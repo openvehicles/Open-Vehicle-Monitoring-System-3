@@ -403,7 +403,7 @@ void dbcBitTiming::WriteFile(dbcOutputCallback callback, void* param)
   if (m_baudrate != 0)
     {
     char buf[64];
-    sprintf(buf,"%u:%u,%u",m_baudrate,m_btr1,m_btr2);
+    sprintf(buf,"%" PRIu32 ":%" PRIu32 ",%" PRIu32,m_baudrate,m_btr1,m_btr2);
     callback(param, buf);
     }
   callback(param, "\n\n");
@@ -504,7 +504,7 @@ void dbcValueTable::WriteFile(dbcOutputCallback callback, void* param, const cha
        it++)
     {
     char buf[40];
-    sprintf(buf," %d \"",it->first);
+    sprintf(buf," %" PRId32 " \"",it->first);
     callback(param,buf);
     callback(param,it->second.c_str());
     callback(param,"\"");
@@ -830,15 +830,17 @@ dbcNumber dbcSignal::Decode(CAN_frame_t* msg)
 
   if (m_value_type == DBC_VALUETYPE_UNSIGNED)
     result.Cast((uint32_t)val, DBC_NUMBER_INTEGER_UNSIGNED);
-  else
-    result.Cast((uint32_t)val, DBC_NUMBER_INTEGER_SIGNED);
+  else {
+    int32_t signed_val = sign_extend<uint32_t, int32_t>((uint32_t)val, m_signal_size-1);
+    result.Cast(static_cast<uint32_t>(signed_val), DBC_NUMBER_INTEGER_SIGNED);
+  }
 
   // Apply factor and offset
-  if (!(m_factor == 1))
+  if (!(m_factor == (uint32_t)1))
     {
     result = (result * m_factor);
     }
-  if (!(m_offset == 0))
+  if (!(m_offset == (uint32_t)0))
     {
     result = (result + m_offset);
     }

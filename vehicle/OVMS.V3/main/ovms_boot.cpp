@@ -34,9 +34,17 @@ static const char *TAG = "boot";
 #include "freertos/FreeRTOS.h"
 #include "freertos/xtensa_api.h"
 #include "rom/rtc.h"
+#include "rom/uart.h"
 #include "soc/rtc_cntl_reg.h"
 #include "esp_system.h"
+#include "esp_sleep.h"
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR < 4
 #include "esp_panic.h"
+#else
+#include "esp_private/panic_internal.h"
+#include "esp_private/system_internal.h"
+#endif
 #include "esp_task_wdt.h"
 #include <driver/adc.h>
 
@@ -106,6 +114,7 @@ static const char *resetreason_name[] = {
 #define NUM_RESETREASONS (sizeof(resetreason_name) / sizeof(char *))
 
 
+#if ESP_IDF_VERSION_MAJOR < 4
 /**
  * ovms_reset_reason_get_hint()
  * 
@@ -131,6 +140,7 @@ static esp_reset_reason_t IRAM_ATTR ovms_reset_reason_get_hint(void)
     return (esp_reset_reason_t) low;
 }
 
+#endif
 
 void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -139,7 +149,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   struct tm* tml;
   char tb[32];
   
-  writer->printf("Last boot was %d second(s) ago\n",monotonictime);
+  writer->printf("Last boot was %" PRId32 " second(s) ago\n",monotonictime);
   
   time(&rawtime);
   rawtime = rawtime-(time_t)monotonictime;
@@ -165,29 +175,48 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->printf("\nLast crash: ");
     if (boot_data.crash_data.is_abort)
       {
+      // Software controlled panic:
       writer->printf("abort() was called on core %d\n", boot_data.crash_data.core_id);
+      if (boot_data.stack_overflow_taskname[0])
+        writer->printf("  Stack overflow in task %s\n", boot_data.stack_overflow_taskname);
+      else if (boot_data.curr_task[0].name[0] && !boot_data.curr_task[0].stackfree)
+        writer->printf("  Pending stack overflow in task %s\n", boot_data.curr_task[0].name);
+      else if (boot_data.curr_task[1].name[0] && !boot_data.curr_task[1].stackfree)
+        writer->printf("  Pending stack overflow in task %s\n", boot_data.curr_task[1].name);
       }
     else
       {
+      // Hardware exception:
       int exccause = boot_data.crash_data.reg[19];
       writer->printf("%s exception on core %d\n",
         (exccause < NUM_EDESCS) ? edesc[exccause] : "Unknown", boot_data.crash_data.core_id);
       writer->printf("  Registers:\n");
       for (int i=0; i<24; i++)
-        writer->printf("  %s: 0x%08lx%s", sdesc[i], boot_data.crash_data.reg[i], ((i+1)%4) ? "" : "\n");
+        writer->printf("  %s: 0x%08" PRIx32 "%s", sdesc[i], boot_data.crash_data.reg[i], ((i+1)%4) ? "" : "\n");
       }
+
+    for (int core = 0; core < portNUM_PROCESSORS; core++)
+      {
+      if (boot_data.curr_task[core].name[0])
+        writer->printf("  Current task on core %d: %s, %" PRIu32 " stack bytes free\n",
+          core, boot_data.curr_task[core].name, boot_data.curr_task[core].stackfree);
+      }
+
     writer->printf("  Backtrace:\n ");
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
-      writer->printf(" 0x%08lx", boot_data.crash_data.bt[i].pc);
+      writer->printf(" 0x%08" PRIx32, boot_data.crash_data.bt[i].pc);
+
     if (boot_data.curr_event_name[0])
       {
       writer->printf("\n  Event: %s@%s %u secs", boot_data.curr_event_name, boot_data.curr_event_handler,
         boot_data.curr_event_runtime);
       }
+
     if (MyBoot.GetResetReason() == ESP_RST_TASK_WDT)
       {
       writer->printf("\n  WDT tasks: %s", boot_data.wdt_tasknames);
       }
+
     writer->printf("\n  Version: %s\n", StdMetrics.ms_m_version->AsString("").c_str());
     writer->printf("\n  Hardware: %s\n", StdMetrics.ms_m_hardware->AsString("").c_str());
     }
@@ -200,6 +229,65 @@ void boot_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->puts("Boot status data has been cleared.");
   }
 
+#if ESP_IDF_VERSION_MAJOR >= 4
+/*
+Error handling for OVMS/ESP-IDF4+ is done differently than the OVMS/ESP-IDF3 versions.
+- In OVMS/ESP-IDF3, ESP-IDF was patched to add support for a custom error handler.
+- In OVMS/ESP-IDF4+, we take advantage of the ability of the linker to wrap a symbol,
+  and we thus wrap the original `esp_panic_handler` (panic.c)
+
+See:
+- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html#wrappers-to-redefine-or-extend-existing-functions
+- https://github.com/espressif/esp-idf/issues/7681#issuecomment-941957783
+*/
+extern "C" {
+  extern void esp_panic_handler_reconfigure_wdts(void);
+
+  /* Declare the real panic handler function. We'll be able to call it after executing our custom code */
+  extern void __real_esp_panic_handler(panic_info_t*);
+
+  /* This function will be considered the esp_panic_handler to call in case a panic occurs */
+  void __wrap_esp_panic_handler(panic_info_t* info)
+    {
+    /* Custom code, count the number of panics or simply print a message */
+    esp_rom_printf("Panic has been triggered by the program!\n");
+
+    /*
+    This logic comes from the original esp_panic_handler (in panic.c) which is
+    used to set the reset reason hint.
+    However, our wrapper happens *before* this function, so cannot benefit from
+    the hint.
+    */
+    esp_reset_reason_t reset_hint = esp_reset_reason_get_hint();
+    if (ESP_RST_UNKNOWN == reset_hint)
+      {
+      switch (info->exception)
+        {
+        case PANIC_EXCEPTION_IWDT:
+            reset_hint = ESP_RST_INT_WDT;
+            break;
+        case PANIC_EXCEPTION_TWDT:
+            reset_hint = ESP_RST_TASK_WDT;
+            break;
+        case PANIC_EXCEPTION_ABORT:
+        case PANIC_EXCEPTION_FAULT:
+        default:
+            reset_hint = ESP_RST_PANIC;
+            break;
+        }
+      }
+
+    /* Call the ErrorCallback from OVMS/ESP-IDF3 - adding the `reset_hint` parameter */
+    Boot::ErrorCallback(info->frame, info->core, g_panic_abort, reset_hint);
+
+    esp_panic_handler_reconfigure_wdts();
+
+    /* Call the original panic handler function to finish processing this error (creating a core dump for example...) */
+    __real_esp_panic_handler(info);
+    }
+}
+#endif
+
 Boot::Boot()
   {
   ESP_LOGI(TAG, "Initialising BOOT (1100)");
@@ -210,6 +298,7 @@ Boot::Boot()
   m_shutdown_timer = 0;
   m_shutdown_pending = 0;
   m_shutdown_deepsleep = false;
+  m_shutdown_deepsleep_seconds = 0;
   m_shutting_down = false;
 
   m_resetreason = esp_reset_reason(); // Note: necessary to link reset_reason module
@@ -234,12 +323,12 @@ Boot::Boot()
     #ifdef CONFIG_OVMS_COMP_ADC
       // Note: RTC_MODULE nags about a lock release before aquire, this can be ignored
       //  (reason: RTC_MODULE needs FreeRTOS for locking, which hasn't been started yet)
-      adc1_config_width(ADC_WIDTH_12Bit);
-      adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_11db);
+      adc1_config_width(ADC_WIDTH_BIT_12);
+      adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
       uint32_t adc_level = 0;
       for (int i = 0; i < 5; i++)
         adc_level += adc1_get_raw(ADC1_CHANNEL_0);
-      float level_12v = adc_level / 5 / 195.7;
+      float level_12v = (float) adc_level / 5 / 195.7;
       ESP_LOGI(TAG, "12V level: ~%.1fV", level_12v);
       if (level_12v > 11.0)
         ESP_LOGI(TAG, "12V level sufficient, proceeding with boot");
@@ -265,14 +354,12 @@ Boot::Boot()
     boot_data.boot_count++;
     ESP_LOGI(TAG, "Boot #%d reasons for CPU0=%d and CPU1=%d",boot_data.boot_count,cpu0,cpu1);
 
-    m_resetreason = boot_data.reset_hint;
-    ESP_LOGI(TAG, "Reset reason %s (%d)", GetResetReasonName(), GetResetReason());
-
     if (boot_data.soft_reset)
       {
       boot_data.crash_count_total = 0;
       boot_data.crash_count_early = 0;
       m_bootreason = BR_SoftReset;
+      m_resetreason = ESP_RST_SW;
       ESP_LOGI(TAG, "Soft reset by user");
       }
     else if (boot_data.firmware_update)
@@ -281,6 +368,7 @@ Boot::Boot()
       boot_data.crash_count_early = 0;
       m_bootreason = BR_FirmwareUpdate;
       ESP_LOGI(TAG, "Firmware update reset");
+      m_resetreason = ESP_RST_SW;
       }
     else if (!boot_data.stable_reached)
       {
@@ -288,29 +376,40 @@ Boot::Boot()
       boot_data.crash_count_early++;
       m_bootreason = BR_EarlyCrash;
       ESP_LOGE(TAG, "Early crash #%d detected", boot_data.crash_count_early);
+      m_resetreason = boot_data.reset_hint;
+      ESP_LOGI(TAG, "Reset reason %s (%d)", GetResetReasonName(), GetResetReason());
       }
     else
       {
       boot_data.crash_count_total++;
       m_bootreason = BR_Crash;
       ESP_LOGE(TAG, "Crash #%d detected", boot_data.crash_count_total);
+      m_resetreason = boot_data.reset_hint;
+      ESP_LOGI(TAG, "Reset reason %s (%d)", GetResetReasonName(), GetResetReason());
       }
     }
 
   m_crash_count_early = boot_data.crash_count_early;
+  m_stack_overflow = boot_data.stack_overflow;
+  if (!m_stack_overflow)
+    boot_data.stack_overflow_taskname[0] = 0;
 
   boot_data.bootreason_cpu0 = cpu0;
   boot_data.bootreason_cpu1 = cpu1;
+  boot_data.reset_hint = ESP_RST_UNKNOWN;
 
   // reset flags:
   boot_data.soft_reset = false;
   boot_data.firmware_update = false;
   boot_data.stable_reached = false;
+  boot_data.stack_overflow = false;
 
   boot_data.crc = boot_data.calc_crc();
 
   // install error handler:
+#if ESP_IDF_VERSION_MAJOR < 4
   xt_set_error_handler_callback(ErrorCallback);
+#endif
 
   // Register our commands
   OvmsCommand* cmd_boot = MyCommandApp.RegisterCommand("boot","BOOT framework",boot_status, "", 0, 0, false);
@@ -351,6 +450,8 @@ const char* Boot::GetBootReasonName()
 
 const char* Boot::GetResetReasonName()
   {
+  if (m_stack_overflow)
+    return "Stack overflow";
   return (m_resetreason >= 0 && m_resetreason < NUM_RESETREASONS)
     ? resetreason_name[m_resetreason]
     : "Unknown reset reason";
@@ -363,7 +464,17 @@ static void boot_shutdown_done(const char* event, void* data)
   if (MyBoot.m_shutdown_deepsleep)
     {
     // For consistency with init, instead of calling MyPeripherals->m_esp32->SetPowerMode(DeepSleep):
-    esp_deep_sleep(1000000LL * 60);
+    if (MyBoot.m_shutdown_deepsleep_waketime)
+      {
+      // Accomodate for boot time (15 seconds):
+      int seconds = MyBoot.m_shutdown_deepsleep_waketime - time(0) - 15;
+      if (seconds < 0) seconds = 0;
+      esp_deep_sleep(1000000LL * seconds);
+      }
+    else
+      {
+      esp_deep_sleep(1000000LL * MyBoot.m_shutdown_deepsleep_seconds);
+      }
     }
   else
     {
@@ -391,7 +502,7 @@ void Boot::Restart(bool hard)
   OvmsMutexLock lock(&m_shutdown_mutex);
   m_shutting_down = true;
   m_shutdown_pending = 0;
-  m_shutdown_timer = 60; // Give them 60 seconds to shutdown
+  m_shutdown_timer = 70; // Give them 70 seconds to shutdown
   MyEvents.SignalEvent("system.shuttingdown", NULL, boot_shuttingdown_done);
 
   #undef bind  // Kludgy, but works
@@ -400,9 +511,19 @@ void Boot::Restart(bool hard)
   MyEvents.RegisterEvent(TAG,"ticker.1", std::bind(&Boot::Ticker1, this, _1, _2));
   }
 
-void Boot::DeepSleep()
+void Boot::DeepSleep(unsigned int seconds /*=60*/)
   {
   m_shutdown_deepsleep = true;
+  m_shutdown_deepsleep_seconds = seconds;
+  m_shutdown_deepsleep_waketime = 0;
+  Restart(false);
+  }
+
+void Boot::DeepSleep(time_t waketime)
+  {
+  m_shutdown_deepsleep = true;
+  m_shutdown_deepsleep_seconds = 0;
+  m_shutdown_deepsleep_waketime = waketime;
   Restart(false);
   }
 
@@ -448,20 +569,91 @@ bool Boot::IsShuttingDown()
   return m_shutting_down;
   }
 
+
+/*
+ * Direct UART output utils borrowed from esp32/panic.c
+ */
+static void panicPutChar(char c)
+  {
+  while (((READ_PERI_REG(UART_STATUS_REG(CONFIG_CONSOLE_UART_NUM)) >> UART_TXFIFO_CNT_S)&UART_TXFIFO_CNT) >= 126) ;
+  WRITE_PERI_REG(UART_FIFO_REG(CONFIG_CONSOLE_UART_NUM), c);
+  }
+
+static void panicPutStr(const char *c)
+  {
+  int x = 0;
+  while (c[x] != 0)
+    {
+    panicPutChar(c[x]);
+    x++;
+    }
+  }
+
+/*
+ * This function is called by task_wdt_isr function (ISR for when TWDT times out).
+ * It can be redefined in user code to handle twdt events.
+ * Note: It has the same limitations as the interrupt function.
+ *       Do not use ESP_LOGI functions inside.
+ */
+extern "C" void esp_task_wdt_isr_user_handler(void)
+  {
+  panicPutStr("\r\n[OVMS] ***TWDT***\r\n");
+  // Save TWDT task info:
+#if ESP_IDF_VERSION_MAJOR < 4
+  esp_task_wdt_get_trigger_tasknames(boot_data.wdt_tasknames, sizeof(boot_data.wdt_tasknames));
+#else
+  snprintf(boot_data.wdt_tasknames, sizeof(boot_data.wdt_tasknames), "(unavailable)");
+  #warning "(TODO) ESP-IDF >= 4 : list of tasks triggering WDT not available."
+#endif
+  }
+
+/*
+ * This function is called if FreeRTOS detects a stack overflow.
+ */
+extern "C" void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName )
+  {
+  panicPutStr("\r\n[OVMS] ***ERROR*** A stack overflow in task ");
+  panicPutStr((char *)pcTaskName);
+  panicPutStr(" has been detected.\r\n");
+  strlcpy(boot_data.stack_overflow_taskname, (const char*)pcTaskName, sizeof(boot_data.stack_overflow_taskname));
+  boot_data.stack_overflow = true;
+  abort();
+  }
+
+#if ESP_IDF_VERSION_MAJOR < 4
 void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
   {
   boot_data.reset_hint = ovms_reset_reason_get_hint();
+
+#else
+
+void Boot::ErrorCallback(const void *f, int core_id, bool is_abort, esp_reset_reason_t reset_hint)
+  {
+#if CONFIG_IDF_TARGET_ARCH_XTENSA
+  XtExcFrame *frame = (XtExcFrame *) f;
+#elif CONFIG_IDF_TARGET_ARCH_RISCV
+  RvExcFrame *frame = (RvExcFrame *) f;
+#endif
+
+  boot_data.reset_hint = reset_hint;
+
+#endif
+
   boot_data.crash_data.core_id = core_id;
   boot_data.crash_data.is_abort = is_abort;
 
   // Save registers:
-  for (int i=0; i<24; i++)
-    boot_data.crash_data.reg[i] = ((uint32_t*)frame)[i+1];
+  for (int i=0; i<__ARCH_NB_REGS; i++)
+    {
+    boot_data.crash_data.reg[i] = ((uint32_t*)frame)[i + __ARCH_REG_OFFSET_IN_FRAME];
+    }
 
   // Save backtrace:
+  uint32_t i = 0;
+#if (ESP_IDF_VERSION_MAJOR < 4) || CONFIG_IDF_TARGET_ARCH_XTENSA
   // (see panic.c::doBacktrace() for code template)
   #define _adjusted_pc(pc) (((pc) & 0x80000000) ? (((pc) & 0x3fffffff) | 0x40000000) : (pc))
-  uint32_t i = 0, pc = frame->pc, sp = frame->a1;
+  uint32_t pc = frame->pc, sp = frame->a1;
   boot_data.crash_data.bt[i++].pc = _adjusted_pc(pc);
   pc = frame->a0;
   while (i < OVMS_BT_LEVELS)
@@ -475,6 +667,9 @@ void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
     if (pc < 0x40000000)
         break;
     }
+#else
+  #warning "Backtrace not available in crash_data on this architecture - please fix ovms_boot.cpp"
+#endif
   while (i < OVMS_BT_LEVELS)
     boot_data.crash_data.bt[i++].pc = 0;
 
@@ -495,8 +690,28 @@ void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
     boot_data.curr_event_runtime = 0;
     }
 
-  // Save TWDT task info:
-  esp_task_wdt_get_trigger_tasknames(boot_data.wdt_tasknames, sizeof(boot_data.wdt_tasknames));
+  // Save current tasks:
+  panicPutStr("\r\n[OVMS] Current tasks: ");
+  for (int core=0; core<portNUM_PROCESSORS; core++)
+    {
+    TaskHandle_t task = xTaskGetCurrentTaskHandleForCPU(core);
+    if (task)
+      {
+      char *name = pcTaskGetTaskName(task);
+      uint32_t stackfree = uxTaskGetStackHighWaterMark(task);
+      if (core > 0) panicPutChar('|');
+      panicPutStr(name);
+      strlcpy(boot_data.curr_task[core].name, name, sizeof(boot_data.curr_task[core].name));
+      boot_data.curr_task[core].stackfree = stackfree;
+      if (!stackfree) boot_data.stack_overflow = true;
+      }
+    else
+      {
+      boot_data.curr_task[core].name[0] = 0;
+      boot_data.curr_task[core].stackfree = 0;
+      }
+    }
+  panicPutStr("\r\n");
 
   boot_data.crc = boot_data.calc_crc();
   }
@@ -514,6 +729,8 @@ void Boot::NotifyDebugCrash()
     //  ,<curr_event_name>,<curr_event_handler>,<curr_event_runtime>
     //  ,<wdt_tasknames>
     //  ,<hardware_info>
+    //  ,<stack_overflow_task>
+    //  ,<core0_task>,<core0_stackfree>,<core1_task>,<core1_stackfree>
 
     StringWriter buf;
     buf.reserve(2048);
@@ -534,13 +751,13 @@ void Boot::NotifyDebugCrash()
       buf.printf(",%s,%d,",
         (exccause < NUM_EDESCS) ? edesc[exccause] : "Unknown", boot_data.crash_data.core_id);
       for (int i=0; i<24; i++)
-        buf.printf("0x%08lx ", boot_data.crash_data.reg[i]);
+        buf.printf("0x%08" PRIx32 " ", boot_data.crash_data.reg[i]);
       }
 
     // backtrace:
     buf.append(",");
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
-      buf.printf("0x%08lx ", boot_data.crash_data.bt[i].pc);
+      buf.printf("0x%08" PRIx32 " ", boot_data.crash_data.bt[i].pc);
 
     // Reset reason:
     buf.printf(",%d,%s", GetResetReason(), GetResetReasonName());
@@ -556,6 +773,20 @@ void Boot::NotifyDebugCrash()
     // Hardware info:
     buf.append(",");
     buf.append(mp_encode(StdMetrics.ms_m_hardware->AsString("")));
+
+    // Stack overflow task:
+    std::string name = boot_data.stack_overflow_taskname;
+    buf.append(",");
+    buf.append(mp_encode(name));
+
+    // Current tasks:
+    for (int i = 0; i < 2; i++)
+      {
+      name = boot_data.curr_task[i].name;
+      buf.append(",");
+      buf.append(mp_encode(name));
+      buf.printf(",%" PRIu32, boot_data.curr_task[i].stackfree);
+      }
 
     MyNotify.NotifyString("data", "debug.crash", buf.c_str());
     }

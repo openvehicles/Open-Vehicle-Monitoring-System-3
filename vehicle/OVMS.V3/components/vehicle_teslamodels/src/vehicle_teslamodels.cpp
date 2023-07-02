@@ -285,6 +285,7 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
       if (d[0] < 255)
         {
         StandardMetrics.ms_v_pos_gpslock->SetValue(true);
+        StandardMetrics.ms_v_pos_gpssq->SetValue(100); // todo: derive from HDOP
         StandardMetrics.ms_v_pos_gpsmode->SetValue("TESLA");
         }
       break;
@@ -305,6 +306,7 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
                                                            ((uint32_t)d[5] << 12) +
                                                            ((uint32_t)d[4] << 4) +
                                                            ((uint32_t)(d[3]&0xf0) >> 4)) / 1000000.0);
+      StandardMetrics.ms_v_pos_gpstime->SetValue(time(NULL));
       break;
     case 0x31f: // TPMS Baolong tyre pressures + temperatures
       // Note: Baolong TPMS in Model S does not specify which wheel is which, so
@@ -473,7 +475,7 @@ bool OvmsVehicleTeslaModelS::TPMSRead(std::vector<uint32_t> *tpms)
                     ((uint32_t)m_tpms_data[offset+1] << 16) +
                     ((uint32_t)m_tpms_data[offset+2] << 8) +
                     ((uint32_t)m_tpms_data[offset+3]);
-      ESP_LOGD(TAG,"TPMS read ID %08x",id);
+      ESP_LOGD(TAG,"TPMS read ID %08" PRIx32,id);
       tpms->push_back( id );
       }
     return true;
@@ -497,7 +499,7 @@ bool OvmsVehicleTeslaModelS::TPMSWrite(std::vector<uint32_t> &tpms)
   m_tpms_pos = 0;
   for(uint32_t id : tpms)
     {
-    ESP_LOGD(TAG,"TPMS write ID %08x",id);
+    ESP_LOGD(TAG,"TPMS write ID %08" PRIx32,id);
     m_tpms_data[m_tpms_pos++] = (id>>24) & 0xff;
     m_tpms_data[m_tpms_pos++] = (id>>16) & 0xff;
     m_tpms_data[m_tpms_pos++] = (id>>8) & 0xff;

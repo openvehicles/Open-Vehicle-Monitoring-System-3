@@ -76,7 +76,7 @@ void pushover_send_message(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
       sound = "pushover";
     }
 
-  writer->printf("Sending PUSHOVER message \"%s\" with priority %d and sound %s\n",argv[0],priority,sound);
+  writer->printf("Sending PUSHOVER message \"%s\" with priority %d and sound %s\n",argv[0],priority,sound.c_str());
   MyPushoverClient.SendMessage(argv[0], priority, sound);
   }
 
@@ -297,10 +297,10 @@ static void PushoverMongooseCallback(struct mg_connection *nc, int ev, void *p)
       MyPushoverClient.m_mgconn_mutex.Unlock();
       break;
     case MG_EV_SEND:
-      ESP_LOGD(TAG, "PushoverMongooseCallback(MG_EV_SEND) %d bytes",*(uint32_t*)p);
+      ESP_LOGD(TAG, "PushoverMongooseCallback(MG_EV_SEND) %" PRId32 " bytes",*(uint32_t*)p);
       break;
     case MG_EV_RECV:
-      ESP_LOGD(TAG, "PushoverMongooseCallback(MG_EV_RECV) %d bytes",*(uint32_t*)p);
+      ESP_LOGD(TAG, "PushoverMongooseCallback(MG_EV_RECV) %" PRId32 " bytes",*(uint32_t*)p);
       mbuf_remove(&nc->recv_mbuf, MyPushoverClient.IncomingData((uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len));
       break;
     case MG_EV_POLL:

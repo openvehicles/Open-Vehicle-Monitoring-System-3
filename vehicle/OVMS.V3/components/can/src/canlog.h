@@ -34,6 +34,8 @@
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 #include "ovms_netmanager.h"
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+#include "ovms_metrics.h"
+#include "id_filter.h"
 
 /**
  * canlog is the general interface and base implementation for all can loggers.
@@ -95,7 +97,6 @@ class canlogconnection: public InternalRamAllocated
     uint32_t       m_filtercount;
   };
 
-
 class canlog : public InternalRamAllocated
   {
   public:
@@ -105,6 +106,7 @@ class canlog : public InternalRamAllocated
   public:
     static void RxTask(void* context);
     void EventListener(std::string event, void* data);
+    void MetricListener(OvmsMetric* metric);
 
   public:
     const char* GetType();
@@ -152,6 +154,16 @@ class canlog : public InternalRamAllocated
     uint32_t            m_msgcount;
     uint32_t            m_dropcount;
     uint32_t            m_filtercount;
+
+  protected:
+    virtual void UpdatedConfig(std::string event, void* data);
+    virtual void LoadConfig();
+
+  protected:
+    IdFilter            m_events_filters;
+    size_t              m_events_filters_hash = 0;
+    IdFilter            m_metrics_filters;
+    size_t              m_metrics_filters_hash = 0;
   };
 
 #endif // __CANLOG_H__

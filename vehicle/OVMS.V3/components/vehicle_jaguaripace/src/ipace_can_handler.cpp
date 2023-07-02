@@ -111,7 +111,7 @@ void OvmsVehicleJaguarIpace::IncomingPollFrame(CAN_frame_t* frame)
 
         if (frameType == ISOTP_FT_SINGLE)
         {
-            ESP_LOGD(TAG, "IncomingPollFrame, SINGLE frame->MsgID=%d", frame->MsgID);
+            ESP_LOGD(TAG, "IncomingPollFrame, SINGLE frame->MsgID=%" PRId32, frame->MsgID);
             switch (frame->MsgID) {
                 case (becmId | rxFlag):
                     IncomingBecmPoll(responsePid, data, dataLength, 0);
@@ -163,7 +163,7 @@ void OvmsVehicleJaguarIpace::IncomingPollReply(
 {
     ESP_LOGD(
         TAG,
-        "%03x TYPE:%x PID:%02x Length:%x Data:%02x %02x %02x %02x",
+        "%03" PRIx32 " TYPE:%" PRIx16 " PID:%02" PRIx16 " Length:%" PRIx8 " Data:%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8,
         m_poll_moduleid_low,
         type,
         pid,

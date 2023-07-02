@@ -372,7 +372,7 @@ CANopenResult_t SevconClient::Login(bool on)
     m_drivemode.type = 1; // Twizy45
   }
   else {
-    ESP_LOGE(TAG, "Twizy type unknown: SEVCON type 0x%08x", m_sevcon_type);
+    ESP_LOGE(TAG, "Twizy type unknown: SEVCON type 0x%08" PRIx32, m_sevcon_type);
     return COR_ERR_UnknownDevice;
   }
 

@@ -31,6 +31,7 @@
 
 static const char *TAG = "v-mgev";
 
+#include <esp_timer.h>
 #include "vehicle_mgev.h"
 #include "mg_auth.h"
 
@@ -161,13 +162,13 @@ void OvmsVehicleMgEv::IncomingBCMAuthFrame(CAN_frame_t* frame, uint8_t serviceId
                     uint32_t seed = (data[2] << 24) | (data[3] << 16) | (data[4] << 8) | data[5];
                     if (seed == 0)
                     {
-                        ESP_LOGI(TAG, "BCM auth: seed received %08x. BCM seems to already have been authenticated", seed);
+                        ESP_LOGI(TAG, "BCM auth: seed received %08" PRIx32 ". BCM seems to already have been authenticated", seed);
                         m_bcm_task->SetValue(static_cast<int>(BCMTasks::AuthenticationDone));
                     }
                     else
                     {
                         uint32_t key = MgEvPasscode::BCMKey(seed);
-                        ESP_LOGI(TAG, "BCM auth: seed received %08x. Replying with key %08x", seed, key);
+                        ESP_LOGI(TAG, "BCM auth: seed received %08" PRIx32 ". Replying with key %08" PRIx32, seed, key);
                         nextFrame.data.u8[0] = (ISOTP_FT_SINGLE << 4) | 6;
                         nextFrame.data.u8[1] = VEHICLE_POLL_TYPE_SECACCESS;
                         nextFrame.data.u8[2] = 0x02u;

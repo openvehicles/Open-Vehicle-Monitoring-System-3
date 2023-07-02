@@ -438,6 +438,7 @@ This message is sent <cartoserver> "C" and transmits the last known location of 
 * GPS satellite count
 * GPS HDOP (see below)
 * GPS speed (in distance units per hour)
+* GPS signal quality (%)
 
 **GPS mode indicator**: this shows the NMEA receiver mode. If using the SIM5360 modem for GPS, this 
 is a two character string. The first character represents the GPS receiver mode, the second the GLONASS 
@@ -461,6 +462,11 @@ The lower the value, the higher the precision. Values up to 2 mean high precisio
 If the value is higher than 20, coordinates may be off by 300 meters from the actual position.
 
 See https://en.wikipedia.org/wiki/Dilution_of_precision_(navigation) for further details.
+
+**GPS signal quality**: this is a normalized quality / reliability level (0…100%) derived from lock
+status, satellite count and HDOP (if available). Levels below 30% mean the position should not be
+depended on, from 50% up mean good, from 80% up excellent.
+
 
 ---------------------------------
 Car Capabilities message 0x56 "V"

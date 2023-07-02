@@ -62,6 +62,7 @@ MetricsStandard::MetricsStandard()
   ms_m_egpio_output = new OvmsMetricBitset<10,0>(MS_M_EGPIO_OUTPUT, SM_STALE_MAX);
   ms_m_egpio_monitor = new OvmsMetricBitset<10,0>(MS_M_EGPIO_MONITOR, SM_STALE_MAX);
 #endif //CONFIG_OVMS_COMP_MAX7317
+  ms_m_obd2ecu_on = new OvmsMetricBool(MS_M_OBD2ECU_ON, SM_STALE_MID);
 
   ms_s_v2_connected = new OvmsMetricBool(MS_S_V2_CONNECTED);
   ms_s_v2_peers = new OvmsMetricInt(MS_S_V2_PEERS);
@@ -257,6 +258,8 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_gpsmode = new OvmsMetricString(MS_V_POS_GPSMODE, SM_STALE_MIN);
   ms_v_pos_gpshdop = new OvmsMetricFloat(MS_V_POS_GPSHDOP, SM_STALE_MIN);
   ms_v_pos_satcount= new OvmsMetricInt(MS_V_POS_SATCOUNT, SM_STALE_MIN);
+  ms_v_pos_gpssq = new OvmsMetricInt(MS_V_POS_GPSSQ, SM_STALE_MIN, Percentage);
+  ms_v_pos_gpstime = new OvmsMetricInt(MS_V_POS_GPSTIME, SM_STALE_MIN, Seconds);
   ms_v_pos_latitude = new OvmsMetricFloat(MS_V_POS_LATITUDE, SM_STALE_MIN, Other, true);
   ms_v_pos_longitude = new OvmsMetricFloat(MS_V_POS_LONGITUDE, SM_STALE_MIN, Other, true);
   ms_v_pos_location = new OvmsMetricString(MS_V_POS_LOCATION, SM_STALE_MID);
@@ -267,6 +270,9 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_gpsspeed = new OvmsMetricFloat(MS_V_POS_GPSSPEED, SM_STALE_MIN, Kph);
   ms_v_pos_odometer = new OvmsMetricFloat(MS_V_POS_ODOMETER, SM_STALE_MID, Kilometers, true);
   ms_v_pos_trip = new OvmsMetricFloat(MS_V_POS_TRIP, SM_STALE_MID, Kilometers, true);
+  ms_v_pos_valet_latitude = new OvmsMetricFloat(MS_V_POS_VALET_LATITUDE, SM_STALE_NONE, Other, true);
+  ms_v_pos_valet_longitude = new OvmsMetricFloat(MS_V_POS_VALET_LONGITUDE, SM_STALE_NONE, Other, true);
+  ms_v_pos_valet_distance = new OvmsMetricFloat(MS_V_POS_VALET_DISTANCE, SM_STALE_HIGH, Meters, true);
 
   //
   // TPMS: tyre monitoring metrics

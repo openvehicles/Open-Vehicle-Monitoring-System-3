@@ -155,6 +155,8 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_OBDIIGROUP      0x21 // Custom: Read data by 8 bit PID
 #define VEHICLE_POLL_TYPE_OBDII_32        0x32 // Custom: VW routine control extension (8 bit PID)
 
+#define VEHICLE_OBD_BROADCAST_MODULE_TX   0x7df
+#define VEHICLE_OBD_BROADCAST_MODULE_RX   0x0
 // A note on "PID" and their sizes here:
 //  By "PID" for the service types we mean the part of the request parameters
 //  after the service type that is reflected in _every_ valid response to the request.
@@ -273,6 +275,14 @@ typedef struct
   uint32_t                lastused;         // Timestamp of last channel access
   } vwtp_channel_t;
 
+enum class OvmsStatus : short {
+  OK = 0,
+  Warn = 1,
+  Alert = 2
+};
+inline bool operator<(OvmsStatus lhs, OvmsStatus rhs) {
+  return static_cast<short>(lhs) < static_cast<short>(rhs);
+}
 
 class OvmsVehicle : public InternalRamAllocated
   {
@@ -437,9 +447,14 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleDrivemode(int drivemode) {}
     virtual void NotifiedVehicleChargeMode(const char* m) {}
     virtual void NotifiedVehicleChargeState(const char* s) {}
+    virtual void NotifiedVehicleChargeType(const std::string& state) {}
     virtual void NotifiedVehicleGenState(const std::string& state) {}
+    virtual void NotifiedVehicleGenType(const std::string& state) {}
+    virtual void NotifiedOBD2ECUStart() {}
+    virtual void NotifiedOBD2ECUStop() {}
 
   protected:
+    uint32_t m_valet_last_alarm;
     virtual void ConfigChanged(OvmsConfigParam* param);
     virtual void MetricModified(OvmsMetric* metric);
     virtual void CalculateEfficiency();
@@ -452,7 +467,7 @@ class OvmsVehicle : public InternalRamAllocated
 
   protected:
     void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL);
-    bool PinCheck(char* pin);
+    bool PinCheck(const char* pin);
 
   public:
     virtual void RxTask();
@@ -471,6 +486,12 @@ class OvmsVehicle : public InternalRamAllocated
       Range = 3,
       Performance = 4
       } vehicle_mode_t;
+    enum class vehicle_bms_status_t
+      {
+      Both,
+      Voltage,
+      Temperature
+      };
 
   public:
     vehicle_mode_t VehicleModeKey(const std::string code);
@@ -631,7 +652,7 @@ class OvmsVehicle : public InternalRamAllocated
     float* m_bms_vmins;                       // BMS minimum voltages seen (since reset)
     float* m_bms_vmaxs;                       // BMS maximum voltages seen (since reset)
     float* m_bms_vdevmaxs;                    // BMS maximum voltage deviations seen (since reset)
-    short* m_bms_valerts;                     // BMS voltage deviation alerts (since reset)
+    OvmsStatus* m_bms_valerts;                // BMS voltage deviation alerts (since reset)
     int m_bms_valerts_new;                    // BMS new voltage alerts since last notification
     int m_bms_vstddev_cnt;                    // BMS internal stddev counter
     float m_bms_vstddev_avg;                  // BMS internal stddev average
@@ -640,7 +661,7 @@ class OvmsVehicle : public InternalRamAllocated
     float* m_bms_tmins;                       // BMS minimum temperatures seen (since reset)
     float* m_bms_tmaxs;                       // BMS maximum temperatures seen (since reset)
     float* m_bms_tdevmaxs;                    // BMS maximum temperature deviations seen (since reset)
-    short* m_bms_talerts;                     // BMS temperature deviation alerts (since reset)
+    OvmsStatus* m_bms_talerts;                // BMS temperature deviation alerts (since reset)
     int m_bms_talerts_new;                    // BMS new temperature alerts since last notification
     bool m_bms_has_temperatures;              // True if BMS has a complete set of temperature values
     std::vector<bool> m_bms_bitset_v;         // BMS tracking: true if corresponding voltage set
@@ -686,8 +707,10 @@ class OvmsVehicle : public InternalRamAllocated
     void BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert, float* maxgrad=NULL, float* maxsddev=NULL);
     void BmsGetCellDefaultThresholdsTemperature(float* warn, float* alert);
     void BmsResetCellStats();
-    virtual void BmsStatus(int verbosity, OvmsWriter* writer);
+    virtual void BmsStatus(int verbosity, OvmsWriter* writer, vehicle_bms_status_t statusmode);
     virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings);
+    bool BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule = 0);
+    bool BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule = 0);
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()

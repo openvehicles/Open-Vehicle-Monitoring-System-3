@@ -229,11 +229,14 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x85: // GPS direction and altitude
           {
           StandardMetrics.ms_v_pos_gpslock->SetValue(d[1] == 1);
+          StandardMetrics.ms_v_pos_gpssq->SetValue(d[1] == 1 ? 100 : 0);
           StandardMetrics.ms_v_pos_direction->SetValue((((int)d[3]<<8)+d[2])%360);
           if (d[5] & 0xf0)
             StandardMetrics.ms_v_pos_altitude->SetValue(0);
           else
             StandardMetrics.ms_v_pos_altitude->SetValue(((int)d[5]<<8)+d[4]);
+          // Assuming this finishes the GPS update:
+          StandardMetrics.ms_v_pos_gpstime->SetValue(time(NULL));
           break;
           }
         case 0x87: // Gear shift status every 10 seconds for v2.x cars
@@ -1229,7 +1232,11 @@ bool OvmsVehicleTeslaRoadster::TPMSRead(std::vector<uint32_t> *tpms)
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = 122,
+#if ESP_IDF_VERSION_MAJOR < 5
     .use_ref_tick = 0,
+#else
+    .source_clk = UART_SCLK_DEFAULT,
+#endif
   };
   uart_param_config(uart, &uart_config);
   uart_set_pin(uart, 33, 32, 0, 0);
@@ -1271,7 +1278,7 @@ bool OvmsVehicleTeslaRoadster::TPMSRead(std::vector<uint32_t> *tpms)
                       ((uint32_t)data[offset+1] << 16) +
                       ((uint32_t)data[offset+2] << 8) +
                       ((uint32_t)data[offset+3]);
-    ESP_LOGD(TAG,"TPMS read ID %08x",id);
+    ESP_LOGD(TAG,"TPMS read ID %08" PRIx32,id);
     tpms->push_back( id );
     }
   return true;
@@ -1303,7 +1310,11 @@ bool OvmsVehicleTeslaRoadster::TPMSWrite(std::vector<uint32_t> &tpms)
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = 122,
+#if ESP_IDF_VERSION_MAJOR < 5
     .use_ref_tick = 0,
+#else
+    .source_clk = UART_SCLK_DEFAULT,
+#endif
   };
   uart_param_config(uart, &uart_config);
   uart_set_pin(uart, 33, 32, 0, 0);
@@ -1313,7 +1324,7 @@ bool OvmsVehicleTeslaRoadster::TPMSWrite(std::vector<uint32_t> &tpms)
   int offset = 2;
   for(uint32_t id : tpms)
     {
-    ESP_LOGD(TAG,"TPMS write ID %08x",id);
+    ESP_LOGD(TAG,"TPMS write ID %08" PRIx32,id);
     req_msg[offset++] = (id>>24) & 0xff;
     req_msg[offset++] = (id>>16) & 0xff;
     req_msg[offset++] = (id>>8) & 0xff;

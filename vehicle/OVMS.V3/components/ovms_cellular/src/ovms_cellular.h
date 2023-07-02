@@ -47,6 +47,8 @@
 
 using namespace std;
 
+#define CELLULAR_NETREG_COUNT 3
+
 class modemdriver;  // Forward declaration
 
 class modem : public pcp, public InternalRamAllocated
@@ -56,7 +58,7 @@ class modem : public pcp, public InternalRamAllocated
     ~modem();
 
   protected:
-    TaskHandle_t m_task;
+    volatile TaskHandle_t m_task;
     volatile QueueHandle_t m_queue;
     int m_baud;
     int m_rxpin;
@@ -93,13 +95,23 @@ class modem : public pcp, public InternalRamAllocated
       } event_type_t;
     typedef enum
       {
-      NotRegistered = 0,
-      Searching = 2,
-      DeniedRegistration = 3,
-      RegisteredHome = 1,
-      RegisteredRoaming = 5,
-      Unknown = 99
+      Unknown = 0,
+      NotRegistered = 1,
+      DeniedRegistration = 2,
+      Searching = 3,
+      Registered = 4,
+      RegisteredEmergencyServices = 5,
+      RegisteredRoamingSMS = 6,
+      RegisteredRoaming = 7,
+      RegisteredHomeSMS = 8,
+      RegisteredHome = 9
       } network_registration_t;
+    typedef enum
+      {
+      NRT_GSM = 0,
+      NRT_GPRS = 1,
+      NRT_EPS = 2
+      } network_regtype_t;
     typedef struct
       {
       event_type_t type;
@@ -126,6 +138,7 @@ class modem : public pcp, public InternalRamAllocated
 
     std::string            m_line_buffer;
     network_registration_t m_netreg;
+    network_registration_t m_netreg_d[CELLULAR_NETREG_COUNT];
     std::string            m_provider;
     int                    m_sq;
     bool                   m_pincode_required;
@@ -149,6 +162,9 @@ class modem : public pcp, public InternalRamAllocated
     GsmMux*                m_mux;
     GsmPPPOS*              m_ppp;
     GsmNMEA*               m_nmea;
+
+    bool                   m_cmd_running;
+    std::string            m_cmd_output;
 
   public:
     // Modem power control and initialisation
@@ -185,7 +201,7 @@ class modem : public pcp, public InternalRamAllocated
     // High level API functions
     void StartTask();
     void StopTask();
-    void StartNMEA();
+    bool StartNMEA(bool force=false);
     void StopNMEA();
     void StartMux();
     void StopMux();
@@ -198,7 +214,7 @@ class modem : public pcp, public InternalRamAllocated
     void IncomingMuxData(GsmMuxChannel* channel);
     void SendSetState1(modem_state1_t newstate);
     bool IsStarted();
-    void SetNetworkRegistration(network_registration_t netreg);
+    void SetNetworkRegistration(network_regtype_t regtype, network_registration_t netreg);
     void SetProvider(std::string provider);
     void SetSignalQuality(int newsq);
     void ClearNetMetrics();
@@ -241,6 +257,7 @@ class modemdriver : public InternalRamAllocated
   protected:
     unsigned int m_powercyclefactor;
     modem* m_modem;
+    int m_statuspoller_step;
   };
 
 template<typename Type> modemdriver* CreateCellularModemDriver()

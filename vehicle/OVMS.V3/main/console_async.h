@@ -46,13 +46,13 @@ class ConsoleAsync : public OvmsConsole, public TaskBase
   public:
     static ConsoleAsync* Instance();
     int puts(const char* s);
-    int printf(const char* fmt, ...);
+    int printf(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
     ssize_t write(const void *buf, size_t nbyte);
-    static int Log(const char* fmt, ...);
+    static int Log(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
 
   private:
     void Service();
-    static int ConsoleLogger(const char* fmt, va_list arg);
+    static int ConsoleLogger(const char* fmt, va_list arg) __attribute__ ((format (printf, 1, 0)));
     void Log(char* message);
     void HandleDeviceEvent(void* pEvent);
 

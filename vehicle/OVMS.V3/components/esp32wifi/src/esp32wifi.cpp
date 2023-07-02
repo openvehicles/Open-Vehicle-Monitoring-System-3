@@ -42,6 +42,13 @@ static const char *TAG = "esp32wifi";
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
 #include "metrics_standard.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include <esp_wifi_types.h>
+#endif
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_wifi_ap_get_sta_list.h>
+#include <dhcpserver/dhcpserver.h>
+#endif
 
 const char* const esp32wifi_mode_names[] = {
   "Modem is off",
@@ -1000,9 +1007,14 @@ void esp32wifi::UpdateNetMetrics()
 
 void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
+#if ESP_IDF_VERSION_MAJOR >= 4
+  ip_event_got_ip_t *info = (ip_event_got_ip_t*)data;
+  m_ip_info_sta = info->ip_info;
+#else
   system_event_info_t *info = (system_event_info_t*)data;
   m_ip_info_sta = info->got_ip.ip_info;
-  esp_wifi_get_mac(ESP_IF_WIFI_STA, m_mac_sta);
+#endif
+  esp_wifi_get_mac(WIFI_IF_STA, m_mac_sta);
   UpdateNetMetrics();
   ESP_LOGI(TAG, "STA got IP with SSID '%s' AP " MACSTR ": MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
     m_wifi_sta_cfg.sta.ssid, MAC2STR(m_sta_ap_info.bssid), MAC2STR(m_mac_sta),
@@ -1019,7 +1031,11 @@ void esp32wifi::EventWifiLostIp(std::string event, void* data)
 
 void esp32wifi::EventWifiStaConnected(std::string event, void* data)
   {
+#if ESP_IDF_VERSION_MAJOR >= 4
+  wifi_event_sta_connected_t& conn = *((wifi_event_sta_connected_t*)data);
+#else
   system_event_sta_connected_t& conn = ((system_event_info_t*)data)->connected;
+#endif
 
   m_sta_connected = true;
   m_previous_reason = 0;
@@ -1036,13 +1052,17 @@ void esp32wifi::EventWifiStaConnected(std::string event, void* data)
 
 void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
   {
-  system_event_info_t *info = (system_event_info_t*)data;
+#if ESP_IDF_VERSION_MAJOR >= 4
+  wifi_event_sta_disconnected_t& disconn = *((wifi_event_sta_disconnected_t*)data);
+#else
+  system_event_sta_disconnected_t& disconn = ((system_event_info_t*)data)->disconnected;
+#endif
 
-  if (info->disconnected.reason != m_previous_reason)
+  if (disconn.reason != m_previous_reason)
     {
     ESP_LOGI(TAG, "STA disconnected with reason %d = %s",
-      info->disconnected.reason, wifi_err_reason_code((wifi_err_reason_t)info->disconnected.reason));
-    m_previous_reason = info->disconnected.reason;
+      disconn.reason, wifi_err_reason_code((wifi_err_reason_t)disconn.reason));
+    m_previous_reason = disconn.reason;
     }
 
   m_sta_connected = false;
@@ -1070,7 +1090,11 @@ void esp32wifi::EventWifiStaState(std::string event, void* data)
     // Set hostname for DHCP request
     std::string vehicleid = MyConfig.GetParamValue("vehicle", "id");
     if (vehicleid.empty()) vehicleid = "ovms";
+#if ESP_IDF_VERSION_MAJOR >= 4
+    if (ESP_OK != esp_netif_set_hostname(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), vehicleid.c_str()))
+#else
     if (ESP_OK != tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, vehicleid.c_str()))
+#endif
       ESP_LOGW(TAG, "failed to set hostname");
 
     AdjustTaskPriority();
@@ -1090,13 +1114,21 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
     {
     // Start
     AdjustTaskPriority();
-    esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac_ap);
+    esp_wifi_get_mac(WIFI_IF_AP, m_mac_ap);
+#if ESP_IDF_VERSION_MAJOR >= 4
+    esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"), &m_ip_info_ap);
+#else
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
+#endif
 
     // Disable routing (gateway) and DNS offer on DHCP server for AP:
     // Note: disabling the DNS offer requires esp-idf fix in commit 4195d7c2eec2d93781d5f88fd71f5c7e1ee1ff20
     esp_err_t err;
+#if ESP_IDF_VERSION_MAJOR >= 4
+    err = esp_netif_dhcps_stop(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"));
+#else
     err = tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
+#endif
     if (err != ESP_OK)
       {
       ESP_LOGE(TAG, "AP: failed reconfiguring DHCP server; error=%d", err);
@@ -1104,13 +1136,25 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
     else
       {
       dhcps_offer_t opt_val = 0;
+#if ESP_IDF_VERSION_MAJOR >= 4
+      err = esp_netif_dhcps_option(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"), ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER, &opt_val, sizeof(opt_val));
+#else
       err = tcpip_adapter_dhcps_option(TCPIP_ADAPTER_OP_SET, TCPIP_ADAPTER_DOMAIN_NAME_SERVER, &opt_val, sizeof(opt_val));
+#endif
       if (err != ESP_OK)
         ESP_LOGW(TAG, "AP: failed disabling DHCP DNS offer; error=%d", err);
+#if ESP_IDF_VERSION_MAJOR >= 4
+      err = esp_netif_dhcps_option(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"), ESP_NETIF_OP_SET, ESP_NETIF_ROUTER_SOLICITATION_ADDRESS, &opt_val, sizeof(opt_val));
+#else
       err = tcpip_adapter_dhcps_option(TCPIP_ADAPTER_OP_SET, TCPIP_ADAPTER_ROUTER_SOLICITATION_ADDRESS, &opt_val, sizeof(opt_val));
+#endif
       if (err != ESP_OK)
         ESP_LOGW(TAG, "AP: failed disabling DHCP routing offer; error=%d", err);
+#if ESP_IDF_VERSION_MAJOR >= 4
+      err = esp_netif_dhcps_start(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"));
+#else
       err = tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+#endif
       if (err != ESP_OK)
         ESP_LOGE(TAG, "AP: failed restarting DHCP server; error=%d", err);
       }
@@ -1129,13 +1173,26 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
 
 void esp32wifi::EventWifiApUpdate(std::string event, void* data)
   {
-  system_event_info_t *info = (system_event_info_t*)data;
   if (event == "system.wifi.ap.sta.connected")
+    {
+#if ESP_IDF_VERSION_MAJOR >= 4
+    wifi_event_ap_staconnected_t& sta_conn = *((wifi_event_ap_staconnected_t*)data);
+#else
+    system_event_ap_staconnected_t& sta_conn = ((system_event_info_t*)data)->sta_connected;
+#endif
     ESP_LOGI(TAG, "AP station connected: id: %d, MAC: " MACSTR,
-      info->sta_connected.aid, MAC2STR(info->sta_connected.mac));
+      sta_conn.aid, MAC2STR(sta_conn.mac));
+    }
   else
+    {
+#if ESP_IDF_VERSION_MAJOR >= 4
+    wifi_event_ap_stadisconnected_t& sta_disconn = *((wifi_event_ap_stadisconnected_t*)data);
+#else
+    system_event_ap_stadisconnected_t& sta_disconn = ((system_event_info_t*)data)->sta_disconnected;
+#endif
     ESP_LOGI(TAG, "AP station disconnected: id: %d, MAC: " MACSTR,
-      info->sta_connected.aid, MAC2STR(info->sta_connected.mac));
+      sta_disconn.aid, MAC2STR(sta_disconn.mac));
+    }
   }
 
 void esp32wifi::EventTimer1(std::string event, void* data)
@@ -1302,11 +1359,23 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
     writer->printf("\nAP SSID: %s (%d MHz, channel %d)\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
       m_wifi_ap_cfg.ap.ssid, (int)bw*20, primary, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
     wifi_sta_list_t sta_list;
+#if ESP_IDF_VERSION_MAJOR >= 5
+    wifi_sta_mac_ip_list_t ip_list;
+#elif ESP_IDF_VERSION_MAJOR >= 4
+    esp_netif_sta_list_t ip_list;
+#else
     tcpip_adapter_sta_list_t ip_list;
+#endif
     if (esp_wifi_ap_get_sta_list(&sta_list) == ESP_OK)
       {
       writer->printf("  AP Stations: %d\n", sta_list.num);
+#if ESP_IDF_VERSION_MAJOR >= 5
+      if (esp_wifi_ap_get_sta_list_with_ip(&sta_list, &ip_list) == ESP_OK)
+#elif ESP_IDF_VERSION_MAJOR >= 4
+      if (esp_netif_get_sta_list(&sta_list, &ip_list) == ESP_OK)
+#else
       if (tcpip_adapter_get_sta_list(&sta_list, &ip_list) == ESP_OK)
+#endif
         {
         for (int i=0; i<sta_list.num; i++)
           writer->printf("    %d: MAC: " MACSTR ", IP: " IPSTR "\n", i+1, MAC2STR(ip_list.sta[i].mac), IP2STR(&ip_list.sta[i].ip));
@@ -1329,8 +1398,13 @@ void esp32wifi::StartDhcpClient()
   if (m_mode ==  ESP32WIFI_MODE_CLIENT || m_mode ==  ESP32WIFI_MODE_APCLIENT)
     {
     esp_err_t err;
+#if ESP_IDF_VERSION_MAJOR >= 4
+    err = esp_netif_dhcpc_start(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"));
+    if (err != ESP_OK && err != ESP_ERR_ESP_NETIF_DHCP_ALREADY_STARTED)
+#else
     err = tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
     if (err != ESP_OK && err != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STARTED)
+#endif
       {
       ESP_LOGE(TAG, "TCPIP: failed starting dhcp client; error=%d", err);
       }
@@ -1368,28 +1442,49 @@ void esp32wifi::SetSTAWifiIP(std::string ip, std::string sn, std::string gw)
     inet_aton(sn.c_str(), &m_ip_static_sta.netmask);
     inet_aton(gw.c_str(), &m_dns_static_sta.ip);
     esp_err_t err;
+#if ESP_IDF_VERSION_MAJOR >= 4
+    err = esp_netif_dhcpc_stop(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"));
+    if (err != ESP_OK && err != ESP_ERR_ESP_NETIF_DHCP_ALREADY_STOPPED)
+#else
     err = tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA);
     if (err != ESP_OK && err != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED)
+#endif
       {
       ESP_LOGE(TAG, "DHCP: failed stopping DHCP server; error=%d", err);
       return;
       }
 
+#if ESP_IDF_VERSION_MAJOR >= 4
+    err = esp_netif_set_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &m_ip_static_sta);
+#else
     err = tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &m_ip_static_sta);
+#endif
     if (err != ESP_OK)
       {
       ESP_LOGE(TAG, "TCPIP: failed setting static ip details, restarting dhcp; error=%d", err);
+#if ESP_IDF_VERSION_MAJOR >= 4
+      esp_netif_dhcpc_start(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"));
+#else
       tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
+#endif
       return;
       }
 
+#if ESP_IDF_VERSION_MAJOR >= 4
+    err = esp_netif_set_dns_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"),ESP_NETIF_DNS_MAIN, &m_dns_static_sta);
+#else
     err = tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA,TCPIP_ADAPTER_DNS_MAIN, &m_dns_static_sta);
+#endif
     if (err != ESP_OK)
       {
       ESP_LOGE(TAG, "TCPIP: failed setting static dns details; error=%d", err);
       return;
       }
+#if ESP_IDF_VERSION_MAJOR >= 4
+    esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"),&m_ip_info_sta);
+#else
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&m_ip_info_sta);
+#endif
     }
   }
   
@@ -1402,13 +1497,13 @@ void esp32wifi::SetAPWifiBW()
     switch (bw)
       {
       case 20:
-        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT20);
+        err = esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_BW_HT20);
         break;
       case 40:
-        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT40);
+        err = esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_BW_HT40);
         break;
       default:
-        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT20);
+        err = esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_BW_HT20);
       }
     if (err != ESP_OK)
       {

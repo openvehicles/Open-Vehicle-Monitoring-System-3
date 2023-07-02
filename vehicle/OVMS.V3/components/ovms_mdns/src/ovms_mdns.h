@@ -33,6 +33,7 @@
 
 #include "mdns.h"
 #include "ovms_events.h"
+#include "esp_idf_version.h"
 
 class OvmsMDNS
   {
@@ -41,7 +42,9 @@ class OvmsMDNS
     virtual ~OvmsMDNS();
 
   public:
+#if ESP_IDF_VERSION_MAJOR < 4
     void SystemEvent(std::string event, void* data);
+#endif
     void SystemStart(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
     void StartMDNS();

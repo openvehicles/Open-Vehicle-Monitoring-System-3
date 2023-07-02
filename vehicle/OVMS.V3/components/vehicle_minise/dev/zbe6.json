@@ -1,0 +1,4713 @@
+{
+   "ovmscode" : "ZBE",
+   "ovmsextaddr" : "67",
+   "ovmsdesc" : "iDrive controller",
+   "tables" : {
+      "ARG_0XD134_D" : [
+         {
+            "MAX" : "-",
+            "NAME" : "TAB_ARG_STELLGLIED_POSITIONEN",
+            "DIV" : "1.0",
+            "INFO" : "Ansteuerung des Stellglieds:  NULLSTELLUNG, NORDEN ( nicht bei ZBE Low), OSTEN,  SUEDEN ( nicht bei ZBE Low), WESTEN",
+            "L/H" : "-",
+            "ARG" : "POSITION",
+            "INFO_EN" : "Actuation of the actuator: ZERO, NORTH (not with ZBE Low), EAST, SOUTH (not with ZBE Low), WEST",
+            "EINHEIT" : "0-n",
+            "MIN" : "-",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char"
+         }
+      ],
+      "PROZESSKLASSEN" : [
+         {
+            "WERT" : "0x00",
+            "BEZEICHNUNG" : "ungueltig",
+            "PROZESSKLASSE" : "-"
+         },
+         {
+            "PROZESSKLASSE" : "HWEL",
+            "BEZEICHNUNG" : "Hardware (Elektronik)",
+            "WERT" : "0x01"
+         },
+         {
+            "PROZESSKLASSE" : "HWAP",
+            "BEZEICHNUNG" : "Hardwareauspraegung",
+            "WERT" : "0x02"
+         },
+         {
+            "PROZESSKLASSE" : "HWFR",
+            "BEZEICHNUNG" : "Hardwarefarbe",
+            "WERT" : "0x03"
+         },
+         {
+            "WERT" : "0x05",
+            "BEZEICHNUNG" : "Codierdaten",
+            "PROZESSKLASSE" : "CAFD"
+         },
+         {
+            "WERT" : "0x06",
+            "BEZEICHNUNG" : "Bootloader",
+            "PROZESSKLASSE" : "BTLD"
+         },
+         {
+            "WERT" : "0x08",
+            "PROZESSKLASSE" : "SWFL",
+            "BEZEICHNUNG" : "Software ECU Speicherimage"
+         },
+         {
+            "BEZEICHNUNG" : "Flash File Software",
+            "PROZESSKLASSE" : "SWFF",
+            "WERT" : "0x09"
+         },
+         {
+            "WERT" : "0x0A",
+            "PROZESSKLASSE" : "SWPF",
+            "BEZEICHNUNG" : "Pruefsoftware"
+         },
+         {
+            "PROZESSKLASSE" : "ONPS",
+            "BEZEICHNUNG" : "Onboard Programmiersystem",
+            "WERT" : "0x0B"
+         },
+         {
+            "BEZEICHNUNG" : "FA2FP",
+            "PROZESSKLASSE" : "FAFP",
+            "WERT" : "0x0F"
+         },
+         {
+            "PROZESSKLASSE" : "TLRT",
+            "BEZEICHNUNG" : "Temporaere Loeschroutine",
+            "WERT" : "0x1A"
+         },
+         {
+            "PROZESSKLASSE" : "TPRG",
+            "BEZEICHNUNG" : "Temporaere Programmierroutine",
+            "WERT" : "0x1B"
+         },
+         {
+            "PROZESSKLASSE" : "FLSL",
+            "BEZEICHNUNG" : "Flashloader Slave",
+            "WERT" : "0x07"
+         },
+         {
+            "PROZESSKLASSE" : "IBAD",
+            "BEZEICHNUNG" : "Interaktive Betriebsanleitung Daten",
+            "WERT" : "0x0C"
+         },
+         {
+            "PROZESSKLASSE" : "FCFA",
+            "BEZEICHNUNG" : "Freischaltcode Fahrzeug-Auftrag",
+            "WERT" : "0x10"
+         },
+         {
+            "WERT" : "0x1C",
+            "PROZESSKLASSE" : "BLUP",
+            "BEZEICHNUNG" : "Bootloader-Update Applikation"
+         },
+         {
+            "PROZESSKLASSE" : "FLUP",
+            "BEZEICHNUNG" : "Flashloader-Update Applikation",
+            "WERT" : "0x1D"
+         },
+         {
+            "WERT" : "0xC0",
+            "BEZEICHNUNG" : "Software-Update Package",
+            "PROZESSKLASSE" : "SWUP"
+         },
+         {
+            "WERT" : "0xC1",
+            "PROZESSKLASSE" : "SWIP",
+            "BEZEICHNUNG" : "Index Software-Update Package"
+         },
+         {
+            "PROZESSKLASSE" : "ENTD",
+            "BEZEICHNUNG" : "Entertainment Daten",
+            "WERT" : "0xA0"
+         },
+         {
+            "WERT" : "0xA1",
+            "PROZESSKLASSE" : "NAVD",
+            "BEZEICHNUNG" : "Navigation Daten"
+         },
+         {
+            "BEZEICHNUNG" : "Freischaltcode Funktion",
+            "PROZESSKLASSE" : "FCFN",
+            "WERT" : "0xA2"
+         },
+         {
+            "PROZESSKLASSE" : "GWTB",
+            "BEZEICHNUNG" : "Gateway-Tabelle",
+            "WERT" : "0x04"
+         },
+         {
+            "PROZESSKLASSE" : "SWFK",
+            "BEZEICHNUNG" : "BEGU: Detaillierung auf SWE-Ebene",
+            "WERT" : "0x0D"
+         },
+         {
+            "WERT" : "0xFF",
+            "PROZESSKLASSE" : "-",
+            "BEZEICHNUNG" : "ungueltig"
+         }
+      ],
+      "RES_0XD21A_D" : [
+         {
+            "INFO" : "Anzahl Druck",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned long",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of prints",
+            "L/H" : "high"
+         },
+         {
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "INFO_EN" : "Relative time of last print",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Druck"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Anzahl Langdruck",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "L/H" : "high",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of long presses",
+            "ADD" : "0.0"
+         },
+         {
+            "DATENTYP" : "data[4]",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of the last long press",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "NAME" : "-"
+         },
+         {
+            "DATENTYP" : "unsigned long",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of hangers",
+            "L/H" : "high",
+            "INFO" : "Anzahl Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Relativzeit letzter Hänger",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "DATENTYP" : "data[4]",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of the last trailer",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "DATENTYP" : "data[4]",
+            "NAME" : "-",
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger",
+            "DIV" : "1.0"
+         }
+      ],
+      "TAB_ZBE_TASTEN" : [
+         {
+            "TEXT_EN" : "MENU / FAV",
+            "TEXT" : "MENU/FAV",
+            "WERT" : "0x01"
+         },
+         {
+            "TEXT_EN" : "BACK",
+            "TEXT" : "BACK",
+            "WERT" : "0x02"
+         },
+         {
+            "WERT" : "0x04",
+            "TEXT" : "OPTION",
+            "TEXT_EN" : "OPTION"
+         },
+         {
+            "WERT" : "0x08",
+            "TEXT" : "RADIO/COM",
+            "TEXT_EN" : "RADIO / COM"
+         },
+         {
+            "WERT" : "0x10",
+            "TEXT" : "MEDIA",
+            "TEXT_EN" : "MEDIA"
+         },
+         {
+            "TEXT_EN" : "NAV",
+            "TEXT" : "NAV",
+            "WERT" : "0x20"
+         },
+         {
+            "TEXT_EN" : "TEL / MAP",
+            "WERT" : "0x40",
+            "TEXT" : "TEL/MAP"
+         },
+         {
+            "WERT" : "0x80",
+            "TEXT" : "PUSH",
+            "TEXT_EN" : "PUSH"
+         },
+         {
+            "TEXT_EN" : "Invalid value",
+            "WERT" : "0xFF",
+            "TEXT" : "Ungültiger Wert"
+         }
+      ],
+      "RES_0XD217_D" : [
+         {
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of prints",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Druck",
+            "NAME" : "-"
+         },
+         {
+            "INFO" : "Relativzeit letzter Druck",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of last print",
+            "L/H" : "high",
+            "DATENTYP" : "data[4]",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0"
+         },
+         {
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned long",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of long presses",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "INFO" : "Anzahl Langdruck",
+            "DIV" : "1.0"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of the last long press",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "DATENTYP" : "data[4]"
+         },
+         {
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of hangers",
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "MASKE" : "-",
+            "INFO" : "Anzahl Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-"
+         },
+         {
+            "INFO" : "Relativzeit letzter Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "INFO_EN" : "Relative time of the last trailer",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "DATENTYP" : "data[4]",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0"
+         },
+         {
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "MASKE" : "-",
+            "DATENTYP" : "data[4]",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger"
+         }
+      ],
+      "TAB_ARG_STELLGLIED_POSITIONEN" : [
+         {
+            "TEXT_EN" : "RESET",
+            "TEXT" : "NULLSTELLUNG",
+            "WERT" : "0"
+         },
+         {
+            "TEXT_EN" : "NORTH",
+            "TEXT" : "NORDEN",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "EAST",
+            "WERT" : "2",
+            "TEXT" : "OSTEN"
+         },
+         {
+            "TEXT_EN" : "SOUTH",
+            "WERT" : "3",
+            "TEXT" : "SUEDEN"
+         },
+         {
+            "WERT" : "4",
+            "TEXT" : "WESTEN",
+            "TEXT_EN" : "WEST"
+         }
+      ],
+      "ARG_0XD60E_D" : [
+         {
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "Activation of touchpad: 0x00 = off (back to the initial state) 0x01 = on",
+            "MIN" : "-",
+            "L/H" : "high",
+            "ARG" : "AKTIVIERUNG",
+            "ADD" : "-",
+            "NAME" : "-",
+            "DIV" : "-",
+            "INFO" : "Aktivierung Touchpad: 0x00 = aus (zurück in den Ausgangszustand) 0x01 = ein",
+            "MAX" : "-"
+         }
+      ],
+      "ARG_0XD598_D" : [
+         {
+            "DATENTYP" : "unsigned char",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "ARG" : "SIGNALMODE",
+            "L/H" : "-",
+            "INFO_EN" : "SIGNALMODE: 0 = NOT BLOCKED = signals are sent, 1 = BLOCKED = signals are blocked, no effect on other functions (control units)",
+            "MIN" : "-",
+            "EINHEIT" : "0/1",
+            "INFO" : "SIGNALMODE:  0 = NICHT BLOCKIERT = Signale werden verschickt,  1 = BLOCKIERT = Signale werden blockiert, keine Auswirkung auf andere Funktionen (Steuergeräte)",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "MAX" : "-"
+         }
+      ],
+      "RES_0XD14D_D" : [
+         {
+            "INFO" : "Gibt aus, welche Tasten gedrückt sind.",
+            "DIV" : "-",
+            "NAME" : "TAB_ZBE_TASTEN",
+            "ADD" : "-",
+            "INFO_EN" : "Indicates which keys are pressed.",
+            "EINHEIT" : "0-n",
+            "L/H" : "high",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_TASTEN",
+            "MASKE" : "-",
+            "MUL" : "-"
+         },
+         {
+            "ADD" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "0 = key not pressed, 1 key pressed",
+            "EINHEIT" : "0/1",
+            "DATENTYP" : "unsigned char",
+            "MUL" : "-",
+            "RESULTNAME" : "STAT_TASTER_MENU_FAV_EIN",
+            "MASKE" : "-",
+            "INFO" : "0=Taste nicht betätigt, 1 Taste betätigt",
+            "DIV" : "-",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "-",
+            "INFO" : "0=Taste nicht betätigt, 1 Taste betätigt",
+            "L/H" : "high",
+            "INFO_EN" : "0 = key not pressed, 1 key pressed",
+            "EINHEIT" : "0/1",
+            "ADD" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "STAT_TASTER_BACK_EIN",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "0=Taste nicht betätigt, 1 Taste betätigt",
+            "DIV" : "-",
+            "INFO_EN" : "0 = key not pressed, 1 key pressed",
+            "EINHEIT" : "0/1",
+            "L/H" : "high",
+            "ADD" : "-",
+            "RESULTNAME" : "STAT_TASTER_OPTION_EIN",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DATENTYP" : "unsigned char"
+         },
+         {
+            "INFO" : "0=Taste nicht betätigt, 1 Taste betätigt",
+            "DIV" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_TASTER_RADIO_COM_EIN",
+            "MUL" : "-",
+            "ADD" : "-",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "0 = key not pressed, 1 key pressed",
+            "L/H" : "high"
+         },
+         {
+            "INFO" : "0=Taste nicht betätigt, 1 Taste betätigt",
+            "DIV" : "-",
+            "NAME" : "-",
+            "ADD" : "-",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "0 = key not pressed, 1 key pressed",
+            "L/H" : "high",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_TASTER_MEDIA_EIN",
+            "MUL" : "-"
+         },
+         {
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_TASTER_NAV_EIN",
+            "MUL" : "-",
+            "ADD" : "-",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "0 = key not pressed, 1 key pressed",
+            "L/H" : "high",
+            "DIV" : "-",
+            "INFO" : "0=Taste nicht betätigt, 1 Taste betätigt",
+            "NAME" : "-"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "0 = key not pressed, 1 key pressed",
+            "EINHEIT" : "0/1",
+            "ADD" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "STAT_TASTER_TEL_MAP_EIN",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "0=Taste nicht betätigt, 1 Taste betätigt",
+            "DIV" : "-"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "-",
+            "INFO" : "0=Taste nicht betätigt, 1 Taste betätigt",
+            "L/H" : "high",
+            "INFO_EN" : "0 = key not pressed, 1 key pressed",
+            "EINHEIT" : "0/1",
+            "ADD" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "STAT_TASTER_PUSH_EIN",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char"
+         }
+      ],
+      "FARTTEXTE" : [
+         {
+            "ARTTEXT_EN" : "no error type available",
+            "ARTNR" : "0x00",
+            "ARTTEXT" : "keine Fehlerart verfügbar"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x04",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x05"
+         },
+         {
+            "ARTNR" : "0x08",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x09"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x0C",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x0D",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x20",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x21",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x24"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x25"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x28"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x29",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x2C",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x2D"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTNR" : "0x40",
+            "ARTTEXT_EN" : "unknown type of error"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x44"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x45",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTNR" : "0x48",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x49",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x4C",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x4D",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTNR" : "0x60",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x61",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x64",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x65",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x68"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x69",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x6C",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x6D",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen erfüllt",
+            "ARTNR" : "0x10",
+            "ARTTEXT_EN" : "Test conditions met"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt",
+            "ARTNR" : "0x11",
+            "ARTTEXT_EN" : "Test conditions not yet met"
+         },
+         {
+            "ARTNR" : "0x80",
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up",
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up",
+            "ARTNR" : "0x81",
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0xFF"
+         }
+      ],
+      "RES_0XD21F_D" : [
+         {
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Druck",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of prints"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Relativzeit letzter Druck",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "DATENTYP" : "data[4]",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of last print",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0"
+         },
+         {
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Number of long presses",
+            "EINHEIT" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Langdruck",
+            "NAME" : "-"
+         },
+         {
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of the last long press",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "DATENTYP" : "data[4]",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Langdruck"
+         },
+         {
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "DATENTYP" : "unsigned long",
+            "L/H" : "high",
+            "INFO_EN" : "Number of hangers",
+            "EINHEIT" : "-",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Hänger"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Hänger",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "INFO_EN" : "Relative time of the last trailer",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "DATENTYP" : "data[4]",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "MUL" : "1.0"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger",
+            "NAME" : "-",
+            "DATENTYP" : "data[4]",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "L/H" : "high"
+         }
+      ],
+      "RDBI_PC_PCS_DOP" : [
+         {
+            "WERT" : "0",
+            "TEXT" : "ECUMehrmalsProgrammierbar",
+            "TEXT_EN" : "ECU several times programmable"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "ECUMindestensEinmalVollstaendigProgrammierbar",
+            "TEXT_EN" : "ECU at least once, fully programmable"
+         },
+         {
+            "TEXT_EN" : "ECUNotMoreProgrammable",
+            "WERT" : "2",
+            "TEXT" : "ECUNichtMehrProgrammierbar"
+         }
+      ],
+      "FUMWELTTEXTE" : [
+         {
+            "MUL" : "1.0",
+            "UWNR" : "0x170C",
+            "L/H" : "High",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "UWTYP" : "unsigned int",
+            "DIV" : "1.0",
+            "UWTEXT" : "Batteriespannung",
+            "UW_EINH" : "mV"
+         },
+         {
+            "MUL" : "1.0",
+            "UWNR" : "0x1750",
+            "L/H" : "High",
+            "ADD" : "0.0",
+            "UWTYP" : "unsigned char",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "UWTEXT" : "F_UW_BN",
+            "UW_EINH" : "-"
+         },
+         {
+            "UW_EINH" : "TEXT",
+            "UWTEXT" : "F_UW_TN",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "UWTYP" : "3",
+            "ADD" : "0.0",
+            "UWNR" : "0x1751",
+            "L/H" : "High",
+            "MUL" : "1.0"
+         },
+         {
+            "MUL" : "-",
+            "ADD" : "-",
+            "L/H" : "-",
+            "UWNR" : "0xXYXY",
+            "DIV" : "-",
+            "NAME" : "-",
+            "UWTYP" : "-",
+            "UW_EINH" : "-",
+            "UWTEXT" : "unbekannte Umweltbedingung"
+         }
+      ],
+      "BETRIEBSMODE" : [
+         {
+            "BEDEUTUNG" : "Hier deaktivierte Funktionen gemäß FeTra-Liste festhalten",
+            "TEXT_EN" : "General manufacturing and energy saving fashion",
+            "TEXT" : "Allgemeiner Fertigungs- und Energiesparmode",
+            "WERT" : "0x00"
+         },
+         {
+            "TEXT_EN" : "Special energy saving mode",
+            "WERT" : "0x01",
+            "TEXT" : "Spezieller Energiesparmode",
+            "BEDEUTUNG" : "-"
+         },
+         {
+            "TEXT" : "ECOS-Mode",
+            "WERT" : "0x02",
+            "TEXT_EN" : "ECOS mode",
+            "BEDEUTUNG" : "-"
+         },
+         {
+            "BEDEUTUNG" : "-",
+            "WERT" : "0x03",
+            "TEXT" : "MOST-Mode",
+            "TEXT_EN" : "MOST mode"
+         },
+         {
+            "TEXT_EN" : "Role fashion",
+            "TEXT" : "Rollenmode",
+            "WERT" : "0x04",
+            "BEDEUTUNG" : "-"
+         },
+         {
+            "TEXT" : "ungültiger Betriebsmode",
+            "WERT" : "0xFF",
+            "TEXT_EN" : "invalid operating mode",
+            "BEDEUTUNG" : "ungültig"
+         }
+      ],
+      "IDETAILSTRUKTUR" : [
+         {
+            "NAME" : "F_UWB_ERW",
+            "TYP" : "ja"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "SAE_CODE"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_HLZ"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_SEVERITY"
+         }
+      ],
+      "TAB_ZBE_VARIANTE" : [
+         {
+            "WERT" : "0x00",
+            "TEXT" : "Standardvariante",
+            "TEXT_EN" : "Standard variant"
+         },
+         {
+            "WERT" : "0x01",
+            "TEXT" : "Standardvariante mit Touchpad",
+            "TEXT_EN" : "Standard variant with touchpad"
+         },
+         {
+            "TEXT_EN" : "Reverse variant",
+            "TEXT" : "Rükovariante ",
+            "WERT" : "0x02"
+         },
+         {
+            "TEXT_EN" : "Back cover with touchpad",
+            "TEXT" : "Rükovarinte mit Touchpad",
+            "WERT" : "0x03"
+         },
+         {
+            "TEXT_EN" : "Invalid value or ZBE not coded",
+            "WERT" : "0xFF",
+            "TEXT" : "Ungültiger Wert oder ZBE nicht codiert"
+         }
+      ],
+      "UDS_TAB_ROE_AKTIV" : [
+         {
+            "TEXT_EN" : "Active error message deactivated",
+            "TEXT" : "Aktive Fehlermeldung deaktiviert",
+            "NR" : "0x00"
+         },
+         {
+            "NR" : "0x01",
+            "TEXT" : "Aktive Fehlermeldung aktiviert",
+            "TEXT_EN" : "Active error message activated"
+         },
+         {
+            "NR" : "0xFF",
+            "TEXT" : "Status der aktiven Fehlermeldung nicht feststellbar",
+            "TEXT_EN" : "Status of the active error message cannot be determined"
+         }
+      ],
+      "RES_0XD213_D" : [
+         {
+            "INFO" : "Anzahl Druck",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of prints",
+            "L/H" : "high",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "MUL" : "1.0"
+         },
+         {
+            "INFO_EN" : "Relative time of last print",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "NAME" : "-",
+            "INFO" : "Relativzeit letzter Druck",
+            "DIV" : "1.0"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Langdruck",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned long",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of long presses",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "NAME" : "-",
+            "DATENTYP" : "data[4]",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "Relative time of the last long press",
+            "EINHEIT" : "DATA",
+            "L/H" : "high"
+         },
+         {
+            "INFO" : "Anzahl Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Number of hangers",
+            "EINHEIT" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Relativzeit letzter Hänger",
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of the last trailer",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "DATENTYP" : "data[4]"
+         },
+         {
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "DATENTYP" : "data[4]",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "EINHEIT" : "DATA",
+            "L/H" : "high"
+         }
+      ],
+      "IORTTEXTE" : [
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "ECUM_E_RAM_CHECK_FAILED",
+            "ORT" : "0x670003",
+            "ORTTEXT_EN" : "ECUM_E_RAM_CHECK_FAILED"
+         },
+         {
+            "ORTTEXT_EN" : "FLS_E_READ_FAILED",
+            "ORT" : "0x670006",
+            "ORTTEXT" : "FLS_E_READ_FAILED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "FLS_E_WRITE_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x670007",
+            "ORTTEXT" : "FLS_E_WRITE_FAILED"
+         },
+         {
+            "ORT" : "0x670008",
+            "ORTTEXT" : "FLS_E_COMPARE_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "FLS_E_COMPARE_FAILED"
+         },
+         {
+            "ORTTEXT_EN" : "FLS_E_ERASE_FAILED",
+            "ORTTEXT" : "FLS_E_ERASE_FAILED",
+            "ORT" : "0x67000A",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "FLS_E_UNEXPECTED_FLASH_ID",
+            "ORT" : "0x67000B",
+            "ORTTEXT" : "FLS_E_UNEXPECTED_FLASH_ID",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "FLSTST_E_FLSTST_FAILURE",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x67000D",
+            "ORTTEXT" : "FLSTST_E_FLSTST_FAILURE"
+         },
+         {
+            "ORTTEXT_EN" : "MCU_E_CLOCK_FAILURE",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "MCU_E_CLOCK_FAILURE",
+            "ORT" : "0x67000E"
+         },
+         {
+            "ORTTEXT" : "NVM_E_INTEGRITY_FAILED",
+            "ORT" : "0x67000F",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "NVM_E_INTEGRITY_FAILED"
+         },
+         {
+            "ORTTEXT_EN" : "NVM_E_LOSS_OF_REDUNDANCY",
+            "ORTTEXT" : "NVM_E_LOSS_OF_REDUNDANCY",
+            "ORT" : "0x670010",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "NVM_E_QUEUE_OVERFLOW",
+            "ORTTEXT" : "NVM_E_QUEUE_OVERFLOW",
+            "ORT" : "0x670011",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "NVM_E_REQ_FAILED",
+            "ORTTEXT" : "NVM_E_REQ_FAILED",
+            "ORT" : "0x670012",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "NVM_E_VERIFY_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x670013",
+            "ORTTEXT" : "NVM_E_VERIFY_FAILED"
+         },
+         {
+            "ORTTEXT_EN" : "NVM_E_WRITE_PROTECTED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "NVM_E_WRITE_PROTECTED",
+            "ORT" : "0x670014"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x670015",
+            "ORTTEXT" : "NVM_E_WRONG_BLOCK_ID",
+            "ORTTEXT_EN" : "NVM_E_WRONG_BLOCK_ID"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "RAMTST_E_RAM_FAILURE",
+            "ORT" : "0x670016",
+            "ORTTEXT_EN" : "RAMTST_E_RAM_FAILURE"
+         },
+         {
+            "ORTTEXT_EN" : "MCU_E_QUARTZ_FAILURE",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x670037",
+            "ORTTEXT" : "MCU_E_QUARTZ_FAILURE"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x670039",
+            "ORTTEXT" : "WDGM_E_MONITORING",
+            "ORTTEXT_EN" : "WDGM_E_MONITORING"
+         },
+         {
+            "ORTTEXT_EN" : "WDGM_E_SET_MODE",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "WDGM_E_SET_MODE",
+            "ORT" : "0x67003A"
+         },
+         {
+            "ORTTEXT_EN" : "TOUCHPAD_SENSOR_SHORT",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "TOUCHPAD_SENSOR_SHORT",
+            "ORT" : "0x670200"
+         },
+         {
+            "ORTTEXT_EN" : "TOUCHPAD_SENSOR_OPEN",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x670201",
+            "ORTTEXT" : "TOUCHPAD_SENSOR_OPEN"
+         },
+         {
+            "ORTTEXT_EN" : "TOUCHPAD_COMMUNICATION_ERROR",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x670202",
+            "ORTTEXT" : "TOUCHPAD_COMMUNICATION_ERROR"
+         },
+         {
+            "ORTTEXT_EN" : "TOUCHPAD_COMMUNICATION_TIMEOUT",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "TOUCHPAD_COMMUNICATION_TIMEOUT",
+            "ORT" : "0x670203"
+         },
+         {
+            "ORT" : "0x670204",
+            "ORTTEXT" : "TOUCHPAD_COMMUNICATION_CRCERROR",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "TOUCHPAD_COMMUNICATION_CRCERROR"
+         },
+         {
+            "ORTTEXT_EN" : "unknown error location",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "ORT" : "0xFFFFFF"
+         }
+      ],
+      "RES_0X2504_D" : [
+         {
+            "EINHEIT" : "s",
+            "INFO_EN" : "EraseMemoryTime, maximum SWE deletion time with process control in the control unit.",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_ERASE_MEMORY_TIME_WERT",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "EraseMemoryTime, maximale SWE-Löschzeit mit Ablaufkontrolle im Steuergerät."
+         },
+         {
+            "INFO_EN" : "CheckMemoryTime (e.g. signature check), maximum memory check time with process control in the control unit.",
+            "EINHEIT" : "s",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_CHECK_MEMORY_TIME_WERT",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "INFO" : "CheckMemoryTime (Bsp.: Signaturprüfung), maximale Speicherprüfzeit mit Ablaufkontrolle im Steuergerät.",
+            "DIV" : "1.0"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "BootloaderInstallationTime Die Zeit, die nach dem Reset benötigt wird, damit der Hilfsbootloader gestartet wird, den Bootloader löscht, den neuen Bootloader kopiert, dessen Signatur prüf und der neue Bootloader gestartet wird bis er wieder diagnosefähig ist. Angabe ist verpflichtend für alle Steuergeräte, auch wenn das Steuergerät keinen Bootloader Update geplant hat. Ein Wert von 0x0000 ist verboten.",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_BOOTLOADER_INSTALLATION_TIME_WERT",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned int",
+            "INFO_EN" : "BootloaderInstallationTime The time that is required after the reset so that the auxiliary bootloader is started, the bootloader is deleted, the new bootloader is copied, its signature is checked and the new bootloader is started until it can be diagnosed again. This information is mandatory for all control units, even if the control unit has not planned a bootloader update. A value of 0x0000 is prohibited.",
+            "EINHEIT" : "s",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "AuthenticationTime, the maximum time that the control device needs to check the authentication (sendKey) with flow control in the control device.",
+            "EINHEIT" : "s",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_AUTHENTICATION_TIME_WERT",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "INFO" : "AuthenticationTime, die maximale Zeit, die das Steuergerät zur Prüfung der Authentisierung (sendKey) benötigt mit Ablaufkontrolle im Steuergerät.",
+            "DIV" : "1.0"
+         },
+         {
+            "INFO" : "ResetTime Die Zeitangabe bezieht sich auf den Übergang von der ApplicationExtendedSesssion in die ProgrammingSession bzw. bei Übergang von der ProgrammingSession in die DefaultSession. Es ist der Maximalwert auszugeben. Nach Ablauf der ResetTime ist das Steuergerät durch Diagnose ansprechbar.",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "EINHEIT" : "s",
+            "INFO_EN" : "ResetTime The time refers to the transition from the ApplicationExtendedSession to the ProgrammingSession or to the transition from the ProgrammingSession to the DefaultSession. The maximum value is to be output. After the reset time has elapsed, the control unit can be addressed by diagnosis.",
+            "DATENTYP" : "unsigned int",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RESET_TIME_WERT"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "TransferDataTime Die Angabe hat sich zu beziehen auf einen TransferData mit maximaler Blocklänge auf die Zeitspanne vom vollständigen Empfang der Daten im Steuergerät über das ggf. erforderliche Dekomprimieren und dem vollständigen Speichern im nichtflüchtigen Speicher bis einschließlich dem Senden der positiven Response.",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_TRANSFER_DATA_TIME_WERT",
+            "DATENTYP" : "unsigned int",
+            "L/H" : "high",
+            "INFO_EN" : "TransferDataTime The specification has to refer to a TransferData with a maximum block length to the time span from the complete reception of the data in the control unit via the possibly necessary decompression and the complete storage in the non-volatile memory up to and including the sending of the positive response.",
+            "EINHEIT" : "s",
+            "ADD" : "0.0"
+         }
+      ],
+      "LIEFERANTEN" : [
+         {
+            "LIEF_TEXT" : "Reinshagen => Delphi",
+            "LIEF_NR" : "0x000001"
+         },
+         {
+            "LIEF_TEXT" : "Kostal",
+            "LIEF_NR" : "0x000002"
+         },
+         {
+            "LIEF_TEXT" : "Hella",
+            "LIEF_NR" : "0x000003"
+         },
+         {
+            "LIEF_TEXT" : "Siemens",
+            "LIEF_NR" : "0x000004"
+         },
+         {
+            "LIEF_TEXT" : "Eaton",
+            "LIEF_NR" : "0x000005"
+         },
+         {
+            "LIEF_NR" : "0x000006",
+            "LIEF_TEXT" : "UTA"
+         },
+         {
+            "LIEF_NR" : "0x000007",
+            "LIEF_TEXT" : "Helbako"
+         },
+         {
+            "LIEF_NR" : "0x000008",
+            "LIEF_TEXT" : "Bosch"
+         },
+         {
+            "LIEF_TEXT" : "Loewe => Lear",
+            "LIEF_NR" : "0x000009"
+         },
+         {
+            "LIEF_NR" : "0x000010",
+            "LIEF_TEXT" : "VDO"
+         },
+         {
+            "LIEF_NR" : "0x000011",
+            "LIEF_TEXT" : "Valeo"
+         },
+         {
+            "LIEF_TEXT" : "MBB",
+            "LIEF_NR" : "0x000012"
+         },
+         {
+            "LIEF_TEXT" : "Kammerer",
+            "LIEF_NR" : "0x000013"
+         },
+         {
+            "LIEF_NR" : "0x000014",
+            "LIEF_TEXT" : "SWF"
+         },
+         {
+            "LIEF_NR" : "0x000015",
+            "LIEF_TEXT" : "Blaupunkt"
+         },
+         {
+            "LIEF_TEXT" : "Philips",
+            "LIEF_NR" : "0x000016"
+         },
+         {
+            "LIEF_TEXT" : "Alpine",
+            "LIEF_NR" : "0x000017"
+         },
+         {
+            "LIEF_TEXT" : "Continental Teves",
+            "LIEF_NR" : "0x000018"
+         },
+         {
+            "LIEF_TEXT" : "Elektromatik Suedafrika",
+            "LIEF_NR" : "0x000019"
+         },
+         {
+            "LIEF_TEXT" : "Becker",
+            "LIEF_NR" : "0x000020"
+         },
+         {
+            "LIEF_TEXT" : "Preh",
+            "LIEF_NR" : "0x000021"
+         },
+         {
+            "LIEF_TEXT" : "Alps",
+            "LIEF_NR" : "0x000022"
+         },
+         {
+            "LIEF_NR" : "0x000023",
+            "LIEF_TEXT" : "Motorola"
+         },
+         {
+            "LIEF_NR" : "0x000024",
+            "LIEF_TEXT" : "Temic"
+         },
+         {
+            "LIEF_TEXT" : "Webasto",
+            "LIEF_NR" : "0x000025"
+         },
+         {
+            "LIEF_TEXT" : "MotoMeter",
+            "LIEF_NR" : "0x000026"
+         },
+         {
+            "LIEF_NR" : "0x000027",
+            "LIEF_TEXT" : "Delphi PHI"
+         },
+         {
+            "LIEF_TEXT" : "DODUCO => BERU",
+            "LIEF_NR" : "0x000028"
+         },
+         {
+            "LIEF_NR" : "0x000029",
+            "LIEF_TEXT" : "DENSO"
+         },
+         {
+            "LIEF_NR" : "0x000030",
+            "LIEF_TEXT" : "NEC"
+         },
+         {
+            "LIEF_TEXT" : "DASA",
+            "LIEF_NR" : "0x000031"
+         },
+         {
+            "LIEF_NR" : "0x000032",
+            "LIEF_TEXT" : "Pioneer"
+         },
+         {
+            "LIEF_NR" : "0x000033",
+            "LIEF_TEXT" : "Jatco"
+         },
+         {
+            "LIEF_NR" : "0x000034",
+            "LIEF_TEXT" : "Fuba"
+         },
+         {
+            "LIEF_NR" : "0x000035",
+            "LIEF_TEXT" : "UK-NSI"
+         },
+         {
+            "LIEF_TEXT" : "AABG",
+            "LIEF_NR" : "0x000036"
+         },
+         {
+            "LIEF_NR" : "0x000037",
+            "LIEF_TEXT" : "Dunlop"
+         },
+         {
+            "LIEF_TEXT" : "Sachs",
+            "LIEF_NR" : "0x000038"
+         },
+         {
+            "LIEF_TEXT" : "ITT",
+            "LIEF_NR" : "0x000039"
+         },
+         {
+            "LIEF_TEXT" : "FTE",
+            "LIEF_NR" : "0x000040"
+         },
+         {
+            "LIEF_NR" : "0x000041",
+            "LIEF_TEXT" : "Megamos"
+         },
+         {
+            "LIEF_TEXT" : "TRW",
+            "LIEF_NR" : "0x000042"
+         },
+         {
+            "LIEF_NR" : "0x000043",
+            "LIEF_TEXT" : "Wabco"
+         },
+         {
+            "LIEF_TEXT" : "ISAD Electronic Systems",
+            "LIEF_NR" : "0x000044"
+         },
+         {
+            "LIEF_TEXT" : "HEC (Hella Electronics Corporation)",
+            "LIEF_NR" : "0x000045"
+         },
+         {
+            "LIEF_NR" : "0x000046",
+            "LIEF_TEXT" : "Gemel"
+         },
+         {
+            "LIEF_TEXT" : "ZF",
+            "LIEF_NR" : "0x000047"
+         },
+         {
+            "LIEF_NR" : "0x000048",
+            "LIEF_TEXT" : "GMPT"
+         },
+         {
+            "LIEF_TEXT" : "Harman Kardon",
+            "LIEF_NR" : "0x000049"
+         },
+         {
+            "LIEF_NR" : "0x000050",
+            "LIEF_TEXT" : "Remes"
+         },
+         {
+            "LIEF_TEXT" : "ZF Lenksysteme",
+            "LIEF_NR" : "0x000051"
+         },
+         {
+            "LIEF_NR" : "0x000052",
+            "LIEF_TEXT" : "Magneti Marelli"
+         },
+         {
+            "LIEF_NR" : "0x000053",
+            "LIEF_TEXT" : "Borg Instruments"
+         },
+         {
+            "LIEF_TEXT" : "GETRAG",
+            "LIEF_NR" : "0x000054"
+         },
+         {
+            "LIEF_TEXT" : "BHTC (Behr Hella Thermocontrol)",
+            "LIEF_NR" : "0x000055"
+         },
+         {
+            "LIEF_TEXT" : "Siemens VDO Automotive",
+            "LIEF_NR" : "0x000056"
+         },
+         {
+            "LIEF_TEXT" : "Visteon",
+            "LIEF_NR" : "0x000057"
+         },
+         {
+            "LIEF_NR" : "0x000058",
+            "LIEF_TEXT" : "Autoliv"
+         },
+         {
+            "LIEF_TEXT" : "Haberl",
+            "LIEF_NR" : "0x000059"
+         },
+         {
+            "LIEF_NR" : "0x000060",
+            "LIEF_TEXT" : "Magna Steyr"
+         },
+         {
+            "LIEF_NR" : "0x000061",
+            "LIEF_TEXT" : "Marquardt"
+         },
+         {
+            "LIEF_TEXT" : "AB-Elektronik",
+            "LIEF_NR" : "0x000062"
+         },
+         {
+            "LIEF_TEXT" : "Siemens VDO Borg",
+            "LIEF_NR" : "0x000063"
+         },
+         {
+            "LIEF_TEXT" : "Hirschmann Electronics",
+            "LIEF_NR" : "0x000064"
+         },
+         {
+            "LIEF_TEXT" : "Hoerbiger Electronics",
+            "LIEF_NR" : "0x000065"
+         },
+         {
+            "LIEF_NR" : "0x000066",
+            "LIEF_TEXT" : "Thyssen Krupp Automotive Mechatronics"
+         },
+         {
+            "LIEF_NR" : "0x000067",
+            "LIEF_TEXT" : "Gentex GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000068",
+            "LIEF_TEXT" : "Atena GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000069",
+            "LIEF_TEXT" : "Magna-Donelly"
+         },
+         {
+            "LIEF_TEXT" : "Koyo Steering Europe",
+            "LIEF_NR" : "0x000070"
+         },
+         {
+            "LIEF_TEXT" : "NSI B.V",
+            "LIEF_NR" : "0x000071"
+         },
+         {
+            "LIEF_NR" : "0x000072",
+            "LIEF_TEXT" : "AISIN AW CO.LTD"
+         },
+         {
+            "LIEF_TEXT" : "Shorlock",
+            "LIEF_NR" : "0x000073"
+         },
+         {
+            "LIEF_NR" : "0x000074",
+            "LIEF_TEXT" : "Schrader"
+         },
+         {
+            "LIEF_NR" : "0x000075",
+            "LIEF_TEXT" : "BERU Electronics GmbH"
+         },
+         {
+            "LIEF_TEXT" : "CEL",
+            "LIEF_NR" : "0x000076"
+         },
+         {
+            "LIEF_TEXT" : "Audio Mobil",
+            "LIEF_NR" : "0x000077"
+         },
+         {
+            "LIEF_NR" : "0x000078",
+            "LIEF_TEXT" : "rd electronic"
+         },
+         {
+            "LIEF_TEXT" : "iSYS RTS GmbH",
+            "LIEF_NR" : "0x000079"
+         },
+         {
+            "LIEF_NR" : "0x000080",
+            "LIEF_TEXT" : "Westfalia Automotive GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Tyco Electronics",
+            "LIEF_NR" : "0x000081"
+         },
+         {
+            "LIEF_NR" : "0x000082",
+            "LIEF_TEXT" : "Paragon AG"
+         },
+         {
+            "LIEF_TEXT" : "IEE S.A",
+            "LIEF_NR" : "0x000083"
+         },
+         {
+            "LIEF_NR" : "0x000084",
+            "LIEF_TEXT" : "TEMIC AUTOMOTIVE of NA"
+         },
+         {
+            "LIEF_TEXT" : "AKsys GmbH",
+            "LIEF_NR" : "0x000085"
+         },
+         {
+            "LIEF_TEXT" : "META System",
+            "LIEF_NR" : "0x000086"
+         },
+         {
+            "LIEF_NR" : "0x000087",
+            "LIEF_TEXT" : "Hülsbeck & Fürst GmbH & Co KG"
+         },
+         {
+            "LIEF_NR" : "0x000088",
+            "LIEF_TEXT" : "Mann & Hummel Automotive GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Brose Fahrzeugteile GmbH & Co",
+            "LIEF_NR" : "0x000089"
+         },
+         {
+            "LIEF_TEXT" : "Keihin",
+            "LIEF_NR" : "0x000090"
+         },
+         {
+            "LIEF_TEXT" : "Vimercati S.p.A.",
+            "LIEF_NR" : "0x000091"
+         },
+         {
+            "LIEF_NR" : "0x000092",
+            "LIEF_TEXT" : "CRH"
+         },
+         {
+            "LIEF_TEXT" : "TPO Display Corp.",
+            "LIEF_NR" : "0x000093"
+         },
+         {
+            "LIEF_NR" : "0x000094",
+            "LIEF_TEXT" : "KÜSTER Automotive Control"
+         },
+         {
+            "LIEF_TEXT" : "Hitachi Automotive",
+            "LIEF_NR" : "0x000095"
+         },
+         {
+            "LIEF_NR" : "0x000096",
+            "LIEF_TEXT" : "Continental Automotive"
+         },
+         {
+            "LIEF_TEXT" : "TI-Automotive",
+            "LIEF_NR" : "0x000097"
+         },
+         {
+            "LIEF_NR" : "0x000098",
+            "LIEF_TEXT" : "Hydro"
+         },
+         {
+            "LIEF_TEXT" : "Johnson Controls",
+            "LIEF_NR" : "0x000099"
+         },
+         {
+            "LIEF_NR" : "0x00009A",
+            "LIEF_TEXT" : "Takata- Petri"
+         },
+         {
+            "LIEF_TEXT" : "Mitsubishi Electric B.V. (Melco)",
+            "LIEF_NR" : "0x00009B"
+         },
+         {
+            "LIEF_NR" : "0x00009C",
+            "LIEF_TEXT" : "Autokabel"
+         },
+         {
+            "LIEF_TEXT" : "GKN-Driveline",
+            "LIEF_NR" : "0x00009D"
+         },
+         {
+            "LIEF_TEXT" : "Zollner Elektronik AG",
+            "LIEF_NR" : "0x00009E"
+         },
+         {
+            "LIEF_NR" : "0x00009F",
+            "LIEF_TEXT" : "PEIKER acustics GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Bosal-Oris",
+            "LIEF_NR" : "0x0000A0"
+         },
+         {
+            "LIEF_TEXT" : "Cobasys",
+            "LIEF_NR" : "0x0000A1"
+         },
+         {
+            "LIEF_TEXT" : "Lighting Reutlingen GmbH",
+            "LIEF_NR" : "0x0000A2"
+         },
+         {
+            "LIEF_TEXT" : "CONTI VDO",
+            "LIEF_NR" : "0x0000A3"
+         },
+         {
+            "LIEF_TEXT" : "ADC Automotive Distance Control Systems GmbH",
+            "LIEF_NR" : "0x0000A4"
+         },
+         {
+            "LIEF_TEXT" : "Funkwerk Dabendorf GmbH",
+            "LIEF_NR" : "0x0000A5"
+         },
+         {
+            "LIEF_NR" : "0x0000A6",
+            "LIEF_TEXT" : "Lame"
+         },
+         {
+            "LIEF_TEXT" : "Magna/Closures",
+            "LIEF_NR" : "0x0000A7"
+         },
+         {
+            "LIEF_TEXT" : "Wanyu",
+            "LIEF_NR" : "0x0000A8"
+         },
+         {
+            "LIEF_NR" : "0x0000A9",
+            "LIEF_TEXT" : "Thyssen Krupp Presta"
+         },
+         {
+            "LIEF_TEXT" : "ArvinMeritor",
+            "LIEF_NR" : "0x0000AA"
+         },
+         {
+            "LIEF_TEXT" : "Kongsberg Automotive GmbH",
+            "LIEF_NR" : "0x0000AB"
+         },
+         {
+            "LIEF_TEXT" : "SMR Automotive Mirrors",
+            "LIEF_NR" : "0x0000AC"
+         },
+         {
+            "LIEF_NR" : "0x0000AD",
+            "LIEF_TEXT" : "So.Ge.Mi."
+         },
+         {
+            "LIEF_TEXT" : "MTA",
+            "LIEF_NR" : "0x0000AE"
+         },
+         {
+            "LIEF_NR" : "0x0000AF",
+            "LIEF_TEXT" : "Alfmeier"
+         },
+         {
+            "LIEF_TEXT" : "ELTEK VALERE DEUTSCHLAND GMBH",
+            "LIEF_NR" : "0x0000B0"
+         },
+         {
+            "LIEF_NR" : "0x0000B1",
+            "LIEF_TEXT" : "Omron Automotive Electronics Europe Group"
+         },
+         {
+            "LIEF_TEXT" : "ASK",
+            "LIEF_NR" : "0x0000B2"
+         },
+         {
+            "LIEF_NR" : "0x0000B3",
+            "LIEF_TEXT" : "CML Innovative Technologies GmbH & Co. KG"
+         },
+         {
+            "LIEF_NR" : "0x0000B4",
+            "LIEF_TEXT" : "APAG Elektronik AG"
+         },
+         {
+            "LIEF_TEXT" : "Nexteer Automotive World Headquarters",
+            "LIEF_NR" : "0x0000B5"
+         },
+         {
+            "LIEF_NR" : "0x0000B6",
+            "LIEF_TEXT" : "Hans Widmaier"
+         },
+         {
+            "LIEF_NR" : "0x0000B7",
+            "LIEF_TEXT" : "Robert Bosch Battery Systems GmbH"
+         },
+         {
+            "LIEF_TEXT" : "KYOCERA Display Corporation",
+            "LIEF_NR" : "0x0000B8"
+         },
+         {
+            "LIEF_NR" : "0x0000B9",
+            "LIEF_TEXT" : "MAGNA Powertrain AG & Co KG"
+         },
+         {
+            "LIEF_TEXT" : "BorgWarner",
+            "LIEF_NR" : "0x0000BA"
+         },
+         {
+            "LIEF_TEXT" : "BMW - Fahrzeugsimulator",
+            "LIEF_NR" : "0x0000BB"
+         },
+         {
+            "LIEF_NR" : "0x0000BC",
+            "LIEF_TEXT" : "Benteler Duncan Plant"
+         },
+         {
+            "LIEF_NR" : "0x0000BD",
+            "LIEF_TEXT" : "U-Shin"
+         },
+         {
+            "LIEF_NR" : "0x0000BE",
+            "LIEF_TEXT" : "Schaeffler Technologies"
+         },
+         {
+            "LIEF_TEXT" : "unbekannter Hersteller",
+            "LIEF_NR" : "0xFFFFFF"
+         }
+      ],
+      "JOBRESULTEXTENDED" : [
+         {
+            "STATUS_TEXT" : "ERROR_UNKNOWN",
+            "SB" : "0xXY"
+         }
+      ],
+      "RES_0XD21D_D" : [
+         {
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "L/H" : "high",
+            "INFO_EN" : "Number of prints",
+            "EINHEIT" : "-",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Druck"
+         },
+         {
+            "DATENTYP" : "data[4]",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "Relative time of last print",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Druck",
+            "NAME" : "-"
+         },
+         {
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of long presses",
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "INFO" : "Anzahl Langdruck",
+            "DIV" : "1.0",
+            "NAME" : "-"
+         },
+         {
+            "INFO_EN" : "Relative time of the last long press",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "NAME" : "-",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "DIV" : "1.0"
+         },
+         {
+            "INFO" : "Anzahl Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned long",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of hangers",
+            "L/H" : "high"
+         },
+         {
+            "DATENTYP" : "data[4]",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of the last trailer",
+            "EINHEIT" : "DATA",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Hänger",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger",
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "MASKE" : "-",
+            "DATENTYP" : "data[4]"
+         }
+      ],
+      "IUMWELTTEXTE" : [
+         {
+            "ADD" : "0.0",
+            "L/H" : "High",
+            "UWNR" : "0x170C",
+            "MUL" : "1.0",
+            "UW_EINH" : "mV",
+            "UWTEXT" : "Batteriespannung",
+            "DIV" : "1.0",
+            "UWTYP" : "unsigned int",
+            "NAME" : "-"
+         },
+         {
+            "UWTEXT" : "F_UW_BN",
+            "UW_EINH" : "-",
+            "NAME" : "-",
+            "UWTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "L/H" : "High",
+            "UWNR" : "0x1750",
+            "ADD" : "0.0",
+            "MUL" : "1.0"
+         },
+         {
+            "DIV" : "1.0",
+            "UWTYP" : "3",
+            "NAME" : "-",
+            "UW_EINH" : "TEXT",
+            "UWTEXT" : "F_UW_TN",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "UWNR" : "0x1751",
+            "L/H" : "High"
+         },
+         {
+            "MUL" : "-",
+            "ADD" : "-",
+            "UWNR" : "0xXYXY",
+            "L/H" : "-",
+            "DIV" : "-",
+            "UWTYP" : "-",
+            "NAME" : "-",
+            "UW_EINH" : "-",
+            "UWTEXT" : "unbekannte Umweltbedingung"
+         }
+      ],
+      "RES_0X2502_D" : [
+         {
+            "INFO_EN" : "Reserve. Constant = 0x00",
+            "EINHEIT" : "-",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_RESERVE_WERT",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "Reserve. Konstante = 0x00",
+            "DIV" : "1.0"
+         },
+         {
+            "ADD" : "-",
+            "L/H" : "high",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "ProgrammingCounterStatus",
+            "DATENTYP" : "unsigned char",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_PROG_ZAEHLER_STATUS",
+            "DIV" : "-",
+            "INFO" : "ProgrammingCounterStatus",
+            "NAME" : "RDBI_PC_PCS_DOP"
+         },
+         {
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_PROG_ZAEHLER_WERT",
+            "DATENTYP" : "unsigned int",
+            "L/H" : "high",
+            "INFO_EN" : "ProgrammingCounter",
+            "EINHEIT" : "-",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "INFO" : "ProgrammingCounter",
+            "DIV" : "1.0"
+         }
+      ],
+      "FORTTEXTE" : [
+         {
+            "ORTTEXT_EN" : "Energy saving mode active",
+            "ORTTEXT" : "Energiesparmode aktiv",
+            "ORT" : "0x026700",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Coding: Control unit is not coded",
+            "ORTTEXT" : "Codierung: Steuergerät ist nicht codiert",
+            "ORT" : "0x026708",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Coding: Error occurred during coding data transaction",
+            "ORT" : "0x026709",
+            "ORTTEXT" : "Codierung: Fehler bei Codierdatentransaktion aufgetreten",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Coding: Signature of the coding data is invalid",
+            "ORT" : "0x02670A",
+            "ORTTEXT" : "Codierung: Signatur der Codierdaten ungültig",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Codierung: Codierdaten passen nicht zum Fahrzeug",
+            "ORT" : "0x02670B",
+            "ORTTEXT_EN" : "Coding: Coding data does not match the vehicle"
+         },
+         {
+            "ORTTEXT_EN" : "Coding: Implausible data during coding data transaction",
+            "ORT" : "0x02670C",
+            "ORTTEXT" : "Codierung: Unplausible Daten während Codierdatentransaktion",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x026720",
+            "ORTTEXT" : "CAN-Fehler (Sammelfehler)",
+            "ORTTEXT_EN" : "CAN error (group error)"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Flash Memory Fehler (Sammelfehler)",
+            "ORT" : "0x026723",
+            "ORTTEXT_EN" : "Flash memory error (group error)"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Hardwarefehler (Sammelfehler)",
+            "ORT" : "0x026726",
+            "ORTTEXT_EN" : "Hardware error (group error)"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Softwarefehler (Sammelfehler)",
+            "ORT" : "0x026729",
+            "ORTTEXT_EN" : "Software error (group error)"
+         },
+         {
+            "ORTTEXT_EN" : "Dummy error memory entry in the component error area for test purposes only",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x02FF67",
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Komponentenfehlerbereich nur für Testzwecke"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Stellglied (Kippen/Rotieren): Unplausible Position erkannt",
+            "ORT" : "0x801400",
+            "ORTTEXT_EN" : "Actuator (tilt / rotate): Implausible position detected"
+         },
+         {
+            "ORTTEXT" : "Unterspannung erkannt",
+            "ORT" : "0x801405",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Undervoltage detected"
+         },
+         {
+            "ORTTEXT" : "Ueberspannung erkannt",
+            "ORT" : "0x801406",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Overvoltage detected"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Interner Komponetenfehler Touchfeld",
+            "ORT" : "0x801409",
+            "ORTTEXT_EN" : "Internal component error touch field"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x801422",
+            "ORTTEXT" : "Interner Steuergerätefehler",
+            "ORTTEXT_EN" : "Internal control unit error"
+         },
+         {
+            "ORTTEXT_EN" : "IuK-CAN Control Module Bus OFF",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "IuK-CAN Control Module Bus OFF",
+            "ORT" : "0xE2C41E"
+         },
+         {
+            "ORTTEXT_EN" : "BODY-CAN Control Module Bus OFF",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xE2C468",
+            "ORTTEXT" : "BODY-CAN Control Module Bus OFF"
+         },
+         {
+            "ORTTEXT_EN" : "Dummy error memory entry in the network error area for test purposes only",
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Netzwerkfehlerbereich nur für Testzwecke",
+            "ORT" : "0xE2CBFF",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xE2D400",
+            "ORTTEXT" : "Botschaft (0x202, Dimmung): Ausfall",
+            "ORTTEXT_EN" : "Message (0x202, dimming): failure"
+         },
+         {
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "ORT" : "0xFFFFFF",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "unknown error location"
+         }
+      ],
+      "RES_0XD134_D" : [
+         {
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_STELLGLIED_N_EIN",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "Actuator position north: 0 = not actuated, 1 = actuated; not with ZBE Low",
+            "L/H" : "-",
+            "INFO" : "Stellglied-Position Nord: 0 = nicht betätigt, 1 = betätigt;  nicht bei ZBE Low",
+            "DIV" : "1.0",
+            "NAME" : "-"
+         },
+         {
+            "L/H" : "-",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "Actuator position east: 0 = not actuated, 1 = actuated",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_STELLGLIED_E_EIN",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "Stellglied-Position Ost: 0 = nicht betätigt, 1 = betätigt",
+            "DIV" : "1.0"
+         },
+         {
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_STELLGLIED_S_EIN",
+            "DATENTYP" : "unsigned char",
+            "L/H" : "-",
+            "INFO_EN" : "Actuator position south: 0 = not actuated, 1 = actuated, not with ZBE Low",
+            "EINHEIT" : "0/1",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Stellglied-Position Süd: 0 = nicht betätigt, 1 = betätigt,  nicht bei ZBE Low"
+         },
+         {
+            "L/H" : "-",
+            "INFO_EN" : "Actuator position west: 0 = not actuated, 1 = actuated",
+            "EINHEIT" : "0/1",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_STELLGLIED_W_EIN",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "Stellglied-Position West: 0 = nicht betätigt, 1 = betätigt",
+            "DIV" : "1.0"
+         },
+         {
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_STELLGLIED_NR",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "Actuator value: 0 = no actuation, 1 = actuator pushed north, not with ZBE Low 2 = actuator pushed east, 3 = actuator pushed south, not with ZBE Low 4 = actuator pushed west",
+            "L/H" : "-",
+            "INFO" : "Wert des Stellglieds:  0 = Keine Betätigung,  1 = Stellglied gedrückt nach Norden, nicht bei ZBE Low 2 = Stellglied gedrückt nach Osten,  3 = Stellglied gedrückt nach Süden,  nicht bei ZBE Low 4 = Stellglied gedrückt nach Westen",
+            "DIV" : "1.0",
+            "NAME" : "TAB_STELLGLIED_POSITIONEN"
+         }
+      ],
+      "RES_0XD216_D" : [
+         {
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "DATENTYP" : "unsigned long",
+            "L/H" : "high",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of prints",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "INFO" : "Anzahl Druck",
+            "DIV" : "1.0"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Druck",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of last print",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Langdruck",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned long",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of long presses",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "DATENTYP" : "data[4]",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of the last long press",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0"
+         },
+         {
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "Number of hangers",
+            "EINHEIT" : "-",
+            "L/H" : "high",
+            "INFO" : "Anzahl Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Hänger",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "MASKE" : "-",
+            "DATENTYP" : "data[4]",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of the last trailer",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger",
+            "DIV" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         }
+      ],
+      "IARTTEXTE" : [
+         {
+            "ARTTEXT_EN" : "no error type available",
+            "ARTNR" : "0x00",
+            "ARTTEXT" : "keine Fehlerart verfügbar"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x04",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x05"
+         },
+         {
+            "ARTNR" : "0x08",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x09",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x0C"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x0D",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x44",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x45",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x48"
+         },
+         {
+            "ARTNR" : "0x49",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x4C",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x4D"
+         },
+         {
+            "ARTTEXT_EN" : "Test conditions met",
+            "ARTNR" : "0x10",
+            "ARTTEXT" : "Testbedingungen erfüllt"
+         },
+         {
+            "ARTNR" : "0x11",
+            "ARTTEXT_EN" : "Test conditions not yet met",
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up",
+            "ARTNR" : "0x80",
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up",
+            "ARTNR" : "0x81",
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0xFF"
+         }
+      ],
+      "RDBI_ADS_DOP" : [
+         {
+            "TEXT" : "ISOSAEReserved_00",
+            "WERT" : "0",
+            "TEXT_EN" : "ISOSAEReserved_00"
+         },
+         {
+            "TEXT_EN" : "defaultSession",
+            "TEXT" : "defaultSession",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "programmingSession",
+            "TEXT" : "programmingSession",
+            "WERT" : "2"
+         },
+         {
+            "WERT" : "3",
+            "TEXT" : "extendedDiagnosticSession",
+            "TEXT_EN" : "extendedDiagnosticSession"
+         },
+         {
+            "TEXT_EN" : "safetySystemDiagnosticSession",
+            "WERT" : "4",
+            "TEXT" : "safetySystemDiagnosticSession"
+         },
+         {
+            "WERT" : "64",
+            "TEXT" : "vehicleManufacturerSpecific_40",
+            "TEXT_EN" : "vehicleManufacturerSpecific_40"
+         },
+         {
+            "TEXT_EN" : "codingSession",
+            "WERT" : "65",
+            "TEXT" : "codingSession"
+         },
+         {
+            "TEXT_EN" : "SWTSession",
+            "WERT" : "66",
+            "TEXT" : "SWTSession"
+         }
+      ],
+      "RES_0XD21E_D" : [
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Druck",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "L/H" : "high",
+            "INFO_EN" : "Number of prints",
+            "EINHEIT" : "-",
+            "ADD" : "0.0"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Druck",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "INFO_EN" : "Relative time of last print",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Langdruck",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of long presses",
+            "L/H" : "high"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of the last long press",
+            "EINHEIT" : "DATA",
+            "DATENTYP" : "data[4]",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA"
+         },
+         {
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "DATENTYP" : "unsigned long",
+            "L/H" : "high",
+            "INFO_EN" : "Number of hangers",
+            "EINHEIT" : "-",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "INFO" : "Anzahl Hänger",
+            "DIV" : "1.0"
+         },
+         {
+            "INFO" : "Relativzeit letzter Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "INFO_EN" : "Relative time of the last trailer",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "DATENTYP" : "data[4]",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "MUL" : "1.0"
+         },
+         {
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "DATENTYP" : "data[4]",
+            "L/H" : "high",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger"
+         }
+      ],
+      "DIGITALARGUMENT" : [
+         {
+            "TEXT" : "ein",
+            "WERT" : "1",
+            "TEXT_EN" : "a"
+         },
+         {
+            "TEXT_EN" : "out",
+            "WERT" : "0",
+            "TEXT" : "aus"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "ja",
+            "TEXT_EN" : "Yes"
+         },
+         {
+            "TEXT_EN" : "No",
+            "WERT" : "0",
+            "TEXT" : "nein"
+         },
+         {
+            "TEXT_EN" : "on",
+            "TEXT" : "auf",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "from",
+            "WERT" : "0",
+            "TEXT" : "ab"
+         },
+         {
+            "TEXT_EN" : "at",
+            "WERT" : "1",
+            "TEXT" : "an"
+         },
+         {
+            "TEXT_EN" : "yes",
+            "TEXT" : "yes",
+            "WERT" : "1"
+         },
+         {
+            "WERT" : "0",
+            "TEXT" : "no",
+            "TEXT_EN" : "no"
+         },
+         {
+            "TEXT" : "on",
+            "WERT" : "1",
+            "TEXT_EN" : "on"
+         },
+         {
+            "TEXT" : "off",
+            "WERT" : "0",
+            "TEXT_EN" : "off"
+         },
+         {
+            "TEXT_EN" : "up",
+            "TEXT" : "up",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "down",
+            "TEXT" : "down",
+            "WERT" : "0"
+         },
+         {
+            "TEXT_EN" : "true",
+            "WERT" : "1",
+            "TEXT" : "true"
+         },
+         {
+            "TEXT_EN" : "false",
+            "WERT" : "0",
+            "TEXT" : "false"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "1",
+            "TEXT_EN" : "1"
+         },
+         {
+            "WERT" : "0",
+            "TEXT" : "0"
+         }
+      ],
+      "JOBRESULT" : [
+         {
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_REJECT",
+            "SB" : "0x10"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED",
+            "SB" : "0x11"
+         },
+         {
+            "SB" : "0x12",
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT",
+            "SB" : "0x13"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LONG",
+            "SB" : "0x14"
+         },
+         {
+            "SB" : "0x21",
+            "STATUS_TEXT" : "ERROR_ECU_BUSY_REPEAT_REQUEST"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_CONDITIONS_NOT_CORRECT",
+            "SB" : "0x22"
+         },
+         {
+            "SB" : "0x24",
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_SEQUENCE_ERROR"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE_FROM_SUBNET_COMPONENT",
+            "SB" : "0x25"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_FAILURE_PREVENTS_EXECUTION_OF_REQUESTED_ACTION",
+            "SB" : "0x26"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_OUT_OF_RANGE",
+            "SB" : "0x31"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SECURITY_ACCESS_DENIED",
+            "SB" : "0x33"
+         },
+         {
+            "SB" : "0x35",
+            "STATUS_TEXT" : "ERROR_ECU_INVALID_KEY"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_EXCEED_NUMBER_OF_ATTEMPTS",
+            "SB" : "0x36"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_REQUIRED_TIME_DELAY_NOT_EXPIRED",
+            "SB" : "0x37"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_UPLOAD_DOWNLOAD_NOT_ACCEPTED",
+            "SB" : "0x70"
+         },
+         {
+            "SB" : "0x71",
+            "STATUS_TEXT" : "ERROR_ECU_TRANSFER_DATA_SUSPENDED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_PROGRAMMING_FAILURE",
+            "SB" : "0x72"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_WRONG_BLOCK_SEQUENCE_COUNTER",
+            "SB" : "0x73"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_CORRECTLY_RECEIVED__RESPONSE_PENDING",
+            "SB" : "0x78"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED_IN_ACTIVE_SESSION",
+            "SB" : "0x7E"
+         },
+         {
+            "SB" : "0x7F",
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED_IN_ACTIVE_SESSION"
+         },
+         {
+            "SB" : "0x81",
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_LOW",
+            "SB" : "0x82"
+         },
+         {
+            "SB" : "0x83",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_RUNNING"
+         },
+         {
+            "SB" : "0x84",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_NOT_RUNNING"
+         },
+         {
+            "SB" : "0x85",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_RUN_TIME_TOO_LOW"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_HIGH",
+            "SB" : "0x86"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_LOW",
+            "SB" : "0x87"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_HIGH",
+            "SB" : "0x88"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_LOW",
+            "SB" : "0x89"
+         },
+         {
+            "SB" : "0x8A",
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_LOW",
+            "SB" : "0x8B"
+         },
+         {
+            "SB" : "0x8C",
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_NEUTRAL"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_GEAR",
+            "SB" : "0x8D"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_BRAKE_SWITCH_NOT_CLOSED",
+            "SB" : "0x8F"
+         },
+         {
+            "SB" : "0x90",
+            "STATUS_TEXT" : "ERROR_ECU_SHIFTER_LEVER_NOT_IN_PARK"
+         },
+         {
+            "SB" : "0x91",
+            "STATUS_TEXT" : "ERROR_ECU_TORQUE_CONVERTER_CLUTCH_LOCKED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_HIGH",
+            "SB" : "0x92"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_LOW",
+            "SB" : "0x93"
+         },
+         {
+            "SB" : "?00?",
+            "STATUS_TEXT" : "OKAY"
+         },
+         {
+            "SB" : "?01?",
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_LEN",
+            "SB" : "?02?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_RESPONSE_ID",
+            "SB" : "?03?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TA_RESPONSE_NOT_SA_REQUEST",
+            "SB" : "?04?"
+         },
+         {
+            "SB" : "?05?",
+            "STATUS_TEXT" : "ERROR_ECU_SA_RESPONSE_NOT_TA_REQUEST"
+         },
+         {
+            "SB" : "?06?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DATA_IDENTIFIER"
+         },
+         {
+            "SB" : "?07?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_MUCH_DATA"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LESS_DATA",
+            "SB" : "?08?"
+         },
+         {
+            "SB" : "?09?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_VALUE_OUT_OF_RANGE"
+         },
+         {
+            "SB" : "?0A?",
+            "STATUS_TEXT" : "ERROR_TABLE"
+         },
+         {
+            "SB" : "?10?",
+            "STATUS_TEXT" : "ERROR_F_CODE"
+         },
+         {
+            "SB" : "?12?",
+            "STATUS_TEXT" : "ERROR_INTERPRETATION"
+         },
+         {
+            "SB" : "?13?",
+            "STATUS_TEXT" : "ERROR_F_POS"
+         },
+         {
+            "SB" : "?14?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_IO_CONTROL_PARAMETER"
+         },
+         {
+            "SB" : "?15?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_TYPE"
+         },
+         {
+            "SB" : "?16?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SUB_FUNCTION"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DYNAMICALLY_DEFINED_DATA_IDENTIFIER",
+            "SB" : "?17?"
+         },
+         {
+            "SB" : "?18?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_NO_STRING_END_CHAR"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_IDENTIFIER",
+            "SB" : "?19?"
+         },
+         {
+            "SB" : "?1A?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_RESET_TYPE"
+         },
+         {
+            "SB" : "?1B?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SERIAL_NUMBER_FORMAT"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_BY_STATUS_MASK",
+            "SB" : "?1C?"
+         },
+         {
+            "SB" : "?1D?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_STATUS_AVAILABILITY_MASK"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_IDENTIFIER",
+            "SB" : "?1E?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE1",
+            "SB" : "?50?"
+         },
+         {
+            "SB" : "?51?",
+            "STATUS_TEXT" : "ERROR_BYTE2"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE3",
+            "SB" : "?52?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_VERIFY",
+            "SB" : "?60?"
+         },
+         {
+            "SB" : "?61?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_ZGW"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_BACKUP",
+            "SB" : "?62?"
+         },
+         {
+            "SB" : "?70?",
+            "STATUS_TEXT" : "ERROR_CALID_CVN_INCORRECT_LEN"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_LEN",
+            "SB" : "?80?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_FINGERPRINT",
+            "SB" : "?81?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ARGUMENT",
+            "SB" : "?F0?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_UNKNOWN_NEGATIVE_RESPONSE",
+            "SB" : "0xXY"
+         }
+      ],
+      "RES_0XD218_D" : [
+         {
+            "INFO" : "Anzahl Druck",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of prints",
+            "L/H" : "high"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Druck",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "INFO_EN" : "Relative time of last print",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Langdruck",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "DATENTYP" : "unsigned long",
+            "L/H" : "high",
+            "INFO_EN" : "Number of long presses",
+            "EINHEIT" : "-",
+            "ADD" : "0.0"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "DATENTYP" : "data[4]",
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of the last long press",
+            "ADD" : "0.0"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Anzahl Hänger",
+            "DIV" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned long",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of hangers",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Hänger",
+            "NAME" : "-",
+            "DATENTYP" : "data[4]",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "Relative time of the last trailer",
+            "EINHEIT" : "DATA",
+            "L/H" : "high"
+         },
+         {
+            "DATENTYP" : "data[4]",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger",
+            "NAME" : "-"
+         }
+      ],
+      "DIAGMODE" : [
+         {
+            "MODE_TEXT" : "DefaultMode",
+            "MODE" : "UNGUELTIG",
+            "NR" : "0x00"
+         },
+         {
+            "NR" : "0x01",
+            "MODE" : "DEFAULT",
+            "MODE_TEXT" : "DefaultMode"
+         },
+         {
+            "NR" : "0x02",
+            "MODE" : "ECUPM",
+            "MODE_TEXT" : "ECUProgrammingMode"
+         },
+         {
+            "MODE_TEXT" : "ECUExtendedDiagnosticSession",
+            "MODE" : "ECUEXTDIAG",
+            "NR" : "0x03"
+         },
+         {
+            "MODE_TEXT" : "ECUSafetySystemDiagnosticSession",
+            "MODE" : "ECUSSDS",
+            "NR" : "0x04"
+         },
+         {
+            "NR" : "0x40",
+            "MODE" : "ECUEOL",
+            "MODE_TEXT" : "ECUEndOfLineSession"
+         },
+         {
+            "NR" : "0x41",
+            "MODE_TEXT" : "ECUCodingSession",
+            "MODE" : "ECUCODE"
+         },
+         {
+            "MODE_TEXT" : "ECUSwtSession",
+            "MODE" : "ECUSWT",
+            "NR" : "0x42"
+         },
+         {
+            "NR" : "0x43",
+            "MODE" : "ECUHDD",
+            "MODE_TEXT" : "ECUHDDDownloadSession"
+         },
+         {
+            "MODE_TEXT" : "ECUDevelopmentSession",
+            "MODE" : "ECUDEVELOP",
+            "NR" : "0x4F"
+         },
+         {
+            "NR" : "0x5F",
+            "MODE" : "ECUGDM",
+            "MODE_TEXT" : "ECUGarageDiagnoseMode"
+         },
+         {
+            "NR" : "0xXY",
+            "MODE_TEXT" : "unbekannter Diagnose-Mode",
+            "MODE" : "--"
+         }
+      ],
+      "SVK_ID" : [
+         {
+            "BEZEICHNUNG" : "SVK_AKTUELL",
+            "WERT" : "0x01"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_SUPPLIER",
+            "WERT" : "0x02"
+         },
+         {
+            "WERT" : "0x03",
+            "BEZEICHNUNG" : "SVK_WERK"
+         },
+         {
+            "WERT" : "0x04",
+            "BEZEICHNUNG" : "SVK_BACKUP_01"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_02",
+            "WERT" : "0x05"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_03",
+            "WERT" : "0x06"
+         },
+         {
+            "WERT" : "0x07",
+            "BEZEICHNUNG" : "SVK_BACKUP_04"
+         },
+         {
+            "WERT" : "0x08",
+            "BEZEICHNUNG" : "SVK_BACKUP_05"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_06",
+            "WERT" : "0x09"
+         },
+         {
+            "WERT" : "0x0A",
+            "BEZEICHNUNG" : "SVK_BACKUP_07"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_08",
+            "WERT" : "0x0B"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_09",
+            "WERT" : "0x0C"
+         },
+         {
+            "WERT" : "0x0D",
+            "BEZEICHNUNG" : "SVK_BACKUP_10"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_11",
+            "WERT" : "0x0E"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_12",
+            "WERT" : "0x0F"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_13",
+            "WERT" : "0x10"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_14",
+            "WERT" : "0x11"
+         },
+         {
+            "WERT" : "0x12",
+            "BEZEICHNUNG" : "SVK_BACKUP_15"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_16",
+            "WERT" : "0x13"
+         },
+         {
+            "WERT" : "0x14",
+            "BEZEICHNUNG" : "SVK_BACKUP_17"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_18",
+            "WERT" : "0x15"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_19",
+            "WERT" : "0x16"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_20",
+            "WERT" : "0x17"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_21",
+            "WERT" : "0x18"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_22",
+            "WERT" : "0x19"
+         },
+         {
+            "WERT" : "0x1A",
+            "BEZEICHNUNG" : "SVK_BACKUP_23"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_24",
+            "WERT" : "0x1B"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_25",
+            "WERT" : "0x1C"
+         },
+         {
+            "WERT" : "0x1D",
+            "BEZEICHNUNG" : "SVK_BACKUP_26"
+         },
+         {
+            "WERT" : "0x1E",
+            "BEZEICHNUNG" : "SVK_BACKUP_27"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_28",
+            "WERT" : "0x1F"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_29",
+            "WERT" : "0x20"
+         },
+         {
+            "WERT" : "0x21",
+            "BEZEICHNUNG" : "SVK_BACKUP_30"
+         },
+         {
+            "WERT" : "0x22",
+            "BEZEICHNUNG" : "SVK_BACKUP_31"
+         },
+         {
+            "WERT" : "0x23",
+            "BEZEICHNUNG" : "SVK_BACKUP_32"
+         },
+         {
+            "WERT" : "0x24",
+            "BEZEICHNUNG" : "SVK_BACKUP_33"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_34",
+            "WERT" : "0x25"
+         },
+         {
+            "WERT" : "0x26",
+            "BEZEICHNUNG" : "SVK_BACKUP_35"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_36",
+            "WERT" : "0x27"
+         },
+         {
+            "WERT" : "0x28",
+            "BEZEICHNUNG" : "SVK_BACKUP_37"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_38",
+            "WERT" : "0x29"
+         },
+         {
+            "WERT" : "0x2A",
+            "BEZEICHNUNG" : "SVK_BACKUP_39"
+         },
+         {
+            "WERT" : "0x2B",
+            "BEZEICHNUNG" : "SVK_BACKUP_40"
+         },
+         {
+            "WERT" : "0x2C",
+            "BEZEICHNUNG" : "SVK_BACKUP_41"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_42",
+            "WERT" : "0x2D"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_43",
+            "WERT" : "0x2E"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_44",
+            "WERT" : "0x2F"
+         },
+         {
+            "WERT" : "0x30",
+            "BEZEICHNUNG" : "SVK_BACKUP_45"
+         },
+         {
+            "WERT" : "0x31",
+            "BEZEICHNUNG" : "SVK_BACKUP_46"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_47",
+            "WERT" : "0x32"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_48",
+            "WERT" : "0x33"
+         },
+         {
+            "WERT" : "0x34",
+            "BEZEICHNUNG" : "SVK_BACKUP_49"
+         },
+         {
+            "WERT" : "0x35",
+            "BEZEICHNUNG" : "SVK_BACKUP_50"
+         },
+         {
+            "WERT" : "0x36",
+            "BEZEICHNUNG" : "SVK_BACKUP_51"
+         },
+         {
+            "WERT" : "0x37",
+            "BEZEICHNUNG" : "SVK_BACKUP_52"
+         },
+         {
+            "WERT" : "0x38",
+            "BEZEICHNUNG" : "SVK_BACKUP_53"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_54",
+            "WERT" : "0x39"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_55",
+            "WERT" : "0x3A"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_56",
+            "WERT" : "0x3B"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_57",
+            "WERT" : "0x3C"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_58",
+            "WERT" : "0x3D"
+         },
+         {
+            "WERT" : "0x3E",
+            "BEZEICHNUNG" : "SVK_BACKUP_59"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_60",
+            "WERT" : "0x3F"
+         },
+         {
+            "WERT" : "0x40",
+            "BEZEICHNUNG" : "SVK_BACKUP_61"
+         },
+         {
+            "BEZEICHNUNG" : "ERROR_UNKNOWN",
+            "WERT" : "0xXY"
+         }
+      ],
+      "SG_FUNKTIONEN" : [
+         {
+            "DATENTYP" : "-",
+            "RES_TABELLE" : "RES_0x2502_D",
+            "INFO_EN" : "Programming counter",
+            "EINHEIT" : "-",
+            "L/H" : "-",
+            "ARG" : "PROGRAMMING_COUNTER",
+            "DIV" : "-",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "ARG_TABELLE" : "-",
+            "SERVICE" : "22",
+            "ADD" : "-",
+            "INFO" : "Programming-Counter",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "LABEL" : "-",
+            "ID" : "0x2502"
+         },
+         {
+            "DIV" : "1.0",
+            "DATENTYP" : "unsigned int",
+            "RES_TABELLE" : "-",
+            "L/H" : "High",
+            "ARG" : "PROGRAMMING_COUNTER_MAX_VALUE",
+            "EINHEIT" : "-",
+            "INFO_EN" : "maximum number of programming processes",
+            "INFO" : "maximalen Anzahl von Programmiervorgängen",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "LABEL" : "-",
+            "ID" : "0x2503",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_PROG_MAX_WERT",
+            "ADD" : "0.0",
+            "SERVICE" : "22",
+            "ARG_TABELLE" : "-"
+         },
+         {
+            "ARG" : "FLASH_TIMING_PARAMETER",
+            "L/H" : "-",
+            "INFO_EN" : "Programming specific timing parameters",
+            "EINHEIT" : "-",
+            "RES_TABELLE" : "RES_0x2504_D",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "ADD" : "-",
+            "SERVICE" : "22",
+            "ARG_TABELLE" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "ID" : "0x2504",
+            "LABEL" : "-",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "INFO" : "Programmierspezifische Timing Parameter"
+         },
+         {
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Mileage stored in the EEPROM.",
+            "ARG" : "MILE_KM_EEPROM",
+            "L/H" : "High",
+            "DATENTYP" : "data[3]",
+            "RES_TABELLE" : "-",
+            "DIV" : "1.0",
+            "ARG_TABELLE" : "-",
+            "ADD" : "0.0",
+            "SERVICE" : "22",
+            "RESULTNAME" : "STAT_MILE_KM_EEPROM_DATA",
+            "MUL" : "1.0",
+            "LABEL" : "-",
+            "ID" : "0x2540",
+            "INFO" : "Im EEPROM abgelegter Kilometerstand.",
+            "SG_ADR" : "-",
+            "NAME" : "-"
+         },
+         {
+            "SERVICE" : "2E;22",
+            "ADD" : "-",
+            "ARG_TABELLE" : "ARG_0xD134_D",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "ID" : "0xD134",
+            "LABEL" : "-",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "INFO" : "Stellgliedposition",
+            "ARG" : "STELLGLIED_POSITIONEN",
+            "L/H" : "-",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Actuator position",
+            "RES_TABELLE" : "RES_0xD134_D",
+            "DATENTYP" : "-",
+            "DIV" : "-"
+         },
+         {
+            "ARG_TABELLE" : "-",
+            "SERVICE" : "22",
+            "ADD" : "-",
+            "RESULTNAME" : "STAT_ZBE_VARIANTE_NR",
+            "MUL" : "-",
+            "ID" : "0xD137",
+            "LABEL" : "-",
+            "SG_ADR" : "-",
+            "NAME" : "TAB_ZBE_VARIANTE",
+            "INFO" : "Variante ZBE: 0 = Standardvariante 1 = Asiavariante 2 = Standardvariante mit Touchpad 3 = Asiavariante mit Touchpad 255 = Ungültiger Wert oder ZBE nicht codiert",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "Variant ZBE: 0 = standard variant 1 = Asian variant 2 = standard variant with touchpad 3 = Asian variant with touchpad 255 = invalid value or ZBE not coded",
+            "ARG" : "VARIANTE_ZBE",
+            "L/H" : "High",
+            "RES_TABELLE" : "-",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "-"
+         },
+         {
+            "DIV" : "-",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Activation of the specified key. Simulates normal key press.",
+            "L/H" : "-",
+            "ARG" : "ZBE_TASTEN",
+            "RES_TABELLE" : "RES_0xD14D_D",
+            "DATENTYP" : "-",
+            "ID" : "0xD14D",
+            "LABEL" : "-",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "INFO" : "Ansteuerung der angegebenen Taste. Simuliert eine normale Tastenbetätigung.",
+            "ARG_TABELLE" : "ARG_0xD14D_D",
+            "SERVICE" : "2E;22",
+            "ADD" : "-",
+            "RESULTNAME" : "-",
+            "MUL" : "-"
+         },
+         {
+            "ARG" : "SCHRITTE_ROTRAD",
+            "L/H" : "-",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Output of the current value for the position of the rotating wheel. Value 0 if the encoder has not been configured",
+            "DATENTYP" : "unsigned int",
+            "RES_TABELLE" : "-",
+            "DIV" : "1.0",
+            "ADD" : "0.0",
+            "SERVICE" : "22",
+            "ARG_TABELLE" : "-",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_REGISTER_ROTRAD_WERT",
+            "LABEL" : "-",
+            "ID" : "0xD14E",
+            "INFO" : "Ausgabe vom aktuellen Wert für die Stellung des Rotationsrad. Wert 0, wenn Drehgeber nicht konfiguriert wurde",
+            "NAME" : "-",
+            "SG_ADR" : "-"
+         },
+         {
+            "SERVICE" : "22",
+            "ADD" : "-",
+            "ARG_TABELLE" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "ID" : "0xD213",
+            "LABEL" : "-",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "INFO" : "Loggingdaten der Tasten.",
+            "ARG" : "LOGGING_TASTE1",
+            "L/H" : "-",
+            "INFO_EN" : "Logging data of the keys.",
+            "EINHEIT" : "-",
+            "RES_TABELLE" : "RES_0xD213_D",
+            "DATENTYP" : "-",
+            "DIV" : "-"
+         },
+         {
+            "INFO" : "Loggingdaten der Tasten.",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "LABEL" : "-",
+            "ID" : "0xD214",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "SERVICE" : "22",
+            "ADD" : "-",
+            "ARG_TABELLE" : "-",
+            "DIV" : "-",
+            "DATENTYP" : "-",
+            "RES_TABELLE" : "RES_0xD214_D",
+            "ARG" : "LOGGING_TASTE2",
+            "L/H" : "-",
+            "INFO_EN" : "Logging data of the keys.",
+            "EINHEIT" : "-"
+         },
+         {
+            "LABEL" : "-",
+            "ID" : "0xD215",
+            "INFO" : "Loggingdaten der Tasten.",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "ARG_TABELLE" : "-",
+            "SERVICE" : "22",
+            "ADD" : "-",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Logging data of the keys.",
+            "EINHEIT" : "-",
+            "ARG" : "LOGGING_TASTE3",
+            "L/H" : "-",
+            "DATENTYP" : "-",
+            "RES_TABELLE" : "RES_0xD215_D"
+         },
+         {
+            "DIV" : "-",
+            "DATENTYP" : "-",
+            "RES_TABELLE" : "RES_0xD216_D",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Logging data of the keys.",
+            "L/H" : "-",
+            "ARG" : "LOGGING_TASTE4",
+            "INFO" : "Loggingdaten der Tasten.",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "LABEL" : "-",
+            "ID" : "0xD216",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "ARG_TABELLE" : "-",
+            "SERVICE" : "22",
+            "ADD" : "-"
+         },
+         {
+            "ARG_TABELLE" : "-",
+            "SERVICE" : "22",
+            "ADD" : "-",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "ID" : "0xD217",
+            "LABEL" : "-",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "INFO" : "Loggingdaten der Tasten.",
+            "INFO_EN" : "Logging data of the keys.",
+            "EINHEIT" : "-",
+            "L/H" : "-",
+            "ARG" : "LOGGING_TASTE5",
+            "RES_TABELLE" : "RES_0xD217_D",
+            "DATENTYP" : "-",
+            "DIV" : "-"
+         },
+         {
+            "L/H" : "-",
+            "ARG" : "LOGGING_TASTE6",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Logging data of the keys.",
+            "RES_TABELLE" : "RES_0xD218_D",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "ADD" : "-",
+            "SERVICE" : "22",
+            "ARG_TABELLE" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "ID" : "0xD218",
+            "LABEL" : "-",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "INFO" : "Loggingdaten der Tasten."
+         },
+         {
+            "RES_TABELLE" : "RES_0xD219_D",
+            "DATENTYP" : "-",
+            "INFO_EN" : "Logging data of the keys.",
+            "EINHEIT" : "-",
+            "L/H" : "-",
+            "ARG" : "LOGGING_TASTE7",
+            "DIV" : "-",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "ARG_TABELLE" : "-",
+            "ADD" : "-",
+            "SERVICE" : "22",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "INFO" : "Loggingdaten der Tasten.",
+            "ID" : "0xD219",
+            "LABEL" : "-"
+         },
+         {
+            "DIV" : "-",
+            "RES_TABELLE" : "RES_0xD21A_D",
+            "DATENTYP" : "-",
+            "L/H" : "-",
+            "ARG" : "LOGGING_TASTE8",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Logging data of the keys.",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "INFO" : "Loggingdaten der Tasten.",
+            "ID" : "0xD21A",
+            "LABEL" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "ADD" : "-",
+            "SERVICE" : "22",
+            "ARG_TABELLE" : "-"
+         },
+         {
+            "L/H" : "-",
+            "ARG" : "LOGGING_DREHSTELLER",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Logging of the rotary actuator (turning, tilting)",
+            "RES_TABELLE" : "RES_0xD21B_D",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "ADD" : "-",
+            "SERVICE" : "22",
+            "ARG_TABELLE" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "ID" : "0xD21B",
+            "LABEL" : "-",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "INFO" : "Logging des Drehstellers (Drehen, Kippen)"
+         },
+         {
+            "DIV" : "-",
+            "RES_TABELLE" : "RES_0xD21C_D",
+            "DATENTYP" : "-",
+            "L/H" : "-",
+            "ARG" : "LOGGING_DREHSTELLER_NORD",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Logging the keys",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "INFO" : "Logging der Tasten ",
+            "ID" : "0xD21C",
+            "LABEL" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "ADD" : "-",
+            "SERVICE" : "22",
+            "ARG_TABELLE" : "-"
+         },
+         {
+            "INFO" : "Logging der Tasten",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "LABEL" : "-",
+            "ID" : "0xD21D",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "ARG_TABELLE" : "-",
+            "ADD" : "-",
+            "SERVICE" : "22",
+            "DIV" : "-",
+            "DATENTYP" : "-",
+            "RES_TABELLE" : "RES_0xD21D_D",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Logging the keys",
+            "ARG" : "LOGGING_DREHSTELLER_OST",
+            "L/H" : "-"
+         },
+         {
+            "DIV" : "-",
+            "RES_TABELLE" : "RES_0xD21E_D",
+            "DATENTYP" : "-",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Logging the keys",
+            "ARG" : "LOGGING_DREHSTELLER_SUED",
+            "L/H" : "-",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "INFO" : "Logging der Tasten",
+            "ID" : "0xD21E",
+            "LABEL" : "-",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "ARG_TABELLE" : "-",
+            "SERVICE" : "22",
+            "ADD" : "-"
+         },
+         {
+            "DIV" : "-",
+            "DATENTYP" : "-",
+            "RES_TABELLE" : "RES_0xD21F_D",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Logging the keys",
+            "L/H" : "-",
+            "ARG" : "LOGGING_DREHSTELLER_WEST",
+            "INFO" : "Logging der Tasten",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "LABEL" : "-",
+            "ID" : "0xD21F",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "ARG_TABELLE" : "-",
+            "ADD" : "-",
+            "SERVICE" : "22"
+         },
+         {
+            "DIV" : "-",
+            "INFO_EN" : "Read out when the component was installed",
+            "EINHEIT" : "-",
+            "ARG" : "LOGGING_VERBAU",
+            "L/H" : "-",
+            "RES_TABELLE" : "RES_0xD228_D",
+            "DATENTYP" : "-",
+            "ID" : "0xD228",
+            "LABEL" : "-",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "INFO" : "Auslesen, wann die Komponente verbaut wurde",
+            "ARG_TABELLE" : "-",
+            "SERVICE" : "22",
+            "ADD" : "-",
+            "RESULTNAME" : "-",
+            "MUL" : "-"
+         },
+         {
+            "L/H" : "-",
+            "ARG" : "STEUERN_SIGNALMODE",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Sets whether the signals are sent to the outside on the CAN when the control elements are operated (suppressed = Arg 1). Is automatically deactivated when changing terminals (or with Arg. 0)",
+            "RES_TABELLE" : "-",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "ADD" : "-",
+            "SERVICE" : "2E",
+            "ARG_TABELLE" : "ARG_0xD598_D",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "ID" : "0xD598",
+            "LABEL" : "-",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "INFO" : "Stellt ein, ob bei Betätigung der Bedienelemente die Signale auf den CAN nach außen verschickt werden (unterdrückt = Arg 1). Wird bei Klemmenwechsel automatisch deaktiviert (oder bei Arg. 0)"
+         },
+         {
+            "ARG_TABELLE" : "-",
+            "SERVICE" : "22",
+            "ADD" : "-",
+            "RESULTNAME" : "STAT_TOUCHPAD_BERUEHRUNG",
+            "MUL" : "-",
+            "ID" : "0xD60D",
+            "LABEL" : "-",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "INFO" : "Berührungserkennung Touchpad: 0x00 = keine Berührung erkannt 0x01 = Berührung erkannt",
+            "INFO_EN" : "Touch detection Touchpad: 0x00 = no touch detected 0x01 = touch detected",
+            "EINHEIT" : "0/1",
+            "L/H" : "High",
+            "ARG" : "TOUCHPAD_BERUEHRUNG",
+            "RES_TABELLE" : "-",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "-"
+         },
+         {
+            "EINHEIT" : "-",
+            "INFO_EN" : "Activation from the touchpad",
+            "ARG" : "TOUCHPAD_AKTIVIERUNG",
+            "L/H" : "-",
+            "DATENTYP" : "-",
+            "RES_TABELLE" : "RES_0xD60E_D",
+            "DIV" : "-",
+            "ARG_TABELLE" : "ARG_0xD60E_D",
+            "ADD" : "-",
+            "SERVICE" : "22;2E",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "LABEL" : "-",
+            "ID" : "0xD60E",
+            "INFO" : "Aktivierung vom Touchpad",
+            "SG_ADR" : "-",
+            "NAME" : "-"
+         },
+         {
+            "DIV" : "-",
+            "RES_TABELLE" : "-",
+            "DATENTYP" : "unsigned char",
+            "L/H" : "High",
+            "ARG" : "TOUCHPAD_ANNAEHERUNG",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "Proximity detection touchpad: 0x00 = no proximity detected 0x01 = proximity detected",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "INFO" : "Annäherungsserkennung Touchpad: 0x00 = keine Annäherung erkannt 0x01 = Annäherung erkannt",
+            "ID" : "0xD68D",
+            "LABEL" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "STAT_TOUCHPAD_ANNAEHERUNG",
+            "ADD" : "-",
+            "SERVICE" : "22",
+            "ARG_TABELLE" : "-"
+         },
+         {
+            "DIV" : "10.0",
+            "RES_TABELLE" : "-",
+            "DATENTYP" : "int",
+            "INFO_EN" : "Voltage value on the control unit at terminal 30B (accurate to one decimal place)",
+            "EINHEIT" : "V",
+            "ARG" : "SPANNUNG_KLEMME_30B_WERT",
+            "L/H" : "-",
+            "SG_ADR" : "-",
+            "NAME" : "-",
+            "INFO" : "Spannungswert am Steuergerät an Klemme 30B (auf eine Nachkommastelle genau)",
+            "ID" : "0xDAD9",
+            "LABEL" : "-",
+            "RESULTNAME" : "STAT_SPANNUNG_KLEMME_30B_WERT",
+            "MUL" : "1.0",
+            "ARG_TABELLE" : "-",
+            "ADD" : "0.0",
+            "SERVICE" : "22"
+         },
+         {
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "activeDiagnosticSession",
+            "ARG" : "ACTIVE_DIAGNOSTIC_SESSION",
+            "L/H" : "High",
+            "DATENTYP" : "unsigned char",
+            "RES_TABELLE" : "-",
+            "DIV" : "-",
+            "ARG_TABELLE" : "-",
+            "ADD" : "-",
+            "SERVICE" : "22",
+            "RESULTNAME" : "STAT_ACTIVE_DIAGNOSTIC_SESSION",
+            "MUL" : "-",
+            "LABEL" : "-",
+            "ID" : "0xF186",
+            "INFO" : "activeDiagnosticSession",
+            "SG_ADR" : "-",
+            "NAME" : "RDBI_ADS_DOP"
+         }
+      ],
+      "TAB_STELLGLIED_POSITIONEN" : [
+         {
+            "WERT" : "0",
+            "TEXT" : "Keine Betätigung",
+            "TEXT_EN" : "No actuation"
+         },
+         {
+            "TEXT_EN" : "Actuator pushed north",
+            "WERT" : "1",
+            "TEXT" : "Stellglied nach Norden gedrückt"
+         },
+         {
+            "TEXT" : "Stellglied nach Osten gedrückt",
+            "WERT" : "2",
+            "TEXT_EN" : "Actuator pushed east"
+         },
+         {
+            "WERT" : "3",
+            "TEXT" : "Stellglied nach Süden gedrückt",
+            "TEXT_EN" : "Actuator pushed south"
+         },
+         {
+            "TEXT" : "Stellglied nach Westen gedrückt",
+            "WERT" : "4",
+            "TEXT_EN" : "Actuator pushed west"
+         },
+         {
+            "WERT" : "0xFF",
+            "TEXT" : "Wert ungültig",
+            "TEXT_EN" : "Invalid value"
+         }
+      ],
+      "RES_0XD215_D" : [
+         {
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Number of prints",
+            "EINHEIT" : "-",
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "MASKE" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Druck",
+            "NAME" : "-"
+         },
+         {
+            "DATENTYP" : "data[4]",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "Relative time of last print",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Druck",
+            "NAME" : "-"
+         },
+         {
+            "DATENTYP" : "unsigned long",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of long presses",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Langdruck",
+            "NAME" : "-"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "NAME" : "-",
+            "DATENTYP" : "data[4]",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "Relative time of the last long press",
+            "EINHEIT" : "DATA",
+            "L/H" : "high"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Hänger",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Number of hangers",
+            "EINHEIT" : "-"
+         },
+         {
+            "ADD" : "0.0",
+            "INFO_EN" : "Relative time of the last trailer",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "DATENTYP" : "data[4]",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "INFO" : "Relativzeit letzter Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-"
+         },
+         {
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "L/H" : "high",
+            "DATENTYP" : "data[4]",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "MUL" : "1.0"
+         }
+      ],
+      "RES_0XD21C_D" : [
+         {
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Druck",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of prints",
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Relativzeit letzter Druck",
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of last print",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "DATENTYP" : "data[4]"
+         },
+         {
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Number of long presses",
+            "EINHEIT" : "-",
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "MASKE" : "-",
+            "INFO" : "Anzahl Langdruck",
+            "DIV" : "1.0",
+            "NAME" : "-"
+         },
+         {
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "INFO_EN" : "Relative time of the last long press",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "DIV" : "1.0"
+         },
+         {
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "DATENTYP" : "unsigned long",
+            "L/H" : "high",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of hangers",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Hänger"
+         },
+         {
+            "INFO" : "Relativzeit letzter Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of the last trailer",
+            "EINHEIT" : "DATA",
+            "DATENTYP" : "data[4]",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA"
+         },
+         {
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "DATENTYP" : "data[4]",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "EINHEIT" : "DATA"
+         }
+      ],
+      "RES_0XD21B_D" : [
+         {
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RASTEN_IM_UHRZEIGERSINN_WERT",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Number of notches in clockwise direction",
+            "EINHEIT" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Rasten im Uhrzeigersinn",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Relativzeit der letzten Drehung gegen den Uhrzeigersinn",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_RELATIVZEIT_IM_UHRZEIGERSINN_DATA",
+            "MASKE" : "-",
+            "DATENTYP" : "data[4]",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of the last counterclockwise rotation",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0"
+         },
+         {
+            "INFO" : "Anzahl Rasten gegen Uhrzeigersinn",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of notches counterclockwise",
+            "L/H" : "high",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RASTEN_GEGEN_UHRZEIGERSINN_WERT",
+            "MUL" : "1.0"
+         },
+         {
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of the last counter-clockwise rotation",
+            "DATENTYP" : "data[4]",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_RELATIVZEIT_GEGEN_UHRZEIGERSINN_DATA",
+            "MASKE" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzte Drehung gegen den Uhrzeigersinn",
+            "NAME" : "-"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Underflow, Anschlag links",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "INFO_EN" : "Number of underflows, stop on the left",
+            "EINHEIT" : "-",
+            "L/H" : "high",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_UNDERFLOW_WERT",
+            "MUL" : "1.0"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Relativzeit letzter Underflow",
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of the last underflow",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_UNDERFLOW_DATA",
+            "DATENTYP" : "data[4]"
+         },
+         {
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of overflows, stop on the right",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_OVERFLOW_WERT",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "-",
+            "INFO" : "Anzahl Overflow, Anschlag rechts",
+            "DIV" : "1.0"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of last overflow",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_OVERFLOW_DATA",
+            "DATENTYP" : "data[4]",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Overflow"
+         },
+         {
+            "INFO" : "KM-Stand der letzten Drehaktion ",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "DATENTYP" : "data[4]",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_KM_DREH_DATA",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "KM status of the last shooting",
+            "EINHEIT" : "DATA"
+         }
+      ],
+      "FDETAILSTRUKTUR" : [
+         {
+            "NAME" : "F_UWB_ERW",
+            "TYP" : "ja"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "SAE_CODE"
+         },
+         {
+            "TYP" : "ja",
+            "NAME" : "F_HLZ"
+         },
+         {
+            "NAME" : "F_SEVERITY",
+            "TYP" : "nein"
+         },
+         {
+            "TYP" : "2",
+            "NAME" : "F_UWB_SATZ"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_HLZ_VIEW"
+         }
+      ],
+      "ARG_0XD14D_D" : [
+         {
+            "ARG" : "TASTE",
+            "L/H" : "-",
+            "INFO_EN" : "Control of the ZBE buttons. See table TAB_ZBE_TASTEN",
+            "MIN" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "MAX" : "-",
+            "NAME" : "TAB_ZBE_TASTEN",
+            "DIV" : "-",
+            "INFO" : "Ansteuerung der ZBE Tasten. Siehe Tabelle TAB_ZBE_TASTEN"
+         },
+         {
+            "INFO_EN" : "0 = NOT PRESSED, 1 = PRESSED",
+            "EINHEIT" : "0/1",
+            "MIN" : "-",
+            "L/H" : "-",
+            "ARG" : "AKTION",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DATENTYP" : "unsigned char",
+            "MAX" : "-",
+            "NAME" : "-",
+            "INFO" : "0 = NICHT GEDRUECKT, 1 = GEDRUECKT",
+            "DIV" : "-"
+         }
+      ],
+      "RES_0XD219_D" : [
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Druck",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned long",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of prints",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Druck",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of last print",
+            "EINHEIT" : "DATA",
+            "DATENTYP" : "data[4]",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA"
+         },
+         {
+            "INFO" : "Anzahl Langdruck",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of long presses",
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "MASKE" : "-"
+         },
+         {
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of the last long press",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "NAME" : "-",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "DIV" : "1.0"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Hänger",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of hangers",
+            "L/H" : "high",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "MUL" : "1.0"
+         },
+         {
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of the last trailer",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "DATENTYP" : "data[4]",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Hänger"
+         },
+         {
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "DATENTYP" : "data[4]",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "MASKE" : "-",
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-"
+         }
+      ],
+      "RES_0XD228_D" : [
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Zeit des Erstverbau",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_VERBAU_DATA",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "INFO_EN" : "Time of first installation",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "KM-Stand beim Verbau",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_KM_VERBAU_DATA",
+            "MASKE" : "-",
+            "DATENTYP" : "data[4]",
+            "L/H" : "high",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "KM stand during installation",
+            "ADD" : "0.0"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "VIN",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_VIN_DATA",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[7]",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "VIN",
+            "L/H" : "high",
+            "ADD" : "0.0"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "Relative time last installation",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LETZTVERBAU_DATA",
+            "DATENTYP" : "data[4]",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit Letztverbau"
+         },
+         {
+            "DATENTYP" : "data[4]",
+            "RESULTNAME" : "STAT_KM_LETZTVERBAU_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "KM stand last installation",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "INFO" : "KM-Stand Letztverbau",
+            "DIV" : "1.0",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Fahrgestellnummer Letztverbau",
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "INFO_EN" : "Chassis number of the last installation",
+            "EINHEIT" : "DATA",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_VIN_LETZTVERBAU_DATA",
+            "DATENTYP" : "data[7]"
+         }
+      ],
+      "DTCSNAPSHOTIDENTIFIER" : [
+         {
+            "UWNR" : "0x1700",
+            "L/H" : "-",
+            "ADD" : "0.000000",
+            "MUL" : "1",
+            "UWTEXT" : "KM_STAND",
+            "UW_EINH" : "0-n",
+            "NAME" : "-",
+            "UWTYP" : "0xFFFFFF",
+            "DIV" : "1"
+         },
+         {
+            "MUL" : "1",
+            "ADD" : "0.000000",
+            "UWNR" : "0x1701",
+            "L/H" : "-",
+            "DIV" : "1",
+            "UWTYP" : "0xFFFFFFFF",
+            "NAME" : "-",
+            "UW_EINH" : "0-n",
+            "UWTEXT" : "ABS_ZEIT"
+         },
+         {
+            "UWTEXT" : "SAE_CODE",
+            "UW_EINH" : "0-n",
+            "UWTYP" : "0xFFFFFF",
+            "NAME" : "-",
+            "DIV" : "1",
+            "UWNR" : "0x1702",
+            "L/H" : "-",
+            "ADD" : "0.000000",
+            "MUL" : "1"
+         },
+         {
+            "UW_EINH" : "-",
+            "UWTEXT" : "Fehlerklasse_DTC",
+            "DIV" : "1",
+            "UWTYP" : "u char",
+            "NAME" : "-",
+            "ADD" : "0.000000",
+            "L/H" : "-",
+            "UWNR" : "0x1731",
+            "MUL" : "1"
+         },
+         {
+            "DIV" : "1",
+            "UWTYP" : "0xFFFFFF",
+            "NAME" : "-",
+            "UW_EINH" : "-",
+            "UWTEXT" : "IDENTIFIER_UNKNOWN",
+            "MUL" : "1",
+            "ADD" : "0.000000",
+            "L/H" : "-",
+            "UWNR" : "0xFFFF"
+         }
+      ],
+      "DTCEXTENDEDDATARECORDNUMBER" : [
+         {
+            "TEXT" : "ISO_RESERVED",
+            "WERT" : "0x00",
+            "TEXT_EN" : "ISO_RESERVED",
+            "ANZ_BYTE" : "0"
+         },
+         {
+            "ANZ_BYTE" : "1",
+            "WERT" : "0x01",
+            "TEXT" : "CONDITION_BYTE",
+            "TEXT_EN" : "CONDITION_BYTE"
+         },
+         {
+            "TEXT_EN" : "HFK",
+            "TEXT" : "HFK",
+            "WERT" : "0x02",
+            "ANZ_BYTE" : "1"
+         },
+         {
+            "TEXT_EN" : "HLZ",
+            "WERT" : "0x03",
+            "TEXT" : "HLZ",
+            "ANZ_BYTE" : "1"
+         },
+         {
+            "TEXT_EN" : "RECORD_UNKNOWN",
+            "WERT" : "0xFF",
+            "TEXT" : "RECORD_UNKNOWN",
+            "ANZ_BYTE" : "0"
+         }
+      ],
+      "FEHLERKLASSE" : [
+         {
+            "TEXT" : "Keine Fehlerklasse verfuegbar",
+            "NR" : "0x00",
+            "TEXT_EN" : "No fault class available"
+         },
+         {
+            "TEXT" : "Ueberpruefung bei naechstem Werkstattbesuch",
+            "NR" : "0x01",
+            "TEXT_EN" : "Check when you next visit the workshop"
+         },
+         {
+            "TEXT_EN" : "Check at the next stop",
+            "NR" : "0x02",
+            "TEXT" : "Ueberpruefung bei naechstem Halt"
+         },
+         {
+            "TEXT_EN" : "Check required immediately!",
+            "NR" : "0x04",
+            "TEXT" : "Ueberpruefung sofort erforderlich !"
+         },
+         {
+            "TEXT_EN" : "unknown error class",
+            "TEXT" : "unbekannte Fehlerklasse",
+            "NR" : "0xFF"
+         }
+      ],
+      "RES_0XD60E_D" : [
+         {
+            "DIV" : "-",
+            "INFO" : "Status der Aktivierung vom Touchpad: 0x00 = Touchpad nicht aktiviert 0x01 = Touchpad aktiviert",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_TOUCHPAD_AKTIVIERUNG",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "Status of the activation of the touchpad: 0x00 = touchpad not activated 0x01 = touchpad activated",
+            "L/H" : "high"
+         }
+      ],
+      "RES_0XD214_D" : [
+         {
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of prints",
+            "DATENTYP" : "unsigned long",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_ANZAHL_DRUCK_WERT",
+            "MASKE" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Druck",
+            "NAME" : "-"
+         },
+         {
+            "DATENTYP" : "data[4]",
+            "RESULTNAME" : "STAT_RELATIVZEIT_DRUCK_DATA",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "Relative time of last print",
+            "EINHEIT" : "DATA",
+            "L/H" : "high",
+            "INFO" : "Relativzeit letzter Druck",
+            "DIV" : "1.0",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Langdruck",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Number of long presses",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_ANZAHL_LANGDRUCK_WERT",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned long"
+         },
+         {
+            "DATENTYP" : "data[4]",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_LANGDRUCK_DATA",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Relative time of the last long press",
+            "EINHEIT" : "DATA",
+            "DIV" : "1.0",
+            "INFO" : "Relativzeit letzter Langdruck",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "Anzahl Hänger",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_ANZAHL_HAENGER_WERT",
+            "DATENTYP" : "unsigned long",
+            "L/H" : "high",
+            "INFO_EN" : "Number of hangers",
+            "EINHEIT" : "-",
+            "ADD" : "0.0"
+         },
+         {
+            "INFO" : "Relativzeit letzter Hänger",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "DATENTYP" : "data[4]",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_RELATIVZEIT_HAENGER_DATA",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "Relative time of the last trailer",
+            "L/H" : "high"
+         },
+         {
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_KM_DRUCK_DATA",
+            "MUL" : "1.0",
+            "DATENTYP" : "data[4]",
+            "EINHEIT" : "DATA",
+            "INFO_EN" : "KM status last print, long print or hanger",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "DIV" : "1.0",
+            "INFO" : "KM-Stand letzter Druck, Langdruck oder Hänger"
+         }
+      ]
+   }
+}

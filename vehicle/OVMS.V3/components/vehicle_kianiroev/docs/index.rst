@@ -1,10 +1,17 @@
-==========
-Kia e-Niro
-==========
+============================================
+Kia e-Niro / Hyundai Kona / Hyundai Ioniq FL
+============================================
 
 Vehicle Type: **KN**
 
-The Kia e-Niro vehicle support will be documented here.
+The Kia e-Niro shares the same platform with the Hyundai Kona and Hyundai Ioniq FL
+(Hyundai Ioniq Electric 38 kWh).
+
+Kia e-Niro and Hyundai Kona are the same vehicle in terms of battery specs.
+
+The Hyundai Ioniq FL (aka vFL second generation) differs from the e-Niro and Kona
+only by the lower battery capacity of 38 kWh and maximum range, both of which can
+be configured via the web UI.
 
 ----------------
 Support Overview
@@ -67,5 +74,5 @@ Currently, there is no known way to get the estimated range directly from the ca
 12V battery drain
 -----------------
 
-OVMS will eventually drain the 12V battery, but steps have been taken to minimize the drain. However, if you are going to leave the car for a fews days, it is recommended to unplug OVMS. OVMS will send an alert if 12V drops under 12V alert threshold. See 12V Calibration section. 
+OVMS will eventually drain the 12V battery, but steps have been taken to minimize the drain. However, if you are going to leave the car for a few days, it is recommended to unplug OVMS. OVMS will send an alert if 12V drops under 12V alert threshold. See 12V Calibration section. 
 

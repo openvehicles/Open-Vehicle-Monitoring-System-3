@@ -40,6 +40,7 @@
 #endif
 #include "ovms_mutex.h"
 #include "ovms_semaphore.h"
+#include "string_writer.h"
 
 #include "rt_types.h"
 #include "rt_battmon.h"
@@ -399,6 +400,9 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     OvmsMetricFloat *m_batt_use_volt_max;
     OvmsMetricFloat *m_batt_use_temp_min;
     OvmsMetricFloat *m_batt_use_temp_max;
+
+    OvmsMetricFloat *m_batt_energy_avail;
+    OvmsMetricFloat *m_batt_energy_full;
 
     //OvmsMetricFloat *m_batt_max_drive_pwr;
     //OvmsMetricFloat *m_batt_max_recup_pwr;

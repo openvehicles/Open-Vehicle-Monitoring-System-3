@@ -170,18 +170,20 @@ void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     return;
     }
 
-	const char* auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2).c_str();
 
 	writer->printf("AUX BATTERY\n");
-	if (*auxBatt != '-')
-		{
-		writer->printf("Aux battery voltage %s\n", auxBatt);
+  if (StdMetrics.ms_v_bat_12v_voltage->IsDefined())
+    {
+    const std::string& auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2);
+		writer->printf("Aux battery voltage %s\n", auxBatt.c_str());
 
 		OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
 
-		const char* auxSOC = soul->m_b_aux_soc->AsUnitString("-", Percentage, 1).c_str();
-
-		if (*auxSOC != '-') writer->printf("Aux battery SOC %s\n", auxSOC);
+    if (soul->m_b_aux_soc->IsDefined())
+      {
+      const std::string& auxSOC = soul->m_b_aux_soc->AsUnitString("-", Percentage, 1);
+      writer->printf("Aux battery SOC %s\n", auxSOC.c_str());
+      }
 
 		}
 	}
@@ -258,7 +260,8 @@ void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		writer->printf("Unknown %c\n", soul->m_vin[4]);
 		}
 
-	writer->printf("Model year: %04d\n", 2014 + soul->m_vin[9]-'E'); //TODO Will be wrong in for 2022. O and Q are not used.
+	int margin = (soul->m_vin[9] >= 'I') + (soul->m_vin[9] >= 'O') + (soul->m_vin[9] >= 'Q') + (soul->m_vin[9] >= 'U') + (soul->m_vin[9] >= 'Z'); // Will be wrong in 2032, but that's a 2032 problem.
+	writer->printf("Model year: %04d\n", 2014 + soul->m_vin[9]-'E'-margin);
 
 	writer->printf("Motor type: ");
 	if(soul->m_vin[7]=='E')
@@ -315,31 +318,34 @@ void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
 	writer->printf("TPMS\n");
 	// Front left
-	const char* fl_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_FL, "-", kPa, 1).c_str();
-	const char* fl_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_FL, "-", Celcius, 1).c_str();
+  if (StdMetrics.ms_v_tpms_pressure->IsDefined())
+    {
+    const std::string& fl_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_FL, "-", kPa, 1);
+    const std::string& fl_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_FL, "-", Celcius, 1);
+    writer->printf("1 ID:%" PRIu32 " %s %s\n", soul->kia_tpms_id[0], fl_pressure.c_str(), fl_temp.c_str());
+    }
 	// Front right
-	const char* fr_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_FR, "-", kPa, 1).c_str();
-	const char* fr_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_FR, "-", Celcius, 1).c_str();
+  if (StdMetrics.ms_v_tpms_pressure->IsDefined())
+    {
+    const std::string& fr_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_FR, "-", kPa, 1);
+    const std::string& fr_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_FR, "-", Celcius, 1);
+    writer->printf("2 ID:%" PRIu32 " %s %s\n",soul->kia_tpms_id[1], fr_pressure.c_str(), fr_temp.c_str());
+    }
 	// Rear left
-	const char* rl_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_RL, "-", kPa, 1).c_str();
-	const char* rl_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_RL, "-", Celcius, 1).c_str();
+  if (StdMetrics.ms_v_tpms_pressure->IsDefined())
+    {
+    const std::string& rl_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_RL, "-", kPa, 1);
+    const std::string& rl_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_RL, "-", Celcius, 1);
+    writer->printf("3 ID:%" PRIu32 " %s %s\n",soul->kia_tpms_id[2], rl_pressure.c_str(), rl_temp.c_str());
+    }
 	// Rear right
-	const char* rr_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_RR, "-", kPa, 1).c_str();
-	const char* rr_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_RR, "-", Celcius, 1).c_str();
-
-	if (*fl_pressure != '-')
-    writer->printf("1 ID:%lu %s %s\n", soul->kia_tpms_id[0], fl_pressure, fl_temp);
-
-  if (*fr_pressure != '-')
-    writer->printf("2 ID:%lu %s %s\n",soul->kia_tpms_id[1], fr_pressure, fr_temp);
-
-  if (*rl_pressure != '-')
-    writer->printf("3 ID:%lu %s %s\n",soul->kia_tpms_id[2], rl_pressure, rl_temp);
-
-  if (*rr_pressure != '-')
-    writer->printf("4 ID:%lu %s %s\n",soul->kia_tpms_id[3], rr_pressure, rr_temp);
+  if (StdMetrics.ms_v_tpms_pressure->IsDefined())
+    {
+    const std::string& rr_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_RR, "-", kPa, 1);
+    const std::string& rr_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_RR, "-", Celcius, 1);
+    writer->printf("4 ID:%" PRIu32 " %s %s\n",soul->kia_tpms_id[3], rr_pressure.c_str(), rr_temp.c_str());
+    }
   }
-
 
 /**
  * Print out information of the current trip.
@@ -356,44 +362,52 @@ void xks_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 
   writer->printf("TRIP\n");
 
-  // Trip distance
-  const char* distance = StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
   // Consumption
   float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit);
   float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
-  // Discharge
-  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", kWh, 1).c_str();
-  // Recuperation
-  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", kWh, 1).c_str();
   // Total consumption
   float totalConsumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) + StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh);
-  // ODO
-  const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
 
-  if (*distance != '-')
-    writer->printf("Dist %s\n", distance);
+  // Trip distance
+  if (StdMetrics.ms_v_pos_trip->IsDefined())
+    {
+    const std::string& distance = StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1);
+    writer->printf("Dist %s\n", distance.c_str());
+    }
 
   if(MyConfig.GetParamValue("vehicle", "units.distance") == "M")
-  		{
+    {
     writer->printf("Cons %.*fkWh/100mi\n", 2, consumption);
     writer->printf("Cons %.*fmi/kWh\n", 2, consumption2);
-  		}
+    }
   else
-  		{
+    {
     writer->printf("Cons %.*fkWh/100km\n", 2, consumption);
     writer->printf("Cons %.*fkm/kWh\n", 2, consumption2);
-  		}
+    }
 
-  if (*discharge != '-')
-    writer->printf("Disc %s\n", discharge);
+  // Discharge
+  if (StdMetrics.ms_v_bat_energy_used->IsDefined())
+    {
+    const std::string& discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", kWh, 1);
+    writer->printf("Disc %s\n", discharge.c_str());
+    }
 
-  if (*recuparation != '-')
-    writer->printf("Rec %s\n", recuparation);
+  // Recuperation
+  if (StdMetrics.ms_v_bat_energy_recd->IsDefined())
+    {
+    const std::string& recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", kWh, 1);
+    writer->printf("Rec %s\n", recuparation.c_str());
+    }
 
   writer->printf("Tot %.*fkWh\n", 2, totalConsumption);
 
-  if (*ODO != '-')
-    writer->printf("ODO %s\n", ODO);
+  // ODO
+  if (StdMetrics.ms_v_pos_odometer->IsDefined())
+    {
+    const std::string& ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1);
+    writer->printf("ODO %s\n", ODO.c_str());
+    }
   }
 
 /**
@@ -413,22 +427,18 @@ void xks_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 
   writer->printf("TRIP SINCE CHARGE\n");
 
-  // Trip distance
-  const char* distance = soul->ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
   // Consumption
   float consumption = soul->ms_v_trip_energy_used->AsFloat(kWh) * 100 / soul->ms_v_pos_trip->AsFloat(rangeUnit);
   float consumption2 = soul->ms_v_pos_trip->AsFloat(rangeUnit) / soul->ms_v_trip_energy_used->AsFloat(kWh);
-  // Discharge
-  const char* discharge = soul->ms_v_trip_energy_used->AsUnitString("-", kWh, 1).c_str();
-  // Recuperation
-  const char* recuparation = soul->ms_v_trip_energy_recd->AsUnitString("-", kWh, 1).c_str();
   // Total consumption
   float totalConsumption = soul->ms_v_trip_energy_used->AsFloat(kWh) + soul->ms_v_trip_energy_recd->AsFloat(kWh);
-  // ODO
-  const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
 
-  if (*distance != '-')
-    writer->printf("Dist %s\n", distance);
+  // Trip distance
+  if (soul->ms_v_pos_trip->IsDefined())
+    {
+    const std::string& distance = soul->ms_v_pos_trip->AsUnitString("-", rangeUnit, 1);
+    writer->printf("Dist %s\n", distance.c_str());
+    }
 
   if(MyConfig.GetParamValue("vehicle", "units.distance") == "M")
   		{
@@ -441,14 +451,26 @@ void xks_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
     writer->printf("Cons %.*fkm/kWh\n", 2, consumption2);
   		}
 
-  if (*discharge != '-')
-    writer->printf("Disc %s\n", discharge);
+  // Discharge
+  if (soul->ms_v_trip_energy_used->IsDefined())
+    {
+    const std::string& discharge = soul->ms_v_trip_energy_used->AsUnitString("-", kWh, 1);
+    writer->printf("Disc %s\n", discharge.c_str());
+    }
 
-  if (*recuparation != '-')
-    writer->printf("Rec %s\n", recuparation);
+  // Recuperation
+  if (soul->ms_v_trip_energy_recd->IsDefined())
+    {
+    const std::string& recuparation = soul->ms_v_trip_energy_recd->AsUnitString("-", kWh, 1);
+    writer->printf("Rec %s\n", recuparation.c_str());
+    }
 
   writer->printf("Tot %.*fkWh\n", 2, totalConsumption);
 
-  if (*ODO != '-')
-    writer->printf("ODO %s\n", ODO);
+  // ODO
+  if (StdMetrics.ms_v_pos_odometer->IsDefined())
+    {
+    const std::string& ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1);
+    writer->printf("ODO %s\n", ODO.c_str());
+    }
   }

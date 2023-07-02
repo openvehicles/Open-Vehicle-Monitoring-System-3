@@ -34,9 +34,9 @@ static const char *TAG = "test";
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <esp_timer.h>
 #include "esp_system.h"
 #include "esp_event.h"
-#include "esp_event_loop.h"
 #include "esp_sleep.h"
 #include "test_framework.h"
 #include "ovms_command.h"
@@ -45,7 +45,9 @@ static const char *TAG = "test";
 #include "metrics_standard.h"
 #include "ovms_config.h"
 #include "can.h"
+#if ESP_IDF_VERSION_MAJOR < 4
 #include "strverscmp.h"
+#endif
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -167,6 +169,18 @@ void test_watchdog(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("Spinning now (watchdog should fire in a few minutes)");
   for (;;) {}
   writer->puts("Error: We should never get here");
+  }
+
+__attribute__((noreturn))
+void test_stackoverflow(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  uint8_t data[256];
+  memset(data, verbosity & 255, sizeof data);
+  writer->printf("Stack bytes remaining: %u\n", uxTaskGetStackHighWaterMark(NULL));
+  vTaskDelay(pdMS_TO_TICKS(250));
+  test_stackoverflow(verbosity+1, writer, cmd, argc, argv);
+  // never reached, just to inhibit tail recursion optimization:
+  writer->printf("%x\n", data[0]);
   }
 
 void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -385,6 +399,7 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("chargen","Character generator",test_chargen,"[<#lines>] [<delay_ms>]",0,2);
   cmd_test->RegisterCommand("echo", "Test getchar", test_echo);
   cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog);
+  cmd_test->RegisterCommand("stackoverflow", "Test stack overflow detection (crashes)", test_stackoverflow);
   cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc);
   cmd_test->RegisterCommand("spiram", "Test SPI RAM memory usage", test_spiram);
   cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2);

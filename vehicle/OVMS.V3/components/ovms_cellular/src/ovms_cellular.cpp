@@ -79,12 +79,16 @@ const char* ModemNetRegName(modem::network_registration_t netreg)
   {
   switch (netreg)
     {
-    case modem::NotRegistered:       return "NotRegistered";
-    case modem::Searching:           return "Searching";
-    case modem::DeniedRegistration:  return "DeniedRegistration";
-    case modem::RegisteredHome:      return "RegisteredHome";
-    case modem::RegisteredRoaming:   return "RegisteredRoaming";
-    default:                         return "Unknown";
+    case modem::NotRegistered:               return "NotRegistered";
+    case modem::DeniedRegistration:          return "DeniedRegistration";
+    case modem::Searching:                   return "Searching";
+    case modem::Registered:                  return "Registered";
+    case modem::RegisteredEmergencyServices: return "RegisteredEmergencyServices";
+    case modem::RegisteredRoamingSMS:        return "RegisteredRoamingSMS";
+    case modem::RegisteredRoaming:           return "RegisteredRoaming";
+    case modem::RegisteredHomeSMS:           return "RegisteredHomeSMS";
+    case modem::RegisteredHome:              return "RegisteredHome";
+    default:                                 return "Unknown";
     };
   }
 
@@ -112,10 +116,14 @@ void modem::Task()
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = 122,
+#if ESP_IDF_VERSION_MAJOR < 5
     .use_ref_tick = 0,
+#else
+    .source_clk = UART_SCLK_DEFAULT,
+#endif
     };
   uart_param_config(m_uartnum, &uart_config);
-  uart_set_pin(m_uartnum, m_txpin, m_rxpin, 0, 0);
+  uart_set_pin(m_uartnum, m_txpin, m_rxpin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
   uart_driver_install(m_uartnum,
     CONFIG_OVMS_HW_CELLULAR_MODEM_UART_SIZE,
     CONFIG_OVMS_HW_CELLULAR_MODEM_UART_SIZE,
@@ -241,11 +249,20 @@ void modem::Task()
           }
         }
       }
+    
+    if (m_state1 == PoweredOff && MyBoot.IsShuttingDown())
+      {
+      m_task = 0;
+      }
     }
 
   // Shutdown:
-  uart_driver_delete(m_uartnum);
+  ESP_LOGD(TAG, "UART shutdown");
   m_queue = 0;
+  uart_wait_tx_done(m_uartnum, portMAX_DELAY);
+  uart_flush(m_uartnum);
+  uart_driver_delete(m_uartnum);
+  if (MyBoot.IsShuttingDown()) MyBoot.ShutdownReady(TAG);
   vTaskDelete(NULL);
   }
 
@@ -272,6 +289,7 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_line_unfinished = -1;
   m_line_buffer.clear();
   m_netreg = Unknown;
+  for (size_t k=0; k<CELLULAR_NETREG_COUNT; k++) { m_netreg_d[k] = Unknown; }
   m_provider = "";
   m_sq = 99; // Unknown
   m_powermode = Off;
@@ -285,6 +303,8 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_mux = NULL;
   m_ppp = NULL;
   m_driver = NULL;
+  m_cmd_running = false;
+  m_cmd_output.clear();
 
   ClearNetMetrics();
   StartTask();
@@ -402,6 +422,9 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
       m_provider.c_str(),
       UnitConvert(sq, dbm, m_sq),
       StandardMetrics.ms_m_net_mdm_mode->AsString().c_str());
+    // writer->printf("    GSM Registration:   %s\n",ModemNetRegName(m_netreg_d[NRT_GSM]));
+    // writer->printf("    GPRS Registration:  %s\n",ModemNetRegName(m_netreg_d[NRT_GPRS]));
+    // writer->printf("    EPS Registration:   %s\n",ModemNetRegName(m_netreg_d[NRT_EPS]));
     }
 
   writer->printf("  State: %s\n", ModemState1Name(m_state1));
@@ -437,10 +460,10 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
     if (debug)
       {
       writer->printf("    Open Channels: %d\n", m_mux->m_openchannels);
-      writer->printf("    Framing Errors: %d\n", m_mux->m_framingerrors);
-      writer->printf("    RX frames: %d\n", m_mux->m_rxframecount);
-      writer->printf("    TX frames: %d\n", m_mux->m_txframecount);
-      writer->printf("    Last RX frame: %d sec(s) ago\n", m_mux->GoodFrameAge());
+      writer->printf("    Framing Errors: %" PRId32 "\n", m_mux->m_framingerrors);
+      writer->printf("    RX frames: %" PRId32 "\n", m_mux->m_rxframecount);
+      writer->printf("    TX frames: %" PRId32 "\n", m_mux->m_txframecount);
+      writer->printf("    Last RX frame: %" PRId32 " sec(s) ago\n", m_mux->GoodFrameAge());
       }
     }
   else
@@ -452,17 +475,24 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
     {
     writer->puts("  PPP: Not running");
     }
-  else if (m_ppp->m_connected)
-    {
-    writer->printf("  PPP: Connected on channel: #%d\n", m_ppp->m_channel);
-    }
   else
     {
-    writer->puts("  PPP: Not connected");
-    }
-  if ((m_ppp != NULL)&&(m_ppp->m_lasterrcode > 0))
-    {
-    writer->printf("     Last Error: %s\n", m_ppp->ErrCodeName(m_ppp->m_lasterrcode));
+    if (m_ppp->m_connected)
+      {
+      writer->printf("  PPP: Connected on channel: #%d\n", m_ppp->m_channel);
+      }
+    else
+      {
+      writer->puts("  PPP: Not connected");
+      }
+    if (debug)
+      {
+      writer->printf("     Connects: %d\n", m_ppp->m_connectcount);
+      }
+    if (m_ppp->m_lasterrcode > 0)
+      {
+      writer->printf("     Last Error: %s\n", m_ppp->ErrCodeName(m_ppp->m_lasterrcode));
+      }
     }
 
   if (m_nmea==NULL)
@@ -652,7 +682,6 @@ void modem::State1Enter(modem_state1_t newstate)
     case PoweredOff:
       ClearNetMetrics();
       MyEvents.SignalEvent("system.modem.poweredoff", NULL);
-      if (MyBoot.IsShuttingDown()) MyBoot.ShutdownReady(TAG);
       StopMux();
       if (m_driver)
         {
@@ -832,7 +861,7 @@ modem::modem_state1_t modem::State1Ticker1()
       if (m_mux != NULL)
         {
         if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-          { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+          { m_driver->StatusPoller(); }
         if (m_mux->IsMuxUp())
           return NetWait;
         }
@@ -850,10 +879,10 @@ modem::modem_state1_t modem::State1Ticker1()
         if ((!MyConfig.GetParamValueBool("modem", "enable.net", true))||(p.empty()))
           return NetHold; // Just hold, without starting PPP
         }
-      else if ((m_state1_ticker > 3)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
+      else if ((m_state1_ticker > 3)&&((m_netreg >= Registered)))
         return NetStart; // We have GSM, so start the network
       if ((m_mux != NULL)&&(m_state1_ticker>3)&&((m_state1_ticker % 10) == 0))
-        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { m_driver->StatusPoller(); }
       break;
 
     case NetStart:
@@ -889,14 +918,14 @@ modem::modem_state1_t modem::State1Ticker1()
 
     case NetHold:
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { m_driver->StatusPoller(); }
       break;
 
     case NetSleep:
       if (m_powermode == On) return NetWait;
       if (m_powermode != Sleep) return PoweringOn;
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { m_driver->StatusPoller(); }
       break;
 
     case NetMode:
@@ -905,7 +934,7 @@ modem::modem_state1_t modem::State1Ticker1()
         // Need to shutdown ppp, and get back to NetSleep mode
         return NetSleep;
         }
-      if ((m_netreg!=RegisteredHome)&&(m_netreg!=RegisteredRoaming))
+      if (m_netreg < Registered)
         {
         // We've lost the network connection
         ESP_LOGW(TAG, "Lost network connection (NetworkRegistration in NetMode)");
@@ -988,6 +1017,12 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
   if (line.length() == 0)
     return;
 
+  if ((m_cmd_running)&&(channel == m_mux_channel_CMD))
+    {
+    m_cmd_output.append(line);
+    m_cmd_output.append("\r\n");
+    }
+
   // expecting continuation of previous line?
   if (m_line_unfinished == channel)
     {
@@ -1002,12 +1037,15 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     line = m_line_buffer;
     }
 
-  const char *cp = line.c_str();
-  if ((line.length()>2)&&(cp[0]!='$')&&(cp[1])!='G')
+  if (line.compare(0, 2, "$G") == 0)
     {
-    // Log incoming data other than GPS NMEA
-    ESP_LOGD(TAG, "mux-rx-line #%d: %s", channel, line.c_str());
+    // GPS NMEA URC:
+    if (m_nmea) m_nmea->IncomingLine(line);
+    return;
     }
+
+  // Log incoming data other than GPS NMEA
+  ESP_LOGD(TAG, "mux-rx-line #%d: %s", channel, line.c_str());
 
   if ((line.compare(0, 8, "CONNECT ") == 0)&&(m_state1 == NetStart)&&(m_state1_userdata == 1))
     {
@@ -1047,26 +1085,57 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
       creg = atoi(line.substr(7,1).c_str());
     switch (creg)
       {
-      case 0:
-      case 4:
-        nreg = NotRegistered;
-        break;
-      case 1:
-        nreg = RegisteredHome;
-        break;
-      case 2:
-        nreg = Searching;
-        break;
-      case 3:
-        nreg = DeniedRegistration;
-        break;
-      case 5:
-        nreg = RegisteredRoaming;
-        break;
-      default:
-        break;
+      case 0: case 4: nreg = NotRegistered; break;
+      case 1:         nreg = RegisteredHome; break;
+      case 2:         nreg = Searching; break;
+      case 3:         nreg = DeniedRegistration; break;
+      case 5:         nreg = RegisteredRoaming; break;
+      default:        break;
       }
-    SetNetworkRegistration(nreg);
+    SetNetworkRegistration(NRT_GSM, nreg);
+    }
+  else if (line.compare(0, 8, "+CGREG: ") == 0)
+    {
+    size_t qp = line.find(',');
+    int creg;
+    network_registration_t nreg = Unknown;
+    if (qp != string::npos)
+      creg = atoi(line.substr(qp+1,1).c_str());
+    else
+      creg = atoi(line.substr(7,1).c_str());
+    switch (creg)
+      {
+      case 0: case 4: nreg = NotRegistered; break;
+      case 1:         nreg = RegisteredHome; break;
+      case 2:         nreg = Searching; break;
+      case 3:         nreg = DeniedRegistration; break;
+      case 5:         nreg = RegisteredRoaming; break;
+      default:        break;
+      }
+    SetNetworkRegistration(NRT_GPRS, nreg);
+    }
+  else if (line.compare(0, 8, "+CEREG: ") == 0)
+    {
+    size_t qp = line.find(',');
+    int creg;
+    network_registration_t nreg = Unknown;
+    if (qp != string::npos)
+      creg = atoi(line.substr(qp+1,1).c_str());
+    else
+      creg = atoi(line.substr(7,1).c_str());
+    switch (creg)
+      {
+      case 0: case 4: nreg = NotRegistered; break;
+      case 1:         nreg = RegisteredHome; break;
+      case 2:         nreg = Searching; break;
+      case 3:         nreg = DeniedRegistration; break;
+      case 5:         nreg = RegisteredRoaming; break;
+      case 6:         nreg = RegisteredHomeSMS; break;
+      case 7:         nreg = RegisteredRoamingSMS; break;
+      case 8:         nreg = RegisteredEmergencyServices; break;
+      default:        break;
+      }
+    SetNetworkRegistration(NRT_EPS, nreg);
     }
   else if (line.compare(0, 7, "+CPSI: ") == 0)
     {
@@ -1074,7 +1143,13 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     if (qp != string::npos)
       { qp = line.find(',',qp+1); }
     if (qp != string::npos)
-      { StandardMetrics.ms_m_net_mdm_mode->SetValue(line.substr(7,qp-7)); }
+      {
+      std::string netmode = line.substr(7,qp-7);
+      if (StandardMetrics.ms_m_net_mdm_mode->SetValue(netmode))
+        {
+        ESP_LOGI(TAG, "Network Mode: %s", netmode.c_str());
+        }
+      }
     }
   else if (line.compare(0, 7, "+COPS: ") == 0)
     {
@@ -1128,15 +1203,22 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     }
   else if (line.compare(0, 30, "+CME ERROR: incorrect password") == 0)
     {
+    std::string pincode = MyConfig.GetParamValue("modem", "pincode");
     ESP_LOGE(TAG,"Wrong PIN code entered!");
     MyEvents.SignalEvent("system.modem.wrongpingcode", NULL);
-    MyNotify.NotifyStringf("alert", "modem.wrongpincode", "Wrong pin code (%s) entered!", MyConfig.GetParamValue("modem", "pincode"));
+    MyNotify.NotifyStringf("alert", "modem.wrongpincode", "Wrong pin code (%s) entered!", pincode.c_str());
     MyConfig.SetParamValueBool("modem","wrongpincode",true);
+    }
+  else if (line.compare(0, 28, "+CME ERROR: SIM not inserted") == 0)
+    {
+    ESP_LOGE(TAG,"SIM not inserted!");
+    MyEvents.SignalEvent("system.modem.simnotinserted", NULL);
+    StandardMetrics.ms_m_net_mdm_iccid->SetValue(line.substr(12));
     }
 
   // MMI/USSD response (URC):
-  //  sent on all free channels, so we only process m_mux_channel_CMD
-  else if (channel == m_mux_channel_CMD && line.compare(0, 7, "+CUSD: ") == 0)
+  //  sent on all free channels or only on POLL, so we only process m_mux_channel_POLL
+  else if (channel == m_mux_channel_POLL && line.compare(0, 7, "+CUSD: ") == 0)
     {
     // Format: +CUSD: 0,"…msg…",15
     // The message string may contain CR/LF so can come on multiple lines, with unknown length
@@ -1280,7 +1362,7 @@ void modem::StartTask()
   if (!m_task)
     {
     ESP_LOGV(TAG, "Starting modem task");
-    xTaskCreatePinnedToCore(MODEM_task, "OVMS Cellular", CONFIG_OVMS_HW_CELLULAR_MODEM_STACK_SIZE, (void*)this, 20, &m_task, CORE(0));
+    xTaskCreatePinnedToCore(MODEM_task, "OVMS Cellular", CONFIG_OVMS_HW_CELLULAR_MODEM_STACK_SIZE, (void*)this, 20, (TaskHandle_t*)&m_task, CORE(0));
     }
   }
 
@@ -1298,27 +1380,42 @@ void modem::StopTask()
     }
   }
 
-void modem::StartNMEA()
+bool modem::StartNMEA(bool force /*=false*/)
   {
   if ( (m_nmea == NULL) &&
-       (MyConfig.GetParamValueBool("modem", "enable.gps", false)) )
+       (force || MyConfig.GetParamValueBool("modem", "enable.gps", false)) )
     {
-    ESP_LOGV(TAG, "Starting NMEA");
-    m_nmea = new GsmNMEA(m_mux, m_mux_channel_NMEA, m_mux_channel_CMD);
-    m_nmea->Startup();
-    m_driver->StartupNMEA();
+    if (!m_mux || !m_driver)
+      {
+      ESP_LOGE(TAG, "StartNMEA failed: MUX or driver not available");
+      }
+    else
+      {
+      ESP_LOGV(TAG, "Starting NMEA");
+      m_nmea = new GsmNMEA(m_mux, m_mux_channel_NMEA, m_mux_channel_CMD);
+      m_nmea->Startup();
+      m_driver->StartupNMEA();
+      }
     }
+  return (m_nmea != NULL);
   }
 
 void modem::StopNMEA()
   {
   if (m_nmea != NULL)
     {
-    ESP_LOGV(TAG, "Stopping NMEA");
-    m_driver->ShutdownNMEA();
-    m_nmea->Shutdown();
-    delete m_nmea;
-    m_nmea = NULL;
+    if (!m_mux || !m_driver)
+      {
+      ESP_LOGE(TAG, "StopNMEA failed: MUX or driver not available");
+      }
+    else
+      {
+      ESP_LOGV(TAG, "Stopping NMEA");
+      m_driver->ShutdownNMEA();
+      m_nmea->Shutdown();
+      delete m_nmea;
+      m_nmea = NULL;
+      }
     }
   }
 
@@ -1393,7 +1490,8 @@ void modem::Ticker(std::string event, void* data)
 
   ev.event.type = TICKER1;
 
-  xQueueSend(m_queue,&ev,0);
+  QueueHandle_t queue = m_queue;
+  if (queue) xQueueSend(queue,&ev,0);
   }
 
 void modem::EventListener(std::string event, void* data)
@@ -1421,17 +1519,7 @@ void modem::IncomingMuxData(GsmMuxChannel* channel)
     }
   else if (channel->m_channel == m_mux_channel_NMEA)
     {
-    if (m_nmea != NULL)
-      {
-      while (channel->m_buffer.HasLine() >= 0)
-        {
-        m_nmea->IncomingLine(channel->m_buffer.ReadLine());
-        }
-      }
-    else
-      {
-      channel->m_buffer.EmptyAll();
-      }
+    StandardIncomingHandler(channel->m_channel, &channel->m_buffer);
     }
   else if (channel->m_channel == m_mux_channel_DATA)
     {
@@ -1470,7 +1558,8 @@ void modem::SendSetState1(modem_state1_t newstate)
   ev.event.type = SETSTATE;
   ev.event.data.newstate = newstate;
 
-  xQueueSend(m_queue,&ev,0);
+  QueueHandle_t queue = m_queue;
+  if (queue) xQueueSend(queue,&ev,0);
   }
 
 bool modem::IsStarted()
@@ -1478,14 +1567,25 @@ bool modem::IsStarted()
   return (m_task != NULL);
   }
 
-void modem::SetNetworkRegistration(network_registration_t netreg)
+void modem::SetNetworkRegistration(network_regtype_t regtype, network_registration_t netreg)
   {
-  if (netreg != m_netreg)
+  if (netreg != m_netreg_d[regtype])
     {
-    m_netreg = netreg;
-    const char *v = ModemNetRegName(m_netreg);
-    ESP_LOGI(TAG, "Network Registration status: %s", v);
-    StdMetrics.ms_m_net_mdm_netreg->SetValue(v);
+    m_netreg_d[regtype] = netreg;
+
+    // Need to re-calculate m_netreg as best of these
+    network_registration_t highest = Unknown;
+    for (size_t k=0; k<CELLULAR_NETREG_COUNT; k++)
+      {
+      if (highest < m_netreg_d[k]) highest = m_netreg_d[k];
+      }
+    if (highest != m_netreg)
+      {
+      m_netreg = highest;
+      const char *v = ModemNetRegName(m_netreg);
+      ESP_LOGI(TAG, "Network Registration status: %s", v);
+      StdMetrics.ms_m_net_mdm_netreg->SetValue(v);
+      }
     }
   }
 
@@ -1513,7 +1613,7 @@ void modem::SetSignalQuality(int newsq)
   if (m_sq != newsq)
     {
     m_sq = newsq;
-    ESP_LOGI(TAG, "Signal Quality is: %d (%d dBm)", m_sq, UnitConvert(sq, dbm, m_sq));
+    ESP_LOGD(TAG, "Signal Quality is: %d (%d dBm)", m_sq, UnitConvert(sq, dbm, m_sq));
     StdMetrics.ms_m_net_mdm_sq->SetValue(m_sq, sq);
     if (StdMetrics.ms_m_net_type->AsString() == "modem")
       {
@@ -1525,6 +1625,7 @@ void modem::SetSignalQuality(int newsq)
 void modem::ClearNetMetrics()
   {
   m_netreg = Unknown;
+  for (size_t k=0; k<CELLULAR_NETREG_COUNT; k++) { m_netreg_d[k] = Unknown; }
   StdMetrics.ms_m_net_mdm_netreg->Clear();
 
   m_provider = "";
@@ -1587,6 +1688,10 @@ void cellular_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 void cellular_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string msg;
+
+  MyModem->m_cmd_output.clear();
+  MyModem->m_cmd_running = true;
+
   for (int k=0; k<argc; k++)
     {
     if (k>0)
@@ -1596,14 +1701,31 @@ void cellular_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     msg.append(argv[k]);
     }
   msg.append("\r\n");
-  bool sent = MyModem->txcmd(msg.c_str(),msg.length());
+  if (!MyModem->txcmd(msg.c_str(),msg.length()))
+    {
+    if (verbosity >= COMMAND_RESULT_MINIMAL)
+      {
+      writer->puts("ERROR: MODEM command channel not available!");
+      }
+    return;
+    }
+
+  // Wait for output to stabilise
+  size_t cmdsize = UINT_MAX;
+  size_t iter = 0;
+  while ((MyModem->m_cmd_output.size() != cmdsize) && (iter < 5))
+    {
+    iter++;
+    cmdsize = MyModem->m_cmd_output.size();
+    vTaskDelay(pdMS_TO_TICKS(500));
+    }
+
+  MyModem->m_cmd_running = false;
   if (verbosity >= COMMAND_RESULT_MINIMAL)
     {
-    if (sent)
-      writer->puts("MODEM command has been sent.");
-    else
-      writer->puts("ERROR: MODEM command channel not available!");
+    writer->write(MyModem->m_cmd_output.c_str(), MyModem->m_cmd_output.size());
     }
+  MyModem->m_cmd_output.clear();
   }
 
 void cellular_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -1634,6 +1756,53 @@ void modem_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   writer->printf("Error: Unrecognised state %s\n",statename);
+  }
+
+void modem_gps_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->printf("GPS status: autostart %s, currently %s.\n",
+    MyConfig.GetParamValueBool("modem", "enable.gps", false) ? "enabled" : "disabled",
+    (MyModem && MyModem->m_nmea) ? "running" : "not running");
+  }
+
+void modem_gps_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyModem || !MyModem->m_mux || !MyModem->m_mux->IsMuxUp())
+    {
+    writer->puts("ERROR: Modem not ready");
+    return;
+    }
+  if (MyModem->m_nmea)
+    {
+    writer->puts("GPS already running.");
+    return;
+    }
+
+  if (MyModem->StartNMEA(true))
+    {
+    writer->puts("GPS started (may take a minute to find satellites).");
+    }
+  else
+    {
+    writer->puts("ERROR: GPS startup failed.");
+    }
+  }
+
+void modem_gps_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyModem || !MyModem->m_mux || !MyModem->m_mux->IsMuxUp())
+    {
+    writer->puts("ERROR: Modem not ready");
+    return;
+    }
+  if (!MyModem->m_nmea)
+    {
+    writer->puts("GPS already stopped.");
+    return;
+    }
+
+  MyModem->StopNMEA();
+  writer->puts("GPS stopped.");
   }
 
 void cellular_drivers(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -1690,6 +1859,11 @@ CellularModemInit::CellularModemInit()
     {
     cmd_setstate->RegisterCommand(ModemState1Name((modem::modem_state1_t)x),"Force CELLULAR MODEM state change",modem_setstate);
     }
+
+  OvmsCommand* cmd_gps = cmd_cellular->RegisterCommand("gps", "GPS/GNSS state control", modem_gps_status);
+  cmd_gps->RegisterCommand("status", "GPS/GNSS status", modem_gps_status);
+  cmd_gps->RegisterCommand("start", "Start GPS/GNSS", modem_gps_start);
+  cmd_gps->RegisterCommand("stop", "Stop GPS/GNSS", modem_gps_stop);
 
   MyConfig.RegisterParam("modem", "Modem Configuration", true, true);
   // Our instances:

@@ -38,8 +38,11 @@ static const char *TAG = "peripherals";
 #include "ovms_command.h"
 #include "esp_intr_alloc.h"
 #include "driver/gpio.h"
-#include "esp_intr.h"
 #include "ovms_peripherals.h"
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_mac.h>
+#endif
 
 Peripherals::Peripherals()
   {
@@ -64,8 +67,15 @@ Peripherals::Peripherals()
         mac_addr[3], mac_addr[4], mac_addr[5]);
       }
     }
+#if ESP_IDF_VERSION_MAJOR >= 4
+  ESP_LOGI(TAG, "  ESP-NETIF");
+  ESP_ERROR_CHECK(esp_netif_init());
+  esp_netif_create_default_wifi_sta();
+  esp_netif_create_default_wifi_ap();
+#else
   ESP_LOGI(TAG, "  TCP/IP Adaptor");
   tcpip_adapter_init();
+#endif
 #endif // #if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_CELLULAR)
 
   gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
@@ -134,7 +144,8 @@ Peripherals::Peripherals()
 
 #ifdef CONFIG_OVMS_COMP_ADC
   ESP_LOGI(TAG, "  ESP32 ADC");
-  m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_12Bit, ADC_ATTEN_11db);
+  m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_BIT_12, ADC_ATTEN_DB_11);
+
 #endif // #ifdef CONFIG_OVMS_COMP_ADC
 
 #ifdef CONFIG_OVMS_COMP_MCP2515
@@ -190,4 +201,7 @@ Peripherals::Peripherals()
 
 Peripherals::~Peripherals()
   {
+#if ESP_IDF_VERSION_MAJOR >= 4
+  esp_netif_deinit();
+#endif
   }

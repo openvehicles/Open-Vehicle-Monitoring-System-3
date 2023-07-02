@@ -13,12 +13,22 @@ The Comfort CAN also provides data in more cases without turning on the car or c
 
 For the full experience, making both connections is recommended.
 
+
+----------
+Using OBD2
+----------
+
 Connection to OBD2 is done with the standard OVMS OBD2-cable just below the fuses left of the driving pedals:
 
 .. image:: 1441200-3.jpeg
     :width: 480px
 .. image:: DSC00369_1024.JPG
     :width: 480px
+
+
+-----------------
+Using Comfort CAN
+-----------------
 
 Connection to Comfort CAN can be done by removing the OCU below the passenger seat using a custom 26-pin adapter cable to the T26A plug (advantage: the connections for the GSM & GPS-antennas of the car can be used using a Fakra-SMA adapter):
 
@@ -42,29 +52,156 @@ gain access to the rear screws.
 The T26a plug is secured by the white clamp, open it fully to the left 
 to unplug.
 
-If both connections are to be made simultaneously, an adapter cable has to be made with the following connections:
+
+----------------------
+Using both Connections
+----------------------
+
+This document shows two options to use both connections:
+
+1. Variant 1 connects to the Comfort CAN using the OCU T26A connector.
+2. Variant 2 connects to the Comfort CAN by tapping the Comfort CAN cables.
+
+Both variants allow keeping the OCU in place. If you intend to replace the
+OCU by the OVMS and reuse the OCU antennas for the OVMS, variant 1 will
+probably be the better choice.
+
+
+~~~~~~~~~
+Variant 1
+~~~~~~~~~
+
+**Connecting to the Comfort CAN using the OCU T26A connector**
+
+You need to establish a connection between the OBD2 and the OCU ports. 
+If installing the OVMS near the OBD2 port, you need to make a cable to 
+connect to the T26A plug (or tap into the T26A cable there). If 
+installing the OVMS replacing the OCU, you need to connect the OBD2 
+CAN bus from there.
+
+An adapter cable has to be made with the following connections:
 
 .. image:: DSC00373_1024.JPG
     :width: 480px
 
-The cable used between the OBD plug and the DB9-F plug needs to be twisted to avoid transmission problems. A good cable to use here is a CAT-5 or CAT-6 double shielded network cable. Be shure to not only connect CAN hi and CAN lo, but also connect ground.
+The cable used between the OBD plug and the DB9-F plug needs to be 
+twisted to avoid transmission problems. A good cable to use here is a 
+CAT-5 or CAT-6 double shielded network cable. Be sure to not only 
+connect CAN hi and CAN lo, but also connect ground.
 
 === === ===== ===========================
 T26 OBD DB9-F Signal
 === === ===== ===========================
-26  4   3	  Chassis / Power GND
-.   14  2	  can1 L (Can Low)
-.   6   7	  can1 H (Can High)
-.   .   4	  can2 L (Can Low, not used)
-.   .   5	  can2 H (Can High, not used)
-2   .   6	  can3 L (Comfort-can Low)
-14  .   8	  can3 H (Comfort-can High)
-1   .   9	  +12V Vehicle Power
+26  4   3	    Chassis / Power GND
+.   14  2	    can1 L (OBD2 CAN Low)
+.   6   7	    can1 H (OBD2 CAN High)
+.   .   4	    can2 L (not used)
+.   .   5	    can2 H (not used)
+2   .   6	    can3 L (Comfort-CAN Low)
+14  .   8	    can3 H (Comfort-CAN High)
+1   .   9	    +12V Vehicle Power
 === === ===== ===========================
 
 **Important note**: the VW T26a pin numbering scheme does not follow 
 the IT standard (zig zag) but instead has pins 1-13 left to right on 
 the top and 14-26 left to right on the bottom row. See image above.
+
+
+~~~~~~~~~
+Variant 2
+~~~~~~~~~
+
+**Connecting to the Comfort CAN by tapping the Comfort CAN cables**
+
+Description & images by courtesy of GE user donaldduck8.
+
+This approach installs the OVMS near the OBD2 port and keeps the OCU in
+place. Advantages:
+
+1. The OCU remains untouched and can be switched on/off as needed (fuse SD1)
+2. No need to unmount the passenger seat
+3. The OVMS can be disabled/enabled any time simply via the OBD2 plug
+
+The OVMS will be mounted on the driver side behind the footwell panel near
+the OBD2 port. The Comfort CAN signal will be taken by tapping the cables
+behind the passenger's footwell panel.
+
+The cable used needs to be twisted to avoid transmission problems. A good
+cable to use here is a CAT-5 or CAT-6 double shielded network cable.
+A network cable has four pairs, you will only need one pair here.
+We recommend connecting the shielding as well to avoid issues.
+
+To connect to the OVMS, you can use either a custom DB9 plug or add a
+DA26 connector. You need to connect to CAN3.
+
+============= === ===== ===== ===========================
+Comfort CAN   OBD DB9-F DA26  Signal
+============= === ===== ===== ===========================
+.             4   3     8     Chassis / Power GND
+.             14  2     5     can1 L (OBD2 CAN Low)
+.             6   7     15    can1 H (OBD2 CAN High)
+.             12  4     7     can2 L (not used)
+.             13  5     17    can2 H (not used)
+orange/brown  .   6     6     can3 L (Comfort-CAN Low)
+orange/green  .   8     16    can3 H (Comfort-CAN High)
+.             16  9     9     +12V Vehicle Power
+============= === ===== ===== ===========================
+
+
+**Step 1**: Remove the passenger footwell panel:
+
+.. image:: installation/IMG_8250.JPG
+    :width: 480px
+
+
+**Step 2**: Tap into the Comfort CAN:
+
+Comfort CAN is on cables orange/green (→CAN3-H) and orange/brown (→CAN3-L).
+Carefully remove a part of the isolation, solder on your twisted pair
+cables, then restore the isolation (e.g. by applying PlastiDip).
+
+.. image:: installation/IMG_8255.JPG
+    :width: 480px
+
+.. image:: installation/IMG_8260.JPG
+    :width: 480px
+
+
+**Step 3**: Lay the cable towards the fuse box & OBD2 port on the left:
+
+.. image:: installation/IMG_8265.JPG
+    :width: 480px
+
+
+**Step 4**: Use velcro tape to mount the OVMS on the side wall:
+
+.. image:: installation/IMG_8270.JPG
+    :width: 480px
+
+
+**Step 5**: Stick the GPS antenna e.g. onto the air vent pipe. To disable the OCU,
+unplug fuse SD1:
+
+.. image:: installation/IMG_8280.JPG
+    :width: 480px
+
+
+**Step 6**: Stick the GSM antenna e.g. on the lower panel's rear side:
+
+.. image:: installation/IMG_8285.JPG
+    :width: 480px
+
+
+**Finally**: Refit all panels:
+
+.. image:: installation/IMG_8275.JPG
+    :width: 480px
+
+
+
+-------------------
+Basic Configuration
+-------------------
 
 After selecting the VW e-Up vehicle module, the corresponding settings have to be made in the web interface via the "VW e-Up" menu under "Features":
 
@@ -94,6 +231,7 @@ Beware: obviously, these values have great uncertainties (in my car, the DC outp
 But e.g. the internal energy counters are very informative :)
 
 Additional custom web pages (code for the example above is below) can be defined as described here: https://docs.openvehicles.com/en/latest/plugin/README.html?highlight=web%20plugin#installing-web-plugins
+
 
 ----------------
 Support Overview
@@ -413,9 +551,9 @@ Example Code for Web Plugin with some custom metrics:
 Custom Data Logs
 ----------------
 
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 SOC Monitoring Log
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
 The SOC monitoring log provides detailed data about the correlations
 and connections between the various SOCs, voltage level & energy/coulomb

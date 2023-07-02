@@ -40,7 +40,12 @@
 #include "freertos/queue.h"
 #include "esp_heap_caps.h"
 #include "ovms_log.h"
+// Unfortunately, both the compiler includes (stdc++) and wolfssl define "byte"
+// to a different value, and the compiler is not OK with that.
+// So we hide the compiler's definition - ugly hack.
+#define byte do_not_redefine_byte
 #include "ovms_events.h"
+#undef byte
 #include "ovms_netmanager.h"
 #include "ovms_config.h"
 #include <wolfssl/wolfcrypt/memory.h>
@@ -158,6 +163,7 @@ OvmsSSH::OvmsSSH()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(tag,"network.mgr.init", std::bind(&OvmsSSH::NetManInit, this, _1, _2));
   MyEvents.RegisterEvent(tag,"network.mgr.stop", std::bind(&OvmsSSH::NetManStop, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"config.restore", std::bind(&OvmsSSH::ConfigRestore, this, _1, _2));
   MyConfig.RegisterParam("ssh.server", "SSH server private key store", true, false);
   MyConfig.RegisterParam("ssh.info", "SSH server information", false, true);
   MyConfig.RegisterParam("ssh.keys", "SSH public key store", true, true);
@@ -232,6 +238,14 @@ void OvmsSSH::NetManStop(std::string event, void* data)
     }
   }
 
+void OvmsSSH::ConfigRestore(std::string event, void* data)
+  {
+  if (RSAKeyGenerator::KillInstance())
+    {
+    ESP_LOGW(tag, "RSAKeyGenerator killed by request");
+    }
+  }
+
 int OvmsSSH::Authenticate(uint8_t type, WS_UserAuthData* data, void* ctx)
   {
   ConsoleSSH* cons = (ConsoleSSH*)ctx;
@@ -259,7 +273,7 @@ int OvmsSSH::Authenticate(uint8_t type, WS_UserAuthData* data, void* ctx)
     if (key.empty())
       return WOLFSSH_USERAUTH_INVALID_USER;
     byte der[560];
-    uint32_t len = sizeof(der);
+    word32 len = sizeof(der);
     if (Base64_Decode((const byte*)key.data(), key.size(), der, &len) != 0 ||
       len != data->sf.publicKey.publicKeySz ||
       memcmp(data->sf.publicKey.publicKey, der, len) != 0)
@@ -275,8 +289,8 @@ int OvmsSSH::Authenticate(uint8_t type, WS_UserAuthData* data, void* ctx)
 //    Class ConsoleSSH
 //-----------------------------------------------------------------------------
 
-int RecvCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx);
-int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx);
+int RecvCallback(WOLFSSH* ssh, void* data, word32 size, void* ctx);
+int SendCallback(WOLFSSH* ssh, void* data, word32 size, void* ctx);
 
 ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   {
@@ -1018,7 +1032,7 @@ ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
 // Routines to be called from within WolfSSH to receive and send data from and
 // to the network socket.
 
-int RecvCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
+int RecvCallback(WOLFSSH* ssh, void* data, word32 size, void* ctx)
   {
   ConsoleSSH* me = (ConsoleSSH*)ctx;
   return me->RecvCallback((char*)data, size);
@@ -1037,7 +1051,7 @@ int ConsoleSSH::RecvCallback(char* buf, uint32_t size)
   return len;
   }
 
-int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
+int SendCallback(WOLFSSH* ssh, void* data, word32 size, void* ctx)
   {
   mg_connection* nc = (mg_connection*)ctx;
   nc->flags |= MG_F_SEND_IMMEDIATELY;
@@ -1047,7 +1061,7 @@ int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
     if (!((ConsoleSSH*)nc->user_data)->IsDraining())
       {
       size_t free8 = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
-      ESP_LOGW(tag, "send blocked on %zu-byte packet: low free memory %zu", size, free8);
+      ESP_LOGW(tag, "send blocked on %u-byte packet: low free memory %zu", size, free8);
       }
     size = WS_CBIO_ERR_WANT_WRITE;
     }
@@ -1058,9 +1072,24 @@ int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
 //    Class RSAKeyGenerator
 //-----------------------------------------------------------------------------
 
+RSAKeyGenerator* RSAKeyGenerator::s_instance = NULL;
+
 RSAKeyGenerator::RSAKeyGenerator() : TaskBase("RSAKeyGen", 7*1024, 0)
   {
+  s_instance = this;
   Instantiate();
+  }
+
+RSAKeyGenerator::~RSAKeyGenerator()
+  {
+  s_instance = NULL;
+  }
+
+bool RSAKeyGenerator::KillInstance()
+  {
+  if (!s_instance) return false;
+  s_instance->Kill();
+  return true;
   }
 
 void RSAKeyGenerator::Service()
@@ -1104,8 +1133,8 @@ void RSAKeyGenerator::Service()
   uint32_t length[2];
   byte  exp[8];
   byte  mod[260];
-  uint32_t explen = sizeof(exp);
-  uint32_t modlen = sizeof(mod);
+  word32 explen = sizeof(exp);
+  word32 modlen = sizeof(mod);
   ret = wc_RsaFlattenPublicKey(&key, exp, &explen, mod, &modlen);
   wc_InitSha256(&sha);
   length[0] = htonl(strlen(type));

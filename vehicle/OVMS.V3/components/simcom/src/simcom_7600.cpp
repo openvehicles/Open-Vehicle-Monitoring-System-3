@@ -80,6 +80,7 @@ void simcom7600::StartupNMEA()
     {
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
     vTaskDelay(2000 / portTICK_PERIOD_MS);
+    // send single commands, as each can fail:
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=258\r\n");
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSINFOCFG=5,258\r\n");
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=1,1\r\n");
@@ -88,10 +89,52 @@ void simcom7600::StartupNMEA()
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
   }
 
+void simcom7600::ShutdownNMEA()
+  {
+  // Switch off GPS:
+  if (m_modem->m_mux != NULL)
+    {
+    // send single commands, as each can fail:
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=0\r\n");
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSINFOCFG=0\r\n");
+    vTaskDelay(pdMS_TO_TICKS(100));
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
+    }
+  else
+    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
+  }
+
 void simcom7600::StatusPoller()
   {
   if (m_modem->m_mux != NULL)
-    { m_modem->muxtx(GetMuxChannelPOLL(), "AT+CREG?;+CCLK?;+CSQ;+CPSI?;+COPS?\r\n"); }
+    {
+    // The ESP32 UART queue has a capacity of 128 bytes, NMEA and PPP data may be
+    // coming in concurrently, and we cannot use flow control.
+    // Reduce the queue stress by distributing the status poll:
+    switch (++m_statuspoller_step)
+      {
+      case 1:
+        m_modem->muxtx(GetMuxChannelPOLL(), "AT+CREG?;+CGREG?;+CEREG?;+CCLK?;+CSQ\r\n");
+        // → ~ 80 bytes, e.g.
+        //  +CREG: 1,5  +CGREG: 1,5  +CEREG: 1,5  +CCLK: "22/09/09,12:54:41+08"  +CSQ: 13,99  
+        break;
+      case 2:
+        m_modem->muxtx(GetMuxChannelPOLL(), "AT+CPSI?\r\n");
+        // → ~ 85 bytes, e.g.
+        //  +CPSI: LTE,Online,262-02,0xB0F5,13179412,448,EUTRAN-BAND1,100,4,4,-122,-1184,-874,9  
+        break;
+      case 3:
+        m_modem->muxtx(GetMuxChannelPOLL(), "AT+COPS?\r\n");
+        // → ~ 35 bytes, e.g.
+        //  +COPS: 0,0,"vodafone.de Hologram",7  
+
+        // done, fallthrough:
+        FALLTHROUGH;
+      default:
+        m_statuspoller_step = 0;
+        break;
+      }
+    }
   }
 
 void simcom7600::PowerCycle()
@@ -100,6 +143,7 @@ void simcom7600::PowerCycle()
   m_powercyclefactor = m_powercyclefactor % 3;
   ESP_LOGI(TAG, "Power Cycle (SIM7600) %dms",psd);
 
+  uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
   uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
 #ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
@@ -111,12 +155,12 @@ void simcom7600::PowerCycle()
 
 bool simcom7600::State1Leave(modem::modem_state1_t oldstate)
   {
-  return false;
+  return modemdriver::State1Leave(oldstate);
   }
 
 bool simcom7600::State1Enter(modem::modem_state1_t newstate)
   {
-  return false;
+  return modemdriver::State1Enter(newstate);
   }
 
 modem::modem_state1_t simcom7600::State1Activity(modem::modem_state1_t curstate)
@@ -130,7 +174,7 @@ modem::modem_state1_t simcom7600::State1Activity(modem::modem_state1_t curstate)
     return modem::None;
     }
 
-  return curstate;
+  return modemdriver::State1Activity(curstate);
   }
 
 modem::modem_state1_t simcom7600::State1Ticker1(modem::modem_state1_t curstate)
@@ -144,17 +188,21 @@ modem::modem_state1_t simcom7600::State1Ticker1(modem::modem_state1_t curstate)
     switch (m_modem->m_state1_ticker)
       {
       case 10:
-        m_modem->tx("AT+CPIN?;+CREG=1;+CTZU=1;+CTZR=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0;S0=0\r\n");
+        m_modem->tx("AT+CPIN?;+CREG=1;+CGREG=1;+CEREG=1;+CTZU=1;+CTZR=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0;S0=0\r\n");
         break;
       case 12:
         m_modem->tx("AT+CGMR;+ICCID\r\n");
         break;
       case 20:
-        m_modem->tx("AT+CMUX=0\r\n");
+        // start MUX mode, route URCs to MUX channel 3 (POLL)
+        // Note: NMEA URCs will now also be sent on channel 3 by the SIMCOM 7600;
+        //    without +CATR, NMEA URCs are sent identically on all channels;
+        //    there is no option to route these separately to channel 1 (NMEA)
+        m_modem->tx("AT+CMUX=0;+CATR=6\r\n");
         break;
       }
     return modem::None;
     }
 
-  return curstate;
+  return modemdriver::State1Ticker1(curstate);
   }

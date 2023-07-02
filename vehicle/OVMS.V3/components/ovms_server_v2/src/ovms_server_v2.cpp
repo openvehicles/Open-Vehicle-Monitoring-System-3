@@ -46,7 +46,9 @@ static const char *TAG = "ovms-server-v2";
 #include "esp_system.h"
 #include "ovms_utils.h"
 #include "ovms_boot.h"
+#if CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
+#endif
 
 // should this go in the .h or in the .cpp?
 typedef union {
@@ -363,7 +365,7 @@ void OvmsServerV2::ProcessServerMsg()
 
     delete pm_crypto1;
     delete pm_crypto2;
-    delete d;
+    delete[] d;
     ESP_LOGI(TAG, "Decoded Paranoid Msg: %s",line.c_str());
     }
 
@@ -721,11 +723,11 @@ void OvmsServerV2::ProcessCommand(const char* payload)
   delete buffer;
   }
 
-void OvmsServerV2::Transmit(const std::string& message)
+bool OvmsServerV2::Transmit(const std::string& message)
   {
   OvmsMutexLock mg(&m_mgconn_mutex);
   if (!m_mgconn)
-    return;
+    return false;
 
   int len = message.length();
   char* s = new char[(len*2)+4];
@@ -761,7 +763,7 @@ void OvmsServerV2::Transmit(const std::string& message)
     strcat(s,code);
     base64encode(d, len-6, (uint8_t*)s+8);
     // The messdage is now in paranoid mode...
-    delete d;
+    delete[] d;
     delete pm_crypto1;
     delete pm_crypto2;
     }
@@ -775,6 +777,7 @@ void OvmsServerV2::Transmit(const std::string& message)
 
   delete [] buf;
   delete [] s;
+  return true;
   }
 
 void OvmsServerV2::SetStatus(const char* status, bool fault, State newstate)
@@ -862,8 +865,14 @@ void OvmsServerV2::Connect()
   opts.error_string = &err;
   if (m_tls)
     {
+#if CONFIG_MG_ENABLE_SSL
     opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     opts.ssl_server_name = m_server.c_str();
+#else
+    ESP_LOGE(TAG, "mg_connect(%s) failed: SSL support disabled", address.c_str());
+    SetStatus("Error: Connection failed (SSL support disabled)", true, Undefined);
+    return;
+#endif
     }
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV2MongooseCallback, opts)) == NULL)
     {
@@ -1181,6 +1190,7 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     StandardMetrics.ms_v_pos_direction->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_altitude->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_gpslock->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_gpssq->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_gpsmode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_gpshdop->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_satcount->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1197,10 +1207,7 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
   if ((!always)&&(!modified)) return;
 
   bool stale =
-    StandardMetrics.ms_v_pos_latitude->IsStale() ||
-    StandardMetrics.ms_v_pos_longitude->IsStale() ||
-    StandardMetrics.ms_v_pos_direction->IsStale() ||
-    StandardMetrics.ms_v_pos_altitude->IsStale();
+    StandardMetrics.ms_v_pos_gpstime->IsStale();
 
   char drivemode[10];
   sprintf(drivemode, "%x", StandardMetrics.ms_v_env_drivemode->AsInt());
@@ -1243,6 +1250,8 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << StandardMetrics.ms_v_pos_gpshdop->AsString("0", Native, 1)
     << ","
     << StandardMetrics.ms_v_pos_gpsspeed->AsString("0", units_speed, 1)
+    << ","
+    << StandardMetrics.ms_v_pos_gpssq->AsInt()
     ;
 
   Transmit(buffer.str().c_str());
@@ -1610,9 +1619,15 @@ void OvmsServerV2::TransmitNotifyInfo()
     buffer
       << "MP-0 PI"
       << mp_encode(e->GetValue());
-    Transmit(buffer.str().c_str());
-
-    info->MarkRead(MyOvmsServerV2Reader, e);
+    if (Transmit(buffer.str().c_str()))
+      {
+      info->MarkRead(MyOvmsServerV2Reader, e);
+      }
+    else
+      {
+      m_pending_notify_info = true;
+      return;
+      }
     }
   }
 
@@ -1634,9 +1649,15 @@ void OvmsServerV2::TransmitNotifyError()
     buffer
       << "MP-0 PE"
       << e->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
-    Transmit(buffer.str().c_str());
-
-    alert->MarkRead(MyOvmsServerV2Reader, e);
+    if (Transmit(buffer.str().c_str()))
+      {
+      alert->MarkRead(MyOvmsServerV2Reader, e);
+      }
+    else
+      {
+      m_pending_notify_error = true;
+      return;
+      }
     }
   }
 
@@ -1658,9 +1679,15 @@ void OvmsServerV2::TransmitNotifyAlert()
     buffer
       << "MP-0 PA"
       << mp_encode(e->GetValue());
-    Transmit(buffer.str().c_str());
-
-    alert->MarkRead(MyOvmsServerV2Reader, e);
+    if (Transmit(buffer.str().c_str()))
+      {
+      alert->MarkRead(MyOvmsServerV2Reader, e);
+      }
+    else
+      {
+      m_pending_notify_alert = true;
+      return;
+      }
     }
   }
 
@@ -1704,7 +1731,13 @@ void OvmsServerV2::TransmitNotifyData()
       << -((int)(now - e->m_created) / 1000)
       << ","
       << msg;
-    Transmit(buffer.str().c_str());
+    if (!Transmit(buffer.str().c_str()))
+      {
+      m_pending_notify_data = true;
+      m_pending_notify_data_last = 0;
+      return;
+      }
+
     m_pending_notify_data_last = e->m_id;
 
     // be nice to other tasks, the network & the server:
@@ -1713,7 +1746,7 @@ void OvmsServerV2::TransmitNotifyData()
     size += buffer.str().size();
     if (now - starttime >= 300 || cnt == 5 || size >= 4000)
       {
-      ESP_LOGD(TAG, "TransmitNotifyData: used %d ms for %d records, %u bytes", now - starttime, cnt, size);
+      ESP_LOGD(TAG, "TransmitNotifyData: used %" PRId32 " ms for %d records, %u bytes", now - starttime, cnt, size);
       return;
       }
     }
@@ -1833,8 +1866,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PI"
       << mp_encode(entry->GetValue());
-    Transmit(buffer.str().c_str());
-    return true; // Mark it as read, as we've managed to send it
+    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"error")==0)
     {
@@ -1848,8 +1880,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PE"
       << entry->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
-    Transmit(buffer.str().c_str());
-    return true; // Mark it as read, as we've managed to send it
+    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"alert")==0)
     {
@@ -1863,8 +1894,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PA"
       << mp_encode(entry->GetValue());
-    Transmit(buffer.str().c_str());
-    return true; // Mark it as read, as we've managed to send it
+    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"data")==0)
     {
@@ -1892,7 +1922,7 @@ void OvmsServerV2::EventListener(std::string event, void* data)
     {
     ConfigChanged((OvmsConfigParam*) data);
     }
-  else if (event == "location.alert.flatbed.moved")
+  else if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds")
     {
     m_now_gps = true;
     }
@@ -2116,6 +2146,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"location.alert.flatbed.moved", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"location.alert.valet.bounds", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
 
   // read config:
   ConfigChanged(NULL);
@@ -2172,8 +2203,13 @@ void ovmsv2_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   if (MyOvmsServerV2 != NULL)
     {
     writer->puts("Stopping OVMS Server V2 connection (oscv2)");
-    delete MyOvmsServerV2;
+    OvmsServerV2 *instance = MyOvmsServerV2;
     MyOvmsServerV2 = NULL;
+    delete instance;
+    }
+  else
+    {
+    writer->puts("OVMS v2 server has not been started");
     }
   }
 

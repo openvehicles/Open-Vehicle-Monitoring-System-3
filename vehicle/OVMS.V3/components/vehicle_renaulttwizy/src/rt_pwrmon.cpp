@@ -504,8 +504,8 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
     if (verbosity >= COMMAND_RESULT_SMS)
     {
       writer->printf(
-        "Up %lum -%lu +%lu Wh\n"
-        "Down %lum -%lu +%lu Wh\n",
+        "Up %um -%lu +%lu Wh\n"
+        "Down %um -%lu +%lu Wh\n",
         twizy_levelpwr[CAN_LEVEL_UP].hsum,
         (twizy_levelpwr[CAN_LEVEL_UP].use + WH_RND) / WH_DIV,
         (twizy_levelpwr[CAN_LEVEL_UP].rec + WH_RND) / WH_DIV,
@@ -554,7 +554,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
       pwr = pwr_use - pwr_rec;
       if ((pwr_use > 0) && (dist > 0))
       {
-        writer->printf(" %ldWpk/%d%%",
+        writer->printf(" %ldWpk/%ld%%",
           (pwr / dist * 10000 + ((pwr>=0)?WH_RND:-WH_RND)) / WH_DIV,
           (pwr_rec / (pwr_use/1000) + 5) / 10);
       }
@@ -570,7 +570,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
       pwr = pwr_use - pwr_rec;
       if ((pwr_use > 0) && (dist > 0))
       {
-        writer->printf("\n=== %d%% %ldWpk/%d%%",
+        writer->printf("\n=== %d%% %ldWpk/%ld%%",
           prc_const,
           (pwr / dist * 10000 + ((pwr>=0)?WH_RND:-WH_RND)) / WH_DIV,
           (pwr_rec / (pwr_use/1000) + 5) / 10);
@@ -583,7 +583,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
       pwr = pwr_use - pwr_rec;
       if ((pwr_use > 0) && (dist > 0))
       {
-        writer->printf("\n+++ %d%% %.1fkps %ldWpk/%d%%",
+        writer->printf("\n+++ %d%% %.1fkps %ldWpk/%ld%%",
           prc_accel,
           (float) ((twizy_speedpwr[CAN_SPEED_ACCEL].spdcnt > 0)
               ? ((twizy_speedpwr[CAN_SPEED_ACCEL].spdsum * 10) / twizy_speedpwr[CAN_SPEED_ACCEL].spdcnt + 50) / 100
@@ -599,7 +599,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
       pwr = pwr_use - pwr_rec;
       if ((pwr_use > 0) && (dist > 0))
       {
-        writer->printf("\n--- %d%% %.1fkps %ldWpk/%d%%",
+        writer->printf("\n--- %d%% %.1fkps %ldWpk/%ld%%",
           prc_decel,
           (float) ((twizy_speedpwr[CAN_SPEED_DECEL].spdcnt > 0)
               ? ((twizy_speedpwr[CAN_SPEED_DECEL].spdsum * 10) / twizy_speedpwr[CAN_SPEED_DECEL].spdcnt + 50) / 100
@@ -622,7 +622,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
       pwr = pwr_use - pwr_rec;
       if ((pwr_use > 0) && (dist > 0))
       {
-        writer->printf("\n^^^ %dm %ldWpk/%d%%",
+        writer->printf("\n^^^ %dm %ldWpk/%ld%%",
           twizy_levelpwr[CAN_LEVEL_UP].hsum,
           (pwr / dist * 1000 + ((pwr>=0)?WH_RND:-WH_RND)) / WH_DIV,
           (pwr_rec / (pwr_use/1000) + 5) / 10);
@@ -635,7 +635,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
       pwr = pwr_use - pwr_rec;
       if ((pwr_use > 0) && (dist > 0))
       {
-        writer->printf("\nvvv %dm %ldWpk/%d%%",
+        writer->printf("\nvvv %dm %ldWpk/%ld%%",
           twizy_levelpwr[CAN_LEVEL_DOWN].hsum,
           (pwr / dist * 1000 + ((pwr>=0)?WH_RND:-WH_RND)) / WH_DIV,
           (pwr_rec / (pwr_use/1000) + 5) / 10);

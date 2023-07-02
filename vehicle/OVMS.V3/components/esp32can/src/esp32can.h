@@ -43,7 +43,7 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
-#include "esp_intr.h"
+#include "esp_intr_alloc.h"
 #include "soc/dport_reg.h"
 #include <math.h>
 
@@ -64,6 +64,7 @@ class esp32can : public canbus
 
   protected:
     esp_err_t WriteFrame(const CAN_frame_t* p_frame);
+    void BusTicker10(std::string event, void* data);
 
   public:
     void SetPowerMode(PowerMode powermode);

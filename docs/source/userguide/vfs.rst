@@ -17,7 +17,7 @@ OVMS includes a Virtual File System (VFS) used to unify all storage in the syste
   stat                 VFS Status of a file
   tail                 VFS Output tail of a file
 
-Please take care. This is a very small microcontroller based system with limited storage. The /store area should only be used for storage of configurations and small scripts. The /sd SD CARD area is more flexibly and can be used for storing of configuration logs, firmware images, etc.
+Please take care. This is a very small microcontroller based system with limited storage. The /store area should only be used for storage of configurations and small scripts. The /sd SD CARD area is more flexible and can be used for storing of configuration logs, firmware images, etc.
 
 
 --------------
@@ -34,6 +34,13 @@ SCP can access the whole file system and is read/write::
  scp leaf:/sd/backup/cfg-2019-12-05.zip .
 
 In the upload example the firmware can then be loaded with the :code:`OTA flash vfs` command
+
+.. note::
+  With OpenSSH version 9.0 (or later), the ``scp`` **protocol** has been disabled by default and
+  replaced by the ``sftp`` **protocol**. To be able to use the ``scp`` **command** with OVMS, you need
+  to re-enable the ``scp`` **protocol** with option ``-O`` on the command line::
+
+    scp -O ....
 
 The web server offers read access rooted at the sd card.
 An example retrieving that same config file from the SCP example would look like::

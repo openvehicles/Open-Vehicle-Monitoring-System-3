@@ -46,3 +46,4 @@ xji_v_bat_power_soh
 xji_v_bat_power_soh_min
 xji_v_bat_power_soh_max
 xji_v_bat_max_regen
+======================================== ======================== ============================================

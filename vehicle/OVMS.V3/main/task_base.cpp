@@ -165,10 +165,11 @@ void TaskBase::Task(void *object)
   }
 
 // This function should be overridden in the derived class to perform any
-// cleanup operations that must be done before the task is deleted.
+// cleanup operations that must be done after Service() has finished/stopped
+// and before the TaskBase instance is deleted.
 // This function should NOT be called from the destructor because it is
 // called explicitly here before the object is deleted.  That separation
-// is needed so DeleteTask can clean up before deleting the task and still
+// is needed so DeleteFromParent can clean up before deleting the task and still
 // wait to delete the object until after the task is deleted.
 void TaskBase::Cleanup()
   {
@@ -192,8 +193,21 @@ void TaskBase::DeleteFromParent()
 // parent object's task.
 void TaskBase::DeleteTask()
   {
-  Cleanup();
   if (m_taskid)
+    {
+    ESP_LOGD(TAG, "Task %s deletion at %u stack free", m_name, uxTaskGetStackHighWaterMark(m_taskid));
     vTaskDelete(m_taskid);
+    }
+  Cleanup();
   delete this;
+  }
+
+// Kill: immediate task removal and instance deletion.
+// ATT: This will terminate the running task (Service()) unconditionally!
+// This function must NOT be called from the TaskBase object's own task.
+void TaskBase::Kill()
+  {
+  if (m_parent)
+    m_parent->RemoveChild(this);
+  DeleteTask();
   }

@@ -40,12 +40,50 @@
 #include <string>
 #include <sstream>
 #include "ovms_malloc.h"
+#include "esp_idf_version.h"
+
+#if ESP_IDF_VERSION_MAJOR >= 4
+#define CONFIG_CONSOLE_UART_NUM CONFIG_ESP_CONSOLE_UART_NUM
+#define CONFIG_TASK_WDT_TIMEOUT_S CONFIG_ESP_TASK_WDT_TIMEOUT_S
+#endif
 
 #ifdef CONFIG_FREERTOS_UNICORE
   #define CORE(n) (0)
 #else
   #define CORE(n) (n)
 #endif
+
+#if defined __has_cpp_attribute
+    #if __has_cpp_attribute(fallthrough)
+        #define FALLTHROUGH [[fallthrough]]
+    #endif
+#elif defined __has_attribute
+    #if __has_attribute(__fallthrough__)
+        #define FALLTHROUGH __attribute__((__fallthrough__))
+    #endif
+#endif
+#if !defined(FALLTHROUGH)
+    #define FALLTHROUGH do {} while (0)  /* fallthrough */
+#endif
+
+#undef WDT_ALREADY_INITIALIZED
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 1)
+  #if CONFIG_ESP_TASK_WDT_INIT
+    #define WDT_ALREADY_INITIALIZED 1
+  #endif // CONFIG_ESP_TASK_WDT_INIT
+#endif // 5.0.1
+
+#if ESP_IDF_VERSION == ESP_IDF_VERSION_VAL(5, 0, 0)
+  #if CONFIG_ESP_TASK_WDT
+    #define WDT_ALREADY_INITIALIZED 1
+  #endif // CONFIG_ESP_TASK_WDT
+#endif // 5.0.0
+
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
+  #if CONFIG_TASK_WDT
+    #define WDT_ALREADY_INITIALIZED 1
+  #endif // CONFIG_ESP_TASK_WDT_INIT
+#endif // < 5
 
 extern uint32_t monotonictime;
 
@@ -55,8 +93,8 @@ class ExternalRamAllocated
     static void* operator new(std::size_t sz);
     static void* operator new[](std::size_t sz);
     static char* strdup(const char* src);
-    static int asprintf(char** strp, const char* fmt, ...);
-    static int vasprintf(char** strp, const char* fmt, va_list ap);
+    static int asprintf(char** strp, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+    static int vasprintf(char** strp, const char* fmt, va_list ap) __attribute__ ((format (printf, 2, 0)));
   };
 
 class InternalRamAllocated
@@ -65,8 +103,8 @@ class InternalRamAllocated
     static void* operator new(std::size_t sz);
     static void* operator new[](std::size_t sz);
     static char* strdup(const char* src);
-    static int asprintf(char** strp, const char* fmt, ...);
-    static int vasprintf(char** strp, const char* fmt, va_list ap);
+    static int asprintf(char** strp, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+    static int vasprintf(char** strp, const char* fmt, va_list ap) __attribute__ ((format (printf, 2, 0)));
   };
 
 // C++11 Allocator:

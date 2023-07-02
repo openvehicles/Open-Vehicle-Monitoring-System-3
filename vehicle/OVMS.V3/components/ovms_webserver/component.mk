@@ -10,6 +10,7 @@
 ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 ifdef CONFIG_OVMS_COMP_WEBSERVER
 
+COMPONENT_DEPENDS := mongoose
 COMPONENT_ADD_INCLUDEDIRS:=src
 COMPONENT_SRCDIRS:=src assets
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
@@ -90,12 +91,12 @@ src/web_framework.o: \
 	$(COMPONENT_PATH)/assets/favicon.png \
 	$(COMPONENT_PATH)/assets/zones.json.gz
 
-CPPFLAGS += -DMTIME_ASSETS_SCRIPT_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/script.js.gz")[9]')
-CPPFLAGS += -DMTIME_ASSETS_CHARTS_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/charts.js.gz")[9]')
-CPPFLAGS += -DMTIME_ASSETS_TABLES_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/tables.js.gz")[9]')
-CPPFLAGS += -DMTIME_ASSETS_STYLE_CSS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/style.css.gz")[9]')
-CPPFLAGS += -DMTIME_ASSETS_FAVICON_PNG=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/favicon.png")[9]')
-CPPFLAGS += -DMTIME_ASSETS_ZONES_JSON=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/zones.json.gz")[9]')
+CPPFLAGS += -DMTIME_ASSETS_SCRIPT_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/script.js.gz")[9]')LL
+CPPFLAGS += -DMTIME_ASSETS_CHARTS_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/charts.js.gz")[9]')LL
+CPPFLAGS += -DMTIME_ASSETS_TABLES_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/tables.js.gz")[9]')LL
+CPPFLAGS += -DMTIME_ASSETS_STYLE_CSS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/style.css.gz")[9]')LL
+CPPFLAGS += -DMTIME_ASSETS_FAVICON_PNG=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/favicon.png")[9]')LL
+CPPFLAGS += -DMTIME_ASSETS_ZONES_JSON=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/zones.json.gz")[9]')LL
 
 endif
 endif

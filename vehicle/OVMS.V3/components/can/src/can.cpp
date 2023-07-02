@@ -145,6 +145,21 @@ void can_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   writer->printf("Can bus %s stopped\n",bus);
   }
 
+void can_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+  if (sbus->Reset() == ESP_OK)
+    writer->printf("Can bus %s has been reset\n",bus);
+  else
+    writer->printf("ERROR: failed to reset can bus %s\n",bus);
+  }
+
 void can_dbc_attach(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char* bus = cmd->GetParent()->GetParent()->GetName();
@@ -213,7 +228,7 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   uint32_t uv = strtoul(argv[0], &ep, 16);
   if (*ep != '\0' || uv > idmax)
     {
-    writer->printf("Error: Invalid CAN ID \"%s\" (0x%lx max)\n", argv[0], idmax);
+    writer->printf("Error: Invalid CAN ID \"%s\" (0x%" PRIx32 " max)\n", argv[0], idmax);
     return;
     }
   frame.MsgID = uv;
@@ -298,7 +313,7 @@ void can_testtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   uint32_t uv = strtoul(argv[0], &ep, 16);
   if (*ep != '\0' || uv > idmax)
     {
-    writer->printf("Error: Invalid CAN ID \"%s\" (0x%lx max)\n", argv[0], idmax);
+    writer->printf("Error: Invalid CAN ID \"%s\" (0x%" PRIx32 " max)\n", argv[0], idmax);
     return;
     }
   frame.MsgID = uv;
@@ -333,22 +348,22 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Speed:     %d\n",MAP_CAN_SPEED(sbus->m_speed));
   writer->printf("DBC:       %s\n",(sbus->GetDBC())?sbus->GetDBC()->GetName().c_str():"none");
 
-  writer->printf("\nInterrupts:%20d\n",sbus->m_status.interrupts);
-  writer->printf("Rx pkt:    %20d\n",sbus->m_status.packets_rx);
+  writer->printf("\nInterrupts:%20" PRId32 "\n",sbus->m_status.interrupts);
+  writer->printf("Rx pkt:    %20" PRId32 "\n",sbus->m_status.packets_rx);
   writer->printf("Rx ovrflw: %20d\n",sbus->m_status.rxbuf_overflow);
-  writer->printf("Tx pkt:    %20d\n",sbus->m_status.packets_tx);
-  writer->printf("Tx delays: %20d\n",sbus->m_status.txbuf_delay);
+  writer->printf("Tx pkt:    %20" PRId32 "\n",sbus->m_status.packets_tx);
+  writer->printf("Tx delays: %20" PRId32 "\n",sbus->m_status.txbuf_delay);
   writer->printf("Tx ovrflw: %20d\n",sbus->m_status.txbuf_overflow);
-  writer->printf("Tx fails:  %20d\n",sbus->m_status.tx_fails);
+  writer->printf("Tx fails:  %20" PRId32 "\n",sbus->m_status.tx_fails);
 
-  writer->printf("\nErr flags: 0x%08x\n",sbus->m_status.error_flags);
+  writer->printf("\nErr flags: 0x%08" PRIx32 "\n",sbus->m_status.error_flags);
   writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
   writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
   writer->printf("Rx invalid:%20d\n",sbus->m_status.invalid_rx);
   writer->printf("Wdg Resets:%20d\n",sbus->m_status.watchdog_resets);
   if (sbus->m_watchdog_timer>0)
     {
-    writer->printf("Wdg Timer: %20d sec(s)\n",monotonictime-sbus->m_watchdog_timer);
+    writer->printf("Wdg Timer: %20" PRId32 " sec(s)\n",monotonictime-sbus->m_watchdog_timer);
     }
   writer->printf("Err Resets:%20d\n",sbus->m_status.error_resets);
   }
@@ -570,7 +585,8 @@ static const char* const CAN_log_type_names[] = {
   "Status",
   "Comment",
   "Info",
-  "Event"
+  "Event",
+  "Metric"
   };
 
 const char* GetCanLogTypeName(CAN_log_type_t type)
@@ -620,8 +636,8 @@ void canbus::LogStatus(CAN_log_type_t type)
     if (!StatusChanged())
       return;
     ESP_LOGE(TAG,
-      "%s: intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxinval=%d"
-      " rxovr=%d txovr=%d txdelay=%d txfail=%d wdgreset=%d errreset=%d",
+      "%s: intr=%" PRId32 " rxpkt=%" PRId32 " txpkt=%" PRId32 " errflags=%#" PRIx32 " rxerr=%d txerr=%d rxinval=%d"
+      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d",
       m_name, m_status.interrupts, m_status.packets_rx, m_status.packets_tx,
       m_status.error_flags, m_status.errors_rx, m_status.errors_tx,
       m_status.invalid_rx, m_status.rxbuf_overflow, m_status.txbuf_overflow,
@@ -889,6 +905,7 @@ can::can()
     cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2);
     cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud> [<dbc>]", 1, 2);
     cmd_canx->RegisterCommand("stop","Stop CAN bus",can_stop);
+    cmd_canx->RegisterCommand("reset","Reset CAN bus",can_reset);
     OvmsCommand* cmd_candbc = cmd_canx->RegisterCommand("dbc","CAN dbc framework");
     cmd_candbc->RegisterCommand("attach","Attach a DBC file to a CAN bus",can_dbc_attach,"<dbc>", 1, 1);
     cmd_candbc->RegisterCommand("detach","Detach the DBC file from a CAN bus",can_dbc_detach);
@@ -1055,6 +1072,18 @@ esp_err_t canbus::Stop()
   return ESP_FAIL;
   }
 
+esp_err_t canbus::Reset()
+  {
+  CAN_mode_t m = m_mode;
+  CAN_speed_t s = m_speed;
+  CAN_status_t t;
+  memcpy(&t,&m_status,sizeof(CAN_status_t));
+  Stop();
+  esp_err_t res = Start(m, s);
+  memcpy(&m_status,&t,sizeof(CAN_status_t));
+  return res;
+  }
+
 esp_err_t canbus::ViewRegisters()
   {
   return ESP_ERR_NOT_SUPPORTED;
@@ -1114,14 +1143,9 @@ void canbus::BusTicker10(std::string event, void* data)
       {
       // We have a watchdog timeout
       // We need to reset the CAN bus...
-      m_status.watchdog_resets++;
-      CAN_mode_t m = m_mode;
-      CAN_speed_t s = m_speed;
-      CAN_status_t t; memcpy(&t,&m_status,sizeof(CAN_status_t));
       ESP_LOGE(TAG, "%s watchdog inactivity timeout - resetting bus",m_name);
-      Stop();
-      Start(m, s);
-      memcpy(&m_status,&t,sizeof(CAN_status_t));
+      Reset();
+      m_status.watchdog_resets++;
       m_watchdog_timer = monotonictime;
       }
     }

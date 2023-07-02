@@ -49,6 +49,7 @@ class OvmsSSH
     void EventHandler(struct mg_connection *nc, int ev, void *p);
     void NetManInit(std::string event, void* data);
     void NetManStop(std::string event, void* data);
+    void ConfigRestore(std::string event, void* data);
     static int Authenticate(uint8_t type, WS_UserAuthData* data, void* ctx);
     WOLFSSH_CTX* ctx() { return m_ctx; }
 
@@ -74,7 +75,7 @@ class ConsoleSSH : public OvmsConsole
     void Sent();
     void Exit();
     int puts(const char* s);
-    int printf(const char* fmt, ...);
+    int printf(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
     ssize_t write(const void *buf, size_t nbyte);
     int RecvCallback(char* buf, uint32_t size);
     bool IsDraining() { return m_drain > 0; }
@@ -118,14 +119,18 @@ class ConsoleSSH : public OvmsConsole
 
 class RSAKeyGenerator : public TaskBase
   {
+  private:
+    static RSAKeyGenerator* s_instance;
+
   public:
     RSAKeyGenerator();
-    virtual ~RSAKeyGenerator() {}
+    virtual ~RSAKeyGenerator();
+    static bool KillInstance();
 
   private:
     void Service();
 
   private:
-  byte m_der[1200];   // Big enough for 2048-bit private key
+    byte m_der[1200];   // Big enough for 2048-bit private key
   };
 #endif //#ifndef __CONSOLE_SSH_H__

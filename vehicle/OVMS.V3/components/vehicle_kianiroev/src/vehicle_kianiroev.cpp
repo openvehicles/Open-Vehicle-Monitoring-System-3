@@ -244,8 +244,7 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 
   m_v_power_usage = MyMetrics.InitFloat("xkn.v.power.usage", 10, 0, kW);
 
-  m_v_trip_consumption1 = MyMetrics.InitFloat("xkn.v.trip.consumption.KWh/100km", 10, 0, Other);
-  m_v_trip_consumption2 = MyMetrics.InitFloat("xkn.v.trip.consumption.km/kWh", 10, 0, Other);
+  m_v_trip_consumption = MyMetrics.InitFloat("xkn.v.trip.consumption", 10, 0, kWhP100K);
 
   m_v_door_lock_fl = MyMetrics.InitBool("xkn.v.door.lock.front.left", 10, 0);
   m_v_door_lock_fr = MyMetrics.InitBool("xkn.v.door.lock.front.right", 10, 0);
@@ -308,7 +307,9 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 OvmsVehicleKiaNiroEv::~OvmsVehicleKiaNiroEv()
   {
   ESP_LOGI(TAG, "Shutdown Kia Niro / Hyundai Kona EV vehicle module");
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
   }
 
 /**
@@ -416,9 +417,7 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 		}
 
 	if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
-			m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
-	if( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)>0 )
-			m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
+			m_v_trip_consumption->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers), kWhP100K);
 
 	StdMetrics.ms_v_bat_power->SetValue( StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts) * StdMetrics.ms_v_bat_current->AsFloat(1,Amps)/1000,kW );
 

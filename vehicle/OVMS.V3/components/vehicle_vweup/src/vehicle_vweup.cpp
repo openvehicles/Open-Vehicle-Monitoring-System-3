@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.22.4"
+#define VERSION "0.23.1"
 
 #include <stdio.h>
 #include <string>
@@ -41,6 +41,7 @@ static const char *TAG = "v-vweup";
 #include "ovms_command.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
+#include "string_writer.h"
 
 #include "vehicle_vweup.h"
 
@@ -786,9 +787,12 @@ void OvmsVehicleVWeUp::SetChargeState(bool charging)
  */
 int OvmsVehicleVWeUp::CalcChargeTime(float capacity, float max_pwr, int from_soc, int to_soc)
 {
-  struct {
+  struct ccurve_point {
     int soc;  float pwr;    float grd;
-  } ccurve[] = {
+  };
+
+  // Charge curve model:
+  const ccurve_point ccurve[] = {
     {     0,       30.0,    (32.5-30.0) / ( 30-  0) },
     {    30,       32.5,    (26.5-32.5) / ( 55- 30) },
     {    55,       26.5,    (18.5-26.5) / ( 76- 55) },
@@ -797,16 +801,18 @@ int OvmsVehicleVWeUp::CalcChargeTime(float capacity, float max_pwr, int from_soc
     {    91,        6.5,    ( 3.0- 6.5) / (100- 91) },
     {   100,        3.0,    0                       },
   };
-  const int csize = sizeof_array(ccurve);
 
+  // Validate arguments:
   if (capacity <= 0 || to_soc <= from_soc)
     return 0;
+  if (from_soc < 0) from_soc = 0;
+  if (to_soc > 100) to_soc = 100;
 
   // Find curve section for a given SOC:
   auto find_csection = [&](int soc) {
     if (soc == 0) return 0;
     int i;
-    for (i = 0; i < csize; i++) {
+    for (i = 0; ccurve[i].soc != 100; i++) {
       if (ccurve[i].soc < soc && ccurve[i+1].soc >= soc)
         break;
     }
@@ -851,12 +857,32 @@ int OvmsVehicleVWeUp::CalcChargeTime(float capacity, float max_pwr, int from_soc
       p2 = ccurve[section+1].pwr;
     }
     
-    p1 = pwr_limit(p1);
-    p2 = pwr_limit(p2);
-    
-    section_energy = capacity * (s2 - s1) / 100.0;
-    section_time = section_energy / ((p1 + p2) / 2);
-    charge_time += section_time;
+    if (max_pwr > 0 && ((p1 > max_pwr && p2 < max_pwr) || (p1 < max_pwr && p2 > max_pwr)))
+    {
+      // the section crosses max_pwr, split at intersection:
+      float si = ccurve[section].soc + (max_pwr - ccurve[section].pwr) / ccurve[section].grd;
+      
+      p1 = pwr_limit(p1);
+      p2 = pwr_limit(p2);
+      
+      section_energy = capacity * (si - s1) / 100.0;
+      section_time = section_energy / ((p1 + max_pwr) / 2);
+      charge_time += section_time;
+      
+      section_energy = capacity * (s2 - si) / 100.0;
+      section_time = section_energy / ((max_pwr + p2) / 2);
+      charge_time += section_time;
+    }
+    else
+    {
+      // the section does not cross max_pwr, use the full section:
+      p1 = pwr_limit(p1);
+      p2 = pwr_limit(p2);
+      
+      section_energy = capacity * (s2 - s1) / 100.0;
+      section_time = section_energy / ((p1 + p2) / 2);
+      charge_time += section_time;
+    }
   }
 
   // return full minutes:

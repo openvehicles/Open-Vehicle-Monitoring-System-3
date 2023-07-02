@@ -67,9 +67,12 @@ class OvmsVehicleSmartED : public OvmsVehicle
     char m_vin[18];
 
   public:
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
     void WebInit();
     void WebDeInit();
+#endif
     void ObdInitPoll();
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     static void WebCfgCommands(PageEntry_t& p, PageContext_t& c);
@@ -77,6 +80,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     static void WebCfgBmsCellMonitor(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBmsCellCapacity(PageEntry_t& p, PageContext_t& c);
     static void WebCfgEco(PageEntry_t& p, PageContext_t& c);
+#endif
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);

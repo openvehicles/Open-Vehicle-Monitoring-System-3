@@ -32,7 +32,6 @@
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 #include "canlog.h"
-#include "canlog_tcpserver.h"
 #include "ovms_netmanager.h"
 #include "ovms_mutex.h"
 

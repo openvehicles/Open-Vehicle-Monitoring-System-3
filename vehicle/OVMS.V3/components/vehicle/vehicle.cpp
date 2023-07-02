@@ -90,6 +90,8 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
   OvmsCommand* cmd_bms = MyCommandApp.RegisterCommand("bms","BMS framework", bms_status, "", 0, 0, false);
   cmd_bms->RegisterCommand("status","Show BMS status",bms_status);
+  cmd_bms->RegisterCommand("temp","Show BMS temperature status",bms_status);
+  cmd_bms->RegisterCommand("volt","Show BMS voltage status",bms_status);
   cmd_bms->RegisterCommand("reset","Reset BMS statistics",bms_reset);
   cmd_bms->RegisterCommand("alerts","Show BMS alerts",bms_alerts);
 
@@ -356,17 +358,21 @@ OvmsVehicle::OvmsVehicle()
   m_brakelight_ignftbrk = false;
 
   m_tpms_lastcheck = 0;
+  m_inv_energyused = 0;
+  m_inv_energyrecd = 0;
 
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, CORE(1));
 
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
+
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   VehicleConfigChanged("config.mounted", NULL);
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
+
   }
 
 OvmsVehicle::~OvmsVehicle()
@@ -545,7 +551,7 @@ void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, db
     }
   }
 
-bool OvmsVehicle::PinCheck(char* pin)
+bool OvmsVehicle::PinCheck(const char* pin)
   {
   if (!MyConfig.IsDefined("password","pin")) return false;
 
@@ -893,66 +899,227 @@ void OvmsVehicle::CalculateEfficiency()
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeMode(vehicle_mode_t mode)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string mode_code = chargemode_code((int)mode);
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.SetChargeMode.prototype)?-1:"
+      "OvmsVehicle.SetChargeMode(\"%s\")", mode_code.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeCurrent(uint16_t limit)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.SetChargeCurrent.prototype)?-1:"
+      "OvmsVehicle.SetChargeCurrent(%" PRIu16 ")", limit);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStartCharge()
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.StartCharge.prototype)?-1:"
+      "OvmsVehicle.StartCharge()");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStopCharge()
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.StopCharge.prototype)?-1:"
+      "OvmsVehicle.StopCharge()");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeTimer(bool timeron, uint16_t timerstart)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.SetChargeTimer.prototype)?-1:"
+      "OvmsVehicle.SetChargeTimer(%s,%" PRIu16 ")", timeron ? "true" : "false", timerstart);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandCooldown(bool cooldownon)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    const char *method = cooldownon ? "StartCooldown" : "StopCooldown";
+    dukcmd.printf("(!OvmsVehicle.%s.prototype)?-1:"
+      "OvmsVehicle.%s()", method, method);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool climatecontrolon)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.ClimateControl.prototype)?-1:"
+      "OvmsVehicle.ClimateControl(%s)", climatecontrolon ? "true" : "false");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandWakeup()
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Wakeup.prototype)?-1:"
+      "OvmsVehicle.Wakeup()");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandLock(const char* pin)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Lock.prototype)?-1:"
+      "OvmsVehicle.Lock(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandUnlock(const char* pin)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Unlock.prototype)?-1:"
+      "OvmsVehicle.Unlock(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandActivateValet(const char* pin)
   {
-  return NotImplemented;
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Valet.prototype)?-1:"
+      "OvmsVehicle.Valet(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0)
+      {
+        if (res)
+          {
+          StandardMetrics.ms_v_env_valet->SetValue(true);
+          return Success;
+          }
+        else
+          return Fail;
+      }
+    }
+#endif
+  if (StandardMetrics.ms_v_env_valet->AsBool())
+    return Success;
+  if (!PinCheck(pin))
+    return Fail;
+  StandardMetrics.ms_v_env_valet->SetValue(true);
+  return Success;
+
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandDeactivateValet(const char* pin)
   {
-  return NotImplemented;
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Unvalet.prototype)?-1:"
+      "OvmsVehicle.Unvalet(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0)
+      {
+      if (res)
+        StandardMetrics.ms_v_env_valet->SetValue(false);
+      return res ? Success : Fail;
+      }
+    }
+#endif
+  if (!StandardMetrics.ms_v_env_valet->AsBool())
+    return Success;
+  if (!PinCheck(pin))
+    return Fail;
+  StandardMetrics.ms_v_env_valet->SetValue(false);
+  return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button, int durationms)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Homelink.prototype)?-1:"
+      "OvmsVehicle.Homelink(%d,%d)", button+1, durationms);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
@@ -977,7 +1144,6 @@ bool OvmsVehicle::TPMSWrite(std::vector<uint32_t> &tpms)
  */
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWriter* writer)
   {
-  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
 
   bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
   std::string charge_state = StdMetrics.ms_v_charge_state->AsString();
@@ -1028,10 +1194,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
         }
 
       // Charge speed:
-      if (StdMetrics.ms_v_bat_range_speed->AsFloat() != 0)
+      if (StdMetrics.ms_v_bat_range_speed->IsDefined() && StdMetrics.ms_v_bat_range_speed->AsFloat() != 0)
         {
-        metric_unit_t speedUnit = (rangeUnit == Miles) ? Mph : Kph;
-        writer->printf("%s\n", StdMetrics.ms_v_bat_range_speed->AsUnitString("-", speedUnit, 1).c_str());
+        writer->printf("%s\n", StdMetrics.ms_v_bat_range_speed->AsUnitString("-", ToUser, 1).c_str());
         }
       else if (show_vc)
         {
@@ -1046,13 +1211,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
       int duration_soc = StdMetrics.ms_v_charge_duration_soc->AsInt();
       if (duration_soc > 0)
         writer->printf("%s: %d:%02dh\n",
-          (char*) StdMetrics.ms_v_charge_limit_soc->AsUnitString("SOC", Native, 0).c_str(),
+          (char*) StdMetrics.ms_v_charge_limit_soc->AsUnitString("SOC", ToUser, 0).c_str(),
           duration_soc / 60, duration_soc % 60);
 
       int duration_range = StdMetrics.ms_v_charge_duration_range->AsInt();
       if (duration_range > 0)
         writer->printf("%s: %d:%02dh\n",
-          (char*) StdMetrics.ms_v_charge_limit_range->AsUnitString("Range", rangeUnit, 0).c_str(),
+          (char*) StdMetrics.ms_v_charge_limit_range->AsUnitString("Range", ToUser, 0).c_str(),
           duration_range / 60, duration_range % 60);
       }
 
@@ -1060,12 +1225,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
     if (StdMetrics.ms_v_charge_kwh_grid->IsDefined())
       {
       writer->printf("Drawn: %s\n",
-        StdMetrics.ms_v_charge_kwh_grid->AsUnitString("-", Native, 1).c_str());
+        StdMetrics.ms_v_charge_kwh_grid->AsUnitString("-", ToUser, 1).c_str());
       }
     if (StdMetrics.ms_v_charge_kwh->IsDefined())
       {
       writer->printf("Charged: %s\n",
-        StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 1).c_str());
+        StdMetrics.ms_v_charge_kwh->AsUnitString("-", ToUser, 1).c_str());
       }
     }
   else
@@ -1073,27 +1238,37 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
     writer->puts("Not charging");
     }
 
-  writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
+  writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", ToUser, 1).c_str());
 
-  const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0).c_str();
-  if (*range_ideal != '-')
-    writer->printf("Ideal range: %s\n", range_ideal);
+  if (StdMetrics.ms_v_bat_range_ideal->IsDefined())
+    {
+    const std::string& range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", ToUser, 0);
+    writer->printf("Ideal range: %s\n", range_ideal.c_str());
+    }
 
-  const char* range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0).c_str();
-  if (*range_est != '-')
-    writer->printf("Est. range: %s\n", range_est);
+  if (StdMetrics.ms_v_bat_range_est->IsDefined())
+    {
+    const std::string& range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", ToUser, 0);
+    writer->printf("Est. range: %s\n", range_est.c_str());
+    }
 
-  const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
-  if (*odometer != '-')
-    writer->printf("ODO: %s\n", odometer);
+  if (StdMetrics.ms_v_pos_odometer->IsDefined())
+    {
+    const std::string& odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", ToUser, 1);
+    writer->printf("ODO: %s\n", odometer.c_str());
+    }
 
-  const char* cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str();
-  if (*cac != '-')
-    writer->printf("CAC: %s\n", cac);
+  if (StdMetrics.ms_v_bat_cac->IsDefined())
+    {
+    const std::string& cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", ToUser, 1);
+    writer->printf("CAC: %s\n", cac.c_str());
+    }
 
-  const char* soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 0).c_str();
-  if (*soh != '-')
-    writer->printf("SOH: %s\n", soh);
+  if (StdMetrics.ms_v_bat_soh->IsDefined())
+    {
+    const std::string& soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0);
+    writer->printf("SOH: %s\n", soh.c_str());
+    }
 
   return Success;
   }
@@ -1103,12 +1278,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
  */
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsWriter* writer)
   {
-  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
-  metric_unit_t speedUnit = (rangeUnit == Miles) ? Mph : Kph;
-  metric_unit_t accelUnit = (rangeUnit == Miles) ? MphPS : KphPS;
-  metric_unit_t consumUnit = (rangeUnit == Miles) ? WattHoursPM : WattHoursPK;
+  metric_unit_t rangeUnit = OvmsMetricGetUserUnit(GrpDistance, Kilometers);
+  metric_unit_t speedUnit = OvmsMetricGetUserUnit(GrpSpeed, Kph);
+  metric_unit_t accelUnit = OvmsMetricGetUserUnit(GrpAccel, KphPS);
+  metric_unit_t consumUnit = OvmsMetricGetUserUnit(GrpConsumption, WattHoursPK);
   metric_unit_t energyUnit = kWh;
-  metric_unit_t altitudeUnit = (rangeUnit == Miles) ? Feet : Meters;
+  metric_unit_t altitudeUnit = OvmsMetricGetUserUnit(GrpDistanceShort, Meters);
   const char* rangeUnitLabel = OvmsMetricUnitLabel(rangeUnit);
   const char* speedUnitLabel = OvmsMetricUnitLabel(speedUnit);
   const char* accelUnitLabel = OvmsMetricUnitLabel(accelUnit);
@@ -1116,7 +1291,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
   const char* energyUnitLabel = OvmsMetricUnitLabel(energyUnit);
   const char* altitudeUnitLabel = OvmsMetricUnitLabel(altitudeUnit);
 
-  float trip_length = StdMetrics.ms_v_pos_trip->AsFloat(0, rangeUnit);
+  float trip_length = StdMetrics.ms_v_pos_trip->AsFloat(0);
 
   float speed_avg = (m_drive_speedcnt > 0)
     ? UnitConvert(Kph, speedUnit, (float)(m_drive_speedsum / m_drive_speedcnt))
@@ -1132,7 +1307,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
   float energy_used = StdMetrics.ms_v_bat_energy_used->AsFloat();
   float energy_recd = StdMetrics.ms_v_bat_energy_recd->AsFloat();
   float energy_recd_perc = (energy_used > 0) ? energy_recd / energy_used * 100 : 0;
-  float wh_per_rangeunit = (trip_length > 0) ? (energy_used - energy_recd) * 1000 / trip_length : 0;
+  float wh_per_km = (trip_length > 0) ? (energy_used - energy_recd) * 1000 / trip_length : 0;
 
   float soc = StdMetrics.ms_v_bat_soc->AsFloat();
   float soc_diff = soc - m_drive_startsoc;
@@ -1146,7 +1321,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     << "Trip "
     << std::fixed
     << std::setprecision(1)
-    << trip_length << rangeUnitLabel
+    << UnitConvert(Kilometers, rangeUnit, trip_length) << rangeUnitLabel
     << " Avg "
     << std::setprecision(0)
     << speed_avg << speedUnitLabel
@@ -1154,11 +1329,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     << ((alt_diff >= 0) ? "+" : "")
     << alt_diff << altitudeUnitLabel
     ;
-  if (wh_per_rangeunit != 0)
+  if (wh_per_km != 0)
     {
     buf
       << "\nEnergy "
-      << wh_per_rangeunit << consumUnitLabel
+      << UnitConvert(WattHoursPK, consumUnit, wh_per_km) << consumUnitLabel
       << ", "
       << energy_recd_perc << "% recd"
       ;
@@ -1490,12 +1665,24 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
         NotifyChargeState();
       }
     }
+  else if (metric == StandardMetrics.ms_v_charge_type)
+    {
+    std::string m = metric->AsString();
+    MyEvents.SignalEvent("vehicle.charge.type", (void*)m.c_str(), m.size()+1);
+    NotifiedVehicleChargeType(m);
+    }
   else if (metric == StandardMetrics.ms_v_gen_state)
     {
     std::string state = metric->AsString();
     MyEvents.SignalEvent("vehicle.gen.state", (void*)state.c_str(), state.size()+1);
     if (m_autonotifications)
       NotifyGenState();
+    }
+  else if (metric == StandardMetrics.ms_v_gen_type)
+    {
+    std::string m = metric->AsString();
+    MyEvents.SignalEvent("vehicle.gen.type", (void*)m.c_str(), m.size()+1);
+    NotifiedVehicleGenType(m);
     }
   else if (metric == StandardMetrics.ms_v_pos_speed)
     {
@@ -1559,6 +1746,17 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     {
     CalculateRangeSpeed();
     }
+  else if (metric == StdMetrics.ms_m_obd2ecu_on)
+    {
+    if ( StdMetrics.ms_m_obd2ecu_on->AsBool() )
+      {
+      NotifiedOBD2ECUStart();
+      }
+    else
+      {
+      NotifiedOBD2ECUStop();
+      }
+    }
   }
 
 /**
@@ -1573,7 +1771,7 @@ void OvmsVehicle::CalculateAcceleration()
   uint32_t now = esp_log_timestamp();
   if (now > m_accel_reftime)
     {
-    float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
+    float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, MetersPS));
     float accel = (speed - m_accel_refspeed) / (now - m_accel_reftime) * 1000;
     // smooth out road bumps & gear box backlash:
     if (m_accel_smoothing > 0)
@@ -1988,68 +2186,83 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &resul
  */
 void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
   {
-  cfg.gaugeset1 =
-    "yAxis: [{"
-      // Speed:
-      "min: 0, max: 200,"
-      "plotBands: ["
-        "{ from: 0, to: 120, className: 'green-band' },"
-        "{ from: 120, to: 160, className: 'yellow-band' },"
-        "{ from: 160, to: 200, className: 'red-band' }]"
-    "},{"
-      // Voltage:
-      "min: 310, max: 410,"
-      "plotBands: ["
-        "{ from: 310, to: 325, className: 'red-band' },"
-        "{ from: 325, to: 340, className: 'yellow-band' },"
-        "{ from: 340, to: 410, className: 'green-band' }]"
-    "},{"
-      // SOC:
-      "min: 0, max: 100,"
-      "plotBands: ["
-        "{ from: 0, to: 12.5, className: 'red-band' },"
-        "{ from: 12.5, to: 25, className: 'yellow-band' },"
-        "{ from: 25, to: 100, className: 'green-band' }]"
-    "},{"
-      // Efficiency:
-      "min: 0, max: 400,"
-      "plotBands: ["
-        "{ from: 0, to: 200, className: 'green-band' },"
-        "{ from: 200, to: 300, className: 'yellow-band' },"
-        "{ from: 300, to: 400, className: 'red-band' }]"
-    "},{"
-      // Power:
-      "min: -50, max: 200,"
-      "plotBands: ["
-        "{ from: -50, to: 0, className: 'violet-band' },"
-        "{ from: 0, to: 100, className: 'green-band' },"
-        "{ from: 100, to: 150, className: 'yellow-band' },"
-        "{ from: 150, to: 200, className: 'red-band' }]"
-    "},{"
-      // Charger temperature:
-      "min: 20, max: 80, tickInterval: 20,"
-      "plotBands: ["
-        "{ from: 20, to: 65, className: 'normal-band border' },"
-        "{ from: 65, to: 80, className: 'red-band border' }]"
-    "},{"
-      // Battery temperature:
-      "min: -15, max: 65, tickInterval: 25,"
-      "plotBands: ["
-        "{ from: -15, to: 0, className: 'red-band border' },"
-        "{ from: 0, to: 50, className: 'normal-band border' },"
-        "{ from: 50, to: 65, className: 'red-band border' }]"
-    "},{"
-      // Inverter temperature:
-      "min: 20, max: 80, tickInterval: 20,"
-      "plotBands: ["
-        "{ from: 20, to: 70, className: 'normal-band border' },"
-        "{ from: 70, to: 80, className: 'red-band border' }]"
-    "},{"
-      // Motor temperature:
-      "min: 50, max: 125, tickInterval: 25,"
-      "plotBands: ["
-        "{ from: 50, to: 110, className: 'normal-band border' },"
-        "{ from: 110, to: 125, className: 'red-band border' }]"
-    "}]";
+  // Speed:
+  dash_gauge_t speed_dash(NULL,Kph);
+  speed_dash.SetMinMax(0, 200, 5);
+  speed_dash.AddBand("green", 0, 120);
+  speed_dash.AddBand("yellow", 120, 160);
+  speed_dash.AddBand("red", 160, 200);
+
+  // Voltage:
+  dash_gauge_t voltage_dash(NULL,Volts);
+  voltage_dash.SetMinMax(310, 410);
+  voltage_dash.AddBand("red", 310, 325);
+  voltage_dash.AddBand("yellow", 325, 340);
+  voltage_dash.AddBand("green", 340, 410);
+
+  // SOC:
+  dash_gauge_t soc_dash("SOC ",Percentage);
+  soc_dash.SetMinMax(0, 100);
+  soc_dash.AddBand("red", 0, 12.5);
+  soc_dash.AddBand("yellow", 12.5, 25);
+  soc_dash.AddBand("green", 25, 100);
+
+  // Efficiency:
+  dash_gauge_t eff_dash(NULL,WattHoursPK);
+  eff_dash.SetMinMax(0, 400);
+  eff_dash.AddBand("green", 0, 200);
+  eff_dash.AddBand("yellow", 200, 300);
+  eff_dash.AddBand("red", 300, 400);
+
+  // Power:
+  dash_gauge_t power_dash(NULL,kW);
+  power_dash.SetMinMax(-50, 200);
+  power_dash.AddBand("violet", -50, 0);
+  power_dash.AddBand("green", 0, 100);
+  power_dash.AddBand("yellow", 100, 150);
+  power_dash.AddBand("red", 150, 200);
+
+  // Charger temperature:
+  dash_gauge_t charget_dash("CHG ",Celcius);
+  charget_dash.SetMinMax(20, 80);
+  charget_dash.SetTick(20);
+  charget_dash.AddBand("normal", 20, 65);
+  charget_dash.AddBand("red", 65, 80);
+
+  // Battery temperature:
+  dash_gauge_t batteryt_dash("BAT ",Celcius);
+  batteryt_dash.SetMinMax(-15, 65);
+  batteryt_dash.SetTick(25);
+  batteryt_dash.AddBand("red", -15, 0);
+  batteryt_dash.AddBand("normal", 0, 50);
+  batteryt_dash.AddBand("red", 50, 65);
+
+  // Inverter temperature:
+  dash_gauge_t invertert_dash("PEM ",Celcius);
+  invertert_dash.SetMinMax(20, 80);
+  invertert_dash.SetTick(20);
+  invertert_dash.AddBand("normal", 20, 70);
+  invertert_dash.AddBand("red", 70, 80);
+
+  // Motor temperature:
+  dash_gauge_t motort_dash("MOT ",Celcius);
+  motort_dash.SetMinMax(50, 125);
+  motort_dash.SetTick(25);
+  motort_dash.AddBand("normal", 50, 110);
+  motort_dash.AddBand("red", 110, 125);
+
+  std::ostringstream str;
+  str << "yAxis: ["
+      << speed_dash << "," // Speed
+      << voltage_dash << "," // Voltage
+      << soc_dash << "," // SOC
+      << eff_dash << "," // Efficiency
+      << power_dash << "," // Power
+      << charget_dash << "," // Charger temperature
+      << batteryt_dash << "," // Battery temperature
+      << invertert_dash << "," // Inverter temperature
+      << motort_dash // Motor temperature
+      << "]";
+  cfg.gaugeset1 = str.str();
   }
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER

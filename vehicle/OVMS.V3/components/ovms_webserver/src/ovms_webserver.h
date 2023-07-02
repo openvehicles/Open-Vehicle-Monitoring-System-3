@@ -155,7 +155,7 @@ struct PageContext : public ExternalRamAllocated
   void print(const std::string text);
   void print(const extram::string text);
   void print(const char* text);
-  void printf(const char *fmt, ...);
+  void printf(const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
   void done();
   void panel_start(const char* type, const char* title);
   void panel_end(const char* footer="");
@@ -367,6 +367,8 @@ enum WebSocketTxJobType
   WSTX_Config,                // payload: config (todo)
   WSTX_Notify,                // payload: notification
   WSTX_LogBuffers,            // payload: logbuffers
+  WSTX_UnitMetricUpdate,      // payload: -
+  WSTX_UnitPrefsUpdate,       // payload: -
 };
 
 struct WebSocketTxJob
@@ -412,6 +414,10 @@ class WebSocketHandler : public MgHandler, public OvmsWriter
     void Unsubscribe(std::string topic);
     bool IsSubscribedTo(std::string topic);
 
+    void SubscriptionChanged();
+    void UnitsCheckSubscribe();
+    void UnitsCheckVehicleSubscribe();
+
   // OvmsWriter:
   public:
     void Log(LogBuffers* message);
@@ -428,7 +434,10 @@ class WebSocketHandler : public MgHandler, public OvmsWriter
     WebSocketTxJob            m_job = {};
     int                       m_sent = 0;
     int                       m_ack = 0;
+    int                       m_last = 0;             // last entry sent up
     std::set<std::string>     m_subscriptions;
+    bool                      m_units_subscribed;
+    bool                      m_units_prefs_subscribed;
 };
 
 struct WebSocketSlot
@@ -469,7 +478,7 @@ class HttpCommandStream : public OvmsShell, public MgHandler
     void Initialize(bool print);
     virtual bool IsInteractive() { return false; }
     int puts(const char* s);
-    int printf(const char* fmt, ...);
+    int printf(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
     ssize_t write(const void *buf, size_t nbyte);
     void Log(LogBuffers* message);
 };
@@ -536,7 +545,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleLogin(PageEntry_t& p, PageContext_t& c);
     static void HandleLogout(PageEntry_t& p, PageContext_t& c);
     static void OutputReboot(PageEntry_t& p, PageContext_t& c);
-    static void OutputReconnect(PageEntry_t& p, PageContext_t& c, const char* info=NULL);
+    static void OutputReconnect(PageEntry_t& p, PageContext_t& c, const char* info=NULL, const char* cmd=NULL);
 
   public:
     static void HandleStatus(PageEntry_t& p, PageContext_t& c);
@@ -609,6 +618,80 @@ class OvmsWebServer : public ExternalRamAllocated
 };
 
 extern OvmsWebServer MyWebServer;
+
+/** Dashboard Gauge generator.
+ * Handles unit conversions.
+ */
+struct dash_gauge_t {
+protected:
+  struct dash_plot_band_t {
+    std::string colour;
+    float min_value, max_value;
+  };
+  std::string title_prefix;
+  metric_unit_t user_unit, base_unit;
+  float min_value, max_value, tick_value;
+  bool has_tick;
+  std::vector<dash_plot_band_t> bands;
+  void DoAddBand( const std::string &colour, float minValue, float maxValue, bool round, float roundValue);
+public:
+
+  /**
+   * @param titlePrefix The title/caption prefix (to the unit)
+   * @param defUnit  The unit used as a default for these metrics.
+   * @param group    (Optional) The group of units it belong to.
+   */
+  dash_gauge_t(const char *titlePrefix, metric_unit_t defUnit, metric_group_t group = GrpNone);
+  /**
+   * Convert a unit to the user unit.
+   */
+  float UntConvert( float inValue ) const;
+  /**
+   * Convert a unit to the user unit with rounding to the nearest value.
+   */
+  float UntConvert( float inValue, float roundValue ) const;
+  /**
+   * Set the minimum and maximum values for the gauge (in original units).
+   */
+  void SetMinMax( float minValue, float maxValue);
+  /**
+   * Set the minimum and maximum values for the gauge (in original units) including
+   * rounding to the nearest value.
+   */
+  void SetMinMax( float minValue, float maxValue, float roundValue);
+  /**
+   * Set the tickmark intervals (in original units).
+   */
+  void SetTick( float tickValue);
+  /**
+   * Set the tickmark intervals (in original units) with rounding to nearest.
+   */
+  void SetTick( float tickValue, float roundValue);
+  /** Zero the minimum.  Used when 0 cannot be originally used as a minimum.
+   */
+  inline void ZeroMin() { if (max_value > 0) min_value = 0; }
+
+  /** Add a colour band to the gauge.
+   */
+  inline void AddBand( const std::string &colour, float minValue, float maxValue)
+  {
+    DoAddBand(colour, minValue, maxValue, false, 0);
+  }
+  /** Add a colour band to the gauge with rounding to the nearest value.
+   */
+  inline void AddBand( const std::string &colour, float minValue, float maxValue, float roundValue)
+  {
+    DoAddBand(colour, minValue, maxValue, true, roundValue);
+  }
+
+  /** Output this element to a stream.
+   */
+  std::ostream &Output(std::ostream &ostream) const;
+};
+inline std::ostream &operator<<(std::ostream &out, const dash_gauge_t& gauge)
+{
+  return gauge.Output(out);
+}
 
 
 /**

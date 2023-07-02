@@ -8,6 +8,11 @@ GET     /api/cookie
 
 Login and return a session cookie.
 
+URL parameters:
+
+* ``username``: (mandatory) your server account login
+* ``password``: (mandatory) your server account password
+
 -------------------
 DELETE  /api/cookie
 -------------------
@@ -244,22 +249,37 @@ GET /api/historical/<VEHICLEID>
 
 Request historical data summary (as array of):
 
-* ``h_recordtype``
-* ``distinctrecs``
-* ``totalrecs``
-* ``totalsize``
-* ``first``
-* ``last``
+* ``h_recordtype``: record type, e.g. ``*-LOG-Notification``
+* ``distinctrecs``: number of distinct record numbers (``h_recordnumber``) stored
+* ``totalrecs``: total number of records stored
+* ``totalsize``: total transfer data volume (bytes) of all records
+* ``first``: ISO timestamp of earliest record
+* ``last``: ISO timestamp of latest record
 
-------------------------------------------
-GET /api/historical/<VEHICLEID>/<DATATYPE>
-------------------------------------------
+URL parameters:
 
-Request historical data records:
+* ``since``: (optional) limit output to records after the date/time specified (ISO format)
 
-* ``h_timestamp``
-* ``h_recordnumber``
-* ``h_data``
+--------------------------------------------
+GET /api/historical/<VEHICLEID>/<RECORDTYPE>
+--------------------------------------------
+
+Request historical data records (as array of):
+
+* ``h_timestamp``: ISO date/time of the record
+* ``h_recordnumber``: record type/application specific "record number" (arbitrary identifier)
+* ``h_data``: record type/application specific payload
+
+The records are ordered by ``h_timestamp`` (primary) and ``h_recordnumber`` (secondary), both in ascending order.
+
+``h_data`` may contain any kind of data. OVMS standard record types normally use a size
+optimized CSV (comma separated values) format, with fields as specified/documented
+for the record type. Another option can be JSON, with the advantage of field names being
+included, at the expense of additional data volume overhead.
+
+URL parameters:
+
+* ``since``: (optional) limit output to records after the date/time specified (ISO format)
 
 -------------------
 Not Yet Implemented

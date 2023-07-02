@@ -42,6 +42,8 @@ static const char *TAG = "canlog";
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
 
+static const char *CAN_PARAM = "can";
+
 ////////////////////////////////////////////////////////////////////////
 // Command Processing
 ////////////////////////////////////////////////////////////////////////
@@ -119,7 +121,7 @@ void can_log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
       {
       canlog* cl = it->second;
-      writer->printf("#%d: %s %s %s\n",
+      writer->printf("#%" PRId32 ": %s %s %s\n",
         it->first,
         (cl->m_isopen)?"open":"closed",
         cl->GetInfo().c_str(), cl->GetStats().c_str());
@@ -157,7 +159,7 @@ void can_log_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
       {
       canlog* cl = it->second;
-      writer->printf("#%d: %s\n", it->first, cl->GetInfo().c_str());
+      writer->printf("#%" PRId32 ": %s\n", it->first, cl->GetInfo().c_str());
       }
     }
   }
@@ -336,6 +338,7 @@ std::string canlogconnection::GetStats()
 ////////////////////////////////////////////////////////////////////////
 
 canlog::canlog(const char* type, std::string format, canformat::canformat_serve_mode_t mode)
+  : m_events_filters(TAG), m_metrics_filters(TAG)
   {
   m_type = type;
   m_format = format;
@@ -352,8 +355,12 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(IDTAG, "*", std::bind(&canlog::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(IDTAG,"config.mounted", std::bind(&canlog::UpdatedConfig, this, _1, _2));
+  MyEvents.RegisterEvent(IDTAG,"config.changed", std::bind(&canlog::UpdatedConfig, this, _1, _2));
+  MyMetrics.RegisterListener(IDTAG, "*", std::bind(&canlog::MetricListener, this, _1));
 
-  int queuesize = MyConfig.GetParamValueInt("can", "log.queuesize",100);
+  int queuesize = MyConfig.GetParamValueInt(CAN_PARAM, "log.queuesize",100);
+  LoadConfig();
   m_queue = xQueueCreate(queuesize, sizeof(CAN_log_message_t));
   xTaskCreatePinnedToCore(RxTask, "OVMS CanLog", 4096, (void*)this, 10, &m_task, CORE(1));
   }
@@ -361,6 +368,7 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
 canlog::~canlog()
   {
   MyEvents.DeregisterEvent(IDTAG);
+  MyMetrics.DeregisterListener(IDTAG);
 
   if (m_task)
     {
@@ -383,6 +391,7 @@ canlog::~canlog()
         case CAN_LogInfo_Comment:
         case CAN_LogInfo_Config:
         case CAN_LogInfo_Event:
+        case CAN_LogInfo_Metric:
           free(msg.text);
           break;
         default:
@@ -418,6 +427,7 @@ void canlog::RxTask(void *context)
         case CAN_LogInfo_Comment:
         case CAN_LogInfo_Config:
         case CAN_LogInfo_Event:
+        case CAN_LogInfo_Metric:
           me->OutputMsg(msg);
           free(msg.text);
           break;
@@ -429,11 +439,69 @@ void canlog::RxTask(void *context)
     }
   }
 
+/**
+ * Load, or reload, the configuration of events and metrics filters.
+ *
+ * The configuration item is a string containing a comma-separated list of filters.
+ */
+void canlog::LoadConfig()
+  {
+  std::size_t str_hash;
+
+  std::string list_of_events_filters = MyConfig.GetParamValue(CAN_PARAM, "log.events_filters", "x*,vehicle*");
+  str_hash = std::hash<std::string>{}(list_of_events_filters);
+  if (str_hash != m_events_filters_hash)
+    {
+    m_events_filters_hash = str_hash;
+    m_events_filters.LoadFilters(list_of_events_filters);
+    MyCan.LogInfo(NULL, CAN_LogInfo_Config, ("Events filters: " + list_of_events_filters).c_str());
+    }
+  std::string list_of_metrics_filters = MyConfig.GetParamValue(CAN_PARAM, "log.metrics_filters");
+  str_hash = std::hash<std::string>{}(list_of_metrics_filters);
+  if (str_hash != m_metrics_filters_hash)
+    {
+    m_metrics_filters_hash = str_hash;
+    m_metrics_filters.LoadFilters(list_of_metrics_filters);
+    MyCan.LogInfo(NULL, CAN_LogInfo_Config, ("Metrics filters: " + list_of_metrics_filters).c_str());
+    }
+  }
+
+/**
+ * Load, or reload, the configuration if a config event occurred.
+ */
+void canlog::UpdatedConfig(std::string event, void* data)
+  {
+  if (event == "config.changed")
+    {
+    // Only reload if our parameter has changed
+    OvmsConfigParam*p = (OvmsConfigParam*)data;
+    if (p->GetName() != CAN_PARAM)
+      {
+      return;
+      }
+    }
+  LoadConfig();
+  }
+
 void canlog::EventListener(std::string event, void* data)
   {
   // Log vehicle custom (x…) & framework events:
-  if (startsWith(event, 'x') || startsWith(event, "vehicle"))
+  if (m_events_filters.CheckFilter(event))
     LogInfo(NULL, CAN_LogInfo_Event, event.c_str());
+  }
+
+void canlog::MetricListener(OvmsMetric* metric)
+  {
+    std::string name = metric->m_name;
+  // Log metrics (in JSON for later parsing):
+  if (m_metrics_filters.CheckFilter(name))
+    {
+    std::string metric_text = "{ ";
+    metric_text += "\"name\": \"" + json_encode(name) + "\", ";
+    metric_text += "\"value\": " + metric->AsJSON() + ", ";
+    metric_text += "\"unit\": \"" + json_encode(std::string(OvmsMetricUnitLabel(metric->GetUnits()))) + "\" }";
+    LogInfo(NULL, CAN_LogInfo_Metric, metric_text.c_str());
+    }
   }
 
 const char* canlog::GetType()
@@ -596,7 +664,11 @@ void canlog::LogInfo(canbus* bus, CAN_log_type_t type, const char* text)
     msg.origin = bus;
     msg.text = strdup(text);
     m_msgcount++;
-    if (xQueueSend(m_queue, &msg, 0) != pdTRUE) m_dropcount++;
+    if (xQueueSend(m_queue, &msg, 0) != pdTRUE)
+      {
+      m_dropcount++;
+      free(msg.text);
+      }
     }
   else
     {

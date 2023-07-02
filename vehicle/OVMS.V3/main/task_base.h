@@ -66,6 +66,7 @@ class TaskBase
   public:
     TaskBase(const char* name, int stack = DEFAULT_STACK, UBaseType_t priority = DEFAULT_PRIORITY, Parent* parent = NULL);
     Parent* parent() { return m_parent; }
+    virtual void Kill();
 
   protected:
     virtual ~TaskBase();

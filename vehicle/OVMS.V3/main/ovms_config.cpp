@@ -44,6 +44,7 @@ static const char *TAG = "config";
 #include "ovms_events.h"
 #include "ovms_utils.h"
 #include "ovms_boot.h"
+#include "ovms_semaphore.h"
 
 #ifdef CONFIG_OVMS_SC_ZIP
 #include "zip_archive.h"
@@ -564,8 +565,31 @@ void OvmsConfig::upgrade()
     DeregisterParam("vwup");
     }
 
+  // Update single units setting of miles/km to multiple units settings
+  if (GetParamValueInt("module", "cfgversion") < 2022111900)
+    {
+    bool ismiles = GetParamValue("vehicle", "units.distance") == "M";
+    if (ismiles)
+      {
+      SetParamValue("vehicle", "units.speed", "miph");
+      SetParamValue("vehicle", "units.accel", "miphps");
+      SetParamValue("vehicle", "units.accelshort", "ftpss");
+      SetParamValue("vehicle", "units.consumption", "mipkwh");
+      }
+    }
+  if (GetParamValueInt("module", "cfgversion") < 2022121400) 
+    {
+    auto val = GetParamValue("vehicle", "units.preasure");
+    if (val != "")
+      {
+      if (GetParamValue("vehicle", "units.pressure") != "")
+        SetParamValue("vehicle", "units.pressure", val);
+      }
+    DeleteInstance("vehicle", "units.preasure");
+    }
+
   // Done, set config version:
-  SetParamValueInt("module", "cfgversion", 2020053100);
+  SetParamValueInt("module", "cfgversion", 2022121400);
   }
 
 void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)
@@ -717,12 +741,25 @@ OvmsConfigParam* OvmsConfig::CachedParam(std::string param)
   return *p;
   }
 
+/**
+ * ProtectedPath: `true` if the path is protected (e.g. config)
+ * - Note: path is canonicalized before comparison, in case the path
+ * does not exist in the filesystem, the result will be `false`
+ * (i.e.: not protected).
+ */
 bool OvmsConfig::ProtectedPath(std::string path)
   {
 #ifdef CONFIG_OVMS_DEV_CONFIGVFS
   return false;
 #else
-  return (path.find(OVMS_CONFIGPATH) != std::string::npos);
+  char canonical_path[PATH_MAX];
+  char * result = realpath(path.c_str(), canonical_path);
+  if (NULL == result) {
+    // If error during path resolution, we consider it as not protected
+    return false;
+  }
+  std::string resolved_path(canonical_path);
+  return (resolved_path.find(OVMS_CONFIGPATH) != std::string::npos);
 #endif // #ifdef CONFIG_OVMS_DEV_CONFIGVFS
   }
 
@@ -852,7 +889,24 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
   else
     ESP_LOGD(TAG, "Restore: reading '%s'...", path.c_str());
 
-  m_store_lock.Lock();
+  // Lock config store:
+  if (!m_store_lock.Lock(pdMS_TO_TICKS(5000)))
+    {
+    if (writer)
+      writer->puts("Error: config store currently in use by another process");
+    else
+      ESP_LOGE(TAG, "Restore: timeout waiting for config lock");
+    return false;
+    }
+
+  // Signal & wait for components to shutdown:
+    {
+    OvmsSemaphore eventdone;
+    auto callback = [](const char* event, void* data) { ((OvmsSemaphore*)data)->Give(); };
+    MyEvents.SignalEvent("config.restore", &eventdone, callback);
+    eventdone.Take();
+    }
+
   bool ok = true;
 
   // unzip into restore directory:
@@ -1057,6 +1111,7 @@ void OvmsConfigParam::DeleteParam()
   path.append("/");
   path.append(m_name);
   unlink(path.c_str());
+  m_map.clear();
   MyEvents.SignalEvent("config.changed", this);
   }
 

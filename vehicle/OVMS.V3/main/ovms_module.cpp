@@ -431,7 +431,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task, bool leaks)
         break;
     if (j == numafter)
       {
-      writer->printf("- t=%.15s s=%4d a=%p\n", name.bytes,
+      writer->printf("- t=%.15s s=%4" PRId32 " a=%p\n", name.bytes,
         before[i].size, before[i].address);
       ++count;
       }
@@ -461,7 +461,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task, bool leaks)
         {
         for (int pi=0; pi<32; pi++)
           pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
-        writer->printf("  t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
+        writer->printf("  t=%.15s s=%4" PRId32 " a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
           name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
         }
       size += after[i].size;
@@ -497,7 +497,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task, bool leaks)
         {
         for (int pi=0; pi<32; pi++)
           pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
-        writer->printf("+ t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
+        writer->printf("+ t=%.15s s=%4" PRId32 " a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
           name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
         }
       size += after[i].size;
@@ -780,12 +780,23 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
         uint32_t used = total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF);
         int core = xTaskGetAffinity(taskstatus[i].xHandle);
         uint32_t runtime = taskstatus[i].ulRunTimeCounter - last_runtime[taskstatus[i].xTaskNumber];
-        writer->printf("%08X %4u %s %-15s %5u %5u %5u %7u%7u%7u  %c %3d %3.0f%% %3d/%2d\n", taskstatus[i].xHandle,
+#if ESP_IDF_VERSION_MAJOR >= 4
+        writer->printf("%08" PRIX32 " %4u %s %-15s %5" PRIu32 " %5" PRIu32 " %5" PRIu32 " %7u%7u%7u  %c %3d %3.0f%% %3d\n",
+          (uint32_t)taskstatus[i].xHandle,
+          taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
+          used, total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi,
+          (core == tskNO_AFFINITY) ? '*' : '0'+core, taskstatus[i].uxCurrentPriority,
+          diff_totalruntime ? ((float) runtime / diff_totalruntime * 100) : 0.0f,
+          taskstatus[i].uxBasePriority);
+#else
+        writer->printf("%08" PRIX32 " %4u %s %-15s %5" PRIu32 " %5" PRIu32 " %5" PRIu32 " %7u%7u%7u  %c %3d %3.0f%% %3d/%2d\n",
+          (uint32_t)taskstatus[i].xHandle,
           taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
           used, total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi,
           (core == tskNO_AFFINITY) ? '*' : '0'+core, taskstatus[i].uxCurrentPriority,
           diff_totalruntime ? ((float) runtime / diff_totalruntime * 100) : 0.0f,
           taskstatus[i].uxBasePriority, taskstatus[i].uxMutexesHeld);
+#endif
         if (showStack)
           {
           uint32_t* stack = (uint32_t*)(pxTaskGetStackStart(taskstatus[i].xHandle) + total);
@@ -795,7 +806,7 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
             uint32_t word = *topstack++;
             if ((word & 0xFF000000) == 0x80000000)
               {
-              writer->printf("  %p", word - 0x40000000);
+              writer->printf("  %#" PRIx32, word - 0x40000000);
               }
             }
           writer->printf("\n");
@@ -842,7 +853,7 @@ static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cm
   uint32_t diff_totalruntime = totalruntime - last_totalruntime;
 
   // output task count & total runtime diff:
-  buf.printf("*-OVM-DebugTasks,1,86400,%u,%u", n, diff_totalruntime);
+  buf.printf("*-OVM-DebugTasks,1,86400,%u,%" PRIu32, n, diff_totalruntime);
 
   // output tasks sorted by xTaskNumber:
   num = 0;
@@ -869,7 +880,7 @@ static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cm
         //  ,<stack_now>,<stack_max>,<stack_total>
         //  ,<heaptotal>,<heap32bit>,<heapspi>
         //  ,<runtime>
-        buf.printf(",%u,%-.15s,%s,%u,%u,%u,%u,%u,%u,%u",
+        buf.printf(",%u,%-.15s,%s,%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%u,%u,%u,%" PRIu32,
           taskstatus[i].xTaskNumber, taskstatus[i].pcTaskName, states[taskstatus[i].eCurrentState],
           used, total - taskstatus[i].usStackHighWaterMark, total,
           heaptotal, heap32bit, heapspi, runtime);
@@ -922,6 +933,138 @@ static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   MyBoot.Restart();
   }
 
+static void module_sleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int seconds = 0;
+  struct tm spec = {};
+  spec.tm_wday = -1;
+  spec.tm_year = -1;
+  bool have_timespec = false;
+
+  // The esp-idf strptime implementation doesn't return NULL on some mismatches but
+  // instead returns the string start, so we use a wrapper to get POSIX behaviour:
+  auto my_strptime = [](const char *s, const char *format, struct tm *tm) -> bool
+    {
+    char *r = strptime(s, format, tm);
+    return (r && r != s);
+    };
+
+  // Time specification: [weekday|YYYY-mm-dd] [HH:MM[:SS]] | <seconds>
+  for (int i = 0; i < argc; i++)
+    {
+    struct tm part = {};
+
+    // check for weekday name:
+    if (my_strptime(argv[i], "%A", &part) || my_strptime(argv[i], "%a", &part))
+      {
+      spec.tm_wday = part.tm_wday;
+      have_timespec = true;
+      continue;
+      }
+
+    // check for date:
+    if (my_strptime(argv[i], "%Y-%m-%d", &part))
+      {
+      spec.tm_year = part.tm_year;
+      spec.tm_mon = part.tm_mon;
+      spec.tm_mday = part.tm_mday;
+      have_timespec = true;
+      continue;
+      }
+
+    // check for time:
+    if (my_strptime(argv[i], "%H:%M:%S", &part) || my_strptime(argv[i], "%H:%M", &part))
+      {
+      spec.tm_hour = part.tm_hour;
+      spec.tm_min = part.tm_min;
+      spec.tm_sec = part.tm_sec;
+      have_timespec = true;
+      continue;
+      }
+
+    // check for seconds:
+    seconds = atoi(argv[i]);
+    if (seconds > 0) break;
+    }
+
+  time_t utnow = time(NULL);
+  time_t utwaketime;
+
+  if (have_timespec)
+    {
+    // wakeup time specified, calculate second difference to now:
+    struct tm waketime = {};
+    struct tm *tmu = NULL;
+
+    if (spec.tm_year >= 0)
+      {
+      // absolute date:
+      waketime.tm_year = spec.tm_year;
+      waketime.tm_mon = spec.tm_mon;
+      waketime.tm_mday = spec.tm_mday;
+      }
+    else
+      {
+      // date relative to today:
+      tmu = localtime(&utnow);
+      if (spec.tm_wday >= 0)
+        {
+        int daydiff = (spec.tm_wday == tmu->tm_wday) ? 7 : ((7 + spec.tm_wday - tmu->tm_wday) % 7);
+        time_t tday = utnow + daydiff * 24 * 60 * 60;
+        tmu = localtime(&tday);
+        }
+      waketime.tm_year = tmu->tm_year;
+      waketime.tm_mon = tmu->tm_mon;
+      waketime.tm_mday = tmu->tm_mday;
+      }
+
+    waketime.tm_hour = spec.tm_hour;
+    waketime.tm_min = spec.tm_min;
+    waketime.tm_sec = spec.tm_sec;
+
+    // make unix time from spec:
+    waketime.tm_isdst = -1;
+    utwaketime = mktime(&waketime);
+
+    if (utwaketime <= utnow && spec.tm_year < 0)
+      {
+      // relative time in the past, shift by 24 hours:
+      time_t tday = utnow + 24 * 60 * 60;
+      tmu = localtime(&tday);
+      waketime.tm_year = tmu->tm_year;
+      waketime.tm_mon = tmu->tm_mon;
+      waketime.tm_mday = tmu->tm_mday;
+      utwaketime = mktime(&waketime);
+      }
+
+    seconds = utwaketime - utnow;
+    }
+  else
+    {
+    // time span specified:
+    utwaketime = utnow + seconds;
+    }
+
+  // Accomodate shutdown & boot time:
+  if (seconds < 60)
+    {
+    writer->puts("ERROR: invalid or past time specification");
+    }
+  else
+    {
+    // Output info:
+    char buf[100];
+    struct tm *tmwaketime = localtime(&utwaketime);
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %Z", tmwaketime);
+    ESP_LOGI(TAG, "Sleeping until %s = %u seconds ...\n", buf, seconds);
+    writer->printf("Sleeping until %s = %u seconds ...\n", buf, seconds);
+
+    // Enter sleep mode:
+    vTaskDelay(1000/portTICK_PERIOD_MS);
+    MyBoot.DeepSleep(utwaketime);
+    }
+  }
+
 static void module_perform_factoryreset(OvmsWriter* writer)
   {
   const esp_partition_t* p = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "store");
@@ -936,21 +1079,30 @@ static void module_perform_factoryreset(OvmsWriter* writer)
 
   if (writer)
     {
-    writer->printf("Store partition is at %08x size %08x\n", p->address, p->size);
+    writer->printf("Store partition is at %08" PRIx32 " size %08" PRIx32 "\n", p->address, p->size);
     writer->puts("Unmounting configuration store...");
     }
   else
     {
-    ESP_LOGI(TAG, "Store partition is at %08x size %08x", p->address, p->size);
+    ESP_LOGI(TAG, "Store partition is at %08" PRIx32 " size %08" PRIx32, p->address, p->size);
     ESP_LOGI(TAG, "Unmounting configuration store...");
     }
   MyConfig.unmount();
 
   if (writer)
-    writer->printf("Erasing %d bytes of flash...\n",p->size);
+    writer->printf("Erasing %" PRId32 " bytes of flash...\n",p->size);
   else
-    ESP_LOGI(TAG, "Erasing %d bytes of flash...", p->size);
-  spi_flash_erase_range(p->address, p->size);
+    ESP_LOGI(TAG, "Erasing %" PRId32 " bytes of flash...", p->size);
+
+  esp_err_t err = esp_partition_erase_range(p, 0, p->size);
+  if (ESP_OK != err)
+    {
+    if (writer)
+      writer->printf("Factory reset of configuration store failed: %s\n", esp_err_to_name(err));
+    else
+      ESP_LOGE(TAG, "Factory reset of configuration store failed: %s", esp_err_to_name(err));
+    return;
+    }
 
   if (writer)
     writer->puts("Factory reset of configuration store complete and reboot now...");
@@ -1080,6 +1232,19 @@ class OvmsModuleInit
     OvmsCommand* cmd_trigger = cmd_module->RegisterCommand("trigger","Trigger framework");
     cmd_trigger->RegisterCommand("twdt","Trigger task watchdog timeout",module_trigger_twdt);
     cmd_module->RegisterCommand("reset","Reset module",module_reset);
+    cmd_module->RegisterCommand("sleep","Enter sleep mode", module_sleep,
+      "[weekday|YYYY-mm-dd] [HH:MM[:SS]] | <seconds>\n"
+      "Shutdown all components and enter deep sleep for a time span or until a specific time.\n"
+      "Day defaults to today. Weekdays set the next matching day and may be abbreviated.\n"
+      "Time defaults to 00:00 and is expected in local time. A past time today sets that time tomorrow.\n"
+      "Wakeup time needs to be set at least 60 seconds from now.\n"
+      "Actual wakeup is scheduled 15 seconds before the time set to accomodate boot time.\n"
+      "Note: the ESP32 internal clock isn't precise and has a temperature depending drift,\n"
+      "so expect random deviations in both directions on long sleep periods.\n"
+      "Examples:\n"
+      " - sleep for 30 minutes: module sleep 1800\n"
+      " - sleep until monday 6:30: module sleep monday 06:30\n"
+      , 1, 2);
     cmd_module->RegisterCommand("check","Check heap integrity",module_check);
     cmd_module->RegisterCommand("summary","Show module summary",module_summary);
     OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework");

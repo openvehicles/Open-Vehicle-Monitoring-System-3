@@ -6,6 +6,8 @@
 ;    0.1.0  Trial code
 ;    0.2.0  Code initially submitted to master branch
 ;    0.3.0  Implemented v_on and v_charging states with some metrics only set/cleared depending on these states
+;    0.4.0  Changed v_on to be gated on BMS_status instead of BMS_CtrSet to eliminate the overlap with AC charging state, 
+;           drop SOCui, added gear letter metric.
 ;
 ;    (C) 2021-2022 Mike Iimura
 ;
@@ -38,7 +40,9 @@
 
 #include "vehicle.h"
 #include "ovms_metrics.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 
 using namespace std;
 
@@ -46,6 +50,9 @@ using namespace std;
 #define BMS_CTRSET_OPEN 0x00
 #define BMS_CTRSET_PRECHARGE 0x01
 #define BMS_CTRSET_CLOSED 0x02
+#define BMS_STANDBY 0x00
+#define BMS_DRIVE 0x01
+#define BMS_CHARGER 0x03
 
 class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
   {
@@ -56,7 +63,8 @@ class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
+//    void IncomingFrameCan3(CAN_frame_t* p_frame);
+//    void GetDashboardConfig(DashboardConfig& cfg);
 
   protected:
     virtual void Ticker1(uint32_t ticker);
@@ -99,12 +107,15 @@ class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
     uint16_t iPackAmps;
     bool v_on;
     bool v_charging;
+    bool v_dc_charging;
     uint16_t iFrameCountCan1;
     uint16_t iFrameCountCan2;
+    uint32_t iNegPowerCount;
 
-    
+//    OvmsMetricFloat *m_v_bat_socui;
     OvmsMetricFloat *m_v_bat_cool_in_temp;
     OvmsMetricFloat *m_v_bat_cool_out_temp;
+    OvmsMetricString *m_v_env_gear_letter;
     OvmsMetricFloat *m_v_mot_cool_in_temp;
     OvmsMetricFloat *m_v_mot_cool_out_temp;
     OvmsMetricFloat *m_v_bat_energy_avail;

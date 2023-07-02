@@ -69,17 +69,44 @@ const char* simcom5360::GetName()
 void simcom5360::StatusPoller()
   {
   if (m_modem->m_mux != NULL)
-    { m_modem->muxtx(GetMuxChannelPOLL(), "AT+CREG?;+CCLK?;+CSQ;+CPSI?;+COPS?\r\n"); }
+    {
+    // The ESP32 UART queue has a capacity of 128 bytes, NMEA and PPP data may be
+    // coming in concurrently, and we cannot use flow control.
+    // Reduce the queue stress by distributing the status poll:
+    switch (++m_statuspoller_step)
+      {
+      case 1:
+        m_modem->muxtx(GetMuxChannelPOLL(), "AT+CREG?;+CCLK?;+CSQ\r\n");
+        // → ~ 55 bytes, e.g.
+        //  +CREG: 1,5  +CCLK: "22/10/02,09:33:27+08"  +CSQ: 24,99
+        break;
+      case 2:
+        m_modem->muxtx(GetMuxChannelPOLL(), "AT+CPSI?\r\n");
+        // → ~ 60 bytes, e.g.
+        //  +CPSI: GSM,Online,262-02,0x011f,14822,4 EGSM 900,-67,0,40-40
+        break;
+      case 3:
+        m_modem->muxtx(GetMuxChannelPOLL(), "AT+COPS?\r\n");
+        // → ~ 35 bytes, e.g.
+        //  +COPS: 0,0,"vodafone.de Hologram",0
+
+        // done, fallthrough:
+        FALLTHROUGH;
+      default:
+        m_statuspoller_step = 0;
+        break;
+      }
+    }
   }
 
 bool simcom5360::State1Leave(modem::modem_state1_t oldstate)
   {
-  return false;
+  return modemdriver::State1Leave(oldstate);
   }
 
 bool simcom5360::State1Enter(modem::modem_state1_t newstate)
   {
-  return false;
+  return modemdriver::State1Enter(newstate);
   }
 
 modem::modem_state1_t simcom5360::State1Activity(modem::modem_state1_t curstate)
@@ -93,7 +120,7 @@ modem::modem_state1_t simcom5360::State1Activity(modem::modem_state1_t curstate)
     return modem::None;
     }
 
-  return curstate;
+  return modemdriver::State1Activity(curstate);
   }
 
 modem::modem_state1_t simcom5360::State1Ticker1(modem::modem_state1_t curstate)
@@ -125,11 +152,13 @@ modem::modem_state1_t simcom5360::State1Ticker1(modem::modem_state1_t curstate)
         m_modem->tx("AT+CMUXSRVPORT=0,5\r\n");
         break;
       case 20:
-        m_modem->tx("AT+CMUX=0\r\n");
+        // start MUX mode, route URCs to MUX channel 3 (POLL)
+        // Note: NMEA URCs will still be sent only on channel 1 (NMEA) by the SIMCOM 5360
+        m_modem->tx("AT+CMUX=0;+CATR=6\r\n");
         break;
       }
     return modem::None;
     }
 
-  return curstate;
+  return modemdriver::State1Ticker1(curstate);
   }

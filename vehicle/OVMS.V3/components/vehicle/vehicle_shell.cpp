@@ -435,7 +435,14 @@ void OvmsVehicleFactory::bms_status(int verbosity, OvmsWriter* writer, OvmsComma
   {
   if (MyVehicleFactory.m_currentvehicle != NULL)
     {
-    MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, writer);
+      OvmsVehicle::vehicle_bms_status_t statusmode = OvmsVehicle::vehicle_bms_status_t::Both;
+      const char* smode = cmd->GetName();
+      if (strcmp(smode,"volt")==0)
+        statusmode = OvmsVehicle::vehicle_bms_status_t::Voltage;
+      else if (strcmp(smode,"temp")==0)
+        statusmode = OvmsVehicle::vehicle_bms_status_t::Temperature;
+
+      MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, writer, statusmode);
     }
   else
     {
@@ -616,7 +623,7 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
   int err = MyVehicleFactory.m_currentvehicle->PollSingleRequest(bus, txid, rxid,
     request, response, timeout_ms, protocol);
 
-  writer->printf("%x[%x] %s: ", txid, rxid, hexencode(request).c_str());
+  writer->printf("%" PRIx32 "[%" PRIx32 "] %s: ", txid, rxid, hexencode(request).c_str());
   if (err == POLLSINGLE_TXFAILURE)
     {
     writer->puts("ERROR: transmission failure (CAN bus error)");

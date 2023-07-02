@@ -290,9 +290,10 @@ void OvmsLocation::Store(std::string& buf)
 
 void OvmsLocation::Render(std::string& buf)
   {
-  char val[32];
-  snprintf(val, sizeof(val), "%0.6f,%0.6f (%dm)", m_latitude, m_longitude, m_radius);
-  buf = val;
+  metric_unit_t user_length = OvmsMetricGetUserUnit(GrpDistanceShort, Meters);
+
+  buf = string_format("%0.6f,%0.6f (%d%s)",
+      m_latitude, m_longitude, UnitConvert(Meters, user_length, m_radius), OvmsMetricUnitLabel(user_length));
   bool first = true;
   for (ActionList::iterator it = m_actions.begin(); it != m_actions.end(); ++it)
     {
@@ -369,11 +370,22 @@ void location_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("NOTE: ACC actions are not implemented yet!");       // XXX IMPLEMENT AND REMOVE THIS!
   }
 
+int location_set_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 5)
+    {
+    return OvmsMetricUnit_Validate(writer, argc, argv[4], complete, GrpDistanceShort);
+    }
+  return -1;
+  }
+
 void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *name = argv[0];
   float latitude, longitude;
   int radius = LOCATION_DEFRADIUS;
+  int base_value = radius;
+  metric_unit_t user_length = Meters;
 
   if (strcmp(name, "?") == 0)
     {
@@ -391,12 +403,37 @@ void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     longitude = MyLocations.m_longitude;
     }
 
-  if (argc > 3) radius = atoi(argv[3]);
+  if (argc > 3)
+    {
+    radius = atoi(argv[3]);
+    base_value = radius;
+    if (argc < 5)
+      user_length = OvmsMetricGetUserUnit(GrpDistanceShort, Meters);
+    else
+      {
+      user_length = OvmsMetricUnitFromName(argv[4]);
+      if (user_length == UnitNotFound)
+        {
+        writer->printf("Error: Invalid Metric %s\n", argv[4]);
+        return;
+        }
+      user_length = OvmsMetricCheckUnit(Meters, user_length);
+      if (user_length == UnitNotFound)
+        {
+        writer->printf("Error: Metric %s is not a length unit\n", argv[4]);
+        return;
+        }
+      }
 
-  char val[32];
-  snprintf(val,sizeof(val),"%0.6f,%0.6f,%d",latitude,longitude,radius);
-  MyConfig.SetParamValue(LOCATIONS_PARAM,name,val);
-  writer->puts("Location defined");
+    radius = UnitConvert(user_length, Meters, radius);
+    }
+
+  std::string val = string_format("%0.6f,%0.6f,%d",latitude,longitude,radius);
+  MyConfig.SetParamValue(LOCATIONS_PARAM,name,val.c_str());
+  if (user_length == Meters)
+    writer->printf("Location defined with radius of %dm\n", base_value);
+  else
+    writer->printf("Location defined with radius of %d%s = %dm\n", base_value, OvmsMetricUnitLabel(user_length), radius);
   }
 
 void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -409,12 +446,35 @@ void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->printf("Error: No location %s defined\n",name);
     return;
     }
+  metric_unit_t user_length;
+  if (argc < 3)
+    user_length = OvmsMetricGetUserUnit(GrpDistanceShort, Meters);
+  else
+    {
+    user_length = OvmsMetricUnitFromName(argv[2]);
+    if (user_length == UnitNotFound)
+      {
+      writer->printf("Error: Invalid Metric %s\n", argv[2]);
+      return;
+      }
+    user_length = OvmsMetricCheckUnit(Meters, user_length);
+    if (user_length == UnitNotFound)
+      {
+      writer->printf("Error: Metric %s is not a length unit\n", argv[2]);
+      return;
+      }
+    }
 
   std::string buf;
   OvmsLocation* loc = *locp;
-  loc->m_radius = atoi(argv[1]);
+  int base_value = atoi(argv[1]);
+  int radius_m = UnitConvert(user_length, Meters, base_value);
+  loc->m_radius = radius_m;
   loc->Store(buf);
-  writer->puts("Location radius set");
+  if (user_length == Meters)
+    writer->printf("Location radius set to %dm\n", base_value);
+  else
+    writer->printf("Location radius set to %d%s = %dm\n", base_value, OvmsMetricUnitLabel(user_length), radius_m);
   }
 
 void location_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -439,7 +499,10 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   writer->printf("(%sGPS lock", MyLocations.m_gpslock ? "" : "without ");
   n = StandardMetrics.ms_v_pos_satcount->AsInt();
   if (n > 0)
-    writer->printf(", %d satellite%s", n, n == 1 ? "" : "s");
+    {
+    writer->printf(", %d satellite%s, %s", n, n == 1 ? "" : "s",
+      MyLocations.m_gpsgood ? "reliable" : "unreliable");
+    }
   writer->puts(")");
 
   if ((MyLocations.m_park_latitude != 0) || (MyLocations.m_park_longitude != 0))
@@ -471,6 +534,16 @@ int location_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char
   {
   if (argc == 1)
     return MyLocations.m_locations.Validate(writer, argc, argv[0], complete);
+  return -1;
+  }
+
+int location_radius_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  switch (argc)
+    {
+    case 1: return MyLocations.m_locations.Validate(writer, argc, argv[0], complete);
+    case 3: return OvmsMetricUnit_Validate(writer, argc, argv[2], complete, GrpDistanceShort);
+    }
   return -1;
   }
 
@@ -618,6 +691,8 @@ OvmsLocations::OvmsLocations()
 
   m_ready = false;
   m_gpslock = false;
+  m_gpssq = 0;
+  m_gpsgood = false;
   m_latitude = 0;
   m_longitude = 0;
   m_park_latitude = 0;
@@ -625,12 +700,17 @@ OvmsLocations::OvmsLocations()
   m_park_distance = 0;
   m_park_invalid = true;
   m_last_alarm = 0;
+  m_valet_latitude = 0;
+  m_valet_longitude = 0;
+  m_valet_distance = 0;
+  m_valet_invalid = true;
+  m_valet_last_alarm = 0;
 
   // Register our commands
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework", location_status, "", 0, 0, false);
   cmd_location->RegisterCommand("list","Show all locations",location_list);
-  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4);
-  cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2, true, location_validate);
+  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius> [<unit>]] ]", 1, 5, true, location_set_validate);
+  cmd_location->RegisterCommand("radius","Set the radius of a location (defaults to user 'height' units)",location_radius, "<name> <radius> [<unit>]", 2, 3, true, location_radius_validate);
   cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true, location_validate);
   cmd_location->RegisterCommand("status","Show location status",location_status);
   OvmsCommand* cmd_action = cmd_location->RegisterCommand("action","Set an action for a location");
@@ -671,9 +751,11 @@ OvmsLocations::OvmsLocations()
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyMetrics.RegisterListener(TAG, MS_V_POS_GPSLOCK, std::bind(&OvmsLocations::UpdatedGpsLock, this, _1));
-  MyMetrics.RegisterListener(TAG, MS_V_POS_LATITUDE, std::bind(&OvmsLocations::UpdatedLatitude, this, _1));
-  MyMetrics.RegisterListener(TAG, MS_V_POS_LONGITUDE, std::bind(&OvmsLocations::UpdatedLongitude, this, _1));
+  MyMetrics.RegisterListener(TAG, MS_V_POS_GPSSQ, std::bind(&OvmsLocations::UpdatedGpsSQ, this, _1));
+  MyMetrics.RegisterListener(TAG, MS_V_POS_GPSTIME, std::bind(&OvmsLocations::UpdatedPosition, this, _1));
   MyMetrics.RegisterListener(TAG, MS_V_ENV_ON, std::bind(&OvmsLocations::UpdatedVehicleOn, this, _1));
+  MyMetrics.RegisterListener(TAG, MS_V_ENV_VALET, std::bind(&OvmsLocations::UpdateValetMode, this, _1));
+
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsLocations::UpdatedConfig, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsLocations::UpdatedConfig, this, _1, _2));
 
@@ -696,12 +778,6 @@ void OvmsLocations::UpdatedGpsLock(OvmsMetric* metric)
   m_gpslock = m->AsBool();
   if (m_gpslock)
     {
-    if (!m_ready)
-      {
-      UpdateParkPosition();
-      m_ready = true;
-      }
-    UpdateLocations();
     MyEvents.SignalEvent("gps.lock.acquired", NULL);
     }
   else
@@ -710,35 +786,54 @@ void OvmsLocations::UpdatedGpsLock(OvmsMetric* metric)
     }
   }
 
-void OvmsLocations::UpdatedLatitude(OvmsMetric* metric)
+void OvmsLocations::UpdatedGpsSQ(OvmsMetric* metric)
   {
-  OvmsMetricFloat* m = (OvmsMetricFloat*)metric;
-  m_latitude = m->AsFloat();
-  if (m_gpslock)
+  m_gpssq = StdMetrics.ms_v_pos_gpssq->AsInt();
+  int level_good = MyConfig.GetParamValueInt("vehicle", "gps.sq.good", 60);
+  int level_bad  = MyConfig.GetParamValueInt("vehicle", "gps.sq.bad",  40);
+  if (level_bad >= level_good) level_bad = level_good - 1;
+
+  if (!m_gpsgood && m_gpssq >= level_good)
     {
+    m_gpsgood = true;
+    if (!m_ready)
+      {
+      UpdateParkPosition();
+      UpdateValetPosition();
+      m_ready = true;
+      }
     UpdateLocations();
-    CheckTheft();
+    MyEvents.SignalEvent("gps.sq.good", NULL);
+    }
+  else if (m_gpsgood && m_gpssq <= level_bad)
+    {
+    m_gpsgood = false;
+    MyEvents.SignalEvent("gps.sq.bad", NULL);
     }
   }
 
-void OvmsLocations::UpdatedLongitude(OvmsMetric* metric)
+void OvmsLocations::UpdatedPosition(OvmsMetric* metric)
   {
-  OvmsMetricFloat* m = (OvmsMetricFloat*)metric;
-  m_longitude = m->AsFloat();
-  if (m_gpslock)
+  m_latitude = StdMetrics.ms_v_pos_latitude->AsFloat();
+  m_longitude = StdMetrics.ms_v_pos_longitude->AsFloat();
+  if (m_gpsgood)
     {
     UpdateLocations();
     CheckTheft();
+    CheckValet();
     }
   }
 
 void OvmsLocations::UpdatedVehicleOn(OvmsMetric* metric)
   {
   UpdateParkPosition();
+  UpdateValetPosition();
   }
 
 void OvmsLocations::UpdateParkPosition()
   {
+  OvmsRecMutexLock lock(&m_park_lock);
+
   bool caron = StdMetrics.ms_v_env_on->AsBool();
   if (caron)
     {
@@ -753,13 +848,13 @@ void OvmsLocations::UpdateParkPosition()
     {
     m_park_latitude = m_latitude;
     m_park_longitude = m_longitude;
-    m_park_invalid = (!m_gpslock || StdMetrics.ms_v_pos_latitude->IsStale() || StdMetrics.ms_v_pos_longitude->IsStale());
+    m_park_invalid = (!m_gpsgood || StdMetrics.ms_v_pos_latitude->IsStale() || StdMetrics.ms_v_pos_longitude->IsStale());
     m_last_alarm = 0;
-    ESP_LOGI(TAG, "UpdateParkPosition: vehicle is parking @%0.6f,%0.6f gpslock=%d satcount=%d hdop=%.1f invalid=%d",
+    ESP_LOGI(TAG, "UpdateParkPosition: vehicle is parking @%0.6f,%0.6f gpslock=%d satcount=%d hdop=%.1f sq=%d invalid=%d",
       m_park_latitude, m_park_longitude, m_gpslock,
       StdMetrics.ms_v_pos_satcount->AsInt(),
       StdMetrics.ms_v_pos_gpshdop->AsFloat(),
-      m_park_invalid);
+      m_gpssq, m_park_invalid);
     }
   }
 
@@ -813,7 +908,7 @@ void OvmsLocations::ReloadMap()
       }
     }
 
-  if (m_gpslock) UpdateLocations();
+  if (m_gpsgood) UpdateLocations();
   }
 
 void OvmsLocations::UpdateLocations()
@@ -829,6 +924,8 @@ void OvmsLocations::UpdateLocations()
 void OvmsLocations::CheckTheft()
   {
   static int last_dist = 0;
+
+  OvmsRecMutexLock lock(&m_park_lock);
 
   if ((m_park_latitude == 0) && (m_park_longitude == 0)) return;
   if (StandardMetrics.ms_v_env_on->AsBool()) return;
@@ -887,6 +984,112 @@ void OvmsLocations::CheckTheft()
     // inhibit further alerts for configured interval:
     m_last_alarm = monotonictime;
     }
+  }
+
+void OvmsLocations::UpdateValetPosition()
+  {
+  OvmsRecMutexLock lock(&m_valet_lock);
+  if (!StandardMetrics.ms_v_env_valet->AsBool())
+    {
+    if (m_valet_enabled)
+      ESP_LOGI(TAG, "UpdateValetPosition: Clear Valeting information");
+    m_valet_enabled = false;
+    m_valet_latitude = 0;
+    m_valet_longitude = 0;
+    m_valet_distance = 0;
+    m_valet_invalid = true;
+    m_valet_last_alarm = 0;
+    StandardMetrics.ms_v_pos_valet_latitude->Clear();
+    StandardMetrics.ms_v_pos_valet_longitude->Clear();
+    StandardMetrics.ms_v_pos_valet_distance->Clear();
+    }
+  else if (!m_valet_enabled || m_valet_invalid)
+    {
+
+    m_valet_last_alarm = 0;
+    m_valet_enabled = true;
+    if (StandardMetrics.ms_v_pos_valet_latitude->IsDefined() && StandardMetrics.ms_v_pos_valet_longitude->IsDefined())
+      {
+      m_valet_latitude = StandardMetrics.ms_v_pos_valet_latitude->AsFloat();
+      m_valet_longitude = StandardMetrics.ms_v_pos_valet_longitude->AsFloat();
+      m_valet_distance = StandardMetrics.ms_v_pos_valet_distance->AsFloat();
+
+      m_valet_invalid = false;
+      ESP_LOGI(TAG, "UpdateValetPosition: Load from metrics - vehicle is valeting @%0.6f,%0.6f", m_valet_latitude, m_valet_longitude);
+      }
+    else
+      {
+      m_valet_latitude = m_latitude;
+      m_valet_longitude = m_longitude;
+      m_valet_invalid = (!m_gpsgood || StdMetrics.ms_v_pos_latitude->IsStale() || StdMetrics.ms_v_pos_longitude->IsStale());
+      if (!m_valet_invalid)
+        {
+        StandardMetrics.ms_v_pos_valet_latitude->SetValue(m_valet_latitude);
+        StandardMetrics.ms_v_pos_valet_longitude->SetValue(m_valet_longitude );
+        }
+
+      ESP_LOGI(TAG, "UpdateValetPosition: vehicle is valeting @%0.6f,%0.6f gpslock=%d satcount=%d hdop=%.1f sq=%d invalid=%d",
+        m_valet_latitude, m_valet_longitude, m_gpslock,
+        StdMetrics.ms_v_pos_satcount->AsInt(),
+        StdMetrics.ms_v_pos_gpshdop->AsFloat(),
+        m_gpssq, m_valet_invalid);
+      }
+    }
+  }
+
+void OvmsLocations::CheckValet()
+  {
+  OvmsRecMutexLock lock(&m_valet_lock);
+  if (!m_valet_enabled)
+    return;
+  if (!StandardMetrics.ms_v_env_valet->AsBool())
+    {
+    UpdateValetPosition();
+    return;
+    }
+
+  // Wait for first valid coordinates if we had none when we valeted the car:
+  if (m_valet_invalid)
+    {
+    UpdateValetPosition();
+    return;
+    }
+
+  if ((m_valet_latitude == 0) && (m_valet_longitude == 0))
+    return;
+
+  int alarm_dist = MyConfig.GetParamValueInt("vehicle", "valet.alarmdistance", 0);
+  if (alarm_dist == 0) return;
+
+  double dist = fabs(OvmsLocationDistance(
+    (double)m_latitude,(double)m_longitude,
+    (double)m_valet_latitude,(double)m_valet_longitude));
+  // Valet distance is the smoothed version
+  m_valet_distance = (m_valet_distance * 4 + dist) / 5;
+  StandardMetrics.ms_v_pos_valet_distance->SetValue(m_valet_distance);
+
+  int alarm_interval = MyConfig.GetParamValueInt("vehicle", "valet.alarminterval", 15) * 60;
+  if ((m_valet_distance > alarm_dist) &&
+      (m_valet_last_alarm == 0
+        || (alarm_interval > 0 && monotonictime > m_valet_last_alarm + alarm_interval)))
+    {
+    MyNotify.NotifyStringf("alert", "valet.bounds",
+      "Vehicle has moved out of area while being valeted (@%0.6f,%0.6f)",
+      m_latitude, m_longitude);
+    MyEvents.SignalEvent("location.alert.valet.bounds", NULL);
+    ESP_LOGW(TAG, "CheckValet: valet.bounds valeted @%0.6f,%0.6f now @%0.6f,%0.6f gpsmode=%s satcount=%d hdop=%.1f gpsspeed=%.1f",
+      m_valet_latitude, m_valet_longitude, m_latitude, m_longitude,
+      StdMetrics.ms_v_pos_gpsmode->AsString().c_str(),
+      StdMetrics.ms_v_pos_satcount->AsInt(),
+      StdMetrics.ms_v_pos_gpshdop->AsFloat(),
+      StdMetrics.ms_v_pos_gpsspeed->AsFloat());
+    // inhibit further alerts for configured interval:
+    m_valet_last_alarm = monotonictime;
+    }
+  }
+void OvmsLocations::UpdateValetMode(OvmsMetric* metric)
+  {
+  UpdateValetPosition();
   }
 
 void OvmsLocations::UpdatedConfig(std::string event, void* data)

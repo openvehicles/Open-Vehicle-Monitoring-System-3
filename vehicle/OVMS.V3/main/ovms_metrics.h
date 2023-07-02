@@ -41,12 +41,13 @@
 #include <set>
 #include <vector>
 #include <atomic>
-#include "ovms_utils.h"
 #include "ovms_mutex.h"
 #include "dbc_number.h"
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 #include "ovms_script.h"
 #endif
+
+#include "ovms_command.h"
 
 #include "ovms_log.h"
 #define TAG ((const char*)"metric")
@@ -59,6 +60,9 @@ typedef enum : uint8_t
   {
   Other         = 0,
   Native        = Other,
+  ToMetric      = 1,
+  ToImperial    = 2,
+  ToUser        = 3,
 
   Kilometers    = 10,
   Miles         = 11,
@@ -71,6 +75,7 @@ typedef enum : uint8_t
   kPa           = 30,
   Pa            = 31,
   PSI           = 32,
+  Bar           = 33,
 
   Volts         = 40,
   Amps          = 41,
@@ -79,6 +84,8 @@ typedef enum : uint8_t
   kWh           = 44,
   Watts         = 45,
   WattHours     = 46,
+  Kilocoulombs  = 47,
+  MegaJoules    = 48,
 
   Seconds       = 50,
   Minutes       = 51,
@@ -90,24 +97,37 @@ typedef enum : uint8_t
 
   Kph           = 61,
   Mph           = 62,
+  MetersPS      = 63,
+  FeetPS        = 64,
 
   // Acceleration:
   KphPS         = 71,   // Kph per second
   MphPS         = 72,   // Mph per second
   MetersPSS     = 73,   // Meters per second^2
+  FeetPSS       = 74,   // Feet per second^2
 
   dbm           = 80,   // Signal Quality (in dBm)
   sq            = 81,   // Signal Quality (in SQ units)
 
   Percentage    = 90,
+  Permille      = 91,
 
   // Energy consumption:
   WattHoursPK   = 100,  // Wh/km
   WattHoursPM   = 101,  // Wh/mi
+  kWhP100K      = 102,  // Kwh/100km
+  KPkWh         = 103,  // Km/kwH
+  MPkWh         = 104,  // mi/kwH
 
   // Torque:
   Nm            = 110,
+  // ^^^^ Last ^^^^ MetricUnitLast below.
+
+  UnitNotFound  = 255 // Used for errors in Search.
   } metric_unit_t;
+
+const metric_unit_t MetricUnitFirst = Other;
+const metric_unit_t MetricUnitLast  = Nm;
 
 typedef enum : uint8_t
   {
@@ -116,9 +136,60 @@ typedef enum : uint8_t
   Defined
 } metric_defined_t;
 
+// Mask for folding "Short groups" to their equivalent "Long Group"
+const uint8_t GrpFoldMask = 0x0f;
+const uint8_t GrpUnfold = 0x10;
+typedef enum : uint8_t
+  {
+  GrpNone = 0,
+  GrpOther = 1,
+  GrpDistance = 2,
+  GrpSpeed = 3,
+  GrpAccel = 4,
+  GrpPower = 5,
+  GrpEnergy = 6,
+  GrpConsumption = 7,
+  GrpTemp = 8,
+  GrpPressure = 9,
+  GrpTime = 10,
+  GrpSignal = 11,
+  GrpTorque = 12,
+  GrpDirection = 13,
+  GrpRatio = 14,
+  GrpCharge = 15,
+  // These are where a dimension group is split and allows
+  // easily folding the 'short distances' back onto their equivalents.
+  GrpDistanceShort = GrpDistance + GrpUnfold,
+  GrpAccelShort = GrpAccel + GrpUnfold
+  } metric_group_t;
+const metric_group_t MetricGroupLast = GrpAccelShort;
+
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
+extern const char* OvmsMetricUnitName(metric_unit_t units);
+extern metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePrefix = false);
+int OvmsMetricUnit_Validate(OvmsWriter* writer, int argc, const char* token, bool complete, metric_group_t group = GrpNone);
+const char *OvmsMetricUnit_FindUniquePrefix(const char* token);
+
+bool CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_check);
 extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
 extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
+
+typedef std::vector<metric_group_t> metric_group_list_t;
+typedef std::set<metric_unit_t> metric_unit_set_t;
+
+// Groups in order of display.
+extern bool OvmsMetricGroupConfigList(metric_group_list_t& groups);
+extern const char* OvmsMetricGroupLabel(metric_group_t group);
+extern const char* OvmsMetricGroupName(metric_group_t group);
+extern bool OvmsMetricGroupUnits(metric_group_t group, metric_unit_set_t& units);
+
+// Get/Set Metric default config
+extern std::string OvmsMetricGetUserConfig(metric_group_t group);
+extern void OvmsMetricSetUserConfig(metric_group_t group, std::string value);
+extern void OvmsMetricSetUserConfig(metric_group_t group, metric_unit_t unit);
+extern metric_unit_t OvmsMetricGetUserUnit(metric_group_t group, metric_unit_t defaultUnit = Native);
+extern metric_group_t GetMetricGroup(metric_unit_t unit);
+metric_unit_t OvmsMetricCheckUnit(metric_unit_t fromUnit, metric_unit_t toUnit);
 
 typedef uint32_t persistent_value_t;
 
@@ -153,9 +224,9 @@ class OvmsMetric
     virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     virtual float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    virtual void DukPush(DukContext &dc);
+    virtual void DukPush(DukContext &dc, metric_unit_t units = Other);
 #endif
-    virtual bool SetValue(std::string value);
+    virtual bool SetValue(std::string value, metric_unit_t units = Other);
     virtual bool SetValue(dbcNumber& value);
     virtual void operator=(std::string value);
     virtual uint32_t LastModified();
@@ -177,10 +248,16 @@ class OvmsMetric
     virtual void SetModified(bool changed=true);
     virtual void Clear();
 
+    bool IsUnitSend(size_t modifier);
+    bool IsUnitSendAndClear(size_t modifier);
+    void ClearUnitSend(size_t modifier);
+    void SetUnitSend(size_t modifier);
+    void SetUnitSendAll();
+
   public:
     OvmsMetric* m_next;
     const char* m_name;
-    std::atomic_ulong m_modified;
+    std::atomic_ulong m_modified, m_sendunit;
     uint32_t m_lastmodified;
     uint16_t m_autostale;
     metric_unit_t m_units;
@@ -201,12 +278,12 @@ class OvmsMetricBool : public OvmsMetric
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsBool(const bool defvalue = false);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc);
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override;
 #endif
     bool SetValue(bool value);
     void operator=(bool value) { SetValue(value); }
-    bool SetValue(std::string value);
-    bool SetValue(dbcNumber& value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+    bool SetValue(dbcNumber& value) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     bool CheckPersist();
@@ -229,12 +306,12 @@ class OvmsMetricInt : public OvmsMetric
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc);
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override;
 #endif
     bool SetValue(int value, metric_unit_t units = Other);
     void operator=(int value) { SetValue(value); }
-    bool SetValue(std::string value);
-    bool SetValue(dbcNumber& value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+    bool SetValue(dbcNumber& value) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     bool CheckPersist();
@@ -257,12 +334,12 @@ class OvmsMetricFloat : public OvmsMetric
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc);
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override;
 #endif
     bool SetValue(float value, metric_unit_t units = Other);
     void operator=(float value) { SetValue(value); }
-    bool SetValue(std::string value);
-    bool SetValue(dbcNumber& value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+    bool SetValue(dbcNumber& value) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     virtual bool CheckPersist();
@@ -282,9 +359,9 @@ class OvmsMetricString : public OvmsMetric
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc);
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override;
 #endif
-    bool SetValue(std::string value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     virtual bool IsString() { return true; };
@@ -338,7 +415,7 @@ class OvmsMetricBitset : public OvmsMetric
       return json;
       }
 
-    bool SetValue(std::string value)
+    bool SetValue(std::string value, metric_unit_t units = Other) override
       {
       std::bitset<N> n_value;
       std::istringstream vs(value);
@@ -352,7 +429,7 @@ class OvmsMetricBitset : public OvmsMetric
         if (elem >= 0 && elem < N)
           n_value[elem] = 1;
         }
-      return SetValue(n_value);
+      return SetValue(n_value, units);
       }
     void operator=(std::string value) { SetValue(value); }
 
@@ -365,7 +442,7 @@ class OvmsMetricBitset : public OvmsMetric
       }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc)
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override
       {
       std::bitset<N> value;
         {
@@ -450,7 +527,7 @@ class OvmsMetricSet : public OvmsMetric
       return json;
       }
 
-    bool SetValue(std::string value)
+    bool SetValue(std::string value, metric_unit_t units = Other) override
       {
       std::set<ElemType> n_value;
       std::istringstream vs(value);
@@ -462,7 +539,7 @@ class OvmsMetricSet : public OvmsMetric
         ts >> elem;
         n_value.insert(elem);
         }
-      return SetValue(n_value);
+      return SetValue(n_value, units);
       }
     void operator=(std::string value) { SetValue(value); }
 
@@ -475,7 +552,7 @@ class OvmsMetricSet : public OvmsMetric
       }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc)
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override
       {
       std::set<ElemType> value;
         {
@@ -543,7 +620,8 @@ class OvmsMetricSet : public OvmsMetric
 template
   <
   typename ElemType,
-  class Allocator = std::allocator<ElemType>
+  class Allocator = std::allocator<ElemType>,
+  class AllocatorStar = std::allocator<ElemType*>
   >
 class OvmsMetricVector : public OvmsMetric
   {
@@ -688,15 +766,18 @@ class OvmsMetricVector : public OvmsMetric
         ss.precision(precision);
         ss << fixed;
         }
-      OvmsMutexLock lock(&m_mutex);
-      for (auto i = m_value.begin(); i != m_value.end(); i++)
+      CheckTargetUnit(m_units, units, false);
         {
-        if (ss.tellp() > 0)
-          ss << ',';
-        if (units != Other && units != m_units)
-          ss << (ElemType) UnitConvert(m_units, units, (float)*i);
-        else
-          ss << *i;
+        OvmsMutexLock lock(&m_mutex);
+        for (auto i = m_value.begin(); i != m_value.end(); i++)
+          {
+          if (ss.tellp() > 0)
+            ss << ',';
+          if (units != Other && units != m_units)
+            ss << (ElemType) UnitConvert(m_units, units, (float)*i);
+          else
+            ss << *i;
+          }
         }
       return ss.str();
       }
@@ -735,7 +816,7 @@ class OvmsMetricVector : public OvmsMetric
       }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc)
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override
       {
       std::vector<ElemType, Allocator> value;
         {
@@ -752,7 +833,7 @@ class OvmsMetricVector : public OvmsMetric
       }
 #endif
 
-    virtual bool SetValue(std::string value)
+    virtual bool SetValue(std::string value, metric_unit_t units = Other)
       {
       std::vector<ElemType, Allocator> n_value;
       std::istringstream vs(value);
@@ -764,7 +845,7 @@ class OvmsMetricVector : public OvmsMetric
         ts >> elem;
         n_value.push_back(elem);
         }
-      return SetValue(n_value);
+      return SetValue(n_value, units);
       }
     void operator=(std::string value) { SetValue(value); }
 
@@ -821,8 +902,28 @@ class OvmsMetricVector : public OvmsMetric
       {
       if (!IsDefined())
         return defvalue;
-      OvmsMutexLock lock(&m_mutex);
-      return m_value;
+      // Translate any 'Metric' or 'Imperial' type units.. see if we can do a simple return first..
+      CheckTargetUnit(m_units, units, false);
+      if ((units == Native) || (units == m_units) )
+        {
+        OvmsMutexLock lock(&m_mutex);
+        return m_value;
+        }
+      else
+        {
+        std::vector<ElemType, Allocator> res;
+          {
+          OvmsMutexLock lock(&m_mutex);
+          res = m_value;
+          }
+        for ( auto it = res.begin(); it != res.end(); ++it)
+          *it = UnitConvert(m_units, units, *it);
+        return res;
+        }
+      }
+    inline std::vector<ElemType, Allocator> AsVector(metric_unit_t units)
+      {
+      return AsVector(std::vector<ElemType, Allocator>(), units);
       }
 
     ElemType GetElemValue(size_t n)
@@ -832,6 +933,12 @@ class OvmsMetricVector : public OvmsMetric
       if (m_value.size() > n)
         val = m_value[n];
       return val;
+      }
+
+    ElemType GetElemValue(size_t n, metric_unit_t units)
+      {
+      ElemType val = GetElemValue(n);
+      return UnitConvert(m_units, units, val);
       }
 
     void SetElemValue(size_t n, const ElemType nvalue, metric_unit_t units = Other)
@@ -904,7 +1011,7 @@ class OvmsMetricVector : public OvmsMetric
     OvmsMutex m_mutex;
     std::vector<ElemType, Allocator> m_value;
     std::size_t* m_valuep_size;
-    std::vector<ElemType*, Allocator> m_valuep_elem;
+    std::vector<ElemType*, AllocatorStar> m_valuep_elem;
   };
 
 
@@ -913,16 +1020,42 @@ typedef std::function<void(OvmsMetric*)> MetricCallback;
 class MetricCallbackEntry
   {
   public:
-    MetricCallbackEntry(const char* caller, MetricCallback callback);
+    MetricCallbackEntry(std::string caller, MetricCallback callback);
     virtual ~MetricCallbackEntry();
 
   public:
-    const char *m_caller;
+    std::string m_caller;
     MetricCallback m_callback;
   };
 
+class UnitConfigMap
+  {
+  protected:
+    std::array<metric_unit_t, static_cast<uint8_t>(MetricGroupLast)+1> m_map;
+    std::array<std::atomic_ulong, static_cast<uint8_t>(MetricGroupLast)+1> m_modified;
+    OvmsMutex m_store_lock;
+  public:
+    UnitConfigMap();
+    void Load();
+
+    void ConfigEventListener(std::string event, void* data);
+    void ConfigMountedListener(std::string event, void* data);
+
+    metric_unit_t GetUserUnit( metric_group_t group, metric_unit_t defaultUnit = UnitNotFound );
+    metric_unit_t GetUserUnit( metric_unit_t unit);
+
+    bool IsModified( metric_group_t group, size_t modifier);
+    bool IsModifiedAndClear(metric_group_t group, size_t modifier);
+    bool HasModified(size_t modifier);
+    void ConfigList(metric_group_list_t& groups);
+
+    metric_group_list_t config_groups;
+
+    void InitialiseSlot(size_t modifier);
+  };
+
 typedef std::list<MetricCallbackEntry*> MetricCallbackList;
-typedef std::map<const char*, MetricCallbackList*, CmpStrOp> MetricCallbackMap;
+typedef std::map<std::string, MetricCallbackList*> MetricCallbackMap;
 
 class OvmsMetrics
   {
@@ -935,11 +1068,16 @@ class OvmsMetrics
     void DeregisterMetric(OvmsMetric* metric);
 
   public:
-    bool Set(const char* metric, const char* value);
+    bool Set(const char* metric, const char* value, const char *unit = NULL);
     bool SetInt(const char* metric, int value);
     bool SetBool(const char* metric, bool value);
     bool SetFloat(const char* metric, float value);
+    std::string GetUnitStr(const char* metric, const char *unit = NULL);
     OvmsMetric* Find(const char* metric);
+
+    OvmsMetric* FindUniquePrefix(const char* token) const;
+    bool GetCompletion(OvmsWriter* writer, const char* token) const;
+    int Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const;
 
     OvmsMetricInt *InitInt(const char* metric, uint16_t autostale=0, int value=0, metric_unit_t units = Other, bool persist = false);
     OvmsMetricBool *InitBool(const char* metric, uint16_t autostale=0, bool value=0, metric_unit_t units = Other, bool persist = false);
@@ -972,17 +1110,22 @@ class OvmsMetrics
         m->SetValue(value);
       return m;
       }
+    void SetAllUnitSend(size_t modifier);
+    void SetAllGroupUnitSend(metric_group_t group);
+
+    // Return bitmask of unit streams that need to be sent
+    unsigned long GetUnitSendAll();
 
   public:
-    void RegisterListener(const char* caller, const char* name, MetricCallback callback);
-    void DeregisterListener(const char* caller);
+    void RegisterListener(std::string caller, std::string name, MetricCallback callback);
+    void DeregisterListener(std::string caller);
     void NotifyModified(OvmsMetric* metric);
-
   protected:
     MetricCallbackMap m_listeners;
 
   public:
     size_t RegisterModifier();
+    void InitialiseSlot(size_t modifier);
 
   public:
     void EventSystemShutDown(std::string event, void* data);
@@ -996,6 +1139,7 @@ class OvmsMetrics
   };
 
 extern OvmsMetrics MyMetrics;
+extern UnitConfigMap MyUnitConfig;
 
 #undef TAG
 

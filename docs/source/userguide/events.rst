@@ -54,10 +54,13 @@ clock.dayN                                    Per-day local time, day N (0=Sun, 
 config.changed                                Configuration has changed
 config.mounted                                Configuration is mounted and available
 config.unmounted                              Configuration is unmounted and unavailable
+config.restore                                Configuration is about to be restored from a backup
 egpio.input.<port>.<state>                    EGPIO input port change (port=0…9, state=high/low)
 egpio.output.<port>.<state>                   EGPIO output port change (port=0…9, state=high/low)
 gps.lock.acquired                             GPS lock has been acquired
 gps.lock.lost                                 GPS lock has been lost
+gps.sq.bad                                    GPS position is now unreliable
+gps.sq.good                                   GPS position is now reliable
 housekeeping.init                             Housekeeping has initialised
 location.alert.flatbed.moved                  GPS movement of parked vehicle detected
 location.enter.<name>               <name>    The specified geolocation has been entered
@@ -76,6 +79,8 @@ network.wifi.sta.bad                          WIFI client has bad signal level
 network.wifi.sta.good                         WIFI client has good signal level
 network.wifi.up                               WIFI network is up
 notify.<type>.<subtype>                       An info / alert / error notification is sent
+obd2ecu.start                                 Called after the OBD2ECU process is started.
+obd2ecu.stop                                  Called before the OBD2ECU process is stopped.
 retools.cleared.all                           RE frame log has been cleared
 retools.cleared.changed                       RE frame change flags cleared
 retools.cleared.discovered                    RE frame discovery flags cleared
@@ -168,10 +173,13 @@ vehicle.charge.state                <state>   Vehicle charge state has changed
 vehicle.charge.stop                           Vehicle has stopped charging
 vehicle.charge.timermode.off                  Vehicle charge timer mode has been switched off
 vehicle.charge.timermode.on                   Vehicle charge timer mode has been switched on
+vehicle.charge.type                 <type>    Vehicle charge connection type has changed (e.g. ccs/type2/…)
 vehicle.drivemode.<n>                         Vehicle drivemode has been set to profile <n> (vehicle specific)
 vehicle.gear.forward                          Vehicle has been put in forward gear
 vehicle.gear.neutral                          Vehicle has been put in neutral gear
 vehicle.gear.reverse                          Vehicle has been put in reverse gear
+vehicle.gen.state                   <state>   Vehicle generator state has changed
+vehicle.gen.type                    <type>    Vehicle generator connection type has changed
 vehicle.headlights.off                        Vehicle headlights are off
 vehicle.headlights.on                         Vehicle headlights are on
 vehicle.locked                                Vehicle has been locked

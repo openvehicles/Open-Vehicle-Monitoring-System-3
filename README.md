@@ -45,10 +45,12 @@ provides data logging to SD card and to a server.
   - Chevrolet Volt / Opel Ampera
   - Chevrolet Bolt EV / Opel Ampera-e
   - [BMW i3 / i3s](https://docs.openvehicles.com/en/latest/components/vehicle_bmwi3/docs/index.html)
+  - [Mini Cooper SE](https://docs.openvehicles.com/en/latest/components/vehicle_minise/docs/index.html)
   - [Fiat 500e](https://docs.openvehicles.com/en/latest/components/vehicle_fiat500/docs/index.html)
   - [Hyundai Ioniq vFL](https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html)
+  - [Hyundai Ioniq 5](https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniq5/docs/index.html)
   - [Jaguar Ipace](https://docs.openvehicles.com/en/latest/components/vehicle_jaguaripace/docs/index.html)
-  - [Kia e-Niro / Hyundai Kona](https://docs.openvehicles.com/en/latest/components/vehicle_kianiroev/docs/index.html)
+  - [Kia e-Niro / Hyundai Kona / Hyundai Ioniq FL](https://docs.openvehicles.com/en/latest/components/vehicle_kianiroev/docs/index.html)
   - [Kia Soul EV](https://docs.openvehicles.com/en/latest/components/vehicle_kiasoulev/docs/index.html)
   - [Maxus eDeliver 3](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html)
   - [Mercedes-Benz B250E](https://docs.openvehicles.com/en/latest/components/vehicle_mercedesb250e/docs/index.html)
@@ -57,6 +59,7 @@ provides data logging to SD card and to a server.
   - [Nissan Leaf / e-NV200](https://docs.openvehicles.com/en/latest/components/vehicle_nissanleaf/docs/index.html)
   - [Renault Twizy](https://docs.openvehicles.com/en/latest/components/vehicle_renaulttwizy/docs/index.html)
   - [Renault Zoe / Kangoo](https://docs.openvehicles.com/en/latest/components/vehicle_renaultzoe/docs/index.html)
+  - [Renault Zoe Phase 2](https://docs.openvehicles.com/en/latest/components/vehicle_renaultzoe_ph2_obd/docs/index.html)
   - [Smart ED Gen.3](https://docs.openvehicles.com/en/latest/components/vehicle_smarted/docs/index.html)
   - [Smart ED/EQ Gen.4 (453)](https://docs.openvehicles.com/en/latest/components/vehicle_smarteq/docs/index.html)
   - [Tesla Model S](https://docs.openvehicles.com/en/latest/components/vehicle_teslamodels/docs/index.html)
@@ -82,6 +85,7 @@ provides data logging to SD card and to a server.
   - [iOS App](https://apps.apple.com/us/app/open-vehicles/id490098531)
 - _Distributors_
   - [FastTech (global)](https://www.fasttech.com/search?ovms)
+  - [Medlock & Sons (North America)](https://medlockandsons.com/product/ovms-v3/)
   - [OpenEnergyMonitor (UK/Europe)](https://shop.openenergymonitor.com/ovms/)
 - _Servers_
   - [Asia-Pacific](https://www.openvehicles.com/)
@@ -100,7 +104,7 @@ provides data logging to SD card and to a server.
 
 - [Module Schematics and PCB Layouts](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/tree/master/vehicle/hardware)  
 
-- **Base Module**
+- **Base Module (v3.0-3.3)**
   - Black injection-moulded plastic enclosure, approximately 99x73x29 mm excl. plugs
   - ESP32 WROVER processor (16MB flash, 4MB SPI RAM, 520KB SRAM, dual core 160/240MHz Xtensa LX6 processor)
   - WIFI 802.11 b/g/n
@@ -114,11 +118,18 @@ provides data logging to SD card and to a server.
   - 1x GPS antenna connector
   - 1x DB9 vehicle connector
   - 1x DB26 expansion connector
-- **Modem Module**
+- **Modem Module v3.0-3.2**
   - US edition is SIM5360A (Dual-Band UMTS/HSPA+ 850/1900MHz, Quad-Band GSM/GPRS/EDGE 850/900/1800/1900MHz)
   - EU edition is SIM5360J(E) (Dual-Band UMTS/HSPA+ 900/2100MHz, Quad-Band GSM/GPRS/EDGE 850/900/1800/1900MHz)
   - 3G (EV-DO/HSPA+) dual band modem
   - Includes 2G (GSM/GPRS) and 2.5G (EDGE) quad band
+  - GPS/GNSS
+  - Nano (4FF) SIM slot
+  - HOLOGRAM.IO nano sim included (can be exchanged if necessary)
+- **Modem Module v3.3**
+  - World edition: SIM7600G (Multi-Band LTE-FDD/LTE-TDD/HSPA+ and GSM/GPRS/EDGE)
+  - 4G (LTE-FDD/LTE-TDD) multi band modem
+  - Includes 3G (EV-DO/HSPA+), 2G (GSM/GPRS) and 2.5G (EDGE) quad band
   - GPS/GNSS
   - Nano (4FF) SIM slot
   - HOLOGRAM.IO nano sim included (can be exchanged if necessary)

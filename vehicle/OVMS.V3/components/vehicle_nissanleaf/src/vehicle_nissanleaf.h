@@ -36,7 +36,9 @@
 #include <algorithm>
 #include "freertos/timers.h"
 #include "vehicle.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 #include "ovms_semaphore.h"
 #include "ovms_mutex.h"
 #include "ovms_peripherals.h"
@@ -134,10 +136,12 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
   //
 
   public:
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
     void WebInit();
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+#endif
     static void shell_obd_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   public:

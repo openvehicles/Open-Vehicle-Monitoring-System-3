@@ -16,11 +16,14 @@ Pre-Installation Steps
 Prior to installation, please make sure you have the following available:
 
 #. The OVMS v3 module in it's enclosure.
+#. A `Hologram <https://hologram.io>`_ (or other suitable) SIM card if you module did not come with one.
 #. A micro-usb cable suitable for connecting to your computer.
 #. A laptop or desktop computer (if necessary).
 #. A cable suitable for connecting to your vehicle.
 #. A GSM antenna (if you are using the cellular option).
 #. A GPS antenna (if your vehicle type requires one).
+
+
 
 You should also have ready access to this User Guide, and wifi connectivity to the Internet.
 
@@ -33,6 +36,18 @@ Powering the module
 ^^^^^^^^^^^^^^^^^^^
 
 If you intend to configure the module on your desk before connecting it to the vehicle, make sure your USB port delivers power (around 500mA, depending on modem and wifi activity). We recommend using a USB hub with a separate power supply or a direct port of your laptop / PC.
+
+.. warning::
+  **The v3.3 LTE Modem (SIMCOM 7600G) may not be able to connect or not power up at all
+  when powered from USB, even with a powered USB hub.**
+  
+  If you cannot get the cellular connection to work on your desk, try powering from your
+  car's OBD port first.
+  
+  Another option is adding a 12V supply on your desk, e.g. using a standard RC 3S LiPo battery
+  (connect 12V/+ to OBD pin 16 and GND/- to OBD pin 4). You can connect USB and OBD/12V supply
+  simultaneously, be aware the module will boot as soon as any power source is present.
+
 
 ^^^^^^^^^^^^^^^^^^^
 OVMS Server account
@@ -59,7 +74,7 @@ As this is insecure, you should take care not to leave the module running unconf
 
 Using your laptop/tablet/phone, establish a wifi connection to the module. You should see an IP address in the range 192.168.4.x allocated, with a gateway at 192.168.4.1.
 
-Note: Some smartphones (e.g Android) require mobile data to be switched off to use a WiFi connection without a interent connectivity. 
+Note: Some smartphones (e.g Android) require mobile data to be switched off to use a WiFi connection without a internet connectivity.
 
 Launch your web browser, and connect as follows:
 
@@ -88,6 +103,8 @@ Manual configuration
 ^^^^^^^^^^^^^^^^^^^^
 
 After finishing the wizard or if you prefer to do a manual setup, the configuration menus will provide single pages for each module function. These also contain advanced options for the features, so it's worth having a look.
+
+.. _installation-vehicle-configuration:
 
 ^^^^^^^^^^^^^^^^^^^^^
 Vehicle Configuration

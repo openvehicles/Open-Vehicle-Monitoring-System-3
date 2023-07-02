@@ -401,12 +401,27 @@ config OVMS_VEHICLE_RENAULTZOE
     help
         Enable to include support for Renault Zoe vehicles.
 
+config OVMS_VEHICLE_RENAULTZOE_PH2_OBD
+    bool "Include support for Renault Zoe Phase2 vehicles (OBD port version)"
+    default y
+    depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    help
+        Enable to include support for Renault Zoe Phase 2 vehicles (OBD port version).
+        
 config OVMS_VEHICLE_MAXED3
     bool "Include support for Maxus eDeliver3 vehicle"
     default y
     depends on OVMS
     help
         Enable to include support for Maxus eDeliver3 vehicle.
+        
+config OVMS_VEHICLE_MAXE56
+    bool "Include support for Maxus Euniq 5 6-seats vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Maxus Euniq 5 6-seats vehicle.
 
 config OVMS_VEHICLE_KIASOULEV
     bool "Include support for Kia Soul EV vehicles"
@@ -521,12 +536,26 @@ config OVMS_VEHICLE_BMWI3
     help
         Enable to include support for BMW i3 or i3s vehicles
 
+config OVMS_VEHICLE_MINISE
+    bool "Include support for Mini Cooper SE"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Mini Cooper SE vehicles
+
 config OVMS_VEHICLE_HYUNDAI_IONIQVFL
     bool "Include support for Hyundai Ioniq Electric 28kWh (vFL)"
     default y
     depends on OVMS
     help
         Enable to include support for Hyundai Ioniq Electric 28kWh (vFL).
+
+config OVMS_VEHICLE_HYUNDAI_IONIQ5
+    bool "Include support for Hyundai Ioniq 5"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Hyundai Ioniq 5.
 
 config OVMS_VEHICLE_JAGUARIPACE
     bool "Include support for Jaguar Ipace"
@@ -845,5 +874,12 @@ config OVMS_DEV_DEBUGNOTIFICATIONS
     depends on OVMS
     help
         Enable to show notifications raised
+
+config OVMS_DEV_NETMANAGER_PING
+    bool "Enable netmanager ping support"
+    default n
+    depends on OVMS && LWIP_ICMP
+    help
+        Enable to add 'network ping' command
 
 endmenu # Developer Options

@@ -39,7 +39,9 @@ static const char *TAG = "command";
 #include <esp_log.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
+#include <esp_timer.h>
 #include "freertos/FreeRTOS.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
@@ -53,7 +55,7 @@ static const char *TAG = "command";
 
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1010)));
 
-bool CompareCharPtr::operator()(const char* a, const char* b)
+bool CompareCharPtr::operator()(const char* a, const char* b) const
   {
   return strcmp(a, b) < 0;
   }
@@ -1461,9 +1463,9 @@ void OvmsCommandApp::ShowLogStatus(int verbosity, OvmsWriter* writer)
     "  Log file path    : %s\n"
     "  Current size     : %.1f kB\n"
     "  Cycle size       : %u kB\n"
-    "  Cycle count      : %u\n"
-    "  Dropped messages : %u\n"
-    "  Messages logged  : %u\n"
+    "  Cycle count      : %" PRIu32 "\n"
+    "  Dropped messages : %" PRIu32 "\n"
+    "  Messages logged  : %" PRIu32 "\n"
     "  Total fsync time : %.1f s\n"
     , m_consoles.size()
     , m_logfile ? "active" : "inactive"

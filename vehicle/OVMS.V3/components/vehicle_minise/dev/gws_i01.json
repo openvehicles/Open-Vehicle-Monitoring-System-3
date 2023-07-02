@@ -1,0 +1,5663 @@
+{
+   "ovmscode": "GWS",
+   "ovmsextaddr": "5E",
+   "ovmsdesc": "Gear selector switch",
+   "tables" : {
+      "DIGITALARGUMENT" : [
+         {
+            "WERT" : "1",
+            "TEXT" : "ein",
+            "TEXT_EN" : "a"
+         },
+         {
+            "TEXT_EN" : "out",
+            "WERT" : "0",
+            "TEXT" : "aus"
+         },
+         {
+            "TEXT_EN" : "Yes",
+            "TEXT" : "ja",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "No",
+            "TEXT" : "nein",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "auf",
+            "TEXT_EN" : "on"
+         },
+         {
+            "TEXT_EN" : "from",
+            "WERT" : "0",
+            "TEXT" : "ab"
+         },
+         {
+            "TEXT_EN" : "at",
+            "WERT" : "1",
+            "TEXT" : "an"
+         },
+         {
+            "TEXT_EN" : "yes",
+            "WERT" : "1",
+            "TEXT" : "yes"
+         },
+         {
+            "WERT" : "0",
+            "TEXT" : "no",
+            "TEXT_EN" : "no"
+         },
+         {
+            "TEXT_EN" : "on",
+            "TEXT" : "on",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "off",
+            "WERT" : "0",
+            "TEXT" : "off"
+         },
+         {
+            "TEXT_EN" : "up",
+            "WERT" : "1",
+            "TEXT" : "up"
+         },
+         {
+            "TEXT_EN" : "down",
+            "WERT" : "0",
+            "TEXT" : "down"
+         },
+         {
+            "TEXT_EN" : "true",
+            "TEXT" : "true",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "false",
+            "TEXT" : "false",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "1",
+            "TEXT_EN" : "1"
+         },
+         {
+            "TEXT" : "0",
+            "WERT" : "0"
+         }
+      ],
+      "ARG_0XD204" : [
+         {
+            "ARG" : "ELEMENT",
+            "MAX" : "-",
+            "EINHEIT" : "0-n",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "TAB_FUNKTIONSBELEUCHTUNG",
+            "INFO" : "Anzusteuerndes Element der Suchbeleuchtung Siehe Tabelle TAB_FUNKTIONSBELEUCHTUNG",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Search lighting element to be controlled See table TAB_FUNKTIONSBELEUCHTUNG",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MIN" : "-"
+         }
+      ],
+      "ARG_0X5106" : [
+         {
+            "INFO" : "Schreibt 2 Bytes auf den Tabellenindex INDEX_IN_ARRAY",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "-",
+            "MAX" : "127.0",
+            "ARG" : "INDEX_IN_ARRAY",
+            "MIN" : "0.0",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Writes 2 bytes to the table index INDEX_IN_ARRAY",
+            "DIV" : "1.0",
+            "MUL" : "1.0"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "MIN" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Value - 2 bytes",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "ARG" : "VALUE",
+            "MAX" : "-",
+            "NAME" : "-",
+            "INFO" : "Wert - 2 Bytes",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int"
+         }
+      ],
+      "UDS_TAB_ROE_AKTIV" : [
+         {
+            "TEXT_EN" : "Active error message deactivated",
+            "NR" : "0x00",
+            "TEXT" : "Aktive Fehlermeldung deaktiviert"
+         },
+         {
+            "NR" : "0x01",
+            "TEXT" : "Aktive Fehlermeldung aktiviert",
+            "TEXT_EN" : "Active error message activated"
+         },
+         {
+            "TEXT" : "Status der aktiven Fehlermeldung nicht feststellbar",
+            "NR" : "0xFF",
+            "TEXT_EN" : "Status of the active error message cannot be determined"
+         }
+      ],
+      "LIEFERANTEN" : [
+         {
+            "LIEF_TEXT" : "Reinshagen => Delphi",
+            "LIEF_NR" : "0x000001"
+         },
+         {
+            "LIEF_NR" : "0x000002",
+            "LIEF_TEXT" : "Kostal"
+         },
+         {
+            "LIEF_NR" : "0x000003",
+            "LIEF_TEXT" : "Hella"
+         },
+         {
+            "LIEF_TEXT" : "Siemens",
+            "LIEF_NR" : "0x000004"
+         },
+         {
+            "LIEF_NR" : "0x000005",
+            "LIEF_TEXT" : "Eaton"
+         },
+         {
+            "LIEF_TEXT" : "UTA",
+            "LIEF_NR" : "0x000006"
+         },
+         {
+            "LIEF_NR" : "0x000007",
+            "LIEF_TEXT" : "Helbako"
+         },
+         {
+            "LIEF_NR" : "0x000008",
+            "LIEF_TEXT" : "Bosch"
+         },
+         {
+            "LIEF_TEXT" : "Loewe => Lear",
+            "LIEF_NR" : "0x000009"
+         },
+         {
+            "LIEF_NR" : "0x000010",
+            "LIEF_TEXT" : "VDO"
+         },
+         {
+            "LIEF_TEXT" : "Valeo",
+            "LIEF_NR" : "0x000011"
+         },
+         {
+            "LIEF_NR" : "0x000012",
+            "LIEF_TEXT" : "MBB"
+         },
+         {
+            "LIEF_TEXT" : "Kammerer",
+            "LIEF_NR" : "0x000013"
+         },
+         {
+            "LIEF_TEXT" : "SWF",
+            "LIEF_NR" : "0x000014"
+         },
+         {
+            "LIEF_TEXT" : "Blaupunkt",
+            "LIEF_NR" : "0x000015"
+         },
+         {
+            "LIEF_TEXT" : "Philips",
+            "LIEF_NR" : "0x000016"
+         },
+         {
+            "LIEF_NR" : "0x000017",
+            "LIEF_TEXT" : "Alpine"
+         },
+         {
+            "LIEF_NR" : "0x000018",
+            "LIEF_TEXT" : "Continental Teves"
+         },
+         {
+            "LIEF_NR" : "0x000019",
+            "LIEF_TEXT" : "Elektromatik Suedafrika"
+         },
+         {
+            "LIEF_TEXT" : "Becker",
+            "LIEF_NR" : "0x000020"
+         },
+         {
+            "LIEF_TEXT" : "Preh",
+            "LIEF_NR" : "0x000021"
+         },
+         {
+            "LIEF_NR" : "0x000022",
+            "LIEF_TEXT" : "Alps"
+         },
+         {
+            "LIEF_NR" : "0x000023",
+            "LIEF_TEXT" : "Motorola"
+         },
+         {
+            "LIEF_NR" : "0x000024",
+            "LIEF_TEXT" : "Temic"
+         },
+         {
+            "LIEF_TEXT" : "Webasto",
+            "LIEF_NR" : "0x000025"
+         },
+         {
+            "LIEF_TEXT" : "MotoMeter",
+            "LIEF_NR" : "0x000026"
+         },
+         {
+            "LIEF_TEXT" : "Delphi PHI",
+            "LIEF_NR" : "0x000027"
+         },
+         {
+            "LIEF_TEXT" : "DODUCO => BERU",
+            "LIEF_NR" : "0x000028"
+         },
+         {
+            "LIEF_TEXT" : "DENSO",
+            "LIEF_NR" : "0x000029"
+         },
+         {
+            "LIEF_NR" : "0x000030",
+            "LIEF_TEXT" : "NEC"
+         },
+         {
+            "LIEF_NR" : "0x000031",
+            "LIEF_TEXT" : "DASA"
+         },
+         {
+            "LIEF_TEXT" : "Pioneer",
+            "LIEF_NR" : "0x000032"
+         },
+         {
+            "LIEF_NR" : "0x000033",
+            "LIEF_TEXT" : "Jatco"
+         },
+         {
+            "LIEF_NR" : "0x000034",
+            "LIEF_TEXT" : "Fuba"
+         },
+         {
+            "LIEF_TEXT" : "UK-NSI",
+            "LIEF_NR" : "0x000035"
+         },
+         {
+            "LIEF_NR" : "0x000036",
+            "LIEF_TEXT" : "AABG"
+         },
+         {
+            "LIEF_TEXT" : "Dunlop",
+            "LIEF_NR" : "0x000037"
+         },
+         {
+            "LIEF_NR" : "0x000038",
+            "LIEF_TEXT" : "Sachs"
+         },
+         {
+            "LIEF_TEXT" : "ITT",
+            "LIEF_NR" : "0x000039"
+         },
+         {
+            "LIEF_NR" : "0x000040",
+            "LIEF_TEXT" : "FTE"
+         },
+         {
+            "LIEF_TEXT" : "Megamos",
+            "LIEF_NR" : "0x000041"
+         },
+         {
+            "LIEF_TEXT" : "TRW",
+            "LIEF_NR" : "0x000042"
+         },
+         {
+            "LIEF_TEXT" : "Wabco",
+            "LIEF_NR" : "0x000043"
+         },
+         {
+            "LIEF_NR" : "0x000044",
+            "LIEF_TEXT" : "ISAD Electronic Systems"
+         },
+         {
+            "LIEF_NR" : "0x000045",
+            "LIEF_TEXT" : "HEC (Hella Electronics Corporation)"
+         },
+         {
+            "LIEF_NR" : "0x000046",
+            "LIEF_TEXT" : "Gemel"
+         },
+         {
+            "LIEF_NR" : "0x000047",
+            "LIEF_TEXT" : "ZF"
+         },
+         {
+            "LIEF_NR" : "0x000048",
+            "LIEF_TEXT" : "GMPT"
+         },
+         {
+            "LIEF_TEXT" : "Harman Kardon",
+            "LIEF_NR" : "0x000049"
+         },
+         {
+            "LIEF_NR" : "0x000050",
+            "LIEF_TEXT" : "Remes"
+         },
+         {
+            "LIEF_NR" : "0x000051",
+            "LIEF_TEXT" : "ZF Lenksysteme"
+         },
+         {
+            "LIEF_TEXT" : "Magneti Marelli",
+            "LIEF_NR" : "0x000052"
+         },
+         {
+            "LIEF_TEXT" : "Borg Instruments",
+            "LIEF_NR" : "0x000053"
+         },
+         {
+            "LIEF_TEXT" : "GETRAG",
+            "LIEF_NR" : "0x000054"
+         },
+         {
+            "LIEF_TEXT" : "BHTC (Behr Hella Thermocontrol)",
+            "LIEF_NR" : "0x000055"
+         },
+         {
+            "LIEF_NR" : "0x000056",
+            "LIEF_TEXT" : "Siemens VDO Automotive"
+         },
+         {
+            "LIEF_TEXT" : "Visteon",
+            "LIEF_NR" : "0x000057"
+         },
+         {
+            "LIEF_TEXT" : "Autoliv",
+            "LIEF_NR" : "0x000058"
+         },
+         {
+            "LIEF_NR" : "0x000059",
+            "LIEF_TEXT" : "Haberl"
+         },
+         {
+            "LIEF_TEXT" : "Magna Steyr",
+            "LIEF_NR" : "0x000060"
+         },
+         {
+            "LIEF_NR" : "0x000061",
+            "LIEF_TEXT" : "Marquardt"
+         },
+         {
+            "LIEF_NR" : "0x000062",
+            "LIEF_TEXT" : "AB-Elektronik"
+         },
+         {
+            "LIEF_NR" : "0x000063",
+            "LIEF_TEXT" : "Siemens VDO Borg"
+         },
+         {
+            "LIEF_TEXT" : "Hirschmann Electronics",
+            "LIEF_NR" : "0x000064"
+         },
+         {
+            "LIEF_NR" : "0x000065",
+            "LIEF_TEXT" : "Hoerbiger Electronics"
+         },
+         {
+            "LIEF_NR" : "0x000066",
+            "LIEF_TEXT" : "Thyssen Krupp Automotive Mechatronics"
+         },
+         {
+            "LIEF_NR" : "0x000067",
+            "LIEF_TEXT" : "Gentex GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Atena GmbH",
+            "LIEF_NR" : "0x000068"
+         },
+         {
+            "LIEF_TEXT" : "Magna-Donelly",
+            "LIEF_NR" : "0x000069"
+         },
+         {
+            "LIEF_NR" : "0x000070",
+            "LIEF_TEXT" : "Koyo Steering Europe"
+         },
+         {
+            "LIEF_TEXT" : "NSI B.V",
+            "LIEF_NR" : "0x000071"
+         },
+         {
+            "LIEF_NR" : "0x000072",
+            "LIEF_TEXT" : "AISIN AW CO.LTD"
+         },
+         {
+            "LIEF_NR" : "0x000073",
+            "LIEF_TEXT" : "Shorlock"
+         },
+         {
+            "LIEF_TEXT" : "Schrader",
+            "LIEF_NR" : "0x000074"
+         },
+         {
+            "LIEF_NR" : "0x000075",
+            "LIEF_TEXT" : "BERU Electronics GmbH"
+         },
+         {
+            "LIEF_TEXT" : "CEL",
+            "LIEF_NR" : "0x000076"
+         },
+         {
+            "LIEF_TEXT" : "Audio Mobil",
+            "LIEF_NR" : "0x000077"
+         },
+         {
+            "LIEF_TEXT" : "rd electronic",
+            "LIEF_NR" : "0x000078"
+         },
+         {
+            "LIEF_TEXT" : "iSYS RTS GmbH",
+            "LIEF_NR" : "0x000079"
+         },
+         {
+            "LIEF_TEXT" : "Westfalia Automotive GmbH",
+            "LIEF_NR" : "0x000080"
+         },
+         {
+            "LIEF_TEXT" : "Tyco Electronics",
+            "LIEF_NR" : "0x000081"
+         },
+         {
+            "LIEF_NR" : "0x000082",
+            "LIEF_TEXT" : "Paragon AG"
+         },
+         {
+            "LIEF_TEXT" : "IEE S.A",
+            "LIEF_NR" : "0x000083"
+         },
+         {
+            "LIEF_TEXT" : "TEMIC AUTOMOTIVE of NA",
+            "LIEF_NR" : "0x000084"
+         },
+         {
+            "LIEF_TEXT" : "AKsys GmbH",
+            "LIEF_NR" : "0x000085"
+         },
+         {
+            "LIEF_TEXT" : "META System",
+            "LIEF_NR" : "0x000086"
+         },
+         {
+            "LIEF_NR" : "0x000087",
+            "LIEF_TEXT" : "Hülsbeck & Fürst GmbH & Co KG"
+         },
+         {
+            "LIEF_NR" : "0x000088",
+            "LIEF_TEXT" : "Mann & Hummel Automotive GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Brose Fahrzeugteile GmbH & Co",
+            "LIEF_NR" : "0x000089"
+         },
+         {
+            "LIEF_NR" : "0x000090",
+            "LIEF_TEXT" : "Keihin"
+         },
+         {
+            "LIEF_TEXT" : "Vimercati S.p.A.",
+            "LIEF_NR" : "0x000091"
+         },
+         {
+            "LIEF_TEXT" : "CRH",
+            "LIEF_NR" : "0x000092"
+         },
+         {
+            "LIEF_TEXT" : "TPO Display Corp.",
+            "LIEF_NR" : "0x000093"
+         },
+         {
+            "LIEF_TEXT" : "KÜSTER Automotive Control",
+            "LIEF_NR" : "0x000094"
+         },
+         {
+            "LIEF_NR" : "0x000095",
+            "LIEF_TEXT" : "Hitachi Automotive"
+         },
+         {
+            "LIEF_TEXT" : "Continental Automotive",
+            "LIEF_NR" : "0x000096"
+         },
+         {
+            "LIEF_NR" : "0x000097",
+            "LIEF_TEXT" : "TI-Automotive"
+         },
+         {
+            "LIEF_TEXT" : "Hydro",
+            "LIEF_NR" : "0x000098"
+         },
+         {
+            "LIEF_TEXT" : "Johnson Controls",
+            "LIEF_NR" : "0x000099"
+         },
+         {
+            "LIEF_NR" : "0x00009A",
+            "LIEF_TEXT" : "Takata- Petri"
+         },
+         {
+            "LIEF_TEXT" : "Mitsubishi Electric B.V. (Melco)",
+            "LIEF_NR" : "0x00009B"
+         },
+         {
+            "LIEF_TEXT" : "Autokabel",
+            "LIEF_NR" : "0x00009C"
+         },
+         {
+            "LIEF_TEXT" : "GKN-Driveline",
+            "LIEF_NR" : "0x00009D"
+         },
+         {
+            "LIEF_NR" : "0x00009E",
+            "LIEF_TEXT" : "Zollner Elektronik AG"
+         },
+         {
+            "LIEF_NR" : "0x00009F",
+            "LIEF_TEXT" : "PEIKER acustics GmbH"
+         },
+         {
+            "LIEF_NR" : "0x0000A0",
+            "LIEF_TEXT" : "Bosal-Oris"
+         },
+         {
+            "LIEF_NR" : "0x0000A1",
+            "LIEF_TEXT" : "Cobasys"
+         },
+         {
+            "LIEF_TEXT" : "Lighting Reutlingen GmbH",
+            "LIEF_NR" : "0x0000A2"
+         },
+         {
+            "LIEF_NR" : "0x0000A3",
+            "LIEF_TEXT" : "CONTI VDO"
+         },
+         {
+            "LIEF_NR" : "0x0000A4",
+            "LIEF_TEXT" : "ADC Automotive Distance Control Systems GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Funkwerk Dabendorf GmbH",
+            "LIEF_NR" : "0x0000A5"
+         },
+         {
+            "LIEF_NR" : "0x0000A6",
+            "LIEF_TEXT" : "Lame"
+         },
+         {
+            "LIEF_TEXT" : "Magna/Closures",
+            "LIEF_NR" : "0x0000A7"
+         },
+         {
+            "LIEF_NR" : "0x0000A8",
+            "LIEF_TEXT" : "Wanyu"
+         },
+         {
+            "LIEF_NR" : "0x0000A9",
+            "LIEF_TEXT" : "Thyssen Krupp Presta"
+         },
+         {
+            "LIEF_TEXT" : "ArvinMeritor",
+            "LIEF_NR" : "0x0000AA"
+         },
+         {
+            "LIEF_NR" : "0x0000AB",
+            "LIEF_TEXT" : "Kongsberg Automotive GmbH"
+         },
+         {
+            "LIEF_TEXT" : "SMR Automotive Mirrors",
+            "LIEF_NR" : "0x0000AC"
+         },
+         {
+            "LIEF_TEXT" : "So.Ge.Mi.",
+            "LIEF_NR" : "0x0000AD"
+         },
+         {
+            "LIEF_NR" : "0x0000AE",
+            "LIEF_TEXT" : "MTA"
+         },
+         {
+            "LIEF_TEXT" : "Alfmeier",
+            "LIEF_NR" : "0x0000AF"
+         },
+         {
+            "LIEF_TEXT" : "ELTEK VALERE DEUTSCHLAND GMBH",
+            "LIEF_NR" : "0x0000B0"
+         },
+         {
+            "LIEF_TEXT" : "Omron Automotive Electronics Europe Group",
+            "LIEF_NR" : "0x0000B1"
+         },
+         {
+            "LIEF_NR" : "0x0000B2",
+            "LIEF_TEXT" : "ASK"
+         },
+         {
+            "LIEF_NR" : "0x0000B3",
+            "LIEF_TEXT" : "CML Innovative Technologies GmbH & Co. KG"
+         },
+         {
+            "LIEF_TEXT" : "APAG Elektronik AG",
+            "LIEF_NR" : "0x0000B4"
+         },
+         {
+            "LIEF_NR" : "0x0000B5",
+            "LIEF_TEXT" : "Nexteer Automotive World Headquarters"
+         },
+         {
+            "LIEF_NR" : "0x0000B6",
+            "LIEF_TEXT" : "Hans Widmaier"
+         },
+         {
+            "LIEF_NR" : "0x0000B7",
+            "LIEF_TEXT" : "SB LiMotive Germany GmbH"
+         },
+         {
+            "LIEF_TEXT" : "KYOCERA Display Corporation",
+            "LIEF_NR" : "0x0000B8"
+         },
+         {
+            "LIEF_TEXT" : "MAGNA Powertrain AG & Co KG",
+            "LIEF_NR" : "0x0000B9"
+         },
+         {
+            "LIEF_TEXT" : "BorgWarner",
+            "LIEF_NR" : "0x0000BA"
+         },
+         {
+            "LIEF_NR" : "0xFFFFFF",
+            "LIEF_TEXT" : "unbekannter Hersteller"
+         }
+      ],
+      "ARG_0X5107" : [
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Update of the LED parameter block: 0: no update of the LED block in the NvM 1: update of the LED block in the NvM",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MIN" : "-",
+            "ARG" : "UPDATE_LED_BLOCK",
+            "MAX" : "-",
+            "EINHEIT" : "0/1",
+            "DATENTYP" : "unsigned char",
+            "INFO" : "Update des LED-Parameterblocks: 0: kein Update des LED-Blocks im NvM 1: Update des LED-Blocks im NvM",
+            "NAME" : "-"
+         }
+      ],
+      "ARG_0XD202" : [
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Corona lighting color",
+            "L/H" : "high",
+            "MIN" : "-",
+            "MAX" : "-",
+            "ARG" : "FARBE",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "0-n",
+            "INFO" : "Farbe der Coronabeleuchtung",
+            "NAME" : "TAB_CORONA_FARBE"
+         },
+         {
+            "MAX" : "-",
+            "ARG" : "PULSIEREND",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "0/1",
+            "INFO" : "Pulsierend: 0x00 = nicht pulsierend 0x01 = pulsierend",
+            "NAME" : "-",
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Pulsating: 0x00 = not pulsing 0x01 = pulsating",
+            "L/H" : "high",
+            "MIN" : "-"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "Duration of the activation",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "MIN" : "-",
+            "MUL" : "1.0",
+            "DIV" : "1.0",
+            "EINHEIT" : "s",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "Dauer der Ansteuerung",
+            "ARG" : "ZEIT",
+            "MAX" : "-"
+         }
+      ],
+      "PROZESSKLASSEN_GWS" : [
+         {
+            "BEZEICHNUNG" : "ungueltig",
+            "PROZESSKLASSE" : "-",
+            "WERT" : "0x00"
+         },
+         {
+            "PROZESSKLASSE" : "HWEL",
+            "WERT" : "0x01",
+            "BEZEICHNUNG" : "Hardware (Elektronik)"
+         },
+         {
+            "BEZEICHNUNG" : "Hardwareauspraegung",
+            "PROZESSKLASSE" : "HWAP",
+            "WERT" : "0x02"
+         },
+         {
+            "BEZEICHNUNG" : "Hardwarefarbe",
+            "WERT" : "0x03",
+            "PROZESSKLASSE" : "HWFR"
+         },
+         {
+            "PROZESSKLASSE" : "CAFD",
+            "WERT" : "0x05",
+            "BEZEICHNUNG" : "Codierdaten"
+         },
+         {
+            "BEZEICHNUNG" : "Bootloader",
+            "WERT" : "0x06",
+            "PROZESSKLASSE" : "BTLD"
+         },
+         {
+            "PROZESSKLASSE" : "SWFL",
+            "WERT" : "0x08",
+            "BEZEICHNUNG" : "Software ECU Speicherimage"
+         },
+         {
+            "PROZESSKLASSE" : "SWFF",
+            "WERT" : "0x09",
+            "BEZEICHNUNG" : "Flash File Software"
+         },
+         {
+            "PROZESSKLASSE" : "SWPF",
+            "WERT" : "0x0A",
+            "BEZEICHNUNG" : "Pruefsoftware"
+         },
+         {
+            "WERT" : "0x0B",
+            "PROZESSKLASSE" : "ONPS",
+            "BEZEICHNUNG" : "Onboard Programmiersystem"
+         },
+         {
+            "BEZEICHNUNG" : "FA2FP",
+            "PROZESSKLASSE" : "FAFP",
+            "WERT" : "0x0F"
+         },
+         {
+            "BEZEICHNUNG" : "Temporaere Loeschroutine",
+            "PROZESSKLASSE" : "TLRT",
+            "WERT" : "0x1A"
+         },
+         {
+            "BEZEICHNUNG" : "Temporaere Programmierroutine",
+            "PROZESSKLASSE" : "TPRG",
+            "WERT" : "0x1B"
+         },
+         {
+            "BEZEICHNUNG" : "Flashloader Slave",
+            "PROZESSKLASSE" : "FLSL",
+            "WERT" : "0x07"
+         },
+         {
+            "BEZEICHNUNG" : "Interaktive Betriebsanleitung Daten",
+            "WERT" : "0x0C",
+            "PROZESSKLASSE" : "IBAD"
+         },
+         {
+            "PROZESSKLASSE" : "FCFA",
+            "WERT" : "0x10",
+            "BEZEICHNUNG" : "Freischaltcode Fahrzeug-Auftrag"
+         },
+         {
+            "BEZEICHNUNG" : "Bootloader-Update Applikation",
+            "PROZESSKLASSE" : "BLUP",
+            "WERT" : "0x1C"
+         },
+         {
+            "PROZESSKLASSE" : "FLUP",
+            "WERT" : "0x1D",
+            "BEZEICHNUNG" : "Flashloader-Update Applikation"
+         },
+         {
+            "BEZEICHNUNG" : "Entertainment Daten",
+            "WERT" : "0xA0",
+            "PROZESSKLASSE" : "ENTD"
+         },
+         {
+            "PROZESSKLASSE" : "NAVD",
+            "WERT" : "0xA1",
+            "BEZEICHNUNG" : "Navigation Daten"
+         },
+         {
+            "PROZESSKLASSE" : "FCFN",
+            "WERT" : "0xA2",
+            "BEZEICHNUNG" : "Freischaltcode Funktion"
+         },
+         {
+            "PROZESSKLASSE" : "SWUP",
+            "WERT" : "0xC0",
+            "BEZEICHNUNG" : "Software-Update Package"
+         },
+         {
+            "BEZEICHNUNG" : "Index Software-Update Package",
+            "PROZESSKLASSE" : "SWIP",
+            "WERT" : "0xC1"
+         },
+         {
+            "BEZEICHNUNG" : "ungueltig",
+            "PROZESSKLASSE" : "-",
+            "WERT" : "0xFF"
+         }
+      ],
+      "TAB_ENTR_TASTER" : [
+         {
+            "TEXT_EN" : "not pressed",
+            "WERT" : "0x00",
+            "TEXT" : "nicht gedrueckt"
+         },
+         {
+            "TEXT_EN" : "depressed",
+            "WERT" : "0x01",
+            "TEXT" : "gedrueckt"
+         },
+         {
+            "TEXT" : "klemmt",
+            "WERT" : "0x02",
+            "TEXT_EN" : "stuck"
+         },
+         {
+            "WERT" : "0xFF",
+            "TEXT" : "unbekannnter Fehlerort",
+            "TEXT_EN" : "unknown error location"
+         }
+      ],
+      "RES_0XD5AE" : [
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "-",
+            "INFO_EN" : "Status park button contact 1; see TAB_ENTR_TASTER",
+            "RESULTNAME" : "STAT_PARKTASTER_1_NR",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "0-n",
+            "INFO" : "Status Parktaster Kontakt 1; siehe TAB_ENTR_TASTER  ",
+            "NAME" : "TAB_ENTR_TASTER"
+         },
+         {
+            "EINHEIT" : "0-n",
+            "RESULTNAME" : "STAT_PARKTASTER_2_NR",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "TAB_ENTR_TASTER",
+            "INFO" : "Status Parktaster Kontakt 2; siehe TAB_ENTR_TASTER  ",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Status park button contact 2; see TAB_ENTR_TASTER",
+            "L/H" : "-",
+            "MASKE" : "-",
+            "ADD" : "-"
+         }
+      ],
+      "SG_FUNKTIONEN" : [
+         {
+            "L/H" : "high",
+            "INFO_EN" : "Rotary actuator position: see table TAB_POSITION_DREHSTELLER",
+            "ADD" : "-",
+            "ARG" : "POSITION_DREHSTELLER",
+            "SG_ADR" : "-",
+            "SERVICE" : "22",
+            "DATENTYP" : "unsigned char",
+            "LABEL" : "-",
+            "MUL" : "-",
+            "ID" : "0xD200",
+            "RES_TABELLE" : "-",
+            "DIV" : "-",
+            "ARG_TABELLE" : "-",
+            "EINHEIT" : "0-n",
+            "RESULTNAME" : "STAT_POSITION_DREHSTELLER",
+            "NAME" : "TAB_POSITION_DREHSTELLER",
+            "INFO" : "Position Drehsteller:siehe Tabelle TAB_POSITION_DREHSTELLER"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Coronabeleuchtung",
+            "RESULTNAME" : "-",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "ARG_0xD202",
+            "RES_TABELLE" : "-",
+            "DIV" : "-",
+            "ID" : "0xD202",
+            "MUL" : "-",
+            "LABEL" : "-",
+            "DATENTYP" : "-",
+            "SERVICE" : "2E",
+            "SG_ADR" : "-",
+            "ARG" : "CORONA_BELEUCHTUNG",
+            "ADD" : "-",
+            "L/H" : "-",
+            "INFO_EN" : "Corona lighting"
+         },
+         {
+            "ARG_TABELLE" : "ARG_0xD203",
+            "LABEL" : "-",
+            "MUL" : "-",
+            "ID" : "0xD203",
+            "RES_TABELLE" : "-",
+            "DIV" : "-",
+            "NAME" : "-",
+            "INFO" : "Funktionsbeleuchtung vom Drehsteller",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "L/H" : "-",
+            "INFO_EN" : "Function lighting from the rotary actuator",
+            "ADD" : "-",
+            "DATENTYP" : "-",
+            "SERVICE" : "2E",
+            "SG_ADR" : "-",
+            "ARG" : "FUNKTIONSBELEUCHTUNG_DREHSTELLER"
+         },
+         {
+            "LABEL" : "-",
+            "MUL" : "-",
+            "RES_TABELLE" : "-",
+            "DIV" : "-",
+            "ID" : "0xD204",
+            "ARG_TABELLE" : "ARG_0xD204",
+            "NAME" : "-",
+            "INFO" : "Suchbeleuchtung Drehsteller",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "INFO_EN" : "Search lighting rotary actuator",
+            "L/H" : "-",
+            "ADD" : "-",
+            "SERVICE" : "2E",
+            "SG_ADR" : "-",
+            "ARG" : "SUCHBELEUCHTUNG_DREHSTELLER",
+            "DATENTYP" : "-"
+         },
+         {
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "NAME" : "-",
+            "INFO" : "Status Parktaster Kontake 1 und 2; 0= nicht gedrückt 1= gedrückt 2= klemmt",
+            "LABEL" : "-",
+            "MUL" : "-",
+            "RES_TABELLE" : "RES_0xD5AE",
+            "ID" : "0xD5AE",
+            "DIV" : "-",
+            "ARG_TABELLE" : "-",
+            "ARG" : "STATUS_GWS_PARKTASTER_1_UND_2",
+            "SERVICE" : "22",
+            "SG_ADR" : "-",
+            "DATENTYP" : "-",
+            "INFO_EN" : "Status park button contacts 1 and 2; 0 = not pressed 1 = pressed 2 = stuck",
+            "L/H" : "-",
+            "ADD" : "-"
+         },
+         {
+            "ARG_TABELLE" : "-",
+            "LABEL" : "-",
+            "MUL" : "-",
+            "RES_TABELLE" : "RES_0x5100",
+            "ID" : "0x5100",
+            "DIV" : "-",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "NAME" : "-",
+            "INFO" : "Read ZF-Codierdatenblocks",
+            "INFO_EN" : "Read IF coding data blocks",
+            "L/H" : "-",
+            "ADD" : "-",
+            "DATENTYP" : "-",
+            "ARG" : "PARAMETERBLOCK_LESEN",
+            "SG_ADR" : "-",
+            "SERVICE" : "22"
+         },
+         {
+            "MUL" : "-",
+            "LABEL" : "-",
+            "RES_TABELLE" : "-",
+            "DIV" : "-",
+            "ID" : "0x5101",
+            "ARG_TABELLE" : "ARG_0x5101",
+            "INFO" : "Write 1 Byte in ZF-Codierdatenblock",
+            "NAME" : "-",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "INFO_EN" : "Write 1 byte in the IF coding data block",
+            "L/H" : "-",
+            "ADD" : "-",
+            "SERVICE" : "2E",
+            "SG_ADR" : "-",
+            "ARG" : "PARAMETERBLOCK_SCHREIBEN_1_BYTE",
+            "DATENTYP" : "-"
+         },
+         {
+            "LABEL" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "RES_TABELLE" : "-",
+            "ID" : "0x5102",
+            "ARG_TABELLE" : "ARG_0x5102",
+            "NAME" : "-",
+            "INFO" : "Write 2 Bytes in ZF-Codierdatenblock",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "L/H" : "-",
+            "INFO_EN" : "Write 2 bytes in the IF coding data block",
+            "ADD" : "-",
+            "SG_ADR" : "-",
+            "SERVICE" : "2E",
+            "ARG" : "PARAMETERBLOCK_SCHREIBEN_2_BYTES",
+            "DATENTYP" : "-"
+         },
+         {
+            "L/H" : "-",
+            "INFO_EN" : "Write the 64 bytes block in the non-volatile memory.",
+            "ADD" : "-",
+            "DATENTYP" : "-",
+            "SERVICE" : "2E",
+            "SG_ADR" : "-",
+            "ARG" : "WRITE_BLOCK_IN_NVM",
+            "ARG_TABELLE" : "ARG_0x5103",
+            "LABEL" : "-",
+            "MUL" : "-",
+            "RES_TABELLE" : "-",
+            "DIV" : "-",
+            "ID" : "0x5103",
+            "NAME" : "-",
+            "INFO" : "Write the 64 bytes block in the non volatile memory.",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-"
+         },
+         {
+            "INFO_EN" : "Read LED parameter block",
+            "L/H" : "-",
+            "ADD" : "-",
+            "SG_ADR" : "-",
+            "SERVICE" : "22",
+            "ARG" : "LED_PARAMETERBLOCK_LESEN",
+            "DATENTYP" : "-",
+            "MUL" : "-",
+            "LABEL" : "-",
+            "DIV" : "-",
+            "RES_TABELLE" : "RES_0x5104",
+            "ID" : "0x5104",
+            "ARG_TABELLE" : "-",
+            "NAME" : "-",
+            "INFO" : "LED Parameterblock lesen",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-"
+         },
+         {
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "NAME" : "-",
+            "INFO" : "LED Parameterblock schreiben 1 Byte",
+            "MUL" : "-",
+            "LABEL" : "-",
+            "DIV" : "-",
+            "RES_TABELLE" : "-",
+            "ID" : "0x5105",
+            "ARG_TABELLE" : "ARG_0x5105",
+            "ARG" : "LED_PARAMETERBLOCK_SCHREIBEN_1_BYTE",
+            "SG_ADR" : "-",
+            "SERVICE" : "2E",
+            "DATENTYP" : "-",
+            "INFO_EN" : "LED parameter block write 1 byte",
+            "L/H" : "-",
+            "ADD" : "-"
+         },
+         {
+            "ARG" : "LED_PARAMETERBLOCK_SCHREIBEN_2_BYTES",
+            "SERVICE" : "2E",
+            "SG_ADR" : "-",
+            "DATENTYP" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Write 2 bytes in array",
+            "L/H" : "-",
+            "RESULTNAME" : "-",
+            "EINHEIT" : "-",
+            "NAME" : "-",
+            "INFO" : "Write 2 bytes in array",
+            "RES_TABELLE" : "-",
+            "DIV" : "-",
+            "ID" : "0x5106",
+            "LABEL" : "-",
+            "MUL" : "-",
+            "ARG_TABELLE" : "ARG_0x5106"
+         },
+         {
+            "ARG" : "WRITE_LED_BLOCK_IN_NVM",
+            "SG_ADR" : "-",
+            "SERVICE" : "2E",
+            "DATENTYP" : "-",
+            "L/H" : "-",
+            "INFO_EN" : "Write LED block in NvM",
+            "ADD" : "-",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "NAME" : "-",
+            "INFO" : "Write LED block in NvM",
+            "MUL" : "-",
+            "LABEL" : "-",
+            "RES_TABELLE" : "-",
+            "DIV" : "-",
+            "ID" : "0x5107",
+            "ARG_TABELLE" : "ARG_0x5107"
+         },
+         {
+            "DATENTYP" : "-",
+            "ARG" : "SET_PARAMETERBLOCK_TO_INIT_VALUES",
+            "SG_ADR" : "-",
+            "SERVICE" : "2E",
+            "INFO_EN" : "Set Param Block 1 to the initial ROM default values",
+            "L/H" : "-",
+            "ADD" : "-",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "INFO" : "Set Param Block 1 to the initial ROM default values",
+            "NAME" : "-",
+            "ARG_TABELLE" : "ARG_0x5108",
+            "MUL" : "-",
+            "LABEL" : "-",
+            "RES_TABELLE" : "-",
+            "ID" : "0x5108",
+            "DIV" : "-"
+         },
+         {
+            "ARG_TABELLE" : "ARG_0x5109",
+            "MUL" : "-",
+            "LABEL" : "-",
+            "RES_TABELLE" : "-",
+            "ID" : "0x5109",
+            "DIV" : "-",
+            "INFO" : "Set Param Block 2 (LED params) to the ROM default values.",
+            "NAME" : "-",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "L/H" : "-",
+            "INFO_EN" : "Set Param Block 2 (LED params) to the ROM default values.",
+            "ADD" : "-",
+            "DATENTYP" : "-",
+            "SG_ADR" : "-",
+            "SERVICE" : "2E",
+            "ARG" : "SET_LED_PARAMETERBLOCK_TO_INIT_VALUES"
+         }
+      ],
+      "FARTTEXTE" : [
+         {
+            "ARTTEXT_EN" : "no error type available",
+            "ARTNR" : "0x00",
+            "ARTTEXT" : "keine Fehlerart verfügbar"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x04",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTNR" : "0x05",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x08",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x09",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x0C",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x0D",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0x40"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x44",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x45",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x48",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x49",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x4C",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x4D",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen erfüllt",
+            "ARTTEXT_EN" : "Test conditions met",
+            "ARTNR" : "0x10"
+         },
+         {
+            "ARTNR" : "0x11",
+            "ARTTEXT_EN" : "Test conditions not yet met",
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt"
+         },
+         {
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen",
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up",
+            "ARTNR" : "0x80"
+         },
+         {
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen",
+            "ARTNR" : "0x81",
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTNR" : "0xFF",
+            "ARTTEXT_EN" : "unknown type of error"
+         }
+      ],
+      "FUMWELTTEXTE" : [
+         {
+            "UWTYP" : "unsigned int",
+            "NAME" : "-",
+            "UWTEXT" : "Batteriespannung",
+            "UW_EINH" : "mV",
+            "ADD" : "0.0",
+            "L/H" : "High",
+            "UWNR" : "0x170C",
+            "DIV" : "1.0",
+            "MUL" : "1.0"
+         },
+         {
+            "UWNR" : "0x4000",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "UW_EINH" : "°C",
+            "ADD" : "-70.0",
+            "L/H" : "High",
+            "UWTYP" : "unsigned char",
+            "NAME" : "-",
+            "UWTEXT" : "TEMP"
+         },
+         {
+            "UWTYP" : "0xFF",
+            "NAME" : "-",
+            "UWTEXT" : "Sub-Tabelle",
+            "UWNR" : "0x4100",
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "L/H" : "-"
+         },
+         {
+            "UWTEXT" : "FEHLERORT_HALLSENSOR_VV_1",
+            "UWTYP" : "0x01",
+            "NAME" : "-",
+            "DIV" : "-",
+            "MUL" : "-",
+            "UWNR" : "0x0001",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "L/H" : "High"
+         },
+         {
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "L/H" : "High",
+            "UWNR" : "0x0002",
+            "DIV" : "-",
+            "MUL" : "-",
+            "UWTYP" : "0x02",
+            "NAME" : "-",
+            "UWTEXT" : "FEHLERORT_HALLSENSOR_VV_2"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "UWNR" : "0x0003",
+            "L/H" : "High",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "UWTEXT" : "FEHLERORT_HALLSENSOR_VO_1",
+            "NAME" : "-",
+            "UWTYP" : "0x04"
+         },
+         {
+            "UWTEXT" : "FEHLERORT_HALLSENSOR_VO_2",
+            "NAME" : "-",
+            "UWTYP" : "0x08",
+            "L/H" : "High",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "MUL" : "-",
+            "DIV" : "-",
+            "UWNR" : "0x0004"
+         },
+         {
+            "UWTYP" : "0x10",
+            "NAME" : "-",
+            "UWTEXT" : "FEHLERORT_HALLSENSOR_NA_1",
+            "UWNR" : "0x0005",
+            "DIV" : "-",
+            "MUL" : "-",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "L/H" : "High"
+         },
+         {
+            "UWTEXT" : "FEHLERORT_HALLSENSOR_NA_2",
+            "UWTYP" : "0x20",
+            "NAME" : "-",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "L/H" : "High",
+            "DIV" : "-",
+            "MUL" : "-",
+            "UWNR" : "0x0006"
+         },
+         {
+            "UWTYP" : "0x40",
+            "NAME" : "-",
+            "UWTEXT" : "FEHLERORT_HALLSENSOR_HI_1",
+            "UWNR" : "0x0007",
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "L/H" : "High"
+         },
+         {
+            "NAME" : "-",
+            "UWTYP" : "0x80",
+            "UWTEXT" : "FEHLERORT_HALLSENSOR_HI_2",
+            "UWNR" : "0x0008",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "High",
+            "UW_EINH" : "0/1",
+            "ADD" : "-"
+         },
+         {
+            "NAME" : "-",
+            "UWTYP" : "0xFF",
+            "UWTEXT" : "Sub-Tabelle",
+            "UWNR" : "0x4101",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "-",
+            "ADD" : "-",
+            "UW_EINH" : "0/1"
+         },
+         {
+            "UWNR" : "0x0009",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "High",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "NAME" : "-",
+            "UWTYP" : "0x01",
+            "UWTEXT" : "FEHLERORT_FKT_LED_P_KS_MASSE"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "UWNR" : "0x000A",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "L/H" : "High",
+            "UWTEXT" : "FEHLERORT_FKT_LED_P_KS_UBATT_OPEN",
+            "UWTYP" : "0x02",
+            "NAME" : "-"
+         },
+         {
+            "L/H" : "High",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "UWNR" : "0x000B",
+            "UWTEXT" : "FEHLERORT_FKT_LED_R_SYMBOL_KS_MASSE",
+            "NAME" : "-",
+            "UWTYP" : "0x04"
+         },
+         {
+            "L/H" : "High",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "MUL" : "-",
+            "DIV" : "-",
+            "UWNR" : "0x000C",
+            "UWTEXT" : "FEHLERORT_FKT_LED_R_SYMBOL_KS_UBATT_OPEN",
+            "NAME" : "-",
+            "UWTYP" : "0x08"
+         },
+         {
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "L/H" : "High",
+            "UWNR" : "0x000D",
+            "DIV" : "-",
+            "MUL" : "-",
+            "UWTYP" : "0x10",
+            "NAME" : "-",
+            "UWTEXT" : "FEHLERORT_FKT_LED_R_QUADRAT_KS_MASSE"
+         },
+         {
+            "L/H" : "High",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "UWNR" : "0x000E",
+            "MUL" : "-",
+            "DIV" : "-",
+            "NAME" : "-",
+            "UWTYP" : "0x20",
+            "UWTEXT" : "FEHLERORT_FKT_LED_R_QUADRAT_KS_UBATT_OPEN"
+         },
+         {
+            "UWTEXT" : "FEHLERORT_FKT_LED_N_SYMBOL_KS_MASSE",
+            "NAME" : "-",
+            "UWTYP" : "0x40",
+            "MUL" : "-",
+            "DIV" : "-",
+            "UWNR" : "0x000F",
+            "L/H" : "High",
+            "UW_EINH" : "0/1",
+            "ADD" : "-"
+         },
+         {
+            "UWNR" : "0x0010",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "High",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "NAME" : "-",
+            "UWTYP" : "0x80",
+            "UWTEXT" : "FEHLERORT_FKT_LED_N_SYMBOL_KS_UBATT_OPEN"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "UWNR" : "0x4102",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "L/H" : "-",
+            "UWTEXT" : "Sub-Tabelle",
+            "UWTYP" : "0xFF",
+            "NAME" : "-"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "UWNR" : "0x0011",
+            "L/H" : "High",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "UWTEXT" : "FEHLERORT_FKT_LED_N_QUADRAT_KS_MASSE",
+            "NAME" : "-",
+            "UWTYP" : "0x01"
+         },
+         {
+            "UWTYP" : "0x02",
+            "NAME" : "-",
+            "UWTEXT" : "FEHLERORT_FKT_LED_N_QUADRAT_KS_UBATT_OPEN",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "L/H" : "High",
+            "UWNR" : "0x0012",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "UWNR" : "0x0013",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "High",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "NAME" : "-",
+            "UWTYP" : "0x04",
+            "UWTEXT" : "FEHLERORT_FKT_LED_D_SYMBOL_KS_MASSE"
+         },
+         {
+            "UWTYP" : "0x08",
+            "NAME" : "-",
+            "UWTEXT" : "FEHLERORT_FKT_LED_D_SYMBOL_KS_UBATT_OPEN",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "L/H" : "High",
+            "UWNR" : "0x0014",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "UWNR" : "0x0015",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "L/H" : "High",
+            "UWTEXT" : "FEHLERORT_FKT_LED_D_QUADRAT_KS_MASSE",
+            "UWTYP" : "0x10",
+            "NAME" : "-"
+         },
+         {
+            "UWTYP" : "0x20",
+            "NAME" : "-",
+            "UWTEXT" : "FEHLERORT_FKT_LED_D_QUADRAT_KS_UBATT_OPEN",
+            "UWNR" : "0x0016",
+            "DIV" : "-",
+            "MUL" : "-",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "L/H" : "High"
+         },
+         {
+            "UWTEXT" : "Sub-Tabelle",
+            "NAME" : "-",
+            "UWTYP" : "0xFF",
+            "L/H" : "-",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "UWNR" : "0x4103"
+         },
+         {
+            "UWNR" : "0x0017",
+            "DIV" : "-",
+            "MUL" : "-",
+            "UW_EINH" : "0/1",
+            "ADD" : "-",
+            "L/H" : "High",
+            "UWTYP" : "0x01",
+            "NAME" : "-",
+            "UWTEXT" : "FEHLERORT_HALLSENSOR_HH_1"
+         },
+         {
+            "UWTEXT" : "FEHLERORT_HALLSENSOR_HH_2",
+            "NAME" : "-",
+            "UWTYP" : "0x02",
+            "L/H" : "High",
+            "ADD" : "-",
+            "UW_EINH" : "0/1",
+            "MUL" : "-",
+            "DIV" : "-",
+            "UWNR" : "0x0018"
+         }
+      ],
+      "TAB_0X4101" : [
+         {
+            "UW1_NR" : "0x0009",
+            "UW6_NR" : "0x000E",
+            "UW_ANZ" : "8",
+            "UW7_NR" : "0x000F",
+            "UW4_NR" : "0x000C",
+            "UW5_NR" : "0x000D",
+            "UW2_NR" : "0x000A",
+            "UW3_NR" : "0x000B",
+            "UW8_NR" : "0x0010"
+         }
+      ],
+      "IARTTEXTE" : [
+         {
+            "ARTTEXT_EN" : "no error type available",
+            "ARTNR" : "0x00",
+            "ARTTEXT" : "keine Fehlerart verfügbar"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x04",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x05"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x08",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x09",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x0C",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x0D",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x44",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x45",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x48",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x49"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x4C",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x4D"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen erfüllt",
+            "ARTNR" : "0x10",
+            "ARTTEXT_EN" : "Test conditions met"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt",
+            "ARTNR" : "0x11",
+            "ARTTEXT_EN" : "Test conditions not yet met"
+         },
+         {
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen",
+            "ARTNR" : "0x80",
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up"
+         },
+         {
+            "ARTNR" : "0x81",
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up",
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTNR" : "0xFF",
+            "ARTTEXT_EN" : "unknown type of error"
+         }
+      ],
+      "TAB_FUNKTIONSBELEUCHTUNG" : [
+         {
+            "TEXT_EN" : "ALL",
+            "WERT" : "0x01",
+            "TEXT" : "ALLE"
+         },
+         {
+            "TEXT_EN" : "P",
+            "TEXT" : "P",
+            "WERT" : "0x02"
+         },
+         {
+            "WERT" : "0x03",
+            "TEXT" : "N",
+            "TEXT_EN" : "N"
+         },
+         {
+            "TEXT" : "D",
+            "WERT" : "0x04",
+            "TEXT_EN" : "D."
+         },
+         {
+            "TEXT_EN" : "R.",
+            "TEXT" : "R",
+            "WERT" : "0x05"
+         }
+      ],
+      "ARG_0X5103" : [
+         {
+            "NAME" : "-",
+            "INFO" : "Update des 64 Bytes großen Speicherbereiches: 0: Kein Update ins NvM durchführen 1:  Update ins NvM durchführen",
+            "EINHEIT" : "0/1",
+            "DATENTYP" : "unsigned char",
+            "ARG" : "UPDATE_BLOCK",
+            "MAX" : "-",
+            "MIN" : "-",
+            "INFO_EN" : "Update of the 64-byte memory area: 0: Do not update to NvM 1: Update to NvM",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         }
+      ],
+      "IORTTEXTE" : [
+         {
+            "ORTTEXT_EN" : "CANNM_E_CANIF_TRANSMIT_ERROR_1",
+            "ORTTEXT" : "CANNM_E_CANIF_TRANSMIT_ERROR_1",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x8026DB"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "SPI_E_TIMEOUT",
+            "ORTTEXT_EN" : "SPI_E_TIMEOUT",
+            "ORT" : "0x8026D5"
+         },
+         {
+            "ORT" : "0x8026E3",
+            "ORTTEXT_EN" : "ECC ROM check faulty",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "ECC ROM Check fehlerhaft"
+         },
+         {
+            "ORTTEXT_EN" : "COMM_E_START_Tx_TIMEOUT_C0",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "COMM_E_START_Tx_TIMEOUT_C0",
+            "ORT" : "0x8026C4"
+         },
+         {
+            "ORTTEXT" : "WDGM_E_SET_MODE",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "WDGM_E_SET_MODE",
+            "ORT" : "0x8026D3"
+         },
+         {
+            "ORT" : "0x8026C1",
+            "ORTTEXT_EN" : "CNM_E_NETWORK_TIMEOUT",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "CNM_E_NETWORK_TIMEOUT"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Fehlererkennung Programablaufkontrolle",
+            "ORTTEXT_EN" : "Error detection program flow control",
+            "ORT" : "0x8026E6"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "MCU_E_HCLOCK_1_FAILURE",
+            "ORTTEXT_EN" : "MCU_E_HCLOCK_1_FAILURE",
+            "ORT" : "0x8026AD"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "MCU_E_TIMEOUT_OSC_STABILITY",
+            "ORTTEXT_EN" : "MCU_E_TIMEOUT_OSC_STABILITY",
+            "ORT" : "0x8026B1"
+         },
+         {
+            "ORT" : "0x8026D2",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "WDGM_E_ALIVE_SUPERVISION",
+            "ORTTEXT_EN" : "WDGM_E_ALIVE_SUPERVISION"
+         },
+         {
+            "ORTTEXT_EN" : "ECUM_E_ALL_RUN_REQUESTS_KILLED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "ECUM_E_ALL_RUN_REQUESTS_KILLED",
+            "ORT" : "0x8026C5"
+         },
+         {
+            "ORTTEXT" : "MCU_E_LOCK_0_FAILURE",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "MCU_E_LOCK_0_FAILURE",
+            "ORT" : "0x8026AA"
+         },
+         {
+            "ORTTEXT" : "MCU_E_CLOCK_FAILURE",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "MCU_E_CLOCK_FAILURE",
+            "ORT" : "0x8026CB"
+         },
+         {
+            "ORT" : "0x8026A1",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "CANNM_E_NETWORK_TIMEOUT_0",
+            "ORTTEXT_EN" : "CANNM_E_NETWORK_TIMEOUT_0"
+         },
+         {
+            "ORT" : "0x8026F9",
+            "ORTTEXT_EN" : "Shutdown due to excess temperature",
+            "ORTTEXT" : "Abschaltung wegen Übertemperatur",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORT" : "0x8026CD",
+            "ORTTEXT_EN" : "NVM_E_INTEGRITY_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "NVM_E_INTEGRITY_FAILED"
+         },
+         {
+            "ORT" : "0x8026B2",
+            "ORTTEXT_EN" : "WDG_E_MISS_TRIGGER",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "WDG_E_MISS_TRIGGER"
+         },
+         {
+            "ORT" : "0x8026BF",
+            "ORTTEXT" : "CANNM_E_INIT_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANNM_E_INIT_FAILED"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Fehlererkennung Core Self Test",
+            "ORTTEXT_EN" : "Error detection Core Self Test",
+            "ORT" : "0x8026E5"
+         },
+         {
+            "ORT" : "0x5E1003",
+            "ORTTEXT" : "Puffer für ausgehende Fehlermeldungen ist voll",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Outbound error message buffer is full"
+         },
+         {
+            "ORTTEXT" : "WDG_E_DISABLE_REJECTED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "WDG_E_DISABLE_REJECTED",
+            "ORT" : "0x8026D0"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "PWM_E_UNEXPECTED_IRQ",
+            "ORTTEXT_EN" : "PWM_E_UNEXPECTED_IRQ",
+            "ORT" : "0x8026D4"
+         },
+         {
+            "ORTTEXT" : "FLS_E_WRITE_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "FLS_E_WRITE_FAILED",
+            "ORT" : "0x8026CA"
+         },
+         {
+            "ORTTEXT_EN" : "COMM_E_STOP_Tx_TIMEOUT_C1",
+            "ORTTEXT" : "COMM_E_STOP_Tx_TIMEOUT_C1",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x8026B5"
+         },
+         {
+            "ORT" : "0x8026AF",
+            "ORTTEXT_EN" : "MCU_E_LOCK_1_FAILURE",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "MCU_E_LOCK_1_FAILURE"
+         },
+         {
+            "ORTTEXT_EN" : "Cyclical ROM check faulty",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Zyklischer ROM Check fehlerhaft",
+            "ORT" : "0x8026E1"
+         },
+         {
+            "ORT" : "0x8026E8",
+            "ORTTEXT_EN" : "Error detection WD reset",
+            "ORTTEXT" : "Fehlererkennung WD Reset",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "CANNM_E_NETWORK_TIMEOUT_1",
+            "ORTTEXT" : "CANNM_E_NETWORK_TIMEOUT_1",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x8026DC"
+         },
+         {
+            "ORT" : "0x8026B0",
+            "ORTTEXT" : "MCU_E_TIMEOUT_TRANSITION",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "MCU_E_TIMEOUT_TRANSITION"
+         },
+         {
+            "ORTTEXT_EN" : "CANIF_E_FULL_TX_BUFFER",
+            "ORTTEXT" : "CANIF_E_FULL_TX_BUFFER",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x8026BC"
+         },
+         {
+            "ORT" : "0x8026C2",
+            "ORTTEXT_EN" : "CNM_E_TX_PATH_FAILED",
+            "ORTTEXT" : "CNM_E_TX_PATH_FAILED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x8026C6",
+            "ORTTEXT_EN" : "FEE_E_WRITE_FAILED",
+            "ORTTEXT" : "FEE_E_WRITE_FAILED",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORT" : "0x5E1002",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Fahrzeugzustand, 0x3A0) fehlt",
+            "ORTTEXT_EN" : "Message (vehicle status, 0x3A0) is missing"
+         },
+         {
+            "ORT" : "0x8026BA",
+            "ORTTEXT_EN" : "ADC_E_TIMEOUT",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "ADC_E_TIMEOUT"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "NVM_E_REQ_FAILED",
+            "ORTTEXT_EN" : "NVM_E_REQ_FAILED",
+            "ORT" : "0x8026CE"
+         },
+         {
+            "ORT" : "0x8026AC",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "MCU_E_LCLOCK_1_FAILURE",
+            "ORTTEXT_EN" : "MCU_E_LCLOCK_1_FAILURE"
+         },
+         {
+            "ORT" : "0x8026A8",
+            "ORTTEXT_EN" : "MCU_E_LCLOCK_0_FAILURE",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "MCU_E_LCLOCK_0_FAILURE"
+         },
+         {
+            "ORT" : "0x8026C3",
+            "ORTTEXT_EN" : "COMM_E_NET_START_IND_CHANNEL_0",
+            "ORTTEXT" : "COMM_E_NET_START_IND_CHANNEL_0",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x8026AB",
+            "ORTTEXT" : "MCU_E_RCCLOCK_0_FAILURE",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "MCU_E_RCCLOCK_0_FAILURE"
+         },
+         {
+            "ORT" : "0x8026E2",
+            "ORTTEXT_EN" : "Cyclical RAM check faulty",
+            "ORTTEXT" : "Zyklischer RAM Check fehlerhaft",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "COMM_E_STOP_Tx_TIMEOUT_C0",
+            "ORTTEXT_EN" : "COMM_E_STOP_Tx_TIMEOUT_C0",
+            "ORT" : "0x8026A2"
+         },
+         {
+            "ORTTEXT" : "WDG_E_MODE_SWITCH_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "WDG_E_MODE_SWITCH_FAILED",
+            "ORT" : "0x8026D1"
+         },
+         {
+            "ORTTEXT" : "FLS_E_COMPARE_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "FLS_E_COMPARE_FAILED",
+            "ORT" : "0x8026C7"
+         },
+         {
+            "ORT" : "0x8026B4",
+            "ORTTEXT_EN" : "FLS_E_UNEXPECTED_FLASH_ID",
+            "ORTTEXT" : "FLS_E_UNEXPECTED_FLASH_ID",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORT" : "0x8026BB",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "CAN_E_TIMEOUT",
+            "ORTTEXT_EN" : "CAN_E_TIMEOUT"
+         },
+         {
+            "ORTTEXT_EN" : "MCU_E_LOCK_FAILURE",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "MCU_E_LOCK_FAILURE",
+            "ORT" : "0x8026CC"
+         },
+         {
+            "ORTTEXT_EN" : "Error detection stack check",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Fehlererkennung Stack Check",
+            "ORT" : "0x8026E7"
+         },
+         {
+            "ORTTEXT_EN" : "MCU_E_RC_MEASURE",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "MCU_E_RC_MEASURE",
+            "ORT" : "0x8026B3"
+         },
+         {
+            "ORTTEXT_EN" : "MCU_E_HCLOCK_0_FAILURE",
+            "ORTTEXT" : "MCU_E_HCLOCK_0_FAILURE",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x8026A9"
+         },
+         {
+            "ORTTEXT_EN" : "FLS_E_ERASE_FAILED",
+            "ORTTEXT" : "FLS_E_ERASE_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x8026C8"
+         },
+         {
+            "ORTTEXT_EN" : "CANIF_E_INVALID_RXPDUID",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "CANIF_E_INVALID_RXPDUID",
+            "ORT" : "0x8026B9"
+         },
+         {
+            "ORT" : "0x8026BD",
+            "ORTTEXT" : "CANIF_E_STOPPED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANIF_E_STOPPED"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "FLS_E_READ_FAILED",
+            "ORTTEXT_EN" : "FLS_E_READ_FAILED",
+            "ORT" : "0x8026C9"
+         },
+         {
+            "ORTTEXT" : "PIA_E_IO_ERROR",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "PIA_E_IO_ERROR",
+            "ORT" : "0x8026CF"
+         },
+         {
+            "ORTTEXT" : "ECC RAM Check fehlerhaft",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "ECC RAM check faulty",
+            "ORT" : "0x8026E4"
+         },
+         {
+            "ORT" : "0x8026A6",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "IPDUM_E_TRANSMIT_FAILED",
+            "ORTTEXT_EN" : "IPDUM_E_TRANSMIT_FAILED"
+         },
+         {
+            "ORT" : "0x8026B7",
+            "ORTTEXT_EN" : "COMM_E_NET_START_IND_CHANNEL_1",
+            "ORTTEXT" : "COMM_E_NET_START_IND_CHANNEL_1",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x8026A0",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "CANNM_E_TX_PATH_FAILED",
+            "ORTTEXT_EN" : "CANNM_E_TX_PATH_FAILED"
+         },
+         {
+            "ORTTEXT_EN" : "COMM_E_START_Tx_TIMEOUT_C1",
+            "ORTTEXT" : "COMM_E_START_Tx_TIMEOUT_C1",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x8026B6"
+         },
+         {
+            "ORT" : "0x5E1004",
+            "ORTTEXT" : "Fehler konnte nach maximaler Anzahl von Versuchen nicht gesendet werden",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Error could not be sent after the maximum number of attempts"
+         },
+         {
+            "ORTTEXT_EN" : "MCU_E_QUARTZ_FAILURE",
+            "ORTTEXT" : "MCU_E_QUARTZ_FAILURE",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x8026A7"
+         },
+         {
+            "ORTTEXT" : "CANNM_E_CANIF_TRANSMIT_ERROR",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANNM_E_CANIF_TRANSMIT_ERROR",
+            "ORT" : "0x8026BE"
+         },
+         {
+            "ORTTEXT_EN" : "CANIF_E_INVALID_TXPDUID",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "CANIF_E_INVALID_TXPDUID",
+            "ORT" : "0x8026B8"
+         },
+         {
+            "ORTTEXT_EN" : "MCU_E_RCCLOCK_1_FAILURE",
+            "ORTTEXT" : "MCU_E_RCCLOCK_1_FAILURE",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x8026AE"
+         },
+         {
+            "ORT" : "0x8026C0",
+            "ORTTEXT_EN" : "CANTP_E_COMM",
+            "ORTTEXT" : "CANTP_E_COMM",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0xFFFFFF",
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "unknown error location"
+         }
+      ],
+      "PROZESSKLASSEN" : [
+         {
+            "BEZEICHNUNG" : "ungueltig",
+            "WERT" : "0x00",
+            "PROZESSKLASSE" : "-"
+         },
+         {
+            "WERT" : "0x01",
+            "PROZESSKLASSE" : "HWEL",
+            "BEZEICHNUNG" : "Hardware (Elektronik)"
+         },
+         {
+            "PROZESSKLASSE" : "HWAP",
+            "WERT" : "0x02",
+            "BEZEICHNUNG" : "Hardwareauspraegung"
+         },
+         {
+            "PROZESSKLASSE" : "HWFR",
+            "WERT" : "0x03",
+            "BEZEICHNUNG" : "Hardwarefarbe"
+         },
+         {
+            "PROZESSKLASSE" : "CAFD",
+            "WERT" : "0x05",
+            "BEZEICHNUNG" : "Codierdaten"
+         },
+         {
+            "BEZEICHNUNG" : "Bootloader",
+            "PROZESSKLASSE" : "BTLD",
+            "WERT" : "0x06"
+         },
+         {
+            "PROZESSKLASSE" : "SWFL",
+            "WERT" : "0x08",
+            "BEZEICHNUNG" : "Software ECU Speicherimage"
+         },
+         {
+            "PROZESSKLASSE" : "SWFF",
+            "WERT" : "0x09",
+            "BEZEICHNUNG" : "Flash File Software"
+         },
+         {
+            "BEZEICHNUNG" : "Pruefsoftware",
+            "WERT" : "0x0A",
+            "PROZESSKLASSE" : "SWPF"
+         },
+         {
+            "PROZESSKLASSE" : "ONPS",
+            "WERT" : "0x0B",
+            "BEZEICHNUNG" : "Onboard Programmiersystem"
+         },
+         {
+            "BEZEICHNUNG" : "FA2FP",
+            "WERT" : "0x0F",
+            "PROZESSKLASSE" : "FAFP"
+         },
+         {
+            "BEZEICHNUNG" : "Temporaere Loeschroutine",
+            "WERT" : "0x1A",
+            "PROZESSKLASSE" : "TLRT"
+         },
+         {
+            "BEZEICHNUNG" : "Temporaere Programmierroutine",
+            "WERT" : "0x1B",
+            "PROZESSKLASSE" : "TPRG"
+         },
+         {
+            "BEZEICHNUNG" : "Flashloader Slave",
+            "WERT" : "0x07",
+            "PROZESSKLASSE" : "FLSL"
+         },
+         {
+            "PROZESSKLASSE" : "IBAD",
+            "WERT" : "0x0C",
+            "BEZEICHNUNG" : "Interaktive Betriebsanleitung Daten"
+         },
+         {
+            "WERT" : "0x10",
+            "PROZESSKLASSE" : "FCFA",
+            "BEZEICHNUNG" : "Freischaltcode Fahrzeug-Auftrag"
+         },
+         {
+            "BEZEICHNUNG" : "Bootloader-Update Applikation",
+            "PROZESSKLASSE" : "BLUP",
+            "WERT" : "0x1C"
+         },
+         {
+            "BEZEICHNUNG" : "Flashloader-Update Applikation",
+            "PROZESSKLASSE" : "FLUP",
+            "WERT" : "0x1D"
+         },
+         {
+            "PROZESSKLASSE" : "SWUP",
+            "WERT" : "0xC0",
+            "BEZEICHNUNG" : "Software-Update Package"
+         },
+         {
+            "BEZEICHNUNG" : "Index Software-Update Package",
+            "WERT" : "0xC1",
+            "PROZESSKLASSE" : "SWIP"
+         },
+         {
+            "BEZEICHNUNG" : "Entertainment Daten",
+            "PROZESSKLASSE" : "ENTD",
+            "WERT" : "0xA0"
+         },
+         {
+            "PROZESSKLASSE" : "NAVD",
+            "WERT" : "0xA1",
+            "BEZEICHNUNG" : "Navigation Daten"
+         },
+         {
+            "PROZESSKLASSE" : "FCFN",
+            "WERT" : "0xA2",
+            "BEZEICHNUNG" : "Freischaltcode Funktion"
+         },
+         {
+            "BEZEICHNUNG" : "Gateway-Tabelle",
+            "PROZESSKLASSE" : "GWTB",
+            "WERT" : "0x04"
+         },
+         {
+            "BEZEICHNUNG" : "BEGU: Detaillierung auf SWE-Ebene",
+            "WERT" : "0x0D",
+            "PROZESSKLASSE" : "SWFK"
+         },
+         {
+            "BEZEICHNUNG" : "ungueltig",
+            "WERT" : "0xFF",
+            "PROZESSKLASSE" : "-"
+         }
+      ],
+      "DTCSNAPSHOTIDENTIFIER" : [
+         {
+            "MUL" : "1",
+            "DIV" : "1",
+            "UWNR" : "0x1700",
+            "L/H" : "-",
+            "UW_EINH" : "0-n",
+            "ADD" : "0.000000",
+            "UWTEXT" : "KM_STAND",
+            "NAME" : "-",
+            "UWTYP" : "0xFFFFFF"
+         },
+         {
+            "L/H" : "-",
+            "UW_EINH" : "0-n",
+            "ADD" : "0.000000",
+            "UWNR" : "0x1701",
+            "MUL" : "1",
+            "DIV" : "1",
+            "NAME" : "-",
+            "UWTYP" : "0xFFFFFFFF",
+            "UWTEXT" : "ABS_ZEIT"
+         },
+         {
+            "L/H" : "-",
+            "UW_EINH" : "0-n",
+            "ADD" : "0.000000",
+            "MUL" : "1",
+            "DIV" : "1",
+            "UWNR" : "0x1702",
+            "UWTEXT" : "SAE_CODE",
+            "NAME" : "-",
+            "UWTYP" : "0xFFFFFF"
+         },
+         {
+            "ADD" : "0.000000",
+            "UW_EINH" : "-",
+            "L/H" : "-",
+            "DIV" : "1",
+            "MUL" : "1",
+            "UWNR" : "0x1731",
+            "UWTEXT" : "Fehlerklasse_DTC",
+            "UWTYP" : "u char",
+            "NAME" : "-"
+         },
+         {
+            "UW_EINH" : "-",
+            "ADD" : "0.000000",
+            "L/H" : "-",
+            "UWNR" : "0xFFFF",
+            "DIV" : "1",
+            "MUL" : "1",
+            "UWTYP" : "0xFFFFFF",
+            "NAME" : "-",
+            "UWTEXT" : "IDENTIFIER_UNKNOWN"
+         }
+      ],
+      "TAB_0X4102" : [
+         {
+            "UW5_NR" : "0x0015",
+            "UW1_NR" : "0x0011",
+            "UW4_NR" : "0x0014",
+            "UW6_NR" : "0x0016",
+            "UW2_NR" : "0x0012",
+            "UW3_NR" : "0x0013",
+            "UW_ANZ" : "6"
+         }
+      ],
+      "ARG_0X5101" : [
+         {
+            "ARG" : "INDEX_IN_ARRAY",
+            "MAX" : "63.0",
+            "NAME" : "-",
+            "INFO" : "Schreibt 1 Byte auf dem Tabellenindex INDEX_IN_ARRAY",
+            "EINHEIT" : "-",
+            "DATENTYP" : "unsigned char",
+            "MUL" : "1.0",
+            "DIV" : "1.0",
+            "MIN" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Writes 1 byte to the table index INDEX_IN_ARRAY",
+            "MASKE" : "-",
+            "ADD" : "0.0"
+         },
+         {
+            "ARG" : "VALUE",
+            "MAX" : "-",
+            "INFO" : "Wert der geschrieben werden soll - 1 Byte",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "MUL" : "-",
+            "DIV" : "-",
+            "MIN" : "-",
+            "INFO_EN" : "Value to be written - 1 byte",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-"
+         }
+      ],
+      "DTCBEREICHE" : [
+         {
+            "MINIMALWERT" : "020000",
+            "BESCHREIBUNG" : "Die zulässigen Bereiche sind für jedes Steuergerät festgelegt. Es können mehrere gültige Bereiche (Kacheln) definiert werden.",
+            "DTC-TYP" : "AllgemeinerDTC",
+            "MAXIMALWERT" : "02FFFF"
+         },
+         {
+            "MINIMALWERT" : "E0841F",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MAXIMALWERT" : "E0843E",
+            "DTC-TYP" : "SystembusDTC"
+         },
+         {
+            "DTC-TYP" : "SystembusDTC",
+            "MAXIMALWERT" : "E08472",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "E08469"
+         },
+         {
+            "MINIMALWERT" : "930030",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "DTC-TYP" : "SystembusDTC",
+            "MAXIMALWERT" : "930055"
+         },
+         {
+            "MINIMALWERT" : "E0843F",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "DTC-TYP" : "SystembusDTC",
+            "MAXIMALWERT" : "E08449"
+         },
+         {
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "E08501",
+            "MAXIMALWERT" : "E0850A",
+            "DTC-TYP" : "SystembusDTC"
+         },
+         {
+            "MINIMALWERT" : "E08415",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "DTC-TYP" : "SystembusDTC",
+            "MAXIMALWERT" : "E0841E"
+         },
+         {
+            "MINIMALWERT" : "E08600",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "DTC-TYP" : "SystembusDTC",
+            "MAXIMALWERT" : "E086FF"
+         },
+         {
+            "MAXIMALWERT" : "930011",
+            "DTC-TYP" : "SystembusDTC",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "930000"
+         },
+         {
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "E08487",
+            "MAXIMALWERT" : "E0848F",
+            "DTC-TYP" : "SystembusDTC"
+         },
+         {
+            "DTC-TYP" : "SystembusDTC",
+            "MAXIMALWERT" : "E08514",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "E0850B"
+         },
+         {
+            "MAXIMALWERT" : "E08414",
+            "DTC-TYP" : "SystembusDTC",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "E0840B"
+         },
+         {
+            "DTC-TYP" : "SystembusDTC",
+            "MAXIMALWERT" : "E0840A",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "E08401"
+         },
+         {
+            "MAXIMALWERT" : "E0847C",
+            "DTC-TYP" : "SystembusDTC",
+            "MINIMALWERT" : "E08473",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses."
+         },
+         {
+            "MAXIMALWERT" : "E08468",
+            "DTC-TYP" : "SystembusDTC",
+            "MINIMALWERT" : "E0845F",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses."
+         },
+         {
+            "MAXIMALWERT" : "E08486",
+            "DTC-TYP" : "SystembusDTC",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "E0847D"
+         },
+         {
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "E08C00",
+            "DTC-TYP" : "SubbusDTC",
+            "MAXIMALWERT" : "E093FF"
+         },
+         {
+            "MINIMALWERT" : "E09400",
+            "BESCHREIBUNG" : "Ist aus einem vorgegebenen Offset-Bereich frei wählbar. Enthält Signalfehler, die SG-spezifisch sind.",
+            "DTC-TYP" : "SignalDTC",
+            "MAXIMALWERT" : "E0C3FF"
+         },
+         {
+            "MAXIMALWERT" : "E08BFF",
+            "DTC-TYP" : "SignalDTC",
+            "MINIMALWERT" : "E08BFF",
+            "BESCHREIBUNG" : "Ist aus einem vorgegebenen Offset-Bereich frei wählbar. Enthält Signalfehler, die SG-spezifisch sind."
+         },
+         {
+            "MINIMALWERT" : "E09400",
+            "BESCHREIBUNG" : "Ist aus einem vorgegebenen Offset-Bereich frei wählbar. Enthält Signalfehler, die SG-spezifisch sind.",
+            "MAXIMALWERT" : "E0C3FF",
+            "DTC-TYP" : "SignalDTC"
+         },
+         {
+            "MAXIMALWERT" : "8026FF",
+            "DTC-TYP" : "KomponentenDTC",
+            "MINIMALWERT" : "802680",
+            "BESCHREIBUNG" : "Die zulässigen Bereiche sind für jedes Steuergerät festgelegt. Es können mehrere gültige Bereiche (Kacheln) definiert werden."
+         }
+      ],
+      "TAB_POSITION_DREHSTELLER" : [
+         {
+            "TEXT_EN" : "Rest position",
+            "WERT" : "0x00",
+            "TEXT" : "Ruhestellung"
+         },
+         {
+            "TEXT_EN" : "Tap forward",
+            "TEXT" : "Tippen nach vorn",
+            "WERT" : "0x01"
+         },
+         {
+            "TEXT_EN" : "Push forward",
+            "TEXT" : "Überdrücken nach vorn",
+            "WERT" : "0x02"
+         },
+         {
+            "TEXT" : "Tippen nach hinten",
+            "WERT" : "0x03",
+            "TEXT_EN" : "Tap backwards"
+         },
+         {
+            "TEXT_EN" : "Push backwards",
+            "TEXT" : "Überdrücken nach hinten",
+            "WERT" : "0x04"
+         },
+         {
+            "TEXT_EN" : "not defined",
+            "WERT" : "0xFF",
+            "TEXT" : "nicht definiert"
+         }
+      ],
+      "FORTTEXTE" : [
+         {
+            "ORTTEXT_EN" : "DME interface (data drivetrain 2, A-CAN): signal invalid",
+            "ORTTEXT" : "Schnittstelle DME (Daten Antriebsstrang 2, A-CAN): Signal ungültig",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xE0AC26"
+         },
+         {
+            "ORTTEXT" : "Botschaft (Daten Anzeige Getriebestrang, 0x3FD) nicht aktuell, Empfänger GWS (FA-CAN), Sender EGS (FA-CAN)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (data display gear train, 0x3FD) not current, receiver GWS (FA-CAN), sender EGS (FA-CAN)",
+            "ORT" : "0xE09402"
+         },
+         {
+            "ORT" : "0xE0942B",
+            "ORTTEXT" : "Botschaft (Stabilisierung DSC, 0x173) nicht aktuell, Empfänger GWS (FA-CAN), Sender (DSC)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (stabilization DSC, 0x173) not current, receiver GWS (FA-CAN), transmitter (DSC)"
+         },
+         {
+            "ORT" : "0xE08486",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "A-CAN Control Module Bus OFF",
+            "ORTTEXT_EN" : "A-CAN Control Module Bus OFF"
+         },
+         {
+            "ORTTEXT_EN" : "Interface LIM (status charging line plugged in, FA-CAN): signal invalid",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Schnittstelle LIM (Status Ladeleitung Steckt, FA-CAN): Signal ungültig",
+            "ORT" : "0xE0AC28"
+         },
+         {
+            "ORT" : "0xE09424",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Daten Antriebsstrang 2, 0x3F9) fehlt, Empfänger GWS (FA-CAN), Sender (DME)",
+            "ORTTEXT_EN" : "Message (data drive train 2, 0x3F9) missing, receiver GWS (FA-CAN), transmitter (DME)"
+         },
+         {
+            "ORTTEXT" : "Interner Steuergerätefehler Software",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Internal control unit error software",
+            "ORT" : "0x8026FB"
+         },
+         {
+            "ORTTEXT_EN" : "Message (data drive train 2, 0x3F9) incorrect test buzzer, receiver GWS (FA-CAN), transmitter (DME)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Daten Antriebsstrang 2, 0x3F9) Prüfsummer falsch, Empfänger GWS (FA-CAN), Sender (DME)",
+            "ORT" : "0xE09426"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Daten Anzeige Getriebestrang, 0x3FD) nicht aktuell, Empfänger GWS (A-CAN), Sender EGS (A-CAN)",
+            "ORTTEXT_EN" : "Message (data display gear train, 0x3FD) not current, receiver GWS (A-CAN), sender EGS (A-CAN)",
+            "ORT" : "0xE09412"
+         },
+         {
+            "ORTTEXT_EN" : "Dummy error memory entry in the network error area for test purposes only",
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Netzwerkfehlerbereich nur für Testzwecke",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xE08BFF"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Hall-Sensoren Zweifachfehler",
+            "ORTTEXT_EN" : "Hall sensors double failure",
+            "ORT" : "0x802694"
+         },
+         {
+            "ORT" : "0x8026E0",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Parktaster fehlerhaft",
+            "ORTTEXT_EN" : "Park button faulty"
+         },
+         {
+            "ORT" : "0xE0AC06",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Schnittstelle FRM (Dimmung): Signal ungültig",
+            "ORTTEXT_EN" : "FRM interface (dimming): signal invalid"
+         },
+         {
+            "ORT" : "0xE0942D",
+            "ORTTEXT" : "Botschaft (Status Ladeschnittstelle, 0x3B4) fehlt, Empfänger GWS (FA-CAN), Sender (LIM)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (status of charging interface, 0x3B4) missing, receiver GWS (FA-CAN), sender (LIM)"
+         },
+         {
+            "ORT" : "0xE09410",
+            "ORTTEXT" : "Botschaft (Daten Anzeige Getriebestrang, 0x3FD) fehlt, Empfänger GWS (A-CAN), Sender EGS (A-CAN)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (data display gear train, 0x3FD) missing, receiver GWS (A-CAN), transmitter EGS (A-CAN)"
+         },
+         {
+            "ORTTEXT" : "Botschaft (Daten Antriebsstrang 2, 0x3F9) nicht aktuell, Empfänger GWS (FA-CAN), Sender (DME)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (data drive train 2, 0x3F9) not up-to-date, receiver GWS (FA-CAN), transmitter (DME)",
+            "ORT" : "0xE09425"
+         },
+         {
+            "ORT" : "0x80268E",
+            "ORTTEXT_EN" : "Park button: button stuck",
+            "ORTTEXT" : "Parktaster: Taste klemmt",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Energy saving mode active",
+            "ORTTEXT" : "Energiesparmode aktiv",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x025E00"
+         },
+         {
+            "ORT" : "0xE09429",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Daten Antriebsstrang 2, 0x3F9) Prüfsummer falsch, Empfänger GWS (A-CAN), Sender (DME)",
+            "ORTTEXT_EN" : "Message (data drive train 2, 0x3F9) incorrect test buzzer, receiver GWS (A-CAN), transmitter (DME)"
+         },
+         {
+            "ORTTEXT" : "Überspannung erkannt",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Overvoltage detected",
+            "ORT" : "0x802698"
+         },
+         {
+            "ORT" : "0x8026FA",
+            "ORTTEXT_EN" : "Internal control unit error hardware",
+            "ORTTEXT" : "Interner Steuergerätefehler Hardware",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0xE09400",
+            "ORTTEXT_EN" : "Message (data display gear train, 0x3FD) missing, receiver GWS (FA-CAN), transmitter EGS (FA-CAN)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Daten Anzeige Getriebestrang, 0x3FD) fehlt, Empfänger GWS (FA-CAN), Sender EGS (FA-CAN)"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Daten Anzeige Getriebestrang, 0x3FD) Prüfsumme falsch, Empfänger GWS (FA-CAN), Sender EGS (FA-CAN)",
+            "ORTTEXT_EN" : "Message (data display gear train, 0x3FD) incorrect checksum, receiver GWS (FA-CAN), sender EGS (FA-CAN)",
+            "ORT" : "0xE09404"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Daten Antriebsstrang 2, 0x3F9) nicht aktuell, Empfänger GWS (A-CAN), Sender (DME)",
+            "ORTTEXT_EN" : "Message (data drive train 2, 0x3F9) not up-to-date, receiver GWS (A-CAN), transmitter (DME)",
+            "ORT" : "0xE09428"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Stabilisierung DSC, 0x173) fehlt, Empfänger GWS (FA-CAN), Sender (DSC)",
+            "ORTTEXT_EN" : "Message (stabilization DSC, 0x173) missing, receiver GWS (FA-CAN), transmitter (DSC)",
+            "ORT" : "0xE0942A"
+         },
+         {
+            "ORTTEXT" : "Schnittstelle KOMBI (LCD Helligkeit Regelung): Signal ungültig",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Interface KOMBI (LCD brightness control): signal invalid",
+            "ORT" : "0xE0AC08"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Schnittstelle EGS (Daten Anzeige Getriebestrang, A-CAN): Signal ungültig",
+            "ORTTEXT_EN" : "EGS interface (data display gear train, A-CAN): signal invalid",
+            "ORT" : "0xE0AC20"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Komponentenfehlerbereich nur für Testzwecke",
+            "ORTTEXT_EN" : "Dummy error memory entry in the component error area for test purposes only",
+            "ORT" : "0x02FF5E"
+         },
+         {
+            "ORTTEXT_EN" : "Hall sensors single fault",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Hall-Sensoren Einfachfehler",
+            "ORT" : "0x802692"
+         },
+         {
+            "ORT" : "0xE0AC00",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Schnittstelle EGS (Daten Anzeige Getriebestrang, FA-CAN): Signal ungültig",
+            "ORTTEXT_EN" : "Interface EGS (data display gear train, FA-CAN): signal invalid"
+         },
+         {
+            "ORT" : "0x8026F8",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Coronabeleuchtung fehlerhaft",
+            "ORTTEXT_EN" : "Corona lighting faulty"
+         },
+         {
+            "ORTTEXT_EN" : "Message (data display gear train, 0x3FD) incorrect checksum, receiver GWS (A-CAN), sender EGS (A-CAN)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Daten Anzeige Getriebestrang, 0x3FD) Prüfsumme falsch, Empfänger GWS (A-CAN), Sender EGS (A-CAN)",
+            "ORT" : "0xE09414"
+         },
+         {
+            "ORT" : "0x802696",
+            "ORTTEXT_EN" : "Undervoltage detected",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Unterspannung erkannt"
+         },
+         {
+            "ORTTEXT_EN" : "DSC interface (stabilization DSC, FA-CAN): signal invalid",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Schnittstelle DSC (Stabilisierung DSC, FA-CAN): Signal ungültig",
+            "ORT" : "0xE0AC27"
+         },
+         {
+            "ORT" : "0xE0AC04",
+            "ORTTEXT" : "Schnittstelle CAS (Klemmen): Signal ungültig",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "CAS interface (terminals): signal invalid"
+         },
+         {
+            "ORTTEXT_EN" : "Message (terminals, 0x12F) missing, receiver GWS (FA-CAN), sender CAS (FA-CAN)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Klemmen, 0x12F) fehlt, Empfänger GWS (FA-CAN), Sender CAS (FA-CAN)",
+            "ORT" : "0xE09408"
+         },
+         {
+            "ORT" : "0xE0942C",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Stabilisierung DSC, 0x173) Prüfsummer falsch, Empfänger GWS (FA-CAN), Sender (DSC)",
+            "ORTTEXT_EN" : "Message (stabilization DSC, 0x173) Check buzzer wrong, receiver GWS (FA-CAN), transmitter (DSC)"
+         },
+         {
+            "ORT" : "0xE0840A",
+            "ORTTEXT" : "FA-CAN Control Module Bus OFF",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "FA-CAN Control Module Bus OFF"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Funktionsanzeige fehlerhaft",
+            "ORTTEXT_EN" : "Function display faulty",
+            "ORT" : "0x802680"
+         },
+         {
+            "ORT" : "0xE0AC25",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Schnittstelle DME (Daten Antriebsstrang 2, FA-CAN): Signal ungültig",
+            "ORTTEXT_EN" : "Interface DME (data drive train 2, FA-CAN): signal invalid"
+         },
+         {
+            "ORT" : "0x80268C",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Suchbeleuchtung fehlerhaft",
+            "ORTTEXT_EN" : "Search lighting faulty"
+         },
+         {
+            "ORT" : "0xE0940A",
+            "ORTTEXT_EN" : "Message (dimming, 0x202) missing, receiver GWS (FA-CAN), transmitter FRM (FA-CAN)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Dimmung, 0x202) fehlt, Empfänger GWS (FA-CAN), Sender FRM (FA-CAN)"
+         },
+         {
+            "ORTTEXT" : "Botschaft (Daten Antriebsstrang 2, 0x3F9) fehlt, Empfänger GWS (A-CAN), Sender (DME)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (data drive train 2, 0x3F9) missing, receiver GWS (A-CAN), transmitter (DME)",
+            "ORT" : "0xE09427"
+         },
+         {
+            "ORT" : "0xE0940C",
+            "ORTTEXT" : "Botschaft (LCD Helligkeit Regelung, 0x393) fehlt, Empfänger GWS (FA-CAN), Sender KOMBI (FA-CAN)",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (LCD brightness control, 0x393) missing, receiver GWS (FA-CAN), transmitter KOMBI (FA-CAN)"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "ORTTEXT_EN" : "unknown error location",
+            "ORT" : "0xFFFFFF"
+         }
+      ],
+      "ARG_0X5105" : [
+         {
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Writes 1 byte to the table index INDEX_IN_ARRAY",
+            "MIN" : "0.0",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "-",
+            "NAME" : "-",
+            "INFO" : "Scheibt 1 Byte auf dem Tabellenindex INDEX_IN_ARRAY",
+            "MAX" : "127.0",
+            "ARG" : "INDEX_IN_ARRAY"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Value - 1 byte",
+            "MIN" : "-",
+            "MAX" : "-",
+            "ARG" : "VALUE",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "HEX",
+            "NAME" : "-",
+            "INFO" : "Wert - 1 Byte"
+         }
+      ],
+      "ARG_0XD203" : [
+         {
+            "INFO" : "Angesteuerte Stufe der Funktionsbeleuchtung",
+            "NAME" : "TAB_FUNKTIONSBELEUCHTUNG",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "0-n",
+            "MAX" : "-",
+            "ARG" : "STUFE",
+            "MIN" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "Controlled level of functional lighting",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-"
+         }
+      ],
+      "SVK_ID" : [
+         {
+            "BEZEICHNUNG" : "SVK_AKTUELL",
+            "WERT" : "0x01"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_SUPPLIER",
+            "WERT" : "0x02"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_WERK",
+            "WERT" : "0x03"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_01",
+            "WERT" : "0x04"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_02",
+            "WERT" : "0x05"
+         },
+         {
+            "WERT" : "0x06",
+            "BEZEICHNUNG" : "SVK_BACKUP_03"
+         },
+         {
+            "WERT" : "0x07",
+            "BEZEICHNUNG" : "SVK_BACKUP_04"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_05",
+            "WERT" : "0x08"
+         },
+         {
+            "WERT" : "0x09",
+            "BEZEICHNUNG" : "SVK_BACKUP_06"
+         },
+         {
+            "WERT" : "0x0A",
+            "BEZEICHNUNG" : "SVK_BACKUP_07"
+         },
+         {
+            "WERT" : "0x0B",
+            "BEZEICHNUNG" : "SVK_BACKUP_08"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_09",
+            "WERT" : "0x0C"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_10",
+            "WERT" : "0x0D"
+         },
+         {
+            "WERT" : "0x0E",
+            "BEZEICHNUNG" : "SVK_BACKUP_11"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_12",
+            "WERT" : "0x0F"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_13",
+            "WERT" : "0x10"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_14",
+            "WERT" : "0x11"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_15",
+            "WERT" : "0x12"
+         },
+         {
+            "WERT" : "0x13",
+            "BEZEICHNUNG" : "SVK_BACKUP_16"
+         },
+         {
+            "WERT" : "0x14",
+            "BEZEICHNUNG" : "SVK_BACKUP_17"
+         },
+         {
+            "WERT" : "0x15",
+            "BEZEICHNUNG" : "SVK_BACKUP_18"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_19",
+            "WERT" : "0x16"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_20",
+            "WERT" : "0x17"
+         },
+         {
+            "WERT" : "0x18",
+            "BEZEICHNUNG" : "SVK_BACKUP_21"
+         },
+         {
+            "WERT" : "0x19",
+            "BEZEICHNUNG" : "SVK_BACKUP_22"
+         },
+         {
+            "WERT" : "0x1A",
+            "BEZEICHNUNG" : "SVK_BACKUP_23"
+         },
+         {
+            "WERT" : "0x1B",
+            "BEZEICHNUNG" : "SVK_BACKUP_24"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_25",
+            "WERT" : "0x1C"
+         },
+         {
+            "WERT" : "0x1D",
+            "BEZEICHNUNG" : "SVK_BACKUP_26"
+         },
+         {
+            "WERT" : "0x1E",
+            "BEZEICHNUNG" : "SVK_BACKUP_27"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_28",
+            "WERT" : "0x1F"
+         },
+         {
+            "WERT" : "0x20",
+            "BEZEICHNUNG" : "SVK_BACKUP_29"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_30",
+            "WERT" : "0x21"
+         },
+         {
+            "WERT" : "0x22",
+            "BEZEICHNUNG" : "SVK_BACKUP_31"
+         },
+         {
+            "WERT" : "0x23",
+            "BEZEICHNUNG" : "SVK_BACKUP_32"
+         },
+         {
+            "WERT" : "0x24",
+            "BEZEICHNUNG" : "SVK_BACKUP_33"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_34",
+            "WERT" : "0x25"
+         },
+         {
+            "WERT" : "0x26",
+            "BEZEICHNUNG" : "SVK_BACKUP_35"
+         },
+         {
+            "WERT" : "0x27",
+            "BEZEICHNUNG" : "SVK_BACKUP_36"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_37",
+            "WERT" : "0x28"
+         },
+         {
+            "WERT" : "0x29",
+            "BEZEICHNUNG" : "SVK_BACKUP_38"
+         },
+         {
+            "WERT" : "0x2A",
+            "BEZEICHNUNG" : "SVK_BACKUP_39"
+         },
+         {
+            "WERT" : "0x2B",
+            "BEZEICHNUNG" : "SVK_BACKUP_40"
+         },
+         {
+            "WERT" : "0x2C",
+            "BEZEICHNUNG" : "SVK_BACKUP_41"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_42",
+            "WERT" : "0x2D"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_43",
+            "WERT" : "0x2E"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_44",
+            "WERT" : "0x2F"
+         },
+         {
+            "WERT" : "0x30",
+            "BEZEICHNUNG" : "SVK_BACKUP_45"
+         },
+         {
+            "WERT" : "0x31",
+            "BEZEICHNUNG" : "SVK_BACKUP_46"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_47",
+            "WERT" : "0x32"
+         },
+         {
+            "WERT" : "0x33",
+            "BEZEICHNUNG" : "SVK_BACKUP_48"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_49",
+            "WERT" : "0x34"
+         },
+         {
+            "WERT" : "0x35",
+            "BEZEICHNUNG" : "SVK_BACKUP_50"
+         },
+         {
+            "WERT" : "0x36",
+            "BEZEICHNUNG" : "SVK_BACKUP_51"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_52",
+            "WERT" : "0x37"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_53",
+            "WERT" : "0x38"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_54",
+            "WERT" : "0x39"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_55",
+            "WERT" : "0x3A"
+         },
+         {
+            "WERT" : "0x3B",
+            "BEZEICHNUNG" : "SVK_BACKUP_56"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_57",
+            "WERT" : "0x3C"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_58",
+            "WERT" : "0x3D"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_59",
+            "WERT" : "0x3E"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_60",
+            "WERT" : "0x3F"
+         },
+         {
+            "WERT" : "0x40",
+            "BEZEICHNUNG" : "SVK_BACKUP_61"
+         },
+         {
+            "WERT" : "0xXY",
+            "BEZEICHNUNG" : "ERROR_UNKNOWN"
+         }
+      ],
+      "IUMWELTTEXTE" : [
+         {
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "UWNR" : "0x170C",
+            "UW_EINH" : "mV",
+            "ADD" : "0.0",
+            "L/H" : "High",
+            "UWTEXT" : "Batteriespannung",
+            "UWTYP" : "unsigned int",
+            "NAME" : "-"
+         },
+         {
+            "L/H" : "High",
+            "UW_EINH" : "°C",
+            "ADD" : "-70.0",
+            "MUL" : "1.0",
+            "DIV" : "1.0",
+            "UWNR" : "0x4000",
+            "UWTEXT" : "TEMP",
+            "NAME" : "-",
+            "UWTYP" : "unsigned char"
+         }
+      ],
+      "TAB_0X4100" : [
+         {
+            "UW2_NR" : "0x0002",
+            "UW3_NR" : "0x0003",
+            "UW8_NR" : "0x0008",
+            "UW4_NR" : "0x0004",
+            "UW5_NR" : "0x0005",
+            "UW6_NR" : "0x0006",
+            "UW_ANZ" : "8",
+            "UW7_NR" : "0x0007",
+            "UW1_NR" : "0x0001"
+         }
+      ],
+      "UDS_TAB_HEX2ASCII" : [
+         {
+            "ASCII" : "!",
+            "HEX" : "0x21"
+         },
+         {
+            "HEX" : "0x23",
+            "ASCII" : "#"
+         },
+         {
+            "ASCII" : "$",
+            "HEX" : "0x24"
+         },
+         {
+            "ASCII" : "%",
+            "HEX" : "0x25"
+         },
+         {
+            "HEX" : "0x26",
+            "ASCII" : "&"
+         },
+         {
+            "ASCII" : "'",
+            "HEX" : "0x27"
+         },
+         {
+            "HEX" : "0x28",
+            "ASCII" : "("
+         },
+         {
+            "HEX" : "0x29",
+            "ASCII" : ")"
+         },
+         {
+            "HEX" : "0x2A",
+            "ASCII" : "*"
+         },
+         {
+            "ASCII" : "+",
+            "HEX" : "0x2B"
+         },
+         {
+            "ASCII" : ",",
+            "HEX" : "0x2C"
+         },
+         {
+            "ASCII" : "-",
+            "HEX" : "0x2D"
+         },
+         {
+            "HEX" : "0x2E",
+            "ASCII" : "."
+         },
+         {
+            "ASCII" : "/",
+            "HEX" : "0x2F"
+         },
+         {
+            "HEX" : "0x30",
+            "ASCII" : "0"
+         },
+         {
+            "HEX" : "0x31",
+            "ASCII" : "1"
+         },
+         {
+            "HEX" : "0x32",
+            "ASCII" : "2"
+         },
+         {
+            "ASCII" : "3",
+            "HEX" : "0x33"
+         },
+         {
+            "HEX" : "0x34",
+            "ASCII" : "4"
+         },
+         {
+            "HEX" : "0x35",
+            "ASCII" : "5"
+         },
+         {
+            "HEX" : "0x36",
+            "ASCII" : "6"
+         },
+         {
+            "ASCII" : "7",
+            "HEX" : "0x37"
+         },
+         {
+            "ASCII" : "8",
+            "HEX" : "0x38"
+         },
+         {
+            "ASCII" : "9",
+            "HEX" : "0x39"
+         },
+         {
+            "ASCII" : ":",
+            "HEX" : "0x3A"
+         },
+         {
+            "ASCII" : ";",
+            "HEX" : "0x3B"
+         },
+         {
+            "HEX" : "0x3C",
+            "ASCII" : "<"
+         },
+         {
+            "ASCII" : "=",
+            "HEX" : "0x3D"
+         },
+         {
+            "ASCII" : ">",
+            "HEX" : "0x3E"
+         },
+         {
+            "HEX" : "0x3F",
+            "ASCII" : "?"
+         },
+         {
+            "HEX" : "0x41",
+            "ASCII" : "A"
+         },
+         {
+            "HEX" : "0x42",
+            "ASCII" : "B"
+         },
+         {
+            "ASCII" : "C",
+            "HEX" : "0x43"
+         },
+         {
+            "ASCII" : "D",
+            "HEX" : "0x44"
+         },
+         {
+            "HEX" : "0x45",
+            "ASCII" : "E"
+         },
+         {
+            "ASCII" : "F",
+            "HEX" : "0x46"
+         },
+         {
+            "ASCII" : "G",
+            "HEX" : "0x47"
+         },
+         {
+            "HEX" : "0x48",
+            "ASCII" : "H"
+         },
+         {
+            "HEX" : "0x49",
+            "ASCII" : "I"
+         },
+         {
+            "HEX" : "0x4A",
+            "ASCII" : "J"
+         },
+         {
+            "ASCII" : "K",
+            "HEX" : "0x4B"
+         },
+         {
+            "ASCII" : "L",
+            "HEX" : "0x4C"
+         },
+         {
+            "HEX" : "0x4D",
+            "ASCII" : "M"
+         },
+         {
+            "HEX" : "0x4E",
+            "ASCII" : "N"
+         },
+         {
+            "ASCII" : "O",
+            "HEX" : "0x4F"
+         },
+         {
+            "ASCII" : "P",
+            "HEX" : "0x50"
+         },
+         {
+            "ASCII" : "Q",
+            "HEX" : "0x51"
+         },
+         {
+            "HEX" : "0x52",
+            "ASCII" : "R"
+         },
+         {
+            "HEX" : "0x53",
+            "ASCII" : "S"
+         },
+         {
+            "HEX" : "0x54",
+            "ASCII" : "T"
+         },
+         {
+            "HEX" : "0x55",
+            "ASCII" : "U"
+         },
+         {
+            "ASCII" : "V",
+            "HEX" : "0x56"
+         },
+         {
+            "ASCII" : "W",
+            "HEX" : "0x57"
+         },
+         {
+            "HEX" : "0x58",
+            "ASCII" : "X"
+         },
+         {
+            "ASCII" : "Y",
+            "HEX" : "0x59"
+         },
+         {
+            "HEX" : "0x5A",
+            "ASCII" : "Z"
+         },
+         {
+            "ASCII" : "[",
+            "HEX" : "0x5B"
+         },
+         {
+            "HEX" : "0x5D",
+            "ASCII" : "]"
+         },
+         {
+            "HEX" : "0x5E",
+            "ASCII" : "^"
+         },
+         {
+            "ASCII" : "_",
+            "HEX" : "0x5F"
+         },
+         {
+            "HEX" : "0x60",
+            "ASCII" : "`"
+         },
+         {
+            "ASCII" : "a",
+            "HEX" : "0x61"
+         },
+         {
+            "HEX" : "0x62",
+            "ASCII" : "b"
+         },
+         {
+            "ASCII" : "c",
+            "HEX" : "0x63"
+         },
+         {
+            "ASCII" : "d",
+            "HEX" : "0x64"
+         },
+         {
+            "ASCII" : "e",
+            "HEX" : "0x65"
+         },
+         {
+            "ASCII" : "f",
+            "HEX" : "0x66"
+         },
+         {
+            "HEX" : "0x67",
+            "ASCII" : "g"
+         },
+         {
+            "ASCII" : "h",
+            "HEX" : "0x68"
+         },
+         {
+            "HEX" : "0x69",
+            "ASCII" : "i"
+         },
+         {
+            "HEX" : "0x6A",
+            "ASCII" : "j"
+         },
+         {
+            "HEX" : "0x6B",
+            "ASCII" : "k"
+         },
+         {
+            "ASCII" : "l",
+            "HEX" : "0x6C"
+         },
+         {
+            "ASCII" : "m",
+            "HEX" : "0x6D"
+         },
+         {
+            "HEX" : "0x6E",
+            "ASCII" : "n"
+         },
+         {
+            "HEX" : "0x6F",
+            "ASCII" : "o"
+         },
+         {
+            "ASCII" : "p",
+            "HEX" : "0x70"
+         },
+         {
+            "ASCII" : "q",
+            "HEX" : "0x71"
+         },
+         {
+            "HEX" : "0x72",
+            "ASCII" : "r"
+         },
+         {
+            "HEX" : "0x73",
+            "ASCII" : "s"
+         },
+         {
+            "HEX" : "0x74",
+            "ASCII" : "t"
+         },
+         {
+            "HEX" : "0x75",
+            "ASCII" : "u"
+         },
+         {
+            "HEX" : "0x76",
+            "ASCII" : "v"
+         },
+         {
+            "ASCII" : "w",
+            "HEX" : "0x77"
+         },
+         {
+            "HEX" : "0x78",
+            "ASCII" : "x"
+         },
+         {
+            "HEX" : "0x79",
+            "ASCII" : "y"
+         },
+         {
+            "ASCII" : "z",
+            "HEX" : "0x7A"
+         },
+         {
+            "ASCII" : "|",
+            "HEX" : "0x7C"
+         },
+         {
+            "HEX" : "0x7E",
+            "ASCII" : "~"
+         }
+      ],
+      "DIAGMODE" : [
+         {
+            "MODE_TEXT" : "DefaultMode",
+            "MODE" : "UNGUELTIG",
+            "NR" : "0x00"
+         },
+         {
+            "MODE" : "DEFAULT",
+            "MODE_TEXT" : "DefaultMode",
+            "NR" : "0x01"
+         },
+         {
+            "NR" : "0x02",
+            "MODE" : "ECUPM",
+            "MODE_TEXT" : "ECUProgrammingMode"
+         },
+         {
+            "NR" : "0x03",
+            "MODE_TEXT" : "ECUExtendedDiagnosticSession",
+            "MODE" : "ECUEXTDIAG"
+         },
+         {
+            "NR" : "0x04",
+            "MODE_TEXT" : "ECUSafetySystemDiagnosticSession",
+            "MODE" : "ECUSSDS"
+         },
+         {
+            "MODE_TEXT" : "ECUEndOfLineSession",
+            "MODE" : "ECUEOL",
+            "NR" : "0x40"
+         },
+         {
+            "NR" : "0x41",
+            "MODE" : "ECUCODE",
+            "MODE_TEXT" : "ECUCodingSession"
+         },
+         {
+            "MODE_TEXT" : "ECUSwtSession",
+            "MODE" : "ECUSWT",
+            "NR" : "0x42"
+         },
+         {
+            "NR" : "0x43",
+            "MODE_TEXT" : "ECUHDDDownloadSession",
+            "MODE" : "ECUHDD"
+         },
+         {
+            "MODE" : "ECUDEVELOP",
+            "MODE_TEXT" : "ECUDevelopmentSession",
+            "NR" : "0x4F"
+         },
+         {
+            "NR" : "0x5F",
+            "MODE_TEXT" : "ECUGarageDiagnoseMode",
+            "MODE" : "ECUGDM"
+         },
+         {
+            "NR" : "0xXY",
+            "MODE" : "--",
+            "MODE_TEXT" : "unbekannter Diagnose-Mode"
+         }
+      ],
+      "ARG_0X5109" : [
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "The LED parameter block is reset to the initial ROM values if the transfer parameter is 1.",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MIN" : "-",
+            "ARG" : "ARG_SET_TO_ROM_VALUES",
+            "MAX" : "-",
+            "EINHEIT" : "0/1",
+            "DATENTYP" : "unsigned char",
+            "INFO" : "LED Parameterblock wird auf die initial ROM Werte zurückgesetzt, wenn der Übergabeparameter 1 ist.",
+            "NAME" : "-"
+         }
+      ],
+      "JOBRESULT" : [
+         {
+            "SB" : "0x10",
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_REJECT"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED",
+            "SB" : "0x11"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED",
+            "SB" : "0x12"
+         },
+         {
+            "SB" : "0x13",
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LONG",
+            "SB" : "0x14"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_BUSY_REPEAT_REQUEST",
+            "SB" : "0x21"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_CONDITIONS_NOT_CORRECT",
+            "SB" : "0x22"
+         },
+         {
+            "SB" : "0x24",
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_SEQUENCE_ERROR"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE_FROM_SUBNET_COMPONENT",
+            "SB" : "0x25"
+         },
+         {
+            "SB" : "0x26",
+            "STATUS_TEXT" : "ERROR_ECU_FAILURE_PREVENTS_EXECUTION_OF_REQUESTED_ACTION"
+         },
+         {
+            "SB" : "0x31",
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_OUT_OF_RANGE"
+         },
+         {
+            "SB" : "0x33",
+            "STATUS_TEXT" : "ERROR_ECU_SECURITY_ACCESS_DENIED"
+         },
+         {
+            "SB" : "0x35",
+            "STATUS_TEXT" : "ERROR_ECU_INVALID_KEY"
+         },
+         {
+            "SB" : "0x36",
+            "STATUS_TEXT" : "ERROR_ECU_EXCEED_NUMBER_OF_ATTEMPTS"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_REQUIRED_TIME_DELAY_NOT_EXPIRED",
+            "SB" : "0x37"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_UPLOAD_DOWNLOAD_NOT_ACCEPTED",
+            "SB" : "0x70"
+         },
+         {
+            "SB" : "0x71",
+            "STATUS_TEXT" : "ERROR_ECU_TRANSFER_DATA_SUSPENDED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_PROGRAMMING_FAILURE",
+            "SB" : "0x72"
+         },
+         {
+            "SB" : "0x73",
+            "STATUS_TEXT" : "ERROR_ECU_WRONG_BLOCK_SEQUENCE_COUNTER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_CORRECTLY_RECEIVED__RESPONSE_PENDING",
+            "SB" : "0x78"
+         },
+         {
+            "SB" : "0x7E",
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED_IN_ACTIVE_SESSION"
+         },
+         {
+            "SB" : "0x7F",
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED_IN_ACTIVE_SESSION"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_HIGH",
+            "SB" : "0x81"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_LOW",
+            "SB" : "0x82"
+         },
+         {
+            "SB" : "0x83",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_RUNNING"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_NOT_RUNNING",
+            "SB" : "0x84"
+         },
+         {
+            "SB" : "0x85",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_RUN_TIME_TOO_LOW"
+         },
+         {
+            "SB" : "0x86",
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_LOW",
+            "SB" : "0x87"
+         },
+         {
+            "SB" : "0x88",
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_LOW",
+            "SB" : "0x89"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_HIGH",
+            "SB" : "0x8A"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_LOW",
+            "SB" : "0x8B"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_NEUTRAL",
+            "SB" : "0x8C"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_GEAR",
+            "SB" : "0x8D"
+         },
+         {
+            "SB" : "0x8F",
+            "STATUS_TEXT" : "ERROR_ECU_BRAKE_SWITCH_NOT_CLOSED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SHIFTER_LEVER_NOT_IN_PARK",
+            "SB" : "0x90"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TORQUE_CONVERTER_CLUTCH_LOCKED",
+            "SB" : "0x91"
+         },
+         {
+            "SB" : "0x92",
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_LOW",
+            "SB" : "0x93"
+         },
+         {
+            "SB" : "?00?",
+            "STATUS_TEXT" : "OKAY"
+         },
+         {
+            "SB" : "?01?",
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_LEN",
+            "SB" : "?02?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_RESPONSE_ID",
+            "SB" : "?03?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TA_RESPONSE_NOT_SA_REQUEST",
+            "SB" : "?04?"
+         },
+         {
+            "SB" : "?05?",
+            "STATUS_TEXT" : "ERROR_ECU_SA_RESPONSE_NOT_TA_REQUEST"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DATA_IDENTIFIER",
+            "SB" : "?06?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_MUCH_DATA",
+            "SB" : "?07?"
+         },
+         {
+            "SB" : "?08?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LESS_DATA"
+         },
+         {
+            "SB" : "?09?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_VALUE_OUT_OF_RANGE"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_TABLE",
+            "SB" : "?0A?"
+         },
+         {
+            "SB" : "?10?",
+            "STATUS_TEXT" : "ERROR_F_CODE"
+         },
+         {
+            "SB" : "?12?",
+            "STATUS_TEXT" : "ERROR_INTERPRETATION"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_F_POS",
+            "SB" : "?13?"
+         },
+         {
+            "SB" : "?14?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_IO_CONTROL_PARAMETER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_TYPE",
+            "SB" : "?15?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SUB_FUNCTION",
+            "SB" : "?16?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DYNAMICALLY_DEFINED_DATA_IDENTIFIER",
+            "SB" : "?17?"
+         },
+         {
+            "SB" : "?18?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_NO_STRING_END_CHAR"
+         },
+         {
+            "SB" : "?19?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_IDENTIFIER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_RESET_TYPE",
+            "SB" : "?1A?"
+         },
+         {
+            "SB" : "?1B?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SERIAL_NUMBER_FORMAT"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_BY_STATUS_MASK",
+            "SB" : "?1C?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_STATUS_AVAILABILITY_MASK",
+            "SB" : "?1D?"
+         },
+         {
+            "SB" : "?1E?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_IDENTIFIER"
+         },
+         {
+            "SB" : "?50?",
+            "STATUS_TEXT" : "ERROR_BYTE1"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE2",
+            "SB" : "?51?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE3",
+            "SB" : "?52?"
+         },
+         {
+            "SB" : "?60?",
+            "STATUS_TEXT" : "ERROR_VERIFY"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_ZGW",
+            "SB" : "?61?"
+         },
+         {
+            "SB" : "?62?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_BACKUP"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_CALID_CVN_INCORRECT_LEN",
+            "SB" : "?70?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_LEN",
+            "SB" : "?80?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_FINGERPRINT",
+            "SB" : "?81?"
+         },
+         {
+            "SB" : "?F0?",
+            "STATUS_TEXT" : "ERROR_ARGUMENT"
+         },
+         {
+            "SB" : "0xXY",
+            "STATUS_TEXT" : "ERROR_ECU_UNKNOWN_NEGATIVE_RESPONSE"
+         }
+      ],
+      "BETRIEBSMODE" : [
+         {
+            "TEXT" : "kein Betriebsmode gesetzt",
+            "WERT" : "0x00",
+            "TEXT_EN" : "no operating mode set",
+            "BEDEUTUNG" : "kein Betriebsmode"
+         },
+         {
+            "TEXT_EN" : "invalid operating mode",
+            "BEDEUTUNG" : "ungültig",
+            "TEXT" : "ungültiger Betriebsmode",
+            "WERT" : "0xFF"
+         }
+      ],
+      "RES_0X5100" : [
+         {
+            "RESULTNAME" : "STAT_COD_FSP_LIMIT_U_LOW_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "V",
+            "NAME" : "-",
+            "INFO" : "Unterer Schwellwert zum Ausblenden der Fehlerspeicherung",
+            "DIV" : "10.0",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Lower threshold to hide the error memory"
+         },
+         {
+            "INFO_EN" : "Upper threshold to hide the error memory",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "DIV" : "10.0",
+            "NAME" : "-",
+            "INFO" : "Oberer Schwellwert zum Ausblenden der Fehlerspeicherung",
+            "EINHEIT" : "V",
+            "RESULTNAME" : "STAT_COD_FSP_LIMIT_U_HIGH_WERT",
+            "DATENTYP" : "unsigned char"
+         },
+         {
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "INFO_EN" : "Debounce time for the sensor raw value acquisition",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "NAME" : "-",
+            "INFO" : "Entprellzeit für die Sensorrohwerterfassung",
+            "RESULTNAME" : "STAT_COD_POS_DEB_TIME_1_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "ms"
+         },
+         {
+            "EINHEIT" : "ms",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_POS_DEB_TIME_2_INV_WERT",
+            "INFO" : "Entprellzeit für die Sensorrohwerterfassung invers (2 aus 3)",
+            "NAME" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Debounce time for the sensor raw value acquisition inverse (2 of 3)",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "DIV" : "1.0"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "Debounce time for the sensor raw value acquisition (2 of 3)",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "DIV" : "1.0",
+            "NAME" : "-",
+            "INFO" : "Entprellzeit für die Sensorrohwerterfassung (2 aus 3)",
+            "EINHEIT" : "ms",
+            "RESULTNAME" : "STAT_COD_POS_DEB_TIME_3_WERT",
+            "DATENTYP" : "unsigned char"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Fixed value 0x43",
+            "NAME" : "-",
+            "INFO" : "Festwert 0x43",
+            "RESULTNAME" : "STAT_COD_POS_DEB_COD_IDENTIFIER_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Debounce time for the parking button detection",
+            "RESULTNAME" : "STAT_COD_PBUTT_DEB_TIME_1_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "ms",
+            "INFO" : "Entprellzeit für die Parktastererfassung",
+            "NAME" : "-"
+         },
+         {
+            "EINHEIT" : "ms",
+            "RESULTNAME" : "STAT_COD_PBUTT_DEB_TIME_2_INV_WERT",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "Entprellzeit für die Parktastererfassung invers (2 aus 3)",
+            "MUL" : "1.0",
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "INFO_EN" : "Debounce time for the park button detection inverse (2 of 3)",
+            "ADD" : "0.0",
+            "MASKE" : "-"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "Debounce time for the parking button detection (2 of 3)",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "DIV" : "1.0",
+            "EINHEIT" : "ms",
+            "RESULTNAME" : "STAT_COD_PBUTT_DEB_TIME_3_WERT",
+            "DATENTYP" : "unsigned char",
+            "INFO" : "Entprellzeit für die Parktastererfassung (2 aus 3)",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Festwert 0xEA",
+            "RESULTNAME" : "STAT_COD_PBUTT_DEB_COD_IDENTIFIER_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "HEX",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Fixed value 0xEA",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "Threshold value ADC for switching off lighting (temperature issue)",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DIV" : "1.0",
+            "EINHEIT" : "Counts",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_THRESHOLD_ILL_CUT_OFF_WERT",
+            "NAME" : "-",
+            "INFO" : "Schwellwert ADC zur Beleuchtungsabschaltung (Temperaturthematik)"
+         },
+         {
+            "EINHEIT" : "ms",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_POS_DEB_NA_CNT_1_WERT",
+            "INFO" : "Zeit in ms für die, die Drehklinke in NA stehen muß, damit es sich nicht um ein Schnippen handelt.",
+            "NAME" : "-",
+            "INFO_EN" : "Time in ms for that the rotary pawl must be in NA so that it is not a snap.",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "DIV" : "1.0"
+         },
+         {
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "INFO_EN" : "Time in ms for that the rotary pawl must be in NA so that it is not a snap. inverse (2 of 3)",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "NAME" : "-",
+            "INFO" : "Zeit in ms für die, die Drehklinke in NA stehen muß, damit es nicht um ein Schnippen handelt. invers (2 aus 3)",
+            "RESULTNAME" : "STAT_COD_POS_DEB_NA_CNT_2_INV_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "ms"
+         },
+         {
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "INFO_EN" : "Time in ms for that the rotary pawl must be in NA so that it is not a matter of snapping (2 of 3)",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_POS_DEB_NA_CNT_3_WERT",
+            "EINHEIT" : "ms",
+            "INFO" : "Zeit in ms für die, die Drehklinke in NA stehen muß, damit es nicht um ein Schnippen handelt (2 aus 3)",
+            "NAME" : "-"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_POS_DEB_NA_COD_IDENTIFIER_WERT",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "Festwert 0xAD",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Fixed value 0xAD",
+            "MASKE" : "-",
+            "ADD" : "-"
+         },
+         {
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "DTC code that is hidden for error storage. (Detection, error qualification and error handling are retained). Primary storage or information storage possible.",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-",
+            "NAME" : "-",
+            "INFO" : "DTC-Code der ausgeblendet wird für die Fehlerspeicherung. (Erkennung, Feherqualifizierung und Fehlerbehandlung bleiben erhalten). Primärer Speicher oder Infospeicher möglich.",
+            "DATENTYP" : "unsigned long",
+            "RESULTNAME" : "STAT_COD_DTC_SWITCH_OFF_1_WERT",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "DTC code that is hidden for error storage. (Detection, error qualification and error handling are retained). Primary storage or information storage possible",
+            "L/H" : "high",
+            "RESULTNAME" : "STAT_COD_DTC_SWITCH_OFF_2_WERT",
+            "DATENTYP" : "unsigned long",
+            "EINHEIT" : "HEX",
+            "NAME" : "-",
+            "INFO" : "DTC-Code der ausgeblendet wird für die Fehlerspeicherung. (Erkennung, Feherqualifizierung und Fehlerbehandlung bleiben erhalten). Primärer Speicher oder Infospeicher möglich"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_DTC_SWITCH_OFF_3_WERT",
+            "DATENTYP" : "unsigned long",
+            "INFO" : "DTC-Code der ausgeblendet wird für die Fehlerspeicherung. (Erkennung, Feherqualifizierung und Fehlerbehandlung bleiben erhalten). Primärer Speicher oder Infospeicher möglich.",
+            "NAME" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "DTC code that is hidden for error storage. (Detection, error qualification and error handling are retained). Primary storage or information storage possible.",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "DTC code that is hidden for error storage. (Detection, error qualification and error handling are retained). Primary storage or information storage possible.",
+            "L/H" : "high",
+            "NAME" : "-",
+            "INFO" : "DTC-Code der ausgeblendet wird für die Fehlerspeicherung. (Erkennung, Feherqualifizierung und Fehlerbehandlung bleiben erhalten). Primärer Speicher oder Infospeicher möglich.",
+            "RESULTNAME" : "STAT_COD_DTC_SWITCH_OFF_4_WERT",
+            "DATENTYP" : "unsigned long",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "INFO" : "Codierbyte Reserve 32 = frei",
+            "NAME" : "-",
+            "RESULTNAME" : "STAT_COD_RES_32_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "-",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "INFO_EN" : "Coding byte reserve 32 = free",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "MUL" : "1.0"
+         },
+         {
+            "INFO" : "Timeout, nach der das blaue Atmen der Corona im Stand ausgeschalten wird",
+            "NAME" : "-",
+            "EINHEIT" : "ms",
+            "RESULTNAME" : "STAT_COD_CORONA_TIMEOUT_WERT",
+            "DATENTYP" : "unsigned char",
+            "L/H" : "high",
+            "INFO_EN" : "Timeout after which the blue breathing of the Corona is switched off while standing",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "MUL" : "100.0",
+            "DIV" : "1.0"
+         },
+         {
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Flashing frequency of the corona (period in ms)",
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "INFO" : "Blinkfrequenz der Korona (Periodendauer in ms)",
+            "NAME" : "-",
+            "RESULTNAME" : "STAT_COD_CORONA_PERIOD_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "ms"
+         },
+         {
+            "INFO" : "Abstimmung Corona State  Corona atmet blau hell : Zeitpunkt Ende der Phase  einatmen ",
+            "NAME" : "-",
+            "EINHEIT" : "ms",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_CORONA_BREATH_IN_TIME_WERT",
+            "INFO_EN" : "Corona State vote Corona breathes lightly blue: Inhale at the end of the phase",
+            "L/H" : "high",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "DIV" : "1.0"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Abstimmung Corona State  Corona atmet blau hell : Zeitpunkt Start der Phase  ausatmen ",
+            "EINHEIT" : "ms",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_CORONA_BREATH_OUT_TIME_WERT",
+            "MUL" : "1.0",
+            "DIV" : "1.0",
+            "INFO_EN" : "Vote Corona State Corona breathes lightly blue: Exhale at the start of the phase",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "0.0"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Abstimmung Corona State  Corona atmet blau dunkel : Zeitpunkt Ende der Phase  einatmen ",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_CORONA_DARK_BREATH_IN_TIME_WERT",
+            "EINHEIT" : "ms",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Vote Corona State Corona breathes dark blue: inhale at the end of the phase",
+            "DIV" : "1.0",
+            "MUL" : "1.0"
+         },
+         {
+            "MUL" : "1.0",
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "INFO_EN" : "Vote Corona State Corona breathe dark blue: Exhale at the start of the phase",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "EINHEIT" : "ms",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_CORONA_DARK_BREATH_OUT_TIME_WERT",
+            "INFO" : "Abstimmung Corona State  Corona atmet blau dunkel : Zeitpunkt Start der Phase  ausatmen ",
+            "NAME" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "LED diagnosis ADC trigger delay",
+            "L/H" : "high",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_LEDDIAG_ADC_TRIGGER_DELAY_WERT",
+            "EINHEIT" : "HEX",
+            "NAME" : "-",
+            "INFO" : "LED Diagnose ADC Trigger Delay"
+         },
+         {
+            "RESULTNAME" : "STAT_COD_FNC_LED_OFF_LOWER_LIMIT_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX",
+            "INFO" : "Untere Diagnoseschwelle Funktionsausleuchtung - LED aus",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Lower diagnostic threshold function illumination - LED off",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "INFO" : "Obere Diagnoseschwelle Funktionsausleuchtung - LED aus",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_FNC_LED_OFF_UPPER_LIMIT_WERT",
+            "INFO_EN" : "Upper diagnostic threshold function illumination - LED off",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Lower diagnostic threshold function illumination - LED on",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "NAME" : "-",
+            "INFO" : "Untere Diagnoseschwelle Funktionsausleuchtung - LED an",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_FNC_LED_ON_LOWER_LIMIT_WERT"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Upper diagnostic threshold function illumination - LED on",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "NAME" : "-",
+            "INFO" : "Obere Diagnoseschwelle Funktionsausleuchtung - LED an",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_FNC_LED_ON_UPPER_LIMIT_WERT",
+            "DATENTYP" : "unsigned int"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Lower diagnostic threshold search light - LED off",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO" : "Untere Diagnoseschwelle Suchbeleuchtung - LED aus",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_BKG_LED_OFF_LOWER_LIMIT_WERT",
+            "DATENTYP" : "unsigned int"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Obere Diagnoseschwelle Suchbeleuchtung - LED aus",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_BKG_LED_OFF_UPPER_LIMIT_WERT",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Upper diagnostic threshold search light - LED off",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Lower diagnostic threshold search light - LED on",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "NAME" : "-",
+            "INFO" : "Untere Diagnoseschwelle Suchbeleuchtung - LED an",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_BKG_LED_ON_LOWER_LIMIT_WERT",
+            "DATENTYP" : "unsigned int"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_BKG_LED_ON_UPPER_LIMIT_WERT",
+            "INFO" : "Obere Diagnoseschwelle Suchbeleuchtung - LED an",
+            "NAME" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Upper diagnostic threshold search light - LED on",
+            "MASKE" : "-",
+            "ADD" : "-"
+         },
+         {
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Start and end duty cycle of corona breathing",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-",
+            "INFO" : "Start und Endtastverhältnis der Corona Atmung",
+            "NAME" : "-",
+            "RESULTNAME" : "STAT_COD_BREATH_MIN_DUTY_CYCLE_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX"
+         }
+      ],
+      "ARG_0X5108" : [
+         {
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "0/1",
+            "INFO" : "Parameterblock wird auf die initial ROM-Werte zurückgesetzt, wenn der Übergabeparameter 1 ist.",
+            "NAME" : "-",
+            "MAX" : "-",
+            "ARG" : "ARG_SET_TO_ROM_VALUES",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "The parameter block is reset to the initial ROM values if the transfer parameter is 1.",
+            "L/H" : "high",
+            "MIN" : "-",
+            "DIV" : "-",
+            "MUL" : "-"
+         }
+      ],
+      "TAB_0X4103" : [
+         {
+            "UW_ANZ" : "2",
+            "UW2_NR" : "0x0018",
+            "UW1_NR" : "0x0017"
+         }
+      ],
+      "ARG_0X5102" : [
+         {
+            "DIV" : "1.0",
+            "MUL" : "1.0",
+            "MIN" : "0.0",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "L/H" : "high",
+            "INFO_EN" : "Writes 2 bytes to the table index INDEX_IN_ARRAY",
+            "MAX" : "63.0",
+            "ARG" : "INDEX_IN_ARRAY",
+            "NAME" : "-",
+            "INFO" : "Schreibt 2 Bytes auf dem Tabellenindex INDEX_IN_ARRAY",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "MIN" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : " Value to be written - 2 bytes",
+            "L/H" : "high",
+            "MAX" : "-",
+            "ARG" : "VALUE",
+            "NAME" : "-",
+            "INFO" : " Wert der geschrieben werden soll - 2 Bytes",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX"
+         }
+      ],
+      "DTCEXTENDEDDATARECORDNUMBER" : [
+         {
+            "ANZ_BYTE" : "0",
+            "TEXT" : "ISO_RESERVED",
+            "WERT" : "0x00",
+            "TEXT_EN" : "ISO_RESERVED"
+         },
+         {
+            "TEXT_EN" : "CONDITION_BYTE",
+            "ANZ_BYTE" : "1",
+            "WERT" : "0x01",
+            "TEXT" : "CONDITION_BYTE"
+         },
+         {
+            "TEXT_EN" : "HFK",
+            "TEXT" : "HFK",
+            "WERT" : "0x02",
+            "ANZ_BYTE" : "1"
+         },
+         {
+            "TEXT_EN" : "HLZ",
+            "ANZ_BYTE" : "1",
+            "WERT" : "0x03",
+            "TEXT" : "HLZ"
+         },
+         {
+            "TEXT_EN" : "RECORD_UNKNOWN",
+            "ANZ_BYTE" : "0",
+            "TEXT" : "RECORD_UNKNOWN",
+            "WERT" : "0xFF"
+         }
+      ],
+      "FEHLERKLASSE" : [
+         {
+            "TEXT_EN" : "No fault class available",
+            "TEXT" : "Keine Fehlerklasse verfuegbar",
+            "NR" : "0x00"
+         },
+         {
+            "TEXT_EN" : "Check when you next visit the workshop",
+            "TEXT" : "Ueberpruefung bei naechstem Werkstattbesuch",
+            "NR" : "0x01"
+         },
+         {
+            "TEXT_EN" : "Check at the next stop",
+            "NR" : "0x02",
+            "TEXT" : "Ueberpruefung bei naechstem Halt"
+         },
+         {
+            "NR" : "0x04",
+            "TEXT" : "Ueberpruefung sofort erforderlich !",
+            "TEXT_EN" : "Check required immediately!"
+         },
+         {
+            "TEXT_EN" : "unknown error class",
+            "NR" : "0xFF",
+            "TEXT" : "unbekannte Fehlerklasse"
+         }
+      ],
+      "JOBRESULTEXTENDED" : [
+         {
+            "SB" : "0xXY",
+            "STATUS_TEXT" : "ERROR_UNKNOWN"
+         }
+      ],
+      "TAB_CORONA_FARBE" : [
+         {
+            "TEXT_EN" : "BLUE",
+            "WERT" : "0x01",
+            "TEXT" : "BLAU"
+         },
+         {
+            "TEXT_EN" : "ORANGE",
+            "TEXT" : "ORANGE",
+            "WERT" : "0x02"
+         }
+      ],
+      "IDETAILSTRUKTUR" : [
+         {
+            "NAME" : "F_UWB_ERW",
+            "TYP" : "ja"
+         },
+         {
+            "NAME" : "SAE_CODE",
+            "TYP" : "nein"
+         },
+         {
+            "NAME" : "F_HLZ",
+            "TYP" : "ja"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_SEVERITY"
+         }
+      ],
+      "FDETAILSTRUKTUR" : [
+         {
+            "NAME" : "F_UWB_ERW",
+            "TYP" : "ja"
+         },
+         {
+            "NAME" : "SAE_CODE",
+            "TYP" : "nein"
+         },
+         {
+            "NAME" : "F_HLZ",
+            "TYP" : "ja"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_SEVERITY"
+         },
+         {
+            "TYP" : "2",
+            "NAME" : "F_UWB_SATZ"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_HLZ_VIEW"
+         }
+      ],
+      "RES_0X5104" : [
+         {
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SYM_P_L_MIN_WERT",
+            "EINHEIT" : "HEX",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED P Symbol - Lmin gem. BMW GS 95010 [% in Counts]",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Dimming value function display LED P symbol - Lmin acc. BMW GS 95010 [% in counts]",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED P Symbol - ST/N gem. BMW GS 95010",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SYM_P_STN_BOUNDARY_WERT",
+            "EINHEIT" : "HEX",
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED P symbol - ST / N acc. BMW GS 95010"
+         },
+         {
+            "INFO" : "Dimmwert Funktionsanzeige  LED P Symbol - Lmax gem. BMW GS 95010",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SYM_P_L_MAX_WERT",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED P symbol - Lmax acc. BMW GS 95010",
+            "ADD" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "INFO" : "Dimmwert Funktionsanzeige  LED R Symbol - Lmin gem. BMW GS 95010",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SYM_R_L_MIN_WERT",
+            "EINHEIT" : "HEX",
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "Dimming value function display LED R symbol - Lmin acc. BMW GS 95010",
+            "L/H" : "high"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED R Symbol - ST/N gem. BMW GS 95010",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_SYM_R_STN_BOUNDARY_WERT",
+            "DATENTYP" : "unsigned int",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Dimming value function display LED R symbol - ST / N acc. BMW GS 95010",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Dimming value function display LED R symbol - Lmax acc. BMW GS 95010",
+            "L/H" : "high",
+            "INFO" : "Dimmwert Funktionsanzeige  LED R Symbol - Lmax gem. BMW GS 95010",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SYM_R_L_MAX_WERT",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED N symbol - Lmin acc. BMW GS 95010",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_SYM_N_L_MIN_WERT",
+            "DATENTYP" : "unsigned int",
+            "INFO" : "Dimmwert Funktionsanzeige  LED N Symbol - Lmin gem. BMW GS 95010",
+            "NAME" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED N symbol - ST / N acc. BMW GS 95010",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SYM_N_STN_BOUNDARY_WERT",
+            "EINHEIT" : "HEX",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED N Symbol - ST/N gem. BMW GS 95010"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Dimming value function display LED N symbol - Lmax acc. BMW GS 95010",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED N Symbol - Lmax gem. BMW GS 95010",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_SYM_N_L_MAX_WERT",
+            "DATENTYP" : "unsigned int"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED D symbol - Lmin acc. BMW GS 95010",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SYM_D_L_MIN_WERT",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED D Symbol - Lmin gem. BMW GS 95010"
+         },
+         {
+            "INFO" : "Dimmwert Funktionsanzeige  LED D Symbol - ST/N gem. BMW GS 95010",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_SYM_D_STN_BOUNDARY_WERT",
+            "DATENTYP" : "unsigned int",
+            "INFO_EN" : "Dimming value function display LED D symbol - ST / N acc. BMW GS 95010",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED D symbol - Lmax acc. BMW GS 95010",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED D Symbol - Lmax gem. BMW GS 95010",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_SYM_D_L_MAX_WERT",
+            "DATENTYP" : "unsigned int"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED P Quadrat - Lmin gem. BMW GS 95010",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SQUARE_P_L_MIN_WERT",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Dimming value function display LED P square - Lmin acc. BMW GS 95010",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED P Quadrat - ST/N gem. BMW GS 95010",
+            "RESULTNAME" : "STAT_COD_SQUARE_P_STN_BOUNDARY_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX",
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED P square - ST / N acc. BMW GS 95010"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED P Quadrat - Lmax gem. BMW GS 95010",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_SQUARE_P_L_MAX_WERT",
+            "DATENTYP" : "unsigned int",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED P square - Lmax acc. BMW GS 95010",
+            "MASKE" : "-",
+            "ADD" : "-"
+         },
+         {
+            "INFO_EN" : "Dimming value function display LED R square - Lmin acc. BMW GS 95010",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SQUARE_R_L_MIN_WERT",
+            "INFO" : "Dimmwert Funktionsanzeige  LED R Quadrat - Lmin gem. BMW GS 95010",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED R Quadrat - ST/N gem. BMW GS 95010",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_SQUARE_R_STN_BOUNDARY_WERT",
+            "DATENTYP" : "unsigned int",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Dimming value function display LED R square - ST / N acc. BMW GS 95010",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SQUARE_R_L_MAX_WERT",
+            "INFO" : "Dimmwert Funktionsanzeige  LED R Quadrat - Lmax gem. BMW GS 95010",
+            "NAME" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED R square - Lmax acc. BMW GS 95010",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "RESULTNAME" : "STAT_COD_SQUARE_N_L_MIN_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX",
+            "INFO" : "Dimmwert Funktionsanzeige  LED N Quadrat - Lmin gem. BMW GS 95010",
+            "NAME" : "-",
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Dimming value function display LED N square - Lmin acc. BMW GS 95010",
+            "L/H" : "high"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED N Quadrat - ST/N gem. BMW GS 95010",
+            "RESULTNAME" : "STAT_COD_SQUARE_N_STN_BOUNDARY_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Dimming value function display LED N square - ST / N acc. BMW GS 95010",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED N square - Lmax acc. BMW GS 95010",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED N Quadrat - Lmax gem. BMW GS 95010",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_SQUARE_N_L_MAX_WERT",
+            "DATENTYP" : "unsigned int"
+         },
+         {
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SQUARE_D_L_MIN_WERT",
+            "EINHEIT" : "HEX",
+            "INFO" : "Dimmwert Funktionsanzeige  LED D Quadrat - Lmin gem. BMW GS 95010",
+            "NAME" : "-",
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display LED D square - Lmin acc. BMW GS 95010"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED D Quadrat - ST/N gem. BMW GS 95010",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SQUARE_D_STN_BOUNDARY_WERT",
+            "EINHEIT" : "HEX",
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "Dimming value function display LED D square - ST / N acc. BMW GS 95010",
+            "L/H" : "high"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_SQUARE_D_L_MAX_WERT",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige  LED D Quadrat - Lmax gem. BMW GS 95010",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Dimming value function display LED D square - Lmax acc. BMW GS 95010",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "Dimming value search lighting LED P background - Lmin according to BMW GS 95010",
+            "L/H" : "high",
+            "INFO" : "Dimmwert Suchbeleuchtung LED P Hintergrund - Lmin gem BMW GS 95010",
+            "NAME" : "-",
+            "RESULTNAME" : "STAT_COD_BKG_P_L_MIN_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "INFO" : "Dimmwert Suchbeleuchtung LED P Hintergrund - Lmax gem BMW GS 95010",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_BKG_P_L_MAX_WERT",
+            "EINHEIT" : "HEX",
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value search lighting LED P background - Lmax according to BMW GS 95010"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_BKG_R_L_MIN_WERT",
+            "DATENTYP" : "unsigned int",
+            "INFO" : "Dimmwert Suchbeleuchtung LED R Hintergrund - Lmin gem BMW GS 95010",
+            "NAME" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value search lighting LED R background - Lmin according to BMW GS 95010",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value search lighting LED R background - Lmax according to BMW GS 95010",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO" : "Dimmwert Suchbeleuchtung LED R Hintergrund - Lmax gem BMW GS 95010",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_BKG_R_L_MAX_WERT"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Suchbeleuchtung LED N Hintergrund - Lmin gem BMW GS 95010",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_BKG_N_L_MIN_WERT",
+            "EINHEIT" : "HEX",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "Dimming value search lighting LED N background - Lmin according to BMW GS 95010",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "INFO_EN" : "Dimming value search lighting LED N background - Lmax according to BMW GS 95010",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_BKG_N_L_MAX_WERT",
+            "INFO" : "Dimmwert Suchbeleuchtung LED N Hintergrund - Lmax gem BMW GS 95010",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Suchbeleuchtung LED D Hintergrund - Lmin gem BMW GS 95010",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_BKG_D_L_MIN_WERT",
+            "DATENTYP" : "unsigned int",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value search lighting LED D background - Lmin according to BMW GS 95010",
+            "MASKE" : "-",
+            "ADD" : "-"
+         },
+         {
+            "INFO_EN" : "Dimming value search lighting LED D background - Lmax according to BMW GS 95010",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_BKG_D_L_MAX_WERT",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Suchbeleuchtung LED D Hintergrund - Lmax gem BMW GS 95010"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige Corona atmet orange (dunkel) - Lmin gem BMW GS 95010",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_CORONA_ORANGE_DARK_BREATH_L_MIN_WERT",
+            "EINHEIT" : "HEX",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Dimming value function display Corona breathes orange (dark) - Lmin according to BMW GS 95010",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "MASKE" : "-",
+            "ADD" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display Corona breathes orange (dark) - ST / N according to BMW GS 95010",
+            "DIV" : "-",
+            "MUL" : "-",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_CORONA_ORANGE_DARK_BREATH_STN_BOUNDARY_WERT",
+            "EINHEIT" : "HEX",
+            "INFO" : "Dimmwert Funktionsanzeige Corona atmet orange (dunkel) - ST/N gem BMW GS 95010",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige Corona atmet orange (dunkel) - Lmax gem BMW GS 95010",
+            "RESULTNAME" : "STAT_COD_CORONA_ORANGE_DARK_BREATH_L_MAX_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX",
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display Corona breathes orange (dark) - Lmax according to BMW GS 95010"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display Corona breathes orange (light) - Lmin according to BMW GS 95010",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige Corona atmet orange (hell) - Lmin gem BMW GS 95010",
+            "RESULTNAME" : "STAT_COD_CORONA_ORANGE_BREATH_L_MIN_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "INFO_EN" : "Dimming value function display Corona breathes orange (light) - ST / N according to BMW GS 95010",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_CORONA_ORANGE_BREATH_STN_BOUNDARY_WERT",
+            "DATENTYP" : "unsigned int",
+            "INFO" : "Dimmwert Funktionsanzeige Corona atmet orange (hell) - ST/N gem BMW GS 95010",
+            "NAME" : "-"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_CORONA_ORANGE_BREATH_L_MAX_WERT",
+            "DATENTYP" : "unsigned int",
+            "INFO" : "Dimmwert Funktionsanzeige Corona atmet orange (hell) - Lmax gem BMW GS 95010",
+            "NAME" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Dimming value function display Corona breathes orange (light) - Lmax according to BMW GS 95010",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige Corona orange (hell) - Lmin gem BMW GS 95010",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_CORONA_ORANGE_L_MIN_WERT",
+            "DATENTYP" : "unsigned int",
+            "INFO_EN" : "Dimming value function display Corona orange (light) - Lmin according to BMW GS 95010",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Dimming value function display Corona orange (light) - ST / N according to BMW GS 95010",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige Corona orange (hell) - ST/N gem BMW GS 95010",
+            "RESULTNAME" : "STAT_COD_CORONA_ORANGE_STN_BOUNDARY_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_CORONA_ORANGE_L_MAX_WERT",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige Corona orange (hell) - Lmax gem BMW GS 95010",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display Corona orange (light) - Lmax according to BMW GS 95010",
+            "MASKE" : "-",
+            "ADD" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display E-band (light) - Lmin according to BMW GS 95010",
+            "RESULTNAME" : "STAT_COD_EBAND_BLUE_L_MIN_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige E-Band (hell) - Lmin gem BMW GS 95010"
+         },
+         {
+            "INFO_EN" : "Dimming value function display E-Band (light) - ST / N according to BMW GS 95010",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_EBAND_BLUE_STN_BOUNDARY_WERT",
+            "DATENTYP" : "unsigned int",
+            "INFO" : "Dimmwert Funktionsanzeige E-Band (hell) - ST/N gem BMW GS 95010",
+            "NAME" : "-"
+         },
+         {
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Dimming value function display E-Band (light) - Lmax according to BMW GS 95010",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige E-Band (hell) - Lmax gem BMW GS 95010",
+            "NAME" : "-",
+            "RESULTNAME" : "STAT_COD_EBAND_BLUE_L_MAX_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display E-band orange - Lmin according to BMW GS 95010",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige E-Band orange - Lmin gem BMW GS 95010",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_EBAND_ORANGE_L_MIN_WERT",
+            "DATENTYP" : "unsigned int"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Dimming value function display E-band orange - ST / N according to BMW GS 95010",
+            "L/H" : "high",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige E-Band orange - ST/N gem BMW GS 95010",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_COD_EBAND_ORANGE_STN_BOUNDARY_WERT",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "MASKE" : "-",
+            "ADD" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "Dimming value function display E-Band orange - Lmax according to BMW GS 95010",
+            "DIV" : "-",
+            "MUL" : "-",
+            "NAME" : "-",
+            "INFO" : "Dimmwert Funktionsanzeige E-Band orange - Lmax gem BMW GS 95010",
+            "RESULTNAME" : "STAT_COD_EBAND_ORANGE_L_MAX_WERT",
+            "DATENTYP" : "unsigned int",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES1_WERT",
+            "NAME" : "-",
+            "INFO" : "-"
+         },
+         {
+            "RESULTNAME" : "STAT_COD_RES2_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "HEX",
+            "INFO" : "-",
+            "NAME" : "-",
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES3_WERT",
+            "EINHEIT" : "HEX",
+            "INFO" : "-",
+            "NAME" : "-"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_RES4_WERT",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "-"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES5_WERT",
+            "NAME" : "-",
+            "INFO" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES6_WERT",
+            "EINHEIT" : "HEX",
+            "INFO" : "-",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "RESULTNAME" : "STAT_COD_RES7_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "HEX",
+            "NAME" : "-",
+            "INFO" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "INFO" : "-",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES8_WERT",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO" : "-",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES9_WERT"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "INFO" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_RES10_WERT",
+            "DATENTYP" : "unsigned char"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES11_WERT",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "MASKE" : "-",
+            "ADD" : "-"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES12_WERT",
+            "INFO" : "-",
+            "NAME" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO" : "-",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES13_WERT"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO" : "-",
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_RES14_WERT",
+            "DATENTYP" : "unsigned char"
+         },
+         {
+            "RESULTNAME" : "STAT_COD_RES15_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "HEX",
+            "INFO" : "-",
+            "NAME" : "-",
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES16_WERT",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_RES17_WERT",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_RES18_WERT",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "-"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES19_WERT",
+            "NAME" : "-",
+            "INFO" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "ADD" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-",
+            "INFO" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES20_WERT",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "MUL" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES21_WERT",
+            "NAME" : "-",
+            "INFO" : "-"
+         },
+         {
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "DIV" : "-",
+            "MUL" : "-",
+            "NAME" : "-",
+            "INFO" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES22_WERT",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_RES23_WERT",
+            "DATENTYP" : "unsigned char",
+            "INFO" : "-",
+            "NAME" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "INFO" : "-",
+            "NAME" : "-",
+            "RESULTNAME" : "STAT_COD_RES24_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "HEX",
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES25_WERT",
+            "EINHEIT" : "HEX",
+            "NAME" : "-",
+            "INFO" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "-",
+            "RESULTNAME" : "STAT_COD_RES26_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "HEX",
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "NAME" : "-",
+            "INFO" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES27_WERT",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES28_WERT",
+            "INFO" : "-",
+            "NAME" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-"
+         },
+         {
+            "RESULTNAME" : "STAT_COD_RES29_WERT",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "HEX",
+            "NAME" : "-",
+            "INFO" : "-",
+            "DIV" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high"
+         },
+         {
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES30_WERT",
+            "EINHEIT" : "HEX",
+            "INFO" : "-",
+            "NAME" : "-",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "DIV" : "-",
+            "MUL" : "-"
+         },
+         {
+            "DIV" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "INFO" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES31_WERT",
+            "EINHEIT" : "HEX"
+         },
+         {
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES32_WERT",
+            "NAME" : "-",
+            "INFO" : "-"
+         },
+         {
+            "L/H" : "high",
+            "INFO_EN" : "-",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "HEX",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_COD_RES33_WERT",
+            "INFO" : "-",
+            "NAME" : "-"
+         },
+         {
+            "INFO_EN" : "-",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "HEX",
+            "RESULTNAME" : "STAT_COD_RES34_WERT",
+            "DATENTYP" : "unsigned char",
+            "INFO" : "-",
+            "NAME" : "-"
+         }
+      ]
+   }
+}

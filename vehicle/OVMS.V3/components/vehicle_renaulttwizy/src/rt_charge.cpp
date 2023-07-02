@@ -220,9 +220,9 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(in
   // Estimated + Ideal Range:
   if (capacity > 0)
   {
-    const char* range_est = StdMetrics.ms_v_bat_range_est->AsString("?", rangeUnit, 0).c_str();
-    const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("?", rangeUnit, 0).c_str();
-    writer->printf("Range: %s - %s\n", range_est, range_ideal);
+    const std::string& range_est = StdMetrics.ms_v_bat_range_est->AsString("?", rangeUnit, 0);
+    const std::string& range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("?", rangeUnit, 0);
+    writer->printf("Range: %s - %s\n", range_est.c_str(), range_ideal.c_str());
   }
   
   // SOC:

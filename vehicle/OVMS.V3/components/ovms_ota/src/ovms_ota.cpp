@@ -38,7 +38,12 @@ static const char *TAG = "ota";
 #include <string.h>
 #include <esp_system.h>
 #include <esp_ota_ops.h>
+#if ESP_IDF_VERSION_MAJOR < 4
 #include "strverscmp.h"
+#endif
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <spi_flash_mmap.h>
+#endif
 #include "ovms_ota.h"
 #include "ovms_command.h"
 #include "ovms_boot.h"
@@ -180,7 +185,7 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     writer->printf("Error: Cannot find file %s\n",argv[0]);
     return;
     }
-  writer->printf("Source image is %d bytes in size\n",ds.st_size);
+  writer->printf("Source image is %ld bytes in size\n",ds.st_size);
 
   FILE* f = fopen(argv[0], "r");
   if (f == NULL)
@@ -242,7 +247,7 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     return;
     }
 
-  writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
+  writer->printf("OTA flash was successful\n  Flashed %ld bytes from %s\n  Next boot will be from '%s'\n",
                  ds.st_size,argv[0],target->label);
   MyConfig.SetParamValue("ota", "vfs.mru", argv[0]);
   }
@@ -440,7 +445,7 @@ void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     switch (err)
       {
       case ESP_OK:
-        writer->printf("Boot from %s at 0x%08x (size 0x%08x)\n",p->label,p->address,p->size);
+        writer->printf("Boot from %s at 0x%08" PRIx32 " (size 0x%08" PRIx32 ")\n",p->label,p->address,p->size);
         break;
       case ESP_ERR_INVALID_ARG:
         writer->puts("Error: partition argument didn't point to a valid OTA partition of type 'app'");
@@ -578,7 +583,7 @@ void ota_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
-  writer->printf("OTA copy %s (%08x) -> %s (%08x) size %u\n",
+  writer->printf("OTA copy %s (%08" PRIu32 ") -> %s (%08" PRIx32 ") size %" PRIu32 "\n",
     fn.c_str(), from_p->address,
     tn.c_str(), to_p->address, to_p->size);
 
@@ -931,7 +936,11 @@ static void OTAFlashTask(void *pvParameters)
 
   if (fromsd)
     {
+#ifdef CONFIG_OVMS_COMP_SDCARD
     success = MyOTA.AutoFlashSD();
+#else
+    success = false;
+#endif //CONFIG_OVMS_COMP_SDCARD
     }
   else
     {

@@ -39,9 +39,11 @@ class canlog_vfs_conn: public canlogconnection
 
   public:
     virtual void OutputMsg(CAN_log_message_t& msg, std::string &result);
+    virtual std::string GetStats();
 
   public:
     FILE*               m_file;
+    size_t              m_file_size;
   };
 
 
@@ -55,9 +57,11 @@ class canlog_vfs : public canlog
     virtual bool Open();
     virtual void Close();
     virtual std::string GetInfo();
+    virtual size_t GetFileSize();
 
   public:
     virtual void MountListener(std::string event, void* data);
+    virtual std::string GetStats();
 
   public:
     std::string         m_path;

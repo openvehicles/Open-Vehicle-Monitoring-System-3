@@ -1,0 +1,6457 @@
+{
+   "ovmscode": "EPS",
+   "ovmsextaddr": "30",
+   "ovmsdesc": "Power steering",
+   "tables" : {
+      "RES_0XAB72_R" : [
+         {
+            "EINHEIT" : "0-n",
+            "NAME" : "TAB_STATUS_ROUTINE_EPS",
+            "STR" : "-",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "RESULTNAME" : "STAT_ROUTINE_STATUS",
+            "INFO" : "Ausführungsstatus",
+            "MUL" : "1.0",
+            "INFO_EN" : "Execution status",
+            "ADD" : "0.0"
+         }
+      ],
+      "RES_0X1234_R" : [
+         {
+            "DIV" : "-",
+            "DATENTYP" : "unsigned char",
+            "RRR" : "+",
+            "ADD" : "-",
+            "RESULTNAME" : "STAT_SERVICE",
+            "INFO" : "Status des Service",
+            "MUL" : "-",
+            "INFO_EN" : "Status of the service",
+            "STR" : "-",
+            "L/H" : "high",
+            "EINHEIT" : "0-n",
+            "NAME" : "TAB_STAT_SERVICE",
+            "STPR" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "EINHEIT" : "0-n",
+            "NAME" : "TAB_STAT_PIC",
+            "L/H" : "high",
+            "STR" : "-",
+            "STPR" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "-",
+            "RRR" : "+",
+            "INFO" : "Status des zu flashenden Prozessors",
+            "RESULTNAME" : "STAT_PIC",
+            "MUL" : "-",
+            "INFO_EN" : "Status of the processor to be flashed",
+            "ADD" : "-"
+         }
+      ],
+      "ARG_0XAB56_R" : [
+         {
+            "DIV" : "1.0",
+            "DATENTYP" : "unsigned char",
+            "ARG" : "FREQUENZ",
+            "INFO" : "Frequenz Pendelbewegung",
+            "MUL" : "16.0",
+            "INFO_EN" : "Frequency pendulum movement",
+            "ADD" : "0.0",
+            "EINHEIT" : "Hz",
+            "MIN" : "1.0",
+            "NAME" : "-",
+            "MAX" : "5.0",
+            "STR" : "+",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "ARG" : "MAX_AMPLITUDE",
+            "INFO" : "Maximale Amplitude Pendelbewegung",
+            "INFO_EN" : "Maximum amplitude pendulum movement",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "°",
+            "MIN" : "1.0",
+            "MAX" : "15.0",
+            "NAME" : "-",
+            "STR" : "+",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "NAME" : "-",
+            "MAX" : "50.0",
+            "EINHEIT" : "-",
+            "MIN" : "1.0",
+            "STR" : "+",
+            "L/H" : "-",
+            "MASKE" : "-",
+            "STPR" : "-",
+            "ARG" : "NUMBER_OF_CYCLES",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "INFO_EN" : "Number of pendulum movements",
+            "MUL" : "1.0",
+            "INFO" : "Anzahl Pendelbewegung",
+            "ADD" : "0.0"
+         }
+      ],
+      "HW_MODEL" : [
+         {
+            "TEXT" : "A-Muster",
+            "TEXT_EN" : "A pattern",
+            "WERT" : "0x00"
+         },
+         {
+            "WERT" : "0x40",
+            "TEXT_EN" : "B pattern",
+            "TEXT" : "B-Muster"
+         },
+         {
+            "TEXT" : "C-Muster",
+            "TEXT_EN" : "C pattern",
+            "WERT" : "0x80"
+         },
+         {
+            "WERT" : "0xC0",
+            "TEXT_EN" : "D pattern",
+            "TEXT" : "D-Muster"
+         },
+         {
+            "TEXT_EN" : "Invalid value",
+            "WERT" : "0xFF",
+            "TEXT" : "Wert ungültig"
+         }
+      ],
+      "ARG_0XDB5A_D" : [
+         {
+            "MASKE" : "-",
+            "L/H" : "-",
+            "EINHEIT" : "°",
+            "MIN" : "-15.0",
+            "NAME" : "-",
+            "MAX" : "15.0",
+            "ADD" : "0.0",
+            "INFO" : "Offset Lenkwinkel",
+            "INFO_EN" : "Offset steering angle",
+            "MUL" : "100.0",
+            "DATENTYP" : "signed int",
+            "DIV" : "1.0",
+            "ARG" : "OFFSET"
+         }
+      ],
+      "TAB_STAT_PIC" : [
+         {
+            "WERT" : "0",
+            "TEXT_EN" : "initialization",
+            "TEXT" : "Initialisierung"
+         },
+         {
+            "TEXT_EN" : "Running",
+            "WERT" : "1",
+            "TEXT" : "Laeuft"
+         },
+         {
+            "TEXT_EN" : "Finished",
+            "WERT" : "2",
+            "TEXT" : "Fertig"
+         }
+      ],
+      "RDBI_PC_PCS_DOP" : [
+         {
+            "WERT" : "0",
+            "TEXT_EN" : "ECU several times programmable",
+            "TEXT" : "ECUMehrmalsProgrammierbar"
+         },
+         {
+            "TEXT_EN" : "ECU at least once, fully programmable",
+            "WERT" : "1",
+            "TEXT" : "ECUMindestensEinmalVollstaendigProgrammierbar"
+         },
+         {
+            "TEXT" : "ECUNichtMehrProgrammierbar",
+            "WERT" : "2",
+            "TEXT_EN" : "ECUNotMoreProgrammable"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "3"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "4",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "5",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "6"
+         },
+         {
+            "WERT" : "7",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "8"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "9",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "10",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "11",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "12",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "13",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "14",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "15"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "16",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "17",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "18",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "19",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "20",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "21"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "22",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "23",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "24",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "25"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "26",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "27",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "28",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "29",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "30"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "31"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "32",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "33",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "34"
+         },
+         {
+            "WERT" : "35",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "36",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "37"
+         },
+         {
+            "WERT" : "38",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "39",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "40",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "41"
+         },
+         {
+            "WERT" : "42",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "43"
+         },
+         {
+            "WERT" : "44",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "45",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "46",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "47"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "48",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "49"
+         },
+         {
+            "WERT" : "50",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "51",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "52"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "53",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "54"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "55",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "56"
+         },
+         {
+            "WERT" : "57",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "58",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "59",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "60",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "61",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "62"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "63"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "64"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "65",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "66",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "67",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "68"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "69",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "70",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "71",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "72"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "73",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "74",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "75",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "76",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "77",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "78",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "79",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "80",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "81",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "82"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "83"
+         },
+         {
+            "WERT" : "84",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "85",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "86",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "87",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "88",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "89",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "90"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "91"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "92",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "93",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "94"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "95",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "96",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "97",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "98",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "99",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "100",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "101",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "102",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "103",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "104",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "105",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "106",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "107",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "108",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "109",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "110",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "111",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "112"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "113"
+         },
+         {
+            "WERT" : "114",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "115",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "116"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "117",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "118"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "119",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "120"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "121",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "122",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "123",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "124",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "125",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "126"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "127",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "128",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "129",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "130",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "131"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "132",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "133",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "134",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "135",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "136"
+         },
+         {
+            "WERT" : "137",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "138",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "139",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "140",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "141"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "142"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "143"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "144",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "145",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "146",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "147",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "148",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "149",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "150",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "151",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "152",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "153"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "154",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "155",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "156",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "157",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "158"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "159"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "160",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "161",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "162",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "163",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "164"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "165",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "166",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "167",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "168",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "169",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "170",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "171"
+         },
+         {
+            "WERT" : "172",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "173",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "174",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "175",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "176",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "177",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "178",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "179",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "180",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "181",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "182"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "183"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "184",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "185",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "186",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "187",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "188",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "189",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "190",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "191"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "192"
+         },
+         {
+            "WERT" : "193",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "194",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "195",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "196",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "197",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "198"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "199",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "200",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "201",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "202",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "203",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "204",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "205"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "206"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "207"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "208",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "209",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "210"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "211",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "212",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "213"
+         },
+         {
+            "WERT" : "214",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "215",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "216",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "217",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "218",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "219",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "220",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "221",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "222",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "223",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "224",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "225",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "226"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "227",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "228",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "229",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "230",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "231",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "232",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "233",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "234",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "235"
+         },
+         {
+            "WERT" : "236",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "237",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "238",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "239"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "240",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "241"
+         },
+         {
+            "WERT" : "242",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "243",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "244"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "245",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "246"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "247"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "248",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "WERT" : "249",
+            "TEXT_EN" : "reserved_03_FF",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "250",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "251",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "252"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "WERT" : "253",
+            "TEXT_EN" : "reserved_03_FF"
+         },
+         {
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "254",
+            "TEXT" : "reserved_03_FF"
+         },
+         {
+            "TEXT" : "reserved_03_FF",
+            "TEXT_EN" : "reserved_03_FF",
+            "WERT" : "255"
+         }
+      ],
+      "FDETAILSTRUKTUR" : [
+         {
+            "NAME" : "F_UWB_ERW",
+            "TYP" : "ja"
+         },
+         {
+            "NAME" : "SAE_CODE",
+            "TYP" : "nein"
+         },
+         {
+            "NAME" : "F_HLZ",
+            "TYP" : "ja"
+         },
+         {
+            "NAME" : "F_SEVERITY",
+            "TYP" : "nein"
+         },
+         {
+            "TYP" : "2",
+            "NAME" : "F_UWB_SATZ"
+         },
+         {
+            "TYP" : "ja",
+            "NAME" : "F_HLZ_VIEW"
+         }
+      ],
+      "DIAGMODE" : [
+         {
+            "MODE" : "UNGUELTIG",
+            "NR" : "0x00",
+            "MODE_TEXT" : "DefaultMode"
+         },
+         {
+            "NR" : "0x01",
+            "MODE" : "DEFAULT",
+            "MODE_TEXT" : "DefaultMode"
+         },
+         {
+            "MODE_TEXT" : "ECUProgrammingMode",
+            "MODE" : "ECUPM",
+            "NR" : "0x02"
+         },
+         {
+            "MODE" : "ECUEXTDIAG",
+            "NR" : "0x03",
+            "MODE_TEXT" : "ECUExtendedDiagnosticSession"
+         },
+         {
+            "MODE_TEXT" : "ECUSafetySystemDiagnosticSession",
+            "NR" : "0x04",
+            "MODE" : "ECUSSDS"
+         },
+         {
+            "MODE" : "ECUEOL",
+            "NR" : "0x40",
+            "MODE_TEXT" : "ECUEndOfLineSession"
+         },
+         {
+            "NR" : "0x41",
+            "MODE" : "ECUCODE",
+            "MODE_TEXT" : "ECUCodingSession"
+         },
+         {
+            "MODE" : "ECUSWT",
+            "NR" : "0x42",
+            "MODE_TEXT" : "ECUSwtSession"
+         },
+         {
+            "NR" : "0x43",
+            "MODE" : "ECUHDD",
+            "MODE_TEXT" : "ECUHDDDownloadSession"
+         },
+         {
+            "NR" : "0x44",
+            "MODE" : "ECURSU",
+            "MODE_TEXT" : "ECURsuSession"
+         },
+         {
+            "MODE_TEXT" : "ECUDevelopmentSession",
+            "MODE" : "ECUDEVELOP",
+            "NR" : "0x4F"
+         },
+         {
+            "MODE" : "ECUGDM",
+            "NR" : "0x5F",
+            "MODE_TEXT" : "ECUGarageDiagnoseMode"
+         },
+         {
+            "MODE_TEXT" : "ECUSupplierSpecificSession",
+            "NR" : "0x61",
+            "MODE" : "ECUSUPSPEC"
+         },
+         {
+            "MODE_TEXT" : "unbekannter Diagnose-Mode",
+            "MODE" : "--",
+            "NR" : "0xXY"
+         }
+      ],
+      "TAB_EPS_ZAHNSTANGENMITTE_WERT" : [
+         {
+            "TEXT" : "Zahnstangenmitte nicht gelernt",
+            "TEXT_EN" : "Rack center not learned",
+            "WERT" : "0"
+         },
+         {
+            "TEXT_EN" : "Rack center learned",
+            "WERT" : "1",
+            "TEXT" : "Zahnstangenmitte  gelernt"
+         },
+         {
+            "TEXT_EN" : "Invalid",
+            "WERT" : "255",
+            "TEXT" : "Ungültig"
+         }
+      ],
+      "RES_0XDB5A_D" : [
+         {
+            "DIV" : "100.0",
+            "DATENTYP" : "signed int",
+            "ADD" : "-89.9656",
+            "MUL" : "4.395",
+            "INFO_EN" : "Offset steering angle",
+            "RESULTNAME" : "STAT_LW_OFFSET_WERT",
+            "INFO" : "Offset Lenkwinkel",
+            "L/H" : "-",
+            "NAME" : "-",
+            "EINHEIT" : "°",
+            "MASKE" : "-"
+         }
+      ],
+      "ARG_0XAB71_R" : [
+         {
+            "ADD" : "0.0",
+            "INFO" : "Sollwinkel Lenkrad (relativ oder absolut)",
+            "INFO_EN" : "Target angle steering wheel (relative or absolute)",
+            "MUL" : "100.0",
+            "DIV" : "1.0",
+            "DATENTYP" : "signed int",
+            "ARG" : "WINKEL",
+            "STPR" : "-",
+            "MASKE" : "-",
+            "L/H" : "-",
+            "STR" : "+",
+            "MIN" : "-100.0",
+            "EINHEIT" : "°",
+            "NAME" : "-",
+            "MAX" : "100.0"
+         },
+         {
+            "MAX" : "100.0",
+            "NAME" : "-",
+            "MIN" : "0.0",
+            "EINHEIT" : "°/s",
+            "STR" : "+",
+            "L/H" : "-",
+            "MASKE" : "-",
+            "STPR" : "-",
+            "ARG" : "WINKELGESCHWINDIGKEIT",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "INFO_EN" : "Angular speed steering wheel",
+            "MUL" : "1.0",
+            "INFO" : "Winkelgeschwindigkeit Lenkrad",
+            "ADD" : "0.0"
+         },
+         {
+            "ADD" : "0.0",
+            "INFO_EN" : "Angular acceleration steering wheel",
+            "MUL" : "1.0",
+            "INFO" : "Winkelbeschleunigung Lenkrad",
+            "ARG" : "WINKELBESCHLEUNIGUNG",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "10.0",
+            "MASKE" : "-",
+            "STPR" : "-",
+            "STR" : "+",
+            "L/H" : "high",
+            "MAX" : "2000.0",
+            "NAME" : "-",
+            "MIN" : "0.0",
+            "EINHEIT" : "°/s²"
+         },
+         {
+            "MAX" : "-",
+            "NAME" : "-",
+            "EINHEIT" : "0/1",
+            "MIN" : "-",
+            "L/H" : "high",
+            "STR" : "+",
+            "MASKE" : "-",
+            "STPR" : "-",
+            "ARG" : "ABSOLUT_EIN",
+            "DIV" : "1.0",
+            "DATENTYP" : "unsigned char",
+            "INFO_EN" : "Reference angle (1 = absolute movement, 0 = relative movement)",
+            "MUL" : "1.0",
+            "INFO" : "Referenz Winkel (1 = absolutes Verfahren, 0 = relatives Verfahren)",
+            "ADD" : "0.0"
+         }
+      ],
+      "RES_0XAB6C_R" : [
+         {
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "INFO_EN" : "Execution status",
+            "INFO" : "Ausführungsstatus",
+            "RESULTNAME" : "STAT_ROUTINE_STATUS",
+            "RRR" : "+",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "MASKE" : "-",
+            "STPR" : "-",
+            "L/H" : "-",
+            "STR" : "-",
+            "NAME" : "TAB_STATUS_ROUTINE_EPS",
+            "EINHEIT" : "0-n"
+         },
+         {
+            "STR" : "-",
+            "L/H" : "-",
+            "EINHEIT" : "°",
+            "NAME" : "-",
+            "STPR" : "-",
+            "MASKE" : "-",
+            "DIV" : "1.0",
+            "DATENTYP" : "signed int",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_LENKRADWINKEL_WERT",
+            "INFO" : "Lenkradwinkel",
+            "INFO_EN" : "Steering wheel angle",
+            "MUL" : "1.0"
+         },
+         {
+            "DATENTYP" : "signed char",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "INFO" : "Zustand Sensor Ritzelwinkelsensor",
+            "RESULTNAME" : "STAT_SENSOR_ZUSTAND_NR",
+            "INFO_EN" : "Condition sensor pinion angle sensor",
+            "MUL" : "1.0",
+            "STR" : "-",
+            "L/H" : "-",
+            "EINHEIT" : "0-n",
+            "NAME" : "TAB_EPS_WERT",
+            "STPR" : "-",
+            "MASKE" : "-"
+         }
+      ],
+      "RDBI_ADS_DOP" : [
+         {
+            "TEXT" : "ISOSAEReserved_00",
+            "WERT" : "0",
+            "TEXT_EN" : "ISOSAEReserved_00"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "defaultSession",
+            "TEXT" : "defaultSession"
+         },
+         {
+            "WERT" : "2",
+            "TEXT_EN" : "programmingSession",
+            "TEXT" : "programmingSession"
+         },
+         {
+            "WERT" : "3",
+            "TEXT_EN" : "extendedDiagnosticSession",
+            "TEXT" : "extendedDiagnosticSession"
+         },
+         {
+            "TEXT_EN" : "safetySystemDiagnosticSession",
+            "WERT" : "4",
+            "TEXT" : "safetySystemDiagnosticSession"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "5",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "6",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "7",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "8",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "9",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "10",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "WERT" : "11",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "12",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "13",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "14"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "15"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "16"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "17",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "18",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "19",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "20",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "21",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "22",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "WERT" : "23",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "24",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "25",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "WERT" : "26",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "27"
+         },
+         {
+            "WERT" : "28",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "29"
+         },
+         {
+            "WERT" : "30",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "31"
+         },
+         {
+            "WERT" : "32",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "33",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "WERT" : "34",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "35"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "36"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "37",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "38",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "WERT" : "39",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "40",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "41"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "42",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "43",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "44",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "45"
+         },
+         {
+            "WERT" : "46",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "47"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "48",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "49"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "WERT" : "50",
+            "TEXT_EN" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "51"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "52"
+         },
+         {
+            "WERT" : "53",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "WERT" : "54",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "55",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "56",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "57",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "WERT" : "58",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "59"
+         },
+         {
+            "WERT" : "60",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "61"
+         },
+         {
+            "TEXT" : "ISOSAEReserved_05_3F",
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "62"
+         },
+         {
+            "TEXT_EN" : "ISOSAEReserved_05_3F",
+            "WERT" : "63",
+            "TEXT" : "ISOSAEReserved_05_3F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_40",
+            "WERT" : "64",
+            "TEXT_EN" : "vehicleManufacturerSpecific_40"
+         },
+         {
+            "TEXT_EN" : "codingSession",
+            "WERT" : "65",
+            "TEXT" : "codingSession"
+         },
+         {
+            "WERT" : "66",
+            "TEXT_EN" : "SWTSession",
+            "TEXT" : "SWTSession"
+         },
+         {
+            "WERT" : "67",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "68",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "WERT" : "69",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "70",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "WERT" : "71",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "72"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "73",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "74",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "75"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "76",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "77"
+         },
+         {
+            "WERT" : "78",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "79",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "80"
+         },
+         {
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "81",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "82",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "WERT" : "83",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "WERT" : "84",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "WERT" : "85",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "WERT" : "86",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "87",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "88",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "89",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "WERT" : "90",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "91",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "92",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "93"
+         },
+         {
+            "WERT" : "94",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT" : "vehicleManufacturerSpecific_43_5F"
+         },
+         {
+            "TEXT" : "vehicleManufacturerSpecific_43_5F",
+            "TEXT_EN" : "vehicleManufacturerSpecific_43_5F",
+            "WERT" : "95"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "WERT" : "96",
+            "TEXT_EN" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "97"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "WERT" : "98",
+            "TEXT_EN" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "99",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "WERT" : "100",
+            "TEXT_EN" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "101"
+         },
+         {
+            "WERT" : "102",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "103"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "WERT" : "104",
+            "TEXT_EN" : "systemSupplierSpecific"
+         },
+         {
+            "WERT" : "105",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "106",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "WERT" : "107",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "108",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "109"
+         },
+         {
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "110",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "WERT" : "111",
+            "TEXT_EN" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "112",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "WERT" : "113",
+            "TEXT_EN" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "114"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "WERT" : "115",
+            "TEXT_EN" : "systemSupplierSpecific"
+         },
+         {
+            "WERT" : "116",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "117",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "118",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "119",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "120",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "WERT" : "121",
+            "TEXT_EN" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "122"
+         },
+         {
+            "WERT" : "123",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "TEXT" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "TEXT_EN" : "systemSupplierSpecific",
+            "WERT" : "124"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "WERT" : "125",
+            "TEXT_EN" : "systemSupplierSpecific"
+         },
+         {
+            "TEXT" : "systemSupplierSpecific",
+            "WERT" : "126",
+            "TEXT_EN" : "systemSupplierSpecific"
+         }
+      ],
+      "TAB_EPS_MOMENTENSENSOR" : [
+         {
+            "TEXT" : "OK",
+            "TEXT_EN" : "OK",
+            "WERT" : "0x00"
+         },
+         {
+            "TEXT_EN" : "NOK",
+            "WERT" : "0x01",
+            "TEXT" : "NOK"
+         }
+      ],
+      "RES_0XAB56_R" : [
+         {
+            "RRR" : "+",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "Execution status",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_EPS_PENDELN_AKTIV_NR",
+            "INFO" : "Ausführungsstatus",
+            "L/H" : "-",
+            "STR" : "-",
+            "NAME" : "TAB_STATUS_ROUTINE_EPS",
+            "EINHEIT" : "0-n",
+            "MASKE" : "-",
+            "STPR" : "-"
+         }
+      ],
+      "RES_0XF152_D" : [
+         {
+            "NAME" : "-",
+            "EINHEIT" : "HEX",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "DIV" : "-",
+            "DATENTYP" : "unsigned char",
+            "MUL" : "-",
+            "INFO_EN" : "Index of hardware modification: FF: Not supported index",
+            "INFO" : "Index of hardware modification:  FF: Not supported index",
+            "RESULTNAME" : "STAT_HW_MODIFICATION_INDEX_WERT",
+            "ADD" : "-"
+         },
+         {
+            "DATENTYP" : "BITFIELD",
+            "DIV" : "-",
+            "INFO_EN" : "Supplier info tab",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "INFO" : "Tab Supplierinfo",
+            "ADD" : "-",
+            "NAME" : "BF_22_F152_SUPPLIERINFO",
+            "EINHEIT" : "Bit",
+            "L/H" : "high",
+            "MASKE" : "-"
+         }
+      ],
+      "IUMWELTTEXTE" : [
+         {
+            "ADD" : "-",
+            "MUL" : "-",
+            "UWTEXT" : "TESTER_ID",
+            "DIV" : "-",
+            "L/H" : "High",
+            "UW_EINH" : "HEX",
+            "NAME" : "-",
+            "UWTYP" : "unsigned int",
+            "UWNR" : "0x29FF"
+         },
+         {
+            "DIV" : "1.0",
+            "UWTEXT" : "FAHRERLENKWINKEL",
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "UWNR" : "0x5003",
+            "UWTYP" : "signed int",
+            "NAME" : "-",
+            "UW_EINH" : "°",
+            "L/H" : "High"
+         },
+         {
+            "UWTEXT" : "ANTRIEBSZUSTAND",
+            "DIV" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "UW_EINH" : "HEX",
+            "L/H" : "High",
+            "UWTYP" : "unsigned char",
+            "UWNR" : "0x5004",
+            "NAME" : "-"
+         },
+         {
+            "UW_EINH" : "V",
+            "L/H" : "High",
+            "UWNR" : "0x5006",
+            "UWTYP" : "unsigned char",
+            "NAME" : "-",
+            "UWTEXT" : "BETRIEBSSPANNUNG",
+            "DIV" : "100.0",
+            "ADD" : "0.0",
+            "MUL" : "8.0"
+         },
+         {
+            "UW_EINH" : "km/h",
+            "L/H" : "High",
+            "UWNR" : "0x500A",
+            "UWTYP" : "unsigned char",
+            "NAME" : "-",
+            "UWTEXT" : "FAHRZEUGGESCHWINDIGKEIT",
+            "DIV" : "1.0",
+            "ADD" : "0.0",
+            "MUL" : "1.0"
+         },
+         {
+            "UW_EINH" : "HEX",
+            "L/H" : "High",
+            "UWNR" : "0x500C",
+            "UWTYP" : "unsigned int",
+            "NAME" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "UWTEXT" : "INT_FUNKTIONSZUSTAND",
+            "DIV" : "-"
+         },
+         {
+            "UWTYP" : "signed int",
+            "UWNR" : "0x500E",
+            "NAME" : "-",
+            "UW_EINH" : "Nm",
+            "L/H" : "High",
+            "MUL" : "0.01",
+            "ADD" : "0.0",
+            "DIV" : "1.0",
+            "UWTEXT" : "HANDMOMENT"
+         },
+         {
+            "DIV" : "1.0",
+            "UWTEXT" : "MOTORMOMENT",
+            "MUL" : "0.1",
+            "ADD" : "0.0",
+            "UWTYP" : "signed int",
+            "UWNR" : "0x500F",
+            "NAME" : "-",
+            "UW_EINH" : "Nm",
+            "L/H" : "High"
+         },
+         {
+            "UWNR" : "0x5030",
+            "UWTYP" : "unsigned int",
+            "NAME" : "-",
+            "UW_EINH" : "HEX",
+            "L/H" : "High",
+            "MUL" : "-",
+            "ADD" : "-",
+            "DIV" : "-",
+            "UWTEXT" : "FEHLERCODE"
+         },
+         {
+            "L/H" : "High",
+            "UW_EINH" : "HEX",
+            "NAME" : "-",
+            "UWTYP" : "signed long",
+            "UWNR" : "0x5032",
+            "UWTEXT" : "FEHLERCODE_EXTENDED",
+            "DIV" : "-",
+            "ADD" : "-",
+            "MUL" : "-"
+         },
+         {
+            "MUL" : "-",
+            "ADD" : "-",
+            "DIV" : "-",
+            "UWTEXT" : "unbekannte Umweltbedingung",
+            "NAME" : "-",
+            "UWNR" : "0xXYXY",
+            "UWTYP" : "-",
+            "L/H" : "-",
+            "UW_EINH" : "-"
+         }
+      ],
+      "JOBRESULTEXTENDED" : [
+         {
+            "STATUS_TEXT" : "ERROR_UNKNOWN",
+            "SB" : "0xXY"
+         }
+      ],
+      "BETRIEBSMODE" : [
+         {
+            "WERT" : "0x00",
+            "TEXT_EN" : "General manufacturing and energy saving fashion",
+            "TEXT" : "Allgemeiner Fertigungs- und Energiesparmode",
+            "BEDEUTUNG" : "Hier deaktivierte Funktionen gemäß FeTra-Liste festhalten"
+         },
+         {
+            "TEXT" : "Spezieller Energiesparmode",
+            "TEXT_EN" : "Special energy saving mode",
+            "WERT" : "0x01",
+            "BEDEUTUNG" : "-"
+         },
+         {
+            "BEDEUTUNG" : "-",
+            "TEXT" : "ECOS-Mode",
+            "TEXT_EN" : "ECOS mode",
+            "WERT" : "0x02"
+         },
+         {
+            "TEXT" : "MOST-Mode",
+            "WERT" : "0x03",
+            "TEXT_EN" : "MOST mode",
+            "BEDEUTUNG" : "-"
+         },
+         {
+            "TEXT" : "Rollenmode",
+            "WERT" : "0x04",
+            "TEXT_EN" : "Role fashion",
+            "BEDEUTUNG" : "-"
+         },
+         {
+            "WERT" : "0xFF",
+            "TEXT_EN" : "invalid operating mode",
+            "TEXT" : "ungültiger Betriebsmode",
+            "BEDEUTUNG" : "ungültig"
+         }
+      ],
+      "RES_0XDB99_D" : [
+         {
+            "DIV" : "128.0",
+            "DATENTYP" : "signed int",
+            "INFO" : "Aktuelles Moment",
+            "RESULTNAME" : "STAT_MOMENT_WERT",
+            "MUL" : "1.0",
+            "INFO_EN" : "Current moment",
+            "ADD" : "0.0",
+            "EINHEIT" : "Nm",
+            "NAME" : "-",
+            "L/H" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "MASKE" : "-",
+            "L/H" : "-",
+            "EINHEIT" : "0-n",
+            "NAME" : "TAB_EPS_MOMENTENSENSOR",
+            "ADD" : "-",
+            "RESULTNAME" : "STAT_SENSOR_ZUSTAND_NR",
+            "INFO" : "Zustand Sensor Lenkmoment",
+            "INFO_EN" : "State of the steering torque sensor",
+            "MUL" : "-",
+            "DIV" : "-",
+            "DATENTYP" : "signed char"
+         }
+      ],
+      "FORTTEXTE" : [
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x023000",
+            "ORTTEXT_EN" : "Energy saving mode active",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Energiesparmode aktiv"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Codierung: Steuergerät ist nicht codiert",
+            "ORTTEXT_EN" : "Coding: Control unit is not coded",
+            "ORT" : "0x023008"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Codierung: Fehler bei Codierdatentransaktion aufgetreten",
+            "ORTTEXT_EN" : "Coding: Error occurred during coding data transaction",
+            "ORT" : "0x023009",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Codierung: Signatur der Codierdaten ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Coding: Signature of the coding data invalid",
+            "ORT" : "0x02300A"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Codierung: Codierdaten passen nicht zum Fahrzeug",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Coding: Coding data does not match the vehicle",
+            "ORT" : "0x02300B"
+         },
+         {
+            "ORT" : "0x02300C",
+            "ORTTEXT" : "Codierung: Unplausible Daten während Codierdatentransaktion",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Coding: Implausible data during coding data transaction",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Dummy error memory entry in the component error area for test purposes only",
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Komponentenfehlerbereich nur für Testzwecke",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x02FF30",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x482285",
+            "ORTTEXT_EN" : "Internal control unit - processor start-up error",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Steuergerät intern - Aufstartfehler Prozessor"
+         },
+         {
+            "ORT" : "0x482297",
+            "ORTTEXT" : "Ruhestrom Plausibilisierung dauerhafte Lenkbewegung erkannt",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Quiescent current plausibility check permanent steering movement detected",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "Steuergerät intern - Hardwarefehler",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Internal control unit - hardware error",
+            "ORT" : "0x4822DA",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Internal control unit - manufacturer initialization incorrect",
+            "ORTTEXT" : "Steuergerät intern - Herstellerinitialisierung fehlerhaft",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x4822DB"
+         },
+         {
+            "ORT" : "0x4822DE",
+            "ORTTEXT_EN" : "Sensor - rotor position - steering angle - internal signal error",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Sensor - Rotorlage - Lenkwinkel - interner Signalfehler",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x4822DF",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Steuergerät intern - ROM fehlerhaft",
+            "ORTTEXT_EN" : "Internal control unit - ROM faulty"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Steuergerät intern - NVRAM fehlerhaft",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Internal control unit - NVRAM faulty",
+            "ORT" : "0x4822E0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x4822E3",
+            "ORTTEXT" : "Steuergerät intern - RAM fehlerhaft",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Internal control unit - RAM defective"
+         },
+         {
+            "ORT" : "0x4822E4",
+            "ORTTEXT" : "Steuergerät intern - allgemeiner MCU-Fehler - OBD",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Internal control unit - general MCU error - OBD",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "Steuergerät intern - Software Laufzeitfehler - OBD",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Internal control unit - software runtime error - OBD",
+            "ORT" : "0x4822E6",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x4822E7",
+            "ORTTEXT_EN" : "Internal control unit - watchdog event",
+            "ORTTEXT" : "Steuergerät intern - Watchdog Ereignis",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "ORTTEXT" : "Globales Powermanagement Reduzierung Lenkunterstützung",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Global power management Reduction of steering assistance",
+            "ORT" : "0x4822EC",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Internal control unit - copying failed: data from EEPROM to ROM",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Steuergerät intern - Kopieren fehlgeschlagen: Daten von EEPROM nach ROM",
+            "ORT" : "0x4822F1",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x4822F5",
+            "ORTTEXT_EN" : "Internal control unit - general MCU error",
+            "ORTTEXT" : "Steuergerät intern - allgemeiner MCU-Fehler",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "ORT" : "0x4822F6",
+            "ORTTEXT_EN" : "Internal control unit - software runtime error",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Steuergerät intern - Software Laufzeitfehler",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x4822F7",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ungültiger Datenstand für diese Fahrzeugkonfiguration",
+            "ORTTEXT_EN" : "Invalid data status for this vehicle configuration",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Quiescent current plausibility check Kl15N locally with bus signal",
+            "ORTTEXT" : "Ruhestrom Plausibilisierung Kl15N lokal mit Bus-Signal",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x48238D"
+         },
+         {
+            "ORT" : "0x48238E",
+            "ORTTEXT" : "Spannungsversorgung - Globale Überspannung",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Power supply - global overvoltage",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Sensor - Rotorlage - Lenkwinkel - Verlust Multiturnwert",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Sensor - rotor position - steering angle - loss of multiturn value",
+            "ORT" : "0x482394"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x482399",
+            "ORTTEXT" : "Spannungsversorgung - Lokale Überspannung Abschaltung Lenkunterstützung",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Power supply - Local overvoltage, shutdown of steering assistance"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Sensor - rotor position - steering angle - straight-line stability not learned",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Sensor - Rotorlage - Lenkwinkel - Geradeauslauf nicht gelernt",
+            "ORT" : "0x4823C2"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Sensor - Rotorlage - Lenkwinkel - Plausibilität",
+            "ORTTEXT_EN" : "Sensor - rotor position - steering angle - plausibility",
+            "ORT" : "0x4823C5"
+         },
+         {
+            "ORT" : "0x4823C6",
+            "ORTTEXT_EN" : "Actuator - motor - general error",
+            "ORTTEXT" : "Aktuator - Motor - Allgemeiner Fehler",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x4823D2",
+            "ORTTEXT_EN" : "Sensor - rotor position - steering angle - hardware defective",
+            "ORTTEXT" : "Sensor - Rotorlage - Lenkwinkel - Hardware defekt",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x4823D4",
+            "ORTTEXT_EN" : "Power supply - global undervoltage",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Spannungsversorgung - Globale Unterspannung"
+         },
+         {
+            "ORT" : "0x4823E4",
+            "ORTTEXT_EN" : "Internal control unit - Motor driver voltage supply over- or undervoltage",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Steuergerät intern - Spannungsversorgung Motortreiber Über- oder Unterspannung",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x4823E6",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Steuergerät intern - Powerpack Defekt",
+            "ORTTEXT_EN" : "Internal control unit - Powerpack defective"
+         },
+         {
+            "ORTTEXT_EN" : "Sensor - torque - steering torque - defect",
+            "ORTTEXT" : "Sensor - Drehmoment - Lenkmoment - Defekt",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x4823EC",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x4823F9",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Steuergerät intern - Übertemperatur Reduzierung Lenkunterstützung",
+            "ORTTEXT_EN" : "Internal control unit overtemperature Reduction of steering assistance"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x4823FA",
+            "ORTTEXT" : "Steuergerät intern - Überlast Reduzierung Lenkradunterstützung",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Internal control unit - overload Reduction of steering wheel support"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x4823FC",
+            "ORTTEXT" : "Spannungsversorgung - Lokale Unterspannung Reduzierung Lenkunterstützung",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Power supply - Local undervoltage Reduction of steering assistance"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xD5041F",
+            "ORTTEXT_EN" : "FLEXRAY bus 1",
+            "ORTTEXT" : "FLEXRAY Bus 1",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xD50420",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "FLEXRAY Controller Error Bus 1",
+            "ORTTEXT_EN" : "FLEXRAY Controller Error Bus 1"
+         },
+         {
+            "ORTTEXT_EN" : "Dummy error memory entry in the network error area for test purposes only",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Netzwerkfehlerbereich nur für Testzwecke",
+            "ORT" : "0xD50BFF",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Signalfehler (Fahrgestellnummer, ID: FAHRGESTELLNUMMER) - Ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Signal error (chassis number, ID: CHASSIS NUMBER) - Invalid",
+            "ORT" : "0xD5144E"
+         },
+         {
+            "ORTTEXT_EN" : "Message error (offset quadrant EPS, ID: OFFS_QUAD_EPS) - timeout",
+            "ORTTEXT" : "Botschaftsfehler (Offset Quadrant EPS, ID: OFFS_QUAD_EPS) - Timeout",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xD51458",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD51459",
+            "ORTTEXT" : "Botschaftsfehler (Offset Quadrant EPS, ID: OFFS_QUAD_EPS) - Checksumme",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Message error (offset quadrant EPS, ID: OFFS_QUAD_EPS) - checksum"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD5145A",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Offset Quadrant EPS, ID: OFFS_QUAD_EPS) - Alive",
+            "ORTTEXT_EN" : "Message error (offset quadrant EPS, ID: OFFS_QUAD_EPS) - Alive"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD5145B",
+            "ORTTEXT_EN" : "Signal error (offset quadrant EPS, ID: OFFS_QUAD_EPS) - invalid",
+            "ORTTEXT" : "Signalfehler (Offset Quadrant EPS, ID: OFFS_QUAD_EPS) - Ungültig",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD5145C",
+            "ORTTEXT_EN" : "Signal error (offset quadrant EPS, ID: OFFS_QUAD_EPS) - undefined",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Offset Quadrant EPS, ID: OFFS_QUAD_EPS) - Undefiniert"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message error (chassis number, ID: CHASSIS NUMBER) - timeout",
+            "ORTTEXT" : "Botschaftsfehler (Fahrgestellnummer, ID: FAHRGESTELLNUMMER) - Timeout",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xD51482"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Geschwindigkeit Fahrzeug, ID: V_VEH) - Timeout",
+            "ORTTEXT_EN" : "Message error (vehicle speed, ID: V_VEH) - timeout",
+            "ORT" : "0xD514B8",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message error (vehicle speed, ID: V_VEH) - checksum",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Geschwindigkeit Fahrzeug, ID: V_VEH) - Checksumme",
+            "ORT" : "0xD514B9"
+         },
+         {
+            "ORTTEXT_EN" : "Message error (vehicle speed, ID: V_VEH) - Alive",
+            "ORTTEXT" : "Botschaftsfehler (Geschwindigkeit Fahrzeug, ID: V_VEH) - Alive",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xD514BA",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD514BE",
+            "ORTTEXT_EN" : "Signal error (vehicle speed, ID: V_VEH) - Invalid",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Geschwindigkeit Fahrzeug, ID: V_VEH) - Ungültig"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD514BF",
+            "ORTTEXT" : "Signalfehler (Geschwindigkeit Fahrzeug, ID: V_VEH) - Undefiniert",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Signal error (vehicle speed, ID: V_VEH) - Undefined"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD514C2",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Giergeschwindigkeit Fahrzeug, ID: VYAW_VEH) - Timeout",
+            "ORTTEXT_EN" : "Message error (yaw rate vehicle, ID: VYAW_VEH) - timeout"
+         },
+         {
+            "ORT" : "0xD514C3",
+            "ORTTEXT_EN" : "Message error (yaw rate vehicle, ID: VYAW_VEH) - checksum",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Giergeschwindigkeit Fahrzeug, ID: VYAW_VEH) - Checksumme",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Message error (yaw rate vehicle, ID: VYAW_VEH) - Alive",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Giergeschwindigkeit Fahrzeug, ID: VYAW_VEH) - Alive",
+            "ORT" : "0xD514C4",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Signal error (yaw rate vehicle, ID: VYAW_VEH) - Invalid",
+            "ORTTEXT" : "Signalfehler (Giergeschwindigkeit Fahrzeug, ID: VYAW_VEH) - Ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xD514C8",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORT" : "0xD514C9",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Giergeschwindigkeit Fahrzeug, ID: VYAW_VEH) - Undefiniert",
+            "ORTTEXT_EN" : "Signal error (yaw rate vehicle, ID: VYAW_VEH) - Undefined",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Message error (mileage / range, ID: KILOMETERSTAND) - timeout",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Kilometerstand/Reichweite, ID: KILOMETERSTAND) - Timeout",
+            "ORT" : "0xD514F2",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Klemmen, ID: KLEMMEN) - Timeout",
+            "ORTTEXT_EN" : "Message error (terminals, ID: KLEMMEN) - timeout",
+            "ORT" : "0xD514F8",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Message error (terminals, ID: KLEMMEN) - Alive",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Klemmen, ID: KLEMMEN) - Alive",
+            "ORT" : "0xD514FA",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD514FC",
+            "ORTTEXT_EN" : "Signal error (terminals, ID: KLEMMEN) - Invalid",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Klemmen, ID: KLEMMEN) - Ungültig"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD514FD",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Klemmen, ID: KLEMMEN) - Undefiniert",
+            "ORTTEXT_EN" : "Signal error (terminals, ID: KLEMMEN) - Undefined"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD514FF",
+            "ORTTEXT_EN" : "Message error (vehicle status, ID: CON_VEH) checksum",
+            "ORTTEXT" : "Botschaftsfehler (Zustand Fahrzeug, ID: CON_VEH) Checksumme",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "ORT" : "0xD5150A",
+            "ORTTEXT_EN" : "Message error (configuration of the driving dynamics switch, ID: SU_SW_DRDY) - timeout",
+            "ORTTEXT" : "Botschaftsfehler (Konfiguration Schalter Fahrdynamik, ID: SU_SW_DRDY) - Timeout",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT" : "Signalfehler (Konfiguration Schalter Fahrdynamik, ID: SU_SW_DRDY) - Ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Signal error (configuration switch driving dynamics, ID: SU_SW_DRDY) - Invalid",
+            "ORT" : "0xD51510",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD51511",
+            "ORTTEXT_EN" : "Signal error (configuration switch driving dynamics, ID: SU_SW_DRDY) - Undefined",
+            "ORTTEXT" : "Signalfehler (Konfiguration Schalter Fahrdynamik, ID: SU_SW_DRDY) - Undefiniert",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "ORTTEXT_EN" : "Message error (lateral acceleration center of gravity, ID: ACLNY_MASSCNTR) - timeout",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Querbeschleunigung Schwerpunkt, ID: ACLNY_MASSCNTR) - Timeout",
+            "ORT" : "0xD51542",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD51543",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Querbeschleunigung Schwerpunkt, ID: ACLNY_MASSCNTR) - Checksumme",
+            "ORTTEXT_EN" : "Message error (lateral acceleration center of gravity, ID: ACLNY_MASSCNTR) - checksum"
+         },
+         {
+            "ORTTEXT_EN" : "Signal error (lateral acceleration center of gravity, ID: ACLNY_MASSCNTR) - Invalid",
+            "ORTTEXT" : "Signalfehler (Querbeschleunigung Schwerpunkt, ID: ACLNY_MASSCNTR) - Ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xD51548",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT" : "Botschaftsfehler (Zustand Fahrzeug, ID: CON_VEH) Alive",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Message error (vehicle status, ID: CON_VEH) Alive",
+            "ORT" : "0xD51565",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORT" : "0xD51600",
+            "ORTTEXT_EN" : "Message error (energy degradation driving dynamics, ID: ENERG_DGR_DRDY) timeout",
+            "ORTTEXT" : "Botschaftsfehler (Energie Degradation Fahrdynamik, ID: ENERG_DGR_DRDY) Timeout",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaftsfehler (Zustand Fahrzeug, ID: CON_VEH) Timeout",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Message error (vehicle status, ID: CON_VEH) timeout",
+            "ORT" : "0xD5160C"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Energie Degradation Fahrdynamik, ID: ENERG_DGR_DRDY) Ungültig",
+            "ORTTEXT_EN" : "Signal error (energy degradation driving dynamics, ID: ENERG_DGR_DRDY) Invalid",
+            "ORT" : "0xD51645",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Signal error (vehicle status, ID: CON_VEH) Invalid",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Zustand Fahrzeug, ID: CON_VEH) Ungültig",
+            "ORT" : "0xD5165E",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORT" : "0xD51744",
+            "ORTTEXT_EN" : "Message error (data drive train 2, ID: DT_PT_2) - timeout",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Daten Antriebsstrang 2, ID: DT_PT_2) - Timeout",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message error (data drive train 2, ID: DT_PT_2) - Alive",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Daten Antriebsstrang 2, ID: DT_PT_2) - Alive",
+            "ORT" : "0xD51746"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD51853",
+            "ORTTEXT" : "Signalfehler (Energie Degradation Fahrdynamik, ID: ENERG_DGR_DRDY) Undefiniert",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Signal error (energy degradation driving dynamics, ID: ENERG_DGR_DRDY) Undefined"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Signal error (vehicle status, ID: CON_VEH) Undefined",
+            "ORTTEXT" : "Signalfehler (Zustand Fahrzeug, ID: CON_VEH) Undefiniert",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xD51858"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD51966",
+            "ORTTEXT" : "Signalfehler (Status Verbrennungsmotor, ID: ST_CENG) Ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Signal error (status of combustion engine, ID: ST_CENG) Invalid"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Signalfehler (Daten Antriebsstrang 2, ID: DT_PT_2) - Ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Signal error (data drive train 2, ID: DT_PT_2) - Invalid",
+            "ORT" : "0xD519AB"
+         },
+         {
+            "ORT" : "0xD519CC",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Status Verbrennungsmotor, ID: ST_CENG) Timeout",
+            "ORTTEXT_EN" : "Message error (internal combustion engine status, ID: ST_CENG) timeout",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD519E2",
+            "ORTTEXT_EN" : "Message error (control vibration steering wheel display exterior mirror, ID: CTR_VIB_STW_DISP_EXMI_SP2015) Timeout",
+            "ORTTEXT" : "Botschaftsfehler (Steuerung Vibration Lenkrad Anzeige Außenspiegel, ID: CTR_VIB_STW_DISP_EXMI_SP2015) Timeout",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message error (steering wheel vibration control, ID: CTR_VIB_STW) timeout",
+            "ORTTEXT" : "Botschaftsfehler (Steuerung Vibration Lenkrad, ID: CTR_VIB_STW) Timeout",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xD519E3"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Status Verbrennungsmotor, ID: ST_CENG) Undefiniert",
+            "ORTTEXT_EN" : "Signal error (internal combustion engine status, ID: ST_CENG) Undefined",
+            "ORT" : "0xD51A38"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Signal error (vehicle speed, ID: V_VEH) qualifier",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Geschwindigkeit Fahrzeug, ID: V_VEH) - Qualifier",
+            "ORT" : "0xD51A3E"
+         },
+         {
+            "ORTTEXT" : "Botschaftsfehler (Status Verbrennungsmotor, ID: ST_CENG) Alive",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Message error (internal combustion engine status, ID: ST_CENG) Alive",
+            "ORT" : "0xD51A4B",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Steuerung Vibration Lenkrad Anzeige Außenspiegel, ID: CTR_VIB_STW_DISP_EXMI_SP2015) Undefiniert",
+            "ORTTEXT_EN" : "Signal error (control vibration steering wheel display exterior mirror, ID: CTR_VIB_STW_DISP_EXMI_SP2015) Undefined",
+            "ORT" : "0xD51ADB"
+         },
+         {
+            "ORT" : "0xD51ADC",
+            "ORTTEXT_EN" : "Signal error (steering wheel vibration control, ID: CTR_VIB_STW) Undefined",
+            "ORTTEXT" : "Signalfehler (Steuerung Vibration Lenkrad, ID: CTR_VIB_STW) Undefiniert",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD51AEB",
+            "ORTTEXT_EN" : "Signal error (control vibration steering wheel display outside mirror, ID: CTR_VIB_STW_DISP_EXMI_SP2015) Invalid",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Steuerung Vibration Lenkrad Anzeige Außenspiegel, ID: CTR_VIB_STW_DISP_EXMI_SP2015) Ungültig"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Signalfehler (Steuerung Vibration Lenkrad, ID: CTR_VIB_STW) Ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Signal error (steering wheel vibration control, ID: CTR_VIB_STW) Invalid",
+            "ORT" : "0xD51AEC"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message error (steering angle offset, ID: STEA_OFFS) - timeout",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Lenkwinkel Offset, ID: STEA_OFFS) - Timeout",
+            "ORT" : "0xD51B30"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Lenkwinkel Offset, ID: STEA_OFFS) - Ungültig",
+            "ORTTEXT_EN" : "Signal error (steering angle offset, ID: STEA_OFFS) - Invalid",
+            "ORT" : "0xD51B34",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORT" : "0xD51B35",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Lenkwinkel Offset, ID: STEA_OFFS) - Undefiniert",
+            "ORTTEXT_EN" : "Signal error (steering angle offset, ID: STEA_OFFS) - Undefined",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORT" : "0xD51C12",
+            "ORTTEXT_EN" : "Message error (target proportion of driver steering torque, ID: TAR_QTA_STRMOM_DV) - timeout",
+            "ORTTEXT" : "Botschaftsfehler (Soll Anteil Lenkmoment Fahrer, ID: TAR_QTA_STRMOM_DV) - Timeout",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD51C13",
+            "ORTTEXT" : "Botschaftsfehler (Soll Anteil Lenkmoment Fahrer, ID: TAR_QTA_STRMOM_DV) - Checksumme",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Message error (target portion of driver steering torque, ID: TAR_QTA_STRMOM_DV) - checksum"
+         },
+         {
+            "ORT" : "0xD51C14",
+            "ORTTEXT" : "Botschaftsfehler (Soll Anteil Lenkmoment Fahrer, ID: TAR_QTA_STRMOM_DV) - Alive",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Message error (target portion of driver steering torque, ID: TAR_QTA_STRMOM_DV) - Alive",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORT" : "0xD51C1F",
+            "ORTTEXT" : "Botschaftsfehler (Vorgabe Leistung Elektrisch, ID: SPEC_PWR_EL) - Timeout",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Message error (specification electrical power, ID: SPEC_PWR_EL) - timeout",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD51C20",
+            "ORTTEXT" : "Botschaftsfehler (Soll Lenkmoment Fahrer Stellglied, ID: TAR_STMOM_DV_ACT) - Timeout",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Message error (target steering torque driver actuator, ID: TAR_STMOM_DV_ACT) - timeout"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD51C21",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Soll Lenkmoment Fahrer Stellglied, ID: TAR_STMOM_DV_ACT) - Checksumme",
+            "ORTTEXT_EN" : "Message error (target steering torque driver actuator, ID: TAR_STMOM_DV_ACT) - checksum"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaftsfehler (Soll Lenkmoment Fahrer Stellglied, ID: TAR_STMOM_DV_ACT) - Alive",
+            "ORTTEXT_EN" : "Message error (target steering torque driver actuator, ID: TAR_STMOM_DV_ACT) - Alive",
+            "ORT" : "0xD51C22",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalfehler (Daten Antriebsstrang 2, ID: DT_PT_2) - Undefiniert",
+            "ORTTEXT_EN" : "Signal error (data drive train 2, ID: DT_PT_2) - Undefined",
+            "ORT" : "0xD52C0D",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "unknown error location",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "ORT" : "0xFFFFFF"
+         }
+      ],
+      "SVK_ID" : [
+         {
+            "BEZEICHNUNG" : "SVK_AKTUELL",
+            "WERT" : "0x01"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_SUPPLIER",
+            "WERT" : "0x02"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_WERK",
+            "WERT" : "0x03"
+         },
+         {
+            "WERT" : "0x04",
+            "BEZEICHNUNG" : "SVK_BACKUP_01"
+         },
+         {
+            "WERT" : "0x05",
+            "BEZEICHNUNG" : "SVK_BACKUP_02"
+         },
+         {
+            "WERT" : "0x06",
+            "BEZEICHNUNG" : "SVK_BACKUP_03"
+         },
+         {
+            "WERT" : "0x07",
+            "BEZEICHNUNG" : "SVK_BACKUP_04"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_05",
+            "WERT" : "0x08"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_06",
+            "WERT" : "0x09"
+         },
+         {
+            "WERT" : "0x0A",
+            "BEZEICHNUNG" : "SVK_BACKUP_07"
+         },
+         {
+            "WERT" : "0x0B",
+            "BEZEICHNUNG" : "SVK_BACKUP_08"
+         },
+         {
+            "WERT" : "0x0C",
+            "BEZEICHNUNG" : "SVK_BACKUP_09"
+         },
+         {
+            "WERT" : "0x0D",
+            "BEZEICHNUNG" : "SVK_BACKUP_10"
+         },
+         {
+            "WERT" : "0x0E",
+            "BEZEICHNUNG" : "SVK_BACKUP_11"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_12",
+            "WERT" : "0x0F"
+         },
+         {
+            "WERT" : "0x10",
+            "BEZEICHNUNG" : "SVK_BACKUP_13"
+         },
+         {
+            "WERT" : "0x11",
+            "BEZEICHNUNG" : "SVK_BACKUP_14"
+         },
+         {
+            "WERT" : "0x12",
+            "BEZEICHNUNG" : "SVK_BACKUP_15"
+         },
+         {
+            "WERT" : "0x13",
+            "BEZEICHNUNG" : "SVK_BACKUP_16"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_17",
+            "WERT" : "0x14"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_18",
+            "WERT" : "0x15"
+         },
+         {
+            "WERT" : "0x16",
+            "BEZEICHNUNG" : "SVK_BACKUP_19"
+         },
+         {
+            "WERT" : "0x17",
+            "BEZEICHNUNG" : "SVK_BACKUP_20"
+         },
+         {
+            "WERT" : "0x18",
+            "BEZEICHNUNG" : "SVK_BACKUP_21"
+         },
+         {
+            "WERT" : "0x19",
+            "BEZEICHNUNG" : "SVK_BACKUP_22"
+         },
+         {
+            "WERT" : "0x1A",
+            "BEZEICHNUNG" : "SVK_BACKUP_23"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_24",
+            "WERT" : "0x1B"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_25",
+            "WERT" : "0x1C"
+         },
+         {
+            "WERT" : "0x1D",
+            "BEZEICHNUNG" : "SVK_BACKUP_26"
+         },
+         {
+            "WERT" : "0x1E",
+            "BEZEICHNUNG" : "SVK_BACKUP_27"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_28",
+            "WERT" : "0x1F"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_29",
+            "WERT" : "0x20"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_30",
+            "WERT" : "0x21"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_31",
+            "WERT" : "0x22"
+         },
+         {
+            "WERT" : "0x23",
+            "BEZEICHNUNG" : "SVK_BACKUP_32"
+         },
+         {
+            "WERT" : "0x24",
+            "BEZEICHNUNG" : "SVK_BACKUP_33"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_34",
+            "WERT" : "0x25"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_35",
+            "WERT" : "0x26"
+         },
+         {
+            "WERT" : "0x27",
+            "BEZEICHNUNG" : "SVK_BACKUP_36"
+         },
+         {
+            "WERT" : "0x28",
+            "BEZEICHNUNG" : "SVK_BACKUP_37"
+         },
+         {
+            "WERT" : "0x29",
+            "BEZEICHNUNG" : "SVK_BACKUP_38"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_39",
+            "WERT" : "0x2A"
+         },
+         {
+            "WERT" : "0x2B",
+            "BEZEICHNUNG" : "SVK_BACKUP_40"
+         },
+         {
+            "WERT" : "0x2C",
+            "BEZEICHNUNG" : "SVK_BACKUP_41"
+         },
+         {
+            "WERT" : "0x2D",
+            "BEZEICHNUNG" : "SVK_BACKUP_42"
+         },
+         {
+            "WERT" : "0x2E",
+            "BEZEICHNUNG" : "SVK_BACKUP_43"
+         },
+         {
+            "WERT" : "0x2F",
+            "BEZEICHNUNG" : "SVK_BACKUP_44"
+         },
+         {
+            "WERT" : "0x30",
+            "BEZEICHNUNG" : "SVK_BACKUP_45"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_46",
+            "WERT" : "0x31"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_47",
+            "WERT" : "0x32"
+         },
+         {
+            "WERT" : "0x33",
+            "BEZEICHNUNG" : "SVK_BACKUP_48"
+         },
+         {
+            "WERT" : "0x34",
+            "BEZEICHNUNG" : "SVK_BACKUP_49"
+         },
+         {
+            "WERT" : "0x35",
+            "BEZEICHNUNG" : "SVK_BACKUP_50"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_51",
+            "WERT" : "0x36"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_52",
+            "WERT" : "0x37"
+         },
+         {
+            "WERT" : "0x38",
+            "BEZEICHNUNG" : "SVK_BACKUP_53"
+         },
+         {
+            "WERT" : "0x39",
+            "BEZEICHNUNG" : "SVK_BACKUP_54"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_55",
+            "WERT" : "0x3A"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_56",
+            "WERT" : "0x3B"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_57",
+            "WERT" : "0x3C"
+         },
+         {
+            "WERT" : "0x3D",
+            "BEZEICHNUNG" : "SVK_BACKUP_58"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_59",
+            "WERT" : "0x3E"
+         },
+         {
+            "WERT" : "0x3F",
+            "BEZEICHNUNG" : "SVK_BACKUP_60"
+         },
+         {
+            "WERT" : "0x40",
+            "BEZEICHNUNG" : "SVK_BACKUP_61"
+         },
+         {
+            "BEZEICHNUNG" : "ERROR_UNKNOWN",
+            "WERT" : "0xXY"
+         }
+      ],
+      "DTCSNAPSHOTIDENTIFIER" : [
+         {
+            "DIV" : "1",
+            "UWTEXT" : "KM_STAND",
+            "MUL" : "1",
+            "ADD" : "0.000000",
+            "NAME" : "-",
+            "UWTYP" : "0xFFFFFF",
+            "UWNR" : "0x1700",
+            "L/H" : "-",
+            "UW_EINH" : "0-n"
+         },
+         {
+            "UWNR" : "0x1701",
+            "UWTYP" : "0xFFFFFFFF",
+            "NAME" : "-",
+            "UW_EINH" : "0-n",
+            "L/H" : "-",
+            "DIV" : "1",
+            "UWTEXT" : "ABS_ZEIT",
+            "MUL" : "1",
+            "ADD" : "0.000000"
+         },
+         {
+            "UW_EINH" : "0-n",
+            "L/H" : "-",
+            "UWNR" : "0x1702",
+            "UWTYP" : "0xFFFFFF",
+            "NAME" : "-",
+            "UWTEXT" : "SAE_CODE",
+            "DIV" : "1",
+            "ADD" : "0.000000",
+            "MUL" : "1"
+         },
+         {
+            "UW_EINH" : "-",
+            "L/H" : "-",
+            "UWNR" : "0x1731",
+            "UWTYP" : "u char",
+            "NAME" : "-",
+            "UWTEXT" : "Fehlerklasse_DTC",
+            "DIV" : "1",
+            "ADD" : "0.000000",
+            "MUL" : "1"
+         },
+         {
+            "MUL" : "1",
+            "ADD" : "0.000000",
+            "DIV" : "1",
+            "UWTEXT" : "PWF_Basinetz",
+            "UWNR" : "0x1750",
+            "UWTYP" : "0xFF",
+            "NAME" : "-",
+            "UW_EINH" : "0-n",
+            "L/H" : "-"
+         },
+         {
+            "NAME" : "-",
+            "UWTYP" : "0xFFFFFF",
+            "UWNR" : "0x1751",
+            "L/H" : "-",
+            "UW_EINH" : "0-n",
+            "MUL" : "1",
+            "ADD" : "0.000000",
+            "DIV" : "1",
+            "UWTEXT" : "PWF_Teilnetz"
+         },
+         {
+            "UW_EINH" : "0-n",
+            "L/H" : "-",
+            "UWNR" : "0x1768",
+            "UWTYP" : "0xFFFFFFFF",
+            "NAME" : "-",
+            "UWTEXT" : "KM_STAND_SUP",
+            "DIV" : "1",
+            "ADD" : "0.000000",
+            "MUL" : "1"
+         },
+         {
+            "NAME" : "-",
+            "UWNR" : "0x1769",
+            "UWTYP" : "0xFFFFFFFF",
+            "L/H" : "-",
+            "UW_EINH" : "0-n",
+            "MUL" : "1",
+            "ADD" : "0.000000",
+            "DIV" : "1",
+            "UWTEXT" : "ABS_ZEIT_SUP"
+         },
+         {
+            "UW_EINH" : "-",
+            "L/H" : "-",
+            "UWNR" : "0xFFFF",
+            "UWTYP" : "0xFFFFFF",
+            "NAME" : "-",
+            "ADD" : "0.000000",
+            "MUL" : "1",
+            "UWTEXT" : "IDENTIFIER_UNKNOWN",
+            "DIV" : "1"
+         }
+      ],
+      "LIEFERANTEN" : [
+         {
+            "LIEF_NR" : "0x000001",
+            "LIEF_TEXT" : "Reinshagen / Delphi"
+         },
+         {
+            "LIEF_NR" : "0x000002",
+            "LIEF_TEXT" : "Leopold Kostal GmbH & Co. KG"
+         },
+         {
+            "LIEF_TEXT" : "Hella Fahrzeugkomponenten GmbH",
+            "LIEF_NR" : "0x000003"
+         },
+         {
+            "LIEF_NR" : "0x000004",
+            "LIEF_TEXT" : "Siemens"
+         },
+         {
+            "LIEF_TEXT" : "Eaton",
+            "LIEF_NR" : "0x000005"
+         },
+         {
+            "LIEF_NR" : "0x000006",
+            "LIEF_TEXT" : "UTA"
+         },
+         {
+            "LIEF_NR" : "0x000007",
+            "LIEF_TEXT" : "Helbako GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000008",
+            "LIEF_TEXT" : "Robert Bosch GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000009",
+            "LIEF_TEXT" : "Lear Corporation"
+         },
+         {
+            "LIEF_NR" : "0x000010",
+            "LIEF_TEXT" : "VDO"
+         },
+         {
+            "LIEF_TEXT" : "Valeo GmbH",
+            "LIEF_NR" : "0x000011"
+         },
+         {
+            "LIEF_NR" : "0x000012",
+            "LIEF_TEXT" : "MBB"
+         },
+         {
+            "LIEF_NR" : "0x000013",
+            "LIEF_TEXT" : "Kammerer"
+         },
+         {
+            "LIEF_NR" : "0x000014",
+            "LIEF_TEXT" : "SWF"
+         },
+         {
+            "LIEF_TEXT" : "Blaupunkt",
+            "LIEF_NR" : "0x000015"
+         },
+         {
+            "LIEF_TEXT" : "Philips",
+            "LIEF_NR" : "0x000016"
+         },
+         {
+            "LIEF_TEXT" : "Alpine Electronics GmbH",
+            "LIEF_NR" : "0x000017"
+         },
+         {
+            "LIEF_TEXT" : "Continental Teves AG & Co. OHG",
+            "LIEF_NR" : "0x000018"
+         },
+         {
+            "LIEF_NR" : "0x000019",
+            "LIEF_TEXT" : "Elektromatik Südafrika"
+         },
+         {
+            "LIEF_TEXT" : "Harman Becker Automotive Systems",
+            "LIEF_NR" : "0x000020"
+         },
+         {
+            "LIEF_NR" : "0x000021",
+            "LIEF_TEXT" : "Preh GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000022",
+            "LIEF_TEXT" : "Alps Electric Co. Ltd."
+         },
+         {
+            "LIEF_NR" : "0x000023",
+            "LIEF_TEXT" : "Motorola"
+         },
+         {
+            "LIEF_NR" : "0x000024",
+            "LIEF_TEXT" : "Temic"
+         },
+         {
+            "LIEF_TEXT" : "Webasto SE",
+            "LIEF_NR" : "0x000025"
+         },
+         {
+            "LIEF_NR" : "0x000026",
+            "LIEF_TEXT" : "MotoMeter"
+         },
+         {
+            "LIEF_TEXT" : "Delphi Automotive PLC",
+            "LIEF_NR" : "0x000027"
+         },
+         {
+            "LIEF_NR" : "0x000028",
+            "LIEF_TEXT" : "DODUCO (Beru)"
+         },
+         {
+            "LIEF_NR" : "0x000029",
+            "LIEF_TEXT" : "DENSO"
+         },
+         {
+            "LIEF_TEXT" : "NEC",
+            "LIEF_NR" : "0x000030"
+         },
+         {
+            "LIEF_TEXT" : "DASA",
+            "LIEF_NR" : "0x000031"
+         },
+         {
+            "LIEF_TEXT" : "Pioneer Corporation",
+            "LIEF_NR" : "0x000032"
+         },
+         {
+            "LIEF_NR" : "0x000033",
+            "LIEF_TEXT" : "Jatco"
+         },
+         {
+            "LIEF_TEXT" : "FUBA Automotive GmbH & Co. KG",
+            "LIEF_NR" : "0x000034"
+         },
+         {
+            "LIEF_NR" : "0x000035",
+            "LIEF_TEXT" : "UK-NSI"
+         },
+         {
+            "LIEF_NR" : "0x000036",
+            "LIEF_TEXT" : "AABG"
+         },
+         {
+            "LIEF_TEXT" : "Dunlop",
+            "LIEF_NR" : "0x000037"
+         },
+         {
+            "LIEF_TEXT" : "Sachs",
+            "LIEF_NR" : "0x000038"
+         },
+         {
+            "LIEF_NR" : "0x000039",
+            "LIEF_TEXT" : "ITT"
+         },
+         {
+            "LIEF_TEXT" : "FTE (Fahrzeugtechnik Ebern)",
+            "LIEF_NR" : "0x000040"
+         },
+         {
+            "LIEF_NR" : "0x000041",
+            "LIEF_TEXT" : "Megamos"
+         },
+         {
+            "LIEF_TEXT" : "TRW Automotive GmbH",
+            "LIEF_NR" : "0x000042"
+         },
+         {
+            "LIEF_TEXT" : "WABCO Fahrzeugsysteme GmbH",
+            "LIEF_NR" : "0x000043"
+         },
+         {
+            "LIEF_NR" : "0x000044",
+            "LIEF_TEXT" : "ISAD Electronic Systems"
+         },
+         {
+            "LIEF_TEXT" : "HEC Hella Electronics Corporation",
+            "LIEF_NR" : "0x000045"
+         },
+         {
+            "LIEF_NR" : "0x000046",
+            "LIEF_TEXT" : "Gemel"
+         },
+         {
+            "LIEF_TEXT" : "ZF Friedrichshafen AG",
+            "LIEF_NR" : "0x000047"
+         },
+         {
+            "LIEF_TEXT" : "GMPT",
+            "LIEF_NR" : "0x000048"
+         },
+         {
+            "LIEF_TEXT" : "Harman Becker Automotive Systems GmbH",
+            "LIEF_NR" : "0x000049"
+         },
+         {
+            "LIEF_NR" : "0x000050",
+            "LIEF_TEXT" : "Remes GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000051",
+            "LIEF_TEXT" : "ZF Lenksysteme GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000052",
+            "LIEF_TEXT" : "Magneti Marelli S.p.A."
+         },
+         {
+            "LIEF_TEXT" : "Johnson Controls Inc.",
+            "LIEF_NR" : "0x000053"
+         },
+         {
+            "LIEF_TEXT" : "GETRAG Getriebe- und Zahnradf. Hermann Hagenmeyer GmbH & Co. KG",
+            "LIEF_NR" : "0x000054"
+         },
+         {
+            "LIEF_NR" : "0x000055",
+            "LIEF_TEXT" : "Behr-Hella Thermocontrol GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Siemens VDO Automotive",
+            "LIEF_NR" : "0x000056"
+         },
+         {
+            "LIEF_TEXT" : "Visteon Innovation & Technology GmbH",
+            "LIEF_NR" : "0x000057"
+         },
+         {
+            "LIEF_TEXT" : "Autoliv AB",
+            "LIEF_NR" : "0x000058"
+         },
+         {
+            "LIEF_TEXT" : "Haberl Electronic GmbH & Co. KG",
+            "LIEF_NR" : "0x000059"
+         },
+         {
+            "LIEF_NR" : "0x000060",
+            "LIEF_TEXT" : "Magna International Inc."
+         },
+         {
+            "LIEF_NR" : "0x000061",
+            "LIEF_TEXT" : "Marquardt GmbH"
+         },
+         {
+            "LIEF_TEXT" : "AB Elektronik GmbH",
+            "LIEF_NR" : "0x000062"
+         },
+         {
+            "LIEF_TEXT" : "SDVO/BORG",
+            "LIEF_NR" : "0x000063"
+         },
+         {
+            "LIEF_TEXT" : "Hirschmann Car Communication GmbH",
+            "LIEF_NR" : "0x000064"
+         },
+         {
+            "LIEF_NR" : "0x000065",
+            "LIEF_TEXT" : "hoerbiger-electronics"
+         },
+         {
+            "LIEF_TEXT" : "Thyssen Krupp Automotive",
+            "LIEF_NR" : "0x000066"
+         },
+         {
+            "LIEF_TEXT" : "Gentex Corporation",
+            "LIEF_NR" : "0x000067"
+         },
+         {
+            "LIEF_TEXT" : "Atena GmbH",
+            "LIEF_NR" : "0x000068"
+         },
+         {
+            "LIEF_TEXT" : "Magna-Donelly",
+            "LIEF_NR" : "0x000069"
+         },
+         {
+            "LIEF_TEXT" : "Koyo Steeting Europe",
+            "LIEF_NR" : "0x000070"
+         },
+         {
+            "LIEF_TEXT" : "NSI Beheer B.V.",
+            "LIEF_NR" : "0x000071"
+         },
+         {
+            "LIEF_NR" : "0x000072",
+            "LIEF_TEXT" : "Aisin AW Co. Ltd."
+         },
+         {
+            "LIEF_TEXT" : "Schorlock",
+            "LIEF_NR" : "0x000073"
+         },
+         {
+            "LIEF_TEXT" : "Schrader Electronics Ltd.",
+            "LIEF_NR" : "0x000074"
+         },
+         {
+            "LIEF_TEXT" : "Huf-Electronics Bretten GmbH",
+            "LIEF_NR" : "0x000075"
+         },
+         {
+            "LIEF_NR" : "0x000076",
+            "LIEF_TEXT" : "CEL"
+         },
+         {
+            "LIEF_NR" : "0x000077",
+            "LIEF_TEXT" : "AUDIO MOBIL Elektronik GmbH"
+         },
+         {
+            "LIEF_TEXT" : "rd electronic",
+            "LIEF_NR" : "0x000078"
+         },
+         {
+            "LIEF_NR" : "0x000079",
+            "LIEF_TEXT" : "iSYS RTS GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Westfalia-Automotive GmbH",
+            "LIEF_NR" : "0x000080"
+         },
+         {
+            "LIEF_NR" : "0x000081",
+            "LIEF_TEXT" : "Tyco Electronics"
+         },
+         {
+            "LIEF_NR" : "0x000082",
+            "LIEF_TEXT" : "Paragon AG"
+         },
+         {
+            "LIEF_NR" : "0x000083",
+            "LIEF_TEXT" : "IEE S.A."
+         },
+         {
+            "LIEF_NR" : "0x000084",
+            "LIEF_TEXT" : "TEMIC AUTOMOTIVE of NA"
+         },
+         {
+            "LIEF_NR" : "0x000085",
+            "LIEF_TEXT" : "Sonceboz S.A."
+         },
+         {
+            "LIEF_TEXT" : "Meta System S.p.A.",
+            "LIEF_NR" : "0x000086"
+         },
+         {
+            "LIEF_NR" : "0x000087",
+            "LIEF_TEXT" : "Huf Hülsbeck & Fürst GmbH & Co. KG"
+         },
+         {
+            "LIEF_NR" : "0x000088",
+            "LIEF_TEXT" : "MANN+HUMMEL GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000089",
+            "LIEF_TEXT" : "Brose Fahrzeugteile GmbH & Co."
+         },
+         {
+            "LIEF_NR" : "0x000090",
+            "LIEF_TEXT" : "Keihin"
+         },
+         {
+            "LIEF_TEXT" : "Vimercati S.p.a",
+            "LIEF_NR" : "0x000091"
+         },
+         {
+            "LIEF_TEXT" : "CRH",
+            "LIEF_NR" : "0x000092"
+         },
+         {
+            "LIEF_TEXT" : "TPO Display Corp",
+            "LIEF_NR" : "0x000093"
+         },
+         {
+            "LIEF_TEXT" : "Küster Automotive GmbH",
+            "LIEF_NR" : "0x000094"
+         },
+         {
+            "LIEF_TEXT" : "Hitachi Automotive",
+            "LIEF_NR" : "0x000095"
+         },
+         {
+            "LIEF_NR" : "0x000096",
+            "LIEF_TEXT" : "Continental AG"
+         },
+         {
+            "LIEF_NR" : "0x000097",
+            "LIEF_TEXT" : "TI-Automotive"
+         },
+         {
+            "LIEF_TEXT" : "Hydro",
+            "LIEF_NR" : "0x000098"
+         },
+         {
+            "LIEF_TEXT" : "Johnson Controls Inc.",
+            "LIEF_NR" : "0x000099"
+         },
+         {
+            "LIEF_NR" : "0x00009A",
+            "LIEF_TEXT" : "Takata-Petri"
+         },
+         {
+            "LIEF_TEXT" : "Mitsubishi Electric B.V. (Melco)",
+            "LIEF_NR" : "0x00009B"
+         },
+         {
+            "LIEF_NR" : "0x00009C",
+            "LIEF_TEXT" : "Autokabel"
+         },
+         {
+            "LIEF_NR" : "0x00009D",
+            "LIEF_TEXT" : "GKN Plc"
+         },
+         {
+            "LIEF_TEXT" : "Zollner Elektronik AG",
+            "LIEF_NR" : "0x00009E"
+         },
+         {
+            "LIEF_TEXT" : "peiker acustic GmbH & Co. KG",
+            "LIEF_NR" : "0x00009F"
+         },
+         {
+            "LIEF_TEXT" : "Bosal-Oris",
+            "LIEF_NR" : "0x0000A0"
+         },
+         {
+            "LIEF_NR" : "0x0000A1",
+            "LIEF_TEXT" : "Cobasys"
+         },
+         {
+            "LIEF_TEXT" : "Automotive Lighting Reutlingen GmbH",
+            "LIEF_NR" : "0x0000A2"
+         },
+         {
+            "LIEF_NR" : "0x0000A3",
+            "LIEF_TEXT" : "CONTI VDO"
+         },
+         {
+            "LIEF_NR" : "0x0000A4",
+            "LIEF_TEXT" : "A.D.C. Automotive Distance Control Systems GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Novero Dabendorf GmbH",
+            "LIEF_NR" : "0x0000A5"
+         },
+         {
+            "LIEF_TEXT" : "LAMES S.p.a.",
+            "LIEF_NR" : "0x0000A6"
+         },
+         {
+            "LIEF_TEXT" : "Magna/Closures",
+            "LIEF_NR" : "0x0000A7"
+         },
+         {
+            "LIEF_NR" : "0x0000A8",
+            "LIEF_TEXT" : "Harbin Wan Yu Technology Co"
+         },
+         {
+            "LIEF_NR" : "0x0000A9",
+            "LIEF_TEXT" : "ThyssenKrupp Presta AG"
+         },
+         {
+            "LIEF_TEXT" : "ArvinMeritor",
+            "LIEF_NR" : "0x0000AA"
+         },
+         {
+            "LIEF_TEXT" : "Kongsberg Automotive GmbH",
+            "LIEF_NR" : "0x0000AB"
+         },
+         {
+            "LIEF_TEXT" : "SMR Automotive Mirrors Stuttgart GmbH",
+            "LIEF_NR" : "0x0000AC"
+         },
+         {
+            "LIEF_TEXT" : "So.Ge.Mi.",
+            "LIEF_NR" : "0x0000AD"
+         },
+         {
+            "LIEF_TEXT" : "MTA S.p.A.",
+            "LIEF_NR" : "0x0000AE"
+         },
+         {
+            "LIEF_TEXT" : "Alfmeier Präzision AG",
+            "LIEF_NR" : "0x0000AF"
+         },
+         {
+            "LIEF_NR" : "0x0000B0",
+            "LIEF_TEXT" : "Eltek Deutechland GmbH"
+         },
+         {
+            "LIEF_TEXT" : "OMRON Automotive Electronics Europe GmbH",
+            "LIEF_NR" : "0x0000B1"
+         },
+         {
+            "LIEF_NR" : "0x0000B2",
+            "LIEF_TEXT" : "ASK Industries GmbH"
+         },
+         {
+            "LIEF_TEXT" : "CML Innovative Technologies GmbH & Co. KG",
+            "LIEF_NR" : "0x0000B3"
+         },
+         {
+            "LIEF_NR" : "0x0000B4",
+            "LIEF_TEXT" : "APAG Elektronik AG"
+         },
+         {
+            "LIEF_NR" : "0x0000B5",
+            "LIEF_TEXT" : "Nexteer Automotive"
+         },
+         {
+            "LIEF_TEXT" : "Hans Widmaier Fernmelde- und Feinwerktechnik",
+            "LIEF_NR" : "0x0000B6"
+         },
+         {
+            "LIEF_TEXT" : "Robert Bosch Battery Systems GmbH",
+            "LIEF_NR" : "0x0000B7"
+         },
+         {
+            "LIEF_TEXT" : "Kyocera Display Europe GmbH",
+            "LIEF_NR" : "0x0000B8"
+         },
+         {
+            "LIEF_NR" : "0x0000B9",
+            "LIEF_TEXT" : "Magna Powertrain AG & Co. KG"
+         },
+         {
+            "LIEF_NR" : "0x0000BA",
+            "LIEF_TEXT" : "BorgWarner Beru Systems GmbH"
+         },
+         {
+            "LIEF_TEXT" : "BMW AG",
+            "LIEF_NR" : "0x0000BB"
+         },
+         {
+            "LIEF_TEXT" : "Benteler Duncan Plant",
+            "LIEF_NR" : "0x0000BC"
+         },
+         {
+            "LIEF_NR" : "0x0000BD",
+            "LIEF_TEXT" : "U-Shin Deutschland Zugangssysteme GmbH"
+         },
+         {
+            "LIEF_NR" : "0x0000BE",
+            "LIEF_TEXT" : "Schaeffler Technologies AG & Co. KG"
+         },
+         {
+            "LIEF_TEXT" : "JTEKT Corporation",
+            "LIEF_NR" : "0x0000BF"
+         },
+         {
+            "LIEF_TEXT" : "VLF",
+            "LIEF_NR" : "0x0000C0"
+         },
+         {
+            "LIEF_TEXT" : "Flextronics",
+            "LIEF_NR" : "0x0000C1"
+         },
+         {
+            "LIEF_TEXT" : "LG Chem",
+            "LIEF_NR" : "0x0000C2"
+         },
+         {
+            "LIEF_NR" : "0x0000C3",
+            "LIEF_TEXT" : "Panasonic"
+         },
+         {
+            "LIEF_TEXT" : "Alpitronic GmbH",
+            "LIEF_NR" : "0x0000C4"
+         },
+         {
+            "LIEF_TEXT" : "Telemotive AG",
+            "LIEF_NR" : "0x0000C5"
+         },
+         {
+            "LIEF_TEXT" : "Garmin",
+            "LIEF_NR" : "0x0000C6"
+         },
+         {
+            "LIEF_NR" : "0x0000C7",
+            "LIEF_TEXT" : "RSG Elotech Elektronische Baugruppen GmbH"
+         },
+         {
+            "LIEF_NR" : "0x0000C8",
+            "LIEF_TEXT" : "KEBODA TECHNOLOGY CORP"
+         },
+         {
+            "LIEF_TEXT" : "Aptiv",
+            "LIEF_NR" : "0x0000C9"
+         },
+         {
+            "LIEF_NR" : "0x0000CA",
+            "LIEF_TEXT" : "SEG Automotive Germany GmbH"
+         },
+         {
+            "LIEF_NR" : "0xFFFFFF",
+            "LIEF_TEXT" : "unbekannter Hersteller"
+         }
+      ],
+      "UDS_TAB_ROE_AKTIV" : [
+         {
+            "NR" : "0x00",
+            "TEXT" : "Aktive Fehlermeldung deaktiviert",
+            "TEXT_EN" : "Active error message deactivated"
+         },
+         {
+            "TEXT_EN" : "Active error message activated",
+            "TEXT" : "Aktive Fehlermeldung aktiviert",
+            "NR" : "0x01"
+         },
+         {
+            "NR" : "0xFF",
+            "TEXT_EN" : "Status of the active error message cannot be determined",
+            "TEXT" : "Status der aktiven Fehlermeldung nicht feststellbar"
+         }
+      ],
+      "FUMWELTTEXTE" : [
+         {
+            "MUL" : "1.0",
+            "ADD" : "0.0",
+            "DIV" : "1.0",
+            "UWTEXT" : "FAHRERLENKWINKEL",
+            "NAME" : "-",
+            "UWNR" : "0x5003",
+            "UWTYP" : "signed int",
+            "L/H" : "High",
+            "UW_EINH" : "°"
+         },
+         {
+            "UW_EINH" : "HEX",
+            "L/H" : "High",
+            "UWTYP" : "unsigned char",
+            "UWNR" : "0x5004",
+            "NAME" : "-",
+            "UWTEXT" : "ANTRIEBSZUSTAND",
+            "DIV" : "-",
+            "ADD" : "-",
+            "MUL" : "-"
+         },
+         {
+            "UW_EINH" : "V",
+            "L/H" : "High",
+            "UWNR" : "0x5006",
+            "UWTYP" : "unsigned char",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "MUL" : "8.0",
+            "UWTEXT" : "BETRIEBSSPANNUNG",
+            "DIV" : "100.0"
+         },
+         {
+            "UW_EINH" : "km/h",
+            "L/H" : "High",
+            "UWTYP" : "unsigned char",
+            "UWNR" : "0x500A",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "UWTEXT" : "FAHRZEUGGESCHWINDIGKEIT",
+            "DIV" : "1.0"
+         },
+         {
+            "UW_EINH" : "HEX",
+            "L/H" : "High",
+            "UWNR" : "0x500C",
+            "UWTYP" : "unsigned int",
+            "NAME" : "-",
+            "UWTEXT" : "INT_FUNKTIONSZUSTAND",
+            "DIV" : "-",
+            "ADD" : "-",
+            "MUL" : "-"
+         },
+         {
+            "UWTEXT" : "HANDMOMENT",
+            "DIV" : "1.0",
+            "ADD" : "0.0",
+            "MUL" : "0.01",
+            "L/H" : "High",
+            "UW_EINH" : "Nm",
+            "NAME" : "-",
+            "UWTYP" : "signed int",
+            "UWNR" : "0x500E"
+         },
+         {
+            "UWTYP" : "signed int",
+            "UWNR" : "0x500F",
+            "NAME" : "-",
+            "UW_EINH" : "Nm",
+            "L/H" : "High",
+            "MUL" : "0.1",
+            "ADD" : "0.0",
+            "DIV" : "1.0",
+            "UWTEXT" : "MOTORMOMENT"
+         },
+         {
+            "UWTEXT" : "FEHLERCODE",
+            "DIV" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "UW_EINH" : "HEX",
+            "L/H" : "High",
+            "UWNR" : "0x5030",
+            "UWTYP" : "unsigned int",
+            "NAME" : "-"
+         },
+         {
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "UWTEXT" : "Lenkwinkelgeschwindigkeit",
+            "DIV" : "1.0",
+            "UW_EINH" : "°/s",
+            "L/H" : "High",
+            "UWTYP" : "signed int",
+            "UWNR" : "0x5031",
+            "NAME" : "-"
+         },
+         {
+            "MUL" : "-",
+            "ADD" : "-",
+            "DIV" : "-",
+            "UWTEXT" : "FEHLERCODE_EXTENDED",
+            "UWTYP" : "signed long",
+            "UWNR" : "0x5032",
+            "NAME" : "-",
+            "UW_EINH" : "HEX",
+            "L/H" : "High"
+         },
+         {
+            "UWTEXT" : "unbekannte Umweltbedingung",
+            "DIV" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "L/H" : "-",
+            "UW_EINH" : "-",
+            "NAME" : "-",
+            "UWTYP" : "-",
+            "UWNR" : "0xXYXY"
+         }
+      ],
+      "DTCEXTENDEDDATARECORDNUMBER" : [
+         {
+            "ANZ_BYTE" : "0",
+            "WERT" : "0x00",
+            "TEXT_EN" : "ISO_RESERVED",
+            "TEXT" : "ISO_RESERVED"
+         },
+         {
+            "ANZ_BYTE" : "1",
+            "TEXT_EN" : "CONDITION_BYTE",
+            "WERT" : "0x01",
+            "TEXT" : "CONDITION_BYTE"
+         },
+         {
+            "TEXT_EN" : "HFK",
+            "WERT" : "0x02",
+            "TEXT" : "HFK",
+            "ANZ_BYTE" : "1"
+         },
+         {
+            "ANZ_BYTE" : "1",
+            "TEXT_EN" : "HLZ",
+            "WERT" : "0x03",
+            "TEXT" : "HLZ"
+         },
+         {
+            "WERT" : "0xFF",
+            "TEXT_EN" : "RECORD_UNKNOWN",
+            "TEXT" : "RECORD_UNKNOWN",
+            "ANZ_BYTE" : "0"
+         }
+      ],
+      "RES_0XDFDD_D" : [
+         {
+            "MASKE" : "-",
+            "L/H" : "high",
+            "NAME" : "-",
+            "EINHEIT" : "°",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "INFO_EN" : "Maximum rack travel (as steering angle) based on learned mechanical end stops of the rack in the supplier's factory. Bytes 0-3 stored rack stroke (Nexteer plant). Steering angle in degrees, f32 format.",
+            "RESULTNAME" : "STAT_LENKRADWINKEL_LIEFERANT_WERT",
+            "INFO" : "Maximaler Zahnstangenweg (als Lenkwinkel) auf Basis von gelernten mechanischen Endanschlägen der Zahnstange im Werk des Lieferanten. Bytes 0-3  gespeicherter Zahnstangenhub  (Nexteer Werk). Lenkwinkel in Einheit Grad, f32 Format.",
+            "DATENTYP" : "motorola float",
+            "DIV" : "1.0"
+         },
+         {
+            "ADD" : "0.0",
+            "INFO" : "Maximaler Zahnstangenweg (als Lenkwinkel) auf Basis von gelernten mechanischen Endanschlägen der Zahnstange bei BMW (Letzte Ausführung im aktuellen Power-Zyklus. Enthält 0 Grad, falls Job in diesem Zyklus nicht ausgeführt wurde). Bytes 4-7 letzer gelernter Zahnstangenhub durch automatisches Anschlag-Anschlag-Lenken. Lenkwinkel in Einheit Grad, f32 Format. ",
+            "RESULTNAME" : "STAT_LENKRADWINKEL_AUTOMATISCH_GELERNT_WERT",
+            "INFO_EN" : "Maximum rack travel (as steering angle) based on learned mechanical end stops of the rack at BMW (last execution in the current power cycle. Contains 0 degrees if the job was not executed in this cycle). Bytes 4-7 last learned rack stroke through automatic stop-stop steering. Steering angle in degrees, f32 format.",
+            "MUL" : "1.0",
+            "DATENTYP" : "motorola float",
+            "DIV" : "1.0",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "EINHEIT" : "°",
+            "NAME" : "-"
+         }
+      ],
+      "TAB_ZEIT_SYNCMETHOD" : [
+         {
+            "WERT" : "0x00",
+            "TEXT_EN" : "Combi-Time",
+            "TEXT" : "Combi-Time"
+         },
+         {
+            "WERT" : "0x01",
+            "TEXT_EN" : "DMCS",
+            "TEXT" : "DMCS"
+         },
+         {
+            "WERT" : "0x02",
+            "TEXT_EN" : "IEEE802.1AS",
+            "TEXT" : "IEEE802.1AS"
+         },
+         {
+            "TEXT_EN" : "invalid",
+            "WERT" : "0x03",
+            "TEXT" : "invalid"
+         }
+      ],
+      "SG_FUNKTIONEN" : [
+         {
+            "NAME" : "-",
+            "ARG" : "STEUERN_EPS_PULLDRIFT_OFFSET_RESET",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "SERVICE" : "31",
+            "SG_ADR" : "-",
+            "ID" : "0xA2BB",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "-",
+            "L/H" : "-",
+            "INFO_EN" : "Reset EPS pull-drift long-term offset",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "INFO" : "Reset EPS Pull-Drift Langzeit-Offset ",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "RES_TABELLE" : "-"
+         },
+         {
+            "SG_ADR" : "-",
+            "ID" : "0xAB56",
+            "L/H" : "-",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "ARG_0xAB56_R",
+            "ADD" : "-",
+            "LABEL" : "-",
+            "RESULTNAME" : "-",
+            "INFO" : "Start und Status EPS Pendelroutine",
+            "INFO_EN" : "Start and status of the EPS shuttle routine",
+            "MUL" : "-",
+            "RES_TABELLE" : "RES_0xAB56_R",
+            "NAME" : "-",
+            "SERVICE" : "31",
+            "DIV" : "-",
+            "DATENTYP" : "-",
+            "ARG" : "EPS_PENDELN"
+         },
+         {
+            "SERVICE" : "31",
+            "ARG" : "EPS_LENKWINKELSENSOR_KALIBRIERUNG_RESET",
+            "DIV" : "-",
+            "DATENTYP" : "-",
+            "NAME" : "-",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "INFO_EN" : "Start reset steering angle offset",
+            "RESULTNAME" : "-",
+            "INFO" : "Start Reset Lenkwinkel Offset",
+            "RES_TABELLE" : "-",
+            "SG_ADR" : "-",
+            "ID" : "0xAB69",
+            "L/H" : "-",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "-"
+         },
+         {
+            "ID" : "0xAB6C",
+            "SG_ADR" : "-",
+            "L/H" : "-",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "-",
+            "ADD" : "-",
+            "LABEL" : "-",
+            "INFO" : "Starten, Stoppen und Status Initialisierungsroutine",
+            "RESULTNAME" : "-",
+            "INFO_EN" : "Start, stop and status initialization routine",
+            "MUL" : "-",
+            "RES_TABELLE" : "RES_0xAB6C_R",
+            "NAME" : "-",
+            "SERVICE" : "31",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "ARG" : "EPS_INITIALISIERUNG_SERVICE"
+         },
+         {
+            "RES_TABELLE" : "RES_0xAB71_R",
+            "RESULTNAME" : "-",
+            "INFO" : "Starten, Stoppen und Status Lenkverfahrroutine",
+            "MUL" : "-",
+            "INFO_EN" : "Starting, stopping and status of the steering movement routine",
+            "ADD" : "-",
+            "LABEL" : "-",
+            "ARG_TABELLE" : "ARG_0xAB71_R",
+            "EINHEIT" : "-",
+            "L/H" : "-",
+            "SG_ADR" : "-",
+            "ID" : "0xAB71",
+            "DIV" : "-",
+            "DATENTYP" : "-",
+            "ARG" : "EPS_VERFAHREN",
+            "SERVICE" : "31",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "ARG" : "EPS_INITIALISIERUNG_WERK",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "SERVICE" : "31",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "ARG_0xAB72_R",
+            "L/H" : "-",
+            "ID" : "0xAB72",
+            "SG_ADR" : "-",
+            "RES_TABELLE" : "RES_0xAB72_R",
+            "MUL" : "-",
+            "INFO_EN" : "Start, stop and status initialization routine",
+            "RESULTNAME" : "-",
+            "INFO" : "Starten, Stoppen und Status Initialisierungsroutine",
+            "LABEL" : "-",
+            "ADD" : "-"
+         },
+         {
+            "NAME" : "-",
+            "SERVICE" : "31",
+            "DIV" : "-",
+            "DATENTYP" : "-",
+            "ARG" : "STEUERN_EPS_MULTITURNWERT_RESET",
+            "SG_ADR" : "-",
+            "ID" : "0xAB7D",
+            "L/H" : "-",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "-",
+            "ADD" : "-",
+            "LABEL" : "-",
+            "RESULTNAME" : "-",
+            "INFO" : "Reset EPS Multiturnwert",
+            "MUL" : "-",
+            "INFO_EN" : "Reset EPS multiturn value",
+            "RES_TABELLE" : "-"
+         },
+         {
+            "RES_TABELLE" : "RES_0xDB57_D",
+            "MUL" : "-",
+            "INFO_EN" : "Read out data EPS pinion angle",
+            "RESULTNAME" : "-",
+            "INFO" : "Auslesen Daten EPS Ritzelwinkel",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "ARG_TABELLE" : "-",
+            "EINHEIT" : "-",
+            "L/H" : "-",
+            "SG_ADR" : "-",
+            "ID" : "0xDB57",
+            "ARG" : "EPS_RITZELWINKELSENSOR",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "SERVICE" : "22",
+            "NAME" : "-"
+         },
+         {
+            "SERVICE" : "22;2E",
+            "ARG" : "EPS_LENKWINKELSENSOR_KALIBRIERUNG",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "NAME" : "-",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "Reading out and specifying steering angle offset",
+            "MUL" : "-",
+            "INFO" : "Auslesen und Vorgeben Lenkwinkel Offset",
+            "RESULTNAME" : "-",
+            "RES_TABELLE" : "RES_0xDB5A_D",
+            "ID" : "0xDB5A",
+            "SG_ADR" : "-",
+            "L/H" : "-",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "ARG_0xDB5A_D"
+         },
+         {
+            "INFO_EN" : "Reading out data from the steering torque sensor",
+            "MUL" : "-",
+            "INFO" : "Auslesen Daten Sensor Lenkmoment",
+            "RESULTNAME" : "-",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "RES_TABELLE" : "RES_0xDB99_D",
+            "ID" : "0xDB99",
+            "SG_ADR" : "-",
+            "ARG_TABELLE" : "-",
+            "EINHEIT" : "-",
+            "L/H" : "-",
+            "ARG" : "EPS_MOMENTENSENSOR",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "SERVICE" : "22",
+            "NAME" : "-"
+         },
+         {
+            "L/H" : "-",
+            "ARG_TABELLE" : "-",
+            "EINHEIT" : "0-n",
+            "SG_ADR" : "-",
+            "ID" : "0xDC77",
+            "RES_TABELLE" : "-",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "INFO_EN" : "State of rack center learned",
+            "RESULTNAME" : "STAT_ZAHNSTANGENMITTE_ZUSTAND_NR",
+            "INFO" : "Zustand Zahnstangenmitte gelernt",
+            "NAME" : "TAB_EPS_ZAHNSTANGENMITTE_WERT",
+            "SERVICE" : "22",
+            "ARG" : "EPS_ZAHNSTANGENMITTE",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "-"
+         },
+         {
+            "DIV" : "-",
+            "DATENTYP" : "-",
+            "ARG" : "GELERNTER_ZAHNSTANGENWEG",
+            "SERVICE" : "22",
+            "NAME" : "-",
+            "INFO" : "GELERNTER_ZAHNSTANGENWEG",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "INFO_EN" : "GELERNTER_ZAHNSTANGENWEG",
+            "ADD" : "-",
+            "LABEL" : "-",
+            "RES_TABELLE" : "RES_0xDFDD_D",
+            "SG_ADR" : "-",
+            "ID" : "0xDFDD",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "-",
+            "L/H" : "-"
+         },
+         {
+            "RES_TABELLE" : "RES_0xF152_D",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "INFO_EN" : "This service is only used if there has been a slight hardware change on the control unit that did not result in a change in the part number or the hardware SGBM IDs. Such a change cannot be diagnosed from the outside, which is why this service was introduced for it.",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "INFO" : "Dieser Service kommt nur zum Einsatz, wenn es eine geringfügige Hardwareänderung an dem Steuergerät gegeben hat, die nicht zu einer Änderung der Sachnummer bzw. der Hardware SGBM-IDs geführt hat. Eine solche Änderung ist von außen nicht diagnostizierbar, daher wurde dieser Dienst dafür eingeführt.",
+            "L/H" : "-",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "-",
+            "ID" : "0xF152",
+            "SG_ADR" : "-",
+            "SERVICE" : "22",
+            "ARG" : "READHWMODIFICATIONINDEX",
+            "DATENTYP" : "-",
+            "DIV" : "-",
+            "NAME" : "-"
+         },
+         {
+            "MUL" : "-",
+            "INFO_EN" : "Flash update of the multiturn counter",
+            "INFO" : "Flash Update des Multiturnzählers",
+            "RESULTNAME" : "-",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "RES_TABELLE" : "RES_0x1234_R",
+            "SG_ADR" : "-",
+            "ID" : "0x1234",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "-",
+            "L/H" : "-",
+            "ARG" : "FLASH_UPDATE_MULTITURNZAEHLER",
+            "DIV" : "-",
+            "DATENTYP" : "-",
+            "SERVICE" : "31",
+            "NAME" : "-"
+         }
+      ],
+      "PROZESSKLASSEN" : [
+         {
+            "WERT" : "0x00",
+            "BEZEICHNUNG" : "ungueltig",
+            "PROZESSKLASSE" : "-"
+         },
+         {
+            "BEZEICHNUNG" : "Hardware (Elektronik)",
+            "PROZESSKLASSE" : "HWEL",
+            "WERT" : "0x01"
+         },
+         {
+            "WERT" : "0x02",
+            "BEZEICHNUNG" : "Hardwareauspraegung",
+            "PROZESSKLASSE" : "HWAP"
+         },
+         {
+            "WERT" : "0x03",
+            "PROZESSKLASSE" : "HWFR",
+            "BEZEICHNUNG" : "Hardwarefarbe"
+         },
+         {
+            "BEZEICHNUNG" : "Codierdaten",
+            "PROZESSKLASSE" : "CAFD",
+            "WERT" : "0x05"
+         },
+         {
+            "WERT" : "0x06",
+            "PROZESSKLASSE" : "BTLD",
+            "BEZEICHNUNG" : "Bootloader"
+         },
+         {
+            "BEZEICHNUNG" : "Software ECU Speicherimage",
+            "PROZESSKLASSE" : "SWFL",
+            "WERT" : "0x08"
+         },
+         {
+            "WERT" : "0x09",
+            "BEZEICHNUNG" : "Flash File Software",
+            "PROZESSKLASSE" : "SWFF"
+         },
+         {
+            "BEZEICHNUNG" : "Pruefsoftware",
+            "PROZESSKLASSE" : "SWPF",
+            "WERT" : "0x0A"
+         },
+         {
+            "WERT" : "0x0B",
+            "PROZESSKLASSE" : "ONPS",
+            "BEZEICHNUNG" : "Onboard Programmiersystem"
+         },
+         {
+            "BEZEICHNUNG" : "FA2FP",
+            "PROZESSKLASSE" : "FAFP",
+            "WERT" : "0x0F"
+         },
+         {
+            "WERT" : "0x1A",
+            "PROZESSKLASSE" : "TLRT",
+            "BEZEICHNUNG" : "Temporaere Loeschroutine"
+         },
+         {
+            "BEZEICHNUNG" : "Temporaere Programmierroutine",
+            "PROZESSKLASSE" : "TPRG",
+            "WERT" : "0x1B"
+         },
+         {
+            "WERT" : "0x07",
+            "PROZESSKLASSE" : "FLSL",
+            "BEZEICHNUNG" : "Flashloader Slave"
+         },
+         {
+            "WERT" : "0x0C",
+            "PROZESSKLASSE" : "IBAD",
+            "BEZEICHNUNG" : "Interaktive Betriebsanleitung Daten"
+         },
+         {
+            "BEZEICHNUNG" : "Freischaltcode Fahrzeug-Auftrag",
+            "PROZESSKLASSE" : "FCFA",
+            "WERT" : "0x10"
+         },
+         {
+            "PROZESSKLASSE" : "BLUP",
+            "BEZEICHNUNG" : "Bootloader-Update Applikation",
+            "WERT" : "0x1C"
+         },
+         {
+            "BEZEICHNUNG" : "Flashloader-Update Applikation",
+            "PROZESSKLASSE" : "FLUP",
+            "WERT" : "0x1D"
+         },
+         {
+            "BEZEICHNUNG" : "Software-Update Package",
+            "PROZESSKLASSE" : "SWUP",
+            "WERT" : "0xC0"
+         },
+         {
+            "BEZEICHNUNG" : "Index Software-Update Package",
+            "PROZESSKLASSE" : "SWIP",
+            "WERT" : "0xC1"
+         },
+         {
+            "WERT" : "0xA0",
+            "BEZEICHNUNG" : "Entertainment Daten",
+            "PROZESSKLASSE" : "ENTD"
+         },
+         {
+            "WERT" : "0xA1",
+            "BEZEICHNUNG" : "Navigation Daten",
+            "PROZESSKLASSE" : "NAVD"
+         },
+         {
+            "WERT" : "0xA2",
+            "BEZEICHNUNG" : "Freischaltcode Funktion",
+            "PROZESSKLASSE" : "FCFN"
+         },
+         {
+            "WERT" : "0x04",
+            "PROZESSKLASSE" : "GWTB",
+            "BEZEICHNUNG" : "Gateway-Tabelle"
+         },
+         {
+            "BEZEICHNUNG" : "BEGU: Detaillierung auf SWE-Ebene",
+            "PROZESSKLASSE" : "SWFK",
+            "WERT" : "0x0D"
+         },
+         {
+            "BEZEICHNUNG" : "ungueltig",
+            "PROZESSKLASSE" : "-",
+            "WERT" : "0xFF"
+         }
+      ],
+      "TAB_STAT_SERVICE" : [
+         {
+            "TEXT_EN" : "finished",
+            "WERT" : "0",
+            "TEXT" : "fertig"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "active",
+            "TEXT" : "aktiv"
+         }
+      ],
+      "ARG_0XAB72_R" : [
+         {
+            "INFO_EN" : "Steering wheel angle (both sides)",
+            "MUL" : "1.0",
+            "INFO" : "Winkel Lenkrad (beidseitig)",
+            "ADD" : "0.0",
+            "ARG" : "WINKEL",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "MASKE" : "-",
+            "STPR" : "-",
+            "MAX" : "100.0",
+            "NAME" : "-",
+            "EINHEIT" : "°",
+            "MIN" : "1.0",
+            "STR" : "+",
+            "L/H" : "-"
+         },
+         {
+            "STPR" : "-",
+            "MASKE" : "-",
+            "MIN" : "1.0",
+            "EINHEIT" : "°/s",
+            "MAX" : "100.0",
+            "NAME" : "-",
+            "L/H" : "-",
+            "STR" : "+",
+            "INFO" : "Winkelgeschwindigkeit Lenkrad",
+            "MUL" : "1.0",
+            "INFO_EN" : "Angular speed steering wheel",
+            "ADD" : "0.0",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "ARG" : "WINKELGESCHWINDIGKEIT"
+         },
+         {
+            "ADD" : "0.0",
+            "INFO" : "Winkelbeschleunigung Lenkrad",
+            "INFO_EN" : "Angular acceleration steering wheel",
+            "MUL" : "1.0",
+            "DIV" : "10.0",
+            "DATENTYP" : "unsigned char",
+            "ARG" : "WINKELBESCHLEUNIGUNG",
+            "STPR" : "-",
+            "MASKE" : "-",
+            "STR" : "+",
+            "L/H" : "high",
+            "MIN" : "0.0",
+            "EINHEIT" : "°/s²",
+            "MAX" : "2000.0",
+            "NAME" : "-"
+         }
+      ],
+      "TAB_STATUS_ROUTINE_EPS" : [
+         {
+            "TEXT" : "Unbekannt",
+            "TEXT_EN" : "Unknown",
+            "WERT" : "0x00"
+         },
+         {
+            "TEXT_EN" : "active",
+            "WERT" : "0x01",
+            "TEXT" : "Aktiv"
+         },
+         {
+            "TEXT" : "Erfolg",
+            "WERT" : "0x02",
+            "TEXT_EN" : "success"
+         },
+         {
+            "TEXT" : "Abbruch",
+            "TEXT_EN" : "cancellation",
+            "WERT" : "0x03"
+         },
+         {
+            "TEXT" : "Fehler",
+            "WERT" : "0x04",
+            "TEXT_EN" : "error"
+         },
+         {
+            "TEXT" : "Phasenende",
+            "WERT" : "0x05",
+            "TEXT_EN" : "End of phase"
+         },
+         {
+            "TEXT_EN" : "no garage fashion",
+            "WERT" : "0x0A",
+            "TEXT" : "kein garage mode"
+         },
+         {
+            "TEXT_EN" : "Vehicle speed too high",
+            "WERT" : "0x0B",
+            "TEXT" : "Geschwindigkeit Fahrzeug zu hoch"
+         },
+         {
+            "TEXT" : "Hands on detection",
+            "TEXT_EN" : "Hands on detection",
+            "WERT" : "0x0C"
+         },
+         {
+            "TEXT" : "allgemeine Abschaltung",
+            "TEXT_EN" : "general shutdown",
+            "WERT" : "0x0D"
+         },
+         {
+            "WERT" : "0x0E",
+            "TEXT_EN" : "Index not found",
+            "TEXT" : "Index nicht gefunden"
+         },
+         {
+            "WERT" : "0xFF",
+            "TEXT_EN" : "Invalid",
+            "TEXT" : "Ungültig"
+         }
+      ],
+      "IARTTEXTE" : [
+         {
+            "ARTTEXT" : "keine Fehlerart verfügbar",
+            "ARTNR" : "0x00",
+            "ARTTEXT_EN" : "no type of error available"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x04",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x05"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x08"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x09",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x0C"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x0D",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x20",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x21",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x24"
+         },
+         {
+            "ARTNR" : "0x25",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x28",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x29"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x2C",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x2D"
+         },
+         {
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0x40",
+            "ARTTEXT" : "unbekannte Fehlerart"
+         },
+         {
+            "ARTNR" : "0x44",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x45"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x48"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x49",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x4C",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTNR" : "0x4D",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x60"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x61",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x64",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x65",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTNR" : "0x68",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x69",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x6C",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x6D",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Test conditions met",
+            "ARTNR" : "0x10",
+            "ARTTEXT" : "Testbedingungen erfüllt"
+         },
+         {
+            "ARTTEXT_EN" : "Test conditions not yet met",
+            "ARTNR" : "0x11",
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt"
+         },
+         {
+            "ARTNR" : "0x80",
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen",
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up",
+            "ARTNR" : "0x81",
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTNR" : "0xFF",
+            "ARTTEXT_EN" : "unknown type of error"
+         }
+      ],
+      "JOBRESULT" : [
+         {
+            "SB" : "0x10",
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_REJECT"
+         },
+         {
+            "SB" : "0x11",
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED"
+         },
+         {
+            "SB" : "0x12",
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED"
+         },
+         {
+            "SB" : "0x13",
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LONG",
+            "SB" : "0x14"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_BUSY_REPEAT_REQUEST",
+            "SB" : "0x21"
+         },
+         {
+            "SB" : "0x22",
+            "STATUS_TEXT" : "ERROR_ECU_CONDITIONS_NOT_CORRECT"
+         },
+         {
+            "SB" : "0x24",
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_SEQUENCE_ERROR"
+         },
+         {
+            "SB" : "0x25",
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE_FROM_SUBNET_COMPONENT"
+         },
+         {
+            "SB" : "0x26",
+            "STATUS_TEXT" : "ERROR_ECU_FAILURE_PREVENTS_EXECUTION_OF_REQUESTED_ACTION"
+         },
+         {
+            "SB" : "0x31",
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_OUT_OF_RANGE"
+         },
+         {
+            "SB" : "0x33",
+            "STATUS_TEXT" : "ERROR_ECU_SECURITY_ACCESS_DENIED"
+         },
+         {
+            "SB" : "0x35",
+            "STATUS_TEXT" : "ERROR_ECU_INVALID_KEY"
+         },
+         {
+            "SB" : "0x36",
+            "STATUS_TEXT" : "ERROR_ECU_EXCEED_NUMBER_OF_ATTEMPTS"
+         },
+         {
+            "SB" : "0x37",
+            "STATUS_TEXT" : "ERROR_ECU_REQUIRED_TIME_DELAY_NOT_EXPIRED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_UPLOAD_DOWNLOAD_NOT_ACCEPTED",
+            "SB" : "0x70"
+         },
+         {
+            "SB" : "0x71",
+            "STATUS_TEXT" : "ERROR_ECU_TRANSFER_DATA_SUSPENDED"
+         },
+         {
+            "SB" : "0x72",
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_PROGRAMMING_FAILURE"
+         },
+         {
+            "SB" : "0x73",
+            "STATUS_TEXT" : "ERROR_ECU_WRONG_BLOCK_SEQUENCE_COUNTER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_CORRECTLY_RECEIVED__RESPONSE_PENDING",
+            "SB" : "0x78"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED_IN_ACTIVE_SESSION",
+            "SB" : "0x7E"
+         },
+         {
+            "SB" : "0x7F",
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED_IN_ACTIVE_SESSION"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_HIGH",
+            "SB" : "0x81"
+         },
+         {
+            "SB" : "0x82",
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_LOW"
+         },
+         {
+            "SB" : "0x83",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_RUNNING"
+         },
+         {
+            "SB" : "0x84",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_NOT_RUNNING"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_RUN_TIME_TOO_LOW",
+            "SB" : "0x85"
+         },
+         {
+            "SB" : "0x86",
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_LOW",
+            "SB" : "0x87"
+         },
+         {
+            "SB" : "0x88",
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_LOW",
+            "SB" : "0x89"
+         },
+         {
+            "SB" : "0x8A",
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_LOW",
+            "SB" : "0x8B"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_NEUTRAL",
+            "SB" : "0x8C"
+         },
+         {
+            "SB" : "0x8D",
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_GEAR"
+         },
+         {
+            "SB" : "0x8F",
+            "STATUS_TEXT" : "ERROR_ECU_BRAKE_SWITCH_NOT_CLOSED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SHIFTER_LEVER_NOT_IN_PARK",
+            "SB" : "0x90"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TORQUE_CONVERTER_CLUTCH_LOCKED",
+            "SB" : "0x91"
+         },
+         {
+            "SB" : "0x92",
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_LOW",
+            "SB" : "0x93"
+         },
+         {
+            "STATUS_TEXT" : "OKAY",
+            "SB" : "?00?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE",
+            "SB" : "?01?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_LEN",
+            "SB" : "?02?"
+         },
+         {
+            "SB" : "?03?",
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_RESPONSE_ID"
+         },
+         {
+            "SB" : "?04?",
+            "STATUS_TEXT" : "ERROR_ECU_TA_RESPONSE_NOT_SA_REQUEST"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SA_RESPONSE_NOT_TA_REQUEST",
+            "SB" : "?05?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DATA_IDENTIFIER",
+            "SB" : "?06?"
+         },
+         {
+            "SB" : "?07?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_MUCH_DATA"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LESS_DATA",
+            "SB" : "?08?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_VALUE_OUT_OF_RANGE",
+            "SB" : "?09?"
+         },
+         {
+            "SB" : "?0A?",
+            "STATUS_TEXT" : "ERROR_TABLE"
+         },
+         {
+            "SB" : "?10?",
+            "STATUS_TEXT" : "ERROR_F_CODE"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_INTERPRETATION",
+            "SB" : "?12?"
+         },
+         {
+            "SB" : "?13?",
+            "STATUS_TEXT" : "ERROR_F_POS"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_IO_CONTROL_PARAMETER",
+            "SB" : "?14?"
+         },
+         {
+            "SB" : "?15?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_TYPE"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SUB_FUNCTION",
+            "SB" : "?16?"
+         },
+         {
+            "SB" : "?17?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DYNAMICALLY_DEFINED_DATA_IDENTIFIER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_NO_STRING_END_CHAR",
+            "SB" : "?18?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_IDENTIFIER",
+            "SB" : "?19?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_RESET_TYPE",
+            "SB" : "?1A?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SERIAL_NUMBER_FORMAT",
+            "SB" : "?1B?"
+         },
+         {
+            "SB" : "?1C?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_BY_STATUS_MASK"
+         },
+         {
+            "SB" : "?1D?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_STATUS_AVAILABILITY_MASK"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_IDENTIFIER",
+            "SB" : "?1E?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE1",
+            "SB" : "?50?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE2",
+            "SB" : "?51?"
+         },
+         {
+            "SB" : "?52?",
+            "STATUS_TEXT" : "ERROR_BYTE3"
+         },
+         {
+            "SB" : "?60?",
+            "STATUS_TEXT" : "ERROR_VERIFY"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_ZGW",
+            "SB" : "?61?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_BACKUP",
+            "SB" : "?62?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_CALID_CVN_INCORRECT_LEN",
+            "SB" : "?70?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_LEN",
+            "SB" : "?80?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_FINGERPRINT",
+            "SB" : "?81?"
+         },
+         {
+            "SB" : "?F0?",
+            "STATUS_TEXT" : "ERROR_ARGUMENT"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_UNKNOWN_NEGATIVE_RESPONSE",
+            "SB" : "0xXY"
+         }
+      ],
+      "TAB_EPS_WERT" : [
+         {
+            "WERT" : "0x00",
+            "TEXT_EN" : "Straight-ahead offset not written and index position or rack center not found",
+            "TEXT" : "Geradeauslauf-Offset nicht geschrieben und Index Position bzw Zahnstangenmitte nicht gefunden"
+         },
+         {
+            "TEXT" : "Geradeauslauf-Offset nicht geschrieben und Index Position bzw Zahnstangenmitte gefunden",
+            "TEXT_EN" : "Straight-ahead offset not written and index position or rack center found",
+            "WERT" : "0x01"
+         },
+         {
+            "TEXT" : "Geradeauslauf-Offset geschrieben und Index Position bzw Zahnstangenmitte nicht gefunden",
+            "WERT" : "0x02",
+            "TEXT_EN" : "Straight-ahead offset written and index position or rack center not found"
+         },
+         {
+            "TEXT_EN" : "Straight-ahead offset written and index position or rack center found and saved and Ist_Position_EPS valid",
+            "WERT" : "0x03",
+            "TEXT" : "Geradeauslauf-Offset geschrieben und Index Position bzw Zahnstangenmitte gefunden und gespeichert und Ist_Position_EPS gültig"
+         },
+         {
+            "TEXT" : "ungültig",
+            "WERT" : "0xFF",
+            "TEXT_EN" : "invalid"
+         }
+      ],
+      "IDETAILSTRUKTUR" : [
+         {
+            "TYP" : "ja",
+            "NAME" : "F_UWB_ERW"
+         },
+         {
+            "NAME" : "SAE_CODE",
+            "TYP" : "nein"
+         },
+         {
+            "TYP" : "ja",
+            "NAME" : "F_HLZ"
+         },
+         {
+            "NAME" : "F_SEVERITY",
+            "TYP" : "nein"
+         },
+         {
+            "TYP" : "2",
+            "NAME" : "F_UWB_SATZ"
+         }
+      ],
+      "IORTTEXTE" : [
+         {
+            "ORT" : "0x2002B7",
+            "ORTTEXT" : "Steuergerät intern - Security Diagnose Request in verriegeltem Zustand erhalten",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Internal control unit - Security diagnosis request received in locked state",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "NVM_E_REQ_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "NVM_E_REQ_FAILED",
+            "ORT" : "0x482286"
+         },
+         {
+            "ORT" : "0x482289",
+            "ORTTEXT" : "NVM_E_INTEGRITY_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "NVM_E_INTEGRITY_FAILED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "ECUM_E_ALL_RUN_REQUESTS_KILLED",
+            "ORTTEXT" : "ECUM_E_ALL_RUN_REQUESTS_KILLED",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x48228A",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x48228D",
+            "ORTTEXT" : "COMM_E_NET_START_IND_CHANNEL_0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "COMM_E_NET_START_IND_CHANNEL_0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x48228E",
+            "ORTTEXT" : "FR_E_ACCESS",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "FR_E_ACCESS"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x482292",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "FRTRCV_10_TJA1080_E_FR_NO_TRCV_C",
+            "ORTTEXT_EN" : "FRTRCV_10_TJA1080_E_FR_NO_TRCV_C"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x482296",
+            "ORTTEXT" : "WDGM_E_ALIVE_SUPERVISION",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "WDGM_E_ALIVE_SUPERVISION"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x4822A0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Steuergerät intern - Mehrfache Aufstartversuche Prozessor",
+            "ORTTEXT_EN" : "Internal control unit - Multiple attempts to start the processor"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x4822C6",
+            "ORTTEXT" : "Assist-Firewall-Touched",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Assist-Firewall-Touched"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Assist-Firewall-FaultMode",
+            "ORTTEXT_EN" : "Assist-Firewall-FaultMode",
+            "ORT" : "0x4822D4",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "Damping-Firewall-Touched",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Damping-Firewall-Touched",
+            "ORT" : "0x4822D5",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x4822D6",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Damping-Firewall-FaultMode",
+            "ORTTEXT_EN" : "Damping Firewall FaultMode"
+         },
+         {
+            "ORT" : "0x4822D7",
+            "ORTTEXT_EN" : "VBIC-FDD-FaultMode",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "VBIC-FDD-FaultMode",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Return-Firewall-Touched",
+            "ORTTEXT_EN" : "Return-Firewall-Touched",
+            "ORT" : "0x4822D8",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Function interface - deactivation of pinion angle interface steering angle speed",
+            "ORTTEXT" : "Funktionsschnittstelle - Deaktivierung Ritzelwinkelschnittstelle Lenkwinkelgeschwindigkeit",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x4822DC",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Signal (Zeit_Secunde_Zaehler_Relativ, 0x328): invalid",
+            "ORTTEXT" : "Signal (Zeit_Sekunde_Zaehler_Relativ, 0x328): ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x4823CD"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x4823CE",
+            "ORTTEXT" : "Puffer für ausgehende Fehlermeldungen ist voll",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Buffer for outgoing error messages is full"
+         },
+         {
+            "ORT" : "0x4823CF",
+            "ORTTEXT_EN" : "Error could not be sent after the maximum number of attempts",
+            "ORTTEXT" : "Fehler konnte nach maximaler Anzahl von Versuchen nicht gesendet werden",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x482451",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Sensor - Rotorlage - Lenkwinkel - Verlust Multiturnwert",
+            "ORTTEXT_EN" : "Sensor - rotor position - steering angle - loss of multiturn value"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "IPDUM_E_TRANSMIT_FAILED Betriebssystem Uebermittlungsfehler Botschaft",
+            "ORTTEXT_EN" : "IPDUM_E_TRANSMIT_FAILED Operating system transmission error message",
+            "ORT" : "0x8BAC63",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xFFFFFF",
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "unknown error location"
+         }
+      ],
+      "FARTTEXTE" : [
+         {
+            "ARTTEXT_EN" : "no type of error available",
+            "ARTTEXT" : "keine Fehlerart verfügbar",
+            "ARTNR" : "0x00"
+         },
+         {
+            "ARTNR" : "0x04",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x05",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x08",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTNR" : "0x09",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x0C",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x0D"
+         },
+         {
+            "ARTNR" : "0x20",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x21"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x24",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x25",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x28"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x29",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x2C"
+         },
+         {
+            "ARTNR" : "0x2D",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTNR" : "0x40",
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTTEXT_EN" : "unknown type of error"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x44"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x45",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTNR" : "0x48",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTNR" : "0x49",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTNR" : "0x4C",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x4D",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x60",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x61",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x64"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x65"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x68",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x69",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x6C",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x6D"
+         },
+         {
+            "ARTNR" : "0x10",
+            "ARTTEXT" : "Testbedingungen erfüllt",
+            "ARTTEXT_EN" : "Test conditions met"
+         },
+         {
+            "ARTTEXT_EN" : "Test conditions not yet met",
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt",
+            "ARTNR" : "0x11"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up",
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen",
+            "ARTNR" : "0x80"
+         },
+         {
+            "ARTNR" : "0x81",
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen",
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up"
+         },
+         {
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0xFF",
+            "ARTTEXT" : "unbekannte Fehlerart"
+         }
+      ],
+      "TAB_ZEIT_USER_INFO" : [
+         {
+            "TEXT" : "out of sync, no time available",
+            "WERT" : "0x00",
+            "TEXT_EN" : "out of sync, no time available"
+         },
+         {
+            "TEXT" : "ms ECU overall, not comparable",
+            "TEXT_EN" : "ms ECU overall, not comparable",
+            "WERT" : "0x01"
+         },
+         {
+            "TEXT" : "ms ECU overall, not comparable",
+            "TEXT_EN" : "ms ECU overall, not comparable",
+            "WERT" : "0x02"
+         },
+         {
+            "TEXT_EN" : "invalid",
+            "WERT" : "0x03",
+            "TEXT" : "invalid"
+         },
+         {
+            "TEXT_EN" : "insync, ms ECU overall, not comparable",
+            "WERT" : "0x04",
+            "TEXT" : "insync, ms ECU overall, not comparable"
+         },
+         {
+            "TEXT_EN" : "ms ECU overall, comparable",
+            "WERT" : "0x05",
+            "TEXT" : "ms ECU overall, comparable"
+         },
+         {
+            "TEXT" : "ms ECU overall, comparable",
+            "TEXT_EN" : "ms ECU overall, comparable",
+            "WERT" : "0x06"
+         },
+         {
+            "WERT" : "0x07",
+            "TEXT_EN" : "invalid",
+            "TEXT" : "invalid"
+         }
+      ],
+      "RES_0XAB71_R" : [
+         {
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "INFO_EN" : "Execution status",
+            "INFO" : "Ausführungsstatus",
+            "RESULTNAME" : "STAT_EPS_VERFAHREN_AKTIV_NR",
+            "RRR" : "+",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "MASKE" : "-",
+            "STPR" : "-",
+            "L/H" : "-",
+            "STR" : "-",
+            "NAME" : "TAB_STATUS_ROUTINE_EPS",
+            "EINHEIT" : "0-n"
+         }
+      ],
+      "DIGITALARGUMENT" : [
+         {
+            "TEXT" : "ein",
+            "WERT" : "1",
+            "TEXT_EN" : "a"
+         },
+         {
+            "WERT" : "0",
+            "TEXT_EN" : "out",
+            "TEXT" : "aus"
+         },
+         {
+            "TEXT" : "ja",
+            "TEXT_EN" : "Yes",
+            "WERT" : "1"
+         },
+         {
+            "TEXT" : "nein",
+            "TEXT_EN" : "No",
+            "WERT" : "0"
+         },
+         {
+            "TEXT" : "auf",
+            "WERT" : "1",
+            "TEXT_EN" : "on"
+         },
+         {
+            "TEXT" : "ab",
+            "WERT" : "0",
+            "TEXT_EN" : "from"
+         },
+         {
+            "TEXT_EN" : "at",
+            "WERT" : "1",
+            "TEXT" : "an"
+         },
+         {
+            "TEXT_EN" : "yes",
+            "WERT" : "1",
+            "TEXT" : "yes"
+         },
+         {
+            "TEXT" : "no",
+            "WERT" : "0",
+            "TEXT_EN" : "no"
+         },
+         {
+            "TEXT" : "on",
+            "TEXT_EN" : "on",
+            "WERT" : "1"
+         },
+         {
+            "TEXT" : "off",
+            "TEXT_EN" : "off",
+            "WERT" : "0"
+         },
+         {
+            "TEXT" : "up",
+            "TEXT_EN" : "up",
+            "WERT" : "1"
+         },
+         {
+            "TEXT" : "down",
+            "TEXT_EN" : "down",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "true",
+            "TEXT" : "true"
+         },
+         {
+            "TEXT" : "false",
+            "TEXT_EN" : "false",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "1",
+            "TEXT" : "1"
+         },
+         {
+            "WERT" : "0",
+            "TEXT" : "0"
+         }
+      ],
+      "FEHLERKLASSE" : [
+         {
+            "NR" : "0x00",
+            "TEXT_EN" : "No fault class available",
+            "TEXT" : "Keine Fehlerklasse verfuegbar"
+         },
+         {
+            "NR" : "0x01",
+            "TEXT_EN" : "Check when you next visit the workshop",
+            "TEXT" : "Ueberpruefung bei naechstem Werkstattbesuch"
+         },
+         {
+            "NR" : "0x02",
+            "TEXT_EN" : "Check at the next stop",
+            "TEXT" : "Ueberpruefung bei naechstem Halt"
+         },
+         {
+            "TEXT" : "Ueberpruefung sofort erforderlich !",
+            "TEXT_EN" : "Check required immediately!",
+            "NR" : "0x04"
+         },
+         {
+            "NR" : "0xFF",
+            "TEXT_EN" : "unknown error class",
+            "TEXT" : "unbekannte Fehlerklasse"
+         }
+      ],
+      "RES_0XDB57_D" : [
+         {
+            "EINHEIT" : "°",
+            "NAME" : "-",
+            "L/H" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "signed long",
+            "DIV" : "100.0",
+            "INFO" : "Ritzelwinkel",
+            "RESULTNAME" : "STAT_RITZELWINKEL_WERT",
+            "MUL" : "1.0",
+            "INFO_EN" : "Pinion angle",
+            "ADD" : "0.0"
+         },
+         {
+            "EINHEIT" : "°/s",
+            "NAME" : "-",
+            "L/H" : "-",
+            "MASKE" : "-",
+            "DIV" : "1.0",
+            "DATENTYP" : "signed int",
+            "INFO" : "Ritzelwinkel Winkelgeschwindigkeit",
+            "RESULTNAME" : "STAT_RITZELWINKELGESCHWINDIGKEIT_WERT",
+            "MUL" : "1.0",
+            "INFO_EN" : "Pinion angle angular speed",
+            "ADD" : "0.0"
+         },
+         {
+            "L/H" : "-",
+            "NAME" : "TAB_EPS_WERT",
+            "EINHEIT" : "0-n",
+            "MASKE" : "-",
+            "DATENTYP" : "signed char",
+            "DIV" : "1.0",
+            "ADD" : "0.0",
+            "INFO_EN" : "Condition sensor pinion angle sensor",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_SENSOR_ZUSTAND_NR",
+            "INFO" : "Zustand Sensor Ritzelwinkelsensor"
+         }
+      ],
+      "TAB_SUPPLIERINFO_FIELD" : [
+         {
+            "WERT" : "0x00",
+            "TEXT_EN" : "Value 0",
+            "TEXT" : "Wert 0"
+         },
+         {
+            "WERT" : "0x1",
+            "TEXT_EN" : "Value 1",
+            "TEXT" : "Wert 1"
+         },
+         {
+            "WERT" : "0x2",
+            "TEXT_EN" : "Value 2",
+            "TEXT" : "Wert 2"
+         },
+         {
+            "TEXT" : "Wert 3",
+            "WERT" : "0x3",
+            "TEXT_EN" : "Value 3"
+         },
+         {
+            "WERT" : "0x4",
+            "TEXT_EN" : "Value 4",
+            "TEXT" : "Wert 4"
+         },
+         {
+            "TEXT" : "Wert 5",
+            "TEXT_EN" : "Value 5",
+            "WERT" : "0x5"
+         },
+         {
+            "WERT" : "0x6",
+            "TEXT_EN" : "Value 6",
+            "TEXT" : "Wert 6"
+         },
+         {
+            "TEXT" : "Wert 7",
+            "WERT" : "0x7",
+            "TEXT_EN" : "Value 7"
+         },
+         {
+            "TEXT_EN" : "Value 8",
+            "WERT" : "0x8",
+            "TEXT" : "Wert 8"
+         },
+         {
+            "WERT" : "0x9",
+            "TEXT_EN" : "Value 9",
+            "TEXT" : "Wert 9"
+         },
+         {
+            "WERT" : "0xA",
+            "TEXT_EN" : "Worth 10",
+            "TEXT" : "Wert 10"
+         },
+         {
+            "WERT" : "0xB",
+            "TEXT_EN" : "Value 11",
+            "TEXT" : "Wert 11"
+         },
+         {
+            "TEXT_EN" : "Worth 12",
+            "WERT" : "0xC",
+            "TEXT" : "Wert 12"
+         },
+         {
+            "WERT" : "0xD",
+            "TEXT_EN" : "Worth 13",
+            "TEXT" : "Wert 13"
+         },
+         {
+            "TEXT_EN" : "Worth 14",
+            "WERT" : "0xE",
+            "TEXT" : "Wert 14"
+         },
+         {
+            "TEXT_EN" : "Worth 15",
+            "WERT" : "0xF",
+            "TEXT" : "Wert 15"
+         },
+         {
+            "TEXT" : "Wert 16",
+            "WERT" : "0x10",
+            "TEXT_EN" : "Worth 16"
+         },
+         {
+            "WERT" : "0x11",
+            "TEXT_EN" : "Worth 17",
+            "TEXT" : "Wert 17"
+         },
+         {
+            "TEXT_EN" : "Worth 18",
+            "WERT" : "0x12",
+            "TEXT" : "Wert 18"
+         },
+         {
+            "WERT" : "0x13",
+            "TEXT_EN" : "Worth 19",
+            "TEXT" : "Wert 19"
+         },
+         {
+            "TEXT" : "Wert 20",
+            "WERT" : "0x14",
+            "TEXT_EN" : "Worth 20"
+         },
+         {
+            "WERT" : "0x15",
+            "TEXT_EN" : "Worth 21",
+            "TEXT" : "Wert 21"
+         },
+         {
+            "WERT" : "0x16",
+            "TEXT_EN" : "Worth 22",
+            "TEXT" : "Wert 22"
+         },
+         {
+            "TEXT_EN" : "Worth 23",
+            "WERT" : "0x17",
+            "TEXT" : "Wert 23"
+         },
+         {
+            "WERT" : "0x18",
+            "TEXT_EN" : "Worth 24",
+            "TEXT" : "Wert 24"
+         },
+         {
+            "TEXT" : "Wert 25",
+            "TEXT_EN" : "Worth 25",
+            "WERT" : "0x19"
+         },
+         {
+            "TEXT" : "Wert 26",
+            "TEXT_EN" : "Worth 26",
+            "WERT" : "0x1A"
+         },
+         {
+            "TEXT" : "Wert 27",
+            "TEXT_EN" : "Worth 27",
+            "WERT" : "0x1B"
+         },
+         {
+            "WERT" : "0x1C",
+            "TEXT_EN" : "Worth 28",
+            "TEXT" : "Wert 28"
+         },
+         {
+            "TEXT_EN" : "Worth 29",
+            "WERT" : "0x1D",
+            "TEXT" : "Wert 29"
+         },
+         {
+            "TEXT_EN" : "Worth 30",
+            "WERT" : "0x1E",
+            "TEXT" : "Wert 30"
+         },
+         {
+            "TEXT" : "Wert 31",
+            "WERT" : "0x1F",
+            "TEXT_EN" : "Value 31"
+         },
+         {
+            "TEXT_EN" : "Worth 32",
+            "WERT" : "0x20",
+            "TEXT" : "Wert 32"
+         },
+         {
+            "TEXT" : "Wert 33",
+            "TEXT_EN" : "Worth 33",
+            "WERT" : "0x21"
+         },
+         {
+            "TEXT_EN" : "Worth 34",
+            "WERT" : "0x22",
+            "TEXT" : "Wert 34"
+         },
+         {
+            "TEXT" : "Wert 35",
+            "WERT" : "0x23",
+            "TEXT_EN" : "Worth 35"
+         },
+         {
+            "TEXT" : "Wert 36",
+            "TEXT_EN" : "Worth 36",
+            "WERT" : "0x24"
+         },
+         {
+            "TEXT" : "Wert 37",
+            "TEXT_EN" : "Worth 37",
+            "WERT" : "0x25"
+         },
+         {
+            "TEXT" : "Wert 38",
+            "WERT" : "0x26",
+            "TEXT_EN" : "Worth 38"
+         },
+         {
+            "TEXT" : "Wert 39",
+            "TEXT_EN" : "Worth 39",
+            "WERT" : "0x27"
+         },
+         {
+            "WERT" : "0x28",
+            "TEXT_EN" : "Worth 40",
+            "TEXT" : "Wert 40"
+         },
+         {
+            "WERT" : "0x29",
+            "TEXT_EN" : "Worth 41",
+            "TEXT" : "Wert 41"
+         },
+         {
+            "TEXT_EN" : "Worth 42",
+            "WERT" : "0x2A",
+            "TEXT" : "Wert 42"
+         },
+         {
+            "TEXT_EN" : "Worth 43",
+            "WERT" : "0x2B",
+            "TEXT" : "Wert 43"
+         },
+         {
+            "TEXT" : "Wert 44",
+            "WERT" : "0x2C",
+            "TEXT_EN" : "Worth 44"
+         },
+         {
+            "TEXT_EN" : "Worth 45",
+            "WERT" : "0x2D",
+            "TEXT" : "Wert 45"
+         },
+         {
+            "TEXT_EN" : "Worth 46",
+            "WERT" : "0x2E",
+            "TEXT" : "Wert 46"
+         },
+         {
+            "TEXT" : "Wert 47",
+            "WERT" : "0x2F",
+            "TEXT_EN" : "Worth 47"
+         },
+         {
+            "TEXT" : "Wert 48",
+            "WERT" : "0x30",
+            "TEXT_EN" : "Worth 48"
+         },
+         {
+            "TEXT_EN" : "Worth 49",
+            "WERT" : "0x31",
+            "TEXT" : "Wert 49"
+         },
+         {
+            "TEXT_EN" : "Worth 50",
+            "WERT" : "0x32",
+            "TEXT" : "Wert 50"
+         },
+         {
+            "WERT" : "0x33",
+            "TEXT_EN" : "Worth 51",
+            "TEXT" : "Wert 51"
+         },
+         {
+            "TEXT" : "Wert 52",
+            "TEXT_EN" : "Worth 52",
+            "WERT" : "0x34"
+         },
+         {
+            "TEXT" : "Wert 53",
+            "TEXT_EN" : "Worth 53",
+            "WERT" : "0x35"
+         },
+         {
+            "TEXT_EN" : "Worth 54",
+            "WERT" : "0x36",
+            "TEXT" : "Wert 54"
+         },
+         {
+            "TEXT" : "Wert 55",
+            "TEXT_EN" : "Worth 55",
+            "WERT" : "0x37"
+         },
+         {
+            "TEXT" : "Wert 56",
+            "TEXT_EN" : "Worth 56",
+            "WERT" : "0x38"
+         },
+         {
+            "TEXT" : "Wert 57",
+            "TEXT_EN" : "Worth 57",
+            "WERT" : "0x39"
+         },
+         {
+            "TEXT_EN" : "Worth 58",
+            "WERT" : "0x3A",
+            "TEXT" : "Wert 58"
+         },
+         {
+            "TEXT" : "Wert 59",
+            "TEXT_EN" : "Worth 59",
+            "WERT" : "0x3B"
+         },
+         {
+            "WERT" : "0x3C",
+            "TEXT_EN" : "Worth 60",
+            "TEXT" : "Wert 60"
+         },
+         {
+            "TEXT" : "Wert 61",
+            "WERT" : "0x3D",
+            "TEXT_EN" : "Worth 61"
+         },
+         {
+            "TEXT_EN" : "Worth 62",
+            "WERT" : "0x3E",
+            "TEXT" : "Wert 62"
+         },
+         {
+            "WERT" : "0xFF",
+            "TEXT_EN" : "Invalid value",
+            "TEXT" : "Wert ungültig"
+         }
+      ],
+      "BF_22_F152_SUPPLIERINFO" : [
+         {
+            "ADD" : "-",
+            "MUL" : "-",
+            "INFO_EN" : "hardware model",
+            "RESULTNAME" : "STAT_HWMODEL",
+            "INFO" : "hardware model",
+            "DIV" : "-",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "0xC0",
+            "L/H" : "high",
+            "NAME" : "HW_MODEL",
+            "EINHEIT" : "0-n"
+         },
+         {
+            "L/H" : "high",
+            "EINHEIT" : "0-n",
+            "NAME" : "TAB_SUPPLIERINFO_FIELD",
+            "MASKE" : "0x3F",
+            "DIV" : "-",
+            "DATENTYP" : "unsigned char",
+            "ADD" : "-",
+            "RESULTNAME" : "STAT_SUPPLIERINFOFIELD",
+            "INFO" : "supplierInfo",
+            "MUL" : "-",
+            "INFO_EN" : "supplierInfo"
+         }
+      ]
+   }
+}

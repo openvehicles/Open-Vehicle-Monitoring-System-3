@@ -191,12 +191,28 @@ void GsmNMEA::IncomingLine(const std::string line)
     *StdMetrics.ms_v_pos_gpsmode = (std::string) mode;
     *StdMetrics.ms_v_pos_satcount = (int) satcnt;
     *StdMetrics.ms_v_pos_gpshdop = (float) hdop;
+    
+    // Derive signal quality from lock status, satellite count and HDOP:
+    //  quality ~ satcnt / hdop
+    *StdMetrics.ms_v_pos_gpssq = (int) LIMIT_MAX(gpslock * LIMIT_MIN(satcnt-1,0) / LIMIT_MIN(hdop,0.1) * 10, 100);
+    // Quality raises by satellite count and drops by HDOP. HDOP 1.0 = perfect.
+    // The calculation is designed to get 50% as the threshold for a "good" signal.
+    // GPS needs at least 4 satellites in view to get a position, but that will need
+    // HDOP << 1 to be considered reliable. 6 satellites are on the edge to "good"
+    // (with HDOP=1). Samples:
+    //   4 satellites / HDOP 1.0 → SQ 30%
+    //   4 satellites / HDOP 0.6 → SQ 50%
+    //   6 satellites / HDOP 1.0 → SQ 50%
+    //   9 satellites / HDOP 1.0 → SQ 80%
+    //  10 satellites / HDOP 0.9 → SQ 100%
+    //  10 satellites / HDOP 1.8 → SQ 50%
 
     if (gpslock)
       {
       *StdMetrics.ms_v_pos_latitude = (float) lat;
       *StdMetrics.ms_v_pos_longitude = (float) lon;
       *StdMetrics.ms_v_pos_altitude = (float) alt;
+      *StdMetrics.ms_v_pos_gpstime = (int) time(NULL);
       }
 
     // upodate gpslock last, so listeners will see updated lat/lon values:
@@ -280,6 +296,12 @@ void GsmNMEA::Startup()
 void GsmNMEA::Shutdown(bool hard)
   {
   ESP_LOGI(TAG, "Shutdown (direct)");
+
+  *StdMetrics.ms_v_pos_gpsmode = (std::string) "";
+  *StdMetrics.ms_v_pos_gpsspeed = (float) 0;
+  *StdMetrics.ms_v_pos_satcount = (int) 0;
+  *StdMetrics.ms_v_pos_gpshdop = (float) 500;
+  *StdMetrics.ms_v_pos_gpssq = (int) 0;
 
   if (StdMetrics.ms_v_pos_gpslock->AsBool())
     {

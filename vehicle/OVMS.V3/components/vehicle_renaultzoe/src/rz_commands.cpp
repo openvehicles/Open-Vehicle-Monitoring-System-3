@@ -44,6 +44,7 @@ static const char *TAG = "v-zoe";
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 #include "ovms_peripherals.h"
+#include "string_writer.h"
 
 #include "vehicle_renaultzoe.h"
 
@@ -290,33 +291,47 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandStat(int verbosity,
 
   writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
 
-  const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0).c_str();
-  if (*range_ideal != '-')
-    writer->printf("Ideal range: %s\n", range_ideal);
+  if (StdMetrics.ms_v_bat_range_ideal->IsDefined())
+    {
+    const std::string& range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0);
+    writer->printf("Ideal range: %s\n", range_ideal.c_str());
+    }
 
-  const char* range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0).c_str();
-  if (*range_est != '-')
-    writer->printf("Est. range: %s\n", range_est);
+  if (StdMetrics.ms_v_bat_range_est->IsDefined())
+    {
+    const std::string& range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0);
+    writer->printf("Est. range: %s\n", range_est.c_str());
+    }
 
-  const char* chargedkwh = StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 3).c_str();
-  if (*chargedkwh != '-')
-    writer->printf("Energy charged: %s\n", chargedkwh);
+  if (StdMetrics.ms_v_charge_kwh->IsDefined())
+    {
+    const std::string& chargedkwh = StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 3);
+    writer->printf("Energy charged: %s\n", chargedkwh.c_str());
+    }
 
-  const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
-  if (*odometer != '-')
-    writer->printf("ODO: %s\n", odometer);
+  if (StdMetrics.ms_v_pos_odometer->IsDefined())
+    {
+    const std::string& odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1);
+    writer->printf("ODO: %s\n", odometer.c_str());
+    }
 
-  const char* cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str();
-  if (*cac != '-')
-    writer->printf("CAC: %s\n", cac);
+  if (StdMetrics.ms_v_bat_cac->IsDefined())
+    {
+    const std::string& cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1);
+    writer->printf("CAC: %s\n", cac.c_str());
+    }
 
-  const char* soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 1).c_str();
-  if (*soh != '-')
-    writer->printf("SOH: %s\n", soh);
+  if (StdMetrics.ms_v_bat_soh->IsDefined())
+    {
+    const std::string& soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 1);
+    writer->printf("SOH: %s\n", soh.c_str());
+    }
   
-  const char* avai_energy = mt_available_energy->AsUnitString("-", Native, 1).c_str();
-  if (*avai_energy != '-')
-    writer->printf("Energy Available: %s\n", avai_energy);
+  if (mt_available_energy->IsDefined())
+    {
+    const std::string& avai_energy = mt_available_energy->AsUnitString("-", Native, 1);
+    writer->printf("Energy Available: %s\n", avai_energy.c_str());
+    }
   
   return Success;
 }

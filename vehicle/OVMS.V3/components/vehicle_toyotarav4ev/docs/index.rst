@@ -1,6 +1,6 @@
-=============
+==============
 Toyota RAV4 EV
-=============
+==============
 
 Vehicle Type: **TYR4**
 
@@ -34,3 +34,5 @@ Others
 =========================== ==============
 
 The Tesla CAN bus already had decodes available, so those were implemented already. The primary focus going forward will be decoding the Toyota CAN bus to replicate SafetyConnect connected features like Remote Climate before the 3G shutdown ends that manufacturer provided functionality.
+
+The file xr4mon.htm should be installed as a Page type Web Plugin to display detailed information about the car's status.

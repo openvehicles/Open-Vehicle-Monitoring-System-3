@@ -85,6 +85,12 @@ You can also use SCP to copy files to and from the OVMS v3 VFS.
 	HostkeyAlgorithms +ssh-rsa
 	PubkeyAcceptedAlgorithms +ssh-rsa
 
+.. note::
+  With OpenSSH version 9.0 (or later), the ``scp`` **protocol** has been disabled by default and
+  replaced by the ``sftp`` **protocol**. To be able to use the ``scp`` **command** with OVMS, you need
+  to re-enable the ``scp`` **protocol** with option ``-O`` on the command line::
+
+    scp -O ....
 
 --------------
 Console Basics

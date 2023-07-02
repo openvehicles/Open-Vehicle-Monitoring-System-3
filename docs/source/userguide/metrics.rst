@@ -82,6 +82,7 @@ m.net.sq                                 -79dBm                   …signal qual
 m.net.type                               wifi                     …and type (none/modem/wifi)
 m.net.wifi.network                       WLAN-214677              Current Wifi network SSID
 m.net.wifi.sq                            -79.1dBm                 …and signal quality
+m.obdc2ecu.on                            no                       Is the OBD2ECU process currently on.
 m.serial                                                          Reserved for module serial no.
 m.tasks                                  20                       Task count (use ``module tasks`` to list)
 m.time.utc                               1572590910Sec            UTC time in seconds
@@ -240,7 +241,9 @@ v.p.direction                            31.2°                    GPS direction
 v.p.gpshdop                              1.3                      GPS horizontal dilution of precision (smaller=better)
 v.p.gpslock                              no                       yes = has GPS satellite lock
 v.p.gpsmode                              AA                       <GPS><GLONASS>; N/A/D/E (None/Autonomous/Differential/Estimated)
+v.p.gpssq                                80%                      GPS signal quality [%] (<30 unusable, >50 good, >80 excellent)
 v.p.gpsspeed                             0km/h                    GPS speed over ground
+v.p.gpstime                              1572590910Sec            Time (UTC) of GPS coordinates [Seconds]
 v.p.latitude                             51.3023                  GPS latitude
 v.p.location                             Home                     Name of current location if defined
 v.p.longitude                            7.39006                  GPS longitude
@@ -255,3 +258,63 @@ v.t.temp                                 33,33,34,38°C            TPMS tyre tem
 v.type                                   RT                       Vehicle type code
 v.vin                                    VF1ACVYB012345678        Vehicle identification number
 ======================================== ======================== ============================================
+
+
+------------------------
+Tunnel through V2 Server
+------------------------
+
+The V2 protocol and server does not know about new V3 and custom metrics. If you 
+want to tunnel these through a V2 server, you need to use "historical" records, 
+which can be sent from the module as "data" notifications.
+
+.. code-block:: javascript
+  :caption: Script Example / Template
+
+  /* Send selected V3/custom metrics via V2 server:
+   * save e.g. as /store/events/ticker.60/50-v2data.js for execution every 60 seconds
+   * fetch via REST: /api/historical/<vehicleid>/<recordtype>
+   * → array {h_timestamp,h_data}; JSON.parse(h_data) = metrics object
+   */
+  (function(){
+
+    // Configuration:
+    const cfg = {
+      metricnames: [ "v.b.consumption", "xvu.b.energy.range", "xvu.b.soh.range" ],
+      notifytype: "usr.v2data.consumption",
+      recordtype: "XVU-LOG-Consumption",
+      expiretime: 86400,
+    };
+
+    // Check vehicle state:
+    if (!OvmsMetrics.Value("v.e.on")) return;
+
+    // Transmit metrics:
+    var metrics = OvmsMetrics.GetValues(cfg.metricnames);
+    var msg = cfg.recordtype + ",0," + cfg.expiretime + "," + Duktape.enc('jc', metrics);
+    OvmsNotify.Raise("data", cfg.notifytype, msg);
+
+  })()
+
+The example shows a configuration for a VW e-Up transmitting one V3 metric and
+two e-Up custom metrics in JSON format. When adapting to your vehicle, change
+the metrics as needed and the record type prefix from "XVU" to your vehicle's
+prefix code.
+
+Historical records can be downloaded from the server via TCP MP or HTTP REST API
+(hint: you can test the download using https://dexters-web.de/downloadtool).
+
+The V2 server REST API call returns all records stored within the expiry period with
+their respective record times in ``h_timestamp``, and most recent = last entry.
+You can restrict the results by time by adding the ``since`` request parameter.
+Field ``h_data`` contains the JSON encoded metrics dump, so needs to be parsed
+via ``JSON.parse()`` or the respective client platform variant.
+
+Hint: to avoid the JSON overhead, you may consider using a simple CSV (array)
+format instead. That way, metric names don't need to be included, which saves
+data volume especially when sending with high frequencies. The REST client
+then simply needs to know about the structure.
+
+You're free to include as many metrics as necessary in a record and to use as 
+many record types as suitable. Simply verify your record types do not get in 
+conflict with existing types sent by your vehicle module.

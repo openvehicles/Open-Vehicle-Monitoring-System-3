@@ -45,7 +45,7 @@ class StringWriter : public std::string, public OvmsWriter
 
   public:
     int puts(const char* s);
-    int printf(const char* fmt, ...);
+    int printf(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
     ssize_t write(const void *buf, size_t nbyte);
 
   public:

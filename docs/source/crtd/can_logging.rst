@@ -1,3 +1,5 @@
+.. highlight:: none
+
 ====================
 CAN Bus Data Logging
 ====================
@@ -69,6 +71,11 @@ If using a good quality SD card with a current OVMS V3 module (i.e. PCB revision
 
 ``config set sdcard maxfreq.khz 20000``
 
+.. warning::
+  If you increase :code:`maxfreq.khz` too much, higher than the maximum possible frequency supported by the board,
+  you may encounter a bootloop on the next boot.
+  In that case you will want to eject the SD card - to stop the bootloop - and change the config to a lower value of :code:`maxfreq.khz`.
+
 Start logging all CAN messages using CRTD log file format with:
 
 ``ovms# can log start vfs crtd /sd/can.crtd``
@@ -77,7 +84,7 @@ or log specific CAN packets by applying a filter e.g 0x55b the Nissan LEAF SoC C
 
 ``ovms# can log start vfs crtd /sd/can.crtd 55b``
   
-Other CAN log file formats are supported e.g ``crtd, gvret-a, gvret-b, lawricel, pcap, raw``.
+Other CAN log file formats are supported e.g ``crtd, cs11, gvret-a, gvret-b, lawicel, pcap, raw``.
   
 Check CAN logging satus with:
 
@@ -100,6 +107,74 @@ The log file can also be viewed in a browser with ``http://<ovms-ipaddress>/sd/c
 
 The logfiles can then be imported into a tool like SavvyCan for analysis.
 
+
+--------------------------
+Logging Events and Metrics
+--------------------------
+
+Alongside the CAN data, it's also possible to log any **event** or **metric** of your choosing.
+
+For an event, the name of the event will be logged. For a metric, a JSON representation of the metric will be logged
+(an object with 3 properties: ``name``, ``value``, and ``unit``).
+
+To select the events and/or metrics to log, a comma-separated list of filter (``"<filter1>,<filter2>,..."``) needs to be
+configured:
+
+* events filters are configured by the configuration item ``can log.events_filters``
+* metrics filters are configured by the configuration item ``can log.metrics_filters``
+
+Each filter of the list can be one of:
+
+a) an event or metric name that will be matched in its entirety (e.g. matching the metric ``v.e.charging12v``, or the event ``system.wifi.ap.sta.connected``)
+b) a pattern ending with a wildcard ``*`` - to match the beginning of an event or metric name (e.g. ``v.p.*`` will match all metrics starting with ``v.p.``, like ``v.p.odometer`` for instance)
+c) a pattern starting with a wildcard ``*`` - to match the end of an event or metric name (e.g. ``*.stop`` will match all metrics ending with ``.stop``, like ``network.mgr.stop``, ``system.wifi.ap.stop``, ... for instance)
+
+.. note:: Only those 3 kind of filters are supported. The wildcard character ``*`` can only occur once, either at the beginning, or
+  at the end of the filter.
+
+^^^^^^^^^^^^^^^
+Default filters
+^^^^^^^^^^^^^^^
+
+The default filter configuration for **event** logging is to log all events starting with ``x`` or with ``vehicle``, which is equivalent to the following configuration command::
+
+  OVMS# config set can log.events_filters "x*,vehicle*"
+
+
+The default filter configuration for **metric** logging is not to log any metric.
+
+^^^^^^^^
+Examples
+^^^^^^^^
+
+If you would like to log all GNSS **events** for example, in addition to the default events, you could use the following configuration::
+
+  OVMS# config set can log.events_filters "x*,vehicle*,gps.*"
+
+
+If you would like to log all GNSS **metrics** for example, you could use the following configuration::
+
+  OVMS# config set can log.metrics_filters "v.p.gps*, v.p.latitude, v.p.longitude, v.p.altitude, v.p.direction, v.p.satcount"
+
+^^^^^^^^^^^^^^^^^^^^^
+Supported log formats
+^^^^^^^^^^^^^^^^^^^^^
+For the moment, only the CRTD log format is able to store the events or metrics in the logs.
+Those are logged with the tags:
+
+* ``CEV`` for an event
+* ``CMT`` for a metric
+
+Example of a CRTD log output containing a mix of CAN messages, metrics and events::
+
+  1668992145.032123 1CMT Metric { "name": "v.p.satcount", "value": 6, "unit": "" }
+  1668992145.034551 1CMT Metric { "name": "v.p.gpshdop", "value": 1.1, "unit": "" }
+  1668992145.036341 1R11 358 18 08 20 00 00 00 00 20
+  1668992145.037777 1CEV Event vehicle.alert.tpms
+  1668992145.041696 1CMT Metric { "name": "v.p.altitude", "value": 121.3, "unit": "m" }
+  1668992147.042809 1R11 27E c0 c0 c0 c0 00 00 00 00
+  1668992150.035591 1CMT Metric { "name": "v.p.gpssq", "value": 20, "unit": "%" }
+  1668992150.042837 1CEV Event gps.sq.bad
 
 -----------------
 Network Streaming

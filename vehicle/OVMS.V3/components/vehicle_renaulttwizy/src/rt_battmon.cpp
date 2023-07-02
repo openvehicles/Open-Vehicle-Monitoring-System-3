@@ -93,6 +93,9 @@ void OvmsVehicleRenaultTwizy::BatteryInit()
   m_batt_use_temp_min = MyMetrics.InitFloat("xrt.b.u.temp.min", SM_STALE_HIGH, 0, Celcius);
   m_batt_use_temp_max = MyMetrics.InitFloat("xrt.b.u.temp.max", SM_STALE_HIGH, 0, Celcius);
 
+  m_batt_energy_avail = MyMetrics.InitFloat("xrt.b.energy.avail", SM_STALE_HIGH, 0, kWh, true);
+  m_batt_energy_full  = MyMetrics.InitFloat("xrt.b.energy.full", SM_STALE_HIGH, 0, kWh, true);
+
   twizy_bms_type      = BMS_TYPE_ORIG;
   m_bms_type          = MyMetrics.InitInt("xrt.bms.type", SM_STALE_HIGH, BMS_TYPE_ORIG);
   m_bms_state1        = MyMetrics.InitInt("xrt.bms.state1", SM_STALE_HIGH, 0);
@@ -798,7 +801,7 @@ void OvmsVehicleRenaultTwizy::FormatBatteryTemps(int verbosity, OvmsWriter* writ
       em = "";
 
     if (show_deviations)
-      capacity -= writer->printf("%s%d:%+dC ", em, c+1, twizy_cmod[c].temp_maxdev);
+      capacity -= writer->printf("%s%d:%+.0fC ", em, c+1, twizy_cmod[c].temp_maxdev);
     else
       capacity -= writer->printf("%s%d:%dC ", em, c+1, CONV_Temp(twizy_cmod[c].temp_act));
   }
@@ -912,7 +915,7 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
     ",%d,%d"
     ",%d,%d,%d,%d"
     ",%d,%d,%d,%d"
-    ",%d,%d,%d",
+    ",%d,%d,%ld",
     cell+1,
     volt_alert, temp_alert,
     CONV_CellVolt(twizy_cell[cell].volt_act),

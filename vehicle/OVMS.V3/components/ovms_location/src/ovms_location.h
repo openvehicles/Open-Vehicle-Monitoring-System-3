@@ -96,13 +96,27 @@ class OvmsLocations
   public:
     bool m_ready;
     bool m_gpslock;
+    int m_gpssq;
+    bool m_gpsgood;
     float m_latitude;
     float m_longitude;
+
     float m_park_latitude;
     float m_park_longitude;
     float m_park_distance;
     bool m_park_invalid;
+    OvmsRecMutex m_park_lock;
+
     uint32_t m_last_alarm;
+
+    float m_valet_latitude;
+    float m_valet_longitude;
+    float m_valet_distance;
+    bool m_valet_invalid;
+    bool m_valet_enabled;
+    uint32_t m_valet_last_alarm;
+    OvmsRecMutex m_valet_lock;
+
     LocationMap m_locations;
 
   public:
@@ -111,12 +125,16 @@ class OvmsLocations
     void UpdateParkPosition();
     void CheckTheft();
 
+    void UpdateValetPosition();
+    void CheckValet();
+
   public:
     void UpdatedGpsLock(OvmsMetric* metric);
-    void UpdatedLatitude(OvmsMetric* metric);
-    void UpdatedLongitude(OvmsMetric* metric);
+    void UpdatedGpsSQ(OvmsMetric* metric);
+    void UpdatedPosition(OvmsMetric* metric);
     void UpdatedVehicleOn(OvmsMetric* metric);
     void UpdatedConfig(std::string event, void* data);
+    void UpdateValetMode(OvmsMetric* metric);
   };
 
 extern OvmsLocations MyLocations;

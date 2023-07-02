@@ -369,8 +369,8 @@ format. Both by default insert spacing and indentation for readability and accep
   builtins and `Duktape JSON <https://github.com/svaarala/duktape/blob/master/doc/json.rst>`_
   for explanations of these).
   
-  For example, ``Duktape.enc('JC', data)`` is equivalent to ``JSON.format(data, false)`` except for
-  the representation of functions. Using the ``JX`` encoding will omit unnecessary quotings.
+  For example, ``Duktape.enc('jc', data)`` is equivalent to ``JSON.format(data, false)`` except for
+  the representation of functions. Using the ``jx`` encoding will omit unnecessary quotings.
 
 
 .. warning:: All Duktape JSON encoders and decoders have a very high performance penalty
@@ -825,14 +825,22 @@ Note: to get the actual GPS coordinates, simply read metrics ``v.p.latitude``, `
 OvmsMetrics
 ^^^^^^^^^^^
 
-- ``str = OvmsMetrics.Value(metricname [,decode])``
+- ``bool = OvmsMetrics.HasValue(metricname)``
+    Returns whether the specified metric has a defined value.
+    Returns undefined if metric is un-registered.
+- ``str = OvmsMetrics.Value(metricname [,unitcode] [,decode])``
     Returns the typed value (default) or string representation (with ``decode`` = false)
-    of the metric value.
-- ``num = OvmsMetrics.AsFloat(metricname)``
-    Returns the float representation of the metric value.
+    of the metric value optionally converted to the specified unit.
+    Invalid ``unitcode`` or ``metricname`` will return invalid.
+    Mismatched ``unitcode`` will be ignored.
+- ``num = OvmsMetrics.AsFloat(metricname [,unitcode])``
+    Returns the float representation of the metric value, optionally converted
+    to the supplied unit.
+    Un-registered ``metricname`` or invalid ``unitcode`` will return invalid.
+    Mismatched ``unitcode`` will be ignored.
 - ``str = OvmsMetrics.AsJSON(metricname)``
     Returns the JSON representation of the metric value.
-- ``obj = OvmsMetrics.GetValues([filter] [,decode])``
+- ``obj = OvmsMetrics.GetValues([filter] [,unitcode] [,decode])``
     Returns an object of all metrics matching the optional name filter/template (see below),
     by default decoded into Javascript types (i.e. numerical values will be JS numbers, arrays
     will be JS arrays etc.). The object returned is a snapshot, the values won't be updated.
@@ -845,6 +853,20 @@ OvmsMetrics
     
     The ``decode`` argument defaults to ``true``, pass ``false`` to retrieve the metrics
     string representations instead of typed values.
+
+    The ``unitcode`` argument allows units to be converted (amongst the same types of untits).
+    The special unit codes "native", "metric" and "imperial" can also be used.
+    Specifying an invalid ``unitcode`` will return invalid.
+    Mismatched ``unitcode`` will be ignored on those metricnames that don't match.
+
+    For ``OvmsMetrics.Value`` and ``OvmsMetrics.GetValues`` if a ``unitcode`` is specified
+    in addition to passing ``false`` to the ``decode`` argument, then the metric is
+    returned as a string with any unit specifiers.
+
+.. code-block:: javascript
+
+  // Get the speed as a string with units ( eg: 37.4km/h )
+  var speed  = OvmsMetrics.Value("v.b.range.speed", "native", false)
 
 With the introduction of the ``OvmsMetrics.GetValues()`` call, you can get multiple metrics
 at once and let the system decode them for you. Using this you can for example do:
@@ -902,7 +924,7 @@ The OvmsVehicle object is the most comprehensive, and exposes several methods to
     Return the type of the currently loaded vehicle module
 - ``success = OvmsVehicle.Wakeup()``
     Wakeup the vehicle (return TRUE if successful)
-- ``success = OvmsVehicle.Homelink(button,durationms)``
+- ``success = OvmsVehicle.Homelink(button, durationms)``
     Fire the given homelink button
 - ``success = OvmsVehicle.ClimateControl(onoff)``
     Turn on/off climate control
@@ -961,6 +983,77 @@ The OvmsVehicle object is the most comprehensive, and exposes several methods to
         print(res.response_hex);
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+OvmsVehicle Command Plugins
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Most vehicles do not implement all standard vehicle commands. When trying to execute
+one of these, the system will respond with "not implemented". Using the ``OvmsVehicle``
+object, you can register your own handlers for these. This applies to the following
+functions:
+
+- ``OvmsVehicle.Wakeup()``
+- ``OvmsVehicle.Homelink(button, durationms)``
+- ``OvmsVehicle.ClimateControl(onoff)``
+- ``OvmsVehicle.Lock(pin)``
+- ``OvmsVehicle.Unlock(pin)``
+- ``OvmsVehicle.Valet(pin)``
+- ``OvmsVehicle.Unvalet(pin)``
+- ``OvmsVehicle.SetChargeMode(mode)``
+- ``OvmsVehicle.SetChargeCurrent(limit)``
+- ``OvmsVehicle.SetChargeTimer(onoff, start)``
+- ``OvmsVehicle.StartCharge()``
+- ``OvmsVehicle.StopCharge()``
+- ``OvmsVehicle.StartCooldown()``
+- ``OvmsVehicle.StopCooldown()``
+
+**Note:** this normally only works for commands not implemented by the vehicle.
+Vehicles **may** also allow custom handlers to replace their default implementation,
+ask a vehicle maintainer if you miss/need this option for your vehicle.
+
+To register your own command handler for any of these, simply assign a Javascript
+function to the respective ``OvmsVehicle`` property. Your custom function shall
+accept the same arguments as the native handler and return a boolean value to
+reflect success (``true``) or failure (``false``).
+
+**Example**
+
+A common use case for this is implementing your own variant of "Homelink", which is
+basically only available in hardware on Tesla Roadsters, yet accessible in the App
+for other vehicles as well as a means to execute other commands.
+
+The following example code shows how to register a custom "Homelink" handler doing
+an HTTP API call:
+
+.. code-block:: javascript
+
+  OvmsVehicle.Homelink = function(button, durationms) {
+    const debug = false;   // set to true to log full server response
+    const notify = false;  // set to true to enable failure push notification
+    const fndesc = "Homelink " + button;
+
+    HTTP.Request({
+      url: "https://your.api.server/action?button=" + button,
+      done: function() { print(fndesc + " OK"); },
+      fail: function() { const msg = fndesc + " FAILED: " + this.error; print(msg);
+        if (notify) OvmsNotify.Raise("alert", "homelink", msg); },
+      always: function() { if (debug) print(JSON.stringify(this.response||this)); }
+    });
+
+    return true;
+  }
+
+(Due to the HTTP request being asynchronous, the command function can only return
+true when called. Enable the push notification to get an alert on failure.)
+
+After running this code for a vehicle not implementing the homelink command itself,
+you can let the module do the HTTP API call by selecting one of the three button
+options in the App, as well as by executing the ``homelink`` shell command.
+
+To load this plugin automatically on boot, add the code to ``ovmsmain.js``, either
+inline or by loading a lib module (see `Persistent JavaScript`_).
+
+
 --------------
 Test Utilities
 --------------
@@ -994,6 +1087,13 @@ Customize to your needs. If you want to test a plugin, simply replace the ``scri
 command by ``script reload`` followed by some ``script eval`` calls to your plugin API.
 
 Note: this may be slow, as the ``ssh`` session needs to be negotiated for every command.
+
+.. note::
+  With OpenSSH version 9.0 (or later), the ``scp`` **protocol** has been disabled by default and
+  replaced by the ``sftp`` **protocol**. To be able to use the ``scp`` **command** with OVMS, you need
+  to re-enable the ``scp`` **protocol** with option ``-O`` on the command line::
+
+    scp -O ....
 
 A faster option is using the OVMS HTTP REST API. The following script uses ``curl`` to upload
 and execute a script:

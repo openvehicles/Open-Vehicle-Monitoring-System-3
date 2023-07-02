@@ -136,7 +136,7 @@ bool OvmsHttpClient::Request(std::string url, const char* method)
         {
         // ESP_LOGI(TAG, "Got response %s",m_buf->ReadLine().c_str());
         std::string header = m_buf->ReadLine();
-        if (header.compare(0,15,"Content-Length:") == 0)
+        if (strncasecmp(header.c_str(), "Content-Length:", 15) == 0)
           {
           m_bodysize = atoi(header.substr(15).c_str());
           }
