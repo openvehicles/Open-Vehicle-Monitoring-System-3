@@ -104,6 +104,7 @@ class obd2ecu : public pcp, public InternalRamAllocated
 
   protected:
     void FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint8_t format);
+    void ECURxCallback(const CAN_frame_t* frame, bool success);
   };
   
 class obd2ecuInit
