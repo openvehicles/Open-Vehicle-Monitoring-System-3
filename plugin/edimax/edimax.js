@@ -1,8 +1,11 @@
 /**
  * Module plugin:
  *  Smart Plug control for Edimax models SP-1101W, SP-2101W et al
- *  Version 2.2 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 2.3 by Michael Balzer <dexter@dexters-web.de>
  *  Note: may need digest auth support to work with newer Edimax firmware (untested)
+ * 
+ * History:
+ *  - v2.3: uppercase ON/OFF fix by Olaf Straube <olaf.straube@mailbox.org>
  * 
  * Installation:
  *  - Save as /store/scripts/lib/edimax.js
@@ -99,7 +102,7 @@ function setPowerState(onoff) {
     url: "http://" + cfg.user + ":" + cfg.pass + "@" + cfg.ip + ":10000/smartplug.cgi",
     headers: [{ "Content-Type": "text/xml" }],
     post: '<?xml version="1.0" encoding="utf-8"?>'
-      + '<SMARTPLUG id="edimax"><CMD id="setup"><Device.System.Power.State>' + onoff
+      + '<SMARTPLUG id="edimax"><CMD id="setup"><Device.System.Power.State>' + onoff.toUpperCase()
       + '</Device.System.Power.State></CMD></SMARTPLUG>',
     done: function(resp) {
       if (resp.statusCode == 200) {
