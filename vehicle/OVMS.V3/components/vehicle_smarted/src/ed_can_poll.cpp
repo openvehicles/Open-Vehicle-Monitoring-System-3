@@ -258,12 +258,12 @@ void OvmsVehicleSmartED::ObdInitPoll() {
  */
 void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
   string& rxbuf = smarted_obd_rxbuf;
-  static uint16_t last_pid = -1;
   
-  if (pid != last_pid) {
-    //ESP_LOGD(TAG, "pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
-    last_pid = pid;
-    m_poll_ml_frame=0;
+  if (pid != m_last_pid) {
+    //ESP_LOGD(TAG, "pid: %04x length: %d mlremain: %d mlframe: %d", pid, length, mlremain, mlframe);
+    if (mlframe > 0)
+      return;
+    m_last_pid = pid;
   }
   
   // init / fill rx buffer:
