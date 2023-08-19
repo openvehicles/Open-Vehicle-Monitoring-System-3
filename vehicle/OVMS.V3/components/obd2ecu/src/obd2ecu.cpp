@@ -583,9 +583,13 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
 
           // Test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)
           if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script)
-          { metric = metric+jitter;
-            if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0) metric = 500+jitter;
-          }
+            {
+            if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0)
+              metric = 500;
+            else if (metric < 0)
+              metric = -metric;
+            metric += jitter;
+            }
 
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
