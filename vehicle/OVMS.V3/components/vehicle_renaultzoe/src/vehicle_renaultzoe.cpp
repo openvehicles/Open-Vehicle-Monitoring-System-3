@@ -107,7 +107,6 @@ OvmsVehicleRenaultZoe* OvmsVehicleRenaultZoe::GetInstance(OvmsWriter* writer /*=
 OvmsVehicleRenaultZoe::OvmsVehicleRenaultZoe() {
   ESP_LOGI(TAG, "Start Renault Zoe/Kangoo vehicle module");
 
-  m_last_pid = 0;
   StandardMetrics.ms_v_type->SetValue("RZ");
   StandardMetrics.ms_v_charge_inprogress->SetValue(false);
   
@@ -799,14 +798,13 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
  * Handles incoming poll results
  */
 void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
-  string& rxbuf = zoe_obd_rxbuf;
-
-  if (pid != m_last_pid) {
-    // Ignore if it's no tthe same one.
-    if (m_poll_ml_frame != 0)
-      return;
-    //ESP_LOGD(TAG, "pid: %04x length: %d m_poll_ml_remain: %d mlframe: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
-    m_last_pid = pid;
+	string& rxbuf = zoe_obd_rxbuf;
+  static uint16_t last_pid = -1;
+  
+  if (pid != last_pid) {
+    //ESP_LOGD(TAG, "pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
+    last_pid = pid;
+    m_poll_ml_frame=0;
   }
   
   // init / fill rx buffer:

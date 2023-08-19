@@ -112,8 +112,6 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   protected:
     int m_reboot_ticker;
-    uint16_t m_last_pid;
-
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);
