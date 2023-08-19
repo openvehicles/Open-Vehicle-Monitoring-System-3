@@ -194,7 +194,6 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_mgconn = NULL;
   m_sendall = false;
   m_lasttx = 0;
-  m_lasttx_stream = 0;
   m_lasttx_sendall = 0;
   m_peers = 0;
   m_streaming = 0;
@@ -759,16 +758,6 @@ void OvmsServerV3::SetStatus(const char* status, bool fault /*=false*/, State ne
 
 void OvmsServerV3::MetricModified(OvmsMetric* metric)
   {
-  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
-
-  if (m_streaming)
-    {
-    OvmsMutexLock mg(&m_mgconn_mutex);
-    if (!m_mgconn)
-      return;
-    metric->ClearModified(MyOvmsServerV3Modifier);
-    TransmitMetric(metric);
-    }
   }
 
 bool OvmsServerV3::NotificationFilter(OvmsNotifyType* type, const char* subtype)
@@ -928,12 +917,21 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       TransmitPendingNotificationsData();
 
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
+
     // Next send time depends on the state of the car
-    int next = (m_peers != 0) ? m_updatetime_connected :
-               (caron) ? m_updatetime_on :
-               (StandardMetrics.ms_v_charge_inprogress->AsBool()) ? m_updatetime_charging :
-               (StandardMetrics.ms_v_env_awake->AsBool()) ? m_updatetime_awake :
-               m_updatetime_idle;
+    int next = m_updatetime_idle;
+
+    // Use the lowest enabled update value
+    if (m_peers != 0 && m_updatetime_connected < next)
+      next = m_updatetime_connected;
+    if ((caron && m_streaming > 0) && m_streaming < next)
+      next = m_streaming;
+    if (caron && m_updatetime_on < next)
+      next = m_updatetime_on;
+    if (StandardMetrics.ms_v_charge_inprogress->AsBool() && m_updatetime_charging < next)
+      next = m_updatetime_charging;
+    if (StandardMetrics.ms_v_env_awake->AsBool() && m_updatetime_awake < next)
+      next = m_updatetime_awake;
 
     if ((m_lasttx_sendall == 0) ||
         (m_updatetime_sendall > 0 && now > (m_lasttx_sendall + m_updatetime_sendall)))
@@ -945,12 +943,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     else if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
       TransmitModifiedMetrics();
-      m_lasttx = m_lasttx_stream = now;
-      }
-    else if (m_streaming && caron && m_peers && now > m_lasttx_stream+m_streaming)
-      {
-      // TODO: transmit streaming metrics
-      m_lasttx_stream = now;
+      m_lasttx = now;
       }
     }
   }

@@ -170,6 +170,16 @@ We recommend the following:
   EOT
 
 --------------
+Authentication
+--------------
+
+Authentication is typically via username+password from the ovms_owners table. But that depends on what plugin you have configured to do it.
+The ApiHttpCore calls the overloaded plugin function 'Authenticate' to perform the authentication.
+
+You either need to use the supplied AuthDrupal plugin (which espects drupal style strongly hashed passwords in ovms_owners table),
+or write your own (registering and providing the 'Authenticate' function. You can use AuthDrupal as an example.
+
+--------------
 Run The Server
 --------------
 

@@ -347,7 +347,7 @@ void OvmsVehicleMg5::MainStateMachine(canbus* currentBus, uint32_t ticker)
             StandardMetrics.ms_v_charge_inprogress->SetValue(false);
             if (m_afterRunTicker < TRANSITION_TIMEOUT)
             {
-                ESP_LOGV(TAG, "(%u) Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
+                ESP_LOGV(TAG, "(%" PRIu32 ") Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
                 m_afterRunTicker++;
             }
             else if (m_afterRunTicker == TRANSITION_TIMEOUT)
