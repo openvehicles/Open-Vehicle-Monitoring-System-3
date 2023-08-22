@@ -70,6 +70,16 @@
 ;       - Fix charge metrics if crash during charge session
 ;     1.0.15
 ;       - Add support for trip distance from speed
+;     1.0.16
+;       - Add DC-DC current as 12v battery current (only on newer cars)
+;     1.0.17
+;       - swap xmi.b.power.min/max
+;     1.0.18
+;       - Add RX buffer for polling
+;     1.0.19
+;       - Add Voltage/temp reading to newer cars that not broadcast it
+;     1.0.20
+;       - Add environment temperature, and modify poll timers
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -106,7 +116,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "1.0.15"
+#define VERSION "1.0.20"
 
 static const char *TAG = "v-mitsubishi";
 
@@ -137,7 +147,6 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   StandardMetrics.ms_v_charge_inprogress->SetAutoStale(30);    //Set autostale to 30 second
 
   set_odo = false;
-  has_trip = false;
   mi_SC = false;
 
   m_odo_trip = 0;
@@ -422,10 +431,10 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
 
         //min power
-        if (v_b_power_max->AsFloat() > StandardMetrics.ms_v_bat_power->AsFloat())
+        if (v_b_power_max->AsFloat() < StandardMetrics.ms_v_bat_power->AsFloat())
           v_b_power_max->SetValue(StandardMetrics.ms_v_bat_power->AsFloat());
         //max power
-        if (v_b_power_min->AsFloat() < StandardMetrics.ms_v_bat_power->AsFloat())
+        if (v_b_power_min->AsFloat() > StandardMetrics.ms_v_bat_power->AsFloat())
           v_b_power_min->SetValue(StandardMetrics.ms_v_bat_power->AsFloat());
 
       break;
@@ -436,6 +445,17 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         if (d[1] > 10)
           StandardMetrics.ms_v_bat_soc->SetValue((d[1] - 10 ) * 0.5, Percentage);
 
+      break;
+      }
+
+      case 0x377://freq10 // DC-DC Converter
+      {
+        if(d[2] != 255 && d[3] != 255 )
+        {
+          StandardMetrics.ms_v_bat_12v_current->SetValue(((d[2] << 8) + d[3]) * 0.1);
+        }else{
+          StandardMetrics.ms_v_bat_12v_current->SetValue(0);
+        }
       break;
       }
 
@@ -701,6 +721,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x6e3:
     case 0x6e4:
     {
+      has_broadcast = true;
       //Pid index 0-3
       int pid_index = (p_frame->MsgID) - 1761;
       //cmu index 1-12: ignore high order nybble which appears to sometimes contain other status bits
@@ -919,7 +940,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
        ms_v_trip_park_heating_kwh->SetValue(0);
        ms_v_trip_park_ac_kwh->SetValue(0);
        ms_v_trip_park_time_start->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-       if(has_trip == true && StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
+       if(StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
          {
           ResetTripOdo();
            //mi_park_trip_counter.Reset(ms_v_trip_B->AsFloat());

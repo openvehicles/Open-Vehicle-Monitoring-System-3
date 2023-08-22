@@ -2,13 +2,19 @@
 MG EV
 =====
 
-Vehicle Types: **MG EV (UK/EU)** & **MG EV (TH)**
+1. **MG ZS EV (2019-2021)**
+2. **MG ZS EV (2022-)**
+3. **MG5 EV Long Range (2020-2023)**
 
-These vehicle types support the MG ZS EV (2019-). MG5 is not yet supported in this build. 
 
---------
-Variants
---------
+- Vehicle Type: **MG**
+- Log tag: ``v-mgev``
+- Namespace: ``xmg``
+- Maintainers: `Peter Harry`
+
+-----------------------------
+MG ZS EV (2019-2021) Variants
+-----------------------------
 
 MG ZS EVs sold in different countries seem to possess different behaviours. This is why we have developed 2 different vehicle types to support the different requirements.
 
@@ -17,11 +23,11 @@ Known Countries
 ^^^^^^^^^^^^^^^
 
 =========   =========== ===========================   =====================   =
-Country     Zombie mode Requires GWM authentication   Poll BCM causes alarm   Suggested vehicle type to use
+Country     Zombie mode Requires GWM authentication   Poll BCM causes alarm   Suggested vehicle
 =========   =========== ===========================   =====================   =
 UK/EU       Y           N                             Y                       UK/EU                                                     
-Thailand    N           Y                             N                       TH
-Australia   N           N                             N                       TH
+Thailand    N           Y                             N                       TH/AU
+Australia   N           N                             N                       TH/AU
 =========   =========== ===========================   =====================   =
 
 Zombie mode is when the gateway module (GWM) enters the locked state and no PIDs can be accessed. This happens for UK/EU cars when:
@@ -44,6 +50,25 @@ You can follow these steps to see which variant may be suitable for your car:
    3. If you do not get any alarm, try put the car into Zombie mode. 
    4. If OVMS is unable to get data (like no charging details appear on the app), try switch to MG EV (UK/EU).
 
+-------------------------
+MG ZS EV (2022-) Variants
+-------------------------
+
+Currently only the Long Range (72.6kWh) variant is supported as testers only seem to have this model.
+The Short Range (51.1kWh) variant can easily be supported if BMS scans can be done.
+
+------------------------
+MG5 (2020-2023) Variants
+------------------------
+
+Currently only the Long Range (57kWh) variant is supported.
+
+The web UI features a configuration page for Manual Polling in the vehicle menu.
+The default setting is for Manual Polling to be on. If this is deselected, the polling will be automatic and will start when the vehicle is in READY or CHARGING and stop automatically when the vehicle is turned off to save the 12V battery. This may cause alarms on the MG5 and if this is a problem please use Manual Polling.
+
+**Manual Polling** - As the alarm sometimes goes off when the MG5 is locked and charging, the MG5 variant starts up with the polls turned off. Polls can be turned on with the `xmg polls on` command in the shell or via a message in the app. You can also turn on polls by pressing the boot of the car in the app and pressing wakeup. Polls will only start when the car is in ready or charging. When the car is turned off again or charging is turned off, the polls will stop again. Polls can be manually stopped with the `xmg polls off` command.
+
+
 ----------------
 Support Overview
 ----------------
@@ -56,7 +81,7 @@ Vehicle Cable                       Right hand OBDII cable (RHD), Left hand OBDI
 GSM Antenna                         1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                         1020200 Universal GPS Antenna (or any compatible antenna)
 SOC Display                         Yes
-Range Display                       Yes (BMS calculated and WLTP range from SoC)
+Range Display                       Yes (Calculated using battery capacity, average consumption and temperature)
 Cabin Pre-heat/cool Control         No
 GPS Location                        Yes (from modem module GPS)
 Speed Display                       Yes
@@ -68,19 +93,36 @@ Charge Interruption Alerts          Yes
 Charge Control                      No
 Lock/Unlock Vehicle                 No
 Valet Mode Control                  No
-Others                              Daytime Running Light Control
+Others                              Daytime Running Light Control (MG ZS EV TH/AU)
 =================================== ==============
 
 --------------
 Shell Commands
 --------------
 
+Precede all commands with ``xmg`` e.g. ``xmg softver``
+
+MG ZS EV (UK/EU) & MG ZS EV MK2
+
+============================  =
+``softver``                   Get software version of ECUs
+============================  =
+
+MG ZS EV (TH/AU)
+
 ==========================  =
 ``softver``                 Get software version of ECUs
 ``drl [on | off]``          Turn on/off daytime running lights
-``drln [on | off]``         Turn on/off daytime running lights without doing BCM authentication first (for debugging purposes)
-``auth [all | gwm | bcm]``  Authenticate with specified ECU. 'auth all' will authenticate GWM then BCM.
+``drln [on | off]``         Turn on/off daytime running lights without BCM authentication first (debug)
+``auth [all | gwm | bcm]``  Authenticate with specified ECU 'auth all' will authenticate GWM then BCM
 ==========================  =
+
+MG5 EV
+
+============================  =
+``softver``                   Get software version of ECUs
+``polls [on | off]``          Start/ Stop all CAN Bus polling
+============================  =
 
 ------------
 Module notes
@@ -92,7 +134,7 @@ The code for each vehicle type has these behaviours:
 Vehicle type   Zombie mode mitigation  GWM authentication   Poll BCM
 =============  ======================  ==================   ========
 UK/EU          Y                       N                    N                                                     
-TH             N                       Y                    Y
+TH/AU          N                       Y                    Y
 =============  ======================  ==================   ========
 
 The MG EV module now monitors (and automatically calibrates) the 12V status and will automatically start polling the car for data when the 12V battery voltage is equal to or greater than 12.9V. When it is below 12.9V, it will automatically stop polling (after a 50s delay) to not drain the 12V battery.
@@ -106,9 +148,9 @@ The MG EV module now monitors (and automatically calibrates) the 12V status and 
 3  Backup      the OVMS module cannot get data from the car when it is charging so just retries SoC queries. This is unused in TH code.
 =  ==========  =
 
-^^^^^^^^^^
-UK/EU spec
-^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+MG ZS EV (2019-2021) UK/EU spec
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The car is accessible over the OBD port when it is running (ignition on) and for around
 40 seconds after it is turned off or the car is "tweaked" (lock button pushed, etc).

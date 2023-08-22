@@ -34,6 +34,12 @@
 
 #include "vehicle_mgev.h"
 
+#define WLTP_RANGE 263.0 //km
+#define BATT_CAPACITY 42.5 //kWh
+#define MAX_CHARGE_RATE 82 //kW
+#define BMSDoDUpperLimit 940.0
+#define BMSDoDLowerLimit 25.0
+
 class OvmsVehicleMgEvB : public OvmsVehicleMgEv
 {
     public:
@@ -46,24 +52,6 @@ class OvmsVehicleMgEvB : public OvmsVehicleMgEv
 
     private:
         void MainStateMachine(canbus* currentBus, uint32_t ticker);
-        void GWMAwake(canbus* currentBus);
-        void GWMUnlocked();	
-        void RetryCheckState();
-        void GWMUnknown();
-
-        enum class GWMStates
-        {
-            Unknown,				//Unknown state
-            CheckingState,			//Checking what state GWM is in
-            Awake, 					//Awake but don't know if locked or unlocked. Currently unused.
-            Unlocked,				//Awake and unlocked - can get parameters
-            WaitToRetryCheckState	//Waiting, doing nothing for a set amount of time before retrying check state
-        }; 
-
-        // Counter for waiting to change GWM state back to Unknown to restart state check process
-        uint8_t m_RetryCheckStateWaitCount = 0;
-        // Remember if we are active so when we go to sleep, we can do certain tasks once
-        bool m_OVMSActive = true;
 };
 
 #endif  // __VEHICLE_MGEV_B_H__

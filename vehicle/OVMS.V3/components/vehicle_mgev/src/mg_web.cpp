@@ -64,10 +64,21 @@ using namespace std;
 void OvmsVehicleMgEv::WebInit()
 {
     // vehicle menu:
-    MyWebServer.RegisterPage("/xmg/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/xmg/battery",  "Battery config",   WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
+}
+
+void OvmsVehicleMgEv::Mg5WebInit()
+{
+    // vehicle menu:
+    MyWebServer.RegisterPage("/xmg/features", "Features", MG5WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+}
+
+void OvmsVehicleMgEv::FeaturesWebInit()
+{
+    // vehicle menu:
+    MyWebServer.RegisterPage("/xmg/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -75,10 +86,13 @@ void OvmsVehicleMgEv::WebInit()
  */
 void OvmsVehicleMgEv::WebDeInit()
 {
-    MyWebServer.DeregisterPage("/xmg/features");
     MyWebServer.DeregisterPage("/bms/metrics_charger");
     MyWebServer.DeregisterPage("/xmg/battery");
     MyWebServer.DeregisterPage("/bms/cellmon");
+}
+void OvmsVehicleMgEv::FeaturesWebDeInit()
+{
+    MyWebServer.DeregisterPage("/xmg/features");
 }
 
 /**
@@ -90,23 +104,18 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     std::string bmstype;
     int bmsval;
 
-    //When we have more versions, need to change this to int and change from checkbox to select
-    //bool updatedbms = DEFAULT_BMS_VERSION == 1 ? true : false;
-    
     if (c.method == "POST") {
-        //updatedbms = (c.getvar("updatedbms") == "yes");
         bmstype = c.getvar("bmstype");
         bmsval = atoi(bmstype.c_str());
 
         
         if (error == "") {
           // store:
-          //"Updated" BMS is version 1 (corresponding to BMSDoDLimits array element). "Original" BMS is version 0 (corresponding to BMSDoDLimits array element)
-          //MyConfig.SetParamValueInt("xmg", "bms.version", updatedbms ? 1 : 0);
             MyConfig.SetParamValueInt("xmg", "bmsval", bmsval);
             MyConfig.SetParamValue("xmg", "bmstype", bmstype);
+            MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLimits[bmsval].Lower);
+            MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDLimits[bmsval].Upper);
 
-          
           c.head(200);
           c.alert("success", "<p class=\"lead\">MG ZS EV feature configuration saved.</p>");
           MyWebServer.OutputHome(p, c);
@@ -118,19 +127,6 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
         c.head(400);
         c.alert("danger", error.c_str());
     } else {
-        // read configuration:
-        /*switch (MyConfig.GetParamValueInt("xmg", "bms.version", DEFAULT_BMS_VERSION))
-        {
-          case 0:
-            //"Updated" BMS is version 0 (corresponding to BMSDoDLimits array element)
-            updatedbms = false;
-            break;
-          case 1:
-            //"Original" BMS is version 1 (corresponding to BMSDoDLimits array element)
-            updatedbms = true;
-            break;
-        }
-        */
         bmsval = MyConfig.GetParamValueInt("xmg", "bmsval",0);
         bmstype = MyConfig.GetParamValue("xmg", "bmstype", "0");
 
@@ -142,7 +138,6 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 
     c.fieldset_start("BMS Firmware Status");
     //When we have more versions, need to change this to select and updatedbms to int
-    //c.input_checkbox("Updated BMS Firmware", "updatedbms", updatedbms, "<p>Select this if you have BMS Firmware later than Jan 2021</p>");
     c.input_radio_start("BMS Type", "bmstype");
     c.input_radio_option("bmstype", "Original BMS Firmware", "0",  bmsval == 0);
     c.input_radio_option("bmstype", "Updated BMS Firmware", "1", bmsval == 1);
@@ -155,6 +150,65 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     c.form_end();
     c.panel_end();
     c.done();
+}
+
+/**
+ * MG5WebCfgFeatures: configure general parameters (URL /xmg/config)
+ */
+void OvmsVehicleMgEv::MG5WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
+{
+    std::string error;
+    
+        bool pollingmanual = MyConfig.GetParamValueInt("xmg", "polling.manual");
+        
+        if (c.method == "POST") {
+            pollingmanual = (c.getvar("pollingmanual") == "yes");
+            
+            if (error == "") {
+                // store:
+                
+                MyConfig.SetParamValueInt("xmg", "polling.manual", pollingmanual ? 1 : 0);
+                
+                c.head(200);
+                c.alert("success", "<p class=\"lead\">MG5 feature configuration saved.</p>");
+                MyWebServer.OutputHome(p, c);
+                c.done();
+                return;
+            }
+            // output error, return to form:
+            error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+            c.head(400);
+            c.alert("danger", error.c_str());
+        } else {
+            // read configuration:
+            switch (MyConfig.GetParamValueInt("xmg", "polling.manual"))
+            {
+                case 0:
+                    // Polling is set to manual
+                    pollingmanual = false;
+                    break;
+                case 1:
+                    // Polling is automatic
+                    pollingmanual = true;
+                    break;
+            }
+            c.head(200);
+        }
+        // generate form:
+        c.panel_start("primary", "MG5 feature configuration");
+        c.form_start(p.uri);
+        
+        c.fieldset_start("General");
+    if(StandardMetrics.ms_v_type->AsString() == "MG5") {
+        c.input_checkbox("Manual Polling Enabled", "pollingmanual", pollingmanual,
+                         "<p>Vehicle polling must be manually turned on if this is selected</p>");
+    }
+        c.fieldset_end();
+        c.print("<hr>");
+        c.input_button("default", "Save");
+        c.form_end();
+        c.panel_end();
+        c.done();
 }
 
 /**

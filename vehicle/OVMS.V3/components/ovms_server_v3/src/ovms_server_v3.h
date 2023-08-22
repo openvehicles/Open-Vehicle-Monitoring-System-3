@@ -98,7 +98,6 @@ class OvmsServerV3 : public OvmsServer
     bool m_sendall;
     int m_msgid;
     int m_lasttx;
-    int m_lasttx_stream;
     int m_lasttx_sendall;
     int m_peers;
     int m_streaming;
