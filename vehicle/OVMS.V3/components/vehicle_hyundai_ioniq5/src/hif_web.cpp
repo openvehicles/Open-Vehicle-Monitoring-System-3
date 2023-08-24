@@ -31,6 +31,7 @@
 #include <sdkconfig.h>
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 
+#include <sstream>
 #include "ovms_metrics.h"
 #include "ovms_events.h"
 #include "ovms_config.h"
@@ -170,7 +171,10 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
     if (!cap_act_kwh.empty()) {
       float n = atof(cap_act_kwh.c_str());
       if (n < 1) {
-        error += "<li data-input=\"cap_act_kwh\">Battery Wh capacity must be &ge; 1</li>";
+        error += "<li data-input=\"cap_act_kwh\">Battery kWh capacity must be &ge; 1</li>";
+      } else if (n > 10000) {
+        error += "<li data-input=\"cap_act_kwh\">Battery capacity is in kWh!</li>";
+        cap_act_kwh = string_format("%g", n/1000);
       }
     }
     if (!maxrange.empty()) {
@@ -215,9 +219,15 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
   else {
     // read configuration:
     cap_act_kwh = MyConfig.GetParamValue("xiq", "cap_act_kwh", "");
+    if (!cap_act_kwh.empty()) {
+      float n = atof(cap_act_kwh.c_str());
+      if (n > 10000)
+        cap_act_kwh = string_format("%g", n/1000);
+    }
+
     maxrange = MyConfig.GetParamValue("xiq", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
-    suffrange = MyConfig.GetParamValue("xiq", "suffrange", "0");
-    suffsoc = MyConfig.GetParamValue("xiq", "suffsoc", "0");
+    suffrange = MyConfig.GetParamValue("xiq", "suffrange", "");
+    suffsoc = MyConfig.GetParamValue("xiq", "suffsoc", "");
 
     c.head(200);
   }
@@ -229,9 +239,9 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
 
   c.fieldset_start("Battery properties");
 
-  c.input("number", "Battery capacity", "cap_nom_ah", cap_act_kwh.c_str(), "",
-    "<p>This is the usable battery capacity of your battery when new.</p>",
-    "min=\"1\" step=\"0.1\"", "Wh");
+  c.input("number", "Override Battery capacity", "cap_act_kwh", cap_act_kwh.c_str(), "",
+    "<p>This overrides the calculated usable battery capacity of your battery when new.</p>",
+    "min=\"1\" step=\"0.1\"", "kWh");
 
   c.input("number", "Maximum drive range", "maxrange", maxrange.c_str(), "Default: " STR(CFG_DEFAULT_MAXRANGE),
     "<p>The range you normally get at 100% SOC and 20 °C.</p>",
@@ -241,11 +251,13 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
 
   c.fieldset_start("Charge control");
 
+  bool rangeempty = suffrange.empty();
   c.input_slider("Sufficient range", "suffrange", 3, "km",
-    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 300, 1,
+    !rangeempty, rangeempty ? 0 : atof(suffrange.c_str()), 0, 0, 300, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+  rangeempty = suffsoc.empty();
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
-    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
+    !rangeempty, rangeempty ? 0 : atof(suffsoc.c_str()), 0, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
   c.fieldset_end();
@@ -263,71 +275,87 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
  */
 void OvmsHyundaiIoniqEv::GetDashboardConfig(DashboardConfig &cfg)
 {
-  XARM("OvmsHyundaiIoniqEv::GetDashboardConfig");
-  cfg.gaugeset1 =
-    "yAxis: [{"
-    // Speed:
-    "min: 0, max: 170,"
-    "plotBands: ["
-    "{ from: 0, to: 70, className: 'green-band' },"
-    "{ from: 70, to: 120, className: 'yellow-band' },"
-    "{ from: 120, to: 170, className: 'red-band' }]"
-    "},{"
-    // Voltage:
-    "min: 300, max: 810,"
-    "plotBands: ["
-    "{ from: 660, to: 720, className: 'red-band' },"
-    "{ from: 720, to: 760, className: 'yellow-band' },"
-    "{ from: 760, to: 810, className: 'green-band' }]"
-    "},{"
-    // SOC:
-    "min: 0, max: 100,"
-    "plotBands: ["
-    "{ from: 0, to: 12.5, className: 'red-band' },"
-    "{ from: 12.5, to: 25, className: 'yellow-band' },"
-    "{ from: 25, to: 100, className: 'green-band' }]"
-    "},{"
-    // Efficiency:
-    "min: 0, max: 300,"
-    "plotBands: ["
-    "{ from: 0, to: 150, className: 'green-band' },"
-    "{ from: 150, to: 250, className: 'yellow-band' },"
-    "{ from: 250, to: 300, className: 'red-band' }]"
-    "},{"
-    // Power:
-    "min: -30, max: 30,"
-    "plotBands: ["
-    "{ from: -10, to: 0, className: 'violet-band' },"
-    "{ from: 0, to: 15, className: 'green-band' },"
-    "{ from: 15, to: 25, className: 'yellow-band' },"
-    "{ from: 25, to: 30, className: 'red-band' }]"
-    "},{"
-    // Charger temperature:
-    "min: 20, max: 80, tickInterval: 20,"
-    "plotBands: ["
-    "{ from: 20, to: 65, className: 'normal-band border' },"
-    "{ from: 65, to: 80, className: 'red-band border' }]"
-    "},{"
-    // Battery temperature:
-    "min: -15, max: 65, tickInterval: 25,"
-    "plotBands: ["
-    "{ from: -15, to: 0, className: 'red-band border' },"
-    "{ from: 0, to: 50, className: 'normal-band border' },"
-    "{ from: 50, to: 65, className: 'red-band border' }]"
-    "},{"
-    // Inverter temperature:
-    "min: 20, max: 80, tickInterval: 20,"
-    "plotBands: ["
-    "{ from: 20, to: 70, className: 'normal-band border' },"
-    "{ from: 70, to: 80, className: 'red-band border' }]"
-    "},{"
-    // Motor temperature:
-    "min: 50, max: 125, tickInterval: 25,"
-    "plotBands: ["
-    "{ from: 50, to: 110, className: 'normal-band border' },"
-    "{ from: 110, to: 125, className: 'red-band border' }]"
-    "}]";
-  XDISARM;
+  // Speed:
+  dash_gauge_t speed_dash(NULL, Kph);
+  speed_dash.SetMinMax(0, 170, 5);
+  speed_dash.AddBand("green", 0, 70, 5);
+  speed_dash.AddBand("yellow", 70, 120, 5);
+  speed_dash.AddBand("red", 120, 170, 5);
+
+  // Voltage:
+  dash_gauge_t voltage_dash(NULL, Volts);
+  voltage_dash.SetMinMax(300, 810);
+  voltage_dash.AddBand("red", 350, 450);
+  voltage_dash.AddBand("yellow", 450, 500);
+  voltage_dash.AddBand("green", 500, 800);
+
+  // SOC:
+  dash_gauge_t soc_dash("SOC ", Percentage);
+  soc_dash.SetMinMax(0, 100);
+  soc_dash.AddBand("red", 0, 12.5);
+  soc_dash.AddBand("yellow", 12.5, 25);
+  soc_dash.AddBand("green",  25,  100);
+
+  // Efficiency:
+  dash_gauge_t eff_dash(NULL, WattHoursPK);
+  // Efficency has some inverse relationships .. so choose values that work either way first
+  eff_dash.SetMinMax(50, 300);
+  // Then force the minimum to zero (whichever way round);
+  eff_dash.ZeroMin();
+  eff_dash.AddBand("green", 50, 150);
+  eff_dash.AddBand("yellow", 150, 250);
+  eff_dash.AddBand("red", 250, 300);
+
+  // Power:
+  dash_gauge_t power_dash(NULL, kW);
+  power_dash.SetMinMax(-30, 30);
+  power_dash.AddBand("violet", -10, 0);
+  power_dash.AddBand("green", 0, 15);
+  power_dash.AddBand("yellow", 15, 25);
+  power_dash.AddBand("red", 25, 30);
+
+  // Charger temperature:
+  dash_gauge_t charget_dash("CHG ", Celcius);
+  charget_dash.SetMinMax(10, 80);
+  charget_dash.SetTick(20, 5);
+  charget_dash.AddBand("normal", 10, 65);
+  charget_dash.AddBand("red", 65, 80);
+
+  // Battery temperature:
+  dash_gauge_t batteryt_dash("BAT ", Celcius);
+  batteryt_dash.SetMinMax(-15, 65);
+  batteryt_dash.SetTick(25, 5);
+  batteryt_dash.AddBand("red", -15, 0);
+  batteryt_dash.AddBand("normal", 0, 50);
+  batteryt_dash.AddBand("red", 50, 65);
+
+  // Inverter temperature:
+  dash_gauge_t invertert_dash("PEM ", Celcius);
+  invertert_dash.SetMinMax(20, 80);
+  invertert_dash.SetTick(20, 5);
+  invertert_dash.AddBand("normal", 20, 70);
+  invertert_dash.AddBand("red", 70, 80);
+
+  // Motor temperature:
+  dash_gauge_t motort_dash("MOT ", Celcius);
+  motort_dash.SetMinMax(10, 100);
+  motort_dash.SetTick(25, 5);
+  motort_dash.AddBand("normal", 10, 70);
+  motort_dash.AddBand("red", 70, 100);
+
+  std::ostringstream str;
+  str << "yAxis: ["
+      << speed_dash << "," // Speed
+      << voltage_dash << "," // Voltage
+      << soc_dash << "," // SOC
+      << eff_dash << "," // Efficiency
+      << power_dash << "," // Power
+      << charget_dash << "," // Charger temperature
+      << batteryt_dash << "," // Battery temperature
+      << invertert_dash << "," // Inverter temperature
+      << motort_dash // Motor temperature
+      << "]";
+  cfg.gaugeset1 = str.str();
 }
 
 #endif //CONFIG_OVMS_COMP_WEBSERVER

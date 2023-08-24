@@ -1,0 +1,8 @@
+
+These ecu definition files are generated from the JSON files found in the dev directory.
+You will find the relevant programs in the tools directory.
+
+The origin on the JSON ecu definitions in the dev directory is explained in the README file
+that you will find there.
+
+

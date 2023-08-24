@@ -98,6 +98,31 @@ OVMS Server v3
 
 The OVMS Server v3 protocol is MQTT. This is an industry standard protocol, and means an OVMS v3 module can communicate with any standard MQTT server. While this is the future of OVMS, support for this is experimental at the moment and production users should use OVMS Server v2 protocol.
 
+By default, OMVS Server v3 transmits all metrics. This can be adjusted by modifying the ``server.v3`` ``metrics.include`` and ``metrics.exclude`` configuration parameters.
+
+The ``metrics.include`` and ``metrics.exclude`` parameters should contain a comma separate list of metric names with optional leading or trailing wildcards.
+
+Metrics names matching the include list and **not matching** the exclude list will be transmitted. Note that if ``metrics.include`` is not defined or empty, all metric names will be included.
+
+^^^^^^^^
+Examples
+^^^^^^^^
+
+Only send the ``s.v3.connected`` and ``v.b.soc`` metrics::
+
+  OVMS# config set server.v3 metrics.include s.v3.connected,v.b.soc
+  OVMS# config rm server.v3 metrics.exclude
+
+Send all metrics except ``v.b.soc``::
+
+  OVMS# config rm server.v3 metrics.include
+  OVMS# config set server.v3 metrics.exclude v.b.soc
+
+Send all ``v.b`` metrics except ``v.b.soc``::
+
+  OVMS# config set server.v3 metrics.include v.b.*
+  OVMS# config set server.v3 metrics.exclude v.b.soc
+
 -------------------------------
 Upgrading from OVMS v1/v2 to v3
 -------------------------------

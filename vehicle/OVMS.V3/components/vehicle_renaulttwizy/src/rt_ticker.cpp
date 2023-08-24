@@ -314,7 +314,10 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
         // yes, means "done"
         twizy_chargestate = 4;
         
-        // calculate battery capacity if charge started below 40% SOC:
+        // set battery energy capacity from BMS info (ID 0x425):
+        m_batt_energy_full->SetValue(m_batt_energy_avail->AsFloat());
+        
+        // calculate battery capacity from coulomb count if charge started below 40% SOC:
         if (twizy_soc_min < 4000 && twizy_cc_soc > twizy_soc_min)
         {
           // scale CC charge part by SOC range:

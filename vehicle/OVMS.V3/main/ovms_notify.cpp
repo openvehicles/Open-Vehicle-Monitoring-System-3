@@ -94,7 +94,7 @@ void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       for (NotifyEntryMap_t::iterator ite=mt->m_entries.begin(); ite!=mt->m_entries.end(); ++ite)
         {
         OvmsNotifyEntry* e = ite->second;
-        writer->printf("    %d: [%d pending] %s\n",
+        writer->printf("    %" PRId32 ": [%d pending] %s\n",
           ite->first, e->CountPending(), e->GetValue().c_str());
         }
       }
@@ -118,7 +118,7 @@ void notify_errorcode_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
   {
   for (OvmsNotifyErrorCodeMap_t::iterator it=MyNotify.m_errorcodes.begin(); it!=MyNotify.m_errorcodes.end(); ++it)
     {
-    writer->printf("%u(0x%04.4x) %s raised %d, updated %d, sec(s) ago\n",
+    writer->printf("%" PRIu32 "(0x%4.4" PRIx32 ") %s raised %" PRId32 ", updated %" PRId32 ", sec(s) ago\n",
       it->first,
       it->second->lastdata,
       (it->second->active)?"active":"cleared",
@@ -370,7 +370,7 @@ void OvmsNotifyType::Cleanup(OvmsNotifyEntry* entry, NotifyEntryMap_t::iterator*
       if (next) *next = it;
       }
     if (DO_TRACE(m_name))
-      ESP_LOGD(TAG,"Cleanup type %s id %d",m_name,entry->m_id);
+      ESP_LOGD(TAG,"Cleanup type %s id %" PRId32,m_name,entry->m_id);
     delete entry;
     }
   }
@@ -786,7 +786,7 @@ void OvmsNotify::NotifyErrorCode(uint32_t code, uint32_t data, bool raised, bool
   entry->updated = monotonictime;
   if (raised)
     {
-    NotifyStringf("error", "code", "%s,%u,%u",
+    NotifyStringf("error", "code", "%s,%" PRIu32 ",%" PRIu32 ,
       MyVehicleFactory.ActiveVehicleType(),
       code,
       data);

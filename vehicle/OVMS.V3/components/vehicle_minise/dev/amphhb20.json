@@ -1,0 +1,4646 @@
+{
+   "tables" : {
+      "RDTCI_LEV_DOP" : [
+         {
+            "WERT" : "2",
+            "TEXT" : "reportDTCByStatusMask",
+            "TEXT_EN" : "reportDTCByStatusMask"
+         },
+         {
+            "TEXT_EN" : "reportDTCsnapshotRecordByDTCnumber",
+            "TEXT" : "reportDTCsnapshotRecordByDTCnumber",
+            "WERT" : "4"
+         },
+         {
+            "TEXT_EN" : "reportDTCextendedDataRecordByDTCnumber",
+            "TEXT" : "reportDTCextendedDataRecordByDTCnumber",
+            "WERT" : "6"
+         },
+         {
+            "WERT" : "7",
+            "TEXT" : "reportNumberOfDTCbySeverityMaskRecord",
+            "TEXT_EN" : "reportNumberOfDTCbySeverityMaskRecord"
+         },
+         {
+            "TEXT_EN" : "reportDTCbySeverityMaskRecord",
+            "TEXT" : "reportDTCbySeverityMaskRecord",
+            "WERT" : "8"
+         },
+         {
+            "TEXT" : "reportSeverityInformationOfDTC",
+            "TEXT_EN" : "reportSeverityInformationOfDTC",
+            "WERT" : "9"
+         },
+         {
+            "TEXT_EN" : "reportSupportedDTC",
+            "TEXT" : "reportSupportedDTC",
+            "WERT" : "10"
+         },
+         {
+            "WERT" : "18",
+            "TEXT_EN" : "reportNumberOfEmissionsRelatedOBDDTCByStatusMask",
+            "TEXT" : "reportNumberOfEmissionsRelatedOBDDTCByStatusMask"
+         },
+         {
+            "WERT" : "19",
+            "TEXT_EN" : "reportEmissionsRelatedOBDDTCByStatusMask",
+            "TEXT" : "reportEmissionsRelatedOBDDTCByStatusMask"
+         }
+      ],
+      "BETRIEBSMODE" : [
+         {
+            "TEXT" : "Allgemeiner Fertigungs- und Energiesparmode",
+            "BEDEUTUNG" : "Hier deaktivierte Funktionen gemäß FeTra-Liste festhalten",
+            "TEXT_EN" : "General manufacturing and energy saving fashion",
+            "WERT" : "0x00"
+         },
+         {
+            "TEXT_EN" : "Special energy saving mode",
+            "BEDEUTUNG" : "-",
+            "TEXT" : "Spezieller Energiesparmode",
+            "WERT" : "0x01"
+         },
+         {
+            "WERT" : "0x02",
+            "TEXT_EN" : "ECOS mode",
+            "BEDEUTUNG" : "-",
+            "TEXT" : "ECOS-Mode"
+         },
+         {
+            "WERT" : "0x03",
+            "TEXT_EN" : "MOST mode",
+            "BEDEUTUNG" : "-",
+            "TEXT" : "MOST-Mode"
+         },
+         {
+            "WERT" : "0x04",
+            "TEXT_EN" : "Role fashion",
+            "BEDEUTUNG" : "-",
+            "TEXT" : "Rollenmode"
+         },
+         {
+            "WERT" : "0xFF",
+            "TEXT_EN" : "invalid operating mode",
+            "BEDEUTUNG" : "ungültig",
+            "TEXT" : "ungültiger Betriebsmode"
+         }
+      ],
+      "ARG_0XD003_D" : [
+         {
+            "MIN" : "0.0",
+            "INFO_EN" : "Channel number",
+            "ARG" : "ARG_KANAL",
+            "DIV" : "1.0",
+            "MAX" : "8388608.0",
+            "EINHEIT" : "-",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "-",
+            "MUL" : "1.0",
+            "L/H" : "-",
+            "INFO" : "Kanalnummer"
+         }
+      ],
+      "TKANALFEHLERART" : [
+         {
+            "TEXT_EN" : "Short circuit to positive",
+            "TEXT" : "Kurzschluss nach Plus",
+            "WERT" : "0x00"
+         },
+         {
+            "WERT" : "0x01",
+            "TEXT" : "Kurzschluss nach Masse",
+            "TEXT_EN" : "Short circuit to ground"
+         },
+         {
+            "TEXT_EN" : "Line interruption",
+            "TEXT" : "Leitungsunterbrechung",
+            "WERT" : "0x02"
+         },
+         {
+            "WERT" : "0x03",
+            "TEXT" : "Außerhalb Toleranz",
+            "TEXT_EN" : "Outside tolerance"
+         },
+         {
+            "TEXT" : "Kurzschluss Untereinander",
+            "TEXT_EN" : "Short circuit between each other",
+            "WERT" : "0x04"
+         },
+         {
+            "WERT" : "0xFF",
+            "TEXT" : "Nicht definiert",
+            "TEXT_EN" : "Not defined"
+         }
+      ],
+      "DIGITALARGUMENT" : [
+         {
+            "TEXT_EN" : "a",
+            "TEXT" : "ein",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "out",
+            "TEXT" : "aus",
+            "WERT" : "0"
+         },
+         {
+            "TEXT_EN" : "Yes",
+            "TEXT" : "ja",
+            "WERT" : "1"
+         },
+         {
+            "WERT" : "0",
+            "TEXT_EN" : "No",
+            "TEXT" : "nein"
+         },
+         {
+            "TEXT" : "auf",
+            "TEXT_EN" : "on",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "from",
+            "TEXT" : "ab",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "an",
+            "TEXT_EN" : "at"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "yes",
+            "TEXT_EN" : "yes"
+         },
+         {
+            "WERT" : "0",
+            "TEXT_EN" : "no",
+            "TEXT" : "no"
+         },
+         {
+            "TEXT" : "on",
+            "TEXT_EN" : "on",
+            "WERT" : "1"
+         },
+         {
+            "WERT" : "0",
+            "TEXT_EN" : "off",
+            "TEXT" : "off"
+         },
+         {
+            "TEXT_EN" : "up",
+            "TEXT" : "up",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "down",
+            "TEXT" : "down",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "true",
+            "TEXT" : "true"
+         },
+         {
+            "TEXT" : "false",
+            "TEXT_EN" : "false",
+            "WERT" : "0"
+         },
+         {
+            "TEXT" : "1",
+            "TEXT_EN" : "1",
+            "WERT" : "1"
+         },
+         {
+            "TEXT" : "0",
+            "WERT" : "0"
+         }
+      ],
+      "RES_0XD003_D" : [
+         {
+            "RESULTNAME" : "STAT_KANAL",
+            "INFO" : "Kanalnummer",
+            "L/H" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "TAudioKanal",
+            "DATENTYP" : "unsigned long",
+            "ADD" : "0.0",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "Channel number",
+            "DIV" : "1.0"
+         }
+      ],
+      "FARTTEXTE" : [
+         {
+            "ARTNR" : "0x00",
+            "ARTTEXT_EN" : "no error type available",
+            "ARTTEXT" : "keine Fehlerart verfügbar"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x04"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x05"
+         },
+         {
+            "ARTNR" : "0x08",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x09",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x0C",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x0D",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x20",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x21",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x24"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x25",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTNR" : "0x28",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x29"
+         },
+         {
+            "ARTNR" : "0x2C",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x2D",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0x40",
+            "ARTTEXT" : "unbekannte Fehlerart"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x44",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x45",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x48"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x49"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x4C",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x4D",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x60",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x61",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x64",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x65",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x68",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x69",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x6C",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x6D",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen erfüllt",
+            "ARTNR" : "0x10",
+            "ARTTEXT_EN" : "Test conditions met"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt",
+            "ARTTEXT_EN" : "Test conditions not yet met",
+            "ARTNR" : "0x11"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up",
+            "ARTNR" : "0x80",
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up",
+            "ARTNR" : "0x81",
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0xFF",
+            "ARTTEXT" : "unbekannte Fehlerart"
+         }
+      ],
+      "IDETAILSTRUKTUR" : [
+         {
+            "TYP" : "ja",
+            "NAME" : "F_UWB_ERW"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "SAE_CODE"
+         },
+         {
+            "TYP" : "ja",
+            "NAME" : "F_HLZ"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_SEVERITY"
+         }
+      ],
+      "DIAGMODE" : [
+         {
+            "MODE_TEXT" : "DefaultMode",
+            "NR" : "0x00",
+            "MODE" : "UNGUELTIG"
+         },
+         {
+            "MODE" : "DEFAULT",
+            "NR" : "0x01",
+            "MODE_TEXT" : "DefaultMode"
+         },
+         {
+            "MODE" : "ECUPM",
+            "MODE_TEXT" : "ECUProgrammingMode",
+            "NR" : "0x02"
+         },
+         {
+            "MODE" : "ECUEXTDIAG",
+            "NR" : "0x03",
+            "MODE_TEXT" : "ECUExtendedDiagnosticSession"
+         },
+         {
+            "NR" : "0x04",
+            "MODE_TEXT" : "ECUSafetySystemDiagnosticSession",
+            "MODE" : "ECUSSDS"
+         },
+         {
+            "NR" : "0x40",
+            "MODE_TEXT" : "ECUEndOfLineSession",
+            "MODE" : "ECUEOL"
+         },
+         {
+            "MODE" : "ECUCODE",
+            "NR" : "0x41",
+            "MODE_TEXT" : "ECUCodingSession"
+         },
+         {
+            "NR" : "0x42",
+            "MODE_TEXT" : "ECUSwtSession",
+            "MODE" : "ECUSWT"
+         },
+         {
+            "MODE_TEXT" : "ECUHDDDownloadSession",
+            "NR" : "0x43",
+            "MODE" : "ECUHDD"
+         },
+         {
+            "MODE" : "ECUDEVELOP",
+            "MODE_TEXT" : "ECUDevelopmentSession",
+            "NR" : "0x4F"
+         },
+         {
+            "NR" : "0x5F",
+            "MODE_TEXT" : "ECUGarageDiagnoseMode",
+            "MODE" : "ECUGDM"
+         },
+         {
+            "NR" : "0xXY",
+            "MODE_TEXT" : "unbekannter Diagnose-Mode",
+            "MODE" : "--"
+         }
+      ],
+      "EXTENDED_ENERGY_MODE_DOP" : [
+         {
+            "WERT" : "0",
+            "TEXT_EN" : "Extended operating mode not set",
+            "TEXT" : "Erweiterter Betriebsmodus nicht gesetzt"
+         },
+         {
+            "TEXT" : "Erweiterter Betriebsmodus 1",
+            "TEXT_EN" : "Extended operating mode 1",
+            "WERT" : "1"
+         },
+         {
+            "TEXT" : "Erweiterter Betriebsmodus 2",
+            "TEXT_EN" : "Extended operating mode 2",
+            "WERT" : "2"
+         },
+         {
+            "TEXT" : "Erweiterter Betriebsmodus 3",
+            "TEXT_EN" : "Extended operating mode 3",
+            "WERT" : "3"
+         },
+         {
+            "WERT" : "4",
+            "TEXT" : "Erweiterter Betriebsmodus 4",
+            "TEXT_EN" : "Extended operating mode 4"
+         },
+         {
+            "WERT" : "5",
+            "TEXT_EN" : "Extended operating mode 5",
+            "TEXT" : "Erweiterter Betriebsmodus 5"
+         },
+         {
+            "WERT" : "6",
+            "TEXT" : "Erweiterter Betriebsmodus 6",
+            "TEXT_EN" : "Extended operating mode 6"
+         },
+         {
+            "TEXT" : "Erweiterter Betriebsmodus 7",
+            "TEXT_EN" : "Extended operating mode 7",
+            "WERT" : "7"
+         },
+         {
+            "WERT" : "8",
+            "TEXT" : "Erweiterter Betriebsmodus 8",
+            "TEXT_EN" : "Extended operating mode 8"
+         },
+         {
+            "TEXT_EN" : "Extended operating mode 9",
+            "TEXT" : "Erweiterter Betriebsmodus 9",
+            "WERT" : "9"
+         },
+         {
+            "WERT" : "10",
+            "TEXT_EN" : "Extended operating mode 10",
+            "TEXT" : "Erweiterter Betriebsmodus 10"
+         },
+         {
+            "TEXT_EN" : "Extended operating mode 11",
+            "TEXT" : "Erweiterter Betriebsmodus 11",
+            "WERT" : "11"
+         },
+         {
+            "WERT" : "12",
+            "TEXT" : "Erweiterter Betriebsmodus 12",
+            "TEXT_EN" : "Extended operating mode 12"
+         },
+         {
+            "WERT" : "13",
+            "TEXT_EN" : "Extended operating mode 13",
+            "TEXT" : "Erweiterter Betriebsmodus 13"
+         },
+         {
+            "WERT" : "14",
+            "TEXT" : "Erweiterter Betriebsmodus 14",
+            "TEXT_EN" : "Extended operating mode 14"
+         },
+         {
+            "TEXT" : "Erweiterter Betriebsmodus 15",
+            "TEXT_EN" : "Extended operating mode 15",
+            "WERT" : "15"
+         }
+      ],
+      "FUMWELTTEXTE" : [
+         {
+            "L/H" : "High",
+            "MUL" : "1.0",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "UW_EINH" : "mV",
+            "UWNR" : "0x170C",
+            "UWTYP" : "unsigned int",
+            "DIV" : "1.0",
+            "UWTEXT" : "UBAT"
+         },
+         {
+            "NAME" : "-",
+            "MUL" : "-",
+            "L/H" : "-",
+            "UWTEXT" : "unbekannte Umweltbedingung",
+            "UWTYP" : "-",
+            "UWNR" : "0xXYXY",
+            "DIV" : "-",
+            "ADD" : "-",
+            "UW_EINH" : "-"
+         }
+      ],
+      "TAB_AMP_LEISTUNGSZUSTAND" : [
+         {
+            "TEXT" : "Default",
+            "TEXT_EN" : "default",
+            "WERT" : "1"
+         },
+         {
+            "WERT" : "2",
+            "TEXT_EN" : "MSA_START",
+            "TEXT" : "MSA_START"
+         },
+         {
+            "TEXT" : "Powersave",
+            "TEXT_EN" : "Powersave",
+            "WERT" : "3"
+         },
+         {
+            "WERT" : "4",
+            "TEXT" : "High_Performance",
+            "TEXT_EN" : "High_Performance"
+         }
+      ],
+      "TAUDIOKANAL" : [
+         {
+            "WERT" : "0x00000000",
+            "TEXT" : "Alle Kanäle",
+            "TEXT_EN" : "All channels"
+         },
+         {
+            "TEXT_EN" : "Left front (standard channel, especially midrange if separate tweeter / midrange)",
+            "TEXT" : "Links vorne (Standardkanal, speziell Mitteltöner wenn getrennte Hoch/Mitteltöner)",
+            "WERT" : "0x00000001"
+         },
+         {
+            "TEXT" : "Rechts vorne (Standardkanal, speziell Mitteltöner wenn getrennte Hoch/Mitteltöner)",
+            "TEXT_EN" : "Right front (standard channel, especially mid-range speaker if separate tweeter / mid-range speaker)",
+            "WERT" : "0x00000002"
+         },
+         {
+            "TEXT_EN" : "Center front (extended channel, especially mid-range speakers if tweeter / mid-range speakers are separate)",
+            "TEXT" : "Center vorne (Erweiterter Kanal, speziell Mitteltöner wenn getrennte Hoch/Mitteltöner)",
+            "WERT" : "0x00000004"
+         },
+         {
+            "TEXT_EN" : "Side left (extended channel, especially mid-range speakers if tweeter / mid-range speakers are separate)",
+            "TEXT" : "Seite links (Erweiterter Kanal, speziell Mitteltöner wenn getrennte Hoch/Mitteltöner)",
+            "WERT" : "0x00000008"
+         },
+         {
+            "TEXT_EN" : "Right side (extended channel, especially midrange if separate tweeter / midrange)",
+            "TEXT" : "Seite rechts (Erweiterter Kanal, speziell Mitteltöner wenn getrennte Hoch/Mitteltöner)",
+            "WERT" : "0x00000010"
+         },
+         {
+            "TEXT" : "Links hinten (Standardkanal, speziell Mitteltöner wenn getrennte Hoch/Mitteltöner)",
+            "TEXT_EN" : "Left rear (standard channel, especially mid-range speaker if separate tweeter / mid-range speaker)",
+            "WERT" : "0x00000020"
+         },
+         {
+            "TEXT" : "Rechts hinten (Standardkanal, speziell Mitteltöner wenn getrennte Hoch/Mitteltöner)",
+            "TEXT_EN" : "Right rear (standard channel, especially midrange if separate tweeter / midrange)",
+            "WERT" : "0x00000040"
+         },
+         {
+            "WERT" : "0x00000080",
+            "TEXT" : "Links vorne Bass (Erweiterter Kanal)",
+            "TEXT_EN" : "Left front bass (extended channel)"
+         },
+         {
+            "TEXT" : "Rechts vorne Bass (Erweiterter Kanal)",
+            "TEXT_EN" : "Right front bass (extended channel)",
+            "WERT" : "0x00000100"
+         },
+         {
+            "TEXT" : "Links hinten Bass (Erweiterter Kanal)",
+            "TEXT_EN" : "Left rear bass (extended channel)",
+            "WERT" : "0x00000200"
+         },
+         {
+            "TEXT_EN" : "Right back bass (extended channel)",
+            "TEXT" : "Rechts hinten Bass (Erweiterter Kanal)",
+            "WERT" : "0x00000400"
+         },
+         {
+            "WERT" : "0x00000800",
+            "TEXT_EN" : "Center rear (extended channel, especially midrange if separate tweeter / midrange)",
+            "TEXT" : "Center hinten (Erweiterter Kanal, speziell Mitteltöner wenn getrennte Hoch/Mitteltöner)"
+         },
+         {
+            "WERT" : "0x00001000",
+            "TEXT" : "Linker Kopfhörer links",
+            "TEXT_EN" : "Left headphone left"
+         },
+         {
+            "WERT" : "0x00002000",
+            "TEXT_EN" : "Left headphone right",
+            "TEXT" : "Linker Kopfhörer rechts"
+         },
+         {
+            "WERT" : "0x00004000",
+            "TEXT" : "Rechter Kopfhörer links",
+            "TEXT_EN" : "Right headphone on the left"
+         },
+         {
+            "WERT" : "0x00008000",
+            "TEXT_EN" : "Right headphone right",
+            "TEXT" : "Rechter Kopfhörer rechts"
+         },
+         {
+            "TEXT" : "Links vorne (Erweiterter Kanal, speziell Hochtöner wenn getrennte Hoch/Mitteltöner)",
+            "TEXT_EN" : "Front left (extended channel, especially tweeter if tweeter / midrange is separate)",
+            "WERT" : "0x00010000"
+         },
+         {
+            "WERT" : "0x00020000",
+            "TEXT_EN" : "Front right (extended channel, especially tweeter if tweeter / midrange is separate)",
+            "TEXT" : "Rechts vorne (Erweiterter Kanal, speziell Hochtöner wenn getrennte Hoch/Mitteltöner)"
+         },
+         {
+            "WERT" : "0x00040000",
+            "TEXT" : "Center vorne (Erweiterter Kanal, speziell Hochtöner wenn getrennte Hoch/Mitteltöner)",
+            "TEXT_EN" : "Center front (extended channel, especially tweeter if tweeter / midrange is separate)"
+         },
+         {
+            "WERT" : "0x00080000",
+            "TEXT_EN" : "Left side (extended channel, especially tweeter if tweeter / midrange is separate)",
+            "TEXT" : "Seite links (Erweiterter Kanal, speziell Hochtöner wenn getrennte Hoch/Mitteltöner)"
+         },
+         {
+            "WERT" : "0x00100000",
+            "TEXT_EN" : "Right side (extended channel, especially tweeter if tweeter / midrange is separate)",
+            "TEXT" : "Seite rechts (Erweiterter Kanal, speziell Hochtöner wenn getrennte Hoch/Mitteltöner)"
+         },
+         {
+            "WERT" : "0x00200000",
+            "TEXT" : "Links hinten (Erweiterter Kanal, speziell Hochtöner wenn getrennte Hoch/Mitteltöner)",
+            "TEXT_EN" : "Left rear (extended channel, especially tweeter if tweeter / midrange is separate)"
+         },
+         {
+            "TEXT" : "Rechts hinten (Erweiterter Kanal, speziell Hochtöner wenn getrennte Hoch/Mitteltöner)",
+            "TEXT_EN" : "Right rear (extended channel, especially tweeter if separate tweeter / midrange)",
+            "WERT" : "0x00400000"
+         },
+         {
+            "TEXT" : "Center hinten (Erweiterter Kanal, speziell Hochtöner wenn getrennte Hoch/Mitteltöner)",
+            "TEXT_EN" : "Center rear (extended channel, especially tweeter if tweeter / midrange is separate)",
+            "WERT" : "0x00800000"
+         },
+         {
+            "TEXT" : "Nicht definiert",
+            "TEXT_EN" : "Not defined",
+            "WERT" : "0xFFFFFFFF"
+         }
+      ],
+      "ROE_EWT_DOP" : [
+         {
+            "WERT" : "2",
+            "TEXT_EN" : "infiniteTimeToResponse",
+            "TEXT" : "infiniteTimeToResponse"
+         }
+      ],
+      "FORTTEXTE" : [
+         {
+            "ORTTEXT_EN" : "Energy saving mode active",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x023700",
+            "ORTTEXT" : "Energiesparmode aktiv"
+         },
+         {
+            "ORTTEXT_EN" : "Dummy error memory entry in the component error area for test purposes only",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Komponentenfehlerbereich nur für Testzwecke",
+            "ORT" : "0x02FF37"
+         },
+         {
+            "ORTTEXT_EN" : "Coding: Control unit is not coded",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F481",
+            "ORTTEXT" : "Codierung: Steuergerät ist nicht codiert"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F482",
+            "ORTTEXT" : "Codierung: Fehler bei Codierung aufgetreten",
+            "ORTTEXT_EN" : "Coding: Coding error occurred"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F483",
+            "ORTTEXT" : "Codierung: Signatur für Daten ungültig",
+            "ORTTEXT_EN" : "Encoding: Invalid signature for data"
+         },
+         {
+            "ORTTEXT_EN" : "Coding: Coding does not match the vehicle",
+            "ORT" : "0xB7F484",
+            "ORTTEXT" : "Codierung: Codierung passt nicht zum Fahrzeug",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "Codierung: Unplausible Daten während Transaktion",
+            "ORT" : "0xB7F485",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Coding: Implausible data during the transaction"
+         },
+         {
+            "ORT" : "0xB7F490",
+            "ORTTEXT" : "Interner Steuergerätefehler Software",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Internal control unit error software"
+         },
+         {
+            "ORTTEXT" : "Interner Steuergerätefehler Hardware",
+            "ORT" : "0xB7F491",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Internal control unit error hardware"
+         },
+         {
+            "ORTTEXT_EN" : "Invalid coding data for equalizing",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F492",
+            "ORTTEXT" : "Ungültige Codierdaten für Equalizing"
+         },
+         {
+            "ORTTEXT_EN" : "Tuning mode active",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Tuning Modus aktiv",
+            "ORT" : "0xB7F493"
+         },
+         {
+            "ORTTEXT_EN" : "Control unit: overtemperature detected",
+            "ORT" : "0xB7F4A0",
+            "ORTTEXT" : "Steuergerät: Übertemperatur erkannt",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Front left speaker channel error (mid-range speaker, if controlled separately)",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal links vorne (Mitteltöner, wenn getrennt angesteuert)",
+            "ORT" : "0xB7F4A1"
+         },
+         {
+            "ORTTEXT" : "Fehler Lautsprecherkanal rechts vorne (Mitteltöner, wenn getrennt angesteuert)",
+            "ORT" : "0xB7F4A2",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Fault in the front right loudspeaker channel (mid-range speaker, if controlled separately)"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Center vorne (Mitteltöner, wenn getrennt angesteuert)",
+            "ORT" : "0xB7F4A3",
+            "ORTTEXT_EN" : "Error speaker channel center front (mid-range speaker, if controlled separately)"
+         },
+         {
+            "ORTTEXT" : "Fehler Lautsprecherkanal Türe hinten links (Mitteltöner, wenn getrennt angesteuert)",
+            "ORT" : "0xB7F4A4",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Error in the loudspeaker channel, rear left door (mid-range speaker, if activated separately)"
+         },
+         {
+            "ORTTEXT_EN" : "Fault in the loudspeaker channel, rear right door (mid-range speaker, if activated separately)",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Türe hinten rechts (Mitteltöner, wenn getrennt angesteuert)",
+            "ORT" : "0xB7F4A5",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal links hinten (Mitteltöner, wenn getrennt angesteuert)",
+            "ORT" : "0xB7F4A6",
+            "ORTTEXT_EN" : "Error loudspeaker channel at the rear left (mid-range speaker, if activated separately)"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F4A7",
+            "ORTTEXT" : "Fehler Lautsprecherkanal rechts hinten (Mitteltöner, wenn getrennt angesteuert)",
+            "ORTTEXT_EN" : "Error loudspeaker channel on the right rear (mid-range speaker, if controlled separately)"
+         },
+         {
+            "ORTTEXT_EN" : "Front left bass speaker channel error",
+            "ORT" : "0xB7F4A8",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Bass vorne links",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0xB7F4A9",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Bass vorne rechts",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Front right bass speaker channel error"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Bass hinten links",
+            "ORT" : "0xB7F4AA",
+            "ORTTEXT_EN" : "Error loudspeaker channel bass rear left"
+         },
+         {
+            "ORTTEXT_EN" : "Error loudspeaker channel bass rear right",
+            "ORT" : "0xB7F4AB",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Bass hinten rechts",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Center hinten (Mitteltöner, wenn getrennt angesteuert)",
+            "ORT" : "0xB7F4AC",
+            "ORTTEXT_EN" : "Error center rear speaker channel (mid-range speaker, if controlled separately)"
+         },
+         {
+            "ORTTEXT_EN" : "Error loudspeaker channel tweeter in front left",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner links vorne",
+            "ORT" : "0xB7F4AD",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F4AE",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner rechts vorne",
+            "ORTTEXT_EN" : "Error loudspeaker channel tweeter at the front right"
+         },
+         {
+            "ORTTEXT_EN" : "Error speaker channel tweeter center front",
+            "ORT" : "0xB7F4AF",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner Center vorne",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner Türe hinten links",
+            "ORT" : "0xB7F4B0",
+            "ORTTEXT_EN" : "Error in the loudspeaker channel in the tweeter door, rear left"
+         },
+         {
+            "ORTTEXT_EN" : "Error in the loudspeaker channel in the tweeter door, rear right",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F4B1",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner Türe hinten rechts"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F4B2",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner hinten links",
+            "ORTTEXT_EN" : "Error loudspeaker channel tweeter, rear left"
+         },
+         {
+            "ORTTEXT_EN" : "Error loudspeaker channel tweeter, rear right",
+            "ORT" : "0xB7F4B3",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner hinten rechts",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0xB7F4B4",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner Center hinten",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Error loudspeaker channel tweeter center rear"
+         },
+         {
+            "ORTTEXT_EN" : "Logic part: Undervoltage detected",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xB7F4E0",
+            "ORTTEXT" : "Logikteil: Unterspannung erkannt"
+         },
+         {
+            "ORTTEXT_EN" : "Logic part: overvoltage detected",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xB7F4E2",
+            "ORTTEXT" : "Logikteil: Überspannung erkannt"
+         },
+         {
+            "ORTTEXT_EN" : "BODY-CAN Control Module Bus OFF",
+            "ORT" : "0xD6C468",
+            "ORTTEXT" : "BODY-CAN Control Module Bus OFF",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xD6CBFF",
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Netzwerkfehlerbereich nur für Testzwecke",
+            "ORTTEXT_EN" : "Dummy error memory entry in the network error area for test purposes only"
+         },
+         {
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "ORT" : "0xFFFFFF",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "unknown error location"
+         }
+      ],
+      "IUMWELTTEXTE" : [
+         {
+            "L/H" : "High",
+            "NAME" : "-",
+            "MUL" : "1.0",
+            "UW_EINH" : "mV",
+            "ADD" : "0.0",
+            "UWTEXT" : "UBAT",
+            "DIV" : "1.0",
+            "UWNR" : "0x170C",
+            "UWTYP" : "unsigned int"
+         },
+         {
+            "ADD" : "-",
+            "UW_EINH" : "-",
+            "UWTEXT" : "unbekannte Umweltbedingung",
+            "UWTYP" : "-",
+            "UWNR" : "0xXYXY",
+            "DIV" : "-",
+            "L/H" : "-",
+            "NAME" : "-",
+            "MUL" : "-"
+         }
+      ],
+      "RDBI_PC_PCS_DOP" : [
+         {
+            "TEXT_EN" : "ECU several times programmable",
+            "TEXT" : "ECUMehrmalsProgrammierbar",
+            "WERT" : "0"
+         },
+         {
+            "TEXT_EN" : "ECU at least once, fully programmable",
+            "TEXT" : "ECUMindestensEinmalVollstaendigProgrammierbar",
+            "WERT" : "1"
+         },
+         {
+            "TEXT" : "ECUNichtMehrProgrammierbar",
+            "TEXT_EN" : "ECUNotMoreProgrammable",
+            "WERT" : "2"
+         }
+      ],
+      "DTCSNAPSHOTIDENTIFIER" : [
+         {
+            "DIV" : "1",
+            "UWTYP" : "0xFFFFFF",
+            "UWNR" : "0x1700",
+            "UWTEXT" : "KM_STAND",
+            "UW_EINH" : "0-n",
+            "ADD" : "0.000000",
+            "MUL" : "1",
+            "NAME" : "-",
+            "L/H" : "-"
+         },
+         {
+            "DIV" : "1",
+            "UWTYP" : "0xFFFFFFFF",
+            "UWNR" : "0x1701",
+            "UWTEXT" : "ABS_ZEIT",
+            "UW_EINH" : "0-n",
+            "ADD" : "0.000000",
+            "MUL" : "1",
+            "NAME" : "-",
+            "L/H" : "-"
+         },
+         {
+            "MUL" : "1",
+            "NAME" : "-",
+            "L/H" : "-",
+            "UWNR" : "0x1702",
+            "UWTYP" : "0xFFFFFF",
+            "DIV" : "1",
+            "UWTEXT" : "SAE_CODE",
+            "ADD" : "0.000000",
+            "UW_EINH" : "0-n"
+         },
+         {
+            "UW_EINH" : "-",
+            "ADD" : "0.000000",
+            "UWTEXT" : "Fehlerklasse_DTC",
+            "DIV" : "1",
+            "UWTYP" : "u char",
+            "UWNR" : "0x1731",
+            "L/H" : "-",
+            "NAME" : "-",
+            "MUL" : "1"
+         },
+         {
+            "ADD" : "0.000000",
+            "UW_EINH" : "0-n",
+            "UWTYP" : "0xFF",
+            "UWNR" : "0x1750",
+            "DIV" : "1",
+            "UWTEXT" : "PWF_Basinetz",
+            "L/H" : "-",
+            "MUL" : "1",
+            "NAME" : "-"
+         },
+         {
+            "ADD" : "0.000000",
+            "UW_EINH" : "0-n",
+            "UWTEXT" : "PWF_Teilnetz",
+            "UWTYP" : "0xFFFFFF",
+            "UWNR" : "0x1751",
+            "DIV" : "1",
+            "L/H" : "-",
+            "NAME" : "-",
+            "MUL" : "1"
+         },
+         {
+            "ADD" : "0.000000",
+            "UW_EINH" : "-",
+            "UWTEXT" : "IDENTIFIER_UNKNOWN",
+            "UWNR" : "0xFFFF",
+            "UWTYP" : "0xFFFFFF",
+            "DIV" : "1",
+            "L/H" : "-",
+            "NAME" : "-",
+            "MUL" : "1"
+         }
+      ],
+      "TTESTSTATUS" : [
+         {
+            "WERT" : "0x00",
+            "TEXT" : "Test nicht gestartet",
+            "TEXT_EN" : "Test not started"
+         },
+         {
+            "TEXT" : "Test läuft",
+            "TEXT_EN" : "Test is running",
+            "WERT" : "0x01"
+         },
+         {
+            "WERT" : "0x02",
+            "TEXT" : "Test beendet ohne Fehler",
+            "TEXT_EN" : "Test ended with no errors"
+         },
+         {
+            "WERT" : "0x03",
+            "TEXT" : "Test beendet mit Fehlern",
+            "TEXT_EN" : "Test ended with errors"
+         },
+         {
+            "TEXT" : "Test unterbrochen",
+            "TEXT_EN" : "Test interrupted",
+            "WERT" : "0x04"
+         },
+         {
+            "WERT" : "0xFF",
+            "TEXT_EN" : "Not defined",
+            "TEXT" : "Nicht definiert"
+         }
+      ],
+      "DM_TAB_ROE_ACTIVATED_DOP" : [
+         {
+            "WERT" : "0",
+            "TEXT" : "Aktive Fehlermeldung deaktiviert",
+            "TEXT_EN" : "Active error message deactivated"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "Aktive Fehlermeldung aktiviert",
+            "TEXT_EN" : "Active error message activated"
+         }
+      ],
+      "SVK_ID" : [
+         {
+            "WERT" : "0x01",
+            "BEZEICHNUNG" : "SVK_AKTUELL"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_SUPPLIER",
+            "WERT" : "0x02"
+         },
+         {
+            "WERT" : "0x03",
+            "BEZEICHNUNG" : "SVK_WERK"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_01",
+            "WERT" : "0x04"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_02",
+            "WERT" : "0x05"
+         },
+         {
+            "WERT" : "0x06",
+            "BEZEICHNUNG" : "SVK_BACKUP_03"
+         },
+         {
+            "WERT" : "0x07",
+            "BEZEICHNUNG" : "SVK_BACKUP_04"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_05",
+            "WERT" : "0x08"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_06",
+            "WERT" : "0x09"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_07",
+            "WERT" : "0x0A"
+         },
+         {
+            "WERT" : "0x0B",
+            "BEZEICHNUNG" : "SVK_BACKUP_08"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_09",
+            "WERT" : "0x0C"
+         },
+         {
+            "WERT" : "0x0D",
+            "BEZEICHNUNG" : "SVK_BACKUP_10"
+         },
+         {
+            "WERT" : "0x0E",
+            "BEZEICHNUNG" : "SVK_BACKUP_11"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_12",
+            "WERT" : "0x0F"
+         },
+         {
+            "WERT" : "0x10",
+            "BEZEICHNUNG" : "SVK_BACKUP_13"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_14",
+            "WERT" : "0x11"
+         },
+         {
+            "WERT" : "0x12",
+            "BEZEICHNUNG" : "SVK_BACKUP_15"
+         },
+         {
+            "WERT" : "0x13",
+            "BEZEICHNUNG" : "SVK_BACKUP_16"
+         },
+         {
+            "WERT" : "0x14",
+            "BEZEICHNUNG" : "SVK_BACKUP_17"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_18",
+            "WERT" : "0x15"
+         },
+         {
+            "WERT" : "0x16",
+            "BEZEICHNUNG" : "SVK_BACKUP_19"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_20",
+            "WERT" : "0x17"
+         },
+         {
+            "WERT" : "0x18",
+            "BEZEICHNUNG" : "SVK_BACKUP_21"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_22",
+            "WERT" : "0x19"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_23",
+            "WERT" : "0x1A"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_24",
+            "WERT" : "0x1B"
+         },
+         {
+            "WERT" : "0x1C",
+            "BEZEICHNUNG" : "SVK_BACKUP_25"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_26",
+            "WERT" : "0x1D"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_27",
+            "WERT" : "0x1E"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_28",
+            "WERT" : "0x1F"
+         },
+         {
+            "WERT" : "0x20",
+            "BEZEICHNUNG" : "SVK_BACKUP_29"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_30",
+            "WERT" : "0x21"
+         },
+         {
+            "WERT" : "0x22",
+            "BEZEICHNUNG" : "SVK_BACKUP_31"
+         },
+         {
+            "WERT" : "0x23",
+            "BEZEICHNUNG" : "SVK_BACKUP_32"
+         },
+         {
+            "WERT" : "0x24",
+            "BEZEICHNUNG" : "SVK_BACKUP_33"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_34",
+            "WERT" : "0x25"
+         },
+         {
+            "WERT" : "0x26",
+            "BEZEICHNUNG" : "SVK_BACKUP_35"
+         },
+         {
+            "WERT" : "0x27",
+            "BEZEICHNUNG" : "SVK_BACKUP_36"
+         },
+         {
+            "WERT" : "0x28",
+            "BEZEICHNUNG" : "SVK_BACKUP_37"
+         },
+         {
+            "WERT" : "0x29",
+            "BEZEICHNUNG" : "SVK_BACKUP_38"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_39",
+            "WERT" : "0x2A"
+         },
+         {
+            "WERT" : "0x2B",
+            "BEZEICHNUNG" : "SVK_BACKUP_40"
+         },
+         {
+            "WERT" : "0x2C",
+            "BEZEICHNUNG" : "SVK_BACKUP_41"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_42",
+            "WERT" : "0x2D"
+         },
+         {
+            "WERT" : "0x2E",
+            "BEZEICHNUNG" : "SVK_BACKUP_43"
+         },
+         {
+            "WERT" : "0x2F",
+            "BEZEICHNUNG" : "SVK_BACKUP_44"
+         },
+         {
+            "WERT" : "0x30",
+            "BEZEICHNUNG" : "SVK_BACKUP_45"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_46",
+            "WERT" : "0x31"
+         },
+         {
+            "WERT" : "0x32",
+            "BEZEICHNUNG" : "SVK_BACKUP_47"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_48",
+            "WERT" : "0x33"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_49",
+            "WERT" : "0x34"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_50",
+            "WERT" : "0x35"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_51",
+            "WERT" : "0x36"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_52",
+            "WERT" : "0x37"
+         },
+         {
+            "WERT" : "0x38",
+            "BEZEICHNUNG" : "SVK_BACKUP_53"
+         },
+         {
+            "WERT" : "0x39",
+            "BEZEICHNUNG" : "SVK_BACKUP_54"
+         },
+         {
+            "WERT" : "0x3A",
+            "BEZEICHNUNG" : "SVK_BACKUP_55"
+         },
+         {
+            "WERT" : "0x3B",
+            "BEZEICHNUNG" : "SVK_BACKUP_56"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_57",
+            "WERT" : "0x3C"
+         },
+         {
+            "WERT" : "0x3D",
+            "BEZEICHNUNG" : "SVK_BACKUP_58"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_59",
+            "WERT" : "0x3E"
+         },
+         {
+            "WERT" : "0x3F",
+            "BEZEICHNUNG" : "SVK_BACKUP_60"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_61",
+            "WERT" : "0x40"
+         },
+         {
+            "BEZEICHNUNG" : "ERROR_UNKNOWN",
+            "WERT" : "0xXY"
+         }
+      ],
+      "SVK_VERSION_DOP" : [
+         {
+            "TEXT_EN" : "reserved",
+            "TEXT" : "reserved",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "SVKVersion_01",
+            "TEXT_EN" : "SVKVersion_01"
+         }
+      ],
+      "RES_0XD026_D" : [
+         {
+            "INFO" : "liefert die Temperatur des Fibre Optical Transceivers (FOT). Bereich: -127,&,127",
+            "RESULTNAME" : "STAT_TEMP_FOT_WERT",
+            "L/H" : "-",
+            "MUL" : "1.0",
+            "NAME" : "-",
+            "DATENTYP" : "signed char",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "°C",
+            "INFO_EN" : "provides the temperature of the Fiber Optical Transceiver (FOT). Range: -127, &, 127",
+            "DIV" : "1.0"
+         },
+         {
+            "INFO_EN" : "supplies the temperature of the output stage. Range: -32767, &, 32767",
+            "DIV" : "1.0",
+            "EINHEIT" : "°C",
+            "ADD" : "0.0",
+            "DATENTYP" : "signed int",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "L/H" : "-",
+            "INFO" : "liefert die Temperatur der Endstufe. Bereich: -32767,&, 32767",
+            "RESULTNAME" : "STAT_TEMP_ENDSTU_WERT"
+         },
+         {
+            "RESULTNAME" : "STAT_TEMP_GYRO_WERT",
+            "INFO" : "liefert die Temperatur des Gyro. Bereich: -127,&,127",
+            "L/H" : "-",
+            "MUL" : "1.0",
+            "NAME" : "-",
+            "DATENTYP" : "signed char",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "°C",
+            "INFO_EN" : "provides the temperature of the gyro. Range: -127, &, 127",
+            "DIV" : "1.0"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO_EN" : "supplies the temperature of the module (usually close to the processor). Range: -127, &, 127",
+            "ADD" : "0.0",
+            "EINHEIT" : "°C",
+            "MUL" : "1.0",
+            "DATENTYP" : "signed char",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_TEMP_MOD_WERT",
+            "INFO" : "liefert die Temperatur des Moduls (normalerweise prozessornah). Bereich: -127,&,127",
+            "L/H" : "-"
+         },
+         {
+            "RESULTNAME" : "STAT_TEMP_HDD_WERT",
+            "INFO" : "liefert die Temperatur des HDD-Laufwerks. Bereich: -127,&,127",
+            "L/H" : "-",
+            "MUL" : "1.0",
+            "DATENTYP" : "signed char",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "°C",
+            "INFO_EN" : "provides the temperature of the HDD drive. Range: -127, &, 127",
+            "DIV" : "1.0"
+         },
+         {
+            "EINHEIT" : "°C",
+            "ADD" : "0.0",
+            "DIV" : "1.0",
+            "INFO_EN" : "provides the temperature of the DVD drive. Range: -127, &, 127",
+            "L/H" : "-",
+            "INFO" : "liefert die Temperatur des DVD-Laufwerks. Bereich: -127,&,127",
+            "RESULTNAME" : "STAT_TEMP_DVD_WERT",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "signed char",
+            "MUL" : "1.0"
+         }
+      ],
+      "UDS_TAB_ROE_AKTIV" : [
+         {
+            "TEXT" : "Aktive Fehlermeldung deaktiviert",
+            "TEXT_EN" : "Active error message deactivated",
+            "NR" : "0x00"
+         },
+         {
+            "TEXT_EN" : "Active error message activated",
+            "TEXT" : "Aktive Fehlermeldung aktiviert",
+            "NR" : "0x01"
+         },
+         {
+            "NR" : "0xFF",
+            "TEXT_EN" : "Status of the active error message cannot be determined",
+            "TEXT" : "Status der aktiven Fehlermeldung nicht feststellbar"
+         }
+      ],
+      "RES_0XA06F_R" : [
+         {
+            "L/H" : "-",
+            "INFO" : "Leistungszustand des Verstärkers",
+            "RESULTNAME" : "STAT_LEISTUNGSZUSTAND",
+            "NAME" : "TAB_AMP_LEISTUNGSZUSTAND",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "0.0",
+            "RRR" : "+",
+            "STR" : "-",
+            "INFO_EN" : "Power condition of the amplifier",
+            "DIV" : "1.0"
+         }
+      ],
+      "TAB_VERBAU_ROUTINE" : [
+         {
+            "WERT" : "0x00000000",
+            "TEXT" : "Alle Routinen",
+            "TEXT_EN" : "All routines"
+         },
+         {
+            "TEXT" : "Lautsprecherausgangsleitungen",
+            "TEXT_EN" : "Loudspeaker output lines",
+            "WERT" : "0x00000001"
+         },
+         {
+            "WERT" : "0x00000002",
+            "TEXT" : "RAD ON Leitung",
+            "TEXT_EN" : "RAD ON line"
+         },
+         {
+            "TEXT_EN" : "Connection amplifier to microphone 1",
+            "TEXT" : "Verbindung Verstärker zum Mikrofon 1",
+            "WERT" : "0x00000004"
+         },
+         {
+            "WERT" : "0x00000008",
+            "TEXT" : "Verbindung Verstärker zum Mikrofon 2",
+            "TEXT_EN" : "Connection amplifier to microphone 2"
+         },
+         {
+            "WERT" : "0x00000010",
+            "TEXT_EN" : "Light show",
+            "TEXT" : "Lichtinszenierung"
+         },
+         {
+            "TEXT" : "AGA-Lautsprecher",
+            "TEXT_EN" : "AGA speakers",
+            "WERT" : "0x00000020"
+         },
+         {
+            "WERT" : "0x00000040",
+            "TEXT_EN" : "AGA sensors",
+            "TEXT" : "AGA-Sensoren"
+         },
+         {
+            "TEXT_EN" : "not defined",
+            "TEXT" : "nicht definiert",
+            "WERT" : "0xFFFFFFFF"
+         }
+      ],
+      "FEHLERKLASSE" : [
+         {
+            "NR" : "0x00",
+            "TEXT_EN" : "No fault class available",
+            "TEXT" : "Keine Fehlerklasse verfuegbar"
+         },
+         {
+            "TEXT" : "Ueberpruefung bei naechstem Werkstattbesuch",
+            "TEXT_EN" : "Check when you next visit the workshop",
+            "NR" : "0x01"
+         },
+         {
+            "NR" : "0x02",
+            "TEXT_EN" : "Check at the next stop",
+            "TEXT" : "Ueberpruefung bei naechstem Halt"
+         },
+         {
+            "TEXT" : "Ueberpruefung sofort erforderlich !",
+            "TEXT_EN" : "Check required immediately!",
+            "NR" : "0x04"
+         },
+         {
+            "NR" : "0xFF",
+            "TEXT_EN" : "unknown error class",
+            "TEXT" : "unbekannte Fehlerklasse"
+         }
+      ],
+      "FDETAILSTRUKTUR" : [
+         {
+            "TYP" : "ja",
+            "NAME" : "F_UWB_ERW"
+         },
+         {
+            "NAME" : "SAE_CODE",
+            "TYP" : "nein"
+         },
+         {
+            "TYP" : "ja",
+            "NAME" : "F_HLZ"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_SEVERITY"
+         },
+         {
+            "TYP" : "2",
+            "NAME" : "F_UWB_SATZ"
+         },
+         {
+            "TYP" : "ja",
+            "NAME" : "F_HLZ_VIEW"
+         }
+      ],
+      "LIEFERANTEN" : [
+         {
+            "LIEF_TEXT" : "Reinshagen / Delphi",
+            "LIEF_NR" : "0x000001"
+         },
+         {
+            "LIEF_NR" : "0x000002",
+            "LIEF_TEXT" : "Leopold Kostal GmbH & Co. KG"
+         },
+         {
+            "LIEF_NR" : "0x000003",
+            "LIEF_TEXT" : "Hella Fahrzeugkomponenten GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Siemens",
+            "LIEF_NR" : "0x000004"
+         },
+         {
+            "LIEF_NR" : "0x000005",
+            "LIEF_TEXT" : "Eaton"
+         },
+         {
+            "LIEF_NR" : "0x000006",
+            "LIEF_TEXT" : "UTA"
+         },
+         {
+            "LIEF_NR" : "0x000007",
+            "LIEF_TEXT" : "Helbako GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Robert Bosch GmbH",
+            "LIEF_NR" : "0x000008"
+         },
+         {
+            "LIEF_NR" : "0x000009",
+            "LIEF_TEXT" : "Lear Corporation"
+         },
+         {
+            "LIEF_NR" : "0x000010",
+            "LIEF_TEXT" : "VDO"
+         },
+         {
+            "LIEF_TEXT" : "Valeo GmbH",
+            "LIEF_NR" : "0x000011"
+         },
+         {
+            "LIEF_TEXT" : "MBB",
+            "LIEF_NR" : "0x000012"
+         },
+         {
+            "LIEF_TEXT" : "Kammerer",
+            "LIEF_NR" : "0x000013"
+         },
+         {
+            "LIEF_TEXT" : "SWF",
+            "LIEF_NR" : "0x000014"
+         },
+         {
+            "LIEF_TEXT" : "Blaupunkt",
+            "LIEF_NR" : "0x000015"
+         },
+         {
+            "LIEF_NR" : "0x000016",
+            "LIEF_TEXT" : "Philips"
+         },
+         {
+            "LIEF_NR" : "0x000017",
+            "LIEF_TEXT" : "Alpine Electronics GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Continental Teves AG & Co. OHG",
+            "LIEF_NR" : "0x000018"
+         },
+         {
+            "LIEF_TEXT" : "Elektromatik Südafrika",
+            "LIEF_NR" : "0x000019"
+         },
+         {
+            "LIEF_TEXT" : "Harman Becker Automotive Systems",
+            "LIEF_NR" : "0x000020"
+         },
+         {
+            "LIEF_TEXT" : "Preh GmbH",
+            "LIEF_NR" : "0x000021"
+         },
+         {
+            "LIEF_NR" : "0x000022",
+            "LIEF_TEXT" : "Alps Electric Co. Ltd."
+         },
+         {
+            "LIEF_TEXT" : "Motorola",
+            "LIEF_NR" : "0x000023"
+         },
+         {
+            "LIEF_TEXT" : "Temic",
+            "LIEF_NR" : "0x000024"
+         },
+         {
+            "LIEF_NR" : "0x000025",
+            "LIEF_TEXT" : "Webasto SE"
+         },
+         {
+            "LIEF_TEXT" : "MotoMeter",
+            "LIEF_NR" : "0x000026"
+         },
+         {
+            "LIEF_NR" : "0x000027",
+            "LIEF_TEXT" : "Delphi Automotive PLC"
+         },
+         {
+            "LIEF_TEXT" : "DODUCO (Beru)",
+            "LIEF_NR" : "0x000028"
+         },
+         {
+            "LIEF_NR" : "0x000029",
+            "LIEF_TEXT" : "DENSO"
+         },
+         {
+            "LIEF_NR" : "0x000030",
+            "LIEF_TEXT" : "NEC"
+         },
+         {
+            "LIEF_NR" : "0x000031",
+            "LIEF_TEXT" : "DASA"
+         },
+         {
+            "LIEF_NR" : "0x000032",
+            "LIEF_TEXT" : "Pioneer Corporation"
+         },
+         {
+            "LIEF_NR" : "0x000033",
+            "LIEF_TEXT" : "Jatco"
+         },
+         {
+            "LIEF_TEXT" : "FUBA Automotive GmbH & Co. KG",
+            "LIEF_NR" : "0x000034"
+         },
+         {
+            "LIEF_NR" : "0x000035",
+            "LIEF_TEXT" : "UK-NSI"
+         },
+         {
+            "LIEF_NR" : "0x000036",
+            "LIEF_TEXT" : "AABG"
+         },
+         {
+            "LIEF_NR" : "0x000037",
+            "LIEF_TEXT" : "Dunlop"
+         },
+         {
+            "LIEF_TEXT" : "Sachs",
+            "LIEF_NR" : "0x000038"
+         },
+         {
+            "LIEF_NR" : "0x000039",
+            "LIEF_TEXT" : "ITT"
+         },
+         {
+            "LIEF_TEXT" : "FTE (Fahrzeugtechnik Ebern)",
+            "LIEF_NR" : "0x000040"
+         },
+         {
+            "LIEF_NR" : "0x000041",
+            "LIEF_TEXT" : "Megamos"
+         },
+         {
+            "LIEF_TEXT" : "TRW Automotive GmbH",
+            "LIEF_NR" : "0x000042"
+         },
+         {
+            "LIEF_NR" : "0x000043",
+            "LIEF_TEXT" : "WABCO Fahrzeugsysteme GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000044",
+            "LIEF_TEXT" : "ISAD Electronic Systems"
+         },
+         {
+            "LIEF_TEXT" : "HEC Hella Electronics Corporation",
+            "LIEF_NR" : "0x000045"
+         },
+         {
+            "LIEF_NR" : "0x000046",
+            "LIEF_TEXT" : "Gemel"
+         },
+         {
+            "LIEF_NR" : "0x000047",
+            "LIEF_TEXT" : "ZF Friedrichshafen AG"
+         },
+         {
+            "LIEF_NR" : "0x000048",
+            "LIEF_TEXT" : "GMPT"
+         },
+         {
+            "LIEF_TEXT" : "Harman Becker Automotive Systems GmbH",
+            "LIEF_NR" : "0x000049"
+         },
+         {
+            "LIEF_TEXT" : "Remes GmbH",
+            "LIEF_NR" : "0x000050"
+         },
+         {
+            "LIEF_NR" : "0x000051",
+            "LIEF_TEXT" : "ZF Lenksysteme GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Magneti Marelli S.p.A.",
+            "LIEF_NR" : "0x000052"
+         },
+         {
+            "LIEF_TEXT" : "Johnson Controls Inc.",
+            "LIEF_NR" : "0x000053"
+         },
+         {
+            "LIEF_TEXT" : "GETRAG Getriebe- und Zahnradf. Hermann Hagenmeyer GmbH & Co. KG",
+            "LIEF_NR" : "0x000054"
+         },
+         {
+            "LIEF_TEXT" : "Behr-Hella Thermocontrol GmbH",
+            "LIEF_NR" : "0x000055"
+         },
+         {
+            "LIEF_TEXT" : "Siemens VDO Automotive",
+            "LIEF_NR" : "0x000056"
+         },
+         {
+            "LIEF_TEXT" : "Visteon Innovation & Technology GmbH",
+            "LIEF_NR" : "0x000057"
+         },
+         {
+            "LIEF_TEXT" : "Autoliv AB",
+            "LIEF_NR" : "0x000058"
+         },
+         {
+            "LIEF_TEXT" : "Haberl Electronic GmbH & Co. KG",
+            "LIEF_NR" : "0x000059"
+         },
+         {
+            "LIEF_TEXT" : "Magna International Inc.",
+            "LIEF_NR" : "0x000060"
+         },
+         {
+            "LIEF_TEXT" : "Marquardt GmbH",
+            "LIEF_NR" : "0x000061"
+         },
+         {
+            "LIEF_NR" : "0x000062",
+            "LIEF_TEXT" : "AB Elektronik GmbH"
+         },
+         {
+            "LIEF_TEXT" : "SDVO/BORG",
+            "LIEF_NR" : "0x000063"
+         },
+         {
+            "LIEF_TEXT" : "Hirschmann Car Communication GmbH",
+            "LIEF_NR" : "0x000064"
+         },
+         {
+            "LIEF_TEXT" : "hoerbiger-electronics",
+            "LIEF_NR" : "0x000065"
+         },
+         {
+            "LIEF_NR" : "0x000066",
+            "LIEF_TEXT" : "Thyssen Krupp Automotive"
+         },
+         {
+            "LIEF_NR" : "0x000067",
+            "LIEF_TEXT" : "Gentex Corporation"
+         },
+         {
+            "LIEF_NR" : "0x000068",
+            "LIEF_TEXT" : "Atena GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000069",
+            "LIEF_TEXT" : "Magna-Donelly"
+         },
+         {
+            "LIEF_TEXT" : "Koyo Steeting Europe",
+            "LIEF_NR" : "0x000070"
+         },
+         {
+            "LIEF_TEXT" : "NSI Beheer B.V.",
+            "LIEF_NR" : "0x000071"
+         },
+         {
+            "LIEF_NR" : "0x000072",
+            "LIEF_TEXT" : "Aisin AW Co. Ltd."
+         },
+         {
+            "LIEF_TEXT" : "Schorlock",
+            "LIEF_NR" : "0x000073"
+         },
+         {
+            "LIEF_TEXT" : "Schrader Electronics Ltd.",
+            "LIEF_NR" : "0x000074"
+         },
+         {
+            "LIEF_TEXT" : "Huf-Electronics Bretten GmbH",
+            "LIEF_NR" : "0x000075"
+         },
+         {
+            "LIEF_TEXT" : "CEL",
+            "LIEF_NR" : "0x000076"
+         },
+         {
+            "LIEF_NR" : "0x000077",
+            "LIEF_TEXT" : "AUDIO MOBIL Elektronik GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000078",
+            "LIEF_TEXT" : "rd electronic"
+         },
+         {
+            "LIEF_NR" : "0x000079",
+            "LIEF_TEXT" : "iSYS RTS GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Westfalia-Automotive GmbH",
+            "LIEF_NR" : "0x000080"
+         },
+         {
+            "LIEF_TEXT" : "Tyco Electronics",
+            "LIEF_NR" : "0x000081"
+         },
+         {
+            "LIEF_TEXT" : "Paragon AG",
+            "LIEF_NR" : "0x000082"
+         },
+         {
+            "LIEF_TEXT" : "IEE S.A.",
+            "LIEF_NR" : "0x000083"
+         },
+         {
+            "LIEF_TEXT" : "TEMIC AUTOMOTIVE of NA",
+            "LIEF_NR" : "0x000084"
+         },
+         {
+            "LIEF_TEXT" : "Sonceboz S.A.",
+            "LIEF_NR" : "0x000085"
+         },
+         {
+            "LIEF_TEXT" : "Meta System S.p.A.",
+            "LIEF_NR" : "0x000086"
+         },
+         {
+            "LIEF_NR" : "0x000087",
+            "LIEF_TEXT" : "Huf Hülsbeck & Fürst GmbH & Co. KG"
+         },
+         {
+            "LIEF_TEXT" : "MANN+HUMMEL GmbH",
+            "LIEF_NR" : "0x000088"
+         },
+         {
+            "LIEF_TEXT" : "Brose Fahrzeugteile GmbH & Co.",
+            "LIEF_NR" : "0x000089"
+         },
+         {
+            "LIEF_NR" : "0x000090",
+            "LIEF_TEXT" : "Keihin"
+         },
+         {
+            "LIEF_NR" : "0x000091",
+            "LIEF_TEXT" : "Vimercati S.p.a"
+         },
+         {
+            "LIEF_TEXT" : "CRH",
+            "LIEF_NR" : "0x000092"
+         },
+         {
+            "LIEF_NR" : "0x000093",
+            "LIEF_TEXT" : "TPO Display Corp"
+         },
+         {
+            "LIEF_TEXT" : "Küster Automotive GmbH",
+            "LIEF_NR" : "0x000094"
+         },
+         {
+            "LIEF_NR" : "0x000095",
+            "LIEF_TEXT" : "Hitachi Automotive"
+         },
+         {
+            "LIEF_TEXT" : "Continental AG",
+            "LIEF_NR" : "0x000096"
+         },
+         {
+            "LIEF_TEXT" : "TI-Automotive",
+            "LIEF_NR" : "0x000097"
+         },
+         {
+            "LIEF_TEXT" : "Hydro",
+            "LIEF_NR" : "0x000098"
+         },
+         {
+            "LIEF_NR" : "0x000099",
+            "LIEF_TEXT" : "Johnson Controls Inc."
+         },
+         {
+            "LIEF_TEXT" : "Takata-Petri",
+            "LIEF_NR" : "0x00009A"
+         },
+         {
+            "LIEF_NR" : "0x00009B",
+            "LIEF_TEXT" : "Mitsubishi Electric B.V. (Melco)"
+         },
+         {
+            "LIEF_NR" : "0x00009C",
+            "LIEF_TEXT" : "Autokabel"
+         },
+         {
+            "LIEF_NR" : "0x00009D",
+            "LIEF_TEXT" : "GKN Plc"
+         },
+         {
+            "LIEF_TEXT" : "Zollner Elektronik AG",
+            "LIEF_NR" : "0x00009E"
+         },
+         {
+            "LIEF_TEXT" : "peiker acustic GmbH & Co. KG",
+            "LIEF_NR" : "0x00009F"
+         },
+         {
+            "LIEF_TEXT" : "Bosal-Oris",
+            "LIEF_NR" : "0x0000A0"
+         },
+         {
+            "LIEF_NR" : "0x0000A1",
+            "LIEF_TEXT" : "Cobasys"
+         },
+         {
+            "LIEF_TEXT" : "Automotive Lighting Reutlingen GmbH",
+            "LIEF_NR" : "0x0000A2"
+         },
+         {
+            "LIEF_TEXT" : "CONTI VDO",
+            "LIEF_NR" : "0x0000A3"
+         },
+         {
+            "LIEF_NR" : "0x0000A4",
+            "LIEF_TEXT" : "A.D.C. Automotive Distance Control Systems GmbH"
+         },
+         {
+            "LIEF_NR" : "0x0000A5",
+            "LIEF_TEXT" : "Novero Dabendorf GmbH"
+         },
+         {
+            "LIEF_TEXT" : "LAMES S.p.a.",
+            "LIEF_NR" : "0x0000A6"
+         },
+         {
+            "LIEF_TEXT" : "Magna/Closures",
+            "LIEF_NR" : "0x0000A7"
+         },
+         {
+            "LIEF_TEXT" : "Harbin Wan Yu Technology Co",
+            "LIEF_NR" : "0x0000A8"
+         },
+         {
+            "LIEF_NR" : "0x0000A9",
+            "LIEF_TEXT" : "ThyssenKrupp Presta AG"
+         },
+         {
+            "LIEF_NR" : "0x0000AA",
+            "LIEF_TEXT" : "ArvinMeritor"
+         },
+         {
+            "LIEF_TEXT" : "Kongsberg Automotive GmbH",
+            "LIEF_NR" : "0x0000AB"
+         },
+         {
+            "LIEF_NR" : "0x0000AC",
+            "LIEF_TEXT" : "SMR Automotive Mirrors Stuttgart GmbH"
+         },
+         {
+            "LIEF_NR" : "0x0000AD",
+            "LIEF_TEXT" : "So.Ge.Mi."
+         },
+         {
+            "LIEF_NR" : "0x0000AE",
+            "LIEF_TEXT" : "MTA S.p.A."
+         },
+         {
+            "LIEF_NR" : "0x0000AF",
+            "LIEF_TEXT" : "Alfmeier Präzision AG"
+         },
+         {
+            "LIEF_TEXT" : "Eltek Deutechland GmbH",
+            "LIEF_NR" : "0x0000B0"
+         },
+         {
+            "LIEF_TEXT" : "OMRON Automotive Electronics Europe GmbH",
+            "LIEF_NR" : "0x0000B1"
+         },
+         {
+            "LIEF_TEXT" : "ASK Industries GmbH",
+            "LIEF_NR" : "0x0000B2"
+         },
+         {
+            "LIEF_NR" : "0x0000B3",
+            "LIEF_TEXT" : "CML Innovative Technologies GmbH & Co. KG"
+         },
+         {
+            "LIEF_TEXT" : "APAG Elektronik AG",
+            "LIEF_NR" : "0x0000B4"
+         },
+         {
+            "LIEF_NR" : "0x0000B5",
+            "LIEF_TEXT" : "Nexteer Automotive"
+         },
+         {
+            "LIEF_TEXT" : "Hans Widmaier Fernmelde- und Feinwerktechnik",
+            "LIEF_NR" : "0x0000B6"
+         },
+         {
+            "LIEF_TEXT" : "Robert Bosch Battery Systems GmbH",
+            "LIEF_NR" : "0x0000B7"
+         },
+         {
+            "LIEF_NR" : "0x0000B8",
+            "LIEF_TEXT" : "Kyocera Display Europe GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Magna Powertrain AG & Co. KG",
+            "LIEF_NR" : "0x0000B9"
+         },
+         {
+            "LIEF_TEXT" : "BorgWarner Beru Systems GmbH",
+            "LIEF_NR" : "0x0000BA"
+         },
+         {
+            "LIEF_TEXT" : "BMW AG",
+            "LIEF_NR" : "0x0000BB"
+         },
+         {
+            "LIEF_NR" : "0x0000BC",
+            "LIEF_TEXT" : "Benteler Duncan Plant"
+         },
+         {
+            "LIEF_NR" : "0x0000BD",
+            "LIEF_TEXT" : "U-Shin Deutschland Zugangssysteme GmbH"
+         },
+         {
+            "LIEF_NR" : "0x0000BE",
+            "LIEF_TEXT" : "Schaeffler Technologies AG & Co. KG"
+         },
+         {
+            "LIEF_TEXT" : "JTEKT Corporation",
+            "LIEF_NR" : "0x0000BF"
+         },
+         {
+            "LIEF_NR" : "0x0000C0",
+            "LIEF_TEXT" : "VLF"
+         },
+         {
+            "LIEF_NR" : "0x0000C1",
+            "LIEF_TEXT" : "Flextronics"
+         },
+         {
+            "LIEF_TEXT" : "LG Chem",
+            "LIEF_NR" : "0x0000C2"
+         },
+         {
+            "LIEF_TEXT" : "unbekannter Hersteller",
+            "LIEF_NR" : "0xFFFFFF"
+         }
+      ],
+      "ARG_0XA0A2_R" : [
+         {
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "Routines to be tested",
+            "DIV" : "-",
+            "ARG" : "ARG_VERBAU_ROUTINE",
+            "STR" : "+",
+            "MAX" : "-",
+            "MIN" : "-",
+            "INFO" : "Routinen, die getestet werden sollen",
+            "L/H" : "high",
+            "STPR" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAB_VERBAU_ROUTINE"
+         }
+      ],
+      "PROZESSKLASSEN" : [
+         {
+            "PROZESSKLASSE" : "-",
+            "WERT" : "0x00",
+            "BEZEICHNUNG" : "ungueltig"
+         },
+         {
+            "BEZEICHNUNG" : "Hardware (Elektronik)",
+            "PROZESSKLASSE" : "HWEL",
+            "WERT" : "0x01"
+         },
+         {
+            "WERT" : "0x02",
+            "PROZESSKLASSE" : "HWAP",
+            "BEZEICHNUNG" : "Hardwareauspraegung"
+         },
+         {
+            "WERT" : "0x03",
+            "PROZESSKLASSE" : "HWFR",
+            "BEZEICHNUNG" : "Hardwarefarbe"
+         },
+         {
+            "WERT" : "0x05",
+            "PROZESSKLASSE" : "CAFD",
+            "BEZEICHNUNG" : "Codierdaten"
+         },
+         {
+            "WERT" : "0x06",
+            "PROZESSKLASSE" : "BTLD",
+            "BEZEICHNUNG" : "Bootloader"
+         },
+         {
+            "PROZESSKLASSE" : "SWFL",
+            "WERT" : "0x08",
+            "BEZEICHNUNG" : "Software ECU Speicherimage"
+         },
+         {
+            "PROZESSKLASSE" : "SWFF",
+            "WERT" : "0x09",
+            "BEZEICHNUNG" : "Flash File Software"
+         },
+         {
+            "PROZESSKLASSE" : "SWPF",
+            "WERT" : "0x0A",
+            "BEZEICHNUNG" : "Pruefsoftware"
+         },
+         {
+            "BEZEICHNUNG" : "Onboard Programmiersystem",
+            "PROZESSKLASSE" : "ONPS",
+            "WERT" : "0x0B"
+         },
+         {
+            "BEZEICHNUNG" : "FA2FP",
+            "WERT" : "0x0F",
+            "PROZESSKLASSE" : "FAFP"
+         },
+         {
+            "WERT" : "0x1A",
+            "PROZESSKLASSE" : "TLRT",
+            "BEZEICHNUNG" : "Temporaere Loeschroutine"
+         },
+         {
+            "BEZEICHNUNG" : "Temporaere Programmierroutine",
+            "PROZESSKLASSE" : "TPRG",
+            "WERT" : "0x1B"
+         },
+         {
+            "WERT" : "0x07",
+            "PROZESSKLASSE" : "FLSL",
+            "BEZEICHNUNG" : "Flashloader Slave"
+         },
+         {
+            "BEZEICHNUNG" : "Interaktive Betriebsanleitung Daten",
+            "WERT" : "0x0C",
+            "PROZESSKLASSE" : "IBAD"
+         },
+         {
+            "WERT" : "0x10",
+            "PROZESSKLASSE" : "FCFA",
+            "BEZEICHNUNG" : "Freischaltcode Fahrzeug-Auftrag"
+         },
+         {
+            "BEZEICHNUNG" : "Bootloader-Update Applikation",
+            "PROZESSKLASSE" : "BLUP",
+            "WERT" : "0x1C"
+         },
+         {
+            "WERT" : "0x1D",
+            "PROZESSKLASSE" : "FLUP",
+            "BEZEICHNUNG" : "Flashloader-Update Applikation"
+         },
+         {
+            "WERT" : "0xC0",
+            "PROZESSKLASSE" : "SWUP",
+            "BEZEICHNUNG" : "Software-Update Package"
+         },
+         {
+            "BEZEICHNUNG" : "Index Software-Update Package",
+            "PROZESSKLASSE" : "SWIP",
+            "WERT" : "0xC1"
+         },
+         {
+            "BEZEICHNUNG" : "Entertainment Daten",
+            "WERT" : "0xA0",
+            "PROZESSKLASSE" : "ENTD"
+         },
+         {
+            "BEZEICHNUNG" : "Navigation Daten",
+            "PROZESSKLASSE" : "NAVD",
+            "WERT" : "0xA1"
+         },
+         {
+            "WERT" : "0xA2",
+            "PROZESSKLASSE" : "FCFN",
+            "BEZEICHNUNG" : "Freischaltcode Funktion"
+         },
+         {
+            "BEZEICHNUNG" : "Gateway-Tabelle",
+            "PROZESSKLASSE" : "GWTB",
+            "WERT" : "0x04"
+         },
+         {
+            "BEZEICHNUNG" : "BEGU: Detaillierung auf SWE-Ebene",
+            "WERT" : "0x0D",
+            "PROZESSKLASSE" : "SWFK"
+         },
+         {
+            "WERT" : "0xFF",
+            "PROZESSKLASSE" : "-",
+            "BEZEICHNUNG" : "ungueltig"
+         }
+      ],
+      "DTCEXTENDEDDATARECORDNUMBER" : [
+         {
+            "TEXT_EN" : "ISO_RESERVED",
+            "TEXT" : "ISO_RESERVED",
+            "ANZ_BYTE" : "0",
+            "WERT" : "0x00"
+         },
+         {
+            "TEXT_EN" : "CONDITION_BYTE",
+            "TEXT" : "CONDITION_BYTE",
+            "ANZ_BYTE" : "1",
+            "WERT" : "0x01"
+         },
+         {
+            "ANZ_BYTE" : "1",
+            "WERT" : "0x02",
+            "TEXT_EN" : "HFK",
+            "TEXT" : "HFK"
+         },
+         {
+            "WERT" : "0x03",
+            "ANZ_BYTE" : "1",
+            "TEXT" : "HLZ",
+            "TEXT_EN" : "HLZ"
+         },
+         {
+            "TEXT" : "RECORD_UNKNOWN",
+            "TEXT_EN" : "RECORD_UNKNOWN",
+            "WERT" : "0xFF",
+            "ANZ_BYTE" : "0"
+         }
+      ],
+      "ARG_0XA021_R" : [
+         {
+            "ADD" : "0.0",
+            "EINHEIT" : "Hz",
+            "STR" : "+",
+            "INFO_EN" : "Integer, 20..20,000 [Hz] For amplifiers: 8,000 ... 20,000 [Hz]",
+            "DIV" : "1.0",
+            "ARG" : "ARG_FREQUENZ",
+            "MAX" : "23000.0",
+            "MIN" : "8000.0",
+            "INFO" : "Integer, 20..20 000 [Hz] Bei Verstärkern: 8 000 ... 20 000 [Hz]",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int"
+         },
+         {
+            "ARG" : "ARG_LEVEL",
+            "INFO_EN" : "For head units: hex value, from 0x00 without gaps to 0x7F, unsupported values (stereo: 0x3F) must not lead to error messages. Instead, the next lower possible volume available for the speaker system is set. For amplifiers: Integer, -50..0 [dB]",
+            "DIV" : "1.0",
+            "STR" : "+",
+            "MAX" : "0.0",
+            "MIN" : "-50.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "signed char",
+            "INFO" : "Bei Headunits:  Hex-Wert, von 0x00 lückenlos bis 0x7F, Nicht unterstützte Werte (Stereo: 0x3F) dürfen nicht zu Fehlermeldungen führen. Sondern die für das Lautsprechersystem nächstmöglich kleinere verfügbare Lautstärke wird eingestellt.   Bei Verstärkern: Integer, -50..0 [dB]",
+            "L/H" : "-"
+         },
+         {
+            "STR" : "+",
+            "INFO_EN" : "denotes the channel on which to measure. Table TAudioKanal",
+            "DIV" : "1.0",
+            "ARG" : "ARG_KANAL",
+            "MAX" : "-",
+            "MIN" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned long",
+            "INFO" : "bezeichnet den Kanal, auf dem gemessen werden soll. Tabelle TAudioKanal",
+            "L/H" : "-"
+         },
+         {
+            "MIN" : "200.0",
+            "MAX" : "3000.0",
+            "INFO_EN" : "defines the duration of the measurement. Range: 50-1000ms For amplifiers: Range: 200-3000ms",
+            "DIV" : "1.0",
+            "STR" : "+",
+            "ARG" : "ARG_MESSDAUER",
+            "EINHEIT" : "-",
+            "ADD" : "0.0",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "L/H" : "-",
+            "INFO" : "legt die Dauer der Messung fest. Bereich: 50-1000ms Bei Verstärkern: Bereich: 200-3000ms"
+         }
+      ],
+      "ENERGIESPARMODE_DOP" : [
+         {
+            "TEXT" : "Normalmode",
+            "TEXT_EN" : "Normal mode",
+            "WERT" : "0"
+         },
+         {
+            "TEXT_EN" : "Manufacturing fashion",
+            "TEXT" : "Fertigungsmode",
+            "WERT" : "1"
+         },
+         {
+            "TEXT" : "Transportmode",
+            "TEXT_EN" : "Transport fashion",
+            "WERT" : "2"
+         },
+         {
+            "TEXT" : "Flashmode",
+            "TEXT_EN" : "Flash mode",
+            "WERT" : "3"
+         }
+      ],
+      "FEHLERKLASSE_DOP" : [
+         {
+            "TEXT" : "Keine Fehlerklasse verfuegbar",
+            "TEXT_EN" : "No fault class available",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "Ueberpruefung beim naechsten Werkstattbesuch",
+            "TEXT_EN" : "Check at the next workshop visit"
+         },
+         {
+            "TEXT_EN" : "Check at the next stop",
+            "TEXT" : "Ueberpruefung beim naechsten Halt",
+            "WERT" : "2"
+         },
+         {
+            "WERT" : "4",
+            "TEXT" : "Ueberpruefung sofort erforderlich",
+            "TEXT_EN" : "Verification required immediately"
+         }
+      ],
+      "ARG_0XA001_R" : [
+         {
+            "MAX" : "20000.0",
+            "INFO_EN" : "Frequency setting: 20..20,000 Hz",
+            "STR" : "+",
+            "DIV" : "1.0",
+            "ARG" : "ARG_FREQUENZ",
+            "MIN" : "20.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "Hz",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "MASKE" : "-",
+            "INFO" : "Frequenzeinstellung: 20..20 000 Hz",
+            "L/H" : "-"
+         },
+         {
+            "EINHEIT" : "-",
+            "ADD" : "0.0",
+            "MIN" : "-96.0",
+            "DIV" : "1.0",
+            "INFO_EN" : "For head units: hex value, from 0x00 without gaps to 0x7F, unsupported values (stereo: 0x3F) must not lead to error messages; instead, the next lower possible volume available for the speaker system is set. For amplifiers: Integer, -96..0 [dB]",
+            "STR" : "+",
+            "ARG" : "ARG_LEVEL",
+            "MAX" : "0.0",
+            "L/H" : "-",
+            "INFO" : "Bei Headunits: Hex-Wert, von 0x00 lückenlos bis 0x7F, Nicht unterstützte Werte (Stereo: 0x3F) dürfen nicht zu Fehlermeldungen führen.Sondern die für das Lautsprechersystem nächstmöglich kleinere verfügbare Lautstärke wird eingestellt.  Bei Verstärkern: Integer,-96..0 [dB]",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "signed char",
+            "STPR" : "-",
+            "MUL" : "1.0"
+         },
+         {
+            "INFO_EN" : "designates the channel on which to output. Table TAudioKanal",
+            "ARG" : "ARG_KANAL",
+            "DIV" : "1.0",
+            "STR" : "+",
+            "MAX" : "8388608.0",
+            "MIN" : "0.0",
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "-",
+            "INFO" : "bezeichnet den Kanal, auf dem ausgegeben werden soll. Tabelle TAudioKanal",
+            "L/H" : "-"
+         }
+      ],
+      "RES_0XA021_R" : [
+         {
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "MASKE" : "-",
+            "INFO" : "Integer, 20..20 000 [Hz] Bei Verstärkern: 8 000 ... 20 000 [Hz]",
+            "RESULTNAME" : "STAT_FREQUENZ_WERT",
+            "L/H" : "-",
+            "STR" : "-",
+            "INFO_EN" : "Integer, 20..20,000 [Hz] For amplifiers: 8,000 ... 20,000 [Hz]",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "Hz"
+         },
+         {
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "DATENTYP" : "signed char",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_LEVEL_WERT",
+            "INFO" : "Bei Headunits: Hex-Wert, von 0x00 lückenlos bis 0x7F, Bei Verstärkern: Integer, -50..0 [dB]",
+            "L/H" : "-",
+            "STR" : "-",
+            "INFO_EN" : "For head units: Hex value, from 0x00 without gaps to 0x7F, For amplifiers: Integer, -50..0 [dB]",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "-"
+         },
+         {
+            "INFO" : "bezeichnet den Kanal, auf dem gemessen wurde.",
+            "RESULTNAME" : "STAT_KANAL",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAudioKanal",
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "denotes the channel on which measurements were made.",
+            "STR" : "-",
+            "DIV" : "-",
+            "RRR" : "+"
+         },
+         {
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "shows the duration of the measurement. Range: 50-1000ms For amplifiers: Range: 800-3000ms",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "RESULTNAME" : "STAT_MESSDAUER_WERT",
+            "INFO" : "gibt die Dauer der Messung wieder. Bereich: 50-1000ms Bei Verstärkern: Bereich: 800-3000ms",
+            "L/H" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "MASKE" : "-"
+         },
+         {
+            "INFO_EN" : "Returns the status of the entire test or the corresponding channels. After shutting down or restarting the control unit, the status is automatically reset to 0.",
+            "STR" : "-",
+            "DIV" : "-",
+            "RRR" : "+",
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "MUL" : "-",
+            "STPR" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "TTestStatus",
+            "MASKE" : "-",
+            "INFO" : "Gibt den Status des gesamten Tests oder der entsprechenden Kanäle wieder. Nach dem Herunterfahren oder Neustart des Steuergerätes wird der Status automatisch auf 0 zurückgesetzt.",
+            "RESULTNAME" : "STAT_LAUTSPRECHER_IMPEDANZMESSUNG",
+            "L/H" : "-"
+         },
+         {
+            "ADD" : "0.0",
+            "EINHEIT" : "-",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 2 or 3. Returns how many errors were found during the test.",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "RESULTNAME" : "STAT_ANZAHL_FEHLERHAFTE_KANAELE_WERT",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 2 oder 3 meldet. Gibt wieder, wie viele Fehler während des Tests gefunden wurden.",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-"
+         },
+         {
+            "RRR" : "+",
+            "STR" : "-",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "DIV" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAudioKanal",
+            "STPR" : "-",
+            "MUL" : "-",
+            "L/H" : "-",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "RESULTNAME" : "STAT_FEHLER_1_KANAL"
+         },
+         {
+            "RRR" : "+",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "STR" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "TKanalFehlerArt",
+            "STPR" : "-",
+            "MUL" : "-",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_1_FEHLERART_KANAL",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war."
+         },
+         {
+            "EINHEIT" : "mV",
+            "ADD" : "0.0",
+            "RRR" : "+",
+            "DIV" : "1.0",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "STR" : "-",
+            "L/H" : "-",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "RESULTNAME" : "STAT_FEHLER_1_MESSWERT_SPANNUNG_WERT",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "STPR" : "-",
+            "MUL" : "1.0"
+         },
+         {
+            "RRR" : "+",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "EINHEIT" : "mA",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_1_MESSWERT_STROMSTAERKE_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen."
+         },
+         {
+            "L/H" : "-",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "RESULTNAME" : "STAT_FEHLER_2_KANAL",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAudioKanal",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "RRR" : "+",
+            "DIV" : "-",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "STR" : "-"
+         },
+         {
+            "RESULTNAME" : "STAT_FEHLER_2_FEHLERART_KANAL",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "NAME" : "TKanalFehlerArt",
+            "DATENTYP" : "unsigned char",
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "DIV" : "-",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "STR" : "-",
+            "RRR" : "+"
+         },
+         {
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "RESULTNAME" : "STAT_FEHLER_2_MESSWERT_SPANNUNG_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "L/H" : "-",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mV"
+         },
+         {
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "RESULTNAME" : "STAT_FEHLER_2_MESSWERT_STROMSTAERKE_WERT",
+            "L/H" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "mA",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "DIV" : "1.0",
+            "STR" : "-",
+            "RRR" : "+"
+         },
+         {
+            "RESULTNAME" : "STAT_FEHLER_3_KANAL",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "L/H" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "NAME" : "TAudioKanal",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "DIV" : "-",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "STR" : "-",
+            "RRR" : "+"
+         },
+         {
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_3_FEHLERART_KANAL",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "NAME" : "TKanalFehlerArt",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "RRR" : "+",
+            "DIV" : "-",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "STR" : "-"
+         },
+         {
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "RESULTNAME" : "STAT_FEHLER_3_MESSWERT_SPANNUNG_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "L/H" : "-",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "DIV" : "1.0",
+            "STR" : "-",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mV"
+         },
+         {
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mA",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "RESULTNAME" : "STAT_FEHLER_3_MESSWERT_STROMSTAERKE_WERT",
+            "L/H" : "-"
+         },
+         {
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "STR" : "-",
+            "DIV" : "-",
+            "RRR" : "+",
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "STPR" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "NAME" : "TAudioKanal",
+            "DATENTYP" : "unsigned long",
+            "RESULTNAME" : "STAT_FEHLER_4_KANAL",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "L/H" : "-"
+         },
+         {
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "STR" : "-",
+            "DIV" : "-",
+            "RRR" : "+",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "RESULTNAME" : "STAT_FEHLER_4_FEHLERART_KANAL",
+            "L/H" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "TKanalFehlerArt",
+            "MASKE" : "-"
+         },
+         {
+            "EINHEIT" : "mV",
+            "ADD" : "0.0",
+            "RRR" : "+",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_4_MESSWERT_SPANNUNG_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "STPR" : "-",
+            "MUL" : "1.0"
+         },
+         {
+            "RRR" : "+",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "DIV" : "1.0",
+            "STR" : "-",
+            "EINHEIT" : "mA",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "L/H" : "-",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "RESULTNAME" : "STAT_FEHLER_4_MESSWERT_STROMSTAERKE_WERT"
+         },
+         {
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "RRR" : "+",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "STR" : "-",
+            "DIV" : "-",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_5_KANAL",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAudioKanal",
+            "STPR" : "-",
+            "MUL" : "-"
+         },
+         {
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "TKanalFehlerArt",
+            "STPR" : "-",
+            "MUL" : "-",
+            "L/H" : "-",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "RESULTNAME" : "STAT_FEHLER_5_FEHLERART_KANAL",
+            "RRR" : "+",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "DIV" : "-",
+            "STR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-"
+         },
+         {
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "DIV" : "1.0",
+            "STR" : "-",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mV",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_FEHLER_5_MESSWERT_SPANNUNG_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "L/H" : "-"
+         },
+         {
+            "ADD" : "0.0",
+            "EINHEIT" : "mA",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "DIV" : "1.0",
+            "STR" : "-",
+            "RRR" : "+",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "RESULTNAME" : "STAT_FEHLER_5_MESSWERT_STROMSTAERKE_WERT",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int"
+         },
+         {
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "DIV" : "-",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "STR" : "-",
+            "RRR" : "+",
+            "RESULTNAME" : "STAT_FEHLER_6_KANAL",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "L/H" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAudioKanal",
+            "MASKE" : "-"
+         },
+         {
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "DIV" : "-",
+            "STR" : "-",
+            "RRR" : "+",
+            "RESULTNAME" : "STAT_FEHLER_6_FEHLERART_KANAL",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "NAME" : "TKanalFehlerArt",
+            "DATENTYP" : "unsigned char"
+         },
+         {
+            "RESULTNAME" : "STAT_FEHLER_6_MESSWERT_SPANNUNG_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "ADD" : "0.0",
+            "EINHEIT" : "mV",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "RRR" : "+"
+         },
+         {
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_6_MESSWERT_STROMSTAERKE_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "RRR" : "+",
+            "STR" : "-",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "DIV" : "1.0",
+            "EINHEIT" : "mA",
+            "ADD" : "0.0"
+         },
+         {
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "RRR" : "+",
+            "STR" : "-",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "DIV" : "-",
+            "L/H" : "-",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "RESULTNAME" : "STAT_FEHLER_7_KANAL",
+            "NAME" : "TAudioKanal",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "STPR" : "-"
+         },
+         {
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "DIV" : "-",
+            "STR" : "-",
+            "RRR" : "+",
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "MUL" : "-",
+            "STPR" : "-",
+            "NAME" : "TKanalFehlerArt",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "RESULTNAME" : "STAT_FEHLER_7_FEHLERART_KANAL",
+            "L/H" : "-"
+         },
+         {
+            "RESULTNAME" : "STAT_FEHLER_7_MESSWERT_SPANNUNG_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "L/H" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "mV",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "RRR" : "+"
+         },
+         {
+            "L/H" : "-",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "RESULTNAME" : "STAT_FEHLER_7_MESSWERT_STROMSTAERKE_WERT",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "EINHEIT" : "mA",
+            "ADD" : "0.0",
+            "RRR" : "+",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "DIV" : "1.0",
+            "STR" : "-"
+         },
+         {
+            "STPR" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "NAME" : "TAudioKanal",
+            "DATENTYP" : "unsigned long",
+            "RESULTNAME" : "STAT_FEHLER_8_KANAL",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "L/H" : "-",
+            "STR" : "-",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "DIV" : "-",
+            "RRR" : "+",
+            "ADD" : "-",
+            "EINHEIT" : "0-n"
+         },
+         {
+            "MASKE" : "-",
+            "NAME" : "TKanalFehlerArt",
+            "DATENTYP" : "unsigned char",
+            "STPR" : "-",
+            "MUL" : "-",
+            "L/H" : "-",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "RESULTNAME" : "STAT_FEHLER_8_FEHLERART_KANAL",
+            "RRR" : "+",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "DIV" : "-",
+            "STR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-"
+         },
+         {
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mV",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "RESULTNAME" : "STAT_FEHLER_8_MESSWERT_SPANNUNG_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "L/H" : "-"
+         },
+         {
+            "ADD" : "0.0",
+            "EINHEIT" : "mA",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "DIV" : "1.0",
+            "STR" : "-",
+            "RRR" : "+",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "RESULTNAME" : "STAT_FEHLER_8_MESSWERT_STROMSTAERKE_WERT",
+            "L/H" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "MASKE" : "-"
+         },
+         {
+            "L/H" : "-",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "RESULTNAME" : "STAT_FEHLER_9_KANAL",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAudioKanal",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "RRR" : "+",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "STR" : "-",
+            "DIV" : "-"
+         },
+         {
+            "L/H" : "-",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "RESULTNAME" : "STAT_FEHLER_9_FEHLERART_KANAL",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "TKanalFehlerArt",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "RRR" : "+",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "STR" : "-",
+            "DIV" : "-"
+         },
+         {
+            "RRR" : "+",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "DIV" : "1.0",
+            "STR" : "-",
+            "EINHEIT" : "mV",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "L/H" : "-",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "RESULTNAME" : "STAT_FEHLER_9_MESSWERT_SPANNUNG_WERT"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "STR" : "-",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mA",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_FEHLER_9_MESSWERT_STROMSTAERKE_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "L/H" : "-"
+         },
+         {
+            "L/H" : "-",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "RESULTNAME" : "STAT_FEHLER_10_KANAL",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAudioKanal",
+            "STPR" : "-",
+            "MUL" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "RRR" : "+",
+            "DIV" : "-",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "STR" : "-"
+         },
+         {
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_10_FEHLERART_KANAL",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "NAME" : "TKanalFehlerArt",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "RRR" : "+",
+            "STR" : "-",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "DIV" : "-"
+         },
+         {
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "L/H" : "-",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "RESULTNAME" : "STAT_FEHLER_10_MESSWERT_SPANNUNG_WERT",
+            "RRR" : "+",
+            "DIV" : "1.0",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "STR" : "-",
+            "EINHEIT" : "mV",
+            "ADD" : "0.0"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "STR" : "-",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mA",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "RESULTNAME" : "STAT_FEHLER_10_MESSWERT_STROMSTAERKE_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "L/H" : "-"
+         },
+         {
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "DIV" : "-",
+            "STR" : "-",
+            "RRR" : "+",
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "STPR" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAudioKanal",
+            "RESULTNAME" : "STAT_FEHLER_11_KANAL",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "L/H" : "-"
+         },
+         {
+            "STR" : "-",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "DIV" : "-",
+            "RRR" : "+",
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "STPR" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "TKanalFehlerArt",
+            "RESULTNAME" : "STAT_FEHLER_11_FEHLERART_KANAL",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "L/H" : "-"
+         },
+         {
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "RESULTNAME" : "STAT_FEHLER_11_MESSWERT_SPANNUNG_WERT",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "ADD" : "0.0",
+            "EINHEIT" : "mV",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "DIV" : "1.0",
+            "STR" : "-",
+            "RRR" : "+"
+         },
+         {
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mA",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_FEHLER_11_MESSWERT_STROMSTAERKE_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "L/H" : "-"
+         },
+         {
+            "STPR" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAudioKanal",
+            "RESULTNAME" : "STAT_FEHLER_12_KANAL",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "L/H" : "-",
+            "DIV" : "-",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "STR" : "-",
+            "RRR" : "+",
+            "ADD" : "-",
+            "EINHEIT" : "0-n"
+         },
+         {
+            "RRR" : "+",
+            "DIV" : "-",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "STR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "TKanalFehlerArt",
+            "STPR" : "-",
+            "MUL" : "-",
+            "L/H" : "-",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "RESULTNAME" : "STAT_FEHLER_12_FEHLERART_KANAL"
+         },
+         {
+            "RRR" : "+",
+            "DIV" : "1.0",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "STR" : "-",
+            "EINHEIT" : "mV",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "L/H" : "-",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "RESULTNAME" : "STAT_FEHLER_12_MESSWERT_SPANNUNG_WERT"
+         },
+         {
+            "DIV" : "1.0",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "STR" : "-",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mA",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_FEHLER_12_MESSWERT_STROMSTAERKE_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "L/H" : "-"
+         },
+         {
+            "RRR" : "+",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "STR" : "-",
+            "DIV" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "TAudioKanal",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_13_KANAL",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert."
+         },
+         {
+            "DATENTYP" : "unsigned char",
+            "NAME" : "TKanalFehlerArt",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_13_FEHLERART_KANAL",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "RRR" : "+",
+            "DIV" : "-",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "STR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-"
+         },
+         {
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "RESULTNAME" : "STAT_FEHLER_13_MESSWERT_SPANNUNG_WERT",
+            "L/H" : "-",
+            "DIV" : "1.0",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "STR" : "-",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mV"
+         },
+         {
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "DIV" : "1.0",
+            "STR" : "-",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mA",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_FEHLER_13_MESSWERT_STROMSTAERKE_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "L/H" : "-"
+         },
+         {
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "DIV" : "-",
+            "STR" : "-",
+            "RRR" : "+",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "RESULTNAME" : "STAT_FEHLER_14_KANAL",
+            "L/H" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "NAME" : "TAudioKanal",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-"
+         },
+         {
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "RRR" : "+",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "STR" : "-",
+            "DIV" : "-",
+            "L/H" : "-",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "RESULTNAME" : "STAT_FEHLER_14_FEHLERART_KANAL",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "TKanalFehlerArt",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "STPR" : "-"
+         },
+         {
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "RESULTNAME" : "STAT_FEHLER_14_MESSWERT_SPANNUNG_WERT",
+            "L/H" : "-",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "STR" : "-",
+            "DIV" : "1.0",
+            "RRR" : "+",
+            "ADD" : "0.0",
+            "EINHEIT" : "mV"
+         },
+         {
+            "RRR" : "+",
+            "DIV" : "1.0",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "STR" : "-",
+            "EINHEIT" : "mA",
+            "ADD" : "0.0",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_14_MESSWERT_STROMSTAERKE_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen."
+         },
+         {
+            "RESULTNAME" : "STAT_FEHLER_15_KANAL",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "L/H" : "-",
+            "STPR" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "NAME" : "TAudioKanal",
+            "DATENTYP" : "unsigned long",
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "STR" : "-",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "DIV" : "-",
+            "RRR" : "+"
+         },
+         {
+            "MUL" : "-",
+            "STPR" : "-",
+            "NAME" : "TKanalFehlerArt",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_FEHLER_15_FEHLERART_KANAL",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war.",
+            "L/H" : "-",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "STR" : "-",
+            "DIV" : "-",
+            "RRR" : "+",
+            "ADD" : "-",
+            "EINHEIT" : "0-n"
+         },
+         {
+            "L/H" : "-",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "RESULTNAME" : "STAT_FEHLER_15_MESSWERT_SPANNUNG_WERT",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "EINHEIT" : "mV",
+            "ADD" : "0.0",
+            "RRR" : "+",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "DIV" : "1.0",
+            "STR" : "-"
+         },
+         {
+            "RRR" : "+",
+            "DIV" : "1.0",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "STR" : "-",
+            "EINHEIT" : "mA",
+            "ADD" : "0.0",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_15_MESSWERT_STROMSTAERKE_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen."
+         },
+         {
+            "NAME" : "TAudioKanal",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "L/H" : "-",
+            "INFO" : "Gibt den Kanal wieder, bei dem der Fehler X auftrat. Dieses Result wird mit 65535 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert.",
+            "RESULTNAME" : "STAT_FEHLER_16_KANAL",
+            "RRR" : "+",
+            "DIV" : "-",
+            "INFO_EN" : "Returns the channel on which error X occurred. This result is assigned 65535 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist.",
+            "STR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-"
+         },
+         {
+            "RRR" : "+",
+            "INFO_EN" : "This result is assigned 255 if STAT_LAUTSPRECHER_IMPEDANZMESSUNG does not report the value 3 (error) or the channel does not exist. Outside tolerance also denotes incorrect loudspeaker installation, i.e. e.g. a stereo mid-range speaker in a hi-fi vehicle. Returns, as an integer, the type of Xth error.",
+            "DIV" : "-",
+            "STR" : "-",
+            "EINHEIT" : "0-n",
+            "ADD" : "-",
+            "MASKE" : "-",
+            "NAME" : "TKanalFehlerArt",
+            "DATENTYP" : "unsigned char",
+            "STPR" : "-",
+            "MUL" : "-",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_16_FEHLERART_KANAL",
+            "INFO" : "Dieses Result wird mit 255 belegt, wenn STAT_LAUTSPRECHER_IMPEDANZMESSUNG nicht den Wert 3 (Fehler) meldet oder der Kanal nicht existiert. Außerhalb Toleranz bezeichnet auch Lautsprecherfehlverbau, d.h. z.B. einen Stereo-Mitteltöner in einem Hifi-Fahrzeug. Gibt wieder, als Integer, welcher Art der X. Fehler war."
+         },
+         {
+            "EINHEIT" : "mV",
+            "ADD" : "0.0",
+            "RRR" : "+",
+            "INFO_EN" : "The voltage measured on the faulty channel X in mV. Maximum possible voltage: 50V If only one current measurement is carried out, this value must be assigned 65535",
+            "DIV" : "1.0",
+            "STR" : "-",
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_16_MESSWERT_SPANNUNG_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Spannung in mV Maximal mögliche Spannung: 50V Wird nur eine Strommessung durchgeführt, so ist dieser Wert mit 65535 zu belegen",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-"
+         },
+         {
+            "L/H" : "-",
+            "RESULTNAME" : "STAT_FEHLER_16_MESSWERT_STROMSTAERKE_WERT",
+            "INFO" : "Die auf dem fehlerhaften Kanal X gemessene Stromstärke in mA Maximal mögliche Stromstärke: 50A Wird nur eine Spannungsmessung durchgeführt, so ist dieser Wert mit 65535 zu belegen.",
+            "DATENTYP" : "unsigned int",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "EINHEIT" : "mA",
+            "ADD" : "0.0",
+            "RRR" : "+",
+            "DIV" : "1.0",
+            "INFO_EN" : "The current intensity measured on the faulty channel X in mA Maximum possible current intensity: 50A If only one voltage measurement is carried out, this value must be assigned 65535.",
+            "STR" : "-"
+         }
+      ],
+      "SG_FUNKTIONEN" : [
+         {
+            "ADD" : "-",
+            "SERVICE" : "31",
+            "DIV" : "-",
+            "ARG" : "SINUSGENERATOR",
+            "RES_TABELLE" : "-",
+            "INFO" : "Gibt einen Sinuston auf einen oder mehrere Kanäle aus.",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "DATENTYP" : "-",
+            "ID" : "0xA001",
+            "EINHEIT" : "-",
+            "INFO_EN" : "Outputs a sine tone on one or more channels.",
+            "SG_ADR" : "-",
+            "LABEL" : "-",
+            "L/H" : "-",
+            "NAME" : "-",
+            "ARG_TABELLE" : "ARG_0xA001_R"
+         },
+         {
+            "SERVICE" : "31",
+            "ADD" : "-",
+            "RES_TABELLE" : "RES_0xA021_R",
+            "ARG" : "LAUTSPRECHER_IMPEDANZMESSUNG",
+            "DIV" : "-",
+            "INFO" : "Impedanzmessung (AC-Messung) auf einem oder mehreren Kanälen",
+            "RESULTNAME" : "-",
+            "DATENTYP" : "-",
+            "ID" : "0xA021",
+            "MUL" : "-",
+            "EINHEIT" : "-",
+            "SG_ADR" : "-",
+            "INFO_EN" : "Impedance measurement (AC measurement) on one or more channels",
+            "L/H" : "-",
+            "LABEL" : "-",
+            "NAME" : "-",
+            "ARG_TABELLE" : "ARG_0xA021_R"
+         },
+         {
+            "EINHEIT" : "-",
+            "INFO_EN" : "Controls the amplifier's power states",
+            "SG_ADR" : "-",
+            "LABEL" : "-",
+            "L/H" : "-",
+            "NAME" : "-",
+            "ARG_TABELLE" : "ARG_0xA06F_R",
+            "ADD" : "-",
+            "SERVICE" : "31",
+            "DIV" : "-",
+            "ARG" : "LEISTUNGSZUSTAENDE",
+            "RES_TABELLE" : "RES_0xA06F_R",
+            "INFO" : "Steuert die Leistungszustände des Verstärkers",
+            "RESULTNAME" : "-",
+            "MUL" : "-",
+            "DATENTYP" : "-",
+            "ID" : "0xA06F"
+         },
+         {
+            "SG_ADR" : "-",
+            "INFO_EN" : "Tests all external connections (e.g. loudspeaker, microphone, RAD_ON)",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "ARG_0xA0A2_R",
+            "NAME" : "-",
+            "LABEL" : "-",
+            "L/H" : "-",
+            "ARG" : "TEST_VERBAU_VERSTAERKER",
+            "DIV" : "-",
+            "RES_TABELLE" : "RES_0xA0A2_R",
+            "ADD" : "-",
+            "SERVICE" : "31",
+            "MUL" : "-",
+            "DATENTYP" : "-",
+            "ID" : "0xA0A2",
+            "INFO" : "Testet alle externen Anschlüsse (z. B. Lautsprecher, Mikrophon, RAD_ON)",
+            "RESULTNAME" : "-"
+         },
+         {
+            "DIV" : "-",
+            "ARG" : "AUDIOKANAELE",
+            "RES_TABELLE" : "RES_0xD003_D",
+            "ADD" : "-",
+            "SERVICE" : "22;2E",
+            "MUL" : "-",
+            "ID" : "0xD003",
+            "DATENTYP" : "-",
+            "INFO" : "Verstellt und liest den aktuell eingestellten Lautsprecherkanal.",
+            "RESULTNAME" : "-",
+            "INFO_EN" : "Adjusts and reads the currently set speaker channel.",
+            "SG_ADR" : "-",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "ARG_0xD003_D",
+            "NAME" : "-",
+            "LABEL" : "-",
+            "L/H" : "-"
+         },
+         {
+            "DIV" : "-",
+            "ARG" : "STATUS_ANALOG_TEMPERATUR",
+            "RES_TABELLE" : "RES_0xD026_D",
+            "ADD" : "-",
+            "SERVICE" : "22",
+            "MUL" : "-",
+            "ID" : "0xD026",
+            "DATENTYP" : "-",
+            "RESULTNAME" : "-",
+            "INFO" : "Abfrage der Temperaturen des Steuergerätes.",
+            "INFO_EN" : "Query the temperatures of the control unit.",
+            "SG_ADR" : "-",
+            "EINHEIT" : "-",
+            "NAME" : "-",
+            "ARG_TABELLE" : "-",
+            "LABEL" : "-",
+            "L/H" : "-"
+         },
+         {
+            "ADD" : "0.0",
+            "SERVICE" : "22",
+            "DIV" : "1.0",
+            "ARG" : "RADON",
+            "RES_TABELLE" : "-",
+            "RESULTNAME" : "STAT_RADON",
+            "INFO" : "Status des Ausgangssignals RADON",
+            "MUL" : "1.0",
+            "ID" : "0xD028",
+            "DATENTYP" : "unsigned char",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "Status of the output signal RADON",
+            "SG_ADR" : "-",
+            "LABEL" : "-",
+            "L/H" : "-",
+            "ARG_TABELLE" : "-",
+            "NAME" : "TRadOnLead"
+         }
+      ],
+      "RDBI_ADS_DOP" : [
+         {
+            "WERT" : "0",
+            "TEXT" : "ISOSAEReserved_00",
+            "TEXT_EN" : "ISOSAEReserved_00"
+         },
+         {
+            "TEXT_EN" : "defaultSession",
+            "TEXT" : "defaultSession",
+            "WERT" : "1"
+         },
+         {
+            "WERT" : "2",
+            "TEXT" : "programmingSession",
+            "TEXT_EN" : "programmingSession"
+         },
+         {
+            "WERT" : "3",
+            "TEXT_EN" : "extendedDiagnosticSession",
+            "TEXT" : "extendedDiagnosticSession"
+         },
+         {
+            "TEXT" : "safetySystemDiagnosticSession",
+            "TEXT_EN" : "safetySystemDiagnosticSession",
+            "WERT" : "4"
+         },
+         {
+            "WERT" : "64",
+            "TEXT_EN" : "vehicleManufacturerSpecific_40",
+            "TEXT" : "vehicleManufacturerSpecific_40"
+         },
+         {
+            "TEXT" : "codingSession",
+            "TEXT_EN" : "codingSession",
+            "WERT" : "65"
+         },
+         {
+            "TEXT_EN" : "SWTSession",
+            "TEXT" : "SWTSession",
+            "WERT" : "66"
+         }
+      ],
+      "PROG_DEP_DOP" : [
+         {
+            "TEXT" : "reserved",
+            "TEXT_EN" : "reserved",
+            "WERT" : "0"
+         },
+         {
+            "TEXT_EN" : "correctResult",
+            "TEXT" : "correctResult",
+            "WERT" : "1"
+         },
+         {
+            "TEXT" : "incorrectResult",
+            "TEXT_EN" : "incorrectResult",
+            "WERT" : "2"
+         },
+         {
+            "TEXT_EN" : "incorrectResult error SWE - HWE",
+            "TEXT" : "incorrectResult error SWE - HWE",
+            "WERT" : "3"
+         },
+         {
+            "TEXT" : "incorrectResult error SWE - SWE",
+            "TEXT_EN" : "incorrectResult error SWE - SWE",
+            "WERT" : "4"
+         },
+         {
+            "TEXT" : "reserved",
+            "TEXT_EN" : "reserved",
+            "WERT" : "255"
+         }
+      ],
+      "ARG_0XA06F_R" : [
+         {
+            "INFO_EN" : "Power condition of the amplifier",
+            "STR" : "+",
+            "DIV" : "1.0",
+            "ARG" : "ARG_LEISTUNGSZUSTAND",
+            "MAX" : "-",
+            "MIN" : "-",
+            "ADD" : "0.0",
+            "EINHEIT" : "0-n",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "NAME" : "TAB_AMP_LEISTUNGSZUSTAND",
+            "DATENTYP" : "unsigned char",
+            "INFO" : "Leistungszustand des Verstärkers",
+            "L/H" : "-"
+         }
+      ],
+      "JOBRESULTEXTENDED" : [
+         {
+            "STATUS_TEXT" : "ERROR_UNKNOWN",
+            "SB" : "0xXY"
+         }
+      ],
+      "RES_0XA0A2_R" : [
+         {
+            "L/H" : "high",
+            "RESULTNAME" : "STAT_TEST_VERBAU_VERSTAERKER",
+            "INFO" : "Gibt den Status des Verbautests wieder. Nach dem Herunterfahren oder Neustart des Steuergerätes wird der Status automatisch auf 0 zurückgesetzt.",
+            "MASKE" : "-",
+            "NAME" : "TTestStatus",
+            "DATENTYP" : "unsigned char",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "EINHEIT" : "0-n",
+            "ADD" : "0.0",
+            "RRR" : "+",
+            "STR" : "-",
+            "INFO_EN" : "Indicates the status of the installation test. After shutting down or restarting the control unit, the status is automatically reset to 0.",
+            "DIV" : "1.0"
+         },
+         {
+            "INFO_EN" : "executed test routine",
+            "STR" : "-",
+            "DIV" : "-",
+            "RRR" : "+",
+            "ADD" : "-",
+            "EINHEIT" : "0-n",
+            "MUL" : "-",
+            "STPR" : "-",
+            "NAME" : "TAB_VERBAU_ROUTINE",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_VERBAU_ROUTINE",
+            "INFO" : "ausgeführte Testroutine",
+            "L/H" : "high"
+         }
+      ],
+      "TRADONLEAD" : [
+         {
+            "TEXT" : "aus",
+            "TEXT_EN" : "out",
+            "WERT" : "0x00"
+         },
+         {
+            "TEXT" : "ein",
+            "TEXT_EN" : "a",
+            "WERT" : "0x01"
+         },
+         {
+            "TEXT_EN" : "Not defined",
+            "TEXT" : "Nicht definiert",
+            "WERT" : "0xFF"
+         }
+      ],
+      "IARTTEXTE" : [
+         {
+            "ARTTEXT_EN" : "no error type available",
+            "ARTNR" : "0x00",
+            "ARTTEXT" : "keine Fehlerart verfügbar"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x04",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x05",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x08"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x09",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x0C"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x0D"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x20",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTNR" : "0x21",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x24"
+         },
+         {
+            "ARTNR" : "0x25",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x28",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x29",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x2C",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x2D",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0x40"
+         },
+         {
+            "ARTNR" : "0x44",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x45",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x48",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x49",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x4C"
+         },
+         {
+            "ARTNR" : "0x4D",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x60",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x61",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x64",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x65",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x68",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x69"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x6C",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x6D",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen erfüllt",
+            "ARTNR" : "0x10",
+            "ARTTEXT_EN" : "Test conditions met"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt",
+            "ARTTEXT_EN" : "Test conditions not yet met",
+            "ARTNR" : "0x11"
+         },
+         {
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen",
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up",
+            "ARTNR" : "0x80"
+         },
+         {
+            "ARTNR" : "0x81",
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up",
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0xFF"
+         }
+      ],
+      "IORTTEXTE" : [
+         {
+            "ORTTEXT_EN" : "Developer EQ: invalid checksum",
+            "ORT" : "0xB7F495",
+            "ORTTEXT" : "Entwickler-EQ: ungültige Checksumme",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0xB7F4C0",
+            "ORTTEXT" : "NVM_E_WRITE_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "NVM_E_WRITE_FAILED"
+         },
+         {
+            "ORTTEXT_EN" : "NVM_E_READ_FAILED",
+            "ORT" : "0xB7F4C1",
+            "ORTTEXT" : "NVM_E_READ_FAILED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "NVM_E_CONTROL_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "NVM_E_CONTROL_FAILED",
+            "ORT" : "0xB7F4C2"
+         },
+         {
+            "ORTTEXT" : "NVM_E_ERASE_FAILED",
+            "ORT" : "0xB7F4C3",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "NVM_E_ERASE_FAILED"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "NVM_E_WRITE_ALL_FAILED",
+            "ORT" : "0xB7F4C4",
+            "ORTTEXT_EN" : "NVM_E_WRITE_ALL_FAILED"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "NVM_E_WRONG_CONFIG_ID",
+            "ORT" : "0xB7F4C5",
+            "ORTTEXT_EN" : "NVM_E_WRONG_CONFIG_ID"
+         },
+         {
+            "ORTTEXT_EN" : "NVM_E_READ_ALL_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "NVM_E_READ_ALL_FAILED",
+            "ORT" : "0xB7F4C6"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Signal (Zeit_Sekunde_Zaehler_Relativ, 0x328): ungültig",
+            "ORT" : "0xB7F4D0",
+            "ORTTEXT_EN" : "Signal (Zeit_Sekunde_Zaehler_Relativ, 0x328): invalid"
+         },
+         {
+            "ORT" : "0xB7F4D1",
+            "ORTTEXT" : "Botschaft (Fahrzeugzustand, 0x3A0) fehlt",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (vehicle status, 0x3A0) is missing"
+         },
+         {
+            "ORTTEXT_EN" : "Outbound error message buffer is full",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xB7F4D2",
+            "ORTTEXT" : "Puffer für ausgehende Fehlermeldungen ist voll"
+         },
+         {
+            "ORTTEXT_EN" : "Error could not be sent after the maximum number of attempts",
+            "ORTTEXT" : "Fehler konnte nach maximaler Anzahl von Versuchen nicht gesendet werden",
+            "ORT" : "0xB7F4D3",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Front left speaker channel error (mid-range speaker, if controlled separately)",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal links vorne (Mitteltöner, wenn getrennt angesteuert)",
+            "ORT" : "0xB7F4F0"
+         },
+         {
+            "ORTTEXT_EN" : "Fault in the front right loudspeaker channel (mid-range speaker, if controlled separately)",
+            "ORT" : "0xB7F4F1",
+            "ORTTEXT" : "Fehler Lautsprecherkanal rechts vorne (Mitteltöner, wenn getrennt angesteuert)",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Center vorne (Mitteltöner, wenn getrennt angesteuert)",
+            "ORT" : "0xB7F4F2",
+            "ORTTEXT_EN" : "Error speaker channel center front (mid-range speaker, if controlled separately)"
+         },
+         {
+            "ORTTEXT_EN" : "Error in the loudspeaker channel, rear left door (mid-range speaker, if activated separately)",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F4F3",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Türe hinten links (Mitteltöner, wenn getrennt angesteuert)"
+         },
+         {
+            "ORTTEXT_EN" : "Fault in the loudspeaker channel, rear right door (mid-range speaker, if activated separately)",
+            "ORT" : "0xB7F4F4",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Türe hinten rechts (Mitteltöner, wenn getrennt angesteuert)",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F4F5",
+            "ORTTEXT" : "Fehler Lautsprecherkanal links hinten (Mitteltöner, wenn getrennt angesteuert)",
+            "ORTTEXT_EN" : "Error loudspeaker channel at the rear left (mid-range speaker, if activated separately)"
+         },
+         {
+            "ORT" : "0xB7F4F6",
+            "ORTTEXT" : "Fehler Lautsprecherkanal rechts hinten (Mitteltöner, wenn getrennt angesteuert)",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Error loudspeaker channel on the right rear (mid-range speaker, if controlled separately)"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xB7F4F7",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Bass vorne links",
+            "ORTTEXT_EN" : "Front left bass speaker channel error"
+         },
+         {
+            "ORTTEXT_EN" : "Front right bass speaker channel error",
+            "ORT" : "0xB7F4F8",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Bass vorne rechts",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Bass hinten links",
+            "ORT" : "0xB7F4F9",
+            "ORTTEXT_EN" : "Error loudspeaker channel bass rear left"
+         },
+         {
+            "ORTTEXT_EN" : "Error loudspeaker channel bass rear right",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Bass hinten rechts",
+            "ORT" : "0xB7F4FA"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Center hinten (Mitteltöner, wenn getrennt angesteuert)",
+            "ORT" : "0xB7F4FB",
+            "ORTTEXT_EN" : "Error center rear speaker channel (mid-range speaker, if controlled separately)"
+         },
+         {
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner links vorne",
+            "ORT" : "0xB7F4FC",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Error loudspeaker channel tweeter in front left"
+         },
+         {
+            "ORTTEXT_EN" : "Error loudspeaker channel tweeter at the front right",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner rechts vorne",
+            "ORT" : "0xB7F4FD"
+         },
+         {
+            "ORTTEXT_EN" : "Error speaker channel tweeter center front",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner Center vorne",
+            "ORT" : "0xB7F4FE"
+         },
+         {
+            "ORTTEXT_EN" : "Error in the loudspeaker channel in the tweeter door, rear left",
+            "ORT" : "0xB7F4FF",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner Türe hinten links",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner Türe hinten rechts",
+            "ORT" : "0xB7F500",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Error in the loudspeaker channel in the tweeter door, rear right"
+         },
+         {
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner hinten links",
+            "ORT" : "0xB7F501",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Error loudspeaker channel tweeter, rear left"
+         },
+         {
+            "ORTTEXT_EN" : "Error loudspeaker channel tweeter, rear right",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner hinten rechts",
+            "ORT" : "0xB7F502"
+         },
+         {
+            "ORTTEXT_EN" : "Error loudspeaker channel tweeter center rear",
+            "ORT" : "0xB7F503",
+            "ORTTEXT" : "Fehler Lautsprecherkanal Hochtöner Center hinten",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "ORT" : "0xFFFFFF",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "unknown error location"
+         }
+      ],
+      "JOBRESULT" : [
+         {
+            "SB" : "0x10",
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_REJECT"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED",
+            "SB" : "0x11"
+         },
+         {
+            "SB" : "0x12",
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT",
+            "SB" : "0x13"
+         },
+         {
+            "SB" : "0x14",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LONG"
+         },
+         {
+            "SB" : "0x21",
+            "STATUS_TEXT" : "ERROR_ECU_BUSY_REPEAT_REQUEST"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_CONDITIONS_NOT_CORRECT",
+            "SB" : "0x22"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_SEQUENCE_ERROR",
+            "SB" : "0x24"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE_FROM_SUBNET_COMPONENT",
+            "SB" : "0x25"
+         },
+         {
+            "SB" : "0x26",
+            "STATUS_TEXT" : "ERROR_ECU_FAILURE_PREVENTS_EXECUTION_OF_REQUESTED_ACTION"
+         },
+         {
+            "SB" : "0x31",
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_OUT_OF_RANGE"
+         },
+         {
+            "SB" : "0x33",
+            "STATUS_TEXT" : "ERROR_ECU_SECURITY_ACCESS_DENIED"
+         },
+         {
+            "SB" : "0x35",
+            "STATUS_TEXT" : "ERROR_ECU_INVALID_KEY"
+         },
+         {
+            "SB" : "0x36",
+            "STATUS_TEXT" : "ERROR_ECU_EXCEED_NUMBER_OF_ATTEMPTS"
+         },
+         {
+            "SB" : "0x37",
+            "STATUS_TEXT" : "ERROR_ECU_REQUIRED_TIME_DELAY_NOT_EXPIRED"
+         },
+         {
+            "SB" : "0x70",
+            "STATUS_TEXT" : "ERROR_ECU_UPLOAD_DOWNLOAD_NOT_ACCEPTED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSFER_DATA_SUSPENDED",
+            "SB" : "0x71"
+         },
+         {
+            "SB" : "0x72",
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_PROGRAMMING_FAILURE"
+         },
+         {
+            "SB" : "0x73",
+            "STATUS_TEXT" : "ERROR_ECU_WRONG_BLOCK_SEQUENCE_COUNTER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_CORRECTLY_RECEIVED__RESPONSE_PENDING",
+            "SB" : "0x78"
+         },
+         {
+            "SB" : "0x7E",
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED_IN_ACTIVE_SESSION"
+         },
+         {
+            "SB" : "0x7F",
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED_IN_ACTIVE_SESSION"
+         },
+         {
+            "SB" : "0x81",
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_HIGH"
+         },
+         {
+            "SB" : "0x82",
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_LOW"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_RUNNING",
+            "SB" : "0x83"
+         },
+         {
+            "SB" : "0x84",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_NOT_RUNNING"
+         },
+         {
+            "SB" : "0x85",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_RUN_TIME_TOO_LOW"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_HIGH",
+            "SB" : "0x86"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_LOW",
+            "SB" : "0x87"
+         },
+         {
+            "SB" : "0x88",
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_LOW",
+            "SB" : "0x89"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_HIGH",
+            "SB" : "0x8A"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_LOW",
+            "SB" : "0x8B"
+         },
+         {
+            "SB" : "0x8C",
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_NEUTRAL"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_GEAR",
+            "SB" : "0x8D"
+         },
+         {
+            "SB" : "0x8F",
+            "STATUS_TEXT" : "ERROR_ECU_BRAKE_SWITCH_NOT_CLOSED"
+         },
+         {
+            "SB" : "0x90",
+            "STATUS_TEXT" : "ERROR_ECU_SHIFTER_LEVER_NOT_IN_PARK"
+         },
+         {
+            "SB" : "0x91",
+            "STATUS_TEXT" : "ERROR_ECU_TORQUE_CONVERTER_CLUTCH_LOCKED"
+         },
+         {
+            "SB" : "0x92",
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_HIGH"
+         },
+         {
+            "SB" : "0x93",
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_LOW"
+         },
+         {
+            "SB" : "?00?",
+            "STATUS_TEXT" : "OKAY"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE",
+            "SB" : "?01?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_LEN",
+            "SB" : "?02?"
+         },
+         {
+            "SB" : "?03?",
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_RESPONSE_ID"
+         },
+         {
+            "SB" : "?04?",
+            "STATUS_TEXT" : "ERROR_ECU_TA_RESPONSE_NOT_SA_REQUEST"
+         },
+         {
+            "SB" : "?05?",
+            "STATUS_TEXT" : "ERROR_ECU_SA_RESPONSE_NOT_TA_REQUEST"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DATA_IDENTIFIER",
+            "SB" : "?06?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_MUCH_DATA",
+            "SB" : "?07?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LESS_DATA",
+            "SB" : "?08?"
+         },
+         {
+            "SB" : "?09?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_VALUE_OUT_OF_RANGE"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_TABLE",
+            "SB" : "?0A?"
+         },
+         {
+            "SB" : "?10?",
+            "STATUS_TEXT" : "ERROR_F_CODE"
+         },
+         {
+            "SB" : "?12?",
+            "STATUS_TEXT" : "ERROR_INTERPRETATION"
+         },
+         {
+            "SB" : "?13?",
+            "STATUS_TEXT" : "ERROR_F_POS"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_IO_CONTROL_PARAMETER",
+            "SB" : "?14?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_TYPE",
+            "SB" : "?15?"
+         },
+         {
+            "SB" : "?16?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SUB_FUNCTION"
+         },
+         {
+            "SB" : "?17?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DYNAMICALLY_DEFINED_DATA_IDENTIFIER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_NO_STRING_END_CHAR",
+            "SB" : "?18?"
+         },
+         {
+            "SB" : "?19?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_IDENTIFIER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_RESET_TYPE",
+            "SB" : "?1A?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SERIAL_NUMBER_FORMAT",
+            "SB" : "?1B?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_BY_STATUS_MASK",
+            "SB" : "?1C?"
+         },
+         {
+            "SB" : "?1D?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_STATUS_AVAILABILITY_MASK"
+         },
+         {
+            "SB" : "?1E?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_IDENTIFIER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE1",
+            "SB" : "?50?"
+         },
+         {
+            "SB" : "?51?",
+            "STATUS_TEXT" : "ERROR_BYTE2"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE3",
+            "SB" : "?52?"
+         },
+         {
+            "SB" : "?60?",
+            "STATUS_TEXT" : "ERROR_VERIFY"
+         },
+         {
+            "SB" : "?61?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_ZGW"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_BACKUP",
+            "SB" : "?62?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_CALID_CVN_INCORRECT_LEN",
+            "SB" : "?70?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_LEN",
+            "SB" : "?80?"
+         },
+         {
+            "SB" : "?81?",
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_FINGERPRINT"
+         },
+         {
+            "SB" : "?F0?",
+            "STATUS_TEXT" : "ERROR_ARGUMENT"
+         },
+         {
+            "SB" : "0xXY",
+            "STATUS_TEXT" : "ERROR_ECU_UNKNOWN_NEGATIVE_RESPONSE"
+         }
+      ]
+   }
+}

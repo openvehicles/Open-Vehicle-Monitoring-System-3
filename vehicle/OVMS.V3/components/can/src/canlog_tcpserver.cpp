@@ -87,19 +87,19 @@ OvmsCanLogTcpServerInit::OvmsCanLogTcpServerInit()
         OvmsCommand* transmit = start->RegisterCommand("transmit","CAN logging as TCP server (transmit mode)");
         MyCanFormatFactory.RegisterCommandSet(discard, "Start CAN logging as TCP server (discard mode)",
           can_log_tcpserver_start,
-          "<port> [filter1] ... [filterN]\n"
+          "<host[:port]> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
           1, 9);
         MyCanFormatFactory.RegisterCommandSet(simulate, "Start CAN logging as TCP server (simulate mode)",
           can_log_tcpserver_start,
-          "<port> [filter1] ... [filterN]\n"
+          "<host[:port]> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
           1, 9);
         MyCanFormatFactory.RegisterCommandSet(transmit, "Start CAN logging as TCP server (transmit mode)",
           can_log_tcpserver_start,
-          "<port> [filter1] ... [filterN]\n"
+          "<host[:port]> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
           1, 9);

@@ -91,6 +91,7 @@ void simcom5360::StatusPoller()
         //  +COPS: 0,0,"vodafone.de Hologram",0
 
         // done, fallthrough:
+        FALLTHROUGH;
       default:
         m_statuspoller_step = 0;
         break;
@@ -151,7 +152,9 @@ modem::modem_state1_t simcom5360::State1Ticker1(modem::modem_state1_t curstate)
         m_modem->tx("AT+CMUXSRVPORT=0,5\r\n");
         break;
       case 20:
-        m_modem->tx("AT+CMUX=0\r\n");
+        // start MUX mode, route URCs to MUX channel 3 (POLL)
+        // Note: NMEA URCs will still be sent only on channel 1 (NMEA) by the SIMCOM 5360
+        m_modem->tx("AT+CMUX=0;+CATR=6\r\n");
         break;
       }
     return modem::None;

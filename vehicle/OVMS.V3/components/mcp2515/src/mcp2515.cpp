@@ -36,7 +36,7 @@ static const char *TAG = "mcp2515";
 #include "mcp2515_regdef.h"
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
-#include "esp_intr.h"
+#include "esp_intr_alloc.h"
 #include "soc/dport_reg.h"
 
 static IRAM_ATTR void MCP2515_isr(void *pvParameters)

@@ -38,7 +38,9 @@ static const char *TAG = "ovms-server-v3";
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#if CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
+#endif
 
 OvmsServerV3 *MyOvmsServerV3 = NULL;
 size_t MyOvmsServerV3Modifier = 0;
@@ -179,7 +181,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
   }
 
 OvmsServerV3::OvmsServerV3(const char* name)
-  : OvmsServer(name)
+  : OvmsServer(name), m_metrics_filter(TAG)
   {
   if (MyOvmsServerV3Modifier == 0)
     {
@@ -192,7 +194,6 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_mgconn = NULL;
   m_sendall = false;
   m_lasttx = 0;
-  m_lasttx_stream = 0;
   m_lasttx_sendall = 0;
   m_peers = 0;
   m_streaming = 0;
@@ -295,9 +296,14 @@ void OvmsServerV3::TransmitModifiedMetrics()
 
 void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   {
+  auto const metric_name = metric->m_name;
+
+  if (!m_metrics_filter.CheckFilter(metric_name))
+    return;
+
   std::string topic(m_topic_prefix);
   topic.append("metric/");
-  topic.append(metric->m_name);
+  topic.append(metric_name);
 
   // Replace '.' inside the metric name by '/' for MQTT like namespacing.
   for(size_t i = m_topic_prefix.length(); i < topic.length(); i++)
@@ -679,8 +685,14 @@ void OvmsServerV3::Connect()
   opts.error_string = &err;
   if (m_tls)
     {
+#if CONFIG_MG_ENABLE_SSL
     opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     opts.ssl_server_name = m_server.c_str();
+#else
+    ESP_LOGE(TAG, "mg_connect(%s) failed: SSL support disabled", address.c_str());
+    SetStatus("Error: Connection failed (SSL support disabled)", true, Undefined);
+    return;
+#endif
     }
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV3MongooseCallback, opts)) == NULL)
     {
@@ -746,16 +758,6 @@ void OvmsServerV3::SetStatus(const char* status, bool fault /*=false*/, State ne
 
 void OvmsServerV3::MetricModified(OvmsMetric* metric)
   {
-  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
-
-  if (m_streaming)
-    {
-    OvmsMutexLock mg(&m_mgconn_mutex);
-    if (!m_mgconn)
-      return;
-    metric->ClearModified(MyOvmsServerV3Modifier);
-    TransmitMetric(metric);
-    }
   }
 
 bool OvmsServerV3::NotificationFilter(OvmsNotifyType* type, const char* subtype)
@@ -824,6 +826,8 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_updatetime_on = MyConfig.GetParamValueInt("server.v3", "updatetime.on", m_updatetime_idle);
   m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_idle);
   m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", 0);
+  m_metrics_filter.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.include"),
+                               MyConfig.GetParamValue("server.v3", "metrics.exclude"));
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)
@@ -913,12 +917,21 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       TransmitPendingNotificationsData();
 
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
+
     // Next send time depends on the state of the car
-    int next = (m_peers != 0) ? m_updatetime_connected :
-               (caron) ? m_updatetime_on :
-               (StandardMetrics.ms_v_charge_inprogress->AsBool()) ? m_updatetime_charging :
-               (StandardMetrics.ms_v_env_awake->AsBool()) ? m_updatetime_awake :
-               m_updatetime_idle;
+    int next = m_updatetime_idle;
+
+    // Use the lowest enabled update value
+    if (m_peers != 0 && m_updatetime_connected < next)
+      next = m_updatetime_connected;
+    if ((caron && m_streaming > 0) && m_streaming < next)
+      next = m_streaming;
+    if (caron && m_updatetime_on < next)
+      next = m_updatetime_on;
+    if (StandardMetrics.ms_v_charge_inprogress->AsBool() && m_updatetime_charging < next)
+      next = m_updatetime_charging;
+    if (StandardMetrics.ms_v_env_awake->AsBool() && m_updatetime_awake < next)
+      next = m_updatetime_awake;
 
     if ((m_lasttx_sendall == 0) ||
         (m_updatetime_sendall > 0 && now > (m_lasttx_sendall + m_updatetime_sendall)))
@@ -930,12 +943,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     else if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
       TransmitModifiedMetrics();
-      m_lasttx = m_lasttx_stream = now;
-      }
-    else if (m_streaming && caron && m_peers && now > m_lasttx_stream+m_streaming)
-      {
-      // TODO: transmit streaming metrics
-      m_lasttx_stream = now;
+      m_lasttx = now;
       }
     }
   }

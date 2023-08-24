@@ -460,7 +460,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
   if (poll_state != m_poll_state) {
     ESP_LOGD(TAG,
       "PollerStateTicker: [%s] LVPwrState=%d HVChgMode=%d SOC=%.1f%% LVAutoChg=%d "
-      "12V=%.1f DCDC_U=%.1f DCDC_I=%.1f ChgEff=%.1f BatI=%.1f BatIAge=%u => PollState %d->%d",
+      "12V=%.1f DCDC_U=%.1f DCDC_I=%.1f ChgEff=%.1f BatI=%.1f BatIAge=%" PRIu32 " => PollState %d->%d",
       car_online ? "online" : "offline", lv_pwrstate, hv_chgmode, StdMetrics.ms_v_bat_soc->AsFloat(),
       m_lv_autochg->AsInt(), StdMetrics.ms_v_bat_12v_voltage->AsFloat(),
       dcdc_voltage, StdMetrics.ms_v_charge_12v_current->AsFloat(),
@@ -1206,7 +1206,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         int threshold = MyConfig.GetParamValueInt("xvu", "serv_warn_range", 5000);
         int old_value = StdMetrics.ms_v_env_service_range->AsInt();
         if (old_value > threshold && value <= threshold) { 
-          MyNotify.NotifyStringf("info", "serv.range", "Service range left: %d km!", value);
+          MyNotify.NotifyStringf("info", "serv.range", "Service range left: %.0f km!", value);
         }         
         StdMetrics.ms_v_env_service_range->SetValue(value);
         VALUE_LOG(TAG, "VWUP_MFD_SERV_RANGE=%f => %f", value, StdMetrics.ms_v_env_service_range->AsFloat());
@@ -1219,7 +1219,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         int threshold = MyConfig.GetParamValueInt("xvu", "serv_warn_days", 30);
         int old_value = ROUNDPREC((StdMetrics.ms_v_env_service_time->AsInt() - now) / 86400.0f, 0);
         if (old_value > threshold && value <= threshold) {
-          MyNotify.NotifyStringf("info", "serv.time", "Service time left: %d days!", value);
+          MyNotify.NotifyStringf("info", "serv.time", "Service time left: %.0f days!", value);
         }         
         ServiceDays -> SetValue(value);
         StdMetrics.ms_v_env_service_time->SetValue(StdMetrics.ms_m_timeutc->AsInt() + value * 86400);
@@ -1321,7 +1321,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     default:
-      VALUE_LOG(TAG, "IncomingPollReply: ECU %X/%X unhandled PID %02X %04X: %s",
+      VALUE_LOG(TAG, "IncomingPollReply: ECU %" PRIX32 "/%" PRIX32 " unhandled PID %02X %04X: %s",
         m_poll_entry.txmoduleid, m_poll_entry.rxmoduleid, type, pid, PollReply.GetHexString().c_str());
       break;
   }

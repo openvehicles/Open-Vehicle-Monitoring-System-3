@@ -76,7 +76,7 @@
 // C string sorting for std::map et al:
 struct CmpStrOp
   {
-  bool operator()(char const *a, char const *b)
+  bool operator()(char const *a, char const *b) const
     {
     return std::strcmp(a, b) < 0;
     }
@@ -207,7 +207,8 @@ std::string json_encode(const src_string text)
   buf.reserve(text.size() + (text.size() >> 3));
   for (int i=0; i<text.size(); i++)
     {
-    switch(text[i])
+    char ch = text[i];
+    switch(ch)
       {
       case '\n':        buf += "\\n"; break;
       case '\r':        buf += "\\r"; break;
@@ -217,14 +218,14 @@ std::string json_encode(const src_string text)
       case '\"':        buf += "\\\""; break;
       case '\\':        buf += "\\\\"; break;
       default:
-        if (iscntrl(text[i]))
+        if (iscntrl(ch))
           {
-          sprintf(hex, "\\u%04x", (unsigned int)text[i]);
+          sprintf(hex, "\\u%04x", (unsigned int)ch);
           buf += hex;
           }
         else
           {
-          buf += text[i];
+          buf += ch;
           }
         break;
       }
@@ -609,4 +610,28 @@ static inline std::string trim_copy(std::string s) {
     return s;
 }
 
+/**
+ * format_file_size: format a file size in human-readable format.
+ * (like 1.5k 234.2M 2.1G)
+ */
+void format_file_size(char* buffer, std::size_t buf_size, std::size_t fsize);
+
+/** Format to a std::string.
+ */
+std::string string_format(const char *fmt_str, ...) __attribute__ ((format (printf, 1, 2)));
+
+/**
+ * Return `std::string` in lower-case.
+ *
+ * Cf https://en.cppreference.com/w/cpp/string/byte/tolower
+ *
+ * Note: This may introduce unnecessary overhead as `std::tolower()` is locale aware.
+ * Sometimes it may be better to use plain C `strncasecmp()`.
+ */
+static inline std::string str_tolower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); }
+                  );
+    return s;
+}
 #endif // __OVMS_UTILS_H__

@@ -82,9 +82,9 @@ void modemdriver::Restart()
   {
   ESP_LOGI(TAG, "Restart");
   if (MyConfig.GetParamValueBool("auto", "modem", false))
-    m_modem->SetState1((m_modem->GetState1() != modem::PoweredOff) ? modem::PowerOffOn : modem::PoweringOn);
+    m_modem->SendSetState1((m_modem->GetState1() != modem::PoweredOff) ? modem::PowerOffOn : modem::PoweringOn);
   else
-    m_modem->SetState1(modem::PoweringOff);
+    m_modem->SendSetState1(modem::PoweringOff);
   }
 
 void modemdriver::PowerOff()
@@ -101,6 +101,7 @@ void modemdriver::PowerCycle()
   m_powercyclefactor = m_powercyclefactor % 3;
   ESP_LOGI(TAG, "Power Cycle %dms", psd);
 
+  uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
   uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
 #ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
@@ -142,7 +143,12 @@ void modemdriver::ShutdownNMEA()
   {
   // Switch off GPS:
   if (m_modem->m_mux != NULL)
-    { m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n"); }
+    {
+    // send single commands, as each can fail:
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=0\r\n");
+    vTaskDelay(pdMS_TO_TICKS(100));
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
+    }
   else
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
   }

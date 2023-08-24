@@ -82,6 +82,8 @@ static const char *TAG = "v-smarted";
 #include <algorithm>
 #include <string>
 #include <iomanip>
+#include <numeric>
+#include <math.h>
 #include "pcp.h"
 #include "ovms_events.h"
 #include "metrics_standard.h"

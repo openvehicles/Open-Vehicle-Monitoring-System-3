@@ -39,6 +39,32 @@ namespace
 //Variant b specific polls
 const OvmsVehicle::poll_pid_t obdii_polls_b[] =
 {
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCurrentPid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryResistancePid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoCPid, {  0, 30, 30, 60  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCoolantTempPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoHPid, {  0, 120, 120, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryTempPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryErrorPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsRangePid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell1StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell2StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell3StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell4StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell5StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell6StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell7StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell8StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell9StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsMaxCellVoltagePid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsMinCellVoltagePid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsTimePid, {  0, 60, 60, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsSystemMainRelayBPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsSystemMainRelayGPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsSystemMainRelayPPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
     { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDoorPid, {  0, 1, 1, 0  }, 0, ISOTP_STD },
     { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDrlPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
     { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_TESTERPRESENT, 0, {  0, 2, 2, 0  }, 0, ISOTP_STD} //This is required for keeping BCM authentication. Technically it is only needed if BCM is authenticated but it doesn't seem to cause any side effects when BCM is not authenticated so it is put here for simplicity sake so that we don't have to add/remove this line depending on whether BCM is authenticated or not.
@@ -53,9 +79,30 @@ OvmsVehicleMgEvB::OvmsVehicleMgEvB()
 
     //Initialise GWM state to Unknown
     m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));
+    
+    // Set Max Range to WLTP Range
+    StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
+    m_batt_capacity->SetValue(BATT_CAPACITY);
+    m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
+    MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLowerLimit);
+    MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDUpperLimit);
 
     //Add variant specific poll data
     ConfigurePollData(obdii_polls_b, sizeof(obdii_polls_b));
+    
+    //BMS Configuration
+    BmsSetCellArrangementVoltage(18, 2);
+    BmsSetCellArrangementTemperature(18, 2);
+    BmsSetCellLimitsVoltage(3.0, 5.0);
+    BmsSetCellLimitsTemperature(-39, 200);
+    BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+    BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+    
+    // Register shell commands
+    cmd_xmg->RegisterCommand("auth", "Authenticate with ECUs", AuthenticateECUShell, "<ECU>\nall\tAll ECUs\ngwm\tGWM only\nbcm\tBCM only", 1, 1);
+    cmd_xmg->RegisterCommand("drl", "Daytime running light control", DRLCommandWithAuthShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
+    cmd_xmg->RegisterCommand("drln", "Daytime running light control (no BCM authentication)", DRLCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
+
 }
 
 //Called by OVMS when vehicle type is changed from current
@@ -210,7 +257,7 @@ void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
         StandardMetrics.ms_v_charge_inprogress->SetValue(false);
         if (m_afterRunTicker < TRANSITION_TIMEOUT)
         {
-            ESP_LOGV(TAG, "(%u) Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
+            ESP_LOGV(TAG, "(%" PRIu32 ") Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
             m_afterRunTicker++;
         }
         else if (m_afterRunTicker == TRANSITION_TIMEOUT)      
@@ -220,71 +267,6 @@ void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
             GWMUnknown();
         }        
     }
-}
-
-void OvmsVehicleMgEvB::GWMAwake(canbus* currentBus)
-{
-    ESP_LOGI(TAG, "GWM responded to tester present. GWM is awake. Checking if GWM is unlocked.");
-    m_gwm_state->SetValue(static_cast<int>(GWMStates::Awake));   
-    std::string Response;
-    int PollStatus = PollSingleRequest(currentBus, bcmId, bcmId | rxFlag, hexdecode("3e00"), Response, SYNC_REQUEST_TIMEOUT, ISOTP_STD);
-    ESP_LOGI(TAG, "Response (%d): %s", PollStatus, hexencode(Response).c_str());
-    if (PollStatus == 0)
-    {
-        ESP_LOGI(TAG, "BCM responded to tester present. GWM is unlocked.");	
-        GWMUnlocked();
-    }
-    else
-    {
-        ESP_LOGI(TAG, "BCM did not respond to tester present, will start GWM authentication");
-        if (AuthenticateECU({ECUAuth::GWM}))
-        {
-            ESP_LOGI(TAG, "Authentication successful. Try send tester present to BCM again.");
-            PollStatus = PollSingleRequest(currentBus, bcmId, bcmId | rxFlag, hexdecode("3e00"), Response, SYNC_REQUEST_TIMEOUT, ISOTP_STD);
-            ESP_LOGI(TAG, "Response (%d): %s", PollStatus, hexencode(Response).c_str());
-            if (PollStatus == 0)
-            {
-                ESP_LOGI(TAG, "BCM responded to tester present. GWM is unlocked.");	
-                GWMUnlocked();
-            }
-            else
-            {
-                ESP_LOGI(TAG, "BCM did not respond to tester present, will retry in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
-                RetryCheckState();	
-            }              
-        }
-        else
-        {
-            ESP_LOGI(TAG, "Authentication failed. Retrying in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
-            RetryCheckState();
-        }        
-    }
-}
-
-void OvmsVehicleMgEvB::GWMUnlocked()
-{
-	ESP_LOGI(TAG, "Setting GWM state to Unlocked");
-    m_gwm_state->SetValue(static_cast<int>(GWMStates::Unlocked));
-	m_GWMUnresponsiveCount = 0;
-    StandardMetrics.ms_v_env_awake->SetValue(true);
-    StandardMetrics.ms_v_env_ctrl_login->SetValue(true);
-}
-
-void OvmsVehicleMgEvB::RetryCheckState()
-{
-	ESP_LOGI(TAG, "Setting GWM state to WaitToRetryCheckState");
-	m_gwm_state->SetValue(static_cast<int>(GWMStates::WaitToRetryCheckState));
-    m_RetryCheckStateWaitCount = 0;
-}
-
-void OvmsVehicleMgEvB::GWMUnknown()
-{
-    ESP_LOGI(TAG, "Setting GWM state to Unknown");
-    m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));
-    m_bcm_auth->SetValue(false);
-    PollSetState(PollStateListenOnly);
-    StandardMetrics.ms_v_env_awake->SetValue(false);
-    StandardMetrics.ms_v_env_ctrl_login->SetValue(false);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMgEvB::CommandWakeup()
@@ -331,7 +313,7 @@ class OvmsVehicleMgEvBInit
 
 OvmsVehicleMgEvBInit::OvmsVehicleMgEvBInit()
 {
-    ESP_LOGI(TAG, "Registering Vehicle: MG EV (TH) (9000)");
+    ESP_LOGI(TAG, "Registering Vehicle: MG ZS EV (AU/TH) (9000)");
 
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvB>("MGB", "MG EV (TH)");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvB>("MGB", "MG ZS EV (AU/TH)");
 }

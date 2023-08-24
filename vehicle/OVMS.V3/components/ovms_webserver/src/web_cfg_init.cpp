@@ -883,7 +883,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
 std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::string step)
 {
   std::string error, info;
-  std::string vehicletype, units_distance;
+  std::string vehicletype, units_distance, units_temp, units_pressure;
   std::string server, vehicleid, password;
 
   if (c.method == "POST") {
@@ -903,6 +903,8 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
       // process form input:
       vehicletype = c.getvar("vehicletype");
       units_distance = c.getvar("units_distance");
+      units_temp = c.getvar("units_temp");
+      units_pressure = c.getvar("units_pressure");
       server = c.getvar("server");
       vehicleid = c.getvar("vehicleid");
       password = c.getvar("password");
@@ -915,7 +917,22 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
         error += "<li data-input=\"vehicleid\">Vehicle ID may only contain ASCII letters, digits and '-'</li>";
 
       // configure vehicle:
-      MyConfig.SetParamValue("vehicle", "units.distance", units_distance);
+      OvmsMetricSetUserConfig(GrpDistance, units_distance);
+      if (units_distance == "miles") {
+        OvmsMetricSetUserConfig(GrpDistanceShort, "feet");
+        OvmsMetricSetUserConfig(GrpSpeed, "miph");
+        OvmsMetricSetUserConfig(GrpAccel, "miphps");
+        OvmsMetricSetUserConfig(GrpAccelShort, "ftpss");
+        OvmsMetricSetUserConfig(GrpConsumption, "mipkwh");
+      } else {
+        // Set to their defaults.
+        OvmsMetricSetUserConfig(GrpDistanceShort, "");
+        OvmsMetricSetUserConfig(GrpSpeed, "");
+        OvmsMetricSetUserConfig(GrpAccel, "");
+        OvmsMetricSetUserConfig(GrpAccelShort, "");
+        OvmsMetricSetUserConfig(GrpConsumption, "");
+      }
+
       MyConfig.SetParamValue("auto", "vehicle.type", vehicletype);
 
       // configure server:
@@ -943,7 +960,10 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
     // read configuration:
     vehicleid = MyConfig.GetParamValue("vehicle", "id");
     vehicletype = MyConfig.GetParamValue("auto", "vehicle.type");
-    units_distance = MyConfig.GetParamValue("vehicle", "units.distance", "K");
+    units_distance = OvmsMetricGetUserConfig(GrpDistance);
+    units_temp = OvmsMetricGetUserConfig(GrpTemp);
+    units_pressure = OvmsMetricGetUserConfig(GrpPressure);
+
     server = MyConfig.GetParamValue("server.v2", "server");
     password = MyConfig.GetParamValue("password","server.v2");
 
@@ -1027,9 +1047,22 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
     c.input_select_option(k->second.name, k->first, (vehicletype == k->first));
   c.input_select_end();
 
-  c.input_radiobtn_start("Distance units", "units_distance");
-  c.input_radiobtn_option("units_distance", "Kilometers", "K", units_distance == "K");
-  c.input_radiobtn_option("units_distance", "Miles", "M", units_distance == "M");
+  bool is_metric = units_distance != "miles";
+  c.input_radiobtn_start("Distance related units", "units_distance");
+  c.input_radiobtn_option("units_distance", "Metric (km & metres)", "", is_metric);
+  c.input_radiobtn_option("units_distance", "Imperial (miles & feet)", "miles", !is_metric);
+  c.input_radiobtn_end();
+
+  is_metric = units_temp != "fahrenheit";
+  c.input_radiobtn_start("Temperature units", "units_temp");
+  c.input_radiobtn_option("units_temp", "Metric (°C)", "", is_metric);
+  c.input_radiobtn_option("units_temp", "Imperial (°F)", "fahrenheit", !is_metric);
+  c.input_radiobtn_end();
+
+  is_metric = units_pressure != "psi";
+  c.input_radiobtn_start("Pressure units", "units_pressure");
+  c.input_radiobtn_option("units_pressure", "Metric (kPa)", "", is_metric);
+  c.input_radiobtn_option("units_pressure", "Imperial (PSI)", "psi", !is_metric);
   c.input_radiobtn_end();
 
   c.input_radio_start("OVMS data server", "server");

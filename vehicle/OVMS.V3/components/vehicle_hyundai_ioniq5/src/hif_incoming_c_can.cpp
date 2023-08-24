@@ -52,7 +52,7 @@ void OvmsHyundaiIoniqEv::IncomingFrameCan1(CAN_frame_t *p_frame)
     kia_send_can.byte[7] = d[7];
   }
   else if (kia_send_can.status == 3 && p_frame->MsgID == (kia_send_can.id + 0x08)) {
-    ESP_LOGV(TAG, "Drop: MsgID=%03x [%02x %02x %02x %02x %02x %02x %02x %02x]",
+    ESP_LOGV(TAG, "Drop: MsgID=%03" PRIx32 " [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
       p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]
     );
   }

@@ -161,7 +161,7 @@ void OvmsVehicleMgEv::IncomingGWMAuthFrame(CAN_frame_t* frame, uint8_t serviceId
                     // Seed1 response
                     uint32_t seed = (data[2] << 24) | (data[3] << 16) | (data[4] << 8) | data[5];
                     uint32_t key = MgEvPasscode::GWMKey1(seed);
-                    ESP_LOGI(TAG, "GWM auth: seed1 received %08x. Replying with key1 %08x", seed, key);
+                    ESP_LOGI(TAG, "GWM auth: seed1 received %08" PRIx32 ". Replying with key1 %08" PRIx32, seed, key);
                     nextFrame.data.u8[0] = (ISOTP_FT_SINGLE << 4) | 6;
                     nextFrame.data.u8[1] = VEHICLE_POLL_TYPE_SECACCESS;            
                     nextFrame.data.u8[2] = 0x42u;
@@ -185,7 +185,7 @@ void OvmsVehicleMgEv::IncomingGWMAuthFrame(CAN_frame_t* frame, uint8_t serviceId
                     // Seed2 response
                     uint32_t seed = (data[2] << 24) | (data[3] << 16) | (data[4] << 8) | data[5];
                     uint32_t key = MgEvPasscode::GWMKey2(seed);
-                    ESP_LOGI(TAG, "GWM auth: seed2 received %08x. Replying with key2 %08x", seed, key);
+                    ESP_LOGI(TAG, "GWM auth: seed2 received %08" PRIx32 ". Replying with key2 %08" PRIx32, seed, key);
                     nextFrame.data.u8[0] = (ISOTP_FT_SINGLE << 4) | 6;
                     nextFrame.data.u8[1] = VEHICLE_POLL_TYPE_SECACCESS;            
                     nextFrame.data.u8[2] = 0x02u;

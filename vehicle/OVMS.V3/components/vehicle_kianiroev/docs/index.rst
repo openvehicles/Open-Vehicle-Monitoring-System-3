@@ -1,10 +1,17 @@
-==========
-Kia e-Niro
-==========
+============================================
+Kia e-Niro / Hyundai Kona / Hyundai Ioniq FL
+============================================
 
 Vehicle Type: **KN**
 
-The Kia e-Niro vehicle support will be documented here.
+The Kia e-Niro shares the same platform with the Hyundai Kona and Hyundai Ioniq FL
+(Hyundai Ioniq Electric 38 kWh).
+
+Kia e-Niro and Hyundai Kona are the same vehicle in terms of battery specs.
+
+The Hyundai Ioniq FL (aka vFL second generation) differs from the e-Niro and Kona
+only by the lower battery capacity of 38 kWh and maximum range, both of which can
+be configured via the web UI.
 
 ----------------
 Support Overview

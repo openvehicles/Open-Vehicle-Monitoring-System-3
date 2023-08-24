@@ -34,9 +34,9 @@ static const char *TAG = "test";
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <esp_timer.h>
 #include "esp_system.h"
 #include "esp_event.h"
-#include "esp_event_loop.h"
 #include "esp_sleep.h"
 #include "test_framework.h"
 #include "ovms_command.h"
@@ -45,7 +45,9 @@ static const char *TAG = "test";
 #include "metrics_standard.h"
 #include "ovms_config.h"
 #include "can.h"
+#if ESP_IDF_VERSION_MAJOR < 4
 #include "strverscmp.h"
+#endif
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -169,6 +171,7 @@ void test_watchdog(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("Error: We should never get here");
   }
 
+__attribute__((noreturn))
 void test_stackoverflow(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   uint8_t data[256];

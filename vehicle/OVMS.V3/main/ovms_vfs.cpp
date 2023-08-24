@@ -101,15 +101,7 @@ class Direntry {
         if (is_protected) {
           strcpy(bufsize, "[P]     ");
         } else {
-          if (size < 1024) {
-            snprintf(bufsize, sizeof(bufsize), "%d ", (int) size);
-          } else if (size < 0x100000) {
-            snprintf(bufsize, sizeof(bufsize), "%.1fk", (double) size / 1024.0);
-          } else if (size < 0x40000000) {
-            snprintf(bufsize, sizeof(bufsize), "%.1fM", (double) size / 1048576);
-          } else {
-            snprintf(bufsize, sizeof(bufsize), "%.1fG", (double) size / 1073741824);
-          }
+          format_file_size(bufsize, sizeof(bufsize), size);
         }
       }
       strftime(mod, sizeof(mod), "%d-%b-%Y %H:%M", localtime(&mtime));

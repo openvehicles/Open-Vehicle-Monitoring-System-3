@@ -1,0 +1,2281 @@
+{
+   "tables" : {
+      "JOBRESULTEXTENDED" : [
+         {
+            "STATUS_TEXT" : "ERROR_UNKNOWN",
+            "SB" : "0xXY"
+         }
+      ],
+      "ARG_0XA094" : [
+         {
+            "DIV" : "1.0",
+            "INFO" : "Gibt die simulierte Geschwindigkeit an. Einheit: 10 = 10km/h",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MIN" : "-",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "STR" : "+",
+            "MAX" : "-",
+            "ARG" : "ARG_SPEED",
+            "DATENTYP" : "unsigned char",
+            "L/H" : "high",
+            "EINHEIT" : "km/h",
+            "STPR" : "-",
+            "INFO_EN" : "Indicates the simulated speed. Unit: 10 = 10km / h"
+         },
+         {
+            "DATENTYP" : "char",
+            "ARG" : "ARG_LAST",
+            "MAX" : "1270.0",
+            "MASKE" : "-",
+            "STR" : "+",
+            "NAME" : "-",
+            "MIN" : "-1270.0",
+            "MUL" : "1.0",
+            "DIV" : "10.0",
+            "INFO" : "Gibt die simulierte Last an.",
+            "ADD" : "0.0",
+            "INFO_EN" : "Indicates the simulated load.",
+            "STPR" : "-",
+            "EINHEIT" : "Nm",
+            "L/H" : "high"
+         }
+      ],
+      "DTCBEREICHE" : [
+         {
+            "BESCHREIBUNG" : "Die zulässigen Bereiche sind für jedes Steuergerät festgelegt. Es können mehrere gültige Bereiche (Kacheln) definiert werden.",
+            "MINIMALWERT" : "020000",
+            "MAXIMALWERT" : "02FFFF",
+            "DTC-TYP" : "AllgemeinerDTC"
+         },
+         {
+            "MAXIMALWERT" : "D446FF",
+            "DTC-TYP" : "SystembusDTC",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "D44600"
+         },
+         {
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "D4450B",
+            "MAXIMALWERT" : "D44514",
+            "DTC-TYP" : "SystembusDTC"
+         },
+         {
+            "MINIMALWERT" : "D44401",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "DTC-TYP" : "SystembusDTC",
+            "MAXIMALWERT" : "D4440A"
+         },
+         {
+            "MAXIMALWERT" : "D44414",
+            "DTC-TYP" : "SystembusDTC",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "D4440B"
+         },
+         {
+            "MAXIMALWERT" : "930055",
+            "DTC-TYP" : "SystembusDTC",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "930030"
+         },
+         {
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "930000",
+            "MAXIMALWERT" : "930011",
+            "DTC-TYP" : "SystembusDTC"
+         },
+         {
+            "MAXIMALWERT" : "D44486",
+            "DTC-TYP" : "SystembusDTC",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "D4447D"
+         },
+         {
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "D44501",
+            "MAXIMALWERT" : "D4450A",
+            "DTC-TYP" : "SystembusDTC"
+         },
+         {
+            "MAXIMALWERT" : "D44472",
+            "DTC-TYP" : "SystembusDTC",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "D44469"
+         },
+         {
+            "DTC-TYP" : "SystembusDTC",
+            "MAXIMALWERT" : "D44449",
+            "MINIMALWERT" : "D4443F",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses."
+         },
+         {
+            "MAXIMALWERT" : "D44468",
+            "DTC-TYP" : "SystembusDTC",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "D4445F"
+         },
+         {
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "D44415",
+            "MAXIMALWERT" : "D4441E",
+            "DTC-TYP" : "SystembusDTC"
+         },
+         {
+            "MAXIMALWERT" : "D4447C",
+            "DTC-TYP" : "SystembusDTC",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "D44473"
+         },
+         {
+            "DTC-TYP" : "SystembusDTC",
+            "MAXIMALWERT" : "D4443E",
+            "MINIMALWERT" : "D4441F",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses."
+         },
+         {
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses.",
+            "MINIMALWERT" : "D44487",
+            "MAXIMALWERT" : "D4448F",
+            "DTC-TYP" : "SystembusDTC"
+         },
+         {
+            "DTC-TYP" : "SubbusDTC",
+            "MAXIMALWERT" : "D453FF",
+            "MINIMALWERT" : "D44C00",
+            "BESCHREIBUNG" : "Zulässiger Bereich wird mittels Formel berechnet. Enthält physikalische Fehler bzw. Protokollfehler des Systembusses."
+         },
+         {
+            "BESCHREIBUNG" : "Ist aus einem vorgegebenen Offset-Bereich frei wählbar. Enthält Signalfehler, die SG-spezifisch sind.",
+            "MINIMALWERT" : "D44BFF",
+            "MAXIMALWERT" : "D44BFF",
+            "DTC-TYP" : "SignalDTC"
+         },
+         {
+            "MAXIMALWERT" : "D483FF",
+            "DTC-TYP" : "SignalDTC",
+            "BESCHREIBUNG" : "Ist aus einem vorgegebenen Offset-Bereich frei wählbar. Enthält Signalfehler, die SG-spezifisch sind.",
+            "MINIMALWERT" : "D45400"
+         },
+         {
+            "BESCHREIBUNG" : "Ist aus einem vorgegebenen Offset-Bereich frei wählbar. Enthält Signalfehler, die SG-spezifisch sind.",
+            "MINIMALWERT" : "D45400",
+            "MAXIMALWERT" : "D483FF",
+            "DTC-TYP" : "SignalDTC"
+         },
+         {
+            "MAXIMALWERT" : "8064FF",
+            "DTC-TYP" : "KomponentenDTC",
+            "BESCHREIBUNG" : "Die zulässigen Bereiche sind für jedes Steuergerät festgelegt. Es können mehrere gültige Bereiche (Kacheln) definiert werden.",
+            "MINIMALWERT" : "806480"
+         }
+      ],
+      "LIEFERANTEN" : [
+         {
+            "LIEF_NR" : "0x000001",
+            "LIEF_TEXT" : "Reinshagen => Delphi"
+         },
+         {
+            "LIEF_NR" : "0x000002",
+            "LIEF_TEXT" : "Kostal"
+         },
+         {
+            "LIEF_NR" : "0x000003",
+            "LIEF_TEXT" : "Hella"
+         },
+         {
+            "LIEF_NR" : "0x000004",
+            "LIEF_TEXT" : "Siemens"
+         },
+         {
+            "LIEF_NR" : "0x000005",
+            "LIEF_TEXT" : "Eaton"
+         },
+         {
+            "LIEF_NR" : "0x000006",
+            "LIEF_TEXT" : "UTA"
+         },
+         {
+            "LIEF_NR" : "0x000007",
+            "LIEF_TEXT" : "Helbako"
+         },
+         {
+            "LIEF_NR" : "0x000008",
+            "LIEF_TEXT" : "Bosch"
+         },
+         {
+            "LIEF_NR" : "0x000009",
+            "LIEF_TEXT" : "Loewe => Lear"
+         },
+         {
+            "LIEF_NR" : "0x000010",
+            "LIEF_TEXT" : "VDO"
+         },
+         {
+            "LIEF_NR" : "0x000011",
+            "LIEF_TEXT" : "Valeo"
+         },
+         {
+            "LIEF_NR" : "0x000012",
+            "LIEF_TEXT" : "MBB"
+         },
+         {
+            "LIEF_TEXT" : "Kammerer",
+            "LIEF_NR" : "0x000013"
+         },
+         {
+            "LIEF_TEXT" : "SWF",
+            "LIEF_NR" : "0x000014"
+         },
+         {
+            "LIEF_NR" : "0x000015",
+            "LIEF_TEXT" : "Blaupunkt"
+         },
+         {
+            "LIEF_NR" : "0x000016",
+            "LIEF_TEXT" : "Philips"
+         },
+         {
+            "LIEF_NR" : "0x000017",
+            "LIEF_TEXT" : "Alpine"
+         },
+         {
+            "LIEF_NR" : "0x000018",
+            "LIEF_TEXT" : "Continental Teves"
+         },
+         {
+            "LIEF_TEXT" : "Elektromatik Suedafrika",
+            "LIEF_NR" : "0x000019"
+         },
+         {
+            "LIEF_TEXT" : "Becker",
+            "LIEF_NR" : "0x000020"
+         },
+         {
+            "LIEF_TEXT" : "Preh",
+            "LIEF_NR" : "0x000021"
+         },
+         {
+            "LIEF_NR" : "0x000022",
+            "LIEF_TEXT" : "Alps"
+         },
+         {
+            "LIEF_NR" : "0x000023",
+            "LIEF_TEXT" : "Motorola"
+         },
+         {
+            "LIEF_TEXT" : "Temic",
+            "LIEF_NR" : "0x000024"
+         },
+         {
+            "LIEF_TEXT" : "Webasto",
+            "LIEF_NR" : "0x000025"
+         },
+         {
+            "LIEF_NR" : "0x000026",
+            "LIEF_TEXT" : "MotoMeter"
+         },
+         {
+            "LIEF_NR" : "0x000027",
+            "LIEF_TEXT" : "Delphi PHI"
+         },
+         {
+            "LIEF_TEXT" : "DODUCO => BERU",
+            "LIEF_NR" : "0x000028"
+         },
+         {
+            "LIEF_NR" : "0x000029",
+            "LIEF_TEXT" : "DENSO"
+         },
+         {
+            "LIEF_TEXT" : "NEC",
+            "LIEF_NR" : "0x000030"
+         },
+         {
+            "LIEF_NR" : "0x000031",
+            "LIEF_TEXT" : "DASA"
+         },
+         {
+            "LIEF_TEXT" : "Pioneer",
+            "LIEF_NR" : "0x000032"
+         },
+         {
+            "LIEF_TEXT" : "Jatco",
+            "LIEF_NR" : "0x000033"
+         },
+         {
+            "LIEF_NR" : "0x000034",
+            "LIEF_TEXT" : "Fuba"
+         },
+         {
+            "LIEF_NR" : "0x000035",
+            "LIEF_TEXT" : "UK-NSI"
+         },
+         {
+            "LIEF_NR" : "0x000036",
+            "LIEF_TEXT" : "AABG"
+         },
+         {
+            "LIEF_NR" : "0x000037",
+            "LIEF_TEXT" : "Dunlop"
+         },
+         {
+            "LIEF_TEXT" : "Sachs",
+            "LIEF_NR" : "0x000038"
+         },
+         {
+            "LIEF_NR" : "0x000039",
+            "LIEF_TEXT" : "ITT"
+         },
+         {
+            "LIEF_TEXT" : "FTE",
+            "LIEF_NR" : "0x000040"
+         },
+         {
+            "LIEF_NR" : "0x000041",
+            "LIEF_TEXT" : "Megamos"
+         },
+         {
+            "LIEF_NR" : "0x000042",
+            "LIEF_TEXT" : "TRW"
+         },
+         {
+            "LIEF_TEXT" : "Wabco",
+            "LIEF_NR" : "0x000043"
+         },
+         {
+            "LIEF_TEXT" : "ISAD Electronic Systems",
+            "LIEF_NR" : "0x000044"
+         },
+         {
+            "LIEF_TEXT" : "HEC (Hella Electronics Corporation)",
+            "LIEF_NR" : "0x000045"
+         },
+         {
+            "LIEF_NR" : "0x000046",
+            "LIEF_TEXT" : "Gemel"
+         },
+         {
+            "LIEF_NR" : "0x000047",
+            "LIEF_TEXT" : "ZF"
+         },
+         {
+            "LIEF_NR" : "0x000048",
+            "LIEF_TEXT" : "GMPT"
+         },
+         {
+            "LIEF_TEXT" : "Harman Kardon",
+            "LIEF_NR" : "0x000049"
+         },
+         {
+            "LIEF_NR" : "0x000050",
+            "LIEF_TEXT" : "Remes"
+         },
+         {
+            "LIEF_TEXT" : "ZF Lenksysteme",
+            "LIEF_NR" : "0x000051"
+         },
+         {
+            "LIEF_NR" : "0x000052",
+            "LIEF_TEXT" : "Magneti Marelli"
+         },
+         {
+            "LIEF_TEXT" : "Borg Instruments",
+            "LIEF_NR" : "0x000053"
+         },
+         {
+            "LIEF_NR" : "0x000054",
+            "LIEF_TEXT" : "GETRAG"
+         },
+         {
+            "LIEF_TEXT" : "BHTC (Behr Hella Thermocontrol)",
+            "LIEF_NR" : "0x000055"
+         },
+         {
+            "LIEF_NR" : "0x000056",
+            "LIEF_TEXT" : "Siemens VDO Automotive"
+         },
+         {
+            "LIEF_NR" : "0x000057",
+            "LIEF_TEXT" : "Visteon"
+         },
+         {
+            "LIEF_TEXT" : "Autoliv",
+            "LIEF_NR" : "0x000058"
+         },
+         {
+            "LIEF_NR" : "0x000059",
+            "LIEF_TEXT" : "Haberl"
+         },
+         {
+            "LIEF_TEXT" : "Magna Steyr",
+            "LIEF_NR" : "0x000060"
+         },
+         {
+            "LIEF_NR" : "0x000061",
+            "LIEF_TEXT" : "Marquardt"
+         },
+         {
+            "LIEF_NR" : "0x000062",
+            "LIEF_TEXT" : "AB-Elektronik"
+         },
+         {
+            "LIEF_NR" : "0x000063",
+            "LIEF_TEXT" : "Siemens VDO Borg"
+         },
+         {
+            "LIEF_TEXT" : "Hirschmann Electronics",
+            "LIEF_NR" : "0x000064"
+         },
+         {
+            "LIEF_NR" : "0x000065",
+            "LIEF_TEXT" : "Hoerbiger Electronics"
+         },
+         {
+            "LIEF_NR" : "0x000066",
+            "LIEF_TEXT" : "Thyssen Krupp Automotive Mechatronics"
+         },
+         {
+            "LIEF_NR" : "0x000067",
+            "LIEF_TEXT" : "Gentex GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000068",
+            "LIEF_TEXT" : "Atena GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000069",
+            "LIEF_TEXT" : "Magna-Donelly"
+         },
+         {
+            "LIEF_NR" : "0x000070",
+            "LIEF_TEXT" : "Koyo Steering Europe"
+         },
+         {
+            "LIEF_TEXT" : "NSI B.V",
+            "LIEF_NR" : "0x000071"
+         },
+         {
+            "LIEF_TEXT" : "AISIN AW CO.LTD",
+            "LIEF_NR" : "0x000072"
+         },
+         {
+            "LIEF_TEXT" : "Shorlock",
+            "LIEF_NR" : "0x000073"
+         },
+         {
+            "LIEF_NR" : "0x000074",
+            "LIEF_TEXT" : "Schrader"
+         },
+         {
+            "LIEF_TEXT" : "BERU Electronics GmbH",
+            "LIEF_NR" : "0x000075"
+         },
+         {
+            "LIEF_NR" : "0x000076",
+            "LIEF_TEXT" : "CEL"
+         },
+         {
+            "LIEF_TEXT" : "Audio Mobil",
+            "LIEF_NR" : "0x000077"
+         },
+         {
+            "LIEF_TEXT" : "rd electronic",
+            "LIEF_NR" : "0x000078"
+         },
+         {
+            "LIEF_NR" : "0x000079",
+            "LIEF_TEXT" : "iSYS RTS GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Westfalia Automotive GmbH",
+            "LIEF_NR" : "0x000080"
+         },
+         {
+            "LIEF_NR" : "0x000081",
+            "LIEF_TEXT" : "Tyco Electronics"
+         },
+         {
+            "LIEF_NR" : "0x000082",
+            "LIEF_TEXT" : "Paragon AG"
+         },
+         {
+            "LIEF_TEXT" : "IEE S.A",
+            "LIEF_NR" : "0x000083"
+         },
+         {
+            "LIEF_TEXT" : "TEMIC AUTOMOTIVE of NA",
+            "LIEF_NR" : "0x000084"
+         },
+         {
+            "LIEF_NR" : "0x000085",
+            "LIEF_TEXT" : "AKsys GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000086",
+            "LIEF_TEXT" : "META System"
+         },
+         {
+            "LIEF_TEXT" : "Hülsbeck & Fürst GmbH & Co KG",
+            "LIEF_NR" : "0x000087"
+         },
+         {
+            "LIEF_TEXT" : "Mann & Hummel Automotive GmbH",
+            "LIEF_NR" : "0x000088"
+         },
+         {
+            "LIEF_TEXT" : "Brose Fahrzeugteile GmbH & Co",
+            "LIEF_NR" : "0x000089"
+         },
+         {
+            "LIEF_TEXT" : "Keihin",
+            "LIEF_NR" : "0x000090"
+         },
+         {
+            "LIEF_NR" : "0x000091",
+            "LIEF_TEXT" : "Vimercati S.p.A."
+         },
+         {
+            "LIEF_TEXT" : "CRH",
+            "LIEF_NR" : "0x000092"
+         },
+         {
+            "LIEF_NR" : "0x000093",
+            "LIEF_TEXT" : "TPO Display Corp."
+         },
+         {
+            "LIEF_NR" : "0x000094",
+            "LIEF_TEXT" : "KÜSTER Automotive Control"
+         },
+         {
+            "LIEF_TEXT" : "Hitachi Automotive",
+            "LIEF_NR" : "0x000095"
+         },
+         {
+            "LIEF_NR" : "0x000096",
+            "LIEF_TEXT" : "Continental Automotive"
+         },
+         {
+            "LIEF_TEXT" : "TI-Automotive",
+            "LIEF_NR" : "0x000097"
+         },
+         {
+            "LIEF_TEXT" : "Hydro",
+            "LIEF_NR" : "0x000098"
+         },
+         {
+            "LIEF_TEXT" : "Johnson Controls",
+            "LIEF_NR" : "0x000099"
+         },
+         {
+            "LIEF_NR" : "0x00009A",
+            "LIEF_TEXT" : "Takata- Petri"
+         },
+         {
+            "LIEF_TEXT" : "Mitsubishi Electric B.V. (Melco)",
+            "LIEF_NR" : "0x00009B"
+         },
+         {
+            "LIEF_TEXT" : "Autokabel",
+            "LIEF_NR" : "0x00009C"
+         },
+         {
+            "LIEF_NR" : "0x00009D",
+            "LIEF_TEXT" : "GKN-Driveline"
+         },
+         {
+            "LIEF_TEXT" : "Zollner Elektronik AG",
+            "LIEF_NR" : "0x00009E"
+         },
+         {
+            "LIEF_TEXT" : "PEIKER acustics GmbH",
+            "LIEF_NR" : "0x00009F"
+         },
+         {
+            "LIEF_TEXT" : "Bosal-Oris",
+            "LIEF_NR" : "0x0000A0"
+         },
+         {
+            "LIEF_NR" : "0x0000A1",
+            "LIEF_TEXT" : "Cobasys"
+         },
+         {
+            "LIEF_TEXT" : "Lighting Reutlingen GmbH",
+            "LIEF_NR" : "0x0000A2"
+         },
+         {
+            "LIEF_TEXT" : "CONTI VDO",
+            "LIEF_NR" : "0x0000A3"
+         },
+         {
+            "LIEF_NR" : "0x0000A4",
+            "LIEF_TEXT" : "ADC Automotive Distance Control Systems GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Funkwerk Dabendorf GmbH",
+            "LIEF_NR" : "0x0000A5"
+         },
+         {
+            "LIEF_NR" : "0x0000A6",
+            "LIEF_TEXT" : "Lame"
+         },
+         {
+            "LIEF_TEXT" : "Magna/Closures",
+            "LIEF_NR" : "0x0000A7"
+         },
+         {
+            "LIEF_NR" : "0x0000A8",
+            "LIEF_TEXT" : "Wanyu"
+         },
+         {
+            "LIEF_NR" : "0x0000A9",
+            "LIEF_TEXT" : "Thyssen Krupp Presta"
+         },
+         {
+            "LIEF_TEXT" : "ArvinMeritor",
+            "LIEF_NR" : "0x0000AA"
+         },
+         {
+            "LIEF_TEXT" : "Kongsberg Automotive GmbH",
+            "LIEF_NR" : "0x0000AB"
+         },
+         {
+            "LIEF_NR" : "0x0000AC",
+            "LIEF_TEXT" : "SMR Automotive Mirrors"
+         },
+         {
+            "LIEF_NR" : "0x0000AD",
+            "LIEF_TEXT" : "So.Ge.Mi."
+         },
+         {
+            "LIEF_NR" : "0x0000AE",
+            "LIEF_TEXT" : "MTA"
+         },
+         {
+            "LIEF_NR" : "0x0000AF",
+            "LIEF_TEXT" : "Alfmeier"
+         },
+         {
+            "LIEF_TEXT" : "ELTEK VALERE DEUTSCHLAND GMBH",
+            "LIEF_NR" : "0x0000B0"
+         },
+         {
+            "LIEF_TEXT" : "Omron Automotive Electronics Europe Group",
+            "LIEF_NR" : "0x0000B1"
+         },
+         {
+            "LIEF_NR" : "0x0000B2",
+            "LIEF_TEXT" : "ASK"
+         },
+         {
+            "LIEF_TEXT" : "CML Innovative Technologies GmbH & Co. KG",
+            "LIEF_NR" : "0x0000B3"
+         },
+         {
+            "LIEF_TEXT" : "APAG Elektronik AG",
+            "LIEF_NR" : "0x0000B4"
+         },
+         {
+            "LIEF_TEXT" : "Nexteer Automotive World Headquarters",
+            "LIEF_NR" : "0x0000B5"
+         },
+         {
+            "LIEF_NR" : "0x0000B6",
+            "LIEF_TEXT" : "Hans Widmaier"
+         },
+         {
+            "LIEF_TEXT" : "SB LiMotive Germany GmbH",
+            "LIEF_NR" : "0x0000B7"
+         },
+         {
+            "LIEF_NR" : "0x0000B8",
+            "LIEF_TEXT" : "KYOCERA Display Corporation"
+         },
+         {
+            "LIEF_TEXT" : "MAGNA Powertrain AG & Co KG",
+            "LIEF_NR" : "0x0000B9"
+         },
+         {
+            "LIEF_NR" : "0x0000BA",
+            "LIEF_TEXT" : "BorgWarner"
+         },
+         {
+            "LIEF_TEXT" : "unbekannter Hersteller",
+            "LIEF_NR" : "0xFFFFFF"
+         }
+      ],
+      "SG_FUNKTIONEN" : [
+         {
+            "L/H" : "-",
+            "INFO_EN" : "Controls a sound signal for the output of an outside sound.",
+            "LABEL" : "-",
+            "SERVICE" : "31",
+            "DIV" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "-",
+            "EINHEIT" : "-",
+            "NAME" : "-",
+            "ARG_TABELLE" : "ARG_0xA094",
+            "INFO" : "Steuert ein Tonsignal für die Ausgabe eines Außensounds.",
+            "ID" : "0xA094",
+            "ARG" : "TONTEST_AUSSENSOUND",
+            "DATENTYP" : "-",
+            "RES_TABELLE" : "-",
+            "SG_ADR" : "-"
+         },
+         {
+            "SG_ADR" : "-",
+            "ARG" : "AUSSENSOUND_MUTE",
+            "DATENTYP" : "-",
+            "RES_TABELLE" : "RES_0xD0D8",
+            "ARG_TABELLE" : "ARG_0xD0D8",
+            "INFO" : "Stummschaltung des Außensounds.",
+            "ID" : "0xD0D8",
+            "NAME" : "-",
+            "EINHEIT" : "-",
+            "RESULTNAME" : "-",
+            "DIV" : "-",
+            "ADD" : "-",
+            "MUL" : "-",
+            "SERVICE" : "22;2E",
+            "LABEL" : "-",
+            "INFO_EN" : "Muting the outside sound.",
+            "L/H" : "-"
+         }
+      ],
+      "IARTTEXTE" : [
+         {
+            "ARTTEXT_EN" : "no error type available",
+            "ARTNR" : "0x00",
+            "ARTTEXT" : "keine Fehlerart verfügbar"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x04"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x05",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x08",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x09",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTNR" : "0x0C",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x0D",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x44",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x45",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x48"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x49",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x4C"
+         },
+         {
+            "ARTNR" : "0x4D",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen erfüllt",
+            "ARTTEXT_EN" : "Test conditions met",
+            "ARTNR" : "0x10"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt",
+            "ARTTEXT_EN" : "Test conditions not yet met",
+            "ARTNR" : "0x11"
+         },
+         {
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen",
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up",
+            "ARTNR" : "0x80"
+         },
+         {
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen",
+            "ARTNR" : "0x81",
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTNR" : "0xFF",
+            "ARTTEXT_EN" : "unknown type of error"
+         }
+      ],
+      "RES_0XD0D8" : [
+         {
+            "MUL" : "-",
+            "INFO" : "Status vom Außensound-Signal: 0 = Stummschaltung aus 1 = Stummschaltung ein",
+            "ADD" : "-",
+            "DIV" : "-",
+            "NAME" : "TDemuteStatus",
+            "MASKE" : "-",
+            "DATENTYP" : "unsigned char",
+            "L/H" : "high",
+            "RESULTNAME" : "STAT_AUSSENSOUND_MUTE",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "Status of the external sound signal: 0 = muting off 1 = muting on"
+         }
+      ],
+      "DIGITALARGUMENT" : [
+         {
+            "TEXT" : "ein",
+            "TEXT_EN" : "a",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "out",
+            "WERT" : "0",
+            "TEXT" : "aus"
+         },
+         {
+            "TEXT" : "ja",
+            "WERT" : "1",
+            "TEXT_EN" : "Yes"
+         },
+         {
+            "TEXT_EN" : "No",
+            "WERT" : "0",
+            "TEXT" : "nein"
+         },
+         {
+            "TEXT" : "auf",
+            "WERT" : "1",
+            "TEXT_EN" : "on"
+         },
+         {
+            "WERT" : "0",
+            "TEXT_EN" : "from",
+            "TEXT" : "ab"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "at",
+            "TEXT" : "an"
+         },
+         {
+            "TEXT" : "yes",
+            "WERT" : "1",
+            "TEXT_EN" : "yes"
+         },
+         {
+            "TEXT" : "no",
+            "WERT" : "0",
+            "TEXT_EN" : "no"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "on",
+            "TEXT" : "on"
+         },
+         {
+            "TEXT" : "off",
+            "WERT" : "0",
+            "TEXT_EN" : "off"
+         },
+         {
+            "TEXT" : "up",
+            "WERT" : "1",
+            "TEXT_EN" : "up"
+         },
+         {
+            "TEXT" : "down",
+            "TEXT_EN" : "down",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "true",
+            "TEXT" : "true"
+         },
+         {
+            "TEXT_EN" : "false",
+            "WERT" : "0",
+            "TEXT" : "false"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "1",
+            "TEXT" : "1"
+         },
+         {
+            "TEXT" : "0",
+            "WERT" : "0"
+         }
+      ],
+      "FDETAILSTRUKTUR" : [
+         {
+            "TYP" : "nein",
+            "NAME" : "F_UWB_ERW"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "SAE_CODE"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_HLZ"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_SEVERITY"
+         },
+         {
+            "TYP" : "2",
+            "NAME" : "F_UWB_SATZ"
+         },
+         {
+            "NAME" : "F_HLZ_VIEW",
+            "TYP" : "-"
+         }
+      ],
+      "JOBRESULT" : [
+         {
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_REJECT",
+            "SB" : "0x10"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED",
+            "SB" : "0x11"
+         },
+         {
+            "SB" : "0x12",
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT",
+            "SB" : "0x13"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LONG",
+            "SB" : "0x14"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_BUSY_REPEAT_REQUEST",
+            "SB" : "0x21"
+         },
+         {
+            "SB" : "0x22",
+            "STATUS_TEXT" : "ERROR_ECU_CONDITIONS_NOT_CORRECT"
+         },
+         {
+            "SB" : "0x24",
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_SEQUENCE_ERROR"
+         },
+         {
+            "SB" : "0x25",
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE_FROM_SUBNET_COMPONENT"
+         },
+         {
+            "SB" : "0x26",
+            "STATUS_TEXT" : "ERROR_ECU_FAILURE_PREVENTS_EXECUTION_OF_REQUESTED_ACTION"
+         },
+         {
+            "SB" : "0x31",
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_OUT_OF_RANGE"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SECURITY_ACCESS_DENIED",
+            "SB" : "0x33"
+         },
+         {
+            "SB" : "0x35",
+            "STATUS_TEXT" : "ERROR_ECU_INVALID_KEY"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_EXCEED_NUMBER_OF_ATTEMPTS",
+            "SB" : "0x36"
+         },
+         {
+            "SB" : "0x37",
+            "STATUS_TEXT" : "ERROR_ECU_REQUIRED_TIME_DELAY_NOT_EXPIRED"
+         },
+         {
+            "SB" : "0x70",
+            "STATUS_TEXT" : "ERROR_ECU_UPLOAD_DOWNLOAD_NOT_ACCEPTED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSFER_DATA_SUSPENDED",
+            "SB" : "0x71"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_PROGRAMMING_FAILURE",
+            "SB" : "0x72"
+         },
+         {
+            "SB" : "0x73",
+            "STATUS_TEXT" : "ERROR_ECU_WRONG_BLOCK_SEQUENCE_COUNTER"
+         },
+         {
+            "SB" : "0x78",
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_CORRECTLY_RECEIVED__RESPONSE_PENDING"
+         },
+         {
+            "SB" : "0x7E",
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED_IN_ACTIVE_SESSION"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED_IN_ACTIVE_SESSION",
+            "SB" : "0x7F"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_HIGH",
+            "SB" : "0x81"
+         },
+         {
+            "SB" : "0x82",
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_LOW"
+         },
+         {
+            "SB" : "0x83",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_RUNNING"
+         },
+         {
+            "SB" : "0x84",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_NOT_RUNNING"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_RUN_TIME_TOO_LOW",
+            "SB" : "0x85"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_HIGH",
+            "SB" : "0x86"
+         },
+         {
+            "SB" : "0x87",
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_LOW"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_HIGH",
+            "SB" : "0x88"
+         },
+         {
+            "SB" : "0x89",
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_LOW"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_HIGH",
+            "SB" : "0x8A"
+         },
+         {
+            "SB" : "0x8B",
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_LOW"
+         },
+         {
+            "SB" : "0x8C",
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_NEUTRAL"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_GEAR",
+            "SB" : "0x8D"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_BRAKE_SWITCH_NOT_CLOSED",
+            "SB" : "0x8F"
+         },
+         {
+            "SB" : "0x90",
+            "STATUS_TEXT" : "ERROR_ECU_SHIFTER_LEVER_NOT_IN_PARK"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TORQUE_CONVERTER_CLUTCH_LOCKED",
+            "SB" : "0x91"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_HIGH",
+            "SB" : "0x92"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_LOW",
+            "SB" : "0x93"
+         },
+         {
+            "SB" : "?00?",
+            "STATUS_TEXT" : "OKAY"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE",
+            "SB" : "?01?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_LEN",
+            "SB" : "?02?"
+         },
+         {
+            "SB" : "?03?",
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_RESPONSE_ID"
+         },
+         {
+            "SB" : "?04?",
+            "STATUS_TEXT" : "ERROR_ECU_TA_RESPONSE_NOT_SA_REQUEST"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SA_RESPONSE_NOT_TA_REQUEST",
+            "SB" : "?05?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DATA_IDENTIFIER",
+            "SB" : "?06?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_MUCH_DATA",
+            "SB" : "?07?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LESS_DATA",
+            "SB" : "?08?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_VALUE_OUT_OF_RANGE",
+            "SB" : "?09?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_TABLE",
+            "SB" : "?0A?"
+         },
+         {
+            "SB" : "?10?",
+            "STATUS_TEXT" : "ERROR_F_CODE"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_INTERPRETATION",
+            "SB" : "?12?"
+         },
+         {
+            "SB" : "?13?",
+            "STATUS_TEXT" : "ERROR_F_POS"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_IO_CONTROL_PARAMETER",
+            "SB" : "?14?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_TYPE",
+            "SB" : "?15?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SUB_FUNCTION",
+            "SB" : "?16?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DYNAMICALLY_DEFINED_DATA_IDENTIFIER",
+            "SB" : "?17?"
+         },
+         {
+            "SB" : "?18?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_NO_STRING_END_CHAR"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_IDENTIFIER",
+            "SB" : "?19?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_RESET_TYPE",
+            "SB" : "?1A?"
+         },
+         {
+            "SB" : "?1B?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SERIAL_NUMBER_FORMAT"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_BY_STATUS_MASK",
+            "SB" : "?1C?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_STATUS_AVAILABILITY_MASK",
+            "SB" : "?1D?"
+         },
+         {
+            "SB" : "?1E?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_IDENTIFIER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE1",
+            "SB" : "?50?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE2",
+            "SB" : "?51?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE3",
+            "SB" : "?52?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_VERIFY",
+            "SB" : "?60?"
+         },
+         {
+            "SB" : "?61?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_ZGW"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_BACKUP",
+            "SB" : "?62?"
+         },
+         {
+            "SB" : "?70?",
+            "STATUS_TEXT" : "ERROR_CALID_CVN_INCORRECT_LEN"
+         },
+         {
+            "SB" : "?80?",
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_LEN"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_FINGERPRINT",
+            "SB" : "?81?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ARGUMENT",
+            "SB" : "?F0?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_UNKNOWN_NEGATIVE_RESPONSE",
+            "SB" : "0xXY"
+         }
+      ],
+      "IORTTEXTE" : [
+         {
+            "ORT" : "0x2D0084",
+            "ORTTEXT_EN" : "CALIBRATION_ERROR",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "CALIBRATION_ERROR"
+         },
+         {
+            "ORT" : "0x2D0080",
+            "ORTTEXT_EN" : "Amplifier_HW_Error",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Amplifier_HW_Error"
+         },
+         {
+            "ORTTEXT_EN" : "CANIF_E_STOPPED",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x2D0020",
+            "ORTTEXT" : "CANIF_E_STOPPED"
+         },
+         {
+            "ORTTEXT_EN" : "Outbound error message buffer is full",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x2D0015",
+            "ORTTEXT" : "Puffer für ausgehende Fehlermeldungen ist voll"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANTP_E_COMM",
+            "ORT" : "0x2D0036",
+            "ORTTEXT" : "CANTP_E_COMM"
+         },
+         {
+            "ORT" : "0x2D0001",
+            "ORTTEXT_EN" : "Message (vehicle status, 0x3A0) is missing",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Fahrzeugzustand, 0x3A0) fehlt"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "PDUR_E_INIT_FAILED",
+            "ORT" : "0x2D0044",
+            "ORTTEXT" : "PDUR_E_INIT_FAILED"
+         },
+         {
+            "ORT" : "0x2D0022",
+            "ORTTEXT_EN" : "CANTRCV_30_TJA1041_E_NO_TRCV_CONTROL",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "CANTRCV_30_TJA1041_E_NO_TRCV_CONTROL"
+         },
+         {
+            "ORTTEXT" : "Fehler konnte nach maximaler Anzahl von Versuchen nicht gesendet werden",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Error could not be sent after the maximum number of attempts",
+            "ORT" : "0x2D0002"
+         },
+         {
+            "ORTTEXT" : "CAN_E_TIMEOUT",
+            "ORT" : "0x2D0033",
+            "ORTTEXT_EN" : "CAN_E_TIMEOUT",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Memory_HW_Error",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x2D0082",
+            "ORTTEXT" : "Memory_HW_Error"
+         },
+         {
+            "ORTTEXT" : "IPDUM_E_TRANSMIT_FAILED",
+            "ORTTEXT_EN" : "IPDUM_E_TRANSMIT_FAILED",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x2D0039"
+         },
+         {
+            "ORTTEXT" : "Signal (Zeit_Sekunde_Zaehler_Relativ, 0x328): ungültig",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Signal (Zeit_Sekunde_Zaehler_Relativ, 0x328): invalid",
+            "ORT" : "0x2D0046"
+         },
+         {
+            "ORTTEXT" : "Loudspeaker_HW_Error",
+            "ORTTEXT_EN" : "Loudspeaker_HW_Error",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x2D0081"
+         },
+         {
+            "ORTTEXT" : "CANIF_E_FULL_TX_BUFFER",
+            "ORTTEXT_EN" : "CANIF_E_FULL_TX_BUFFER",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x2D0034"
+         },
+         {
+            "ORTTEXT" : "PDUR_E_PDU_INSTANCE_LOST",
+            "ORTTEXT_EN" : "PDUR_E_PDU_INSTANCE_LOST",
+            "ORT" : "0x2D0040",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "Watchdog_Error",
+            "ORTTEXT_EN" : "Watchdog_Error",
+            "ORT" : "0x2D0083",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x2D0045",
+            "ORTTEXT_EN" : "CANTP_E_OPER_NOT_SUPPORTED",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "CANTP_E_OPER_NOT_SUPPORTED"
+         },
+         {
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "ORT" : "0xFFFFFF",
+            "ORTTEXT_EN" : "unknown error location",
+            "EREIGNIS_DTC" : "0"
+         }
+      ],
+      "DTCEXTENDEDDATARECORDNUMBER" : [
+         {
+            "ANZ_BYTE" : "0",
+            "TEXT" : "ISO_RESERVED",
+            "TEXT_EN" : "ISO_RESERVED",
+            "WERT" : "0x00"
+         },
+         {
+            "TEXT_EN" : "CONDITION_BYTE",
+            "WERT" : "0x01",
+            "TEXT" : "CONDITION_BYTE",
+            "ANZ_BYTE" : "1"
+         },
+         {
+            "WERT" : "0x02",
+            "TEXT_EN" : "HFK",
+            "ANZ_BYTE" : "1",
+            "TEXT" : "HFK"
+         },
+         {
+            "WERT" : "0x03",
+            "TEXT_EN" : "HLZ",
+            "TEXT" : "HLZ",
+            "ANZ_BYTE" : "1"
+         },
+         {
+            "ANZ_BYTE" : "0",
+            "TEXT" : "RECORD_UNKNOWN",
+            "TEXT_EN" : "RECORD_UNKNOWN",
+            "WERT" : "0xFF"
+         }
+      ],
+      "UDS_TAB_ROE_AKTIV" : [
+         {
+            "TEXT" : "Aktive Fehlermeldung deaktiviert",
+            "TEXT_EN" : "Active error message deactivated",
+            "NR" : "0x00"
+         },
+         {
+            "TEXT" : "Aktive Fehlermeldung aktiviert",
+            "TEXT_EN" : "Active error message activated",
+            "NR" : "0x01"
+         },
+         {
+            "NR" : "0xFF",
+            "TEXT" : "Status der aktiven Fehlermeldung nicht feststellbar",
+            "TEXT_EN" : "Status of the active error message cannot be determined"
+         }
+      ],
+      "TDEMUTESTATUS" : [
+         {
+            "TEXT" : "Stummschaltung aus",
+            "TEXT_EN" : "Mute off",
+            "WERT" : "0x00"
+         },
+         {
+            "TEXT" : "Stummschaltung ein",
+            "TEXT_EN" : "Mute on",
+            "WERT" : "0x01"
+         },
+         {
+            "TEXT_EN" : "Not defined",
+            "WERT" : "0xFF",
+            "TEXT" : "Nicht definiert"
+         }
+      ],
+      "FORTTEXTE" : [
+         {
+            "ORTTEXT_EN" : "Energy saving mode active",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x022D00",
+            "ORTTEXT" : "Energiesparmode aktiv"
+         },
+         {
+            "ORTTEXT" : "Codierung: Fehler bei Codierdatentransaktion aufgetreten",
+            "ORT" : "0x022D09",
+            "ORTTEXT_EN" : "Coding: Error occurred during coding data transaction",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "Unterspannung erkannt",
+            "ORT" : "0x806482",
+            "ORTTEXT_EN" : "Undervoltage detected",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT" : "B2-CAN Control Module Bus OFF",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "B2-CAN Control Module Bus OFF",
+            "ORT" : "0xD44514"
+         },
+         {
+            "ORTTEXT" : "Codierung: Steuergerät ist nicht codiert",
+            "ORT" : "0x022D08",
+            "ORTTEXT_EN" : "Coding: Control unit is not coded",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Invalid coding data for outside sound",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x806485",
+            "ORTTEXT" : "Ungültige Codierdaten für Außensound"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "FA-CAN Control Module Bus OFF",
+            "ORT" : "0xD4440A",
+            "ORTTEXT" : "FA-CAN Control Module Bus OFF"
+         },
+         {
+            "ORTTEXT" : "Codierung: Unplausible Daten während Codierdatentransaktion",
+            "ORTTEXT_EN" : "Coding: Implausible data during coding data transaction",
+            "ORT" : "0x022D0C",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "B2-CAN Physical bus error",
+            "ORT" : "0xD4450B",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "B2-CAN Physikalischer Busfehler"
+         },
+         {
+            "ORTTEXT" : "Interner Steuergerätefehler: Hardware",
+            "ORTTEXT_EN" : "Internal control unit error: hardware",
+            "ORT" : "0x806480",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Coding: Coding data does not match the vehicle",
+            "ORT" : "0x022D0B",
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Codierung: Codierdaten passen nicht zum Fahrzeug"
+         },
+         {
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Komponentenfehlerbereich nur für Testzwecke",
+            "ORTTEXT_EN" : "Dummy error memory entry in the component error area for test purposes only",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x02FF2D"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Dummy error memory entry in the network error area for test purposes only",
+            "ORT" : "0xD44BFF",
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Netzwerkfehlerbereich nur für Testzwecke"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "FA-CAN Physical bus error",
+            "ORT" : "0xD44401",
+            "ORTTEXT" : "FA-CAN Physikalischer Busfehler"
+         },
+         {
+            "ORTTEXT" : "Codierung: Signatur der Codierdaten ungültig",
+            "ORTTEXT_EN" : "Coding: Signature of the coding data is invalid",
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x022D0A"
+         },
+         {
+            "ORTTEXT_EN" : "Message (vehicle speed, 0x1A1): failure or signal invalid",
+            "ORT" : "0xD45402",
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Geschwindigkeit Fahrzeug, 0x1A1): Ausfall oder Signal ungültig"
+         },
+         {
+            "ORTTEXT_EN" : "Overvoltage detected",
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x806483",
+            "ORTTEXT" : "Überspannung erkannt"
+         },
+         {
+            "ORTTEXT" : "Botschaft (Drehmoment Kurbelwelle 1, 0xA5): Ausfall oder Signal ungültig",
+            "ORTTEXT_EN" : "Message (torque crankshaft 1, 0xA5): failure or signal invalid",
+            "ORT" : "0xD45401",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "ORTTEXT_EN" : "unknown error location",
+            "ORT" : "0xFFFFFF",
+            "EREIGNIS_DTC" : "0"
+         }
+      ],
+      "SVK_ID" : [
+         {
+            "BEZEICHNUNG" : "SVK_AKTUELL",
+            "WERT" : "0x01"
+         },
+         {
+            "WERT" : "0x02",
+            "BEZEICHNUNG" : "SVK_SUPPLIER"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_WERK",
+            "WERT" : "0x03"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_01",
+            "WERT" : "0x04"
+         },
+         {
+            "WERT" : "0x05",
+            "BEZEICHNUNG" : "SVK_BACKUP_02"
+         },
+         {
+            "WERT" : "0x06",
+            "BEZEICHNUNG" : "SVK_BACKUP_03"
+         },
+         {
+            "WERT" : "0x07",
+            "BEZEICHNUNG" : "SVK_BACKUP_04"
+         },
+         {
+            "WERT" : "0x08",
+            "BEZEICHNUNG" : "SVK_BACKUP_05"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_06",
+            "WERT" : "0x09"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_07",
+            "WERT" : "0x0A"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_08",
+            "WERT" : "0x0B"
+         },
+         {
+            "WERT" : "0x0C",
+            "BEZEICHNUNG" : "SVK_BACKUP_09"
+         },
+         {
+            "WERT" : "0x0D",
+            "BEZEICHNUNG" : "SVK_BACKUP_10"
+         },
+         {
+            "WERT" : "0x0E",
+            "BEZEICHNUNG" : "SVK_BACKUP_11"
+         },
+         {
+            "WERT" : "0x0F",
+            "BEZEICHNUNG" : "SVK_BACKUP_12"
+         },
+         {
+            "WERT" : "0x10",
+            "BEZEICHNUNG" : "SVK_BACKUP_13"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_14",
+            "WERT" : "0x11"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_15",
+            "WERT" : "0x12"
+         },
+         {
+            "WERT" : "0x13",
+            "BEZEICHNUNG" : "SVK_BACKUP_16"
+         },
+         {
+            "WERT" : "0x14",
+            "BEZEICHNUNG" : "SVK_BACKUP_17"
+         },
+         {
+            "WERT" : "0x15",
+            "BEZEICHNUNG" : "SVK_BACKUP_18"
+         },
+         {
+            "WERT" : "0x16",
+            "BEZEICHNUNG" : "SVK_BACKUP_19"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_20",
+            "WERT" : "0x17"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_21",
+            "WERT" : "0x18"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_22",
+            "WERT" : "0x19"
+         },
+         {
+            "WERT" : "0x1A",
+            "BEZEICHNUNG" : "SVK_BACKUP_23"
+         },
+         {
+            "WERT" : "0x1B",
+            "BEZEICHNUNG" : "SVK_BACKUP_24"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_25",
+            "WERT" : "0x1C"
+         },
+         {
+            "WERT" : "0x1D",
+            "BEZEICHNUNG" : "SVK_BACKUP_26"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_27",
+            "WERT" : "0x1E"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_28",
+            "WERT" : "0x1F"
+         },
+         {
+            "WERT" : "0x20",
+            "BEZEICHNUNG" : "SVK_BACKUP_29"
+         },
+         {
+            "WERT" : "0x21",
+            "BEZEICHNUNG" : "SVK_BACKUP_30"
+         },
+         {
+            "WERT" : "0x22",
+            "BEZEICHNUNG" : "SVK_BACKUP_31"
+         },
+         {
+            "WERT" : "0x23",
+            "BEZEICHNUNG" : "SVK_BACKUP_32"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_33",
+            "WERT" : "0x24"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_34",
+            "WERT" : "0x25"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_35",
+            "WERT" : "0x26"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_36",
+            "WERT" : "0x27"
+         },
+         {
+            "WERT" : "0x28",
+            "BEZEICHNUNG" : "SVK_BACKUP_37"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_38",
+            "WERT" : "0x29"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_39",
+            "WERT" : "0x2A"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_40",
+            "WERT" : "0x2B"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_41",
+            "WERT" : "0x2C"
+         },
+         {
+            "WERT" : "0x2D",
+            "BEZEICHNUNG" : "SVK_BACKUP_42"
+         },
+         {
+            "WERT" : "0x2E",
+            "BEZEICHNUNG" : "SVK_BACKUP_43"
+         },
+         {
+            "WERT" : "0x2F",
+            "BEZEICHNUNG" : "SVK_BACKUP_44"
+         },
+         {
+            "WERT" : "0x30",
+            "BEZEICHNUNG" : "SVK_BACKUP_45"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_46",
+            "WERT" : "0x31"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_47",
+            "WERT" : "0x32"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_48",
+            "WERT" : "0x33"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_49",
+            "WERT" : "0x34"
+         },
+         {
+            "WERT" : "0x35",
+            "BEZEICHNUNG" : "SVK_BACKUP_50"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_51",
+            "WERT" : "0x36"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_52",
+            "WERT" : "0x37"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_53",
+            "WERT" : "0x38"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_54",
+            "WERT" : "0x39"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_55",
+            "WERT" : "0x3A"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_56",
+            "WERT" : "0x3B"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_57",
+            "WERT" : "0x3C"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_58",
+            "WERT" : "0x3D"
+         },
+         {
+            "WERT" : "0x3E",
+            "BEZEICHNUNG" : "SVK_BACKUP_59"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_60",
+            "WERT" : "0x3F"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_61",
+            "WERT" : "0x40"
+         },
+         {
+            "BEZEICHNUNG" : "ERROR_UNKNOWN",
+            "WERT" : "0xXY"
+         }
+      ],
+      "DTCSNAPSHOTIDENTIFIER" : [
+         {
+            "L/H" : "-",
+            "UWTEXT" : "KM_STAND",
+            "UWTYP" : "0xFFFFFF",
+            "MUL" : "1",
+            "ADD" : "0.000000",
+            "DIV" : "1",
+            "NAME" : "-",
+            "UWNR" : "0x1700",
+            "UW_EINH" : "0-n"
+         },
+         {
+            "L/H" : "-",
+            "UWTEXT" : "ABS_ZEIT",
+            "DIV" : "1",
+            "ADD" : "0.000000",
+            "MUL" : "1",
+            "UW_EINH" : "0-n",
+            "NAME" : "-",
+            "UWNR" : "0x1701",
+            "UWTYP" : "0xFFFFFFFF"
+         },
+         {
+            "L/H" : "-",
+            "UWTEXT" : "SAE_CODE",
+            "UWTYP" : "0xFFFFFF",
+            "DIV" : "1",
+            "ADD" : "0.000000",
+            "MUL" : "1",
+            "UW_EINH" : "0-n",
+            "NAME" : "-",
+            "UWNR" : "0x1702"
+         },
+         {
+            "L/H" : "-",
+            "UWTEXT" : "Fehlerklasse_DTC",
+            "UWTYP" : "u char",
+            "DIV" : "1",
+            "ADD" : "0.000000",
+            "MUL" : "1",
+            "UW_EINH" : "-",
+            "UWNR" : "0x1731",
+            "NAME" : "-"
+         },
+         {
+            "UW_EINH" : "-",
+            "NAME" : "-",
+            "UWNR" : "0xFFFF",
+            "ADD" : "0.000000",
+            "DIV" : "1",
+            "MUL" : "1",
+            "UWTYP" : "0xFFFFFF",
+            "UWTEXT" : "IDENTIFIER_UNKNOWN",
+            "L/H" : "-"
+         }
+      ],
+      "BETRIEBSMODE" : [
+         {
+            "BEDEUTUNG" : "Hier deaktivierte Funktionen gemäß FeTra-Liste festhalten",
+            "TEXT" : "Allgemeiner Fertigungs- und Energiesparmode",
+            "TEXT_EN" : "General manufacturing and energy saving fashion",
+            "WERT" : "0x00"
+         },
+         {
+            "BEDEUTUNG" : "-",
+            "TEXT" : "Spezieller Energiesparmode",
+            "TEXT_EN" : "Special energy saving mode",
+            "WERT" : "0x01"
+         },
+         {
+            "TEXT" : "ECOS-Mode",
+            "WERT" : "0x02",
+            "TEXT_EN" : "ECOS mode",
+            "BEDEUTUNG" : "-"
+         },
+         {
+            "BEDEUTUNG" : "-",
+            "TEXT" : "MOST-Mode",
+            "TEXT_EN" : "MOST mode",
+            "WERT" : "0x03"
+         },
+         {
+            "TEXT_EN" : "Role fashion",
+            "WERT" : "0x04",
+            "TEXT" : "Rollenmode",
+            "BEDEUTUNG" : "-"
+         },
+         {
+            "TEXT_EN" : "invalid operating mode",
+            "WERT" : "0xFF",
+            "TEXT" : "ungültiger Betriebsmode",
+            "BEDEUTUNG" : "ungültig"
+         }
+      ],
+      "FEHLERKLASSE" : [
+         {
+            "TEXT" : "Keine Fehlerklasse verfuegbar",
+            "TEXT_EN" : "No fault class available",
+            "NR" : "0x00"
+         },
+         {
+            "NR" : "0x01",
+            "TEXT" : "Ueberpruefung bei naechstem Werkstattbesuch",
+            "TEXT_EN" : "Check when you next visit the workshop"
+         },
+         {
+            "TEXT" : "Ueberpruefung bei naechstem Halt",
+            "TEXT_EN" : "Check at the next stop",
+            "NR" : "0x02"
+         },
+         {
+            "NR" : "0x04",
+            "TEXT" : "Ueberpruefung sofort erforderlich !",
+            "TEXT_EN" : "Check required immediately!"
+         },
+         {
+            "TEXT_EN" : "unknown error class",
+            "TEXT" : "unbekannte Fehlerklasse",
+            "NR" : "0xFF"
+         }
+      ],
+      "FARTTEXTE" : [
+         {
+            "ARTTEXT" : "keine Fehlerart verfügbar",
+            "ARTNR" : "0x00",
+            "ARTTEXT_EN" : "no error type available"
+         },
+         {
+            "ARTNR" : "0x04",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x05",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x08",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x09",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x0C"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x0D",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTNR" : "0x40",
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTTEXT" : "unbekannte Fehlerart"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x44",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x45",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x48",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x49",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x4C",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x4D",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen erfüllt",
+            "ARTTEXT_EN" : "Test conditions met",
+            "ARTNR" : "0x10"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt",
+            "ARTTEXT_EN" : "Test conditions not yet met",
+            "ARTNR" : "0x11"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up",
+            "ARTNR" : "0x80",
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen",
+            "ARTNR" : "0x81",
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTNR" : "0xFF",
+            "ARTTEXT_EN" : "unknown type of error"
+         }
+      ],
+      "PROZESSKLASSEN" : [
+         {
+            "BEZEICHNUNG" : "ungueltig",
+            "WERT" : "0x00",
+            "PROZESSKLASSE" : "-"
+         },
+         {
+            "WERT" : "0x01",
+            "BEZEICHNUNG" : "Hardware (Elektronik)",
+            "PROZESSKLASSE" : "HWEL"
+         },
+         {
+            "WERT" : "0x02",
+            "BEZEICHNUNG" : "Hardwareauspraegung",
+            "PROZESSKLASSE" : "HWAP"
+         },
+         {
+            "WERT" : "0x03",
+            "BEZEICHNUNG" : "Hardwarefarbe",
+            "PROZESSKLASSE" : "HWFR"
+         },
+         {
+            "WERT" : "0x05",
+            "BEZEICHNUNG" : "Codierdaten",
+            "PROZESSKLASSE" : "CAFD"
+         },
+         {
+            "BEZEICHNUNG" : "Bootloader",
+            "WERT" : "0x06",
+            "PROZESSKLASSE" : "BTLD"
+         },
+         {
+            "WERT" : "0x08",
+            "BEZEICHNUNG" : "Software ECU Speicherimage",
+            "PROZESSKLASSE" : "SWFL"
+         },
+         {
+            "PROZESSKLASSE" : "SWFF",
+            "BEZEICHNUNG" : "Flash File Software",
+            "WERT" : "0x09"
+         },
+         {
+            "PROZESSKLASSE" : "SWPF",
+            "WERT" : "0x0A",
+            "BEZEICHNUNG" : "Pruefsoftware"
+         },
+         {
+            "WERT" : "0x0B",
+            "BEZEICHNUNG" : "Onboard Programmiersystem",
+            "PROZESSKLASSE" : "ONPS"
+         },
+         {
+            "PROZESSKLASSE" : "FAFP",
+            "WERT" : "0x0F",
+            "BEZEICHNUNG" : "FA2FP"
+         },
+         {
+            "PROZESSKLASSE" : "TLRT",
+            "WERT" : "0x1A",
+            "BEZEICHNUNG" : "Temporaere Loeschroutine"
+         },
+         {
+            "BEZEICHNUNG" : "Temporaere Programmierroutine",
+            "WERT" : "0x1B",
+            "PROZESSKLASSE" : "TPRG"
+         },
+         {
+            "BEZEICHNUNG" : "Flashloader Slave",
+            "WERT" : "0x07",
+            "PROZESSKLASSE" : "FLSL"
+         },
+         {
+            "BEZEICHNUNG" : "Interaktive Betriebsanleitung Daten",
+            "WERT" : "0x0C",
+            "PROZESSKLASSE" : "IBAD"
+         },
+         {
+            "WERT" : "0x10",
+            "BEZEICHNUNG" : "Freischaltcode Fahrzeug-Auftrag",
+            "PROZESSKLASSE" : "FCFA"
+         },
+         {
+            "WERT" : "0x1C",
+            "BEZEICHNUNG" : "Bootloader-Update Applikation",
+            "PROZESSKLASSE" : "BLUP"
+         },
+         {
+            "PROZESSKLASSE" : "FLUP",
+            "BEZEICHNUNG" : "Flashloader-Update Applikation",
+            "WERT" : "0x1D"
+         },
+         {
+            "PROZESSKLASSE" : "SWUP",
+            "WERT" : "0xC0",
+            "BEZEICHNUNG" : "Software-Update Package"
+         },
+         {
+            "PROZESSKLASSE" : "SWIP",
+            "WERT" : "0xC1",
+            "BEZEICHNUNG" : "Index Software-Update Package"
+         },
+         {
+            "WERT" : "0xA0",
+            "BEZEICHNUNG" : "Entertainment Daten",
+            "PROZESSKLASSE" : "ENTD"
+         },
+         {
+            "BEZEICHNUNG" : "Navigation Daten",
+            "WERT" : "0xA1",
+            "PROZESSKLASSE" : "NAVD"
+         },
+         {
+            "PROZESSKLASSE" : "FCFN",
+            "WERT" : "0xA2",
+            "BEZEICHNUNG" : "Freischaltcode Funktion"
+         },
+         {
+            "BEZEICHNUNG" : "Gateway-Tabelle",
+            "WERT" : "0x04",
+            "PROZESSKLASSE" : "GWTB"
+         },
+         {
+            "PROZESSKLASSE" : "SWFK",
+            "BEZEICHNUNG" : "BEGU: Detaillierung auf SWE-Ebene",
+            "WERT" : "0x0D"
+         },
+         {
+            "PROZESSKLASSE" : "-",
+            "WERT" : "0xFF",
+            "BEZEICHNUNG" : "ungueltig"
+         }
+      ],
+      "DIAGMODE" : [
+         {
+            "NR" : "0x00",
+            "MODE" : "UNGUELTIG",
+            "MODE_TEXT" : "DefaultMode"
+         },
+         {
+            "MODE" : "DEFAULT",
+            "NR" : "0x01",
+            "MODE_TEXT" : "DefaultMode"
+         },
+         {
+            "MODE" : "ECUPM",
+            "NR" : "0x02",
+            "MODE_TEXT" : "ECUProgrammingMode"
+         },
+         {
+            "MODE" : "ECUEXTDIAG",
+            "NR" : "0x03",
+            "MODE_TEXT" : "ECUExtendedDiagnosticSession"
+         },
+         {
+            "NR" : "0x04",
+            "MODE" : "ECUSSDS",
+            "MODE_TEXT" : "ECUSafetySystemDiagnosticSession"
+         },
+         {
+            "MODE_TEXT" : "ECUEndOfLineSession",
+            "MODE" : "ECUEOL",
+            "NR" : "0x40"
+         },
+         {
+            "MODE_TEXT" : "ECUCodingSession",
+            "NR" : "0x41",
+            "MODE" : "ECUCODE"
+         },
+         {
+            "MODE" : "ECUSWT",
+            "NR" : "0x42",
+            "MODE_TEXT" : "ECUSwtSession"
+         },
+         {
+            "MODE_TEXT" : "ECUHDDDownloadSession",
+            "NR" : "0x43",
+            "MODE" : "ECUHDD"
+         },
+         {
+            "MODE_TEXT" : "ECUDevelopmentSession",
+            "NR" : "0x4F",
+            "MODE" : "ECUDEVELOP"
+         },
+         {
+            "MODE" : "ECUGDM",
+            "NR" : "0x5F",
+            "MODE_TEXT" : "ECUGarageDiagnoseMode"
+         },
+         {
+            "MODE_TEXT" : "unbekannter Diagnose-Mode",
+            "NR" : "0xXY",
+            "MODE" : "--"
+         }
+      ],
+      "ARG_0XD0D8" : [
+         {
+            "EINHEIT" : "-",
+            "INFO_EN" : "Switch MUTE on or off 0x00 = off 0x01 = on 0xFF = not defined",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "MAX" : "-",
+            "ARG" : "ARG_MUTE",
+            "DATENTYP" : "char",
+            "INFO" : "MUTE einschalten oder ausschalten 0x00 = aus 0x01 = ein 0xFF = nicht definiert",
+            "DIV" : "1.0",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "MIN" : "-",
+            "NAME" : "-"
+         }
+      ],
+      "IDETAILSTRUKTUR" : [
+         {
+            "TYP" : "nein",
+            "NAME" : "F_UWB_ERW"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "SAE_CODE"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_HLZ"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_SEVERITY"
+         }
+      ]
+   }
+}

@@ -450,8 +450,11 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleChargeType(const std::string& state) {}
     virtual void NotifiedVehicleGenState(const std::string& state) {}
     virtual void NotifiedVehicleGenType(const std::string& state) {}
+    virtual void NotifiedOBD2ECUStart() {}
+    virtual void NotifiedOBD2ECUStop() {}
 
   protected:
+    uint32_t m_valet_last_alarm;
     virtual void ConfigChanged(OvmsConfigParam* param);
     virtual void MetricModified(OvmsMetric* metric);
     virtual void CalculateEfficiency();
@@ -464,7 +467,7 @@ class OvmsVehicle : public InternalRamAllocated
 
   protected:
     void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL);
-    bool PinCheck(char* pin);
+    bool PinCheck(const char* pin);
 
   public:
     virtual void RxTask();

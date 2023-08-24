@@ -35,7 +35,11 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/uart.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include "esp_netif.h"
+#else
 #include "tcpip_adapter.h"
+#endif
 extern "C"
   {
 #include "netif/ppp/pppos.h"
@@ -64,6 +68,7 @@ class GsmPPPOS : public InternalRamAllocated
     ppp_pcb*     m_ppp;
     struct netif m_ppp_netif;
     bool         m_connected;
+    int          m_connectcount;
     int          m_lasterrcode;
   };
 

@@ -9,6 +9,7 @@
 
 
 ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+COMPONENT_DEPENDS := mongoose
 COMPONENT_SRCDIRS := src srcduk
 COMPONENT_ADD_INCLUDEDIRS := src srcduk umm
 # To get line numbers of internal modules in stack traces, embed the uncompressed sources:

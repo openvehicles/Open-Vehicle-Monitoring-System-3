@@ -18,7 +18,7 @@ See: [http://www.sphinx-doc.org/en/master/usage/installation.html](http://www.sp
 
 #### 3. Install Plugins
 
-`pip install m2r`
+`pip install m2r2`
 
 #### 4. Build the docs
 

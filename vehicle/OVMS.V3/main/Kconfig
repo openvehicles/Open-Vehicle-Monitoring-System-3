@@ -415,6 +415,13 @@ config OVMS_VEHICLE_MAXED3
     depends on OVMS
     help
         Enable to include support for Maxus eDeliver3 vehicle.
+        
+config OVMS_VEHICLE_MAXE56
+    bool "Include support for Maxus Euniq 5 6-seats vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Maxus Euniq 5 6-seats vehicle.
 
 config OVMS_VEHICLE_KIASOULEV
     bool "Include support for Kia Soul EV vehicles"
@@ -528,6 +535,13 @@ config OVMS_VEHICLE_BMWI3
     depends on OVMS
     help
         Enable to include support for BMW i3 or i3s vehicles
+
+config OVMS_VEHICLE_MINISE
+    bool "Include support for Mini Cooper SE"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Mini Cooper SE vehicles
 
 config OVMS_VEHICLE_HYUNDAI_IONIQVFL
     bool "Include support for Hyundai Ioniq Electric 28kWh (vFL)"
@@ -860,5 +874,12 @@ config OVMS_DEV_DEBUGNOTIFICATIONS
     depends on OVMS
     help
         Enable to show notifications raised
+
+config OVMS_DEV_NETMANAGER_PING
+    bool "Enable netmanager ping support"
+    default n
+    depends on OVMS && LWIP_ICMP
+    help
+        Enable to add 'network ping' command
 
 endmenu # Developer Options

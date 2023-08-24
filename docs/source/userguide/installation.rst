@@ -16,11 +16,14 @@ Pre-Installation Steps
 Prior to installation, please make sure you have the following available:
 
 #. The OVMS v3 module in it's enclosure.
+#. A `Hologram <https://hologram.io>`_ (or other suitable) SIM card if you module did not come with one.
 #. A micro-usb cable suitable for connecting to your computer.
 #. A laptop or desktop computer (if necessary).
 #. A cable suitable for connecting to your vehicle.
 #. A GSM antenna (if you are using the cellular option).
 #. A GPS antenna (if your vehicle type requires one).
+
+
 
 You should also have ready access to this User Guide, and wifi connectivity to the Internet.
 

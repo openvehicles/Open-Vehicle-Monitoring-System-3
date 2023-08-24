@@ -1,6 +1,11 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- MG EV Added support for MG ZS EV (2023 - ) and MG5 (2020 - 2023) Long Range
+- OVMS Server v3 metrics filtering
+  New configs:
+    [server.v3] metrics.include         -- Comma-separated list of metric names (with possible wildcard) matching metrics to send
+    [server.v3] metrics.exclude         -- Comma-separated list of metric names (with possible wildcard) matching metrics to not send
 - Renault Zoe Phase 2: Initial support
 - Improved output of bms shell command for narrow windows.
   New commands:
@@ -33,6 +38,67 @@ Open Vehicle Monitor System v3 - Change log
   New configs:
     [can] log.events_filters            -- comma-separated list of filters (with possible wildcard) matching an event name
     [can] log.metrics_filters           -- comma-separated list of filters (with possible wildcard) matching a metric name
+- Add units Bar, Permille
+- Add user configuration for groups of metrics
+  Adds the 'ToUser' unit that converts to the user specified unit.
+  Add -u to 'metrics list' to view metrics as  user units.
+- Add completion for metrics set/get as well as units
+- Mini Cooper SE: Initial support
+- Hyundai Ioniq vFL: trip metrics, range estimations, TPMS, web configuration,
+    charge type detection, charge speed & time estimation
+  New configs:
+    [xhi] ctp.maxpower                -- Default charge power limit [kW] for charge time estimations, default 0 = unlimited
+    [xhi] ctp.soclimit                -- SOC level [%] for secondary charge time estimation (sufficient SOC), default 80
+    [xhi] notify.charge.delay.ccs     -- Wait time [sec] for DC charge power to ramp up before sending the notification, default 15
+    [xhi] notify.charge.delay.type2   -- … same for AC charging, default 3
+    [xhi] range.ideal                 -- ideal new car range [km], default 200
+    [xhi] range.user                  -- typical current user range [km], default 200
+    [xhi] range.smoothing             -- Number of SOC samples, default 10 = ~ 5% SOC
+    [xhi] tpms.pressure.warn		      -- default 230 [kPa]
+    [xhi] tpms.pressure.alert         -- default 220 [kPa]
+    [xhi] tpms.temp.warn              -- default 90 [°C]
+    [xhi] tpms.temp.alert             -- default 100 [°C]
+  New metrics:
+    xhi.b.range.user                  -- actual current user range [km]
+    xhi.e.state                       -- General/ignition state flags
+- Module: support deep sleep schedules
+  New commands:
+    module sleep                      -- Shutdown all components and enter deep sleep for a time span or until a specific time.
+- Add support for user-configured metrics in the web interface and plugins:
+   Adds an extra 'units' stream from the websocket containing sub-streams:
+     - metrics (for the current user unit/label for each metric) (subscribe to units/metrics)
+     - prefs (for any user preferences for unit groups/types) (subscribe to units/prefs)
+   Adds proxy arrays metrics_user[] , metrics_label[] available to plugin pages.
+   Adds various browser javascript functions and methods for plugins related
+     to displaying user configurations Auto-converts metric display to user
+     units in plugins that use attributes
+- Cellular: add GPS/GNSS state control commands (for power management)
+  New commands:
+    cellular gps [status]             -- output current modem GPS/GNSS subsystem status
+    cellular gps start                -- start modem GPS/GNSS subsystem
+    cellular gps stop                 -- stop modem GPS/GNSS subsystem
+- CAN framework: add bus reset command
+  New commands:
+    can [can1…4] reset                -- reset the CAN interface
+- Vehicle: add support for custom command handlers, see…
+  https://docs.openvehicles.com/en/latest/userguide/scripting.html#ovmsvehicle-command-plugins
+- Renault Twizy: read battery energy available from BMS (thanks to Martin Bitz)
+  New metrics:
+    xrt.b.energy.avail                -- Current battery energy available [kWh] (aged)
+    xrt.b.energy.full                 -- Maximum battery energy capacity [kWh] (aged, needs full charge)
+- Add button on web file editor to reload obd2ECU (when obd2ECU is enabled).
+- Vehicle: add support for a geofence for valet mode similar to parking/flatbed warnings.
+  New Configs:
+    [vehicle] valet.alarmdistance     -- How far away from the original position before raising an alert (in metres)
+    [vehicle] valet.alarminterval      -- How often the alarm can be raised in minumtes
+- Add metric and events related to obd2ecu process:
+  New metric:
+    m.obdc2ecu.on                     -- Is the OBD2ECU process currently on.
+  New events:
+    obd2ecu.start                     -- Called after the OBD2ECU process is started.
+    obd2ecu.stop                      -- Called before the OBD2ECU process is stopped.
+- Web UI: Add configuration for Valet and Flatbed geofence to the Locations config page.
+- Network: New 'network ping' command to ping (ICMP) hostname or IP address. (ESP-IDFv4+ only / needs to be enabled in menuconfig - Developer Options)
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

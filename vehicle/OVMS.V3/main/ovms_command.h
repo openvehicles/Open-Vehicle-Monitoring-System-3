@@ -66,7 +66,7 @@ class OvmsWriter
 
   public:
     virtual int puts(const char* s) { return 0; }
-    virtual int printf(const char* fmt, ...) { return 0; }
+    virtual int printf(const char* fmt, ...) __attribute__ ((format (printf, 2, 3))) { return 0; }
     virtual ssize_t write(const void *buf, size_t nbyte) { return 0; }
     virtual char** SetCompletion(int index, const char* token) { return NULL; }
     virtual char** GetCompletions() { return NULL; }
@@ -223,7 +223,7 @@ class CNameMap : public std::map<const char*, T, CmpStrOp>
 
 struct CompareCharPtr
   {
-  bool operator()(const char* a, const char* b);
+  bool operator()(const char* a, const char* b) const;
   };
 
 class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr>
@@ -329,9 +329,9 @@ class OvmsCommandApp : public OvmsWriter
     OvmsCommand* FindCommandFullName(const char* name);
     void RegisterConsole(OvmsWriter* writer);
     void DeregisterConsole(OvmsWriter* writer);
-    int Log(const char* fmt, ...);
-    int Log(const char* fmt, va_list args);
-    int LogPartial(const char* fmt, ...);
+    int Log(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+    int Log(const char* fmt, va_list args) __attribute__ ((format (printf, 2, 0)));
+    int LogPartial(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
     int HexDump(const char* tag, const char* prefix, const char* data, size_t length, size_t colsize=16);
     void Display(OvmsWriter* writer);
 
@@ -359,7 +359,7 @@ class OvmsCommandApp : public OvmsWriter
     void ReadConfig();
 
   private:
-    int LogBuffer(LogBuffers* lb, const char* fmt, va_list args);
+    int LogBuffer(LogBuffers* lb, const char* fmt, va_list args) __attribute__ ((format (printf, 3, 0)));
 
   public:
     void Log(LogBuffers* message);

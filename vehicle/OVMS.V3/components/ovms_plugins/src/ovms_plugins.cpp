@@ -36,7 +36,10 @@ static const char *TAG = "pluginstore";
 #include <sys/stat.h>
 #include <string>
 #include <string.h>
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR < 4
 #include "strverscmp.h"
+#endif
 #include "ovms_plugins.h"
 #include "ovms_command.h"
 #include "ovms_config.h"

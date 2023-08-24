@@ -64,10 +64,21 @@ using namespace std;
 void OvmsVehicleMgEv::WebInit()
 {
     // vehicle menu:
-    MyWebServer.RegisterPage("/xmg/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/xmg/battery",  "Battery config",   WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
-    //MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+    MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
+}
+
+void OvmsVehicleMgEv::Mg5WebInit()
+{
+    // vehicle menu:
+    MyWebServer.RegisterPage("/xmg/features", "Features", MG5WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+}
+
+void OvmsVehicleMgEv::FeaturesWebInit()
+{
+    // vehicle menu:
+    MyWebServer.RegisterPage("/xmg/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -75,9 +86,13 @@ void OvmsVehicleMgEv::WebInit()
  */
 void OvmsVehicleMgEv::WebDeInit()
 {
-  MyWebServer.DeregisterPage("/xmg/features");
-  MyWebServer.DeregisterPage("/bms/metrics_charger");
-  MyWebServer.DeregisterPage("/xmg/battery");
+    MyWebServer.DeregisterPage("/bms/metrics_charger");
+    MyWebServer.DeregisterPage("/xmg/battery");
+    MyWebServer.DeregisterPage("/bms/cellmon");
+}
+void OvmsVehicleMgEv::FeaturesWebDeInit()
+{
+    MyWebServer.DeregisterPage("/xmg/features");
 }
 
 /**
@@ -86,19 +101,23 @@ void OvmsVehicleMgEv::WebDeInit()
 void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
     std::string error;
-    //When we have more versions, need to change this to int and change from checkbox to select
-    bool updatedbms = DEFAULT_BMS_VERSION == 1 ? true : false;
-    
+    std::string bmstype;
+    int bmsval;
+
     if (c.method == "POST") {
-        updatedbms = (c.getvar("updatedbms") == "yes");
+        bmstype = c.getvar("bmstype");
+        bmsval = atoi(bmstype.c_str());
+
         
         if (error == "") {
           // store:
-          //"Updated" BMS is version 1 (corresponding to BMSDoDLimits array element). "Original" BMS is version 0 (corresponding to BMSDoDLimits array element)
-          MyConfig.SetParamValueInt("xmg", "bms.version", updatedbms ? 1 : 0);
-          
+            MyConfig.SetParamValueInt("xmg", "bmsval", bmsval);
+            MyConfig.SetParamValue("xmg", "bmstype", bmstype);
+            MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLimits[bmsval].Lower);
+            MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDLimits[bmsval].Upper);
+
           c.head(200);
-          c.alert("success", "<p class=\"lead\">MG ZS EV / MG5 feature configuration saved.</p>");
+          c.alert("success", "<p class=\"lead\">MG ZS EV feature configuration saved.</p>");
           MyWebServer.OutputHome(p, c);
           c.done();
           return;
@@ -108,34 +127,88 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
         c.head(400);
         c.alert("danger", error.c_str());
     } else {
-        // read configuration:
-        switch (MyConfig.GetParamValueInt("xmg", "bms.version", DEFAULT_BMS_VERSION))
-        {
-          case 0:
-            //"Updated" BMS is version 0 (corresponding to BMSDoDLimits array element)
-            updatedbms = false;
-            break;
-          case 1:
-            //"Original" BMS is version 1 (corresponding to BMSDoDLimits array element)
-            updatedbms = true;
-            break;
-        }
+        bmsval = MyConfig.GetParamValueInt("xmg", "bmsval",0);
+        bmstype = MyConfig.GetParamValue("xmg", "bmstype", "0");
+
         c.head(200);
     }
     // generate form:
-    c.panel_start("primary", "MG ZS EV / MG5 feature configuration");
+    c.panel_start("primary", "MG ZS EV feature configuration");
     c.form_start(p.uri);
 
-    c.fieldset_start("General");
+    c.fieldset_start("BMS Firmware Status");
     //When we have more versions, need to change this to select and updatedbms to int
-    c.input_checkbox("Updated BMS Firmware", "updatedbms", updatedbms,
-      "<p>Select this if you have BMS Firmware later than Jan 2021</p>");
+    c.input_radio_start("BMS Type", "bmstype");
+    c.input_radio_option("bmstype", "Original BMS Firmware", "0",  bmsval == 0);
+    c.input_radio_option("bmstype", "Updated BMS Firmware", "1", bmsval == 1);
+    c.input_radio_option("bmstype", "Select this if SOC not 100% at Full Charge after BMS Update", "2", bmsval == 2);
+    c.input_radio_end("");
+
     c.fieldset_end();
     c.print("<hr>");
     c.input_button("default", "Save");
     c.form_end();
     c.panel_end();
     c.done();
+}
+
+/**
+ * MG5WebCfgFeatures: configure general parameters (URL /xmg/config)
+ */
+void OvmsVehicleMgEv::MG5WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
+{
+    std::string error;
+    
+        bool pollingmanual = MyConfig.GetParamValueInt("xmg", "polling.manual");
+        
+        if (c.method == "POST") {
+            pollingmanual = (c.getvar("pollingmanual") == "yes");
+            
+            if (error == "") {
+                // store:
+                
+                MyConfig.SetParamValueInt("xmg", "polling.manual", pollingmanual ? 1 : 0);
+                
+                c.head(200);
+                c.alert("success", "<p class=\"lead\">MG5 feature configuration saved.</p>");
+                MyWebServer.OutputHome(p, c);
+                c.done();
+                return;
+            }
+            // output error, return to form:
+            error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+            c.head(400);
+            c.alert("danger", error.c_str());
+        } else {
+            // read configuration:
+            switch (MyConfig.GetParamValueInt("xmg", "polling.manual"))
+            {
+                case 0:
+                    // Polling is set to manual
+                    pollingmanual = false;
+                    break;
+                case 1:
+                    // Polling is automatic
+                    pollingmanual = true;
+                    break;
+            }
+            c.head(200);
+        }
+        // generate form:
+        c.panel_start("primary", "MG5 feature configuration");
+        c.form_start(p.uri);
+        
+        c.fieldset_start("General");
+    if(StandardMetrics.ms_v_type->AsString() == "MG5") {
+        c.input_checkbox("Manual Polling Enabled", "pollingmanual", pollingmanual,
+                         "<p>Vehicle polling must be manually turned on if this is selected</p>");
+    }
+        c.fieldset_end();
+        c.print("<hr>");
+        c.input_button("default", "Save");
+        c.form_end();
+        c.panel_end();
+        c.done();
 }
 
 /**
@@ -233,69 +306,84 @@ void OvmsVehicleMgEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsVehicleMgEv::GetDashboardConfig(DashboardConfig& cfg)
 {
-    cfg.gaugeset1 =
-    "yAxis: [{"
     // Speed:
-    "min: 0, max: 135,"
-    "plotBands: ["
-    "{ from: 0, to: 60, className: 'green-band' },"
-    "{ from: 60, to: 100, className: 'yellow-band' },"
-    "{ from: 100, to: 135, className: 'red-band' }]"
-    "},{"
+    dash_gauge_t speed_dash(NULL,Kph);
+    speed_dash.SetMinMax(0, 135, 5);
+    speed_dash.AddBand("green", 0, 60);
+    speed_dash.AddBand("yellow", 60, 100);
+    speed_dash.AddBand("red", 100, 135);
+
     // Voltage:
-    "min: 340, max: 460,"
-    "plotBands: ["
-    "{ from: 340, to: 380, className: 'red-band' },"
-    "{ from: 380, to: 420, className: 'yellow-band' },"
-    "{ from: 410, to: 460, className: 'green-band' }]"
-    "},{"
+    dash_gauge_t voltage_dash(NULL,Volts);
+    voltage_dash.SetMinMax(340, 460);
+    voltage_dash.AddBand("red", 340, 380);
+    voltage_dash.AddBand("yellow", 380, 420);
+    voltage_dash.AddBand("green", 410, 460);
+
     // SOC:
-    "min: 10, max: 100,"
-    "plotBands: ["
-    "{ from: 10, to: 15.5, className: 'red-band' },"
-    "{ from: 15.5, to: 25, className: 'yellow-band' },"
-    "{ from: 25, to: 100, className: 'green-band' }]"
-    "},{"
+    dash_gauge_t soc_dash("SOC ",Percentage);
+    soc_dash.SetMinMax(10, 100);
+    soc_dash.AddBand("red", 10, 15.5);
+    soc_dash.AddBand("yellow", 15.5, 25);
+    soc_dash.AddBand("green", 25, 100);
+
     // Efficiency:
-    "min: 0, max: 600,"
-    "plotBands: ["
-    "{ from: 0, to: 200, className: 'green-band' },"
-    "{ from: 200, to: 400, className: 'yellow-band' },"
-    "{ from: 400, to: 600, className: 'red-band' }]"
-    "},{"
+    dash_gauge_t eff_dash(NULL,WattHoursPK);
+    eff_dash.SetMinMax(0, 600);
+    eff_dash.AddBand("green", 0, 200);
+    eff_dash.AddBand("yellow", 200, 400);
+    eff_dash.AddBand("red", 400, 600);
+
     // Power:
-    "min: -30, max: 150,"
-    "plotBands: ["
-    "{ from: -30, to: 0, className: 'violet-band' },"
-    "{ from: 0, to: 50, className: 'green-band' },"
-    "{ from: 50, to: 100, className: 'yellow-band' },"
-    "{ from: 100, to: 150, className: 'red-band' }]"
-    "},{"
+    dash_gauge_t power_dash(NULL,kW);
+    power_dash.SetMinMax(-30, 150);
+    power_dash.AddBand("violet", -30, 0);
+    power_dash.AddBand("green", 0, 50);
+    power_dash.AddBand("yellow", 50, 100);
+    power_dash.AddBand("red", 100, 150);
+
     // Charger temperature:
-    "min: -10, max: 55, tickInterval: 20,"
-    "plotBands: ["
-    "{ from: -10, to: 40, className: 'normal-band border' },"
-    "{ from: 40, to: 55, className: 'red-band border' }]"
-    "},{"
+    dash_gauge_t charget_dash("CHG ",Celcius);
+    charget_dash.SetMinMax(-10, 55);
+    charget_dash.SetTick(20);
+    charget_dash.AddBand("normal", -10, 40);
+    charget_dash.AddBand("red", 40, 55);
+
     // Battery temperature:
-    "min: -15, max: 65, tickInterval: 25,"
-    "plotBands: ["
-    "{ from: -15, to: 0, className: 'red-band border' },"
-    "{ from: 0, to: 40, className: 'normal-band border' },"
-    "{ from: 40, to: 65, className: 'red-band border' }]"
-    "},{"
+    dash_gauge_t batteryt_dash("BAT ",Celcius);
+    batteryt_dash.SetMinMax(-15, 65);
+    batteryt_dash.SetTick(25);
+    batteryt_dash.AddBand("red", -15, 0);
+    batteryt_dash.AddBand("normal", 0, 40);
+    batteryt_dash.AddBand("red", 40, 65);
+
     // Inverter temperature:
-    "min: -10, max: 55, tickInterval: 20,"
-    "plotBands: ["
-    "{ from: -10, to: 40, className: 'normal-band border' },"
-    "{ from: 40, to: 55, className: 'red-band border' }]"
-    "},{"
+    dash_gauge_t invertert_dash("PEM ",Celcius);
+    invertert_dash.SetMinMax(-10, 55);
+    invertert_dash.SetTick(20);
+    invertert_dash.AddBand("normal", -10, 40);
+    invertert_dash.AddBand("red", 40, 55);
+
     // Motor temperature:
-    "min: 20, max: 100, tickInterval: 25,"
-    "plotBands: ["
-    "{ from: 20, to: 75, className: 'normal-band border' },"
-    "{ from: 75, to: 100, className: 'red-band border' }]"
-    "}]";
+    dash_gauge_t motort_dash("MOT ",Celcius);
+    motort_dash.SetMinMax(20, 100);
+    motort_dash.SetTick(25);
+    motort_dash.AddBand("normal", 20, 75);
+    motort_dash.AddBand("red", 75, 100);
+
+    std::ostringstream str;
+    str << "yAxis: ["
+        << speed_dash << "," // Speed
+        << voltage_dash << "," // Voltage
+        << soc_dash << "," // SOC
+        << eff_dash << "," // Efficiency
+        << power_dash << "," // Power
+        << charget_dash << "," // Charger temperature
+        << batteryt_dash << "," // Battery temperature
+        << invertert_dash << "," // Inverter temperature
+        << motort_dash // Motor temperature
+        << "]";
+    cfg.gaugeset1 = str.str();
 }
 
 /**

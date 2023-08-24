@@ -415,6 +415,7 @@ void OvmsVehicleFiat500e::IncomingFrameCan2(CAN_frame_t* p_frame) {
     float itemp = ((uint16_t) d[3] << 1) | (d[4]&0x80 >> 7 );
     StandardMetrics.ms_v_env_cabintemp->SetValue(itemp*0.5-40);
     //01111111 10000000
+    break;
     }
      case 0xC014003: //TRIP_A_B
     {

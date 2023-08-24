@@ -623,7 +623,7 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
   int err = MyVehicleFactory.m_currentvehicle->PollSingleRequest(bus, txid, rxid,
     request, response, timeout_ms, protocol);
 
-  writer->printf("%x[%x] %s: ", txid, rxid, hexencode(request).c_str());
+  writer->printf("%" PRIx32 "[%" PRIx32 "] %s: ", txid, rxid, hexencode(request).c_str());
   if (err == POLLSINGLE_TXFAILURE)
     {
     writer->puts("ERROR: transmission failure (CAN bus error)");

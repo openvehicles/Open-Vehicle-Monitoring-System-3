@@ -74,7 +74,7 @@ void time_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
       OvmsTimeProvider* tp = itc->second;
       time_t tim = tp->m_time + (monotonictime-tp->m_lastreport);
       struct tm* tml = gmtime(&tim);
-      writer->printf("%s%-20.20s%7d%8d %s",
+      writer->printf("%s%-20.20s%7d%8" PRId32 " %s",
         (tp==MyTime.m_current)?"*":" ",
         tp->m_provider, tp->m_stratum, monotonictime-tp->m_lastreport, asctime(tml));
       }

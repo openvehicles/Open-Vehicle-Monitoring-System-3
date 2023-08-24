@@ -41,6 +41,7 @@ static const char *TAG = "obd2ecu";
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
 
+using namespace std::placeholders;
 
 obd2pid::obd2pid(int pid, pid_t type, OvmsMetric* metric)
   {
@@ -172,18 +173,44 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
 
   xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, CORE(1));
 
-  MyCan.RegisterListener(m_rxqueue);
+  MyCan.RegisterCallback(GetName(), std::bind(&obd2ecu::ECURxCallback, this, _1, _2));
+  NotifyStartup();
   }
 
 obd2ecu::~obd2ecu()
   {
+  NotifyShutdown();
   m_can->SetPowerMode(Off);
-  MyCan.DeregisterListener(m_rxqueue);
 
-  vQueueDelete(m_rxqueue);
   vTaskDelete(m_task);
+  m_task = nullptr;
+  auto rxqueue = m_rxqueue;
+  m_rxqueue = nullptr;
+  vQueueDelete(rxqueue);
+
+  MyCan.DeregisterCallback(GetName());
 
   ClearMap();
+  }
+
+void obd2ecu::ECURxCallback(const CAN_frame_t* frame, bool success)
+  {
+  if ( (frame->origin == m_can) && (m_rxqueue != nullptr))
+    {
+    xQueueSend(m_rxqueue,frame,0);
+    }
+  }
+
+void obd2ecu::NotifyStartup()
+  {
+  StandardMetrics.ms_m_obd2ecu_on->SetValue(true);
+  MyEvents.SignalEvent("obd2ecu.start", NULL);
+  }
+
+void obd2ecu::NotifyShutdown()
+  {
+  StandardMetrics.ms_m_obd2ecu_on->SetValue(false);
+  MyEvents.SignalEvent("obd2ecu.stop", NULL);
   }
 
 void obd2ecu::SetPowerMode(PowerMode powermode)
@@ -489,7 +516,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   uint8_t *p_d = p_frame->data.u8;  /* Incoming frame data from HUD / Dongle */
   uint8_t *r_d = r_frame.data.u8;  /* Response frame data being sent back to HUD / Dongle */
 
-  ESP_LOGD(TAG, "Rcv %x: %x (%x %x %x %x %x %x %x %x)",
+  ESP_LOGD(TAG, "Rcv %" PRIx32 ": %x (%x %x %x %x %x %x %x %x)",
                       p_frame->MsgID,
                       p_frame->FIR.B.DLC,
                       p_d[0],p_d[1],p_d[2],p_d[3],p_d[4],p_d[5],p_d[6],p_d[7]);
@@ -504,7 +531,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
            return;  /* ignore it.  We just sleep for a bit instead */
          }
          /* if none of the above, no idea what it is.  Ignore */
-         ESP_LOGD(TAG, "unknown MsgID %x",p_frame->MsgID);
+         ESP_LOGD(TAG, "unknown MsgID %" PRIx32,p_frame->MsgID);
          return;
        }
 
@@ -569,9 +596,13 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
 
           // Test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)
           if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script)
-          { metric = metric+jitter;
-            if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0) metric = 500+jitter;
-          }
+            {
+            if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0)
+              metric = 500;
+            else if (metric < 0)
+              metric = -metric;
+            metric += jitter;
+            }
 
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
@@ -834,7 +865,7 @@ void obd2ecu::Addpid(uint8_t pid)
 
   if(pid <= 0x20)       // PIDs 1-20
   { m_supported_01_20 |= 1 << (32-pid);
-    ESP_LOGD(TAG, "Added 0x%02x resulting 0x%08x",pid,m_supported_01_20);
+    ESP_LOGD(TAG, "Added 0x%02x resulting 0x%08" PRIx32,pid,m_supported_01_20);
     return;
   }
 

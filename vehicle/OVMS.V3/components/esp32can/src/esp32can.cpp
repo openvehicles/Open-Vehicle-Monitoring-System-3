@@ -43,6 +43,15 @@ static const char *TAG = "esp32can";
 #include "esp32can_regdef.h"
 #include "ovms_peripherals.h"
 #include "ovms_module.h"
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_chip_info.h>
+#endif
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include <rom/gpio.h>
+#include <soc/gpio_sig_map.h>
+#endif
+
 
 esp32can* MyESP32can = NULL;
 
@@ -207,11 +216,11 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
         MODULE_ESP32CAN->TXERR.B.TXERR = 0;
         MODULE_ESP32CAN->TXERR.B.TXERR = 0xff;
 
-        // Exit reset mode
-        MODULE_ESP32CAN->MOD.B.RM = 0;
-
         // Clear the re-triggered bus-off interrupt, collect any new bits
         interrupt |= MODULE_ESP32CAN->IR.U & 0xff;
+
+        // Exit reset mode
+        MODULE_ESP32CAN->MOD.B.RM = 0;
         }
 
       if ((status & __CAN_STS_BUS_OFF) == 0 &&
@@ -322,6 +331,7 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
       me->m_status.error_flags = error_flags;
       me->m_status.errors_rx = rxerr;
       me->m_status.errors_tx = txerr;
+      me->m_status.error_time = monotonictime;
       // …only necessary if no abort has been issued:
       if (!me->m_tx_abort)
         {
@@ -540,9 +550,19 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
 
 esp_err_t esp32can::Stop()
   {
+  OvmsMutexLock lock(&m_write_mutex);
+
   canbus::Stop();
 
+  // Clear TX queue
+  xQueueReset(m_txqueue);
+
   ESP32CAN_ENTER_CRITICAL();
+
+  // Abort TX
+  MODULE_ESP32CAN->CMR.B.TR = 0;
+  MODULE_ESP32CAN->CMR.B.AT = 1;
+  MODULE_ESP32CAN->CMR.B.AT = 0;
 
   // Enter reset mode
   MODULE_ESP32CAN->MOD.B.RM = 1;
@@ -615,7 +635,7 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*
   {
   OvmsMutexLock lock(&m_write_mutex);
 
-  if (m_mode != CAN_MODE_ACTIVE)
+  if (m_powermode != On || m_mode != CAN_MODE_ACTIVE)
     {
     ESP_LOGW(TAG,"Cannot write %s when not in ACTIVE mode",m_name);
     return ESP_FAIL;
@@ -669,6 +689,29 @@ void esp32can::TxCallback(CAN_frame_t* p_frame, bool success)
       }
     }
   }
+
+
+void esp32can::BusTicker10(std::string event, void* data)
+  {
+  // Check for a stuck bus-off error state:
+  // The workaround following TWAI_ERRATA_FIX_BUS_OFF_REC in ESP32CAN_isr() sometimes fails.
+  // If this happens, the error IRQ settles with only IR.2 Error Interrupt (warning state change)
+  // set. The controller fails to recover from this situation, we need to perform a full reset.
+  if ((m_status.error_flags >> 16 == __CAN_IRQ_ERR_WARNING) &&
+      (monotonictime - m_status.error_time >= 10))
+    {
+    ESP_LOGE(TAG, "%s stuck bus-off error state (errflags=0x%08" PRIx32 ") detected - resetting bus",
+             m_name, m_status.error_flags);
+    Reset();
+    m_status.error_flags = 0;
+    m_status.error_resets++;
+    m_watchdog_timer = monotonictime;
+    }
+
+  // Pass on to standard handler:
+  canbus::BusTicker10(event, data);
+  }
+
 
 void esp32can::SetPowerMode(PowerMode powermode)
   {

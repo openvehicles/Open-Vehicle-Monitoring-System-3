@@ -74,6 +74,12 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
       c.done();
       return;
     }
+    else {
+      // "network restart", "wifi reconnect"
+      OutputReconnect(p, c, NULL, cmd.c_str());
+      c.done();
+      return;
+    }
   }
 
   PAGE_HOOK("body.pre");
@@ -209,7 +215,10 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Network");
   output = ExecuteCommand("network status");
   c.printf("<samp class=\"monitor\" data-updcmd=\"network status\" data-events=\"^network\">%s</samp>", _html(output));
-  c.panel_end();
+  c.panel_end(
+    "<ul class=\"list-inline\">"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" name=\"action\" value=\"network restart\">Restart network</button></li>"
+    "</ul>");
 
   c.print(
     "</div>"
@@ -218,7 +227,10 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Wifi");
   output = ExecuteCommand("wifi status");
   c.printf("<samp class=\"monitor\" data-updcmd=\"wifi status\" data-events=\"\\.wifi\\.\">%s</samp>", _html(output));
-  c.panel_end();
+  c.panel_end(
+    "<ul class=\"list-inline\">"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" name=\"action\" value=\"wifi reconnect\">Reconnect Wifi</button></li>"
+    "</ul>");
 
   c.print(
     "</div>"
@@ -229,8 +241,10 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.printf("<samp class=\"monitor\" data-updcmd=\"cellular status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular on\">Start cellular modem</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular off\">Stop cellular modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular on\">Start modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular off\">Stop modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"cellular gps start\">Start GPS</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"cellular gps stop\">Stop GPS</button></li>"
       "<li><samp id=\"modem-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
@@ -591,8 +605,12 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  std::string vehicleid, vehicletype, vehiclename, timezone, timezone_region, units_distance, pin;
+  std::string vehicleid, vehicletype, vehiclename, timezone, timezone_region, pin;
   std::string bat12v_factor, bat12v_ref, bat12v_alert;
+
+  std::map<metric_group_t,std::string> units_values;
+  metric_group_list_t unit_groups;
+  OvmsMetricGroupConfigList(unit_groups);
 
   if (c.method == "POST") {
     // process form submission:
@@ -601,7 +619,13 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehiclename = c.getvar("vehiclename");
     timezone = c.getvar("timezone");
     timezone_region = c.getvar("timezone_region");
-    units_distance = c.getvar("units_distance");
+    for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
+      std::string name = OvmsMetricGroupName(*grpiter);
+      std::string cfg = "units_";
+      cfg += name;
+      units_values[*grpiter] = c.getvar(cfg);
+    }
+
     bat12v_factor = c.getvar("bat12v_factor");
     bat12v_ref = c.getvar("bat12v_ref");
     bat12v_alert = c.getvar("bat12v_alert");
@@ -627,7 +651,12 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("vehicle", "name", vehiclename);
       MyConfig.SetParamValue("vehicle", "timezone", timezone);
       MyConfig.SetParamValue("vehicle", "timezone_region", timezone_region);
-      MyConfig.SetParamValue("vehicle", "units.distance", units_distance);
+      for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
+        std::string name = OvmsMetricGroupName(*grpiter);
+        std::string value = units_values[*grpiter];
+        OvmsMetricSetUserConfig(*grpiter, value);
+      }
+
       MyConfig.SetParamValue("system.adc", "factor12v", bat12v_factor);
       MyConfig.SetParamValue("vehicle", "12v.ref", bat12v_ref);
       MyConfig.SetParamValue("vehicle", "12v.alert", bat12v_alert);
@@ -656,7 +685,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehiclename = MyConfig.GetParamValue("vehicle", "name");
     timezone = MyConfig.GetParamValue("vehicle", "timezone");
     timezone_region = MyConfig.GetParamValue("vehicle", "timezone_region");
-    units_distance = MyConfig.GetParamValue("vehicle", "units.distance");
+    for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter)
+      units_values[*grpiter] = OvmsMetricGetUserConfig(*grpiter);
     bat12v_factor = MyConfig.GetParamValue("system.adc", "factor12v");
     bat12v_ref = MyConfig.GetParamValue("vehicle", "12v.ref");
     bat12v_alert = MyConfig.GetParamValue("vehicle", "12v.alert");
@@ -703,10 +733,40 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     , _attr(timezone_region)
     , _attr(timezone));
 
-  c.input_radiobtn_start("Distance units", "units_distance");
-  c.input_radiobtn_option("units_distance", "Kilometers", "K", units_distance == "K");
-  c.input_radiobtn_option("units_distance", "Miles", "M", units_distance == "M");
-  c.input_radiobtn_end();
+  for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
+    std::string name = OvmsMetricGroupName(*grpiter);
+    metric_unit_set_t group_units;
+    if (OvmsMetricGroupUnits(*grpiter,group_units)) {
+      bool use_select = group_units.size() > 3;
+      std::string cfg = "units_";
+      cfg += name;
+      std::string value = units_values[*grpiter];
+      if (use_select)
+        c.input_select_start(OvmsMetricGroupLabel(*grpiter), cfg.c_str() );
+      else
+        c.input_radiobtn_start(OvmsMetricGroupLabel(*grpiter), cfg.c_str() );
+
+      bool checked = value.empty();
+      if (use_select)
+        c.input_select_option( "Default", "", checked);
+      else
+        c.input_radiobtn_option(cfg.c_str(), "Default", "", checked);
+      for (auto unititer = group_units.begin(); unititer != group_units.end(); ++unititer) {
+        const char* unit_name = OvmsMetricUnitName(*unititer);
+        const char* unit_label = OvmsMetricUnitLabel(*unititer);
+        checked = value == unit_name;
+        if (use_select)
+          c.input_select_option( unit_label, unit_name, checked);
+        else
+          c.input_radiobtn_option(cfg.c_str(), unit_label, unit_name, checked);
+      }
+      if (use_select)
+        c.input_select_end();
+      else
+        c.input_radiobtn_end();
+    }
+  }
+
   c.input_password("PIN", "pin", "", "empty = no change",
     "<p>Vehicle PIN code used for unlocking etc.</p>", "autocomplete=\"section-vehiclepin new-password\"");
 
@@ -963,8 +1023,7 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
     }
 
     if (error == "") {
-      if (c.getvar("action") == "save")
-        {
+      if (c.getvar("action") == "save") {
         // save:
         param->m_map.clear();
         param->m_map = std::move(pmap);
@@ -975,9 +1034,8 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
         OutputHome(p, c);
         c.done();
         return;
-        }
-      else if (c.getvar("action") == "test")
-        {
+      } else if (c.getvar("action") == "test")
+      {
         std::string reply;
         std::string popup;
         c.head(200);
@@ -991,10 +1049,10 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
             atoi(c.getvar("retry").c_str()),
             atoi(c.getvar("expire").c_str()),
             true /* receive server reply as reply/pushover-type notification */ ))
-          {
+        {
           c.alert("danger", "<p class=\"lead\">Could not send test message!</p>");
-          }
         }
+      }
     }
     else {
       // output error, return to form:
@@ -1163,7 +1221,7 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
             "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
             "<td><input type=\"text\" class=\"form-control\" name=\"nfy_%d\" value=\"%s\" placeholder=\"Enter notification type/subtype\""
               " autocomplete=\"section-notification-type\"></td>"
-            "<td width=\"20%\"><select class=\"form-control\" name=\"np_%d\" size=\"1\">"
+            "<td width=\"20%%\"><select class=\"form-control\" name=\"np_%d\" size=\"1\">"
       , max, _attr(name)
       , max);
     gen_options_priority(kv.second);
@@ -3089,6 +3147,7 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
   std::string latlon, name;
   int radius;
   double lat, lon;
+  std::string flatbed_dist, flatbed_time, valet_dist, valet_time;
 
   if (c.method == "POST") {
     // process form submission:
@@ -3111,12 +3170,20 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
       snprintf(buf, sizeof(buf), "%f,%f,%d", lat, lon, radius);
       pmap[name] = buf;
     }
-
+    flatbed_dist = c.getvar("flatbed.dist");
+    flatbed_time = c.getvar("flatbed.interval");
+    valet_dist = c.getvar("valet.dist");
+    valet_time = c.getvar("valet.interval");
     if (error == "") {
       // save:
       param->m_map.clear();
       param->m_map = std::move(pmap);
       param->Save();
+
+      MyConfig.SetParamValue("vehicle", "flatbed.alarmdistance", flatbed_dist);
+      MyConfig.SetParamValue("vehicle", "flatbed.alarminterval", flatbed_time);
+      MyConfig.SetParamValue("vehicle", "valet.alarmdistance", valet_dist);
+      MyConfig.SetParamValue("vehicle", "valet.alarminterval", valet_time);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Locations saved.</p>");
@@ -3134,6 +3201,11 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     pmap = param->m_map;
 
+    flatbed_dist = MyConfig.GetParamValue("vehicle", "flatbed.alarmdistance");
+    flatbed_time = MyConfig.GetParamValue("vehicle", "flatbed.alarminterval");
+    valet_dist   = MyConfig.GetParamValue("vehicle", "valet.alarmdistance");
+    valet_time   = MyConfig.GetParamValue("vehicle", "valet.alarminterval");
+
     // generate form:
     c.head(200);
   }
@@ -3148,6 +3220,16 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary panel-single", "Locations");
   c.form_start(p.uri);
+
+  c.print(
+    "<ul class=\"nav nav-tabs\">"
+      "<li class=\"active\"><a data-toggle=\"tab\" href=\"#tab-locations\">User Locations</a></li>"
+      "<li><a data-toggle=\"tab\" href=\"#tab-system-locations\">System Locations</a></li>"
+    "</ul>"
+    "<div class=\"tab-content\">"
+      "<div id=\"tab-locations\" class=\"tab-pane fade in active section-locations\">");
+
+
 
   c.print(
     "<div class=\"table-responsive list-editor receiver\" id=\"loced\">"
@@ -3207,13 +3289,36 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
         "</tfoot>"
       "</table>"
       "<input type=\"hidden\" class=\"list-item-id\" name=\"loc\" value=\"0\">"
-    "</div>"
-    "<div class=\"text-center\">\n"
-      "<button type=\"reset\" class=\"btn btn-default\">Reset</button>\n"
-      "<button type=\"submit\" class=\"btn btn-primary\">Save</button>\n"
     "</div>\n"
   );
 
+  c.print(
+      "</div>"
+      "<div id=\"tab-system-locations\" class=\"tab-pane fade section-system-locations\">");
+
+  c.input("number", "Flatbed Alert Distance", "flatbed.dist", flatbed_dist.c_str(), "Default: 500 m",
+      "<p>Distance from the parked location that the car needs to have moved before a 'flat-bed' alert is raised, 0 = disable flatbed alerts.</p>",
+      "min=\"0\" step=\"1\"", "m");
+  c.input("number", "Flatbed Alert Interval", "flatbed.interval", flatbed_time.c_str(), "Default: 15 min",
+      "Interval between repeated flatbed alerts, 0 = disable alert repetition",
+      "min=\"1\" step=\"1\"", "min");
+
+  c.input("number", "Valet Alert Distance", "valet.dist", valet_dist.c_str(), "Default: 0 (disabled)",
+      "<p>Distance from the location Valet Mode was enabled that the car needs to have travelled before an alert is raised, 0 = disable valet alerts.</p>",
+      "min=\"0\" step=\"1\"", "m");
+  c.input("number", "Valet Alert Interval", "valet.interval", valet_time.c_str(), "Default: 15 min",
+      "Interval between repeated valet alerts, 0 = disable alert repetition",
+      "min=\"1\" step=\"1\"", "min");
+
+  c.print(
+    "</div>\n"
+    "<br/>\n"
+    "<div class=\"form-group\">\n"
+    "<div class=\"text-center\">\n"
+      "<button type=\"reset\" class=\"btn btn-default\">Reset</button>\n"
+      "<button type=\"submit\" class=\"btn btn-primary\">Save</button>\n"
+    "</div></div>\n"
+    );
   c.form_end();
 
   c.print(
@@ -3929,7 +4034,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
         "text-align: center !important;\n"
       "}\n"
     "}\n"
-    ".log { font-size: 87%; color: gray; }\n"
+    ".log { font-size: 87%%; color: gray; }\n"
     ".log.log-I { color: green; }\n"
     ".log.log-W { color: darkorange; }\n"
     ".log.log-E { color: red; }\n"
@@ -3948,6 +4053,11 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
           "</div>\n"
     , _attr(p.uri), _attr(path));
 
+#ifdef CONFIG_OVMS_COMP_OBD2ECU
+  bool isECUEnabled = MyPeripherals->m_obd2ecu != nullptr;
+#else
+  bool isECUEnabled = false;
+#endif
   c.printf(
           "<div class=\"form-group\">\n"
             "<div class=\"textarea-control pull-right\">\n"
@@ -3964,6 +4074,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
               "<div class=\"text-left\">\n"
                 "<button type=\"button\" class=\"btn btn-default action-script-eval\" accesskey=\"V\">E<u>v</u>aluate JS</button>\n"
                 "<button type=\"button\" class=\"btn btn-default action-script-reload\">Reload JS Engine</button>\n"
+                "%s"
               "</div>\n"
             "</div>\n"
             "<div class=\"col-sm-6\">\n"
@@ -3986,9 +4097,11 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
           "Use a second session to test a web plugin.</p>\n"
       "</div>\n"
     "</div>\n"
-    , c.encode_html(content).c_str());
+    , c.encode_html(content).c_str()
+    , isECUEnabled ? "<button type=\"button\" class=\"btn btn-default action-script-ecu\">Reload ECU Settings</button>\n" : ""
+    );
 
-  c.print(
+  c.printf(
     "<script>\n"
     "(function(){\n"
       "var $ta = $('#input-content'), $output = $('#output');\n"
@@ -4050,6 +4163,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
           "$('.panel').removeClass('loading');\n"
         "});\n"
       "});\n"
+      "%s"
       "// Utility: select textarea line\n"
       "function selectLine(line) {\n"
         "var ta = $ta.get(0);\n"
@@ -4125,6 +4239,15 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
         "$('.action-open').trigger('click');\n"
     "})();\n"
     "</script>\n"
+     ,( !isECUEnabled ? "" : "// Reload ECU mappings:\n"
+      "$('.action-script-ecu').on('click', function() {\n"
+        "$('.panel').addClass('loading');\n"
+        "$ta.focus();\n"
+        "$output.empty().show();\n"
+        "loadcmd('obdii ecu reload', '+#output').then(function(){\n"
+          "$('.panel').removeClass('loading');\n"
+        "});\n"
+      "});\n")
     );
 
   c.done();

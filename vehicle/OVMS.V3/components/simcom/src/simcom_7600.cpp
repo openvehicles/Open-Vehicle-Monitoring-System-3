@@ -80,9 +80,25 @@ void simcom7600::StartupNMEA()
     {
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
     vTaskDelay(2000 / portTICK_PERIOD_MS);
+    // send single commands, as each can fail:
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=258\r\n");
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSINFOCFG=5,258\r\n");
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=1,1\r\n");
+    }
+  else
+    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
+  }
+
+void simcom7600::ShutdownNMEA()
+  {
+  // Switch off GPS:
+  if (m_modem->m_mux != NULL)
+    {
+    // send single commands, as each can fail:
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=0\r\n");
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSINFOCFG=0\r\n");
+    vTaskDelay(pdMS_TO_TICKS(100));
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
     }
   else
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
@@ -113,6 +129,7 @@ void simcom7600::StatusPoller()
         //  +COPS: 0,0,"vodafone.de Hologram",7  
 
         // done, fallthrough:
+        FALLTHROUGH;
       default:
         m_statuspoller_step = 0;
         break;
@@ -126,6 +143,7 @@ void simcom7600::PowerCycle()
   m_powercyclefactor = m_powercyclefactor % 3;
   ESP_LOGI(TAG, "Power Cycle (SIM7600) %dms",psd);
 
+  uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
   uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
 #ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
@@ -176,7 +194,11 @@ modem::modem_state1_t simcom7600::State1Ticker1(modem::modem_state1_t curstate)
         m_modem->tx("AT+CGMR;+ICCID\r\n");
         break;
       case 20:
-        m_modem->tx("AT+CMUX=0\r\n");
+        // start MUX mode, route URCs to MUX channel 3 (POLL)
+        // Note: NMEA URCs will now also be sent on channel 3 by the SIMCOM 7600;
+        //    without +CATR, NMEA URCs are sent identically on all channels;
+        //    there is no option to route these separately to channel 1 (NMEA)
+        m_modem->tx("AT+CMUX=0;+CATR=6\r\n");
         break;
       }
     return modem::None;

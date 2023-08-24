@@ -121,7 +121,7 @@ void can_log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
       {
       canlog* cl = it->second;
-      writer->printf("#%d: %s %s %s\n",
+      writer->printf("#%" PRId32 ": %s %s %s\n",
         it->first,
         (cl->m_isopen)?"open":"closed",
         cl->GetInfo().c_str(), cl->GetStats().c_str());
@@ -159,7 +159,7 @@ void can_log_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
       {
       canlog* cl = it->second;
-      writer->printf("#%d: %s\n", it->first, cl->GetInfo().c_str());
+      writer->printf("#%" PRId32 ": %s\n", it->first, cl->GetInfo().c_str());
       }
     }
   }
@@ -338,6 +338,7 @@ std::string canlogconnection::GetStats()
 ////////////////////////////////////////////////////////////////////////
 
 canlog::canlog(const char* type, std::string format, canformat::canformat_serve_mode_t mode)
+  : m_events_filters(TAG), m_metrics_filters(TAG)
   {
   m_type = type;
   m_format = format;
@@ -439,83 +440,6 @@ void canlog::RxTask(void *context)
   }
 
 /**
- * Parse a comma-separated list of filters, and assign them to a member of the class.
- * We have 3 kind of comparisons, and an unlimited list of filters.
- *
- * A filter can be:
- * - A "startsWith" comparison - when ending with '*',
- * - An "endsWith" comparison - when starting with '*',
- * - Invalid (and skipped) if empty, or with a '*' in any other position than beginning or end,
- * - A "string equal" comparison for all other cases
- */
-static void LoadFilters(conn_filters_arr_t &member, const std::string &value)
-  {
-  // Empty all previously defined filters, for all operators
-  for (int i=0; i<COUNT_OF_OPERATORS; i++)
-    {
-    member[i].clear();
-    }
-
-  if (!value.empty())
-    {
-    std::stringstream stream (value);
-    std::string item;
-    unsigned char comparison_operator;
-
-    // Comma-separated list
-    while (getline (stream, item, ','))
-      {
-      trim(item); // Removing leading and trailing spaces
-
-      if (item.empty())
-        {
-        ESP_LOGW(TAG, "LoadFilters: skipping empty value in the filter list");
-        continue;
-        }
-
-      // Check if there is a wildcard ('*') in any other place than first or last position
-      size_t wildcard_position = item.find('*', 1);
-      if ((wildcard_position != std::string::npos) && (wildcard_position != item.size()-1))
-        {
-        ESP_LOGW(TAG, "LoadFilters: skipping incorrect value (%s) in the filter list (wildcard in wrong position)", item.c_str());
-        continue;
-        }
-
-      // Depending on the presence and position of the wildcard, push the filter
-      // in the proper vector (without the wildcard)
-      if (item.front() == '*')
-        {
-        comparison_operator = OPERATOR_ENDSWITH;
-        item.erase(0, 1);
-        }
-      else if (item.back() == '*')
-        {
-        comparison_operator = OPERATOR_STARTSWITH;
-        item.pop_back();
-        }
-      else
-        {
-        comparison_operator = OPERATOR_EQUALS;
-        }
-      member[comparison_operator].push_back(item);
-      }
-    }
-
-  // for (int i=0; i<COUNT_OF_OPERATORS; i++)
-  //   {
-  //   ESP_LOGI(TAG, "LoadFilters: filters for operator %d:", i);
-  //   for (std::vector<std::string>::iterator it=member[i].begin(); it!=member[i].end(); ++it)
-  //     {
-  //     ESP_LOGI(TAG, "LoadFilters: filter value '%s'", it->c_str());
-  //     }
-  //   if (member[i].begin() == member[i].end())
-  //     {
-  //     ESP_LOGI(TAG, "LoadFilters: (empty filter list)");
-  //     }
-  //   }
-  }
-
-/**
  * Load, or reload, the configuration of events and metrics filters.
  *
  * The configuration item is a string containing a comma-separated list of filters.
@@ -529,7 +453,7 @@ void canlog::LoadConfig()
   if (str_hash != m_events_filters_hash)
     {
     m_events_filters_hash = str_hash;
-    LoadFilters(m_events_filters, list_of_events_filters);
+    m_events_filters.LoadFilters(list_of_events_filters);
     MyCan.LogInfo(NULL, CAN_LogInfo_Config, ("Events filters: " + list_of_events_filters).c_str());
     }
   std::string list_of_metrics_filters = MyConfig.GetParamValue(CAN_PARAM, "log.metrics_filters");
@@ -537,7 +461,7 @@ void canlog::LoadConfig()
   if (str_hash != m_metrics_filters_hash)
     {
     m_metrics_filters_hash = str_hash;
-    LoadFilters(m_metrics_filters, list_of_metrics_filters);
+    m_metrics_filters.LoadFilters(list_of_metrics_filters);
     MyCan.LogInfo(NULL, CAN_LogInfo_Config, ("Metrics filters: " + list_of_metrics_filters).c_str());
     }
   }
@@ -559,41 +483,10 @@ void canlog::UpdatedConfig(std::string event, void* data)
   LoadConfig();
   }
 
-/**
- * Check if a value matches in a list of filters.
- *
- * Match can be a:
- * - startsWith match,
- * - endsWith match,
- * - equality match.
- */
-static bool CheckFilter(conn_filters_arr_t &member, const std::string &value)
-  {
-  for (int i=0; i<COUNT_OF_OPERATORS; i++)
-    {
-    for (std::vector<std::string>::iterator it=member[i].begin(); it!=member[i].end(); ++it)
-      {
-      if ((i == OPERATOR_STARTSWITH) && (startsWith(value, *it)))
-        {
-        return true;
-        }
-      else if ((i == OPERATOR_ENDSWITH) && (endsWith(value, *it)))
-        {
-        return true;
-        }
-      else if ((i == OPERATOR_EQUALS) && (value == *it))
-        {
-        return true;
-        }
-      }
-    }
-  return false;
-  }
-
 void canlog::EventListener(std::string event, void* data)
   {
   // Log vehicle custom (x…) & framework events:
-  if (CheckFilter(m_events_filters, event))
+  if (m_events_filters.CheckFilter(event))
     LogInfo(NULL, CAN_LogInfo_Event, event.c_str());
   }
 
@@ -601,7 +494,7 @@ void canlog::MetricListener(OvmsMetric* metric)
   {
     std::string name = metric->m_name;
   // Log metrics (in JSON for later parsing):
-  if (CheckFilter(m_metrics_filters, name))
+  if (m_metrics_filters.CheckFilter(name))
     {
     std::string metric_text = "{ ";
     metric_text += "\"name\": \"" + json_encode(name) + "\", ";

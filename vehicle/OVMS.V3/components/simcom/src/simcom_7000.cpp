@@ -73,6 +73,7 @@ void simcom7000::PowerCycle()
   m_powercyclefactor = m_powercyclefactor % 3;
   ESP_LOGI(TAG, "Power Cycle (SIM7000) %dms",psd);
 
+  uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
   uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
 #ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
@@ -118,6 +119,7 @@ modem::modem_state1_t simcom7000::State1Ticker1(modem::modem_state1_t curstate)
       {
       case 8:
         m_modem->tx("ATE0\r\n");
+        break;
       case 10:
         m_modem->tx("AT+CPIN?;+CREG=1;+CTZU=1;+CTZR=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;S0=0\r\n");
         break;
@@ -125,7 +127,8 @@ modem::modem_state1_t simcom7000::State1Ticker1(modem::modem_state1_t curstate)
         m_modem->tx("AT+CGMR;+ICCID\r\n");
         break;
       case 20:
-        m_modem->tx("AT+CMUX=0\r\n");
+        // start MUX mode, route URCs to MUX channel 3 (POLL)
+        m_modem->tx("AT+CMUX=0;+CATR=6\r\n");
         break;
       }
     return modem::None;
