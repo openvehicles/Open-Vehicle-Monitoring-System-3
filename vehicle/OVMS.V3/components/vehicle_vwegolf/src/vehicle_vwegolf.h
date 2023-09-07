@@ -1,11 +1,8 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
+;	 Subproject:    Integrate VW e-Golf
 ;
-;    Changes:
-;    1.0  Initial release
-;
-;    (C) 2011       Michael Stegen / Stegen Electronics
+;    (C) 2023  Jared Greco <jaredgreco@gmail.com>
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
