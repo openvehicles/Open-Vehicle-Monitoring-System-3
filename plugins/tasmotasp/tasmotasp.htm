@@ -1,0 +1,232 @@
+<!--
+  Web UI page plugin:
+    Control & configuration frontend for Tasmota Smart Plug module plugin (tasmotasp.js)
+    Tasmota Smart Plug Plugin Version 1.0  Michael Balzer <dexter@dexters-web.de>
+  
+  Recommended installation:
+    - Page:    /usr/tasmotasp
+    - Label:   Tasmota Smart Plug
+    - Menu:    Config
+    - Auth:    Cookie
+-->
+
+<div class="panel panel-primary panel-single">
+  <div class="panel-heading">Tasmota Smart Plug</div>
+  <div class="panel-body">
+    <div class="alert alert-dismissible" style="display:none" />
+    <div class="receiver" id="tasmotasp">
+
+      <form class="form-horizontal" id="form-state">
+        <fieldset><legend>State</legend>
+          <div class="form-group">
+            <label class="control-label col-sm-3">Power:</label>
+            <div class="col-sm-9">
+              <div class="btn-group action-tasmotasp-set" data-toggle="buttons">
+                <label class="btn btn-default action-tasmotasp-off"><input type="radio" name="power" value="off">OFF</label>
+                <label class="btn btn-default action-tasmotasp-on"><input type="radio" name="power" value="on">ON</label>
+              </div>
+              <samp class="samp-inline" id="action-tasmotasp-output"></samp>
+            </div>
+          </div>
+        </fieldset>
+      </form>
+
+      <form class="form-horizontal" id="form-cfg">
+
+        <fieldset><legend>Configuration</legend>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-ip">Tasmota IP address:</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control font-monospace" name="ip" id="input-ip">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-user">… Username:</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control font-monospace" name="user" id="input-user"
+                autocomplete="section-tasmotasp username">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-pass">… Password:</label>
+            <div class="col-sm-9">
+              <input type="password" class="form-control font-monospace" name="pass" id="input-pass"
+                autocomplete="section-tasmotasp current-password">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-socket">… Socket:</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control font-monospace" name="socket" id="input-socket"
+                placeholder="optional output id (1-8, 0=all, empty=default)">
+              <span class="help-block">
+                <p>For multiple socket strips: enter the output number (1-8) to control.
+                  Id 0 controls all outputs simultaneously. Leave empty to use the device
+                  default output.</p>
+              </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-location">Location:</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" name="location" id="input-location"
+                placeholder="optional: defined location name">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset><legend>Main Battery Guard</legend>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-soc_on">Power on at:</label>
+            <div class="col-sm-9">
+              <div class="form-control slider" id="soc_on" data-min="0" data-max="100" data-step="1" data-unit="% SOC" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-soc_off">Power off at:</label>
+            <div class="col-sm-9">
+              <div class="form-control slider" id="soc_off" data-min="0" data-max="100" data-step="1" data-unit="% SOC" />
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-sm-9 col-sm-offset-3">
+              <div class="checkbox">
+                <label><input type="checkbox" name="chg_stop_off" id="input-chg_stop_off" value="yes">Power off at charge stop</label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset><legend>12V Battery Guard</legend>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-aux_volt_on">Power on at:</label>
+            <div class="col-sm-9">
+              <div class="form-control slider" id="aux_volt_on" data-min="10" data-max="15" data-step="0.1" data-unit="V" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-aux_volt_off">Power off at:</label>
+            <div class="col-sm-9">
+              <div class="form-control slider" id="aux_volt_off" data-min="10" data-max="15" data-step="0.1" data-unit="V" />
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-sm-9 col-sm-offset-3">
+              <div class="checkbox">
+                <label><input type="checkbox" name="aux_stop_off" id="input-aux_stop_off" value="yes">Power off at charge stop</label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-group">
+          <div class="col-sm-offset-3 col-sm-9">
+            <button type="button" class="btn btn-primary action-save">Save</button>
+          </div>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  var tasmotasp = { cfg: {}, state: { power: "", error: "" } };
+  var $actionset = $('#tasmotasp .action-tasmotasp-set > label');
+  var $actionres = $('#action-tasmotasp-output');
+  var $alert = $('.alert');
+
+  // Alert utility:
+  function showAlert(type, text) {
+    var intro = {
+      "danger": "<strong>⚠</strong> ",
+      "success": "<strong>✓</strong> ",
+    };
+    $alert.attr('class', 'alert alert-' + type)
+      .html('<p class="lead">' + intro[type] + encode_html(text) + '</p>')
+      .show();
+  }
+
+  // State & UI update:
+  function update(data) {
+    $.extend(true, tasmotasp, data);
+    // update state form:
+    $actionres.empty();
+    $actionset.removeClass('active');
+    if (tasmotasp.state.power) {
+      $actionset.find('input[value='+tasmotasp.state.power+']')
+        .prop('checked', true)
+        .parent().addClass('active');
+    }
+    // update config form:
+    $('#input-ip').val(tasmotasp.cfg.ip);
+    $('#input-user').val(tasmotasp.cfg.user);
+    $('#input-pass').val(tasmotasp.cfg.pass);
+    $('#input-socket').val(tasmotasp.cfg.socket);
+    $('#input-location').val(tasmotasp.cfg.location);
+    $('#soc_on').slider({ checked: (tasmotasp.cfg.soc_on != ""), value: Number(tasmotasp.cfg.soc_on) });
+    $('#soc_off').slider({ checked: (tasmotasp.cfg.soc_off != ""), value: Number(tasmotasp.cfg.soc_off) });
+    $('#input-chg_stop_off').prop("checked", tasmotasp.cfg.chg_stop_off == "yes");
+    $('#aux_volt_on').slider({ checked: (tasmotasp.cfg.aux_volt_on != ""), value: Number(tasmotasp.cfg.aux_volt_on) });
+    $('#aux_volt_off').slider({ checked: (tasmotasp.cfg.aux_volt_off != ""), value: Number(tasmotasp.cfg.aux_volt_off) });
+    $('#input-aux_stop_off').prop("checked", tasmotasp.cfg.aux_stop_off == "yes");
+    // show error:
+    if (tasmotasp.state.error) {
+      showAlert("danger", tasmotasp.state.error);
+    }
+  }
+
+  // Listen to tasmotasp events:
+  $('#tasmotasp').on('msg:event', function(e, event) {
+    if (event == "usr.tasmotasp.on")
+      update({ state: { power: "on" } });
+    else if (event == "usr.tasmotasp.off")
+      update({ state: { power: "off" } });
+    else if (event == "usr.tasmotasp.error" || event == "config.changed")
+      getInfo();
+  });
+
+  // Get state & config:
+  function getInfo() {
+    loadcmd('script eval tasmotasp.info()').then(function(output) {
+      update(JSON.parse(output));
+    });
+  }
+
+  // Switch power:
+  $('.action-tasmotasp-set input').on('change', function(e) {
+    $alert.hide();
+    tasmotasp.state.power = $(this).val();
+    loadcmd('script eval tasmotasp.set("'+tasmotasp.state.power+'")', '#action-tasmotasp-output');
+  });
+
+  // Save config:
+  $('.action-save').on('click', function(e) {
+    $alert.hide();
+    $actionres.empty();
+    var upd = {
+      soc_on: "", soc_off: "", chg_stop_off: "",
+      aux_volt_on: "", aux_volt_off: "", aux_stop_off: ""
+    };
+    var inp = $('#form-cfg').serializeArray();
+    inp.map(el => upd[el["name"]] = el["value"]);
+    loadcmd('script eval \'OvmsConfig.SetValues("usr","tasmotasp.",'+JSON.stringify(upd)+')\'').then(
+      function() {
+        showAlert("success", "OK, configuration saved!");
+      },
+      function(req,status,error) {
+        showAlert("danger", "Failed saving: " + status + "/" + error);
+      });
+  });
+
+  // Init:
+  $('#main').one('load', function(ev) {
+    $('.slider').slider();
+    getInfo();
+  });
+
+})();
+</script>

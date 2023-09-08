@@ -1,0 +1,72 @@
+<!--
+  Web UI plugin for page /status hook body.post:
+    Add Tasmota Smart Plug power control button to Vehicle panel
+    Tasmota Smart Plug plugin Version 1.0  Michael Balzer <dexter@dexters-web.de>
+-->
+
+<script>
+(function(){
+
+  var tasmotasp = { cfg: {}, state: { power: "", error: "" } };
+  var $receiver = $('#livestatus');
+  var $actionres = $('#vehicle-cmdres');
+  var $actionset;
+
+  // State & UI update:
+  function update(data) {
+    $.extend(true, tasmotasp, data);
+    // update state buttons:
+    $actionres.empty();
+    $actionset.removeClass('active');
+    if (tasmotasp.state.power) {
+      $actionset.find('input[value='+tasmotasp.state.power+']')
+        .prop('checked', true)
+        .parent().addClass('active');
+    }
+    // show error:
+    if (tasmotasp.state.error) {
+      $actionres.text("TasmotaSP: " + tasmotasp.state.error);
+    }
+  }
+
+  // Listen to tasmotasp events:
+  $receiver.on('msg:event', function(e, event) {
+    if (event == "usr.tasmotasp.on")
+      update({ state: { power: "on" } });
+    else if (event == "usr.tasmotasp.off")
+      update({ state: { power: "off" } });
+    else if (event == "usr.tasmotasp.error" || event == "config.changed")
+      getInfo();
+  });
+
+  // Get state & config:
+  function getInfo() {
+    loadjs('tasmotasp.info()').then(function(output) {
+      update(JSON.parse(output));
+    });
+  }
+
+  // Init:
+  $('#main').one('load', function(ev) {
+    // add buttons to panel:
+    $('#vehicle-cmdres').parent().before(
+      '<li>'+
+        '<label class="control-label">Power:</label>'+
+        '<div class="btn-group action-tasmotasp-set" data-toggle="buttons">'+
+          '<label class="btn btn-default btn-sm action-tasmotasp-off"><input type="radio" name="power" value="off">OFF</label>'+
+          '<label class="btn btn-default btn-sm action-tasmotasp-on"><input type="radio" name="power" value="on">ON</label>'+
+        '</div>'+
+      '</li>');
+    $actionset = $('.action-tasmotasp-set > label');
+    // add button handler:
+    $('.action-tasmotasp-set input').on('change', function(e) {
+      $actionres.empty();
+      tasmotasp.state.power = $(this).val();
+      loadjs('tasmotasp.set("'+tasmotasp.state.power+'")', '#action-tasmotasp-output');
+    });
+    // get status:
+    getInfo();
+  });
+
+})();
+</script>
