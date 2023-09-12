@@ -124,7 +124,7 @@ void OvmsConsole::Service()
 
 void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
   {
-  Event event;
+  static Event event;
 
   if (!queue)
     queue = m_queue;
