@@ -1,16 +1,26 @@
 <!--
   Web UI plugin for page /status hook body.post:
     Add Tasmota Smart Plug power control button to Vehicle panel
-    Tasmota Smart Plug plugin Version 1.0  Michael Balzer <dexter@dexters-web.de>
+    Tasmota Smart Plug plugin Version 2.0  Michael Balzer <dexter@dexters-web.de>
 -->
+
+<style>
+.btn-group.data-tasmotasp .metric {
+  display: block;
+  float: none;
+  font-size: 80%;
+  line-height: 110%;
+}
+</style>
 
 <script>
 (function(){
 
-  var tasmotasp = { cfg: {}, state: { power: "", error: "" } };
+  var tasmotasp = { cfg: {}, state: { power: "", error: "" }, data: {} };
   var $receiver = $('#livestatus');
   var $actionres = $('#vehicle-cmdres');
   var $actionset;
+  var $datadisplay;
 
   // State & UI update:
   function update(data) {
@@ -23,9 +33,25 @@
         .prop('checked', true)
         .parent().addClass('active');
     }
+    // update energy readings:
+    if (tasmotasp.cfg["power_mon"] == "yes") {
+      updateEnergy();
+      $datadisplay.show();
+    } else {
+      $datadisplay.hide();
+    }
     // show error:
     if (tasmotasp.state.error) {
       $actionres.text("TasmotaSP: " + tasmotasp.state.error);
+    }
+  }
+
+  // Display power/energy sensor data:
+  function updateEnergy() {
+    if (tasmotasp.data["StatusSNS"] && tasmotasp.data["StatusSNS"]["ENERGY"]) {
+      let td = tasmotasp.data["StatusSNS"]["ENERGY"];
+      $('#data-tasmotasp-power').text(td["Power"]);
+      $('#data-tasmotasp-total').text(td["Total"]);
     }
   }
 
@@ -37,6 +63,21 @@
       update({ state: { power: "off" } });
     else if (event == "usr.tasmotasp.error" || event == "config.changed")
       getInfo();
+  });
+
+  // Listen to tasmotasp stream update:
+  $receiver.on('msg:notify', function(e, msg) {
+    if (msg.subtype == "usr/tasmotasp/data") {
+      try {
+        var data = JSON.parse(msg.value);
+        if (typeof data == "object") {
+          tasmotasp.data = Object.assign(tasmotasp.data, data);
+          updateEnergy();
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
   });
 
   // Get state & config:
@@ -51,13 +92,18 @@
     // add buttons to panel:
     $('#vehicle-cmdres').parent().before(
       '<li>'+
-        '<label class="control-label">Power:</label>'+
+        '<label class="control-label">Plug:</label>'+
         '<div class="btn-group action-tasmotasp-set" data-toggle="buttons">'+
           '<label class="btn btn-default btn-sm action-tasmotasp-off"><input type="radio" name="power" value="off">OFF</label>'+
           '<label class="btn btn-default btn-sm action-tasmotasp-on"><input type="radio" name="power" value="on">ON</label>'+
         '</div>'+
+        '<div class="btn-group data-tasmotasp" style="display:none">'+
+          '<div class="metric number"><span class="value" id="data-tasmotasp-power">?</span><span class="unit">W</span></div>'+
+          '<div class="metric number"><span class="value" id="data-tasmotasp-total">?</span><span class="unit">kWh</span></div>'+
+        '</div>'+
       '</li>');
     $actionset = $('.action-tasmotasp-set > label');
+    $datadisplay = $('.data-tasmotasp');
     // add button handler:
     $('.action-tasmotasp-set input').on('change', function(e) {
       $actionres.empty();
@@ -66,6 +112,8 @@
     });
     // get status:
     getInfo();
+    // subscribe to stream updates:
+    $receiver.subscribe("notify/stream/usr/tasmotasp/#");
   });
 
 })();

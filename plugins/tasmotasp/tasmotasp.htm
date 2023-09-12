@@ -1,7 +1,7 @@
 <!--
   Web UI page plugin:
     Control & configuration frontend for Tasmota Smart Plug module plugin (tasmotasp.js)
-    Tasmota Smart Plug Plugin Version 1.0  Michael Balzer <dexter@dexters-web.de>
+    Tasmota Smart Plug Plugin Version 2.0  Michael Balzer <dexter@dexters-web.de>
   
   Recommended installation:
     - Page:    /usr/tasmotasp
@@ -10,11 +10,21 @@
     - Auth:    Cookie
 -->
 
+<style>
+#form-data table {
+  width: auto;
+}
+#form-data th, #form-data td {
+  text-align: left;
+  padding-right: 2em;
+}
+</style>
+
 <div class="panel panel-primary panel-single">
   <div class="panel-heading">Tasmota Smart Plug</div>
   <div class="panel-body">
     <div class="alert alert-dismissible" style="display:none" />
-    <div class="receiver" id="tasmotasp">
+    <div class="receiver" id="tasmotasp" data-subscriptions="notify/stream/usr/tasmotasp/#">
 
       <form class="form-horizontal" id="form-state">
         <fieldset><legend>State</legend>
@@ -26,6 +36,24 @@
                 <label class="btn btn-default action-tasmotasp-on"><input type="radio" name="power" value="on">ON</label>
               </div>
               <samp class="samp-inline" id="action-tasmotasp-output"></samp>
+            </div>
+          </div>
+          <div class="form-group" id="form-data" style="display:none">
+            <label class="control-label col-sm-3">Energy:</label>
+            <div class="col-sm-9">
+              <table class="table table-striped table-condensed">
+                <tbody>
+                </tbody>
+              </table>
+              <button type="button" class="btn btn-default" data-target="#action-tasmotasp-output2"
+                data-js="tasmotasp.sendcmd('EnergyToday 0', true)">
+                Reset Today
+              </button>
+              <button type="button" class="btn btn-default" data-target="#action-tasmotasp-output2"
+                data-js="tasmotasp.sendcmd('EnergyTotal 0', true)">
+                Reset Total
+              </button>
+              <samp class="samp-inline" id="action-tasmotasp-output2"></samp>
             </div>
           </div>
         </fieldset>
@@ -64,6 +92,13 @@
                   Id 0 controls all outputs simultaneously. Leave empty to use the device
                   default output.</p>
               </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-sm-9 col-sm-offset-3">
+              <div class="checkbox">
+                <label><input type="checkbox" name="power_mon" id="input-power_mon" value="yes">Enable energy monitoring</label>
+              </div>
             </div>
           </div>
           <div class="form-group">
@@ -134,10 +169,22 @@
 <script>
 (function(){
 
-  var tasmotasp = { cfg: {}, state: { power: "", error: "" } };
+  var tasmotasp = { cfg: {}, state: { power: "", error: "" }, data: {} };
   var $actionset = $('#tasmotasp .action-tasmotasp-set > label');
   var $actionres = $('#action-tasmotasp-output');
   var $alert = $('.alert');
+  var $datadisplay = $('#form-data'), $datarows = $('#form-data tbody');
+
+  var units = {
+    "Voltage": "V",
+    "Current": "A",
+    "Power": "W",
+    "ApparentPower": "VA",
+    "ReactivePower": "VAr",
+    "Total": "kWh",
+    "Today": "kWh",
+    "Yesterday": "kWh",
+  };
 
   // Alert utility:
   function showAlert(type, text) {
@@ -161,11 +208,19 @@
         .prop('checked', true)
         .parent().addClass('active');
     }
+    // update energy data:
+    if (tasmotasp.cfg.power_mon == "yes") {
+      updateEnergy();
+      $datadisplay.show();
+    } else {
+      $datadisplay.hide();
+    }
     // update config form:
     $('#input-ip').val(tasmotasp.cfg.ip);
     $('#input-user').val(tasmotasp.cfg.user);
     $('#input-pass').val(tasmotasp.cfg.pass);
     $('#input-socket').val(tasmotasp.cfg.socket);
+    $('#input-power_mon').prop("checked", tasmotasp.cfg.power_mon == "yes");
     $('#input-location').val(tasmotasp.cfg.location);
     $('#soc_on').slider({ checked: (tasmotasp.cfg.soc_on != ""), value: Number(tasmotasp.cfg.soc_on) });
     $('#soc_off').slider({ checked: (tasmotasp.cfg.soc_off != ""), value: Number(tasmotasp.cfg.soc_off) });
@@ -178,6 +233,18 @@
       showAlert("danger", tasmotasp.state.error);
     }
   }
+  
+  // Display power/energy sensor data:
+  function updateEnergy() {
+    if (tasmotasp.data["StatusSNS"] && tasmotasp.data["StatusSNS"]["ENERGY"]) {
+      $datarows.empty();
+      for (let [key, value] of Object.entries(tasmotasp.data["StatusSNS"]["ENERGY"])) {
+        if (typeof value == "number") {
+          $datarows.append(`<tr><th>${key}</th><td>${value}</td><td>${units[key]||""}</td></tr>`);
+        }
+      }
+    }
+  }
 
   // Listen to tasmotasp events:
   $('#tasmotasp').on('msg:event', function(e, event) {
@@ -187,6 +254,21 @@
       update({ state: { power: "off" } });
     else if (event == "usr.tasmotasp.error" || event == "config.changed")
       getInfo();
+  });
+
+  // Listen to tasmotasp stream update:
+  $('#tasmotasp').on('msg:notify', function(e, msg) {
+    if (msg.subtype == "usr/tasmotasp/data") {
+      try {
+        var data = JSON.parse(msg.value);
+        if (typeof data == "object") {
+          tasmotasp.data = Object.assign(tasmotasp.data, data);
+          updateEnergy();
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
   });
 
   // Get state & config:
@@ -209,7 +291,8 @@
     $actionres.empty();
     var upd = {
       soc_on: "", soc_off: "", chg_stop_off: "",
-      aux_volt_on: "", aux_volt_off: "", aux_stop_off: ""
+      aux_volt_on: "", aux_volt_off: "", aux_stop_off: "",
+      power_mon: ""
     };
     var inp = $('#form-cfg').serializeArray();
     inp.map(el => upd[el["name"]] = el["value"]);

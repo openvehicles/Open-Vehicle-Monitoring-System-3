@@ -1,9 +1,10 @@
 /**
  * Module plugin:
  *  Tasmota Smart Plug control -- see https://tasmota.github.io/
- *  Version 1.0 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 2.0 by Michael Balzer <dexter@dexters-web.de>
  * 
  * History:
+ *  - v2.0: power/energy monitoring
  *  - v1.0: initial release
  * 
  * Installation:
@@ -15,12 +16,19 @@
  * Config: usr/tasmotasp.*, fields see below
  * 
  * Usage:
- *  - script eval tasmotasp.get()
+ *  - script eval tasmotasp.get([true]) -- read power state, true = also read sensor data
  *  - script eval tasmotasp.set("on" | "off" | 1 | 0 | true | false)
- *  - script eval tasmotasp.info()
+ *  - script eval tasmotasp.info() -- output config, state & data
+ *  - script eval tasmotasp.status() -- only output state & data
+ *  - script eval tasmotasp.sendcmd(command, [true]) -- send any Tasmota command, true = followed by sensor read
  * 
- * Note: get() & set() do an async update, the result is logged.
- *  Use info() to show the current state.
+ * Notes: get(), set() & sendcmd() are asynchronous operations, the results are logged.
+ *  Use info() or status() to show/fetch the current state.
+ *  Sensor monitoring (if enabled) is done on request and while the power is switched on,
+ *  with a single final update after switching the power off.
+ *  See Tasmota documentation on command syntax.
+ * 
+ * Hint: to use a Tasmota plug for charging on the road, bind it to the module's Wifi access point.
  */
 
 const tickerEvent = "ticker.60";
@@ -37,6 +45,7 @@ var cfg = {
   aux_volt_on: "",        // optional: switch on if 12V level at/below
   aux_volt_off: "",       // optional: switch off if 12V level at/above
   aux_stop_off: "",       // optional: yes = switch off on vehicle.charge.12v.stop
+  power_mon: "",          // optional: yes = monitor plug power & energy sensors
 };
 
 var state = {
@@ -44,7 +53,10 @@ var state = {
   auto: false,
   ticker: false,
   error: "",
+  monitoring: false,
 };
+
+var data = {};
 
 // Process call result:
 function processResult(tag) {
@@ -66,8 +78,31 @@ function makeCommandURL(command) {
   return url;
 }
 
+// Send Tasmota command:
+function sendCommand(command, check_sensors) {
+  if (cfg.location && !OvmsLocation.Status(cfg.location)) {
+    print("TasmotaSP: vehicle not at plug location (" + cfg.location + ")");
+    return;
+  }
+  print("TasmotaSP: executing command: " + command);
+  HTTP.Request({
+    url: makeCommandURL(command),
+    done: function(resp) {
+      if (resp.statusCode == 200) {
+        print("TasmotaSP: command response: " + resp.body);
+        // also read sensor state?
+        if (check_sensors && cfg.power_mon == "yes") {
+          getSensorData(true);
+        }
+      } else {
+        state.error = "Access error: " + resp.statusCode + " " + resp.statusText;
+      }
+    },
+  });
+}
+
 // Get power state:
-function getPowerState() {
+function getPowerState(check_sensors) {
   if (cfg.location && !OvmsLocation.Status(cfg.location)) {
     print("TasmotaSP: vehicle not at plug location (" + cfg.location + ")");
     return;
@@ -79,8 +114,13 @@ function getPowerState() {
         var ts = null;
         try { ts = JSON.parse(resp.body); } catch (e) {}
         if (ts && ts["POWER"] != undefined) {
+          // success:
           state.error = "";
           state.power = ts["POWER"].toLowerCase();
+          // also read sensor state?
+          if (check_sensors && cfg.power_mon == "yes") {
+            getSensorData(true);
+          }
         } else {
           state.error = "Unable to parse TasmotaSP response";
         }
@@ -111,8 +151,13 @@ function setPowerState(onoff) {
         var ts = null;
         try { ts = JSON.parse(resp.body); } catch (e) {}
         if (ts && ts["POWER"] != undefined) {
+          // success:
           state.error = "";
           state.power = ts["POWER"].toLowerCase();
+          // schedule sensor update:
+          if (cfg.power_mon == "yes") {
+            OvmsEvents.Raise("usr.tasmotasp.getdata", (state.power == "on") ? 15000 : 2000);
+          }
         } else {
           state.error = "Unable to parse TasmotaSP response";
         }
@@ -128,9 +173,40 @@ function setPowerState(onoff) {
   });
 }
 
+// Get sensor data:
+function getSensorData(force) {
+  if (cfg.location && !OvmsLocation.Status(cfg.location)) {
+    return;
+  }
+  if (force || state.power == "on" || state.monitoring || data["StatusSNS"] == undefined) {
+    HTTP.Request({
+      url: makeCommandURL("Status 8"),
+      done: function(resp) {
+        if (resp.statusCode == 200) {
+          try {
+            var ts = JSON.parse(resp.body);
+            data = Object.assign(data, ts);
+            // send update to web UI:
+            OvmsNotify.Raise("stream", "usr.tasmotasp.data", Duktape.enc('jc', data));
+          } catch (e) {
+            print("TasmotaSP getSensorData ERROR: " + e);
+          }
+        }
+        // follow power state changes:
+        state.monitoring = (state.power == "on");
+      },
+    });
+  }
+}
+
 // Output info:
 function printInfo() {
-  JSON.print({ "cfg": cfg, "state": state });
+  JSON.print({ "cfg": cfg, "state": state, "data": data });
+}
+
+// Output status:
+function printStatus() {
+  JSON.print({ "state": state, "data": data });
 }
 
 // Read & process config:
@@ -142,7 +218,7 @@ function readConfig() {
   cfg = upd;
   // process:
   state.error = "";
-  state.auto = (cfg.ip && (cfg.soc_on || cfg.soc_off || cfg.aux_volt_on || cfg.aux_volt_off)) != "";
+  state.auto = (cfg.ip && (cfg.soc_on || cfg.soc_off || cfg.aux_volt_on || cfg.aux_volt_off || cfg.power_mon == "yes")) != "";
   if (state.auto && !state.ticker) {
     state.ticker = PubSub.subscribe(tickerEvent, ticker);
   } else if (!state.auto && state.ticker) {
@@ -150,7 +226,7 @@ function readConfig() {
     state.ticker = false;
   }
   if (cfg.ip && (!cfg.location || OvmsLocation.Status(cfg.location))) {
-    getPowerState();
+    getPowerState(true);
   }
 }
 
@@ -182,13 +258,23 @@ function ticker() {
   else if (state.power == "") {
     getPowerState();
   }
+  // get sensor data:
+  else if (cfg.power_mon == "yes") {
+    getSensorData();
+  }
 }
 
 // Event handler:
 function handleEvent(event) {
-  if (cfg.location && !OvmsLocation.Status(cfg.location))
+  if (cfg.ip == "" || (cfg.location && !OvmsLocation.Status(cfg.location)))
     return;
-  if (event == "vehicle.charge.stop") {
+  if (event == "network.wifi.up") {
+    getPowerState(true);
+  }
+  else if (event == "usr.tasmotasp.getdata") {
+    getSensorData(true);
+  }
+  else if (event == "vehicle.charge.stop") {
     if (cfg.chg_stop_off == "yes" && state.power == "on") {
       print("TasmotaSP event: main charge stop => switching off");
       setPowerState("off");
@@ -205,10 +291,14 @@ function handleEvent(event) {
 // Init:
 readConfig();
 PubSub.subscribe("config.changed", readConfig);
+PubSub.subscribe("network.wifi.up", handleEvent);
 PubSub.subscribe("vehicle.charge.stop", handleEvent);
 PubSub.subscribe("vehicle.charge.12v.stop", handleEvent);
+PubSub.subscribe("usr.tasmotasp.getdata", handleEvent);
 
 // API exports:
 exports.get = getPowerState;
 exports.set = setPowerState;
 exports.info = printInfo;
+exports.status = printStatus;
+exports.sendcmd = sendCommand;
