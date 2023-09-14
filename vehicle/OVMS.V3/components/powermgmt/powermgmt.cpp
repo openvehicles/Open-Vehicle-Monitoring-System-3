@@ -162,10 +162,19 @@ void powermgmt::Ticker1(std::string event, void* data)
       }
     if (m_12v_shutdown_delay && m_12v_alert_timer > m_12v_shutdown_delay*60) // minutes to seconds
       {
+      m_12v_shutdown_delay = 0;
       ESP_LOGE(TAG,"Ongoing 12V battery alert time limit exceeded! Shutting down OVMS..");
       MyEvents.SignalEvent("powermgmt.ovms.shutdown",NULL);
-      MyBoot.DeepSleep();
-      m_12v_shutdown_delay = 0;
+      
+      // Override default boot voltage level configuration:
+      float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
+      float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
+      float alert_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6);
+      MyBoot.SetMin12VLevel(vref - alert_threshold + 0.5);
+      
+      // Request deep sleep shutdown:
+      unsigned int wakeup_interval = MyConfig.GetParamValueInt("vehicle", "12v.wakeup_interval", 60);
+      MyBoot.DeepSleep(wakeup_interval);
       }
     }
   else

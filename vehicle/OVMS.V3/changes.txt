@@ -99,6 +99,14 @@ Open Vehicle Monitor System v3 - Change log
     obd2ecu.stop                      -- Called before the OBD2ECU process is stopped.
 - Web UI: Add configuration for Valet and Flatbed geofence to the Locations config page.
 - Network: New 'network ping' command to ping (ICMP) hostname or IP address. (ESP-IDFv4+ only / needs to be enabled in menuconfig - Developer Options)
+- Vehicle: add automatic module shutdown/reboot based on 12V battery voltage level
+  New configs:
+    [vehicle] 12v.shutdown            -- Shutdown voltage level (default: disabled)
+    [vehicle] 12v.wakeup              -- Reboot minimum voltage level after shutdown (default: any)
+    [vehicle] 12v.wakeup_interval     -- Reboot test interval in seconds (default: 60)
+  New events:
+    vehicle.alert.12v.shutdown        -- 12V shutdown threshold reached, entering deep sleep
+
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.
