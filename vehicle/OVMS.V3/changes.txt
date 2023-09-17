@@ -106,6 +106,7 @@ Open Vehicle Monitor System v3 - Change log
     [vehicle] 12v.wakeup_interval     -- Reboot test interval in seconds (default: 60)
   New events:
     vehicle.alert.12v.shutdown        -- 12V shutdown threshold reached, entering deep sleep
+- BYD Atto 3 initial support
 
 
 2022-09-01 MWJ  3.3.003  OTA release
