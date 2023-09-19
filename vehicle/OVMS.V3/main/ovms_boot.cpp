@@ -300,6 +300,7 @@ Boot::Boot()
   m_shutdown_deepsleep = false;
   m_shutdown_deepsleep_seconds = 0;
   m_shutting_down = false;
+  m_min_12v_level_override = false;
 
   m_resetreason = esp_reset_reason(); // Note: necessary to link reset_reason module
 
@@ -311,10 +312,15 @@ Boot::Boot()
     }
   else if (cpu0 == DEEPSLEEP_RESET)
     {
-    memset(&boot_data,0,sizeof(boot_data_t));
     m_bootreason = BR_Wakeup;
     esp_sleep_wakeup_cause_t wakeup_cause = esp_sleep_get_wakeup_cause();
     ESP_LOGI(TAG, "Wakeup from deep sleep detected, wakeup cause %d", wakeup_cause);
+
+    if (boot_data.crc != boot_data.calc_crc())
+      {
+      memset(&boot_data,0,sizeof(boot_data_t));
+      ESP_LOGW(TAG, "Boot data corruption detected, data cleared");
+      }
 
     // There is currently only one deep sleep application: saving the 12V battery
     // from depletion. So we need to check if the voltage level is sufficient for
@@ -323,21 +329,30 @@ Boot::Boot()
     #ifdef CONFIG_OVMS_COMP_ADC
       // Note: RTC_MODULE nags about a lock release before aquire, this can be ignored
       //  (reason: RTC_MODULE needs FreeRTOS for locking, which hasn't been started yet)
-      adc1_config_width(ADC_WIDTH_BIT_12);
-      adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
-      uint32_t adc_level = 0;
-      for (int i = 0; i < 5; i++)
-        adc_level += adc1_get_raw(ADC1_CHANNEL_0);
-      float level_12v = (float) adc_level / 5 / 195.7;
-      ESP_LOGI(TAG, "12V level: ~%.1fV", level_12v);
-      if (level_12v > 11.0)
-        ESP_LOGI(TAG, "12V level sufficient, proceeding with boot");
-      else if (level_12v < 1.0)
-        ESP_LOGI(TAG, "Assuming USB powered, proceeding with boot");
-      else
+      float min_12v_level = (boot_data.min_12v_level > 0) ? boot_data.min_12v_level : 0;
+      if (min_12v_level > 0)
         {
-        ESP_LOGE(TAG, "12V level insufficient, re-entering deep sleep");
-        esp_deep_sleep(1000000LL * 60);
+        adc1_config_width(ADC_WIDTH_BIT_12);
+        adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
+        uint32_t adc_level = 0;
+        for (int i = 0; i < 5; i++)
+          {
+          ets_delay_us(2000);
+          adc_level += adc1_get_raw(ADC1_CHANNEL_0);
+          }
+        float adc1_factor = (boot_data.adc1_factor > 0) ? boot_data.adc1_factor : 195.7;
+        float level_12v = (float) adc_level / 5.0f / adc1_factor;
+        ESP_LOGI(TAG, "12V level: ~%.1fV", level_12v);
+        if (level_12v >= min_12v_level)
+          ESP_LOGI(TAG, "12V level sufficient, proceeding with boot");
+        else if (level_12v < 1.0)
+          ESP_LOGI(TAG, "Assuming USB powered, proceeding with boot");
+        else
+          {
+          ESP_LOGE(TAG, "12V level insufficient, re-entering deep sleep");
+          int wakeup_interval = (boot_data.wakeup_interval > 0) ? boot_data.wakeup_interval : 60;
+          esp_deep_sleep(1000000LL * wakeup_interval);
+          }
         }
     #else
       ESP_LOGW(TAG, "ADC not available, cannot check 12V level");
@@ -419,6 +434,36 @@ Boot::Boot()
 
 Boot::~Boot()
   {
+  }
+
+void Boot::Init()
+  {
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&Boot::UpdateConfig, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&Boot::UpdateConfig, this, _1, _2));
+  }
+
+void Boot::UpdateConfig(std::string event, void* data)
+  {
+  OvmsConfigParam* param = (OvmsConfigParam*) data;
+  if (!param || param->GetName() == "system.adc" || param->GetName() == "vehicle")
+    {
+    boot_data.adc1_factor     = MyConfig.GetParamValueFloat("system.adc", "factor12v", 195.7);
+    boot_data.wakeup_interval = MyConfig.GetParamValueInt("vehicle", "12v.wakeup_interval", 60);
+    if (!m_min_12v_level_override)
+      boot_data.min_12v_level = MyConfig.GetParamValueFloat("vehicle", "12v.wakeup", 0);
+    boot_data.crc = boot_data.calc_crc();
+    }
+  }
+
+void Boot::SetMin12VLevel(float min_12v_level)
+  {
+  boot_data.min_12v_level = min_12v_level;
+  boot_data.crc = boot_data.calc_crc();
+  // inhibit update from config:
+  m_min_12v_level_override = true;
+  ESP_LOGI(TAG, "Minimum 12V boot level set to %.1fV", min_12v_level);
   }
 
 void Boot::SetStable()

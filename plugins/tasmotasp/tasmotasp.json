@@ -1,0 +1,34 @@
+{
+  "name": "tasmotasp",
+  "title": "Tasmota Smart Plug Control",
+  "description": "Smart Plug control for Tasmota based hardware (https://tasmota.github.io/)",
+  "group": "Home Automation",
+  "info": "https://www.openvehicles.com/",
+  "maintainer": "Michael Balzer <dexter@dexters-web.de>",
+  "version": "2.0",
+  "prerequisites": ["ovms>=3.3.001"],
+  "elements": [
+    {
+    "type": "webpage",
+    "name": "tasmotasp.htm",
+    "path": "tasmotasp.htm",
+    "page": "/plugins/tasmotasp",
+    "label": "Tasmota Smart Plug",
+    "menu": "Config",
+    "auth": "Cookie"
+    },
+    {
+    "type": "hook",
+    "name": "tasmotasp-status.htm",
+    "path": "tasmotasp-status.htm",
+    "page": "/status",
+    "hook": "body.post"
+    },
+    {
+    "type": "module",
+    "path": "tasmotasp.js",
+    "name": "tasmotasp"
+    }
+  ]
+}
+
