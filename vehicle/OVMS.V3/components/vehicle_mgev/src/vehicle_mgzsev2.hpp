@@ -36,8 +36,8 @@
 #include "vehicle_mgev.h"
 
 #define WLTP_RANGE 320.0 //km
-#define BATT_CAPACITY 68.3 //kWh
-#define MAX_CHARGE_RATE 94 //kW
+#define BATT_CAPACITY 49.0 //kWh
+#define MAX_CHARGE_RATE 75 //kW
 #define BMSDoDUpperLimit 1000.0
 #define BMSDoDLowerLimit 36.0
 
