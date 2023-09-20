@@ -155,7 +155,10 @@ void powermgmt::WebCleanup()
   c.print("<hr>");
   c.input_button("default", "Save");
   c.form_end();
-  c.panel_end();
+  c.panel_end(
+    "<p>See <a href=\"/cfg/vehicle\" target=\"#main\">vehicle configuration</a> for automatic shutdown"
+    " (deep sleep) when the 12V level gets too low, independent of the 12V alert state.</p>"
+  );
   c.done();
   }
 

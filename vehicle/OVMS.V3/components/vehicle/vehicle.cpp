@@ -45,6 +45,7 @@ static const char *TAG = "vehicle";
 #include <ovms_webserver.h>
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include <ovms_peripherals.h>
+#include <ovms_boot.h>
 #include <string_writer.h>
 #include "vehicle.h"
 
@@ -643,6 +644,8 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     //  be triggered if the measured ref follows a degrading battery:
     float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
     float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
+
+    // Check for alert level:
     bool alert_on = StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool();
     float alert_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6);
     if (!alert_on && volt > 0 && vref > 0 && vref-volt > alert_threshold)
@@ -656,6 +659,15 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);
       MyEvents.SignalEvent("vehicle.alert.12v.off", NULL);
       if (m_autonotifications) Notify12vRecovered();
+      }
+
+    // Check for shutdown level:
+    float shutdown_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.shutdown", 0);
+    if (shutdown_threshold > 0 && volt > 0 && volt <= shutdown_threshold && !MyBoot.IsShuttingDown())
+      {
+      MyEvents.SignalEvent("vehicle.alert.12v.shutdown", NULL);
+      unsigned int wakeup_interval = MyConfig.GetParamValueInt("vehicle", "12v.wakeup_interval", 60);
+      MyBoot.DeepSleep(wakeup_interval);
       }
     }
 

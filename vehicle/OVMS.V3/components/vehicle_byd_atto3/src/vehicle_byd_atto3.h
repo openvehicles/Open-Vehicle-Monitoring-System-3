@@ -1,15 +1,11 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          3rd September 2020
+;    Date:          22nd July 2023
 ;
 ;    Changes:
 ;    1.0  Initial release
 ;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2018  Mark Webb-Johnson
-;    (C) 2011       Sonny Chen @ EPRO/DX
-;    (C) 2020       Chris Staite
-;    (C) 2023       Peter Harry
+;    (C) 2023       Alan Harper
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -30,29 +26,25 @@
 ; THE SOFTWARE.
 */
 
-#ifndef vehicle_mgzsev2_hpp
-#define vehicle_mgzsev2_hpp
+#ifndef __VEHICLE_BYD_ATTO3_H__
+#define __VEHICLE_BYD_ATTO3_H__
 
-#include "vehicle_mgev.h"
+#include "vehicle.h"
 
-#define WLTP_RANGE 320.0 //km
-#define BATT_CAPACITY 49.0 //kWh
-#define MAX_CHARGE_RATE 75 //kW
-#define BMSDoDUpperLimit 1000.0
-#define BMSDoDLowerLimit 36.0
+using namespace std;
 
-class OvmsVehicleMgEvD : public OvmsVehicleMgEv
-{
+
+class OvmsVehicleBydAtto3 : public OvmsVehicle
+  {
   public:
-    OvmsVehicleMgEvD();
-    ~OvmsVehicleMgEvD();
+    OvmsVehicleBydAtto3();
+    ~OvmsVehicleBydAtto3();
+    void GetDashboardConfig(DashboardConfig& cfg);
 
-  protected:
+  private:
+    void IncomingFrameCan1(CAN_frame_t *p_frame) override;
+    void IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
     void Ticker1(uint32_t ticker) override;
-    vehicle_command_t CommandWakeup() override;
+  };
 
-private:
-    void MainStateMachine(canbus* currentBus, uint32_t ticker);
-};
-
-#endif /* vehicle_mgzsev2_hpp */
+#endif //#ifndef __VEHICLE_BYD_ATTO3_H__

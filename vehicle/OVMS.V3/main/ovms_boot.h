@@ -88,6 +88,9 @@ typedef struct
   unsigned int boot_count;          // Number of times system has rebooted (not power on)
   RESET_REASON bootreason_cpu0;     // Reason for last boot on CPU#0
   RESET_REASON bootreason_cpu1;     // Reason for last boot on CPU#1
+  float adc1_factor;                // 12V battery ADC calibration factor
+  float min_12v_level;              // 12V battery minimum voltage level to allow boot
+  int wakeup_interval;              // Wakeup interval in seconds for 12V restoration check
   bool soft_reset;                  // true = user requested reset ("module reset")
   bool firmware_update;             // true = firmware update restart
   bool stable_reached;              // true = system has reached stable state (see housekeeping)
@@ -111,6 +114,7 @@ class Boot
   public:
     Boot();
     virtual ~Boot();
+    void Init();
 
   public:
     bootreason_t GetBootReason() { return m_bootreason; }
@@ -125,6 +129,7 @@ class Boot
   public:
     void SetSoftReset();
     void SetFirmwareUpdate();
+    void SetMin12VLevel(float min_12v_level);
     void Restart(bool hard=false);
     void DeepSleep(unsigned int seconds = 60);
     void DeepSleep(time_t waketime);
@@ -132,6 +137,7 @@ class Boot
     void ShutdownReady(const char* tag);
     bool IsShuttingDown();
     void Ticker1(std::string event, void* data);
+    void UpdateConfig(std::string event, void* data);
 
   public:
     OvmsMutex m_shutdown_mutex;
@@ -141,6 +147,7 @@ class Boot
     unsigned int m_shutdown_deepsleep_seconds;
     time_t m_shutdown_deepsleep_waketime;
     bool m_shutting_down;
+    bool m_min_12v_level_override;
 
   public:
 #if ESP_IDF_VERSION_MAJOR < 4

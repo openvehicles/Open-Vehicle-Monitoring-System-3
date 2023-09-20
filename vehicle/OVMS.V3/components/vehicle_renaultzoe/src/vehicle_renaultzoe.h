@@ -138,7 +138,8 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
   private:
     unsigned int m_candata_timer;
     unsigned int m_candata_poll;
-  
+
+    uint16_t m_last_pid;
   public:
 		static void zoe_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   

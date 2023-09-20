@@ -260,13 +260,13 @@ void OvmsVehicleSmartED::IncomingPollReply (
     canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data,
     uint8_t length, const OvmsPoller::poll_pid_t &pollentry) {
   string& rxbuf = smarted_obd_rxbuf;
-  static uint16_t last_pid = -1;
-  
-  if (state.pid != last_pid) {
-    //ESP_LOGD(TAG, "pid: %04x length: %d mlremain: %d mlframe: %d", state.pid, length, state.mlremain, state.mlframe);
+
+  if (state.pid != m_last_pid) {
+    //ESP_LOGD(TAG, "pid: %04x length: %d mlremain: %d mlframe: %d", pid, length, mlremain, mlframe);
+    // If this is not the first frame .. ignore it until we get one.
     if (state.mlframe > 0)
       return;
-    last_pid = state.pid;
+    m_last_pid = state.pid;
   }
   
   // init / fill rx buffer:

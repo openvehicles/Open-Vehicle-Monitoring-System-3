@@ -327,5 +327,5 @@ OvmsVehicleMgEvDInit::OvmsVehicleMgEvDInit()
 {
     ESP_LOGI(TAG, "Registering Vehicle: MG ZS EV (2023-)");
 
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvD>("MGD", "MG ZS EV (2023-)");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvD>("MGD", "MG ZS EV (SR) (2023-)");
 }
