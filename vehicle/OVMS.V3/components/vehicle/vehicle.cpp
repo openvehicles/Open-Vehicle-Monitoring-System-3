@@ -265,6 +265,8 @@ OvmsVehicle::OvmsVehicle()
 
   m_ticker = 0;
   m_12v_ticker = 0;
+  m_12v_low_ticker = 0;
+  m_12v_shutdown_ticker = 0;
   m_chargestate_ticker = 0;
   m_vehicleon_ticker = 0;
   m_vehicleoff_ticker = 0;
@@ -662,13 +664,40 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       }
 
     // Check for shutdown level:
-    float shutdown_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.shutdown", 0);
-    if (shutdown_threshold > 0 && volt > 0 && volt <= shutdown_threshold && !MyBoot.IsShuttingDown())
+    if (!MyBoot.IsShuttingDown())
       {
-      MyEvents.SignalEvent("vehicle.alert.12v.shutdown", NULL);
-      unsigned int wakeup_interval = MyConfig.GetParamValueInt("vehicle", "12v.wakeup_interval", 60);
-      MyBoot.DeepSleep(wakeup_interval);
+      float shutdown_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.shutdown", 0);
+      if (shutdown_threshold > 0 && volt > 0 && volt <= shutdown_threshold)
+        {
+        ++m_12v_low_ticker;
+        if (m_12v_low_ticker == 1)
+          {
+          MyEvents.SignalEvent("vehicle.alert.12v.low", NULL);
+          }
+        int shutdown_delay = MyConfig.GetParamValueInt("vehicle", "12v.shutdown_delay", 2);
+        if (m_12v_low_ticker > shutdown_delay)
+          {
+          MyEvents.SignalEvent("vehicle.alert.12v.shutdown", NULL);
+          if (m_autonotifications) Notify12vShutdown();
+          // shutdown in 10 seconds to allow for scripts & notifications:
+          m_12v_shutdown_ticker = 10;
+          }
+        }
+      else
+        {
+        if (m_12v_low_ticker > 0)
+          {
+          m_12v_low_ticker = 0;
+          MyEvents.SignalEvent("vehicle.alert.12v.operational", NULL);
+          }
+        }
       }
+    }
+
+  if (m_12v_shutdown_ticker > 0 && --m_12v_shutdown_ticker == 0)
+    {
+    unsigned int wakeup_interval = MyConfig.GetParamValueInt("vehicle", "12v.wakeup_interval", 60);
+    MyBoot.DeepSleep(wakeup_interval);
     }
 
   if ((m_ticker % 10)==0)
@@ -841,6 +870,14 @@ void OvmsVehicle::Notify12vRecovered()
   float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
   MyNotify.NotifyStringf("alert", "batt.12v.recovered", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
+  }
+
+void OvmsVehicle::Notify12vShutdown()
+  {
+  float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+  float wakeup = MyBoot.GetMin12VLevel();
+
+  MyNotify.NotifyStringf("alert", "batt.12v.shutdown", "12V Battery shutdown: %.1fV (wakeup at/above %.1fV)", volt, wakeup);
   }
 
 void OvmsVehicle::NotifyMinSocCritical()

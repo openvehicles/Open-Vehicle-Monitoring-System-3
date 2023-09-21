@@ -606,7 +606,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
   std::string vehicleid, vehicletype, vehiclename, timezone, timezone_region, pin;
-  std::string bat12v_factor, bat12v_ref, bat12v_alert, bat12v_shutdown, bat12v_wakeup, bat12v_wakeup_interval;
+  std::string bat12v_factor, bat12v_ref, bat12v_alert, bat12v_shutdown, bat12v_shutdown_delay, bat12v_wakeup, bat12v_wakeup_interval;
 
   std::map<metric_group_t,std::string> units_values;
   metric_group_list_t unit_groups;
@@ -630,6 +630,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     bat12v_ref = c.getvar("bat12v_ref");
     bat12v_alert = c.getvar("bat12v_alert");
     bat12v_shutdown = c.getvar("bat12v_shutdown");
+    bat12v_shutdown_delay = c.getvar("bat12v_shutdown_delay");
     bat12v_wakeup = c.getvar("bat12v_wakeup");
     bat12v_wakeup_interval = c.getvar("bat12v_wakeup_interval");
     pin = c.getvar("pin");
@@ -664,6 +665,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("vehicle", "12v.ref", bat12v_ref);
       MyConfig.SetParamValue("vehicle", "12v.alert", bat12v_alert);
       MyConfig.SetParamValue("vehicle", "12v.shutdown", bat12v_shutdown);
+      MyConfig.SetParamValue("vehicle", "12v.shutdown_delay", bat12v_shutdown_delay);
       MyConfig.SetParamValue("vehicle", "12v.wakeup", bat12v_wakeup);
       MyConfig.SetParamValue("vehicle", "12v.wakeup_interval", bat12v_wakeup_interval);
       if (!pin.empty())
@@ -697,6 +699,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     bat12v_ref = MyConfig.GetParamValue("vehicle", "12v.ref");
     bat12v_alert = MyConfig.GetParamValue("vehicle", "12v.alert");
     bat12v_shutdown = MyConfig.GetParamValue("vehicle", "12v.shutdown");
+    bat12v_shutdown_delay = MyConfig.GetParamValue("vehicle", "12v.shutdown_delay");
     bat12v_wakeup = MyConfig.GetParamValue("vehicle", "12v.wakeup");
     bat12v_wakeup_interval = MyConfig.GetParamValue("vehicle", "12v.wakeup_interval");
     c.head(200);
@@ -809,6 +812,10 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     "<p>If the voltage drops to/below this level, the module will enter deep sleep and wait for the voltage to recover to the wakeup level.</p>"
     "<p>Recommended shutdown level for standard lead acid batteries: not less than 10.5 V</p>",
     "min=\"10\" max=\"15\" step=\"0.1\"", "V");
+  c.input("number", "Shutdown delay", "bat12v_shutdown_delay", bat12v_shutdown_delay.c_str(), "Default: 2",
+    "<p>The 12V shutdown condition needs to be present for at least this long to actually cause a shutdown "
+    "(0 = shutdown on first detection, check is done once per minute).</p>",
+    "min=\"0\" max=\"60\" step=\"1\"", "Minutes");
   c.input("number", "12V wakeup", "bat12v_wakeup", bat12v_wakeup.c_str(), "Default: any",
     "<p>The minimum voltage level to allow restarting the module after a 12V shutdown.</p>"
     "<p>Recommended minimum level for standard lead acid batteries: not less than 11.0 V",

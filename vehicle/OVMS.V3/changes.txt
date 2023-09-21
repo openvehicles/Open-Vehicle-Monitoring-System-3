@@ -107,6 +107,14 @@ Open Vehicle Monitor System v3 - Change log
   New events:
     vehicle.alert.12v.shutdown        -- 12V shutdown threshold reached, entering deep sleep
 - BYD Atto 3 initial support
+- Vehicle: add 12V shutdown delay & notification
+  New configs:
+    [vehicle] 12v.shutdown_delay      -- Shutdown delay in minutes (default: 2)
+  New events:
+    vehicle.alert.12v.low             -- 12V shutdown voltage level detected
+    vehicle.alert.12v.operational     -- 12V recovered above shutdown level
+  New notifications:
+    [alert] batt.12v.shutdown         -- Alert about imminent 12V shutdown
 
 
 2022-09-01 MWJ  3.3.003  OTA release
