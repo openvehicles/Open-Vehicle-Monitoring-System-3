@@ -664,7 +664,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       }
 
     // Check for shutdown level:
-    if (!MyBoot.IsShuttingDown())
+    if (!m_12v_shutdown_ticker && !MyBoot.IsShuttingDown())
       {
       float shutdown_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.shutdown", 0);
       if (shutdown_threshold > 0 && volt > 0 && volt <= shutdown_threshold)
