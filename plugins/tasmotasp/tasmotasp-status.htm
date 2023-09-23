@@ -1,7 +1,7 @@
 <!--
   Web UI plugin for page /status hook body.post:
     Add Tasmota Smart Plug power control button to Vehicle panel
-    Tasmota Smart Plug plugin Version 2.0  Michael Balzer <dexter@dexters-web.de>
+    Tasmota Smart Plug plugin Version 2.1  Michael Balzer <dexter@dexters-web.de>
 -->
 
 <style>
@@ -10,6 +10,11 @@
   float: none;
   font-size: 80%;
   line-height: 110%;
+}
+a#action-tasmotasp-info {
+  font-size: 19px;
+  line-height: 100%;
+  padding: 6px 7px 3px;
 }
 </style>
 
@@ -20,7 +25,18 @@
   var $receiver = $('#livestatus');
   var $actionres = $('#vehicle-cmdres');
   var $actionset;
-  var $datadisplay;
+  var $datadisplay, $datadialog, $datarows;
+
+  var units = {
+    "Voltage": "V",
+    "Current": "A",
+    "Power": "W",
+    "ApparentPower": "VA",
+    "ReactivePower": "VAr",
+    "Total": "kWh",
+    "Today": "kWh",
+    "Yesterday": "kWh",
+  };
 
   // State & UI update:
   function update(data) {
@@ -50,8 +66,16 @@
   function updateEnergy() {
     if (tasmotasp.data["StatusSNS"] && tasmotasp.data["StatusSNS"]["ENERGY"]) {
       let td = tasmotasp.data["StatusSNS"]["ENERGY"];
+      // update inline displays:
       $('#data-tasmotasp-power').text(td["Power"]);
       $('#data-tasmotasp-total').text(td["Total"]);
+      // update info dialog:
+      $datarows.empty();
+      for (let [key, value] of Object.entries(td)) {
+        if (typeof value == "number") {
+          $datarows.append(`<tr><th>${key}</th><td>${value}</td><td>${units[key]||""}</td></tr>`);
+        }
+      }
     }
   }
 
@@ -101,6 +125,8 @@
           '<div class="metric number"><span class="value" id="data-tasmotasp-power">?</span><span class="unit">W</span></div>'+
           '<div class="metric number"><span class="value" id="data-tasmotasp-total">?</span><span class="unit">kWh</span></div>'+
         '</div>'+
+        '<a class="btn btn-default btn-sm data-tasmotasp" id="action-tasmotasp-info">ⓘ</a>'+
+        '<div id="dialog-tasmotasp-info"></div>'+
       '</li>');
     $actionset = $('.action-tasmotasp-set > label');
     $datadisplay = $('.data-tasmotasp');
@@ -109,6 +135,27 @@
       $actionres.empty();
       tasmotasp.state.power = $(this).val();
       loadjs('tasmotasp.set("'+tasmotasp.state.power+'")', '#action-tasmotasp-output');
+    });
+    // init data dialog:
+    $datadialog = $('#dialog-tasmotasp-info');
+    $datadialog.dialog({
+      title: 'Plug Energy Data',
+      body:
+        '<table class="table table-striped table-condensed"><tbody /></table>'+
+        '<samp class="samp-inline" id="action-tasmotasp-output2"></samp>',
+      buttons: [
+        { label: "Close" },
+        { label: "Update", btnClass: "default pull-left", autoHide: false, action: function () {
+          loadjs("tasmotasp.getdata(true)", "#action-tasmotasp-output2"); } },
+        { label: "Reset Today", btnClass: "default pull-left", autoHide: false, action: function () {
+          loadjs("tasmotasp.sendcmd('EnergyToday 0', true)", "#action-tasmotasp-output2"); } },
+        { label: "Reset Total", btnClass: "default pull-left", autoHide: false, action: function () {
+          loadjs("tasmotasp.sendcmd('EnergyTotal 0', true)", "#action-tasmotasp-output2"); } },
+      ],
+    });
+    $datarows = $('#dialog-tasmotasp-info tbody');
+    $('#action-tasmotasp-info').on('click', function(){
+      $datadialog.dialog('show');
     });
     // get status:
     getInfo();
