@@ -358,7 +358,6 @@ class OvmsVehicle : public InternalRamAllocated
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
     void PollerSend(bool fromTicker);
-    void PollerReceive(CAN_frame_t* frame, uint32_t msgid);
 
   protected:
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);

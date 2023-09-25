@@ -332,16 +332,6 @@ void OvmsVehicle::PollerTxCallback(const CAN_frame_t* frame, bool success)
   IncomingPollTxCallback(m_poll, success);
   }
 
-
-/**
- * PollerReceive: internal: process poll response frame
- */
-void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
-  {
-  // obsolete
-  }
-
-
 /**
  * PollSingleRequest: perform prioritized synchronous single OBD2/UDS request
  *  Pass a full OBD2/UDS request (mode/type, PID, additional payload).
