@@ -115,6 +115,7 @@ Open Vehicle Monitor System v3 - Change log
     vehicle.alert.12v.operational     -- 12V recovered above shutdown level
   New notifications:
     [alert] batt.12v.shutdown         -- Alert about imminent 12V shutdown
+- VFS toolkit: add recursive options to mkdir (-p) & rmdir (-r) commands
 
 
 2022-09-01 MWJ  3.3.003  OTA release
