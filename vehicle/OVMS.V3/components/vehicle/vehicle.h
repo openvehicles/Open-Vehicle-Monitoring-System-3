@@ -375,6 +375,8 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     uint32_t m_ticker;
     int m_12v_ticker;
+    int m_12v_low_ticker;
+    int m_12v_shutdown_ticker;
     int m_chargestate_ticker;
     int m_vehicleon_ticker;
     int m_vehicleoff_ticker;
@@ -401,6 +403,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifyAlarmStopped();
     virtual void Notify12vCritical();
     virtual void Notify12vRecovered();
+    virtual void Notify12vShutdown();
     virtual void NotifyMinSocCritical();
     virtual void NotifyVehicleIdling();
     virtual void NotifyVehicleOn();

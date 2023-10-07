@@ -4,7 +4,7 @@ Tasmota Smart Plug Control
 
 **Smart Plug control for hardware running the Tasmota open source firmware**
 
-Version 2.0 by Michael Balzer <dexter@dexters-web.de>
+Version 2.1 by Michael Balzer <dexter@dexters-web.de>
 
 - `Tasmota open source firmware <https://tasmota.github.io/>`_
 - `List of Tasmota based smart plugs <https://templates.blakadder.com/plug.html>`_
@@ -19,6 +19,9 @@ switch off power at the charge stop event of the main and/or 12V battery.
 
 Since version 2.0, the plugin can also monitor the plug power & energy sensors, if
 available. Energy counters can be reset from the config page.
+
+Version 2.1 adds an energy data dialog to the status page plugin and the ``getdata()``
+command.
 
 
 ------------
@@ -77,11 +80,12 @@ Usage
 
   script eval tasmotasp.get([true]) -- read power state, true = also read sensor data
   script eval tasmotasp.set("on" | "off" | 1 | 0 | true | false)
+  script eval tasmotasp.getdata([true]) -- read sensor data, true = force
   script eval tasmotasp.info() -- output config, state & data
   script eval tasmotasp.status() -- only output state & data
   script eval tasmotasp.sendcmd(command, [true]) -- send any Tasmota command, true = followed by sensor read
 
-Notes: ``get()``, ``set()`` & ``sendcmd()`` are asynchronous operations, the results are logged.
+Notes: ``get()``, ``set()``, ``getdata()`` & ``sendcmd()`` are asynchronous operations, the results are logged.
 Use ``info()`` or ``status()`` to show/fetch the current state.
 Sensor monitoring (if enabled) is done on request and while the power is switched on,
 with a single final update after switching the power off.
