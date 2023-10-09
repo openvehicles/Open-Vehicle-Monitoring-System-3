@@ -78,11 +78,6 @@ void OvmsVehicleMgEv::ConfigChanged(OvmsConfigParam* param)
         StandardMetrics.ms_v_charge_limit_range->SetValue(
             (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Miles );
     }
-    
-    int BMSVersion = MyConfig.GetParamValueInt("xmg", "bmsval", DEFAULT_BMS_VERSION);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLimits[BMSVersion].Lower);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDLimits[BMSVersion].Upper);
-    ESP_LOGI(TAG, "BMS Value = %d", BMSVersion);
 }
 
 // Called by OVMS when server requests to set feature
