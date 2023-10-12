@@ -106,8 +106,8 @@ OvmsVehicleMgEvA::OvmsVehicleMgEvA()
     StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
     
     int BMSVersion = MyConfig.GetParamValueInt("xmg", "bmsval", DEFAULT_BMS_VERSION);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLimits[BMSVersion].Lower);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDLimits[BMSVersion].Upper);
+    m_dod_lower->SetValue(BMSDoDLimits[BMSVersion].Lower);
+    m_dod_upper->SetValue(BMSDoDLimits[BMSVersion].Upper);
     m_batt_capacity->SetValue(BATT_CAPACITY);
     m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
 
