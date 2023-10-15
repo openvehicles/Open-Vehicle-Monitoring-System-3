@@ -2363,6 +2363,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MegaJoules:  return (value*3.6);
         default: break;
         }
+      break;
     case WattHours:
       switch (to)
         {
@@ -2370,6 +2371,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MegaJoules:  return (value*9/2500);
         default: break;
         }
+      break;
     case MegaJoules:
       switch (to)
         {
@@ -2377,18 +2379,21 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case WattHours:  return (value * 2500/9);
         default: break;
         }
+      break;
     case AmpHours:
       switch (to)
         {
         case Kilocoulombs:  return (value * 18) / 5; // * 3600 / 1000
         default: break;
         }
+      break;
     case Kilocoulombs:
       switch (to)
         {
         case AmpHours:  return (value * 5) / 18; // * 1000 / 3600
         default: break;
         }
+      break;
     case WattHoursPK:
       switch (to)
         {
@@ -2510,10 +2515,11 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       switch (to)
         {
         case Mph: return km_to_mi(value);
-        case MetersPS: return value * 5 / 18; // 1000/3600 
+        case MetersPS: return value * 5 / 18; // 1000/3600
         case FeetPS: return km_to_mi(value* feet_per_mile)/3600;
         default: break;
         }
+      break;
     case Mph:
       switch (to)
         {
@@ -2522,6 +2528,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MetersPS: return mi_to_km(value * 5 ) / 18;
         default: break;
         }
+      break;
     case MetersPS:
       switch (to)
         {
@@ -2530,6 +2537,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case FeetPS: return km_to_mi(value* feet_per_mile) / 1000;
         default: break;
         }
+      break;
     case FeetPS:
       switch (to)
         {
@@ -2538,6 +2546,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MetersPS: return mi_to_km(value * 1000 ) / feet_per_mile;
         default: break;
         }
+      break;
     case dbm:
       if (to == sq) return (value <= -51) ? ((value + 113)/2) : 0;
       break;
@@ -2650,6 +2659,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MegaJoules:  return (value*3.6);
         default: break;
         }
+      break;
     case WattHours:
       switch (to)
         {
@@ -2657,6 +2667,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MegaJoules:  return (value*0.0036);
         default: break;
         }
+      break;
     case MegaJoules:
       switch (to)
         {
@@ -2664,18 +2675,21 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case WattHours:  return (value * 277.7778);
         default: break;
         }
+      break;
     case AmpHours:
       switch (to)
         {
         case Kilocoulombs:  return value * 3.6; // * 3600 / 1000
         default: break;
         }
+      break;
     case Kilocoulombs:
       switch (to)
         {
         case AmpHours:  return value * 0.277778; // * 1000 / 3600
         default: break;
         }
+      break;
     case WattHoursPK:
       switch (to)
         {
@@ -2784,10 +2798,11 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       switch (to)
         {
         case Mph: return km_to_mi(value);
-        case MetersPS: return value * 0.277778; // 1000/3600 
+        case MetersPS: return value * 0.277778; // 1000/3600
         case FeetPS: return km_to_mi(value* feet_per_mile)/3600;
         default: break;
         }
+      break;
     case Mph:
       switch (to)
         {
@@ -2796,6 +2811,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MetersPS: return mi_to_km(value) * 0.277778; // 1000/36000
         default: break;
         }
+      break;
     case MetersPS:
       switch (to)
         {
@@ -2804,6 +2820,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case FeetPS: return km_to_mi(value* feet_per_mile) / 1000;
         default: break;
         }
+      break;
     case FeetPS:
       switch (to)
         {
@@ -2812,7 +2829,9 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MetersPS: return mi_to_km(value * 1000 ) / feet_per_mile;
         default: break;
         }
+      break;
     case dbm:
+      break;
       if (to == sq) return int((value <= -51) ? ((value + 113)/2) : 0);
       break;
     case sq:
