@@ -989,6 +989,7 @@ static void module_sleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
 
   time_t utnow = time(NULL);
   time_t utwaketime;
+  struct tm timeinfo;
 
   if (have_timespec)
     {
@@ -1006,12 +1007,12 @@ static void module_sleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     else
       {
       // date relative to today:
-      tmu = localtime(&utnow);
+      tmu = localtime_r(&utnow, &timeinfo);
       if (spec.tm_wday >= 0)
         {
         int daydiff = (spec.tm_wday == tmu->tm_wday) ? 7 : ((7 + spec.tm_wday - tmu->tm_wday) % 7);
         time_t tday = utnow + daydiff * 24 * 60 * 60;
-        tmu = localtime(&tday);
+        tmu = localtime_r(&tday, &timeinfo);
         }
       waketime.tm_year = tmu->tm_year;
       waketime.tm_mon = tmu->tm_mon;
@@ -1030,7 +1031,7 @@ static void module_sleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
       {
       // relative time in the past, shift by 24 hours:
       time_t tday = utnow + 24 * 60 * 60;
-      tmu = localtime(&tday);
+      tmu = localtime_r(&tday, &timeinfo);
       waketime.tm_year = tmu->tm_year;
       waketime.tm_mon = tmu->tm_mon;
       waketime.tm_mday = tmu->tm_mday;
@@ -1054,7 +1055,7 @@ static void module_sleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     {
     // Output info:
     char buf[100];
-    struct tm *tmwaketime = localtime(&utwaketime);
+    struct tm *tmwaketime = localtime_r(&utwaketime, &timeinfo);
     strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %Z", tmwaketime);
     ESP_LOGI(TAG, "Sleeping until %s = %u seconds ...\n", buf, seconds);
     writer->printf("Sleeping until %s = %u seconds ...\n", buf, seconds);
