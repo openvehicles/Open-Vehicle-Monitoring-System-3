@@ -122,6 +122,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     OvmsMetricFloat *m_avg_consumption; // Average consumption
     OvmsMetricFloat *m_batt_capacity; // Battery Capacity
     OvmsMetricFloat *m_max_dc_charge_rate; // Maximum Charge Rate
+    OvmsMetricFloat *m_dod_lower; // Battery DoD lower value used to calculate SOC
+    OvmsMetricFloat *m_dod_upper; // Battery DoD upper value used to calculate SOC
 
   protected:
     void ConfigChanged(OvmsConfigParam* param) override;
