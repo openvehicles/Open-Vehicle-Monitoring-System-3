@@ -43,7 +43,7 @@ MetricsStandard::MetricsStandard()
   ms_m_tasks = new OvmsMetricInt(MS_M_TASKS, SM_STALE_MID);
   ms_m_freeram = new OvmsMetricInt(MS_M_FREERAM, SM_STALE_MID);
   ms_m_monotonic = new OvmsMetricInt(MS_M_MONOTONIC, SM_STALE_MIN, Seconds);
-  ms_m_timeutc = new OvmsMetricInt(MS_M_TIME_UTC, SM_STALE_MIN, Seconds);
+  ms_m_timeutc = new OvmsMetricInt(MS_M_TIME_UTC, SM_STALE_MIN, DateUTC);
 
   ms_m_net_type = new OvmsMetricString(MS_N_TYPE, SM_STALE_MAX);
   ms_m_net_sq = new OvmsMetricInt(MS_N_SQ, SM_STALE_MAX, dbm);
@@ -259,7 +259,7 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_gpshdop = new OvmsMetricFloat(MS_V_POS_GPSHDOP, SM_STALE_MIN);
   ms_v_pos_satcount= new OvmsMetricInt(MS_V_POS_SATCOUNT, SM_STALE_MIN);
   ms_v_pos_gpssq = new OvmsMetricInt(MS_V_POS_GPSSQ, SM_STALE_MIN, Percentage);
-  ms_v_pos_gpstime = new OvmsMetricInt(MS_V_POS_GPSTIME, SM_STALE_MIN, Seconds);
+  ms_v_pos_gpstime = new OvmsMetricInt(MS_V_POS_GPSTIME, SM_STALE_MIN, DateLocal);
   ms_v_pos_latitude = new OvmsMetricFloat(MS_V_POS_LATITUDE, SM_STALE_MIN, Other, true);
   ms_v_pos_longitude = new OvmsMetricFloat(MS_V_POS_LONGITUDE, SM_STALE_MIN, Other, true);
   ms_v_pos_location = new OvmsMetricString(MS_V_POS_LOCATION, SM_STALE_MID);
