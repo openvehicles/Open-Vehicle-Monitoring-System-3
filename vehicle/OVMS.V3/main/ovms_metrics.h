@@ -371,7 +371,7 @@ class OvmsMetricString : public OvmsMetric
     bool SetValue(std::string value, metric_unit_t units = Other) override;
     void operator=(std::string value) override { SetValue(value); }
     void Clear() override;
-    bool IsString() override { return true; };
+    virtual bool IsString() { return true; };
 
   protected:
     OvmsMutex m_mutex;
