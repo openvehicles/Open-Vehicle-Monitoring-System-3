@@ -44,6 +44,7 @@ static const char *TAG = "metrics";
 #include "ovms_config.h"
 #include "rom/rtc.h"
 #include "string.h"
+#include <iomanip>
 
 using namespace std;
 
@@ -129,7 +130,7 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   {"seconds",  "Sec",      Native,     Native,      GrpTime}, // 50
   {"minutes",  "Min",      Native,     Native,      GrpTime}, // 51
   {"hours",    "Hour",     Native,     Native,      GrpTime}, // 52
-  {"utc",      "UTC",      Native,     Native,      GrpTime}, // 53
+  {"utctime",  "UTC",      Native,     Native,      GrpTime}, // 53
   {"localtz",  "local",    Native,     Native,      GrpTime}, // 54,
   UNIT_GAP,// 55
   UNIT_GAP,// 56
@@ -264,6 +265,19 @@ template<typename T>
 T pkm_to_pmi(T pkm)
   {
   return mi_to_km(pkm);
+  }
+
+void time_unit_split(int value, int &hour, int &mins, int &secs)
+  {
+  secs = value % 60;
+  value /= 60;
+  mins = value % 60;
+  value /= 60;
+  hour = value;
+  }
+int time_unit_join(int hh, int mm, int ss)
+  {
+  return (hh*3600) + (mm * 60) + ss;
   }
 
 /*
@@ -1685,22 +1699,31 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
   {
   if (IsDefined())
     {
-    char buffer[33];
     int value = m_value;
-    if ((units != Native)&&(units != m_units))
+    CheckTargetUnit(GetUnits(), units, false);
+    if (units == Native)
+      units = m_units;
+    else if (units != m_units)
       value = UnitConvert(m_units,units,m_value);
-    if (units == TimeUTC || units == TimeLocal)
+    std::stringstream os;
+    switch (units)
       {
-      int seconds = value % 60;
-      value /= 60;
-      int minutes = value % 60;
-      value /= 60;
-      int hours = value;
-      snprintf(buffer, sizeof(buffer), "%02u:%02u:%02u", hours, minutes, seconds);
+      case TimeUTC:
+      case TimeLocal:
+        {
+        int hours, minutes, seconds;
+        time_unit_split(value, hours, minutes, seconds);
+        os << std::setfill('0')
+          << std::setw(2) << hours << ':'
+          << std::setw(2) << minutes << ':'
+          << std::setw(2) << seconds;
+        }
+        break;
+      default:
+        os << value;
+        break;
       }
-    else
-      itoa (value,buffer,10);
-    return buffer;
+    return os.str();
     }
   else
     {
@@ -1711,7 +1734,18 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
 std::string OvmsMetricInt::AsJSON(const char* defvalue, metric_unit_t units, int precision)
   {
   if (IsDefined())
-    return AsString(defvalue, units, precision);
+    {
+    CheckTargetUnit(GetUnits(), units, false);
+    if (units == Native)
+      units = GetUnits();
+    switch (units)
+      {
+      case TimeUTC:
+      case TimeLocal:
+        return OvmsMetric::AsJSON(defvalue, units, precision);
+      default: return AsString(defvalue, units, precision);
+      }
+    }
   else
     return std::string((defvalue && *defvalue) ? defvalue : "0");
   }
@@ -1764,7 +1798,35 @@ bool OvmsMetricInt::SetValue(int value, metric_unit_t units)
 
 bool OvmsMetricInt::SetValue(std::string value, metric_unit_t units)
   {
-  int nvalue = atoi(value.c_str());
+  CheckTargetUnit(GetUnits(), units, false);
+  if (units == Native)
+    units = m_units;
+  int nvalue;
+  switch (units)
+    {
+    case TimeUTC:
+    case TimeLocal:
+      {
+      int hours = 0, minutes = 0, seconds = 0;
+      switch (sscanf(value.c_str(), "%d:%d:%d", &hours, &minutes,&seconds))
+        {
+        case 1:
+          nvalue = hours; //number by itself - treat it as number of seconds.
+          break;
+        case 2:
+          nvalue = time_unit_join(hours, minutes, 0);
+          break;
+        case 3:
+          nvalue = time_unit_join(hours, minutes, seconds);
+          break;
+        default: return false;
+        }
+      break;
+      }
+    default:
+      nvalue = atoi(value.c_str());
+      break;
+    }
   return SetValue(nvalue, units);
   }
 
@@ -2486,26 +2548,72 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       else if (to == Hours) return value/3600;
       break;
     case Minutes:
-      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*60;
-      else if (to == Hours) return value/60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*60;
+        case Hours:
+          return value/60;
+        default: break;
+        }
       break;
     case Hours:
-      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*3600;
-      else if (to == Minutes) return value*60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*3600;
+        case Minutes:
+          return value*60;
+        default: break;
+        }
       break;
     case TimeUTC:
-      if (to == TimeLocal)
+      switch (to)
         {
-        time_t now;
-        time(&now);
-        now -= now % (24*60*60);        // Back to midnight UTC
-        now += value;                   // The target time today
-        struct tm* tmu = localtime(&now);
-        return (tmu->tm_hour * 60 + tmu->tm_min) * 60 + tmu->tm_sec;
+        case Minutes: return  value/60;
+        case Hours: return value/3600;
+        case TimeLocal:
+          {
+          time_t now;
+          time(&now);
+          now -= now % (24*60*60);        // Back to midnight UTC
+          now += value;                   // The target time today
+          struct tm tmu;
+          localtime_r(&now, &tmu);
+          return time_unit_join(tmu.tm_hour, tmu.tm_min, tmu.tm_sec);
+          }
+        default:
+          break;
         }
-      else if (to == Minutes) return value/60;
-      else if (to == Hours) return value/3600;
       break;
+    case TimeLocal:
+      switch (to)
+        {
+        case Minutes: return  value/60;
+        case Hours: return value/3600;
+        case TimeUTC:
+          {
+          time_t now;
+          time(&now);
+          struct tm tmu;
+          localtime_r(&now, &tmu);
+          int hrs, mins, secs;
+          time_unit_split(value, hrs, mins, secs);
+          tmu.tm_hour = hrs;
+          tmu.tm_min = mins;
+          tmu.tm_sec = secs;
+          now = mktime(&tmu);
+          gmtime_r(&now, &tmu);
+          return time_unit_join(tmu.tm_hour, tmu.tm_min, tmu.tm_sec);
+          }
+        default: break;
+        }
+      break;
+
     case Kph:
       switch (to)
         {
@@ -2768,17 +2876,48 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         default: break;
         }
       break;
+    case TimeUTC:
+    case TimeLocal:
+      switch (to)
+        {
+        case Minutes: return  value/60;
+        case Hours: return value/3600;
+        case TimeLocal:
+        case TimeUTC:
+          {
+          int intVal = round(value);
+          return UnitConvert(from, to, intVal);
+          }
+        default: break;
+        }
+        break;
     case Seconds:
       if (to == Minutes) return value/60;
       else if (to == Hours) return value/3600;
       break;
     case Minutes:
-      if (to == Seconds) return value*60;
-      else if (to == Hours) return value/60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*60;
+        case Hours:
+          return value/60;
+        default: break;
+        }
       break;
     case Hours:
-      if (to == Seconds) return value*3600;
-      else if (to == Minutes) return value*60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*3600;
+        case Minutes:
+          return value*60;
+        default: break;
+        }
       break;
     case Kph:
       switch (to)
