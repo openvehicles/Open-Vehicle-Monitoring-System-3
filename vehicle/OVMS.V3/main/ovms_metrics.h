@@ -273,9 +273,9 @@ class OvmsMetricBool : public OvmsMetric
     virtual ~OvmsMetricBool();
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
-    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
-    float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
+    std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
+    float AsFloat(const float defvalue = 0, metric_unit_t units = Other) override;
     int AsBool(const bool defvalue = false);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     void DukPush(DukContext &dc, metric_unit_t units = Other) override;
@@ -284,10 +284,10 @@ class OvmsMetricBool : public OvmsMetric
     void operator=(bool value) { SetValue(value); }
     bool SetValue(std::string value, metric_unit_t units = Other) override;
     bool SetValue(dbcNumber& value) override;
-    void operator=(std::string value) { SetValue(value); }
-    void Clear();
-    bool CheckPersist();
-    void RefreshPersist();
+    void operator=(std::string value) override { SetValue(value); }
+    void Clear() override;
+    bool CheckPersist() override;
+    void RefreshPersist() override;
 
   protected:
     bool m_value;
@@ -301,9 +301,9 @@ class OvmsMetricInt : public OvmsMetric
     virtual ~OvmsMetricInt();
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
-    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
-    float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
+    std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
+    float AsFloat(const float defvalue = 0, metric_unit_t units = Other) override;
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     void DukPush(DukContext &dc, metric_unit_t units = Other) override;
@@ -312,10 +312,10 @@ class OvmsMetricInt : public OvmsMetric
     void operator=(int value) { SetValue(value); }
     bool SetValue(std::string value, metric_unit_t units = Other) override;
     bool SetValue(dbcNumber& value) override;
-    void operator=(std::string value) { SetValue(value); }
-    void Clear();
-    bool CheckPersist();
-    void RefreshPersist();
+    void operator=(std::string value) override { SetValue(value); }
+    void Clear() override;
+    bool CheckPersist() override;
+    void RefreshPersist() override;
 
   protected:
     int m_value;
@@ -329,9 +329,9 @@ class OvmsMetricFloat : public OvmsMetric
     virtual ~OvmsMetricFloat();
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
-    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
-    float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
+    std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
+    float AsFloat(const float defvalue = 0, metric_unit_t units = Other) override;
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     void DukPush(DukContext &dc, metric_unit_t units = Other) override;
@@ -340,10 +340,10 @@ class OvmsMetricFloat : public OvmsMetric
     void operator=(float value) { SetValue(value); }
     bool SetValue(std::string value, metric_unit_t units = Other) override;
     bool SetValue(dbcNumber& value) override;
-    void operator=(std::string value) { SetValue(value); }
-    void Clear();
-    virtual bool CheckPersist();
-    virtual void RefreshPersist();
+    void operator=(std::string value) override { SetValue(value); }
+    void Clear() override;
+    bool CheckPersist() override;
+    void RefreshPersist() override;
 
   protected:
     float m_value;
@@ -357,13 +357,13 @@ class OvmsMetricString : public OvmsMetric
     virtual ~OvmsMetricString();
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     void DukPush(DukContext &dc, metric_unit_t units = Other) override;
 #endif
     bool SetValue(std::string value, metric_unit_t units = Other) override;
-    void operator=(std::string value) { SetValue(value); }
-    void Clear();
+    void operator=(std::string value) override { SetValue(value); }
+    void Clear() override;
     virtual bool IsString() { return true; };
 
   protected:
@@ -389,7 +389,7 @@ class OvmsMetricBitset : public OvmsMetric
       }
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override
       {
       if (!IsDefined())
         return std::string(defvalue);
@@ -407,7 +407,7 @@ class OvmsMetricBitset : public OvmsMetric
       return ss.str();
       }
 
-    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+    std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override
       {
       std::string json = "[";
       json += AsString(defvalue, units, precision);
@@ -431,7 +431,7 @@ class OvmsMetricBitset : public OvmsMetric
         }
       return SetValue(n_value, units);
       }
-    void operator=(std::string value) { SetValue(value); }
+    void operator=(std::string value) override { SetValue(value); }
 
     std::bitset<N> AsBitset(const std::bitset<N> defvalue = std::bitset<N>(0), metric_unit_t units = Other)
       {
@@ -504,7 +504,7 @@ class OvmsMetricSet : public OvmsMetric
       }
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override
       {
       if (!IsDefined())
         return std::string(defvalue);
@@ -519,7 +519,7 @@ class OvmsMetricSet : public OvmsMetric
       return ss.str();
       }
 
-    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+    std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override
       {
       std::string json = "[";
       json += AsString(defvalue, units, precision);
@@ -541,7 +541,7 @@ class OvmsMetricSet : public OvmsMetric
         }
       return SetValue(n_value, units);
       }
-    void operator=(std::string value) { SetValue(value); }
+    void operator=(std::string value) override { SetValue(value); }
 
     std::set<ElemType> AsSet(const std::set<ElemType> defvalue = std::set<ElemType>(), metric_unit_t units = Other)
       {
@@ -745,7 +745,7 @@ class OvmsMetricVector : public OvmsMetric
       return true;
       }
 
-    void RefreshPersist()
+    void RefreshPersist() override
       {
       if (m_persist && m_valuep_size && IsDefined())
         {
@@ -756,7 +756,7 @@ class OvmsMetricVector : public OvmsMetric
       }
 
   public:
-    virtual std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override
       {
       if (!IsDefined())
         return std::string(defvalue);
@@ -807,7 +807,7 @@ class OvmsMetricVector : public OvmsMetric
       return ElemAsString(n, defvalue, units, precision, true);
       }
 
-    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+    std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override
       {
       std::string json = "[";
       json += AsString(defvalue, units, precision);
@@ -847,7 +847,7 @@ class OvmsMetricVector : public OvmsMetric
         }
       return SetValue(n_value, units);
       }
-    void operator=(std::string value) { SetValue(value); }
+    void operator=(std::string value) override { SetValue(value); }
 
     bool SetValue(const std::vector<ElemType, Allocator>& value, metric_unit_t units = Other)
       {
