@@ -134,8 +134,8 @@ OvmsVehicleMg5::OvmsVehicleMg5()
     StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
     m_batt_capacity->SetValue(BATT_CAPACITY);
     m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLowerLimit);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDUpperLimit);
+    m_dod_lower->SetValue(BMSDoDLowerLimit);
+    m_dod_upper->SetValue(BMSDoDUpperLimit);
 
     //Initialise GWM state to Unknown
     //m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));

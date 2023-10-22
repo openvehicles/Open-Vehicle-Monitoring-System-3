@@ -1,9 +1,10 @@
 /**
  * Module plugin:
  *  Tasmota Smart Plug control -- see https://tasmota.github.io/
- *  Version 2.0 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 2.1 by Michael Balzer <dexter@dexters-web.de>
  * 
  * History:
+ *  - v2.1: energy data dialog in status plugin, suppress repeated on/off events, add getdata command
  *  - v2.0: power/energy monitoring
  *  - v1.0: initial release
  * 
@@ -18,6 +19,7 @@
  * Usage:
  *  - script eval tasmotasp.get([true]) -- read power state, true = also read sensor data
  *  - script eval tasmotasp.set("on" | "off" | 1 | 0 | true | false)
+ *  - script eval tasmotasp.getdata([true]) -- read sensor data, true = force
  *  - script eval tasmotasp.info() -- output config, state & data
  *  - script eval tasmotasp.status() -- only output state & data
  *  - script eval tasmotasp.sendcmd(command, [true]) -- send any Tasmota command, true = followed by sensor read
@@ -56,6 +58,10 @@ var state = {
   monitoring: false,
 };
 
+var oldstate = {
+  power: "",
+};
+
 var data = {};
 
 // Process call result:
@@ -65,7 +71,10 @@ function processResult(tag) {
     OvmsEvents.Raise("usr.tasmotasp.error");
   } else {
     print("TasmotaSP " + tag + ": power=" + state.power);
-    OvmsEvents.Raise("usr.tasmotasp." + state.power);
+    if (state.power != oldstate.power) {
+      oldstate.power = state.power;
+      OvmsEvents.Raise("usr.tasmotasp." + state.power);
+    }
   }
 }
 
@@ -299,6 +308,7 @@ PubSub.subscribe("usr.tasmotasp.getdata", handleEvent);
 // API exports:
 exports.get = getPowerState;
 exports.set = setPowerState;
+exports.getdata = getSensorData;
 exports.info = printInfo;
 exports.status = printStatus;
 exports.sendcmd = sendCommand;

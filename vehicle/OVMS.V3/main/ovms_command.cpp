@@ -1087,12 +1087,13 @@ void OvmsCommandApp::LogTask()
             m_logtask_laststamp = stamp.tv_sec;
             // write timestamp:
             timeradd(&m_logtask_basetime, &stamp, &stamp);
-            struct tm* tmu = localtime(&stamp.tv_sec);
-            strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S", tmu);
+            struct tm tmu;
+            localtime_r(&stamp.tv_sec, &tmu);
+            strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S", &tmu);
             m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
             snprintf(tb, sizeof(tb), ".%03lu ", stamp.tv_usec / 1000);
             int len = strlen(tb);
-            strftime(tb+len, sizeof(tb)-len, "%Z ", tmu);
+            strftime(tb+len, sizeof(tb)-len, "%Z ", &tmu);
             m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
             }
           // write log entry:
@@ -1307,7 +1308,8 @@ bool OvmsCommandApp::CycleLogfile()
 
   char ts[20];
   time_t tm = time(NULL);
-  strftime(ts, sizeof(ts), ".%Y%m%d-%H%M%S", localtime(&tm));
+  struct tm timeinfo;
+  strftime(ts, sizeof(ts), ".%Y%m%d-%H%M%S", localtime_r(&tm, &timeinfo));
   std::string archpath = m_logfile_path;
   archpath.append(ts);
   if (rename(m_logfile_path.c_str(), archpath.c_str()) == 0)
@@ -1500,8 +1502,9 @@ void OvmsCommandApp::EventHandler(std::string event, void* data)
     {
     int keepdays = MyConfig.GetParamValueInt("log", "file.keepdays", 30);
     time_t utm = time(NULL);
-    struct tm* ltm = localtime(&utm);
-    if (keepdays && ltm->tm_hour == 0 && !m_expiretask)
+    struct tm ltm;
+    localtime_r(&utm, &ltm);
+    if (keepdays && ltm.tm_hour == 0 && !m_expiretask)
       xTaskCreatePinnedToCore(ExpireTask, "OVMS ExpireLogs", 4096, NULL, 0, &m_expiretask, CORE(1));
     }
   }

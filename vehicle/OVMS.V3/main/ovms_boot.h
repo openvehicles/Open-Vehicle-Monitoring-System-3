@@ -130,6 +130,7 @@ class Boot
     void SetSoftReset();
     void SetFirmwareUpdate();
     void SetMin12VLevel(float min_12v_level);
+    float GetMin12VLevel() { return boot_data.min_12v_level; }
     void Restart(bool hard=false);
     void DeepSleep(unsigned int seconds = 60);
     void DeepSleep(time_t waketime);

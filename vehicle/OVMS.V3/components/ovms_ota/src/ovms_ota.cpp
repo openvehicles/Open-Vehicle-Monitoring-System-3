@@ -881,12 +881,13 @@ void OvmsOTA::Ticker600(std::string event, void* data)
 
   time_t rawtime;
   time ( &rawtime );
-  struct tm* tmu = localtime(&rawtime);
+  struct tm tmu;
+  localtime_r(&rawtime, &tmu);
 
-  if ((tmu->tm_hour == MyConfig.GetParamValueInt("ota","auto.hour",2)) &&
-      (tmu->tm_mday != m_lastcheckday))
+  if ((tmu.tm_hour == MyConfig.GetParamValueInt("ota","auto.hour",2)) &&
+      (tmu.tm_mday != m_lastcheckday))
     {
-    m_lastcheckday = tmu->tm_mday;  // So we only try once a day (unless cleared due to a temporary fault)
+    m_lastcheckday = tmu.tm_mday;  // So we only try once a day (unless cleared due to a temporary fault)
     LaunchAutoFlash(OTA_FlashCfg_Default);
     }
   }
