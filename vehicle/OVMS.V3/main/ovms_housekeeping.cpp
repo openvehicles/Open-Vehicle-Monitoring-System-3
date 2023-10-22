@@ -123,16 +123,17 @@ void HousekeepingTicker1( TimerHandle_t timer )
 
   time_t rawtime;
   time ( &rawtime );
-  struct tm* tmu = localtime(&rawtime);
-  if (tmu->tm_sec == 0)
+  struct tm tmu;
+  localtime_r(&rawtime,&tmu);
+  if (tmu.tm_sec == 0)
     {
     // Start of the minute, so signal a timer event
     char tev[16];
-    sprintf(tev,"clock.%02d%02d",tmu->tm_hour,tmu->tm_min);
+    sprintf(tev,"clock.%02d%02d",tmu.tm_hour,tmu.tm_min);
     MyEvents.SignalEvent(tev, NULL);
-    if ((tmu->tm_hour==0)&&(tmu->tm_min==0))
+    if ((tmu.tm_hour==0)&&(tmu.tm_min==0))
       {
-      sprintf(tev,"clock.day%1d",tmu->tm_wday);
+      sprintf(tev,"clock.day%1d",tmu.tm_wday);
       MyEvents.SignalEvent(tev, NULL);
       }
     }
@@ -286,10 +287,11 @@ void Housekeeping::TimeLogger(std::string event, void* data)
   {
   time_t rawtime;
   time ( &rawtime );
-  struct tm* tmu = localtime(&rawtime);
+  struct tm tmu;
+  localtime_r(&rawtime, &tmu);
   char tb[64];
 
-  if (strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", tmu) > 0)
+  if (strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", &tmu) > 0)
     {
     size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
     size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);

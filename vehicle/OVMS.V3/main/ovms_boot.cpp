@@ -146,6 +146,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   {
   
   time_t rawtime;
+  struct tm timeinfo;
   struct tm* tml;
   char tb[32];
   
@@ -153,7 +154,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   
   time(&rawtime);
   rawtime = rawtime-(time_t)monotonictime;
-  tml = localtime(&rawtime);
+  tml = localtime_r(&rawtime, &timeinfo);
   if ((strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", tml) > 0) && rawtime > 0)
     writer->printf("Time at boot: %s\n", tb);
 

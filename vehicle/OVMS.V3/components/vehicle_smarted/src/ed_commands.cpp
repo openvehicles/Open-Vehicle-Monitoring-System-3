@@ -412,9 +412,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(bool en
   time_t rawtime;
   time ( &rawtime );
   rawtime += m_preclima_time*60; // add 15 minutes
-  struct tm* tmu = localtime(&rawtime);
-  int hours = tmu->tm_hour;
-  int minutes = tmu->tm_min;
+  struct tm tmu;
+  localtime_r(&rawtime,&tmu);
+  int hours = tmu.tm_hour;
+  int minutes = tmu.tm_min;
   minutes = (minutes - (minutes % 5));
   return CommandSetChargeTimer(enable, hours, minutes);
 }
@@ -485,9 +486,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, i
   time_t rawtime;
   time ( &rawtime );
   rawtime += m_preclima_time*60; // add 15 minutes
-  struct tm* tmu = localtime(&rawtime);
-  int hours = tmu->tm_hour;
-  int minutes = tmu->tm_min;
+  struct tm tmu;
+  localtime_r(&rawtime, &tmu);
+  int hours = tmu.tm_hour;
+  int minutes = tmu.tm_min;
   minutes = (minutes - (minutes % 5));
   if (button == 0) {
       enable = true;
