@@ -137,12 +137,12 @@ void simcom7600::StatusPoller()
     }
   }
 
-void simcom7600::PowerCycle()
+void simcom7600::PowerOff()
   {
-  unsigned int psd = 2000 * (++m_powercyclefactor);
-  m_powercyclefactor = m_powercyclefactor % 3;
-  ESP_LOGI(TAG, "Power Cycle (SIM7600) %dms",psd);
+  unsigned int psd = 3000;    // min 2500ms
+  ESP_LOGI(TAG, "Power Off (SIM7600) %dms",psd);
 
+  modemdriver::PowerSleep(false);
   uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
   uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
 #ifdef CONFIG_OVMS_COMP_MAX7317
@@ -153,6 +153,23 @@ void simcom7600::PowerCycle()
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   }
 
+void simcom7600::PowerCycle()
+  {
+  unsigned int psd = 500;     // min 100ms  typical 500ms
+  unsigned int uartd = 3000; //  min 11s    typical 12s
+  ESP_LOGI(TAG, "Power Cycle (SIM7600) %dms, wait %dms for uart",psd,uartd);
+
+  uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
+  uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
+  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 1); // Modem EN/PWR line high
+  vTaskDelay(psd / portTICK_PERIOD_MS);
+  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
+  vTaskDelay(uartd / portTICK_PERIOD_MS);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+  }
+
 bool simcom7600::State1Leave(modem::modem_state1_t oldstate)
   {
   return modemdriver::State1Leave(oldstate);
@@ -160,6 +177,17 @@ bool simcom7600::State1Leave(modem::modem_state1_t oldstate)
 
 bool simcom7600::State1Enter(modem::modem_state1_t newstate)
   {
+  if (newstate == modem::PoweringOff)
+    {
+    m_modem->ClearNetMetrics();
+    m_modem->StopPPP();
+    m_modem->StopNMEA();
+    MyEvents.SignalEvent("system.modem.stop",NULL);
+    PowerOff();
+    m_modem->m_state1_timeout_ticks = 20;
+    m_modem->m_state1_timeout_goto = modem::CheckPowerOff;
+    return true;
+    }
   return modemdriver::State1Enter(newstate);
   }
 
