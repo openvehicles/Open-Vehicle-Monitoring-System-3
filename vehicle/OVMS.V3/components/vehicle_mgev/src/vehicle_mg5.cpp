@@ -134,8 +134,8 @@ OvmsVehicleMg5::OvmsVehicleMg5()
     StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
     m_batt_capacity->SetValue(BATT_CAPACITY);
     m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLowerLimit);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDUpperLimit);
+    m_dod_lower->SetValue(BMSDoDLowerLimit);
+    m_dod_upper->SetValue(BMSDoDUpperLimit);
 
     //Initialise GWM state to Unknown
     //m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));
@@ -347,7 +347,7 @@ void OvmsVehicleMg5::MainStateMachine(canbus* currentBus, uint32_t ticker)
             StandardMetrics.ms_v_charge_inprogress->SetValue(false);
             if (m_afterRunTicker < TRANSITION_TIMEOUT)
             {
-                ESP_LOGV(TAG, "(%u) Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
+                ESP_LOGV(TAG, "(%" PRIu32 ") Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
                 m_afterRunTicker++;
             }
             else if (m_afterRunTicker == TRANSITION_TIMEOUT)
@@ -379,6 +379,6 @@ OvmsVehicleMg5Init::OvmsVehicleMg5Init()
 {
     ESP_LOGI(TAG, "Registering Vehicle: MG5 (9000)");
     
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleMg5>("MG5", "MG 5 (2020-2023)");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleMg5>("MG5", "MG 5 (LR) (2020-2023)");
 }
 

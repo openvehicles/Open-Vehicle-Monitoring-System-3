@@ -104,7 +104,8 @@ class Direntry {
           format_file_size(bufsize, sizeof(bufsize), size);
         }
       }
-      strftime(mod, sizeof(mod), "%d-%b-%Y %H:%M", localtime(&mtime));
+      struct tm timeinfo;
+      strftime(mod, sizeof(mod), "%d-%b-%Y %H:%M", localtime_r(&mtime, &timeinfo));
 
       const char *slash = is_dir ? "/" : "";
 
@@ -329,13 +330,31 @@ void vfs_mv(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 
 void vfs_mkdir(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (MyConfig.ProtectedPath(argv[0]))
+  const char *dirpath = NULL;
+  bool parents = false;
+
+  for (int i = 0; i < argc; i++)
+    {
+    if (strcmp(argv[i], "-p") == 0)
+      parents = true;
+    else
+      dirpath = argv[i];
+    }
+
+  if (!dirpath)
+    {
+    writer->puts("Error: no path specified");
+    return;
+    }
+  if (MyConfig.ProtectedPath(dirpath))
     {
     writer->puts("Error: protected path");
     return;
     }
 
-  if (mkdir(argv[0],0) == 0)
+  int res = (parents) ? mkpath(dirpath,0) : mkdir(dirpath,0);
+
+  if (res == 0)
     { writer->puts("VFS directory created"); }
   else
     { writer->puts("Error: Could not create VFS directory"); }
@@ -343,13 +362,31 @@ void vfs_mkdir(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
 void vfs_rmdir(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (MyConfig.ProtectedPath(argv[0]))
+  const char *dirpath = NULL;
+  bool recursive = false;
+
+  for (int i = 0; i < argc; i++)
+    {
+    if (strcmp(argv[i], "-r") == 0)
+      recursive = true;
+    else
+      dirpath = argv[i];
+    }
+
+  if (!dirpath)
+    {
+    writer->puts("Error: no path specified");
+    return;
+    }
+  if (MyConfig.ProtectedPath(dirpath))
     {
     writer->puts("Error: protected path");
     return;
     }
 
-  if (rmdir(argv[0]) == 0)
+  int res = (recursive) ? rmtree(dirpath) : rmdir(dirpath);
+
+  if (res == 0)
     { writer->puts("VFS directory removed"); }
   else
     { writer->puts("Error: Could not remove VFS directory"); }
@@ -582,8 +619,10 @@ VfsInit::VfsInit()
   cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1);
   cmd_vfs->RegisterCommand("head","VFS Display first 20 lines of a file",vfs_head, "[-nrlines] <file>", 1, 2);
   cmd_vfs->RegisterCommand("stat","VFS Status of a file",vfs_stat, "<file>", 1, 1);
-  cmd_vfs->RegisterCommand("mkdir","VFS Create a directory",vfs_mkdir, "<path>", 1, 1);
-  cmd_vfs->RegisterCommand("rmdir","VFS Delete a directory",vfs_rmdir, "<path>", 1, 1);
+  cmd_vfs->RegisterCommand("mkdir","VFS Create a directory",vfs_mkdir, "[-p] <path>\n"
+    "-p = create full path including missing parents", 1, 2);
+  cmd_vfs->RegisterCommand("rmdir","VFS Delete a directory",vfs_rmdir, "[-r] <path>\n"
+    "-r = delete recursively including all files and subdirectories", 1, 2);
   cmd_vfs->RegisterCommand("rm","VFS Delete a file",vfs_rm, "<file>", 1, 1);
   cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2);
   cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2);

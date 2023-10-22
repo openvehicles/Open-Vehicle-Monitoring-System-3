@@ -123,6 +123,7 @@ alert   alarm.sounding              Vehicle alarm is sounding
 alert   alarm.stopped               Vehicle alarm has stopped
 alert   batt.12v.alert              12V Battery critical
 alert   batt.12v.recovered          12V Battery restored
+alert   batt.12v.shutdown           System shutdown (deep sleep) due to low 12V battery level
 alert   batt.bms.alert              Battery pack/cell alert (critical voltage/temperature deviation)
 alert   batt.soc.alert              Battery SOC critical
 info    charge.done                 ``stat`` on charge finished

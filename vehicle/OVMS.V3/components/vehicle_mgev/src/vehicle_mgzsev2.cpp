@@ -101,8 +101,8 @@ OvmsVehicleMgEvD::OvmsVehicleMgEvD()
     StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
     m_batt_capacity->SetValue(BATT_CAPACITY);
     m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLowerLimit);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDUpperLimit);
+    m_dod_lower->SetValue(BMSDoDLowerLimit);
+    m_dod_upper->SetValue(BMSDoDUpperLimit);
 
     //Add variant specific poll data
     ConfigurePollData(obdii_polls_d, sizeof(obdii_polls_d));
@@ -269,7 +269,7 @@ void OvmsVehicleMgEvD::MainStateMachine(canbus* currentBus, uint32_t ticker)
         StandardMetrics.ms_v_charge_inprogress->SetValue(false);
         if (m_afterRunTicker < TRANSITION_TIMEOUT)
         {
-            ESP_LOGV(TAG, "(%u) Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
+            ESP_LOGV(TAG, "(%" PRIu32 ") Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
             m_afterRunTicker++;
         }
         else if (m_afterRunTicker == TRANSITION_TIMEOUT)
@@ -327,5 +327,5 @@ OvmsVehicleMgEvDInit::OvmsVehicleMgEvDInit()
 {
     ESP_LOGI(TAG, "Registering Vehicle: MG ZS EV (2023-)");
 
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvD>("MGD", "MG ZS EV (2023-)");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvD>("MGD", "MG ZS EV (SR) (2023-)");
 }

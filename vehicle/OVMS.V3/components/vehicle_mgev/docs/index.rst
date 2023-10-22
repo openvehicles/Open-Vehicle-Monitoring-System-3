@@ -54,8 +54,8 @@ You can follow these steps to see which variant may be suitable for your car:
 MG ZS EV (2022-) Variants
 -------------------------
 
-Currently only the Long Range (72.6kWh) variant is supported as testers only seem to have this model.
-The Short Range (51.1kWh) variant can easily be supported if BMS scans can be done.
+Currently only the Short Range (51.1kWh) variant is supported as testers only seem to have this model.
+The Long Range (72.6kWh) variant can easily be supported if BMS scans can be done.
 
 ------------------------
 MG5 (2020-2023) Variants

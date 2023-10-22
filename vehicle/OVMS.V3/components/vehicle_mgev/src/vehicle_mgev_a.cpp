@@ -105,8 +105,9 @@ OvmsVehicleMgEvA::OvmsVehicleMgEvA()
     // Set Max Range to WLTP Range
     StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
     
-    MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLowerLimit);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDUpperLimit);
+    int BMSVersion = MyConfig.GetParamValueInt("xmg", "bmsval", DEFAULT_BMS_VERSION);
+    m_dod_lower->SetValue(BMSDoDLimits[BMSVersion].Lower);
+    m_dod_upper->SetValue(BMSDoDLimits[BMSVersion].Upper);
     m_batt_capacity->SetValue(BATT_CAPACITY);
     m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
 
@@ -459,7 +460,7 @@ class OvmsVehicleMgEvAInit
 
 OvmsVehicleMgEvAInit::OvmsVehicleMgEvAInit()
 {
-    ESP_LOGI(TAG, "Registering Vehicle: MG JS EV (UK/EU) (9000)");
+    ESP_LOGI(TAG, "Registering Vehicle: MG ZS EV (UK/EU) (9000)");
 
     MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvA>("MGA", "MG ZS EV (UK/EU)");
 }

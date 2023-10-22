@@ -606,7 +606,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
   std::string vehicleid, vehicletype, vehiclename, timezone, timezone_region, pin;
-  std::string bat12v_factor, bat12v_ref, bat12v_alert;
+  std::string bat12v_factor, bat12v_ref, bat12v_alert, bat12v_shutdown, bat12v_shutdown_delay, bat12v_wakeup, bat12v_wakeup_interval;
 
   std::map<metric_group_t,std::string> units_values;
   metric_group_list_t unit_groups;
@@ -629,6 +629,10 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     bat12v_factor = c.getvar("bat12v_factor");
     bat12v_ref = c.getvar("bat12v_ref");
     bat12v_alert = c.getvar("bat12v_alert");
+    bat12v_shutdown = c.getvar("bat12v_shutdown");
+    bat12v_shutdown_delay = c.getvar("bat12v_shutdown_delay");
+    bat12v_wakeup = c.getvar("bat12v_wakeup");
+    bat12v_wakeup_interval = c.getvar("bat12v_wakeup_interval");
     pin = c.getvar("pin");
 
     if (vehicleid.length() == 0)
@@ -660,6 +664,10 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("system.adc", "factor12v", bat12v_factor);
       MyConfig.SetParamValue("vehicle", "12v.ref", bat12v_ref);
       MyConfig.SetParamValue("vehicle", "12v.alert", bat12v_alert);
+      MyConfig.SetParamValue("vehicle", "12v.shutdown", bat12v_shutdown);
+      MyConfig.SetParamValue("vehicle", "12v.shutdown_delay", bat12v_shutdown_delay);
+      MyConfig.SetParamValue("vehicle", "12v.wakeup", bat12v_wakeup);
+      MyConfig.SetParamValue("vehicle", "12v.wakeup_interval", bat12v_wakeup_interval);
       if (!pin.empty())
         MyConfig.SetParamValue("password", "pin", pin);
 
@@ -690,6 +698,10 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     bat12v_factor = MyConfig.GetParamValue("system.adc", "factor12v");
     bat12v_ref = MyConfig.GetParamValue("vehicle", "12v.ref");
     bat12v_alert = MyConfig.GetParamValue("vehicle", "12v.alert");
+    bat12v_shutdown = MyConfig.GetParamValue("vehicle", "12v.shutdown");
+    bat12v_shutdown_delay = MyConfig.GetParamValue("vehicle", "12v.shutdown_delay");
+    bat12v_wakeup = MyConfig.GetParamValue("vehicle", "12v.wakeup");
+    bat12v_wakeup_interval = MyConfig.GetParamValue("vehicle", "12v.wakeup_interval");
     c.head(200);
   }
 
@@ -785,6 +797,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     -1, bat12v_factor.empty() ? 195.7 : atof(bat12v_factor.c_str()), 195.7, 175.0, 225.0, 0.1,
     "<p>Adjust the calibration so the voltage displayed above matches your real voltage.</p>");
 
+  c.fieldset_start("Alert");
   c.input("number", "12V reference", "bat12v_ref", bat12v_ref.c_str(), "Default: 12.6",
     "<p>The nominal resting voltage level of your 12V battery when fully charged.</p>",
     "min=\"10\" max=\"15\" step=\"0.1\"", "V");
@@ -792,6 +805,26 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     "<p>If the actual voltage drops this far below the maximum of configured and measured reference"
     " level, an alert is sent.</p>",
     "min=\"0\" max=\"3\" step=\"0.1\"", "V");
+  c.fieldset_end();
+
+  c.fieldset_start("Shutdown");
+  c.input("number", "12V shutdown", "bat12v_shutdown", bat12v_shutdown.c_str(), "Default: disabled",
+    "<p>If the voltage drops to/below this level, the module will enter deep sleep and wait for the voltage to recover to the wakeup level.</p>"
+    "<p>Recommended shutdown level for standard lead acid batteries: not less than 10.5 V</p>",
+    "min=\"10\" max=\"15\" step=\"0.1\"", "V");
+  c.input("number", "Shutdown delay", "bat12v_shutdown_delay", bat12v_shutdown_delay.c_str(), "Default: 2",
+    "<p>The 12V shutdown condition needs to be present for at least this long to actually cause a shutdown "
+    "(0 = shutdown on first detection, check is done once per minute).</p>",
+    "min=\"0\" max=\"60\" step=\"1\"", "Minutes");
+  c.input("number", "12V wakeup", "bat12v_wakeup", bat12v_wakeup.c_str(), "Default: any",
+    "<p>The minimum voltage level to allow restarting the module after a 12V shutdown.</p>"
+    "<p>Recommended minimum level for standard lead acid batteries: not less than 11.0 V",
+    "min=\"10\" max=\"15\" step=\"0.1\"", "V");
+  c.input("number", "Wakeup test interval", "bat12v_wakeup_interval", bat12v_wakeup_interval.c_str(), "Default: 60",
+    "<p>Voltage test interval after shutdown in seconds. Lowering this means faster detection of voltage recovery "
+    "at the cost of higher energy usage (each test needs ~3 seconds of CPU uptime).</p>",
+    "min=\"1\" max=\"300\" step=\"1\"", "Seconds");
+  c.fieldset_end();
 
   c.print(
       "</div>"

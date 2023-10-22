@@ -570,6 +570,12 @@ config OVMS_VEHICLE_TOYOTARAV4EV
     depends on OVMS
     help
         Enable to include support for Toyota RAV4 EV vehicles.
+config OVMS_VEHICLE_BYD_ATTO3
+    bool "Include support for BYD Atto 3"
+    default y
+    depends on OVMS
+    help
+        Enable support for BYD Atto 3
 
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
