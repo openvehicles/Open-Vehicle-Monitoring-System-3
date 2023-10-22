@@ -49,6 +49,7 @@ OvmsTime MyTime __attribute__ ((init_priority (1500)));
 
 void time_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  struct tm timeinfo;
   time_t rawtime;
   time ( &rawtime );
   char tb[64];
@@ -56,11 +57,11 @@ void time_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   writer->printf("Time Zone:  %s\n", (tz!=NULL)?tz:"Not defined");
 
-  struct tm* tmu = gmtime(&rawtime);
+  struct tm* tmu = gmtime_r(&rawtime, &timeinfo);
   if (strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S UTC", tmu) > 0)
     writer->printf("UTC Time:   %s\n", tb);
 
-  tmu = localtime(&rawtime);
+  tmu = localtime_r(&rawtime, &timeinfo);
   if (strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", tmu) > 0)
     writer->printf("Local Time: %s\n", tb);
 
@@ -73,10 +74,14 @@ void time_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
       {
       OvmsTimeProvider* tp = itc->second;
       time_t tim = tp->m_time + (monotonictime-tp->m_lastreport);
-      struct tm* tml = gmtime(&tim);
+      struct tm tml;
+      gmtime_r(&tim, &tml);
+
+      char tmbuf[30];
       writer->printf("%s%-20.20s%7d%8" PRId32 " %s",
         (tp==MyTime.m_current)?"*":" ",
-        tp->m_provider, tp->m_stratum, monotonictime-tp->m_lastreport, asctime(tml));
+        tp->m_provider, tp->m_stratum, monotonictime-tp->m_lastreport,
+        asctime_r( &tml, tmbuf));
       }
     }
   }
@@ -228,8 +233,11 @@ void OvmsTime::Set(const char* provider, int stratum, bool trusted, time_t tim, 
   {
   if (!trusted) stratum=16;
 
-  struct tm* tmu = gmtime(&tim);
-  ESP_LOGD(TAG, "%s (stratum %d trusted %d) provides time %-24.24s (%06luus) UTC", provider, stratum, trusted, asctime(tmu),timu);
+  struct tm tmu;
+  gmtime_r(&tim,&tmu);
+  char timebuf[30];
+  ESP_LOGD(TAG, "%s (stratum %d trusted %d) provides time %-24.24s (%06luus) UTC", provider, stratum, trusted,
+    asctime_r(&tmu, timebuf),timu);
 
   auto k = m_providers.find(provider);
   if (k == m_providers.end())

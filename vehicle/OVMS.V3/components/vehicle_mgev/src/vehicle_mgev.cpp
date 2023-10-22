@@ -185,6 +185,8 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_avg_consumption = MyMetrics.InitFloat("xmg.p.avg.consumption", SM_STALE_MID, 165.0, WattHoursPK);
     m_batt_capacity = MyMetrics.InitFloat("xmg.b.capacity", SM_STALE_MID, 42.5, kWh);
     m_max_dc_charge_rate = MyMetrics.InitFloat("xmg.c.max.dc.charge", SM_STALE_MID, 82.0, kW);
+    m_dod_lower = MyMetrics.InitFloat("xmg.b.dod.lower", SM_STALE_MAX, 940.0);
+    m_dod_upper = MyMetrics.InitFloat("xmg.b.dod.upper", SM_STALE_MAX, 25.0);
 
     DRLFirstFrameSentCallback = std::bind(&OvmsVehicleMgEv::DRLFirstFrameSent, this, std::placeholders::_1, std::placeholders::_2);
     

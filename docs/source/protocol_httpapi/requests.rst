@@ -148,19 +148,62 @@ Return vehicle status:
 GET /api/tpms/<VEHICLEID>
 -------------------------
 
-Return tpms status:
+Return tpms status: the data available depends on the vehicle and module type.
 
-* ``fr_pressure``
-* ``fr_temperature``
-* ``rr_pressure``
+''''''''''''''''''''''''''''''''''
+V2 modules / old firmware versions
+''''''''''''''''''''''''''''''''''
+
+On V2 modules, the wheel layout is fixed to two front & two rear wheels, and sensor
+data is fixed to pressure and temperature:
+
+* ``fr_pressure``: front right pressure (PSI)
+* ``fr_temperature``: front right temperature (Celcius)
+* ``rr_pressure``: rear right
 * ``rr_temperature``
-* ``fl_pressure``
+* ``fl_pressure``: front left
 * ``fl_temperature``
-* ``rl_pressure``
+* ``rl_pressure``: rear left
 * ``rl_temperature``
-* ``staletpms``
+* ``staletpms``: overall value staleness, -1=undefined, 0=stale, 1=valid
 * ``m_msgage_w``: age (seconds) of last TPMS (W) message received if available
 * ``m_msgtime_w``: time stamp (UTC) of last TPMS (W) message received if available
+
+''''''''''
+V3 modules
+''''''''''
+
+V3 modules support any kind of wheel/nonwheel layout as well as two new sensor types
+(health & alert level). The actual wheel naming and value availability depends on the
+vehicle type. Default wheel layout/naming is the same as with V2, i.e. "fl", "fr",
+"rl" & "rr". For the wheel layout of other vehicles, see the respective vehicle manual
+pages.
+
+For each wheel, sensor values pressure, temperature, health and alert status **may**
+be available, i.e. all wheel fields are optional:
+
+* ``<wheelname>_pressure_kpa``: wheel pressure in kPa
+* ``<wheelname>_pressure``: wheel pressure in PSI
+* ``<wheelname>_temperature``: wheel temperature in Celcius
+* ``<wheelname>_health``: wheel health in percent
+* ``<wheelname>_alert``: wheel alert level, 0=none, 1=warning, 2=alert
+
+Staleness is available per sensor type & overall, with -1=undefined, 0=stale, 1=valid:
+
+* ``stale_pressure``
+* ``stale_temperature``
+* ``stale_health``
+* ``stale_alert``
+* ``staletpms`` (maximum value of the above)
+
+Metadata:
+
+* ``m_msgage_y``: age (seconds) of last TPMS (Y) message received if available
+* ``m_msgtime_y``: time stamp (UTC) of last TPMS (Y) message received if available
+* ``m_msgage_w``: compatibility copy of ``m_msgage_y``
+* ``m_msgtime_w``: compatibility copy of ``m_msgtime_y``
+
+
 
 -----------------------------
 GET /api/location/<VEHICLEID>

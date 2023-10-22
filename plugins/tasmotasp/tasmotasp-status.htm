@@ -1,0 +1,167 @@
+<!--
+  Web UI plugin for page /status hook body.post:
+    Add Tasmota Smart Plug power control button to Vehicle panel
+    Tasmota Smart Plug plugin Version 2.1  Michael Balzer <dexter@dexters-web.de>
+-->
+
+<style>
+.btn-group.data-tasmotasp .metric {
+  display: block;
+  float: none;
+  font-size: 80%;
+  line-height: 110%;
+}
+a#action-tasmotasp-info {
+  font-size: 19px;
+  line-height: 100%;
+  padding: 6px 7px 3px;
+}
+</style>
+
+<script>
+(function(){
+
+  var tasmotasp = { cfg: {}, state: { power: "", error: "" }, data: {} };
+  var $receiver = $('#livestatus');
+  var $actionres = $('#vehicle-cmdres');
+  var $actionset;
+  var $datadisplay, $datadialog, $datarows;
+
+  var units = {
+    "Voltage": "V",
+    "Current": "A",
+    "Power": "W",
+    "ApparentPower": "VA",
+    "ReactivePower": "VAr",
+    "Total": "kWh",
+    "Today": "kWh",
+    "Yesterday": "kWh",
+  };
+
+  // State & UI update:
+  function update(data) {
+    $.extend(true, tasmotasp, data);
+    // update state buttons:
+    $actionres.empty();
+    $actionset.removeClass('active');
+    if (tasmotasp.state.power) {
+      $actionset.find('input[value='+tasmotasp.state.power+']')
+        .prop('checked', true)
+        .parent().addClass('active');
+    }
+    // update energy readings:
+    if (tasmotasp.cfg["power_mon"] == "yes") {
+      updateEnergy();
+      $datadisplay.show();
+    } else {
+      $datadisplay.hide();
+    }
+    // show error:
+    if (tasmotasp.state.error) {
+      $actionres.text("TasmotaSP: " + tasmotasp.state.error);
+    }
+  }
+
+  // Display power/energy sensor data:
+  function updateEnergy() {
+    if (tasmotasp.data["StatusSNS"] && tasmotasp.data["StatusSNS"]["ENERGY"]) {
+      let td = tasmotasp.data["StatusSNS"]["ENERGY"];
+      // update inline displays:
+      $('#data-tasmotasp-power').text(td["Power"]);
+      $('#data-tasmotasp-total').text(td["Total"]);
+      // update info dialog:
+      $datarows.empty();
+      for (let [key, value] of Object.entries(td)) {
+        if (typeof value == "number") {
+          $datarows.append(`<tr><th>${key}</th><td>${value}</td><td>${units[key]||""}</td></tr>`);
+        }
+      }
+    }
+  }
+
+  // Listen to tasmotasp events:
+  $receiver.on('msg:event', function(e, event) {
+    if (event == "usr.tasmotasp.on")
+      update({ state: { power: "on" } });
+    else if (event == "usr.tasmotasp.off")
+      update({ state: { power: "off" } });
+    else if (event == "usr.tasmotasp.error" || event == "config.changed")
+      getInfo();
+  });
+
+  // Listen to tasmotasp stream update:
+  $receiver.on('msg:notify', function(e, msg) {
+    if (msg.subtype == "usr/tasmotasp/data") {
+      try {
+        var data = JSON.parse(msg.value);
+        if (typeof data == "object") {
+          tasmotasp.data = Object.assign(tasmotasp.data, data);
+          updateEnergy();
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  });
+
+  // Get state & config:
+  function getInfo() {
+    loadjs('tasmotasp.info()').then(function(output) {
+      update(JSON.parse(output));
+    });
+  }
+
+  // Init:
+  $('#main').one('load', function(ev) {
+    // add buttons to panel:
+    $('#vehicle-cmdres').parent().before(
+      '<li>'+
+        '<label class="control-label">Plug:</label>'+
+        '<div class="btn-group action-tasmotasp-set" data-toggle="buttons">'+
+          '<label class="btn btn-default btn-sm action-tasmotasp-off"><input type="radio" name="power" value="off">OFF</label>'+
+          '<label class="btn btn-default btn-sm action-tasmotasp-on"><input type="radio" name="power" value="on">ON</label>'+
+        '</div>'+
+        '<div class="btn-group data-tasmotasp" style="display:none">'+
+          '<div class="metric number"><span class="value" id="data-tasmotasp-power">?</span><span class="unit">W</span></div>'+
+          '<div class="metric number"><span class="value" id="data-tasmotasp-total">?</span><span class="unit">kWh</span></div>'+
+        '</div>'+
+        '<a class="btn btn-default btn-sm data-tasmotasp" id="action-tasmotasp-info">ⓘ</a>'+
+        '<div id="dialog-tasmotasp-info"></div>'+
+      '</li>');
+    $actionset = $('.action-tasmotasp-set > label');
+    $datadisplay = $('.data-tasmotasp');
+    // add button handler:
+    $('.action-tasmotasp-set input').on('change', function(e) {
+      $actionres.empty();
+      tasmotasp.state.power = $(this).val();
+      loadjs('tasmotasp.set("'+tasmotasp.state.power+'")', '#action-tasmotasp-output');
+    });
+    // init data dialog:
+    $datadialog = $('#dialog-tasmotasp-info');
+    $datadialog.dialog({
+      title: 'Plug Energy Data',
+      body:
+        '<table class="table table-striped table-condensed"><tbody /></table>'+
+        '<samp class="samp-inline" id="action-tasmotasp-output2"></samp>',
+      buttons: [
+        { label: "Close" },
+        { label: "Update", btnClass: "default pull-left", autoHide: false, action: function () {
+          loadjs("tasmotasp.getdata(true)", "#action-tasmotasp-output2"); } },
+        { label: "Reset Today", btnClass: "default pull-left", autoHide: false, action: function () {
+          loadjs("tasmotasp.sendcmd('EnergyToday 0', true)", "#action-tasmotasp-output2"); } },
+        { label: "Reset Total", btnClass: "default pull-left", autoHide: false, action: function () {
+          loadjs("tasmotasp.sendcmd('EnergyTotal 0', true)", "#action-tasmotasp-output2"); } },
+      ],
+    });
+    $datarows = $('#dialog-tasmotasp-info tbody');
+    $('#action-tasmotasp-info').on('click', function(){
+      $datadialog.dialog('show');
+    });
+    // get status:
+    getInfo();
+    // subscribe to stream updates:
+    $receiver.subscribe("notify/stream/usr/tasmotasp/#");
+  });
+
+})();
+</script>

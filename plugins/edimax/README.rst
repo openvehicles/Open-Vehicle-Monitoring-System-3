@@ -4,9 +4,11 @@ Edimax: Smart Plug Control
 
 **Smart Plug control for Edimax models SP-1101W, SP-2101W et al**
 
-Version 2.0 by Michael Balzer <dexter@dexters-web.de>
+Version 2.3 by Michael Balzer <dexter@dexters-web.de>
 
-Note: may need ``HTTP.request()`` digest auth support to work with newer Edimax firmware (untested)
+Note: currently requires Edimax firmware version 2.x, as version 3.x requires digest auth
+(not yet supported by ``HTTP.request()``). Workaround: downgrade a newer Edimax to firmware
+version 2.x, which can be found on the internet. (Thanks to Olaf Straube for testing!)
 
 The smart plug can be bound to a defined location. Automatic periodic recharging or charge stop can
 be configured via main battery SOC level and/or 12V battery voltage level. The plugin can also

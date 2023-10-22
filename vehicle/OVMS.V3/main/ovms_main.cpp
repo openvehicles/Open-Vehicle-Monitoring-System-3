@@ -15,6 +15,7 @@ static const char *TAG = "ovms_main";
 #include "ovms_events.h"
 #include "ovms_config.h"
 #include "ovms_module.h"
+#include "ovms_boot.h"
 #include <esp_task_wdt.h>
 
 extern "C"
@@ -67,6 +68,7 @@ void app_main(void)
 
   ESP_LOGI(TAG, "Executing on CPU core %d",xPortGetCoreID());
   AddTaskToMap(xTaskGetCurrentTaskHandle());
+  MyBoot.Init();
 
   ESP_LOGI(TAG, "Mounting CONFIG...");
   MyConfig.mount();

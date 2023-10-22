@@ -156,6 +156,9 @@ vehicle.alarm.off                             Vehicle alarm has been disarmed
 vehicle.alarm.on                              Vehicle alarm has been armed
 vehicle.alert.12v.off                         12V system voltage has recovered
 vehicle.alert.12v.on                          12V system voltage is below alert threshold
+vehicle.alert.12v.low                         12V shutdown voltage level detected
+vehicle.alert.12v.operational                 12V recovered above shutdown level
+vehicle.alert.12v.shutdown                    12V shutdown threshold reached, entering deep sleep
 vehicle.alert.bms                             BMS cell/pack volts/temps exceeded thresholds
 vehicle.asleep                                Vehicle systems are asleep
 vehicle.awake                                 Vehicle systems are awake
