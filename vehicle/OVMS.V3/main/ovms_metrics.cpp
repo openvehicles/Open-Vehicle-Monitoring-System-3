@@ -2831,7 +2831,6 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         }
       break;
     case dbm:
-      break;
       if (to == sq) return int((value <= -51) ? ((value + 113)/2) : 0);
       break;
     case sq:
