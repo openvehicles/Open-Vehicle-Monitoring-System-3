@@ -304,8 +304,8 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
 
 float OvmsVehicleMgEv::calculateSoc(uint16_t value)
 {
-    float lowerlimit = MyConfig.GetParamValueInt("xmg","bms.dod.lower");
-    float upperlimit = MyConfig.GetParamValueInt("xmg","bms.dod.upper");
+    float lowerlimit = m_dod_lower->AsFloat();
+    float upperlimit = m_dod_upper->AsFloat();
     ESP_LOGD(TAG, "BMS Limits: Lower = %f Upper = %f",lowerlimit,upperlimit);
     // Calculate SOC from upper and lower limits
     return (value - lowerlimit) * 100.0f / (upperlimit - lowerlimit);
