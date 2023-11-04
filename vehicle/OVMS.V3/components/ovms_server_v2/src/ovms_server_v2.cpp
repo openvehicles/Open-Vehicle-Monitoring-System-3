@@ -712,7 +712,24 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         }
       break;
     case 49: // Send raw AT command
-      *buffer << "MP-0 c" << command << ",2";
+      if (!sep)
+        *buffer << "MP-0 c" << command << ",1,No command";
+      else
+        {
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+        std::string cellcmd = "cellular cmd ";
+        cellcmd += ++sep;
+        std::string cellres = BufferedShell::ExecuteCommand(cellcmd, true);
+        if (cellres.empty())
+          *buffer << "MP-0 c" << command << ",1,Timeout/no response";
+        else if (cellres.find("ERROR") != std::string::npos)
+          *buffer << "MP-0 c" << command << ",1," << cellres;
+        else
+          *buffer << "MP-0 c" << command << ",0," << cellres;
+#else // #ifdef CONFIG_OVMS_COMP_CELLULAR
+        *buffer << "MP-0 c" << command << ",1,No modem";
+#endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
+        }
       break;
     default:
       *buffer << "MP-0 c" << command << ",2";
