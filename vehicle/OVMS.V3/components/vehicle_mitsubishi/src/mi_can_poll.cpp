@@ -165,11 +165,11 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
           BmsRestartCellTemperatures();
           for (int i = 0; i < 33; i++) {
             BmsSetCellTemperature(i, (RXB_BYTE(i) - 50.0));
-            ESP_LOGV(TAGPOLL, " %i cell temp: %0f",i, RXB_BYTE(i) - 50.0f);
+            //ESP_LOGV(TAGPOLL, " %i cell temp: %0f",i, RXB_BYTE(i) - 50.0f);
           }
           for (int i = 36; i < 69; i++) {
             BmsSetCellTemperature(33+i-36, (RXB_BYTE(i) - 50.0));
-            ESP_LOGV(TAGPOLL, " %i cell temp: %0f",33+i-36, RXB_BYTE(i) - 50.0f);
+            //ESP_LOGV(TAGPOLL, " %i cell temp: %0f",33+i-36, RXB_BYTE(i) - 50.0f);
           }
         }
         break;
@@ -189,7 +189,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
         {
           StandardMetrics.ms_v_env_cabintemp->SetValue((RXB_BYTE(2) * 0.25) - 16.0);
           StandardMetrics.ms_v_env_temp->SetValue((RXB_BYTE(4) * 0.3) - 29.0);
-          ESP_LOGI(TAGPOLL, "IntTempSen: %0f, AmbTempContr: %0f, AmbTempCan: %0f, AirTempSen: %0f, WaterTemp_HVAC: %0f", (RXB_BYTE(2) * 0.25) - 16.0, (RXB_BYTE(3) * 0.5) - 40.0, (RXB_BYTE(4) * 0.3) - 29.0, (RXB_BYTE(5) * 0.25) - 16.0,(RXB_BYTE(6) * 0.6) - 40.0);
+          //ESP_LOGV(TAGPOLL, "IntTempSen: %0f, AmbTempContr: %0f, AmbTempCan: %0f, AirTempSen: %0f, WaterTemp_HVAC: %0f", (RXB_BYTE(2) * 0.25) - 16.0, (RXB_BYTE(3) * 0.5) - 40.0, (RXB_BYTE(4) * 0.3) - 29.0, (RXB_BYTE(5) * 0.25) - 16.0,(RXB_BYTE(6) * 0.6) - 40.0);
         }
 
         break;

@@ -80,6 +80,9 @@
 ;       - Add Voltage/temp reading to newer cars that not broadcast it
 ;     1.0.20
 ;       - Add environment temperature, and modify poll timers
+;       - 12V current fix
+;     1.0.21
+;       - fix efficiency calculation
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -116,7 +119,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "1.0.20"
+#define VERSION "1.0.21"
 
 static const char *TAG = "v-mitsubishi";
 
@@ -875,14 +878,19 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       }
 
       //Charge efficiency calculation AC/DC
-      if ((v_c_power_dc->AsInt() <= 0) || (StdMetrics.ms_v_charge_power->AsInt() <= 0))
+      /*if ((v_c_power_dc->AsInt() <= 0) || (StdMetrics.ms_v_charge_power->AsInt() <= 0))
       {
         StdMetrics.ms_v_charge_efficiency->SetValue(0,Percentage);
       }
       else
       {
         StdMetrics.ms_v_charge_efficiency->SetValue((v_c_power_dc->AsFloat() / StdMetrics.ms_v_charge_power->AsFloat()) * 100, Percentage);
+      }*/
+      if(ms_v_charge_ac_kwh->AsInt() > 0)
+      {
+        StdMetrics.ms_v_charge_efficiency->SetValue((ms_v_charge_dc_kwh->AsFloat() / ms_v_charge_ac_kwh->AsFloat()) * 100,Percentage);
       }
+      
   } //Car in P "if" close
 
   // Update trip data
