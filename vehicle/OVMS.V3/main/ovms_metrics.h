@@ -109,6 +109,10 @@ typedef enum : uint8_t
   dbm           = 80,   // Signal Quality (in dBm)
   sq            = 81,   // Signal Quality (in SQ units)
 
+  DateUnix      = 85,
+  DateUTC       = 86,
+  DateLocal     = 87,
+
   Percentage    = 90,
   Permille      = 91,
 
@@ -137,8 +141,8 @@ typedef enum : uint8_t
 } metric_defined_t;
 
 // Mask for folding "Short groups" to their equivalent "Long Group"
-const uint8_t GrpFoldMask = 0x0f;
-const uint8_t GrpUnfold = 0x10;
+const uint8_t GrpFoldMask = 0x1f;
+const uint8_t GrpUnfold = 0x20;
 typedef enum : uint8_t
   {
   GrpNone = 0,
@@ -157,6 +161,7 @@ typedef enum : uint8_t
   GrpDirection = 13,
   GrpRatio = 14,
   GrpCharge = 15,
+  GrpDate = 16,
   // These are where a dimension group is split and allows
   // easily folding the 'short distances' back onto their equivalents.
   GrpDistanceShort = GrpDistance + GrpUnfold,

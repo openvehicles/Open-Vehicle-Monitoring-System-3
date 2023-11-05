@@ -45,6 +45,8 @@ static const char *TAG = "metrics";
 #include "rom/rtc.h"
 #include "string.h"
 #include <iomanip>
+#include <locale>
+#include <time.h>
 
 using namespace std;
 
@@ -163,9 +165,9 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP,// 82
   UNIT_GAP,// 83
   UNIT_GAP,// 84
-  UNIT_GAP,// 85
-  UNIT_GAP,// 86
-  UNIT_GAP,// 87
+  {"unixepoch","epoch",    Native,     Native,      GrpDate}, // 85
+  {"utcdate",  "",         Native,     Native,      GrpDate}, // 86
+  {"localdate","",         Native,     Native,      GrpDate}, // 87
   UNIT_GAP,// 88
   UNIT_GAP,// 89
   {"percent",  "%",        Native,     Native,      GrpRatio}, // 90
@@ -219,12 +221,28 @@ static const OvmsUnitGroupInfo group_info[int(MetricGroupLast)+1] =
   { "direction",   NULL                      }, // 13
   { "ratio",       "Ratio"                   }, // 14
   { "charge",      "Charge"                  }, // 15
-  // Short dimensions from here:
   GROUP_GAP, // 16
   GROUP_GAP, // 17
-  { "distanceshort","Height"                 }, // 2+16=18
+  GROUP_GAP, // 18
+  GROUP_GAP, // 19
+  GROUP_GAP, // 20
+  GROUP_GAP, // 21
+  GROUP_GAP, // 22
+  GROUP_GAP, // 23
+  GROUP_GAP, // 24
+  GROUP_GAP, // 25
+  GROUP_GAP, // 26
+  GROUP_GAP, // 27
+  GROUP_GAP, // 28
+  GROUP_GAP, // 29
+  GROUP_GAP, // 30
+  GROUP_GAP, // 31
+  GROUP_GAP, // 32
+  GROUP_GAP, // 33
+  // Short dimensions from here:
+  { "distanceshort","Height"                 }, // 2+32=34
   GROUP_GAP,
-  { "accelshort",   "Acceleration (short)"   }, // 4+16=20
+  { "accelshort",   "Acceleration (short)"   }, // 4+32=36
 };
 
 static inline int mi_to_km(int mi)
@@ -310,7 +328,7 @@ bool OvmsMetricGroupConfigList(metric_group_list_t& groups)
   {
   bool found = false;
   groups.reserve(12);
-  for (uint8_t idx = 0; idx <= GrpFoldMask; ++idx)
+  for (uint8_t idx = 0; idx < GrpUnfold; ++idx)
     {
     if (group_info[idx].Label != NULL)
       {
@@ -1719,6 +1737,22 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
           << std::setw(2) << seconds;
         }
         break;
+      case DateUTC:
+        {
+        time_t tvalue = value;
+        std::tm ourtime;
+        gmtime_r(&tvalue, &ourtime);
+        os << std::put_time(&ourtime, "%F %T UTC");
+        }
+        break;
+      case DateLocal:
+        {
+        time_t tvalue = value;
+        std::tm ourtime;
+        localtime_r(&tvalue, &ourtime);
+        os << std::put_time(&ourtime, "%F %T %Z");
+        }
+        break;
       default:
         os << value;
         break;
@@ -1743,6 +1777,16 @@ std::string OvmsMetricInt::AsJSON(const char* defvalue, metric_unit_t units, int
       case TimeUTC:
       case TimeLocal:
         return OvmsMetric::AsJSON(defvalue, units, precision);
+      case DateLocal:
+      case DateUTC:
+        {
+        time_t tvalue = m_value;
+        std::tm ourtime;
+        gmtime_r(&tvalue, &ourtime);
+        std::ostringstream os;
+        os << '"' << std::put_time(&ourtime, "%FT%T.000Z") << '"';
+        return os.str();
+        }
       default: return AsString(defvalue, units, precision);
       }
     }
@@ -1796,6 +1840,41 @@ bool OvmsMetricInt::SetValue(int value, metric_unit_t units)
     }
   }
 
+// credit for timegm to Sergey-D on StackOverflow
+//
+// Algorithm: http://howardhinnant.github.io/date_algorithms.html
+int days_from_epoch(int y, int m, int d)
+  {
+  y -= m <= 2;
+  int era = y / 400;
+  int yoe = y - era * 400;                                   // [0, 399]
+  int doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;  // [0, 365]
+  int doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;           // [0, 146096]
+  return era * 146097 + doe - 719468;
+  }
+
+// Provide the non-standard 'timegm' function which is the
+// effective reverse of gmtime_r()
+static time_t internal_timegm(struct tm const* t)
+  {
+  int year = t->tm_year + 1900;
+  int month = t->tm_mon;          // 0-11
+  if (month > 11)
+    {
+    year += month / 12;
+    month %= 12;
+    }
+  else if (month < 0)
+    {
+    int years_diff = (11 - month) / 12;
+    year -= years_diff;
+    month += 12 * years_diff;
+    }
+  int days_since_epoch = days_from_epoch(year, month + 1, t->tm_mday);
+
+  return 60 * (60 * (24L * days_since_epoch + t->tm_hour) + t->tm_min) + t->tm_sec;
+  }
+
 bool OvmsMetricInt::SetValue(std::string value, metric_unit_t units)
   {
   CheckTargetUnit(GetUnits(), units, false);
@@ -1820,6 +1899,28 @@ bool OvmsMetricInt::SetValue(std::string value, metric_unit_t units)
           nvalue = time_unit_join(hours, minutes, seconds);
           break;
         default: return false;
+        }
+      break;
+      }
+    case DateUTC:
+    case DateLocal:
+      {
+      if (!value.empty() && value.find_first_not_of("0123456789") == std::string::npos)
+        {
+        // digits only... treat it as a time_t integer.
+        nvalue = atoi(value.c_str());
+        }
+      else
+        {
+        std::tm ourtime;
+        istringstream istr(value);
+        istr >> std::get_time(&ourtime,"%Y-%m-%dT%H:%M:%S");
+        if (istr.fail())
+          return false;
+        if (units==DateUTC)
+          nvalue = internal_timegm(&ourtime);
+        else
+          nvalue = mktime(&ourtime);
         }
       break;
       }
