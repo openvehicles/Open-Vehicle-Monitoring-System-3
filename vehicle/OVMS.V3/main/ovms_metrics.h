@@ -270,7 +270,7 @@ class OvmsMetricBool : public OvmsMetric
   {
   public:
     OvmsMetricBool(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false);
-    virtual ~OvmsMetricBool();
+    ~OvmsMetricBool() override;
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
@@ -298,7 +298,7 @@ class OvmsMetricInt : public OvmsMetric
   {
   public:
     OvmsMetricInt(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false);
-    virtual ~OvmsMetricInt();
+    ~OvmsMetricInt() override;
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
@@ -326,7 +326,7 @@ class OvmsMetricFloat : public OvmsMetric
   {
   public:
     OvmsMetricFloat(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false);
-    virtual ~OvmsMetricFloat();
+    ~OvmsMetricFloat() override;
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
@@ -354,7 +354,7 @@ class OvmsMetricString : public OvmsMetric
   {
   public:
     OvmsMetricString(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false);
-    virtual ~OvmsMetricString();
+    ~OvmsMetricString() override;
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
@@ -364,7 +364,7 @@ class OvmsMetricString : public OvmsMetric
     bool SetValue(std::string value, metric_unit_t units = Other) override;
     void operator=(std::string value) override { SetValue(value); }
     void Clear() override;
-    virtual bool IsString() { return true; };
+    bool IsString() override { return true; };
 
   protected:
     OvmsMutex m_mutex;
@@ -384,7 +384,7 @@ class OvmsMetricBitset : public OvmsMetric
       : OvmsMetric(name, autostale, units, false)
       {
       }
-    virtual ~OvmsMetricBitset()
+    ~OvmsMetricBitset() override
       {
       }
 
@@ -499,7 +499,7 @@ class OvmsMetricSet : public OvmsMetric
       : OvmsMetric(name, autostale, units, false)
       {
       }
-    virtual ~OvmsMetricSet()
+    ~OvmsMetricSet() override
       {
       }
 
@@ -651,7 +651,7 @@ class OvmsMetricVector : public OvmsMetric
         ESP_LOGI(TAG, "persist %s = %s", m_name, AsUnitString().c_str());
         }
       }
-    virtual ~OvmsMetricVector()
+    ~OvmsMetricVector() override
       {
       }
 
@@ -833,7 +833,7 @@ class OvmsMetricVector : public OvmsMetric
       }
 #endif
 
-    virtual bool SetValue(std::string value, metric_unit_t units = Other)
+    bool SetValue(std::string value, metric_unit_t units = Other) override
       {
       std::vector<ElemType, Allocator> n_value;
       std::istringstream vs(value);
