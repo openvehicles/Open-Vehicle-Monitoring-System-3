@@ -1021,7 +1021,7 @@ class MetricCallbackEntry
   {
   public:
     MetricCallbackEntry(std::string caller, MetricCallback callback);
-    virtual ~MetricCallbackEntry();
+    ~MetricCallbackEntry();
 
   public:
     std::string m_caller;
@@ -1061,7 +1061,7 @@ class OvmsMetrics
   {
   public:
     OvmsMetrics();
-    virtual ~OvmsMetrics();
+    ~OvmsMetrics();
 
   public:
     void RegisterMetric(OvmsMetric* metric);
