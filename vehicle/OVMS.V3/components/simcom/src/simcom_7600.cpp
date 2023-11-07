@@ -153,11 +153,12 @@ void simcom7600::PowerOff()
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   }
 
-void simcom7600::PowerCycle()
+void simcom7600::PowerOn()
   {
-  unsigned int psd = 500;     // min 100ms  typical 500ms
-  ESP_LOGI(TAG, "Power Cycle (SIM7600) %dms, wait 10s for uart",psd);
+  unsigned int psd = 500;    // min 100ms  typical 500ms
+  ESP_LOGI(TAG, "Power On (SIM7600) %dms",psd);
 
+  modemdriver::PowerSleep(false);
   uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
   uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
 #ifdef CONFIG_OVMS_COMP_MAX7317
@@ -166,6 +167,14 @@ void simcom7600::PowerCycle()
   vTaskDelay(psd / portTICK_PERIOD_MS);
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+  }
+
+void simcom7600::PowerCycle()
+  {
+  ESP_LOGI(TAG, "Power Cycle (SIM7600)");
+  PowerOff();
+  vTaskDelay(15000 / portTICK_PERIOD_MS); // wait 15s for uart shutdown
+  PowerOn();
   }
 
 bool simcom7600::State1Leave(modem::modem_state1_t oldstate)
@@ -186,12 +195,28 @@ bool simcom7600::State1Enter(modem::modem_state1_t newstate)
     m_modem->m_state1_timeout_goto = modem::CheckPowerOff;
     return true;
     }
+  if (newstate == modem::PoweringOn)
+    {
+    m_modem->ClearNetMetrics();
+    MyEvents.SignalEvent("system.modem.poweringon", NULL);
+    PowerOn();
+    m_modem->m_state1_timeout_ticks = 30;
+    m_modem->m_state1_timeout_goto = modem::PowerOffOn;
+    return true;
+    }
   if (newstate == modem::PoweredOn)
     {
     m_modem->ClearNetMetrics();
     MyEvents.SignalEvent("system.modem.poweredon", NULL);
-    m_modem->m_state1_timeout_ticks = 40;
+    m_modem->m_state1_timeout_ticks = 60;
     m_modem->m_state1_timeout_goto = modem::PoweringOn;
+    return true;
+    }
+  if (newstate == modem::NetStart)
+    {
+    MyEvents.SignalEvent("system.modem.netstart", NULL);
+    m_modem->m_state1_timeout_ticks = 60;
+    m_modem->m_state1_timeout_goto = modem::PowerOffOn;
     return true;
     }
   return modemdriver::State1Enter(newstate);
@@ -239,11 +264,13 @@ modem::modem_state1_t simcom7600::State1Ticker1(modem::modem_state1_t curstate)
     }
   
   if (curstate == modem::PoweringOn)
-      {
-      // min 11s    typical 12s 
-      // for uart to start
-      if (m_modem->m_state1_ticker > 10) m_modem->tx("AT\r\n");
-      }
+    {
+    // min 11s    typical 12s 
+    // for uart to start
+    // in addition to power off time
+    if (m_modem->m_state1_ticker > 10) m_modem->tx("AT\r\n");
+    return modem::None;
+    }
 
   return modemdriver::State1Ticker1(curstate);
   }
