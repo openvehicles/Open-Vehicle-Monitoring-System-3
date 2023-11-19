@@ -207,10 +207,10 @@ bool simcom7600::State1Enter(modem::modem_state1_t newstate)
   if (newstate == modem::PoweredOn)
     {
     ++m_powercyclefactor;
-    m_powercyclefactor = m_powercyclefactor % 3;
+    m_powercyclefactor = m_powercyclefactor % 2;
     m_modem->ClearNetMetrics();
     MyEvents.SignalEvent("system.modem.poweredon", NULL);
-    m_modem->m_state1_timeout_ticks = 60;
+    m_modem->m_state1_timeout_ticks = 30;
     if (m_powercyclefactor == 0) 
       { m_modem->m_state1_timeout_goto = modem::PowerOffOn; }
     else
