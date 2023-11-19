@@ -219,6 +219,7 @@ bool simcom7600::State1Enter(modem::modem_state1_t newstate)
     }
   if (newstate == modem::NetStart)
     {
+    m_powercyclefactor = 0; // assume successful start so reset counter
     MyEvents.SignalEvent("system.modem.netstart", NULL);
     m_modem->m_state1_timeout_ticks = 60;
     m_modem->m_state1_timeout_goto = modem::PowerOffOn;
