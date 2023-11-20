@@ -54,14 +54,28 @@
 #include "vweup_utils.h"
 
 #define DEFAULT_MODEL_YEAR 2020
+#define CC_TEMP_MIN 15
+#define CC_TEMP_MAX 30
+#define CLIMIT_MAX 16
 
 using namespace std;
+
+// VW e-Up specific MSG protocol commands:
+#define CMD_SetChargeAlerts         204 // (suffsoc, current limit, charge mode)
 
 typedef enum {
   ENABLE_CLIMATE_CONTROL,
   DISABLE_CLIMATE_CONTROL,
   AUTO_DISABLE_CLIMATE_CONTROL
 } RemoteCommand;
+
+// Profile0 communication state (charge & AC control)
+#define PROFILE0_IDLE 0
+#define PROFILE0_REQUEST 1
+#define PROFILE0_READ 2
+#define PROFILE0_WRITE 3
+#define PROFILE0_WRITEREAD 4
+#define PROFILE0_SWITCH 5
 
 // Value update & conversion debug logging:
 #define VALUE_LOG(...)    ESP_LOGV(__VA_ARGS__)
@@ -119,6 +133,8 @@ public:
   void MetricModified(OvmsMetric* metric);
   bool SetFeature(int key, const char *value);
   const std::string GetFeature(int key);
+  vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args); 
+  vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
 
 protected:
   void Ticker1(uint32_t ticker);
@@ -132,6 +148,7 @@ public:
   vehicle_command_t CommandUnlock(const char *pin);
   vehicle_command_t CommandStartCharge();
   vehicle_command_t CommandStopCharge();
+  vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
   vehicle_command_t CommandActivateValet(const char *pin);
   vehicle_command_t CommandDeactivateValet(const char *pin);
   vehicle_command_t CommandWakeup();
@@ -264,6 +281,18 @@ public:
   void CCOff();
   static void ccCountdown(TimerHandle_t timer);
   static void sendOcuHeartbeat(TimerHandle_t timer);
+  void CCTempSet(uint16_t temperature);
+  static void Profile0_Retry_Timer(TimerHandle_t timer);
+  void Profile0_Retry_CallBack();
+  //bool StartCharget26();
+  //bool StopCmharget26();
+  bool StartStopChargeT26(bool start);
+  void SetChargeCurrent(uint16_t limit);
+  void RequestProfile0();
+  void ReadProfile0(uint8_t *data);
+  void WriteProfile0();
+  void ActivateProfile0();
+  int profile0_state;
 
 private:
   void SendCommand(RemoteCommand);
@@ -296,10 +325,27 @@ public:
   int fas_counter_off;
   bool dev_mode;
 
+  bool profile0_recv;
+  uint8_t profile0_cntr[3];
+  int profile0_idx;
+  int profile0_chan;
+  int profile0_mode;
+  int profile0_charge_current;
+  int profile0_cc_temp;
+  static const int profile0_len = 48;
+  uint8_t profile0[profile0_len];
+  int vweup_charge_current;
+  int profile0_delay;
+  int profile0_retries;
+  int profile0_key;
+  int profile0_val;
+  bool profile0_activate;
+
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
   TimerHandle_t m_sendOcuHeartbeat;
   TimerHandle_t m_ccCountdown;
+  TimerHandle_t profile0_timer;
 
 
   // --------------------------------------------------------------------------
