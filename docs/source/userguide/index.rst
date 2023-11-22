@@ -23,6 +23,7 @@ User Guide
    notifications
    time
    ssltls
+   commands
    scripting
    factory
    ecu

@@ -1689,6 +1689,16 @@ void cellular_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   {
   std::string msg;
 
+  PowerMode pm = MyModem ? MyModem->GetPowerMode() : Off;
+  if (pm != On && pm != Devel)
+    {
+    if (verbosity >= COMMAND_RESULT_MINIMAL)
+      {
+      writer->puts("ERROR: MODEM not powered on!");
+      }
+    return;
+    }
+
   MyModem->m_cmd_output.clear();
   MyModem->m_cmd_running = true;
 

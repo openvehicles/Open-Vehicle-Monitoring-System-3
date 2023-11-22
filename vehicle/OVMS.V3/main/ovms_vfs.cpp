@@ -104,7 +104,8 @@ class Direntry {
           format_file_size(bufsize, sizeof(bufsize), size);
         }
       }
-      strftime(mod, sizeof(mod), "%d-%b-%Y %H:%M", localtime(&mtime));
+      struct tm timeinfo;
+      strftime(mod, sizeof(mod), "%d-%b-%Y %H:%M", localtime_r(&mtime, &timeinfo));
 
       const char *slash = is_dir ? "/" : "";
 

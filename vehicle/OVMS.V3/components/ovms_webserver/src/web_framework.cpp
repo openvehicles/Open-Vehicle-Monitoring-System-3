@@ -837,9 +837,10 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
 
   char etag[50], current_time[50], last_modified[50];
   time_t t = (time_t) mg_time();
+  struct tm timeinfo;
   snprintf(etag, sizeof(etag), "\"%lx.%" INT64_FMT "\"", (unsigned long) mtime, (int64_t) size);
-  strftime(current_time, sizeof(current_time), "%a, %d %b %Y %H:%M:%S GMT", gmtime(&t));
-  strftime(last_modified, sizeof(last_modified), "%a, %d %b %Y %H:%M:%S GMT", gmtime(&mtime));
+  strftime(current_time, sizeof(current_time), "%a, %d %b %Y %H:%M:%S GMT", gmtime_r(&t, &timeinfo));
+  strftime(last_modified, sizeof(last_modified), "%a, %d %b %Y %H:%M:%S GMT", gmtime_r(&mtime, &timeinfo));
 
   mg_send_response_line(c.nc, 200, NULL);
   mg_printf(c.nc,

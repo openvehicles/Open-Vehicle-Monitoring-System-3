@@ -44,6 +44,9 @@ static const char *TAG = "metrics";
 #include "ovms_config.h"
 #include "rom/rtc.h"
 #include "string.h"
+#include <iomanip>
+#include <locale>
+#include <time.h>
 
 using namespace std;
 
@@ -129,7 +132,7 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   {"seconds",  "Sec",      Native,     Native,      GrpTime}, // 50
   {"minutes",  "Min",      Native,     Native,      GrpTime}, // 51
   {"hours",    "Hour",     Native,     Native,      GrpTime}, // 52
-  {"utc",      "UTC",      Native,     Native,      GrpTime}, // 53
+  {"utctime",  "UTC",      Native,     Native,      GrpTime}, // 53
   {"localtz",  "local",    Native,     Native,      GrpTime}, // 54,
   UNIT_GAP,// 55
   UNIT_GAP,// 56
@@ -162,9 +165,9 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP,// 82
   UNIT_GAP,// 83
   UNIT_GAP,// 84
-  UNIT_GAP,// 85
-  UNIT_GAP,// 86
-  UNIT_GAP,// 87
+  {"unixepoch","epoch",    Native,     Native,      GrpDate}, // 85
+  {"utcdate",  "",         Native,     Native,      GrpDate}, // 86
+  {"localdate","",         Native,     Native,      GrpDate}, // 87
   UNIT_GAP,// 88
   UNIT_GAP,// 89
   {"percent",  "%",        Native,     Native,      GrpRatio}, // 90
@@ -218,12 +221,28 @@ static const OvmsUnitGroupInfo group_info[int(MetricGroupLast)+1] =
   { "direction",   NULL                      }, // 13
   { "ratio",       "Ratio"                   }, // 14
   { "charge",      "Charge"                  }, // 15
-  // Short dimensions from here:
   GROUP_GAP, // 16
   GROUP_GAP, // 17
-  { "distanceshort","Height"                 }, // 2+16=18
+  GROUP_GAP, // 18
+  GROUP_GAP, // 19
+  GROUP_GAP, // 20
+  GROUP_GAP, // 21
+  GROUP_GAP, // 22
+  GROUP_GAP, // 23
+  GROUP_GAP, // 24
+  GROUP_GAP, // 25
+  GROUP_GAP, // 26
+  GROUP_GAP, // 27
+  GROUP_GAP, // 28
+  GROUP_GAP, // 29
+  GROUP_GAP, // 30
+  GROUP_GAP, // 31
+  GROUP_GAP, // 32
+  GROUP_GAP, // 33
+  // Short dimensions from here:
+  { "distanceshort","Height"                 }, // 2+32=34
   GROUP_GAP,
-  { "accelshort",   "Acceleration (short)"   }, // 4+16=20
+  { "accelshort",   "Acceleration (short)"   }, // 4+32=36
 };
 
 static inline int mi_to_km(int mi)
@@ -266,6 +285,19 @@ T pkm_to_pmi(T pkm)
   return mi_to_km(pkm);
   }
 
+void time_unit_split(int value, int &hour, int &mins, int &secs)
+  {
+  secs = value % 60;
+  value /= 60;
+  mins = value % 60;
+  value /= 60;
+  hour = value;
+  }
+int time_unit_join(int hh, int mm, int ss)
+  {
+  return (hh*3600) + (mm * 60) + ss;
+  }
+
 /*
  * Returns the group of the metric.
  * simplify - Means those separated for (eventual) user config
@@ -296,7 +328,7 @@ bool OvmsMetricGroupConfigList(metric_group_list_t& groups)
   {
   bool found = false;
   groups.reserve(12);
-  for (uint8_t idx = 0; idx <= GrpFoldMask; ++idx)
+  for (uint8_t idx = 0; idx < GrpUnfold; ++idx)
     {
     if (group_info[idx].Label != NULL)
       {
@@ -1685,22 +1717,47 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
   {
   if (IsDefined())
     {
-    char buffer[33];
     int value = m_value;
-    if ((units != Native)&&(units != m_units))
+    CheckTargetUnit(GetUnits(), units, false);
+    if (units == Native)
+      units = m_units;
+    else if (units != m_units)
       value = UnitConvert(m_units,units,m_value);
-    if (units == TimeUTC || units == TimeLocal)
+    std::stringstream os;
+    switch (units)
       {
-      int seconds = value % 60;
-      value /= 60;
-      int minutes = value % 60;
-      value /= 60;
-      int hours = value;
-      snprintf(buffer, sizeof(buffer), "%02u:%02u:%02u", hours, minutes, seconds);
+      case TimeUTC:
+      case TimeLocal:
+        {
+        int hours, minutes, seconds;
+        time_unit_split(value, hours, minutes, seconds);
+        os << std::setfill('0')
+          << std::setw(2) << hours << ':'
+          << std::setw(2) << minutes << ':'
+          << std::setw(2) << seconds;
+        }
+        break;
+      case DateUTC:
+        {
+        time_t tvalue = value;
+        std::tm ourtime;
+        gmtime_r(&tvalue, &ourtime);
+        os << std::put_time(&ourtime, "%F %T UTC");
+        }
+        break;
+      case DateLocal:
+        {
+        time_t tvalue = value;
+        std::tm ourtime;
+        localtime_r(&tvalue, &ourtime);
+        os << std::put_time(&ourtime, "%F %T %Z");
+        }
+        break;
+      default:
+        os << value;
+        break;
       }
-    else
-      itoa (value,buffer,10);
-    return buffer;
+    return os.str();
     }
   else
     {
@@ -1711,7 +1768,28 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
 std::string OvmsMetricInt::AsJSON(const char* defvalue, metric_unit_t units, int precision)
   {
   if (IsDefined())
-    return AsString(defvalue, units, precision);
+    {
+    CheckTargetUnit(GetUnits(), units, false);
+    if (units == Native)
+      units = GetUnits();
+    switch (units)
+      {
+      case TimeUTC:
+      case TimeLocal:
+        return OvmsMetric::AsJSON(defvalue, units, precision);
+      case DateLocal:
+      case DateUTC:
+        {
+        time_t tvalue = m_value;
+        std::tm ourtime;
+        gmtime_r(&tvalue, &ourtime);
+        std::ostringstream os;
+        os << '"' << std::put_time(&ourtime, "%FT%T.000Z") << '"';
+        return os.str();
+        }
+      default: return AsString(defvalue, units, precision);
+      }
+    }
   else
     return std::string((defvalue && *defvalue) ? defvalue : "0");
   }
@@ -1762,9 +1840,94 @@ bool OvmsMetricInt::SetValue(int value, metric_unit_t units)
     }
   }
 
+// credit for timegm to Sergey-D on StackOverflow
+//
+// Algorithm: http://howardhinnant.github.io/date_algorithms.html
+int days_from_epoch(int y, int m, int d)
+  {
+  y -= m <= 2;
+  int era = y / 400;
+  int yoe = y - era * 400;                                   // [0, 399]
+  int doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;  // [0, 365]
+  int doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;           // [0, 146096]
+  return era * 146097 + doe - 719468;
+  }
+
+// Provide the non-standard 'timegm' function which is the
+// effective reverse of gmtime_r()
+static time_t internal_timegm(struct tm const* t)
+  {
+  int year = t->tm_year + 1900;
+  int month = t->tm_mon;          // 0-11
+  if (month > 11)
+    {
+    year += month / 12;
+    month %= 12;
+    }
+  else if (month < 0)
+    {
+    int years_diff = (11 - month) / 12;
+    year -= years_diff;
+    month += 12 * years_diff;
+    }
+  int days_since_epoch = days_from_epoch(year, month + 1, t->tm_mday);
+
+  return 60 * (60 * (24L * days_since_epoch + t->tm_hour) + t->tm_min) + t->tm_sec;
+  }
+
 bool OvmsMetricInt::SetValue(std::string value, metric_unit_t units)
   {
-  int nvalue = atoi(value.c_str());
+  CheckTargetUnit(GetUnits(), units, false);
+  if (units == Native)
+    units = m_units;
+  int nvalue;
+  switch (units)
+    {
+    case TimeUTC:
+    case TimeLocal:
+      {
+      int hours = 0, minutes = 0, seconds = 0;
+      switch (sscanf(value.c_str(), "%d:%d:%d", &hours, &minutes,&seconds))
+        {
+        case 1:
+          nvalue = hours; //number by itself - treat it as number of seconds.
+          break;
+        case 2:
+          nvalue = time_unit_join(hours, minutes, 0);
+          break;
+        case 3:
+          nvalue = time_unit_join(hours, minutes, seconds);
+          break;
+        default: return false;
+        }
+      break;
+      }
+    case DateUTC:
+    case DateLocal:
+      {
+      if (!value.empty() && value.find_first_not_of("0123456789") == std::string::npos)
+        {
+        // digits only... treat it as a time_t integer.
+        nvalue = atoi(value.c_str());
+        }
+      else
+        {
+        std::tm ourtime;
+        istringstream istr(value);
+        istr >> std::get_time(&ourtime,"%Y-%m-%dT%H:%M:%S");
+        if (istr.fail())
+          return false;
+        if (units==DateUTC)
+          nvalue = internal_timegm(&ourtime);
+        else
+          nvalue = mktime(&ourtime);
+        }
+      break;
+      }
+    default:
+      nvalue = atoi(value.c_str());
+      break;
+    }
   return SetValue(nvalue, units);
   }
 
@@ -2363,6 +2526,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MegaJoules:  return (value*3.6);
         default: break;
         }
+      break;
     case WattHours:
       switch (to)
         {
@@ -2370,6 +2534,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MegaJoules:  return (value*9/2500);
         default: break;
         }
+      break;
     case MegaJoules:
       switch (to)
         {
@@ -2377,18 +2542,21 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case WattHours:  return (value * 2500/9);
         default: break;
         }
+      break;
     case AmpHours:
       switch (to)
         {
         case Kilocoulombs:  return (value * 18) / 5; // * 3600 / 1000
         default: break;
         }
+      break;
     case Kilocoulombs:
       switch (to)
         {
         case AmpHours:  return (value * 5) / 18; // * 1000 / 3600
         default: break;
         }
+      break;
     case WattHoursPK:
       switch (to)
         {
@@ -2486,34 +2654,81 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       else if (to == Hours) return value/3600;
       break;
     case Minutes:
-      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*60;
-      else if (to == Hours) return value/60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*60;
+        case Hours:
+          return value/60;
+        default: break;
+        }
       break;
     case Hours:
-      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*3600;
-      else if (to == Minutes) return value*60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*3600;
+        case Minutes:
+          return value*60;
+        default: break;
+        }
       break;
     case TimeUTC:
-      if (to == TimeLocal)
+      switch (to)
         {
-        time_t now;
-        time(&now);
-        now -= now % (24*60*60);        // Back to midnight UTC
-        now += value;                   // The target time today
-        struct tm* tmu = localtime(&now);
-        return (tmu->tm_hour * 60 + tmu->tm_min) * 60 + tmu->tm_sec;
+        case Minutes: return  value/60;
+        case Hours: return value/3600;
+        case TimeLocal:
+          {
+          time_t now;
+          time(&now);
+          now -= now % (24*60*60);        // Back to midnight UTC
+          now += value;                   // The target time today
+          struct tm tmu;
+          localtime_r(&now, &tmu);
+          return time_unit_join(tmu.tm_hour, tmu.tm_min, tmu.tm_sec);
+          }
+        default:
+          break;
         }
-      else if (to == Minutes) return value/60;
-      else if (to == Hours) return value/3600;
       break;
+    case TimeLocal:
+      switch (to)
+        {
+        case Minutes: return  value/60;
+        case Hours: return value/3600;
+        case TimeUTC:
+          {
+          time_t now;
+          time(&now);
+          struct tm tmu;
+          localtime_r(&now, &tmu);
+          int hrs, mins, secs;
+          time_unit_split(value, hrs, mins, secs);
+          tmu.tm_hour = hrs;
+          tmu.tm_min = mins;
+          tmu.tm_sec = secs;
+          now = mktime(&tmu);
+          gmtime_r(&now, &tmu);
+          return time_unit_join(tmu.tm_hour, tmu.tm_min, tmu.tm_sec);
+          }
+        default: break;
+        }
+      break;
+
     case Kph:
       switch (to)
         {
         case Mph: return km_to_mi(value);
-        case MetersPS: return value * 5 / 18; // 1000/3600 
+        case MetersPS: return value * 5 / 18; // 1000/3600
         case FeetPS: return km_to_mi(value* feet_per_mile)/3600;
         default: break;
         }
+      break;
     case Mph:
       switch (to)
         {
@@ -2522,6 +2737,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MetersPS: return mi_to_km(value * 5 ) / 18;
         default: break;
         }
+      break;
     case MetersPS:
       switch (to)
         {
@@ -2530,6 +2746,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case FeetPS: return km_to_mi(value* feet_per_mile) / 1000;
         default: break;
         }
+      break;
     case FeetPS:
       switch (to)
         {
@@ -2538,6 +2755,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MetersPS: return mi_to_km(value * 1000 ) / feet_per_mile;
         default: break;
         }
+      break;
     case dbm:
       if (to == sq) return (value <= -51) ? ((value + 113)/2) : 0;
       break;
@@ -2650,6 +2868,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MegaJoules:  return (value*3.6);
         default: break;
         }
+      break;
     case WattHours:
       switch (to)
         {
@@ -2657,6 +2876,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MegaJoules:  return (value*0.0036);
         default: break;
         }
+      break;
     case MegaJoules:
       switch (to)
         {
@@ -2664,18 +2884,21 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case WattHours:  return (value * 277.7778);
         default: break;
         }
+      break;
     case AmpHours:
       switch (to)
         {
         case Kilocoulombs:  return value * 3.6; // * 3600 / 1000
         default: break;
         }
+      break;
     case Kilocoulombs:
       switch (to)
         {
         case AmpHours:  return value * 0.277778; // * 1000 / 3600
         default: break;
         }
+      break;
     case WattHoursPK:
       switch (to)
         {
@@ -2768,26 +2991,58 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         default: break;
         }
       break;
+    case TimeUTC:
+    case TimeLocal:
+      switch (to)
+        {
+        case Minutes: return  value/60;
+        case Hours: return value/3600;
+        case TimeLocal:
+        case TimeUTC:
+          {
+          int intVal = round(value);
+          return UnitConvert(from, to, intVal);
+          }
+        default: break;
+        }
+        break;
     case Seconds:
       if (to == Minutes) return value/60;
       else if (to == Hours) return value/3600;
       break;
     case Minutes:
-      if (to == Seconds) return value*60;
-      else if (to == Hours) return value/60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*60;
+        case Hours:
+          return value/60;
+        default: break;
+        }
       break;
     case Hours:
-      if (to == Seconds) return value*3600;
-      else if (to == Minutes) return value*60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*3600;
+        case Minutes:
+          return value*60;
+        default: break;
+        }
       break;
     case Kph:
       switch (to)
         {
         case Mph: return km_to_mi(value);
-        case MetersPS: return value * 0.277778; // 1000/3600 
+        case MetersPS: return value * 0.277778; // 1000/3600
         case FeetPS: return km_to_mi(value* feet_per_mile)/3600;
         default: break;
         }
+      break;
     case Mph:
       switch (to)
         {
@@ -2796,6 +3051,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MetersPS: return mi_to_km(value) * 0.277778; // 1000/36000
         default: break;
         }
+      break;
     case MetersPS:
       switch (to)
         {
@@ -2804,6 +3060,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case FeetPS: return km_to_mi(value* feet_per_mile) / 1000;
         default: break;
         }
+      break;
     case FeetPS:
       switch (to)
         {
@@ -2812,6 +3069,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MetersPS: return mi_to_km(value * 1000 ) / feet_per_mile;
         default: break;
         }
+      break;
     case dbm:
       if (to == sq) return int((value <= -51) ? ((value + 113)/2) : 0);
       break;
