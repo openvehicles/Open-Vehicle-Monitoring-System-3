@@ -231,20 +231,20 @@ void OvmsVehicleHyundaiVFL::MetricModified(OvmsMetric* metric)
 /**
  * IncomingPollReply: framework callback: process response
  */
-void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleHyundaiVFL::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   // init / fill rx buffer:
-  if (state.mlframe == 0) {
+  if (job.mlframe == 0) {
     m_rxbuf.clear();
-    m_rxbuf.reserve(length + state.mlremain);
+    m_rxbuf.reserve(length + job.mlremain);
   }
   m_rxbuf.append((char*)data, length);
-  if (state.mlremain)
+  if (job.mlremain)
     return;
 
   // response complete:
-  ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", state.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
-  switch (state.pid)
+  ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+  switch (job.pid)
   {
     case 0x01:
     {
@@ -289,7 +289,7 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, const OvmsPoller::pol
       UpdateTripCounters();
 
       // Read battery module temperatures 1-5 (only when also polling PIDs 02…05):
-      if (m_poll_state != STATE_OFF && m_poll_ticker % 15 == 0)
+      if (m_poll_state != STATE_OFF && job.ticker % 15 == 0)
       {
         BmsRestartCellTemperatures();
         for (int i = 0; i < 5; i++) {
@@ -408,7 +408,7 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, const OvmsPoller::pol
 
     default:
     {
-      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", state.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
     }
   }
 }

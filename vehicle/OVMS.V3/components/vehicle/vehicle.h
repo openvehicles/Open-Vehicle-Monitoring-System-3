@@ -315,14 +315,20 @@ namespace OvmsPoller
 
   typedef struct
     {
-    uint32_t moduleidsent;
-    uint32_t moduleidrec;
-    uint16_t type;
-    uint16_t pid;
-    uint16_t mlframe;
-    uint16_t mloffset;
-    uint16_t mlremain;
-    } poll_state_t;
+    canbus* bus;            ///< Bus to poll on.
+    uint32_t protocol;      ///< ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME / VWTP_20.
+    uint16_t type;          ///< Expected type
+    uint16_t pid;           ///< Expected PID
+    uint32_t moduleid_sent; ///< ModuleID last sent
+    uint32_t moduleid_low;  ///< Expected response moduleid low mark
+    uint32_t moduleid_high; ///< Expected response moduleid high mark
+    uint32_t moduleid_rec;  ///< Actual received moduleid.
+    uint16_t mlframe;       ///< Frame number for multi frame response
+    uint16_t mloffset;      ///< Current Byte offset of multi frame response
+    uint16_t mlremain;      ///< Bytes remaining for multi frame response
+    OvmsPoller::poll_pid_t entry; ///< Currently processed entry of poll list (copy)
+    uint32_t ticker;        ///< Polling tick count
+    } poll_job_t;
   }
 
 class OvmsVehicle : public InternalRamAllocated
@@ -581,25 +587,17 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
-    canbus*           m_poll_bus;             // Bus to poll on
     canbus*           m_poll_bus_default;     // Bus default to poll on
     const OvmsPoller::poll_pid_t* m_poll_plist;           // Head of poll list
     const OvmsPoller::poll_pid_t* m_poll_plcur;           // Poll list loop cursor
-    OvmsPoller::poll_pid_t        m_poll_entry;           // Currently processed entry of poll list (copy)
-    uint32_t          m_poll_ticker;          // Polling ticker
-    uint8_t           m_poll_protocol;        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME / VWTP_20
-    uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
-    uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
-    uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
-    uint16_t          m_poll_type;            // Expected type
-    uint16_t          m_poll_pid;             // Expected PID
+  private:
+    // Poll state for received data.
+    OvmsPoller::poll_job_t m_poll;
+
     const uint8_t*    m_poll_tx_data;         // Payload data for multi frame request
     uint16_t          m_poll_tx_remain;       // Payload bytes remaining for multi frame request
     uint16_t          m_poll_tx_offset;       // Payload offset of multi frame request
     uint16_t          m_poll_tx_frame;        // Frame number for multi frame request
-    uint16_t          m_poll_ml_remain;       // Bytes remaining for multi frame response
-    uint16_t          m_poll_ml_offset;       // Offset of multi frame response
-    uint16_t          m_poll_ml_frame;        // Frame number for multi frame response
     uint8_t           m_poll_wait;            // Wait counter for a reply from a sent poll or bytes remaining.
                                               // Gets set = 2 when a poll is sent OR when bytes are remaining after receiving.
                                               // Gets set = 0 when a poll is received.
@@ -610,9 +608,11 @@ class OvmsVehicle : public InternalRamAllocated
                                               //              Only when the reply doesn't get in until the next ticker occurs
                                               //              PollserSend() decrements to 0 and abandons the outstanding reply (=timeout)
 
-    // Polling
-    virtual void IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry);
-    virtual void IncomingPollError(canbus* bus, const OvmsPoller::poll_state_t& state, uint16_t code, const OvmsPoller::poll_pid_t &pollentry);
+  protected:
+    // Polling Response
+    virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
+    virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
+    virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
 
   private:
     uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
@@ -631,6 +631,10 @@ class OvmsVehicle : public InternalRamAllocated
 
   protected:
     void PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plist);
+    void PollSetPidList( const OvmsPoller::poll_pid_t* plist)
+      {
+      PollSetPidList(m_poll.bus, plist);
+      }
     void PollSetState(uint8_t state);
     void PollSetThrottling(uint8_t sequence_max);
     void PollSetResponseSeparationTime(uint8_t septime);
@@ -660,8 +664,6 @@ class OvmsVehicle : public InternalRamAllocated
 
   private:
     void PollerTxCallback(const CAN_frame_t* frame, bool success);
-  protected:
-    virtual void IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t type, uint16_t pid, bool success);
 
 
   // BMS helpers

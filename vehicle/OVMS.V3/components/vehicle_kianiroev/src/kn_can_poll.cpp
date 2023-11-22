@@ -29,59 +29,59 @@ static const char *TAG = "v-kianiroev";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleKiaNiroEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleKiaNiroEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
-	//ESP_LOGD(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, state.type, state.pid, length, data[0], data[1], data[2], data[3],
+	//ESP_LOGD(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_low, job.type, job.pid, length, data[0], data[1], data[2], data[3],
 	//	data[4], data[5], data[6], data[7]);
-	switch (m_poll_moduleid_low)
+	switch (job.moduleid_low)
 		{
 		// ****** IGMP *****
 		case 0x778:
-			IncomingIGMP(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingIGMP(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		// ****** OBC ******
 		case 0x7ed:
-			IncomingOBC(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingOBC(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		// ****** BCM ******
 		case 0x7a8:
-			IncomingBCM(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingBCM(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 	  // ****** AirCon ******
 	  case 0x7bb:
-			IncomingAirCon(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingAirCon(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 	  // ****** ABS ESP ******
 	  case 0x7d9:
-			IncomingAbsEsp(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingAbsEsp(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		// ******* VMCU ******
 		case 0x7ea:
-			IncomingVMCU(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingVMCU(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		// ******* MCU ******
 		case 0x7eb:
-			IncomingMCU(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingMCU(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		// ***** BMC ****
 		case 0x7ec:
-			IncomingBMC(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingBMC(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		// ***** CM ****
 		case 0x7ce:
-			IncomingCM(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingCM(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		default:
-			ESP_LOGD(TAG, "Unknown module: %03" PRIx32, m_poll_moduleid_low);
+			ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_low);
 			break;
 	  }
   }

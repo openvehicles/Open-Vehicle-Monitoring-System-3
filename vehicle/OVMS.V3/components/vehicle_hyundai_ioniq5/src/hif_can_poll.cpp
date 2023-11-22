@@ -32,15 +32,15 @@
 /**
  * Incoming poll reply messages
  */
-void OvmsHyundaiIoniqEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingPollReply");
   /*
-  ESP_LOGV(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
+  ESP_LOGV(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
      data[4], data[5], data[6], data[7]);
   */
   bool process_all = false;
-  switch (m_poll_moduleid_low) {
+  switch (job.moduleid_low) {
     // ****** IGMP *****
     case 0x778:
       process_all = true;
@@ -81,7 +81,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_s
       break;
 
     default:
-      ESP_LOGD(TAG, "Unknown module: %03" PRIx32, m_poll_moduleid_low);
+      ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_low);
       XDISARM;
       return;
   }
@@ -93,33 +93,33 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_s
     // Assemble first and following frames to get complete reply
 
     // init rx buffer on first (it tells us whole length)
-    if (state.mlframe == 0) {
-      obd_module = state.moduleidrec;
-      obd_rxtype = state.type;
-      obd_rxpid = state.pid;
+    if (job.mlframe == 0) {
+      obd_module = job.moduleid_rec;
+      obd_rxtype = job.type;
+      obd_rxpid = job.pid;
       obd_frame = 0;
       rxbuf.clear();
       ESP_LOGV(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Buffer: %d - Start",
-        m_poll_moduleid_low, state.type, state.pid, length + state.mlremain);
-      rxbuf.reserve(length + state.mlremain);
+        job.moduleid_low, job.type, job.pid, length + job.mlremain);
+      rxbuf.reserve(length + job.mlremain);
     }
     else {
       if (obd_frame == 0xffff) {
         XDISARM;
         return; // Aborted
       }
-      if ((obd_rxtype != state.type) || (obd_rxpid != state.pid) || (obd_module != m_poll_moduleid_low)) {
+      if ((obd_rxtype != job.type) || (obd_rxpid != job.pid) || (obd_module != job.moduleid_low)) {
         ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Dropped Frame",
-          m_poll_moduleid_low, state.type, state.pid);
+          job.moduleid_low, job.type, job.pid);
         XDISARM;
         return;
       }
       ++obd_frame;
-      if (obd_frame != m_poll_ml_frame) {
+      if (obd_frame != job.mlframe) {
         obd_frame = 0xffff;
         rxbuf.clear();
         ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Skipped Frame: %d",
-          m_poll_moduleid_low, state.type, state.pid, obd_frame);
+          job.moduleid_low, job.type, job.pid, obd_frame);
         XDISARM;
         return;
       }
@@ -128,38 +128,38 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_s
     rxbuf.insert(rxbuf.end(), data, data + length);
     /*
     ESP_LOGV(TAG, "IoniqISOTP: IPR %03x TYPE:%x PID: %03x Frame: %d Append: %d Expected: %d - Append",
-      m_poll_moduleid_low, state.type, state.pid, m_poll_ml_frame, length, state.mlremain);
+      job.moduleid_low, job.type, job.pid, m_poll_ml_frame, length, job.mlremain);
     */
-    if (state.mlremain > 0) {
+    if (job.mlremain > 0) {
       // we need more - return for now.
       XDISARM;
       return;
     }
 
     ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Frames: %d Message Size: %d",
-      m_poll_moduleid_low, state.type, state.pid, obd_frame, rxbuf.size());
+      job.moduleid_low, job.type, job.pid, obd_frame, rxbuf.size());
     ESP_BUFFER_LOGD(TAG, rxbuf.data(), rxbuf.size());
-    switch (m_poll_moduleid_low) {
+    switch (job.moduleid_low) {
       case 0x778:
-        IncomingIGMP_Full(bus, state.type, state.pid, rxbuf);
+        IncomingIGMP_Full(job.bus, job.type, job.pid, rxbuf);
         break;
       case 0x7ce:
-        IncomingCM_Full(bus, state.type, state.pid, rxbuf);
+        IncomingCM_Full(job.bus, job.type, job.pid, rxbuf);
         break;
       case 0x7ec:
-        IncomingBMC_Full(bus, state.type, state.pid, rxbuf);
+        IncomingBMC_Full(job.bus, job.type, job.pid, rxbuf);
         break;
       // ****** BCM ******
       case 0x7a8:
-        IncomingBCM_Full(bus, state.type, state.pid, rxbuf);
+        IncomingBCM_Full(job.bus, job.type, job.pid, rxbuf);
         break;
       // ****** ?? Misc inc speed ******
       case 0x7bb:
-        IncomingOther_Full(bus, state.type, state.pid, rxbuf);
+        IncomingOther_Full(job.bus, job.type, job.pid, rxbuf);
         break;
       // ******* VMCU ******
       case 0x7ea:
-        IncomingVMCU_Full(bus, state.type, state.pid, rxbuf);
+        IncomingVMCU_Full(job.bus, job.type, job.pid, rxbuf);
         break;
     }
     obd_frame = 0xffff; // Received all - drop until we have a new frame 0

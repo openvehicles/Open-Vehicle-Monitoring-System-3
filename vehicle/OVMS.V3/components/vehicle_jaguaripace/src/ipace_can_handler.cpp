@@ -157,34 +157,34 @@ bool OvmsVehicleJaguarIpace::SendPollMessage(
     return bus->Write(&sendFrame) != ESP_FAIL;
 }
 
-void OvmsVehicleJaguarIpace::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleJaguarIpace::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
     ESP_LOGD(
         TAG,
         "%03" PRIx32 " TYPE:%" PRIx16 " PID:%02" PRIx16 " Length:%" PRIx8 " Data:%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8,
-        m_poll_moduleid_low,
-        state.type,
-        state.pid,
+        job.moduleid_low,
+        job.type,
+        job.pid,
         length,
         data[0], data[1], data[2], data[3]
     );
 
-    switch (m_poll_moduleid_low)
+    switch (job.moduleid_low)
     {
         case (becmId | rxFlag):
-            IncomingBecmPoll(state.pid, data, length, state.mlremain);
+            IncomingBecmPoll(job.pid, data, length, job.mlremain);
             break;
         case (hvacId | rxFlag):
-            IncomingHvacPoll(state.pid, data, length, state.mlremain);
+            IncomingHvacPoll(job.pid, data, length, job.mlremain);
             break;
         case (bcmId | rxFlag):
-            IncomingBcmPoll(state.pid, data, length, state.mlremain);
+            IncomingBcmPoll(job.pid, data, length, job.mlremain);
             break;
         case (tpmsId | rxFlag):
-            IncomingTpmsPoll(state.pid, data, length, state.mlremain);
+            IncomingTpmsPoll(job.pid, data, length, job.mlremain);
             break;
         case (tcuId | rxFlag):
-            IncomingTcuPoll(state.pid, data, length, state.mlremain);
+            IncomingTcuPoll(job.pid, data, length, job.mlremain);
             break;
     }
 }

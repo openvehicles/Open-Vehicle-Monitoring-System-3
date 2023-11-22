@@ -324,7 +324,7 @@ protected:
   }
   void PollerStateTicker();
 
-  void IncomingPollReply( canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
+  void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 
 protected:
   void UpdateChargePower(float power_kw);

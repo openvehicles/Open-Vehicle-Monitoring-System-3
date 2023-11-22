@@ -400,13 +400,13 @@ void OvmsVehicleThinkCity::Ticker10(uint32_t ticker)
   }
 
 
-void OvmsVehicleThinkCity::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleThinkCity::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
     ESP_LOGI(TAG,"Poll replay arrived");
      
     // TODO: These are temperatures so maybe the uint8_t is not proper temperatures can be negative too
     uint8_t value = *data;
-    switch (state.pid)
+    switch (job.pid)
       {
       case 0x4965:  
         StandardMetrics.ms_v_charge_temp->SetValue((float)((short)value) / 100.0f);

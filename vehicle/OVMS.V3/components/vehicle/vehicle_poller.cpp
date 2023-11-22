@@ -62,31 +62,15 @@ void OvmsVehicle::PollerStateTicker()
  *  This is called by PollerReceive() on each valid response frame for the current request.
  *  Be aware responses may consist of multiple frames, detectable e.g. by mlremain > 0.
  *  A typical pattern is to collect frames in a buffer until mlremain == 0.
- *  
- *  @param bus
- *    CAN bus the current poll is done on
- *  @param moduleidsent
- *    The CAN ID addressed by the current request (txmoduleid)
- *  @param moduleid
- *    The CAN ID received matching the current request (rxmoduleid)
- *  @param type
- *    OBD2 mode / UDS polling type, e.g. VEHICLE_POLL_TYPE_READDTC
- *  @param pid
- *    PID addressed (depending on the request type, may be none / 8 bit / 16 bit)
+ *
+ *  @param job
+ *    Status of the current Poll job
  *  @param data
  *    Payload
- *  @mparam mloffset
- *    Byte position of this frame's payload part in the response, 0 = first frame
  *  @param length
  *    Payload size
- *  @param mlremain
- *    Remaining bytes expected to complete the response after this frame
- *  @param mlframe
- *    Frame number of the response, 0 = first frame / new response
- *  @param pollentry
- *    The currently processed poll entry
  */
-void OvmsVehicle::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicle::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
   }
 
@@ -95,23 +79,13 @@ void OvmsVehicle::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t&
  *  This is called by PollerReceive() on reception of an OBD/UDS Negative Response Code (NRC),
  *  except if the code is requestCorrectlyReceived-ResponsePending (0x78), which is handled
  *  by the poller. See ISO 14229 Annex A.1 for the list of NRC codes.
- *  
- *  @param bus
- *    CAN bus the current poll is done on
- *  @param moduleidsent
- *    The CAN ID addressed by the current request (txmoduleid)
- *  @param moduleid
- *    The CAN ID received (or expected to be received) matching the current request (rxmoduleid)
- *  @param type
- *    OBD2 mode / UDS polling type, e.g. VEHICLE_POLL_TYPE_READDTC
- *  @param pid
- *    PID addressed (depending on the request type, may be none / 8 bit / 16 bit)
+ *
+ *  @param job
+ *    Status of the current Poll job
  *  @param code
  *    NRC detail code
- *  @param pollentry
- *    The currently processed poll entry
  */
-void OvmsVehicle::IncomingPollError(canbus* bus, const OvmsPoller::poll_state_t& state, uint16_t code, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicle::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
   {
   }
 
@@ -122,19 +96,13 @@ void OvmsVehicle::IncomingPollError(canbus* bus, const OvmsPoller::poll_state_t&
  *  
  *  ATT: this is executed in the main CAN task context. Keep it simple.
  *    Complex processing here will affect overall CAN performance.
- *  
- *  @param bus
- *    CAN bus the current poll is done on
- *  @param txid
- *    The module TX ID of the current poll
- *  @param type
- *    OBD2 mode / UDS polling type, e.g. VEHICLE_POLL_TYPE_READDTC
- *  @param pid
- *    PID addressed (depending on the request type, may be none / 8 bit / 16 bit)
+ *
+ *  @param job
+ *    Status of the current Poll job
  *  @param success
  *    Frame transmission success
  */
-void OvmsVehicle::IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t type, uint16_t pid, bool success)
+void OvmsVehicle::IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success)
   {
   }
 
@@ -154,14 +122,14 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plis
   {
   OvmsRecMutexLock slock(&m_poll_single_mutex);
   OvmsRecMutexLock lock(&m_poll_mutex);
-  m_poll_bus = bus;
+  m_poll.bus = bus;
   m_poll_bus_default = bus;
   m_poll_plist = plist;
-  m_poll_ticker = 0;
+  m_poll.ticker = 0;
   m_poll_sequence_cnt = 0;
   m_poll_wait = 0;
   m_poll_plcur = NULL;
-  m_poll_entry = {};
+  m_poll.entry = {};
   m_poll_txmsgid = 0;
   }
 
@@ -182,11 +150,11 @@ void OvmsVehicle::PollSetState(uint8_t state)
     OvmsRecMutexLock slock(&m_poll_single_mutex);
     OvmsRecMutexLock lock(&m_poll_mutex);
     m_poll_state = state;
-    m_poll_ticker = 0;
+    m_poll.ticker = 0;
     m_poll_sequence_cnt = 0;
     m_poll_wait = 0;
     m_poll_plcur = NULL;
-    m_poll_entry = {};
+    m_poll.entry = {};
     m_poll_txmsgid = 0;
     }
   }
@@ -278,39 +246,39 @@ void OvmsVehicle::PollerSend(bool fromTicker)
   // Restart poll list cursor:
   if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
 
-  m_poll_entry = {};
+  m_poll.entry = {};
 
   while (m_poll_plcur->txmoduleid != 0)
     {
     if ((m_poll_plcur->polltime[m_poll_state] > 0) &&
-        ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state]) == 0))
+        ((m_poll.ticker % m_poll_plcur->polltime[m_poll_state]) == 0))
       {
       // We need to poll this one...
-      m_poll_entry = *m_poll_plcur;
-      m_poll_protocol = m_poll_plcur->protocol;
-      m_poll_type = m_poll_plcur->type;
-      m_poll_pid = m_poll_plcur->pid;
+      m_poll.entry = *m_poll_plcur;
+      m_poll.protocol = m_poll_plcur->protocol;
+      m_poll.type = m_poll_plcur->type;
+      m_poll.pid = m_poll_plcur->pid;
 
       switch (m_poll_plcur->pollbus)
         {
         case 1:
-          m_poll_bus = m_can1;
+          m_poll.bus = m_can1;
           break;
         case 2:
-          m_poll_bus = m_can2;
+          m_poll.bus = m_can2;
           break;
         case 3:
-          m_poll_bus = m_can3;
+          m_poll.bus = m_can3;
           break;
         case 4:
-          m_poll_bus = m_can4;
+          m_poll.bus = m_can4;
           break;
         default:
-          m_poll_bus = m_poll_bus_default;
+          m_poll.bus = m_poll_bus_default;
         }
 
       // Dispatch transmission start to protocol handler:
-      if (m_poll_protocol == VWTP_20)
+      if (m_poll.protocol == VWTP_20)
         PollerVWTPStart(fromTicker);
       else
         PollerISOTPStart(fromTicker);
@@ -324,11 +292,11 @@ void OvmsVehicle::PollerSend(bool fromTicker)
     m_poll_plcur++;
     }
 
-  // Completed checking all poll entries for the current m_poll_ticker
-  // ESP_LOGD(TAG, "PollerSend(%d): cycle complete for ticker=%u", fromTicker, m_poll_ticker);
+  // Completed checking all poll entries for the current m_poll.ticker
+  // ESP_LOGD(TAG, "PollerSend(%d): cycle complete for ticker=%u", fromTicker, m_poll.ticker);
   m_poll_plcur = m_poll_plist;
-  m_poll_ticker++;
-  if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
+  m_poll.ticker++;
+  if (m_poll.ticker > 3600) m_poll.ticker -= 3600;
   }
 
 
@@ -340,11 +308,11 @@ void OvmsVehicle::PollerTxCallback(const CAN_frame_t* frame, bool success)
   OvmsRecMutexLock lock(&m_poll_mutex);
 
   // Check for a late callback:
-  if (!m_poll_wait || !m_poll_plist || frame->origin != m_poll_bus || frame->MsgID != m_poll_txmsgid)
+  if (!m_poll_wait || !m_poll_plist || frame->origin != m_poll.bus || frame->MsgID != m_poll_txmsgid)
     return;
 
   // Forward to protocol handler:
-  if (m_poll_protocol == VWTP_20)
+  if (m_poll.protocol == VWTP_20)
     PollerVWTPTxCallback(frame, success);
 
   // On failure, try to speed up the current poll timeout:
@@ -360,7 +328,8 @@ void OvmsVehicle::PollerTxCallback(const CAN_frame_t* frame, bool success)
     }
 
   // Forward to application:
-  IncomingPollTxCallback(m_poll_bus, m_poll_moduleid_sent, m_poll_type, m_poll_pid, success);
+  m_poll.moduleid_rec = 0; // Not yet received
+  IncomingPollTxCallback(m_poll, success);
   }
 
 
@@ -456,7 +425,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
   canbus*           p_bus    = m_poll_bus_default;
   const OvmsPoller::poll_pid_t* p_list   = m_poll_plist;
   const OvmsPoller::poll_pid_t* p_plcur  = m_poll_plcur;
-  uint32_t          p_ticker = m_poll_ticker;
+  uint32_t          p_ticker = m_poll.ticker;
 
   // start single poll:
   PollSetPidList(bus, poll);
@@ -472,7 +441,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
   m_poll_mutex.Lock();
   PollSetPidList(p_bus, p_list);
   m_poll_plcur = p_plcur;
-  m_poll_ticker = p_ticker;
+  m_poll.ticker = p_ticker;
   m_poll_single_rxbuf = NULL;
   m_poll_mutex.Unlock();
 

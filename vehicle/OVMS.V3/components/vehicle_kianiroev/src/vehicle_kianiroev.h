@@ -82,7 +82,7 @@ class OvmsVehicleKiaNiroEv : public KiaVehicle
     void Ticker10(uint32_t ticker);
     void Ticker300(uint32_t ticker);
     void EventListener(std::string event, void* data);
-    void IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);

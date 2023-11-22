@@ -64,12 +64,12 @@ OvmsVehicleOBDII::~OvmsVehicleOBDII()
   ESP_LOGI(TAG, "Shutdown OBDII vehicle module");
   }
 
-void OvmsVehicleOBDII::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleOBDII::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
   int value1 = (int)data[0];
   int value2 = ((int)data[0] << 8) + (int)data[1];
 
-  switch (state.pid)
+  switch (job.pid)
     {
     case 0x02:  // VIN (multi-line response)
       // Data in the first frame starts with 0x01 for some (all?) vehicles
@@ -79,7 +79,7 @@ void OvmsVehicleOBDII::IncomingPollReply(canbus* bus, const OvmsPoller::poll_sta
         --length;
         }
       strncat(m_vin,(char*)data,length);
-      if (state.mlremain==0)
+      if (job.mlremain==0)
         {
         StandardMetrics.ms_v_vin->SetValue(m_vin);
         m_vin[0] = 0;

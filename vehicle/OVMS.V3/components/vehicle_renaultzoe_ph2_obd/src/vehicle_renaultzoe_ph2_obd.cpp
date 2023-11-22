@@ -178,49 +178,49 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingFrameCan1(CAN_frame_t* p_frame) {
 /**
  * Handles incoming poll results
  */
-void OvmsVehicleRenaultZoePh2OBD::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) {
+void OvmsVehicleRenaultZoePh2OBD::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) {
 	string& rxbuf = zoe_obd_rxbuf;
   
   //ESP_LOGV(TAG, "pid: %04x length: %d m_poll_ml_remain: %d mlframe: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
 
   // init / fill rx buffer:
-  if (state.mlframe == 0) {
+  if (job.mlframe == 0) {
     rxbuf.clear();
-    rxbuf.reserve(length + state.mlremain);
+    rxbuf.reserve(length + job.mlremain);
   }
   rxbuf.append((char*)data, length);
   
-  if (state.mlremain)
+  if (job.mlremain)
     return;
   
-	switch (m_poll_moduleid_low) {
+	switch (job.moduleid_low) {
 		// ****** INV *****
 		case 0x18daf1df:
-			IncomingINV(state.type, state.pid, rxbuf.data(), rxbuf.size());
+			IncomingINV(job.type, job.pid, rxbuf.data(), rxbuf.size());
 			break;
     // ****** EVC *****
 		case 0x18daf1da:
-			IncomingEVC(state.type, state.pid, rxbuf.data(), rxbuf.size());
+			IncomingEVC(job.type, job.pid, rxbuf.data(), rxbuf.size());
 			break;
     // ****** BCM *****
     case 0x765:
-      IncomingBCM(state.type, state.pid, rxbuf.data(), rxbuf.size());
+      IncomingBCM(job.type, job.pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** LBC *****
     case 0x18daf1db:
-      IncomingLBC(state.type, state.pid, rxbuf.data(), rxbuf.size());
+      IncomingLBC(job.type, job.pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** HVAC *****
     case 0x764:
-      IncomingHVAC(state.type, state.pid, rxbuf.data(), rxbuf.size());
+      IncomingHVAC(job.type, job.pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** UCM *****
     case 0x76D:
-      IncomingUCM(state.type, state.pid, rxbuf.data(), rxbuf.size());
+      IncomingUCM(job.type, job.pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** CLUSTER *****
     //case 0x763:
-    //  IncomingCLUSTER(state.type, state.pid, rxbuf.data(), rxbuf.size());
+    //  IncomingCLUSTER(job.type, job.pid, rxbuf.data(), rxbuf.size());
     //  break;
 	}
 }

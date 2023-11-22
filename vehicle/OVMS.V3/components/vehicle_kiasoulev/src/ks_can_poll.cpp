@@ -29,44 +29,44 @@ static const char *TAG = "v-kiasoulev";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleKiaSoulEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
-	//ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, state.type, state.pid, length, data[0], data[1], data[2], data[3],
+	//ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_low, job.type, job.pid, length, data[0], data[1], data[2], data[3],
 	//	data[4], data[5], data[6], data[7]);
-	switch (m_poll_moduleid_low)
+	switch (job.moduleid_low)
 		{
 		// ****** SJB *****
 		case 0x779:
-			IncomingSJB(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingSJB(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		// ****** OBC ******
 		case 0x79c:
-			IncomingOBC(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingOBC(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		// ****** TPMS ******
 		case 0x7de:
-			IncomingTPMS(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingTPMS(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		// ******* VMCU ******
 		case 0x7ea:
-			IncomingVMCU(bus, state.type, state.pid, data, state.mloffset, length, state.mlframe, state.mlremain);
+			IncomingVMCU(job.bus, job.type, job.pid, data, job.mloffset, length, job.mlframe, job.mlremain);
 			break;
 
 		// ***** BMC ****
 		case 0x7ec:
-			IncomingBMC(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingBMC(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		// ***** LDC ****
 		case 0x7cd:
-			IncomingLDC(bus, state.type, state.pid, data, length, state.mlframe, state.mlremain);
+			IncomingLDC(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 			break;
 
 		default:
-			ESP_LOGD(TAG, "Unknown module: %03" PRIx32, m_poll_moduleid_low);
+			ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_low);
 			break;
 	  }
   }

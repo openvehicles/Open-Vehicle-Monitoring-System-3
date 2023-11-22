@@ -42,7 +42,7 @@ class OvmsVehicleCadillaccC2CTS : public OvmsVehicle
     ~OvmsVehicleCadillaccC2CTS();
 
   protected:
-    void IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);

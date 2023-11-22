@@ -557,13 +557,13 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 }
 
 
-void OvmsVehicleVWeUp::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   if (m_obd_state != OBDS_Run)
     return;
 
   // If not all data is here: wait for the next call
-  if (!PollReply.AddNewData(state.pid, data, length, state.mlremain)) {
+  if (!PollReply.AddNewData(job.pid, data, length, job.mlremain)) {
     return;
   }
 
@@ -574,16 +574,16 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus* bus, const OvmsPoller::poll_sta
   // Handle reply for diagnostic session
   //
 
-  if (state.type == UDS_SESSION)
+  if (job.type == UDS_SESSION)
     return;
 
   //
   // Handle BMS cell voltage & temperatures
   //
 
-  if (state.pid >= VWUP_BAT_MGMT_CELL_VBASE && state.pid <= VWUP_BAT_MGMT_CELL_VLAST)
+  if (job.pid >= VWUP_BAT_MGMT_CELL_VBASE && job.pid <= VWUP_BAT_MGMT_CELL_VLAST)
   {
-    uint16_t pi = state.pid - VWUP_BAT_MGMT_CELL_VBASE;
+    uint16_t pi = job.pid - VWUP_BAT_MGMT_CELL_VBASE;
 
     // get cell index from poll index:
     uint16_t cmods = (vweup_modelyear > 2019) ? 14 : 17;
@@ -599,10 +599,10 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus* bus, const OvmsPoller::poll_sta
     return;
   }
 
-  if ((state.pid >= VWUP_BAT_MGMT_CELL_TBASE && state.pid <= VWUP_BAT_MGMT_CELL_TLAST) ||
-      (state.pid == VWUP_BAT_MGMT_CELL_T17))
+  if ((job.pid >= VWUP_BAT_MGMT_CELL_TBASE && job.pid <= VWUP_BAT_MGMT_CELL_TLAST) ||
+      (job.pid == VWUP_BAT_MGMT_CELL_T17))
   {
-    uint16_t ti = (state.pid == VWUP_BAT_MGMT_CELL_T17) ? 16 : state.pid - VWUP_BAT_MGMT_CELL_TBASE;
+    uint16_t ti = (job.pid == VWUP_BAT_MGMT_CELL_T17) ? 16 : job.pid - VWUP_BAT_MGMT_CELL_TBASE;
     if (ti < m_cell_last_ti) {
       BmsRestartCellTemperatures();
     }
@@ -617,7 +617,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus* bus, const OvmsPoller::poll_sta
   // Handle regular PIDs
   //
 
-  switch (state.pid) {
+  switch (job.pid) {
 
     case VWUP_CHG_MGMT_LV_PWRSTATE:
       if (PollReply.FromUint8("VWUP_CHG_MGMT_LV_PWRSTATE", ivalue)) {
@@ -1322,7 +1322,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus* bus, const OvmsPoller::poll_sta
 
     default:
       VALUE_LOG(TAG, "IncomingPollReply: ECU %" PRIX32 "/%" PRIX32 " unhandled PID %02X %04X: %s",
-        state.moduleidsent, state.moduleidrec, state.type, state.pid, PollReply.GetHexString().c_str());
+        job.moduleid_sent, job.moduleid_rec, job.type, job.pid, PollReply.GetHexString().c_str());
       break;
   }
 }

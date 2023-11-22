@@ -181,24 +181,24 @@ OvmsVehicleMaxed3::~OvmsVehicleMaxed3()
 
 // IncomingPollReply:
 
-void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleMaxed3::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   // init / fill rx buffer:
-  if (state.mlframe == 0) {
+  if (job.mlframe == 0) {
     m_rxbuf.clear();
-    m_rxbuf.reserve(length + state.mlremain);
+    m_rxbuf.reserve(length + job.mlremain);
   }
   m_rxbuf.append((char*)data, length);
-  if (state.mlremain)
+  if (job.mlremain)
     return;
 
   // response complete:
-    ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", state.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+    ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
     
     int value1 = (int)data[0];
     int value2 = ((int)data[0] << 8) + (int)data[1];
     
-  switch (state.pid)
+  switch (job.pid)
   {
       case vcuvin:  // VIN
           StdMetrics.ms_v_vin->SetValue(m_rxbuf);
@@ -292,7 +292,7 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, const OvmsPoller::poll_st
 
     default:
     {
-      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", state.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
     }
   }
 }

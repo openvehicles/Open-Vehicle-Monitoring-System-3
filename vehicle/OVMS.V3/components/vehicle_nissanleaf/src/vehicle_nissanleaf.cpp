@@ -568,13 +568,13 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
   }
   poll[0].pollbus = bus;
   // stop default polling:
-  PollSetPidList(m_poll_bus, NULL);
+  PollSetPidList(NULL);
   vTaskDelay(pdMS_TO_TICKS(100));
 
   // clear rx semaphore, start single poll:
   nl_obd_rxwait.Take(0);
   nl_obd_rxbuf.clear();
-  PollSetPidList(m_poll_bus, poll);
+  PollSetPidList(poll);
 
   // wait for response:
   bool rxok = nl_obd_rxwait.Take(pdMS_TO_TICKS(timeout_ms));
@@ -586,7 +586,7 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
   // restore default polling:
   nl_obd_rxwait.Give();
   vTaskDelay(pdMS_TO_TICKS(100));
-  PollSetPidList(m_poll_bus, obdii_polls);
+  PollSetPidList(obdii_polls);
 
   return (rxok == pdTRUE);
   }
@@ -790,22 +790,22 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_l
   }
 
 // Reassemble all pieces of a multi-frame reply.
-void OvmsVehicleNissanLeaf::IncomingPollReply( canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)  {
+void OvmsVehicleNissanLeaf::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) {
   string& rxbuf = nl_obd_rxbuf;
 
   // init / fill rx buffer:
-  if (state.mlframe == 0) {
+  if (job.mlframe == 0) {
     rxbuf.clear();
-    rxbuf.reserve(length + state.mlremain);
+    rxbuf.reserve(length + job.mlremain);
   }
   rxbuf.append((char*)data, length);
-  if (state.mlremain)
+  if (job.mlremain)
     return;
 
   static uint8_t buf[MAX_POLL_DATA_LEN];
   memcpy(buf, rxbuf.c_str(), rxbuf.size());
 
-  uint32_t id_pid = m_poll_moduleid_low<<16 | state.pid;
+  uint32_t id_pid = job.moduleid_low<<16 | job.pid;
     switch (id_pid)
       {
       case BMS_RXID<<16 | 0x01: // battery
@@ -837,7 +837,7 @@ void OvmsVehicleNissanLeaf::IncomingPollReply( canbus* bus, const OvmsPoller::po
     // single poll?
     if (!nl_obd_rxwait.IsAvail()) {
       // yes: stop poller & signal response
-      PollSetPidList(m_poll_bus, NULL);
+      PollSetPidList(NULL);
       nl_obd_rxwait.Give();
     }
   }

@@ -99,8 +99,8 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     void CanResponder(const CAN_frame_t* p_frame);
     void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
-    void IncomingPollError(canbus* bus, const OvmsPoller::poll_state_t& state, uint16_t code, const OvmsPoller::poll_pid_t &pollentry) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
+    void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);

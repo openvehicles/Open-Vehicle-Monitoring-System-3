@@ -45,21 +45,21 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
   if (m_poll_plcur->rxmoduleid != 0)
     {
     // send to <moduleid>, listen to response from <rmoduleid>:
-    m_poll_moduleid_sent = m_poll_plcur->txmoduleid;
-    m_poll_moduleid_low = m_poll_plcur->rxmoduleid;
-    m_poll_moduleid_high = m_poll_plcur->rxmoduleid;
+    m_poll.moduleid_sent = m_poll_plcur->txmoduleid;
+    m_poll.moduleid_low = m_poll_plcur->rxmoduleid;
+    m_poll.moduleid_high = m_poll_plcur->rxmoduleid;
     }
   else
     {
     // broadcast: send to 0x7df, listen to all responses:
-    m_poll_moduleid_sent = 0x7df;
-    m_poll_moduleid_low = 0x7e8;
-    m_poll_moduleid_high = 0x7ef;
+    m_poll.moduleid_sent = 0x7df;
+    m_poll.moduleid_low = 0x7e8;
+    m_poll.moduleid_high = 0x7ef;
     }
 
   ESP_LOGD(TAG, "PollerISOTPStart(%d): send [bus=%d, type=%02X, pid=%X], expecting %03" PRIx32 "/%03" PRIx32 "-%03" PRIx32,
-           fromTicker, m_poll_plcur->pollbus, m_poll_type, m_poll_pid, m_poll_moduleid_sent,
-           m_poll_moduleid_low, m_poll_moduleid_high);
+           fromTicker, m_poll_plcur->pollbus, m_poll.type, m_poll.pid, m_poll.moduleid_sent,
+           m_poll.moduleid_low, m_poll.moduleid_high);
 
   //
   // Assemble ISO-TP single/first frame
@@ -87,26 +87,26 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
     }
 
   CAN_frame_t txframe = {};
-  txframe.origin = m_poll_bus;
+  txframe.origin = m_poll.bus;
   txframe.callback = &m_poll_txcallback;
   txframe.FIR.B.DLC = 8;
   std::fill_n(txframe.data.u8, sizeof_array(txframe.data.u8), 0x55);
 
-  if (m_poll_protocol == ISOTP_EXTFRAME)
+  if (m_poll.protocol == ISOTP_EXTFRAME)
     txframe.FIR.B.FF = CAN_frame_ext;
   else
     txframe.FIR.B.FF = CAN_frame_std;
 
-  if (m_poll_protocol == ISOTP_EXTADR)
+  if (m_poll.protocol == ISOTP_EXTADR)
     {
-    txframe.MsgID = m_poll_moduleid_sent >> 8;
-    txframe.data.u8[0] = m_poll_moduleid_sent & 0xff;
+    txframe.MsgID = m_poll.moduleid_sent >> 8;
+    txframe.data.u8[0] = m_poll.moduleid_sent & 0xff;
     fr_data = &txframe.data.u8[1];
     fr_maxlen = 7;
     }
   else
     {
-    txframe.MsgID = m_poll_moduleid_sent;
+    txframe.MsgID = m_poll.moduleid_sent;
     fr_data = &txframe.data.u8[0];
     fr_maxlen = 8;
     }
@@ -136,22 +136,22 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
   // Add TP data:
   if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
     {
-    tp_data[0] = m_poll_type;
-    tp_data[1] = m_poll_pid >> 8;
-    tp_data[2] = m_poll_pid & 0xff;
+    tp_data[0] = m_poll.type;
+    tp_data[1] = m_poll.pid >> 8;
+    tp_data[2] = m_poll.pid & 0xff;
     tx_datasent = LIMIT_MAX(tx_datalen, tp_datalen - 3);
     memcpy(&tp_data[3], tx_data, tx_datasent);
     }
   else if (POLL_TYPE_HAS_8BIT_PID(m_poll_plcur->type))
     {
-    tp_data[0] = m_poll_type;
-    tp_data[1] = m_poll_pid;
+    tp_data[0] = m_poll.type;
+    tp_data[1] = m_poll.pid;
     tx_datasent = LIMIT_MAX(tx_datalen, tp_datalen - 2);
     memcpy(&tp_data[2], tx_data, tx_datasent);
     }
   else
     {
-    tp_data[0] = m_poll_type;
+    tp_data[0] = m_poll.type;
     tx_datasent = LIMIT_MAX(tx_datalen, tp_datalen - 1);
     memcpy(&tp_data[1], tx_data, tx_datasent);
     }
@@ -161,12 +161,12 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
   m_poll_tx_data = tx_data;
   m_poll_tx_offset = tx_datasent;
   m_poll_tx_remain = tx_datalen - tx_datasent;
-  m_poll_ml_frame = 0;
-  m_poll_ml_offset = 0;
-  m_poll_ml_remain = 0;
+  m_poll.mlframe = 0;
+  m_poll.mloffset = 0;
+  m_poll.mlremain = 0;
   m_poll_wait = 2;
 
-  m_poll_bus->Write(&txframe);
+  m_poll.bus->Write(&txframe);
   }
 
 
@@ -179,8 +179,8 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   char *hexdump = NULL;
 
   // After locking the mutex, check again for poll expectance match:
-  if (!m_poll_wait || !m_poll_plist || frame->origin != m_poll_bus ||
-      msgid < m_poll_moduleid_low || msgid > m_poll_moduleid_high)
+  if (!m_poll_wait || !m_poll_plist || frame->origin != m_poll.bus ||
+      msgid < m_poll.moduleid_low || msgid > m_poll.moduleid_high)
     {
     ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: dropping expired poll response", msgid);
     return false;
@@ -202,7 +202,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   uint8_t  tp_fc_framecnt;        // Flow control max frame count (0 = unlimited)
   uint8_t  tp_fc_septime = 0;     // Flow control frame separation time
 
-  if (m_poll_protocol == ISOTP_EXTADR)
+  if (m_poll.protocol == ISOTP_EXTADR)
     {
     fr_data = &frame->data.u8[1];
     fr_maxlen = 7;
@@ -231,7 +231,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       break;
     case ISOTP_FT_CONSECUTIVE:
       tp_frameindex = fr_data[0] & 0x0f;
-      tp_len = m_poll_ml_remain;
+      tp_len = m_poll.mlremain;
       tp_data = &fr_data[1];
       tp_datalen = (tp_len > fr_maxlen-1) ? fr_maxlen-1 : tp_len;
       break;
@@ -286,12 +286,12 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       tx_frame.origin = frame->origin;
       tx_frame.FIR.B.DLC = 8;
 
-      if (m_poll_protocol == ISOTP_EXTFRAME)
+      if (m_poll.protocol == ISOTP_EXTFRAME)
         tx_frame.FIR.B.FF = CAN_frame_ext;
       else
         tx_frame.FIR.B.FF = CAN_frame_std;
 
-      if (m_poll_moduleid_sent == 0x7df)
+      if (m_poll.moduleid_sent == 0x7df)
         {
         // broadcast request: derive module ID from response ID:
         // (Note: this only works for the SAE standard ID scheme)
@@ -300,10 +300,10 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       else
         {
         // use known module ID:
-        txid = m_poll_moduleid_sent;
+        txid = m_poll.moduleid_sent;
         }
 
-      if (m_poll_protocol == ISOTP_EXTADR)
+      if (m_poll.protocol == ISOTP_EXTADR)
         {
         tx_frame.MsgID = txid >> 8;
         tx_frame.data.u8[0] = txid & 0xff;
@@ -357,14 +357,14 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     {
     // Note: we tolerate an index less than the expected one, as some devices
     //  begin counting at the first consecutive frame
-    if (m_poll_ml_remain == 0 || tp_frameindex > (m_poll_ml_frame & 0x0f))
+    if (m_poll.mlremain == 0 || tp_frameindex > (m_poll.mlframe & 0x0f))
       {
       FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
       ESP_LOGW(TAG, "PollerISOTPReceive[%03" PRIX32 "]: unexpected/out of sequence ISO TP frame (%d vs %d), aborting poll %02X(%X): %s",
-              msgid, tp_frameindex, m_poll_ml_frame & 0x0f, m_poll_type, m_poll_pid,
+              msgid, tp_frameindex, m_poll.mlframe & 0x0f, m_poll.type, m_poll.pid,
               hexdump ? hexdump : "-");
       if (hexdump) free(hexdump);
-      m_poll_moduleid_low = m_poll_moduleid_high = 0; // ignore further frames
+      m_poll.moduleid_low = m_poll.moduleid_high = 0; // ignore further frames
       m_poll_wait = 2; // give the bus time to let remaining frames pass
       return true;
       }
@@ -384,8 +384,8 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
 
   if (tp_frametype == ISOTP_FT_CONSECUTIVE)
     {
-    response_type = 0x40+m_poll_type;
-    response_pid = m_poll_pid;
+    response_type = 0x40+m_poll.type;
+    response_pid = m_poll.pid;
     response_data = tp_data;
     response_datalen = tp_datalen;
     }
@@ -411,7 +411,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       }
     else
       {
-      response_pid = m_poll_pid;
+      response_pid = m_poll.pid;
       response_data = &tp_data[1];
       response_datalen = tp_datalen - 1;
       }
@@ -422,14 +422,14 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   // Process OBD/UDS payload
   // 
 
-  if (response_type == UDS_RESP_TYPE_NRC && error_type == m_poll_type)
+  if (response_type == UDS_RESP_TYPE_NRC && error_type == m_poll.type)
     {
     // Negative Response Code:
     if (error_code == UDS_RESP_NRC_RCRRP)
       {
       // Info: requestCorrectlyReceived-ResponsePending (server busy processing the request)
       ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: got OBD/UDS info %02X(%X) code=%02X (pending)",
-               msgid, m_poll_type, m_poll_pid, error_code);
+               msgid, m_poll.type, m_poll.pid, error_code);
       // add some wait time:
       m_poll_wait++;
       return true;
@@ -438,7 +438,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       {
       // Error: forward to application:
       ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS error %02X(%X) code=%02X",
-               msgid, m_poll_type, m_poll_pid, error_code);
+               msgid, m_poll.type, m_poll.pid, error_code);
       // Running single poll?
       if (m_poll_single_rxbuf)
         {
@@ -448,37 +448,33 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
         }
       else
         {
-        OvmsPoller::poll_state_t state;
-        state.moduleidsent = m_poll_moduleid_sent;
-        state.moduleidrec = msgid;
-        state.type = m_poll_type;
-        state.pid = m_poll_pid;
-        state.mlframe = 0;
-        state.mloffset = 0;
-        state.mlremain = 0;
-        IncomingPollError(frame->origin, state, error_code, m_poll_entry);
+        m_poll.moduleid_rec = msgid;
+        m_poll.mlframe = 0;
+        m_poll.mloffset = 0;
+        m_poll.mlremain = 0;
+        IncomingPollError(m_poll, error_code);
         }
       // abort:
-      m_poll_ml_remain = 0;
+      m_poll.mlremain = 0;
       }
     }
-  else if (response_type == 0x40+m_poll_type && response_pid == m_poll_pid)
+  else if (response_type == 0x40+m_poll.type && response_pid == m_poll.pid)
     {
     // Normal matching poll response, forward to application:
-    m_poll_ml_remain = tp_len - tp_datalen;
+    m_poll.mlremain = tp_len - tp_datalen;
     ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS response %02X(%X) frm=%u len=%u off=%u rem=%u",
-             msgid, m_poll_type, m_poll_pid,
-             m_poll_ml_frame, response_datalen, m_poll_ml_offset, m_poll_ml_remain);
+             msgid, m_poll.type, m_poll.pid,
+             m_poll.mlframe, response_datalen, m_poll.mloffset, m_poll.mlremain);
     // Running single poll?
     if (m_poll_single_rxbuf)
       {
-      if (m_poll_ml_frame == 0)
+      if (m_poll.mlframe == 0)
         {
         m_poll_single_rxbuf->clear();
-        m_poll_single_rxbuf->reserve(response_datalen + m_poll_ml_remain);
+        m_poll_single_rxbuf->reserve(response_datalen + m_poll.mlremain);
         }
       m_poll_single_rxbuf->append((char*)response_data, response_datalen);
-      if (m_poll_ml_remain == 0)
+      if (m_poll.mlremain == 0)
         {
         m_poll_single_rxerr = 0;
         m_poll_single_rxbuf = NULL;
@@ -487,15 +483,8 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       }
     else
       {
-      OvmsPoller::poll_state_t state;
-      state.moduleidsent = m_poll_moduleid_sent;
-      state.moduleidrec = msgid;
-      state.type = m_poll_type;
-      state.pid = m_poll_pid;
-      state.mlframe = m_poll_ml_frame;
-      state.mloffset = m_poll_ml_offset;
-      state.mlremain = m_poll_ml_remain;
-      IncomingPollReply(frame->origin, state, response_data, response_datalen, m_poll_entry);
+      m_poll.moduleid_rec = msgid;
+      IncomingPollReply(m_poll, response_data, response_datalen);
       }
     }
   else
@@ -503,14 +492,14 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     // This is most likely a late response to a previous poll, log & skip:
     FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
     ESP_LOGW(TAG, "PollerISOTPReceive[%03" PRIX32 "]: OBD/UDS response type/PID mismatch, got %02X(%X) vs %02X(%X) => ignoring: %s",
-             msgid, response_type, response_pid, 0x40+m_poll_type, m_poll_pid, hexdump ? hexdump : "-");
+             msgid, response_type, response_pid, 0x40+m_poll.type, m_poll.pid, hexdump ? hexdump : "-");
     if (hexdump) free(hexdump);
     return false;
     }
 
 
   // Do we expect more data?
-  if (m_poll_ml_remain)
+  if (m_poll.mlremain)
     {
     if (tp_frametype == ISOTP_FT_FIRST)
       {
@@ -522,12 +511,12 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       txframe.origin = frame->origin;
       txframe.FIR.B.DLC = 8;
 
-      if (m_poll_protocol == ISOTP_EXTFRAME)
+      if (m_poll.protocol == ISOTP_EXTFRAME)
         txframe.FIR.B.FF = CAN_frame_ext;
       else
         txframe.FIR.B.FF = CAN_frame_std;
 
-      if (m_poll_moduleid_sent == 0x7df)
+      if (m_poll.moduleid_sent == 0x7df)
         {
         // broadcast request: derive module ID from response ID:
         // (Note: this only works for the SAE standard ID scheme)
@@ -536,10 +525,10 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       else
         {
         // use known module ID:
-        txid = m_poll_moduleid_sent;
+        txid = m_poll.moduleid_sent;
         }
 
-      if (m_poll_protocol == ISOTP_EXTADR)
+      if (m_poll.protocol == ISOTP_EXTADR)
         {
         txframe.MsgID = txid >> 8;
         txframe.data.u8[0] = txid & 0xff;
@@ -555,14 +544,14 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       txdata[1] = 0x00;                // request all frames available
       txdata[2] = m_poll_fc_septime;   // with configured separation timing (default 25 ms)
       txframe.Write();
-      m_poll_ml_frame = 1;
+      m_poll.mlframe = 1;
       }
     else
       {
-      m_poll_ml_frame++;
+      m_poll.mlframe++;
       }
 
-    m_poll_ml_offset += response_datalen; // next frame application payload offset
+    m_poll.mloffset += response_datalen; // next frame application payload offset
     m_poll_wait = 2;
     }
   else
@@ -577,7 +566,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   // - the poll was no broadcast (with potential further responses from other devices)
   // - poll throttling is unlimited or limit isn't reached yet
   if (m_poll_wait == 0 &&
-      m_poll_moduleid_sent != 0x7df &&
+      m_poll.moduleid_sent != 0x7df &&
       (!m_poll_sequence_max || m_poll_sequence_cnt < m_poll_sequence_max))
     {
     PollerSend(false);

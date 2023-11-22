@@ -153,21 +153,21 @@ void OvmsVehicleRenaultTwizy::ObdTicker1()
 }
 
 
-void OvmsVehicleRenaultTwizy::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleRenaultTwizy::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   string& rxbuf = twizy_obd_rxbuf;
 
   // init / fill rx buffer:
-  if (state.mlframe == 0) {
+  if (job.mlframe == 0) {
     rxbuf.clear();
-    rxbuf.reserve(length + state.mlremain);
+    rxbuf.reserve(length + job.mlremain);
   }
   rxbuf.append((char*)data, length);
-  if (state.mlremain)
+  if (job.mlremain)
     return;
   
   // complete:
-  switch (state.pid) {
+  switch (job.pid) {
 
     // VIN:
     case CLUSTER_PID_VIN: {
@@ -189,7 +189,7 @@ void OvmsVehicleRenaultTwizy::IncomingPollReply(canbus* bus, const OvmsPoller::p
 
     // Ignored:
     case SESSION_EXTDIAG:
-      ESP_LOGV(TAG, "OBD2: ignored reply [%02x %02x]", state.type, state.pid);
+      ESP_LOGV(TAG, "OBD2: ignored reply [%02x %02x]", job.type, job.pid);
       break;
     
     // Unknown: output
@@ -199,7 +199,7 @@ void OvmsVehicleRenaultTwizy::IncomingPollReply(canbus* bus, const OvmsPoller::p
       do {
         rlen = FormatHexDump(&buf, rxbuf.data() + offset, rlen, 16);
         offset += 16;
-        ESP_LOGW(TAG, "OBD2: unhandled reply [%02x %02x]: %s", state.type, state.pid, buf ? buf : "-");
+        ESP_LOGW(TAG, "OBD2: unhandled reply [%02x %02x]: %s", job.type, job.pid, buf ? buf : "-");
       } while (rlen);
       if (buf)
         free(buf);
@@ -217,7 +217,7 @@ void OvmsVehicleRenaultTwizy::IncomingPollReply(canbus* bus, const OvmsPoller::p
 }
 
 
-void OvmsVehicleRenaultTwizy::IncomingPollError(canbus* bus, const OvmsPoller::poll_state_t& state, uint16_t code, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleRenaultTwizy::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
 {
   // single poll?
   if (!twizy_obd_rxwait.IsAvail()) {

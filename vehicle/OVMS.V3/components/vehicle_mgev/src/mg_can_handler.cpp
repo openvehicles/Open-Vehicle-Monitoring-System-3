@@ -185,44 +185,44 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
     }
 }
 
-void OvmsVehicleMgEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleMgEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
     ESP_LOGV(
         TAG,
         "%03" PRIx32 " TYPE:%" PRIx16 " PID:%02" PRIx16 " Length:%" PRIx8 " Data:%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8,
-        m_poll_moduleid_low,
-        state.type,
-        state.pid,
+        job.moduleid_low,
+        job.type,
+        job.pid,
         length,
         data[0], data[1], data[2], data[3]
     );
 
-    switch (m_poll_moduleid_low)
+    switch (job.moduleid_low)
     {
         case (bmsId | rxFlag):
         case (bmsMk2Id | rxFlag):
-            IncomingBmsPoll(state.pid, data, length, state.mlremain);
+            IncomingBmsPoll(job.pid, data, length, job.mlremain);
             break;
         case (dcdcId | rxFlag):
-            IncomingDcdcPoll(state.pid, data, length);
+            IncomingDcdcPoll(job.pid, data, length);
             break;
         case (vcuId | rxFlag):
-            IncomingVcuPoll(state.pid, data, length, state.mlremain);
+            IncomingVcuPoll(job.pid, data, length, job.mlremain);
             break;
         case (atcId | rxFlag):
-            IncomingAtcPoll(state.pid, data, length);
+            IncomingAtcPoll(job.pid, data, length);
             break;
         case (tpmsId | rxFlag):
-            IncomingTpmsPoll(state.pid, data, length);
+            IncomingTpmsPoll(job.pid, data, length);
             break;
         case (pepsId | rxFlag):
-            IncomingPepsPoll(state.pid, data, length);
+            IncomingPepsPoll(job.pid, data, length);
             break;
         case (evccId | rxFlag):
-            IncomingEvccPoll(state.pid, data, length);
+            IncomingEvccPoll(job.pid, data, length);
             break;
         case (bcmId | rxFlag):
-            IncomingBcmPoll(state.pid, data, length);
+            IncomingBcmPoll(job.pid, data, length);
             break;            
     }
 }

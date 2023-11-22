@@ -386,20 +386,20 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
     }
 }
 
-void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleBMWi3::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
     string& rxbuf = bmwi3_obd_rxbuf;
   
     // Assemble first and following frames to get complete reply
     
     // init rx buffer on first (it tells us whole length)
-    if (state.mlframe == 0) {
+    if (job.mlframe == 0) {
       rxbuf.clear();
-      rxbuf.reserve(length + state.mlremain);
+      rxbuf.reserve(length + job.mlremain);
     }
     // Append each piece
     rxbuf.append((char*)data, length);
-    if (state.mlremain) {
+    if (job.mlremain) {
         // we need more - return for now.
         return;
     }
@@ -414,7 +414,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, const OvmsPoller::poll_sta
 
   last_obd_data_seen = StdMetrics.ms_m_monotonic->AsInt();
 
-  switch (state.pid) {
+  switch (job.pid) {
 
   // --- SME --------------------------------------------------------------------------------------------------------
 
@@ -1503,7 +1503,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lx%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "BF_BLOCK_10_STERNE", (unsigned long)BF_BLOCK_10_STERNE, "\"Bit\"");
 
     // ==========  Add your processing here ==========
-    hexdump(rxbuf, state.type, state.pid);
+    hexdump(rxbuf, job.type, job.pid);
 
     break;
   }
@@ -1615,7 +1615,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "AE_STROM_EMASCHINE", "STAT_STROM_DC_HV_UMRICHTER_EM_WERT", STAT_STROM_DC_HV_UMRICHTER_EM_WERT, "\"A\"");
 
     // ==========  Add your processing here ==========
-    hexdump(rxbuf, state.type, state.pid);
+    hexdump(rxbuf, job.type, job.pid);
 
     break;
   }
@@ -2606,7 +2606,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   // Unknown: output if for review
   default: {
-    hexdump(rxbuf, state.type, state.pid);
+    hexdump(rxbuf, job.type, job.pid);
     break;
   }
 

@@ -133,12 +133,12 @@ void OvmsVehicleChevroletC6Corvette::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleChevroletC6Corvette::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleChevroletC6Corvette::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
   int value1 = (int)data[0];
   // int value2 = ((int)data[0] << 8) + (int)data[1];
 
-  switch (state.pid)
+  switch (job.pid)
     {
     case 0x05:  // Engine coolant temperature
       StandardMetrics.ms_v_bat_temp->SetValue(value1 - 0x28);

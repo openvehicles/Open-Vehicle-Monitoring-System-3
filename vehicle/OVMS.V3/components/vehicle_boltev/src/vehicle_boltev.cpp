@@ -636,21 +636,21 @@ void OvmsVehicleBoltEV::IncomingFrameCan4(CAN_frame_t* p_frame)
     ClimateControlIncomingSWCAN(p_frame);
 }
 
-void OvmsVehicleBoltEV::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleBoltEV::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
     uint8_t value = *data;
 
     //Cell voltage
     const uint16_t pid_cellv1 = 0x4181;
-    if((state.pid >=pid_cellv1 && state.pid<=pid_cellv1 + 30) || (state.pid>=pid_cellv1+127 && state.pid<=pid_cellv1+191)) {
+    if((job.pid >=pid_cellv1 && job.pid<=pid_cellv1 + 30) || (job.pid>=pid_cellv1+127 && job.pid<=pid_cellv1+191)) {
         if(length <2)
             return;
 
         int nCellNum = 0;
-        if(state.pid <= pid_cellv1 + 30)
-            nCellNum = state.pid - pid_cellv1;
+        if(job.pid <= pid_cellv1 + 30)
+            nCellNum = job.pid - pid_cellv1;
         else
-            nCellNum = state.pid - pid_cellv1 - 96;
+            nCellNum = job.pid - pid_cellv1 - 96;
 
         if(nCellNum == 0)
             BmsResetCellVoltages();
@@ -660,7 +660,7 @@ void OvmsVehicleBoltEV::IncomingPollReply(canbus* bus, const OvmsPoller::poll_st
         return;
     }
 
-    switch (state.pid) {
+    switch (job.pid) {
     case 0x002f:  // Fuel level
         if(mt_fuel_level->SetValue((int)value * 100 / 255))
             NotifyFuel();

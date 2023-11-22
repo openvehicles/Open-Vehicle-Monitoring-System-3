@@ -86,7 +86,7 @@ protected:
     void IncomingFrameCan2(CAN_frame_t* p_frame);
     void IncomingFrameCan3(CAN_frame_t* p_frame);
     void IncomingFrameCan4(CAN_frame_t* p_frame);
-    void IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void TxCallback(const CAN_frame_t* p_frame, bool success);
     void CommandWakeupComplete(const CAN_frame_t* p_frame, bool success);
     void SendTesterPresentMessage( uint32_t id );

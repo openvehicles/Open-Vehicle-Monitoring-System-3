@@ -218,10 +218,10 @@ void OvmsVehicleBydAtto3::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleBydAtto3::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleBydAtto3::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
     uint32_t res;
-    switch(state.pid)
+    switch(job.pid)
       {
       case POLL_FOR_BATTERY_VOLTAGE:
         if(!get_bytes_uint_le<2>(data, 0, 2, res))

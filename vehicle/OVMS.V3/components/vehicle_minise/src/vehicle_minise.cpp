@@ -485,19 +485,19 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
   }
 }
 
-void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
+void OvmsVehicleMiniSE::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   string &rxbuf = obd_rxbuf;
 
   // Init RX buffer on first (it tells us whole length)
-  if (state.mlframe == 0) {
+  if (job.mlframe == 0) {
     rxbuf.clear();
-    rxbuf.reserve(length + state.mlremain);
+    rxbuf.reserve(length + job.mlremain);
   }
 
   // Assemble first and following frames to get complete reply
   rxbuf.append((char *) data, length);
-  if (state.mlremain) {
+  if (job.mlremain) {
     // we need more - return for now.
     return;
   }
@@ -512,7 +512,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, const OvmsPoller::poll_st
 
   last_obd_data_seen = StdMetrics.ms_m_monotonic->AsInt();
 
-  switch (state.pid) {
+  switch (job.pid) {
 
     // --- SME --------------------------------------------------------------------------------------------------------
 
@@ -521,11 +521,11 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, const OvmsPoller::poll_st
         ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "0x01AD6E", 2);
         break;
       }
-      if (m_poll_entry.args.data[1] == 0x6E) {
-        uint8_t cell = m_poll_entry.args.data[2];
+      if (job.entry.args.data[1] == 0x6E) {
+        uint8_t cell = job.entry.args.data[2];
         ESP_LOGD(TAG, "From ECU %s, pid %s: got %s (cell %d)\n", "SME", "0x01AD6E", "cell voltage selected", cell);
-      } else if (m_poll_entry.args.data[1] == 0x6D) {
-        uint8_t module = m_poll_entry.args.data[2];
+      } else if (job.entry.args.data[1] == 0x6D) {
+        uint8_t module = job.entry.args.data[2];
         ESP_LOGD(TAG, "From ECU %s, pid %s: got %s (cell %d)\n", "SME", "0x01AD6E", "module temp. selected", module);
       }
       break;
@@ -536,15 +536,15 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, const OvmsPoller::poll_st
         ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "0x03AD6E", 2);
         break;
       }
-      if (m_poll_entry.args.data[1] == 0x6E) {
-        uint8_t cell = m_poll_entry.args.data[2];
+      if (job.entry.args.data[1] == 0x6E) {
+        uint8_t cell = job.entry.args.data[2];
         uint16_t voltage = (RXBUF_UINT(2));
         ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s  (cell %d)\n", "SME", "0x03AD6E",
           "cell voltage", voltage / 1000.0f, "\"V\"", cell);
         ESP_LOGD(TAG, "Cell %d voltage = %f", cell, voltage / 1000.0f);
         BmsSetCellVoltage(cell - 1, voltage / 1000.0f);
-      } else if (m_poll_entry.args.data[1] == 0x6D) {
-        uint8_t module = m_poll_entry.args.data[2];
+      } else if (job.entry.args.data[1] == 0x6D) {
+        uint8_t module = job.entry.args.data[2];
         uint16_t temperature = (RXBUF_UINT(2));
         ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s  (module %d)\n", "SME", "0x03AD6E",
           "module temperature", temperature / 100.0f, "\"°C\"", module);
@@ -1742,7 +1742,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, const OvmsPoller::poll_st
         (unsigned long) BF_BLOCK_10_STERNE, "\"Bit\"");
 
       // ==========  Add your processing here ==========
-      HexDump(rxbuf, state.type, state.pid);
+      HexDump(rxbuf, job.type, job.pid);
 
       break;
     }
@@ -2972,7 +2972,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, const OvmsPoller::poll_st
 
       // Unknown: output if for review
     default: {
-      HexDump(rxbuf, state.type, state.pid);
+      HexDump(rxbuf, job.type, job.pid);
       break;
     }
   }
