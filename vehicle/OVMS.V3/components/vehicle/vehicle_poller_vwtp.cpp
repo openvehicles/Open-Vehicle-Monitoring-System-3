@@ -54,12 +54,10 @@ void OvmsPoller::PollerVWTPStart(bool fromTicker)
       PollerVWTPEnter(VWTP_ChannelClose);
     else if (m_poll.entry.rxmoduleid != 0)
       PollerVWTPEnter(VWTP_ChannelSetup);
-    else if (m_poll_single_rxbuf)
+    else
       {
-      m_poll_single_rxbuf->clear();
-      m_poll_single_rxbuf = NULL;
-      m_poll_single_rxerr = POLLSINGLE_OK;
-      m_poll_single_rxdone.Give();
+      OvmsRecMutexLock lock(&m_poll_mutex);
+      m_polls.IncomingError(m_poll, POLLSINGLE_OK);
       }
     return;
     }
@@ -510,12 +508,10 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
         // Check if we shall open another channel:
         if (m_poll.protocol == VWTP_20 && m_poll.entry.rxmoduleid != 0)
           PollerVWTPEnter(VWTP_ChannelSetup);
-        else if (m_poll_single_rxbuf)
+        else
           {
-          m_poll_single_rxbuf->clear();
-          m_poll_single_rxbuf = NULL;
-          m_poll_single_rxerr = POLLSINGLE_OK;
-          m_poll_single_rxdone.Give();
+          OvmsRecMutexLock lock(&m_poll_mutex);
+          m_polls.IncomingError(m_poll, POLLSINGLE_OK);
           }
         }
       else
@@ -705,22 +701,13 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
           else
             {
             // Error: forward to application:
-            ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPReceive[%02X]: process OBD/UDS error %02X(%X) code=%02X",
-                m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.type, m_poll.pid, error_code);
-            // Running single poll?
-            if (m_poll_single_rxbuf)
+            ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: process OBD/UDS error %02X(%X) code=%02X",
+                      m_poll_vwtp.moduleid, m_poll.type, m_poll.pid, error_code);
+
               {
-              m_poll_single_rxerr = error_code;
-              m_poll_single_rxbuf = NULL;
-              m_poll_single_rxdone.Give();
-              }
-            else
-              {
-              m_poll.moduleid_rec = msgid;
-              m_poll.mlframe = 0;
-              m_poll.mloffset = 0;
-              m_poll.mlremain = 0;
-              IncomingPollError(m_poll, error_code);
+              OvmsRecMutexLock lock(&m_poll_mutex);
+              m_poll.moduleid_rec = m_poll.moduleid_sent;
+              m_polls.IncomingError(m_poll, error_code);
               }
             // abort receive:
             m_poll.mlremain = 0;
@@ -735,32 +722,13 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
 
           // Normal matching poll response, forward to application:
           m_poll.mlremain -= tp_datalen;
-          ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPReceive[%02X]: process OBD/UDS response %02X(%X) frm=%u len=%u off=%u rem=%u",
-                    m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.type, m_poll.pid,
+          ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: process OBD/UDS response %02X(%X) frm=%u len=%u off=%u rem=%u",
+                    m_poll_vwtp.moduleid, m_poll.type, m_poll.pid,
                     m_poll.mlframe, response_datalen, m_poll.mloffset, m_poll.mlremain);
-          // Running single poll?
-          if (m_poll_single_rxbuf)
             {
-            if (m_poll.mlframe == 0)
-              {
-              m_poll_single_rxbuf->clear();
-              m_poll_single_rxbuf->reserve(response_datalen + m_poll.mlremain);
-              }
-            m_poll_single_rxbuf->append((char*)response_data, response_datalen);
-            if (m_poll.mlremain == 0)
-              {
-              m_poll_single_rxerr = 0;
-              m_poll_single_rxbuf = NULL;
-              m_poll_single_rxdone.Give();
-              }
-            }
-          else
-            {
+            OvmsRecMutexLock lock(&m_poll_mutex);
             m_poll.moduleid_rec = msgid;
-            m_poll.mlframe = m_poll.mlframe;
-            m_poll.mloffset = m_poll.mloffset;
-            m_poll.mlremain = m_poll.mlremain;
-            IncomingPollReply(m_poll, response_data, response_datalen);
+            m_polls.IncomingPacket(m_poll, response_data, response_datalen);
             }
           }
         else

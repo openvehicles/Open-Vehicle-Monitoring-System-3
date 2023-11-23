@@ -180,7 +180,7 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   char *hexdump = NULL;
 
   // After locking the mutex, check again for poll expectance match:
-  if (!m_poll_wait || !m_poll.entry.txmoduleid /*m_poll_plist*/ || frame->origin != m_poll.bus)
+  if (!m_poll_wait || !m_polls.HasPollList() || frame->origin != m_poll.bus)
     {
     ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPReceive[%03" PRIX32 "]: dropping expired poll response", m_poll.bus_no, msgid);
     return false;
@@ -445,20 +445,14 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS error %02X(%X) code=%02X",
                m_poll.bus_no, msgid, m_poll.type, m_poll.pid, error_code);
       // Running single poll?
-      if (m_poll_single_rxbuf)
-        {
-        m_poll_single_rxerr = error_code;
-        m_poll_single_rxbuf = NULL;
-        m_poll_single_rxdone.Give();
-        }
-      else
-        {
-        m_poll.moduleid_rec = msgid;
-        m_poll.mlframe = 0;
-        m_poll.mloffset = 0;
-        m_poll.mlremain = 0;
-        IncomingPollError(m_poll, error_code);
-        }
+      {
+      OvmsRecMutexLock lock(&m_poll_mutex);
+      m_poll.moduleid_rec = msgid;
+      m_poll.mlframe = 0;
+      m_poll.mloffset = 0;
+      m_poll.mlremain = 0;
+      IncomingPollError(m_poll, error_code);
+      }
       // abort:
       m_poll.mlremain = 0;
       }
@@ -467,29 +461,14 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     {
     // Normal matching poll response, forward to application:
     m_poll.mlremain = tp_len - tp_datalen;
-    ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS response %02X(%X) frm=%u len=%u off=%u rem=%u",
-             m_poll.bus_no, msgid, m_poll.type, m_poll.pid,
+    ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS response %02" PRIX16 "(%" PRIX16 ") frm=%u len=%u off=%u rem=%u",
+             msgid, m_poll.type, m_poll.pid,
              m_poll.mlframe, response_datalen, m_poll.mloffset, m_poll.mlremain);
-    // Running single poll?
-    if (m_poll_single_rxbuf)
+
       {
-      if (m_poll.mlframe == 0)
-        {
-        m_poll_single_rxbuf->clear();
-        m_poll_single_rxbuf->reserve(response_datalen + m_poll.mlremain);
-        }
-      m_poll_single_rxbuf->append((char*)response_data, response_datalen);
-      if (m_poll.mlremain == 0)
-        {
-        m_poll_single_rxerr = 0;
-        m_poll_single_rxbuf = NULL;
-        m_poll_single_rxdone.Give();
-        }
-      }
-    else
-      {
+      OvmsRecMutexLock lock(&m_poll_mutex);
       m_poll.moduleid_rec = msgid;
-      IncomingPollReply(m_poll, response_data, response_datalen);
+      m_polls.IncomingPacket(m_poll, response_data, response_datalen);
       }
     }
   else
