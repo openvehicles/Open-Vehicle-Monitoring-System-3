@@ -553,6 +553,8 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
 
   protected:
+    void PollRequest(canbus* bus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series);
+    void RemovePollRequest(canbus* bus, const std::string &name);
     void IncomingPollRxFrame(canbus* bus, CAN_frame_t *frame, bool success);
     uint8_t           m_poll_state;           // Current poll state
 

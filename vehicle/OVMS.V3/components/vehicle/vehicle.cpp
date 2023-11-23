@@ -2426,6 +2426,19 @@ void OvmsVehicle::IncomingPollRxFrame(canbus* bus, CAN_frame_t *frame, bool succ
   else if (m_can4 == bus) IncomingFrameCan4(frame);
   }
 
+void OvmsVehicle::PollRequest(canbus* bus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series)
+  {
+  auto poller = m_pollers.GetPoller(bus, true);
+  poller->PollRequest(name, series);
+  }
+
+void OvmsVehicle::RemovePollRequest(canbus* bus, const std::string &name)
+  {
+  auto poller = m_pollers.GetPoller(bus, false);
+  if (poller)
+    poller->RemovePollRequest(name);
+  }
+
 /** Does the specified bus have a non-empty PollList ?
   * @param bus Canbus to check or null for any bus
   */

@@ -631,6 +631,26 @@ void OvmsPoller::Queue_PollerSend(OvmsPoller::poller_source_t source)
   {
   m_parent_signal->PollerSend(m_poll.bus_no, source);
   }
+/** Add a polling requester to list. Replaces any existing entry with that name.
+  @param name Unique name/identifier of poll series.
+  @param series Shared pointer to poller instance.
+  */
+void OvmsPoller::PollRequest(const std::string &name, const std::shared_ptr<PollSeriesEntry> &series)
+  {
+  series->SetParentPoller(this);
+  OvmsRecMutexLock lock(&m_poll_mutex);
+  series->ResetList(OvmsPoller::ResetMode::PollReset);
+  m_polls.SetEntry(name, series);
+  }
+
+/** Remove a polling requester from the list if it exists.
+  @param name Unique name/identifier of poll series.
+  */
+void OvmsPoller::RemovePollRequest(const std::string &name)
+  {
+  OvmsRecMutexLock lock(&m_poll_mutex);
+  m_polls.RemoveEntry(name);
+  }
 
 /**
  * PollResultCodeName: get text representation of result code
@@ -1379,6 +1399,10 @@ OvmsPoller::StandardPollSeries::StandardPollSeries(OvmsPoller *poller, uint16_t 
   : m_poller(poller), m_state_offset(stateoffset),  m_defaultbus(0), m_poll_plist(nullptr), m_poll_plcur(nullptr) 
   {
   }
+void OvmsPoller::StandardPollSeries::SetParentPoller(OvmsPoller *poller)
+  {
+  m_poller = poller;
+  }
 
 // Set the PID List in use.
 void OvmsPoller::StandardPollSeries::PollSetPidList(uint8_t defaultbus, const poll_pid_t* plist)
@@ -1473,11 +1497,83 @@ bool OvmsPoller::StandardPollSeries::HasRepeat()
   return false;
   }
 
+// StandardPacketPollSeries
+
+OvmsPoller::StandardPacketPollSeries::StandardPacketPollSeries( OvmsPoller *poller, int repeat_max, poll_success_func success, poll_fail_func fail)
+  : StandardPollSeries(poller),
+    m_repeat_max(repeat_max),
+    m_repeat_count(0),
+    m_success(success),
+    m_fail(fail)
+  {
+  }
+
+// Move list to start.
+void OvmsPoller::StandardPacketPollSeries::ResetList(OvmsPoller::ResetMode mode)
+  {
+  switch (mode)
+    {
+      case OvmsPoller::ResetMode::PollReset:
+        m_repeat_count = 0;
+        break;
+      case OvmsPoller::ResetMode::LoopReset:
+        if (++m_repeat_count >= m_repeat_max)
+          return; // No more retries... don't reset the loop.
+        break;
+    }
+  // Do the base Poll reset - ignore passed-in.
+  OvmsPoller::StandardPollSeries::ResetList(OvmsPoller::ResetMode::PollReset);
+  }
+
+// Process an incoming packet.
+void OvmsPoller::StandardPacketPollSeries::IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length)
+  {
+  if (job.mlframe == 0)
+    {
+    m_data.clear();
+    m_data.reserve(length+job.mlremain);
+    }
+  m_data.append((char*)data, length);
+  if (job.mlremain == 0)
+    {
+    if (m_success)
+      m_success(job.type, job.moduleid_sent, job.moduleid_rec, job.pid, m_data);
+    m_data.clear();
+    }
+  }
+
+// Process An Error
+void OvmsPoller::StandardPacketPollSeries::IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code)
+  {
+  if (code == 0)
+    {
+    ESP_LOGD(TAG, "Packet failed with zero error %.03" PRIx32 " TYPE:%x PID: %03x", job.moduleid_rec, job.type, job.pid);
+    m_data.clear();
+    if (m_success)
+      m_success(job.type, job.moduleid_sent, job.moduleid_rec, job.pid, m_data);
+    }
+  else
+    {
+    if (m_fail)
+      m_fail(job.type, job.moduleid_sent, job.moduleid_rec, job.pid, code);
+    OvmsPoller::StandardPollSeries::IncomingError(job, code);
+    }
+  }
+
+// Return true if this series has entries to retry/redo.
+bool OvmsPoller::StandardPacketPollSeries::HasRepeat()
+  {
+  return (m_repeat_count < m_repeat_max) && HasPollList();
+  }
+
 // OvmsPoller::OnceOffPollBase class
 
 OvmsPoller::OnceOffPollBase::OnceOffPollBase( const poll_pid_t &pollentry, std::string *rxbuf, int *rxerr, uint8_t retry_fail)
    : m_sent(status_t::Init), m_poll(pollentry), m_poll_rxbuf(rxbuf), m_poll_rxerr(rxerr),
     m_retry_fail(retry_fail)
+  {
+  }
+void OvmsPoller::OnceOffPollBase::SetParentPoller(OvmsPoller *poller)
   {
   }
 
@@ -1693,4 +1789,53 @@ void OvmsPoller::BlockingOnceOffPoll::Finished()
   m_poll_rxbuf = nullptr;
   m_poll_rxdone = nullptr;
   m_poll_rxerr = nullptr;
+  }
+
+// OnceOffPoll class
+
+// Once off poll entry with buffer and result.
+OvmsPoller::OnceOffPoll::OnceOffPoll(poll_success_func success, poll_fail_func fail,
+    uint32_t txid, uint32_t rxid, const std::string &request, uint8_t protocol, uint8_t pollbus, uint8_t retry_fail)
+  : OvmsPoller::OnceOffPollBase(nullptr, &m_error, retry_fail),
+    m_success(success), m_fail(fail), m_error(0)
+  {
+  m_poll_rxbuf = &m_data;
+  SetPollPid(txid, rxid, request, protocol, pollbus);
+  }
+
+OvmsPoller::OnceOffPoll::OnceOffPoll( poll_success_func success, poll_fail_func fail,
+            uint32_t txid, uint32_t rxid, uint8_t polltype, uint16_t pid,  uint8_t protocol, uint8_t pollbus, uint8_t retry_fail)
+  : OvmsPoller::OnceOffPollBase( nullptr, &m_error, retry_fail),
+    m_success(success), m_fail(fail), m_error(0)
+  {
+  m_poll_rxbuf = &m_data;
+  SetPollPid(txid, rxid, polltype, pid, protocol, pollbus);
+  }
+
+void OvmsPoller::OnceOffPoll::Done(bool success)
+  {
+  ESP_LOGD(TAG, "Once-Off Poll: Done %s", success ? "success" : "fail");
+  m_poll_rxbuf = nullptr;
+  if (success)
+    {
+    if (m_success)
+      m_success(m_poll.type, m_poll.txmoduleid, m_poll.rxmoduleid, m_poll.pid, m_data );
+    }
+  else
+    {
+    if (m_fail)
+      m_fail(m_poll.type, m_poll.txmoduleid, m_poll.rxmoduleid, m_poll.pid, m_error);
+    }
+  }
+
+// Called when run is finished to determine what happens next.
+OvmsPoller::SeriesStatus OvmsPoller::OnceOffPoll::FinishRun()
+  {
+  if (m_sent == status_t::Retry)
+    return OvmsPoller::SeriesStatus::Next;
+  return OvmsPoller::SeriesStatus::RemoveNext;
+  }
+
+void OvmsPoller::OnceOffPoll::Removing()
+  {
   }
