@@ -65,15 +65,20 @@
 
 const char *OvmsHyundaiIoniqEv::TAG = "v-ioniq5";
 
+#ifdef bind
+#undef bind
+#endif
+using namespace std::placeholders;
+
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
 // Pollstate 3 - ping : car is off, not charging and something triggers a wake
 static const OvmsPoller::poll_pid_t vehicle_ioniq_polls[] = {
   //                                                   Off  On  Chrg Ping
-  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   1,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
+  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   2,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
   { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe004, { 0,   1,   4,  4}, 0, ISOTP_STD },   // VMCU - Drive status + Accellerator
-  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   3,   4,  4}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM + Charging
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   2,   4,  4}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 1 - BMC Diag page 02
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0103, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 2 - BMC Diag page 03
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0104, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 3 - BMC Diag page 04
@@ -101,8 +106,13 @@ static const OvmsPoller::poll_pid_t vehicle_ioniq_polls[] = {
 
   // TODO 0x7e5 OBC - On Board Charger?
 
-  // Check again while driving only
-  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,  1,  0,  0}, 0, ISOTP_STD },  // AirCon and Speed
+  POLL_LIST_END
+};
+
+static const OvmsPoller::poll_pid_t vehicle_ioniq_driving_polls[] = {
+  // Check again while driving with ECU only
+  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,  1,  20,  20}, 0, ISOTP_STD },  // For Speed
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,  1,  20,  20}, 0, ISOTP_STD },  // For RPM
   POLL_LIST_END
 };
 
@@ -596,10 +606,6 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   if (StdMetrics.ms_v_bat_pack_tavg->IsDefined()) {
     StdMetrics.ms_v_bat_temp->SetValue(StdMetrics.ms_v_bat_pack_tavg->AsFloat());
   }
-#ifdef bind
-#undef bind
-#endif
-  using std::placeholders::_1;
   MyMetrics.RegisterListener(TAG, MS_V_BAT_PACK_TAVG, std::bind(&OvmsHyundaiIoniqEv::UpdatedAverageTemp, this, _1));
 
   // init commands:
@@ -635,7 +641,6 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 #endif
 
 
-  using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsHyundaiIoniqEv::EventListener, this, _1, _2));
 
   MyConfig.RegisterParam("xiq", "Ioniq 5/EV6 specific settings.", true, true);
@@ -664,10 +669,32 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   XDISARM;
 }
 
+static const char *ECU_POLL = "!xiq.ecu";
+
 void OvmsHyundaiIoniqEv::ECUStatusChange(bool run)
 {
   // When ECU is running - be more agressive.
-  PollSetThrottling(run ? 10 : 4);
+  int newThrottle =  run ? 10 : 5;
+  bool subtick = run && MyConfig.GetParamValueBool("xiq", "poll_subtick", false);
+  ESP_LOGD(TAG, "run=%d throttle=%d subtick=%d", run, newThrottle, subtick);
+  PollSetThrottling(newThrottle);
+
+  if (!run) {
+    RemovePollRequest(m_can1, ECU_POLL);
+  } else {
+    // Add an extra set of polling.
+    auto poll_series = std::shared_ptr<OvmsPoller::StandardPacketPollSeries>(
+        new OvmsPoller::StandardPacketPollSeries(nullptr, 3/*repeats*/,
+              std::bind(&OvmsHyundaiIoniqEv::Incoming_Full, this, _1, _2, _3, _4, _5),
+              nullptr));
+    poll_series->PollSetPidList(1, vehicle_ioniq_driving_polls);
+
+    PollRequest(m_can1, ECU_POLL, poll_series);
+  }
+  if (subtick)
+    PollSetTicker(333, 3);
+  else
+    PollSetTicker(1000, 1);
 }
 
 /**
@@ -695,7 +722,7 @@ void OvmsHyundaiIoniqEv::ConfigChanged(OvmsConfigParam *param)
   ESP_LOGD(TAG, "Hyundai Ioniq 5 EV reload configuration");
 
   // Instances:
-  // xkn
+  // xiq
   //    cap_act_kwh     Battery capacity in kwH
   //  suffsoc           Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange         Sufficient range [km] (Default: 0=disabled)
