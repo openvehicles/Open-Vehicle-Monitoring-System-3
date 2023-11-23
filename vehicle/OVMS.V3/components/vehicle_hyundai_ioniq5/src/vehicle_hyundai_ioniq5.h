@@ -168,7 +168,7 @@ public:
   void EventListener(std::string event, void *data);
   void UpdatedAverageTemp(OvmsMetric* metric);
   void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
-  void ConfigChanged(OvmsConfigParam *param);
+  void ConfigChanged(OvmsConfigParam *param) override;
   bool SetFeature(int key, const char *value);
   const std::string GetFeature(int key);
   vehicle_command_t CommandHandler(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);

@@ -40,23 +40,23 @@ class OvmsVehicleZeva : public OvmsVehicle
     ~OvmsVehicleZeva();
 
   public:
-    virtual void Ticker1(uint32_t ticker);
-    virtual void Ticker10(uint32_t ticker);
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
-    virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
-    virtual vehicle_command_t CommandStartCharge();
-    virtual vehicle_command_t CommandStopCharge();
-    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart);
-    virtual vehicle_command_t CommandCooldown(bool cooldownon);
-    virtual vehicle_command_t CommandWakeup();
-    virtual vehicle_command_t CommandLock(const char* pin);
-    virtual vehicle_command_t CommandUnlock(const char* pin);
-    virtual vehicle_command_t CommandActivateValet(const char* pin);
-    virtual vehicle_command_t CommandDeactivateValet(const char* pin);
-    virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode) override;
+    vehicle_command_t CommandSetChargeCurrent(uint16_t limit) override;
+    vehicle_command_t CommandStartCharge() override;
+    vehicle_command_t CommandStopCharge() override;
+    vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart) override;
+    vehicle_command_t CommandCooldown(bool cooldownon) override;
+    vehicle_command_t CommandWakeup() override;
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
+    vehicle_command_t CommandActivateValet(const char* pin) override;
+    vehicle_command_t CommandDeactivateValet(const char* pin) override;
+    vehicle_command_t CommandHomelink(int button, int durationms=1000) override;
   };
 
 #endif //#ifndef __VEHICLE_ZEVA_H__

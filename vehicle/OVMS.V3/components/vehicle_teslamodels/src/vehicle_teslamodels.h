@@ -45,20 +45,20 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
     ~OvmsVehicleTeslaModelS();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan3(CAN_frame_t* p_frame) override;
 
   protected:
-    virtual void Ticker1(uint32_t ticker);
-    virtual void Notify12vCritical();
-    virtual void Notify12vRecovered();
-    virtual void NotifyBmsAlerts();
+    void Ticker1(uint32_t ticker) override;
+    void Notify12vCritical() override;
+    void Notify12vRecovered() override;
+    void NotifyBmsAlerts() override;
 
 #ifdef CONFIG_OVMS_COMP_TPMS
   public:
-    virtual bool TPMSRead(std::vector<uint32_t> *tpms);
-    virtual bool TPMSWrite(std::vector<uint32_t> &tpms);
+    bool TPMSRead(std::vector<uint32_t> *tpms) override;
+    bool TPMSWrite(std::vector<uint32_t> &tpms) override;
 
   protected:
     typedef enum

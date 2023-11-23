@@ -50,8 +50,8 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     ~OvmsVehicleVoltAmpera();
 
   public:
-    void Status(int verbosity, OvmsWriter* writer);
-    void ConfigChanged(OvmsConfigParam* param);
+    void Status(int verbosity, OvmsWriter* writer) override;
+    void ConfigChanged(OvmsConfigParam* param) override;
 
     typedef enum
       {
@@ -73,30 +73,30 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
         OVMS        // OVMS takes care of everything (starting, stopping, lights)
       } va_preheat_commander_t;
 
-    vehicle_command_t CommandWakeup();
-    vehicle_command_t CommandClimateControl(bool enable);
-    vehicle_command_t CommandLock(const char* pin);
-    vehicle_command_t CommandUnlock(const char* pin);
-    vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    vehicle_command_t CommandWakeup() override;
+    vehicle_command_t CommandClimateControl(bool enable) override;
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
+    vehicle_command_t CommandHomelink(int button, int durationms=1000) override;
     vehicle_command_t CommandLights(va_light_t lights, bool turn_on);
-    vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
+    vehicle_command_t CommandSetChargeCurrent(uint16_t limit) override;
     void FlashLights(va_light_t light, int interval=500, int count=1); // milliseconds
 
   protected:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
-    void IncomingFrameCan4(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan3(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan4(CAN_frame_t* p_frame) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void TxCallback(const CAN_frame_t* p_frame, bool success);
     void CommandWakeupComplete(const CAN_frame_t* p_frame, bool success);
     void SendTesterPresentMessage( uint32_t id );
-    virtual void Ticker1(uint32_t ticker);
-    virtual void Ticker10(uint32_t ticker);
-    virtual void Ticker300(uint32_t ticker);
-    virtual void NotifiedVehicleOn();
-    virtual void NotifiedVehicleOff();
-    virtual void NotifiedVehicleAwake();
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
+    void Ticker300(uint32_t ticker) override;
+    void NotifiedVehicleOn() override;
+    void NotifiedVehicleOff() override;
+    void NotifiedVehicleAwake() override;
 
     // va_ac_preheat
     void ClimateControlInit();

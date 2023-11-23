@@ -46,23 +46,23 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     void IncomingFrameCan1(CAN_frame_t* p_frame);
 
   public:
-    virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
-    virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
-    virtual vehicle_command_t CommandStartCharge();
-    virtual vehicle_command_t CommandStopCharge();
-    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart);
-    virtual vehicle_command_t CommandCooldown(bool cooldownon);
-    virtual vehicle_command_t CommandWakeup();
-    virtual vehicle_command_t CommandLock(const char* pin);
-    virtual vehicle_command_t CommandUnlock(const char* pin);
-    virtual vehicle_command_t CommandActivateValet(const char* pin);
-    virtual vehicle_command_t CommandDeactivateValet(const char* pin);
-    virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode) override;
+    vehicle_command_t CommandSetChargeCurrent(uint16_t limit) override;
+    vehicle_command_t CommandStartCharge() override;
+    vehicle_command_t CommandStopCharge() override;
+    vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart) override;
+    vehicle_command_t CommandCooldown(bool cooldownon) override;
+    vehicle_command_t CommandWakeup() override;
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
+    vehicle_command_t CommandActivateValet(const char* pin) override;
+    vehicle_command_t CommandDeactivateValet(const char* pin) override;
+    vehicle_command_t CommandHomelink(int button, int durationms=1000) override;
 
 #ifdef CONFIG_OVMS_COMP_TPMS
   public:
-    virtual bool TPMSRead(std::vector<uint32_t> *tpms);
-    virtual bool TPMSWrite(std::vector<uint32_t> &tpms);
+    bool TPMSRead(std::vector<uint32_t> *tpms) override;
+    bool TPMSWrite(std::vector<uint32_t> &tpms) override;
 #endif // #ifdef CONFIG_OVMS_COMP_TPMS
 
   public:
@@ -91,19 +91,19 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     TimerHandle_t m_speedo_timer;              // Timer for digital speedo
 
   public:
-    virtual void Status(int verbosity, OvmsWriter* writer);
+    void Status(int verbosity, OvmsWriter* writer) override;
 
   protected:
-    virtual void Notify12vCritical();
-    virtual void Notify12vRecovered();
+    void Notify12vCritical() override;
+    void Notify12vRecovered() override;
 
   protected:
-    virtual int GetNotifyChargeStateDelay(const char* state);
-    virtual void NotifiedVehicleChargeStart();
-    virtual void NotifiedVehicleOn();
-    virtual void NotifiedVehicleOff();
-    virtual void Ticker1(uint32_t ticker);
-    virtual void Ticker60(uint32_t ticker);
+    int GetNotifyChargeStateDelay(const char* state) override;
+    void NotifiedVehicleChargeStart() override;
+    void NotifiedVehicleOn() override;
+    void NotifiedVehicleOff() override;
+    void Ticker1(uint32_t ticker) override;
+    void Ticker60(uint32_t ticker) override;
 
   protected:
     void RequestStreamStartCAC();
