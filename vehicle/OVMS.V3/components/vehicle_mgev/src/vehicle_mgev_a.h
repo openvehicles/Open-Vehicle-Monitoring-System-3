@@ -46,7 +46,7 @@ class OvmsVehicleMgEvA : public OvmsVehicleMgEv
 
   protected:
     void Ticker1(uint32_t ticker) override;
-    vehicle_command_t CommandWakeup() override;   
+    vehicle_command_t CommandWakeup() override;
 
   private:
     void ZombieMode();

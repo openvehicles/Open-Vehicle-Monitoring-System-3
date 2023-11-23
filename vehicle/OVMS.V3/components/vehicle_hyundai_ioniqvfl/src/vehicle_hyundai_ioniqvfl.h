@@ -44,8 +44,8 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
     ~OvmsVehicleHyundaiVFL();
 
   public:
-    void ConfigChanged(OvmsConfigParam *param);
-    void MetricModified(OvmsMetric* metric);
+    void ConfigChanged(OvmsConfigParam *param) override;
+    void MetricModified(OvmsMetric* metric) override;
 
   protected:
     void Ticker60(uint32_t ticker);
