@@ -31,9 +31,9 @@ static const char *TAG = "v-kiasoulev";
  */
 void OvmsVehicleKiaSoulEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
-	//ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_low, job.type, job.pid, length, data[0], data[1], data[2], data[3],
+	//ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_rec, job.type, job.pid, length, data[0], data[1], data[2], data[3],
 	//	data[4], data[5], data[6], data[7]);
-	switch (job.moduleid_low)
+	switch (job.moduleid_rec)
 		{
 		// ****** SJB *****
 		case 0x779:
@@ -66,7 +66,7 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, 
 			break;
 
 		default:
-			ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_low);
+			ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_rec);
 			break;
 	  }
   }

@@ -33,7 +33,7 @@ void OvmsVehicleKiaNiroEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, 
   {
 	//ESP_LOGD(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_low, job.type, job.pid, length, data[0], data[1], data[2], data[3],
 	//	data[4], data[5], data[6], data[7]);
-	switch (job.moduleid_low)
+	switch (job.moduleid_rec)
 		{
 		// ****** IGMP *****
 		case 0x778:
@@ -81,7 +81,7 @@ void OvmsVehicleKiaNiroEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, 
 			break;
 
 		default:
-			ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_low);
+			ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_rec);
 			break;
 	  }
   }

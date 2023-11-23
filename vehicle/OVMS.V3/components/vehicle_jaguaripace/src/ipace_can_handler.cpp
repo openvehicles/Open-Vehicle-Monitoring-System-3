@@ -162,14 +162,14 @@ void OvmsVehicleJaguarIpace::IncomingPollReply(const OvmsPoller::poll_job_t &job
     ESP_LOGD(
         TAG,
         "%03" PRIx32 " TYPE:%" PRIx16 " PID:%02" PRIx16 " Length:%" PRIx8 " Data:%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8,
-        job.moduleid_low,
+        job.moduleid_rec,
         job.type,
         job.pid,
         length,
         data[0], data[1], data[2], data[3]
     );
 
-    switch (job.moduleid_low)
+    switch (job.moduleid_rec)
     {
         case (becmId | rxFlag):
             IncomingBecmPoll(job.pid, data, length, job.mlremain);

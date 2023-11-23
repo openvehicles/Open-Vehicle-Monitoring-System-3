@@ -36,11 +36,11 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 {
   XARM("OvmsHyundaiIoniqEv::IncomingPollReply");
   /*
-  ESP_LOGV(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
+  ESP_LOGV(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_rec, type, pid, length, data[0], data[1], data[2], data[3],
      data[4], data[5], data[6], data[7]);
   */
   bool process_all = false;
-  switch (job.moduleid_low) {
+  switch (job.moduleid_rec) {
     // ****** IGMP *****
     case 0x778:
       process_all = true;
@@ -81,7 +81,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
       break;
 
     default:
-      ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_low);
+      ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_rec);
       XDISARM;
       return;
   }
@@ -100,7 +100,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
       obd_frame = 0;
       rxbuf.clear();
       ESP_LOGV(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Buffer: %d - Start",
-        job.moduleid_low, job.type, job.pid, length + job.mlremain);
+        job.moduleid_rec, job.type, job.pid, length + job.mlremain);
       rxbuf.reserve(length + job.mlremain);
     }
     else {
@@ -108,9 +108,9 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         XDISARM;
         return; // Aborted
       }
-      if ((obd_rxtype != job.type) || (obd_rxpid != job.pid) || (obd_module != job.moduleid_low)) {
+      if ((obd_rxtype != job.type) || (obd_rxpid != job.pid) || (obd_module != job.moduleid_rec)) {
         ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Dropped Frame",
-          job.moduleid_low, job.type, job.pid);
+          job.moduleid_rec, job.type, job.pid);
         XDISARM;
         return;
       }
@@ -119,7 +119,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         obd_frame = 0xffff;
         rxbuf.clear();
         ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Skipped Frame: %d",
-          job.moduleid_low, job.type, job.pid, obd_frame);
+          job.moduleid_rec, job.type, job.pid, obd_frame);
         XDISARM;
         return;
       }
@@ -128,7 +128,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
     rxbuf.insert(rxbuf.end(), data, data + length);
     /*
     ESP_LOGV(TAG, "IoniqISOTP: IPR %03x TYPE:%x PID: %03x Frame: %d Append: %d Expected: %d - Append",
-      job.moduleid_low, job.type, job.pid, m_poll_ml_frame, length, job.mlremain);
+      job.moduleid_rec, job.type, job.pid, m_poll_ml_frame, length, job.mlremain);
     */
     if (job.mlremain > 0) {
       // we need more - return for now.
@@ -137,9 +137,9 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
     }
 
     ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Frames: %d Message Size: %d",
-      job.moduleid_low, job.type, job.pid, obd_frame, rxbuf.size());
+      job.moduleid_rec, job.type, job.pid, obd_frame, rxbuf.size());
     ESP_BUFFER_LOGD(TAG, rxbuf.data(), rxbuf.size());
-    switch (job.moduleid_low) {
+    switch (job.moduleid_rec) {
       case 0x778:
         IncomingIGMP_Full(job.bus, job.type, job.pid, rxbuf);
         break;
