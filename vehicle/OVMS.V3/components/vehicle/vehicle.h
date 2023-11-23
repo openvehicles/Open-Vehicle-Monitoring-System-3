@@ -34,6 +34,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <memory>
 #include "can.h"
 #include "ovms_events.h"
 #include "ovms_config.h"

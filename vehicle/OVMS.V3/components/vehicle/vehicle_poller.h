@@ -132,23 +132,247 @@ class OvmsPoller {
 // Macro for poll_pid_t termination
 #define POLL_LIST_END                   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0, 0 }
 
-  class ParentSignal {
-  public:
-    virtual ~ParentSignal() { }
-    // Signals for vehicle
-    virtual void PollRunFinished() = 0;
+    class ParentSignal {
+    public:
+      virtual ~ParentSignal() { }
+      // Signals for vehicle
+      virtual void PollRunFinished() = 0;
+      virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
+      virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
+      virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
 
-    virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
-    virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
-    virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
+      virtual void IncomingPollRxFrame(canbus* bus, CAN_frame_t* frame, bool success) = 0;
+      virtual bool Ready() = 0;
+      virtual uint8_t GetBusNo(canbus* bus) = 0;
+      virtual canbus* GetBus(uint8_t busno) = 0;
 
-    virtual void IncomingPollRxFrame(canbus* bus, CAN_frame_t* frame, bool success) = 0;
-    virtual bool Ready() = 0;
-    virtual uint8_t GetBusNo(canbus* bus) = 0;
-    virtual canbus* GetBus(uint8_t busno) = 0;
+      virtual void PollerSend(uint8_t busno, OvmsPoller::poller_source_t source) = 0;
+    };
 
-    virtual void PollerSend(uint8_t busno, OvmsPoller::poller_source_t source) = 0;
-  };
+    enum class OvmsNextPollResult
+      {
+      StillAtEnd, ///< Still at end of list.
+      FoundEntry, ///< Found an entry
+      ReachedEnd, ///< Reached the end.
+      Ignore      ///< Ignore this (don't move to next poller index)
+      };
+
+    enum class SeriesStatus
+      {
+      Next,         ///< Move to Next Poll Result
+      RemoveNext,   ///< Remove Series from list and keep going.
+      RemoveRestart ///< Remove series and resume from start
+      };
+
+    /// Class that defines a series list.
+    class PollSeriesEntry
+      {
+      public:
+        /// Move list to start.
+        virtual void ResetList() = 0;
+
+        /// Find the next poll entry.
+        virtual OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry, uint8_t mybus, uint32_t pollticker, uint8_t pollstate) = 0;
+        /// Process an incoming packet.
+        virtual void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length) = 0;
+        /// Process An Error
+        virtual void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) = 0;
+
+        /// Called when run is finished to determine what happens next.
+        virtual SeriesStatus FinishRun() = 0;
+
+        /// Called before removing from list.
+        virtual void Removing() = 0;
+
+        /// Return true if this series has any entries
+        virtual bool HasPollList() = 0;
+
+        /** Return true if the list can be reset.
+          */
+        virtual bool CanReset() = 0;
+      };
+
+    /// Named element in the series double-linked list.
+    typedef struct poll_series_st
+      {
+      std::string name;
+      std::shared_ptr<PollSeriesEntry> series;
+
+      bool is_blocking;
+
+      struct poll_series_st *prev, *next;
+      } poll_series_t;
+
+    /** A collection of Poll Series entries.
+     *  Also behaves as the iterator controlling which is the current series/entry.
+     *  No thread safety included, so relies on the mutex blocking calls to it.
+     */
+    class PollSeriesList
+      {
+      private:
+        // Each end of the list.
+        poll_series_t *m_first, *m_last;
+        // Current poll entry.
+        poll_series_t *m_iter;
+
+        // Remove an item out of the linked list.
+        void Remove( poll_series_t *iter);
+        // Insert an item into the linked list (before == null means the end)
+        void InsertBefore( poll_series_t *iter, poll_series_t *before);
+      public:
+        PollSeriesList();
+        ~PollSeriesList();
+
+        // List functions:
+
+        /** Set/Add the named entry to the series specified.
+         * @param name Name of the entry.
+         * @param series Shared pointer to the series
+         * @param blocking This is a blocking poll entry.
+         */
+        void SetEntry(const std::string &name, std::shared_ptr<PollSeriesEntry> series, bool blocking = false);
+        /// Remove the named entry from the list.
+        void RemoveEntry( const std::string &name);
+        /// Are there any entries/lists
+        bool IsEmpty();
+        /// Clear the list.
+        void Clear();
+
+        // Processing functions.
+
+        /// Process an incoming packet.
+        void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length);
+
+        /// Process An Error
+        void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code);
+
+        /// Reset the list to beging processing
+        void RestartPoll();
+
+        /// Get the next poll entry
+        OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry, uint8_t mybus, uint32_t pollticker, uint8_t pollstate);
+
+        /// Are there any lists that have active entries?
+        bool HasPollList();
+
+        /** Return true if the current item is marked as blocking.
+        */
+        bool PollIsBlocking()
+          {
+          return (m_iter != nullptr) && (m_iter->is_blocking) && (m_iter->series != nullptr);
+          }
+
+        /** Return true if the list can be reset.
+          */
+        bool CanReset();
+      };
+
+    /** Standard series.
+      * The main functionality of processing an array of poll_pid_t based on the pollstate and ticker.
+      */
+    class StandardPollSeries : public PollSeriesEntry
+      {
+      protected:
+        OvmsPoller *m_poller;
+        uint16_t m_state_offset; // Offset of 'state' entries.
+
+        uint8_t m_defaultbus;
+
+        const poll_pid_t* m_poll_plist; // Head of poll list
+        const poll_pid_t* m_poll_plcur; // Poll list loop cursor
+
+      public:
+        StandardPollSeries(OvmsPoller *poller, uint16_t stateoffset = 0);
+
+        /// Set the PID list and default bus.
+        void PollSetPidList(uint8_t defaultbus, const poll_pid_t* plist);
+
+        // Move list to start.
+        void ResetList() override;
+
+        // Find the next poll entry.
+        OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry, uint8_t mybus, uint32_t pollticker, uint8_t pollstate) override;
+
+        // Process an incoming packet. (pass through to m_poller)
+        void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length) override;
+
+        // Process An Error. (pass through to m_poller)
+        void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) override;
+
+        // Called when run is finished to determine what happens next.
+        SeriesStatus FinishRun() override;
+
+        void Removing() override;
+
+        bool HasPollList() override;
+
+        bool CanReset() override;;
+      };
+
+   /** Base for Once off Poll series.
+    */
+   class OnceOffPollBase : public PollSeriesEntry
+      {
+      protected:
+        enum class status_t {
+          Init, ///< Initialised, entry can be sent
+          Sent, ///< Entry is sent. (Next mode is 'finished');
+          Stopped ///< Has been stopped. (Needs to be reset)
+          };
+        status_t m_sent;
+        poll_pid_t m_poll; // Poll Entry
+        std::string *m_poll_rxbuf;    // … response buffer
+        int         *m_poll_rxerr;    // … response error code (NRC) / TX failure code
+
+        // Called when the one-off is finished (for semaphore etc).
+        // Called with NULL bus when on Removing
+        virtual void Done(bool success);
+      public:
+        OnceOffPollBase( const poll_pid_t &pollentry, std::string *rxbuf, int *rxerr);
+
+        // Move list to start.
+        void ResetList() override;
+
+        // Find the next poll entry.
+        OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry,  uint8_t mybus, uint32_t pollticker, uint8_t pollstate) override;
+
+        // Process an incoming packet.
+        void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length) override;
+
+        // Process An Error
+        void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) override;
+
+        bool HasPollList() override;
+
+        bool CanReset();
+      };
+
+  private:
+   /** Blocking once off poll entry used by PollSingleRequest.
+    *  Signals Semaphore when done.  Used for once-off blocking calls.
+    *  Because this is used poentially passing in stack variables, I'm going to
+    *  leave this as private as it really needs to have Finished() called before
+    *  the variables go out of scope.
+    */
+   class BlockingOnceOffPoll : public OnceOffPollBase
+      {
+      protected:
+        OvmsSemaphore *m_poll_rxdone;   // … response done (ok/error)
+        void Done(bool success) override;
+      public:
+        BlockingOnceOffPoll(const poll_pid_t &pollentry, std::string *rxbuf, int *rxerr, OvmsSemaphore *rxdone );
+
+        // Called To null out the call-back pointers (particularly before they go out of scope).
+        void Finished();
+   public:
+
+      // Called when run is finished to determine what happens next.
+      SeriesStatus FinishRun() override;
+
+      void Removing() override;
+    };
+
+
 
   protected:
     ParentSignal *m_parent_signal;
@@ -159,12 +383,8 @@ class OvmsPoller {
     // Poll state
     uint8_t           m_poll_default_bus;
 
-    enum class PollMode : short { Standard, OnceOff, OnceOffDone };
-    PollMode m_poll_mode;
-
-    poll_pid_t  m_poll_once;                  // Once-off Poll
-    const poll_pid_t* m_poll_plist;           // Head of poll list
-    const poll_pid_t* m_poll_plcur;           // Poll list loop cursor
+    PollSeriesList    m_polls;  // User poll entries list.
+    std::shared_ptr<StandardPollSeries> m_poll_series;
 
   protected:
     poll_job_t        m_poll;
@@ -194,9 +414,6 @@ class OvmsPoller {
 
   private:
     OvmsRecMutex      m_poll_single_mutex;    // PollSingleRequest() concurrency protection
-    std::string*      m_poll_single_rxbuf;    // … response buffer
-    int               m_poll_single_rxerr;    // … response error code (NRC) / TX failure code
-    OvmsSemaphore     m_poll_single_rxdone;   // … response done (ok/error)
 
   protected:
     vwtp_channel_t    m_poll_vwtp;            // VWTP channel state
@@ -227,20 +444,12 @@ class OvmsPoller {
 
   public:
     bool HasBus(canbus* bus) { return bus == m_poll.bus;}
+    uint8_t CanBusNo() { return m_poll.bus_no;}
   protected:
-
-    enum class OvmsNextPollResult
-      {
-      StillAtEnd, ///< Still at end of list.
-      FoundEntry, ///< Found an entry
-      ReachedEnd, ///< Reached the end.
-      Ignore      ///< Ignore this (don't move to next poller index)
-      };
 
     // Poll entry manipulation: Must be called under lock of m_poll_mutex
 
-    void ResetPollEntry();
-    OvmsNextPollResult NextPollEntry(poller_source_t source, poll_pid_t *entry);
+    void ResetPollEntry(bool force = false);
     void PollerNextTick(poller_source_t source);
 
     void Incoming(CAN_frame_t &frame, bool success);
