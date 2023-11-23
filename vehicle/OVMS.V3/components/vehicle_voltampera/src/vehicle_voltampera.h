@@ -111,6 +111,7 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     void NotifyFuel();
     void NotifyMetrics();
 
+    void PollRunFinished() override;
   protected:
     char m_vin[18];
     char m_type[6];

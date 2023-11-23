@@ -554,7 +554,7 @@ void OvmsVehicleMgEv::ConfigurePollInterface(int bus)
     {
         // Already configured for that interface
         ESP_LOGI(TAG, "Already configured for interface, not re-configuring");
-        if (m_pollData && !m_poll_plist)
+        if (m_pollData && !HasPollList())
         {
             PollSetPidList(newBus, m_pollData);
         }

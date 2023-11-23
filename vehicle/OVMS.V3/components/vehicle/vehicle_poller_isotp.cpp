@@ -42,12 +42,12 @@ static const char *TAG = "vehicle-isotp";
  */
 void OvmsVehicle::PollerISOTPStart(bool fromTicker)
   {
-  if (m_poll_plcur->rxmoduleid != 0)
+  if (m_poll.entry.rxmoduleid != 0)
     {
     // send to <moduleid>, listen to response from <rmoduleid>:
-    m_poll.moduleid_sent = m_poll_plcur->txmoduleid;
-    m_poll.moduleid_low = m_poll_plcur->rxmoduleid;
-    m_poll.moduleid_high = m_poll_plcur->rxmoduleid;
+    m_poll.moduleid_sent = m_poll.entry.txmoduleid;
+    m_poll.moduleid_low = m_poll.entry.rxmoduleid;
+    m_poll.moduleid_high = m_poll.entry.rxmoduleid;
     }
   else
     {
@@ -58,7 +58,7 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
     }
 
   ESP_LOGD(TAG, "PollerISOTPStart(%d): send [bus=%d, type=%02X, pid=%X], expecting %03" PRIx32 "/%03" PRIx32 "-%03" PRIx32,
-           fromTicker, m_poll_plcur->pollbus, m_poll.type, m_poll.pid, m_poll.moduleid_sent,
+           fromTicker, m_poll.entry.pollbus, m_poll.type, m_poll.pid, m_poll.moduleid_sent,
            m_poll.moduleid_low, m_poll.moduleid_high);
 
   //
@@ -75,15 +75,15 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
   uint16_t tx_datalen;            // Payload data length
   uint16_t tx_datasent;           // Payload data length sent with this frame
 
-  if (m_poll_plcur->xargs.tag == POLL_TXDATA)
+  if (m_poll.entry.xargs.tag == POLL_TXDATA)
     {
-    tx_data = m_poll_plcur->xargs.data;
-    tx_datalen = m_poll_plcur->xargs.datalen;
+    tx_data = m_poll.entry.xargs.data;
+    tx_datalen = m_poll.entry.xargs.datalen;
     }
   else
     {
-    tx_data = m_poll_plcur->args.data;
-    tx_datalen = m_poll_plcur->args.datalen;
+    tx_data = m_poll.entry.args.data;
+    tx_datalen = m_poll.entry.args.datalen;
     }
 
   CAN_frame_t txframe = {};
@@ -112,9 +112,9 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
     }
 
   // Do we need to split this request into multiple frames?
-  if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
+  if (POLL_TYPE_HAS_16BIT_PID(m_poll.entry.type))
     tp_len = 3 + tx_datalen;
-  else if (POLL_TYPE_HAS_8BIT_PID(m_poll_plcur->type))
+  else if (POLL_TYPE_HAS_8BIT_PID(m_poll.entry.type))
     tp_len = 2 + tx_datalen;
   else
     tp_len = 1 + tx_datalen;
@@ -134,7 +134,7 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
     }
 
   // Add TP data:
-  if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
+  if (POLL_TYPE_HAS_16BIT_PID(m_poll.entry.type))
     {
     tp_data[0] = m_poll.type;
     tp_data[1] = m_poll.pid >> 8;
@@ -142,7 +142,7 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
     tx_datasent = LIMIT_MAX(tx_datalen, tp_datalen - 3);
     memcpy(&tp_data[3], tx_data, tx_datasent);
     }
-  else if (POLL_TYPE_HAS_8BIT_PID(m_poll_plcur->type))
+  else if (POLL_TYPE_HAS_8BIT_PID(m_poll.entry.type))
     {
     tp_data[0] = m_poll.type;
     tp_data[1] = m_poll.pid;
@@ -567,9 +567,9 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   // - poll throttling is unlimited or limit isn't reached yet
   if (m_poll_wait == 0 &&
       m_poll.moduleid_sent != 0x7df &&
-      (!m_poll_sequence_max || m_poll_sequence_cnt < m_poll_sequence_max))
+      CanPoll() )
     {
-    PollerSend(false);
+    PollerSend(poller_source_t::Successful);
     }
 
   return true;

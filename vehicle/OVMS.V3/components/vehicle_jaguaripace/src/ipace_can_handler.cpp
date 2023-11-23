@@ -121,7 +121,7 @@ void OvmsVehicleJaguarIpace::IncomingPollFrame(CAN_frame_t* frame)
 
     }
     // Handle multi-line version responses
-    else if (m_poll_plist == nullptr && frameType == ISOTP_FT_CONSECUTIVE)
+    else if (HasPollList() && frameType == ISOTP_FT_CONSECUTIVE)
     {
         // auto start = ((dataLength - 1) * 7) + 3;
         // for (auto& version : m_versions)
