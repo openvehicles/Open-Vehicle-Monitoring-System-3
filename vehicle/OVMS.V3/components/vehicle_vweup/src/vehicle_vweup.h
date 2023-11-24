@@ -63,6 +63,7 @@ using namespace std;
 // VW e-Up specific MSG protocol commands:
 #define CMD_SetChargeAlerts         204 // (suffsoc, current limit, charge mode)
 
+
 typedef enum {
   ENABLE_CLIMATE_CONTROL,
   DISABLE_CLIMATE_CONTROL,
@@ -275,17 +276,10 @@ protected:
 
 public:
   void SendOcuHeartbeat();
-  void CCCountdown();
-  void CCOn();
-  void CCOnP();
-  void CCOff();
-  static void ccCountdown(TimerHandle_t timer);
   static void sendOcuHeartbeat(TimerHandle_t timer);
   void CCTempSet(uint16_t temperature);
   static void Profile0_Retry_Timer(TimerHandle_t timer);
   void Profile0_Retry_CallBack();
-  //bool StartCharget26();
-  //bool StopCmharget26();
   bool StartStopChargeT26(bool start);
   void SetChargeCurrent(uint16_t limit);
   void RequestProfile0();
@@ -304,14 +298,11 @@ public:
   bool vin_part1;
   bool vin_part2;
   bool vin_part3;
-  int vweup_remote_climate_ticker;
-  int vweup_cc_temp_int;
   bool ocu_awake;
   bool ocu_working;
   bool ocu_what;
   bool ocu_wait;
   bool vweup_cc_on;
-  bool vweup_cc_turning_on;
   bool signal_ok;
   bool t26_12v_boost;
   bool t26_car_on;
@@ -319,7 +310,6 @@ public:
   int t26_12v_boost_cnt;
   int t26_12v_boost_last_cnt;
   int t26_12v_wait_off;
-  int cc_count;
   int cd_count;
   int fas_counter_on;
   int fas_counter_off;
@@ -344,7 +334,6 @@ public:
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
   TimerHandle_t m_sendOcuHeartbeat;
-  TimerHandle_t m_ccCountdown;
   TimerHandle_t profile0_timer;
 
 
