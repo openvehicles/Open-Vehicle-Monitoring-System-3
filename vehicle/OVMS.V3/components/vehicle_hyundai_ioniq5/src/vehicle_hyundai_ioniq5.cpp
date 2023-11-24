@@ -698,10 +698,17 @@ void OvmsHyundaiIoniqEv::ECUStatusChange(bool run)
 
     PollRequest(m_can1, ECU_POLL, poll_series);
   }
-  if (subtick)
-    PollSetTicker(333, 3);
-  else
+  if (subtick) {
+    PollSetTimeBetweenSuccess(80); // 80ms Gap between each successfull poll.
+    PollSetResponseSeparationTime(5); // Faster bursts of messages.
+    PollSetTicker(300, 3);
+  }
+  else {
+    // Defaults.
+    PollSetTimeBetweenSuccess(0);
+    PollSetResponseSeparationTime(25);
     PollSetTicker(1000, 1);
+  }
 }
 
 /**
