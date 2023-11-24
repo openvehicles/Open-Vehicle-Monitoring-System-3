@@ -97,7 +97,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     nmap["bat.soh.source"] = c.getvar("bat.soh.source");
     nmap["ctp.maxpower"] = c.getvar("ctp_maxpower");
     nmap["chg_soclimit"] = c.getvar("chg_soclimit");
-    nmap["chg_autostop"] = (c.getvar("chg_autostop") == "yes" || c.getvar("chg_autostop") == "1") ? "yes" : "no";
+    nmap["chg_autostop"] = ((c.getvar("chg_autostop") == "yes") or (c.getvar("chg_autostop") == "1")) ? "yes" : "no";
     nmap["chg_climit"] = c.getvar("chg_climit");
 
     // check:
