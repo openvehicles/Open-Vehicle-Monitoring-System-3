@@ -216,12 +216,14 @@ public:
 protected:
   void HandleCharging();
   void HandleChargeStop();
-  void IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingOther_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
+  void Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data);
+
+  void IncomingVMCU_Full(uint16_t type, uint16_t pid, const std::string &data);
+  void IncomingBMC_Full(uint16_t type, uint16_t pid, const std::string &data);
+  void IncomingBCM_Full(uint16_t type, uint16_t pid, const std::string &data);
+  void IncomingIGMP_Full(uint16_t type, uint16_t pid, const std::string &data);
+  void IncomingOther_Full(uint16_t type, uint16_t pid, const std::string &data);
+  void IncomingCM_Full(uint16_t type, uint16_t pid, const std::string &data);
   void RequestNotify(unsigned int which);
   void DoNotify();
   void vehicle_ioniq5_car_on(bool isOn);

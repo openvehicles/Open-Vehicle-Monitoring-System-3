@@ -136,42 +136,52 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
       return;
     }
 
-    ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Frames: %d Message Size: %d",
-      job.moduleid_rec, job.type, job.pid, obd_frame, rxbuf.size());
-    ESP_BUFFER_LOGD(TAG, rxbuf.data(), rxbuf.size());
-    switch (job.moduleid_rec) {
-      case 0x778:
-        IncomingIGMP_Full(job.bus, job.type, job.pid, rxbuf);
-        break;
-      case 0x7ce:
-        IncomingCM_Full(job.bus, job.type, job.pid, rxbuf);
-        break;
-      case 0x7ec:
-        IncomingBMC_Full(job.bus, job.type, job.pid, rxbuf);
-        break;
-      // ****** BCM ******
-      case 0x7a8:
-        IncomingBCM_Full(job.bus, job.type, job.pid, rxbuf);
-        break;
-      // ****** ?? Misc inc speed ******
-      case 0x7bb:
-        IncomingOther_Full(job.bus, job.type, job.pid, rxbuf);
-        break;
-      // ******* VMCU ******
-      case 0x7ea:
-        IncomingVMCU_Full(job.bus, job.type, job.pid, rxbuf);
-        break;
-    }
+    Incoming_Full(job.type, job.moduleid_sent, job.moduleid_rec, job.pid, rxbuf);
     obd_frame = 0xffff; // Received all - drop until we have a new frame 0
     rxbuf.clear();
   }
   XDISARM;
 }
 
+void OvmsHyundaiIoniqEv::Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data)
+{
+  ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Message Size: %d",
+      module_rec, type, pid, data.size());
+  ESP_BUFFER_LOGV(TAG, data.data(), data.size());
+  switch (type) {
+    case VEHICLE_POLL_TYPE_READDATA:
+      switch (module_rec) {
+        case 0x778:
+          IncomingIGMP_Full(type, pid, data);
+          break;
+        case 0x7ce:
+          IncomingCM_Full(type, pid, data);
+          break;
+        case 0x7ec:
+          IncomingBMC_Full(type, pid, data);
+          break;
+        // ****** BCM ******
+        case 0x7a8:
+          IncomingBCM_Full(type, pid, data);
+          break;
+        // ****** ?? Misc inc speed ******
+        case 0x7bb:
+          IncomingOther_Full(type, pid, data);
+          break;
+        // ******* VMCU ******
+        case 0x7ea:
+          IncomingVMCU_Full(type, pid, data);
+          break;
+      }
+      break;
+      break;
+  }
+}
+
 /**
  * Handle incoming messages from cluster.
  */
-void OvmsHyundaiIoniqEv::IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingCM_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingCM_Full");
   switch (pid) {
@@ -192,7 +202,7 @@ void OvmsHyundaiIoniqEv::IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pi
 /**
  * Handle incoming messages from Aircon poll.
  */
-void OvmsHyundaiIoniqEv::IncomingOther_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingOther_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   // 0x7b3->0x7bb
   XARM("OvmsHyundaiIoniqEv::IncomingOther_Full");
@@ -220,7 +230,7 @@ void OvmsHyundaiIoniqEv::IncomingOther_Full(canbus *bus, uint16_t type, uint16_t
  *
  * - Aux battery SOC, Voltage and current
  */
-void OvmsHyundaiIoniqEv::IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingVMCU_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   // 0x7ea
 
@@ -310,7 +320,7 @@ void OvmsHyundaiIoniqEv::IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t 
  * - Cell voltage max / min + cell #
  * + more
  */
-void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingBMC_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   // 0x7e4->0x7ec
   XARM("OvmsHyundaiIoniqEv::IncomingBMC_Full");
@@ -645,7 +655,7 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
  * Handle incoming messages from BCM-poll
  *
  */
-void OvmsHyundaiIoniqEv::IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingBCM_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingBCM_Full");
   //0x7a8
@@ -728,7 +738,7 @@ void OvmsHyundaiIoniqEv::IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t p
  * Handle incoming messages from IGMP-poll
  *
  */
-void OvmsHyundaiIoniqEv::IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingIGMP_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingIGMP_Full");
   // 0x778
