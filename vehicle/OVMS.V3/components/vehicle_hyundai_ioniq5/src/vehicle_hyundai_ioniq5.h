@@ -217,6 +217,7 @@ protected:
   void HandleCharging();
   void HandleChargeStop();
   void Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data);
+  void Incoming_Fail(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, int errorcode);
 
   void IncomingVMCU_Full(uint16_t type, uint16_t pid, const std::string &data);
   void IncomingBMC_Full(uint16_t type, uint16_t pid, const std::string &data);
@@ -350,7 +351,15 @@ protected:
   int m_ecu_lockout;
   void ECUStatusChange(bool run);
 public:
+  // Non-Blocking VIN Request.
+  bool PollRequestVIN();
+
+  // Blocking VIN Request.
   int RequestVIN();
+
+  // Process VIN REsult.
+  bool ProcessVIN(const std::string &response);
+
   bool DriverIndicator(bool on)
   {
     if (IsLHD()) {

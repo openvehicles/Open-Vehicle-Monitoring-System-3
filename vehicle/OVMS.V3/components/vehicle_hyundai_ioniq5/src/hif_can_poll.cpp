@@ -29,6 +29,11 @@
 #include "ovms_utils.h"
 #include <string.h>
 
+#ifdef bind
+#undef bind
+#endif
+using namespace std::placeholders;
+
 /**
  * Incoming poll reply messages
  */
@@ -174,8 +179,19 @@ void OvmsHyundaiIoniqEv::Incoming_Full(uint16_t type, uint32_t module_sent, uint
           break;
       }
       break;
+    case VEHICLE_POLL_TYPE_OBDIIVEHICLE:
+      switch (pid) {
+        case 2: // VIN
+          ProcessVIN(data);
+          break;
+      }
       break;
   }
+}
+void OvmsHyundaiIoniqEv::Incoming_Fail(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, int errorcode)
+{
+  ESP_LOGE(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Error: %d",
+    module_rec, type, pid, errorcode);
 }
 
 /**
@@ -904,61 +920,82 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(uint16_t type, uint16_t pid, const st
   XDISARM;
 }
 
+bool OvmsHyundaiIoniqEv::ProcessVIN(const std::string &response)
+{
+  uint32_t byte;
+  if (!get_uint_buff_be<1>(response, 4, byte)) {
+    ESP_LOGE(TAG, "ProcessVIN: Bad Buffer");
+    return false;
+  }
+  else if (byte != 1) {
+    ESP_LOGI(TAG, "ProcessVIN: Ignore Response");
+    return false;
+  }
+  else {
+    std::string vin;
+    if ( get_buff_string(response, 5, 17, vin)) {
+      if (vin.length() > 5 && vin[4] == '-') {
+        vin = vin.substr(0, 3) + vin.substr(10) + "-------";
+      }
+      StandardMetrics.ms_v_vin->SetValue(vin);
+      ESP_BUFFER_LOGD(TAG, response.data(), response.size());
+
+      vin.copy(m_vin, sizeof(m_vin) - 1);
+      m_vin[sizeof(m_vin) - 1] = '\0';
+      ESP_LOGD(TAG, "ProcessVIN: Success: '%s'->'%s'", vin.c_str(), m_vin);
+      return true;
+    }
+    else {
+      ESP_LOGE(TAG, "ProcessVIN: Bad VIN Buffer");
+      return false;
+    }
+  }
+}
+
+bool OvmsHyundaiIoniqEv::PollRequestVIN()
+{
+  if (!StdMetrics.ms_v_env_awake->AsBool()) {
+    ESP_LOGV(TAG, "PollRequestVIN: Not Awake Request not sent");
+    return false;
+  }
+  auto poll_entry = std::shared_ptr<OvmsPoller::OnceOffPoll>(
+      new OvmsPoller::OnceOffPoll(
+        std::bind(&OvmsHyundaiIoniqEv::Incoming_Full, this, _1, _2, _3, _4, _5),
+        std::bind(&OvmsHyundaiIoniqEv::Incoming_Fail, this, _1, _2, _3, _4, _5),
+        VEHICLE_OBD_BROADCAST_MODULE_TX, VEHICLE_OBD_BROADCAST_MODULE_RX,
+        VEHICLE_POLL_TYPE_OBDIIVEHICLE,  2,
+        ISOTP_STD, 0, 3/*retries*/ ));
+  PollRequest(m_can1, "!xiq.vin", poll_entry);
+  return true;
+}
+
 int OvmsHyundaiIoniqEv::RequestVIN()
 {
   //ESP_LOGD(TAG, "RequestVIN: Sending Request");
+
   if (!StdMetrics.ms_v_env_awake->AsBool()) {
     ESP_LOGD(TAG, "RequestVIN: Not Awake Request not sent");
     return -3;
   }
+
   std::string response;
   int res = PollSingleRequest( m_can1,
       VEHICLE_OBD_BROADCAST_MODULE_TX, VEHICLE_OBD_BROADCAST_MODULE_RX,
       VEHICLE_POLL_TYPE_OBDIIVEHICLE,  2, response, 1000);
-  if (res != POLLSINGLE_OK) {
-    switch (res) {
-      case POLLSINGLE_TIMEOUT:
-        ESP_LOGE(TAG, "RequestVIN: Request Timeout");
-        break;
-      case POLLSINGLE_TXFAILURE:
-        ESP_LOGE(TAG, "RequestVIN: Request TX Failure");
-        break;
-      default:
-        ESP_LOGE(TAG, "RequestVIN: UDC Error %d", res);
-    }
+  switch (res) {
+    case POLLSINGLE_OK:
+      return ProcessVIN(response) ? POLLSINGLE_OK : POLLSINGLE_TIMEOUT;
 
-    return res;
+    case POLLSINGLE_TIMEOUT:
+      ESP_LOGE(TAG, "RequestVIN: Request Timeout");
+      break;
+    case POLLSINGLE_TXFAILURE:
+      ESP_LOGE(TAG, "RequestVIN: Request TX Failure");
+      break;
+    default:
+      ESP_LOGE(TAG, "RequestVIN: UDC Error %d: %s", res, OvmsPoller::PollResultCodeName(res));
   }
-  else {
-    uint32_t byte;
-    if (!get_uint_buff_be<1>(response, 4, byte)) {
-      ESP_LOGE(TAG, "RequestVIN: Bad Buffer");
-      return POLLSINGLE_TIMEOUT;
-    }
-    else if (byte != 1) {
-      ESP_LOGI(TAG, "RequestVIN: Ignore Response");
-      return POLLSINGLE_TIMEOUT;
-    }
-    else {
-      std::string vin;
-      if ( get_buff_string(response, 5, 17, vin)) {
-        if (vin.length() > 5 && vin[4] == '-') {
-          vin = vin.substr(0, 3) + vin.substr(10) + "-------";
-        }
-        StandardMetrics.ms_v_vin->SetValue(vin);
-        ESP_BUFFER_LOGD(TAG, response.data(), response.size());
-
-        vin.copy(m_vin, sizeof(m_vin) - 1);
-        m_vin[sizeof(m_vin) - 1] = '\0';
-        ESP_LOGD(TAG, "RequestVIN: Success: '%s'->'%s'", vin.c_str(), m_vin);
-        return POLLSINGLE_OK;
-      }
-      else {
-        ESP_LOGE(TAG, "RequestVIN.String: Bad Buffer");
-        return POLLSINGLE_TIMEOUT;
-      }
-    }
-  }
+  return res;
 }
 
 /**
