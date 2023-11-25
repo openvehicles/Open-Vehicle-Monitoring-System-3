@@ -173,10 +173,16 @@ void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, cons
   OvmsHyundaiIoniqEv *hif = (OvmsHyundaiIoniqEv *) MyVehicleFactory.ActiveVehicle();
 
   if (hif->m_vin[0] == 0) {
-    hif->RequestVIN();
+    writer->printf("Requesting VIN ... ");
+    if (hif->RequestVIN() != POLLSINGLE_OK)
+    {
+      writer->printf("failed\n");
+      return;
+    }
+    writer->printf("OK\n");
   }
   writer->printf("VIN\n");
-  writer->printf("Vin: %s \n", hif->m_vin);
+  writer->printf("Vin: %s\n", hif->m_vin);
   if (hif->m_vin[0] == 0) {
     return;
   }

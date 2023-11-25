@@ -1181,7 +1181,7 @@ void OvmsHyundaiIoniqEv::Ticker10(uint32_t ticker)
 {
   if (m_vin[0] == 0 && IsPollState_Running() && (m_vin_retry < 10)) {
     ESP_LOGI(TAG, "Checking for VIN.");
-    if (RequestVIN() != -3) {
+    if (PollRequestVIN()) {
       ++m_vin_retry;
     }
   }
