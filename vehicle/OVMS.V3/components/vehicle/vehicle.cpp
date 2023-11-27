@@ -190,18 +190,20 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
   {
   DoClearVehicle(false, true);
   m_currentvehicle = NewVehicle(type);
-  std::string new_type(type);
   if (m_currentvehicle)
     {
+    std::string new_type(type);
+    m_currentvehicletype = new_type;
+    StandardMetrics.ms_v_type->SetValue(m_currentvehicletype);
+
     m_currentvehicle->StartingUp();
+
+    MyEvents.SignalEvent("vehicle.type.set", (void*)new_type.c_str(), new_type.size()+1);
     }
   else
     {
-    new_type = "";
+    StandardMetrics.ms_v_type->SetValue("");
     }
-  m_currentvehicletype = new_type;
-  StandardMetrics.ms_v_type->SetValue(new_type);
-  MyEvents.SignalEvent("vehicle.type.set", (void*)new_type.c_str(), new_type.size()+1);
   }
 
 void OvmsVehicleFactory::AutoInit()
