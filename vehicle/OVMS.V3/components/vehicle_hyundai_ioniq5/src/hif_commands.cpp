@@ -253,45 +253,48 @@ void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, cons
   }
 
   writer->printf("Vehicle Line: ");
-  if (hif->m_vin[3] == 'J') {
-    writer->printf("Soul\n");
-  }
-  else  if (hif->m_vin[3] == 'C') {
-    writer->printf("Niro\n");
-  }
-  else  if (hif->m_vin[3] == 'K') {
-    if (hif->m_vin[4] != 'R') {
-      writer->printf("Kona\n");
-    }
-    else {
-      writer->printf("Ioniq 5\n");
-    }
-  }
-  else {
-    writer->printf("Unknown %c\n", hif->m_vin[3]);
+  switch (hif->m_vin[3]) {
+    case 'J':
+      writer->printf("Soul\n");
+      break;
+    case 'C':
+      writer->printf("Niro\n");
+      break;
+    case 'K':
+      switch (hif->m_vin[4]) {
+        case 'R':
+          writer->printf("Ioniq 5\n");
+          writer->printf("Motor type: ");
+          switch (hif->m_vin[7]) {
+
+            case 'A': writer->printf("Electric motor, 160kw, (111.2Ah/72.6 kWh Battery), RWD 22\n"); break;
+            case 'B': writer->printf("Electric motor, 125kw, (111.2Ah/58.0 kWh Battery), RWD 22\n"); break;
+            case 'E': writer->printf("Electric motor, 168kw, (111.2Ah/77.4 kWh Battery), RWD 22\n"); break;
+            case 'F': writer->printf("Electric motors, 239kw, (111.2Ah/77.4 kWh Battery), AWD 22\n"); break;
+            default:  writer->printf("Unknown %c\n", hif->m_vin[7]); break;
+          }
+          break;
+        default:
+          writer->printf("Kona\n");
+      }
+      break;
+    case 'M': // Entourage, Ioniq 6, Genesis GV70
+      switch (hif->m_vin[4]) {
+          writer->printf("Ioniq 6\n");
+          writer->printf("Motor type: ");
+          switch (hif->m_vin[7]) {
+            case 'A': writer->printf("Electric motor, 168kw, (111.2Ah/77.4 kWh Battery), RWD 23\n"); break;
+            case 'B': writer->printf("Electric motor, 111kw, (111.2Ah/53.0 kWh Battery), RWD 23\n"); break;
+            case 'C': writer->printf("Electric motors, 239kw, (111.2Ah/77.4 kWh Battery), AWD 23\n"); break;
+            default:  writer->printf("Unknown %c\n", hif->m_vin[7]); break;
+          }
+      }
+      break;
+    default:
+      writer->printf("Unknown %c\n", hif->m_vin[3]);
+      break;
   }
 
-  /*if(hif->m_vin[4]=='M')
-    {
-    writer->printf("Low grade\n");
-    }
-    else if(hif->m_vin[4]=='N')
-    {
-    writer->printf("Middle-low grade\n");
-    }
-    else if(hif->m_vin[4]=='P')
-    {
-    writer->printf("Middle grade\n");
-    }
-    else if(hif->m_vin[4]=='R')
-    {
-    writer->printf("Middle-high grade\n");
-    }
-    else if(hif->m_vin[4]=='X')
-    {
-    writer->printf("High grade\n");
-    }
-    else*/
   if (hif->m_vin[4] == 'R') {
     // Ioniq 5. Is this premium?
   }
@@ -337,19 +340,6 @@ void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, cons
   }
   else {
     writer->printf("Model year: Unknown\n");
-  }
-
-  writer->printf("Motor type: ");
-  switch (hif->m_vin[7]) {
-    case 'E':
-      writer->printf("Battery [LiPB 350 V, 75 Ah (39kWh)] + Motor [3-phase AC 80 KW]\n");
-      break;
-    case 'G':
-      writer->printf("Battery [LiPB 356 V, 180 Ah (64kWh)] + Motor [3-phase AC 150 KW]\n");
-      break;
-    default:
-      writer->printf("Unknown %c\n", hif->m_vin[7]);
-      break;
   }
 
   //
