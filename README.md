@@ -30,9 +30,8 @@ module and the web frontend can be customized by plugins. The module has three b
 extended by a fourth one](https://github.com/mjuhanne/OVMS-SWCAN).
 
 The **OVMS base component** is a small and inexpensive hardware module that connects to the vehicle **OBD2** 
-port. The standard kit includes a 3G modem to provide **GSM** connectivity and **GPS** and comes with a 
-ready-to-use [Hologram.io](https://hologram.io/) SIM card. The US kit has been **FCC certified**, the EU kit
-**CE certified**.
+port. The standard kit includes a 3G modem to provide **GSM** connectivity and **GPS**. The US kit has been
+**FCC certified**, the EU kit **CE certified**.
 
 The module provides a **built-in Web App** user interface and remote control via native cellphone Apps 
 available for **Android** and **iOS**. It integrates into home/process automation systems via **MQTT** and 

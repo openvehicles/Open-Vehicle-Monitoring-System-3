@@ -23,7 +23,7 @@ Remote command execution can be done via these APIs:
 Direct/routed connections work best with a Wifi connection to the module, either
 to the module's client IP in a Wifi network or to the module's own AP network.
 Some cellular network providers also offer options for direct or bridged IP
-routing to a mobile device via GSM. With the OVMS partner Hologram, this option
+routing to a mobile device via GSM. When using the recommended Hologram SIM, this option
 is called "Spacebridge device tunneling", it can be enabled free of charge in
 the Hologram dashboard.
 

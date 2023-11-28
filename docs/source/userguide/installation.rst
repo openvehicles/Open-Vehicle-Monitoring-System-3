@@ -16,7 +16,7 @@ Pre-Installation Steps
 Prior to installation, please make sure you have the following available:
 
 #. The OVMS v3 module in it's enclosure.
-#. A `Hologram <https://hologram.io>`_ (or other suitable) SIM card if you module did not come with one.
+#. A `Hologram <https://hologram.io>`_ (or other suitable) SIM card.
 #. A micro-usb cable suitable for connecting to your computer.
 #. A laptop or desktop computer (if necessary).
 #. A cable suitable for connecting to your vehicle.
@@ -163,9 +163,7 @@ OVMS v3 has a number of networking options to choose from. You can either use th
 GSM SIM Activation (Hologram)
 -----------------------------
 
-OVMS has partnered with Hologram and to provide a Hologram GSM SIM pre-installed in every OVMS kit purchased from our partners in Europe and USA. For modules purchased from China, we recommend you purchase a Hologram SIM directly from the hologram.io store (also available on Amazon). In addition, Hologram have provided OVMS a coupon code valid for US$5 off data usage:
-
-Hologram Coupon Code: **OVMS**
+OVMS recommends Hologram SIM cards and service, although note that any compatible 2G/3G/4G SIM card and service should work, and the use of Hologram is not required.
 
 To activate your Hologram SIM, register at https://dashboard.hologram.io/, then invoke "Activate SIM" in the dashboard.
 
