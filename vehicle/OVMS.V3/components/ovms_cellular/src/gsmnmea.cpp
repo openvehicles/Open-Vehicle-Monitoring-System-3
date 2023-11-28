@@ -243,6 +243,7 @@ void GsmNMEA::IncomingLine(const std::string line)
 
     if (std::getline(sentence, token, ','))
       strncpy(time, token.c_str(), 6);
+    bool speedok = false, directionok = false;
     if (std::getline(sentence, token, ','))
       {;} // Status
     if (std::getline(sentence, token, ','))
@@ -254,9 +255,17 @@ void GsmNMEA::IncomingLine(const std::string line)
     if (std::getline(sentence, token, ','))
       {;} // EW
     if (std::getline(sentence, token, ','))
-      speed = atof(token.c_str()) * 1.852;
+      {
+        speedok = !token.empty();
+        if (speedok)
+          speed = atof(token.c_str()) * 1.852;
+      }
     if (std::getline(sentence, token, ','))
-      direction = atof(token.c_str());
+      {
+      directionok = !token.empty();
+      if (directionok)
+        direction = atof(token.c_str());
+      }
     if (std::getline(sentence, token, ','))
       strncpy(date, token.c_str(), 6);
 
@@ -275,8 +284,13 @@ void GsmNMEA::IncomingLine(const std::string line)
       MyTime.Set(TAG, 2, true, tm);
       }
 
-    *StdMetrics.ms_v_pos_direction = (float) direction;
-    *StdMetrics.ms_v_pos_gpsspeed = (float) speed;
+    if (directionok)
+      *StdMetrics.ms_v_pos_direction = (float) direction;
+
+    if (speedok)
+      *StdMetrics.ms_v_pos_gpsspeed = speed;
+    else if (StdMetrics.ms_v_pos_gpsspeed->Age() > 10)
+      *StdMetrics.ms_v_pos_gpsspeed = (float) 0;
 
     // END "RMC" handler
     }
