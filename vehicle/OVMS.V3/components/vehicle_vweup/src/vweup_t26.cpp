@@ -180,7 +180,7 @@ void OvmsVehicleVWeUp::T26Init()
   profile0_mode = 0;
   profile0_charge_current = 0;
   profile0_cc_temp = 0;
-  profile0_delay = 1500;
+  profile0_delay = 1000;
   profile0_retries = 5;
   memset(profile0_cntr, 0, sizeof(profile0_cntr));
   profile0_state = PROFILE0_IDLE;
@@ -704,7 +704,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     if (!dev_mode) {
       comfBus->WriteStandard(0x69E, length2, data2);
     }
-    vTaskDelay(3000 / portTICK_PERIOD_MS);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
 
     ESP_LOGI(TAG, "Sent Wakeup Command - stage 1");
 
@@ -980,6 +980,7 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
       }
       profile0_mode = profile0[11];
       profile0_charge_current = profile0[13];
+      StdMetrics.ms_v_charge_climit->SetValue(profile0_charge_current);
       profile0_cc_temp = (profile0[25]/10)+10;
       profile0_recv = false;
       ESP_LOGI(TAG, "ReadProfile0: got mode: %d, charge_current: %d, cc_temp: %d", profile0_mode, profile0_charge_current, profile0_cc_temp);
@@ -1381,6 +1382,6 @@ void OvmsVehicleVWeUp::ActivateProfile0() // only sends on/off command, profile0
     ESP_LOGD(TAG, "profile0 state change to %d", profile0_state);
   }
   ESP_LOGD(TAG,"Starting profile0 activate timer...");
-  profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(4*profile0_delay), pdFALSE, this, Profile0_Retry_Timer);
+  profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(5*profile0_delay), pdFALSE, this, Profile0_Retry_Timer);
   xTimerStart(profile0_timer, 0);
 }
