@@ -97,7 +97,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     nmap["bat.soh.source"] = c.getvar("bat.soh.source");
     nmap["ctp.maxpower"] = c.getvar("ctp_maxpower");
     nmap["chg_soclimit"] = c.getvar("chg_soclimit");
-    nmap["chg_autostop"] = ((c.getvar("chg_autostop") == "yes") or (c.getvar("chg_autostop") == "1")) ? "yes" : "no";
+    nmap["chg_autostop"] = (c.getvar("chg_autostop") == "yes") ? "yes" : "no";
     nmap["chg_climit"] = c.getvar("chg_climit");
 
     // check:
@@ -156,6 +156,10 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
       nmap["con_t26"] = "yes";
     if (nmap["bat.soh.source"] == "")
       nmap["bat.soh.source"] = "charge";
+    if (nmap["chg_autostop"] == "" || nmap["chg_autostop"] == "0")
+      nmap["chg_autostop"] = "no";
+    else if (nmap["chg_autostop"] == "1")
+      nmap["chg_autostop"] = "yes";
 
     c.head(200);
   }
@@ -191,10 +195,10 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     80, 10, 100, 1,
     "<p>Used if no timer mode limits are available, i.e. without OBD connection or without timer schedule.</p>");
 
-  c.input_slider("Charging Current Limit", "chg_climit", 3, "Amps",
+  c.input_slider("Charge current limit", "chg_climit", 3, "Amps",
     -1, nmap["chg_climit"].empty()? 16 : std::stof(nmap["chg_climit"]),
     16, 6, 16, 1,
-    "<p>Charging current limit Value between 6 - 16 Amps .</p>");
+    "<p>Set charge current limit in vehicle (may be reduced further by charging equipment!)</p>");
 
 /*  c.input_slider("Power limit", "ctp_maxpower", 3, "kW",
     -1, nmap["ctp.maxpower"].empty() ? 0 : std::stof(nmap["ctp.maxpower"]),
@@ -207,6 +211,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   c.input_radiobtn_option("chg_autostop", "Notify", "no", nmap["chg_autostop"] == "no");
   c.input_radiobtn_option("chg_autostop", "Stop", "yes", nmap["chg_autostop"] == "yes");
   c.input_radiobtn_end(
+    "<p>Only notify or stop charge when SoC limit is reached?</p>"
     "<p>This parameter can also be set in the app under FEATURES 6.</p>");
 
   c.fieldset_end();
