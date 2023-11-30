@@ -287,6 +287,7 @@ public:
   void WriteProfile0();
   void ActivateProfile0();
   int profile0_state;
+  bool profile0_1sttime;
 
 private:
   void SendCommand(RemoteCommand);
