@@ -187,6 +187,7 @@ void OvmsVehicleVWeUp::T26Init()
   profile0_key = 0;
   profile0_val = 0;
   profile0_activate = false;
+  profile0_1sttime = true;
 
   dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -966,8 +967,13 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
   else if (profile0_idx == profile0_len)
   {
     ESP_LOGD(TAG,"ReadProfile0 complete");
-    for (int i = 0; i < profile0_len; i+=8)
+    for (int i = 0; i < profile0_len; i+=8) 
       ESP_LOGD(TAG, "Profile0: %02x %02x %02x %02x %02x %02x %02x %02x", profile0[i+0], profile0[i+1], profile0[i+2], profile0[i+3],profile0[i+4], profile0[i+5], profile0[i+6], profile0[i+7]);
+    if (profile0_1sttime) { 
+      for (int i = 0; i < profile0_len; i+=8)
+        ESP_LOGI(TAG, "Profile0: %02x %02x %02x %02x %02x %02x %02x %02x", profile0[i+0], profile0[i+1], profile0[i+2], profile0[i+3],profile0[i+4], profile0[i+5], profile0[i+6], profile0[i+7]);
+      profile0_1sttime = false;
+    }
     if(profile0[27] != 0 && profile0[28] != 0 && profile0[29] != 0)
     {
       // stop any retry timer
@@ -1259,11 +1265,12 @@ void OvmsVehicleVWeUp::SetChargeCurrent(uint16_t climit)
     ESP_LOGE(TAG, "SetChargeCurrent: T26 not ready");
     return;
   }
-  if (profile0_charge_current == climit)
+/*  if (profile0_charge_current == climit) XXX always apply values for now
   {
     ESP_LOGD(TAG, "No change in charge current, ignoring request");
     return;
-  }
+  } */
+  profile0_1sttime = true;
   CommandWakeup(); // wakeup vehicle to enable communication with all ECUs
   profile0_key = 21;
   profile0_val = climit;
@@ -1286,6 +1293,7 @@ bool OvmsVehicleVWeUp::StartStopChargeT26(bool chargestart)
         return Fail;
     }
     ESP_LOGI(TAG, "Charge turning %s", chargestart ? "ON" : "OFF");
+    profile0_1sttime = true;
     CommandWakeup(); // wakeup vehicle to enable communication with all ECUs
     profile0_activate = chargestart;
     profile0_key = 20;
@@ -1307,11 +1315,12 @@ void OvmsVehicleVWeUp::CCTempSet(uint16_t temperature) //to send the can message
     ESP_LOGE(TAG, "CCTempSet: T26 not ready");
     return;
   }
-  if (profile0_cc_temp == temperature)
+/*  if (profile0_cc_temp == temperature) XXX always apply values for now
   {
     ESP_LOGD(TAG, "No change in temperature, ignoring request");
     return;
-  }
+  }*/
+  profile0_1sttime = true;
   CommandWakeup(); // wakeup vehicle to enable communication with all ECUs
   profile0_key = 22;
   profile0_val = temperature;
@@ -1345,6 +1354,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandClimateControl(bool clim
       }
     }*/
     ESP_LOGI(TAG, "CommandClimateControl turning %s", climatecontrolon ? "ON" : "OFF");
+    profile0_1sttime = true;
     CommandWakeup(); // wakeup vehicle to enable communication with all ECUs
     profile0_activate = climatecontrolon;
     profile0_key = 20;

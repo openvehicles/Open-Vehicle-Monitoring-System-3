@@ -437,12 +437,12 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     vweup_cc_temp_int_new = CC_TEMP_MAX;
     MyConfig.SetParamValue("xvu", "cc_temp", STR(CC_TEMP_MAX));
   }
-  if (vweup_cc_temp_int_new != profile0_cc_temp)
-  {
+//  if (vweup_cc_temp_int_new != profile0_cc_temp) XXX always apply values for now
+//  {
     ESP_LOGD(TAG, "CC_temp parameter changed in ConfigChanged from %d to %d", profile0_cc_temp, vweup_cc_temp_int_new);
     if (vweup_enable_t26) 
       CCTempSet(vweup_cc_temp_int_new);
-  }
+//  }
   if (vweup_charge_current_new < 0) {
     vweup_charge_current_new = 0;
     MyConfig.SetParamValue("xvu", "chg_climit", STR(0));
@@ -451,12 +451,12 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     vweup_charge_current_new = CLIMIT_MAX;
     MyConfig.SetParamValue("xvu", "chg_climit", STR(CLIMIT_MAX));
   }
-  if(vweup_charge_current_new != profile0_charge_current)
-  {
+//  if(vweup_charge_current_new != profile0_charge_current) XXX always apply values for now
+//  {
     ESP_LOGD(TAG, "Charge current changed in ConfigChanged from %d to %d", profile0_charge_current, vweup_charge_current_new);
     if (vweup_enable_t26)
       SetChargeCurrent(vweup_charge_current_new);
-  }
+//  }
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // Init Web subsystem:
