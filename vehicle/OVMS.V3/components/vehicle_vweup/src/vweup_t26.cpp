@@ -974,7 +974,7 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
         ESP_LOGI(TAG, "Profile0: %02x %02x %02x %02x %02x %02x %02x %02x", profile0[i+0], profile0[i+1], profile0[i+2], profile0[i+3],profile0[i+4], profile0[i+5], profile0[i+6], profile0[i+7]);
       profile0_1sttime = false;
     }
-    if(profile0[27] != 0 && profile0[28] != 0 && profile0[29] != 0)
+    if(profile0[28] != 0 && profile0[29] != 0)
     {
       // stop any retry timer
     if (profile0_timer != NULL)
