@@ -700,10 +700,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
 
     // We send 0x69E a request for a (currently unknown) profile on PID 941.
     // This wakes 0x400, we wait two seconds and then call us in the ring
-    data[0] = 0x19; //0x14;
-    data[1] = 0x41; //0x42;
+    data2[0] = 0x19; //0x14;
+    data2[1] = 0x41; //0x42;
     if (!dev_mode) {
       comfBus->WriteStandard(0x69E, length2, data2);
+    }
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    if (!dev_mode) {
+      comfBus->WriteStandard(0x69E, length2, data2); // seems like we need to do it twice so it works reliably
     }
     vTaskDelay(2000 / portTICK_PERIOD_MS);
 
