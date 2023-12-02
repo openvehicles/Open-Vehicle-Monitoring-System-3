@@ -436,7 +436,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
 
     case 0x61C: // Charge detection
       cd_count++;
-      if (d[1] == 0xF0 && d[2] == 0x07) {
+      if (d[1] == 0xF0 && (d[2] == 0x07 || d[2] == 0x0F)) {
         isCharging = false;
       }
       else {
@@ -918,13 +918,13 @@ void OvmsVehicleVWeUp::RequestProfile0()
   canbus *comfBus;
   comfBus = m_can3;
   data[0] = 0x90;
-  data[1] = 0x04;
-  data[2] = 0x19;
+  data[1] = 0x04; // length
+  data[2] = 0x19; // PID 959
   data[3] = 0x59;
   data[4] = 0x27; // channel ID 10..1f or 20..2f for OCU writes; XXX should check if already in use!
-  data[5] = 0x00;
-  data[6] = 0x00;
-  data[7] = 0x01;
+  data[5] = 0x00; // all parts
+  data[6] = 0x00; // start from index 0
+  data[7] = 0x01; // request one profile
   if (vweup_enable_write && !dev_mode) {
     comfBus->WriteStandard(0x69E, length, data);
     ESP_LOGD(TAG, "Profile0 requested");
