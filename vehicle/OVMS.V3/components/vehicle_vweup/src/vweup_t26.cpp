@@ -1214,7 +1214,7 @@ void OvmsVehicleVWeUp::Profile0_Retry_CallBack()
             ESP_LOGD(TAG, "profile0 state change to %d", profile0_state);
             profile0_key = 0;          }
           else {
-            ESP_LOGI(TAG,"Profile0 charge %s attempt %d...", (profile0_val)? "start" : "stop", profile0_cntr[0]);
+            ESP_LOGI(TAG,"Profile0 charge %s attempt %d...", (profile0_activate)? "start" : "stop", profile0_cntr[0]);
             ActivateProfile0();
           }
         }
@@ -1228,7 +1228,7 @@ void OvmsVehicleVWeUp::Profile0_Retry_CallBack()
             profile0_key = 0;
           }
           else {
-            ESP_LOGI(TAG,"Profile0 climatecontrol %s attempt %d...", (profile0_val)? "start" : "stop", profile0_cntr[0]);
+            ESP_LOGI(TAG,"Profile0 climatecontrol %s attempt %d...", (profile0_activate)? "start" : "stop", profile0_cntr[0]);
             ActivateProfile0();
           }
         }
