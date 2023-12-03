@@ -249,7 +249,7 @@ MetricsStandard::MetricsStandard()
   ms_v_env_cabinvent = new OvmsMetricString(MS_V_ENV_CABINVENT, SM_STALE_MID);
 
   ms_v_env_service_range = new OvmsMetricInt(MS_V_ENV_SERV_RANGE, SM_STALE_MID, Kilometers);
-  ms_v_env_service_time = new OvmsMetricInt(MS_V_ENV_SERV_TIME, SM_STALE_MID, Seconds);
+  ms_v_env_service_time = new OvmsMetricInt(MS_V_ENV_SERV_TIME, SM_STALE_MID, DateLocal);
 
   //
   // Position / movement metrics
