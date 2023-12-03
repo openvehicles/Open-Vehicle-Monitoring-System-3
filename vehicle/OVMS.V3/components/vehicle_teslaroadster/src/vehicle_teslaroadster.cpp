@@ -196,7 +196,8 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x81: // Time/Date UTC
           {
-          int tm = ((int)d[7]<<24) + ((int)d[6]<<16) + ((int)d[5]<<8) + d[4];
+          // TODO: Only 32 bit time_t
+          time_t tm = ((int)d[7]<<24) + ((int)d[6]<<16) + ((int)d[5]<<8) + d[4];
           MyTime.Set(TAG, 2, true, tm);
           break;
           }

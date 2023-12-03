@@ -1215,7 +1215,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
     case VWUP_MFD_SERV_TIME:
       if (PollReply.FromUint16("VWUP_MFD_SERV_TIME", value) && value > 0) { // excluding value of 0 seems to be necessary for now
         // Send notification?
-        int now = StdMetrics.ms_m_timeutc->AsInt();
+        time_t now = StdMetrics.ms_m_timeutc->AsInt();
         int threshold = MyConfig.GetParamValueInt("xvu", "serv_warn_days", 30);
         int old_value = ROUNDPREC((StdMetrics.ms_v_env_service_time->AsInt() - now) / 86400.0f, 0);
         if (old_value > threshold && value <= threshold) {
