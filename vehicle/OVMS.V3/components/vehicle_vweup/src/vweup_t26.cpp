@@ -188,7 +188,6 @@ void OvmsVehicleVWeUp::T26Init()
   profile0_val = 0;
   profile0_activate = false;
   profile0_1sttime = true;
-  restart_OCU = false;
 
   dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -712,11 +711,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     if (!dev_mode) {
       comfBus->WriteStandard(0x69E, length2, data2);
     }
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
-    if (!dev_mode) {
-      comfBus->WriteStandard(0x69E, length2, data2); // seems like we need to do it twice so it works reliably
-    }
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     ESP_LOGI(TAG, "Sent Wakeup Command - stage 1");
 
@@ -765,6 +760,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
        PollSetState(VWEUP_CHARGING);
     }
   // This can be done better. Gives always success, even when already awake.
+  ESP_LOGD(TAG, "wait after wakeup...");
+  vTaskDelay(1000 / portTICK_PERIOD_MS);
   return Success;
   }
   else 
@@ -927,14 +924,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandHomelink(int button, int
 void OvmsVehicleVWeUp::RequestProfile0()
 {
   ESP_LOGD(TAG,"RequestProfile0 called in state %d (key %d, val %d, mode %d, current %d, temp %d, recv %d)", profile0_state, profile0_key, profile0_val, profile0_mode, profile0_charge_current, profile0_cc_temp, profile0_recv);
-/*  ESP_LOGD(TAG,"m_sendOcuHeartbeat: %s",STR(m_sendOcuHeartbeat));
-  if (m_sendOcuHeartbeat != NULL) {
-    restart_OCU = true;
-    ESP_LOGD(TAG,"stopping OCU heartbeat timer");
-    xTimerStop(m_sendOcuHeartbeat, 0);
-    xTimerDelete(m_sendOcuHeartbeat, 0);
-    m_sendOcuHeartbeat = NULL;
-  }*/
   uint8_t length = 8;
   unsigned char data[length];
   canbus *comfBus;
@@ -947,7 +936,6 @@ void OvmsVehicleVWeUp::RequestProfile0()
   data[5] = 0x00; // all parts
   data[6] = 0x00; // start from index 0
   data[7] = 0x01; // request one profile
-  vTaskDelay(150 / portTICK_PERIOD_MS); // avoid conflicts with OCU heartbeat write tasks
   if (vweup_enable_write && !dev_mode) {
     comfBus->WriteStandard(0x69E, length, data);
     ESP_LOGD(TAG, "Profile0 requested");
@@ -958,12 +946,6 @@ void OvmsVehicleVWeUp::RequestProfile0()
   ESP_LOGD(TAG,"Starting profile0 request timer...");
   profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(profile0_delay), pdFALSE, this, Profile0_Retry_Timer);
   xTimerStart(profile0_timer, 0);
-/*  if (restart_OCU) {
-    ESP_LOGD(TAG,"Restarting OCU heartbeat timer...");
-    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", 1000 / portTICK_PERIOD_MS, pdTRUE, this, sendOcuHeartbeat);
-    xTimerStart(m_sendOcuHeartbeat, 0);
-    restart_OCU = false;
-  }*/
 }
 
 void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
@@ -1426,8 +1408,3 @@ void OvmsVehicleVWeUp::ActivateProfile0() // only sends on/off command, profile0
   profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(5*profile0_delay), pdFALSE, this, Profile0_Retry_Timer);
   xTimerStart(profile0_timer, 0);
 }
-
-// Problem wakeup/request bei Batt<13V:
-// NOK stopping & restarting m_ocuheartbeat
-// NOK in T26Ticker1: <11 & >=11
-// 
