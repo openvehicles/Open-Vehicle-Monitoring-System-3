@@ -95,6 +95,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   vweup_enable_t26 = false;
   vweup_con = 0;
   vweup_modelyear = 0;
+  climit_max = 16;
 
   m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
@@ -382,6 +383,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     else
       m_range_est_factor = 2.6f;
     StdMetrics.ms_v_charge_climit->SetValue(32);
+    climit_max = 32;
 
     // Battery pack layout: 2P84S in 14 modules
     BmsSetCellArrangementVoltage(84, 6);
@@ -404,6 +406,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     else
       m_range_est_factor = 1.6f;
     StdMetrics.ms_v_charge_climit->SetValue(16);
+    climit_max = 16;
 
     // Battery pack layout: 2P102S in 17 modules
     BmsSetCellArrangementVoltage(102, 6);
@@ -447,9 +450,10 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     vweup_charge_current_new = 0;
     MyConfig.SetParamValue("xvu", "chg_climit", STR(0));
   }
-  if (vweup_charge_current_new > CLIMIT_MAX) {
-    vweup_charge_current_new = CLIMIT_MAX;
-    MyConfig.SetParamValue("xvu", "chg_climit", STR(CLIMIT_MAX));
+  ESP_LOGD(TAG,"climit_max: %d",climit_max);
+  if (vweup_charge_current_new > climit_max) {
+    vweup_charge_current_new = climit_max;
+    MyConfig.SetParamValue("xvu", "chg_climit", STR(climit_max));
   }
   if(vweup_charge_current_new != profile0_charge_current)
   {
@@ -538,12 +542,13 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
     float soc = StdMetrics.ms_v_bat_soc->AsFloat();
     int suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
     bool chg_autostop = MyConfig.GetParamValueBool("xvu", "chg_autostop");
-    if (m_chargestate_lastsoc <= suff_soc && soc >= suff_soc) {
+    if (m_chargestate_lastsoc < suff_soc && soc >= suff_soc) {
       if(chg_autostop && suff_soc > 0) // exception for no limit (0): don't stop when we reach 100%
       {
         ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), Stopping the charge", suff_soc);
-        OvmsVehicle::vehicle_command_t cmd =CommandStopCharge();
-        StdMetrics.ms_v_charge_state->SetValue("stopped");
+        SetChargeCurrent(1); // dirty trick: stop charging by setting too low current of 1A (but don't change config value!) // XXX CommandStopCharge();
+//        OvmsVehicle::vehicle_command_t cmd = CommandStopCharge();
+//        StdMetrics.ms_v_charge_state->SetValue("stopped");
       }
       else
       {

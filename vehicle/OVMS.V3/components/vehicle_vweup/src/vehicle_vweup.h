@@ -56,7 +56,6 @@
 #define DEFAULT_MODEL_YEAR 2020
 #define CC_TEMP_MIN 15
 #define CC_TEMP_MAX 30
-#define CLIMIT_MAX 16
 
 using namespace std;
 
@@ -220,7 +219,8 @@ public:
   bool vweup_enable_write;
   int vweup_con;                // 0: none, 1: only T26, 2: only OBD2; 3: both
   int vweup_modelyear;
-
+  int climit_max;
+  
 private:
   use_phase_t m_use_phase;
   double m_odo_trip;
