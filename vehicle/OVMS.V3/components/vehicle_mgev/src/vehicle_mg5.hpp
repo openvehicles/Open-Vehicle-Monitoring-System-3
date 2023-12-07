@@ -35,12 +35,6 @@
 
 #include "vehicle_mgev.h"
 
-#define WLTP_RANGE 290.0 //km
-#define BATT_CAPACITY 48.8 //kWh
-#define MAX_CHARGE_RATE 80 //kW
-#define BMSDoDUpperLimit 950.0
-#define BMSDoDLowerLimit 36.0
-
 class OvmsVehicleMg5 : public OvmsVehicleMgEv
 {
 public:

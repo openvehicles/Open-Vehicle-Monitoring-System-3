@@ -110,7 +110,11 @@ OvmsVehicleMgEvA::OvmsVehicleMgEvA()
     m_dod_upper->SetValue(BMSDoDLimits[BMSVersion].Upper);
     m_batt_capacity->SetValue(BATT_CAPACITY);
     m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
-
+    
+    ESP_LOGD(TAG, "BMS DoD lower = %f upper = %f", 
+             MyConfig.GetParamValueFloat("xmg","bms.dod.lower"),
+             MyConfig.GetParamValueFloat("xmg","bms.dod.upper"));
+    
     //Add variant specific poll data
     ConfigurePollData(obdii_polls_a, sizeof(obdii_polls_a));
     

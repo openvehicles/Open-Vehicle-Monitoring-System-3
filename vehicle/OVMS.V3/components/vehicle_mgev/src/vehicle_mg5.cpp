@@ -130,15 +130,27 @@ OvmsVehicleMg5::OvmsVehicleMg5()
     
     // Set manual polling on
     MyConfig.SetParamValueInt("xmg", "polling.manual", 1);
-    // Set values for MG5 SR
-    StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
-    m_batt_capacity->SetValue(BATT_CAPACITY);
-    m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
-    m_dod_lower->SetValue(BMSDoDLowerLimit);
-    m_dod_upper->SetValue(BMSDoDUpperLimit);
-
-    //Initialise GWM state to Unknown
-    //m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));
+    
+    // Set up initial values from the version setting
+    int VehicleVersion = MyConfig.GetParamValueInt("xmg", "vehval", 0);
+    if(VehicleVersion == 0) {
+        ESP_LOGV(TAG,"MG5 Version - SR");
+        StandardMetrics.ms_v_bat_range_full->SetValue(290.0);
+        m_batt_capacity->SetValue(48.8);
+        m_max_dc_charge_rate->SetValue(80);
+        m_dod_lower->SetValue(950.0);
+        m_dod_upper->SetValue(36.0);
+    } else {
+        ESP_LOGV(TAG,"MG5 Version - LR");
+        StandardMetrics.ms_v_bat_range_full->SetValue(320.0);
+        m_batt_capacity->SetValue(57.4);
+        m_max_dc_charge_rate->SetValue(87);
+        m_dod_lower->SetValue(950.0);
+        m_dod_upper->SetValue(36.0);
+    }
+    ESP_LOGD(TAG, "MG5 Values - Range: %0.1f Battery kWh: %0.1f Charge Max: %0.1f", StandardMetrics.ms_v_bat_range_full->AsFloat(),
+             m_batt_capacity->AsFloat(),
+             m_max_dc_charge_rate->AsFloat());
     
     //Add variant specific poll data
     ConfigureMG5PollData(mg5_obdii_polls, sizeof(mg5_obdii_polls));
@@ -165,6 +177,7 @@ OvmsVehicleMg5::~OvmsVehicleMg5()
     ESP_LOGI(TAG, "Shutdown MG5");
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     FeaturesWebDeInit();
+    VersionWebDeInit();
 #endif
 }
 

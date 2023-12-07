@@ -96,6 +96,11 @@ void OvmsVehicleMgEv::FeaturesWebDeInit()
     MyWebServer.DeregisterPage("/xmg/features");
 }
 
+void OvmsVehicleMgEv::VersionWebDeInit()
+{
+    MyWebServer.DeregisterPage("/xmg/version");
+}
+
 /**
  * WebCfgFeatures: configure general parameters (URL /xmg/config)
  */
