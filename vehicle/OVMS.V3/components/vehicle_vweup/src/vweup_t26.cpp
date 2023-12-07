@@ -117,6 +117,8 @@
 ;
 ;    0.4.9  Added T26 awake detection for OBD
 ;
+;    0.5.0 fix CAN awake/asleep loop (sharkcow)
+;
 ;    (C) 2021       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78, E-lmo, Dexter and 'der kleine Nik'.
@@ -280,8 +282,8 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
       PollSetState(VWEUP_CHARGING);
     }
     ResetTripCounters();
-    // Turn off possibly running climate control timer
-    if (ocu_awake) {
+    if (ocu_awake && m_sendOcuHeartbeat != NULL) {
+      ESP_LOGD(TAG,"stopping OCU heartbeat timer");
       xTimerStop(m_sendOcuHeartbeat, 0);
       xTimerDelete(m_sendOcuHeartbeat, 0);
       m_sendOcuHeartbeat = NULL;
@@ -543,42 +545,39 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         PollSetState(VWEUP_AWAKE);
         ESP_LOGI(TAG, "Car woke up. Will try to charge 12v battery");
       }
-      if (d[1] == 0x31 && ocu_awake) {
-        // We should go to sleep, no matter what
-        ESP_LOGI(TAG, "Comfort CAN calls for sleep");
-        xTimerStop(m_sendOcuHeartbeat, 0);
-        xTimerDelete(m_sendOcuHeartbeat, 0);
-        m_sendOcuHeartbeat = NULL;
-        if (cc_count != 0) {
-          xTimerStop(m_ccCountdown, 0);
-          xTimerDelete(m_ccCountdown, 0);
-          m_ccCountdown = NULL;
+      if (d[1] == 0x31) {
+        if (m_sendOcuHeartbeat != NULL) {
+          ESP_LOGD(TAG,"stopping OCU heartbeat timer");
+          xTimerStop(m_sendOcuHeartbeat, 0);
+          xTimerDelete(m_sendOcuHeartbeat, 0);
+          m_sendOcuHeartbeat = NULL;
         }
-        ocu_awake = false;
-        ocu_working = false;
-        vweup_remote_climate_ticker = 0;
-        fas_counter_on = 0;
-        fas_counter_off = 0;
-        t26_12v_boost = false;
-        if (StandardMetrics.ms_v_charge_inprogress->AsBool()) {
-           PollSetState(VWEUP_CHARGING);
-        } else {
-           t26_ring_awake = false;
-           PollSetState(VWEUP_AWAKE);
+        if (ocu_awake) { // We should go to sleep, no matter what
+          ESP_LOGI(TAG, "Comfort CAN calls for sleep");
+          ocu_awake = false;
+          ocu_working = false;
+          fas_counter_on = 0;
+          fas_counter_off = 0;
+          t26_12v_boost = false;
+          if (StandardMetrics.ms_v_charge_inprogress->AsBool()) {
+            PollSetState(VWEUP_CHARGING);
+          } else {
+            t26_ring_awake = false;
+            PollSetState(VWEUP_AWAKE);
+          }
+          break;
         }
-
-        break;
+        else if (t26_ring_awake) {
+          t26_ring_awake = false;
+          ESP_LOGI(TAG, "Ring asleep");
+        }
       }
       if (d[0] == 0x00 && d[1] != 0x31 && !t26_ring_awake) {
         t26_ring_awake = true;
         ESP_LOGI(TAG, "Ring awake");
         if (t26_12v_wait_off != 0) {
-          ESP_LOGI(TAG, "ODB AWAKE ist still blocked");
+          ESP_LOGI(TAG, "OBD AWAKE ist still blocked");
         }
-      }
-      if (d[1] == 0x31 && t26_ring_awake) {
-         t26_ring_awake = false;
-         ESP_LOGI(TAG, "Ring asleep");
       }
       if (d[0] == 0x1D) {
         // We are called in the ring
@@ -615,7 +614,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         }
         data[6] = 0x00;
         data[7] = 0x00;
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(pdMS_TO_TICKS(50));
         if (vweup_enable_write && !dev_mode) {
           comfBus->WriteStandard(0x43D, length, data);  // We answer
         }
@@ -787,8 +786,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     if (!dev_mode) {
       comfBus->WriteStandard(0x69E, length2, data2);
     }
-
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    vTaskDelay(pdMS_TO_TICKS(1000));
 
     ESP_LOGI(TAG, "Sent Wakeup Command - stage 1");
 
@@ -804,7 +802,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
       comfBus->WriteStandard(0x43D, length, data);
     }
 
-    vTaskDelay(50 / portTICK_PERIOD_MS);
+    vTaskDelay(pdMS_TO_TICKS(50));
 
     data[0] = 0x00; // We need to talk to 0x400 first to get accepted in the ring
     data[1] = 0x01;
@@ -821,9 +819,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     ocu_working = true;
     ocu_awake = true;
 
-    vTaskDelay(50 / portTICK_PERIOD_MS);
+    vTaskDelay(pdMS_TO_TICKS(50));
 
-    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", 1000 / portTICK_PERIOD_MS, pdTRUE, this, sendOcuHeartbeat);
+    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdFALSE, this, sendOcuHeartbeat);
     xTimerStart(m_sendOcuHeartbeat, 0);
 
     ESP_LOGI(TAG, "Sent Wakeup Command - stage 2");
