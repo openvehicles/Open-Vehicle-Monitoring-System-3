@@ -130,7 +130,7 @@ OvmsVehicleMg5::OvmsVehicleMg5()
     
     // Set manual polling on
     MyConfig.SetParamValueInt("xmg", "polling.manual", 1);
-    // Set Max Range to WLTP Range
+    // Set values for MG5 SR
     StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
     m_batt_capacity->SetValue(BATT_CAPACITY);
     m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
@@ -153,7 +153,6 @@ OvmsVehicleMg5::OvmsVehicleMg5()
     
     // Register shell commands
     cmd_xmg->RegisterCommand("polls", "Turn polling on", PollsCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
-             
     //PollSetState(PollStateRunning);
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     Mg5WebInit();
@@ -203,7 +202,7 @@ void OvmsVehicleMg5::MainStateMachine(canbus* currentBus, uint32_t ticker)
                 StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= CHARGING_THRESHOLD);
     
     if(MyConfig.GetParamValueInt("xmg", "polling.manual") == 1) {
-        ESP_LOGD(TAG,"Polling is manual");
+        //ESP_LOGD(TAG,"Polling is manual");
         if(!StandardMetrics.ms_v_env_charging12v->AsBool()) {
             // 12V not being charged so vehicle is off
             StandardMetrics.ms_v_env_awake->SetValue(false);
@@ -379,6 +378,6 @@ OvmsVehicleMg5Init::OvmsVehicleMg5Init()
 {
     ESP_LOGI(TAG, "Registering Vehicle: MG5 (9000)");
     
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleMg5>("MG5", "MG 5 (LR) (2020-2023)");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleMg5>("MG5", "MG 5 (2020-2023)");
 }
 
