@@ -333,12 +333,12 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   bool vweup_enable_obd_new = MyConfig.GetParamValueBool("xvu", "con_obd", true);
   bool vweup_enable_t26_new = MyConfig.GetParamValueBool("xvu", "con_t26", true);
   vweup_enable_write = MyConfig.GetParamValueBool("xvu", "canwrite", false);
-  int vweup_cc_temp_int_new = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
   int dc_interval = MyConfig.GetParamValueInt("xvu", "dc_interval", 0);
   int cell_interval_drv = MyConfig.GetParamValueInt("xvu", "cell_interval_drv", 15);
   int cell_interval_chg = MyConfig.GetParamValueInt("xvu", "cell_interval_chg", 60);
   int cell_interval_awk = MyConfig.GetParamValueInt("xvu", "cell_interval_awk", 60);
   int vweup_charge_current_new = MyConfig.GetParamValueInt("xvu", "chg_climit", 16);
+  int vweup_cc_temp_new = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
 
   bool do_obd_init = (
     (!vweup_enable_obd && vweup_enable_obd_new) ||
@@ -432,35 +432,41 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   }
 
   // Handle changed settings:
-  if (vweup_cc_temp_int_new < CC_TEMP_MIN) {
-    vweup_cc_temp_int_new = CC_TEMP_MIN;
-    MyConfig.SetParamValue("xvu", "cc_temp", STR(CC_TEMP_MIN));
+  if (vweup_cc_temp_new != profile0_cc_temp_old) {
+    if (vweup_cc_temp_new < CC_TEMP_MIN) {
+      vweup_cc_temp_new = CC_TEMP_MIN;
+      MyConfig.SetParamValue("xvu", "cc_temp", STR(CC_TEMP_MIN));
+    }
+    if (vweup_cc_temp_new > CC_TEMP_MAX) {
+      vweup_cc_temp_new = CC_TEMP_MAX;
+      MyConfig.SetParamValue("xvu", "cc_temp", STR(CC_TEMP_MAX));
+    }
+    if (vweup_cc_temp_new != profile0_cc_temp)
+    {
+      ESP_LOGD(TAG, "T26: CC_temp parameter changed in ConfigChanged from %d to %d", profile0_cc_temp, vweup_cc_temp_new);
+      if (vweup_enable_t26) 
+        CCTempSet(vweup_cc_temp_new);
+    }
   }
-  if (vweup_cc_temp_int_new > CC_TEMP_MAX) {
-    vweup_cc_temp_int_new = CC_TEMP_MAX;
-    MyConfig.SetParamValue("xvu", "cc_temp", STR(CC_TEMP_MAX));
+  else ESP_LOGD(TAG, "T26: cc temp reset to previous value %d", profile0_cc_temp_old);
+  if (vweup_charge_current_new != profile0_charge_current_old) {
+    if (vweup_charge_current_new < 0) {
+      vweup_charge_current_new = 0;
+      MyConfig.SetParamValue("xvu", "chg_climit", STR(0));
+    }
+    ESP_LOGD(TAG, "T26: climit_max: %d",climit_max);
+    if (vweup_charge_current_new > climit_max) {
+      vweup_charge_current_new = climit_max;
+      MyConfig.SetParamValue("xvu", "chg_climit", STR(climit_max));
+    }
+    if(vweup_charge_current_new != profile0_charge_current)
+    {
+      ESP_LOGD(TAG, "T26: Charge current changed in ConfigChanged from %d to %d", profile0_charge_current, vweup_charge_current_new);
+      if (vweup_enable_t26)
+        SetChargeCurrent(vweup_charge_current_new);
+    }
   }
-  if (vweup_cc_temp_int_new != profile0_cc_temp)
-  {
-    ESP_LOGD(TAG, "CC_temp parameter changed in ConfigChanged from %d to %d", profile0_cc_temp, vweup_cc_temp_int_new);
-    if (vweup_enable_t26) 
-      CCTempSet(vweup_cc_temp_int_new);
-  }
-  if (vweup_charge_current_new < 0) {
-    vweup_charge_current_new = 0;
-    MyConfig.SetParamValue("xvu", "chg_climit", STR(0));
-  }
-  ESP_LOGD(TAG,"climit_max: %d",climit_max);
-  if (vweup_charge_current_new > climit_max) {
-    vweup_charge_current_new = climit_max;
-    MyConfig.SetParamValue("xvu", "chg_climit", STR(climit_max));
-  }
-  if(vweup_charge_current_new != profile0_charge_current)
-  {
-    ESP_LOGD(TAG, "Charge current changed in ConfigChanged from %d to %d", profile0_charge_current, vweup_charge_current_new);
-    if (vweup_enable_t26)
-      SetChargeCurrent(vweup_charge_current_new);
-  }
+  else ESP_LOGD(TAG, "T26: charge current reset to previous value %d", profile0_charge_current_old);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // Init Web subsystem:
@@ -543,12 +549,13 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
     int suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
     bool chg_autostop = MyConfig.GetParamValueBool("xvu", "chg_autostop");
     if (m_chargestate_lastsoc < suff_soc && soc >= suff_soc) {
+      ESP_LOGD(TAG, "Ticker1: SOC crossed from %.2f to %.2f", m_chargestate_lastsoc, soc);
       if(chg_autostop && suff_soc > 0) // exception for no limit (0): don't stop when we reach 100%
       {
         ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), Stopping the charge", suff_soc);
         SetChargeCurrent(1); // dirty trick: stop charging by setting too low current of 1A (but don't change config value!) // XXX CommandStopCharge();
 //        OvmsVehicle::vehicle_command_t cmd = CommandStopCharge();
-//        StdMetrics.ms_v_charge_state->SetValue("stopped");
+        StdMetrics.ms_v_charge_state->SetValue("stopped");
       }
       else
       {
