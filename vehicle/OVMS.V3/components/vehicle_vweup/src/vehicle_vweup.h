@@ -323,6 +323,8 @@ public:
   int profile0_mode;
   int profile0_charge_current;
   int profile0_cc_temp;
+  int profile0_charge_current_old;
+  int profile0_cc_temp_old;
   static const int profile0_len = 48;
   uint8_t profile0[profile0_len];
   int vweup_charge_current;
@@ -331,6 +333,7 @@ public:
   int profile0_key;
   int profile0_val;
   bool profile0_activate;
+  bool profile0_success;
 
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
