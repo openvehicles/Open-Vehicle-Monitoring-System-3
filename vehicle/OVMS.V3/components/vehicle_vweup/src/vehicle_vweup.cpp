@@ -432,41 +432,34 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   }
 
   // Handle changed settings:
-  if (vweup_cc_temp_new != profile0_cc_temp_old) {
-    if (vweup_cc_temp_new < CC_TEMP_MIN) {
-      vweup_cc_temp_new = CC_TEMP_MIN;
-      MyConfig.SetParamValue("xvu", "cc_temp", STR(CC_TEMP_MIN));
-    }
-    if (vweup_cc_temp_new > CC_TEMP_MAX) {
-      vweup_cc_temp_new = CC_TEMP_MAX;
-      MyConfig.SetParamValue("xvu", "cc_temp", STR(CC_TEMP_MAX));
-    }
-    if (vweup_cc_temp_new != profile0_cc_temp)
-    {
+  if (vweup_cc_temp_new != profile0_cc_temp) {
+    if (vweup_cc_temp_new != profile0_cc_temp_old) {
+      if (vweup_cc_temp_new < CC_TEMP_MIN)
+        vweup_cc_temp_new = CC_TEMP_MIN;
+      else if (vweup_cc_temp_new > CC_TEMP_MAX)
+        vweup_cc_temp_new = CC_TEMP_MAX;
       ESP_LOGD(TAG, "T26: CC_temp parameter changed in ConfigChanged from %d to %d", profile0_cc_temp, vweup_cc_temp_new);
       if (vweup_enable_t26) 
         CCTempSet(vweup_cc_temp_new);
+      else
+        ESP_LOGE(TAG, "T26: climatecontrol only works with enabled comfort CAN connection!");
     }
+    else ESP_LOGD(TAG, "T26: cc temp reset to previous value %d", profile0_cc_temp_old);
   }
-  else ESP_LOGD(TAG, "T26: cc temp reset to previous value %d", profile0_cc_temp_old);
-  if (vweup_charge_current_new != profile0_charge_current_old) {
-    if (vweup_charge_current_new < 0) {
-      vweup_charge_current_new = 0;
-      MyConfig.SetParamValue("xvu", "chg_climit", STR(0));
-    }
-    ESP_LOGD(TAG, "T26: climit_max: %d",climit_max);
-    if (vweup_charge_current_new > climit_max) {
-      vweup_charge_current_new = climit_max;
-      MyConfig.SetParamValue("xvu", "chg_climit", STR(climit_max));
-    }
-    if(vweup_charge_current_new != profile0_charge_current)
-    {
+  if(vweup_charge_current_new != profile0_charge_current) {
+    if (vweup_charge_current_new != profile0_charge_current_old) {
+      if (vweup_charge_current_new < 0)
+        vweup_charge_current_new = 0;
+      else if (vweup_charge_current_new > climit_max)
+        vweup_charge_current_new = climit_max;
       ESP_LOGD(TAG, "T26: Charge current changed in ConfigChanged from %d to %d", profile0_charge_current, vweup_charge_current_new);
       if (vweup_enable_t26)
         SetChargeCurrent(vweup_charge_current_new);
+      else
+        ESP_LOGE(TAG, "T26: charge current control only works with enabled comfort CAN connection!");
     }
+    else ESP_LOGD(TAG, "T26: charge current reset to previous value %d", profile0_charge_current_old);
   }
-  else ESP_LOGD(TAG, "T26: charge current reset to previous value %d", profile0_charge_current_old);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // Init Web subsystem:
