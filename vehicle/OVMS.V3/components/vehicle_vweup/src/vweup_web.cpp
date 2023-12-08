@@ -82,6 +82,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   ConfigParamMap nmap = pmap;
   std::string error, warn;
   bool do_reload = false;
+  int climit = 16;
 
   if (c.method == "POST")
   {
@@ -150,6 +151,8 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     // fill in defaults:
     if (nmap["modelyear"] == "")
       nmap["modelyear"] = STR(DEFAULT_MODEL_YEAR);
+    if (std::stoi(nmap["modelyear"]) > 2019)
+      climit = 32;
     if (nmap["con_obd"] == "")
       nmap["con_obd"] = "yes";
     if (nmap["con_t26"] == "")
@@ -196,8 +199,8 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     "<p>Used if no timer mode limits are available, i.e. without OBD connection or without timer schedule.</p>");
 
   c.input_slider("Charge current limit", "chg_climit", 3, "Amps",
-    -1, nmap["chg_climit"].empty()? 16 : std::stof(nmap["chg_climit"]),
-    16, 6, 16, 1,
+    -1, nmap["chg_climit"].empty()? climit : std::stof(nmap["chg_climit"]),
+    climit, 6, climit, 1,
     "<p>Set charge current limit in vehicle (may be reduced further by charging equipment!)</p>");
 
 /*  c.input_slider("Power limit", "ctp_maxpower", 3, "kW",
