@@ -821,7 +821,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
 
     vTaskDelay(pdMS_TO_TICKS(50));
 
-    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdFALSE, this, sendOcuHeartbeat);
+    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdTRUE, this, sendOcuHeartbeat);
     xTimerStart(m_sendOcuHeartbeat, 0);
 
     ESP_LOGI(TAG, "Sent Wakeup Command - stage 2");
