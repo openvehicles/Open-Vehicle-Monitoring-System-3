@@ -118,7 +118,7 @@
 ;    0.4.9  Added T26 awake detection for OBD
 ;
 ;    0.5.0 fix CAN awake/asleep loop (sharkcow)
-;
+
 ;    0.6.0  complete rework of climatecontrol, added charge control by Urwa Khattak & sharkcow
 ;
 ;    (C) 2021       Chris van der Meijden
@@ -747,7 +747,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
 
     vTaskDelay(pdMS_TO_TICKS(50));
 
-    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdFALSE, this, sendOcuHeartbeat);
+    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdTRUE, this, sendOcuHeartbeat);
     xTimerStart(m_sendOcuHeartbeat, 0);
 
     ESP_LOGI(TAG, "T26: Sent Wakeup Command - stage 2");
