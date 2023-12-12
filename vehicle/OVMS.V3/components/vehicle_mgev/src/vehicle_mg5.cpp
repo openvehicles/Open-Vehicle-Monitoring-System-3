@@ -139,7 +139,7 @@ OvmsVehicleMg5::OvmsVehicleMg5()
         m_batt_capacity->SetValue(48.8);
         m_max_dc_charge_rate->SetValue(80);
         m_dod_lower->SetValue(36.0);
-        m_dod_upper->SetValue(950.0);
+        m_dod_upper->SetValue(994.0);
 
     } else {
         ESP_LOGV(TAG,"MG5 Version - LR");
