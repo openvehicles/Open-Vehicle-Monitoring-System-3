@@ -1299,7 +1299,7 @@ void OvmsVehicleVWeUp::Profile0_Retry_CallBack()
               ESP_LOGW(TAG, "Climatecontrol on battery disabled, is the car plugged in?");
             if (profile0_activate == StandardMetrics.ms_v_env_hvac->AsBool()) {
               ESP_LOGI(TAG, "T26: Profile0 climatecontrol successfully turned %s",(profile0_activate)? "ON" : "OFF");
-              MyNotify.NotifyStringf("info", "climatecontrol", "Climatecontrol successfully turned %s", (profile0_activate)? "start" : "stop");
+              MyNotify.NotifyStringf("info", "climatecontrol", "Climatecontrol successfully turned %s", (profile0_activate)? "on" : "off");
               vweup_cc_on = profile0_activate;
               profile0_state = PROFILE0_IDLE;
               ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
