@@ -137,6 +137,9 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   cmd->RegisterCommand("status", "Get current polling status", ShellPollControl);
   cmd->RegisterCommand("pause", "Pause polling if running", ShellPollControl);
   cmd->RegisterCommand("continue", "Continue polling if paused", ShellPollControl);
+  cmd = cmd_xvu->RegisterCommand("profile0", "Interact with charging/climate control settings");
+  cmd->RegisterCommand("read", "Show current contents", CommandReadProfile0);
+  cmd->RegisterCommand("reset", "Reset to default values", CommandResetProfile0);
 
   // Load initial config:
   ConfigChanged(NULL);
@@ -339,6 +342,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   int cell_interval_awk = MyConfig.GetParamValueInt("xvu", "cell_interval_awk", 60);
   int vweup_charge_current_new = MyConfig.GetParamValueInt("xvu", "chg_climit", 16);
   int vweup_cc_temp_new = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
+  int vweup_chg_soclimit_new = MyConfig.GetParamValueInt("xvu", "chg_soclimit", 80);
 
   bool do_obd_init = (
     (!vweup_enable_obd && vweup_enable_obd_new) ||
@@ -432,6 +436,13 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   }
 
   // Handle changed settings:
+  if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt()) {
+    StdMetrics.ms_v_charge_limit_soc->SetValue(vweup_chg_soclimit_new);
+    if ( StdMetrics.ms_v_bat_soc->AsInt() < vweup_chg_soclimit_new) {
+      if (IsCharging())
+        StdMetrics.ms_v_charge_state->SetValue("charging");
+    }
+  }
   if (vweup_cc_temp_new != profile0_cc_temp) {
     if (vweup_cc_temp_new != profile0_cc_temp_old) {
       if (vweup_cc_temp_new < CC_TEMP_MIN)
@@ -542,13 +553,16 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
     int suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
     bool chg_autostop = MyConfig.GetParamValueBool("xvu", "chg_autostop");
     if (m_chargestate_lastsoc < suff_soc && soc >= suff_soc) {
-      ESP_LOGD(TAG, "Ticker1: SOC crossed from %.2f to %.2f", m_chargestate_lastsoc, soc);
+      ESP_LOGD(TAG, "Ticker1: SOC crossed from %.2f to %.2f, autostop %d", m_chargestate_lastsoc, soc, chg_autostop);
       if(chg_autostop && suff_soc > 0) // exception for no limit (0): don't stop when we reach 100%
       {
-        ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), Stopping the charge", suff_soc);
-        SetChargeCurrent(1); // dirty trick: stop charging by setting too low current of 1A (but don't change config value!) // XXX CommandStopCharge();
-//        OvmsVehicle::vehicle_command_t cmd = CommandStopCharge();
-        StdMetrics.ms_v_charge_state->SetValue("stopped");
+          if (profile0_state == PROFILE0_IDLE) {
+            ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), Stopping charge", suff_soc);
+            StartStopChargeT26(false);
+          }
+          else {
+            ESP_LOGW(TAG, "Ticker1: Can't stop charge, profile0 communication already running");
+          }
       }
       else
       {
@@ -588,7 +602,6 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
         MyNotify.NotifyString("info", "charge.timermode", buf.c_str());
       }
     }
-
     m_timermode_ticker = 0;
   }
 }
