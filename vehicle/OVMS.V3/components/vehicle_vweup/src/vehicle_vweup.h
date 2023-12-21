@@ -280,14 +280,14 @@ public:
   void CCTempSet(uint16_t temperature);
   static void Profile0_Retry_Timer(TimerHandle_t timer);
   void Profile0_Retry_CallBack();
-  bool StartStopChargeT26(bool start);
+  void StartStopChargeT26(bool start);
   void SetChargeCurrent(uint16_t limit);
   void RequestProfile0();
   void ReadProfile0(uint8_t *data);
   void WriteProfile0();
   void ActivateProfile0();
   int profile0_state;
-  bool profile0_1sttime;
+  SemaphoreHandle_t xSemaphore;
 
 private:
   void SendCommand(RemoteCommand);
@@ -333,7 +333,6 @@ public:
   int profile0_key;
   int profile0_val;
   bool profile0_activate;
-  bool profile0_success;
 
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
@@ -371,6 +370,8 @@ protected:
 
 public:
   static void ShellPollControl(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+  static void CommandReadProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+  static void CommandResetProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU
