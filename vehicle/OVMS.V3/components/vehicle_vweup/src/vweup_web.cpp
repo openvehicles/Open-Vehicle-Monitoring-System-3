@@ -195,8 +195,9 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   c.fieldset_start("Charge Control");
   c.input_slider("SoC limit", "chg_soclimit", 3, "%",
     -1, nmap["chg_soclimit"].empty() ? 80 : std::stof(nmap["chg_soclimit"]),
-    80, 10, 100, 1,
-    "<p>Used if no timer mode limits are available, i.e. without OBD connection or without timer schedule.</p>");
+    80, 0, 99, 1,
+    "<p>Used if no timer mode limits are available, i.e. without OBD connection or without timer schedule.</p>"
+    "<p>Value 0 disables the limit.</p>");
 
   c.input_slider("Charge current limit", "chg_climit", 3, "Amps",
     -1, nmap["chg_climit"].empty()? climit : std::stof(nmap["chg_climit"]),
