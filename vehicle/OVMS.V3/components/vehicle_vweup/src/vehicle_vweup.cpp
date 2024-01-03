@@ -574,12 +574,14 @@ void OvmsVehicleVWeUp::MetricModified(OvmsMetric* metric)
 {
   // If one of our SOH sources got updated, derive standard SOH, CAC and ranges from it
   // if it's the configured SOH source:
-  if (metric == m_bat_soh_range || metric == m_bat_soh_charge)
+  if (metric == m_bat_soh_vw || metric == m_bat_soh_range || metric == m_bat_soh_charge)
   {
     // Check SOH source configuration:
     float soh_new = 0;
-    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "charge");
-    if (metric == m_bat_soh_range && soh_source == "range")
+    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "vw");
+    if (metric == m_bat_soh_vw && soh_source == "vw")
+      soh_new = metric->AsFloat();
+    else if (metric == m_bat_soh_range && soh_source == "range")
       soh_new = metric->AsFloat();
     else if (metric == m_bat_soh_charge && soh_source == "charge")
       soh_new = metric->AsFloat();

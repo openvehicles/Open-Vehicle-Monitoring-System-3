@@ -75,6 +75,7 @@ const OvmsPoller::poll_pid_t vweup_polls[] = {
 
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP,             {  0, 20, 20, 20}, 1, ISOTP_STD},
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST18,           {  0, 20, 20, 20}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOH_CAC,          {  0, 20, 20, 20}, 1, ISOTP_STD},
 
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  0, 10,  0}, 1, ISOTP_STD},
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_LOSS,            {  0,  0, 10,  0}, 1, ISOTP_STD},
@@ -190,8 +191,11 @@ void OvmsVehicleVWeUp::OBDInit()
     TPMSEmergency = MyMetrics.InitVector<float>("xvu.v.t.emgcy", SM_STALE_NONE, 0);
 
     // Battery SOH:
+    //  . from ECU 8C PID 74 CB
     //  - from MFD range estimation
     //  - from charge energy counting
+    if (!(m_bat_soh_vw = (OvmsMetricFloat*)MyMetrics.Find("xvu.b.soh.vw")))
+      m_bat_soh_vw  = new OvmsMetricFloat("xvu.b.soh.vw", SM_STALE_MAX, Percentage, true);
     if (!(m_bat_soh_range = (OvmsMetricFloat*)MyMetrics.Find("xvu.b.soh.range")))
       m_bat_soh_range  = new OvmsMetricFloat("xvu.b.soh.range", SM_STALE_MAX, Percentage, true);
     if (!(m_bat_soh_charge = (OvmsMetricFloat*)MyMetrics.Find("xvu.b.soh.charge")))
@@ -946,6 +950,16 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
       if (PollReply.FromInt16("VWUP_BAT_MGMT_TEMP", value)) {
         StdMetrics.ms_v_bat_temp->SetValue(value / 64.0f);
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_TEMP=%f => %f", value, StdMetrics.ms_v_bat_temp->AsFloat());
+      }
+      break;
+
+    case VWUP_BAT_MGMT_SOH_CAC:
+      if (PollReply.FromInt16("VWUP_BAT_MGMT_SOH_CAC", value)) {
+//        StdMetrics.ms_v_bat_cac->SetValue(value / 100.0f);
+        float cac = value / 100.0f;
+        float soh = value / ((vweup_modelyear > 2019) ? 120.0f : 50.0f);
+        m_bat_soh_vw->SetValue(soh);
+        VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOH_CAC: %f => CAC=%f, SOH=%f", value, cac, m_bat_soh_vw->AsFloat());
       }
       break;
 

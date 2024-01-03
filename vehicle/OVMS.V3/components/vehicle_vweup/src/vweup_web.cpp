@@ -230,9 +230,13 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 
   c.fieldset_start("Battery Health", "needs-con-obd");
   c.input_radiobtn_start("SOH source", "bat.soh.source");
+  c.input_radiobtn_option("bat.soh.source", "Official VW SOH", "vw", (nmap["bat.soh.source"] == "vw"));
   c.input_radiobtn_option("bat.soh.source", "Charge capacity", "charge", (nmap["bat.soh.source"] == "charge"));
   c.input_radiobtn_option("bat.soh.source", "Range estimation", "range", (nmap["bat.soh.source"] == "range"));
   c.input_radiobtn_end(
+    "<p><b>Official VW SOH</b> "
+    "(currently <span class=\"metric\" data-metric=\"xvu.b.soh.vw\" data-prec=\"1\">?</span>%) "
+    "taken directly via OBD from ECU 8C PID 74 CB</p>"
     "<p><b>Charge capacity SOH</b> "
     "(currently <span class=\"metric\" data-metric=\"xvu.b.soh.charge\" data-prec=\"1\">?</span>%) "
     "needs a couple of full charges to settle but tends to be more precise.</p>"
