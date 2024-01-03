@@ -201,7 +201,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 
   c.input_slider("Charge current limit", "chg_climit", 3, "Amps",
     -1, nmap["chg_climit"].empty()? climit : std::stof(nmap["chg_climit"]),
-    climit, 6, climit, 1,
+    climit, 4, climit, 1,
     "<p>Set charge current limit in vehicle (may be reduced further by charging equipment!)</p>");
 
 /*  c.input_slider("Power limit", "ctp_maxpower", 3, "kW",
