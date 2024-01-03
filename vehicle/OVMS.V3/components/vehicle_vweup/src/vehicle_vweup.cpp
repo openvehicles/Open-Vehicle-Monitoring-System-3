@@ -172,7 +172,6 @@ const char* OvmsVehicleVWeUp::VehicleShortName()
 bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
 {
   int i;
-  int n;
   switch (key) {
     case 6:
     {
@@ -200,8 +199,8 @@ bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
           break;
         }
       }
-      n = atoi(value);
-      if (n < 2013) {
+      i = atoi(value);
+      if (i < 2013) {
         value = "2013";
       }
       MyConfig.SetParamValue("xvu", "modelyear", value);
@@ -217,11 +216,11 @@ bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
           break;
         }
       }
-      n = atoi(value);
-      if (n < CC_TEMP_MIN) {
+      i = atoi(value);
+      if (i < CC_TEMP_MIN) {
         value = STR(CC_TEMP_MIN);
       }
-      if (n > CC_TEMP_MAX) {
+      if (i > CC_TEMP_MAX) {
         value = STR(CC_TEMP_MAX);
       }
       MyConfig.SetParamValue("xvu", "cc_temp", value);
@@ -343,6 +342,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   int vweup_charge_current_new = MyConfig.GetParamValueInt("xvu", "chg_climit", 16);
   int vweup_cc_temp_new = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
   int vweup_chg_soclimit_new = MyConfig.GetParamValueInt("xvu", "chg_soclimit", 80);
+  ESP_LOGV(TAG, "chg_climit: %d, chg_climit_old: %d, cc_temp: %d, cc_temp_old: %d", vweup_charge_current_new, profile0_charge_current_old, vweup_cc_temp_new, profile0_cc_temp_old);
 
   bool do_obd_init = (
     (!vweup_enable_obd && vweup_enable_obd_new) ||
@@ -438,38 +438,47 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   // Handle changed settings:
   if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt()) {
     StdMetrics.ms_v_charge_limit_soc->SetValue(vweup_chg_soclimit_new);
-    if ( StdMetrics.ms_v_bat_soc->AsInt() < vweup_chg_soclimit_new) {
+    if (vweup_chg_soclimit_new > StdMetrics.ms_v_bat_soc->AsInt()) {
+      ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to above current SoC");
       if (IsCharging())
         StdMetrics.ms_v_charge_state->SetValue("charging");
+      else {
+        fakestop = true;
+        StartStopChargeT26(true); // XXX only start charge when previous max SoC was < SoC
+      }
+    }
+    else {
+      ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to below current SoC");
+      StartStopChargeT26(false); // make sure charging is deactivated (via workaround current of 1A) even though charge may not be running
     }
   }
-  if (vweup_cc_temp_new != profile0_cc_temp) {
-    if (vweup_cc_temp_new != profile0_cc_temp_old) {
-      if (vweup_cc_temp_new < CC_TEMP_MIN)
-        vweup_cc_temp_new = CC_TEMP_MIN;
-      else if (vweup_cc_temp_new > CC_TEMP_MAX)
-        vweup_cc_temp_new = CC_TEMP_MAX;
-      ESP_LOGD(TAG, "T26: CC_temp parameter changed in ConfigChanged from %d to %d", profile0_cc_temp, vweup_cc_temp_new);
-      if (vweup_enable_t26) 
-        CCTempSet(vweup_cc_temp_new);
-      else
-        ESP_LOGE(TAG, "T26: climatecontrol only works with enabled comfort CAN connection!");
+  if (vweup_charge_current_new != profile0_charge_current) {
+/*    if (xvu_update) {
+      ESP_LOGD(TAG, "ConfigChanged: Update chg_climit to %d", vweup_charge_current_new);
+      xvu_update = false;
     }
-    else ESP_LOGD(TAG, "T26: cc temp reset to previous value %d", profile0_cc_temp_old);
-  }
-  if(vweup_charge_current_new != profile0_charge_current) {
-    if (vweup_charge_current_new != profile0_charge_current_old) {
-      if (vweup_charge_current_new < 0)
-        vweup_charge_current_new = 0;
-      else if (vweup_charge_current_new > climit_max)
-        vweup_charge_current_new = climit_max;
-      ESP_LOGD(TAG, "T26: Charge current changed in ConfigChanged from %d to %d", profile0_charge_current, vweup_charge_current_new);
+    else */if (vweup_charge_current_new != profile0_charge_current_old) {
+      ESP_LOGD(TAG, "ConfigChanged: Charge current changed in ConfigChanged from %d to %d", profile0_charge_current, vweup_charge_current_new);
       if (vweup_enable_t26)
         SetChargeCurrent(vweup_charge_current_new);
       else
-        ESP_LOGE(TAG, "T26: charge current control only works with enabled comfort CAN connection!");
+        ESP_LOGE(TAG, "ConfigChanged: charge current control only works with enabled comfort CAN connection!");
     }
-    else ESP_LOGD(TAG, "T26: charge current reset to previous value %d", profile0_charge_current_old);
+    else ESP_LOGD(TAG, "ConfigChanged: charge current reset to previous value %d", profile0_charge_current_old);
+  }
+  if (vweup_cc_temp_new != profile0_cc_temp && profile0_cc_temp != 0) {
+/*    if (xvu_update) {
+      ESP_LOGD(TAG, "ConfigChanged: Update cc_temp to %d", vweup_cc_temp_new);
+      xvu_update = false;
+    }
+    else */if (vweup_cc_temp_new != profile0_cc_temp_old) {
+      ESP_LOGD(TAG, "ConfigChanged: CC_temp parameter changed in ConfigChanged from %d to %d", profile0_cc_temp, vweup_cc_temp_new);
+      if (vweup_enable_t26) 
+        CCTempSet(vweup_cc_temp_new);
+      else
+        ESP_LOGE(TAG, "ConfigChanged: climatecontrol only works with enabled comfort CAN connection!");
+    }
+    else ESP_LOGD(TAG, "ConfigChanged: cc temp reset to previous value %d", profile0_cc_temp_old);
   }
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -547,21 +556,22 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
   //  so we get a notification at our usual charge stop during range
   //  charging as well.
   // Fallback for v.c.limit.soc is config xvu ctp.soclimit
+  int suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
+  float soc = StdMetrics.ms_v_bat_soc->AsFloat();
   if (StdMetrics.ms_v_charge_state->AsString() == "charging")
   {
-    float soc = StdMetrics.ms_v_bat_soc->AsFloat();
-    int suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
     bool chg_autostop = MyConfig.GetParamValueBool("xvu", "chg_autostop");
     if (m_chargestate_lastsoc < suff_soc && soc >= suff_soc) {
       ESP_LOGD(TAG, "Ticker1: SOC crossed from %.2f to %.2f, autostop %d", m_chargestate_lastsoc, soc, chg_autostop);
       if(chg_autostop && suff_soc > 0) // exception for no limit (0): don't stop when we reach 100%
       {
           if (profile0_state == PROFILE0_IDLE) {
-            ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), Stopping charge", suff_soc);
+            ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), stopping charge", suff_soc);
             StartStopChargeT26(false);
           }
           else {
             ESP_LOGW(TAG, "Ticker1: Can't stop charge, profile0 communication already running");
+            MyNotify.NotifyString("alert", "Charge control", "Failed to stop charge on SoC limit!");
           }
       }
       else
@@ -570,8 +580,13 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
         StdMetrics.ms_v_charge_state->SetValue("topoff");
       }
     }
-    m_chargestate_lastsoc = soc;
   }
+  if (m_chargestate_lastsoc >= suff_soc && soc < suff_soc) {
+    ESP_LOGI(TAG, "Ticker1: SOC fell below sufficient SOC limit (%d%%), restarting charge", suff_soc);
+    fakestop = true;
+    StartStopChargeT26(true);
+  }
+  m_chargestate_lastsoc = soc;
 
   // Process a delayed timer mode change?
   if (m_chargestate_ticker == 0 && m_chargestart_ticker == 0 && m_chargestop_ticker == 0 &&
