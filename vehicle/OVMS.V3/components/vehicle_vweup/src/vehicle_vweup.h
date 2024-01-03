@@ -69,13 +69,20 @@ typedef enum {
   AUTO_DISABLE_CLIMATE_CONTROL
 } RemoteCommand;
 
-// Profile0 communication state (charge & AC control)
+// profile0 communication state (charge & AC control)
 #define PROFILE0_IDLE 0
 #define PROFILE0_REQUEST 1
 #define PROFILE0_READ 2
 #define PROFILE0_WRITE 3
 #define PROFILE0_WRITEREAD 4
 #define PROFILE0_SWITCH 5
+
+// keys that control behavior of profile0 state machine
+#define P0_KEY_NOP 0
+#define P0_KEY_READ 1
+#define P0_KEY_SWITCH 20
+#define P0_KEY_CLIMIT 21
+#define P0_KEY_CC_TEMP 22
 
 // Value update & conversion debug logging:
 #define VALUE_LOG(...)    ESP_LOGV(__VA_ARGS__)
@@ -277,17 +284,20 @@ protected:
 public:
   void SendOcuHeartbeat();
   static void sendOcuHeartbeat(TimerHandle_t timer);
-  void CCTempSet(uint16_t temperature);
+  void CCTempSet(int temperature);
   static void Profile0_Retry_Timer(TimerHandle_t timer);
   void Profile0_Retry_CallBack();
+  void WakeupT26();
   void StartStopChargeT26(bool start);
-  void SetChargeCurrent(uint16_t limit);
+  void StartStopChargeT26Workaround(bool start);
+  void SetChargeCurrent(int limit);
   void RequestProfile0();
   void ReadProfile0(uint8_t *data);
   void WriteProfile0();
   void ActivateProfile0();
-  int profile0_state;
-  SemaphoreHandle_t xSemaphore;
+  SemaphoreHandle_t xWakeSemaphore;
+  SemaphoreHandle_t xChargeSemaphore;
+  SemaphoreHandle_t xCurrentSemaphore;
 
 private:
   void SendCommand(RemoteCommand);
@@ -314,7 +324,6 @@ public:
   int cd_count;
   int fas_counter_on;
   int fas_counter_off;
-  bool dev_mode;
 
   bool profile0_recv;
   uint8_t profile0_cntr[3];
@@ -328,11 +337,15 @@ public:
   static const int profile0_len = 48;
   uint8_t profile0[profile0_len];
   int vweup_charge_current;
+  int profile0_state;
   int profile0_delay;
   int profile0_retries;
   int profile0_key;
   int profile0_val;
   bool profile0_activate;
+  bool ocu_response;
+  bool fakestop;
+  bool xvu_update;
 
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
