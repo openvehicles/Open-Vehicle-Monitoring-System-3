@@ -439,6 +439,7 @@ protected:
   OvmsMetricInt       *m_chg_timer_socmax;        // Scheduled maximum SOC
   OvmsMetricBool      *m_chg_timer_def;           // true = Scheduled charging is default
 
+  OvmsMetricFloat     *m_bat_soh_vw = 0;          // Battery SOH from ECU 8C PID 74 CB via OBD [%]
   OvmsMetricFloat     *m_bat_soh_range = 0;       // Battery SOH based on MFD range estimation [%]
   OvmsMetricFloat     *m_bat_soh_charge = 0;      // Battery SOH based on coulomb charge count [%]
 
