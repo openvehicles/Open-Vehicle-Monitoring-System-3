@@ -56,7 +56,7 @@ using namespace std;
 RTC_NOINIT_ATTR persistent_metrics      pmetrics;             // persistent storage container
 #define NUM_PERSISTENT_VALUES           sizeof_array(pmetrics.values)
 static const char*                      pmetrics_reason;      // reason pmetrics was zeroed
-std::map<std::size_t, const char*>      pmetrics_keymap       // hash key → metric name map (registry)
+std::map<std::size_t, std::string>      pmetrics_keymap       // hash key → metric name map (registry)
                                         __attribute__ ((init_priority (1800)));
 
 OvmsMetrics                             MyMetrics
@@ -740,17 +740,27 @@ bool pmetrics_check()
   return ret;
   }
 
-persistent_values *pmetrics_find(const char *name)
+static persistent_values *pmetrics_find_hash(size_t namehash)
   {
   int i;
   persistent_values *vp;
-  std::size_t namehash = std::hash<std::string>{}(name);
-  for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp)
-    {
+  for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp) {
     if (vp->namehash == namehash)
       return vp;
     }
   return NULL;
+  }
+
+persistent_values *pmetrics_find(const char *name)
+  {
+  std::size_t namehash = std::hash<std::string>{}(name);
+  return pmetrics_find_hash(namehash);
+  }
+
+persistent_values *pmetrics_find(const std::string &name)
+  {
+  std::size_t namehash = std::hash<std::string>{}(name);
+  return pmetrics_find_hash(namehash);
   }
 
 void pmetrics_init(bool refresh = false)
@@ -768,16 +778,22 @@ void pmetrics_init(bool refresh = false)
 
 persistent_values *pmetrics_register(const char *name)
   {
+  std::string str_name(name);
+  return pmetrics_register(str_name);
+  }
+
+persistent_values *pmetrics_register(const std::string &name)
+  {
   int i;
   persistent_values *vp;
   std::size_t namehash = std::hash<std::string>{}(name);
 
   // check for hash collision:
   auto it = pmetrics_keymap.find(namehash);
-  if (it != pmetrics_keymap.end() && strcmp(it->second, name) != 0)
+  if (it != pmetrics_keymap.end() && (it->second != name) )
     {
     ESP_LOGE(TAG, "pmetrics_register: cannot persist '%s' due to hash collision with '%s'",
-      name, it->second);
+      name.c_str(), it->second.c_str());
     return NULL;
     }
 
@@ -793,7 +809,7 @@ persistent_values *pmetrics_register(const char *name)
     {
     if (i >= NUM_PERSISTENT_VALUES)
       {
-      ESP_LOGE(TAG, "pmetrics_register: no free slots, cannot persist '%s'", name);
+      ESP_LOGE(TAG, "pmetrics_register: no free slots, cannot persist '%s'", name.c_str());
       return NULL;
       }
     vp->namehash = namehash;
@@ -802,7 +818,7 @@ persistent_values *pmetrics_register(const char *name)
     }
 
   ESP_LOGD(TAG, "pmetrics_register: '%s' => slot=%d, used %d/%d",
-    name, i, pmetrics.used, NUM_PERSISTENT_VALUES);
+    name.c_str(), i, pmetrics.used, NUM_PERSISTENT_VALUES);
   pmetrics_keymap[namehash] = name;
   return vp;
   }

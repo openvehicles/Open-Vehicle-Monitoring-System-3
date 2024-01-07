@@ -215,7 +215,9 @@ struct persistent_metrics
   };
 
 extern persistent_values *pmetrics_find(const char *name);
+extern persistent_values *pmetrics_find(const std::string &name);
 extern persistent_values *pmetrics_register(const char *name);
+extern persistent_values *pmetrics_register(const std::string &name);
 
 class OvmsMetric
   {
@@ -725,25 +727,41 @@ class OvmsMetricVector : public OvmsMetric
         return true;
       if (*m_valuep_size != m_value.size())
         {
-        ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+        ESP_LOGE(TAG, "CheckPersist: bad value for %s[] size", m_name);
         return false;
         }
       persistent_values *vp = pmetrics_find(m_name);
       if (vp == NULL)
         {
-        ESP_LOGE(TAG, "CheckPersist: can't find %s", m_name);
+        ESP_LOGE(TAG, "CheckPersist: can't find %s[] size", m_name);
         return false;
         }
       if (m_valuep_size != reinterpret_cast<std::size_t*>(&vp->value))
         {
-        ESP_LOGE(TAG, "CheckPersist: bad address for %s", m_name);
+        ESP_LOGE(TAG, "CheckPersist: bad address for %s[] size", m_name);
         return false;
         }
-      for (int i = 0; i < m_value.size(); i++)
+      for (std::size_t i = 0; i < m_value.size(); i++)
         {
         if (*m_valuep_elem[i] != m_value[i])
           {
           ESP_LOGE(TAG, "CheckPersist: bad value for %s[%d]", m_name, i);
+          return false;
+          }
+        }
+      char elem_name[100];
+      for (std::size_t i = 0; i < m_value.size(); ++i)
+        {
+        snprintf(elem_name, sizeof(elem_name), "%s_%u", m_name, i);
+        vp = pmetrics_find(elem_name);
+        if (!vp)
+          {
+          ESP_LOGE(TAG, "CheckPersist: can't find %s[%d]", m_name, i);
+          return false;
+          }
+        if (m_valuep_elem[i] != reinterpret_cast<ElemType*>(&vp->value))
+          {
+          ESP_LOGE(TAG, "CheckPersist: bad address for %s[%d]", m_name, i);
           return false;
           }
         }
