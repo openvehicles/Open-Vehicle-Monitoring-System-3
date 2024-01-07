@@ -489,7 +489,7 @@ class MetricsStandard
     OvmsMetricString* ms_v_env_cabinintake;               // Cabin intake type (fresh, recirc, etc)
     OvmsMetricString* ms_v_env_cabinvent;                 // Cabin vent type (comma-separated list of feet, face, screen, etc)
     OvmsMetricInt*    ms_v_env_service_range;             // Distance to next scheduled maintenance/service [km]
-    OvmsMetricInt*    ms_v_env_service_time;              // Time to next scheduled maintenance/service [Seconds]
+    OvmsMetricInt*    ms_v_env_service_time;              // Time of scheduled maintenance/service [DateLocal]
 
     //
     // Position / location metrics
