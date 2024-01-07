@@ -42,9 +42,9 @@ class OvmsVehicleBydAtto3 : public OvmsVehicle
     void GetDashboardConfig(DashboardConfig& cfg);
 
   private:
-    void IncomingFrameCan1(CAN_frame_t *p_frame);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void Ticker1(uint32_t ticker);
+    void IncomingFrameCan1(CAN_frame_t *p_frame) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
+    void Ticker1(uint32_t ticker) override;
   };
 
 #endif //#ifndef __VEHICLE_BYD_ATTO3_H__

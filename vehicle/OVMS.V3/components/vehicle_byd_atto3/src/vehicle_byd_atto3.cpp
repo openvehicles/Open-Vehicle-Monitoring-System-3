@@ -43,7 +43,7 @@ static const char *TAG = "v-atto3";
 #define POLL_STATE_CAR_CHARGING  1
 #define POLL_STATE_CAR_ON        2
 
-static const OvmsVehicle::poll_pid_t vehicle_atto3_polls[] = {
+static const OvmsPoller::poll_pid_t vehicle_atto3_polls[] = {
   //                                                                                    Off On  Chrg
   { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_READDATA, POLL_FOR_BATTERY_VOLTAGE,               { 60, 1,  10}, 0, ISOTP_STD },
   { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_READDATA, POLL_FOR_BATTERY_CURRENT,               { 60, 1,  10}, 0, ISOTP_STD },
@@ -218,10 +218,10 @@ void OvmsVehicleBydAtto3::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleBydAtto3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleBydAtto3::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
     uint32_t res;
-    switch(pid)
+    switch(job.pid)
       {
       case POLL_FOR_BATTERY_VOLTAGE:
         if(!get_bytes_uint_le<2>(data, 0, 2, res))

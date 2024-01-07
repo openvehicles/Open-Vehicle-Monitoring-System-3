@@ -128,7 +128,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
   protected:
     void ConfigChanged(OvmsConfigParam* param) override;
 
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 
     void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingFrameCan2(CAN_frame_t* p_frame) override;
@@ -171,10 +171,10 @@ class OvmsVehicleMgEv : public OvmsVehicle
      * @param SpecificPollData Variant specific poll list to add to common list
      * @param DataSize sizeof(SpecificPollData)
      */
-    void ConfigurePollData(const OvmsVehicle::poll_pid_t *SpecificPollData, size_t DataSize);
+    void ConfigurePollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize);
     // Form the poll list for OVMS to use by using only the common list
     void ConfigurePollData();
-    void ConfigureMG5PollData(const OvmsVehicle::poll_pid_t *SpecificPollData, size_t DataSize);
+    void ConfigureMG5PollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize);
 
     // Integer to string without padding
     static string IntToString(int x);
@@ -204,7 +204,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     //  * @param ManualPolls Poll items to manually poll
     //  * @param ManualPollSize sizeof(ManualPolls)
     //  */
-    // void SetupManualPolls(const OvmsVehicle::poll_pid_t *ManualPolls, size_t ManualPollSize);
+    // void SetupManualPolls(const OvmsPoller::poll_pid_t *ManualPolls, size_t ManualPollSize);
     // // Loop through manual poll list and send a request one by one
     // void SendManualPolls(canbus* currentBus, uint32_t ticker);
 
@@ -246,7 +246,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     // The polling structure, this is stored on external RAM which should be no slower
     // than accessing a const data structure as the Flash is stored externally on the
     // same interface and will be cached in the same way
-    OvmsVehicle::poll_pid_t* m_pollData = nullptr;
+    OvmsPoller::poll_pid_t* m_pollData = nullptr;
     // A temporary store for the VIN
     char m_vin[18];
 	  // Store cumulative energy charged
