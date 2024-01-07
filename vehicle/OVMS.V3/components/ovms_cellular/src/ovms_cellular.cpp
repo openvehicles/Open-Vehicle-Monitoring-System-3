@@ -340,7 +340,9 @@ void modem::SetPowerMode(PowerMode powermode)
     case Sleep:
     case DeepSleep:
       if ((original!=On)&&(original!=Sleep)&&(original!=DeepSleep))
-        SendSetState1(PoweringOn); // We are not in the task, so queue the state change
+        SendSetState1(PowerOffOn); // We are not in the task, so queue the state change
+        // We don't know the actual power state of the modem, it can be still powered on
+        // after a crash. PowerOffOn initiates a power cycle, which works in any case.
       break;
 
     case Off:
