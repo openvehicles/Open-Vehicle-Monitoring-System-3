@@ -805,7 +805,7 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(const OvmsPoller::poll_job_t &job,
   static uint8_t buf[MAX_POLL_DATA_LEN];
   memcpy(buf, rxbuf.c_str(), rxbuf.size());
 
-  uint32_t id_pid = job.moduleid_low<<16 | job.pid;
+  uint32_t id_pid = job.moduleid_rec<<16 | job.pid;
     switch (id_pid)
       {
       case BMS_RXID<<16 | 0x01: // battery

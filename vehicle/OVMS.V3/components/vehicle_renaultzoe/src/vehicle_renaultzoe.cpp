@@ -819,7 +819,7 @@ void OvmsVehicleRenaultZoe::IncomingPollReply(const OvmsPoller::poll_job_t &job,
   if (job.mlremain)
     return;
   
-	switch (job.moduleid_low) {
+	switch (job.moduleid_rec) {
 		// ****** EPS *****
 		case 0x762:
 			IncomingEPS(job.type, job.pid, rxbuf.data(), rxbuf.size());

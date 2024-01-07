@@ -34,7 +34,7 @@ static const char *TAGPOLL = "v-trio-poll";
  */
 void OvmsVehicleMitsubishi::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
-  //ESP_LOGW(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", job.moduleid_low, job.type, job.pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, job.mlremain);
+  //ESP_LOGW(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", job.moduleid_rec, job.type, job.pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, job.mlremain);
   // init / fill rx buffer:
     if (job.mlframe == 0)
     {
@@ -49,7 +49,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(const OvmsPoller::poll_job_t &job,
 
     ESP_LOGV(TAGPOLL, "IncomingPollReply: PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
   	//OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
-    switch (job.moduleid_low)
+    switch (job.moduleid_rec)
     {
       // ****** BMU *****
       case 0x762:
@@ -178,7 +178,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(const OvmsPoller::poll_job_t &job,
       // ****** OBC *****
       case 0x766:
       {
-        ESP_LOGV(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", job.moduleid_low, job.type, job.pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, job.mlremain);
+        ESP_LOGV(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", job.moduleid_rec, job.type, job.pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, job.mlremain);
         break;
       }
 
@@ -207,7 +207,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(const OvmsPoller::poll_job_t &job,
       }
 
      default:
-      ESP_LOGV(TAGPOLL, "Unknown module: %03" PRIx32, job.moduleid_low);
+      ESP_LOGV(TAGPOLL, "Unknown module: %03" PRIx32, job.moduleid_rec);
     }
 
 }

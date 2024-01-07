@@ -193,7 +193,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingPollReply(const OvmsPoller::poll_job_t
   if (job.mlremain)
     return;
   
-	switch (job.moduleid_low) {
+	switch (job.moduleid_rec) {
 		// ****** INV *****
 		case 0x18daf1df:
 			IncomingINV(job.type, job.pid, rxbuf.data(), rxbuf.size());
