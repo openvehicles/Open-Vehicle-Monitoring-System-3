@@ -81,7 +81,7 @@ static unsigned long JdFromYMD(int year, int month, int day)
  *   date: "ddmmyy"
  *   time: "hhmmss"
  */
-static unsigned long utc_to_timestamp(const char* date, const char* time)
+static int64_t utc_to_timestamp(const char* date, const char* time)
   {
   int day, month, year, hour, minute, second;
 
@@ -93,8 +93,8 @@ static unsigned long utc_to_timestamp(const char* date, const char* time)
   minute = (time[2]-'0')*10 + (time[3]-'0');
   second = (time[4]-'0')*10 + (time[5]-'0');
 
-  return
-    (JdFromYMD(2000+year, month, day) - JDEpoch) * (24L * 3600)
+  int64_t jd = JdFromYMD(2000+year, month, day);
+  return (jd - JDEpoch) * (24L * 3600)
       + ((hour * 60L + minute) * 60) + second;
   }
 
@@ -212,7 +212,7 @@ void GsmNMEA::IncomingLine(const std::string line)
       *StdMetrics.ms_v_pos_latitude = (float) lat;
       *StdMetrics.ms_v_pos_longitude = (float) lon;
       *StdMetrics.ms_v_pos_altitude = (float) alt;
-      *StdMetrics.ms_v_pos_gpstime = (int) time(NULL);
+      *StdMetrics.ms_v_pos_gpstime = time(NULL);
       }
 
     // upodate gpslock last, so listeners will see updated lat/lon values:
@@ -269,7 +269,7 @@ void GsmNMEA::IncomingLine(const std::string line)
 
     if (m_gpstime_enabled)
       {
-      int tm = utc_to_timestamp(date, time);
+      auto tm = utc_to_timestamp(date, time);
       if (tm < 1572735600) // 2019-11-03 00:00:00
         tm += (1024*7*86400); // Nasty kludge to workaround SIM5360 week rollover
       MyTime.Set(TAG, 2, true, tm);
