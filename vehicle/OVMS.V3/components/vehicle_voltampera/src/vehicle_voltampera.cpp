@@ -783,6 +783,16 @@ void OvmsVehicleVoltAmpera::Ticker10(uint32_t ticker)
     }
   }
 
+void OvmsVehicleVoltAmpera::PollRunFinished()
+  {
+  if(m_poll_state == 2)
+    {
+    // polling complete one time for state 2. Switch to state 1.
+    PollSetState(1);
+    PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
+    }
+  }
+
 void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
   {
   // Check if the car has gone to sleep
@@ -812,13 +822,6 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
       }
     }
   
-  if((m_poll_state == 2) && (m_poll_plcur == m_poll_plist))
-    {
-    // polling complete one time for state 2. Switch to state 1.
-    PollSetState(1);
-    PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
-    }
-
   PreheatWatchdog();
 
   if (m_controlled_lights)

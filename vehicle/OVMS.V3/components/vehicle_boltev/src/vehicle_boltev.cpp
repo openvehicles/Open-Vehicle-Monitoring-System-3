@@ -783,6 +783,15 @@ void OvmsVehicleBoltEV::Ticker10(uint32_t ticker)
     }
 }
 
+void OvmsVehicleBoltEV::PollRunFinished()
+{
+  if (m_poll_state == 2) {
+      // polling complete one time for state 2. Switch to state 1.
+      PollSetState(1);
+      PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
+  }
+}
+
 void OvmsVehicleBoltEV::Ticker1(uint32_t ticker)
 {
     // Check if the car has gone to sleep
@@ -805,12 +814,6 @@ void OvmsVehicleBoltEV::Ticker1(uint32_t ticker)
                 PollSetState(2);
             }
         }
-    }
-
-    if((m_poll_state == 2) && (m_poll_plcur == m_poll_plist)) {
-        // polling complete one time for state 2. Switch to state 1.
-        PollSetState(1);
-        PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
     }
 
     PreheatWatchdog();

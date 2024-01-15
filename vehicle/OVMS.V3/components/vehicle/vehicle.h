@@ -357,9 +357,15 @@ class OvmsVehicle : public InternalRamAllocated
   private:
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
-    void PollerSend(bool fromTicker);
+    void PollerResetThrottle();
+
+    typedef enum { Primary, Successful, OnceOff } poller_source_t;
+    void PollerSend(poller_source_t source);
+    static const char *PollerSource(OvmsVehicle::poller_source_t src);
 
   protected:
+    virtual void PollRunFinished();
+
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan2(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan3(CAN_frame_t* p_frame);
@@ -583,13 +589,20 @@ class OvmsVehicle : public InternalRamAllocated
     virtual bool SetFeature(int key, const char* value);
     virtual const std::string GetFeature(int key);
 
+    enum class OvmsNextPollResult
+      {
+      StillAtEnd,
+      FoundEntry,
+      ReachedEnd
+      };
+
   protected:
     OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
     canbus*           m_poll_bus_default;     // Bus default to poll on
     const OvmsPoller::poll_pid_t* m_poll_plist;           // Head of poll list
-    const OvmsPoller::poll_pid_t* m_poll_plcur;           // Poll list loop cursor
   private:
+    const OvmsPoller::poll_pid_t* m_poll_plcur;           // Poll list loop cursor
     // Poll state for received data.
     OvmsPoller::poll_job_t m_poll;
 
@@ -607,7 +620,18 @@ class OvmsVehicle : public InternalRamAllocated
                                               //              Only when the reply doesn't get in until the next ticker occurs
                                               //              PollserSend() decrements to 0 and abandons the outstanding reply (=timeout)
 
+
   protected:
+    // Poll entry manipulation: Must be called under lock of m_poll_mutex
+    void ResetPollEntry();
+    bool HasPollList();
+
+    OvmsNextPollResult NextPollEntry(OvmsPoller::poll_pid_t *entry);
+    void PollerNextTick(poller_source_t source);
+
+    // Check for throttling.
+    bool CanPoll();
+
     // Polling Response
     virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
     virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
