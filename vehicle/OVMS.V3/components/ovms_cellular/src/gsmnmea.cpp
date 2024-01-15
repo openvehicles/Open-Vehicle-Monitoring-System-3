@@ -289,8 +289,6 @@ void GsmNMEA::IncomingLine(const std::string line)
 
     if (speedok)
       *StdMetrics.ms_v_pos_gpsspeed = speed;
-    else if (StdMetrics.ms_v_pos_gpsspeed->Age() > 10)
-      *StdMetrics.ms_v_pos_gpsspeed = (float) 0;
 
     // END "RMC" handler
     }
