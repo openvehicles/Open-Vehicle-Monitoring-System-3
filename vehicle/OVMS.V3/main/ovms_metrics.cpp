@@ -56,7 +56,7 @@ using namespace std;
 RTC_NOINIT_ATTR persistent_metrics      pmetrics;             // persistent storage container
 #define NUM_PERSISTENT_VALUES           sizeof_array(pmetrics.values)
 static const char*                      pmetrics_reason;      // reason pmetrics was zeroed
-std::map<std::size_t, const char*>      pmetrics_keymap       // hash key → metric name map (registry)
+std::map<std::size_t, std::string>      pmetrics_keymap       // hash key → metric name map (registry)
                                         __attribute__ ((init_priority (1800)));
 
 OvmsMetrics                             MyMetrics
@@ -740,17 +740,27 @@ bool pmetrics_check()
   return ret;
   }
 
-persistent_values *pmetrics_find(const char *name)
+static persistent_values *pmetrics_find_hash(size_t namehash)
   {
   int i;
   persistent_values *vp;
-  std::size_t namehash = std::hash<std::string>{}(name);
-  for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp)
-    {
+  for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp) {
     if (vp->namehash == namehash)
       return vp;
     }
   return NULL;
+  }
+
+persistent_values *pmetrics_find(const char *name)
+  {
+  std::size_t namehash = std::hash<std::string>{}(name);
+  return pmetrics_find_hash(namehash);
+  }
+
+persistent_values *pmetrics_find(const std::string &name)
+  {
+  std::size_t namehash = std::hash<std::string>{}(name);
+  return pmetrics_find_hash(namehash);
   }
 
 void pmetrics_init(bool refresh = false)
@@ -768,16 +778,22 @@ void pmetrics_init(bool refresh = false)
 
 persistent_values *pmetrics_register(const char *name)
   {
+  std::string str_name(name);
+  return pmetrics_register(str_name);
+  }
+
+persistent_values *pmetrics_register(const std::string &name)
+  {
   int i;
   persistent_values *vp;
   std::size_t namehash = std::hash<std::string>{}(name);
 
   // check for hash collision:
   auto it = pmetrics_keymap.find(namehash);
-  if (it != pmetrics_keymap.end() && strcmp(it->second, name) != 0)
+  if (it != pmetrics_keymap.end() && (it->second != name) )
     {
     ESP_LOGE(TAG, "pmetrics_register: cannot persist '%s' due to hash collision with '%s'",
-      name, it->second);
+      name.c_str(), it->second.c_str());
     return NULL;
     }
 
@@ -793,7 +809,7 @@ persistent_values *pmetrics_register(const char *name)
     {
     if (i >= NUM_PERSISTENT_VALUES)
       {
-      ESP_LOGE(TAG, "pmetrics_register: no free slots, cannot persist '%s'", name);
+      ESP_LOGE(TAG, "pmetrics_register: no free slots, cannot persist '%s'", name.c_str());
       return NULL;
       }
     vp->namehash = namehash;
@@ -802,7 +818,7 @@ persistent_values *pmetrics_register(const char *name)
     }
 
   ESP_LOGD(TAG, "pmetrics_register: '%s' => slot=%d, used %d/%d",
-    name, i, pmetrics.used, NUM_PERSISTENT_VALUES);
+    name.c_str(), i, pmetrics.used, NUM_PERSISTENT_VALUES);
   pmetrics_keymap[namehash] = name;
   return vp;
   }
@@ -1277,6 +1293,16 @@ OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, uint16_t autostale, int 
   {
   OvmsMetricInt *m = (OvmsMetricInt*)Find(metric);
   if (m==NULL) m = new OvmsMetricInt(metric, autostale, units, persist);
+
+  if (!m->IsDefined())
+    m->SetValue(value);
+  return m;
+  }
+
+OvmsMetricInt64 *OvmsMetrics::InitInt64(const char* metric, uint16_t autostale, int64_t value, metric_unit_t units, bool persist)
+  {
+  OvmsMetricInt64 *m = (OvmsMetricInt64*)Find(metric);
+  if (m==NULL) m = new OvmsMetricInt64(metric, autostale, units, persist);
 
   if (!m->IsDefined())
     m->SetValue(value);
@@ -1875,6 +1901,25 @@ static time_t internal_timegm(struct tm const* t)
   return 60 * (60 * (24L * days_since_epoch + t->tm_hour) + t->tm_min) + t->tm_sec;
   }
 
+
+static int ParseTimerValue(const char *value)
+  {
+  int hours = 0, minutes = 0, seconds = 0;
+  switch (sscanf(value, "%d:%d:%d", &hours, &minutes,&seconds))
+    {
+    case 1:
+      return hours; //number by itself - treat it as number of seconds.
+      break;
+    case 2:
+      return time_unit_join(hours, minutes, 0);
+      break;
+    case 3:
+      return time_unit_join(hours, minutes, seconds);
+      break;
+    }
+  return -1;
+  }
+
 bool OvmsMetricInt::SetValue(std::string value, metric_unit_t units)
   {
   CheckTargetUnit(GetUnits(), units, false);
@@ -1886,20 +1931,9 @@ bool OvmsMetricInt::SetValue(std::string value, metric_unit_t units)
     case TimeUTC:
     case TimeLocal:
       {
-      int hours = 0, minutes = 0, seconds = 0;
-      switch (sscanf(value.c_str(), "%d:%d:%d", &hours, &minutes,&seconds))
-        {
-        case 1:
-          nvalue = hours; //number by itself - treat it as number of seconds.
-          break;
-        case 2:
-          nvalue = time_unit_join(hours, minutes, 0);
-          break;
-        case 3:
-          nvalue = time_unit_join(hours, minutes, seconds);
-          break;
-        default: return false;
-        }
+      nvalue = ParseTimerValue(value.c_str());
+      if (nvalue < 0)
+        return false;
       break;
       }
     case DateUTC:
@@ -2303,6 +2337,325 @@ bool OvmsMetricString::SetValue(std::string value, metric_unit_t units)
 void OvmsMetricString::Clear()
   {
   SetValue("");
+  OvmsMetric::Clear();
+  }
+
+OvmsMetric64::OvmsMetric64(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
+  : OvmsMetric(name, autostale, units, persist)
+  {
+  m_persist = persist;
+  m_valuep_lo = nullptr;
+  m_valuep_hi = nullptr;
+  }
+ void OvmsMetric64::InitPersist()
+   {
+  if (m_persist)
+    {
+    std::string lo_name(m_name);
+    std::string hi_name = lo_name + "_hi";
+
+    persistent_values *hi_vp = pmetrics_register(hi_name);
+    persistent_values *lo_vp = pmetrics_register(lo_name);
+    if (!hi_vp || !lo_vp)
+      {
+      m_persist = false;
+      }
+    else
+      {
+      m_valuep_hi = (&hi_vp->value);
+      m_valuep_lo = (&lo_vp->value);
+      if (SetValueParts(*m_valuep_lo, *m_valuep_hi))
+        {
+        SetModified(true);
+        ESP_LOGI(TAG, "persist %s = %s", m_name, AsUnitString().c_str());
+        }
+      }
+    }
+  }
+
+bool OvmsMetric64::CheckPersist()
+  {
+  if (!m_persist || !m_valuep_lo || !m_valuep_hi || !IsDefined())
+    return true;
+  persistent_value_t lo, hi;
+  GetValueParts(lo, hi);
+  if (lo != *m_valuep_lo || hi != *m_valuep_hi)
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+    return false;
+    }
+  std::string lo_name(m_name);
+  std::string hi_name = lo_name + "_hi";
+
+  persistent_values *hi_vp = pmetrics_find(hi_name);
+  if (!hi_vp)
+    {
+    ESP_LOGE(TAG, "CheckPersist: can't find %s", hi_name.c_str());
+    return false;
+    }
+  persistent_values *lo_vp = pmetrics_find(lo_name);
+  if ( !lo_vp)
+    {
+    ESP_LOGE(TAG, "CheckPersist: can't find %s", lo_name.c_str());
+    return false;
+    }
+  if (m_valuep_hi != &hi_vp->value)
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad address for %s",hi_name.c_str());
+    return false;
+    }
+  if (m_valuep_lo != &lo_vp->value)
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad address for %s",lo_name.c_str());
+    return false;
+    }
+  return true;
+  }
+
+void OvmsMetric64::RefreshPersist()
+  {
+  if (m_persist && m_valuep_lo && m_valuep_hi && IsDefined())
+    {
+    GetValueParts(*m_valuep_lo, *m_valuep_hi);
+    }
+  }
+
+OvmsMetricInt64::OvmsMetricInt64(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
+  : OvmsMetric64(name, autostale, units, persist)
+  {
+  // Initialise once GetValueParts is set.
+  InitPersist();
+  }
+
+// Get the value as low/high parts.
+void OvmsMetricInt64::GetValueParts( persistent_value_t &value_low, persistent_value_t &value_hi)
+  {
+  value_low = static_cast<persistent_value_t>( m_value & 0xffff);
+  value_hi = static_cast<persistent_value_t>(m_value >> 32);
+  }
+
+// Set the value as low/high parts. Return true on changed
+bool OvmsMetricInt64::SetValueParts( persistent_value_t value_low, persistent_value_t value_hi)
+  {
+  int64_t newval =
+    static_cast<int32_t>(value_low)|
+    (static_cast<int64_t>(value_hi)<< 32);
+  if (newval == m_value)
+    return false;
+  m_value = newval;
+  return true;
+  }
+
+std::string OvmsMetricInt64::AsString(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (IsDefined())
+    {
+    int64_t value = m_value;
+    CheckTargetUnit(GetUnits(), units, false);
+    if (units == Native)
+      units = m_units;
+    else if (units != m_units)
+    {
+    switch (units)
+      {
+      case DateUTC:
+      case DateLocal:
+        value = m_value;
+        break;
+      default:
+        value = static_cast<int64_t>(round(UnitConvert(m_units,units,static_cast<float>(m_value))));
+      }
+    }
+    std::stringstream os;
+    switch (units)
+      {
+      case TimeUTC:
+      case TimeLocal:
+        {
+        int hours, minutes, seconds;
+        time_unit_split(value, hours, minutes, seconds);
+        os << std::setfill('0')
+          << std::setw(2) << hours << ':'
+          << std::setw(2) << minutes << ':'
+          << std::setw(2) << seconds;
+        }
+        break;
+      case DateUTC:
+        {
+        time_t tvalue = value;
+        std::tm ourtime;
+        gmtime_r(&tvalue, &ourtime);
+        os << std::put_time(&ourtime, "%F %T UTC");
+        }
+        break;
+      case DateLocal:
+        {
+        time_t tvalue = value;
+        std::tm ourtime;
+        localtime_r(&tvalue, &ourtime);
+        os << std::put_time(&ourtime, "%F %T %Z");
+        }
+        break;
+      default:
+        os << value;
+        break;
+      }
+    return os.str();
+    }
+  else
+    {
+    return std::string(defvalue);
+    }
+  }
+
+std::string OvmsMetricInt64::AsJSON(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (IsDefined())
+    {
+    CheckTargetUnit(GetUnits(), units, false);
+    if (units == Native)
+      units = GetUnits();
+    switch (units)
+      {
+      case TimeUTC:
+      case TimeLocal:
+        return OvmsMetric::AsJSON(defvalue, units, precision);
+      case DateLocal:
+      case DateUTC:
+        {
+        time_t tvalue = m_value;
+        std::tm ourtime;
+        gmtime_r(&tvalue, &ourtime);
+        std::ostringstream os;
+        os << '"' << std::put_time(&ourtime, "%FT%T.000Z") << '"';
+        return os.str();
+        }
+      default: return AsString(defvalue, units, precision);
+      }
+    }
+  else
+    return std::string((defvalue && *defvalue) ? defvalue : "0");
+  }
+
+float OvmsMetricInt64::AsFloat(const float defvalue, metric_unit_t units)
+  {
+  return (float)AsInt((int64_t)defvalue, units);
+  }
+
+int64_t OvmsMetricInt64::AsInt(const int64_t defvalue, metric_unit_t units)
+  {
+  if (IsDefined())
+    {
+    if ((units != Native)&&(units != m_units))
+      {
+      switch(units)
+        {
+        case DateUTC:
+        case DateLocal:
+          return m_value;
+        default:
+          return UnitConvert(m_units,units,static_cast<float>(m_value));
+        }
+      }
+    else
+      return m_value;
+    }
+  else
+    return defvalue;
+  }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetricInt64::DukPush(DukContext &dc, metric_unit_t units)
+  {
+  dc.Push(static_cast<double>(AsInt(0, units)));
+  }
+#endif
+
+bool OvmsMetricInt64::SetValue(int64_t value, metric_unit_t units)
+  {
+  int64_t nvalue = value;
+
+  if (units != m_units)
+    {
+    switch(units)
+      {
+      case Other:
+      case DateUTC:
+      case DateLocal:
+        break;
+      default:
+        nvalue=UnitConvert(units,m_units,static_cast<float>(value));
+      }
+    }
+
+  if (m_value != nvalue)
+    {
+    m_value = nvalue;
+    if (m_persist && m_valuep_hi && m_valuep_lo)
+      GetValueParts(*m_valuep_lo, *m_valuep_hi);
+    SetModified(true);
+    return true;
+    }
+  else
+    {
+    SetModified(false);
+    return false;
+    }
+  }
+
+bool OvmsMetricInt64::SetValue(std::string value, metric_unit_t units)
+  {
+  CheckTargetUnit(GetUnits(), units, false);
+  if (units == Native)
+    units = m_units;
+  int64_t nvalue;
+  switch (units)
+    {
+    case TimeUTC:
+    case TimeLocal:
+      {
+      nvalue = ParseTimerValue(value.c_str());
+      if (nvalue < 0)
+        return false;
+      break;
+      }
+    case DateUTC:
+    case DateLocal:
+      {
+      if (!value.empty() && value.find_first_not_of("0123456789") == std::string::npos)
+        {
+        // digits only... treat it as a time_t integer.
+        nvalue = atoll(value.c_str());
+        }
+      else
+        {
+        std::tm ourtime;
+        istringstream istr(value);
+        istr >> std::get_time(&ourtime,"%Y-%m-%dT%H:%M:%S");
+        if (istr.fail())
+          return false;
+        if (units==DateUTC)
+          nvalue = internal_timegm(&ourtime);
+        else
+          nvalue = mktime(&ourtime);
+        }
+      break;
+      }
+    default:
+      nvalue = atoll(value.c_str());
+      break;
+    }
+  return SetValue(nvalue, units);
+  }
+
+bool OvmsMetricInt64::SetValue(dbcNumber& value)
+  {
+  return SetValue(value.GetSignedInteger());
+  }
+
+void OvmsMetricInt64::Clear()
+  {
+  SetValue(0);
   OvmsMetric::Clear();
   }
 

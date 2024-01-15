@@ -276,24 +276,26 @@ OvmsVehicle::OvmsVehicle()
   m_ready = false;
 
   m_poll_state = 0;
-  m_poll_bus = NULL;
   m_poll_bus_default = NULL;
   m_poll_txcallback = std::bind(&OvmsVehicle::PollerTxCallback, this, _1, _2);
   m_poll_plist = NULL;
   m_poll_plcur = NULL;
-  m_poll_entry = {};
   m_poll_vwtp = {};
-  m_poll_ticker = 0;
+
+  m_poll.bus = NULL;
+  m_poll.entry = {};
+  m_poll.ticker = 0;
   m_poll_single_rxbuf = NULL;
   m_poll_single_rxerr = 0;
-  m_poll_moduleid_sent = 0;
-  m_poll_moduleid_low = 0;
-  m_poll_moduleid_high = 0;
-  m_poll_type = 0;
-  m_poll_pid = 0;
-  m_poll_ml_remain = 0;
-  m_poll_ml_offset = 0;
-  m_poll_ml_frame = 0;
+  m_poll.moduleid_sent = 0;
+  m_poll.moduleid_low = 0;
+  m_poll.moduleid_high = 0;
+  m_poll.type = 0;
+  m_poll.pid = 0;
+  m_poll.mlremain = 0;
+  m_poll.mloffset = 0;
+  m_poll.mlframe = 0;
+
   m_poll_wait = 0;
   m_poll_sequence_max = 1;
   m_poll_sequence_cnt = 0;
@@ -460,6 +462,17 @@ const char* OvmsVehicle::VehicleType()
   return MyVehicleFactory.ActiveVehicleType();
   }
 
+const char *OvmsVehicle::PollerSource(OvmsVehicle::poller_source_t src)
+  {
+  switch (src)
+    {
+    case poller_source_t::Primary: return "PRI";
+    case poller_source_t::Successful: return "SRX";
+    case poller_source_t::OnceOff: return "ONE";
+    }
+    return "XXX";
+  }
+
 void OvmsVehicle::RxTask()
   {
   CAN_frame_t frame;
@@ -476,14 +489,14 @@ void OvmsVehicle::RxTask()
         {
         PollerVWTPReceive(&frame, frame.MsgID);
         }
-      else if (m_poll_wait && frame.origin == m_poll_bus && m_poll_plist)
+      else if (m_poll_wait && frame.origin == m_poll.bus && HasPollList())
         {
         uint32_t msgid;
-        if (m_poll_protocol == ISOTP_EXTADR)
+        if (m_poll.protocol == ISOTP_EXTADR)
           msgid = frame.MsgID << 8 | frame.data.u8[0];
         else
           msgid = frame.MsgID;
-        if (msgid >= m_poll_moduleid_low && msgid <= m_poll_moduleid_high)
+        if (msgid >= m_poll.moduleid_low && msgid <= m_poll.moduleid_high)
           {
           PollerISOTPReceive(&frame, msgid);
           }
@@ -570,7 +583,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   m_ticker++;
 
   PollerStateTicker();
-  PollerSend(true);
+  PollerSend(poller_source_t::Primary);
 
   Ticker1(m_ticker);
   if ((m_ticker % 10) == 0) Ticker10(m_ticker);

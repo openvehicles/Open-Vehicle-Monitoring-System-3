@@ -36,7 +36,7 @@ static const char *TAG = "v-thinkcity";
 
 #define TC_CANDATA_TIMEOUT 10
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] =
+static const OvmsPoller::poll_pid_t obdii_polls[] =
   {
    // 0x753 03 22 49 65 - charger temp
     { 0x753, 0x75B, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4965, {  0, 30, 300 }, 0, ISOTP_STD }, 
@@ -400,13 +400,13 @@ void OvmsVehicleThinkCity::Ticker10(uint32_t ticker)
   }
 
 
-void OvmsVehicleThinkCity::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleThinkCity::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
     ESP_LOGI(TAG,"Poll replay arrived");
      
     // TODO: These are temperatures so maybe the uint8_t is not proper temperatures can be negative too
     uint8_t value = *data;
-    switch (pid)
+    switch (job.pid)
       {
       case 0x4965:  
         StandardMetrics.ms_v_charge_temp->SetValue((float)((short)value) / 100.0f);

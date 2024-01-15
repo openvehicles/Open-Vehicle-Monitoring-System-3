@@ -287,7 +287,7 @@ class MetricsStandard
     OvmsMetricInt*    ms_m_tasks;
     OvmsMetricInt*    ms_m_freeram;
     OvmsMetricInt*    ms_m_monotonic;
-    OvmsMetricInt*    ms_m_timeutc;
+    OvmsMetricInt64*  ms_m_timeutc;
 
     OvmsMetricString* ms_m_net_type;                      // none, wifi, modem
     OvmsMetricInt*    ms_m_net_sq;                        // Network signal quality [dbm]
@@ -494,7 +494,7 @@ class MetricsStandard
     OvmsMetricString* ms_v_env_cabinintake;               // Cabin intake type (fresh, recirc, etc)
     OvmsMetricString* ms_v_env_cabinvent;                 // Cabin vent type (comma-separated list of feet, face, screen, etc)
     OvmsMetricInt*    ms_v_env_service_range;             // Distance to next scheduled maintenance/service [km]
-    OvmsMetricInt*    ms_v_env_service_time;              // Time to next scheduled maintenance/service [Seconds]
+    OvmsMetricInt64*  ms_v_env_service_time;            // Time of scheduled maintenance/service [DateLocal]
 
     //
     // Position / location metrics
@@ -504,7 +504,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_pos_gpshdop;                   // Horizontal dilution of precision (smaller=better)
     OvmsMetricInt*    ms_v_pos_satcount;
     OvmsMetricInt*    ms_v_pos_gpssq;                     // GPS signal quality [%] (<30 unusable, >50 good, >80 excellent)
-    OvmsMetricInt*    ms_v_pos_gpstime;                   // Time (UTC) of GPS coordinates [Seconds]
+    OvmsMetricInt64*  ms_v_pos_gpstime;                   // Time (UTC) of GPS coordinates [Seconds]
     OvmsMetricFloat*  ms_v_pos_latitude;
     OvmsMetricFloat*  ms_v_pos_longitude;
     OvmsMetricString* ms_v_pos_location;                  // Name of current location if defined

@@ -46,7 +46,7 @@ class OvmsVehicleThinkCity : public OvmsVehicle
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
  
     vehicle_command_t CommandLock(const char* pin);
     vehicle_command_t CommandUnlock(const char* pin);

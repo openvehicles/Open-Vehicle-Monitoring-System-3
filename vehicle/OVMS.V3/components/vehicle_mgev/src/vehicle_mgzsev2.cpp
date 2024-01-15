@@ -39,7 +39,7 @@ namespace
 {
 
 //Variant ZS EV MK2 specific polls
-const OvmsVehicle::poll_pid_t obdii_polls_d[] =
+const OvmsPoller::poll_pid_t obdii_polls_d[] =
 {
     { bmsMk2Id, bmsMk2Id | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
     { bmsMk2Id, bmsMk2Id | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },

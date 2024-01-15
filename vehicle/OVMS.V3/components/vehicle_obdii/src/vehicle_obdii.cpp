@@ -34,7 +34,7 @@ static const char *TAG = "v-obdii";
 #include <stdio.h>
 #include "vehicle_obdii.h"
 
-static const OvmsVehicle::poll_pid_t obdii_polls[]
+static const OvmsPoller::poll_pid_t obdii_polls[]
   =
   {
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30, 30 }, 0, ISOTP_STD }, // Engine coolant temp
@@ -64,12 +64,12 @@ OvmsVehicleOBDII::~OvmsVehicleOBDII()
   ESP_LOGI(TAG, "Shutdown OBDII vehicle module");
   }
 
-void OvmsVehicleOBDII::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleOBDII::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
   int value1 = (int)data[0];
   int value2 = ((int)data[0] << 8) + (int)data[1];
 
-  switch (pid)
+  switch (job.pid)
     {
     case 0x02:  // VIN (multi-line response)
       // Data in the first frame starts with 0x01 for some (all?) vehicles
@@ -79,7 +79,7 @@ void OvmsVehicleOBDII::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
         --length;
         }
       strncat(m_vin,(char*)data,length);
-      if (mlremain==0)
+      if (job.mlremain==0)
         {
         StandardMetrics.ms_v_vin->SetValue(m_vin);
         m_vin[0] = 0;

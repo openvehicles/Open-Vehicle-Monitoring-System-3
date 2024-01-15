@@ -37,7 +37,7 @@ namespace
 {
 
 //Variant b specific polls
-const OvmsVehicle::poll_pid_t obdii_polls_b[] =
+const OvmsPoller::poll_pid_t obdii_polls_b[] =
 {
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },

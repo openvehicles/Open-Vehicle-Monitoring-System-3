@@ -215,7 +215,9 @@ struct persistent_metrics
   };
 
 extern persistent_values *pmetrics_find(const char *name);
+extern persistent_values *pmetrics_find(const std::string &name);
 extern persistent_values *pmetrics_register(const char *name);
+extern persistent_values *pmetrics_register(const std::string &name);
 
 class OvmsMetric
   {
@@ -725,25 +727,41 @@ class OvmsMetricVector : public OvmsMetric
         return true;
       if (*m_valuep_size != m_value.size())
         {
-        ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+        ESP_LOGE(TAG, "CheckPersist: bad value for %s[] size", m_name);
         return false;
         }
       persistent_values *vp = pmetrics_find(m_name);
       if (vp == NULL)
         {
-        ESP_LOGE(TAG, "CheckPersist: can't find %s", m_name);
+        ESP_LOGE(TAG, "CheckPersist: can't find %s[] size", m_name);
         return false;
         }
       if (m_valuep_size != reinterpret_cast<std::size_t*>(&vp->value))
         {
-        ESP_LOGE(TAG, "CheckPersist: bad address for %s", m_name);
+        ESP_LOGE(TAG, "CheckPersist: bad address for %s[] size", m_name);
         return false;
         }
-      for (int i = 0; i < m_value.size(); i++)
+      for (std::size_t i = 0; i < m_value.size(); i++)
         {
         if (*m_valuep_elem[i] != m_value[i])
           {
           ESP_LOGE(TAG, "CheckPersist: bad value for %s[%d]", m_name, i);
+          return false;
+          }
+        }
+      char elem_name[100];
+      for (std::size_t i = 0; i < m_value.size(); ++i)
+        {
+        snprintf(elem_name, sizeof(elem_name), "%s_%u", m_name, i);
+        vp = pmetrics_find(elem_name);
+        if (!vp)
+          {
+          ESP_LOGE(TAG, "CheckPersist: can't find %s[%d]", m_name, i);
+          return false;
+          }
+        if (m_valuep_elem[i] != reinterpret_cast<ElemType*>(&vp->value))
+          {
+          ESP_LOGE(TAG, "CheckPersist: bad address for %s[%d]", m_name, i);
           return false;
           }
         }
@@ -1019,6 +1037,60 @@ class OvmsMetricVector : public OvmsMetric
     std::vector<ElemType*, AllocatorStar> m_valuep_elem;
   };
 
+/* Base class for 64 bit persisted metrics.
+ */
+class OvmsMetric64 : public OvmsMetric
+ {
+  public:
+    OvmsMetric64(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false);
+
+    bool CheckPersist() override;
+    void RefreshPersist() override;
+
+    void operator=(std::string value) override { SetValue(value); }
+  protected:
+    // Get the value as low/high parts.
+    virtual void GetValueParts( persistent_value_t &value_low, persistent_value_t &value_hi) = 0;
+    // Set the value as low/high parts. Return true on changed
+    virtual bool SetValueParts( persistent_value_t value_low, persistent_value_t value_hi) = 0;
+
+    // Needs to be called by overriding constructor.
+    void InitPersist();
+
+    persistent_value_t *m_valuep_lo;
+    persistent_value_t *m_valuep_hi;
+ };
+
+class OvmsMetricInt64 : public OvmsMetric64
+  {
+  protected:
+    // Get the value as low/high parts.
+    void GetValueParts( persistent_value_t &value_low, persistent_value_t &value_hi) override;
+    // Set the value as low/high parts. Return true on changed
+    bool SetValueParts( persistent_value_t value_low, persistent_value_t value_hi) override;
+
+    int64_t m_value;
+
+  public:
+    OvmsMetricInt64(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false);
+
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
+    std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
+
+    float AsFloat(const float defvalue = 0, metric_unit_t units = Other) override; // TODO !?!?!?
+
+    int64_t AsInt(const int64_t defvalue = 0, metric_unit_t units = Other);
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override;
+#endif
+    bool SetValue(int64_t value, metric_unit_t units = Other);
+    void operator=(int64_t value) { SetValue(value); }
+
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+    bool SetValue(dbcNumber& value) override;
+    void Clear() override;
+
+  };
 
 typedef std::function<void(OvmsMetric*)> MetricCallback;
 
@@ -1085,6 +1157,7 @@ class OvmsMetrics
     int Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const;
 
     OvmsMetricInt *InitInt(const char* metric, uint16_t autostale=0, int value=0, metric_unit_t units = Other, bool persist = false);
+    OvmsMetricInt64 *InitInt64(const char* metric, uint16_t autostale=0, int64_t value=0, metric_unit_t units = Other, bool persist = false);
     OvmsMetricBool *InitBool(const char* metric, uint16_t autostale=0, bool value=0, metric_unit_t units = Other, bool persist = false);
     OvmsMetricFloat *InitFloat(const char* metric, uint16_t autostale=0, float value=0, metric_unit_t units = Other, bool persist = false);
     OvmsMetricString *InitString(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other);

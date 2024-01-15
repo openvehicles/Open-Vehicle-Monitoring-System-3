@@ -94,7 +94,7 @@ static const char *TAG = "v-bmwi3";
 
 
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] = {
+static const OvmsPoller::poll_pid_t obdii_polls[] = {
   // TXMODULEID, RXMODULEID, TYPE, PID, { POLLTIMES }, BUS, ADDRESSING
   // SME: Battery management electronics
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS,                     {  0, 60, 60, 60 }, 0, ISOTP_EXTADR },   // 0x6335 v_bat_soh, v_bat_health
@@ -386,20 +386,20 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
     }
 }
 
-void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleBMWi3::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
     string& rxbuf = bmwi3_obd_rxbuf;
   
     // Assemble first and following frames to get complete reply
     
     // init rx buffer on first (it tells us whole length)
-    if (m_poll_ml_frame == 0) {
+    if (job.mlframe == 0) {
       rxbuf.clear();
-      rxbuf.reserve(length + mlremain);
+      rxbuf.reserve(length + job.mlremain);
     }
     // Append each piece
     rxbuf.append((char*)data, length);
-    if (mlremain) {
+    if (job.mlremain) {
         // we need more - return for now.
         return;
     }
@@ -414,7 +414,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
   last_obd_data_seen = StdMetrics.ms_m_monotonic->AsInt();
 
-  switch (pid) {
+  switch (job.pid) {
 
   // --- SME --------------------------------------------------------------------------------------------------------
 
@@ -1503,7 +1503,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lx%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "BF_BLOCK_10_STERNE", (unsigned long)BF_BLOCK_10_STERNE, "\"Bit\"");
 
     // ==========  Add your processing here ==========
-    hexdump(rxbuf, type, pid);
+    hexdump(rxbuf, job.type, job.pid);
 
     break;
   }
@@ -1615,7 +1615,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "AE_STROM_EMASCHINE", "STAT_STROM_DC_HV_UMRICHTER_EM_WERT", STAT_STROM_DC_HV_UMRICHTER_EM_WERT, "\"A\"");
 
     // ==========  Add your processing here ==========
-    hexdump(rxbuf, type, pid);
+    hexdump(rxbuf, job.type, job.pid);
 
     break;
   }
@@ -2606,7 +2606,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   // Unknown: output if for review
   default: {
-    hexdump(rxbuf, type, pid);
+    hexdump(rxbuf, job.type, job.pid);
     break;
   }
 

@@ -57,7 +57,7 @@ static const char *TAG = "v-boltev";
 // 1 = car is on and ready to Drive
 // 2 = car wakeup or powertrain off, one request with high polling speed. After swith to state 1.
 
-static const OvmsVehicle::poll_pid_t va_polls[]
+static const OvmsPoller::poll_pid_t va_polls[]
 = {
     { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x002F, {  0, 600,  0 },   0, ISOTP_STD }, // Fuel Level
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1940, {  0, 60,   60 },  0, ISOTP_STD }, // Transmission temperature
@@ -134,7 +134,7 @@ OvmsVehicleBoltEV::OvmsVehicleBoltEV()
     const int va_pollsSize = sizeof(va_polls)/sizeof(va_polls[0]);
 
     // +1 is for the dynamic capacity check below
-    m_pPollingList = new poll_pid_t[va_pollsSize + nCellListSize + 1];
+    m_pPollingList = new OvmsPoller::poll_pid_t[va_pollsSize + nCellListSize + 1];
 
     // cell 01 0x4181, cell 96 0x4240
     uint16_t cellPID = 0x4181;
@@ -636,21 +636,21 @@ void OvmsVehicleBoltEV::IncomingFrameCan4(CAN_frame_t* p_frame)
     ClimateControlIncomingSWCAN(p_frame);
 }
 
-void OvmsVehicleBoltEV::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleBoltEV::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
     uint8_t value = *data;
 
     //Cell voltage
     const uint16_t pid_cellv1 = 0x4181;
-    if((pid >=pid_cellv1 && pid<=pid_cellv1 + 30) || (pid>=pid_cellv1+127 && pid<=pid_cellv1+191)) {
+    if((job.pid >=pid_cellv1 && job.pid<=pid_cellv1 + 30) || (job.pid>=pid_cellv1+127 && job.pid<=pid_cellv1+191)) {
         if(length <2)
             return;
 
         int nCellNum = 0;
-        if(pid <= pid_cellv1 + 30)
-            nCellNum = pid - pid_cellv1;
+        if(job.pid <= pid_cellv1 + 30)
+            nCellNum = job.pid - pid_cellv1;
         else
-            nCellNum = pid - pid_cellv1 - 96;
+            nCellNum = job.pid - pid_cellv1 - 96;
 
         if(nCellNum == 0)
             BmsResetCellVoltages();
@@ -660,7 +660,7 @@ void OvmsVehicleBoltEV::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
         return;
     }
 
-    switch (pid) {
+    switch (job.pid) {
     case 0x002f:  // Fuel level
         if(mt_fuel_level->SetValue((int)value * 100 / 255))
             NotifyFuel();
@@ -783,6 +783,15 @@ void OvmsVehicleBoltEV::Ticker10(uint32_t ticker)
     }
 }
 
+void OvmsVehicleBoltEV::PollRunFinished()
+{
+  if (m_poll_state == 2) {
+      // polling complete one time for state 2. Switch to state 1.
+      PollSetState(1);
+      PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
+  }
+}
+
 void OvmsVehicleBoltEV::Ticker1(uint32_t ticker)
 {
     // Check if the car has gone to sleep
@@ -805,12 +814,6 @@ void OvmsVehicleBoltEV::Ticker1(uint32_t ticker)
                 PollSetState(2);
             }
         }
-    }
-
-    if((m_poll_state == 2) && (m_poll_plcur == m_poll_plist)) {
-        // polling complete one time for state 2. Switch to state 1.
-        PollSetState(1);
-        PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
     }
 
     PreheatWatchdog();

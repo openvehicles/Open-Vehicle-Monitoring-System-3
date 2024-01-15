@@ -57,7 +57,7 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
 
   protected:
     void PollerStateTicker();
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 
     // Trip length & SOC/energy consumption:
     void ResetTripCounters();

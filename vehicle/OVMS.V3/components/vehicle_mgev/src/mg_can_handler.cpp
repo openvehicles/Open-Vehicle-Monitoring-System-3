@@ -185,46 +185,44 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
     }
 }
 
-void OvmsVehicleMgEv::IncomingPollReply(
-        canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length,
-        uint16_t remain)
+void OvmsVehicleMgEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
     ESP_LOGV(
         TAG,
         "%03" PRIx32 " TYPE:%" PRIx16 " PID:%02" PRIx16 " Length:%" PRIx8 " Data:%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8,
-        m_poll_moduleid_low,
-        type,
-        pid,
+        job.moduleid_rec,
+        job.type,
+        job.pid,
         length,
         data[0], data[1], data[2], data[3]
     );
 
-    switch (m_poll_moduleid_low)
+    switch (job.moduleid_rec)
     {
         case (bmsId | rxFlag):
         case (bmsMk2Id | rxFlag):
-            IncomingBmsPoll(pid, data, length, remain);
+            IncomingBmsPoll(job.pid, data, length, job.mlremain);
             break;
         case (dcdcId | rxFlag):
-            IncomingDcdcPoll(pid, data, length);
+            IncomingDcdcPoll(job.pid, data, length);
             break;
         case (vcuId | rxFlag):
-            IncomingVcuPoll(pid, data, length, remain);
+            IncomingVcuPoll(job.pid, data, length, job.mlremain);
             break;
         case (atcId | rxFlag):
-            IncomingAtcPoll(pid, data, length);
+            IncomingAtcPoll(job.pid, data, length);
             break;
         case (tpmsId | rxFlag):
-            IncomingTpmsPoll(pid, data, length);
+            IncomingTpmsPoll(job.pid, data, length);
             break;
         case (pepsId | rxFlag):
-            IncomingPepsPoll(pid, data, length);
+            IncomingPepsPoll(job.pid, data, length);
             break;
         case (evccId | rxFlag):
-            IncomingEvccPoll(pid, data, length);
+            IncomingEvccPoll(job.pid, data, length);
             break;
         case (bcmId | rxFlag):
-            IncomingBcmPoll(pid, data, length);
+            IncomingBcmPoll(job.pid, data, length);
             break;            
     }
 }

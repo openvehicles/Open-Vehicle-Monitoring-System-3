@@ -38,7 +38,7 @@ static const char *TAG = "v-cadillacc2cts";
 
 OvmsVehicleCadillaccC2CTS* MyCadillaccC2CTS = NULL;
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] =
+static const OvmsPoller::poll_pid_t obdii_polls[] =
   {
     // Engine coolant temp
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30 }, 0, ISOTP_STD },
@@ -256,13 +256,12 @@ void OvmsVehicleCadillaccC2CTS::IncomingFrameCan2(CAN_frame_t* p_frame)
   }
 
 void
-OvmsVehicleCadillaccC2CTS::IncomingPollReply(canbus* bus, uint16_t type,
-  uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+OvmsVehicleCadillaccC2CTS::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
   int value1 = (int)data[0];
   // int value2 = ((int)data[0] << 8) + (int)data[1];
 
-  switch (pid)
+  switch (job.pid)
     {
     case 0x05:  // Engine coolant temperature
       StandardMetrics.ms_v_bat_temp->SetValue(value1 - 0x28);
