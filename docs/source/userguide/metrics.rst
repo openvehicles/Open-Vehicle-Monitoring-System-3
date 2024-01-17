@@ -85,7 +85,7 @@ m.net.wifi.sq                            -79.1dBm                 …and signal 
 m.obdc2ecu.on                            no                       Is the OBD2ECU process currently on.
 m.serial                                                          Reserved for module serial no.
 m.tasks                                  20                       Task count (use ``module tasks`` to list)
-m.time.utc                               1572590910Sec            UTC time in seconds
+m.time.utc                               2023-12-03 02:14:31 UTC  Current UTC time [DateUTC]
 m.version                                3.2.005-155-g3133466f/…  Firmware version
 m.egpio.input                            0,1,2,3,4,5,6,7,9        EGPIO input port state (ports 0…9, present=high)
 m.egpio.monitor                          8,9                      EGPIO input monitoring ports
@@ -203,7 +203,7 @@ v.e.on                                   no                       yes = Vehicle 
 v.e.parktime                             49608Sec                 Seconds parking (turned off)
 v.e.regenbrake                                                    yes = Regenerative braking active
 v.e.serv.range                           12345km                  Distance to next scheduled maintenance/service [km]
-v.e.serv.time                            1572590910Sec            Time of next scheduled maintenance/service [Seconds]
+v.e.serv.time                            2023-12-03 10:16:05 AWST Time of next scheduled maintenance/service [DateLocal]
 v.e.temp                                                          Ambient temperature
 v.e.throttle                             0%                       Drive pedal state [%]
 v.e.valet                                                         yes = Valet mode engaged
@@ -243,7 +243,7 @@ v.p.gpslock                              no                       yes = has GPS 
 v.p.gpsmode                              AA                       <GPS><GLONASS>; N/A/D/E (None/Autonomous/Differential/Estimated)
 v.p.gpssq                                80%                      GPS signal quality [%] (<30 unusable, >50 good, >80 excellent)
 v.p.gpsspeed                             0km/h                    GPS speed over ground
-v.p.gpstime                              1572590910Sec            Time (UTC) of GPS coordinates [Seconds]
+v.p.gpstime                              2023-12-03 10:16:05 AWST Time of GPS coordinates [DateLocal]
 v.p.latitude                             51.3023                  GPS latitude
 v.p.location                             Home                     Name of current location if defined
 v.p.longitude                            7.39006                  GPS longitude

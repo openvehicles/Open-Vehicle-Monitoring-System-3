@@ -86,7 +86,7 @@ protected:
     void IncomingFrameCan2(CAN_frame_t* p_frame);
     void IncomingFrameCan3(CAN_frame_t* p_frame);
     void IncomingFrameCan4(CAN_frame_t* p_frame);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void TxCallback(const CAN_frame_t* p_frame, bool success);
     void CommandWakeupComplete(const CAN_frame_t* p_frame, bool success);
     void SendTesterPresentMessage( uint32_t id );
@@ -110,6 +110,7 @@ protected:
     void NotifyFuel();
     void NotifyMetrics();
 
+    void PollRunFinished() override;
 protected:
     char m_vin[18];
     char m_type[6];
@@ -119,7 +120,7 @@ protected:
     unsigned int m_candata_timer;
     unsigned int m_range_rated_km;
     unsigned int m_startPolling_timer;
-    poll_pid_t * m_pPollingList;
+    OvmsPoller::poll_pid_t * m_pPollingList;
 
     canbus* p_swcan;    // Either "can4" or "can3" bus, depending on which is connected to slow speed GMLAN bus
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN

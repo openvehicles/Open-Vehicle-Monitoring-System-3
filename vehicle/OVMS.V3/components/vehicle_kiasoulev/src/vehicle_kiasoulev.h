@@ -83,7 +83,7 @@ class OvmsVehicleKiaSoulEv : public KiaVehicle
     void Ticker10(uint32_t ticker);
     void Ticker300(uint32_t ticker);
     void EventListener(std::string event, void* data);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
@@ -143,12 +143,12 @@ class OvmsVehicleKiaSoulEv : public KiaVehicle
   protected:
     void HandleCharging();
     void HandleChargeStop();
-    void IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingLDC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingSJB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
+    void IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
+    void IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlframe, uint16_t mlremain);
+    void IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
+    void IncomingLDC(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
+    void IncomingSJB(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
     void RequestNotify(unsigned int which);
     void DoNotify();
     void vehicle_kiasoulev_car_on(bool isOn);

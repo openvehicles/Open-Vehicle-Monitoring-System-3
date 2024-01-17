@@ -126,7 +126,7 @@ static const char *TAG = "v-mitsubishi";
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
-static const OvmsVehicle::poll_pid_t vehicle_mitsubishi_polls[] =
+static const OvmsPoller::poll_pid_t vehicle_mitsubishi_polls[] =
   {
     { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,   10 }, 0, ISOTP_STD }, 	// cac
     { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x02, 		{       0,   1,    1 }, 0, ISOTP_STD }, 	// cell voltage

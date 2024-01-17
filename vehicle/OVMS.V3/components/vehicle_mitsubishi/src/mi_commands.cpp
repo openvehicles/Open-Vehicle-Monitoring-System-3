@@ -61,9 +61,9 @@ void xmi_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 	
 	float distance = StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit);
 	//Trip timer
-	int start = trio->ms_v_trip_park_time_start->AsInt();
-	int stop = trio->ms_v_trip_park_time_stop->AsInt();
-	int time = stop - start;
+	time_t start = trio->ms_v_trip_park_time_start->AsInt();
+	time_t stop = trio->ms_v_trip_park_time_stop->AsInt();
+	time_t time = stop - start;
 
 	int num_seconds = time;
 	int hours = num_seconds / (60 * 60);

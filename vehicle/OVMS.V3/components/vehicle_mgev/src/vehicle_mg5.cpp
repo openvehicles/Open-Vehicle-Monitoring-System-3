@@ -35,7 +35,7 @@ static const char *TAG = "v-mgev";
 
 namespace {
 
-const OvmsVehicle::poll_pid_t mg5_obdii_polls[] =
+const OvmsPoller::poll_pid_t mg5_obdii_polls[] =
 {
     { bmsMk2Id, bmsMk2Id | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
     { bmsMk2Id, bmsMk2Id | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },

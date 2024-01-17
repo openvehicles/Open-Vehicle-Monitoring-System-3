@@ -73,7 +73,7 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     ~OvmsVehicleRenaultZoe();
 		static OvmsVehicleRenaultZoe* GetInstance(OvmsWriter* writer=NULL);
 		void IncomingFrameCan1(CAN_frame_t* p_frame);
-		void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+		void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 
 	protected:
 		void IncomingEPS(uint16_t type, uint16_t pid, const char* data, uint16_t len);

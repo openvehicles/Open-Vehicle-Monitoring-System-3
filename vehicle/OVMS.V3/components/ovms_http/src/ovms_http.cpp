@@ -260,7 +260,7 @@ std::string OvmsHttpClient::GetBodyAsString()
   if (filesize != expected)
     {
     ESP_LOGE(TAG, "Download file size (%d) does not match expected (%d)", filesize, expected);
-    body.empty();
+    body.clear();
     }
 
   Disconnect();
