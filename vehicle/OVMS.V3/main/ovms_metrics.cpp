@@ -47,6 +47,7 @@ static const char *TAG = "metrics";
 #include <iomanip>
 #include <locale>
 #include <time.h>
+#include <math.h>
 
 using namespace std;
 
