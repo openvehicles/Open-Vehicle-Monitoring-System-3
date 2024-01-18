@@ -253,8 +253,18 @@ public:
 #define POS_ODO			StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers)
 #define CHARGE_CURRENT	StdMetrics.ms_v_charge_current->AsFloat(0, Amps)
 #define CHARGE_VOLTAGE	StdMetrics.ms_v_charge_voltage->AsFloat(0, Volts)
-#define SET_CHARGE_STATE(n,m)		StdMetrics.ms_v_charge_state->SetValue(n); if(m!=NULL) StdMetrics.ms_v_charge_substate->SetValue(m)
 
+template<typename S>
+inline void SET_CHARGE_STATE(S state)
+{
+  StandardMetrics.ms_v_charge_state->SetValue(state);
+}
+template <typename S,typename T>
+inline void SET_CHARGE_STATE(S state, T substate)
+{
+  StandardMetrics.ms_v_charge_state->SetValue(state);
+  StandardMetrics.ms_v_charge_substate->SetValue(substate);
+}
 #define CUM_CHARGE		((float)kia_battery_cum_charge/10.0)
 #define CUM_DISCHARGE	((float)kia_battery_cum_discharge/10.0)
 #define SET_TPMS_ID(n, v)	if (v > 0) kia_tpms_id[n] = v;
