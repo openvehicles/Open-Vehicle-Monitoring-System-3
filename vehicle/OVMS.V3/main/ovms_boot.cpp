@@ -33,6 +33,9 @@ static const char *TAG = "boot";
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/xtensa_api.h"
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include "soc/uart_reg.h"
+#endif
 #include "rom/rtc.h"
 #include "rom/uart.h"
 #include "soc/rtc_cntl_reg.h"
@@ -740,7 +743,11 @@ void Boot::ErrorCallback(const void *f, int core_id, bool is_abort, esp_reset_re
   panicPutStr("\r\n[OVMS] Current tasks: ");
   for (int core=0; core<portNUM_PROCESSORS; core++)
     {
+#if ESP_IDF_VERSION_MAJOR >= 5
+    TaskHandle_t task = xTaskGetCurrentTaskHandleForCore(core);
+#else
     TaskHandle_t task = xTaskGetCurrentTaskHandleForCPU(core);
+#endif
     if (task)
       {
       char *name = pcTaskGetTaskName(task);
