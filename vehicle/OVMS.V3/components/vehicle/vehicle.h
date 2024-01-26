@@ -600,8 +600,10 @@ class OvmsVehicle : public InternalRamAllocated
     OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
     canbus*           m_poll_bus_default;     // Bus default to poll on
-    const OvmsPoller::poll_pid_t* m_poll_plist;           // Head of poll list
   private:
+    bool              m_poll_paused;          // Processing the poll list is paused
+
+    const OvmsPoller::poll_pid_t* m_poll_plist;           // Head of poll list
     const OvmsPoller::poll_pid_t* m_poll_plcur;           // Poll list loop cursor
     // Poll state for received data.
     OvmsPoller::poll_job_t m_poll;
@@ -631,6 +633,9 @@ class OvmsVehicle : public InternalRamAllocated
 
     // Check for throttling.
     bool CanPoll();
+
+    void PausePolling();
+    void ResumePolling();
 
     // Polling Response
     virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
