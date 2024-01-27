@@ -74,6 +74,7 @@ const OvmsPoller::poll_pid_t vweup_polls[] = {
   // Same tick & order important of above 2: VWUP_BAT_MGMT_CELL_MIN calculates the delta
 
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP,             {  0, 20, 20, 20}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST18,           {  0, 20, 20, 20}, 1, ISOTP_STD},
 
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  0, 10,  0}, 1, ISOTP_STD},
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_LOSS,            {  0,  0, 10,  0}, 1, ISOTP_STD},
@@ -98,6 +99,9 @@ const OvmsPoller::poll_pid_t vweup_polls[] = {
   {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_LIMITS,       {  0, 12, 12, 12}, 1, ISOTP_STD},
   // Note: m_timermode_ticker needs to be the polling interval for VWUP_CHG_MGMT_SOC_LIMITS + 1
   //  (see response handler for VWUP_CHG_MGMT_HV_CHGMODE)
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_HEATER_I,              {  0, 20, 20, 20}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_SOCKET,                {  0,  5,  5,  5}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_SOCK_STATS,            {  0, 20, 20, 20}, 1, ISOTP_STD},
 
   {VWUP_BRK,      UDS_SESSION, VWUP_EXTDIAG_START,          {  0,  0,  0, 30}, 1, ISOTP_STD},
   {VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  0,  0, 30}, 1, ISOTP_STD},
@@ -477,8 +481,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
       SetUsePhase(UP_Charging);
       ResetChargeCounters();
 
-      // TODO: get real port & pilot states, fake for now:
-      StdMetrics.ms_v_door_chargeport->SetValue(true);
+      // TODO: get real charge pilot states, fake for now:
       StdMetrics.ms_v_charge_pilot->SetValue(true);
 
       PollSetState(VWEUP_CHARGING);
@@ -1106,6 +1109,8 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
         m_chg_ccs_power->SetValue(power);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_CCS_P => %.1f", power);
 
+        // XXX CCS plug state from OBD-Amigos: V14==0?"NO":V14==1?"YES"
+
         if (IsChargeModeDC()) {
           // CCS_U and CCS_I are provided by the CCS charger with varying resolution and
           //  precision / accuracy depending on the charger type.
@@ -1172,9 +1177,6 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
           StdMetrics.ms_v_env_on->SetValue(false);
         }
         else if (StdMetrics.ms_v_env_on->SetValue(true)) {
-          // TODO: get real charge port state
-          // For now, we assume the port has been closed when the car is started:
-          StdMetrics.ms_v_door_chargeport->SetValue(false);
           StdMetrics.ms_v_charge_substate->SetValue("");
           StdMetrics.ms_v_charge_state->SetValue("");
         }
@@ -1215,7 +1217,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
     case VWUP_MFD_SERV_TIME:
       if (PollReply.FromUint16("VWUP_MFD_SERV_TIME", value) && value > 0) { // excluding value of 0 seems to be necessary for now
         // Send notification?
-        time_t now = StdMetrics.ms_m_timeutc->AsInt();
+        int now = StdMetrics.ms_m_timeutc->AsInt();
         int threshold = MyConfig.GetParamValueInt("xvu", "serv_warn_days", 30);
         int old_value = ROUNDPREC((StdMetrics.ms_v_env_service_time->AsInt() - now) / 86400.0f, 0);
         if (old_value > threshold && value <= threshold) {
@@ -1318,6 +1320,32 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
           StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
         }
       }
+      break;
+
+    case VWUP_BAT_MGMT_HIST18:
+      // XXX OBD-Amigos: AC Ah: b21-b24, DC Ah: b29-b32, regen Ah: b5-b8, HV usage counter: U16(V2,V3), CCS usage counter: U16(V8,V9)
+      break;
+    case VWUP_CHG_HEATER_I:
+      // XXX OBD-Amigos: V1/4
+      break;
+    case VWUP_CHG_SOCKET: // XXX OBD-Amigos: b0: plugged, b1: locked, AC socket temp: U16(V3,V4)/10-55, DC socket temp: U16(V5,V6)/10-55
+      if (PollReply.FromUint8("VWUP_CHG_SOCKET", ivalue)) {
+        bool plugstate = ivalue & 0x01;
+        bool lockstate = ivalue & 0x02;
+        VALUE_LOG(TAG, "VWUP_CHG_SOCKET plugged=%d, locked=%d", plugstate, lockstate);
+        if (plugstate != StdMetrics.ms_v_door_chargeport->AsBool()) {
+          ESP_LOGI(TAG, "OBD: chargeport changed to %s", plugstate ? "plugged" : "unplugged");
+          StdMetrics.ms_v_door_chargeport->SetValue(plugstate);
+          if (!plugstate && HasT26()) {
+            ESP_LOGD(TAG, "OBD: socket unplugged, resetting charge current");
+            fakestop = true;
+            StartStopChargeT26(true);
+          }
+        }
+      }
+      break;
+    case VWUP_CHG_SOCK_STATS:
+      // XXX OBD-Amigos: insertions: U16(V1,V2), lockings: U16(V3,V4)
       break;
 
     default:

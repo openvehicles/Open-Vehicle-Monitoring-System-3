@@ -96,6 +96,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   vweup_con = 0;
   vweup_modelyear = 0;
   climit_max = 16;
+  chg_autostop = false;
 
   m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
@@ -123,6 +124,8 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   m_tripfrac_reftime = 0;
   m_tripfrac_refspeed = 0;
 
+  startup = true;
+
   // Init metrics:
   m_version = MyMetrics.InitString("xvu.m.version", 0, VERSION " " __DATE__ " " __TIME__);
 
@@ -140,9 +143,16 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   cmd = cmd_xvu->RegisterCommand("profile0", "Interact with charging/climate control settings");
   cmd->RegisterCommand("read", "Show current contents", CommandReadProfile0);
   cmd->RegisterCommand("reset", "Reset to default values", CommandResetProfile0);
+  cmd->RegisterCommand("test", "Test boot charge set", CommandTestProfile0);
+  cmd->RegisterCommand("test1", "show profile0 vars", CommandTest1Profile0);
 
   // Load initial config:
   ConfigChanged(NULL);
+
+  // init event listener:
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "mcp2515.start", std::bind(&OvmsVehicleVWeUp::EventListener, this, _1, _2));
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -168,6 +178,24 @@ const char* OvmsVehicleVWeUp::VehicleShortName()
   return "e-Up";
 }
 */
+
+/**
+ * EventListener:
+ * 
+ */
+void OvmsVehicleVWeUp::EventListener(string event, void* data)
+{
+  if (event == "mcp2515.start")
+  {
+    MyConfig.SetParamValueInt("xvu","mcp2515_start", xTaskGetTickCount());
+    t26_init = true;
+    profile0_state = PROFILE0_INIT;
+//    profile0_key = P0_KEY_READ;
+//    memset(profile0_cntr, 0, sizeof(profile0_cntr));
+//    profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(5000), pdFALSE, this, Profile0_Retry_Timer);
+//    xTimerStart(profile0_timer, 0);
+  }
+}
 
 bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
 {
@@ -342,7 +370,22 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   int vweup_charge_current_new = MyConfig.GetParamValueInt("xvu", "chg_climit", 16);
   int vweup_cc_temp_new = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
   int vweup_chg_soclimit_new = MyConfig.GetParamValueInt("xvu", "chg_soclimit", 80);
+  bool chg_autostop_new = MyConfig.GetParamValueBool("xvu", "chg_autostop", false);
+  bool chg_workaround_new = MyConfig.GetParamValueBool("xvu", "chg_workaround", false);
   ESP_LOGV(TAG, "chg_climit: %d, chg_climit_old: %d, cc_temp: %d, cc_temp_old: %d", vweup_charge_current_new, profile0_charge_current_old, vweup_cc_temp_new, profile0_cc_temp_old);
+
+  if (startup) {
+    MyConfig.SetParamValueInt("xvu", "startup", xTaskGetTickCount());
+    char buf[50];
+    sprintf(buf, "%d, %d, %d, %d", vweup_charge_current_new, profile0_charge_current_old, vweup_cc_temp_new, profile0_cc_temp_old);
+    MyConfig.SetParamValue("xvu", "startupvalues", buf);
+    startup = false;
+//    return;
+    profile0_cc_temp_old = 0; // ugly hack: set values to 0 so they can't be wrong (need to be read from profile0 after boot)
+    MyConfig.SetParamValueInt("xvu","cc_temp",0);
+    profile0_charge_current_old = 0;
+    MyConfig.SetParamValueInt("xvu","chg_climit",0);
+  }
 
   bool do_obd_init = (
     (!vweup_enable_obd && vweup_enable_obd_new) ||
@@ -436,6 +479,27 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   }
 
   // Handle changed settings:
+  if (chg_workaround_new != chg_workaround) {
+    ESP_LOGD(TAG, "ConfigChanged: charge control workaround turned %s", chg_workaround_new ? "on" : "off");
+    if (chg_workaround_new) {
+      ESP_LOGW(TAG, "Turning on charge workaround may in rare cases result in situations where the car does not charge anymore!");
+      ESP_LOGW(TAG, "Only use this function if you can handle the consequences!");
+    }
+    else {
+      ESP_LOGD(TAG, "ConfigChanged: resetting charge current to %dA", profile0_cc_temp_old);
+      ESP_LOGI(TAG, "Note: charge control may not work reliably without workaround.");
+      SetChargeCurrent(profile0_cc_temp_old);
+    }
+    chg_workaround = chg_workaround_new;
+  }
+  if (chg_autostop_new != chg_autostop) {
+    chg_autostop = chg_autostop_new;
+    if (!chg_autostop_new) {
+      ESP_LOGD(TAG, "ConfigChanged: charge autostop disabled, resetting charge current");
+      fakestop = true;
+      StartStopChargeT26(true);
+    }
+  }
   if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt()) {
     StdMetrics.ms_v_charge_limit_soc->SetValue(vweup_chg_soclimit_new);
     if (vweup_chg_soclimit_new > StdMetrics.ms_v_bat_soc->AsInt()) {
@@ -453,6 +517,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     }
   }
   if (vweup_charge_current_new != profile0_charge_current) {
+    MyConfig.SetParamValueBool("xvu", "climit_triggered", true);
 /*    if (xvu_update) {
       ESP_LOGD(TAG, "ConfigChanged: Update chg_climit to %d", vweup_charge_current_new);
       xvu_update = false;

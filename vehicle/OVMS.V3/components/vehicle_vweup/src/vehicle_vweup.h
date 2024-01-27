@@ -71,11 +71,13 @@ typedef enum {
 
 // profile0 communication state (charge & AC control)
 #define PROFILE0_IDLE 0
-#define PROFILE0_REQUEST 1
-#define PROFILE0_READ 2
-#define PROFILE0_WRITE 3
-#define PROFILE0_WRITEREAD 4
-#define PROFILE0_SWITCH 5
+#define PROFILE0_INIT 1
+#define PROFILE0_WAKE 2
+#define PROFILE0_REQUEST 3
+#define PROFILE0_READ 4
+#define PROFILE0_WRITE 5
+#define PROFILE0_WRITEREAD 6
+#define PROFILE0_SWITCH 7
 
 // keys that control behavior of profile0 state machine
 #define P0_KEY_NOP 0
@@ -142,6 +144,7 @@ public:
   const std::string GetFeature(int key);
   vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args); 
   vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
+  void EventListener(string event, void* data);
 
 protected:
   void Ticker1(uint32_t ticker);
@@ -226,7 +229,7 @@ public:
   bool vweup_enable_write;
   int vweup_con;                // 0: none, 1: only T26, 2: only OBD2; 3: both
   int vweup_modelyear;
-  int climit_max;
+  uint8_t climit_max;
   
 private:
   use_phase_t m_use_phase;
@@ -288,6 +291,7 @@ public:
   static void Profile0_Retry_Timer(TimerHandle_t timer);
   void Profile0_Retry_CallBack();
   void WakeupT26();
+  void WakeupT26Stage2();
   void StartStopChargeT26(bool start);
   void StartStopChargeT26Workaround(bool start);
   void SetChargeCurrent(int limit);
@@ -336,7 +340,7 @@ public:
   int profile0_cc_temp_old;
   static const int profile0_len = 48;
   uint8_t profile0[profile0_len];
-  int vweup_charge_current;
+  int charge_current;
   int profile0_state;
   int profile0_delay;
   int profile0_retries;
@@ -346,6 +350,12 @@ public:
   bool ocu_response;
   bool fakestop;
   bool xvu_update;
+  bool chg_autostop;
+  bool chg_workaround;
+  bool t26_init;
+  int test;
+  bool startup;
+  string xtralog;
 
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
@@ -385,6 +395,8 @@ public:
   static void ShellPollControl(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   static void CommandReadProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   static void CommandResetProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+  static void CommandTestProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+  static void CommandTest1Profile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU
