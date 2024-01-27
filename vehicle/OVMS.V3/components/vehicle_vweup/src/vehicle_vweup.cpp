@@ -382,9 +382,9 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     startup = false;
 //    return;
     profile0_cc_temp_old = 0; // ugly hack: set values to 0 so they can't be wrong (need to be read from profile0 after boot)
-    MyConfig.SetParamValueInt("xvu","cc_temp",0);
+//    MyConfig.SetParamValueInt("xvu","cc_temp",0);
     profile0_charge_current_old = 0;
-    MyConfig.SetParamValueInt("xvu","chg_climit",0);
+//    MyConfig.SetParamValueInt("xvu","chg_climit",0);
   }
 
   bool do_obd_init = (
