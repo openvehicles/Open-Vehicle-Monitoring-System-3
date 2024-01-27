@@ -99,7 +99,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     nmap["ctp.maxpower"] = c.getvar("ctp_maxpower");
     nmap["chg_soclimit"] = c.getvar("chg_soclimit");
     nmap["chg_autostop"] = (c.getvar("chg_autostop") == "yes") ? "yes" : "no";
-    nmap["chg_climit"] = c.getvar("chg_climit");
+    nmap["chg_workaround"] = (c.getvar("chg_workaround") == "yes") ? "yes" : "no";
 
     // check:
     if (nmap["modelyear"] != "")
@@ -217,6 +217,14 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   c.input_radiobtn_end(
     "<p>Only notify or stop charge when SoC limit is reached?</p>"
     "<p>This parameter can also be set in the app under FEATURES 6.</p>");
+
+  c.input_checkbox("Enable charge control workaround", "chg_workaround", strtobool(nmap["chg_workaround"]),
+    "<p></p>"
+    "<p style=\"color:Tomato;\"><strong>WARNING: In rare cases, this feature might leave the car in a state where it is unable to charge.</strong></p>"
+    "<p>This can only be fixed by changing the charge current via a working OVMS or Maps&More.<br>"
+    "Only enable this feature if you are aware of the risk and are capable of fixing the issue!<br>"
+    "Without this feature, charge control may not work reliably.</p>"
+    );
 
   c.fieldset_end();
 

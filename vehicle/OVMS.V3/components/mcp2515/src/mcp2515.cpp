@@ -251,6 +251,7 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
 
   // And record that we are powered on
   pcp::SetPowerMode(On);
+  MyEvents.SignalEvent("mcp2515.start",NULL);
 
   return ESP_OK;
   }
