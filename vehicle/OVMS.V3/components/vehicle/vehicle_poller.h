@@ -164,12 +164,19 @@ class OvmsPoller {
       RemoveRestart ///< Remove series and resume from start
       };
 
+    enum class ResetMode {
+      PollReset, ///< Reset for poll start
+      LoopReset  ///< Reset for retry loop.
+    };
+
     /// Class that defines a series list.
     class PollSeriesEntry
       {
       public:
-        /// Move list to start.
-        virtual void ResetList() = 0;
+        /** Move list to start.
+          * @arg  mode Specify Resetting for Poll-Start or for Retry
+          */
+        virtual void ResetList(ResetMode mode) = 0;
 
         /// Find the next poll entry.
         virtual OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry, uint8_t mybus, uint32_t pollticker, uint8_t pollstate) = 0;
@@ -187,9 +194,11 @@ class OvmsPoller {
         /// Return true if this series has any entries
         virtual bool HasPollList() = 0;
 
-        /** Return true if the list can be reset.
-          */
-        virtual bool CanReset() = 0;
+        /** Return true if this series has entries to retry/redo.
+          This should mean that the list has been finished at least once,
+          but also that the remaining todo don't NEED to be done before moving on.
+         */
+        virtual bool HasRepeat() = 0;
       };
 
     /// Named element in the series double-linked list.
@@ -247,7 +256,7 @@ class OvmsPoller {
         void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code);
 
         /// Reset the list to beging processing
-        void RestartPoll();
+        void RestartPoll(ResetMode mode);
 
         /// Get the next poll entry
         OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry, uint8_t mybus, uint32_t pollticker, uint8_t pollstate);
@@ -262,9 +271,12 @@ class OvmsPoller {
           return (m_iter != nullptr) && (m_iter->is_blocking) && (m_iter->series != nullptr);
           }
 
-        /** Return true if the list can be reset.
-          */
-        bool CanReset();
+        /** Return true if this series has entries to retry/redo.
+          This should mean that the list has been finished at least once,
+          but also that the remaining todo don't NEED to be done before moving on.
+         */
+        bool HasRepeat();
+
       };
 
     /** Standard series.
@@ -288,7 +300,7 @@ class OvmsPoller {
         void PollSetPidList(uint8_t defaultbus, const poll_pid_t* plist);
 
         // Move list to start.
-        void ResetList() override;
+        void ResetList(ResetMode mode) override;
 
         // Find the next poll entry.
         OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry, uint8_t mybus, uint32_t pollticker, uint8_t pollstate) override;
@@ -306,7 +318,7 @@ class OvmsPoller {
 
         bool HasPollList() override;
 
-        bool CanReset() override;;
+        bool HasRepeat() override;
       };
 
    /** Base for Once off Poll series.
@@ -317,21 +329,31 @@ class OvmsPoller {
         enum class status_t {
           Init, ///< Initialised, entry can be sent
           Sent, ///< Entry is sent. (Next mode is 'finished');
-          Stopped ///< Has been stopped. (Needs to be reset)
+          Stopping, ///< Success or reached retries.
+          Stopped, ///< Has been stopped.
+          Retry, /// Ready for retry
+          RetryInit, /// Reset for retry
+          RetrySent, /// Retry has sent
           };
         status_t m_sent;
+        std::string m_poll_data; // Request buffer data
         poll_pid_t m_poll; // Poll Entry
         std::string *m_poll_rxbuf;    // … response buffer
         int         *m_poll_rxerr;    // … response error code (NRC) / TX failure code
+        uint8_t     m_retry_fail;
 
         // Called when the one-off is finished (for semaphore etc).
         // Called with NULL bus when on Removing
         virtual void Done(bool success);
+
+        void SetPollPid( uint32_t txid, uint32_t rxid, const std::string &request, uint8_t protocol=ISOTP_STD, uint8_t pollbus = 0, uint16_t polltime = 1);
+        void SetPollPid( uint32_t txid, uint32_t rxid, uint8_t polltype, uint16_t pid,  uint8_t protocol=ISOTP_STD, uint8_t pollbus = 0, uint16_t polltime = 1);
       public:
-        OnceOffPollBase( const poll_pid_t &pollentry, std::string *rxbuf, int *rxerr);
+        OnceOffPollBase(const poll_pid_t &pollentry, std::string *rxbuf, int *rxerr, uint8_t retry_fail = 0);
+        OnceOffPollBase(std::string *rxbuf, int *rxerr, uint8_t retry_fail = 0);
 
         // Move list to start.
-        void ResetList() override;
+        void ResetList(ResetMode mode) override;
 
         // Find the next poll entry.
         OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry,  uint8_t mybus, uint32_t pollticker, uint8_t pollstate) override;
@@ -344,7 +366,7 @@ class OvmsPoller {
 
         bool HasPollList() override;
 
-        bool CanReset();
+        bool HasRepeat() override;
       };
 
   private:
@@ -384,7 +406,10 @@ class OvmsPoller {
     uint8_t           m_poll_default_bus;
 
     PollSeriesList    m_polls;  // User poll entries list.
+    int               m_poll_repeat_count; // 'Extra repeats' for polling.
     std::shared_ptr<StandardPollSeries> m_poll_series;
+
+    const int         max_poll_repeat = 5; // Maximum # of poll-repeats.
 
   protected:
     poll_job_t        m_poll;
@@ -411,6 +436,8 @@ class OvmsPoller {
     uint8_t           m_poll_sequence_cnt;    // Polls already sent in the current time tick (second)
     uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
     uint16_t          m_poll_ch_keepalive;    // Seconds to keep an inactive channel (e.g. VWTP) alive (default: 60)
+    bool              m_poll_ticked;
+    bool              m_poll_run_finished;
 
   private:
     OvmsRecMutex      m_poll_single_mutex;    // PollSingleRequest() concurrency protection
