@@ -249,7 +249,6 @@ void OvmsVehicleSmartED::ObdInitPoll() {
 }
 
 void OvmsVehicleSmartED::ObdModifyPoll() {
-  OvmsRecMutexLock lock(&m_poll_mutex);
 
   PollSetPidList(m_can1, NULL);
   PollSetState(0);
