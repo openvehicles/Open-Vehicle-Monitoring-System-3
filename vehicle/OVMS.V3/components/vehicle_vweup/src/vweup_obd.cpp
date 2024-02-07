@@ -1350,10 +1350,11 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
         if (plugstate != StdMetrics.ms_v_door_chargeport->AsBool()) {
           ESP_LOGI(TAG, "OBD: chargeport changed to %s", plugstate ? "plugged" : "unplugged");
           StdMetrics.ms_v_door_chargeport->SetValue(plugstate);
-          if (!plugstate && HasT26()) {
-            ESP_LOGD(TAG, "OBD: socket unplugged, resetting charge current");
-            fakestop = true;
-            StartStopChargeT26(true);
+          if (!plugstate && HasT26() && chg_workaround) {
+            ESP_LOGD(TAG, "OBD: socket unplugged in workaround mode, resetting charge current");
+            SetChargeCurrent(profile0_charge_current_old);
+//            fakestop = true;
+//            StartStopChargeT26(true);
           }
         }
       }
