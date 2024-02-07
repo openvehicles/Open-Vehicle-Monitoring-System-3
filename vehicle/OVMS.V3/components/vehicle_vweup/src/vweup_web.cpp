@@ -97,6 +97,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     nmap["cell_interval_awk"] = c.getvar("cell_interval_awk");
     nmap["bat.soh.source"] = c.getvar("bat.soh.source");
     nmap["ctp.maxpower"] = c.getvar("ctp_maxpower");
+    nmap["chg_climit"] = c.getvar("chg_climit");
     nmap["chg_soclimit"] = c.getvar("chg_soclimit");
     nmap["chg_autostop"] = (c.getvar("chg_autostop") == "yes") ? "yes" : "no";
     nmap["chg_workaround"] = (c.getvar("chg_workaround") == "yes") ? "yes" : "no";
@@ -158,7 +159,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     if (nmap["con_t26"] == "")
       nmap["con_t26"] = "yes";
     if (nmap["bat.soh.source"] == "")
-      nmap["bat.soh.source"] = "charge";
+      nmap["bat.soh.source"] = "vw";
     if (nmap["chg_autostop"] == "" || nmap["chg_autostop"] == "0")
       nmap["chg_autostop"] = "no";
     else if (nmap["chg_autostop"] == "1")
