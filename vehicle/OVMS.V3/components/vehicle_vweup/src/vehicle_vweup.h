@@ -144,7 +144,6 @@ public:
   const std::string GetFeature(int key);
   vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args); 
   vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
-  void EventListener(string event, void* data);
 
 protected:
   void Ticker1(uint32_t ticker);
@@ -288,10 +287,11 @@ public:
   void SendOcuHeartbeat();
   static void sendOcuHeartbeat(TimerHandle_t timer);
   void CCTempSet(int temperature);
-  static void Profile0_Retry_Timer(TimerHandle_t timer);
-  void Profile0_Retry_CallBack();
+  static void Profile0RetryTimer(TimerHandle_t timer);
+  void Profile0RetryCallBack();
   void WakeupT26();
   void WakeupT26Stage2();
+  void WakeupT26Stage3();
   void StartStopChargeT26(bool start);
   void StartStopChargeT26Workaround(bool start);
   void SetChargeCurrent(int limit);
@@ -353,9 +353,13 @@ public:
   bool chg_autostop;
   bool chg_workaround;
   bool t26_init;
-  int test;
+  bool wakeup_success;
   bool startup;
-  string xtralog;
+  
+  int test_profile0_cc_temp;
+  int test_profile0_climit;
+  string test_cb;
+  string test_change;
 
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()

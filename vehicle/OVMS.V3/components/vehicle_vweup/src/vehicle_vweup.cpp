@@ -96,7 +96,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   vweup_con = 0;
   vweup_modelyear = 0;
   climit_max = 16;
-  chg_autostop = false;
+//  chg_autostop = false;
 
   m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
@@ -114,7 +114,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 
   m_chargestart_ticker = 0;
   m_chargestop_ticker = 0;
-  m_chargestate_lastsoc = 100;
+//  m_chargestate_lastsoc = 100;
   m_timermode_ticker = 0;
   m_timermode_new = false;
 
@@ -124,13 +124,16 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   m_tripfrac_reftime = 0;
   m_tripfrac_refspeed = 0;
 
-  startup = true;
-
   // Init metrics:
   m_version = MyMetrics.InitString("xvu.m.version", 0, VERSION " " __DATE__ " " __TIME__);
 
   // init configs:
   MyConfig.RegisterParam("xvu", "VW e-Up", true, true);
+  chg_autostop = MyConfig.GetParamValueBool("xvu", "chg_autostop");
+  m_chargestate_lastsoc = StdMetrics.ms_v_bat_soc->AsFloat();
+  StdMetrics.ms_v_door_chargeport->SetValue(true); // assume we are plugged on boot/init (esp. important if OBD connection is not configured!)
+//  startup = true;
+  test_change = "none";
 
   // Init commands:
   OvmsCommand *cmd;
@@ -148,11 +151,6 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 
   // Load initial config:
   ConfigChanged(NULL);
-
-  // init event listener:
-  using std::placeholders::_1;
-  using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "mcp2515.start", std::bind(&OvmsVehicleVWeUp::EventListener, this, _1, _2));
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -178,24 +176,6 @@ const char* OvmsVehicleVWeUp::VehicleShortName()
   return "e-Up";
 }
 */
-
-/**
- * EventListener:
- * 
- */
-void OvmsVehicleVWeUp::EventListener(string event, void* data)
-{
-  if (event == "mcp2515.start")
-  {
-    MyConfig.SetParamValueInt("xvu","mcp2515_start", xTaskGetTickCount());
-    t26_init = true;
-    profile0_state = PROFILE0_INIT;
-//    profile0_key = P0_KEY_READ;
-//    memset(profile0_cntr, 0, sizeof(profile0_cntr));
-//    profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(5000), pdFALSE, this, Profile0_Retry_Timer);
-//    xTimerStart(profile0_timer, 0);
-  }
-}
 
 bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
 {
@@ -372,20 +352,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   int vweup_chg_soclimit_new = MyConfig.GetParamValueInt("xvu", "chg_soclimit", 80);
   bool chg_autostop_new = MyConfig.GetParamValueBool("xvu", "chg_autostop", false);
   bool chg_workaround_new = MyConfig.GetParamValueBool("xvu", "chg_workaround", false);
-  ESP_LOGV(TAG, "chg_climit: %d, chg_climit_old: %d, cc_temp: %d, cc_temp_old: %d", vweup_charge_current_new, profile0_charge_current_old, vweup_cc_temp_new, profile0_cc_temp_old);
-
-  if (startup) {
-    MyConfig.SetParamValueInt("xvu", "startup", xTaskGetTickCount());
-    char buf[50];
-    sprintf(buf, "%d, %d, %d, %d", vweup_charge_current_new, profile0_charge_current_old, vweup_cc_temp_new, profile0_cc_temp_old);
-    MyConfig.SetParamValue("xvu", "startupvalues", buf);
-    startup = false;
-//    return;
-    profile0_cc_temp_old = 0; // ugly hack: set values to 0 so they can't be wrong (need to be read from profile0 after boot)
-//    MyConfig.SetParamValueInt("xvu","cc_temp",0);
-    profile0_charge_current_old = 0;
-//    MyConfig.SetParamValueInt("xvu","chg_climit",0);
-  }
+  ESP_LOGD(TAG, "ConfigChanged: chg_climit: %d, chg_climit_old: %d, cc_temp: %d, cc_temp_old: %d", vweup_charge_current_new, profile0_charge_current_old, vweup_cc_temp_new, profile0_cc_temp_old);
 
   bool do_obd_init = (
     (!vweup_enable_obd && vweup_enable_obd_new) ||
@@ -478,51 +445,45 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     T26Init();
   }
 
+/*  if (startup) {
+    test_change = "";
+    if (chg_autostop_new != chg_autostop)
+      test_change += "chg_autostop ";
+    if (chg_workaround_new != chg_workaround)
+      test_change += "chg_workaround ";
+    if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt())
+      test_change += "vweup_chg_soclimit ";
+    startup = false;
+    return;
+  }*/
+
   // Handle changed settings:
-  if (chg_workaround_new != chg_workaround) {
-    ESP_LOGD(TAG, "ConfigChanged: charge control workaround turned %s", chg_workaround_new ? "on" : "off");
-    if (chg_workaround_new) {
-      ESP_LOGW(TAG, "Turning on charge workaround may in rare cases result in situations where the car does not charge anymore!");
-      ESP_LOGW(TAG, "Only use this function if you can handle the consequences!");
-    }
-    else {
-      ESP_LOGD(TAG, "ConfigChanged: resetting charge current to %dA", profile0_cc_temp_old);
-      ESP_LOGI(TAG, "Note: charge control may not work reliably without workaround.");
-      SetChargeCurrent(profile0_cc_temp_old);
-    }
-    chg_workaround = chg_workaround_new;
-  }
-  if (chg_autostop_new != chg_autostop) {
-    chg_autostop = chg_autostop_new;
-    if (!chg_autostop_new) {
-      ESP_LOGD(TAG, "ConfigChanged: charge autostop disabled, resetting charge current");
-      fakestop = true;
-      StartStopChargeT26(true);
-    }
-  }
   if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt()) {
+    bool socswitch = StdMetrics.ms_v_charge_limit_soc->AsInt() <= StdMetrics.ms_v_bat_soc->AsFloat();
     StdMetrics.ms_v_charge_limit_soc->SetValue(vweup_chg_soclimit_new);
     if (vweup_chg_soclimit_new > StdMetrics.ms_v_bat_soc->AsInt()) {
       ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to above current SoC");
-      if (IsCharging())
-        StdMetrics.ms_v_charge_state->SetValue("charging");
-      else {
+      if (IsCharging()) {
+        ESP_LOGD(TAG, "ConfigChanged: already charging, nothing to do");
+        StdMetrics.ms_v_charge_state->SetValue("charging"); // switch from topoff mode to charging
+      }
+      else if (socswitch) { //(StdMetrics.ms_v_door_chargeport->AsBool() && socswitch) { // only start charge when previous max SoC was < SoC
+        ESP_LOGD(TAG, "ConfigChanged: trying to start charge...");
         fakestop = true;
-        StartStopChargeT26(true); // XXX only start charge when previous max SoC was < SoC
+        StartStopChargeT26(true);
       }
     }
     else {
       ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to below current SoC");
-      StartStopChargeT26(false); // make sure charging is deactivated (via workaround current of 1A) even though charge may not be running
+//      test_change += "soclimit_stop ";
+      if (IsCharging()) {
+        ESP_LOGD(TAG, "ConfigChanged: stopping charge...");
+        StartStopChargeT26(false);
+      }
     }
   }
-  if (vweup_charge_current_new != profile0_charge_current) {
-    MyConfig.SetParamValueBool("xvu", "climit_triggered", true);
-/*    if (xvu_update) {
-      ESP_LOGD(TAG, "ConfigChanged: Update chg_climit to %d", vweup_charge_current_new);
-      xvu_update = false;
-    }
-    else */if (vweup_charge_current_new != profile0_charge_current_old) {
+  if (vweup_charge_current_new != profile0_charge_current && profile0_charge_current != 0) {
+    if (vweup_charge_current_new != profile0_charge_current_old) {
       ESP_LOGD(TAG, "ConfigChanged: Charge current changed in ConfigChanged from %d to %d", profile0_charge_current, vweup_charge_current_new);
       if (vweup_enable_t26)
         SetChargeCurrent(vweup_charge_current_new);
@@ -532,11 +493,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     else ESP_LOGD(TAG, "ConfigChanged: charge current reset to previous value %d", profile0_charge_current_old);
   }
   if (vweup_cc_temp_new != profile0_cc_temp && profile0_cc_temp != 0) {
-/*    if (xvu_update) {
-      ESP_LOGD(TAG, "ConfigChanged: Update cc_temp to %d", vweup_cc_temp_new);
-      xvu_update = false;
-    }
-    else */if (vweup_cc_temp_new != profile0_cc_temp_old) {
+    if (vweup_cc_temp_new != profile0_cc_temp_old) {
       ESP_LOGD(TAG, "ConfigChanged: CC_temp parameter changed in ConfigChanged from %d to %d", profile0_cc_temp, vweup_cc_temp_new);
       if (vweup_enable_t26) 
         CCTempSet(vweup_cc_temp_new);
@@ -544,6 +501,38 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
         ESP_LOGE(TAG, "ConfigChanged: climatecontrol only works with enabled comfort CAN connection!");
     }
     else ESP_LOGD(TAG, "ConfigChanged: cc temp reset to previous value %d", profile0_cc_temp_old);
+  }
+  if (chg_workaround_new != chg_workaround) {
+    ESP_LOGD(TAG, "ConfigChanged: charge control workaround turned %s", chg_workaround_new ? "on" : "off");
+    if (chg_workaround_new) {
+      ESP_LOGW(TAG, "Turning on charge workaround may in rare cases result in situations where the car does not charge anymore!");
+      ESP_LOGW(TAG, "Only use this function if you can handle the consequences!");
+    }
+    else {
+      ESP_LOGI(TAG, "Note: charge control may not work reliably without workaround.");
+      if (profile0_charge_current == 1) {
+        ESP_LOGD(TAG, "ConfigChanged: resetting charge current to %dA", profile0_charge_current_old);
+        SetChargeCurrent(profile0_cc_temp_old);
+      }
+    }
+    chg_workaround = chg_workaround_new;
+  }
+  if (chg_autostop_new != chg_autostop) {
+    chg_autostop = chg_autostop_new;
+    if (!chg_autostop_new) {
+      ESP_LOGD(TAG, "ConfigChanged: charge autostop disabled, trying to start charge...");
+// XXX      if (chg_workaround)
+// XXX        profile0_charge_current_old = 1; // hack to force setting of (previous) charge current
+      test_change += "autostop_start ";
+//      if (StdMetrics.ms_v_door_chargeport->AsBool()) { // now handled in StartStopChargeT26()
+      fakestop = true;
+      StartStopChargeT26(true);
+/*      }
+      else if (chg_workaround) {
+        ESP_LOGD(TAG, "ConfigChanged: resetting charge current...");
+        CommandSetChargeCurrent(profile0_charge_current_old);
+      }*/
+    }
   }
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -555,8 +544,10 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   // Set standard SOH from configured source:
   if (IsOBDReady())
   {
-    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "charge");
-    if (soh_source == "range" && m_bat_soh_range->IsDefined())
+    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "vw");
+    if (soh_source == "vw" && m_bat_soh_range->IsDefined())
+      SetSOH(m_bat_soh_vw->AsFloat());
+    else if (soh_source == "range" && m_bat_soh_range->IsDefined())
       SetSOH(m_bat_soh_range->AsFloat());
     else if (soh_source == "charge" && m_bat_soh_charge->IsDefined())
       SetSOH(m_bat_soh_charge->AsFloat());
@@ -648,10 +639,19 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
       }
     }
   }
-  if (m_chargestate_lastsoc >= suff_soc && soc < suff_soc) {
+  if (m_chargestate_lastsoc > suff_soc && soc < suff_soc) {
     ESP_LOGI(TAG, "Ticker1: SOC fell below sufficient SOC limit (%d%%), restarting charge", suff_soc);
     fakestop = true;
-    StartStopChargeT26(true);
+//    test_change += "Ticker1 ";
+//    if (StdMetrics.ms_v_door_chargeport->AsBool()) { // now handled in StartStopChargeT26()
+      ESP_LOGD(TAG, "Ticker1: trying to start charge...");
+      fakestop = true;
+      StartStopChargeT26(true);
+/*    }
+    else if (chg_workaround) {
+      ESP_LOGD(TAG, "Ticker1: trying to reset charge current...");
+      CommandSetChargeCurrent(profile0_charge_current_old);
+    }*/
   }
   m_chargestate_lastsoc = soc;
 
