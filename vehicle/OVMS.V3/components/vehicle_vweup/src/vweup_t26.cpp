@@ -1671,12 +1671,3 @@ void OvmsVehicleVWeUp::CommandTestProfile0(int verbosity, OvmsWriter* writer, Ov
 //  eup->profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(1000), pdFALSE, eup, eup->Profile0RetryTimer);
   xTimerStart(eup->profile0_timer, 0);
 }
-
-void OvmsVehicleVWeUp::CommandTest1Profile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-{
-  ESP_LOGD(TAG, "T26: CommandTest1Profile0 called");
-  OvmsVehicleVWeUp* eup = OvmsVehicleVWeUp::GetInstance(writer);
-  ESP_LOGI(TAG, "test_change: %s", eup->test_change.c_str());
-  ESP_LOGI(TAG, "test_cb: %s", eup->test_cb.c_str());
-  ESP_LOGI(TAG, "test_climit: %d, test_cctemp: %d, climit: %d, climit_old: %d, cc_temp: %d, cc_temp_old: %d", eup->test_profile0_climit, eup->test_profile0_cc_temp, eup->profile0_charge_current, eup->profile0_charge_current_old, eup->profile0_cc_temp, eup->profile0_cc_temp_old);
-}
