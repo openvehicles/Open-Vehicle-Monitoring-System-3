@@ -96,7 +96,6 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   vweup_con = 0;
   vweup_modelyear = 0;
   climit_max = 16;
-//  chg_autostop = false;
 
   m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
@@ -114,7 +113,6 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 
   m_chargestart_ticker = 0;
   m_chargestop_ticker = 0;
-//  m_chargestate_lastsoc = 100;
   m_timermode_ticker = 0;
   m_timermode_new = false;
 
@@ -132,8 +130,6 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   chg_autostop = MyConfig.GetParamValueBool("xvu", "chg_autostop");
   m_chargestate_lastsoc = StdMetrics.ms_v_bat_soc->AsFloat();
   StdMetrics.ms_v_door_chargeport->SetValue(true); // assume we are plugged on boot/init (esp. important if OBD connection is not configured!)
-//  startup = true;
-  test_change = "none";
 
   // Init commands:
   OvmsCommand *cmd;
@@ -146,8 +142,6 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   cmd = cmd_xvu->RegisterCommand("profile0", "Interact with charging/climate control settings");
   cmd->RegisterCommand("read", "Show current contents", CommandReadProfile0);
   cmd->RegisterCommand("reset", "Reset to default values", CommandResetProfile0);
-  cmd->RegisterCommand("test", "Test boot charge set", CommandTestProfile0);
-  cmd->RegisterCommand("test1", "show profile0 vars", CommandTest1Profile0);
 
   // Load initial config:
   ConfigChanged(NULL);
@@ -445,18 +439,6 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     T26Init();
   }
 
-/*  if (startup) {
-    test_change = "";
-    if (chg_autostop_new != chg_autostop)
-      test_change += "chg_autostop ";
-    if (chg_workaround_new != chg_workaround)
-      test_change += "chg_workaround ";
-    if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt())
-      test_change += "vweup_chg_soclimit ";
-    startup = false;
-    return;
-  }*/
-
   // Handle changed settings:
   if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt()) {
     bool socswitch = StdMetrics.ms_v_charge_limit_soc->AsInt() <= StdMetrics.ms_v_bat_soc->AsFloat();
@@ -467,7 +449,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
         ESP_LOGD(TAG, "ConfigChanged: already charging, nothing to do");
         StdMetrics.ms_v_charge_state->SetValue("charging"); // switch from topoff mode to charging
       }
-      else if (socswitch) { //(StdMetrics.ms_v_door_chargeport->AsBool() && socswitch) { // only start charge when previous max SoC was < SoC
+      else if (socswitch) { // only start charge when previous max SoC was < SoC
         ESP_LOGD(TAG, "ConfigChanged: trying to start charge...");
         fakestop = true;
         StartStopChargeT26(true);
@@ -475,7 +457,6 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     }
     else {
       ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to below current SoC");
-//      test_change += "soclimit_stop ";
       if (IsCharging()) {
         ESP_LOGD(TAG, "ConfigChanged: stopping charge...");
         StartStopChargeT26(false);
@@ -521,17 +502,8 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     chg_autostop = chg_autostop_new;
     if (!chg_autostop_new) {
       ESP_LOGD(TAG, "ConfigChanged: charge autostop disabled, trying to start charge...");
-// XXX      if (chg_workaround)
-// XXX        profile0_charge_current_old = 1; // hack to force setting of (previous) charge current
-      test_change += "autostop_start ";
-//      if (StdMetrics.ms_v_door_chargeport->AsBool()) { // now handled in StartStopChargeT26()
       fakestop = true;
       StartStopChargeT26(true);
-/*      }
-      else if (chg_workaround) {
-        ESP_LOGD(TAG, "ConfigChanged: resetting charge current...");
-        CommandSetChargeCurrent(profile0_charge_current_old);
-      }*/
     }
   }
 
@@ -642,16 +614,9 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
   if (m_chargestate_lastsoc > suff_soc && soc < suff_soc) {
     ESP_LOGI(TAG, "Ticker1: SOC fell below sufficient SOC limit (%d%%), restarting charge", suff_soc);
     fakestop = true;
-//    test_change += "Ticker1 ";
-//    if (StdMetrics.ms_v_door_chargeport->AsBool()) { // now handled in StartStopChargeT26()
       ESP_LOGD(TAG, "Ticker1: trying to start charge...");
       fakestop = true;
       StartStopChargeT26(true);
-/*    }
-    else if (chg_workaround) {
-      ESP_LOGD(TAG, "Ticker1: trying to reset charge current...");
-      CommandSetChargeCurrent(profile0_charge_current_old);
-    }*/
   }
   m_chargestate_lastsoc = soc;
 

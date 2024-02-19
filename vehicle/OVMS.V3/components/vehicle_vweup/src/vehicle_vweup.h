@@ -356,11 +356,6 @@ public:
   bool wakeup_success;
   bool startup;
   
-  int test_profile0_cc_temp;
-  int test_profile0_climit;
-  string test_cb;
-  string test_change;
-
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
   TimerHandle_t m_sendOcuHeartbeat;
@@ -399,8 +394,6 @@ public:
   static void ShellPollControl(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   static void CommandReadProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   static void CommandResetProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-  static void CommandTestProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-  static void CommandTest1Profile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU
