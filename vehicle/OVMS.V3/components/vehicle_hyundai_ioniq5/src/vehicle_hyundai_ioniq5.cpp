@@ -727,6 +727,21 @@ OvmsHyundaiIoniqEv::~OvmsHyundaiIoniqEv()
   XDISARM;
 }
 
+int OvmsHyundaiIoniqEv::GetNotifyChargeStateDelay(const char *state)
+{
+  if (!StdMetrics.ms_v_charge_inprogress->AsBool())
+    return KiaVehicle::GetNotifyChargeStateDelay(state);
+
+  std::string charge_type = StdMetrics.ms_v_charge_type->AsString();
+  if (charge_type == "ccs") {
+    // CCS charging needs some time to ramp up the current/power level:
+    return MyConfig.GetParamValueInt("xiq", "notify.charge.delay.ccs", 15);
+  }
+  else {
+    return MyConfig.GetParamValueInt("xiq", "notify.charge.delay.type2", 10);
+  }
+}
+
 /**
  * ConfigChanged: reload single/all configuration variables
  */
