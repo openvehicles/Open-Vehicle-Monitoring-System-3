@@ -74,7 +74,6 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 #ifdef XIQ_CAN_WRITE
   bool canwrite;
 #endif
-  bool consoleKilometers;
   bool leftDrive;
   int charge_delay_ccs, charge_delay_type2;
 
@@ -83,7 +82,6 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 #ifdef XIQ_CAN_WRITE
     canwrite = (c.getvar("canwrite") == "yes");
 #endif
-    consoleKilometers = (c.getvar("consoleKilometers") == "yes");
     leftDrive = (c.getvar("leftDrive") == "yes");
     charge_delay_ccs = atoi(c.getvar("delayccs").c_str());
     if (charge_delay_ccs < 0 || charge_delay_ccs > 60)
@@ -100,7 +98,6 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 #ifdef XIQ_CAN_WRITE
       MyConfig.SetParamValueBool("xiq", "canwrite", canwrite);
 #endif
-      MyConfig.SetParamValueBool("xiq", "consoleKilometers", consoleKilometers);
       MyConfig.SetParamValueBool("xiq", "leftDrive", leftDrive);
 
       if (charge_delay_ccs == 0)
@@ -130,7 +127,6 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 #ifdef XIQ_CAN_WRITE
     canwrite = MyConfig.GetParamValueBool("xiq", "canwrite", false);
 #endif
-    consoleKilometers = MyConfig.GetParamValueBool("xiq", "consoleKilometers", true);
     leftDrive = MyConfig.GetParamValueBool("xiq", "leftDrive", true);
 
     charge_delay_ccs = MyConfig.GetParamValueInt("xiq", "notify.charge.delay.ccs",0);
@@ -149,8 +145,6 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   c.input_checkbox("Enable CAN writes", "canwrite", canwrite,
     "<p>Controls overall CAN write access, all control functions depend on this.</p>");
 #endif
-  c.input_checkbox("Console odometer in Kilometers", "consoleKilometers", consoleKilometers,
-    "<p>Enable for cars with console odometer in Kilometers, disable for Miles</p>");
   c.input_checkbox("Left hand drive", "leftDrive", leftDrive,
     "<p>Enable for left hand drive cars, disable for right hand drive.</p>");
   c.fieldset_end();

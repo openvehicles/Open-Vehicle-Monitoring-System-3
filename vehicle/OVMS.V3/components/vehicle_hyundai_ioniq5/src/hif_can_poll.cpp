@@ -1001,14 +1001,11 @@ int OvmsHyundaiIoniqEv::RequestVIN()
 /**
  * Get console ODO units
  *
- * Currently from configuration
  */
 metric_unit_t OvmsHyundaiIoniqEv::GetConsoleUnits()
 {
-  XARM("OvmsHyundaiIoniqEv::GetConsoleUnits");
-  metric_unit_t res = MyConfig.GetParamValueBool("xkn", "consoleKilometers", true) ? Kilometers : Miles;
-  XDISARM;
-  return res;
+  // Always KM.
+  return Kilometers;
 }
 
 /**
@@ -1019,7 +1016,7 @@ metric_unit_t OvmsHyundaiIoniqEv::GetConsoleUnits()
 bool OvmsHyundaiIoniqEv::IsLHD()
 {
   XARM("OvmsHyundaiIoniqEv::IsLHD");
-  bool res = MyConfig.GetParamValueBool("xkn", "leftDrive", true);
+  bool res = MyConfig.GetParamValueBool("xiq", "leftDrive", true);
   XDISARM;
   return res;
 }
