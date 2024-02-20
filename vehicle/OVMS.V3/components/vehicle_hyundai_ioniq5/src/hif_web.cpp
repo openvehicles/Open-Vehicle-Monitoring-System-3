@@ -76,6 +76,7 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 #endif
   bool consoleKilometers;
   bool leftDrive;
+  int charge_delay_ccs, charge_delay_type2;
 
   if (c.method == "POST") {
     // process form submission:
@@ -84,6 +85,15 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 #endif
     consoleKilometers = (c.getvar("consoleKilometers") == "yes");
     leftDrive = (c.getvar("leftDrive") == "yes");
+    charge_delay_ccs = atoi(c.getvar("delayccs").c_str());
+    if (charge_delay_ccs < 0 || charge_delay_ccs > 60)
+      error = "CSS Delay Out of Range";
+    charge_delay_type2 = atoi(c.getvar("delaytype2").c_str());
+    if (charge_delay_type2 < 0 || charge_delay_type2 > 60)
+    {
+      if (error == "")
+        error = "Type2 Delay Out of Range";
+    }
 
     if (error == "") {
       // store:
@@ -92,6 +102,15 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 #endif
       MyConfig.SetParamValueBool("xiq", "consoleKilometers", consoleKilometers);
       MyConfig.SetParamValueBool("xiq", "leftDrive", leftDrive);
+
+      if (charge_delay_ccs == 0)
+        MyConfig.SetParamValue("xiq", "notify.charge.delay.ccs", "");
+      else
+        MyConfig.SetParamValueInt("xiq", "notify.charge.delay.ccs", charge_delay_ccs);
+      if (charge_delay_type2 == 0)
+        MyConfig.SetParamValue("xiq", "notify.charge.delay.type2", "");
+      else
+        MyConfig.SetParamValueInt("xiq", "notify.charge.delay.type2", charge_delay_type2);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Hyundai Ioniq 5 / Kia EV6 feature configuration saved.</p>");
@@ -114,6 +133,9 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     consoleKilometers = MyConfig.GetParamValueBool("xiq", "consoleKilometers", true);
     leftDrive = MyConfig.GetParamValueBool("xiq", "leftDrive", true);
 
+    charge_delay_ccs = MyConfig.GetParamValueInt("xiq", "notify.charge.delay.ccs",0);
+    charge_delay_type2 = MyConfig.GetParamValueInt("xiq", "notify.charge.delay.type2",0);
+
     c.head(200);
   }
 
@@ -133,10 +155,12 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     "<p>Enable for left hand drive cars, disable for right hand drive.</p>");
   c.fieldset_end();
 
-  //c.fieldset_start("Functionality");
-  //c.input_checkbox("Enable open charge port with key fob", "remote_charge_port", remote_charge_port,
-  //  "<p>Enable using the Hold-button on the remote key fob to open up the charge port.</p>");
-  //c.fieldset_end();
+  c.fieldset_start("Charge Notify Delays");
+  c.input_slider("CCS Delay", "delayccs", 1, "seconds", charge_delay_ccs>0, charge_delay_ccs?charge_delay_ccs:15,
+    15, 1, 60, 1, "<p>Seconds after DC charging starts before notifying user</p>");
+  c.input_slider("Type 2 Delay", "delaytype2", 1, "seconds", charge_delay_type2>0, charge_delay_type2?charge_delay_type2:10,
+    10, 1, 60, 1, "<p>Seconds after AC charge starts before notifying user</p>");
+  c.fieldset_end();
 
   c.print("<hr>");
   c.input_button("default", "Save");

@@ -102,6 +102,17 @@ xiq.v.c.current.req                      45A                      Requested char
 
 ======================================== ======================== ============================================
 
+--------------
+Custom Configs
+--------------
+
+======================================== ============== ========= ============================================
+Config name                              Default value  …unit     Description
+======================================== ============== ========= ============================================
+xiq leftDrive                            true                     This car is left-hand-drive
+xiq notify.charge.delay.ccs              15             Seconds   Wait time for DC charge power to ramp up before sending the notification
+xiq notify.charge.delay.type2            10             Seconds   … same for AC charging
+======================================== ============== ========= ============================================
 
 ----------
 Debug Logs

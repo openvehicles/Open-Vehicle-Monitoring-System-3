@@ -248,6 +248,8 @@ protected:
   void SendTesterPresentMessages();
   void StopTesterPresentMessages();
 
+  int GetNotifyChargeStateDelay(const char *state) override;
+
   // Inline functions to handle the different I5 Poll states.
   inline int PollGetState()
   {
