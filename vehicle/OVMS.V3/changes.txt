@@ -116,6 +116,7 @@ Open Vehicle Monitor System v3 - Change log
   New notifications:
     [alert] batt.12v.shutdown         -- Alert about imminent 12V shutdown
 - VFS toolkit: add recursive options to mkdir (-p) & rmdir (-r) commands
+- Renault-Zoe-Ph1: add Cabin Pre-heat/cool Control
 
 
 2022-09-01 MWJ  3.3.003  OTA release

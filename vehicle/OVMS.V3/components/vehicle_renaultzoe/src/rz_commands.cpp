@@ -57,7 +57,33 @@ void OvmsVehicleRenaultZoe::zoe_trip(int verbosity, OvmsWriter* writer, OvmsComm
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandClimateControl(bool climatecontrolon) {
-  return NotImplemented;
+  if(!m_enable_write) {
+    ESP_LOGE(TAG, "CommandClimateControl failed / no write access");
+    return Fail;
+  }
+  ESP_LOGI(TAG, "CommandClimateControl %s", climatecontrolon ? "ON" : "OFF");
+
+  OvmsVehicle::vehicle_command_t res;
+
+  if (climatecontrolon) {
+    uint8_t data[4] = {0x80, 0x01, 0x30, 0x00};
+    canbus *obd;
+    obd = m_can1;
+    
+    for (int i = 0; i < 7; i++) {
+      obd->WriteStandard(0x634, 4, data);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+    res = Success;
+  } else {
+    res = NotImplemented;
+  }
+
+  // fallback to default implementation?
+  if (res == NotImplemented) {
+    res = OvmsVehicle::CommandClimateControl(climatecontrolon);
+  }
+  return res;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandWakeup() {
@@ -183,29 +209,46 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandDeactivateValet(con
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandHomelink(int button, int durationms) {
+  // This is needed to enable climate control via Homelink for the iOS app
+  ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
+  
+  OvmsVehicle::vehicle_command_t res = NotImplemented;
+  if (!m_enable_egpio) {
+    if (button == 0) {
+      res = CommandClimateControl(true);
+    }
+    else if (button == 1) {
+      res = CommandClimateControl(false);
+    }
+  }
 #ifdef CONFIG_OVMS_COMP_MAX7317  
-  if(m_enable_egpio) {
+  if (m_enable_egpio) {
     if (button == 0) {
       MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 0);
       vTaskDelay(500 / portTICK_PERIOD_MS);
       MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 1);
-      return Success;
+      res = Success;
     }
     if (button == 1) {
       MyPeripherals->m_max7317->Output(MAX7317_EGPIO_4, 0);
       vTaskDelay(500 / portTICK_PERIOD_MS);
       MyPeripherals->m_max7317->Output(MAX7317_EGPIO_4, 1);
-      return Success;
+      res = Success;
     }
     if (button == 2) {
       MyPeripherals->m_max7317->Output(MAX7317_EGPIO_5, 0);
       vTaskDelay(500 / portTICK_PERIOD_MS);
       MyPeripherals->m_max7317->Output(MAX7317_EGPIO_5, 1);
-      return Success;
+      res = Success;
     }
   }
 #endif
-  return NotImplemented;
+  // fallback to default implementation?
+  if (res == NotImplemented) {
+    res = OvmsVehicle::CommandHomelink(button, durationms);
+  }
+  
+  return res;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandTrip(int verbosity, OvmsWriter* writer) {
