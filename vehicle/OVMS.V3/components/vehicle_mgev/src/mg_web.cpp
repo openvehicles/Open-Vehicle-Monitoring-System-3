@@ -73,6 +73,7 @@ void OvmsVehicleMgEv::Mg5WebInit()
 {
     // vehicle menu:
     MyWebServer.RegisterPage("/xmg/features", "Features", MG5WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+    MyWebServer.RegisterPage("/xmg/version", "Version", MG5WebCfgVersion, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 void OvmsVehicleMgEv::FeaturesWebInit()
@@ -93,6 +94,11 @@ void OvmsVehicleMgEv::WebDeInit()
 void OvmsVehicleMgEv::FeaturesWebDeInit()
 {
     MyWebServer.DeregisterPage("/xmg/features");
+}
+
+void OvmsVehicleMgEv::VersionWebDeInit()
+{
+    MyWebServer.DeregisterPage("/xmg/version");
 }
 
 /**
@@ -158,8 +164,7 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 void OvmsVehicleMgEv::MG5WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
     std::string error;
-    
-        bool pollingmanual = MyConfig.GetParamValueInt("xmg", "polling.manual");
+    bool pollingmanual = MyConfig.GetParamValueInt("xmg", "polling.manual");
         
         if (c.method == "POST") {
             pollingmanual = (c.getvar("pollingmanual") == "yes");
@@ -210,6 +215,61 @@ void OvmsVehicleMgEv::MG5WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
         c.panel_end();
         c.done();
 }
+
+/**
+ * MG5WebCfgVersion: configure general parameters (URL /xmg/config)
+ */
+void OvmsVehicleMgEv::MG5WebCfgVersion(PageEntry_t &p, PageContext_t &c)
+{
+    std::string error;
+    std::string vehtype;
+    int vehval;
+
+    if (c.method == "POST") {
+        vehtype = c.getvar("vehtype");
+        vehval = atoi(vehtype.c_str());
+
+        
+        if (error == "") {
+          // store:
+            MyConfig.SetParamValueInt("xmg", "vehval", vehval);
+            MyConfig.SetParamValue("xmg", "vehtype", vehtype);
+
+          c.head(200);
+          c.alert("success", "<p class=\"lead\">MG5 version configuration saved.</p>");
+          MyWebServer.OutputHome(p, c);
+          c.done();
+          return;
+        }
+        // output error, return to form:
+        error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+        c.head(400);
+        c.alert("danger", error.c_str());
+    } else {
+        vehval = MyConfig.GetParamValueInt("xmg", "vehval",0);
+        vehtype = MyConfig.GetParamValue("xmg", "vehtype", "Short Range 49kWh");
+
+        c.head(200);
+    }
+    // generate form:
+    c.panel_start("primary", "MG5 version configuration");
+    c.form_start(p.uri);
+
+    c.fieldset_start("MG5 Version Selection");
+    //When we have more versions, need to change this to select and updatedbms to int
+    c.input_radio_start("Version", "vehtype");
+    c.input_radio_option("vehtype", "Short Range 49kWh", "0",  vehval == 0);
+    c.input_radio_option("vehtype", "Long Range 57kWh", "1", vehval == 1);
+    c.input_radio_end("");
+
+    c.fieldset_end();
+    c.print("<hr>");
+    c.input_button("default", "Save");
+    c.form_end();
+    c.panel_end();
+    c.done();
+}
+
 
 /**
  * WebCfgBattery: configure battery parameters (URL /xmg/battery)

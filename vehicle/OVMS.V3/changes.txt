@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- MG EV Added support for MG5 (2020 - 2023) Short Range
 - MG EV Added support for MG ZS EV (2023 - ) and MG5 (2020 - 2023) Long Range
 - OVMS Server v3 metrics filtering
   New configs:
