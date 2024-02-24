@@ -778,7 +778,12 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
           }
         uint32_t total = (uint32_t)taskstatus[i].pxStackBase >> 16;
         uint32_t used = total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF);
+
+#if ESP_IDF_VERSION_MAJOR >= 5
+        int core = xTaskGetCoreID(taskstatus[i].xHandle);
+#else
         int core = xTaskGetAffinity(taskstatus[i].xHandle);
+#endif
         uint32_t runtime = taskstatus[i].ulRunTimeCounter - last_runtime[taskstatus[i].xTaskNumber];
 #if ESP_IDF_VERSION_MAJOR >= 4
         writer->printf("%08" PRIX32 " %4u %s %-15s %5" PRIu32 " %5" PRIu32 " %5" PRIu32 " %7u%7u%7u  %c %3d %3.0f%% %3d\n",

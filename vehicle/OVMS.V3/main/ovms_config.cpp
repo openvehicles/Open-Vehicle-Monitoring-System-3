@@ -455,7 +455,12 @@ esp_err_t OvmsConfig::mount()
   memset(&m_store_fat,0,sizeof(esp_vfs_fat_sdmmc_mount_config_t));
   m_store_fat.format_if_mount_failed = true;
   m_store_fat.max_files = 5;
+
+#if ESP_IDF_VERSION_MAJOR >= 5
+  esp_vfs_fat_spiflash_mount_rw_wl("/store", "store", &m_store_fat, &m_store_wlh);
+#else
   esp_vfs_fat_spiflash_mount("/store", "store", &m_store_fat, &m_store_wlh);
+#endif
   m_mounted = true;
 
   struct stat ds;
@@ -498,7 +503,11 @@ esp_err_t OvmsConfig::unmount()
 
   if (m_mounted)
     {
+#if ESP_IDF_VERSION_MAJOR >= 5
+    esp_vfs_fat_spiflash_unmount_rw_wl("/store", m_store_wlh);
+#else
     esp_vfs_fat_spiflash_unmount("/store", m_store_wlh);
+#endif
     m_mounted = false;
     MyEvents.SignalEvent("config.unmounted", NULL);
     }

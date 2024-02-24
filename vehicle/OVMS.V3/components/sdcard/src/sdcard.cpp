@@ -195,7 +195,11 @@ esp_err_t sdcard::unmount(bool hard /*=false*/)
     }
   else
     {
+#if ESP_IDF_VERSION_MAJOR >= 5
+    esp_err_t ret = esp_vfs_fat_sdcard_unmount("/sd", m_card);
+#else
     esp_err_t ret = esp_vfs_fat_sdmmc_unmount();
+#endif
     if (ret == ESP_OK)
       {
       ESP_LOGI(TAG, "unmount done");
