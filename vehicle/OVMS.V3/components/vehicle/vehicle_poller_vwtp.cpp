@@ -375,6 +375,11 @@ void OvmsVehicle::PollerVWTPTxCallback(const CAN_frame_t* frame, bool success)
     }
   }
 
+#if __cplusplus >= 202002L
+#define CAP_THIS ,this
+#else
+#define CAP_THIS
+#endif
 
 /**
  * PollerVWTPReceive: process VW-TP frame received (internal)
@@ -384,7 +389,7 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
   OvmsRecMutexLock lock(&m_poll_mutex);
 
   // Log utility:
-  auto logFrameDump = [=](const char* msg)
+  auto logFrameDump = [= CAP_THIS](const char* msg)
     {
     char *hexdump = NULL;
     FormatHexDump(&hexdump, (const char*)frame->data.u8, frame->FIR.B.DLC, frame->FIR.B.DLC);
@@ -393,7 +398,7 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
     };
 
   // Send channel keepalive response (0xA3 response):
-  auto sendPong = [=]()
+  auto sendPong = [= CAP_THIS]()
     {
     CAN_frame_t txframe = {};
     txframe.callback = &m_poll_txcallback;
@@ -410,7 +415,7 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
     };
 
   // Send ACK:
-  auto sendAck = [=]()
+  auto sendAck = [= CAP_THIS]()
     {
     CAN_frame_t txframe = {};
     txframe.callback = &m_poll_txcallback;

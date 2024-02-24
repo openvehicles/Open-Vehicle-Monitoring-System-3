@@ -1282,10 +1282,10 @@ void OvmsHyundaiIoniqEv::HandleCharging()
         && (ideal_range >= limit_range )
         && (kia_last_ideal_range < limit_range ))) {
       // ...enter state 2=topping off when we've reach the needed range / SOC:
-      SET_CHARGE_STATE("topoff", NULL);
+      SET_CHARGE_STATE("topoff");
     }
     else if (bat_soc >= 95) { // ...else set "topping off" from 94% SOC:
-      SET_CHARGE_STATE("topoff", NULL);
+      SET_CHARGE_STATE("topoff");
     }
   }
 
@@ -1349,7 +1349,7 @@ void OvmsHyundaiIoniqEv::HandleCharging()
       SET_CHARGE_STATE("heating", "scheduledstart");
     }
     else {
-      SET_CHARGE_STATE("charging", NULL);
+      SET_CHARGE_STATE("charging");
     }
   }
   StdMetrics.ms_v_charge_kwh->SetValue(StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh) - kia_cum_charge_start, kWh); // kWh charged
