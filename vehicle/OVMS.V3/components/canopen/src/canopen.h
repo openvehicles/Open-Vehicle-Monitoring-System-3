@@ -220,7 +220,7 @@ typedef union __attribute__ ((__packed__))
 
 typedef std::forward_list<CANopenAsyncClient*> CANopenClientList;
 
-class CANopenWorker
+class CANopenWorker final
   {
   public:
     CANopenWorker(canbus* canbus);
@@ -301,33 +301,33 @@ class CANopenAsyncClient
 
   public:
     // CANopenWorker callback:
-    virtual CANopenResult_t SubmitDoneCallback(CANopenJob& job, TickType_t maxqueuewait=0);
+    CANopenResult_t SubmitDoneCallback(CANopenJob& job, TickType_t maxqueuewait=0);
 
   public:
     // Queue API:
-    virtual CANopenResult_t SubmitJob(CANopenJob& job, TickType_t maxqueuewait=0);
-    virtual CANopenResult_t ReceiveDone(CANopenJob& job, TickType_t maxqueuewait=0);
+    CANopenResult_t SubmitJob(CANopenJob& job, TickType_t maxqueuewait=0);
+    CANopenResult_t ReceiveDone(CANopenJob& job, TickType_t maxqueuewait=0);
   
   public:
     // Customisation:
-    virtual void InitSendNMT(CANopenJob& job, uint8_t nodeid, CANopenNMTCommand_t command,
+    void InitSendNMT(CANopenJob& job, uint8_t nodeid, CANopenNMTCommand_t command,
       bool wait_for_state=false, int resp_timeout_ms=1000, int max_tries=3);
-    virtual void InitReceiveHB(CANopenJob& job, uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
+    void InitReceiveHB(CANopenJob& job, uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
       int recv_timeout_ms=1000, int max_tries=1);
-    virtual void InitReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    void InitReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=100, int max_tries=3);
-    virtual void InitWriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    void InitWriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=100, int max_tries=3);
   
   public:
     // Main API:
-    virtual CANopenResult_t SendNMT(uint8_t nodeid, CANopenNMTCommand_t command,
+    CANopenResult_t SendNMT(uint8_t nodeid, CANopenNMTCommand_t command,
       bool wait_for_state=false, int resp_timeout_ms=1000, int max_tries=3);
-    virtual CANopenResult_t ReceiveHB(uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
+    CANopenResult_t ReceiveHB(uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
       int recv_timeout_ms=1000, int max_tries=1);
-    virtual CANopenResult_t ReadSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    CANopenResult_t ReadSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=100, int max_tries=3);
-    virtual CANopenResult_t WriteSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    CANopenResult_t WriteSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=100, int max_tries=3);
   
   public:
@@ -349,21 +349,21 @@ class CANopenClient : public CANopenAsyncClient
   public:
     CANopenClient(canbus* canbus);
     CANopenClient(CANopenWorker* worker);
-    virtual ~CANopenClient();
+    ~CANopenClient() override;
 
   public:
     // Queue API:
-    virtual CANopenResult_t ExecuteJob(CANopenJob& job, TickType_t maxqueuewait=0);
+    CANopenResult_t ExecuteJob(CANopenJob& job, TickType_t maxqueuewait=0);
   
   public:
     // Main API:
-    virtual CANopenResult_t SendNMT(CANopenJob& job, uint8_t nodeid, CANopenNMTCommand_t command,
+    CANopenResult_t SendNMT(CANopenJob& job, uint8_t nodeid, CANopenNMTCommand_t command,
       bool wait_for_state=false, int resp_timeout_ms=1000, int max_tries=3);
-    virtual CANopenResult_t ReceiveHB(CANopenJob& job, uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
+    CANopenResult_t ReceiveHB(CANopenJob& job, uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
       int recv_timeout_ms=1000, int max_tries=1);
-    virtual CANopenResult_t ReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    CANopenResult_t ReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=100, int max_tries=3);
-    virtual CANopenResult_t WriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    CANopenResult_t WriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=100, int max_tries=3);
   
   public:
@@ -375,7 +375,7 @@ class CANopenClient : public CANopenAsyncClient
  * The CANopen master manages all CANopenWorkers, provides shell commands
  *   and the CAN rx task for all workers.
  */
-class CANopen
+class CANopen final
   {
   public:
     CANopen();
