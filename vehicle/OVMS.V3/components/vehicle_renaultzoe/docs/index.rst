@@ -28,7 +28,7 @@ TPMS Display Kangoo         No
 Charge Status Display       Yes
 Charge Interruption Alerts  No
 Charge Control              No
-Cabin Pre-heat/cool Control No
+Cabin Pre-heat/cool Control Yes
 Lock/Unlock Vehicle         No
 Valet Mode Control          No
 Others
@@ -38,3 +38,11 @@ After selecting the Renault Zoe/Kangoo vehicle module, the corresponding setting
 
 .. image:: Features.png
     :width: 480px
+
+
+-------------------------
+Using Cabin Pre-heat/cool
+-------------------------
+
+Climate control on is only supported. It starts the 5 minute booster. After 5 minutes it switches off automatically. For IOS users it is started via Homelink 1
+
