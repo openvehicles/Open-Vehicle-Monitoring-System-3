@@ -469,6 +469,9 @@ class OvmsMetricBitset : public OvmsMetric
       }
 #endif
 
+    // Bring other overridden SetValue into scope from  OVMSMetric
+    using OvmsMetric::SetValue;
+
     bool SetValue(std::bitset<N> value, metric_unit_t units = Other)
       {
       if (m_mutex.Lock())
@@ -872,6 +875,9 @@ class OvmsMetricVector : public OvmsMetric
       }
     void operator=(std::string value) override { SetValue(value); }
 
+    // Bring other overridden SetValue into scope from OVMSMetric
+    using OvmsMetric::SetValue;
+
     bool SetValue(const std::vector<ElemType, Allocator>& value, metric_unit_t units = Other)
       {
       bool modified = false, resized = false;
@@ -1047,6 +1053,7 @@ class OvmsMetric64 : public OvmsMetric
     bool CheckPersist() override;
     void RefreshPersist() override;
 
+    using OvmsMetric::operator=;
     void operator=(std::string value) override { SetValue(value); }
   protected:
     // Get the value as low/high parts.
@@ -1083,11 +1090,16 @@ class OvmsMetricInt64 : public OvmsMetric64
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     void DukPush(DukContext &dc, metric_unit_t units = Other) override;
 #endif
+    // Bring other overridden SetValue into scope from  OVMSMetric64
+    using OvmsMetric64::SetValue;
     bool SetValue(int64_t value, metric_unit_t units = Other);
+    bool SetValue(dbcNumber& value) override;
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+
+    // Bring other overridden = operator into scope from  OVMSMetric64
+    using OvmsMetric64::operator=;
     void operator=(int64_t value) { SetValue(value); }
 
-    bool SetValue(std::string value, metric_unit_t units = Other) override;
-    bool SetValue(dbcNumber& value) override;
     void Clear() override;
 
   };
