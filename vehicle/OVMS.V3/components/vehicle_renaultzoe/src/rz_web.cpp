@@ -136,7 +136,7 @@ void OvmsVehicleRenaultZoe::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   
   c.print("<hr>");
   c.input_checkbox("use EGPIOs for Homelink", "use_gpios", use_gpios,
-    "<p>Disabeld are Default use for Homelink 1 = Climatecontrol for IOS users. When enable some EGPIOs are switched. (BINKINO thinks)</p>");
+    "<p>Disabeld are Default use for Homelink 1 = Climatecontrol for IOS and Android users. <br>When enable EGPIO 3, 4, 5 are switched for 500ms via Homelink 1, 2, 3.</p>");
   c.print("<hr>");
   c.input_button("default", "Save");
   c.form_end();

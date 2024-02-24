@@ -40,8 +40,9 @@ After selecting the Renault Zoe/Kangoo vehicle module, the corresponding setting
     :width: 480px
 
 
-----------
+-------------------------
 Using Cabin Pre-heat/cool
-----------
+-------------------------
 
-Only 5 Minutes Booster are Implementet white Climatecontrol on or Homelink 1
+Climate control on is only supported. It starts the 5 minute booster. After 5 minutes it switches off automatically. For IOS users it is started via Homelink 1
+
