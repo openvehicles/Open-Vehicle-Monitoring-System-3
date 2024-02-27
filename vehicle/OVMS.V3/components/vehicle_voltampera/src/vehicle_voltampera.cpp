@@ -152,15 +152,12 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
 
   PollSetPidList(m_can1, m_pPollingList);
   PollSetState(0);
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  ESP_LOGI(TAG, "Volt/Ampera vehicle module: Register SWCAN using external CAN module");
-  RegisterCanBus(4,CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);
-  p_swcan = m_can4;
-  p_swcan_if = (swcan*)MyPcpApp.FindDeviceByName("can4");
-#else
-  ESP_LOGI(TAG, "Volt/Ampera vehicle module: Register 2nd MCP2515 as SWCAN");
-  RegisterCanBus(3,CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);  // single wire can
+
+  ESP_LOGI(TAG, "Volt/Ampera vehicle module: Register 2nd MCP2515 or external CAN module as SWCAN");
+  RegisterCanBus(3, CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);  // single wire can
   p_swcan = m_can3;
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+  p_swcan_if = (swcan*)MyPcpApp.FindDeviceByName("can3");
 #endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
 
   // register tx callback

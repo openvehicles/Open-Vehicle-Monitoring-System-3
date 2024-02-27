@@ -151,16 +151,15 @@ Peripherals::Peripherals()
 #ifdef CONFIG_OVMS_COMP_MCP2515
   ESP_LOGI(TAG, "  MCP2515 CAN 1/2");
   m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_HOST, 10000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
+#ifndef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   ESP_LOGI(TAG, "  MCP2515 CAN 2/2");
   m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_HOST, 10000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
-#endif // #ifdef CONFIG_OVMS_COMP_MCP2515
-
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  ESP_LOGI(TAG, "  can4/swcan (MCP2515 + TH8056 DRIVER)");
-
-  // External SWCAN module with MCP2515. Here we use software CS (maximum 3 HW CS pins already used)
-  m_mcp2515_swcan = new swcan("can4", m_spibus, VSPI_NODMA_HOST, 10000000, VSPI_PIN_MCP2515_SWCAN_CS, VSPI_PIN_MCP2515_SWCAN_INT, false);
+#else
+  ESP_LOGI(TAG, "  can3/swcan (MCP2515 + TH8056 DRIVER)");
+  // External SWCAN module with MCP2515
+  m_mcp2515_swcan = new swcan("can3", m_spibus, VSPI_HOST, 10000000, VSPI_PIN_MCP2515_SWCAN_CS, VSPI_PIN_MCP2515_SWCAN_INT);
 #endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+#endif // #ifdef CONFIG_OVMS_COMP_MCP2515
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   ESP_LOGI(TAG, "  SD CARD");
