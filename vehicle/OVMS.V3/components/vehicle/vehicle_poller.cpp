@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-// #include "ovms_log.h"
+#include "ovms_log.h"
 static const char *TAG = "vehicle-poll";
 
 #include <stdio.h>
@@ -127,6 +127,8 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plis
   m_poll_plist = plist;
   m_poll.ticker = 0;
   m_poll_sequence_cnt = 0;
+
+  m_poll_subticker = 0;
   m_poll_wait = 0;
   ResetPollEntry();
   }
@@ -174,7 +176,6 @@ void OvmsVehicle::PollSetThrottling(uint8_t sequence_max)
   OvmsRecMutexLock lock(&m_poll_mutex);
   m_poll_sequence_max = sequence_max;
   }
-
 
 /**
  * PollSetResponseSeparationTime: configure ISO TP multi frame response timing
@@ -324,10 +325,7 @@ void OvmsVehicle::PollerSend(poller_source_t source)
     }
   if (fromPrimaryTicker)
     {
-    // Timer ticker call: reset throttling counter
-    PollerResetThrottle();
-
-    // Only reset the list when 'from Ticker' and it's at the end.
+    // Only reset the list when 'from primary Ticker' and it's at the end.
     if (m_poll_plcur && m_poll_plcur->txmoduleid == 0)
       {
       PollerNextTick(source);
@@ -397,7 +395,6 @@ void OvmsVehicle::PollerSend(poller_source_t source)
       }
     }
   }
-
 
 /**
  * PollerTxCallback: internal: process poll request callbacks
@@ -520,7 +517,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
   PollSetPidList(bus, poll);
   m_poll_single_rxdone.Take(0);
   m_poll_single_rxbuf = &response;
-  PollerSend(poller_source_t::OnceOff);
+  Queue_PollerSend(poller_source_t::OnceOff);
   m_poll_mutex.Unlock();
 
   // wait for response:
