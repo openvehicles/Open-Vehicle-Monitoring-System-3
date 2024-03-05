@@ -129,6 +129,7 @@ class OvmsEvents
     TimerList m_timers;
     TimerStatusMap m_timer_active;
     OvmsMutex m_timers_mutex;
+    int detect_event_loop_blockage;
 #if ESP_IDF_VERSION_MAJOR >= 4
     esp_event_handler_instance_t event_handler_instance;
 #endif
