@@ -191,7 +191,6 @@ void Housekeeping::Init(std::string event, void* data)
   else if (MyBoot.GetEarlyCrashCount() >= AUTO_INIT_INHIBIT_CRASHCOUNT)
     {
     ESP_LOGE(TAG, "Auto init inhibited: too many early crashes (%d)", MyBoot.GetEarlyCrashCount());
-    ExecuteDriverFactoryReset();
     }
   else
     {
