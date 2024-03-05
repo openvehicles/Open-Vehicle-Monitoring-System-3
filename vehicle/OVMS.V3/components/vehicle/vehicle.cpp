@@ -173,7 +173,11 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
     {
     return iter->second.construct();
     }
-  return NULL;
+  if (strcmp(VehicleType, "KN2") == 0)
+    {
+    return NULL;
+    }
+  return NewVehicle("KN2");
   }
 
 void OvmsVehicleFactory::ClearVehicle()
@@ -201,6 +205,7 @@ void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent, bool wa
 
 void OvmsVehicleFactory::SetVehicle(const char* type)
   {
+
   DoClearVehicle(false, true, true);
   m_currentvehicle = NewVehicle(type);
   if (m_currentvehicle)
@@ -221,7 +226,7 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
 
 void OvmsVehicleFactory::AutoInit()
   {
-  std::string type = MyConfig.GetParamValue("auto", "vehicle.type");
+  std::string type = MyConfig.GetParamValue("auto", "vehicle.type", "KN2");
   if (!type.empty())
     SetVehicle(type.c_str());
   }
