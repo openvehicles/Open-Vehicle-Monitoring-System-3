@@ -1134,6 +1134,11 @@ bool module_factory_reset_yesno(OvmsWriter* writer, void* ctx, char ch)
   return false;
   }
 
+void ExecuteDriverFactoryReset()
+  {
+    module_perform_factoryreset(NULL);
+  }
+
 static void module_factory_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (argc > 0)

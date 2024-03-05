@@ -108,9 +108,10 @@ void HousekeepingTicker1( TimerHandle_t timer )
   StandardMetrics.ms_m_timeutc->SetValue(time(NULL));
 
   HousekeepingUpdate12V();
-  MyEvents.SignalEvent("ticker.1", NULL);
 
   tick++;
+
+  MyEvents.SignalEvent("ticker.1", NULL);
   if ((tick % 10)==0) MyEvents.SignalEvent("ticker.10", NULL);
   if ((tick % 60)==0) MyEvents.SignalEvent("ticker.60", NULL);
   if ((tick % 300)==0) MyEvents.SignalEvent("ticker.300", NULL);

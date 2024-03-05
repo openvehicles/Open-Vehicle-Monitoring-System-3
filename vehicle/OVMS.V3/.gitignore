@@ -53,7 +53,6 @@ dkms.conf
 
 # ESP32 stuff
 build
-sdkconfig
 sdkconfig.old
 .DS_Store
 .atom-build.yml
