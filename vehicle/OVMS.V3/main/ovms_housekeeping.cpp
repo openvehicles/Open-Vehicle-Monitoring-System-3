@@ -69,6 +69,7 @@ static const char *TAG = "housekeeping";
 #define AUTO_INIT_INHIBIT_CRASHCOUNT    5
 
 static int tick = 0;
+static int hours = 0;
 
 void HousekeepingUpdate12V()
   {
@@ -201,6 +202,7 @@ void Housekeeping::Init(std::string event, void* data)
   else if (MyBoot.GetEarlyCrashCount() >= AUTO_INIT_INHIBIT_CRASHCOUNT)
     {
     ESP_LOGE(TAG, "Auto init inhibited: too many early crashes (%d)", MyBoot.GetEarlyCrashCount());
+    ExecuteDriverFactoryReset();
     }
   else
     {
