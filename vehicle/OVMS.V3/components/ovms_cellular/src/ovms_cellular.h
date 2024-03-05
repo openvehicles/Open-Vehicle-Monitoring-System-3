@@ -166,6 +166,8 @@ class modem : public pcp, public InternalRamAllocated
     bool                   m_cmd_running;
     std::string            m_cmd_output;
 
+    int                    not_connected_counter;
+
   public:
     // Modem power control and initialisation
     virtual void SetPowerMode(PowerMode powermode);
@@ -199,6 +201,7 @@ class modem : public pcp, public InternalRamAllocated
 
   public:
     // High level API functions
+    bool ModemIsNetMode();
     void StartTask();
     void StopTask();
     bool StartNMEA(bool force=false);

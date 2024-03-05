@@ -305,6 +305,7 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_driver = NULL;
   m_cmd_running = false;
   m_cmd_output.clear();
+  not_connected_counter = 0;
 
   ClearNetMetrics();
   StartTask();
@@ -356,6 +357,10 @@ void modem::SetPowerMode(PowerMode powermode)
     default:
       break;
     }
+  }
+bool modem::ModemIsNetMode()
+  {
+    return m_state1 == NetMode;
   }
 
 void modem::AutoInit()
@@ -799,11 +804,11 @@ modem::modem_state1_t modem::State1Activity()
 
 modem::modem_state1_t modem::State1Ticker1()
   {
-  if ((m_mux != NULL)&&(m_mux->GoodFrameAge() > 180)&&(m_state1 != Development))
+  if ((m_mux != NULL)&&(m_mux->GoodFrameAge() > 120)&&(m_state1 != Development))
     {
-    // Mux is up, but we haven't had a good MUX frame in 3 minutes.
+    // Mux is up, but we haven't had a good MUX frame in 2 minutes.
     // Let's assume the MUX has failed
-    ESP_LOGW(TAG, "3 minutes since last MUX rx frame - assume MUX has failed");
+    ESP_LOGW(TAG, "2 minutes since last MUX rx frame - assume MUX has failed");
     StopPPP();
     StopNMEA();
     StopMux();
@@ -948,6 +953,15 @@ modem::modem_state1_t modem::State1Ticker1()
         ESP_LOGW(TAG, "Lost network connection (+PPP disconnect in NetMode)");
         return NetLoss;
         }
+      if ((!m_ppp->m_connected)&&(m_ppp->m_lasterrcode > 0))
+        {
+          not_connected_counter++;
+          ESP_LOGE(TAG, "Not connected to PPP, counter: %d", not_connected_counter);
+          if (not_connected_counter > 100)
+          {
+            MyBoot.Restart();
+          }
+        }
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         { m_driver->StatusPoller(); }
       break;
@@ -963,6 +977,11 @@ modem::modem_state1_t modem::State1Ticker1()
       break;
 
     case Development:
+      break;
+    
+    case PowerOffOn:
+      if (m_state1_ticker > 180)
+          MyBoot.Restart();
       break;
 
     default:
