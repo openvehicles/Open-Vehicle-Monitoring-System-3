@@ -40,9 +40,9 @@
 #endif
 
 // Defaults
-#define POWERMGMT_MODEMOFF_DELAY      96 // hours
-#define POWERMGMT_WIFIOFF_DELAY       24 // hours
-#define POWERMGMT_12V_SHUTDOWN_DELAY  30 // minutes
+#define POWERMGMT_MODEMOFF_DELAY      0 // hours
+#define POWERMGMT_WIFIOFF_DELAY       0 // hours
+#define POWERMGMT_12V_SHUTDOWN_DELAY  0 // minutes
 
 class powermgmt
   {
