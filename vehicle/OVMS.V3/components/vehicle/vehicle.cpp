@@ -173,11 +173,7 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
     {
     return iter->second.construct();
     }
-  if (strcmp(VehicleType, "KN2") == 0)
-    {
-    return NULL;
-    }
-  return NewVehicle("KN2");
+  return NULL;
   }
 
 void OvmsVehicleFactory::ClearVehicle()
@@ -226,7 +222,7 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
 
 void OvmsVehicleFactory::AutoInit()
   {
-  std::string type = MyConfig.GetParamValue("auto", "vehicle.type", "KN2");
+  std::string type = MyConfig.GetParamValue("auto", "vehicle.type");
   if (!type.empty())
     SetVehicle(type.c_str());
   }
