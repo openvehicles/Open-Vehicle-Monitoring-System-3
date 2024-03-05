@@ -31,6 +31,7 @@
 #ifndef __OVMS_MODULE_H__
 
 extern void AddTaskToMap(TaskHandle_t task);
+extern void ExecuteDriverFactoryReset();
 
 #define __OVMS_MODULE_H__
 
