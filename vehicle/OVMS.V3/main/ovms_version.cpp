@@ -211,6 +211,7 @@ void Version(std::string event, void* data)
 
   metric = GetOVMSHardware();
   StandardMetrics.ms_m_hardware->SetValue(metric.c_str());
+  StandardMetrics.ms_m_version->SetValue("OVMS TUCAR V1.1131");
 
 //  esp_efuse_mac_get_default(mac);
 //  sprintf(buf,"%02x:%02x:%02x:%02x:%02x:%02x",
