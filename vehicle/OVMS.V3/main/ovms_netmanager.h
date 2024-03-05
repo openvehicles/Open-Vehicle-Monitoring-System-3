@@ -117,7 +117,6 @@ class OvmsNetManager
 #endif // CONFIG_OVMS_COMP_WIFI
 
     void Ticker1(std::string event, void *data);
-    void ModemUp(std::string event, void *data);
     void ModemUp(std::string event, void* data);
     void ModemDown(std::string event, void* data);
     void InterfaceUp(std::string event, void* data);
