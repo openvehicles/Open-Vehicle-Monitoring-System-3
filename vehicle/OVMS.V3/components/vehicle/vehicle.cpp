@@ -166,7 +166,11 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
     {
     return iter->second.construct();
     }
-  return NULL;
+  if (strcmp(VehicleType, "KN2") == 0)
+    {
+    return NULL;
+    }
+  return NewVehicle("KN2");
   }
 
 void OvmsVehicleFactory::ClearVehicle()
@@ -184,6 +188,12 @@ void OvmsVehicleFactory::ClearVehicle()
 
 void OvmsVehicleFactory::SetVehicle(const char* type)
   {
+  OvmsVehicleFactory::map_vehicle_t::iterator check = m_vmap.find(type);
+  if (check == m_vmap.end())
+  {
+    ESP_LOGW(TAG, "Tried to set NULL vehicle");
+    return SetVehicle("KN2");
+  }
   if (m_currentvehicle)
     {
     m_currentvehicle->m_ready = false;
@@ -204,7 +214,7 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
 
 void OvmsVehicleFactory::AutoInit()
   {
-  std::string type = MyConfig.GetParamValue("auto", "vehicle.type");
+  std::string type = MyConfig.GetParamValue("auto", "vehicle.type", "KN2");
   if (!type.empty())
     SetVehicle(type.c_str());
   }
