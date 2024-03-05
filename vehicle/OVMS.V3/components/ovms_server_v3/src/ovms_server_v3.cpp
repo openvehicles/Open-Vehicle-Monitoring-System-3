@@ -94,7 +94,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           StandardMetrics.ms_s_v3_connected->SetValue(false);
           StandardMetrics.ms_s_v3_peers->SetValue(0);
           MyOvmsServerV3->SetStatus("Error: Connection failed", true, OvmsServerV3::WaitReconnect);
-          MyOvmsServerV3->m_connretry = 60;
+          MyOvmsServerV3->m_connretry = 10;
           }
         }
       }
@@ -107,7 +107,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV3)
           {
           MyOvmsServerV3->Disconnect();
-          MyOvmsServerV3->m_connretry = 60;
+          MyOvmsServerV3->m_connretry = 10;
           }
         }
       else
@@ -137,8 +137,13 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
              msg->topic.p, (int) msg->payload.len, msg->payload.p);
       if (MyOvmsServerV3)
         {
-        MyOvmsServerV3->IncomingMsg(std::string(msg->topic.p,msg->topic.len),
-                                    std::string(msg->payload.p,msg->payload.len));
+        if (MyOvmsServerV3->accept_command == 0)
+          {
+            MyOvmsServerV3->accept_command = 3;
+            MyOvmsServerV3->IncomingMsg(
+              std::string(msg->topic.p,msg->topic.len),
+              std::string(msg->payload.p,msg->payload.len));
+          }                       
         }
       if (msg->qos == 1)
         {
@@ -172,7 +177,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       if (MyOvmsServerV3)
         {
         MyOvmsServerV3->Disconnect();
-        MyOvmsServerV3->m_connretry = 60;
+        MyOvmsServerV3->m_connretry = 10;
         }
       break;
     default:
@@ -210,6 +215,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_notify_data_waitcomp = 0;
   m_notify_data_waittype = NULL;
   m_notify_data_waitentry = NULL;
+  accept_command = 0;
 
   ESP_LOGI(TAG, "OVMS Server v3 running");
 
@@ -624,6 +630,12 @@ void OvmsServerV3::CountClients()
 
 void OvmsServerV3::Connect()
   {
+  if (!connection_available)
+  {
+    ESP_LOGE(TAG, "No connection available, waiting for network");
+    m_connretry = 10;
+    return;
+  }
   m_msgid = 1;
   m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
   m_server = MyConfig.GetParamValue("server.v3", "server");
@@ -820,12 +832,12 @@ void OvmsServerV3::EventListener(std::string event, void* data)
 void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   {
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
-  m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 60);
-  m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 600);
+  m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 1);
+  m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 60);
   m_updatetime_awake = MyConfig.GetParamValueInt("server.v3", "updatetime.awake", m_updatetime_idle);
   m_updatetime_on = MyConfig.GetParamValueInt("server.v3", "updatetime.on", m_updatetime_idle);
   m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_idle);
-  m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", 0);
+  m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", 300);
   m_metrics_filter.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.include"),
                                MyConfig.GetParamValue("server.v3", "metrics.exclude"));
   }
@@ -876,9 +888,20 @@ void OvmsServerV3::NetmanStop(std::string event, void* data)
 
 void OvmsServerV3::Ticker1(std::string event, void* data)
   {
+  connection_available = StdMetrics.ms_m_net_connected->AsBool() &&
+                              StdMetrics.ms_m_net_ip->AsBool();
+  if (accept_command != 0)
+    {
+      accept_command--;
+    }
+  if (!connection_available && m_mgconn)
+    {
+      Disconnect();
+      m_connretry = 10;
+    }
   if (m_connretry > 0)
     {
-    if (MyNetManager.m_connected_any)
+    if (connection_available)
       {
       m_connretry--;
       if (m_connretry == 0)
