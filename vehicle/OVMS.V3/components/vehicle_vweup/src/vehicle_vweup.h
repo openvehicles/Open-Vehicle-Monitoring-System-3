@@ -354,8 +354,9 @@ public:
   bool chg_workaround;
   bool t26_init;
   bool wakeup_success;
-  bool startup;
-  
+  bool charge_timeout;
+  uint8_t lever;
+
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
   TimerHandle_t m_sendOcuHeartbeat;

@@ -378,53 +378,55 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   float socfactor = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
   float sohfactor = StdMetrics.ms_v_bat_soh->AsFloat() / 100;
   if (sohfactor == 0) sohfactor = 1;
-  if (vweup_modelyear > 2019)
-  {
-    // 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
-    if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
-      StdMetrics.ms_v_bat_cac->SetValue(120 * sohfactor);
-    StdMetrics.ms_v_bat_range_full->SetValue(260 * sohfactor);
-    if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
-      StdMetrics.ms_v_bat_range_ideal->SetValue(260 * sohfactor * socfactor);
-    if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
-      m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
+  if (do_obd_init) {
+    if (vweup_modelyear > 2019)
+    {
+      // 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
+      if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
+        StdMetrics.ms_v_bat_cac->SetValue(120 * sohfactor);
+      StdMetrics.ms_v_bat_range_full->SetValue(260 * sohfactor);
+      if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
+        StdMetrics.ms_v_bat_range_ideal->SetValue(260 * sohfactor * socfactor);
+      if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
+        m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
+      else
+        m_range_est_factor = 2.6f;
+      StdMetrics.ms_v_charge_climit->SetValue(32);
+      climit_max = 32;
+
+      // Battery pack layout: 2P84S in 14 modules
+      BmsSetCellArrangementVoltage(84, 6);
+      BmsSetCellArrangementTemperature(14, 1);
+      BmsSetCellLimitsVoltage(2.0, 5.0);
+      BmsSetCellLimitsTemperature(-39, 200);
+      BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+      BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+    }
     else
-      m_range_est_factor = 2.6f;
-    StdMetrics.ms_v_charge_climit->SetValue(32);
-    climit_max = 32;
+    {
+      // 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
+      if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
+        StdMetrics.ms_v_bat_cac->SetValue(50 * sohfactor);
+      StdMetrics.ms_v_bat_range_full->SetValue(160 * sohfactor);
+      if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
+        StdMetrics.ms_v_bat_range_ideal->SetValue(160 * sohfactor * socfactor);
+      if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
+        m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
+      else
+        m_range_est_factor = 1.6f;
+      StdMetrics.ms_v_charge_climit->SetValue(16);
+      climit_max = 16;
 
-    // Battery pack layout: 2P84S in 14 modules
-    BmsSetCellArrangementVoltage(84, 6);
-    BmsSetCellArrangementTemperature(14, 1);
-    BmsSetCellLimitsVoltage(2.0, 5.0);
-    BmsSetCellLimitsTemperature(-39, 200);
-    BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
-    BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+      // Battery pack layout: 2P102S in 17 modules
+      BmsSetCellArrangementVoltage(102, 6);
+      BmsSetCellArrangementTemperature(17, 1);
+      BmsSetCellLimitsVoltage(2.0, 5.0);
+      BmsSetCellLimitsTemperature(-39, 200);
+      BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+      BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+    }
   }
-  else
-  {
-    // 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
-    if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
-      StdMetrics.ms_v_bat_cac->SetValue(50 * sohfactor);
-    StdMetrics.ms_v_bat_range_full->SetValue(160 * sohfactor);
-    if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
-      StdMetrics.ms_v_bat_range_ideal->SetValue(160 * sohfactor * socfactor);
-    if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
-      m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
-    else
-      m_range_est_factor = 1.6f;
-    StdMetrics.ms_v_charge_climit->SetValue(16);
-    climit_max = 16;
-
-    // Battery pack layout: 2P102S in 17 modules
-    BmsSetCellArrangementVoltage(102, 6);
-    BmsSetCellArrangementTemperature(17, 1);
-    BmsSetCellLimitsVoltage(2.0, 5.0);
-    BmsSetCellLimitsTemperature(-39, 200);
-    BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
-    BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
-  }
-
+  
   // Init OBD subsystem:
   // (needs to be initialized first as the T26 module depends on OBD being ready)
   if (vweup_enable_obd && do_obd_init) {
@@ -443,7 +445,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt()) {
     bool socswitch = StdMetrics.ms_v_charge_limit_soc->AsInt() <= StdMetrics.ms_v_bat_soc->AsFloat();
     StdMetrics.ms_v_charge_limit_soc->SetValue(vweup_chg_soclimit_new);
-    if (vweup_chg_soclimit_new > StdMetrics.ms_v_bat_soc->AsInt()) {
+    if (vweup_chg_soclimit_new == 0 || vweup_chg_soclimit_new > StdMetrics.ms_v_bat_soc->AsInt()) {
       ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to above current SoC");
       if (IsCharging()) {
         ESP_LOGD(TAG, "ConfigChanged: already charging, nothing to do");
