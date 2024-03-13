@@ -78,12 +78,13 @@ void OvmsVehicleRenaultZoe::WebDeInit()
 void OvmsVehicleRenaultZoe::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  bool canwrite;
+  bool canwrite, use_gpios;
   std::string vehicle_type;
 
   if (c.method == "POST") {
     // process form submission:
     canwrite     = (c.getvar("canwrite") == "yes");
+    use_gpios    = (c.getvar("use_gpios") == "yes");
     vehicle_type = c.getvar("vehicle_type");
     
     // validate:
@@ -96,8 +97,9 @@ void OvmsVehicleRenaultZoe::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // success:
-      MyConfig.SetParamValueBool("xrz", "canwrite",   canwrite);
-      MyConfig.SetParamValue("xrz", "vehicle.type", vehicle_type);
+      MyConfig.SetParamValueBool("xrz", "canwrite",     canwrite);
+      MyConfig.SetParamValueBool("xrz", "enable_egpio", use_gpios);
+      MyConfig.SetParamValue("xrz", "vehicle.type",     vehicle_type);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -115,6 +117,7 @@ void OvmsVehicleRenaultZoe::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     canwrite     = MyConfig.GetParamValueBool("xrz", "canwrite", false);
+    use_gpios    = MyConfig.GetParamValueBool("xrz", "enable_egpio", false);
     vehicle_type = MyConfig.GetParamValue("xrz", "vehicle.type", "0");
     c.head(200);
   }
@@ -131,6 +134,9 @@ void OvmsVehicleRenaultZoe::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_select_option("Kangoo",    "1", vehicle_type == "1");
   c.input_select_end();
   
+  c.print("<hr>");
+  c.input_checkbox("use EGPIOs for Homelink", "use_gpios", use_gpios,
+    "<p>Disabeld are Default use for Homelink 1 = Climatecontrol for IOS and Android users. <br>When enable EGPIO 3, 4, 5 are switched for 500ms via Homelink 1, 2, 3.</p>");
   c.print("<hr>");
   c.input_button("default", "Save");
   c.form_end();

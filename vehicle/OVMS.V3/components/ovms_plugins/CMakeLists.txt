@@ -3,7 +3,7 @@ set(include_dirs)
 
 if (CONFIG_OVMS_COMP_PLUGINS)
   list(APPEND include_dirs "src")
-if (CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE)
+if (CONFIG_OVMS_COMP_PLUGINS)
   list(APPEND srcs "src/ovms_plugins.cpp")
 endif ()
 endif ()

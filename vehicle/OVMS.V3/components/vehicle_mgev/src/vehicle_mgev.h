@@ -352,8 +352,10 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void Mg5WebInit();
     void FeaturesWebInit();
     void FeaturesWebDeInit();
+    void VersionWebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void MG5WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
+    static void MG5WebCfgVersion(PageEntry_t &p, PageContext_t &c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     void GetDashboardConfig(DashboardConfig& cfg);
     static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);

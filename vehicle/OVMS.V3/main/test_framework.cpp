@@ -174,6 +174,10 @@ void test_watchdog(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 __attribute__((noreturn))
 void test_stackoverflow(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  if (verbosity >= 2147483647) // Stops rescursive routine critical warning
+    while(true)
+     {;}
+
   uint8_t data[256];
   memset(data, verbosity & 255, sizeof data);
   writer->printf("Stack bytes remaining: %u\n", uxTaskGetStackHighWaterMark(NULL));

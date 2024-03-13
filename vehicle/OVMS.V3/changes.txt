@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- MG EV Added support for MG5 (2020 - 2023) Short Range
 - MG EV Added support for MG ZS EV (2023 - ) and MG5 (2020 - 2023) Long Range
 - OVMS Server v3 metrics filtering
   New configs:
@@ -116,6 +117,7 @@ Open Vehicle Monitor System v3 - Change log
   New notifications:
     [alert] batt.12v.shutdown         -- Alert about imminent 12V shutdown
 - VFS toolkit: add recursive options to mkdir (-p) & rmdir (-r) commands
+- Renault-Zoe-Ph1: add Cabin Pre-heat/cool Control
 
 
 2022-09-01 MWJ  3.3.003  OTA release

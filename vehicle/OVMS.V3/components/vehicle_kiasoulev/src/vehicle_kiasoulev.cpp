@@ -745,11 +745,11 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
 							&& (kia_last_ideal_range < LIMIT_RANGE )))
     		{
       // ...enter state 2=topping off when we've reach the needed range / SOC:
-  			SET_CHARGE_STATE("topoff", NULL);
+  			SET_CHARGE_STATE("topoff");
       }
     else if (BAT_SOC >= 95) // ...else set "topping off" from 94% SOC:
     		{
-			SET_CHARGE_STATE("topoff", NULL);
+			SET_CHARGE_STATE("topoff");
     		}
   		}
 
@@ -820,7 +820,7 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
   			}
   		else
   			{
-  			SET_CHARGE_STATE("charging",NULL);
+  			SET_CHARGE_STATE("charging");
   			}
   		}
   StdMetrics.ms_v_charge_kwh->SetValue((CUM_CHARGE - kia_cum_charge_start)/10.0, kWh); // kWh charged
