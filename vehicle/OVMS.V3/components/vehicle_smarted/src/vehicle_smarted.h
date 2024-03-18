@@ -286,6 +286,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   // BMS helpers
   protected:
+    float m_bms_raw_voltages[93];            // BMS raw voltages (current value)
+    float m_bms_bat_pack_avg;                 // BMS avg raw voltages
     float* m_bms_capacitys;                   // BMS Capacity (current value)
     float* m_bms_cmins;                       // BMS minimum Capacity seen (since reset)
     float* m_bms_cmaxs;                       // BMS maximum Capacity seen (since reset)
