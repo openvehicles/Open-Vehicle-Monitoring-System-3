@@ -162,7 +162,7 @@ void OvmsPoller::PollSetPidList(uint8_t defaultbus, const OvmsPoller::poll_pid_t
     if (!plist) // Don't add if not necessary.
       return;
     m_poll_series = std::shared_ptr<StandardPollSeries>(new StandardVehiclePollSeries(this, signal));
-    m_polls.SetEntry("!standard", m_poll_series);
+    m_polls.SetEntry("!v.standard", m_poll_series);
     }
 
   m_poll_series->PollSetPidList(defaultbus, plist);
@@ -555,7 +555,7 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
     if (!lock.IsLocked())
       return -1;
     // start single poll:
-    m_polls.SetEntry("!single", poller, true);
+    m_polls.SetEntry("!v.single", poller, true);
     }
 
   ESP_LOGV(TAG, "[%" PRIu8 "]Single Request Sending", m_poll.bus_no);
@@ -805,9 +805,9 @@ void OvmsPollers::ShuttingDownVehicle()
   OvmsRecMutexLock lock(&m_poller_mutex);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
-      // Remove All pollers starting with "!"
+      // Remove All pollers starting with "!v."
     if (m_pollers[i])
-      m_pollers[i]->RemovePollRequestStarting("!");
+      m_pollers[i]->RemovePollRequestStarting("!v.");
     // Power down pollers started from the 'vehicle'
     bus_info_t &info = m_canbusses[i];
     if (info.can && info.from_vehicle)
