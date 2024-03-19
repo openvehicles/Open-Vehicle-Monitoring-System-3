@@ -75,6 +75,7 @@ using namespace std::placeholders;
 // Pollstate 2 - car is charging
 // Pollstate 3 - ping : car is off, not charging and something triggers a wake
 static const OvmsPoller::poll_pid_t vehicle_ioniq_polls[] = {
+  //                                                    0    1    2   3
   //                                                   Off  On  Chrg Ping
   { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   2,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
   { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe004, { 0,   1,   4,  4}, 0, ISOTP_STD },   // VMCU - Drive status + Accellerator
@@ -106,6 +107,20 @@ static const OvmsPoller::poll_pid_t vehicle_ioniq_polls[] = {
 
   // TODO 0x7e5 OBC - On Board Charger?
 
+  POLL_LIST_END
+};
+
+// Pollstate 4 - Aux Charging car is off but Auxilary is charging
+static const OvmsPoller::poll_pid_t vehicle_ioniq_polls_second[] = {
+  //                                                      4    5    6   7
+  //                                                   AuxCh
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 300,   0,   0,  0}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 1 - BMC Diag page 02
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0103, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 2 - BMC Diag page 03
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0104, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 3 - BMC Diag page 04
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0105, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 4 - BMC Diag page 05 (Other - Battery Pack Temp)
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc03, { 150,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc04, { 150,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status
   POLL_LIST_END
 };
 
@@ -640,7 +655,6 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   kia_enable_write = false;
 #endif
 
-
   MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsHyundaiIoniqEv::EventListener, this, _1, _2));
 
   MyConfig.RegisterParam("xiq", "Ioniq 5/EV6 specific settings.", true, true);
@@ -661,6 +675,13 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   PollState_Off();
   kia_secs_with_no_client = 0;
   PollSetPidList(m_can1, vehicle_ioniq_polls);
+
+  auto secondary_series = std::shared_ptr<OvmsPoller::StandardPollSeries>(
+      new OvmsPoller::StandardVehiclePollSeries(nullptr, GetPollerSignal(), 4));
+  secondary_series->PollSetPidList(1, vehicle_ioniq_polls_second);
+
+  PollRequest(m_can1, "!secondary", secondary_series);
+
   // Initially throttling to 4.
   PollSetThrottling(4);
 
@@ -682,7 +703,7 @@ void OvmsHyundaiIoniqEv::ECUStatusChange(bool run)
   m_ecu_status_on = run;
   // When ECU is running - be more agressive.
   int newThrottle =  run ? 10 : 5;
-  bool subtick = run && MyConfig.GetParamValueBool("xiq", "poll_subtick", false);
+  bool subtick = run && MyConfig.GetParamValueBool("xiq", "poll_subtick", true);
   ESP_LOGD(TAG, "run=%d throttle=%d subtick=%d", run, newThrottle, subtick);
   PollSetThrottling(newThrottle);
 
@@ -1042,9 +1063,9 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
 #endif
     if (hif_aux_battery_mon.state() == OvmsBatteryState::Charging) {
       // Maintain ping until stop charging
-      if (IsPollState_Off() || IsPollState_Ping() ) {
-        ESP_LOGD(TAG, "PollState->Ping for 30 (Charging)");
-        PollState_Ping(30);
+      if (IsPollState_Off() || IsPollState_PingAux() ) {
+        ESP_LOGD(TAG, "PollState->PingAux for 30 (Charging)");
+        PollState_PingAux(30);
       }
     }
 
