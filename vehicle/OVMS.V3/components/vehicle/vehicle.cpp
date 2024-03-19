@@ -50,6 +50,10 @@ static const char *TAG = "vehicle";
 #include <string_writer.h>
 #include "vehicle.h"
 
+#ifdef bind
+#undef bind
+#endif
+using namespace std::placeholders;
 
 OvmsVehicleFactory MyVehicleFactory __attribute__ ((init_priority (2000)));
 
@@ -236,35 +240,10 @@ const char* OvmsVehicleFactory::ActiveVehicleShortName()
   return m_currentvehicle ? m_currentvehicle->VehicleShortName() : "";
   }
 
-static void OvmsVehiclePollTicker(TimerHandle_t xTimer )
-  {
-  OvmsVehicle *vehicle = (OvmsVehicle *)pvTimerGetTimerID(xTimer);
-  if (vehicle)
-    vehicle->VehiclePollTicker();
-  }
-
-void OvmsVehicle::VehiclePollTicker()
-  {
-  if (!m_ready)
-    return;
-
-  int32_t cur_ticker = ++m_poll_subticker;
-  if (cur_ticker >= m_poll_tick_secondary)
-    m_poll_subticker = 0;
-
-  OvmsPoller::poller_source_t src;
-
-  // So first tick is Primary.
-  src = (cur_ticker == 1) ? OvmsPoller::poller_source_t::Primary : OvmsPoller::poller_source_t::Secondary;
-
-  m_pollers.QueuePollerSend(src);
-  }
+static const char *PollerRegister="Vehicle Listener";
 
 OvmsVehicle::OvmsVehicle()
-  : m_pollers(new OvmsVehicleSignal(this))
   {
-  using std::placeholders::_1;
-  using std::placeholders::_2;
 
   m_is_shutdown = false;
 
@@ -299,11 +278,10 @@ OvmsVehicle::OvmsVehicle()
   m_autonotifications = true;
   m_ready = false;
 
+#ifdef CONFIG_OVMS_COMP_POLLER
   m_poll_state = 0;
-  m_timer_poller = NULL;
-  m_poll_subticker = 0;
-  m_poll_tick_secondary = 0;
-  m_poll_tick_ms = 1000;
+  m_pollsignal = nullptr;
+#endif
 
   // Poll parameters.
   PollSetThrottling(1);
@@ -376,6 +354,8 @@ OvmsVehicle::OvmsVehicle()
   m_inv_energyused = 0;
   m_inv_energyrecd = 0;
 
+  MyPollers.RegisterRunFinished(TAG, std::bind(&OvmsVehicle::PollRunFinishedNotify, this, _1, _2));
+
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
 
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
@@ -383,12 +363,7 @@ OvmsVehicle::OvmsVehicle()
   VehicleConfigChanged("config.mounted", NULL);
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
-
-  // default to 1 second
-  m_timer_poller = xTimerCreate("Vehicle OBD Poll Ticker",
-      m_poll_tick_ms / portTICK_PERIOD_MS,pdTRUE,this,
-      OvmsVehiclePollTicker);
-  xTimerStart(m_timer_poller, 0);
+  MyCan.RegisterCallback(PollerRegister, std::bind(&OvmsVehicle::IncomingPollRxFrame, this, _1, _2));
   }
 
 OvmsVehicle::~OvmsVehicle()
@@ -451,7 +426,9 @@ OvmsVehicle::~OvmsVehicle()
 void OvmsVehicle::StartingUp()
   {
   m_ready = true;
-  m_pollers.StartingUp();
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.StartingUp();
+#endif
   }
 
 void OvmsVehicle::ShuttingDown()
@@ -460,18 +437,20 @@ void OvmsVehicle::ShuttingDown()
     return;
   m_is_shutdown = true;
   m_ready = false;
-  if (m_timer_poller)
-    {
-    xTimerDelete( m_timer_poller, 0);
-    m_timer_poller = NULL;
-    }
-  m_pollers.ShuttingDown();
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.ShuttingDownVehicle();
+  MyPollers.DeregisterRunFinished(TAG);
+  if (m_pollsignal)
+    delete m_pollsignal;
+#else
   if (m_can1) m_can1->SetPowerMode(Off);
   if (m_can2) m_can2->SetPowerMode(Off);
   if (m_can3) m_can3->SetPowerMode(Off);
   if (m_can4) m_can4->SetPowerMode(Off);
+#endif
   MyEvents.DeregisterEvent(TAG);
   MyMetrics.DeregisterListener(TAG);
+  MyCan.DeregisterCallback(PollerRegister);
   }
 
 const char* OvmsVehicle::VehicleShortName()
@@ -508,56 +487,44 @@ uint8_t OvmsVehicle::GetBusNo(canbus* bus)
     return 4;
   return 0;
   }
-void OvmsVehicle::PollRunFinished()
+void OvmsVehicle::PollRunFinished(canbus* bus)
   {
   }
 
+#ifdef CONFIG_OVMS_COMP_POLLER
 OvmsVehicle::OvmsVehicleSignal::OvmsVehicleSignal( OvmsVehicle *parent)
   {
   m_parent = parent;
   }
 // Signals for vehicle
-void OvmsVehicle::OvmsVehicleSignal::PollRunFinished()
-  {
-  m_parent->PollRunFinished();
-  }
-
 void OvmsVehicle::OvmsVehicleSignal::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
-  m_parent->IncomingPollReply(job, data, length);
+  if (Ready())
+    m_parent->IncomingPollReply(job, data, length);
   }
 
 void OvmsVehicle::OvmsVehicleSignal::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
   {
-  m_parent->IncomingPollError(job, code);
+  if (Ready())
+    m_parent->IncomingPollError(job, code);
   }
 
 void OvmsVehicle::OvmsVehicleSignal::IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success)
   {
-  m_parent->IncomingPollTxCallback(job, success);
+  if (Ready())
+    m_parent->IncomingPollTxCallback(job, success);
   }
 
 void OvmsVehicle::OvmsVehicleSignal::IncomingPollRxFrame(canbus* bus, CAN_frame_t *frame, bool success)
   {
-  m_parent->IncomingPollRxFrame(bus, frame, success);
+  if (Ready())
+    m_parent->IncomingPollRxFrame(frame, success);
   }
 bool OvmsVehicle::OvmsVehicleSignal::Ready()
   {
   return m_parent->m_ready;
   }
-
-uint8_t OvmsVehicle::OvmsVehicleSignal::GetBusNo(canbus* bus)
-  {
-  return m_parent->GetBusNo(bus);
-  }
-canbus* OvmsVehicle::OvmsVehicleSignal::GetBus(uint8_t busno)
-  {
-  return m_parent->GetBus(busno);
-  }
-void OvmsVehicle::OvmsVehicleSignal::PollerSend(uint8_t busno, OvmsPoller::poller_source_t source)
-  {
-  m_parent->m_pollers.QueuePollerSend(source, busno);
-  }
+#endif
 
 void OvmsVehicle::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
@@ -570,7 +537,6 @@ void OvmsVehicle::IncomingFrameCan2(CAN_frame_t* p_frame)
 void OvmsVehicle::IncomingFrameCan3(CAN_frame_t* p_frame)
   {
   }
-
 void OvmsVehicle::IncomingFrameCan4(CAN_frame_t* p_frame)
   {
   }
@@ -582,33 +548,24 @@ void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
 
 void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile)
   {
+  canbus *can;
+#ifdef CONFIG_OVMS_COMP_POLLER
+  can = MyPollers.RegisterCanBus(bus, mode, speed, dbcfile, true);
+#else
+  {
+    std::string busname = string_format("can%d", bus);
+    can = (canbus*)MyPcpApp.FindDeviceByName(busname.c_str());
+    can->SetPowerMode(On);
+    can->Start(mode,speed,dbcfile);
+  }
+#endif
   switch (bus)
     {
-    case 1:
-      m_can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
-      m_can1->SetPowerMode(On);
-      m_can1->Start(mode,speed,dbcfile);
-      break;
-    case 2:
-      m_can2 = (canbus*)MyPcpApp.FindDeviceByName("can2");
-      m_can2->SetPowerMode(On);
-      m_can2->Start(mode,speed,dbcfile);
-      break;
-    case 3:
-      m_can3 = (canbus*)MyPcpApp.FindDeviceByName("can3");
-      m_can3->SetPowerMode(On);
-      m_can3->Start(mode,speed,dbcfile);
-      break;
-    case 4:
-      m_can4 = (canbus*)MyPcpApp.FindDeviceByName("can4");
-      m_can4->SetPowerMode(On);
-      m_can4->Start(mode,speed,dbcfile);
-      break;
-    default:
-      return;
+    case 1: m_can1 = can; break;
+    case 2: m_can2 = can; break;
+    case 3: m_can3 = can; break;
+    case 4: m_can4 = can; break;
     }
-  // Make sure IncomingFrameCan* functions are called.
-  m_pollers.CheckStartPollTask();
   }
 
 bool OvmsVehicle::PinCheck(const char* pin)
@@ -619,6 +576,11 @@ bool OvmsVehicle::PinCheck(const char* pin)
   return (strcmp(vpin.c_str(),pin)==0);
   }
 
+void OvmsVehicle::PollRunFinishedNotify(canbus* bus, void *data)
+  {
+  PollRunFinished(bus);
+  }
+
 void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   {
   if (!m_ready)
@@ -627,8 +589,6 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   m_ticker++;
 
   PollerStateTicker();
-
-  m_pollers.PollerResetThrottle();
 
   Ticker1(m_ticker);
   if ((m_ticker % 10) == 0) Ticker10(m_ticker);
@@ -2298,18 +2258,26 @@ void OvmsVehicle::PollerStateTicker()
 // Signal poller
 void OvmsVehicle::PausePolling()
   {
-  m_pollers.PausePolling();
+  MyPollers.PausePolling();
   }
 void OvmsVehicle::ResumePolling()
   {
-  m_pollers.ResumePolling();
+  MyPollers.ResumePolling();
   }
 
+#ifdef CONFIG_OVMS_COMP_POLLER
+OvmsPoller::VehicleSignal *OvmsVehicle::GetPollerSignal()
+  {
+  if (!m_pollsignal)
+    m_pollsignal = new OvmsVehicle::OvmsVehicleSignal(this);
+  return m_pollsignal;
+  }
 void OvmsVehicle::PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plist)
   {
   m_poll_bus_default = bus;
-  m_pollers.PollSetPidList(bus, plist);
+  MyPollers.PollSetPidList(bus, plist, GetPollerSignal());
   }
+#endif
 
 /**
  * PollSetState: set the polling state
@@ -2322,13 +2290,16 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plis
  */
 void OvmsVehicle::PollSetState(uint8_t state)
   {
+#ifdef CONFIG_OVMS_COMP_POLLER
   if (m_poll_state != state)
     {
     m_poll_state = state;
-    m_pollers.PollSetState(state);
+    MyPollers.PollSetState(state);
     }
+#endif
   }
 
+#ifdef CONFIG_OVMS_COMP_POLLER
 int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                 std::string request, std::string& response,
                 int timeout_ms, uint8_t protocol)
@@ -2336,7 +2307,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
 
   if (!m_ready)
     return POLLSINGLE_TXFAILURE;
-  auto poller = m_pollers.GetPoller(bus, true);
+  auto poller = MyPollers.GetPoller(bus, true);
   if (!poller)
     return POLLSINGLE_TXFAILURE;
   return poller->PollSingleRequest(txid, rxid, request, response, timeout_ms, protocol);
@@ -2348,11 +2319,12 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
   {
   if (!m_ready)
     return POLLSINGLE_TXFAILURE;
-  auto poller = m_pollers.GetPoller(bus, true);
+  auto poller = MyPollers.GetPoller(bus, true);
   if (!poller)
     return POLLSINGLE_TXFAILURE;
   return poller->PollSingleRequest(txid, rxid, polltype, pid, response, timeout_ms, protocol);
   }
+#endif
 
 /** Set the 'tick' interval for the poller.
  * @param tick_time_ms The interval in ms between poll 'ticks'
@@ -2362,34 +2334,28 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
  */
 void OvmsVehicle::PollSetTicker(uint16_t tick_time_ms, uint8_t secondary_ticks)
   {
-  ESP_LOGD(TAG, "Set Poll Ticker Timer %dms * %d", tick_time_ms, secondary_ticks);
-  if (!m_timer_poller)
-    m_poll_tick_ms = tick_time_ms;
-  else if (m_poll_tick_ms != tick_time_ms)
-    {
-    if (xTimerChangePeriod(m_timer_poller, tick_time_ms / portTICK_PERIOD_MS, 0) == pdPASS)
-      {
-      m_poll_tick_ms = tick_time_ms;
-      }
-    else
-      ESP_LOGE(TAG, "Poll Ticker Timer period not changed");
-    xTimerReset(m_timer_poller, 0);
-    }
-  m_poll_tick_secondary = secondary_ticks;
-  m_poll_subticker = 0;
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.PollSetTicker(tick_time_ms, secondary_ticks);
+#endif
   }
 
 void OvmsVehicle::PollSetResponseSeparationTime(uint8_t septime)
   {
-  m_pollers.PollSetResponseSeparationTime(septime);
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.PollSetResponseSeparationTime(septime);
+#endif
   }
 void OvmsVehicle::PollSetChannelKeepalive(uint16_t keepalive_seconds)
   {
-  m_pollers.PollSetChannelKeepalive(keepalive_seconds);
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.PollSetChannelKeepalive(keepalive_seconds);
+#endif
   }
 void OvmsVehicle::PollSetTimeBetweenSuccess(uint16_t time_between_ms)
   {
-  m_pollers.PollSetTimeBetweenSuccess(time_between_ms);
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.PollSetTimeBetweenSuccess(time_between_ms);
+#endif
   }
 
 /**
@@ -2428,7 +2394,7 @@ void OvmsVehicle::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t 
  * IncomingPollTxCallback: poller TX callback (stub, override with vehicle implementation)
  *  This is called by PollerTxCallback() on TX success/failure for a poller request.
  *  You can use this to detect CAN bus issues, e.g. if the car switches off the OBD port.
- *  
+ *
  *  ATT: this is executed in the main CAN task context. Keep it simple.
  *    Complex processing here will affect overall CAN performance.
  *
@@ -2441,34 +2407,42 @@ void OvmsVehicle::IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool
   {
   }
 
-void OvmsVehicle::IncomingPollRxFrame(canbus* bus, CAN_frame_t *frame, bool success)
+void OvmsVehicle::IncomingPollRxFrame(const CAN_frame_t *frame, bool success)
   {
+  if (!m_ready)
+    return;
+
+  auto bus = frame->origin;
+
   // Pass frame to standard handlers:
-  if (m_can1 == bus) IncomingFrameCan1(frame);
-  else if (m_can2 == bus) IncomingFrameCan2(frame);
-  else if (m_can3 == bus) IncomingFrameCan3(frame);
-  else if (m_can4 == bus) IncomingFrameCan4(frame);
+  CAN_frame_t tmp_frame = *frame;
+  if (m_can1 == bus) IncomingFrameCan1(&tmp_frame);
+  else if (m_can2 == bus) IncomingFrameCan2(&tmp_frame);
+  else if (m_can3 == bus) IncomingFrameCan3(&tmp_frame);
+  else if (m_can4 == bus) IncomingFrameCan4(&tmp_frame);
   }
 
+#ifdef CONFIG_OVMS_COMP_POLLER
 void OvmsVehicle::PollRequest(canbus* bus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series)
   {
-  auto poller = m_pollers.GetPoller(bus, true);
+  auto poller = MyPollers.GetPoller(bus, true);
   poller->PollRequest(name, series);
   }
 
 void OvmsVehicle::RemovePollRequest(canbus* bus, const std::string &name)
   {
-  auto poller = m_pollers.GetPoller(bus, false);
+  auto poller = MyPollers.GetPoller(bus, false);
   if (poller)
     poller->RemovePollRequest(name);
   }
+#endif
 
 /** Does the specified bus have a non-empty PollList ?
   * @param bus Canbus to check or null for any bus
   */
 bool OvmsVehicle::HasPollList(canbus* bus)
   {
-  return m_pollers.HasPollList(bus);
+  return MyPollers.HasPollList(bus);
   }
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER

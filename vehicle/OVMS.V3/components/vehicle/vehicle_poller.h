@@ -24,25 +24,9 @@
 #ifndef __VEHICLE_POLLER_H__
 #define __VEHICLE_POLLER_H__
 
+#include "vehicle_common.h"
+
 #include <cstdint>
-
-// ISO TP:
-//  (see https://en.wikipedia.org/wiki/ISO_15765-2)
-
-#define ISOTP_FT_SINGLE                 0
-#define ISOTP_FT_FIRST                  1
-#define ISOTP_FT_CONSECUTIVE            2
-#define ISOTP_FT_FLOWCTRL               3
-
-// Protocol variant:
-#define ISOTP_STD                       0     // standard addressing (11 bit IDs)
-#define ISOTP_EXTADR                    1     // extended addressing (19 bit IDs)
-#define ISOTP_EXTFRAME                  2     // extended frame mode (29 bit IDs)
-#define VWTP_16                         16    // VW/VAG Transport Protocol 1.6 (placeholder, unsupported)
-#define VWTP_20                         20    // VW/VAG Transport Protocol 2.0
-
-// Argument tag:
-#define POLL_TXDATA                     0xff  // poll_pid_t using xargs for external payload up to 4095 bytes
 
 // Number of polling states supported
 #define VEHICLE_POLL_NSTATES            4
@@ -78,8 +62,9 @@ typedef struct
   uint32_t                lastused;         // Timestamp of last channel access
   } vwtp_channel_t;
 
+class OvmsPollers;
 
-class OvmsPoller {
+class OvmsPoller : public InternalRamAllocated {
   public:
     typedef struct
       {
@@ -132,25 +117,21 @@ class OvmsPoller {
 // Macro for poll_pid_t termination
 #define POLL_LIST_END                   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0, 0 }
 
-    class ParentSignal {
-    public:
-      virtual ~ParentSignal() { }
-      // Signals for vehicle
-      virtual void PollRunFinished() = 0;
-      virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
-      virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
-      virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
-
-      virtual void IncomingPollRxFrame(canbus* bus, CAN_frame_t* frame, bool success) = 0;
-      virtual bool Ready() = 0;
-      virtual uint8_t GetBusNo(canbus* bus) = 0;
-      virtual canbus* GetBus(uint8_t busno) = 0;
-
-      virtual void PollerSend(uint8_t busno, OvmsPoller::poller_source_t source) = 0;
-    };
-
+    // Interface for polls generated from the Vehicle class.
+    class VehicleSignal
+      {
+      public:
+        virtual ~VehicleSignal() { }
+        // Signals for vehicle
+        virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
+        virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
+        virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
+        virtual void IncomingPollRxFrame(canbus* bus, CAN_frame_t* frame, bool success);
+        virtual bool Ready() = 0;
+      };
     enum class OvmsNextPollResult
       {
+      NotReady,   ///< Not ready - ignore and move on.
       StillAtEnd, ///< Still at end of list.
       FoundEntry, ///< Found an entry
       ReachedEnd, ///< Reached the end.
@@ -188,6 +169,9 @@ class OvmsPoller {
         /// Process An Error
         virtual void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) = 0;
 
+        /// Send on an imcoming TX reply
+        virtual void IncomingTxReply(const OvmsPoller::poll_job_t& job, bool success);
+
         /// Called when run is finished to determine what happens next.
         virtual SeriesStatus FinishRun() = 0;
 
@@ -202,6 +186,9 @@ class OvmsPoller {
           but also that the remaining todo don't NEED to be done before moving on.
          */
         virtual bool HasRepeat() = 0;
+        /** Return true if this series is ok to run.
+         */
+        virtual bool Ready();
       };
 
     /// Named element in the series double-linked list.
@@ -244,7 +231,7 @@ class OvmsPoller {
          */
         void SetEntry(const std::string &name, std::shared_ptr<PollSeriesEntry> series, bool blocking = false);
         /// Remove the named entry from the list.
-        void RemoveEntry( const std::string &name);
+        void RemoveEntry( const std::string &name, bool starts_with = false);
         /// Are there any entries/lists
         bool IsEmpty();
         /// Clear the list.
@@ -257,6 +244,9 @@ class OvmsPoller {
 
         /// Process An Error
         void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code);
+
+        /// Send on an imcoming TX reply
+        void IncomingTxReply(const OvmsPoller::poll_job_t& job, bool success);
 
         /// Reset the list to beging processing
         void RestartPoll(ResetMode mode);
@@ -326,6 +316,27 @@ class OvmsPoller {
         bool HasRepeat() override;
       };
 
+    // Standard Vehicle Poll series passing through various responses.
+    class StandardVehiclePollSeries : public StandardPollSeries
+      {
+      private:
+        VehicleSignal *m_signal;
+      public:
+        StandardVehiclePollSeries(OvmsPoller *poller, VehicleSignal *signal, uint16_t stateoffset = 0);
+
+        // Process an incoming packet.
+        void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length) override;
+
+        // Process An Error
+        void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) override;
+
+        // Send on an imcoming TX reply
+        void IncomingTxReply(const OvmsPoller::poll_job_t& job, bool success) override;
+
+        // Return true if this series is ok to run.
+        bool Ready() override;
+      };
+
     typedef std::function<void(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data)> poll_success_func;
     typedef std::function<void(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, int errorcode)> poll_fail_func;
 
@@ -352,11 +363,11 @@ class OvmsPoller {
 
         // Return true if this series has entries to retry/redo.
         bool HasRepeat() override;
-     };
+      };
 
-   /** Base for Once off Poll series.
-    */
-   class OnceOffPollBase : public PollSeriesEntry
+    /** Base for Once off Poll series.
+     */
+    class OnceOffPollBase : public PollSeriesEntry
       {
       protected:
         enum class status_t {
@@ -405,13 +416,13 @@ class OvmsPoller {
       };
 
   private:
-   /** Blocking once off poll entry used by PollSingleRequest.
-    *  Signals Semaphore when done.  Used for once-off blocking calls.
-    *  Because this is used poentially passing in stack variables, I'm going to
-    *  leave this as private as it really needs to have Finished() called before
-    *  the variables go out of scope.
-    */
-   class BlockingOnceOffPoll : public OnceOffPollBase
+    /** Blocking once off poll entry used by PollSingleRequest.
+     *  Signals Semaphore when done.  Used for once-off blocking calls.
+     *  Because this is used poentially passing in stack variables, I'm going to
+     *  leave this as private as it really needs to have Finished() called before
+     *  the variables go out of scope.
+     */
+    class BlockingOnceOffPoll : public OnceOffPollBase
       {
       protected:
         OvmsSemaphore *m_poll_rxdone;   // … response done (ok/error)
@@ -421,14 +432,12 @@ class OvmsPoller {
 
         // Called To null out the call-back pointers (particularly before they go out of scope).
         void Finished();
-   public:
+      public:
+        // Called when run is finished to determine what happens next.
+        SeriesStatus FinishRun() override;
 
-      // Called when run is finished to determine what happens next.
-      SeriesStatus FinishRun() override;
-
-      void Removing() override;
-    };
-
+        void Removing() override;
+      };
   public:
    /** Once off poll entry with buffer and asynchronous result call-backs.
     */
@@ -454,13 +463,12 @@ class OvmsPoller {
       };
 
   protected:
-    ParentSignal *m_parent_signal;
+    OvmsPollers*      m_parent;
 
     OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
   private:
     // Poll state
-    uint8_t           m_poll_default_bus;
 
     PollSeriesList    m_polls;  // User poll entries list.
     int               m_poll_repeat_count; // 'Extra repeats' for polling.
@@ -508,10 +516,10 @@ class OvmsPoller {
     // Signals for vehicle
     void PollRunFinished();
 
-    // Polling Response
-    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
-
-    void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
+    void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+      {
+      m_polls.IncomingError(job, code);
+      }
     void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
 
     bool Ready();
@@ -532,6 +540,7 @@ class OvmsPoller {
   public:
     bool HasBus(canbus* bus) { return bus == m_poll.bus;}
     uint8_t CanBusNo() { return m_poll.bus_no;}
+
   protected:
 
     // Poll entry manipulation: Must be called under lock of m_poll_mutex
@@ -589,7 +598,7 @@ class OvmsPoller {
     void Do_PollSetState(uint8_t state);
 
   public:
-    OvmsPoller(canbus* can, uint8_t can_number, ParentSignal *parent_signal,
+    OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
       const CanFrameCallback &polltxcallback);
     ~OvmsPoller();
 
@@ -609,7 +618,7 @@ class OvmsPoller {
     void PollSetTimeBetweenSuccess(uint16_t time_between_ms);
 
     // TODO - Work out how to make sure these are protected. Reduce/eliminate mutex time.
-    void PollSetPidList(uint8_t defaultbus, const poll_pid_t* plist);
+    void PollSetPidList(uint8_t defaultbus, const poll_pid_t* plist, VehicleSignal *signal);
 
     int PollSingleRequest(uint32_t txid, uint32_t rxid,
                       std::string request, std::string& response,
@@ -620,6 +629,8 @@ class OvmsPoller {
 
     void PollRequest(const std::string &name, const std::shared_ptr<PollSeriesEntry> &series);
     void RemovePollRequest(const std::string &name);
+    void RemovePollRequestStarting(const std::string &name);
+
   public:
     static const char *PollerCommand(OvmsPollCommand src);
     static const char *PollerSource(poller_source_t src);
@@ -628,22 +639,32 @@ class OvmsPoller {
 };
 
 #define VEHICLE_MAXBUSSES 4
-class OvmsPollers {
+class OvmsPollers : public InternalRamAllocated {
   private:
+    typedef  struct {
+      canbus* can;
+      bool from_vehicle;
+    } bus_info_t;
+    bus_info_t        m_canbusses[VEHICLE_MAXBUSSES];
     OvmsRecMutex      m_poller_mutex;
     OvmsPoller*       m_pollers[VEHICLE_MAXBUSSES];
-    OvmsPoller::ParentSignal* m_parent_callback;
     uint8_t           m_poll_state;           // Current poll state
     uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
     uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
     uint16_t          m_poll_ch_keepalive;    // Seconds to keep an inactive channel (e.g. VWTP) alive (default: 60)
     uint16_t          m_poll_between_success;
 
-    QueueHandle_t m_pollqueue;
-    TaskHandle_t m_polltask;
+    QueueHandle_t     m_pollqueue;
+    TaskHandle_t      m_polltask;
     CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback
 
+    TimerHandle_t     m_timer_poller;
+    int32_t           m_poll_subticker;       // Subticker count for polling
+    uint16_t          m_poll_tick_ms;         // Tick length in ms.
+    uint8_t           m_poll_tick_secondary;  // Number of secondary poll subticks per primary / zero
+
     bool              m_shut_down;
+    bool              m_ready;
 
     void PollerTxCallback(const CAN_frame_t* frame, bool success);
     void PollerRxCallback(const CAN_frame_t* frame, bool success);
@@ -654,18 +675,46 @@ class OvmsPollers {
     void Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool istx);
 
     void Queue_Command(OvmsPoller::OvmsPollCommand cmd, uint16_t param = 0);
+
   public:
-    OvmsPollers( OvmsPoller::ParentSignal *parent);
+    typedef std::function<void(canbus*, void *)> PollCallback;
+  private:
+    ovms_callback_register_t<PollCallback> m_runfinished_callback;
+  public:
+    void RegisterRunFinished(const std::string &name, PollCallback fn) { m_runfinished_callback.Register(name, fn);}
+    void DeregisterRunFinished(const std::string &name) { m_runfinished_callback.Deregister(name);}
+  private:
+    void PollRunFinished(canbus *bus)
+      {
+      m_runfinished_callback.Call(
+        [bus](const std::string &name, const PollCallback &cb)
+          {
+          cb(bus, nullptr);
+          });
+      }
+
+    void Ticker1(std::string event, void* data);
+    void EventSystemShuttingDown(std::string event, void* data);
+
+  public:
+    OvmsPollers();
     ~OvmsPollers();
 
     void StartingUp();
     void ShuttingDown();
+    void ShuttingDownVehicle();
 
     OvmsPoller *GetPoller(canbus *can, bool force = false );
 
+    void PollSetTicker(uint16_t tick_time_ms, uint8_t secondary_ticks);
+
     void QueuePollerSend(OvmsPoller::poller_source_t src, uint8_t busno = 0 , uint32_t pollticker = 0);
 
-    void PollSetPidList(canbus* defbus, const OvmsPoller::poll_pid_t* plist);
+    void PollSetPidList(canbus* defbus, const OvmsPoller::poll_pid_t* plist, OvmsPoller::VehicleSignal *signal);
+
+    void PollRequest(canbus* defbus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series);
+
+    void PollRemove(canbus* defbus, const std::string &name);
 
     bool HasPollList(canbus* bus = nullptr);
 
@@ -690,6 +739,8 @@ class OvmsPollers {
     // signal poller
     void PollerResetThrottle();
 
+    void VehiclePollTicker();
+
     void PausePolling()
       {
       Queue_Command(OvmsPoller::OvmsPollCommand::Pause);
@@ -700,6 +751,20 @@ class OvmsPollers {
       }
     void PollSetState(uint8_t state);
 
+    uint8_t GetBusNo(canbus* bus);
+    canbus* GetBus(uint8_t busno);
+    canbus* RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle);
+    void PowerDownCanBus(int busno);
+
+    bool Ready() { return m_ready;}
+    void Ready(bool ready) { m_ready = ready;}
+
+    // AutoInit stub for startup.
+    void AutoInit() { Ready(true); };
+
+    friend class OvmsPoller;
+
 };
+extern OvmsPollers MyPollers;
 
 #endif // __VEHICLE_POLLER_H__
