@@ -475,6 +475,7 @@ class OvmsPoller : public InternalRamAllocated {
     std::shared_ptr<StandardPollSeries> m_poll_series;
 
     const int         max_poll_repeat = 5; // Maximum # of poll-repeats.
+    uint32_t          m_poll_sent_last;
 
   protected:
     poll_job_t        m_poll;
@@ -653,6 +654,7 @@ class OvmsPollers : public InternalRamAllocated {
     uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
     uint16_t          m_poll_ch_keepalive;    // Seconds to keep an inactive channel (e.g. VWTP) alive (default: 60)
     uint16_t          m_poll_between_success;
+    uint32_t          m_poll_last;
 
     QueueHandle_t     m_pollqueue;
     TaskHandle_t      m_polltask;
@@ -665,6 +667,7 @@ class OvmsPollers : public InternalRamAllocated {
 
     bool              m_shut_down;
     bool              m_ready;
+    bool              m_paused;
 
     void PollerTxCallback(const CAN_frame_t* frame, bool success);
     void PollerRxCallback(const CAN_frame_t* frame, bool success);
@@ -675,7 +678,11 @@ class OvmsPollers : public InternalRamAllocated {
     void Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool istx);
 
     void Queue_Command(OvmsPoller::OvmsPollCommand cmd, uint16_t param = 0);
-
+    static void vehicle_poller_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_pause_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_pause_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    void PollerStatus(int verbosity, OvmsWriter* writer);
+    void SetPauseStatus(bool paused, int verbosity, OvmsWriter* writer);
   public:
     typedef std::function<void(canbus*, void *)> PollCallback;
   private:
@@ -749,13 +756,24 @@ class OvmsPollers : public InternalRamAllocated {
       {
       Queue_Command(OvmsPoller::OvmsPollCommand::Resume);
       }
+    bool IsPaused()
+      {
+      return m_paused;
+      }
     void PollSetState(uint8_t state);
 
+    uint32_t LastPollCmdReceived()
+      {
+      return m_poll_last;
+      }
     uint8_t GetBusNo(canbus* bus);
     canbus* GetBus(uint8_t busno);
     canbus* RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle);
     void PowerDownCanBus(int busno);
-
+    bool HasPollTask()
+      {
+      return (m_polltask != nullptr);
+      }
     bool Ready() { return m_ready;}
     void Ready(bool ready) { m_ready = ready;}
 

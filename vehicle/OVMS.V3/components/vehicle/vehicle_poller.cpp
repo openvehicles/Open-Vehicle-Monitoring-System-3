@@ -78,6 +78,7 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
   m_poll_fc_septime = 25;       // response default timing: 25 milliseconds
   m_poll_ch_keepalive = 60;     // channel keepalive default: 60 seconds
   m_poll_repeat_count = 0;
+  m_poll_sent_last = 0;
   m_poll_between_success = 0;
 
   }
@@ -442,6 +443,7 @@ void OvmsPoller::PollerSend(poller_source_t source)
       m_poll.type = m_poll.entry.type;
       m_poll.pid = m_poll.entry.pid;
 
+      m_poll_sent_last = monotonictime;
       // Dispatch transmission start to protocol handler:
       if (m_poll.protocol == VWTP_20)
         PollerVWTPStart(fromPrimaryOrOnceOffTicker);
@@ -720,6 +722,7 @@ OvmsPollers::OvmsPollers()
     m_poll_fc_septime(25),
     m_poll_ch_keepalive(60),
     m_poll_between_success(0),
+    m_poll_last(0),
     m_pollqueue(nullptr), m_polltask(nullptr),
     m_timer_poller(nullptr),
     m_poll_subticker(0),
@@ -737,6 +740,15 @@ OvmsPollers::OvmsPollers()
     }
 
   m_poll_txcallback = std::bind(&OvmsPollers::PollerTxCallback, this, _1, _2);
+
+  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsPollers::Ticker1, this, _1, _2));
+  MyCan.RegisterCallback(TAG, std::bind(&OvmsPollers::PollerRxCallback, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsPollers::EventSystemShuttingDown, this, _1, _2));
+
+  OvmsCommand* cmd_pause = MyCommandApp.RegisterCommand("poller","OBD polling framework",vehicle_poller_status);
+  cmd_pause->RegisterCommand("status","OBD Polling Status",vehicle_poller_status);
+  cmd_pause->RegisterCommand("pause","Pause OBD Polling",vehicle_pause_on);
+  cmd_pause->RegisterCommand("resume","Resume OBD Polling",vehicle_pause_off);
 
   }
 
@@ -969,7 +981,7 @@ void OvmsPollers::PollerTask()
       {
       if (m_shut_down)
         break;
-
+      m_poll_last = monotonictime;
       switch (entry.entry_type)
         {
         case OvmsPoller::OvmsPollEntryType::FrameRx:
@@ -1023,10 +1035,12 @@ void OvmsPollers::PollerTask()
             case OvmsPoller::OvmsPollCommand::Pause:
               ESP_LOGD(TAG, "Pollers: Command Pause");
               paused = true;
+              m_paused = paused;
               continue;
             case OvmsPoller::OvmsPollCommand::Resume:
               ESP_LOGD(TAG, "Pollers: Command Resume");
               paused = false;
+              m_paused = paused;
               continue;
             case OvmsPoller::OvmsPollCommand::Throttle:
               if (entry.entry_Command.parameter != m_poll_sequence_max)
@@ -1339,6 +1353,82 @@ void OvmsPollers::PollerResetThrottle()
     if (m_pollers[i])
       m_pollers[i]->ResetThrottle();
     }
+  }
+void OvmsPollers::PollerStatus(int verbosity, OvmsWriter* writer)
+  {
+  auto curmon = monotonictime;
+  if (!HasPollTask())
+    {
+    writer->puts("OBD Polling task is not running");
+    return;
+    }
+  bool found_list = false;
+  for (uint8_t busno = 1; busno <= VEHICLE_MAXBUSSES; ++busno)
+    {
+    auto bus = GetBus(busno);
+    if (!bus)
+      continue;
+    OvmsPoller *poller = GetPoller(bus, false);
+    if (!poller)
+      continue;
+    bool has_active = poller->HasPollList();
+    found_list = true;
+    writer->printf("Poller on Can%" PRIu8 "\n", busno);
+    writer->printf("  List: %s\n", (has_active ? "active" : "not active") );
+    if (has_active)
+      writer->printf("  State: %" PRIu8 "\n", m_poll_state);
+
+    writer->printf("  Last Request: ");
+    auto last = poller->m_poll_sent_last;
+    if (last == 0)
+      writer->puts("None");
+    else
+      writer->printf("%" PRIu8 "s (ticks)\n", (curmon - last));
+    }
+  if (!found_list)
+    {
+    writer->puts("No OBD Pollers active.");
+    return;
+    }
+  writer->printf("Time between polling ticks: %" PRIu16 "ms\n", m_poll_tick_ms);
+ if (m_poll_tick_secondary > 0)
+   writer->printf("Secondary ticks: %" PRIu8 ".\n",  m_poll_tick_secondary);
+  auto last = LastPollCmdReceived();
+  writer->printf("Last Poll Received: ");
+  if (last == 0)
+    writer->puts("none");
+  else
+    writer->printf("%" PRIu32 "s (ticks) ago\n", (curmon-last));
+
+  writer->printf("OBD polling is %s.\n", IsPaused()?"paused":"resumed");
+  }
+
+void OvmsPollers::SetPauseStatus(bool paused, int verbosity, OvmsWriter* writer)
+  {
+  if (paused)
+    {
+    PausePolling();
+    writer->puts("Vehicle OBD Polling Pause Requested");
+    }
+  else
+    {
+    ResumePolling();
+    writer->puts("Vehicle OBD Polling Resume Requested");
+    }
+  }
+
+void OvmsPollers::vehicle_poller_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPollers.PollerStatus(verbosity, writer);
+  }
+void OvmsPollers::vehicle_pause_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPollers.SetPauseStatus(true, verbosity, writer);
+  }
+
+void OvmsPollers::vehicle_pause_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPollers.SetPauseStatus(false, verbosity, writer);
   }
 
 static const char *PollResStr( OvmsPoller::OvmsNextPollResult res)
