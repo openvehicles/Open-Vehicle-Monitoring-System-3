@@ -31,8 +31,6 @@
 #ifndef __VEHICLE_H__
 #define __VEHICLE_H__
 
-#define CONFIG_OVMS_COMP_POLLER
-
 #include <map>
 #include <vector>
 #include <string>

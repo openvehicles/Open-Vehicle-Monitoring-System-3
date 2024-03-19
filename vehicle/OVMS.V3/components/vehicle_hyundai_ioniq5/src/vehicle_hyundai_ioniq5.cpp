@@ -680,7 +680,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
       new OvmsPoller::StandardVehiclePollSeries(nullptr, GetPollerSignal(), 4));
   secondary_series->PollSetPidList(1, vehicle_ioniq_polls_second);
 
-  PollRequest(m_can1, "!secondary", secondary_series);
+  PollRequest(m_can1, "!v.secondary", secondary_series);
 
   // Initially throttling to 4.
   PollSetThrottling(4);
@@ -691,7 +691,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   XDISARM;
 }
 
-static const char *ECU_POLL = "!xiq.ecu";
+static const char *ECU_POLL = "!v.xiq.ecu";
 
 void OvmsHyundaiIoniqEv::ECUStatusChange(bool run)
 {
