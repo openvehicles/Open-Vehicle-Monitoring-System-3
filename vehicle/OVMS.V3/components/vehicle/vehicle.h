@@ -31,6 +31,8 @@
 #ifndef __VEHICLE_H__
 #define __VEHICLE_H__
 
+#define CONFIG_OVMS_COMP_POLLER
+
 #include <map>
 #include <vector>
 #include <string>
@@ -43,7 +45,10 @@
 #include "metrics_standard.h"
 #include "ovms_mutex.h"
 #include "ovms_semaphore.h"
+#include "vehicle_common.h"
+#ifdef CONFIG_OVMS_COMP_POLLER
 #include "vehicle_poller.h"
+#endif
 
 using namespace std;
 struct DashboardConfig;
@@ -250,21 +255,22 @@ class OvmsVehicle : public InternalRamAllocated
     canbus* m_can3;
     canbus* m_can4;
 
-    void VehiclePollTicker();
   private:
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
-
+    void PollRunFinishedNotify(canbus* bus, void *data);
   protected:
     // Signal poller
     void PausePolling();
     void ResumePolling();
+    void PollSetState(uint8_t state);
+#ifdef CONFIG_OVMS_COMP_POLLER
     void PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plist);
     void PollSetPidList( const OvmsPoller::poll_pid_t* plist)
       {
       PollSetPidList(m_poll_bus_default, plist);
       }
-    void PollSetState(uint8_t state);
+    OvmsPoller::VehicleSignal *GetPollerSignal();
 
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       std::string request, std::string& response,
@@ -277,18 +283,19 @@ class OvmsVehicle : public InternalRamAllocated
 
     void PollSetThrottling(uint8_t sequence_max)
       {
-      m_pollers.PollSetThrottling(sequence_max);
+      MyPollers.PollSetThrottling(sequence_max);
       }
     void PollSetTicker(uint16_t tick_time_ms, uint8_t secondary_ticks = 0);
 
     void PollSetResponseSeparationTime(uint8_t septime);
     void PollSetChannelKeepalive(uint16_t keepalive_seconds);
     void PollSetTimeBetweenSuccess(uint16_t tick_between_ms);
+#endif
 
     uint8_t GetBusNo(canbus* bus);
     canbus *GetBus(uint8_t busno);
   protected:
-    virtual void PollRunFinished();
+    virtual void PollRunFinished(canbus* bus);
 
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan2(CAN_frame_t* p_frame);
@@ -347,8 +354,6 @@ class OvmsVehicle : public InternalRamAllocated
     float m_inv_refpower;                   // last inverter(motor) power
 
   protected:
-
-    OvmsPollers m_pollers;
 
     uint32_t m_ticker;
     int m_12v_ticker;
@@ -513,15 +518,10 @@ class OvmsVehicle : public InternalRamAllocated
     virtual bool SetFeature(int key, const char* value);
     virtual const std::string GetFeature(int key);
 
-  private:
-    TimerHandle_t     m_timer_poller;
-    int32_t           m_poll_subticker;       // Subticker count for polling
-    uint16_t          m_poll_tick_ms;         // Tick length in ms.
-    uint8_t           m_poll_tick_secondary;  // Number of secondary poll subticks per primary / zero
-
+#ifdef CONFIG_OVMS_COMP_POLLER
     /** Provide link from the poller back to the parent OvmsVehicle implementation.
       */
-    class OvmsVehicleSignal : public OvmsPoller::ParentSignal {
+    class OvmsVehicleSignal : public OvmsPoller::VehicleSignal {
     private:
       OvmsVehicle *m_parent;
     public:
@@ -529,18 +529,14 @@ class OvmsVehicle : public InternalRamAllocated
 
       // Signals for vehicle.
 
-      void PollRunFinished() override;
-
       void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
       void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
       void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success) override;
 
       void IncomingPollRxFrame(canbus* bus, CAN_frame_t *frame, bool success) override;
       bool Ready() override;
-      uint8_t GetBusNo(canbus* bus) override;
-      canbus* GetBus(uint8_t busno) override;
-      void PollerSend(uint8_t busno, OvmsPoller::poller_source_t source) override;
     };
+#endif
 
   protected:
     bool HasPollList(canbus* bus = nullptr);
@@ -548,16 +544,21 @@ class OvmsVehicle : public InternalRamAllocated
 
     canbus*           m_poll_bus_default;     // Bus default to poll on
 
+#ifdef CONFIG_OVMS_COMP_POLLER
     // Polling Response
     virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
     virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
     virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
+#endif
 
   protected:
+#ifdef CONFIG_OVMS_COMP_POLLER
+    OvmsVehicleSignal*m_pollsignal;
+    uint8_t           m_poll_state;           // Current poll state
     void PollRequest(canbus* bus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series);
     void RemovePollRequest(canbus* bus, const std::string &name);
-    void IncomingPollRxFrame(canbus* bus, CAN_frame_t *frame, bool success);
-    uint8_t           m_poll_state;           // Current poll state
+#endif
+    void IncomingPollRxFrame(const CAN_frame_t *frame, bool success);
 
   // BMS helpers
   protected:
@@ -624,10 +625,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings);
     bool BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule = 0);
     bool BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule = 0);
-    void QueueSuccessPoll(uint8_t can_number, uint32_t ticker)
-      {
-      m_pollers.QueuePollerSend(OvmsPoller::poller_source_t::Successful, can_number, ticker);
-      }
+
   protected:
     bool m_is_shutdown;
   public:
