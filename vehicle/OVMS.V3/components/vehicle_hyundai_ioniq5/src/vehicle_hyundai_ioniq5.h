@@ -297,6 +297,19 @@ protected:
     }
     PollSetState(3);
   }
+  inline bool IsPollState_PingAux()
+  {
+    return m_poll_state == 4;
+  }
+  inline void PollState_PingAux(uint32_t ticks)
+  {
+    if (hif_keep_awake < ticks) {
+      hif_keep_awake = ticks;
+    }
+    if (!IsPollState_PingAux()) {
+      PollSetState(4);
+    }
+  }
   inline void Poll_CapAwake( uint32_t ticks)
   {
     if (hif_keep_awake > ticks) {
