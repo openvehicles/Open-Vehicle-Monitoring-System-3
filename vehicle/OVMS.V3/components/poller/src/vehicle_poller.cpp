@@ -755,11 +755,6 @@ OvmsPollers::OvmsPollers()
 OvmsPollers::~OvmsPollers()
   {
   ShuttingDown();
-  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
-    {
-    if (m_pollers[i])
-      delete m_pollers[i];
-    }
   }
 
 void OvmsPollers::StartingUp()
@@ -774,6 +769,9 @@ void OvmsPollers::ShuttingDown()
   if (m_shut_down)
     return;
   m_shut_down = true;
+  MyCan.DeregisterCallback(TAG);
+  MyEvents.DeregisterEvent(TAG);
+
   if (m_polltask)
     {
     vTaskDelete(m_polltask);
@@ -789,8 +787,6 @@ void OvmsPollers::ShuttingDown()
     xTimerDelete( m_timer_poller, 0);
     m_timer_poller = NULL;
     }
-  MyCan.DeregisterCallback(TAG);
-  MyEvents.DeregisterEvent(TAG);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
     if (m_pollers[i])
@@ -798,6 +794,14 @@ void OvmsPollers::ShuttingDown()
     }
   for (int i = 1 ; i <= VEHICLE_MAXBUSSES; ++i)
     PowerDownCanBus(i);
+  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+    {
+    if (m_pollers[i])
+      {
+      delete m_pollers[i];
+      m_pollers[i] = nullptr;
+      }
+    }
   }
 
 void OvmsPollers::ShuttingDownVehicle()
@@ -835,6 +839,8 @@ canbus* OvmsPollers::GetBus(uint8_t busno)
   }
 canbus* OvmsPollers::RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle)
   {
+  if (m_shut_down)
+    return nullptr;
   if (busno <1 || busno > VEHICLE_MAXBUSSES)
     return nullptr;
 
@@ -843,6 +849,8 @@ canbus* OvmsPollers::RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t spee
     {
     std::string busname = string_format("can%d", busno);
     info.can = (canbus*)MyPcpApp.FindDeviceByName(busname.c_str());
+    if (!info.can)
+      return nullptr;
     }
   info.from_vehicle = from_vehicle;
   info.can->SetPowerMode(On);
@@ -1117,7 +1125,7 @@ void OvmsPollers::PollerTask()
 
 OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
   {
-  if (m_shut_down)
+  if (m_shut_down || !can)
     return nullptr;
 
   int gap = -1;
@@ -1142,6 +1150,8 @@ OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
       return nullptr;
 
     int busno = GetBusNo(can);
+    if (!busno)
+      return nullptr;
 
     ESP_LOGD(TAG, "GetPoller( busno=%" PRIu8 ")", busno);
     auto newpoller =  new OvmsPoller(can, busno, this, m_poll_txcallback);
