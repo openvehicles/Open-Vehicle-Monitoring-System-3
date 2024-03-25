@@ -83,7 +83,6 @@ provides data logging to SD card and to a server.
   - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US)
   - [iOS App](https://apps.apple.com/us/app/open-vehicles/id490098531)
 - _Distributors_
-  - [FastTech (global)](https://www.fasttech.com/search?ovms)
   - [Medlock & Sons (North America)](https://medlockandsons.com/product/ovms-v3/)
   - [OpenEnergyMonitor (UK/Europe)](https://shop.openenergymonitor.com/ovms/)
 - _Servers_
