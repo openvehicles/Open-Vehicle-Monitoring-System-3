@@ -283,12 +283,15 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc;
+  std::string suffrange, suffsoc, cell_interval_drv, cell_interval_chg, cell_interval_awk;
 
   if (c.method == "POST") {
     // process form submission:
     suffrange = c.getvar("suffrange");
     suffsoc   = c.getvar("suffsoc");
+    cell_interval_drv = c.getvar("cell_interval_drv");
+    cell_interval_chg = c.getvar("cell_interval_chg");
+    cell_interval_awk = c.getvar("cell_interval_awk");
 
     // check:
     if (!suffrange.empty()) {
@@ -306,6 +309,9 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       // store:
       MyConfig.SetParamValue("xse", "suffrange", suffrange);
       MyConfig.SetParamValue("xse", "suffsoc", suffsoc);
+      MyConfig.SetParamValue("xse", "cell_interval_drv", cell_interval_drv);
+      MyConfig.SetParamValue("xse", "cell_interval_chg", cell_interval_chg);
+      MyConfig.SetParamValue("xse", "cell_interval_awk", cell_interval_awk);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">SmartED3 battery setup saved.</p>");
@@ -322,7 +328,10 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     suffrange = MyConfig.GetParamValue("xse", "suffrange", "0");
-    suffsoc = MyConfig.GetParamValue("xse", "suffsoc", "0");
+    suffsoc   = MyConfig.GetParamValue("xse", "suffsoc", "0");
+    cell_interval_drv = MyConfig.GetParamValue("xse", "cell_interval_drv", "60");
+    cell_interval_chg = MyConfig.GetParamValue("xse", "cell_interval_chg", "60");
+    cell_interval_awk = MyConfig.GetParamValue("xse", "cell_interval_awk", "60");
 
     c.head(200);
   }
@@ -342,6 +351,22 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 80, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
+  c.fieldset_end();
+  
+  c.fieldset_start("BMS Cell Monitoring");
+  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",
+    atof(cell_interval_drv.c_str()) > 0, atof(cell_interval_drv.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off.</p>");
+  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",
+    atof(cell_interval_chg.c_str()) > 0, atof(cell_interval_chg.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off.</p>");
+  c.input_slider("Update interval awake", "cell_interval_awk", 3, "s",
+    atof(cell_interval_awk.c_str()) > 0, atof(cell_interval_awk.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off. Note: an interval below 30 seconds may keep the car awake indefinitely.</p>");
+  
   c.fieldset_end();
 
   c.print("<hr>");
