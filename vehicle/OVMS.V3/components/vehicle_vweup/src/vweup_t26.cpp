@@ -1429,6 +1429,14 @@ void OvmsVehicleVWeUp::SetChargeCurrent(int climit)
 // "official" start/stop function; unfortunately sometimes charge keeps reverting to previous state after issuing (even multiple) PID 958 switch commands
 void OvmsVehicleVWeUp::StartStopChargeT26(bool chargestart)
 {
+  if (!StdMetrics.ms_v_door_chargeport->AsBool()) {
+    ESP_LOGE(TAG, "T26: Vehicle is not plugged!");
+    if (xChargeSemaphore != NULL)
+      xSemaphoreGive(xChargeSemaphore);
+    return;
+  }
+  else 
+    ESP_LOGD(TAG, "T26: OK, plugged -> start charge");
   ESP_LOGI(TAG, "T26: Charge turning %s", chargestart ? "ON" : "OFF");
   if (chg_workaround)
     StartStopChargeT26Workaround(chargestart);
