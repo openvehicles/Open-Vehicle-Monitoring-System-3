@@ -1197,15 +1197,15 @@ void OvmsPollers::PollSetPidList(canbus* defbus, const OvmsPoller::poll_pid_t* p
   for (int i = 0 ; i <= VEHICLE_MAXBUSSES; ++i)
     hasbus[i] = false;
 
-  // Check for an Empty list.
-  if (plist->txmoduleid == 0)
+  // Load up any bus pollers required.
+  if (!plist)
+    ESP_LOGD(TAG, "PollSetPidList - Setting NULL List");
+  else if (plist->txmoduleid == 0) // Check for an Empty list.
     {
     plist = nullptr;
     ESP_LOGD(TAG, "PollSetPidList - Setting Empty List");
     }
-
-  // Load up any bus pollers required.
-  if (plist)
+  else
     {
     for (const OvmsPoller::poll_pid_t *plcur = plist; plcur->txmoduleid != 0; ++plcur)
       {
@@ -1225,8 +1225,6 @@ void OvmsPollers::PollSetPidList(canbus* defbus, const OvmsPoller::poll_pid_t* p
         }
       }
     }
-  else
-    ESP_LOGD(TAG, "PollSetPidList - Setting NULL List");
 
   OvmsRecMutexLock lock(&m_poller_mutex);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
@@ -1235,7 +1233,9 @@ void OvmsPollers::PollSetPidList(canbus* defbus, const OvmsPoller::poll_pid_t* p
     if (poller)
       {
       uint8_t busno = poller->m_poll.bus_no;
-      if ((busno > VEHICLE_MAXBUSSES) || hasbus[busno])
+      if (busno > VEHICLE_MAXBUSSES)
+        continue;
+      if (hasbus[busno])
         {
         ESP_LOGD(TAG, "PollSetPidList - Setting for bus=%" PRIu8 " defbus=%" PRIu8, busno, defbusno);
         poller->PollSetPidList(defbusno, plist, signal);
