@@ -441,73 +441,70 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     T26Init();
   }
 
-  // Handle changed settings:
-  if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt()) {
-    bool socswitch = StdMetrics.ms_v_charge_limit_soc->AsInt() <= StdMetrics.ms_v_bat_soc->AsFloat();
-    StdMetrics.ms_v_charge_limit_soc->SetValue(vweup_chg_soclimit_new);
-    if (vweup_chg_soclimit_new == 0 || vweup_chg_soclimit_new > StdMetrics.ms_v_bat_soc->AsInt()) {
-      ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to above current SoC");
-      if (IsCharging()) {
-        ESP_LOGD(TAG, "ConfigChanged: already charging, nothing to do");
-        StdMetrics.ms_v_charge_state->SetValue("charging"); // switch from topoff mode to charging
+  // Handle changed T26 settings:
+  if (vweup_enable_t26)
+  {
+    if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt()) {
+      bool socswitch = StdMetrics.ms_v_charge_limit_soc->AsInt() <= StdMetrics.ms_v_bat_soc->AsFloat();
+      StdMetrics.ms_v_charge_limit_soc->SetValue(vweup_chg_soclimit_new);
+      if (vweup_chg_soclimit_new == 0 || vweup_chg_soclimit_new > StdMetrics.ms_v_bat_soc->AsInt()) {
+        ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to above current SoC");
+        if (IsCharging()) {
+          ESP_LOGD(TAG, "ConfigChanged: already charging, nothing to do");
+          StdMetrics.ms_v_charge_state->SetValue("charging"); // switch from topoff mode to charging
+        }
+        else if (socswitch) { // only start charge when previous max SoC was < SoC
+          ESP_LOGD(TAG, "ConfigChanged: trying to start charge...");
+          fakestop = true;
+          StartStopChargeT26(true);
+        }
       }
-      else if (socswitch) { // only start charge when previous max SoC was < SoC
-        ESP_LOGD(TAG, "ConfigChanged: trying to start charge...");
+      else {
+        ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to below current SoC");
+        if (IsCharging()) {
+          ESP_LOGD(TAG, "ConfigChanged: stopping charge...");
+          StartStopChargeT26(false);
+        }
+      }
+    }
+    if (vweup_charge_current_new != profile0_charge_current && profile0_charge_current != 0) {
+      if (vweup_charge_current_new != profile0_charge_current_old) {
+        ESP_LOGD(TAG, "ConfigChanged: Charge current changed in ConfigChanged from %d to %d", profile0_charge_current, vweup_charge_current_new);
+        SetChargeCurrent(vweup_charge_current_new);
+      }
+      else ESP_LOGD(TAG, "ConfigChanged: charge current reset to previous value %d", profile0_charge_current_old);
+    }
+    if (vweup_cc_temp_new != profile0_cc_temp && profile0_cc_temp != 0) {
+      if (vweup_cc_temp_new != profile0_cc_temp_old) {
+        ESP_LOGD(TAG, "ConfigChanged: CC_temp parameter changed in ConfigChanged from %d to %d", profile0_cc_temp, vweup_cc_temp_new);
+        CCTempSet(vweup_cc_temp_new);
+      }
+      else ESP_LOGD(TAG, "ConfigChanged: cc temp reset to previous value %d", profile0_cc_temp_old);
+    }
+    if (chg_workaround_new != chg_workaround) {
+      ESP_LOGD(TAG, "ConfigChanged: charge control workaround turned %s", chg_workaround_new ? "on" : "off");
+      if (chg_workaround_new) {
+        ESP_LOGW(TAG, "Turning on charge workaround may in rare cases result in situations where the car does not charge anymore!");
+        ESP_LOGW(TAG, "Only use this function if you can handle the consequences!");
+      }
+      else {
+        ESP_LOGI(TAG, "Note: charge control may not work reliably without workaround.");
+        if (profile0_charge_current == 1) {
+          ESP_LOGD(TAG, "ConfigChanged: resetting charge current to %dA", profile0_charge_current_old);
+          SetChargeCurrent(profile0_cc_temp_old);
+        }
+      }
+      chg_workaround = chg_workaround_new;
+    }
+    if (chg_autostop_new != chg_autostop) {
+      chg_autostop = chg_autostop_new;
+      if (!chg_autostop_new) {
+        ESP_LOGD(TAG, "ConfigChanged: charge autostop disabled, trying to start charge...");
         fakestop = true;
         StartStopChargeT26(true);
       }
     }
-    else {
-      ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to below current SoC");
-      if (IsCharging()) {
-        ESP_LOGD(TAG, "ConfigChanged: stopping charge...");
-        StartStopChargeT26(false);
-      }
-    }
-  }
-  if (vweup_charge_current_new != profile0_charge_current && profile0_charge_current != 0) {
-    if (vweup_charge_current_new != profile0_charge_current_old) {
-      ESP_LOGD(TAG, "ConfigChanged: Charge current changed in ConfigChanged from %d to %d", profile0_charge_current, vweup_charge_current_new);
-      if (vweup_enable_t26)
-        SetChargeCurrent(vweup_charge_current_new);
-      else
-        ESP_LOGE(TAG, "ConfigChanged: charge current control only works with enabled comfort CAN connection!");
-    }
-    else ESP_LOGD(TAG, "ConfigChanged: charge current reset to previous value %d", profile0_charge_current_old);
-  }
-  if (vweup_cc_temp_new != profile0_cc_temp && profile0_cc_temp != 0) {
-    if (vweup_cc_temp_new != profile0_cc_temp_old) {
-      ESP_LOGD(TAG, "ConfigChanged: CC_temp parameter changed in ConfigChanged from %d to %d", profile0_cc_temp, vweup_cc_temp_new);
-      if (vweup_enable_t26) 
-        CCTempSet(vweup_cc_temp_new);
-      else
-        ESP_LOGE(TAG, "ConfigChanged: climatecontrol only works with enabled comfort CAN connection!");
-    }
-    else ESP_LOGD(TAG, "ConfigChanged: cc temp reset to previous value %d", profile0_cc_temp_old);
-  }
-  if (chg_workaround_new != chg_workaround) {
-    ESP_LOGD(TAG, "ConfigChanged: charge control workaround turned %s", chg_workaround_new ? "on" : "off");
-    if (chg_workaround_new) {
-      ESP_LOGW(TAG, "Turning on charge workaround may in rare cases result in situations where the car does not charge anymore!");
-      ESP_LOGW(TAG, "Only use this function if you can handle the consequences!");
-    }
-    else {
-      ESP_LOGI(TAG, "Note: charge control may not work reliably without workaround.");
-      if (profile0_charge_current == 1) {
-        ESP_LOGD(TAG, "ConfigChanged: resetting charge current to %dA", profile0_charge_current_old);
-        SetChargeCurrent(profile0_cc_temp_old);
-      }
-    }
-    chg_workaround = chg_workaround_new;
-  }
-  if (chg_autostop_new != chg_autostop) {
-    chg_autostop = chg_autostop_new;
-    if (!chg_autostop_new) {
-      ESP_LOGD(TAG, "ConfigChanged: charge autostop disabled, trying to start charge...");
-      fakestop = true;
-      StartStopChargeT26(true);
-    }
-  }
+  } // if (vweup_enable_t26)
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // Init Web subsystem:
@@ -595,7 +592,7 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
     bool chg_autostop = MyConfig.GetParamValueBool("xvu", "chg_autostop");
     if (m_chargestate_lastsoc < suff_soc && soc >= suff_soc) {
       ESP_LOGD(TAG, "Ticker1: SOC crossed from %.2f to %.2f, autostop %d", m_chargestate_lastsoc, soc, chg_autostop);
-      if(chg_autostop && suff_soc > 0) // exception for no limit (0): don't stop when we reach 100%
+      if (HasT26() && chg_autostop && suff_soc > 0) // exception for no limit (0): don't stop when we reach 100%
       {
           if (profile0_state == PROFILE0_IDLE) {
             ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), stopping charge", suff_soc);
@@ -613,7 +610,7 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
       }
     }
   }
-  if (m_chargestate_lastsoc > suff_soc && soc < suff_soc) {
+  if (HasT26() && m_chargestate_lastsoc > suff_soc && soc < suff_soc) {
     ESP_LOGI(TAG, "Ticker1: SOC fell below sufficient SOC limit (%d%%), restarting charge", suff_soc);
     fakestop = true;
       ESP_LOGD(TAG, "Ticker1: trying to start charge...");
