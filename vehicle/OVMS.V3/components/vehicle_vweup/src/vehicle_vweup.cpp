@@ -1134,7 +1134,11 @@ void OvmsVehicleVWeUp::UpdateChargeTimes()
   }
 
   // Derive charge mode from final SOC destination:
-  if ((!timermode || timer_socmax == 100) && MyConfig.GetParamValueBool("xvu", "chg_autostop", false))
+  int final_soc = (!timermode) ? 100 : timer_socmax;
+  if (HasT26() && MyConfig.GetParamValueBool("xvu", "chg_autostop") && suff_soc > 0)
+    final_soc = suff_soc;
+
+  if (final_soc == 100)
     StdMetrics.ms_v_charge_mode->SetValue("range");
   else
     StdMetrics.ms_v_charge_mode->SetValue("standard");
