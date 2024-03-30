@@ -257,6 +257,7 @@ class OvmsVehicle : public InternalRamAllocated
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
     void PollRunFinishedNotify(canbus* bus, void *data);
+    void PollerStateTickerNotify(canbus* bus, void *data);
   protected:
     // Signal poller
     void PausePolling();
@@ -301,7 +302,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void IncomingFrameCan4(CAN_frame_t* p_frame);
 
   protected:
-    virtual void PollerStateTicker();
+    virtual void PollerStateTicker(canbus *bus);
 
   protected:
     int m_minsoc;            // The minimum SOC level before alert

@@ -355,6 +355,7 @@ OvmsVehicle::OvmsVehicle()
   m_inv_energyrecd = 0;
 
   MyPollers.RegisterRunFinished(TAG, std::bind(&OvmsVehicle::PollRunFinishedNotify, this, _1, _2));
+  MyPollers.RegisterRunFinished(TAG, std::bind(&OvmsVehicle::PollerStateTickerNotify, this, _1, _2));
 
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
 
@@ -580,6 +581,10 @@ void OvmsVehicle::PollRunFinishedNotify(canbus* bus, void *data)
   {
   PollRunFinished(bus);
   }
+void OvmsVehicle::PollerStateTickerNotify(canbus* bus, void *data)
+  {
+  PollerStateTicker(bus);
+  }
 
 void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   {
@@ -588,7 +593,6 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
 
   m_ticker++;
 
-  PollerStateTicker();
 
   Ticker1(m_ticker);
   if ((m_ticker % 10) == 0) Ticker10(m_ticker);
@@ -2251,7 +2255,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &resul
  *  Implement your poller state transition logic in this method, so the changes
  *  will get applied immediately.
  */
-void OvmsVehicle::PollerStateTicker()
+void OvmsVehicle::PollerStateTicker(canbus* bus)
   {
   }
 

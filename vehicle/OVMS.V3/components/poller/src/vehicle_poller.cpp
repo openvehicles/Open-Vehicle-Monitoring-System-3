@@ -333,7 +333,12 @@ void OvmsPoller::PollerSend(poller_source_t source)
     default:
       ;
     }
-  // Only reset the list when 'from Ticker' and it's at the end.
+  if (fromPrimaryTicker)
+    {
+    // Call back on vehicle PollerStateTicker()  with bus number / bus
+    m_parent->PollerStateTicker(m_poll.bus);
+    }
+
   if (fromPrimaryTicker )
     {
     if (!curIsBlocking)

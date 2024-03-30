@@ -408,7 +408,7 @@ void OvmsVehicleVWeUp::PollSetState(uint8_t state)
  * PollerStateTicker: check for state changes
  *  This is called by VehicleTicker1() just before the next PollerSend().
  */
-void OvmsVehicleVWeUp::PollerStateTicker()
+void OvmsVehicleVWeUp::PollerStateTicker(canbus *bus)
 {
   // T26 state management has precedence if available:
   if (HasT26() || m_obd_state != OBDS_Run)
