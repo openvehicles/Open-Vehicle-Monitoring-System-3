@@ -48,7 +48,7 @@ static const char *TAG = "vehicle-poll";
 
 /**
  * PollerStateTicker: check for state changes (stub, override with vehicle implementation)
- *  This is called by VehicleTicker1() just before the next PollerSend().
+ *  This is called by PollerSend() in the RXTask on a primary tick just before it checks the queue.
  *  Implement your poller state transition logic in this method, so the changes
  *  will get applied immediately.
  */
@@ -290,7 +290,6 @@ void OvmsVehicle::PollRunFinished()
  */
 void OvmsVehicle::PollerSend(poller_source_t source)
   {
-  OvmsRecMutexLock lock(&m_poll_mutex);
 
   // ESP_LOGD(TAG, "PollerSend(%d): entry at[type=%02X, pid=%X], ticker=%u, wait=%u, cnt=%u/%u",
   //          fromTicker, m_poll_plcur->type, m_poll_plcur->pid,
@@ -308,6 +307,11 @@ void OvmsVehicle::PollerSend(poller_source_t source)
     default:
       ;
     }
+
+  if (fromPrimaryTicker)
+    PollerStateTicker();
+
+  OvmsRecMutexLock lock(&m_poll_mutex);
   if (fromPrimaryTicker)
     {
     // Only reset the list when 'from primary Ticker' and it's at the end.
