@@ -686,14 +686,24 @@ class OvmsPollers : public InternalRamAllocated {
   public:
     typedef std::function<void(canbus*, void *)> PollCallback;
   private:
-    ovms_callback_register_t<PollCallback> m_runfinished_callback;
+    ovms_callback_register_t<PollCallback> m_runfinished_callback, m_pollstateticker_callback;
   public:
     void RegisterRunFinished(const std::string &name, PollCallback fn) { m_runfinished_callback.Register(name, fn);}
     void DeregisterRunFinished(const std::string &name) { m_runfinished_callback.Deregister(name);}
+    void RegisterPollStateTicker(const std::string &name, PollCallback fn) { m_pollstateticker_callback.Register(name, fn);}
+    void DeregisterPollStateTicker(const std::string &name) { m_pollstateticker_callback.Deregister(name);}
   private:
     void PollRunFinished(canbus *bus)
       {
       m_runfinished_callback.Call(
+        [bus](const std::string &name, const PollCallback &cb)
+          {
+          cb(bus, nullptr);
+          });
+      }
+    void PollerStateTicker(canbus *bus)
+      {
+      m_pollstateticker_callback.Call(
         [bus](const std::string &name, const PollCallback &cb)
           {
           cb(bus, nullptr);
