@@ -270,7 +270,7 @@ OvmsVehicle::OvmsNextPollResult OvmsVehicle::NextPollEntry(OvmsPoller::poll_pid_
 void OvmsVehicle::PollerNextTick(poller_source_t source)
   {
   // Completed checking all poll entries for the current m_poll_ticker
-  ESP_LOGD(TAG, "PollerSend(%s): cycle complete for ticker=%u", PollerSource(source), m_poll.ticker);
+  ESP_LOGD(TAG, "PollerNextTick(%s): cycle complete for ticker=%u", PollerSource(source), m_poll.ticker);
 
   // Allow POLL to restart.
   m_poll_plcur = NULL;
