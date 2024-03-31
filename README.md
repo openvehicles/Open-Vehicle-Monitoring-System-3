@@ -80,7 +80,7 @@ provides data logging to SD card and to a server.
     - [Stable release (OTA version "main")](https://docs.openvehicles.com/en/stable/)
     - [Latest nightly build (OTA version "edge")](https://docs.openvehicles.com/en/latest/)
   - [User Support Forum](https://www.openvehicles.com/forum)
-  - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US)
+  - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US) [APK file](https://github.com/openvehicles/Open-Vehicle-Android/tree/master/release)
   - [iOS App](https://apps.apple.com/us/app/open-vehicles/id490098531)
 - _Distributors_
   - [Medlock & Sons (North America)](https://medlockandsons.com/product/ovms-v3/)
