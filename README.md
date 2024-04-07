@@ -85,6 +85,7 @@ provides data logging to SD card and to a server.
 - _Distributors_
   - [Medlock & Sons (North America)](https://medlockandsons.com/product/ovms-v3/)
   - [OpenEnergyMonitor (UK/Europe)](https://shop.openenergymonitor.com/ovms/)
+  - [e-mobility driving solutions GmbH (Germany/Europe)](https://e-mobility-driving-solutions.com/produkt-kategorie/ovms-products/?lang=en)
 - _Servers_
   - [Asia-Pacific](https://www.openvehicles.com/)
   - [Germany/Europe](https://dexters-web.de/)
