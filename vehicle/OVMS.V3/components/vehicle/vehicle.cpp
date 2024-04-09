@@ -354,8 +354,10 @@ OvmsVehicle::OvmsVehicle()
   m_inv_energyused = 0;
   m_inv_energyrecd = 0;
 
+#ifdef CONFIG_OVMS_COMP_POLLER
   MyPollers.RegisterRunFinished(TAG, std::bind(&OvmsVehicle::PollRunFinishedNotify, this, _1, _2));
-  MyPollers.RegisterRunFinished(TAG, std::bind(&OvmsVehicle::PollerStateTickerNotify, this, _1, _2));
+  MyPollers.RegisterPollStateTicker(TAG, std::bind(&OvmsVehicle::PollerStateTickerNotify, this, _1, _2));
+#endif
 
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
 
@@ -441,6 +443,8 @@ void OvmsVehicle::ShuttingDown()
 #ifdef CONFIG_OVMS_COMP_POLLER
   MyPollers.ShuttingDownVehicle();
   MyPollers.DeregisterRunFinished(TAG);
+  MyPollers.DeregisterPollStateTicker(TAG);
+
   if (m_pollsignal)
     delete m_pollsignal;
 #else
