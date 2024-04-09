@@ -340,6 +340,7 @@ config OVMS_VEHICLE_OBDII
     bool "Include support for OBDII vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for OBDII vehicles.
 
@@ -409,6 +410,7 @@ config OVMS_VEHICLE_RENAULTZOE_PH2_OBD
     default y
     depends on OVMS
     depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Renault Zoe Phase 2 vehicles (OBD port version).
         

@@ -281,7 +281,6 @@ OvmsVehicle::OvmsVehicle()
 #ifdef CONFIG_OVMS_COMP_POLLER
   m_poll_state = 0;
   m_pollsignal = nullptr;
-#endif
 
   // Poll parameters.
   PollSetThrottling(1);
@@ -289,6 +288,7 @@ OvmsVehicle::OvmsVehicle()
   PollSetResponseSeparationTime(25);
   // channel keepalive default: 60 seconds
   PollSetChannelKeepalive(60);
+#endif
 
   m_bms_voltages = NULL;
   m_bms_vmins = NULL;
@@ -2266,11 +2266,15 @@ void OvmsVehicle::PollerStateTicker(canbus* bus)
 // Signal poller
 void OvmsVehicle::PausePolling()
   {
+#ifdef CONFIG_OVMS_COMP_POLLER
   MyPollers.PausePolling();
+#endif
   }
 void OvmsVehicle::ResumePolling()
   {
+#ifdef CONFIG_OVMS_COMP_POLLER
   MyPollers.ResumePolling();
+#endif
   }
 
 #ifdef CONFIG_OVMS_COMP_POLLER
@@ -2332,7 +2336,6 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
     return POLLSINGLE_TXFAILURE;
   return poller->PollSingleRequest(txid, rxid, polltype, pid, response, timeout_ms, protocol);
   }
-#endif
 
 /** Set the 'tick' interval for the poller.
  * @param tick_time_ms The interval in ms between poll 'ticks'
@@ -2342,28 +2345,20 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
  */
 void OvmsVehicle::PollSetTicker(uint16_t tick_time_ms, uint8_t secondary_ticks)
   {
-#ifdef CONFIG_OVMS_COMP_POLLER
   MyPollers.PollSetTicker(tick_time_ms, secondary_ticks);
-#endif
   }
 
 void OvmsVehicle::PollSetResponseSeparationTime(uint8_t septime)
   {
-#ifdef CONFIG_OVMS_COMP_POLLER
   MyPollers.PollSetResponseSeparationTime(septime);
-#endif
   }
 void OvmsVehicle::PollSetChannelKeepalive(uint16_t keepalive_seconds)
   {
-#ifdef CONFIG_OVMS_COMP_POLLER
   MyPollers.PollSetChannelKeepalive(keepalive_seconds);
-#endif
   }
 void OvmsVehicle::PollSetTimeBetweenSuccess(uint16_t time_between_ms)
   {
-#ifdef CONFIG_OVMS_COMP_POLLER
   MyPollers.PollSetTimeBetweenSuccess(time_between_ms);
-#endif
   }
 
 /**
@@ -2414,6 +2409,7 @@ void OvmsVehicle::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t 
 void OvmsVehicle::IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success)
   {
   }
+#endif
 
 void OvmsVehicle::IncomingPollRxFrame(const CAN_frame_t *frame, bool success)
   {
@@ -2445,6 +2441,7 @@ void OvmsVehicle::RemovePollRequest(canbus* bus, const std::string &name)
   }
 #endif
 
+#ifdef CONFIG_OVMS_COMP_POLLER
 /** Does the specified bus have a non-empty PollList ?
   * @param bus Canbus to check or null for any bus
   */
@@ -2452,6 +2449,7 @@ bool OvmsVehicle::HasPollList(canbus* bus)
   {
   return MyPollers.HasPollList(bus);
   }
+#endif
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 /**

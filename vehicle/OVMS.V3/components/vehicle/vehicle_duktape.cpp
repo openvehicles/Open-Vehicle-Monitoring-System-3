@@ -44,6 +44,7 @@
 #include <ovms_peripherals.h>
 #include <string_writer.h>
 #include "vehicle.h"
+#include "vehicle_common.h"
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
@@ -408,7 +409,9 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
   uint32_t txid = 0, rxid = 0;
   std::string request, response;
   int timeout = 3000;
+#ifdef CONFIG_OVMS_COMP_POLLER
   uint8_t protocol = ISOTP_STD;
+#endif
 
   if (!MyVehicleFactory.m_currentvehicle)
     {
@@ -429,8 +432,10 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
     if (duk_get_prop_string(ctx, 0, "timeout"))
       timeout = duk_to_int(ctx, -1);
     duk_pop(ctx);
+#ifdef CONFIG_OVMS_COMP_POLLER
     if (duk_get_prop_string(ctx, 0, "protocol"))
       protocol = duk_to_int(ctx, -1);
+#endif
     duk_pop(ctx);
     if (duk_get_prop_string(ctx, 0, "txid"))
       txid = duk_to_int(ctx, -1);
@@ -474,6 +479,7 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
     // Execute request:
     if (error == 0)
       {
+#ifdef CONFIG_OVMS_COMP_POLLER
       error = MyVehicleFactory.m_currentvehicle->PollSingleRequest(
         device, txid, rxid, request, response, timeout, protocol);
 
@@ -491,6 +497,10 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
           errordesc += errname;
           }
         }
+#else
+      error = -1;
+      errordesc = "Polling not implemented";
+#endif
       }
     }
 
