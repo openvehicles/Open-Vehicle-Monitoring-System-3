@@ -44,7 +44,7 @@
 #include <ovms_peripherals.h>
 #include <string_writer.h>
 #include "vehicle.h"
-
+#include "vehicle_common.h"
 
 int OvmsVehicleFactory::vehicle_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
@@ -496,6 +496,9 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
     writer->printf("ERROR: CAN bus %s not in active mode\n", busname);
     return;
     }
+#ifndef CONFIG_OVMS_COMP_POLLER
+  writer->puts("Poller not implemented");
+#else
 
   uint32_t txid = 0, rxid = 0;
   uint8_t protocol = ISOTP_STD;
@@ -656,4 +659,5 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
 
   if (buf)
     free(buf);
+#endif
   }

@@ -537,13 +537,12 @@ class OvmsVehicle : public InternalRamAllocated
     };
 #endif
 
+#ifdef CONFIG_OVMS_COMP_POLLER
   protected:
     bool HasPollList(canbus* bus = nullptr);
 
-
     canbus*           m_poll_bus_default;     // Bus default to poll on
 
-#ifdef CONFIG_OVMS_COMP_POLLER
     // Polling Response
     virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
     virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
