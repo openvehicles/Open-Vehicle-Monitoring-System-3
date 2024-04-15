@@ -262,7 +262,7 @@ class OvmsVehicle : public InternalRamAllocated
     // Signal poller
     void PausePolling();
     void ResumePolling();
-    void PollSetState(uint8_t state);
+    void PollSetState(uint8_t state, canbus* bus = nullptr);
 #ifdef CONFIG_OVMS_COMP_POLLER
     void PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plist);
     void PollSetPidList( const OvmsPoller::poll_pid_t* plist)

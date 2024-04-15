@@ -2300,14 +2300,12 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plis
  *  @param state
  *    The polling state to activate (0 … VEHICLE_POLL_NSTATES)
  */
-void OvmsVehicle::PollSetState(uint8_t state)
+void OvmsVehicle::PollSetState(uint8_t state, canbus* bus)
   {
 #ifdef CONFIG_OVMS_COMP_POLLER
-  if (m_poll_state != state)
-    {
+  if (!bus)
     m_poll_state = state;
-    MyPollers.PollSetState(state);
-    }
+  MyPollers.PollSetState(state, bus);
 #endif
   }
 
