@@ -1,8 +1,8 @@
-===============
-Hyundai Ioniq 5
-===============
+=========================
+Hyundai Ioniq 5 / Kia EV6
+=========================
 
-**Hyundai Ioniq 5**
+**Hyundai Ioniq 5 / Kia EV6**
 
 - Vehicle Type: **HION5**
 - Log tag: ``v-ioniq5``

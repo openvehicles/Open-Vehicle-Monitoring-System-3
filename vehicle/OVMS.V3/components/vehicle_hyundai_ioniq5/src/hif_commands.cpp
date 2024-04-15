@@ -258,7 +258,47 @@ void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, cons
       writer->printf("Soul\n");
       break;
     case 'C':
-      writer->printf("Niro\n");
+      writer->printf("EV6 ");
+      switch (hif->m_vin[4]) {
+        case '3':
+          writer->printf("77.4kwH ");
+          break;
+        case '4':
+          writer->printf("GT-Line ");
+          break;
+        case '5':
+          writer->printf("GT ");
+          break;
+        default:
+          writer->printf("(Unknown %c) ", hif->m_vin[4]);
+      }
+      switch (hif->m_vin[5]) {
+        case '4':
+          writer->puts("2WD");
+          break;
+        case 'D':
+          writer->puts("4WD");
+          break;
+      default: writer->puts("");
+      }
+      switch (hif->m_vin[7]) {
+        case 'A':
+          writer->puts("KMA Electric 111.2Ah / RR 160kW (697V)");
+          break;
+        case 'B':
+          writer->puts("KMA Electric 111.2Ah / RR 160kW (522.7V)");
+          break;
+        case 'C':
+          writer->puts("KMA Electric 111.2Ah / FR 70kW / RR 160kW (697V)");
+          break;
+        case 'D':
+          writer->puts("KMA Electric 111.2Ah / FR 70kW / RR 160kW (522.7V)");
+          break;
+        case 'E':
+          writer->puts("KMA Electric 111.2Ah / FR 160kW / RR 270kW (697V)");
+          break;
+      }
+
       break;
     case 'K':
       switch (hif->m_vin[4]) {

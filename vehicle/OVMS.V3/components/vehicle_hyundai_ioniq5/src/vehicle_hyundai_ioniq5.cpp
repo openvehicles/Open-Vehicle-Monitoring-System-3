@@ -460,7 +460,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 {
   XARM("OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv");
 
-  ESP_LOGI(TAG, "Ioniq 5 EV " IONIQ5_VERSION " vehicle module");
+  ESP_LOGI(TAG, "Hyundai Ioniq 5 / KIA EV6 " IONIQ5_VERSION " vehicle module");
 
   StopTesterPresentMessages();
 
@@ -603,7 +603,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   MyMetrics.RegisterListener(TAG, MS_V_BAT_PACK_TAVG, std::bind(&OvmsHyundaiIoniqEv::UpdatedAverageTemp, this, _1));
 
   // init commands:
-  cmd_hiq = MyCommandApp.RegisterCommand("xhiq", "Hyundai Ioniq 5 EV");
+  cmd_hiq = MyCommandApp.RegisterCommand("xhiq", "Hyundai Ioniq 5 EV/Kia EV6");
   cmd_hiq->RegisterCommand("trip", "Show trip info since last parked", xiq_trip_since_parked);
   cmd_hiq->RegisterCommand("tripch", "Show trip info since last charge", xiq_trip_since_charge);
   cmd_hiq->RegisterCommand("tpms", "Tire pressure monitor", xiq_tpms);
@@ -638,7 +638,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsHyundaiIoniqEv::EventListener, this, _1, _2));
 
-  MyConfig.RegisterParam("xiq", "Hyundai Ioniq 5 EV specific settings.", true, true);
+  MyConfig.RegisterParam("xiq", "Ioniq 5/EV6 specific settings.", true, true);
   ConfigChanged(NULL);
 
   m_ecu_lockout = 0;
@@ -1806,5 +1806,5 @@ OvmsHyundaiIoniqEvInit::OvmsHyundaiIoniqEvInit()
 {
   ESP_LOGI(OvmsHyundaiIoniqEv::TAG, "Registering Vehicle: Hyundai Ioniq 5 EV (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsHyundaiIoniqEv>("I5", "Hyundai Ioniq 5 EV");
+  MyVehicleFactory.RegisterVehicle<OvmsHyundaiIoniqEv>("I5", "Hyundai Ioniq 5 EV/KIA EV6");
 }
