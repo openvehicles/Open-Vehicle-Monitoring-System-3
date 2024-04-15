@@ -542,6 +542,8 @@ class OvmsPoller : public InternalRamAllocated {
     bool HasBus(canbus* bus) { return bus == m_poll.bus;}
     uint8_t CanBusNo() { return m_poll.bus_no;}
 
+    uint8_t PollState() { return m_poll_state;}
+
   protected:
 
     // Poll entry manipulation: Must be called under lock of m_poll_mutex
@@ -585,6 +587,10 @@ class OvmsPoller : public InternalRamAllocated {
       poller_source_t source;
       uint32_t poll_ticker;
     } poll_source_entry_t;
+    typedef struct {
+      uint8_t new_state;
+      canbus* bus; // optional
+    } poll_state_entry_t;
 
     typedef struct {
       OvmsPollEntryType entry_type;
@@ -592,7 +598,7 @@ class OvmsPoller : public InternalRamAllocated {
         poll_source_entry_t entry_Poll;
         poll_frame_entry_t entry_FrameRxTx;
         poll_command_entry_t entry_Command;
-        uint8_t entry_PollState;
+        poll_state_entry_t entry_PollState;
       };
     } poll_queue_entry_t;
 
@@ -668,6 +674,7 @@ class OvmsPollers : public InternalRamAllocated {
     bool              m_shut_down;
     bool              m_ready;
     bool              m_paused;
+    bool              m_user_paused;
 
     void PollerTxCallback(const CAN_frame_t* frame, bool success);
     void PollerRxCallback(const CAN_frame_t* frame, bool success);
@@ -682,7 +689,7 @@ class OvmsPollers : public InternalRamAllocated {
     static void vehicle_pause_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_pause_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     void PollerStatus(int verbosity, OvmsWriter* writer);
-    void SetPauseStatus(bool paused, int verbosity, OvmsWriter* writer);
+    void SetUserPauseStatus(bool paused, int verbosity, OvmsWriter* writer);
   public:
     typedef std::function<void(canbus*, void *)> PollCallback;
   private:
@@ -758,19 +765,23 @@ class OvmsPollers : public InternalRamAllocated {
 
     void VehiclePollTicker();
 
-    void PausePolling()
+    void PausePolling(bool user_poll = false)
       {
-      Queue_Command(OvmsPoller::OvmsPollCommand::Pause);
+      Queue_Command(OvmsPoller::OvmsPollCommand::Pause, (int)user_poll );
       }
-    void ResumePolling()
+    void ResumePolling(bool user_poll = false)
       {
-      Queue_Command(OvmsPoller::OvmsPollCommand::Resume);
+      Queue_Command(OvmsPoller::OvmsPollCommand::Resume, (int)user_poll);
+      }
+    bool IsUserPaused()
+      {
+      return m_user_paused;
       }
     bool IsPaused()
       {
       return m_paused;
       }
-    void PollSetState(uint8_t state);
+    void PollSetState(uint8_t state, canbus* bus = nullptr);
 
     uint32_t LastPollCmdReceived()
       {
