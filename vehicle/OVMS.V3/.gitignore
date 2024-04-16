@@ -52,7 +52,8 @@ Mkfile.old
 dkms.conf
 
 # ESP32 stuff
-build
+build/*
+!build/*.*
 sdkconfig.old
 .DS_Store
 .atom-build.yml
