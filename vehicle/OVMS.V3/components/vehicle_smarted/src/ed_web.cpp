@@ -283,12 +283,15 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc;
+  std::string suffrange, suffsoc, cell_interval_drv, cell_interval_chg, cell_interval_awk;
 
   if (c.method == "POST") {
     // process form submission:
     suffrange = c.getvar("suffrange");
     suffsoc   = c.getvar("suffsoc");
+    cell_interval_drv = c.getvar("cell_interval_drv");
+    cell_interval_chg = c.getvar("cell_interval_chg");
+    cell_interval_awk = c.getvar("cell_interval_awk");
 
     // check:
     if (!suffrange.empty()) {
@@ -306,6 +309,9 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       // store:
       MyConfig.SetParamValue("xse", "suffrange", suffrange);
       MyConfig.SetParamValue("xse", "suffsoc", suffsoc);
+      MyConfig.SetParamValue("xse", "cell_interval_drv", cell_interval_drv);
+      MyConfig.SetParamValue("xse", "cell_interval_chg", cell_interval_chg);
+      MyConfig.SetParamValue("xse", "cell_interval_awk", cell_interval_awk);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">SmartED3 battery setup saved.</p>");
@@ -322,7 +328,10 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     suffrange = MyConfig.GetParamValue("xse", "suffrange", "0");
-    suffsoc = MyConfig.GetParamValue("xse", "suffsoc", "0");
+    suffsoc   = MyConfig.GetParamValue("xse", "suffsoc", "0");
+    cell_interval_drv = MyConfig.GetParamValue("xse", "cell_interval_drv", "60");
+    cell_interval_chg = MyConfig.GetParamValue("xse", "cell_interval_chg", "60");
+    cell_interval_awk = MyConfig.GetParamValue("xse", "cell_interval_awk", "60");
 
     c.head(200);
   }
@@ -342,6 +351,22 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 80, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
+  c.fieldset_end();
+  
+  c.fieldset_start("BMS Cell Monitoring");
+  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",
+    atof(cell_interval_drv.c_str()) > 0, atof(cell_interval_drv.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off.</p>");
+  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",
+    atof(cell_interval_chg.c_str()) > 0, atof(cell_interval_chg.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off.</p>");
+  c.input_slider("Update interval awake", "cell_interval_awk", 3, "s",
+    atof(cell_interval_awk.c_str()) > 0, atof(cell_interval_awk.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off. Note: an interval below 30 seconds may keep the car awake indefinitely.</p>");
+  
   c.fieldset_end();
 
   c.print("<hr>");
@@ -778,17 +803,16 @@ void OvmsVehicleSmartED::WebCfgBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
       "var cnt = metrics[\"v.b.c.voltage\"] ? metrics[\"v.b.c.voltage\"].length : 0;\n"
       "if (cnt == 0)\n"
         "return data;\n"
-      "var i, act, min, max, devmax, dalert, dlow, dhigh, voffset;\n"
-      "voffset = metrics[\"xse.mybms.adc.volts.offset\"]/1000;\n"
-      "data.voltmean = metrics[\"v.b.p.voltage.avg\"]-voffset || 0;\n"
+      "var i, act, min, max, devmax, dalert, dlow, dhigh;\n"
+      "data.voltmean = metrics[\"v.b.p.voltage.avg\"] || 0;\n"
       "data.sdlo = data.voltmean - (metrics[\"v.b.p.voltage.stddev\"] || 0);\n"
       "data.sdhi = data.voltmean + (metrics[\"v.b.p.voltage.stddev\"] || 0);\n"
       "data.sdmaxlo = data.voltmean - (metrics[\"v.b.p.voltage.stddev.max\"] || 0);\n"
       "data.sdmaxhi = data.voltmean + (metrics[\"v.b.p.voltage.stddev.max\"] || 0);\n"
       "for (i=0; i<cnt; i++) {\n"
-        "act = metrics[\"v.b.c.voltage\"][i]-voffset;\n"
-        "min = metrics[\"v.b.c.voltage.min\"][i]-voffset || act;\n"
-        "max = metrics[\"v.b.c.voltage.max\"][i]-voffset || act;\n"
+        "act = metrics[\"v.b.c.voltage\"][i];\n"
+        "min = metrics[\"v.b.c.voltage.min\"][i] || act;\n"
+        "max = metrics[\"v.b.c.voltage.max\"][i] || act;\n"
         "devmax = metrics[\"v.b.c.voltage.dev.max\"][i] || 0;\n"
         "dalert = metrics[\"v.b.c.voltage.alert\"][i] || 0;\n"
         "if (devmax > 0) {\n"
