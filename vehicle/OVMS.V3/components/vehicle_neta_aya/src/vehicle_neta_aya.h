@@ -37,22 +37,19 @@
 
 using namespace std;
 
-class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
+class OvmsVehicleNetaAya : public NetaAya
   {
   public:
-		OvmsVehicleKiaNiroEvSg2();
-    ~OvmsVehicleKiaNiroEvSg2();
+		OvmsVehicleNetaAya();
+    ~OvmsVehicleNetaAya();
 
   public:
-    bool should_poll;
-    int poll_counter;
-  
+
     void IncomingFrameCan1(CAN_frame_t *p_frame);
-    void IncomingFrameCan2(CAN_frame_t *p_frame);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void Ticker300(uint32_t ticker);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void EventListener(std::string event, void* data);
     void SendTesterPresent(uint16_t id, uint8_t length);
     bool SetSessionMode(uint16_t id, uint8_t mode);
     void SendCanMessage(uint16_t id, uint8_t count,
@@ -83,19 +80,9 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     void HandleCarOn();
     void HandleCarOff();
 
-    void IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingBCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingCM(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
-    void IncomingSW(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
-
     bool SetDoorLock(bool open);
-    void VerifyCanActivity();
     void SetChargeMetrics();
     void SendTesterPresentMessages();
-
-    bool windows_open;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
