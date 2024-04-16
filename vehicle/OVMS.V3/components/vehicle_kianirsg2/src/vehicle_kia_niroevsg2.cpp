@@ -116,6 +116,11 @@ OvmsVehicleKiaNiroEvSg2::OvmsVehicleKiaNiroEvSg2()
 
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
 	windows_open = false;
+	start_alarm = false;
+	lock_command = false;
+	unlock_command = false;
+	fully_configured = false;
+	reset_by_config = false;
 	// SetParamValue
 	// SetParamValueBinary
 	// SetParamValueInt
@@ -190,6 +195,8 @@ void OvmsVehicleKiaNiroEvSg2::HandleCharging()
  */
 void OvmsVehicleKiaNiroEvSg2::Ticker1(uint32_t ticker)
 {
+	VerifyConfigs(true);
+
 	VerifyCanActivity();
 	can_2_sending = false;
 
@@ -255,6 +262,7 @@ void OvmsVehicleKiaNiroEvSg2::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleKiaNiroEvSg2::Ticker300(uint32_t ticker)
 {
+	VerifyConfigs(false);
 	// check ecus every 20 min even if car is off
 	if (!can_2_sending && poll_counter > 1500)
 	{
@@ -315,6 +323,8 @@ bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 			SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
 			vTaskDelay(pdMS_TO_TICKS(28));
 			SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
+			lock_command = true;
+			lock_counter = 6;
 		}
 		else
 		{
@@ -329,7 +339,10 @@ bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
 		vTaskDelay(pdMS_TO_TICKS(28));
 		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
+		unlock_command = true;
+		lock_counter = 6;
 	}
+	m_can2->Reset();
 	return true;
 }
 
@@ -361,6 +374,68 @@ void OvmsVehicleKiaNiroEvSg2::VerifyCanActivity()
 			}
 		}
 	}
+}
+
+void OvmsVehicleKiaNiroEvSg2::VerifyDoorLock()
+{
+	if (!(lock_command || unlock_command))
+		return;
+	if (lock_counter <= 0)
+	{
+		lock_counter = 0;
+		lock_command = false;
+		unlock_command = false;
+		return;
+	}
+	lock_counter--;
+	bool is_locked = StdMetrics.ms_v_env_locked->AsBool();
+	if (lock_command && is_locked)
+	{
+		lock_counter = 0;
+		lock_command = false;
+		return;
+	}
+	if (unlock_command && !is_locked)
+	{
+		lock_counter = 0;
+		unlock_command = false;
+		return;
+	}
+	if (lock_counter % 2 == 1)
+	{
+		m_can2->Reset();
+		return;
+	}
+	SendCanMessageSecondary(0x500, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
+	vTaskDelay(pdMS_TO_TICKS(14));
+	SendCanMessageSecondary(0x502, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
+	vTaskDelay(pdMS_TO_TICKS(120));
+	SendCanMessageSecondary(0x401, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	vTaskDelay(pdMS_TO_TICKS(2));
+	SendCanMessageSecondary(0x402, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	vTaskDelay(pdMS_TO_TICKS(2));
+	SendCanMessageSecondary(0x403, 0x06, 0x10, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00);
+	vTaskDelay(pdMS_TO_TICKS(2));
+	SendCanMessageSecondary(0x4D6, 0xDD, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	if (lock_command)
+	{
+		vTaskDelay(pdMS_TO_TICKS(50));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(5));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(28));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
+	}
+	else if (unlock_command)
+	{
+		vTaskDelay(pdMS_TO_TICKS(50));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(5));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(28));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
+	}
+	return;
 }
 
 class OvmsVehicleKiaNiroEvSg2Init

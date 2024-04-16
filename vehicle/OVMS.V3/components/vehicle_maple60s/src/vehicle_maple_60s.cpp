@@ -85,6 +85,8 @@ OvmsVehicleMaple60S::OvmsVehicleMaple60S()
 	message_send_can.status = 0;
 
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
+	fully_configured = false;
+	reset_by_config = false;
 
 	StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
 	StdMetrics.ms_v_charge_inprogress->SetValue(false);
@@ -142,6 +144,8 @@ void OvmsVehicleMaple60S::HandleCharging()
  */
 void OvmsVehicleMaple60S::Ticker1(uint32_t ticker)
 {
+	VerifyConfigs(true);
+
 	if (m_poll_state == 0)
 	{
 		// ESP_LOGI(TAG, "POLL STATE OFF");
@@ -189,6 +193,7 @@ void OvmsVehicleMaple60S::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleMaple60S::Ticker300(uint32_t ticker)
 {
+	VerifyConfigs(false);
 }
 
 void OvmsVehicleMaple60S::EventListener(std::string event, void *data)

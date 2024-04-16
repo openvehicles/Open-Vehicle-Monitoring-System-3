@@ -44,6 +44,12 @@ class OvmsVehicleMaxEu6 : public maxeu6
     ~OvmsVehicleMaxEu6();
 
   public:
+    bool configured;
+    bool fully_configured;
+    bool reset_by_config;
+    bool shouldLock;
+    bool shouldUnlock;
+    int lockingCounter;
 
     void IncomingFrameCan1(CAN_frame_t *p_frame);
     void Ticker1(uint32_t ticker);
@@ -76,6 +82,13 @@ class OvmsVehicleMaxEu6 : public maxeu6
 
   protected:
 
+    void VerifyConfigs(bool verify);
+    bool ConfigChanged();
+    void VerifySingleConfig(std::string param, std::string instance, std::string defValue, std::string value);
+    void VerifySingleConfigInt(std::string param, std::string instance, int defValue, int value);
+    void VerifySingleConfigBool(std::string param, std::string instance, bool defValue, bool value);
+
+
     void HandleCharging();
     void HandleChargeStop();
     void HandleCarOn();
@@ -84,6 +97,8 @@ class OvmsVehicleMaxEu6 : public maxeu6
     bool SetDoorLock(bool open);
     void SetChargeMetrics();
     void SendTesterPresentMessages();
+
+    void CheckLock();
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------

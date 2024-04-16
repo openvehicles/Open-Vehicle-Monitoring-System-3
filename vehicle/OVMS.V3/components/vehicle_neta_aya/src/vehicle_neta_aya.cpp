@@ -87,6 +87,8 @@ OvmsVehicleNetaAya::OvmsVehicleNetaAya()
 	message_send_can.status = 0;
 
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
+	fully_configured = false;
+	reset_by_config = false;
 
 	StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
 	StdMetrics.ms_v_charge_inprogress->SetValue(false);
@@ -147,6 +149,7 @@ void OvmsVehicleNetaAya::HandleCharging()
  */
 void OvmsVehicleNetaAya::Ticker1(uint32_t ticker)
 {
+	VerifyConfigs(true);
 	// Register car as locked only if all doors are locked
 
 	if (m_poll_state == 0)
@@ -196,6 +199,7 @@ void OvmsVehicleNetaAya::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleNetaAya::Ticker300(uint32_t ticker)
 {
+	VerifyConfigs(false);
 }
 
 void OvmsVehicleNetaAya::EventListener(std::string event, void *data)
@@ -231,22 +235,19 @@ bool OvmsVehicleNetaAya::SetDoorLock(bool lock)
 							StdMetrics.ms_v_door_fr->AsBool() &&
 							StdMetrics.ms_v_door_rl->AsBool() &&
 							StdMetrics.ms_v_door_rr->AsBool();
-		if (closed_doors)
-		{
-			MyPeripherals->m_max7317->Output(8, 0);
+		if (closed_doors) {
+			MyPeripherals->m_max7317->Output(9, 0);
 			vTaskDelay(pdMS_TO_TICKS(1000));
-			MyPeripherals->m_max7317->Output(8, 255);
-		}
-		else
-		{
+			MyPeripherals->m_max7317->Output(9, 255);
+		} else {
 			return false;
 		}
 	}
 	else
 	{
-		MyPeripherals->m_max7317->Output(9, 0);
+		MyPeripherals->m_max7317->Output(8, 0);
 		vTaskDelay(pdMS_TO_TICKS(1000));
-		MyPeripherals->m_max7317->Output(9, 255);
+		MyPeripherals->m_max7317->Output(8, 255);
 	}
 	return true;
 }

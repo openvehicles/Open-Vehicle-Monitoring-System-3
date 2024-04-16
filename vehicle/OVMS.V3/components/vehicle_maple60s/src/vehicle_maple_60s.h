@@ -44,6 +44,9 @@ class OvmsVehicleMaple60S : public Maple60S
     ~OvmsVehicleMaple60S();
 
   public:
+    bool configured;
+    bool fully_configured;
+    bool reset_by_config;
 
     void IncomingFrameCan1(CAN_frame_t *p_frame);
     void Ticker1(uint32_t ticker);
@@ -74,6 +77,14 @@ class OvmsVehicleMaple60S : public Maple60S
     metric_unit_t GetConsoleUnits();
 
   protected:
+
+    void VerifyConfigs(bool verify);
+    bool ConfigChanged();
+    void VerifySingleConfig(std::string param, std::string instance, std::string defValue, std::string value);
+    void VerifySingleConfigInt(std::string param, std::string instance, int defValue, int value);
+    void VerifySingleConfigBool(std::string param, std::string instance, bool defValue, bool value);
+
+
     void HandleCharging();
     void HandleChargeStop();
     void HandleCarOn();
@@ -82,6 +93,11 @@ class OvmsVehicleMaple60S : public Maple60S
     bool SetDoorLock(bool open);
     void SetChargeMetrics();
     void SendTesterPresentMessages();
+
+		#define CFG_DEFAULT_MAXRANGE 440
+
+		#define CGF_DEFAULT_BATTERY_CAPACITY 64000
+    float kn_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------

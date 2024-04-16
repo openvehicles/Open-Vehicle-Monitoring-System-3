@@ -46,7 +46,15 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
   public:
     bool should_poll;
     int poll_counter;
-  
+
+    bool lock_command;
+    bool unlock_command;
+    bool start_alarm;
+    bool configured;
+    bool fully_configured;
+    bool reset_by_config;
+    int lock_counter;
+
     void IncomingFrameCan1(CAN_frame_t *p_frame);
     void IncomingFrameCan2(CAN_frame_t *p_frame);
     void Ticker1(uint32_t ticker);
@@ -77,6 +85,12 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     metric_unit_t GetConsoleUnits();
 
   protected:
+    void VerifyConfigs(bool verify);
+    bool ConfigChanged();
+    void VerifySingleConfig(std::string param, std::string instance, std::string defValue, std::string value);
+    void VerifySingleConfigInt(std::string param, std::string instance, int defValue, int value);
+    void VerifySingleConfigBool(std::string param, std::string instance, bool defValue, bool value);
+
 
     void HandleCharging();
     void HandleChargeStop();
@@ -91,6 +105,7 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     void IncomingSW(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
     bool SetDoorLock(bool open);
+    void VerifyDoorLock();
     void VerifyCanActivity();
     void SetChargeMetrics();
     void SendTesterPresentMessages();
