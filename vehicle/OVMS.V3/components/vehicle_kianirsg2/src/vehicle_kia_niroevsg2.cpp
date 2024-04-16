@@ -100,9 +100,7 @@ static const OvmsVehicle::poll_pid_t vehicle_kianiroevsg2_polls[] =
 		{0x7d4, 0x7dc, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0101, {2, 2, 2}, 1, ISOTP_STD}, // ON SPEED
 		POLL_LIST_END};
 
-static const OvmsVehicle::poll_pid_t vehicle_kianiroevsg2_polls_stop[] =
-	{
-		POLL_LIST_END};
+static const OvmsVehicle::poll_pid_t vehicle_kianiroevsg2_polls_stop[] = {POLL_LIST_END};
 
 /**
  * Constructor for Kia Niro EV OvmsVehicleKiaNiroEvSg2
@@ -118,11 +116,6 @@ OvmsVehicleKiaNiroEvSg2::OvmsVehicleKiaNiroEvSg2()
 
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
 	windows_open = false;
-	start_alarm = false;
-	lock_command = false;
-	unlock_command = false;
-	fully_configured = false;
-	reset_by_config = false;
 	// SetParamValue
 	// SetParamValueBinary
 	// SetParamValueInt
@@ -322,7 +315,6 @@ bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 			SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
 			vTaskDelay(pdMS_TO_TICKS(28));
 			SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
-
 		}
 		else
 		{

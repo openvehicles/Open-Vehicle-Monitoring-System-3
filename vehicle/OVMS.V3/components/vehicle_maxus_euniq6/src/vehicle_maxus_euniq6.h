@@ -37,22 +37,19 @@
 
 using namespace std;
 
-class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
+class OvmsVehicleMaxEu6 : public maxeu6
   {
   public:
-		OvmsVehicleKiaNiroEvSg2();
-    ~OvmsVehicleKiaNiroEvSg2();
+		OvmsVehicleMaxEu6();
+    ~OvmsVehicleMaxEu6();
 
   public:
-    bool should_poll;
-    int poll_counter;
-  
+
     void IncomingFrameCan1(CAN_frame_t *p_frame);
-    void IncomingFrameCan2(CAN_frame_t *p_frame);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void Ticker300(uint32_t ticker);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void EventListener(std::string event, void* data);
     void SendTesterPresent(uint16_t id, uint8_t length);
     bool SetSessionMode(uint16_t id, uint8_t mode);
     void SendCanMessage(uint16_t id, uint8_t count,
@@ -70,11 +67,12 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     bool SendCommandInSessionMode(uint16_t id, uint8_t count,
     				uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 						uint8_t b5, uint8_t b6, uint8_t mode);
+    void CanMultimpleSend(uint16_t id, uint8_t count,
+                          uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+                          uint8_t b5, uint8_t b6, int times, int delay);
 
     virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
-
-    metric_unit_t GetConsoleUnits();
 
   protected:
 
@@ -83,19 +81,9 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     void HandleCarOn();
     void HandleCarOff();
 
-    void IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingBCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingCM(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
-    void IncomingSW(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
-
     bool SetDoorLock(bool open);
-    void VerifyCanActivity();
     void SetChargeMetrics();
     void SendTesterPresentMessages();
-
-    bool windows_open;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 set(srcs)
 set(include_dirs)
 
-if (CONFIG_OVMS_VEHICLE_KIANIROEVSG2)
-  list(APPEND srcs "src/configs.cpp" "src/can_poll.cpp" "src/can_send.cpp" "src/commands.cpp" "src/incoming_c_can.cpp" "src/web.cpp" "src/vehicle_kia_niroevsg2.cpp")
+if (CONFIG_OVMS_VEHICLE_MAXEU6)
+  list(APPEND srcs  "src/configs.cpp" "src/can_poll.cpp" "src/can_send.cpp" "src/commands.cpp" "src/incoming_c_can.cpp" "src/web.cpp" "src/vehicle_maxus_euniq6.cpp")
   list(APPEND include_dirs "src")
 endif ()
 
