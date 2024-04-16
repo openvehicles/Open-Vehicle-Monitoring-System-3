@@ -1100,7 +1100,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << StandardMetrics.ms_v_bat_voltage->AsFloat()
     << ","
-    << StandardMetrics.ms_v_bat_soh->AsInt()
+    << StandardMetrics.ms_v_bat_soh->AsFloat()
     << ","
     << StandardMetrics.ms_v_charge_power->AsFloat()
     << ","

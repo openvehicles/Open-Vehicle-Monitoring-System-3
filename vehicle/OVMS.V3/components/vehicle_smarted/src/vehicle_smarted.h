@@ -52,6 +52,9 @@
 
 using namespace std;
 
+typedef std::vector<OvmsPoller::poll_pid_t, ExtRamAllocator<OvmsPoller::poll_pid_t>> poll_vector_t;
+typedef std::initializer_list<const OvmsPoller::poll_pid_t> poll_list_t;
+
 class OvmsVehicleSmartED : public OvmsVehicle
 {
   public:
@@ -72,6 +75,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void WebDeInit();
 #endif
     void ObdInitPoll();
+    void ObdModifyPoll();
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
@@ -286,6 +290,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   // BMS helpers
   protected:
+    float m_bms_raw_voltages[93];            // BMS raw voltages (current value)
+    float m_bms_bat_pack_avg;                 // BMS avg raw voltages
     float* m_bms_capacitys;                   // BMS Capacity (current value)
     float* m_bms_cmins;                       // BMS minimum Capacity seen (since reset)
     float* m_bms_cmaxs;                       // BMS maximum Capacity seen (since reset)
@@ -362,6 +368,13 @@ class OvmsVehicleSmartED : public OvmsVehicle
   protected:
     void HandleCharging12v();
     unsigned int m_charging_timer;
+  
+  protected:
+    poll_vector_t       m_poll_vector;              // List of PIDs to poll
+    
+    int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.
+    int                 m_cfg_cell_interval_chg;    // … while charging, default 60 sec.
+    int                 m_cfg_cell_interval_awk;    // … while awake, default 60 sec.
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__

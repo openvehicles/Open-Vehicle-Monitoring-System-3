@@ -11,7 +11,7 @@
     "body-parser": "~1.9.3",
     "byline": "~4.2.1",
     "events": "~1.0.2",
-    "express": "~4.10.1",
+    "express": ">=4.19.2",
     "http": "0.0.0",
     "minimist": "~1.2.5",
     "readline": "0.0.5",
