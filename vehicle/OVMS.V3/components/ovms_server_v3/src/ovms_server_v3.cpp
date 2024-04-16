@@ -832,7 +832,7 @@ void OvmsServerV3::EventListener(std::string event, void* data)
 void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   {
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
-  m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 1);
+  m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 10);
   m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 60);
   m_updatetime_awake = MyConfig.GetParamValueInt("server.v3", "updatetime.awake", m_updatetime_idle);
   m_updatetime_on = MyConfig.GetParamValueInt("server.v3", "updatetime.on", m_updatetime_idle);
