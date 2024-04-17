@@ -304,6 +304,7 @@ esp_err_t mcp2515::Stop()
 
   // And record that we are powered down
   pcp::SetPowerMode(Off);
+  m_mode = CAN_MODE_OFF;
 
   return ESP_OK;
   }
