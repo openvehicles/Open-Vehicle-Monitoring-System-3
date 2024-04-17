@@ -584,7 +584,7 @@ void modem::State1Enter(modem_state1_t newstate)
   if (m_driver == NULL)
     {
     // Register a default modem driver
-    std::string driver = MyConfig.GetParamValue("modem", "driver","auto");
+    std::string driver = MyConfig.GetParamValue("modem", "driver", "auto");
     SetCellularModemDriver(driver.c_str());
     }
 
@@ -962,7 +962,7 @@ modem::modem_state1_t modem::State1Ticker1()
             MyBoot.Restart();
           }
         }
-      if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
+      if ((m_mux != NULL) && (m_state1_ticker > 5) && ((m_state1_ticker % 30) == 0))
         { m_driver->StatusPoller(); }
       break;
 

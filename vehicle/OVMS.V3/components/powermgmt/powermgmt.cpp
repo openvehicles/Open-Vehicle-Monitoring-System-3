@@ -86,103 +86,103 @@ void powermgmt::ConfigChanged(std::string event, void* data)
 
 void powermgmt::Ticker1(std::string event, void* data)
   {
-  if (!m_charging)
-    m_notcharging_timer++;
+//   if (!m_charging)
+//     m_notcharging_timer++;
 
-  if (StandardMetrics.ms_v_env_charging12v->AsBool())
-    {
-    if (!m_charging)
-      {
-      ESP_LOGI(TAG,"Charging 12V battery..");
-      m_charging=true;
-      // Turn on WiFi and modem if they were previously turned off by us
-#ifdef CONFIG_OVMS_COMP_WIFI
-      if (m_wifi_off)
-        {
-        MyPeripherals->m_esp32wifi->SetPowerMode(On);
-        m_wifi_off = false;
-        }
-#endif
-#ifdef CONFIG_OVMS_COMP_CELLULAR
-      if (m_modem_off)
-        {
-        MyPeripherals->m_cellular_modem->SetPowerMode(On);
-        m_modem_off = false;
-        }
-#endif
-      }
-    }
-  else
-    {
-    if (m_charging)
-      {
-      ESP_LOGI(TAG,"No longer charging 12V battery..");
-      m_charging=false;
-      m_notcharging_timer=0;
-      }
-    }
+//   if (StandardMetrics.ms_v_env_charging12v->AsBool())
+//     {
+//     if (!m_charging)
+//       {
+//       ESP_LOGI(TAG,"Charging 12V battery..");
+//       m_charging=true;
+//       // Turn on WiFi and modem if they were previously turned off by us
+// #ifdef CONFIG_OVMS_COMP_WIFI
+//       if (m_wifi_off)
+//         {
+//         MyPeripherals->m_esp32wifi->SetPowerMode(On);
+//         m_wifi_off = false;
+//         }
+// #endif
+// #ifdef CONFIG_OVMS_COMP_CELLULAR
+//       if (m_modem_off)
+//         {
+//         MyPeripherals->m_cellular_modem->SetPowerMode(On);
+//         m_modem_off = false;
+//         }
+// #endif
+//       }
+//     }
+//   else
+//     {
+//     if (m_charging)
+//       {
+//       ESP_LOGI(TAG,"No longer charging 12V battery..");
+//       m_charging=false;
+//       m_notcharging_timer=0;
+//       }
+//     }
 
-  if (!m_enabled)
-    return;
+//   if (!m_enabled)
+//     return;
 
-#ifdef CONFIG_OVMS_COMP_WIFI
-  if (m_wifioff_delay && m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
-    {
-    if (MyPeripherals->m_esp32wifi->GetPowerMode()==On)
-      {
-      ESP_LOGW(TAG,"Powering off wifi");
-      MyEvents.SignalEvent("powermgmt.wifi.off",NULL);
-      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down WiFI
-      MyPeripherals->m_esp32wifi->SetPowerMode(Off);
-      m_wifi_off = true;
-      }
-    }
-#endif
+// #ifdef CONFIG_OVMS_COMP_WIFI
+//   if (m_wifioff_delay && m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
+//     {
+//     if (MyPeripherals->m_esp32wifi->GetPowerMode()==On)
+//       {
+//       ESP_LOGW(TAG,"Powering off wifi");
+//       MyEvents.SignalEvent("powermgmt.wifi.off",NULL);
+//       vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down WiFI
+//       MyPeripherals->m_esp32wifi->SetPowerMode(Off);
+//       m_wifi_off = true;
+//       }
+//     }
+// #endif
 
-#ifdef CONFIG_OVMS_COMP_CELLULAR
-  if (m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
-    {
-    if (MyPeripherals->m_cellular_modem->GetPowerMode()==On)
-      {
-      ESP_LOGW(TAG,"Powering off cellular modem");
-      MyEvents.SignalEvent("powermgmt.modem.off",NULL);
-      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down modem
-      MyPeripherals->m_cellular_modem->SetPowerMode(Off);
-      m_modem_off = true;
-      }
-    }
-#endif
+// #ifdef CONFIG_OVMS_COMP_CELLULAR
+//   if (m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
+//     {
+//     if (MyPeripherals->m_cellular_modem->GetPowerMode()==On)
+//       {
+//       ESP_LOGW(TAG,"Powering off cellular modem");
+//       MyEvents.SignalEvent("powermgmt.modem.off",NULL);
+//       vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down modem
+//       MyPeripherals->m_cellular_modem->SetPowerMode(Off);
+//       m_modem_off = true;
+//       }
+//     }
+// #endif
 
-  if (StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool())
-    {
-    m_12v_alert_timer++;
-    if (m_12v_shutdown_delay && m_12v_alert_timer == 1)
-      {
-      ESP_LOGW(TAG, "12V battery alert detected, will shutdown in %d minutes", m_12v_shutdown_delay);
-      }
-    if (m_12v_shutdown_delay && m_12v_alert_timer > m_12v_shutdown_delay*60) // minutes to seconds
-      {
-      m_12v_shutdown_delay = 0;
-      ESP_LOGE(TAG,"Ongoing 12V battery alert time limit exceeded! Shutting down OVMS..");
-      MyEvents.SignalEvent("powermgmt.ovms.shutdown",NULL);
+//   if (StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool())
+//     {
+//     m_12v_alert_timer++;
+//     if (m_12v_shutdown_delay && m_12v_alert_timer == 1)
+//       {
+//       ESP_LOGW(TAG, "12V battery alert detected, will shutdown in %d minutes", m_12v_shutdown_delay);
+//       }
+//     if (m_12v_shutdown_delay && m_12v_alert_timer > m_12v_shutdown_delay*60) // minutes to seconds
+//       {
+//       m_12v_shutdown_delay = 0;
+//       ESP_LOGE(TAG,"Ongoing 12V battery alert time limit exceeded! Shutting down OVMS..");
+//       MyEvents.SignalEvent("powermgmt.ovms.shutdown",NULL);
       
-      // Override default boot voltage level configuration:
-      float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
-      float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
-      float alert_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6);
-      MyBoot.SetMin12VLevel(vref - alert_threshold + 0.5);
+//       // Override default boot voltage level configuration:
+//       float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
+//       float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
+//       float alert_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6);
+//       MyBoot.SetMin12VLevel(vref - alert_threshold + 0.5);
       
-      // Request deep sleep shutdown:
-      unsigned int wakeup_interval = MyConfig.GetParamValueInt("vehicle", "12v.wakeup_interval", 60);
-      MyBoot.DeepSleep(wakeup_interval);
-      }
-    }
-  else
-    {
-    if (m_12v_shutdown_delay && m_12v_alert_timer)
-      {
-      ESP_LOGI(TAG, "12V battery alert resolved, shutdown cancelled");
-      }
-    m_12v_alert_timer = 0;
-    }
+//       // Request deep sleep shutdown:
+//       unsigned int wakeup_interval = MyConfig.GetParamValueInt("vehicle", "12v.wakeup_interval", 60);
+//       MyBoot.DeepSleep(wakeup_interval);
+//       }
+//     }
+//   else
+//     {
+//     if (m_12v_shutdown_delay && m_12v_alert_timer)
+//       {
+//       ESP_LOGI(TAG, "12V battery alert resolved, shutdown cancelled");
+//       }
+//     m_12v_alert_timer = 0;
+//     }
   }

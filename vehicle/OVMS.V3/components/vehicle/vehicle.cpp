@@ -30,6 +30,7 @@
 
 #include "ovms_log.h"
 static const char *TAG = "vehicle";
+static const char *BASE_VEHICLE = "MPL60S";
 
 #include <stdio.h>
 #include <algorithm>
@@ -166,7 +167,14 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
     {
     return iter->second.construct();
     }
-  return NULL;
+  // REPLACE DEFAULT
+  // return NULL;
+
+  if (strcmp(VehicleType, BASE_VEHICLE) == 0)
+  {
+    return NULL;
+  }
+  return NewVehicle(BASE_VEHICLE);
   }
 
 void OvmsVehicleFactory::ClearVehicle()
@@ -184,6 +192,11 @@ void OvmsVehicleFactory::ClearVehicle()
 
 void OvmsVehicleFactory::SetVehicle(const char* type)
   {
+  if (check == m_vmap.end())
+  {
+    ESP_LOGW(TAG, "Tried to set NULL vehicle");
+    return SetVehicle(BASE_VEHICLE);
+  }
   if (m_currentvehicle)
     {
     m_currentvehicle->m_ready = false;
@@ -204,7 +217,8 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
 
 void OvmsVehicleFactory::AutoInit()
   {
-  std::string type = MyConfig.GetParamValue("auto", "vehicle.type");
+  // REPLACE DEFAULT
+  std::string type = MyConfig.GetParamValue("auto", "vehicle.type", BASE_VEHICLE);
   if (!type.empty())
     SetVehicle(type.c_str());
   }
@@ -583,7 +597,8 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     return;
 
   m_ticker++;
-
+  
+  // todo: revisar si bajar
   PollerStateTicker();
   PollerSend(poller_source_t::Primary);
 

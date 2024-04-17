@@ -196,7 +196,6 @@ void OvmsVehicleKiaNiroEvSg2::HandleCharging()
 void OvmsVehicleKiaNiroEvSg2::Ticker1(uint32_t ticker)
 {
 	VerifyConfigs(true);
-
 	VerifyCanActivity();
 	can_2_sending = false;
 
