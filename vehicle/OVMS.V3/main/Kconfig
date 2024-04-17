@@ -378,6 +378,34 @@ config OVMS_VEHICLE_TESLAMODEL3
     help
         Enable to include support for Tesla Model 3 vehicles.
 
+config OVMS_VEHICLE_KIANIROEVSG2
+    bool "Include support for Kia NiroSG2 vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Kia NiroSG2 vehicles
+
+config OVMS_VEHICLE_MAPLE60S
+    bool "Include support for Maple 60s vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Maple 60s vehicles
+
+config OVMS_VEHICLE_MAXEU6
+    bool "Include support for Maxus Euniq6 vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Maxus Euniq6 vehicles
+
+config OVMS_VEHICLE_NETA_AYA
+    bool "Include support for Neta Aya vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Neta Aya vehicles
+
 config OVMS_VEHICLE_NISSANLEAF
     bool "Include support for Nissan Leaf vehicles"
     default y
@@ -435,7 +463,7 @@ config OVMS_VEHICLE_BOLTEV
     default y
     depends on OVMS
     help
-        Enable to include support for Bolt EV/Ampera-e vehicles"
+        Enable to include support for Bolt EV/Ampera vehicles
 
 config OVMS_VEHICLE_VOLTAMPERA
     bool "Include support for Volt/Ampera vehicles"
