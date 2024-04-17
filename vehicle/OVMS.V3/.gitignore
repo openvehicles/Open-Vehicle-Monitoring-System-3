@@ -53,7 +53,7 @@ dkms.conf
 
 # ESP32 stuff
 build/*
-!build/*.bin
+!build/ovms3.bin
 sdkconfig.old
 .DS_Store
 .atom-build.yml

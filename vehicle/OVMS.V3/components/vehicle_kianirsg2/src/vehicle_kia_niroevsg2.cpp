@@ -75,7 +75,7 @@ static const char *TAG = "v-kianiroevsg2";
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
-static const OvmsVehicle::poll_pid_t vehicle_kianiroevsg2_polls[] =
+static const OvmsPoller::poll_pid_t vehicle_kianiroevsg2_polls[] =
 	{
 		// ok2	IncomingIGMP
 		{0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xbc03, {2, 2, 2}, 1, ISOTP_STD}, // IGMP Door status and lock
@@ -100,7 +100,7 @@ static const OvmsVehicle::poll_pid_t vehicle_kianiroevsg2_polls[] =
 		{0x7d4, 0x7dc, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0101, {2, 2, 2}, 1, ISOTP_STD}, // ON SPEED
 		POLL_LIST_END};
 
-static const OvmsVehicle::poll_pid_t vehicle_kianiroevsg2_polls_stop[] = {POLL_LIST_END};
+static const OvmsPoller::poll_pid_t vehicle_kianiroevsg2_polls_stop[] = {POLL_LIST_END};
 
 /**
  * Constructor for Kia Niro EV OvmsVehicleKiaNiroEvSg2
@@ -240,7 +240,6 @@ void OvmsVehicleKiaNiroEvSg2::Ticker1(uint32_t ticker)
 	{
 		HandleCharging();
 	}
-	VerifyDoorLock();
 }
 
 /**
@@ -286,10 +285,6 @@ void OvmsVehicleKiaNiroEvSg2::SetChargeMetrics()
  */
 bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 {
-	if (lock_command || unlock_command)
-	{
-		return false;
-	}
 	SendCanMessageSecondary(0x500, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
 	vTaskDelay(pdMS_TO_TICKS(14));
 	SendCanMessageSecondary(0x502, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
