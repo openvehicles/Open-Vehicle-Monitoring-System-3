@@ -7,7 +7,7 @@
 # please read the ESP-IDF documents if you need to do this.
 #
 
-ifdef CONFIG_OVMS_VEHICLE_NETAAYA
+ifdef CONFIG_OVMS_VEHICLE_NETA_AYA
 COMPONENT_ADD_INCLUDEDIRS:=src
 COMPONENT_SRCDIRS:=src
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
