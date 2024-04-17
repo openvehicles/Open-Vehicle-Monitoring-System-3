@@ -207,7 +207,9 @@ void Version(std::string event, void* data)
   metric.append(" (build ");
   metric.append(GetOVMSBuild());
   metric.append(")");
-  StandardMetrics.ms_m_version->SetValue(metric.c_str());
+  // StandardMetrics.ms_m_version->SetValue(metric.c_str());
+  // CAMBIAR CON DIFERENTES VERSIONES
+  StandardMetrics.ms_m_version->SetValue("OVMS TUCAR V2.0");
 
   metric = GetOVMSHardware();
   StandardMetrics.ms_m_hardware->SetValue(metric.c_str());

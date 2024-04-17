@@ -45,6 +45,7 @@ static const char *TAG = "config";
 #include "ovms_utils.h"
 #include "ovms_boot.h"
 #include "ovms_semaphore.h"
+#include "ovms_module.h"
 
 #ifdef CONFIG_OVMS_SC_ZIP
 #include "zip_archive.h"
@@ -1187,8 +1188,16 @@ void OvmsConfigParam::RewriteConfig()
   path.append("/");
   path.append(m_name);
   FILE* f = fopen(path.c_str(), "w");
-  if (!f)
+  if (!f){
     ESP_LOGE(TAG, "RewriteConfig: can't open '%s': %s", path.c_str(), strerror(errno));
+    // in case /store/ovms_config/ is not accesible factory reset.
+    // This is a workaround in case config is corrupted
+    if (startsWith(path, "/store/ovms_config/"))
+    {
+      ESP_LOGE(TAG, "RewriteConfig: factory reset");
+      ExecuteDriverFactoryReset();
+    }
+  }
   else
     {
 #ifdef OVMS_PERSIST_METADATA

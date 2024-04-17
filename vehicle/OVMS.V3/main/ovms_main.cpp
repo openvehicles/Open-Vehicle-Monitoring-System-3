@@ -41,13 +41,13 @@ static class FrameworkInit
 #if ESP_IDF_VERSION_MAJOR >= 5
       // If the TWDT was not initialized automatically on startup, manually intialize it now
       esp_task_wdt_config_t config = {
-          .timeout_ms = 120 * 1000,
+          .timeout_ms = 250 * 1000,
           .idle_core_mask = 0,
           .trigger_panic = true,
       };
       ESP_ERROR_CHECK(esp_task_wdt_init(&config));
 #else
-      esp_task_wdt_init(120, true);
+      esp_task_wdt_init(250, true);
 #endif
 #else
       ESP_LOGI(TAG, "WATCHDOG already initialized...");
