@@ -29,66 +29,66 @@ static const char *TAG = "v-kianiroevsg2";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleKiaNiroEvSg2::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEvSg2::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length)
 {
-	//ESP_LOGD(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
+	// ESP_LOGD(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_rec, type, pid, length, data[0], data[1], data[2], data[3],
 	//	data[4], data[5], data[6], data[7]);
-	switch (m_poll_moduleid_low)
-		{
-		// ****** IGMP *****
-		case 0x778:
-			IncomingIGMP(bus, type, pid, data, length, mlremain);
-			break;
+	switch (job.moduleid_rec)
+	{
+	// ****** IGMP *****
+	case 0x778:
+		IncomingIGMP(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
+		break;
 
-		// ****** BCM ******
-		case 0x7a8:
-			IncomingBCM(bus, type, pid, data, length, mlremain);
-			break;
+	// ****** BCM ******
+	case 0x7a8:
+		IncomingBCM(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
+		break;
 
-		// ******* VMCU ******
-		case 0x7ea:
-			IncomingVMCU(bus, type, pid, data, length, mlremain);
-			break;
+	// ******* VMCU ******
+	case 0x7ea:
+		IncomingVMCU(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
+		break;
 
-		// ***** BMC ****
-		case 0x7ec:
-			IncomingBMC(bus, type, pid, data, length, mlremain);
-			break;
+	// ***** BMC ****
+	case 0x7ec:
+		IncomingBMC(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
+		break;
 
-		// ***** CM ****
-		case 0x7ce:
-			IncomingCM(bus, type, pid, data, length, mlremain);
-			break;
+	// ***** CM ****
+	case 0x7ce:
+		IncomingCM(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
+		break;
 
-		// ***** SW ****
-		case 0x7dc:
-			IncomingSW(bus, type, pid, data, length, mlremain);
-			break;
+	// ***** SW ****
+	case 0x7dc:
+		IncomingSW(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
+		break;
 
-		default:
-			ESP_LOGD(TAG, "Unknown module: %03x", m_poll_moduleid_low);
-			break;
-		}
+	default:
+		ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_rec);
+		break;
+	}
 }
 
 /**
  * Handle incoming messages from cluster.
  */
-void OvmsVehicleKiaNiroEvSg2::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEvSg2::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
 {
-//	ESP_LOGI(TAG, "CM PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
+//	ESP_LOGI(TAG, "CM PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, mlframe, data[0], data[1], data[2], data[3],
 //			data[4], data[5], data[6]);
 //	ESP_LOGI(TAG, "---");
 	switch (pid)
 		{
 		case 0xb002:
-			if (m_poll_ml_frame == 1)
+			if (mlframe == 1)
 				{
 				StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(3), GetConsoleUnits());
 				}
 				break;
 		case 0xb003:
-				if (m_poll_ml_frame == 1)
+				if (mlframe == 1)
 				{
 				StdMetrics.ms_v_env_awake->SetValue(CAN_BYTE(1)!=0);
 				if (!StdMetrics.ms_v_env_awake->AsBool())
@@ -106,9 +106,9 @@ void OvmsVehicleKiaNiroEvSg2::IncomingCM(canbus* bus, uint16_t type, uint16_t pi
  *
  * - Aux battery SOC, Voltage and current
  */
-void OvmsVehicleKiaNiroEvSg2::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEvSg2::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
 {
-	//ESP_LOGD(TAG, "VMCU TYPE: %02x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", type, pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
+	//ESP_LOGD(TAG, "VMCU TYPE: %02x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", type, pid, length, mlframe, data[0], data[1], data[2], data[3],
 	//		data[4], data[5], data[6]);
 
 	switch (pid)
@@ -116,7 +116,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingVMCU(canbus* bus, uint16_t type, uint16_t 
 	case 0x02:
 		if (type == VEHICLE_POLL_TYPE_OBDIIGROUP)
 			{
-			if (m_poll_ml_frame == 3)
+			if (mlframe == 3)
 				{
 				StdMetrics.ms_v_bat_12v_voltage->SetValue(((CAN_BYTE(2)<<8)+CAN_BYTE(1))/1000.0, Volts);
 				}
@@ -136,7 +136,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingVMCU(canbus* bus, uint16_t type, uint16_t 
  * - Cell voltage max / min + cell #
  * + more
  */
-void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
 {
 	if (type == VEHICLE_POLL_TYPE_OBDIIEXTENDED)
 	{
@@ -144,9 +144,9 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus* bus, uint16_t type, uint16_t p
 		{
 		case 0x0101:
 			// diag page 01: skip first frame (no data)
-			//ESP_LOGD(TAG, "Frame number %x",m_poll_ml_frame);
+			//ESP_LOGD(TAG, "Frame number %x",mlframe);
 			
-			if (m_poll_ml_frame == 2)
+			if (mlframe == 2)
 				{
 				StdMetrics.ms_v_bat_current->SetValue((float)CAN_INT(0)/10.0, Amps);
 				StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(2)/10.0, Volts);
@@ -154,11 +154,11 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus* bus, uint16_t type, uint16_t p
 			break;
 
 		case 0x0105:
-			if (m_poll_ml_frame == 4)
+			if (mlframe == 4)
 				{
 				StdMetrics.ms_v_bat_soh->SetValue( (float)CAN_UINT(1)/10.0 );
 				}
-			else if (m_poll_ml_frame == 5)
+			else if (mlframe == 5)
 				{
 				StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(0)/2.0);
 				}
@@ -172,7 +172,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus* bus, uint16_t type, uint16_t p
 /**
  * Handle incoming messages from BCM-poll
  */
-void OvmsVehicleKiaNiroEvSg2::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEvSg2::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
 {
 	uint8_t bVal;
 	if (type == VEHICLE_POLL_TYPE_OBDIIEXTENDED)
@@ -180,7 +180,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBCM(canbus* bus, uint16_t type, uint16_t p
 		switch (pid)
 			{
 			case 0xC00B:
-				if (m_poll_ml_frame == 1)
+				if (mlframe == 1)
 				{
 					bVal = CAN_BYTE(1);
 					if (bVal > 0)
@@ -189,13 +189,13 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBCM(canbus* bus, uint16_t type, uint16_t p
 					if (bVal > 0)
 						StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, bVal / 5.0, PSI);
 				}
-				else if (m_poll_ml_frame == 2)
+				else if (mlframe == 2)
 				{
 					bVal = CAN_BYTE(4);
 					if (bVal > 0)
 						StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, bVal / 5.0, PSI);
 				}
-				else if (m_poll_ml_frame == 3)
+				else if (mlframe == 3)
 				{
 					bVal = CAN_BYTE(2);
 					if (bVal > 0)
@@ -204,7 +204,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBCM(canbus* bus, uint16_t type, uint16_t p
 				break;
 
 			case 0xB010:
-				if (m_poll_ml_frame == 1)
+				if (mlframe == 1)
 				{
 					bVal = CAN_BYTE(1);
 					if (bVal > 0){
@@ -223,14 +223,14 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBCM(canbus* bus, uint16_t type, uint16_t p
  *
  *
  */
-void OvmsVehicleKiaNiroEvSg2::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEvSg2::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
 {
 	if (type == VEHICLE_POLL_TYPE_OBDIIEXTENDED)
 	{
 		switch (pid)
 		{
 		case 0xbc03:
-			if (m_poll_ml_frame == 1)
+			if (mlframe == 1)
 				{
 				StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(1, 5));
 				StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(1, 4));
@@ -242,7 +242,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingIGMP(canbus* bus, uint16_t type, uint16_t 
 			break;
 
 		case 0xbc04:
-			if (m_poll_ml_frame == 1)
+			if (mlframe == 1)
 				{
 				m_v_door_lock_fl->SetValue(!CAN_BIT(1, 3));
 				m_v_door_lock_fr->SetValue(!CAN_BIT(1, 2));
@@ -252,15 +252,14 @@ void OvmsVehicleKiaNiroEvSg2::IncomingIGMP(canbus* bus, uint16_t type, uint16_t 
 	}
 }
 
-
-void OvmsVehicleKiaNiroEvSg2::IncomingSW(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEvSg2::IncomingSW(canbus *bus, uint16_t type, uint16_t pid, const uint8_t *data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
 {
 	if (type == VEHICLE_POLL_TYPE_OBDIIEXTENDED)
 	{
 		switch (pid)
 		{
 		case 0x0101:
-			if (m_poll_ml_frame == 2)
+			if (mlframe == 2)
 			{
 				StdMetrics.ms_v_env_on->SetValue(CAN_BYTE(6) != 0);
 				StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(2));
