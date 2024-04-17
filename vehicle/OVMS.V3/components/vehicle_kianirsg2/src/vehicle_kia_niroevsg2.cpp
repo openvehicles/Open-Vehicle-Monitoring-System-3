@@ -247,6 +247,7 @@ void OvmsVehicleKiaNiroEvSg2::Ticker1(uint32_t ticker)
 	{
 		HandleCharging();
 	}
+	VerifyDoorLock();
 }
 
 /**
@@ -293,6 +294,10 @@ void OvmsVehicleKiaNiroEvSg2::SetChargeMetrics()
  */
 bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 {
+	if (lock_command || unlock_command)
+	{
+		return false;
+	}
 	SendCanMessageSecondary(0x500, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
 	vTaskDelay(pdMS_TO_TICKS(14));
 	SendCanMessageSecondary(0x502, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
