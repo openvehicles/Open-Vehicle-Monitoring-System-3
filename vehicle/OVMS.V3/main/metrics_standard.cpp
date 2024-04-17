@@ -227,7 +227,6 @@ MetricsStandard::MetricsStandard()
   ms_v_env_on = new OvmsMetricBool(MS_V_ENV_ON, SM_STALE_MID, Other, true);
   ms_v_env_drivemode = new OvmsMetricInt(MS_V_ENV_DRIVEMODE, SM_STALE_MID, Other, true);
   ms_v_env_efficiencymode = new OvmsMetricString(MS_V_ENV_EFFICIENCYMODE, SM_STALE_MID, Other, true);
-  ms_v_env_regenmode = new OvmsMetricInt(MS_V_ENV_REGENMODE, SM_STALE_MID, Other, true);
   ms_v_env_regenlevel = new OvmsMetricFloat(MS_V_ENV_REGENLEVEL, SM_STALE_MID, Percentage, true);
   ms_v_env_gear = new OvmsMetricInt(MS_V_ENV_GEAR, SM_STALE_MID);
   ms_v_env_throttle = new OvmsMetricFloat(MS_V_ENV_THROTTLE, SM_STALE_MID, Percentage);

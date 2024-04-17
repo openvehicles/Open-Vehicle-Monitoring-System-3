@@ -475,7 +475,7 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_env_drivemode;                 // Active drive profile number [1]
     OvmsMetricString* ms_v_env_efficiencymode;            // Active efficiency profile number [1]
     OvmsMetricInt*    ms_v_env_gear;                      // Gear/direction; negative=reverse, 0=neutral [1]
-    OvmsMetricFloat*  ms_v_env_regenlevel;                 // regen level activaed
+    OvmsMetricFloat*  ms_v_env_regenlevel;                // regen level activaed
     OvmsMetricFloat*  ms_v_env_throttle;                  // Drive pedal state [%]
     OvmsMetricFloat*  ms_v_env_footbrake;                 // Brake pedal state [%]
     OvmsMetricBool*   ms_v_env_handbrake;                 // Handbrake state

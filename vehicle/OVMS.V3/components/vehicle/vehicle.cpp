@@ -192,6 +192,7 @@ void OvmsVehicleFactory::ClearVehicle()
 
 void OvmsVehicleFactory::SetVehicle(const char* type)
   {
+  OvmsVehicleFactory::map_vehicle_t::iterator check = m_vmap.find(type);
   if (check == m_vmap.end())
   {
     ESP_LOGW(TAG, "Tried to set NULL vehicle");
