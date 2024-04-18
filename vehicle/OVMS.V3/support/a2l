@@ -1,5 +1,5 @@
 #!/bin/bash
-elf=~/esp/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/ovms3.elf
+elf=/home/jaime/Documents/Tucar/OVMS/OVMS3-Tucar/vehicle/OVMS.V3/build/ovms3.elf
 for adr in $* ; do
   if [[ "$adr" =~ "elf" ]] ; then
     elf="$adr"
