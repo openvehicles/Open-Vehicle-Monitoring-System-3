@@ -61,6 +61,15 @@ enum class IqShiftStatus {
   Neutral,
   Drive
 };
+enum class IqVinStatus {
+  Success,
+  BadBuffer,
+  TxFail,
+  Timeout,
+  ProtocolErr,
+  BadFormat,
+  NotAwake
+};
 
 
 void xiq_trip_since_parked(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
@@ -371,11 +380,12 @@ public:
   // Non-Blocking VIN Request.
   bool PollRequestVIN();
 
+
   // Blocking VIN Request.
-  int RequestVIN();
+  IqVinStatus RequestVIN();
 
   // Process VIN REsult.
-  bool ProcessVIN(const std::string &response);
+  IqVinStatus ProcessVIN(const std::string &response);
 
   bool DriverIndicator(bool on)
   {
