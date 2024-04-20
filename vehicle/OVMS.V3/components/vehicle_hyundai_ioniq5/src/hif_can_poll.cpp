@@ -920,16 +920,37 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(uint16_t type, uint16_t pid, const st
   XDISARM;
 }
 
-bool OvmsHyundaiIoniqEv::ProcessVIN(const std::string &response)
+IqVinStatus OvmsHyundaiIoniqEv::ProcessVIN(const std::string &response)
 {
   uint32_t byte;
-  if (!get_uint_buff_be<1>(response, 4, byte)) {
+  if (!get_uint_buff_be<1>(response, 0, byte)) {
     ESP_LOGE(TAG, "ProcessVIN: Bad Buffer");
-    return false;
+    return IqVinStatus::BadBuffer;
+  }
+  else if (byte == 1)
+  {
+    std::string vin;
+    if ( !get_buff_string(response, 1, 17, vin)) {
+      return IqVinStatus::BadBuffer;
+    }
+    if (vin.length() > 5 && vin[4] == '-') {
+      vin = vin.substr(0, 3) + vin.substr(10) + "-------";
+    }
+    StandardMetrics.ms_v_vin->SetValue(vin);
+    ESP_BUFFER_LOGD(TAG, response.data(), response.size());
+
+    vin.copy(m_vin, sizeof(m_vin) - 1);
+    m_vin[sizeof(m_vin) - 1] = '\0';
+    ESP_LOGD(TAG, "ProcessVIN: Success: '%s'", vin.c_str());
+    return IqVinStatus::Success;
+  }
+  else if (!get_uint_buff_be<1>(response, 4, byte)) {
+    ESP_LOGE(TAG, "ProcessVIN: Bad Buffer");
+    return IqVinStatus::BadBuffer;
   }
   else if (byte != 1) {
     ESP_LOGI(TAG, "ProcessVIN: Ignore Response");
-    return false;
+    return IqVinStatus::BadFormat;
   }
   else {
     std::string vin;
@@ -943,11 +964,11 @@ bool OvmsHyundaiIoniqEv::ProcessVIN(const std::string &response)
       vin.copy(m_vin, sizeof(m_vin) - 1);
       m_vin[sizeof(m_vin) - 1] = '\0';
       ESP_LOGD(TAG, "ProcessVIN: Success: '%s'->'%s'", vin.c_str(), m_vin);
-      return true;
+      return IqVinStatus::Success;
     }
     else {
       ESP_LOGE(TAG, "ProcessVIN: Bad VIN Buffer");
-      return false;
+      return IqVinStatus::BadBuffer;
     }
   }
 }
@@ -962,40 +983,39 @@ bool OvmsHyundaiIoniqEv::PollRequestVIN()
       new OvmsPoller::OnceOffPoll(
         std::bind(&OvmsHyundaiIoniqEv::Incoming_Full, this, _1, _2, _3, _4, _5),
         std::bind(&OvmsHyundaiIoniqEv::Incoming_Fail, this, _1, _2, _3, _4, _5),
-        VEHICLE_OBD_BROADCAST_MODULE_TX, VEHICLE_OBD_BROADCAST_MODULE_RX,
+        0x7e2, 0x7ea,
         VEHICLE_POLL_TYPE_OBDIIVEHICLE,  2,
         ISOTP_STD, 0, 3/*retries*/ ));
   PollRequest(m_can1, "!xiq.vin", poll_entry);
   return true;
 }
 
-int OvmsHyundaiIoniqEv::RequestVIN()
+IqVinStatus OvmsHyundaiIoniqEv::RequestVIN()
 {
   //ESP_LOGD(TAG, "RequestVIN: Sending Request");
 
   if (!StdMetrics.ms_v_env_awake->AsBool()) {
     ESP_LOGD(TAG, "RequestVIN: Not Awake Request not sent");
-    return -3;
+    return IqVinStatus::NotAwake;
   }
 
   std::string response;
   int res = PollSingleRequest( m_can1,
-      VEHICLE_OBD_BROADCAST_MODULE_TX, VEHICLE_OBD_BROADCAST_MODULE_RX,
+      0x7e2, 0x7ea,
       VEHICLE_POLL_TYPE_OBDIIVEHICLE,  2, response, 1000);
   switch (res) {
     case POLLSINGLE_OK:
-      return ProcessVIN(response) ? POLLSINGLE_OK : POLLSINGLE_TIMEOUT;
-
+      return ProcessVIN(response);
     case POLLSINGLE_TIMEOUT:
       ESP_LOGE(TAG, "RequestVIN: Request Timeout");
-      break;
+      return IqVinStatus::Timeout;
     case POLLSINGLE_TXFAILURE:
       ESP_LOGE(TAG, "RequestVIN: Request TX Failure");
-      break;
+      return IqVinStatus::TxFail;
     default:
       ESP_LOGE(TAG, "RequestVIN: UDC Error %d: %s", res, OvmsPoller::PollResultCodeName(res));
   }
-  return res;
+  return IqVinStatus::ProtocolErr;
 }
 
 /**
