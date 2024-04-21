@@ -415,13 +415,13 @@ void xiq_tpms(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, con
   if (StdMetrics.ms_v_tpms_pressure->IsDefined()) {
     const std::string &rl_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_RL, "-", ToUser, 1);
     const std::string &rl_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_RL, "-", ToUser, 1);
-    writer->printf("3 Rear-Left ID:%" PRIu32 " %s %s\n", car->kia_tpms_id[2], rl_pressure.c_str(), rl_temp.c_str());
+    writer->printf("3 Rear-Left   ID:%" PRIu32 " %s %s\n", car->kia_tpms_id[2], rl_pressure.c_str(), rl_temp.c_str());
   }
   // Rear right
   if (StdMetrics.ms_v_tpms_pressure->IsDefined()) {
     const std::string &rr_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_RR, "-", ToUser, 1);
     const std::string &rr_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_RR, "-", ToUser, 1);
-    writer->printf("4 Rear-Right ID:%" PRIu32 " %s %s\n", car->kia_tpms_id[3], rr_pressure.c_str(), rr_temp.c_str());
+    writer->printf("4 Rear-Right  ID:%" PRIu32 " %s %s\n", car->kia_tpms_id[3], rr_pressure.c_str(), rr_temp.c_str());
   }
 }
 
