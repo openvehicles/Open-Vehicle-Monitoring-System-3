@@ -3368,7 +3368,7 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
     "$('#loced').on('msg:metrics', function(evt, update) {"
       "if ('v.p.latitude' in update || 'v.p.longitude' in update) {"
         "var preset = { latlon: metrics['v.p.latitude']+','+metrics['v.p.longitude'], radius: 100 };"
-        "$('#loced button.list-item-add').data('preset', JSON.stringify(preset));"
+        "$('#loced button.list-item-add').data('preset', preset);"
       "}"
     "}).trigger('msg:metrics', metrics);"
     "$('#loced').on('click', 'button.edit-scripts', function(evt) {\n"
