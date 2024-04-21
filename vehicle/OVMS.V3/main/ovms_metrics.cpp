@@ -1641,20 +1641,6 @@ bool OvmsMetric::IsFresh()
     return !IsStale();
   }
 
-void OvmsMetric::SetStale(bool stale)
-  {
-  m_stale = stale;
-  }
-
-void OvmsMetric::SetAutoStale(uint16_t seconds)
-  {
-  m_autostale = seconds;
-  }
-
-metric_unit_t OvmsMetric::GetUnits()
-  {
-  return m_units;
-  }
 
 bool OvmsMetric::IsModified(size_t modifier)
   {
