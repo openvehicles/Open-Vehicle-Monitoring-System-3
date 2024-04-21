@@ -336,6 +336,7 @@ class OvmsMetricFloat : public OvmsMetric
     ~OvmsMetricFloat() override;
 
   public:
+    void SetFormat(int precision = -1, bool fixed = false) { m_fmt_prec = precision; m_fmt_fixed = fixed; }
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
     std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other) override;
@@ -355,6 +356,8 @@ class OvmsMetricFloat : public OvmsMetric
   protected:
     float m_value;
     float* m_valuep;
+    int m_fmt_prec;
+    bool m_fmt_fixed;
   };
 
 class OvmsMetricString : public OvmsMetric

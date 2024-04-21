@@ -1995,7 +1995,7 @@ void OvmsVehicle::NotifyGridLog()
     << std::noboolalpha
     << "," << (StdMetrics.ms_v_pos_gpslock->AsBool() ? 1 : 0)
     << std::fixed
-    << std::setprecision(8)
+    << std::setprecision(6)
     << "," << StdMetrics.ms_v_pos_latitude->AsFloat()
     << "," << StdMetrics.ms_v_pos_longitude->AsFloat()
     << std::setprecision(1)

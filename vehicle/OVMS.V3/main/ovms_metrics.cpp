@@ -2142,6 +2142,8 @@ OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_un
   m_value = 0.0;
   m_valuep = NULL;
   m_persist = persist;
+  m_fmt_prec = -1;
+  m_fmt_fixed = false;
 
   if (m_persist)
     {
@@ -2203,8 +2205,17 @@ std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units,
     std::ostringstream ss;
     if (precision >= 0)
       {
-      ss.precision(precision); // Set desired precision
+      // Set desired fixed precision format:
+      ss.precision(precision);
       ss << fixed;
+      }
+    else
+      {
+      // Set standard metric format:
+      if (m_fmt_prec >= 0)
+        ss.precision(m_fmt_prec);
+      if (m_fmt_fixed)
+        ss << fixed;
       }
     if ((units != Other)&&(units != m_units))
       ss << UnitConvert(m_units,units,m_value);
@@ -2248,7 +2259,9 @@ int OvmsMetricFloat::AsInt(const int defvalue, metric_unit_t units)
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 void OvmsMetricFloat::DukPush(DukContext &dc, metric_unit_t units)
   {
-  dc.Push(AsFloat(0, units));
+  // Support custom precisions & minimize errors on float→double conversion:
+  std::string fval = AsString("0", units);
+  dc.Push(strtod(fval.c_str(), NULL));
   }
 #endif
 
