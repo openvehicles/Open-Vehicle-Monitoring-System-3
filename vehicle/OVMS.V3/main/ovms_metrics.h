@@ -822,12 +822,18 @@ class OvmsMetricVector : public OvmsMetric
         ss.precision(precision);
         ss << fixed;
         }
-      if (units != Other && units != m_units)
-        ss << (ElemType) UnitConvert(m_units, units, (float)m_value[n]);
-      else
-        ss << m_value[n];
+      auto currentUnits = GetUnits();
+      CheckTargetUnit(currentUnits, units, true);
+      if (units == Native)
+        units = currentUnits;
+
+      ElemType value = m_value[n];
+      if (units != currentUnits)
+        value = (ElemType)UnitConvert(currentUnits, units, (float)value);
+      ss << value;
+
       if (addunitlabel)
-        ss << OvmsMetricUnitLabel(units == Native ? GetUnits() : units);
+        ss << OvmsMetricUnitLabel( units );
       return ss.str();
       }
 
