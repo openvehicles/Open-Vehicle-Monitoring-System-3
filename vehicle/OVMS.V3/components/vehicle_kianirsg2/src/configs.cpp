@@ -123,7 +123,6 @@ void OvmsVehicleKiaNiroEvSg2::VerifyConfigs(bool verify)
             ESP_LOGE(TAG, "Set new configuration %s %s", "auto", "wifi.ssid.ap");
         }
     }
-
     VerifySingleConfig("module", "init", "", "done");
     VerifySingleConfig("wifi.ssid", "remoteWifiTucar", "", "&P9j1890Kz$8MzX");
     VerifySingleConfig("wifi.ssid", "DriverTucarApp", "", "driverpasstucarapp");

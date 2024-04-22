@@ -26,6 +26,40 @@
 
 static const char *TAG = "v-kianiroevsg2";
 
+	/*
+	BASIC METRICS
+	StdMetrics.ms_v_pos_speed 					ok (check miles)
+	StdMetrics.ms_v_bat_soc 					ok
+	StdMetrics.ms_v_pos_odometer 				ok
+
+	StdMetrics.ms_v_door_fl 					-
+	StdMetrics.ms_v_door_fr 					-
+	StdMetrics.ms_v_door_rl 					-
+	StdMetrics.ms_v_door_rr 					-
+	StdMetrics.ms_v_env_locked 					ok
+
+	StdMetrics.ms_v_env_onepedal 				-
+	StdMetrics.ms_v_env_efficiencymode 			-
+	StdMetrics.ms_v_env_regenlevel Percentage 	-
+
+	StdMetrics.ms_v_bat_current 				ok
+	StdMetrics.ms_v_bat_voltage 				ok
+	StdMetrics.ms_v_bat_power 					ok
+
+	StdMetrics.ms_v_charge_inprogress 			ok
+
+	StdMetrics.ms_v_env_on 						ok
+	StdMetrics.ms_v_env_awake 					ok
+
+	StdMetrics.ms_v_env_aux12v					ok
+
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI);	ok
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI);	ok
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI);	ok
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI);	ok 
+	*/
+
+
 /**
  * Incoming poll reply messages
  */

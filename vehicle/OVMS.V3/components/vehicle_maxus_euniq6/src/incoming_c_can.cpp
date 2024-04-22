@@ -56,36 +56,37 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 
 	/*
 	BASIC METRICS
-	StdMetrics.ms_v_pos_speed 
-	StdMetrics.ms_v_bat_soc 
-	StdMetrics.ms_v_pos_odometer 
+	StdMetrics.ms_v_pos_speed 					-
+	StdMetrics.ms_v_bat_soc 					-
+	StdMetrics.ms_v_pos_odometer 				-
 
-	StdMetrics.ms_v_door_fl 
-	StdMetrics.ms_v_door_fr 
-	StdMetrics.ms_v_door_rl 
-	StdMetrics.ms_v_door_rr 
-	StdMetrics.ms_v_env_locked
+	StdMetrics.ms_v_door_fl 					-
+	StdMetrics.ms_v_door_fr 					-
+	StdMetrics.ms_v_door_rl 					-
+	StdMetrics.ms_v_door_rr 					-
+	StdMetrics.ms_v_env_locked 					-
 
-	StdMetrics.ms_v_env_onepedal 
-	StdMetrics.ms_v_env_efficiencymode 
-	StdMetrics.ms_v_env_drivemode
+	StdMetrics.ms_v_env_onepedal 				-
+	StdMetrics.ms_v_env_efficiencymode 			-
+	StdMetrics.ms_v_env_regenlevel Percentage 	-
 
-	StdMetrics.ms_v_bat_current
-	StdMetrics.ms_v_bat_voltage
-	StdMetrics.ms_v_bat_power
+	StdMetrics.ms_v_bat_current 				-
+	StdMetrics.ms_v_bat_voltage 				-
+	StdMetrics.ms_v_bat_power 					-
 
-	StdMetrics.ms_v_charge_inprogress
+	StdMetrics.ms_v_charge_inprogress 			-
 
-	StdMetrics.ms_v_env_on 
-	StdMetrics.ms_v_env_awake
+	StdMetrics.ms_v_env_on 						-
+	StdMetrics.ms_v_env_awake 					-
 
-	StdMetrics.ms_v_env_aux12v
+	StdMetrics.ms_v_env_aux12v					-
 
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI);
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI);
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI);
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI);
 	*/
+
 	uint8_t *data = p_frame->data.u8;
 
 	// set batt temp

@@ -139,7 +139,7 @@ void OvmsVehicleMaxEu6::VerifyConfigs(bool verify)
     VerifySingleConfigBool("auto", "scripting", false, true);
     VerifySingleConfigBool("auto", "server.v2", true, false);
     VerifySingleConfigBool("auto", "server.v3", false, true);
-    VerifySingleConfig("auto", "vehicle.type", "", "NTA"); // model tag
+    VerifySingleConfig("auto", "vehicle.type", "", "ME6"); // model tag
     VerifySingleConfig("auto", "wifi.mode", "", "client");
     VerifySingleConfigBool("log", "file.enable", true, false);
     VerifySingleConfig("log", "level", "", "error");

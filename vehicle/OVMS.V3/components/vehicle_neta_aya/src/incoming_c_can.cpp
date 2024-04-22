@@ -53,6 +53,39 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 		message_send_can.byte[7] = d[7];
 	}
 
+	/*
+	BASIC METRICS
+	StdMetrics.ms_v_pos_speed 					ok
+	StdMetrics.ms_v_bat_soc 					ok
+	StdMetrics.ms_v_pos_odometer 				ok
+
+	StdMetrics.ms_v_door_fl 					ok
+	StdMetrics.ms_v_door_fr 					ok
+	StdMetrics.ms_v_door_rl 					ok
+	StdMetrics.ms_v_door_rr 					ok
+	StdMetrics.ms_v_env_locked 					ok
+
+	StdMetrics.ms_v_env_onepedal 				NA
+	StdMetrics.ms_v_env_efficiencymode 			ok
+	StdMetrics.ms_v_env_regenlevel Percentage 	ok
+
+	StdMetrics.ms_v_bat_current 				ok
+	StdMetrics.ms_v_bat_voltage 				ok
+	StdMetrics.ms_v_bat_power 					ok
+
+	StdMetrics.ms_v_charge_inprogress 			ok
+
+	StdMetrics.ms_v_env_on 						-
+	StdMetrics.ms_v_env_awake 					-
+
+	StdMetrics.ms_v_env_aux12v					-
+
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI);
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI);
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI);
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI);
+	*/
+
 	uint8_t *data = p_frame->data.u8;
 
 	switch (p_frame->MsgID)
@@ -110,11 +143,6 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 		StdMetrics.ms_v_charge_inprogress->SetValue(CAN_BIT(2, 0));
 		break;
 	default:
-		// StdMetrics.ms_v_env_on
-		// StdMetrics.ms_v_env_awake
-		// StdMetrics.ms_v_env_aux12v
 		return;
-		// case 0x405;
-		// 	StdMetrics.ms_v_bat_current->SetValue(CAN_INT(0));
 	}
 }

@@ -30,7 +30,7 @@
 
 #include "ovms_log.h"
 static const char *TAG = "vehicle";
-static const char *BASE_VEHICLE = "MPL60S";
+static const char *BASE_VEHICLE = "ME6";
 
 #include <stdio.h>
 #include <algorithm>
