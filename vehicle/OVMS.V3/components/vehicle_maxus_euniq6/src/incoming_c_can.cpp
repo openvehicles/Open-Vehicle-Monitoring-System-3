@@ -54,11 +54,12 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 		message_send_can.byte[7] = d[7];
 	}
 
+	// OVMS# E (3190620) can: can2 watchdog inactivity timeout - resetting bus
 	/*
 	BASIC METRICS
-	StdMetrics.ms_v_pos_speed 					-
-	StdMetrics.ms_v_bat_soc 					-
-	StdMetrics.ms_v_pos_odometer 				-
+	StdMetrics.ms_v_pos_speed 					ok
+	StdMetrics.ms_v_bat_soc 					ok
+	StdMetrics.ms_v_pos_odometer 				ok
 
 	StdMetrics.ms_v_door_fl 					-
 	StdMetrics.ms_v_door_fr 					-
@@ -72,12 +73,12 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 
 	StdMetrics.ms_v_bat_current 				-
 	StdMetrics.ms_v_bat_voltage 				-
-	StdMetrics.ms_v_bat_power 					-
+	StdMetrics.ms_v_bat_power 					- esta en porcentaje, varia entre el valor y 0.4
 
 	StdMetrics.ms_v_charge_inprogress 			-
 
-	StdMetrics.ms_v_env_on 						-
-	StdMetrics.ms_v_env_awake 					-
+	StdMetrics.ms_v_env_on 						ok
+	StdMetrics.ms_v_env_awake 					ok
 
 	StdMetrics.ms_v_env_aux12v					-
 
