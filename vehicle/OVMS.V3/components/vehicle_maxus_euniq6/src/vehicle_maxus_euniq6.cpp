@@ -147,14 +147,6 @@ void OvmsVehicleMaxEu6::HandleCharging()
 void OvmsVehicleMaxEu6::Ticker1(uint32_t ticker)
 {
 	VerifyConfigs(true);
-	StdMetrics.ms_v_bat_power->SetValue(
-		StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) *
-			StdMetrics.ms_v_bat_current->AsFloat(1, Amps) / 1000,
-		kW);
-	StdMetrics.ms_v_charge_inprogress->SetValue(
-		(StdMetrics.ms_v_pos_speed->AsFloat(0) < 1) &
-		(StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -1));
-
 	if (m_poll_state == 0)
 	{
 		// ESP_LOGI(TAG, "POLL STATE OFF");
