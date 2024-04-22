@@ -54,14 +54,13 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 		message_send_can.byte[7] = d[7];
 	}
 
-	// OVMS# E (3190620) can: can2 watchdog inactivity timeout - resetting bus
 	/*
 	BASIC METRICS
 	StdMetrics.ms_v_pos_speed 					ok
 	StdMetrics.ms_v_bat_soc 					ok
 	StdMetrics.ms_v_pos_odometer 				ok
 
-	StdMetrics.ms_v_door_fl 					ok no when closed yes when open
+	StdMetrics.ms_v_door_fl 					ok; yes when open, no when closed
 	StdMetrics.ms_v_door_fr 					ok
 	StdMetrics.ms_v_door_rl 					ok
 	StdMetrics.ms_v_door_rr 					ok
@@ -114,7 +113,7 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 	}
 	case 0x46a:
 	{
-		StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(0, 0)); // me tira 0 con la puerta cerrada, revisar que efectivamente deba ser asi
+		StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(0, 0));
 		StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(0, 3));
 		StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(0, 5));
 		StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(0, 7));

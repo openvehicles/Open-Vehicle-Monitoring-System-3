@@ -205,6 +205,7 @@ void OvmsVehicleKiaNiroEvSg2::Ticker1(uint32_t ticker)
 		m_v_door_lock_fl->AsBool() &
 		m_v_door_lock_rr->AsBool() &
 		m_v_door_lock_rl->AsBool());
+
 	StdMetrics.ms_v_bat_power->SetValue(
 		StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) *
 			StdMetrics.ms_v_bat_current->AsFloat(1, Amps) / 1000,
@@ -347,32 +348,33 @@ bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 
 void OvmsVehicleKiaNiroEvSg2::VerifyCanActivity()
 {
-	poll_counter++;
-	if (can_2_sending)
-	{
-		if (!should_poll)
-		{
-			should_poll = true;
-			ESP_LOGI(TAG, "Re-enable polling...");
-			PollSetPidList(m_can1, vehicle_kianiroevsg2_polls);
-			m_v_polling->SetValue(true);
-		}
-		poll_counter = 0;
-	}
-	else
-	{
-		if (should_poll)
-		{
-			if (poll_counter > 300)
-			{
-				should_poll = false;
-				ESP_LOGI(TAG, "Disable polling...");
-				PollSetPidList(m_can1, vehicle_kianiroevsg2_polls_stop);
-				m_v_polling->SetValue(false);
-				poll_counter = 0;
-			}
-		}
-	}
+	return;
+	// poll_counter++;
+	// if (can_2_sending)
+	// {
+	// 	if (!should_poll)
+	// 	{
+	// 		should_poll = true;
+	// 		ESP_LOGI(TAG, "Re-enable polling...");
+	// 		PollSetPidList(m_can1, vehicle_kianiroevsg2_polls);
+	// 		m_v_polling->SetValue(true);
+	// 	}
+	// 	poll_counter = 0;
+	// }
+	// else
+	// {
+	// 	if (should_poll)
+	// 	{
+	// 		if (poll_counter > 300)
+	// 		{
+	// 			should_poll = false;
+	// 			ESP_LOGI(TAG, "Disable polling...");
+	// 			PollSetPidList(m_can1, vehicle_kianiroevsg2_polls_stop);
+	// 			m_v_polling->SetValue(false);
+	// 			poll_counter = 0;
+	// 		}
+	// 	}
+	// }
 }
 
 void OvmsVehicleKiaNiroEvSg2::VerifyDoorLock()
