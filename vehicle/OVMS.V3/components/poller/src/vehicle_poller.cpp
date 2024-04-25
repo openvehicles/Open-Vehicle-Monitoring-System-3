@@ -619,12 +619,8 @@ void OvmsPoller::Queue_PollerSend(OvmsPoller::poller_source_t source)
 
 void OvmsPoller::DoPollerSendSuccess( void * pvParamCan, uint32_t ticker ) // Static
   {
-  // Reduce the chance of this callback on an invalid vehicle pointer.
-  if (MyVehicleFactory.m_currentvehicle != NULL)
-    {
-    uint8_t can_number = uint32_t(pvParamCan);
-    MyPollers.QueuePollerSend(OvmsPoller::poller_source_t::Successful, can_number, ticker);
-    }
+  uint8_t can_number = uint32_t(pvParamCan);
+  MyPollers.QueuePollerSend(OvmsPoller::poller_source_t::Successful, can_number, ticker);
   }
 
 void OvmsPoller::Queue_PollerSendSuccess()
