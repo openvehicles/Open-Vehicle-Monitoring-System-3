@@ -899,6 +899,39 @@ static duk_ret_t DukOvmsMetricHasValue(duk_context *ctx)
   return 1;
   }
 
+static duk_ret_t DukOvmsMetricIsStale(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (!m)
+    return 0;
+  dc.Push(m->IsStale());
+  return 1;
+  }
+
+static duk_ret_t DukOvmsMetricIsFresh(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (!m)
+    return 0;
+  dc.Push(m->IsFresh());
+  return 1;
+  }
+
+static duk_ret_t DukOvmsMetricAge(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (!m)
+    return 0;
+  dc.Push(m->Age());
+  return 1;
+  }
+
 static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
   {
   DukContext dc(ctx);
@@ -1078,6 +1111,9 @@ OvmsMetrics::OvmsMetrics()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsMetrics");
   dto->RegisterDuktapeFunction(DukOvmsMetricHasValue, 1, "HasValue");
+  dto->RegisterDuktapeFunction(DukOvmsMetricIsStale, 1, "IsStale");
+  dto->RegisterDuktapeFunction(DukOvmsMetricIsFresh, 1, "IsFresh");
+  dto->RegisterDuktapeFunction(DukOvmsMetricAge, 1, "Age");
   dto->RegisterDuktapeFunction(DukOvmsMetricValue, 3, "Value");
   dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 2, "AsFloat");
