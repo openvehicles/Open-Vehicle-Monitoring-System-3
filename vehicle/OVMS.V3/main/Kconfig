@@ -839,6 +839,16 @@ config OVMS_COMP_PLUGINS
         Enable to include support for PLUGINS and server based
         extension repositories.
 
+menuconfig OVMS_COMP_WIREGUARD
+    bool "Include support for WireGuard VPN (client)"
+    default n
+    depends on OVMS
+    help
+        The WireGuard VPN client support allows your OVMS to connect, via VPN,
+        to a server or network of your choosing.
+        When enabled, all outgoing connexions will use this VPN tunnel ; and all
+        incoming connexions through the tunnel will be accepted as local.
+
 endmenu # Component Options
 
 
