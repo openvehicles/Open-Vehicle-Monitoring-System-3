@@ -138,7 +138,7 @@ public:
   static OvmsVehicleVWeUp *GetInstance(OvmsWriter *writer = NULL);
 
 public:
-  void ConfigChanged(OvmsConfigParam *param);
+  void ConfigChanged(OvmsConfigParam *param) override;
   void MetricModified(OvmsMetric* metric);
   bool SetFeature(int key, const char *value);
   const std::string GetFeature(int key);
@@ -146,21 +146,21 @@ public:
   vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
 
 protected:
-  void Ticker1(uint32_t ticker);
-  void Ticker10(uint32_t ticker);
-  void Ticker60(uint32_t ticker);
+  void Ticker1(uint32_t ticker) override;
+  void Ticker10(uint32_t ticker) override;
+  void Ticker60(uint32_t ticker) override;
 
 public:
-  vehicle_command_t CommandHomelink(int button, int durationms = 1000);
-  vehicle_command_t CommandClimateControl(bool enable);
-  vehicle_command_t CommandLock(const char *pin);
-  vehicle_command_t CommandUnlock(const char *pin);
-  vehicle_command_t CommandStartCharge();
-  vehicle_command_t CommandStopCharge();
-  vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
-  vehicle_command_t CommandActivateValet(const char *pin);
-  vehicle_command_t CommandDeactivateValet(const char *pin);
-  vehicle_command_t CommandWakeup();
+  vehicle_command_t CommandHomelink(int button, int durationms = 1000) override;
+  vehicle_command_t CommandClimateControl(bool enable) override;
+  vehicle_command_t CommandLock(const char *pin) override;
+  vehicle_command_t CommandUnlock(const char *pin) override;
+  vehicle_command_t CommandStartCharge() override;
+  vehicle_command_t CommandStopCharge() override;
+  vehicle_command_t CommandSetChargeCurrent(uint16_t limit) override;
+  vehicle_command_t CommandActivateValet(const char *pin) override;
+  vehicle_command_t CommandDeactivateValet(const char *pin) override;
+  vehicle_command_t CommandWakeup() override;
 
 protected:
   int GetNotifyChargeStateDelay(const char *state);
@@ -281,7 +281,7 @@ protected:
   void T26Ticker1(uint32_t ticker);
 
 protected:
-  void IncomingFrameCan3(CAN_frame_t *p_frame);
+  void IncomingFrameCan3(CAN_frame_t *p_frame) override;
 
 public:
   void SendOcuHeartbeat();

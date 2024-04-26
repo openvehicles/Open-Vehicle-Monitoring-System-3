@@ -61,17 +61,17 @@ class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
     ~OvmsVehicleToyotaRav4Ev();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-//    void IncomingFrameCan3(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
+//    void IncomingFrameCan3(CAN_frame_t* p_frame) override;
 //    void GetDashboardConfig(DashboardConfig& cfg);
 
   protected:
-    virtual void Ticker1(uint32_t ticker);
-    virtual void Ticker60(uint32_t ticker);
-    virtual void Notify12vCritical();
-    virtual void Notify12vRecovered();
-    virtual void NotifyBmsAlerts();
+    void Ticker1(uint32_t ticker) override;
+    void Ticker60(uint32_t ticker) override;
+    void Notify12vCritical() override;
+    void Notify12vRecovered() override;
+    void NotifyBmsAlerts() override;
 
 /*
 #ifdef CONFIG_OVMS_COMP_TPMS
