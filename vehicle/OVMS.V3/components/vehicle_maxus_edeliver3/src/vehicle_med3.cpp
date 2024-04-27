@@ -423,7 +423,7 @@ void OvmsVehicleMaxed3::Ticker1(uint32_t ticker)
 // PollerStateTicker: framework callback: check for state changes
 // This is called by VehicleTicker1() just before the next PollerSend().
 
-void OvmsVehicleMaxed3::PollerStateTicker()
+void OvmsVehicleMaxed3::PollerStateTicker(canbus *bus)
 {
     bool charging12v = StdMetrics.ms_v_env_charging12v->AsBool();
     StdMetrics.ms_v_env_charging12v->SetValue(StdMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);

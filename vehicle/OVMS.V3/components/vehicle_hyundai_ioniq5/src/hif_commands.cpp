@@ -171,12 +171,37 @@ void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, cons
   }
 
   OvmsHyundaiIoniqEv *hif = (OvmsHyundaiIoniqEv *) MyVehicleFactory.ActiveVehicle();
-
   if (hif->m_vin[0] == 0) {
-    hif->RequestVIN();
+    writer->printf("Requesting VIN ... ");
+    switch (hif->RequestVIN()) {
+      case IqVinStatus::Success:
+        writer->puts("OK");
+        break;
+      case IqVinStatus::BadBuffer:
+        writer->puts("Bad Buffer");
+        return;
+      case IqVinStatus::TxFail:
+        writer->puts("Transmit Fail");
+        return;
+      case IqVinStatus::Timeout:
+        writer->puts("Timeout");
+        return;
+      case IqVinStatus::ProtocolErr:
+        writer->puts("Protocol Error");
+        return;
+      case IqVinStatus::BadFormat:
+        writer->puts("Unrecognised");
+        return;
+      case IqVinStatus::NotAwake:
+        writer->puts("Car Not Awake");
+        return;
+      default:
+        writer->puts("Failed");
+        return;
+    }
   }
   writer->printf("VIN\n");
-  writer->printf("Vin: %s \n", hif->m_vin);
+  writer->printf("Vin: %s\n", hif->m_vin);
   if (hif->m_vin[0] == 0) {
     return;
   }

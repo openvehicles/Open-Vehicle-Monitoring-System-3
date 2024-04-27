@@ -72,7 +72,7 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
       
   protected:
       void ConfigChanged(OvmsConfigParam* param) override;
-      void PollerStateTicker();
+      void PollerStateTicker(canbus *bus) override;
       void Ticker1(uint32_t ticker) override;
       void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
       void processEnergy();

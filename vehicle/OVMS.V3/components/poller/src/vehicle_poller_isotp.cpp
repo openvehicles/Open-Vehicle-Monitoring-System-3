@@ -40,7 +40,7 @@ static const char *TAG = "vehicle-isotp";
 /**
  * PollerISOTPStart: start ISO-TP request
  */
-void OvmsVehicle::PollerISOTPStart(bool fromTicker)
+void OvmsPoller::PollerISOTPStart(bool fromTicker)
   {
   if (m_poll.entry.rxmoduleid != 0)
     {
@@ -57,8 +57,9 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
     m_poll.moduleid_high = 0x7ef;
     }
 
-  ESP_LOGD(TAG, "PollerISOTPStart(%d): send [bus=%d, type=%02X, pid=%X], expecting %03" PRIx32 "/%03" PRIx32 "-%03" PRIx32,
-           fromTicker, m_poll.entry.pollbus, m_poll.type, m_poll.pid, m_poll.moduleid_sent,
+  ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPStart(%s): send [bus=%" PRIu8 ", type=%02" PRIX16 ", pid=%X], expecting %03x/%03x-%03x",
+           m_poll.bus_no, fromTicker ? "Yes" : "No",
+           m_poll.entry.pollbus, m_poll.type, m_poll.pid, m_poll.moduleid_sent,
            m_poll.moduleid_low, m_poll.moduleid_high);
 
   //
@@ -173,19 +174,23 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
 /**
  * PollerISOTPReceive: process ISO-TP poll response frame
  */
-bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
+bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   {
-  OvmsRecMutexLock lock(&m_poll_mutex);
+  // OvmsRecMutexLock lock(&m_poll_mutex);
   char *hexdump = NULL;
 
   // After locking the mutex, check again for poll expectance match:
-  if (!m_poll_wait || !m_poll_plist || frame->origin != m_poll.bus ||
-      msgid < m_poll.moduleid_low || msgid > m_poll.moduleid_high)
+  if (!m_poll_wait || !m_polls.HasPollList() || frame->origin != m_poll.bus)
     {
-    ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: dropping expired poll response", msgid);
+    ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPReceive[%03" PRIX32 "]: dropping expired poll response", m_poll.bus_no, msgid);
     return false;
     }
-
+  if (msgid < m_poll.moduleid_low || msgid > m_poll.moduleid_high)
+    {
+    ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPReceive[%03" PRIX32 "]: dropping out-of-range poll response %03" PRIX32 "-%03" PRIX32,
+      m_poll.bus_no, msgid, m_poll.moduleid_low, m_poll.moduleid_high);
+    return false;
+    }
   // 
   // Get & validate ISO-TP meta data
   // 
@@ -428,8 +433,8 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     if (error_code == UDS_RESP_NRC_RCRRP)
       {
       // Info: requestCorrectlyReceived-ResponsePending (server busy processing the request)
-      ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: got OBD/UDS info %02X(%X) code=%02X (pending)",
-               msgid, m_poll.type, m_poll.pid, error_code);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPReceive[%03" PRIX32 "]: got OBD/UDS info %02X(%X) code=%02X (pending)",
+               m_poll.bus_no, msgid, m_poll.type, m_poll.pid, error_code);
       // add some wait time:
       m_poll_wait++;
       return true;
@@ -437,23 +442,17 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     else
       {
       // Error: forward to application:
-      ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS error %02X(%X) code=%02X",
-               msgid, m_poll.type, m_poll.pid, error_code);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS error %02X(%X) code=%02X",
+               m_poll.bus_no, msgid, m_poll.type, m_poll.pid, error_code);
       // Running single poll?
-      if (m_poll_single_rxbuf)
-        {
-        m_poll_single_rxerr = error_code;
-        m_poll_single_rxbuf = NULL;
-        m_poll_single_rxdone.Give();
-        }
-      else
-        {
-        m_poll.moduleid_rec = msgid;
-        m_poll.mlframe = 0;
-        m_poll.mloffset = 0;
-        m_poll.mlremain = 0;
-        IncomingPollError(m_poll, error_code);
-        }
+      {
+      OvmsRecMutexLock lock(&m_poll_mutex);
+      m_poll.moduleid_rec = msgid;
+      m_poll.mlframe = 0;
+      m_poll.mloffset = 0;
+      m_poll.mlremain = 0;
+      IncomingPollError(m_poll, error_code);
+      }
       // abort:
       m_poll.mlremain = 0;
       }
@@ -462,29 +461,14 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     {
     // Normal matching poll response, forward to application:
     m_poll.mlremain = tp_len - tp_datalen;
-    ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS response %02X(%X) frm=%u len=%u off=%u rem=%u",
+    ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS response %02" PRIX16 "(%" PRIX16 ") frm=%u len=%u off=%u rem=%u",
              msgid, m_poll.type, m_poll.pid,
              m_poll.mlframe, response_datalen, m_poll.mloffset, m_poll.mlremain);
-    // Running single poll?
-    if (m_poll_single_rxbuf)
+
       {
-      if (m_poll.mlframe == 0)
-        {
-        m_poll_single_rxbuf->clear();
-        m_poll_single_rxbuf->reserve(response_datalen + m_poll.mlremain);
-        }
-      m_poll_single_rxbuf->append((char*)response_data, response_datalen);
-      if (m_poll.mlremain == 0)
-        {
-        m_poll_single_rxerr = 0;
-        m_poll_single_rxbuf = NULL;
-        m_poll_single_rxdone.Give();
-        }
-      }
-    else
-      {
+      OvmsRecMutexLock lock(&m_poll_mutex);
       m_poll.moduleid_rec = msgid;
-      IncomingPollReply(m_poll, response_data, response_datalen);
+      m_polls.IncomingPacket(m_poll, response_data, response_datalen);
       }
     }
   else
@@ -569,7 +553,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       m_poll.moduleid_sent != 0x7df &&
       CanPoll() )
     {
-    PollerSend(poller_source_t::Successful);
+    Queue_PollerSendSuccess();
     }
 
   return true;
