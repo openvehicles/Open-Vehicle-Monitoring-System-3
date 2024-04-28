@@ -1107,7 +1107,7 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
 
   c.printf("<div><p>Please visit <a href=\"https://pushover.net\">Pushover web site</a> to create an account (identified by a <b>user key</b>) "
-    " and then register OVMS as an application in order to receive an application <b>token</b>).<br>"
+    " and then register OVMS as an application in order to receive an application <b>token</b>.<br>"
     "Install Pushover iOS/Android application and specify your user key. <br>Finally enter both the user key and the application token here and test connectivity.<br>"
     "To receive specific notifications and events, configure them below.</p></div>" );
 
