@@ -520,11 +520,6 @@ void OvmsVehicle::OvmsVehicleSignal::IncomingPollTxCallback(const OvmsPoller::po
     m_parent->IncomingPollTxCallback(job, success);
   }
 
-void OvmsVehicle::OvmsVehicleSignal::IncomingPollRxFrame(canbus* bus, CAN_frame_t *frame, bool success)
-  {
-  if (Ready())
-    m_parent->IncomingPollRxFrame(frame, success);
-  }
 bool OvmsVehicle::OvmsVehicleSignal::Ready()
   {
   return m_parent->m_ready;
@@ -2418,6 +2413,13 @@ void OvmsVehicle::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t 
  *    Frame transmission success
  */
 void OvmsVehicle::IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success)
+  {
+  }
+
+/**
+ * IncomingPollerRxFrame: the Poller's Rx Frame callback.
+ */
+void IncomingPollerRxFrame(const CAN_frame_t *frame, bool success)
   {
   }
 #endif
