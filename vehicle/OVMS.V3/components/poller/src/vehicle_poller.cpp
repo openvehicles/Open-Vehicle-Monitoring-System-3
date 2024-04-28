@@ -1367,13 +1367,15 @@ void OvmsPollers::PollSetState(uint8_t state, canbus* bus)
   if (m_shut_down)
     return;
 
-  if (!m_pollqueue)
-    return;
-
   if (!bus)
     {
+    if (m_poll_state == state)
+      return;
     m_poll_state = state;
     }
+
+  if (!m_pollqueue)
+    return;
 
   // Queues the command
   OvmsPoller::poll_queue_entry_t entry;
