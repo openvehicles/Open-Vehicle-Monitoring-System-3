@@ -112,6 +112,9 @@ class OvmsPoller : public InternalRamAllocated {
       uint32_t ticker;        ///< Polling tick count
       } poll_job_t;
 
+    const uint32_t max_ticker = 3600;
+    const uint32_t init_ticker = 3601;
+
     typedef enum : uint8_t { Primary, Secondary, Successful, OnceOff } poller_source_t;
 
 // Macro for poll_pid_t termination
@@ -126,7 +129,6 @@ class OvmsPoller : public InternalRamAllocated {
         virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
         virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
         virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
-        virtual void IncomingPollRxFrame(canbus* bus, CAN_frame_t* frame, bool success);
         virtual bool Ready() = 0;
       };
     enum class OvmsNextPollResult
