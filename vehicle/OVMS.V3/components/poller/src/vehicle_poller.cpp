@@ -62,7 +62,7 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
 
   m_poll.entry = {};
   m_poll_vwtp = {};
-  m_poll.ticker = 0;
+  m_poll.ticker = init_ticker;
 
   m_poll.moduleid_sent = 0;
   m_poll.moduleid_low = 0;
@@ -166,7 +166,7 @@ void OvmsPoller::PollSetPidList(uint8_t defaultbus, const OvmsPoller::poll_pid_t
 
   m_poll_series->PollSetPidList(defaultbus, plist);
 
-  m_poll.ticker = 0;
+  m_poll.ticker = init_ticker;
   m_poll_sequence_cnt = 0;
   }
 
@@ -175,7 +175,7 @@ void OvmsPoller::Do_PollSetState(uint8_t state)
   if ( state != m_poll_state)
     {
     m_poll_state = state;
-    m_poll.ticker = 0;
+    m_poll.ticker = init_ticker;
     m_poll_sequence_cnt = 0;
     m_poll_repeat_count = 0;
     ResetPollEntry(false);
@@ -296,7 +296,7 @@ void OvmsPoller::PollerNextTick(poller_source_t source)
       }
 
     m_poll.ticker++;
-    if (m_poll.ticker > 3600) m_poll.ticker -= 3600;
+    if (m_poll.ticker > max_ticker) m_poll.ticker -= max_ticker;
     }
   }
 
