@@ -91,14 +91,14 @@ void OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
     }
   else if (frame.origin == m_poll.bus)
     {
-    if (!m_poll_wait)
-      {
-      ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Incoming - giving up", m_poll.bus_no);
-      return;
-      }
     if (m_poll.entry.txmoduleid == 0)
       {
-      ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Incoming - Poll Entry Cleared", m_poll.bus_no);
+      ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Incoming - dropped (no poll entry)", m_poll.bus_no);
+      return;
+      }
+    if (!m_poll_wait)
+      {
+      ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Incoming - timed out", m_poll.bus_no);
       return;
       }
     uint32_t msgid;
@@ -1357,7 +1357,7 @@ void OvmsPollers::Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool
   entry.entry_FrameRxTx.frame = frame;
   entry.entry_FrameRxTx.success = success;
 
-  ESP_LOGD(TAG, "Poller: Queue PollerFrame()");
+  ESP_LOGV(TAG, "Poller: Queue PollerFrame( %s, %s)", (success ? "OK" : "Fail"), ( istx ? "TX" : "RX") );
   if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
     ESP_LOGI(TAG, "Poller[Frame]: Task Queue Overflow");
   }
