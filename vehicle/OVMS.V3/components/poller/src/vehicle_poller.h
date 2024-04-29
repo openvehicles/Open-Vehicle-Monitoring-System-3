@@ -696,13 +696,18 @@ class OvmsPollers : public InternalRamAllocated {
     void SetUserPauseStatus(bool paused, int verbosity, OvmsWriter* writer);
   public:
     typedef std::function<void(canbus*, void *)> PollCallback;
+    typedef std::function<void(const CAN_frame_t &)> FrameCallback;
   private:
     ovms_callback_register_t<PollCallback> m_runfinished_callback, m_pollstateticker_callback;
+    ovms_callback_register_t<FrameCallback> m_framerx_callback;
   public:
     void RegisterRunFinished(const std::string &name, PollCallback fn) { m_runfinished_callback.Register(name, fn);}
     void DeregisterRunFinished(const std::string &name) { m_runfinished_callback.Deregister(name);}
     void RegisterPollStateTicker(const std::string &name, PollCallback fn) { m_pollstateticker_callback.Register(name, fn);}
     void DeregisterPollStateTicker(const std::string &name) { m_pollstateticker_callback.Deregister(name);}
+
+    void RegisterFrameRx(const std::string &name, FrameCallback fn) { m_framerx_callback.Register(name, fn);}
+    void DeregisterFrameRx(const std::string &name) { m_framerx_callback.Deregister(name);}
   private:
     void PollRunFinished(canbus *bus)
       {
@@ -718,6 +723,14 @@ class OvmsPollers : public InternalRamAllocated {
         [bus](const std::string &name, const PollCallback &cb)
           {
           cb(bus, nullptr);
+          });
+      }
+    void PollerFrameRx(CAN_frame_t &frame)
+      {
+      m_framerx_callback.Call(
+        [frame](const std::string &name, FrameCallback cb)
+          {
+          cb(frame);
           });
       }
 
