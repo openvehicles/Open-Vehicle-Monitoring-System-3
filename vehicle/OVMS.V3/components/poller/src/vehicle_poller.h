@@ -677,6 +677,7 @@ class OvmsPollers : public InternalRamAllocated {
     bool              m_ready;
     bool              m_paused;
     bool              m_user_paused;
+    bool              m_trace;                // true = enable verbose logging
 
     void PollerTxCallback(const CAN_frame_t* frame, bool success);
     void PollerRxCallback(const CAN_frame_t* frame, bool success);
@@ -690,6 +691,7 @@ class OvmsPollers : public InternalRamAllocated {
     static void vehicle_poller_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_pause_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_pause_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_poller_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     void PollerStatus(int verbosity, OvmsWriter* writer);
     void SetUserPauseStatus(bool paused, int verbosity, OvmsWriter* writer);
   public:
