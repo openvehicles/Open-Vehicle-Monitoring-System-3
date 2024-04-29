@@ -999,6 +999,7 @@ void OvmsPollers::PollerTask()
         ESP_LOGV(TAG, "Pollers: FrameRx(bus=%d)", GetBusNo(entry.entry_FrameRxTx.frame.origin));
         if (poller)
           poller->Incoming(entry.entry_FrameRxTx.frame, entry.entry_FrameRxTx.success);
+        PollerFrameRx(entry.entry_FrameRxTx.frame);
         }
         break;
       case OvmsPoller::OvmsPollEntryType::FrameTx:
