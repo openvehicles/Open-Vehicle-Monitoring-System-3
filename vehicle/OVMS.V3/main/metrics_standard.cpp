@@ -276,6 +276,12 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_valet_longitude = new OvmsMetricFloat(MS_V_POS_VALET_LONGITUDE, SM_STALE_NONE, Other, true);
   ms_v_pos_valet_distance = new OvmsMetricFloat(MS_V_POS_VALET_DISTANCE, SM_STALE_HIGH, Meters, true);
 
+  // Use fixed 6 digit precision for latitude/longitude formatting:
+  ms_v_pos_latitude->SetFormat(6, true);
+  ms_v_pos_longitude->SetFormat(6, true);
+  ms_v_pos_valet_latitude->SetFormat(6, true);
+  ms_v_pos_valet_longitude->SetFormat(6, true);
+
   //
   // TPMS: tyre monitoring metrics
   //

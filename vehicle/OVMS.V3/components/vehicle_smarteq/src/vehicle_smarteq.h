@@ -56,7 +56,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     ~OvmsVehicleSmartEQ();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void HandleEnergy();
 
@@ -67,7 +67,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
 #endif
-    void ConfigChanged(OvmsConfigParam* param);
+    void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
     uint64_t swap_uint64(uint64_t val);
@@ -77,7 +77,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     unsigned int m_candata_poll;
 
   protected:
-    virtual void Ticker1(uint32_t ticker);
+    void Ticker1(uint32_t ticker) override;
     void GetDashboardConfig(DashboardConfig& cfg);
     
     void PollReply_BMS_BattVolts(const char* reply_data, uint16_t reply_len, uint16_t start);

@@ -61,6 +61,15 @@ enum class IqShiftStatus {
   Neutral,
   Drive
 };
+enum class IqVinStatus {
+  Success,
+  BadBuffer,
+  TxFail,
+  Timeout,
+  ProtocolErr,
+  BadFormat,
+  NotAwake
+};
 
 
 void xiq_trip_since_parked(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
@@ -168,7 +177,7 @@ public:
   void EventListener(std::string event, void *data);
   void UpdatedAverageTemp(OvmsMetric* metric);
   void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
-  void ConfigChanged(OvmsConfigParam *param);
+  void ConfigChanged(OvmsConfigParam *param) override;
   bool SetFeature(int key, const char *value);
   const std::string GetFeature(int key);
   vehicle_command_t CommandHandler(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
@@ -216,12 +225,15 @@ public:
 protected:
   void HandleCharging();
   void HandleChargeStop();
-  void IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingOther_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
+  void Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data);
+  void Incoming_Fail(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, int errorcode);
+
+  void IncomingVMCU_Full(uint16_t type, uint16_t pid, const std::string &data);
+  void IncomingBMC_Full(uint16_t type, uint16_t pid, const std::string &data);
+  void IncomingBCM_Full(uint16_t type, uint16_t pid, const std::string &data);
+  void IncomingIGMP_Full(uint16_t type, uint16_t pid, const std::string &data);
+  void IncomingOther_Full(uint16_t type, uint16_t pid, const std::string &data);
+  void IncomingCM_Full(uint16_t type, uint16_t pid, const std::string &data);
   void RequestNotify(unsigned int which);
   void DoNotify();
   void vehicle_ioniq5_car_on(bool isOn);
@@ -244,6 +256,8 @@ protected:
   void SetChargeMetrics(float voltage, float current, float climit, bool ccs);
   void SendTesterPresentMessages();
   void StopTesterPresentMessages();
+
+  int GetNotifyChargeStateDelay(const char *state) override;
 
   // Inline functions to handle the different I5 Poll states.
   inline int PollGetState()
@@ -292,6 +306,19 @@ protected:
     }
     PollSetState(3);
   }
+  inline bool IsPollState_PingAux()
+  {
+    return m_poll_state == 4;
+  }
+  inline void PollState_PingAux(uint32_t ticks)
+  {
+    if (hif_keep_awake < ticks) {
+      hif_keep_awake = ticks;
+    }
+    if (!IsPollState_PingAux()) {
+      PollSetState(4);
+    }
+  }
   inline void Poll_CapAwake( uint32_t ticks)
   {
     if (hif_keep_awake > ticks) {
@@ -319,6 +346,8 @@ protected:
   }
   void CheckResetDoorCheck();
 
+  int m_ecu_lockout;
+  bool m_ecu_status_on;
   void NotifiedOBD2ECUStart() override
   {
     if (m_ecu_lockout == 0)
@@ -330,12 +359,13 @@ protected:
   }
   void NotifiedVehicleOn() override
   {
-    m_ecu_lockout = 20;
+    if (m_ecu_lockout < 0)
+      m_ecu_lockout = 20;
   }
   void NotifiedVehicleOff() override
   {
-    m_ecu_lockout = 0;
     ECUStatusChange(false);
+    m_ecu_lockout = -1;
   }
   void NotifiedVehicleGear( int gear) override
   {
@@ -345,10 +375,18 @@ protected:
       ECUStatusChange(StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_m_obd2ecu_on->AsBool());
   }
 
-  int m_ecu_lockout;
   void ECUStatusChange(bool run);
 public:
-  int RequestVIN();
+  // Non-Blocking VIN Request.
+  bool PollRequestVIN();
+
+
+  // Blocking VIN Request.
+  IqVinStatus RequestVIN();
+
+  // Process VIN REsult.
+  IqVinStatus ProcessVIN(const std::string &response);
+
   bool DriverIndicator(bool on)
   {
     if (IsLHD()) {

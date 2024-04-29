@@ -38,6 +38,8 @@
 #include <string>
 #include <iomanip>
 #include <vector>
+#include <forward_list>
+#include <functional>
 #include "ovms.h"
 
 // Macro utils:
@@ -634,4 +636,75 @@ static inline std::string str_tolower(std::string s) {
                   );
     return s;
 }
+
+/**
+ * Call-back register for registering named call-back procedures.
+ *
+ * The list does not shrink which is fine for our use-cases.
+ * Can be made inexpensively threadsafe/re-entrant safe.
+ */
+template <typename FN>
+class ovms_callback_register_t
+  {
+  private:
+  class entry_t
+    {
+    public:
+      entry_t(const std::string &caller, FN callback)
+        {
+        m_name = caller;
+        m_callback = callback;
+        }
+      ~entry_t() {}
+    public:
+      std::string m_name;
+      FN m_callback;
+    };
+    typedef std::forward_list<entry_t> callbacklist_t;
+    callbacklist_t m_list;
+  public:
+    ~ovms_callback_register_t()
+      {
+      }
+    void Register(const std::string &nametag, FN callback)
+      {
+      // Replace
+      for (auto it = m_list.begin(); it != m_list.end(); ++it)
+        {
+        if ((*it).m_name == nametag)
+          {
+          (*it).m_callback = callback;
+          return;
+          }
+        }
+      if (!callback)
+        return;
+      for (auto it = m_list.begin(); it != m_list.end(); ++it)
+        {
+        if (!(*it).m_callback)
+          {
+          entry_t &entry = *it;
+          entry.m_name = nametag;
+          entry.m_callback = callback;
+          return;
+          }
+        }
+      m_list.push_front(entry_t(nametag, callback));
+      }
+    void Deregister(const std::string &nametag)
+      {
+      Register(nametag, nullptr);
+      }
+    typedef std::function<void (const std::string &nametag, FN callback)> visit_fn_t;
+    void Call(visit_fn_t visit)
+      {
+      for (auto it = m_list.begin(); it != m_list.end(); ++it)
+        {
+        const entry_t &entry = *it;
+        if (entry.m_callback)
+          visit(entry.m_name, entry.m_callback);
+        }
+      }
+  };
+
 #endif // __OVMS_UTILS_H__
