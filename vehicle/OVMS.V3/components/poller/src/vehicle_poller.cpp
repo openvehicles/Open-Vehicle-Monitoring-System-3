@@ -62,7 +62,7 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
 
   m_poll.entry = {};
   m_poll_vwtp = {};
-  m_poll.ticker = 0;
+  m_poll.ticker = init_ticker;
 
   m_poll.moduleid_sent = 0;
   m_poll.moduleid_low = 0;
@@ -91,14 +91,14 @@ void OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
     }
   else if (frame.origin == m_poll.bus)
     {
-    if (!m_poll_wait)
-      {
-      ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Incoming - giving up", m_poll.bus_no);
-      return;
-      }
     if (m_poll.entry.txmoduleid == 0)
       {
-      ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Incoming - Poll Entry Cleared", m_poll.bus_no);
+      ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Incoming - dropped (no poll entry)", m_poll.bus_no);
+      return;
+      }
+    if (!m_poll_wait)
+      {
+      ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Incoming - timed out", m_poll.bus_no);
       return;
       }
     uint32_t msgid;
@@ -166,7 +166,7 @@ void OvmsPoller::PollSetPidList(uint8_t defaultbus, const OvmsPoller::poll_pid_t
 
   m_poll_series->PollSetPidList(defaultbus, plist);
 
-  m_poll.ticker = 0;
+  m_poll.ticker = init_ticker;
   m_poll_sequence_cnt = 0;
   }
 
@@ -175,7 +175,7 @@ void OvmsPoller::Do_PollSetState(uint8_t state)
   if ( state != m_poll_state)
     {
     m_poll_state = state;
-    m_poll.ticker = 0;
+    m_poll.ticker = init_ticker;
     m_poll_sequence_cnt = 0;
     m_poll_repeat_count = 0;
     ResetPollEntry(false);
@@ -296,7 +296,7 @@ void OvmsPoller::PollerNextTick(poller_source_t source)
       }
 
     m_poll.ticker++;
-    if (m_poll.ticker > 3600) m_poll.ticker -= 3600;
+    if (m_poll.ticker > max_ticker) m_poll.ticker -= max_ticker;
     }
   }
 
@@ -1357,7 +1357,7 @@ void OvmsPollers::Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool
   entry.entry_FrameRxTx.frame = frame;
   entry.entry_FrameRxTx.success = success;
 
-  ESP_LOGD(TAG, "Poller: Queue PollerFrame()");
+  ESP_LOGV(TAG, "Poller: Queue PollerFrame( %s, %s)", (success ? "OK" : "Fail"), ( istx ? "TX" : "RX") );
   if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
     ESP_LOGI(TAG, "Poller[Frame]: Task Queue Overflow");
   }
@@ -1367,13 +1367,15 @@ void OvmsPollers::PollSetState(uint8_t state, canbus* bus)
   if (m_shut_down)
     return;
 
-  if (!m_pollqueue)
-    return;
-
   if (!bus)
     {
+    if (m_poll_state == state)
+      return;
     m_poll_state = state;
     }
+
+  if (!m_pollqueue)
+    return;
 
   // Queues the command
   OvmsPoller::poll_queue_entry_t entry;

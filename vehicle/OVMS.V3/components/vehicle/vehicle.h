@@ -532,7 +532,6 @@ class OvmsVehicle : public InternalRamAllocated
       void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
       void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success) override;
 
-      void IncomingPollRxFrame(canbus* bus, CAN_frame_t *frame, bool success) override;
       bool Ready() override;
     };
 #endif
