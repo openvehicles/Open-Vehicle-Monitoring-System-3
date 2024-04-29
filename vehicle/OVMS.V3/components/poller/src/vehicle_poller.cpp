@@ -50,6 +50,10 @@ using namespace std::placeholders;
 
 OvmsPollers MyPollers __attribute__ ((init_priority (7000)));
 
+// Runtime control for verbose logging:
+#undef ESP_LOGV
+#define ESP_LOGV( tag, format, ... ) if (MyPollers.m_trace) esp_log_write(ESP_LOG_VERBOSE, tag, LOG_FORMAT(V, format), esp_log_timestamp(), tag, ##__VA_ARGS__)
+
 OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
     const CanFrameCallback &polltxcallback)
   : m_parent(parent)
@@ -98,7 +102,7 @@ void OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
       }
     if (!m_poll_wait)
       {
-      ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Incoming - timed out", m_poll.bus_no);
+      ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Incoming - timed out", m_poll.bus_no);
       return;
       }
     uint32_t msgid;
@@ -106,7 +110,7 @@ void OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
       msgid = frame.MsgID << 8 | frame.data.u8[0];
     else
       msgid = frame.MsgID;
-    ESP_LOGD(TAG, "[%" PRIu8 "]Poller: FrameRx(bus=%s, msg=%" PRIx32 " )", m_poll.bus_no, frame.origin == m_poll.bus ? "Self" : "Other", msgid );
+    ESP_LOGV(TAG, "[%" PRIu8 "]Poller: FrameRx(bus=%s, msg=%" PRIx32 " )", m_poll.bus_no, frame.origin == m_poll.bus ? "Self" : "Other", msgid );
     if (msgid >= m_poll.moduleid_low && msgid <= m_poll.moduleid_high)
       {
       PollerISOTPReceive(&frame, msgid);
@@ -731,7 +735,8 @@ OvmsPollers::OvmsPollers()
     m_shut_down(false),
     m_ready(false),
     m_paused(false),
-    m_user_paused(false)
+    m_user_paused(false),
+    m_trace(false)
   {
   ESP_LOGI(TAG, "Initialising Poller (7000)");
   for (int idx = 0; idx < VEHICLE_MAXBUSSES; ++idx)
@@ -747,11 +752,14 @@ OvmsPollers::OvmsPollers()
   MyCan.RegisterCallback(TAG, std::bind(&OvmsPollers::PollerRxCallback, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsPollers::EventSystemShuttingDown, this, _1, _2));
 
-  OvmsCommand* cmd_pause = MyCommandApp.RegisterCommand("poller","OBD polling framework",vehicle_poller_status);
-  cmd_pause->RegisterCommand("status","OBD Polling Status",vehicle_poller_status);
-  cmd_pause->RegisterCommand("pause","Pause OBD Polling",vehicle_pause_on);
-  cmd_pause->RegisterCommand("resume","Resume OBD Polling",vehicle_pause_off);
+  OvmsCommand* cmd_poller = MyCommandApp.RegisterCommand("poller","OBD polling framework",vehicle_poller_status);
+  cmd_poller->RegisterCommand("status","OBD Polling Status",vehicle_poller_status);
+  cmd_poller->RegisterCommand("pause","Pause OBD Polling",vehicle_pause_on);
+  cmd_poller->RegisterCommand("resume","Resume OBD Polling",vehicle_pause_off);
 
+  OvmsCommand* cmd_trace = cmd_poller->RegisterCommand("trace","OBD Poller Verbose Logging");
+  cmd_trace->RegisterCommand("on","Turn verbose logging ON",vehicle_poller_trace);
+  cmd_trace->RegisterCommand("off","Turn verbose logging OFF",vehicle_poller_trace);
   }
 
 OvmsPollers::~OvmsPollers()
@@ -1480,6 +1488,16 @@ void OvmsPollers::vehicle_pause_on(int verbosity, OvmsWriter* writer, OvmsComman
 void OvmsPollers::vehicle_pause_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyPollers.SetUserPauseStatus(false, verbosity, writer);
+  }
+
+void OvmsPollers::vehicle_poller_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (strcmp(cmd->GetName(), "on") == 0)
+    MyPollers.m_trace = true;
+  else
+    MyPollers.m_trace = false;
+
+  writer->printf("Vehicle OBD poller tracing is now %s\n", cmd->GetName());
   }
 
 static const char *PollResStr( OvmsPoller::OvmsNextPollResult res)
