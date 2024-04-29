@@ -704,7 +704,10 @@ class OvmsPollers : public InternalRamAllocated {
     void RegisterPollStateTicker(const std::string &name, PollCallback fn) { m_pollstateticker_callback.Register(name, fn);}
     void DeregisterPollStateTicker(const std::string &name) { m_pollstateticker_callback.Deregister(name);}
 
-    void RegisterFrameRx(const std::string &name, FrameCallback fn) { m_framerx_callback.Register(name, fn);}
+    void RegisterFrameRx(const std::string &name, FrameCallback fn) {
+      m_framerx_callback.Register(name, fn);
+      CheckStartPollTask(true);
+    }
     void DeregisterFrameRx(const std::string &name) { m_framerx_callback.Deregister(name);}
   private:
     void PollRunFinished(canbus *bus)
