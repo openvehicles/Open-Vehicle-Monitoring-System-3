@@ -554,8 +554,15 @@ class OvmsVehicle : public InternalRamAllocated
     uint8_t           m_poll_state;           // Current poll state
     void PollRequest(canbus* bus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series);
     void RemovePollRequest(canbus* bus, const std::string &name);
+    void IncomingRxFrame(const CAN_frame_t &frame);
+#else
+    // These are required in lieu of using the OvmsPoller queue.
+    static void OvmsVehicleTask(void *pvParameters);
+    void VehicleTask();
+    QueueHandle_t m_vqueue;
+    TaskHandle_t  m_vtask;
 #endif
-    void IncomingPollRxFrame(const CAN_frame_t *frame, bool success);
+    void SendIncomingFrame(const CAN_frame_t *frame);
 
   // BMS helpers
   protected:
