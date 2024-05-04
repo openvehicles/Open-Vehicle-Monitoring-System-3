@@ -707,4 +707,18 @@ class ovms_callback_register_t
       }
   };
 
+  /** Get the variable and null it in an atomic way.
+   * Should probably be used sparingly.
+   */
+  template<typename T>
+  T Atomic_GetAndNull( volatile T &variable)
+    {
+    T tmp;
+    vTaskSuspendAll();
+    tmp = variable;
+    variable = nullptr;
+    xTaskResumeAll();
+    return tmp;
+    }
+
 #endif // __OVMS_UTILS_H__

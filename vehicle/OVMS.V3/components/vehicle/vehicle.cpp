@@ -65,6 +65,8 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   m_currentvehicle = NULL;
   m_currentvehicletype.clear();
 
+  MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsVehicleFactory::EventSystemShuttingDown, this, _1, _2));
+
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework", vehicle_status, "", 0, 0, false);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1,true,vehicle_validate);
   cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list);
@@ -155,7 +157,13 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
   {
-  DoClearVehicle(false, false);
+  MyEvents.DeregisterEvent(TAG);
+  DoClearVehicle(false, false, false);
+  }
+
+void OvmsVehicleFactory::EventSystemShuttingDown(std::string event, void* data)
+  {
+  DoClearVehicle(false, false, true);
   }
 
 OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
@@ -170,13 +178,14 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
 
 void OvmsVehicleFactory::ClearVehicle()
   {
-  DoClearVehicle(true, true);
+  DoClearVehicle(true, true, true);
   }
-void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent)
+
+void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent, bool wait)
   {
   if (m_currentvehicle)
     {
-    m_currentvehicle->ShuttingDown();
+    m_currentvehicle->ShuttingDown(wait);
     auto vehicle = m_currentvehicle;
     m_currentvehicle = NULL;
 
@@ -192,7 +201,7 @@ void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent)
 
 void OvmsVehicleFactory::SetVehicle(const char* type)
   {
-  DoClearVehicle(false, true);
+  DoClearVehicle(false, true, true);
   m_currentvehicle = NewVehicle(type);
   if (m_currentvehicle)
     {
@@ -379,7 +388,7 @@ OvmsVehicle::OvmsVehicle()
 
 OvmsVehicle::~OvmsVehicle()
   {
-  ShuttingDown();
+  ShuttingDown(false);
 
   if (m_bms_voltages != NULL)
     {
@@ -432,12 +441,6 @@ OvmsVehicle::~OvmsVehicle()
     delete [] m_bms_talerts;
     m_bms_talerts = NULL;
     }
-#ifndef CONFIG_OVMS_COMP_POLLER
-  vTaskDelete(m_vtask);
-  m_vtask = nullptr;
-  vQueueDelete(m_vqueue);
-  m_vqueue = nullptr;
-#endif
   }
 
 void OvmsVehicle::StartingUp()
@@ -448,7 +451,7 @@ void OvmsVehicle::StartingUp()
 #endif
   }
 
-void OvmsVehicle::ShuttingDown()
+void OvmsVehicle::ShuttingDown(bool wait)
   {
   if (m_is_shutdown)
     return;
@@ -463,16 +466,36 @@ void OvmsVehicle::ShuttingDown()
   if (m_pollsignal)
     delete m_pollsignal;
 #else
+  MyCan.DeregisterListener(m_vqueue);
+  CAN_frame_t entry;
+  entry.origin = nullptr;
+  entry.callback = nullptr;
+  entry.MsgID = 0;
+  xQueueSend(m_vqueue, &entry, 0);
+
   if (m_can1) m_can1->SetPowerMode(Off);
   if (m_can2) m_can2->SetPowerMode(Off);
   if (m_can3) m_can3->SetPowerMode(Off);
   if (m_can4) m_can4->SetPowerMode(Off);
 
-  MyCan.DeregisterListener(m_vqueue);
 #endif
   MyEvents.DeregisterEvent(TAG);
   MyMetrics.DeregisterListener(TAG);
-  MyCan.DeregisterCallback(TAG);
+#ifndef CONFIG_OVMS_COMP_POLLER
+  if (wait)
+    {
+    int repeat = 20; // 1s
+    while (m_vtask && repeat--)
+      vTaskDelay(pdMS_TO_TICKS(50));
+    }
+
+  auto vtask = Atomic_GetAndNull(m_vtask);
+  if (vtask)
+    vTaskDelete(vtask);
+
+  vQueueDelete(m_vqueue);
+  m_vqueue = nullptr;
+#endif
   }
 
 const char* OvmsVehicle::VehicleShortName()
@@ -2455,8 +2478,12 @@ void OvmsVehicle::VehicleTask()
     {
     if (xQueueReceive(m_vqueue, &entry, (portTickType)portMAX_DELAY)!=pdTRUE)
       continue;
-    SendIncomingFrame(&entry);
+    if (entry.origin != nullptr )
+      SendIncomingFrame(&entry);
     }
+  auto vtask = Atomic_GetAndNull(m_vtask);
+  if (vtask)
+    vTaskDelete(vtask);
   }
 #endif
 

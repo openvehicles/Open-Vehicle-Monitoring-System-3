@@ -574,7 +574,8 @@ class OvmsPoller : public InternalRamAllocated {
       Throttle,
       ResponseSep,
       Keepalive,
-      SuccessSep
+      SuccessSep,
+      Shutdown
       };
     typedef struct {
         CAN_frame_t frame;
@@ -746,7 +747,7 @@ class OvmsPollers : public InternalRamAllocated {
     ~OvmsPollers();
 
     void StartingUp();
-    void ShuttingDown();
+    void ShuttingDown( bool wait);
     void ShuttingDownVehicle();
 
     OvmsPoller *GetPoller(canbus *can, bool force = false );
