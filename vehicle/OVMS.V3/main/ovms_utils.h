@@ -720,5 +720,23 @@ class ovms_callback_register_t
     xTaskResumeAll();
     return tmp;
     }
+  template<typename T>
+  T Atomic_Increment( volatile T &variable)
+    {
+    vTaskSuspendAll();
+    T tmp = ++variable;
+    xTaskResumeAll();
+    return tmp;
+    }
+
+  template<typename T>
+  T Atomic_Subtract( volatile T &variable, T amt)
+    {
+    vTaskSuspendAll();
+    variable -= amt;
+    T tmp = variable;
+    xTaskResumeAll();
+    return tmp;
+    }
 
 #endif // __OVMS_UTILS_H__
