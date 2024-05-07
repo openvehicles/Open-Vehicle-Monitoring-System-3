@@ -535,11 +535,19 @@ void OvmsServerV3::IncomingEvent(std::string event, void* data)
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
 
   std::string topic(m_topic_prefix);
-  topic.append("event");
 
-  ESP_LOGI(TAG,"Tx event %s",event.c_str());
+  // Legacy: publish event name on fixed topic
+  topic.append("event");
   mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
     MG_MQTT_QOS(0), event.c_str(), event.length());
+
+  // Publish MQTT style event topic, payload reserved for event data serialization:
+  topic.append("/");
+  topic.append(mqtt_topic(event));
+  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+    MG_MQTT_QOS(0), "", 0);
+
+  ESP_LOGD(TAG,"Tx event %s",event.c_str());
   }
 
 void OvmsServerV3::RunCommand(std::string client, std::string id, std::string command)
