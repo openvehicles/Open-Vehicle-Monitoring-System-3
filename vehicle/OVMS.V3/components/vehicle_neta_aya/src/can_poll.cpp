@@ -58,9 +58,11 @@ void OvmsVehicleNetaAya::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 			value = CAN_UINT(0);
 			if (value < 32000)
 			{
-				curr = (32000-value)*-1
-			} else {
-				curr = value-32000
+				curr = (32000 - value) * -1;
+			}
+			else
+			{
+				curr = value - 32000;
 			}
 			StdMetrics.ms_v_bat_current->SetValue(curr / 20, Amps);
 			break;
@@ -80,15 +82,13 @@ void OvmsVehicleNetaAya::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 		{
 		// evse code
 		case 0xf012:
-			ESP_LOGE(TAG, "EVSE %02x %02x %02x %02x %02x %02x %02x %02x %02x", job.mlframe, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 			if (job.mlframe == 1)
 			{
-				ESP_LOGE(TAG, "EVSE %02x", data[1]);
 				// 04 es cs2 06 tmb
 				// 27 es conectada
-				// 01 es verificando
+				// 01 es dc
 				bool charging;
-				charging = data[1] != 0x00 && data[1] != 0x01 && data[1] != 0x27;
+				charging = data[1] != 0x00 && data[1] != 0x27;
 				charging = charging && StdMetrics.ms_v_bat_current->AsFloat(0, Amps) > 1;
 				if (charging)
 				{

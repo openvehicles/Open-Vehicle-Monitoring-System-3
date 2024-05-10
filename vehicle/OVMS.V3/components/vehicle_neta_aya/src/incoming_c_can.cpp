@@ -45,13 +45,13 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 
 	StdMetrics.ms_v_env_onepedal 				ok
 	StdMetrics.ms_v_env_efficiencymode 			ok
-	StdMetrics.ms_v_env_regenlevel Percentage 	rev cuando anda
+	StdMetrics.ms_v_env_regenlevel 				ok
 
-	StdMetrics.ms_v_bat_current 				rev
+	StdMetrics.ms_v_bat_current 				ok
 	StdMetrics.ms_v_bat_voltage 				ok
 	StdMetrics.ms_v_bat_power 					ok
 
-	StdMetrics.ms_v_charge_inprogress 			rev 
+	StdMetrics.ms_v_charge_inprogress 			ok 
 
 	StdMetrics.ms_v_env_on 						ok
 	StdMetrics.ms_v_env_awake 					NA
@@ -96,18 +96,21 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 		{
 			StdMetrics.ms_v_env_efficiencymode->SetValue("Sport");
 		}
+		break;
 	case 0x522: // regen level cambia
-		if (CAN_BIT(0, 4) == 1)
+		switch (CAN_BYTE(0))
 		{
-			StdMetrics.ms_v_env_regenlevel->SetValue(50, Percentage);
-		}
-		else if (CAN_BIT(0, 5) == 1)
-		{
-			StdMetrics.ms_v_env_regenlevel->SetValue(100, Percentage);
-		}
-		else
-		{
+		case 0x00:
 			StdMetrics.ms_v_env_regenlevel->SetValue(0, Percentage);
+			break;
+		case 0x10:
+			StdMetrics.ms_v_env_regenlevel->SetValue(50, Percentage);
+			break;
+		case 0x20:
+			StdMetrics.ms_v_env_regenlevel->SetValue(100, Percentage);
+			break;
+		default:
+			break;
 		}
 		break;
 	// case 0x405:

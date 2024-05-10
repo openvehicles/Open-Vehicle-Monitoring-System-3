@@ -265,10 +265,10 @@ bool OvmsVehicleNetaAya::SetDoorLock(bool lock)
 	if (lock)
 	{
 		bool closed_doors = true;
-		// StdMetrics.ms_v_door_fl->AsBool() &&
-		// 					StdMetrics.ms_v_door_fr->AsBool() &&
-		// 					StdMetrics.ms_v_door_rl->AsBool() &&
-		// 					StdMetrics.ms_v_door_rr->AsBool();
+		StdMetrics.ms_v_door_fl->AsBool() &&
+							StdMetrics.ms_v_door_fr->AsBool() &&
+							StdMetrics.ms_v_door_rl->AsBool() &&
+							StdMetrics.ms_v_door_rr->AsBool();
 		if (closed_doors)
 		{
 			MyPeripherals->m_max7317->Output(8, 0);
