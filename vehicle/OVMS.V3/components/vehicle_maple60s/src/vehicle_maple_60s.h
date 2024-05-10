@@ -26,8 +26,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_KIANIROEV_H__
-#define __VEHICLE_KIANIROEV_H__
+#ifndef __VEHICLE_MAPLE60S_H__
+#define __VEHICLE_MAPLE60S_H__
 
 #include "common.h"
 #include "vehicle.h"
@@ -116,4 +116,4 @@ class OvmsVehicleMaple60S : public Maple60S
 #endif //CONFIG_OVMS_COMP_WEBSERVER
   };
 
-#endif //#ifndef __VEHICLE_KIANIROEV_H__
+#endif // #ifndef __VEHICLE_MAPLE60S_H__

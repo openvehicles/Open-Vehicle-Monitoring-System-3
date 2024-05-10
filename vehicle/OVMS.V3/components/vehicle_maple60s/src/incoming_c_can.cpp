@@ -31,7 +31,6 @@
  */
 void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 {
-
 	// static const uint8_t byteMask[8] = {0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F};
 	uint8_t *d = p_frame->data.u8;
 
@@ -79,13 +78,14 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 	StdMetrics.ms_v_env_on 						ok
 	StdMetrics.ms_v_env_awake 					ok
 
-	StdMetrics.ms_v_env_aux12v					ok
+	StdMetrics.ms_v_env_aux12v					rev
 
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI);
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI);
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI);
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI);
 	*/
+
 	uint8_t *data = p_frame->data.u8;
 
 	switch (p_frame->MsgID)
@@ -100,9 +100,24 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 	{
 		switch (CAN_BYTE(4))
 		{
+		case 0x00:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("Normal");
+			break;
+		}
 		case 0x01:
 		{
 			StdMetrics.ms_v_env_efficiencymode->SetValue("Normal");
+			break;
+		}
+		case 0x02:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("Normal");
+			break;
+		}
+		case 0x04:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("Eco");
 			break;
 		}
 		case 0x05:
@@ -110,11 +125,25 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 			StdMetrics.ms_v_env_efficiencymode->SetValue("ECO");
 			break;
 		}
+		case 0x06:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("ECO");
+			break;
+		}
+		case 0x08:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("Sport");
+			break;
+		}
 		case 0x09:
 		{
 			StdMetrics.ms_v_env_efficiencymode->SetValue("Sport");
 			break;
 		}
+		case 0x0A:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("Sport");
+			break;
 		}
 		break;
 	}
@@ -147,7 +176,6 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 		// StdMetrics.ms_v_pos_speed->SetValue((CAN_BYTE(1) * 2) + 2 * (CAN_BYTE(2) - 2 / 253.0));
 		break;
 	}
-	// 1.952756 
 	case 0x162: // awake on/off // potencia
 	{
 		// StdMetrics.ms_v_env_awake->SetValue(((d[5] | byteMask[0]) == 0xff));
@@ -156,19 +184,19 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 		StdMetrics.ms_v_env_on->SetValue(CAN_BIT(3, 7) && CAN_BIT(5, 0));
 		// StdMetrics.ms_v_bat_power->SetValue(d[4] - 100);
 		StdMetrics.ms_v_bat_power->SetValue(CAN_BYTE(4) - 100);
-		switch (CAN_BYTE(5) | 0xF3)
+		switch (CAN_BYTE(5))
 		{
-		case 0xF7:
+		case 0x05:
 		{
 			StdMetrics.ms_v_env_regenlevel->SetValue(0, Percentage);
 			break;
 		}
-		case 0xFB:
+		case 0x09:
 		{
 			StdMetrics.ms_v_env_regenlevel->SetValue(50, Percentage);
 			break;
 		}
-		case 0xFF:
+		case 0x0d:
 		{
 			StdMetrics.ms_v_env_regenlevel->SetValue(100, Percentage);
 			break;
@@ -180,6 +208,11 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 	{
 		StdMetrics.ms_v_bat_soc->SetValue((100 * CAN_BYTE(1)) / 255, Percentage);
 		break;
+	}
+	case 0x235:
+	{
+		StdMetrics.ms_v_env_aux12v->SetValue((CAN_BYTE(7) + 67)/15);
+	}	
 	}
 	}
 }

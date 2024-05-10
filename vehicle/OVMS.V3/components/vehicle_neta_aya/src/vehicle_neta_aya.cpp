@@ -75,7 +75,23 @@ static const char *TAG = "v-netaAya";
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
-
+static const OvmsPoller::poll_pid_t vehicle_neta_polls[] =
+	{
+		// speed
+		{0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xb100, {1, 1, 1}, 2, ISOTP_STD},
+		// soc
+		{0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xf015, {1, 1, 1}, 2, ISOTP_STD},
+		// odometer
+		{0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe101, {1, 1, 1}, 2, ISOTP_STD},
+		// current
+		{0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xf013, {1, 1, 1}, 2, ISOTP_STD},
+		// voltage
+		{0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xf012, {1, 1, 1}, 2, ISOTP_STD},
+		// on
+		{0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xd001, {1, 1, 1}, 2, ISOTP_STD},
+		// evse code cahrging ??
+		{0x708, 0x718, VEHICLE_POLL_TYPE_READDATA, 0xf012, {1, 1, 1}, 2, ISOTP_STD},
+		POLL_LIST_END};
 /**
  * Constructor for Kia Niro EV OvmsVehicleNetaAya
  */
@@ -89,6 +105,7 @@ OvmsVehicleNetaAya::OvmsVehicleNetaAya()
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
 	fully_configured = false;
 	reset_by_config = false;
+	charger_disconected = false;
 
 	StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
 	StdMetrics.ms_v_charge_inprogress->SetValue(false);
@@ -107,8 +124,11 @@ OvmsVehicleNetaAya::OvmsVehicleNetaAya()
 	// 	WebInit();
 	// #endif
 	// D-Bus
-	RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+	PollSetThrottling(10);
+	RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
+	RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 	POLLSTATE_OFF;
+	PollSetPidList(m_can2, vehicle_neta_polls);
 }
 
 /**
@@ -152,6 +172,11 @@ void OvmsVehicleNetaAya::Ticker1(uint32_t ticker)
 	VerifyConfigs(true);
 	// Register car as locked only if all doors are locked
 
+	StdMetrics.ms_v_bat_power->SetValue(
+		StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) *
+			StdMetrics.ms_v_bat_current->AsFloat(1, Amps) / 1000,
+		kW);
+
 	if (m_poll_state == 0)
 	{
 		// ESP_LOGI(TAG, "POLL STATE OFF");
@@ -192,6 +217,14 @@ void OvmsVehicleNetaAya::Ticker1(uint32_t ticker)
  */
 void OvmsVehicleNetaAya::Ticker10(uint32_t ticker)
 {
+	if (StdMetrics.ms_v_charge_inprogress->AsBool())
+	{
+		if (charger_disconected)
+		{
+			StdMetrics.ms_v_charge_inprogress->SetValue(false);
+		}
+		charger_disconected = true;
+	}
 }
 
 /**
@@ -231,23 +264,27 @@ bool OvmsVehicleNetaAya::SetDoorLock(bool lock)
 {
 	if (lock)
 	{
-		bool closed_doors = StdMetrics.ms_v_door_fl->AsBool() &&
+		bool closed_doors = true;
+		StdMetrics.ms_v_door_fl->AsBool() &&
 							StdMetrics.ms_v_door_fr->AsBool() &&
 							StdMetrics.ms_v_door_rl->AsBool() &&
 							StdMetrics.ms_v_door_rr->AsBool();
-		if (closed_doors) {
-			MyPeripherals->m_max7317->Output(9, 0);
+		if (closed_doors)
+		{
+			MyPeripherals->m_max7317->Output(8, 0);
 			vTaskDelay(pdMS_TO_TICKS(1000));
-			MyPeripherals->m_max7317->Output(9, 255);
-		} else {
+			MyPeripherals->m_max7317->Output(8, 255);
+		}
+		else
+		{
 			return false;
 		}
 	}
 	else
 	{
-		MyPeripherals->m_max7317->Output(8, 0);
+		MyPeripherals->m_max7317->Output(9, 0);
 		vTaskDelay(pdMS_TO_TICKS(1000));
-		MyPeripherals->m_max7317->Output(8, 255);
+		MyPeripherals->m_max7317->Output(9, 255);
 	}
 	return true;
 }

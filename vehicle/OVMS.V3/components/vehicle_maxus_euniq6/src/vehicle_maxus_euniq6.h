@@ -26,8 +26,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_KIANIROEV_H__
-#define __VEHICLE_KIANIROEV_H__
+#ifndef __VEHICLE_MAXUSEUNIQ6_H__
+#define __VEHICLE_MAXUSEUNIQ6_H__
 
 #include "common.h"
 #include "vehicle.h"
@@ -117,4 +117,4 @@ class OvmsVehicleMaxEu6 : public maxeu6
 #endif //CONFIG_OVMS_COMP_WEBSERVER
   };
 
-#endif //#ifndef __VEHICLE_KIANIROEV_H__
+#endif // #ifndef __VEHICLE_MAXUSEUNIQ6_H__
