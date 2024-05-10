@@ -33,9 +33,9 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 {
 	/*
 	BASIC METRICS
-	StdMetrics.ms_v_pos_speed 					rev
-	StdMetrics.ms_v_bat_soc 					rev
-	StdMetrics.ms_v_pos_odometer 				rev
+	StdMetrics.ms_v_pos_speed 					ok
+	StdMetrics.ms_v_bat_soc 					ok
+	StdMetrics.ms_v_pos_odometer 				ok
 
 	StdMetrics.ms_v_door_fl 					ok
 	StdMetrics.ms_v_door_fr 					ok
@@ -48,20 +48,20 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 	StdMetrics.ms_v_env_regenlevel Percentage 	rev cuando anda
 
 	StdMetrics.ms_v_bat_current 				rev
-	StdMetrics.ms_v_bat_voltage 				rev
-	StdMetrics.ms_v_bat_power 					rev
+	StdMetrics.ms_v_bat_voltage 				ok
+	StdMetrics.ms_v_bat_power 					ok
 
-	StdMetrics.ms_v_charge_inprogress 			-
+	StdMetrics.ms_v_charge_inprogress 			rev 
 
-	StdMetrics.ms_v_env_on 						rev
+	StdMetrics.ms_v_env_on 						ok
 	StdMetrics.ms_v_env_awake 					NA
 
 	StdMetrics.ms_v_env_aux12v					yes
 
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI); NA
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI); NA
-	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI); NA 
- 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI); NA
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI); NA
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI); NA
 	*/
 
 	uint8_t *data = p_frame->data.u8;
@@ -74,7 +74,7 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 	// case 0x452: // ODOMETER
 	// 	StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT(1), Kilometers);
 	// 	break;
-	case 0x339: // door status
+	case 0x339:											  // door status
 		StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(1, 1)); // true when open
 		StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(1, 3));
 		StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(1, 5));
@@ -96,7 +96,7 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 		{
 			StdMetrics.ms_v_env_efficiencymode->SetValue("Sport");
 		}
-	case 0x522: //regen level cambia
+	case 0x522: // regen level cambia
 		if (CAN_BIT(0, 4) == 1)
 		{
 			StdMetrics.ms_v_env_regenlevel->SetValue(50, Percentage);
@@ -119,7 +119,7 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 	// 			StdMetrics.ms_v_bat_current->AsFloat(0, Amps) / 1000,
 	// 		kW);
 	// 	StdMetrics.ms_v_charge_inprogress->SetValue(CAN_BIT(2, 0));
-		break;
+	// 	break;
 	default:
 		return;
 	}
