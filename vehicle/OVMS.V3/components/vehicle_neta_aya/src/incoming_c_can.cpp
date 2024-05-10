@@ -31,33 +31,11 @@
  */
 void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 {
-
-	uint8_t *d = p_frame->data.u8;
-
-	// ESP_LOGE(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
-	// 		 p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
-
-	// Check if response is from synchronous can message
-	if (message_send_can.status == 0xff && p_frame->MsgID == (message_send_can.id + 0x08))
-	{
-		// Store message bytes so that the async method can continue
-		message_send_can.status = 3;
-
-		message_send_can.byte[0] = d[0];
-		message_send_can.byte[1] = d[1];
-		message_send_can.byte[2] = d[2];
-		message_send_can.byte[3] = d[3];
-		message_send_can.byte[4] = d[4];
-		message_send_can.byte[5] = d[5];
-		message_send_can.byte[6] = d[6];
-		message_send_can.byte[7] = d[7];
-	}
-
 	/*
 	BASIC METRICS
-	StdMetrics.ms_v_pos_speed 					ok
-	StdMetrics.ms_v_bat_soc 					ok
-	StdMetrics.ms_v_pos_odometer 				ok
+	StdMetrics.ms_v_pos_speed 					rev
+	StdMetrics.ms_v_bat_soc 					rev
+	StdMetrics.ms_v_pos_odometer 				rev
 
 	StdMetrics.ms_v_door_fl 					ok
 	StdMetrics.ms_v_door_fr 					ok
@@ -65,37 +43,37 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 	StdMetrics.ms_v_door_rr 					ok
 	StdMetrics.ms_v_env_locked 					ok
 
-	StdMetrics.ms_v_env_onepedal 				NA
+	StdMetrics.ms_v_env_onepedal 				ok
 	StdMetrics.ms_v_env_efficiencymode 			ok
-	StdMetrics.ms_v_env_regenlevel Percentage 	ok
+	StdMetrics.ms_v_env_regenlevel Percentage 	rev cuando anda
 
-	StdMetrics.ms_v_bat_current 				ok
-	StdMetrics.ms_v_bat_voltage 				ok
-	StdMetrics.ms_v_bat_power 					ok
+	StdMetrics.ms_v_bat_current 				rev
+	StdMetrics.ms_v_bat_voltage 				rev
+	StdMetrics.ms_v_bat_power 					rev
 
-	StdMetrics.ms_v_charge_inprogress 			ok
+	StdMetrics.ms_v_charge_inprogress 			-
 
-	StdMetrics.ms_v_env_on 						-
-	StdMetrics.ms_v_env_awake 					-
+	StdMetrics.ms_v_env_on 						rev
+	StdMetrics.ms_v_env_awake 					NA
 
-	StdMetrics.ms_v_env_aux12v					-
+	StdMetrics.ms_v_env_aux12v					yes
 
-	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI);
-	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI);
-	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI);
-	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI);
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI); NA
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI); NA
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI); NA 
+ 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI); NA
 	*/
 
 	uint8_t *data = p_frame->data.u8;
 
 	switch (p_frame->MsgID)
 	{
-	case 0x21E: // SPEED
-		StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(0), Kph);
-		break;
-	case 0x452: // ODOMETER
-		StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT(1), Kilometers);
-		break;
+	// case 0x21E: // SPEED
+	// 	StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(0), Kph);
+	// 	break;
+	// case 0x452: // ODOMETER
+	// 	StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT(1), Kilometers);
+	// 	break;
 	case 0x339: // door status
 		StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(1, 1)); // true when open
 		StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(1, 3));
@@ -103,9 +81,9 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 		StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(1, 7));
 		StdMetrics.ms_v_env_locked->SetValue(CAN_BIT(4, 6));
 		break;
-	case 0x590: // SOC
-		StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(1), Percentage);
-		break;
+	// case 0x590: // SOC
+	// 	StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(1), Percentage);
+	// 	break;
 	case 0x403:
 		StdMetrics.ms_v_env_onepedal->SetValue(CAN_BIT(2, 4));
 		break;
@@ -132,17 +110,40 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 			StdMetrics.ms_v_env_regenlevel->SetValue(0, Percentage);
 		}
 		break;
-	case 0x405:
-		StdMetrics.ms_v_bat_current->SetValue((CAN_UINT(4) * 0.05) - 1600, Amps);
-		StdMetrics.ms_v_bat_voltage->SetValue(CAN_UINT(6) * 0.05, Volts);
-		// maybe send to ticker
-		StdMetrics.ms_v_bat_power->SetValue(
-			StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) *
-				StdMetrics.ms_v_bat_current->AsFloat(0, Amps) / 1000,
-			kW);
-		StdMetrics.ms_v_charge_inprogress->SetValue(CAN_BIT(2, 0));
+	// case 0x405:
+	// 	StdMetrics.ms_v_bat_current->SetValue((CAN_UINT(4) * 0.05) - 1600, Amps);
+	// 	StdMetrics.ms_v_bat_voltage->SetValue(CAN_UINT(6) * 0.05, Volts);
+	// 	// maybe send to ticker
+	// 	StdMetrics.ms_v_bat_power->SetValue(
+	// 		StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) *
+	// 			StdMetrics.ms_v_bat_current->AsFloat(0, Amps) / 1000,
+	// 		kW);
+	// 	StdMetrics.ms_v_charge_inprogress->SetValue(CAN_BIT(2, 0));
 		break;
 	default:
 		return;
+	}
+}
+
+void OvmsVehicleNetaAya::IncomingFrameCan2(CAN_frame_t *p_frame)
+{
+	uint8_t *d = p_frame->data.u8;
+	// ESP_LOGE(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
+	// 		 p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+
+	// Check if response is from synchronous can message
+	if (message_send_can.status == 0xff && p_frame->MsgID == (message_send_can.id + 0x08))
+	{
+		// Store message bytes so that the async method can continue
+		message_send_can.status = 3;
+
+		message_send_can.byte[0] = d[0];
+		message_send_can.byte[1] = d[1];
+		message_send_can.byte[2] = d[2];
+		message_send_can.byte[3] = d[3];
+		message_send_can.byte[4] = d[4];
+		message_send_can.byte[5] = d[5];
+		message_send_can.byte[6] = d[6];
+		message_send_can.byte[7] = d[7];
 	}
 }

@@ -26,8 +26,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_KIANIROEV_H__
-#define __VEHICLE_KIANIROEV_H__
+#ifndef __VEHICLE_KIANIROEVSG2_H__
+#define __VEHICLE_KIANIROEVSG2_H__
 
 #include "common.h"
 #include "vehicle.h"
@@ -129,4 +129,4 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
 #endif //CONFIG_OVMS_COMP_WEBSERVER
   };
 
-#endif //#ifndef __VEHICLE_KIANIROEV_H__
+#endif //#ifndef __VEHICLE_KIANIROEVSG2_H__
