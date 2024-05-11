@@ -389,6 +389,12 @@ void OvmsPoller::PollerSend(poller_source_t source)
     return;
     }
 
+  if (! CanPoll())
+    {
+    ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Throttled", m_poll.bus_no);
+    return;
+    }
+
   OvmsPoller::OvmsNextPollResult res;
   {
     OvmsRecMutexLock lock(&m_poll_mutex);
