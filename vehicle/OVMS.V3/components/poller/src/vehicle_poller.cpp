@@ -744,6 +744,7 @@ const char *OvmsPoller::PollerCommand(OvmsPollCommand src)
     case OvmsPollCommand::ResponseSep: return "ResponseSep";
     case OvmsPollCommand::Keepalive: return "Keepalive";
     case OvmsPollCommand::SuccessSep: return "SuccessSep";
+    case OvmsPollCommand::Shutdown: return "Shutdown";
     }
   return "??";
   }
@@ -792,7 +793,7 @@ OvmsPollers::OvmsPollers()
 
 OvmsPollers::~OvmsPollers()
   {
-  ShuttingDown();
+  ShuttingDown(false);
   }
 
 void OvmsPollers::StartingUp()
@@ -802,33 +803,51 @@ void OvmsPollers::StartingUp()
   CheckStartPollTask();
   }
 
-void OvmsPollers::ShuttingDown()
+void OvmsPollers::ShuttingDown(bool wait)
   {
   if (m_shut_down)
     return;
   m_shut_down = true;
+  if (m_polltask && m_pollqueue)
+    {
+    OvmsPoller::poll_queue_entry_t entry;
+    entry.entry_type = OvmsPoller::OvmsPollEntryType::Command;
+    entry.entry_Command.cmd = OvmsPoller::OvmsPollCommand::Shutdown;
+    entry.entry_Command.parameter = 0;
+    xQueueSendToFront(m_pollqueue, &entry, 0);
+    }
+
   MyCan.DeregisterCallback(TAG);
   MyEvents.DeregisterEvent(TAG);
 
-  if (m_polltask)
-    {
-    vTaskDelete(m_polltask);
-    m_polltask = nullptr;
-    }
-  if (m_pollqueue)
-    {
-    vQueueDelete(m_pollqueue);
-    m_pollqueue = nullptr;
-    }
   if (m_timer_poller)
     {
     xTimerDelete( m_timer_poller, 0);
     m_timer_poller = NULL;
     }
+
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
     if (m_pollers[i])
       m_pollers[i]->ClearPollList();
+    }
+
+  if (wait)
+    {
+    int repeat = 40; // 2s
+    while (m_polltask && repeat--)
+      vTaskDelay(pdMS_TO_TICKS(50));
+    }
+
+  // Shouldn't be needed.. but just in case.
+  auto ptask = Atomic_GetAndNull(m_polltask);
+  if (ptask)
+    vTaskDelete(ptask);
+
+  if (m_pollqueue)
+    {
+    vQueueDelete(m_pollqueue);
+    m_pollqueue = nullptr;
     }
   for (int i = 1 ; i <= VEHICLE_MAXBUSSES; ++i)
     PowerDownCanBus(i);
@@ -910,7 +929,7 @@ void OvmsPollers::Ticker1(std::string event, void* data)
 
 void OvmsPollers::EventSystemShuttingDown(std::string event, void* data)
   {
-  ShuttingDown();
+  ShuttingDown(true);
   }
 
 /**
@@ -1020,10 +1039,15 @@ void OvmsPollers::OvmsPollerTask(void *pvParameters)
 void OvmsPollers::PollerTask()
   {
   OvmsPoller::poll_queue_entry_t entry;
-  while (!m_shut_down)
+  while (not m_shut_down )
     {
     if (xQueueReceive(m_pollqueue, &entry, (portTickType)portMAX_DELAY)!=pdTRUE)
       continue;
+    if ( (entry.entry_type == OvmsPoller::OvmsPollEntryType::Command)
+      &&  (entry.entry_Command.cmd == OvmsPoller::OvmsPollCommand::Shutdown))
+      {
+      break;
+      }
     if (m_shut_down)
       break;
     m_poll_last = monotonictime;
@@ -1079,6 +1103,8 @@ void OvmsPollers::PollerTask()
       case OvmsPoller::OvmsPollEntryType::Command:
         switch (entry.entry_Command.cmd)
           {
+          case OvmsPoller::OvmsPollCommand::Shutdown:
+            break; // Shouldn't get here.
           case OvmsPoller::OvmsPollCommand::Pause:
             {
             if (entry.entry_Command.parameter)
@@ -1191,6 +1217,13 @@ void OvmsPollers::PollerTask()
         break;
       }
     }
+
+  auto task = Atomic_GetAndNull(m_polltask);
+  ESP_LOGD(TAG, "Pollers: Shutdown %s", task ? "null" : "OK");
+  if (task)
+    vTaskDelete(task);
+  // Wait to die.
+  vTaskSuspend(nullptr);
   }
 
 OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
@@ -1365,7 +1398,7 @@ bool OvmsPollers::HasPollList(canbus* bus)
 
 void OvmsPollers::Queue_Command(OvmsPoller::OvmsPollCommand cmd, uint16_t param)
   {
-  if (!m_pollqueue)
+  if (!m_pollqueue || m_shut_down)
     return;
   // Queues the command
   OvmsPoller::poll_queue_entry_t entry;

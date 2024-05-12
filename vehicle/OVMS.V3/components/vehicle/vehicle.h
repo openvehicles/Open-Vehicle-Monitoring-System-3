@@ -634,7 +634,7 @@ class OvmsVehicle : public InternalRamAllocated
     bool m_is_shutdown;
   public:
     void StartingUp();
-    void ShuttingDown();
+    void ShuttingDown(bool wait = true);
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()
@@ -661,7 +661,7 @@ class OvmsVehicleFactory
     std::string m_currentvehicletype;
     map_vehicle_t m_vmap;
 
-    void DoClearVehicle( bool clearName, bool sendEvent);
+    void DoClearVehicle( bool clearName, bool sendEvent, bool wait);
   public:
     template<typename Type>
     short RegisterVehicle(const char* VehicleType, const char* VehicleName = "")
@@ -705,6 +705,8 @@ class OvmsVehicleFactory
     static void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void obdii_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+    void EventSystemShuttingDown(std::string event, void* data);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   protected:
