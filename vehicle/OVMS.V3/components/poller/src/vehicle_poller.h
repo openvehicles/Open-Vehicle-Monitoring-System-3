@@ -619,6 +619,7 @@ class OvmsPoller : public InternalRamAllocated {
 
     void Queue_PollerSend(poller_source_t source);
     void Queue_PollerSendSuccess();
+    void PollerSucceededPollNext();
 
     void PollSetThrottling(uint8_t sequence_max);
 
