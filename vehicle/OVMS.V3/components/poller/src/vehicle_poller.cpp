@@ -71,7 +71,7 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
   m_poll.moduleid_sent = 0;
   m_poll.moduleid_low = 0;
   m_poll.moduleid_high = 0;
-  m_poll.type = 0;
+  m_poll.type = VEHICLE_POLL_TYPE_NONE;
   m_poll.pid = 0;
   m_poll.mlremain = 0;
   m_poll.mloffset = 0;
@@ -88,6 +88,11 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
 
 void OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
   {
+
+  // No multiframe request is active.
+  if (m_poll.type == VEHICLE_POLL_TYPE_NONE)
+    return;
+
   // Pass frame to poller protocol handlers:
   if (frame.origin == m_poll_vwtp.bus && frame.MsgID == m_poll_vwtp.rxid)
     {
@@ -381,6 +386,8 @@ void OvmsPoller::PollerSend(poller_source_t source)
       PollerNextTick(poller_source_t::Primary);
       }
     }
+ // Clear. If it got to here we are ready to send a new item.
+  m_poll.type = VEHICLE_POLL_TYPE_NONE;
 
   // Check poll bus & list:
   if (!HasPollList())
@@ -631,6 +638,21 @@ void OvmsPoller::DoPollerSendSuccess( void * pvParamCan, uint32_t ticker ) // St
   {
   uint8_t can_number = uint32_t(pvParamCan);
   MyPollers.QueuePollerSend(OvmsPoller::poller_source_t::Successful, can_number, ticker);
+  }
+
+//: Call when poll Succeeded and no more is expected.
+void OvmsPoller::PollerSucceededPollNext()
+  {
+  // Not expecting any more .. so short-cut the poll receive.
+  m_poll.type = VEHICLE_POLL_TYPE_NONE;
+
+  // Immediately send the next poll for this tick if…
+  // - we are not waiting for another frame
+  // - poll throttling is unlimited or limit isn't reached yet
+  if (m_poll_wait == 0 && CanPoll())
+    {
+    Queue_PollerSendSuccess();
+    }
   }
 
 void OvmsPoller::Queue_PollerSendSuccess()
