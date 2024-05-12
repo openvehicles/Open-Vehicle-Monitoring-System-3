@@ -768,8 +768,11 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
       break;
     }
 
-  // Succeeded - No more expected so check to send the next poll
-  PollerSucceededPollNext();
+  if (m_poll.mlremain == 0)
+    {
+    // Succeeded - No more expected so check to send the next poll
+    PollerSucceededPollNext();
+    }
 
   return true;
   }

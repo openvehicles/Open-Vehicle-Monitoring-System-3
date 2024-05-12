@@ -544,9 +544,10 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     m_poll_wait = 0;
     }
 
+  //  If there are no more packets and
   //  If the poll was not a broadcast
   //  (with potential further responses from other devices)
-  if ( m_poll.moduleid_sent != 0x7df )
+  if (m_poll.mlremain == 0 && m_poll.moduleid_sent != 0x7df )
     {
     // Succeeded - No more expected so check to send the next poll
     PollerSucceededPollNext();
