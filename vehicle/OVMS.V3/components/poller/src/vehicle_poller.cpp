@@ -814,8 +814,7 @@ void OvmsPollers::ShuttingDown(bool wait)
     entry.entry_type = OvmsPoller::OvmsPollEntryType::Command;
     entry.entry_Command.cmd = OvmsPoller::OvmsPollCommand::Shutdown;
     entry.entry_Command.parameter = 0;
-    xQueueReset(m_pollqueue);
-    xQueueSend(m_pollqueue, &entry, 0);
+    xQueueSendToFront(m_pollqueue, &entry, 0);
     }
 
   MyCan.DeregisterCallback(TAG);
@@ -1224,8 +1223,7 @@ void OvmsPollers::PollerTask()
   if (task)
     vTaskDelete(task);
   // Wait to die.
-  while (true)
-    vTaskDelay(pdMS_TO_TICKS(10));
+  vTaskSuspend(nullptr);
   }
 
 OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
