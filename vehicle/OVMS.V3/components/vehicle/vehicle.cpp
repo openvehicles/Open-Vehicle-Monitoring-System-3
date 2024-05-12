@@ -471,7 +471,7 @@ void OvmsVehicle::ShuttingDown(bool wait)
   entry.origin = nullptr;
   entry.callback = nullptr;
   entry.MsgID = 0;
-  xQueueSend(m_vqueue, &entry, 0);
+  xQueueSendToFront(m_vqueue, &entry, 0);
 
   if (m_can1) m_can1->SetPowerMode(Off);
   if (m_can2) m_can2->SetPowerMode(Off);
@@ -2484,6 +2484,7 @@ void OvmsVehicle::VehicleTask()
   auto vtask = Atomic_GetAndNull(m_vtask);
   if (vtask)
     vTaskDelete(vtask);
+  vTaskSuspend(nullptr);
   }
 #endif
 
