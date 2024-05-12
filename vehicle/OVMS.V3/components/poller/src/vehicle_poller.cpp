@@ -808,8 +808,15 @@ void OvmsPollers::ShuttingDown(bool wait)
   if (m_shut_down)
     return;
   m_shut_down = true;
-  if (m_polltask)
-    Queue_Command(OvmsPoller::OvmsPollCommand::Shutdown, 0);
+  if (m_polltask && m_pollqueue)
+    {
+    OvmsPoller::poll_queue_entry_t entry;
+    entry.entry_type = OvmsPoller::OvmsPollEntryType::Command;
+    entry.entry_Command.cmd = OvmsPoller::OvmsPollCommand::Shutdown;
+    entry.entry_Command.parameter = 0;
+    xQueueReset(m_pollqueue);
+    xQueueSend(m_pollqueue, &entry, 0);
+    }
 
   MyCan.DeregisterCallback(TAG);
   MyEvents.DeregisterEvent(TAG);
@@ -828,11 +835,12 @@ void OvmsPollers::ShuttingDown(bool wait)
 
   if (wait)
     {
-    int repeat = 20; // 1s
+    int repeat = 40; // 2s
     while (m_polltask && repeat--)
       vTaskDelay(pdMS_TO_TICKS(50));
     }
 
+  // Shouldn't be needed.. but just in case.
   auto ptask = Atomic_GetAndNull(m_polltask);
   if (ptask)
     vTaskDelete(ptask);
@@ -1032,23 +1040,17 @@ void OvmsPollers::OvmsPollerTask(void *pvParameters)
 void OvmsPollers::PollerTask()
   {
   OvmsPoller::poll_queue_entry_t entry;
-  bool shutdown = false;
-  while (true)
+  while (not m_shut_down )
     {
     if (xQueueReceive(m_pollqueue, &entry, (portTickType)portMAX_DELAY)!=pdTRUE)
       continue;
     if ( (entry.entry_type == OvmsPoller::OvmsPollEntryType::Command)
       &&  (entry.entry_Command.cmd == OvmsPoller::OvmsPollCommand::Shutdown))
       {
-      shutdown = true;
-      auto task = Atomic_GetAndNull(m_polltask);
-      ESP_LOGD(TAG, "Pollers: Shutdown %s", task ? "null" : "OK");
-      if (task)
-        vTaskDelete(task);
-      continue;
+      break;
       }
-    if (m_shut_down or shutdown)
-      continue;
+    if (m_shut_down)
+      break;
     m_poll_last = monotonictime;
     switch (entry.entry_type)
       {
@@ -1103,13 +1105,7 @@ void OvmsPollers::PollerTask()
         switch (entry.entry_Command.cmd)
           {
           case OvmsPoller::OvmsPollCommand::Shutdown:
-            {
-            shutdown = true;
-            auto task = Atomic_GetAndNull(m_polltask);
-            if (task)
-              vTaskDelete(task);
-            break;
-            }
+            break; // Shouldn't get here.
           case OvmsPoller::OvmsPollCommand::Pause:
             {
             if (entry.entry_Command.parameter)
@@ -1222,6 +1218,14 @@ void OvmsPollers::PollerTask()
         break;
       }
     }
+
+  auto task = Atomic_GetAndNull(m_polltask);
+  ESP_LOGD(TAG, "Pollers: Shutdown %s", task ? "null" : "OK");
+  if (task)
+    vTaskDelete(task);
+  // Wait to die.
+  while (true)
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 
 OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
@@ -1396,7 +1400,7 @@ bool OvmsPollers::HasPollList(canbus* bus)
 
 void OvmsPollers::Queue_Command(OvmsPoller::OvmsPollCommand cmd, uint16_t param)
   {
-  if (!m_pollqueue)
+  if (!m_pollqueue || m_shut_down)
     return;
   // Queues the command
   OvmsPoller::poll_queue_entry_t entry;
