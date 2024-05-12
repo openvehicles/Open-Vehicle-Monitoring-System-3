@@ -634,6 +634,21 @@ void OvmsPoller::DoPollerSendSuccess( void * pvParamCan, uint32_t ticker ) // St
   MyPollers.QueuePollerSend(OvmsPoller::poller_source_t::Successful, can_number, ticker);
   }
 
+//: Call when poll Succeeded and no more is expected.
+void OvmsPoller::PollerSucceededPollNext()
+  {
+  // Not expecting any more .. so short-cut the poll receive.
+  m_poll.type = VEHICLE_POLL_TYPE_NONE;
+
+  // Immediately send the next poll for this tick if…
+  // - we are not waiting for another frame
+  // - poll throttling is unlimited or limit isn't reached yet
+  if (m_poll_wait == 0 && CanPoll())
+    {
+    Queue_PollerSendSuccess();
+    }
+  }
+
 void OvmsPoller::Queue_PollerSendSuccess()
   {
   if (m_poll_between_success == 0)
