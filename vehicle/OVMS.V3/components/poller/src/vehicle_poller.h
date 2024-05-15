@@ -680,7 +680,7 @@ class OvmsPollers : public InternalRamAllocated {
     bool              m_paused;
     bool              m_user_paused;
     typedef enum {trace_Off = 0x00, trace_Poller = 0x1, trace_TXRX = 0x2, trace_All= 0x3} tracetype_t;
-    tracetype_t       m_trace;                // true = enable verbose logging
+    uint8_t           m_trace;                // Current Trace flags.
     uint32_t          m_overflow_count[2];    // Keep track of overflows.
 
     void PollerTxCallback(const CAN_frame_t* frame, bool success);

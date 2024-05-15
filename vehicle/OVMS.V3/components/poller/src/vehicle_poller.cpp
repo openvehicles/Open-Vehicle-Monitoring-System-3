@@ -793,6 +793,7 @@ OvmsPollers::OvmsPollers()
   cmd_trace->RegisterCommand("txrx","Turn verbose logging ON for txrx queuing",vehicle_poller_trace);
   cmd_trace->RegisterCommand("all","Turn verbose logging ON",vehicle_poller_trace);
   cmd_trace->RegisterCommand("off","Turn verbose logging OFF",vehicle_poller_trace);
+  cmd_trace->RegisterCommand("status","Show status for poller loop logging",vehicle_poller_trace);
   }
 
 OvmsPollers::~OvmsPollers()
@@ -1573,15 +1574,19 @@ void OvmsPollers::vehicle_pause_off(int verbosity, OvmsWriter* writer, OvmsComma
 void OvmsPollers::vehicle_poller_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (strcmp(cmd->GetName(), "on") == 0)
-    MyPollers.m_trace = trace_Poller;
+    MyPollers.m_trace |= trace_Poller;
   else if (strcmp(cmd->GetName(), "txrx") == 0)
-    MyPollers.m_trace = trace_TXRX;
+    MyPollers.m_trace |= trace_TXRX;
   else if (strcmp(cmd->GetName(), "all") == 0)
-    MyPollers.m_trace = trace_All;
+    MyPollers.m_trace |= trace_All;
   else if (strcmp(cmd->GetName(), "off") == 0)
-    MyPollers.m_trace = trace_Off;
+    MyPollers.m_trace &= ~trace_All;
+  //"status" falls through here.
 
-  writer->printf("Vehicle OBD poller tracing is now %s\n", cmd->GetName());
+  writer->printf("Vehicle OBD poller tracing: %s%s%s\n",
+      (MyPollers.m_trace & trace_Poller) ? "+poll" : "",
+      (MyPollers.m_trace & trace_TXRX) ? "+txrx" : "",
+      (MyPollers.m_trace & trace_All) ? "" : "off");
   }
 
 static const char *PollResStr( OvmsPoller::OvmsNextPollResult res)
