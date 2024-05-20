@@ -45,6 +45,7 @@ static const char *TAG = "vehicle-poll";
 #include <string_writer.h>
 #include "vehicle.h"
 #include "can.h"
+#include "ovms_boot.h"
 
 using namespace std::placeholders;
 
@@ -822,7 +823,28 @@ OvmsPollers::OvmsPollers()
 
 OvmsPollers::~OvmsPollers()
   {
-  ShuttingDown(false);
+  MyEvents.DeregisterEvent(TAG);
+
+  auto pqueue = Atomic_GetAndNull(m_pollqueue);
+  if (pqueue)
+    vQueueDelete(pqueue);
+
+  // Shouldn't be needed.. but just in case.
+  auto ptask = Atomic_GetAndNull(m_polltask);
+  if (ptask)
+    {
+    vTaskDelete(ptask);
+    ESP_LOGE(TAG, "Poller Shutdown Force-Deleting task");
+    }
+  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+    {
+    if (m_pollers[i])
+      {
+      delete m_pollers[i];
+      m_pollers[i] = nullptr;
+      }
+    }
+
   }
 
 void OvmsPollers::StartingUp()
@@ -832,22 +854,11 @@ void OvmsPollers::StartingUp()
   CheckStartPollTask();
   }
 
-void OvmsPollers::ShuttingDown(bool wait)
+void OvmsPollers::ShuttingDown()
   {
-  if (m_shut_down)
-    return;
-  m_shut_down = true;
-  if (m_polltask && m_pollqueue)
-    {
-    OvmsPoller::poll_queue_entry_t entry;
-    entry.entry_type = OvmsPoller::OvmsPollEntryType::Command;
-    entry.entry_Command.cmd = OvmsPoller::OvmsPollCommand::Shutdown;
-    entry.entry_Command.parameter = 0;
-    xQueueSendToFront(m_pollqueue, &entry, 0);
-    }
+  ESP_LOGD(TAG, "Poller Shutdown Sending Shut-Down");
 
   MyCan.DeregisterCallback(TAG);
-  MyEvents.DeregisterEvent(TAG);
 
   if (m_timer_poller)
     {
@@ -861,33 +872,11 @@ void OvmsPollers::ShuttingDown(bool wait)
       m_pollers[i]->ClearPollList();
     }
 
-  if (wait)
-    {
-    int repeat = 40; // 2s
-    while (m_polltask && repeat--)
-      vTaskDelay(pdMS_TO_TICKS(50));
-    }
-
-  // Shouldn't be needed.. but just in case.
-  auto ptask = Atomic_GetAndNull(m_polltask);
-  if (ptask)
-    vTaskDelete(ptask);
-
-  if (m_pollqueue)
-    {
-    vQueueDelete(m_pollqueue);
-    m_pollqueue = nullptr;
-    }
+  ESP_LOGV(TAG, "Poller Shutdown Powering Down Busses");
   for (int i = 1 ; i <= VEHICLE_MAXBUSSES; ++i)
     PowerDownCanBus(i);
-  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
-    {
-    if (m_pollers[i])
-      {
-      delete m_pollers[i];
-      m_pollers[i] = nullptr;
-      }
-    }
+
+  ESP_LOGV(TAG, "Poller Shutdown Finished");
   }
 
 void OvmsPollers::ShuttingDownVehicle()
@@ -958,7 +947,33 @@ void OvmsPollers::Ticker1(std::string event, void* data)
 
 void OvmsPollers::EventSystemShuttingDown(std::string event, void* data)
   {
-  ShuttingDown(true);
+  if (m_shut_down)
+    return;
+
+  // Close down standard events.
+  MyEvents.DeregisterEvent(TAG);
+  MyBoot.ShutdownPending(TAG);
+  // Register a special shut-down event to check shut-down
+  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsPollers::Ticker1_Shutdown, this, _1, _2));
+  m_shut_down = true;
+  if (Atomic_Get(m_polltask))
+    {
+
+    // Send a Shutdown command to the front of the queue
+    OvmsPoller::poll_queue_entry_t entry;
+    entry.entry_type = OvmsPoller::OvmsPollEntryType::Command;
+    entry.entry_Command.cmd = OvmsPoller::OvmsPollCommand::Shutdown;
+    entry.entry_Command.parameter = 0;
+    xQueueSendToFront(m_pollqueue, &entry, 0);
+    }
+  }
+void OvmsPollers::Ticker1_Shutdown(std::string event, void* data)
+  {
+  if (Atomic_Get(m_polltask) == nullptr)
+    {
+    MyEvents.DeregisterEvent(TAG);
+    MyBoot.ShutdownReady(TAG);
+    }
   }
 
 void OvmsPollers::VehicleOn(std::string event, void* data)
@@ -1088,22 +1103,32 @@ void OvmsPollers::CheckStartPollTask( bool force )
       return;
     }
 
-  if (!m_pollqueue)
-    m_pollqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(OvmsPoller::poll_queue_entry_t));
-  if (!m_polltask)
+  if (!Atomic_Get(m_pollqueue))
+    {
+    OvmsRecMutexLock lock(&m_poller_mutex);
+    if (!m_pollqueue)
+      m_pollqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(OvmsPoller::poll_queue_entry_t));
+    }
+  if (!Atomic_Get(m_polltask))
     {
     if (!Ready())
       return;
-    xTaskCreatePinnedToCore(OvmsPollerTask, "OVMS Vehicle Poll",
-      CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_polltask, CORE(1));
+    OvmsRecMutexLock lock(&m_poller_mutex);
+    if (!m_polltask)
+      xTaskCreatePinnedToCore(OvmsPollerTask, "OVMS Vehicle Poll",
+        CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_polltask, CORE(1));
     }
   if (!m_timer_poller)
     {
     // default to 1 second
-    m_timer_poller = xTimerCreate("Vehicle OBD Poll Ticker",
-        m_poll_tick_ms / portTICK_PERIOD_MS,pdTRUE,this,
-        OvmsVehiclePollTicker);
-    xTimerStart(m_timer_poller, 0);
+    OvmsRecMutexLock lock(&m_poller_mutex);
+    if (!m_timer_poller)
+      {
+      m_timer_poller = xTimerCreate("Vehicle OBD Poll Ticker",
+          m_poll_tick_ms / portTICK_PERIOD_MS,pdTRUE,this,
+          OvmsVehiclePollTicker);
+      xTimerStart(m_timer_poller, 0);
+      }
     }
   }
 
@@ -1216,8 +1241,13 @@ OvmsPollers::poller_key_st::poller_key_st( const OvmsPoller::poll_queue_entry_t 
 void OvmsPollers::PollerTask()
   {
   OvmsPoller::poll_queue_entry_t entry;
-  while (not m_shut_down )
+  while (true)
     {
+    if ( m_shut_down )
+      {
+      ShuttingDown();
+      break;
+      }
     if (xQueueReceive(m_pollqueue, &entry, (portTickType)portMAX_DELAY)!=pdTRUE)
       continue;
 
@@ -1245,6 +1275,7 @@ void OvmsPollers::PollerTask()
       {
       if (entry.entry_Command.cmd == OvmsPoller::OvmsPollCommand::Shutdown)
         {
+        ShuttingDown();
         break;
         }
       if (entry.entry_Command.cmd == OvmsPoller::OvmsPollCommand::ResetTimer)
@@ -1454,6 +1485,7 @@ void OvmsPollers::PollerTask()
 
   auto task = Atomic_GetAndNull(m_polltask);
   ESP_LOGD(TAG, "Pollers: Shutdown %s", task ? "null" : "OK");
+
   if (task)
     vTaskDelete(task);
   // Wait to die.

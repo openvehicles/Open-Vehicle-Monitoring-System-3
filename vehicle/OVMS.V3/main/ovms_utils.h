@@ -725,11 +725,19 @@ class ovms_callback_register_t
     {
     return Atomic_Swap<T>(variable, nullptr);
     }
+  /** Swap newval into variable if variable is checkval.
+   * @return true if successful.
+   */
+  template<typename T>
+  bool Atomic_SwapIf( volatile T &variable, T checkval, T newVal)
+    {
+    return __atomic_compare_exchange_n(&variable, &checkval, newVal, false,  __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+    }
 
   template<typename T>
   T Atomic_Get( volatile const T &variable)
     {
-    return variable;
+    return __atomic_load_n(&variable, __ATOMIC_SEQ_CST);
     }
   template<typename T>
   T Atomic_Increment( volatile T &variable, T amt)

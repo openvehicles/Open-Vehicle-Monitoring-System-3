@@ -667,6 +667,7 @@ class OvmsPollers : public InternalRamAllocated {
     uint16_t          m_poll_between_success;
     uint32_t          m_poll_last;
 
+    _Alignas(32 / CHAR_BIT)
     QueueHandle_t     m_pollqueue;
     TaskHandle_t      m_polltask;
     CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback
@@ -796,6 +797,7 @@ class OvmsPollers : public InternalRamAllocated {
       }
 
     void Ticker1(std::string event, void* data);
+    void Ticker1_Shutdown(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
     void ConfigChanged(std::string event, void* data);
     void LoadPollerTimerConfig();
@@ -812,7 +814,7 @@ class OvmsPollers : public InternalRamAllocated {
     ~OvmsPollers();
 
     void StartingUp();
-    void ShuttingDown( bool wait);
+    void ShuttingDown();
     void ShuttingDownVehicle();
 
     OvmsPoller *GetPoller(canbus *can, bool force = false );
@@ -880,7 +882,7 @@ class OvmsPollers : public InternalRamAllocated {
     void PowerDownCanBus(int busno);
     bool HasPollTask()
       {
-      return (m_polltask != nullptr);
+      return (Atomic_Get(m_polltask) != nullptr);
       }
     bool Ready() { return m_ready;}
     void Ready(bool ready) { m_ready = ready;}
