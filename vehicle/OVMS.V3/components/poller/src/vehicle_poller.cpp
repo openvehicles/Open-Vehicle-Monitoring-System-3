@@ -395,7 +395,7 @@ void OvmsPoller::PollerSend(poller_source_t source)
 
   if (m_poll.ticker == init_ticker)
     {
-    IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Wait for next primary poll", m_poll.bus_no );
+    ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Wait for next primary poll", m_poll.bus_no );
     return;
     }
 
