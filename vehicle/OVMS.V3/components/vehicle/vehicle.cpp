@@ -599,11 +599,24 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
 
 
   Ticker1(m_ticker);
-  if ((m_ticker % 10) == 0) Ticker10(m_ticker);
-  if ((m_ticker % 60) == 0) Ticker60(m_ticker);
-  if ((m_ticker % 300) == 0) Ticker300(m_ticker);
-  if ((m_ticker % 600) == 0) Ticker600(m_ticker);
-  if ((m_ticker % 3600) == 0) Ticker3600(m_ticker);
+  if ((m_ticker % 10) == 0)
+    {
+    Ticker10(m_ticker);
+    if ((m_ticker % 60) == 0)
+      {
+      Ticker60(m_ticker);
+      if ((m_ticker % 300) == 0)
+        {
+        Ticker300(m_ticker);
+        if ((m_ticker % 600) == 0)
+          {
+          Ticker600(m_ticker);
+          if ((m_ticker % 3600) == 0)
+            Ticker3600(m_ticker);
+          }
+        }
+      }
+    }
 
   if (StandardMetrics.ms_v_env_on->AsBool())
     {

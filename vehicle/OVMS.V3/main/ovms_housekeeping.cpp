@@ -110,16 +110,26 @@ void HousekeepingTicker1( TimerHandle_t timer )
   HousekeepingUpdate12V();
 
   tick++;
-
-  MyEvents.SignalEvent("ticker.1", NULL);
-  if ((tick % 10)==0) MyEvents.SignalEvent("ticker.10", NULL);
-  if ((tick % 60)==0) MyEvents.SignalEvent("ticker.60", NULL);
-  if ((tick % 300)==0) MyEvents.SignalEvent("ticker.300", NULL);
-  if ((tick % 600)==0) MyEvents.SignalEvent("ticker.600", NULL);
-  if ((tick % 3600)==0)
+  if ((tick % 10)==0)
     {
-    tick = 0;
-    MyEvents.SignalEvent("ticker.3600", NULL);
+    MyEvents.SignalEvent("ticker.10", NULL);
+    if ((tick % 60)==0)
+      {
+      MyEvents.SignalEvent("ticker.60", NULL);
+      if ((tick % 300)==0)
+        {
+        MyEvents.SignalEvent("ticker.300", NULL);
+        if ((tick % 600)==0)
+          {
+          MyEvents.SignalEvent("ticker.600", NULL);
+          if ((tick % 3600)==0)
+            {
+            tick = 0;
+            MyEvents.SignalEvent("ticker.3600", NULL);
+            }
+          }
+        }
+      }
     }
 
   time_t rawtime;
