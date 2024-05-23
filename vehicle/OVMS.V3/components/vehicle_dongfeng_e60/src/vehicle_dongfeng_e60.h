@@ -44,9 +44,6 @@ class OvmsVehicleDFE60 : public dfe60
     ~OvmsVehicleDFE60();
 
   public:
-    bool configured;
-    bool fully_configured;
-    bool reset_by_config;
     bool shouldLock;
     bool shouldUnlock;
     int lockingCounter;
@@ -81,13 +78,6 @@ class OvmsVehicleDFE60 : public dfe60
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
 
   protected:
-
-    void VerifyConfigs(bool verify);
-    bool ConfigChanged();
-    void VerifySingleConfig(std::string param, std::string instance, std::string defValue, std::string value);
-    void VerifySingleConfigInt(std::string param, std::string instance, int defValue, int value);
-    void VerifySingleConfigBool(std::string param, std::string instance, bool defValue, bool value);
-
 
     void HandleCharging();
     void HandleChargeStop();

@@ -169,7 +169,6 @@ void OvmsVehicleNetaAya::HandleCharging()
  */
 void OvmsVehicleNetaAya::Ticker1(uint32_t ticker)
 {
-	VerifyConfigs(true);
 	// Register car as locked only if all doors are locked
 
 	StdMetrics.ms_v_bat_power->SetValue(
@@ -232,7 +231,6 @@ void OvmsVehicleNetaAya::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleNetaAya::Ticker300(uint32_t ticker)
 {
-	VerifyConfigs(false);
 }
 
 void OvmsVehicleNetaAya::EventListener(std::string event, void *data)

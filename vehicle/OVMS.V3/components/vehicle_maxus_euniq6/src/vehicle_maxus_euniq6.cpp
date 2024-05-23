@@ -146,7 +146,6 @@ void OvmsVehicleMaxEu6::HandleCharging()
  */
 void OvmsVehicleMaxEu6::Ticker1(uint32_t ticker)
 {
-	VerifyConfigs(true);
 	if (m_poll_state == 0)
 	{
 		// ESP_LOGI(TAG, "POLL STATE OFF");
@@ -194,7 +193,6 @@ void OvmsVehicleMaxEu6::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleMaxEu6::Ticker300(uint32_t ticker)
 {
-	VerifyConfigs(false);
 }
 
 void OvmsVehicleMaxEu6::EventListener(std::string event, void *data)
