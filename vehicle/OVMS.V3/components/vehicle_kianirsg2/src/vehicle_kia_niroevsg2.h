@@ -46,7 +46,10 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
   public:
     bool should_poll;
     int poll_counter;
-  
+
+    bool lock_command;
+    bool unlock_command;
+
     void IncomingFrameCan1(CAN_frame_t *p_frame);
     void IncomingFrameCan2(CAN_frame_t *p_frame);
     void Ticker1(uint32_t ticker);
@@ -77,6 +80,12 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     metric_unit_t GetConsoleUnits();
 
   protected:
+    void VerifyConfigs(bool verify);
+    bool ConfigChanged();
+    void VerifySingleConfig(std::string param, std::string instance, std::string defValue, std::string value);
+    void VerifySingleConfigInt(std::string param, std::string instance, int defValue, int value);
+    void VerifySingleConfigBool(std::string param, std::string instance, bool defValue, bool value);
+
 
     void HandleCharging();
     void HandleChargeStop();
@@ -95,6 +104,10 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     void SetChargeMetrics();
     void SendTesterPresentMessages();
 
+		#define CFG_DEFAULT_MAXRANGE 440
+
+		#define CGF_DEFAULT_BATTERY_CAPACITY 64000
+    float kn_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY;
     bool windows_open;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
