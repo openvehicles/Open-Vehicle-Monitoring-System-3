@@ -899,6 +899,39 @@ static duk_ret_t DukOvmsMetricHasValue(duk_context *ctx)
   return 1;
   }
 
+static duk_ret_t DukOvmsMetricIsStale(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (!m)
+    return 0;
+  dc.Push(m->IsStale());
+  return 1;
+  }
+
+static duk_ret_t DukOvmsMetricIsFresh(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (!m)
+    return 0;
+  dc.Push(m->IsFresh());
+  return 1;
+  }
+
+static duk_ret_t DukOvmsMetricAge(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (!m)
+    return 0;
+  dc.Push(m->Age());
+  return 1;
+  }
+
 static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
   {
   DukContext dc(ctx);
@@ -1078,6 +1111,9 @@ OvmsMetrics::OvmsMetrics()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsMetrics");
   dto->RegisterDuktapeFunction(DukOvmsMetricHasValue, 1, "HasValue");
+  dto->RegisterDuktapeFunction(DukOvmsMetricIsStale, 1, "IsStale");
+  dto->RegisterDuktapeFunction(DukOvmsMetricIsFresh, 1, "IsFresh");
+  dto->RegisterDuktapeFunction(DukOvmsMetricAge, 1, "Age");
   dto->RegisterDuktapeFunction(DukOvmsMetricValue, 3, "Value");
   dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 2, "AsFloat");
@@ -1641,20 +1677,6 @@ bool OvmsMetric::IsFresh()
     return !IsStale();
   }
 
-void OvmsMetric::SetStale(bool stale)
-  {
-  m_stale = stale;
-  }
-
-void OvmsMetric::SetAutoStale(uint16_t seconds)
-  {
-  m_autostale = seconds;
-  }
-
-metric_unit_t OvmsMetric::GetUnits()
-  {
-  return m_units;
-  }
 
 bool OvmsMetric::IsModified(size_t modifier)
   {
@@ -2142,6 +2164,8 @@ OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_un
   m_value = 0.0;
   m_valuep = NULL;
   m_persist = persist;
+  m_fmt_prec = -1;
+  m_fmt_fixed = false;
 
   if (m_persist)
     {
@@ -2203,8 +2227,17 @@ std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units,
     std::ostringstream ss;
     if (precision >= 0)
       {
-      ss.precision(precision); // Set desired precision
+      // Set desired fixed precision format:
+      ss.precision(precision);
       ss << fixed;
+      }
+    else
+      {
+      // Set standard metric format:
+      if (m_fmt_prec >= 0)
+        ss.precision(m_fmt_prec);
+      if (m_fmt_fixed)
+        ss << fixed;
       }
     if ((units != Other)&&(units != m_units))
       ss << UnitConvert(m_units,units,m_value);
@@ -2248,7 +2281,9 @@ int OvmsMetricFloat::AsInt(const int defvalue, metric_unit_t units)
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 void OvmsMetricFloat::DukPush(DukContext &dc, metric_unit_t units)
   {
-  dc.Push(AsFloat(0, units));
+  // Support custom precisions & minimize errors on float→double conversion:
+  std::string fval = AsString("0", units);
+  dc.Push(strtod(fval.c_str(), NULL));
   }
 #endif
 

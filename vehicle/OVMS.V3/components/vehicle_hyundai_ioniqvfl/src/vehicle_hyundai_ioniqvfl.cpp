@@ -418,7 +418,7 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(const OvmsPoller::poll_job_t &job,
  * PollerStateTicker: framework callback: check for state changes
  *  This is called by VehicleTicker1() just before the next PollerSend().
  */
-void OvmsVehicleHyundaiVFL::PollerStateTicker()
+void OvmsVehicleHyundaiVFL::PollerStateTicker(canbus *bus)
 {
   bool car_online = (m_can1->GetErrorState() < CAN_errorstate_passive && !m_xhi_charge_state->IsStale());
   int charge_state = m_xhi_charge_state->AsInt();

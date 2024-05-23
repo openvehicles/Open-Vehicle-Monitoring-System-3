@@ -828,6 +828,15 @@ OvmsMetrics
 - ``bool = OvmsMetrics.HasValue(metricname)``
     Returns whether the specified metric has a defined value.
     Returns undefined if metric is un-registered.
+- ``bool = OvmsMetrics.IsStale(metricname)``
+    Returns whether the specified metric is "stale" (has been marked stale or has not been set within the staleness period).
+    Returns undefined if metric is un-registered.
+- ``bool = OvmsMetrics.IsFresh(metricname)``
+    Returns whether the specified metric is "fresh" (defined, set since reboot, and not stale).
+    Returns undefined if metric is un-registered.
+- ``num = OvmsMetrics.Age(metricname)``
+    Returns the age in (monotonic) seconds of the specified metric.
+    Returns undefined if metric is un-registered.
 - ``str = OvmsMetrics.Value(metricname [,unitcode] [,decode])``
     Returns the typed value (default) or string representation (with ``decode`` = false)
     of the metric value optionally converted to the specified unit.

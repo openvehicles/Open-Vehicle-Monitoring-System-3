@@ -783,7 +783,7 @@ void OvmsVehicleBoltEV::Ticker10(uint32_t ticker)
     }
 }
 
-void OvmsVehicleBoltEV::PollRunFinished()
+void OvmsVehicleBoltEV::PollRunFinished(canbus *bus)
 {
   if (m_poll_state == 2) {
       // polling complete one time for state 2. Switch to state 1.

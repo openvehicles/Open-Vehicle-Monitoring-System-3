@@ -42,22 +42,22 @@ class OvmsVehicleFiat500e : public OvmsVehicle
     ~OvmsVehicleFiat500e();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    virtual vehicle_command_t CommandWakeup();
-    virtual vehicle_command_t CommandStartCharge();
-    virtual vehicle_command_t CommandStopCharge();
-    virtual vehicle_command_t CommandLock(const char* pin);
-    virtual vehicle_command_t CommandUnlock(const char* pin);
-    virtual vehicle_command_t CommandActivateValet(const char* pin);
-    virtual vehicle_command_t CommandDeactivateValet(const char* pin);
-    virtual vehicle_command_t CommandHomelink(int button, int durationms);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
+    vehicle_command_t CommandWakeup() override;
+    vehicle_command_t CommandStartCharge() override;
+    vehicle_command_t CommandStopCharge() override;
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
+    vehicle_command_t CommandActivateValet(const char* pin) override;
+    vehicle_command_t CommandDeactivateValet(const char* pin) override;
+    vehicle_command_t CommandHomelink(int button, int durationms) override;
 
   //public:
     //static void xse_drivemode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   protected:
-    virtual void Ticker1(uint32_t ticker);
+    void Ticker1(uint32_t ticker) override;
 
     OvmsMetricFloat *mt_mb_trip_reset;        // Distance since reset
     OvmsMetricFloat *mt_mb_trip_start;        // Distance since default trip started

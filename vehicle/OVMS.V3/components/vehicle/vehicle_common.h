@@ -1,13 +1,7 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
-;
-;    Changes:
-;    1.0  Initial release
-;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    Date:          19th March 2024
+
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -27,34 +21,29 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+#ifndef __VEHICLE_COMMON_H__
+#define __VEHICLE_COMMON_H__
 
-#ifndef __VEHICLE_TESLAMODEL3_H__
-#define __VEHICLE_TESLAMODEL3_H__
+// ISOTP Defines needed by the Poller as well as the CanOpen code.
+// Required if polling is not enabled in the configuration.
 
-#include "vehicle.h"
-#include "ovms_metrics.h"
+// ISO TP:
+//  (see https://en.wikipedia.org/wiki/ISO_15765-2)
 
-using namespace std;
+#define ISOTP_FT_SINGLE                 0
+#define ISOTP_FT_FIRST                  1
+#define ISOTP_FT_CONSECUTIVE            2
+#define ISOTP_FT_FLOWCTRL               3
 
-class OvmsVehicleTeslaModel3: public OvmsVehicle
-  {
-  public:
-    OvmsVehicleTeslaModel3();
-    ~OvmsVehicleTeslaModel3();
+// Protocol variant:
+#define ISOTP_STD                       0     // standard addressing (11 bit IDs)
+#define ISOTP_EXTADR                    1     // extended addressing (19 bit IDs)
+#define ISOTP_EXTFRAME                  2     // extended frame mode (29 bit IDs)
+#define VWTP_16                         16    // VW/VAG Transport Protocol 1.6 (placeholder, unsupported)
+#define VWTP_20                         20    // VW/VAG Transport Protocol 2.0
 
-  public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
-    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
-    void IncomingFrameCan3(CAN_frame_t* p_frame) override;
+// Argument tag:
+#define POLL_TXDATA                     0xff  // poll_pid_t using xargs for external payload up to 4095 bytes
 
-  protected:
-    void Notify12vCritical() override;
-    void Notify12vRecovered() override;
-    void NotifyBmsAlerts() override;
 
-  protected:
-    char m_vin[18];
-    char m_type[5];
-  };
-
-#endif //#ifndef __VEHICLE_TESLAMODEL3_H__
+#endif

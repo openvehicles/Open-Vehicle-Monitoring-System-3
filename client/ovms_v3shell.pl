@@ -63,6 +63,7 @@ the server v3 (MQTT) protocol.
 our $verbose = 0;       # "1" if verbose output is requested
 our $server = 'api.openvehicles.com';
 our $port = 1883;
+our $tls = 0;
 our $username;
 our $password;
 our $vehicleid;
@@ -72,6 +73,7 @@ GetOptions(
             'verbose'     => \$verbose,
             'server=s'    => \$server,
             'port=i'      => \$port,
+            'tls'         => \$tls,
             'username=s'  => \$username,
             'password=s'  => \$password,
             'prefix=s'    => \$prefix,
@@ -122,6 +124,14 @@ sub newprompt()
   $rl->rl_redisplay();
   }
 
+our $clientid;
+our $mqtt;
+
+sub mqtt_logout()
+  {
+  $mqtt->publish(topic => "$prefix/client/$clientid/active", message => '0') if ($mqtt);
+  }
+
 sub mqtt_response
   {
   my ($topic, $message) = @_;
@@ -153,25 +163,43 @@ sub mqtt_metric
     }
   }
 
+sub mqtt_notify
+  {
+  my ($topic, $message) = @_;
+
+  if ($message ne '')
+    {
+    $topic = substr($topic,length($prefix)+8);
+    $topic =~ s/\//\./g;
+    AnyEvent::ReadLine::Gnu->print("NOTIFY $topic: $message\n");
+    &newprompt();
+    }
+  }
+
 sub mqtt_error
   {
   my ($fatal,$message) = @_;
 
   AnyEvent::ReadLine::Gnu->print("MQTT ERROR: $message\n");
   &newprompt();
-  EV::break() if ($fatal);
+  if ($fatal)
+    {
+    &mqtt_logout();
+    EV::break()
+    }
   }
 
-my $clientid = $ENV{'HOSTNAME'} . ':' . $$;
+$clientid = $ENV{'HOSTNAME'} . ':' . $$;
 AnyEvent::ReadLine::Gnu->print("Connecting to $server:$port/$username...\n");
-my $mqtt = AnyEvent::MQTT->new(
+$mqtt = AnyEvent::MQTT->new(
             host => $server,
             port => $port,
+            tls => $tls,
             keep_alive_timer => 60,
             user_name => $username,
             password => $password,
             will_topic => "$prefix/client/$clientid/active",
-            will_message => '',
+            will_message => '0',
             client_id => $clientid,
             on_error => \&mqtt_error);
 
@@ -181,13 +209,20 @@ my $event_cv = $mqtt->subscribe(topic => "$prefix/event",
                           callback => \&mqtt_event);
 my $metric_cv = $mqtt->subscribe(topic => "$prefix/metric/#",
                           callback => \&mqtt_metric);
+my $notify_cv = $mqtt->subscribe(topic => "$prefix/notify/#",
+                          callback => \&mqtt_notify);
 
-$mqtt->publish(topic => "$prefix/client/$clientid/active", message => '1');
+my $peer_timer = AnyEvent->timer(after => 0, interval => 60, cb => sub {
+  $mqtt->publish(topic => "$prefix/client/$clientid/active", message => '1');
+  });
 
 $rl = new AnyEvent::ReadLine::Gnu prompt => "OVMS# ", on_line => sub {
    # called for each line entered by the user
   if (!defined $_[0])
-    { EV::break(); }
+    {
+    &mqtt_logout();
+    EV::break();
+    }
   elsif (length($_[0]) != 0)
     {
     $commandsoutstanding++;
@@ -200,6 +235,7 @@ $rl->ornaments(1);
 
 my $interrupt = AnyEvent->signal(signal => "INT", cb => sub {
   AnyEvent::ReadLine::Gnu->print ("Exit!\n");
+  &mqtt_logout();
   EV::break();
   });
 

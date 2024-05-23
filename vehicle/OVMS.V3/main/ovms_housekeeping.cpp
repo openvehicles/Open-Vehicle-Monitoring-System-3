@@ -110,16 +110,26 @@ void HousekeepingTicker1( TimerHandle_t timer )
   HousekeepingUpdate12V();
 
   tick++;
-
-  MyEvents.SignalEvent("ticker.1", NULL);
-  if ((tick % 10)==0) MyEvents.SignalEvent("ticker.10", NULL);
-  if ((tick % 60)==0) MyEvents.SignalEvent("ticker.60", NULL);
-  if ((tick % 300)==0) MyEvents.SignalEvent("ticker.300", NULL);
-  if ((tick % 600)==0) MyEvents.SignalEvent("ticker.600", NULL);
-  if ((tick % 3600)==0)
+  if ((tick % 10)==0)
     {
-    tick = 0;
-    MyEvents.SignalEvent("ticker.3600", NULL);
+    MyEvents.SignalEvent("ticker.10", NULL);
+    if ((tick % 60)==0)
+      {
+      MyEvents.SignalEvent("ticker.60", NULL);
+      if ((tick % 300)==0)
+        {
+        MyEvents.SignalEvent("ticker.300", NULL);
+        if ((tick % 600)==0)
+          {
+          MyEvents.SignalEvent("ticker.600", NULL);
+          if ((tick % 3600)==0)
+            {
+            tick = 0;
+            MyEvents.SignalEvent("ticker.3600", NULL);
+            }
+          }
+        }
+      }
     }
 
   time_t rawtime;
@@ -191,6 +201,7 @@ void Housekeeping::Init(std::string event, void* data)
   else if (MyBoot.GetEarlyCrashCount() >= AUTO_INIT_INHIBIT_CRASHCOUNT)
     {
     ESP_LOGE(TAG, "Auto init inhibited: too many early crashes (%d)", MyBoot.GetEarlyCrashCount());
+    ExecuteDriverFactoryReset();
     }
   else
     {
@@ -216,6 +227,11 @@ void Housekeeping::Init(std::string event, void* data)
     ESP_LOGI(TAG, "Auto init modem (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyPeripherals->m_cellular_modem->AutoInit();
 #endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
+
+#ifdef CONFIG_OVMS_COMP_POLLER
+    ESP_LOGI(TAG, "Auto init Pollers (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
+    MyPollers.AutoInit();
+#endif
 
     ESP_LOGI(TAG, "Auto init vehicle (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyVehicleFactory.AutoInit();

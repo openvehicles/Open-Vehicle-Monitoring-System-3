@@ -68,9 +68,11 @@ enum poll_states
 
 static const OvmsPoller::poll_pid_t obdii_polls[] =
   {
+    // BUS 2
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },   // QC [2]
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD }, // L0/L1/L2 [2]
+    // BUS 1
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // bat [39/41]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery voltages [196]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery shunts [96]
@@ -1794,7 +1796,7 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
   HandleCharging();
   HandleChargeEstimation();
   HandleExporting();
-  if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() > 13)
+  if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() > 12.8)
     {
     StandardMetrics.ms_v_env_charging12v->SetValue(true);  
     }
