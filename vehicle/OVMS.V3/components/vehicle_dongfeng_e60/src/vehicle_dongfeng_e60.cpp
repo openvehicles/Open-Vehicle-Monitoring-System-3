@@ -55,7 +55,7 @@
 ; THE SOFTWARE.
 */
 
-#include "vehicle_maxus_euniq6.h"
+#include "vehicle_dongfeng_e60.h"
 
 #include "ovms_log.h"
 #include <stdio.h>
@@ -71,15 +71,15 @@
 
 #define VERSION "0.1.6"
 
-static const char *TAG = "v-maxeu6";
+static const char *TAG = "v-dfe60";
 
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
 
-OvmsVehicleMaxEu6::OvmsVehicleMaxEu6()
+OvmsVehicleDFE60::OvmsVehicleDFE60()
 {
-	ESP_LOGI(TAG, "Maxus Euniq 6 vehicle module");
+	ESP_LOGI(TAG, "Dongfeng E60 vehicle module");
 
 	message_send_can.id = 0;
 	message_send_can.status = 0;
@@ -99,22 +99,21 @@ OvmsVehicleMaxEu6::OvmsVehicleMaxEu6()
 
 	using std::placeholders::_1;
 	using std::placeholders::_2;
-	MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsVehicleMaxEu6::EventListener, this, _1, _2));
+	MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsVehicleDFE60::EventListener, this, _1, _2));
 
 	// #ifdef CONFIG_OVMS_COMP_WEBSERVER
 	// 	WebInit();
 	// #endif
 	RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-	RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 	POLLSTATE_OFF;
 }
 
 /**
  * Destructor
  */
-OvmsVehicleMaxEu6::~OvmsVehicleMaxEu6()
+OvmsVehicleDFE60::~OvmsVehicleDFE60()
 {
-	ESP_LOGI(TAG, "Shutdown Maxus Euniq 6 vehicle module");
+	ESP_LOGI(TAG, "Shutdown Dongfeng E60 vehicle module");
 	// MyWebServer.DeregisterPage("/bms/cellmon");
 }
 //  housekeeping: Auto init inhibited: too many early crashes
@@ -124,18 +123,18 @@ OvmsVehicleMaxEu6::~OvmsVehicleMaxEu6()
  * or off. Centralized so we can more easily make on and off mirror
  * images.
  */
-void OvmsVehicleMaxEu6::HandleCarOn()
+void OvmsVehicleDFE60::HandleCarOn()
 {
 	POLLSTATE_RUNNING;
 	ESP_LOGI(TAG, "CAR IS ON | POLLSTATE RUNNING");
 }
-void OvmsVehicleMaxEu6::HandleCarOff()
+void OvmsVehicleDFE60::HandleCarOff()
 {
 	POLLSTATE_OFF;
 	ESP_LOGI(TAG, "CAR IS OFF | POLLSTATE OFF");
 	StdMetrics.ms_v_pos_speed->SetValue(0);
 }
-void OvmsVehicleMaxEu6::HandleCharging()
+void OvmsVehicleDFE60::HandleCharging()
 {
 	POLLSTATE_CHARGING;
 	ESP_LOGI(TAG, "CAR IS CHARGING | POLLSTATE RUNNING");
@@ -144,7 +143,7 @@ void OvmsVehicleMaxEu6::HandleCharging()
 /**
  * Ticker1: Called every second
  */
-void OvmsVehicleMaxEu6::Ticker1(uint32_t ticker)
+void OvmsVehicleDFE60::Ticker1(uint32_t ticker)
 {
 	VerifyConfigs(true);
 	if (m_poll_state == 0)
@@ -185,26 +184,26 @@ void OvmsVehicleMaxEu6::Ticker1(uint32_t ticker)
 /**
  * Ticker10: Called every ten seconds
  */
-void OvmsVehicleMaxEu6::Ticker10(uint32_t ticker)
+void OvmsVehicleDFE60::Ticker10(uint32_t ticker)
 {
 }
 
 /**
  * Ticker300: Called every five minutes
  */
-void OvmsVehicleMaxEu6::Ticker300(uint32_t ticker)
+void OvmsVehicleDFE60::Ticker300(uint32_t ticker)
 {
 	VerifyConfigs(false);
 }
 
-void OvmsVehicleMaxEu6::EventListener(std::string event, void *data)
+void OvmsVehicleDFE60::EventListener(std::string event, void *data)
 {
 }
 
 /**
  * Update metrics when charging stops
  */
-void OvmsVehicleMaxEu6::HandleChargeStop()
+void OvmsVehicleDFE60::HandleChargeStop()
 {
 	ESP_LOGI(TAG, "Charging done...");
 	StdMetrics.ms_v_charge_type->SetValue("");
@@ -213,7 +212,7 @@ void OvmsVehicleMaxEu6::HandleChargeStop()
 /**
  *  Sets the charge metrics
  */
-void OvmsVehicleMaxEu6::SetChargeMetrics()
+void OvmsVehicleDFE60::SetChargeMetrics()
 {
 	bool ccs = StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -15;
 	StdMetrics.ms_v_charge_type->SetValue(ccs ? "ccs" : "type2");
@@ -222,7 +221,7 @@ void OvmsVehicleMaxEu6::SetChargeMetrics()
 /**
  * Open or lock the doors
  */
-bool OvmsVehicleMaxEu6::SetDoorLock(bool lock)
+bool OvmsVehicleDFE60::SetDoorLock(bool lock)
 {
 	if (lock)
 	{
@@ -240,7 +239,7 @@ bool OvmsVehicleMaxEu6::SetDoorLock(bool lock)
 
 			CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
 			CanMultimpleSend(0x310, 0x00, 0x02, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
-			CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
+			CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 38, 20);
 			return true;
 		}
 		return false;
@@ -254,14 +253,14 @@ bool OvmsVehicleMaxEu6::SetDoorLock(bool lock)
 		shouldUnlock = true;
 		lockingCounter = 11;
 
-		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
-		CanMultimpleSend(0x310, 0x00, 0x01, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
-		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
+		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 2, 20);
+		CanMultimpleSend(0x310, 0x00, 0x01, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
+		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 38, 20);
 		return true;
 	}
 }
 
-void OvmsVehicleMaxEu6::CheckLock()
+void OvmsVehicleDFE60::CheckLock()
 {
 	if (lockingCounter <= 0)
 	{
@@ -302,14 +301,14 @@ void OvmsVehicleMaxEu6::CheckLock()
 	}
 }
 
-class OvmsVehicleMaxEu6Init
+class OvmsVehicleDFE60Init
 {
 public:
-	OvmsVehicleMaxEu6Init();
-} MyOvmsVehicleMaxEu6Init __attribute__((init_priority(9000)));
+	OvmsVehicleDFE60Init();
+} MyOvmsVehicleDFE60Init __attribute__((init_priority(9000)));
 
-OvmsVehicleMaxEu6Init::OvmsVehicleMaxEu6Init()
+OvmsVehicleDFE60Init::OvmsVehicleDFE60Init()
 {
-	ESP_LOGI(TAG, "Registering Vehicle: Maxus Euniq 6");
-	MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxEu6>("ME6", "Maxus Euniq 6");
+	ESP_LOGI(TAG, "Registering Vehicle: DongFeng E60");
+	MyVehicleFactory.RegisterVehicle<OvmsVehicleDFE60>("DFE60", "DongFeng E60");
 }
