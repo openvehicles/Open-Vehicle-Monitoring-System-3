@@ -26,6 +26,46 @@
 
 static const char *TAG = "v-kianiroevsg2";
 
+/*
+BASIC METRICS
+StdMetrics.ms_v_pos_speed 					ok  esta contando -5 kmph REVISAR
+40 -> 35
+30 -> 26
+25 -> 22
+20 -> 18
+15 real -> 13
+5 -> 2
+
+StdMetrics.ms_v_bat_soc 					ok
+StdMetrics.ms_v_pos_odometer 				ok
+
+StdMetrics.ms_v_door_fl 					ok; yes when open, no when closed
+StdMetrics.ms_v_door_fr 					ok
+StdMetrics.ms_v_door_rl 					ok
+StdMetrics.ms_v_door_rr 					ok
+StdMetrics.ms_v_env_locked 					ok
+
+StdMetrics.ms_v_env_onepedal 				na
+StdMetrics.ms_v_env_efficiencymode 			na
+StdMetrics.ms_v_env_regenlevel Percentage 	na
+
+StdMetrics.ms_v_bat_current 				ok
+StdMetrics.ms_v_bat_voltage 				ok
+StdMetrics.ms_v_bat_power 					ok
+
+StdMetrics.ms_v_charge_inprogress 			ok
+
+StdMetrics.ms_v_env_on 						ok
+StdMetrics.ms_v_env_awake 					ok
+
+StdMetrics.ms_v_env_aux12v					ok
+
+StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI);	ok
+StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI);	ok
+StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI);	ok
+StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI);	ok
+*/
+
 /**
  * Incoming poll reply messages
  */
@@ -148,8 +188,8 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus* bus, uint16_t type, uint16_t p
 			
 			if (mlframe == 2)
 				{
-				StdMetrics.ms_v_bat_current->SetValue((float)CAN_INT(0)/10.0, Amps);
-				StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(2)/10.0, Volts);
+					StdMetrics.ms_v_bat_current->SetValue((float)CAN_INT(0) / 10.0, Amps); // negative regen, positive accel
+					StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(2) / 10.0, Volts);
 				}
 			break;
 
@@ -263,6 +303,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingSW(canbus *bus, uint16_t type, uint16_t pi
 			{
 				StdMetrics.ms_v_env_on->SetValue(CAN_BYTE(6) != 0);
 				StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(2));
+				ESP_LOGE(TAG, "%02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 			}
 			break;
 		}

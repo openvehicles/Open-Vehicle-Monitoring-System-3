@@ -31,7 +31,6 @@
  */
 void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 {
-
 	// static const uint8_t byteMask[8] = {0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F};
 	uint8_t *d = p_frame->data.u8;
 
@@ -56,36 +55,37 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 
 	/*
 	BASIC METRICS
-	StdMetrics.ms_v_pos_speed ok
-	StdMetrics.ms_v_bat_soc ok
-	StdMetrics.ms_v_pos_odometer ok 
+	StdMetrics.ms_v_pos_speed 					ok
+	StdMetrics.ms_v_bat_soc 					ok
+	StdMetrics.ms_v_pos_odometer 				ok
 
-	StdMetrics.ms_v_door_fl ok
-	StdMetrics.ms_v_door_fr ok 
-	StdMetrics.ms_v_door_rl ok 
-	StdMetrics.ms_v_door_rr ok 
-	StdMetrics.ms_v_env_locked
+	StdMetrics.ms_v_door_fl 					rev
+	StdMetrics.ms_v_door_fr 					rev
+	StdMetrics.ms_v_door_rl 					rev
+	StdMetrics.ms_v_door_rr 					rev
+	StdMetrics.ms_v_env_locked 					no
 
-	StdMetrics.ms_v_env_onepedal NA
-	StdMetrics.ms_v_env_efficiencymode ok 
-	StdMetrics.ms_v_env_drivemode
+	StdMetrics.ms_v_env_onepedal 				NA
+	StdMetrics.ms_v_env_efficiencymode 			ok
+	StdMetrics.ms_v_env_regenlevel Percentage 	ok
 
-	StdMetrics.ms_v_bat_current
-	StdMetrics.ms_v_bat_voltage
-	StdMetrics.ms_v_bat_power
+	StdMetrics.ms_v_bat_current 				NA
+	StdMetrics.ms_v_bat_voltage 				NA
+	StdMetrics.ms_v_bat_power 					ok
 
-	StdMetrics.ms_v_charge_inprogress ok
+	StdMetrics.ms_v_charge_inprogress 			rev
 
-	StdMetrics.ms_v_env_on ok 
-	StdMetrics.ms_v_env_awake ok
+	StdMetrics.ms_v_env_on 						ok
+	StdMetrics.ms_v_env_awake 					ok
 
-	StdMetrics.ms_v_env_aux12v
+	StdMetrics.ms_v_env_aux12v					rev
 
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI);
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI);
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI);
 	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI);
 	*/
+
 	uint8_t *data = p_frame->data.u8;
 
 	switch (p_frame->MsgID)
@@ -105,7 +105,27 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 			StdMetrics.ms_v_env_efficiencymode->SetValue("Normal");
 			break;
 		}
+		case 0x01:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("Normal");
+			break;
+		}
+		case 0x02:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("Normal");
+			break;
+		}
 		case 0x04:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("Eco");
+			break;
+		}
+		case 0x05:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("ECO");
+			break;
+		}
+		case 0x06:
 		{
 			StdMetrics.ms_v_env_efficiencymode->SetValue("ECO");
 			break;
@@ -115,12 +135,21 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 			StdMetrics.ms_v_env_efficiencymode->SetValue("Sport");
 			break;
 		}
+		case 0x09:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("Sport");
+			break;
+		}
+		case 0x0A:
+		{
+			StdMetrics.ms_v_env_efficiencymode->SetValue("Sport");
+			break;
 		}
 		break;
 	}
 	case 0x46a:
 	{
-	    //StdMetrics.ms_v_door_fl->SetValue(((d[0] | byteMask[0]) != 0xff)); // me tira 0 con la puerta cerrada, revisar que efectivamente deba ser asi
+		// StdMetrics.ms_v_door_fl->SetValue(((d[0] | byteMask[0]) != 0xff)); // me tira 0 con la puerta cerrada, revisar que efectivamente deba ser asi
 		StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(0, 0));
 		// StdMetrics.ms_v_door_fr->SetValue(((d[0] | byteMask[3]) != 0xff));
 		StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(0, 3));
@@ -135,12 +164,16 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 	case 0x3F1:
 	{
 		// StdMetrics.ms_v_pos_odometer->SetValue((d[0] << 16 | d[1] << 8 | d[2]) / 10.0);
-		StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0) / 10.0);
+		StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0) / 10.0, Kilometers);
 		break;
 	}
 	case 0x125:
 	{
-		StdMetrics.ms_v_pos_speed->SetValue((CAN_BYTE(1) * 2) + 2 * (CAN_BYTE(2) - 2 / 253.0));
+		// ESP_LOGE(TAG, "IFCP %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
+		// 		 p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+		// ESP_LOGE(TAG, "IFCP %lf", (CAN_BYTE(2) - 1) / 250.0);
+		StdMetrics.ms_v_pos_speed->SetValue((CAN_BYTE(1) * 2) + (2 * (CAN_BYTE(2) - 1) / 250.0));
+		// StdMetrics.ms_v_pos_speed->SetValue((CAN_BYTE(1) * 2) + 2 * (CAN_BYTE(2) - 2 / 253.0));
 		break;
 	}
 	case 0x162: // awake on/off // potencia
@@ -151,30 +184,35 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 		StdMetrics.ms_v_env_on->SetValue(CAN_BIT(3, 7) && CAN_BIT(5, 0));
 		// StdMetrics.ms_v_bat_power->SetValue(d[4] - 100);
 		StdMetrics.ms_v_bat_power->SetValue(CAN_BYTE(4) - 100);
-		switch (CAN_BYTE(5) | 0xF3)
+		switch (CAN_BYTE(5))
 		{
-		case 0xF7:
+		case 0x05:
 		{
 			StdMetrics.ms_v_env_regenlevel->SetValue(0, Percentage);
 			break;
 		}
-		case 0xFB:
+		case 0x09:
 		{
 			StdMetrics.ms_v_env_regenlevel->SetValue(50, Percentage);
 			break;
 		}
-		case 0xFF:
+		case 0x0d:
 		{
 			StdMetrics.ms_v_env_regenlevel->SetValue(100, Percentage);
 			break;
 		}
-		break;
 		}
+		break;
 	}
 	case 0x2F4: // carga
 	{
 		StdMetrics.ms_v_bat_soc->SetValue((100 * CAN_BYTE(1)) / 255, Percentage);
 		break;
+	}
+	case 0x235:
+	{
+		StdMetrics.ms_v_env_aux12v->SetValue((CAN_BYTE(7) + 67)/15);
+	}	
 	}
 	}
 }

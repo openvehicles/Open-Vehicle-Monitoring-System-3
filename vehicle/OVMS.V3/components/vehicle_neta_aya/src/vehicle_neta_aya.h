@@ -26,8 +26,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_KIANIROEV_H__
-#define __VEHICLE_KIANIROEV_H__
+#ifndef __VEHICLE_NETAAYA_H__
+#define __VEHICLE_NETAAYA_H__
 
 #include "common.h"
 #include "vehicle.h"
@@ -44,11 +44,14 @@ class OvmsVehicleNetaAya : public NetaAya
     ~OvmsVehicleNetaAya();
 
   public:
+    bool charger_disconected;
 
     void IncomingFrameCan1(CAN_frame_t *p_frame);
+    void IncomingFrameCan2(CAN_frame_t *p_frame);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void Ticker300(uint32_t ticker);
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length) override;
     void EventListener(std::string event, void* data);
     void SendTesterPresent(uint16_t id, uint8_t length);
     bool SetSessionMode(uint16_t id, uint8_t mode);
@@ -74,7 +77,6 @@ class OvmsVehicleNetaAya : public NetaAya
     metric_unit_t GetConsoleUnits();
 
   protected:
-
     void HandleCharging();
     void HandleChargeStop();
     void HandleCarOn();
@@ -101,4 +103,4 @@ class OvmsVehicleNetaAya : public NetaAya
 #endif //CONFIG_OVMS_COMP_WEBSERVER
   };
 
-#endif //#ifndef __VEHICLE_KIANIROEV_H__
+#endif //#ifndef __VEHICLE_NETAAYA_H__

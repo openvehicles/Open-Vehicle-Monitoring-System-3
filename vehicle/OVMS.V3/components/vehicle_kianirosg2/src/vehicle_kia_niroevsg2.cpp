@@ -115,12 +115,8 @@ OvmsVehicleKiaNiroEvSg2::OvmsVehicleKiaNiroEvSg2()
 	should_poll = true;
 
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
-	windows_open = false;
-	start_alarm = false;
 	lock_command = false;
 	unlock_command = false;
-	fully_configured = false;
-	reset_by_config = false;
 	// SetParamValue
 	// SetParamValueBinary
 	// SetParamValueInt
@@ -204,6 +200,7 @@ void OvmsVehicleKiaNiroEvSg2::Ticker1(uint32_t ticker)
 		m_v_door_lock_fl->AsBool() &
 		m_v_door_lock_rr->AsBool() &
 		m_v_door_lock_rl->AsBool());
+
 	StdMetrics.ms_v_bat_power->SetValue(
 		StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) *
 			StdMetrics.ms_v_bat_current->AsFloat(1, Amps) / 1000,
@@ -245,6 +242,7 @@ void OvmsVehicleKiaNiroEvSg2::Ticker1(uint32_t ticker)
 	{
 		HandleCharging();
 	}
+	VerifyDoorLock();
 }
 
 /**
@@ -290,31 +288,38 @@ void OvmsVehicleKiaNiroEvSg2::SetChargeMetrics()
  */
 bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 {
-	SendCanMessageSecondary(0x500, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
-	vTaskDelay(pdMS_TO_TICKS(14));
-	SendCanMessageSecondary(0x502, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
-	vTaskDelay(pdMS_TO_TICKS(120));
-	SendCanMessageSecondary(0x401, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
-	vTaskDelay(pdMS_TO_TICKS(2));
-	SendCanMessageSecondary(0x402, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
-	vTaskDelay(pdMS_TO_TICKS(2));
-	SendCanMessageSecondary(0x403, 0x06, 0x10, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00);
-	vTaskDelay(pdMS_TO_TICKS(2));
-	SendCanMessageSecondary(0x4D6, 0xDD, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	if (lock_command || unlock_command)
+	{
+		return false;
+	}
 	bool closed_doors = StdMetrics.ms_v_door_fl->AsBool() &&
 						StdMetrics.ms_v_door_fr->AsBool() &&
 						StdMetrics.ms_v_door_rl->AsBool() &&
 						StdMetrics.ms_v_door_rr->AsBool();
+	
 	if (lock)
 	{
 		if (closed_doors)
 		{
+			SendCanMessageSecondary(0x500, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
+			vTaskDelay(pdMS_TO_TICKS(14));
+			SendCanMessageSecondary(0x502, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
+			vTaskDelay(pdMS_TO_TICKS(120));
+			SendCanMessageSecondary(0x401, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+			vTaskDelay(pdMS_TO_TICKS(2));
+			SendCanMessageSecondary(0x402, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+			vTaskDelay(pdMS_TO_TICKS(2));
+			SendCanMessageSecondary(0x403, 0x06, 0x10, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00);
+			vTaskDelay(pdMS_TO_TICKS(2));
+			SendCanMessageSecondary(0x4D6, 0xDD, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 			vTaskDelay(pdMS_TO_TICKS(50));
 			SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
 			vTaskDelay(pdMS_TO_TICKS(5));
 			SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
 			vTaskDelay(pdMS_TO_TICKS(28));
 			SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
+			lock_command = true;
+			lock_counter = 6;
 		}
 		else
 		{
@@ -323,6 +328,124 @@ bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 	}
 	else
 	{
+		SendCanMessageSecondary(0x500, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
+		vTaskDelay(pdMS_TO_TICKS(14));
+		SendCanMessageSecondary(0x502, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
+		vTaskDelay(pdMS_TO_TICKS(120));
+		SendCanMessageSecondary(0x401, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(2));
+		SendCanMessageSecondary(0x402, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(2));
+		SendCanMessageSecondary(0x403, 0x06, 0x10, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(2));
+		SendCanMessageSecondary(0x4D6, 0xDD, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(50));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(5));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(28));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
+		unlock_command = true;
+		lock_counter = 6;
+	}
+	m_can2->Reset();
+	return true;
+}
+
+void OvmsVehicleKiaNiroEvSg2::VerifyCanActivity()
+{
+	return;
+	// poll_counter++;
+	// if (can_2_sending)
+	// {
+	// 	if (!should_poll)
+	// 	{
+	// 		should_poll = true;
+	// 		ESP_LOGI(TAG, "Re-enable polling...");
+	// 		PollSetPidList(m_can1, vehicle_kianiroevsg2_polls);
+	// 		m_v_polling->SetValue(true);
+	// 	}
+	// 	poll_counter = 0;
+	// }
+	// else
+	// {
+	// 	if (should_poll)
+	// 	{
+	// 		if (poll_counter > 300)
+	// 		{
+	// 			should_poll = false;
+	// 			ESP_LOGI(TAG, "Disable polling...");
+	// 			PollSetPidList(m_can1, vehicle_kianiroevsg2_polls_stop);
+	// 			m_v_polling->SetValue(false);
+	// 			poll_counter = 0;
+	// 		}
+	// 	}
+	// }
+}
+
+void OvmsVehicleKiaNiroEvSg2::VerifyDoorLock()
+{
+	if (!(lock_command || unlock_command))
+		return;
+	if (lock_counter <= 0)
+	{
+		lock_counter = 0;
+		lock_command = false;
+		unlock_command = false;
+		return;
+	}
+	lock_counter--;
+	bool is_locked = StdMetrics.ms_v_env_locked->AsBool();
+	if (lock_command && is_locked)
+	{
+		lock_counter = 0;
+		lock_command = false;
+		return;
+	}
+	if (unlock_command && !is_locked)
+	{
+		lock_counter = 0;
+		unlock_command = false;
+		return;
+	}
+	if (lock_counter % 2 == 1)
+	{
+		m_can2->Reset();
+		return;
+	}
+	if (lock_command)
+	{
+		SendCanMessageSecondary(0x500, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
+		vTaskDelay(pdMS_TO_TICKS(14));
+		SendCanMessageSecondary(0x502, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
+		vTaskDelay(pdMS_TO_TICKS(120));
+		SendCanMessageSecondary(0x401, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(2));
+		SendCanMessageSecondary(0x402, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(2));
+		SendCanMessageSecondary(0x403, 0x06, 0x10, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(2));
+		SendCanMessageSecondary(0x4D6, 0xDD, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(50));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(5));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(28));
+		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
+	}
+	else if (unlock_command)
+	{
+		SendCanMessageSecondary(0x500, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
+		vTaskDelay(pdMS_TO_TICKS(14));
+		SendCanMessageSecondary(0x502, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF);
+		vTaskDelay(pdMS_TO_TICKS(120));
+		SendCanMessageSecondary(0x401, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(2));
+		SendCanMessageSecondary(0x402, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(2));
+		SendCanMessageSecondary(0x403, 0x06, 0x10, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00);
+		vTaskDelay(pdMS_TO_TICKS(2));
+		SendCanMessageSecondary(0x4D6, 0xDD, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 		vTaskDelay(pdMS_TO_TICKS(50));
 		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
 		vTaskDelay(pdMS_TO_TICKS(5));
@@ -330,37 +453,7 @@ bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 		vTaskDelay(pdMS_TO_TICKS(28));
 		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
 	}
-	return true;
-}
-
-void OvmsVehicleKiaNiroEvSg2::VerifyCanActivity()
-{
-	poll_counter++;
-	if (can_2_sending)
-	{
-		if (!should_poll)
-		{
-			should_poll = true;
-			ESP_LOGI(TAG, "Re-enable polling...");
-			PollSetPidList(m_can1, vehicle_kianiroevsg2_polls);
-			m_v_polling->SetValue(true);
-		}
-		poll_counter = 0;
-	}
-	else
-	{
-		if (should_poll)
-		{
-			if (poll_counter > 300)
-			{
-				should_poll = false;
-				ESP_LOGI(TAG, "Disable polling...");
-				PollSetPidList(m_can1, vehicle_kianiroevsg2_polls_stop);
-				m_v_polling->SetValue(false);
-				poll_counter = 0;
-			}
-		}
-	}
+	return;
 }
 
 class OvmsVehicleKiaNiroEvSg2Init

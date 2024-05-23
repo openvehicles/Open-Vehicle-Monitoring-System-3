@@ -26,8 +26,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_KIANIROEV_H__
-#define __VEHICLE_KIANIROEV_H__
+#ifndef __VEHICLE_MAXUSEUNIQ6_H__
+#define __VEHICLE_MAXUSEUNIQ6_H__
 
 #include "common.h"
 #include "vehicle.h"
@@ -44,6 +44,9 @@ class OvmsVehicleMaxEu6 : public maxeu6
     ~OvmsVehicleMaxEu6();
 
   public:
+    bool lock_command;
+    bool unlock_command;
+    int lock_counter;
 
     void IncomingFrameCan1(CAN_frame_t *p_frame);
     void Ticker1(uint32_t ticker);
@@ -75,7 +78,6 @@ class OvmsVehicleMaxEu6 : public maxeu6
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
 
   protected:
-
     void HandleCharging();
     void HandleChargeStop();
     void HandleCarOn();
@@ -84,6 +86,8 @@ class OvmsVehicleMaxEu6 : public maxeu6
     bool SetDoorLock(bool open);
     void SetChargeMetrics();
     void SendTesterPresentMessages();
+
+    void CheckLock();
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
@@ -102,4 +106,4 @@ class OvmsVehicleMaxEu6 : public maxeu6
 #endif //CONFIG_OVMS_COMP_WEBSERVER
   };
 
-#endif //#ifndef __VEHICLE_KIANIROEV_H__
+#endif // #ifndef __VEHICLE_MAXUSEUNIQ6_H__

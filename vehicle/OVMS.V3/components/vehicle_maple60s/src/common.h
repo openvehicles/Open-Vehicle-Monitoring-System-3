@@ -1,5 +1,5 @@
-#ifndef __VEHICLE_KIA_COMMON_H__
-#define __VEHICLE_KIA_COMMON_H__
+#ifndef __VEHICLE_MAPLE_COMMON_H__
+#define __VEHICLE_MAPLE_COMMON_H__
 
 #include "vehicle.h"
 #include "ovms_webserver.h"

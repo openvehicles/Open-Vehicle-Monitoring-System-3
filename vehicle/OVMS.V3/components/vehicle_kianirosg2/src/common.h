@@ -1,5 +1,5 @@
-#ifndef __VEHICLE_KIA_COMMON_H__
-#define __VEHICLE_KIA_COMMON_H__
+#ifndef __VEHICLE_KIASG2_COMMON_H__
+#define __VEHICLE_KIASG2_COMMON_H__
 
 #include "vehicle.h"
 #include "ovms_webserver.h"
@@ -86,4 +86,4 @@ protected:
 #define POLLSTATE_RUNNING           PollSetState(1);
 #define POLLSTATE_CHARGING      PollSetState(2);
  
- #endif //#ifndef __VEHICLE_KIA_COMMON_H__
+ #endif //#ifndef __VEHICLE_KIASG2_COMMON_H__

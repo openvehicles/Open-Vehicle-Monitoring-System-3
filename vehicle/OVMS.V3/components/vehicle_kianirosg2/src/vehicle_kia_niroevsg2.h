@@ -26,8 +26,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_KIANIROEV_H__
-#define __VEHICLE_KIANIROEV_H__
+#ifndef __VEHICLE_KIANIROEVSG2_H__
+#define __VEHICLE_KIANIROEVSG2_H__
 
 #include "common.h"
 #include "vehicle.h"
@@ -49,6 +49,7 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
 
     bool lock_command;
     bool unlock_command;
+    int lock_counter;
 
     void IncomingFrameCan1(CAN_frame_t *p_frame);
     void IncomingFrameCan2(CAN_frame_t *p_frame);
@@ -80,13 +81,6 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     metric_unit_t GetConsoleUnits();
 
   protected:
-    void VerifyConfigs(bool verify);
-    bool ConfigChanged();
-    void VerifySingleConfig(std::string param, std::string instance, std::string defValue, std::string value);
-    void VerifySingleConfigInt(std::string param, std::string instance, int defValue, int value);
-    void VerifySingleConfigBool(std::string param, std::string instance, bool defValue, bool value);
-
-
     void HandleCharging();
     void HandleChargeStop();
     void HandleCarOn();
@@ -100,14 +94,11 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     void IncomingSW(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
 
     bool SetDoorLock(bool open);
+    void VerifyDoorLock();
     void VerifyCanActivity();
     void SetChargeMetrics();
     void SendTesterPresentMessages();
 
-		#define CFG_DEFAULT_MAXRANGE 440
-
-		#define CGF_DEFAULT_BATTERY_CAPACITY 64000
-    float kn_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY;
     bool windows_open;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -127,4 +118,4 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
 #endif //CONFIG_OVMS_COMP_WEBSERVER
   };
 
-#endif //#ifndef __VEHICLE_KIANIROEV_H__
+#endif //#ifndef __VEHICLE_KIANIROEVSG2_H__

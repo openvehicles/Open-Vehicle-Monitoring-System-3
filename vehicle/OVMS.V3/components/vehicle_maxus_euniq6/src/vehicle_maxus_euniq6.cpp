@@ -144,14 +144,6 @@ void OvmsVehicleMaxEu6::HandleCharging()
  */
 void OvmsVehicleMaxEu6::Ticker1(uint32_t ticker)
 {
-	StdMetrics.ms_v_bat_power->SetValue(
-		StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) *
-			StdMetrics.ms_v_bat_current->AsFloat(1, Amps) / 1000,
-		kW);
-	StdMetrics.ms_v_charge_inprogress->SetValue(
-		(StdMetrics.ms_v_pos_speed->AsFloat(0) < 1) &
-		(StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -1));
-
 	if (m_poll_state == 0)
 	{
 		// ESP_LOGI(TAG, "POLL STATE OFF");
@@ -230,24 +222,84 @@ bool OvmsVehicleMaxEu6::SetDoorLock(bool lock)
 {
 	if (lock)
 	{
+		if (lock_command || unlock_command)
+		{
+			return false;
+		}
 		bool closed_doors = StdMetrics.ms_v_door_fl->AsBool() &&
 							StdMetrics.ms_v_door_fr->AsBool() &&
 							StdMetrics.ms_v_door_rl->AsBool() &&
 							StdMetrics.ms_v_door_rr->AsBool();
-		if (closed_doors){
+		if (closed_doors)
+		{
+			lock_command = true;
+			lock_counter = 11;
+
 			CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
 			CanMultimpleSend(0x310, 0x00, 0x02, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
-			CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 38, 20);
+			CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
 			return true;
 		}
 		return false;
 	}
 	else
 	{
-		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 2, 20);
-		CanMultimpleSend(0x310, 0x00, 0x01, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
-		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 38, 20);
+		if (lock_command || unlock_command)
+		{
+			return false;
+		}
+		unlock_command = true;
+		lock_counter = 11;
+
+		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
+		CanMultimpleSend(0x310, 0x00, 0x01, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
+		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
 		return true;
+	}
+}
+
+void OvmsVehicleMaxEu6::CheckLock()
+{
+	if (!(lock_command || unlock_command))
+		return;
+	if (lock_counter <= 0)
+	{
+		lock_counter = 0;
+		lock_command = false;
+		unlock_command = false;
+		return;
+	}
+	lock_counter--;
+	bool is_locked = StdMetrics.ms_v_env_locked->AsBool();
+	if (lock_command && is_locked)
+	{
+		lock_counter = 0;
+		lock_command = false;
+		return;
+	}
+	if (unlock_command && !is_locked)
+	{
+		lock_counter = 0;
+		unlock_command = false;
+		return;
+	}
+	if (lock_counter % 2 == 1)
+	{
+		m_can2->Reset();
+		return;
+	}
+
+	if (lock_command)
+	{
+		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
+		CanMultimpleSend(0x310, 0x00, 0x02, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
+		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
+	}
+	else if (unlock_command)
+	{
+		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
+		CanMultimpleSend(0x310, 0x00, 0x01, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
+		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
 	}
 }
 
