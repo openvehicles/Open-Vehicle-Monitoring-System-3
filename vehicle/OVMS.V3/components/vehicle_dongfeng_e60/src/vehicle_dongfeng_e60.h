@@ -51,7 +51,7 @@ class OvmsVehicleDFE60 : public dfe60
     bool shouldUnlock;
     int lockingCounter;
 
-    void IncomingFrameCan1(CAN_frame_t *p_frame);
+    void IncomingFrameCan1(CAN_frame_t *p_frame) override;
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void Ticker300(uint32_t ticker);

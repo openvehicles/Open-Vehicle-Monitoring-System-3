@@ -55,11 +55,11 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     bool reset_by_config;
     int lock_counter;
 
-    void IncomingFrameCan1(CAN_frame_t *p_frame);
-    void IncomingFrameCan2(CAN_frame_t *p_frame);
-    void Ticker1(uint32_t ticker);
-    void Ticker10(uint32_t ticker);
-    void Ticker300(uint32_t ticker);
+    void IncomingFrameCan1(CAN_frame_t *p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t *p_frame) override;
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
+    void Ticker300(uint32_t ticker) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length) override;
     void SendTesterPresent(uint16_t id, uint8_t length);
     bool SetSessionMode(uint16_t id, uint8_t mode);
