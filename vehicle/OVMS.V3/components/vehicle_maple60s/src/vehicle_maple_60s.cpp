@@ -85,8 +85,7 @@ OvmsVehicleMaple60S::OvmsVehicleMaple60S()
 	message_send_can.status = 0;
 
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
-	fully_configured = false;
-	reset_by_config = false;
+
 
 	StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
 	StdMetrics.ms_v_charge_inprogress->SetValue(false);

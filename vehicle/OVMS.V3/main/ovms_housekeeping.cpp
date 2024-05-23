@@ -110,6 +110,7 @@ void HousekeepingTicker1( TimerHandle_t timer )
   HousekeepingUpdate12V();
 
   tick++;
+  MyEvents.SignalEvent("ticker.1", NULL);
   if ((tick % 10)==0)
     {
     MyEvents.SignalEvent("ticker.10", NULL);

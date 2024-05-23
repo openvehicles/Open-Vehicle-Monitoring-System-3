@@ -51,11 +51,11 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     bool unlock_command;
     int lock_counter;
 
-    void IncomingFrameCan1(CAN_frame_t *p_frame);
-    void IncomingFrameCan2(CAN_frame_t *p_frame);
-    void Ticker1(uint32_t ticker);
-    void Ticker10(uint32_t ticker);
-    void Ticker300(uint32_t ticker);
+    void IncomingFrameCan1(CAN_frame_t *p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t *p_frame) override;
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
+    void Ticker300(uint32_t ticker) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length) override;
     void SendTesterPresent(uint16_t id, uint8_t length);
     bool SetSessionMode(uint16_t id, uint8_t mode);
@@ -75,10 +75,8 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     				uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 						uint8_t b5, uint8_t b6, uint8_t mode);
 
-    virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
-    virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
-
-    metric_unit_t GetConsoleUnits();
+    vehicle_command_t CommandLock(const char *pin) override;
+    vehicle_command_t CommandUnlock(const char *pin) override;
 
   protected:
     void HandleCharging();

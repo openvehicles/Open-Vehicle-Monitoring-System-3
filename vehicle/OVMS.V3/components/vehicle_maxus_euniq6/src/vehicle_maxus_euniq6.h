@@ -48,10 +48,10 @@ class OvmsVehicleMaxEu6 : public maxeu6
     bool unlock_command;
     int lock_counter;
 
-    void IncomingFrameCan1(CAN_frame_t *p_frame);
-    void Ticker1(uint32_t ticker);
-    void Ticker10(uint32_t ticker);
-    void Ticker300(uint32_t ticker);
+    void IncomingFrameCan1(CAN_frame_t *p_frame) override;
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
+    void Ticker300(uint32_t ticker) override;
     void EventListener(std::string event, void* data);
     void SendTesterPresent(uint16_t id, uint8_t length);
     bool SetSessionMode(uint16_t id, uint8_t mode);
@@ -74,8 +74,8 @@ class OvmsVehicleMaxEu6 : public maxeu6
                           uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
                           uint8_t b5, uint8_t b6, int times, int delay);
 
-    virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
-    virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
+    vehicle_command_t CommandLock(const char *pin) override;
+    vehicle_command_t CommandUnlock(const char *pin) override;
 
   protected:
     void HandleCharging();
