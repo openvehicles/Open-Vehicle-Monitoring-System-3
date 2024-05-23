@@ -406,6 +406,13 @@ config OVMS_VEHICLE_NETA_AYA
     help
         Enable to include support for Neta Aya vehicles
 
+config OVMS_VEHICLE_DFE60
+    bool "Include support for Dongfenf E60 vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Dongfenf E60 vehicles
+
 config OVMS_VEHICLE_NISSANLEAF
     bool "Include support for Nissan Leaf vehicles"
     default y

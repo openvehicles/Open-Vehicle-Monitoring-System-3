@@ -1,5 +1,5 @@
-#ifndef __VEHICLE_MAXUS_COMMON_H__
-#define __VEHICLE_MAXUS_COMMON_H__
+#ifndef __VEHICLE_DFE60_COMMON_H__
+#define __VEHICLE_DFE60_COMMON_H__
 
 #include "vehicle.h"
 #include "ovms_webserver.h"
@@ -13,7 +13,7 @@ typedef struct{
 }charging_profile;
 
 
-class maxeu6 : public OvmsVehicle
+class dfe60 : public OvmsVehicle
 {
 public:
   // #ifdef CONFIG_OVMS_COMP_WEBSERVER

@@ -264,8 +264,7 @@ bool OvmsVehicleNetaAya::SetDoorLock(bool lock)
 {
 	if (lock)
 	{
-		bool closed_doors = true;
-		StdMetrics.ms_v_door_fl->AsBool() &&
+		bool closed_doors = StdMetrics.ms_v_door_fl->AsBool() &&
 							StdMetrics.ms_v_door_fr->AsBool() &&
 							StdMetrics.ms_v_door_rl->AsBool() &&
 							StdMetrics.ms_v_door_rr->AsBool();
