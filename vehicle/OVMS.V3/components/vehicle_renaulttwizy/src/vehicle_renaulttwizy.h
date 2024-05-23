@@ -98,12 +98,12 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void CanResponder(const CAN_frame_t* p_frame);
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
-    void Ticker1(uint32_t ticker);
-    void Ticker10(uint32_t ticker);
-    void ConfigChanged(OvmsConfigParam* param);
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
+    void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
     void EventListener(string event, void* data);
@@ -124,7 +124,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   // 
   
   public:
-    vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
+    vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer) override;
   
   protected:
     void UpdateMaxRange();
@@ -457,9 +457,9 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void ChargeShutdown();
     vehicle_command_t CommandCA(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
-    vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
-    vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
-    vehicle_command_t CommandStopCharge();
+    vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode) override;
+    vehicle_command_t CommandSetChargeCurrent(uint16_t limit) override;
+    vehicle_command_t CommandStopCharge() override;
     
   protected:
     OvmsCommand *cmd_ca;
@@ -489,10 +489,10 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     vehicle_command_t MsgCommandResetLogs(string& result, int command, const char* args);
     
   public:
-    vehicle_command_t CommandLock(const char* pin);
-    vehicle_command_t CommandUnlock(const char* pin);
-    vehicle_command_t CommandActivateValet(const char* pin);
-    vehicle_command_t CommandDeactivateValet(const char* pin);
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
+    vehicle_command_t CommandActivateValet(const char* pin) override;
+    vehicle_command_t CommandDeactivateValet(const char* pin) override;
 
   public:
     int               twizy_lock_speed = 6;     // if Lock mode: fix speed to this (kph)

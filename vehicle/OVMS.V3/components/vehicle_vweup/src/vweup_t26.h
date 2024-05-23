@@ -72,7 +72,7 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
     void IncomingFrameCan3(CAN_frame_t* p_frame);
 
   protected:
-    virtual void Ticker1(uint32_t ticker);
+    void Ticker1(uint32_t ticker) override;
     char m_vin[18];
 
   public:

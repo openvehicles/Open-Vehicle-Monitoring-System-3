@@ -225,7 +225,6 @@ void OvmsVehicleVWeUp::OBDInit()
   // Init/reconfigure poller
   //
 
-  OvmsRecMutexLock lock(&m_poll_mutex);
   obd_state_t previous_state = m_obd_state;
   m_obd_state = OBDS_Config;
 
@@ -368,12 +367,10 @@ void OvmsVehicleVWeUp::OBDInit()
 void OvmsVehicleVWeUp::OBDDeInit()
 {
   ESP_LOGI(TAG, "Stopping connection: OBDII");
-  OvmsRecMutexLock lock(&m_poll_mutex);
   m_obd_state = OBDS_DeInit;
   PollSetPidList(m_can1, NULL);
   m_poll_vector.clear();
 }
-
 
 /**
  * OBDSetState: set the OBD state, log the change
@@ -383,14 +380,12 @@ bool OvmsVehicleVWeUp::OBDSetState(obd_state_t state)
   if (m_obd_state == OBDS_Run && state == OBDS_Pause)
   {
     ESP_LOGW(TAG, "OBDSetState: %s -> %s", GetOBDStateName(m_obd_state), GetOBDStateName(state));
-    OvmsRecMutexLock lock(&m_poll_mutex);
     PollSetPidList(m_can1, NULL);
     m_obd_state = OBDS_Pause;
   }
   else if (m_obd_state == OBDS_Pause && state == OBDS_Run)
   {
     ESP_LOGI(TAG, "OBDSetState: %s -> %s", GetOBDStateName(m_obd_state), GetOBDStateName(state));
-    OvmsRecMutexLock lock(&m_poll_mutex);
     PollSetPidList(m_can1, m_poll_vector.data());
     m_obd_state = OBDS_Run;
   }
@@ -413,7 +408,7 @@ void OvmsVehicleVWeUp::PollSetState(uint8_t state)
  * PollerStateTicker: check for state changes
  *  This is called by VehicleTicker1() just before the next PollerSend().
  */
-void OvmsVehicleVWeUp::PollerStateTicker()
+void OvmsVehicleVWeUp::PollerStateTicker(canbus *bus)
 {
   // T26 state management has precedence if available:
   if (HasT26() || m_obd_state != OBDS_Run)

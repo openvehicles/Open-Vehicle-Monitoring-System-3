@@ -44,8 +44,8 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
     ~OvmsVehicleHyundaiVFL();
 
   public:
-    void ConfigChanged(OvmsConfigParam *param);
-    void MetricModified(OvmsMetric* metric);
+    void ConfigChanged(OvmsConfigParam *param) override;
+    void MetricModified(OvmsMetric* metric) override;
 
   protected:
     void Ticker60(uint32_t ticker);
@@ -56,7 +56,7 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
 #endif
 
   protected:
-    void PollerStateTicker();
+    void PollerStateTicker(canbus *bus) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 
     // Trip length & SOC/energy consumption:

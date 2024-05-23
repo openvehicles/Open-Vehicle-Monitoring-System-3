@@ -31,6 +31,7 @@
 #include "ovms_log.h"
 static const char *TAG = "vehicle";
 static const char *BASE_VEHICLE = "ME6";
+// static const char *TAGRX = "vehicle-rx";
 
 #include <stdio.h>
 #include <algorithm>
@@ -50,6 +51,10 @@ static const char *BASE_VEHICLE = "ME6";
 #include <string_writer.h>
 #include "vehicle.h"
 
+#ifdef bind
+#undef bind
+#endif
+using namespace std::placeholders;
 
 OvmsVehicleFactory MyVehicleFactory __attribute__ ((init_priority (2000)));
 
@@ -60,6 +65,8 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
   m_currentvehicle = NULL;
   m_currentvehicletype.clear();
+
+  MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsVehicleFactory::EventSystemShuttingDown, this, _1, _2));
 
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework", vehicle_status, "", 0, 0, false);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1,true,vehicle_validate);
@@ -151,13 +158,13 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
   {
-  if (m_currentvehicle)
-    {
-    m_currentvehicle->m_ready = false;
-    delete m_currentvehicle;
-    m_currentvehicle = NULL;
-    m_currentvehicletype.clear();
-    }
+  MyEvents.DeregisterEvent(TAG);
+  DoClearVehicle(false, false, false);
+  }
+
+void OvmsVehicleFactory::EventSystemShuttingDown(std::string event, void* data)
+  {
+  DoClearVehicle(false, false, true);
   }
 
 OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
@@ -179,41 +186,46 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
 
 void OvmsVehicleFactory::ClearVehicle()
   {
+  DoClearVehicle(true, true, true);
+  }
+
+void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent, bool wait)
+  {
   if (m_currentvehicle)
     {
-    m_currentvehicle->m_ready = false;
-    delete m_currentvehicle;
+    m_currentvehicle->ShuttingDown(wait);
+    auto vehicle = m_currentvehicle;
     m_currentvehicle = NULL;
+
     m_currentvehicletype.clear();
-    StandardMetrics.ms_v_type->SetValue("");
-    MyEvents.SignalEvent("vehicle.type.cleared", NULL);
+    if (clearName)
+      StandardMetrics.ms_v_type->SetValue("");
+    if (sendEvent)
+      MyEvents.SignalEvent("vehicle.type.cleared", NULL);
+
+    delete vehicle;
     }
   }
 
 void OvmsVehicleFactory::SetVehicle(const char* type)
   {
-  OvmsVehicleFactory::map_vehicle_t::iterator check = m_vmap.find(type);
-  if (check == m_vmap.end())
-  {
-    ESP_LOGW(TAG, "Tried to set NULL vehicle");
-    return SetVehicle(BASE_VEHICLE);
-  }
+  DoClearVehicle(false, true, true);
+  m_currentvehicle = NewVehicle(type);
+
   if (m_currentvehicle)
     {
-    m_currentvehicle->m_ready = false;
-    delete m_currentvehicle;
-    m_currentvehicle = NULL;
-    m_currentvehicletype.clear();
-    MyEvents.SignalEvent("vehicle.type.cleared", NULL);
+    std::string new_type(type);
+    m_currentvehicletype = new_type;
+    StandardMetrics.ms_v_type->SetValue(m_currentvehicletype);
+
+    m_currentvehicle->StartingUp();
+
+    MyEvents.SignalEvent("vehicle.type.set", (void*)new_type.c_str(), new_type.size()+1);
     }
-  m_currentvehicle = NewVehicle(type);
-  if (m_currentvehicle)
-  {
-  	m_currentvehicle->m_ready = true;
-  }
-  m_currentvehicletype = std::string(type);
-  StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
-  MyEvents.SignalEvent("vehicle.type.set", (void*)type, strlen(type)+1);
+  else
+    {
+    StandardMetrics.ms_v_type->SetValue("");
+    }
   }
 
 void OvmsVehicleFactory::AutoInit()
@@ -221,7 +233,9 @@ void OvmsVehicleFactory::AutoInit()
   // REPLACE DEFAULT
   std::string type = MyConfig.GetParamValue("auto", "vehicle.type", BASE_VEHICLE);
   if (!type.empty())
-    SetVehicle(type.c_str());
+    
+    
+    (type.c_str());
   }
 
 OvmsVehicle* OvmsVehicleFactory::ActiveVehicle()
@@ -247,16 +261,10 @@ const char* OvmsVehicleFactory::ActiveVehicleShortName()
   return m_currentvehicle ? m_currentvehicle->VehicleShortName() : "";
   }
 
-static void OvmsVehicleRxTask(void *pvParameters)
-  {
-  OvmsVehicle *me = (OvmsVehicle*)pvParameters;
-  me->RxTask();
-  }
-
 OvmsVehicle::OvmsVehicle()
   {
-  using std::placeholders::_1;
-  using std::placeholders::_2;
+
+  m_is_shutdown = false;
 
   m_can1 = NULL;
   m_can2 = NULL;
@@ -286,38 +294,20 @@ OvmsVehicle::OvmsVehicle()
   m_vehicleon_ticker = 0;
   m_vehicleoff_ticker = 0;
   m_idle_ticker = 0;
-  m_registeredlistener = false;
   m_autonotifications = true;
   m_ready = false;
 
+#ifdef CONFIG_OVMS_COMP_POLLER
   m_poll_state = 0;
-  m_poll_bus_default = NULL;
-  m_poll_txcallback = std::bind(&OvmsVehicle::PollerTxCallback, this, _1, _2);
-  m_poll_plist = NULL;
-  m_poll_plcur = NULL;
-  m_poll_paused = false;
+  m_pollsignal = nullptr;
 
-  m_poll_vwtp = {};
-
-  m_poll.bus = NULL;
-  m_poll.entry = {};
-  m_poll.ticker = 0;
-  m_poll_single_rxbuf = NULL;
-  m_poll_single_rxerr = 0;
-  m_poll.moduleid_sent = 0;
-  m_poll.moduleid_low = 0;
-  m_poll.moduleid_high = 0;
-  m_poll.type = 0;
-  m_poll.pid = 0;
-  m_poll.mlremain = 0;
-  m_poll.mloffset = 0;
-  m_poll.mlframe = 0;
-
-  m_poll_wait = 0;
-  m_poll_sequence_max = 1;
-  m_poll_sequence_cnt = 0;
-  m_poll_fc_septime = 25;       // response default timing: 25 milliseconds
-  m_poll_ch_keepalive = 60;     // channel keepalive default: 60 seconds
+  // Poll parameters.
+  PollSetThrottling(1);
+  // response default timing: 25 milliseconds
+  PollSetResponseSeparationTime(25);
+  // channel keepalive default: 60 seconds
+  PollSetChannelKeepalive(60);
+#endif
 
   m_bms_voltages = NULL;
   m_bms_vmins = NULL;
@@ -383,9 +373,10 @@ OvmsVehicle::OvmsVehicle()
   m_inv_energyused = 0;
   m_inv_energyrecd = 0;
 
-  m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
-    CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, CORE(1));
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.RegisterRunFinished(TAG, std::bind(&OvmsVehicle::PollRunFinishedNotify, this, _1, _2));
+  MyPollers.RegisterPollStateTicker(TAG, std::bind(&OvmsVehicle::PollerStateTickerNotify, this, _1, _2));
+#endif
 
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
 
@@ -395,14 +386,21 @@ OvmsVehicle::OvmsVehicle()
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
 
+#ifdef CONFIG_OVMS_COMP_POLLER
+
+  MyPollers.RegisterFrameRx(TAG, std::bind(&OvmsVehicle::IncomingRxFrame, this, _1));
+#else
+
+  m_vqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
+  xTaskCreatePinnedToCore(OvmsVehicleTask, "OVMS Vehicle Poll",
+      CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_vtask, CORE(1));
+  MyCan.RegisterListener(m_vqueue);
+#endif
   }
 
 OvmsVehicle::~OvmsVehicle()
   {
-  if (m_can1) m_can1->SetPowerMode(Off);
-  if (m_can2) m_can2->SetPowerMode(Off);
-  if (m_can3) m_can3->SetPowerMode(Off);
-  if (m_can4) m_can4->SetPowerMode(Off);
+  ShuttingDown(false);
 
   if (m_bms_voltages != NULL)
     {
@@ -455,18 +453,61 @@ OvmsVehicle::~OvmsVehicle()
     delete [] m_bms_talerts;
     m_bms_talerts = NULL;
     }
+  }
 
-  if (m_registeredlistener)
-    {
-    MyCan.DeregisterListener(m_rxqueue);
-    m_registeredlistener = false;
-    }
+void OvmsVehicle::StartingUp()
+  {
+  m_ready = true;
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.StartingUp();
+#endif
+  }
 
-  vQueueDelete(m_rxqueue);
-  vTaskDelete(m_rxtask);
+void OvmsVehicle::ShuttingDown(bool wait)
+  {
+  if (m_is_shutdown)
+    return;
+  m_is_shutdown = true;
+  m_ready = false;
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.ShuttingDownVehicle();
+  MyPollers.DeregisterRunFinished(TAG);
+  MyPollers.DeregisterPollStateTicker(TAG);
+  MyPollers.DeregisterFrameRx(TAG);
 
+  if (m_pollsignal)
+    delete m_pollsignal;
+#else
+  MyCan.DeregisterListener(m_vqueue);
+  CAN_frame_t entry;
+  entry.origin = nullptr;
+  entry.callback = nullptr;
+  entry.MsgID = 0;
+  xQueueSendToFront(m_vqueue, &entry, 0);
+
+  if (m_can1) m_can1->SetPowerMode(Off);
+  if (m_can2) m_can2->SetPowerMode(Off);
+  if (m_can3) m_can3->SetPowerMode(Off);
+  if (m_can4) m_can4->SetPowerMode(Off);
+
+#endif
   MyEvents.DeregisterEvent(TAG);
   MyMetrics.DeregisterListener(TAG);
+#ifndef CONFIG_OVMS_COMP_POLLER
+  if (wait)
+    {
+    int repeat = 20; // 1s
+    while (m_vtask && repeat--)
+      vTaskDelay(pdMS_TO_TICKS(50));
+    }
+
+  auto vtask = Atomic_GetAndNull(m_vtask);
+  if (vtask)
+    vTaskDelete(vtask);
+
+  vQueueDelete(m_vqueue);
+  m_vqueue = nullptr;
+#endif
   }
 
 const char* OvmsVehicle::VehicleShortName()
@@ -479,54 +520,63 @@ const char* OvmsVehicle::VehicleType()
   return MyVehicleFactory.ActiveVehicleType();
   }
 
-const char *OvmsVehicle::PollerSource(OvmsVehicle::poller_source_t src)
+canbus *OvmsVehicle::GetBus(uint8_t busno)
   {
-  switch (src)
+  switch (busno)
     {
-    case poller_source_t::Primary: return "PRI";
-    case poller_source_t::Successful: return "SRX";
-    case poller_source_t::OnceOff: return "ONE";
-    }
-    return "XXX";
-  }
-
-void OvmsVehicle::RxTask()
-  {
-  CAN_frame_t frame;
-
-  while(1)
-    {
-    if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
-      {
-      if (!m_ready)
-        continue;
-
-      // Pass frame to poller protocol handlers:
-      if (frame.origin == m_poll_vwtp.bus && frame.MsgID == m_poll_vwtp.rxid)
-        {
-        PollerVWTPReceive(&frame, frame.MsgID);
-        }
-      else if (m_poll_wait && frame.origin == m_poll.bus && HasPollList())
-        {
-        uint32_t msgid;
-        if (m_poll.protocol == ISOTP_EXTADR)
-          msgid = frame.MsgID << 8 | frame.data.u8[0];
-        else
-          msgid = frame.MsgID;
-        if (msgid >= m_poll.moduleid_low && msgid <= m_poll.moduleid_high)
-          {
-          PollerISOTPReceive(&frame, msgid);
-          }
-        }
-
-      // Pass frame to standard handlers:
-      if (m_can1 == frame.origin) IncomingFrameCan1(&frame);
-      else if (m_can2 == frame.origin) IncomingFrameCan2(&frame);
-      else if (m_can3 == frame.origin) IncomingFrameCan3(&frame);
-      else if (m_can4 == frame.origin) IncomingFrameCan4(&frame);
-      }
+    case 1: return m_can1;
+    case 2: return m_can2;
+    case 3: return m_can3;
+    case 4: return m_can4;
+    default: return nullptr;
     }
   }
+
+uint8_t OvmsVehicle::GetBusNo(canbus* bus)
+  {
+  if (bus == m_can1)
+    return 1;
+  if(bus == m_can2)
+    return 2;
+  if (bus == m_can3)
+    return 3;
+  if (bus == m_can4)
+    return 4;
+  return 0;
+  }
+void OvmsVehicle::PollRunFinished(canbus* bus)
+  {
+  }
+
+#ifdef CONFIG_OVMS_COMP_POLLER
+OvmsVehicle::OvmsVehicleSignal::OvmsVehicleSignal( OvmsVehicle *parent)
+  {
+  m_parent = parent;
+  }
+// Signals for vehicle
+void OvmsVehicle::OvmsVehicleSignal::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
+  {
+  if (Ready())
+    m_parent->IncomingPollReply(job, data, length);
+  }
+
+void OvmsVehicle::OvmsVehicleSignal::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+  {
+  if (Ready())
+    m_parent->IncomingPollError(job, code);
+  }
+
+void OvmsVehicle::OvmsVehicleSignal::IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success)
+  {
+  if (Ready())
+    m_parent->IncomingPollTxCallback(job, success);
+  }
+
+bool OvmsVehicle::OvmsVehicleSignal::Ready()
+  {
+  return m_parent->m_ready;
+  }
+#endif
 
 void OvmsVehicle::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
@@ -539,7 +589,6 @@ void OvmsVehicle::IncomingFrameCan2(CAN_frame_t* p_frame)
 void OvmsVehicle::IncomingFrameCan3(CAN_frame_t* p_frame)
   {
   }
-
 void OvmsVehicle::IncomingFrameCan4(CAN_frame_t* p_frame)
   {
   }
@@ -551,36 +600,23 @@ void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
 
 void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile)
   {
+  canbus *can;
+#ifdef CONFIG_OVMS_COMP_POLLER
+  can = MyPollers.RegisterCanBus(bus, mode, speed, dbcfile, true);
+#else
+  {
+    std::string busname = string_format("can%d", bus);
+    can = (canbus*)MyPcpApp.FindDeviceByName(busname.c_str());
+    can->SetPowerMode(On);
+    can->Start(mode,speed,dbcfile);
+  }
+#endif
   switch (bus)
     {
-    case 1:
-      m_can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
-      m_can1->SetPowerMode(On);
-      m_can1->Start(mode,speed,dbcfile);
-      break;
-    case 2:
-      m_can2 = (canbus*)MyPcpApp.FindDeviceByName("can2");
-      m_can2->SetPowerMode(On);
-      m_can2->Start(mode,speed,dbcfile);
-      break;
-    case 3:
-      m_can3 = (canbus*)MyPcpApp.FindDeviceByName("can3");
-      m_can3->SetPowerMode(On);
-      m_can3->Start(mode,speed,dbcfile);
-      break;
-    case 4:
-      m_can4 = (canbus*)MyPcpApp.FindDeviceByName("can4");
-      m_can4->SetPowerMode(On);
-      m_can4->Start(mode,speed,dbcfile);
-      break;
-    default:
-      break;
-    }
-
-  if (!m_registeredlistener)
-    {
-    m_registeredlistener = true;
-    MyCan.RegisterListener(m_rxqueue);
+    case 1: m_can1 = can; break;
+    case 2: m_can2 = can; break;
+    case 3: m_can3 = can; break;
+    case 4: m_can4 = can; break;
     }
   }
 
@@ -592,23 +628,44 @@ bool OvmsVehicle::PinCheck(const char* pin)
   return (strcmp(vpin.c_str(),pin)==0);
   }
 
+void OvmsVehicle::PollRunFinishedNotify(canbus* bus, void *data)
+  {
+  PollRunFinished(bus);
+  }
+void OvmsVehicle::PollerStateTickerNotify(canbus* bus, void *data)
+  {
+  PollerStateTicker(bus);
+  }
+
 void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   {
   if (!m_ready)
     return;
 
   m_ticker++;
-  
-  // todo: revisar si bajar
-  PollerStateTicker();
-  PollerSend(poller_source_t::Primary);
+  // todo: revisar si bajar REVISAR
+//   PollerStateTicker();
+//   PollerSend(poller_source_t::Primary);
 
   Ticker1(m_ticker);
-  if ((m_ticker % 10) == 0) Ticker10(m_ticker);
-  if ((m_ticker % 60) == 0) Ticker60(m_ticker);
-  if ((m_ticker % 300) == 0) Ticker300(m_ticker);
-  if ((m_ticker % 600) == 0) Ticker600(m_ticker);
-  if ((m_ticker % 3600) == 0) Ticker3600(m_ticker);
+  if ((m_ticker % 10) == 0)
+    {
+    Ticker10(m_ticker);
+    if ((m_ticker % 60) == 0)
+      {
+      Ticker60(m_ticker);
+      if ((m_ticker % 300) == 0)
+        {
+        Ticker300(m_ticker);
+        if ((m_ticker % 600) == 0)
+          {
+          Ticker600(m_ticker);
+          if ((m_ticker % 3600) == 0)
+            Ticker3600(m_ticker);
+          }
+        }
+      }
+    }
 
   if (StandardMetrics.ms_v_env_on->AsBool())
     {
@@ -2011,7 +2068,7 @@ void OvmsVehicle::NotifyGridLog()
     << std::noboolalpha
     << "," << (StdMetrics.ms_v_pos_gpslock->AsBool() ? 1 : 0)
     << std::fixed
-    << std::setprecision(8)
+    << std::setprecision(6)
     << "," << StdMetrics.ms_v_pos_latitude->AsFloat()
     << "," << StdMetrics.ms_v_pos_longitude->AsFloat()
     << std::setprecision(1)
@@ -2180,7 +2237,7 @@ void OvmsVehicle::NotifyTripLog()
 void OvmsVehicle::NotifyTripReport()
   {
   // Send trip report notification
-  //  Notification type "info", subtype "drive.trip.report" 
+  //  Notification type "info", subtype "drive.trip.report"
   bool send_report = MyConfig.GetParamValueBool("notify", "report.trip.enable", false);
   if (send_report)
     {
@@ -2257,6 +2314,233 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &resul
   return NotImplemented;
   }
 
+
+/**
+ * PollerStateTicker: check for state changes (stub, override with vehicle implementation)
+ *  This is called by VehicleTicker1() just before the next PollerSend().
+ *  Implement your poller state transition logic in this method, so the changes
+ *  will get applied immediately.
+ */
+void OvmsVehicle::PollerStateTicker(canbus* bus)
+  {
+  }
+
+// Signal poller
+void OvmsVehicle::PausePolling()
+  {
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.PausePolling();
+#endif
+  }
+void OvmsVehicle::ResumePolling()
+  {
+#ifdef CONFIG_OVMS_COMP_POLLER
+  MyPollers.ResumePolling();
+#endif
+  }
+
+#ifdef CONFIG_OVMS_COMP_POLLER
+OvmsPoller::VehicleSignal *OvmsVehicle::GetPollerSignal()
+  {
+  if (!m_pollsignal)
+    m_pollsignal = new OvmsVehicle::OvmsVehicleSignal(this);
+  return m_pollsignal;
+  }
+void OvmsVehicle::PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plist)
+  {
+  m_poll_bus_default = bus;
+  MyPollers.PollSetPidList(bus, plist, GetPollerSignal());
+  }
+#endif
+
+/**
+ * PollSetState: set the polling state
+ *  Call this to change the polling state and restart the current polling list.
+ *  This won't do anything if the state is already active. The state is changed without
+ *  waiting for pending responses to finish (except PollSingleRequests).
+ *
+ *  @param state
+ *    The polling state to activate (0 … VEHICLE_POLL_NSTATES)
+ */
+void OvmsVehicle::PollSetState(uint8_t state, canbus* bus)
+  {
+#ifdef CONFIG_OVMS_COMP_POLLER
+  if (!bus)
+    m_poll_state = state;
+  MyPollers.PollSetState(state, bus);
+#endif
+  }
+
+#ifdef CONFIG_OVMS_COMP_POLLER
+int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                std::string request, std::string& response,
+                int timeout_ms, uint8_t protocol)
+  {
+
+  if (!m_ready)
+    return POLLSINGLE_TXFAILURE;
+  auto poller = MyPollers.GetPoller(bus, true);
+  if (!poller)
+    return POLLSINGLE_TXFAILURE;
+  return poller->PollSingleRequest(txid, rxid, request, response, timeout_ms, protocol);
+  }
+
+int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                uint8_t polltype, uint16_t pid, std::string& response,
+                int timeout_ms, uint8_t protocol)
+  {
+  if (!m_ready)
+    return POLLSINGLE_TXFAILURE;
+  auto poller = MyPollers.GetPoller(bus, true);
+  if (!poller)
+    return POLLSINGLE_TXFAILURE;
+  return poller->PollSingleRequest(txid, rxid, polltype, pid, response, timeout_ms, protocol);
+  }
+
+/** Set the 'tick' interval for the poller.
+ * @param tick_time_ms The interval in ms between poll 'ticks'
+ * @param secondary_ticks The number of ticks making up a primary tick (0/1 means no secondary ticks)
+ * Only Primary ticks will allow starting the poll-queue again once it has reached the end.
+ * Either secondary or primary ticks allow fetching of the next entry in the queue.
+ */
+void OvmsVehicle::PollSetTicker(uint16_t tick_time_ms, uint8_t secondary_ticks)
+  {
+  MyPollers.PollSetTicker(tick_time_ms, secondary_ticks);
+  }
+
+void OvmsVehicle::PollSetResponseSeparationTime(uint8_t septime)
+  {
+  MyPollers.PollSetResponseSeparationTime(septime);
+  }
+void OvmsVehicle::PollSetChannelKeepalive(uint16_t keepalive_seconds)
+  {
+  MyPollers.PollSetChannelKeepalive(keepalive_seconds);
+  }
+void OvmsVehicle::PollSetTimeBetweenSuccess(uint16_t time_between_ms)
+  {
+  MyPollers.PollSetTimeBetweenSuccess(time_between_ms);
+  }
+
+/**
+ * IncomingPollReply: poll response handler (stub, override with vehicle implementation)
+ *  This is called by PollerReceive() on each valid response frame for the current request.
+ *  Be aware responses may consist of multiple frames, detectable e.g. by mlremain > 0.
+ *  A typical pattern is to collect frames in a buffer until mlremain == 0.
+ *
+ *  @param job
+ *    Status of the current Poll job
+ *  @param data
+ *    Payload
+ *  @param length
+ *    Payload size
+ */
+void OvmsVehicle::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
+  {
+  }
+
+/**
+ * IncomingPollError: Calls Vehicle poll response error handler
+ *  This is called by PollerReceive() on reception of an OBD/UDS Negative Response Code (NRC),
+ *  except if the code is requestCorrectlyReceived-ResponsePending (0x78), which is handled
+ *  by the poller. See ISO 14229 Annex A.1 for the list of NRC codes.
+ *
+ *  @param job
+ *    Status of the current Poll job
+ *  @param code
+ *    NRC detail code
+ */
+void OvmsVehicle::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+  {
+  }
+
+/**
+ * IncomingPollTxCallback: poller TX callback (stub, override with vehicle implementation)
+ *  This is called by PollerTxCallback() on TX success/failure for a poller request.
+ *  You can use this to detect CAN bus issues, e.g. if the car switches off the OBD port.
+ *
+ *  ATT: this is executed in the main CAN task context. Keep it simple.
+ *    Complex processing here will affect overall CAN performance.
+ *
+ *  @param job
+ *    Status of the current Poll job
+ *  @param success
+ *    Frame transmission success
+ */
+void OvmsVehicle::IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success)
+  {
+  }
+
+#endif
+
+#ifdef CONFIG_OVMS_COMP_POLLER
+void OvmsVehicle::IncomingRxFrame(const CAN_frame_t &frame)
+  {
+  SendIncomingFrame(&frame);
+  }
+#else
+void OvmsVehicle::OvmsVehicleTask(void *pvParameters)
+  {
+  OvmsVehicle *me = (OvmsVehicle*)pvParameters;
+  me->VehicleTask();
+  }
+
+void OvmsVehicle::VehicleTask()
+  {
+
+  CAN_frame_t entry;
+  while (!m_is_shutdown)
+    {
+    if (xQueueReceive(m_vqueue, &entry, (portTickType)portMAX_DELAY)!=pdTRUE)
+      continue;
+    if (entry.origin != nullptr )
+      SendIncomingFrame(&entry);
+    }
+  auto vtask = Atomic_GetAndNull(m_vtask);
+  if (vtask)
+    vTaskDelete(vtask);
+  vTaskSuspend(nullptr);
+  }
+#endif
+
+void OvmsVehicle::SendIncomingFrame(const CAN_frame_t *frame)
+  {
+  if (!m_ready)
+    return;
+
+  auto bus = frame->origin;
+
+  // Pass frame to standard handlers:
+  CAN_frame_t tmp_frame = *frame;
+  if (m_can1 == bus) IncomingFrameCan1(&tmp_frame);
+  else if (m_can2 == bus) IncomingFrameCan2(&tmp_frame);
+  else if (m_can3 == bus) IncomingFrameCan3(&tmp_frame);
+  else if (m_can4 == bus) IncomingFrameCan4(&tmp_frame);
+  }
+
+#ifdef CONFIG_OVMS_COMP_POLLER
+void OvmsVehicle::PollRequest(canbus* bus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series)
+  {
+  auto poller = MyPollers.GetPoller(bus, true);
+  poller->PollRequest(name, series);
+  }
+
+void OvmsVehicle::RemovePollRequest(canbus* bus, const std::string &name)
+  {
+  auto poller = MyPollers.GetPoller(bus, false);
+  if (poller)
+    poller->RemovePollRequest(name);
+  }
+#endif
+
+#ifdef CONFIG_OVMS_COMP_POLLER
+/** Does the specified bus have a non-empty PollList ?
+  * @param bus Canbus to check or null for any bus
+  */
+bool OvmsVehicle::HasPollList(canbus* bus)
+  {
+  return MyPollers.HasPollList(bus);
+  }
+#endif
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 /**

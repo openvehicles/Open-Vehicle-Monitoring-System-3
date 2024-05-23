@@ -41,7 +41,7 @@ class OvmsVehicleChevroletC6Corvette : public OvmsVehicle
   public:
     OvmsVehicleChevroletC6Corvette();
     ~OvmsVehicleChevroletC6Corvette();
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
 
   protected:
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;

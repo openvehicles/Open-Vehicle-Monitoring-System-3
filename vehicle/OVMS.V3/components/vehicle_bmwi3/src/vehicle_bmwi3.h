@@ -68,8 +68,8 @@ class OvmsVehicleBMWi3 : public OvmsVehicle
     OvmsVehicleBMWi3();
     ~OvmsVehicleBMWi3();
     void CanResponder(const CAN_frame_t* p_frame);
-    void Ticker1(uint32_t ticker);
-    void Ticker10(uint32_t ticker);
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
 
 
 

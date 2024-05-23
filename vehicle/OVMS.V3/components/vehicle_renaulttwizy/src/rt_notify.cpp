@@ -300,7 +300,7 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
     << "RT-GPS-Log,"
     << (long) (StdMetrics.ms_v_pos_odometer->AsFloat(0, Miles) * 10) // in 1/10 mi
     << ",86400"
-    << setprecision(8)
+    << setprecision(6)
     << fixed
     << "," << StdMetrics.ms_v_pos_latitude->AsFloat()
     << "," << StdMetrics.ms_v_pos_longitude->AsFloat()

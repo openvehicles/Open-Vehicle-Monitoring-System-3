@@ -302,36 +302,29 @@ void OvmsServerV3::TransmitModifiedMetrics()
 
 void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   {
-  auto const metric_name = metric->m_name;
+  std::string metric_name(metric->m_name);
 
   if (!m_metrics_filter.CheckFilter(metric_name))
     return;
 
   std::string topic(m_topic_prefix);
   topic.append("metric/");
-  topic.append(metric_name);
-
-  // Replace '.' inside the metric name by '/' for MQTT like namespacing.
-  for(size_t i = m_topic_prefix.length(); i < topic.length(); i++)
-    {
-      if(topic[i] == '.')
-        topic[i] = '/';
-    }
+  topic.append(mqtt_topic(metric_name));
 
   std::string val = metric->AsString();
 
   mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
     MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
-  ESP_LOGI(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
+  ESP_LOGD(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
 
 int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
   {
   std::string topic(m_topic_prefix);
   topic.append("notify/info/");
-  topic.append(entry->m_subtype);
+  topic.append(mqtt_topic(entry->m_subtype));
 
-  const extram::string result = mp_encode(entry->GetValue());
+  const extram::string result = entry->GetValue();
 
   int id = m_msgid++;
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
@@ -344,9 +337,9 @@ int OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
   {
   std::string topic(m_topic_prefix);
   topic.append("notify/error/");
-  topic.append(entry->m_subtype);
+  topic.append(mqtt_topic(entry->m_subtype));
 
-  const extram::string result = mp_encode(entry->GetValue());
+  const extram::string result = entry->GetValue();
 
   int id = m_msgid++;
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
@@ -359,9 +352,9 @@ int OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
   {
   std::string topic(m_topic_prefix);
   topic.append("notify/alert/");
-  topic.append(entry->m_subtype);
+  topic.append(mqtt_topic(entry->m_subtype));
 
-  const extram::string result = mp_encode(entry->GetValue());
+  const extram::string result = entry->GetValue();
 
   int id = m_msgid++;
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
@@ -375,7 +368,7 @@ int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
   char base[32];
   std::string topic(m_topic_prefix);
   topic.append("notify/data/");
-  topic.append(entry->m_subtype);
+  topic.append(mqtt_topic(entry->m_subtype));
   topic.append("/");
   topic.append(itoa(entry->m_id,base,10));
   topic.append("/");
@@ -542,11 +535,19 @@ void OvmsServerV3::IncomingEvent(std::string event, void* data)
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
 
   std::string topic(m_topic_prefix);
-  topic.append("event");
 
-  ESP_LOGI(TAG,"Tx event %s",event.c_str());
+  // Legacy: publish event name on fixed topic
+  topic.append("event");
   mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
     MG_MQTT_QOS(0), event.c_str(), event.length());
+
+  // Publish MQTT style event topic, payload reserved for event data serialization:
+  topic.append("/");
+  topic.append(mqtt_topic(event));
+  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+    MG_MQTT_QOS(0), "", 0);
+
+  ESP_LOGD(TAG,"Tx event %s",event.c_str());
   }
 
 void OvmsServerV3::RunCommand(std::string client, std::string id, std::string command)
