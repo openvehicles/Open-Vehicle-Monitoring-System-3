@@ -69,7 +69,6 @@ static const char *TAG = "housekeeping";
 #define AUTO_INIT_INHIBIT_CRASHCOUNT    5
 
 static int tick = 0;
-static int hours = 0;
 
 void HousekeepingUpdate12V()
   {
