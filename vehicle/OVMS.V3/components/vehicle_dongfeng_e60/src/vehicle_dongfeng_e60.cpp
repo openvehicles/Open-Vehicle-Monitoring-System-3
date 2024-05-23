@@ -55,7 +55,7 @@
 ; THE SOFTWARE.
 */
 
-#include "vehicle_maple_60s.h"
+#include "vehicle_dongfeng_e60.h"
 
 #include "ovms_log.h"
 #include <stdio.h>
@@ -71,15 +71,15 @@
 
 #define VERSION "0.1.6"
 
-static const char *TAG = "v-maple60s";
+static const char *TAG = "v-dfe60";
 
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
 
-OvmsVehicleMaple60S::OvmsVehicleMaple60S()
+OvmsVehicleDFE60::OvmsVehicleDFE60()
 {
-	ESP_LOGI(TAG, "Maple 60s vehicle module");
+	ESP_LOGI(TAG, "Dongfeng E60 vehicle module");
 
 	message_send_can.id = 0;
 	message_send_can.status = 0;
@@ -99,7 +99,7 @@ OvmsVehicleMaple60S::OvmsVehicleMaple60S()
 
 	using std::placeholders::_1;
 	using std::placeholders::_2;
-	MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsVehicleMaple60S::EventListener, this, _1, _2));
+	MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsVehicleDFE60::EventListener, this, _1, _2));
 
 	// #ifdef CONFIG_OVMS_COMP_WEBSERVER
 	// 	WebInit();
@@ -111,29 +111,30 @@ OvmsVehicleMaple60S::OvmsVehicleMaple60S()
 /**
  * Destructor
  */
-OvmsVehicleMaple60S::~OvmsVehicleMaple60S()
+OvmsVehicleDFE60::~OvmsVehicleDFE60()
 {
-	ESP_LOGI(TAG, "Shutdown Maple 60S vehicle module");
+	ESP_LOGI(TAG, "Shutdown Dongfeng E60 vehicle module");
 	// MyWebServer.DeregisterPage("/bms/cellmon");
 }
+//  housekeeping: Auto init inhibited: too many early crashes
 
 /**
  * Takes care of setting all the state appropriate when the car is on
  * or off. Centralized so we can more easily make on and off mirror
  * images.
  */
-void OvmsVehicleMaple60S::HandleCarOn()
+void OvmsVehicleDFE60::HandleCarOn()
 {
 	POLLSTATE_RUNNING;
 	ESP_LOGI(TAG, "CAR IS ON | POLLSTATE RUNNING");
 }
-void OvmsVehicleMaple60S::HandleCarOff()
+void OvmsVehicleDFE60::HandleCarOff()
 {
 	POLLSTATE_OFF;
 	ESP_LOGI(TAG, "CAR IS OFF | POLLSTATE OFF");
 	StdMetrics.ms_v_pos_speed->SetValue(0);
 }
-void OvmsVehicleMaple60S::HandleCharging()
+void OvmsVehicleDFE60::HandleCharging()
 {
 	POLLSTATE_CHARGING;
 	ESP_LOGI(TAG, "CAR IS CHARGING | POLLSTATE RUNNING");
@@ -142,10 +143,9 @@ void OvmsVehicleMaple60S::HandleCharging()
 /**
  * Ticker1: Called every second
  */
-void OvmsVehicleMaple60S::Ticker1(uint32_t ticker)
+void OvmsVehicleDFE60::Ticker1(uint32_t ticker)
 {
 	VerifyConfigs(true);
-
 	if (m_poll_state == 0)
 	{
 		// ESP_LOGI(TAG, "POLL STATE OFF");
@@ -184,26 +184,26 @@ void OvmsVehicleMaple60S::Ticker1(uint32_t ticker)
 /**
  * Ticker10: Called every ten seconds
  */
-void OvmsVehicleMaple60S::Ticker10(uint32_t ticker)
+void OvmsVehicleDFE60::Ticker10(uint32_t ticker)
 {
 }
 
 /**
  * Ticker300: Called every five minutes
  */
-void OvmsVehicleMaple60S::Ticker300(uint32_t ticker)
+void OvmsVehicleDFE60::Ticker300(uint32_t ticker)
 {
 	VerifyConfigs(false);
 }
 
-void OvmsVehicleMaple60S::EventListener(std::string event, void *data)
+void OvmsVehicleDFE60::EventListener(std::string event, void *data)
 {
 }
 
 /**
  * Update metrics when charging stops
  */
-void OvmsVehicleMaple60S::HandleChargeStop()
+void OvmsVehicleDFE60::HandleChargeStop()
 {
 	ESP_LOGI(TAG, "Charging done...");
 	StdMetrics.ms_v_charge_type->SetValue("");
@@ -212,7 +212,7 @@ void OvmsVehicleMaple60S::HandleChargeStop()
 /**
  *  Sets the charge metrics
  */
-void OvmsVehicleMaple60S::SetChargeMetrics()
+void OvmsVehicleDFE60::SetChargeMetrics()
 {
 	bool ccs = StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -15;
 	StdMetrics.ms_v_charge_type->SetValue(ccs ? "ccs" : "type2");
@@ -221,7 +221,7 @@ void OvmsVehicleMaple60S::SetChargeMetrics()
 /**
  * Open or lock the doors
  */
-bool OvmsVehicleMaple60S::SetDoorLock(bool lock)
+bool OvmsVehicleDFE60::SetDoorLock(bool lock)
 {
 	if (lock)
 	{
@@ -249,14 +249,15 @@ bool OvmsVehicleMaple60S::SetDoorLock(bool lock)
 	return true;
 }
 
-class OvmsVehicleMaple60SInit
+
+class OvmsVehicleDFE60Init
 {
 public:
-	OvmsVehicleMaple60SInit();
-} MyOvmsVehicleMaple60SInit __attribute__((init_priority(9000)));
+	OvmsVehicleDFE60Init();
+} MyOvmsVehicleDFE60Init __attribute__((init_priority(9000)));
 
-OvmsVehicleMaple60SInit::OvmsVehicleMaple60SInit()
+OvmsVehicleDFE60Init::OvmsVehicleDFE60Init()
 {
-	ESP_LOGI(TAG, "Registering Vehicle: Maple 60S (9000)");
-	MyVehicleFactory.RegisterVehicle<OvmsVehicleMaple60S>("MPL60S", "Maple 60S");
+	ESP_LOGI(TAG, "Registering Vehicle: DongFeng E60");
+	MyVehicleFactory.RegisterVehicle<OvmsVehicleDFE60>("DFE60", "DongFeng E60");
 }

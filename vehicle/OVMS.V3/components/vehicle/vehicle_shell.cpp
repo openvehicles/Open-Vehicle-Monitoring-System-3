@@ -55,12 +55,11 @@ int OvmsVehicleFactory::vehicle_validate(OvmsWriter* writer, OvmsCommand* cmd, i
 
 void OvmsVehicleFactory::vehicle_module(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  // if (argc == 0)
-  //   {
-  //   MyVehicleFactory.ClearVehicle();
-  //   }
-  // else
-  if (argc != 0)
+  if (argc == 0)
+    {
+    MyVehicleFactory.ClearVehicle();
+    }
+  else if (argc != 0)
     {
     MyVehicleFactory.SetVehicle(argv[0]);
     }

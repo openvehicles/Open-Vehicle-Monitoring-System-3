@@ -302,8 +302,8 @@ class MetricsStandard
     OvmsMetricString* ms_m_net_mdm_iccid;                 // ICCID of SIM card in modem
     OvmsMetricString* ms_m_net_mdm_model;                 // Model of modem discovered
     OvmsMetricString* ms_m_net_mdm_mode;                  // Cellular connection mode and status
-    OvmsMetricBool *ms_m_net_connected;                   // True = connected_any is true
-    OvmsMetricBool *ms_m_net_ip;                          // True = device has ip available
+    OvmsMetricBool*  ms_m_net_connected;                   // True = connected_any is true
+    OvmsMetricBool*  ms_m_net_ip;                          // True = device has ip available
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
     OvmsMetricBitset<10,0>* ms_m_egpio_input;             // EGPIO (MAX7317) input port state (ports 0…9)
@@ -475,7 +475,7 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_env_drivemode;                 // Active drive profile number [1]
     OvmsMetricString* ms_v_env_efficiencymode;            // Active efficiency profile number [1]
     OvmsMetricInt*    ms_v_env_gear;                      // Gear/direction; negative=reverse, 0=neutral [1]
-    OvmsMetricFloat*  ms_v_env_regenlevel;                 // regen level activaed
+    OvmsMetricFloat*  ms_v_env_regenlevel;                // regen level activaed
     OvmsMetricFloat*  ms_v_env_throttle;                  // Drive pedal state [%]
     OvmsMetricFloat*  ms_v_env_footbrake;                 // Brake pedal state [%]
     OvmsMetricBool*   ms_v_env_handbrake;                 // Handbrake state

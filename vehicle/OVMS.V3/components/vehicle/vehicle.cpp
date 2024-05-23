@@ -30,6 +30,7 @@
 
 #include "ovms_log.h"
 static const char *TAG = "vehicle";
+static const char *BASE_VEHICLE = "ME6";
 // static const char *TAGRX = "vehicle-rx";
 
 #include <stdio.h>
@@ -173,7 +174,14 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
     {
     return iter->second.construct();
     }
-  return NULL;
+  // REPLACE DEFAULT
+  // return NULL;
+
+  if (strcmp(VehicleType, BASE_VEHICLE) == 0)
+  {
+    return NULL;
+  }
+  return NewVehicle(BASE_VEHICLE);
   }
 
 void OvmsVehicleFactory::ClearVehicle()
@@ -201,9 +209,9 @@ void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent, bool wa
 
 void OvmsVehicleFactory::SetVehicle(const char* type)
   {
-
   DoClearVehicle(false, true, true);
   m_currentvehicle = NewVehicle(type);
+
   if (m_currentvehicle)
     {
     std::string new_type(type);
@@ -222,9 +230,12 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
 
 void OvmsVehicleFactory::AutoInit()
   {
-  std::string type = MyConfig.GetParamValue("auto", "vehicle.type");
+  // REPLACE DEFAULT
+  std::string type = MyConfig.GetParamValue("auto", "vehicle.type", BASE_VEHICLE);
   if (!type.empty())
-    SetVehicle(type.c_str());
+    
+    
+    (type.c_str());
   }
 
 OvmsVehicle* OvmsVehicleFactory::ActiveVehicle()
@@ -632,7 +643,9 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     return;
 
   m_ticker++;
-
+  // todo: revisar si bajar REVISAR
+//   PollerStateTicker();
+//   PollerSend(poller_source_t::Primary);
 
   Ticker1(m_ticker);
   if ((m_ticker % 10) == 0)

@@ -26,8 +26,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_MAPLE60S_H__
-#define __VEHICLE_MAPLE60S_H__
+#ifndef __VEHICLE_DONGFENGE60_H__
+#define __VEHICLE_DONGFENGE60_H__
 
 #include "common.h"
 #include "vehicle.h"
@@ -37,16 +37,19 @@
 
 using namespace std;
 
-class OvmsVehicleMaple60S : public Maple60S
+class OvmsVehicleDFE60 : public dfe60
   {
   public:
-		OvmsVehicleMaple60S();
-    ~OvmsVehicleMaple60S();
+		OvmsVehicleDFE60();
+    ~OvmsVehicleDFE60();
 
   public:
     bool configured;
     bool fully_configured;
     bool reset_by_config;
+    bool shouldLock;
+    bool shouldUnlock;
+    int lockingCounter;
 
     void IncomingFrameCan1(CAN_frame_t *p_frame);
     void Ticker1(uint32_t ticker);
@@ -70,11 +73,12 @@ class OvmsVehicleMaple60S : public Maple60S
     bool SendCommandInSessionMode(uint16_t id, uint8_t count,
     				uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 						uint8_t b5, uint8_t b6, uint8_t mode);
+    void CanMultimpleSend(uint16_t id, uint8_t count,
+                          uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+                          uint8_t b5, uint8_t b6, int times, int delay);
 
     virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
-
-    metric_unit_t GetConsoleUnits();
 
   protected:
 
@@ -94,11 +98,6 @@ class OvmsVehicleMaple60S : public Maple60S
     void SetChargeMetrics();
     void SendTesterPresentMessages();
 
-		#define CFG_DEFAULT_MAXRANGE 440
-
-		#define CGF_DEFAULT_BATTERY_CAPACITY 64000
-    float kn_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY;
-
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
     // Webserver subsystem
@@ -116,4 +115,4 @@ class OvmsVehicleMaple60S : public Maple60S
 #endif //CONFIG_OVMS_COMP_WEBSERVER
   };
 
-#endif // #ifndef __VEHICLE_MAPLE60S_H__
+#endif // #ifndef __VEHICLE_DONGFENGE60_H__

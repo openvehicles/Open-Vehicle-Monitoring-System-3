@@ -85,6 +85,8 @@ OvmsVehicleMaxEu6::OvmsVehicleMaxEu6()
 	message_send_can.status = 0;
 
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
+	fully_configured = false;
+	reset_by_config = false;
 
 	StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
 	StdMetrics.ms_v_charge_inprogress->SetValue(false);
@@ -144,6 +146,7 @@ void OvmsVehicleMaxEu6::HandleCharging()
  */
 void OvmsVehicleMaxEu6::Ticker1(uint32_t ticker)
 {
+	VerifyConfigs(true);
 	if (m_poll_state == 0)
 	{
 		// ESP_LOGI(TAG, "POLL STATE OFF");
@@ -191,6 +194,7 @@ void OvmsVehicleMaxEu6::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleMaxEu6::Ticker300(uint32_t ticker)
 {
+	VerifyConfigs(false);
 }
 
 void OvmsVehicleMaxEu6::EventListener(std::string event, void *data)
