@@ -194,7 +194,6 @@ void OvmsVehicleKiaNiroEvSg2::HandleCharging()
  */
 void OvmsVehicleKiaNiroEvSg2::Ticker1(uint32_t ticker)
 {
-	VerifyConfigs(true);
 	VerifyCanActivity();
 	can_2_sending = false;
 
@@ -261,7 +260,6 @@ void OvmsVehicleKiaNiroEvSg2::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleKiaNiroEvSg2::Ticker300(uint32_t ticker)
 {
-	VerifyConfigs(false);
 	// check ecus every 20 min even if car is off
 	if (!can_2_sending && poll_counter > 1500)
 	{
