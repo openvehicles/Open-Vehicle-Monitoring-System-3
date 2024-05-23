@@ -226,7 +226,7 @@ bool OvmsVehicleMaxEu6::SetDoorLock(bool lock)
 {
 	if (lock)
 	{
-		if (shouldLock || shouldUnlock)
+		if (lock_command || unlock_command)
 		{
 			return false;
 		}
@@ -234,9 +234,10 @@ bool OvmsVehicleMaxEu6::SetDoorLock(bool lock)
 							StdMetrics.ms_v_door_fr->AsBool() &&
 							StdMetrics.ms_v_door_rl->AsBool() &&
 							StdMetrics.ms_v_door_rr->AsBool();
-		if (closed_doors){
-			shouldLock = true;
-			lockingCounter = 11;
+		if (closed_doors)
+		{
+			lock_command = true;
+			lock_counter = 11;
 
 			CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
 			CanMultimpleSend(0x310, 0x00, 0x02, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
@@ -247,12 +248,12 @@ bool OvmsVehicleMaxEu6::SetDoorLock(bool lock)
 	}
 	else
 	{
-		if (shouldLock || shouldUnlock)
+		if (lock_command || unlock_command)
 		{
 			return false;
 		}
-		shouldUnlock = true;
-		lockingCounter = 11;
+		unlock_command = true;
+		lock_counter = 11;
 
 		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
 		CanMultimpleSend(0x310, 0x00, 0x01, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
@@ -263,42 +264,46 @@ bool OvmsVehicleMaxEu6::SetDoorLock(bool lock)
 
 void OvmsVehicleMaxEu6::CheckLock()
 {
-	if (lockingCounter <= 0)
+	if (!(lock_command || unlock_command))
+		return;
+	if (lock_counter <= 0)
 	{
-		lockingCounter = 0;
-		shouldLock = false;
-		shouldUnlock = false;
+		lock_counter = 0;
+		lock_command = false;
+		unlock_command = false;
 		return;
 	}
-	if (lockingCounter > 0)
+	lock_counter--;
+	bool is_locked = StdMetrics.ms_v_env_locked->AsBool();
+	if (lock_command && is_locked)
 	{
-		lockingCounter--;
+		lock_counter = 0;
+		lock_command = false;
+		return;
+	}
+	if (unlock_command && !is_locked)
+	{
+		lock_counter = 0;
+		unlock_command = false;
+		return;
+	}
+	if (lock_counter % 2 == 1)
+	{
+		m_can2->Reset();
+		return;
 	}
 
-	if (shouldLock && lockingCounter % 2 == 1)
+	if (lock_command)
 	{
-		if (StdMetrics.ms_v_env_locked->AsBool())
-		{
-			shouldLock = false;
-			return;
-		}
 		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
 		CanMultimpleSend(0x310, 0x00, 0x02, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
 		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
-		m_can2->Reset();
 	}
-
-	if (shouldUnlock && lockingCounter % 2 == 1)
+	else if (unlock_command)
 	{
-		if (!StdMetrics.ms_v_env_locked->AsBool())
-		{
-			shouldUnlock = false;
-			return;
-		}
 		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
 		CanMultimpleSend(0x310, 0x00, 0x01, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
 		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
-		m_can2->Reset();
 	}
 }
 

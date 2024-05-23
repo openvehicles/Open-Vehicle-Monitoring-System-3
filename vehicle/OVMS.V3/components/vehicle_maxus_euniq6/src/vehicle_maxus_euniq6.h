@@ -47,9 +47,9 @@ class OvmsVehicleMaxEu6 : public maxeu6
     bool configured;
     bool fully_configured;
     bool reset_by_config;
-    bool shouldLock;
-    bool shouldUnlock;
-    int lockingCounter;
+    bool lock_command;
+    bool unlock_command;
+    int lock_counter;
 
     void IncomingFrameCan1(CAN_frame_t *p_frame);
     void Ticker1(uint32_t ticker);

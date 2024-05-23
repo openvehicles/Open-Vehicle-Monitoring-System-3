@@ -73,7 +73,7 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 
 	StdMetrics.ms_v_bat_current 				-
 	StdMetrics.ms_v_bat_voltage 				-
-	StdMetrics.ms_v_bat_power 					wip esta en porcentaje, varia entre el valor y 0.4
+	StdMetrics.ms_v_bat_power 					wip esta en porcentaje
 
 	StdMetrics.ms_v_charge_inprogress 			ok
 
@@ -139,7 +139,7 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 	case 0x6f2:
 	{
 		StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(1));
-		StdMetrics.ms_v_bat_power->SetValue(CAN_BYTE(2) - 100); // es porcentaje
+		StdMetrics.ms_v_bat_power->SetValue((CAN_BYTE(2) - 100) * 120, kW); // es porcentaje
 		break;
 	}
 	default:

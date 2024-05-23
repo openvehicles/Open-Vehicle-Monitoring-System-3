@@ -98,8 +98,6 @@ class OvmsVehicleDFE60 : public dfe60
     void SetChargeMetrics();
     void SendTesterPresentMessages();
 
-    void CheckLock();
-
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
     // Webserver subsystem

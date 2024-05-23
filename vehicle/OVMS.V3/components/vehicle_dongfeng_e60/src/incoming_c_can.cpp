@@ -56,15 +56,15 @@ void OvmsVehicleDFE60::IncomingFrameCan1(CAN_frame_t *p_frame)
 
 	/*
 	BASIC METRICS
-	StdMetrics.ms_v_pos_speed 					rev
-	StdMetrics.ms_v_bat_soc 					rev
-	StdMetrics.ms_v_pos_odometer 				rev
+	StdMetrics.ms_v_pos_speed 					ok (it doesnt show the same speed as in the screen but it is close, a little less when going slow and a little more when going fast)
+	StdMetrics.ms_v_bat_soc 					ok
+	StdMetrics.ms_v_pos_odometer 				ok
 
 	StdMetrics.ms_v_door_fl 					ok; yes when open, no when closed
 	StdMetrics.ms_v_door_fr 					ok
 	StdMetrics.ms_v_door_rl 					ok
 	StdMetrics.ms_v_door_rr 					ok
-	StdMetrics.ms_v_trunk	 					-
+	StdMetrics.ms_v_trunk	 					NA
 	StdMetrics.ms_v_env_locked 					ok
 
 	StdMetrics.ms_v_env_onepedal 				NA

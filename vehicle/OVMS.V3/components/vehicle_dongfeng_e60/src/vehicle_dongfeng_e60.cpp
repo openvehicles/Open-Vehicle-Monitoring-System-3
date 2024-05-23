@@ -225,81 +225,30 @@ bool OvmsVehicleDFE60::SetDoorLock(bool lock)
 {
 	if (lock)
 	{
-		if (shouldLock || shouldUnlock)
-		{
-			return false;
-		}
 		bool closed_doors = StdMetrics.ms_v_door_fl->AsBool() &&
 							StdMetrics.ms_v_door_fr->AsBool() &&
 							StdMetrics.ms_v_door_rl->AsBool() &&
 							StdMetrics.ms_v_door_rr->AsBool();
-		if (closed_doors){
-			shouldLock = true;
-			lockingCounter = 11;
-
-			CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
-			CanMultimpleSend(0x310, 0x00, 0x02, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
-			CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 38, 20);
-			return true;
+		if (closed_doors)
+		{
+			MyPeripherals->m_max7317->Output(9, 0);
+			vTaskDelay(pdMS_TO_TICKS(1000));
+			MyPeripherals->m_max7317->Output(9, 255);
 		}
-		return false;
-	}
-	else
-	{
-		if (shouldLock || shouldUnlock)
+		else
 		{
 			return false;
 		}
-		shouldUnlock = true;
-		lockingCounter = 11;
-
-		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 2, 20);
-		CanMultimpleSend(0x310, 0x00, 0x01, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
-		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 38, 20);
-		return true;
 	}
+	else
+	{
+		MyPeripherals->m_max7317->Output(8, 0);
+		vTaskDelay(pdMS_TO_TICKS(1000));
+		MyPeripherals->m_max7317->Output(8, 255);
+	}
+	return true;
 }
 
-void OvmsVehicleDFE60::CheckLock()
-{
-	if (lockingCounter <= 0)
-	{
-		lockingCounter = 0;
-		shouldLock = false;
-		shouldUnlock = false;
-		return;
-	}
-	if (lockingCounter > 0)
-	{
-		lockingCounter--;
-	}
-
-	if (shouldLock && lockingCounter % 2 == 1)
-	{
-		if (StdMetrics.ms_v_env_locked->AsBool())
-		{
-			shouldLock = false;
-			return;
-		}
-		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
-		CanMultimpleSend(0x310, 0x00, 0x02, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
-		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
-		m_can2->Reset();
-	}
-
-	if (shouldUnlock && lockingCounter % 2 == 1)
-	{
-		if (!StdMetrics.ms_v_env_locked->AsBool())
-		{
-			shouldUnlock = false;
-			return;
-		}
-		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
-		CanMultimpleSend(0x310, 0x00, 0x01, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
-		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
-		m_can2->Reset();
-	}
-}
 
 class OvmsVehicleDFE60Init
 {
