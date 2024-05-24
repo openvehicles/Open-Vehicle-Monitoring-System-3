@@ -79,10 +79,8 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     				uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 						uint8_t b5, uint8_t b6, uint8_t mode);
 
-    virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
-    virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
-
-    metric_unit_t GetConsoleUnits();
+    vehicle_command_t CommandLock(const char *pin) override;
+    vehicle_command_t CommandUnlock(const char *pin) override;
 
   protected:
     void VerifyConfigs(bool verify);

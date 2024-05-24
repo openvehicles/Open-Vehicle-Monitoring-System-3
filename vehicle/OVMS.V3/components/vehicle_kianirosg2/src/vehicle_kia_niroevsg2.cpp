@@ -115,11 +115,8 @@ OvmsVehicleKiaNiroEvSg2::OvmsVehicleKiaNiroEvSg2()
 	should_poll = true;
 
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
-	start_alarm = false;
 	lock_command = false;
 	unlock_command = false;
-	fully_configured = false;
-	reset_by_config = false;
 	// SetParamValue
 	// SetParamValueBinary
 	// SetParamValueInt

@@ -77,8 +77,8 @@ class OvmsVehicleMaxEu6 : public maxeu6
                           uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
                           uint8_t b5, uint8_t b6, int times, int delay);
 
-    virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
-    virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
+    vehicle_command_t CommandLock(const char *pin) override;
+    vehicle_command_t CommandUnlock(const char *pin) override;
 
   protected:
     void VerifyConfigs(bool verify);

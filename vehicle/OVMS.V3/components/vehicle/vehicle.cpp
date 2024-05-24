@@ -30,7 +30,7 @@
 
 #include "ovms_log.h"
 static const char *TAG = "vehicle";
-static const char *BASE_VEHICLE = "ME6";
+static const char *BASE_VEHICLE = "KN2";
 // static const char *TAGRX = "vehicle-rx";
 
 #include <stdio.h>
@@ -176,7 +176,6 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
     }
   // REPLACE DEFAULT
   // return NULL;
-
   if (strcmp(VehicleType, BASE_VEHICLE) == 0)
   {
     return NULL;
@@ -233,9 +232,7 @@ void OvmsVehicleFactory::AutoInit()
   // REPLACE DEFAULT
   std::string type = MyConfig.GetParamValue("auto", "vehicle.type", BASE_VEHICLE);
   if (!type.empty())
-    
-    
-    (type.c_str());
+    SetVehicle(type.c_str());
   }
 
 OvmsVehicle* OvmsVehicleFactory::ActiveVehicle()
@@ -643,9 +640,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     return;
 
   m_ticker++;
-  // todo: revisar si bajar REVISAR
-//   PollerStateTicker();
-//   PollerSend(poller_source_t::Primary);
+
 
   Ticker1(m_ticker);
   if ((m_ticker % 10) == 0)

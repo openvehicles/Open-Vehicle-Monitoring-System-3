@@ -383,6 +383,8 @@ config OVMS_VEHICLE_KIANIROEVSG2
     bool "Include support for Kia NiroSG2 vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Kia NiroSG2 vehicles
 
@@ -390,6 +392,8 @@ config OVMS_VEHICLE_MAPLE60S
     bool "Include support for Maple 60s vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Maple 60s vehicles
 
@@ -397,6 +401,8 @@ config OVMS_VEHICLE_MAXEU6
     bool "Include support for Maxus Euniq6 vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Maxus Euniq6 vehicles
 
@@ -404,6 +410,8 @@ config OVMS_VEHICLE_NETA_AYA
     bool "Include support for Neta Aya vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Neta Aya vehicles
 
@@ -411,6 +419,8 @@ config OVMS_VEHICLE_DFE60
     bool "Include support for Dongfenf E60 vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Dongfenf E60 vehicles
 
@@ -887,7 +897,7 @@ config OVMS_COMP_CANOPEN_WRK_STACK
     depends on OVMS_COMP_CANOPEN
     help
         Stack size for CANopen worker tasks ("COwrk").
-        Worker tasks only process TX jobs and don't trigger any event/metrics
+        Worker tasks only process TX jobs and dont trigger any event/metrics
         updates so can run with a smaller stack than the RX task.
         Standard stack usage for the Twizy is currently around 1000 bytes.
 
