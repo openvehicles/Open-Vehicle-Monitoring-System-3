@@ -71,6 +71,14 @@ class OvmsVehicleMaple60S : public Maple60S
     vehicle_command_t CommandUnlock(const char *pin) override;
 
   protected:
+
+    void VerifyConfigs(bool verify);
+    bool ConfigChanged();
+    void VerifySingleConfig(std::string param, std::string instance, std::string defValue, std::string value);
+    void VerifySingleConfigInt(std::string param, std::string instance, int defValue, int value);
+    void VerifySingleConfigBool(std::string param, std::string instance, bool defValue, bool value);
+
+
     void HandleCharging();
     void HandleChargeStop();
     void HandleCarOn();

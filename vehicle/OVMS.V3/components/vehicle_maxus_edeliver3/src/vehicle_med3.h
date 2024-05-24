@@ -81,20 +81,20 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
       char m_vin[17];
       
   private:
-      void IncomingFrameCan1(CAN_frame_t* p_frame);
-      void IncomingPollFrame(CAN_frame_t* frame);
-      void SetBmsStatus(uint8_t status);
-      /// A temporary store for the VIN
-     
-      int calcMinutesRemaining(int toSoc, charging_profile charge_steps[]);
-      float med3_cum_energy_charge_wh;
-      bool soc_limit_reached;
-      bool range_limit_reached;
-      bool vanIsOn;
-      bool ccschargeon;
-      bool acchargeon;
-      
-      virtual void calculateEfficiency();
+    void IncomingFrameCan1(CAN_frame_t *p_frame) override;
+    void IncomingPollFrame(CAN_frame_t *frame);
+    void SetBmsStatus(uint8_t status);
+    /// A temporary store for the VIN
+
+    int calcMinutesRemaining(int toSoc, charging_profile charge_steps[]);
+    float med3_cum_energy_charge_wh;
+    bool soc_limit_reached;
+    bool range_limit_reached;
+    bool vanIsOn;
+    bool ccschargeon;
+    bool acchargeon;
+
+    virtual void calculateEfficiency();
       
       
 

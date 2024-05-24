@@ -49,6 +49,10 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
 
     bool lock_command;
     bool unlock_command;
+    bool start_alarm;
+    bool configured;
+    bool fully_configured;
+    bool reset_by_config;
     int lock_counter;
 
     void IncomingFrameCan1(CAN_frame_t *p_frame) override;
@@ -79,6 +83,11 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     vehicle_command_t CommandUnlock(const char *pin) override;
 
   protected:
+    void VerifyConfigs(bool verify);
+    bool ConfigChanged();
+    void VerifySingleConfig(std::string param, std::string instance, std::string defValue, std::string value);
+    void VerifySingleConfigInt(std::string param, std::string instance, int defValue, int value);
+    void VerifySingleConfigBool(std::string param, std::string instance, bool defValue, bool value);
     void HandleCharging();
     void HandleChargeStop();
     void HandleCarOn();

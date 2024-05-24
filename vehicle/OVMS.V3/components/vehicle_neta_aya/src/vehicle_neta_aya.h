@@ -44,6 +44,9 @@ class OvmsVehicleNetaAya : public NetaAya
     ~OvmsVehicleNetaAya();
 
   public:
+    bool configured;
+    bool fully_configured;
+    bool reset_by_config;
     bool charger_disconected;
 
     void IncomingFrameCan1(CAN_frame_t *p_frame) override;
@@ -75,6 +78,11 @@ class OvmsVehicleNetaAya : public NetaAya
     vehicle_command_t CommandUnlock(const char *pin) override;
 
   protected:
+    void VerifyConfigs(bool verify);
+    bool ConfigChanged();
+    void VerifySingleConfig(std::string param, std::string instance, std::string defValue, std::string value);
+    void VerifySingleConfigInt(std::string param, std::string instance, int defValue, int value);
+    void VerifySingleConfigBool(std::string param, std::string instance, bool defValue, bool value);
     void HandleCharging();
     void HandleChargeStop();
     void HandleCarOn();

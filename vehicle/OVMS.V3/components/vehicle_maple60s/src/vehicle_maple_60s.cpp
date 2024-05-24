@@ -143,6 +143,8 @@ void OvmsVehicleMaple60S::HandleCharging()
  */
 void OvmsVehicleMaple60S::Ticker1(uint32_t ticker)
 {
+	VerifyConfigs(true);
+
 	if (m_poll_state == 0)
 	{
 		// ESP_LOGI(TAG, "POLL STATE OFF");
@@ -190,6 +192,7 @@ void OvmsVehicleMaple60S::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleMaple60S::Ticker300(uint32_t ticker)
 {
+	VerifyConfigs(false);
 }
 
 void OvmsVehicleMaple60S::EventListener(std::string event, void *data)

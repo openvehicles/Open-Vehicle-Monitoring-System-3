@@ -127,8 +127,8 @@ class SevconClient : public InternalRamAllocated
     void EmcyListener(string event, void* data);
     void UnmountListener(string event, void* data);
     void SetStatus(bool car_awake);
-    void Ticker1(uint32_t ticker);
-  
+    void Ticker1(uint32_t ticker) override;
+
   public:
     // Synchronous access:
     CANopenResult_t Read(CANopenJob& job, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize);
