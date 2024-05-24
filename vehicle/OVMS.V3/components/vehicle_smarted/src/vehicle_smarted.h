@@ -63,8 +63,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     static OvmsVehicleSmartED* GetInstance(OvmsWriter* writer=NULL);
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
     char m_vin[18];
@@ -85,23 +85,23 @@ class OvmsVehicleSmartED : public OvmsVehicle
     static void WebCfgBmsCellCapacity(PageEntry_t& p, PageContext_t& c);
     static void WebCfgEco(PageEntry_t& p, PageContext_t& c);
 #endif
-    void ConfigChanged(OvmsConfigParam* param);
+    void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
     bool CommandSetRecu(bool on);
     bool SetRecu(int mode);
 
   public:
-    virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
-    virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
-    virtual vehicle_command_t CommandWakeup();
-    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, int hours, int minutes);
-    virtual vehicle_command_t CommandClimateControl(bool enable);
-    virtual vehicle_command_t CommandLock(const char* pin);
-    virtual vehicle_command_t CommandUnlock(const char* pin);
-    virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
-    virtual vehicle_command_t CommandActivateValet(const char* pin);
-    virtual vehicle_command_t CommandDeactivateValet(const char* pin);
+    vehicle_command_t CommandSetChargeCurrent(uint16_t limit) override;
+    vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer) override;
+    vehicle_command_t CommandWakeup() override;
+    vehicle_command_t CommandSetChargeTimer(bool timeron, int hours, int minutes);
+    vehicle_command_t CommandClimateControl(bool enable) override;
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
+    vehicle_command_t CommandHomelink(int button, int durationms=1000) override;
+    vehicle_command_t CommandActivateValet(const char* pin) override;
+    vehicle_command_t CommandDeactivateValet(const char* pin) override;
     virtual vehicle_command_t CommandTrip(int verbosity, OvmsWriter* writer);
     void BmsDiag(int verbosity, OvmsWriter* writer);
     void printRPTdata(int verbosity, OvmsWriter* writer);
@@ -118,17 +118,17 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_reboot_ticker;
     uint16_t m_last_pid;
 
-    virtual void Ticker1(uint32_t ticker);
-    virtual void Ticker10(uint32_t ticker);
-    virtual void Ticker60(uint32_t ticker);
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
+    void Ticker60(uint32_t ticker) override;
     void GetDashboardConfig(DashboardConfig& cfg);
     virtual void CalculateEfficiency();
     void vehicle_smarted_car_on(bool isOn);    
     void NotifyTrip();
-    void NotifyValetEnabled();
-    void NotifyValetDisabled();
-    void NotifyValetHood();
-    void NotifyValetTrunk();
+    void NotifyValetEnabled() override;
+    void NotifyValetDisabled() override;
+    void NotifyValetHood() override;
+    void NotifyValetTrunk() override;
     void SaveStatus();
     void RestoreStatus();
     void HandleCharging();

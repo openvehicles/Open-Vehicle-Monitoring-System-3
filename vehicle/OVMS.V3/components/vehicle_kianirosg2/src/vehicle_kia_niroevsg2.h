@@ -49,17 +49,16 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
 
     bool lock_command;
     bool unlock_command;
-    bool start_alarm;
     bool configured;
     bool fully_configured;
     bool reset_by_config;
     int lock_counter;
 
-    void IncomingFrameCan1(CAN_frame_t *p_frame);
-    void IncomingFrameCan2(CAN_frame_t *p_frame);
-    void Ticker1(uint32_t ticker);
-    void Ticker10(uint32_t ticker);
-    void Ticker300(uint32_t ticker);
+    void IncomingFrameCan1(CAN_frame_t *p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t *p_frame) override;
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
+    void Ticker300(uint32_t ticker) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length) override;
     void SendTesterPresent(uint16_t id, uint8_t length);
     bool SetSessionMode(uint16_t id, uint8_t mode);
@@ -79,10 +78,8 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     				uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 						uint8_t b5, uint8_t b6, uint8_t mode);
 
-    virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
-    virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
-
-    metric_unit_t GetConsoleUnits();
+    vehicle_command_t CommandLock(const char *pin) override;
+    vehicle_command_t CommandUnlock(const char *pin) override;
 
   protected:
     void VerifyConfigs(bool verify);
@@ -90,8 +87,6 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
     void VerifySingleConfig(std::string param, std::string instance, std::string defValue, std::string value);
     void VerifySingleConfigInt(std::string param, std::string instance, int defValue, int value);
     void VerifySingleConfigBool(std::string param, std::string instance, bool defValue, bool value);
-
-
     void HandleCharging();
     void HandleChargeStop();
     void HandleCarOn();

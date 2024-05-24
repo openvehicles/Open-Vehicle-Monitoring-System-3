@@ -68,9 +68,9 @@ class OvmsVehicleRenaultZoePh2OBD : public OvmsVehicle {
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     static void WebCfgCommon(PageEntry_t& p, PageContext_t& c);
 #endif
-    void ConfigChanged(OvmsConfigParam* param);
+    void ConfigChanged(OvmsConfigParam* param) override;
     void ZoeWakeUp();
-		void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     void WebInit();
@@ -101,8 +101,8 @@ class OvmsVehicleRenaultZoePh2OBD : public OvmsVehicle {
     void ChargeStatistics();
     void EnergyStatisticsOVMS();
     void EnergyStatisticsBMS();
-    virtual void Ticker10(uint32_t ticker);//Handle charge, energy statistics
-    virtual void Ticker1(uint32_t ticker); //Handle trip counter
+    void Ticker10(uint32_t ticker) override;//Handle charge, energy statistics
+    void Ticker1(uint32_t ticker) override; //Handle trip counter
     
     		
     // Renault ZOE specific metrics

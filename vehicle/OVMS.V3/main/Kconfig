@@ -340,6 +340,7 @@ config OVMS_VEHICLE_OBDII
     bool "Include support for OBDII vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for OBDII vehicles.
 
@@ -382,6 +383,8 @@ config OVMS_VEHICLE_KIANIROEVSG2
     bool "Include support for Kia NiroSG2 vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Kia NiroSG2 vehicles
 
@@ -389,6 +392,8 @@ config OVMS_VEHICLE_MAPLE60S
     bool "Include support for Maple 60s vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Maple 60s vehicles
 
@@ -396,6 +401,8 @@ config OVMS_VEHICLE_MAXEU6
     bool "Include support for Maxus Euniq6 vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Maxus Euniq6 vehicles
 
@@ -403,6 +410,8 @@ config OVMS_VEHICLE_NETA_AYA
     bool "Include support for Neta Aya vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Neta Aya vehicles
 
@@ -410,6 +419,8 @@ config OVMS_VEHICLE_DFE60
     bool "Include support for Dongfenf E60 vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Dongfenf E60 vehicles
 
@@ -417,6 +428,7 @@ config OVMS_VEHICLE_NISSANLEAF
     bool "Include support for Nissan Leaf vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Nissan Leaf vehicles.
 
@@ -425,6 +437,7 @@ config OVMS_VEHICLE_RENAULTTWIZY
     default y
     depends on OVMS
     depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Renault Twizy vehicles.
 
@@ -433,6 +446,7 @@ config OVMS_VEHICLE_RENAULTZOE
     default y
     depends on OVMS
     depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Renault Zoe vehicles.
 
@@ -441,6 +455,7 @@ config OVMS_VEHICLE_RENAULTZOE_PH2_OBD
     default y
     depends on OVMS
     depends on OVMS_COMP_CANOPEN
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Renault Zoe Phase 2 vehicles (OBD port version).
         
@@ -448,6 +463,7 @@ config OVMS_VEHICLE_MAXED3
     bool "Include support for Maxus eDeliver3 vehicle"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Maxus eDeliver3 vehicle.
         
@@ -455,6 +471,7 @@ config OVMS_VEHICLE_MAXE56
     bool "Include support for Maxus Euniq 5 6-seats vehicle"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Maxus Euniq 5 6-seats vehicle.
 
@@ -462,6 +479,7 @@ config OVMS_VEHICLE_KIASOULEV
     bool "Include support for Kia Soul EV vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Kia Soul EV vehicles.
 
@@ -469,6 +487,7 @@ config OVMS_VEHICLE_BOLTEV
     bool "Include support for Bolt EV/Ampera-e vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Bolt EV/Ampera vehicles
 
@@ -476,6 +495,7 @@ config OVMS_VEHICLE_VOLTAMPERA
     bool "Include support for Volt/Ampera vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Volt/Ampera vehicles.
 
@@ -483,6 +503,7 @@ config OVMS_VEHICLE_THINKCITY
     bool "Include support for Think City vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Think City vehicles.
 
@@ -490,6 +511,7 @@ config OVMS_VEHICLE_SMARTED
     bool "Include support for Smart ED vehicle"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Smart ED vehicle.
 
@@ -497,6 +519,7 @@ config OVMS_VEHICLE_SMARTEQ
     bool "Include support for Smart ED/EQ Gen.4 vehicle"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Smart ED/EQ Gen.4 vehicle.
 
@@ -504,6 +527,7 @@ config OVMS_VEHICLE_MITSUBISHI
     bool "Include support for Mitsubishi iMiev vehicle"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Mitsubishi iMiev vehicle.
 
@@ -533,6 +557,7 @@ config OVMS_VEHICLE_VWEUP
     bool "Include support for VW e-up! vehicle"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for vehicles VW e-up! (all model years), Seat Mii electric, and Skoda Citigo-e iV.
 
@@ -547,6 +572,7 @@ config OVMS_VEHICLE_CADILLAC_C2_CTS
     bool "Include support for Cadillac 2nd gen CTS vehicle"
     default n
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Cadillac 2nd gen CTS vehicle.
 
@@ -554,6 +580,7 @@ config OVMS_VEHICLE_CHEVROLET_C6_CORVETTE
     bool "Include support for Chevrolet C6 Corvette vehicle"
     default n
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Chevrolet C6 Corvette vehicle.
 
@@ -561,6 +588,7 @@ config OVMS_VEHICLE_MG_EV
     bool "Include support for MG ZS EV vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for MG ZS EV vehicles.
 
@@ -568,6 +596,7 @@ config OVMS_VEHICLE_BMWI3
     bool "Include support for BMW i3/i3s"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for BMW i3 or i3s vehicles
 
@@ -575,6 +604,7 @@ config OVMS_VEHICLE_MINISE
     bool "Include support for Mini Cooper SE"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Mini Cooper SE vehicles
 
@@ -582,6 +612,7 @@ config OVMS_VEHICLE_HYUNDAI_IONIQVFL
     bool "Include support for Hyundai Ioniq Electric 28kWh (vFL)"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Hyundai Ioniq Electric 28kWh (vFL).
 
@@ -589,6 +620,7 @@ config OVMS_VEHICLE_HYUNDAI_IONIQ5
     bool "Include support for Hyundai Ioniq 5"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Hyundai Ioniq 5.
 
@@ -596,6 +628,7 @@ config OVMS_VEHICLE_JAGUARIPACE
     bool "Include support for Jaguar Ipace"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for Jaguar Ipace.
 
@@ -609,25 +642,26 @@ config OVMS_VEHICLE_BYD_ATTO3
     bool "Include support for BYD Atto 3"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable support for BYD Atto 3
 
 config OVMS_VEHICLE_RXTASK_STACK
-    int "Stack size for vehicle RX task"
+    int "Stack size for ISOTP Poller RX task"
     default 6144
     depends on OVMS
     help
-        Stack size for the vehicle CAN RX task ("Vrx Task").
+        Stack size for the ISOTP Poller CAN RX task ("Vrx Task").
         The RX task triggers events and metrics updates so needs to be
         able to process the attached event/metrics listeners.
         Standard stack usage of this task is currently around 1400 bytes.
 
 config OVMS_VEHICLE_CAN_RX_QUEUE_SIZE
-    int "Vehicle CAN queue size"
+    int "Poller CAN queue size"
     default 40
     depends on OVMS
     help
-        The size of the CAN bus RX queue (at the vehicle component).
+        The size of the CAN bus RX queue (at the ISOTP Poller component).
 
 endmenu # Vehicle Support
 
@@ -805,6 +839,7 @@ config OVMS_COMP_OBD2ECU
     bool "Include support for OBDII ECU"
     default y
     depends on OVMS
+    depends on OVMS_COMP_POLLER
     help
         Enable to include support for OBDII ECU
 
@@ -862,9 +897,18 @@ config OVMS_COMP_CANOPEN_WRK_STACK
     depends on OVMS_COMP_CANOPEN
     help
         Stack size for CANopen worker tasks ("COwrk").
-        Worker tasks only process TX jobs and don't trigger any event/metrics
+        Worker tasks only process TX jobs and dont trigger any event/metrics
         updates so can run with a smaller stack than the RX task.
         Standard stack usage for the Twizy is currently around 1000 bytes.
+
+menuconfig OVMS_COMP_POLLER
+    bool "Include ISOTP Poller framework"
+    default y
+    depends on OVMS
+    help
+        The ISOTP Poller framework provides a client API for ISOTP/VWTP
+        protocol address polling.
+        It provides some simple shell commands for status.
 
 config OVMS_COMP_PLUGINS
     bool "Include support for PLUGINS"
