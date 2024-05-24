@@ -49,7 +49,6 @@ class OvmsVehicleKiaNiroEvSg2 : public KiaVehicleSg2
 
     bool lock_command;
     bool unlock_command;
-    bool start_alarm;
     bool configured;
     bool fully_configured;
     bool reset_by_config;

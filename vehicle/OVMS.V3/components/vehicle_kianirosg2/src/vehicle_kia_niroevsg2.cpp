@@ -117,12 +117,8 @@ OvmsVehicleKiaNiroEvSg2::OvmsVehicleKiaNiroEvSg2()
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
 	lock_command = false;
 	unlock_command = false;
-	// SetParamValue
-	// SetParamValueBinary
-	// SetParamValueInt
-	// SetParamValueFloat
-	// SetParamValueBool
-	// GetParamValue\(.*, .*, ".*"\);
+	fully_configured = false;
+	reset_by_config = false;
 
 	// init metrics:
 	m_v_door_lock_fl = MyMetrics.InitBool("xkn.v.door.lock.front.left", 10, 0);

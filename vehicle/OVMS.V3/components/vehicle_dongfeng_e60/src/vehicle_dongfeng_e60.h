@@ -47,9 +47,6 @@ class OvmsVehicleDFE60 : public dfe60
     bool configured;
     bool fully_configured;
     bool reset_by_config;
-    bool shouldLock;
-    bool shouldUnlock;
-    int lockingCounter;
 
     void IncomingFrameCan1(CAN_frame_t *p_frame) override;
     void Ticker1(uint32_t ticker) override;

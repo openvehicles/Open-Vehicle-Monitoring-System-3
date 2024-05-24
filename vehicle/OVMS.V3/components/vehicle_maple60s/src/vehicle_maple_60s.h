@@ -44,6 +44,10 @@ class OvmsVehicleMaple60S : public Maple60S
     ~OvmsVehicleMaple60S();
 
   public:
+    bool configured;
+    bool fully_configured;
+    bool reset_by_config;
+  
     void IncomingFrameCan1(CAN_frame_t *p_frame) override;
     void Ticker1(uint32_t ticker) override;
     void Ticker10(uint32_t ticker) override;
