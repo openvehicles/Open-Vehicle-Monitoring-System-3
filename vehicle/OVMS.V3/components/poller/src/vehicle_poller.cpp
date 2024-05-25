@@ -175,6 +175,7 @@ void OvmsPoller::PollSetPidList(uint8_t defaultbus, const OvmsPoller::poll_pid_t
 
   m_poll_series->PollSetPidList(defaultbus, plist);
 
+  m_poll_run_finished = true;
   m_poll.ticker = init_ticker;
   m_poll_sequence_cnt = 0;
   }
@@ -184,6 +185,7 @@ void OvmsPoller::Do_PollSetState(uint8_t state)
   if ( state != m_poll_state)
     {
     m_poll_state = state;
+    m_poll_run_finished = true;
     m_poll.ticker = init_ticker;
     m_poll_sequence_cnt = 0;
     m_poll_repeat_count = 0;
@@ -304,8 +306,10 @@ void OvmsPoller::PollerNextTick(poller_source_t source)
       m_poll_repeat_count = 0;
       }
 
-    m_poll.ticker++;
-    if (m_poll.ticker > max_ticker) m_poll.ticker -= max_ticker;
+    if (m_poll.ticker < max_ticker)
+      m_poll.ticker++;
+    else
+      m_poll.ticker = (m_poll.ticker == init_ticker) ? 0 : 1;
     }
   }
 
@@ -388,6 +392,12 @@ void OvmsPoller::PollerSend(poller_source_t source)
     }
  // Clear. If it got to here we are ready to send a new item.
   m_poll.type = VEHICLE_POLL_TYPE_NONE;
+
+  if (m_poll.ticker == init_ticker)
+    {
+    ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Wait for next primary poll", m_poll.bus_no );
+    return;
+    }
 
   // Check poll bus & list:
   if (!HasPollList())

@@ -113,7 +113,7 @@ class OvmsPoller : public InternalRamAllocated {
       } poll_job_t;
 
     const uint32_t max_ticker = 3600;
-    const uint32_t init_ticker = 3601;
+    const uint32_t init_ticker = 9999;
 
     typedef enum : uint8_t { Primary, Secondary, Successful, OnceOff } poller_source_t;
 
