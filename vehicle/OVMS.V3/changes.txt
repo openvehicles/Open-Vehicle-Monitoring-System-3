@@ -6,7 +6,7 @@ Open Vehicle Monitor System v3 - Change log
     poller status
     poller pause
     poller resume
-    poller trace on|off                 -- Control verbose logging
+    poller trace on|txrx|all|off|status-- Control verbose logging
 - Duktape support for Metric Age / Stale
   New Duktape methods
     OvmsMetrics.IsStale

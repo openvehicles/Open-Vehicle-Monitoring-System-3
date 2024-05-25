@@ -707,18 +707,40 @@ class ovms_callback_register_t
       }
   };
 
+
   /** Get the variable and null it in an atomic way.
    * Should probably be used sparingly.
    */
   template<typename T>
+  T Atomic_Swap( volatile T &variable, T newVal)
+    {
+    return __atomic_exchange_n(&variable, newVal, __ATOMIC_SEQ_CST);
+    }
+  /** Get the variable and null it in an atomic way.
+   * Should probably be used sparingly.
+   * @return true if successful.
+   */
+  template<typename T>
   T Atomic_GetAndNull( volatile T &variable)
     {
-    T tmp;
-    vTaskSuspendAll();
-    tmp = variable;
-    variable = nullptr;
-    xTaskResumeAll();
-    return tmp;
+    return Atomic_Swap<T>(variable, nullptr);
+    }
+
+  template<typename T>
+  T Atomic_Get( volatile const T &variable)
+    {
+    return variable;
+    }
+  template<typename T>
+  T Atomic_Increment( volatile T &variable, T amt)
+    {
+    return __atomic_fetch_add(&variable, amt, __ATOMIC_SEQ_CST);
+    }
+
+  template<typename T>
+  T Atomic_Subtract( volatile T &variable, T amt)
+    {
+    return __atomic_fetch_sub(&variable, amt, __ATOMIC_SEQ_CST);
     }
 
 #endif // __OVMS_UTILS_H__
