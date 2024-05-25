@@ -1796,7 +1796,7 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
   HandleCharging();
   HandleChargeEstimation();
   HandleExporting();
-  if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() > 13)
+  if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() > 12.8)
     {
     StandardMetrics.ms_v_env_charging12v->SetValue(true);  
     }

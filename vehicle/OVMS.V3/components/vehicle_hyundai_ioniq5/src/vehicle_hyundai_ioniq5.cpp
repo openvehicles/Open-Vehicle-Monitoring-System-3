@@ -64,6 +64,10 @@
 #include <sstream>
 
 const char *OvmsHyundaiIoniqEv::TAG = "v-ioniq5";
+const char *OvmsHyundaiIoniqEv::FULL_NAME = "Hyundai Ioniq 5 EV/KIA EV6";
+const char *OvmsHyundaiIoniqEv::SHORT_NAME = "Ioniq 5/EV 6";
+const char *OvmsHyundaiIoniqEv::VEHICLE_TYPE = "I5";
+
 
 #ifdef bind
 #undef bind
@@ -692,6 +696,15 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 }
 
 static const char *ECU_POLL = "!v.xiq.ecu";
+
+const char* OvmsHyundaiIoniqEv::VehicleShortName()
+  {
+  return SHORT_NAME;
+  }
+const char* OvmsHyundaiIoniqEv::VehicleType()
+  {
+  return VEHICLE_TYPE;
+  }
 
 void OvmsHyundaiIoniqEv::ECUStatusChange(bool run)
 {
@@ -1888,7 +1901,7 @@ public:
 
 OvmsHyundaiIoniqEvInit::OvmsHyundaiIoniqEvInit()
 {
-  ESP_LOGI(OvmsHyundaiIoniqEv::TAG, "Registering Vehicle: Hyundai Ioniq 5 EV (9000)");
+  ESP_LOGI(OvmsHyundaiIoniqEv::TAG, "Registering Vehicle: %s (9000)", OvmsHyundaiIoniqEv::FULL_NAME);
 
-  MyVehicleFactory.RegisterVehicle<OvmsHyundaiIoniqEv>("I5", "Hyundai Ioniq 5 EV/KIA EV6");
+  MyVehicleFactory.RegisterVehicle<OvmsHyundaiIoniqEv>(OvmsHyundaiIoniqEv::VEHICLE_TYPE, OvmsHyundaiIoniqEv::FULL_NAME);
 }

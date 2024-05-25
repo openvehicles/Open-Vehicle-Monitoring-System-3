@@ -50,6 +50,9 @@ using namespace std::placeholders;
 
 OvmsPollers MyPollers __attribute__ ((init_priority (7000)));
 
+// Runtime control for logging:
+#define IFTRACE(x) if (MyPollers.m_trace &  OvmsPollers::tracetype_t::trace_##x)
+
 OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
     const CanFrameCallback &polltxcallback)
   : m_parent(parent)
@@ -67,7 +70,7 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
   m_poll.moduleid_sent = 0;
   m_poll.moduleid_low = 0;
   m_poll.moduleid_high = 0;
-  m_poll.type = 0;
+  m_poll.type = VEHICLE_POLL_TYPE_NONE;
   m_poll.pid = 0;
   m_poll.mlremain = 0;
   m_poll.mloffset = 0;
@@ -84,6 +87,11 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
 
 void OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
   {
+
+  // No multiframe request is active.
+  if (m_poll.type == VEHICLE_POLL_TYPE_NONE)
+    return;
+
   // Pass frame to poller protocol handlers:
   if (frame.origin == m_poll_vwtp.bus && frame.MsgID == m_poll_vwtp.rxid)
     {
@@ -93,12 +101,12 @@ void OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
     {
     if (m_poll.entry.txmoduleid == 0)
       {
-      ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Incoming - dropped (no poll entry)", m_poll.bus_no);
+      IFTRACE(TXRX) ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Incoming - dropped (no poll entry)", m_poll.bus_no);
       return;
       }
     if (!m_poll_wait)
       {
-      ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Incoming - timed out", m_poll.bus_no);
+      IFTRACE(TXRX) ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Incoming - timed out", m_poll.bus_no);
       return;
       }
     uint32_t msgid;
@@ -106,7 +114,7 @@ void OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
       msgid = frame.MsgID << 8 | frame.data.u8[0];
     else
       msgid = frame.MsgID;
-    ESP_LOGD(TAG, "[%" PRIu8 "]Poller: FrameRx(bus=%s, msg=%" PRIx32 " )", m_poll.bus_no, frame.origin == m_poll.bus ? "Self" : "Other", msgid );
+    IFTRACE(TXRX) ESP_LOGV(TAG, "[%" PRIu8 "]Poller: FrameRx(bus=%s, msg=%" PRIx32 " )", m_poll.bus_no, frame.origin == m_poll.bus ? "Self" : "Other", msgid );
     if (msgid >= m_poll.moduleid_low && msgid <= m_poll.moduleid_high)
       {
       PollerISOTPReceive(&frame, msgid);
@@ -166,6 +174,7 @@ void OvmsPoller::PollSetPidList(uint8_t defaultbus, const OvmsPoller::poll_pid_t
 
   m_poll_series->PollSetPidList(defaultbus, plist);
 
+  m_poll_run_finished = true;
   m_poll.ticker = init_ticker;
   m_poll_sequence_cnt = 0;
   }
@@ -175,6 +184,7 @@ void OvmsPoller::Do_PollSetState(uint8_t state)
   if ( state != m_poll_state)
     {
     m_poll_state = state;
+    m_poll_run_finished = true;
     m_poll.ticker = init_ticker;
     m_poll_sequence_cnt = 0;
     m_poll_repeat_count = 0;
@@ -281,7 +291,7 @@ void OvmsPoller::PollerNextTick(poller_source_t source)
   {
   // Completed checking all poll entries for the current m_poll.ticker
 
-  ESP_LOGD(TAG, "[%" PRIu8 "]PollerNextTick(%s): cycle complete for ticker=%u", m_poll.bus_no, PollerSource(source), m_poll.ticker);
+  IFTRACE(Poller) ESP_LOGD(TAG, "[%" PRIu8 "]PollerNextTick(%s): cycle complete for ticker=%u", m_poll.bus_no, PollerSource(source), m_poll.ticker);
   m_poll_ticked = false;
 
   if (source == poller_source_t::Primary)
@@ -295,8 +305,10 @@ void OvmsPoller::PollerNextTick(poller_source_t source)
       m_poll_repeat_count = 0;
       }
 
-    m_poll.ticker++;
-    if (m_poll.ticker > max_ticker) m_poll.ticker -= max_ticker;
+    if (m_poll.ticker < max_ticker)
+      m_poll.ticker++;
+    else
+      m_poll.ticker = (m_poll.ticker == init_ticker) ? 0 : 1;
     }
   }
 
@@ -357,7 +369,7 @@ void OvmsPoller::PollerSend(poller_source_t source)
 
   if (m_poll_wait > 0)
     {
-    ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Waiting %" PRIu8, m_poll.bus_no, m_poll_wait);
+    IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Waiting %" PRIu8, m_poll.bus_no, m_poll_wait);
     return;
     }
 
@@ -365,7 +377,7 @@ void OvmsPoller::PollerSend(poller_source_t source)
     {
     if (!m_poll_run_finished && m_poll_repeat_count > 0)
       {
-      ESP_LOGD(TAG, "Poller finished primary run");
+      IFTRACE(Poller) ESP_LOGD(TAG, "Poller finished primary run");
       m_poll_run_finished = true;
       }
     m_poll_ticked = false;
@@ -377,11 +389,25 @@ void OvmsPoller::PollerSend(poller_source_t source)
       PollerNextTick(poller_source_t::Primary);
       }
     }
+ // Clear. If it got to here we are ready to send a new item.
+  m_poll.type = VEHICLE_POLL_TYPE_NONE;
+
+  if (m_poll.ticker == init_ticker)
+    {
+    IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Wait for next primary poll", m_poll.bus_no );
+    return;
+    }
 
   // Check poll bus & list:
   if (!HasPollList())
     {
-    ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Empty", m_poll.bus_no);
+    IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Empty", m_poll.bus_no);
+    return;
+    }
+
+  if (! CanPoll())
+    {
+    IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Throttled", m_poll.bus_no);
     return;
     }
 
@@ -395,19 +421,19 @@ void OvmsPoller::PollerSend(poller_source_t source)
     ++m_poll_repeat_count;
     if (m_poll_repeat_count > max_poll_repeat)
       {
-      ESP_LOGD(TAG, "[%" PRIu8 "]Poller Retry Exceeded - Finishing", m_poll.bus_no);
+      IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]Poller Retry Exceeded - Finishing", m_poll.bus_no);
       m_poll_run_finished = true;
       res = OvmsNextPollResult::StillAtEnd;
       }
     else
       {
-      ESP_LOGV(TAG, "[%" PRIu8 "]Poller Reset for Repeat (%s)", m_poll.bus_no, OvmsPoller::PollerSource(source));
+      IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]Poller Reset for Repeat (%s)", m_poll.bus_no, OvmsPoller::PollerSource(source));
       m_polls.RestartPoll(OvmsPoller::ResetMode::LoopReset);
       // If this poll is from a ISOTP success, don't overwhelm the ECU,
       // wait until a Secondary tick.
       if (source == poller_source_t::Successful)
         {
-        ESP_LOGV(TAG, "[%" PRIu8 "]Poller Restart: Wait for secondary", m_poll.bus_no);
+        IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]Poller Restart: Wait for secondary", m_poll.bus_no);
         return;
         }
       res = m_polls.NextPollEntry(m_poll.entry, m_poll.bus_no, m_poll.ticker, m_poll_state);
@@ -416,24 +442,24 @@ void OvmsPoller::PollerSend(poller_source_t source)
   switch (res)
     {
     case OvmsNextPollResult::Ignore:
-      ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend: Ignore", m_poll.bus_no);
+      IFTRACE(Poller) ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend: Ignore", m_poll.bus_no);
       break;
     case OvmsNextPollResult::NotReady:
       {
-      ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Poller Not Ready", m_poll.bus_no);
+      IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Poller Not Ready", m_poll.bus_no);
       m_poll_run_finished = true;
       break;
       }
     case OvmsNextPollResult::ReachedEnd:
       {
-      ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Poller Reached End", m_poll.bus_no);
+      IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Poller Reached End", m_poll.bus_no);
       m_poll_run_finished = true;
       break;
       }
     case OvmsNextPollResult::StillAtEnd:
       if (!m_poll_run_finished)
         {
-        ESP_LOGD(TAG, "[%" PRIu8 "Poller Reached End(!)", m_poll.bus_no);
+        IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "Poller Reached End(!)", m_poll.bus_no);
         m_poll_run_finished = true;
         }
       break;
@@ -562,13 +588,13 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
     m_polls.SetEntry("!v.single", poller, true);
     }
 
-  ESP_LOGV(TAG, "[%" PRIu8 "]Single Request Sending", m_poll.bus_no);
+  IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]Single Request Sending", m_poll.bus_no);
   Queue_PollerSend(poller_source_t::OnceOff);
 
   // wait for response:
-  ESP_LOGV(TAG, "[%" PRIu8 "]Single Request Waiting for response", m_poll.bus_no);
+  IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]Single Request Waiting for response", m_poll.bus_no);
   bool rxok = single_rxdone.Take(pdMS_TO_TICKS(timeout_ms));
-  ESP_LOGV(TAG, "[%" PRIu8 "]PollSingleRequest: Response done ", m_poll.bus_no);
+  IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollSingleRequest: Response done ", m_poll.bus_no);
   // Make sure if it is still sticking around that it's not accessing
   // stack objects!
   poller->Finished();
@@ -621,6 +647,21 @@ void OvmsPoller::DoPollerSendSuccess( void * pvParamCan, uint32_t ticker ) // St
   {
   uint8_t can_number = uint32_t(pvParamCan);
   MyPollers.QueuePollerSend(OvmsPoller::poller_source_t::Successful, can_number, ticker);
+  }
+
+//: Call when poll Succeeded and no more is expected.
+void OvmsPoller::PollerSucceededPollNext()
+  {
+  // Not expecting any more .. so short-cut the poll receive.
+  m_poll.type = VEHICLE_POLL_TYPE_NONE;
+
+  // Immediately send the next poll for this tick if…
+  // - we are not waiting for another frame
+  // - poll throttling is unlimited or limit isn't reached yet
+  if (m_poll_wait == 0 && CanPoll())
+    {
+    Queue_PollerSendSuccess();
+    }
   }
 
 void OvmsPoller::Queue_PollerSendSuccess()
@@ -712,6 +753,7 @@ const char *OvmsPoller::PollerCommand(OvmsPollCommand src)
     case OvmsPollCommand::ResponseSep: return "ResponseSep";
     case OvmsPollCommand::Keepalive: return "Keepalive";
     case OvmsPollCommand::SuccessSep: return "SuccessSep";
+    case OvmsPollCommand::Shutdown: return "Shutdown";
     }
   return "??";
   }
@@ -731,7 +773,8 @@ OvmsPollers::OvmsPollers()
     m_shut_down(false),
     m_ready(false),
     m_paused(false),
-    m_user_paused(false)
+    m_user_paused(false),
+    m_trace(trace_Off)
   {
   ESP_LOGI(TAG, "Initialising Poller (7000)");
   for (int idx = 0; idx < VEHICLE_MAXBUSSES; ++idx)
@@ -741,22 +784,31 @@ OvmsPollers::OvmsPollers()
     m_canbusses[idx].from_vehicle = false;
     }
 
+  m_overflow_count[0] = 0;
+  m_overflow_count[1] = 0;
+
   m_poll_txcallback = std::bind(&OvmsPollers::PollerTxCallback, this, _1, _2);
 
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsPollers::Ticker1, this, _1, _2));
   MyCan.RegisterCallback(TAG, std::bind(&OvmsPollers::PollerRxCallback, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsPollers::EventSystemShuttingDown, this, _1, _2));
 
-  OvmsCommand* cmd_pause = MyCommandApp.RegisterCommand("poller","OBD polling framework",vehicle_poller_status);
-  cmd_pause->RegisterCommand("status","OBD Polling Status",vehicle_poller_status);
-  cmd_pause->RegisterCommand("pause","Pause OBD Polling",vehicle_pause_on);
-  cmd_pause->RegisterCommand("resume","Resume OBD Polling",vehicle_pause_off);
+  OvmsCommand* cmd_poller = MyCommandApp.RegisterCommand("poller","OBD polling framework",vehicle_poller_status);
+  cmd_poller->RegisterCommand("status","OBD Polling Status",vehicle_poller_status);
+  cmd_poller->RegisterCommand("pause","Pause OBD Polling",vehicle_pause_on);
+  cmd_poller->RegisterCommand("resume","Resume OBD Polling",vehicle_pause_off);
 
+  OvmsCommand* cmd_trace = cmd_poller->RegisterCommand("trace","OBD Poller Verbose Logging");
+  cmd_trace->RegisterCommand("on","Turn verbose logging ON for poller loop",vehicle_poller_trace);
+  cmd_trace->RegisterCommand("txrx","Turn verbose logging ON for txrx queuing",vehicle_poller_trace);
+  cmd_trace->RegisterCommand("all","Turn verbose logging ON",vehicle_poller_trace);
+  cmd_trace->RegisterCommand("off","Turn verbose logging OFF",vehicle_poller_trace);
+  cmd_trace->RegisterCommand("status","Show status for poller loop logging",vehicle_poller_trace);
   }
 
 OvmsPollers::~OvmsPollers()
   {
-  ShuttingDown();
+  ShuttingDown(false);
   }
 
 void OvmsPollers::StartingUp()
@@ -766,33 +818,51 @@ void OvmsPollers::StartingUp()
   CheckStartPollTask();
   }
 
-void OvmsPollers::ShuttingDown()
+void OvmsPollers::ShuttingDown(bool wait)
   {
   if (m_shut_down)
     return;
   m_shut_down = true;
+  if (m_polltask && m_pollqueue)
+    {
+    OvmsPoller::poll_queue_entry_t entry;
+    entry.entry_type = OvmsPoller::OvmsPollEntryType::Command;
+    entry.entry_Command.cmd = OvmsPoller::OvmsPollCommand::Shutdown;
+    entry.entry_Command.parameter = 0;
+    xQueueSendToFront(m_pollqueue, &entry, 0);
+    }
+
   MyCan.DeregisterCallback(TAG);
   MyEvents.DeregisterEvent(TAG);
 
-  if (m_polltask)
-    {
-    vTaskDelete(m_polltask);
-    m_polltask = nullptr;
-    }
-  if (m_pollqueue)
-    {
-    vQueueDelete(m_pollqueue);
-    m_pollqueue = nullptr;
-    }
   if (m_timer_poller)
     {
     xTimerDelete( m_timer_poller, 0);
     m_timer_poller = NULL;
     }
+
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
     if (m_pollers[i])
       m_pollers[i]->ClearPollList();
+    }
+
+  if (wait)
+    {
+    int repeat = 40; // 2s
+    while (m_polltask && repeat--)
+      vTaskDelay(pdMS_TO_TICKS(50));
+    }
+
+  // Shouldn't be needed.. but just in case.
+  auto ptask = Atomic_GetAndNull(m_polltask);
+  if (ptask)
+    vTaskDelete(ptask);
+
+  if (m_pollqueue)
+    {
+    vQueueDelete(m_pollqueue);
+    m_pollqueue = nullptr;
     }
   for (int i = 1 ; i <= VEHICLE_MAXBUSSES; ++i)
     PowerDownCanBus(i);
@@ -874,7 +944,7 @@ void OvmsPollers::Ticker1(std::string event, void* data)
 
 void OvmsPollers::EventSystemShuttingDown(std::string event, void* data)
   {
-  ShuttingDown();
+  ShuttingDown(true);
   }
 
 /**
@@ -984,10 +1054,26 @@ void OvmsPollers::OvmsPollerTask(void *pvParameters)
 void OvmsPollers::PollerTask()
   {
   OvmsPoller::poll_queue_entry_t entry;
-  while (!m_shut_down)
+  while (not m_shut_down )
     {
     if (xQueueReceive(m_pollqueue, &entry, (portTickType)portMAX_DELAY)!=pdTRUE)
       continue;
+
+    for (int istx = 0; istx < 2; ++istx)
+      {
+      uint32_t ovf_count = m_overflow_count[istx];
+      if (ovf_count > 0)
+        {
+        ESP_LOGI(TAG, "Poller[Frame]: %s Task Queue Overflow Run %" PRIu32, ( istx ? "TX" : "RX"), ovf_count);
+        Atomic_Subtract( m_overflow_count[istx], ovf_count);
+        }
+      }
+
+    if ( (entry.entry_type == OvmsPoller::OvmsPollEntryType::Command)
+      &&  (entry.entry_Command.cmd == OvmsPoller::OvmsPollCommand::Shutdown))
+      {
+      break;
+      }
     if (m_shut_down)
       break;
     m_poll_last = monotonictime;
@@ -996,15 +1082,16 @@ void OvmsPollers::PollerTask()
       case OvmsPoller::OvmsPollEntryType::FrameRx:
         {
         auto poller = GetPoller(entry.entry_FrameRxTx.frame.origin);
-        ESP_LOGV(TAG, "Pollers: FrameRx(bus=%d)", GetBusNo(entry.entry_FrameRxTx.frame.origin));
+        IFTRACE(Poller) ESP_LOGV(TAG, "Pollers: FrameRx(bus=%d)", GetBusNo(entry.entry_FrameRxTx.frame.origin));
         if (poller)
           poller->Incoming(entry.entry_FrameRxTx.frame, entry.entry_FrameRxTx.success);
+        PollerFrameRx(entry.entry_FrameRxTx.frame);
         }
         break;
       case OvmsPoller::OvmsPollEntryType::FrameTx:
         {
         auto poller = GetPoller(entry.entry_FrameRxTx.frame.origin);
-        ESP_LOGV(TAG, "Pollers: FrameTx(bus=%d)", GetBusNo(entry.entry_FrameRxTx.frame.origin));
+        IFTRACE(Poller) ESP_LOGV(TAG, "Pollers: FrameTx(bus=%d)", GetBusNo(entry.entry_FrameRxTx.frame.origin));
         if (poller)
           poller->Outgoing(entry.entry_FrameRxTx.frame, entry.entry_FrameRxTx.success);
         }
@@ -1013,7 +1100,7 @@ void OvmsPollers::PollerTask()
         if (!m_user_paused && !m_paused)
           {
           // Must not lock mutex while calling.
-          ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Send(%s)", entry.entry_Poll.busno, OvmsPoller::PollerSource(entry.entry_Poll.source));
+          IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Send(%s)", entry.entry_Poll.busno, OvmsPoller::PollerSource(entry.entry_Poll.source));
           if (entry.entry_Poll.busno != 0)
             {
             auto bus = GetBus(entry.entry_Poll.busno);
@@ -1042,6 +1129,8 @@ void OvmsPollers::PollerTask()
       case OvmsPoller::OvmsPollEntryType::Command:
         switch (entry.entry_Command.cmd)
           {
+          case OvmsPoller::OvmsPollCommand::Shutdown:
+            break; // Shouldn't get here.
           case OvmsPoller::OvmsPollCommand::Pause:
             {
             if (entry.entry_Command.parameter)
@@ -1154,6 +1243,13 @@ void OvmsPollers::PollerTask()
         break;
       }
     }
+
+  auto task = Atomic_GetAndNull(m_polltask);
+  ESP_LOGD(TAG, "Pollers: Shutdown %s", task ? "null" : "OK");
+  if (task)
+    vTaskDelete(task);
+  // Wait to die.
+  vTaskSuspend(nullptr);
   }
 
 OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
@@ -1186,7 +1282,7 @@ OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
     if (!busno)
       return nullptr;
 
-    ESP_LOGD(TAG, "GetPoller( busno=%" PRIu8 ")", busno);
+    IFTRACE(Poller) ESP_LOGD(TAG, "GetPoller( busno=%" PRIu8 ")", busno);
     auto newpoller =  new OvmsPoller(can, busno, this, m_poll_txcallback);
     newpoller->m_poll_state = m_poll_state;
     newpoller->m_poll_sequence_max = m_poll_sequence_max;
@@ -1217,7 +1313,7 @@ void OvmsPollers::QueuePollerSend(OvmsPoller::poller_source_t src, uint8_t busno
   entry.entry_Poll.source = src;
   entry.entry_Poll.poll_ticker = pollticker;
 
-  ESP_LOGV(TAG, "Pollers: Queue PollerSend(%s, %" PRIu8 ")", OvmsPoller::PollerSource(src), busno);
+  IFTRACE(TXRX) ESP_LOGV(TAG, "Pollers: Queue PollerSend(%s, %" PRIu8 ")", OvmsPoller::PollerSource(src), busno);
   if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
     ESP_LOGI(TAG, "Pollers[Send]: Task Queue Overflow");
   }
@@ -1328,7 +1424,7 @@ bool OvmsPollers::HasPollList(canbus* bus)
 
 void OvmsPollers::Queue_Command(OvmsPoller::OvmsPollCommand cmd, uint16_t param)
   {
-  if (!m_pollqueue)
+  if (!m_pollqueue || m_shut_down)
     return;
   // Queues the command
   OvmsPoller::poll_queue_entry_t entry;
@@ -1357,9 +1453,12 @@ void OvmsPollers::Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool
   entry.entry_FrameRxTx.frame = frame;
   entry.entry_FrameRxTx.success = success;
 
-  ESP_LOGV(TAG, "Poller: Queue PollerFrame( %s, %s)", (success ? "OK" : "Fail"), ( istx ? "TX" : "RX") );
+  IFTRACE(TXRX) ESP_LOGV(TAG, "Poller: Queue PollerFrame(%s, %s)", (success ? "OK" : "Fail"), ( istx ? "TX" : "RX") );
   if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
-    ESP_LOGI(TAG, "Poller[Frame]: Task Queue Overflow");
+    {
+    volatile uint32_t &count = m_overflow_count[istx ? 1 : 0];
+    Atomic_Increment(count, 1U);
+    }
   }
 
 void OvmsPollers::PollSetState(uint8_t state, canbus* bus)
@@ -1482,6 +1581,24 @@ void OvmsPollers::vehicle_pause_off(int verbosity, OvmsWriter* writer, OvmsComma
   MyPollers.SetUserPauseStatus(false, verbosity, writer);
   }
 
+void OvmsPollers::vehicle_poller_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (strcmp(cmd->GetName(), "on") == 0)
+    MyPollers.m_trace |= trace_Poller;
+  else if (strcmp(cmd->GetName(), "txrx") == 0)
+    MyPollers.m_trace |= trace_TXRX;
+  else if (strcmp(cmd->GetName(), "all") == 0)
+    MyPollers.m_trace |= trace_All;
+  else if (strcmp(cmd->GetName(), "off") == 0)
+    MyPollers.m_trace &= ~trace_All;
+  //"status" falls through here.
+
+  writer->printf("Vehicle OBD poller tracing: %s%s%s\n",
+      (MyPollers.m_trace & trace_Poller) ? "+poll" : "",
+      (MyPollers.m_trace & trace_TXRX) ? "+txrx" : "",
+      (MyPollers.m_trace & trace_All) ? "" : "off");
+  }
+
 static const char *PollResStr( OvmsPoller::OvmsNextPollResult res)
   {
   switch(res)
@@ -1575,11 +1692,11 @@ void OvmsPoller::PollSeriesList::Remove( poll_series_t *iter)
   if (iternext)
     iternext->prev = iterprev;
 
-  ESP_LOGV(TAG, "Poll List: Removing series %s", iter->name.c_str());
+  IFTRACE(Poller) ESP_LOGV(TAG, "Poll List: Removing series %s", iter->name.c_str());
   if (iter->series != nullptr)
      iter->series->Removing();
   iter->series = nullptr;
-  ESP_LOGV(TAG, "Poll List: Deleting series %s", iter->name.c_str());
+  IFTRACE(Poller) ESP_LOGV(TAG, "Poll List: Deleting series %s", iter->name.c_str());
   delete iter;
   }
 
@@ -1648,13 +1765,13 @@ void OvmsPoller::PollSeriesList::IncomingPacket(const OvmsPoller::poll_job_t& jo
   {
   if ((m_iter != nullptr) && (m_iter->series != nullptr))
     {
-    ESP_LOGD(TAG, "Poll List:[%s] IncomingPacket TYPE:%x PID: %03x LEN: %d REM: %d ", m_iter->name.c_str(), job.type, job.pid, length, job.mlremain);
+    IFTRACE(Poller) ESP_LOGD(TAG, "Poll List:[%s] IncomingPacket TYPE:%x PID: %03x LEN: %d REM: %d ", m_iter->name.c_str(), job.type, job.pid, length, job.mlremain);
 
     m_iter->series->IncomingPacket(job, data, length);
     }
   else
     {
-    ESP_LOGD(TAG, "Poll List:[Discard] IncomingPacket TYPE:%x PID: %03x LEN: %d REM: %d ", job.type, job.pid, length, job.mlremain);
+    IFTRACE(Poller) ESP_LOGD(TAG, "Poll List:[Discard] IncomingPacket TYPE:%x PID: %03x LEN: %d REM: %d ", job.type, job.pid, length, job.mlremain);
     }
   }
 
@@ -1663,12 +1780,12 @@ void OvmsPoller::PollSeriesList::IncomingError(const OvmsPoller::poll_job_t& job
   {
   if ((m_iter != nullptr) && (m_iter->series != nullptr))
     {
-    ESP_LOGD(TAG, "Poll List:[%s] IncomingError TYPE:%x PID: %03x Code: %02X", m_iter->name.c_str(), job.type, job.pid, code);
+    IFTRACE(Poller) ESP_LOGD(TAG, "Poll List:[%s] IncomingError TYPE:%x PID: %03x Code: %02X", m_iter->name.c_str(), job.type, job.pid, code);
     m_iter->series->IncomingError(job, code);
     }
   else
     {
-    ESP_LOGD(TAG, "Poll List:[Discard] IncomingError TYPE:%x PID: %03x Code: %02X", job.type, job.pid, code);
+    IFTRACE(Poller) ESP_LOGD(TAG, "Poll List:[Discard] IncomingError TYPE:%x PID: %03x Code: %02X", job.type, job.pid, code);
     }
   }
 
@@ -1677,12 +1794,12 @@ void OvmsPoller::PollSeriesList::IncomingTxReply(const OvmsPoller::poll_job_t& j
   {
   if ((m_iter != nullptr) && (m_iter->series != nullptr))
     {
-    ESP_LOGD(TAG, "Poll List:[%s] IncomingTXReply TYPE:%x PID: %03x Success: %s", m_iter->name.c_str(), job.type, job.pid, success ? "true" : "false");
+    IFTRACE(TXRX) ESP_LOGV(TAG, "Poll List:[%s] IncomingTXReply TYPE:%x PID: %03x Success: %s", m_iter->name.c_str(), job.type, job.pid, success ? "true" : "false");
     m_iter->series->IncomingTxReply(job, success);
     }
   else
     {
-    ESP_LOGD(TAG, "Poll List:[Discard] IncomingTXReply TYPE:%x PID: %03x Success %s", job.type, job.pid, success ? "true" : "false");
+    IFTRACE(TXRX) ESP_LOGV(TAG, "Poll List:[Discard] IncomingTXReply TYPE:%x PID: %03x Success %s", job.type, job.pid, success ? "true" : "false");
     }
 
   }
@@ -1691,12 +1808,12 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::PollSeriesList::NextPollEntry(poll_pi
   {
   if (!m_first)
     {
-    ESP_LOGV(TAG, "PollSeriesList::NextPollEntry - No List Set");
+    IFTRACE(Poller) ESP_LOGV(TAG, "PollSeriesList::NextPollEntry - No List Set");
     return OvmsPoller::OvmsNextPollResult::StillAtEnd;
     }
   if (!m_iter)
     {
-    ESP_LOGV(TAG, "PollSeriesList::NextPollEntry - Not Started");
+    IFTRACE(Poller) ESP_LOGV(TAG, "PollSeriesList::NextPollEntry - Not Started");
     return OvmsPoller::OvmsNextPollResult::StillAtEnd;
     }
 
@@ -1710,25 +1827,25 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::PollSeriesList::NextPollEntry(poll_pi
       ++skipped;
       }
     if (skipped)
-      ESP_LOGV(TAG, "PollSeriesList::NextPollEntry Skipped %d", skipped);
+      {
+      IFTRACE(Poller) ESP_LOGV(TAG, "PollSeriesList::NextPollEntry Skipped %d", skipped);
+      }
 
     if (m_iter == nullptr)
       return OvmsPoller::OvmsNextPollResult::ReachedEnd;
     res = m_iter->series->NextPollEntry(entry, mybus, pollticker, pollstate);
 
-    ESP_LOGD(TAG, "PollSeriesList::NextPollEntry[%s]: %s", m_iter->name.c_str(), PollResStr(res));
+    IFTRACE(Poller) ESP_LOGV(TAG, "PollSeriesList::NextPollEntry[%s]: %s", m_iter->name.c_str(), PollResStr(res));
 
     switch (res)
       {
       case OvmsPoller::OvmsNextPollResult::NotReady:
         {
-        ESP_LOGV(TAG, "Poll Not Ready: '%s'", m_iter->name.c_str());
         m_iter = m_iter->next;
         break;
         }
       case OvmsPoller::OvmsNextPollResult::StillAtEnd:
         {
-        ESP_LOGV(TAG, "Poll Still at end: '%s'", m_iter->name.c_str());
         if (m_iter->is_blocking)
           {
           m_iter = nullptr;
@@ -1831,7 +1948,7 @@ void OvmsPoller::StandardPollSeries::SetParentPoller(OvmsPoller *poller)
 // Set the PID List in use.
 void OvmsPoller::StandardPollSeries::PollSetPidList(uint8_t defaultbus, const poll_pid_t* plist)
   {
-  ESP_LOGV(TAG, "Standard Poll Series: PID List set");
+  IFTRACE(Poller) ESP_LOGV(TAG, "Standard Poll Series: PID List set");
   m_poll_plcur = nullptr;
   m_poll_plist = plist;
   m_defaultbus = defaultbus;
@@ -1841,7 +1958,7 @@ void OvmsPoller::StandardPollSeries::ResetList(OvmsPoller::ResetMode mode)
   {
   if (mode == OvmsPoller::ResetMode::PollReset)
     {
-    ESP_LOGV(TAG, "Standard Poll Series: List reset");
+    IFTRACE(Poller) ESP_LOGV(TAG, "Standard Poll Series: List reset");
     m_poll_plcur = NULL;
     }
   }
@@ -1880,7 +1997,7 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::StandardPollSeries::NextPollEntry(pol
       if (( polltime > 0) && ((pollticker % polltime) == 0))
         {
         entry = *m_poll_plcur;
-        ESP_LOGD(TAG, "Found Poll Entry for Standard Poll");
+        IFTRACE(Poller) ESP_LOGD(TAG, "Found Poll Entry for Standard Poll");
         return OvmsNextPollResult::FoundEntry;
         }
       }
@@ -2089,7 +2206,7 @@ void OvmsPoller::OnceOffPollBase::ResetList(OvmsPoller::ResetMode mode)
   switch(m_sent)
     {
     case status_t::Init:
-      ESP_LOGD(TAG, "Once Off Poll: List reset to start");
+      ESP_LOGV(TAG, "Once Off Poll: List reset to start");
       break;
     case status_t::Retry:
       if (mode == OvmsPoller::ResetMode::PollReset)
@@ -2099,7 +2216,7 @@ void OvmsPoller::OnceOffPollBase::ResetList(OvmsPoller::ResetMode mode)
           m_sent = status_t::Stopping;
           return;
           }
-        ESP_LOGD(TAG, "Once Off Poll: Reset for retry");
+        IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Reset for retry");
         --m_retry_fail;
         m_sent = status_t::RetryInit;
         }
@@ -2128,7 +2245,7 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::OnceOffPollBase::NextPollEntry(poll_p
       else
         {
         m_sent = status_t::Retry;
-        ESP_LOGD(TAG, "Once Off Poll: Retries left %d", m_retry_fail);
+        IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Retries left %d", m_retry_fail);
         }
       return OvmsPoller::OvmsNextPollResult::ReachedEnd;
       }

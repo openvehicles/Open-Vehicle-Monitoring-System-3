@@ -65,6 +65,8 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   m_currentvehicle = NULL;
   m_currentvehicletype.clear();
 
+  MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsVehicleFactory::EventSystemShuttingDown, this, _1, _2));
+
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework", vehicle_status, "", 0, 0, false);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1,true,vehicle_validate);
   cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list);
@@ -155,7 +157,13 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
   {
-  DoClearVehicle(false, false);
+  MyEvents.DeregisterEvent(TAG);
+  DoClearVehicle(false, false, false);
+  }
+
+void OvmsVehicleFactory::EventSystemShuttingDown(std::string event, void* data)
+  {
+  DoClearVehicle(false, false, true);
   }
 
 OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
@@ -170,13 +178,14 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
 
 void OvmsVehicleFactory::ClearVehicle()
   {
-  DoClearVehicle(true, true);
+  DoClearVehicle(true, true, true);
   }
-void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent)
+
+void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent, bool wait)
   {
   if (m_currentvehicle)
     {
-    m_currentvehicle->ShuttingDown();
+    m_currentvehicle->ShuttingDown(wait);
     auto vehicle = m_currentvehicle;
     m_currentvehicle = NULL;
 
@@ -192,7 +201,7 @@ void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent)
 
 void OvmsVehicleFactory::SetVehicle(const char* type)
   {
-  DoClearVehicle(false, true);
+  DoClearVehicle(false, true, true);
   m_currentvehicle = NewVehicle(type);
   if (m_currentvehicle)
     {
@@ -239,8 +248,6 @@ const char* OvmsVehicleFactory::ActiveVehicleShortName()
   {
   return m_currentvehicle ? m_currentvehicle->VehicleShortName() : "";
   }
-
-static const char *PollerRegister="Vehicle Listener";
 
 OvmsVehicle::OvmsVehicle()
   {
@@ -366,12 +373,22 @@ OvmsVehicle::OvmsVehicle()
   VehicleConfigChanged("config.mounted", NULL);
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
-  MyCan.RegisterCallback(PollerRegister, std::bind(&OvmsVehicle::IncomingPollRxFrame, this, _1, _2));
+
+#ifdef CONFIG_OVMS_COMP_POLLER
+
+  MyPollers.RegisterFrameRx(TAG, std::bind(&OvmsVehicle::IncomingRxFrame, this, _1));
+#else
+
+  m_vqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
+  xTaskCreatePinnedToCore(OvmsVehicleTask, "OVMS Vehicle Poll",
+      CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_vtask, CORE(1));
+  MyCan.RegisterListener(m_vqueue);
+#endif
   }
 
 OvmsVehicle::~OvmsVehicle()
   {
-  ShuttingDown();
+  ShuttingDown(false);
 
   if (m_bms_voltages != NULL)
     {
@@ -434,7 +451,7 @@ void OvmsVehicle::StartingUp()
 #endif
   }
 
-void OvmsVehicle::ShuttingDown()
+void OvmsVehicle::ShuttingDown(bool wait)
   {
   if (m_is_shutdown)
     return;
@@ -444,18 +461,41 @@ void OvmsVehicle::ShuttingDown()
   MyPollers.ShuttingDownVehicle();
   MyPollers.DeregisterRunFinished(TAG);
   MyPollers.DeregisterPollStateTicker(TAG);
+  MyPollers.DeregisterFrameRx(TAG);
 
   if (m_pollsignal)
     delete m_pollsignal;
 #else
+  MyCan.DeregisterListener(m_vqueue);
+  CAN_frame_t entry;
+  entry.origin = nullptr;
+  entry.callback = nullptr;
+  entry.MsgID = 0;
+  xQueueSendToFront(m_vqueue, &entry, 0);
+
   if (m_can1) m_can1->SetPowerMode(Off);
   if (m_can2) m_can2->SetPowerMode(Off);
   if (m_can3) m_can3->SetPowerMode(Off);
   if (m_can4) m_can4->SetPowerMode(Off);
+
 #endif
   MyEvents.DeregisterEvent(TAG);
   MyMetrics.DeregisterListener(TAG);
-  MyCan.DeregisterCallback(PollerRegister);
+#ifndef CONFIG_OVMS_COMP_POLLER
+  if (wait)
+    {
+    int repeat = 20; // 1s
+    while (m_vtask && repeat--)
+      vTaskDelay(pdMS_TO_TICKS(50));
+    }
+
+  auto vtask = Atomic_GetAndNull(m_vtask);
+  if (vtask)
+    vTaskDelete(vtask);
+
+  vQueueDelete(m_vqueue);
+  m_vqueue = nullptr;
+#endif
   }
 
 const char* OvmsVehicle::VehicleShortName()
@@ -2416,15 +2456,39 @@ void OvmsVehicle::IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool
   {
   }
 
-/**
- * IncomingPollerRxFrame: the Poller's Rx Frame callback.
- */
-void IncomingPollerRxFrame(const CAN_frame_t *frame, bool success)
+#endif
+
+#ifdef CONFIG_OVMS_COMP_POLLER
+void OvmsVehicle::IncomingRxFrame(const CAN_frame_t &frame)
   {
+  SendIncomingFrame(&frame);
+  }
+#else
+void OvmsVehicle::OvmsVehicleTask(void *pvParameters)
+  {
+  OvmsVehicle *me = (OvmsVehicle*)pvParameters;
+  me->VehicleTask();
+  }
+
+void OvmsVehicle::VehicleTask()
+  {
+
+  CAN_frame_t entry;
+  while (!m_is_shutdown)
+    {
+    if (xQueueReceive(m_vqueue, &entry, (portTickType)portMAX_DELAY)!=pdTRUE)
+      continue;
+    if (entry.origin != nullptr )
+      SendIncomingFrame(&entry);
+    }
+  auto vtask = Atomic_GetAndNull(m_vtask);
+  if (vtask)
+    vTaskDelete(vtask);
+  vTaskSuspend(nullptr);
   }
 #endif
 
-void OvmsVehicle::IncomingPollRxFrame(const CAN_frame_t *frame, bool success)
+void OvmsVehicle::SendIncomingFrame(const CAN_frame_t *frame)
   {
   if (!m_ready)
     return;

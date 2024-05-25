@@ -768,13 +768,10 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
       break;
     }
 
-
-  // Immediately send the next poll for this tick if…
-  // - we are not waiting for another frame
-  // - poll throttling is unlimited or limit isn't reached yet
-  if (m_poll_wait == 0 && CanPoll())
+  if (m_poll.mlremain == 0)
     {
-    Queue_PollerSendSuccess();
+    // Succeeded - No more expected so check to send the next poll
+    PollerSucceededPollNext();
     }
 
   return true;

@@ -168,6 +168,11 @@ public:
   OvmsHyundaiIoniqEv();
   ~OvmsHyundaiIoniqEv();
   static const char *TAG;
+  static const char *SHORT_NAME;
+  static const char *FULL_NAME;
+  static const char *VEHICLE_TYPE;
+  const char* VehicleShortName() override;
+  const char* VehicleType() override;
 public:
   void IncomingFrameCan1(CAN_frame_t *p_frame) override;
   void Ticker1(uint32_t ticker) override;

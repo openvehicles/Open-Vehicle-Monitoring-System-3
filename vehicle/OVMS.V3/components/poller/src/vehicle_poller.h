@@ -113,7 +113,7 @@ class OvmsPoller : public InternalRamAllocated {
       } poll_job_t;
 
     const uint32_t max_ticker = 3600;
-    const uint32_t init_ticker = 3601;
+    const uint32_t init_ticker = 9999;
 
     typedef enum : uint8_t { Primary, Secondary, Successful, OnceOff } poller_source_t;
 
@@ -574,7 +574,8 @@ class OvmsPoller : public InternalRamAllocated {
       Throttle,
       ResponseSep,
       Keepalive,
-      SuccessSep
+      SuccessSep,
+      Shutdown
       };
     typedef struct {
         CAN_frame_t frame;
@@ -619,6 +620,7 @@ class OvmsPoller : public InternalRamAllocated {
 
     void Queue_PollerSend(poller_source_t source);
     void Queue_PollerSendSuccess();
+    void PollerSucceededPollNext();
 
     void PollSetThrottling(uint8_t sequence_max);
 
@@ -677,6 +679,9 @@ class OvmsPollers : public InternalRamAllocated {
     bool              m_ready;
     bool              m_paused;
     bool              m_user_paused;
+    typedef enum {trace_Off = 0x00, trace_Poller = 0x1, trace_TXRX = 0x2, trace_All= 0x3} tracetype_t;
+    uint8_t           m_trace;                // Current Trace flags.
+    uint32_t          m_overflow_count[2];    // Keep track of overflows.
 
     void PollerTxCallback(const CAN_frame_t* frame, bool success);
     void PollerRxCallback(const CAN_frame_t* frame, bool success);
@@ -690,17 +695,26 @@ class OvmsPollers : public InternalRamAllocated {
     static void vehicle_poller_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_pause_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_pause_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_poller_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     void PollerStatus(int verbosity, OvmsWriter* writer);
     void SetUserPauseStatus(bool paused, int verbosity, OvmsWriter* writer);
   public:
     typedef std::function<void(canbus*, void *)> PollCallback;
+    typedef std::function<void(const CAN_frame_t &)> FrameCallback;
   private:
     ovms_callback_register_t<PollCallback> m_runfinished_callback, m_pollstateticker_callback;
+    ovms_callback_register_t<FrameCallback> m_framerx_callback;
   public:
     void RegisterRunFinished(const std::string &name, PollCallback fn) { m_runfinished_callback.Register(name, fn);}
     void DeregisterRunFinished(const std::string &name) { m_runfinished_callback.Deregister(name);}
     void RegisterPollStateTicker(const std::string &name, PollCallback fn) { m_pollstateticker_callback.Register(name, fn);}
     void DeregisterPollStateTicker(const std::string &name) { m_pollstateticker_callback.Deregister(name);}
+
+    void RegisterFrameRx(const std::string &name, FrameCallback fn) {
+      m_framerx_callback.Register(name, fn);
+      CheckStartPollTask(true);
+    }
+    void DeregisterFrameRx(const std::string &name) { m_framerx_callback.Deregister(name);}
   private:
     void PollRunFinished(canbus *bus)
       {
@@ -718,6 +732,14 @@ class OvmsPollers : public InternalRamAllocated {
           cb(bus, nullptr);
           });
       }
+    void PollerFrameRx(CAN_frame_t &frame)
+      {
+      m_framerx_callback.Call(
+        [frame](const std::string &name, FrameCallback cb)
+          {
+          cb(frame);
+          });
+      }
 
     void Ticker1(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
@@ -727,7 +749,7 @@ class OvmsPollers : public InternalRamAllocated {
     ~OvmsPollers();
 
     void StartingUp();
-    void ShuttingDown();
+    void ShuttingDown( bool wait);
     void ShuttingDownVehicle();
 
     OvmsPoller *GetPoller(canbus *can, bool force = false );

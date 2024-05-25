@@ -601,6 +601,23 @@ config OVMS_VEHICLE_BYD_ATTO3
     help
         Enable support for BYD Atto 3
 
+config OVMS_VEHICLE_RXTASK_STACK
+    int "Stack size for ISOTP Poller RX task"
+    default 6144
+    depends on OVMS
+    help
+        Stack size for the ISOTP Poller CAN RX task ("Vrx Task").
+        The RX task triggers events and metrics updates so needs to be
+        able to process the attached event/metrics listeners.
+        Standard stack usage of this task is currently around 1400 bytes.
+
+config OVMS_VEHICLE_CAN_RX_QUEUE_SIZE
+    int "Poller CAN queue size"
+    default 40
+    depends on OVMS
+    help
+        The size of the CAN bus RX queue (at the ISOTP Poller component).
+
 endmenu # Vehicle Support
 
 
@@ -847,23 +864,6 @@ menuconfig OVMS_COMP_POLLER
         The ISOTP Poller framework provides a client API for ISOTP/VWTP
         protocol address polling.
         It provides some simple shell commands for status.
-
-config OVMS_VEHICLE_RXTASK_STACK
-    int "Stack size for ISOTP Poller RX task"
-    default 6144
-    depends on OVMS_COMP_POLLER
-    help
-        Stack size for the ISOTP Poller CAN RX task ("Vrx Task").
-        The RX task triggers events and metrics updates so needs to be
-        able to process the attached event/metrics listeners.
-        Standard stack usage of this task is currently around 1400 bytes.
-
-config OVMS_VEHICLE_CAN_RX_QUEUE_SIZE
-    int "Poller CAN queue size"
-    default 40
-    depends on OVMS_COMP_POLLER
-    help
-        The size of the CAN bus RX queue (at the ISOTP Poller component).
 
 config OVMS_COMP_PLUGINS
     bool "Include support for PLUGINS"

@@ -554,8 +554,15 @@ class OvmsVehicle : public InternalRamAllocated
     uint8_t           m_poll_state;           // Current poll state
     void PollRequest(canbus* bus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series);
     void RemovePollRequest(canbus* bus, const std::string &name);
+    void IncomingRxFrame(const CAN_frame_t &frame);
+#else
+    // These are required in lieu of using the OvmsPoller queue.
+    static void OvmsVehicleTask(void *pvParameters);
+    void VehicleTask();
+    QueueHandle_t m_vqueue;
+    TaskHandle_t  m_vtask;
 #endif
-    void IncomingPollRxFrame(const CAN_frame_t *frame, bool success);
+    void SendIncomingFrame(const CAN_frame_t *frame);
 
   // BMS helpers
   protected:
@@ -627,7 +634,7 @@ class OvmsVehicle : public InternalRamAllocated
     bool m_is_shutdown;
   public:
     void StartingUp();
-    void ShuttingDown();
+    void ShuttingDown(bool wait = true);
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()
@@ -654,7 +661,7 @@ class OvmsVehicleFactory
     std::string m_currentvehicletype;
     map_vehicle_t m_vmap;
 
-    void DoClearVehicle( bool clearName, bool sendEvent);
+    void DoClearVehicle( bool clearName, bool sendEvent, bool wait);
   public:
     template<typename Type>
     short RegisterVehicle(const char* VehicleType, const char* VehicleName = "")
@@ -698,6 +705,8 @@ class OvmsVehicleFactory
     static void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void obdii_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+    void EventSystemShuttingDown(std::string event, void* data);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   protected:
