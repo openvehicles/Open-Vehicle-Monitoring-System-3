@@ -743,17 +743,18 @@ const char *OvmsPoller::PollerSource(OvmsPoller::poller_source_t src)
     }
     return "XXX";
   }
-const char *OvmsPoller::PollerCommand(OvmsPollCommand src)
+const char *OvmsPoller::PollerCommand(OvmsPollCommand src, bool brief)
   {
   switch(src)
     {
-    case OvmsPollCommand::Pause: return "Pause";
-    case OvmsPollCommand::Resume: return "Resume";
-    case OvmsPollCommand::Throttle: return "Throttle";
-    case OvmsPollCommand::ResponseSep: return "ResponseSep";
-    case OvmsPollCommand::Keepalive: return "Keepalive";
-    case OvmsPollCommand::SuccessSep: return "SuccessSep";
-    case OvmsPollCommand::Shutdown: return "Shutdown";
+    case OvmsPollCommand::Pause:       return                   "Pause";
+    case OvmsPollCommand::Resume:      return brief ? "Resme" : "Resume";
+    case OvmsPollCommand::Throttle:    return brief ? "Thrtl" : "Throttle";
+    case OvmsPollCommand::ResponseSep: return brief ? "RspSp" : "RespSep";
+    case OvmsPollCommand::Keepalive:   return brief ? "KpAlv" : "Keepalive";
+    case OvmsPollCommand::SuccessSep:  return brief ? "SucSp" : "SuccSep";
+    case OvmsPollCommand::Shutdown:    return brief ? "Shtdn" : "Shutdown";
+    case OvmsPollCommand::ResetTimer:  return brief ? "RstTm" : "ResetTimer";
     }
   return "??";
   }
@@ -792,6 +793,10 @@ OvmsPollers::OvmsPollers()
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsPollers::Ticker1, this, _1, _2));
   MyCan.RegisterCallback(TAG, std::bind(&OvmsPollers::PollerRxCallback, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsPollers::EventSystemShuttingDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsPollers::ConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsPollers::ConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "vehicle.charge.stop", std::bind(&OvmsPollers::VehicleChargeStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "vehicle.off", std::bind(&OvmsPollers::VehicleOff, this, _1, _2));
 
   OvmsCommand* cmd_poller = MyCommandApp.RegisterCommand("poller","OBD polling framework",vehicle_poller_status);
   cmd_poller->RegisterCommand("status","OBD Polling Status",vehicle_poller_status);
@@ -804,6 +809,13 @@ OvmsPollers::OvmsPollers()
   cmd_trace->RegisterCommand("all","Turn verbose logging ON",vehicle_poller_trace);
   cmd_trace->RegisterCommand("off","Turn verbose logging OFF",vehicle_poller_trace);
   cmd_trace->RegisterCommand("status","Show status for poller loop logging",vehicle_poller_trace);
+  OvmsCommand* cmd_times = cmd_poller->RegisterCommand("times","OBD Poll-Time Tracing");
+  cmd_times->RegisterCommand("on","Turn on Poll-Time Tracing",poller_times);
+  cmd_times->RegisterCommand("off","Turn off Poll-Time Tracing",poller_times);
+  cmd_times->RegisterCommand("status","Show timing status",poller_times);
+  cmd_times->RegisterCommand("reset","Reset Poll-Time Tracing",poller_times);
+  if (MyConfig.ismounted())
+    LoadPollerTimerConfig();
   }
 
 OvmsPollers::~OvmsPollers()
@@ -947,6 +959,38 @@ void OvmsPollers::EventSystemShuttingDown(std::string event, void* data)
   ShuttingDown(true);
   }
 
+void OvmsPollers::VehicleOff(std::string event, void* data)
+  {
+  NotifyPollerTrace();
+  }
+void OvmsPollers::VehicleChargeStop(std::string event, void* data)
+  {
+  NotifyPollerTrace();
+  }
+
+void OvmsPollers::NotifyPollerTrace()
+  {
+  if (!IsTracingTimes())
+    return;
+  StringWriter buf(200);
+  PollerTimesTrace(&buf);
+  MyNotify.NotifyString("info", "poller.report", buf.c_str());
+  }
+
+void OvmsPollers::ConfigChanged(std::string event, void* data)
+  {
+  OvmsConfigParam* param = (OvmsConfigParam*) data;
+  if (!param || param->GetName() == "log")
+    LoadPollerTimerConfig();
+  }
+void OvmsPollers::LoadPollerTimerConfig()
+  {
+  if (MyConfig.GetParamValueBool("log", "poller.timers", false))
+    MyPollers.m_trace |= trace_Times;
+  else
+    MyPollers.m_trace &= ~trace_Times;
+  }
+
 /**
  * PollerTxCallback: internal: process poll request callbacks
  */
@@ -1051,6 +1095,87 @@ void OvmsPollers::OvmsPollerTask(void *pvParameters)
   me->PollerTask();
   }
 
+void OvmsPollers::average_value_t::catchup(uint64_t time_added)
+  {
+  if (time_added > next_end)
+    {
+    if (next_end == 0)
+      {
+      next_end = time_added + average_sep_mic_s;
+      return;
+      }
+    do
+      {
+      next_end += average_sep_mic_s;
+      avg_n.push();
+      avg_utlzn.push();
+      } while (time_added > next_end);
+    }
+  }
+void OvmsPollers::average_value_t::add_time(uint32_t time_spent, uint64_t time_added)
+  {
+  uint32_t timesum = avg_utlzn.sum();
+  catchup(time_added);
+  avg_time.add(time_spent);
+  avg_utlzn.add(time_spent);
+  avg_n.add(100);
+  if (time_spent > max_val)
+    max_val = time_spent;
+  if (timesum > max_time )
+    max_time = timesum;
+  }
+
+bool OvmsPollers::poller_key_less_t::operator()(const poller_key_t &lhs, const poller_key_t &rhs) const
+  {
+  if (lhs.entry_type != rhs.entry_type)
+    return lhs.entry_type < rhs.entry_type;
+  switch (lhs.entry_type)
+    {
+    case OvmsPoller::OvmsPollEntryType::FrameRx:
+    case OvmsPoller::OvmsPollEntryType::FrameTx:
+      {
+      if (lhs.busnumber != rhs.busnumber)
+        return lhs.busnumber < rhs.busnumber;
+      return lhs.Frame_MsgId < rhs.Frame_MsgId;
+      }
+    case OvmsPoller::OvmsPollEntryType::Poll:
+      {
+      if (lhs.busnumber != rhs.busnumber)
+        return lhs.busnumber < rhs.busnumber;
+      return lhs.Poll_src < rhs.Poll_src;
+      }
+    case OvmsPoller::OvmsPollEntryType::Command:
+      return lhs.Command_cmd < rhs.Command_cmd;
+    case OvmsPoller::OvmsPollEntryType::PollState:
+      return false;
+    default:
+      return false;
+    }
+  }
+
+OvmsPollers::poller_key_st::poller_key_st( const OvmsPoller::poll_queue_entry_t &entry)
+  {
+  busnumber = 0;
+  entry_type = entry.entry_type;
+  switch (entry.entry_type)
+    {
+    case OvmsPoller::OvmsPollEntryType::FrameRx:
+    case OvmsPoller::OvmsPollEntryType::FrameTx:
+      busnumber = entry.entry_FrameRxTx.frame.origin->m_busnumber+1;
+      Frame_MsgId = entry.entry_FrameRxTx.frame.MsgID;
+      break;
+    case OvmsPoller::OvmsPollEntryType::Poll:
+      busnumber = entry.entry_Poll.busno;
+      Poll_src = entry.entry_Poll.source;
+      break;
+    case OvmsPoller::OvmsPollEntryType::Command:
+      Command_cmd = entry.entry_Command.cmd;
+      break;
+    default:
+      ;
+    }
+  }
+
 void OvmsPollers::PollerTask()
   {
   OvmsPoller::poll_queue_entry_t entry;
@@ -1068,14 +1193,58 @@ void OvmsPollers::PollerTask()
         Atomic_Subtract( m_overflow_count[istx], ovf_count);
         }
       }
-
-    if ( (entry.entry_type == OvmsPoller::OvmsPollEntryType::Command)
-      &&  (entry.entry_Command.cmd == OvmsPoller::OvmsPollCommand::Shutdown))
+    IFTRACE(Times)
       {
-      break;
+      if (entry.entry_type == OvmsPoller::OvmsPollEntryType::PollState)
+        {
+        // Make sure the every second (ish), we have caught up on averages-by-period measurements.
+        uint64_t curtime = esp_timer_get_time();
+        for (auto it = m_poll_time_stats.begin(); it != m_poll_time_stats.end(); ++it)
+          it->second.catchup(curtime);
+        }
+      }
+    // A couple of special cases.
+    if (entry.entry_type == OvmsPoller::OvmsPollEntryType::Command)
+      {
+      if (entry.entry_Command.cmd == OvmsPoller::OvmsPollCommand::Shutdown)
+        {
+        break;
+        }
+      if (entry.entry_Command.cmd == OvmsPoller::OvmsPollCommand::ResetTimer)
+        {
+        if (entry.entry_Command.parameter == 2)
+          {
+          for (auto it = m_poll_time_stats.begin(); it != m_poll_time_stats.end(); ++it)
+            it->second.paused();
+          }
+        else
+          {
+          for (auto it = m_poll_time_stats.begin(); it != m_poll_time_stats.end(); ++it)
+            it->second.reset();
+          if (entry.entry_Command.parameter == 1)
+            {
+            // Tracing back on.
+            MyPollers.m_trace |= trace_Times;
+            }
+          }
+        continue;
+        }
       }
     if (m_shut_down)
       break;
+
+    timer_util_t timer(
+      [&entry,this](uint64_t start, uint64_t finish)
+        {
+        IFTRACE(Times)
+          {
+          int32_t diff = finish-start;
+          poller_key_t key(entry);
+          m_poll_time_stats[key].add_time(diff, finish);
+          }
+        }
+      );
+
     m_poll_last = monotonictime;
     switch (entry.entry_type)
       {
@@ -1213,6 +1382,8 @@ void OvmsPollers::PollerTask()
                 }
               }
             break;
+          case OvmsPoller::OvmsPollCommand::ResetTimer:
+            break;//triggered above
           }
         break;
       case OvmsPoller::OvmsPollEntryType::PollState:
@@ -1546,6 +1717,11 @@ void OvmsPollers::PollerStatus(int verbosity, OvmsWriter* writer)
     writer->puts("none");
   else
     writer->printf("%" PRIu32 "s (ticks) ago\n", (curmon-last));
+  if (m_pollqueue)
+    {
+    auto waiting = uxQueueMessagesWaiting(m_pollqueue);
+    writer->printf("Poll Queue Length: %d\n", waiting);
+    }
 
   if (IsPaused() || IsUserPaused())
     writer->printf("OBD polling is Paused %s%s\n", IsPaused() ? "[system]":"", IsUserPaused() ? "[user]" : "");
@@ -1597,6 +1773,123 @@ void OvmsPollers::vehicle_poller_trace(int verbosity, OvmsWriter* writer, OvmsCo
       (MyPollers.m_trace & trace_Poller) ? "+poll" : "",
       (MyPollers.m_trace & trace_TXRX) ? "+txrx" : "",
       (MyPollers.m_trace & trace_All) ? "" : "off");
+  }
+void OvmsPollers::poller_times(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (strcmp(cmd->GetName(), "on") == 0)
+    {
+    MyConfig.SetParamValueBool("log", "poller.timers", true);
+    writer->puts("Poller timing is now on");
+    }
+  else if (strcmp(cmd->GetName(), "off") == 0)
+    {
+    MyConfig.SetParamValueBool("log", "poller.timers", false);
+    writer->puts("Poller timing is now off");
+    // Turn off the 'last' value.
+    MyPollers.Queue_Command(OvmsPoller::OvmsPollCommand::ResetTimer, 3);
+    }
+  else if (strcmp(cmd->GetName(), "status") == 0)
+    {
+    MyPollers.PollerTimesTrace(writer);
+    }
+  else if (strcmp(cmd->GetName(), "reset") == 0)
+    {
+    MyPollers.PollerTimesReset();
+    writer->puts("Poller times Reset");
+    writer->printf("Poller timing is: %s\n",
+      (MyPollers.m_trace & trace_Times) ? "on" : "off");
+    }
+  }
+void OvmsPollers::PollerTimesReset()
+  {
+  bool currLogging = ((MyPollers.m_trace & trace_Times) != 0);
+  MyPollers.m_trace &= ~trace_Times;
+
+  Queue_Command(OvmsPoller::OvmsPollCommand::ResetTimer, currLogging?1:0);
+  }
+void OvmsPollers::PollerTimesTrace( OvmsWriter* writer)
+  {
+  writer->printf("Poller timing is: %s\n",
+    (MyPollers.m_trace & trace_Times) ? "on" : "off");
+
+  metric_unit_t ratio_unt = OvmsMetricGetUserUnit(GrpRatio, Permille);
+  int ratio_dec = (ratio_unt == Percentage) ? 4 : 3;
+  bool first = true;
+  uint32_t avg_time_sum_us = 0;
+  uint32_t avg_utlzn_sum_us = 0;
+  uint32_t avg_count_sum = 0;
+  for (auto it = m_poll_time_stats.begin(); it != m_poll_time_stats.end(); ++it)
+    {
+    average_value_t &cur = it->second;
+    uint16_t avg_100n = cur.avg_n.get();
+    uint32_t avg_utlzn_us = cur.avg_utlzn.get();
+    uint32_t avg_time = cur.avg_time.get();
+    uint32_t max_time = cur.max_time;
+    uint16_t max_val = cur.max_val;
+
+    avg_time_sum_us += avg_time;
+    avg_utlzn_sum_us += avg_utlzn_us;
+    avg_count_sum += avg_100n;
+
+    if (max_val == 0)
+      continue;
+    if (first)
+      {
+      first = false;
+      writer->puts(  "Type           | count  | Utlztn | Time ");
+      writer->printf("               | per s  | [%s]    | [ms]\n", OvmsMetricUnitLabel(ratio_unt) );
+      }
+    writer->puts(    "---------------+--------+--------+---------");
+
+    std::string desc;
+    switch (it->first.entry_type)
+      {
+      case OvmsPoller::OvmsPollEntryType::FrameRx:
+        desc = string_format("RxCan%" PRIu32 "[%03" PRIx32 "]",
+            it->first.busnumber, it->first.Frame_MsgId);
+        break;
+      case OvmsPoller::OvmsPollEntryType::FrameTx:
+        desc = string_format("TxCan%" PRIu32 "[%03" PRIx32 "]",
+            it->first.busnumber, it->first.Frame_MsgId);
+        break;
+      case OvmsPoller::OvmsPollEntryType::Poll:
+        desc = string_format("Poll:%s", OvmsPoller::PollerSource(it->first.Poll_src));
+        break;
+      case OvmsPoller::OvmsPollEntryType::Command:
+        desc = string_format("Cmd:%s", OvmsPoller::PollerCommand(it->first.Command_cmd, true));
+        break;
+      case OvmsPoller::OvmsPollEntryType::PollState:
+        desc = "Cmd:State";
+        break;
+      default:
+        desc = "Other";
+      }
+
+    // uses 100 as base for precision. cvt from 10s to 1s
+    float avg_n_f = avg_100n  / (average_sep_s * 100.0);
+    // Convert to micro-s per 10s to ms per s (ie permille)
+    float avg_utlzn_ms_f = UnitConvert( Permille, ratio_unt, avg_utlzn_us / (average_sep_s * 1000.0F));
+    float avg_time_f = avg_time / 1000.0;
+    writer->printf("%-12sAvg|%8.2f|%8.*f|%9.3f\n",
+        desc.c_str(), avg_n_f, ratio_dec, avg_utlzn_ms_f, avg_time_f);
+
+    float max_time_f = UnitConvert(Permille, ratio_unt, max_time / (average_sep_s * 1000.0F));
+    float max_val_f  = max_val  / 1000.0;
+    writer->printf("           Peak|        |%8.*f|%9.3f\n",
+         ratio_dec, max_time_f, max_val_f);
+    }
+
+  if (!first)
+    {
+    // uses 100 as base for precision. cvt from 10s to 1s (ie permille)
+    float tot_n_f = avg_count_sum  / (average_sep_s * 100.0);
+    // Convert to micro-s per 10s to ms per s
+    float tot_utlzn_ms_f = UnitConvert(Permille, ratio_unt, avg_utlzn_sum_us / (average_sep_s * 1000.0F));
+    float tot_time_f = avg_time_sum_us / 1000.0;
+    writer->puts(  "===============+========+========+=========");
+    writer->printf("      Total Avg|%8.2f|%8.*f|%9.3f\n",
+        tot_n_f, ratio_dec, tot_utlzn_ms_f, tot_time_f);
+    }
   }
 
 static const char *PollResStr( OvmsPoller::OvmsNextPollResult res)
