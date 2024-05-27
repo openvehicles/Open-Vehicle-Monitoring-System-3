@@ -795,6 +795,8 @@ OvmsPollers::OvmsPollers()
   MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsPollers::EventSystemShuttingDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsPollers::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsPollers::ConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "vehicle.charge.start", std::bind(&OvmsPollers::VehicleChargeStart, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "vehicle.on", std::bind(&OvmsPollers::VehicleOn, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "vehicle.charge.stop", std::bind(&OvmsPollers::VehicleChargeStop, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "vehicle.off", std::bind(&OvmsPollers::VehicleOff, this, _1, _2));
 
@@ -959,6 +961,16 @@ void OvmsPollers::EventSystemShuttingDown(std::string event, void* data)
   ShuttingDown(true);
   }
 
+void OvmsPollers::VehicleOn(std::string event, void* data)
+  {
+  IFTRACE(Times)
+    MyPollers.PollerTimesReset();
+  }
+void OvmsPollers::VehicleChargeStart(std::string event, void* data)
+  {
+  IFTRACE(Times)
+    MyPollers.PollerTimesReset();
+  }
 void OvmsPollers::VehicleOff(std::string event, void* data)
   {
   NotifyPollerTrace();

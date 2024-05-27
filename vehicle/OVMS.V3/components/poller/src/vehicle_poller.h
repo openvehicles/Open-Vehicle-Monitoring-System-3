@@ -800,6 +800,8 @@ class OvmsPollers : public InternalRamAllocated {
     void ConfigChanged(std::string event, void* data);
     void LoadPollerTimerConfig();
 
+    void VehicleOn(std::string event, void* data);
+    void VehicleChargeStart(std::string event, void* data);
     void VehicleOff(std::string event, void* data);
     void VehicleChargeStop(std::string event, void* data);
 
