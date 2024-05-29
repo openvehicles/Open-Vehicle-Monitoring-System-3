@@ -41,7 +41,7 @@ void OvmsVehicleNetaAya::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 		// speed
 		case 0xb100:
 		{
-			StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(0) / 100, Kph);
+			StdMetrics.ms_v_pos_speed->SetValue((float)CAN_UINT(0) / 100, Kph);
 			break;
 		}
 		// soc
@@ -76,7 +76,7 @@ void OvmsVehicleNetaAya::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 		// voltage
 		case 0xf012:
 		{
-			StdMetrics.ms_v_bat_voltage->SetValue(CAN_UINT(0) / 20, Volts);
+			StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(0) / 20, Volts);
 			break;
 		}
 		// on

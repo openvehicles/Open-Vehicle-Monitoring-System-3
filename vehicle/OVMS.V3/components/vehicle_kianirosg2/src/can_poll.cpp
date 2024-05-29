@@ -168,7 +168,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingVMCU(canbus *bus, uint16_t type, uint16_t 
 		{
 			if (mlframe == 3)
 			{
-				StdMetrics.ms_v_bat_12v_voltage->SetValue(((CAN_BYTE(2) << 8) + CAN_BYTE(1)) / 1000.0, Volts);
+				StdMetrics.ms_v_bat_12v_voltage->SetValue(((float)(CAN_BYTE(2) << 8) + (float)CAN_BYTE(1)) / 1000.0, Volts);
 			}
 		}
 		break;
@@ -212,7 +212,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus *bus, uint16_t type, uint16_t p
 			}
 			else if (mlframe == 5)
 			{
-				StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(0) / 2.0, Percentage);
+				StdMetrics.ms_v_bat_soc->SetValue((float)CAN_BYTE(0) / 2.0, Percentage);
 			}
 			break;
 		}
@@ -225,7 +225,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus *bus, uint16_t type, uint16_t p
  */
 void OvmsVehicleKiaNiroEvSg2::IncomingBCM(canbus *bus, uint16_t type, uint16_t pid, const uint8_t *data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
 {
-	uint8_t bVal;
+	float bVal;
 	if (type == VEHICLE_POLL_TYPE_OBDIIEXTENDED)
 	{
 		switch (pid)
@@ -234,22 +234,22 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBCM(canbus *bus, uint16_t type, uint16_t p
 		{
 			if (mlframe == 1)
 			{
-				bVal = CAN_BYTE(1);
+				bVal = (float)CAN_BYTE(1);
 				if (bVal > 0)
 					StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, bVal / 5.0, PSI);
-				bVal = CAN_BYTE(6);
+				bVal = (float)CAN_BYTE(6);
 				if (bVal > 0)
 					StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, bVal / 5.0, PSI);
 			}
 			else if (mlframe == 2)
 			{
-				bVal = CAN_BYTE(4);
+				bVal = (float)CAN_BYTE(4);
 				if (bVal > 0)
 					StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, bVal / 5.0, PSI);
 			}
 			else if (mlframe == 3)
 			{
-				bVal = CAN_BYTE(2);
+				bVal = (float)CAN_BYTE(2);
 				if (bVal > 0)
 					StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, bVal / 5.0, PSI);
 			}

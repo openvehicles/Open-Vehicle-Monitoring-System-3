@@ -54,14 +54,8 @@ void OvmsVehicleMaxEu6::IncomingPollReply(const OvmsPoller::poll_job_t &job, uin
 		// 		StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0), Kilometers);
 		// 	}
 		// 	break;
-		case 0xE107:
-			if (job.mlframe == 0)
-			{
-				ESP_LOGE(TAG, "SOC %02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-				StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(0), Percentage);
-			}
-			break;
 		case 0xB110:
+		{
 			if (job.mlframe == 0)
 			{
 				int value = CAN_UINT(0);
@@ -69,7 +63,9 @@ void OvmsVehicleMaxEu6::IncomingPollReply(const OvmsPoller::poll_job_t &job, uin
 				StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, preassure, kPa);
 			}
 			break;
+		}
 		case 0xB111:
+		{
 			if (job.mlframe == 0)
 			{
 				int value = CAN_UINT(0);
@@ -77,7 +73,9 @@ void OvmsVehicleMaxEu6::IncomingPollReply(const OvmsPoller::poll_job_t &job, uin
 				StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, preassure, kPa);
 			}
 			break;
+		}
 		case 0xB112:
+		{
 			if (job.mlframe == 0)
 			{
 				int value = CAN_UINT(0);
@@ -85,7 +83,9 @@ void OvmsVehicleMaxEu6::IncomingPollReply(const OvmsPoller::poll_job_t &job, uin
 				StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, preassure, kPa);
 			}
 			break;
+		}
 		case 0xB113:
+		{
 			if (job.mlframe == 0)
 			{
 				int value = CAN_UINT(0);
@@ -94,6 +94,7 @@ void OvmsVehicleMaxEu6::IncomingPollReply(const OvmsPoller::poll_job_t &job, uin
 			}
 			break;
 		}
+		}
 		break;
 
 	// ****** BCM ******
@@ -101,21 +102,31 @@ void OvmsVehicleMaxEu6::IncomingPollReply(const OvmsPoller::poll_job_t &job, uin
 		switch (job.pid)
 		{
 		case 0xE010:
+		{
 			if (job.mlframe == 0)
 			{
-				int value = CAN_UINT(0);
-				int amps = (value - 5000) / 10;
+				float value = (float)CAN_UINT(0);
+				float amps = (value - 5000) / 10;
 				StdMetrics.ms_v_bat_current->SetValue(amps, Amps);
 			}
 			break;
+		}
 		case 0xE004:
+		{
 			if (job.mlframe == 0)
 			{
-				int value = CAN_UINT(0);
-				int volts = value / 10;
-				StdMetrics.ms_v_bat_voltage->SetValue(volts, Volts);
+				StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(0) / 10, Volts);
 			}
 			break;
+		}
+		case 0xE014:
+		{
+			if (job.mlframe == 0)
+			{
+				StdMetrics.ms_v_bat_soc->SetValue((float)CAN_UINT(0) / 100, Percentage);
+			}
+			break;
+		}
 		}
 		break;
 

@@ -165,7 +165,7 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 	case 0x3F1:
 	{
 		// StdMetrics.ms_v_pos_odometer->SetValue((d[0] << 16 | d[1] << 8 | d[2]) / 10.0);
-		StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0) / 10.0, Kilometers);
+		StdMetrics.ms_v_pos_odometer->SetValue((float)CAN_UINT24(0) / 10.0, Kilometers);
 		break;
 	}
 	case 0x125:
@@ -173,7 +173,7 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 		// ESP_LOGE(TAG, "IFCP %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
 		// 		 p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 		// ESP_LOGE(TAG, "IFCP %lf", (CAN_BYTE(2) - 1) / 250.0);
-		StdMetrics.ms_v_pos_speed->SetValue((CAN_BYTE(1) * 2) + (2 * (CAN_BYTE(2) - 1) / 250.0), Kph);
+		StdMetrics.ms_v_pos_speed->SetValue(((float)CAN_BYTE(1) * 2) + (2 * ((float)CAN_BYTE(2) - 1) / 250.0), Kph);
 		// StdMetrics.ms_v_pos_speed->SetValue((CAN_BYTE(1) * 2) + 2 * (CAN_BYTE(2) - 2 / 253.0));
 		break;
 	}
@@ -207,7 +207,7 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 	}
 	case 0x2F4: // carga
 	{
-		StdMetrics.ms_v_bat_soc->SetValue((100 * CAN_BYTE(1)) / 255, Percentage);
+		StdMetrics.ms_v_bat_soc->SetValue((100 * (float)CAN_BYTE(1)) / 255, Percentage);
 		break;
 	}
 	}
