@@ -40,19 +40,25 @@ void OvmsVehicleNetaAya::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 		{
 		// speed
 		case 0xb100:
+		{
 			StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(0) / 100, Kph);
-			;
 			break;
+		}
 		// soc
 		case 0xf015:
+		{
 			StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(0), Percentage);
 			break;
+		}
 		// odometer
 		case 0xe101:
+		{
 			StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0), Kilometers);
 			break;
+		}
 		// current
 		case 0xf013:
+		{
 			float curr;
 			uid_t value;
 			value = CAN_UINT(0);
@@ -66,22 +72,28 @@ void OvmsVehicleNetaAya::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 			}
 			StdMetrics.ms_v_bat_current->SetValue(curr / 20, Amps);
 			break;
+		}
 		// voltage
 		case 0xf012:
+		{
 			StdMetrics.ms_v_bat_voltage->SetValue(CAN_UINT(0) / 20, Volts);
 			break;
+		}
 		// on
 		case 0xd001:
+		{
 			bool on = CAN_BYTE(0) != 0x01;
 			StdMetrics.ms_v_env_awake->SetValue(on);
 			StdMetrics.ms_v_env_on->SetValue(on);
 			break;
+		}
 		}
 	case 0x718:
 		switch (job.pid)
 		{
 		// evse code
 		case 0xf012:
+		{
 			if (job.mlframe == 1)
 			{
 				// 04 es cs2 06 tmb
@@ -96,10 +108,12 @@ void OvmsVehicleNetaAya::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 				}
 				StdMetrics.ms_v_charge_inprogress->SetValue(charging);
 			}
-			if (job.mlframe == 3) {
+			if (job.mlframe == 3)
+			{
 				ESP_LOGE(TAG, "\n");
 			}
 			break;
+		}
 		}
 	default:
 		ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_rec);

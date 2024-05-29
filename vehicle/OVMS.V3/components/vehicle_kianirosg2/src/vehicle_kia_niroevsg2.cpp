@@ -290,11 +290,13 @@ bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 	{
 		return false;
 	}
-	bool closed_doors = StdMetrics.ms_v_door_fl->AsBool() &&
-						StdMetrics.ms_v_door_fr->AsBool() &&
-						StdMetrics.ms_v_door_rl->AsBool() &&
-						StdMetrics.ms_v_door_rr->AsBool();
-	
+	bool closed_doors = !StdMetrics.ms_v_door_fl->AsBool() &&
+						!StdMetrics.ms_v_door_fr->AsBool() &&
+						!StdMetrics.ms_v_door_rl->AsBool() &&
+						!StdMetrics.ms_v_door_rr->AsBool();
+	closed_doors = closed_doors &&
+				   !StdMetrics.ms_v_env_awake->AsBool() &&
+				   !StdMetrics.ms_v_env_on->AsBool();
 	if (lock)
 	{
 		if (closed_doors)
@@ -318,11 +320,10 @@ bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 			SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0x7F, 0x00);
 			lock_command = true;
 			lock_counter = 6;
+			m_can2->Reset();
+			return true;
 		}
-		else
-		{
-			return false;
-		}
+		return false;
 	}
 	else
 	{
@@ -345,9 +346,10 @@ bool OvmsVehicleKiaNiroEvSg2::SetDoorLock(bool lock)
 		SendCanMessageSecondary(0x4A2, 0x00, 0x00, 0xFC, 0xC0, 0xFF, 0xFF, 0xDF, 0x00);
 		unlock_command = true;
 		lock_counter = 6;
+		m_can2->Reset();
+		return true;
 	}
-	m_can2->Reset();
-	return true;
+	return false;
 }
 
 void OvmsVehicleKiaNiroEvSg2::VerifyCanActivity()

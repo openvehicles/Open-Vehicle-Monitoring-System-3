@@ -56,9 +56,10 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 
 	/*
 	BASIC METRICS
-	StdMetrics.ms_v_pos_speed 					ok
-	StdMetrics.ms_v_bat_soc 					ok
-	StdMetrics.ms_v_pos_odometer 				ok
+	StdMetrics.ms_v_pos_speed 					ok 0x700 - 03 22 E1 02 00 00 00 00
+
+	StdMetrics.ms_v_bat_soc 					ok 0x700 - 03 22 E1 07 00 00 00 00
+	StdMetrics.ms_v_pos_odometer 				ok 0x700 - 03 22 B1 01 00 00 00 00
 
 	StdMetrics.ms_v_door_fl 					ok; yes when open, no when closed
 	StdMetrics.ms_v_door_fr 					ok
@@ -71,8 +72,8 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 	StdMetrics.ms_v_env_efficiencymode 			-
 	StdMetrics.ms_v_env_regenlevel Percentage 	-
 
-	StdMetrics.ms_v_bat_current 				-
-	StdMetrics.ms_v_bat_voltage 				-
+	StdMetrics.ms_v_bat_current 				- req 22 748 e010 resp en 7c8 (val-5000)/10
+	StdMetrics.ms_v_bat_voltage 				- req 22 748 e004 resp en 7c8 val/10
 	StdMetrics.ms_v_bat_power 					wip esta en porcentaje
 
 	StdMetrics.ms_v_charge_inprogress 			ok
@@ -82,10 +83,27 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 
 	StdMetrics.ms_v_env_aux12v					ok
 
-	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI);
-	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI);
-	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI);
-	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI);
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI);  0x700
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI);  0x700
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI);  0x700
+	StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI);  0x700
+
+	03 22 B1 10 00 00 00 00
+	05 62 B1 10 00 4D 00 00
+	03 22 B1 13 00 00 00 00
+	05 62 B1 13 00 4F 00 00
+	03 22 B1 12 00 00 00 00
+	05 62 B1 12 00 4E 00 00
+	03 22 B1 11 00 00 00 00
+	05 62 B1 11 00 50 00 00
+	de 120 (80) a 192.15 (71) kPa (FR)
+	05 62 B1 11 00 47 00 00
+	47 71	192.15
+	4D 77 	211.75
+	4E 78	214.5
+	4F 79	217.25
+	50 80	220
+	f(x) = 3.122*X - 29.26
 	*/
 
 	uint8_t *data = p_frame->data.u8;
@@ -122,12 +140,12 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 	}
 	case 0x540:
 	{
-		StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0));
+		StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0), Kilometers);
 		break;
 	}
 	case 0x6f0:
 	{
-		StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(4));
+		StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(4), Kph);
 		break;
 	}
 	case 0x6f1:
@@ -138,8 +156,8 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 	}
 	case 0x6f2:
 	{
-		StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(1));
-		StdMetrics.ms_v_bat_power->SetValue((CAN_BYTE(2) - 100) * 120, kW); // es porcentaje
+		StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(1), Percentage);
+		// StdMetrics.ms_v_bat_power->SetValue((CAN_BYTE(2) - 100) * 120, kW); // es porcentaje
 		break;
 	}
 	default:
