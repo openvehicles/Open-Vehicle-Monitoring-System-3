@@ -31,7 +31,6 @@
  */
 void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 {
-
 	// static const uint8_t byteMask[8] = {0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F};
 	uint8_t *d = p_frame->data.u8;
 
@@ -114,14 +113,13 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 	case 0x0c9:
 	{
 		StdMetrics.ms_v_charge_inprogress->SetValue(
-			CAN_BIT(2,0) && CAN_BIT(2,1) && CAN_BIT(2,2)
-			);
+			CAN_BIT(2, 0) && CAN_BIT(2, 1) && CAN_BIT(2, 2));
 		break;
 	}
 	case 0x281:
 	{
 		StdMetrics.ms_v_env_locked->SetValue(
-			CAN_BIT(1,0) &&	CAN_BIT(1,2) &&	CAN_BIT(1,4) &&	CAN_BIT(1,6) &&
+			CAN_BIT(1, 0) && CAN_BIT(1, 2) && CAN_BIT(1, 4) && CAN_BIT(1, 6) &&
 			!StdMetrics.ms_v_door_fl->AsBool() &&
 			!StdMetrics.ms_v_door_fr->AsBool() &&
 			!StdMetrics.ms_v_door_rl->AsBool() &&
@@ -150,13 +148,16 @@ void OvmsVehicleMaxEu6::IncomingFrameCan1(CAN_frame_t *p_frame)
 	}
 	case 0x6f1:
 	{
-		StdMetrics.ms_v_env_awake->SetValue(CAN_BIT(4,7));
-		StdMetrics.ms_v_env_on->SetValue(CAN_BIT(1,4) && CAN_BIT(4,7));
+		StdMetrics.ms_v_env_awake->SetValue(CAN_BIT(4, 7));
+		StdMetrics.ms_v_env_on->SetValue(CAN_BIT(1, 4) && CAN_BIT(4, 7));
 		break;
 	}
 	case 0x6f2:
 	{
-		StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(1), Percentage);
+		if (m_poll_state == 1)
+		{
+			StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(1), Percentage);
+		}
 		// StdMetrics.ms_v_bat_power->SetValue((CAN_BYTE(2) - 100) * 120, kW); // es porcentaje
 		break;
 	}

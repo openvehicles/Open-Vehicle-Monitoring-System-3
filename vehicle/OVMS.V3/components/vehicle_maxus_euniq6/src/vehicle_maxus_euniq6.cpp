@@ -92,7 +92,7 @@ static const OvmsPoller::poll_pid_t vehicle_maxusEU6_polls[] =
 		// ok2	IncomingCM
 		{0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE010, {0, 1, 1}, 1, ISOTP_STD}, // Current
 		{0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE004, {0, 1, 1}, 1, ISOTP_STD}, // Voltage
-		{0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE014, {0, 1, 1}, 1, ISOTP_STD}, // SOC
+		{0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE014, {0, 0, 1}, 1, ISOTP_STD}, // SOC
 		POLL_LIST_END};
 
 OvmsVehicleMaxEu6::OvmsVehicleMaxEu6()
