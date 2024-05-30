@@ -77,34 +77,40 @@ void OvmsVehicleKiaNiroEvSg2::IncomingPollReply(const OvmsPoller::poll_job_t &jo
 	{
 	// ****** IGMP *****
 	case 0x778:
+	{
 		IncomingIGMP(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 		break;
-
+	}
 	// ****** BCM ******
 	case 0x7a8:
+	{
 		IncomingBCM(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 		break;
-
+	}
 	// ******* VMCU ******
 	case 0x7ea:
+	{
 		IncomingVMCU(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 		break;
-
+	}
 	// ***** BMC ****
 	case 0x7ec:
+	{
 		IncomingBMC(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 		break;
-
+	}
 	// ***** CM ****
 	case 0x7ce:
+	{
 		IncomingCM(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 		break;
-
+	}
 	// ***** SW ****
 	case 0x7dc:
+	{
 		IncomingSW(job.bus, job.type, job.pid, data, length, job.mlframe, job.mlremain);
 		break;
-
+	}
 	default:
 		ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_rec);
 		break;
@@ -122,12 +128,15 @@ void OvmsVehicleKiaNiroEvSg2::IncomingCM(canbus *bus, uint16_t type, uint16_t pi
 	switch (pid)
 	{
 	case 0xb002:
+	{
 		if (mlframe == 1)
 		{
 			StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(3), Kilometers);
 		}
 		break;
+	}
 	case 0xb003:
+	{
 		if (mlframe == 1)
 		{
 			StdMetrics.ms_v_env_awake->SetValue(CAN_BYTE(1) != 0);
@@ -137,6 +146,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingCM(canbus *bus, uint16_t type, uint16_t pi
 			}
 		}
 		break;
+	}
 	}
 }
 
@@ -153,14 +163,16 @@ void OvmsVehicleKiaNiroEvSg2::IncomingVMCU(canbus *bus, uint16_t type, uint16_t 
 	switch (pid)
 	{
 	case 0x02:
+	{
 		if (type == VEHICLE_POLL_TYPE_OBDIIGROUP)
 		{
 			if (mlframe == 3)
 			{
-				StdMetrics.ms_v_bat_12v_voltage->SetValue(((CAN_BYTE(2) << 8) + CAN_BYTE(1)) / 1000.0, Volts);
+				StdMetrics.ms_v_bat_12v_voltage->SetValue(((float)(CAN_BYTE(2) << 8) + (float)CAN_BYTE(1)) / 1000.0, Volts);
 			}
 		}
 		break;
+	}
 	}
 }
 
@@ -182,7 +194,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus *bus, uint16_t type, uint16_t p
 		switch (pid)
 		{
 		case 0x0101:
-			// diag page 01: skip first frame (no data)
+		{ // diag page 01: skip first frame (no data)
 			// ESP_LOGD(TAG, "Frame number %x",mlframe);
 
 			if (mlframe == 2)
@@ -191,17 +203,19 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus *bus, uint16_t type, uint16_t p
 				StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(2) / 10.0, Volts);
 			}
 			break;
-
+		}
 		case 0x0105:
+		{
 			if (mlframe == 4)
 			{
 				StdMetrics.ms_v_bat_soh->SetValue((float)CAN_UINT(1) / 10.0, Percentage);
 			}
 			else if (mlframe == 5)
 			{
-				StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(0) / 2.0, Percentage);
+				StdMetrics.ms_v_bat_soc->SetValue((float)CAN_BYTE(0) / 2.0, Percentage);
 			}
 			break;
+		}
 		}
 	}
 }
@@ -211,36 +225,39 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBMC(canbus *bus, uint16_t type, uint16_t p
  */
 void OvmsVehicleKiaNiroEvSg2::IncomingBCM(canbus *bus, uint16_t type, uint16_t pid, const uint8_t *data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
 {
-	uint8_t bVal;
+	float bVal;
 	if (type == VEHICLE_POLL_TYPE_OBDIIEXTENDED)
 	{
 		switch (pid)
 		{
 		case 0xC00B:
+		{
 			if (mlframe == 1)
 			{
-				bVal = CAN_BYTE(1);
+				bVal = (float)CAN_BYTE(1);
 				if (bVal > 0)
 					StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, bVal / 5.0, PSI);
-				bVal = CAN_BYTE(6);
+				bVal = (float)CAN_BYTE(6);
 				if (bVal > 0)
 					StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, bVal / 5.0, PSI);
 			}
 			else if (mlframe == 2)
 			{
-				bVal = CAN_BYTE(4);
+				bVal = (float)CAN_BYTE(4);
 				if (bVal > 0)
 					StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, bVal / 5.0, PSI);
 			}
 			else if (mlframe == 3)
 			{
-				bVal = CAN_BYTE(2);
+				bVal = (float)CAN_BYTE(2);
 				if (bVal > 0)
 					StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, bVal / 5.0, PSI);
 			}
 			break;
+		}
 
 		case 0xB010:
+		{
 			if (mlframe == 1)
 			{
 				bVal = CAN_BYTE(1);
@@ -254,6 +271,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingBCM(canbus *bus, uint16_t type, uint16_t p
 				}
 			}
 			break;
+		}
 		}
 	}
 }
@@ -270,6 +288,7 @@ void OvmsVehicleKiaNiroEvSg2::IncomingIGMP(canbus *bus, uint16_t type, uint16_t 
 		switch (pid)
 		{
 		case 0xbc03:
+		{
 			if (mlframe == 1)
 			{
 				StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(1, 5));
@@ -280,14 +299,17 @@ void OvmsVehicleKiaNiroEvSg2::IncomingIGMP(canbus *bus, uint16_t type, uint16_t 
 				m_v_door_lock_rr->SetValue(!CAN_BIT(1, 3));
 			}
 			break;
+		}
 
 		case 0xbc04:
+		{
 			if (mlframe == 1)
 			{
 				m_v_door_lock_fl->SetValue(!CAN_BIT(1, 3));
 				m_v_door_lock_fr->SetValue(!CAN_BIT(1, 2));
 			}
 			break;
+		}
 		}
 	}
 }
@@ -299,12 +321,14 @@ void OvmsVehicleKiaNiroEvSg2::IncomingSW(canbus *bus, uint16_t type, uint16_t pi
 		switch (pid)
 		{
 		case 0x0101:
+		{
 			if (mlframe == 2)
 			{
 				StdMetrics.ms_v_env_on->SetValue(CAN_BYTE(6) != 0);
 				StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(2), Kph);
 			}
 			break;
+		}
 		}
 	}
 }

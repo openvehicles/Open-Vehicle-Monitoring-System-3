@@ -55,6 +55,9 @@ class OvmsVehicleMaxEu6 : public maxeu6
     void Ticker1(uint32_t ticker) override;
     void Ticker10(uint32_t ticker) override;
     void Ticker300(uint32_t ticker) override;
+    
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length) override;
+
     void EventListener(std::string event, void* data);
     void SendTesterPresent(uint16_t id, uint8_t length);
     bool SetSessionMode(uint16_t id, uint8_t mode);

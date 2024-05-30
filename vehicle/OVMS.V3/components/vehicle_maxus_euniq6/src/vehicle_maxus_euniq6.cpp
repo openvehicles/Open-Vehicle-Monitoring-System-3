@@ -77,6 +77,24 @@ static const char *TAG = "v-maxeu6";
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
 
+static const OvmsPoller::poll_pid_t vehicle_maxusEU6_polls[] =
+	{
+		// ok2	IPK
+		// {0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE102, {0, 1, 0}, 1, ISOTP_STD}, // Speed
+		// {0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE107, {0, 0, 1}, 1, ISOTP_STD}, // SOC
+		// {0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xB101, {0, 1, 0}, 1, ISOTP_STD}, // ODO
+
+		{0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xB110, {0, 2, 0}, 1, ISOTP_STD}, // TPMS
+		{0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xB111, {0, 2, 0}, 1, ISOTP_STD}, // TPMS
+		{0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xB112, {0, 2, 0}, 1, ISOTP_STD}, // TPMS
+		{0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xB113, {0, 2, 0}, 1, ISOTP_STD}, // TPMS
+
+		// ok2	IncomingCM
+		{0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE010, {0, 1, 1}, 1, ISOTP_STD}, // Current
+		{0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE004, {0, 1, 1}, 1, ISOTP_STD}, // Voltage
+		{0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE014, {0, 0, 1}, 1, ISOTP_STD}, // SOC
+		POLL_LIST_END};
+
 OvmsVehicleMaxEu6::OvmsVehicleMaxEu6()
 {
 	ESP_LOGI(TAG, "Maxus Euniq 6 vehicle module");
@@ -85,6 +103,8 @@ OvmsVehicleMaxEu6::OvmsVehicleMaxEu6()
 	message_send_can.status = 0;
 
 	memset(message_send_can.byte, 0, sizeof(message_send_can.byte));
+	lock_command = false;
+	unlock_command = false;
 	fully_configured = false;
 	reset_by_config = false;
 
@@ -104,9 +124,11 @@ OvmsVehicleMaxEu6::OvmsVehicleMaxEu6()
 	// #ifdef CONFIG_OVMS_COMP_WEBSERVER
 	// 	WebInit();
 	// #endif
+	PollSetThrottling(10);
 	RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 	RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 	POLLSTATE_OFF;
+	PollSetPidList(m_can1, vehicle_maxusEU6_polls);
 }
 
 /**
@@ -147,17 +169,22 @@ void OvmsVehicleMaxEu6::HandleCharging()
 void OvmsVehicleMaxEu6::Ticker1(uint32_t ticker)
 {
 	VerifyConfigs(true);
+	StdMetrics.ms_v_bat_power->SetValue(
+		StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) *
+			StdMetrics.ms_v_bat_current->AsFloat(1, Amps) / 1000,
+		kW);
+
 	if (m_poll_state == 0)
 	{
-		// ESP_LOGI(TAG, "POLL STATE OFF");
+		// ESP_LOGE(TAG, "POLL STATE OFF");
 	}
 	else if (m_poll_state == 1)
 	{
-		// ESP_LOGI(TAG, "POLL STATE RUNNING");
+		// ESP_LOGE(TAG, "POLL STATE RUNNING");
 	}
 	else if (m_poll_state == 2)
 	{
-		// ESP_LOGI(TAG, "POLL STATE CHARGING");
+		// ESP_LOGE(TAG, "POLL STATE CHARGING");
 		if (!StdMetrics.ms_v_charge_inprogress->AsBool())
 		{
 			HandleChargeStop();
@@ -180,6 +207,7 @@ void OvmsVehicleMaxEu6::Ticker1(uint32_t ticker)
 	{
 		HandleCharging();
 	}
+	CheckLock();
 }
 
 /**
@@ -224,21 +252,24 @@ void OvmsVehicleMaxEu6::SetChargeMetrics()
  */
 bool OvmsVehicleMaxEu6::SetDoorLock(bool lock)
 {
+	if (lock_command || unlock_command)
+	{
+		ESP_LOGE(TAG, "Lock active, lock:%x unlock:%x", lock_command, unlock_command);
+		return false;
+	}
 	if (lock)
 	{
-		if (lock_command || unlock_command)
-		{
-			return false;
-		}
-		bool closed_doors = StdMetrics.ms_v_door_fl->AsBool() &&
-							StdMetrics.ms_v_door_fr->AsBool() &&
-							StdMetrics.ms_v_door_rl->AsBool() &&
-							StdMetrics.ms_v_door_rr->AsBool();
+		bool closed_doors = !StdMetrics.ms_v_door_fl->AsBool() &&
+							!StdMetrics.ms_v_door_fr->AsBool() &&
+							!StdMetrics.ms_v_door_rl->AsBool() &&
+							!StdMetrics.ms_v_door_rr->AsBool();
+		closed_doors = closed_doors &&
+					   !StdMetrics.ms_v_env_awake->AsBool() &&
+					   !StdMetrics.ms_v_env_on->AsBool();
 		if (closed_doors)
 		{
 			lock_command = true;
 			lock_counter = 11;
-
 			CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
 			CanMultimpleSend(0x310, 0x00, 0x02, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
 			CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
@@ -248,24 +279,22 @@ bool OvmsVehicleMaxEu6::SetDoorLock(bool lock)
 	}
 	else
 	{
-		if (lock_command || unlock_command)
-		{
-			return false;
-		}
 		unlock_command = true;
 		lock_counter = 11;
-
 		CanMultimpleSend(0x310, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01, 0x00, 5, 20);
 		CanMultimpleSend(0x310, 0x00, 0x01, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 10, 20);
 		CanMultimpleSend(0x310, 0x00, 0x00, 0x10, 0x80, 0x00, 0x00, 0x01, 0x00, 40, 20);
 		return true;
 	}
+	return false;
 }
 
 void OvmsVehicleMaxEu6::CheckLock()
 {
 	if (!(lock_command || unlock_command))
+	{
 		return;
+	}
 	if (lock_counter <= 0)
 	{
 		lock_counter = 0;
@@ -275,15 +304,10 @@ void OvmsVehicleMaxEu6::CheckLock()
 	}
 	lock_counter--;
 	bool is_locked = StdMetrics.ms_v_env_locked->AsBool();
-	if (lock_command && is_locked)
+	if ((lock_command && is_locked) || (unlock_command && !is_locked))
 	{
 		lock_counter = 0;
 		lock_command = false;
-		return;
-	}
-	if (unlock_command && !is_locked)
-	{
-		lock_counter = 0;
 		unlock_command = false;
 		return;
 	}

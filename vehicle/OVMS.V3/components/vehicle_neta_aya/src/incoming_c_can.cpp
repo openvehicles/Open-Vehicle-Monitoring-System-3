@@ -51,7 +51,7 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 	StdMetrics.ms_v_bat_voltage 				ok
 	StdMetrics.ms_v_bat_power 					ok
 
-	StdMetrics.ms_v_charge_inprogress 			ok 
+	StdMetrics.ms_v_charge_inprogress 			ok
 
 	StdMetrics.ms_v_env_on 						ok
 	StdMetrics.ms_v_env_awake 					NA
@@ -74,20 +74,25 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 	// case 0x452: // ODOMETER
 	// 	StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT(1), Kilometers);
 	// 	break;
-	case 0x339:											  // door status
+	case 0x339: // door status
+	{
 		StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(1, 1)); // true when open
 		StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(1, 3));
 		StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(1, 5));
 		StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(1, 7));
 		StdMetrics.ms_v_env_locked->SetValue(CAN_BIT(4, 6));
 		break;
+	}
 	// case 0x590: // SOC
 	// 	StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(1), Percentage);
 	// 	break;
 	case 0x403:
+	{
 		StdMetrics.ms_v_env_onepedal->SetValue(CAN_BIT(2, 4));
 		break;
+	}
 	case 0x404:
+	{
 		if (CAN_BIT(7, 3))
 		{
 			StdMetrics.ms_v_env_efficiencymode->SetValue("Normal");
@@ -97,7 +102,9 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 			StdMetrics.ms_v_env_efficiencymode->SetValue("Sport");
 		}
 		break;
+	}
 	case 0x522: // regen level cambia
+	{
 		switch (CAN_BYTE(0))
 		{
 		case 0x00:
@@ -113,10 +120,11 @@ void OvmsVehicleNetaAya::IncomingFrameCan1(CAN_frame_t *p_frame)
 			break;
 		}
 		break;
+	}
 	// case 0x405:
 	// 	StdMetrics.ms_v_bat_current->SetValue((CAN_UINT(4) * 0.05) - 1600, Amps);
 	// 	StdMetrics.ms_v_bat_voltage->SetValue(CAN_UINT(6) * 0.05, Volts);
-	// 	// maybe send to ticker
+	//	// maybe send to ticker
 	// 	StdMetrics.ms_v_bat_power->SetValue(
 	// 		StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) *
 	// 			StdMetrics.ms_v_bat_current->AsFloat(0, Amps) / 1000,

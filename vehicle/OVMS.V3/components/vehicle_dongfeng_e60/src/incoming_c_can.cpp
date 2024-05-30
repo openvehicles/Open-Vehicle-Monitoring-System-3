@@ -116,7 +116,7 @@ void OvmsVehicleDFE60::IncomingFrameCan1(CAN_frame_t *p_frame)
 	}
 	case 0x488:
 	{
-		StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0) / 10, Kilometers);
+		StdMetrics.ms_v_pos_odometer->SetValue((int)CAN_UINT24(0) / 10, Kilometers);
 		break;
 	}
 	case 0x347:
@@ -152,7 +152,8 @@ void OvmsVehicleDFE60::IncomingFrameCan1(CAN_frame_t *p_frame)
 	}
 	case 0x0a0:
 	{
-		StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(6) / 93, Kph);
+		// (it doesnt show the same speed as in the screen but it is close, a little less when going slow and a little more when going fast)
+		StdMetrics.ms_v_pos_speed->SetValue((int)CAN_UINT(6) / 93, Kph);
 		break;
 	}
 	default:

@@ -225,30 +225,31 @@ bool OvmsVehicleDFE60::SetDoorLock(bool lock)
 {
 	if (lock)
 	{
-		bool closed_doors = StdMetrics.ms_v_door_fl->AsBool() &&
-							StdMetrics.ms_v_door_fr->AsBool() &&
-							StdMetrics.ms_v_door_rl->AsBool() &&
-							StdMetrics.ms_v_door_rr->AsBool();
+		bool closed_doors = !StdMetrics.ms_v_door_fl->AsBool() &&
+							!StdMetrics.ms_v_door_fr->AsBool() &&
+							!StdMetrics.ms_v_door_rl->AsBool() &&
+							!StdMetrics.ms_v_door_rr->AsBool();
+		closed_doors = closed_doors &&
+					   !StdMetrics.ms_v_env_awake->AsBool() &&
+					   !StdMetrics.ms_v_env_on->AsBool();
 		if (closed_doors)
 		{
-			MyPeripherals->m_max7317->Output(9, 0);
-			vTaskDelay(pdMS_TO_TICKS(1000));
-			MyPeripherals->m_max7317->Output(9, 255);
+			// MyPeripherals->m_max7317->Output(9, 0);
+			// vTaskDelay(pdMS_TO_TICKS(1000));
+			// MyPeripherals->m_max7317->Output(9, 255);
+			return true;
 		}
-		else
-		{
-			return false;
-		}
+		return false;
 	}
 	else
 	{
-		MyPeripherals->m_max7317->Output(8, 0);
-		vTaskDelay(pdMS_TO_TICKS(1000));
-		MyPeripherals->m_max7317->Output(8, 255);
-	}
+		// MyPeripherals->m_max7317->Output(8, 0);
+		// vTaskDelay(pdMS_TO_TICKS(1000));
+		// MyPeripherals->m_max7317->Output(8, 255);
 	return true;
+	}
+	return false;
 }
-
 
 class OvmsVehicleDFE60Init
 {
