@@ -789,10 +789,10 @@ class ovms_callback_register_t
     private:
       static const uint8_t _BITS = floorlog2(N);
       static const T _REST = (N-1);
-      T m_ave;
+      T m_avg;
       uint8_t m_n;
     public:
-      average_util_t() : m_ave(0), m_n(0)
+      average_util_t() : m_avg(0), m_n(0)
         {
         static_assert(N == (1 << _BITS), "N must be a power of 2");
         }
@@ -800,25 +800,29 @@ class ovms_callback_register_t
       void add(T val)
         {
         if (m_n == _BITS) // Optimise for templated values.
-          m_ave = ((_REST * m_ave) + val) >> _BITS;
+          m_avg = ((_REST * m_avg) + val) >> _BITS;
         else
           {
           // This is not quite as proper as m_n being the number of items,
           // but it is better than not ramping up at all and it works out
           // after a bit anyway.. and it's faster than using /.
           if (m_n == 0)
-            m_ave = val; // Wear the cost of the if.
+            m_avg = val; // Wear the cost of the if.
           else // Simplify to 2 shifts.
-            m_ave = ((m_ave << m_n) - m_ave + val) >> m_n;
+            m_avg = (((m_avg << m_n) - m_avg) + val) >> m_n;
           ++m_n;
           }
         }
-      T get() { return m_ave; }
-      operator T() { return m_ave; }
+      T get() const { return m_avg; }
+      operator T() const { return m_avg; }
       void reset()
         {
         m_n = 0;
-        m_ave = 0;
+        m_avg = 0;
+        }
+      bool isEmpty() const
+        {
+        return m_n == 0;
         }
     };
   /* Assists in maintaining smoothed average for a period.
