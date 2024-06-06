@@ -6,6 +6,7 @@ Hyundai Ioniq 5 / Kia EV6
 
 - Vehicle Type: **HION5**
 - Log tag: ``v-ioniq5``
+- Poll log tag: ``v-ioniq5-poll``
 - Namespace: ``xiq``
 - Maintainers: `Michael Geddes <frog@bunyip.wheelycreek.net>`_
 - Credits: `EVNotify <https://github.com/EVNotify>`_
