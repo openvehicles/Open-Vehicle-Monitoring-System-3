@@ -28,8 +28,51 @@
 
 #include <cstdint>
 
+// PollSingleRequest specific result codes:
+#define POLLSINGLE_OK                   0
+#define POLLSINGLE_TIMEOUT              -1
+#define POLLSINGLE_TXFAILURE            -2
+
+#define VEHICLE_POLL_TYPE_NONE          0x00
+
 // Number of polling states supported
 #define VEHICLE_POLL_NSTATES            4
+
+// A note on "PID" and their sizes here:
+//  By "PID" for the service types we mean the part of the request parameters
+//  after the service type that is reflected in _every_ valid response to the request.
+//  That part is used to validate the response by the poller, if it doesn't match,
+//  the response won't be forwarded to the application.
+//  Some requests require additional parameters as specified in ISO 14229, but implementations
+//  may differ. For example, a 31b8 request on a VW ECU does not necessarily copy the routine
+//  ID in the response (e.g. with 0000), so the routine ID isn't part of our "PID" here.
+
+// Utils:
+#define POLL_TYPE_HAS_16BIT_PID(type) \
+  ((type) == VEHICLE_POLL_TYPE_READDATA || \
+   (type) == VEHICLE_POLL_TYPE_READSCALING || \
+   (type) == VEHICLE_POLL_TYPE_WRITEDATA || \
+   (type) == VEHICLE_POLL_TYPE_IOCONTROL || \
+   (type) == VEHICLE_POLL_TYPE_READOXSTEST)
+#define POLL_TYPE_HAS_NO_PID(type) \
+  ((type) == VEHICLE_POLL_TYPE_CLEARDTC || \
+   (type) == VEHICLE_POLL_TYPE_READMEMORY || \
+   (type) == VEHICLE_POLL_TYPE_READ_ERDTC || \
+   (type) == VEHICLE_POLL_TYPE_CLEAR_ERDTC || \
+   (type) == VEHICLE_POLL_TYPE_READ_DCERDTC || \
+   (type) == VEHICLE_POLL_TYPE_READ_PERMDTC || \
+   (type) == VEHICLE_POLL_TYPE_OBDII_18)
+#define POLL_TYPE_HAS_8BIT_PID(type) \
+  (!POLL_TYPE_HAS_NO_PID(type) && !POLL_TYPE_HAS_16BIT_PID(type))
+
+// OBD/UDS Negative Response Code
+#define UDS_RESP_TYPE_NRC               0x7F  // see ISO 14229 Annex A.1
+#define UDS_RESP_NRC_RCRRP              0x78  // … requestCorrectlyReceived-ResponsePending
+
+// Poll list PID xargs utility (see info above):
+#define POLL_PID_DATA(pid, datastring) \
+  {.xargs={ (pid), POLL_TXDATA, sizeof(datastring)-1, reinterpret_cast<const uint8_t*>(datastring) }}
+
 
 // VWTP_20 channel states:
 typedef enum

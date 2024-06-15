@@ -43,7 +43,7 @@ static const char *TAG = "vehicle-poll";
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include <ovms_peripherals.h>
 #include <string_writer.h>
-#include "vehicle.h"
+#include "vehicle_poller.h"
 #include "can.h"
 
 using namespace std::placeholders;
