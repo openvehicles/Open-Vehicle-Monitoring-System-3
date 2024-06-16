@@ -702,7 +702,7 @@ class OvmsPollers : public InternalRamAllocated {
     void PollerStatus(int verbosity, OvmsWriter* writer);
     void SetUserPauseStatus(bool paused, int verbosity, OvmsWriter* writer);
   public:
-    void PollerTimesTrace( OvmsWriter* writer);
+    bool PollerTimesTrace( OvmsWriter* writer, bool is_notify = false);
     bool IsTracingTimes() { return (m_trace & trace_Times) != 0; }
     typedef std::function<void(canbus*, void *)> PollCallback;
     typedef std::function<void(const CAN_frame_t &)> FrameCallback;
@@ -800,6 +800,8 @@ class OvmsPollers : public InternalRamAllocated {
     void ConfigChanged(std::string event, void* data);
     void LoadPollerTimerConfig();
 
+    void VehicleOn(std::string event, void* data);
+    void VehicleChargeStart(std::string event, void* data);
     void VehicleOff(std::string event, void* data);
     void VehicleChargeStop(std::string event, void* data);
 

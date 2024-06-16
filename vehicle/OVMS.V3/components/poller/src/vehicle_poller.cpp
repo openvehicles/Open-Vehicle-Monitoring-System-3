@@ -795,6 +795,8 @@ OvmsPollers::OvmsPollers()
   MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsPollers::EventSystemShuttingDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsPollers::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsPollers::ConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "vehicle.charge.start", std::bind(&OvmsPollers::VehicleChargeStart, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "vehicle.on", std::bind(&OvmsPollers::VehicleOn, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "vehicle.charge.stop", std::bind(&OvmsPollers::VehicleChargeStop, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "vehicle.off", std::bind(&OvmsPollers::VehicleOff, this, _1, _2));
 
@@ -959,6 +961,16 @@ void OvmsPollers::EventSystemShuttingDown(std::string event, void* data)
   ShuttingDown(true);
   }
 
+void OvmsPollers::VehicleOn(std::string event, void* data)
+  {
+  IFTRACE(Times)
+    MyPollers.PollerTimesReset();
+  }
+void OvmsPollers::VehicleChargeStart(std::string event, void* data)
+  {
+  IFTRACE(Times)
+    MyPollers.PollerTimesReset();
+  }
 void OvmsPollers::VehicleOff(std::string event, void* data)
   {
   NotifyPollerTrace();
@@ -973,8 +985,33 @@ void OvmsPollers::NotifyPollerTrace()
   if (!IsTracingTimes())
     return;
   StringWriter buf(200);
-  PollerTimesTrace(&buf);
-  MyNotify.NotifyString("info", "poller.report", buf.c_str());
+  if (!PollerTimesTrace(&buf, true))
+    return;
+
+  if (buf.length() <= 1024)
+    MyNotify.NotifyString("info", "poller.report", buf.c_str());
+  else
+    {
+    // break it up into pieces.
+    int len = 0;
+    std::stringstream ss(buf);
+    StringWriter sbuf(1025);
+    std::string s;
+    while (std::getline(ss, s))
+      {
+      int slen = s.length();
+      if ((slen+len) > 1024)
+        {
+        MyNotify.NotifyString("info", "poller.report", sbuf.c_str());
+        sbuf.clear();
+        len = 0;
+        }
+      len += slen;
+      sbuf.puts(s.c_str());
+      }
+    if (len > 0)
+      MyNotify.NotifyString("info", "poller.report", sbuf.c_str());
+    }
   }
 
 void OvmsPollers::ConfigChanged(std::string event, void* data)
@@ -1790,6 +1827,8 @@ void OvmsPollers::poller_times(int verbosity, OvmsWriter* writer, OvmsCommand* c
     }
   else if (strcmp(cmd->GetName(), "status") == 0)
     {
+    writer->printf("Poller timing is: %s\n",
+      (MyPollers.m_trace & trace_Times) ? "on" : "off");
     MyPollers.PollerTimesTrace(writer);
     }
   else if (strcmp(cmd->GetName(), "reset") == 0)
@@ -1807,11 +1846,9 @@ void OvmsPollers::PollerTimesReset()
 
   Queue_Command(OvmsPoller::OvmsPollCommand::ResetTimer, currLogging?1:0);
   }
-void OvmsPollers::PollerTimesTrace( OvmsWriter* writer)
-  {
-  writer->printf("Poller timing is: %s\n",
-    (MyPollers.m_trace & trace_Times) ? "on" : "off");
 
+bool OvmsPollers::PollerTimesTrace( OvmsWriter* writer, bool is_notify )
+  {
   metric_unit_t ratio_unt = OvmsMetricGetUserUnit(GrpRatio, Permille);
   int ratio_dec = (ratio_unt == Percentage) ? 4 : 3;
   bool first = true;
@@ -1836,10 +1873,19 @@ void OvmsPollers::PollerTimesTrace( OvmsWriter* writer)
     if (first)
       {
       first = false;
-      writer->puts(  "Type           | count  | Utlztn | Time ");
-      writer->printf("               | per s  | [%s]    | [ms]\n", OvmsMetricUnitLabel(ratio_unt) );
+      if (is_notify)
+        {
+        const char * unit = (ratio_unt == Permille) ? "permil" : "percent";
+        writer->printf("\"Type\",\"Count (hz)\",\"Avg Utlztn (%s)\",\"Peak Utlztn (%s)\", \"Avg Time (ms)\",\"Peak Time (ms)\"\n", unit, unit);
+        }
+        else
+        {
+        writer->puts(  "Type           | count  | Utlztn | Time");
+        writer->printf("               | per s  | [%s]    | [ms]\n", OvmsMetricUnitLabel(ratio_unt) );
+        }
       }
-    writer->puts(    "---------------+--------+--------+---------");
+    if (!is_notify)
+      writer->puts( "---------------+--------+--------+---------");
 
     std::string desc;
     switch (it->first.entry_type)
@@ -1870,13 +1916,20 @@ void OvmsPollers::PollerTimesTrace( OvmsWriter* writer)
     // Convert to micro-s per 10s to ms per s (ie permille)
     float avg_utlzn_ms_f = UnitConvert( Permille, ratio_unt, avg_utlzn_us / (average_sep_s * 1000.0F));
     float avg_time_f = avg_time / 1000.0;
-    writer->printf("%-12sAvg|%8.2f|%8.*f|%9.3f\n",
-        desc.c_str(), avg_n_f, ratio_dec, avg_utlzn_ms_f, avg_time_f);
-
     float max_time_f = UnitConvert(Permille, ratio_unt, max_time / (average_sep_s * 1000.0F));
     float max_val_f  = max_val  / 1000.0;
-    writer->printf("           Peak|        |%8.*f|%9.3f\n",
-         ratio_dec, max_time_f, max_val_f);
+
+    if (is_notify)
+      writer->printf("\"%s\",%.2f,%.*f,%.*f,%.3f,%.3f\n",
+          desc.c_str(), avg_n_f, ratio_dec, avg_utlzn_ms_f, ratio_dec, max_time_f, avg_time_f, max_val_f);
+    else
+      {
+      writer->printf("%-12sAvg|%8.2f|%8.*f|%9.3f\n",
+          desc.c_str(), avg_n_f, ratio_dec, avg_utlzn_ms_f, avg_time_f);
+
+      writer->printf("           Peak|        |%8.*f|%9.3f\n",
+           ratio_dec, max_time_f, max_val_f);
+      }
     }
 
   if (!first)
@@ -1886,10 +1939,17 @@ void OvmsPollers::PollerTimesTrace( OvmsWriter* writer)
     // Convert to micro-s per 10s to ms per s
     float tot_utlzn_ms_f = UnitConvert(Permille, ratio_unt, avg_utlzn_sum_us / (average_sep_s * 1000.0F));
     float tot_time_f = avg_time_sum_us / 1000.0;
-    writer->puts(  "===============+========+========+=========");
-    writer->printf("      Total Avg|%8.2f|%8.*f|%9.3f\n",
-        tot_n_f, ratio_dec, tot_utlzn_ms_f, tot_time_f);
+    if (is_notify)
+      writer->printf("\"Total\",%.2f,%.*f,,%.3f,\n",
+          tot_n_f, ratio_dec, tot_utlzn_ms_f, tot_time_f);
+    else
+      {
+      writer->puts(  "===============+========+========+=========");
+      writer->printf("      Total Avg|%8.2f|%8.*f|%9.3f\n",
+          tot_n_f, ratio_dec, tot_utlzn_ms_f, tot_time_f);
+      }
     }
+  return (!first);
   }
 
 static const char *PollResStr( OvmsPoller::OvmsNextPollResult res)
