@@ -358,6 +358,13 @@ config OVMS_VEHICLE_DEMO
     help
         Enable to include support for demonstration vehicles.
 
+config OVMS_VEHICLE_ENERGICA
+    bool "Include support for Energica motorbikes"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Tesla Roadster vehicles.
+
 config OVMS_VEHICLE_TESLAROADSTER
     bool "Include support for Tesla Roadster vehicles"
     default y
