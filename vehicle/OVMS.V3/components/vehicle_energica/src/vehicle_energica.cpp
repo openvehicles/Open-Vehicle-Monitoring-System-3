@@ -70,7 +70,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 		case 0x20: {
 			const pid_20* val = reinterpret_cast<const pid_20*>(d);
 
-			StandardMetrics.ms_v_mot_temp->SetValue(val->motor_temp_C());
+			*StandardMetrics.ms_v_mot_temp = val->motor_temp_C();
 			break;
 		}
 
@@ -78,10 +78,10 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 		case 0x102: {
 			const pid_102* val = reinterpret_cast<const pid_102*>(d);
 
-			StandardMetrics.ms_v_env_on->SetValue(val->ignition);
-			StandardMetrics.ms_v_env_footbrake->SetValue(val->rear_brake ? 1.0f : 0.0f);
-			StandardMetrics.ms_v_env_handbrake->SetValue(val->front_brake);
-			StandardMetrics.ms_v_env_headlights->SetValue(val->high_beam);
+			*StandardMetrics.ms_v_env_on         = val->ignition;
+			*StandardMetrics.ms_v_env_footbrake  = (val->rear_brake ? 1.0f : 0.0f);
+			*StandardMetrics.ms_v_env_handbrake  = val->front_brake;
+			*StandardMetrics.ms_v_env_headlights = val->high_beam;
 			break;
 		}
 
@@ -89,10 +89,10 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 		case 0x104: {
 			const pid_104* val = reinterpret_cast<const pid_104*>(d);
 
-			StandardMetrics.ms_v_mot_rpm->SetValue(val->rpm);
-			StandardMetrics.ms_v_pos_speed->SetValue(val->speed_kmh());
-			StandardMetrics.ms_v_pos_odometer->SetValue(val->odometer_km());
-			StandardMetrics.ms_v_env_gear->SetValue(val->reverse ? -1 : 1);
+			*StandardMetrics.ms_v_mot_rpm      = val->rpm;
+			*StandardMetrics.ms_v_pos_speed    = val->speed_kmh();
+			*StandardMetrics.ms_v_pos_odometer = val->odometer_km();
+			*StandardMetrics.ms_v_env_gear     = val->reverse ? -1 : 1;
 			break;
 		}
 
@@ -100,7 +100,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 		case 0x109: {
 			const pid_109* val = reinterpret_cast<const pid_109*>(d);
 
-			StandardMetrics.ms_v_env_throttle->SetValue(val->throttle_pc());
+			*StandardMetrics.ms_v_env_throttle = val->throttle_pc();
 			break;
 		}
 
@@ -108,15 +108,15 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 		case 0x200: {
 			const pid_200* val = reinterpret_cast<const pid_200*>(d);
 
-			StandardMetrics.ms_v_bat_soc    ->SetValue(val->soc());
-			StandardMetrics.ms_v_bat_soh    ->SetValue(val->soh());
-			StandardMetrics.ms_v_bat_voltage->SetValue(val->pack_voltage());
-			StandardMetrics.ms_v_bat_current->SetValue(val->pack_current());
-			StandardMetrics.ms_v_bat_power  ->SetValue(val->power_W() * 0.001f);
-			StandardMetrics.ms_v_bat_temp   ->SetValue(val->temp_cell_max());
+			*StandardMetrics.ms_v_bat_soc     = val->soc();
+			*StandardMetrics.ms_v_bat_soh     = val->soh();
+			*StandardMetrics.ms_v_bat_voltage = val->pack_voltage();
+			*StandardMetrics.ms_v_bat_current = val->pack_current();
+			*StandardMetrics.ms_v_bat_power   = val->power_W() * 0.001f;
+			*StandardMetrics.ms_v_bat_temp    = val->temp_cell_max();
 
-			StandardMetrics.ms_v_bat_pack_tmin->SetValue(val->temp_cell_min());
-			StandardMetrics.ms_v_bat_pack_tmax->SetValue(val->temp_cell_max());
+			*StandardMetrics.ms_v_bat_pack_tmin = val->temp_cell_min();
+			*StandardMetrics.ms_v_bat_pack_tmax = val->temp_cell_max();
 			break;
 		}
 
@@ -124,39 +124,39 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 		case 0x203: {
 			const pid_203* val = reinterpret_cast<const pid_203*>(d);
 
-			StandardMetrics.ms_v_bat_pack_vmin->SetValue(val->min_cell_voltage() * 0.001f); // mV to V
-			StandardMetrics.ms_v_bat_pack_vmax->SetValue(val->max_cell_voltage() * 0.001f);
-			StandardMetrics.ms_v_bat_pack_vavg->SetValue(val->avg_cell_voltage() * 0.001f);
+			*StandardMetrics.ms_v_bat_pack_vmin = val->min_cell_voltage() * 0.001f; // mV to V
+			*StandardMetrics.ms_v_bat_pack_vmax = val->max_cell_voltage() * 0.001f;
+			*StandardMetrics.ms_v_bat_pack_vavg = val->avg_cell_voltage() * 0.001f;
 			break;
 		}
 
 		// GPS
 		case 0x410: {
-			uint16_t msg = *reinterpret_cast<uint16_t*>(d);
+			uint16_t msg = *reinterpret_cast<uint16_t*>(d); // PID 0x410 is little-endian
 			switch (msg) {
 				case msg_gps_latspeed: {
 					const pid_410_gps_latspdcourse* val = reinterpret_cast<const pid_410_gps_latspdcourse*>(d);
 
-					StandardMetrics.ms_v_pos_latitude->SetValue(val->latitude());
-					StandardMetrics.ms_v_pos_direction->SetValue(val->course());
-					StandardMetrics.ms_v_pos_gpsspeed->SetValue(val->speed());
+					*StandardMetrics.ms_v_pos_latitude  = val->latitude();
+					*StandardMetrics.ms_v_pos_direction = val->course();
+					*StandardMetrics.ms_v_pos_gpsspeed  = val->speed();
 					break;
 				}
 
 				case msg_gps_longalt: {
 					const pid_410_gps_longalt* val = reinterpret_cast<const pid_410_gps_longalt*>(d);
 
-					StandardMetrics.ms_v_pos_longitude->SetValue(val->longitude());
-					StandardMetrics.ms_v_pos_altitude->SetValue(val->altitude());
-					StandardMetrics.ms_v_pos_gpslock->SetValue(val->fix() != 0);
+					*StandardMetrics.ms_v_pos_longitude = val->longitude();
+					*StandardMetrics.ms_v_pos_altitude  = val->altitude();
+					*StandardMetrics.ms_v_pos_gpslock   = val->fix() != 0;
 					break;
 				}
 
 				case msg_gps_datetime: {
 					const pid_410_gps_date* val = reinterpret_cast<const pid_410_gps_date*>(d);
 
-					StandardMetrics.ms_v_pos_gpstime->SetValue(val->time_utc()); // FIXME: do not convert for each message: keep last one and convert only when required (by IncomingPollReply()?)
-					StandardMetrics.ms_v_pos_satcount->SetValue(val->n_satellites());
+					*StandardMetrics.ms_v_pos_gpstime  = val->time_utc(); // FIXME: do not convert for each message: keep last one and convert only when required (by IncomingPollReply()?)
+					*StandardMetrics.ms_v_pos_satcount = val->n_satellites();
 					break;
 				}
 			}

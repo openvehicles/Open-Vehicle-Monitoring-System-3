@@ -19,6 +19,7 @@ public:
 
 	float motor_temp_C() const { return motor_temp * 0.1f; }
 };
+static_assert(sizeof(pid_20) == 8, "Energica: sizeof pid_20");
 
 #pragma pack(1)
 class pid_102 { // little-endian
@@ -56,6 +57,7 @@ public:
 
 	uint8_t _unk4; // Remainder
 };
+static_assert(sizeof(pid_102) == 8, "Energica: sizeof pid_102");
 
 #pragma pack(1)
 class pid_104 { // little-endian
@@ -70,6 +72,7 @@ public:
 	float odometer_km() const { return odometer * 0.1f; }
 	float speed_kmh  () const { return speed * 0.1f; }
 };
+static_assert(sizeof(pid_104) == 8, "Energica: sizeof pid_104");
 
 #pragma pack(1)
 class pid_109 { // little-endian
@@ -83,6 +86,7 @@ public:
 	float current_max_out()   const { return _current_max_out * 0.1f; }
 	float current_max_regen() const { return _current_max_regen * 0.1f; }
 };
+static_assert(sizeof(pid_109) == 8, "Energica: sizeof pid_109");
 
 #pragma pack(1)
 class pid_200 { // big-endian
@@ -102,6 +106,7 @@ public: // Conversion from big-endian
 	uint16_t pack_current() const { return ::ntohs(_pack_current); }
 	uint32_t power_W()      const { return pack_voltage() * pack_current(); }
 };
+static_assert(sizeof(pid_200) == 8, "Energica: sizeof pid_200");
 
 #pragma pack(1)
 class pid_203 { // big-endian
@@ -118,15 +123,27 @@ public: // Conversion from big-endian
 	uint16_t min_cell_voltage() const { return ::ntohs(_min_cell_voltage); }
 	uint16_t max_cell_voltage() const { return ::ntohs(_max_cell_voltage); }
 };
+static_assert(sizeof(pid_203) == 8, "Energica: sizeof pid_203");
+
 
 constexpr uint16_t msg_gps_latspeed  = 0x1a00;
 constexpr uint16_t msg_gps_longalt   = 0x1a01;
 constexpr uint16_t msg_gps_datetime  = 0x1afe;
 
-#pragma pack(1)
-class pid_410_gps_latspdcourse {
-	uint16_t _msg : 16; // 0x1a00
+/**
+ * All 0x410 PIDs start with a 2-bytes marker identifying the rest of the data (message type).
+ * Classes describing those data inherit the `_pid_410` class that include this maker, then
+ * define their memory mapping.
+ */
 
+#pragma pack(1)
+class _pid_410 {
+	uint16_t _msg : 16;
+};
+static_assert(sizeof(_pid_410) == 2, "Energica: sizeof _pid_410");
+
+#pragma pack(1)
+class pid_410_gps_latspdcourse : _pid_410 {
 	uint16_t _course : 9; // ° mag
 	uint16_t _speed  : 9; // km/h
 
@@ -145,10 +162,10 @@ public:
 		return (_lat_neg ? -lat : lat);
 	}
 };
-#pragma pack(1)
-class pid_410_gps_longalt {
-	uint16_t _msg : 16; // 0x1a01
+static_assert(sizeof(pid_410_gps_latspdcourse) == 8, "Energica: sizeof pid_410 (latitude)");
 
+#pragma pack(1)
+class pid_410_gps_longalt : _pid_410 {
 	uint8_t  _fix  : 2;
 
 	uint16_t _altitude : 15;
@@ -169,10 +186,10 @@ public:
 		return (_long_neg ? -lon : lon);
 	}
 };
-#pragma pack(1)
-class pid_410_gps_date {
-	uint16_t _msg : 16; // 0x1afe
+static_assert(sizeof(pid_410_gps_longalt) == 8, "Energica: sizeof pid_410 (longitude)");
 
+#pragma pack(1)
+class pid_410_gps_date : _pid_410 {
 	uint16_t _ms    : 10;
 	uint8_t  _sec   : 6;
 	uint8_t  _min   : 6;
@@ -198,5 +215,6 @@ public:
 		return static_cast<int64_t>(std::mktime(std::gmtime(&t)));
 	}
 };
+static_assert(sizeof(pid_410_gps_date) == 8, "Energica: sizeof pid_410 (date)");
 
 #endif // VEHICLE_ENERGICA_PIDS_H
