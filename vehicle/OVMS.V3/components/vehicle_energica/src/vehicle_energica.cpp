@@ -132,7 +132,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 		// GPS
 		case 0x410: {
-			uint16_t msg = *reinterpret_cast<uint16_t*>(d); // PID 0x410 is little-endian
+			uint16_t msg = reinterpret_cast<_pid_410*>(d)->_msg; // PID 0x410 is little-endian
 			switch (msg) {
 				case msg_gps_latspeed: {
 					const pid_410_gps_latspdcourse* val = reinterpret_cast<const pid_410_gps_latspdcourse*>(d);
@@ -148,7 +148,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 					*StandardMetrics.ms_v_pos_longitude = val->longitude();
 					*StandardMetrics.ms_v_pos_altitude  = val->altitude();
-					*StandardMetrics.ms_v_pos_gpslock   = val->fix() != 0;
+					*StandardMetrics.ms_v_pos_gpslock   = (val->fix() != 0);
 					break;
 				}
 

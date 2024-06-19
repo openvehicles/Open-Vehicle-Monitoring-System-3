@@ -137,7 +137,7 @@ constexpr uint16_t msg_gps_datetime  = 0x1afe;
  */
 
 #pragma pack(1)
-class _pid_410 {
+struct _pid_410 {
 	uint16_t _msg : 16;
 };
 static_assert(sizeof(_pid_410) == 2, "Energica: sizeof _pid_410");
@@ -179,8 +179,8 @@ class pid_410_gps_longalt : _pid_410 {
 	bool _unk1 : 1;
 
 public:
-	float fix() const { return _fix; }
-	float altitude() const { return (_alt_neg ? _altitude : -_altitude); }
+	float fix      () const { return _fix; }
+	float altitude () const { return (_alt_neg ? -_altitude : _altitude); }
 	float longitude() const {
 		float lon = (_long_min_10000 /  600000.0f) + (_long_min / 60.0f) + _long_degree;
 		return (_long_neg ? -lon : lon);
@@ -202,17 +202,23 @@ class pid_410_gps_date : _pid_410 {
 	uint8_t  _nsat	: 5;
 
 public:
+	float   seconds() const { return _sec + _ms * 0.001f; }
+	uint8_t	minutes() const { return _min; }
+	uint8_t	hours  () const { return _hours; }
+	uint8_t day    () const { return _day; }
+	uint8_t month  () const { return _month; }
+	int     year   () const { return _year + 2000; }
+
 	float n_satellites() const { return _nsat; }
 	int64_t time_utc() const {
 		std::tm tm{};
-		tm.tm_sec = _sec;
-		tm.tm_min = _min;
+		tm.tm_sec  = _sec;
+		tm.tm_min  = _min;
 		tm.tm_hour = _hours;
 		tm.tm_mday = _day;
-		tm.tm_mon = _month;
+		tm.tm_mon  = _month;
 		tm.tm_year = _year + 100;
-		std::time_t t = std::mktime(&tm);
-		return static_cast<int64_t>(std::mktime(std::gmtime(&t)));
+		return static_cast<int64_t>(std::mktime(&tm)); // GPS time is already in UTC // TODO: is it since epoch?
 	}
 };
 static_assert(sizeof(pid_410_gps_date) == 8, "Energica: sizeof pid_410 (date)");
