@@ -1,0 +1,35 @@
+diff --git a/mongoose.c b/mongoose.c
+index b12cff18..8ea7f06a 100644
+--- a/mongoose.c
++++ b/mongoose.c
+@@ -6979,7 +6979,7 @@ void mg_http_serve_file(struct mg_connection *nc, struct http_message *hm,
+     };
+     mg_http_send_error(nc, code, "Open failed");
+   } else {
+-    char etag[50], current_time[50], last_modified[50], range[70];
++    char etag[50], current_time[50], last_modified[50], range[76];
+     time_t t = (time_t) mg_time();
+     int64_t r1 = 0, r2 = 0, cl = st.st_size;
+     struct mg_str *range_hdr = mg_get_http_header(hm, "Range");
+@@ -9160,7 +9160,7 @@ static void mg_send_file_data(struct mg_connection *nc, FILE *fp) {
+ static void mg_do_ssi_include(struct mg_connection *nc, struct http_message *hm,
+                               const char *ssi, char *tag, int include_level,
+                               const struct mg_serve_http_opts *opts) {
+-  char file_name[MG_MAX_PATH], path[MG_MAX_PATH], *p;
++  char file_name[MG_MAX_PATH], path[MG_MAX_PATH+2], *p;
+   FILE *fp;
+ 
+   /*
+diff --git a/mongoose.h b/mongoose.h
+index 3bcf8147..5649e1a7 100644
+--- a/mongoose.h
++++ b/mongoose.h
+@@ -1768,7 +1768,7 @@ typedef struct {
+ 
+ void cs_md5_init(cs_md5_ctx *c);
+ void cs_md5_update(cs_md5_ctx *c, const unsigned char *data, size_t len);
+-void cs_md5_final(unsigned char *md, cs_md5_ctx *c);
++void cs_md5_final(unsigned char md[16], cs_md5_ctx *c);
+ 
+ #ifdef __cplusplus
+ }
