@@ -46,17 +46,17 @@ public:
 	bool throttle_on : 1; // 1 when throttle is not idle (>0%), 0 when 0% throttle
 
 	// Byte 2
-	bool plugged : 2;
+	bool plugged : 1;
 	bool charge_port_unlocked : 1;
-	bool _unk2 : 2;
+	bool _unk3 : 3;
 	bool front_brake : 1;
 	bool rear_brake : 1;
-	bool _unk3 : 1;
+	bool _unk4 : 1;
 
 	int16_t lateral_acceleration; // g
 	int16_t frontal_acceleration; // g
 
-	uint8_t _unk4; // Remainder
+	uint8_t _unk5; // Remainder
 };
 #pragma pack(pop)
 static_assert(sizeof(pid_102) == 8, "Energica: sizeof pid_102");
@@ -107,7 +107,7 @@ public: // Conversion from big-endian
 	uint8_t soh()           const { return _soh; }
 	uint8_t temp_cell_max() const { return _temp_cell_max; }
 	float   pack_voltage()  const { return ::ntohs(_pack_voltage) * 0.1f; }
-	float   pack_current()  const { return ((int16_t)::ntohs(_pack_current)) * 0.1f; }
+	float   pack_current()  const { return -0.1f * ((int16_t)::ntohs(_pack_current)); } // Current is battery-centric (<0 when going out of the battery)
 	float   power_W()       const { return pack_voltage() * pack_current(); }
 };
 #pragma pack(pop)
@@ -127,6 +127,7 @@ public: // Conversion from big-endian
 	uint8_t  max_cell_num    () const { return _max_cell_num; }
 	uint16_t min_cell_voltage() const { return ::ntohs(_min_cell_voltage); }
 	uint16_t max_cell_voltage() const { return ::ntohs(_max_cell_voltage); }
+	uint16_t cell_balance    () const { return max_cell_voltage() - min_cell_voltage(); }
 };
 #pragma pack(pop)
 static_assert(sizeof(pid_203) == 8, "Energica: sizeof pid_203");
