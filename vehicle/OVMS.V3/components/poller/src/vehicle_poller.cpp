@@ -988,29 +988,12 @@ void OvmsPollers::NotifyPollerTrace()
   if (!PollerTimesTrace(&buf, true))
     return;
 
-  if (buf.length() <= 1024)
-    MyNotify.NotifyString("info", "poller.report", buf.c_str());
-  else
+  // break it up into pieces.
+  std::stringstream ss(buf);
+  std::string s;
+  while (std::getline(ss, s))
     {
-    // break it up into pieces.
-    int len = 0;
-    std::stringstream ss(buf);
-    StringWriter sbuf(1025);
-    std::string s;
-    while (std::getline(ss, s))
-      {
-      int slen = s.length();
-      if ((slen+len) > 1024)
-        {
-        MyNotify.NotifyString("info", "poller.report", sbuf.c_str());
-        sbuf.clear();
-        len = 0;
-        }
-      len += slen;
-      sbuf.puts(s.c_str());
-      }
-    if (len > 0)
-      MyNotify.NotifyString("info", "poller.report", sbuf.c_str());
+    MyNotify.NotifyString("data", "log.pollstats", s.c_str());
     }
   }
 
@@ -1849,12 +1832,17 @@ void OvmsPollers::PollerTimesReset()
 
 bool OvmsPollers::PollerTimesTrace( OvmsWriter* writer, bool is_notify )
   {
-  metric_unit_t ratio_unt = OvmsMetricGetUserUnit(GrpRatio, Permille);
+  metric_unit_t ratio_unt;
+  if (is_notify)
+    ratio_unt = Permille;
+  else
+    ratio_unt = OvmsMetricGetUserUnit(GrpRatio, Permille);
   int ratio_dec = (ratio_unt == Percentage) ? 4 : 3;
   bool first = true;
   uint32_t avg_time_sum_us = 0;
   uint32_t avg_utlzn_sum_us = 0;
   uint32_t avg_count_sum = 0;
+  uint32_t ident = 0;
   for (auto it = m_poll_time_stats.begin(); it != m_poll_time_stats.end(); ++it)
     {
     average_value_t &cur = it->second;
@@ -1875,8 +1863,7 @@ bool OvmsPollers::PollerTimesTrace( OvmsWriter* writer, bool is_notify )
       first = false;
       if (is_notify)
         {
-        const char * unit = (ratio_unt == Permille) ? "permil" : "percent";
-        writer->printf("\"Type\",\"Count (hz)\",\"Avg Utlztn (%s)\",\"Peak Utlztn (%s)\", \"Avg Time (ms)\",\"Peak Time (ms)\"\n", unit, unit);
+        // writer->puts("*-LOG-PollStats,0,\"type\",\"count_hz\",\"avg_util_pm\",\"peak_util_pm\",\"avg_time_ms\",\"peak_time_ms\"")
         }
         else
         {
@@ -1915,13 +1902,16 @@ bool OvmsPollers::PollerTimesTrace( OvmsWriter* writer, bool is_notify )
     float avg_n_f = avg_100n  / (average_sep_s * 100.0);
     // Convert to micro-s per 10s to ms per s (ie permille)
     float avg_utlzn_ms_f = UnitConvert( Permille, ratio_unt, avg_utlzn_us / (average_sep_s * 1000.0F));
-    float avg_time_f = avg_time / 1000.0;
+    float avg_time_f = avg_time / 10000.0;
     float max_time_f = UnitConvert(Permille, ratio_unt, max_time / (average_sep_s * 1000.0F));
     float max_val_f  = max_val  / 1000.0;
 
     if (is_notify)
-      writer->printf("\"%s\",%.2f,%.*f,%.*f,%.3f,%.3f\n",
-          desc.c_str(), avg_n_f, ratio_dec, avg_utlzn_ms_f, ratio_dec, max_time_f, avg_time_f, max_val_f);
+      {
+      ++ident;
+      writer->printf("*-LOG-PollStats,%" PRIu32 ",86400,\"%s\",%.2f,%.*f,%.*f,%.3f,%.3f\n",
+          ident, desc.c_str(), avg_n_f, ratio_dec, avg_utlzn_ms_f, ratio_dec, max_time_f, avg_time_f, max_val_f);
+      }
     else
       {
       writer->printf("%-12sAvg|%8.2f|%8.*f|%9.3f\n",
@@ -1940,8 +1930,11 @@ bool OvmsPollers::PollerTimesTrace( OvmsWriter* writer, bool is_notify )
     float tot_utlzn_ms_f = UnitConvert(Permille, ratio_unt, avg_utlzn_sum_us / (average_sep_s * 1000.0F));
     float tot_time_f = avg_time_sum_us / 1000.0;
     if (is_notify)
-      writer->printf("\"Total\",%.2f,%.*f,,%.3f,\n",
-          tot_n_f, ratio_dec, tot_utlzn_ms_f, tot_time_f);
+      {
+      ++ident;
+      writer->printf("*-LOG-PollStats,%" PRIu32 ",86400,\"Total\",%.2f,%.*f,,%.3f,\n",
+          ident, tot_n_f, ratio_dec, tot_utlzn_ms_f, tot_time_f);
+      }
     else
       {
       writer->puts(  "===============+========+========+=========");
