@@ -1223,7 +1223,7 @@ void OvmsPollers::PollerTask()
 
     for (int istx = 0; istx < 2; ++istx)
       {
-      uint32_t ovf_count = m_overflow_count[istx];
+      uint32_t ovf_count = Atomic_Get(m_overflow_count[istx]);
       if (ovf_count > 0)
         {
         ESP_LOGI(TAG, "Poller[Frame]: %s Task Queue Overflow Run %" PRIu32, ( istx ? "TX" : "RX"), ovf_count);
