@@ -72,10 +72,7 @@ public:
 	void IncomingFrameCan1(CAN_frame_t* p_frame) override;
 
 protected:
-#if 0
-	void Ticker1(uint32_t ticker) override;
-	void Ticker60(uint32_t ticker) override;
-#endif
+	// void Ticker1(uint32_t ticker) override;
 
 	// Custom metrics
 	OvmsMetricFloat* m_v_cell_balance;

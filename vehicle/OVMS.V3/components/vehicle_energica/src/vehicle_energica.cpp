@@ -92,7 +92,7 @@ OvmsVehicleEnergica::OvmsVehicleEnergica()
 {
 	ESP_LOGI(TAG, "Energica vehicle module");
 
-	RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+	RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
 	// Custom metrics
 	m_v_cell_balance = MyMetrics.InitFloat("nrjk.v.b.c.balance", SM_STALE_MIN, 0, Volts);
@@ -130,7 +130,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 			if (val->charging) { // Charging, start charge session if not running
 				if (!charge_session) {
 					ESP_LOGI(TAG, "Charge started");
-					charge_session.start();
+					last_charge_notif = charge_session.start();
 				}
 			} else { // Not charging, stop charge session if running
 				if (charge_session) {
@@ -169,7 +169,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 			const pid_200* val = reinterpret_cast<const pid_200*>(d);
 
 			float volts = val->pack_voltage();
-			float amps = val->pack_current();
+			float amps  = val->pack_current();
 
 			*StandardMetrics.ms_v_bat_soc     = val->soc();
 			*StandardMetrics.ms_v_bat_soh     = val->soh();
@@ -253,12 +253,6 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 #if 0
 void OvmsVehicleEnergica::Ticker1(uint32_t ticker)
 {
-}
-
-void OvmsVehicleEnergica::Ticker60(uint32_t ticker)
-{
-	if (charge_session) {
-	}
 }
 #endif
 
