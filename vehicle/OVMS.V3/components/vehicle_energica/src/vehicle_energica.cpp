@@ -181,7 +181,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 			*StandardMetrics.ms_v_bat_pack_tmin = val->temp_cell_min();
 			*StandardMetrics.ms_v_bat_pack_tmax = val->temp_cell_max();
 
-			if (charge_session.push(volts, amps)) {
+			if (charge_session.push(volts, amps) && charge_session.last_push() - last_charge_notif >= CHARGE_NOTIF_MS) {
 				float kwh = (float)charge_session.current_kWh();
 				timestamp duration = charge_session.duration_ms() / 1000;
 				*StandardMetrics.ms_v_charge_current = amps;
@@ -190,6 +190,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 				*StandardMetrics.ms_v_charge_time    = duration;
 				*StandardMetrics.ms_v_charge_kwh     = kwh;
 				ESP_LOGI(TAG, "Charge duration %llu seconds, %.3f kWh", duration, kwh);
+				last_charge_notif = charge_session.last_push();
 			}
 			break;
 		}
