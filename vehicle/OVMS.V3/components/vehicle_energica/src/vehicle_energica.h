@@ -33,45 +33,40 @@
 
 #include "vehicle.h"
 
-#if 0
-#include <sys/time.h>
-inline uint64_t time_us(void)
-{
-	struct timeval tv;
-	::gettimeofday(&tv, nullptr);
-	return int64_t(tv.tv_sec) * 1000000 + tv.tv_usec;
-}
-#else
 #include <esp_timer.h>
-inline int64_t time_us() { return esp_timer_get_time(); }
-#endif
-inline int64_t time_ms() { return time_us() / 1000; }
+typedef uint64_t timestamp;
+inline timestamp time_us() { return (timestamp)esp_timer_get_time(); }
+inline timestamp time_ms() { return time_us() / 1000; }
 
+constexpr timestamp CHARGE_NOTIF_MS = 1000; // Notify charge status every 'CHARGE_NOTIF_MS'ms
 
 class kWhMeasure {
-	bool ongoing;
-	int64_t t_start, t_last;
-	double power_last, sum_power; // 'sum_power' in W.ms
+	bool ongoing{false};
+	timestamp t_start{0}, t_last{0};
+	double power_last{0}, sum_power{0}; // 'sum_power' in W.ms
 
 public:
 
-	kWhMeasure();
+	kWhMeasure() = default;
 
-	explicit operator bool () const { return (ongoing && t_last > 0); } // Measure available
+	explicit operator bool () const { return ongoing; }
+	bool     has_measures  () const { return (t_last > 0); } // Measure available
 
-	void start();
-	void stop ();
+	timestamp start();
+	void      stop ();
 
-	int64_t duration_ms() const { return (ongoing ? time_ms() - t_start : t_start); }
-	double  current_kWh() const { constexpr double i = 1.0 / 3600000; return sum_power * i; }
+	timestamp duration_ms() const { return (ongoing ? time_ms() - t_start : t_start); }
+	timestamp last_push  () const { return t_last; }
+	double    current_kWh() const { constexpr double i = 1.0 / 3600000; return sum_power * i; }
 
 	bool push(float volt, float amp);
 
 };
 
 class OvmsVehicleEnergica : public OvmsVehicle {
+
 public:
-	OvmsVehicleEnergica();
+	 OvmsVehicleEnergica();
 	~OvmsVehicleEnergica();
 
 	void IncomingFrameCan1(CAN_frame_t* p_frame) override;
@@ -86,6 +81,7 @@ protected:
 	OvmsMetricFloat* m_v_cell_balance;
 
 	kWhMeasure charge_session;
+	timestamp last_charge_notif{0};
 
 };
 

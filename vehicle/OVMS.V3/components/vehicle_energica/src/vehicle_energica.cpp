@@ -50,24 +50,20 @@ static const char *TAG = "v-energica";
 #include "metrics_standard.h"
 #include "vehicle_energica_pids.h"
 
-// TODO: Detect charge start/stop (PID 0x102 bit 9) and build charge stats
 
-kWhMeasure::kWhMeasure()
-	: ongoing{false}
-	, t_start{-1}, t_last{-1}
-	, power_last{0}, sum_power{0}
-{ }
-
-void kWhMeasure::start()
+timestamp kWhMeasure::start()
 {
 	t_start = time_ms();
-	t_last  = -1;
+	t_last  = 0;
 
 	power_last = 0;
 	sum_power  = 0;
 
 	ongoing = true;
+
+	return t_start;
 }
+
 void kWhMeasure::stop()
 {
 	t_start = duration_ms();
@@ -90,9 +86,6 @@ bool kWhMeasure::push(float volt, float amp)
 
 	return ret;
 }
-
-
-
 
 
 OvmsVehicleEnergica::OvmsVehicleEnergica()
@@ -136,12 +129,18 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 			if (val->charging) { // Charging, start charge session if not running
 				if (!charge_session) {
+					ESP_LOGI(TAG, "Charge started");
 					charge_session.start();
 				}
 			} else { // Not charging, stop charge session if running
 				if (charge_session) {
+					ESP_LOGI(TAG, "Charge stopped");
 					charge_session.stop();
 				}
+			}
+
+			if (charge_session && val->blink_push) {
+				ESP_LOGI(TAG, "Charge duration %llu seconds, %.3f kWh", charge_session.duration_ms() / 1000, (float)charge_session.current_kWh());
 			}
 			break;
 		}
@@ -183,11 +182,14 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 			*StandardMetrics.ms_v_bat_pack_tmax = val->temp_cell_max();
 
 			if (charge_session.push(volts, amps)) {
+				float kwh = (float)charge_session.current_kWh();
+				timestamp duration = charge_session.duration_ms() / 1000;
 				*StandardMetrics.ms_v_charge_current = amps;
 				*StandardMetrics.ms_v_charge_voltage = volts;
 				*StandardMetrics.ms_v_charge_power   = (volts * amps) / 1000;
-				*StandardMetrics.ms_v_charge_time    = charge_session.duration_ms() / 1000;
-				*StandardMetrics.ms_v_charge_kwh     = (float)charge_session.current_kWh();
+				*StandardMetrics.ms_v_charge_time    = duration;
+				*StandardMetrics.ms_v_charge_kwh     = kwh;
+				ESP_LOGI(TAG, "Charge duration %llu seconds, %.3f kWh", duration, kwh);
 			}
 			break;
 		}

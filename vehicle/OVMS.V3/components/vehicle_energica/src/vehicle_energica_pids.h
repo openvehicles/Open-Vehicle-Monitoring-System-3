@@ -27,31 +27,31 @@ class pid_102 { // little-endian
 
 public:
 	// Byte 0
-	bool mode_left  : 1;
-	bool mode_right : 1;
-	bool mode_push  : 1;
+	bool mode_left   : 1;
+	bool mode_right  : 1;
+	bool mode_push   : 1;
 	bool blink_right : 1;
 	bool blink_left  : 1;
 	bool blink_push	 : 1;
-	bool high_beam : 1;
-	bool low_beam  : 1;
+	bool high_beam   : 1;
+	bool low_beam    : 1;
 
 	// Byte 1
-	bool _unk0 : 1;
-	bool charging : 1;
-	bool _unk1 : 2; // Mode?
-	bool key_in : 1;
-	bool stand_up : 1; // 0 when stand is down
-	bool ignition : 1;
+	bool _unk0       : 1;
+	bool charging    : 1;
+	bool _unk1	     : 2; // Mode?
+	bool key_in      : 1;
+	bool stand_up    : 1; // 0 when stand is down
+	bool ignition    : 1;
 	bool throttle_on : 1; // 1 when throttle is not idle (>0%), 0 when 0% throttle
 
 	// Byte 2
-	bool plugged : 1;
+	bool plugged              : 1;
 	bool charge_port_unlocked : 1;
-	bool _unk3 : 3;
-	bool front_brake : 1;
-	bool rear_brake : 1;
-	bool _unk4 : 1;
+	bool _unk3                : 3;
+	bool front_brake          : 1;
+	bool rear_brake           : 1;
+	bool _unk4                : 1;
 
 	int16_t lateral_acceleration; // g
 	int16_t frontal_acceleration; // g
