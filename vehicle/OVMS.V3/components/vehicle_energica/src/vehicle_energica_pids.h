@@ -9,7 +9,6 @@
 #pragma pack(push,1)
 class pid_20 { // little-endian
 
-public:
 	// IGBT in 0.1° C
 	uint16_t igbt_min;
 	uint16_t igbt;
@@ -17,46 +16,92 @@ public:
 
 	uint16_t motor_temp; // 0.1° C
 
-	float motor_temp_C() const { return motor_temp * 0.1f; }
+public:
+	float inverter_temp_C() const { return igbt * 0.1f; }
+	float motor_temp_C   () const { return motor_temp * 0.1f; }
 };
 #pragma pack(pop)
 static_assert(sizeof(pid_20) == 8, "Energica: sizeof pid_20");
 
+enum button_state { released, pushed, left, right };
+enum beam_state   { off, low, high, both };
+
 #pragma pack(push,1)
 class pid_102 { // little-endian
 
-public:
-	// Byte 0
-	bool mode_left   : 1;
-	bool mode_right  : 1;
-	bool mode_push   : 1;
-	bool blink_right : 1;
-	bool blink_left  : 1;
-	bool blink_push	 : 1;
-	bool high_beam   : 1;
-	bool low_beam    : 1;
+	// Byte 0 - 0:7
+	bool _mode_left   : 1;
+	bool _mode_right  : 1;
+	bool _mode_push   : 1;
+	bool _blink_right : 1;
+	bool _blink_left  : 1;
+	bool _blink_push  : 1;
+	bool _high_beam   : 1;
+	bool _low_beam    : 1;
 
-	// Byte 1
-	bool _unk0       : 1;
-	bool charging    : 1;
-	bool _unk1	     : 2; // Mode?
-	bool key_in      : 1;
-	bool stand_up    : 1; // 0 when stand is down
-	bool ignition    : 1;
-	bool throttle_on : 1; // 1 when throttle is not idle (>0%), 0 when 0% throttle
+	// Byte 1 - 8:15
+	bool _unk0         : 1;
+	bool _energized    : 1;
+	bool _go_req       : 1;
+	bool _go	       : 1;
+	bool _key_in       : 1;
+	bool _stand_up     : 1; // 0 when stand is down
+	bool _ignition_btn : 1;
+	bool _throttle_on  : 1; // 1 when throttle is not idle (>0%), 0 when 0% throttle
 
-	// Byte 2
-	bool plugged              : 1;
-	bool charge_port_unlocked : 1;
-	bool _unk3                : 3;
-	bool front_brake          : 1;
-	bool rear_brake           : 1;
-	bool _unk4                : 1;
+	// Byte 2 - 16:23
+	bool _charging    : 1;
+	bool _charge_port_unlocked : 1;
+	bool _unk3        : 1;
+	bool _unk4        : 1;
+	bool _unk5        : 1;
+	bool _front_brake : 1;
+	bool _rear_brake  : 1;
+	bool _moving      : 1;
+
+	// Byte 3 - 24:31
+	uint8_t _unk7;
 
 	int16_t lateral_acceleration; // g
 	int16_t frontal_acceleration; // g
 
-	uint8_t _unk5; // Remainder
+protected:
+	static button_state _to_state(bool push, bool left, bool right)
+	{
+		if (push)  return button_state::pushed;
+		if (left)  return button_state::left;
+		if (right) return button_state::right;
+		return button_state::released;
+	}
+
+public:
+	button_state blinker_state() const { return _to_state(_blink_push, _blink_left, _blink_right); }
+	button_state mode_state   () const { return _to_state(_mode_push, _mode_left, _mode_right); }
+	beam_state   light_state  () const
+	{
+		if (_high_beam && _low_beam) return beam_state::both;
+		if (_high_beam)              return beam_state::high;
+		if (_low_beam)               return beam_state::low;
+		return beam_state::off;
+	}
+
+	inline bool front_brake() const { return _front_brake; }
+	inline bool rear_brake () const { return _rear_brake; }
+
+	inline bool go    () const { return _go; }
+	inline bool moving() const { return _moving; }
+
+	inline bool stand_up  () const	{ return  _stand_up; }
+	inline bool stand_down() const	{ return !_stand_up; }
+
+	inline bool ignition_button() const { return _ignition_btn; }
+	inline bool throttle_on    () const { return _throttle_on; }
+	inline bool key_in         () const { return _key_in; }
+
+	// TODO: double-check
+	inline bool energized  () const { return _energized; }
+	inline bool charge_lock() const { return !_charge_port_unlocked; }
+	inline bool charging   () const { return charge_lock() && stand_down(); }
 };
 #pragma pack(pop)
 static_assert(sizeof(pid_102) == 8, "Energica: sizeof pid_102");
@@ -68,8 +113,8 @@ public:
 	uint32_t odometer : 32; // 0.1 km
 	uint16_t speed    : 13; // 0.1 km/h
 	uint16_t rpm      : 15;
-	uint8_t _unk0     : 3;
-	bool reverse      : 1;
+	uint8_t  _unk0    : 3;
+	bool     reverse  : 1;
 
 	float odometer_km() const { return odometer * 0.1f; }
 	float speed_kmh  () const { return speed * 0.1f; }

@@ -37,6 +37,7 @@
  *   - ms_v_bat_consumption (from last speed and last power), ms_v_bat_energy_used, ms_v_bat_energy_recd
  * = Metrics ms_v_env_aux12v, ms_v_env_charging12v and nms_v_env_awake are always 'on'
  * = Charge stats:
+ *   - Detect charge when bike on stand *and* current <0
  *   - ms_v_charge_climit, ms_v_charge_type, ms_v_charge_limit_soc
  * = Trip
  * = Additionnal Energica-specific metrics
@@ -70,12 +71,11 @@ void kWhMeasure::stop()
 	ongoing = false;
 }
 
-bool kWhMeasure::push(float volt, float amp)
+bool kWhMeasure::push(float pwr)
 {
 	if (!ongoing) return false;
 
 	int64_t ts = time_ms();
-	float pwr = volt * amp;
 
 	bool ret = (t_last > 0);
 	if (ret) {
@@ -112,6 +112,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 		case 0x20: {
 			const pid_20* val = reinterpret_cast<const pid_20*>(d);
 
+			*StandardMetrics.ms_v_inv_temp = val->inverter_temp_C();
 			*StandardMetrics.ms_v_mot_temp = val->motor_temp_C();
 			break;
 		}
@@ -120,27 +121,35 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 		case 0x102: {
 			const pid_102* val = reinterpret_cast<const pid_102*>(d);
 
-			*StandardMetrics.ms_v_env_on         = val->ignition;
-			*StandardMetrics.ms_v_env_footbrake  = (val->rear_brake ? 1.0f : 0.0f);
-			*StandardMetrics.ms_v_env_handbrake  = val->front_brake; // TODO: side stand?
-			*StandardMetrics.ms_v_env_headlights = val->high_beam;
+			stand_down = val->stand_down();
 
-			*StandardMetrics.ms_v_charge_inprogress = val->charging; // TODO: val->charge_port_unlocked?
+			*StandardMetrics.ms_v_env_on         = val->go();
+			*StandardMetrics.ms_v_env_footbrake  = (val->rear_brake() ? 1.0f : 0.0f);
+			*StandardMetrics.ms_v_env_handbrake  = val->front_brake();
+			*StandardMetrics.ms_v_env_headlights = (val->light_state() == beam_state::high);
+			if (stand_down) *StandardMetrics.ms_v_env_gear = 0; // Bike on stand => parked
 
-			if (val->charging) { // Charging, start charge session if not running
+			*StandardMetrics.ms_v_door_chargeport   = val->charge_lock();
+			*StandardMetrics.ms_v_charge_inprogress = val->charging();
+
+			if (val->charging()) { // Charging. Start charge session if not running
 				if (!charge_session) {
-					ESP_LOGI(TAG, "Charge started");
 					last_charge_notif = charge_session.start();
+					ESP_LOGI(TAG, "Charge started");
 				}
-			} else { // Not charging, stop charge session if running
+			} else { // Not charging. Stop charge session if running
 				if (charge_session) {
-					ESP_LOGI(TAG, "Charge stopped");
 					charge_session.stop();
+					ESP_LOGI(TAG, "Charge stopped");
 				}
 			}
 
-			if (charge_session && val->blink_push) {
-				ESP_LOGI(TAG, "Charge duration %llu seconds, %.3f kWh", charge_session.duration_ms() / 1000, (float)charge_session.current_kWh());
+			if (val->blinker_state() == button_state::pushed && stand_down) { // Logs when bike on stand and blinker pressed
+				if (charge_session) {
+					ESP_LOGI(TAG, "Charge duration %llu seconds, %.3f kWh", charge_session.duration_ms() / 1000, (float)charge_session.current_kWh());
+				} else {
+					ESP_LOGI(TAG, "Not charging.");
+				}
 			}
 			break;
 		}
@@ -152,7 +161,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 			*StandardMetrics.ms_v_mot_rpm      = val->rpm;
 			*StandardMetrics.ms_v_pos_speed    = val->speed_kmh();
 			*StandardMetrics.ms_v_pos_odometer = val->odometer_km();
-			*StandardMetrics.ms_v_env_gear     = val->reverse ? -1 : 1;
+			*StandardMetrics.ms_v_env_gear     = (stand_down ? 0 : (val->reverse ? -1 : 1));
 			break;
 		}
 
@@ -170,6 +179,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 			float volts = val->pack_voltage();
 			float amps  = val->pack_current();
+			float pwr   = volts * amps; // W
 
 			*StandardMetrics.ms_v_bat_soc     = val->soc();
 			*StandardMetrics.ms_v_bat_soh     = val->soh();
@@ -181,12 +191,12 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 			*StandardMetrics.ms_v_bat_pack_tmin = val->temp_cell_min();
 			*StandardMetrics.ms_v_bat_pack_tmax = val->temp_cell_max();
 
-			if (charge_session.push(volts, amps) && charge_session.last_push() - last_charge_notif >= CHARGE_NOTIF_MS) {
+			if (charge_session.push(pwr) && charge_session.last_push() - last_charge_notif >= CHARGE_NOTIF_MS) {
 				float kwh = (float)charge_session.current_kWh();
 				timestamp duration = charge_session.duration_ms() / 1000;
 				*StandardMetrics.ms_v_charge_current = amps;
 				*StandardMetrics.ms_v_charge_voltage = volts;
-				*StandardMetrics.ms_v_charge_power   = (volts * amps) / 1000;
+				*StandardMetrics.ms_v_charge_power   = pwr / 1000; // kW
 				*StandardMetrics.ms_v_charge_time    = duration;
 				*StandardMetrics.ms_v_charge_kwh     = kwh;
 				ESP_LOGI(TAG, "Charge duration %llu seconds, %.3f kWh", duration, kwh);

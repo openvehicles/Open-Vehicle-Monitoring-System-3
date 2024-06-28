@@ -56,10 +56,10 @@ public:
 	void      stop ();
 
 	timestamp duration_ms() const { return (ongoing ? time_ms() - t_start : t_start); }
-	timestamp last_push  () const { return t_last; }
 	double    current_kWh() const { constexpr double i = 1.0 / 3600000; return sum_power * i; }
 
-	bool push(float volt, float amp);
+	bool push(float pwr);
+	inline timestamp last_push() const { return t_last; }
 
 };
 
@@ -73,6 +73,8 @@ public:
 
 protected:
 	// void Ticker1(uint32_t ticker) override;
+
+	bool stand_down;
 
 	// Custom metrics
 	OvmsMetricFloat* m_v_cell_balance;
