@@ -580,7 +580,12 @@ class OvmsVehicleFactory
     OvmsVehicle *m_currentvehicle;
     std::string m_currentvehicletype;
     map_vehicle_t m_vmap;
-    std::list<OvmsVehicle*> m_pending;
+    // Any vehicle modules still waiting to be shut down.
+    // Yes, having multiple vehicle modules watiting to finish
+    // shutdown is unlikely and may produce slightly weird
+    // results ... but they should actually be in the final stages
+    // so should be safer this way anyway
+    std::list<OvmsVehicle*> m_pending_shutdown;
 
     void DoClearVehicle( bool clearName, bool sendEvent, bool wait);
   public:

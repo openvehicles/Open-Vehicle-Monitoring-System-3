@@ -163,11 +163,11 @@ OvmsVehicleFactory::~OvmsVehicleFactory()
   // Should be shutdown properly
   if (m_currentvehicle)
     delete m_currentvehicle;
-  auto it = m_pending.begin();
-  while (it != m_pending.end())
+  auto it = m_pending_shutdown.begin();
+  while (it != m_pending_shutdown.end())
     {
     auto vehicle = (*it);
-    it = m_pending.erase(it);
+    it = m_pending_shutdown.erase(it);
     delete vehicle;
     }
   }
@@ -182,13 +182,13 @@ void OvmsVehicleFactory::EventSystemShuttingDown(std::string event, void* data)
 void OvmsVehicleFactory::EventTicker1ShuttingDown(std::string event, void* data)
   {
   bool iscleared = true;
-  auto it = m_pending.begin();
-  while (it != m_pending.end())
+  auto it = m_pending_shutdown.begin();
+  while (it != m_pending_shutdown.end())
     {
     if ((*it)->IsShutdown())
       {
       auto vehicle = (*it);
-      it = m_pending.erase(it);
+      it = m_pending_shutdown.erase(it);
       delete vehicle;
       }
     else
@@ -245,12 +245,12 @@ void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent, bool wa
       delete vehicle;
     else
       {
-      if (m_pending.empty())
+      if (m_pending_shutdown.empty())
         {
         MyEvents.DeregisterEvent(CHECK_SHUTDOWN_TAG);
         MyEvents.RegisterEvent(CHECK_SHUTDOWN_TAG,"ticker.1",std::bind(&OvmsVehicleFactory::EventTicker1ShuttingDown, this, _1, _2));
         }
-      m_pending.push_back(vehicle);
+      m_pending_shutdown.push_back(vehicle);
       }
     }
   }
