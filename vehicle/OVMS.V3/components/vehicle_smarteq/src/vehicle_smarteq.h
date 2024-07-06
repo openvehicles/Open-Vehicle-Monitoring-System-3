@@ -46,6 +46,15 @@
 #include "ovms_webserver.h"
 #endif
 
+// CAN buffer access macros: b=byte# 0..7 / n=nibble# 0..15
+#define CAN_BYTE(b)     data[b]
+#define CAN_UINT(b)     (((UINT)CAN_BYTE(b) << 8) | CAN_BYTE(b+1))
+#define CAN_UINT24(b)   (((uint32_t)CAN_BYTE(b) << 16) | ((UINT)CAN_BYTE(b+1) << 8) | CAN_BYTE(b+2))
+#define CAN_UINT32(b)   (((uint32_t)CAN_BYTE(b) << 24) | ((uint32_t)CAN_BYTE(b+1) << 16)  | ((UINT)CAN_BYTE(b+2) << 8) | CAN_BYTE(b+3))
+#define CAN_NIBL(b)     (data[b] & 0x0f)
+#define CAN_NIBH(b)     (data[b] >> 4)
+#define CAN_NIB(n)      (((n)&1) ? CAN_NIBL((n)>>1) : CAN_NIBH((n)>>1))
+
 using namespace std;
 
 
@@ -59,6 +68,11 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void HandleEnergy();
+
+  public:
+    virtual vehicle_command_t CommandClimateControl(bool enable);
+    virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    virtual vehicle_command_t CommandWakeup();
 
   public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -82,6 +96,9 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     
     void PollReply_BMS_BattVolts(const char* reply_data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* reply_data, uint16_t reply_len);
+    void PollReply_BCB_OBC(const char* reply_data, uint16_t reply_len);
+    void PollReply_HVAC(const char* reply_data, uint16_t reply_len);
+    void PollReply_TDB(const char* reply_data, uint16_t reply_len);
 
   protected:
     bool m_enable_write;                    // canwrite
@@ -96,6 +113,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
   protected:
     OvmsMetricVector<float> *mt_bms_temps;       // BMS temperatures
+    OvmsMetricBool          *mt_bus_awake;       // Can Bus active
+
+  protected:
+    bool m_booter_start;
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__
