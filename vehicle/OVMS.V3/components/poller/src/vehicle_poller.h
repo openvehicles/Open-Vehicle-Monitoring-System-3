@@ -742,11 +742,51 @@ class OvmsPollers : public InternalRamAllocated {
     static void vehicle_pause_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_poller_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void poller_times(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    // OvmsPoller Object
+    // OvmsPoller.GetPaused
+    static duk_ret_t DukOvmsPollerPaused(duk_context *ctx);
+    // OvmsPoller.GetUserPaused
+    static duk_ret_t DukOvmsPollerUserPaused(duk_context *ctx);
+    // OvmsPoller.Pause
+    static duk_ret_t DukOvmsPollerPause(duk_context *ctx);
+    // OvmsPoller.Resume
+    static duk_ret_t DukOvmsPollerResume(duk_context *ctx);
+
+    // OvmsPoller.Trace
+    static duk_ret_t DukOvmsPollerSetTrace(duk_context *ctx);
+    // OvmsPoller.GetTraceStatus
+    static duk_ret_t DukOvmsPollerGetTrace(duk_context *ctx);
+
+    // OvmsPoller.Times Sub-object
+    // OvmsPoller.Times.GetEnabled
+    static duk_ret_t DukOvmsPollerTimesGetStarted(duk_context *ctx);
+    // OvmsPoller.Times.Start Times
+    static duk_ret_t DukOvmsPollerTimesStart(duk_context *ctx);
+    // OvmsPoller.Times.Start Times
+    static duk_ret_t DukOvmsPollerTimesStop(duk_context *ctx);
+    // OvmsPoller.Times.Reset
+    static duk_ret_t DukOvmsPollerTimesReset(duk_context *ctx);
+    // OvmsPoller.Times.GetStatus
+    static duk_ret_t DukOvmsPollerTimesGetStatus(duk_context *ctx);
+#endif
+
+    typedef struct {
+      std::string desc;
+      float avg_n, avg_utlzn_ms, max_time, avg_time, max_val;
+    } times_trace_elt_t;
+    typedef struct {
+      std::list<times_trace_elt_t> items;
+      float tot_n, tot_utlzn_ms, tot_time;
+    } times_trace_t;
+
     void PollerTimesReset();
     void PollerStatus(int verbosity, OvmsWriter* writer);
     void SetUserPauseStatus(bool paused, int verbosity, OvmsWriter* writer);
+    bool LoadTimesTrace( metric_unit_t ratio_unit, times_trace_t &trace);
   public:
-    bool PollerTimesTrace( OvmsWriter* writer, bool is_notify = false);
+    bool PollerTimesTrace( OvmsWriter* writer);
     bool IsTracingTimes() { return (m_trace & trace_Times) != 0; }
     typedef std::function<void(canbus*, void *)> PollCallback;
     typedef std::function<void(const CAN_frame_t &)> FrameCallback;

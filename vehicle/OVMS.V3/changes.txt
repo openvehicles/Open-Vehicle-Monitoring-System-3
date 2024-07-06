@@ -13,6 +13,17 @@ Open Vehicle Monitor System v3 - Change log
     poller resume
     poller trace on|txrx|all|off|status-- Control verbose logging
     poller times on|off|status|reset   -- Control poller timing metrics
+  Duktape Support:
+    OvmsPoller.GetPaused
+    OvmsPoller.GetUserPaused
+    OvmsPoller.Pause
+    OvmsPoller.Resume
+    OvmsPoller.Trace
+    OvmsPoller.GetTraceStatus
+    OvmsPoller.Times.Start
+    OvmsPoller.Times.Stop
+    OvmsPoller.Times.Reset
+    OvmsPoller.Times.GetStatus
 - Duktape support for Metric Age / Stale
   New Duktape methods
     OvmsMetrics.IsStale
