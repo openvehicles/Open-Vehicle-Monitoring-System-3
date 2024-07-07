@@ -6,6 +6,7 @@ Open Vehicle Monitor System v3 - Change log
     add TPMS pressure
     add Internal Temp
     add Doors status
+- Support for completion in vfs commands.
 - Separate Polling from the Vehicle implementation
   New commands:
     poller status
