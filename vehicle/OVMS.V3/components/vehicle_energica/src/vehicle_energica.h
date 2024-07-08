@@ -38,7 +38,7 @@ typedef uint64_t timestamp;
 inline timestamp time_us() { return (timestamp)esp_timer_get_time(); }
 inline timestamp time_ms() { return time_us() / 1000; }
 
-constexpr timestamp CHARGE_NOTIF_MS = 1000; // Notify charge status every 'CHARGE_NOTIF_MS'ms
+constexpr timestamp CHARGE_NOTIF_MS = 5000; // Notify charge status every 'CHARGE_NOTIF_MS'ms
 
 class kWhMeasure {
 	bool ongoing{false};
@@ -56,7 +56,7 @@ public:
 	void      stop ();
 
 	timestamp duration_ms() const { return (ongoing ? time_ms() - t_start : t_start); }
-	double    current_kWh() const { constexpr double i = 1.0 / 3600000; return sum_power * i; }
+	double    current_kWh() const { constexpr double i = 1e-9 / 3.6; return sum_power * i; }
 
 	bool push(float pwr);
 	inline timestamp last_push() const { return t_last; }
@@ -74,7 +74,7 @@ public:
 protected:
 	// void Ticker1(uint32_t ticker) override;
 
-	bool stand_down;
+	bool stand_down, stats_printed;
 
 	// Custom metrics
 	OvmsMetricFloat* m_v_cell_balance;

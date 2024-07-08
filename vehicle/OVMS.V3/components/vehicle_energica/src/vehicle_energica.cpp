@@ -144,11 +144,14 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 				}
 			}
 
-			if (val->blinker_state() == button_state::pushed && stand_down) { // Logs when bike on stand and blinker pressed
-				if (charge_session) {
-					ESP_LOGI(TAG, "Charge duration %llu seconds, %.3f kWh", charge_session.duration_ms() / 1000, (float)charge_session.current_kWh());
-				} else {
-					ESP_LOGI(TAG, "Not charging.");
+			if (stand_down) { // Logs when bike on stand and blinker pressed
+				if (!stats_printed && val->blinker_state() == button_state::pushed) {
+					stats_printed = true;
+					if (charge_session) {
+						ESP_LOGI(TAG, "Charge duration %llu seconds, %.3f kWh", charge_session.duration_ms() / 1000, (float)charge_session.current_kWh());
+					} else {
+						ESP_LOGI(TAG, "Not charging.");
+					}
 				}
 			}
 			break;
@@ -192,7 +195,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 			*StandardMetrics.ms_v_bat_pack_tmax = val->temp_cell_max();
 
 			if (charge_session.push(pwr) && charge_session.last_push() - last_charge_notif >= CHARGE_NOTIF_MS) {
-				float kwh = (float)charge_session.current_kWh();
+				float kwh = -(float)charge_session.current_kWh(); // Make it >0
 				timestamp duration = charge_session.duration_ms() / 1000;
 				*StandardMetrics.ms_v_charge_current = amps;
 				*StandardMetrics.ms_v_charge_voltage = volts;
