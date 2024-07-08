@@ -1,6 +1,11 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Smart EQ 453:
+    add 5min Booster preheat cool
+    add TPMS pressure
+    add Internal Temp
+    add Doors status
 - Separate Polling from the Vehicle implementation
   New commands:
     poller status

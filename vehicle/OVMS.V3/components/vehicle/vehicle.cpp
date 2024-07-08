@@ -31,6 +31,7 @@
 #include "ovms_log.h"
 static const char *TAG = "vehicle";
 // static const char *TAGRX = "vehicle-rx";
+static const char *CHECK_SHUTDOWN_TAG = "vehicle-shutdown";
 
 #include <stdio.h>
 #include <algorithm>
@@ -158,12 +159,50 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 OvmsVehicleFactory::~OvmsVehicleFactory()
   {
   MyEvents.DeregisterEvent(TAG);
-  DoClearVehicle(false, false, false);
+  MyEvents.DeregisterEvent(CHECK_SHUTDOWN_TAG);
+  // Should be shutdown properly
+  if (m_currentvehicle)
+    delete m_currentvehicle;
+  auto it = m_pending_shutdown.begin();
+  while (it != m_pending_shutdown.end())
+    {
+    auto vehicle = (*it);
+    it = m_pending_shutdown.erase(it);
+    delete vehicle;
+    }
   }
 
 void OvmsVehicleFactory::EventSystemShuttingDown(std::string event, void* data)
   {
-  DoClearVehicle(false, false, true);
+  MyBoot.ShutdownPending(TAG);
+  MyEvents.RegisterEvent(CHECK_SHUTDOWN_TAG,"ticker.1",std::bind(&OvmsVehicleFactory::EventTicker1ShuttingDown, this, _1, _2));
+  DoClearVehicle(false, false, false/*dont wait*/);
+  }
+
+void OvmsVehicleFactory::EventTicker1ShuttingDown(std::string event, void* data)
+  {
+  bool iscleared = true;
+  auto it = m_pending_shutdown.begin();
+  while (it != m_pending_shutdown.end())
+    {
+    if ((*it)->IsShutdown())
+      {
+      auto vehicle = (*it);
+      it = m_pending_shutdown.erase(it);
+      delete vehicle;
+      }
+    else
+      {
+      iscleared = false;
+      ++it;
+      }
+    }
+  if (iscleared)
+    {
+    MyEvents.DeregisterEvent(CHECK_SHUTDOWN_TAG);
+    if (MyBoot.IsShuttingDown())
+      MyBoot.ShutdownReady(TAG);
+    }
   }
 
 OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
@@ -185,9 +224,16 @@ void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent, bool wa
   {
   if (m_currentvehicle)
     {
-    m_currentvehicle->ShuttingDown(wait);
+    m_currentvehicle->ShuttingDown();
     auto vehicle = m_currentvehicle;
     m_currentvehicle = NULL;
+
+    if (wait)
+      {
+      int repeat = 20; // 1s
+      while (!vehicle->IsShutdown() && repeat--)
+        vTaskDelay(pdMS_TO_TICKS(50));
+      }
 
     m_currentvehicletype.clear();
     if (clearName)
@@ -195,7 +241,17 @@ void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent, bool wa
     if (sendEvent)
       MyEvents.SignalEvent("vehicle.type.cleared", NULL);
 
-    delete vehicle;
+    if (vehicle->IsShutdown())
+      delete vehicle;
+    else
+      {
+      if (m_pending_shutdown.empty())
+        {
+        MyEvents.DeregisterEvent(CHECK_SHUTDOWN_TAG);
+        MyEvents.RegisterEvent(CHECK_SHUTDOWN_TAG,"ticker.1",std::bind(&OvmsVehicleFactory::EventTicker1ShuttingDown, this, _1, _2));
+        }
+      m_pending_shutdown.push_back(vehicle);
+      }
     }
   }
 
@@ -388,7 +444,14 @@ OvmsVehicle::OvmsVehicle()
 
 OvmsVehicle::~OvmsVehicle()
   {
-  ShuttingDown(false);
+#ifndef CONFIG_OVMS_COMP_POLLER
+  auto vtask = Atomic_GetAndNull(m_vtask);
+  if (vtask)
+    vTaskDelete(vtask);
+
+  vQueueDelete(m_vqueue);
+  m_vqueue = nullptr;
+#endif
 
   if (m_bms_voltages != NULL)
     {
@@ -451,7 +514,7 @@ void OvmsVehicle::StartingUp()
 #endif
   }
 
-void OvmsVehicle::ShuttingDown(bool wait)
+void OvmsVehicle::ShuttingDown()
   {
   if (m_is_shutdown)
     return;
@@ -481,21 +544,16 @@ void OvmsVehicle::ShuttingDown(bool wait)
 #endif
   MyEvents.DeregisterEvent(TAG);
   MyMetrics.DeregisterListener(TAG);
+  }
+bool OvmsVehicle::IsShutdown()
+  {
+  if (!m_is_shutdown)
+    return false;
 #ifndef CONFIG_OVMS_COMP_POLLER
-  if (wait)
-    {
-    int repeat = 20; // 1s
-    while (m_vtask && repeat--)
-      vTaskDelay(pdMS_TO_TICKS(50));
-    }
-
-  auto vtask = Atomic_GetAndNull(m_vtask);
-  if (vtask)
-    vTaskDelete(vtask);
-
-  vQueueDelete(m_vqueue);
-  m_vqueue = nullptr;
+  if (Atomic_Get(m_vqueue) != nullptr) then
+    return false;
 #endif
+  return true;
   }
 
 const char* OvmsVehicle::VehicleShortName()
