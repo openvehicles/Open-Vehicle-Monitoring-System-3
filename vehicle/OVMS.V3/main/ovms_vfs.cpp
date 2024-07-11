@@ -46,6 +46,7 @@ static const char *TAG = "vfs";
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
 #include "crypt_md5.h"
+#include "glob_match.h"
 
 #ifdef CONFIG_OVMS_COMP_EDITOR
 #include "vfsedit.h"
@@ -117,25 +118,75 @@ class Direntry {
  * Fills a `std::set<Direntry>` with all possible entries starting at `startpath`.
  * if `recurse` is `true`, then all possible directories are recursively entered.
  */
-static void read_entries(std::set<Direntry> &entries, std::string startpath, bool recurse = true) {
-  DIR *dir;
-  struct dirent *dp;
+static void read_entries(std::set<Direntry> &entries, std::string startpath, std::string glob, bool recurse = true) {
+  if (recurse && (startpath.empty() || startpath == "/") )
+    {
+    read_entries(entries, "/store", glob);
+#ifdef CONFIG_OVMS_COMP_SDCARD
+    read_entries(entries, "/sd", glob);
+#endif
+    return;
+    }
+  DIR *dir = opendir(startpath.c_str());
+  if (!dir && glob.empty()) {
+    // not a path - see if we can add it as a glob.
+    auto posn = startpath.rfind('/');
+    if (posn != std::string::npos) {
+      glob.assign(startpath, posn+1, std::string::npos);
+      startpath.erase(posn, std::string::npos);
+      if (startpath.empty()) {
+        if (recurse)
+          read_entries(entries, startpath, glob);
+        return;
+      }
 
-  if ((dir = opendir(startpath.c_str())) != NULL) {
+      dir = opendir(startpath.c_str());
+    }
+  }
+  if (dir != NULL) {
+    struct dirent *dp;
     while ((dp = readdir(dir)) != NULL) {
+      if (!glob.empty()) {
+        if (!glob_match(glob.c_str(), dp->d_name)){
+          if (recurse && dp->d_type == DT_DIR) {
+            auto path = startpath;
+            if (path.back() != '/')
+              path += '/';
+            path += dp->d_name;
+            read_entries(entries, path, glob);
+          }
+          continue;
+        }
+      }
       Direntry dirent(startpath, dp);
       if (dirent.is_skip) {
         continue;
       }
       entries.insert(dirent);
       if (recurse && dirent.is_dir && !dirent.is_protected) {
-        read_entries(entries, dirent.path());
+        read_entries(entries, dirent.path(), glob);
       }
     }
     closedir(dir);
   }
 }
 
+static bool has_glob_end(const std::string &str) {
+
+  for (auto it = str.rbegin(); it != str.rend(); ++it) {
+    switch (*it) {
+      case '?':
+      case '*':
+          return true;
+          break;
+      case '/':
+          return false;
+      default:
+          break;
+    }
+  }
+  return false;
+}
 /**
  * Fills a `std::set<Direntry>` with all possible entries, and display the sorted result.
  * if `recurse` is `true`:
@@ -146,8 +197,8 @@ static void read_entries(std::set<Direntry> &entries, std::string startpath, boo
  * - the display shows only file / directory name
  */
 static void list_entries(OvmsWriter* writer, std::string startpath, bool recurse = true) {
-  std::set<Direntry> entries;
 
+  std::set<Direntry> entries;
   while((startpath.back() == '/') || (startpath.back() == '.')) {
     startpath.pop_back();
   }
@@ -156,8 +207,21 @@ static void list_entries(OvmsWriter* writer, std::string startpath, bool recurse
     writer->puts("Error: protected path");
     return;
   }
+  std::string glob;
 
-  read_entries(entries, startpath, recurse);
+  if (has_glob_end(startpath)) {
+    int idx = startpath.rfind('/');
+    if (idx < 0) {
+      glob = startpath;
+      startpath = "";
+    }
+    else {
+      glob.assign(startpath, idx+1, std::string::npos);
+      startpath.erase(idx, std::string::npos);
+    }
+  }
+
+  read_entries(entries, startpath, glob, recurse);
 
   for (auto it = entries.begin(); it != entries.end(); it++) {
     Direntry dirent = *it;
