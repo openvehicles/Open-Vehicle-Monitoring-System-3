@@ -68,16 +68,23 @@ class Direntry {
     /**
      * Default constructor, calls stat() on the file.
      */
-    Direntry(std::string basepath, struct dirent *direntry) {
+    Direntry(std::string basepath, struct dirent *direntry, bool dostat = true) {
       struct stat st;
       this->basepath = basepath + '/';
       name = direntry->d_name;
       is_protected = MyConfig.ProtectedPath(path());
-      stat(path().c_str(), &st);
-      is_dir = S_ISDIR(st.st_mode);
-      is_skip = (!S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode)) || (direntry->d_name[0] == '.');
-      size = st.st_size;
-      mtime = st.st_mtime;
+      if (dostat) {
+        stat(path().c_str(), &st);
+        is_dir = S_ISDIR(st.st_mode);
+        is_skip = (!S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode)) || (direntry->d_name[0] == '.');
+        size = st.st_size;
+        mtime = st.st_mtime;
+      } else {
+        is_dir = direntry->d_type == DT_DIR;
+        is_skip = (!is_dir && (direntry->d_type != DT_REG)) || (direntry->d_name[0] == '.');
+        size = 0;
+        mtime = 0;
+      }
     }
 
     std::string path() const {
@@ -118,12 +125,12 @@ class Direntry {
  * Fills a `std::set<Direntry>` with all possible entries starting at `startpath`.
  * if `recurse` is `true`, then all possible directories are recursively entered.
  */
-static void read_entries(std::set<Direntry> &entries, std::string startpath, std::string glob, bool recurse = true) {
+static void read_entries(std::set<Direntry> &entries, std::string startpath, std::string glob, bool recurse = true, bool dostat = true) {
   if (recurse && (startpath.empty() || startpath == "/") )
     {
-    read_entries(entries, "/store", glob);
+    read_entries(entries, "/store", glob, recurse, dostat);
 #ifdef CONFIG_OVMS_COMP_SDCARD
-    read_entries(entries, "/sd", glob);
+    read_entries(entries, "/sd", glob, recurse, dostat);
 #endif
     return;
     }
@@ -136,7 +143,7 @@ static void read_entries(std::set<Direntry> &entries, std::string startpath, std
       startpath.erase(posn, std::string::npos);
       if (startpath.empty()) {
         if (recurse)
-          read_entries(entries, startpath, glob);
+          read_entries(entries, startpath, glob, recurse, dostat);
         return;
       }
 
@@ -153,18 +160,18 @@ static void read_entries(std::set<Direntry> &entries, std::string startpath, std
             if (path.back() != '/')
               path += '/';
             path += dp->d_name;
-            read_entries(entries, path, glob);
+            read_entries(entries, path, glob, recurse, dostat);
           }
           continue;
         }
       }
-      Direntry dirent(startpath, dp);
+      Direntry dirent(startpath, dp, dostat);
       if (dirent.is_skip) {
         continue;
       }
       entries.insert(dirent);
       if (recurse && dirent.is_dir && !dirent.is_protected) {
-        read_entries(entries, dirent.path(), glob);
+        read_entries(entries, dirent.path(), glob, recurse, dostat);
       }
     }
     closedir(dir);
@@ -187,6 +194,20 @@ static bool has_glob_end(const std::string &str) {
   }
   return false;
 }
+
+// Splits off the filename part of the string.
+static void split_filename(std::string &path, std::string &filepart) {
+  int idx = path.rfind('/');
+  if (idx < 0) {
+    filepart = path;
+    path = "";
+  }
+  else {
+    filepart.assign(path, idx+1, std::string::npos);
+    path.erase(idx, std::string::npos);
+  }
+}
+
 /**
  * Fills a `std::set<Direntry>` with all possible entries, and display the sorted result.
  * if `recurse` is `true`:
@@ -210,15 +231,7 @@ static void list_entries(OvmsWriter* writer, std::string startpath, bool recurse
   std::string glob;
 
   if (has_glob_end(startpath)) {
-    int idx = startpath.rfind('/');
-    if (idx < 0) {
-      glob = startpath;
-      startpath = "";
-    }
-    else {
-      glob.assign(startpath, idx+1, std::string::npos);
-      startpath.erase(idx, std::string::npos);
-    }
+    split_filename(startpath, glob);
   }
 
   read_entries(entries, startpath, glob, recurse);
@@ -362,16 +375,51 @@ void vfs_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
 void vfs_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (MyConfig.ProtectedPath(argv[0]))
+  std::string filename(argv[0]);
+  if (!has_glob_end(filename)) // Only match multiple files if there is a glob expression.
     {
-    writer->puts("Error: protected path");
-    return;
+    if (MyConfig.ProtectedPath(argv[0]))
+      {
+      writer->puts("Error: protected path");
+      return;
+      }
+    if (unlink(filename.c_str()) == 0)
+      { writer->puts("VFS File deleted"); }
+    else
+      { writer->puts("Error: Could not delete VFS file"); }
     }
-
-  if (unlink(argv[0]) == 0)
-    { writer->puts("VFS File deleted"); }
   else
-    { writer->puts("Error: Could not delete VFS file"); }
+    {
+    std::string glob;
+    split_filename(filename, glob);
+    if (MyConfig.ProtectedPath(filename.c_str()))
+      {
+      writer->puts("Error: protected path");
+      return;
+      }
+
+    std::set<Direntry> entries;
+    // read without stat.
+    read_entries(entries, filename, glob, false, false);
+    if (entries.size() == 0)
+      {
+      writer->puts("VFS: No matching files");
+      return;
+      }
+
+    int delcount = 0;
+    for (auto it = entries.begin(); it != entries.end(); ++it)
+      {
+      const std::string &path = it->path();
+      if (unlink(path.c_str()) == 0)
+        ++delcount;
+      else
+        writer->printf("Error: Could not delete VFS file '%s'", path.c_str());
+      }
+
+    if (delcount > 0)
+      writer->printf("VFS: Deleted %d files\n", delcount );
+    }
   }
 
 void vfs_mv(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
