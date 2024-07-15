@@ -694,7 +694,7 @@ class VfsInit
   public: VfsInit();
 } MyVfsInit  __attribute__ ((init_priority (5200)));
 
-static bool vfs_expand(OvmsWriter* writer, const char *token, bool complete, bool dirok, bool fileok)
+bool vfs_expand(OvmsWriter* writer, const char *token, bool complete, bool dirok, bool fileok)
   {
   if (!token)
     return false;
@@ -799,7 +799,7 @@ static bool vfs_expand(OvmsWriter* writer, const char *token, bool complete, boo
   return false;
   }
 
-static int vfs_file_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+int vfs_file_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
   if (argc == 1)
     return vfs_expand(writer, argv[0], complete, false, true) ? 1 : -1;
