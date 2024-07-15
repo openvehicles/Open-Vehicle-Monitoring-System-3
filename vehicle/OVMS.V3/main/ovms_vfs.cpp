@@ -159,6 +159,10 @@ static bool starts_with(const char *string, const char *prefix) {
     return true;
 }
 
+// This is a version of read_entries that:
+// * Doesn't use stat()
+// * Doesn't recurse
+// * Allows a partial 'filepart'
 static void read_expand_entries(std::set<simple_dir_entry_t> &entries, std::string startpath, std::string filepart) {
   DIR *dir = opendir(startpath.c_str());
   if (!dir && filepart.empty()) {
@@ -700,19 +704,14 @@ static bool vfs_expand(OvmsWriter* writer, const char *token, bool complete, boo
 #endif
   std::string filepart;
   std::string path(token);
-  if (path != "")
+  if (path != "") // Empty path is a special case.
     {
     auto posn = path.rfind('/');
     if (posn == std::string::npos)
-      {
-      filepart = path;
-      path = "";
-      }
-    else
-      {
-      filepart.assign(path, posn+1, std::string::npos);
-      path.erase(posn, std::string::npos);
-      }
+      return false; // This is not a valid path
+
+    filepart.assign(path, posn+1, std::string::npos);
+    path.erase(posn, std::string::npos);
     }
 
   std::set<simple_dir_entry_t> entries;
