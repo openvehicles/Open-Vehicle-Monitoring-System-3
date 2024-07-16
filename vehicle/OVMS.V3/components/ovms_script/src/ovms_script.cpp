@@ -49,6 +49,7 @@ static const char *TAG = "script";
 #include "ovms_netmanager.h"
 #include "ovms_boot.h"
 #include "ovms_peripherals.h"
+#include "ovms_vfs.h"
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 #include "ovms_duktape.h"
@@ -234,14 +235,14 @@ OvmsScripts::OvmsScripts()
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_NONE
 
   OvmsCommand* cmd_script = MyCommandApp.RegisterCommand("script","SCRIPT framework");
-  cmd_script->RegisterCommand("run","Run a script",script_run,"<path>",1,1);
+  cmd_script->RegisterCommand("run","Run a script",script_run,"<path>",1,1,true, vfs_file_validate);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   cmd_script->RegisterCommand("reload","Reload javascript framework",script_reload);
   cmd_script->RegisterCommand("eval","Eval some javascript code",script_eval,"<code>",1,1);
   cmd_script->RegisterCommand("compact","Compact javascript heap",script_compact);
   cmd_script->RegisterCommand("meminfo","Show heap memory status",script_meminfo);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1);
+  MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1, true, vfs_file_validate);
   }
 
 OvmsScripts::~OvmsScripts()

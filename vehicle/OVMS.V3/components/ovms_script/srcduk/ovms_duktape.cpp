@@ -877,8 +877,12 @@ void DuktapeObjectRegistration::RegisterDuktapeFunction(duk_c_function func, duk
   fn->nargs = nargs;
   m_fnmap[name] = fn;
   }
+void DuktapeObjectRegistration::RegisterDuktapeObject(DuktapeObjectRegistration* obj, const char *name)
+  {
+  m_obmap[name] = obj;
+  }
 
-void DuktapeObjectRegistration::RegisterWithDuktape(duk_context* ctx)
+void DuktapeObjectRegistration::PushThisAsObject(duk_context* ctx)
   {
   duk_push_object(ctx);
 
@@ -895,7 +899,16 @@ void DuktapeObjectRegistration::RegisterWithDuktape(duk_context* ctx)
     duk_put_prop_string(ctx, -2, name);
     ++itm;
     }
+  for ( auto ito = m_obmap.begin(); ito != m_obmap.end(); ++ito )
+    {
+    ito->second->PushThisAsObject(ctx);
+    duk_put_prop_string(ctx, -2, ito->first);
+    }
+  }
 
+void DuktapeObjectRegistration::RegisterWithDuktape(duk_context* ctx)
+  {
+  PushThisAsObject(ctx);
   duk_put_global_string(ctx, m_name);
   }
 
