@@ -41,6 +41,7 @@ static const char *TAG = "dbc-app";
 #include "dbc_app.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
+#include "ovms_vfs.h"
 
 dbc MyDBC __attribute__ ((init_priority (4520)));
 
@@ -67,6 +68,13 @@ void dbc_load(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     {
     writer->printf("Error: Failed to load DBC %s from %s\n",argv[0],argv[1]);
     }
+  }
+
+static int dbc_load_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 2)
+    return vfs_expand(writer, argv[0], complete, false, true) ? 1 : -1;
+  return -1;
   }
 
 void dbc_unload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -524,7 +532,7 @@ dbc::dbc()
   OvmsCommand* cmd_dbc = MyCommandApp.RegisterCommand("dbc","DBC framework");
 
   cmd_dbc->RegisterCommand("list", "List DBC status", dbc_list);
-  cmd_dbc->RegisterCommand("load", "Load DBC file", dbc_load, "<name> <path>", 2, 2);
+  cmd_dbc->RegisterCommand("load", "Load DBC file", dbc_load, "<name> <path>", 2, 2, true, dbc_load_validate );
   cmd_dbc->RegisterCommand("unload", "Unload DBC file", dbc_unload, "<name>", 1, 1);
   cmd_dbc->RegisterCommand("save", "Save DBC file", dbc_save, "[<name>]", 0, 1);
   cmd_dbc->RegisterCommand("dump", "Dump DBC file", dbc_dump, "[<name>]", 0, 1);

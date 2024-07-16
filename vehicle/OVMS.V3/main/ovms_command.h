@@ -323,7 +323,8 @@ class OvmsCommandApp : public OvmsWriter
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title,
                                  OvmsCommandExecuteCallback_t execute = NULL,
-                                 const char *usage = "", int min = 0, int max = 0, bool secure = true);
+                                 const char *usage = "", int min = 0, int max = 0, bool secure = true,
+                                 OvmsCommandValidateCallback_t validate = NULL);
     bool UnregisterCommand(const char* name);
     OvmsCommand* FindCommand(const char* name);
     OvmsCommand* FindCommandFullName(const char* name);

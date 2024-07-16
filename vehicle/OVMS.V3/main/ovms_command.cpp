@@ -52,6 +52,7 @@ static const char *TAG = "command";
 #include "buffered_shell.h"
 #include "log_buffers.h"
 #include "ovms_semaphore.h"
+#include "ovms_vfs.h"
 
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1010)));
 
@@ -795,7 +796,7 @@ OvmsCommandApp::OvmsCommandApp()
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0, false);
   m_root.RegisterCommand("exit", "End console session", cmd_exit, "", 0, 0, false);
   OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework", log_status, "", 0, 0, false);
-  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file, "[<vfspath>]\nDefault: config log[file.path]", 0, 1);
+  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file, "[<vfspath>]\nDefault: config log[file.path]", 0, 1, true, vfs_file_validate);
   cmd_log->RegisterCommand("open", "Start file logging", log_open);
   cmd_log->RegisterCommand("close", "Stop file logging", log_close);
   cmd_log->RegisterCommand("status", "Show logging status", log_status);
@@ -845,9 +846,10 @@ void OvmsCommandApp::ConfigureLogging()
   }
 
 OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
-                                             const char *usage, int min, int max, bool secure)
+                                             const char *usage, int min, int max, bool secure,
+                                             OvmsCommandValidateCallback_t validate)
   {
-  return m_root.RegisterCommand(name, title, execute, usage, min, max, secure);
+  return m_root.RegisterCommand(name, title, execute, usage, min, max, secure, validate);
   }
 
 bool OvmsCommandApp::UnregisterCommand(const char* name)
