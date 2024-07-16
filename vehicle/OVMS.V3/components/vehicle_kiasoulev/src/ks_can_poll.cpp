@@ -181,15 +181,14 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 				}
 			break;
 
-		case 0x02:
+		case 0x90:
 			// VIN (multi-line response):
-			if (type == VEHICLE_POLL_TYPE_OBDIIVEHICLE)
+			if (type == VEHICLE_POLL_TYPE_OBDII_1A)
 				{
-				base = mloffset - length;
 
-				for (bVal = 0; (bVal < length) && ((base + bVal)<sizeof (m_vin)); bVal++)
-					if(base+bVal>0) m_vin[base + bVal-1] = CAN_BYTE(bVal);
-				if (mlremain == 0 && base+bVal>=0) m_vin[base + bVal] = 0;
+                                for (int i = 0; (i < (sizeof(m_vin)-1)) && (i < length); i++){
+                                        m_vin[mloffset + i] = CAN_BYTE(i);
+                                }
 
 				//Set VIN
 				StandardMetrics.ms_v_vin->SetValue(m_vin);
@@ -207,6 +206,9 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 					}
 				}
 			break;
+                        
+                default:
+                        break;
 		}
 	}
 

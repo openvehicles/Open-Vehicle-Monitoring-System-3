@@ -205,7 +205,8 @@ static const char *TAG = "v-kiasoulev";
 // Pollstate 2 - car is charging
 static const OvmsPoller::poll_pid_t vehicle_kiasoulev_polls[] =
   {
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, 		{       0,  120,   0 }, 0, ISOTP_STD }, 	// VIN
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIISESSION,     0x81, 		{       0,    2,   0 }, 0, ISOTP_STD }, 	// DIAG
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_1A,         0x90, 		{       0,   30,   0 }, 0, ISOTP_STD }, 	// VIN
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 }, 0, ISOTP_STD }, 	// BMC Diag page 01 *
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  10 }, 0, ISOTP_STD }, 	// BMC Diag page 02
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, 		{       0,   10,  10 }, 0, ISOTP_STD }, 	// BMC Diag page 03
