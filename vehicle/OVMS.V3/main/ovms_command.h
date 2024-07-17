@@ -68,8 +68,8 @@ class OvmsWriter
     virtual int puts(const char* s) { return 0; }
     virtual int printf(const char* fmt, ...) __attribute__ ((format (printf, 2, 3))) { return 0; }
     virtual ssize_t write(const void *buf, size_t nbyte) { return 0; }
-    virtual char** SetCompletion(int index, const char* token) { return NULL; }
-    virtual char** GetCompletions() { return NULL; }
+    virtual char** SetCompletion(int index, const char* token, bool isfinal = true) { return NULL; }
+    virtual char** GetCompletions(int &common_len, bool &finished ) { return NULL; }
     virtual void SetArgv(const char* const* argv) { return; }
     virtual const char* const* GetArgv() { return NULL; }
     virtual void Log(LogBuffers* message) {};
@@ -260,7 +260,7 @@ class OvmsCommand : public ExternalRamAllocated
     const char* GetName();
     const char* GetTitle();
     const char* GetUsage(OvmsWriter* writer);
-    char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
+    char ** Complete(OvmsWriter* writer, int argc, const char * const * argv, int &common_len, bool &finished);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
     OvmsCommand* GetParent();
     OvmsCommand* FindCommand(const char* name);
@@ -337,7 +337,7 @@ class OvmsCommandApp : public OvmsWriter
     void Display(OvmsWriter* writer);
 
   public:
-    char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
+    char ** Complete(OvmsWriter* writer, int argc, const char * const * argv, int &common_len, bool &finished);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
 
   public:
@@ -386,6 +386,49 @@ class OvmsCommandApp : public OvmsWriter
 
   public:
     TaskHandle_t m_expiretask;
+  };
+
+// Utility class to help with completion where there are '-' options
+class option_completer_t
+  {
+  private:
+    OvmsWriter *m_writer;
+    bool m_complete;
+    bool m_valid;
+    int m_complete_idx;
+    bool m_found_param;
+    int m_final_posn;
+    int m_argc;
+    const char * const* m_argv;
+
+  public:
+    option_completer_t(OvmsWriter *writer, bool complete, int argc, const char * const* argv)
+    : m_writer(writer),
+      m_complete(complete),
+      m_valid(false),
+      m_complete_idx(0),
+      m_found_param(false),
+      m_argc(argc),
+      m_argv(argv)
+      {
+      }
+    /** Check if the param is there / needs completion.
+     */
+    bool check_param(char param, bool has_more = false);
+
+    // Return the (0 based) current completion parameter # (without '-' options).
+    int param_index();
+
+    bool do_return()
+      {
+      if (m_complete_idx > 0)
+        return true;
+      return m_complete && (m_valid || m_found_param);
+      }
+    int return_val()
+      {
+      return m_valid ? m_argc : -1;
+      }
   };
 
 extern OvmsCommandApp MyCommandApp;

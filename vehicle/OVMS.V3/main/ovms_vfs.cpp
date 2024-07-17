@@ -902,7 +902,7 @@ bool vfs_expand(OvmsWriter* writer, const char *token, bool complete, bool dirok
 #ifdef LOG_VFS_EXPAND
         ESP_LOGD(TAGX, "complete add: [%d] %s", index, name.c_str());
 #endif
-        writer->SetCompletion(index++, name.c_str());
+        writer->SetCompletion(index++, name.c_str(), !it->is_dir);
         }
       }
     if (index > 0)
@@ -920,39 +920,16 @@ int vfs_file_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char
 
 static int vfs_mkdir_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
-  if (argc == 1)
-    {
-    if (argv[0][0] == '-')
-      {
-      if (complete)
-        {
-        std::string name("-p");
-        if (strlen(argv[0]) == 1)
-          {
-          if (complete)
-            {
-            writer->SetCompletion(0, NULL);
-            writer->SetCompletion(0, name.c_str());
-            return argc;
-            }
-          }
-        else
-          {
-          if ((name == argv[0]))
-            {
-            if (complete)
-              {
-              writer->SetCompletion(0,NULL);
-              writer->SetCompletion(0, name.c_str());
-              }
-            return argc;
-            }
-          }
-        }
-      return -1;
-      }
-    }
-  if (argc > 0)
+  if (complete)
+    writer->SetCompletion(0,NULL);
+  option_completer_t comp(writer, complete, argc, argv);
+
+  comp.check_param('p');
+
+  if (comp.do_return())
+    return comp.return_val();
+
+  if (comp.param_index() == 0)
     return vfs_expand(writer, argv[argc-1], complete, true, false) ? argc : -1;
   return -1;
   }
@@ -964,10 +941,19 @@ static int vfs_ls_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   return -1;
   }
 
-static int vfs_dir_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+static int vfs_rmdir_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
-  if (argc == 1)
-    return vfs_expand(writer, argv[0], complete, true, false) ? 1 : -1;
+  if (complete)
+    writer->SetCompletion(0,NULL);
+  option_completer_t comp(writer, complete, argc, argv);
+
+  comp.check_param('r');
+
+  if (comp.do_return())
+    return comp.return_val();
+
+  if (comp.param_index() == 0)
+    return vfs_expand(writer, argv[argc-1], complete, true, false) ? argc : -1;
   return -1;
   }
 
@@ -1015,7 +1001,7 @@ VfsInit::VfsInit()
   cmd_vfs->RegisterCommand("mkdir","VFS Create a directory",vfs_mkdir, "[-p] <path>\n"
     "-p = create full path including missing parents", 1, 2, true, vfs_mkdir_validate);
   cmd_vfs->RegisterCommand("rmdir","VFS Delete a directory",vfs_rmdir, "[-r] <path>\n"
-    "-r = delete recursively including all files and subdirectories", 1, 2, true, vfs_dir_validate);
+    "-r = delete recursively including all files and subdirectories", 1, 2, true, vfs_rmdir_validate);
   cmd_vfs->RegisterCommand("rm","VFS Delete a file",vfs_rm, "<file>", 1, 1, true, vfs_file_validate);
   cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2, true, vfs_cp_mv_validate);
   cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2, true, vfs_cp_mv_validate);
