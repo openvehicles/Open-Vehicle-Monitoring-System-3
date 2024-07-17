@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Support for *,? wildcards in vfs ls and vfs rls commands.
 - Smart EQ 453:
     add 5min Booster preheat cool
     add TPMS pressure
