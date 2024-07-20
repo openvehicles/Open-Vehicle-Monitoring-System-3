@@ -1247,9 +1247,9 @@ void OvmsVehicleVWeUp::Profile0RetryCallBack()
       if (profile0_val == 1) {
         if (!fakestop)
           charge_timeout = true;
-          if (xChargeSemaphore != NULL)
-            xSemaphoreGive(xChargeSemaphore);
-          MyNotify.NotifyStringf("alert", "Charge control", "Failed to %s charge!", (profile0_activate)? "start" : "stop");
+        if (xChargeSemaphore != NULL)
+          xSemaphoreGive(xChargeSemaphore);
+        MyNotify.NotifyStringf("alert", "Charge control", "Failed to %s charge!", (profile0_activate)? "start" : "stop");
       }
       else
         MyNotify.NotifyStringf("alert", "Climatecontrol", "Failed to %s remote climate control!", (profile0_activate)? "start" : "stop");
