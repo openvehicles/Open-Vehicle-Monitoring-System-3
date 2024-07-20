@@ -1713,7 +1713,7 @@ void OvmsPollers::Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool
   if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
     {
     volatile uint32_t &count = m_overflow_count[istx ? 1 : 0];
-    Atomic_Increment(count, 1lU);
+    Atomic_Increment(count, (uint32_t)1);
     }
   }
 
