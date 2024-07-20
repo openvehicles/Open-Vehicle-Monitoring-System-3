@@ -550,8 +550,9 @@ bool OvmsVehicle::IsShutdown()
   if (!m_is_shutdown)
     return false;
 #ifndef CONFIG_OVMS_COMP_POLLER
-  if (Atomic_Get(m_vqueue) != nullptr) then
+  if (Atomic_Get(m_vqueue) != nullptr) {
     return false;
+  }
 #endif
   return true;
   }
