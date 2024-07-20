@@ -57,7 +57,7 @@ void OvmsPoller::PollerISOTPStart(bool fromTicker)
     m_poll.moduleid_high = 0x7ef;
     }
 
-  ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPStart(%s): send [bus=%" PRIu8 ", type=%02" PRIX16 ", pid=%X], expecting %03x/%03x-%03x",
+  ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPStart(%s): send [bus=%" PRIu8 ", type=%02" PRIX16 ", pid=%X], expecting %03" PRIx32 "/%03" PRIx32 "-%03" PRIx32 "",
            m_poll.bus_no, fromTicker ? "Yes" : "No",
            m_poll.entry.pollbus, m_poll.type, m_poll.pid, m_poll.moduleid_sent,
            m_poll.moduleid_low, m_poll.moduleid_high);
