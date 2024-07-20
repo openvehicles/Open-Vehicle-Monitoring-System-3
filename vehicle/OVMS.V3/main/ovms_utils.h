@@ -40,6 +40,7 @@
 #include <vector>
 #include <forward_list>
 #include <functional>
+#include <esp_timer.h>
 #include "ovms.h"
 
 // Macro utils:
