@@ -292,7 +292,7 @@ void OvmsPoller::PollerNextTick(poller_source_t source)
   {
   // Completed checking all poll entries for the current m_poll.ticker
 
-  IFTRACE(Poller) ESP_LOGD(TAG, "[%" PRIu8 "]PollerNextTick(%s): cycle complete for ticker=%u", m_poll.bus_no, PollerSource(source), m_poll.ticker);
+  IFTRACE(Poller) ESP_LOGD(TAG, "[%" PRIu8 "]PollerNextTick(%s): cycle complete for ticker=%" PRIu32, m_poll.bus_no, PollerSource(source), m_poll.ticker);
   m_poll_ticked = false;
 
   if (source == poller_source_t::Primary)
@@ -466,7 +466,7 @@ void OvmsPoller::PollerSend(poller_source_t source)
       break;
     case OvmsNextPollResult::FoundEntry:
       {
-      ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend(%s)[%" PRIu8 "]: entry at[type=%02X, pid=%X], ticker=%u, wait=%u, cnt=%u/%u",
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend(%s)[%" PRIu8 "]: entry at[type=%02X, pid=%X], ticker=%" PRIu32 ", wait=%u, cnt=%u/%u",
              m_poll.bus_no, PollerSource(source), m_poll_state, m_poll.entry.type, m_poll.entry.pid,
              m_poll.ticker, m_poll_wait, m_poll_sequence_cnt, m_poll_sequence_max);
       // We need to poll this one...
@@ -1713,7 +1713,7 @@ void OvmsPollers::Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool
   if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
     {
     volatile uint32_t &count = m_overflow_count[istx ? 1 : 0];
-    Atomic_Increment(count, 1U);
+    Atomic_Increment(count, 1lU);
     }
   }
 
@@ -1786,7 +1786,7 @@ void OvmsPollers::PollerStatus(int verbosity, OvmsWriter* writer)
     if (last == 0)
       writer->puts("None");
     else
-      writer->printf("%" PRIu8 "s (ticks)\n", (curmon - last));
+      writer->printf("%" PRIu32 "s (ticks)\n", (curmon - last));
     }
   if (!found_list)
     {
@@ -2085,11 +2085,11 @@ bool OvmsPollers::LoadTimesTrace( metric_unit_t ratio_unit, times_trace_t &trace
     switch (it->first.entry_type)
       {
       case OvmsPoller::OvmsPollEntryType::FrameRx:
-        item.desc = string_format("RxCan%" PRIu32 "[%03" PRIx32 "]",
+        item.desc = string_format("RxCan%" PRIu8 "[%03" PRIx32 "]",
             it->first.busnumber, it->first.Frame_MsgId);
         break;
       case OvmsPoller::OvmsPollEntryType::FrameTx:
-        item.desc = string_format("TxCan%" PRIu32 "[%03" PRIx32 "]",
+        item.desc = string_format("TxCan%" PRIu8 "[%03" PRIx32 "]",
             it->first.busnumber, it->first.Frame_MsgId);
         break;
       case OvmsPoller::OvmsPollEntryType::Poll:
