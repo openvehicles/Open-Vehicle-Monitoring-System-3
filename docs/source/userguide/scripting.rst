@@ -732,7 +732,7 @@ OvmsCommand
 ^^^^^^^^^^^
 
 - ``str = OvmsCommand.Exec(command)``
-    The OvmsCommand object exposes one method “Exec”. This method is passed a single parameter as the command
+    The OvmsCommand object “Exec” method is passed a single parameter as the command
     to be executed, runs that command, and then returns the textual output of the command as a string. For
     example::
 
@@ -741,6 +741,25 @@ OvmsCommand
         This is reset #0 since last power cycle
         Detected boot reason: PowerOn (1/14)
         Crash counters: 0 total, 0 early
+- ``OvmsCommand.Register( function(cmd, argv){}, parent, command, description, param_description, minargs, maxargs)``
+    The OvmsCommand object “Register” registers a function as command on the cli.
+    A second call to RegisterCommand with the same will update the details of same command.
+    A blank 'parent' will cause a top-level command to be registered.
+    The function call-back should take 2 parameters:
+    - the command being called (with '/' separating paths eg: "command/subcommand").
+    - an array of the arguments to the command.
+    example::
+
+      mycommand = function(c, argv){
+        print("Hello: "+c+"\n");
+        if (argv.length == 0)
+          print("Simple\n");
+        else {
+          for (s in argv)
+            print("Script: "+argv[s]+"\n")
+        }
+      }
+      OvmsCommand.Register(mycommand, "", "sample", "Sample Command", "{[string]}", 0, 4)
 
 OvmsConfig
 ^^^^^^^^^^
