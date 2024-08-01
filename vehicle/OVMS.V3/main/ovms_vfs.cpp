@@ -46,6 +46,7 @@ static const char *TAG = "vfs";
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
 #include "crypt_md5.h"
+#include "glob_match.h"
 
 #ifdef CONFIG_OVMS_COMP_EDITOR
 #include "vfsedit.h"
@@ -67,16 +68,23 @@ class Direntry {
     /**
      * Default constructor, calls stat() on the file.
      */
-    Direntry(std::string basepath, struct dirent *direntry) {
+    Direntry(std::string basepath, struct dirent *direntry, bool dostat = true) {
       struct stat st;
       this->basepath = basepath + '/';
       name = direntry->d_name;
       is_protected = MyConfig.ProtectedPath(path());
-      stat(path().c_str(), &st);
-      is_dir = S_ISDIR(st.st_mode);
-      is_skip = (!S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode)) || (direntry->d_name[0] == '.');
-      size = st.st_size;
-      mtime = st.st_mtime;
+      if (dostat) {
+        stat(path().c_str(), &st);
+        is_dir = S_ISDIR(st.st_mode);
+        is_skip = (!S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode)) || (direntry->d_name[0] == '.');
+        size = st.st_size;
+        mtime = st.st_mtime;
+      } else {
+        is_dir = direntry->d_type == DT_DIR;
+        is_skip = (!is_dir && (direntry->d_type != DT_REG)) || (direntry->d_name[0] == '.');
+        size = 0;
+        mtime = 0;
+      }
     }
 
     std::string path() const {
@@ -117,20 +125,169 @@ class Direntry {
  * Fills a `std::set<Direntry>` with all possible entries starting at `startpath`.
  * if `recurse` is `true`, then all possible directories are recursively entered.
  */
-static void read_entries(std::set<Direntry> &entries, std::string startpath, bool recurse = true) {
-  DIR *dir;
-  struct dirent *dp;
+static void read_entries(std::set<Direntry> &entries, std::string startpath, std::string glob, bool recurse = true, bool dostat = true) {
+  if (recurse && (startpath.empty() || startpath == "/") )
+    {
+    read_entries(entries, "/store", glob, recurse, dostat);
+#ifdef CONFIG_OVMS_COMP_SDCARD
+    read_entries(entries, "/sd", glob, recurse, dostat);
+#endif
+    return;
+    }
+  DIR *dir = opendir(startpath.c_str());
+  if (!dir && glob.empty()) {
+    // not a path - see if we can add it as a glob.
+    auto posn = startpath.rfind('/');
+    if (posn != std::string::npos) {
+      glob.assign(startpath, posn+1, std::string::npos);
+      startpath.erase(posn, std::string::npos);
+      if (startpath.empty()) {
+        if (recurse)
+          read_entries(entries, startpath, glob, recurse, dostat);
+        return;
+      }
 
-  if ((dir = opendir(startpath.c_str())) != NULL) {
+      dir = opendir(startpath.c_str());
+    }
+  }
+  if (dir != NULL) {
+    struct dirent *dp;
     while ((dp = readdir(dir)) != NULL) {
-      Direntry dirent(startpath, dp);
+      if (!glob.empty()) {
+        if (!glob_match(glob.c_str(), dp->d_name)){
+          if (recurse && dp->d_type == DT_DIR) {
+            auto path = startpath;
+            if (path.back() != '/')
+              path += '/';
+            path += dp->d_name;
+            read_entries(entries, path, glob, recurse, dostat);
+          }
+          continue;
+        }
+      }
+      Direntry dirent(startpath, dp, dostat);
       if (dirent.is_skip) {
         continue;
       }
       entries.insert(dirent);
       if (recurse && dirent.is_dir && !dirent.is_protected) {
-        read_entries(entries, dirent.path());
+        read_entries(entries, dirent.path(), glob, recurse, dostat);
       }
+    }
+    closedir(dir);
+  }
+}
+
+static bool has_glob_end(const std::string &str) {
+
+  for (auto it = str.rbegin(); it != str.rend(); ++it) {
+    switch (*it) {
+      case '?':
+      case '*':
+          return true;
+          break;
+      case '/':
+          return false;
+      default:
+          break;
+    }
+  }
+  return false;
+}
+
+// Splits off the filename part of the string.
+static void split_filename(std::string &path, std::string &filepart) {
+  int idx = path.rfind('/');
+  if (idx < 0) {
+    filepart = path;
+    path = "";
+  }
+  else {
+    filepart.assign(path, idx+1, std::string::npos);
+    path.erase(idx, std::string::npos);
+  }
+}
+
+class simple_dir_entry_t{
+public:
+  std::string path, name;
+  bool is_protected, is_dir;
+  bool operator<(const simple_dir_entry_t &other) const {
+    static std::less<std::string> const less;
+    return less(name, other.name);
+  }
+};
+
+// #define LOG_VFS_EXPAND
+#ifdef LOG_VFS_EXPAND
+static const char * TAGX = "vfs-val";
+#endif
+static bool starts_with(const char *string, const char *prefix) {
+    while(*prefix)
+    {
+        if(*prefix++ != *string++)
+            return false;
+    }
+    return true;
+}
+
+// This is a version of read_entries that:
+// * Doesn't use stat()
+// * Doesn't recurse
+// * Allows a partial 'filepart'
+static void read_expand_entries(std::set<simple_dir_entry_t> &entries, std::string startpath, std::string filepart) {
+  DIR *dir = opendir(startpath.c_str());
+  if (!dir && filepart.empty()) {
+    // not a path - see if we can add it as a filepart.
+    auto posn = startpath.rfind('/');
+    if (posn != std::string::npos) {
+      filepart.assign(startpath, posn+1, std::string::npos);
+      startpath.erase(posn, std::string::npos);
+      if (startpath.empty()) {
+        return;
+      };
+
+      dir = opendir(startpath.c_str());
+    }
+  }
+
+#ifdef LOG_VFS_EXPAND
+  ESP_LOGD(TAGX, "expand entries: -> '%s' / '%s'", startpath.c_str(), filepart.c_str());
+#endif
+  if (dir != NULL) {
+    struct dirent *dp;
+    while ((dp = readdir(dir)) != NULL) {
+      if (!filepart.empty()) {
+        if (starts_with(dp->d_name, startpath.c_str())) {
+#ifdef LOG_VFS_EXPAND
+          ESP_LOGD(TAGX, "expand entries: discard not match %s (!= %s)", dp->d_name, startpath.c_str());
+#endif
+          continue;
+        }
+      }
+
+      if ((dp->d_type != DT_DIR) && (dp->d_type != DT_REG)) {
+#ifdef LOG_VFS_EXPAND
+        ESP_LOGD(TAGX, "expand entries: discard bad type %s", dp->d_name);
+#endif
+        continue;
+      }
+      if (dp->d_name[0] == '.') {
+#ifdef LOG_VFS_EXPAND
+        ESP_LOGD(TAGX, "expand entries: discard .file %s", dp->d_name);
+#endif
+        continue;
+      }
+      simple_dir_entry_t entry;
+
+      entry.path = startpath;
+      if (entry.path.back() != '/')
+        entry.path += '/';
+      entry.name = dp->d_name;
+
+      entry.is_protected = MyConfig.ProtectedPath(entry.path + entry.name);
+      entry.is_dir = (dp->d_type == DT_DIR);
+      entries.insert(entry);
     }
     closedir(dir);
   }
@@ -146,8 +303,8 @@ static void read_entries(std::set<Direntry> &entries, std::string startpath, boo
  * - the display shows only file / directory name
  */
 static void list_entries(OvmsWriter* writer, std::string startpath, bool recurse = true) {
-  std::set<Direntry> entries;
 
+  std::set<Direntry> entries;
   while((startpath.back() == '/') || (startpath.back() == '.')) {
     startpath.pop_back();
   }
@@ -156,8 +313,13 @@ static void list_entries(OvmsWriter* writer, std::string startpath, bool recurse
     writer->puts("Error: protected path");
     return;
   }
+  std::string glob;
 
-  read_entries(entries, startpath, recurse);
+  if (has_glob_end(startpath)) {
+    split_filename(startpath, glob);
+  }
+
+  read_entries(entries, startpath, glob, recurse);
 
   for (auto it = entries.begin(); it != entries.end(); it++) {
     Direntry dirent = *it;
@@ -298,16 +460,51 @@ void vfs_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
 void vfs_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (MyConfig.ProtectedPath(argv[0]))
+  std::string filename(argv[0]);
+  if (!has_glob_end(filename)) // Only match multiple files if there is a glob expression.
     {
-    writer->puts("Error: protected path");
-    return;
+    if (MyConfig.ProtectedPath(argv[0]))
+      {
+      writer->puts("Error: protected path");
+      return;
+      }
+    if (unlink(filename.c_str()) == 0)
+      { writer->puts("VFS File deleted"); }
+    else
+      { writer->puts("Error: Could not delete VFS file"); }
     }
-
-  if (unlink(argv[0]) == 0)
-    { writer->puts("VFS File deleted"); }
   else
-    { writer->puts("Error: Could not delete VFS file"); }
+    {
+    std::string glob;
+    split_filename(filename, glob);
+    if (MyConfig.ProtectedPath(filename.c_str()))
+      {
+      writer->puts("Error: protected path");
+      return;
+      }
+
+    std::set<Direntry> entries;
+    // read without stat.
+    read_entries(entries, filename, glob, false, false);
+    if (entries.size() == 0)
+      {
+      writer->puts("VFS: No matching files");
+      return;
+      }
+
+    int delcount = 0;
+    for (auto it = entries.begin(); it != entries.end(); ++it)
+      {
+      const std::string &path = it->path();
+      if (unlink(path.c_str()) == 0)
+        ++delcount;
+      else
+        writer->printf("Error: Could not delete VFS file '%s'", path.c_str());
+      }
+
+    if (delcount > 0)
+      writer->printf("VFS: Deleted %d files\n", delcount );
+    }
   }
 
 void vfs_mv(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -605,32 +802,214 @@ void vfs_df(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 
 
 class VfsInit
-  {
+{
   public: VfsInit();
 } MyVfsInit  __attribute__ ((init_priority (5200)));
+
+bool vfs_expand(OvmsWriter* writer, const char *token, bool complete, bool dirok, bool fileok)
+  {
+  if (!token)
+    return false;
+
+#ifdef LOG_VFS_EXPAND
+  ESP_LOGD(TAGX, "expand: '%s' %s%s%s", token, complete ? "[complete]" : "", dirok ? "[dir]" : "" , fileok ? "[file]" : "");
+#endif
+  std::string filepart;
+  std::string path(token);
+  if (path != "") // Empty path is a special case.
+    {
+    auto posn = path.rfind('/');
+    if (posn == std::string::npos)
+      return false; // This is not a valid path
+
+    filepart.assign(path, posn+1, std::string::npos);
+    path.erase(posn, std::string::npos);
+    }
+
+  std::set<simple_dir_entry_t> entries;
+  if (path != "")
+    read_expand_entries(entries, path, filepart);
+  else
+    {
+    // Add pretend root entries.
+    simple_dir_entry_t entry;
+    entry.is_protected = false;
+    entry.is_dir = true;
+    entry.path = "/";
+    entry.name = "store";
+    entries.insert(entry);
+
+#ifdef CONFIG_OVMS_COMP_SDCARD
+    if (MyPeripherals->m_sdcard->m_card)
+      {
+      entry.name = "sd";
+      entries.insert(entry);
+      }
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+    }
+
+#ifdef LOG_VFS_EXPAND
+  ESP_LOGD(TAGX, "expand: -> '%s' / '%s' [%d]", path.c_str(), filepart.c_str(), entries.size() );
+#endif
+  if (entries.size() == 0)
+    return false;
+  if (!complete)
+    {
+    if (entries.size() != 1)
+      return false;
+    const simple_dir_entry_t &single = *entries.begin();
+    if (filepart == single.name)
+      {
+      if (dirok && single.is_dir)
+        return true;
+      if (fileok && !single.is_dir)
+        return true;
+      }
+    }
+  else
+    {
+    writer->SetCompletion(0,NULL);
+    unsigned int index = 0;
+    auto filepart_size = filepart.size();
+    for (auto it = entries.begin(); it != entries.end(); ++it)
+      {
+      // Complete directories always.
+      bool is_add = !it->is_protected;
+      if (is_add)
+        {
+        if (!it->is_dir)
+          is_add = fileok;
+        }
+      if (is_add)
+        {
+        if (it->name.size() < filepart_size)
+          is_add = false;
+        else if (it->name.compare( 0, filepart_size, filepart) != 0)
+          {
+#ifdef LOG_VFS_EXPAND
+          ESP_LOGD(TAGX, "complete discard: %s", it->name.c_str());
+#endif
+          is_add = false;
+          }
+        }
+
+      if (is_add)
+        {
+        std::string name = it->path;
+        name += it->name;
+        if (it->is_dir)
+          name += "/";
+#ifdef LOG_VFS_EXPAND
+        ESP_LOGD(TAGX, "complete add: [%d] %s", index, name.c_str());
+#endif
+        writer->SetCompletion(index++, name.c_str(), !it->is_dir);
+        }
+      }
+    if (index > 0)
+      return true;
+    }
+  return false;
+  }
+
+int vfs_file_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 1)
+    return vfs_expand(writer, argv[0], complete, false, true) ? 1 : -1;
+  return -1;
+  }
+
+static int vfs_mkdir_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (complete)
+    writer->SetCompletion(0,NULL);
+  option_completer_t comp(writer, complete, argc, argv);
+
+  comp.check_param('p');
+
+  if (comp.do_return())
+    return comp.return_val();
+
+  if (comp.param_index() == 0)
+    return vfs_expand(writer, argv[argc-1], complete, true, false) ? argc : -1;
+  return -1;
+  }
+
+static int vfs_ls_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 1)
+    return vfs_expand(writer, argv[0], complete, true, true) ? 1 : -1;
+  return -1;
+  }
+
+static int vfs_rmdir_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (complete)
+    writer->SetCompletion(0,NULL);
+  option_completer_t comp(writer, complete, argc, argv);
+
+  comp.check_param('r');
+
+  if (comp.do_return())
+    return comp.return_val();
+
+  if (comp.param_index() == 0)
+    return vfs_expand(writer, argv[argc-1], complete, true, false) ? argc : -1;
+  return -1;
+  }
+
+static int vfs_cp_mv_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  switch (argc)
+    {
+    case 1: return vfs_expand(writer, argv[0], complete, false, true) ? argc : -1;
+    case 2: return vfs_expand(writer, argv[1], complete, true, false) ? argc : -1;
+    }
+  return -1;
+  }
+
+static int vfs_append_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  switch (argc)
+    {
+    case 2: return vfs_expand(writer, argv[1], complete, true, false) ? argc : -1;
+    }
+  return -1;
+  }
+
+static int vfs_tail_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 1)
+    {
+    if (argv[0][0] == '-')
+      return -1;
+    }
+  if (argc > 0)
+    return vfs_expand(writer, argv[argc-1], complete, false, true) ? argc : -1;
+  return -1;
+  }
 
 VfsInit::VfsInit()
   {
   ESP_LOGI(TAG, "Initialising VFS (5200)");
 
   OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","Virtual File System framework");
-  cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[<file>]", 0, 1);
-  cmd_vfs->RegisterCommand("rls","VFS Recursive Directory Listing",vfs_rls, "[<file>]", 0, 1);
-  cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1);
-  cmd_vfs->RegisterCommand("head","VFS Display first 20 lines of a file",vfs_head, "[-nrlines] <file>", 1, 2);
-  cmd_vfs->RegisterCommand("stat","VFS Status of a file",vfs_stat, "<file>", 1, 1);
+  cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[<path>]", 0, 1, true, vfs_ls_validate);
+  cmd_vfs->RegisterCommand("rls","VFS Recursive Directory Listing",vfs_rls, "[<path>]", 0, 1, true, vfs_ls_validate);
+  cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1, true, vfs_file_validate);
+  cmd_vfs->RegisterCommand("head","VFS Display first 20 lines of a file",vfs_head, "[-nrlines] <file>", 1, 2, true, vfs_file_validate);
+  cmd_vfs->RegisterCommand("stat","VFS Status of a file",vfs_stat, "<file>", 1, 1, true, vfs_file_validate);
   cmd_vfs->RegisterCommand("mkdir","VFS Create a directory",vfs_mkdir, "[-p] <path>\n"
-    "-p = create full path including missing parents", 1, 2);
+    "-p = create full path including missing parents", 1, 2, true, vfs_mkdir_validate);
   cmd_vfs->RegisterCommand("rmdir","VFS Delete a directory",vfs_rmdir, "[-r] <path>\n"
-    "-r = delete recursively including all files and subdirectories", 1, 2);
-  cmd_vfs->RegisterCommand("rm","VFS Delete a file",vfs_rm, "<file>", 1, 1);
-  cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2);
-  cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2);
-  cmd_vfs->RegisterCommand("append","VFS Append a line to a file",vfs_append, "<quoted line> <file>", 2, 2);
-  cmd_vfs->RegisterCommand("tail","VFS output tail of a file",VfsTailCommand::Execute, "[-nrlines] <file>", 1, 2);
+    "-r = delete recursively including all files and subdirectories", 1, 2, true, vfs_rmdir_validate);
+  cmd_vfs->RegisterCommand("rm","VFS Delete a file",vfs_rm, "<file>", 1, 1, true, vfs_file_validate);
+  cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2, true, vfs_cp_mv_validate);
+  cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2, true, vfs_cp_mv_validate);
+  cmd_vfs->RegisterCommand("append","VFS Append a line to a file",vfs_append, "<quoted line> <file>", 2, 2, true, vfs_append_validate);
+  cmd_vfs->RegisterCommand("tail","VFS output tail of a file",VfsTailCommand::Execute, "[-nrlines] <file>", 1, 2, true, vfs_tail_validate);
   cmd_vfs->RegisterCommand("df","VFS show disk usage", vfs_df, "", 0, 0);
   #ifdef CONFIG_OVMS_COMP_EDITOR
-  cmd_vfs->RegisterCommand("edit","VFS edit a file",vfs_edit, "<path>", 1, 1);
+  cmd_vfs->RegisterCommand("edit","VFS edit a file",vfs_edit, "<path>", 1, 1, true, vfs_file_validate);
   #endif // #ifdef CONFIG_OVMS_COMP_EDITOR
 
   }

@@ -292,7 +292,7 @@ void OvmsPoller::PollerNextTick(poller_source_t source)
   {
   // Completed checking all poll entries for the current m_poll.ticker
 
-  IFTRACE(Poller) ESP_LOGD(TAG, "[%" PRIu8 "]PollerNextTick(%s): cycle complete for ticker=%u", m_poll.bus_no, PollerSource(source), m_poll.ticker);
+  IFTRACE(Poller) ESP_LOGD(TAG, "[%" PRIu8 "]PollerNextTick(%s): cycle complete for ticker=%" PRIu32, m_poll.bus_no, PollerSource(source), m_poll.ticker);
   m_poll_ticked = false;
 
   if (source == poller_source_t::Primary)
@@ -466,7 +466,7 @@ void OvmsPoller::PollerSend(poller_source_t source)
       break;
     case OvmsNextPollResult::FoundEntry:
       {
-      ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend(%s)[%" PRIu8 "]: entry at[type=%02X, pid=%X], ticker=%u, wait=%u, cnt=%u/%u",
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend(%s)[%" PRIu8 "]: entry at[type=%02X, pid=%X], ticker=%" PRIu32 ", wait=%u, cnt=%u/%u",
              m_poll.bus_no, PollerSource(source), m_poll_state, m_poll.entry.type, m_poll.entry.pid,
              m_poll.ticker, m_poll_wait, m_poll_sequence_cnt, m_poll_sequence_max);
       // We need to poll this one...
@@ -817,6 +817,33 @@ OvmsPollers::OvmsPollers()
   cmd_times->RegisterCommand("off","Turn off Poll-Time Tracing",poller_times);
   cmd_times->RegisterCommand("status","Show timing status",poller_times);
   cmd_times->RegisterCommand("reset","Reset Poll-Time Tracing",poller_times);
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsPoller");
+
+  dto->RegisterDuktapeFunction(DukOvmsPollerPaused, 0, "GetPaused");
+  dto->RegisterDuktapeFunction(DukOvmsPollerUserPaused, 0, "GetUserPaused");
+  dto->RegisterDuktapeFunction(DukOvmsPollerPause,  0, "Pause");
+  dto->RegisterDuktapeFunction(DukOvmsPollerResume, 0, "Resume");
+
+  dto->RegisterDuktapeFunction(DukOvmsPollerSetTrace, 1, "Trace");
+  dto->RegisterDuktapeFunction(DukOvmsPollerGetTrace, 0, "GetTraceStatus");
+
+  // OvmsPoller.Times Sub-object
+  DuktapeObjectRegistration* dto_times =
+    new DuktapeObjectRegistration("OvmsPollerTimes");
+
+  dto_times->RegisterDuktapeFunction(DukOvmsPollerTimesGetStarted, 0, "GetStarted");
+  dto_times->RegisterDuktapeFunction(DukOvmsPollerTimesStart, 0, "Start");
+  dto_times->RegisterDuktapeFunction(DukOvmsPollerTimesStop, 0, "Stop");
+  dto_times->RegisterDuktapeFunction(DukOvmsPollerTimesReset, 0, "Reset");
+  dto_times->RegisterDuktapeFunction(DukOvmsPollerTimesGetStatus, 0, "GetStatus");
+
+  dto->RegisterDuktapeObject(dto_times, "Times");
+
+  MyDuktape.RegisterDuktapeObject(dto);
+#endif
+
   if (MyConfig.ismounted())
     LoadPollerTimerConfig();
   }
@@ -999,15 +1026,20 @@ void OvmsPollers::NotifyPollerTrace()
   {
   if (!IsTracingTimes())
     return;
-  StringWriter buf(200);
-  if (!PollerTimesTrace(&buf, true))
+
+  times_trace_t trace;
+  if (!LoadTimesTrace( Permille, trace))
     return;
 
-  // break it up into pieces.
-  std::stringstream ss(buf);
-  std::string s;
-  while (std::getline(ss, s))
+  // *-LOG-PollStats,0,"type","count_hz","avg_util_pm","peak_util_pm","avg_time_ms","peak_time_ms"
+
+  uint32_t ident = 0;
+  for (auto it = trace.items.begin(); it != trace.items.end(); ++it)
     {
+    ++ident;
+    std::string s = string_format(
+      "*-LOG-PollStats,%" PRIu32 ",86400,\"%s\",%.2f,%.3f,%.3f,%.3f,%.3f\n",
+        ident, it->desc.c_str(), it->avg_n, it->avg_utlzn_ms,  it->max_time, it->avg_time, it->max_val);
     MyNotify.NotifyString("data", "log.pollstats", s.c_str());
     }
   }
@@ -1018,6 +1050,7 @@ void OvmsPollers::ConfigChanged(std::string event, void* data)
   if (!param || param->GetName() == "log")
     LoadPollerTimerConfig();
   }
+
 void OvmsPollers::LoadPollerTimerConfig()
   {
   if (MyConfig.GetParamValueBool("log", "poller.timers", false))
@@ -1680,7 +1713,7 @@ void OvmsPollers::Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool
   if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
     {
     volatile uint32_t &count = m_overflow_count[istx ? 1 : 0];
-    Atomic_Increment(count, 1U);
+    Atomic_Increment(count, (uint32_t)1);
     }
   }
 
@@ -1753,7 +1786,7 @@ void OvmsPollers::PollerStatus(int verbosity, OvmsWriter* writer)
     if (last == 0)
       writer->puts("None");
     else
-      writer->printf("%" PRIu8 "s (ticks)\n", (curmon - last));
+      writer->printf("%" PRIu32 "s (ticks)\n", (curmon - last));
     }
   if (!found_list)
     {
@@ -1854,6 +1887,171 @@ void OvmsPollers::poller_times(int verbosity, OvmsWriter* writer, OvmsCommand* c
       (MyPollers.m_trace & trace_Times) ? "on" : "off");
     }
   }
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+// OvmsPoller.GetPaused
+duk_ret_t OvmsPollers::DukOvmsPollerPaused(duk_context *ctx)
+  {
+  duk_push_boolean(ctx, (MyPollers.IsPaused() || MyPollers.IsUserPaused()) ? 1 : 0);
+  return 1;
+  }
+// OvmsPoller.GetUserPaused
+duk_ret_t OvmsPollers::DukOvmsPollerUserPaused(duk_context *ctx)
+  {
+  duk_push_boolean(ctx, MyPollers.IsUserPaused() ? 1 : 0);
+  return 1;
+  }
+// OvmsPoller.Pause
+duk_ret_t OvmsPollers::DukOvmsPollerPause(duk_context *ctx)
+  {
+  MyPollers.PausePolling(true);
+  return 0;
+  }
+// OvmsPoller.Resume
+duk_ret_t OvmsPollers::DukOvmsPollerResume(duk_context *ctx)
+  {
+  MyPollers.ResumePolling(true);
+  return 0;
+  }
+
+// OvmsPoller.SetTrace
+duk_ret_t OvmsPollers::DukOvmsPollerSetTrace(duk_context *ctx)
+  {
+  uint8_t newval;
+  if (duk_is_string(ctx, 0))
+    {
+    std::string mode(duk_to_string(ctx,0));
+    if (mode == "on")
+      newval = trace_Poller;
+    else if (mode == "off")
+      newval = 0;
+    else if (mode == "txrx")
+      newval = trace_TXRX;
+    else if (mode == "all")
+      newval = trace_All;
+    else
+      return 0;
+    }
+  else if (duk_is_object(ctx, 0))
+    {
+    newval = 0;
+    if (duk_get_prop_string(ctx, 0, "poller"))
+      {
+      if (duk_get_boolean(ctx, -1))
+        newval |= trace_Poller;
+      duk_pop(ctx);
+      }
+    if (duk_get_prop_string(ctx, 0, "txrx"))
+      {
+      if (duk_get_boolean(ctx, -1))
+        newval |= trace_TXRX;
+      duk_pop(ctx);
+      }
+    }
+  else
+    return 0;
+  // Set the pollers log only
+  MyPollers.m_trace = (MyPollers.m_trace & ~trace_All) | newval;
+  return 0;
+
+  }
+// OvmsPoller.GetTrace
+duk_ret_t OvmsPollers::DukOvmsPollerGetTrace(duk_context *ctx)
+  {
+  uint8_t val = MyPollers.m_trace & trace_All;
+
+  duk_push_object(ctx);
+  duk_push_boolean(ctx, val & trace_Poller ? 1 : 0);
+  duk_put_prop_string(ctx, -2, "poller");
+  duk_push_boolean(ctx, val & trace_TXRX ? 1 : 0);
+  duk_put_prop_string(ctx, -2, "txrx");
+
+  return 1;
+  }
+
+// OvmsPoller.Times.GetStarted
+duk_ret_t OvmsPollers::DukOvmsPollerTimesGetStarted(duk_context *ctx)
+  {
+  bool enabled = MyConfig.GetParamValueBool("log", "poller.timers", false);
+  duk_push_boolean(ctx, enabled?1:0);
+  return 1;
+  }
+// OvmsPoller.Times.Start
+duk_ret_t OvmsPollers::DukOvmsPollerTimesStart(duk_context *ctx)
+  {
+  MyConfig.SetParamValueBool("log", "poller.timers", true);
+  return 0;
+  }
+// OvmsPoller.Times.Stop
+duk_ret_t OvmsPollers::DukOvmsPollerTimesStop(duk_context *ctx)
+  {
+  MyConfig.SetParamValueBool("log", "poller.timers", false);
+  // Turn off the 'last' value.
+  MyPollers.Queue_Command(OvmsPoller::OvmsPollCommand::ResetTimer, 3);
+  return 0;
+  }
+// OvmsPoller.Times.Reset
+duk_ret_t OvmsPollers::DukOvmsPollerTimesReset(duk_context *ctx)
+  {
+  MyPollers.PollerTimesReset();
+  return 0;
+  }
+// OvmsPoller.Times.GetStatus
+duk_ret_t OvmsPollers::DukOvmsPollerTimesGetStatus(duk_context *ctx)
+  {
+  // array of objects!
+  times_trace_t trace;
+  if (!MyPollers.LoadTimesTrace( Permille, trace))
+    return 0;
+
+  // The return object
+  duk_push_object(ctx);
+
+  bool enabled = MyConfig.GetParamValueBool("log", "poller.timers", false);
+  duk_push_boolean(ctx, enabled?1:0);
+  duk_put_prop_string(ctx, -2, "started");
+
+  // The items object
+  duk_push_object(ctx);
+
+  for (auto it = trace.items.begin(); it != trace.items.end(); ++it)
+    {
+    // The dictionary object of items.
+    duk_push_object(ctx);
+
+    duk_push_number(ctx, it->avg_n);
+    duk_put_prop_string(ctx, -2, "count_hz");
+
+    duk_push_number(ctx, it->avg_utlzn_ms);
+    duk_put_prop_string(ctx, -2, "avg_util_pm");
+
+    duk_push_number(ctx, it->max_time);
+    duk_put_prop_string(ctx, -2, "peak_util_pm");
+
+    duk_push_number(ctx, it->avg_time);
+    duk_put_prop_string(ctx, -2, "avg_time_ms");
+
+    duk_push_number(ctx, it->max_val);
+    duk_put_prop_string(ctx, -2, "peak_time_ms");
+
+    // Add the object with the desc as the key
+    duk_put_prop_string(ctx, -2, it->desc.c_str());
+    }
+  duk_put_prop_string(ctx, -2, "items");
+
+  // Now the totals
+  duk_push_number(ctx, trace.tot_n);
+  duk_put_prop_string(ctx, -2, "tot_count_hz");
+
+  duk_push_number(ctx, trace.tot_utlzn_ms);
+  duk_put_prop_string(ctx, -2, "tot_util_pm");
+
+  duk_push_number(ctx, trace.tot_time);
+  duk_put_prop_string(ctx, -2, "tot_time_ms");
+
+  return 1;
+  }
+#endif
+
 void OvmsPollers::PollerTimesReset()
   {
   bool currLogging = ((MyPollers.m_trace & trace_Times) != 0);
@@ -1862,119 +2060,90 @@ void OvmsPollers::PollerTimesReset()
   Queue_Command(OvmsPoller::OvmsPollCommand::ResetTimer, currLogging?1:0);
   }
 
-bool OvmsPollers::PollerTimesTrace( OvmsWriter* writer, bool is_notify )
+bool OvmsPollers::LoadTimesTrace( metric_unit_t ratio_unit, times_trace_t &trace)
   {
-  metric_unit_t ratio_unt;
-  if (is_notify)
-    ratio_unt = Permille;
-  else
-    ratio_unt = OvmsMetricGetUserUnit(GrpRatio, Permille);
-  int ratio_dec = (ratio_unt == Percentage) ? 4 : 3;
-  bool first = true;
+  trace.items.clear();
+
   uint32_t avg_time_sum_us = 0;
   uint32_t avg_utlzn_sum_us = 0;
   uint32_t avg_count_sum = 0;
-  uint32_t ident = 0;
   for (auto it = m_poll_time_stats.begin(); it != m_poll_time_stats.end(); ++it)
     {
     average_value_t &cur = it->second;
+    uint16_t max_val = cur.max_val;
+    if (max_val == 0)
+      continue;
     uint16_t avg_100n = cur.avg_n.get();
     uint32_t avg_utlzn_us = cur.avg_utlzn.get();
     uint32_t avg_time = cur.avg_time.get();
     uint32_t max_time = cur.max_time;
-    uint16_t max_val = cur.max_val;
-
     avg_time_sum_us += avg_time;
     avg_utlzn_sum_us += avg_utlzn_us;
     avg_count_sum += avg_100n;
 
-    if (max_val == 0)
-      continue;
-    if (first)
-      {
-      first = false;
-      if (is_notify)
-        {
-        // writer->puts("*-LOG-PollStats,0,\"type\",\"count_hz\",\"avg_util_pm\",\"peak_util_pm\",\"avg_time_ms\",\"peak_time_ms\"")
-        }
-        else
-        {
-        writer->puts(  "Type           | count  | Utlztn | Time");
-        writer->printf("               | per s  | [%s]    | [ms]\n", OvmsMetricUnitLabel(ratio_unt) );
-        }
-      }
-    if (!is_notify)
-      writer->puts( "---------------+--------+--------+---------");
-
-    std::string desc;
+    times_trace_elt_t item;
     switch (it->first.entry_type)
       {
       case OvmsPoller::OvmsPollEntryType::FrameRx:
-        desc = string_format("RxCan%" PRIu32 "[%03" PRIx32 "]",
+        item.desc = string_format("RxCan%" PRIu8 "[%03" PRIx32 "]",
             it->first.busnumber, it->first.Frame_MsgId);
         break;
       case OvmsPoller::OvmsPollEntryType::FrameTx:
-        desc = string_format("TxCan%" PRIu32 "[%03" PRIx32 "]",
+        item.desc = string_format("TxCan%" PRIu8 "[%03" PRIx32 "]",
             it->first.busnumber, it->first.Frame_MsgId);
         break;
       case OvmsPoller::OvmsPollEntryType::Poll:
-        desc = string_format("Poll:%s", OvmsPoller::PollerSource(it->first.Poll_src));
+        item.desc = string_format("Poll:%s", OvmsPoller::PollerSource(it->first.Poll_src));
         break;
       case OvmsPoller::OvmsPollEntryType::Command:
-        desc = string_format("Cmd:%s", OvmsPoller::PollerCommand(it->first.Command_cmd, true));
+        item.desc = string_format("Cmd:%s", OvmsPoller::PollerCommand(it->first.Command_cmd, true));
         break;
       case OvmsPoller::OvmsPollEntryType::PollState:
-        desc = "Cmd:State";
+        item.desc = "Cmd:State";
         break;
       default:
-        desc = "Other";
+        item.desc = "Other";
       }
-
     // uses 100 as base for precision. cvt from 10s to 1s
-    float avg_n_f = avg_100n  / (average_sep_s * 100.0);
+    item.avg_n = avg_100n  / (average_sep_s * 100.0);
     // Convert to micro-s per 10s to ms per s (ie permille)
-    float avg_utlzn_ms_f = UnitConvert( Permille, ratio_unt, avg_utlzn_us / (average_sep_s * 1000.0F));
-    float avg_time_f = avg_time / 10000.0;
-    float max_time_f = UnitConvert(Permille, ratio_unt, max_time / (average_sep_s * 1000.0F));
-    float max_val_f  = max_val  / 1000.0;
-
-    if (is_notify)
-      {
-      ++ident;
-      writer->printf("*-LOG-PollStats,%" PRIu32 ",86400,\"%s\",%.2f,%.*f,%.*f,%.3f,%.3f\n",
-          ident, desc.c_str(), avg_n_f, ratio_dec, avg_utlzn_ms_f, ratio_dec, max_time_f, avg_time_f, max_val_f);
-      }
-    else
-      {
-      writer->printf("%-12sAvg|%8.2f|%8.*f|%9.3f\n",
-          desc.c_str(), avg_n_f, ratio_dec, avg_utlzn_ms_f, avg_time_f);
-
-      writer->printf("           Peak|        |%8.*f|%9.3f\n",
-           ratio_dec, max_time_f, max_val_f);
-      }
+    item.avg_utlzn_ms = UnitConvert( Permille, ratio_unit, avg_utlzn_us / (average_sep_s * 1000.0F));
+    item.max_time = UnitConvert(Permille, ratio_unit, max_time / (average_sep_s * 1000.0F));
+    item.avg_time = avg_time / 10000.0;
+    item.max_val  = max_val  / 1000.0;
+    trace.items.push_back(item);
     }
+  if (trace.items.size() == 0)
+    return false;
+  // uses 100 as base for precision. cvt from 10s to 1s (ie permille)
+  trace.tot_n = avg_count_sum  / (average_sep_s * 100.0);
+  // Convert to micro-s per 10s to ms per s
+  trace.tot_utlzn_ms = UnitConvert(Permille, ratio_unit, avg_utlzn_sum_us / (average_sep_s * 1000.0F));
+  trace.tot_time = avg_time_sum_us / 1000.0;
+  return true;
+  }
 
-  if (!first)
+bool OvmsPollers::PollerTimesTrace( OvmsWriter* writer)
+  {
+  metric_unit_t ratio_unt = OvmsMetricGetUserUnit(GrpRatio, Permille);
+  times_trace_t trace;
+  if (!LoadTimesTrace( ratio_unt, trace))
+    return false;
+  int ratio_dec = (ratio_unt == Percentage) ? 4 : 3;
+  writer->puts(  "Type           | count  | Utlztn | Time");
+  writer->printf("               | per s  | [%s]    | [ms]\n", OvmsMetricUnitLabel(ratio_unt) );
+  for (auto it = trace.items.begin(); it != trace.items.end(); ++it)
     {
-    // uses 100 as base for precision. cvt from 10s to 1s (ie permille)
-    float tot_n_f = avg_count_sum  / (average_sep_s * 100.0);
-    // Convert to micro-s per 10s to ms per s
-    float tot_utlzn_ms_f = UnitConvert(Permille, ratio_unt, avg_utlzn_sum_us / (average_sep_s * 1000.0F));
-    float tot_time_f = avg_time_sum_us / 1000.0;
-    if (is_notify)
-      {
-      ++ident;
-      writer->printf("*-LOG-PollStats,%" PRIu32 ",86400,\"Total\",%.2f,%.*f,,%.3f,\n",
-          ident, tot_n_f, ratio_dec, tot_utlzn_ms_f, tot_time_f);
-      }
-    else
-      {
-      writer->puts(  "===============+========+========+=========");
-      writer->printf("      Total Avg|%8.2f|%8.*f|%9.3f\n",
-          tot_n_f, ratio_dec, tot_utlzn_ms_f, tot_time_f);
-      }
+      writer->puts( "---------------+--------+--------+---------");
+      writer->printf("%-12sAvg|%8.2f|%8.*f|%9.3f\n",
+          it->desc.c_str(), it->avg_n, ratio_dec, it->avg_utlzn_ms, it->avg_time);
+      writer->printf("           Peak|        |%8.*f|%9.3f\n",
+           ratio_dec, it->max_time, it->max_val);
     }
-  return (!first);
+  writer->puts(  "===============+========+========+=========");
+  writer->printf("      Total Avg|%8.2f|%8.*f|%9.3f\n",
+      trace.tot_n, ratio_dec, trace.tot_utlzn_ms, trace.tot_time);
+  return true;
   }
 
 static const char *PollResStr( OvmsPoller::OvmsNextPollResult res)

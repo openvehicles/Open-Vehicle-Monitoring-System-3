@@ -41,9 +41,12 @@ static char CRbuf[4] = { '\r', '\033', '[', 'K' };
 static char NLbuf[2] = { '\r', '\n' };
 static char ctrlRbuf[1] = { 'R'-0100 };
 
-char ** Complete (microrl_t* rl, int argc, const char * const * argv )
+char ** Complete (microrl_t* rl, int argc, const char * const * argv, int *common_len, int *finished)
   {
-  return MyCommandApp.Complete((OvmsWriter*)rl->userdata, argc, argv);
+  bool fin = *finished != 0;
+  auto res = MyCommandApp.Complete((OvmsWriter*)rl->userdata, argc, argv, *common_len, fin);
+  *finished = fin ? 1 : 0;
+  return res;
   }
 
 OvmsConsole::OvmsConsole()
@@ -76,10 +79,30 @@ void OvmsConsole::Initialize(const char* console)
   m_ready = true;
   }
 
-char** OvmsConsole::SetCompletion(int index, const char* token)
+char** OvmsConsole::SetCompletion(int index, const char* token, bool isfinal)
   {
+  if (index == 0)
+    {
+    m_common = token ? strlen(token) : 0;
+    m_final = isfinal;
+    }
   if (index < COMPLETION_MAX_TOKENS+1)
     {
+      {
+      if (index > 0)
+        {
+        int common_count = 0;
+        const char *commonit = m_space[0];
+        for ( const char *it = token; *it && *commonit; ++it, ++commonit)
+          {
+          if (*it != *commonit)
+            break;
+          ++common_count;
+          }
+        if (common_count < m_common)
+          m_common = common_count;
+        }
+      }
     if (index == COMPLETION_MAX_TOKENS)
       token = "...";
     if (token)
@@ -91,6 +114,15 @@ char** OvmsConsole::SetCompletion(int index, const char* token)
       }
     m_completions[index] = NULL;
     }
+  return m_completions;
+  }
+
+char** OvmsConsole::GetCompletions(int &common_len, bool &finished )
+  {
+  if (!m_completions[1])
+    finished = m_final;
+  else
+    common_len = m_common;
   return m_completions;
   }
 

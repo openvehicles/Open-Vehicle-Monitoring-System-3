@@ -33,6 +33,7 @@ static const char *TAG = "canlog-vfs";
 #include "ovms_utils.h"
 #include "ovms_config.h"
 #include "ovms_peripherals.h"
+#include "ovms_vfs.h"
 
 void can_log_vfs_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -81,7 +82,7 @@ OvmsCanLogVFSInit::OvmsCanLogVFSInit()
           "<path> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
-          1, 9);
+          1, 9, true, vfs_file_validate);
         }
       }
     }

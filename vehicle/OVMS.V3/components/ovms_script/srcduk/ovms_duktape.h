@@ -122,6 +122,10 @@ typedef struct
 
 typedef std::map<const char*, duktape_registermodule_t*, CmpStrOp> DuktapeModuleMap;
 
+class DuktapeObjectRegistration;
+
+typedef std::map<const char *, DuktapeObjectRegistration*, CmpStrOp> DuktapeObjectMap;
+
 class DuktapeObjectRegistration
   {
   public:
@@ -132,12 +136,16 @@ class DuktapeObjectRegistration
     const char* GetName();
     void RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name);
 
+    void RegisterDuktapeObject(DuktapeObjectRegistration* obj, const char *name);
+
   public:
     void RegisterWithDuktape(duk_context* ctx);
 
   protected:
+    void PushThisAsObject(duk_context* ctx);
     const char* m_name;
     DuktapeFunctionMap m_fnmap;
+    DuktapeObjectMap m_obmap;
   };
 
 typedef std::map<const char*, DuktapeObjectRegistration*, CmpStrOp> DuktapeObjectMap;

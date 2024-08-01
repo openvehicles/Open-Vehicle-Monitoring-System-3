@@ -8,17 +8,21 @@ OVMS includes a Virtual File System (VFS) used to unify all storage in the syste
   append               VFS Append a line to a file
   cat                  VFS Display a file
   cp                   VFS Copy a file
-  edit                 VFS Edit a file
+  df                   VFS show disk usage
+  edit                 VFS edit a file
+  head                 VFS Display first 20 lines of a file
   ls                   VFS Directory Listing
   mkdir                VFS Create a directory
   mv                   VFS Rename a file
+  rls                  VFS Recursive Directory Listing
   rm                   VFS Delete a file
   rmdir                VFS Delete a directory
   stat                 VFS Status of a file
-  tail                 VFS Output tail of a file
+  tail                 VFS output tail of a file
 
 Please take care. This is a very small microcontroller based system with limited storage. The /store area should only be used for storage of configurations and small scripts. The /sd SD CARD area is more flexible and can be used for storing of configuration logs, firmware images, etc.
 
+The ls, rls and rm commands take simple (``*`` and ``?``) wildcards. So ``vfs rls /sd/*.js`` wold list all files with ``.js`` extension on the SD CARD.
 
 --------------
 Network Access
