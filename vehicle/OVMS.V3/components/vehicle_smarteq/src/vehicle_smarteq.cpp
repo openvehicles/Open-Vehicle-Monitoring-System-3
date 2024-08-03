@@ -127,6 +127,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   
   static bool isCharging = false;
   static bool lastCharging = false;
+  float _range_est;
 
   if (m_candata_poll != 100 && StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) > 100) {
     m_candata_poll++;
@@ -168,8 +169,9 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       StandardMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(3));
       StandardMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(0) & 0x20)); // ChargingPlugConnected
       StandardMetrics.ms_v_charge_duration_full->SetValue((((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0);
-      StandardMetrics.ms_v_bat_range_est->SetValue((c >> 12) & 0x3FFu); // VehicleAutonomy
-      //ChargeRemainingTime = (((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0;
+      _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy
+      if ( _range_est != 1023.0 )
+        StandardMetrics.ms_v_bat_range_est->SetValue(_range_est); // VehicleAutonomy
       break;
     case 0x65C: // ExternalTemp
       StandardMetrics.ms_v_env_temp->SetValue((CAN_BYTE(0) >> 1) - 40); // ExternalTemp ?
