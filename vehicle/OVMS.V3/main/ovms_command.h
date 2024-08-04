@@ -224,9 +224,11 @@ class CNameMap : public std::map<const char*, T, CmpStrOp>
 struct CompareCharPtr
   {
   bool operator()(const char* a, const char* b) const;
+  bool operator()(const std::string& a, const char* b) const;
+  bool operator()(const std::string& a, const std::string& b) const;
   };
 
-class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr>
+class OvmsCommandMap : public std::map<std::string, OvmsCommand*, CompareCharPtr>
   {
   public:
     OvmsCommand* FindUniquePrefix(const char* key);
@@ -268,15 +270,18 @@ class OvmsCommand : public ExternalRamAllocated
     void Display(OvmsWriter* writer, int level);
     void PutUsage(OvmsWriter* writer);
 
+    void UpdateCommand(const char *title,
+         const char *usage = "", int min = 0, int max = 0, bool secure = true);
+
   private:
     void ExpandUsage(const char* templ, OvmsWriter* writer, std::string& result);
 
   protected:
-    const char* m_name;
-    const char* m_title;
+    std::string m_name;
+    std::string m_title;
     OvmsCommandExecuteCallback_t m_execute;
     OvmsCommandValidateCallback_t m_validate;
-    const char* m_usage_template;
+    std::string m_usage_template;
     int m_min;
     int m_max;
     bool m_secure;

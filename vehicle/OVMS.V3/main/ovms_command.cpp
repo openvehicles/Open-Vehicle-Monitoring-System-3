@@ -60,6 +60,14 @@ bool CompareCharPtr::operator()(const char* a, const char* b) const
   {
   return strcmp(a, b) < 0;
   }
+bool CompareCharPtr::operator()(const std::string& a, const char* b) const
+  {
+  return strcmp(a.c_str(), b) < 0;
+  }
+bool CompareCharPtr::operator()(const std::string& a, const std::string& b) const
+  {
+  return a < b;
+  }
 
 OvmsWriter::OvmsWriter()
   {
@@ -115,9 +123,9 @@ OvmsCommand* OvmsCommandMap::FindUniquePrefix(const char* key)
   OvmsCommand* found = NULL;
   for (iterator it = begin(); it != end(); ++it)
     {
-    if (strncmp(it->first, key, len) == 0)
+    if (strncmp(it->first.c_str(), key, len) == 0)
       {
-      if (len == strlen(it->first))
+      if (len == it->first.length())
         {
         return it->second;
         }
@@ -136,7 +144,8 @@ OvmsCommand* OvmsCommandMap::FindUniquePrefix(const char* key)
 
 OvmsCommand* OvmsCommandMap::FindCommand(const char* key)
   {
-  iterator it = find(key);
+  std::string skey(key);
+  iterator it = find(skey);
   if (it == end())
     return NULL;
   else
@@ -153,34 +162,32 @@ char ** OvmsCommandMap::GetCompletion(OvmsWriter* writer, const char* token)
       {
       if (it->second->IsSecure() && !writer->IsSecure())
         continue;
-      if (strncmp(it->first, token, strlen(token)) == 0)
-        writer->SetCompletion(index++, it->first);
+      if (strncmp(it->first.c_str(), token, strlen(token)) == 0)
+        writer->SetCompletion(index++, it->first.c_str());
       }
     }
   return tokens;
   }
 
 OvmsCommand::OvmsCommand()
+  : m_execute(nullptr),
+    m_validate(nullptr),
+    m_min(0),
+    m_max(0),
+    m_secure(true),
+    m_parent(nullptr)
   {
-  m_execute = NULL;
-  m_usage_template= "";
-  m_parent = NULL;
-  m_validate = NULL;
   }
 
 OvmsCommand::OvmsCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
                          const char *usage, int min, int max, bool secure,
                          OvmsCommandValidateCallback_t validate)
+   : m_name(name), m_title(title),
+     m_execute(execute), m_validate(validate),
+     m_usage_template(!usage ? "" : usage),
+     m_min(min), m_max(max), m_secure(secure),
+     m_parent(nullptr)
   {
-  m_name = name;
-  m_title = title;
-  m_execute = execute;
-  m_usage_template= !usage ? "" : usage;
-  m_min = min;
-  m_max = max;
-  m_parent = NULL;
-  m_secure = secure;
-  m_validate = validate;
   }
 
 OvmsCommand::~OvmsCommand()
@@ -195,12 +202,12 @@ OvmsCommand::~OvmsCommand()
 
 const char* OvmsCommand::GetName()
   {
-  return m_name;
+  return m_name.c_str();
   }
 
 const char* OvmsCommand::GetTitle()
   {
-  return m_title;
+  return m_title.c_str();
   }
 
 // Dynamic generation of "Usage:" messages.  Syntax of the usage template string:
@@ -220,24 +227,25 @@ void OvmsCommand::PutUsage(OvmsWriter* writer)
     {
     if (parent->m_validate)
       {
-      size_t len = strlen(parent->m_usage_template);
-      char* dollar = index(parent->m_usage_template, '$');
+      size_t len = parent->m_usage_template.length();
+      const char * usage = parent->m_usage_template.c_str();
+      char* dollar = index(usage, '$');
       if (dollar)
         {
-        len = dollar - parent->m_usage_template;
+        len = dollar - usage;
         if (len > 0 && *(dollar-1) == '[')
           --len;
         }
       else
         result.insert(pos, " ");
-      result.insert(pos, parent->m_usage_template, len);
+      result.insert(pos, usage, len);
       }
     result.insert(pos, " ");
     result.insert(pos, parent->m_name);
     }
   result += m_name;
   result += " ";
-  ExpandUsage(m_usage_template, writer, result);
+  ExpandUsage(m_usage_template.c_str(), writer, result);
   writer->puts(result.c_str());
   }
 
@@ -264,7 +272,7 @@ void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string
         result += it->first;
         result += " ";
         found = true;
-        child->ExpandUsage(child->m_usage_template, writer, result);
+        child->ExpandUsage(child->m_usage_template.c_str(), writer, result);
         }
       }
     if (result.size() == z)
@@ -316,7 +324,7 @@ void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string
       if (it != m_children.end() && (!it->second->m_secure || writer->m_issecure))
         {
         OvmsCommand* child = it->second;
-        child->ExpandUsage(child->m_usage_template, writer, result);
+        child->ExpandUsage(child->m_usage_template.c_str(), writer, result);
         }
       }
     else
@@ -336,10 +344,19 @@ OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, O
   if (cmd == NULL)
     {
     cmd = new OvmsCommand(name, title, execute, usage, min, max, secure, validate);
-    m_children[name] = cmd;
+    m_children[cmd->m_name] = cmd;
     cmd->m_parent = this;
     }
   return cmd;
+  }
+
+void OvmsCommand::UpdateCommand(const char *title, const char *usage, int min, int max, bool secure)
+  {
+  m_title = title;
+  m_usage_template = usage;
+  m_min = min;
+  m_max = max;
+  m_secure = secure;
   }
 
 bool OvmsCommand::UnregisterCommand(const char* name)
@@ -347,7 +364,7 @@ bool OvmsCommand::UnregisterCommand(const char* name)
   if (name == NULL)
     {
     // Unregister this command
-    return m_parent->UnregisterCommand(m_name);
+    return m_parent->UnregisterCommand(m_name.c_str());
     }
 
   // Unregister the specified child command
@@ -448,7 +465,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     if (strcmp(argv[0],"?")==0)
       {
       // Skip usage line if it's just the one-line list of children.
-      if (*m_usage_template || m_execute)
+      if (m_usage_template.empty() || m_execute)
         PutUsage(writer);
       // Show available commands
       int avail = 0;
@@ -456,7 +473,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
         {
         if (it->second->IsSecure() && !writer->m_issecure)
           continue;
-        const char* k = it->first;
+        const char* k = it->first.c_str();
         const char* v = it->second->GetTitle();
         writer->printf("%-20.20s %s\n",k,v);
         ++avail;
@@ -496,15 +513,15 @@ void OvmsCommand::Display(OvmsWriter* writer, int level)
   static const char* const end = spaces + len;
   if (level >= 0)
     {
-    const char* usage = m_usage_template;
+    const char* usage = m_usage_template.c_str();
     if (!usage)
-	usage = "NULL";
+      usage = "NULL";
     const char* p = usage;
     int quotes = 0;
     for ( ; *p; ++p)
       if (*p == '"')
         ++quotes;
-    char* m = (char*)malloc(p - m_usage_template + quotes + 1);
+    char* m = (char*)malloc(p - usage + quotes + 1);
     if (m)
       {
       char* q = m;
@@ -520,7 +537,7 @@ void OvmsCommand::Display(OvmsWriter* writer, int level)
     if (2*level > len)
       level = 0;
     writer->printf("\"%s%s\"\t\"%s\"\t\"%s\"\t%d\t%d\t%s\t%s\t%s\t%s\n",
-      end-2*level, m_name, m_title, usage, m_min, m_max, m_children.empty() ? "--" : "children",
+      end-2*level, m_name.c_str(), m_title.c_str(), usage, m_min, m_max, m_children.empty() ? "--" : "children",
       m_execute ? "execute" : "--", m_secure ? "secure" : "--", m_validate ? "validate" : "--");
     if (m)
       free(m);
@@ -754,25 +771,32 @@ static duk_ret_t DukOvmsCommandRegister(duk_context *ctx)
   int linenumber = 0;
   MyDuktape.DukGetCallInfo(ctx, &filename, &linenumber, &function);
 
-  const char *fullcommand = duk_to_string(ctx,0);
-  const char *name = duk_to_string(ctx,1);
-  const char *title = duk_to_string(ctx,2);
-  const char *usage = duk_to_string(ctx,3);
-  uint32_t min = duk_is_number(ctx,4) ? duk_to_uint32(ctx,4) : 0;
-  uint32_t max = duk_is_number(ctx,5) ? duk_to_uint32(ctx,5) : 0;
+  const char *parent = duk_to_string(ctx,1);
+  const char *name = duk_to_string(ctx,2);
+  const char *title = duk_to_string(ctx,3);
+  const char *usage = duk_to_string(ctx,4);
+  uint32_t minarg = 0;
+  if (duk_is_number(ctx,5))
+   minarg = duk_to_uint32(ctx,5);
+  uint32_t maxarg = minarg;
+  if (duk_is_number(ctx,6)) {
+    maxarg = duk_to_uint32(ctx,6);
+    if (maxarg < minarg)
+      maxarg = minarg;
+  }
 
   MyDuktape.RegisterDuktapeConsoleCommand(
     ctx, 0,
     filename.c_str(),
-    fullcommand,
+    parent,
     name,
     title,
     usage,
-    min,
-    max);
+    minarg,
+    maxarg);
 
-  ESP_LOGD(TAG,"Duktape: Script %s %s:%d registered command %s/%s",
-      filename.c_str(), function.c_str(), linenumber, fullcommand, name);
+  ESP_LOGD(TAG,"Duktape: Script %s %s:%d registered command %s/%s (%" PRIu32 "<=nargs<=%" PRIu32 ")",
+      filename.c_str(), function.c_str(), linenumber, parent, name, minarg, maxarg);
 
   return 0;
   }
@@ -822,7 +846,7 @@ OvmsCommandApp::OvmsCommandApp()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsCommand");
   dto->RegisterDuktapeFunction(DukOvmsCommandExec, 1, "Exec");
-  dto->RegisterDuktapeFunction(DukOvmsCommandRegister, 6, "Register");
+  dto->RegisterDuktapeFunction(DukOvmsCommandRegister, 7, "Register");
   MyDuktape.RegisterDuktapeObject(dto);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }

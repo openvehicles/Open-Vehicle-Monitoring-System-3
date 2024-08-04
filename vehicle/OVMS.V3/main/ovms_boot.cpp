@@ -743,7 +743,7 @@ void Boot::ErrorCallback(const void *f, int core_id, bool is_abort, esp_reset_re
   panicPutStr("\r\n[OVMS] Current tasks: ");
   for (int core=0; core<portNUM_PROCESSORS; core++)
     {
-#if ESP_IDF_VERSION_MAJOR >= 5
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0)
     TaskHandle_t task = xTaskGetCurrentTaskHandleForCore(core);
 #else
     TaskHandle_t task = xTaskGetCurrentTaskHandleForCPU(core);
