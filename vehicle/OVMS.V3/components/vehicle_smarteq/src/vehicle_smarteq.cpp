@@ -55,6 +55,8 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,120,999 }, 0, ISOTP_STD }, // rqBattTemperatures
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,120,999 }, 0, ISOTP_STD }, // rqBattVoltages_P1
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,120,999 }, 0, ISOTP_STD }, // rqBattVoltages_P2
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,10,999 }, 0, ISOTP_STD }, // extern temp byte 2+3
+ // { 0x744, 0x764, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x52, {  0,10,999 }, 0, ISOTP_STD }, // ,764,36,45,.1,400,1,°C,2152,6152,ff,IH_InCarTemp
   POLL_LIST_END
 };
 
@@ -64,6 +66,8 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
 
 OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ESP_LOGI(TAG, "Start Smart EQ vehicle module");
+  
+  m_booter_start = false;
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 3);
@@ -74,6 +78,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
   
   mt_bms_temps = new OvmsMetricVector<float>("xsq.v.bms.temps", SM_STALE_HIGH, Celcius);
+  mt_bus_awake = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, false);
   
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   PollSetPidList(m_can1, obdii_polls);
@@ -117,45 +122,63 @@ uint64_t OvmsVehicleSmartEQ::swap_uint64(uint64_t val) {
 }
 
 void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
-  uint8_t *d = p_frame->data.u8;
+  uint8_t *data = p_frame->data.u8;
   uint64_t c = swap_uint64(p_frame->data.u64);
   
   static bool isCharging = false;
   static bool lastCharging = false;
+  float _range_est;
 
   if (m_candata_poll != 100 && StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) > 100) {
     m_candata_poll++;
     if (m_candata_poll==100) {
       ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
-      StandardMetrics.ms_v_env_awake->SetValue(true);
+      mt_bus_awake->SetValue(true);
       if (m_enable_write) PollSetState(1);
     }
   }
   m_candata_timer = SQ_CANDATA_TIMEOUT;
   
   switch (p_frame->MsgID) {
+    case 0x392:
+      StandardMetrics.ms_v_env_hvac->SetValue((CAN_BYTE(1) & 0x40) > 0);
+      StandardMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40);
+      break;
     case 0x42E: // HV Voltage
-      StandardMetrics.ms_v_bat_voltage->SetValue((float) (((d[3]<<8|d[4])>>5)&0x3ff) / 2); // HV Voltage
+      StandardMetrics.ms_v_bat_voltage->SetValue((float) ((CAN_UINT(3)>>5)&0x3ff) / 2); // HV Voltage
       StandardMetrics.ms_v_bat_temp->SetValue(((c >> 13) & 0x7Fu) - 40); // HVBatteryTemp
       StandardMetrics.ms_v_charge_climit->SetValue((c >> 20) & 0x3Fu); // MaxChargingNegotiatedCurrent
       break;
+    case 0x4F8:
+      StandardMetrics.ms_v_env_handbrake->SetValue((CAN_BYTE(0) & 0x08) > 0);
+      StandardMetrics.ms_v_env_awake->SetValue((CAN_BYTE(0) & 0x40) > 0); // Ignition on
+      break;
     case 0x5D7: // Speed, ODO
-      StandardMetrics.ms_v_pos_speed->SetValue((float) (d[0]<<8 | d[1]) / 100);
-      StandardMetrics.ms_v_pos_odometer->SetValue((float) (((d[2]<<24) | (d[3]<<16) | (d[4]<<8) | d[5])>>4) / 100);
+      StandardMetrics.ms_v_pos_speed->SetValue((float) CAN_UINT(0) / 100);
+      StandardMetrics.ms_v_pos_odometer->SetValue((float) (CAN_UINT32(2)>>4) / 100);
+      break;
+    case 0x5de:
+      StandardMetrics.ms_v_env_headlights->SetValue((CAN_BYTE(0) & 0x04) > 0);
+      StandardMetrics.ms_v_door_fl->SetValue((CAN_BYTE(1) & 0x08) > 0);
+      StandardMetrics.ms_v_door_fr->SetValue((CAN_BYTE(1) & 0x02) > 0);
+      StandardMetrics.ms_v_door_rl->SetValue((CAN_BYTE(2) & 0x40) > 0);
+      StandardMetrics.ms_v_door_rr->SetValue((CAN_BYTE(2) & 0x10) > 0);
+      StandardMetrics.ms_v_door_trunk->SetValue((CAN_BYTE(7) & 0x10) > 0);
       break;
     case 0x654: // SOC(b)
-      StandardMetrics.ms_v_bat_soc->SetValue(d[3]);
-      StandardMetrics.ms_v_door_chargeport->SetValue((d[0] & 0x20)); // ChargingPlugConnected
+      StandardMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(3));
+      StandardMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(0) & 0x20)); // ChargingPlugConnected
       StandardMetrics.ms_v_charge_duration_full->SetValue((((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0);
-      StandardMetrics.ms_v_bat_range_est->SetValue((c >> 12) & 0x3FFu); // VehicleAutonomy
-      //ChargeRemainingTime = (((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0;
+      _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy
+      if ( _range_est != 1023.0 )
+        StandardMetrics.ms_v_bat_range_est->SetValue(_range_est); // VehicleAutonomy
       break;
     case 0x65C: // ExternalTemp
-      StandardMetrics.ms_v_env_temp->SetValue((d[0] >> 1) - 40); // ExternalTemp ?
+      StandardMetrics.ms_v_env_temp->SetValue((CAN_BYTE(0) >> 1) - 40); // ExternalTemp ?
       break;
     case 0x658: //
-      StandardMetrics.ms_v_bat_soh->SetValue(d[4] & 0x7Fu); // SOH ?
-      isCharging = (d[5] & 0x20); // ChargeInProgress
+      StandardMetrics.ms_v_bat_soh->SetValue(CAN_BYTE(4) & 0x7Fu); // SOH ?
+      isCharging = (CAN_BYTE(5) & 0x20); // ChargeInProgress
       if (isCharging) { // STATE charge in progress
         //StandardMetrics.ms_v_charge_inprogress->SetValue(isCharging);
       }
@@ -187,7 +210,20 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       }
       lastCharging = isCharging;
       break;
-    
+    case 0x668:
+      StandardMetrics.ms_v_env_on->SetValue((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
+      break;
+    case 0x673:
+      if (CAN_BYTE(2) != 0xff)
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float) CAN_BYTE(2)*3.1);
+      if (CAN_BYTE(3) != 0xff)
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float) CAN_BYTE(3)*3.1);
+      if (CAN_BYTE(4) != 0xff)
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float) CAN_BYTE(4)*3.1);
+      if (CAN_BYTE(5) != 0xff)
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float) CAN_BYTE(5)*3.1);
+      break;
+
     default:
       //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
@@ -221,11 +257,105 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
     if (--m_candata_timer == 0) {
       // Car has gone to sleep
       ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
-      StandardMetrics.ms_v_env_awake->SetValue(false);
+      mt_bus_awake->SetValue(false);
       m_candata_poll = 0;
       PollSetState(0);
     }
   }
+
+  if (m_booter_start && StandardMetrics.ms_v_env_hvac->AsBool()) {
+    m_booter_start = false;
+    MyNotify.NotifyString("info", "hvac.enabled", "Booster on");
+  }
+}
+
+// can can1 tx st 634 40 01 72 00
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
+  if(!m_enable_write) {
+    ESP_LOGE(TAG, "CommandClimateControl failed / no write access");
+    return Fail;
+  }
+  ESP_LOGI(TAG, "CommandClimateControl %s", enable ? "ON" : "OFF");
+
+  OvmsVehicle::vehicle_command_t res;
+
+  if (enable) {
+    uint8_t data[4] = {0x40, 0x01, 0x00, 0x00};
+    canbus *obd;
+    obd = m_can1;
+
+    res = CommandWakeup();
+    if (res == Success) {
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      for (int i = 0; i < 10; i++) {
+        obd->WriteStandard(0x634, 4, data);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+      }
+      m_booter_start = true;
+      res = Success;
+    } else {
+      res = Fail;
+    }
+  } else {
+    res = NotImplemented;
+  }
+
+  // fallback to default implementation?
+  if (res == NotImplemented) {
+    res = OvmsVehicle::CommandClimateControl(enable);
+  }
+  return res;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, int durationms) {
+  // This is needed to enable climate control via Homelink for the iOS app
+  ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
+  
+  OvmsVehicle::vehicle_command_t res = NotImplemented;
+  if (button == 0) {
+    res = CommandClimateControl(true);
+  }
+  else if (button == 1) {
+    res = CommandClimateControl(false);
+  }
+
+  // fallback to default implementation?
+  if (res == NotImplemented) {
+    res = OvmsVehicle::CommandHomelink(button, durationms);
+  }
+  return res;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
+  if(!m_enable_write) {
+    ESP_LOGE(TAG, "CommandWakeup failed: no write access!");
+    return Fail;
+  }
+
+  OvmsVehicle::vehicle_command_t res;
+
+  ESP_LOGI(TAG, "Send Wakeup Command");
+  res = Fail;
+  if(!mt_bus_awake->AsBool()) {
+    uint8_t data[4] = {0x40, 0x00, 0x00, 0x00};
+    canbus *obd;
+    obd = m_can1;
+
+    for (int i = 0; i < 20; i++) {
+      obd->WriteStandard(0x634, 4, data);
+      vTaskDelay(200 / portTICK_PERIOD_MS);
+      if (mt_bus_awake->AsBool()) {
+        res = Success;
+        ESP_LOGI(TAG, "Vehicle is now awake");
+        break;
+      }
+    }
+  } else {
+    res = Success;
+    ESP_LOGI(TAG, "Vehicle is awake");
+  }
+
+  return res;
 }
 
 /**

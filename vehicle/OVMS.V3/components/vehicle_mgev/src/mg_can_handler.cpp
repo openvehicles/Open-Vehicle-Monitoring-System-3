@@ -35,37 +35,45 @@ static const char *TAG = "v-mgev";
 
 void OvmsVehicleMgEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
+  /*
     if (m_poll_bus_default != m_can1)
     {
         return;
     }
+    */
     IncomingPollFrame(p_frame);
 }
 
 void OvmsVehicleMgEv::IncomingFrameCan2(CAN_frame_t* p_frame)
 {
+  /*
     if (m_poll_bus_default != m_can2)
     {
         return;
     }
+    */
     IncomingPollFrame(p_frame);
 }
 
 void OvmsVehicleMgEv::IncomingFrameCan3(CAN_frame_t* p_frame)
 {
+  /*
     if (m_poll_bus_default != m_can3)
     {
         return;
     }
+    */
     IncomingPollFrame(p_frame);
 }
 
 void OvmsVehicleMgEv::IncomingFrameCan4(CAN_frame_t* p_frame)
 {
+    /*
     if (m_poll_bus_default != m_can4)
     {
         return;
     }
+    */
     IncomingPollFrame(p_frame);
 }
 

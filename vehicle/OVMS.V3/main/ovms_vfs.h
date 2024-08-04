@@ -30,5 +30,9 @@
 
 #ifndef __VFS_H__
 #define __VFS_H__
+#include "ovms_command.h"
+
+extern bool vfs_expand(OvmsWriter* writer, const char *token, bool complete, bool dirok, bool fileok);
+extern int vfs_file_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete);
 
 #endif //#ifndef __VFS_H__

@@ -77,14 +77,14 @@ class OvmsVehicleKiaSoulEv : public KiaVehicle
     ~OvmsVehicleKiaSoulEv();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void Ticker1(uint32_t ticker);
-    void Ticker10(uint32_t ticker);
-    void Ticker300(uint32_t ticker);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
+    void Ticker300(uint32_t ticker) override;
     void EventListener(std::string event, void* data);
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
-    void ConfigChanged(OvmsConfigParam* param);
+    void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
     vehicle_command_t CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -107,8 +107,8 @@ class OvmsVehicleKiaSoulEv : public KiaVehicle
     					uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 						uint8_t b5, uint8_t b6, uint8_t mode );
 
-    virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
-    virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
+    OvmsVehicle::vehicle_command_t CommandLock(const char* pin) override;
+    OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin) override;
 
     bool OpenTrunk(const char* password);
     bool OpenChargePort(const char* password);

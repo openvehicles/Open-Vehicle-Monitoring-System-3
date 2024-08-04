@@ -64,16 +64,26 @@
 #include <sstream>
 
 const char *OvmsHyundaiIoniqEv::TAG = "v-ioniq5";
+const char *OvmsHyundaiIoniqEv::FULL_NAME = "Hyundai Ioniq 5 EV/KIA EV6";
+const char *OvmsHyundaiIoniqEv::SHORT_NAME = "Ioniq 5/EV 6";
+const char *OvmsHyundaiIoniqEv::VEHICLE_TYPE = "I5";
+
+
+#ifdef bind
+#undef bind
+#endif
+using namespace std::placeholders;
 
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
 // Pollstate 3 - ping : car is off, not charging and something triggers a wake
 static const OvmsPoller::poll_pid_t vehicle_ioniq_polls[] = {
+  //                                                    0    1    2   3
   //                                                   Off  On  Chrg Ping
-  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   1,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
+  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   2,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
   { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe004, { 0,   1,   4,  4}, 0, ISOTP_STD },   // VMCU - Drive status + Accellerator
-  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   3,   4,  4}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM + Charging
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   2,   4,  4}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 1 - BMC Diag page 02
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0103, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 2 - BMC Diag page 03
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0104, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 3 - BMC Diag page 04
@@ -101,8 +111,27 @@ static const OvmsPoller::poll_pid_t vehicle_ioniq_polls[] = {
 
   // TODO 0x7e5 OBC - On Board Charger?
 
-  // Check again while driving only
-  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,  1,  0,  0}, 0, ISOTP_STD },  // AirCon and Speed
+  POLL_LIST_END
+};
+
+// Pollstate 4 - Aux Charging car is off but Auxilary is charging
+static const OvmsPoller::poll_pid_t vehicle_ioniq_polls_second[] = {
+  //                                                      4    5    6   7
+  //                                                   AuxCh
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 300,   0,   0,  0}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 1 - BMC Diag page 02
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0103, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 2 - BMC Diag page 03
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0104, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 3 - BMC Diag page 04
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0105, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 4 - BMC Diag page 05 (Other - Battery Pack Temp)
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc03, { 150,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc04, { 150,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status
+  POLL_LIST_END
+};
+
+static const OvmsPoller::poll_pid_t vehicle_ioniq_driving_polls[] = {
+  // Check again while driving with ECU only
+  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,  1,  20,  20}, 0, ISOTP_STD },  // For Speed
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,  1,  20,  20}, 0, ISOTP_STD },  // For RPM
   POLL_LIST_END
 };
 
@@ -460,7 +489,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 {
   XARM("OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv");
 
-  ESP_LOGI(TAG, "Ioniq 5 EV " IONIQ5_VERSION " vehicle module");
+  ESP_LOGI(TAG, "Hyundai Ioniq 5 / KIA EV6 " IONIQ5_VERSION " vehicle module");
 
   StopTesterPresentMessages();
 
@@ -596,14 +625,10 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   if (StdMetrics.ms_v_bat_pack_tavg->IsDefined()) {
     StdMetrics.ms_v_bat_temp->SetValue(StdMetrics.ms_v_bat_pack_tavg->AsFloat());
   }
-#ifdef bind
-#undef bind
-#endif
-  using std::placeholders::_1;
   MyMetrics.RegisterListener(TAG, MS_V_BAT_PACK_TAVG, std::bind(&OvmsHyundaiIoniqEv::UpdatedAverageTemp, this, _1));
 
   // init commands:
-  cmd_hiq = MyCommandApp.RegisterCommand("xhiq", "Hyundai Ioniq 5 EV");
+  cmd_hiq = MyCommandApp.RegisterCommand("xhiq", "Hyundai Ioniq 5 EV/Kia EV6");
   cmd_hiq->RegisterCommand("trip", "Show trip info since last parked", xiq_trip_since_parked);
   cmd_hiq->RegisterCommand("tripch", "Show trip info since last charge", xiq_trip_since_charge);
   cmd_hiq->RegisterCommand("tpms", "Tire pressure monitor", xiq_tpms);
@@ -634,14 +659,13 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   kia_enable_write = false;
 #endif
 
-
-  using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsHyundaiIoniqEv::EventListener, this, _1, _2));
 
-  MyConfig.RegisterParam("xiq", "Hyundai Ioniq 5 EV specific settings.", true, true);
+  MyConfig.RegisterParam("xiq", "Ioniq 5/EV6 specific settings.", true, true);
   ConfigChanged(NULL);
 
-  m_ecu_lockout = 0;
+  m_ecu_lockout = -1;
+  m_ecu_status_on = false;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -655,6 +679,13 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   PollState_Off();
   kia_secs_with_no_client = 0;
   PollSetPidList(m_can1, vehicle_ioniq_polls);
+
+  auto secondary_series = std::shared_ptr<OvmsPoller::StandardPollSeries>(
+      new OvmsPoller::StandardVehiclePollSeries(nullptr, GetPollerSignal(), 4));
+  secondary_series->PollSetPidList(1, vehicle_ioniq_polls_second);
+
+  PollRequest(m_can1, "!v.secondary", secondary_series);
+
   // Initially throttling to 4.
   PollSetThrottling(4);
 
@@ -664,10 +695,54 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   XDISARM;
 }
 
+static const char *ECU_POLL = "!v.xiq.ecu";
+
+const char* OvmsHyundaiIoniqEv::VehicleShortName()
+  {
+  return SHORT_NAME;
+  }
+const char* OvmsHyundaiIoniqEv::VehicleType()
+  {
+  return VEHICLE_TYPE;
+  }
+
 void OvmsHyundaiIoniqEv::ECUStatusChange(bool run)
 {
+  if (m_ecu_status_on == run) {
+    return;
+  }
+  if (!run)
+    m_ecu_lockout = -1;
+  m_ecu_status_on = run;
   // When ECU is running - be more agressive.
-  PollSetThrottling(run ? 10 : 4);
+  int newThrottle =  run ? 10 : 5;
+  bool subtick = run && MyConfig.GetParamValueBool("xiq", "poll_subtick", true);
+  ESP_LOGD(TAG, "run=%d throttle=%d subtick=%d", run, newThrottle, subtick);
+  PollSetThrottling(newThrottle);
+
+  if (!run) {
+    RemovePollRequest(m_can1, ECU_POLL);
+  } else {
+    // Add an extra set of polling.
+    auto poll_series = std::shared_ptr<OvmsPoller::StandardPacketPollSeries>(
+        new OvmsPoller::StandardPacketPollSeries(nullptr, 3/*repeats*/,
+              std::bind(&OvmsHyundaiIoniqEv::Incoming_Full, this, _1, _2, _3, _4, _5),
+              nullptr));
+    poll_series->PollSetPidList(1, vehicle_ioniq_driving_polls);
+
+    PollRequest(m_can1, ECU_POLL, poll_series);
+  }
+  if (subtick) {
+    PollSetTimeBetweenSuccess(80); // 80ms Gap between each successfull poll.
+    PollSetResponseSeparationTime(5); // Faster bursts of messages.
+    PollSetTicker(300, 3);
+  }
+  else {
+    // Defaults.
+    PollSetTimeBetweenSuccess(0);
+    PollSetResponseSeparationTime(25);
+    PollSetTicker(1000, 1);
+  }
 }
 
 /**
@@ -686,6 +761,21 @@ OvmsHyundaiIoniqEv::~OvmsHyundaiIoniqEv()
   XDISARM;
 }
 
+int OvmsHyundaiIoniqEv::GetNotifyChargeStateDelay(const char *state)
+{
+  if (!StdMetrics.ms_v_charge_inprogress->AsBool())
+    return KiaVehicle::GetNotifyChargeStateDelay(state);
+
+  std::string charge_type = StdMetrics.ms_v_charge_type->AsString();
+  if (charge_type == "ccs") {
+    // CCS charging needs some time to ramp up the current/power level:
+    return MyConfig.GetParamValueInt("xiq", "notify.charge.delay.ccs", 15);
+  }
+  else {
+    return MyConfig.GetParamValueInt("xiq", "notify.charge.delay.type2", 10);
+  }
+}
+
 /**
  * ConfigChanged: reload single/all configuration variables
  */
@@ -695,7 +785,7 @@ void OvmsHyundaiIoniqEv::ConfigChanged(OvmsConfigParam *param)
   ESP_LOGD(TAG, "Hyundai Ioniq 5 EV reload configuration");
 
   // Instances:
-  // xkn
+  // xiq
   //    cap_act_kwh     Battery capacity in kwH
   //  suffsoc           Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange         Sufficient range [km] (Default: 0=disabled)
@@ -986,9 +1076,9 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
 #endif
     if (hif_aux_battery_mon.state() == OvmsBatteryState::Charging) {
       // Maintain ping until stop charging
-      if (IsPollState_Off() || IsPollState_Ping() ) {
-        ESP_LOGD(TAG, "PollState->Ping for 30 (Charging)");
-        PollState_Ping(30);
+      if (IsPollState_Off() || IsPollState_PingAux() ) {
+        ESP_LOGD(TAG, "PollState->PingAux for 30 (Charging)");
+        PollState_PingAux(30);
       }
     }
 
@@ -1132,12 +1222,19 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   // Let the busy time of starting the car happen before we
   // ramp up the speed of the polls to support obd2ecu.
   // Otherwise we can see the car reporting system failures.
-  if (m_ecu_lockout > 0 && (--m_ecu_lockout == 0)) {
-    if (StandardMetrics.ms_v_env_on->AsBool()
-        && StandardMetrics.ms_m_obd2ecu_on->AsBool()
-        && (StdMetrics.ms_v_env_gear->AsInt() > 0)) {
-      ECUStatusChange(true);
-    }
+
+  if (StandardMetrics.ms_v_env_on->AsBool()
+      && StandardMetrics.ms_m_obd2ecu_on->AsBool()
+      && (StdMetrics.ms_v_env_gear->AsInt() > 0)) {
+
+    if (m_ecu_lockout > 0)
+      --m_ecu_lockout;
+    else if (m_ecu_lockout < 0)
+      m_ecu_lockout = 10;
+
+    ECUStatusChange(m_ecu_lockout==0);
+  } else {
+    ECUStatusChange(false);
   }
 
   // Send tester present
@@ -1154,7 +1251,7 @@ void OvmsHyundaiIoniqEv::Ticker10(uint32_t ticker)
 {
   if (m_vin[0] == 0 && IsPollState_Running() && (m_vin_retry < 10)) {
     ESP_LOGI(TAG, "Checking for VIN.");
-    if (RequestVIN() != -3) {
+    if (PollRequestVIN()) {
       ++m_vin_retry;
     }
   }
@@ -1804,7 +1901,7 @@ public:
 
 OvmsHyundaiIoniqEvInit::OvmsHyundaiIoniqEvInit()
 {
-  ESP_LOGI(OvmsHyundaiIoniqEv::TAG, "Registering Vehicle: Hyundai Ioniq 5 EV (9000)");
+  ESP_LOGI(OvmsHyundaiIoniqEv::TAG, "Registering Vehicle: %s (9000)", OvmsHyundaiIoniqEv::FULL_NAME);
 
-  MyVehicleFactory.RegisterVehicle<OvmsHyundaiIoniqEv>("I5", "Hyundai Ioniq 5 EV");
+  MyVehicleFactory.RegisterVehicle<OvmsHyundaiIoniqEv>(OvmsHyundaiIoniqEv::VEHICLE_TYPE, OvmsHyundaiIoniqEv::FULL_NAME);
 }

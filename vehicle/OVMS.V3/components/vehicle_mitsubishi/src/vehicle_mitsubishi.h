@@ -67,13 +67,13 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     ~OvmsVehicleMitsubishi();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     char m_vin[18];
 
   protected:
-    virtual void Ticker1(uint32_t ticker);
-    void ConfigChanged(OvmsConfigParam* param);
+    void Ticker1(uint32_t ticker) override;
+    void ConfigChanged(OvmsConfigParam* param) override;
 
   protected:
 
@@ -81,7 +81,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     std::string m_rxbuf;
 
   public:
-    virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
+    vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer) override;
 
     OvmsMetricFloat* v_b_power_min  = MyMetrics.InitFloat("xmi.b.power.min", 10, 0, kW);
     OvmsMetricFloat* v_b_power_max  = MyMetrics.InitFloat("xmi.b.power.max", 10, 0, kW);

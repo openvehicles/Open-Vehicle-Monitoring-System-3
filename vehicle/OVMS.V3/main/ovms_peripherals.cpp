@@ -40,8 +40,11 @@ static const char *TAG = "peripherals";
 #include "driver/gpio.h"
 #include "ovms_peripherals.h"
 #include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include "esp_netif.h"
 #if ESP_IDF_VERSION_MAJOR >= 5
 #include <esp_mac.h>
+#endif
 #endif
 
 Peripherals::Peripherals()

@@ -68,8 +68,8 @@ class OvmsWriter
     virtual int puts(const char* s) { return 0; }
     virtual int printf(const char* fmt, ...) __attribute__ ((format (printf, 2, 3))) { return 0; }
     virtual ssize_t write(const void *buf, size_t nbyte) { return 0; }
-    virtual char** SetCompletion(int index, const char* token) { return NULL; }
-    virtual char** GetCompletions() { return NULL; }
+    virtual char** SetCompletion(int index, const char* token, bool isfinal = true) { return NULL; }
+    virtual char** GetCompletions(int &common_len, bool &finished ) { return NULL; }
     virtual void SetArgv(const char* const* argv) { return; }
     virtual const char* const* GetArgv() { return NULL; }
     virtual void Log(LogBuffers* message) {};
@@ -224,9 +224,11 @@ class CNameMap : public std::map<const char*, T, CmpStrOp>
 struct CompareCharPtr
   {
   bool operator()(const char* a, const char* b) const;
+  bool operator()(const std::string& a, const char* b) const;
+  bool operator()(const std::string& a, const std::string& b) const;
   };
 
-class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr>
+class OvmsCommandMap : public std::map<std::string, OvmsCommand*, CompareCharPtr>
   {
   public:
     OvmsCommand* FindUniquePrefix(const char* key);
@@ -260,7 +262,7 @@ class OvmsCommand : public ExternalRamAllocated
     const char* GetName();
     const char* GetTitle();
     const char* GetUsage(OvmsWriter* writer);
-    char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
+    char ** Complete(OvmsWriter* writer, int argc, const char * const * argv, int &common_len, bool &finished);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
     OvmsCommand* GetParent();
     OvmsCommand* FindCommand(const char* name);
@@ -268,15 +270,18 @@ class OvmsCommand : public ExternalRamAllocated
     void Display(OvmsWriter* writer, int level);
     void PutUsage(OvmsWriter* writer);
 
+    void UpdateCommand(const char *title,
+         const char *usage = "", int min = 0, int max = 0, bool secure = true);
+
   private:
     void ExpandUsage(const char* templ, OvmsWriter* writer, std::string& result);
 
   protected:
-    const char* m_name;
-    const char* m_title;
+    std::string m_name;
+    std::string m_title;
     OvmsCommandExecuteCallback_t m_execute;
     OvmsCommandValidateCallback_t m_validate;
-    const char* m_usage_template;
+    std::string m_usage_template;
     int m_min;
     int m_max;
     bool m_secure;
@@ -323,7 +328,8 @@ class OvmsCommandApp : public OvmsWriter
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title,
                                  OvmsCommandExecuteCallback_t execute = NULL,
-                                 const char *usage = "", int min = 0, int max = 0, bool secure = true);
+                                 const char *usage = "", int min = 0, int max = 0, bool secure = true,
+                                 OvmsCommandValidateCallback_t validate = NULL);
     bool UnregisterCommand(const char* name);
     OvmsCommand* FindCommand(const char* name);
     OvmsCommand* FindCommandFullName(const char* name);
@@ -336,7 +342,7 @@ class OvmsCommandApp : public OvmsWriter
     void Display(OvmsWriter* writer);
 
   public:
-    char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
+    char ** Complete(OvmsWriter* writer, int argc, const char * const * argv, int &common_len, bool &finished);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
 
   public:
@@ -385,6 +391,49 @@ class OvmsCommandApp : public OvmsWriter
 
   public:
     TaskHandle_t m_expiretask;
+  };
+
+// Utility class to help with completion where there are '-' options
+class option_completer_t
+  {
+  private:
+    OvmsWriter *m_writer;
+    bool m_complete;
+    bool m_valid;
+    int m_complete_idx;
+    bool m_found_param;
+    int m_final_posn;
+    int m_argc;
+    const char * const* m_argv;
+
+  public:
+    option_completer_t(OvmsWriter *writer, bool complete, int argc, const char * const* argv)
+    : m_writer(writer),
+      m_complete(complete),
+      m_valid(false),
+      m_complete_idx(0),
+      m_found_param(false),
+      m_argc(argc),
+      m_argv(argv)
+      {
+      }
+    /** Check if the param is there / needs completion.
+     */
+    bool check_param(char param, bool has_more = false);
+
+    // Return the (0 based) current completion parameter # (without '-' options).
+    int param_index();
+
+    bool do_return()
+      {
+      if (m_complete_idx > 0)
+        return true;
+      return m_complete && (m_valid || m_found_param);
+      }
+    int return_val()
+      {
+      return m_valid ? m_argc : -1;
+      }
   };
 
 extern OvmsCommandApp MyCommandApp;

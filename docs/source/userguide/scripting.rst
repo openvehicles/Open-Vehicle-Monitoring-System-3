@@ -732,7 +732,7 @@ OvmsCommand
 ^^^^^^^^^^^
 
 - ``str = OvmsCommand.Exec(command)``
-    The OvmsCommand object exposes one method “Exec”. This method is passed a single parameter as the command
+    The OvmsCommand object “Exec” method is passed a single parameter as the command
     to be executed, runs that command, and then returns the textual output of the command as a string. For
     example::
 
@@ -741,6 +741,25 @@ OvmsCommand
         This is reset #0 since last power cycle
         Detected boot reason: PowerOn (1/14)
         Crash counters: 0 total, 0 early
+- ``OvmsCommand.Register( function(cmd, argv){}, parent, command, description, param_description, minargs, maxargs)``
+    The OvmsCommand object “Register” registers a function as command on the cli.
+    A second call to RegisterCommand with the same will update the details of same command.
+    A blank 'parent' will cause a top-level command to be registered.
+    The function call-back should take 2 parameters:
+    - the command being called (with '/' separating paths eg: "command/subcommand").
+    - an array of the arguments to the command.
+    example::
+
+      mycommand = function(c, argv){
+        print("Hello: "+c+"\n");
+        if (argv.length == 0)
+          print("Simple\n");
+        else {
+          for (s in argv)
+            print("Script: "+argv[s]+"\n")
+        }
+      }
+      OvmsCommand.Register(mycommand, "", "sample", "Sample Command", "{[string]}", 0, 4)
 
 OvmsConfig
 ^^^^^^^^^^
@@ -827,6 +846,15 @@ OvmsMetrics
 
 - ``bool = OvmsMetrics.HasValue(metricname)``
     Returns whether the specified metric has a defined value.
+    Returns undefined if metric is un-registered.
+- ``bool = OvmsMetrics.IsStale(metricname)``
+    Returns whether the specified metric is "stale" (has been marked stale or has not been set within the staleness period).
+    Returns undefined if metric is un-registered.
+- ``bool = OvmsMetrics.IsFresh(metricname)``
+    Returns whether the specified metric is "fresh" (defined, set since reboot, and not stale).
+    Returns undefined if metric is un-registered.
+- ``num = OvmsMetrics.Age(metricname)``
+    Returns the age in (monotonic) seconds of the specified metric.
     Returns undefined if metric is un-registered.
 - ``str = OvmsMetrics.Value(metricname [,unitcode] [,decode])``
     Returns the typed value (default) or string representation (with ``decode`` = false)
@@ -1053,6 +1081,91 @@ options in the App, as well as by executing the ``homelink`` shell command.
 To load this plugin automatically on boot, add the code to ``ovmsmain.js``, either
 inline or by loading a lib module (see `Persistent JavaScript`_).
 
+OvmsPoller
+^^^^^^^^^^
+The Ovms Poller object represents the poller sub-system. It contains the following methods:
+
+- ``ispaused = OvmsPoller.GetPaused()``: Return true if the poller is paused by the system/user.
+- ``ispaused = OvmsPoller.GetUserPaused()``: Return true if the poller is paused by the user.
+- ``OvmsPoller.Pause()``: Pause the poller (adds User poller pause)
+- ``OvmsPoller.Resume()``: Remove the User poller pause.
+
+- ``OvmsPoller.Trace({ poller: true, txrx: false})``: Enable traces for poller/txrx tasks.
+    Enabling trace still requires that 'Verbose' or 'Debug' levels (depending) for the
+    'vehicle-poll' debug tags are set.
+    The flag ``poller`` refers to the poller task itself (relatively safe) and ``txrx`` refers to the Can TX/RX task
+    (not safe, especially for some cars).
+- ``tracemodes = OvmsPoller.GetTraceStatus()``: Return the current trace mode for the respective 'tasks'. Eg
+    .. code-block:: javascript
+   { "poller": true, "txrx": false }
+
+The poller object also contains a ``Times`` property for the OBD Poll-Time tracing
+which contains the following methods:
+- ``isrunning = OvmsPoller.Times.GetStarted()``: Returns true if the time-tracing is enabled
+- ``OvmsPoller.Times.Start``: Starts the timer-tracing
+- ``OvmsPoller.Times.Stop``: Stops the timer-tracing
+- ``OvmsPoller.Times.Reset()``: Reset the timers (doesn't affect their current state).
+- ``OvmsPoller.Times.GetStatus()``: Gets the status of the various times. This returns an object
+    of this format:
+    .. code-block:: javascript
+    return_value = {
+      "started": true,
+      "items": {
+        "Poll:PRI" : {
+          "count_hz":    1,
+          "avg_util_pm": 0.529,
+          "peak_util_pm":0.652,
+          "avg_time_ms": 0.052,
+          "peak_time_ms":1.516
+        },
+        "Poll:SRX": {
+          "count_hz":    1.47,
+          "avg_util_pm": 0.302,
+          "peak_util_pm":0.44,
+          "avg_time_ms": 0.02,
+          "peak_time_ms":0.573
+        },
+        "RxCan1[778]": {
+          "count_hz":    0.74,
+          "avg_util_pm": 0.427,
+          "peak_util_pm":0.826,
+          "avg_time_ms": 0.063,
+          "peak_time_ms":1.872
+        },
+        "RxCan1[7a8]": {
+          "count_hz":    0.35,
+          "avg_util_pm": 0.183,
+          "peak_util_pm":0.355,
+          "avg_time_ms": 0.052,
+          "peak_time_ms":1.382
+        },
+        "TxCan1[7b3]": {
+          "count_hz":    0.07,
+          "avg_util_pm": 0.005,
+          "peak_util_pm":0.01,
+          "avg_time_ms": 0.007,
+          "peak_time_ms":0.099
+        },
+        "TxCan1[7c6]": {
+          "count_hz":    0,
+          "avg_util_pm": 0,
+          "peak_util_pm":0.009,
+          "avg_time_ms": 0.004,
+          "peak_time_ms":0.098
+        },
+        "Cmd:State": {
+          "count_hz":    0,
+          "avg_util_pm": 0,
+          "peak_util_pm":0,
+          "avg_time_ms": 0.011,
+          "peak_time_ms":0.109
+        }
+      },
+
+      "tot_count_hz": 11.76,
+      "tot_util_pm": 6.247,
+      "tot_time_ms": 4.628
+    };
 
 --------------
 Test Utilities

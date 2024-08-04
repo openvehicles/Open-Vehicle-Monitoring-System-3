@@ -236,24 +236,34 @@ class OvmsMetric
     virtual bool SetValue(std::string value, metric_unit_t units = Other);
     virtual bool SetValue(dbcNumber& value);
     virtual void operator=(std::string value);
-    virtual uint32_t LastModified();
-    virtual uint32_t Age();
     virtual bool CheckPersist();
-    virtual bool IsDefined();
-    virtual bool IsFirstDefined();
-    virtual bool IsPersistent();
-    virtual bool IsStale();
-    virtual bool IsString() { return false; };
-    virtual bool IsFresh();
     virtual void RefreshPersist();
-    virtual void SetStale(bool stale);
-    virtual void SetAutoStale(uint16_t seconds);
-    virtual metric_unit_t GetUnits();
-    virtual bool IsModified(size_t modifier);
-    virtual bool IsModifiedAndClear(size_t modifier);
-    virtual void ClearModified(size_t modifier);
-    virtual void SetModified(bool changed=true);
+    virtual bool IsString() { return false; };
     virtual void Clear();
+
+    uint32_t LastModified();
+    uint32_t Age();
+    bool IsDefined();
+    bool IsFirstDefined();
+    bool IsPersistent();
+    bool IsStale();
+    bool IsFresh();
+    void SetStale(bool stale)
+      {
+      m_stale = stale;
+      }
+    void SetAutoStale(uint16_t seconds)
+      {
+      m_autostale = seconds;
+      }
+    metric_unit_t GetUnits()
+      {
+      return m_units;
+      }
+    bool IsModified(size_t modifier);
+    bool IsModifiedAndClear(size_t modifier);
+    void ClearModified(size_t modifier);
+    void SetModified(bool changed=true);
 
     bool IsUnitSend(size_t modifier);
     bool IsUnitSendAndClear(size_t modifier);
@@ -336,6 +346,7 @@ class OvmsMetricFloat : public OvmsMetric
     ~OvmsMetricFloat() override;
 
   public:
+    void SetFormat(int precision = -1, bool fixed = false) { m_fmt_prec = precision; m_fmt_fixed = fixed; }
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
     std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1) override;
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other) override;
@@ -355,6 +366,8 @@ class OvmsMetricFloat : public OvmsMetric
   protected:
     float m_value;
     float* m_valuep;
+    int m_fmt_prec;
+    bool m_fmt_fixed;
   };
 
 class OvmsMetricString : public OvmsMetric
@@ -724,7 +737,7 @@ class OvmsMetricVector : public OvmsMetric
       }
 
   public:
-    bool CheckPersist()
+    bool CheckPersist() override
       {
       if (!m_persist || !m_valuep_size || !IsDefined())
         return true;
@@ -808,7 +821,7 @@ class OvmsMetricVector : public OvmsMetric
       return ss.str();
       }
 
-    virtual std::string ElemAsString(size_t n, const char* defvalue = "", metric_unit_t units = Other, int precision = -1, bool addunitlabel = false)
+    std::string ElemAsString(size_t n, const char* defvalue = "", metric_unit_t units = Other, int precision = -1, bool addunitlabel = false)
       {
       OvmsMutexLock lock(&m_mutex);
       if (!IsDefined() || m_value.size() <= n)
@@ -819,12 +832,18 @@ class OvmsMetricVector : public OvmsMetric
         ss.precision(precision);
         ss << fixed;
         }
-      if (units != Other && units != m_units)
-        ss << (ElemType) UnitConvert(m_units, units, (float)m_value[n]);
-      else
-        ss << m_value[n];
+      auto currentUnits = GetUnits();
+      CheckTargetUnit(currentUnits, units, true);
+      if (units == Native)
+        units = currentUnits;
+
+      ElemType value = m_value[n];
+      if (units != currentUnits)
+        value = (ElemType)UnitConvert(currentUnits, units, (float)value);
+      ss << value;
+
       if (addunitlabel)
-        ss << OvmsMetricUnitLabel(units == Native ? GetUnits() : units);
+        ss << OvmsMetricUnitLabel( units );
       return ss.str();
       }
 

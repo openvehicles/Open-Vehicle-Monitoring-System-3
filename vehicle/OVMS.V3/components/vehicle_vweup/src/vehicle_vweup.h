@@ -54,14 +54,37 @@
 #include "vweup_utils.h"
 
 #define DEFAULT_MODEL_YEAR 2020
+#define CC_TEMP_MIN 15
+#define CC_TEMP_MAX 30
 
 using namespace std;
+
+// VW e-Up specific MSG protocol commands:
+#define CMD_SetChargeAlerts         204 // (suffsoc, current limit, charge mode)
+
 
 typedef enum {
   ENABLE_CLIMATE_CONTROL,
   DISABLE_CLIMATE_CONTROL,
   AUTO_DISABLE_CLIMATE_CONTROL
 } RemoteCommand;
+
+// profile0 communication state (charge & AC control)
+#define PROFILE0_IDLE 0
+#define PROFILE0_INIT 1
+#define PROFILE0_WAKE 2
+#define PROFILE0_REQUEST 3
+#define PROFILE0_READ 4
+#define PROFILE0_WRITE 5
+#define PROFILE0_WRITEREAD 6
+#define PROFILE0_SWITCH 7
+
+// keys that control behavior of profile0 state machine
+#define P0_KEY_NOP 0
+#define P0_KEY_READ 1
+#define P0_KEY_SWITCH 20
+#define P0_KEY_CLIMIT 21
+#define P0_KEY_CC_TEMP 22
 
 // Value update & conversion debug logging:
 #define VALUE_LOG(...)    ESP_LOGV(__VA_ARGS__)
@@ -115,26 +138,29 @@ public:
   static OvmsVehicleVWeUp *GetInstance(OvmsWriter *writer = NULL);
 
 public:
-  void ConfigChanged(OvmsConfigParam *param);
+  void ConfigChanged(OvmsConfigParam *param) override;
   void MetricModified(OvmsMetric* metric);
   bool SetFeature(int key, const char *value);
   const std::string GetFeature(int key);
+  vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args); 
+  vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
 
 protected:
-  void Ticker1(uint32_t ticker);
-  void Ticker10(uint32_t ticker);
-  void Ticker60(uint32_t ticker);
+  void Ticker1(uint32_t ticker) override;
+  void Ticker10(uint32_t ticker) override;
+  void Ticker60(uint32_t ticker) override;
 
 public:
-  vehicle_command_t CommandHomelink(int button, int durationms = 1000);
-  vehicle_command_t CommandClimateControl(bool enable);
-  vehicle_command_t CommandLock(const char *pin);
-  vehicle_command_t CommandUnlock(const char *pin);
-  vehicle_command_t CommandStartCharge();
-  vehicle_command_t CommandStopCharge();
-  vehicle_command_t CommandActivateValet(const char *pin);
-  vehicle_command_t CommandDeactivateValet(const char *pin);
-  vehicle_command_t CommandWakeup();
+  vehicle_command_t CommandHomelink(int button, int durationms = 1000) override;
+  vehicle_command_t CommandClimateControl(bool enable) override;
+  vehicle_command_t CommandLock(const char *pin) override;
+  vehicle_command_t CommandUnlock(const char *pin) override;
+  vehicle_command_t CommandStartCharge() override;
+  vehicle_command_t CommandStopCharge() override;
+  vehicle_command_t CommandSetChargeCurrent(uint16_t limit) override;
+  vehicle_command_t CommandActivateValet(const char *pin) override;
+  vehicle_command_t CommandDeactivateValet(const char *pin) override;
+  vehicle_command_t CommandWakeup() override;
 
 protected:
   int GetNotifyChargeStateDelay(const char *state);
@@ -202,7 +228,8 @@ public:
   bool vweup_enable_write;
   int vweup_con;                // 0: none, 1: only T26, 2: only OBD2; 3: both
   int vweup_modelyear;
-
+  uint8_t climit_max;
+  
 private:
   use_phase_t m_use_phase;
   double m_odo_trip;
@@ -254,16 +281,27 @@ protected:
   void T26Ticker1(uint32_t ticker);
 
 protected:
-  void IncomingFrameCan3(CAN_frame_t *p_frame);
+  void IncomingFrameCan3(CAN_frame_t *p_frame) override;
 
 public:
   void SendOcuHeartbeat();
-  void CCCountdown();
-  void CCOn();
-  void CCOnP();
-  void CCOff();
-  static void ccCountdown(TimerHandle_t timer);
   static void sendOcuHeartbeat(TimerHandle_t timer);
+  void CCTempSet(int temperature);
+  static void Profile0RetryTimer(TimerHandle_t timer);
+  void Profile0RetryCallBack();
+  void WakeupT26();
+  void WakeupT26Stage2();
+  void WakeupT26Stage3();
+  void StartStopChargeT26(bool start);
+  void StartStopChargeT26Workaround(bool start);
+  void SetChargeCurrent(int limit);
+  void RequestProfile0();
+  void ReadProfile0(uint8_t *data);
+  void WriteProfile0();
+  void ActivateProfile0();
+  SemaphoreHandle_t xWakeSemaphore;
+  SemaphoreHandle_t xChargeSemaphore;
+  SemaphoreHandle_t xCurrentSemaphore;
 
 private:
   void SendCommand(RemoteCommand);
@@ -275,14 +313,11 @@ public:
   bool vin_part1;
   bool vin_part2;
   bool vin_part3;
-  int vweup_remote_climate_ticker;
-  int vweup_cc_temp_int;
   bool ocu_awake;
   bool ocu_working;
   bool ocu_what;
   bool ocu_wait;
   bool vweup_cc_on;
-  bool vweup_cc_turning_on;
   bool signal_ok;
   bool t26_12v_boost;
   bool t26_car_on;
@@ -290,16 +325,42 @@ public:
   int t26_12v_boost_cnt;
   int t26_12v_boost_last_cnt;
   int t26_12v_wait_off;
-  int cc_count;
   int cd_count;
   int fas_counter_on;
   int fas_counter_off;
-  bool dev_mode;
+
+  bool profile0_recv;
+  uint8_t profile0_cntr[3];
+  int profile0_idx;
+  int profile0_chan;
+  int profile0_mode;
+  int profile0_charge_current;
+  int profile0_cc_temp;
+  int profile0_charge_current_old;
+  int profile0_cc_temp_old;
+  static const int profile0_len = 48;
+  uint8_t profile0[profile0_len];
+  int charge_current;
+  int profile0_state;
+  int profile0_delay;
+  int profile0_retries;
+  int profile0_key;
+  int profile0_val;
+  bool profile0_activate;
+  bool ocu_response;
+  bool fakestop;
+  bool xvu_update;
+  bool chg_autostop;
+  bool chg_workaround;
+  bool t26_init;
+  bool wakeup_success;
+  bool charge_timeout;
+  uint8_t lever;
 
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
   TimerHandle_t m_sendOcuHeartbeat;
-  TimerHandle_t m_ccCountdown;
+  TimerHandle_t profile0_timer;
 
 
   // --------------------------------------------------------------------------
@@ -322,7 +383,7 @@ protected:
     const char *statename[4] = { "OFF", "AWAKE", "CHARGING", "ON" };
     return statename[state];
   }
-  void PollerStateTicker();
+  void PollerStateTicker(canbus *bus) override;
 
   void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 
@@ -332,6 +393,8 @@ protected:
 
 public:
   static void ShellPollControl(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+  static void CommandReadProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+  static void CommandResetProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU
@@ -374,6 +437,7 @@ protected:
   OvmsMetricInt       *m_chg_timer_socmax;        // Scheduled maximum SOC
   OvmsMetricBool      *m_chg_timer_def;           // true = Scheduled charging is default
 
+  OvmsMetricFloat     *m_bat_soh_vw = 0;          // Battery SOH from ECU 8C PID 74 CB via OBD [%]
   OvmsMetricFloat     *m_bat_soh_range = 0;       // Battery SOH based on MFD range estimation [%]
   OvmsMetricFloat     *m_bat_soh_charge = 0;      // Battery SOH based on coulomb charge count [%]
 

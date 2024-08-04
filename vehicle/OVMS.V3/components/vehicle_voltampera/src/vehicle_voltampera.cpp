@@ -780,7 +780,7 @@ void OvmsVehicleVoltAmpera::Ticker10(uint32_t ticker)
     }
   }
 
-void OvmsVehicleVoltAmpera::PollRunFinished()
+void OvmsVehicleVoltAmpera::PollRunFinished(canbus* bus)
   {
   if(m_poll_state == 2)
     {

@@ -81,8 +81,8 @@ class OvmsConsole : public OvmsShell
 
   public:
     void Initialize(const char* console);
-    char** SetCompletion(int index, const char* token);
-    char** GetCompletions() { return m_completions; }
+    char** SetCompletion(int index, const char* token, bool isfinal) override;
+    char** GetCompletions(int &common_len, bool &finished ) override;
     void Log(LogBuffers* message);
     void Poll(portTickType ticks, QueueHandle_t queue = NULL);
 
@@ -96,7 +96,9 @@ class OvmsConsole : public OvmsShell
   protected:
     bool m_ready;
     char *m_completions[COMPLETION_MAX_TOKENS+2];
+    int m_common;
     char m_space[COMPLETION_MAX_TOKENS+2][TOKEN_MAX_LENGTH];
+    bool m_final;
     QueueHandle_t m_queue;
     QueueHandle_t m_deferred;
     int m_discarded;
