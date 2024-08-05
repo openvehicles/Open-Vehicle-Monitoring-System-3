@@ -323,6 +323,7 @@ OvmsVehicle::OvmsVehicle()
   m_drive_startsoc = StdMetrics.ms_v_bat_soc->AsFloat();
   m_drive_startrange = StdMetrics.ms_v_bat_range_est->AsFloat();
   m_drive_startaltitude = StdMetrics.ms_v_pos_altitude->AsFloat();
+  m_drive_starttime = esp_log_timestamp();
   m_drive_speedcnt = 0;
   m_drive_speedsum = 0;
   m_drive_accelcnt = 0;
@@ -1497,6 +1498,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
   float range_diff = range - m_drive_startrange;
   float alt = StdMetrics.ms_v_pos_altitude->AsFloat();
   float alt_diff = UnitConvert(Meters, altitudeUnit, alt - m_drive_startaltitude);
+  uint32_t endtime = esp_log_timestamp();
+  float duration_h = (endtime - m_drive_starttime) / 3600 / 1000;
+  float duration_min = (endtime - m_drive_starttime) / 60 / 1000;
+  float duration_sec = (endtime - m_drive_starttime) / 1000 - duration_min * 60;
 
   std::ostringstream buf;
   buf
@@ -1504,8 +1509,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     << std::fixed
     << std::setprecision(1)
     << UnitConvert(Kilometers, rangeUnit, trip_length) << rangeUnitLabel
-    << " Avg "
     << std::setprecision(0)
+    << " ("
+    ;
+  if (duration_h > 0) 
+    {
+    buf
+      << duration_h
+      << ":"
+      ;
+    }
+  buf
+    << duration_min
+    << ":"
+    << std::setw(2) << std::setfill('0') << duration_sec
+    << ") "
+    << " Avg "
     << speed_avg << speedUnitLabel
     << " Alt "
     << ((alt_diff >= 0) ? "+" : "")
@@ -1605,6 +1624,7 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       m_drive_startsoc = StdMetrics.ms_v_bat_soc->AsFloat();
       m_drive_startrange = StdMetrics.ms_v_bat_range_est->AsFloat();
       m_drive_startaltitude = StdMetrics.ms_v_pos_altitude->AsFloat();
+      m_drive_starttime = esp_log_timestamp();
       m_drive_speedcnt = 0;
       m_drive_speedsum = 0;
       m_drive_accelcnt = 0;
