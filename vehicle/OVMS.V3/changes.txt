@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Implement custom CLI commands with Duktape function OvmsCommand.Register()
 - Support for *,? wildcards in vfs ls and vfs rls commands.
 - Smart EQ 453:
     add 5min Booster preheat cool

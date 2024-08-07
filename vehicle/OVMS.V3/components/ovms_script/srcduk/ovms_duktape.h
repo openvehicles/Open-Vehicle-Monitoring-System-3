@@ -101,6 +101,8 @@ typedef enum
   DUKTAPE_evalfloatresult,      // Execute script text (float result)
   DUKTAPE_evalintresult,        // Execute script text (int result)
   DUKTAPE_callback,             // DuktapeObject callback
+  DUKTAPE_command,              // Duktape command
+  DUKTAPE_shutdown              // Shutdown Duktape
   } duktape_msg_t;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -151,6 +153,7 @@ class DuktapeObjectRegistration
 typedef std::map<const char*, DuktapeObjectRegistration*, CmpStrOp> DuktapeObjectMap;
 class DuktapeObject;
 class OvmsScripts;
+class DuktapeConsoleCommand;
 
 typedef struct
   {
@@ -182,6 +185,13 @@ typedef struct
       const char* method;
       void* data;
       } dt_callback;
+    struct
+      {
+      const char *command;
+      DuktapeConsoleCommand* dcc;
+      int argc;
+      const char * const *argv;
+      } dt_command;
     } body;
   duktape_msg_t type;
   QueueHandle_t waitcompletion;
@@ -219,6 +229,8 @@ class DuktapeObject
   public:
     DuktapeObject();
     DuktapeObject(duk_context *ctx, int obj_idx);
+  protected:
+    // Don't delete. Decouple or Unref()
     virtual ~DuktapeObject();
 
   public:
@@ -230,6 +242,8 @@ class DuktapeObject
     bool Unref();
 
   public:
+    virtual void AfterCouple(duk_context *ctx, int obj_idx);
+    virtual void BeforeDecouple(duk_context *ctx);
     bool Couple(duk_context *ctx, int obj_idx);
     void Decouple(duk_context *ctx);
     bool IsCoupled() { return m_object != NULL; }
@@ -267,9 +281,14 @@ class DuktapeObject
 class DuktapeConsoleCommand : public DuktapeObject
   {
   public:
-    DuktapeConsoleCommand(duk_context *ctx, int obj_idx, OvmsCommand* cmd, const char* module);
-    ~DuktapeConsoleCommand();
+    // Construct then call Couple() separately to ensure the correct AfterCouple()
+    // is called.
+    DuktapeConsoleCommand(OvmsCommand* cmd, const char* module);
 
+    void AfterCouple(duk_context *ctx, int obj_idx) override;
+    void BeforeDecouple(duk_context *ctx) override;
+  protected:
+    ~DuktapeConsoleCommand();
   public:
     OvmsCommand* m_cmd;
     std::string m_module;
@@ -297,20 +316,29 @@ class OvmsDuktape
     bool DuktapeDispatch(duktape_queue_t* msg, TickType_t queuewait=portMAX_DELAY);
     void DuktapeDispatchWait(duktape_queue_t* msg);
 
+    void DukOvmsCommandRun(OvmsWriter* writer, const char * command, DuktapeConsoleCommand* dcc, int argc, const char* const* argv);
+
+    void DukTapeUnload(bool unload_modules = true);
+
+    void EventSystemShuttingDown(std::string event, void* data);
+
+    void Ticker1_Shutdown(std::string event, void* data);
   public:
     void  DuktapeEvalNoResult(const char* text, OvmsWriter* writer=NULL, const char* filename=NULL);
     float DuktapeEvalFloatResult(const char* text, OvmsWriter* writer=NULL);
     int   DuktapeEvalIntResult(const char* text, OvmsWriter* writer=NULL);
+    void DuktapeEvalCommand(OvmsWriter* writer, const char *command, DuktapeConsoleCommand* dcc, int argc, const char* const* argv);
     void  DuktapeReload();
     void  DuktapeCompact(bool wait=true);
     void  DuktapeRequestCallback(DuktapeObject* instance, const char* method, void* data);
     OvmsWriter* GetDuktapeWriter();
     void DukGetCallInfo(duk_context *ctx, std::string *filename, int *linenumber, std::string *function);
 
+  protected:
+    void NotifyDuktapeModuleUnloadAll(duk_context *ctx);
   public:
     void NotifyDuktapeModuleLoad(const char* filename);
     void NotifyDuktapeModuleUnload(const char* filename);
-    void NotifyDuktapeModuleUnloadAll();
     bool RegisterDuktapeConsoleCommand(duk_context *ctx, int obj_idx,
                                        const char* filename,
                                        const char* parent,
