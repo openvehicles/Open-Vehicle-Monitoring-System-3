@@ -49,6 +49,7 @@ static const char *TAG = "netmanager";
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "ovms_module.h"
+#include "ovms_boot.h"
 #ifdef CONFIG_OVMS_DEV_NETMANAGER_PING
 #include "ping/ping_sock.h"
 #endif // CONFIG_OVMS_DEV_NETMANAGER_PING

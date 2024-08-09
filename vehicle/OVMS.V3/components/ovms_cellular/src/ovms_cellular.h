@@ -199,6 +199,7 @@ class modem : public pcp, public InternalRamAllocated
 
   public:
     // High level API functions
+    bool ModemIsNetMode();
     void StartTask();
     void StopTask();
     bool StartNMEA(bool force=false);
