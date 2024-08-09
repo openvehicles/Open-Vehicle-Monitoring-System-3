@@ -343,6 +343,7 @@ void network_connections(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
 OvmsNetManager::OvmsNetManager()
   {
   ESP_LOGI(TAG, "Initialising NETMANAGER (8999)");
+  not_connected_counter = 0;
   m_connected_wifi = false;
   m_connected_modem = false;
   m_connected_any = false;
@@ -399,6 +400,7 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.disconnected", std::bind(&OvmsNetManager::WifiApStaDisconnect, this, _1, _2));
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
+  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsNetManager::Ticker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.gotip", std::bind(&OvmsNetManager::ModemUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.down", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
@@ -499,6 +501,7 @@ void OvmsNetManager::WifiDisconnect()
 void OvmsNetManager::WifiStaGotIP(std::string event, void* data)
   {
   m_wifi_sta = true;
+  StdMetrics.ms_m_net_ip->SetValue(true);
   ESP_LOGI(TAG, "WIFI client got IP");
   SaveDNSServer(m_dns_wifi);
 
@@ -518,6 +521,7 @@ void OvmsNetManager::WifiStaLostIP(std::string event, void* data)
   // Re-prioritise, just in case, as Wifi stack seems to mess with this
   // (in particular if an AP interface is up, and STA goes down, Wifi
   // stack seems to switch default interface to AP)
+  StdMetrics.ms_m_net_ip->SetValue(false);
   PrioritiseAndIndicate();
   #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
     ScheduleCleanup();
@@ -651,6 +655,41 @@ void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
 
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
+
+void OvmsNetManager::Ticker1(std::string event, void *data)
+  {
+  StdMetrics.ms_m_net_connected->SetValue(m_connected_any);
+  if (!m_connected_any)
+    StdMetrics.ms_m_net_ip->SetValue(false);
+  else
+    {
+    bool connected = false;
+    // respect the priority of wifi over modem
+    if (m_connected_modem){
+      if (MyPeripherals && MyPeripherals->m_cellular_modem)
+      {
+        connected = MyPeripherals->m_cellular_modem->ModemIsNetMode() &&
+                    MyPeripherals->m_cellular_modem->m_mux->IsMuxUp() &&
+                    MyPeripherals->m_cellular_modem->m_ppp->m_connected;
+      }
+    }
+    if (m_connected_wifi){
+      if (MyPeripherals && MyPeripherals->m_esp32wifi)
+      {
+        connected = MyPeripherals->m_esp32wifi->WifiHasIp();
+      }
+    }
+    StdMetrics.ms_m_net_ip->SetValue(connected);
+    if (m_connected_any && !connected){
+      not_connected_counter++;
+      if (not_connected_counter > 300){
+        MyBoot.Restart();
+      }
+    } else {
+      not_connected_counter = 0;
+    }
+    }
+  }
 
 void OvmsNetManager::ModemUp(std::string event, void* data)
   {
