@@ -659,11 +659,13 @@ void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
 
 void OvmsNetManager::Ticker1(std::string event, void *data)
   {
-  StdMetrics.ms_m_net_connected->SetValue(m_connected_any);
-  if (!m_connected_any)
+  if (!m_connected_any){
     StdMetrics.ms_m_net_ip->SetValue(false);
+    StdMetrics.ms_m_net_connected->SetValue(false);
+  }
   else
-    {
+  {
+    StdMetrics.ms_m_net_connected->SetValue(true);
     bool connected = false;
     // respect the priority of wifi over modem
     if (m_connected_modem){
@@ -689,7 +691,7 @@ void OvmsNetManager::Ticker1(std::string event, void *data)
     } else {
       not_connected_counter = 0;
     }
-    }
+  }
   }
 
 void OvmsNetManager::ModemUp(std::string event, void* data)
