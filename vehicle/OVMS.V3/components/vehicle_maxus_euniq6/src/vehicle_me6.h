@@ -40,57 +40,24 @@
 
 using namespace std;
 
-typedef struct{
-       int fromPercent;
-       int toPercent;
-       float maxChargeSpeed;
-}charging_profile;
-
-class OvmsCommand;
-
 class OvmsVehicleMaxe6 : public OvmsVehicle
   {
   public:
+
     OvmsVehicleMaxe6();
     ~OvmsVehicleMaxe6();
-      
-    OvmsMetricInt *m_poll_state_metric; // Kept equal to m_poll_state for debugging purposes
-    OvmsMetricFloat* m_soc_raw;
-    OvmsMetricFloat* m_watt_hour_raw;
-    OvmsMetricFloat* m_consump_raw;
-    OvmsMetricFloat* m_consumprange_raw;
-    OvmsMetricFloat* m_poll_bmsstate;
 
   protected:
-      std::string         m_rxbuf;
-
-      
-  protected:
-      void ConfigChanged(OvmsConfigParam* param) override;
-      void PollerStateTicker(canbus *bus);
-      void Ticker1(uint32_t ticker) override;
-      void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
-      void processEnergy();
-      float consumpRange;
-      float hvpower;
-      char m_vin[17];
+    void Ticker1(uint32_t ticker) override;
       
   private:
-      void IncomingFrameCan1(CAN_frame_t* p_frame) override;
-      void IncomingPollFrame(CAN_frame_t* frame);
-      void SetBmsStatus(uint8_t status);
-      /// A temporary store for the VIN
-     
-      int calcMinutesRemaining(int toSoc, charging_profile charge_steps[]);
-      float me56_cum_energy_charge_wh;
-      bool soc_limit_reached;
-      bool range_limit_reached;
-      bool vanIsOn;
-      bool ccschargeon;
-      bool acchargeon;
-      
-      virtual void calculateEfficiency();
-      
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+  
+    struct {
+      uint8_t byte[8];
+      uint8_t status;
+      uint16_t id;
+    } send_can_buffer;
   };
 
 #endif //#ifndef __VEHICLE_ME6_H__
