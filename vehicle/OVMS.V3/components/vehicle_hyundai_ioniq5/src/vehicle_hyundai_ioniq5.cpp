@@ -934,6 +934,9 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
       ESP_LOGV(TAG, "Aux Battery: %s", hif_aux_battery_mon.to_string().c_str());
     }
 #endif
+    if ( hif_aux_battery_mon.state() == OvmsBatteryState::Charging) {
+      BatteryStateStillCharging();
+    }
   }
 
   if (IsPollState_Off() && StdMetrics.ms_v_door_chargeport->AsBool() && kia_ready_for_chargepollstate) {
@@ -1235,10 +1238,6 @@ void OvmsHyundaiIoniqEv::Ticker60(uint32_t ticker)
     }
   } else {
     CheckResetDoorCheck();
-  }
-
-  if ( hif_aux_battery_mon.state() == OvmsBatteryState::Charging) {
-    BatteryStateStillCharging();
   }
 }
 
