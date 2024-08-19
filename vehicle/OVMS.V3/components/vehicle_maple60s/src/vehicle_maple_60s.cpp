@@ -109,35 +109,26 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 
   /*
   BASIC METRICS
-  StdMetrics.ms_v_pos_speed           ok
+  StdMetrics.ms_v_pos_speed         ok
   StdMetrics.ms_v_bat_soc           ok
-  StdMetrics.ms_v_pos_odometer         ok
+  StdMetrics.ms_v_pos_odometer      ok
 
-  StdMetrics.ms_v_door_fl           rev
-  StdMetrics.ms_v_door_fr           rev
-  StdMetrics.ms_v_door_rl           rev
-  StdMetrics.ms_v_door_rr           rev
-  StdMetrics.ms_v_env_locked           no
+  StdMetrics.ms_v_door_fl           ok
+  StdMetrics.ms_v_door_fr           ok
+  StdMetrics.ms_v_door_rl           ok
+  StdMetrics.ms_v_door_rr           ok
+  StdMetrics.ms_v_env_locked        ok
 
-  StdMetrics.ms_v_env_onepedal         NA
-  StdMetrics.ms_v_env_efficiencymode       ok
-  StdMetrics.ms_v_env_regenlevel Percentage   ok
+  StdMetrics.ms_v_bat_current       NA
+  StdMetrics.ms_v_bat_voltage       NA
+  StdMetrics.ms_v_bat_power         ok
 
-  StdMetrics.ms_v_bat_current         NA
-  StdMetrics.ms_v_bat_voltage         NA
-  StdMetrics.ms_v_bat_power           ok
+  StdMetrics.ms_v_charge_inprogress rev
 
-  StdMetrics.ms_v_charge_inprogress       rev
+  StdMetrics.ms_v_env_on            ok
+  StdMetrics.ms_v_env_awake         ok
 
-  StdMetrics.ms_v_env_on             ok
-  StdMetrics.ms_v_env_awake           ok
-
-  StdMetrics.ms_v_env_aux12v          rev
-
-  StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, value, PSI);
-  StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, value, PSI);
-  StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, value, PSI);
-  StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, value, PSI);
+  StdMetrics.ms_v_env_aux12v        rev
   */
 
   uint8_t *data = p_frame->data.u8;
@@ -147,13 +138,6 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
     case 0x250:
       StdMetrics.ms_v_charge_inprogress->SetValue(CAN_BIT(7, 0));
       break;
-    // case 0x46a:
-    //   StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(0, 0));
-    //   StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(0, 3));
-    //   StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(0, 5));
-    //   StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(0, 7));
-    //   StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1, 1));
-    //   break;
     case 0x3F1:
       StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0) / 10.0, Kilometers);
       break;
