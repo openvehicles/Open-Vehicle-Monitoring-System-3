@@ -106,31 +106,27 @@ void OvmsVehicleMaxe6::IncomingFrameCan1(CAN_frame_t *p_frame)
 
   /*
   BASIC METRICS
-  StdMetrics.ms_v_pos_speed           ok
+  StdMetrics.ms_v_pos_speed         ok
   StdMetrics.ms_v_bat_soc           ok
-  StdMetrics.ms_v_pos_odometer         ok
+  StdMetrics.ms_v_pos_odometer      ok
 
-  StdMetrics.ms_v_door_fl           ok; yes when open, no when closed
+  StdMetrics.ms_v_door_fl           ok
   StdMetrics.ms_v_door_fr           ok
   StdMetrics.ms_v_door_rl           ok
   StdMetrics.ms_v_door_rr           ok
   StdMetrics.ms_v_trunk             ok
-  StdMetrics.ms_v_env_locked           ok
+  StdMetrics.ms_v_env_locked        ok
 
-  StdMetrics.ms_v_env_onepedal         -
-  StdMetrics.ms_v_env_efficiencymode       -
-  StdMetrics.ms_v_env_regenlevel Percentage   -
+  StdMetrics.ms_v_bat_current       -
+  StdMetrics.ms_v_bat_voltage       -
+  StdMetrics.ms_v_bat_power         wip (percentage units)
 
-  StdMetrics.ms_v_bat_current         -
-  StdMetrics.ms_v_bat_voltage         -
-  StdMetrics.ms_v_bat_power           wip esta en porcentaje
+  StdMetrics.ms_v_charge_inprogress ok
 
-  StdMetrics.ms_v_charge_inprogress       ok
+  StdMetrics.ms_v_env_on            ok
+  StdMetrics.ms_v_env_awake         ok
 
-  StdMetrics.ms_v_env_on             ok
-  StdMetrics.ms_v_env_awake           ok
-
-  StdMetrics.ms_v_env_aux12v          ok
+  StdMetrics.ms_v_env_aux12v        ok
   */
 
   uint8_t *data = p_frame->data.u8;
