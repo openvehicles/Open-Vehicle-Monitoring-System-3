@@ -65,7 +65,6 @@ OvmsVehicleMaple60S::OvmsVehicleMaple60S()
   StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
   StdMetrics.ms_v_charge_inprogress->SetValue(false);
   StdMetrics.ms_v_env_on->SetValue(false);
-  StdMetrics.ms_v_bat_temp->SetValue(20, Celcius);
   StdMetrics.ms_v_env_locked->SetValue(false);
 
   // Require GPS.
