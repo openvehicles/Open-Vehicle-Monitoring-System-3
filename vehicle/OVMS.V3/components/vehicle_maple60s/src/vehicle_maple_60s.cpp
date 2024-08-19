@@ -144,92 +144,92 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 
 	switch (p_frame->MsgID)
 	{
-	case 0x250:
-		StdMetrics.ms_v_charge_inprogress->SetValue(CAN_BIT(7, 0));
-		break;
-	// case 0x46a:
-	// 	StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(0, 0));
-	// 	StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(0, 3));
-	// 	StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(0, 5));
-	// 	StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(0, 7));
-	// 	StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1, 1));
-	// 	break;
-	case 0x3F1:
-		StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0) / 10.0, Kilometers);
-		break;
-	case 0x125:
-		StdMetrics.ms_v_pos_speed->SetValue((CAN_BYTE(1) * 2) + (2 * (CAN_BYTE(2) - 1) / 250.0));
-		break;
-	case 0x162: // awake, on, off and power
+		case 0x250:
+			StdMetrics.ms_v_charge_inprogress->SetValue(CAN_BIT(7, 0));
+			break;
+		// case 0x46a:
+		// 	StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(0, 0));
+		// 	StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(0, 3));
+		// 	StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(0, 5));
+		// 	StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(0, 7));
+		// 	StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1, 1));
+		// 	break;
+		case 0x3F1:
+			StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0) / 10.0, Kilometers);
+			break;
+		case 0x125:
+			StdMetrics.ms_v_pos_speed->SetValue((CAN_BYTE(1) * 2) + (2 * (CAN_BYTE(2) - 1) / 250.0));
+			break;
+		case 0x162: // awake, on, off and power
 		{
-		StdMetrics.ms_v_env_awake->SetValue(CAN_BIT(5, 0));
-		StdMetrics.ms_v_env_on->SetValue(CAN_BIT(3, 7) && CAN_BIT(5, 0));
-		StdMetrics.ms_v_bat_power->SetValue(CAN_BYTE(4) - 100);
+			StdMetrics.ms_v_env_awake->SetValue(CAN_BIT(5, 0));
+			StdMetrics.ms_v_env_on->SetValue(CAN_BIT(3, 7) && CAN_BIT(5, 0));
+			StdMetrics.ms_v_bat_power->SetValue(CAN_BYTE(4) - 100);
 
-		auto usingCcsCharger = StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -15;
-		StdMetrics.ms_v_charge_type->SetValue(usingCcsCharger ? "ccs" : "type2");
-		break;
+			auto usingCcsCharger = StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -15;
+			StdMetrics.ms_v_charge_type->SetValue(usingCcsCharger ? "ccs" : "type2");
+			break;
 		}
-	case 0x2F4: // Charge state
-		StdMetrics.ms_v_bat_soc->SetValue((100 * CAN_BYTE(1)) / 255, Percentage);
-		break;
-	case 0x235:
-		StdMetrics.ms_v_env_aux12v->SetValue((CAN_BYTE(7) + 67)/15);
-		break;
-	case 0x284:
+		case 0x2F4: // Charge state
+			StdMetrics.ms_v_bat_soc->SetValue((100 * CAN_BYTE(1)) / 255, Percentage);
+			break;
+		case 0x235:
+			StdMetrics.ms_v_env_aux12v->SetValue((CAN_BYTE(7) + 67)/15);
+			break;
+		case 0x284:
 		{
-		StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1, 2));
-		break;
+			StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1, 2));
+			break;
 		}
-	case 0x285:
+		case 0x285:
 		{
-		StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(4, 0));
-		StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(4, 1));
+			StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(4, 0));
+			StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(4, 1));
 
-		/* It's unclear which bit is associated with which door. 
-		 * However this doesn't matter since to consider the 
-		 * vehicle locked, all must be locked. */
-		m_door_lock_status[0] = CAN_BIT(4, 2);
-		m_door_lock_status[1] = CAN_BIT(4, 4);
+			/* It's unclear which bit is associated with which door. 
+			* However this doesn't matter since to consider the 
+			* vehicle locked, all must be locked. */
+			m_door_lock_status[0] = CAN_BIT(4, 2);
+			m_door_lock_status[1] = CAN_BIT(4, 4);
 
-		auto vehicle_locked = std::accumulate(
-			m_door_lock_status.begin(),
-			m_door_lock_status.end(),
-			true,
-			[](bool a, bool b)
-				{ return a && b; });
-		
-		StdMetrics.ms_v_env_locked->SetValue(vehicle_locked);
-		break;
+			auto vehicle_locked = std::accumulate(
+				m_door_lock_status.begin(),
+				m_door_lock_status.end(),
+				true,
+				[](bool a, bool b)
+					{ return a && b; });
+			
+			StdMetrics.ms_v_env_locked->SetValue(vehicle_locked);
+			break;
 		}
-	case 0x286:
+		case 0x286:
 		{
-		StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(4, 0));
-		StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(4, 1));
+			StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(4, 0));
+			StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(4, 1));
 
-		/* It's unclear which bit is associated with which door. 
-		 * However this doesn't matter since to consider the 
-		 * vehicle locked, all must be locked. */
-		m_door_lock_status[2] = CAN_BIT(4, 2);
-		m_door_lock_status[3] = CAN_BIT(4, 4);
+			/* It's unclear which bit is associated with which door. 
+			* However this doesn't matter since to consider the 
+			* vehicle locked, all must be locked. */
+			m_door_lock_status[2] = CAN_BIT(4, 2);
+			m_door_lock_status[3] = CAN_BIT(4, 4);
 
-		auto vehicle_locked = std::accumulate(
-			m_door_lock_status.begin(),
-			m_door_lock_status.end(),
-			true,
-			[](bool a, bool b)
-				{ return a && b; });
-		
-		StdMetrics.ms_v_env_locked->SetValue(vehicle_locked);
-		break;
+			auto vehicle_locked = std::accumulate(
+				m_door_lock_status.begin(),
+				m_door_lock_status.end(),
+				true,
+				[](bool a, bool b)
+					{ return a && b; });
+			
+			StdMetrics.ms_v_env_locked->SetValue(vehicle_locked);
+			break;
 		}
 	}
 }
 
 class OvmsVehicleMaple60SInit
 {
-public:
-	OvmsVehicleMaple60SInit();
+	public:
+		OvmsVehicleMaple60SInit();
 } MyOvmsVehicleMaple60SInit __attribute__((init_priority(9000)));
 
 OvmsVehicleMaple60SInit::OvmsVehicleMaple60SInit()
