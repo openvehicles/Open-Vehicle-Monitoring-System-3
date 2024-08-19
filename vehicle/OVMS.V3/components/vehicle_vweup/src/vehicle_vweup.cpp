@@ -444,16 +444,15 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   // Handle changed T26 settings:
   if (vweup_enable_t26)
   {
+    bool soc_above_max = StdMetrics.ms_v_bat_soc->AsFloat() >= StdMetrics.ms_v_charge_limit_soc->AsInt();
     if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt()) {
-      bool socswitch = StdMetrics.ms_v_charge_limit_soc->AsInt() <= StdMetrics.ms_v_bat_soc->AsFloat();
-      StdMetrics.ms_v_charge_limit_soc->SetValue(vweup_chg_soclimit_new);
-      if (vweup_chg_soclimit_new == 0 || vweup_chg_soclimit_new > StdMetrics.ms_v_bat_soc->AsInt()) {
+      if (vweup_chg_soclimit_new == 0 || vweup_chg_soclimit_new > StdMetrics.ms_v_bat_soc->AsFloat()) {
         ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to above current SoC");
         if (IsCharging()) {
           ESP_LOGD(TAG, "ConfigChanged: already charging, nothing to do");
           StdMetrics.ms_v_charge_state->SetValue("charging"); // switch from topoff mode to charging
         }
-        else if (socswitch) { // only start charge when previous max SoC was < SoC
+        else if (soc_above_max) { // only start charge when previous max SoC was <= SoC
           ESP_LOGD(TAG, "ConfigChanged: trying to start charge...");
           fakestop = true;
           StartStopChargeT26(true);
@@ -461,10 +460,11 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
       }
       else {
         ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to below current SoC");
-        if (IsCharging()) {
+        if (IsCharging() && !soc_above_max) { // only stop charge when previous max SoC was > SoC
           ESP_LOGD(TAG, "ConfigChanged: stopping charge...");
           StartStopChargeT26(false);
         }
+        StdMetrics.ms_v_charge_limit_soc->SetValue(vweup_chg_soclimit_new);
       }
     }
     if (vweup_charge_current_new != profile0_charge_current && profile0_charge_current != 0) {
@@ -498,8 +498,8 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
     }
     if (chg_autostop_new != chg_autostop) {
       chg_autostop = chg_autostop_new;
-      if (!chg_autostop_new) {
-        ESP_LOGD(TAG, "ConfigChanged: charge autostop disabled, trying to start charge...");
+      if (!chg_autostop_new && soc_above_max && StdMetrics.ms_v_bat_soc->AsFloat() < 100) {
+        ESP_LOGD(TAG, "ConfigChanged: charge autostop disabled & SoC above max SoC, trying to start charge...");
         fakestop = true;
         StartStopChargeT26(true);
       }
@@ -610,12 +610,10 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
       }
     }
   }
-  if (HasT26() && m_chargestate_lastsoc > suff_soc && soc < suff_soc) {
-    ESP_LOGI(TAG, "Ticker1: SOC fell below sufficient SOC limit (%d%%), restarting charge", suff_soc);
+  if (m_chargestate_lastsoc > suff_soc && soc < suff_soc) {
+    ESP_LOGI(TAG, "Ticker1: SOC fell below sufficient SOC limit (%d%%), trying to restart charge...", suff_soc);
     fakestop = true;
-      ESP_LOGD(TAG, "Ticker1: trying to start charge...");
-      fakestop = true;
-      StartStopChargeT26(true);
+    StartStopChargeT26(true);
   }
   m_chargestate_lastsoc = soc;
 
@@ -1082,9 +1080,8 @@ int OvmsVehicleVWeUp::CalcChargeTime(float capacity, float max_pwr, int from_soc
 
 /**
  * UpdateChargeTimes: update all charge time predictions
- *  This is called by Ticker60() and by IncomingPollReply(), and on config changes.
- *  While charging, the car delivers a CTP for the current SOC limit if set, or 100%,
- *  but only if the OBD connection is available.
+ *  This is called by Ticker60() and by IncomingPollReply(), and on config changes
+
  */
 void OvmsVehicleVWeUp::UpdateChargeTimes()
 {
