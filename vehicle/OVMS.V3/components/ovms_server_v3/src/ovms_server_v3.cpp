@@ -137,8 +137,13 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
              msg->topic.p, (int) msg->payload.len, msg->payload.p);
       if (MyOvmsServerV3)
         {
-        MyOvmsServerV3->IncomingMsg(std::string(msg->topic.p,msg->topic.len),
-                                    std::string(msg->payload.p,msg->payload.len));
+        if (MyOvmsServerV3->m_accept_command == 0)
+          {
+            MyOvmsServerV3->m_accept_command = 2;
+            MyOvmsServerV3->IncomingMsg(
+              std::string(msg->topic.p,msg->topic.len),
+              std::string(msg->payload.p,msg->payload.len));
+          }
         }
       if (msg->qos == 1)
         {
@@ -210,6 +215,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_notify_data_waitcomp = 0;
   m_notify_data_waittype = NULL;
   m_notify_data_waitentry = NULL;
+  m_accept_command = 0;
 
   ESP_LOGI(TAG, "OVMS Server v3 running");
 
@@ -877,6 +883,10 @@ void OvmsServerV3::NetmanStop(std::string event, void* data)
 
 void OvmsServerV3::Ticker1(std::string event, void* data)
   {
+  if (m_accept_command > 0)
+    {
+      m_accept_command--;
+    }
   if (m_connretry > 0)
     {
     if (MyNetManager.m_connected_any)
