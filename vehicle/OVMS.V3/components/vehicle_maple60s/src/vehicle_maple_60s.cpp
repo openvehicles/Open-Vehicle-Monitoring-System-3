@@ -55,11 +55,6 @@ OvmsVehicleMaple60S::OvmsVehicleMaple60S()
 {
   ESP_LOGI(TAG, "Maple 60s vehicle module");
 
-  send_can_buffer.id = 0;
-  send_can_buffer.status = 0;
-
-  memset(send_can_buffer.byte, 0, sizeof(send_can_buffer.byte));
-
   m_door_lock_status.fill(false);
 
   StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
@@ -88,24 +83,6 @@ void OvmsVehicleMaple60S::Ticker1(uint32_t ticker)
 
 void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 {
-  uint8_t *d = p_frame->data.u8;
-
-  // Check if response is from synchronous can message
-  if (send_can_buffer.status == 0xff && p_frame->MsgID == (send_can_buffer.id + 0x08))
-  {
-    // Store message bytes so that the async method can continue
-    send_can_buffer.status = 3;
-
-    send_can_buffer.byte[0] = d[0];
-    send_can_buffer.byte[1] = d[1];
-    send_can_buffer.byte[2] = d[2];
-    send_can_buffer.byte[3] = d[3];
-    send_can_buffer.byte[4] = d[4];
-    send_can_buffer.byte[5] = d[5];
-    send_can_buffer.byte[6] = d[6];
-    send_can_buffer.byte[7] = d[7];
-  }
-
   /*
   BASIC METRICS
   StdMetrics.ms_v_pos_speed         ok

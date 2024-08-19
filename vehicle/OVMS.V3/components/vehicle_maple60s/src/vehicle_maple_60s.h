@@ -45,12 +45,6 @@ public:
   void Ticker1(uint32_t ticker) override;
 
 private:
-  struct {
-    uint8_t byte[8];
-    uint8_t status;
-    uint16_t id;
-  } send_can_buffer;
-
   std::array<bool, 4> m_door_lock_status;
 };
 
