@@ -50,6 +50,8 @@ class OvmsVehicleMaple60S : public OvmsVehicle
       uint8_t status;
       uint16_t id;
     } send_can_buffer;
+
+    std::array<bool, 4> m_door_lock_status;
   };
 
 #endif // #ifndef __VEHICLE_MAPLE60S_H__

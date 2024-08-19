@@ -29,6 +29,9 @@
 
 #include "vehicle_maple_60s.h"
 
+#include <bitset>
+#include <numeric>
+
 #include "metrics_standard.h"
 #include "ovms_log.h"
 #include "ovms_metrics.h"
@@ -56,6 +59,8 @@ OvmsVehicleMaple60S::OvmsVehicleMaple60S()
 	send_can_buffer.status = 0;
 
 	memset(send_can_buffer.byte, 0, sizeof(send_can_buffer.byte));
+
+	m_door_lock_status.fill(false);
 
 	StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
 	StdMetrics.ms_v_charge_inprogress->SetValue(false);
@@ -172,34 +177,93 @@ void OvmsVehicleMaple60S::IncomingFrameCan1(CAN_frame_t *p_frame)
 		StdMetrics.ms_v_env_aux12v->SetValue((CAN_BYTE(7) + 67)/15);
 		break;
 	case 0x284:
-		StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1, 6));
+		{
+		auto byte = static_cast<std::bitset<8>>(CAN_BYTE(4));
+		ESP_LOGI(TAG, "0x284: %s", byte.to_string().c_str());
+
+		StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1, 2));
+
+		ESP_LOGI(TAG, "0x284: trunk: %d", StdMetrics.ms_v_door_trunk->AsBool(true));
 		break;
+		}
 	case 0x285:
 		{
-		StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(4, 8));
-		StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(4, 7));
+		auto bit0 = static_cast<bool>(CAN_BIT(4, 0));
+		auto bit1 = static_cast<bool>(CAN_BIT(4, 1));
+		auto bit2 = static_cast<bool>(CAN_BIT(4, 2));
+		auto bit3 = static_cast<bool>(CAN_BIT(4, 3));
+		auto bit4 = static_cast<bool>(CAN_BIT(4, 4));
+		auto bit5 = static_cast<bool>(CAN_BIT(4, 5));
+		auto bit6 = static_cast<bool>(CAN_BIT(4, 6));
+		auto bit7 = static_cast<bool>(CAN_BIT(4, 7));
 
-		auto fl_locked = static_cast<bool>(StdMetrics.ms_v_door_fl->AsBool(true));
-		auto rl_locked = static_cast<bool>(StdMetrics.ms_v_door_rl->AsBool(true));
-		auto fr_locked = static_cast<bool>(StdMetrics.ms_v_door_fr->AsBool(true));
-		auto rr_locked = static_cast<bool>(StdMetrics.ms_v_door_rr->AsBool(true));
+		auto byte = static_cast<std::bitset<8>>(CAN_BYTE(4));
 
-		StdMetrics.ms_v_env_locked->SetValue(
-			fl_locked && rl_locked && fr_locked && rr_locked);
+		ESP_LOGI(TAG, "0x285: %s", byte.to_string().c_str());
+		ESP_LOGI(TAG, "0x285: %d %d %d %d %d %d %d %d",
+			bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7);
+		
+		StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(4, 0));
+		StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(4, 1));
+
+		/* It's unclear which bit is associated with which door. 
+		 * However this doesn't matter since to consider the 
+		 * vehicle locked, all must be locked. */
+		m_door_lock_status[0] = CAN_BIT(4, 2);
+		m_door_lock_status[1] = CAN_BIT(4, 4);
+
+		ESP_LOGI(TAG, "lock_status %d %d %d %d",
+			m_door_lock_status[0], m_door_lock_status[1],
+			m_door_lock_status[2], m_door_lock_status[3]);
+
+		auto vehicle_locked = std::accumulate(
+			m_door_lock_status.begin(),
+			m_door_lock_status.end(),
+			true,
+			[](bool a, bool b)
+				{ return a && b; });
+		
+		StdMetrics.ms_v_env_locked->SetValue(vehicle_locked);
 		break;
 		}
 	case 0x286:
 		{
-		StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(4, 8));
-		StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(4, 7));
+		auto bit0 = static_cast<bool>(CAN_BIT(4, 0));
+		auto bit1 = static_cast<bool>(CAN_BIT(4, 1));
+		auto bit2 = static_cast<bool>(CAN_BIT(4, 2));
+		auto bit3 = static_cast<bool>(CAN_BIT(4, 3));
+		auto bit4 = static_cast<bool>(CAN_BIT(4, 4));
+		auto bit5 = static_cast<bool>(CAN_BIT(4, 5));
+		auto bit6 = static_cast<bool>(CAN_BIT(4, 6));
+		auto bit7 = static_cast<bool>(CAN_BIT(4, 7));
 
-		auto fl_locked = static_cast<bool>(StdMetrics.ms_v_door_fl->AsBool(true));
-		auto rl_locked = static_cast<bool>(StdMetrics.ms_v_door_rl->AsBool(true));
-		auto fr_locked = static_cast<bool>(StdMetrics.ms_v_door_fr->AsBool(true));
-		auto rr_locked = static_cast<bool>(StdMetrics.ms_v_door_rr->AsBool(true));
+		auto byte = static_cast<std::bitset<8>>(CAN_BYTE(4));
 
-		StdMetrics.ms_v_env_locked->SetValue(
-			fl_locked && rl_locked && fr_locked && rr_locked);
+		ESP_LOGI(TAG, "0x286: %s", byte.to_string().c_str());
+		ESP_LOGI(TAG, "0x286: %d %d %d %d %d %d %d %d",
+			bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7);
+		
+		StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(4, 0));
+		StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(4, 1));
+
+		/* It's unclear which bit is associated with which door. 
+		 * However this doesn't matter since to consider the 
+		 * vehicle locked, all must be locked. */
+		m_door_lock_status[2] = CAN_BIT(4, 2);
+		m_door_lock_status[3] = CAN_BIT(4, 4);
+
+		ESP_LOGI(TAG, "lock_status %d %d %d %d",
+			m_door_lock_status[0], m_door_lock_status[1],
+			m_door_lock_status[2], m_door_lock_status[3]);
+
+		auto vehicle_locked = std::accumulate(
+			m_door_lock_status.begin(),
+			m_door_lock_status.end(),
+			true,
+			[](bool a, bool b)
+				{ return a && b; });
+		
+		StdMetrics.ms_v_env_locked->SetValue(vehicle_locked);
 		break;
 		}
 	}
