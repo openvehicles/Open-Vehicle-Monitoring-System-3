@@ -57,7 +57,6 @@ OvmsVehicleMaple60S::OvmsVehicleMaple60S()
 
   m_door_lock_status.fill(false);
 
-  StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
   StdMetrics.ms_v_charge_inprogress->SetValue(false);
   StdMetrics.ms_v_env_on->SetValue(false);
   StdMetrics.ms_v_env_locked->SetValue(false);
@@ -69,9 +68,6 @@ OvmsVehicleMaple60S::OvmsVehicleMaple60S()
   RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
 }
 
-/**
- * Destructor
- */
 OvmsVehicleMaple60S::~OvmsVehicleMaple60S()
 {
   ESP_LOGI(TAG, "Shutdown Maple 60S vehicle module");
