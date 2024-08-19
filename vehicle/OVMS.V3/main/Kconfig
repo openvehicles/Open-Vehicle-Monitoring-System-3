@@ -600,6 +600,13 @@ config OVMS_VEHICLE_BYD_ATTO3
     depends on OVMS_COMP_POLLER
     help
         Enable support for BYD Atto 3
+config OVMS_VEHICLE_MAPLE60S
+    bool "Include support for Maple 60s"
+    default y
+    depends on OVMS
+    depends on OVMS_COMP_POLLER
+    help
+        Enable support for Maple 60s
 
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for ISOTP Poller RX task"
