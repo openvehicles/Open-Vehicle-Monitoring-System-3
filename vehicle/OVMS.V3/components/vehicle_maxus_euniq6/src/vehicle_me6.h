@@ -52,12 +52,6 @@ protected:
     
 private:
   void IncomingFrameCan1(CAN_frame_t* p_frame) override;
-
-  struct {
-    uint8_t byte[8];
-    uint8_t status;
-    uint16_t id;
-  } send_can_buffer;
 };
 
 #endif //#ifndef __VEHICLE_ME6_H__
