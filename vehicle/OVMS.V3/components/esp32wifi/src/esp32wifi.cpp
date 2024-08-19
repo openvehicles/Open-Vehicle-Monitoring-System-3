@@ -1022,11 +1022,11 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
   }
 
 bool esp32wifi::WifiHasIp()
-{
+  {
   char numstr[150];
   sprintf(numstr, IPSTR, IP2STR(&m_ip_info_sta.ip));
   return strcmp(numstr, "0.0.0.0") == 1;
-}
+  }
 
 void esp32wifi::EventWifiLostIp(std::string event, void* data)
   {

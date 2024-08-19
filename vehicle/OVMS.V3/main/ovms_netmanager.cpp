@@ -344,7 +344,7 @@ void network_connections(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
 OvmsNetManager::OvmsNetManager()
   {
   ESP_LOGI(TAG, "Initialising NETMANAGER (8999)");
-  not_connected_counter = 0;
+  m_not_connected_counter = 0;
   m_connected_wifi = false;
   m_connected_modem = false;
   m_connected_any = false;
@@ -659,39 +659,46 @@ void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
 
 void OvmsNetManager::Ticker1(std::string event, void *data)
   {
-  if (!m_connected_any){
+  if (!m_connected_any)
+    {
     StdMetrics.ms_m_net_ip->SetValue(false);
     StdMetrics.ms_m_net_connected->SetValue(false);
-  }
+    }
   else
-  {
+    {
     StdMetrics.ms_m_net_connected->SetValue(true);
     bool connected = false;
     // respect the priority of wifi over modem
-    if (m_connected_modem){
-      if (MyPeripherals && MyPeripherals->m_cellular_modem)
+    if (m_connected_modem)
       {
+      if (MyPeripherals && MyPeripherals->m_cellular_modem)
+        {
         connected = MyPeripherals->m_cellular_modem->ModemIsNetMode() &&
                     MyPeripherals->m_cellular_modem->m_mux->IsMuxUp() &&
                     MyPeripherals->m_cellular_modem->m_ppp->m_connected;
+        }
       }
-    }
-    if (m_connected_wifi){
-      if (MyPeripherals && MyPeripherals->m_esp32wifi)
+    if (m_connected_wifi)
       {
+      if (MyPeripherals && MyPeripherals->m_esp32wifi)
+        {
         connected = MyPeripherals->m_esp32wifi->WifiHasIp();
+        }
       }
-    }
     StdMetrics.ms_m_net_ip->SetValue(connected);
-    if (m_connected_any && !connected){
-      not_connected_counter++;
-      if (not_connected_counter > 300){
+    if (m_connected_any && !connected)
+      {
+      m_not_connected_counter++;
+      if (m_not_connected_counter > 300)
+        {
         MyBoot.Restart();
+        }
       }
-    } else {
-      not_connected_counter = 0;
+    else
+      {
+      m_not_connected_counter = 0;
+      }
     }
-  }
   }
 
 void OvmsNetManager::ModemUp(std::string event, void* data)

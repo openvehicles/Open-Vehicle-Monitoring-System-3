@@ -138,7 +138,7 @@ class OvmsNetManager
     void SetDNSServer(ip_addr_t* dnsstore);
 
   public:
-    int not_connected_counter;
+    int m_not_connected_counter;
     bool m_connected_wifi;
     bool m_connected_modem;
     bool m_connected_any;

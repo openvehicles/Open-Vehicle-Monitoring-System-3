@@ -94,7 +94,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           StandardMetrics.ms_s_v3_connected->SetValue(false);
           StandardMetrics.ms_s_v3_peers->SetValue(0);
           MyOvmsServerV3->SetStatus("Error: Connection failed", true, OvmsServerV3::WaitReconnect);
-          MyOvmsServerV3->m_connretry = 30;
+          MyOvmsServerV3->m_connretry = 60;
           }
         }
       }
@@ -107,7 +107,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV3)
           {
           MyOvmsServerV3->Disconnect();
-          MyOvmsServerV3->m_connretry = 30;
+          MyOvmsServerV3->m_connretry = 60;
           }
         }
       else
@@ -137,13 +137,9 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
              msg->topic.p, (int) msg->payload.len, msg->payload.p);
       if (MyOvmsServerV3)
         {                            
-        if (MyOvmsServerV3->accept_command == 0)
-          {
-            MyOvmsServerV3->accept_command = 2;
-            MyOvmsServerV3->IncomingMsg(
-              std::string(msg->topic.p,msg->topic.len),
-              std::string(msg->payload.p,msg->payload.len));
-          }
+        MyOvmsServerV3->IncomingMsg(
+          std::string(msg->topic.p,msg->topic.len),
+          std::string(msg->payload.p,msg->payload.len));
         }
       if (msg->qos == 1)
         {
@@ -215,8 +211,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_notify_data_waitcomp = 0;
   m_notify_data_waittype = NULL;
   m_notify_data_waitentry = NULL;
-  accept_command = 0;
-  connection_available = false;
+  m_connection_available = false;
 
   ESP_LOGI(TAG, "OVMS Server v3 running");
 
@@ -632,12 +627,12 @@ void OvmsServerV3::CountClients()
 
 void OvmsServerV3::Connect()
   {
-  if (!connection_available)
-  {
-    ESP_LOGE(TAG, "No connection available, waiting for network");
-    m_connretry = 10;
-    return;
-  }
+    if (!m_connection_available)
+      {
+      ESP_LOGE(TAG, "No connection available, waiting for network");
+      m_connretry = 10;
+      return;
+      }
   m_msgid = 1;
   m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
   m_server = MyConfig.GetParamValue("server.v3", "server");
@@ -890,21 +885,18 @@ void OvmsServerV3::NetmanStop(std::string event, void* data)
 
 void OvmsServerV3::Ticker1(std::string event, void* data)
   {
-  connection_available = StdMetrics.ms_m_net_connected->AsBool() &&
+  m_connection_available = StdMetrics.ms_m_net_connected->AsBool() &&
                               StdMetrics.ms_m_net_ip->AsBool();
-  if (accept_command != 0)
+
+  if (!m_connection_available && m_mgconn)
     {
-      accept_command--;
-    }
-  if (!connection_available && m_mgconn)
-    {
-      Disconnect();
-      m_connretry = 10;
+    Disconnect();
+    m_connretry = 10;
     }
 
   if (m_connretry > 0)
     {
-    if (connection_available)
+      if (m_connection_available)
       {
       m_connretry--;
       if (m_connretry == 0)
