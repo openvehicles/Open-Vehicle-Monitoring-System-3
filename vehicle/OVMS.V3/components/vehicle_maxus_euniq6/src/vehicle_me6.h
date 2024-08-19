@@ -41,24 +41,24 @@
 using namespace std;
 
 class OvmsVehicleMaxe6 : public OvmsVehicle
-  {
-  public:
+{
+public:
 
-    OvmsVehicleMaxe6();
-    ~OvmsVehicleMaxe6();
+  OvmsVehicleMaxe6();
+  ~OvmsVehicleMaxe6();
 
-  protected:
-    void Ticker1(uint32_t ticker) override;
-      
-  private:
-    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
-  
-    struct {
-      uint8_t byte[8];
-      uint8_t status;
-      uint16_t id;
-    } send_can_buffer;
-  };
+protected:
+  void Ticker1(uint32_t ticker) override;
+    
+private:
+  void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+
+  struct {
+    uint8_t byte[8];
+    uint8_t status;
+    uint16_t id;
+  } send_can_buffer;
+};
 
 #endif //#ifndef __VEHICLE_ME6_H__
 
