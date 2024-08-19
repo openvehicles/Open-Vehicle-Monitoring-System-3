@@ -136,59 +136,59 @@ void OvmsVehicleMaxe6::IncomingFrameCan1(CAN_frame_t *p_frame)
   uint8_t *data = p_frame->data.u8;
 
   switch (p_frame->MsgID)
-	{
-		case 0x0c9:
-		{
-			StdMetrics.ms_v_charge_inprogress->SetValue(
-				CAN_BIT(2,0) && CAN_BIT(2,1) && CAN_BIT(2,2)
-				);
-			break;
-		}
-		case 0x281:
-		{
-			StdMetrics.ms_v_env_locked->SetValue(
-				CAN_BIT(1,0) &&  CAN_BIT(1,2) &&  CAN_BIT(1,4) &&  CAN_BIT(1,6) &&
-				!StdMetrics.ms_v_door_fl->AsBool() &&
-				!StdMetrics.ms_v_door_fr->AsBool() &&
-				!StdMetrics.ms_v_door_rl->AsBool() &&
-				!StdMetrics.ms_v_door_rr->AsBool() &&
-				!StdMetrics.ms_v_door_trunk->AsBool());
-			break;
-		}
-		case 0x46a:
-		{
-			StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(0, 0));
-			StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(0, 3));
-			StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(0, 5));
-			StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(0, 7));
-			StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1, 1));
-			break;
-		}
-		case 0x540:
-		{
-			StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0));
-			break;
-		}
-		case 0x6f0:
-		{
-			StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(4));
-			break;
-		}
-		case 0x6f1:
-		{
-			StdMetrics.ms_v_env_awake->SetValue(CAN_BIT(4,7));
-			StdMetrics.ms_v_env_on->SetValue(CAN_BIT(1,4) && CAN_BIT(4,7));
-			break;
-		}
-		case 0x6f2:
-		{
-			StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(1));
-			// Units percentage.
-			StdMetrics.ms_v_bat_power->SetValue((CAN_BYTE(2) - 100) * 120, kW);
-			break;
-		}
-		default:
-			break;
+  {
+    case 0x0c9:
+    {
+      StdMetrics.ms_v_charge_inprogress->SetValue(
+        CAN_BIT(2,0) && CAN_BIT(2,1) && CAN_BIT(2,2)
+        );
+      break;
+    }
+    case 0x281:
+    {
+      StdMetrics.ms_v_env_locked->SetValue(
+        CAN_BIT(1,0) &&  CAN_BIT(1,2) &&  CAN_BIT(1,4) &&  CAN_BIT(1,6) &&
+        !StdMetrics.ms_v_door_fl->AsBool() &&
+        !StdMetrics.ms_v_door_fr->AsBool() &&
+        !StdMetrics.ms_v_door_rl->AsBool() &&
+        !StdMetrics.ms_v_door_rr->AsBool() &&
+        !StdMetrics.ms_v_door_trunk->AsBool());
+      break;
+    }
+    case 0x46a:
+    {
+      StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(0, 0));
+      StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(0, 3));
+      StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(0, 5));
+      StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(0, 7));
+      StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1, 1));
+      break;
+    }
+    case 0x540:
+    {
+      StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(0));
+      break;
+    }
+    case 0x6f0:
+    {
+      StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(4));
+      break;
+    }
+    case 0x6f1:
+    {
+      StdMetrics.ms_v_env_awake->SetValue(CAN_BIT(4,7));
+      StdMetrics.ms_v_env_on->SetValue(CAN_BIT(1,4) && CAN_BIT(4,7));
+      break;
+    }
+    case 0x6f2:
+    {
+      StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(1));
+      // Units percentage.
+      StdMetrics.ms_v_bat_power->SetValue((CAN_BYTE(2) - 100) * 120, kW);
+      break;
+    }
+    default:
+      break;
   }
 }
 
