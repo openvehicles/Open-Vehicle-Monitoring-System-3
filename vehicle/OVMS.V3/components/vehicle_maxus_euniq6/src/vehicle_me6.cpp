@@ -168,5 +168,5 @@ OvmsVehicleMaxe6Init::OvmsVehicleMaxe6Init()
 {
   ESP_LOGI(TAG, "Registering Vehicle: Maxus Euniq 6 (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxe6>("ME56","Maxus Euniq 6");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxe6>("ME6","Maxus Euniq 6");
 }
