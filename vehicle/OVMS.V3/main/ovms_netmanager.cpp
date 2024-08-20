@@ -415,6 +415,7 @@ OvmsNetManager::OvmsNetManager()
   //   dns                Space-separated list of DNS servers
   //   wifi.sq.good       Threshold for usable wifi signal [dBm], default -87
   //   wifi.sq.bad        Threshold for unusable wifi signal [dBm], default -89
+  StdMetrics.ms_m_net_ip->SetValue(false);
 
 #ifdef CONFIG_OVMS_COMP_WIFI
   MyMetrics.RegisterListener(TAG, MS_N_WIFI_SQ, std::bind(&OvmsNetManager::WifiStaCheckSQ, this, _1));
@@ -661,7 +662,6 @@ void OvmsNetManager::Ticker1(std::string event, void *data)
   {
   if (!m_connected_any)
     {
-    StdMetrics.ms_m_net_ip->SetValue(false);
     StdMetrics.ms_m_net_connected->SetValue(false);
     }
   else
@@ -685,7 +685,6 @@ void OvmsNetManager::Ticker1(std::string event, void *data)
         connected = MyPeripherals->m_esp32wifi->WifiHasIp();
         }
       }
-    StdMetrics.ms_m_net_ip->SetValue(connected);
     if (m_connected_any && !connected)
       {
       m_not_connected_counter++;

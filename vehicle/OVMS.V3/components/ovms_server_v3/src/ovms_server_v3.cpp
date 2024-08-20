@@ -136,10 +136,9 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       ESP_LOGI(TAG, "Incoming message %.*s: %.*s", (int) msg->topic.len,
              msg->topic.p, (int) msg->payload.len, msg->payload.p);
       if (MyOvmsServerV3)
-        {                            
-        MyOvmsServerV3->IncomingMsg(
-          std::string(msg->topic.p,msg->topic.len),
-          std::string(msg->payload.p,msg->payload.len));
+        {
+        MyOvmsServerV3->IncomingMsg(std::string(msg->topic.p, msg->topic.len),
+                                    std::string(msg->payload.p, msg->payload.len));
         }
       if (msg->qos == 1)
         {

@@ -360,7 +360,7 @@ void modem::SetPowerMode(PowerMode powermode)
 
 bool modem::ModemIsNetMode()
   {
-    return m_state1 == NetMode;
+  return m_state1 == NetMode;
   }
 
 void modem::AutoInit()
