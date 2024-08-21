@@ -137,8 +137,8 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
              msg->topic.p, (int) msg->payload.len, msg->payload.p);
       if (MyOvmsServerV3)
         {
-        MyOvmsServerV3->IncomingMsg(std::string(msg->topic.p, msg->topic.len),
-                                    std::string(msg->payload.p, msg->payload.len));
+        MyOvmsServerV3->IncomingMsg(std::string(msg->topic.p,msg->topic.len),
+                                    std::string(msg->payload.p,msg->payload.len));
         }
       if (msg->qos == 1)
         {
@@ -885,7 +885,8 @@ void OvmsServerV3::NetmanStop(std::string event, void* data)
 void OvmsServerV3::Ticker1(std::string event, void* data)
   {
   m_connection_available = StdMetrics.ms_m_net_connected->AsBool() &&
-                              StdMetrics.ms_m_net_ip->AsBool();
+                              StdMetrics.ms_m_net_ip->AsBool() &&
+                              !StdMetrics.ms_m_net_good_sq->AsBool();
 
   if (!m_connection_available && m_mgconn)
     {

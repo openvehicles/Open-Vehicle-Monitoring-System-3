@@ -1520,7 +1520,6 @@ void modem::EventListener(std::string event, void* data)
 
 void modem::ConfigChanged(std::string event, void* data)
   {
-  ESP_LOGE(TAG, "Network config has been changed, reconfiguring modem");
   OvmsConfigParam* param = (OvmsConfigParam*)data;
   if (event == "config.mounted" || !param || param->GetName() == "network")
     {
