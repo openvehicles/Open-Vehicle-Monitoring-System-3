@@ -139,10 +139,10 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         if (MyOvmsServerV3->m_accept_command == 0)
           {
-            MyOvmsServerV3->m_accept_command = 2;
-            MyOvmsServerV3->IncomingMsg(
-              std::string(msg->topic.p,msg->topic.len),
-              std::string(msg->payload.p,msg->payload.len));
+          MyOvmsServerV3->m_accept_command = 2;
+          MyOvmsServerV3->IncomingMsg(
+            std::string(msg->topic.p,msg->topic.len),
+            std::string(msg->payload.p,msg->payload.len));
           }
         }
       if (msg->qos == 1)
@@ -885,7 +885,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
   {
   if (m_accept_command > 0)
     {
-      m_accept_command--;
+    m_accept_command--;
     }
   if (m_connretry > 0)
     {
