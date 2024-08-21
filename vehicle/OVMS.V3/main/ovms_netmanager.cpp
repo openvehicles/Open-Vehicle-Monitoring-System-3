@@ -871,7 +871,6 @@ void OvmsNetManager::PrioritiseAndIndicate()
 
 void OvmsNetManager::DoSafePrioritiseAndIndicate()
   {
-  ESP_LOGE(TAG, "DoSafePrioritiseAndIndicate");
   const char *search = NULL;
   ip_addr_t* dns = NULL;
 
@@ -900,9 +899,9 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
               MyPeripherals->m_cellular_modem->m_mux->IsMuxUp() &&
               MyPeripherals->m_cellular_modem->m_ppp->m_connected;
     }
-    StdMetrics.ms_m_net_ip->SetValue(m_has_ip);
+  StdMetrics.ms_m_net_ip->SetValue(m_has_ip);
 
-    if (search == NULL)
+  if (search == NULL)
     {
     SetNetType("none");
     return;
