@@ -375,6 +375,7 @@ esp32wifi::esp32wifi(const char* name)
   m_sta_reconnect = 0;
   m_sta_connected = false;
   m_sta_rssi = -1270;
+  m_good_signal = false;
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   memset(&m_mac_ap,0,sizeof(m_mac_ap));
@@ -399,6 +400,9 @@ esp32wifi::esp32wifi(const char* name)
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.connected",std::bind(&esp32wifi::EventWifiApUpdate, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.disconnected",std::bind(&esp32wifi::EventWifiApUpdate, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&esp32wifi::EventSystemShuttingDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&esp32wifi::ConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&esp32wifi::ConfigChanged, this, _1, _2));
+  ConfigChanged("config.mounted", NULL);
   }
 
 esp32wifi::~esp32wifi()
@@ -996,13 +1000,19 @@ void esp32wifi::UpdateNetMetrics()
     m_sta_rssi = -1270;
     }
 
-  StdMetrics.ms_m_net_wifi_network->SetValue(GetSSID());
-  StdMetrics.ms_m_net_wifi_sq->SetValue((float)m_sta_rssi/10, dbm);
-  if (StdMetrics.ms_m_net_type->AsString() == "wifi")
-    {
-    StdMetrics.ms_m_net_provider->SetValue(GetSSID());
-    StdMetrics.ms_m_net_sq->SetValue((int)(m_sta_rssi-5)/10, dbm);
-    }
+    float current_dbm = (float)m_sta_rssi / 10;
+    StdMetrics.ms_m_net_wifi_network->SetValue(GetSSID());
+    StdMetrics.ms_m_net_wifi_sq->SetValue(current_dbm, dbm);
+    if (StdMetrics.ms_m_net_type->AsString() == "wifi")
+      {
+      StdMetrics.ms_m_net_provider->SetValue(GetSSID());
+      StdMetrics.ms_m_net_sq->SetValue((int)(m_sta_rssi-5)/10, dbm);
+      if (m_good_signal && current_dbm < m_bad_dbm)
+        m_good_signal = false;
+      if (!m_good_signal && current_dbm > m_good_dbm)
+        m_good_signal = true;
+      StdMetrics.ms_m_net_good_sq->SetValue(m_good_signal);
+      }
   }
 
 void esp32wifi::EventWifiGotIp(std::string event, void* data)
@@ -1397,6 +1407,17 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
       {
       writer->printf("  Stations: unknown\n");
       }
+    }
+  }
+
+void esp32wifi::ConfigChanged(std::string event, void* data)
+  {
+  OvmsConfigParam* param = (OvmsConfigParam*)data;
+  if (event == "config.mounted" || !param || param->GetName() == "network")
+    {
+    // Network config has been changed, apply:
+    m_good_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
+    m_bad_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
     }
   }
 

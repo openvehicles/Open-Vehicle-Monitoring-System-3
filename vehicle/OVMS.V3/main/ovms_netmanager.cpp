@@ -415,7 +415,6 @@ OvmsNetManager::OvmsNetManager()
   //   dns                Space-separated list of DNS servers
   //   wifi.sq.good       Threshold for usable wifi signal [dBm], default -87
   //   wifi.sq.bad        Threshold for unusable wifi signal [dBm], default -89
-  StdMetrics.ms_m_net_ip->SetValue(false);
 
 #ifdef CONFIG_OVMS_COMP_WIFI
   MyMetrics.RegisterListener(TAG, MS_N_WIFI_SQ, std::bind(&OvmsNetManager::WifiStaCheckSQ, this, _1));
@@ -503,7 +502,6 @@ void OvmsNetManager::WifiDisconnect()
 void OvmsNetManager::WifiStaGotIP(std::string event, void* data)
   {
   m_wifi_sta = true;
-  StdMetrics.ms_m_net_ip->SetValue(true);
   ESP_LOGI(TAG, "WIFI client got IP");
   SaveDNSServer(m_dns_wifi);
 
@@ -523,7 +521,6 @@ void OvmsNetManager::WifiStaLostIP(std::string event, void* data)
   // Re-prioritise, just in case, as Wifi stack seems to mess with this
   // (in particular if an AP interface is up, and STA goes down, Wifi
   // stack seems to switch default interface to AP)
-  StdMetrics.ms_m_net_ip->SetValue(false);
   PrioritiseAndIndicate();
   #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
     ScheduleCleanup();
@@ -660,32 +657,9 @@ void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
 
 void OvmsNetManager::Ticker1(std::string event, void *data)
   {
-  if (!m_connected_any)
+  if (m_cfg_reboot_no_connection)
     {
-    StdMetrics.ms_m_net_connected->SetValue(false);
-    }
-  else
-    {
-    StdMetrics.ms_m_net_connected->SetValue(true);
-    bool connected = false;
-    // respect the priority of wifi over modem
-    if (m_connected_modem)
-      {
-      if (MyPeripherals && MyPeripherals->m_cellular_modem)
-        {
-        connected = MyPeripherals->m_cellular_modem->ModemIsNetMode() &&
-                    MyPeripherals->m_cellular_modem->m_mux->IsMuxUp() &&
-                    MyPeripherals->m_cellular_modem->m_ppp->m_connected;
-        }
-      }
-    if (m_connected_wifi)
-      {
-      if (MyPeripherals && MyPeripherals->m_esp32wifi)
-        {
-        connected = MyPeripherals->m_esp32wifi->WifiHasIp();
-        }
-      }
-    if (m_connected_any && !connected)
+    if (m_connected_any && !m_has_ip && StdMetrics.ms_m_net_good_sq->AsBool())
       {
       m_not_connected_counter++;
       if (m_not_connected_counter > 300)
@@ -771,8 +745,9 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
   if (!param || param->GetName() == "network")
     {
     // Network config has been changed, apply:
+    m_cfg_reboot_no_connection = MyConfig.GetParamValueBool("network", "reboot.no.connection", false);
     m_cfg_wifi_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
-    m_cfg_wifi_sq_bad  = MyConfig.GetParamValueFloat("network", "wifi.sq.bad",  -89);
+    m_cfg_wifi_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad",  -89);
     if (m_cfg_wifi_sq_good < m_cfg_wifi_sq_bad)
       {
       float x = m_cfg_wifi_sq_good;
@@ -896,12 +871,15 @@ void OvmsNetManager::PrioritiseAndIndicate()
 
 void OvmsNetManager::DoSafePrioritiseAndIndicate()
   {
+  ESP_LOGE(TAG, "DoSafePrioritiseAndIndicate");
   const char *search = NULL;
   ip_addr_t* dns = NULL;
 
   // A convenient place to keep track of connectivity in general
   m_connected_any = m_connected_wifi || m_connected_modem;
   m_network_any = m_connected_wifi || m_connected_modem || m_wifi_ap;
+  StdMetrics.ms_m_net_connected->SetValue(m_connected_any);
+
 
   // Priority order...
   if (m_connected_wifi)
@@ -910,6 +888,7 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
     SetNetType("wifi");
     search = "st";
     dns = m_dns_wifi;
+    m_has_ip = MyPeripherals->m_esp32wifi->WifiHasIp();
     }
   else if (m_connected_modem)
     {
@@ -917,9 +896,13 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
     SetNetType("modem");
     search = "pp";
     dns = m_dns_modem;
+    m_has_ip = MyPeripherals->m_cellular_modem->ModemIsNetMode() &&
+              MyPeripherals->m_cellular_modem->m_mux->IsMuxUp() &&
+              MyPeripherals->m_cellular_modem->m_ppp->m_connected;
     }
+    StdMetrics.ms_m_net_ip->SetValue(m_has_ip);
 
-  if (search == NULL)
+    if (search == NULL)
     {
     SetNetType("none");
     return;
