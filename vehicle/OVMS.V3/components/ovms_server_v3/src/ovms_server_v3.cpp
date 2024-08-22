@@ -95,6 +95,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           StandardMetrics.ms_s_v3_peers->SetValue(0);
           MyOvmsServerV3->SetStatus("Error: Connection failed", true, OvmsServerV3::WaitReconnect);
           MyOvmsServerV3->m_connretry = 60;
+          MyOvmsServerV3->m_connection_counter = 0;
           }
         }
       }
@@ -108,6 +109,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           {
           MyOvmsServerV3->Disconnect();
           MyOvmsServerV3->m_connretry = 60;
+          MyOvmsServerV3->m_connection_counter = 0;
           }
         }
       else
@@ -173,6 +175,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         MyOvmsServerV3->Disconnect();
         MyOvmsServerV3->m_connretry = 60;
+        MyOvmsServerV3->m_connection_counter = 0;
         }
       break;
     default:
@@ -191,6 +194,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
 
   SetStatus("Server has been started", false, WaitNetwork);
   m_connretry = 0;
+  m_connection_counter = 0;
   m_mgconn = NULL;
   m_sendall = false;
   m_lasttx = 0;
@@ -626,12 +630,13 @@ void OvmsServerV3::CountClients()
 
 void OvmsServerV3::Connect()
   {
-    if (!m_connection_available)
-      {
-      ESP_LOGE(TAG, "No connection available, waiting for network");
-      m_connretry = 10;
-      return;
-      }
+  if (!m_connection_available)
+    {
+    ESP_LOGE(TAG, "No connection available, waiting for network");
+    m_connretry = 10;
+    m_connection_counter = 0;
+    return;
+    }
   m_msgid = 1;
   m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
   m_server = MyConfig.GetParamValue("server.v3", "server");
@@ -681,6 +686,7 @@ void OvmsServerV3::Connect()
     {
     SetStatus("Error: Parameter server.v3/server must be defined", true, WaitReconnect);
     m_connretry = 20; // Try again in 20 seconds...
+    m_connection_counter = 0;
     return;
     }
 
@@ -706,6 +712,7 @@ void OvmsServerV3::Connect()
     {
     ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);
     m_connretry = 20; // Try again in 20 seconds...
+    m_connection_counter = 0;
     return;
     }
   return;
@@ -862,6 +869,7 @@ void OvmsServerV3::NetReconfigured(std::string event, void* data)
   ESP_LOGI(TAG, "Network was reconfigured: disconnect, and reconnect in 10 seconds");
   Disconnect();
   m_connretry = 10;
+  m_connection_counter = 0;
   }
 
 void OvmsServerV3::NetmanInit(std::string event, void* data)
@@ -886,25 +894,33 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
   {
   m_connection_available = StdMetrics.ms_m_net_connected->AsBool() &&
                               StdMetrics.ms_m_net_ip->AsBool() &&
-                              !StdMetrics.ms_m_net_good_sq->AsBool();
-
+                              StdMetrics.ms_m_net_good_sq->AsBool();
   if (!m_connection_available && m_mgconn)
     {
     Disconnect();
     m_connretry = 10;
     }
+  
+  if (!m_connection_available) m_connection_counter = 0;
+  else if (m_connection_counter < 10) 
+    {
+    m_connection_counter++;
+    if (m_connretry == 0 && m_connection_counter == 10)
+      {
+      if (m_mgconn) Disconnect(); // Disconnect first (timeout)
+      Connect();      // Kick off the connection
+      return;
+      }
+    } 
 
   if (m_connretry > 0)
     {
-      if (m_connection_available)
+    m_connretry--;
+    if (m_connretry == 0 && m_connection_counter == 10)
       {
-      m_connretry--;
-      if (m_connretry == 0)
-        {
-        if (m_mgconn) Disconnect(); // Disconnect first (timeout)
-        Connect(); // Kick off the connection
-        return;
-        }
+      if (m_mgconn) Disconnect(); // Disconnect first (timeout)
+      Connect(); // Kick off the connection
+      return;
       }
     }
 

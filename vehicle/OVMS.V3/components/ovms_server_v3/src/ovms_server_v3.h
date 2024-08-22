@@ -95,6 +95,7 @@ class OvmsServerV3 : public OvmsServer
     struct mg_connection *m_mgconn;
     OvmsMutex m_mgconn_mutex;
     int m_connretry;
+    int m_connection_counter;
     bool m_sendall;
     int m_msgid;
     int m_lasttx;
