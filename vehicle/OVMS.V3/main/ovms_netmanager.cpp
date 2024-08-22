@@ -661,6 +661,7 @@ void OvmsNetManager::Ticker1(std::string event, void *data)
     {
     if (m_connected_any && !m_has_ip && StdMetrics.ms_m_net_good_sq->AsBool())
       {
+      ESP_LOGI(TAG, "Connection available with good signal, but no IP address; rebooting in %i seconds", 300-m_not_connected_counter);
       m_not_connected_counter++;
       if (m_not_connected_counter > 300)
         {
@@ -745,7 +746,7 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
   if (!param || param->GetName() == "network")
     {
     // Network config has been changed, apply:
-    m_cfg_reboot_no_connection = MyConfig.GetParamValueBool("network", "reboot.no.connection", false);
+    m_cfg_reboot_no_connection = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
     m_cfg_wifi_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     m_cfg_wifi_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad",  -89);
     if (m_cfg_wifi_sq_good < m_cfg_wifi_sq_bad)
