@@ -51,11 +51,11 @@ static const char *TAG = "v-smarteq";
 
 static const OvmsPoller::poll_pid_t obdii_polls[] =
 {
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, {  0,120,999 }, 0, ISOTP_STD }, // rqIDpart OBL_7KW_Installed
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,120,999 }, 0, ISOTP_STD }, // rqBattTemperatures
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,120,999 }, 0, ISOTP_STD }, // rqBattVoltages_P1
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,120,999 }, 0, ISOTP_STD }, // rqBattVoltages_P2
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,10,999 }, 0, ISOTP_STD }, // extern temp byte 2+3
+ // { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, {  0,120,999 }, 0, ISOTP_STD }, // rqIDpart OBL_7KW_Installed
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,999 }, 0, ISOTP_STD }, // rqBattTemperatures
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,999 }, 0, ISOTP_STD }, // rqBattVoltages_P1
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,999 }, 0, ISOTP_STD }, // rqBattVoltages_P2
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,60,999 }, 0, ISOTP_STD }, // extern temp byte 2+3
  // { 0x744, 0x764, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x52, {  0,10,999 }, 0, ISOTP_STD }, // ,764,36,45,.1,400,1,°C,2152,6152,ff,IH_InCarTemp
   POLL_LIST_END
 };
