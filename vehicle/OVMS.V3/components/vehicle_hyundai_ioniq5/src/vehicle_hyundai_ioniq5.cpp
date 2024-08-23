@@ -287,11 +287,8 @@ OvmsBatteryState OvmsBatteryMon::state()
 
 OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &diff_last)
 {
-  XARM("OvmsBatteryMon::calc_state");
-  if (m_long_avg.isEmpty()) {
-    XDISARM;
+  if (m_long_avg.isEmpty())
     return OvmsBatteryState::Unknown;
-  }
 
   int32_t average_long, average_short;
   average_long = m_long_avg.get();
@@ -299,13 +296,10 @@ OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &diff_last)
   int32_t diff = (average_short - average_long);
   diff_last = diff;
 
-  if (average_short < low_threshold) {
-    XDISARM;
+  if (average_short < low_threshold)
     return OvmsBatteryState::Low;
-  }
 
   if (average_short > charge_threshold) {
-    XDISARM;
     if (diff < chdip_threshold)
       return OvmsBatteryState::ChargingDip;
     if (diff > chblip_threshold)
@@ -313,20 +307,10 @@ OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &diff_last)
     return OvmsBatteryState::Charging;
   }
 
-  if (abs(diff) < smooth_threshold) {
-    XDISARM;
-    return OvmsBatteryState::Normal;
-  }
-
-  if (diff > blip_threshold) {
-    XDISARM;
+  if (diff > blip_threshold)
     return OvmsBatteryState::Blip;
-  }
-  else if (diff < dip_threshold) {
-    XDISARM;
+  if (diff < dip_threshold)
     return OvmsBatteryState::Dip;
-  }
-  XDISARM;
   return OvmsBatteryState::Normal;
 }
 

@@ -109,7 +109,6 @@ private:
   static const int32_t entry_mult       =  1000;
   static const int32_t charge_threshold = 14000; // over 14.0v is 'Charging'
   static const int32_t low_threshold    = 11500; // Under 11.5v is 'Low'
-  static const int32_t smooth_threshold =   200; // < 0.2v variation is 'Normal'
   static const int32_t blip_threshold   =   300; // cur is > 0.3v over average is 'Blip'
   static const int32_t dip_threshold    =  -250; // cur is < 0.25v under average is 'Dip'
   static const int32_t chdip_threshold  =   -90; // cur is < 0.09v under average while charging is 'ChargeDip'
