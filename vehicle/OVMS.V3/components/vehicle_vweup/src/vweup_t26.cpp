@@ -163,7 +163,7 @@ void OvmsVehicleVWeUp::T26Init()
   memset(m_vin, 0, sizeof(m_vin));
 
   RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
-
+  
   MyConfig.RegisterParam("xvu", "VW e-Up", true, true);
   vin_part1 = false;
   vin_part2 = false;
@@ -207,6 +207,8 @@ void OvmsVehicleVWeUp::T26Init()
   wakeup_success = false;
   charge_timeout = false;
   lever = 0x20; // assume position "P" on startup so climatecontrol works
+  lever0_cnt = 0;
+  p_problem = false;
 
   StdMetrics.ms_v_env_locked->SetValue(true);
   StdMetrics.ms_v_env_headlights->SetValue(false);
@@ -336,8 +338,24 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         }
       }
       if (lever != d[3]) {
-        ESP_LOGI(TAG, "Drive mode lever switched to %d", d[3]);
+        ESP_LOGI(TAG, "Drive mode lever switched to 0x%02x", d[3]);
         lever = d[3];
+        if (lever != 0) {
+          lever0_cnt = 0;
+          p_problem = false;
+        }
+      }
+      if (lever == 0) { // detect "P-problem": when 12V battery is detected as defective, lever byte sometimes returns 0 when car is off. Then charge can't start since lever has to be in P position (0x20) for that...
+        if (lever0_cnt < 10) // wait for 10 occurences to suppress ghost triggering
+          lever0_cnt++;
+        else if (lever0_cnt == 10) {
+          lever0_cnt++;
+          if (HasOBD() && StdMetrics.ms_v_door_chargeport->AsBool()) {
+            ESP_LOGE(TAG, "T26: invalid selector lever value, charging impossible! Microswitch possibly defective?");
+            MyNotify.NotifyStringf("alert", "Drive Mode Selector", "Invalid selector lever value, charging impossible! Microswitch possibly defective?");
+          }
+          p_problem = true;
+        }
       }
       break;
 
@@ -925,6 +943,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStartCharge()
       xSemaphoreGive(xChargeSemaphore);
     return Fail;
   }
+  else if (p_problem) {
+    ESP_LOGE(TAG, "T26: invalid selector lever value, can't start charge! Microswitch possibly defective?");
+    MyNotify.NotifyStringf("alert", "Drive Mode Selector", "Invalid selector lever value, can't start charge! Microswitch possibly defective?");
+    p_problem = false;
+    return Fail;
+  }
   fakestop = false; // reset possible workaround charge stop
   xSemaphoreTake(xChargeSemaphore, 0);
   StartStopChargeT26(true);
@@ -956,6 +980,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStopCharge()
   }
   else if (!StdMetrics.ms_v_charge_inprogress->AsBool()) {
     ESP_LOGE(TAG, "Vehicle is not charging!");
+    return Fail;
+  }
+  else if (StdMetrics.ms_v_env_on->AsBool() && !chg_workaround) {
+    ESP_LOGE(TAG, "Vehicle is on, can't stop charge without workaround!");
+    MyNotify.NotifyStringf("alert", "Charge control", "Vehicle is on, can't stop charge without workaround!");
     return Fail;
   }
   xSemaphoreTake(xChargeSemaphore, 0);
