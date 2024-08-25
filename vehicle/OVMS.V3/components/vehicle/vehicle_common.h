@@ -79,6 +79,7 @@
 #define VEHICLE_POLL_TYPE_OBDII_1A        0x1A // Custom: Mode 1A (8 bit PID)
 #define VEHICLE_POLL_TYPE_OBDIIGROUP      0x21 // Custom: Read data by 8 bit PID
 #define VEHICLE_POLL_TYPE_OBDII_32        0x32 // Custom: VW routine control extension (8 bit PID)
+#define VEHICLE_POLL_TYPE_ZOMBIE_VCU_16   0x2A // Custom: ZombieVerterVCU (16 bit PID)
 
 #define VEHICLE_OBD_BROADCAST_MODULE_TX   0x7df
 #define VEHICLE_OBD_BROADCAST_MODULE_RX   0x0

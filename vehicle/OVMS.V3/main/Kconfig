@@ -601,6 +601,14 @@ config OVMS_VEHICLE_BYD_ATTO3
     help
         Enable support for BYD Atto 3
 
+config OVMS_VEHICLE_ZOMBIE_VCU
+    bool "Include support for EVBMW Zombieverter VCU"
+    default y
+    depends on OVMS
+    depends on OVMS_COMP_POLLER
+    help
+        Enable to include support for EVBMW Zombieverter VCU.
+
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for ISOTP Poller RX task"
     default 6144
