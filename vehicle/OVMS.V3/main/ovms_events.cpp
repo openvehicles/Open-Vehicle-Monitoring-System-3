@@ -261,24 +261,24 @@ void OvmsEvents::EventTask()
         case EVENT_signal:
           m_current_event = msg.body.signal.event;
           if (startsWith(m_current_event, "ticker.") && uxQueueSpacesAvailable(m_taskqueue) < CONFIG_OVMS_HW_EVENT_QUEUE_SIZE/5)
-          {
+            {
             ESP_LOGE(TAG, "Droped %s, counter %i", m_current_event.c_str(), detect_event_loop_blockage);
             FreeQueueSignalEvent(&msg);
             detect_event_loop_blockage++;
             if (detect_event_loop_blockage > 30)
-            {
+              {
               ESP_LOGE(TAG, "Timer service / ticker timer has died => aborting");
               MyBoot.Restart();
+              }
             }
-          }
           else
-          {
+            {
             HandleQueueSignalEvent(&msg);
             if (startsWith(m_current_event, "ticker.") && detect_event_loop_blockage > 0)
-            {
+              {
               detect_event_loop_blockage--;
+              }
             }
-          }
           esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
           m_current_event.clear();
           break;
