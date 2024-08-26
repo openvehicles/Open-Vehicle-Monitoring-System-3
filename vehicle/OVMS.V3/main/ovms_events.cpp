@@ -246,7 +246,7 @@ OvmsEvents::~OvmsEvents()
 void OvmsEvents::EventTask()
   {
   event_queue_t msg;
-  detect_event_loop_blockage = 0;
+  int detect_event_loop_blockage = 0;
 
   esp_task_wdt_add(NULL); // WATCHDOG is active for this task
   while(1)
