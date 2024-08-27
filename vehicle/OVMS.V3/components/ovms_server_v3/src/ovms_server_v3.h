@@ -96,6 +96,7 @@ class OvmsServerV3 : public OvmsServer
     OvmsMutex m_mgconn_mutex;
     int m_connretry;
     bool m_sendall;
+    int m_accept_command;
     int m_msgid;
     int m_lasttx;
     int m_lasttx_sendall;
