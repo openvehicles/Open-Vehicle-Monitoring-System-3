@@ -108,11 +108,19 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 	uint8_t *d = p_frame->data.u8;
 
 	switch (p_frame->MsgID) {
-		// Motor temperatures
+		// Inverter temperatures
 		case 0x20: {
 			const pid_20* val = reinterpret_cast<const pid_20*>(d);
 
 			*StandardMetrics.ms_v_inv_temp = val->inverter_temp_C();
+			*StandardMetrics.ms_v_gen_temp = val->gate_temp_C();
+			break;
+		}
+
+		// Motor temperatures
+		case 0x22: {
+			const pid_22* val = reinterpret_cast<const pid_22*>(d);
+
 			*StandardMetrics.ms_v_mot_temp = val->motor_temp_C();
 			break;
 		}
@@ -135,16 +143,18 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 			if (val->charging()) { // Charging. Start charge session if not running
 				if (!charge_session) {
 					last_charge_notif = charge_session.start();
+					StandardMetrics.ms_v_charge_state->SetValue("charging");
 					ESP_LOGI(TAG, "Charge started");
 				}
 			} else { // Not charging. Stop charge session if running
 				if (charge_session) {
 					charge_session.stop();
+					StandardMetrics.ms_v_charge_state->SetValue("stopped");
 					ESP_LOGI(TAG, "Charge stopped");
 				}
 			}
 
-			if (stand_down) { // Logs when bike on stand and blinker pressed
+			if (stand_down) { // Force log when bike on stand and blinker pressed
 				if (!stats_printed && val->blinker_state() == button_state::pushed) {
 					stats_printed = true;
 					if (charge_session) {
@@ -153,6 +163,8 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 						ESP_LOGI(TAG, "Not charging.");
 					}
 				}
+			} else {
+				stats_printed = false;
 			}
 			break;
 		}
@@ -197,7 +209,7 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 			if (charge_session.push(pwr) && charge_session.last_push() - last_charge_notif >= CHARGE_NOTIF_MS) {
 				float kwh = -(float)charge_session.current_kWh(); // Make it >0
 				timestamp duration = charge_session.duration_ms() / 1000;
-				*StandardMetrics.ms_v_charge_current = amps;
+				*StandardMetrics.ms_v_charge_current = -amps; // Make charge current > 0
 				*StandardMetrics.ms_v_charge_voltage = volts;
 				*StandardMetrics.ms_v_charge_power   = pwr / 1000; // kW
 				*StandardMetrics.ms_v_charge_time    = duration;

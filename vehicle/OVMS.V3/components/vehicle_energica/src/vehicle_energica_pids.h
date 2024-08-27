@@ -10,18 +10,31 @@
 class pid_20 { // little-endian
 
 	// IGBT in 0.1° C
-	uint16_t igbt_min;
-	uint16_t igbt;
-	uint16_t igbt_max;
+	int16_t igbt_min;
+	int16_t igbt;
+	int16_t igbt_max;
 
-	uint16_t motor_temp; // 0.1° C
+	int16_t gate_temp; // 0.1° C
 
 public:
 	float inverter_temp_C() const { return igbt * 0.1f; }
-	float motor_temp_C   () const { return motor_temp * 0.1f; }
+	float gate_temp_C    () const { return gate_temp * 0.1f; }
 };
 #pragma pack(pop)
 static_assert(sizeof(pid_20) == 8, "Energica: sizeof pid_20");
+
+#pragma pack(push,1)
+class pid_22 { // little-endian
+	uint16_t _unk0;
+	uint16_t _unk1;
+	int16_t motor_temp; // 0.1° C
+	uint16_t _unk3;
+
+public:
+	float motor_temp_C() const { return motor_temp * 0.1f; }
+};
+#pragma pack(pop)
+static_assert(sizeof(pid_22) == 8, "Energica: sizeof pid_22");
 
 enum button_state { released, pushed, left, right };
 enum beam_state   { off, low, high, both };
