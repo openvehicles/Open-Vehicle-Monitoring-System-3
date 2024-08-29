@@ -49,9 +49,27 @@ public:
 
 protected:
   void Ticker1(uint32_t ticker) override;
+  void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     
 private:
   void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+
+  enum class PollState
+  {
+    OFF,
+    RUNNING,
+    CHARGING
+  };
+
+  void HandleCharging();
+  void HandleChargeStop();
+  void HandleCarOn();
+  void HandleCarOff();
+
+  void SetChargeType();
+  void ResetChargeType();
+
+  PollState GetPollState();
 };
 
 #endif //#ifndef __VEHICLE_ME6_H__

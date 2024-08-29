@@ -38,6 +38,19 @@ static const char *TAG = "v-maxe6";
 #include <algorithm>
 #include "metrics_standard.h"
 
+static const OvmsPoller::poll_pid_t vehicle_maxusEU6_polls[] =
+{
+  {0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xB110, {0, 2, 0}, 1, ISOTP_STD}, // TPMS
+  {0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xB111, {0, 2, 0}, 1, ISOTP_STD}, // TPMS
+  {0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xB112, {0, 2, 0}, 1, ISOTP_STD}, // TPMS
+  {0x700, 0x780, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xB113, {0, 2, 0}, 1, ISOTP_STD}, // TPMS
+
+  {0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE010, {0, 1, 1}, 1, ISOTP_STD}, // Current
+  {0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE004, {0, 1, 1}, 1, ISOTP_STD}, // Voltage
+  {0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE014, {0, 0, 1}, 1, ISOTP_STD}, // SOC
+  POLL_LIST_END
+};
+
 // CAN buffer access macros: b=byte# 0..7 / n=nibble# 0..15
 #define CAN_BYTE(b)     data[b]
 #define CAN_INT(b)      ((int16_t)CAN_UINT(b))
@@ -62,6 +75,9 @@ OvmsVehicleMaxe6::OvmsVehicleMaxe6()
   // Require GPS:
   MyEvents.SignalEvent("vehicle.require.gps", NULL);
   MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
+
+  PollSetThrottling(10);
+  PollSetState(0); // OFF
 }
 
 OvmsVehicleMaxe6::~OvmsVehicleMaxe6()
@@ -154,9 +170,199 @@ void OvmsVehicleMaxe6::IncomingFrameCan1(CAN_frame_t *p_frame)
       break;
   }
 }
+void OvmsVehicleMaxe6::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length)
+{
+	switch (job.moduleid_rec)
+	{
+	// ****** IGMP *****
+	case 0x780:
+		switch (job.pid)
+		{
+		case 0xB110:
+		{
+			if (job.mlframe == 0)
+			{
+				int value = CAN_UINT(0);
+				int preassure = (3.122 * value) - 29.26;
+				StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, preassure, kPa);
+			}
+			break;
+		}
+		case 0xB111:
+		{
+			if (job.mlframe == 0)
+			{
+				int value = CAN_UINT(0);
+				int preassure = (3.122 * value) - 29.26;
+				StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, preassure, kPa);
+			}
+			break;
+		}
+		case 0xB112:
+		{
+			if (job.mlframe == 0)
+			{
+				int value = CAN_UINT(0);
+				int preassure = (3.122 * value) - 29.26;
+				StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, preassure, kPa);
+			}
+			break;
+		}
+		case 0xB113:
+		{
+			if (job.mlframe == 0)
+			{
+				int value = CAN_UINT(0);
+				int preassure = (3.122 * value) - 29.26;
+				StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, preassure, kPa);
+			}
+			break;
+		}
+		}
+		break;
+
+	// ****** BCM ******
+	case 0x7c8:
+		switch (job.pid)
+		{
+		case 0xE010:
+		{
+			if (job.mlframe == 0)
+			{
+				float value = (float)CAN_UINT(0);
+				float amps = (value - 5000) / 10;
+				StdMetrics.ms_v_bat_current->SetValue(amps, Amps);
+			}
+			break;
+		}
+		case 0xE004:
+		{
+			if (job.mlframe == 0)
+			{
+				StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(0) / 10, Volts);
+			}
+			break;
+		}
+		case 0xE014:
+		{
+			if (job.mlframe == 0)
+			{
+				StdMetrics.ms_v_bat_soc->SetValue((float)CAN_UINT(0) / 100, Percentage);
+			}
+			break;
+		}
+		}
+		break;
+
+	default:
+		ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_rec);
+		break;
+	}
+}
 
 void OvmsVehicleMaxe6::Ticker1(uint32_t ticker)
 {
+  /* Set batery power */
+  StdMetrics.ms_v_bat_power->SetValue(
+    StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) *
+      StdMetrics.ms_v_bat_current->AsFloat(1, Amps) / 1000,
+    kW);
+  
+  /* Set charge status */
+  StdMetrics.ms_v_charge_inprogress->SetValue(
+    (StdMetrics.ms_v_pos_speed->AsFloat(0) < 1) &
+    (StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -1));
+  
+  auto vehicle_on = (bool) StdMetrics.ms_v_env_on->AsBool();
+  auto vehicle_charging = (bool) StdMetrics.ms_v_charge_inprogress->AsBool();
+  
+  /* Define next state. */
+  auto to_run = vehicle_on && !vehicle_charging;
+  auto to_charge = vehicle_charging;
+  auto to_off = !vehicle_on && !vehicle_charging;
+
+  /* There may be only one next state. */
+  assert(to_run + to_charge + to_off == 1);
+  
+  /* Run actions depending on state. */
+  auto poll_state = GetPollState();
+  switch (poll_state)
+  {
+    case PollState::OFF:
+      if (to_run)
+        HandleCarOn();
+      else if (to_charge)
+        HandleCharging();
+    case PollState::RUNNING:
+      if (to_off)
+        HandleCarOff();
+      else if (to_charge)
+        HandleCharging();
+    case PollState::CHARGING:
+      if (to_off)
+      {
+        HandleChargeStop();
+        HandleCarOff();
+      }
+      else if (to_run)
+      {
+        HandleChargeStop();
+        HandleCarOn();
+      }
+  }
+}
+
+OvmsVehicleMaxe6::PollState OvmsVehicleMaxe6::GetPollState()
+{
+  switch (m_poll_state)
+  {
+    case 0:
+      return PollState::OFF;
+    case 1:
+      return PollState::RUNNING;
+    case 2:
+      return PollState::CHARGING;
+    default:
+      assert (false);
+      return PollState::OFF;
+  }
+}
+
+void OvmsVehicleMaxe6::HandleCharging()
+{
+  PollSetState(2); // CHARGING
+  ESP_LOGI(TAG, "CAR IS CHARGING | POLLSTATE CHARGING");
+
+  SetChargeType();
+}
+
+void OvmsVehicleMaxe6::HandleChargeStop()
+{  
+  ESP_LOGI(TAG, "CAR CHARGING STOPPED");
+  ResetChargeType();
+}
+
+void OvmsVehicleMaxe6::HandleCarOn()
+{
+  PollSetState(1); // RUNNING
+  ESP_LOGI(TAG, "CAR IS ON | POLLSTATE RUNNING");
+}
+
+void OvmsVehicleMaxe6::HandleCarOff()
+{
+  PollSetState(0); // OFF
+  ESP_LOGI(TAG, "CAR IS OFF | POLLSTATE OFF");
+}
+
+void OvmsVehicleMaxe6::SetChargeType()
+{
+  auto using_css = StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -15;
+  StdMetrics.ms_v_charge_type->SetValue(using_css ? "CCS" : "Type2");
+}
+
+void OvmsVehicleMaxe6::ResetChargeType()
+{
+  StdMetrics.ms_v_charge_type->SetValue("");
 }
 
 class OvmsVehicleMaxe6Init
