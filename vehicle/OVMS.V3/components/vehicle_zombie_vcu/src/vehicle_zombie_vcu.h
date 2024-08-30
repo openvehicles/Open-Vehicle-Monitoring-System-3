@@ -30,10 +30,6 @@
 #define __VEHICLE_ZOMBIE_VCU_H__
 
 #include "vehicle.h"
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-#include "ovms_webserver.h"
-#endif
-
 
 using namespace std;
 

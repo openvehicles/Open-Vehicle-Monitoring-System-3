@@ -98,7 +98,7 @@ void OvmsVehicleZombieVcu::IncomingPollReply(const OvmsPoller::poll_job_t &job, 
     }
     case 0x07DC: //idc
     {
-      int32_t idc = ((int32_t)data[0] << 24) + (  (int32_t)data[1] << 16) + ((int32_t)data[2] << 8) + (int32_t)data[3];
+      int32_t idc = ((int32_t)data[0] << 24) + ((int32_t)data[1] << 16) + ((int32_t)data[2] << 8) + (int32_t)data[3];
       current = idc / 32;
 
       //current in OVMS is discharge positive, charge negative. Flip
