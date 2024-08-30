@@ -429,6 +429,14 @@ config OVMS_VEHICLE_MAXE56
     depends on OVMS_COMP_POLLER
     help
         Enable to include support for Maxus Euniq 5 6-seats vehicle.
+        
+config OVMS_VEHICLE_MAXE6
+    bool "Include support for Maxus Euniq 6 vehicle"
+    default y
+    depends on OVMS
+    depends on OVMS_COMP_POLLER
+    help
+        Enable to include support for Maxus Euniq 6 vehicle.
 
 config OVMS_VEHICLE_KIASOULEV
     bool "Include support for Kia Soul EV vehicles"
