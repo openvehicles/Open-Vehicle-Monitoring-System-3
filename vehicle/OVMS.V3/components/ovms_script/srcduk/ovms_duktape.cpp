@@ -1343,65 +1343,100 @@ bool OvmsDuktape::RegisterDuktapeConsoleCommand(
   {
   ESP_LOGD(TAG,"Duktape: register console command '%s'",name);
 
+  char ch = *name;
+  bool isok =
+    (ch >= 'a' && ch <= 'z') ||
+    (ch >= 'A' && ch <= 'Z');
+  if (!isok)
+    {
+    ESP_LOGE(TAG, "Duktape: Script %s - invalid user command name \"%s\" (must start with an alpha character)",
+        filename, name );
+    return false;
+    }
+
+  bool last_alphanum = false;
+  for ( auto it = name+1; *it; ++it)
+    {
+    char ch = *it;
+    bool isok =
+      (ch >= 'a' && ch <= 'z') ||
+      (ch >= 'A' && ch <= 'Z') ||
+      (ch >= '0' && ch <= '9');
+    last_alphanum = isok;
+    isok = isok || (ch  == '-') || (ch == '_');
+    if (!isok)
+      {
+      ESP_LOGE(TAG, "Duktape: Script %s - invalid user command name \"%s\" (invalid character '%c')",
+          filename, name, ch );
+      return false;
+      }
+    }
+  if (!last_alphanum)
+    {
+    ESP_LOGE(TAG, "Duktape: Script %s - invalid user command name \"%s\" (must end with an alphanumeric character)",
+        filename, name );
+    return false;
+    }
+
   // We need to register the specified console command, to
   // the specified module
 
   bool update = false;
-  OvmsCommand* cmd;
-  if (*parent == 0)
+  OvmsCommand* pcmd = MyCommandApp.FindCommandFullName(parent, true);
+  if (pcmd == NULL)
     {
-    cmd = MyCommandApp.FindCommand(name);
-    if (cmd)
+    ESP_LOGE(TAG,"Duktape: Script %s - failed to register user command \"%s\" on unknown parent \"%s\"",
+        filename, name, parent );
+    return false;
+    }
+  std::string full_parent_name = pcmd->GetFullName();
+  switch (pcmd->GetType())
+    {
+    case OvmsCommandType::System:
       {
-      // Check if it's a js function which we can Update
-      if (m_cmdmap.find(cmd) == m_cmdmap.end() )
-        {
-        ESP_LOGE(TAG,"Duktape: Script %s trying to override known command %s",
-            filename, name);
-        return false;
-        }
-        update = true;
-        cmd->UpdateCommand(title, usage, min, max);
+      ESP_LOGE(TAG,"Duktape: Script %s - failed to register user command \"%s\" against internal command \"%s\"",
+          filename, name, full_parent_name.c_str());
+      return false;
       }
-    else
+    case OvmsCommandType::SystemAllowUserCmd:
+      break;
+    case OvmsCommandType::SystemAllowUsrDir:
       {
-      cmd = MyCommandApp.RegisterCommand(
-        name, title, DukOvmsCommandRegisterRun, usage, min, max);
+      // Shouldn't really happen.
+      ESP_LOGE(TAG,"Duktape: Script %s - failed to register user command \"%s\" must use \"%s usr\"",
+          filename, name, full_parent_name.c_str());
+      return false;
       }
+    case OvmsCommandType::SystemUsrDir:
+    case OvmsCommandType::User:
+      break; // OK
+    }
+
+  OvmsCommand *cmd = pcmd->FindCommand(name);
+  if (cmd)
+    {
+    // Check if it's a js function which we can Update
+    if ( (cmd->GetType() != OvmsCommandType::User) ||
+         (m_cmdmap.find(cmd) == m_cmdmap.end()) )
+      {
+      ESP_LOGE(TAG,"Duktape: Script %s - failed trying to update known command \"%s %s\"",
+          filename, full_parent_name.c_str(), name);
+      return false;
+      }
+      cmd->UpdateCommand(title, usage, min, max);
+      update = true;
     }
   else
     {
-    OvmsCommand* pcmd = MyCommandApp.FindCommandFullName(parent);
-    if (pcmd == NULL)
-      {
-      ESP_LOGE(TAG,"Duktape: Script %s trying to register unknown command %s/%s",
-          filename, parent, name);
-      return false;
-      }
-
-    cmd = MyCommandApp.FindCommand(name);
-    if (cmd)
-      {
-      // Check if it's a js function which we can Update
-      if (m_cmdmap.find(cmd) == m_cmdmap.end() )
-        {
-        ESP_LOGE(TAG,"Duktape: Script %s trying to override known command %s/%s",
-            filename, parent, name);
-        return false;
-        }
-        cmd->UpdateCommand(title, usage, min, max);
-      }
-    else
-      {
-      cmd = pcmd->RegisterCommand(
-        name, title, DukOvmsCommandRegisterRun, usage, min, max);
-      }
+    cmd = pcmd->RegisterCommand(
+      name, title, DukOvmsCommandRegisterRun, usage, min, max, true,
+      nullptr, OvmsCommandType::User);
     }
 
   if (cmd != NULL)
     {
-    ESP_LOGD(TAG,"Duktape: %s %s Console Command JS Function for %s/%s",
-        filename, update ? "Updating" : "Registering new", parent, name);
+    ESP_LOGD(TAG,"Duktape: Script %s - %s Console Command Function for \"%s %s\"",
+        filename, update ? "Updating" : "Registering new", full_parent_name.c_str(), name);
     DuktapeConsoleCommand *dcc = new DuktapeConsoleCommand( cmd, filename);
     dcc->Couple(ctx, obj_idx);
     if (update)
@@ -1417,8 +1452,8 @@ bool OvmsDuktape::RegisterDuktapeConsoleCommand(
     }
   else
     {
-    ESP_LOGE(TAG,"Duktape: Could not register command %s/%s for script %s",
-      parent, name, filename);
+    ESP_LOGE(TAG,"Duktape: Script %s - Unable to register Console command \"%s %s\"",
+      filename, full_parent_name.c_str(), name);
     return false;
     }
   }

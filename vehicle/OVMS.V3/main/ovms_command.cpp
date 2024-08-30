@@ -169,24 +169,27 @@ char ** OvmsCommandMap::GetCompletion(OvmsWriter* writer, const char* token)
   return tokens;
   }
 
-OvmsCommand::OvmsCommand()
+OvmsCommand::OvmsCommand(OvmsCommandType type)
   : m_execute(nullptr),
     m_validate(nullptr),
     m_min(0),
     m_max(0),
     m_secure(true),
-    m_parent(nullptr)
+    m_parent(nullptr),
+    m_type(type)
   {
   }
 
 OvmsCommand::OvmsCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
                          const char *usage, int min, int max, bool secure,
-                         OvmsCommandValidateCallback_t validate)
+                         OvmsCommandValidateCallback_t validate,
+                         OvmsCommandType type)
    : m_name(name), m_title(title),
      m_execute(execute), m_validate(validate),
      m_usage_template(!usage ? "" : usage),
      m_min(min), m_max(max), m_secure(secure),
-     m_parent(nullptr)
+     m_parent(nullptr),
+     m_type(type)
   {
   }
 
@@ -203,6 +206,18 @@ OvmsCommand::~OvmsCommand()
 const char* OvmsCommand::GetName()
   {
   return m_name.c_str();
+  }
+
+std::string OvmsCommand::GetFullName()
+  {
+  if (m_parent == nullptr)
+    return GetName();
+
+  std::string res = m_parent->GetFullName();
+  if (!res.empty())
+    res += " ";
+  res += m_name;
+  return res;
   }
 
 const char* OvmsCommand::GetTitle()
@@ -337,13 +352,14 @@ void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string
 
 OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
                                           const char *usage, int min, int max, bool secure,
-                                          OvmsCommandValidateCallback_t validate)
+                                          OvmsCommandValidateCallback_t validate,
+                                          OvmsCommandType type)
   {
   // Protect against duplicate registrations
   OvmsCommand* cmd = FindCommand(name);
   if (cmd == NULL)
     {
-    cmd = new OvmsCommand(name, title, execute, usage, min, max, secure, validate);
+    cmd = new OvmsCommand(name, title, execute, usage, min, max, secure, validate, type);
     m_children[cmd->m_name] = cmd;
     cmd->m_parent = this;
     }
@@ -804,6 +820,7 @@ static duk_ret_t DukOvmsCommandRegister(duk_context *ctx)
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 OvmsCommandApp::OvmsCommandApp()
+  : m_root(OvmsCommandType::SystemAllowUsrDir)
   {
   ESP_LOGI(TAG, "Initialising COMMAND (1010)");
 
@@ -871,9 +888,10 @@ void OvmsCommandApp::ConfigureLogging()
 
 OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
                                              const char *usage, int min, int max, bool secure,
-                                             OvmsCommandValidateCallback_t validate)
+                                             OvmsCommandValidateCallback_t validate,
+                                             OvmsCommandType type)
   {
-  return m_root.RegisterCommand(name, title, execute, usage, min, max, secure, validate);
+  return m_root.RegisterCommand(name, title, execute, usage, min, max, secure, validate, type);
   }
 
 bool OvmsCommandApp::UnregisterCommand(const char* name)
@@ -887,7 +905,21 @@ OvmsCommand* OvmsCommandApp::FindCommand(const char* name)
   return m_root.FindCommand(name);
   }
 
-OvmsCommand* OvmsCommandApp::FindCommandFullName(const char* name)
+OvmsCommand* OvmsCommandApp::CheckCreateUsr(const char* name, OvmsCommand *command)
+  {
+  bool name_empty = (!name) || (!*name);
+  if (command && command->GetType() == OvmsCommandType::SystemAllowUsrDir)
+    {
+    if ( name_empty|| strcmp(name, "usr") == 0)
+      {
+      return command->RegisterCommand("usr", "User Commands", nullptr, "", 0, 0, true, nullptr,
+          OvmsCommandType::SystemUsrDir);
+      }
+    }
+  return name_empty ? command : nullptr;
+  }
+
+OvmsCommand* OvmsCommandApp::FindCommandFullName(const char* name, bool allow_create_user)
   {
   OvmsCommand* found = &m_root;
   const char* p = name;
@@ -898,17 +930,32 @@ OvmsCommand* OvmsCommandApp::FindCommandFullName(const char* name)
     if (d)
       {
       std::string command(p,0,d-p);
-      found = found->FindCommand(command.c_str());
+      auto curfound = found->FindCommand(command.c_str());
+      if ( !curfound )
+        {
+        if (allow_create_user)
+          return CheckCreateUsr(command.c_str(), found);
+        return nullptr;
+        }
       p = d+1;
+      found = curfound;
       }
     else
       {
-      found = found->FindCommand(p);
-      return found;
+      auto curfound = found->FindCommand(p);
+      if (allow_create_user)
+        {
+        if (curfound)
+          return CheckCreateUsr(nullptr, curfound);
+        else
+          return CheckCreateUsr(p, found);
+        }
+      return curfound;
       }
-    if (found==NULL) return found;
     }
 
+  if (allow_create_user)
+    return CheckCreateUsr(nullptr, found);
   return found;
   }
 

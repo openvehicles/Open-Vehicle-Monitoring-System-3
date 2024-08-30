@@ -50,7 +50,7 @@
 #define SYNC_REQUEST_TIMEOUT 100 //ms. Number of milliseconds to wait for the synchronous PollSingleRequest() calls.
 #define GWM_RETRY_CHECK_STATE_TIMEOUT 5 //seconds. Number of seconds to wait before retry state check.
 #define CAR_UNRESPONSIVE_THRESHOLD 3 //seconds. If reaches this threshold, GWM state will change back to Unknown.
-#define CHARGING_THRESHOLD 12.9 //Volts. If voltage is lower than this, we say 1. 12V battery is not charging and 2. we should sleep OVMS to avoid draining battery too low
+#define CHARGING_THRESHOLD 13.6 //Volts. If voltage is lower than this, we say 1. 12V battery is not charging and 2. we should sleep OVMS to avoid draining battery too low
 #define DEFAULT_BMS_VERSION 1 //Corresponding to the BMSDoDLimits array element
 #define TRANSITION_TIMEOUT 50 //s. Number of seconds after 12V goes below CHARGING_THRESHOLD to stay in current state before going to sleep.
 
@@ -293,6 +293,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void SetBmsStatus(uint8_t status);
     void ProcessBatteryStats(int index, uint8_t* data, uint16_t remain);
     float calculateSoc(uint16_t value);
+    void calculateRange(float soc);
     // A cache of the last byte in the first message of the BMS cell voltage message
     uint8_t m_bmsCache;
     string m_bmsTimeTemp;
@@ -323,6 +324,9 @@ class OvmsVehicleMgEv : public OvmsVehicle
     // mg_poll_evcc.cpp
     void IncomingEvccPoll(uint16_t pid, uint8_t* data, uint8_t length);
 
+    // mg_poll_gwm.cpp
+    void IncomingGwmPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+
     // mg_gwm.cpp
     bool AuthenticateGWM(canbus* currentBus);
     void IncomingGWMAuthFrame(CAN_frame_t* frame, uint8_t serviceId, uint8_t* data);
@@ -349,11 +353,13 @@ class OvmsVehicleMgEv : public OvmsVehicle
   public:
     void WebInit();
     void WebDeInit();
+    void Mg4WebInit();
     void Mg5WebInit();
     void FeaturesWebInit();
     void FeaturesWebDeInit();
     void VersionWebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void MG4WebCfgVersion(PageEntry_t &p, PageContext_t &c);
     static void MG5WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
     static void MG5WebCfgVersion(PageEntry_t &p, PageContext_t &c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);

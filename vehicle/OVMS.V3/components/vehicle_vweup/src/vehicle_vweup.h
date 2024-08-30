@@ -251,7 +251,6 @@ private:
   int m_timermode_ticker;
   bool m_timermode_new;
 
-
   // --------------------------------------------------------------------------
   // Web UI Subsystem
   //  - implementation: vweup_web.(h,cpp)
@@ -356,7 +355,9 @@ public:
   bool wakeup_success;
   bool charge_timeout;
   uint8_t lever;
-
+  uint8_t lever0_cnt;
+  bool p_problem;
+  
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
   TimerHandle_t m_sendOcuHeartbeat;

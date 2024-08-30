@@ -741,11 +741,24 @@ OvmsCommand
         This is reset #0 since last power cycle
         Detected boot reason: PowerOn (1/14)
         Crash counters: 0 total, 0 early
+
 - ``OvmsCommand.Register( function(cmd, argv){}, parent, command, description, param_description, minargs, maxargs)``
-    The OvmsCommand object “Register” registers a function as command on the cli.
+    The OvmsCommand “Register” functions registers a JS function as command on the cli.
     A second call to RegisterCommand with the same will update the details of same command.
-    A blank 'parent' will cause a top-level command to be registered.
-    The function call-back should take 2 parameters:
+
+    For security reasons commands can only be added as sub-commands to select top-level commands.
+    The 'usr' command is the default one, and will be auto-created as needed with the first registered command.
+
+    Currently supported is
+
+    =============== =============
+    Command         Auto-create
+    =============== =============
+    usr             yes
+    xhiq usr        yes
+    =============== =============
+
+    The function call-back should take 2 parameters and will pass:
     - the command being called (with '/' separating paths eg: "command/subcommand").
     - an array of the arguments to the command.
     example::
@@ -759,7 +772,7 @@ OvmsCommand
             print("Script: "+argv[s]+"\n")
         }
       }
-      OvmsCommand.Register(mycommand, "", "sample", "Sample Command", "{[string]}", 0, 4)
+      OvmsCommand.Register(mycommand, "usr", "sample", "Sample Command", "{[string]}", 0, 4)
 
 OvmsConfig
 ^^^^^^^^^^
@@ -789,13 +802,13 @@ for plugins. You can add new config instances simply by setting them, for exampl
 Read plugin configuration example:
 
 .. code-block:: javascript
-  
+
   // Set default configuration:
   var cfg = { level: 100, enabled: "no" };
-  
+
   // Read user configuration:
   Object.assign(cfg, OvmsConfig.GetValues("usr", "myplugin."));
-  
+
   if (cfg["enabled"] == "yes") {
     print("I'm enabled at level " + Number(cfg["level"]));
   }

@@ -116,6 +116,7 @@ class OvmsNetManager
     void WifiApStaDisconnect(std::string event, void* data);
 #endif // CONFIG_OVMS_COMP_WIFI
 
+    void Ticker1(std::string event, void *data);
     void ModemUp(std::string event, void* data);
     void ModemDown(std::string event, void* data);
     void InterfaceUp(std::string event, void* data);
@@ -137,9 +138,11 @@ class OvmsNetManager
     void SetDNSServer(ip_addr_t* dnsstore);
 
   public:
+    int m_not_connected_counter;
     bool m_connected_wifi;
     bool m_connected_modem;
     bool m_connected_any;
+    bool m_has_ip;
     bool m_wifi_sta;
     bool m_wifi_good;
     bool m_wifi_ap;
@@ -150,6 +153,7 @@ class OvmsNetManager
     char m_previous_name[2];
 
   protected:
+    bool m_cfg_reboot_no_connection;
     float m_cfg_wifi_sq_good;               // config network wifi.sq.good   [dBm] default -87
     float m_cfg_wifi_sq_bad;                // config network wifi.sq.bad    [dBm] default -89
 

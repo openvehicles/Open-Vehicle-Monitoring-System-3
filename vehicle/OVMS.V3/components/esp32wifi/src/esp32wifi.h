@@ -87,6 +87,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void StartDhcpClient();
     void SetSTAWifiIP(std::string ip="", std::string sn="", std::string gw="");
     void SetAPWifiBW();
+    bool WifiHasIp();
 
   public:
     void EventWifiStaState(std::string event, void* data);
@@ -100,6 +101,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void EventWifiScanDone(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
     void OutputStatus(int verbosity, OvmsWriter* writer);
+    void ConfigChanged(std::string event, void *data);
 
   protected:
     bool m_poweredup;
@@ -132,6 +134,9 @@ class esp32wifi : public pcp, public InternalRamAllocated
     uint32_t m_sta_reconnect;
     wifi_ap_record_t m_sta_ap_info;
     int m_sta_rssi;                               // smoothed RSSI [dBm/10]
+    float m_good_dbm;
+    float m_bad_dbm;
+    bool m_good_signal;
   };
 
 #endif //#ifndef __ESP32WIFI_H__

@@ -56,6 +56,7 @@ OvmsVehicle::vehicle_command_t OvmsHyundaiIoniqEv::CommandWakeup()
   return Success;
 }
 
+#ifdef XIQ_CAN_WRITE
 /**
  * Command to enable IGN1
  */
@@ -134,6 +135,7 @@ void xiq_set_auto_door_lock(int verbosity, OvmsWriter *writer, OvmsCommand *cmd,
   //OvmsHyundaiIoniqEv* car = (OvmsHyundaiIoniqEv*) MyVehicleFactory.ActiveVehicle();
   //car->SetAutoDoorLock(strtol(argv[0],NULL,10));
 }
+#endif
 
 /**
  * Print out the aux battery voltage.
