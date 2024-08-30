@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          3rd September 2020
+;    Date:          14th March 2017
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -8,7 +8,6 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
-;    (C) 2020       Chris Staite
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,39 +28,21 @@
 ; THE SOFTWARE.
 */
 
-#include "vehicle_mgev.h"
+#ifndef __VEHICLE_ZOMBIE_VCU_H__
+#define __VEHICLE_ZOMBIE_VCU_H__
 
-namespace {
+#include "vehicle.h"
 
-// The bitmasks for the doors being open on the BCM Door PID
-enum DoorMasks : unsigned char {
-    Driver = 1,
-    Passenger = 2,
-    RearLeft = 4,
-    RearRight = 8,
-    Bonnet = 16,
-    Boot = 32,
-    Unlocked = 128
-};
+using namespace std;
 
-}  // anon namespace
+class OvmsVehicleZombieVcu : public OvmsVehicle
+  {
+  public:
+    OvmsVehicleZombieVcu();
+    ~OvmsVehicleZombieVcu();
+  protected:
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 
-void OvmsVehicleMgEv::IncomingBcmPoll(uint16_t pid, uint8_t* data, uint8_t length)
-{
-    switch (pid)
-    {
-        case bcmDoorPid:
-            StandardMetrics.ms_v_door_fl->SetValue(data[0] & Passenger);
-            StandardMetrics.ms_v_door_fr->SetValue(data[0] & Driver);
-            StandardMetrics.ms_v_door_rl->SetValue(data[0] & RearLeft);
-            StandardMetrics.ms_v_door_rr->SetValue(data[0] & RearRight);
-            StandardMetrics.ms_v_door_hood->SetValue(data[0] & Bonnet);
-            StandardMetrics.ms_v_door_trunk->SetValue(data[0] & Boot);
-            StandardMetrics.ms_v_env_locked->SetValue(!(data[0] & Unlocked));
-            StandardMetrics.ms_v_door_chargeport->SetValue(data[3] & 0x80u);
-            break;
-        case bcmDrlPid:
-            StandardMetrics.ms_v_env_headlights->SetValue(data[0] & 0x80u);
-            break;
-    }    
-}
+  };
+
+#endif //#ifndef __VEHICLE_ZOMBIE_VCU_H__

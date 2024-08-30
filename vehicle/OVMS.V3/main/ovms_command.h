@@ -235,6 +235,13 @@ class OvmsCommandMap : public std::map<std::string, OvmsCommand*, CompareCharPtr
     OvmsCommand* FindCommand(const char* key);
     char** GetCompletion(OvmsWriter* writer, const char* token);
   };
+enum class OvmsCommandType : short {
+  System,
+  SystemAllowUserCmd,
+  SystemAllowUsrDir,
+  SystemUsrDir,
+  User
+};
 
 typedef std::function<void(int, OvmsWriter*, OvmsCommand*, int, const char* const*)> OvmsCommandExecuteCallback_t;
 typedef std::function<int(OvmsWriter*, OvmsCommand*, int, const char* const*, bool)> OvmsCommandValidateCallback_t;
@@ -246,22 +253,29 @@ typedef std::function<int(OvmsWriter*, OvmsCommand*, int, const char* const*, bo
 class OvmsCommand : public ExternalRamAllocated
   {
   public:
-    OvmsCommand();
+    OvmsCommand(OvmsCommandType type = OvmsCommandType::System);
     OvmsCommand(const char* name, const char* title,
                 OvmsCommandExecuteCallback_t execute,
                 const char *usage, int min, int max, bool secure,
-                OvmsCommandValidateCallback_t validate);
+                OvmsCommandValidateCallback_t validate,
+                OvmsCommandType type);
     virtual ~OvmsCommand();
 
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title,
                                  OvmsCommandExecuteCallback_t execute = NULL,
                                  const char *usage = "", int min = 0, int max = 0, bool secure = true,
-                                 OvmsCommandValidateCallback_t validate = NULL);
+                                 OvmsCommandValidateCallback_t validate = NULL,
+                                 OvmsCommandType type = OvmsCommandType::System);
     bool UnregisterCommand(const char* name = NULL);
     const char* GetName();
     const char* GetTitle();
     const char* GetUsage(OvmsWriter* writer);
+
+    std::string GetFullName();
+    OvmsCommandType GetType()
+    { return m_type; }
+
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv, int &common_len, bool &finished);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
     OvmsCommand* GetParent();
@@ -275,7 +289,6 @@ class OvmsCommand : public ExternalRamAllocated
 
   private:
     void ExpandUsage(const char* templ, OvmsWriter* writer, std::string& result);
-
   protected:
     std::string m_name;
     std::string m_title;
@@ -287,6 +300,7 @@ class OvmsCommand : public ExternalRamAllocated
     bool m_secure;
     OvmsCommandMap m_children;
     OvmsCommand* m_parent;
+    OvmsCommandType m_type;
   };
 
 
@@ -329,10 +343,12 @@ class OvmsCommandApp : public OvmsWriter
     OvmsCommand* RegisterCommand(const char* name, const char* title,
                                  OvmsCommandExecuteCallback_t execute = NULL,
                                  const char *usage = "", int min = 0, int max = 0, bool secure = true,
-                                 OvmsCommandValidateCallback_t validate = NULL);
+                                 OvmsCommandValidateCallback_t validate = NULL,
+                                 OvmsCommandType type = OvmsCommandType::System);
     bool UnregisterCommand(const char* name);
     OvmsCommand* FindCommand(const char* name);
-    OvmsCommand* FindCommandFullName(const char* name);
+    OvmsCommand* FindCommandFullName(const char* name, bool allow_create_user= false);
+    OvmsCommand* CheckCreateUsr(const char* name, OvmsCommand *command);
     void RegisterConsole(OvmsWriter* writer);
     void DeregisterConsole(OvmsWriter* writer);
     int Log(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
@@ -364,6 +380,7 @@ class OvmsCommandApp : public OvmsWriter
     bool CycleLogfile();
     void ReadConfig();
 
+    OvmsCommand* CheckCreateUsr(OvmsCommand *, bool allow_create_user);
   private:
     int LogBuffer(LogBuffers* lb, const char* fmt, va_list args) __attribute__ ((format (printf, 3, 0)));
 

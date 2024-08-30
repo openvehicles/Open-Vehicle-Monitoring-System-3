@@ -49,6 +49,7 @@ static const char *TAG = "netmanager";
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "ovms_module.h"
+#include "ovms_boot.h"
 #ifdef CONFIG_OVMS_DEV_NETMANAGER_PING
 #include "ping/ping_sock.h"
 #endif // CONFIG_OVMS_DEV_NETMANAGER_PING
@@ -343,6 +344,7 @@ void network_connections(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
 OvmsNetManager::OvmsNetManager()
   {
   ESP_LOGI(TAG, "Initialising NETMANAGER (8999)");
+  m_not_connected_counter = 0;
   m_connected_wifi = false;
   m_connected_modem = false;
   m_connected_any = false;
@@ -399,6 +401,7 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.disconnected", std::bind(&OvmsNetManager::WifiApStaDisconnect, this, _1, _2));
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
+  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsNetManager::Ticker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.gotip", std::bind(&OvmsNetManager::ModemUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.down", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
@@ -652,6 +655,26 @@ void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
 
+void OvmsNetManager::Ticker1(std::string event, void *data)
+  {
+  if (m_cfg_reboot_no_connection)
+    {
+    if (m_connected_any && !m_has_ip && StdMetrics.ms_m_net_good_sq->AsBool())
+      {
+      ESP_LOGI(TAG, "Connection available with good signal, but no IP address; rebooting in %i seconds", 300-m_not_connected_counter);
+      m_not_connected_counter++;
+      if (m_not_connected_counter > 300)
+        {
+        MyBoot.Restart();
+        }
+      }
+    else
+      {
+      m_not_connected_counter = 0;
+      }
+    }
+  }
+
 void OvmsNetManager::ModemUp(std::string event, void* data)
   {
   m_connected_modem = true;
@@ -723,8 +746,9 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
   if (!param || param->GetName() == "network")
     {
     // Network config has been changed, apply:
+    m_cfg_reboot_no_connection = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
     m_cfg_wifi_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
-    m_cfg_wifi_sq_bad  = MyConfig.GetParamValueFloat("network", "wifi.sq.bad",  -89);
+    m_cfg_wifi_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad",  -89);
     if (m_cfg_wifi_sq_good < m_cfg_wifi_sq_bad)
       {
       float x = m_cfg_wifi_sq_good;
@@ -854,6 +878,8 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
   // A convenient place to keep track of connectivity in general
   m_connected_any = m_connected_wifi || m_connected_modem;
   m_network_any = m_connected_wifi || m_connected_modem || m_wifi_ap;
+  StdMetrics.ms_m_net_connected->SetValue(m_connected_any);
+
 
   // Priority order...
   if (m_connected_wifi)
@@ -862,6 +888,7 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
     SetNetType("wifi");
     search = "st";
     dns = m_dns_wifi;
+    m_has_ip = MyPeripherals->m_esp32wifi->WifiHasIp();
     }
   else if (m_connected_modem)
     {
@@ -869,7 +896,11 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
     SetNetType("modem");
     search = "pp";
     dns = m_dns_modem;
+    m_has_ip = MyPeripherals->m_cellular_modem->ModemIsNetMode() &&
+              MyPeripherals->m_cellular_modem->m_mux->IsMuxUp() &&
+              MyPeripherals->m_cellular_modem->m_ppp->m_connected;
     }
+  StdMetrics.ms_m_net_ip->SetValue(m_has_ip);
 
   if (search == NULL)
     {
