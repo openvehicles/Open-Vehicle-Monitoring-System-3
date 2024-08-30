@@ -491,7 +491,9 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   ESP_LOGI(TAG, "Hyundai Ioniq 5 / KIA EV6 " IONIQ5_VERSION " vehicle module");
 
+#ifdef XIQ_CAN_WRITE
   StopTesterPresentMessages();
+#endif
 
   memset( m_vin, 0, sizeof(m_vin));
 
@@ -1238,8 +1240,10 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
     ECUStatusChange(false);
   }
 
+#ifdef XIQ_CAN_WRITE
   // Send tester present
   SendTesterPresentMessages();
+#endif
 
   DoNotify();
   XDISARM;
