@@ -2,7 +2,7 @@
 Energica motorbikes
 ===================
 
-Vehicle Type: **EN**
+Vehicle Type: **NR**
 
 This vehicle aims to support all Energica motorbikes:
 * EsseEsse9 (SS9)

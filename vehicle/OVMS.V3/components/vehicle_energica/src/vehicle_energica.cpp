@@ -95,7 +95,7 @@ OvmsVehicleEnergica::OvmsVehicleEnergica()
 	RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
 	// Custom metrics
-	m_v_cell_balance = MyMetrics.InitFloat("nrjk.v.b.c.balance", SM_STALE_MIN, 0, Volts);
+	m_v_cell_balance = MyMetrics.InitFloat("xnr.v.b.c.balance", SM_STALE_MIN, 0, Volts);
 }
 
 OvmsVehicleEnergica::~OvmsVehicleEnergica()
@@ -289,6 +289,6 @@ class OvmsVehicleEnergicaInit
 	{
 		ESP_LOGI(TAG, "Registering Vehicle: Energica (9000)");
 
-		MyVehicleFactory.RegisterVehicle<OvmsVehicleEnergica>("NRJK", "Energica");
+		MyVehicleFactory.RegisterVehicle<OvmsVehicleEnergica>("NR", "Energica");
 	}
 } MyOvmsVehicleEnergicaInit  __attribute__ ((init_priority (9000)));
