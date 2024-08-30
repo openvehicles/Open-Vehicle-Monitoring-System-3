@@ -692,6 +692,9 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
 
   m_ticker++;
 
+  // Battery Monitor (evey 2 seconds).
+  if (m_aux_enabled && (m_ticker & 1) == 0)
+    Check12vState();
 
   Ticker1(m_ticker);
   if ((m_ticker % 10) == 0)
@@ -779,7 +782,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     // …against the maximum of default and measured reference voltage, so alerts will also
     //  be triggered if the measured ref follows a degrading battery:
     float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
-    float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
+    float vref = std::max(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
     // Check for alert level:
     bool alert_on = StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool();
@@ -918,6 +921,49 @@ void OvmsVehicle::Ticker3600(uint32_t ticker)
   {
   }
 
+void OvmsVehicle::EnableAuxMonitor()
+  {
+  m_aux_enabled = true;
+  }
+
+void OvmsVehicle::EnableAuxMonitor(float low_thresh, float charge_thresh)
+  {
+  m_aux_battery_mon.set_thresholds(low_thresh, charge_thresh);
+  EnableAuxMonitor();
+  }
+
+void OvmsVehicle::Check12vState()
+  {
+  // Update the battery monitor
+  if (StdMetrics.ms_v_bat_12v_voltage->IsDefined())
+    {
+    m_aux_battery_mon.add(StdMetrics.ms_v_bat_12v_voltage->AsFloat());
+    if (m_aux_battery_mon.checkStateChange())
+      {
+      NotifyVehicleAux12vState(m_aux_battery_mon.state(), m_aux_battery_mon);
+      }
+    }
+#ifdef OVMS_DEBUG_BATTERYMON_VERBOSE
+    if (m_ticker % 30)
+      {
+      ESP_LOGV(TAG, "Aux Battery: %s", m_aux_battery_mon.to_string().c_str());
+      }
+#endif
+
+  }
+
+void OvmsVehicle::NotifyVehicleAux12vState(OvmsBatteryState new_state, const OvmsBatteryMon &monitor)
+  {
+  if (new_state != OvmsBatteryState::Unknown)
+    {
+    std::string event("vehicle.aux.12v.");
+    event += OvmsBatteryMon::state_code(new_state);
+    MyEvents.SignalEvent(event, nullptr);
+
+    NotifiedVehicleAux12vStateChanged(new_state, monitor);
+    }
+  }
+
 void OvmsVehicle::NotifyChargeStart()
   {
   StringWriter buf(200);
@@ -992,7 +1038,7 @@ void OvmsVehicle::Notify12vCritical()
   {
   float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
   float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
-  float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
+  float vref = std::max(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
   MyNotify.NotifyStringf("alert", "batt.12v.alert", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
   }
@@ -1001,7 +1047,7 @@ void OvmsVehicle::Notify12vRecovered()
   {
   float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
   float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
-  float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
+  float vref = std::max(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
   MyNotify.NotifyStringf("alert", "batt.12v.recovered", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
   }
@@ -2710,3 +2756,149 @@ void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
   cfg.gaugeset1 = str.str();
   }
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
+
+OvmsBatteryMon::OvmsBatteryMon()
+  :
+  m_dirty(false),
+  m_to_notify(false),
+  m_lastState(OvmsBatteryState::Unknown),
+  m_diff_last(0),
+  m_low_threshold(def_low_threshold),
+  m_charge_threshold(def_charge_threshold)
+  {
+  }
+
+void OvmsBatteryMon::add(float voltage)
+  {
+  long newVoltage = lroundf(voltage * entry_mult);
+  int32_t iVoltage = static_cast<int32_t>(newVoltage);
+
+  m_short_avg.add(iVoltage);
+  m_long_avg.add(iVoltage);
+#ifdef OVMS_DEBUG_BATTERYMON
+  ESP_LOGD(OvmsHyundaiIoniqEv::TAG,
+      "Aux Battery %d short=%d long=%d", iVoltage,
+      m_short_avg.get(), m_long_avg.get());
+#endif
+  m_dirty = true;
+  }
+
+bool OvmsBatteryMon::checkStateChange()
+  {
+  bool res = false;
+  if (m_dirty)
+    {
+    // Causes calculation and clearing dirty.
+    state();
+    }
+
+  if (m_to_notify)
+    {
+    m_to_notify = false;
+    res = true;
+    }
+  return res;
+  }
+
+OvmsBatteryState OvmsBatteryMon::state() const
+  {
+  if (m_dirty)
+    {
+    auto newState = calc_state(m_diff_last);
+    m_dirty = false;
+    if (newState != m_lastState)
+      {
+      m_to_notify = true;
+      m_lastState = newState;
+      }
+    }
+  return m_lastState;
+  }
+
+OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &diff_last) const
+  {
+  if (m_long_avg.isEmpty())
+    return OvmsBatteryState::Unknown;
+
+  int32_t average_long, average_short;
+  average_long = m_long_avg.get();
+  average_short = m_short_avg.get();
+  int32_t diff = (average_short - average_long);
+  diff_last = diff;
+
+  if (average_short < m_low_threshold)
+    return OvmsBatteryState::Low;
+
+  if (average_short > m_charge_threshold)
+    {
+    if (diff < chdip_threshold)
+      return OvmsBatteryState::ChargingDip;
+    if (diff > chblip_threshold)
+      return OvmsBatteryState::ChargingBlip;
+    return OvmsBatteryState::Charging;
+    }
+
+  if (diff > blip_threshold)
+    return OvmsBatteryState::Blip;
+  else if (diff < dip_threshold)
+    return OvmsBatteryState::Dip;
+
+  return OvmsBatteryState::Normal;
+  }
+
+float OvmsBatteryMon::average_lastf() const
+  {
+  return m_short_avg.get() / entry_mult;
+  }
+
+float OvmsBatteryMon::diff_lastf() const
+  {
+  return m_diff_last / entry_mult;
+  }
+
+const uint8_t OvmsBatteryMon::long_count;
+const uint8_t OvmsBatteryMon::short_count;
+
+std::string OvmsBatteryMon::to_string() const
+  {
+  std::stringstream ret;
+
+  // Update state.
+  auto cur_state = state();
+
+  int32_t average_long, average_short;
+  if (!m_long_avg.isEmpty())
+    {
+    average_long = m_long_avg.get();
+    average_short = m_short_avg.get();
+    float avg_long = (float(average_long) / entry_mult);
+    float avg_short = (float(average_short) / entry_mult);
+    ret.setf( std::ios::fixed, std::ios::floatfield);
+    ret.precision(2);
+    ret.width(0);
+    ret << " " << int(long_count) << "s avg=" << avg_long << "v" << endl
+        << " " << int(short_count) << "s avg=" << avg_short << "v"  << endl
+        << " diff=" << float(avg_short - avg_long) << "v" << endl;
+    }
+  ret.width(0);
+
+  ret << " state=" << state_code(cur_state) << endl;
+
+  return ret.str();
+  }
+
+const char *OvmsBatteryMon::state_code(OvmsBatteryState state)
+  {
+  switch (state)
+    {
+    case OvmsBatteryState::Unknown:      return "unknown";
+    case OvmsBatteryState::Normal:       return "normal";
+    case OvmsBatteryState::Charging:     return "charging";
+    case OvmsBatteryState::ChargingDip:  return "charging.dip";
+    case OvmsBatteryState::ChargingBlip: return "charging.blip";
+    case OvmsBatteryState::Blip:         return "blip";
+    case OvmsBatteryState::Dip:          return "dip";
+    case OvmsBatteryState::Low:          return "low";
+    }
+  return "unknown";
+  }

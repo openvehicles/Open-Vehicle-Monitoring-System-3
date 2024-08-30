@@ -69,6 +69,9 @@ static const char *TAG = "housekeeping";
 #define AUTO_INIT_INHIBIT_CRASHCOUNT    5
 
 static int tick = 0;
+#ifdef CONFIG_OVMS_COMP_ADC
+static average_util_t<int32_t,4>  aux_avg_v;
+#endif
 
 void HousekeepingUpdate12V()
   {
@@ -79,14 +82,16 @@ void HousekeepingUpdate12V()
   if (MyPeripherals == NULL)
     return;
 
+  // smooth out ADC errors & noise:
+  aux_avg_v.add(MyPeripherals->m_esp32adc->read());
+
   // Allow the user to adjust the ADC conversion factor
   float f = MyConfig.GetParamValueFloat("system.adc","factor12v");
   if (f == 0) f = 195.7;
-  float v = (float)MyPeripherals->m_esp32adc->read() / f;
-  // smooth out ADC errors & noise:
-  if (m1->AsFloat() != 0)
-    v = (m1->AsFloat() * 4 + v) / 5;
-  v = trunc(v*100) / 100;
+
+  float v = (float)aux_avg_v.get() / f;
+  // Round to 2 decimal places
+  v = trunc((v*100)+0.5) / 100;
   if (v < 1.0) v=0;
   m1->SetValue(v);
   if (StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat() == 0)
