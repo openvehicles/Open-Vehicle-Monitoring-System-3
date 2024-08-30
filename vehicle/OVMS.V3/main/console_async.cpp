@@ -194,6 +194,12 @@ void ConsoleAsync::HandleDeviceEvent(void* pEvent)
       // We can read data out out the buffer, or directly flush the rx buffer.
       uart_flush(EX_UART_NUM);
       break;
+    case UART_FRAME_ERR:
+      ESP_LOGE(TAG, "uart event type: Frame Err");
+      break;
+    case UART_PARITY_ERR:
+      ESP_LOGE(TAG, "uart event type: Parity Err");
+      break;
     default:
       ESP_LOGE(TAG, "uart event type: %d", event.type);
       break;
