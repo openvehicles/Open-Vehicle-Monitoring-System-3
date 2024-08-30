@@ -628,7 +628,8 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   MyMetrics.RegisterListener(TAG, MS_V_BAT_PACK_TAVG, std::bind(&OvmsHyundaiIoniqEv::UpdatedAverageTemp, this, _1));
 
   // init commands:
-  cmd_hiq = MyCommandApp.RegisterCommand("xhiq", "Hyundai Ioniq 5 EV/Kia EV6");
+  cmd_hiq = MyCommandApp.RegisterCommand("xhiq", "Hyundai Ioniq 5 EV/Kia EV6", nullptr, "", 0,0, true,
+      nullptr, OvmsCommandType::SystemAllowUsrDir);
   cmd_hiq->RegisterCommand("trip", "Show trip info since last parked", xiq_trip_since_parked);
   cmd_hiq->RegisterCommand("tripch", "Show trip info since last charge", xiq_trip_since_charge);
   cmd_hiq->RegisterCommand("tpms", "Tire pressure monitor", xiq_tpms);
