@@ -1,13 +1,11 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
+;    Date:          23rd August 2023
 ;
 ;    Changes:
 ;    1.0  Initial release
 ;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2024       Jamie Jones
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -42,6 +40,8 @@ class OvmsVehicleZombieVcu : public OvmsVehicle
     ~OvmsVehicleZombieVcu();
   protected:
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
+
+
 
   };
 
