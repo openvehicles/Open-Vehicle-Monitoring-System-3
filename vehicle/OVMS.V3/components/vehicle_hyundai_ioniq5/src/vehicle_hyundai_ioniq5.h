@@ -173,7 +173,7 @@ public:
   static const char *VEHICLE_TYPE;
   const char* VehicleShortName() override;
   const char* VehicleType() override;
-public:
+protected:
   void IncomingFrameCan1(CAN_frame_t *p_frame) override;
   void Ticker1(uint32_t ticker) override;
   void Ticker10(uint32_t ticker) override;
@@ -183,9 +183,7 @@ public:
   void UpdatedAverageTemp(OvmsMetric* metric);
   void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
   void ConfigChanged(OvmsConfigParam *param) override;
-  bool SetFeature(int key, const char *value);
-  const std::string GetFeature(int key);
-  vehicle_command_t CommandHandler(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+#ifdef XIQ_CAN_WRITE
   bool Send_SJB_Command( uint8_t b1, uint8_t b2, uint8_t b3);
   bool Send_IGMP_Command( uint8_t b1, uint8_t b2, uint8_t b3);
   bool Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3);
@@ -205,6 +203,12 @@ public:
   bool SendCommandInSessionMode(uint16_t id, uint8_t count,
     uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
     uint8_t b5, uint8_t b6, uint8_t mode );
+#endif
+
+public:
+  bool SetFeature(int key, const char *value) override;
+  const std::string GetFeature(int key) override;
+  vehicle_command_t CommandHandler(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 
   OvmsVehicle::vehicle_command_t CommandLock(const char *pin) override;
   OvmsVehicle::vehicle_command_t CommandUnlock(const char *pin) override;
@@ -223,11 +227,11 @@ public:
   bool IsLHD();
   metric_unit_t GetConsoleUnits();
 
+protected:
   bool  kn_emergency_message_sent;
 
   int m_checklock_retry, m_checklock_start, m_checklock_notify;
 
-protected:
   void HandleCharging();
   void HandleChargeStop();
   void Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data);
@@ -331,6 +335,7 @@ protected:
     }
   }
 
+#ifdef XIQ_CAN_WRITE
   inline void Set_IGMP_TP_TimeOut(bool on, int16_t seconds)
   {
     if (!on) {
@@ -349,6 +354,7 @@ protected:
       bcm_tester_present_seconds = seconds;
     }
   }
+#endif
   void CheckResetDoorCheck();
 
   int m_ecu_lockout;
@@ -428,8 +434,10 @@ protected:
 
   uint8_t kn_battery_fan_feedback;
 
+#ifdef XIQ_CAN_WRITE
   int16_t igmp_tester_present_seconds;
   int16_t bcm_tester_present_seconds;
+#endif
 
   int16_t hif_keep_awake;
 

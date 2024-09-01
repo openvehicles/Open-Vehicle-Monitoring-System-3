@@ -50,6 +50,9 @@
 
 #define MS_N_TYPE                   "m.net.type"
 #define MS_N_SQ                     "m.net.sq"
+#define MS_N_CONNECTED              "m.net.connected"
+#define MS_N_IP                     "m.net.ip"
+#define MS_N_GOOD_SQ                "m.net.good.sq"
 #define MS_N_PROVIDER               "m.net.provider"
 #define MS_N_MDM_ICCID              "m.net.mdm.iccid"
 #define MS_N_MDM_MODEL              "m.net.mdm.model"
@@ -297,6 +300,9 @@ class MetricsStandard
     OvmsMetricString* ms_m_net_mdm_iccid;                 // ICCID of SIM card in modem
     OvmsMetricString* ms_m_net_mdm_model;                 // Model of modem discovered
     OvmsMetricString* ms_m_net_mdm_mode;                  // Cellular connection mode and status
+    OvmsMetricBool*  ms_m_net_connected;                  // True = connected_any is true
+    OvmsMetricBool*  ms_m_net_ip;                         // True = device has ip available
+    OvmsMetricBool*  ms_m_net_good_sq;                    // True = sq is above the configured threshold for sq usability
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
     OvmsMetricBitset<10,0>* ms_m_egpio_input;             // EGPIO (MAX7317) input port state (ports 0…9)

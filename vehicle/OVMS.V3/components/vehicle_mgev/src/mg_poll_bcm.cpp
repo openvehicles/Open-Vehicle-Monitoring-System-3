@@ -58,6 +58,7 @@ void OvmsVehicleMgEv::IncomingBcmPoll(uint16_t pid, uint8_t* data, uint8_t lengt
             StandardMetrics.ms_v_door_hood->SetValue(data[0] & Bonnet);
             StandardMetrics.ms_v_door_trunk->SetValue(data[0] & Boot);
             StandardMetrics.ms_v_env_locked->SetValue(!(data[0] & Unlocked));
+            StandardMetrics.ms_v_door_chargeport->SetValue(data[3] & 0x80u);
             break;
         case bcmDrlPid:
             StandardMetrics.ms_v_env_headlights->SetValue(data[0] & 0x80u);

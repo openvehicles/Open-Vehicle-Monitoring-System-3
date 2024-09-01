@@ -491,7 +491,9 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   ESP_LOGI(TAG, "Hyundai Ioniq 5 / KIA EV6 " IONIQ5_VERSION " vehicle module");
 
+#ifdef XIQ_CAN_WRITE
   StopTesterPresentMessages();
+#endif
 
   memset( m_vin, 0, sizeof(m_vin));
 
@@ -628,7 +630,8 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   MyMetrics.RegisterListener(TAG, MS_V_BAT_PACK_TAVG, std::bind(&OvmsHyundaiIoniqEv::UpdatedAverageTemp, this, _1));
 
   // init commands:
-  cmd_hiq = MyCommandApp.RegisterCommand("xhiq", "Hyundai Ioniq 5 EV/Kia EV6");
+  cmd_hiq = MyCommandApp.RegisterCommand("xhiq", "Hyundai Ioniq 5 EV/Kia EV6", nullptr, "", 0,0, true,
+      nullptr, OvmsCommandType::SystemAllowUsrDir);
   cmd_hiq->RegisterCommand("trip", "Show trip info since last parked", xiq_trip_since_parked);
   cmd_hiq->RegisterCommand("tripch", "Show trip info since last charge", xiq_trip_since_charge);
   cmd_hiq->RegisterCommand("tpms", "Tire pressure monitor", xiq_tpms);
@@ -1237,8 +1240,10 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
     ECUStatusChange(false);
   }
 
+#ifdef XIQ_CAN_WRITE
   // Send tester present
   SendTesterPresentMessages();
+#endif
 
   DoNotify();
   XDISARM;

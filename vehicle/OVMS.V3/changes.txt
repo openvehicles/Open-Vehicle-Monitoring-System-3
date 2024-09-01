@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- MG:
+  Add new vehicle MG4
+  Supports Short, Medium and Long Range Variants
 - Implement custom CLI commands with Duktape function OvmsCommand.Register()
 - Support for *,? wildcards in vfs ls and vfs rls commands.
 - Smart EQ 453:
