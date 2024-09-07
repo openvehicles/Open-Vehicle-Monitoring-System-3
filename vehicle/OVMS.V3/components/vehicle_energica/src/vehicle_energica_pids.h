@@ -247,7 +247,7 @@ enum gps_fix : uint8_t {
 
 #pragma pack(push,1)
 class pid_410_gps_longalt : _pid_410 {
-	gps_fix  _fix  : 2;
+	uint8_t  _fix  : 2; // Real type enum gps_fix
 
 	uint16_t _altitude : 15;
 	bool     _alt_neg  : 1;
@@ -260,7 +260,7 @@ class pid_410_gps_longalt : _pid_410 {
 	bool _unk1 : 1;
 
 public:
-	gps_fix fix      () const { return _fix; }
+	gps_fix fix      () const { return static_cast<gps_fix>(_fix); }
 	float   altitude () const { return (_alt_neg ? -_altitude : _altitude); }
 	float   longitude() const {
 		float lon = (_long_min_10000 /  600000.0f) + (_long_min / 60.0f) + _long_degree;
