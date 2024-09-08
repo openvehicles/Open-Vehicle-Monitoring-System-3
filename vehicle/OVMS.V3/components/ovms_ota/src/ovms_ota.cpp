@@ -58,6 +58,7 @@ static const char *TAG = "ota";
 #include "ovms_netmanager.h"
 #include "ovms_version.h"
 #include "crypt_md5.h"
+#include "ovms_vfs.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
@@ -780,7 +781,7 @@ OvmsOTA::OvmsOTA()
   cmd_otastatus->RegisterCommand("nocheck","…skip check for available update",ota_status);
 
   OvmsCommand* cmd_otaflash = cmd_ota->RegisterCommand("flash","OTA flash");
-  cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flash_vfs,"<file>",1,1);
+  cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flash_vfs,"<file>",1,1, true, vfs_file_validate);
   cmd_otaflash->RegisterCommand("http","OTA flash http",ota_flash_http,"[<url>]",0,1);
   OvmsCommand* cmd_otaflash_auto = cmd_otaflash->RegisterCommand("auto","Automatic regular OTA flash (over web)",ota_flash_auto);
   cmd_otaflash_auto->RegisterCommand("force","…force update (even if server version older)",ota_flash_auto);
@@ -881,12 +882,13 @@ void OvmsOTA::Ticker600(std::string event, void* data)
 
   time_t rawtime;
   time ( &rawtime );
-  struct tm* tmu = localtime(&rawtime);
+  struct tm tmu;
+  localtime_r(&rawtime, &tmu);
 
-  if ((tmu->tm_hour == MyConfig.GetParamValueInt("ota","auto.hour",2)) &&
-      (tmu->tm_mday != m_lastcheckday))
+  if ((tmu.tm_hour == MyConfig.GetParamValueInt("ota","auto.hour",2)) &&
+      (tmu.tm_mday != m_lastcheckday))
     {
-    m_lastcheckday = tmu->tm_mday;  // So we only try once a day (unless cleared due to a temporary fault)
+    m_lastcheckday = tmu.tm_mday;  // So we only try once a day (unless cleared due to a temporary fault)
     LaunchAutoFlash(OTA_FlashCfg_Default);
     }
   }

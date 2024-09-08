@@ -41,6 +41,7 @@ static const char *TAG = "obd2ecu";
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
 
+using namespace std::placeholders;
 
 obd2pid::obd2pid(int pid, pid_t type, OvmsMetric* metric)
   {
@@ -172,7 +173,7 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
 
   xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, CORE(1));
 
-  MyCan.RegisterListener(m_rxqueue);
+  MyCan.RegisterCallback(GetName(), std::bind(&obd2ecu::ECURxCallback, this, _1, _2));
   NotifyStartup();
   }
 
@@ -180,12 +181,24 @@ obd2ecu::~obd2ecu()
   {
   NotifyShutdown();
   m_can->SetPowerMode(Off);
-  MyCan.DeregisterListener(m_rxqueue);
 
-  vQueueDelete(m_rxqueue);
   vTaskDelete(m_task);
+  m_task = nullptr;
+  auto rxqueue = m_rxqueue;
+  m_rxqueue = nullptr;
+  vQueueDelete(rxqueue);
+
+  MyCan.DeregisterCallback(GetName());
 
   ClearMap();
+  }
+
+void obd2ecu::ECURxCallback(const CAN_frame_t* frame, bool success)
+  {
+  if ( (frame->origin == m_can) && (m_rxqueue != nullptr))
+    {
+    xQueueSend(m_rxqueue,frame,0);
+    }
   }
 
 void obd2ecu::NotifyStartup()
@@ -583,9 +596,13 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
 
           // Test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)
           if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script)
-          { metric = metric+jitter;
-            if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0) metric = 500+jitter;
-          }
+            {
+            if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0)
+              metric = 500;
+            else if (metric < 0)
+              metric = -metric;
+            metric += jitter;
+            }
 
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);

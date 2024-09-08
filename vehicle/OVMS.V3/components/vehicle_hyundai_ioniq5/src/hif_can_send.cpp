@@ -28,6 +28,7 @@
 #include "kia_common.h"
 // #define QUIET_WHILE_SENDING
 
+#ifdef XIQ_CAN_WRITE
 /**
  * Send a can message and wait for the response before continuing.
  * Time out after approx 0.5 second.
@@ -155,7 +156,7 @@ void OvmsHyundaiIoniqEv::SetHeadLightDelay(bool on)
  * 3 = 7 blink
  *
  */
-void OvmsHyundaiIoniqEv:: SetOneThouchTurnSignal(uint8_t value)
+void OvmsHyundaiIoniqEv::SetOneThouchTurnSignal(uint8_t value)
 {
   //  if(kia_enable_write)
   //    SendCanMessageTriple(0x014, (value+1)<<5 ,0,0,0,0,0,0,0);
@@ -168,7 +169,7 @@ void OvmsHyundaiIoniqEv:: SetOneThouchTurnSignal(uint8_t value)
  * 3 = On shift to P
  * 4 = Driver door unlock
  */
-void OvmsHyundaiIoniqEv:: SetAutoDoorUnlock(uint8_t value)
+void OvmsHyundaiIoniqEv::SetAutoDoorUnlock(uint8_t value)
 {
   //  if(kia_enable_write)
   //    SendCanMessageTriple(0x014, 0,value,0,0,0,0,0,0);
@@ -318,3 +319,4 @@ bool OvmsHyundaiIoniqEv::Send_EBP_Command( uint8_t b1, uint8_t b2, uint8_t mode)
   XDISARM;
   return res;
 }
+#endif

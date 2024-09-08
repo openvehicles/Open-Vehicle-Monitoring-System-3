@@ -760,3 +760,11 @@ void format_file_size(char* buffer, std::size_t buf_size, std::size_t fsize) {
     snprintf(buffer, buf_size, "%.1fG", (double) fsize / 1073741824);
   }
 }
+
+timer_util_t::~timer_util_t()
+  {
+  if (m_cb)
+    {
+    m_cb(m_start, getTime());
+    }
+  }

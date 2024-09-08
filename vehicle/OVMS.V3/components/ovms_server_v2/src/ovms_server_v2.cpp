@@ -207,13 +207,21 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         if (MyOvmsServerV2->m_state == OvmsServerV2::Authenticating)
           {
+          // Auth issue, user needs to fix config:
           MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", true, OvmsServerV2::WaitReconnect);
           MyOvmsServerV2->Reconnect(120);
           }
+        else if (MyOvmsServerV2->m_state == OvmsServerV2::Connecting ||
+                 MyOvmsServerV2->m_state == OvmsServerV2::Connected)
+          {
+          // Unscheduled connection drop:
+          MyOvmsServerV2->SetStatus("Connection lost, reconnecting", true, OvmsServerV2::WaitReconnect);
+          MyOvmsServerV2->Reconnect(10);
+          }
         else
           {
-          MyOvmsServerV2->SetStatus("Disconnected", false, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->Reconnect(60);
+          // Scheduled disconnect:
+          MyOvmsServerV2->SetStatus("Disconnected", false, OvmsServerV2::Disconnected);
           }
         }
       break;
@@ -712,7 +720,24 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         }
       break;
     case 49: // Send raw AT command
-      *buffer << "MP-0 c" << command << ",2";
+      if (!sep)
+        *buffer << "MP-0 c" << command << ",1,No command";
+      else
+        {
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+        std::string cellcmd = "cellular cmd ";
+        cellcmd += ++sep;
+        std::string cellres = BufferedShell::ExecuteCommand(cellcmd, true);
+        if (cellres.empty())
+          *buffer << "MP-0 c" << command << ",1,Timeout/no response";
+        else if (cellres.find("ERROR") != std::string::npos)
+          *buffer << "MP-0 c" << command << ",1," << cellres;
+        else
+          *buffer << "MP-0 c" << command << ",0," << cellres;
+#else // #ifdef CONFIG_OVMS_COMP_CELLULAR
+        *buffer << "MP-0 c" << command << ",1,No modem";
+#endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
+        }
       break;
     default:
       *buffer << "MP-0 c" << command << ",2";
@@ -1075,7 +1100,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << StandardMetrics.ms_v_bat_voltage->AsFloat()
     << ","
-    << StandardMetrics.ms_v_bat_soh->AsInt()
+    << StandardMetrics.ms_v_bat_soh->AsFloat()
     << ","
     << StandardMetrics.ms_v_charge_power->AsFloat()
     << ","
@@ -1955,9 +1980,8 @@ void OvmsServerV2::NetDown(std::string event, void* data)
 
 void OvmsServerV2::NetReconfigured(std::string event, void* data)
   {
-  ESP_LOGI(TAG, "Network was reconfigured: disconnect, and reconnect in 10 seconds");
-  SetStatus("Network was reconfigured: disconnect, and reconnect in 10 seconds", false, ConnectWait);
-  Reconnect(10);
+  SetStatus("Network was reconfigured: disconnect and reconnect", false, ConnectWait);
+  Reconnect(3);
   }
 
 void OvmsServerV2::NetmanInit(std::string event, void* data)
@@ -2162,6 +2186,7 @@ OvmsServerV2::~OvmsServerV2()
   MyMetrics.DeregisterListener(TAG);
   MyEvents.DeregisterEvent(TAG);
   MyNotify.ClearReader(MyOvmsServerV2Reader);
+  SetStatus("Stopped", false, Disconnected);
   Disconnect();
   if (m_buffer)
     {

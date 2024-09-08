@@ -95,10 +95,10 @@ class OvmsServerV3 : public OvmsServer
     struct mg_connection *m_mgconn;
     OvmsMutex m_mgconn_mutex;
     int m_connretry;
+    int m_connection_counter;
     bool m_sendall;
     int m_msgid;
     int m_lasttx;
-    int m_lasttx_stream;
     int m_lasttx_sendall;
     int m_peers;
     int m_streaming;
@@ -109,6 +109,7 @@ class OvmsServerV3 : public OvmsServer
     int m_updatetime_charging;
     int m_updatetime_sendall;
 
+    bool m_connection_available;
     bool m_notify_info_pending;
     bool m_notify_error_pending;
     bool m_notify_alert_pending;

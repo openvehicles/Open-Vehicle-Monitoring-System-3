@@ -5,6 +5,7 @@ MG EV
 1. **MG ZS EV (2019-2021)**
 2. **MG ZS EV (2022-)**
 3. **MG5 EV Long Range (2020-2023)**
+4. **MG4 (2023-)**
 
 
 - Vehicle Type: **MG**
@@ -54,20 +55,27 @@ You can follow these steps to see which variant may be suitable for your car:
 MG ZS EV (2022-) Variants
 -------------------------
 
-Currently only the Long Range (72.6kWh) variant is supported as testers only seem to have this model.
-The Short Range (51.1kWh) variant can easily be supported if BMS scans can be done.
+Currently only the Short Range (51.1kWh) variant is supported as testers only seem to have this model.
+The Long Range (72.6kWh) variant can easily be supported if BMS scans can be done.
 
 ------------------------
 MG5 (2020-2023) Variants
 ------------------------
 
-Currently only the Long Range (57kWh) variant is supported.
+Both Short Range (49kWh) and Long Range (57kWh) MG5 Variants are supported and can be selected in the web UI. The Version configuration page can be found in the vehicle menu.
 
 The web UI features a configuration page for Manual Polling in the vehicle menu.
-The default setting is for Manual Polling to be on. If this is deselected, the polling will be automatic and will start when the vehicle is in READY or CHARGING and stop automatically when the vehicle is turned off to save the 12V battery. This may cause alarms on the MG5 and if this is a problem please use Manual Polling.
+The default setting is for Manual Polling to be on. If this is deselected, the polling will be automatic and will start when the vehicle is in READY or CHARGING and stop automatically when the vehicle is turned off to save the 12V battery. This may cause alarms on the MG5 when locked and charging. If this is a problem, please use Manual Polling.
 
 **Manual Polling** - As the alarm sometimes goes off when the MG5 is locked and charging, the MG5 variant starts up with the polls turned off. Polls can be turned on with the `xmg polls on` command in the shell or via a message in the app. You can also turn on polls by pressing the boot of the car in the app and pressing wakeup. Polls will only start when the car is in ready or charging. When the car is turned off again or charging is turned off, the polls will stop again. Polls can be manually stopped with the `xmg polls off` command.
 
+------------------------
+MG4 (2023-) Variants
+------------------------
+
+Short Range (51kWh), Medium Range (64kWh) and Long Range (77kWh) are all supported and your version can be selected from MG/Version menu.
+
+**Polling** - As the alarm goes off when the MG4 is locked and charging, this variant starts up with the polls turned off. Polls are automatically enabled when the vehicle is being driven and disabled again when the vehicle is locked. To monitor while charging, the vehicle needs to be left unlocked and a door left ajar (so it does not re-lock). To start polling, the 'xmg polls on' command in the shell or via a message in the app can be used once charging has been started. Polls will automatically be turned off when charging is stopped and it will be safe to lock the car again. If you wish to lock the car after charging is commenced and polls are enabled, the 'xmg polls off' command must be issued.
 
 ----------------
 Support Overview
@@ -121,6 +129,12 @@ MG5 EV
 
 ============================  =
 ``softver``                   Get software version of ECUs
+``polls [on | off]``          Start/ Stop all CAN Bus polling
+============================  =
+
+MG4 EV
+
+============================  =
 ``polls [on | off]``          Start/ Stop all CAN Bus polling
 ============================  =
 

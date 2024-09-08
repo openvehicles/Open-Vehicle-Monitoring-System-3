@@ -112,20 +112,20 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
 
   public:
     static OvmsVehicleNissanLeaf* GetInstance(OvmsWriter* writer=NULL);
-    void ConfigChanged(OvmsConfigParam* param);
+    void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
 
   public:
     bool ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/, uint8_t bus);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    vehicle_command_t CommandHomelink(int button, int durationms=1000);
-    vehicle_command_t CommandClimateControl(bool enable);
-    vehicle_command_t CommandLock(const char* pin);
-    vehicle_command_t CommandUnlock(const char* pin);
-    vehicle_command_t CommandWakeup();
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
+    vehicle_command_t CommandHomelink(int button, int durationms=1000) override;
+    vehicle_command_t CommandClimateControl(bool enable) override;
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
+    vehicle_command_t CommandWakeup() override;
     void RemoteCommandTimer();
     void CcDisableTimer();
     void MITMDisableTimer();
@@ -152,8 +152,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void vehicle_nissanleaf_car_on(bool isOn);
     void vehicle_nissanleaf_charger_status(ChargerStatus status);
     void SendCanMessage(uint16_t id, uint8_t length, uint8_t *data);
-    void Ticker1(uint32_t ticker);
-    void Ticker10(uint32_t ticker);
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
     void HandleEnergy();
     void HandleCharging();
     void HandleChargeEstimation();
@@ -162,8 +162,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     int  calcMinutesRemaining(float target, float charge_power_w);
     void SendCommand(RemoteCommand);
     OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
-    OvmsVehicle::vehicle_command_t CommandStartCharge();
-    OvmsVehicle::vehicle_command_t CommandStopCharge();
+    OvmsVehicle::vehicle_command_t CommandStartCharge() override;
+    OvmsVehicle::vehicle_command_t CommandStopCharge() override;
     virtual int GetNotifyChargeStateDelay(const char* state);
     RemoteCommand nl_remote_command; // command to send, see RemoteCommandTimer()
     uint8_t nl_remote_command_ticker; // number remaining remote command frames to send

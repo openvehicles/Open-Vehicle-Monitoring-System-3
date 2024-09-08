@@ -13,6 +13,9 @@ BUGS and TODO:
 #include <stdio.h>
 #endif
 
+#define true  1
+#define false 0
+
 //#define DBG(...) fprintf(stderr, "\033[33m");fprintf(stderr,__VA_ARGS__);fprintf(stderr,"\033[0m");
 
 char * prompt_default = _PROMPT_DEFAULT;
@@ -389,9 +392,9 @@ void microrl_init (microrl_t * pThis, void (*print) (microrl_t*, const char *), 
 }
 
 //*****************************************************************************
-void microrl_set_complete_callback (microrl_t * pThis, char ** (*get_completion)(microrl_t*, int, const char* const*))
+void microrl_set_complete_callback (microrl_t * pThis, char ** (*get_completion_ext) (microrl_t* pThis, int argc, const char * const * argv, int *complete_common, int *finished ))
 {
-	pThis->get_completion = get_completion;
+	pThis->get_completion = get_completion_ext;
 }
 
 //*****************************************************************************
@@ -562,7 +565,10 @@ static void microrl_get_complite (microrl_t * pThis)
 		return;
 	if (pThis->cmdline[pThis->cursor-1] == '\0')
 		tkn_arr[status++] = "";
-	compl_token = pThis->get_completion (pThis, status, tkn_arr);
+
+	int final = true;
+	int complete_len = -1;
+	compl_token = pThis->get_completion (pThis, status, tkn_arr, &complete_len, &final);
 #ifdef _USE_QUOTING
 	restore (pThis);
 #endif
@@ -600,14 +606,17 @@ static void microrl_get_complite (microrl_t * pThis)
 			*j = '\0';
 			pThis->print (pThis, str);
 			print_prompt (pThis);
-			len = common_len (compl_token);
+			if (complete_len >= 0)
+				len = complete_len;
+			else
+				len = common_len (compl_token);
 			pos = 0;
 		}
 
 		if (len) {
 			microrl_insert_text (pThis, compl_token[0] + strlen(tkn_arr[status-1]),
 			                     len - strlen(tkn_arr[status-1]));
-			if (compl_token[1] == NULL)
+			if (final && compl_token[1] == NULL)
 				microrl_insert_text (pThis, " ", 1);
 		}
 		terminal_print_line (pThis, pos, 0);

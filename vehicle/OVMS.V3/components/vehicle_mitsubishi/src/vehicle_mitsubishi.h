@@ -67,13 +67,13 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     ~OvmsVehicleMitsubishi();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     char m_vin[18];
 
   protected:
-    virtual void Ticker1(uint32_t ticker);
-    void ConfigChanged(OvmsConfigParam* param);
+    void Ticker1(uint32_t ticker) override;
+    void ConfigChanged(OvmsConfigParam* param) override;
 
   protected:
 
@@ -81,7 +81,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     std::string m_rxbuf;
 
   public:
-    virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
+    vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer) override;
 
     OvmsMetricFloat* v_b_power_min  = MyMetrics.InitFloat("xmi.b.power.min", 10, 0, kW);
     OvmsMetricFloat* v_b_power_max  = MyMetrics.InitFloat("xmi.b.power.max", 10, 0, kW);
@@ -119,8 +119,8 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricFloat*  ms_v_trip_park_ac_kwh  = MyMetrics.InitFloat("xmi.e.trip.park.ac.kwh", 10, 0, kWh);
     OvmsMetricFloat*  ms_v_trip_park_soc_start = MyMetrics.InitFloat("xmi.e.trip.park.soc.start", 10, 0, Percentage);
     OvmsMetricFloat*  ms_v_trip_park_soc_stop = MyMetrics.InitFloat("xmi.e.trip.park.soc.stop", 10, 0, Percentage);
-    OvmsMetricInt*    ms_v_trip_park_time_start = MyMetrics.InitInt("xmi.e.trip.park.time.start", 10, 0, Seconds);
-    OvmsMetricInt*    ms_v_trip_park_time_stop = MyMetrics.InitInt("xmi.e.trip.park.time.stop", 10, 0, Seconds);
+    OvmsMetricInt64*  ms_v_trip_park_time_start = MyMetrics.InitInt64("xmi.e.trip.park.time.start", 10, 0, DateLocal);
+    OvmsMetricInt64*  ms_v_trip_park_time_stop = MyMetrics.InitInt64("xmi.e.trip.park.time.stop", 10, 0, DateLocal);
 
     OvmsMetricFloat*  ms_v_pos_trip_charge = MyMetrics.InitFloat("xmi.e.trip.charge", 10, 0, Kilometers);
     OvmsMetricFloat*  ms_v_trip_charge_energy_used = MyMetrics.InitFloat("xmi.e.trip.charge.energy.used", 10, 0, kWh);
@@ -139,7 +139,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
 
     void vehicle_mitsubishi_car_on(bool isOn);
 
-    int mi_start_time_utc;
+    time_t mi_start_time_utc;
 
     //config variables
     bool cfg_heater_old;

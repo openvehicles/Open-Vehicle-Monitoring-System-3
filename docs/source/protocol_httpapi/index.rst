@@ -1,6 +1,6 @@
-=============
-OVMS HTTP API
-=============
+=======================
+OVMS Server V2 HTTP API
+=======================
 
 .. toctree::
    :maxdepth: 2

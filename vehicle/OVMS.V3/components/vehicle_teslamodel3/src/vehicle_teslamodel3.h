@@ -43,14 +43,14 @@ class OvmsVehicleTeslaModel3: public OvmsVehicle
     ~OvmsVehicleTeslaModel3();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan3(CAN_frame_t* p_frame) override;
 
   protected:
-    virtual void Notify12vCritical();
-    virtual void Notify12vRecovered();
-    virtual void NotifyBmsAlerts();
+    void Notify12vCritical() override;
+    void Notify12vRecovered() override;
+    void NotifyBmsAlerts() override;
 
   protected:
     char m_vin[18];

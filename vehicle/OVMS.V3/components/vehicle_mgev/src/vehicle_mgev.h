@@ -50,7 +50,7 @@
 #define SYNC_REQUEST_TIMEOUT 100 //ms. Number of milliseconds to wait for the synchronous PollSingleRequest() calls.
 #define GWM_RETRY_CHECK_STATE_TIMEOUT 5 //seconds. Number of seconds to wait before retry state check.
 #define CAR_UNRESPONSIVE_THRESHOLD 3 //seconds. If reaches this threshold, GWM state will change back to Unknown.
-#define CHARGING_THRESHOLD 12.9 //Volts. If voltage is lower than this, we say 1. 12V battery is not charging and 2. we should sleep OVMS to avoid draining battery too low
+#define CHARGING_THRESHOLD 13.6 //Volts. If voltage is lower than this, we say 1. 12V battery is not charging and 2. we should sleep OVMS to avoid draining battery too low
 #define DEFAULT_BMS_VERSION 1 //Corresponding to the BMSDoDLimits array element
 #define TRANSITION_TIMEOUT 50 //s. Number of seconds after 12V goes below CHARGING_THRESHOLD to stay in current state before going to sleep.
 
@@ -122,11 +122,13 @@ class OvmsVehicleMgEv : public OvmsVehicle
     OvmsMetricFloat *m_avg_consumption; // Average consumption
     OvmsMetricFloat *m_batt_capacity; // Battery Capacity
     OvmsMetricFloat *m_max_dc_charge_rate; // Maximum Charge Rate
+    OvmsMetricFloat *m_dod_lower; // Battery DoD lower value used to calculate SOC
+    OvmsMetricFloat *m_dod_upper; // Battery DoD upper value used to calculate SOC
 
   protected:
     void ConfigChanged(OvmsConfigParam* param) override;
 
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 
     void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingFrameCan2(CAN_frame_t* p_frame) override;
@@ -169,10 +171,10 @@ class OvmsVehicleMgEv : public OvmsVehicle
      * @param SpecificPollData Variant specific poll list to add to common list
      * @param DataSize sizeof(SpecificPollData)
      */
-    void ConfigurePollData(const OvmsVehicle::poll_pid_t *SpecificPollData, size_t DataSize);
+    void ConfigurePollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize);
     // Form the poll list for OVMS to use by using only the common list
     void ConfigurePollData();
-    void ConfigureMG5PollData(const OvmsVehicle::poll_pid_t *SpecificPollData, size_t DataSize);
+    void ConfigureMG5PollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize);
 
     // Integer to string without padding
     static string IntToString(int x);
@@ -202,7 +204,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     //  * @param ManualPolls Poll items to manually poll
     //  * @param ManualPollSize sizeof(ManualPolls)
     //  */
-    // void SetupManualPolls(const OvmsVehicle::poll_pid_t *ManualPolls, size_t ManualPollSize);
+    // void SetupManualPolls(const OvmsPoller::poll_pid_t *ManualPolls, size_t ManualPollSize);
     // // Loop through manual poll list and send a request one by one
     // void SendManualPolls(canbus* currentBus, uint32_t ticker);
 
@@ -244,7 +246,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     // The polling structure, this is stored on external RAM which should be no slower
     // than accessing a const data structure as the Flash is stored externally on the
     // same interface and will be cached in the same way
-    OvmsVehicle::poll_pid_t* m_pollData = nullptr;
+    OvmsPoller::poll_pid_t* m_pollData = nullptr;
     // A temporary store for the VIN
     char m_vin[18];
 	  // Store cumulative energy charged
@@ -291,6 +293,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void SetBmsStatus(uint8_t status);
     void ProcessBatteryStats(int index, uint8_t* data, uint16_t remain);
     float calculateSoc(uint16_t value);
+    void calculateRange(float soc);
     // A cache of the last byte in the first message of the BMS cell voltage message
     uint8_t m_bmsCache;
     string m_bmsTimeTemp;
@@ -321,6 +324,9 @@ class OvmsVehicleMgEv : public OvmsVehicle
     // mg_poll_evcc.cpp
     void IncomingEvccPoll(uint16_t pid, uint8_t* data, uint8_t length);
 
+    // mg_poll_gwm.cpp
+    void IncomingGwmPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+
     // mg_gwm.cpp
     bool AuthenticateGWM(canbus* currentBus);
     void IncomingGWMAuthFrame(CAN_frame_t* frame, uint8_t serviceId, uint8_t* data);
@@ -347,11 +353,15 @@ class OvmsVehicleMgEv : public OvmsVehicle
   public:
     void WebInit();
     void WebDeInit();
+    void Mg4WebInit();
     void Mg5WebInit();
     void FeaturesWebInit();
     void FeaturesWebDeInit();
+    void VersionWebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void MG4WebCfgVersion(PageEntry_t &p, PageContext_t &c);
     static void MG5WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
+    static void MG5WebCfgVersion(PageEntry_t &p, PageContext_t &c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     void GetDashboardConfig(DashboardConfig& cfg);
     static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);

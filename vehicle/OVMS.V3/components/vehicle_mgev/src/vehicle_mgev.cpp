@@ -37,7 +37,7 @@ static const char *TAG = "v-mgev";
 
 namespace {
 
-const OvmsVehicle::poll_pid_t common_obdii_polls[] =
+const OvmsPoller::poll_pid_t common_obdii_polls[] =
 {
     /*
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
@@ -106,6 +106,7 @@ const OvmsVehicle::poll_pid_t common_obdii_polls[] =
     { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccVoltagePid, {  0, 5, 0, 0  }, 0, ISOTP_STD },
     { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccAmperagePid, {  0, 5, 0, 0  }, 0, ISOTP_STD },
     { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccMaxAmperagePid, {  0, 30, 0, 0  }, 0, ISOTP_STD },
+    { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccChargingPid, {  0, 1, 1, 0  }, 0, ISOTP_STD },
     { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
 };
 
@@ -185,6 +186,8 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_avg_consumption = MyMetrics.InitFloat("xmg.p.avg.consumption", SM_STALE_MID, 165.0, WattHoursPK);
     m_batt_capacity = MyMetrics.InitFloat("xmg.b.capacity", SM_STALE_MID, 42.5, kWh);
     m_max_dc_charge_rate = MyMetrics.InitFloat("xmg.c.max.dc.charge", SM_STALE_MID, 82.0, kW);
+    m_dod_lower = MyMetrics.InitFloat("xmg.b.dod.lower", SM_STALE_MAX, 940.0);
+    m_dod_upper = MyMetrics.InitFloat("xmg.b.dod.upper", SM_STALE_MAX, 25.0);
 
     DRLFirstFrameSentCallback = std::bind(&OvmsVehicleMgEv::DRLFirstFrameSent, this, std::placeholders::_1, std::placeholders::_2);
     
@@ -257,7 +260,7 @@ int OvmsVehicleMgEv::GetNotifyChargeStateDelay(const char* state)
 }
 
 //Call this function in variant specific code to setup poll data
-void OvmsVehicleMgEv::ConfigurePollData(const OvmsVehicle::poll_pid_t *SpecificPollData, size_t DataSize)
+void OvmsVehicleMgEv::ConfigurePollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize)
 {
     if (m_pollData)
     {
@@ -269,7 +272,7 @@ void OvmsVehicleMgEv::ConfigurePollData(const OvmsVehicle::poll_pid_t *SpecificP
     //Allocate memory for m_pollData which should be enough for both the common_obdii_polls and SpecificPollData
     size_t size = sizeof(common_obdii_polls) + DataSize;
     ESP_LOGI(TAG, "Number of common obdii polls: %u. Number of variant specific polls: %u, total size: %u", sizeof(common_obdii_polls)/sizeof(common_obdii_polls[0]), DataSize/sizeof(SpecificPollData[0]), size/sizeof(common_obdii_polls[0]));
-    m_pollData = reinterpret_cast<OvmsVehicle::poll_pid_t*>(ExternalRamMalloc(size));
+    m_pollData = reinterpret_cast<OvmsPoller::poll_pid_t*>(ExternalRamMalloc(size));
     if (m_pollData == nullptr)
     {
         ESP_LOGE(TAG, "Unable to allocate memory for polling");
@@ -290,7 +293,7 @@ void OvmsVehicleMgEv::ConfigurePollData(const OvmsVehicle::poll_pid_t *SpecificP
 }
 
 //Call this function in variant specific code to setup poll data
-void OvmsVehicleMgEv::ConfigureMG5PollData(const OvmsVehicle::poll_pid_t *SpecificPollData, size_t DataSize)
+void OvmsVehicleMgEv::ConfigureMG5PollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize)
 {
     if (m_pollData)
     {
@@ -302,7 +305,7 @@ void OvmsVehicleMgEv::ConfigureMG5PollData(const OvmsVehicle::poll_pid_t *Specif
     //Allocate memory for m_pollData which should be enough for both the common_obdii_polls and SpecificPollData
     size_t size = DataSize;
     ESP_LOGI(TAG, "Number of Number of variant specific polls: %u, total size: %u", DataSize/sizeof(SpecificPollData[0]), DataSize);
-    m_pollData = reinterpret_cast<OvmsVehicle::poll_pid_t*>(ExternalRamMalloc(size));
+    m_pollData = reinterpret_cast<OvmsPoller::poll_pid_t*>(ExternalRamMalloc(size));
     if (m_pollData == nullptr)
     {
         ESP_LOGE(TAG, "Unable to allocate memory for polling");
@@ -552,7 +555,7 @@ void OvmsVehicleMgEv::ConfigurePollInterface(int bus)
     {
         // Already configured for that interface
         ESP_LOGI(TAG, "Already configured for interface, not re-configuring");
-        if (m_pollData && !m_poll_plist)
+        if (m_pollData && !HasPollList(newBus))
         {
             PollSetPidList(newBus, m_pollData);
         }
@@ -694,7 +697,7 @@ bool OvmsVehicleMgEv::SendPollMessage(canbus* bus, uint16_t id, uint8_t type, ui
 //     return currentBus->Write(&diagnosticControl) != ESP_FAIL;
 // }
 
-// void OvmsVehicleMgEv::SetupManualPolls(const OvmsVehicle::poll_pid_t *ManualPolls, size_t ManualPollSize)
+// void OvmsVehicleMgEv::SetupManualPolls(const OvmsPoller::poll_pid_t *ManualPolls, size_t ManualPollSize)
 // {
 //     m_ManualPollList.clear();
 //     for (uint8_t a = 0; a < ManualPollSize/sizeof(ManualPolls[0]); a++)
@@ -846,10 +849,7 @@ void OvmsVehicleMgEv::PollsCommandShell(int verbosity, OvmsWriter* writer, OvmsC
 bool OvmsVehicleMgEv::AuthenticateECU(vector<ECUAuth> ECUsToAuth)
 {
     // Pause the poller so we're not being interrupted
-    {
-        OvmsRecMutexLock lock(&m_poll_mutex);
-        m_poll_plist = nullptr;
-    }
+    PausePolling();
     bool AuthSucceeded = true;
     uint8_t a = 0;
     while (a < ECUsToAuth.size() && AuthSucceeded)
@@ -872,7 +872,7 @@ bool OvmsVehicleMgEv::AuthenticateECU(vector<ECUAuth> ECUsToAuth)
         a++;
     }
     // Re-start polling
-    m_poll_plist = m_pollData;
+    ResumePolling();
     return AuthSucceeded;
 }
 

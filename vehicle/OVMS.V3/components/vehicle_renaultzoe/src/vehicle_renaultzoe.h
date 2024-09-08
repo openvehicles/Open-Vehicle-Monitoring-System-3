@@ -72,8 +72,8 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     OvmsVehicleRenaultZoe();
     ~OvmsVehicleRenaultZoe();
 		static OvmsVehicleRenaultZoe* GetInstance(OvmsWriter* writer=NULL);
-		void IncomingFrameCan1(CAN_frame_t* p_frame);
-		void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+		void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+		void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
 
 	protected:
 		void IncomingEPS(uint16_t type, uint16_t pid, const char* data, uint16_t len);
@@ -83,8 +83,8 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
 		void IncomingUBP(uint16_t type, uint16_t pid, const char* data, uint16_t len);
 		void IncomingPEB(uint16_t type, uint16_t pid, const char* data, uint16_t len);
 		void car_on(bool isOn);
-    virtual void Ticker1(uint32_t ticker);
-    virtual void Ticker10(uint32_t ticker);
+		void Ticker1(uint32_t ticker) override;
+		void Ticker10(uint32_t ticker) override;
     void HandleCharging();
     void HandleEnergy();
     int calcMinutesRemaining(float target, float charge_voltage, float charge_current);
@@ -107,20 +107,20 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
 #endif
-    void ConfigChanged(OvmsConfigParam* param);
+    void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
   
   public:
     //virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
     //virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
-    virtual vehicle_command_t CommandWakeup();
-    virtual vehicle_command_t CommandClimateControl(bool enable);
-    virtual vehicle_command_t CommandLock(const char* pin);
-    virtual vehicle_command_t CommandUnlock(const char* pin);
-    virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
-    virtual vehicle_command_t CommandActivateValet(const char* pin);
-    virtual vehicle_command_t CommandDeactivateValet(const char* pin);
+    vehicle_command_t CommandWakeup() override;
+    vehicle_command_t CommandClimateControl(bool enable) override;
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
+    vehicle_command_t CommandHomelink(int button, int durationms=1000) override;
+    vehicle_command_t CommandActivateValet(const char* pin) override;
+    vehicle_command_t CommandDeactivateValet(const char* pin) override;
     virtual vehicle_command_t CommandTrip(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
 		void NotifyTrip();
@@ -138,7 +138,8 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
   private:
     unsigned int m_candata_timer;
     unsigned int m_candata_poll;
-  
+
+    uint16_t m_last_pid;
   public:
 		static void zoe_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   

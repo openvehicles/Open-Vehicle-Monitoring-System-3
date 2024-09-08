@@ -151,6 +151,10 @@ so you can easily turn off the module when not needed.
 If you have fixed vehicle usage/parking times, you can use the scripting system to schedule
 regular sleep periods (see command ``module sleep``).
 
+Beginning with firmware release 3.3.004, the 12V monitoring can be configured to enable
+deep sleep based on a low 12V voltage level. On most vehicles, this can be used to
+automatically shut down the module when parking and reboot when driving or charging.
+
 
 ~~~~~~~~~~~~~~~~~~
 Module Version 3.3

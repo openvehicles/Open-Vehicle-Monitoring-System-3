@@ -56,6 +56,7 @@ OvmsVehicle::vehicle_command_t OvmsHyundaiIoniqEv::CommandWakeup()
   return Success;
 }
 
+#ifdef XIQ_CAN_WRITE
 /**
  * Command to enable IGN1
  */
@@ -134,6 +135,7 @@ void xiq_set_auto_door_lock(int verbosity, OvmsWriter *writer, OvmsCommand *cmd,
   //OvmsHyundaiIoniqEv* car = (OvmsHyundaiIoniqEv*) MyVehicleFactory.ActiveVehicle();
   //car->SetAutoDoorLock(strtol(argv[0],NULL,10));
 }
+#endif
 
 /**
  * Print out the aux battery voltage.
@@ -171,12 +173,37 @@ void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, cons
   }
 
   OvmsHyundaiIoniqEv *hif = (OvmsHyundaiIoniqEv *) MyVehicleFactory.ActiveVehicle();
-
   if (hif->m_vin[0] == 0) {
-    hif->RequestVIN();
+    writer->printf("Requesting VIN ... ");
+    switch (hif->RequestVIN()) {
+      case IqVinStatus::Success:
+        writer->puts("OK");
+        break;
+      case IqVinStatus::BadBuffer:
+        writer->puts("Bad Buffer");
+        return;
+      case IqVinStatus::TxFail:
+        writer->puts("Transmit Fail");
+        return;
+      case IqVinStatus::Timeout:
+        writer->puts("Timeout");
+        return;
+      case IqVinStatus::ProtocolErr:
+        writer->puts("Protocol Error");
+        return;
+      case IqVinStatus::BadFormat:
+        writer->puts("Unrecognised");
+        return;
+      case IqVinStatus::NotAwake:
+        writer->puts("Car Not Awake");
+        return;
+      default:
+        writer->puts("Failed");
+        return;
+    }
   }
   writer->printf("VIN\n");
-  writer->printf("Vin: %s \n", hif->m_vin);
+  writer->printf("Vin: %s\n", hif->m_vin);
   if (hif->m_vin[0] == 0) {
     return;
   }
@@ -253,45 +280,88 @@ void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, cons
   }
 
   writer->printf("Vehicle Line: ");
-  if (hif->m_vin[3] == 'J') {
-    writer->printf("Soul\n");
-  }
-  else  if (hif->m_vin[3] == 'C') {
-    writer->printf("Niro\n");
-  }
-  else  if (hif->m_vin[3] == 'K') {
-    if (hif->m_vin[4] != 'R') {
-      writer->printf("Kona\n");
-    }
-    else {
-      writer->printf("Ioniq 5\n");
-    }
-  }
-  else {
-    writer->printf("Unknown %c\n", hif->m_vin[3]);
+  switch (hif->m_vin[3]) {
+    case 'J':
+      writer->printf("Soul\n");
+      break;
+    case 'C':
+      writer->printf("EV6 ");
+      switch (hif->m_vin[4]) {
+        case '3':
+          writer->printf("77.4kwH ");
+          break;
+        case '4':
+          writer->printf("GT-Line ");
+          break;
+        case '5':
+          writer->printf("GT ");
+          break;
+        default:
+          writer->printf("(Unknown %c) ", hif->m_vin[4]);
+      }
+      switch (hif->m_vin[5]) {
+        case '4':
+          writer->puts("2WD");
+          break;
+        case 'D':
+          writer->puts("4WD");
+          break;
+      default: writer->puts("");
+      }
+      switch (hif->m_vin[7]) {
+        case 'A':
+          writer->puts("KMA Electric 111.2Ah / RR 160kW (697V)");
+          break;
+        case 'B':
+          writer->puts("KMA Electric 111.2Ah / RR 160kW (522.7V)");
+          break;
+        case 'C':
+          writer->puts("KMA Electric 111.2Ah / FR 70kW / RR 160kW (697V)");
+          break;
+        case 'D':
+          writer->puts("KMA Electric 111.2Ah / FR 70kW / RR 160kW (522.7V)");
+          break;
+        case 'E':
+          writer->puts("KMA Electric 111.2Ah / FR 160kW / RR 270kW (697V)");
+          break;
+      }
+
+      break;
+    case 'K':
+      switch (hif->m_vin[4]) {
+        case 'R':
+          writer->printf("Ioniq 5\n");
+          writer->printf("Motor type: ");
+          switch (hif->m_vin[7]) {
+
+            case 'A': writer->printf("Electric motor, 160kw, (111.2Ah/72.6 kWh Battery), RWD 22\n"); break;
+            case 'B': writer->printf("Electric motor, 125kw, (111.2Ah/58.0 kWh Battery), RWD 22\n"); break;
+            case 'E': writer->printf("Electric motor, 168kw, (111.2Ah/77.4 kWh Battery), RWD 22\n"); break;
+            case 'F': writer->printf("Electric motors, 239kw, (111.2Ah/77.4 kWh Battery), AWD 22\n"); break;
+            default:  writer->printf("Unknown %c\n", hif->m_vin[7]); break;
+          }
+          break;
+        default:
+          writer->printf("Kona\n");
+      }
+      break;
+    case 'M': // Entourage, Ioniq 6, Genesis GV70
+      switch (hif->m_vin[4]) {
+          writer->printf("Ioniq 6\n");
+          writer->printf("Motor type: ");
+          switch (hif->m_vin[7]) {
+            case 'A': writer->printf("Electric motor, 168kw, (111.2Ah/77.4 kWh Battery), RWD 23\n"); break;
+            case 'B': writer->printf("Electric motor, 111kw, (111.2Ah/53.0 kWh Battery), RWD 23\n"); break;
+            case 'C': writer->printf("Electric motors, 239kw, (111.2Ah/77.4 kWh Battery), AWD 23\n"); break;
+            default:  writer->printf("Unknown %c\n", hif->m_vin[7]); break;
+          }
+      }
+      break;
+    default:
+      writer->printf("Unknown %c\n", hif->m_vin[3]);
+      break;
   }
 
-  /*if(hif->m_vin[4]=='M')
-    {
-    writer->printf("Low grade\n");
-    }
-    else if(hif->m_vin[4]=='N')
-    {
-    writer->printf("Middle-low grade\n");
-    }
-    else if(hif->m_vin[4]=='P')
-    {
-    writer->printf("Middle grade\n");
-    }
-    else if(hif->m_vin[4]=='R')
-    {
-    writer->printf("Middle-high grade\n");
-    }
-    else if(hif->m_vin[4]=='X')
-    {
-    writer->printf("High grade\n");
-    }
-    else*/
   if (hif->m_vin[4] == 'R') {
     // Ioniq 5. Is this premium?
   }
@@ -337,19 +407,6 @@ void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, cons
   }
   else {
     writer->printf("Model year: Unknown\n");
-  }
-
-  writer->printf("Motor type: ");
-  switch (hif->m_vin[7]) {
-    case 'E':
-      writer->printf("Battery [LiPB 350 V, 75 Ah (39kWh)] + Motor [3-phase AC 80 KW]\n");
-      break;
-    case 'G':
-      writer->printf("Battery [LiPB 356 V, 180 Ah (64kWh)] + Motor [3-phase AC 150 KW]\n");
-      break;
-    default:
-      writer->printf("Unknown %c\n", hif->m_vin[7]);
-      break;
   }
 
   //
@@ -415,13 +472,13 @@ void xiq_tpms(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, con
   if (StdMetrics.ms_v_tpms_pressure->IsDefined()) {
     const std::string &rl_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_RL, "-", ToUser, 1);
     const std::string &rl_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_RL, "-", ToUser, 1);
-    writer->printf("3 Rear-Left ID:%" PRIu32 " %s %s\n", car->kia_tpms_id[2], rl_pressure.c_str(), rl_temp.c_str());
+    writer->printf("3 Rear-Left   ID:%" PRIu32 " %s %s\n", car->kia_tpms_id[2], rl_pressure.c_str(), rl_temp.c_str());
   }
   // Rear right
   if (StdMetrics.ms_v_tpms_pressure->IsDefined()) {
     const std::string &rr_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_RR, "-", ToUser, 1);
     const std::string &rr_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_RR, "-", ToUser, 1);
-    writer->printf("4 Rear-Right ID:%" PRIu32 " %s %s\n", car->kia_tpms_id[3], rr_pressure.c_str(), rr_temp.c_str());
+    writer->printf("4 Rear-Right  ID:%" PRIu32 " %s %s\n", car->kia_tpms_id[3], rr_pressure.c_str(), rr_temp.c_str());
   }
 }
 

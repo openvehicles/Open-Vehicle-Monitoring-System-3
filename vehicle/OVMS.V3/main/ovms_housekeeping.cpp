@@ -105,34 +105,47 @@ void HousekeepingTicker1( TimerHandle_t timer )
 
   monotonictime++;
   StandardMetrics.ms_m_monotonic->SetValue((int)monotonictime);
-  StandardMetrics.ms_m_timeutc->SetValue((int)time(NULL));
+  StandardMetrics.ms_m_timeutc->SetValue(time(NULL));
 
   HousekeepingUpdate12V();
   MyEvents.SignalEvent("ticker.1", NULL);
 
   tick++;
-  if ((tick % 10)==0) MyEvents.SignalEvent("ticker.10", NULL);
-  if ((tick % 60)==0) MyEvents.SignalEvent("ticker.60", NULL);
-  if ((tick % 300)==0) MyEvents.SignalEvent("ticker.300", NULL);
-  if ((tick % 600)==0) MyEvents.SignalEvent("ticker.600", NULL);
-  if ((tick % 3600)==0)
+  if ((tick % 10)==0)
     {
-    tick = 0;
-    MyEvents.SignalEvent("ticker.3600", NULL);
+    MyEvents.SignalEvent("ticker.10", NULL);
+    if ((tick % 60)==0)
+      {
+      MyEvents.SignalEvent("ticker.60", NULL);
+      if ((tick % 300)==0)
+        {
+        MyEvents.SignalEvent("ticker.300", NULL);
+        if ((tick % 600)==0)
+          {
+          MyEvents.SignalEvent("ticker.600", NULL);
+          if ((tick % 3600)==0)
+            {
+            tick = 0;
+            MyEvents.SignalEvent("ticker.3600", NULL);
+            }
+          }
+        }
+      }
     }
 
   time_t rawtime;
   time ( &rawtime );
-  struct tm* tmu = localtime(&rawtime);
-  if (tmu->tm_sec == 0)
+  struct tm tmu;
+  localtime_r(&rawtime,&tmu);
+  if (tmu.tm_sec == 0)
     {
     // Start of the minute, so signal a timer event
     char tev[16];
-    sprintf(tev,"clock.%02d%02d",tmu->tm_hour,tmu->tm_min);
+    sprintf(tev,"clock.%02d%02d",tmu.tm_hour,tmu.tm_min);
     MyEvents.SignalEvent(tev, NULL);
-    if ((tmu->tm_hour==0)&&(tmu->tm_min==0))
+    if ((tmu.tm_hour==0)&&(tmu.tm_min==0))
       {
-      sprintf(tev,"clock.day%1d",tmu->tm_wday);
+      sprintf(tev,"clock.day%1d",tmu.tm_wday);
       MyEvents.SignalEvent(tev, NULL);
       }
     }
@@ -215,6 +228,11 @@ void Housekeeping::Init(std::string event, void* data)
     MyPeripherals->m_cellular_modem->AutoInit();
 #endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
 
+#ifdef CONFIG_OVMS_COMP_POLLER
+    ESP_LOGI(TAG, "Auto init Pollers (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
+    MyPollers.AutoInit();
+#endif
+
     ESP_LOGI(TAG, "Auto init vehicle (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyVehicleFactory.AutoInit();
 
@@ -286,10 +304,11 @@ void Housekeeping::TimeLogger(std::string event, void* data)
   {
   time_t rawtime;
   time ( &rawtime );
-  struct tm* tmu = localtime(&rawtime);
+  struct tm tmu;
+  localtime_r(&rawtime, &tmu);
   char tb[64];
 
-  if (strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", tmu) > 0)
+  if (strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", &tmu) > 0)
     {
     size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
     size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);

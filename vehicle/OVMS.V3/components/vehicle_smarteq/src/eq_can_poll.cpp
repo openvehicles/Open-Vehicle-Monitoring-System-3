@@ -77,23 +77,23 @@ static const char *TAG = "v-smarteq";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleSmartEQ::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) {
   
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (job.mlframe == 0) {
     m_rxbuf.clear();
-    m_rxbuf.reserve(length + remain);
+    m_rxbuf.reserve(length + job.mlremain);
   }
-  m_rxbuf.append((char*)data, length);
-  if (remain)
+  m_rxbuf.append((const char*)data, length);
+  if (job.mlremain)
     return;
 
   // response complete:
-  ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+  ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
   
-  switch (m_poll_moduleid_low) {
+  switch (job.moduleid_rec) {
     case 0x7BB:
-      switch (pid) {
+      switch (job.pid) {
         case 0x41: // rqBattVoltages_P1
           PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 0);
           break;
@@ -106,14 +106,28 @@ void OvmsVehicleSmartEQ::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
       }
       break;
     case 0x793:
-      switch (pid) {
+      switch (job.pid) {
         case 0x80: // rqIDpart OBL_7KW_Installed
-          //PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 0);
+          //PollReply_BCB_OBC(m_rxbuf.data(), m_rxbuf.size());
+          break;
+      }
+      break;
+    case 0x764:
+      switch (job.pid) {
+        case 0x52: // temperature sensor values
+          PollReply_HVAC(m_rxbuf.data(), m_rxbuf.size());
+          break;
+      }
+      break;
+    case 0x763:
+      switch (job.pid) {
+        case 0x200c: // temperature sensor values
+          PollReply_TDB(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
       break;
     default:
-      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
       break;
   }
   
@@ -156,3 +170,14 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattTemps(const char* reply_data, uint16_
   }
 }
 
+void OvmsVehicleSmartEQ::PollReply_BCB_OBC(const char* reply_data, uint16_t reply_len) {
+  
+}
+
+void OvmsVehicleSmartEQ::PollReply_HVAC(const char* reply_data, uint16_t reply_len) {
+  //StandardMetrics.ms_v_env_cabintemp->SetValue( (((reply_data[3] << 8) | reply_data[4]) - 400) * 0.1);
+}
+
+void OvmsVehicleSmartEQ::PollReply_TDB(const char* reply_data, uint16_t reply_len) {
+  StandardMetrics.ms_v_env_temp->SetValue( (((reply_data[2] << 8) | reply_data[3]) - 400) * 0.1);
+}

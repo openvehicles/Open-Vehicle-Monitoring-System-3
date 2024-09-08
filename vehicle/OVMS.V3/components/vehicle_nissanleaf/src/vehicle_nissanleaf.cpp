@@ -66,11 +66,13 @@ enum poll_states
   POLLSTATE_CHARGING  //- car is charging
   };
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] =
+static const OvmsPoller::poll_pid_t obdii_polls[] =
   {
+    // BUS 2
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },   // QC [2]
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD }, // L0/L1/L2 [2]
+    // BUS 1
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // bat [39/41]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery voltages [196]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery shunts [96]
@@ -555,7 +557,7 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
   {
   OvmsMutexLock lock(&nl_obd_request);
   // prepare single poll:
-  OvmsVehicle::poll_pid_t poll[] = {
+  OvmsPoller::poll_pid_t poll[] = {
     { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0, ISOTP_STD },
     POLL_LIST_END
   };
@@ -568,13 +570,13 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
   }
   poll[0].pollbus = bus;
   // stop default polling:
-  PollSetPidList(m_poll_bus, NULL);
+  PollSetPidList(NULL);
   vTaskDelay(pdMS_TO_TICKS(100));
 
   // clear rx semaphore, start single poll:
   nl_obd_rxwait.Take(0);
   nl_obd_rxbuf.clear();
-  PollSetPidList(m_poll_bus, poll);
+  PollSetPidList(poll);
 
   // wait for response:
   bool rxok = nl_obd_rxwait.Take(pdMS_TO_TICKS(timeout_ms));
@@ -586,7 +588,7 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
   // restore default polling:
   nl_obd_rxwait.Give();
   vTaskDelay(pdMS_TO_TICKS(100));
-  PollSetPidList(m_poll_bus, obdii_polls);
+  PollSetPidList(obdii_polls);
 
   return (rxok == pdTRUE);
   }
@@ -790,23 +792,22 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_l
   }
 
 // Reassemble all pieces of a multi-frame reply.
-void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-  {
+void OvmsVehicleNissanLeaf::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) {
   string& rxbuf = nl_obd_rxbuf;
 
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (job.mlframe == 0) {
     rxbuf.clear();
-    rxbuf.reserve(length + mlremain);
+    rxbuf.reserve(length + job.mlremain);
   }
   rxbuf.append((char*)data, length);
-  if (mlremain)
+  if (job.mlremain)
     return;
 
   static uint8_t buf[MAX_POLL_DATA_LEN];
   memcpy(buf, rxbuf.c_str(), rxbuf.size());
 
-  uint32_t id_pid = m_poll_moduleid_low<<16 | pid;
+  uint32_t id_pid = job.moduleid_rec<<16 | job.pid;
     switch (id_pid)
       {
       case BMS_RXID<<16 | 0x01: // battery
@@ -838,7 +839,7 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
     // single poll?
     if (!nl_obd_rxwait.IsAvail()) {
       // yes: stop poller & signal response
-      PollSetPidList(m_poll_bus, NULL);
+      PollSetPidList(NULL);
       nl_obd_rxwait.Give();
     }
   }
@@ -1795,7 +1796,7 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
   HandleCharging();
   HandleChargeEstimation();
   HandleExporting();
-  if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() > 13)
+  if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() > 12.8)
     {
     StandardMetrics.ms_v_env_charging12v->SetValue(true);  
     }

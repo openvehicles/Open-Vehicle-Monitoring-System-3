@@ -64,7 +64,7 @@ namespace
 // The parameter namespace for this vehicle
 const char PARAM_NAME[] = "xme";
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] =
+static const OvmsPoller::poll_pid_t obdii_polls[] =
     {
         // VCU Polls
 //        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
@@ -181,24 +181,24 @@ OvmsVehicleMaxe56::~OvmsVehicleMaxe56()
 
 // IncomingPollReply:
 
-void OvmsVehicleMaxe56::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleMaxe56::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (job.mlframe == 0) {
     m_rxbuf.clear();
-    m_rxbuf.reserve(length + mlremain);
+    m_rxbuf.reserve(length + job.mlremain);
   }
   m_rxbuf.append((char*)data, length);
-  if (mlremain)
+  if (job.mlremain)
     return;
 
   // response complete:
-    ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+    ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
     
     int value1 = (int)data[0];
     int value2 = ((int)data[0] << 8) + (int)data[1];
     
-  switch (pid)
+  switch (job.pid)
   {
       case vcuvin:  // VIN
           StdMetrics.ms_v_vin->SetValue(m_rxbuf);
@@ -292,7 +292,7 @@ void OvmsVehicleMaxe56::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
 
     default:
     {
-      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
     }
   }
 }
@@ -423,7 +423,7 @@ void OvmsVehicleMaxe56::Ticker1(uint32_t ticker)
 // PollerStateTicker: framework callback: check for state changes
 // This is called by VehicleTicker1() just before the next PollerSend().
 
-void OvmsVehicleMaxe56::PollerStateTicker()
+void OvmsVehicleMaxe56::PollerStateTicker(canbus *bus)
 {
     bool charging12v = StdMetrics.ms_v_env_charging12v->AsBool();
     StdMetrics.ms_v_env_charging12v->SetValue(StdMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);

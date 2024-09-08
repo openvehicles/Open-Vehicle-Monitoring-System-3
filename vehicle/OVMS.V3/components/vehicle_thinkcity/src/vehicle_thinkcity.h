@@ -45,13 +45,13 @@ class OvmsVehicleThinkCity : public OvmsVehicle
     ~OvmsVehicleThinkCity();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
  
-    vehicle_command_t CommandLock(const char* pin);
-    vehicle_command_t CommandUnlock(const char* pin);
-    vehicle_command_t CommandActivateValet(const char* pin);
-    vehicle_command_t CommandDeactivateValet(const char* pin);
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
+    vehicle_command_t CommandActivateValet(const char* pin) override;
+    vehicle_command_t CommandDeactivateValet(const char* pin) override;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // --------------------------------------------------------------------------
@@ -71,8 +71,8 @@ class OvmsVehicleThinkCity : public OvmsVehicle
 #endif //CONFIG_OVMS_COMP_WEBSERVER
 
   protected:
-    virtual void Ticker1(uint32_t ticker);
-    virtual void Ticker10(uint32_t ticker);
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
 
   private:
     

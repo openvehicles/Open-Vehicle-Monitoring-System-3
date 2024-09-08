@@ -203,7 +203,7 @@ static const char *TAG = "v-kiasoulev";
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
-static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
+static const OvmsPoller::poll_pid_t vehicle_kiasoulev_polls[] =
   {
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, 		{       0,  120,   0 }, 0, ISOTP_STD }, 	// VIN
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 }, 0, ISOTP_STD }, 	// BMC Diag page 01 *
@@ -745,11 +745,11 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
 							&& (kia_last_ideal_range < LIMIT_RANGE )))
     		{
       // ...enter state 2=topping off when we've reach the needed range / SOC:
-  			SET_CHARGE_STATE("topoff", NULL);
+  			SET_CHARGE_STATE("topoff");
       }
     else if (BAT_SOC >= 95) // ...else set "topping off" from 94% SOC:
     		{
-			SET_CHARGE_STATE("topoff", NULL);
+			SET_CHARGE_STATE("topoff");
     		}
   		}
 
@@ -820,7 +820,7 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
   			}
   		else
   			{
-  			SET_CHARGE_STATE("charging",NULL);
+  			SET_CHARGE_STATE("charging");
   			}
   		}
   StdMetrics.ms_v_charge_kwh->SetValue((CUM_CHARGE - kia_cum_charge_start)/10.0, kWh); // kWh charged

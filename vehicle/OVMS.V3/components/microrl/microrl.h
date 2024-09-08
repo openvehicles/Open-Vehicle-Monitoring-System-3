@@ -7,9 +7,6 @@ extern "C" {
 
 #include "microrl_config.h"
 
-#define true  1
-#define false 0
-
  /* define the Key codes */
 #define KEY_NUL 0 /**< ^@ Null character */
 #define KEY_SOH 1 /**< ^A Start of heading, = console interrupt */
@@ -97,7 +94,7 @@ struct microrl {
 	quoted_token_t quotes[_QUOTED_TOKEN_NMB];// pointers to quoted tokens
 #endif
 	int (*execute) (microrl_t* pThis, int argc, const char * const * argv );            // ptr to 'execute' callback
-	char ** (*get_completion) (microrl_t* pThis, int argc, const char * const * argv ); // ptr to 'completion' callback
+	char ** (*get_completion) (microrl_t* pThis, int argc, const char * const * argv, int *complete_common, int *finished ); // ptr to 'completion' callback
 	void (*print) (microrl_t* pThis, const char *);                                     // ptr to 'print' callback
 	void (*error_print) (microrl_t* pThis, const char *);                               // ptr to 'print' callback for error msg
 #ifdef _USE_CTLR_C
@@ -113,13 +110,16 @@ void microrl_init (microrl_t * pThis, void (*print)(microrl_t* pThis, const char
 // echo mode will enabled after user press Enter.
 void microrl_set_echo (int);
 
-// set pointer to callback complition func, that called when user press 'Tab'
+// set pointer to callback completion func, that called when user press 'Tab'
 // callback func description:
-//   param: argc - argument count, argv - pointer array to token string
-//   must return NULL-terminated string, contain complite variant splitted by 'Whitespace'
-//   If complite token found, it's must contain only one token to be complitted
-//   Empty string if complite not found, and multiple string if there are some token
-void microrl_set_complete_callback (microrl_t * pThis, char ** (*get_completion)(microrl_t*, int, const char* const*));
+//   param: argc - argument count
+//   param: argv - pointer array to token strings
+//   param: complete_common - can be optionally populated to the length of the
+//          common portion of the strings.
+//   param: finished - should be set to 0 if the signal completion element is not
+//          considered finished completing.
+//   return: Null terminated Array of NULL-terminated strings contain the completion tokens.
+void microrl_set_complete_callback (microrl_t * pThis, char ** (*get_completion_ext) (microrl_t* pThis, int argc, const char * const * argv, int *complete_common, int *finished ));
 
 // pointer to callback func, that called when user press 'Enter'
 // execute func param: argc - argument count, argv - pointer array to token string

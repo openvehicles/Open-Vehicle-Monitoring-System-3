@@ -72,16 +72,16 @@ class OvmsVehicleMaxe56 : public OvmsVehicle
       
   protected:
       void ConfigChanged(OvmsConfigParam* param) override;
-      void PollerStateTicker();
-      void Ticker1(uint32_t ticker);
-      void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+      void PollerStateTicker(canbus *bus);
+      void Ticker1(uint32_t ticker) override;
+      void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
       void processEnergy();
       float consumpRange;
       float hvpower;
       char m_vin[17];
       
   private:
-      void IncomingFrameCan1(CAN_frame_t* p_frame);
+      void IncomingFrameCan1(CAN_frame_t* p_frame) override;
       void IncomingPollFrame(CAN_frame_t* frame);
       void SetBmsStatus(uint8_t status);
       /// A temporary store for the VIN

@@ -52,7 +52,7 @@ static const char *TAG = "v-zoe";
 // Pollstate 1 - POLLSTATE_ON       - car is on
 // Pollstate 2 - POLLSTATE_RUNNING  - car is driving
 // Pollstate 3 - POLLSTATE_CHARGING - car is charging
-static const OvmsVehicle::poll_pid_t renault_zoe_polls[] = {
+static const OvmsPoller::poll_pid_t renault_zoe_polls[] = {
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2002, { 0, 10, 10, 10 } },  // SOC
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 0, 10, 10, 10 } },  // Odometer
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3203, { 0, 10, 10, 10 } },  // Battery Voltage
@@ -80,7 +80,7 @@ static const OvmsVehicle::poll_pid_t renault_zoe_polls[] = {
   POLL_LIST_END
 };
 
-static const OvmsVehicle::poll_pid_t renault_kangoo_polls[] = {
+static const OvmsPoller::poll_pid_t renault_kangoo_polls[] = {
   // { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 0, 60, 0, 0 }, 0, ISOTP_STD },  // Odometer
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3203, { 0, 10, 1, 2 }, 0, ISOTP_STD },  // Battery Voltage
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3204, { 0, 10, 1, 2 }, 0, ISOTP_STD },  // Battery Current
@@ -107,6 +107,7 @@ OvmsVehicleRenaultZoe* OvmsVehicleRenaultZoe::GetInstance(OvmsWriter* writer /*=
 OvmsVehicleRenaultZoe::OvmsVehicleRenaultZoe() {
   ESP_LOGI(TAG, "Start Renault Zoe/Kangoo vehicle module");
 
+  m_last_pid = 0;
   StandardMetrics.ms_v_type->SetValue("RZ");
   StandardMetrics.ms_v_charge_inprogress->SetValue(false);
   
@@ -797,52 +798,53 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
 /**
  * Handles incoming poll results
  */
-void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
-	string& rxbuf = zoe_obd_rxbuf;
-  static uint16_t last_pid = -1;
-  
-  if (pid != last_pid) {
-    //ESP_LOGD(TAG, "pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
-    last_pid = pid;
-    m_poll_ml_frame=0;
+void OvmsVehicleRenaultZoe::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length){
+  string& rxbuf = zoe_obd_rxbuf;
+
+  if (job.pid != m_last_pid) {
+    // Ignore if it's no tthe same one.
+    if (job.mlframe != 0)
+      return;
+    //ESP_LOGD(TAG, "pid: %04x length: %d m_poll_ml_remain: %d mlframe: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
+    m_last_pid = job.pid;
   }
   
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (job.mlframe == 0) {
     rxbuf.clear();
-    rxbuf.reserve(length + remain);
+    rxbuf.reserve(length + job.mlremain);
   }
   rxbuf.append((char*)data, length);
   
-  if (remain)
+  if (job.mlremain)
     return;
   
-	switch (m_poll_moduleid_low) {
+	switch (job.moduleid_rec) {
 		// ****** EPS *****
 		case 0x762:
-			IncomingEPS(type, pid, rxbuf.data(), rxbuf.size());
+			IncomingEPS(job.type, job.pid, rxbuf.data(), rxbuf.size());
 			break;
     // ****** EVC *****
 		case 0x7ec:
-			IncomingEVC(type, pid, rxbuf.data(), rxbuf.size());
+			IncomingEVC(job.type, job.pid, rxbuf.data(), rxbuf.size());
 			break;
     // ****** BCB *****
     case 0x793:
-      IncomingBCB(type, pid, rxbuf.data(), rxbuf.size());
+      IncomingBCB(job.type, job.pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** LBC *****
     case 0x7bb:
-      IncomingLBC(type, pid, rxbuf.data(), rxbuf.size());
+      IncomingLBC(job.type, job.pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** UBP *****
     case 0x7bc:
-      IncomingUBP(type, pid, rxbuf.data(), rxbuf.size());
+      IncomingUBP(job.type, job.pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** PEB *****
     case 0x77e:
-      IncomingPEB(type, pid, rxbuf.data(), rxbuf.size());
+      IncomingPEB(job.type, job.pid, rxbuf.data(), rxbuf.size());
       break;
-	}
+  }
 }
 
 /**
@@ -987,11 +989,11 @@ void OvmsVehicleRenaultZoe::IncomingLBC(uint16_t type, uint16_t pid, const char*
       // 7bb,192,207,0.01,0,2,%,2103,6103,e2\n" // Real State of Charge
       // if (type == VEHICLE_POLL_TYPE_OBDIIGROUP)
       // {
-      // if (m_poll_ml_frame == 1)
+      // if (mlframe == 1)
       // {
       // m_b_cell_volt_max->SetValue(float( CAN_BYTE(6)*0.01 ),Volts);
       // }
-      // else if (m_poll_ml_frame == 2)
+      // else if (mlframe == 2)
       // {
       // m_b_cell_volt_min->SetValue(float( CAN_BYTE(1)*0.01 ),Volts);
       // }

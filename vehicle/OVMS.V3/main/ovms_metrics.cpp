@@ -44,6 +44,10 @@ static const char *TAG = "metrics";
 #include "ovms_config.h"
 #include "rom/rtc.h"
 #include "string.h"
+#include <iomanip>
+#include <locale>
+#include <time.h>
+#include <math.h>
 
 using namespace std;
 
@@ -53,7 +57,7 @@ using namespace std;
 RTC_NOINIT_ATTR persistent_metrics      pmetrics;             // persistent storage container
 #define NUM_PERSISTENT_VALUES           sizeof_array(pmetrics.values)
 static const char*                      pmetrics_reason;      // reason pmetrics was zeroed
-std::map<std::size_t, const char*>      pmetrics_keymap       // hash key → metric name map (registry)
+std::map<std::size_t, std::string>      pmetrics_keymap       // hash key → metric name map (registry)
                                         __attribute__ ((init_priority (1800)));
 
 OvmsMetrics                             MyMetrics
@@ -129,7 +133,7 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   {"seconds",  "Sec",      Native,     Native,      GrpTime}, // 50
   {"minutes",  "Min",      Native,     Native,      GrpTime}, // 51
   {"hours",    "Hour",     Native,     Native,      GrpTime}, // 52
-  {"utc",      "UTC",      Native,     Native,      GrpTime}, // 53
+  {"utctime",  "UTC",      Native,     Native,      GrpTime}, // 53
   {"localtz",  "local",    Native,     Native,      GrpTime}, // 54,
   UNIT_GAP,// 55
   UNIT_GAP,// 56
@@ -162,9 +166,9 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP,// 82
   UNIT_GAP,// 83
   UNIT_GAP,// 84
-  UNIT_GAP,// 85
-  UNIT_GAP,// 86
-  UNIT_GAP,// 87
+  {"unixepoch","epoch",    Native,     Native,      GrpDate}, // 85
+  {"utcdate",  "",         Native,     Native,      GrpDate}, // 86
+  {"localdate","",         Native,     Native,      GrpDate}, // 87
   UNIT_GAP,// 88
   UNIT_GAP,// 89
   {"percent",  "%",        Native,     Native,      GrpRatio}, // 90
@@ -218,12 +222,28 @@ static const OvmsUnitGroupInfo group_info[int(MetricGroupLast)+1] =
   { "direction",   NULL                      }, // 13
   { "ratio",       "Ratio"                   }, // 14
   { "charge",      "Charge"                  }, // 15
-  // Short dimensions from here:
   GROUP_GAP, // 16
   GROUP_GAP, // 17
-  { "distanceshort","Height"                 }, // 2+16=18
+  GROUP_GAP, // 18
+  GROUP_GAP, // 19
+  GROUP_GAP, // 20
+  GROUP_GAP, // 21
+  GROUP_GAP, // 22
+  GROUP_GAP, // 23
+  GROUP_GAP, // 24
+  GROUP_GAP, // 25
+  GROUP_GAP, // 26
+  GROUP_GAP, // 27
+  GROUP_GAP, // 28
+  GROUP_GAP, // 29
+  GROUP_GAP, // 30
+  GROUP_GAP, // 31
+  GROUP_GAP, // 32
+  GROUP_GAP, // 33
+  // Short dimensions from here:
+  { "distanceshort","Height"                 }, // 2+32=34
   GROUP_GAP,
-  { "accelshort",   "Acceleration (short)"   }, // 4+16=20
+  { "accelshort",   "Acceleration (short)"   }, // 4+32=36
 };
 
 static inline int mi_to_km(int mi)
@@ -266,6 +286,19 @@ T pkm_to_pmi(T pkm)
   return mi_to_km(pkm);
   }
 
+void time_unit_split(int value, int &hour, int &mins, int &secs)
+  {
+  secs = value % 60;
+  value /= 60;
+  mins = value % 60;
+  value /= 60;
+  hour = value;
+  }
+int time_unit_join(int hh, int mm, int ss)
+  {
+  return (hh*3600) + (mm * 60) + ss;
+  }
+
 /*
  * Returns the group of the metric.
  * simplify - Means those separated for (eventual) user config
@@ -296,7 +329,7 @@ bool OvmsMetricGroupConfigList(metric_group_list_t& groups)
   {
   bool found = false;
   groups.reserve(12);
-  for (uint8_t idx = 0; idx <= GrpFoldMask; ++idx)
+  for (uint8_t idx = 0; idx < GrpUnfold; ++idx)
     {
     if (group_info[idx].Label != NULL)
       {
@@ -708,17 +741,27 @@ bool pmetrics_check()
   return ret;
   }
 
-persistent_values *pmetrics_find(const char *name)
+static persistent_values *pmetrics_find_hash(size_t namehash)
   {
   int i;
   persistent_values *vp;
-  std::size_t namehash = std::hash<std::string>{}(name);
-  for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp)
-    {
+  for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp) {
     if (vp->namehash == namehash)
       return vp;
     }
   return NULL;
+  }
+
+persistent_values *pmetrics_find(const char *name)
+  {
+  std::size_t namehash = std::hash<std::string>{}(name);
+  return pmetrics_find_hash(namehash);
+  }
+
+persistent_values *pmetrics_find(const std::string &name)
+  {
+  std::size_t namehash = std::hash<std::string>{}(name);
+  return pmetrics_find_hash(namehash);
   }
 
 void pmetrics_init(bool refresh = false)
@@ -736,16 +779,22 @@ void pmetrics_init(bool refresh = false)
 
 persistent_values *pmetrics_register(const char *name)
   {
+  std::string str_name(name);
+  return pmetrics_register(str_name);
+  }
+
+persistent_values *pmetrics_register(const std::string &name)
+  {
   int i;
   persistent_values *vp;
   std::size_t namehash = std::hash<std::string>{}(name);
 
   // check for hash collision:
   auto it = pmetrics_keymap.find(namehash);
-  if (it != pmetrics_keymap.end() && strcmp(it->second, name) != 0)
+  if (it != pmetrics_keymap.end() && (it->second != name) )
     {
     ESP_LOGE(TAG, "pmetrics_register: cannot persist '%s' due to hash collision with '%s'",
-      name, it->second);
+      name.c_str(), it->second.c_str());
     return NULL;
     }
 
@@ -761,7 +810,7 @@ persistent_values *pmetrics_register(const char *name)
     {
     if (i >= NUM_PERSISTENT_VALUES)
       {
-      ESP_LOGE(TAG, "pmetrics_register: no free slots, cannot persist '%s'", name);
+      ESP_LOGE(TAG, "pmetrics_register: no free slots, cannot persist '%s'", name.c_str());
       return NULL;
       }
     vp->namehash = namehash;
@@ -770,7 +819,7 @@ persistent_values *pmetrics_register(const char *name)
     }
 
   ESP_LOGD(TAG, "pmetrics_register: '%s' => slot=%d, used %d/%d",
-    name, i, pmetrics.used, NUM_PERSISTENT_VALUES);
+    name.c_str(), i, pmetrics.used, NUM_PERSISTENT_VALUES);
   pmetrics_keymap[namehash] = name;
   return vp;
   }
@@ -847,6 +896,39 @@ static duk_ret_t DukOvmsMetricHasValue(duk_context *ctx)
   if (!m)
     return 0;
   dc.Push(m->IsDefined());
+  return 1;
+  }
+
+static duk_ret_t DukOvmsMetricIsStale(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (!m)
+    return 0;
+  dc.Push(m->IsStale());
+  return 1;
+  }
+
+static duk_ret_t DukOvmsMetricIsFresh(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (!m)
+    return 0;
+  dc.Push(m->IsFresh());
+  return 1;
+  }
+
+static duk_ret_t DukOvmsMetricAge(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (!m)
+    return 0;
+  dc.Push(m->Age());
   return 1;
   }
 
@@ -1029,6 +1111,9 @@ OvmsMetrics::OvmsMetrics()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsMetrics");
   dto->RegisterDuktapeFunction(DukOvmsMetricHasValue, 1, "HasValue");
+  dto->RegisterDuktapeFunction(DukOvmsMetricIsStale, 1, "IsStale");
+  dto->RegisterDuktapeFunction(DukOvmsMetricIsFresh, 1, "IsFresh");
+  dto->RegisterDuktapeFunction(DukOvmsMetricAge, 1, "Age");
   dto->RegisterDuktapeFunction(DukOvmsMetricValue, 3, "Value");
   dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 2, "AsFloat");
@@ -1245,6 +1330,16 @@ OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, uint16_t autostale, int 
   {
   OvmsMetricInt *m = (OvmsMetricInt*)Find(metric);
   if (m==NULL) m = new OvmsMetricInt(metric, autostale, units, persist);
+
+  if (!m->IsDefined())
+    m->SetValue(value);
+  return m;
+  }
+
+OvmsMetricInt64 *OvmsMetrics::InitInt64(const char* metric, uint16_t autostale, int64_t value, metric_unit_t units, bool persist)
+  {
+  OvmsMetricInt64 *m = (OvmsMetricInt64*)Find(metric);
+  if (m==NULL) m = new OvmsMetricInt64(metric, autostale, units, persist);
 
   if (!m->IsDefined())
     m->SetValue(value);
@@ -1582,20 +1677,6 @@ bool OvmsMetric::IsFresh()
     return !IsStale();
   }
 
-void OvmsMetric::SetStale(bool stale)
-  {
-  m_stale = stale;
-  }
-
-void OvmsMetric::SetAutoStale(uint16_t seconds)
-  {
-  m_autostale = seconds;
-  }
-
-metric_unit_t OvmsMetric::GetUnits()
-  {
-  return m_units;
-  }
 
 bool OvmsMetric::IsModified(size_t modifier)
   {
@@ -1685,22 +1766,47 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
   {
   if (IsDefined())
     {
-    char buffer[33];
     int value = m_value;
-    if ((units != Native)&&(units != m_units))
+    CheckTargetUnit(GetUnits(), units, false);
+    if (units == Native)
+      units = m_units;
+    else if (units != m_units)
       value = UnitConvert(m_units,units,m_value);
-    if (units == TimeUTC || units == TimeLocal)
+    std::stringstream os;
+    switch (units)
       {
-      int seconds = value % 60;
-      value /= 60;
-      int minutes = value % 60;
-      value /= 60;
-      int hours = value;
-      snprintf(buffer, sizeof(buffer), "%02u:%02u:%02u", hours, minutes, seconds);
+      case TimeUTC:
+      case TimeLocal:
+        {
+        int hours, minutes, seconds;
+        time_unit_split(value, hours, minutes, seconds);
+        os << std::setfill('0')
+          << std::setw(2) << hours << ':'
+          << std::setw(2) << minutes << ':'
+          << std::setw(2) << seconds;
+        }
+        break;
+      case DateUTC:
+        {
+        time_t tvalue = value;
+        std::tm ourtime;
+        gmtime_r(&tvalue, &ourtime);
+        os << std::put_time(&ourtime, "%F %T UTC");
+        }
+        break;
+      case DateLocal:
+        {
+        time_t tvalue = value;
+        std::tm ourtime;
+        localtime_r(&tvalue, &ourtime);
+        os << std::put_time(&ourtime, "%F %T %Z");
+        }
+        break;
+      default:
+        os << value;
+        break;
       }
-    else
-      itoa (value,buffer,10);
-    return buffer;
+    return os.str();
     }
   else
     {
@@ -1711,7 +1817,28 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
 std::string OvmsMetricInt::AsJSON(const char* defvalue, metric_unit_t units, int precision)
   {
   if (IsDefined())
-    return AsString(defvalue, units, precision);
+    {
+    CheckTargetUnit(GetUnits(), units, false);
+    if (units == Native)
+      units = GetUnits();
+    switch (units)
+      {
+      case TimeUTC:
+      case TimeLocal:
+        return OvmsMetric::AsJSON(defvalue, units, precision);
+      case DateLocal:
+      case DateUTC:
+        {
+        time_t tvalue = m_value;
+        std::tm ourtime;
+        gmtime_r(&tvalue, &ourtime);
+        std::ostringstream os;
+        os << '"' << std::put_time(&ourtime, "%FT%T.000Z") << '"';
+        return os.str();
+        }
+      default: return AsString(defvalue, units, precision);
+      }
+    }
   else
     return std::string((defvalue && *defvalue) ? defvalue : "0");
   }
@@ -1762,9 +1889,102 @@ bool OvmsMetricInt::SetValue(int value, metric_unit_t units)
     }
   }
 
+// credit for timegm to Sergey-D on StackOverflow
+//
+// Algorithm: http://howardhinnant.github.io/date_algorithms.html
+int days_from_epoch(int y, int m, int d)
+  {
+  y -= m <= 2;
+  int era = y / 400;
+  int yoe = y - era * 400;                                   // [0, 399]
+  int doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;  // [0, 365]
+  int doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;           // [0, 146096]
+  return era * 146097 + doe - 719468;
+  }
+
+// Provide the non-standard 'timegm' function which is the
+// effective reverse of gmtime_r()
+static time_t internal_timegm(struct tm const* t)
+  {
+  int year = t->tm_year + 1900;
+  int month = t->tm_mon;          // 0-11
+  if (month > 11)
+    {
+    year += month / 12;
+    month %= 12;
+    }
+  else if (month < 0)
+    {
+    int years_diff = (11 - month) / 12;
+    year -= years_diff;
+    month += 12 * years_diff;
+    }
+  int days_since_epoch = days_from_epoch(year, month + 1, t->tm_mday);
+
+  return 60 * (60 * (24L * days_since_epoch + t->tm_hour) + t->tm_min) + t->tm_sec;
+  }
+
+
+static int ParseTimerValue(const char *value)
+  {
+  int hours = 0, minutes = 0, seconds = 0;
+  switch (sscanf(value, "%d:%d:%d", &hours, &minutes,&seconds))
+    {
+    case 1:
+      return hours; //number by itself - treat it as number of seconds.
+      break;
+    case 2:
+      return time_unit_join(hours, minutes, 0);
+      break;
+    case 3:
+      return time_unit_join(hours, minutes, seconds);
+      break;
+    }
+  return -1;
+  }
+
 bool OvmsMetricInt::SetValue(std::string value, metric_unit_t units)
   {
-  int nvalue = atoi(value.c_str());
+  CheckTargetUnit(GetUnits(), units, false);
+  if (units == Native)
+    units = m_units;
+  int nvalue;
+  switch (units)
+    {
+    case TimeUTC:
+    case TimeLocal:
+      {
+      nvalue = ParseTimerValue(value.c_str());
+      if (nvalue < 0)
+        return false;
+      break;
+      }
+    case DateUTC:
+    case DateLocal:
+      {
+      if (!value.empty() && value.find_first_not_of("0123456789") == std::string::npos)
+        {
+        // digits only... treat it as a time_t integer.
+        nvalue = atoi(value.c_str());
+        }
+      else
+        {
+        std::tm ourtime;
+        istringstream istr(value);
+        istr >> std::get_time(&ourtime,"%Y-%m-%dT%H:%M:%S");
+        if (istr.fail())
+          return false;
+        if (units==DateUTC)
+          nvalue = internal_timegm(&ourtime);
+        else
+          nvalue = mktime(&ourtime);
+        }
+      break;
+      }
+    default:
+      nvalue = atoi(value.c_str());
+      break;
+    }
   return SetValue(nvalue, units);
   }
 
@@ -1944,6 +2164,8 @@ OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_un
   m_value = 0.0;
   m_valuep = NULL;
   m_persist = persist;
+  m_fmt_prec = -1;
+  m_fmt_fixed = false;
 
   if (m_persist)
     {
@@ -2005,8 +2227,17 @@ std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units,
     std::ostringstream ss;
     if (precision >= 0)
       {
-      ss.precision(precision); // Set desired precision
+      // Set desired fixed precision format:
+      ss.precision(precision);
       ss << fixed;
+      }
+    else
+      {
+      // Set standard metric format:
+      if (m_fmt_prec >= 0)
+        ss.precision(m_fmt_prec);
+      if (m_fmt_fixed)
+        ss << fixed;
       }
     if ((units != Other)&&(units != m_units))
       ss << UnitConvert(m_units,units,m_value);
@@ -2050,7 +2281,9 @@ int OvmsMetricFloat::AsInt(const int defvalue, metric_unit_t units)
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 void OvmsMetricFloat::DukPush(DukContext &dc, metric_unit_t units)
   {
-  dc.Push(AsFloat(0, units));
+  // Support custom precisions & minimize errors on float→double conversion:
+  std::string fval = AsString("0", units);
+  dc.Push(strtod(fval.c_str(), NULL));
   }
 #endif
 
@@ -2140,6 +2373,325 @@ bool OvmsMetricString::SetValue(std::string value, metric_unit_t units)
 void OvmsMetricString::Clear()
   {
   SetValue("");
+  OvmsMetric::Clear();
+  }
+
+OvmsMetric64::OvmsMetric64(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
+  : OvmsMetric(name, autostale, units, persist)
+  {
+  m_persist = persist;
+  m_valuep_lo = nullptr;
+  m_valuep_hi = nullptr;
+  }
+ void OvmsMetric64::InitPersist()
+   {
+  if (m_persist)
+    {
+    std::string lo_name(m_name);
+    std::string hi_name = lo_name + "_hi";
+
+    persistent_values *hi_vp = pmetrics_register(hi_name);
+    persistent_values *lo_vp = pmetrics_register(lo_name);
+    if (!hi_vp || !lo_vp)
+      {
+      m_persist = false;
+      }
+    else
+      {
+      m_valuep_hi = (&hi_vp->value);
+      m_valuep_lo = (&lo_vp->value);
+      if (SetValueParts(*m_valuep_lo, *m_valuep_hi))
+        {
+        SetModified(true);
+        ESP_LOGI(TAG, "persist %s = %s", m_name, AsUnitString().c_str());
+        }
+      }
+    }
+  }
+
+bool OvmsMetric64::CheckPersist()
+  {
+  if (!m_persist || !m_valuep_lo || !m_valuep_hi || !IsDefined())
+    return true;
+  persistent_value_t lo, hi;
+  GetValueParts(lo, hi);
+  if (lo != *m_valuep_lo || hi != *m_valuep_hi)
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+    return false;
+    }
+  std::string lo_name(m_name);
+  std::string hi_name = lo_name + "_hi";
+
+  persistent_values *hi_vp = pmetrics_find(hi_name);
+  if (!hi_vp)
+    {
+    ESP_LOGE(TAG, "CheckPersist: can't find %s", hi_name.c_str());
+    return false;
+    }
+  persistent_values *lo_vp = pmetrics_find(lo_name);
+  if ( !lo_vp)
+    {
+    ESP_LOGE(TAG, "CheckPersist: can't find %s", lo_name.c_str());
+    return false;
+    }
+  if (m_valuep_hi != &hi_vp->value)
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad address for %s",hi_name.c_str());
+    return false;
+    }
+  if (m_valuep_lo != &lo_vp->value)
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad address for %s",lo_name.c_str());
+    return false;
+    }
+  return true;
+  }
+
+void OvmsMetric64::RefreshPersist()
+  {
+  if (m_persist && m_valuep_lo && m_valuep_hi && IsDefined())
+    {
+    GetValueParts(*m_valuep_lo, *m_valuep_hi);
+    }
+  }
+
+OvmsMetricInt64::OvmsMetricInt64(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
+  : OvmsMetric64(name, autostale, units, persist)
+  {
+  // Initialise once GetValueParts is set.
+  InitPersist();
+  }
+
+// Get the value as low/high parts.
+void OvmsMetricInt64::GetValueParts( persistent_value_t &value_low, persistent_value_t &value_hi)
+  {
+  value_low = static_cast<persistent_value_t>( m_value & 0xffff);
+  value_hi = static_cast<persistent_value_t>(m_value >> 32);
+  }
+
+// Set the value as low/high parts. Return true on changed
+bool OvmsMetricInt64::SetValueParts( persistent_value_t value_low, persistent_value_t value_hi)
+  {
+  int64_t newval =
+    static_cast<int32_t>(value_low)|
+    (static_cast<int64_t>(value_hi)<< 32);
+  if (newval == m_value)
+    return false;
+  m_value = newval;
+  return true;
+  }
+
+std::string OvmsMetricInt64::AsString(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (IsDefined())
+    {
+    int64_t value = m_value;
+    CheckTargetUnit(GetUnits(), units, false);
+    if (units == Native)
+      units = m_units;
+    else if (units != m_units)
+    {
+    switch (units)
+      {
+      case DateUTC:
+      case DateLocal:
+        value = m_value;
+        break;
+      default:
+        value = static_cast<int64_t>(round(UnitConvert(m_units,units,static_cast<float>(m_value))));
+      }
+    }
+    std::stringstream os;
+    switch (units)
+      {
+      case TimeUTC:
+      case TimeLocal:
+        {
+        int hours, minutes, seconds;
+        time_unit_split(value, hours, minutes, seconds);
+        os << std::setfill('0')
+          << std::setw(2) << hours << ':'
+          << std::setw(2) << minutes << ':'
+          << std::setw(2) << seconds;
+        }
+        break;
+      case DateUTC:
+        {
+        time_t tvalue = value;
+        std::tm ourtime;
+        gmtime_r(&tvalue, &ourtime);
+        os << std::put_time(&ourtime, "%F %T UTC");
+        }
+        break;
+      case DateLocal:
+        {
+        time_t tvalue = value;
+        std::tm ourtime;
+        localtime_r(&tvalue, &ourtime);
+        os << std::put_time(&ourtime, "%F %T %Z");
+        }
+        break;
+      default:
+        os << value;
+        break;
+      }
+    return os.str();
+    }
+  else
+    {
+    return std::string(defvalue);
+    }
+  }
+
+std::string OvmsMetricInt64::AsJSON(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (IsDefined())
+    {
+    CheckTargetUnit(GetUnits(), units, false);
+    if (units == Native)
+      units = GetUnits();
+    switch (units)
+      {
+      case TimeUTC:
+      case TimeLocal:
+        return OvmsMetric::AsJSON(defvalue, units, precision);
+      case DateLocal:
+      case DateUTC:
+        {
+        time_t tvalue = m_value;
+        std::tm ourtime;
+        gmtime_r(&tvalue, &ourtime);
+        std::ostringstream os;
+        os << '"' << std::put_time(&ourtime, "%FT%T.000Z") << '"';
+        return os.str();
+        }
+      default: return AsString(defvalue, units, precision);
+      }
+    }
+  else
+    return std::string((defvalue && *defvalue) ? defvalue : "0");
+  }
+
+float OvmsMetricInt64::AsFloat(const float defvalue, metric_unit_t units)
+  {
+  return (float)AsInt((int64_t)defvalue, units);
+  }
+
+int64_t OvmsMetricInt64::AsInt(const int64_t defvalue, metric_unit_t units)
+  {
+  if (IsDefined())
+    {
+    if ((units != Native)&&(units != m_units))
+      {
+      switch(units)
+        {
+        case DateUTC:
+        case DateLocal:
+          return m_value;
+        default:
+          return UnitConvert(m_units,units,static_cast<float>(m_value));
+        }
+      }
+    else
+      return m_value;
+    }
+  else
+    return defvalue;
+  }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetricInt64::DukPush(DukContext &dc, metric_unit_t units)
+  {
+  dc.Push(static_cast<double>(AsInt(0, units)));
+  }
+#endif
+
+bool OvmsMetricInt64::SetValue(int64_t value, metric_unit_t units)
+  {
+  int64_t nvalue = value;
+
+  if (units != m_units)
+    {
+    switch(units)
+      {
+      case Other:
+      case DateUTC:
+      case DateLocal:
+        break;
+      default:
+        nvalue=UnitConvert(units,m_units,static_cast<float>(value));
+      }
+    }
+
+  if (m_value != nvalue)
+    {
+    m_value = nvalue;
+    if (m_persist && m_valuep_hi && m_valuep_lo)
+      GetValueParts(*m_valuep_lo, *m_valuep_hi);
+    SetModified(true);
+    return true;
+    }
+  else
+    {
+    SetModified(false);
+    return false;
+    }
+  }
+
+bool OvmsMetricInt64::SetValue(std::string value, metric_unit_t units)
+  {
+  CheckTargetUnit(GetUnits(), units, false);
+  if (units == Native)
+    units = m_units;
+  int64_t nvalue;
+  switch (units)
+    {
+    case TimeUTC:
+    case TimeLocal:
+      {
+      nvalue = ParseTimerValue(value.c_str());
+      if (nvalue < 0)
+        return false;
+      break;
+      }
+    case DateUTC:
+    case DateLocal:
+      {
+      if (!value.empty() && value.find_first_not_of("0123456789") == std::string::npos)
+        {
+        // digits only... treat it as a time_t integer.
+        nvalue = atoll(value.c_str());
+        }
+      else
+        {
+        std::tm ourtime;
+        istringstream istr(value);
+        istr >> std::get_time(&ourtime,"%Y-%m-%dT%H:%M:%S");
+        if (istr.fail())
+          return false;
+        if (units==DateUTC)
+          nvalue = internal_timegm(&ourtime);
+        else
+          nvalue = mktime(&ourtime);
+        }
+      break;
+      }
+    default:
+      nvalue = atoll(value.c_str());
+      break;
+    }
+  return SetValue(nvalue, units);
+  }
+
+bool OvmsMetricInt64::SetValue(dbcNumber& value)
+  {
+  return SetValue(value.GetSignedInteger());
+  }
+
+void OvmsMetricInt64::Clear()
+  {
+  SetValue(0);
   OvmsMetric::Clear();
   }
 
@@ -2363,6 +2915,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MegaJoules:  return (value*3.6);
         default: break;
         }
+      break;
     case WattHours:
       switch (to)
         {
@@ -2370,6 +2923,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MegaJoules:  return (value*9/2500);
         default: break;
         }
+      break;
     case MegaJoules:
       switch (to)
         {
@@ -2377,18 +2931,21 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case WattHours:  return (value * 2500/9);
         default: break;
         }
+      break;
     case AmpHours:
       switch (to)
         {
         case Kilocoulombs:  return (value * 18) / 5; // * 3600 / 1000
         default: break;
         }
+      break;
     case Kilocoulombs:
       switch (to)
         {
         case AmpHours:  return (value * 5) / 18; // * 1000 / 3600
         default: break;
         }
+      break;
     case WattHoursPK:
       switch (to)
         {
@@ -2486,34 +3043,81 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       else if (to == Hours) return value/3600;
       break;
     case Minutes:
-      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*60;
-      else if (to == Hours) return value/60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*60;
+        case Hours:
+          return value/60;
+        default: break;
+        }
       break;
     case Hours:
-      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*3600;
-      else if (to == Minutes) return value*60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*3600;
+        case Minutes:
+          return value*60;
+        default: break;
+        }
       break;
     case TimeUTC:
-      if (to == TimeLocal)
+      switch (to)
         {
-        time_t now;
-        time(&now);
-        now -= now % (24*60*60);        // Back to midnight UTC
-        now += value;                   // The target time today
-        struct tm* tmu = localtime(&now);
-        return (tmu->tm_hour * 60 + tmu->tm_min) * 60 + tmu->tm_sec;
+        case Minutes: return  value/60;
+        case Hours: return value/3600;
+        case TimeLocal:
+          {
+          time_t now;
+          time(&now);
+          now -= now % (24*60*60);        // Back to midnight UTC
+          now += value;                   // The target time today
+          struct tm tmu;
+          localtime_r(&now, &tmu);
+          return time_unit_join(tmu.tm_hour, tmu.tm_min, tmu.tm_sec);
+          }
+        default:
+          break;
         }
-      else if (to == Minutes) return value/60;
-      else if (to == Hours) return value/3600;
       break;
+    case TimeLocal:
+      switch (to)
+        {
+        case Minutes: return  value/60;
+        case Hours: return value/3600;
+        case TimeUTC:
+          {
+          time_t now;
+          time(&now);
+          struct tm tmu;
+          localtime_r(&now, &tmu);
+          int hrs, mins, secs;
+          time_unit_split(value, hrs, mins, secs);
+          tmu.tm_hour = hrs;
+          tmu.tm_min = mins;
+          tmu.tm_sec = secs;
+          now = mktime(&tmu);
+          gmtime_r(&now, &tmu);
+          return time_unit_join(tmu.tm_hour, tmu.tm_min, tmu.tm_sec);
+          }
+        default: break;
+        }
+      break;
+
     case Kph:
       switch (to)
         {
         case Mph: return km_to_mi(value);
-        case MetersPS: return value * 5 / 18; // 1000/3600 
+        case MetersPS: return value * 5 / 18; // 1000/3600
         case FeetPS: return km_to_mi(value* feet_per_mile)/3600;
         default: break;
         }
+      break;
     case Mph:
       switch (to)
         {
@@ -2522,6 +3126,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MetersPS: return mi_to_km(value * 5 ) / 18;
         default: break;
         }
+      break;
     case MetersPS:
       switch (to)
         {
@@ -2530,6 +3135,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case FeetPS: return km_to_mi(value* feet_per_mile) / 1000;
         default: break;
         }
+      break;
     case FeetPS:
       switch (to)
         {
@@ -2538,6 +3144,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MetersPS: return mi_to_km(value * 1000 ) / feet_per_mile;
         default: break;
         }
+      break;
     case dbm:
       if (to == sq) return (value <= -51) ? ((value + 113)/2) : 0;
       break;
@@ -2650,6 +3257,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MegaJoules:  return (value*3.6);
         default: break;
         }
+      break;
     case WattHours:
       switch (to)
         {
@@ -2657,6 +3265,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MegaJoules:  return (value*0.0036);
         default: break;
         }
+      break;
     case MegaJoules:
       switch (to)
         {
@@ -2664,18 +3273,21 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case WattHours:  return (value * 277.7778);
         default: break;
         }
+      break;
     case AmpHours:
       switch (to)
         {
         case Kilocoulombs:  return value * 3.6; // * 3600 / 1000
         default: break;
         }
+      break;
     case Kilocoulombs:
       switch (to)
         {
         case AmpHours:  return value * 0.277778; // * 1000 / 3600
         default: break;
         }
+      break;
     case WattHoursPK:
       switch (to)
         {
@@ -2768,26 +3380,58 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         default: break;
         }
       break;
+    case TimeUTC:
+    case TimeLocal:
+      switch (to)
+        {
+        case Minutes: return  value/60;
+        case Hours: return value/3600;
+        case TimeLocal:
+        case TimeUTC:
+          {
+          int intVal = round(value);
+          return UnitConvert(from, to, intVal);
+          }
+        default: break;
+        }
+        break;
     case Seconds:
       if (to == Minutes) return value/60;
       else if (to == Hours) return value/3600;
       break;
     case Minutes:
-      if (to == Seconds) return value*60;
-      else if (to == Hours) return value/60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*60;
+        case Hours:
+          return value/60;
+        default: break;
+        }
       break;
     case Hours:
-      if (to == Seconds) return value*3600;
-      else if (to == Minutes) return value*60;
+      switch (to)
+        {
+        case Seconds:
+        case TimeUTC:
+        case TimeLocal:
+          return value*3600;
+        case Minutes:
+          return value*60;
+        default: break;
+        }
       break;
     case Kph:
       switch (to)
         {
         case Mph: return km_to_mi(value);
-        case MetersPS: return value * 0.277778; // 1000/3600 
+        case MetersPS: return value * 0.277778; // 1000/3600
         case FeetPS: return km_to_mi(value* feet_per_mile)/3600;
         default: break;
         }
+      break;
     case Mph:
       switch (to)
         {
@@ -2796,6 +3440,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MetersPS: return mi_to_km(value) * 0.277778; // 1000/36000
         default: break;
         }
+      break;
     case MetersPS:
       switch (to)
         {
@@ -2804,6 +3449,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case FeetPS: return km_to_mi(value* feet_per_mile) / 1000;
         default: break;
         }
+      break;
     case FeetPS:
       switch (to)
         {
@@ -2812,6 +3458,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MetersPS: return mi_to_km(value * 1000 ) / feet_per_mile;
         default: break;
         }
+      break;
     case dbm:
       if (to == sq) return int((value <= -51) ? ((value + 113)/2) : 0);
       break;

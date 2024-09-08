@@ -160,9 +160,12 @@ using namespace std;
 #define VWUP_BAT_MGMT_CELL_TBASE        0x1EAE    // cell temperature base address
 #define VWUP_BAT_MGMT_CELL_TLAST        0x1EBD    // cell temperature last address
 #define VWUP_BAT_MGMT_CELL_T17          0x7425    // cell temperature for module #17 (gen1)
+#define VWUP_BAT_MGMT_HIST18            0x74CF    // "hist. data 18": total AC, CCS & regen Ah charged
+#define VWUP_BAT_MGMT_SOH_CAC           0x74CB    // Ah of HV battery and all cells
 
 #define VWUP_BRKSENS_TEMP               0x1024    // sensor temperature
 
+#define VWUP_CHG_HEATER_I               0x150B    // heater, A/C, DC/DC current
 #define VWUP_CHG_POWER_EFF              0x15D6
 #define VWUP_CHG_POWER_LOSS             0x15E1
 #define VWUP_CHG_TEMP_BRD               0x15D8    // temperature battery charger system board
@@ -170,6 +173,8 @@ using namespace std;
 #define VWUP_CHG_TEMP_DCDCCOIL          0x15DA    // temperature battery charger DCDC coil
 #define VWUP_CHG_TEMP_COOLER            0x15E2    // charger coolant temperature
 #define VWUP_CHG_TEMP_DCDCPL            0x15EC    // temperature DCDC powerline
+#define VWUP_CHG_SOCKET                 0x1DDA    // socket status & temperatures
+#define VWUP_CHG_SOCK_STATS             0x1DE8    // socket insertions & lockings
 #define VWUP1_CHG_AC_U                  0x1DA9
 #define VWUP1_CHG_AC_I                  0x1DA8
 #define VWUP1_CHG_DC_U                  0x1DA7

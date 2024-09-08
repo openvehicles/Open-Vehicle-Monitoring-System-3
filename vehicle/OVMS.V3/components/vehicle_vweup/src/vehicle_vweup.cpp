@@ -95,6 +95,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   vweup_enable_t26 = false;
   vweup_con = 0;
   vweup_modelyear = 0;
+  climit_max = 16;
 
   m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
@@ -112,7 +113,6 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 
   m_chargestart_ticker = 0;
   m_chargestop_ticker = 0;
-  m_chargestate_lastsoc = 100;
   m_timermode_ticker = 0;
   m_timermode_new = false;
 
@@ -127,6 +127,9 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 
   // init configs:
   MyConfig.RegisterParam("xvu", "VW e-Up", true, true);
+  chg_autostop = MyConfig.GetParamValueBool("xvu", "chg_autostop");
+  m_chargestate_lastsoc = StdMetrics.ms_v_bat_soc->AsFloat();
+  StdMetrics.ms_v_door_chargeport->SetValue(true); // assume we are plugged on boot/init (esp. important if OBD connection is not configured!)
 
   // Init commands:
   OvmsCommand *cmd;
@@ -136,6 +139,9 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   cmd->RegisterCommand("status", "Get current polling status", ShellPollControl);
   cmd->RegisterCommand("pause", "Pause polling if running", ShellPollControl);
   cmd->RegisterCommand("continue", "Continue polling if paused", ShellPollControl);
+  cmd = cmd_xvu->RegisterCommand("profile0", "Interact with charging/climate control settings");
+  cmd->RegisterCommand("read", "Show current contents", CommandReadProfile0);
+  cmd->RegisterCommand("reset", "Reset to default values", CommandResetProfile0);
 
   // Load initial config:
   ConfigChanged(NULL);
@@ -168,8 +174,17 @@ const char* OvmsVehicleVWeUp::VehicleShortName()
 bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
 {
   int i;
-  int n;
   switch (key) {
+    case 6:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xvu", "chg_autostop", (bits & 1) != 0);
+      return true;
+    }
+    case 10:{
+      MyConfig.SetParamValue("xvu", "chg_soclimit", value);
+      return true;
+    }
     case 15: {
       int bits = atoi(value);
       MyConfig.SetParamValueBool("xvu", "canwrite", (bits & 1) != 0);
@@ -186,8 +201,8 @@ bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
           break;
         }
       }
-      n = atoi(value);
-      if (n < 2013) {
+      i = atoi(value);
+      if (i < 2013) {
         value = "2013";
       }
       MyConfig.SetParamValue("xvu", "modelyear", value);
@@ -203,15 +218,21 @@ bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
           break;
         }
       }
-      n = atoi(value);
-      if (n < 15) {
-        value = "15";
+      i = atoi(value);
+      if (i < CC_TEMP_MIN) {
+        value = STR(CC_TEMP_MIN);
       }
-      if (n > 30) {
-        value = "30";
+      if (i > CC_TEMP_MAX) {
+        value = STR(CC_TEMP_MAX);
       }
       MyConfig.SetParamValue("xvu", "cc_temp", value);
       return true;
+    case 22:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xvu", "cc_onbat", (bits & 1) != 0);
+      return true;
+    }
     default:
       return OvmsVehicle::SetFeature(key, value);
   }
@@ -220,6 +241,15 @@ bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
 const std::string OvmsVehicleVWeUp::GetFeature(int key)
 {
   switch (key) {
+    case 6:
+    {
+      int bits = (MyConfig.GetParamValueBool("xvu", "chg_autostop", false) ? 1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    case 10:
+      return MyConfig.GetParamValue("xvu", "chg_soclimit", STR(0));
     case 15: {
       int bits = (MyConfig.GetParamValueBool("xvu", "canwrite", false) ? 1 : 0);
       char buf[4];
@@ -230,12 +260,73 @@ const std::string OvmsVehicleVWeUp::GetFeature(int key)
       return MyConfig.GetParamValue("xvu", "modelyear", STR(DEFAULT_MODEL_YEAR));
     case 21:
       return MyConfig.GetParamValue("xvu", "cc_temp", STR(21));
+    case 22:
+    {
+      int bits = (MyConfig.GetParamValueBool("xvu", "cc_onbat", false) ? 1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
     default:
       return OvmsVehicle::GetFeature(key);
   }
 }
 
-void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
+/**
+ * ProcessMsgCommand: V2 compatibility protocol message command processing
+ *  result: optional payload or message to return to the caller with the command response
+ */
+OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::ProcessMsgCommand(string& result, int command, const char* args)
+{
+  switch (command)
+  {
+    case CMD_SetChargeAlerts:
+      return MsgCommandCA(result, command, args);
+
+    default:
+      return NotImplemented;
+  }
+}
+
+/**
+ * MsgCommandCA:
+ *  - CMD_QueryChargeAlerts()
+ *  - CMD_SetChargeAlerts(<range>,<soc>,[<power>],[<stopmode>])
+ *  - Result: <range>,<soc>,<time_range>,<time_soc>,<time_full>,<power>,<stopmode>
+ */
+OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &result, int command, const char* args)
+{
+  if (command == CMD_SetChargeAlerts)
+  {
+    std::istringstream sentence(args);
+    std::string token;
+    
+    // CMD_SetChargeAlerts(<soc limit>,<current limit>,<charge mode>)
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xvu", "chg_soclimit", atoi(token.c_str()));
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xvu", "chg_climit", atoi(token.c_str()));
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xvu", "chg_autostop", atoi(token.c_str()));
+    
+    // Synchronize with config changes:
+    ConfigChanged(NULL);
+  }
+  UpdateChargeTimes();
+  // Result: <soc limit>,<time_soc>,<time_full>,<current>,<autostop>
+  std::ostringstream buf;
+  buf
+    << std::setprecision(0)
+    << MyConfig.GetParamValueInt("xvu", "chg_soclimit", 80) << ","
+    << StdMetrics.ms_v_charge_duration_soc->AsInt() << ","
+    << StdMetrics.ms_v_charge_duration_full->AsInt() << ","
+    << profile0_charge_current << ","
+    << MyConfig.GetParamValueInt("xvu", "chg_autostop", 0);
+  result = buf.str();
+  return Success;
+}
+  
+  void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 {
   if (param && param->GetName() != "xvu") {
     return;
@@ -246,11 +337,16 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   bool vweup_enable_obd_new = MyConfig.GetParamValueBool("xvu", "con_obd", true);
   bool vweup_enable_t26_new = MyConfig.GetParamValueBool("xvu", "con_t26", true);
   vweup_enable_write = MyConfig.GetParamValueBool("xvu", "canwrite", false);
-  vweup_cc_temp_int = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
   int dc_interval = MyConfig.GetParamValueInt("xvu", "dc_interval", 0);
   int cell_interval_drv = MyConfig.GetParamValueInt("xvu", "cell_interval_drv", 15);
   int cell_interval_chg = MyConfig.GetParamValueInt("xvu", "cell_interval_chg", 60);
   int cell_interval_awk = MyConfig.GetParamValueInt("xvu", "cell_interval_awk", 60);
+  int vweup_charge_current_new = MyConfig.GetParamValueInt("xvu", "chg_climit", 16);
+  int vweup_cc_temp_new = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
+  int vweup_chg_soclimit_new = MyConfig.GetParamValueInt("xvu", "chg_soclimit", 80);
+  bool chg_autostop_new = MyConfig.GetParamValueBool("xvu", "chg_autostop", false);
+  bool chg_workaround_new = MyConfig.GetParamValueBool("xvu", "chg_workaround", false);
+  ESP_LOGD(TAG, "ConfigChanged: chg_climit: %d, chg_climit_old: %d, cc_temp: %d, cc_temp_old: %d", vweup_charge_current_new, profile0_charge_current_old, vweup_cc_temp_new, profile0_cc_temp_old);
 
   bool do_obd_init = (
     (!vweup_enable_obd && vweup_enable_obd_new) ||
@@ -282,51 +378,55 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   float socfactor = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
   float sohfactor = StdMetrics.ms_v_bat_soh->AsFloat() / 100;
   if (sohfactor == 0) sohfactor = 1;
-  if (vweup_modelyear > 2019)
-  {
-    // 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
-    if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
-      StdMetrics.ms_v_bat_cac->SetValue(120 * sohfactor);
-    StdMetrics.ms_v_bat_range_full->SetValue(260 * sohfactor);
-    if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
-      StdMetrics.ms_v_bat_range_ideal->SetValue(260 * sohfactor * socfactor);
-    if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
-      m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
+  if (do_obd_init) {
+    if (vweup_modelyear > 2019)
+    {
+      // 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
+      if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
+        StdMetrics.ms_v_bat_cac->SetValue(120 * sohfactor);
+      StdMetrics.ms_v_bat_range_full->SetValue(260 * sohfactor);
+      if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
+        StdMetrics.ms_v_bat_range_ideal->SetValue(260 * sohfactor * socfactor);
+      if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
+        m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
+      else
+        m_range_est_factor = 2.6f;
+      StdMetrics.ms_v_charge_climit->SetValue(32);
+      climit_max = 32;
+
+      // Battery pack layout: 2P84S in 14 modules
+      BmsSetCellArrangementVoltage(84, 6);
+      BmsSetCellArrangementTemperature(14, 1);
+      BmsSetCellLimitsVoltage(2.0, 5.0);
+      BmsSetCellLimitsTemperature(-39, 200);
+      BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+      BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+    }
     else
-      m_range_est_factor = 2.6f;
-    StdMetrics.ms_v_charge_climit->SetValue(32);
+    {
+      // 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
+      if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
+        StdMetrics.ms_v_bat_cac->SetValue(50 * sohfactor);
+      StdMetrics.ms_v_bat_range_full->SetValue(160 * sohfactor);
+      if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
+        StdMetrics.ms_v_bat_range_ideal->SetValue(160 * sohfactor * socfactor);
+      if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
+        m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
+      else
+        m_range_est_factor = 1.6f;
+      StdMetrics.ms_v_charge_climit->SetValue(16);
+      climit_max = 16;
 
-    // Battery pack layout: 2P84S in 14 modules
-    BmsSetCellArrangementVoltage(84, 6);
-    BmsSetCellArrangementTemperature(14, 1);
-    BmsSetCellLimitsVoltage(2.0, 5.0);
-    BmsSetCellLimitsTemperature(-39, 200);
-    BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
-    BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+      // Battery pack layout: 2P102S in 17 modules
+      BmsSetCellArrangementVoltage(102, 6);
+      BmsSetCellArrangementTemperature(17, 1);
+      BmsSetCellLimitsVoltage(2.0, 5.0);
+      BmsSetCellLimitsTemperature(-39, 200);
+      BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+      BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+    }
   }
-  else
-  {
-    // 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
-    if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
-      StdMetrics.ms_v_bat_cac->SetValue(50 * sohfactor);
-    StdMetrics.ms_v_bat_range_full->SetValue(160 * sohfactor);
-    if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
-      StdMetrics.ms_v_bat_range_ideal->SetValue(160 * sohfactor * socfactor);
-    if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
-      m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
-    else
-      m_range_est_factor = 1.6f;
-    StdMetrics.ms_v_charge_climit->SetValue(16);
-
-    // Battery pack layout: 2P102S in 17 modules
-    BmsSetCellArrangementVoltage(102, 6);
-    BmsSetCellArrangementTemperature(17, 1);
-    BmsSetCellLimitsVoltage(2.0, 5.0);
-    BmsSetCellLimitsTemperature(-39, 200);
-    BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
-    BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
-  }
-
+  
   // Init OBD subsystem:
   // (needs to be initialized first as the T26 module depends on OBD being ready)
   if (vweup_enable_obd && do_obd_init) {
@@ -337,9 +437,74 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   }
 
   // Init T26 subsystem:
-  if (vweup_enable_t26) {
+  if (vweup_enable_t26 && do_obd_init) {
     T26Init();
   }
+
+  // Handle changed T26 settings:
+  if (vweup_enable_t26)
+  {
+    bool soc_above_max = StdMetrics.ms_v_bat_soc->AsFloat() >= StdMetrics.ms_v_charge_limit_soc->AsInt();
+    if (vweup_chg_soclimit_new != StdMetrics.ms_v_charge_limit_soc->AsInt()) {
+      if (vweup_chg_soclimit_new == 0 || vweup_chg_soclimit_new > StdMetrics.ms_v_bat_soc->AsFloat()) {
+        ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to above current SoC");
+        if (IsCharging()) {
+          ESP_LOGD(TAG, "ConfigChanged: already charging, nothing to do");
+          StdMetrics.ms_v_charge_state->SetValue("charging"); // switch from topoff mode to charging
+        }
+        else if (soc_above_max) { // only start charge when previous max SoC was <= SoC
+          ESP_LOGD(TAG, "ConfigChanged: trying to start charge...");
+          fakestop = true;
+          StartStopChargeT26(true);
+        }
+      }
+      else {
+        ESP_LOGD(TAG, "ConfigChanged: SoC limit changed to below current SoC");
+        if (IsCharging() && !soc_above_max) { // only stop charge when previous max SoC was > SoC
+          ESP_LOGD(TAG, "ConfigChanged: stopping charge...");
+          StartStopChargeT26(false);
+        }
+        StdMetrics.ms_v_charge_limit_soc->SetValue(vweup_chg_soclimit_new);
+      }
+    }
+    if (vweup_charge_current_new != profile0_charge_current && profile0_charge_current != 0) {
+      if (vweup_charge_current_new != profile0_charge_current_old) {
+        ESP_LOGD(TAG, "ConfigChanged: Charge current changed in ConfigChanged from %d to %d", profile0_charge_current, vweup_charge_current_new);
+        SetChargeCurrent(vweup_charge_current_new);
+      }
+      else ESP_LOGD(TAG, "ConfigChanged: charge current reset to previous value %d", profile0_charge_current_old);
+    }
+    if (vweup_cc_temp_new != profile0_cc_temp && profile0_cc_temp != 0) {
+      if (vweup_cc_temp_new != profile0_cc_temp_old) {
+        ESP_LOGD(TAG, "ConfigChanged: CC_temp parameter changed in ConfigChanged from %d to %d", profile0_cc_temp, vweup_cc_temp_new);
+        CCTempSet(vweup_cc_temp_new);
+      }
+      else ESP_LOGD(TAG, "ConfigChanged: cc temp reset to previous value %d", profile0_cc_temp_old);
+    }
+    if (chg_workaround_new != chg_workaround) {
+      ESP_LOGD(TAG, "ConfigChanged: charge control workaround turned %s", chg_workaround_new ? "on" : "off");
+      if (chg_workaround_new) {
+        ESP_LOGW(TAG, "Turning on charge workaround may in rare cases result in situations where the car does not charge anymore!");
+        ESP_LOGW(TAG, "Only use this function if you can handle the consequences!");
+      }
+      else {
+        ESP_LOGI(TAG, "Note: charge control may not work reliably without workaround.");
+        if (profile0_charge_current == 1) {
+          ESP_LOGD(TAG, "ConfigChanged: resetting charge current to %dA", profile0_charge_current_old);
+          SetChargeCurrent(profile0_cc_temp_old);
+        }
+      }
+      chg_workaround = chg_workaround_new;
+    }
+    if (chg_autostop_new != chg_autostop) {
+      chg_autostop = chg_autostop_new;
+      if (!chg_autostop_new && soc_above_max && StdMetrics.ms_v_bat_soc->AsFloat() < 100) {
+        ESP_LOGD(TAG, "ConfigChanged: charge autostop disabled & SoC above max SoC, trying to start charge...");
+        fakestop = true;
+        StartStopChargeT26(true);
+      }
+    }
+  } // if (vweup_enable_t26)
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // Init Web subsystem:
@@ -350,8 +515,10 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   // Set standard SOH from configured source:
   if (IsOBDReady())
   {
-    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "charge");
-    if (soh_source == "range" && m_bat_soh_range->IsDefined())
+    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "vw");
+    if (soh_source == "vw" && m_bat_soh_range->IsDefined())
+      SetSOH(m_bat_soh_vw->AsFloat());
+    else if (soh_source == "range" && m_bat_soh_range->IsDefined())
       SetSOH(m_bat_soh_range->AsFloat());
     else if (soh_source == "charge" && m_bat_soh_charge->IsDefined())
       SetSOH(m_bat_soh_charge->AsFloat());
@@ -369,12 +536,14 @@ void OvmsVehicleVWeUp::MetricModified(OvmsMetric* metric)
 {
   // If one of our SOH sources got updated, derive standard SOH, CAC and ranges from it
   // if it's the configured SOH source:
-  if (metric == m_bat_soh_range || metric == m_bat_soh_charge)
+  if (metric == m_bat_soh_vw || metric == m_bat_soh_range || metric == m_bat_soh_charge)
   {
     // Check SOH source configuration:
     float soh_new = 0;
-    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "charge");
-    if (metric == m_bat_soh_range && soh_source == "range")
+    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "vw");
+    if (metric == m_bat_soh_vw && soh_source == "vw")
+      soh_new = metric->AsFloat();
+    else if (metric == m_bat_soh_range && soh_source == "range")
       soh_new = metric->AsFloat();
     else if (metric == m_bat_soh_charge && soh_source == "charge")
       soh_new = metric->AsFloat();
@@ -416,16 +585,37 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
   //  so we get a notification at our usual charge stop during range
   //  charging as well.
   // Fallback for v.c.limit.soc is config xvu ctp.soclimit
+  int suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
+  float soc = StdMetrics.ms_v_bat_soc->AsFloat();
   if (StdMetrics.ms_v_charge_state->AsString() == "charging")
   {
-    float soc = StdMetrics.ms_v_bat_soc->AsFloat();
-    int suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
-    if (m_chargestate_lastsoc <= suff_soc && soc > suff_soc) {
-      ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), entering topping off charge phase", suff_soc);
-      StdMetrics.ms_v_charge_state->SetValue("topoff");
+    bool chg_autostop = MyConfig.GetParamValueBool("xvu", "chg_autostop");
+    if (m_chargestate_lastsoc < suff_soc && soc >= suff_soc) {
+      ESP_LOGD(TAG, "Ticker1: SOC crossed from %.2f to %.2f, autostop %d", m_chargestate_lastsoc, soc, chg_autostop);
+      if (HasT26() && chg_autostop && suff_soc > 0) // exception for no limit (0): don't stop when we reach 100%
+      {
+          if (profile0_state == PROFILE0_IDLE) {
+            ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), stopping charge", suff_soc);
+            StartStopChargeT26(false);
+          }
+          else {
+            ESP_LOGW(TAG, "Ticker1: Can't stop charge, profile0 communication already running");
+            MyNotify.NotifyString("alert", "Charge control", "Failed to stop charge on SoC limit!");
+          }
+      }
+      else
+      {
+        ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), entering topping off charge phase", suff_soc);
+        StdMetrics.ms_v_charge_state->SetValue("topoff");
+      }
     }
-    m_chargestate_lastsoc = soc;
   }
+  if (m_chargestate_lastsoc > suff_soc && soc < suff_soc) {
+    ESP_LOGI(TAG, "Ticker1: SOC fell below sufficient SOC limit (%d%%), trying to restart charge...", suff_soc);
+    fakestop = true;
+    StartStopChargeT26(true);
+  }
+  m_chargestate_lastsoc = soc;
 
   // Process a delayed timer mode change?
   if (m_chargestate_ticker == 0 && m_chargestart_ticker == 0 && m_chargestop_ticker == 0 &&
@@ -456,7 +646,6 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
         MyNotify.NotifyString("info", "charge.timermode", buf.c_str());
       }
     }
-
     m_timermode_ticker = 0;
   }
 }
@@ -891,9 +1080,8 @@ int OvmsVehicleVWeUp::CalcChargeTime(float capacity, float max_pwr, int from_soc
 
 /**
  * UpdateChargeTimes: update all charge time predictions
- *  This is called by Ticker60() and by IncomingPollReply(), and on config changes.
- *  While charging, the car delivers a CTP for the current SOC limit if set, or 100%,
- *  but only if the OBD connection is available.
+ *  This is called by Ticker60() and by IncomingPollReply(), and on config changes
+
  */
 void OvmsVehicleVWeUp::UpdateChargeTimes()
 {
@@ -920,7 +1108,7 @@ void OvmsVehicleVWeUp::UpdateChargeTimes()
   // Set v.c.limit.soc (sufficient SOC for current charge):
   int suff_soc = timer_socmax;
   if (timer_socmax == 0 || timer_socmax == 100)
-    suff_soc = MyConfig.GetParamValueFloat("xvu", "ctp.soclimit", 80);
+    suff_soc = MyConfig.GetParamValueFloat("xvu", "chg_soclimit", 80);
   StdMetrics.ms_v_charge_limit_soc->SetValue(suff_soc);
 
   // Calculate charge times for 100% and…
@@ -943,7 +1131,11 @@ void OvmsVehicleVWeUp::UpdateChargeTimes()
   }
 
   // Derive charge mode from final SOC destination:
-  if (!timermode || timer_socmax == 100)
+  int final_soc = (!timermode) ? 100 : timer_socmax;
+  if (HasT26() && MyConfig.GetParamValueBool("xvu", "chg_autostop") && suff_soc > 0)
+    final_soc = suff_soc;
+
+  if (final_soc == 100)
     StdMetrics.ms_v_charge_mode->SetValue("range");
   else
     StdMetrics.ms_v_charge_mode->SetValue("standard");

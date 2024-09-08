@@ -32,29 +32,29 @@ static const char *TAGPOLL = "v-trio-poll";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleMitsubishi::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
-  //ESP_LOGW(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
+  //ESP_LOGW(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", job.moduleid_rec, job.type, job.pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, job.mlremain);
   // init / fill rx buffer:
-    if (m_poll_ml_frame == 0) 
+    if (job.mlframe == 0)
     {
       m_rxbuf.clear();
-      m_rxbuf.reserve(length + mlremain);
+      m_rxbuf.reserve(length + job.mlremain);
     }
-    
+
     m_rxbuf.append((char*)data, length);
 
-    if (mlremain)
+    if (job.mlremain)
       return;
 
-    ESP_LOGV(TAGPOLL, "IncomingPollReply: PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+    ESP_LOGV(TAGPOLL, "IncomingPollReply: PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
   	//OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
-    switch (m_poll_moduleid_low)
-		{
-  		// ****** BMU *****
-  		case 0x762:
+    switch (job.moduleid_rec)
+    {
+      // ****** BMU *****
+      case 0x762:
       {
-        if(pid == 0x01)
+        if(job.pid == 0x01)
         {
           OvmsMetricFloat* xmi_bat_soc_real = MyMetrics.InitFloat("xmi.b.soc.real", 10, 0, Percentage);
           xmi_bat_soc_real->SetValue((RXB_BYTE(0) * 0.5) - 5);
@@ -81,7 +81,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
         Miev: 88cell voltage, 24 bit blocks 16 bit voltage date, 
         */ 
         
-        if(pid == 0x02 && !has_broadcast)
+        if(job.pid == 0x02 && !has_broadcast)
         {
           BmsRestartCellVoltages();
           
@@ -160,16 +160,16 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
         72 bit 66 cell temp after first 33 bit (cell temp) 3 fe bit 
         */
 
-        if(pid == 0x03 && !has_broadcast)
+        if(job.pid == 0x03 && !has_broadcast)
         {
           BmsRestartCellTemperatures();
           for (int i = 0; i < 33; i++) {
             BmsSetCellTemperature(i, (RXB_BYTE(i) - 50.0));
-            ESP_LOGV(TAGPOLL, " %i cell temp: %0f",i, RXB_BYTE(i) - 50.0f);
+            //ESP_LOGV(TAGPOLL, " %i cell temp: %0f",i, RXB_BYTE(i) - 50.0f);
           }
           for (int i = 36; i < 69; i++) {
             BmsSetCellTemperature(33+i-36, (RXB_BYTE(i) - 50.0));
-            ESP_LOGV(TAGPOLL, " %i cell temp: %0f",33+i-36, RXB_BYTE(i) - 50.0f);
+            //ESP_LOGV(TAGPOLL, " %i cell temp: %0f",33+i-36, RXB_BYTE(i) - 50.0f);
           }
         }
         break;
@@ -178,18 +178,18 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
       // ****** OBC *****
       case 0x766:
       {
-        ESP_LOGV(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
+        ESP_LOGV(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", job.moduleid_rec, job.type, job.pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, job.mlremain);
         break;
       }
 
       // ****** HVAC *****
       case 0x772:
       {
-        if(pid == 0x13)
+        if(job.pid == 0x13)
         {
           StandardMetrics.ms_v_env_cabintemp->SetValue((RXB_BYTE(2) * 0.25) - 16.0);
           StandardMetrics.ms_v_env_temp->SetValue((RXB_BYTE(4) * 0.3) - 29.0);
-          ESP_LOGI(TAGPOLL, "IntTempSen: %0f, AmbTempContr: %0f, AmbTempCan: %0f, AirTempSen: %0f, WaterTemp_HVAC: %0f", (RXB_BYTE(2) * 0.25) - 16.0, (RXB_BYTE(3) * 0.5) - 40.0, (RXB_BYTE(4) * 0.3) - 29.0, (RXB_BYTE(5) * 0.25) - 16.0,(RXB_BYTE(6) * 0.6) - 40.0);
+          //ESP_LOGV(TAGPOLL, "IntTempSen: %0f, AmbTempContr: %0f, AmbTempCan: %0f, AirTempSen: %0f, WaterTemp_HVAC: %0f", (RXB_BYTE(2) * 0.25) - 16.0, (RXB_BYTE(3) * 0.5) - 40.0, (RXB_BYTE(4) * 0.3) - 29.0, (RXB_BYTE(5) * 0.25) - 16.0,(RXB_BYTE(6) * 0.6) - 40.0);
         }
 
         break;
@@ -198,7 +198,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
       // ****** METER  *****
       case 0x783:
       {
-        if(pid == 0xCE)
+        if(job.pid == 0xCE)
         {
           ms_v_trip_A->SetValue(RXB_UINT24b(0) * 0.1, Kilometers);
           ms_v_trip_B->SetValue(RXB_UINT24b(3) * 0.1, Kilometers); 
@@ -207,7 +207,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
       }
 
      default:
-		   ESP_LOGV(TAGPOLL, "Unknown module: %03" PRIx32, m_poll_moduleid_low);
-	  }
+      ESP_LOGV(TAGPOLL, "Unknown module: %03" PRIx32, job.moduleid_rec);
+    }
 
 }

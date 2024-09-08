@@ -43,11 +43,14 @@ MetricsStandard::MetricsStandard()
   ms_m_tasks = new OvmsMetricInt(MS_M_TASKS, SM_STALE_MID);
   ms_m_freeram = new OvmsMetricInt(MS_M_FREERAM, SM_STALE_MID);
   ms_m_monotonic = new OvmsMetricInt(MS_M_MONOTONIC, SM_STALE_MIN, Seconds);
-  ms_m_timeutc = new OvmsMetricInt(MS_M_TIME_UTC, SM_STALE_MIN, Seconds);
+  ms_m_timeutc = new OvmsMetricInt64(MS_M_TIME_UTC, SM_STALE_MIN, DateUTC);
 
   ms_m_net_type = new OvmsMetricString(MS_N_TYPE, SM_STALE_MAX);
   ms_m_net_sq = new OvmsMetricInt(MS_N_SQ, SM_STALE_MAX, dbm);
   ms_m_net_provider = new OvmsMetricString(MS_N_PROVIDER, SM_STALE_MAX);
+  ms_m_net_connected = new OvmsMetricBool(MS_N_CONNECTED);
+  ms_m_net_ip = new OvmsMetricBool(MS_N_IP);
+  ms_m_net_good_sq = new OvmsMetricBool(MS_N_GOOD_SQ);
   ms_m_net_wifi_sq = new OvmsMetricFloat(MS_N_WIFI_SQ, SM_STALE_MAX, dbm);
   ms_m_net_wifi_network = new OvmsMetricString(MS_N_WIFI_NETWORK, SM_STALE_MAX);
   ms_m_net_mdm_sq = new OvmsMetricFloat(MS_N_MDM_SQ, SM_STALE_MAX, dbm);
@@ -249,7 +252,7 @@ MetricsStandard::MetricsStandard()
   ms_v_env_cabinvent = new OvmsMetricString(MS_V_ENV_CABINVENT, SM_STALE_MID);
 
   ms_v_env_service_range = new OvmsMetricInt(MS_V_ENV_SERV_RANGE, SM_STALE_MID, Kilometers);
-  ms_v_env_service_time = new OvmsMetricInt(MS_V_ENV_SERV_TIME, SM_STALE_MID, Seconds);
+  ms_v_env_service_time = new OvmsMetricInt64(MS_V_ENV_SERV_TIME, SM_STALE_MID, DateLocal);
 
   //
   // Position / movement metrics
@@ -259,7 +262,7 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_gpshdop = new OvmsMetricFloat(MS_V_POS_GPSHDOP, SM_STALE_MIN);
   ms_v_pos_satcount= new OvmsMetricInt(MS_V_POS_SATCOUNT, SM_STALE_MIN);
   ms_v_pos_gpssq = new OvmsMetricInt(MS_V_POS_GPSSQ, SM_STALE_MIN, Percentage);
-  ms_v_pos_gpstime = new OvmsMetricInt(MS_V_POS_GPSTIME, SM_STALE_MIN, Seconds);
+  ms_v_pos_gpstime = new OvmsMetricInt64(MS_V_POS_GPSTIME, SM_STALE_MIN, DateLocal);
   ms_v_pos_latitude = new OvmsMetricFloat(MS_V_POS_LATITUDE, SM_STALE_MIN, Other, true);
   ms_v_pos_longitude = new OvmsMetricFloat(MS_V_POS_LONGITUDE, SM_STALE_MIN, Other, true);
   ms_v_pos_location = new OvmsMetricString(MS_V_POS_LOCATION, SM_STALE_MID);
@@ -273,6 +276,12 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_valet_latitude = new OvmsMetricFloat(MS_V_POS_VALET_LATITUDE, SM_STALE_NONE, Other, true);
   ms_v_pos_valet_longitude = new OvmsMetricFloat(MS_V_POS_VALET_LONGITUDE, SM_STALE_NONE, Other, true);
   ms_v_pos_valet_distance = new OvmsMetricFloat(MS_V_POS_VALET_DISTANCE, SM_STALE_HIGH, Meters, true);
+
+  // Use fixed 6 digit precision for latitude/longitude formatting:
+  ms_v_pos_latitude->SetFormat(6, true);
+  ms_v_pos_longitude->SetFormat(6, true);
+  ms_v_pos_valet_latitude->SetFormat(6, true);
+  ms_v_pos_valet_longitude->SetFormat(6, true);
 
   //
   // TPMS: tyre monitoring metrics

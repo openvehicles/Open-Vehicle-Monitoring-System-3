@@ -50,6 +50,9 @@
 
 #define MS_N_TYPE                   "m.net.type"
 #define MS_N_SQ                     "m.net.sq"
+#define MS_N_CONNECTED              "m.net.connected"
+#define MS_N_IP                     "m.net.ip"
+#define MS_N_GOOD_SQ                "m.net.good.sq"
 #define MS_N_PROVIDER               "m.net.provider"
 #define MS_N_MDM_ICCID              "m.net.mdm.iccid"
 #define MS_N_MDM_MODEL              "m.net.mdm.model"
@@ -284,7 +287,7 @@ class MetricsStandard
     OvmsMetricInt*    ms_m_tasks;
     OvmsMetricInt*    ms_m_freeram;
     OvmsMetricInt*    ms_m_monotonic;
-    OvmsMetricInt*    ms_m_timeutc;
+    OvmsMetricInt64*  ms_m_timeutc;
 
     OvmsMetricString* ms_m_net_type;                      // none, wifi, modem
     OvmsMetricInt*    ms_m_net_sq;                        // Network signal quality [dbm]
@@ -297,6 +300,9 @@ class MetricsStandard
     OvmsMetricString* ms_m_net_mdm_iccid;                 // ICCID of SIM card in modem
     OvmsMetricString* ms_m_net_mdm_model;                 // Model of modem discovered
     OvmsMetricString* ms_m_net_mdm_mode;                  // Cellular connection mode and status
+    OvmsMetricBool*  ms_m_net_connected;                  // True = connected_any is true
+    OvmsMetricBool*  ms_m_net_ip;                         // True = device has ip available
+    OvmsMetricBool*  ms_m_net_good_sq;                    // True = sq is above the configured threshold for sq usability
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
     OvmsMetricBitset<10,0>* ms_m_egpio_input;             // EGPIO (MAX7317) input port state (ports 0…9)
@@ -489,7 +495,7 @@ class MetricsStandard
     OvmsMetricString* ms_v_env_cabinintake;               // Cabin intake type (fresh, recirc, etc)
     OvmsMetricString* ms_v_env_cabinvent;                 // Cabin vent type (comma-separated list of feet, face, screen, etc)
     OvmsMetricInt*    ms_v_env_service_range;             // Distance to next scheduled maintenance/service [km]
-    OvmsMetricInt*    ms_v_env_service_time;              // Time to next scheduled maintenance/service [Seconds]
+    OvmsMetricInt64*  ms_v_env_service_time;            // Time of scheduled maintenance/service [DateLocal]
 
     //
     // Position / location metrics
@@ -499,7 +505,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_pos_gpshdop;                   // Horizontal dilution of precision (smaller=better)
     OvmsMetricInt*    ms_v_pos_satcount;
     OvmsMetricInt*    ms_v_pos_gpssq;                     // GPS signal quality [%] (<30 unusable, >50 good, >80 excellent)
-    OvmsMetricInt*    ms_v_pos_gpstime;                   // Time (UTC) of GPS coordinates [Seconds]
+    OvmsMetricInt64*  ms_v_pos_gpstime;                   // Time (UTC) of GPS coordinates [Seconds]
     OvmsMetricFloat*  ms_v_pos_latitude;
     OvmsMetricFloat*  ms_v_pos_longitude;
     OvmsMetricString* ms_v_pos_location;                  // Name of current location if defined

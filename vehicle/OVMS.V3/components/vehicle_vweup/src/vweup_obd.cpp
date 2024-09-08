@@ -50,7 +50,7 @@ static const char *TAG = "v-vweup";
 // General PIDs for all model years
 //
 
-const OvmsVehicle::poll_pid_t vweup_polls[] = {
+const OvmsPoller::poll_pid_t vweup_polls[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
   // { ecu, type, pid, {_OFF,_AWAKE,_CHARGING,_ON}, bus, protocol }
 
@@ -74,9 +74,10 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   // Same tick & order important of above 2: VWUP_BAT_MGMT_CELL_MIN calculates the delta
 
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP,             {  0, 20, 20, 20}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST18,           {  0, 20, 20, 20}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOH_CAC,          {  0, 20, 20, 20}, 1, ISOTP_STD},
 
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  0, 10,  0}, 1, ISOTP_STD},
-  {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_LOSS,            {  0,  0, 10,  0}, 1, ISOTP_STD},
 
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_ODOMETER,         {  0,999,  0, 15}, 1, ISOTP_STD},
   {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_CAP,             {  0,  0,  0, 60}, 1, ISOTP_STD},
@@ -98,6 +99,9 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_LIMITS,       {  0, 12, 12, 12}, 1, ISOTP_STD},
   // Note: m_timermode_ticker needs to be the polling interval for VWUP_CHG_MGMT_SOC_LIMITS + 1
   //  (see response handler for VWUP_CHG_MGMT_HV_CHGMODE)
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_HEATER_I,              {  0, 20, 20, 20}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_SOCKET,                {  0,  5,  5,  5}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_SOCK_STATS,            {  0, 20, 20, 20}, 1, ISOTP_STD},
 
   {VWUP_BRK,      UDS_SESSION, VWUP_EXTDIAG_START,          {  0,  0,  0, 30}, 1, ISOTP_STD},
   {VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  0,  0, 30}, 1, ISOTP_STD},
@@ -106,7 +110,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 //
 // Specific PIDs for gen1 model (before year 2020)
 //
-const OvmsVehicle::poll_pid_t vweup_gen1_polls[] = {
+const OvmsPoller::poll_pid_t vweup_gen1_polls[] = {
   // VWUP_MOT_ELEC_GEAR not available
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_DRIVEMODE,        {  0,  0,  0,  5}, 1, ISOTP_STD},
 
@@ -122,7 +126,7 @@ const OvmsVehicle::poll_pid_t vweup_gen1_polls[] = {
 //
 // Specific PIDs for gen2 model (from year 2020)
 //
-const OvmsVehicle::poll_pid_t vweup_gen2_polls[] = {
+const OvmsPoller::poll_pid_t vweup_gen2_polls[] = {
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_GEAR,             {  0,  0,  0,  2}, 1, ISOTP_STD},
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_DRIVEMODE,        {  0,  0,  0,  5}, 1, ISOTP_STD},
 
@@ -186,8 +190,11 @@ void OvmsVehicleVWeUp::OBDInit()
     TPMSEmergency = MyMetrics.InitVector<float>("xvu.v.t.emgcy", SM_STALE_NONE, 0);
 
     // Battery SOH:
+    //  . from ECU 8C PID 74 CB
     //  - from MFD range estimation
     //  - from charge energy counting
+    if (!(m_bat_soh_vw = (OvmsMetricFloat*)MyMetrics.Find("xvu.b.soh.vw")))
+      m_bat_soh_vw  = new OvmsMetricFloat("xvu.b.soh.vw", SM_STALE_MAX, Percentage, true);
     if (!(m_bat_soh_range = (OvmsMetricFloat*)MyMetrics.Find("xvu.b.soh.range")))
       m_bat_soh_range  = new OvmsMetricFloat("xvu.b.soh.range", SM_STALE_MAX, Percentage, true);
     if (!(m_bat_soh_charge = (OvmsMetricFloat*)MyMetrics.Find("xvu.b.soh.charge")))
@@ -218,7 +225,6 @@ void OvmsVehicleVWeUp::OBDInit()
   // Init/reconfigure poller
   //
 
-  OvmsRecMutexLock lock(&m_poll_mutex);
   obd_state_t previous_state = m_obd_state;
   m_obd_state = OBDS_Config;
 
@@ -313,7 +319,7 @@ void OvmsVehicleVWeUp::OBDInit()
     int cmods = (vweup_modelyear > 2019) ? 14 : 17;
 
     // Add PIDs to poll list:
-    OvmsVehicle::poll_pid_t p = { VWUP_BAT_MGMT, UDS_READ, 0, {0,0,0,0}, 1, ISOTP_STD };
+    OvmsPoller::poll_pid_t p = { VWUP_BAT_MGMT, UDS_READ, 0, {0,0,0,0}, 1, ISOTP_STD };
     p.polltime[VWEUP_ON]        = m_cfg_cell_interval_drv;
     p.polltime[VWEUP_CHARGING]  = m_cfg_cell_interval_chg;
     p.polltime[VWEUP_AWAKE]     = m_cfg_cell_interval_awk;
@@ -361,12 +367,10 @@ void OvmsVehicleVWeUp::OBDInit()
 void OvmsVehicleVWeUp::OBDDeInit()
 {
   ESP_LOGI(TAG, "Stopping connection: OBDII");
-  OvmsRecMutexLock lock(&m_poll_mutex);
   m_obd_state = OBDS_DeInit;
   PollSetPidList(m_can1, NULL);
   m_poll_vector.clear();
 }
-
 
 /**
  * OBDSetState: set the OBD state, log the change
@@ -376,14 +380,12 @@ bool OvmsVehicleVWeUp::OBDSetState(obd_state_t state)
   if (m_obd_state == OBDS_Run && state == OBDS_Pause)
   {
     ESP_LOGW(TAG, "OBDSetState: %s -> %s", GetOBDStateName(m_obd_state), GetOBDStateName(state));
-    OvmsRecMutexLock lock(&m_poll_mutex);
     PollSetPidList(m_can1, NULL);
     m_obd_state = OBDS_Pause;
   }
   else if (m_obd_state == OBDS_Pause && state == OBDS_Run)
   {
     ESP_LOGI(TAG, "OBDSetState: %s -> %s", GetOBDStateName(m_obd_state), GetOBDStateName(state));
-    OvmsRecMutexLock lock(&m_poll_mutex);
     PollSetPidList(m_can1, m_poll_vector.data());
     m_obd_state = OBDS_Run;
   }
@@ -406,7 +408,7 @@ void OvmsVehicleVWeUp::PollSetState(uint8_t state)
  * PollerStateTicker: check for state changes
  *  This is called by VehicleTicker1() just before the next PollerSend().
  */
-void OvmsVehicleVWeUp::PollerStateTicker()
+void OvmsVehicleVWeUp::PollerStateTicker(canbus *bus)
 {
   // T26 state management has precedence if available:
   if (HasT26() || m_obd_state != OBDS_Run)
@@ -477,8 +479,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
       SetUsePhase(UP_Charging);
       ResetChargeCounters();
 
-      // TODO: get real port & pilot states, fake for now:
-      StdMetrics.ms_v_door_chargeport->SetValue(true);
+      // TODO: get real charge pilot states, fake for now:
       StdMetrics.ms_v_charge_pilot->SetValue(true);
 
       PollSetState(VWEUP_CHARGING);
@@ -557,13 +558,13 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 }
 
 
-void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   if (m_obd_state != OBDS_Run)
     return;
 
   // If not all data is here: wait for the next call
-  if (!PollReply.AddNewData(pid, data, length, mlremain)) {
+  if (!PollReply.AddNewData(job.pid, data, length, job.mlremain)) {
     return;
   }
 
@@ -574,16 +575,16 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
   // Handle reply for diagnostic session
   //
 
-  if (type == UDS_SESSION)
+  if (job.type == UDS_SESSION)
     return;
 
   //
   // Handle BMS cell voltage & temperatures
   //
 
-  if (pid >= VWUP_BAT_MGMT_CELL_VBASE && pid <= VWUP_BAT_MGMT_CELL_VLAST)
+  if (job.pid >= VWUP_BAT_MGMT_CELL_VBASE && job.pid <= VWUP_BAT_MGMT_CELL_VLAST)
   {
-    uint16_t pi = pid - VWUP_BAT_MGMT_CELL_VBASE;
+    uint16_t pi = job.pid - VWUP_BAT_MGMT_CELL_VBASE;
 
     // get cell index from poll index:
     uint16_t cmods = (vweup_modelyear > 2019) ? 14 : 17;
@@ -599,10 +600,10 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     return;
   }
 
-  if ((pid >= VWUP_BAT_MGMT_CELL_TBASE && pid <= VWUP_BAT_MGMT_CELL_TLAST) ||
-      (pid == VWUP_BAT_MGMT_CELL_T17))
+  if ((job.pid >= VWUP_BAT_MGMT_CELL_TBASE && job.pid <= VWUP_BAT_MGMT_CELL_TLAST) ||
+      (job.pid == VWUP_BAT_MGMT_CELL_T17))
   {
-    uint16_t ti = (pid == VWUP_BAT_MGMT_CELL_T17) ? 16 : pid - VWUP_BAT_MGMT_CELL_TBASE;
+    uint16_t ti = (job.pid == VWUP_BAT_MGMT_CELL_T17) ? 16 : job.pid - VWUP_BAT_MGMT_CELL_TBASE;
     if (ti < m_cell_last_ti) {
       BmsRestartCellTemperatures();
     }
@@ -617,7 +618,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
   // Handle regular PIDs
   //
 
-  switch (pid) {
+  switch (job.pid) {
 
     case VWUP_CHG_MGMT_LV_PWRSTATE:
       if (PollReply.FromUint8("VWUP_CHG_MGMT_LV_PWRSTATE", ivalue)) {
@@ -946,6 +947,16 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       break;
 
+    case VWUP_BAT_MGMT_SOH_CAC:
+      if (PollReply.FromInt16("VWUP_BAT_MGMT_SOH_CAC", value)) {
+//        StdMetrics.ms_v_bat_cac->SetValue(value / 100.0f);
+        float cac = value / 100.0f;
+        float soh = value / ((vweup_modelyear > 2019) ? 120.0f : 50.0f);
+        m_bat_soh_vw->SetValue(soh);
+        VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOH_CAC: %f => CAC=%f, SOH=%f", value, cac, m_bat_soh_vw->AsFloat());
+      }
+      break;
+
     case VWUP1_CHG_AC_U:
       if (PollReply.FromUint16("VWUP_CHG_AC1_U", value) && value != 511) {
         if (IsChargeModeAC()) {
@@ -1106,6 +1117,8 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         m_chg_ccs_power->SetValue(power);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_CCS_P => %.1f", power);
 
+        // XXX CCS plug state from OBD-Amigos: V14==0?"NO":V14==1?"YES"
+
         if (IsChargeModeDC()) {
           // CCS_U and CCS_I are provided by the CCS charger with varying resolution and
           //  precision / accuracy depending on the charger type.
@@ -1172,9 +1185,6 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
           StdMetrics.ms_v_env_on->SetValue(false);
         }
         else if (StdMetrics.ms_v_env_on->SetValue(true)) {
-          // TODO: get real charge port state
-          // For now, we assume the port has been closed when the car is started:
-          StdMetrics.ms_v_door_chargeport->SetValue(false);
           StdMetrics.ms_v_charge_substate->SetValue("");
           StdMetrics.ms_v_charge_state->SetValue("");
         }
@@ -1320,9 +1330,36 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       break;
 
+    case VWUP_BAT_MGMT_HIST18:
+      // XXX OBD-Amigos: AC Ah: b21-b24, DC Ah: b29-b32, regen Ah: b5-b8, HV usage counter: U16(V2,V3), CCS usage counter: U16(V8,V9)
+      break;
+    case VWUP_CHG_HEATER_I:
+      // XXX OBD-Amigos: V1/4
+      break;
+    case VWUP_CHG_SOCKET: // XXX OBD-Amigos: b0: plugged, b1: locked, AC socket temp: U16(V3,V4)/10-55, DC socket temp: U16(V5,V6)/10-55
+      if (PollReply.FromUint8("VWUP_CHG_SOCKET", ivalue)) {
+        bool plugstate = ivalue & 0x01;
+        bool lockstate = ivalue & 0x02;
+        VALUE_LOG(TAG, "VWUP_CHG_SOCKET plugged=%d, locked=%d", plugstate, lockstate);
+        if (plugstate != StdMetrics.ms_v_door_chargeport->AsBool()) {
+          ESP_LOGI(TAG, "OBD: chargeport changed to %s", plugstate ? "plugged" : "unplugged");
+          StdMetrics.ms_v_door_chargeport->SetValue(plugstate);
+          if (!plugstate && HasT26() && chg_workaround) {
+            ESP_LOGD(TAG, "OBD: socket unplugged in workaround mode, resetting charge current");
+            SetChargeCurrent(profile0_charge_current_old);
+//            fakestop = true;
+//            StartStopChargeT26(true);
+          }
+        }
+      }
+      break;
+    case VWUP_CHG_SOCK_STATS:
+      // XXX OBD-Amigos: insertions: U16(V1,V2), lockings: U16(V3,V4)
+      break;
+
     default:
       VALUE_LOG(TAG, "IncomingPollReply: ECU %" PRIX32 "/%" PRIX32 " unhandled PID %02X %04X: %s",
-        m_poll_entry.txmoduleid, m_poll_entry.rxmoduleid, type, pid, PollReply.GetHexString().c_str());
+        job.moduleid_sent, job.moduleid_rec, job.type, job.pid, PollReply.GetHexString().c_str());
       break;
   }
 }

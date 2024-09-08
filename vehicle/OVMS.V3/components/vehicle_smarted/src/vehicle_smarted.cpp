@@ -100,6 +100,9 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() : smarted_obd_rxwait(1,1) {
   // 12v charging
   m_charging_timer    = 0;
 
+  m_last_pid = 0;
+  m_reboot_ticker = 0;
+
   // init commands:
   cmd_xse = MyCommandApp.RegisterCommand("xse","SmartED 451 Gen.3");
   cmd_xse->RegisterCommand("recu","Set recu..", xse_recu, "<up/down>",1,1);
@@ -110,13 +113,14 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() : smarted_obd_rxwait(1,1) {
   cmd_xse->RegisterCommand("rptdata", "Show BMS RPTdata", xse_RPTdata);
 
   MyConfig.RegisterParam("xse", "Smart ED", true, true);
-  ConfigChanged(NULL);
 
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
   // init OBD2 poller:
   ObdInitPoll();
+
+  ConfigChanged(NULL);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -163,6 +167,23 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
 
   StandardMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xse", "suffsoc", 0), Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xse", "suffrange", 0), Kilometers );
+
+  int cell_interval_drv = MyConfig.GetParamValueInt("xse", "cell_interval_drv", 60);
+  int cell_interval_chg = MyConfig.GetParamValueInt("xse", "cell_interval_chg", 60);
+  int cell_interval_awk = MyConfig.GetParamValueInt("xse", "cell_interval_awk", 60);
+
+  bool do_modify_poll = (
+    (cell_interval_drv != m_cfg_cell_interval_drv) ||
+    (cell_interval_chg != m_cfg_cell_interval_chg) ||
+    (cell_interval_awk != m_cfg_cell_interval_awk));
+
+  m_cfg_cell_interval_drv = cell_interval_drv;
+  m_cfg_cell_interval_chg = cell_interval_chg;
+  m_cfg_cell_interval_awk = cell_interval_awk;
+
+  if (do_modify_poll) {
+    ObdModifyPoll();
+  }
 
   if (!m_enable_write) PollSetState(0);
 

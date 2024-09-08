@@ -1,33 +1,33 @@
 /*
-;    Project:       Open Vehicle Monitor System
-;    Date:          3rd September 2020
-;
-;    Changes:
-;    1.0  Initial release
-;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011       Sonny Chen @ EPRO/DX
-;    (C) 2020       Chris Staite
-;
-; Permission is hereby granted, free of charge, to any person obtaining a copy
-; of this software and associated documentation files (the "Software"), to deal
-; in the Software without restriction, including without limitation the rights
-; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-; copies of the Software, and to permit persons to whom the Software is
-; furnished to do so, subject to the following conditions:
-;
-; The above copyright notice and this permission notice shall be included in
-; all copies or substantial portions of the Software.
-;
-; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-; THE SOFTWARE.
-*/
+ ;    Project:       Open Vehicle Monitor System
+ ;    Date:          3rd September 2020
+ ;
+ ;    Changes:
+ ;    1.0  Initial release
+ ;
+ ;    (C) 2011       Michael Stegen / Stegen Electronics
+ ;    (C) 2011-2017  Mark Webb-Johnson
+ ;    (C) 2011       Sonny Chen @ EPRO/DX
+ ;    (C) 2020       Chris Staite
+ ;
+ ; Permission is hereby granted, free of charge, to any person obtaining a copy
+ ; of this software and associated documentation files (the "Software"), to deal
+ ; in the Software without restriction, including without limitation the rights
+ ; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ ; copies of the Software, and to permit persons to whom the Software is
+ ; furnished to do so, subject to the following conditions:
+ ;
+ ; The above copyright notice and this permission notice shall be included in
+ ; all copies or substantial portions of the Software.
+ ;
+ ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ ; THE SOFTWARE.
+ */
 static const char *TAG = "v-mgev-bms";
 
 #include "vehicle_mgev.h"
@@ -76,12 +76,63 @@ void OvmsVehicleMgEv::ProcessBatteryStats(int index, uint8_t* data, uint16_t rem
 }
 
 void OvmsVehicleMgEv::IncomingBmsPoll(
-        uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain)
+                                      uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain)
 {
     uint16_t value = (data[0] << 8 | data[1]);
-
+    //float currentSoc;
+    
     switch (pid)
     {
+        case engineSpeedPid:
+        {
+            int engineRPM = value / 4;
+            if (engineRPM > 0) {
+                ESP_LOGI(TAG, "Engine Speed = %dRPM", engineRPM);
+            }
+            break;
+        }
+        case vehicleSpeedPid:
+        {
+            int vehSpeed = data[0];
+            StandardMetrics.ms_v_pos_speed->SetValue(vehSpeed);
+            //if (vehSpeed > 0) {
+                //ESP_LOGI(TAG, "Vehicle Speed = %dkph", vehSpeed);
+            //}
+            break;
+        }
+        case odometerPid:
+            ESP_LOGI(TAG, "Odometer = %0.0fKm", (data[0] << 24 |data[1] << 16 | data[2] << 8 | data[3]) / 10.0);
+            break;
+        case socPid:
+        {
+            //ESP_LOGI(TAG, "BMS Poll Received PID: %02x %02x", pid, data[0]);
+            float currentSoc = data[0] * 100.0 / 255.0;
+            if(currentSoc != StandardMetrics.ms_v_bat_soc->AsFloat()) {
+                ESP_LOGI(TAG, "Current SOC = %0.2f%%", currentSoc);
+            }
+            // Save SOC for display
+            StandardMetrics.ms_v_bat_soc->SetValue(currentSoc);
+            calculateRange(currentSoc);
+            if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+            {
+                if (currentSoc < 99.5)
+                {
+                    StandardMetrics.ms_v_charge_state->SetValue("charging");
+                }
+                else
+                {
+                    StandardMetrics.ms_v_charge_state->SetValue("topoff");
+                }
+            }
+            break;
+        }
+        case ambTempPid:
+        {
+            int ambTemp = data[0] - 40;
+            StandardMetrics.ms_v_env_temp->SetValue(ambTemp);
+            //ESP_LOGI(TAG, "Outside Temperature = %dDeg", ambTemp);
+            break;
+        }
         case cell1StatPid:
             ProcessBatteryStats(0, data, remain);
             break;
@@ -180,44 +231,47 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
             break;
         case batteryResistancePid:
             m_bat_resistance->SetValue(value / 2.0f);
-            break;            
+            break;
         case batterySoCPid:
+        {
+            // Get raw value to display on Charging Metrics Page
+            m_soc_raw->SetValue(value / 10.0f);
+            auto scaledSoc = calculateSoc(value);
+            if (StandardMetrics.ms_v_charge_inprogress->AsBool())
             {
-                // Get raw value to display on Charging Metrics Page
-                m_soc_raw->SetValue(value / 10.0f);
-                auto scaledSoc = calculateSoc(value);
-                if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+                if (scaledSoc < 99.5)
                 {
-                    if (scaledSoc < 99.5)
-                    {
-                        StandardMetrics.ms_v_charge_state->SetValue("charging");
-                    }
-                    else
-                    {
-                        StandardMetrics.ms_v_charge_state->SetValue("topoff");
-                    }
+                    StandardMetrics.ms_v_charge_state->SetValue("charging");
                 }
-                // Save SOC for display
-                StandardMetrics.ms_v_bat_soc->SetValue(scaledSoc);
-                // Calculate Estimated Range
-                float batTemp = StandardMetrics.ms_v_bat_temp->AsFloat();
-                float effSoh = StandardMetrics.ms_v_bat_soh->AsFloat();
-                // Get average trip consumption weighted by current trip consumption (25%)
-                float kmPerKwh = (m_avg_consumption->AsFloat(0, KPkWh) * 3.0f + m_trip_consumption->AsFloat(0,KPkWh)) / 4.0f;
-                
-                if(kmPerKwh < 4.648)  kmPerKwh = 4.648; //21.5 kWh/100km
-                if(kmPerKwh > 7.728) kmPerKwh = 7.728; //13 kWh/100km
-                if(batTemp > 20) batTemp = 20;
-                // Set battery capacity reduced by SOC and SOH
-                float batteryCapacity = m_batt_capacity->AsFloat() * (scaledSoc * 0.01f) * (effSoh * 0.01f);
-                StandardMetrics.ms_v_bat_range_est->SetValue(batteryCapacity * (kmPerKwh * (1-((20 - batTemp) * 1.3f) * 0.01f)));
-                // Ideal range set to SoC percentage of WLTP Range
-                StandardMetrics.ms_v_bat_range_ideal->SetValue(StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers) * (scaledSoc * 0.01f) * (effSoh * 0.01f));
+                else
+                {
+                    StandardMetrics.ms_v_charge_state->SetValue("topoff");
+                }
             }
+            // Save SOC for display
+            StandardMetrics.ms_v_bat_soc->SetValue(scaledSoc);
+            // Calculate Estimated Range
+            calculateRange(scaledSoc);
+            /*
+            float batTemp = StandardMetrics.ms_v_bat_temp->AsFloat();
+            float effSoh = StandardMetrics.ms_v_bat_soh->AsFloat();
+            // Get average trip consumption weighted by current trip consumption (25%)
+            float kmPerKwh = (m_avg_consumption->AsFloat(0, KPkWh) * 3.0f + m_trip_consumption->AsFloat(0,KPkWh)) / 4.0f;
+            
+            if(kmPerKwh < 4.648)  kmPerKwh = 4.648; //21.5 kWh/100km
+            if(kmPerKwh > 7.728) kmPerKwh = 7.728; //13 kWh/100km
+            if(batTemp > 20) batTemp = 20;
+            // Set battery capacity reduced by SOC and SOH
+            float batteryCapacity = m_batt_capacity->AsFloat() * (scaledSoc * 0.01f) * (effSoh * 0.01f);
+            StandardMetrics.ms_v_bat_range_est->SetValue(batteryCapacity * (kmPerKwh * (1-((20 - batTemp) * 1.3f) * 0.01f)));
+            // Ideal range set to SoC percentage of WLTP Range
+            StandardMetrics.ms_v_bat_range_ideal->SetValue(StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers) * (scaledSoc * 0.01f) * (effSoh * 0.01f));
+             */
+        }
             break;
         case batteryErrorPid:
             m_bat_error->SetValue(data[0]);
-            break;            
+            break;
         case bmsStatusPid:
             SetBmsStatus(data[0]);
             break;
@@ -234,14 +288,15 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
             break;
         case bmsRangePid:
             //StandardMetrics.ms_v_bat_range_est->SetValue(value / 10.0);
+            ESP_LOGD(TAG, "BMS Range: %0.2f",value / 255.0f);
             break;
         case bmsMaxCellVoltagePid:
             m_bms_max_cell_voltage->SetValue(value / 1000.0f);
             break;
         case bmsMinCellVoltagePid:
             m_bms_min_cell_voltage->SetValue(value / 1000.0f);
-            break;     
-        case bmsTimePid:     
+            break;
+        case bmsTimePid:
             // Will get answer in 2 frames. 1st frame will have year month date in data[0], data[1] and data[2], length = 3 and remain = 3.
             // 2nd frame will have hour minute second in data[0], data[1] and data[2], length 3 and remain 0
             if (remain > 0)
@@ -253,16 +308,18 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 m_bmsTimeTemp += OvmsVehicleMgEv::IntToString(data[0], 2, "0") + ":" + OvmsVehicleMgEv::IntToString(data[1], 2, "0") + ":" + OvmsVehicleMgEv::IntToString(data[2], 2, "0");
                 m_bms_time->SetValue(m_bmsTimeTemp);
             }
-            break;    
+            break;
         case bmsSystemMainRelayBPid:
             m_bms_main_relay_b->SetValue(data[0]);
             break;
         case bmsSystemMainRelayGPid:
             m_bms_main_relay_g->SetValue(data[0]);
             break;
-        case bmsSystemMainRelayPPid:     
-            m_bms_main_relay_p->SetValue(data[0]);                          
-            break;            
+        case bmsSystemMainRelayPPid:
+            m_bms_main_relay_p->SetValue(data[0]);
+            break;
+        default:
+            break;
     }
 }
 
@@ -270,11 +327,18 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
 {
     switch (status) {
         case StartingCharge:
+            ESP_LOGD(TAG, "BMS Status: Starting Charge %02X",status);
+            break;
+        case Running:
+            ESP_LOGD(TAG, "BMS Status: Turned ON %02X",status);
+            break;
         case Charging:
+            ESP_LOGD(TAG, "BMS Status: Charging %02X",status);
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             StandardMetrics.ms_v_charge_type->SetValue("type2");
             break;
         case CcsCharging:
+            ESP_LOGD(TAG, "BMS Status: CCS Charging %02X",status);
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             StandardMetrics.ms_v_charge_type->SetValue("ccs");
             //These are normally set in mg_poll_evcc.cpp but while CCS charging, EVCC won't show up so we set these here
@@ -297,7 +361,7 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
                 {
                     StandardMetrics.ms_v_charge_state->SetValue("stopped");
                 }
-            } 
+            }
             break;
     }
 }
@@ -309,4 +373,23 @@ float OvmsVehicleMgEv::calculateSoc(uint16_t value)
     ESP_LOGD(TAG, "BMS Limits: Lower = %f Upper = %f",lowerlimit,upperlimit);
     // Calculate SOC from upper and lower limits
     return (value - lowerlimit) * 100.0f / (upperlimit - lowerlimit);
+}
+
+void OvmsVehicleMgEv::calculateRange(float soc) {
+    // Calculate Estimated Range
+    float batTemp = StandardMetrics.ms_v_bat_temp->AsFloat();
+    float effSoh = StandardMetrics.ms_v_bat_soh->AsFloat();
+    // Get average trip consumption weighted by current trip consumption (25%)
+    float kmPerKwh = (m_avg_consumption->AsFloat(0, KPkWh) * 3.0f + m_trip_consumption->AsFloat(0,KPkWh)) / 4.0f;
+    
+    if(kmPerKwh < 4.648)  kmPerKwh = 4.648; //21.5 kWh/100km
+    if(kmPerKwh > 7.728) kmPerKwh = 7.728; //13 kWh/100km
+    if(batTemp > 20) batTemp = 20;
+    // Set battery capacity reduced by SOC and SOH
+    float batteryCapacity = m_batt_capacity->AsFloat() * (soc * 0.01f) * (effSoh * 0.01f);
+    ESP_LOGD(TAG, "Estimated range = %0.2f",batteryCapacity * (kmPerKwh * (1-((20 - batTemp) * 1.3f) * 0.01f)));
+    StandardMetrics.ms_v_bat_range_est->SetValue(batteryCapacity * (kmPerKwh * (1-((20 - batTemp) * 1.3f) * 0.01f)));
+    // Ideal range set to SoC percentage of WLTP Range
+    ESP_LOGD(TAG, "Ideal Range = %0.2f",(StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers) * (soc * 0.01f) * (effSoh * 0.01f)));
+    StandardMetrics.ms_v_bat_range_ideal->SetValue(StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers) * (soc * 0.01f) * (effSoh * 0.01f));
 }

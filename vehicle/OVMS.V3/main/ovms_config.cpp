@@ -45,6 +45,7 @@ static const char *TAG = "config";
 #include "ovms_utils.h"
 #include "ovms_boot.h"
 #include "ovms_semaphore.h"
+#include "ovms_vfs.h"
 
 #ifdef CONFIG_OVMS_SC_ZIP
 #include "zip_archive.h"
@@ -409,7 +410,7 @@ OvmsConfig::OvmsConfig()
     "Backup system configuration & scripts into password protected ZIP file.\n"
     "Note: user files or directories in /store will not be included.\n"
     "<password> defaults to the current module password, set to \"\" to disable encryption.\n"
-    "Hint: use 7z to unzip/create backup ZIPs on a PC.", 1, 2);
+    "Hint: use 7z to unzip/create backup ZIPs on a PC.", 1, 2, true, vfs_file_validate);
   cmd_config->RegisterCommand("restore", "Restore from file", config_restore,
     "<zipfile> [password=module password]\n"
     "Restore system configuration & scripts from password protected ZIP file.\n"
@@ -417,7 +418,7 @@ OvmsConfig::OvmsConfig()
     "The module will perform a reboot after successful restore.\n"
     "<password> defaults to the current module password.\n"
     "Note: You need to supply the password used for the backup creation.\n"
-    "The default password is not available after flash is erased.", 1, 2);
+    "The default password is not available after flash is erased.", 1, 2, true, vfs_file_validate);
 #endif // CONFIG_OVMS_SC_ZIP
 
   RegisterParam("password", "Password store", true, false);
@@ -455,7 +456,12 @@ esp_err_t OvmsConfig::mount()
   memset(&m_store_fat,0,sizeof(esp_vfs_fat_sdmmc_mount_config_t));
   m_store_fat.format_if_mount_failed = true;
   m_store_fat.max_files = 5;
+
+#if ESP_IDF_VERSION_MAJOR >= 5
+  esp_vfs_fat_spiflash_mount_rw_wl("/store", "store", &m_store_fat, &m_store_wlh);
+#else
   esp_vfs_fat_spiflash_mount("/store", "store", &m_store_fat, &m_store_wlh);
+#endif
   m_mounted = true;
 
   struct stat ds;
@@ -498,7 +504,11 @@ esp_err_t OvmsConfig::unmount()
 
   if (m_mounted)
     {
+#if ESP_IDF_VERSION_MAJOR >= 5
+    esp_vfs_fat_spiflash_unmount_rw_wl("/store", m_store_wlh);
+#else
     esp_vfs_fat_spiflash_unmount("/store", m_store_wlh);
+#endif
     m_mounted = false;
     MyEvents.SignalEvent("config.unmounted", NULL);
     }

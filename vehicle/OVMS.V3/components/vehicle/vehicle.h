@@ -34,6 +34,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <memory>
 #include "can.h"
 #include "ovms_events.h"
 #include "ovms_config.h"
@@ -42,28 +43,13 @@
 #include "metrics_standard.h"
 #include "ovms_mutex.h"
 #include "ovms_semaphore.h"
+#include "vehicle_common.h"
+#ifdef CONFIG_OVMS_COMP_POLLER
+#include "vehicle_poller.h"
+#endif
 
 using namespace std;
 struct DashboardConfig;
-
-
-// ISO TP:
-//  (see https://en.wikipedia.org/wiki/ISO_15765-2)
-
-#define ISOTP_FT_SINGLE                 0
-#define ISOTP_FT_FIRST                  1
-#define ISOTP_FT_CONSECUTIVE            2
-#define ISOTP_FT_FLOWCTRL               3
-
-// Protocol variant:
-#define ISOTP_STD                       0     // standard addressing (11 bit IDs)
-#define ISOTP_EXTADR                    1     // extended addressing (19 bit IDs)
-#define ISOTP_EXTFRAME                  2     // extended frame mode (29 bit IDs)
-#define VWTP_16                         16    // VW/VAG Transport Protocol 1.6 (placeholder, unsupported)
-#define VWTP_20                         20    // VW/VAG Transport Protocol 2.0
-
-// Argument tag:
-#define POLL_TXDATA                     0xff  // poll_pid_t using xargs for external payload up to 4095 bytes
 
 
 // OBD2/UDS Polling types supported:
@@ -117,93 +103,6 @@ struct DashboardConfig;
 //   { 0x200,    0,     0,      0,  {…times…},    0 , VWTP_20 }
 
 
-#define VEHICLE_POLL_TYPE_NONE          0x00
-
-
-// OBD (ISO 15031) service identifiers supported:
-#define VEHICLE_POLL_TYPE_OBDIICURRENT    0x01 // Mode 01 "current data" (8 bit PID)
-#define VEHICLE_POLL_TYPE_OBDIIFREEZE     0x02 // Mode 02 "freeze frame data" (8 bit PID)
-#define VEHICLE_POLL_TYPE_READ_ERDTC      0x03 // Mode 03 read emission-related DTC (no PID)
-#define VEHICLE_POLL_TYPE_CLEAR_ERDTC     0x04 // Mode 04 clear/reset emission-related DTC (no PID)
-#define VEHICLE_POLL_TYPE_READOXSTEST     0x05 // Mode 05 read oxygen sensor monitoring test results (16 bit PID)
-#define VEHICLE_POLL_TYPE_READOBMTEST     0x06 // Mode 06 read on-board monitoring test results (8 bit PID)
-#define VEHICLE_POLL_TYPE_READ_DCERDTC    0x07 // Mode 07 read driving cycle emission-related DTC (no PID)
-#define VEHICLE_POLL_TYPE_REQOBUCTRL      0x08 // Mode 08 request on-board unit control (8 bit PID)
-#define VEHICLE_POLL_TYPE_OBDIIVEHICLE    0x09 // Mode 09 "vehicle information" (8 bit PID)
-#define VEHICLE_POLL_TYPE_READ_PERMDTC    0x0A // Mode 0A read permanent (cleared) DTC (no PID)
-
-// UDS (ISO 14229) service identifiers supported:
-#define VEHICLE_POLL_TYPE_OBDIISESSION    0x10 // UDS: Diagnostic Session Control (8 bit PID)
-#define VEHICLE_POLL_TYPE_TESTERPRESENT   0x3E // UDS: TesterPresent (8 bit PID)
-#define VEHICLE_POLL_TYPE_SECACCESS       0x27 // UDS: SecurityAccess (8 bit PID)
-#define VEHICLE_POLL_TYPE_COMCONTROL      0x28 // UDS: CommunicationControl (8 bit PID)
-#define VEHICLE_POLL_TYPE_ECURESET        0x11 // UDS: ECUReset (8 bit PID)
-#define VEHICLE_POLL_TYPE_CLEARDTC        0x14 // UDS: ClearDiagnosticInformation (no PID)
-#define VEHICLE_POLL_TYPE_READDTC         0x19 // UDS: ReadDTCInformation (8 bit PID)
-#define VEHICLE_POLL_TYPE_OBDIIEXTENDED   0x22 // UDS: ReadDataByIdentifier (16 bit PID) (legacy alias for READDATA)
-#define VEHICLE_POLL_TYPE_READDATA        0x22 // UDS: ReadDataByIdentifier (16 bit PID)
-#define VEHICLE_POLL_TYPE_READMEMORY      0x23 // UDS: ReadMemoryByAddress (no PID)
-#define VEHICLE_POLL_TYPE_READSCALING     0x24 // UDS: ReadScalingDataByIdentifier (16 bit PID)
-#define VEHICLE_POLL_TYPE_WRITEDATA       0x2E // UDS: WriteDataByIdentifier (16 bit PID)
-#define VEHICLE_POLL_TYPE_ROUTINECONTROL  0x31 // UDS: Routine Control (8 bit PID)
-#define VEHICLE_POLL_TYPE_WRITEMEMORY     0x3D // UDS: WriteMemoryByAddress (8 bit PID)
-#define VEHICLE_POLL_TYPE_IOCONTROL       0x2F // UDS: InputOutputControlByIdentifier (16 bit PID)
-
-// Other service identifiers supported:
-#define VEHICLE_POLL_TYPE_OBDII_18        0x18 // Custom: VW request type 18 (no PID)
-#define VEHICLE_POLL_TYPE_OBDII_1A        0x1A // Custom: Mode 1A (8 bit PID)
-#define VEHICLE_POLL_TYPE_OBDIIGROUP      0x21 // Custom: Read data by 8 bit PID
-#define VEHICLE_POLL_TYPE_OBDII_32        0x32 // Custom: VW routine control extension (8 bit PID)
-
-#define VEHICLE_OBD_BROADCAST_MODULE_TX   0x7df
-#define VEHICLE_OBD_BROADCAST_MODULE_RX   0x0
-// A note on "PID" and their sizes here:
-//  By "PID" for the service types we mean the part of the request parameters
-//  after the service type that is reflected in _every_ valid response to the request.
-//  That part is used to validate the response by the poller, if it doesn't match,
-//  the response won't be forwarded to the application.
-//  Some requests require additional parameters as specified in ISO 14229, but implementations
-//  may differ. For example, a 31b8 request on a VW ECU does not necessarily copy the routine
-//  ID in the response (e.g. with 0000), so the routine ID isn't part of our "PID" here.
-
-// Utils:
-#define POLL_TYPE_HAS_16BIT_PID(type) \
-  ((type) == VEHICLE_POLL_TYPE_READDATA || \
-   (type) == VEHICLE_POLL_TYPE_READSCALING || \
-   (type) == VEHICLE_POLL_TYPE_WRITEDATA || \
-   (type) == VEHICLE_POLL_TYPE_IOCONTROL || \
-   (type) == VEHICLE_POLL_TYPE_READOXSTEST)
-#define POLL_TYPE_HAS_NO_PID(type) \
-  ((type) == VEHICLE_POLL_TYPE_CLEARDTC || \
-   (type) == VEHICLE_POLL_TYPE_READMEMORY || \
-   (type) == VEHICLE_POLL_TYPE_READ_ERDTC || \
-   (type) == VEHICLE_POLL_TYPE_CLEAR_ERDTC || \
-   (type) == VEHICLE_POLL_TYPE_READ_DCERDTC || \
-   (type) == VEHICLE_POLL_TYPE_READ_PERMDTC || \
-   (type) == VEHICLE_POLL_TYPE_OBDII_18)
-#define POLL_TYPE_HAS_8BIT_PID(type) \
-  (!POLL_TYPE_HAS_NO_PID(type) && !POLL_TYPE_HAS_16BIT_PID(type))
-
-// OBD/UDS Negative Response Code
-#define UDS_RESP_TYPE_NRC               0x7F  // see ISO 14229 Annex A.1
-#define UDS_RESP_NRC_RCRRP              0x78  // … requestCorrectlyReceived-ResponsePending
-
-// Number of polling states supported
-#define VEHICLE_POLL_NSTATES            4
-
-// Macro for poll_pid_t termination
-#define POLL_LIST_END                   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0, 0 }
-
-// Poll list PID xargs utility (see info above):
-#define POLL_PID_DATA(pid, datastring) \
-  {.xargs={ (pid), POLL_TXDATA, sizeof(datastring)-1, reinterpret_cast<const uint8_t*>(datastring) }}
-
-// PollSingleRequest specific result codes:
-#define POLLSINGLE_OK                   0 
-#define POLLSINGLE_TIMEOUT              -1
-#define POLLSINGLE_TXFAILURE            -2
-
-
 // Standard MSG protocol commands:
 
 #define CMD_QueryFeatures               1   // ()
@@ -243,38 +142,6 @@ struct DashboardConfig;
 #define BMS_DEFTHR_TWARN                2.00    // [°C]
 #define BMS_DEFTHR_TALERT               3.00    // [°C]
 
-
-// VWTP_20 channel states:
-typedef enum
-  {
-  VWTP_Closed = 0,                          // Channel not connecting/connected
-  VWTP_ChannelClose,                        // Close request has been sent
-  VWTP_ChannelSetup,                        // Setup request has been sent
-  VWTP_ChannelParams,                       // Params request has been sent
-  VWTP_Idle,                                // Connection established, idle
-  VWTP_StartPoll,                           // Transit state: begin request transmission
-  VWTP_Transmit,                            // Request transmission phase
-  VWTP_Receive,                             // Response reception phase
-  VWTP_AbortXfer,                           // Transit state: abort request/response
-  } vwtp_channelstate_t;
-
-// VWTP_20 channel:
-typedef struct
-  {
-  vwtp_channelstate_t     state;            // VWTP channel state
-  canbus*                 bus;              // CAN bus
-  uint16_t                baseid;           // Protocol base CAN MsgID (usually 0x200)
-  uint8_t                 moduleid;         // Logical address (ID) of destination module
-  uint16_t                txid;             // CAN MsgID we transmit on
-  uint16_t                rxid;             // CAN MsgID we listen to
-  uint8_t                 blocksize;        // Number of blocks (data frames) to send between ACKs
-  uint32_t                acktime;          // Max time [us] to wait for ACK (not yet implemented)
-  uint32_t                septime;          // Min separation time [us] between blocks (data frames)
-  uint32_t                txseqnr;          // TX packet sequence number
-  uint32_t                rxseqnr;          // RX packet sequence number
-  uint32_t                lastused;         // Timestamp of last channel access
-  } vwtp_channel_t;
-
 enum class OvmsStatus : short {
   OK = 0,
   Warn = 1,
@@ -287,6 +154,7 @@ inline bool operator<(OvmsStatus lhs, OvmsStatus rhs) {
 class OvmsVehicle : public InternalRamAllocated
   {
   friend class OvmsVehicleFactory;
+  friend class OvmsVehicleSignal;
 
   public:
     OvmsVehicle();
@@ -295,9 +163,6 @@ class OvmsVehicle : public InternalRamAllocated
     virtual const char* VehicleType();
 
   protected:
-    QueueHandle_t m_rxqueue;
-    TaskHandle_t m_rxtask;
-    bool m_registeredlistener;
     bool m_autonotifications;
     bool m_ready;
 
@@ -310,19 +175,53 @@ class OvmsVehicle : public InternalRamAllocated
   private:
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
-    void PollerSend(bool fromTicker);
-    void PollerReceive(CAN_frame_t* frame, uint32_t msgid);
-
+    void PollRunFinishedNotify(canbus* bus, void *data);
+    void PollerStateTickerNotify(canbus* bus, void *data);
   protected:
+    // Signal poller
+    void PausePolling();
+    void ResumePolling();
+    void PollSetState(uint8_t state, canbus* bus = nullptr);
+#ifdef CONFIG_OVMS_COMP_POLLER
+    void PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plist);
+    void PollSetPidList( const OvmsPoller::poll_pid_t* plist)
+      {
+      PollSetPidList(m_poll_bus_default, plist);
+      }
+    OvmsPoller::VehicleSignal *GetPollerSignal();
+
+    int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                      std::string request, std::string& response,
+                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+    int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                      uint8_t polltype, uint16_t pid, std::string& response,
+                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+
+    // Poller configuration
+
+    void PollSetThrottling(uint8_t sequence_max)
+      {
+      MyPollers.PollSetThrottling(sequence_max);
+      }
+    void PollSetTicker(uint16_t tick_time_ms, uint8_t secondary_ticks = 0);
+
+    void PollSetResponseSeparationTime(uint8_t septime);
+    void PollSetChannelKeepalive(uint16_t keepalive_seconds);
+    void PollSetTimeBetweenSuccess(uint16_t tick_between_ms);
+#endif
+
+    uint8_t GetBusNo(canbus* bus);
+    canbus *GetBus(uint8_t busno);
+  protected:
+    virtual void PollRunFinished(canbus* bus);
+
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan2(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan3(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan4(CAN_frame_t* p_frame);
 
   protected:
-    virtual void PollerStateTicker();
-    virtual void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    virtual void IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code);
+    virtual void PollerStateTicker(canbus *bus);
 
   protected:
     int m_minsoc;            // The minimum SOC level before alert
@@ -373,8 +272,11 @@ class OvmsVehicle : public InternalRamAllocated
     float m_inv_refpower;                   // last inverter(motor) power
 
   protected:
+
     uint32_t m_ticker;
     int m_12v_ticker;
+    int m_12v_low_ticker;
+    int m_12v_shutdown_ticker;
     int m_chargestate_ticker;
     int m_vehicleon_ticker;
     int m_vehicleoff_ticker;
@@ -401,6 +303,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifyAlarmStopped();
     virtual void Notify12vCritical();
     virtual void Notify12vRecovered();
+    virtual void Notify12vShutdown();
     virtual void NotifyMinSocCritical();
     virtual void NotifyVehicleIdling();
     virtual void NotifyVehicleOn();
@@ -470,9 +373,6 @@ class OvmsVehicle : public InternalRamAllocated
     bool PinCheck(const char* pin);
 
   public:
-    virtual void RxTask();
-
-  public:
     typedef enum
       {
       NotImplemented = 0,
@@ -536,115 +436,52 @@ class OvmsVehicle : public InternalRamAllocated
     virtual bool SetFeature(int key, const char* value);
     virtual const std::string GetFeature(int key);
 
-  public:
-    typedef struct
-      {
-      uint32_t txmoduleid;                      // transmission CAN ID (address), 0x7df = OBD2 broadcast
-      uint32_t rxmoduleid;                      // expected response CAN ID or 0 for broadcasts
-      uint16_t type;                            // UDS poll type / OBD2 "mode", see VEHICLE_POLL_TYPE_…
-      union
-        {
-        uint16_t pid;                           // PID (shortcut for requests w/o payload)
-        struct
-          {
-          uint16_t pid;                         // PID for requests with additional payload
-          uint8_t datalen;                      // payload length (bytes)
-          uint8_t data[6];                      // inline payload data (single frame request)
-          } args;
-        struct
-          {
-          uint16_t pid;                         // PID for requests with additional payload
-          uint8_t tag;                          // needs to be POLL_TXDATA
-          uint16_t datalen;                     // payload length (bytes, max 4095)
-          const uint8_t* data;                  // pointer to payload data (single/multi frame request)
-          } xargs;
-        };
-      uint16_t polltime[VEHICLE_POLL_NSTATES];  // poll intervals in seconds for used poll states
-      uint8_t  pollbus;                         // 0 = default CAN bus from PollSetPidList(), 1…4 = specific
-      uint8_t  protocol;                        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME / VWTP_20
-      } poll_pid_t;
+#ifdef CONFIG_OVMS_COMP_POLLER
+    /** Provide link from the poller back to the parent OvmsVehicle implementation.
+      */
+    class OvmsVehicleSignal : public OvmsPoller::VehicleSignal {
+    private:
+      OvmsVehicle *m_parent;
+    public:
+      OvmsVehicleSignal( OvmsVehicle *parent);
 
+      // Signals for vehicle.
+
+      void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
+      void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
+      void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success) override;
+
+      bool Ready() override;
+    };
+#endif
+
+#ifdef CONFIG_OVMS_COMP_POLLER
   protected:
-    OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
-    uint8_t           m_poll_state;           // Current poll state
-    canbus*           m_poll_bus;             // Bus to poll on
+    bool HasPollList(canbus* bus = nullptr);
+
     canbus*           m_poll_bus_default;     // Bus default to poll on
-    const poll_pid_t* m_poll_plist;           // Head of poll list
-    const poll_pid_t* m_poll_plcur;           // Poll list loop cursor
-    poll_pid_t        m_poll_entry;           // Currently processed entry of poll list (copy)
-    uint32_t          m_poll_ticker;          // Polling ticker
-    uint8_t           m_poll_protocol;        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME / VWTP_20
-    uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
-    uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
-    uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
-    uint16_t          m_poll_type;            // Expected type
-    uint16_t          m_poll_pid;             // Expected PID
-    const uint8_t*    m_poll_tx_data;         // Payload data for multi frame request
-    uint16_t          m_poll_tx_remain;       // Payload bytes remaining for multi frame request
-    uint16_t          m_poll_tx_offset;       // Payload offset of multi frame request
-    uint16_t          m_poll_tx_frame;        // Frame number for multi frame request
-    uint16_t          m_poll_ml_remain;       // Bytes remaining for multi frame response
-    uint16_t          m_poll_ml_offset;       // Offset of multi frame response
-    uint16_t          m_poll_ml_frame;        // Frame number for multi frame response
-    uint8_t           m_poll_wait;            // Wait counter for a reply from a sent poll or bytes remaining.
-                                              // Gets set = 2 when a poll is sent OR when bytes are remaining after receiving.
-                                              // Gets set = 0 when a poll is received.
-                                              // Gets decremented with every second/tick in PollerSend().
-                                              // PollerSend() aborts when > 0.
-                                              // Why set = 2: When a poll gets send just before the next ticker occurs
-                                              //              PollerSend() decrements to 1 and doesn't send the next poll.
-                                              //              Only when the reply doesn't get in until the next ticker occurs
-                                              //              PollserSend() decrements to 0 and abandons the outstanding reply (=timeout)
 
-  private:
-    uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
-    uint8_t           m_poll_sequence_cnt;    // Polls already sent in the current time tick (second)
-    uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
-    uint16_t          m_poll_ch_keepalive;    // Seconds to keep an inactive channel (e.g. VWTP) alive (default: 60)
-
-  private:
-    OvmsRecMutex      m_poll_single_mutex;    // PollSingleRequest() concurrency protection
-    std::string*      m_poll_single_rxbuf;    // … response buffer
-    int               m_poll_single_rxerr;    // … response error code (NRC) / TX failure code
-    OvmsSemaphore     m_poll_single_rxdone;   // … response done (ok/error)
+    // Polling Response
+    virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
+    virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
+    virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
+#endif
 
   protected:
-    vwtp_channel_t    m_poll_vwtp;            // VWTP channel state
-
-  protected:
-    void PollSetPidList(canbus* bus, const poll_pid_t* plist);
-    void PollSetState(uint8_t state);
-    void PollSetThrottling(uint8_t sequence_max);
-    void PollSetResponseSeparationTime(uint8_t septime);
-    void PollSetChannelKeepalive(uint16_t keepalive_seconds);
-    int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
-                      std::string request, std::string& response,
-                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
-    int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
-                      uint8_t polltype, uint16_t pid, std::string& response,
-                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
-    const char* PollResultCodeName(int code);
-
-  private:
-    void PollerISOTPStart(bool fromTicker);
-    bool PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid);
-
-  private:
-    void PollerVWTPStart(bool fromTicker);
-    bool PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid);
-    void PollerVWTPEnter(vwtp_channelstate_t state);
-    void PollerVWTPTicker();
-    void PollerVWTPTxCallback(const CAN_frame_t* frame, bool success);
-
-  private:
-    CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback
-    uint32_t          m_poll_txmsgid;         // Poller last TX CAN ID (frame MsgID)
-
-  private:
-    void PollerTxCallback(const CAN_frame_t* frame, bool success);
-  protected:
-    virtual void IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t type, uint16_t pid, bool success);
-
+#ifdef CONFIG_OVMS_COMP_POLLER
+    OvmsVehicleSignal*m_pollsignal;
+    uint8_t           m_poll_state;           // Current poll state
+    void PollRequest(canbus* bus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series);
+    void RemovePollRequest(canbus* bus, const std::string &name);
+    void IncomingRxFrame(const CAN_frame_t &frame);
+#else
+    // These are required in lieu of using the OvmsPoller queue.
+    static void OvmsVehicleTask(void *pvParameters);
+    void VehicleTask();
+    QueueHandle_t m_vqueue;
+    TaskHandle_t  m_vtask;
+#endif
+    void SendIncomingFrame(const CAN_frame_t *frame);
 
   // BMS helpers
   protected:
@@ -711,6 +548,13 @@ class OvmsVehicle : public InternalRamAllocated
     virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings);
     bool BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule = 0);
     bool BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule = 0);
+
+  protected:
+    bool m_is_shutdown;
+  public:
+    void StartingUp();
+    void ShuttingDown();
+    virtual bool IsShutdown();
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()
@@ -736,7 +580,14 @@ class OvmsVehicleFactory
     OvmsVehicle *m_currentvehicle;
     std::string m_currentvehicletype;
     map_vehicle_t m_vmap;
+    // Any vehicle modules still waiting to be shut down.
+    // Yes, having multiple vehicle modules watiting to finish
+    // shutdown is unlikely and may produce slightly weird
+    // results ... but they should actually be in the final stages
+    // so should be safer this way anyway
+    std::list<OvmsVehicle*> m_pending_shutdown;
 
+    void DoClearVehicle( bool clearName, bool sendEvent, bool wait);
   public:
     template<typename Type>
     short RegisterVehicle(const char* VehicleType, const char* VehicleName = "")
@@ -780,6 +631,9 @@ class OvmsVehicleFactory
     static void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void obdii_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+    void EventSystemShuttingDown(std::string event, void* data);
+    void EventTicker1ShuttingDown(std::string event, void* data);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   protected:

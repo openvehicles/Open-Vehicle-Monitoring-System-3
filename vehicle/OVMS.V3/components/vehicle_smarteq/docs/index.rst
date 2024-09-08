@@ -23,12 +23,18 @@ GPS Location                Yes (from modem module GPS)
 Speed Display               Yes
 Temperature Display         Yes (External Temp and Battery)
 BMS v+t Display             only Cell Volts atm.
-TPMS Display                No
+TPMS Display                Yes pressure only
 Charge Status Display       Yes
 Charge Interruption Alerts  No
 Charge Control              No
-Cabin Pre-heat/cool Control No
+Cabin Pre-heat/cool Control Yes
 Lock/Unlock Vehicle         No
 Valet Mode Control          No
 Others
 =========================== ==============
+
+----------
+Using Cabin Pre-heat/cool
+----------
+
+Only 5 Minutes Booster are Implementet white Climatecontrol on or Homelink 1

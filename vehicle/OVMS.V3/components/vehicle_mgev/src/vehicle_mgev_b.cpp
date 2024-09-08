@@ -37,7 +37,7 @@ namespace
 {
 
 //Variant b specific polls
-const OvmsVehicle::poll_pid_t obdii_polls_b[] =
+const OvmsPoller::poll_pid_t obdii_polls_b[] =
 {
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
@@ -84,8 +84,8 @@ OvmsVehicleMgEvB::OvmsVehicleMgEvB()
     StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
     m_batt_capacity->SetValue(BATT_CAPACITY);
     m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLowerLimit);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDUpperLimit);
+    m_dod_lower->SetValue(BMSDoDLowerLimit);
+    m_dod_upper->SetValue(BMSDoDUpperLimit);
 
     //Add variant specific poll data
     ConfigurePollData(obdii_polls_b, sizeof(obdii_polls_b));

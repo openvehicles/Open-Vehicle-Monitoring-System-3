@@ -37,8 +37,6 @@
 #define WLTP_RANGE 263.0 //km
 #define BATT_CAPACITY 42.5 //kWh
 #define MAX_CHARGE_RATE 82 //kW
-#define BMSDoDUpperLimit 940.0
-#define BMSDoDLowerLimit 25.0
 
 class OvmsVehicleMgEvA : public OvmsVehicleMgEv
 {
@@ -48,7 +46,7 @@ class OvmsVehicleMgEvA : public OvmsVehicleMgEv
 
   protected:
     void Ticker1(uint32_t ticker) override;
-    vehicle_command_t CommandWakeup() override;   
+    vehicle_command_t CommandWakeup() override;
 
   private:
     void ZombieMode();

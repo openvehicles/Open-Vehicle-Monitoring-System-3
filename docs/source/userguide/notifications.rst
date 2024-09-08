@@ -123,6 +123,7 @@ alert   alarm.sounding              Vehicle alarm is sounding
 alert   alarm.stopped               Vehicle alarm has stopped
 alert   batt.12v.alert              12V Battery critical
 alert   batt.12v.recovered          12V Battery restored
+alert   batt.12v.shutdown           System shutdown (deep sleep) due to low 12V battery level
 alert   batt.bms.alert              Battery pack/cell alert (critical voltage/temperature deviation)
 alert   batt.soc.alert              Battery SOC critical
 info    charge.done                 ``stat`` on charge finished
@@ -137,6 +138,7 @@ alert   flatbed.moved               Vehicle is being transported while parked - 
 info    heating.started             ``stat`` on start of heating (battery)
 data    log.grid                    Grid (charge/generator) history log (see below) (→ ``*-LOG-Grid``)
 data    log.trip                    Trip history log (see below) (→ ``*-LOG-Trip``)
+data    log.pollstats               Poller Stats log (see below) (→ ``*-LOG-PollStats``)
 alert   modem.no_pincode            No PIN code for SIM card configured
 alert   modem.wrongpincode          Wrong pin code
 info    ota.update                  New firmware available/downloaded/installed
@@ -284,6 +286,31 @@ Already stored log entries will be kept on the server until expiry or manual del
     * tpms_health_min
     * tpms_health_max
 
+-------------------
+Poller Stats Report
+-------------------
+
+When poller timing stats is enabled from the command ``poller times on`` then the
+equivalent information from the ``poller times status`` command is sent to the server.
+
+This will give you the timing statistics (utilisation and time spent) for various items
+in the poller system.
+
+  - Notification subtype: ``log.pollstats``
+  - History record type: ``*-LOG-PollStats``
+  - Format: CSV
+  - Fields/columns:
+
+============ ============ =======================================================================
+Column       Units        Description
+============ ============ =======================================================================
+type                      Brief descriptor of the poller queue packet type
+count_hz     Hz           Number of this packet type per second on average
+avg_util_pm  permille     The average utilisation of that packet type
+peak_util_pm permille     The peak utilisation of that packet type
+avg_time_ms  ms           The average time spent processing a single packet
+peak_time_ms ms           The peak time spent processing a single packet
+============ ============ =======================================================================
 
 -----------
 Trip report

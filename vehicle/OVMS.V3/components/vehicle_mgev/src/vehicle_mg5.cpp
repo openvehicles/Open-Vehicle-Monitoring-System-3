@@ -35,7 +35,7 @@ static const char *TAG = "v-mgev";
 
 namespace {
 
-const OvmsVehicle::poll_pid_t mg5_obdii_polls[] =
+const OvmsPoller::poll_pid_t mg5_obdii_polls[] =
 {
     { bmsMk2Id, bmsMk2Id | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
     { bmsMk2Id, bmsMk2Id | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
@@ -130,16 +130,29 @@ OvmsVehicleMg5::OvmsVehicleMg5()
     
     // Set manual polling on
     MyConfig.SetParamValueInt("xmg", "polling.manual", 1);
-    // Set Max Range to WLTP Range
-    StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
-    m_batt_capacity->SetValue(BATT_CAPACITY);
-    m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLowerLimit);
-    MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDUpperLimit);
-
-    //Initialise GWM state to Unknown
-    //m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));
     
+    // Set up initial values from the version setting
+    int VehicleVersion = MyConfig.GetParamValueInt("xmg", "vehval", 0);
+    if(VehicleVersion == 0) {
+        ESP_LOGV(TAG,"MG5 Version - SR");
+        StandardMetrics.ms_v_bat_range_full->SetValue(290.0);
+        m_batt_capacity->SetValue(48.8);
+        m_max_dc_charge_rate->SetValue(80);
+        m_dod_lower->SetValue(36.0);
+        m_dod_upper->SetValue(994.0);
+
+    } else {
+        ESP_LOGV(TAG,"MG5 Version - LR");
+        StandardMetrics.ms_v_bat_range_full->SetValue(320.0);
+        m_batt_capacity->SetValue(57.4);
+        m_max_dc_charge_rate->SetValue(87);
+        m_dod_lower->SetValue(36.0);
+        m_dod_upper->SetValue(950.0);
+    }
+    ESP_LOGD(TAG, "MG5 Values - Range: %0.1f Battery kWh: %0.1f Charge Max: %0.1f", StandardMetrics.ms_v_bat_range_full->AsFloat(),
+             m_batt_capacity->AsFloat(),
+             m_max_dc_charge_rate->AsFloat());
+        
     //Add variant specific poll data
     ConfigureMG5PollData(mg5_obdii_polls, sizeof(mg5_obdii_polls));
     
@@ -153,7 +166,6 @@ OvmsVehicleMg5::OvmsVehicleMg5()
     
     // Register shell commands
     cmd_xmg->RegisterCommand("polls", "Turn polling on", PollsCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
-             
     //PollSetState(PollStateRunning);
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     Mg5WebInit();
@@ -166,6 +178,7 @@ OvmsVehicleMg5::~OvmsVehicleMg5()
     ESP_LOGI(TAG, "Shutdown MG5");
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     FeaturesWebDeInit();
+    VersionWebDeInit();
 #endif
 }
 
@@ -203,7 +216,7 @@ void OvmsVehicleMg5::MainStateMachine(canbus* currentBus, uint32_t ticker)
                 StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= CHARGING_THRESHOLD);
     
     if(MyConfig.GetParamValueInt("xmg", "polling.manual") == 1) {
-        ESP_LOGD(TAG,"Polling is manual");
+        //ESP_LOGD(TAG,"Polling is manual");
         if(!StandardMetrics.ms_v_env_charging12v->AsBool()) {
             // 12V not being charged so vehicle is off
             StandardMetrics.ms_v_env_awake->SetValue(false);
@@ -347,7 +360,7 @@ void OvmsVehicleMg5::MainStateMachine(canbus* currentBus, uint32_t ticker)
             StandardMetrics.ms_v_charge_inprogress->SetValue(false);
             if (m_afterRunTicker < TRANSITION_TIMEOUT)
             {
-                ESP_LOGV(TAG, "(%u) Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
+                ESP_LOGV(TAG, "(%" PRIu32 ") Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
                 m_afterRunTicker++;
             }
             else if (m_afterRunTicker == TRANSITION_TIMEOUT)

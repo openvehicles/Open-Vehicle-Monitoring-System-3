@@ -420,7 +420,7 @@ esp_err_t esp32can::InitController()
       break;
     default:
       MODULE_ESP32CAN->BTR1.B.TSEG1=0xc;
-      __tq = ((float)1000/MyESP32can->m_speed) / 16;
+      __tq = ((float)1000/static_cast<int>(MyESP32can->m_speed)) / 16;
     }
 
   // Set baud rate prescaler
@@ -576,6 +576,7 @@ esp_err_t esp32can::Stop()
 
   // And record that we are powered down
   pcp::SetPowerMode(Off);
+  m_mode = CAN_MODE_OFF;
 
   return ESP_OK;
   }

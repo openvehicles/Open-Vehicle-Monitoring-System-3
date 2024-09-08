@@ -29,18 +29,23 @@
 #include "ovms_utils.h"
 #include <string.h>
 
+#ifdef bind
+#undef bind
+#endif
+using namespace std::placeholders;
+static const char * TAGP = "v-ioniq5-poll";
 /**
  * Incoming poll reply messages
  */
-void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
+void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingPollReply");
   /*
-  ESP_LOGV(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
+  ESP_LOGV(TAGP, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_rec, type, pid, length, data[0], data[1], data[2], data[3],
      data[4], data[5], data[6], data[7]);
   */
   bool process_all = false;
-  switch (m_poll_moduleid_low) {
+  switch (job.moduleid_rec) {
     // ****** IGMP *****
     case 0x778:
       process_all = true;
@@ -81,7 +86,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
       break;
 
     default:
-      ESP_LOGD(TAG, "Unknown module: %03" PRIx32, m_poll_moduleid_low);
+      ESP_LOGD(TAGP, "Unknown module: %03" PRIx32, job.moduleid_rec);
       XDISARM;
       return;
   }
@@ -93,33 +98,33 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
     // Assemble first and following frames to get complete reply
 
     // init rx buffer on first (it tells us whole length)
-    if (m_poll_ml_frame == 0) {
-      obd_module = m_poll_moduleid_low;
-      obd_rxtype = type;
-      obd_rxpid = pid;
+    if (job.mlframe == 0) {
+      obd_module = job.moduleid_rec;
+      obd_rxtype = job.type;
+      obd_rxpid = job.pid;
       obd_frame = 0;
       rxbuf.clear();
-      ESP_LOGV(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Buffer: %d - Start",
-        m_poll_moduleid_low, type, pid, length + mlremain);
-      rxbuf.reserve(length + mlremain);
+      ESP_LOGV(TAGP, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Buffer: %d - Start",
+        job.moduleid_rec, job.type, job.pid, length + job.mlremain);
+      rxbuf.reserve(length + job.mlremain);
     }
     else {
       if (obd_frame == 0xffff) {
         XDISARM;
         return; // Aborted
       }
-      if ((obd_rxtype != type) || (obd_rxpid != pid) || (obd_module != m_poll_moduleid_low)) {
-        ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Dropped Frame",
-          m_poll_moduleid_low, type, pid);
+      if ((obd_rxtype != job.type) || (obd_rxpid != job.pid) || (obd_module != job.moduleid_rec)) {
+        ESP_LOGD(TAGP, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Dropped Frame",
+          job.moduleid_rec, job.type, job.pid);
         XDISARM;
         return;
       }
       ++obd_frame;
-      if (obd_frame != m_poll_ml_frame) {
+      if (obd_frame != job.mlframe) {
         obd_frame = 0xffff;
         rxbuf.clear();
-        ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Skipped Frame: %d",
-          m_poll_moduleid_low, type, pid, obd_frame);
+        ESP_LOGD(TAGP, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Skipped Frame: %d",
+          job.moduleid_rec, job.type, job.pid, obd_frame);
         XDISARM;
         return;
       }
@@ -127,62 +132,83 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
     // Append each piece..
     rxbuf.insert(rxbuf.end(), data, data + length);
     /*
-    ESP_LOGV(TAG, "IoniqISOTP: IPR %03x TYPE:%x PID: %03x Frame: %d Append: %d Expected: %d - Append",
-      m_poll_moduleid_low, type, pid, m_poll_ml_frame, length, mlremain);
+    ESP_LOGV(TAGP, "IoniqISOTP: IPR %03x TYPE:%x PID: %03x Frame: %d Append: %d Expected: %d - Append",
+      job.moduleid_rec, job.type, job.pid, m_poll_ml_frame, length, job.mlremain);
     */
-    if (mlremain > 0) {
+    if (job.mlremain > 0) {
       // we need more - return for now.
       XDISARM;
       return;
     }
 
-    ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Frames: %d Message Size: %d",
-      m_poll_moduleid_low, type, pid, obd_frame, rxbuf.size());
-    ESP_BUFFER_LOGD(TAG, rxbuf.data(), rxbuf.size());
-    switch (m_poll_moduleid_low) {
-      case 0x778:
-        IncomingIGMP_Full(bus, type, pid, rxbuf);
-        break;
-      case 0x7ce:
-        IncomingCM_Full(bus, type, pid, rxbuf);
-        break;
-      case 0x7ec:
-        IncomingBMC_Full(bus, type, pid, rxbuf);
-        break;
-      // ****** BCM ******
-      case 0x7a8:
-        IncomingBCM_Full(bus, type, pid, rxbuf);
-        break;
-      // ****** ?? Misc inc speed ******
-      case 0x7bb:
-        IncomingOther_Full(bus, type, pid, rxbuf);
-        break;
-      // ******* VMCU ******
-      case 0x7ea:
-        IncomingVMCU_Full(bus, type, pid, rxbuf);
-        break;
-    }
+    Incoming_Full(job.type, job.moduleid_sent, job.moduleid_rec, job.pid, rxbuf);
     obd_frame = 0xffff; // Received all - drop until we have a new frame 0
     rxbuf.clear();
   }
   XDISARM;
 }
 
+void OvmsHyundaiIoniqEv::Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data)
+{
+  ESP_LOGD(TAGP, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Message Size: %d",
+      module_rec, type, pid, data.size());
+  ESP_BUFFER_LOGV(TAGP, data.data(), data.size());
+  switch (type) {
+    case VEHICLE_POLL_TYPE_READDATA:
+      switch (module_rec) {
+        case 0x778:
+          IncomingIGMP_Full(type, pid, data);
+          break;
+        case 0x7ce:
+          IncomingCM_Full(type, pid, data);
+          break;
+        case 0x7ec:
+          IncomingBMC_Full(type, pid, data);
+          break;
+        // ****** BCM ******
+        case 0x7a8:
+          IncomingBCM_Full(type, pid, data);
+          break;
+        // ****** ?? Misc inc speed ******
+        case 0x7bb:
+          IncomingOther_Full(type, pid, data);
+          break;
+        // ******* VMCU ******
+        case 0x7ea:
+          IncomingVMCU_Full(type, pid, data);
+          break;
+      }
+      break;
+    case VEHICLE_POLL_TYPE_OBDIIVEHICLE:
+      switch (pid) {
+        case 2: // VIN
+          ProcessVIN(data);
+          break;
+      }
+      break;
+  }
+}
+void OvmsHyundaiIoniqEv::Incoming_Fail(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, int errorcode)
+{
+  ESP_LOGE(TAGP, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Error: %d",
+    module_rec, type, pid, errorcode);
+}
+
 /**
  * Handle incoming messages from cluster.
  */
-void OvmsHyundaiIoniqEv::IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingCM_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingCM_Full");
   switch (pid) {
     case 0xb002: {
       uint32_t value;
       if (!get_uint_buff_be<3>(data, 6, value)) {
-        ESP_LOGE(TAG, "IoniqISOTP.CM: ODO: Bad Buffer");
+        ESP_LOGE(TAGP, "IoniqISOTP.CM: ODO: Bad Buffer");
       }
       else {
         StdMetrics.ms_v_pos_odometer->SetValue(value, GetConsoleUnits());
-        ESP_LOGD(TAG, "IoniqISOTP.CM: ODO : %" PRId32 " km", value);
+        ESP_LOGD(TAGP, "IoniqISOTP.CM: ODO : %" PRId32 " km", value);
       }
     }
     break;
@@ -192,7 +218,7 @@ void OvmsHyundaiIoniqEv::IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pi
 /**
  * Handle incoming messages from Aircon poll.
  */
-void OvmsHyundaiIoniqEv::IncomingOther_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingOther_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   // 0x7b3->0x7bb
   XARM("OvmsHyundaiIoniqEv::IncomingOther_Full");
@@ -220,7 +246,7 @@ void OvmsHyundaiIoniqEv::IncomingOther_Full(canbus *bus, uint16_t type, uint16_t
  *
  * - Aux battery SOC, Voltage and current
  */
-void OvmsHyundaiIoniqEv::IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingVMCU_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   // 0x7ea
 
@@ -230,7 +256,7 @@ void OvmsHyundaiIoniqEv::IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t 
       case 0xe004: {
         uint32_t res;
         if (!get_uint_buff_be<1>(data, 14, res)) {
-          ESP_LOGE(TAG, "IoniqISOTP.VMCU: Shift Mode : Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.VMCU: Shift Mode : Bad Buffer");
         }
         else {
           switch (res & 0xf) {// need &0xf?? Possibly not??
@@ -247,7 +273,7 @@ void OvmsHyundaiIoniqEv::IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t 
               iq_shift_status = IqShiftStatus::Reverse;
               break;
             default: // Other.
-              ESP_LOGI(TAG, "Unknown Gear selection %" PRId32, res & 0xf);
+              ESP_LOGI(TAGP, "Unknown Gear selection %" PRId32, res & 0xf);
           }
           switch (iq_shift_status) {
             case IqShiftStatus::Park:
@@ -263,7 +289,7 @@ void OvmsHyundaiIoniqEv::IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t 
           }
         }
         if (!get_uint_buff_be<1>(data, 9, res)) {
-          ESP_LOGE(TAG, "IoniqISOTP.VMCU: Accell: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.VMCU: Accell: Bad Buffer");
         }
         else {
           // Seems likely as it has 0->200 value.
@@ -281,16 +307,16 @@ void OvmsHyundaiIoniqEv::IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t 
       if (type == VEHICLE_POLL_TYPE_OBDIIGROUP) {
         uint32_t value;
         if (!get_buff_uint_le<2>(data, 18, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.VMCU: 12V Bat Voltage: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.VMCU: 12V Bat Voltage: Bad Buffer");
         }
         else {
-          ESP_LOGD(TAG, "IoniqISOTP.VMCU: 12V Bat Voltage: %fV", value / 1000.0);
+          ESP_LOGD(TAGP, "IoniqISOTP.VMCU: 12V Bat Voltage: %fV", value / 1000.0);
         }
         if (!get_buff_uint_le<2>(data, 20, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.VMCU: 12V Bat Current: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.VMCU: 12V Bat Current: Bad Buffer");
         }
         else {
-          ESP_LOGD(TAG, "IoniqISOTP.VMCU: 12V Bat Current: %fA", value / 1000.0);
+          ESP_LOGD(TAGP, "IoniqISOTP.VMCU: 12V Bat Current: %fA", value / 1000.0);
         }
       }
       break;
@@ -310,7 +336,7 @@ void OvmsHyundaiIoniqEv::IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t 
  * - Cell voltage max / min + cell #
  * + more
  */
-void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingBMC_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   // 0x7e4->0x7ec
   XARM("OvmsHyundaiIoniqEv::IncomingBMC_Full");
@@ -320,30 +346,30 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
       case 0x0101: {
 
         if (!get_uint_buff_be<1>(data, 9, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Relay: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Relay: Bad Buffer");
         }
         else {
           m_b_bms_relay->SetValue(get_bit<0>(value));
         }
 
         if (!get_uint_buff_be<1>(data, 4, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS SOC: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS SOC: Bad Buffer");
         }
         else {
-          ESP_LOGD(TAG, "IoniqISOTP.BMC: BMS SOC: %f", value / 2.0);
+          ESP_LOGD(TAGP, "IoniqISOTP.BMC: BMS SOC: %f", value / 2.0);
           m_b_bms_soc->SetValue(value / 2.0);
         }
         float current = 0;
         int32_t signedValue;
         if (!get_buff_int_be<2>(data, 10, signedValue )) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Current: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Current: Bad Buffer");
         }
         else {
           current = (float)signedValue / 10.0;
           StdMetrics.ms_v_bat_current->SetValue(current, Amps);
         }
         if (!get_uint_buff_be<2>(data, 12, value )) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Voltage: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Voltage: Bad Buffer");
         }
         else {
           float voltage = (float)value / 10.0;
@@ -361,7 +387,7 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
         }
 
         if (!get_uint_buff_be<2>(data, 5, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Avail Power: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Avail Power: Bad Buffer");
         }
         else {
           m_b_bms_availpower->SetValue(value, Watts);
@@ -376,13 +402,13 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
         }
 
         if (!get_uint_buff_be<1>(data, 15, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Min Temp Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Min Temp Bad Buffer");
         }
         else {
           m_b_min_temperature->SetValue( value );
         }
         if (!get_uint_buff_be<1>(data, 14, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Max Temp Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Max Temp Bad Buffer");
         }
         else {
           m_b_max_temperature->SetValue( value );
@@ -393,41 +419,41 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
         int32_t temp;
         for (int i = 0; i < 5; ++i) {
           if (!get_buff_int_be<1>(data, 16 + i, temp)) {
-            ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Temp %d Bad Buffer", i + 1);
+            ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Temp %d Bad Buffer", i + 1);
             break;
           }
           BmsSetCellTemperature(i, temp);
-          // ESP_LOGV(TAG, "[%03d] T =%.2dC", i, temp);
+          // ESP_LOGV(TAGP, "[%03d] T =%.2dC", i, temp);
         }
         if (!get_buff_int_be<1>(data, 22, temp)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Inlet Temp Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Inlet Temp Bad Buffer");
         }
         else {
           m_b_inlet_temperature->SetValue( value, Celcius );
         }
         if (!get_buff_int_be<1>(data, 23, temp)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Cell Volt Max Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Cell Volt Max Bad Buffer");
         }
         else {
           m_b_cell_volt_max->SetValue( (float)value / 50.0, Volts );
         }
 
         if (!get_uint_buff_be<1>(data, 24, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Cell Volt Max No Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Cell Volt Max No Bad Buffer");
         }
         else {
           m_b_cell_volt_max_no->SetValue(value);
         }
 
         if (!get_buff_int_be<1>(data, 25, temp)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Cell Volt Min Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Cell Volt Min Bad Buffer");
         }
         else {
           m_b_cell_volt_min->SetValue( (float)value / 50.0, Volts );
         }
 
         if (!get_uint_buff_be<1>(data, 26, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Cell Volt Min No Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Cell Volt Min No Bad Buffer");
         }
         else {
           m_b_cell_volt_min_no->SetValue(value);
@@ -435,56 +461,56 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
 
         // TODO Make these metrics!
         if (!get_uint_buff_be<1>(data, 28, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: Battery Fan Feedback Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: Battery Fan Feedback Bad Buffer");
         }
         else {
           kn_battery_fan_feedback = value;  // Hz
         }
 
         if (!get_uint_buff_be<1>(data, 28, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: Battery Fan status Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: Battery Fan status Bad Buffer");
         }
         else {
           kn_charge_bits.FanStatus = value & 0xF;  //TODO Battery fan status
         }
 
         if (!get_uint_buff_be<4>(data, 30, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: Cumulative Charge Current Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: Cumulative Charge Current Bad Buffer");
         }
         else {
           StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(value * 0.1f, AmpHours);
         }
 
         if (!get_uint_buff_be<4>(data, 34, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: Cumulative Discharge Current Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: Cumulative Discharge Current Bad Buffer");
         }
         else {
           StdMetrics.ms_v_bat_coulomb_used_total->SetValue(value/10, AmpHours);
         }
         //
         if (!get_uint_buff_be<4>(data, 38, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: Cumulative Charge Energy Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: Cumulative Charge Energy Bad Buffer");
         }
         else {
           StdMetrics.ms_v_bat_energy_recd_total->SetValue(value*100, WattHours);
         }
 
         if (!get_uint_buff_be<4>(data, 42, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: Cumulative Discharge Energy Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: Cumulative Discharge Energy Bad Buffer");
         }
         else {
           StdMetrics.ms_v_bat_energy_used_total->SetValue(value*100, WattHours);
         }
 
         if (!get_uint_buff_be<4>(data, 46, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: Cumulative Operating time Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: Cumulative Operating time Bad Buffer");
         }
         else {
           m_v_accum_op_time->SetValue(value, Seconds);
         }
 
         if (!get_uint_buff_be<1>(data, 50, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Ignition Status Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Ignition Status Bad Buffer");
         }
         else {
           m_b_bms_ignition->SetValue(get_bit<2>(value));
@@ -508,45 +534,45 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
       break;
       case 0x0105: {
         if (!get_uint_buff_be<1>(data, 23, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Temp: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Temp: Bad Buffer");
         }
         else {
           m_b_heat_1_temperature->SetValue( value );
         }
 
         if (!get_uint_buff_be<2>(data, 25, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: SOH: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: SOH: Bad Buffer");
         }
         else {
           float sohval = (float) value / 10.0;
-          ESP_LOGD(TAG, "IoniqISOTP.BMC: SOH: %f", sohval);
+          ESP_LOGD(TAGP, "IoniqISOTP.BMC: SOH: %f", sohval);
           StdMetrics.ms_v_bat_soh->SetValue( (float)value / 10.0 );
         }
 
         if (!get_uint_buff_be<1>(data, 27, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: Cell Det Max No: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: Cell Det Max No: Bad Buffer");
         }
         else {
           m_b_cell_det_max_no->SetValue( value );
         }
         if (!get_uint_buff_be<2>(data, 28, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: Cell Det Min: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: Cell Det Min: Bad Buffer");
         }
         else {
           m_b_cell_det_min->SetValue( (float)value / 10.0 );
         }
         if (!get_uint_buff_be<1>(data, 30, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: Cell Det Min: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: Cell Det Min: Bad Buffer");
         }
         else {
           m_b_cell_det_min_no->SetValue( value, Percentage );
         }
 
         if (!get_uint_buff_be<1>(data, 31, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: SOC: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.BMC: SOC: Bad Buffer");
         }
         else {
-          ESP_LOGD(TAG, "IoniqISOTP.BMC: SOC: %f", value / 2.0);
+          ESP_LOGD(TAGP, "IoniqISOTP.BMC: SOC: %f", value / 2.0);
           StdMetrics.ms_v_bat_soc->SetValue(value / 2.0, Percentage);
         }
 
@@ -556,11 +582,11 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
           // Bytes 39..42 contain temps 12..15
           int byteIndex = i + ((i <= 6) ? 9 : (39 - 7));
           if (!get_buff_int_be<1>(data, byteIndex, temp)) {
-            ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS %d -> Temp %d Bad Buffer", byteIndex, i + 6);
+            ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS %d -> Temp %d Bad Buffer", byteIndex, i + 6);
             break;
           }
           BmsSetCellTemperature(5 + i, temp);
-          ESP_LOGV(TAG, "[%03d] T =%.2" PRId32 "C", 5 + i, temp);
+          ESP_LOGV(TAGP, "[%03d] T =%.2" PRId32 "C", 5 + i, temp);
         }
       }
       break;
@@ -574,7 +600,7 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
         bool isfinal = false;
         switch (pid) {
           case 0x0102:
-            ESP_LOGV(TAG, "Cell Voltage Reset");
+            ESP_LOGV(TAGP, "Cell Voltage Reset");
             BmsRestartCellVoltages();
             iq_last_voltage_cell = -1;
             break;
@@ -598,11 +624,11 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
         // It seems that the first 4 byte bitset indicate which cells are active.
         uint32_t present;
         if (! get_uint_buff_be<4>(data, 0, present)) {
-          ESP_LOGE(TAG, "IoniqISOTP.Battery Cells from %" PRId32 " : Bad Buffer", base);
+          ESP_LOGE(TAGP, "IoniqISOTP.Battery Cells from %" PRId32 " : Bad Buffer", base);
 
           break; // Can't get subsequent data if this fails!!
         }
-        ESP_LOGV(TAG, "IoniqISOTP.Battery Cells Available from %" PRId32 " - %.8" PRIx32 " ", base, present);
+        ESP_LOGV(TAGP, "IoniqISOTP.Battery Cells Available from %" PRId32 " - %.8" PRIx32 " ", base, present);
 
         for (int32_t idx = 0; idx < 32; ++idx) {
           // Bitset is from high downto low, left to right.
@@ -615,7 +641,7 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
             }
 
             if (! get_uint_buff_be<1>(data, 4 + idx, value)) {
-              ESP_LOGE(TAG, "IoniqISOTP.Battery Cell %" PRId32 " : Bad Buffer", cellNo);
+              ESP_LOGE(TAGP, "IoniqISOTP.Battery Cell %" PRId32 " : Bad Buffer", cellNo);
             }
             else {
               float voltage = (float)value * 0.02;
@@ -645,7 +671,7 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
  * Handle incoming messages from BCM-poll
  *
  */
-void OvmsHyundaiIoniqEv::IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingBCM_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingBCM_Full");
   //0x7a8
@@ -701,7 +727,7 @@ void OvmsHyundaiIoniqEv::IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t p
       case 0xb008: {
         uint32_t value;
         if (!get_uint_buff_be<1>(data, 6, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.CM: Brake: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.CM: Brake: Bad Buffer");
         }
         else {
           // TODO: Currently only 0 or 100. Possibly looking at brake light here?
@@ -728,7 +754,7 @@ void OvmsHyundaiIoniqEv::IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t p
  * Handle incoming messages from IGMP-poll
  *
  */
-void OvmsHyundaiIoniqEv::IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::IncomingIGMP_Full(uint16_t type, uint16_t pid, const std::string &data)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingIGMP_Full");
   // 0x778
@@ -754,7 +780,7 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t 
       }
       // Byte 4 entries
       if (!get_uint_buff_be<1>(data, 4, lVal)) {
-        ESP_LOGE(TAG, "IoniqISOTP.IGMP: Door Locks/Open: Bad Buffer");
+        ESP_LOGE(TAGP, "IoniqISOTP.IGMP: Door Locks/Open: Bad Buffer");
       }
       else {
         StdMetrics.ms_v_door_trunk->SetValue(get_bit<7>(lVal));
@@ -795,12 +821,12 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t 
       if (get_uint_buff_be<1>(data, 8, lVal) ) {
         StdMetrics.ms_v_env_headlights->SetValue(get_bit<4>(lVal));
       } else {
-          ESP_LOGE(TAG, "IoniqISOTP.IGMP: Headlights: Bad Buffer");
+          ESP_LOGE(TAGP, "IoniqISOTP.IGMP: Headlights: Bad Buffer");
       }
       */
       bool is_lhd = IsLHD();
       if (!get_uint_buff_be<1>(data, 4, lVal)) {
-        ESP_LOGE(TAG, "IoniqISOTP.IGMP: Door Locks: Bad Buffer");
+        ESP_LOGE(TAGP, "IoniqISOTP.IGMP: Door Locks: Bad Buffer");
       }
       else {
         /*
@@ -808,7 +834,7 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t 
          */
         bool driver_door = !get_bit<3>(lVal);
         bool passenger_door = !get_bit<2>(lVal);
-        // ESP_LOGD(TAG, "IoniqISOTP.IGMP: Front Door Locks: Driver: %s Passenger: %s", (passenger_door?"Locked":"Unlocked"), (driver_door?"Locked":"Unlocked"));
+        // ESP_LOGD(TAGP, "IoniqISOTP.IGMP: Front Door Locks: Driver: %s Passenger: %s", (passenger_door?"Locked":"Unlocked"), (driver_door?"Locked":"Unlocked"));
         if (is_lhd) {
           m_v_door_lock_fl->SetValue(driver_door);
           m_v_door_lock_fr->SetValue(passenger_door);
@@ -819,13 +845,13 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t 
         }
       }
       if (!get_uint_buff_be<1>(data, 7, lVal)) {
-        ESP_LOGE(TAG, "IoniqISOTP.IGMP: Belts Bad Buffer");
+        ESP_LOGE(TAGP, "IoniqISOTP.IGMP: Belts Bad Buffer");
       }
       else {
         m_v_seat_belt_back_middle->SetValue(get_bit<3>(lVal));
         bool driver_seat = get_bit<2>(lVal);
         bool passenger_seat = get_bit<4>(lVal);
-        // SP_LOGD(TAG, "IoniqISOTP.IGMP: Seatbelts: Driver: %s Passenger: %s", (passenger_seat?"On":"Off"), (driver_seat?"On":"Off"));
+        // SP_LOGD(TAGP, "IoniqISOTP.IGMP: Seatbelts: Driver: %s Passenger: %s", (passenger_seat?"On":"Off"), (driver_seat?"On":"Off"));
         if (is_lhd) {
           m_v_seat_belt_back_left->SetValue(driver_seat);
           m_v_seat_belt_back_right->SetValue(passenger_seat);
@@ -894,74 +920,112 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t 
   XDISARM;
 }
 
-int OvmsHyundaiIoniqEv::RequestVIN()
+IqVinStatus OvmsHyundaiIoniqEv::ProcessVIN(const std::string &response)
 {
-  //ESP_LOGD(TAG, "RequestVIN: Sending Request");
-  if (!StdMetrics.ms_v_env_awake->AsBool()) {
-    ESP_LOGD(TAG, "RequestVIN: Not Awake Request not sent");
-    return -3;
+  uint32_t byte;
+  if (!get_uint_buff_be<1>(response, 0, byte)) {
+    ESP_LOGE(TAGP, "ProcessVIN: Bad Buffer");
+    return IqVinStatus::BadBuffer;
   }
-  std::string response;
-  int res = PollSingleRequest( m_can1,
-      VEHICLE_OBD_BROADCAST_MODULE_TX, VEHICLE_OBD_BROADCAST_MODULE_RX,
-      VEHICLE_POLL_TYPE_OBDIIVEHICLE,  2, response, 1000);
-  if (res != POLLSINGLE_OK) {
-    switch (res) {
-      case POLLSINGLE_TIMEOUT:
-        ESP_LOGE(TAG, "RequestVIN: Request Timeout");
-        break;
-      case POLLSINGLE_TXFAILURE:
-        ESP_LOGE(TAG, "RequestVIN: Request TX Failure");
-        break;
-      default:
-        ESP_LOGE(TAG, "RequestVIN: UDC Error %d", res);
+  else if (byte == 1)
+  {
+    std::string vin;
+    if ( !get_buff_string(response, 1, 17, vin)) {
+      return IqVinStatus::BadBuffer;
     }
+    if (vin.length() > 5 && vin[4] == '-') {
+      vin = vin.substr(0, 3) + vin.substr(10) + "-------";
+    }
+    StandardMetrics.ms_v_vin->SetValue(vin);
+    ESP_BUFFER_LOGD(TAGP, response.data(), response.size());
 
-    return res;
+    vin.copy(m_vin, sizeof(m_vin) - 1);
+    m_vin[sizeof(m_vin) - 1] = '\0';
+    ESP_LOGD(TAGP, "ProcessVIN: Success: '%s'", vin.c_str());
+    return IqVinStatus::Success;
+  }
+  else if (!get_uint_buff_be<1>(response, 4, byte)) {
+    ESP_LOGE(TAGP, "ProcessVIN: Bad Buffer");
+    return IqVinStatus::BadBuffer;
+  }
+  else if (byte != 1) {
+    ESP_LOGI(TAGP, "ProcessVIN: Ignore Response");
+    return IqVinStatus::BadFormat;
   }
   else {
-    uint32_t byte;
-    if (!get_uint_buff_be<1>(response, 4, byte)) {
-      ESP_LOGE(TAG, "RequestVIN: Bad Buffer");
-      return POLLSINGLE_TIMEOUT;
-    }
-    else if (byte != 1) {
-      ESP_LOGI(TAG, "RequestVIN: Ignore Response");
-      return POLLSINGLE_TIMEOUT;
+    std::string vin;
+    if ( get_buff_string(response, 5, 17, vin)) {
+      if (vin.length() > 5 && vin[4] == '-') {
+        vin = vin.substr(0, 3) + vin.substr(10) + "-------";
+      }
+      StandardMetrics.ms_v_vin->SetValue(vin);
+      ESP_BUFFER_LOGD(TAGP, response.data(), response.size());
+
+      vin.copy(m_vin, sizeof(m_vin) - 1);
+      m_vin[sizeof(m_vin) - 1] = '\0';
+      ESP_LOGD(TAGP, "ProcessVIN: Success: '%s'->'%s'", vin.c_str(), m_vin);
+      return IqVinStatus::Success;
     }
     else {
-      std::string vin;
-      if ( get_buff_string(response, 5, 17, vin)) {
-        if (vin.length() > 5 && vin[4] == '-') {
-          vin = vin.substr(0, 3) + vin.substr(10) + "-------";
-        }
-        StandardMetrics.ms_v_vin->SetValue(vin);
-        ESP_BUFFER_LOGD(TAG, response.data(), response.size());
-
-        vin.copy(m_vin, sizeof(m_vin) - 1);
-        m_vin[sizeof(m_vin) - 1] = '\0';
-        ESP_LOGD(TAG, "RequestVIN: Success: '%s'->'%s'", vin.c_str(), m_vin);
-        return POLLSINGLE_OK;
-      }
-      else {
-        ESP_LOGE(TAG, "RequestVIN.String: Bad Buffer");
-        return POLLSINGLE_TIMEOUT;
-      }
+      ESP_LOGE(TAGP, "ProcessVIN: Bad VIN Buffer");
+      return IqVinStatus::BadBuffer;
     }
   }
+}
+
+bool OvmsHyundaiIoniqEv::PollRequestVIN()
+{
+  if (!StdMetrics.ms_v_env_awake->AsBool()) {
+    ESP_LOGV(TAGP, "PollRequestVIN: Not Awake Request not sent");
+    return false;
+  }
+  auto poll_entry = std::shared_ptr<OvmsPoller::OnceOffPoll>(
+      new OvmsPoller::OnceOffPoll(
+        std::bind(&OvmsHyundaiIoniqEv::Incoming_Full, this, _1, _2, _3, _4, _5),
+        std::bind(&OvmsHyundaiIoniqEv::Incoming_Fail, this, _1, _2, _3, _4, _5),
+        0x7e2, 0x7ea,
+        VEHICLE_POLL_TYPE_OBDIIVEHICLE,  2,
+        ISOTP_STD, 0, 3/*retries*/ ));
+  PollRequest(m_can1, "!xiq.vin", poll_entry);
+  return true;
+}
+
+IqVinStatus OvmsHyundaiIoniqEv::RequestVIN()
+{
+  //ESP_LOGD(TAGP, "RequestVIN: Sending Request");
+
+  if (!StdMetrics.ms_v_env_awake->AsBool()) {
+    ESP_LOGD(TAGP, "RequestVIN: Not Awake Request not sent");
+    return IqVinStatus::NotAwake;
+  }
+
+  std::string response;
+  int res = PollSingleRequest( m_can1,
+      0x7e2, 0x7ea,
+      VEHICLE_POLL_TYPE_OBDIIVEHICLE,  2, response, 1000);
+  switch (res) {
+    case POLLSINGLE_OK:
+      return ProcessVIN(response);
+    case POLLSINGLE_TIMEOUT:
+      ESP_LOGE(TAGP, "RequestVIN: Request Timeout");
+      return IqVinStatus::Timeout;
+    case POLLSINGLE_TXFAILURE:
+      ESP_LOGE(TAGP, "RequestVIN: Request TX Failure");
+      return IqVinStatus::TxFail;
+    default:
+      ESP_LOGE(TAGP, "RequestVIN: UDC Error %d: %s", res, OvmsPoller::PollResultCodeName(res));
+  }
+  return IqVinStatus::ProtocolErr;
 }
 
 /**
  * Get console ODO units
  *
- * Currently from configuration
  */
 metric_unit_t OvmsHyundaiIoniqEv::GetConsoleUnits()
 {
-  XARM("OvmsHyundaiIoniqEv::GetConsoleUnits");
-  metric_unit_t res = MyConfig.GetParamValueBool("xkn", "consoleKilometers", true) ? Kilometers : Miles;
-  XDISARM;
-  return res;
+  // Always KM.
+  return Kilometers;
 }
 
 /**
@@ -972,7 +1036,7 @@ metric_unit_t OvmsHyundaiIoniqEv::GetConsoleUnits()
 bool OvmsHyundaiIoniqEv::IsLHD()
 {
   XARM("OvmsHyundaiIoniqEv::IsLHD");
-  bool res = MyConfig.GetParamValueBool("xkn", "leftDrive", true);
+  bool res = MyConfig.GetParamValueBool("xiq", "leftDrive", true);
   XDISARM;
   return res;
 }

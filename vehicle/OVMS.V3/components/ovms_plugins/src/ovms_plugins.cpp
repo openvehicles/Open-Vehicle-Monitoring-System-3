@@ -46,11 +46,14 @@ static const char *TAG = "pluginstore";
 #include "ovms_http.h"
 #include "ovms_buffer.h"
 #include "ovms_netmanager.h"
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 #include "ovms_duktape.h"
+#endif
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
+#include "ovms_vfs.h"
 
 OvmsPluginStore MyPluginStore __attribute__ ((init_priority (7100)));
 
@@ -62,6 +65,13 @@ void repo_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 void repo_install(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyPluginStore.RepoInstall(writer,std::string(argv[0]),std::string(argv[0]));
+  }
+
+static int repo_install_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 2)
+    return vfs_expand(writer, argv[argc-1], complete, true, false) ? argc : -1;
+  return -1;
   }
 
 void repo_remove(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -136,7 +146,7 @@ OvmsPluginStore::OvmsPluginStore()
 
   OvmsCommand* cmd_repo = cmd_plugin->RegisterCommand("repo","PLUGIN Repositories", repo_list, "", 0, 0);
   cmd_repo->RegisterCommand("list","List repositories",repo_list,"",0,0);
-  cmd_repo->RegisterCommand("install","Install a repository",repo_install,"<repo> <path>",2,2);
+  cmd_repo->RegisterCommand("install","Install a repository",repo_install,"<repo> <path>",2,2,true, repo_install_validate);
   cmd_repo->RegisterCommand("remove","Remove a repository",repo_remove,"<repo>",1,1);
   cmd_repo->RegisterCommand("refresh","Refresh repository metadata",repo_refresh,"",0,0);
 
@@ -503,6 +513,7 @@ void OvmsPluginStore::LoadEnabledModules(plugin_element_type_t type)
             {
             if ((type==EL_MODULE) && (e->m_type == EL_MODULE))
               {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
               // Load an enabled script module
               const char* filename = "LoadEnabledModules";
               duk_context* ctx = MyDuktape.DukTapeContext();
@@ -526,6 +537,7 @@ void OvmsPluginStore::LoadEnabledModules(plugin_element_type_t type)
                 }
               duk_pop(ctx);
               ESP_LOGI(TAG,"  Load %s script %s", p.m_name.c_str(), e->m_path.c_str());
+#endif
               }
             #ifdef CONFIG_OVMS_COMP_WEBSERVER
             else if ((type==EL_WEB_PAGE) && (e->m_type == EL_WEB_PAGE))

@@ -1,11 +1,12 @@
-===============
-Hyundai Ioniq 5
-===============
+=========================
+Hyundai Ioniq 5 / Kia EV6
+=========================
 
-**Hyundai Ioniq 5**
+**Hyundai Ioniq 5 / Kia EV6**
 
 - Vehicle Type: **HION5**
 - Log tag: ``v-ioniq5``
+- Poll log tag: ``v-ioniq5-poll``
 - Namespace: ``xiq``
 - Maintainers: `Michael Geddes <frog@bunyip.wheelycreek.net>`_
 - Credits: `EVNotify <https://github.com/EVNotify>`_
@@ -23,7 +24,7 @@ Vehicle Cable               OBD-II to DB9 Data Cable for OVMS (1441200 right, or
 GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna)
 SOC Display                 Yes
-Range Display               No
+Range Display               Yes
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes
 Temperature Display         Partial
@@ -49,7 +50,6 @@ Metric name                              Example value            Description
 ======================================== ======================== ============================================
 xiq.m.version                            0.0.1 10/09/2022 10:23   Version of Module
 xiq.b.bms.soc                            78.5%                    Internal BMS SOC
-
 xiq.v.b.c.voltage.max                    10.0V                    Battery Cell Volt Max
 xiq.v.b.c.voltage.min                    10.0V                    Battery Cell Volt Min
 xiq.v.b.c.voltage.max.no                 123450                   Battery Cell Volt Max No
@@ -102,6 +102,17 @@ xiq.v.c.current.req                      45A                      Requested char
 
 ======================================== ======================== ============================================
 
+--------------
+Custom Configs
+--------------
+
+======================================== ============== ========= ============================================
+Config name                              Default value  …unit     Description
+======================================== ============== ========= ============================================
+xiq leftDrive                            true                     This car is left-hand-drive
+xiq notify.charge.delay.ccs              15             Seconds   Wait time for DC charge power to ramp up before sending the notification
+xiq notify.charge.delay.type2            10             Seconds   … same for AC charging
+======================================== ============== ========= ============================================
 
 ----------
 Debug Logs

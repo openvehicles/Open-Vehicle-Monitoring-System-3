@@ -78,7 +78,7 @@ static const char *TAG = "v-kianiroev";
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
-static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
+static const OvmsPoller::poll_pid_t vehicle_kianiroev_polls[] =
   {
   		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_1A, 				0x80, 			{       0,  120,	 120 }, 0, ISOTP_STD },  // VMCU - VIN
 
@@ -638,21 +638,21 @@ void OvmsVehicleKiaNiroEv::HandleCharging()
 		POLLSTATE_CHARGING;
     }
   else
-  		{
-    // ******* Charging continues: *******
-    if (((BAT_SOC > 0) && (LIMIT_SOC > 0) && (BAT_SOC >= LIMIT_SOC) && (kia_last_soc < LIMIT_SOC))
-    			|| ((EST_RANGE > 0) && (LIMIT_RANGE > 0)
-    					&& (IDEAL_RANGE >= LIMIT_RANGE )
+		{
+		// ******* Charging continues: *******
+		if (((BAT_SOC > 0) && (LIMIT_SOC > 0) && (BAT_SOC >= LIMIT_SOC) && (kia_last_soc < LIMIT_SOC))
+			|| ((EST_RANGE > 0) && (LIMIT_RANGE > 0)
+					&& (IDEAL_RANGE >= LIMIT_RANGE )
 							&& (kia_last_ideal_range < LIMIT_RANGE )))
-    		{
-      // ...enter state 2=topping off when we've reach the needed range / SOC:
-  			SET_CHARGE_STATE("topoff", NULL);
-      }
-    else if (BAT_SOC >= 95) // ...else set "topping off" from 94% SOC:
-    		{
-			SET_CHARGE_STATE("topoff", NULL);
-    		}
-  		}
+			{
+			// ...enter state 2=topping off when we've reach the needed range / SOC:
+			SET_CHARGE_STATE("topoff");
+			}
+		else if (BAT_SOC >= 95) // ...else set "topping off" from 94% SOC:
+			{
+			SET_CHARGE_STATE("topoff");
+			}
+		}
 
   // Check if we have what is needed to calculate remaining minutes
   if (CHARGE_VOLTAGE > 0 && CHARGE_CURRENT > 0)
@@ -683,16 +683,16 @@ void OvmsVehicleKiaNiroEv::HandleCharging()
   		StdMetrics.ms_v_charge_duration_range->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_range, kn_battery_capacity, niro_charge_steps), Minutes);
     }
   else
-  		{
-  		if( m_v_preheating->AsBool())
-  			{
-  			SET_CHARGE_STATE("heating","scheduledstart");
-  			}
-  		else
-  			{
-  			SET_CHARGE_STATE("charging",NULL);
-  			}
-  		}
+    {
+    if( m_v_preheating->AsBool())
+      {
+      SET_CHARGE_STATE("heating","scheduledstart");
+      }
+    else
+      {
+      SET_CHARGE_STATE("charging");
+      }
+    }
   StdMetrics.ms_v_charge_kwh->SetValue(CUM_CHARGE - kia_cum_charge_start, kWh); // kWh charged
   kia_last_soc = BAT_SOC;
   kia_last_battery_cum_charge = kia_battery_cum_charge;

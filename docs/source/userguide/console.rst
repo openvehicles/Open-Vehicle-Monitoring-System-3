@@ -30,7 +30,7 @@ OVMS v3 includes a powerful command line console that can be accessed in various
 
 6. SMS.
 
-  Console commands can be issued via SMS.
+  Console commands can be issued via SMS in the future (not yet implemented).
 
 ^^^^^^^^^^^
 USB Console

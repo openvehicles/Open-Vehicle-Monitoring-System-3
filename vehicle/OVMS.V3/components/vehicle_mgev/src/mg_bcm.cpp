@@ -241,16 +241,13 @@ void OvmsVehicleMgEv::DRLCommand(OvmsWriter* writer, canbus* currentBus, bool Tu
           
         m_bcm_task->SetValue(static_cast<int>(BCMTasks::DRL));
         // Pause the poller so we're not being interrupted
-        {
-            OvmsRecMutexLock lock(&m_poll_mutex);
-            m_poll_plist = nullptr;
-        }             
+        PausePolling();
 
         if (currentBus->Write(&Command) == ESP_FAIL) {
             ESP_LOGE(TAG, "Error writing DRL command frame");
             m_bcm_task->SetValue(static_cast<int>(BCMTasks::None));
             // Re-start polling
-            m_poll_plist = m_pollData;        
+            ResumePolling();
             return;      
         }
 
@@ -308,7 +305,7 @@ void OvmsVehicleMgEv::DRLCommand(OvmsWriter* writer, canbus* currentBus, bool Tu
             default: {}
         }
         // Re-start polling
-        m_poll_plist = m_pollData;                
+        ResumePolling();
     }
     else
     {

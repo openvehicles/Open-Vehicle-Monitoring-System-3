@@ -29,10 +29,9 @@ The module provides SSH access and WebSocket streaming and can stream and inject
 module and the web frontend can be customized by plugins. The module has three builtin CAN buses and [can be 
 extended by a fourth one](https://github.com/mjuhanne/OVMS-SWCAN).
 
-The **OVMS base component** is a small and inexpensive hardware module that connects to the vehicle **OBD2** 
-port. The standard kit includes a 3G modem to provide **GSM** connectivity and **GPS** and comes with a 
-ready-to-use [Hologram.io](https://hologram.io/) SIM card. The US kit has been **FCC certified**, the EU kit
-**CE certified**.
+The **OVMS base component** is a small hardware module that connects to the vehicle **OBD2** 
+port. The standard kit in the current version 3.3 includes a **2G/3G/4G modem** to provide cellular 
+connectivity and **GPS**. This standard kit has been **FCC certified** and **CE certified**.
 
 The module provides a **built-in Web App** user interface and remote control via native cellphone Apps 
 available for **Android** and **iOS**. It integrates into home/process automation systems via **MQTT** and 
@@ -54,7 +53,7 @@ provides data logging to SD card and to a server.
   - [Kia Soul EV](https://docs.openvehicles.com/en/latest/components/vehicle_kiasoulev/docs/index.html)
   - [Maxus eDeliver 3](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html)
   - [Mercedes-Benz B250E](https://docs.openvehicles.com/en/latest/components/vehicle_mercedesb250e/docs/index.html)
-  - [MG ZS EV](https://docs.openvehicles.com/en/latest/components/vehicle_mgev/docs/index.html)
+  - [MG](https://docs.openvehicles.com/en/latest/components/vehicle_mgev/docs/index.html)
   - [Mitsubishi Trio (i-MiEV et al)](https://docs.openvehicles.com/en/latest/components/vehicle_mitsubishi/docs/index.html)
   - [Nissan Leaf / e-NV200](https://docs.openvehicles.com/en/latest/components/vehicle_nissanleaf/docs/index.html)
   - [Renault Twizy](https://docs.openvehicles.com/en/latest/components/vehicle_renaulttwizy/docs/index.html)
@@ -81,12 +80,12 @@ provides data logging to SD card and to a server.
     - [Stable release (OTA version "main")](https://docs.openvehicles.com/en/stable/)
     - [Latest nightly build (OTA version "edge")](https://docs.openvehicles.com/en/latest/)
   - [User Support Forum](https://www.openvehicles.com/forum)
-  - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US)
+  - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US) [APK file](https://github.com/openvehicles/Open-Vehicle-Android/tree/master/release)
   - [iOS App](https://apps.apple.com/us/app/open-vehicles/id490098531)
 - _Distributors_
-  - [FastTech (global)](https://www.fasttech.com/search?ovms)
   - [Medlock & Sons (North America)](https://medlockandsons.com/product/ovms-v3/)
   - [OpenEnergyMonitor (UK/Europe)](https://shop.openenergymonitor.com/ovms/)
+  - [e-mobility driving solutions GmbH (Germany/Europe)](https://e-mobility-driving-solutions.com/produkt-kategorie/ovms-products/?lang=en)
 - _Servers_
   - [Asia-Pacific](https://www.openvehicles.com/)
   - [Germany/Europe](https://dexters-web.de/)

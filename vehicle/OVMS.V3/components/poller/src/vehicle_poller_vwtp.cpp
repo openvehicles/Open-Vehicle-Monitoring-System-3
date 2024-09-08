@@ -40,26 +40,24 @@ static const char *TAG = "vehicle-vwtp";
 /**
  * PollerVWTPStart: start next VW-TP request (internal method)
  */
-void OvmsVehicle::PollerVWTPStart(bool fromTicker)
+void OvmsPoller::PollerVWTPStart(bool fromTicker)
   {
   m_poll_vwtp.lastused = monotonictime;
 
   // Check connection state:
-  if (m_poll_vwtp.bus != m_poll_bus ||
-      m_poll_vwtp.baseid != m_poll_entry.txmoduleid ||
-      m_poll_vwtp.moduleid != m_poll_entry.rxmoduleid)
+  if (m_poll_vwtp.bus != m_poll.bus ||
+      m_poll_vwtp.baseid != m_poll.entry.txmoduleid ||
+      m_poll_vwtp.moduleid != m_poll.entry.rxmoduleid)
     {
     // close or reconnect channel:
     if (m_poll_vwtp.state != VWTP_Closed)
       PollerVWTPEnter(VWTP_ChannelClose);
-    else if (m_poll_entry.rxmoduleid != 0)
+    else if (m_poll.entry.rxmoduleid != 0)
       PollerVWTPEnter(VWTP_ChannelSetup);
-    else if (m_poll_single_rxbuf)
+    else
       {
-      m_poll_single_rxbuf->clear();
-      m_poll_single_rxbuf = NULL;
-      m_poll_single_rxerr = POLLSINGLE_OK;
-      m_poll_single_rxdone.Give();
+      OvmsRecMutexLock lock(&m_poll_mutex);
+      m_polls.IncomingError(m_poll, POLLSINGLE_OK);
       }
     return;
     }
@@ -91,7 +89,7 @@ void OvmsVehicle::PollerVWTPStart(bool fromTicker)
 /**
  * PollerVWTPEnter: channel state transition (internal method)
  */
-void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
+void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
   {
   CAN_frame_t txframe = {};
   txframe.callback = &m_poll_txcallback;
@@ -104,25 +102,26 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
     case VWTP_ChannelSetup:
       {
       // Open TP20 channel for current polling entry:
-      if (m_poll_protocol != VWTP_20)
+      if (m_poll.protocol != VWTP_20)
         {
-        ESP_LOGD(TAG, "PollerVWTPEnter/ChannelSetup: m_poll_protocol mismatch, abort");
+        ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter/ChannelSetup: m_poll_protocol mismatch, abort", m_poll.bus_no);
         }
       else
         {
-        m_poll_vwtp.bus = m_poll_bus;
-        m_poll_vwtp.baseid = m_poll_entry.txmoduleid;
-        m_poll_vwtp.moduleid = m_poll_entry.rxmoduleid;
+        m_poll_vwtp.bus = m_poll.bus;
+        m_poll_vwtp.baseid = m_poll.entry.txmoduleid;
+        m_poll_vwtp.moduleid = m_poll.entry.rxmoduleid;
         m_poll_vwtp.txid = m_poll_vwtp.baseid;
         m_poll_vwtp.rxid = m_poll_vwtp.baseid + m_poll_vwtp.moduleid;
         
         // txid & rxid will be changed by the setup response frame, we offer a standard rxid
         // matching observed client behaviour with baseid=0x200 → rxid=0x300:
         uint16_t offer_rxid = m_poll_vwtp.baseid + 0x100;
-        
-        ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: channel setup request bus=%d txid=%03X rxid=%03X",
-          m_poll_vwtp.moduleid, m_poll_entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
-        
+
+        ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: channel setup request bus=%d txid=%03X rxid=%03X",
+          m_poll.bus_no,
+          m_poll_vwtp.moduleid, m_poll.entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
+
         txframe.MsgID = m_poll_vwtp.txid;
         txframe.FIR.B.DLC = 7;
         txframe.data.u8[0] = m_poll_vwtp.moduleid;
@@ -134,9 +133,9 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
         txframe.data.u8[6] = 0x01;
         
         m_poll_txmsgid = m_poll_vwtp.txid;
-        m_poll_moduleid_sent = m_poll_vwtp.txid;
-        m_poll_moduleid_low = m_poll_vwtp.rxid;
-        m_poll_moduleid_high = m_poll_vwtp.rxid;
+        m_poll.moduleid_sent = m_poll_vwtp.txid;
+        m_poll.moduleid_low = m_poll_vwtp.rxid;
+        m_poll.moduleid_high = m_poll_vwtp.rxid;
 
         m_poll_wait = 2;
         m_poll_vwtp.state = VWTP_ChannelSetup;
@@ -148,8 +147,8 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
 
     case VWTP_ChannelParams:
       {
-      ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: channel params request bus=%d txid=%03X rxid=%03X",
-        m_poll_vwtp.moduleid, m_poll_entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: channel params request bus=%d txid=%03X rxid=%03X",
+        m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
       
       txframe.MsgID = m_poll_vwtp.txid;
       txframe.FIR.B.DLC = 6;
@@ -161,9 +160,9 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
       txframe.data.u8[5] = 0xFF;  // always ff
       
       m_poll_txmsgid = m_poll_vwtp.txid;
-      m_poll_moduleid_sent = m_poll_vwtp.txid;
-      m_poll_moduleid_low = m_poll_vwtp.rxid;
-      m_poll_moduleid_high = m_poll_vwtp.rxid;
+      m_poll.moduleid_sent = m_poll_vwtp.txid;
+      m_poll.moduleid_low = m_poll_vwtp.rxid;
+      m_poll.moduleid_high = m_poll_vwtp.rxid;
       m_poll_wait = 2;
 
       m_poll_vwtp.state = VWTP_ChannelParams;
@@ -173,17 +172,17 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
 
     case VWTP_ChannelClose:
       {
-      ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: close channel bus=%d txid=%03X rxid=%03X",
-        m_poll_vwtp.moduleid, m_poll_entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: close channel bus=%d txid=%03X rxid=%03X",
+        m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
       
       txframe.MsgID = m_poll_vwtp.txid;
       txframe.FIR.B.DLC = 1;
       txframe.data.u8[0] = 0xA8;  // close request
       
       m_poll_txmsgid = m_poll_vwtp.txid;
-      m_poll_moduleid_sent = m_poll_vwtp.txid;
-      m_poll_moduleid_low = m_poll_vwtp.rxid;
-      m_poll_moduleid_high = m_poll_vwtp.rxid;
+      m_poll.moduleid_sent = m_poll_vwtp.txid;
+      m_poll.moduleid_low = m_poll_vwtp.rxid;
+      m_poll.moduleid_high = m_poll_vwtp.rxid;
       m_poll_wait = 2;
 
       m_poll_vwtp.state = VWTP_ChannelClose;
@@ -193,8 +192,8 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
 
     case VWTP_Closed:
       {
-      ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: channel closed bus=%d txid=%03X rxid=%03X",
-        m_poll_vwtp.moduleid, m_poll_entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: channel closed bus=%d txid=%03X rxid=%03X",
+        m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
       m_poll_vwtp = {};
       m_poll_vwtp.state = VWTP_Closed;
       m_poll_wait = 0;
@@ -203,8 +202,8 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
 
     case VWTP_Idle:
       {
-      ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: idle bus=%d txid=%03X rxid=%03X",
-        m_poll_vwtp.moduleid, m_poll_entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: idle bus=%d txid=%03X rxid=%03X",
+        m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
       m_poll_vwtp.state = VWTP_Idle;
       m_poll_vwtp.lastused = monotonictime;
       m_poll_wait = 0;
@@ -213,34 +212,34 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
 
     case VWTP_StartPoll:
       {
-      ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: start poll type=%02X pid=%X",
-        m_poll_vwtp.moduleid, m_poll_entry.type, m_poll_entry.pid);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: start poll type=%02X pid=%X",
+        m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.entry.type, m_poll.entry.pid);
 
-      if (m_poll_entry.xargs.tag == POLL_TXDATA)
+      if (m_poll.entry.xargs.tag == POLL_TXDATA)
         {
-        m_poll_tx_data = m_poll_entry.xargs.data;
-        m_poll_tx_remain = m_poll_entry.xargs.datalen;
+        m_poll_tx_data = m_poll.entry.xargs.data;
+        m_poll_tx_remain = m_poll.entry.xargs.datalen;
         }
       else
         {
-        m_poll_tx_data = m_poll_entry.args.data;
-        m_poll_tx_remain = m_poll_entry.args.datalen;
+        m_poll_tx_data = m_poll.entry.args.data;
+        m_poll_tx_remain = m_poll.entry.args.datalen;
         }
       m_poll_tx_frame = 0;
       m_poll_tx_offset = 0;
 
-      m_poll_ml_frame = 0;
-      m_poll_ml_offset = 0;
-      m_poll_ml_remain = 0;
+      m_poll.mlframe = 0;
+      m_poll.mloffset = 0;
+      m_poll.mlremain = 0;
 
       // fall through to VWTP_Transmit
       }
       FALLTHROUGH;
     case VWTP_Transmit:
       {
-      ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: transmit frame=%u remain=%u",
-        m_poll_vwtp.moduleid, m_poll_tx_frame, m_poll_tx_remain);
-      
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: transmit frame=%u remain=%u",
+        m_poll.bus_no, m_poll_vwtp.moduleid, m_poll_tx_frame, m_poll_tx_remain);
+
       // Transmit next block of frames:
       txframe.MsgID = m_poll_vwtp.txid;
       int i;
@@ -252,17 +251,17 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
           {
           // First frame:
           uint16_t txlen = m_poll_tx_remain + 1;
-          txframe.data.u8[3] = m_poll_entry.type;
-          if (POLL_TYPE_HAS_16BIT_PID(m_poll_entry.type))
+          txframe.data.u8[3] = m_poll.entry.type;
+          if (POLL_TYPE_HAS_16BIT_PID(m_poll.entry.type))
             {
-            txframe.data.u8[4] = m_poll_entry.pid >> 8;
-            txframe.data.u8[5] = m_poll_entry.pid & 0xff;
+            txframe.data.u8[4] = m_poll.entry.pid >> 8;
+            txframe.data.u8[5] = m_poll.entry.pid & 0xff;
             txlen += 2;
             i = 6;
             }
-          else if (POLL_TYPE_HAS_8BIT_PID(m_poll_entry.type))
+          else if (POLL_TYPE_HAS_8BIT_PID(m_poll.entry.type))
             {
-            txframe.data.u8[4] = m_poll_entry.pid & 0xff;
+            txframe.data.u8[4] = m_poll.entry.pid & 0xff;
             txlen += 1;
             i = 5;
             }
@@ -301,9 +300,9 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
         }
       
       m_poll_txmsgid = m_poll_vwtp.txid;
-      m_poll_moduleid_sent = m_poll_vwtp.txid;
-      m_poll_moduleid_low = m_poll_vwtp.rxid;
-      m_poll_moduleid_high = m_poll_vwtp.rxid;
+      m_poll.moduleid_sent = m_poll_vwtp.txid;
+      m_poll.moduleid_low = m_poll_vwtp.rxid;
+      m_poll.moduleid_high = m_poll_vwtp.rxid;
       m_poll_wait = 2;
       m_poll_vwtp.state = VWTP_Transmit;
       m_poll_vwtp.lastused = monotonictime;
@@ -312,8 +311,8 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
 
     case VWTP_Receive:
       {
-      ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: receive frame=%u remain=%u",
-        m_poll_vwtp.moduleid, m_poll_ml_frame, m_poll_ml_remain);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: receive frame=%u remain=%u",
+        m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.mlframe, m_poll.mlremain);
       m_poll_vwtp.state = VWTP_Receive;
       m_poll_vwtp.lastused = monotonictime;
       m_poll_wait = 2;
@@ -322,8 +321,8 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
 
     case VWTP_AbortXfer:
       {
-      ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: abort xfer",
-        m_poll_vwtp.moduleid);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: abort xfer",
+        m_poll.bus_no, m_poll_vwtp.moduleid);
 
       txframe.MsgID = m_poll_vwtp.txid;
       txframe.FIR.B.DLC = 1;
@@ -338,12 +337,12 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
         }
       
       m_poll_txmsgid = m_poll_vwtp.txid;
-      m_poll_moduleid_sent = m_poll_vwtp.txid;
-      m_poll_moduleid_low = m_poll_vwtp.rxid;
-      m_poll_moduleid_high = m_poll_vwtp.rxid;
+      m_poll.moduleid_sent = m_poll_vwtp.txid;
+      m_poll.moduleid_low = m_poll_vwtp.rxid;
+      m_poll.moduleid_high = m_poll_vwtp.rxid;
 
       m_poll_tx_remain = 0;
-      m_poll_ml_remain = 0;
+      m_poll.mlremain = 0;
       m_poll_vwtp.state = VWTP_Idle;
       m_poll_vwtp.lastused = monotonictime;
       m_poll_wait = 0;
@@ -352,8 +351,8 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
       }
 
     default:
-      ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: idle bus=%d txid=%03X rxid=%03X",
-        m_poll_vwtp.moduleid, m_poll_entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: idle bus=%d txid=%03X rxid=%03X",
+        m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
       m_poll_vwtp.state = VWTP_Idle;
       m_poll_wait = 0;
       break;
@@ -364,7 +363,7 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
 /**
  * PollerVWTPTxCallback: CAN transmission result (internal)
  */
-void OvmsVehicle::PollerVWTPTxCallback(const CAN_frame_t* frame, bool success)
+void OvmsPoller::PollerVWTPTxCallback(const CAN_frame_t* frame, bool success)
   {
   if (!success)
     {
@@ -375,16 +374,21 @@ void OvmsVehicle::PollerVWTPTxCallback(const CAN_frame_t* frame, bool success)
     }
   }
 
+#if __cplusplus >= 202002L
+#define CAP_THIS ,this
+#else
+#define CAP_THIS
+#endif
 
 /**
  * PollerVWTPReceive: process VW-TP frame received (internal)
  */
-bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
+bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
   {
-  OvmsRecMutexLock lock(&m_poll_mutex);
+  // OvmsRecMutexLock lock(&m_poll_mutex);
 
   // Log utility:
-  auto logFrameDump = [=](const char* msg)
+  auto logFrameDump = [= CAP_THIS](const char* msg)
     {
     char *hexdump = NULL;
     FormatHexDump(&hexdump, (const char*)frame->data.u8, frame->FIR.B.DLC, frame->FIR.B.DLC);
@@ -393,7 +397,7 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
     };
 
   // Send channel keepalive response (0xA3 response):
-  auto sendPong = [=]()
+  auto sendPong = [= CAP_THIS]()
     {
     CAN_frame_t txframe = {};
     txframe.callback = &m_poll_txcallback;
@@ -410,7 +414,7 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
     };
 
   // Send ACK:
-  auto sendAck = [=]()
+  auto sendAck = [= CAP_THIS]()
     {
     CAN_frame_t txframe = {};
     txframe.callback = &m_poll_txcallback;
@@ -443,7 +447,8 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
       else if (opcode != 0xD0)
         {
         // Setup failed:
-        ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: channel setup failed opcode=%02X", m_poll_vwtp.moduleid, opcode);
+        ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPReceive[%02X]: channel setup failed opcode=%02X",
+          m_poll.bus_no, m_poll_vwtp.moduleid, opcode);
         m_poll_vwtp.bus = NULL;
         m_poll_vwtp.state = VWTP_Closed;
         m_poll_wait = 0;
@@ -453,8 +458,8 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
         // Setup success, configure txid & rxid:
         m_poll_vwtp.rxid = (uint16_t)frame->data.u8[3] << 8 | frame->data.u8[2];
         m_poll_vwtp.txid = (uint16_t)frame->data.u8[5] << 8 | frame->data.u8[4];
-        ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: channel setup OK, assigned txid=%03X rxid=%03X",
-          m_poll_vwtp.moduleid, m_poll_vwtp.txid, m_poll_vwtp.rxid);
+        ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPReceive[%02X]: channel setup OK, assigned txid=%03X rxid=%03X",
+          m_poll.bus_no, m_poll_vwtp.moduleid, m_poll_vwtp.txid, m_poll_vwtp.rxid);
         // …and send channel parameters:
         PollerVWTPEnter(VWTP_ChannelParams);
         }
@@ -472,8 +477,8 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
         m_poll_vwtp.blocksize = frame->data.u8[1];
         m_poll_vwtp.acktime = (frame->data.u8[2] & 0b00111111) * timeunit[(frame->data.u8[2] & 0b11000000) >> 6];
         m_poll_vwtp.septime = (frame->data.u8[4] & 0b00111111) * timeunit[(frame->data.u8[4] & 0b11000000) >> 6];
-        ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: channel params OK: bs=%d acktime=%" PRIu32 "us septime=%" PRIu32 "us",
-          m_poll_vwtp.moduleid, m_poll_vwtp.blocksize, m_poll_vwtp.acktime, m_poll_vwtp.septime);
+        ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPReceive[%02X]: channel params OK: bs=%d acktime=%" PRIu32 "us septime=%" PRIu32 "us",
+          m_poll.bus_no, m_poll_vwtp.moduleid, m_poll_vwtp.blocksize, m_poll_vwtp.acktime, m_poll_vwtp.septime);
         // …and proceed to data transmission:
         PollerVWTPEnter(VWTP_StartPoll);
         }
@@ -501,14 +506,12 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
         // Close ACK received:
         PollerVWTPEnter(VWTP_Closed);
         // Check if we shall open another channel:
-        if (m_poll_protocol == VWTP_20 && m_poll_entry.rxmoduleid != 0)
+        if (m_poll.protocol == VWTP_20 && m_poll.entry.rxmoduleid != 0)
           PollerVWTPEnter(VWTP_ChannelSetup);
-        else if (m_poll_single_rxbuf)
+        else
           {
-          m_poll_single_rxbuf->clear();
-          m_poll_single_rxbuf = NULL;
-          m_poll_single_rxerr = POLLSINGLE_OK;
-          m_poll_single_rxdone.Give();
+          OvmsRecMutexLock lock(&m_poll_mutex);
+          m_polls.IncomingError(m_poll, POLLSINGLE_OK);
           }
         }
       else
@@ -562,8 +565,8 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
       else if ((opcode & 0xf0) == 0x90)
         {
         // ACK, abort:
-        ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: got abort request during transmission at frame=%u remain=%u",
-          m_poll_vwtp.moduleid, m_poll_tx_frame, m_poll_tx_remain);
+        ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPReceive[%02X]: got abort request during transmission at frame=%u remain=%u",
+          m_poll.bus_no, m_poll_vwtp.moduleid, m_poll_tx_frame, m_poll_tx_remain);
         m_poll_tx_remain = 0;
         PollerVWTPEnter(VWTP_Idle);
         // TODO: application error callback
@@ -631,12 +634,12 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
         uint8_t  error_type = 0;            // OBD/UDS error response service type (expected: request type)
         uint8_t  error_code = 0;            // OBD/UDS error response code (see ISO 14229 Annex A.1)
 
-        if (m_poll_ml_frame == 0)
+        if (m_poll.mlframe == 0)
           {
           // First frame: extract & validate meta data
           // Note: upper nibble of byte 1 masked out, length assumed to by 12 bit
           //  and we've seen 0x80 on byte 1 for response type UDS_RESP_NRC_RCRRP
-          m_poll_ml_remain = (frame->data.u8[1] & 0x0f) << 8 | frame->data.u8[2];
+          m_poll.mlremain = (frame->data.u8[1] & 0x0f) << 8 | frame->data.u8[2];
           tp_data = &frame->data.u8[3];
           tp_datalen = frame->FIR.B.DLC - 3;
           response_type = tp_data[0];
@@ -659,7 +662,7 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
             }
           else
             {
-            response_pid = m_poll_pid;
+            response_pid = m_poll.pid;
             response_data = &tp_data[1];
             response_datalen = tp_datalen - 1;
             }
@@ -669,8 +672,8 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
           // Consecutive frame:
           tp_data = &frame->data.u8[1];
           tp_datalen = frame->FIR.B.DLC - 1;
-          response_type = 0x40+m_poll_type;
-          response_pid = m_poll_pid;
+          response_type = 0x40+m_poll.type;
+          response_pid = m_poll.pid;
           response_data = tp_data;
           response_datalen = tp_datalen;
           }
@@ -679,7 +682,7 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
         // Process OBD/UDS payload
         // 
 
-        if (response_type == UDS_RESP_TYPE_NRC && error_type == m_poll_type)
+        if (response_type == UDS_RESP_TYPE_NRC && error_type == m_poll.type)
           {
           // Send ACK?
           if ((opcode & 0xf0) <= 0x10)
@@ -689,8 +692,8 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
           if (error_code == UDS_RESP_NRC_RCRRP)
             {
             // Info: requestCorrectlyReceived-ResponsePending (server busy processing the request)
-            ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: got OBD/UDS info %02X(%X) code=%02X (pending)",
-                      m_poll_vwtp.moduleid, m_poll_type, m_poll_pid, error_code);
+            ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPReceive[%02X]: got OBD/UDS info %02X(%X) code=%02X (pending)",
+                      m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.type, m_poll.pid, error_code);
             // reset wait time:
             m_poll_wait = 2;
             return true;
@@ -699,53 +702,33 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
             {
             // Error: forward to application:
             ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: process OBD/UDS error %02X(%X) code=%02X",
-                      m_poll_vwtp.moduleid, m_poll_type, m_poll_pid, error_code);
-            // Running single poll?
-            if (m_poll_single_rxbuf)
+                      m_poll_vwtp.moduleid, m_poll.type, m_poll.pid, error_code);
+
               {
-              m_poll_single_rxerr = error_code;
-              m_poll_single_rxbuf = NULL;
-              m_poll_single_rxdone.Give();
-              }
-            else
-              {
-              IncomingPollError(frame->origin, m_poll_type, m_poll_pid, error_code);
+              OvmsRecMutexLock lock(&m_poll_mutex);
+              m_poll.moduleid_rec = m_poll.moduleid_sent;
+              m_polls.IncomingError(m_poll, error_code);
               }
             // abort receive:
-            m_poll_ml_remain = 0;
+            m_poll.mlremain = 0;
             PollerVWTPEnter(VWTP_Idle);
             }
           }
-        else if (response_type == 0x40+m_poll_type && response_pid == m_poll_pid)
+        else if (response_type == 0x40+m_poll.type && response_pid == m_poll.pid)
           {
           // Send ACK?
           if ((opcode & 0xf0) <= 0x10)
             sendAck();
 
           // Normal matching poll response, forward to application:
-          m_poll_ml_remain -= tp_datalen;
+          m_poll.mlremain -= tp_datalen;
           ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: process OBD/UDS response %02X(%X) frm=%u len=%u off=%u rem=%u",
-                    m_poll_vwtp.moduleid, m_poll_type, m_poll_pid,
-                    m_poll_ml_frame, response_datalen, m_poll_ml_offset, m_poll_ml_remain);
-          // Running single poll?
-          if (m_poll_single_rxbuf)
+                    m_poll_vwtp.moduleid, m_poll.type, m_poll.pid,
+                    m_poll.mlframe, response_datalen, m_poll.mloffset, m_poll.mlremain);
             {
-            if (m_poll_ml_frame == 0)
-              {
-              m_poll_single_rxbuf->clear();
-              m_poll_single_rxbuf->reserve(response_datalen + m_poll_ml_remain);
-              }
-            m_poll_single_rxbuf->append((char*)response_data, response_datalen);
-            if (m_poll_ml_remain == 0)
-              {
-              m_poll_single_rxerr = 0;
-              m_poll_single_rxbuf = NULL;
-              m_poll_single_rxdone.Give();
-              }
-            }
-          else
-            {
-            IncomingPollReply(frame->origin, m_poll_type, m_poll_pid, response_data, response_datalen, m_poll_ml_remain);
+            OvmsRecMutexLock lock(&m_poll_mutex);
+            m_poll.moduleid_rec = msgid;
+            m_polls.IncomingPacket(m_poll, response_data, response_datalen);
             }
           }
         else
@@ -754,17 +737,17 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
           char *hexdump = NULL;
           FormatHexDump(&hexdump, (const char*)frame->data.u8, frame->FIR.B.DLC, frame->FIR.B.DLC);
           ESP_LOGW(TAG, "PollerVWTPReceive[%02X]: OBD/UDS response type/PID mismatch, got %02X(%X) vs %02X(%X) => ignoring: %s",
-                    m_poll_vwtp.moduleid, response_type, response_pid, 0x40+m_poll_type, m_poll_pid, hexdump ? hexdump : "-");
+                    m_poll_vwtp.moduleid, response_type, response_pid, 0x40+m_poll.type, m_poll.pid, hexdump ? hexdump : "-");
           if (hexdump) free(hexdump);
           PollerVWTPEnter(VWTP_AbortXfer);
           return false;
           }
         
         // Do we expect more data?
-        if (m_poll_ml_remain)
+        if (m_poll.mlremain)
           {
-          m_poll_ml_frame++;
-          m_poll_ml_offset += response_datalen;
+          m_poll.mlframe++;
+          m_poll.mloffset += response_datalen;
           m_poll_wait = 2;
           }
         else
@@ -785,14 +768,10 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
       break;
     }
 
-
-  // Immediately send the next poll for this tick if…
-  // - we are not waiting for another frame
-  // - poll throttling is unlimited or limit isn't reached yet
-  if (m_poll_wait == 0 &&
-      (!m_poll_sequence_max || m_poll_sequence_cnt < m_poll_sequence_max))
+  if (m_poll.mlremain == 0)
     {
-    PollerSend(false);
+    // Succeeded - No more expected so check to send the next poll
+    PollerSucceededPollNext();
     }
 
   return true;
@@ -802,21 +781,23 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
 /**
  * PollerVWTPTicker: per second channel maintenance (internal)
  */
-void OvmsVehicle::PollerVWTPTicker()
+void OvmsPoller::PollerVWTPTicker()
   {
   if (m_poll_wait > 0)
     {
     // State timeout?
     if (m_poll_vwtp.state == VWTP_ChannelSetup || m_poll_vwtp.state == VWTP_ChannelParams)
       {
-      ESP_LOGD(TAG, "PollerVWTPTicker[%02X]: setup/params timeout", m_poll_vwtp.moduleid);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPTicker[%02X]: setup/params timeout",
+        m_poll.bus_no, m_poll_vwtp.moduleid);
       PollerVWTPEnter(VWTP_Closed);
       }
     else if (m_poll_vwtp.state == VWTP_ChannelClose)
       {
-      ESP_LOGD(TAG, "PollerVWTPTicker[%02X]: close timeout", m_poll_vwtp.moduleid);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPTicker[%02X]: close timeout",
+         m_poll.bus_no,  m_poll_vwtp.moduleid);
       PollerVWTPEnter(VWTP_Closed);
-      if (m_poll_protocol == VWTP_20)
+      if (m_poll.protocol == VWTP_20)
         PollerVWTPStart(true);
       }
     }
@@ -825,7 +806,8 @@ void OvmsVehicle::PollerVWTPTicker()
     // Poll timeout:
     if (m_poll_vwtp.state != VWTP_Closed && m_poll_vwtp.state != VWTP_Idle)
       {
-      ESP_LOGD(TAG, "PollerVWTPTicker[%02X]: poll timeout", m_poll_vwtp.moduleid);
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPTicker[%02X]: poll timeout",
+        m_poll.bus_no, m_poll_vwtp.moduleid);
       PollerVWTPEnter(VWTP_ChannelClose);
       }
     }
@@ -834,7 +816,8 @@ void OvmsVehicle::PollerVWTPTicker()
   if (m_poll_vwtp.state == VWTP_Idle && m_poll_ch_keepalive > 0 &&
       m_poll_vwtp.lastused + m_poll_ch_keepalive < monotonictime)
     {
-    ESP_LOGD(TAG, "PollerVWTPTicker[%02X]: channel inactivity timeout", m_poll_vwtp.moduleid);
+    ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPTicker[%02X]: channel inactivity timeout",
+      m_poll.bus_no, m_poll_vwtp.moduleid);
     PollerVWTPEnter(VWTP_ChannelClose);
     }
   }

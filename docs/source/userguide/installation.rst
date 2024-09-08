@@ -16,7 +16,7 @@ Pre-Installation Steps
 Prior to installation, please make sure you have the following available:
 
 #. The OVMS v3 module in it's enclosure.
-#. A `Hologram <https://hologram.io>`_ (or other suitable) SIM card if you module did not come with one.
+#. A `Hologram <https://hologram.io>`_ (or other suitable) SIM card.
 #. A micro-usb cable suitable for connecting to your computer.
 #. A laptop or desktop computer (if necessary).
 #. A cable suitable for connecting to your vehicle.
@@ -163,9 +163,7 @@ OVMS v3 has a number of networking options to choose from. You can either use th
 GSM SIM Activation (Hologram)
 -----------------------------
 
-OVMS has partnered with Hologram and to provide a Hologram GSM SIM pre-installed in every OVMS kit purchased from our partners in Europe and USA. For modules purchased from China, we recommend you purchase a Hologram SIM directly from the hologram.io store (also available on Amazon). In addition, Hologram have provided OVMS a coupon code valid for US$5 off data usage:
-
-Hologram Coupon Code: **OVMS**
+OVMS recommends Hologram SIM cards and service, although note that any compatible 2G/3G/4G SIM card and service should work, and the use of Hologram is not required.
 
 To activate your Hologram SIM, register at https://dashboard.hologram.io/, then invoke "Activate SIM" in the dashboard.
 
@@ -268,6 +266,35 @@ triggered if the voltage drops below 11.0V. This is suitable for standard lead-a
 If you've got another chemistry, change the values accordingly.
 
 
+^^^^^^^^^^^^^^^^^
+Shutdown / Reboot
+^^^^^^^^^^^^^^^^^
+
+You can set a voltage level to trigger a system shutdown. The module will close all connections,
+shutdown all components and enter deep sleep mode to achieve minimal power consumption. It will
+then wait for the voltage level to recover above the configured minimum wakeup voltage before
+doing a reboot.
+
+On most vehicles, this can also be used to automatically shutdown the module when the vehicle
+isn't operated (driven or charged), as the 12V level normally is above 13V when the vehicle is
+in an operational state, and drops to below 13V when the vehicle is switched off.
+
+The shutdown condition is checked once per minute. You can configure a minimum delay for the actual
+shutdown to be done, default is 2 minutes (= 3 consecutive tests = 2-3 minutes).
+
+To test for a recovered 12V level, the module needs to do short wakeups of ~3 seconds (only CPU,
+no components). This is by default done every 60 seconds. If you use the auto shutdown to follow
+the vehicle operational state, consider lowering this to e.g. 15 seconds to get a quick detection
+of the vehicle being switched on.
+
+Configuration can be done via the web UI or by these config variables::
+
+  config set vehicle 12v.shutdown <voltage>
+  config set vehicle 12v.shutdown_delay <minutes>
+  config set vehicle 12v.wakeup <voltage>
+  config set vehicle 12v.wakeup_interval <seconds>
+
+
 ^^^^^^^^^^^^^^^
 Related Metrics
 ^^^^^^^^^^^^^^^
@@ -291,6 +318,25 @@ Event                               Data      Purpose
 =================================== ========= =======
 vehicle.alert.12v.on                          12V system voltage is below alert threshold
 vehicle.alert.12v.off                         12V system voltage has recovered
+vehicle.alert.12v.low                         12V shutdown voltage level detected
+vehicle.alert.12v.operational                 12V recovered above shutdown level
+vehicle.alert.12v.shutdown                    12V shutdown threshold reached, entering deep sleep
 vehicle.charge.12v.start                      Vehicle 12V battery is charging
 vehicle.charge.12v.stop                       Vehicle 12V battery has stopped charging
 =================================== ========= =======
+
+See :doc:`scripting` on how to attach custom scripts to events.
+
+^^^^^^^^^^^^^^^^^^^^^
+Related Notifications
+^^^^^^^^^^^^^^^^^^^^^
+
+======= =========================== ================================================================
+Type    Subtype                     Purpose / Content
+======= =========================== ================================================================
+alert   batt.12v.alert              12V Battery critical
+alert   batt.12v.recovered          12V Battery restored
+alert   batt.12v.shutdown           System shutdown (deep sleep) due to low 12V battery level
+======= =========================== ================================================================
+
+See :doc:`notifications` on how to filter/suppress notifications.
