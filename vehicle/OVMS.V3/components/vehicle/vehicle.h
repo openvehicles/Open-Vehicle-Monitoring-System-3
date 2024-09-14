@@ -260,6 +260,7 @@ class OvmsVehicle : public InternalRamAllocated
     float m_drive_startsoc;                 // SOC at drive start (vehicle.on)
     float m_drive_startrange;               // Range estimation at drive start (vehicle.on)
     float m_drive_startaltitude;            // Altitude at drive start (vehicle.on)
+    time_t m_drive_starttime;               // Time at drive start (vehicle.on)
     uint32_t m_drive_speedcnt;              // Driving speed average data
     double m_drive_speedsum;                // Driving speed average data
     uint32_t m_drive_accelcnt;              // Driving acceleration average data
