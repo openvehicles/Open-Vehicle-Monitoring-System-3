@@ -51,12 +51,19 @@ static const char *TAG = "v-smarteq";
 
 static const OvmsPoller::poll_pid_t obdii_polls[] =
 {
- // { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, {  0,120,999 }, 0, ISOTP_STD }, // rqIDpart OBL_7KW_Installed
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,999 }, 0, ISOTP_STD }, // rqBattTemperatures
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,999 }, 0, ISOTP_STD }, // rqBattVoltages_P1
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,999 }, 0, ISOTP_STD }, // rqBattVoltages_P2
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,60,999 }, 0, ISOTP_STD }, // extern temp byte 2+3
- // { 0x744, 0x764, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x52, {  0,10,999 }, 0, ISOTP_STD }, // ,764,36,45,.1,400,1,°C,2152,6152,ff,IH_InCarTemp
+  // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
+  // { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, {  0,300,999,999 }, 0, ISOTP_STD }, // rqIDpart OBL_7KW_Installed
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,300,3,3 }, 0, ISOTP_STD }, // rqBattState
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,300,300 }, 0, ISOTP_STD }, // rqBattTemperatures
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P1
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P2
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,300,10,300 }, 0, ISOTP_STD }, // extern temp byte 2+3
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, {  0,300,60,60 }, 0, ISOTP_STD }, // rqHV_Energy
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x302A, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_State
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Load
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Amps
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Power
+  // { 0x744, 0x764, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x52, {  0,300,10,999 }, 0, ISOTP_STD }, // ,764,36,45,.1,400,1,°C,2152,6152,ff,IH_InCarTemp
   POLL_LIST_END
 };
 
@@ -79,6 +86,27 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   
   mt_bms_temps = new OvmsMetricVector<float>("xsq.v.bms.temps", SM_STALE_HIGH, Celcius);
   mt_bus_awake = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, false);
+  mt_evc_hv_energy = MyMetrics.InitFloat("xsq.evc.hv.energy", SM_STALE_MID, 0, kWh);
+  mt_evc_LV_DCDC_amps = MyMetrics.InitFloat("xsq.evc.lv.dcdc.amps", SM_STALE_MID, 0, Amps);
+  mt_evc_LV_DCDC_load = MyMetrics.InitFloat("xsq.evc.lv.dcdc.load", SM_STALE_MID, 0, Percentage);
+  mt_evc_LV_DCDC_power = MyMetrics.InitFloat("xsq.evc.lv.dcdc.power", SM_STALE_MID, 0, Watts);
+  mt_evc_LV_DCDC_state = MyMetrics.InitInt("xsq.evc.lv.dcdc.state", SM_STALE_MID, 0, Other);
+  
+  mt_bms_CV_Range_min = MyMetrics.InitFloat("xsq.bms.cv.range.min", SM_STALE_MID, 0, Volts);
+  mt_bms_CV_Range_max = MyMetrics.InitFloat("xsq.bms.cv.range.max", SM_STALE_MID, 0, Volts);
+  mt_bms_CV_Range_mean = MyMetrics.InitFloat("xsq.bms.cv.range.mean", SM_STALE_MID, 0, Volts);
+  mt_bms_BattLinkVoltage = MyMetrics.InitFloat("xsq.bms.batt.link.voltage", SM_STALE_MID, 0, Volts);
+  mt_bms_BattCV_Sum = MyMetrics.InitFloat("xsq.bms.batt.cv.sum", SM_STALE_MID, 0, Volts);
+  mt_bms_BattPower_voltage = MyMetrics.InitFloat("xsq.bms.batt.voltage", SM_STALE_MID, 0, Volts);
+  mt_bms_BattPower_current = MyMetrics.InitFloat("xsq.bms.batt.current", SM_STALE_MID, 0, Amps);
+  mt_bms_BattPower_power = MyMetrics.InitFloat("xsq.bms.batt.power", SM_STALE_MID, 0, kW);
+  mt_bms_HVcontactState = MyMetrics.InitInt("xsq.bms.hv.contact.state", SM_STALE_MID, 0, Other);
+  mt_bms_HV = MyMetrics.InitFloat("xsq.bms.hv", SM_STALE_MID, 0, Volts);
+  mt_bms_EVmode = MyMetrics.InitInt("xsq.bms.ev.mode", SM_STALE_MID, 0, Other);
+  mt_bms_LV = MyMetrics.InitFloat("xsq.bms.lv", SM_STALE_MID, 0, Volts);
+  mt_bms_Amps = MyMetrics.InitFloat("xsq.bms.amps", SM_STALE_MID, 0, Amps);
+  mt_bms_Amps2 = MyMetrics.InitFloat("xsq.bms.amp2", SM_STALE_MID, 0, Amps);
+  mt_bms_Power = MyMetrics.InitFloat("xsq.bms.power", SM_STALE_MID, 0, kW);
   
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   PollSetPidList(m_can1, obdii_polls);
@@ -129,13 +157,10 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   static bool lastCharging = false;
   float _range_est;
 
-  if (m_candata_poll != 100 && StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) > 100) {
-    m_candata_poll++;
-    if (m_candata_poll==100) {
-      ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
-      mt_bus_awake->SetValue(true);
-      if (m_enable_write) PollSetState(1);
-    }
+  if (m_candata_poll != 1 && StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) > 100) {
+    ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
+    mt_bus_awake->SetValue(true);
+    m_candata_poll = 1;
   }
   m_candata_timer = SQ_CANDATA_TIMEOUT;
   
@@ -252,6 +277,37 @@ void OvmsVehicleSmartEQ::HandleEnergy() {
   }
 }
 
+void OvmsVehicleSmartEQ::HandlePollState() {
+  if ( StandardMetrics.ms_v_charge_pilot->AsBool() && m_poll_state != 3 && m_enable_write ) {
+    PollSetState(3);
+    ESP_LOGI(TAG,"Pollstate Charging");
+  }
+  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() && StandardMetrics.ms_v_env_awake->AsBool() && m_poll_state != 2 && m_enable_write ) {
+    PollSetState(2);
+    ESP_LOGI(TAG,"Pollstate Running");
+  }
+  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() && !StandardMetrics.ms_v_env_awake->AsBool() && mt_bus_awake->AsBool() && m_poll_state != 1 && m_enable_write ) {
+    PollSetState(1);
+    ESP_LOGI(TAG,"Pollstate Awake");
+  }
+  else if ( !mt_bus_awake->AsBool() && m_poll_state != 0 ) {
+    PollSetState(0);
+    ESP_LOGI(TAG,"Pollstate Off");
+  }
+}
+
+void OvmsVehicleSmartEQ::getVIN() {
+  if (StandardMetrics.ms_v_env_awake->AsBool()) {
+    // Fetch VIN once:
+    if (!StdMetrics.ms_v_vin->IsDefined()) {
+      std::string vin;
+      if (PollSingleRequest(m_can1, 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, vin) == 0) {
+        StdMetrics.ms_v_vin->SetValue(vin.substr(0, vin.length() - 2));
+      }
+    }
+  }
+}
+
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   if (m_candata_timer > 0) {
     if (--m_candata_timer == 0) {
@@ -259,9 +315,11 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
       ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
       mt_bus_awake->SetValue(false);
       m_candata_poll = 0;
-      PollSetState(0);
+      // PollSetState(0);
     }
   }
+  HandlePollState();
+  getVIN();
 
   if (m_booter_start && StandardMetrics.ms_v_env_hvac->AsBool()) {
     m_booter_start = false;
@@ -286,7 +344,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
 
     res = CommandWakeup();
     if (res == Success) {
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      vTaskDelay(2000 / portTICK_PERIOD_MS);
       for (int i = 0; i < 10; i++) {
         obd->WriteStandard(0x634, 4, data);
         vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -356,6 +414,142 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
   }
 
   return res;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, OvmsWriter* writer) {
+
+  bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
+  std::string charge_state = StdMetrics.ms_v_charge_state->AsString();
+  if (chargeport_open && charge_state != "")
+    {
+    std::string charge_mode = StdMetrics.ms_v_charge_mode->AsString();
+    bool show_details = !(charge_state == "done" || charge_state == "stopped");
+
+    // Translate mode codes:
+    if (charge_mode == "standard")
+      charge_mode = "Standard";
+    else if (charge_mode == "storage")
+      charge_mode = "Storage";
+    else if (charge_mode == "range")
+      charge_mode = "Range";
+    else if (charge_mode == "performance")
+      charge_mode = "Performance";
+
+    // Translate state codes:
+    if (charge_state == "charging")
+      charge_state = "Charging";
+    else if (charge_state == "topoff")
+      charge_state = "Topping off";
+    else if (charge_state == "done")
+      charge_state = "Charge Done";
+    else if (charge_state == "preparing")
+      charge_state = "Preparing";
+    else if (charge_state == "heating")
+      charge_state = "Charging, Heating";
+    else if (charge_state == "stopped")
+      charge_state = "Charge Stopped";
+    else if (charge_state == "timerwait")
+      charge_state = "Charge Stopped, Timer On";
+
+    if (charge_mode != "")
+      writer->printf("%s - ", charge_mode.c_str());
+    writer->printf("%s\n", charge_state.c_str());
+
+    if (show_details)
+      {
+      // Voltage & current:
+      bool show_vc = (StdMetrics.ms_v_charge_voltage->AsFloat() > 0 || StdMetrics.ms_v_charge_current->AsFloat() > 0);
+      if (show_vc)
+        {
+        writer->printf("%s/%s ",
+          (char*) StdMetrics.ms_v_charge_voltage->AsUnitString("-", Native, 1).c_str(),
+          (char*) StdMetrics.ms_v_charge_current->AsUnitString("-", Native, 1).c_str());
+        }
+
+      // Charge speed:
+      if (StdMetrics.ms_v_bat_range_speed->IsDefined() && StdMetrics.ms_v_bat_range_speed->AsFloat() != 0)
+        {
+        writer->printf("%s\n", StdMetrics.ms_v_bat_range_speed->AsUnitString("-", ToUser, 1).c_str());
+        }
+      else if (show_vc)
+        {
+        writer->puts("");
+        }
+
+      // Estimated time(s) remaining:
+      int duration_full = StdMetrics.ms_v_charge_duration_full->AsInt();
+      if (duration_full > 0)
+        writer->printf("Full: %d:%02dh\n", duration_full / 60, duration_full % 60);
+
+      int duration_soc = StdMetrics.ms_v_charge_duration_soc->AsInt();
+      if (duration_soc > 0)
+        writer->printf("%s: %d:%02dh\n",
+          (char*) StdMetrics.ms_v_charge_limit_soc->AsUnitString("SOC", ToUser, 0).c_str(),
+          duration_soc / 60, duration_soc % 60);
+
+      int duration_range = StdMetrics.ms_v_charge_duration_range->AsInt();
+      if (duration_range > 0)
+        writer->printf("%s: %d:%02dh\n",
+          (char*) StdMetrics.ms_v_charge_limit_range->AsUnitString("Range", ToUser, 0).c_str(),
+          duration_range / 60, duration_range % 60);
+      }
+
+    // Energy sums:
+    if (StdMetrics.ms_v_charge_kwh_grid->IsDefined())
+      {
+      writer->printf("Drawn: %s\n",
+        StdMetrics.ms_v_charge_kwh_grid->AsUnitString("-", ToUser, 1).c_str());
+      }
+    if (StdMetrics.ms_v_charge_kwh->IsDefined())
+      {
+      writer->printf("Charged: %s\n",
+        StdMetrics.ms_v_charge_kwh->AsUnitString("-", ToUser, 1).c_str());
+      }
+    }
+  else
+    {
+    writer->puts("Not charging");
+    }
+
+  writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", ToUser, 1).c_str());
+
+  if (StdMetrics.ms_v_bat_range_ideal->IsDefined())
+    {
+    const std::string& range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", ToUser, 0);
+    writer->printf("Ideal range: %s\n", range_ideal.c_str());
+    }
+
+  if (StdMetrics.ms_v_bat_range_est->IsDefined())
+    {
+    const std::string& range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", ToUser, 0);
+    writer->printf("Est. range: %s\n", range_est.c_str());
+    }
+
+  if (StdMetrics.ms_v_pos_odometer->IsDefined())
+    {
+    const std::string& odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", ToUser, 1);
+    writer->printf("ODO: %s\n", odometer.c_str());
+    }
+
+  if (StdMetrics.ms_v_bat_cac->IsDefined())
+    {
+    const std::string& cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", ToUser, 1);
+    writer->printf("CAC: %s\n", cac.c_str());
+    }
+
+  if (StdMetrics.ms_v_bat_soh->IsDefined())
+    {
+    const std::string& soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0);
+    writer->printf("SOH: %s\n", soh.c_str());
+    }
+
+  if (mt_evc_hv_energy->IsDefined())
+    {
+    const std::string& hv_energy = mt_evc_hv_energy->AsUnitString("-", ToUser, 3);
+    writer->printf("usable Energy: %s\n", hv_energy.c_str());
+    }
+
+  return Success;
 }
 
 /**
