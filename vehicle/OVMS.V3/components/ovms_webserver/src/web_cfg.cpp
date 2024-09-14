@@ -880,8 +880,9 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
-  std::string apn, apn_user, apn_pass, network_dns, pincode;
+  std::string apn, apn_user, apn_pass, network_dns, pincode, error;
   bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode;
+  float cfg_sq_good, cfg_sq_bad;
 
   if (c.method == "POST") {
     // process form submission:
@@ -894,27 +895,49 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     enable_sms = (c.getvar("enable_sms") == "yes");
     enable_gps = (c.getvar("enable_gps") == "yes");
     enable_gpstime = (c.getvar("enable_gpstime") == "yes");
+    cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
+    cfg_sq_bad = atof(c.getvar("cfg_sq_bad").c_str());
 
-    MyConfig.SetParamValue("modem", "apn", apn);
-    MyConfig.SetParamValue("modem", "apn.user", apn_user);
-    MyConfig.SetParamValue("modem", "apn.password", apn_pass);
-    if ( MyConfig.GetParamValueBool("modem","wrongpincode") && (MyConfig.GetParamValue("modem","pincode") != pincode) )
+    if (cfg_sq_bad >= cfg_sq_good)
       {
-      ESP_LOGI(TAG,"New SIM card PIN code entered. Cleared wrong_pin_code flag");
-      MyConfig.SetParamValueBool("modem", "wrongpincode", false);
+      error += "<li data-input=\"cfg_sq_bad\">'Bad' signal level must be lower than 'good' level.</li>";
       }
-    MyConfig.SetParamValue("modem", "pincode", pincode);
-    MyConfig.SetParamValue("network", "dns", network_dns);
-    MyConfig.SetParamValueBool("modem", "enable.net", enable_net);
-    MyConfig.SetParamValueBool("modem", "enable.sms", enable_sms);
-    MyConfig.SetParamValueBool("modem", "enable.gps", enable_gps);
-    MyConfig.SetParamValueBool("modem", "enable.gpstime", enable_gpstime);
+    else 
+      {
+      MyConfig.SetParamValue("modem", "apn", apn);
+      MyConfig.SetParamValue("modem", "apn.user", apn_user);
+      MyConfig.SetParamValue("modem", "apn.password", apn_pass);
+      if ( MyConfig.GetParamValueBool("modem","wrongpincode") && (MyConfig.GetParamValue("modem","pincode") != pincode) )
+        {
+        ESP_LOGI(TAG,"New SIM card PIN code entered. Cleared wrong_pin_code flag");
+        MyConfig.SetParamValueBool("modem", "wrongpincode", false);
+        }
+      MyConfig.SetParamValue("modem", "pincode", pincode);
+      MyConfig.SetParamValue("network", "dns", network_dns);
+      MyConfig.SetParamValueBool("modem", "enable.net", enable_net);
+      MyConfig.SetParamValueBool("modem", "enable.sms", enable_sms);
+      MyConfig.SetParamValueBool("modem", "enable.gps", enable_gps);
+      MyConfig.SetParamValueBool("modem", "enable.gpstime", enable_gpstime);
 
+      MyConfig.SetParamValueFloat("network", "modem.sq.good", cfg_sq_good);
+      MyConfig.SetParamValueFloat("network", "modem.sq.bad", cfg_sq_bad);
+    }
+
+    if (error == "")
+      {
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Modem configured.</p>");
+      OutputHome(p, c);
+      c.done();
+      return;
+      }
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  } 
+  else
+  {
     c.head(200);
-    c.alert("success", "<p class=\"lead\">Modem configured.</p>");
-    OutputHome(p, c);
-    c.done();
-    return;
   }
 
   // read configuration:
@@ -928,9 +951,10 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   enable_sms = MyConfig.GetParamValueBool("modem", "enable.sms", true);
   enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
   enable_gpstime = MyConfig.GetParamValueBool("modem", "enable.gpstime", false);
+  cfg_sq_good = MyConfig.GetParamValueFloat("network", "modem.sq.good", -95);
+  cfg_sq_bad = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -93);
 
   // generate form:
-  c.head(200);
   c.panel_start("primary", "Cellular modem configuration");
   c.form_start(p.uri);
 
@@ -974,6 +998,13 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable SMS", "enable_sms", enable_sms);
   c.input_checkbox("Enable GPS", "enable_gps", enable_gps);
   c.input_checkbox("Use GPS time", "enable_gpstime", enable_gpstime);
+  c.fieldset_end();
+
+  c.fieldset_start("Cellular client options");
+  c.input_slider("Good signal level", "cfg_sq_good", 3, "dBm", -1, cfg_sq_good, -93.0, -128.0, 0.0, 0.1,
+    "<p>Threshold for usable wifi signal strength</p>");
+  c.input_slider("Bad signal level", "cfg_sq_bad", 3, "dBm", -1, cfg_sq_bad, -95.0, -128.0, 0.0, 0.1,
+    "<p>Threshold for unusable wifi signal strength</p>");
   c.fieldset_end();
 
   c.hr();
@@ -2044,6 +2075,7 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
   bool cfg_bad_reconnect;
+  bool cfg_reboot_no_ip;
   float cfg_sq_good, cfg_sq_bad;
 
   if (c.method == "POST") {
@@ -2056,6 +2088,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
     cfg_sq_bad = atof(c.getvar("cfg_sq_bad").c_str());
     cfg_bad_reconnect = (c.getvar("cfg_bad_reconnect") == "yes");
+    cfg_reboot_no_ip = (c.getvar("cfg_reboot_no_ip") == "yes");
 
     if (cfg_sq_bad >= cfg_sq_good) {
       error += "<li data-input=\"cfg_sq_bad\">'Bad' signal level must be lower than 'good' level.</li>";
@@ -2072,6 +2105,10 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
         MyConfig.DeleteInstance("network", "wifi.bad.reconnect");
       else
         MyConfig.SetParamValueBool("network", "wifi.bad.reconnect", cfg_bad_reconnect);
+      if (!cfg_reboot_no_ip)
+        MyConfig.DeleteInstance("network", "reboot.no.ip");
+      else
+        MyConfig.SetParamValueBool("network", "reboot.no.ip", cfg_reboot_no_ip);
     }
 
     if (error == "") {
@@ -2095,7 +2132,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     cfg_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
     cfg_bad_reconnect = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
-
+    cfg_reboot_no_ip = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
     c.head(200);
   }
 
@@ -2121,6 +2158,9 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Immediate disconnect/reconnect", "cfg_bad_reconnect", cfg_bad_reconnect,
     "<p>Check to immediately look for better access points when signal level gets bad."
     " Default is to stay with the current AP as long as possible.</p>");
+  c.input_checkbox("Reboot when no IP is aquired after 5 minutes with a good connection", "cfg_reboot_no_ip", cfg_reboot_no_ip,
+    "<p>Reboot device when there is good signal but the connection fails to obtain an IP address after 5 minutes."
+    " Takes into consideration both wifi and cellular connections.</p>");
   c.fieldset_end();
 
   c.print(
