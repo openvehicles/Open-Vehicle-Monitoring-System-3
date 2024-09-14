@@ -20,7 +20,7 @@ practice is to prefix script names with 2-3 digit numbers in steps of 10 or 100 
 named ``50-…``), so new scripts can easily be integrated at a specific place.
 
 Output of background scripts without console association (e.g. event scripts) will be sent to the 
-log with tag ``script`` at "info" level.
+log with tag ``ovms-duk-util`` at "info" level.
 
 Note that the developer building firmware can optionally set the ``OVMS_DEV_SDCARDSCRIPTS`` build 
 flag. If that is set, then the system will also check ``/sd/scripts`` and ``/sd/events`` for 
