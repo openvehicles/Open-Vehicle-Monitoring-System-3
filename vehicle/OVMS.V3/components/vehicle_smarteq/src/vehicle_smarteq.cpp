@@ -63,6 +63,7 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Load
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Amps
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Power
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // req.VIN
   // { 0x744, 0x764, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x52, {  0,300,10,999 }, 0, ISOTP_STD }, // ,764,36,45,.1,400,1,°C,2152,6152,ff,IH_InCarTemp
   POLL_LIST_END
 };
@@ -296,18 +297,6 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   }
 }
 
-void OvmsVehicleSmartEQ::getVIN() {
-  if (StandardMetrics.ms_v_env_awake->AsBool()) {
-    // Fetch VIN once:
-    if (!StdMetrics.ms_v_vin->IsDefined()) {
-      std::string vin;
-      if (PollSingleRequest(m_can1, 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, vin) == 0) {
-        StdMetrics.ms_v_vin->SetValue(vin.substr(0, vin.length() - 2));
-      }
-    }
-  }
-}
-
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   if (m_candata_timer > 0) {
     if (--m_candata_timer == 0) {
@@ -318,13 +307,28 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
       // PollSetState(0);
     }
   }
-  HandlePollState();
-  getVIN();
 
   if (m_booter_start && StandardMetrics.ms_v_env_hvac->AsBool()) {
     m_booter_start = false;
     MyNotify.NotifyString("info", "hvac.enabled", "Booster on");
   }
+}
+
+/**
+ * PollerStateTicker: check for state changes
+ *  This is called by VehicleTicker1() just before the next PollerSend().
+ */
+void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) {
+  bool car_online = mt_bus_awake->AsBool();
+  int lv_pwrstate = mt_evc_LV_DCDC_amps->AsInt();
+  
+  // - base system is awake if we've got a fresh lv_pwrstate:
+  StandardMetrics.ms_v_env_aux12v->SetValue(car_online);
+
+  // - charging / trickle charging 12V battery is active when lv_pwrstate is not zero:
+  StandardMetrics.ms_v_env_charging12v->SetValue(car_online && lv_pwrstate > 0);
+  
+  HandlePollState();
 }
 
 // can can1 tx st 634 40 01 72 00

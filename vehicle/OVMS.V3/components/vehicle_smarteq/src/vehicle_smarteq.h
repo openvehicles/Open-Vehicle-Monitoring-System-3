@@ -69,7 +69,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void HandleEnergy();
     void HandlePollState();
-    void getVIN();
 
   public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -95,6 +94,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
   protected:
     void Ticker1(uint32_t ticker) override;
+    void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
     
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
@@ -103,6 +103,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void PollReply_BCB_OBC(const char* data, uint16_t reply_len);
     void PollReply_HVAC(const char* data, uint16_t reply_len);
     void PollReply_TDB(const char* data, uint16_t reply_len);
+    void PollReply_VIN(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_State(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);

@@ -147,6 +147,13 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           break;
       }
       break;
+    case 0x765:
+      switch (job.pid) {
+        case 0x81: // req.VIN
+          PollReply_VIN(m_rxbuf.data(), m_rxbuf.size());
+          break;
+      }
+      break;
     default:
       ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
       break;
@@ -227,6 +234,11 @@ void OvmsVehicleSmartEQ::PollReply_HVAC(const char* data, uint16_t reply_len) {
 
 void OvmsVehicleSmartEQ::PollReply_TDB(const char* data, uint16_t reply_len) {
   StandardMetrics.ms_v_env_temp->SetValue( (CAN_UINT(2) - 400) * 0.1 );
+}
+
+void OvmsVehicleSmartEQ::PollReply_VIN(const char* data, uint16_t reply_len) {
+  std::string vin = data;
+  StandardMetrics.ms_v_vin->SetValue(vin.substr(0, vin.length() - 2));
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len) {
