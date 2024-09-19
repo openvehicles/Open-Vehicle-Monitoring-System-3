@@ -323,6 +323,7 @@ OvmsVehicle::OvmsVehicle()
   m_drive_startsoc = StdMetrics.ms_v_bat_soc->AsFloat();
   m_drive_startrange = StdMetrics.ms_v_bat_range_est->AsFloat();
   m_drive_startaltitude = StdMetrics.ms_v_pos_altitude->AsFloat();
+  time(&m_drive_starttime);
   m_drive_speedcnt = 0;
   m_drive_speedsum = 0;
   m_drive_accelcnt = 0;
@@ -1497,6 +1498,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
   float range_diff = range - m_drive_startrange;
   float alt = StdMetrics.ms_v_pos_altitude->AsFloat();
   float alt_diff = UnitConvert(Meters, altitudeUnit, alt - m_drive_startaltitude);
+  uint32_t duration = time(NULL) - m_drive_starttime;
+  uint8_t duration_h = duration / 3600;
+  uint8_t duration_min = duration % 3600 / 60;
+  uint8_t duration_sec = duration % 3600 % 60;
 
   std::ostringstream buf;
   buf
@@ -1504,8 +1509,24 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     << std::fixed
     << std::setprecision(1)
     << UnitConvert(Kilometers, rangeUnit, trip_length) << rangeUnitLabel
-    << " Avg "
     << std::setprecision(0)
+    << " ("
+    ;
+  if (duration_h > 0) 
+    {
+    buf
+      << +duration_h
+      << ":"
+      << std::setw(2) << std::setfill('0')
+      ;
+    }
+  buf
+    << +duration_min
+    << ":"
+    << std::setw(2) << std::setfill('0') << +duration_sec
+    << std::setfill(' ')
+    << ") "
+    << " Avg "
     << speed_avg << speedUnitLabel
     << " Alt "
     << ((alt_diff >= 0) ? "+" : "")
@@ -1513,23 +1534,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     ;
   if (wh_per_km != 0)
     {
-    buf << "\nEnergy ";
-    if (consumUnit == KPkWh || consumUnit == MPkWh) 
-    {
-      buf << std::setprecision(2);
-    } 
-    else if (consumUnit == kWhP100K) 
-    {
-      buf << std::setprecision(1);
-    }
-    else
-    {
-      buf << std::setprecision(0);
-    }
-    buf 
+    buf
+      << "\nEnergy "
       << UnitConvert(WattHoursPK, consumUnit, wh_per_km) << consumUnitLabel
       << ", "
-      << std::setprecision(0)
       << energy_recd_perc << "% recd"
       ;
     }
@@ -1618,6 +1626,7 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       m_drive_startsoc = StdMetrics.ms_v_bat_soc->AsFloat();
       m_drive_startrange = StdMetrics.ms_v_bat_range_est->AsFloat();
       m_drive_startaltitude = StdMetrics.ms_v_pos_altitude->AsFloat();
+      time(&m_drive_starttime);
       m_drive_speedcnt = 0;
       m_drive_speedsum = 0;
       m_drive_accelcnt = 0;
