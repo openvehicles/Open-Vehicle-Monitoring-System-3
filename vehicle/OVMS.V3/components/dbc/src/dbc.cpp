@@ -52,7 +52,7 @@ static const char *TAG = "dbc";
 // Helper functions
 
 static inline uint64_t
-dbc_extract_bits(uint8_t *candata, unsigned int bpos, unsigned int align, unsigned int shifter, unsigned int pos)
+dbc_extract_bits(const uint8_t *candata, unsigned int bpos, unsigned int align, unsigned int shifter, unsigned int pos)
   {
   uint64_t val = (uint64_t)candata[bpos/8];
   unsigned int mask = (1 << shifter) - 1;
@@ -60,7 +60,7 @@ dbc_extract_bits(uint8_t *candata, unsigned int bpos, unsigned int align, unsign
   }
 
 static uint64_t
-dbc_extract_bits_little_endian(uint8_t *candata, unsigned int bpos, unsigned int bits)
+dbc_extract_bits_little_endian(const uint8_t *candata, unsigned int bpos, unsigned int bits)
   {
   unsigned int pos, aligner, shifter;
   uint64_t val = 0;
@@ -83,7 +83,7 @@ dbc_extract_bits_little_endian(uint8_t *candata, unsigned int bpos, unsigned int
   }
 
 static uint64_t
-dbc_extract_bits_big_endian(uint8_t *candata, unsigned int bpos, unsigned int bits)
+dbc_extract_bits_big_endian(const uint8_t *candata, unsigned int bpos, unsigned int bits)
   {
   unsigned int pos, aligner, slicer;
   uint64_t val = 0;
@@ -147,7 +147,7 @@ void dbcCommentTable::RemoveComment(std::string comment)
   m_entrymap.remove(comment);
   }
 
-bool dbcCommentTable::HasComment(std::string comment)
+bool dbcCommentTable::HasComment(std::string comment) const
   {
   auto it = std::find(m_entrymap.begin(), m_entrymap.end(), comment);
   return (it != m_entrymap.end());
@@ -160,9 +160,9 @@ void dbcCommentTable::EmptyContent()
 
 void dbcCommentTable::WriteFile(dbcOutputCallback callback,
                                 void* param,
-                                std::string prefix)
+                                std::string prefix) const
   {
-  for (dbcCommentList_t::iterator it=m_entrymap.begin();
+  for (dbcCommentList_t::const_iterator it=m_entrymap.begin();
        it != m_entrymap.end();
        ++it)
     {
@@ -215,10 +215,10 @@ int dbcNewSymbolTable::GetCount()
   return m_entrymap.size();
   }
 
-void dbcNewSymbolTable::WriteFile(dbcOutputCallback callback, void* param)
+void dbcNewSymbolTable::WriteFile(dbcOutputCallback callback, void* param) const
   {
   callback(param,"NS_ :");
-  for (dbcNewSymbolList_t::iterator it=m_entrymap.begin();
+  for (dbcNewSymbolList_t::const_iterator it=m_entrymap.begin();
        it != m_entrymap.end();
        ++it)
     {
@@ -327,10 +327,10 @@ void dbcNodeTable::EmptyContent()
   m_entrymap.clear();
   }
 
-void dbcNodeTable::WriteFile(dbcOutputCallback callback, void* param)
+void dbcNodeTable::WriteFile(dbcOutputCallback callback, void* param) const
   {
   callback(param, "BU_ :");
-  for (dbcNodeEntry_t::iterator it = m_entrymap.begin();
+  for (dbcNodeEntry_t::const_iterator it = m_entrymap.begin();
        it != m_entrymap.end();
        it++)
     {
@@ -340,10 +340,10 @@ void dbcNodeTable::WriteFile(dbcOutputCallback callback, void* param)
   callback(param,"\n\n");
   }
 
-void dbcNodeTable::WriteFileComments(dbcOutputCallback callback, void* param)
+void dbcNodeTable::WriteFileComments(dbcOutputCallback callback, void* param) const
   {
   std::string prefix;
-  for (dbcNodeEntry_t::iterator it=m_entrymap.begin();
+  for (dbcNodeEntry_t::const_iterator it=m_entrymap.begin();
        it != m_entrymap.end();
        ++it)
     {
@@ -397,7 +397,7 @@ void dbcBitTiming::SetBaud(const uint32_t baudrate, const uint32_t btr1, const u
   m_btr2 = btr2;
   }
 
-void dbcBitTiming::WriteFile(dbcOutputCallback callback, void* param)
+void dbcBitTiming::WriteFile(dbcOutputCallback callback, void* param) const
   {
   callback(param, "BS_ : ");
   if (m_baudrate != 0)
@@ -443,13 +443,13 @@ void dbcValueTable::RemoveValue(uint32_t id)
     m_entrymap.erase(search);
   }
 
-bool dbcValueTable::HasValue(uint32_t id)
+bool dbcValueTable::HasValue(uint32_t id) const
   {
   auto search = m_entrymap.find(id);
   return (search != m_entrymap.end());
   }
 
-std::string dbcValueTable::GetValue(uint32_t id)
+std::string dbcValueTable::GetValue(uint32_t id) const
   {
   auto search = m_entrymap.find(id);
   if (search != m_entrymap.end())
@@ -458,7 +458,7 @@ std::string dbcValueTable::GetValue(uint32_t id)
     return std::string("");
   }
 
-const std::string& dbcValueTable::GetName()
+const std::string& dbcValueTable::GetName() const
   {
   return m_name;
   }
@@ -473,7 +473,7 @@ void dbcValueTable::SetName(const char* name)
   m_name = std::string(name);
   }
 
-int dbcValueTable::GetCount()
+int dbcValueTable::GetCount() const
   {
   return m_entrymap.size();
   }
@@ -488,7 +488,7 @@ void dbcValueTable::EmptyContent()
   m_entrymap.clear();
   }
 
-void dbcValueTable::WriteFile(dbcOutputCallback callback, void* param, const char* prefix)
+void dbcValueTable::WriteFile(dbcOutputCallback callback, void* param, const char* prefix) const
   {
   if (prefix != NULL)
     {
@@ -499,7 +499,7 @@ void dbcValueTable::WriteFile(dbcOutputCallback callback, void* param, const cha
     callback(param, "VAL_TABLE_ ");
     callback(param, m_name.c_str());
     }
-  for (dbcValueTableEntry_t::iterator it = m_entrymap.begin();
+  for (dbcValueTableEntry_t::const_iterator it = m_entrymap.begin();
        it != m_entrymap.end();
        it++)
     {
@@ -552,7 +552,7 @@ dbcValueTable* dbcValueTableTable::FindValueTable(std::string name)
 
 void dbcValueTableTable::EmptyContent()
   {
-  dbcValueTableTableEntry_t::iterator it=m_entrymap.begin();
+  dbcValueTableTableEntry_t::const_iterator it=m_entrymap.begin();
   while (it!=m_entrymap.end())
     {
     delete it->second;
@@ -561,11 +561,11 @@ void dbcValueTableTable::EmptyContent()
   m_entrymap.clear();
   }
 
-void dbcValueTableTable::WriteFile(dbcOutputCallback callback, void* param)
+void dbcValueTableTable::WriteFile(dbcOutputCallback callback, void* param) const
   {
   if (m_entrymap.size() > 0)
     {
-    for (dbcValueTableTableEntry_t::iterator itt = m_entrymap.begin();
+    for (dbcValueTableTableEntry_t::const_iterator itt = m_entrymap.begin();
          itt != m_entrymap.end();
          itt++)
       itt->second->WriteFile(callback, param, NULL);
@@ -641,17 +641,17 @@ void dbcSignal::RemoveValue(uint32_t id)
   m_values.RemoveValue(id);
   }
 
-bool dbcSignal::HasValue(uint32_t id)
+bool dbcSignal::HasValue(uint32_t id) const
   {
   return m_values.HasValue(id);
   }
 
-std::string dbcSignal::GetValue(uint32_t id)
+std::string dbcSignal::GetValue(uint32_t id) const
   {
   return m_values.GetValue(id);
   }
 
-const std::string& dbcSignal::GetName()
+const std::string& dbcSignal::GetName() const
   {
   return m_name;
   }
@@ -670,12 +670,12 @@ void dbcSignal::SetName(const char* name)
   SetName(std::string(name));
   }
 
-bool dbcSignal::IsMultiplexor()
+bool dbcSignal::IsMultiplexor() const
   {
   return (m_mux.multiplexed == DBC_MUX_MULTIPLEXOR);
   }
 
-bool dbcSignal::IsMultiplexSwitch()
+bool dbcSignal::IsMultiplexSwitch() const
   {
   return (m_mux.multiplexed == DBC_MUX_MULTIPLEXED);
   }
@@ -685,7 +685,7 @@ void dbcSignal::SetMultiplexor()
   m_mux.multiplexed = DBC_MUX_MULTIPLEXOR;
   }
 
-uint32_t dbcSignal::GetMultiplexSwitchvalue()
+uint32_t dbcSignal::GetMultiplexSwitchvalue() const
   {
   return m_mux.switchvalue;
   }
@@ -718,42 +718,42 @@ bool dbcSignal::ClearMultiplexed()
     }
   }
 
-int dbcSignal::GetStartBit()
+int dbcSignal::GetStartBit() const
   {
   return m_start_bit;
   }
 
-int dbcSignal::GetSignalSize()
+int dbcSignal::GetSignalSize() const
   {
   return m_signal_size;
   }
 
-dbcByteOrder_t dbcSignal::GetByteOrder()
+dbcByteOrder_t dbcSignal::GetByteOrder() const
   {
   return m_byte_order;
   }
 
-dbcValueType_t dbcSignal::GetValueType()
+dbcValueType_t dbcSignal::GetValueType() const
   {
   return m_value_type;
   }
 
-dbcNumber dbcSignal::GetFactor()
+dbcNumber dbcSignal::GetFactor() const
   {
   return m_factor;
   }
 
-dbcNumber dbcSignal::GetOffset()
+dbcNumber dbcSignal::GetOffset() const
   {
   return m_offset;
   }
 
-dbcNumber dbcSignal::GetMinimum()
+dbcNumber dbcSignal::GetMinimum() const
   {
   return m_minimum;
   }
 
-dbcNumber dbcSignal::GetMaximum()
+dbcNumber dbcSignal::GetMaximum() const
   {
   return m_maximum;
   }
@@ -798,7 +798,7 @@ void dbcSignal::SetMinMax(const double minimum, const double maximum)
   m_maximum = maximum;
   }
 
-const std::string& dbcSignal::GetUnit()
+const std::string& dbcSignal::GetUnit() const
   {
   return m_unit;
   }
@@ -818,7 +818,7 @@ void dbcSignal::Encode(dbcNumber* source, CAN_frame_t* msg)
   // TODO: An efficient encoding of the signal
   }
 
-dbcNumber dbcSignal::Decode(CAN_frame_t* msg)
+dbcNumber dbcSignal::Decode(const CAN_frame_t* msg) const
   {
   uint64_t val;
   dbcNumber result;
@@ -853,12 +853,12 @@ void dbcSignal::AssignMetric(OvmsMetric* metric)
   m_metric = metric;
   }
 
-OvmsMetric* dbcSignal::GetMetric()
+OvmsMetric* dbcSignal::GetMetric() const
   {
   return m_metric;
   }
 
-void dbcSignal::WriteFile(dbcOutputCallback callback, void* param)
+void dbcSignal::WriteFile(dbcOutputCallback callback, void* param) const
   {
   std::ostringstream ss;
 
@@ -911,7 +911,7 @@ void dbcSignal::WriteFile(dbcOutputCallback callback, void* param)
 
 void dbcSignal::WriteFileComments(dbcOutputCallback callback,
                                   void* param,
-                                  std::string messageid)
+                                  std::string messageid) const
   {
   std::string prefix("CM_ SG_ ");
   prefix.append(messageid);
@@ -923,7 +923,7 @@ void dbcSignal::WriteFileComments(dbcOutputCallback callback,
 
 void dbcSignal::WriteFileValues(dbcOutputCallback callback,
                                   void* param,
-                                  std::string messageid)
+                                  std::string messageid) const
   {
   if (m_values.GetCount()>0)
     {
@@ -973,7 +973,7 @@ void dbcMessage::RemoveComment(const std::string& comment)
   m_comments.RemoveComment(comment);
   }
 
-bool dbcMessage::HasComment(const std::string& comment)
+bool dbcMessage::HasComment(const std::string& comment) const
   {
   return m_comments.HasComment(comment);
   }
@@ -1007,7 +1007,7 @@ dbcSignal* dbcMessage::FindSignal(std::string name)
   return NULL;
     }
 
-void dbcMessage::Count(int* signals, int* bits, int* covered)
+void dbcMessage::Count(int* signals, int* bits, int* covered) const
   {
   *bits = m_size*8;
   *signals = 0;
@@ -1019,22 +1019,22 @@ void dbcMessage::Count(int* signals, int* bits, int* covered)
     }
   }
 
-uint32_t dbcMessage::GetID()
+uint32_t dbcMessage::GetID() const
   {
   return m_id;
   }
 
-CAN_frame_format_t dbcMessage::GetFormat()
+CAN_frame_format_t dbcMessage::GetFormat() const
   {
   return ((m_id & 0x80000000) == 0)?CAN_frame_std:CAN_frame_ext;
   }
 
-bool dbcMessage::IsExtended()
+bool dbcMessage::IsExtended() const
   {
   return ((m_id & 0x80000000) != 0);
   }
 
-bool dbcMessage::IsStandard()
+bool dbcMessage::IsStandard() const
   {
   return ((m_id & 0x80000000) == 0);
   }
@@ -1044,7 +1044,7 @@ void dbcMessage::SetID(const uint32_t id)
   m_id = id;
   }
 
-int dbcMessage::GetSize()
+int dbcMessage::GetSize() const
   {
   return m_size;
   }
@@ -1054,7 +1054,7 @@ void dbcMessage::SetSize(const int size)
   m_size = size;
   }
 
-const std::string& dbcMessage::GetName()
+const std::string& dbcMessage::GetName() const
   {
   return m_name;
   }
@@ -1069,7 +1069,7 @@ void dbcMessage::SetName(const char* name)
   m_name = std::string(name);
   }
 
-const std::string& dbcMessage::GetTransmitterNode()
+const std::string& dbcMessage::GetTransmitterNode() const
   {
   return m_transmitter_node;
   }
@@ -1084,12 +1084,12 @@ void dbcMessage::SetTransmitterNode(const char* node)
   m_transmitter_node = std::string(node);
   }
 
-bool dbcMessage::IsMultiplexor()
+bool dbcMessage::IsMultiplexor() const
   {
-  return (m_multiplexor != NULL);
+  return (GetMultiplexorSignal() != NULL);
   }
 
-dbcSignal* dbcMessage::GetMultiplexorSignal()
+dbcSignal* dbcMessage::GetMultiplexorSignal() const
   {
   return m_multiplexor;
   }
@@ -1103,7 +1103,7 @@ void dbcMessage::SetMultiplexorSignal(dbcSignal* signal)
     }
   }
 
-void dbcMessage::WriteFile(dbcOutputCallback callback, void* param)
+void dbcMessage::WriteFile(dbcOutputCallback callback, void* param) const
   {
   std::ostringstream ss;
   ss << "BO_ ";
@@ -1125,7 +1125,7 @@ void dbcMessage::WriteFile(dbcOutputCallback callback, void* param)
   callback(param, "\n");
   }
 
-void dbcMessage::WriteFileComments(dbcOutputCallback callback, void* param)
+void dbcMessage::WriteFileComments(dbcOutputCallback callback, void* param) const
   {
   std::ostringstream ss;
   ss << m_id;
@@ -1141,7 +1141,7 @@ void dbcMessage::WriteFileComments(dbcOutputCallback callback, void* param)
     }
   }
 
-void dbcMessage::WriteFileValues(dbcOutputCallback callback, void* param)
+void dbcMessage::WriteFileValues(dbcOutputCallback callback, void* param) const
   {
   std::ostringstream ss;
   ss << m_id;
@@ -1177,7 +1177,7 @@ void dbcMessageTable::RemoveMessage(uint32_t id, bool free)
     }
   }
 
-dbcMessage* dbcMessageTable::FindMessage(uint32_t id)
+dbcMessage* dbcMessageTable::FindMessage(uint32_t id) const
   {
   auto search = m_entrymap.find(id);
   if (search != m_entrymap.end())
@@ -1186,7 +1186,7 @@ dbcMessage* dbcMessageTable::FindMessage(uint32_t id)
     return NULL;
   }
 
-dbcMessage* dbcMessageTable::FindMessage(CAN_frame_format_t format, uint32_t id)
+dbcMessage* dbcMessageTable::FindMessage(CAN_frame_format_t format, uint32_t id) const
   {
   if (format == CAN_frame_ext)
     id |= 0x80000000;
@@ -1200,13 +1200,13 @@ dbcMessage* dbcMessageTable::FindMessage(CAN_frame_format_t format, uint32_t id)
     return NULL;
   }
 
-void dbcMessageTable::Count(int* messages, int* signals, int* bits, int* covered)
+void dbcMessageTable::Count(int* messages, int* signals, int* bits, int* covered) const
   {
   *messages = 0;
   *signals = 0;
   *bits = 0;
   *covered = 0;
-  for (dbcMessageEntry_t::iterator itt = m_entrymap.begin();
+  for (dbcMessageEntry_t::const_iterator itt = m_entrymap.begin();
        itt != m_entrymap.end();
        itt++)
     {
@@ -1230,23 +1230,23 @@ void dbcMessageTable::EmptyContent()
   m_entrymap.clear();
   }
 
-void dbcMessageTable::WriteFile(dbcOutputCallback callback, void* param)
+void dbcMessageTable::WriteFile(dbcOutputCallback callback, void* param) const
   {
-  for (dbcMessageEntry_t::iterator itt = m_entrymap.begin();
+  for (dbcMessageEntry_t::const_iterator itt = m_entrymap.begin();
        itt != m_entrymap.end();
        itt++)
     itt->second->WriteFile(callback, param);
   }
 
-void dbcMessageTable::WriteFileComments(dbcOutputCallback callback, void* param)
+void dbcMessageTable::WriteFileComments(dbcOutputCallback callback, void* param) const
   {
-  for (dbcMessageEntry_t::iterator it=m_entrymap.begin();
+  for (dbcMessageEntry_t::const_iterator it=m_entrymap.begin();
        it != m_entrymap.end();
        ++it)
     {
     it->second->WriteFileComments(callback, param);
     }
-  for (dbcMessageEntry_t::iterator it=m_entrymap.begin();
+  for (dbcMessageEntry_t::const_iterator it=m_entrymap.begin();
        it != m_entrymap.end();
        ++it)
     {
@@ -1254,9 +1254,9 @@ void dbcMessageTable::WriteFileComments(dbcOutputCallback callback, void* param)
     }
   }
 
-void dbcMessageTable::WriteSummary(dbcOutputCallback callback, void* param)
+void dbcMessageTable::WriteSummary(dbcOutputCallback callback, void* param) const
   {
-  for (dbcMessageEntry_t::iterator itt = m_entrymap.begin();
+  for (dbcMessageEntry_t::const_iterator itt = m_entrymap.begin();
        itt != m_entrymap.end();
        itt++)
     itt->second->WriteFile(callback, param);
@@ -1344,7 +1344,7 @@ bool dbcfile::LoadString(const char* name, const char* source, size_t length)
   return result;
   }
 
-void dbcfile::WriteFile(dbcOutputCallback callback, void* param)
+void dbcfile::WriteFile(dbcOutputCallback callback, void* param) const
   {
   callback(param,"VERSION \"");
   callback(param,m_version.c_str());
@@ -1360,7 +1360,7 @@ void dbcfile::WriteFile(dbcOutputCallback callback, void* param)
   m_messages.WriteFileComments(callback, param);
   }
 
-void dbcfile::WriteSummary(dbcOutputCallback callback, void* param)
+void dbcfile::WriteSummary(dbcOutputCallback callback, void* param) const
   {
   callback(param,"Path:    ");
   callback(param,m_path.c_str());
@@ -1373,7 +1373,7 @@ void dbcfile::WriteSummary(dbcOutputCallback callback, void* param)
   m_messages.WriteSummary(callback, param);
   }
 
-std::string dbcfile::Status()
+std::string dbcfile::Status() const
   {
   std::ostringstream ss;
   int messages, signals, bits, covered;
@@ -1400,17 +1400,17 @@ std::string dbcfile::Status()
   return ss.str();
   }
 
-std::string dbcfile::GetName()
+std::string dbcfile::GetName() const
   {
   return m_name;
   }
 
-std::string dbcfile::GetPath()
+std::string dbcfile::GetPath() const
   {
   return m_path;
   }
 
-std::string dbcfile::GetVersion()
+std::string dbcfile::GetVersion() const
   {
   return m_version;
   }
@@ -1425,7 +1425,7 @@ void dbcfile::UnlockFile()
   m_locks--;
   }
 
-bool dbcfile::IsLocked()
+bool dbcfile::IsLocked() const
   {
   return (m_locks > 0);
   }
