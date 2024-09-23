@@ -297,11 +297,15 @@ class dbcSignal
     const std::string& GetUnit() const;
     void SetUnit(const std::string& unit);
     void SetUnit(const char* unit);
+    metric_unit_t GetMetricUnit() const
+      {
+      return m_metric_unit;
+      }
 
   public:
     void Encode(dbcNumber* source, CAN_frame_t* msg);
 
-    dbcNumber Decode(const CAN_frame_t* msg) const;
+    dbcNumber Decode(const uint8_t* msg, uint8_t size) const;
 
   public:
     void AssignMetric(OvmsMetric* metric);
@@ -330,6 +334,8 @@ class dbcSignal
     dbcNumber m_minimum;
     dbcNumber m_maximum;
     std::string m_unit;
+    metric_unit_t m_metric_unit;
+
     OvmsMetric* m_metric;
   };
 
@@ -439,6 +445,7 @@ class dbcfile
     void UnlockFile();
     bool IsLocked() const;
 
+    void DecodeSignal(CAN_frame_format_t format, uint32_t msg_id, const uint8_t* msg, uint8_t size) const;
   public:
     std::string m_name;
     std::string m_path;

@@ -806,11 +806,23 @@ const std::string& dbcSignal::GetUnit() const
 void dbcSignal::SetUnit(const std::string& unit)
   {
   m_unit = unit;
+  if (unit.empty())
+    m_metric_unit = Native;
+  else
+    {
+    m_metric_unit = OvmsMetricUnitFromName(m_unit.c_str());
+    if (m_metric_unit == Native)
+      {
+      auto metric = OvmsMetricUnitFromLabel(m_unit.c_str());
+      if (metric != Native)
+        m_metric_unit = metric;
+      }
+    }
   }
 
 void dbcSignal::SetUnit(const char* unit)
   {
-  m_unit = std::string(unit);
+  SetUnit(std::string(unit));
   }
 
 void dbcSignal::Encode(dbcNumber* source, CAN_frame_t* msg)
@@ -818,15 +830,21 @@ void dbcSignal::Encode(dbcNumber* source, CAN_frame_t* msg)
   // TODO: An efficient encoding of the signal
   }
 
-dbcNumber dbcSignal::Decode(const CAN_frame_t* msg) const
+dbcNumber dbcSignal::Decode(const uint8_t* msg, uint8_t size) const
   {
   uint64_t val;
   dbcNumber result;
 
+  if (size == 0)
+    return m_offset;
+
+  if ( ((m_start_bit+m_signal_size+7) / 8) > size)
+    return result; // empty value.
+
   if (m_byte_order == DBC_BYTEORDER_BIG_ENDIAN)
-    val = dbc_extract_bits_big_endian(msg->data.u8,m_start_bit,m_signal_size);
+    val = dbc_extract_bits_big_endian(msg,m_start_bit,m_signal_size);
   else
-    val = dbc_extract_bits_little_endian(msg->data.u8,m_start_bit,m_signal_size);
+    val = dbc_extract_bits_little_endian(msg,m_start_bit,m_signal_size);
 
   if (m_value_type == DBC_VALUETYPE_UNSIGNED)
     result.Cast((uint32_t)val, DBC_NUMBER_INTEGER_UNSIGNED);
@@ -1428,4 +1446,31 @@ void dbcfile::UnlockFile()
 bool dbcfile::IsLocked() const
   {
   return (m_locks > 0);
+  }
+
+void dbcfile::DecodeSignal(CAN_frame_format_t format, uint32_t msg_id, const uint8_t* msg, uint8_t size) const
+  {
+  dbcMessage* dbcmsg = m_messages.FindMessage(format, msg_id);
+  if (dbcmsg)
+    {
+    dbcSignal* mux = dbcmsg->GetMultiplexorSignal();
+    uint32_t muxval;
+    if (mux)
+      {
+      dbcNumber r = mux->Decode(msg, size);
+      muxval = r.GetSignedInteger();
+      }
+    for (dbcSignal* sig : dbcmsg->m_signals)
+      {
+      OvmsMetric* m = sig->GetMetric();
+      if (m)
+        {
+        if ((mux==NULL)||(sig->GetMultiplexSwitchvalue() == muxval))
+          {
+          dbcNumber r = sig->Decode(msg, size);
+          m->SetValue(r, sig->GetMetricUnit());
+          }
+        }
+      }
+    }
   }
