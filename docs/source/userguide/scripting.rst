@@ -1096,31 +1096,36 @@ inline or by loading a lib module (see `Persistent JavaScript`_).
 
 OvmsPoller
 ^^^^^^^^^^
+
 The Ovms Poller object represents the poller sub-system. It contains the following methods:
 
 - ``ispaused = OvmsPoller.GetPaused()``: Return true if the poller is paused by the system/user.
 - ``ispaused = OvmsPoller.GetUserPaused()``: Return true if the poller is paused by the user.
 - ``OvmsPoller.Pause()``: Pause the poller (adds User poller pause)
 - ``OvmsPoller.Resume()``: Remove the User poller pause.
-
-- ``OvmsPoller.Trace({ poller: true, txrx: false})``: Enable traces for poller/txrx tasks.
-    Enabling trace still requires that 'Verbose' or 'Debug' levels (depending) for the
-    'vehicle-poll' debug tags are set.
-    The flag ``poller`` refers to the poller task itself (relatively safe) and ``txrx`` refers to the Can TX/RX task
-    (not safe, especially for some cars).
+- ``OvmsPoller.Trace({ poller: true, txrx: false })``: Enable traces for poller/txrx tasks.
+  Enabling trace still requires that 'Verbose' or 'Debug' levels (depending) for the
+  'vehicle-poll' debug tags are set.
+  The flag ``poller`` refers to the poller task itself (relatively safe) and ``txrx`` refers to the Can TX/RX task
+  (not safe, especially for some cars).
 - ``tracemodes = OvmsPoller.GetTraceStatus()``: Return the current trace mode for the respective 'tasks'. Eg
-    .. code-block:: javascript
-   { "poller": true, "txrx": false }
+
+  .. code-block:: javascript
+
+    { "poller": true, "txrx": false }
 
 The poller object also contains a ``Times`` property for the OBD Poll-Time tracing
 which contains the following methods:
+
 - ``isrunning = OvmsPoller.Times.GetStarted()``: Returns true if the time-tracing is enabled
 - ``OvmsPoller.Times.Start``: Starts the timer-tracing
 - ``OvmsPoller.Times.Stop``: Stops the timer-tracing
 - ``OvmsPoller.Times.Reset()``: Reset the timers (doesn't affect their current state).
 - ``OvmsPoller.Times.GetStatus()``: Gets the status of the various times. This returns an object
-    of this format:
-    .. code-block:: javascript
+  of this format:
+
+  .. code-block:: javascript
+
     return_value = {
       "started": true,
       "items": {
@@ -1179,6 +1184,7 @@ which contains the following methods:
       "tot_util_pm": 6.247,
       "tot_time_ms": 4.628
     };
+
 
 --------------
 Test Utilities
