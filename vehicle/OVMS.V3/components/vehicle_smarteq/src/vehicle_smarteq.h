@@ -69,6 +69,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
     void HandleEnergy();
     void HandlePollState();
+    void OnlineState();
 
   public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -112,6 +113,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
   protected:
     bool m_enable_write;                    // canwrite
+    bool m_enable_LED_state;                // Online LED State
 
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define MAX_POLL_DATA_LEN 126
@@ -146,7 +148,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricFloat         *mt_bms_Power;              //!< power as product of voltage and amps in kW
 
   protected:
-    bool m_booter_start;
+    bool m_booster_start;
+    int m_led_state;
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__

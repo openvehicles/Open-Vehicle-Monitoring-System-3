@@ -75,7 +75,8 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
 OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ESP_LOGI(TAG, "Start Smart EQ vehicle module");
   
-  m_booter_start = false;
+  m_booster_start = false;
+  m_led_state = 0;
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 3);
@@ -141,7 +142,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   ESP_LOGI(TAG, "Smart EQ reload configuration");
   
-  m_enable_write  = MyConfig.GetParamValueBool("xsq", "canwrite", false);
+  m_enable_write = MyConfig.GetParamValueBool("xsq", "canwrite", false);
+  m_enable_LED_state = MyConfig.GetParamValueBool("xsq", "led", false);
 }
 
 uint64_t OvmsVehicleSmartEQ::swap_uint64(uint64_t val) {
@@ -297,6 +299,47 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   }
 }
 
+void OvmsVehicleSmartEQ::OnlineState() {
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  if (StandardMetrics.ms_m_net_ip->AsBool()) {
+    // connected:
+    if (StandardMetrics.ms_s_v2_connected->AsBool()) {
+      if (m_led_state != 1) {
+        MyPeripherals->m_max7317->Output(9, 1);
+        MyPeripherals->m_max7317->Output(8, 0);
+        MyPeripherals->m_max7317->Output(7, 1);
+        m_led_state = 1;
+        ESP_LOGI(TAG,"LED GREEN");
+      }
+    } else if (StandardMetrics.ms_m_net_connected->AsBool()) {
+      if (m_led_state != 2) {
+        MyPeripherals->m_max7317->Output(9, 1);
+        MyPeripherals->m_max7317->Output(8, 1);
+        MyPeripherals->m_max7317->Output(7, 0);
+        m_led_state = 2;
+        ESP_LOGI(TAG,"LED BLUE");
+      }
+    } else {
+      if (m_led_state != 3) {
+        MyPeripherals->m_max7317->Output(9, 0);
+        MyPeripherals->m_max7317->Output(8, 1);
+        MyPeripherals->m_max7317->Output(7, 1);
+        m_led_state = 3;
+        ESP_LOGI(TAG,"LED RED");
+      }
+    }
+  }
+  else if (m_led_state != 0) {
+    // not connected:
+    MyPeripherals->m_max7317->Output(9, 1);
+    MyPeripherals->m_max7317->Output(8, 1);
+    MyPeripherals->m_max7317->Output(7, 1);
+    m_led_state = 0;
+    ESP_LOGI(TAG,"LED Off");
+  }
+#endif
+}
+
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   if (m_candata_timer > 0) {
     if (--m_candata_timer == 0) {
@@ -308,10 +351,11 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
     }
   }
 
-  if (m_booter_start && StandardMetrics.ms_v_env_hvac->AsBool()) {
-    m_booter_start = false;
+  if (m_booster_start && StandardMetrics.ms_v_env_hvac->AsBool()) {
+    m_booster_start = false;
     MyNotify.NotifyString("info", "hvac.enabled", "Booster on");
   }
+  if (m_enable_LED_state) OnlineState();
 }
 
 /**
@@ -353,7 +397,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
         obd->WriteStandard(0x634, 4, data);
         vTaskDelay(100 / portTICK_PERIOD_MS);
       }
-      m_booter_start = true;
+      m_booster_start = true;
       res = Success;
     } else {
       res = Fail;
