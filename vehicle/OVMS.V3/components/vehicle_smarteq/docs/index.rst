@@ -33,8 +33,8 @@ Valet Mode Control          No
 Others
 =========================== ==============
 
-----------
+-------------------------
 Using Cabin Pre-heat/cool
-----------
+-------------------------
 
 Only 5 Minutes Booster are Implementet white Climatecontrol on or Homelink 1
