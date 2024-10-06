@@ -1,6 +1,25 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Vehicle: Implement events and scripting for Auxillary batttery monitor
+  New events:
+    vehicle.aux.12v.normal
+    vehicle.aux.12v.charging
+    vehicle.aux.12v.blip
+    vehicle.aux.12v.dip
+    vehicle.aux.12v.charging.blip
+    vehicle.aux.12v.charging.dip
+    vehicle.aux.12v.low
+  New commands:
+    vehicle aux [status]
+    vehicle aux monitor [status]
+    vehicle aux monitor enable
+    vehicle aux monitor disable
+  Duktape Support:
+    OvmsVehicle.AuxMon.Enable
+    OvmsVehicle.AuxMon.Disable
+    OvmsVehicle.AuxMon.Status
+
 - Cellular: GPS run state signals added.
   New events:
     system.modem.gpsstart       -- GPS has started

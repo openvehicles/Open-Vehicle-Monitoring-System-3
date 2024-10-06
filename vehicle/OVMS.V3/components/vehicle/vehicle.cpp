@@ -82,6 +82,13 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1);
   MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1);
   MyCommandApp.RegisterCommand("unvalet","Deactivate valet mode",vehicle_unvalet,"<pin>",1,1);
+  OvmsCommand *cmd_aux = cmd_vehicle->RegisterCommand("aux", "Aux battery", vehicle_aux);
+  cmd_aux->RegisterCommand("status", "Aux Battery Status", vehicle_aux);
+  OvmsCommand *cmd_aux_mon = cmd_aux->RegisterCommand("monitor", "Aux Battery Monitor", vehicle_aux_monitor);
+  cmd_aux_mon->RegisterCommand("status", "Aux Battery Status", vehicle_aux_monitor);
+  cmd_aux_mon->RegisterCommand("enable", "Enable Aux Monitor", vehicle_aux_monitor_enable);
+  cmd_aux_mon->RegisterCommand("disable", "Disable Aux Monitor", vehicle_aux_monitor_disable);
+
 
   OvmsCommand* cmd_charge = MyCommandApp.RegisterCommand("charge","Charging framework");
   OvmsCommand* cmd_chargemode = cmd_charge->RegisterCommand("mode","Set vehicle charge mode");
@@ -134,6 +141,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
       1, 2);
     }
 
+
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsVehicle");
   dto->RegisterDuktapeFunction(DukOvmsVehicleType, 0, "Type");
@@ -152,6 +160,13 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   dto->RegisterDuktapeFunction(DukOvmsVehicleStartCooldown, 0, "StartCooldown");
   dto->RegisterDuktapeFunction(DukOvmsVehicleStopCooldown, 0, "StopCooldown");
   dto->RegisterDuktapeFunction(DukOvmsVehicleObdRequest, 1, "ObdRequest");
+
+  DuktapeObjectRegistration* dto_aux= new DuktapeObjectRegistration("OvmsAuxMonitor");;
+  dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonEnable, DUK_VARARGS /*0..2*/, "Enable");
+  dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonDisable, 0, "Disable");
+  dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonStatus, 0, "Status");
+  dto->RegisterDuktapeObject(dto_aux, "AuxMon");
+
   MyDuktape.RegisterDuktapeObject(dto);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
@@ -2848,12 +2863,26 @@ OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &diff_last) const
 
 float OvmsBatteryMon::average_lastf() const
   {
-  return m_short_avg.get() / entry_mult;
+  return (float)(m_short_avg.get()) / entry_mult;
+  }
+
+float OvmsBatteryMon::average_long() const
+  {
+  return (float)(m_long_avg.get()) / entry_mult;
   }
 
 float OvmsBatteryMon::diff_lastf() const
   {
-  return m_diff_last / entry_mult;
+  return (float)m_diff_last / entry_mult;
+  }
+
+float OvmsBatteryMon::low_threshold() const
+  {
+  return (float)m_low_threshold / entry_mult;
+  }
+float OvmsBatteryMon::charge_threshold() const
+  {
+  return (float)m_charge_threshold / entry_mult;
   }
 
 const uint8_t OvmsBatteryMon::long_count;
@@ -2873,9 +2902,14 @@ std::string OvmsBatteryMon::to_string() const
     average_short = m_short_avg.get();
     float avg_long = (float(average_long) / entry_mult);
     float avg_short = (float(average_short) / entry_mult);
+    float low_thresh = (float(m_low_threshold) / entry_mult);
+    float charge_thresh = (float(m_charge_threshold) / entry_mult);
+
     ret.setf( std::ios::fixed, std::ios::floatfield);
     ret.precision(2);
     ret.width(0);
+    ret << " low thresh=" << low_thresh << endl
+        << " charge thresh=" << charge_thresh << endl;
     ret << " " << int(long_count) << "s avg=" << avg_long << "v" << endl
         << " " << int(short_count) << "s avg=" << avg_short << "v"  << endl
         << " diff=" << float(avg_short - avg_long) << "v" << endl;
