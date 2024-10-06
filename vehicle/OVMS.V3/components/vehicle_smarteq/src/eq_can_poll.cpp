@@ -128,8 +128,29 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
       break;
     case 0x793:
       switch (job.pid) {
-        case 0x80: // rqIDpart OBL_7KW_Installed
-          PollReply_BCB_OBC(m_rxbuf.data(), m_rxbuf.size());
+        case 0x7303: // rqChargerAC
+          PollReply_OBL_ChargerAC(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x503F: // rqJB2AC_Ph12_RMS_V
+          PollReply_OBL_JB2AC_Ph12_RMS_V(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5041: // rqJB2AC_Ph23_RMS_V
+          PollReply_OBL_JB2AC_Ph23_RMS_V(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5042: // rqJB2AC_Ph31_RMS_V
+          PollReply_OBL_JB2AC_Ph31_RMS_V(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x2001: // rqJB2AC_Ph1_RMS_A
+          PollReply_OBL_JB2AC_Ph1_RMS_A(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x503A: // rqJB2AC_Ph2_RMS_A
+          PollReply_OBL_JB2AC_Ph2_RMS_A(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x503B: // rqJB2AC_Ph3_RMS_A
+          PollReply_OBL_JB2AC_Ph3_RMS_A(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x504A: // rqJB2AC_Power
+          PollReply_OBL_JB2AC_Power(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
       break;
@@ -161,6 +182,24 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
   
 }
 
+void OvmsVehicleSmartEQ::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) {
+  switch (job.moduleid_rec) {
+    case 0x793:
+      switch (job.pid) {
+        case 0x7303: // rqChargerAC
+          if (code == 0x12) {
+            mt_obl_fastchg->SetValue(true);
+            ObdModifyPoll();
+          }
+          break;
+      }
+      break;
+    default:
+      ESP_LOGE(TAG, "IncomingPollError: PID %02X: err=%02X", job.pid, code);
+      break;
+  }
+}
+
 void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start) {
   float CV;
   static bool cellstat = false;
@@ -175,7 +214,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t repl
       CV = CV / 1024.0;
       BmsSetCellVoltage((n/2) + start, CV);
       
-      ESP_LOGV(TAG, "CellVoltage: id=%d len=%F", (n/2)+start, CV);
+      ESP_LOGV(TAG, "CellVoltage: id=%d volt=%F", (n/2)+start, CV);
     }
   }
 }
@@ -222,10 +261,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
   mt_bms_Amps2->SetValue( mt_bms_BattPower_current->AsFloat() / 32.0 );
   mt_bms_Power->SetValue( mt_bms_HV->AsFloat() * mt_bms_Amps2->AsFloat() / 1000.0 );
   StandardMetrics.ms_v_bat_current->SetValue(mt_bms_Amps2->AsFloat(0));
-}
-
-void OvmsVehicleSmartEQ::PollReply_BCB_OBC(const char* data, uint16_t reply_len) {
-  
+  StandardMetrics.ms_v_bat_power->SetValue( mt_bms_Power->AsFloat(0) );
 }
 
 void OvmsVehicleSmartEQ::PollReply_HVAC(const char* data, uint16_t reply_len) {
@@ -259,4 +295,98 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Amps(const char* data, uint16_t repl
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len) {
   mt_evc_LV_DCDC_state->SetValue( CAN_UINT(0) );
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len) {
+  int32_t value;
+  //Get AC Currents (two rails from >= 20A, sum up for total current)
+  value = CAN_UINT(6);
+  if (value < 0xEA00) {  //OBL showing only valid data while charging
+    mt_obl_main_amps->SetElemValue(0, value / 10.0);
+  } else {
+    mt_obl_main_amps->SetElemValue(0, 0);
+  }
+  value = CAN_UINT(8);
+  if (value < 0xEA00) {  //OBL showing only valid data while charging
+    mt_obl_main_amps->SetElemValue(1, value / 10.0);
+  } else {
+    mt_obl_main_amps->SetElemValue(1, 0);
+  }
+  mt_obl_main_amps->SetElemValue(2, 0);
+
+  //Get AC Voltages
+  value = CAN_UINT(0);
+  if (value < 0xEA00) {  //OBL showing only valid data while charging
+    mt_obl_main_volts->SetElemValue(0, value / 10.0);
+  } else {
+    mt_obl_main_volts->SetElemValue(0, 0);
+  }
+  mt_obl_main_volts->SetElemValue(1, 0); mt_obl_main_volts->SetElemValue(2, 0);
+  if (mt_obl_main_amps->GetElemValue(0) > 0 || mt_obl_main_amps->GetElemValue(1) > 0) {
+    mt_obl_main_freq->SetValue( CAN_BYTE(11) );
+  } else {
+    mt_obl_main_freq->SetValue(0);
+  }
+
+  //Get AC Power
+  value = CAN_UINT(12);
+  if (value < 0xEA00) {  //OBL showing only valid data while charging
+    mt_obl_main_CHGpower->SetElemValue(0, value / 2000.0);
+  } else {
+    mt_obl_main_CHGpower->SetElemValue(0, 0);
+  }
+  value = CAN_UINT(14);
+  if (value < 0xEA00) {  //OBL showing only valid data while charging
+    mt_obl_main_CHGpower->SetElemValue(1, value / 2000.0);
+  } else {
+    mt_obl_main_CHGpower->SetElemValue(1, 0);
+  }
+  UpdateChargeMetrics();
+  StandardMetrics.ms_v_charge_power->SetValue(mt_obl_main_CHGpower->GetElemValue(0));
+  float power = StandardMetrics.ms_v_charge_power->AsFloat();
+  float efficiency = (power == 0)
+                     ? 0
+                     : (StandardMetrics.ms_v_bat_power->AsFloat() / power) * 100;
+  StandardMetrics.ms_v_charge_efficiency->SetValue(efficiency);
+  ESP_LOGD(TAG, "SmartEQ_CHG_EFF_STD=%f", efficiency);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len) {
+  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
+  mt_obl_main_amps->SetElemValue(0, value);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph2_RMS_A(const char* data, uint16_t reply_len) {
+  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
+  mt_obl_main_amps->SetElemValue(1, value);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph3_RMS_A(const char* data, uint16_t reply_len) {
+  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
+  mt_obl_main_amps->SetElemValue(2, value);
+  UpdateChargeMetrics();
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph12_RMS_V(const char* data, uint16_t reply_len) {
+  mt_obl_main_volts->SetElemValue(0, CAN_UINT(0) / 2.0);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph23_RMS_V(const char* data, uint16_t reply_len) {
+  mt_obl_main_volts->SetElemValue(1, CAN_UINT(0) / 2.0);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len) {
+  mt_obl_main_volts->SetElemValue(2, CAN_UINT(0) / 2.0);
+  UpdateChargeMetrics();
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len) {
+  mt_obl_main_CHGpower->SetElemValue(0, (CAN_UINT(0) - 20000) / 1000.0);
+  StandardMetrics.ms_v_charge_power->SetValue(mt_obl_main_CHGpower->GetElemValue(0));
+  float power = StandardMetrics.ms_v_charge_power->AsFloat();
+  float efficiency = (power == 0)
+                     ? 0
+                     : (StandardMetrics.ms_v_bat_power->AsFloat() / power) * 100;
+  StandardMetrics.ms_v_charge_efficiency->SetValue(efficiency);
+  ESP_LOGD(TAG, "SmartEQ_CHG_EFF_STD=%f", efficiency);
 }

@@ -57,6 +57,8 @@
 
 using namespace std;
 
+typedef std::vector<OvmsPoller::poll_pid_t, ExtRamAllocator<OvmsPoller::poll_pid_t>> poll_vector_t;
+typedef std::initializer_list<const OvmsPoller::poll_pid_t> poll_list_t;
 
 class OvmsVehicleSmartEQ : public OvmsVehicle
 {
@@ -67,9 +69,14 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
+    void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
+    void HandleCharging();
     void HandleEnergy();
+    void UpdateChargeMetrics();
+    int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
     void HandlePollState();
     void OnlineState();
+    void ObdModifyPoll();
 
   public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -97,11 +104,11 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void Ticker1(uint32_t ticker) override;
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
+    virtual void CalculateEfficiency();
     
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* data, uint16_t reply_len);
     void PollReply_BMS_BattState(const char* data, uint16_t reply_len);
-    void PollReply_BCB_OBC(const char* data, uint16_t reply_len);
     void PollReply_HVAC(const char* data, uint16_t reply_len);
     void PollReply_TDB(const char* data, uint16_t reply_len);
     void PollReply_VIN(const char* data, uint16_t reply_len);
@@ -110,6 +117,14 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len);
+    void PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Ph2_RMS_A(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Ph3_RMS_A(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Ph12_RMS_V(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Ph23_RMS_V(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len);
 
   protected:
     bool m_enable_write;                    // canwrite
@@ -124,8 +139,11 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     std::string   m_rxbuf;
 
   protected:
-    OvmsMetricVector<float> *mt_bms_temps;       // BMS temperatures
-    OvmsMetricBool          *mt_bus_awake;       // Can Bus active
+    OvmsMetricVector<float> *mt_bms_temps;              // BMS temperatures
+    OvmsMetricBool          *mt_bus_awake;              // Can Bus active
+    OvmsMetricFloat         *mt_use_at_reset;           // kWh use at reset in Display
+    OvmsMetricFloat         *mt_pos_odometer_start;     // kWh use at reset in Display
+    OvmsMetricBool          *mt_obl_fastchg;            // ODOmeter at Start
     OvmsMetricFloat         *mt_evc_hv_energy;          //!< available energy in kWh
     OvmsMetricFloat         *mt_evc_LV_DCDC_amps;       //!< current of DC/DC LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_load;       //!< load in % of DC/DC LV system, not 12V battery!
@@ -146,10 +164,19 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricFloat         *mt_bms_Amps;               //!< battery current in ampere (x/32) reported by by BMS
     OvmsMetricFloat         *mt_bms_Amps2;              //!< battery current in ampere read by live data on CAN or from BMS
     OvmsMetricFloat         *mt_bms_Power;              //!< power as product of voltage and amps in kW
+    OvmsMetricVector<float> *mt_obl_main_amps;          //!< AC current of L1, L2, L3
+    OvmsMetricVector<float> *mt_obl_main_volts;         //!< AC voltage of L1, L2, L3
+    OvmsMetricVector<float> *mt_obl_main_CHGpower;      //!< Power of rail1, rail2 W (x/2) & max available kw (x/64)
+    OvmsMetricFloat         *mt_obl_main_freq;          //!< AC input frequency
 
   protected:
     bool m_booster_start;
     int m_led_state;
+  
+  protected:
+    poll_vector_t       m_poll_vector;              // List of PIDs to poll
+    int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.
+    int                 m_cfg_cell_interval_chg;    // … while charging, default 60 sec.
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__
