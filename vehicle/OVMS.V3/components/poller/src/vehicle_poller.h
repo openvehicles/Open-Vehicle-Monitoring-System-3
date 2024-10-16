@@ -403,7 +403,7 @@ class OvmsPoller : public InternalRamAllocated {
         CAN_frame_format_t m_format;
         bool m_pack_raw_data;
       public:
-        StandardPacketPollSeries( OvmsPoller *poller, int repeat_max, poll_success_func success, poll_fail_func fail, bool pack_raw_data = false);
+        StandardPacketPollSeries( OvmsPoller *poller, int repeat_max, poll_success_func success, poll_fail_func fail, uint16_t stateoffset = 0, bool pack_raw_data = false);
 
         // Move list to start.
         void ResetList(ResetMode mode) override;
@@ -660,6 +660,8 @@ class OvmsPoller : public InternalRamAllocated {
 
     void Do_PollSetState(uint8_t state);
 
+    int DoPollSingleRequest(
+        const OvmsPoller::poll_pid_t &poll, std::string& response, int timeout_ms);
   public:
     OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
       const CanFrameCallback &polltxcallback);
@@ -689,6 +691,9 @@ class OvmsPoller : public InternalRamAllocated {
                       int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
     int PollSingleRequest(uint32_t txid, uint32_t rxid,
                       uint8_t polltype, uint16_t pid, std::string& response,
+                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+    int PollSingleRequest(uint32_t txid, uint32_t rxid,
+                      uint8_t polltype, uint16_t pid, const std::string &payload, std::string& response,
                       int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
 
     bool PollRequest(const std::string &name, const std::shared_ptr<PollSeriesEntry> &series, int timeout_ms = 5000);
@@ -735,7 +740,7 @@ class OvmsPollers : public InternalRamAllocated {
     bool              m_ready;
     bool              m_paused;
     bool              m_user_paused;
-    typedef enum {trace_Off = 0x00, trace_Poller = 0x1, trace_TXRX = 0x2, trace_Times = 0x4, trace_All= 0x3} tracetype_t;
+    typedef enum {trace_Off = 0x00, trace_Poller = 0x1, trace_TXRX = 0x2, trace_Times = 0x4, trace_Duktape = 0x8, trace_All= 0x3} tracetype_t;
     uint8_t           m_trace;                // Current Trace flags.
     uint32_t          m_overflow_count[2];    // Keep track of overflows.
                                               //
@@ -760,6 +765,11 @@ class OvmsPollers : public InternalRamAllocated {
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     // OvmsPoller Object
+
+    // OvmsPoller.RegisterBus(bus, mode, speed [,dbcfile])
+    static duk_ret_t DukOvmsPollerRegisterBus(duk_context *ctx);
+    // OvmsPoller.PowerDownBus(bus)
+    static duk_ret_t DukOvmsPollerPowerDownBus(duk_context *ctx);
     // OvmsPoller.GetPaused
     static duk_ret_t DukOvmsPollerPaused(duk_context *ctx);
     // OvmsPoller.GetUserPaused
@@ -785,6 +795,25 @@ class OvmsPollers : public InternalRamAllocated {
     static duk_ret_t DukOvmsPollerTimesReset(duk_context *ctx);
     // OvmsPoller.Times.GetStatus
     static duk_ret_t DukOvmsPollerTimesGetStatus(duk_context *ctx);
+
+    // OvmsPoller.Poll.Add
+    static duk_ret_t DukOvmsPollerPollAdd(duk_context *ctx);
+    // OvmsPoller.Poll.Remove
+    static duk_ret_t DukOvmsPollerPollRemove(duk_context *ctx);
+    // OvmsPoller.Poll.GetState
+    static duk_ret_t DukOvmsPollerPollGetState(duk_context *ctx);
+    // OvmsPoller.Poll.SetState
+    static duk_ret_t DukOvmsPollerPollSetState(duk_context *ctx);
+    // OvmsPoller.Poll.SetTrace
+    static duk_ret_t DukOvmsPollerPollSetTrace(duk_context *ctx);
+
+  public:
+    static void Duk_GetRequestFromObject( duk_context *ctx, duk_idx_t obj_idx,
+        std::string default_bus, bool allow_bus,
+        canbus*& device, uint32_t &txid, uint32_t &rxid, uint8_t &protocol,
+        uint16_t &type, uint16_t &pid, std::string &request,
+        int &timeout, int &error, std::string &errordesc);
+  private:
 #endif
 
     typedef struct {
@@ -805,7 +834,7 @@ class OvmsPollers : public InternalRamAllocated {
     bool IsTracingTimes() const { return (m_trace & trace_Times) != 0; }
     typedef std::function<void(canbus*, void *)> PollCallback;
     typedef std::function<void(const CAN_frame_t &)> FrameCallback;
-
+    bool HasTrace( tracetype_t trace) const { return (m_trace & trace) != 0; }
     // CAN RX filtering.
     void ClearFilters();
     void AddFilter(uint8_t bus, uint32_t id_from=0, uint32_t id_to=UINT32_MAX);
@@ -976,6 +1005,7 @@ class OvmsPollers : public InternalRamAllocated {
       return m_paused;
       }
     void PollSetState(uint8_t state, canbus* bus = nullptr);
+    uint8_t PollState() const { return m_poll_state;}
 
     uint32_t LastPollCmdReceived() const
       {
@@ -999,6 +1029,7 @@ class OvmsPollers : public InternalRamAllocated {
     void AutoInit() { Ready(true); };
 
     friend class OvmsPoller;
+    friend class DukTapePoller;
 
 };
 extern OvmsPollers MyPollers;

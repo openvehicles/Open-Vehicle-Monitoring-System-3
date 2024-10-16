@@ -30,6 +30,7 @@
 
 #include "ovms_log.h"
 static const char *TAG = "vehicle-poll";
+static const char *TAG_DK = "duktape-poll";
 
 #include <stdio.h>
 #include <algorithm>
@@ -47,13 +48,15 @@ static const char *TAG = "vehicle-poll";
 #include "can.h"
 #include "ovms_boot.h"
 #include "dbc.h"
+#include "dbc_app.h"
+#include <cctype>
 
 using namespace std::placeholders;
 
 OvmsPollers MyPollers __attribute__ ((init_priority (7000)));
 
 // Runtime control for logging:
-#define IFTRACE(x) if (MyPollers.m_trace &  OvmsPollers::tracetype_t::trace_##x)
+#define IFTRACE(x) if (MyPollers.HasTrace(OvmsPollers::tracetype_t::trace_##x))
 
 OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
     const CanFrameCallback &polltxcallback)
@@ -550,6 +553,37 @@ void OvmsPoller::Outgoing(const CAN_frame_t &frame, bool success)
   IncomingPollTxCallback(m_poll, success);
   }
 
+void LoadPollRequest( OvmsPoller::poll_pid_t &poll,
+    uint32_t txid, uint32_t rxid, const std::string &request,
+    uint8_t protocol, uint8_t initState )
+  {
+  poll = { txid, rxid, 0, 0, { initState, initState, initState, initState }, 0, protocol };
+
+  assert(request.size() > 0);
+  poll.type = request[0];
+  poll.xargs.tag = POLL_TXDATA;
+
+  if (POLL_TYPE_HAS_16BIT_PID(poll.type))
+    {
+    assert(request.size() >= 3);
+    poll.xargs.pid = request[1] << 8 | request[2];
+    poll.xargs.datalen = LIMIT_MAX(request.size()-3, 4095);
+    poll.xargs.data = (const uint8_t*)request.data()+3;
+    }
+  else if (POLL_TYPE_HAS_8BIT_PID(poll.type))
+    {
+    assert(request.size() >= 2);
+    poll.xargs.pid = request.at(1);
+    poll.xargs.datalen = LIMIT_MAX(request.size()-2, 4095);
+    poll.xargs.data = (const uint8_t*)request.data()+2;
+    }
+  else
+    {
+    poll.xargs.pid = 0;
+    poll.xargs.datalen = LIMIT_MAX(request.size()-1, 4095);
+    poll.xargs.data = (const uint8_t*)request.data()+1;
+    }
+  }
 /**
  * PollSingleRequest: perform prioritized synchronous single OBD2/UDS request
  *  Pass a full OBD2/UDS request (mode/type, PID, additional payload).
@@ -582,39 +616,19 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
   if (!Ready())
     return -1;
 
+  // prepare single poll:
+  OvmsPoller::poll_pid_t poll;
+  LoadPollRequest(poll, txid, rxid, request, protocol, 1);
+
+  return DoPollSingleRequest(poll,response,timeout_ms);
+  }
+
+int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::string& response,
+                                   int timeout_ms)
+  {
   OvmsRecMutexLock slock(&m_poll_single_mutex, pdMS_TO_TICKS(timeout_ms));
   if (!slock.IsLocked())
     return -1;
-
-  // prepare single poll:
-  OvmsPoller::poll_pid_t poll =
-      { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0, protocol };
-
-  assert(request.size() > 0);
-  poll.type = request[0];
-  poll.xargs.tag = POLL_TXDATA;
-
-  if (POLL_TYPE_HAS_16BIT_PID(poll.type))
-    {
-    assert(request.size() >= 3);
-    poll.xargs.pid = request[1] << 8 | request[2];
-    poll.xargs.datalen = LIMIT_MAX(request.size()-3, 4095);
-    poll.xargs.data = (const uint8_t*)request.data()+3;
-    }
-  else if (POLL_TYPE_HAS_8BIT_PID(poll.type))
-    {
-    assert(request.size() >= 2);
-    poll.xargs.pid = request.at(1);
-    poll.xargs.datalen = LIMIT_MAX(request.size()-2, 4095);
-    poll.xargs.data = (const uint8_t*)request.data()+2;
-    }
-  else
-    {
-    poll.xargs.pid = 0;
-    poll.xargs.datalen = LIMIT_MAX(request.size()-1, 4095);
-    poll.xargs.data = (const uint8_t*)request.data()+1;
-    }
-
   int rx_error;
   OvmsSemaphore     single_rxdone;   // … response done (ok/error)
   std::shared_ptr<BlockingOnceOffPoll> poller( new BlockingOnceOffPoll(poll, &response, &rx_error, &single_rxdone));
@@ -641,6 +655,13 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
   return (rxok == pdFALSE) ? -1 : rx_error;
   }
 
+int OvmsPoller::PollSingleRequest( uint32_t txid, uint32_t rxid,
+                                   uint8_t polltype, uint16_t pid, std::string& response,
+                                   int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
+  {
+  std::string no_payload;
+  return OvmsPoller::PollSingleRequest(txid, rxid, polltype, pid, no_payload, response, timeout_ms, protocol);
+  }
 
 /**
  * PollSingleRequest: perform prioritized synchronous single OBD2/UDS request
@@ -653,6 +674,7 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
  *  @param response     Response buffer (binary string) (multiple response frames assembled)
  *  @param timeout_ms   Timeout for poller/response in milliseconds
  *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
+ *  @param payload      Extra data for request.
  *  
  *  @return             POLLSINGLE_OK         ( 0)  -- success, response is valid
  *                      POLLSINGLE_TIMEOUT    (-1)  -- timeout/poller unavailable
@@ -660,22 +682,18 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
  *                      else                  (>0)  -- UDS NRC detail code
  *                      Note: response is only valid with return value 0
  */
-int OvmsPoller::PollSingleRequest( uint32_t txid, uint32_t rxid,
-                                   uint8_t polltype, uint16_t pid, std::string& response,
-                                   int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
+int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
+                  uint8_t polltype, uint16_t pid, const std::string &payload, std::string& response,
+                  int timeout_ms, uint8_t protocol)
   {
-  std::string request;
-  request = (char) polltype;
-  if (POLL_TYPE_HAS_16BIT_PID(polltype))
-    {
-    request += (char) (pid >> 8);
-    request += (char) (pid & 0xff);
-    }
-  else if (POLL_TYPE_HAS_8BIT_PID(polltype))
-    {
-    request += (char) (pid & 0xff);
-    }
-  return PollSingleRequest(txid, rxid, request, response, timeout_ms, protocol);
+  if (!Ready())
+    return -1;
+  OvmsPoller::poll_pid_t poll;
+  poll = { txid, rxid, polltype, pid, { 1, 1, 1, 1 }, 0, protocol };
+  poll.xargs.tag = POLL_TXDATA;
+  poll.xargs.datalen = std::min(payload.size(), std::string::size_type(4095));
+  poll.xargs.data = (const uint8_t*)payload.data();
+  return DoPollSingleRequest(poll,response,timeout_ms);
   }
 
 void OvmsPoller::Queue_PollerSend(OvmsPoller::poller_source_t source)
@@ -873,6 +891,9 @@ OvmsPollers::OvmsPollers()
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsPoller");
 
+  dto->RegisterDuktapeFunction(DukOvmsPollerRegisterBus, DUK_VARARGS, "RegisterBus");
+  dto->RegisterDuktapeFunction(DukOvmsPollerPowerDownBus, 1, "PowerDown");
+
   dto->RegisterDuktapeFunction(DukOvmsPollerPaused, 0, "GetPaused");
   dto->RegisterDuktapeFunction(DukOvmsPollerUserPaused, 0, "GetUserPaused");
   dto->RegisterDuktapeFunction(DukOvmsPollerPause,  0, "Pause");
@@ -892,6 +913,16 @@ OvmsPollers::OvmsPollers()
   dto_times->RegisterDuktapeFunction(DukOvmsPollerTimesGetStatus, 0, "GetStatus");
 
   dto->RegisterDuktapeObject(dto_times, "Times");
+
+  // OvmsPoller.Poll Sub-object
+  DuktapeObjectRegistration* dto_poll =
+    new DuktapeObjectRegistration("OvmsPollerPoll");
+  dto_poll->RegisterDuktapeFunction(DukOvmsPollerPollAdd, DUK_VARARGS, "Add");
+  dto_poll->RegisterDuktapeFunction(DukOvmsPollerPollRemove, DUK_VARARGS, "Remove");
+  dto_poll->RegisterDuktapeFunction(DukOvmsPollerPollGetState, DUK_VARARGS, "GetState");
+  dto_poll->RegisterDuktapeFunction(DukOvmsPollerPollSetState, DUK_VARARGS, "SetState");
+  dto_poll->RegisterDuktapeFunction(DukOvmsPollerPollSetTrace, 1, "SetTrace");
+  dto->RegisterDuktapeObject(dto_poll, "Poll");
 
   MyDuktape.RegisterDuktapeObject(dto);
 #endif
@@ -2028,10 +2059,13 @@ void OvmsPollers::vehicle_poller_trace(int verbosity, OvmsWriter* writer, OvmsCo
     MyPollers.m_trace &= ~trace_All;
   //"status" falls through here.
 
-  writer->printf("Vehicle OBD poller tracing: %s%s%s\n",
+  writer->printf("Vehicle OBD poller tracing: %s%s%s%s%s\n",
       (MyPollers.m_trace & trace_Poller) ? "+poll" : "",
       (MyPollers.m_trace & trace_TXRX) ? "+txrx" : "",
-      (MyPollers.m_trace & trace_All) ? "" : "off");
+      (MyPollers.m_trace & trace_All) ? "" : "off",
+      (MyPollers.m_trace & trace_Times) ? "(+times)" : "",
+      (MyPollers.m_trace & trace_Duktape) ? "(+duktape)" : ""
+      );
   }
 
 void OvmsPollers::poller_times(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -2063,6 +2097,120 @@ void OvmsPollers::poller_times(int verbosity, OvmsWriter* writer, OvmsCommand* c
     }
   }
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static canbus* Duk_GetBus(duk_context *ctx, duk_idx_t idx)
+  {
+  if (duk_is_undefined(ctx, idx))
+    return nullptr;
+  std::string bus;
+  if (duk_is_number(ctx, idx))
+    {
+    int busno = duk_get_int(ctx, idx);
+    if (busno <= 0)
+      return nullptr;
+    bus = string_format("can%d", busno);
+    }
+  else
+    {
+    bus = duk_to_string(ctx, idx);
+    }
+  return (canbus*)MyPcpApp.FindDeviceByName(bus.c_str());
+  }
+
+// OvmsPoller.RegisterBus(bus, mode, speed [,dbcfile])
+duk_ret_t OvmsPollers::DukOvmsPollerRegisterBus(duk_context *ctx)
+  {
+  int args = duk_get_top(ctx);
+  if (args < 3)
+    {
+    duk_push_boolean(ctx, 0);
+    return 1;
+    }
+  auto device = Duk_GetBus(ctx, 0);
+  if (device == nullptr)
+    {
+    ESP_LOGE(TAG, "Duktape OvmsPoller.RegisterBus- Invalid can bus");
+    duk_push_boolean(ctx, 0);
+    return 1;
+    }
+  CAN_mode_t mode = CAN_MODE_LISTEN;
+  std::string can_mode = str_tolower(std::string(duk_get_string(ctx, 1)));
+  if (can_mode == "active")
+    mode = CAN_MODE_ACTIVE;
+
+  uint32_t baud = duk_get_uint(ctx,2);
+
+  dbcfile *dbc = nullptr;
+  if (args > 4)
+    {
+    std::string dbc_name = duk_get_string(ctx, 3);
+    dbc = MyDBC.Find(dbc_name.c_str());
+    if (dbc == NULL)
+      {
+      ESP_LOGE(TAG, "Duktape OvmsPoller.RegisterBus- Could not find dbc file %s",dbc_name.c_str());
+      duk_push_boolean(ctx, 0);
+      return 1;
+      }
+    if (baud == 0)
+      baud = dbc->m_bittiming.GetBaudRate();
+    }
+
+  CAN_speed_t cspeed;
+
+  switch (baud)
+    {
+    case 33333:
+      cspeed = CAN_SPEED_33KBPS;
+      break;
+    case 50000:
+      cspeed = CAN_SPEED_50KBPS;
+      break;
+    case 83333:
+      cspeed = CAN_SPEED_83KBPS;
+      break;
+    case 100000:
+      cspeed = CAN_SPEED_100KBPS;
+      break;
+    case 125000:
+      cspeed = CAN_SPEED_125KBPS;
+      break;
+    case 250000:
+      cspeed = CAN_SPEED_250KBPS;
+      break;
+    case 500000:
+      cspeed = CAN_SPEED_500KBPS;
+      break;
+    case 1000000:
+      cspeed = CAN_SPEED_1000KBPS;
+      break;
+    default:
+      {
+      ESP_LOGE(TAG, "Duktape OvmsPoller.RegisterBus- Invalid baud %" PRIu32, baud);
+      duk_push_boolean(ctx, 0);
+      return 1;
+      }
+    }
+  bool isok = MyPollers.RegisterCanBus(device->m_busnumber, mode, cspeed, dbc, BusPoweroff::System ) != nullptr;
+  duk_push_boolean(ctx, isok ? 1 : 0);
+  return 1;
+  }
+
+// OvmsPoller.PowerDownBus(bus)
+duk_ret_t OvmsPollers::DukOvmsPollerPowerDownBus(duk_context *ctx)
+  {
+  auto bus = Duk_GetBus(ctx, 0);
+  if (bus == nullptr)
+    {
+    ESP_LOGE(TAG, "Duktape OvmsPoller.PowerDownBus- Invalid can bus");
+    duk_push_boolean(ctx, 0);
+    return 1;
+    }
+  bus->SetPowerMode(Off);
+
+  duk_push_boolean(ctx, 1);
+  return 1;
+  }
+
 // OvmsPoller.GetPaused
 duk_ret_t OvmsPollers::DukOvmsPollerPaused(duk_context *ctx)
   {
@@ -2113,14 +2261,14 @@ duk_ret_t OvmsPollers::DukOvmsPollerSetTrace(duk_context *ctx)
       {
       if (duk_get_boolean(ctx, -1))
         newval |= trace_Poller;
-      duk_pop(ctx);
       }
+    duk_pop(ctx);
     if (duk_get_prop_string(ctx, 0, "txrx"))
       {
       if (duk_get_boolean(ctx, -1))
         newval |= trace_TXRX;
-      duk_pop(ctx);
       }
+    duk_pop(ctx);
     }
   else
     return 0;
@@ -2225,7 +2373,940 @@ duk_ret_t OvmsPollers::DukOvmsPollerTimesGetStatus(duk_context *ctx)
 
   return 1;
   }
-#endif
+
+
+typedef struct mesage_id_st {
+  uint16_t rxid;
+  uint16_t pid;
+  int32_t cmp(const mesage_id_st &rhs) const
+    {
+    int32_t res = int32_t(rxid) - rhs.rxid;
+    if (res == 0)
+      res = int32_t(pid) - rhs.pid;
+    return res;
+    }
+  bool operator <(const mesage_id_st &rhs) const
+    {
+    return cmp(rhs) < 0;
+    }
+} message_id_t;
+
+typedef std::map<message_id_t, std::shared_ptr<dbcMessage>> message_map_t;
+
+class DukTapePoller : public OvmsPoller::StandardPacketPollSeries
+  {
+  protected:
+    std::string m_name;
+    canbus* m_bus;
+    bool m_use_dbc_file;
+    dbcfile* m_dbcfile;
+
+    std::vector<OvmsPoller::poll_pid_t> m_polls;
+    std::list<std::shared_ptr<std::string>> m_poll_data;
+    message_map_t m_messages;
+
+    void PollSuccess(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, CAN_frame_format_t format, const std::string &data);
+    void PollFail(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, int errorcode);
+
+  public:
+    DukTapePoller( canbus* bus, const std::string name, int repeat_max,
+        const std::vector<OvmsPoller::poll_pid_t> &polls,
+        const std::list<std::shared_ptr<std::string>> &poll_data,
+        const message_map_t &messages,
+        uint16_t stateoffset, bool use_can_dbc_file, dbcfile* dbcfile
+        );
+    ~DukTapePoller();
+
+    static bool RegisterPoller(canbus* bus,const std::string & name, std::shared_ptr<DukTapePoller> &poller);
+    static void UnregisterPoller(canbus* bus,const std::string & name);
+  };
+
+DukTapePoller::DukTapePoller( canbus* bus, const std::string name, int repeat_max,
+        const std::vector<OvmsPoller::poll_pid_t> &polls,
+        const std::list<std::shared_ptr<std::string>> &poll_data,
+        const message_map_t &messages,
+        uint16_t stateoffset, bool use_can_dbc_file, dbcfile* dbcfile
+        )
+  :
+    OvmsPoller::StandardPacketPollSeries(nullptr, repeat_max,
+      std::bind(&DukTapePoller::PollSuccess, this, _1, _2, _3, _4, _5, _6),
+      std::bind(&DukTapePoller::PollFail, this, _1, _2, _3, _4, _5), stateoffset,
+      use_can_dbc_file || (dbcfile != nullptr) /*raw data*/),
+    m_name(name),
+    m_bus(bus),
+    m_use_dbc_file(use_can_dbc_file || (dbcfile!= nullptr)),
+    m_dbcfile(dbcfile),
+    m_polls(polls),
+    m_poll_data(poll_data),
+    m_messages(messages)
+  {
+  // Terminate the poll list.
+  m_polls.push_back(POLL_LIST_END);
+  m_polls.shrink_to_fit();
+  if (m_dbcfile != nullptr)
+    {
+    m_dbcfile->LockFile();
+    m_pack_raw_data = true;
+    }
+
+  uint8_t busno = MyPollers.GetBusNo(bus);
+
+  PollSetPidList(busno, m_polls.data());
+  }
+DukTapePoller::~DukTapePoller()
+  {
+  if (m_dbcfile)
+    m_dbcfile->UnlockFile();
+  }
+
+class PollerDebugWriter : public OvmsWriter
+  {
+  private:
+    std::string m_str;
+  public:
+    int puts(const char* str) override;
+    int printf(const char* fmt, ...) override __attribute__ ((format (printf, 2, 3)));
+    ~PollerDebugWriter() override;
+
+    virtual bool IsInteractive() { return false; }
+  };
+
+PollerDebugWriter::~PollerDebugWriter()
+  {
+  if (!m_str.empty())
+    puts(m_str.c_str());
+  }
+
+int PollerDebugWriter::puts(const char* str)
+  {
+  ESP_LOGV(TAG_DK, "%s", str);
+  return strlen(str);
+  }
+int PollerDebugWriter::printf(const char* fmt, ...)
+  {
+  char *buffer = NULL;
+  va_list args;
+  va_start(args, fmt);
+  int ret = vasprintf(&buffer, fmt, args);
+  va_end(args);
+  if (ret >= 0)
+    {
+    m_str.append(buffer, ret);
+    free(buffer);
+
+    bool done;
+    do
+      {
+      size_t idcr = m_str.find('\n');
+      if (idcr == string::npos)
+        done = true;
+      else
+        {
+        std::string str = m_str.substr(0, idcr);
+        puts(str.c_str());
+        m_str.erase(0, idcr+1);
+        }
+      } while (!done);
+    }
+  return ret;
+  }
+
+void DukTapePoller::PollSuccess(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, CAN_frame_format_t format, const std::string &data)
+  {
+  PollerDebugWriter *writer = nullptr;
+  IFTRACE(Duktape)
+    {
+    ESP_LOGV(TAG_DK, "Poller[%s] Success sent=%" PRIx32 " rec=%" PRIx32 , m_name.c_str(), module_sent, module_rec);
+    writer = new PollerDebugWriter();
+    }
+  if (m_use_dbc_file)
+    {
+    // Decode using the registered dbc-file. These are raw frames (all 8 bytes of each frame)
+    dbcfile* dbc = m_dbcfile;
+    if (!dbc)
+      dbc = m_bus->GetDBC();
+    if (dbc != nullptr)
+      {
+      IFTRACE(Duktape)
+        {
+        int rlength = (int)data.size();
+
+        ESP_LOGD(TAG_DK, "Poller[%s] Decoding with dbc file '%s' (msg=%" PRIx32", len=%d, %s)" ,
+            m_name.c_str(), dbc->GetName().c_str(), module_rec, rlength, m_pack_raw_data ? "raw" : "pkt");
+
+        char *hexdump = NULL;
+        const char * datap = data.data();
+        int outposn = 0;
+        while (rlength>0)
+          {
+          rlength = FormatHexDump(&hexdump, datap, rlength, 8);
+
+          if (hexdump)
+            ESP_LOGV(TAG_DK, "  [%s] %.2d: %s", m_name.c_str(), outposn, hexdump);
+
+          datap += 8;
+          outposn += 8;
+          }
+
+        if (hexdump) free(hexdump);
+        }
+
+      dbc->DecodeSignal(format, module_rec, (const uint8_t *)data.data(), data.length(), true, writer);
+      }
+    }
+  else
+    {
+    // Decode using the specified decode. These are the full payload data only.
+    message_id_t id;
+    id.rxid = module_rec;
+    id.pid = pid;
+
+    message_map_t::const_iterator it = m_messages.find(id);
+    if (it != m_messages.end())
+      {
+      IFTRACE(Duktape) ESP_LOGD(TAG_DK, "Poller[%s] Decoding rxid=%" PRIx16 " pid=%" PRIx16, m_name.c_str(), id.rxid, id.pid);
+      it->second->DecodeSignal((const uint8_t *)data.c_str(), data.length(), true, writer);
+      }
+    }
+  // Output trace poller information;
+  if (writer != nullptr)
+    {
+    delete writer;
+    }
+  }
+
+void DukTapePoller::PollFail(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, int errorcode)
+  {
+  }
+
+bool DukTapePoller::RegisterPoller(canbus* bus,const std::string & name, std::shared_ptr<DukTapePoller> &poller)
+  {
+  return MyPollers.PollRequest(bus, "!d."+name, poller);
+  }
+void DukTapePoller::UnregisterPoller(canbus* bus,const std::string & name)
+  {
+  MyPollers.PollRemove(bus, "!d."+name);
+  }
+
+/** OvmsPoller.Poll.Add implementation.
+ *
+ * Javascript API:
+ *  Implements Add( list_ident, bus, dbc_decode, poll_list [, poll_offset])
+ *  list_ident - unique name to identify this list of polls.
+ *  bus - Name of bus (eg "can1")
+ *  dbc_decode - Set to true to use the default dbc file on the bus for decoding. Set to dbc_file
+ *
+ *  poll_list: [
+ *    {
+ *      send: {
+ *         txid: <int>,
+ *         rxid: <int>,
+ *         timeout: <int>,  // [Opt] in ms, default: 3000
+ *         protocol: <int>|"Std"|"ExtAdr"|"ExtFrame"|"VWTP20", // [Opt] default: Std/0 (ISOTP_STD, see vehicle_common.h)
+ *         pid: <int>,      // [Opt] PID (otherwise embedded in request for backwards compatibility)
+ *         type: <int>,     // [Opt] type (defaults to READDATA type 0x22)
+ *         request: <string>|<Uint8Array>,   // hex encoded string or binary byte array
+ *       },
+ *      states: [ t1, t2, t3, t4], // Repeating poll states.
+ *      decode: [ // Not used if dbc is specified.
+ *        <metric.name>|<value_name> :
+ *          {
+ *          // [Opt] Section conditional on other flags.
+ *          match: {
+ *            name: <value_name>,
+ *            // A list of Either single values or ranges to match the value-name specified.
+ *            values: [
+ *               v1, | { from: n1, to: n2 }
+ *            ]
+ *          },
+
+ *          start: <offset>,  // [Opt] start in bytes
+ *          len: <len>,  //[Opt] Length in bytes (default 1 byte)
+ *
+ *          // [Opt] Bit Start/Length within defined bytes (or whole entry if start not specified)
+ *          bitstart: <offset>, // Adds to 'start'. (Defaults to 0 for little-endian, and 7 for big-endian)
+ *          bitlen: <len>,   // overrides 'len' (effectively defaults to 8*length)
+ *
+ *          factor: <mult>,      // [Opt] Multiple applied to value.
+ *          offset: <offset>,    // [Opt] Offset in bytes.
+ *          unit: <unit>,        // [Opt] Ovms Unit (ensures the final value is in the correct internal units).
+ *          datatype: int-be|uint-be|int-le|uint-le|flag|??float types ??
+ *          values:  // [Opt] Map of values to strings.
+ *            {
+ *            <n1>: <string1>,
+ *            <n2>: <string2>
+ *            }
+ *          }
+ *      ]
+ *    }
+ *  ]
+ *
+ *  poll_offset - (optional) Offset of 4 poll states. Default is [0..3] but an offset of 4 would be states 4..7
+ *
+ */
+duk_ret_t OvmsPollers::DukOvmsPollerPollAdd(duk_context *ctx)
+  {
+
+  // params: 0:list_ident, 1:bus, 2:dbc_file, 3:poll_list [, 4:poll_offset])
+  int args = duk_get_top(ctx);
+  if (args < 4)
+    {
+    duk_push_boolean(ctx, 0);
+    return 1;
+    }
+  std::string ident = duk_to_string(ctx, 0);
+
+  std::string busname;
+  if (duk_is_number(ctx, 1))
+    {
+    int busno = duk_to_int(ctx, 1);
+    busname = string_format("can%d", busno);
+    }
+  else
+    busname = duk_to_string(ctx, 1);
+
+  uint16_t poll_offset = 0;
+  int error=0;
+  std::string errordesc;
+  canbus* mydevice = nullptr;
+
+  std::vector<OvmsPoller::poll_pid_t> polls;
+  std::list<std::shared_ptr<std::string>> poll_data;
+  message_map_t messages;
+  dbcfile *dbcfile = nullptr;
+  bool decode_dbc = false;
+  if (duk_is_undefined(ctx, 2))
+    decode_dbc = false;
+  else if (duk_is_boolean(ctx, 2))
+    decode_dbc = duk_get_boolean(ctx, 2);
+  else if (duk_is_string(ctx, 2))
+    {
+    std::string dbcnm = duk_get_string(ctx, 2);
+    if (dbcnm.empty())
+      decode_dbc = false;
+    else
+      {
+      dbcfile = MyDBC.Find(dbcnm.c_str());
+      if (dbcfile == nullptr)
+        {
+        ESP_LOGE(TAG_DK, "Duktape OvmsPoller.Poll.Add: %s unable to find DBC '%s'", ident.c_str(), dbcnm.c_str());
+        duk_push_boolean(ctx, 0);
+        return 1;
+        }
+      decode_dbc = true;
+      }
+    }
+  // Param: poll_list: [..]
+  duk_size_t n = duk_get_length(ctx, 3);
+  polls.reserve(n);
+  // --
+  for (duk_idx_t i = 0; i < n ; ++i)
+    {
+    if (duk_get_prop_index(ctx, 3, i))
+      // -- {poll_item}
+      {
+      OvmsPoller::poll_pid_t poll =
+        { 0, 0, 0, 0, { 0, 0, 0, 0 }, 0, 0 };
+      bool has_send = duk_get_prop_string(ctx, -1, "send");
+      // -- {poll_item} {send-item}
+      if ( has_send )
+        {
+        canbus* device;
+        std::string request;
+        int timeout;
+
+        MyPollers.Duk_GetRequestFromObject(ctx, -1, busname, false,
+          device,
+          poll.txmoduleid, poll.rxmoduleid, poll.protocol,
+          poll.type, poll.pid,
+          request, timeout, error, errordesc);
+
+        size_t rqsize = request.size();
+        if ( rqsize == 0)
+          poll.args.datalen = 0;
+        else if (rqsize <= 6)
+          {
+          poll.args.datalen = rqsize;
+          std::memcpy(&poll.args.data[0], request.data(), rqsize);
+          }
+        else
+          {
+          // Shared pointer copy of the data.
+          std::shared_ptr<std::string> data(new std::string(request));
+          poll.xargs.tag = POLL_TXDATA;
+          poll.xargs.datalen = std::min(rqsize, std::string::size_type(4095));
+          poll.xargs.data = (const uint8_t*)(data->data());
+          poll_data.push_back(data);
+          }
+
+        if (error != 0)
+          break;
+
+        if (mydevice == nullptr)
+          mydevice = device;
+
+        }
+      duk_pop(ctx);
+      // -- {poll_item}
+
+      if (has_send)
+        {
+        // states: [ t1, t2, t3, t4], // Repeating poll states.
+        if (duk_get_prop_string(ctx, -1, "states") )
+          // -- {poll_item} {states_list}
+          {
+          int state_count = duk_get_length(ctx, -1);
+          if (state_count > VEHICLE_POLL_NSTATES)
+            state_count = VEHICLE_POLL_NSTATES;
+          for (duk_idx_t stateidx = 0; stateidx < state_count ; ++stateidx)
+            {
+            if (duk_get_prop_index(ctx, -1, stateidx))
+              // -- {poll_item} {states_list} {state_item}
+              {
+              poll.polltime[stateidx] = duk_to_int(ctx, -1);
+              }
+            duk_pop(ctx);
+            // -- {poll_item} {states_list}
+            }
+          }
+        polls.push_back(poll);
+        duk_pop(ctx);
+        // -- {poll_item}
+
+        // Skip this if we are using dbc decoding
+        if (!decode_dbc)
+          {
+          if (duk_get_prop_string(ctx, -1, "decode") )
+          // -- {poll_item} {decode_obj}
+            {
+            // We can use a DBC Message object to decode these.  The buffer being decoded on is
+            // different than a standard DBC file expects in that it contains a concatenation
+            // of the payload, rather than of all the 8 bytes of the message.
+            // The data cracking tools, however, work similarly.
+            std::shared_ptr<dbcMessage> msg(new dbcMessage());
+
+            // Enumerate properties
+            duk_enum(ctx, -1, DUK_ENUM_OWN_PROPERTIES_ONLY);  // Enumerate own properties
+            // -- {poll_item} {decode_obj} {enum}
+
+            while (duk_next(ctx, -1, 1))
+              {
+              // -- {poll_item} {decode_obj} {enum} {name} {value}
+
+              // Get the property name (at index -2)
+              std::string itemName = duk_get_string(ctx, -2);
+
+              dbcSignal *signal = new dbcSignal(itemName);
+
+              // Get at optional multiplexer info.
+              // match: {..}
+              if (duk_get_prop_string(ctx, -1, "match"))
+              // -- {poll_item} {decode_obj} {enum} {name} {value} {match_obj}
+                {
+                dbcSignal *src  = nullptr;
+
+                //  name: <value_name>,
+                if (duk_get_prop_string(ctx, -1, "name"))
+                  // -- {poll_item} {decode_obj} {enum} {name} {value} {match_obj} {name}
+                  {
+                  std::string srcName = duk_get_string(ctx, -1);
+
+                  src = msg->FindSignal(srcName);
+                  // TODO if(!src) "invalid signal"
+                  }
+                duk_pop(ctx);
+                // -- {poll_item} {decode_obj} {enum} {name} {value} {match_obj}
+
+                if (src)
+                  {
+                  src->SetMultiplexSource();
+                  signal->SetMultiplexSource(src);
+
+                  // values: [..]
+                  if (duk_get_prop_string(ctx, -1, "values") && duk_is_array(ctx, -1) )
+                    // -- {poll_item}  {decode_obj} {enum} {name} {value} {match_obj} {values_list}
+                    {
+                    duk_enum(ctx, -1, DUK_ENUM_ARRAY_INDICES_ONLY);
+                    // -- {poll_item}  {decode_obj} {enum} {name} {value} {match_obj} {values_list} {values_enum}
+                    while (duk_next(ctx, -1, 1))
+                      {
+                      // -- {poll_item}  {decode_obj} {enum} {name} {value} {match_obj} {values_list} {values_enum} {itemkey} {itemvalue}
+                      // A list of Either single values or ranges to match the value-name specified.
+                      // v1, | { from: n1, to: n2 }
+                      dbcSwitchRange_t range;
+                      bool range_is_ok = false;
+                      if (duk_is_number(ctx, -1))
+                        {// v1
+                        range.min_val = range.max_val = duk_get_number(ctx, -1);
+                        range_is_ok = true;
+                        }
+                      else
+                        {//{ from: n1, to: n2 }
+                        if (duk_get_prop_string(ctx, -1, "from"))
+                        // -- {poll_item}  {decode_obj} {enum} {name} {value} {match_obj} {values_list} {values_enum} {itemkey} {itemvalue} {fromval}
+                          {
+                          range.min_val = duk_get_number(ctx, -1);
+                          range_is_ok = true;
+                          }
+                        duk_pop(ctx);
+                        // -- {poll_item}  {decode_obj} {enum} {name} {value} {match_obj} {values_list} {values_enum} {itemkey} {itemvalue}
+
+                        if (duk_get_prop_string(ctx, -1, "to"))
+                        // -- {poll_item}  {decode_obj} {enum} {name} {value} {match_obj} {values_list} {values_enum} {itemkey} {itemvalue} {toval}
+                          range.max_val = duk_get_number(ctx, -1);
+                        else
+                          range.max_val = range.min_val;
+                        duk_pop(ctx);
+                        // -- {poll_item}  {decode_obj} {enum} {name} {value} {match_obj} {values_list} {values_enum} {itemkey} {itemvalue}
+                        }
+                      if (range_is_ok)
+                        signal->AddMultiplexRange(range);
+
+                      duk_pop_2(ctx);
+                      // -- {poll_item}  {decode_obj} {enum} {name} {value} {match_obj} {values_list} {values_enum}
+                      }
+                    duk_pop(ctx);
+                    // -- {poll_item}  {decode_obj} {enum} {name} {value} {match_obj} {values_list}
+                    }
+                  duk_pop(ctx);
+                  // -- {poll_item}  {decode_obj} {enum} {name} {value} {match_obj}
+                  }
+                }
+              duk_pop(ctx);
+              // -- {poll_item}  {decode_obj} {enum} {name} {value}
+
+              // Get at the definitions.
+
+              // -- {poll_item}  {decode_obj} {enum} {name} {value}
+              dbcByteOrder_t dbc_bo = DBC_BYTEORDER_LITTLE_ENDIAN;
+              dbcValueType_t dbc_vt = DBC_VALUETYPE_UNSIGNED;
+
+              // datatype: int-be|uint-be|int-le|uint-le|flag|??float types ??
+              if (duk_get_prop_string(ctx, -1, "datatype"))
+              // -- {poll_item}  {decode_obj} {enum} {name} {value} {datatype_val}
+                {
+                std::string datatype = duk_get_string(ctx, -1);
+                if (datatype == "int-be")
+                  {
+                  dbc_bo = DBC_BYTEORDER_BIG_ENDIAN;
+                  dbc_vt = DBC_VALUETYPE_SIGNED;
+                  }
+                else if (datatype == "int-le")
+                  {
+                  dbc_bo = DBC_BYTEORDER_LITTLE_ENDIAN;
+                  dbc_vt = DBC_VALUETYPE_SIGNED;
+                  }
+                else if (datatype == "uint-be")
+                  {
+                  dbc_bo = DBC_BYTEORDER_BIG_ENDIAN;
+                  dbc_vt = DBC_VALUETYPE_UNSIGNED;
+                  }
+                else if (datatype == "uint-le")
+                  {
+                  dbc_bo = DBC_BYTEORDER_LITTLE_ENDIAN;
+                  dbc_vt = DBC_VALUETYPE_UNSIGNED;
+                  }
+                }
+              duk_pop(ctx);
+              // -- {poll_item}  {decode_obj} {enum} {name} {value}
+
+              uint32_t start = 0;
+              uint32_t len = 1;
+              // start: <offset>,
+              if (duk_get_prop_string(ctx, -1, "start"))
+                // -- {poll_item}  {decode_obj} {enum} {name} {value} {start_val}
+                {
+                start = duk_get_uint(ctx, -1);
+                }
+              //  len: <len>,
+              if (duk_get_prop_string(ctx, -2, "len"))
+                // -- {poll_item}  {decode_obj} {enum} {name} {value} {start_val} {len_val}
+                {
+                len = duk_get_uint(ctx, -1);
+                }
+              duk_pop_2(ctx);
+              // -- {poll_item}  {decode_obj} {enum} {name} {value}
+
+              // bitstart: <offset>,
+              // For big-endian, the bitstart defaults to 7, the end.. meaning the whole of this byte.
+              uint32_t bitstart = (dbc_bo == DBC_BYTEORDER_LITTLE_ENDIAN ? 0 : 7);
+              uint32_t bitlen = 8 * len;
+              if (duk_get_prop_string(ctx, -1, "bitstart"))
+                // -- {poll_item}  {decode_obj} {enum} {name} {value} {bitstart_val}
+                {
+                bitstart = duk_get_uint(ctx, -1);
+                }
+              // bitlen: <len>, (overrides (byte)length)
+              if (duk_get_prop_string(ctx, -2, "bitlen"))
+                // -- {poll_item}  {decode_obj} {enum} {name} {value} {bitstart_val} {bitlen_val}
+                {
+                bitlen = duk_get_uint(ctx, -1);
+                }
+              duk_pop_2(ctx);
+              // -- {poll_item}  {decode_obj} {enum} {name} {value}
+              double factor = 1, offset = 0;
+              // factor: <mult>
+              if (duk_get_prop_string(ctx, -1, "factor"))
+                // -- {poll_item}  {decode_obj} {enum} {name} {value} {factor_val}
+                {
+                factor = duk_get_number(ctx, -1);
+                }
+              duk_pop(ctx);
+              // -- {poll_item}  {decode_obj} {enum} {name} {value}
+              // offset: <offset>
+              if (duk_get_prop_string(ctx, -1, "offset"))
+                // -- {poll_item}  {decode_obj} {enum} {name} {value} {offset_val}
+                {
+                offset = duk_get_number(ctx, -1);
+                }
+              duk_pop(ctx);
+              std::string unit;
+              // -- {poll_item}  {decode_obj} {enum} {name} {value}
+              // unit: <unit>,
+              if (duk_get_prop_string(ctx, -1, "unit"))
+                // -- {poll_item}  {decode_obj} {enum} {name} {value} {unit_val}
+                {
+                unit = duk_get_string(ctx, -1);
+                }
+              duk_pop(ctx);
+              // -- {poll_item}  {decode_obj} {enum} {name} {value}
+              bitstart += (8*start);
+              signal->SetStartSize(bitstart, bitlen);
+              signal->SetByteOrder(dbc_bo);
+              signal->SetValueType(dbc_vt);
+              signal->SetFactorOffset(factor, offset);
+              if (!unit.empty())
+                signal->SetUnit(unit);
+              // signal->SetMinMax( );
+
+              /*
+               * values:  // [Opt] Map of values to strings.
+               *   {
+               *   <n1>: <string1>,
+               *   <n2>: <string2>
+               *   }
+               */
+              if (duk_get_prop_string(ctx, -1, "values") && duk_is_array(ctx, -1))
+              // -- {poll_item}  {decode_obj} {enum} {name} {value} {values-list}
+                {
+                duk_enum(ctx, -1, DUK_ENUM_ARRAY_INDICES_ONLY);
+                // -- {poll_item}  {decode_obj} {enum} {name} {value} {values-list} {values-emum}
+                while (duk_next(ctx, -1, 1))
+                  {
+                  // -- {poll_item}  {decode_obj} {enum} {name} {value} {values-list} {values-emum} {index} {value}
+                  uint32_t item = duk_get_uint(ctx, -2);
+                  std::string value = duk_get_string(ctx, -1);
+                  signal->AddValue(item, value);
+                  duk_pop_2(ctx);
+                  // -- {poll_item}  {decode_obj} {enum} {name} {value} {values-list} {values-emum}
+                  }
+                duk_pop(ctx);
+                // -- {poll_item}  {decode_obj} {enum} {name} {value} {values-list}
+                }
+              duk_pop(ctx);
+              // -- {poll_item}  {decode_obj} {enum} {name} {value}
+
+              msg->AddSignal(signal);
+
+              duk_pop_2(ctx);
+              // -- {poll_item}  {decode_obj} {enum}
+              }
+            duk_pop(ctx);
+            // -- {poll_item} {decode_obj}
+            message_id_t id;
+            id.rxid = poll.rxmoduleid;
+            id.pid = poll.pid;
+            messages[id] = msg;
+            }
+          duk_pop(ctx);
+          // -- {poll_item}
+          }
+        }
+      }
+      // -- {poll_item}
+      duk_pop(ctx);
+      // --
+    }
+   if ( (args >= 5) && !duk_is_undefined(ctx, 4) && duk_is_number(ctx, 4))
+     {
+     poll_offset = duk_get_uint(ctx, 4);
+     }
+  if (mydevice == nullptr)
+    {
+    ESP_LOGD(TAG, "OvmsPoller.Poll.Add - Bus '%s' not found", busname.c_str());
+    duk_push_boolean(ctx, 0);
+    return 1;
+    }
+
+  std::shared_ptr<DukTapePoller > poller(new DukTapePoller(
+     mydevice,
+     ident,
+     3/*repeat_max*/,
+     polls, poll_data, messages, poll_offset, decode_dbc, dbcfile));
+
+  // register poller object
+  DukTapePoller::RegisterPoller(mydevice, ident, poller);
+
+  duk_push_boolean(ctx, 1);
+  return 1;
+  }
+
+/// OvmsPoller.Poll.Remove(list_ident, bus)
+duk_ret_t OvmsPollers::DukOvmsPollerPollRemove(duk_context *ctx)
+  {
+  int args = duk_get_top(ctx);
+  if (args < 1)
+    {
+    duk_push_boolean(ctx, 0);
+    return 1;
+    }
+  canbus* device = nullptr;
+  std::string ident;
+  if (args >= 2)
+    {
+    // bus
+    device = Duk_GetBus(ctx, 0);
+    if (!device)
+      {
+      duk_push_boolean(ctx, 0);
+      return 1;
+      }
+    ident = duk_to_string(ctx, 1);
+    }
+  else
+    {
+    ident = duk_to_string(ctx, 0);
+    }
+
+  if (ident.empty())
+    {
+    duk_push_boolean(ctx, 0);
+    return 1;
+    }
+  DukTapePoller::UnregisterPoller(device, ident);
+  duk_push_boolean(ctx, 1);
+  return 1;
+  }
+
+// int OvmsPoller.Poll.GetState( [busno])
+duk_ret_t OvmsPollers::DukOvmsPollerPollGetState(duk_context *ctx)
+  {
+  // bus
+  if (duk_get_top(ctx) >= 1)
+    {
+    auto device = Duk_GetBus(ctx, 0);
+    if (!device)
+      {
+      duk_push_undefined(ctx);
+      return 1;
+      }
+    auto poller  = MyPollers.GetPoller(device);
+    if (!poller)
+      {
+      duk_push_undefined(ctx);
+      return 1;
+      }
+    duk_push_int(ctx, poller->PollState());
+    return 1;
+    }
+  else
+    {
+    duk_push_int(ctx, MyPollers.PollState());
+    return 1;
+    }
+  }
+// OvmsPoller.Poll.SetState( [busno,] state)
+duk_ret_t OvmsPollers::DukOvmsPollerPollSetState(duk_context *ctx)
+  {
+  // bus
+  int args = duk_get_top(ctx);
+  if (args < 1)
+    {
+    duk_push_boolean(ctx, 0);
+    return 1;
+    }
+  if (args >= 2)
+    {
+    auto device = Duk_GetBus(ctx, 0);
+    if (!device)
+      {
+      duk_push_boolean(ctx, 0);
+      return 1;
+      }
+    auto poller  = MyPollers.GetPoller(device);
+    if (!poller)
+      {
+      duk_push_boolean(ctx, 0);
+      return 1;
+      }
+    int state = duk_to_int(ctx, 1);
+    MyPollers.PollSetState( state, device);
+    duk_push_boolean(ctx, 1);
+    return 1;
+    }
+  else
+    {
+    int state = duk_to_int(ctx, 0);
+    MyPollers.PollSetState(state);
+    duk_push_boolean(ctx, 1);
+    return 1;
+    }
+  }
+
+// OvmsPoller.Poll.SetTrace
+duk_ret_t OvmsPollers::DukOvmsPollerPollSetTrace(duk_context *ctx)
+  {
+  bool trace = duk_get_boolean(ctx, 0);
+  if (trace)
+    MyPollers.m_trace |= trace_Duktape;
+  else
+    MyPollers.m_trace &= ~trace_Duktape;
+  return 0;
+  }
+
+
+/** Get a ISOTP Request from a Duktape object.
+ *      {
+ *         bus:  "can<n>", // [Opt]
+ *         txid: <int>,
+ *         rxid: <int>,
+ *         timeout: <int>, // [Opt] in ms, default: 3000
+ *         protocol: <int>|"Std"|"ExtAdr"|"ExtFrame"|VWTP20", // [Opt] default: Std/0 (ISOTP_STD, see vehicle_common.h),
+ *         pid: <int>,      // [Opt] PID (otherwise embedded in request)
+ *         type: <int>,     // [Opt] type (defaults to READDATA type 0x22)
+ *
+ *         request: <string>|<Uint8Array>   // [Opt] hex encoded string or binary byte array
+ *       }
+ */
+void OvmsPollers::Duk_GetRequestFromObject( duk_context *ctx, duk_idx_t obj_idx,
+  std::string default_bus, bool allow_bus, canbus*& device,
+  uint32_t &txid, uint32_t &rxid, uint8_t &protocol,
+  uint16_t &type, uint16_t &pid, std::string &request,
+  int &timeout, int &error, std::string &errordesc)
+  {
+  std::string bus = default_bus;
+  error = 0;
+  protocol = ISOTP_STD;
+  txid = 0;
+  rxid = 0;
+  pid = 0;
+  type = VEHICLE_POLL_TYPE_READDATA; // Default if pid specified.
+  timeout = 3000;
+  bool has_pid = false;
+
+  // Read arguments:
+  if (allow_bus && duk_get_prop_string(ctx,  obj_idx, "bus"))
+    bus = duk_to_string(ctx, -1);
+  duk_pop(ctx);
+  if (duk_get_prop_string(ctx,  obj_idx, "timeout"))
+    timeout = duk_to_int(ctx, -1);
+  duk_pop(ctx);
+  if (duk_get_prop_string(ctx,  obj_idx, "protocol"))
+    {
+    if (!duk_is_string(ctx, -1))
+      protocol = duk_to_int(ctx, -1);
+    else
+      {
+      std::string protostr = duk_to_string(ctx, -1);
+      if (protostr == "Std")
+        protocol = ISOTP_STD;
+      else if (protostr == "ExtAdr")
+        protocol = ISOTP_EXTADR;
+      else if (protostr == "ExtFrame")
+        protocol = ISOTP_EXTADR;
+      else if (protostr == "VWTP20")
+        protocol = VWTP_20;
+      else
+        {
+        error = -1002;
+        }
+      }
+    }
+  duk_pop(ctx);
+  if (duk_get_prop_string(ctx, obj_idx, "txid"))
+    txid = duk_to_int(ctx, -1);
+  else
+    error = -1002;
+  duk_pop(ctx);
+  if (duk_get_prop_string(ctx, obj_idx, "rxid"))
+    rxid = duk_to_int(ctx, -1);
+  else
+    error = -1002;
+  duk_pop(ctx);
+  has_pid = duk_get_prop_string(ctx, obj_idx, "pid");
+  if (has_pid)
+    pid = duk_to_int(ctx, -1);
+  duk_pop(ctx);
+  if (duk_get_prop_string(ctx, obj_idx, "type"))
+    type = duk_to_int(ctx, -1);
+  duk_pop(ctx);
+
+  if (duk_get_prop_string(ctx, obj_idx, "request"))
+    {
+    if (duk_is_buffer_data(ctx, -1))
+      {
+      size_t size;
+      void *data = duk_get_buffer_data(ctx, -1, &size);
+      request.resize(size, '\0');
+      memcpy(&request[0], data, size);
+      }
+    else
+      {
+      request = hexdecode(duk_to_string(ctx, -1));
+      }
+    }
+  duk_pop(ctx);
+
+  // Validate arguments:
+  device = (canbus*)MyPcpApp.FindDeviceByName(bus.c_str());
+  if (error != 0)
+    {
+    errordesc = "Missing mandatory argument";
+    }
+  else if (device == NULL || (txid <= 0) || (txid != 0x7df && rxid <= 0) ||
+      (!has_pid && request.empty()) || (timeout <= 0))
+    {
+    error = -1003;
+    errordesc = "Invalid argument";
+    }
+  else if (!has_pid)
+    {
+    type = request[0];
+    if (POLL_TYPE_HAS_16BIT_PID(type))
+      {
+      if (request.size() < 3)
+        {
+        error = -1003;
+        errordesc = "Invalid argument";
+        return;
+        }
+      pid = request[1] << 8 | request[2];
+      request.erase(0,3);
+      }
+    else if (POLL_TYPE_HAS_8BIT_PID(type))
+      {
+      if (request.size() < 2)
+        {
+        error = -1003;
+        errordesc = "Invalid argument";
+        return;
+        }
+      pid = request.at(1);
+      request.erase(0,2);
+      }
+    else
+      {
+      pid = 0;
+      request.erase(0,1);
+      }
+    if (request.size() > 4095)
+      {
+      error = -1003;
+      errordesc = "Invalid argument";
+      }
+    }
+  }
+#endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 void OvmsPollers::PollerTimesReset()
   {
@@ -2780,7 +3861,7 @@ void OvmsPoller::StandardVehiclePollSeries::IncomingPacket(const OvmsPoller::pol
    m_signal->IncomingPollReply(job, data, length);
  }
 
-// Process An Error. 
+// Process An Error.
 void OvmsPoller::StandardVehiclePollSeries::IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code)
  {
  if (m_signal)
@@ -2802,8 +3883,8 @@ void OvmsPoller::StandardVehiclePollSeries::IncomingTxReply(const OvmsPoller::po
 
 // StandardPacketPollSeries
 
-OvmsPoller::StandardPacketPollSeries::StandardPacketPollSeries( OvmsPoller *poller, int repeat_max, poll_success_func success, poll_fail_func fail, bool pack_raw_data)
-  : StandardPollSeries(poller),
+OvmsPoller::StandardPacketPollSeries::StandardPacketPollSeries( OvmsPoller *poller, int repeat_max, poll_success_func success, poll_fail_func fail, uint16_t stateoffset, bool pack_raw_data)
+  : StandardPollSeries(poller, stateoffset),
     m_repeat_max(repeat_max),
     m_repeat_count(0),
     m_success(success),
@@ -2843,9 +3924,18 @@ void OvmsPoller::StandardPacketPollSeries::IncomingPacket(const OvmsPoller::poll
     m_data.reserve(len);
     }
   if (m_pack_raw_data)
-    m_data.append((char*)job.raw_data, job.raw_data_len);
+    {
+    const char *rawdata =  (const char*)job.raw_data;
+    uint8_t rawlen = job.raw_data_len;
+    if ((rawdata == nullptr) || (rawlen ==0) )
+      {
+      IFTRACE(Poller) ESP_LOGD(TAG, "empty raw-data passed in to poll series");
+      }
+    else
+      m_data.append(rawdata, rawlen);
+    }
   else
-    m_data.append((char*)data, length);
+    m_data.append((const char*)data, length);
   if (job.mlremain == 0)
     {
     if (m_success)
