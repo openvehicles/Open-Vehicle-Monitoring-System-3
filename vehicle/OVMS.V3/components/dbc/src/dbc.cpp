@@ -1100,7 +1100,7 @@ void dbcSignal::WriteFileValues(dbcOutputCallback callback,
                                   void* param,
                                   std::string messageid) const
   {
-  if (m_values.GetCount()>0)
+  if (HasValues())
     {
     std::ostringstream ss;
     ss << "VAL_ "
@@ -1166,7 +1166,7 @@ dbcMessage::~dbcMessage()
   {
   }
 
-void dbcMessage::DecodeSignal(const uint8_t* msg, uint8_t size, OvmsWriter* writer) const
+void dbcMessage::DecodeSignal(const uint8_t* msg, uint8_t size, bool assignMetrics, OvmsWriter* writer) const
   {
   // Gets the default multiplexor signal (the first one not also a sink/switch).
   dbcSignal* mux = GetMultiplexorSignal();
@@ -1236,7 +1236,7 @@ void dbcMessage::DecodeSignal(const uint8_t* msg, uint8_t size, OvmsWriter* writ
       if (muxval.first) // Is Active signal
         {
 
-        if (!writer)
+        if (assignMetrics && (m != nullptr))
           {
           // Store to metric.
           if (!sig->HasValues())
@@ -1249,7 +1249,7 @@ void dbcMessage::DecodeSignal(const uint8_t* msg, uint8_t size, OvmsWriter* writ
               m->SetValue(sig->GetValue(val));
             }
           }
-        else
+        if (writer)
           {
           // Log only.
           std::ostringstream ss;
@@ -1801,10 +1801,12 @@ bool dbcfile::IsLocked() const
  * @param size The size of the data to decode.
  * @param writer Pass in to log only (for RE) - unit not set.
  */
-void dbcfile::DecodeSignal(CAN_frame_format_t format, uint32_t msg_id, const uint8_t* msg, uint8_t size, OvmsWriter* writer) const
+void dbcfile::DecodeSignal(CAN_frame_format_t format, uint32_t msg_id, const uint8_t* msg, uint8_t size, bool assignMetrics, OvmsWriter* writer) const
   {
   // Find the default signal
   dbcMessage* dbcmsg = m_messages.FindMessage(format, msg_id);
   if (dbcmsg)
-    dbcmsg->DecodeSignal(msg, size, writer);
+    dbcmsg->DecodeSignal(msg, size, assignMetrics, writer);
+  else if (writer)
+    writer->printf("No Signal %" PRIu32 "\n", msg_id);
   }

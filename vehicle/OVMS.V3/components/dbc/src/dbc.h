@@ -391,7 +391,7 @@ class dbcMessage
     dbcSignal* FindSignal(std::string name);
     void Count(int* signals, int* bits, int* covered) const;
 
-    void DecodeSignal(const uint8_t* msg, uint8_t size, OvmsWriter* writer = nullptr) const;
+    void DecodeSignal(const uint8_t* msg, uint8_t size, bool assignMetrics = true, OvmsWriter* writer = nullptr) const;
 
   public:
     void AddComment(const std::string& comment);
@@ -483,7 +483,7 @@ class dbcfile
     void UnlockFile();
     bool IsLocked() const;
 
-    void DecodeSignal(CAN_frame_format_t format, uint32_t msg_id, const uint8_t* msg, uint8_t size, OvmsWriter* writer = nullptr) const;
+    void DecodeSignal(CAN_frame_format_t format, uint32_t msg_id, const uint8_t* msg, uint8_t size, bool assignMetrics = true, OvmsWriter* writer = nullptr) const;
   public:
     std::string m_name;
     std::string m_path;
