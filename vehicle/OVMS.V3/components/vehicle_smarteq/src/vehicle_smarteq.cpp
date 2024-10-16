@@ -195,10 +195,16 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     return;
 
   ESP_LOGI(TAG, "Smart EQ reload configuration");
-  
+
   m_enable_write = MyConfig.GetParamValueBool("xsq", "canwrite", false);
   m_enable_LED_state = MyConfig.GetParamValueBool("xsq", "led", false);
-  
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  if (!m_enable_LED_state) {
+    MyPeripherals->m_max7317->Output(9, 1);
+    MyPeripherals->m_max7317->Output(8, 1);
+    MyPeripherals->m_max7317->Output(7, 1);
+  }
+#endif
   int cell_interval_drv = MyConfig.GetParamValueInt("xsq", "cell_interval_drv", 60);
   int cell_interval_chg = MyConfig.GetParamValueInt("xsq", "cell_interval_chg", 60);
 
