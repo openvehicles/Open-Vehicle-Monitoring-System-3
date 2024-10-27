@@ -270,6 +270,12 @@ void OvmsVehicleSmartEQ::PollReply_HVAC(const char* data, uint16_t reply_len) {
 
 void OvmsVehicleSmartEQ::PollReply_TDB(const char* data, uint16_t reply_len) {
   StandardMetrics.ms_v_env_temp->SetValue( (CAN_UINT(2) - 400) * 0.1 );
+  if (m_ios_tpms_fix) {
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, (float) (CAN_UINT(2) - 400) * 0.1);
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, (float) (CAN_UINT(2) - 400) * 0.1);
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, (float) (CAN_UINT(2) - 400) * 0.1);
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, (float) (CAN_UINT(2) - 400) * 0.1);
+  }
 }
 
 void OvmsVehicleSmartEQ::PollReply_VIN(const char* data, uint16_t reply_len) {
@@ -342,13 +348,6 @@ void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t repl
     mt_obl_main_CHGpower->SetElemValue(1, 0);
   }
   UpdateChargeMetrics();
-  StandardMetrics.ms_v_charge_power->SetValue(mt_obl_main_CHGpower->GetElemValue(0));
-  float power = StandardMetrics.ms_v_charge_power->AsFloat();
-  float efficiency = (power == 0)
-                     ? 0
-                     : (StandardMetrics.ms_v_bat_power->AsFloat() / power) * 100;
-  StandardMetrics.ms_v_charge_efficiency->SetValue(efficiency);
-  ESP_LOGD(TAG, "SmartEQ_CHG_EFF_STD=%f", efficiency);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len) {
@@ -382,11 +381,5 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len) {
   mt_obl_main_CHGpower->SetElemValue(0, (CAN_UINT(0) - 20000) / 1000.0);
-  StandardMetrics.ms_v_charge_power->SetValue(mt_obl_main_CHGpower->GetElemValue(0));
-  float power = StandardMetrics.ms_v_charge_power->AsFloat();
-  float efficiency = (power == 0)
-                     ? 0
-                     : (StandardMetrics.ms_v_bat_power->AsFloat() / power) * 100;
-  StandardMetrics.ms_v_charge_efficiency->SetValue(efficiency);
-  ESP_LOGD(TAG, "SmartEQ_CHG_EFF_STD=%f", efficiency);
+  UpdateChargeMetrics();
 }

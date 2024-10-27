@@ -77,6 +77,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void HandlePollState();
     void OnlineState();
     void ObdModifyPoll();
+    void ResetChargingValues();
+    void ResetTripCounters();
 
   public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -99,12 +101,14 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
   private:
     unsigned int m_candata_timer;
     unsigned int m_candata_poll;
+    bool m_charge_start;
 
   protected:
     void Ticker1(uint32_t ticker) override;
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
     virtual void CalculateEfficiency();
+    void vehicle_smart_car_on(bool isOn);
     
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* data, uint16_t reply_len);
@@ -129,6 +133,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
   protected:
     bool m_enable_write;                    // canwrite
     bool m_enable_LED_state;                // Online LED State
+    bool m_ios_tpms_fix;                    // IOS TPMS Display Fix
+    bool m_resettrip;                       // Reset Trip Values when Charging/Driving
 
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define MAX_POLL_DATA_LEN 126

@@ -77,17 +77,21 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  bool canwrite, led;
+  bool canwrite, led, ios, resettrip;
 
   if (c.method == "POST") {
     // process form submission:
     canwrite  = (c.getvar("canwrite") == "yes");
     led  = (c.getvar("led") == "yes");
+    ios  = (c.getvar("ios") == "yes");
+    resettrip  = (c.getvar("resettrip") == "yes");
 
     if (error == "") {
       // success:
       MyConfig.SetParamValueBool("xsq", "canwrite", canwrite);
       MyConfig.SetParamValueBool("xsq", "led", led);
+      MyConfig.SetParamValueBool("xsq", "ios_tpms_fix", ios);
+      MyConfig.SetParamValueBool("xsq", "resettrip", resettrip);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -106,6 +110,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     canwrite  = MyConfig.GetParamValueBool("xsq", "canwrite", false);
     led  = MyConfig.GetParamValueBool("xsq", "led", false);
+    ios  = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
+    resettrip  = MyConfig.GetParamValueBool("xsq", "resettrip", false);
     c.head(200);
   }
 
@@ -117,6 +123,10 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
   c.input_checkbox("Enable/Disable Online state LED when installed", "led", led,
     "<p>RED=Internet no, BLUE=Internet yes, GREEN=Server v2 connected.<br>EGPIO Port 7,8,9 are used</p>");
+  c.input_checkbox("Enable IOS TPMS fix", "ios", ios,
+    "<p>Set External Temp to TPMS Temps to Display Tire Pressurs in IOS</p>");
+  c.input_checkbox("Enable Reset Trip when Charging", "resettrip", resettrip,
+    "<p>Enable = Reset Trip Values when Chaging, Disable = Reset Trip Values when Driving</p>");
 
   c.print("<hr>");
   c.input_button("default", "Save");

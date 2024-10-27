@@ -91,7 +91,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ESP_LOGI(TAG, "Start Smart EQ vehicle module");
 
   m_booster_start = false;
-  m_led_state = 0;
+  m_charge_start = false;
+  m_led_state = 4;
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
 
@@ -153,6 +154,13 @@ OvmsVehicleSmartEQ::~OvmsVehicleSmartEQ() {
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebDeInit();
 #endif
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  if (m_enable_LED_state) {
+    MyPeripherals->m_max7317->Output(9, 0);
+    MyPeripherals->m_max7317->Output(8, 1);
+    MyPeripherals->m_max7317->Output(7, 1);
+  }
+#endif
 }
 
 void OvmsVehicleSmartEQ::ObdModifyPoll() {
@@ -198,6 +206,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   m_enable_write = MyConfig.GetParamValueBool("xsq", "canwrite", false);
   m_enable_LED_state = MyConfig.GetParamValueBool("xsq", "led", false);
+  m_ios_tpms_fix = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
+  m_resettrip = MyConfig.GetParamValueBool("xsq", "resettrip", false);
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (!m_enable_LED_state) {
     MyPeripherals->m_max7317->Output(9, 1);
@@ -294,13 +304,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       }
       if (isCharging != lastCharging) { // EVENT charge state changed
         if (isCharging) { // EVENT started charging
-          // Reset charge kWh
-          StandardMetrics.ms_v_charge_kwh->SetValue(0);
-          // Reset trip values
-          StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
-          StandardMetrics.ms_v_bat_energy_used->SetValue(0);
-          mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
-          StandardMetrics.ms_v_pos_trip->SetValue(0);
           // Set charging metrics
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           StandardMetrics.ms_v_charge_inprogress->SetValue(isCharging);
@@ -316,6 +319,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           StandardMetrics.ms_v_charge_duration_full->SetValue(0);
           StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
           StandardMetrics.ms_v_charge_duration_range->SetValue(0);
+          StandardMetrics.ms_v_charge_power->SetValue(0);
           if (StandardMetrics.ms_v_bat_soc->AsInt() < 95) {
             // Assume the charge was interrupted
             ESP_LOGI(TAG,"Car charge session was interrupted");
@@ -332,7 +336,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       lastCharging = isCharging;
       break;
     case 0x668:
-      StandardMetrics.ms_v_env_on->SetValue((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
+      vehicle_smart_car_on((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
       break;
     case 0x673:
       if (CAN_BYTE(2) != 0xff)
@@ -349,6 +353,18 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
   }
+}
+
+void OvmsVehicleSmartEQ::ResetChargingValues() {
+  StandardMetrics.ms_v_charge_kwh->SetValue(0);
+  //StandardMetrics.ms_v_charge_kwh_grid->SetValue(0);
+}
+
+void OvmsVehicleSmartEQ::ResetTripCounters() {
+  StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+  StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+  mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
+  StandardMetrics.ms_v_pos_trip->SetValue(0);
 }
 
 /**
@@ -443,6 +459,14 @@ void OvmsVehicleSmartEQ::UpdateChargeMetrics() {
     }
     StandardMetrics.ms_v_charge_current->SetValue(ampsum);
   }
+
+  StandardMetrics.ms_v_charge_power->SetValue(mt_obl_main_CHGpower->GetElemValue(0));
+  float power = StandardMetrics.ms_v_charge_power->AsFloat();
+  float efficiency = (power == 0)
+                     ? 0
+                     : (StandardMetrics.ms_v_bat_power->AsFloat() / power) * 100;
+  StandardMetrics.ms_v_charge_efficiency->SetValue(efficiency);
+  ESP_LOGD(TAG, "SmartEQ_CHG_EFF_STD=%f", efficiency);
 }
 
 /**
@@ -528,6 +552,27 @@ void OvmsVehicleSmartEQ::OnlineState() {
 #endif
 }
 
+void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
+  if (isOn && !StandardMetrics.ms_v_env_on->AsBool()) {
+    // Log once that car is being turned on
+    ESP_LOGI(TAG,"CAR IS ON");
+    //StandardMetrics.ms_v_env_awake->SetValue(isOn);
+
+    // Reset trip values
+    if (!m_resettrip) {
+      ResetTripCounters();
+    }
+  }
+  else if (!isOn && StandardMetrics.ms_v_env_on->AsBool()) {
+    // Log once that car is being turned off
+    ESP_LOGI(TAG,"CAR IS OFF");
+    //StandardMetrics.ms_v_env_awake->SetValue(isOn);
+  }
+
+  // Always set this value to prevent it from going stale
+  StandardMetrics.ms_v_env_on->SetValue(isOn);
+}
+
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   if (m_candata_timer > 0) {
     if (--m_candata_timer == 0) {
@@ -553,6 +598,17 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   }
   if (StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0 && mt_pos_odometer_start->AsFloat(0) > 0.0) {
     StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat(0) - mt_pos_odometer_start->AsFloat(0));
+  }
+
+  if (StandardMetrics.ms_v_door_chargeport->AsBool() && !m_charge_start) {
+    m_charge_start = true;
+    ResetChargingValues();
+    if (m_resettrip) ResetTripCounters();
+    ESP_LOGD(TAG,"Charge Start");
+  } else if (!StandardMetrics.ms_v_door_chargeport->AsBool() && m_charge_start) {
+    m_charge_start = false;
+    StandardMetrics.ms_v_charge_power->SetValue(0);
+    ESP_LOGD(TAG,"Charge End");
   }
 }
 
@@ -812,6 +868,24 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
 {
   switch (key)
   {
+    case 1:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xsq", "led",  (bits& 1)!=0);
+      return true;
+    }
+    case 2:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xsq", "ios_tpms_fix",  (bits& 1)!=0);
+      return true;
+    }
+    case 3:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xsq", "resettrip",  (bits& 1)!=0);
+      return true;
+    }
     case 10:
       MyConfig.SetParamValue("xsq", "suffsoc", value);
       return true;
@@ -837,6 +911,27 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
 {
   switch (key)
   {
+    case 1:
+    {
+      int bits = ( MyConfig.GetParamValueBool("xsq", "led",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    case 2:
+    {
+      int bits = ( MyConfig.GetParamValueBool("xsq", "ios_tpms_fix",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    case 3:
+    {
+      int bits = ( MyConfig.GetParamValueBool("xsq", "resettrip",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
     case 10:
       return MyConfig.GetParamValue("xsq", "suffsoc", STR(0));
     case 11:
