@@ -208,6 +208,9 @@ class OvmsPoller : public InternalRamAllocated {
         /// Set the parent poller
         virtual void SetParentPoller(OvmsPoller *poller) = 0;
 
+        /// Destructed by pointer.
+        virtual ~PollSeriesEntry() { }
+
         /** Move list to start.
           * @arg  mode Specify Resetting for Poll-Start or for Retry
           */
@@ -437,7 +440,7 @@ class OvmsPoller : public InternalRamAllocated {
         poll_pid_t m_poll; // Poll Entry
         std::string *m_poll_rxbuf;    // … response buffer
         int         *m_poll_rxerr;    // … response error code (NRC) / TX failure code
-        uint8_t     m_retry_fail;
+        int16_t     m_retry_fail;
         CAN_frame_format_t m_format;
 
         // Called when the one-off is finished (for semaphore etc).
@@ -445,7 +448,7 @@ class OvmsPoller : public InternalRamAllocated {
         virtual void Done(bool success);
 
         void SetPollPid( uint32_t txid, uint32_t rxid, const std::string &request, uint8_t protocol=ISOTP_STD, uint8_t pollbus = 0, uint16_t polltime = 1);
-        void SetPollPid( uint32_t txid, uint32_t rxid, uint8_t polltype, uint16_t pid,  uint8_t protocol=ISOTP_STD, uint8_t pollbus = 0, uint16_t polltime = 1);
+        void SetPollPid( uint32_t txid, uint32_t rxid, uint8_t polltype, uint16_t pid,  uint8_t protocol, const std::string &request, uint8_t pollbus = 0, uint16_t polltime = 1);
       public:
         OnceOffPollBase(const poll_pid_t &pollentry, std::string *rxbuf, int *rxerr, uint8_t retry_fail = 0);
         OnceOffPollBase(std::string *rxbuf, int *rxerr, uint8_t retry_fail = 0);
@@ -502,6 +505,7 @@ class OvmsPoller : public InternalRamAllocated {
         poll_fail_func m_fail;
         std::string m_data;
         int m_error;
+        bool m_result_sent;
 
         void Done(bool success) override;
       public:
@@ -509,6 +513,8 @@ class OvmsPoller : public InternalRamAllocated {
             uint32_t txid, uint32_t rxid, const std::string &request, uint8_t protocol=ISOTP_STD, uint8_t pollbus = 0, uint8_t retry_fail = 0);
         OnceOffPoll(poll_success_func success, poll_fail_func fail,
             uint32_t txid, uint32_t rxid, uint8_t polltype, uint16_t pid,  uint8_t protocol=ISOTP_STD, uint8_t pollbus = 0, uint8_t retry_fail = 0);
+        OnceOffPoll(poll_success_func success, poll_fail_func fail,
+            uint32_t txid, uint32_t rxid, uint8_t polltype, uint16_t pid,  uint8_t protocol, const std::string &request, uint8_t pollbus = 0, uint8_t retry_fail = 0);
 
         // Called when run is finished to determine what happens next.
         SeriesStatus FinishRun() override;
@@ -806,6 +812,9 @@ class OvmsPollers : public InternalRamAllocated {
     static duk_ret_t DukOvmsPollerPollSetState(duk_context *ctx);
     // OvmsPoller.Poll.SetTrace
     static duk_ret_t DukOvmsPollerPollSetTrace(duk_context *ctx);
+
+    // OvmsPoller.Poll.Request
+    static duk_ret_t DukOvmsPollerPollRequest(duk_context *ctx);
 
   public:
     static void Duk_GetRequestFromObject( duk_context *ctx, duk_idx_t obj_idx,
