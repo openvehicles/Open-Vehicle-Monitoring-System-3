@@ -941,10 +941,27 @@ canbus* OvmsPollers::GetBus(uint8_t busno)
   }
 canbus* OvmsPollers::RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle)
   {
+
+  canbus *bus = nullptr;
+  OvmsPollers::RegisterCanBus(busno, mode, speed, dbcfile, from_vehicle, bus,0, nullptr);
+  return bus;
+  }
+
+esp_err_t OvmsPollers::RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle, canbus*& bus,int verbosity, OvmsWriter* writer )
+  {
+  bus = nullptr;
   if (m_shut_down)
-    return nullptr;
+    {
+    if (writer)
+      writer->puts("Error: Pollers shut down");
+    return ESP_FAIL;
+    }
   if (busno <1 || busno > VEHICLE_MAXBUSSES)
-    return nullptr;
+    {
+    if (writer)
+      writer->puts("Error: CAN bus number out of range");
+    return ESP_FAIL;
+    }
 
   bus_info_t &info = m_canbusses[busno-1];
   if (!info.can)
@@ -952,12 +969,16 @@ canbus* OvmsPollers::RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t spee
     std::string busname = string_format("can%d", busno);
     info.can = (canbus*)MyPcpApp.FindDeviceByName(busname.c_str());
     if (!info.can)
-      return nullptr;
+      {
+      if (writer)
+        writer->puts("Error: Cannot find named CAN bus");
+      return ESP_FAIL;
+      }
     }
+  bus = info.can;
   info.from_vehicle = from_vehicle;
   info.can->SetPowerMode(On);
-  info.can->Start(mode,speed,dbcfile);
-  return info.can;
+  return info.can->Start(mode,speed,dbcfile);
   }
 
 void OvmsPollers::PowerDownCanBus(int busno)
