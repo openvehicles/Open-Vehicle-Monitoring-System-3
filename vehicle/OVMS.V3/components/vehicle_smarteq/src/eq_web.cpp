@@ -77,15 +77,21 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  bool canwrite;
+  bool canwrite, led, ios, resettrip;
 
   if (c.method == "POST") {
     // process form submission:
     canwrite  = (c.getvar("canwrite") == "yes");
+    led  = (c.getvar("led") == "yes");
+    ios  = (c.getvar("ios") == "yes");
+    resettrip  = (c.getvar("resettrip") == "yes");
 
     if (error == "") {
       // success:
-      MyConfig.SetParamValueBool("xsq", "canwrite",   canwrite);
+      MyConfig.SetParamValueBool("xsq", "canwrite", canwrite);
+      MyConfig.SetParamValueBool("xsq", "led", led);
+      MyConfig.SetParamValueBool("xsq", "ios_tpms_fix", ios);
+      MyConfig.SetParamValueBool("xsq", "resettrip", resettrip);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -103,6 +109,9 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     canwrite  = MyConfig.GetParamValueBool("xsq", "canwrite", false);
+    led  = MyConfig.GetParamValueBool("xsq", "led", false);
+    ios  = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
+    resettrip  = MyConfig.GetParamValueBool("xsq", "resettrip", false);
     c.head(200);
   }
 
@@ -112,7 +121,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
-  
+  c.input_checkbox("Enable/Disable Online state LED when installed", "led", led,
+    "<p>RED=Internet no, BLUE=Internet yes, GREEN=Server v2 connected.<br>EGPIO Port 7,8,9 are used</p>");
+  c.input_checkbox("Enable IOS TPMS fix", "ios", ios,
+    "<p>Set External Temp to TPMS Temps to Display Tire Pressurs in IOS</p>");
+  c.input_checkbox("Enable Reset Trip when Charging", "resettrip", resettrip,
+    "<p>Enable = Reset Trip Values when Chaging, Disable = Reset Trip Values when Driving</p>");
+
   c.print("<hr>");
   c.input_button("default", "Save");
   c.form_end();
@@ -129,12 +144,14 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc;
+  std::string suffrange, suffsoc, cell_interval_drv, cell_interval_chg;
 
   if (c.method == "POST") {
     // process form submission:
     suffrange = c.getvar("suffrange");
     suffsoc   = c.getvar("suffsoc");
+    cell_interval_drv = c.getvar("cell_interval_drv");
+    cell_interval_chg = c.getvar("cell_interval_chg");
 
     // check:
     if (!suffrange.empty()) {
@@ -152,9 +169,11 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       // store:
       MyConfig.SetParamValue("xsq", "suffrange", suffrange);
       MyConfig.SetParamValue("xsq", "suffsoc", suffsoc);
+      MyConfig.SetParamValue("xsq", "cell_interval_drv", cell_interval_drv);
+      MyConfig.SetParamValue("xsq", "cell_interval_chg", cell_interval_chg);
 
       c.head(200);
-      c.alert("success", "<p class=\"lead\">SmartEQ battery setup saved.</p>");
+      c.alert("success", "<p class=\"lead\">SmartED3 battery setup saved.</p>");
       MyWebServer.OutputHome(p, c);
       c.done();
       return;
@@ -168,26 +187,40 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     suffrange = MyConfig.GetParamValue("xsq", "suffrange", "0");
-    suffsoc = MyConfig.GetParamValue("xsq", "suffsoc", "0");
+    suffsoc   = MyConfig.GetParamValue("xsq", "suffsoc", "0");
+    cell_interval_drv = MyConfig.GetParamValue("xsq", "cell_interval_drv", "60");
+    cell_interval_chg = MyConfig.GetParamValue("xsq", "cell_interval_chg", "60");
 
     c.head(200);
   }
 
   // generate form:
 
-  c.panel_start("primary", "SmartEQ battery setup");
+  c.panel_start("primary", "Smart ED Battery Setup");
   c.form_start(p.uri);
 
   c.fieldset_start("Charge control");
 
   c.input_slider("Sufficient range", "suffrange", 3, "km",
-    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 150, 1,
+    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 75, 0, 150, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
-    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
+    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 80, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
+  c.fieldset_end();
+  
+  c.fieldset_start("BMS Cell Monitoring");
+  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",
+    atof(cell_interval_drv.c_str()) > 0, atof(cell_interval_drv.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off.</p>");
+  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",
+    atof(cell_interval_chg.c_str()) > 0, atof(cell_interval_chg.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off.</p>");
+  
   c.fieldset_end();
 
   c.print("<hr>");
