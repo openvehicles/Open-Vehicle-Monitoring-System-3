@@ -490,47 +490,17 @@ void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
       FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
       writer->printf("%-20s %10" PRId32 " %6" PRId32 " %s\n",
         it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
-      if (it->second->last.origin)
+      re_record_t *re_record = it->second;
+      if (re_record->last.origin)
         {
-        dbcfile* dbc = it->second->last.origin->GetDBC();
+        dbcfile* dbc = re_record->last.origin->GetDBC();
         if (dbc)
           {
           // We have a DBC attached.
-          dbcMessage* msg = dbc->m_messages.FindMessage(it->second->last.FIR.B.FF, it->second->last.MsgID);
-          if (msg)
-            {
-            // Let's look for signals...
-            dbcSignal* mux = msg->GetMultiplexorSignal();
-            uint32_t muxval;
-            if (mux)
-              {
-              dbcNumber r = mux->Decode(it->second->last.data.u8, 8);
-              muxval = r.GetSignedInteger();
-              std::ostringstream ss;
-              ss << "  dbc/mux/";
-              ss << mux->GetName();
-              ss << ": ";
-              ss << r;
-              ss << " ";
-              ss << mux->GetUnit();
-              writer->puts(ss.str().c_str());
-              }
-            for (dbcSignal* sig : msg->m_signals)
-              {
-              if ((mux==NULL)||(sig->GetMultiplexSwitchvalue() == muxval))
-                {
-                dbcNumber r = sig->Decode(it->second->last.data.u8, 8);
-                std::ostringstream ss;
-                ss << "  dbc/";
-                ss << sig->GetName();
-                ss << ": ";
-                ss << r;
-                ss << " ";
-                ss << sig->GetUnit();
-                writer->puts(ss.str().c_str());
-                }
-              }
-            }
+          dbc->DecodeSignal(
+              re_record->last.FIR.B.FF, re_record->last.MsgID,
+              re_record->last.data.u8, 8,
+              writer);
           }
         }
       }

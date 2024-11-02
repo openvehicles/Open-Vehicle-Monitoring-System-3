@@ -174,7 +174,7 @@ protected:
   void NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_state, const OvmsBatteryMon &monitor) override;
   void BatteryStateStillCharging();
 
-  void Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data);
+  void Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, CAN_frame_format_t format, const std::string &data);
   void Incoming_Fail(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, int errorcode);
 
   void IncomingVMCU_Full(uint16_t type, uint16_t pid, const std::string &data);

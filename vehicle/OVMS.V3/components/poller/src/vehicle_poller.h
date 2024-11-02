@@ -155,6 +155,10 @@ class OvmsPoller : public InternalRamAllocated {
       uint16_t mlremain;      ///< Bytes remaining for multi frame response
       poll_pid_t entry;       ///< Currently processed entry of poll list (copy)
       uint32_t ticker;        ///< Polling tick count
+      // Used for DBC Decode
+      CAN_frame_format_t format; ///< Incoming frame format used for DBC Decode
+      uint8_t *raw_data;       ///< Raw data in response packet for DBC Decode
+      uint8_t raw_data_len;    ///< Length of raw data in response packet.
       } poll_job_t;
 
     const uint32_t max_ticker = 3600;
@@ -384,7 +388,7 @@ class OvmsPoller : public InternalRamAllocated {
         bool Ready() const override;
       };
 
-    typedef std::function<void(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data)> poll_success_func;
+    typedef std::function<void(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, CAN_frame_format_t format, const std::string &data)> poll_success_func;
     typedef std::function<void(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, int errorcode)> poll_fail_func;
 
     /** Standard Poll Series that assembles packets to complete results.
@@ -396,8 +400,10 @@ class OvmsPoller : public InternalRamAllocated {
         int m_repeat_max, m_repeat_count;
         poll_success_func m_success;
         poll_fail_func m_fail;
+        CAN_frame_format_t m_format;
+        bool m_pack_raw_data;
       public:
-        StandardPacketPollSeries( OvmsPoller *poller, int repeat_max, poll_success_func success, poll_fail_func fail);
+        StandardPacketPollSeries( OvmsPoller *poller, int repeat_max, poll_success_func success, poll_fail_func fail, bool pack_raw_data = false);
 
         // Move list to start.
         void ResetList(ResetMode mode) override;
@@ -432,6 +438,7 @@ class OvmsPoller : public InternalRamAllocated {
         std::string *m_poll_rxbuf;    // … response buffer
         int         *m_poll_rxerr;    // … response error code (NRC) / TX failure code
         uint8_t     m_retry_fail;
+        CAN_frame_format_t m_format;
 
         // Called when the one-off is finished (for semaphore etc).
         // Called with NULL bus when on Removing
@@ -598,7 +605,7 @@ class OvmsPoller : public InternalRamAllocated {
     void ResetPollEntry(bool force = false);
     void PollerNextTick(poller_source_t source);
 
-    void Incoming(CAN_frame_t &frame, bool success);
+    bool Incoming(CAN_frame_t &frame, bool success);
     void Outgoing(const CAN_frame_t &frame, bool success);
 
     // Check for throttling.

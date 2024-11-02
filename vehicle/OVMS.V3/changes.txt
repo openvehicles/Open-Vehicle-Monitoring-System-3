@@ -26,6 +26,8 @@ Open Vehicle Monitor System v3 - Change log
     can <bus> explain [errorflags]    -- Decode error flags into human readable text 
 - DBC Files
   Add unit support
+  Add extended signals/multiplexing support
+  Add support for enum values.
 - OVMS Server v3: Ability to define less frequent MQTT communication to save data charges and power
   Events:
     Excludes clock.* events from being published at the start of every minute.

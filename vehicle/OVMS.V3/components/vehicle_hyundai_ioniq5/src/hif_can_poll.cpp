@@ -141,14 +141,14 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
       return;
     }
 
-    Incoming_Full(job.type, job.moduleid_sent, job.moduleid_rec, job.pid, rxbuf);
+    Incoming_Full(job.type, job.moduleid_sent, job.moduleid_rec, job.pid, job.format, rxbuf);
     obd_frame = 0xffff; // Received all - drop until we have a new frame 0
     rxbuf.clear();
   }
   XDISARM;
 }
 
-void OvmsHyundaiIoniqEv::Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data)
+void OvmsHyundaiIoniqEv::Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, CAN_frame_format_t format, const std::string &data)
 {
   ESP_LOGD(TAGP, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Message Size: %d",
       module_rec, type, pid, data.size());
@@ -981,7 +981,7 @@ bool OvmsHyundaiIoniqEv::PollRequestVIN()
   }
   auto poll_entry = std::shared_ptr<OvmsPoller::OnceOffPoll>(
       new OvmsPoller::OnceOffPoll(
-        std::bind(&OvmsHyundaiIoniqEv::Incoming_Full, this, _1, _2, _3, _4, _5),
+        std::bind(&OvmsHyundaiIoniqEv::Incoming_Full, this, _1, _2, _3, _4, _5, _6),
         std::bind(&OvmsHyundaiIoniqEv::Incoming_Fail, this, _1, _2, _3, _4, _5),
         0x7e2, 0x7ea,
         VEHICLE_POLL_TYPE_OBDIIVEHICLE,  2,

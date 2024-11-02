@@ -47,14 +47,24 @@ typedef std::function<void(void*, const char*)> dbcOutputCallback;
 typedef enum
   {
   DBC_MUX_NONE=0,
-  DBC_MUX_MULTIPLEXOR=1,
-  DBC_MUX_MULTIPLEXED=2
+  DBC_MUX_MULTIPLEXSRC=1,
+  DBC_MUX_MULTIPLEXED=2,
+  DBC_MUX_MULTIPLEXED_MULTIPLEXSRC=3
   } dbcMultiplex_t;
 
+struct dbcSwitchRange_t
+  {
+  uint32_t min_val, max_val;
+  };
+
+class dbcSignal;
 struct dbcMultiplexor_t
   {
+  dbcMultiplexor_t();
   dbcMultiplex_t multiplexed;
   uint32_t switchvalue;
+  std::list<dbcSwitchRange_t> switchvalues;
+  dbcSignal *source;
   };
 
 typedef enum
@@ -211,6 +221,7 @@ class dbcValueTable
     void SetName(const std::string& name);
     void SetName(const char* name);
     int GetCount() const;
+    bool IsEmpty() const;
 
   public:
     void EmptyContent();
@@ -286,6 +297,7 @@ class dbcSignal
     bool HasComment(std::string comment);
     void AddValue(uint32_t id, std::string value);
     void RemoveValue(uint32_t id);
+    bool HasValues() const;
     bool HasValue(uint32_t id) const;
     std::string GetValue(uint32_t id) const;
 
@@ -293,11 +305,15 @@ class dbcSignal
     const std::string& GetName() const;
     void SetName(const std::string& name);
     void SetName(const char* name);
+    bool IsMainMultiplexSource() const;
     bool IsMultiplexor() const;
     bool IsMultiplexSwitch() const;
-    void SetMultiplexor();
-    uint32_t GetMultiplexSwitchvalue() const;
+    void SetMultiplexSource();
+    bool IsMultiplexSwitchvalue(uint32_t value) const;
     bool SetMultiplexed(const uint32_t switchvalue);
+    void SetMultiplexSource(dbcSignal* source);
+    dbcSignal* GetMultiplexSource() const { return m_mux.source;}
+    void AddMultiplexRange(const dbcSwitchRange_t &range);
     bool ClearMultiplexed();
     int GetStartBit() const;
     int GetSignalSize() const;
@@ -375,6 +391,8 @@ class dbcMessage
     dbcSignal* FindSignal(std::string name);
     void Count(int* signals, int* bits, int* covered) const;
 
+    void DecodeSignal(const uint8_t* msg, uint8_t size, OvmsWriter* writer = nullptr) const;
+
   public:
     void AddComment(const std::string& comment);
     void AddComment(const char* comment);
@@ -408,7 +426,6 @@ class dbcMessage
     dbcCommentTable m_comments;
 
   protected:
-    dbcSignal* m_multiplexor;
     uint32_t m_id;
     std::string m_name;
     int m_size;
@@ -466,7 +483,7 @@ class dbcfile
     void UnlockFile();
     bool IsLocked() const;
 
-    void DecodeSignal(CAN_frame_format_t format, uint32_t msg_id, const uint8_t* msg, uint8_t size) const;
+    void DecodeSignal(CAN_frame_format_t format, uint32_t msg_id, const uint8_t* msg, uint8_t size, OvmsWriter* writer = nullptr) const;
   public:
     std::string m_name;
     std::string m_path;
