@@ -359,15 +359,45 @@ dbcNumber dbcNumber::operator+(const dbcNumber& value)
 
 bool dbcNumber::operator==(const int32_t value) const
   {
-  return ((m_type == DBC_NUMBER_INTEGER_SIGNED)&&(m_value.sintval==value));
+  switch (m_type)
+    {
+    case DBC_NUMBER_INTEGER_SIGNED:
+      return m_value.sintval == value;
+    case DBC_NUMBER_INTEGER_UNSIGNED:
+      return (value >= 0) && (uint32_t(value) == m_value.uintval);
+    case DBC_NUMBER_DOUBLE:
+      return double(value) == m_value.doubleval;
+    default:
+      return false;
+    }
   }
 
 bool dbcNumber::operator==(const uint32_t value) const
   {
-  return ((m_type == DBC_NUMBER_INTEGER_UNSIGNED)&&(m_value.uintval==value));
+  switch (m_type)
+    {
+    case DBC_NUMBER_INTEGER_SIGNED:
+      return (m_value.sintval >= 0) && (value == uint32_t(m_value.sintval));
+    case DBC_NUMBER_INTEGER_UNSIGNED:
+      return m_value.uintval == value;
+    case DBC_NUMBER_DOUBLE:
+      return double(value) == m_value.doubleval;
+    default:
+      return false;
+    }
   }
 
 bool dbcNumber::operator==(const double value) const
   {
-  return ((m_type == DBC_NUMBER_DOUBLE)&&(m_value.doubleval==value));
+  switch (m_type)
+    {
+    case DBC_NUMBER_INTEGER_SIGNED:
+      return (value == double(m_value.sintval));
+    case DBC_NUMBER_INTEGER_UNSIGNED:
+      return (value == double(m_value.uintval));
+    case DBC_NUMBER_DOUBLE:
+      return value == m_value.doubleval;
+    default:
+      return false;
+    }
   }
