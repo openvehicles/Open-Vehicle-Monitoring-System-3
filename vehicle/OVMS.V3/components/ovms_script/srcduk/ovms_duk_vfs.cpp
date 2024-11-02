@@ -80,7 +80,7 @@ class DuktapeVFSLoad : public DuktapeObject
     static duk_ret_t Create(duk_context *ctx);
 
   public:
-    duk_ret_t CallMethod(duk_context *ctx, const char* method, void* data=NULL);
+    duk_ret_t CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params=NULL) override;
 
   protected:
     static void LoadTask(void *param);
@@ -220,11 +220,11 @@ void DuktapeVFSLoad::Load()
     }
   }
 
-duk_ret_t DuktapeVFSLoad::CallMethod(duk_context *ctx, const char* method, void* data /*=NULL*/)
+duk_ret_t DuktapeVFSLoad::CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params /*=NULL*/)
   {
   if (!ctx)
     {
-    RequestCallback(method, data);
+    RequestCallback(method, params);
     return 0;
     }
   OvmsRecMutexLock lock(&m_mutex);
@@ -341,7 +341,7 @@ class DuktapeVFSSave : public DuktapeObject
     static duk_ret_t Create(duk_context *ctx);
 
   public:
-    duk_ret_t CallMethod(duk_context *ctx, const char* method, void* data=NULL);
+    duk_ret_t CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params = nullptr);
 
   protected:
     static void SaveTask(void *param);
@@ -520,11 +520,11 @@ void DuktapeVFSSave::Save()
     }
   }
 
-duk_ret_t DuktapeVFSSave::CallMethod(duk_context *ctx, const char* method, void* data /*=NULL*/)
+duk_ret_t DuktapeVFSSave::CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params /*=NULL*/)
   {
   if (!ctx)
     {
-    RequestCallback(method, data);
+    RequestCallback(method, params);
     return 0;
     }
   OvmsRecMutexLock lock(&m_mutex);
