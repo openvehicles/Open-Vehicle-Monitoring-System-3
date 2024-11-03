@@ -71,6 +71,7 @@ static const char *TAG = "housekeeping";
 static int tick = 0;
 #ifdef CONFIG_OVMS_COMP_ADC
 static average_util_t<int32_t,4>  aux_avg_v;
+static float aux_factor = 195.7;
 #endif
 
 void HousekeepingUpdate12V()
@@ -86,12 +87,9 @@ void HousekeepingUpdate12V()
   aux_avg_v.add(MyPeripherals->m_esp32adc->read());
 
   // Allow the user to adjust the ADC conversion factor
-  float f = MyConfig.GetParamValueFloat("system.adc","factor12v");
-  if (f == 0) f = 195.7;
-
-  float v = (float)aux_avg_v.get() / f;
+  float v = (float)aux_avg_v.get() / aux_factor;
   // Round to 2 decimal places
-  v = trunc((v*100)+0.5) / 100;
+  v = truncf((v*100)+0.5) / 100;
   if (v < 1.0) v=0;
   m1->SetValue(v);
   if (StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat() == 0)
@@ -170,6 +168,12 @@ Housekeeping::Housekeeping()
   MyEvents.RegisterEvent(TAG,"housekeeping.init", std::bind(&Housekeeping::Init, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.10", std::bind(&Housekeeping::Metrics, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.300", std::bind(&Housekeeping::TimeLogger, this, _1, _2));
+
+#ifdef CONFIG_OVMS_COMP_ADC
+  MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&Housekeeping::ConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&Housekeeping::ConfigChanged, this, _1, _2));
+  ConfigChanged("config.mounted", nullptr);
+#endif
 
   // Fire off the event that causes us to be called back in Events tasks context
   MyEvents.SignalEvent("housekeeping.init", NULL);
@@ -272,6 +276,21 @@ void Housekeeping::Init(std::string event, void* data)
 
   Metrics(event,data); // Causes the metrics to be produced
   }
+
+#ifdef CONFIG_OVMS_COMP_ADC
+void Housekeeping::ConfigChanged(std::string event, void* data)
+  {
+  OvmsConfigParam* param = (OvmsConfigParam*) data;
+
+  if (!param || param->GetName() == "system.adc")
+    {
+    // Allow the user to adjust the ADC conversion factor
+    float f = MyConfig.GetParamValueFloat("system.adc","factor12v");
+    if (f == 0) f = 195.7;
+    aux_factor = f;
+    }
+  }
+#endif
 
 void Housekeeping::Metrics(std::string event, void* data)
   {
