@@ -140,6 +140,14 @@ Open Vehicle Monitor System v3 - Change log
     OvmsPoller.Times.Stop
     OvmsPoller.Times.Reset
     OvmsPoller.Times.GetStatus
+    OvmsPoller.RegisterBus(bus, mode, speed, [,dbcfile])
+    OvmsPoller.PowerDown(bus)
+    OvmsPoller.Poll.Add(..)
+    OvmsPoller.Poll.Remove(..)
+    OvmsPoller.Poll.GetState([busno])
+    OvmsPoller.Poll.SetState([busno,] state)
+    OvmsPoller.Poll.Request(..)
+    OvmsPoller.Poll.SetTrace(enable)
 - Duktape support for Metric Age / Stale
   New Duktape methods
     OvmsMetrics.IsStale
