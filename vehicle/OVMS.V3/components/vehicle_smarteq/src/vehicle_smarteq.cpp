@@ -281,6 +281,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x646:
       mt_use_at_reset->SetValue(CAN_BYTE(1) * 0.1);
+      StandardMetrics.ms_v_inv_temp->SetValue(mt_use_at_reset->AsFloat());
       break;
     case 0x654: // SOC(b)
       StandardMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(3));
@@ -292,6 +293,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         StandardMetrics.ms_v_bat_range_full->SetValue((float) (_range_est / StandardMetrics.ms_v_bat_soc->AsFloat(0)) * 100.0); // ToDo
       }
       StandardMetrics.ms_v_bat_range_ideal->SetValue((165 * StandardMetrics.ms_v_bat_soc->AsFloat(0)) / 100.0); // ToDo
+      StandardMetrics.ms_v_inv_power->SetValue(mt_evc_hv_energy->AsFloat());
       break;
     case 0x65C: // ExternalTemp
       StandardMetrics.ms_v_env_temp->SetValue((CAN_BYTE(0) >> 1) - 40); // ExternalTemp ?
