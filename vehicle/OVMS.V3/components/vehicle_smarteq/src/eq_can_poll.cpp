@@ -271,10 +271,12 @@ void OvmsVehicleSmartEQ::PollReply_HVAC(const char* data, uint16_t reply_len) {
 void OvmsVehicleSmartEQ::PollReply_TDB(const char* data, uint16_t reply_len) {
   StandardMetrics.ms_v_env_temp->SetValue( (CAN_UINT(2) - 400) * 0.1 );
   if (m_ios_tpms_fix) {
-    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, (float) (CAN_UINT(2) - 400) * 0.1);
-    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, (float) (CAN_UINT(2) - 400) * 0.1);
-    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, (float) (CAN_UINT(2) - 400) * 0.1);
-    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, (float) (CAN_UINT(2) - 400) * 0.1);
+    float temp = (float) (CAN_UINT(2) - 400) * 0.1;
+    if (temp < 1.0f) temp = 1.0;
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, temp);
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, temp);
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, temp);
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, temp);
   }
 }
 
@@ -285,6 +287,7 @@ void OvmsVehicleSmartEQ::PollReply_VIN(const char* data, uint16_t reply_len) {
 
 void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len) {
   mt_evc_hv_energy->SetValue( CAN_UINT(0) / 200.0 );
+  StandardMetrics.ms_v_inv_power->SetValue(mt_evc_hv_energy->AsFloat());
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_State(const char* data, uint16_t reply_len) {
