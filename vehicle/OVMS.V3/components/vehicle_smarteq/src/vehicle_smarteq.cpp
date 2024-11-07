@@ -138,6 +138,19 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_CHGpower = new OvmsMetricVector<float>("xsq.obl.power", SM_STALE_HIGH, kW);
   mt_obl_main_freq = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);
 
+  // standard settings
+  StdMetrics.ms_v_bat_cac->SetValue(59);
+  StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float) 240);
+  StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float) 240);
+  StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float) 210);
+  StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float) 210);
+  StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, (float) 1.1);
+  StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, (float) 1.1);
+  StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, (float) 1.1);
+  StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, (float) 1.1);
+  StandardMetrics.ms_v_inv_power->SetValue(mt_evc_hv_energy->AsFloat());
+  StandardMetrics.ms_v_inv_temp->SetValue(mt_use_at_reset->AsFloat());
+
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
   MyConfig.RegisterParam("xsq", "Smart EQ", true, true);
@@ -281,6 +294,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x646:
       mt_use_at_reset->SetValue(CAN_BYTE(1) * 0.1);
+      StandardMetrics.ms_v_charge_kwh_grid->SetValue(mt_use_at_reset->AsFloat());
       StandardMetrics.ms_v_inv_temp->SetValue(mt_use_at_reset->AsFloat());
       break;
     case 0x654: // SOC(b)
@@ -342,13 +356,13 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x673:
       if (CAN_BYTE(2) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float) CAN_BYTE(2)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float) CAN_BYTE(2)*3.1);
       if (CAN_BYTE(3) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float) CAN_BYTE(3)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float) CAN_BYTE(3)*3.1);
       if (CAN_BYTE(4) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float) CAN_BYTE(4)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float) CAN_BYTE(4)*3.1);
       if (CAN_BYTE(5) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float) CAN_BYTE(5)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float) CAN_BYTE(5)*3.1);
       break;
 
     default:
@@ -507,10 +521,11 @@ void OvmsVehicleSmartEQ::HandlePollState() {
 }
 
 void OvmsVehicleSmartEQ::CalculateEfficiency() {
-  float consumption = 0;
-  if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5)
-    consumption = ABS(StdMetrics.ms_v_bat_power->AsFloat(0, Watts)) / StdMetrics.ms_v_pos_speed->AsFloat();
-  StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
+  /*float consumption = 0;
+  if (StdMetrics.ms_v_pos_gpsspeed->AsFloat() >= 5)
+    consumption = ABS(mt_bms_BattPower_power->AsFloat(0, Watts)) / StdMetrics.ms_v_pos_gpsspeed->AsFloat();
+  StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);*/
+  StandardMetrics.ms_v_bat_consumption->SetValue(mt_use_at_reset->AsFloat());
 }
 
 void OvmsVehicleSmartEQ::OnlineState() {

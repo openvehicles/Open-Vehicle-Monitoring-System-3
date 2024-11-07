@@ -533,11 +533,23 @@ void OvmsConfig::upgrade()
   // Migrate vehicle.require.* signals to config:
   if (GetParamValueInt("module", "cfgversion") < 2018112200)
     {
-    std::string vt = GetParamValue("auto", "vehicle.type");
-    if (vt=="FT5E" || vt=="KS" || vt=="MI" || vt=="RT" || vt=="TGTC" || vt=="VA" || vt=="ZEVA")
+      std::string vt = GetParamValue("auto", "vehicle.type");
+      if (vt=="FT5E" || vt=="KS" || vt=="MI" || vt=="RT" || vt=="TGTC" || vt=="VA" || vt=="ZEVA")
       {
-      SetParamValueBool("modem", "enable.gps", true);
-      SetParamValueBool("modem", "enable.gpstime", true);
+        SetParamValueBool("modem", "enable.gps", true);
+        SetParamValueBool("modem", "enable.gpstime", true);
+      }
+      // default gps/modem/network setting for smart EQ/ED
+      if (vt=="SE" || vt=="SQ")
+      {
+        SetParamValueBool("modem", "enable.gps", true);
+        SetParamValueBool("modem", "enable.gpstime", true);
+        SetParamValueBool("modem", "enable.sms", false);
+        SetParamValueBool("modem", "enable.net", true);
+        SetParamValueBool("network", "modem.sq.good", -93);
+        SetParamValueBool("network", "modem.sq.bad", -95);
+        SetParamValueBool("network", "wifi.sq.good", -87);
+        SetParamValueBool("network", "wifi.sq.bad",  -89);
       }
     }
 
