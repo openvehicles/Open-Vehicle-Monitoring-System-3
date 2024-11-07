@@ -523,7 +523,7 @@ void OvmsVehicleSmartEQ::HandlePollState() {
 void OvmsVehicleSmartEQ::CalculateEfficiency() {
   float consumption = 0;
   if (StdMetrics.ms_v_pos_gpsspeed->AsFloat() >= 5)
-    consumption = ABS(mt_bms_BattPower_power->AsFloat(0, kW)) / StdMetrics.ms_v_pos_gpsspeed->AsFloat();
+    consumption = ABS(mt_bms_BattPower_power->AsFloat(0, kW)) / StdMetrics.ms_v_pos_trip->AsFloat();
   StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
 }
 
