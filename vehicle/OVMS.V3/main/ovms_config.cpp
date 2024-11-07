@@ -539,18 +539,6 @@ void OvmsConfig::upgrade()
         SetParamValueBool("modem", "enable.gps", true);
         SetParamValueBool("modem", "enable.gpstime", true);
       }
-      // default gps/modem/network setting for smart EQ/ED
-      if (vt=="SE" || vt=="SQ")
-      {
-        SetParamValueBool("modem", "enable.gps", true);
-        SetParamValueBool("modem", "enable.gpstime", true);
-        SetParamValueBool("modem", "enable.sms", false);
-        SetParamValueBool("modem", "enable.net", true);
-        SetParamValueBool("network", "modem.sq.good", -93);
-        SetParamValueBool("network", "modem.sq.bad", -95);
-        SetParamValueBool("network", "wifi.sq.good", -87);
-        SetParamValueBool("network", "wifi.sq.bad",  -89);
-      }
     }
 
   // Migrate server.v2 password (from server.v2 to password)
@@ -610,8 +598,9 @@ void OvmsConfig::upgrade()
     DeleteInstance("vehicle", "units.preasure");
     }
 
-  // updated Standard settings for smart and signal quality
-  if (GetParamValueInt("module", "cfgversion") < 2024110700)
+  // updated Standard settings for signal quality
+  // default gps/modem/network setting for smart EQ/ED
+  if (GetParamValueInt("module", "cfgversion") < 2024110702)
     {
       if (vt=="SE" || vt=="SQ")
       {
@@ -620,14 +609,14 @@ void OvmsConfig::upgrade()
         SetParamValueBool("modem", "enable.sms", false);
         SetParamValueBool("modem", "enable.net", true);
       }
-      SetParamValueBool("network", "modem.sq.good", -93);
-      SetParamValueBool("network", "modem.sq.bad", -95);
-      SetParamValueBool("network", "wifi.sq.good", -87);
-      SetParamValueBool("network", "wifi.sq.bad",  -89);
+      SetParamValue("network", "modem.sq.good", "-93.0");
+      SetParamValue("network", "modem.sq.bad", "-95.0");
+      SetParamValue("network", "wifi.sq.good", "-87.0");
+      SetParamValue("network", "wifi.sq.bad",  "-89.0");
     }
 
   // Done, set config version:
-  SetParamValueInt("module", "cfgversion", 2024110700);
+  SetParamValueInt("module", "cfgversion", 2024110702);
   }
 
 void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)
