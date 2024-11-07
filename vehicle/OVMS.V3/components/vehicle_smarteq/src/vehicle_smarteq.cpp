@@ -139,7 +139,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_freq = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);
 
   // standard settings
-  StdMetrics.ms_v_bat_cac->SetValue(59);
+  StdMetrics.ms_v_bat_cac->SetValue(42);
   StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float) 240);
   StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float) 240);
   StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float) 210);
@@ -521,11 +521,10 @@ void OvmsVehicleSmartEQ::HandlePollState() {
 }
 
 void OvmsVehicleSmartEQ::CalculateEfficiency() {
-  /*float consumption = 0;
+  float consumption = 0;
   if (StdMetrics.ms_v_pos_gpsspeed->AsFloat() >= 5)
-    consumption = ABS(mt_bms_BattPower_power->AsFloat(0, Watts)) / StdMetrics.ms_v_pos_gpsspeed->AsFloat();
-  StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);*/
-  StandardMetrics.ms_v_bat_consumption->SetValue(mt_use_at_reset->AsFloat());
+    consumption = ABS(mt_bms_BattPower_power->AsFloat(0, kW)) / StdMetrics.ms_v_pos_gpsspeed->AsFloat();
+  StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
 }
 
 void OvmsVehicleSmartEQ::OnlineState() {
