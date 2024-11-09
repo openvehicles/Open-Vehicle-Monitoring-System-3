@@ -284,8 +284,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x646:
       mt_use_at_reset->SetValue(CAN_BYTE(1) * 0.1);
-      StandardMetrics.ms_v_inv_temp->SetValue(mt_use_at_reset->AsFloat()); // not the best idea at the moment
-      StandardMetrics.ms_v_charge_kwh_grid->SetValue(mt_use_at_reset->AsFloat()); // not the best idea at the moment
+      StandardMetrics.ms_v_charge_kwh_grid_total->SetValue(mt_use_at_reset->AsFloat()); // not the best idea at the moment
       break;
     case 0x654: // SOC(b)
       StandardMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(3));
