@@ -1019,7 +1019,9 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_charge_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_current->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_bat_range_speed->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_bat_range_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_kwh_grid->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_kwh_grid_total->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1110,6 +1112,10 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << std::setprecision(1)
     << StandardMetrics.ms_v_bat_range_speed->AsFloat(0, units_speed)
+    << ","
+    << StandardMetrics.ms_v_charge_kwh_grid->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_charge_kwh_grid_total->AsFloat()
     ;
 
   Transmit(buffer.str().c_str());
