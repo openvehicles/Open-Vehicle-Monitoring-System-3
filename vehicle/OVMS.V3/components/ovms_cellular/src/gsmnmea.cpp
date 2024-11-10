@@ -133,7 +133,7 @@ void GsmNMEA::IncomingLine(const std::string line)
 
   if (token.substr(3) == "GNS")
     {
-    ESP_LOGD(TAG, "Incoming GNS: %s", line.c_str());
+    ESP_LOGV(TAG, "Incoming GNS: %s", line.c_str());
     // NMEA sentence type "GNS": GNSS Position Fix Data (GPS/GLONASS/… combined position data)
     //  $..GNS,<Time>,<Latitude>,<NS>,<Longitude>,<EW>,<Mode>,<SatCnt>,<HDOP>,<Altitude>,<GeoidalSep>,<DiffAge>,<Chksum>
     // Example:
@@ -230,7 +230,7 @@ void GsmNMEA::IncomingLine(const std::string line)
 
   else if (token.substr(3) == "RMC")
     {
-    ESP_LOGD(TAG, "Incoming RMC: %s", line.c_str());
+    ESP_LOGV(TAG, "Incoming RMC: %s", line.c_str());
     // NMEA sentence type "RMC": Recommended Minimum Specific GNSS Data
     //  $..RMC,<Time>,<Status>,<Latitude>,<NS>,<Longitude>,<EW>,<SpeedKnots>,<Direction>,<Date>,<MagVar>,<MagVarEW>,<Mode>,<Chksum>
     // Example:
@@ -325,11 +325,10 @@ void GsmNMEA::Shutdown(bool hard)
   }
 
 
-GsmNMEA::GsmNMEA(GsmMux* mux, int channel_nmea, int channel_cmd)
+GsmNMEA::GsmNMEA(GsmMux* mux, int channel)
   {
   m_mux = mux;
-  m_channel_nmea = channel_nmea;
-  m_channel_cmd = channel_cmd;
+  m_channel = channel;
   m_connected = false;
   m_gpstime_enabled = false;
   }

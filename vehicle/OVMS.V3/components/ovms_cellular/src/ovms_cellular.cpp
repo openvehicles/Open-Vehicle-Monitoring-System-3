@@ -34,6 +34,8 @@ static const char *TAG = "cellular";
 #include <string.h>
 #include <algorithm>
 #include <functional>
+#include <codecvt>
+#include <locale>
 #include "ovms_cellular.h"
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
@@ -302,6 +304,8 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_err_uart_frame = 0;
   m_err_driver_buffer_full = 0;
   m_nmea = NULL;
+  m_gps_enabled = false;
+  m_gps_usermode = -1;
   m_mux = NULL;
   m_ppp = NULL;
   m_driver = NULL;
@@ -515,7 +519,7 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
     {
     if (m_nmea->m_connected)
       {
-      writer->printf("  GPS: Connected on channel: #%d\n", m_nmea->m_channel_nmea);
+      writer->printf("  GPS: Connected on channel: #%d\n", m_nmea->m_channel);
       }
     else
       {
@@ -986,42 +990,12 @@ bool modem::StandardIncomingHandler(int channel, OvmsBuffer* buf)
   {
   bool result = false;
 
-  while(1)
+  while (buf->HasLine() >= 0)
     {
-    if (buf->m_userdata != 0)
-      {
-      // Expecting N bytes of data mode
-      if (buf->UsedSpace() < (size_t)buf->m_userdata) return false;
-      StandardDataHandler(channel, buf);
-      result = true;
-      }
-    else
-      {
-      // Normal line mode
-      while (buf->HasLine() >= 0)
-        {
-        StandardLineHandler(channel, buf, buf->ReadLine());
-        result = true;
-        }
-      return result;
-      }
+    StandardLineHandler(channel, buf, buf->ReadLine());
+    result = true;
     }
-  }
-
-void modem::StandardDataHandler(int channel, OvmsBuffer* buf)
-  {
-  // We have SMS data ready...
-  size_t needed = (size_t)buf->m_userdata;
-
-  char* result = new char[needed+1];
-  buf->Pop(needed, (uint8_t*)result);
-  result[needed] = 0;
-
-  // This may be a big performance hit, so disable for the moment
-  // MyCommandApp.HexDump(TAG, "data", result, needed);
-
-  delete [] result;
-  buf->m_userdata = 0;
+  return result;
   }
 
 void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
@@ -1039,6 +1013,7 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
   if (m_line_unfinished == channel)
     {
     m_line_buffer += line;
+    m_line_buffer += "\n";
     if (m_line_buffer.length() > 1000)
       {
       ESP_LOGE(TAG, "rx line buffer grown too long, discarding");
@@ -1057,7 +1032,7 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     }
 
   // Log incoming data other than GPS NMEA
-  ESP_LOGD(TAG, "mux-rx-line #%d: %s", channel, line.c_str());
+  ESP_LOGD(TAG, "mux-rx-line #%d (%d/%d): %s", channel, line.length(), buf->UsedSpace(), line.c_str());
 
   if ((line.compare(0, 8, "CONNECT ") == 0)&&(m_state1 == NetStart)&&(m_state1_userdata == 1))
     {
@@ -1175,16 +1150,92 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
         }
       }
     }
+
   // SMS received (URC):
   else if (line.compare(0, 6, "+CMT: ") == 0)
     {
-    size_t qp = line.find_last_of(',');
-    if (qp != string::npos)
+    // Format depending on the modem state:
+    //  Before modem init (+CSDH=1):
+    //    +CMT: <oa>,[<alpha>],<scts>   !! no length !!
+    //    <CR><LF><data>
+    //    This URC mode applies to SMS received while the modem was powered off,
+    //    as these are forwarded to the module as soon as the modem powers on,
+    //    i.e. even before the config init has been sent. As we don't get a length
+    //    and cannot identify the end, we skip these -- possibly solvable by reading
+    //    the SMS explicitly via AT+CMGL="ALL" after MUX init?
+    //  After modem init:
+    //    +CMT: <oa>,[<alpha>],<scts>[,<tooa>,<fo>,<pid>,<dcs>,<sca>,<tosca>,<length>]
+    //    <CR><LF><data>
+    // <oa> = Originating Address (sender phone number / ID)
+    // <scts> = Service Center Time Stamp
+    // <dcs> = Data Coding Scheme: 0=default 7bit, 8=UCS-2 (UTF-16) (do we need more?)
+    // <length> = Bytes in SMS text, with line breaks counting as 1 byte
+    // <data> may come on multiple lines
+
+    std::string header, data;
+    size_t eoh = line.find('\n');
+    if (eoh == string::npos)
       {
-      buf->m_userdata = (void*)atoi(line.substr(qp+1).c_str());
-      ESP_LOGI(TAG,"SMS length is %d",(int)buf->m_userdata);
+      header = line.substr(6);
+      }
+    else
+      {
+      header = line.substr(6, eoh-6);
+      data = line.substr(eoh+1);
+      }
+
+    std::vector<std::string> smsinfo = readCSVRow(header);
+    if (smsinfo.size() != 10)
+      {
+      ESP_LOGW(TAG, "SMS received: malformed/unsupported header: %s", line.c_str());
+      }
+    else
+      {
+      std::string sender = smsinfo[0];
+      std::string timestamp = smsinfo[2];
+      int coding = atoi(smsinfo[6].c_str());
+      int length = atoi(smsinfo[9].c_str());
+      if (data.size() < length)
+        {
+        // SMS text not yet complete, continue reading:
+        ESP_LOGD(TAG, "SMS received from %s, read %d/%d bytes", sender.c_str(), data.size(), length);
+        if (m_line_unfinished < 0)
+          {
+          m_line_unfinished = channel;
+          m_line_buffer = line;
+          m_line_buffer += "\n";
+          }
+        }
+      else
+        {
+        // SMS text complete, process:
+        ESP_LOGI(TAG, "SMS received from %s (%s): %s", sender.c_str(), timestamp.c_str(), data.c_str());
+        if (!MyConfig.GetParamValueBool("modem", "enable.sms"))
+          {
+          ESP_LOGI(TAG, "SMS processing disabled by user");
+          }
+        else
+          {
+          // Check data coding scheme:
+          if ((coding & 15) >= 8 && (coding & 15) <= 11)
+            {
+            // data is hex encoded UCS-2 (UTF-16 subset), decode & convert to UTF-8:
+            size_t hexend = data.find_first_not_of("0123456789ABCDEFabcdef", 0);
+            std::u16string u16 = hexdecode_u16(data.substr(0, hexend));
+            data = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.to_bytes(u16);
+            }
+          
+          // Forward to system & user:
+          MyEvents.SignalEvent("system.modem.received.sms", (void*)m_line_buffer.c_str(),m_line_buffer.size()+1);
+          MyNotify.NotifyStringf("info", "modem.received.sms", "SMS From: %s\nDate: %s\n\n%s",
+            sender.c_str(), timestamp.c_str(), data.c_str());
+          }
+        m_line_unfinished = -1;
+        m_line_buffer.clear();
+        }
       }
     }
+
   // SIM card PIN code required:
   else if (line.compare(0, 14, "+CPIN: SIM PIN") == 0)
     {
@@ -1252,6 +1303,7 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
       m_line_buffer = line.substr(q1+1, q2-q1-1);
       ESP_LOGI(TAG, "USSD received: %s", m_line_buffer.c_str());
       MyEvents.SignalEvent("system.modem.received.ussd", (void*)m_line_buffer.c_str(),m_line_buffer.size()+1);
+      MyNotify.NotifyStringf("info", "modem.received.ussd", "USSD:\n\n%s", m_line_buffer.c_str());
       m_line_unfinished = -1;
       m_line_buffer.clear();
       }
@@ -1324,7 +1376,7 @@ void modem::muxtx(int channel, const char* data, ssize_t size)
   if (!m_task) return; // Quick exit if not task (we are stopped)
   if (size == -1) size = strlen(data);
 
-  if (size > 0 && (channel == m_mux_channel_POLL || channel == m_mux_channel_CMD))
+  if (size > 0 && (channel == m_mux_channel_POLL || channel == m_mux_channel_CMD || channel == m_mux_channel_NMEA))
     ESP_LOGD(TAG, "mux-tx #%d: %s", channel, data);
 
   if (m_state1 == Development)
@@ -1392,10 +1444,10 @@ void modem::StopTask()
     }
   }
 
-bool modem::StartNMEA(bool force /*=false*/)
+bool modem::StartNMEA()
   {
   if ( (m_nmea == NULL) &&
-       (force || MyConfig.GetParamValueBool("modem", "enable.gps", false)) )
+       (m_gps_usermode == 1 || (m_gps_usermode == -1 && m_gps_enabled)) )
     {
     if (!m_mux || !m_driver)
       {
@@ -1404,9 +1456,10 @@ bool modem::StartNMEA(bool force /*=false*/)
     else
       {
       ESP_LOGV(TAG, "Starting NMEA");
-      m_nmea = new GsmNMEA(m_mux, m_mux_channel_NMEA, m_mux_channel_CMD);
+      m_nmea = new GsmNMEA(m_mux, m_mux_channel_NMEA);
       m_nmea->Startup();
       m_driver->StartupNMEA();
+      MyEvents.SignalEvent("system.modem.gpsstart", NULL);
       }
     }
   return (m_nmea != NULL);
@@ -1427,6 +1480,7 @@ void modem::StopNMEA()
       m_nmea->Shutdown();
       delete m_nmea;
       m_nmea = NULL;
+      MyEvents.SignalEvent("system.modem.gpsstop", NULL);
       }
     }
   }
@@ -1521,11 +1575,32 @@ void modem::EventListener(std::string event, void* data)
 void modem::ConfigChanged(std::string event, void* data)
   {
   OvmsConfigParam* param = (OvmsConfigParam*)data;
+
+  if (!param || param->GetName() == "modem")
+    {
+    bool enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
+    if (event == "config.mounted")
+      {
+      // Init:
+      m_gps_enabled = enable_gps;
+      }
+    else if (enable_gps != m_gps_enabled)
+      {
+      // User changed GPS configuration; translate to status change:
+      m_gps_usermode = -1;
+      m_gps_enabled = enable_gps;
+      if (m_gps_enabled && !m_nmea)
+        StartNMEA();
+      else if (!m_gps_enabled && m_nmea)
+        StopNMEA();
+      }
+    }
+
   if (event == "config.mounted" || !param || param->GetName() == "network")
     {
     // Network config has been changed, apply:
-    m_good_dbm = MyConfig.GetParamValueFloat("network", "modem.sq.good", -95);
-    m_bad_dbm = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -93);
+    m_good_dbm = MyConfig.GetParamValueFloat("network", "modem.sq.good", -93);
+    m_bad_dbm = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -95);
     }
   }
 
@@ -1728,44 +1803,128 @@ void cellular_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       }
     return;
     }
-
-  MyModem->m_cmd_output.clear();
-  MyModem->m_cmd_running = true;
-
-  for (int k=0; k<argc; k++)
+  else
     {
-    if (k>0)
+    OvmsMutexLock lock(&MyModem->m_cmd_mutex, 3000);
+    if (!lock.IsLocked())
       {
-      msg.append(" ");
+      if (verbosity >= COMMAND_RESULT_MINIMAL)
+        {
+        writer->puts("ERROR: MODEM command channel in use, please retry");
+        }
+      return;
       }
-    msg.append(argv[k]);
-    }
-  msg.append("\r\n");
-  if (!MyModem->txcmd(msg.c_str(),msg.length()))
-    {
+
+    MyModem->m_cmd_output.clear();
+    MyModem->m_cmd_running = true;
+
+    for (int k=0; k<argc; k++)
+      {
+      if (k>0)
+        {
+        msg.append(" ");
+        }
+      msg.append(argv[k]);
+      }
+    msg.append("\r\n");
+    if (!MyModem->txcmd(msg.c_str(),msg.length()))
+      {
+      if (verbosity >= COMMAND_RESULT_MINIMAL)
+        {
+        writer->puts("ERROR: MODEM command channel not available!");
+        }
+      return;
+      }
+
+    // Wait for output to stabilise
+    size_t cmdsize = UINT_MAX;
+    size_t iter = 0;
+    while ((MyModem->m_cmd_output.size() != cmdsize) && (iter < 5))
+      {
+      iter++;
+      cmdsize = MyModem->m_cmd_output.size();
+      vTaskDelay(pdMS_TO_TICKS(500));
+      }
+
+    MyModem->m_cmd_running = false;
     if (verbosity >= COMMAND_RESULT_MINIMAL)
       {
-      writer->puts("ERROR: MODEM command channel not available!");
+      writer->write(MyModem->m_cmd_output.c_str(), MyModem->m_cmd_output.size());
       }
+    MyModem->m_cmd_output.clear();
+    }
+  }
+
+void cellular_sendsms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyConfig.GetParamValueBool("modem", "enable.sms"))
+    {
+    writer->puts("ERROR: SMS feature disabled!");
     return;
     }
-
-  // Wait for output to stabilise
-  size_t cmdsize = UINT_MAX;
-  size_t iter = 0;
-  while ((MyModem->m_cmd_output.size() != cmdsize) && (iter < 5))
+  
+  PowerMode pm = MyModem ? MyModem->GetPowerMode() : Off;
+  if (pm != On && pm != Devel)
     {
-    iter++;
-    cmdsize = MyModem->m_cmd_output.size();
-    vTaskDelay(pdMS_TO_TICKS(500));
+    writer->puts("ERROR: MODEM not powered on!");
+    return;
     }
-
-  MyModem->m_cmd_running = false;
-  if (verbosity >= COMMAND_RESULT_MINIMAL)
+  else
     {
-    writer->write(MyModem->m_cmd_output.c_str(), MyModem->m_cmd_output.size());
+    OvmsMutexLock lock(&MyModem->m_cmd_mutex, 3000);
+    if (!lock.IsLocked())
+      {
+      writer->puts("ERROR: MODEM command channel in use, please retry");
+      return;
+      }
+
+    MyModem->m_cmd_output.clear();
+    MyModem->m_cmd_running = true;
+
+    // Request SMS transmission:
+    std::string msg = "AT+CMGS=\"";
+    msg.append(argv[0]);
+    msg.append("\"\r");
+
+    if (!MyModem->txcmd(msg.c_str(), msg.length()))
+      {
+      writer->puts("ERROR: MODEM command channel not available!");
+      MyModem->m_cmd_running = false;
+      MyModem->m_cmd_output.clear();
+      return;
+      }
+
+    for (int k=1; k<argc; k++)
+      {
+      vTaskDelay(pdMS_TO_TICKS(20));
+      msg = argv[k];
+      msg.append(k == (argc-1) ? "\032" : "\n");
+      MyModem->txcmd(msg.c_str(), msg.length());
+      }
+
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
+    // Wait for output to stabilise
+    size_t cmdsize = UINT_MAX;
+    size_t iter = 0;
+    while ((MyModem->m_cmd_output.size() != cmdsize) && (iter < 5))
+      {
+      iter++;
+      cmdsize = MyModem->m_cmd_output.size();
+      vTaskDelay(pdMS_TO_TICKS(500));
+      }
+
+    MyModem->m_cmd_running = false;
+
+    size_t outpos = MyModem->m_cmd_output.find_first_not_of("> \r\n");
+    if (outpos != std::string::npos)
+      msg = MyModem->m_cmd_output.substr(outpos);
+    else
+      msg = MyModem->m_cmd_output;
+    writer->write(msg.c_str(), msg.size());
+
+    MyModem->m_cmd_output.clear();
     }
-  MyModem->m_cmd_output.clear();
   }
 
 void cellular_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -1818,7 +1977,8 @@ void modem_gps_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     return;
     }
 
-  if (MyModem->StartNMEA(true))
+  MyModem->m_gps_usermode = 1;
+  if (MyModem->StartNMEA())
     {
     writer->puts("GPS started (may take a minute to find satellites).");
     }
@@ -1841,6 +2001,7 @@ void modem_gps_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     return;
     }
 
+  MyModem->m_gps_usermode = 0;
   MyModem->StopNMEA();
   writer->puts("GPS stopped.");
   }
@@ -1890,6 +2051,9 @@ CellularModemInit::CellularModemInit()
   cmd_cellular->RegisterCommand("tx","Transmit data on CELLULAR MODEM",cellular_tx, "", 1, INT_MAX);
   cmd_cellular->RegisterCommand("muxtx","Transmit data on CELLULAR MODEM MUX",cellular_muxtx, "<chan> <data>", 2, INT_MAX);
   cmd_cellular->RegisterCommand("cmd","Send CELLULAR MODEM AT command",cellular_cmd, "<command>", 1, INT_MAX);
+  cmd_cellular->RegisterCommand("sendsms","Send SMS message",cellular_sendsms, "<receiver> <text> [<text>…]\n"
+    "<receiver> needs to be given in international format with leading '+'\n"
+    "Multiple <text> will be sent as multiple lines.", 2, INT_MAX);
   cmd_cellular->RegisterCommand("drivers","Show supported CELLULAR MODEM drivers",cellular_drivers, "", 0, 0);
   OvmsCommand* cmd_status = cmd_cellular->RegisterCommand("status","Show CELLULAR MODEM status",cellular_status, "[debug]", 0, 0, false);
   cmd_status->RegisterCommand("debug","Show extended CELLULAR MODEM status",cellular_status, "", 0, 0, false);

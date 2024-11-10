@@ -141,6 +141,8 @@ data    log.trip                    Trip history log (see below) (→ ``*-LOG-Tr
 data    log.pollstats               Poller Stats log (see below) (→ ``*-LOG-PollStats``)
 alert   modem.no_pincode            No PIN code for SIM card configured
 alert   modem.wrongpincode          Wrong pin code
+info    modem.received.sms          Show/forward received SMS metadata & text
+info    modem.received.ussd         Show/forward received USSD text
 info    ota.update                  New firmware available/downloaded/installed
 info    pushover                    Connection failure / message delivery response
 stream  retools.list.update         RE toolkit CAN frame list update

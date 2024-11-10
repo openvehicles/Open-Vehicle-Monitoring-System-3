@@ -134,9 +134,14 @@ void modemdriver::StartupNMEA()
   //   2 = $..RMC -- UTC time & date
   //  64 = $..GNS -- Position & fix data
   if (m_modem->m_mux != NULL)
-    { m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=66;+CGPS=1,1\r\n"); }
+    {
+    OvmsMutexLock lock(&m_modem->m_cmd_mutex);
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=66;+CGPS=1,1\r\n");
+    }
   else
-    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
+    {
+    ESP_LOGE(TAG, "Attempt to transmit on non running mux");
+    }
   }
 
 void modemdriver::ShutdownNMEA()
@@ -144,13 +149,16 @@ void modemdriver::ShutdownNMEA()
   // Switch off GPS:
   if (m_modem->m_mux != NULL)
     {
+    OvmsMutexLock lock(&m_modem->m_cmd_mutex);
     // send single commands, as each can fail:
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=0\r\n");
     vTaskDelay(pdMS_TO_TICKS(100));
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
     }
   else
-    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
+    {
+    ESP_LOGE(TAG, "Attempt to transmit on non running mux");
+    }
   }
 
 void modemdriver::StatusPoller()

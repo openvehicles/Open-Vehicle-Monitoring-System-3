@@ -76,14 +76,19 @@ void simcom7600::StartupNMEA()
   // We need to do this a little differently from the standard, as SIM7600
   // may start GPS on power up, and doesn't like us using CGPS=1,1 when
   // it is already on. So workaround is to first CGPS=0.
+  // Also, the SIM7600 NMEA can be controlled via the NMEA MUX channel, so we
+  // can keep the CMD MUX channel clear for user commands and don't need to
+  // lock the channel.
   if (m_modem->m_mux != NULL)
     {
-    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    m_modem->muxtx(GetMuxChannelNMEA(), "AT+CGPS=0\r\n");
+    vTaskDelay(pdMS_TO_TICKS(2000));
     // send single commands, as each can fail:
-    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=258\r\n");
-    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSINFOCFG=5,258\r\n");
-    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=1,1\r\n");
+    m_modem->muxtx(GetMuxChannelNMEA(), "AT+CGPSNMEA=258\r\n");
+    vTaskDelay(pdMS_TO_TICKS(20));
+    m_modem->muxtx(GetMuxChannelNMEA(), "AT+CGPSINFOCFG=5,258\r\n");
+    vTaskDelay(pdMS_TO_TICKS(20));
+    m_modem->muxtx(GetMuxChannelNMEA(), "AT+CGPS=1,1\r\n");
     }
   else
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
@@ -95,10 +100,11 @@ void simcom7600::ShutdownNMEA()
   if (m_modem->m_mux != NULL)
     {
     // send single commands, as each can fail:
-    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=0\r\n");
-    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSINFOCFG=0\r\n");
+    m_modem->muxtx(GetMuxChannelNMEA(), "AT+CGPSNMEA=0\r\n");
+    vTaskDelay(pdMS_TO_TICKS(20));
+    m_modem->muxtx(GetMuxChannelNMEA(), "AT+CGPSINFOCFG=0\r\n");
     vTaskDelay(pdMS_TO_TICKS(100));
-    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
+    m_modem->muxtx(GetMuxChannelNMEA(), "AT+CGPS=0\r\n");
     }
   else
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
