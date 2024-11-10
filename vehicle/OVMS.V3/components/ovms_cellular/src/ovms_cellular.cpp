@@ -1524,8 +1524,8 @@ void modem::ConfigChanged(std::string event, void* data)
   if (event == "config.mounted" || !param || param->GetName() == "network")
     {
     // Network config has been changed, apply:
-    m_good_dbm = MyConfig.GetParamValueFloat("network", "modem.sq.good", -95);
-    m_bad_dbm = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -93);
+    m_good_dbm = MyConfig.GetParamValueFloat("network", "modem.sq.good", -93);
+    m_bad_dbm = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -95);
     }
   }
 

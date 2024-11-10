@@ -951,8 +951,8 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   enable_sms = MyConfig.GetParamValueBool("modem", "enable.sms", true);
   enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
   enable_gpstime = MyConfig.GetParamValueBool("modem", "enable.gpstime", false);
-  cfg_sq_good = MyConfig.GetParamValueFloat("network", "modem.sq.good", -95);
-  cfg_sq_bad = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -93);
+  cfg_sq_good = MyConfig.GetParamValueFloat("network", "modem.sq.good", -93);
+  cfg_sq_bad = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -95);
 
   // generate form:
   c.panel_start("primary", "Cellular modem configuration");
@@ -1002,9 +1002,9 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Cellular client options");
   c.input_slider("Good signal level", "cfg_sq_good", 3, "dBm", -1, cfg_sq_good, -93.0, -128.0, 0.0, 0.1,
-    "<p>Threshold for usable wifi signal strength</p>");
+    "<p>Threshold for usable cellular signal strength</p>");
   c.input_slider("Bad signal level", "cfg_sq_bad", 3, "dBm", -1, cfg_sq_bad, -95.0, -128.0, 0.0, 0.1,
-    "<p>Threshold for unusable wifi signal strength</p>");
+    "<p>Threshold for unusable cellular signal strength</p>");
   c.fieldset_end();
 
   c.hr();
