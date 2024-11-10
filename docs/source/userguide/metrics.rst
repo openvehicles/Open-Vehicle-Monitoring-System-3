@@ -109,6 +109,7 @@ v.b.c.voltage.dev.max                    0.0096,-0.0104,…,0.0125V Cell maximum
 v.b.c.voltage.max                        4.135,4.125,…,4.14V      Cell maximum voltages
 v.b.c.voltage.min                        3.875,3.865,…,3.88V      Cell minimum voltages
 v.b.cac                                  90.7796Ah                Calculated battery pack capacity
+v.b.capacity                             
 v.b.consumption                          0Wh/km                   Main battery momentary consumption
 v.b.coulomb.recd                         47.5386Ah                Main battery coulomb recovered on trip/charge
 v.b.coulomb.recd.total                   947.5386Ah               Main battery coulomb recovered total (life time)
@@ -151,6 +152,7 @@ v.c.12v.voltage                          12.3V                    Output voltage
 v.c.charging                             no                       yes = currently charging
 v.c.climit                               0A                       Maximum charger output current
 v.c.current                              1.25A                    Momentary charger output current
+v.c.date
 v.c.duration.full                        25Min                    Estimated time remaing for full charge
 v.c.duration.range                       -1Min                    … for sufficient range
 v.c.duration.soc                         0Min                     … for sufficient SOC
@@ -169,6 +171,7 @@ v.c.temp                                 16°C                     Charger tempe
 v.c.time                                 0Sec                     Duration of running charge
 v.c.timermode                                                     yes = timer enabled
 v.c.timerstart                                                    Time timer is due to start, seconds since midnight UTC
+v.c.timestamp
 v.c.type                                                          undefined, type1, type2, chademo, roadster, teslaus, supercharger, ccs
 v.c.voltage                              0V                       Momentary charger supply voltage
 v.d.cp                                   yes                      yes = Charge port open

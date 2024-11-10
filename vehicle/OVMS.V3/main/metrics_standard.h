@@ -82,6 +82,7 @@
 #define MS_V_BAT_SOC                "v.b.soc"
 #define MS_V_BAT_SOH                "v.b.soh"
 #define MS_V_BAT_CAC                "v.b.cac"
+#define MS_V_BAT_CAPACITY           "v.b.capacity"
 #define MS_V_BAT_HEALTH             "v.b.health"
 #define MS_V_BAT_VOLTAGE            "v.b.voltage"
 #define MS_V_BAT_CURRENT            "v.b.current"
@@ -154,6 +155,8 @@
 #define MS_V_CHARGE_DURATION_RANGE  "v.c.duration.range"
 #define MS_V_CHARGE_DURATION_SOC    "v.c.duration.soc"
 #define MS_V_CHARGE_TEMP            "v.c.temp"
+#define MS_V_CHARGE_DATE            "v.c.date"
+#define MS_V_CHARGE_TIMESTAMP       "v.c.timestamp"
 
 #define MS_V_CHARGE_12V_CURRENT     "v.c.12v.current"
 #define MS_V_CHARGE_12V_POWER       "v.c.12v.power"
@@ -326,6 +329,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_soc;                       // State of charge [%]
     OvmsMetricFloat*  ms_v_bat_soh;                       // State of health [%]
     OvmsMetricFloat*  ms_v_bat_cac;                       // Calculated capacity [Ah]
+    OvmsMetricFloat*  ms_v_bat_capacity;                  // Main battery capacity [kWh]
     OvmsMetricString* ms_v_bat_health;                    // General textual description of battery health
     OvmsMetricFloat*  ms_v_bat_voltage;                   // Main battery momentary voltage [V]
     OvmsMetricFloat*  ms_v_bat_current;                   // Main battery momentary current [A] (output=positive)
@@ -407,6 +411,8 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_charge_duration_range;         // … for sufficient range [min]
     OvmsMetricInt*    ms_v_charge_duration_soc;           // … for sufficient SOC [min]
     OvmsMetricFloat*  ms_v_charge_temp;                   // Charger temperature [°C]
+    OvmsMetricString* ms_v_charge_date;                   // remind last charging date
+    OvmsMetricString* ms_v_charge_timestamp;              // remind last charging time
 
     OvmsMetricFloat*  ms_v_charge_12v_current;            // Output current of DC/DC-converter [A]
     OvmsMetricFloat*  ms_v_charge_12v_power;              // Output power of DC/DC-converter [W]
