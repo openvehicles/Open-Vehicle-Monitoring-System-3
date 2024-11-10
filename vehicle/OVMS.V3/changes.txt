@@ -1,6 +1,22 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Metrics
+  add new Standard Metrics
+    v.b.capacity          -- Main battery capacity [kWh]
+    v.c.date              -- remind last charging date
+    v.c.timestamp         -- remind last charging time
+- Server V2:
+  add to MsgStat
+    v.c.kwh.grid
+    v.c.kwh.grid.total
+    v.b.capacity
+  add to MsgFirmware
+    m.net.mdm.mode
+    v.c.date
+    v.c.timestamp
+- Vehicle:
+  keep ms_v_charge_time as long as ms_v_door_chargeport aktiv
 - MG:
   Add new vehicle MG4
   Supports Short, Medium and Long Range Variants
