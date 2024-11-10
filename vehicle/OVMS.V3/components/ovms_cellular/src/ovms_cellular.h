@@ -167,6 +167,9 @@ class modem : public pcp, public InternalRamAllocated
     GsmPPPOS*              m_ppp;
     GsmNMEA*               m_nmea;
 
+    bool                   m_gps_enabled;           // = config modem enable.gps
+    int                    m_gps_usermode;          // -1=default / 0=off / 1=on
+
     OvmsMutex              m_cmd_mutex;             // lock for the CMD channel
     bool                   m_cmd_running;           // true = collect rx lines in m_cmd_output
     std::string            m_cmd_output;
@@ -206,7 +209,7 @@ class modem : public pcp, public InternalRamAllocated
     bool ModemIsNetMode();
     void StartTask();
     void StopTask();
-    bool StartNMEA(bool force=false);
+    bool StartNMEA();
     void StopNMEA();
     void StartMux();
     void StopMux();

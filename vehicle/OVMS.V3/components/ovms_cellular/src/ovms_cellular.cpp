@@ -304,6 +304,8 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_err_uart_frame = 0;
   m_err_driver_buffer_full = 0;
   m_nmea = NULL;
+  m_gps_enabled = false;
+  m_gps_usermode = -1;
   m_mux = NULL;
   m_ppp = NULL;
   m_driver = NULL;
@@ -517,7 +519,7 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
     {
     if (m_nmea->m_connected)
       {
-      writer->printf("  GPS: Connected on channel: #%d\n", m_nmea->m_channel_nmea);
+      writer->printf("  GPS: Connected on channel: #%d\n", m_nmea->m_channel);
       }
     else
       {
@@ -1442,10 +1444,10 @@ void modem::StopTask()
     }
   }
 
-bool modem::StartNMEA(bool force /*=false*/)
+bool modem::StartNMEA()
   {
   if ( (m_nmea == NULL) &&
-       (force || MyConfig.GetParamValueBool("modem", "enable.gps", false)) )
+       (m_gps_usermode == 1 || (m_gps_usermode == -1 && m_gps_enabled)) )
     {
     if (!m_mux || !m_driver)
       {
@@ -1454,7 +1456,7 @@ bool modem::StartNMEA(bool force /*=false*/)
     else
       {
       ESP_LOGV(TAG, "Starting NMEA");
-      m_nmea = new GsmNMEA(m_mux, m_mux_channel_NMEA, m_mux_channel_CMD);
+      m_nmea = new GsmNMEA(m_mux, m_mux_channel_NMEA);
       m_nmea->Startup();
       m_driver->StartupNMEA();
       }
@@ -1571,6 +1573,27 @@ void modem::EventListener(std::string event, void* data)
 void modem::ConfigChanged(std::string event, void* data)
   {
   OvmsConfigParam* param = (OvmsConfigParam*)data;
+
+  if (!param || param->GetName() == "modem")
+    {
+    bool enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
+    if (event == "config.mounted")
+      {
+      // Init:
+      m_gps_enabled = enable_gps;
+      }
+    else if (enable_gps != m_gps_enabled)
+      {
+      // User changed GPS configuration; translate to status change:
+      m_gps_usermode = -1;
+      m_gps_enabled = enable_gps;
+      if (m_gps_enabled && !m_nmea)
+        StartNMEA();
+      else if (!m_gps_enabled && m_nmea)
+        StopNMEA();
+      }
+    }
+
   if (event == "config.mounted" || !param || param->GetName() == "network")
     {
     // Network config has been changed, apply:
@@ -1952,7 +1975,8 @@ void modem_gps_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     return;
     }
 
-  if (MyModem->StartNMEA(true))
+  MyModem->m_gps_usermode = 1;
+  if (MyModem->StartNMEA())
     {
     writer->puts("GPS started (may take a minute to find satellites).");
     }
@@ -1975,6 +1999,7 @@ void modem_gps_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     return;
     }
 
+  MyModem->m_gps_usermode = 0;
   MyModem->StopNMEA();
   writer->puts("GPS stopped.");
   }

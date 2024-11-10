@@ -325,11 +325,10 @@ void GsmNMEA::Shutdown(bool hard)
   }
 
 
-GsmNMEA::GsmNMEA(GsmMux* mux, int channel_nmea, int channel_cmd)
+GsmNMEA::GsmNMEA(GsmMux* mux, int channel)
   {
   m_mux = mux;
-  m_channel_nmea = channel_nmea;
-  m_channel_cmd = channel_cmd;
+  m_channel = channel;
   m_connected = false;
   m_gpstime_enabled = false;
   }
