@@ -44,6 +44,7 @@
 #include "gsmnmea.h"
 #include "ovms_buffer.h"
 #include "ovms_command.h"
+#include "ovms_mutex.h"
 
 using namespace std;
 
@@ -166,7 +167,11 @@ class modem : public pcp, public InternalRamAllocated
     GsmPPPOS*              m_ppp;
     GsmNMEA*               m_nmea;
 
-    bool                   m_cmd_running;
+    bool                   m_gps_enabled;           // = config modem enable.gps
+    int                    m_gps_usermode;          // -1=default / 0=off / 1=on
+
+    OvmsMutex              m_cmd_mutex;             // lock for the CMD channel
+    bool                   m_cmd_running;           // true = collect rx lines in m_cmd_output
     std::string            m_cmd_output;
 
   public:
@@ -196,7 +201,6 @@ class modem : public pcp, public InternalRamAllocated
     modem_state1_t State1Activity();
     modem_state1_t State1Ticker1();
     bool StandardIncomingHandler(int channel, OvmsBuffer* buf);
-    void StandardDataHandler(int channel, OvmsBuffer* buf);
     void StandardLineHandler(int channel, OvmsBuffer* buf, std::string line);
     bool IdentifyModel();
 
@@ -205,7 +209,7 @@ class modem : public pcp, public InternalRamAllocated
     bool ModemIsNetMode();
     void StartTask();
     void StopTask();
-    bool StartNMEA(bool force=false);
+    bool StartNMEA();
     void StopNMEA();
     void StartMux();
     void StopMux();

@@ -27,6 +27,7 @@
 #include "vehicle_common.h"
 
 #include <cstdint>
+#include <memory>
 
 // PollSingleRequest specific result codes:
 #define POLLSINGLE_OK                   0
@@ -963,6 +964,9 @@ class OvmsPollers : public InternalRamAllocated {
     uint8_t GetBusNo(canbus* bus);
     canbus* GetBus(uint8_t busno);
     canbus* RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle);
+
+    esp_err_t RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle, canbus*& bus,int verbosity, OvmsWriter* writer );
+
     void PowerDownCanBus(int busno);
     bool HasPollTask()
       {
