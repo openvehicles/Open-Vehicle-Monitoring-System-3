@@ -148,7 +148,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricVector<float> *mt_bms_temps;              // BMS temperatures
     OvmsMetricBool          *mt_bus_awake;              // Can Bus active
     OvmsMetricFloat         *mt_use_at_reset;           // kWh use at reset in Display
-    OvmsMetricFloat         *mt_pos_odometer_start;     // kWh use at reset in Display
+    OvmsMetricFloat         *mt_pos_odometer_start;     // remind odometer start
     OvmsMetricBool          *mt_obl_fastchg;            // ODOmeter at Start
     OvmsMetricFloat         *mt_evc_hv_energy;          //!< available energy in kWh
     OvmsMetricFloat         *mt_evc_LV_DCDC_amps;       //!< current of DC/DC LV system, not 12V battery!

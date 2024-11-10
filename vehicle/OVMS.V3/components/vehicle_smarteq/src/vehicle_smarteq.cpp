@@ -315,6 +315,8 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           StandardMetrics.ms_v_charge_type->SetValue("type2");
           StandardMetrics.ms_v_charge_state->SetValue("charging");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+          StandardMetrics.ms_v_charge_date->SetValue(__DATE__);
+          StandardMetrics.ms_v_charge_timestamp->SetValue(__TIME__)
         } else { // EVENT stopped charging
           StandardMetrics.ms_v_charge_pilot->SetValue(false);
           StandardMetrics.ms_v_charge_inprogress->SetValue(isCharging);
@@ -324,6 +326,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
           StandardMetrics.ms_v_charge_duration_range->SetValue(0);
           StandardMetrics.ms_v_charge_power->SetValue(0);
+          StandardMetrics.ms_v_charge_timestamp->SetValue(__TIME__);
           if (StandardMetrics.ms_v_bat_soc->AsInt() < 95) {
             // Assume the charge was interrupted
             ESP_LOGI(TAG,"Car charge session was interrupted");
