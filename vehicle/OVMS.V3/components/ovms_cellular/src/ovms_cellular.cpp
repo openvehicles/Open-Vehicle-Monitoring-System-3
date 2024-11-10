@@ -1374,7 +1374,7 @@ void modem::muxtx(int channel, const char* data, ssize_t size)
   if (!m_task) return; // Quick exit if not task (we are stopped)
   if (size == -1) size = strlen(data);
 
-  if (size > 0 && (channel == m_mux_channel_POLL || channel == m_mux_channel_CMD))
+  if (size > 0 && (channel == m_mux_channel_POLL || channel == m_mux_channel_CMD || channel == m_mux_channel_NMEA))
     ESP_LOGD(TAG, "mux-tx #%d: %s", channel, data);
 
   if (m_state1 == Development)
