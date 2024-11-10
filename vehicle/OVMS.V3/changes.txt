@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Cellular: GPS run state signals added.
+  New events:
+    system.modem.gpsstart       -- GPS has started
+    system.modem.gpsstop        -- GPS has stopped
 - Cellular: receive & send SMS, forward SMS & USSD to user. Note: no system notification
   support (and not planned), this is primarily meant to forward provider info only
   sent via SMS or USSD or expected to be received via SMS.

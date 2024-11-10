@@ -1459,6 +1459,7 @@ bool modem::StartNMEA()
       m_nmea = new GsmNMEA(m_mux, m_mux_channel_NMEA);
       m_nmea->Startup();
       m_driver->StartupNMEA();
+      MyEvents.SignalEvent("system.modem.gpsstart", NULL);
       }
     }
   return (m_nmea != NULL);
@@ -1479,6 +1480,7 @@ void modem::StopNMEA()
       m_nmea->Shutdown();
       delete m_nmea;
       m_nmea = NULL;
+      MyEvents.SignalEvent("system.modem.gpsstop", NULL);
       }
     }
   }
