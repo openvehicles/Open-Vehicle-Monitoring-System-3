@@ -188,6 +188,12 @@ std::string hexencode(const std::string value);
 std::string hexdecode(const std::string encval);
 
 /**
+ * hexdecode_u16: decode a hexadecimal encoded string of UTF-16 bytes
+ *  Returns empty string on error
+ */
+std::u16string hexdecode_u16(const std::string encval);
+
+/**
  * int_to_hex: hex encode an integer value
  *  Source: https://kodlogs.com/68574/int-to-hex-string-c
  */
@@ -637,6 +643,14 @@ static inline std::string str_tolower(std::string s) {
                   );
     return s;
 }
+
+/**
+ * Simple CSV line parser
+ * Note: currently fixed to field separator ',', quoting '"', no line continuations
+ * Credits: https://stackoverflow.com/a/30338543
+ */
+std::vector<std::string> readCSVRow(const std::string &row);
+std::vector<std::vector<std::string>> readCSV(std::istream &in);
 
 /**
  * Call-back register for registering named call-back procedures.

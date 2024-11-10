@@ -128,6 +128,7 @@ system.modem.netstart                         Modem is starting DATA network
 system.modem.netwait                          Modem is pausing before starting DATA
 system.modem.poweredon                        Modem is powered on
 system.modem.poweringon                       Modem is powering on
+system.modem.received.sms           <sms>     An SMS message has been received
 system.modem.received.ussd          <ussd>    A USSD message has been received
 system.modem.stop                             Modem has been shut down
 system.shutdown                               System has been shut down

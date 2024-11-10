@@ -35,6 +35,7 @@
 #include <stdarg.h>
 #include <memory>
 #include <fstream>
+#include <istream>
 #include "ovms_utils.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
@@ -363,6 +364,32 @@ std::string hexdecode(const std::string encval)
     buf[0] = encval.at(i);
     buf[1] = encval.at(i + 1);
     unsigned char c = strtoul(buf, NULL, 16);
+    value += c;
+    }
+  return value;
+  }
+
+/**
+ * hexdecode_u16: decode a hexadecimal encoded string of UTF-16 bytes
+ *  Returns empty string on error
+ */
+std::u16string hexdecode_u16(const std::string encval)
+  {
+  std::u16string value;
+  size_t len = encval.length();
+  if (len == 0)
+    return value;
+  if (encval.find_first_not_of("0123456789ABCDEFabcdef", 0) != std::string::npos || (len & 3))
+    return value;
+  value.reserve(len / 4);
+  char buf[5] = {0};
+  for (size_t i = 0; i < len; i += 4)
+    {
+    buf[0] = encval.at(i);
+    buf[1] = encval.at(i + 1);
+    buf[2] = encval.at(i + 2);
+    buf[3] = encval.at(i + 3);
+    char16_t c = strtoul(buf, NULL, 16);
     value += c;
     }
   return value;
@@ -768,3 +795,73 @@ timer_util_t::~timer_util_t()
     m_cb(m_start, getTime());
     }
   }
+
+
+/**
+ * Simple CSV line parser
+ * Note: currently fixed to field separator ',', quoting '"', no line continuations
+ * Credits: https://stackoverflow.com/a/30338543
+ */
+
+enum class CSVState {
+  UnquotedField,
+  QuotedField,
+  QuotedQuote
+};
+
+std::vector<std::string> readCSVRow(const std::string &row) {
+  CSVState state = CSVState::UnquotedField;
+  std::vector<std::string> fields {""};
+  size_t i = 0; // index of the current field
+  for (char c : row) {
+    switch (state) {
+      case CSVState::UnquotedField:
+        switch (c) {
+          case ',': // end of field
+                    fields.push_back(""); i++;
+                    break;
+          case '"': state = CSVState::QuotedField;
+                    break;
+          default:  fields[i].push_back(c);
+                    break; }
+        break;
+      case CSVState::QuotedField:
+        switch (c) {
+          case '"': state = CSVState::QuotedQuote;
+                    break;
+          default:  fields[i].push_back(c);
+                    break; }
+        break;
+      case CSVState::QuotedQuote:
+        switch (c) {
+          case ',': // , after closing quote
+                    fields.push_back(""); i++;
+                    state = CSVState::UnquotedField;
+                    break;
+          case '"': // "" -> "
+                    fields[i].push_back('"');
+                    state = CSVState::QuotedField;
+                    break;
+          default:  // end of quote
+                    state = CSVState::UnquotedField;
+                    break; }
+        break;
+    }
+  }
+  return fields;
+}
+
+// Read CSV file, Excel dialect. Accept "quoted fields ""with quotes"""
+std::vector<std::vector<std::string>> readCSV(std::istream &in) {
+  std::vector<std::vector<std::string>> table;
+  std::string row;
+  while (!in.eof()) {
+    std::getline(in, row);
+    if (in.bad() || in.fail()) {
+      break;
+    }
+    auto fields = readCSVRow(row);
+    table.push_back(fields);
+  }
+  return table;
+}

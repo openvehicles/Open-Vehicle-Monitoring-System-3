@@ -710,10 +710,18 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         *buffer << "AT+CUSD=1,\"" << sep+1 << "\",15\r\n";
         extram::string msg = buffer->str();
         buffer->str("");
-        if (MyPeripherals->m_cellular_modem->txcmd(msg.c_str(), msg.length()))
-          *buffer << "MP-0 c" << command << ",0";
-        else
+        if (!MyPeripherals->m_cellular_modem->m_cmd_mutex.Lock(0))
+          {
           *buffer << "MP-0 c" << command << ",1,Cannot send command";
+          }
+        else
+          {
+          if (MyPeripherals->m_cellular_modem->txcmd(msg.c_str(), msg.length()))
+            *buffer << "MP-0 c" << command << ",0";
+          else
+            *buffer << "MP-0 c" << command << ",1,Cannot send command";
+          MyPeripherals->m_cellular_modem->m_cmd_mutex.Unlock();
+          }
 #else // #ifdef CONFIG_OVMS_COMP_CELLULAR
         *buffer << "MP-0 c" << command << ",1,No modem";
 #endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
