@@ -1005,6 +1005,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_capacity->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_duration_full->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1116,6 +1117,8 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << StandardMetrics.ms_v_charge_kwh_grid->AsFloat()
     << ","
     << StandardMetrics.ms_v_charge_kwh_grid_total->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_bat_capacity->AsFloat()
     ;
 
   Transmit(buffer.str().c_str());
@@ -1424,7 +1427,10 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_m_net_mdm_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_date->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_timestamp->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1451,6 +1457,12 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << StandardMetrics.ms_v_env_service_time->AsString("-1", Seconds, 0)
     << ","
     << mp_encode(StandardMetrics.ms_m_hardware->AsString(""))
+    << ","
+    << StandardMetrics.ms_m_net_mdm_mode->AsString("")
+    << ","
+    << mp_encode(StandardMetrics.ms_v_charge_date->AsString(""))
+    << ","
+    << mp_encode(StandardMetrics.ms_v_charge_timestamp->AsString(""))
     ;
 
   Transmit(buffer.str().c_str());
@@ -1820,6 +1832,7 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
       (metric == StandardMetrics.ms_v_charge_inprogress)||
       (metric == StandardMetrics.ms_v_env_cooling)||
       (metric == StandardMetrics.ms_v_bat_cac)||
+      (metric == StandardMetrics.ms_v_bat_capacity)||
       (metric == StandardMetrics.ms_v_bat_soh))
     {
     m_now_stat = true;
