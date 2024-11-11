@@ -156,6 +156,8 @@ Vehicle 12V current (i.e. DC converter output)
 
 Cabin temperature (celsius)
 
+Cellular connection mode and status (LTE,Online)
+
 ----------------------------------------
 Paranoid-mode encrypted message 0x45 "E" 
 ----------------------------------------
@@ -403,6 +405,9 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * Charger efficiency (%)
 * Battery current (A)
 * Battery ideal range gain/loss speed (mph/kph, gain=positive)
+* Energy sum for running charge (kWh)
+* Energy drawn from grid during running session (kWh)
+* Date & time of last charge end (seconds)
 
 --------------------------------
 Car update time message 0x53 "T"
@@ -573,5 +578,6 @@ This message is sent <cartoserver> "C", or <servertoapp> "s" and transmits "v.g"
 * v.g.duration.range (in min)
 * v.g.duration.soc (in min)
 * v.g.temp (in deg C)
+* v.g.timestamp (in seconds)
 
 Refer https://docs.openvehicles.com/en/latest/userguide/metrics.html

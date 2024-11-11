@@ -3,20 +3,19 @@ Open Vehicle Monitor System v3 - Change log
 ????-??-?? ???  ???????  OTA release
 - Metrics
   add new Standard Metrics
-    v.b.capacity          -- Main battery capacity [kWh]
-    v.c.date              -- remind last charging date
-    v.c.timestamp         -- remind last charging time
+    v.b.capacity          -- Main battery usable capacity [kWh]
+    v.c.timestamp         -- Date & time of last charge end [DateLocal]
+    v.g.timestamp         -- Date & time of last charge end [DateLocal]
 - Server V2:
   add to MsgStat
     v.c.kwh.grid
     v.c.kwh.grid.total
-    v.b.capacity
-  add to MsgFirmware
-    m.net.mdm.mode
-    v.c.date
     v.c.timestamp
+    v.b.capacity
+  add to MsgEnvironment
+    m.net.mdm.mode
 - Vehicle:
-  keep ms_v_charge_time as long as ms_v_door_chargeport aktiv
+  keep charge time as long as chargeport active
 - Cellular: GPS run state signals added.
   New events:
     system.modem.gpsstart       -- GPS has started

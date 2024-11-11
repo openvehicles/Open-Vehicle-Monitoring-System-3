@@ -1030,7 +1030,8 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_bat_current->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_range_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_kwh_grid->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_charge_kwh_grid_total->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_charge_kwh_grid_total->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_timestamp->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1127,6 +1128,8 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << StandardMetrics.ms_v_charge_kwh_grid_total->AsFloat()
     << ","
     << StandardMetrics.ms_v_bat_capacity->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_charge_timestamp->AsString("-1", Seconds, 0)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1161,7 +1164,8 @@ void OvmsServerV2::TransmitMsgGen(bool always)
     StandardMetrics.ms_v_gen_duration_empty->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_gen_temp->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_gen_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_timestamp->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1216,6 +1220,8 @@ void OvmsServerV2::TransmitMsgGen(bool always)
     << StandardMetrics.ms_v_gen_duration_soc->AsInt()
     << ";"
     << StandardMetrics.ms_v_gen_temp->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_timestamp->AsString("-1", Seconds, 0)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1435,10 +1441,7 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_net_mdm_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_charge_date->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_charge_timestamp->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1465,12 +1468,6 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << StandardMetrics.ms_v_env_service_time->AsString("-1", Seconds, 0)
     << ","
     << mp_encode(StandardMetrics.ms_m_hardware->AsString(""))
-    << ","
-    << StandardMetrics.ms_m_net_mdm_mode->AsString("")
-    << ","
-    << mp_encode(StandardMetrics.ms_v_charge_date->AsString(""))
-    << ","
-    << mp_encode(StandardMetrics.ms_v_charge_timestamp->AsString(""))
     ;
 
   Transmit(buffer.str().c_str());
@@ -1578,7 +1575,8 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_env_cabintemp->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_env_cabintemp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_m_net_mdm_mode->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1637,6 +1635,8 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     << StandardMetrics.ms_v_bat_12v_current->AsString("0")
     << ","
     << StandardMetrics.ms_v_env_cabintemp->AsString("0")
+    << ","
+    << StandardMetrics.ms_m_net_mdm_mode->AsString("")
     ;
 
   Transmit(buffer.str().c_str());

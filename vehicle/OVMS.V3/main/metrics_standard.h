@@ -155,7 +155,6 @@
 #define MS_V_CHARGE_DURATION_RANGE  "v.c.duration.range"
 #define MS_V_CHARGE_DURATION_SOC    "v.c.duration.soc"
 #define MS_V_CHARGE_TEMP            "v.c.temp"
-#define MS_V_CHARGE_DATE            "v.c.date"
 #define MS_V_CHARGE_TIMESTAMP       "v.c.timestamp"
 
 #define MS_V_CHARGE_12V_CURRENT     "v.c.12v.current"
@@ -186,6 +185,7 @@
 #define MS_V_GEN_DURATION_RANGE     "v.g.duration.range"
 #define MS_V_GEN_DURATION_SOC       "v.g.duration.soc"
 #define MS_V_GEN_TEMP               "v.g.temp"
+#define MS_V_GEN_TIMESTAMP          "v.g.timestamp"
 
 #define MS_V_INV_TEMP               "v.i.temp"
 #define MS_V_INV_POWER              "v.i.power"
@@ -329,7 +329,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_soc;                       // State of charge [%]
     OvmsMetricFloat*  ms_v_bat_soh;                       // State of health [%]
     OvmsMetricFloat*  ms_v_bat_cac;                       // Calculated capacity [Ah]
-    OvmsMetricFloat*  ms_v_bat_capacity;                  // Main battery capacity [kWh]
+    OvmsMetricFloat*  ms_v_bat_capacity;                  // Main battery usable capacity [kWh]
     OvmsMetricString* ms_v_bat_health;                    // General textual description of battery health
     OvmsMetricFloat*  ms_v_bat_voltage;                   // Main battery momentary voltage [V]
     OvmsMetricFloat*  ms_v_bat_current;                   // Main battery momentary current [A] (output=positive)
@@ -411,8 +411,7 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_charge_duration_range;         // … for sufficient range [min]
     OvmsMetricInt*    ms_v_charge_duration_soc;           // … for sufficient SOC [min]
     OvmsMetricFloat*  ms_v_charge_temp;                   // Charger temperature [°C]
-    OvmsMetricString* ms_v_charge_date;                   // remind last charging date
-    OvmsMetricString* ms_v_charge_timestamp;              // remind last charging time
+    OvmsMetricInt64*  ms_v_charge_timestamp;              // Date & time of last charge end [DateLocal]
 
     OvmsMetricFloat*  ms_v_charge_12v_current;            // Output current of DC/DC-converter [A]
     OvmsMetricFloat*  ms_v_charge_12v_power;              // Output power of DC/DC-converter [W]
@@ -445,6 +444,7 @@ class MetricsStandard
     OvmsMetricInt*     ms_v_gen_duration_range;           // … for range limit [min]
     OvmsMetricInt*     ms_v_gen_duration_soc;             // … for SOC limit [min]
     OvmsMetricFloat*   ms_v_gen_temp;                     // Generator temperature [°C]
+    OvmsMetricInt64*   ms_v_gen_timestamp;                // Date & time of last charge end [DateLocal]
 
     //
     // Motor inverter/controller metrics
@@ -501,7 +501,7 @@ class MetricsStandard
     OvmsMetricString* ms_v_env_cabinintake;               // Cabin intake type (fresh, recirc, etc)
     OvmsMetricString* ms_v_env_cabinvent;                 // Cabin vent type (comma-separated list of feet, face, screen, etc)
     OvmsMetricInt*    ms_v_env_service_range;             // Distance to next scheduled maintenance/service [km]
-    OvmsMetricInt64*  ms_v_env_service_time;            // Time of scheduled maintenance/service [DateLocal]
+    OvmsMetricInt64*  ms_v_env_service_time;              // Time of scheduled maintenance/service [DateLocal]
 
     //
     // Position / location metrics
