@@ -379,7 +379,7 @@ void OvmsVehicleSmartEQ::ResetTripCounters() {
  */
 void OvmsVehicleSmartEQ::HandleEnergy() {
   float voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
-  float current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+  float current  = -StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
 
   // Power (in kw) resulting from voltage and current
   float power = voltage * current / 1000.0;
@@ -403,7 +403,7 @@ void OvmsVehicleSmartEQ::HandleCharging() {
   float limit_soc       = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
   float limit_range     = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
   float max_range       = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
-  float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+  float charge_current  = -StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
   float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
 
   // Are we charging?
