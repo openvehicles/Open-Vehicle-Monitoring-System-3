@@ -1176,7 +1176,7 @@ void OvmsServerV2::TransmitMsgGen(bool always)
     << std::setprecision(1)
     << "MP-0 X"
     << StandardMetrics.ms_v_gen_inprogress->AsBool()
-    << ";"
+    << ","
     << StandardMetrics.ms_v_gen_pilot->AsBool()
     << ","
     << StandardMetrics.ms_v_gen_voltage->AsInt()
@@ -1218,7 +1218,7 @@ void OvmsServerV2::TransmitMsgGen(bool always)
     << StandardMetrics.ms_v_gen_duration_range->AsInt()
     << ","
     << StandardMetrics.ms_v_gen_duration_soc->AsInt()
-    << ";"
+    << ","
     << StandardMetrics.ms_v_gen_temp->AsFloat()
     << ","
     << StandardMetrics.ms_v_gen_timestamp->AsString("-1", Seconds, 0)
