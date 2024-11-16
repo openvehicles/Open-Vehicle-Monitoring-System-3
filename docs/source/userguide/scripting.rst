@@ -1022,24 +1022,28 @@ The OvmsVehicle object is the most comprehensive, and exposes several methods to
         print(res.errortext);
       else
         print(res.response_hex);
+
 - ``success = OvmsVehicle.AuxMon.Enable( [ LowThreshholdV [, ChargeThreshholdV] ] )``
-    Enable the 12v Auxilary battery monitor. This will enable the 'vehicle.aux.12v.*' events to fire.
-    Useful for preventing battery drain by only polling ECUs when necesary (on certain cars).
+    Enable the 12v Auxiliary battery monitor. This will enable the ``vehicle.aux.12v.*`` events to fire.
+    Useful for preventing battery drain by only polling ECUs when necessary (on certain cars).
 - ``OvmsVehicle.AuxMon.Disable()``
-    Disable the 12v Auxilary battery monitor.
-- ``Obj = vmsVehicle.AuxMon.Status()``
-    Returns the status of the Auilary battery monitor.
+    Disable the 12v Auxiliary battery monitor.
+- ``Obj = OvmsVehicle.AuxMon.Status()``
+    Returns the status of the Auxiliary battery monitor.
     A 'dip' is a temporary lowering of the voltage.
     A 'blip' is a temporary raising of the voltage.
-   .. code-block:: javascript
-   {
-     "enabled": <boolean>,
-     "low_threshold": <float>, // The voltage below which is considered low-voltage  (status="low")
-     "charge_threshold": <float>, // The voltage above which is considered charging (status="charging*")
-     "short_avg": <float>,     // The current 'short period' (2s) average.
-     "long_avg": <float>,      // The current 'long period' (8s) average.
-     "state": <string>         // On of: normal, charging, charging.dip, charging.blip, blip, dip, low
-   }
+    
+    .. code-block:: javascript
+      
+      {
+        "enabled": <boolean>,
+        "low_threshold": <float>,     // The voltage below which is considered low-voltage (status="low")
+        "charge_threshold": <float>,  // The voltage above which is considered charging (status="charging*")
+        "short_avg": <float>,         // The current 'short period' (2s) average.
+        "long_avg": <float>,          // The current 'long period' (8s) average.
+        "state": <string>,            // On of: normal, charging, charging.dip, charging.blip, blip, dip, low
+      }
+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 OvmsVehicle Command Plugins
