@@ -1174,7 +1174,7 @@ void OvmsServerV2::TransmitMsgGen(bool always)
   buffer
     << std::fixed
     << std::setprecision(1)
-    << "MP-0 G"
+    << "MP-0 X"
     << StandardMetrics.ms_v_gen_inprogress->AsBool()
     << ";"
     << StandardMetrics.ms_v_gen_pilot->AsBool()
