@@ -139,11 +139,6 @@ Return vehicle status:
 * ``vehicle12v_ref``
 * ``vehicle12v_current``
 * ``alarmsounding``
-* ``battcurrent``
-* ``battrangespeed``
-* ``chargekwhgrid``
-* ``chargekwhgridtotal``
-* ``bat_capacity``
 * ``m_msgage_s``: age (seconds) of last status (S) message received if available
 * ``m_msgtime_s``: time stamp (UTC) of last status (S) message received if available
 * ``m_msgage_d``: age (seconds) of last doors/env (D) message received if available
@@ -269,6 +264,11 @@ Return vehicle charge status:
 * ``charge_etr_range``
 * ``charge_etr_soc``
 * ``idealrange_max``
+* ``battcurrent``
+* ``battrangespeed``
+* ``chargekwhgrid``
+* ``chargekwhgridtotal``
+* ``bat_capacity``
 * ``cp_dooropen``
 * ``pilotpresent``
 * ``charging``
