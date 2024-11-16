@@ -521,4 +521,61 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
   return 1;
   }
 
+duk_ret_t OvmsVehicleFactory::DukOvmsVehicleAuxMonEnable(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==nullptr)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    duk_idx_t numArgs = duk_get_top(ctx);
+    if (numArgs == 0)
+      MyVehicleFactory.m_currentvehicle->EnableAuxMonitor();
+    else
+      {
+      duk_double_t low_thresh, charge_thresh = 0;
+      low_thresh = duk_to_number(ctx, 0);
+      if (numArgs > 1)
+        charge_thresh = duk_to_number(ctx, 1);
+      MyVehicleFactory.m_currentvehicle->EnableAuxMonitor(low_thresh, charge_thresh);
+      }
+    duk_push_boolean(ctx, 1);
+    }
+  return 1;
+  }
+duk_ret_t OvmsVehicleFactory::DukOvmsVehicleAuxMonDisable(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle!=nullptr)
+    {
+    MyVehicleFactory.m_currentvehicle->DisableAuxMonitor();
+    }
+  return 0;
+  }
+
+duk_ret_t OvmsVehicleFactory::DukOvmsVehicleAuxMonStatus(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    {
+    duk_push_null(ctx);
+    return 1;
+    }
+  DukContext dc(ctx);
+  // Push result object:
+  duk_idx_t obj_idx = dc.PushObject();
+  dc.Push(mycar->m_aux_enabled);
+  dc.PutProp(obj_idx, "enabled");
+  dc.Push(mycar->m_aux_battery_mon.low_threshold());
+  dc.PutProp(obj_idx, "low_threshold");
+  dc.Push(mycar->m_aux_battery_mon.charge_threshold());
+  dc.PutProp(obj_idx, "charge_threshold");
+  dc.Push(mycar->m_aux_battery_mon.average_lastf());
+  dc.PutProp(obj_idx, "short_avg");
+  dc.Push(mycar->m_aux_battery_mon.average_long());
+  dc.PutProp(obj_idx, "long_avg");
+  dc.Push(OvmsBatteryMon::state_code(mycar->m_aux_battery_mon.state()));
+  dc.PutProp(obj_idx, "state");
+  return 1;
+  }
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
