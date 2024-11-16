@@ -1470,7 +1470,7 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << ","
     << mp_encode(StandardMetrics.ms_m_hardware->AsString(""))
     << ","
-    << StandardMetrics.ms_m_net_mdm_mode->AsString("")
+    << mp_encode(StandardMetrics.ms_m_net_mdm_mode->AsString(""))
     ;
 
   Transmit(buffer.str().c_str());
