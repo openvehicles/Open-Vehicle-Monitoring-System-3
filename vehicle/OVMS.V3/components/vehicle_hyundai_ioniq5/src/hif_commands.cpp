@@ -142,23 +142,23 @@ void xiq_set_auto_door_lock(int verbosity, OvmsWriter *writer, OvmsCommand *cmd,
  */
 void xiq_aux(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
 {
-  if (MyVehicleFactory.m_currentvehicle == NULL) {
-    writer->puts("Error: No vehicle module selected");
-    return;
-  }
-
-
   writer->printf("AUX BATTERY\n");
-  if (StdMetrics.ms_v_bat_12v_voltage->IsDefined()) {
+  if (StdMetrics.ms_v_bat_12v_voltage->IsDefined())
+    {
     const std::string &auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2);
-    writer->printf("Aux battery voltage %s\n", auxBatt.c_str());
+    writer->printf("Voltage: %s\n", auxBatt.c_str());
+    }
+
+  if (MyVehicleFactory.m_currentvehicle == NULL) {
+    writer->puts("No vehicle module selected");
+    return;
   }
 
   OvmsHyundaiIoniqEv *niro = (OvmsHyundaiIoniqEv *) MyVehicleFactory.ActiveVehicle();
 
   if (niro->m_b_aux_soc->IsDefined()) {
     const std::string &auxSOC = niro->m_b_aux_soc->AsUnitString("-", Percentage, 1);
-    writer->printf("Aux battery SOC %s\n", auxSOC.c_str());
+    writer->printf("SOC: %s\n", auxSOC.c_str());
   }
 }
 
@@ -640,21 +640,21 @@ void OvmsHyundaiIoniqEv::RangeCalcReset()
 
 void xiq_range_reset(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
 {
-  if (MyVehicleFactory.m_currentvehicle == NULL) {
+  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
+  if (mycar) {
     writer->puts("Error: No vehicle module selected");
     return;
   }
-  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
   mycar->RangeCalcReset();
 }
 
 void xiq_aux_monitor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
 {
-  if (MyVehicleFactory.m_currentvehicle == NULL) {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == NULL) {
     writer->puts("Error: No vehicle module selected");
     return;
   }
-  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
   std::string stat = mycar->BatteryMonStat();
   writer->puts(stat.c_str());
 }
