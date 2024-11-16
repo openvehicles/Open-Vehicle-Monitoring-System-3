@@ -839,6 +839,37 @@ class ovms_callback_register_t
         return m_n == 0;
         }
     };
+
+  template <typename T>
+  class average_util_t<T, 2>
+    {
+    private:
+      static const T _INVALID = ~T(0);
+      T m_avg;
+    public:
+      average_util_t() : m_avg(_INVALID)
+        {
+        }
+
+      void add(T val)
+        {
+        if (m_avg==_INVALID)
+          m_avg = val;
+        else
+          m_avg = (val + m_avg) >> 1;
+        }
+      T get() const { return (m_avg == _INVALID)?0:m_avg; }
+      operator T() const { return get(); }
+      void reset()
+        {
+        m_avg = _INVALID;
+        }
+      bool isEmpty() const
+        {
+        return m_avg == _INVALID;
+        }
+    };
+
   /* Assists in maintaining smoothed average for a period.
    * T should be an integer type
    * N needs to be a power of 2

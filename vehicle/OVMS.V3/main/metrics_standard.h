@@ -444,7 +444,7 @@ class MetricsStandard
     OvmsMetricInt*     ms_v_gen_duration_range;           // … for range limit [min]
     OvmsMetricInt*     ms_v_gen_duration_soc;             // … for SOC limit [min]
     OvmsMetricFloat*   ms_v_gen_temp;                     // Generator temperature [°C]
-    OvmsMetricInt64*   ms_v_gen_timestamp;                // Date & time of last charge end [DateLocal]
+    OvmsMetricInt64*   ms_v_gen_timestamp;                // Date & time of last generation end [DateLocal]
 
     //
     // Motor inverter/controller metrics

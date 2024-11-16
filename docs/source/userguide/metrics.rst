@@ -230,7 +230,7 @@ v.g.temp                                 16°C                     Generator tem
 v.g.time                                 0Sec                     Duration of generator running
 v.g.timermode                            false                    True if generator timer enabled 
 v.g.timerstart                                                    Time generator is due to start 
-v.g.timestamp                            2024-11-11 18:19:21 CET  Date & time of last charge end [DateLocal]
+v.g.timestamp                            2024-11-11 18:19:21 CET  Date & time of last generation end [DateLocal]
 v.g.type                                                          Connection type (chademo, ccs, …)
 v.g.voltage                              0V                       Momentary generator output voltage
 v.i.temp                                                          Inverter temperature

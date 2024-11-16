@@ -1441,7 +1441,8 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_m_net_mdm_mode->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1468,6 +1469,8 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << StandardMetrics.ms_v_env_service_time->AsString("-1", Seconds, 0)
     << ","
     << mp_encode(StandardMetrics.ms_m_hardware->AsString(""))
+    << ","
+    << mp_encode(StandardMetrics.ms_m_net_mdm_mode->AsString(""))
     ;
 
   Transmit(buffer.str().c_str());
@@ -1575,8 +1578,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_env_cabintemp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_net_mdm_mode->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_env_cabintemp->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1635,8 +1637,6 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     << StandardMetrics.ms_v_bat_12v_current->AsString("0")
     << ","
     << StandardMetrics.ms_v_env_cabintemp->AsString("0")
-    << ","
-    << StandardMetrics.ms_m_net_mdm_mode->AsString("")
     ;
 
   Transmit(buffer.str().c_str());
