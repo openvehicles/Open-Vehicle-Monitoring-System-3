@@ -194,6 +194,7 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * Distance to next scheduled maintenance/service [km]
 * Time to next scheduled maintenance/service [seconds]
 * OVMS hardware version
+* Cellular connection mode and status [LTE,Online]
 
 --------------------------------
 Server firmware message 0x66 "f"
@@ -403,6 +404,10 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * Charger efficiency (%)
 * Battery current (A)
 * Battery ideal range gain/loss speed (mph/kph, gain=positive)
+* Energy sum for running charge (kWh)
+* Energy drawn from grid during running session (kWh)
+* Main battery usable capacity (kWh)
+* Date & time of last charge end (seconds)
 
 --------------------------------
 Car update time message 0x53 "T"
@@ -573,5 +578,6 @@ This message is sent <cartoserver> "C", or <servertoapp> "s" and transmits "v.g"
 * v.g.duration.range (in min)
 * v.g.duration.soc (in min)
 * v.g.temp (in deg C)
+* v.g.timestamp (in seconds)
 
 Refer https://docs.openvehicles.com/en/latest/userguide/metrics.html

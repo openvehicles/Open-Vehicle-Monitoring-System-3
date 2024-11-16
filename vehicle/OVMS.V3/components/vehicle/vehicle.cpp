@@ -751,7 +751,10 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     }
   else
     {
-    StandardMetrics.ms_v_charge_time->SetValue(0);
+    if(!StandardMetrics.ms_v_door_chargeport->AsBool())
+      {
+      StandardMetrics.ms_v_charge_time->SetValue(0);
+      }
     }
 
   if (StandardMetrics.ms_v_gen_inprogress->AsBool())

@@ -1,6 +1,22 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Metrics
+  add new Standard Metrics
+    v.b.capacity          -- Main battery usable capacity [kWh]
+    v.c.timestamp         -- Date & time of last charge end [DateLocal]
+    v.g.timestamp         -- Date & time of last generation end [DateLocal]
+- Server V2:
+  add to MsgStat
+    v.c.kwh.grid          -- Energy drawn from grid during running session [kWh]
+    v.c.kwh.grid.total    -- Energy drawn from grid total (life time) [kWh]
+    v.c.timestamp         -- Date & time of last charge end [seconds]
+    v.b.capacity          -- Main battery usable capacity [kWh]
+  add to MsgFirmware
+    m.net.mdm.mode        -- Cellular connection mode and status [LTE,Online]
+  add to MsgGen
+    v.g.timestamp         -- Date & time of last generation end [seconds]
+- Vehicle: keep charge time as long as chargeport active
 - Vehicle: Implement events and scripting for Auxillary batttery monitor
   New events:
     vehicle.aux.12v.normal
