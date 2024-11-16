@@ -41,15 +41,6 @@
 // Debug tool: Do NOT leave this defined in production.
 // #define DEBUG_FUNC_LEAVE
 
-// Define for Debug of battery monitor internal states.
-// Debug tool: Probably don't need it for production
-// #define OVMS_DEBUG_BATTERYMON
-
-#ifdef OVMS_DEBUG_BATTERYMON
-// Extra verbose debuuging of battery monitor.
-// #define OVMS_DEBUG_BATTERYMON_VERBOSE
-#endif
-
 // Define when canwrite is available
 // #define XIQ_CAN_WRITE
 
@@ -94,60 +85,6 @@ void CommandParkBreakService(int verbosity, OvmsWriter *writer, OvmsCommand *cmd
 //NOTIMPL void xiq_set_one_touch_turn_signal(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 //NOTIMPL void xiq_set_auto_door_unlock(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 //NOTIMPL void xiq_set_auto_door_lock(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-
-enum class OvmsBatteryState { Unknown, Normal, Charging, ChargingDip, ChargingBlip, Blip, Dip, Low };
-
-// 12V/Aux Battery monitor: The aim is to detect 'dips' (voltage dipping down) and 'blips' (voltage 'blipping' up),
-// as well as 'charging' states and 'low voltage'.
-// This is used to wake up the 'Ping' cycle and do some polling to detect what's going on.  This prevents us from
-// keeping the power-hungry modules from being kept awake and draining the 12V battery (in 3h)
-struct OvmsBatteryMon {
-private:
-  static const uint8_t long_count = 8;
-  static const uint8_t short_count = 4;
-
-  static const int32_t entry_mult       =  1000;
-  static const int32_t charge_threshold = 14000; // over 14.0v is 'Charging'
-  static const int32_t low_threshold    = 11500; // Under 11.5v is 'Low'
-  static const int32_t blip_threshold   =   300; // cur is > 0.3v over average is 'Blip'
-  static const int32_t dip_threshold    =  -250; // cur is < 0.25v under average is 'Dip'
-  static const int32_t chdip_threshold  =   -90; // cur is < 0.09v under average while charging is 'ChargeDip'
-  static const int32_t chblip_threshold =   100; // cur is > 0.1v over average while charing is  is 'ChargeBlip'
-
-  average_util_t<int32_t,long_count>  m_long_avg;
-  average_util_t<int32_t,short_count>  m_short_avg;
-
-  bool m_dirty;
-  bool m_to_notify;
-
-  // Last calculated state
-  OvmsBatteryState m_lastState;
-  int32_t m_diff_last;
-public:
-  OvmsBatteryMon();
-
-  OvmsBatteryState calc_state(int32_t &diff_last);
-  OvmsBatteryState calc_state()
-    {
-    int32_t diff_ign;
-    return calc_state(diff_ign);
-    }
-
-  // Add a voltage to the smoothed averages
-  void add(float voltage);
-
-  // Calculate state and return true if changed
-  bool checkStateChange();
-
-  // Current State
-  OvmsBatteryState state();
-  std::string to_string() const;
-
-  float average_lastf() const;
-  float diff_lastf() const;
-
-  static const char *state_code(OvmsBatteryState state);
-};
 
 typedef struct {
   int toPercent;
@@ -233,8 +170,8 @@ protected:
 
   void HandleCharging();
   void HandleChargeStop();
-  void CheckBatteryState();
-  void BatteryStateChanged(OvmsBatteryState new_state, const OvmsBatteryMon &monitor);
+
+  void NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_state, const OvmsBatteryMon &monitor) override;
   void BatteryStateStillCharging();
 
   void Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data);
@@ -447,8 +384,6 @@ protected:
   // The last filled voltage cell.
   int32_t iq_last_voltage_cell;
 
-  OvmsBatteryMon hif_aux_battery_mon;
-
   OvmsMetricBool  *m_b_bms_relay;
   OvmsMetricBool  *m_b_bms_ignition;
   OvmsMetricInt   *m_b_bms_availpower;
@@ -497,11 +432,6 @@ public:
 public:
   void RangeCalcReset();
   void RangeCalcStat(OvmsWriter *writer);
-public:
-  std::string BatteryMonStat()
-  {
-    return hif_aux_battery_mon.to_string();
-  }
 };
 
 #ifdef DEBUG_FUNC_LEAVE

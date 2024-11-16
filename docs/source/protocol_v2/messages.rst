@@ -194,6 +194,7 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * Distance to next scheduled maintenance/service [km]
 * Time to next scheduled maintenance/service [seconds]
 * OVMS hardware version
+* Cellular connection mode and status [LTE,Online]
 
 --------------------------------
 Server firmware message 0x66 "f"
@@ -403,6 +404,10 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * Charger efficiency (%)
 * Battery current (A)
 * Battery ideal range gain/loss speed (mph/kph, gain=positive)
+* Energy sum for running charge (kWh)
+* Energy drawn from grid during running session (kWh)
+* Main battery usable capacity (kWh)
+* Date & time of last charge end (seconds)
 
 --------------------------------
 Car update time message 0x53 "T"
@@ -502,6 +507,46 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * rear-left wheel temperature (celcius)
 * Stale TPMS indicator (-1=none, 0=stale, >0 ok)
 
+
+---------------------------------
+Car export power message 0x58 "X"
+---------------------------------
+
+.. note:: The message code has previously been "G". It's been changed to "X" for firmware release
+  3.3.005 to avoid conflict with the <apptoserver> group subscription message code.
+
+This message is sent <cartoserver> "C", or <servertoapp> "s" and transmits "v.g" metrics from the vehicle.
+
+<data> is comma-separated list of:
+
+* v.g.generating (1 = currently delivering power)
+* v.g.pilot (1 = pilot present)
+* v.g.voltage (in V)
+* v.g.current (in A)
+* v.g.power (in kW)
+* v.g.efficiency (in %)
+* v.g.type (eg "chademo")
+* v.g.state (eg "exporting")
+* v.g.substate (eg "onrequest")
+* v.g.mode (eg "standard")
+* v.g.climit (in A)
+* v.g.limit.range (in km)
+* v.g.limit.soc (in %)
+* v.g.kwh (in kWh)
+* v.g.kwh.grid (in kWh)
+* v.g.kwh.grid.total (in kWh)
+* v.g.time (in s)
+* v.g.timermode (1 = generator timer enabled)
+* v.g.timerstart 
+* v.g.duration.empty (in min)
+* v.g.duration.range (in min)
+* v.g.duration.soc (in min)
+* v.g.temp (in deg C)
+* v.g.timestamp (in seconds)
+
+Refer https://docs.openvehicles.com/en/latest/userguide/metrics.html
+
+
 -------------------------
 Car TPMS message 0x59 "Y"
 -------------------------
@@ -542,36 +587,3 @@ Batch client connections do not trigger any peer count change for the car, but t
 
 * Number of peers connected, expressed as a decimal string
 
----------------------------------
-Car export power message 0x47 "G"
----------------------------------
-
-This message is sent <cartoserver> "C", or <servertoapp> "s" and transmits "v.g" metrics from the vehicle.
-
-<data> is comma-separated list of:
-
-* v.g.generating (1 = currently delivering power)
-* v.g.pilot (1 = pilot present)
-* v.g.voltage (in V)
-* v.g.current (in A)
-* v.g.power (in kW)
-* v.g.efficiency (in %)
-* v.g.type (eg "chademo")
-* v.g.state (eg "exporting")
-* v.g.substate (eg "onrequest")
-* v.g.mode (eg "standard")
-* v.g.climit (in A)
-* v.g.limit.range (in km)
-* v.g.limit.soc (in %)
-* v.g.kwh (in kWh)
-* v.g.kwh.grid (in kWh)
-* v.g.kwh.grid.total (in kWh)
-* v.g.time (in s)
-* v.g.timermode (1 = generator timer enabled)
-* v.g.timerstart 
-* v.g.duration.empty (in min)
-* v.g.duration.range (in min)
-* v.g.duration.soc (in min)
-* v.g.temp (in deg C)
-
-Refer https://docs.openvehicles.com/en/latest/userguide/metrics.html

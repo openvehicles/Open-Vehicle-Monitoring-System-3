@@ -463,6 +463,97 @@ void OvmsVehicleFactory::bms_reset(int verbosity, OvmsWriter* writer, OvmsComman
     }
   }
 
+void OvmsVehicleFactory::vehicle_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->printf("AUX BATTERY\n");
+  if (StdMetrics.ms_v_bat_12v_voltage->IsDefined())
+    {
+    const std::string &auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2);
+    writer->printf("  Voltage: %s\n", auxBatt.c_str());
+    }
+  if (StdMetrics.ms_v_bat_12v_current->IsDefined())
+    {
+    const std::string &auxBattI = StdMetrics.ms_v_bat_12v_current->AsUnitString("-", Amps, 2);
+    writer->printf("  Current: %s\n", auxBattI.c_str());
+    }
+
+  if (StdMetrics.ms_v_bat_12v_voltage_ref->IsDefined())
+    {
+    const std::string &auxBattVref = StdMetrics.ms_v_bat_12v_voltage_ref->AsUnitString("-", Volts, 2);
+    writer->printf("  Voltage Ref: %s\n", auxBattVref.c_str());
+    }
+
+  if (StdMetrics.ms_v_bat_12v_voltage_alert->IsDefined())
+    {
+    const std::string &auxBattI = StdMetrics.ms_v_bat_12v_voltage_alert->AsUnitString("-", Volts, 2);
+    writer->printf("  Voltage Alert: %s\n", auxBattI.c_str());
+    }
+  }
+
+void OvmsVehicleFactory::vehicle_aux_monitor(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+  if (!mycar->m_aux_enabled)
+    {
+    writer->puts("Aux Monitor Disabled");
+    return;
+    }
+
+  std::string stat = mycar->BatteryMonStat();
+  writer->puts(stat.c_str());
+  }
+
+void OvmsVehicleFactory::vehicle_aux_monitor_enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+  if (argc == 0)
+    {
+    mycar->EnableAuxMonitor();
+    }
+  else
+    {
+    float low_thresh, charge_thresh = 0;
+    if (0==sscanf(argv[0], "%f", &low_thresh))
+      {
+      writer->puts("Error: Expected float for low threshold");
+      return;
+      }
+    if (argc > 1 )
+      {
+      if (0 == sscanf(argv[1], "%f", &charge_thresh))
+        {
+        writer->puts("Error: Expected float for charge threshold");
+        return;
+        }
+      }
+    mycar->EnableAuxMonitor(low_thresh, charge_thresh);
+
+    }
+  writer->printf("Enabled (low=%f charge=%f)\n", mycar->m_aux_battery_mon.low_threshold(), mycar->m_aux_battery_mon.charge_threshold());
+  }
+
+void OvmsVehicleFactory::vehicle_aux_monitor_disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+  mycar->DisableAuxMonitor();
+  writer->puts("Disabled");
+  }
+
 void OvmsVehicleFactory::bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyVehicleFactory.m_currentvehicle != NULL)
