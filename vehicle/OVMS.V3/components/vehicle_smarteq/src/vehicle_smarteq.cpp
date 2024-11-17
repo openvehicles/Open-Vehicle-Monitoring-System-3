@@ -624,13 +624,13 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
  */
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) {
   bool car_online = mt_bus_awake->AsBool();
-  int lv_pwrstate = mt_evc_LV_DCDC_amps->AsInt();
+  bool lv_pwrstate = (StandardMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 13.0);
   
   // - base system is awake if we've got a fresh lv_pwrstate:
   StandardMetrics.ms_v_env_aux12v->SetValue(car_online);
 
-  // - charging / trickle charging 12V battery is active when lv_pwrstate is not zero:
-  StandardMetrics.ms_v_env_charging12v->SetValue(car_online && lv_pwrstate > 0);
+  // - charging / trickle charging 12V battery is active when lv_pwrstate is true:
+  StandardMetrics.ms_v_env_charging12v->SetValue(car_online && lv_pwrstate);
   
   HandlePollState();
 }
