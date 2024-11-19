@@ -109,6 +109,7 @@ class OvmsServerV3 : public OvmsServer
     int m_updatetime_charging;
     int m_updatetime_sendall;
     int m_updatetime_keepalive;
+    bool m_legacy_event_topic;
 
     bool m_connection_available;
     bool m_notify_info_pending;
