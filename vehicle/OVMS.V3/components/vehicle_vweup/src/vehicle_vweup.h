@@ -335,6 +335,7 @@ public:
   int profile0_mode;
   int profile0_charge_current;
   int profile0_cc_temp;
+  bool profile0_cc_onbat;
   int profile0_charge_current_old;
   int profile0_cc_temp_old;
   static const int profile0_len = 48;
@@ -357,6 +358,7 @@ public:
   uint8_t lever;
   uint8_t lever0_cnt;
   bool p_problem;
+  bool chargestartstop;
   
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
