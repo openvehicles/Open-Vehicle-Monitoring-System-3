@@ -82,6 +82,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
         opts.will_message = "no";
         opts.flags |= MG_MQTT_WILL_RETAIN;
+	opts.keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
         mg_set_protocol_mqtt(nc);
         mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_vehicleid.c_str(), opts);
         }
@@ -207,6 +208,8 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_updatetime_on = m_updatetime_idle;
   m_updatetime_charging = m_updatetime_idle;
   m_updatetime_sendall = 0;
+  m_updatetime_keepalive = 29*60;
+  m_legacy_event_topic = true;
   m_notify_info_pending = false;
   m_notify_error_pending = false;
   m_notify_alert_pending = false;
@@ -535,10 +538,14 @@ void OvmsServerV3::IncomingEvent(std::string event, void* data)
 
   std::string topic(m_topic_prefix);
 
-  // Legacy: publish event name on fixed topic
   topic.append("event");
-  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
-    MG_MQTT_QOS(0), event.c_str(), event.length());
+
+  // Legacy: publish event name on fixed topic
+  if (m_legacy_event_topic)
+    {
+    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+      MG_MQTT_QOS(0), event.c_str(), event.length());
+    }
 
   // Publish MQTT style event topic, payload reserved for event data serialization:
   topic.append("/");
@@ -841,6 +848,8 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_updatetime_on = MyConfig.GetParamValueInt("server.v3", "updatetime.on", m_updatetime_idle);
   m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_idle);
   m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", 0);
+  m_updatetime_keepalive = MyConfig.GetParamValueInt("server.v3", "updatetime.keepalive", 29*60);
+  m_legacy_event_topic = MyConfig.GetParamValueBool("server.v3", "events.legacy_topic", true);
   m_metrics_filter.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.include"),
                                MyConfig.GetParamValue("server.v3", "metrics.exclude"));
   }
@@ -1134,6 +1143,7 @@ void OvmsServerV3Init::AutoInit()
 void OvmsServerV3Init::EventListener(std::string event, void* data)
   {
   if (event.compare(0,7,"ticker.") == 0) return; // Skip ticker.* events
+  if (event.compare(0,6,"clock.") == 0) return; // Skip clock.* events
   if (event.compare("system.event") == 0) return; // Skip event
   if (event.compare("system.wifi.scan.done") == 0) return; // Skip event
 
