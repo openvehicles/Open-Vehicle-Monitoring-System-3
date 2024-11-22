@@ -1488,7 +1488,7 @@ void OvmsVehicleVWeUp::StartStopChargeT26(bool chargestart)
     StartStopChargeT26Workaround(chargestart);
   profile0_key = P0_KEY_SWITCH;
   profile0_val = MyConfig.GetParamValueBool("xvu", "cc_onbat")? 5 : 1;
-  if (StdMetrics.ms_v_env_hvac->AsBool()) profile0_val += 2;
+  if (chargestart && StdMetrics.ms_v_env_hvac->AsBool()) profile0_val += 2;
   profile0_activate = chargestart;
   chargestartstop = true;
   ESP_LOGD(TAG, "T26: StartStopChargeT26 calling WakeupT26");
@@ -1575,7 +1575,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandClimateControl(bool clim
   ESP_LOGI(TAG, "T26: CommandClimateControl turning %s", climatecontrolon ? "ON" : "OFF");
   profile0_key = P0_KEY_SWITCH;
   profile0_val = MyConfig.GetParamValueBool("xvu", "cc_onbat")? 6 : 2;
-  if (StdMetrics.ms_v_charge_inprogress->AsBool()) profile0_val += 1;
+  if (climatecontrolon && StdMetrics.ms_v_charge_inprogress->AsBool()) profile0_val += 1;
   profile0_activate = climatecontrolon;
   ESP_LOGD(TAG, "T26: CommandClimateControl calling WakeupT26");
   WakeupT26();
