@@ -1563,13 +1563,14 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
   std::string server, user, password, port, topic_prefix;
-  std::string updatetime_connected, updatetime_idle, updatetime_on, updatetime_charging, updatetime_awake, updatetime_sendall;
-  bool tls;
+  std::string updatetime_connected, updatetime_idle, updatetime_on, updatetime_charging, updatetime_awake, updatetime_sendall, updatetime_keepalive;
+  bool tls, legacy_event_topic;
 
   if (c.method == "POST") {
     // process form submission:
     server = c.getvar("server");
     tls = (c.getvar("tls") == "yes");
+    legacy_event_topic = (c.getvar("legacy_event_topic") == "yes");
     user = c.getvar("user");
     password = c.getvar("password");
     port = c.getvar("port");
@@ -1580,6 +1581,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_charging = c.getvar("updatetime_charging");
     updatetime_awake = c.getvar("updatetime_awake");
     updatetime_sendall = c.getvar("updatetime_sendall");
+    updatetime_keepalive = c.getvar("updatetime_keepalive");
 
     // validate:
     if (port != "") {
@@ -1618,11 +1620,17 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"updatetime_sendall\">Update interval (sendall) must be at least 60 seconds</li>";
       }
     }
+    if (updatetime_keepalive != "") {
+      if (atoi(updatetime_keepalive.c_str()) < 1) {
+        error += "<li data-input=\"updatetime_keepalive\">Update interval (keepalive) must be at least 1 second</li>";
+      }
+    }
 
     if (error == "") {
       // success:
       MyConfig.SetParamValue("server.v3", "server", server);
       MyConfig.SetParamValueBool("server.v3", "tls", tls);
+      MyConfig.SetParamValueBool("server.v3", "events.legacy_topic", legacy_event_topic);
       MyConfig.SetParamValue("server.v3", "user", user);
       if (password != "")
         MyConfig.SetParamValue("password", "server.v3", password);
@@ -1646,6 +1654,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
         MyConfig.DeleteInstance("server.v3", "updatetime.sendall");
       else
         MyConfig.SetParamValue("server.v3", "updatetime.sendall", updatetime_sendall);
+      if (updatetime_keepalive == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.keepalive");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.keepalive", updatetime_keepalive);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Server V3 (MQTT) connection configured.</p>");
@@ -1663,6 +1675,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     server = MyConfig.GetParamValue("server.v3", "server");
     tls = MyConfig.GetParamValueBool("server.v3", "tls", false);
+    legacy_event_topic = MyConfig.GetParamValueBool("server.v3", "events.legacy_topic", true);
     user = MyConfig.GetParamValue("server.v3", "user");
     password = MyConfig.GetParamValue("password", "server.v3");
     port = MyConfig.GetParamValue("server.v3", "port");
@@ -1673,6 +1686,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_charging = MyConfig.GetParamValue("server.v3", "updatetime.charging");
     updatetime_awake = MyConfig.GetParamValue("server.v3", "updatetime.awake");
     updatetime_sendall = MyConfig.GetParamValue("server.v3", "updatetime.sendall");
+    updatetime_keepalive = MyConfig.GetParamValue("server.v3", "updatetime.keepalive");
 
     // generate form:
     c.head(200);
@@ -1690,6 +1704,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "</ul>");
   c.input_checkbox("Enable TLS", "tls", tls,
     "<p>Note: enable transport layer security (encryption) if your server supports it.</p>");
+  c.input_checkbox("Enable legacy event topic", "legacy_event_topic", legacy_event_topic,
+    "In addition to MQTT-style topics, also publish on <i>&lt;prefix&gt;</i>/event.");
   c.input_text("Port", "port", port.c_str(), "optional, default: 1883 (no TLS) / 8883 (TLS)");
   c.input_text("Username", "user", user.c_str(), "Enter user login name",
     NULL, "autocomplete=\"section-serverv3 username\"");
@@ -1711,11 +1727,23 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "optional, in seconds, only used if set");
   c.input_text("…sendall", "updatetime_sendall", updatetime_sendall.c_str(),
     "optional, in seconds, only used if set");
+  c.input_text("…keepalive", "updatetime_keepalive", updatetime_keepalive.c_str(),
+    "optional, in seconds, default: 1740");
   c.fieldset_end();
+
+  c.print("<span class=\"help-block\">"
+	  "Keepalive defines how often PINGREQs should be sent if there's inactivity. "
+	  "It should be set slightly shorter than the network's NAT timeout "
+	  "and the timeout of your MQTT server. If these are unknown you can use trial "
+	  "and error. Symptoms of keepalive being too high are a lack of metric updates "
+	  "after a certain point, or &quot;Disconnected from OVMS Server V3&quot; "
+	  "appearing in the log."
+	  "</span>");
 
   c.hr();
   c.input_button("default", "Save");
   c.form_end();
+
   c.panel_end();
   c.done();
 }

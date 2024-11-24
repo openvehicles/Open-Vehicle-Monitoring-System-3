@@ -1006,7 +1006,12 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
   if ((m_cmd_running)&&(channel == m_mux_channel_CMD))
     {
     m_cmd_output.append(line);
-    m_cmd_output.append("\r\n");
+    m_cmd_output.append("\n");
+    if (line == "OK" || line == "ERROR" || startsWith(line, "+CME ERROR") || startsWith(line, "+CMS ERROR"))
+      {
+      m_cmd_running = false;
+      m_cmd_done.Give();
+      }
     }
 
   // expecting continuation of previous line?
@@ -1836,20 +1841,14 @@ void cellular_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       return;
       }
 
-    // Wait for output to stabilise
-    size_t cmdsize = UINT_MAX;
-    size_t iter = 0;
-    while ((MyModem->m_cmd_output.size() != cmdsize) && (iter < 5))
-      {
-      iter++;
-      cmdsize = MyModem->m_cmd_output.size();
-      vTaskDelay(pdMS_TO_TICKS(500));
-      }
+    // Wait for command to finish:
+    bool done = MyModem->m_cmd_done.Take(pdMS_TO_TICKS(5000));
 
     MyModem->m_cmd_running = false;
     if (verbosity >= COMMAND_RESULT_MINIMAL)
       {
       writer->write(MyModem->m_cmd_output.c_str(), MyModem->m_cmd_output.size());
+      if (!done) writer->puts("[TIMEOUT]");
       }
     MyModem->m_cmd_output.clear();
     }
@@ -1902,17 +1901,8 @@ void cellular_sendsms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
       MyModem->txcmd(msg.c_str(), msg.length());
       }
 
-    vTaskDelay(pdMS_TO_TICKS(2000));
-
-    // Wait for output to stabilise
-    size_t cmdsize = UINT_MAX;
-    size_t iter = 0;
-    while ((MyModem->m_cmd_output.size() != cmdsize) && (iter < 5))
-      {
-      iter++;
-      cmdsize = MyModem->m_cmd_output.size();
-      vTaskDelay(pdMS_TO_TICKS(500));
-      }
+    // Wait for command to finish:
+    bool done = MyModem->m_cmd_done.Take(pdMS_TO_TICKS(7000));
 
     MyModem->m_cmd_running = false;
 
@@ -1922,6 +1912,8 @@ void cellular_sendsms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     else
       msg = MyModem->m_cmd_output;
     writer->write(msg.c_str(), msg.size());
+
+    if (!done) writer->puts("[TIMEOUT]");
 
     MyModem->m_cmd_output.clear();
     }

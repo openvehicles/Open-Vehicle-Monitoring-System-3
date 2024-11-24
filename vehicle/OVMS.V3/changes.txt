@@ -1,6 +1,21 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- OVMS Server v3: Ability to define less frequent MQTT communication to save data charges and power
+  Events:
+    Excludes clock.* events from being published at the start of every minute.
+  New configs:
+    [server.v3] events.legacy_topic  -- Whether to publish every event on the legacy /event topic as well as
+                                        the MQTT-style topic. Defaults to true to preserve existing behaviour.
+                                        Recommended to set to false if you don't use the legacy topic.
+    [server.v3] updatetime.keepalive -- Max number of seconds to allow the MQTT connection to be idle before
+                                        sending PINGREQ. Should be set slightly shorter than the network's
+                                        NAT timeout and the timeout of your MQTT server. If these are unknown
+                                        you can use trial and error. Symptoms of keepalive being too high are
+                                        a lack of metric updates after a certain point, or "Disconnected from
+                                        OVMS Server V3" appearing in the log. In previous releases this used
+                                        the Mongoose default of 60. New default value 1740 aligns with
+                                        observed Hologram timeout of 1800.
 - Metrics
   add new Standard Metrics
     v.b.capacity          -- Main battery usable capacity [kWh]

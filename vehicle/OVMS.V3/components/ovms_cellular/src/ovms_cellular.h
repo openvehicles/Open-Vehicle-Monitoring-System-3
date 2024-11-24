@@ -45,6 +45,7 @@
 #include "ovms_buffer.h"
 #include "ovms_command.h"
 #include "ovms_mutex.h"
+#include "ovms_semaphore.h"
 
 using namespace std;
 
@@ -172,6 +173,7 @@ class modem : public pcp, public InternalRamAllocated
 
     OvmsMutex              m_cmd_mutex;             // lock for the CMD channel
     bool                   m_cmd_running;           // true = collect rx lines in m_cmd_output
+    OvmsSemaphore          m_cmd_done;              // signals command termination
     std::string            m_cmd_output;
 
   public:

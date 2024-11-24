@@ -1,5 +1,5 @@
 sphinx_rtd_theme
-m2r2
-#docutils<0.18
-mistune<2.0.0
-requests<2.29.0
+sphinx_mdinclude
+docutils
+mistune
+requests
