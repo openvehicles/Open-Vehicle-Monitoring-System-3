@@ -1289,7 +1289,7 @@ void OvmsVehicleVWeUp::Profile0RetryCallBack()
     ESP_LOGE(TAG, "T26: Profile0 max retries exceeded!");
     ESP_LOGD(TAG, "T26: voltage of 12V battery: %0.2f", StdMetrics.ms_v_bat_12v_voltage->AsFloat());
     if (profile0_key == P0_KEY_SWITCH) {
-      if (chargestartstop) { //(profile0_val & 1) { // XXX
+      if (chargestartstop) {
         if (!fakestop)
           charge_timeout = true;
         if (xChargeSemaphore != NULL)
@@ -1356,7 +1356,7 @@ void OvmsVehicleVWeUp::Profile0RetryCallBack()
       case PROFILE0_SWITCH:
         profile0_cntr[0]++;
         ESP_LOGD(TAG, "T26: Profile0 switch attempt %d...", profile0_cntr[0]);
-        if (chargestartstop) { //(profile0_val & 1){ // XXX charge start/stop
+        if (chargestartstop) {
           ESP_LOGD(TAG, "T26: Profile0RetryCallBack to start/stop charge");
           if (profile0_activate == StdMetrics.ms_v_charge_inprogress->AsBool()) {
             ESP_LOGI(TAG, "T26: Profile0 charge successfully turned %s",(profile0_activate)? "ON" : "OFF");
