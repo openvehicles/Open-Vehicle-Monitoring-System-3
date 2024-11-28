@@ -4,7 +4,7 @@ Renault Zoe
 
 Vehicle Type: **RZ**
 
-This vehicle type supports the Renault Zoe(PH1) and Kangoo(2011 - ~2019). The newer Zoe ph2 and Kangoo are not supported yet.
+This vehicle type supports the Renault Zoe(PH1) 22kWh-40kWh (2012 - 2019) and Kangoo 22kWh-33kWh (2011 - ~2019).
 
 ----------------
 Support Overview
@@ -45,4 +45,3 @@ Using Cabin Pre-heat/cool
 -------------------------
 
 Climate control on is only supported. It starts the 5 minute booster. After 5 minutes it switches off automatically. For IOS users it is started via Homelink 1
-

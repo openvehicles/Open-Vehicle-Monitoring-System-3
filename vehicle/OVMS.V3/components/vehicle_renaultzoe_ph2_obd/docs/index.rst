@@ -4,7 +4,8 @@ Renault Zoe Phase 2 (OBD port)
 
 Vehicle Type: **RZ2O**
 
-This vehicle type supports the Renault Zoe(PH2) e.g ZE50 through OBD connection. 
+This vehicle type supports the Renault Zoe(PH2) ZE50 52kWh (2019-2024) through ODB2 connection. 
+
 All values are read-only, no control possible because of CAN Gateway.
 
 ----------------
