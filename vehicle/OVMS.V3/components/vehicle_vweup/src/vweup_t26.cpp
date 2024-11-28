@@ -188,6 +188,7 @@ void OvmsVehicleVWeUp::T26Init()
   profile0_mode = 0;
   profile0_charge_current = 0;
   profile0_cc_temp = 0;
+  profile0_cc_onbat = false;
   profile0_charge_current_old = 0;
   profile0_cc_temp_old = 0;
   profile0_delay = 1500;
@@ -209,6 +210,7 @@ void OvmsVehicleVWeUp::T26Init()
   lever = 0x20; // assume position "P" on startup so climatecontrol works
   lever0_cnt = 0;
   p_problem = false;
+  chargestartstop = false;
 
   StdMetrics.ms_v_env_locked->SetValue(true);
   StdMetrics.ms_v_env_headlights->SetValue(false);
@@ -931,22 +933,26 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStartCharge()
   ESP_LOGD(TAG, "T26: CommandStartCharge called");
   if (HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: CommandStartCharge failed: T26 not ready / no write access!");
+    chargestartstop = false;
     return Fail;
   }
   else if (StdMetrics.ms_v_charge_inprogress->AsBool()) {
     ESP_LOGE(TAG, "Vehicle is already charging!");
+    chargestartstop = false;
     return Fail;
   }
   else if (!StdMetrics.ms_v_door_chargeport->AsBool()) {
     ESP_LOGE(TAG, "T26: Vehicle is not plugged!");
     if (xChargeSemaphore != NULL)
       xSemaphoreGive(xChargeSemaphore);
+    chargestartstop = false;
     return Fail;
   }
   else if (p_problem) {
     ESP_LOGE(TAG, "T26: invalid selector lever value, can't start charge! Microswitch possibly defective?");
     MyNotify.NotifyStringf("alert", "Drive Mode Selector", "Invalid selector lever value, can't start charge! Microswitch possibly defective?");
     p_problem = false;
+    chargestartstop = false;
     return Fail;
   }
   fakestop = false; // reset possible workaround charge stop
@@ -960,13 +966,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStartCharge()
       charge_timeout = false;
       return Fail;
     }
-    else
+    else {
+      chargestartstop = false;
       return Success;
+    }
   }
   else
   {
     ESP_LOGE(TAG, "T26: timeout waiting for CommandStartCharge to finish!");
     xSemaphoreGive(xChargeSemaphore);
+    chargestartstop = false;
     return Fail;
   }
 }
@@ -976,15 +985,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStopCharge()
   ESP_LOGD(TAG, "T26: CommandStopCharge called");
   if (HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: CommandStopCharge failed: T26 not ready / no write access!");
+    chargestartstop = false;
     return Fail;
   }
   else if (!StdMetrics.ms_v_charge_inprogress->AsBool()) {
     ESP_LOGE(TAG, "Vehicle is not charging!");
+    chargestartstop = false;
     return Fail;
   }
   else if (StdMetrics.ms_v_env_on->AsBool() && !chg_workaround) {
     ESP_LOGE(TAG, "Vehicle is on, can't stop charge without workaround!");
     MyNotify.NotifyStringf("alert", "Charge control", "Vehicle is on, can't stop charge without workaround!");
+    chargestartstop = false;
     return Fail;
   }
   xSemaphoreTake(xChargeSemaphore, 0);
@@ -993,12 +1005,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStopCharge()
   {
     ESP_LOGD(TAG, "T26: CommandStopCharge wait for success over");
     xSemaphoreGive(xChargeSemaphore);
+    chargestartstop = false;
     return Success;
   }
   else
   {
     ESP_LOGE(TAG, "T26: timeout waiting for CommandStopCharge to finish!");
     xSemaphoreGive(xChargeSemaphore);
+    chargestartstop = false;
     return Fail;
   }
 }
@@ -1074,9 +1088,9 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
       ESP_LOGD(TAG, "T26: Profile0: %02x %02x %02x %02x %02x %02x %02x %02x", profile0[i+0], profile0[i+1], profile0[i+2], profile0[i+3],profile0[i+4], profile0[i+5], profile0[i+6], profile0[i+7]);
     if(profile0[28] != 0 && profile0[29] != 0)
     {
-        ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
-        int timer_stopped = xTimerStop(profile0_timer, pdMS_TO_TICKS(100));
-        ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
+      ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
+      int timer_stopped = xTimerStop(profile0_timer, pdMS_TO_TICKS(100));
+      ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
       profile0_recv = false;
       profile0_mode = profile0[11];
       profile0_charge_current = profile0[13];
@@ -1097,6 +1111,8 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
             MyConfig.SetParamValueInt("xvu", "chg_climit", profile0_charge_current);
             profile0_cc_temp_old = profile0_cc_temp;
             MyConfig.SetParamValueInt("xvu", "cc_temp", profile0_cc_temp);
+            profile0_cc_onbat = profile0_mode & 4;
+            MyConfig.SetParamValueBool("xvu", "cc_onbat", profile0_cc_onbat);
             t26_init = false;
           }
           return;
@@ -1273,12 +1289,13 @@ void OvmsVehicleVWeUp::Profile0RetryCallBack()
     ESP_LOGE(TAG, "T26: Profile0 max retries exceeded!");
     ESP_LOGD(TAG, "T26: voltage of 12V battery: %0.2f", StdMetrics.ms_v_bat_12v_voltage->AsFloat());
     if (profile0_key == P0_KEY_SWITCH) {
-      if (profile0_val == 1) {
+      if (chargestartstop) {
         if (!fakestop)
           charge_timeout = true;
         if (xChargeSemaphore != NULL)
           xSemaphoreGive(xChargeSemaphore);
         MyNotify.NotifyStringf("alert", "Charge control", "Failed to %s charge!", (profile0_activate)? "start" : "stop");
+        chargestartstop = false;
       }
       else
         MyNotify.NotifyStringf("alert", "Climatecontrol", "Failed to %s remote climate control!", (profile0_activate)? "start" : "stop");
@@ -1339,7 +1356,7 @@ void OvmsVehicleVWeUp::Profile0RetryCallBack()
       case PROFILE0_SWITCH:
         profile0_cntr[0]++;
         ESP_LOGD(TAG, "T26: Profile0 switch attempt %d...", profile0_cntr[0]);
-        if (profile0_val == 1){ // charge start/stop
+        if (chargestartstop) {
           ESP_LOGD(TAG, "T26: Profile0RetryCallBack to start/stop charge");
           if (profile0_activate == StdMetrics.ms_v_charge_inprogress->AsBool()) {
             ESP_LOGI(TAG, "T26: Profile0 charge successfully turned %s",(profile0_activate)? "ON" : "OFF");
@@ -1363,7 +1380,7 @@ void OvmsVehicleVWeUp::Profile0RetryCallBack()
             ActivateProfile0();
           }
         }
-        else if ((profile0_val && 2) || (profile0_val && 4)) { // climatecontrol on/off
+        else if (profile0_val & 2) { //|| (profile0_val & 4)) { // climatecontrol on/off
           ESP_LOGD(TAG, "T26: Profile0RetryCallBack to start/stop climate control");
           if (profile0_cntr[0] == 5 && !MyConfig.GetParamValueBool("xvu", "cc_onbat"))
             ESP_LOGW(TAG, "Climatecontrol on battery disabled, is the car plugged in?");
@@ -1470,8 +1487,10 @@ void OvmsVehicleVWeUp::StartStopChargeT26(bool chargestart)
   if (chg_workaround)
     StartStopChargeT26Workaround(chargestart);
   profile0_key = P0_KEY_SWITCH;
-  profile0_val = 1;
+  profile0_val = MyConfig.GetParamValueBool("xvu", "cc_onbat")? 5 : 1;
+  if (chargestart && StdMetrics.ms_v_env_hvac->AsBool()) profile0_val += 2;
   profile0_activate = chargestart;
+  chargestartstop = true;
   ESP_LOGD(TAG, "T26: StartStopChargeT26 calling WakeupT26");
   WakeupT26();
 }
@@ -1556,6 +1575,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandClimateControl(bool clim
   ESP_LOGI(TAG, "T26: CommandClimateControl turning %s", climatecontrolon ? "ON" : "OFF");
   profile0_key = P0_KEY_SWITCH;
   profile0_val = MyConfig.GetParamValueBool("xvu", "cc_onbat")? 6 : 2;
+  if (climatecontrolon && StdMetrics.ms_v_charge_inprogress->AsBool()) profile0_val += 1;
   profile0_activate = climatecontrolon;
   ESP_LOGD(TAG, "T26: CommandClimateControl calling WakeupT26");
   WakeupT26();
