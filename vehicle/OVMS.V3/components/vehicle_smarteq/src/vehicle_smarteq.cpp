@@ -98,7 +98,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 3);
-  BmsSetCellArrangementTemperature(28, 1);
+  BmsSetCellArrangementTemperature(27, 1);
   BmsSetCellLimitsVoltage(2.0, 5.0);
   BmsSetCellLimitsTemperature(-39, 200);
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
@@ -466,7 +466,7 @@ void OvmsVehicleSmartEQ::UpdateChargeMetrics() {
     StandardMetrics.ms_v_charge_current->SetValue(ampsum);
   }
 
-  StandardMetrics.ms_v_charge_power->SetValue(mt_obl_main_CHGpower->GetElemValue(0));
+  StandardMetrics.ms_v_charge_power->SetValue( (mt_obl_main_CHGpower->GetElemValue(0) == 0) ? mt_obl_main_CHGpower->GetElemValue(1) : mt_obl_main_CHGpower->GetElemValue(0) );
   float power = StandardMetrics.ms_v_charge_power->AsFloat();
   float efficiency = (power == 0)
                      ? 0
@@ -624,7 +624,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
  */
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) {
   bool car_online = mt_bus_awake->AsBool();
-  bool lv_pwrstate = (StandardMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 13.0);
+  bool lv_pwrstate = (StandardMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 12.8);
   
   // - base system is awake if we've got a fresh lv_pwrstate:
   StandardMetrics.ms_v_env_aux12v->SetValue(car_online);
