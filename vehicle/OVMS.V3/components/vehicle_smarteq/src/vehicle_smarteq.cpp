@@ -457,6 +457,13 @@ void OvmsVehicleSmartEQ::UpdateChargeMetrics() {
 
   if( phasecnt == 1 && mt_obl_fastchg->AsBool() ) {
     StandardMetrics.ms_v_charge_current->SetValue(mt_obl_main_amps->GetElemValue(n));
+  } else if( phasecnt == 3 && mt_obl_fastchg->AsBool() ) {
+    for(i = 0; i < 3; i++) {
+      if (mt_obl_main_amps->GetElemValue(i) > 0) {
+        ampsum += mt_obl_main_amps->GetElemValue(i);
+      }
+    }
+    StandardMetrics.ms_v_charge_current->SetValue(ampsum/3);
   } else {
     for(i = 0; i < 3; i++) {
       if (mt_obl_main_amps->GetElemValue(i) > 0) {
@@ -466,7 +473,7 @@ void OvmsVehicleSmartEQ::UpdateChargeMetrics() {
     StandardMetrics.ms_v_charge_current->SetValue(ampsum);
   }
 
-  StandardMetrics.ms_v_charge_power->SetValue( (mt_obl_main_CHGpower->GetElemValue(0) == 0) ? mt_obl_main_CHGpower->GetElemValue(1) : mt_obl_main_CHGpower->GetElemValue(0) );
+  StandardMetrics.ms_v_charge_power->SetValue( mt_obl_main_CHGpower->GetElemValue(0) + mt_obl_main_CHGpower->GetElemValue(1) );
   float power = StandardMetrics.ms_v_charge_power->AsFloat();
   float efficiency = (power == 0)
                      ? 0
