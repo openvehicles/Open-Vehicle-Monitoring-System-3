@@ -221,6 +221,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricInt *m_climate_fan_speed_limit;
     OvmsMetricFloat *m_climate_setpoint;
     OvmsMetricBool *m_climate_auto;
+    OvmsMetricFloat  *mt_pos_odometer_start;  // ODOmeter at Start to count trips
     
     int    cfg_ev_request_port = DEFAULT_PIN_EV;        // EGPIO port number for EV SYSTEM ACTIVATION REQUEST
     int    cfg_allowed_rangedrop;                       // Allowed drop of range after charging
