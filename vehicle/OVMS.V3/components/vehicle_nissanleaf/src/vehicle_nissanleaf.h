@@ -208,6 +208,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricVector<string> *m_charge_duration_label;
     OvmsMetricInt *m_charge_minutes_3kW_remaining;
     OvmsMetricInt *m_remaining_chargebars;
+    OvmsMetricInt *m_remaining_capacitybars;
     OvmsMetricInt *m_quick_charge;
     OvmsMetricString *m_charge_state_previous;
     OvmsMetricString *m_charge_user_notified;           // For sending autocharge notifications only after charge status has changed
@@ -240,6 +241,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     float   m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
     float   m_cum_energy_gen_wh;					  // Cumulated energy (in wh) exported within 10 second ticker interval
     bool    m_ZE0_charger;					        // True if 2011-2012 ZE0 LEAF with 0x380 message (Gen 1)
+    bool    m_kWh_capacity_read;
 	  bool    m_AZE0_charger;							    // True if 2013+ AZE0 LEAF with 0x390 message (Gen 2)
     bool    m_climate_really_off;           // Needed for AZE0 to shown correct hvac status while charging
 

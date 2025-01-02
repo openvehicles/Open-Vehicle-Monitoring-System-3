@@ -166,6 +166,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_charge_minutes_3kW_remaining = MyMetrics.InitInt("xnl.v.c.chargeminutes3kW", SM_STALE_HIGH, 0);
   m_quick_charge = MyMetrics.InitInt("xnl.v.c.quick", SM_STALE_HIGH, 0);
   m_remaining_chargebars = MyMetrics.InitInt("xnl.v.c.chargebars", SM_STALE_HIGH, 0);
+  m_remaining_capacitybars = MyMetrics.InitInt("xnl.v.c.capacitybars", SM_STALE_HIGH, 0);
   m_soc_nominal = MyMetrics.InitFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, 0, Percentage);
   m_battery_out_power_limit = MyMetrics.InitFloat("xnl.v.b.output.limit", SM_STALE_HIGH, 0, kW);
   m_battery_in_power_limit = MyMetrics.InitFloat("xnl.v.b.regen.limit", SM_STALE_HIGH, 0, kW);
@@ -192,6 +193,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   MyMetrics.InitBool("v.e.locked", SM_STALE_MID, false);
   MyMetrics.InitString("v.c.state",SM_STALE_MID,"stopped");
   m_ZE0_charger = false;
+  m_kWh_capacity_read = false;
   m_AZE0_charger = false;
   m_climate_really_off = false;
 
@@ -632,6 +634,11 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t rep
                    |  reply_data[35];
   float ah = ah10000 / 10000.0;
   StandardMetrics.ms_v_bat_cac->SetValue(ah);
+
+  if (!m_kWh_capacity_read) {
+    // Because older LEAF models seem not to transmit 0x59e, calculate based on Ah and pack voltage
+    m_battery_energy_capacity->SetValue((ah*StandardMetrics.ms_v_bat_voltage->AsFloat())/1000.0);
+  }
 
   // there may be a way to get the SoH directly from the BMS, but for now
   // divide by a configurable battery size
@@ -1288,6 +1295,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           {
           uint16_t cap_gid = d[2] << 4 | d[3] >> 4;
           m_battery_energy_capacity->SetValue(cap_gid * GEN_1_WH_PER_GID, WattHours);
+          m_kWh_capacity_read = true;
           }
           break;
         case BATTERY_TYPE_2_30kWh:
@@ -1317,12 +1325,37 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           m_charge_limit->SetValue("low temp");
           break;
         }
+
+      // ZE0 SOH
+      if (m_battery_type->AsInt(0) == BATTERY_TYPE_1_24kWh) {
+        uint8_t soh = (d[4] >> 1 & 0xF7);
+        m_soh_instrument->SetValue(soh);
+      }
+
+
       uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
       uint8_t  mx_gids = (d[5] & 0x10) >> 4;
+      uint8_t  mx_bars_ZE0 = (d[4] & 0x01);
       int type = -1;
       // gids is invalid during startup
       if (nl_gids != 1023)
-        {
+      {
+        // On LEAF ZE0 200X-2012, some values differ from AZE0
+        switch (mx_bars_ZE0) {
+         case 0x00:
+           {
+             if (m_battery_type->AsInt(0) == BATTERY_TYPE_1_24kWh) {
+               uint8_t chargebars = (d[2] & 0x0F);
+               m_remaining_chargebars->SetValue(chargebars);
+             }
+           }
+          case 0x01:
+           {
+             uint8_t capbars = (d[2] & 0x0F);
+             m_remaining_capacitybars->SetValue(capbars);
+             type = BATTERY_TYPE_1_24kWh;
+           }
+        }
         switch (mx_gids)
           {
           case 0x00:
@@ -1330,11 +1363,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             // Current gids on 24 and 30kwh models
             m_gids->SetValue(nl_gids);
             m_battery_energy_available->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
-
-            if (m_remaining_chargebars->AsInt(0) == 0) {
-              uint8_t chargebars = ((d[2]) >> 4); // Range: 0-12
-              m_remaining_chargebars->SetValue(chargebars);
-            }
 
             // new car soc -- 100% when the battery is new, less when it's degraded
             uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
@@ -1344,7 +1372,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             if (MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
               {
               StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
+              }
+            if (MyConfig.GetParamValueBool("xnl", "soc.newcar.capacity", false)) {
               m_battery_energy_capacity->SetValue(max_gids * GEN_1_WH_PER_GID, WattHours);
+              m_kWh_capacity_read = true;
               }
             }
             break;
@@ -1354,6 +1385,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             m_max_gids->SetValue(nl_gids);
             m_battery_energy_capacity->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
             type = BATTERY_TYPE_2_30kWh;
+            m_kWh_capacity_read = true;
             }
             break;
           }
