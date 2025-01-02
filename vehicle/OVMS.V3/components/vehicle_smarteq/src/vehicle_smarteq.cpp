@@ -503,11 +503,11 @@ void OvmsVehicleSmartEQ::HandlePollState() {
     PollSetState(3);
     ESP_LOGI(TAG,"Pollstate Charging");
   }
-  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() && StandardMetrics.ms_v_env_awake->AsBool() && m_poll_state != 2 && m_enable_write ) {
+  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() && StandardMetrics.ms_v_env_on->AsBool() && m_poll_state != 2 && m_enable_write ) {
     PollSetState(2);
     ESP_LOGI(TAG,"Pollstate Running");
   }
-  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() && !StandardMetrics.ms_v_env_awake->AsBool() && mt_bus_awake->AsBool() && m_poll_state != 1 && m_enable_write ) {
+  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() && !StandardMetrics.ms_v_env_on->AsBool() && mt_bus_awake->AsBool() && m_poll_state != 1 && m_enable_write ) {
     PollSetState(1);
     ESP_LOGI(TAG,"Pollstate Awake");
   }
