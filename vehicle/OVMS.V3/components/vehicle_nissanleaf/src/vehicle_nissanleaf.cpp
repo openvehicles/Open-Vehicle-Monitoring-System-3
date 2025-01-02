@@ -1330,6 +1330,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (m_battery_type->AsInt(0) == BATTERY_TYPE_1_24kWh) {
         uint8_t soh = (d[4] >> 1 & 0xF7);
         m_soh_instrument->SetValue(soh);
+        if (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+        {
+          StandardMetrics.ms_v_bat_soh->SetValue(soh);
+        }
       }
 
 
