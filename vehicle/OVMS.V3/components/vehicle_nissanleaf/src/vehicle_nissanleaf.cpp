@@ -2327,7 +2327,7 @@ OvmsVehicleNissanLeaf::vehicle_command_t OvmsVehicleNissanLeaf::ProcessMsgComman
   {
     case CMD_SetChargeAlerts:
       return MsgCommandCA(result, command, args);
-    case CMD_GetChargeAlerts:
+    case CMD_QueryChargeAlerts:
       return MsgCommandCA(result, command, args);
     default:
       return NotImplemented;
@@ -2391,7 +2391,7 @@ OvmsVehicleNissanLeaf::vehicle_command_t OvmsVehicleNissanLeaf::MsgCommandCA(std
     << std::setprecision(0)
     << MyConfig.GetParamValue("xnl", "suffrange", "0") << ","
     << MyConfig.GetParamValue("xnl", "suffsoc", "0") << ","
-    << MyConfig.GetParamValueBool("xnl", "autocharge", true) == true ? "1" : "0"; << ","
+    << ((MyConfig.GetParamValueBool("xnl", "autocharge", true) == true) ? "1" : "0") << ","
     << MyConfig.GetParamValueInt("xnl", "rangedrop", DEFAULT_RANGEDROP) << ","
     << MyConfig.GetParamValueInt("xnl", "socdrop", DEFAULT_SOCDROP);
   result = buf.str();
