@@ -1331,15 +1331,20 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             m_gids->SetValue(nl_gids);
             m_battery_energy_available->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
 
+            if (m_remaining_chargebars->AsInt(0) == 0) {
+              uint8_t chargebars = ((d[2]) >> 4); // Range: 0-12
+              m_remaining_chargebars->SetValue(chargebars);
+            }
+
             // new car soc -- 100% when the battery is new, less when it's degraded
             uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
             float soc_new_car = (nl_gids * 100.0) / max_gids;
             m_soc_new_car->SetValue(soc_new_car);
-
             // we use the instrument cluster soc from 0x1db unless the user has opted otherwise
             if (MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
               {
               StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
+              m_battery_energy_capacity->SetValue(max_gids * GEN_1_WH_PER_GID, WattHours);
               }
             }
             break;
@@ -2151,6 +2156,10 @@ void OvmsVehicleNissanLeaf::HandleCharging()
 int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc, float charge_power_w)
   { // updated to allow for V2X calculation
   float bat_soc = m_soc_instrument->AsFloat(100);
+  if (bat_soc == 0) {
+    // Cannot get instrument SOC, use soc from BMS
+    bat_soc = StandardMetrics.ms_v_bat_soc->AsFloat(100);
+  }
   if ( (bat_soc > target_soc && charge_power_w > 0) || (bat_soc < target_soc && charge_power_w < 0) )
     {
     return 0;   // Done!
@@ -2308,6 +2317,23 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandUnlock(const char* 
   return RemoteCommandHandler(UNLOCK_DOORS);
   }
 
+/**
+ * ProcessMsgCommand: V2 compatibility protocol message command processing
+ *  result: optional payload or message to return to the caller with the command response
+ */
+OvmsVehicleNissanLeaf::vehicle_command_t OvmsVehicleNissanLeaf::ProcessMsgCommand(string& result, int command, const char* args)
+{
+  switch (command)
+  {
+    case CMD_SetChargeAlerts:
+      return MsgCommandCA(result, command, args);
+    case CMD_GetChargeAlerts:
+      return MsgCommandCA(result, command, args);
+    default:
+      return NotImplemented;
+  }
+}
+
 void OvmsVehicleNissanLeaf::MITMDisableTimer() 
 {
   ESP_LOGI(TAG, "MITM attempted off");
@@ -2331,6 +2357,46 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandStartCharge()
   StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
   return RemoteCommandHandler(START_CHARGING);
   }
+
+/**
+ * MsgCommandCA:
+ *  - CMD_QueryChargeAlerts()
+ *  - CMD_SetChargeAlerts(<range>,<soc>,[<power>],[<stopmode>])
+ *  - Result: <range>,<soc>,<time_range>,<time_soc>,<time_full>,<power>,<stopmode>
+ */
+OvmsVehicleNissanLeaf::vehicle_command_t OvmsVehicleNissanLeaf::MsgCommandCA(std::string &result, int command, const char* args)
+{
+  if (command == CMD_SetChargeAlerts)
+  {
+    std::istringstream sentence(args);
+    std::string token;
+
+    // CMD_SetChargeAlerts(<range limit>,<soc limit>,<charge mode>,<range drop>, <soc drop>)
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xnl", "suffrange", atoi(token.c_str()));
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xnl", "suffsoc", atoi(token.c_str()));
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueBool("xnl", "autocharge", atoi(token.c_str()) == 1);
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xnl", "rangedrop", atoi(token.c_str()));
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xnl", "socdrop", atoi(token.c_str()));
+    // Synchronize with config changes:
+    ConfigChanged(NULL);
+  }
+  // Result: <range>,<soc>,<stopmode>,<rangedrop>,<socdrop>
+  std::ostringstream buf;
+  buf
+    << std::setprecision(0)
+    << MyConfig.GetParamValue("xnl", "suffrange", "0") << ","
+    << MyConfig.GetParamValue("xnl", "suffsoc", "0") << ","
+    << MyConfig.GetParamValueBool("xnl", "autocharge", true) == true ? "1" : "0"; << ","
+    << MyConfig.GetParamValueInt("xnl", "rangedrop", DEFAULT_RANGEDROP) << ","
+    << MyConfig.GetParamValueInt("xnl", "socdrop", DEFAULT_SOCDROP);
+  result = buf.str();
+  return Success;
+}
 
 /**
  * SetFeature: V2 compatibility config wrapper

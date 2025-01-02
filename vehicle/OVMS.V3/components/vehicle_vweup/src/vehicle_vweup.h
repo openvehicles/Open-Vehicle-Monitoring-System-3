@@ -60,6 +60,7 @@
 using namespace std;
 
 // VW e-Up specific MSG protocol commands:
+#define CMD_QueryChargeAlerts       203
 #define CMD_SetChargeAlerts         204 // (suffsoc, current limit, charge mode)
 
 
