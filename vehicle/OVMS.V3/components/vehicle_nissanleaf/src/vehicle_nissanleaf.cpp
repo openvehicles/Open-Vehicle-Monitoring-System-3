@@ -166,7 +166,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_charge_minutes_3kW_remaining = MyMetrics.InitInt("xnl.v.c.chargeminutes3kW", SM_STALE_HIGH, 0);
   m_quick_charge = MyMetrics.InitInt("xnl.v.c.quick", SM_STALE_HIGH, 0);
   m_remaining_chargebars = MyMetrics.InitInt("xnl.v.c.chargebars", SM_STALE_HIGH, 0);
-  m_remaining_capacitybars = MyMetrics.InitInt("xnl.v.c.capacitybars", SM_STALE_HIGH, 0);
+  m_capacitybars = MyMetrics.InitInt("xnl.v.b.capacitybars", SM_STALE_HIGH, 0);
   m_soc_nominal = MyMetrics.InitFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, 0, Percentage);
   m_battery_out_power_limit = MyMetrics.InitFloat("xnl.v.b.output.limit", SM_STALE_HIGH, 0, kW);
   m_battery_in_power_limit = MyMetrics.InitFloat("xnl.v.b.regen.limit", SM_STALE_HIGH, 0, kW);
@@ -1353,12 +1353,14 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
                m_remaining_chargebars->SetValue(chargebars);
              }
            }
+           break;
           case 0x01:
            {
              uint8_t capbars = (d[2] & 0x0F);
-             m_remaining_capacitybars->SetValue(capbars);
+             m_capacitybars->SetValue(capbars);
              type = BATTERY_TYPE_1_24kWh;
            }
+           break;
         }
         switch (mx_gids)
           {
