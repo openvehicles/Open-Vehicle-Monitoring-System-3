@@ -296,7 +296,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::ProcessMsgCommand(string& 
  */
 OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &result, int command, const char* args)
 {
-  if (command == CMD_SetChargeAlerts)
+  if (command == CMD_SetChargeAlerts && args && *args)
   {
     std::istringstream sentence(args);
     std::string token;
