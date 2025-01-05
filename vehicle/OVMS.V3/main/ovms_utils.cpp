@@ -430,7 +430,7 @@ TaskHandle_t TaskGetHandle(const char *name)
   {
   TaskHandle_t res = 0;
   TaskStatus_t* pxTaskStatusArray;
-  volatile UBaseType_t uxArraySize, x;
+  UBaseType_t uxArraySize, x;
 
   uxArraySize = uxTaskGetNumberOfTasks();
   pxTaskStatusArray = (TaskStatus_t*)pvPortMalloc(uxArraySize * sizeof(TaskStatus_t));

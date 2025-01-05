@@ -670,8 +670,11 @@ void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, db
   {
     std::string busname = string_format("can%d", bus);
     can = (canbus*)MyPcpApp.FindDeviceByName(busname.c_str());
-    can->SetPowerMode(On);
-    can->Start(mode,speed,dbcfile);
+    if (can)
+    {
+      can->SetPowerMode(On);
+      can->Start(mode,speed,dbcfile);
+    }
   }
 #endif
   switch (bus)

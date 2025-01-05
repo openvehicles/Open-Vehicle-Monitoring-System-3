@@ -47,6 +47,12 @@ static const char *TAG = "peripherals";
 #endif
 #endif
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 4)
+#define ADC_ATTEN ADC_ATTEN_DB_12
+#else
+#define ADC_ATTEN ADC_ATTEN_DB_11
+#endif
+
 Peripherals::Peripherals()
   {
   ESP_LOGI(TAG, "Initialising OVMS Peripherals...");
@@ -147,7 +153,7 @@ Peripherals::Peripherals()
 
 #ifdef CONFIG_OVMS_COMP_ADC
   ESP_LOGI(TAG, "  ESP32 ADC");
-  m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_BIT_12, ADC_ATTEN_DB_11);
+  m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_BIT_12, ADC_ATTEN);
 
 #endif // #ifdef CONFIG_OVMS_COMP_ADC
 

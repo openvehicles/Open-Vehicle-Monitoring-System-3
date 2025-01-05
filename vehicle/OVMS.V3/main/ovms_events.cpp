@@ -41,7 +41,9 @@ static const char *TAG = "events";
 #include "ovms_boot.h"
 #if ESP_IDF_VERSION_MAJOR >= 4
 #include <esp_netif_types.h>
+#ifdef CONFIG_ETH_ENABLED
 #include <esp_eth_com.h>
+#endif
 #endif
 #if ESP_IDF_VERSION_MAJOR >= 5
 #include <esp_wifi_types.h>
@@ -764,6 +766,7 @@ void OvmsEvents::ReceiveSystemEvent(void* handler_args, esp_event_base_t base, i
        break;
       }
     }
+#ifdef CONFIG_ETH_ENABLED
   else if (base == ETH_EVENT)
     {
     switch (id)
@@ -784,6 +787,7 @@ void OvmsEvents::ReceiveSystemEvent(void* handler_args, esp_event_base_t base, i
        break;
       }
     }
+#endif
   }
 
 #else
