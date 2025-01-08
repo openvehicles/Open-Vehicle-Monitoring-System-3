@@ -50,7 +50,7 @@
 #define SYNC_REQUEST_TIMEOUT 100 //ms. Number of milliseconds to wait for the synchronous PollSingleRequest() calls.
 #define GWM_RETRY_CHECK_STATE_TIMEOUT 5 //seconds. Number of seconds to wait before retry state check.
 #define CAR_UNRESPONSIVE_THRESHOLD 3 //seconds. If reaches this threshold, GWM state will change back to Unknown.
-#define CHARGING_THRESHOLD 13.6 //Volts. If voltage is lower than this, we say 1. 12V battery is not charging and 2. we should sleep OVMS to avoid draining battery too low
+#define CHARGING_THRESHOLD 13.1 //Volts. If voltage is lower than this, we say 1. 12V battery is not charging and 2. we should sleep OVMS to avoid draining battery too low. (was 13.6)
 #define DEFAULT_BMS_VERSION 1 //Corresponding to the BMSDoDLimits array element
 #define TRANSITION_TIMEOUT 50 //s. Number of seconds after 12V goes below CHARGING_THRESHOLD to stay in current state before going to sleep.
 

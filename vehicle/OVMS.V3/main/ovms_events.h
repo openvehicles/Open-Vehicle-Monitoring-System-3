@@ -76,6 +76,8 @@ extern void EventStdFree(const char* event, void* data);
 typedef enum
   {
   EVENT_none = 0,             // Do nothing
+  EVENT_addhandler,           // Add an event handler
+  EVENT_removehandlers,       // Remove event handlers
   EVENT_signal                // Raise a signal
   } event_msg_t;
 
@@ -83,6 +85,15 @@ typedef struct
   {
   union
     {
+    struct
+      {
+      char* event;
+      EventCallbackEntry* handler;
+      } addhandler;
+    struct
+      {
+      char* caller;
+      } removehandlers;
     struct
       {
       char* event;
@@ -110,7 +121,6 @@ class OvmsEvents
 
   public:
     void EventTask();
-    void HandleQueueSignalEvent(event_queue_t* msg);
     void FreeQueueSignalEvent(event_queue_t* msg);
 #if ESP_IDF_VERSION_MAJOR >= 4
     static void ReceiveSystemEvent(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
@@ -121,11 +131,17 @@ class OvmsEvents
     const EventMap& Map() { return m_map; }
 
   protected:
+    void HandleQueueSignalEvent(event_queue_t* msg);
+    void HandleQueueAddHandler(event_queue_t* msg);
+    void HandleQueueRemoveHandlers(event_queue_t* msg);
+
+  protected:
     bool ScheduleEvent(event_queue_t* msg, uint32_t delay_ms);
     static void SignalScheduledEvent(TimerHandle_t timer);
 
   protected:
     EventMap m_map;
+    OvmsRecMutex m_map_mutex;
     TimerList m_timers;
     TimerStatusMap m_timer_active;
     OvmsMutex m_timers_mutex;

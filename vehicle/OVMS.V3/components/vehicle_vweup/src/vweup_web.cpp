@@ -205,13 +205,6 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     climit, 4, climit, 1,
     "<p>Set charge current limit in vehicle (may be reduced further by charging equipment!)</p>");
 
-/*  c.input_slider("Power limit", "ctp_maxpower", 3, "kW",
-    -1, nmap["ctp.maxpower"].empty() ? 0 : std::stof(nmap["ctp.maxpower"]),
-    0, 0, 30, 0.1,
-    "<p>Used while not charging, default 0 = unlimited (except by car).</p>"
-    "<p>Note: this needs to be the power level at the battery, i.e. after losses.</p>"
-    "<p>Typical values: 6.5 kW for 2-phase charging, 3.2 kW for 1-phase, 2 kW for ICCB/Schuko.</p>");
-*/
   c.input_radiobtn_start("Charge limit mode", "chg_autostop");
   c.input_radiobtn_option("chg_autostop", "Notify", "no", nmap["chg_autostop"] == "no");
   c.input_radiobtn_option("chg_autostop", "Stop", "yes", nmap["chg_autostop"] == "yes");
@@ -227,6 +220,15 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     "Without this feature, charge control may not work reliably.</p>"
     );
 
+  c.fieldset_end();
+
+  c.fieldset_start("Charge Time Prediction");
+  c.input_slider("Standard power level", "ctp_maxpower", 3, "kW",
+    -1, nmap["ctp.maxpower"].empty() ? 0 : std::stof(nmap["ctp.maxpower"]),
+    0, 0, 30, 0.1,
+    "<p>Used to estimate charge times while not charging, default 0 = unlimited (except by car).</p>"
+    "<p>Note: this needs to be the power level at the battery, i.e. after losses.</p>"
+    "<p>Typical values: 6.5 kW for 2-phase charging, 3.2 kW for 1-phase, 2 kW for ICCB/Schuko.</p>");
   c.fieldset_end();
 
   c.fieldset_start("Battery Health", "needs-con-obd");

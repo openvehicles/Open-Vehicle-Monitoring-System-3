@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.23.1"
+#define VERSION "0.23.2"
 
 #include <stdio.h>
 #include <string>
@@ -296,7 +296,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::ProcessMsgCommand(string& 
  */
 OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &result, int command, const char* args)
 {
-  if (command == CMD_SetChargeAlerts)
+  if (command == CMD_SetChargeAlerts && args && *args)
   {
     std::istringstream sentence(args);
     std::string token;
@@ -326,7 +326,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   return Success;
 }
   
-  void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
+void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 {
   if (param && param->GetName() != "xvu") {
     return;
