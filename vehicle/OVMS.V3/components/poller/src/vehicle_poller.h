@@ -252,6 +252,8 @@ class OvmsPoller : public InternalRamAllocated {
       std::shared_ptr<PollSeriesEntry> series;
 
       bool is_blocking;
+      OvmsPoller::OvmsNextPollResult last_status;
+      uint32_t last_status_monotonic;
 
       struct poll_series_st *prev, *next;
       } poll_series_t;
@@ -324,6 +326,9 @@ class OvmsPoller : public InternalRamAllocated {
          */
         bool HasRepeat() const;
 
+        /** CLI Status.
+         */
+        void Status(int verbosity, OvmsWriter* writer);
       };
 
     /** Standard series.
@@ -710,6 +715,8 @@ class OvmsPoller : public InternalRamAllocated {
     static const char *PollerCommand(OvmsPollCommand src, bool brief=false);
     static const char *PollerSource(poller_source_t src);
     static const char *PollResultCodeName(int code);
+
+   void PollerStatus(int verbosity, OvmsWriter* writer);
   friend class OvmsPollers;
 };
 
