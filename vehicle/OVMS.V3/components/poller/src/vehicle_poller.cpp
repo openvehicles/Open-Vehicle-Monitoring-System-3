@@ -774,6 +774,18 @@ void OvmsPoller::RemovePollRequestStarting(const std::string &name)
   m_polls.RemoveEntry(name, true);
   }
 
+void OvmsPoller::PollerStatus(int verbosity, OvmsWriter* writer)
+  {
+  OvmsRecMutexLock lock(&m_poll_mutex, pdMS_TO_TICKS(3000));
+  if (!lock.IsLocked())
+    {
+    writer->puts("Failed to lock Poller for status");
+    return;
+    }
+  writer->printf("  Ticker: %" PRIu32 "\n", m_poll.ticker);
+  writer->printf("  State:  %" PRIu8 "\n", m_poll_state);
+  m_polls.Status(verbosity, writer);
+  }
 /**
  * PollResultCodeName: get text representation of result code
  */
@@ -2000,6 +2012,7 @@ void OvmsPollers::PollerStatus(int verbosity, OvmsWriter* writer)
       writer->puts("None");
     else
       writer->printf("%" PRIu32 "s (ticks)\n", (curmon - last));
+    poller->PollerStatus(verbosity, writer);
     }
   if (!found_list)
     {
@@ -3644,6 +3657,7 @@ static const char *PollResStr( OvmsPoller::OvmsNextPollResult res)
     case OvmsPoller::OvmsNextPollResult::StillAtEnd: return "StillAtEnd";
     case OvmsPoller::OvmsNextPollResult::FoundEntry: return "FoundEntry";
     case OvmsPoller::OvmsNextPollResult::ReachedEnd: return "ReachedEnd";
+    case OvmsPoller::OvmsNextPollResult::Ignore: return "Ignore";
     default: return "Unknown";
     }
   }
@@ -3683,6 +3697,9 @@ void OvmsPoller::PollSeriesList::SetEntry(const std::string &name, std::shared_p
   newval->name = name;
   newval->series = series;
   newval->is_blocking = blocking;
+
+  newval->last_status = OvmsPoller::OvmsNextPollResult::Ignore;
+  newval->last_status_monotonic = 0;
   newval->next = nullptr;
   newval->prev = nullptr;
 
@@ -3871,6 +3888,8 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::PollSeriesList::NextPollEntry(poll_pi
     if (m_iter == nullptr)
       return OvmsPoller::OvmsNextPollResult::ReachedEnd;
     res = m_iter->series->NextPollEntry(entry, mybus, pollticker, pollstate);
+    m_iter->last_status = res;
+    m_iter->last_status_monotonic = monotonictime;
 
     IFTRACE(Poller) ESP_LOGV(TAG, "PollSeriesList::NextPollEntry[%s]: %s", m_iter->name.c_str(), PollResStr(res));
 
@@ -3957,6 +3976,47 @@ bool OvmsPoller::PollSeriesList::HasRepeat() const
       return true;
     }
   return false;
+  }
+static const char *strtobool(bool val)
+  {
+  return val ? "Yes" : "No";
+  }
+void OvmsPoller::PollSeriesList::Status(int verbosity, OvmsWriter* writer)
+  {
+  writer->puts(" Name          |Rpt|Blk|Lst|Rdy|Ticks|Status");
+  writer->puts("---------------+---+---+---+---+-----+------");
+  uint32_t curmon = monotonictime;
+  for (auto it = m_first; it != nullptr; it = it->next)
+    {
+    const std::string &val = it->name;
+    if (it->series == nullptr)
+      {
+      writer->printf(" %-14s| null\n", val.c_str());
+      }
+    else
+      {
+      bool active = it == m_iter;
+      bool has_repeat = it->series->HasRepeat();
+      bool is_block = it->is_blocking;
+      bool has_list = it->series->HasPollList();
+      bool is_ready = it->series->Ready();
+
+      writer->printf("%s%-14s|%-3s|%-3s|%-3s|%-3s|",
+          active ? "*" : " ",
+          val.c_str(),
+          strtobool(has_repeat),
+          strtobool(is_block),
+          strtobool(has_list),
+          strtobool(is_ready)
+          );
+      auto last = it->last_status_monotonic;
+      if (last == 0)
+        writer->printf("None |");
+      else
+        writer->printf("%5" PRIu32 "|", (curmon - last));
+      writer->puts(PollResStr(it->last_status));
+      }
+    }
   }
 
 // Poll Series base
