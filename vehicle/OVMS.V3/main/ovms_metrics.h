@@ -241,11 +241,11 @@ class OvmsMetric
     virtual bool IsString() { return false; };
     virtual void Clear();
 
-    uint32_t LastModified();
-    uint32_t Age();
-    bool IsDefined();
-    bool IsFirstDefined();
-    bool IsPersistent();
+    uint32_t LastModified() const;
+    uint32_t Age() const;
+    bool IsDefined() const;
+    bool IsFirstDefined() const;
+    bool IsPersistent() const;
     bool IsStale();
     bool IsFresh();
     void SetStale(bool stale)
@@ -256,16 +256,16 @@ class OvmsMetric
       {
       m_autostale = seconds;
       }
-    metric_unit_t GetUnits()
+    metric_unit_t GetUnits() const
       {
       return m_units;
       }
-    bool IsModified(size_t modifier);
+    bool IsModified(size_t modifier) const;
     bool IsModifiedAndClear(size_t modifier);
     void ClearModified(size_t modifier);
     void SetModified(bool changed=true);
 
-    bool IsUnitSend(size_t modifier);
+    bool IsUnitSend(size_t modifier) const;
     bool IsUnitSendAndClear(size_t modifier);
     void ClearUnitSend(size_t modifier);
     void SetUnitSend(size_t modifier);

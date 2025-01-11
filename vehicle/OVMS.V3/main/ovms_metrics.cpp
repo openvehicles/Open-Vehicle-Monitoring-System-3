@@ -1570,12 +1570,12 @@ void OvmsMetric::operator=(std::string value)
   {
   }
 
-uint32_t OvmsMetric::LastModified()
+uint32_t OvmsMetric::LastModified() const
   {
   return m_lastmodified;
   }
 
-uint32_t OvmsMetric::Age()
+uint32_t OvmsMetric::Age() const
   {
   return monotonictime - m_lastmodified;
   }
@@ -1595,7 +1595,7 @@ void OvmsMetric::SetModified(bool changed)
     }
   }
 
-bool OvmsMetric::IsUnitSend(size_t modifier)
+bool OvmsMetric::IsUnitSend(size_t modifier) const
   {
     return m_sendunit & (1ul << modifier);
   }
@@ -1619,17 +1619,17 @@ void OvmsMetric::SetUnitSendAll()
   m_sendunit = ULONG_MAX;
   }
 
-bool OvmsMetric::IsDefined()
+bool OvmsMetric::IsDefined() const
   {
   return (m_defined != NeverDefined);
   }
 
-bool OvmsMetric::IsFirstDefined()
+bool OvmsMetric::IsFirstDefined() const
   {
   return (m_defined == FirstDefined);
   }
 
-bool OvmsMetric::IsPersistent()
+bool OvmsMetric::IsPersistent() const
   {
   return m_persist;
   }
@@ -1678,7 +1678,7 @@ bool OvmsMetric::IsFresh()
   }
 
 
-bool OvmsMetric::IsModified(size_t modifier)
+bool OvmsMetric::IsModified(size_t modifier) const
   {
   return m_modified & 1ul << modifier;
   }
