@@ -43,6 +43,10 @@ static const char *TAG = "dbc-app";
 #include "ovms_events.h"
 #include "ovms_vfs.h"
 
+#undef bind  // Kludgy, but works
+using std::placeholders::_1;
+using std::placeholders::_2;
+
 dbc MyDBC __attribute__ ((init_priority (4520)));
 
 void dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -107,6 +111,69 @@ bool dbc::ExpandComplete(OvmsWriter* writer, const char *token, bool complete)
     return true;
     }
   }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+/// Implement  bool OvmsDBC.Load(name, file)
+duk_ret_t dbc::DukOvmsDBCLoad(duk_context *ctx)
+  {
+  std::string name, fname;
+
+  name = duk_get_string(ctx,0);
+  if (name.empty())
+    {
+    duk_push_boolean(ctx,0);
+    return 1;
+    }
+  fname = duk_get_string(ctx,1);
+
+  auto res = MyDBC.LoadFile(name.c_str(), fname.c_str());
+  duk_push_boolean(ctx, res ? 1 : 0 );
+  return 1;
+  }
+
+/// Implement bool OvmsDBC.Unload(name)
+duk_ret_t dbc::DukOvmsDBCUnload(duk_context *ctx)
+  {
+  std::string name = duk_get_string(ctx,0);
+  if (name.empty())
+    {
+    duk_push_boolean(ctx,0);
+    return 1;
+    }
+  auto res = MyDBC.Unload(name.c_str());
+
+  duk_push_boolean(ctx, res ? 1 : 0 );
+  return 1;
+  }
+
+void dbc_duk_get_callback(void* param, const char* buffer)
+  {
+  *((std::ostringstream *)param) << buffer;
+  }
+
+/// Implement string OvmsDBC.Get(name)
+duk_ret_t dbc::DukOvmsDBCGet(duk_context *ctx)
+  {
+  std::string name = duk_get_string(ctx,0);
+  if (name.empty())
+    {
+    duk_push_null(ctx);
+    return 1;
+    }
+  dbcfile* dbc;
+  dbc = MyDBC.Find(name.c_str());
+  if (dbc == nullptr)
+    {
+    duk_push_null(ctx);
+    return 1;
+    }
+  std::ostringstream writer;
+  dbc->WriteSummary(std::bind(dbc_duk_get_callback,_1,_2), &writer);
+  duk_push_string(ctx, writer.str().c_str());
+  return 1;
+  }
+
+#endif
 
 static int dbc_name_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
@@ -681,9 +748,15 @@ dbc::dbc()
   // Our instances:
   //   'autodirs': Space separated list of directories to auto load DBC files from
 
-  #undef bind  // Kludgy, but works
-  using std::placeholders::_1;
-  using std::placeholders::_2;
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsDBC");
+  dto->RegisterDuktapeFunction(DukOvmsDBCLoad, 2, "Load");
+  dto->RegisterDuktapeFunction(DukOvmsDBCUnload, 1, "Unload");
+  dto->RegisterDuktapeFunction(DukOvmsDBCGet, 1, "Get");
+  MyDuktape.RegisterDuktapeObject(dto);
+
+#endif
+
   MyEvents.RegisterEvent(TAG, "sd.mounted", std::bind(&dbc_sdmounted, _1, _2));
   }
 
