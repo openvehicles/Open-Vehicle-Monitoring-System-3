@@ -572,27 +572,56 @@ void dbcValueTableTable::WriteFile(dbcOutputCallback callback, void* param) cons
     callback(param, "\n");
     }
   }
+////////////////////////////////////////////////////////////////////////
+// dbcOvmsMetric
+//
+dbcOvmsMetric::dbcOvmsMetric(OvmsMetric *metric)
+  : m_metric(metric)
+  {
+  }
+void dbcOvmsMetric::SetValue(dbcNumber value, metric_unit_t unit)
+  {
+  m_metric->SetValue(value, unit);
+  }
+void dbcOvmsMetric::SetValue(const std::string &value)
+  {
+  m_metric->SetValue(value);
+  }
+
+metric_unit_t dbcOvmsMetric::DefaultUnit() const
+  {
+  return m_metric->GetUnits();
+  }
 
 ////////////////////////////////////////////////////////////////////////
 // dbcSignal
 
 dbcSignal::dbcSignal()
+  : m_start_bit(0), m_signal_size(0),
+  m_byte_order(DBC_BYTEORDER_BIG_ENDIAN),
+  m_value_type(DBC_VALUETYPE_UNSIGNED),
+  m_metric_unit(Native),
+  m_metric(nullptr)
   {
-  m_start_bit = 0;
-  m_signal_size = 0;
-  m_metric = NULL;
   }
 
 dbcSignal::dbcSignal(std::string name)
+  : m_start_bit(0), m_signal_size(0),
+  m_byte_order(DBC_BYTEORDER_BIG_ENDIAN),
+  m_value_type(DBC_VALUETYPE_UNSIGNED),
+  m_metric_unit(Native),
+  m_metric(nullptr)
   {
-  m_start_bit = 0;
-  m_signal_size = 0;
-  m_name = name;
-  m_metric = MyMetrics.Find(name.c_str());
+  SetName(name);
   }
 
 dbcSignal::~dbcSignal()
   {
+  if (m_metric)
+    {
+    delete m_metric;
+    m_metric = nullptr;
+    }
   }
 
 void dbcSignal::AddReceiver(std::string receiver)
@@ -662,7 +691,16 @@ void dbcSignal::SetName(const std::string& name)
 
   std::string mappedname(name);
   std::replace( mappedname.begin(), mappedname.end(), '_', '.');
-  m_metric = MyMetrics.Find(mappedname.c_str());
+  auto metric = MyMetrics.Find(mappedname.c_str());
+  if (metric != nullptr)
+    {
+    AssignMetric(metric);
+    return;
+    }
+  // TODO bms.v[] and bms.t[]
+
+  // Not found.
+  AttachDbcMetric(nullptr);
   }
 
 void dbcSignal::SetName(const char* name)
@@ -868,10 +906,21 @@ dbcNumber dbcSignal::Decode(const uint8_t* msg, uint8_t size) const
 
 void dbcSignal::AssignMetric(OvmsMetric* metric)
   {
+  dbcMetric *new_metric = nullptr;
+  if (metric != nullptr)
+    new_metric = new dbcOvmsMetric(metric);
+  AttachDbcMetric(new_metric);
+  }
+
+/// Attach the DBC Metric to the signal (owns the pointer)
+void dbcSignal::AttachDbcMetric(dbcMetric* metric)
+  {
+  if (m_metric != nullptr)
+    delete m_metric;
   m_metric = metric;
   }
 
-OvmsMetric* dbcSignal::GetMetric() const
+dbcMetric* dbcSignal::GetMetric() const
   {
   return m_metric;
   }
@@ -1462,7 +1511,7 @@ void dbcfile::DecodeSignal(CAN_frame_format_t format, uint32_t msg_id, const uin
       }
     for (dbcSignal* sig : dbcmsg->m_signals)
       {
-      OvmsMetric* m = sig->GetMetric();
+      dbcMetric* m = sig->GetMetric();
       if (m)
         {
         if ((mux==NULL)||(sig->GetMultiplexSwitchvalue() == muxval))

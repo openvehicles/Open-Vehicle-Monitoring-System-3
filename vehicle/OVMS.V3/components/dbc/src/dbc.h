@@ -248,6 +248,26 @@ class dbcValueTableTable
     dbcValueTableTableEntry_t m_entrymap;
   };
 
+
+class dbcMetric
+  {
+  public:
+    virtual ~dbcMetric() {};
+    virtual void SetValue(dbcNumber value, metric_unit_t metric) = 0;
+    virtual void SetValue(const std::string &value) = 0;
+    virtual metric_unit_t DefaultUnit() const = 0;
+  };
+class dbcOvmsMetric : public dbcMetric
+  {
+  private:
+    OvmsMetric *m_metric;
+  public:
+    dbcOvmsMetric(OvmsMetric *metric);
+    void SetValue(dbcNumber value, metric_unit_t unit) override;
+    void SetValue(const std::string &value) override;
+    metric_unit_t DefaultUnit() const override;
+  };
+
 typedef std::list<std::string> dbcReceiverList_t;
 class dbcSignal
   {
@@ -309,7 +329,8 @@ class dbcSignal
 
   public:
     void AssignMetric(OvmsMetric* metric);
-    OvmsMetric* GetMetric() const;
+    void AttachDbcMetric(dbcMetric* metric);
+    dbcMetric* GetMetric() const;
 
   public:
     void WriteFile(dbcOutputCallback callback, void* param) const;
@@ -336,7 +357,7 @@ class dbcSignal
     std::string m_unit;
     metric_unit_t m_metric_unit;
 
-    OvmsMetric* m_metric;
+    dbcMetric* m_metric;
   };
 
 typedef std::list<dbcSignal*> dbcSignalList_t;
