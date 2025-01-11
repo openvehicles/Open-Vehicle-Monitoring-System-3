@@ -54,17 +54,17 @@ class dbcNumber
 
   public:
     void Clear();
-    bool IsDefined();
-    bool IsSignedInteger();
-    bool IsUnsignedInteger();
-    bool IsDouble();
+    bool IsDefined() const;
+    bool IsSignedInteger() const;
+    bool IsUnsignedInteger() const;
+    bool IsDouble() const;
     void Set(int32_t value);
     void Set(uint32_t value);
     void Set(double value);
     void Cast(uint32_t value, dbcNumberType_t type);
-    int32_t GetSignedInteger();
-    uint32_t GetUnsignedInteger();
-    double GetDouble();
+    int32_t GetSignedInteger() const;
+    uint32_t GetUnsignedInteger() const;
+    double GetDouble() const;
     friend std::ostream& operator<<(std::ostream& os, const dbcNumber& me);
     dbcNumber& operator=(const int32_t value);
     dbcNumber& operator=(const uint32_t value);
@@ -72,9 +72,9 @@ class dbcNumber
     dbcNumber& operator=(const dbcNumber& value);
     dbcNumber operator*(const dbcNumber& value);
     dbcNumber operator+(const dbcNumber& value);
-    bool operator==(const int32_t value);
-    bool operator==(const uint32_t value);
-    bool operator==(const double value);
+    bool operator==(const int32_t value) const;
+    bool operator==(const uint32_t value) const;
+    bool operator==(const double value) const;
 
   protected:
     dbcNumberType_t m_type;
