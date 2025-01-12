@@ -257,6 +257,9 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   m_candata_timer = SQ_CANDATA_TIMEOUT;
   
   switch (p_frame->MsgID) {
+    case 0x350:
+      StandardMetrics.ms_v_env_locked->SetValue((CAN_BYTE(6) == 0x96));
+      break;
     case 0x392:
       StandardMetrics.ms_v_env_hvac->SetValue((CAN_BYTE(1) & 0x40) > 0);
       StandardMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40);
