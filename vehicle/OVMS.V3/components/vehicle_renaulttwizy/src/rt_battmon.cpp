@@ -250,6 +250,20 @@ void OvmsVehicleRenaultTwizy::BatteryUpdate()
 
 
 /**
+ * BatterySetSensorAndUpdate: Set sensor state and update if all done
+ */
+void OvmsVehicleRenaultTwizy::BatterySetSensorAndUpdate(uint8_t flag)
+{
+  uint8_t batt_sensors_state = twizy_batt_sensors_state;
+  batt_sensors_state |= flag;
+  twizy_batt_sensors_state = batt_sensors_state;
+  if ((batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
+    BatteryUpdate();
+  }
+}
+
+
+/**
  * BatteryReset: reset deviations, alerts & watches
  */
 void OvmsVehicleRenaultTwizy::BatteryReset()
