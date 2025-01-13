@@ -211,6 +211,10 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_enable_LED_state = MyConfig.GetParamValueBool("xsq", "led", false);
   m_ios_tpms_fix = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
   m_resettrip = MyConfig.GetParamValueBool("xsq", "resettrip", false);
+  m_TPMS_FL = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
+  m_TPMS_FR = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
+  m_TPMS_RL = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
+  m_TPMS_RR = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (!m_enable_LED_state) {
     MyPeripherals->m_max7317->Output(9, 1);
@@ -349,13 +353,13 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x673:
       if (CAN_BYTE(2) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float) CAN_BYTE(2)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_RR, (float) CAN_BYTE(2)*3.1);
       if (CAN_BYTE(3) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float) CAN_BYTE(3)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_RL, (float) CAN_BYTE(3)*3.1);
       if (CAN_BYTE(4) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float) CAN_BYTE(4)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_FR, (float) CAN_BYTE(4)*3.1);
       if (CAN_BYTE(5) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float) CAN_BYTE(5)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_FL, (float) CAN_BYTE(5)*3.1);
       break;
 
     default:
