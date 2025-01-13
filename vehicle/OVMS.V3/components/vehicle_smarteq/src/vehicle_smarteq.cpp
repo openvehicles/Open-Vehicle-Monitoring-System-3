@@ -738,6 +738,99 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
   return res;
 }
 
+// lock: can can1 tx st 745 04 30 01 00 00
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) {
+  if(!m_enable_write) {
+    ESP_LOGE(TAG, "CommandLock failed / no write access");
+    return Fail;
+  }
+  ESP_LOGI(TAG, "CommandLock");
+  CommandWakeup();
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  
+  uint32_t txid = 0x745, rxid = 0x765;
+  uint8_t protocol = ISOTP_STD;
+  int timeout_ms = 200;
+  std::string request;
+  std::string response;
+  
+  request = hexdecode("10C0");
+  int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+  
+  request = hexdecode("30010000");
+  err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  request = hexdecode("30082002"); // indicator light
+  err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+  if (err == POLLSINGLE_TXFAILURE)
+  {
+    ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
+    return Fail;
+  }
+  else if (err < 0)
+  {
+    ESP_LOGD(TAG, "ERROR: timeout waiting for poller/response");
+    return Fail;
+  }
+  else if (err)
+  {
+    ESP_LOGD(TAG, "ERROR: request failed with response error code %02X\n", err);
+    return Fail;
+  }
+
+  StandardMetrics.ms_v_env_locked->SetValue(true);
+  return Success;
+}
+
+// unlock: can can1 tx st 745 04 30 01 00 01
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin) {
+
+  if(!m_enable_write) {
+    ESP_LOGE(TAG, "CommandUnlock failed / no write access");
+    return Fail;
+  }
+  ESP_LOGI(TAG, "CommandUnlock");
+  CommandWakeup();
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  
+  uint32_t txid = 0x745, rxid = 0x765;
+  uint8_t protocol = ISOTP_STD;
+  int timeout_ms = 200;
+  std::string request;
+  std::string response;
+  
+  request = hexdecode("10C0");
+  int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+  
+  request = hexdecode("30010001");
+  err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  request = hexdecode("30082002");  // indicator light
+  err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+  if (err == POLLSINGLE_TXFAILURE)
+  {
+    ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
+    return Fail;
+  }
+  else if (err < 0)
+  {
+    ESP_LOGD(TAG, "ERROR: timeout waiting for poller/response");
+    return Fail;
+  }
+  else if (err)
+  {
+    ESP_LOGD(TAG, "ERROR: request failed with response error code %02X\n", err);
+    return Fail;
+  }
+
+  StandardMetrics.ms_v_env_locked->SetValue(false);
+  return Success;
+}
+
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, OvmsWriter* writer) {
 
   bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();

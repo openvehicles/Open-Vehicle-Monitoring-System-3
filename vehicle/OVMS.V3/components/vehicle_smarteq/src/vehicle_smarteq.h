@@ -84,6 +84,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     vehicle_command_t CommandClimateControl(bool enable) override;
     vehicle_command_t CommandHomelink(int button, int durationms=1000) override;
     vehicle_command_t CommandWakeup() override;
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer) override;
 
   public:
