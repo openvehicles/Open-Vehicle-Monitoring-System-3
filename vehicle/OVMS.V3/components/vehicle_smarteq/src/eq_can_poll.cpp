@@ -291,6 +291,7 @@ void OvmsVehicleSmartEQ::PollReply_VIN(const char* data, uint16_t reply_len) {
 void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len) {
   mt_evc_hv_energy->SetValue( CAN_UINT(0) / 200.0 );
   StandardMetrics.ms_v_bat_capacity->SetValue(mt_evc_hv_energy->AsFloat());
+  StandardMetrics.ms_v_bat_cac->SetValue(mt_evc_hv_energy->AsFloat() * 1000.0 / mt_bms_HV->AsFloat());
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_State(const char* data, uint16_t reply_len) {
