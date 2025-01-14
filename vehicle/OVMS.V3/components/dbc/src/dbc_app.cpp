@@ -70,10 +70,58 @@ void dbc_load(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     }
   }
 
+bool dbc::ExpandComplete(OvmsWriter* writer, const char *token, bool complete)
+  {
+  if (complete)
+    {
+    unsigned int index = 0;
+    writer->SetCompletion(index, nullptr);
+    if (!token)
+      return false;
+    OvmsMutexLock ldbc(&m_mutex);
+
+    bool match = false;
+    size_t len = strlen(token);
+    for (dbcLoadedFiles_t::iterator it=m_dbclist.begin();
+        it!=m_dbclist.end(); ++it)
+      {
+      const char * name = it->first.c_str();
+      if (strncasecmp(name, token, len) == 0)
+        {
+        writer->SetCompletion(index++, name);
+        match = true;
+        }
+      }
+    return match;
+    }
+  else
+    {
+    if (!token)
+      return false;
+    auto dbcfile = Find(token);
+    if (!dbcfile)
+      {
+      writer->printf("Error: %s is not a dbc file identifier", token);
+      return false;
+      }
+    return true;
+    }
+  }
+
+static int dbc_name_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc ==1)
+    return MyDBC.ExpandComplete(writer, argv[0], complete) ? argc : -1;
+  return -1;
+  }
+
 static int dbc_load_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
+  if (argc == 1)
+    return MyDBC.ExpandComplete(writer, argv[0], complete) ? argc : -1;
+
   if (argc == 2)
-    return vfs_expand(writer, argv[0], complete, false, true) ? 1 : -1;
+    return vfs_expand(writer, argv[1], complete, false, true) ? argc : -1;
   return -1;
   }
 
@@ -533,12 +581,12 @@ dbc::dbc()
 
   cmd_dbc->RegisterCommand("list", "List DBC status", dbc_list);
   cmd_dbc->RegisterCommand("load", "Load DBC file", dbc_load, "<name> <path>", 2, 2, true, dbc_load_validate );
-  cmd_dbc->RegisterCommand("unload", "Unload DBC file", dbc_unload, "<name>", 1, 1);
-  cmd_dbc->RegisterCommand("save", "Save DBC file", dbc_save, "[<name>]", 0, 1);
-  cmd_dbc->RegisterCommand("dump", "Dump DBC file", dbc_dump, "[<name>]", 0, 1);
-  cmd_dbc->RegisterCommand("show", "Show DBC file", dbc_show, "[<name>]", 0, 1);
+  cmd_dbc->RegisterCommand("unload", "Unload DBC file", dbc_unload, "<name>", 1, 1, true, dbc_name_validate);
+  cmd_dbc->RegisterCommand("save", "Save DBC file", dbc_save, "[<name>]", 0, 1, true, dbc_name_validate);
+  cmd_dbc->RegisterCommand("dump", "Dump DBC file", dbc_dump, "[<name>]", 0, 1, true, dbc_name_validate);
+  cmd_dbc->RegisterCommand("show", "Show DBC file", dbc_show, "[<name>]", 0, 1, true, dbc_name_validate);
   cmd_dbc->RegisterCommand("autoload", "Autoload DBC files", dbc_autoload);
-  cmd_dbc->RegisterCommand("select", "Select DBC file for editing", dbc_select, "[<name>]", 0, 1);
+  cmd_dbc->RegisterCommand("select", "Select DBC file for editing", dbc_select, "[<name>]", 0, 1, true, dbc_name_validate);
   cmd_dbc->RegisterCommand("deselect", "Deselect DBC file for editing", dbc_deselect);
 
   OvmsCommand* cmd_set = cmd_dbc->RegisterCommand("set","DBC Set framework");

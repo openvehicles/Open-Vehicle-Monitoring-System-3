@@ -272,7 +272,7 @@ std::string re::GetKey(CAN_frame_t* frame)
         {
         // We have a multiplexed signal
         dbcSignal* s = m->GetMultiplexorSignal();
-        dbcNumber muxn = s->Decode(frame);
+        dbcNumber muxn = s->Decode(frame->data.u8, 8);
         uint32_t mux = muxn.GetUnsignedInteger();
         char b[8];
         sprintf(b,":%04" PRIx32,mux);
@@ -493,7 +493,7 @@ void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
             uint32_t muxval;
             if (mux)
               {
-              dbcNumber r = mux->Decode(&it->second->last);
+              dbcNumber r = mux->Decode(it->second->last.data.u8, 8);
               muxval = r.GetSignedInteger();
               std::ostringstream ss;
               ss << "  dbc/mux/";
@@ -508,7 +508,7 @@ void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
               {
               if ((mux==NULL)||(sig->GetMultiplexSwitchvalue() == muxval))
                 {
-                dbcNumber r = sig->Decode(&it->second->last);
+                dbcNumber r = sig->Decode(it->second->last.data.u8, 8);
                 std::ostringstream ss;
                 ss << "  dbc/";
                 ss << sig->GetName();

@@ -63,10 +63,14 @@ config OVMS_HW_ASYNC_QUEUE_SIZE
 
 config OVMS_HW_EVENT_QUEUE_SIZE
     int "EVENT queue size"
-    default 20
+    range 80 200
+    default 100
     depends on OVMS
     help
-        The size of the EVENT queue.
+        The size of the EVENT job queue. Att: this needs to be large enough to
+        allow all event registrations during boot and all deregistrations during
+        shutdown. If too small, the system will not be able to boot/reboot,
+        aborting with a "queue overflow" log entry.
 
 config OVMS_HW_NETMANAGER_QUEUE_SIZE
     int "NETMANAGER queue size"

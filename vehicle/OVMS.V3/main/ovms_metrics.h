@@ -172,6 +172,7 @@ const metric_group_t MetricGroupLast = GrpAccelShort;
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
 extern const char* OvmsMetricUnitName(metric_unit_t units);
 extern metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePrefix = false);
+extern metric_unit_t OvmsMetricUnitFromLabel(const char* unit);
 int OvmsMetricUnit_Validate(OvmsWriter* writer, int argc, const char* token, bool complete, metric_group_t group = GrpNone);
 const char *OvmsMetricUnit_FindUniquePrefix(const char* token);
 
@@ -234,18 +235,18 @@ class OvmsMetric
     virtual void DukPush(DukContext &dc, metric_unit_t units = Other);
 #endif
     virtual bool SetValue(std::string value, metric_unit_t units = Other);
-    virtual bool SetValue(dbcNumber& value);
+    virtual bool SetValue(const dbcNumber& value, metric_unit_t units = Other);
     virtual void operator=(std::string value);
     virtual bool CheckPersist();
     virtual void RefreshPersist();
     virtual bool IsString() { return false; };
     virtual void Clear();
 
-    uint32_t LastModified();
-    uint32_t Age();
-    bool IsDefined();
-    bool IsFirstDefined();
-    bool IsPersistent();
+    uint32_t LastModified() const;
+    uint32_t Age() const;
+    bool IsDefined() const;
+    bool IsFirstDefined() const;
+    bool IsPersistent() const;
     bool IsStale();
     bool IsFresh();
     void SetStale(bool stale)
@@ -256,16 +257,16 @@ class OvmsMetric
       {
       m_autostale = seconds;
       }
-    metric_unit_t GetUnits()
+    metric_unit_t GetUnits() const
       {
       return m_units;
       }
-    bool IsModified(size_t modifier);
+    bool IsModified(size_t modifier) const;
     bool IsModifiedAndClear(size_t modifier);
     void ClearModified(size_t modifier);
     void SetModified(bool changed=true);
 
-    bool IsUnitSend(size_t modifier);
+    bool IsUnitSend(size_t modifier) const;
     bool IsUnitSendAndClear(size_t modifier);
     void ClearUnitSend(size_t modifier);
     void SetUnitSend(size_t modifier);
@@ -300,7 +301,7 @@ class OvmsMetricBool : public OvmsMetric
     bool SetValue(bool value);
     void operator=(bool value) { SetValue(value); }
     bool SetValue(std::string value, metric_unit_t units = Other) override;
-    bool SetValue(dbcNumber& value) override;
+    bool SetValue(const dbcNumber& value, metric_unit_t units = Other) override;
     void operator=(std::string value) override { SetValue(value); }
     void Clear() override;
     bool CheckPersist() override;
@@ -328,7 +329,7 @@ class OvmsMetricInt : public OvmsMetric
     bool SetValue(int value, metric_unit_t units = Other);
     void operator=(int value) { SetValue(value); }
     bool SetValue(std::string value, metric_unit_t units = Other) override;
-    bool SetValue(dbcNumber& value) override;
+    bool SetValue(const dbcNumber& value, metric_unit_t units = Other) override;
     void operator=(std::string value) override { SetValue(value); }
     void Clear() override;
     bool CheckPersist() override;
@@ -357,7 +358,7 @@ class OvmsMetricFloat : public OvmsMetric
     bool SetValue(float value, metric_unit_t units = Other);
     void operator=(float value) { SetValue(value); }
     bool SetValue(std::string value, metric_unit_t units = Other) override;
-    bool SetValue(dbcNumber& value) override;
+    bool SetValue(const dbcNumber& value, metric_unit_t units = Other) override;
     void operator=(std::string value) override { SetValue(value); }
     void Clear() override;
     bool CheckPersist() override;
@@ -1112,7 +1113,7 @@ class OvmsMetricInt64 : public OvmsMetric64
     // Bring other overridden SetValue into scope from  OVMSMetric64
     using OvmsMetric64::SetValue;
     bool SetValue(int64_t value, metric_unit_t units = Other);
-    bool SetValue(dbcNumber& value) override;
+    bool SetValue(const dbcNumber& value, metric_unit_t units = Other) override;
     bool SetValue(std::string value, metric_unit_t units = Other) override;
 
     // Bring other overridden = operator into scope from  OVMSMetric64

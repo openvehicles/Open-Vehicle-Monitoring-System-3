@@ -1561,7 +1561,7 @@ bool OvmsMetric::SetValue(std::string value, metric_unit_t units)
   return false;
   }
 
-bool OvmsMetric::SetValue(dbcNumber& value)
+bool OvmsMetric::SetValue(const dbcNumber& value, metric_unit_t units)
   {
   return false;
   }
@@ -1570,12 +1570,12 @@ void OvmsMetric::operator=(std::string value)
   {
   }
 
-uint32_t OvmsMetric::LastModified()
+uint32_t OvmsMetric::LastModified() const
   {
   return m_lastmodified;
   }
 
-uint32_t OvmsMetric::Age()
+uint32_t OvmsMetric::Age() const
   {
   return monotonictime - m_lastmodified;
   }
@@ -1595,7 +1595,7 @@ void OvmsMetric::SetModified(bool changed)
     }
   }
 
-bool OvmsMetric::IsUnitSend(size_t modifier)
+bool OvmsMetric::IsUnitSend(size_t modifier) const
   {
     return m_sendunit & (1ul << modifier);
   }
@@ -1619,17 +1619,17 @@ void OvmsMetric::SetUnitSendAll()
   m_sendunit = ULONG_MAX;
   }
 
-bool OvmsMetric::IsDefined()
+bool OvmsMetric::IsDefined() const
   {
   return (m_defined != NeverDefined);
   }
 
-bool OvmsMetric::IsFirstDefined()
+bool OvmsMetric::IsFirstDefined() const
   {
   return (m_defined == FirstDefined);
   }
 
-bool OvmsMetric::IsPersistent()
+bool OvmsMetric::IsPersistent() const
   {
   return m_persist;
   }
@@ -1678,7 +1678,7 @@ bool OvmsMetric::IsFresh()
   }
 
 
-bool OvmsMetric::IsModified(size_t modifier)
+bool OvmsMetric::IsModified(size_t modifier) const
   {
   return m_modified & 1ul << modifier;
   }
@@ -1988,9 +1988,9 @@ bool OvmsMetricInt::SetValue(std::string value, metric_unit_t units)
   return SetValue(nvalue, units);
   }
 
-bool OvmsMetricInt::SetValue(dbcNumber& value)
+bool OvmsMetricInt::SetValue(const dbcNumber& value, metric_unit_t units)
   {
-  return SetValue(value.GetSignedInteger());
+  return SetValue(value.GetSignedInteger(), units);
   }
 
 void OvmsMetricInt::Clear()
@@ -2147,9 +2147,9 @@ bool OvmsMetricBool::SetValue(std::string value, metric_unit_t units)
     }
   }
 
-bool OvmsMetricBool::SetValue(dbcNumber& value)
+bool OvmsMetricBool::SetValue(const dbcNumber& value, metric_unit_t units)
   {
-  return SetValue((bool)value.GetUnsignedInteger());
+  return SetValue((bool)value.GetUnsignedInteger(), units);
   }
 
 void OvmsMetricBool::Clear()
@@ -2312,9 +2312,9 @@ bool OvmsMetricFloat::SetValue(std::string value, metric_unit_t units)
   return SetValue(nvalue, units);
   }
 
-bool OvmsMetricFloat::SetValue(dbcNumber& value)
+bool OvmsMetricFloat::SetValue(const dbcNumber& value, metric_unit_t units)
   {
-  return SetValue((float)value.GetDouble());
+  return SetValue((float)value.GetDouble(), units);
   }
 
 void OvmsMetricFloat::Clear()
@@ -2684,9 +2684,9 @@ bool OvmsMetricInt64::SetValue(std::string value, metric_unit_t units)
   return SetValue(nvalue, units);
   }
 
-bool OvmsMetricInt64::SetValue(dbcNumber& value)
+bool OvmsMetricInt64::SetValue(const dbcNumber& value, metric_unit_t units)
   {
-  return SetValue(value.GetSignedInteger());
+  return SetValue(value.GetSignedInteger(), units);
   }
 
 void OvmsMetricInt64::Clear()
@@ -2716,7 +2716,7 @@ const char* OvmsMetricUnitName(metric_unit_t units)
   return unit_info[unit_i].UnitCode;
   }
 
-metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePrefix)
+static metric_unit_t match_metric_unit(const char* unit, bool allowUniquePrefix,bool fromName)
   {
   if (unit == NULL || unit[0] == '\0')
     return Native;
@@ -2725,7 +2725,8 @@ metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePrefix)
   int unit_len = strlen(unit);
   for (metric_unit_t metric = MetricUnitFirst; metric <= MetricUnitLast; metric = metric_unit_t(1+(uint8_t)metric))
     {
-    const char * name = unit_info[(uint8_t)metric].UnitCode;
+    const OvmsUnitInfo &info = unit_info[(uint8_t)metric];
+    const char * name = fromName ? info.UnitCode : info.Label;
     if (name == NULL)
       continue;
 
@@ -2742,6 +2743,14 @@ metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePrefix)
       }
     }
   return res;
+  }
+metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePrefix)
+  {
+  return match_metric_unit(unit, allowUniquePrefix, true);
+  }
+metric_unit_t OvmsMetricUnitFromLabel(const char* unit)
+  {
+  return match_metric_unit(unit, false, false);
   }
 
 const char *OvmsMetricUnit_FindUniquePrefix(const char* token)

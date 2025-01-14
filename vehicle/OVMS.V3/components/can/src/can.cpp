@@ -893,6 +893,61 @@ void can::CAN_rxtask(void *pvParameters)
     }
   }
 
+const char *valid_baud[] = {
+  "33333", "50000", "83333", "100000", "125000", "250000", "500000", "1000000"
+};
+
+static int can_start_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 1)
+    {
+    const size_t baud_count = sizeof(valid_baud) / sizeof(valid_baud[0]);
+    const char *token = argv[0];
+
+    if (complete)
+      {
+      bool match = false;
+      unsigned int index = 0;
+      writer->SetCompletion(index, nullptr);
+      int len = strlen(token);
+      for (int i = 0; i < baud_count; ++i)
+        {
+        const char *entry = valid_baud[i];
+        if (strncmp(entry, token, len) == 0)
+          {
+          writer->SetCompletion(index++, entry);
+          match = true;
+          }
+        }
+      return match ? 1 : -1;
+      }
+    else
+      {
+      for (int i = 0; i < baud_count; ++i)
+        {
+        if (strcmp(valid_baud[i], token))
+          return argc;
+        }
+      writer->printf("Error: Invalid baud %s\n", token);
+      return -1;
+      }
+    }
+  if (argc == 2)
+    {
+    return MyDBC.ExpandComplete(writer, argv[1], complete) ? argc : -1;
+    }
+  return -1;
+  }
+
+static int can_dbc_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 1)
+    {
+    return MyDBC.ExpandComplete(writer, argv[0], complete) ? argc : -1;
+    }
+  return -1;
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // can - the CAN system controller
 ////////////////////////////////////////////////////////////////////////
@@ -917,12 +972,12 @@ can::can()
     static const char* name[4] = {"can1", "can2", "can3", "can4"};
     OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework");
     OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework");
-    cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2);
-    cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud> [<dbc>]", 1, 2);
+    cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2, true, can_start_validate);
+    cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud> [<dbc>]", 1, 2, true, can_start_validate);
     cmd_canx->RegisterCommand("stop","Stop CAN bus",can_stop);
     cmd_canx->RegisterCommand("reset","Reset CAN bus",can_reset);
     OvmsCommand* cmd_candbc = cmd_canx->RegisterCommand("dbc","CAN dbc framework");
-    cmd_candbc->RegisterCommand("attach","Attach a DBC file to a CAN bus",can_dbc_attach,"<dbc>", 1, 1);
+    cmd_candbc->RegisterCommand("attach","Attach a DBC file to a CAN bus",can_dbc_attach,"<dbc>", 1, 1, true, can_dbc_validate);
     cmd_candbc->RegisterCommand("detach","Detach the DBC file from a CAN bus",can_dbc_detach);
     OvmsCommand* cmd_cantx = cmd_canx->RegisterCommand("tx","CAN tx framework");
     cmd_cantx->RegisterCommand("standard","Transmit standard CAN frame",can_tx,"<id> <data...>", 1, 9);

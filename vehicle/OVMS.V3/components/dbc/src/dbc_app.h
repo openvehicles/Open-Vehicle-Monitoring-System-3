@@ -58,6 +58,8 @@ class dbc
     void DeselectFile();
     dbcfile* SelectedFile();
 
+    bool ExpandComplete(OvmsWriter* writer, const char *token, bool complete);
+
   public:
     void AutoInit();
 
