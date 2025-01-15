@@ -184,6 +184,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
   protected:
     bool m_booster_start;
     int m_led_state;
+    int m_booster_ticker;
   
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll

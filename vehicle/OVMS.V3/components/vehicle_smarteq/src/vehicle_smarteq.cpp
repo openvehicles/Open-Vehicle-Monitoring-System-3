@@ -92,6 +92,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   m_booster_start = false;
   m_charge_start = false;
+  m_booster_ticker = 0;
   m_led_state = 4;
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
@@ -576,6 +577,7 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
   if (isOn && !StandardMetrics.ms_v_env_on->AsBool()) {
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
+    m_booster_ticker = 0;
     //StandardMetrics.ms_v_env_awake->SetValue(isOn);
 
     // Reset trip values
@@ -603,10 +605,18 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
       // PollSetState(0);
     }
   }
+  // Booster start 2-3 times when Homelink 2 or 3
+  if (m_booster_ticker >= 1 && !StandardMetrics.ms_v_env_hvac->AsBool() && !m_booster_start) {
+    CommandClimateControl(true);
+  }
 
   if (m_booster_start && StandardMetrics.ms_v_env_hvac->AsBool()) {
     m_booster_start = false;
     MyNotify.NotifyString("info", "hvac.enabled", "Booster on");
+    if (m_booster_ticker >= 1) { 
+      --m_booster_ticker;
+      ESP_LOGI(TAG,"Booster ticker: %d", m_booster_ticker);
+    }
   }
   if (m_enable_LED_state) OnlineState();
   HandleCharging();
@@ -694,9 +704,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
   OvmsVehicle::vehicle_command_t res = NotImplemented;
   if (button == 0) {
     res = CommandClimateControl(true);
-  }
-  else if (button == 1) {
-    res = CommandClimateControl(false);
+    m_booster_ticker = 0;
+  } else if (button == 1) {
+    res = CommandClimateControl(true);
+    m_booster_ticker = 2;
+  } else if (button == 2) {
+    res = CommandClimateControl(true);
+    m_booster_ticker = 3;
   }
 
   // fallback to default implementation?
