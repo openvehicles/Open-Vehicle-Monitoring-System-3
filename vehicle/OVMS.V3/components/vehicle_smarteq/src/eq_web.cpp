@@ -128,7 +128,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
 
   // generate form:
-  c.panel_start("primary", "Smart ED feature configuration");
+  c.panel_start("primary", "Smart EQ feature configuration");
   c.form_start(p.uri);
 
   c.fieldset_start("Remote Control");
@@ -247,7 +247,7 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
 
-  c.panel_start("primary", "Smart ED Battery Setup");
+  c.panel_start("primary", "Smart EQ Battery Setup");
   c.form_start(p.uri);
 
   c.fieldset_start("Charge control");
@@ -282,7 +282,7 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 }
 
 /**
- * GetDashboardConfig: smart ED specific dashboard setup
+ * GetDashboardConfig: Smart EQ specific dashboard setup
  */
 void OvmsVehicleSmartEQ::GetDashboardConfig(DashboardConfig& cfg)
 {
