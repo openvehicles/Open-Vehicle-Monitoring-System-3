@@ -37,4 +37,7 @@ Others
 Using Cabin Pre-heat/cool
 -------------------------
 
-Only 5 Minutes Booster are Implementet white Climatecontrol on or Homelink 1
+Only 5 Minutes Booster are Implementet white 
+Climatecontrol on or Homelink 1 = 5 Minutes
+Homelink 2 = 10 Minutes
+Homelink 3 = 15 Minutes

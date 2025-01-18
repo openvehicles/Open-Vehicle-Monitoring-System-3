@@ -78,6 +78,10 @@ Open Vehicle Monitor System v3 - Change log
     add Internal Temp
     add Doors status
     add Charging Metrics
+    add BMS Temperatures
+    add Charging metrics
+    add option to change TMPS Sensors position
+    add option for IOS users to display TMPS values
 - Support for completion in vfs commands.
 - Separate Polling from the Vehicle implementation
   New commands:

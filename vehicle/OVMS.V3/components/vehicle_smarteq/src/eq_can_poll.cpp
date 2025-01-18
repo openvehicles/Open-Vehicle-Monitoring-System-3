@@ -233,7 +233,10 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattTemps(const char* data, uint16_t repl
     }
     Temps[n / 2] = value;
     BMStemps[n / 2] = value / 64.0;
-    mt_bms_temps->SetElemValues(0, 31, BMStemps);
+  }
+  mt_bms_temps->SetElemValues(0, 31, BMStemps);
+  for (int i = 3; i < 30; i++) {
+    BmsSetCellTemperature(i-3, (float) BMStemps[i]);
   }
 }
 
@@ -260,7 +263,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
   mt_bms_Amps->SetValue( mt_bms_BattPower_current->AsFloat() );
   mt_bms_Amps2->SetValue( mt_bms_BattPower_current->AsFloat() / 32.0 );
   mt_bms_Power->SetValue( mt_bms_HV->AsFloat() * mt_bms_Amps2->AsFloat() / 1000.0 );
-  StandardMetrics.ms_v_bat_current->SetValue(mt_bms_Amps2->AsFloat(0));
+  StandardMetrics.ms_v_bat_current->SetValue( mt_bms_Amps2->AsFloat(0) * -1.0f );
   StandardMetrics.ms_v_bat_power->SetValue( mt_bms_Power->AsFloat(0) );
 }
 
@@ -271,10 +274,12 @@ void OvmsVehicleSmartEQ::PollReply_HVAC(const char* data, uint16_t reply_len) {
 void OvmsVehicleSmartEQ::PollReply_TDB(const char* data, uint16_t reply_len) {
   StandardMetrics.ms_v_env_temp->SetValue( (CAN_UINT(2) - 400) * 0.1 );
   if (m_ios_tpms_fix) {
-    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, (float) (CAN_UINT(2) - 400) * 0.1);
-    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, (float) (CAN_UINT(2) - 400) * 0.1);
-    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, (float) (CAN_UINT(2) - 400) * 0.1);
-    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, (float) (CAN_UINT(2) - 400) * 0.1);
+    float temp = (float) (CAN_UINT(2) - 400) * 0.1;
+    if (temp < 1.0f) temp = 1.0;
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, temp);
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, temp);
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, temp);
+    StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, temp);
   }
 }
 
@@ -285,6 +290,8 @@ void OvmsVehicleSmartEQ::PollReply_VIN(const char* data, uint16_t reply_len) {
 
 void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len) {
   mt_evc_hv_energy->SetValue( CAN_UINT(0) / 200.0 );
+  StandardMetrics.ms_v_bat_capacity->SetValue(mt_evc_hv_energy->AsFloat());
+  StandardMetrics.ms_v_bat_cac->SetValue(mt_evc_hv_energy->AsFloat() * 1000.0 / mt_bms_HV->AsFloat());
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_State(const char* data, uint16_t reply_len) {
