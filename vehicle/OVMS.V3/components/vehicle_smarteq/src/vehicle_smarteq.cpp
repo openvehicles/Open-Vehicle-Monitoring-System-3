@@ -92,13 +92,14 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   m_booster_start = false;
   m_charge_start = false;
+  m_booster_ticker = 0;
   m_led_state = 4;
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 3);
-  BmsSetCellArrangementTemperature(28, 1);
+  BmsSetCellArrangementTemperature(27, 1);
   BmsSetCellLimitsVoltage(2.0, 5.0);
   BmsSetCellLimitsTemperature(-39, 200);
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
@@ -137,6 +138,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_amps = new OvmsMetricVector<float>("xsq.obl.amps", SM_STALE_HIGH, Amps);
   mt_obl_main_CHGpower = new OvmsMetricVector<float>("xsq.obl.power", SM_STALE_HIGH, kW);
   mt_obl_main_freq = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);
+  
+  // standard settings
+  StdMetrics.ms_v_bat_cac->SetValue(42);
 
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
@@ -208,6 +212,10 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_enable_LED_state = MyConfig.GetParamValueBool("xsq", "led", false);
   m_ios_tpms_fix = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
   m_resettrip = MyConfig.GetParamValueBool("xsq", "resettrip", false);
+  m_TPMS_FL = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
+  m_TPMS_FR = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
+  m_TPMS_RL = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
+  m_TPMS_RR = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (!m_enable_LED_state) {
     MyPeripherals->m_max7317->Output(9, 1);
@@ -254,6 +262,9 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   m_candata_timer = SQ_CANDATA_TIMEOUT;
   
   switch (p_frame->MsgID) {
+    case 0x350:
+      StandardMetrics.ms_v_env_locked->SetValue((CAN_BYTE(6) == 0x96));
+      break;
     case 0x392:
       StandardMetrics.ms_v_env_hvac->SetValue((CAN_BYTE(1) & 0x40) > 0);
       StandardMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40);
@@ -281,6 +292,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x646:
       mt_use_at_reset->SetValue(CAN_BYTE(1) * 0.1);
+      StandardMetrics.ms_v_charge_kwh_grid_total->SetValue(mt_use_at_reset->AsFloat()); // not the best idea at the moment
       break;
     case 0x654: // SOC(b)
       StandardMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(3));
@@ -311,6 +323,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           StandardMetrics.ms_v_charge_type->SetValue("type2");
           StandardMetrics.ms_v_charge_state->SetValue("charging");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+          StandardMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
         } else { // EVENT stopped charging
           StandardMetrics.ms_v_charge_pilot->SetValue(false);
           StandardMetrics.ms_v_charge_inprogress->SetValue(isCharging);
@@ -320,6 +333,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
           StandardMetrics.ms_v_charge_duration_range->SetValue(0);
           StandardMetrics.ms_v_charge_power->SetValue(0);
+          StandardMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
           if (StandardMetrics.ms_v_bat_soc->AsInt() < 95) {
             // Assume the charge was interrupted
             ESP_LOGI(TAG,"Car charge session was interrupted");
@@ -340,13 +354,13 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x673:
       if (CAN_BYTE(2) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float) CAN_BYTE(2)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_RR, (float) CAN_BYTE(2)*3.1);
       if (CAN_BYTE(3) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float) CAN_BYTE(3)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_RL, (float) CAN_BYTE(3)*3.1);
       if (CAN_BYTE(4) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float) CAN_BYTE(4)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_FR, (float) CAN_BYTE(4)*3.1);
       if (CAN_BYTE(5) != 0xff)
-        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float) CAN_BYTE(5)*3.1);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_FL, (float) CAN_BYTE(5)*3.1);
       break;
 
     default:
@@ -373,7 +387,7 @@ void OvmsVehicleSmartEQ::ResetTripCounters() {
  */
 void OvmsVehicleSmartEQ::HandleEnergy() {
   float voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
-  float current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+  float current  = -StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
 
   // Power (in kw) resulting from voltage and current
   float power = voltage * current / 1000.0;
@@ -397,7 +411,7 @@ void OvmsVehicleSmartEQ::HandleCharging() {
   float limit_soc       = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
   float limit_range     = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
   float max_range       = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
-  float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+  float charge_current  = -StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
   float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
 
   // Are we charging?
@@ -451,6 +465,13 @@ void OvmsVehicleSmartEQ::UpdateChargeMetrics() {
 
   if( phasecnt == 1 && mt_obl_fastchg->AsBool() ) {
     StandardMetrics.ms_v_charge_current->SetValue(mt_obl_main_amps->GetElemValue(n));
+  } else if( phasecnt == 3 && mt_obl_fastchg->AsBool() ) {
+    for(i = 0; i < 3; i++) {
+      if (mt_obl_main_amps->GetElemValue(i) > 0) {
+        ampsum += mt_obl_main_amps->GetElemValue(i);
+      }
+    }
+    StandardMetrics.ms_v_charge_current->SetValue(ampsum/3);
   } else {
     for(i = 0; i < 3; i++) {
       if (mt_obl_main_amps->GetElemValue(i) > 0) {
@@ -460,7 +481,7 @@ void OvmsVehicleSmartEQ::UpdateChargeMetrics() {
     StandardMetrics.ms_v_charge_current->SetValue(ampsum);
   }
 
-  StandardMetrics.ms_v_charge_power->SetValue(mt_obl_main_CHGpower->GetElemValue(0));
+  StandardMetrics.ms_v_charge_power->SetValue( mt_obl_main_CHGpower->GetElemValue(0) + mt_obl_main_CHGpower->GetElemValue(1) );
   float power = StandardMetrics.ms_v_charge_power->AsFloat();
   float efficiency = (power == 0)
                      ? 0
@@ -490,11 +511,11 @@ void OvmsVehicleSmartEQ::HandlePollState() {
     PollSetState(3);
     ESP_LOGI(TAG,"Pollstate Charging");
   }
-  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() && StandardMetrics.ms_v_env_awake->AsBool() && m_poll_state != 2 && m_enable_write ) {
+  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() && StandardMetrics.ms_v_env_on->AsBool() && m_poll_state != 2 && m_enable_write ) {
     PollSetState(2);
     ESP_LOGI(TAG,"Pollstate Running");
   }
-  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() && !StandardMetrics.ms_v_env_awake->AsBool() && mt_bus_awake->AsBool() && m_poll_state != 1 && m_enable_write ) {
+  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() && !StandardMetrics.ms_v_env_on->AsBool() && mt_bus_awake->AsBool() && m_poll_state != 1 && m_enable_write ) {
     PollSetState(1);
     ESP_LOGI(TAG,"Pollstate Awake");
   }
@@ -556,6 +577,7 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
   if (isOn && !StandardMetrics.ms_v_env_on->AsBool()) {
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
+    m_booster_ticker = 0;
     //StandardMetrics.ms_v_env_awake->SetValue(isOn);
 
     // Reset trip values
@@ -583,10 +605,18 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
       // PollSetState(0);
     }
   }
+  // Booster start 2-3 times when Homelink 2 or 3
+  if (m_booster_ticker >= 1 && !StandardMetrics.ms_v_env_hvac->AsBool() && !m_booster_start) {
+    CommandClimateControl(true);
+  }
 
   if (m_booster_start && StandardMetrics.ms_v_env_hvac->AsBool()) {
     m_booster_start = false;
     MyNotify.NotifyString("info", "hvac.enabled", "Booster on");
+    if (m_booster_ticker >= 1) { 
+      --m_booster_ticker;
+      ESP_LOGI(TAG,"Booster ticker: %d", m_booster_ticker);
+    }
   }
   if (m_enable_LED_state) OnlineState();
   HandleCharging();
@@ -618,13 +648,13 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
  */
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) {
   bool car_online = mt_bus_awake->AsBool();
-  int lv_pwrstate = mt_evc_LV_DCDC_amps->AsInt();
+  bool lv_pwrstate = (StandardMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 12.8);
   
   // - base system is awake if we've got a fresh lv_pwrstate:
   StandardMetrics.ms_v_env_aux12v->SetValue(car_online);
 
-  // - charging / trickle charging 12V battery is active when lv_pwrstate is not zero:
-  StandardMetrics.ms_v_env_charging12v->SetValue(car_online && lv_pwrstate > 0);
+  // - charging / trickle charging 12V battery is active when lv_pwrstate is true:
+  StandardMetrics.ms_v_env_charging12v->SetValue(car_online && lv_pwrstate);
   
   HandlePollState();
 }
@@ -674,9 +704,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
   OvmsVehicle::vehicle_command_t res = NotImplemented;
   if (button == 0) {
     res = CommandClimateControl(true);
-  }
-  else if (button == 1) {
-    res = CommandClimateControl(false);
+    m_booster_ticker = 0;
+  } else if (button == 1) {
+    res = CommandClimateControl(true);
+    m_booster_ticker = 2;
+  } else if (button == 2) {
+    res = CommandClimateControl(true);
+    m_booster_ticker = 3;
   }
 
   // fallback to default implementation?
@@ -716,6 +750,99 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
   }
 
   return res;
+}
+
+// lock: can can1 tx st 745 04 30 01 00 00
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) {
+  if(!m_enable_write) {
+    ESP_LOGE(TAG, "CommandLock failed / no write access");
+    return Fail;
+  }
+  ESP_LOGI(TAG, "CommandLock");
+  CommandWakeup();
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  
+  uint32_t txid = 0x745, rxid = 0x765;
+  uint8_t protocol = ISOTP_STD;
+  int timeout_ms = 200;
+  std::string request;
+  std::string response;
+  
+  request = hexdecode("10C0");
+  int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+  
+  request = hexdecode("30010000");
+  err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  request = hexdecode("30082002"); // indicator light
+  err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+  if (err == POLLSINGLE_TXFAILURE)
+  {
+    ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
+    return Fail;
+  }
+  else if (err < 0)
+  {
+    ESP_LOGD(TAG, "ERROR: timeout waiting for poller/response");
+    return Fail;
+  }
+  else if (err)
+  {
+    ESP_LOGD(TAG, "ERROR: request failed with response error code %02X\n", err);
+    return Fail;
+  }
+
+  StandardMetrics.ms_v_env_locked->SetValue(true);
+  return Success;
+}
+
+// unlock: can can1 tx st 745 04 30 01 00 01
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin) {
+
+  if(!m_enable_write) {
+    ESP_LOGE(TAG, "CommandUnlock failed / no write access");
+    return Fail;
+  }
+  ESP_LOGI(TAG, "CommandUnlock");
+  CommandWakeup();
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  
+  uint32_t txid = 0x745, rxid = 0x765;
+  uint8_t protocol = ISOTP_STD;
+  int timeout_ms = 200;
+  std::string request;
+  std::string response;
+  
+  request = hexdecode("10C0");
+  int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+  
+  request = hexdecode("30010001");
+  err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  request = hexdecode("30082002");  // indicator light
+  err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+  if (err == POLLSINGLE_TXFAILURE)
+  {
+    ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
+    return Fail;
+  }
+  else if (err < 0)
+  {
+    ESP_LOGD(TAG, "ERROR: timeout waiting for poller/response");
+    return Fail;
+  }
+  else if (err)
+  {
+    ESP_LOGD(TAG, "ERROR: request failed with response error code %02X\n", err);
+    return Fail;
+  }
+
+  StandardMetrics.ms_v_env_locked->SetValue(false);
+  return Success;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, OvmsWriter* writer) {
