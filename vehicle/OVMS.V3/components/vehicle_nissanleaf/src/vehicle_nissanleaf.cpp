@@ -201,7 +201,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   PollSetState(POLLSTATE_OFF);
   PollSetResponseSeparationTime(0);
-  PollSetPidList(obdii_polls);
+  PollSetPidList(m_can1,obdii_polls);
+  PollSetPidList(m_can2,obdii_polls);
 
   MyConfig.RegisterParam("xnl", "Nissan Leaf", true, true);
   ConfigChanged(NULL);
