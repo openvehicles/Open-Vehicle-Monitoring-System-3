@@ -228,6 +228,10 @@ class canfilter
     bool IsFiltered(const CAN_frame_t* p_frame);
     bool IsFiltered(canbus* bus);
     std::string Info();
+    bool HasFilters()
+      {
+      return !m_filters.empty();
+      }
 
   protected:
     CAN_filter_list_t m_filters;
