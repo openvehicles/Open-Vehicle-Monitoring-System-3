@@ -729,6 +729,10 @@ class OvmsPollers : public InternalRamAllocated {
     typedef enum {trace_Off = 0x00, trace_Poller = 0x1, trace_TXRX = 0x2, trace_Times = 0x4, trace_All= 0x3} tracetype_t;
     uint8_t           m_trace;                // Current Trace flags.
     uint32_t          m_overflow_count[2];    // Keep track of overflows.
+                                              //
+    OvmsMutex         m_filter_mutex;
+    canfilter         m_filter;
+    bool              m_filtered;
 
     void PollerTxCallback(const CAN_frame_t* frame, bool success);
     void PollerRxCallback(const CAN_frame_t* frame, bool success);
@@ -792,6 +796,12 @@ class OvmsPollers : public InternalRamAllocated {
     bool IsTracingTimes() { return (m_trace & trace_Times) != 0; }
     typedef std::function<void(canbus*, void *)> PollCallback;
     typedef std::function<void(const CAN_frame_t &)> FrameCallback;
+
+    // CAN RX filtering.
+    void ClearFilters();
+    void AddFilter(uint8_t bus, uint32_t id_from=0, uint32_t id_to=UINT32_MAX);
+    void AddFilter(const char* filterstring);
+    bool RemoveFilter(uint8_t bus, uint32_t id_from=0, uint32_t id_to=UINT32_MAX);
   private:
     ovms_callback_register_t<PollCallback> m_runfinished_callback, m_pollstateticker_callback;
     ovms_callback_register_t<FrameCallback> m_framerx_callback;

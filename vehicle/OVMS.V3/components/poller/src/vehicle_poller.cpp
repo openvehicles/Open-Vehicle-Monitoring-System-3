@@ -776,7 +776,9 @@ OvmsPollers::OvmsPollers()
     m_ready(false),
     m_paused(false),
     m_user_paused(false),
-    m_trace(trace_Off)
+    m_trace(trace_Off),
+    m_filtered(false)
+
   {
   ESP_LOGI(TAG, "Initialising Poller (7000)");
   for (int idx = 0; idx < VEHICLE_MAXBUSSES; ++idx)
@@ -1087,12 +1089,46 @@ void OvmsPollers::PollerTxCallback(const CAN_frame_t* frame, bool success)
   {
   Queue_PollerFrame(*frame, success, true);
   }
+
 /**
  * PollerRxCallback: internal: process poll request callbacks
  */
 void OvmsPollers::PollerRxCallback(const CAN_frame_t* frame, bool success)
   {
+  if (m_filtered)
+    {
+    OvmsMutexLock lock(&m_filter_mutex, 0); // Don't block! (ever)
+    // If not locked, just let it through.
+    if (lock.IsLocked() && !m_filter.IsFiltered(frame))
+      return;
+    }
   Queue_PollerFrame(*frame, success, false);
+  }
+
+void OvmsPollers::ClearFilters()
+  {
+  m_filtered = false;
+  OvmsMutexLock lock(&m_filter_mutex);
+  m_filter.ClearFilters();
+  }
+void OvmsPollers::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
+  {
+  OvmsMutexLock lock(&m_filter_mutex);
+  m_filter.AddFilter(bus, id_from, id_to);
+  m_filtered = true;
+  }
+void OvmsPollers::AddFilter(const char* filterstring)
+  {
+  OvmsMutexLock lock(&m_filter_mutex);
+  m_filter.AddFilter(filterstring);
+  m_filtered = true;
+  }
+bool OvmsPollers::RemoveFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
+  {
+  OvmsMutexLock lock(&m_filter_mutex);
+  auto res = m_filter.RemoveFilter(bus, id_from, id_to);
+  m_filtered = m_filter.HasFilters();
+  return res;
   }
 
 static void OvmsVehiclePollTicker(TimerHandle_t xTimer )
