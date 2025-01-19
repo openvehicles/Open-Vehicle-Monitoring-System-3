@@ -843,6 +843,7 @@ class OvmsPollers : public InternalRamAllocated {
     };
     // Store for timing for different packet types.
     std::map<poller_key_t, average_value_t, poller_key_less_t> m_poll_time_stats;
+    OvmsMutex m_stats_mutex;
 
   public:
     void RegisterRunFinished(const std::string &name, PollCallback fn) { m_runfinished_callback.Register(name, fn);}
