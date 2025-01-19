@@ -1087,12 +1087,40 @@ void OvmsPollers::PollerTxCallback(const CAN_frame_t* frame, bool success)
   {
   Queue_PollerFrame(*frame, success, true);
   }
+
 /**
  * PollerRxCallback: internal: process poll request callbacks
  */
 void OvmsPollers::PollerRxCallback(const CAN_frame_t* frame, bool success)
   {
+    {
+    OvmsMutexLock lock(&m_filter_mutex, 0); // Don't block! (ever)
+    // If not locked, just let it through.
+    if (lock.IsLocked() && !m_filter.IsFiltered(frame))
+      return;
+    }
   Queue_PollerFrame(*frame, success, false);
+  }
+
+void OvmsPollers::ClearFilters()
+  {
+  OvmsMutexLock lock(&m_filter_mutex);
+  m_filter.ClearFilters();
+  }
+void OvmsPollers::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
+  {
+  OvmsMutexLock lock(&m_filter_mutex);
+  m_filter.AddFilter(bus, id_from, id_to);
+  }
+void OvmsPollers::AddFilter(const char* filterstring)
+  {
+  OvmsMutexLock lock(&m_filter_mutex);
+  m_filter.AddFilter(filterstring);
+  }
+bool OvmsPollers::RemoveFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
+  {
+  OvmsMutexLock lock(&m_filter_mutex);
+  return m_filter.RemoveFilter(bus, id_from, id_to);
   }
 
 static void OvmsVehiclePollTicker(TimerHandle_t xTimer )
