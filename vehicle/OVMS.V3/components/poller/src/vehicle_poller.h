@@ -732,6 +732,7 @@ class OvmsPollers : public InternalRamAllocated {
                                               //
     OvmsMutex         m_filter_mutex;
     canfilter         m_filter;
+    bool              m_filtered;
 
     void PollerTxCallback(const CAN_frame_t* frame, bool success);
     void PollerRxCallback(const CAN_frame_t* frame, bool success);
