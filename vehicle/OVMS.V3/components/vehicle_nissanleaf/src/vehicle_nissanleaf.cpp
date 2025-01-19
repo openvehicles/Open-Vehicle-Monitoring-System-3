@@ -202,7 +202,6 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   PollSetState(POLLSTATE_OFF);
   PollSetResponseSeparationTime(0);
   PollSetPidList(m_can1,obdii_polls);
-  PollSetPidList(m_can2,obdii_polls);
 
   MyConfig.RegisterParam("xnl", "Nissan Leaf", true, true);
   ConfigChanged(NULL);
