@@ -217,7 +217,8 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
       cnf1=0x41; cnf2=0xf1; cnf3=0x85;
       break;
     case CAN_SPEED_500KBPS:
-      cnf1=0x00; cnf2=0xf0; cnf3=0x86;
+       cnf1=0x40; cnf2=0xbc; cnf3=0x81;
+      // OLD : cnf1=0x00; cnf2=0xf0; cnf3=0x86;
       break;
     case CAN_SPEED_1000KBPS:
       cnf1=0x00; cnf2=0xca; cnf3=0x81;
