@@ -1288,21 +1288,13 @@ void OvmsPollers::PollerTask()
     if (xQueueReceive(m_pollqueue, &entry, (portTickType)portMAX_DELAY)!=pdTRUE)
       continue;
 
-    for (int istx = 0; istx < 2; ++istx)
-      {
-      uint32_t ovf_count = Atomic_Get(m_overflow_count[istx]);
-      if (ovf_count > 0)
-        {
-        ESP_LOGI(TAG, "Poller[Frame]: %s Task Queue Overflow Run %" PRIu32, ( istx ? "TX" : "RX"), ovf_count);
-        Atomic_Subtract( m_overflow_count[istx], ovf_count);
-        }
-      }
     IFTRACE(Times)
       {
       if (entry.entry_type == OvmsPoller::OvmsPollEntryType::PollState)
         {
         // Make sure the every second (ish), we have caught up on averages-by-period measurements.
         uint64_t curtime = esp_timer_get_time();
+        OvmsMutexLock lock(&m_stats_mutex);
         for (auto it = m_poll_time_stats.begin(); it != m_poll_time_stats.end(); ++it)
           it->second.catchup(curtime);
         }
@@ -1317,6 +1309,7 @@ void OvmsPollers::PollerTask()
         }
       if (entry.entry_Command.cmd == OvmsPoller::OvmsPollCommand::ResetTimer)
         {
+        OvmsMutexLock lock(&m_stats_mutex);
         if (entry.entry_Command.parameter == 2)
           {
           for (auto it = m_poll_time_stats.begin(); it != m_poll_time_stats.end(); ++it)
@@ -1338,17 +1331,20 @@ void OvmsPollers::PollerTask()
     if (m_shut_down)
       break;
 
-    timer_util_t timer(
-      [&entry,this](uint64_t start, uint64_t finish)
-        {
-        IFTRACE(Times)
+    std::unique_ptr<timer_util_t> timer;
+
+    IFTRACE(Times)
+      timer = std::unique_ptr<timer_util_t>(new timer_util_t(
+        [&entry,this](uint64_t start, uint64_t finish)
           {
-          int32_t diff = finish-start;
-          poller_key_t key(entry);
-          m_poll_time_stats[key].add_time(diff, finish);
+            {
+            int32_t diff = finish-start;
+            poller_key_t key(entry);
+            OvmsMutexLock lock(&m_stats_mutex);
+            m_poll_time_stats[key].add_time(diff, finish);
+            }
           }
-        }
-      );
+        ));
 
     m_poll_last = monotonictime;
     switch (entry.entry_type)
@@ -1371,6 +1367,16 @@ void OvmsPollers::PollerTask()
         }
         break;
       case OvmsPoller::OvmsPollEntryType::Poll:
+        {
+        for (int istx = 0; istx < 2; ++istx)
+          {
+          uint32_t ovf_count = Atomic_Get(m_overflow_count[istx]);
+          if (ovf_count > 0)
+            {
+            ESP_LOGI(TAG, "Poller[Frame]: %s Task Queue Overflow Run %" PRIu32, ( istx ? "TX" : "RX"), ovf_count);
+            Atomic_Subtract( m_overflow_count[istx], ovf_count);
+            }
+          }
         if (!m_user_paused && !m_paused)
           {
           // Must not lock mutex while calling.
@@ -1399,6 +1405,7 @@ void OvmsPollers::PollerTask()
               }
             }
           }
+        }
         break;
       case OvmsPoller::OvmsPollEntryType::Command:
         switch (entry.entry_Command.cmd)
@@ -2088,7 +2095,14 @@ bool OvmsPollers::LoadTimesTrace( metric_unit_t ratio_unit, times_trace_t &trace
   uint32_t avg_time_sum_us = 0;
   uint32_t avg_utlzn_sum_us = 0;
   uint32_t avg_count_sum = 0;
-  for (auto it = m_poll_time_stats.begin(); it != m_poll_time_stats.end(); ++it)
+  std::list<std::pair<poller_key_t, average_value_t> > copy;
+  // Lock for the shortest time possible... copy the current values.
+  m_stats_mutex.Lock();
+  for (const auto &val : m_poll_time_stats)
+    copy.push_back(val);
+  m_stats_mutex.Unlock();
+
+  for (auto it = copy.begin(); it != copy.end(); ++it)
     {
     average_value_t &cur = it->second;
     uint16_t max_val = cur.max_val;
