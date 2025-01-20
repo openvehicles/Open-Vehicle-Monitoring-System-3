@@ -42,7 +42,7 @@ $(COMPONENT_PATH)/assets/script.js : \
 
 $(COMPONENT_PATH)/assets/script.js.gz : \
 	$(COMPONENT_PATH)/assets/script.js
-	cat $^ | gzip -c > $@
+	cat $^ | gzip -9 -c > $@
 
 $(COMPONENT_PATH)/assets/charts.js : \
 	$(COMPONENT_PATH)/assets/highcharts.js \
@@ -55,7 +55,7 @@ $(COMPONENT_PATH)/assets/charts.js : \
 
 $(COMPONENT_PATH)/assets/charts.js.gz : \
 	$(COMPONENT_PATH)/assets/charts.js
-	cat $^ | gzip -c > $@
+	cat $^ | gzip -9 -c > $@
 
 $(COMPONENT_PATH)/assets/tables.js : \
 	$(COMPONENT_PATH)/assets/datatables.min.js
@@ -63,7 +63,7 @@ $(COMPONENT_PATH)/assets/tables.js : \
 
 $(COMPONENT_PATH)/assets/tables.js.gz : \
 	$(COMPONENT_PATH)/assets/tables.js
-	cat $^ | gzip -c > $@
+	cat $^ | gzip -9 -c > $@
 
 $(COMPONENT_PATH)/assets/style.css : \
 	$(COMPONENT_PATH)/assets/intro.css \
@@ -77,11 +77,11 @@ $(COMPONENT_PATH)/assets/style.css : \
 
 $(COMPONENT_PATH)/assets/style.css.gz : \
 	$(COMPONENT_PATH)/assets/style.css
-	cat $^ | gzip -c > $@
+	cat $^ | gzip -9 -c > $@
 
 $(COMPONENT_PATH)/assets/zones.json.gz : \
 	$(COMPONENT_PATH)/assets/zones.json
-	cat $^ | gzip -c > $@
+	cat $^ | gzip -9 -c > $@
 
 src/web_framework.o: \
 	$(COMPONENT_PATH)/assets/script.js.gz \

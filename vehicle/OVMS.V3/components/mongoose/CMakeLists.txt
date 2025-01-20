@@ -60,7 +60,7 @@ idf_component_register(SRCS ${srcs}
 
 if (CONFIG_OVMS_SC_GPL_MONGOOSE)
 
-  component_compile_definitions("MG_ARCH=MG_ARCH_FREERTOS" "MG_ENABLE_LINES=1" "MG_ENABLE_LWIP=1" "MG_ENABLE_IPV6=1" "MG_ENABLE_ASSERT=1")
+  component_compile_definitions("MG_ARCH=MG_ARCH_FREERTOS" "MG_ENABLE_LINES=1" "MG_ENABLE_LWIP=1" "MG_ENABLE_ASSERT=1")
 
 if (CONFIG_MG_SSL_IF_MBEDTLS)
   component_compile_definitions("MG_ENABLE_MBEDTLS=1")

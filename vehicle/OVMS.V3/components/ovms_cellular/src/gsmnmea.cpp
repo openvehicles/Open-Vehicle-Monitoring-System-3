@@ -110,7 +110,7 @@ static bool valid_nmea_cksum(const std::string line)
     return 0;
   unsigned char chk = 0;
   while (cp < ep)
-    chk ^= (const unsigned char)*cp++;
+    chk ^= (unsigned char)*cp++;
   unsigned char chk2 = (unsigned char)strtoul(ep + 1, NULL, 16);
   return (chk == chk2);
   }

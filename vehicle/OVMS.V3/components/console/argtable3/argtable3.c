@@ -3464,7 +3464,7 @@ static const TRexChar *trex_matchnode(TRex* exp,TRexNode *node,const TRexChar *s
 /* public api */
 TRex *trex_compile(const TRexChar *pattern,const TRexChar **error,int flags)
 {
-	TRex *exp = (TRex *)malloc(sizeof(TRex));
+	TRex * volatile exp = (TRex *)malloc(sizeof(TRex));
 	exp->_eol = exp->_bol = NULL;
 	exp->_p = pattern;
 	exp->_nallocated = (int)scstrlen(pattern) * sizeof(TRexChar);

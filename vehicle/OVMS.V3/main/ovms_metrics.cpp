@@ -2149,7 +2149,7 @@ bool OvmsMetricBool::SetValue(std::string value, metric_unit_t units)
 
 bool OvmsMetricBool::SetValue(const dbcNumber& value, metric_unit_t units)
   {
-  return SetValue((bool)value.GetUnsignedInteger(), units);
+  return SetValue((uint32_t)(bool)value.GetUnsignedInteger(), units);
   }
 
 void OvmsMetricBool::Clear()
