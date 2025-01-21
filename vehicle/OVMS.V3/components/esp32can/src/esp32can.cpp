@@ -442,7 +442,7 @@ esp_err_t esp32can::InitController()
   /* Set sampling
    * 1 -> triple; the bus is sampled three times; recommended for low/medium speed buses     (class A and B) where filtering spikes on the bus line is beneficial
    * 0 -> single; the bus is sampled once; recommended for high speed buses (SAE class C)*/
-  MODULE_ESP32CAN->BTR1.B.SAM=0x1;
+  MODULE_ESP32CAN->BTR1.B.SAM = (MyESP32can->m_speed < CAN_SPEED_125KBPS) ? 1 : 0;
 
   // Enable all interrupts except arbitration loss (can be ignored):
   uint32_t ier = 0xff & ~__CAN_IRQ_ARB_LOST;
