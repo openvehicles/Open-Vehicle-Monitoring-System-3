@@ -394,7 +394,7 @@ class can : public InternalRamAllocated
     int ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success);
 
   public:
-    uint32_t AddLogger(canlog* logger, int filterc=0, const char* const* filterv=NULL);
+    uint32_t AddLogger(canlog* logger, int filterc=0, const char* const* filterv=NULL, OvmsWriter* writer=NULL);
     bool HasLogger();
     canlog* GetLogger(uint32_t id);
     bool RemoveLogger(uint32_t id);

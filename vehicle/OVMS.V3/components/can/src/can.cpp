@@ -747,14 +747,18 @@ const char* canbus::GetErrorStateName()
   }
 
 
-uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv)
+uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv, OvmsWriter* writer)
   {
   if (filterc>0)
     {
     canfilter *filter = new canfilter();
     for (int k=0;k<filterc;k++)
       {
-      filter->AddFilter(filterv[k]);
+      if (!filter->AddFilter(filterv[k]))
+        {
+        if (writer)
+          writer->printf("Filter '%s' is invalid\n", filterv[k] );
+        }
       }
     logger->SetFilter(filter);
     }
