@@ -354,9 +354,20 @@ void re_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     if (argc>0)
       {
       filter = new canfilter();
+      bool has_valid = false;
       for (int k=0;k<argc;k++)
         {
-        filter->AddFilter(argv[k]);
+        if (filter->AddFilter(argv[k]))
+          has_valid = true;
+        else
+          {
+          writer->printf("Invalid Filter: '%s'\n", argv[k]);
+          }
+        }
+      if (!has_valid)
+        {
+        writer->puts("No valid filters, not started");
+        return;
         }
       }
     MyRE = new re("re", filter);

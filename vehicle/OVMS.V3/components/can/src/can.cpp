@@ -509,31 +509,40 @@ bool canfilter::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
   m_filters.push_back(f);
   return true;
   }
-
-void canfilter::AddFilter(const char* filterstring)
+/** Add a filter string.
+ * The format is: <bus>[:<from>[-[<to>]]]
+ * Where <bus> is 0 to match any or 1 to CAN_MAXBUSES,
+ * and 'from' and 'to' are in hex.
+ * <bus>          Matches anything on that bus.
+ * <bus>:<value>  Matches 1 address on the specified bus.
+ * <bus>:<from>-  Matches adressses greater than the specified value.
+ * <bus>:<from>-<to>  Matches addresses  'from' <= adress <= 'to'.
+ */
+bool canfilter::AddFilter(const char* filterstring)
   {
-  char* fs = (char*)filterstring;
-  if (fs[1] == 0)
+  if (!*filterstring)
+    return false;
+  uint32_t bus, id_from, id_to;
+  char sep; // Consume '-' - but don't care exactly what it is.
+
+  switch (sscanf(filterstring, "%" SCNu32 ":%" SCNx32 "%c%" SCNx32, &bus, &id_from, &sep, &id_to))
     {
-    AddFilter((uint8_t)fs[0]);
+    case 1: // eg: 1
+      id_from = 0;
+      id_to = UINT32_MAX;
+      break;
+    case 2: // eg: 1:200
+      id_to = id_from;
+      break;
+    case 3: // eg: 1:200-
+      id_to = UINT32_MAX;
+      break;
+    case 4: // eg: 1:200-7E0
+      break;
+    default:
+      return false;
     }
-  else
-    {
-    uint8_t bus = 0;
-    uint32_t id_from = 0;
-    uint32_t id_to = UINT32_MAX;
-    if (fs[1] == ':')
-      {
-      bus = fs[0];
-      fs += 2;
-      }
-    id_from = strtol(fs, &fs, 16);
-    if (*fs)
-      id_to = strtol(fs+1, NULL, 16); // id range
-    else
-      id_to = id_from; // single id
-    AddFilter(bus,id_from,id_to);
-    }
+  return AddFilter(bus, id_from, id_to);
   }
 
 bool canfilter::RemoveFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)

@@ -221,7 +221,7 @@ class canfilter
   public:
     void ClearFilters();
     bool AddFilter(uint8_t bus=0, uint32_t id_from=0, uint32_t id_to=UINT32_MAX);
-    void AddFilter(const char* filterstring);
+    bool AddFilter(const char* filterstring);
     bool RemoveFilter(uint8_t bus=0, uint32_t id_from=0, uint32_t id_to=UINT32_MAX);
 
   public:
