@@ -538,13 +538,17 @@ void canfilter::AddFilter(const char* filterstring)
 
 bool canfilter::RemoveFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
   {
-  for (CAN_filter_t* filter : m_filters)
+  if (bus >= (uint8_t)'0')
+    bus -= '0';
+  for (CAN_filter_list_t::iterator it = m_filters.begin(); it != m_filters.end(); ++it)
     {
-    if ((filter->bus == bus)&&
-        (filter->id_from == id_from)&&
+    CAN_filter_t* filter = *it;
+    if ((filter->bus == bus) &&
+        (filter->id_from == id_from) &&
         (filter->id_to == id_to))
       {
       delete filter;
+      m_filters.erase(it);
       return true;
       }
     }
