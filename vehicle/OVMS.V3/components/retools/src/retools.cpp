@@ -826,7 +826,7 @@ REInit::REInit()
   cmd_re->RegisterCommand("start","Start RE tools",
     re_start,
     "[filter1] ... [filterN]\n"
-    "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
+    "Filter: <bus> | <id>[-[<id>]] | <bus>:<id>[-[<id>]]\n"
     "Example: 2:2a0-37f",
     0, 9);
   cmd_re->RegisterCommand("stop","Stop RE tools",re_stop);
