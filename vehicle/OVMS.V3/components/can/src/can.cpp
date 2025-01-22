@@ -607,9 +607,13 @@ std::string canfilter::Info()
     if (filter->bus > 0) buf << std::setfill(' ') << std::dec << char('0'+ filter->bus) << ':';
     buf << std::setfill('0') << std::setw(3) << std::hex;
     if (filter->id_from == filter->id_to)
-      { buf << filter->id_from << ' '; }
+      buf << filter->id_from << ' ';
+    else if (filter->id_to < UINT32_MAX)
+      buf << filter->id_from << '-' << filter->id_to << ' ';
+    else if (filter->id_to > 0)
+      buf << filter->id_from << "- ";
     else
-      { buf << filter->id_from << '-' << filter->id_to << ' '; }
+      buf << ' ';
     }
 
   return buf.str();
