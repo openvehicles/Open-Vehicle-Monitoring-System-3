@@ -515,8 +515,11 @@ bool canfilter::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
  * and 'from' and 'to' are in hex.
  * <bus>          Matches anything on that bus.
  * <bus>:<value>  Matches 1 address on the specified bus.
- * <bus>:<from>-  Matches adressses greater than the specified value.
- * <bus>:<from>-<to>  Matches addresses  'from' <= adress <= 'to'.
+ * <bus>:<from>-  Matches adressses greater than the specified value on that bus
+ * <bus>:<from>-<to>  Matches addresses  'from' <= adress <= 'to' on that bus
+ * <value>        Matches 1 address on any bus.
+ * <from>-        Matches adressses greater than the specified value on any bus
+ * <from>-<to>    Matches addresses  'from' <= adress <= 'to' on any bus
  */
 bool canfilter::AddFilter(const char* filterstring)
   {
@@ -524,20 +527,40 @@ bool canfilter::AddFilter(const char* filterstring)
     return false;
   uint32_t bus, id_from, id_to;
   char sep; // Consume '-' - but don't care exactly what it is.
+  int level;
 
-  switch (sscanf(filterstring, "%" SCNu32 ":%" SCNx32 "%c%" SCNx32, &bus, &id_from, &sep, &id_to))
+  switch (filterstring[1])
+    {
+    // first character is a bus
+    case '\0':
+    case ':':
+      level = sscanf(filterstring, "%" SCNu32 ":%" SCNx32 "%c%" SCNx32, &bus, &id_from, &sep, &id_to);
+      break;
+    // No bus
+    default:
+      {
+      level = sscanf(filterstring, "%" SCNx32 "%c%" SCNx32,  &id_from, &sep, &id_to);
+      if (level == 0)
+        return false;
+      bus = 0;
+      ++level;
+      break;
+      }
+    }
+
+  switch (level)
     {
     case 1: // eg: 1
       id_from = 0;
       id_to = UINT32_MAX;
       break;
-    case 2: // eg: 1:200
+    case 2: // eg: 1:200 or 200
       id_to = id_from;
       break;
-    case 3: // eg: 1:200-
+    case 3: // eg: 1:200- or 200-
       id_to = UINT32_MAX;
       break;
-    case 4: // eg: 1:200-7E0
+    case 4: // eg: 1:200-7E0 or 200-7E0
       break;
     default:
       return false;
