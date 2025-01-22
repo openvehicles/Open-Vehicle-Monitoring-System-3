@@ -484,13 +484,30 @@ void canfilter::ClearFilters()
   m_filters.clear();
   }
 
-void canfilter::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
+/** Add a filter to the list (what is allowed).
+ * @param bus The CAN bus 1-3  or 0 to match any.
+ * @param id_from The id to match from
+ * @param id_to The id to match to
+ */
+
+bool canfilter::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
   {
+  if (bus > CAN_MAXBUSES)
+    return false;
+  if (id_from > id_to)
+    return false;
+  // Backwards compatible. Used to be '1' (49) for bus 1 etc
+  if (bus >= (uint8_t)'0')
+    bus -= '0';
+  if (bus > CAN_MAXBUSES)
+    return false;
+
   CAN_filter_t* f = new CAN_filter_t;
   f->bus = bus;
   f->id_from = id_from;
   f->id_to = id_to;
   m_filters.push_back(f);
+  return true;
   }
 
 void canfilter::AddFilter(const char* filterstring)
@@ -539,8 +556,9 @@ bool canfilter::IsFiltered(const CAN_frame_t* p_frame)
   if (m_filters.size() == 0) return true;
   if (! p_frame) return false;
 
-  char buskey = '0';
-  if (p_frame->origin) buskey = p_frame->origin->m_busnumber + '1';
+  uint8_t buskey = 0;
+  if (p_frame->origin)
+    buskey = (p_frame->origin->m_busnumber + 1);
 
   for (CAN_filter_t* filter : m_filters)
     {
@@ -557,7 +575,7 @@ bool canfilter::IsFiltered(canbus* bus)
   if (m_filters.size() == 0) return true;
   if (bus == NULL) return true;
 
-  char buskey = bus->GetName()[3];
+  uint8_t buskey = bus->m_busnumber+1;
 
   for (CAN_filter_t* filter : m_filters)
     {
@@ -573,7 +591,7 @@ std::string canfilter::Info()
 
   for (CAN_filter_t* filter : m_filters)
     {
-    if (filter->bus > 0) buf << std::setfill(' ') << std::dec << filter->bus << ':';
+    if (filter->bus > 0) buf << std::setfill(' ') << std::dec << char('0'+ filter->bus) << ':';
     buf << std::setfill('0') << std::setw(3) << std::hex;
     if (filter->id_from == filter->id_to)
       { buf << filter->id_from << ' '; }
