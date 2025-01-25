@@ -418,6 +418,14 @@ esp_err_t esp32can::InitController()
       MODULE_ESP32CAN->BTR1.B.TSEG1=0x4;
       __tq = 0.125;
       break;
+
+    case CAN_SPEED_500KBPS:
+      MODULE_ESP32CAN->BTR0.B.SJW = 2; // .sjw=3
+      MODULE_ESP32CAN->BTR1.B.TSEG1 = 14; // .tseg_1=15
+      MODULE_ESP32CAN->BTR1.B.TSEG2 = 3; // .tseg_2=4
+      __tq = 0.100; // .brp=8
+      break;
+
     default:
       MODULE_ESP32CAN->BTR1.B.TSEG1=0xc;
       __tq = ((float)1000/static_cast<int>(MyESP32can->m_speed)) / 16;
@@ -441,7 +449,7 @@ esp_err_t esp32can::InitController()
 
   /* Set sampling
    * 1 -> triple; the bus is sampled three times; recommended for low/medium speed buses     (class A and B) where filtering spikes on the bus line is beneficial
-   * 0 -> single; the bus is sampled once; recommended for high speed buses (SAE class C)*/
+   * 0 -> single; the bus is sampled once; recommended for high speed buses (SAE class C = 125 kbps or higher)*/
   MODULE_ESP32CAN->BTR1.B.SAM = (MyESP32can->m_speed < CAN_SPEED_125KBPS) ? 1 : 0;
 
   // Enable all interrupts except arbitration loss (can be ignored):
