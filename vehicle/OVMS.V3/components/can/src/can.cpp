@@ -367,6 +367,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Rx pkt:    %20" PRId32 "\n",sbus->m_status.packets_rx);
   writer->printf("Rx ovrflw: %20d\n",sbus->m_status.rxbuf_overflow);
   writer->printf("Tx pkt:    %20" PRId32 "\n",sbus->m_status.packets_tx);
+  writer->printf("Tx queue:  %20" PRId32 "\n",uxQueueMessagesWaiting(sbus->m_txqueue));
   writer->printf("Tx delays: %20" PRId32 "\n",sbus->m_status.txbuf_delay);
   writer->printf("Tx ovrflw: %20d\n",sbus->m_status.txbuf_overflow);
   writer->printf("Tx fails:  %20" PRId32 "\n",sbus->m_status.tx_fails);
@@ -710,12 +711,12 @@ void canbus::LogStatus(CAN_log_type_t type)
       return;
     ESP_LOGE(TAG,
       "%s: intr=%" PRId32 " rxpkt=%" PRId32 " txpkt=%" PRId32 " errflags=%#" PRIx32 " rxerr=%d txerr=%d rxinval=%d"
-      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d",
+      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d txqueue=%" PRId32,
       m_name, m_status.interrupts, m_status.packets_rx, m_status.packets_tx,
       m_status.error_flags, m_status.errors_rx, m_status.errors_tx,
       m_status.invalid_rx, m_status.rxbuf_overflow, m_status.txbuf_overflow,
       m_status.txbuf_delay, m_status.tx_fails, m_status.watchdog_resets,
-      m_status.error_resets);
+      m_status.error_resets, uxQueueMessagesWaiting(m_txqueue));
     }
   if (MyCan.HasLogger())
     MyCan.LogStatus(this, type, &m_status);

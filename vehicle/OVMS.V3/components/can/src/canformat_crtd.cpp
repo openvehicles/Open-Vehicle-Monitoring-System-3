@@ -108,7 +108,7 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
     case CAN_LogStatus_Statistics:
       snprintf(buf,sizeof(buf),
         "%l" PRId32 ".%06ld %c%s %s intr=%" PRId32 " rxpkt=%" PRId32 " txpkt=%" PRId32 " errflags=%#" PRIx32 " rxerr=%d txerr=%d"
-        " rxinval=%d rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d",
+        " rxinval=%d rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d txqueue=%" PRId32,
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogStatus_Error) ? "CER" : "CST",
@@ -117,7 +117,7 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
         message->status.errors_rx, message->status.errors_tx, message->status.invalid_rx,
         message->status.rxbuf_overflow, message->status.txbuf_overflow,
         message->status.txbuf_delay, message->status.tx_fails, message->status.watchdog_resets,
-        message->status.error_resets);
+        message->status.error_resets, uxQueueMessagesWaiting(message->origin->m_txqueue));
       break;
 
     case CAN_LogInfo_Comment:
