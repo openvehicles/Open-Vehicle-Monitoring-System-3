@@ -367,6 +367,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Rx pkt:    %20" PRId32 "\n",sbus->m_status.packets_rx);
   writer->printf("Rx ovrflw: %20d\n",sbus->m_status.rxbuf_overflow);
   writer->printf("Tx pkt:    %20" PRId32 "\n",sbus->m_status.packets_tx);
+  writer->printf("Tx queue:  %20" PRId32 "\n",uxQueueMessagesWaiting(sbus->m_txqueue));
   writer->printf("Tx delays: %20" PRId32 "\n",sbus->m_status.txbuf_delay);
   writer->printf("Tx ovrflw: %20d\n",sbus->m_status.txbuf_overflow);
   writer->printf("Tx fails:  %20" PRId32 "\n",sbus->m_status.tx_fails);
@@ -484,50 +485,103 @@ void canfilter::ClearFilters()
   m_filters.clear();
   }
 
-void canfilter::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
+/** Add a filter to the list (what is allowed).
+ * @param bus The CAN bus 1-3  or 0 to match any.
+ * @param id_from The id to match from
+ * @param id_to The id to match to
+ */
+
+bool canfilter::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
   {
+  if (bus > CAN_MAXBUSES)
+    return false;
+  if (id_from > id_to)
+    return false;
+  // Backwards compatible. Used to be '1' (49) for bus 1 etc
+  if (bus >= (uint8_t)'0')
+    bus -= '0';
+  if (bus > CAN_MAXBUSES)
+    return false;
+
   CAN_filter_t* f = new CAN_filter_t;
   f->bus = bus;
   f->id_from = id_from;
   f->id_to = id_to;
   m_filters.push_back(f);
+  return true;
   }
-
-void canfilter::AddFilter(const char* filterstring)
+/** Add a filter string.
+ * The format is: <bus>[:<from>[-[<to>]]]
+ * Where <bus> is 0 to match any or 1 to CAN_MAXBUSES,
+ * and 'from' and 'to' are in hex.
+ * <bus>          Matches anything on that bus.
+ * <bus>:<value>  Matches 1 address on the specified bus.
+ * <bus>:<from>-  Matches adressses greater than the specified value on that bus
+ * <bus>:<from>-<to>  Matches addresses  'from' <= adress <= 'to' on that bus
+ * <value>        Matches 1 address on any bus.
+ * <from>-        Matches adressses greater than the specified value on any bus
+ * <from>-<to>    Matches addresses  'from' <= adress <= 'to' on any bus
+ */
+bool canfilter::AddFilter(const char* filterstring)
   {
-  char* fs = (char*)filterstring;
-  if (fs[1] == 0)
+  if (!*filterstring)
+    return false;
+  uint32_t bus, id_from, id_to;
+  char sep; // Consume '-' - but don't care exactly what it is.
+  int level;
+
+  switch (filterstring[1])
     {
-    AddFilter((uint8_t)fs[0]);
-    }
-  else
-    {
-    uint8_t bus = 0;
-    uint32_t id_from = 0;
-    uint32_t id_to = UINT32_MAX;
-    if (fs[1] == ':')
+    // first character is a bus
+    case '\0':
+    case ':':
+      level = sscanf(filterstring, "%" SCNu32 ":%" SCNx32 "%c%" SCNx32, &bus, &id_from, &sep, &id_to);
+      break;
+    // No bus
+    default:
       {
-      bus = fs[0];
-      fs += 2;
+      level = sscanf(filterstring, "%" SCNx32 "%c%" SCNx32,  &id_from, &sep, &id_to);
+      if (level == 0)
+        return false;
+      bus = 0;
+      ++level;
+      break;
       }
-    id_from = strtol(fs, &fs, 16);
-    if (*fs)
-      id_to = strtol(fs+1, NULL, 16); // id range
-    else
-      id_to = id_from; // single id
-    AddFilter(bus,id_from,id_to);
     }
+
+  switch (level)
+    {
+    case 1: // eg: 1
+      id_from = 0;
+      id_to = UINT32_MAX;
+      break;
+    case 2: // eg: 1:200 or 200
+      id_to = id_from;
+      break;
+    case 3: // eg: 1:200- or 200-
+      id_to = UINT32_MAX;
+      break;
+    case 4: // eg: 1:200-7E0 or 200-7E0
+      break;
+    default:
+      return false;
+    }
+  return AddFilter(bus, id_from, id_to);
   }
 
 bool canfilter::RemoveFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
   {
-  for (CAN_filter_t* filter : m_filters)
+  if (bus >= (uint8_t)'0')
+    bus -= '0';
+  for (CAN_filter_list_t::iterator it = m_filters.begin(); it != m_filters.end(); ++it)
     {
-    if ((filter->bus == bus)&&
-        (filter->id_from == id_from)&&
+    CAN_filter_t* filter = *it;
+    if ((filter->bus == bus) &&
+        (filter->id_from == id_from) &&
         (filter->id_to == id_to))
       {
       delete filter;
+      m_filters.erase(it);
       return true;
       }
     }
@@ -539,8 +593,9 @@ bool canfilter::IsFiltered(const CAN_frame_t* p_frame)
   if (m_filters.size() == 0) return true;
   if (! p_frame) return false;
 
-  char buskey = '0';
-  if (p_frame->origin) buskey = p_frame->origin->m_busnumber + '1';
+  uint8_t buskey = 0;
+  if (p_frame->origin)
+    buskey = (p_frame->origin->m_busnumber + 1);
 
   for (CAN_filter_t* filter : m_filters)
     {
@@ -557,7 +612,7 @@ bool canfilter::IsFiltered(canbus* bus)
   if (m_filters.size() == 0) return true;
   if (bus == NULL) return true;
 
-  char buskey = bus->GetName()[3];
+  uint8_t buskey = bus->m_busnumber+1;
 
   for (CAN_filter_t* filter : m_filters)
     {
@@ -573,12 +628,16 @@ std::string canfilter::Info()
 
   for (CAN_filter_t* filter : m_filters)
     {
-    if (filter->bus > 0) buf << std::setfill(' ') << std::dec << filter->bus << ':';
+    if (filter->bus > 0) buf << std::setfill(' ') << std::dec << char('0'+ filter->bus) << ':';
     buf << std::setfill('0') << std::setw(3) << std::hex;
     if (filter->id_from == filter->id_to)
-      { buf << filter->id_from << ' '; }
+      buf << filter->id_from << ' ';
+    else if (filter->id_to < UINT32_MAX)
+      buf << filter->id_from << '-' << filter->id_to << ' ';
+    else if (filter->id_to > 0)
+      buf << filter->id_from << "- ";
     else
-      { buf << filter->id_from << '-' << filter->id_to << ' '; }
+      buf << ' ';
     }
 
   return buf.str();
@@ -652,12 +711,12 @@ void canbus::LogStatus(CAN_log_type_t type)
       return;
     ESP_LOGE(TAG,
       "%s: intr=%" PRId32 " rxpkt=%" PRId32 " txpkt=%" PRId32 " errflags=%#" PRIx32 " rxerr=%d txerr=%d rxinval=%d"
-      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d",
+      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d txqueue=%" PRId32,
       m_name, m_status.interrupts, m_status.packets_rx, m_status.packets_tx,
       m_status.error_flags, m_status.errors_rx, m_status.errors_tx,
       m_status.invalid_rx, m_status.rxbuf_overflow, m_status.txbuf_overflow,
       m_status.txbuf_delay, m_status.tx_fails, m_status.watchdog_resets,
-      m_status.error_resets);
+      m_status.error_resets, uxQueueMessagesWaiting(m_txqueue));
     }
   if (MyCan.HasLogger())
     MyCan.LogStatus(this, type, &m_status);
@@ -716,14 +775,18 @@ const char* canbus::GetErrorStateName()
   }
 
 
-uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv)
+uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv, OvmsWriter* writer)
   {
   if (filterc>0)
     {
     canfilter *filter = new canfilter();
     for (int k=0;k<filterc;k++)
       {
-      filter->AddFilter(filterv[k]);
+      if (!filter->AddFilter(filterv[k]))
+        {
+        if (writer)
+          writer->printf("Filter '%s' is invalid\n", filterv[k] );
+        }
       }
     logger->SetFilter(filter);
     }

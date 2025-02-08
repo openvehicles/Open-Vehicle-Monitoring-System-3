@@ -354,9 +354,20 @@ void re_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     if (argc>0)
       {
       filter = new canfilter();
+      bool has_valid = false;
       for (int k=0;k<argc;k++)
         {
-        filter->AddFilter(argv[k]);
+        if (filter->AddFilter(argv[k]))
+          has_valid = true;
+        else
+          {
+          writer->printf("Invalid Filter: '%s'\n", argv[k]);
+          }
+        }
+      if (!has_valid)
+        {
+        writer->puts("No valid filters, not started");
+        return;
         }
       }
     MyRE = new re("re", filter);
@@ -815,7 +826,7 @@ REInit::REInit()
   cmd_re->RegisterCommand("start","Start RE tools",
     re_start,
     "[filter1] ... [filterN]\n"
-    "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
+    "Filter: <bus> | <id>[-[<id>]] | <bus>:<id>[-[<id>]]\n"
     "Example: 2:2a0-37f",
     0, 9);
   cmd_re->RegisterCommand("stop","Stop RE tools",re_stop);
