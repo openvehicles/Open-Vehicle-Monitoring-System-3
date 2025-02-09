@@ -1738,7 +1738,7 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2012) {
      CommandWakeup();
   } else {
-     CommandWakeupTCU();
+     CommandWakeup();
   }
   switch (command)
     {
@@ -2341,6 +2341,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   if (!cfg_enable_write) return Fail; // Disable commands unless canwrite is true
   ESP_LOGI(TAG, "Sending Wakeup Frame");
   unsigned char data = 0;
+  m_can1->WriteStandard(0x68c, 1, &data); //Wakes up the modules by spoofing VCM startup message
   m_can1->WriteStandard(0x679, 1, &data); //Wakes up the modules by spoofing VCM startup message
   m_can1->WriteStandard(0x679, 1, &data); //Tops up the 12V battery if connected to EVSE
   m_can1->WriteStandard(0x5C0, 8, &data); //Wakes up the VCM (by spoofing empty battery request heating)
@@ -2364,7 +2365,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(Remot
   // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
   {
-    CommandWakeupTCU();
+    CommandWakeup();
     MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 1);
     ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST ON");
   } else {
