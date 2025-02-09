@@ -993,7 +993,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (ac_state || qc_state) {
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
       } else {
-          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          // This only represents charging relay state. If timer, or cable still plugged in, relay is open.
+          // StandardMetrics.ms_v_charge_pilot->SetValue(false);
           StandardMetrics.ms_v_charge_voltage->SetValue(0);
       }
 
@@ -1012,8 +1013,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
         StandardMetrics.ms_v_charge_climit->SetValue(max_charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
       } else if (!qc_state) {
-        StandardMetrics.ms_v_charge_climit->SetValue(0);
-        StandardMetrics.ms_v_charge_current->SetValue(0);
         StandardMetrics.ms_v_charge_power->SetValue(0);
       }
 
@@ -1521,6 +1520,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           StandardMetrics.ms_v_charge_pilot->SetValue(false);
           StandardMetrics.ms_v_door_chargeport->SetValue(false);
+          StandardMetrics.ms_v_charge_climit->SetValue(0);
           break;
         case 0xb0: // Quick Charging
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
