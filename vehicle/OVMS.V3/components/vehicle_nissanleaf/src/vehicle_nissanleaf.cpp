@@ -1652,6 +1652,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_pos_odometer->SetValue(d[1] << 16 | d[2] << 8 | d[3], m_odometer_units);
         }
       break;
+    case 0x679:
+      ESP_LOGI(TAG, "J1772/VCM Wakeup!");
+      break;
     case 0x60d:
       StandardMetrics.ms_v_door_trunk->SetValue(d[0] & 0x80);
       StandardMetrics.ms_v_door_rr->SetValue(d[0] & 0x40);
