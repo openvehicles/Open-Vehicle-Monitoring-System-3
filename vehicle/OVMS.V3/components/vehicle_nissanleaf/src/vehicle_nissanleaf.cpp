@@ -1549,10 +1549,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_battery_heatrequested->SetValue(d[1] & 0x01); // Request permission to turn on
         }
       break;
-    }
     case 0x679:
       ESP_LOGI(TAG, "J1772/VCM Wakeup!");
       break;
+    }
   }
 
 void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
