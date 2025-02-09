@@ -2354,6 +2354,7 @@ void OvmsVehicleNissanLeaf::CommandWakeupTCU()
   ESP_LOGI(TAG, "Sending CarWings TCU->VCU Wakeup Frame");
   unsigned char data = 0;
   m_can1->WriteStandard(0x68c, 1, &data); //Wakes up the modules by spoofing VCM startup message
+  m_can1->WriteStandard(0x68c, 1, &data); //Wakes up the modules by spoofing VCM startup message
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)
