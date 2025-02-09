@@ -1497,20 +1497,24 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         // TODO enum?
         uint8_t current_limit = d[2] / 5;
         StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
-        /*if (current_limit > 0 && current_limit <= 32)
+        if (current_limit > 0 && current_limit <= 32)
           {
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           }
 		else
 		  {
 		  StandardMetrics.ms_v_charge_pilot->SetValue(false);
-		  }*/
+		  }
         }
 
       switch (d[4])
         {
-        case 0x38:
-        case 0x28:
+        case 0x70: // Starting to charge
+        case 0x18: // Signal cable plugged in (beep sound)
+          StandardMetrics.ms_v_charge_pilot->SetValue(true);
+          break;
+        case 0x38: // Present when vehicle is off
+        case 0x28: // Present when vehicle is on
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x30:
