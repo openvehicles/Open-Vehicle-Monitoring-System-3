@@ -984,8 +984,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // Gen 1 ZE0 Charger
       // see https://github.com/dalathegreat/leaf_can_bus_messages
 
-      bool  ac_state = (d[4] & 0x20) == 0x1; // indicates ac charge state
-      bool  qc_state = (d[4] & 0x40) == 0x1; // indicates chademo relay state
+      bool  ac_state = (d[4] & 0x20) != 0; // indicates ac charge state
+      bool  qc_state = (d[4] & 0x20) != 0; // indicates chademo relay state
 
       m_ac_relay_status->SetValue((float)(d[4] & 0x20));
       m_qc_relay_status->SetValue((float)(d[4] & 0x40));
@@ -1509,18 +1509,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       switch (d[4])
         {
+        case 0x38:
         case 0x28:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x30:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT);
-          break;
-        // 0x38 when nothing plugged in
-        case 0x38:
-          vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
-          StandardMetrics.ms_v_charge_pilot->SetValue(false);
-          StandardMetrics.ms_v_door_chargeport->SetValue(false);
-          StandardMetrics.ms_v_charge_climit->SetValue(0);
           break;
         case 0xb0: // Quick Charging
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
