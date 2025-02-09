@@ -1734,7 +1734,10 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
     length = 1;
     tcuBus = m_can1;
     }
-  CommandWakeup();
+
+  if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2012) {
+     CommandWakeup();
+  }
   switch (command)
     {
     case ENABLE_CLIMATE_CONTROL:
@@ -2328,7 +2331,7 @@ void OvmsVehicleNissanLeaf::HandleRange()
 //
 // On Generation 2 Cars, a CAN bus message is sent to wake up the VCU. This
 // function sends that message even to Generation 1 cars which doesn't seem to
-// cause any problems.
+// cause any problems. (UPDATE: It automatically starts charging every time)
 //
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   {
@@ -2346,12 +2349,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(Remot
   {
   if (!cfg_enable_write) return Fail; //disable commands unless canwrite is true
   ESP_LOGI(TAG, "RemoteCommandHandler");
-  CommandWakeup();
   // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
   {
     MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 1);
     ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST ON");
+  } else {
+    // Use wakeup only for newer cars.
+    CommandWakeup();
   }
   // The GEN 2 Nissan TCU module sends the command repeatedly, so we start
   // m_remoteCommandTimer (which calls RemoteCommandTimer()) to do this
