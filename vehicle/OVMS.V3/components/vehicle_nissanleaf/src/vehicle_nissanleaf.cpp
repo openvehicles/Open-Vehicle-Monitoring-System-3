@@ -1479,7 +1479,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x5bf:
 		// ZE0 gen1 charger only
-      m_charge_mode->SetValue((int)d[4])
+      m_charge_mode->SetValue((int)d[4]);
       if (d[4] == 0xb0)
         {
         // Quick Charging
