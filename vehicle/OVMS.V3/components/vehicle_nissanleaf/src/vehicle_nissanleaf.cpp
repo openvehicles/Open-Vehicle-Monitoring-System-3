@@ -1516,6 +1516,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x30:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT);
           break;
+        // 0x38 when nothing plugged in
+        case 0x38:
+          vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
+          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          StandardMetrics.ms_v_door_chargeport->SetValue(false);
+          break;
         case 0xb0: // Quick Charging
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
           break;
