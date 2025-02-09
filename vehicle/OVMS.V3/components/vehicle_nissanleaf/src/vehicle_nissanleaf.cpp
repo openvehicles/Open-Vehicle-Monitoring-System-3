@@ -2354,7 +2354,7 @@ void OvmsVehicleNissanLeaf::CommandWakeupTCU()
   if (!cfg_enable_write) return; // Disable commands unless canwrite is true
   ESP_LOGI(TAG, "Sending CarWings TCU->VCU Wakeup Frame");
   unsigned char data = 0;
-  m_can1->WriteStandard(0x68c, 1, &data); //Wakes up the modules by spoofing VCM startup message
+  m_can1->WriteStandard(0x68c, 1, &data); //Wakes up VCM By sending a wakeup message
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)
