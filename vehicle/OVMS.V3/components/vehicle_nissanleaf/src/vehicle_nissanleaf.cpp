@@ -984,11 +984,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // Gen 1 ZE0 Charger
       // see https://github.com/dalathegreat/leaf_can_bus_messages
 
-      bool  ac_state = (d[4] & 0x20) != 0; // indicates ac charge state
+      bool  ac_state = (d[4] & 0x40) != 0; // indicates ac charge state
       bool  qc_state = (d[4] & 0x20) != 0; // indicates chademo relay state
 
-      m_ac_relay_status->SetValue((float)(d[4] & 0x20));
-      m_qc_relay_status->SetValue((float)(d[4] & 0x40));
+      m_qc_relay_status->SetValue((float)(d[4] & 0x20));
+      m_ac_relay_status->SetValue((float)(d[4] & 0x40));
 
       if (ac_state || qc_state) {
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
