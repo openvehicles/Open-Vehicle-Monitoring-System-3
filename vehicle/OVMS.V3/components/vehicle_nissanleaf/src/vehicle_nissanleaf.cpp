@@ -2348,13 +2348,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   }
 
 // Wakeup VCM using command which allegedly is used by TCU (https://docs.google.com/spreadsheets/d/1EHa4R85BttuY4JZ-EnssH4YZddpsDVu6rUFm0P7ouwg/edit?gid=0#gid=0)
-OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeupTCU()
+void OvmsVehicleNissanLeaf::CommandWakeupTCU()
   {
-  if (!cfg_enable_write) return Fail; // Disable commands unless canwrite is true
+  if (!cfg_enable_write) return; // Disable commands unless canwrite is true
   ESP_LOGI(TAG, "Sending CarWings TCU->VCU Wakeup Frame");
   unsigned char data = 0;
   m_can1->WriteStandard(0x68c, 1, &data); //Wakes up the modules by spoofing VCM startup message
-  return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)

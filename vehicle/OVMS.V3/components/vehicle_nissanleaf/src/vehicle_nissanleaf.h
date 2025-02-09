@@ -133,6 +133,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void RemoteCommandTimer();
     void CcDisableTimer();
     void MITMDisableTimer();
+    void CommandWakeupTCU(); // New wakeup command
 
   // --------------------------------------------------------------------------
   // Webserver subsystem
