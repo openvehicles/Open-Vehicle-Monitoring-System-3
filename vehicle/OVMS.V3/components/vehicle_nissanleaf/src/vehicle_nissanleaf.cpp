@@ -981,16 +981,35 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // Gen 1 ZE0 Charger
       // see https://github.com/dalathegreat/leaf_can_bus_messages
 
+      bool  ac_state = (d[4] & 0x20) == 0x1; // indicates ac charge state
+      bool  qc_state = (d[4] & 0x40) == 0x1; // indicates chademo relay state
+
+      if (ac_state || qc_state) {
+          StandardMetrics.ms_v_charge_pilot->SetValue(true);
+      } else {
+          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          StandardMetrics.ms_v_charge_voltage->SetValue(0);
+      }
+
       float max_charge_power = ( (d[2] & 0x01) << 8 | d[3]) * 100; // in W
       float ac_voltage = ( ((d[5] & 0x07) << 8 | ( d[6] & 0xFC)) >> 2) * 2; // in V
       //ac_voltage = ac_voltage + 70; //Offset with 70V (why?)
 
-      StandardMetrics.ms_v_charge_voltage->SetValue(ac_voltage);
-      
+      if (ac_state) {
+         StandardMetrics.ms_v_charge_voltage->SetValue(ac_voltage);
+      } else if (qc_state) {
+         StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
+      }
+
       if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0)
       {
         StandardMetrics.ms_v_charge_climit->SetValue(max_charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
+      } else {
+        StandardMetrics.ms_v_charge_climit->SetValue(0);
+        StandardMetrics.ms_v_charge_current->SetValue(0);
+        StandardMetrics.ms_v_charge_power->SetValue(0);
       }
+
     }
       break;
     case 0x390:
@@ -1463,18 +1482,19 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         // J1772 might be connected
         // d[2] is the J1772 maximum available current, 0 if we're not plugged in
+        // NOTE: this message doesn't update except when charging.
+        // Current limit doesn't seem to go to zero after ending
         // TODO enum?
         uint8_t current_limit = d[2] / 5;
         StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
-        if (current_limit > 0 && current_limit <= 32)
+        /*if (current_limit > 0 && current_limit <= 32)
           {
-          //StandardMetrics.ms_v_charge_type->SetValue("type1");
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           }
-		else // current limit is 0
+		else
 		  {
 		  StandardMetrics.ms_v_charge_pilot->SetValue(false);
-		  }
+		  }*/
         }
 
       switch (d[4])
