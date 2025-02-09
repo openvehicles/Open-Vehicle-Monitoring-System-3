@@ -141,7 +141,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_hx = MyMetrics.InitFloat("xnl.v.b.hx", SM_STALE_HIGH, 0);
   m_soc_new_car = MyMetrics.InitFloat("xnl.v.b.soc.newcar", SM_STALE_HIGH, 0, Percentage);
   m_soc_instrument = MyMetrics.InitFloat("xnl.v.b.soc.instrument", SM_STALE_HIGH, 0, Percentage);
-  m_range_instrument = MyMetrics.InitInt("xnl.v.b.range.instrument", SM_STALE_HIGH, 0, Kilometers);
+  m_range_instrument = MyMetrics.InitInt("xnl.v.b.range.instrument", SM_STALE_HIGH, 0, Kilometers, true);
   m_bms_thermistor = MyMetrics.InitVector<int>("xnl.bms.thermistor", SM_STALE_MIN, 0, Native);
   m_bms_temp_int = MyMetrics.InitVector<int>("xnl.bms.temp.int", SM_STALE_MIN, 0, Celcius);
   m_bms_balancing = MyMetrics.InitBitset<96>("xnl.bms.balancing", SM_STALE_HIGH, 0);
@@ -188,6 +188,9 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_charge_event_reason = MyMetrics.InitString("xnl.v.c.event.reason", SM_STALE_HIGH, 0);
   m_climate_auto = MyMetrics.InitBool("xnl.v.e.hvac.auto", SM_STALE_MIN, false);
   mt_pos_odometer_start   = MyMetrics.InitFloat("xnl.v.pos.odometer.start", SM_STALE_MID, 0, Kilometers);
+  m_qc_relay_status = MyMetrics.InitFloat("xnl.v.c.relay.qc", SM_STALE_HIGH, 0);
+  m_ac_relay_status = MyMetrics.InitFloat("xnl.v.c.relay.ac", SM_STALE_HIGH, 0);
+  m_charge_mode = MyMetrics.InitInt("xnl.v.c.mode.raw", SM_STALE_HIGH, 0);
   MyMetrics.InitBool("v.e.on", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.awake", SM_STALE_MID, false);
   MyMetrics.InitBool("v.e.locked", SM_STALE_MID, false);
@@ -984,6 +987,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       bool  ac_state = (d[4] & 0x20) == 0x1; // indicates ac charge state
       bool  qc_state = (d[4] & 0x40) == 0x1; // indicates chademo relay state
 
+      m_ac_relay_status->SetValue((float)(d[4] & 0x20));
+      m_qc_relay_status->SetValue((float)(d[4] & 0x40));
+
       if (ac_state || qc_state) {
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
       } else {
@@ -1001,10 +1007,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
          StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
       }
 
-      if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0)
+      // AC Current limit on ZE0 charger is sent in another CAN message
+      if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0 && !ac_state)
       {
         StandardMetrics.ms_v_charge_climit->SetValue(max_charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
-      } else {
+      } else if (!qc_state) {
         StandardMetrics.ms_v_charge_climit->SetValue(0);
         StandardMetrics.ms_v_charge_current->SetValue(0);
         StandardMetrics.ms_v_charge_power->SetValue(0);
@@ -1024,7 +1031,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       bool  ac_state = (d[3] & 0x20) == 0x20; // indicates ac charge state
       bool  qc_state = (d[4] & 0x40) == 0x40; // indicates chademo relay state
       bool  vg_state = (d[0] >> 4 == 0x09);   // indicates v2x exporting state
-      
+
+      m_ac_relay_status->SetValue((float)(d[3] & 0x20));
+      m_qc_relay_status->SetValue((float)(d[4] & 0x40));
+
       if ( (qc_state || ac_state) && !vg_state ) 
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
       else
@@ -1469,6 +1479,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x5bf:
 		// ZE0 gen1 charger only
+      m_charge_mode->SetValue((int)d[4])
       if (d[4] == 0xb0)
         {
         // Quick Charging
