@@ -43,22 +43,25 @@ using namespace std;
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
 
-void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t& p, PageContext_t& c)
+void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
 {
   std::string error, rangeideal, battcapacity;
   bool UseBMScalculation;
 
-  if (c.method == "POST") {
-    rangeideal            = c.getvar("rangeideal");
-    battcapacity          = c.getvar("battcapacity");
-    UseBMScalculation     = (c.getvar("UseBMScalculation") == "no");
+  if (c.method == "POST")
+  {
+    rangeideal = c.getvar("rangeideal");
+    battcapacity = c.getvar("battcapacity");
+    UseBMScalculation = (c.getvar("UseBMScalculation") == "no");
 
-    if (!rangeideal.empty()) {
+    if (!rangeideal.empty())
+    {
       int v = atoi(rangeideal.c_str());
       if (v < 90 || v > 500)
         error += "<li data-input=\"rangeideal\">Range Ideal must be of 80…500 km</li>";
     }
-    if (error == "") {
+    if (error == "")
+    {
       // store:
       MyConfig.SetParamValue("xrz2o", "rangeideal", rangeideal);
       MyConfig.SetParamValue("xrz2o", "battcapacity", battcapacity);
@@ -75,10 +78,11 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t& p, PageContext_t& c)
     c.head(400);
     c.alert("danger", error.c_str());
   }
-  else {
+  else
+  {
     // read configuration:
-    rangeideal        = MyConfig.GetParamValue("xrz2o", "rangeideal", "350");
-    battcapacity      = MyConfig.GetParamValue("xrz2o", "battcapacity", "52000");
+    rangeideal = MyConfig.GetParamValue("xrz2o", "rangeideal", "350");
+    battcapacity = MyConfig.GetParamValue("xrz2o", "battcapacity", "52000");
     UseBMScalculation = MyConfig.GetParamValueBool("xrz2o", "UseBMScalculation", false);
     c.head(200);
   }
@@ -95,7 +99,7 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t& p, PageContext_t& c)
   c.input_radio_end("");
 
   c.input_slider("Range Ideal", "rangeideal", 3, "km", -1, atoi(rangeideal.c_str()), 350, 80, 500, 1,
-    "<p>Default 350km. Ideal Range...</p>");
+                 "<p>Default 350km. Ideal Range...</p>");
 
   c.fieldset_start("Battery energy calculation");
 
@@ -119,7 +123,7 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t& p, PageContext_t& c)
 void OvmsVehicleRenaultZoePh2OBD::WebInit()
 {
   MyWebServer.RegisterPage("/xrz2o/battmon", "BMS View", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xrz2o/settings", "Setup", WebCfgCommon,  PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xrz2o/settings", "Setup", WebCfgCommon, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -131,5 +135,4 @@ void OvmsVehicleRenaultZoePh2OBD::WebDeInit()
   MyWebServer.DeregisterPage("/xrz2o/settings");
 }
 
-
-#endif //CONFIG_OVMS_COMP_WEBSERVER
+#endif // CONFIG_OVMS_COMP_WEBSERVER
