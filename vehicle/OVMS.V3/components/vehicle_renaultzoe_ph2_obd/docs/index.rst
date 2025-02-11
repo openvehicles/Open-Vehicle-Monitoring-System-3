@@ -4,9 +4,8 @@ Renault Zoe Phase 2 (OBD port)
 
 Vehicle Type: **RZ2O**
 
-This vehicle type supports the Renault Zoe(PH2) ZE50 52kWh (2019-2024) through ODB2 connection. 
+This vehicle type supports the Renault Zoe(PH2) with 41 or 52kWh battery (2019-2024) through ODB2 connection. 
 
-All values are read-only, no control possible because of CAN Gateway.
 
 ----------------
 Support Overview
@@ -28,8 +27,8 @@ BMS v+t Display             Yes
 TPMS Display Zoe            Yes (Pressure and temperature)
 Charge Status Display       Yes
 Charge Interruption Alerts  Yes
-Charge Control              No (planned, but access to CAN after gw neccessary)
-Cabin Pre-heat/cool Control No (planned, but access to CAN after gw neccessary)
+Charge Control              No
+Cabin Pre-heat/cool Control Yes*
 Lock/Unlock Vehicle         Yes (display only)
 Valet Mode Control          No
 =========================== ==============
@@ -40,11 +39,25 @@ Others:
 Door open/close                     Yes (exclude hood)
 Battery full charge cycles          Yes
 Battery max charge, recd pwr        Yes
-Trip counter from Car               No (was included, but datapoint is extremly unreliable)
-Battery lifetime gauges             Yes (Charged, Recd and Used kWh)
+Trip counter from Car               No
+Battery lifetime gauges             Yes
 Heat pump power, rpm and hp press.  Yes
-Aux power gauges                    Yes (testing needed)
-Charge type                         Yes (DC charge, testing needed)
-Headlights Status                   Yes (lowbeam)
+Aux power gauges                    No
+Charge type                         Yes (DC charge testing needed)
+Headlights Status                   Yes (lowbeam only)
 Charge efficiency calculation       Yes (but only for AC, pf is measured with power analyzer and included as statics)
 =================================== ==============
+
+-------------------
+Pre-heat / climate
+-------------------
+
+If you want to preheat your car, you need to connect CAN2 from the OVMS module to the V-CAN.
+The V-CAN can be grabbed at the BCM or Can-Gateway ECU for example.
+
+------------
+TCU removal
+------------
+
+If you want to remove your TCU for privacy or other reasons, you need to wait for another integration which uses V-CAN connection to detect vehicle state.
+If you remove your TCU the OVMS will not detect car wake up.

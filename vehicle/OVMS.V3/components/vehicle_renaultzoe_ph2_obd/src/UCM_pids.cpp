@@ -24,26 +24,31 @@
 */
 #include "vehicle_renaultzoe_ph2_obd.h"
 
-void OvmsVehicleRenaultZoePh2OBD::IncomingUCM(uint16_t type, uint16_t pid, const char* data, uint16_t len) {  
-  switch (pid) {
-    case 0x6079: { //12V Battery Current
-      StandardMetrics.ms_v_charge_12v_current->SetValue((float) (CAN_UINT(0) * 0.1), Amps);
-      StandardMetrics.ms_v_bat_12v_current->SetValue((float) (CAN_UINT(0) * 0.1), Amps);
-      //ESP_LOGD(TAG, "6079 UCM ms_v_charge_12v_current: %f", CAN_UINT(0) * 0.1);
-      break;
-    }
+void OvmsVehicleRenaultZoePh2OBD::IncomingUCM(uint16_t type, uint16_t pid, const char *data, uint16_t len)
+{
+  switch (pid)
+  {
+  case 0x6079:
+  { // 12V Battery Current
+    StandardMetrics.ms_v_charge_12v_current->SetValue((float)(CAN_UINT(0) * 0.1), Amps);
+    StandardMetrics.ms_v_bat_12v_current->SetValue((float)(CAN_UINT(0) * 0.1), Amps);
+    // ESP_LOGD(TAG, "6079 UCM ms_v_charge_12v_current: %f", CAN_UINT(0) * 0.1);
+    break;
+  }
 
-    default: {
-      char *buf = NULL;
-      size_t rlen = len, offset = 0;
-      do {
-        rlen = FormatHexDump(&buf, data + offset, rlen, 16);
-        offset += 16;
-        ESP_LOGW(TAG, "OBD2: unhandled reply from UCM [%02x %02x]: %s", type, pid, buf ? buf : "-");
-      } while (rlen);
-      if (buf)
-        free(buf);
-      break;
-    }
+  default:
+  {
+    char *buf = NULL;
+    size_t rlen = len, offset = 0;
+    do
+    {
+      rlen = FormatHexDump(&buf, data + offset, rlen, 16);
+      offset += 16;
+      ESP_LOGW(TAG, "OBD2: unhandled reply from UCM [%02x %02x]: %s", type, pid, buf ? buf : "-");
+    } while (rlen);
+    if (buf)
+      free(buf);
+    break;
+  }
   }
 }
