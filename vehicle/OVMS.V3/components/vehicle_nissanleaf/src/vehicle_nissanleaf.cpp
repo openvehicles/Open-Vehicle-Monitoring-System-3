@@ -1513,7 +1513,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x18: // Signal cable plugged in (beep sound)
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           break;
-        case 0x38: // Present when vehicle is off
+        case 0x38: // Present when vehicle is off, no cable plugged or charger is "asleep" (with cable plugged)
+          break;
         case 0x28: // Present when vehicle is on
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
@@ -1737,8 +1738,8 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
 
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2012) {
      CommandWakeup();
-  } else {
-     CommandWakeupTCU();
+  } else if (MyConfig.GetParamValueBool("xnl", "command.wakeup", true)) {
+       CommandWakeupTCU();
   }
   switch (command)
     {
@@ -2364,7 +2365,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(Remot
   // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
   {
-    CommandWakeupTCU();
+    if (MyConfig.GetParamValueBool("xnl", "command.wakeup", true)) {
+       CommandWakeupTCU();
+    }
     MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 1);
     ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST ON");
   } else {
