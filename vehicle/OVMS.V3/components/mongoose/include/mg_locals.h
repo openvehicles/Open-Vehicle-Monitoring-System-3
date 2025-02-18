@@ -78,6 +78,10 @@
 
 #endif
 
+#ifdef CONFIG_LWIP_IPV6
+  #define MG_ENABLE_IPV6 1
+#endif
+
 // Override memory allocation macros in mongoose.c
 #define CS_COMMON_MG_MEM_H_
 #define MG_MALLOC ExternalRamMalloc

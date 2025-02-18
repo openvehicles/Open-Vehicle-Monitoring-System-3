@@ -160,7 +160,6 @@ void OvmsVehicleRenaultTwizy::CanResponder(const CAN_frame_t* p_frame)
   }
 }
 
-
 /**
  * Asynchronous CAN RX handler
  */
@@ -353,12 +352,8 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
             }
           }
         }
-        
-        // detect fetch completion:
-        twizy_batt_sensors_state |= BATT_SENSORS_GOT554;
-        if ((twizy_batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
-          BatteryUpdate();
-        }
+
+        BatterySetSensorAndUpdate(BATT_SENSORS_GOT554);
       }
       break;
     
@@ -409,11 +404,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         twizy_cell[8].volt_new = ((UINT) CAN_NIBL(4) << 8) | ((UINT) CAN_BYTE(5));
         twizy_cell[9].volt_new = ((UINT) CAN_BYTE(6) << 4) | ((UINT) CAN_NIBH(7));
 
-        // detect fetch completion:
-        twizy_batt_sensors_state |= BATT_SENSORS_GOT557;
-        if ((twizy_batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
-          BatteryUpdate();
-        }
+        BatterySetSensorAndUpdate(BATT_SENSORS_GOT557);
       }
       break;
     
@@ -428,11 +419,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         twizy_cell[12].volt_new = ((UINT) CAN_BYTE(3) << 4) | ((UINT) CAN_NIBH(4));
         twizy_cell[13].volt_new = ((UINT) CAN_NIBL(4) << 8) | ((UINT) CAN_BYTE(5));
 
-        // detect fetch completion:
-        twizy_batt_sensors_state |= BATT_SENSORS_GOT55E;
-        if ((twizy_batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
-          BatteryUpdate();
-        }
+        BatterySetSensorAndUpdate(BATT_SENSORS_GOT55E);
       }
       break;
     
@@ -449,11 +436,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         v2 = ((UINT) CAN_NIBL(6) << 8) | ((UINT) CAN_BYTE(7));
         twizy_batt[0].volt_new = (v1 + v2 + 1) >> 1;
 
-        // detect fetch completion:
-        twizy_batt_sensors_state |= BATT_SENSORS_GOT55F;
-        if ((twizy_batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
-          BatteryUpdate();
-        }
+        BatterySetSensorAndUpdate(BATT_SENSORS_GOT55F);
       }
       break;
     
@@ -757,11 +740,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         }
 
-        // detect fetch completion:
-        twizy_batt_sensors_state |= BATT_SENSORS_GOT700;
-        if ((twizy_batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
-          BatteryUpdate();
-        }
+        BatterySetSensorAndUpdate(BATT_SENSORS_GOT700);
       }
       break;
       

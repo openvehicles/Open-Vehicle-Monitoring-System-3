@@ -31,6 +31,7 @@
 #ifndef __VEHICLE_H__
 #define __VEHICLE_H__
 
+#include <cmath>
 #include <map>
 #include <vector>
 #include <string>

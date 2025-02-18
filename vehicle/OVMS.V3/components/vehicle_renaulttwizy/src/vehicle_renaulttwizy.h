@@ -374,6 +374,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void BatteryUpdate();
     void BatteryReset();
     void BatterySendDataUpdate(bool force = false);
+    void BatterySetSensorAndUpdate(uint8_t flag);
     vehicle_command_t CommandBatt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   
   protected:
