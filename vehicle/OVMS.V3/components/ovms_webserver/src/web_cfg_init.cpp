@@ -57,6 +57,79 @@ static const char *TAG = "webserver";
 
 #ifdef WEBSRV_HAVE_SETUPWIZARD
 
+struct wizard_info_t {
+  const char *title, *desc;
+};
+static const int wizard_count = 5;
+static const wizard_info_t wizards[wizard_count] = {
+  {"Secure Module", "Secure module access" },
+  {"Connect to Internet", "Connect module to internet (via Wifi)"},
+#ifdef CONFIG_OVMS_COMP_OTA
+  {"Update Firmware", "Update to latest firmware version"},
+#else
+  {NULL,NULL},
+#endif
+  {"Vehicle &amp; Server", "Configure vehicle type and server"},
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  {"Cellular Modem", "Configure cellular modem (if equipped)"}
+#else
+  {NULL,NULL}
+#endif
+};
+
+static int WizardNumber( int wizardNo)
+{
+  int count = 0;
+  for (int i = 0; i < wizardNo; ++i) {
+    if (wizards[i].desc)
+      ++count;
+  }
+  return count;
+}
+// Returns the active wizard pages (the number of the last page)
+static inline int WizardCount()
+{
+  return WizardNumber(wizard_count);
+}
+
+/**
+ * Returns the setup wizard header.
+ * Indexed from 1.
+ * Has the current one bolded and previous ones checked.
+ */
+static std::string WizardStatus(int wizardNo)
+{
+  --wizardNo;
+  std::ostringstream os;
+  os << "<p class=\"lead\">Quick setup wizard</p>"
+        "<ol>";
+  for (int i = 0; i < wizard_count; ++i) {
+    if (!wizards[i].desc)
+      continue;
+    os << "<li>";
+    bool isStrong = (i == wizardNo);
+    if (isStrong)
+      os << "<strong>";
+    os << wizards[i].desc;
+    if (i < wizardNo)
+      os << "<span class=\"checkmark\">✔</span>";
+    else if (isStrong)
+      os << "</strong>";
+    os << "</li>";
+  }
+  os << "</ol>";
+  return os.str();
+}
+
+static std::string WizardFormHeader(int wizardNo)
+{
+  std::ostringstream os;
+  const char *title = wizards[wizardNo-1].title;
+  os << "Step " << WizardNumber(wizardNo) << '/' << WizardCount() << ": "
+    << (title ? title : "(not included)");
+  return os.str();
+}
+
 /**
  * HandleCfgInit: /cfg/init: setup wizard dispatcher
  */
@@ -415,15 +488,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
   }
 
   // Wizard status:
-  c.alert("info",
-    "<p class=\"lead\">Quick setup wizard</p>"
-    "<ol>"
-      "<li><strong>Secure module access</strong></li>"
-      "<li>Connect module to internet (via Wifi)</li>"
-      "<li>Update to latest firmware version</li>"
-      "<li>Configure vehicle type and server</li>"
-      "<li>Configure cellular modem (if equipped)</li>"
-    "</ol>");
+  c.alert("info", WizardStatus(1).c_str());
 
   // create some random passwords:
   std::ostringstream pwsugg;
@@ -434,7 +499,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
   pwsugg << "</p>";
 
   // generate form:
-  c.panel_start("primary", "Step 1/5: Secure Module");
+  c.panel_start("primary", WizardFormHeader(1).c_str());
 
   c.print(
     "<p>Your module may currently be accessed by anyone in Wifi range using the default"
@@ -564,18 +629,10 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
   }
 
   // Wizard status:
-  c.alert("info",
-    "<p class=\"lead\">Quick setup wizard</p>"
-    "<ol>"
-      "<li>Secure module access <span class=\"checkmark\">✔</span></li>"
-      "<li><strong>Connect module to internet (via Wifi)</strong></li>"
-      "<li>Update to latest firmware version</li>"
-      "<li>Configure vehicle type and server</li>"
-      "<li>Configure cellular modem (if equipped)</li>"
-    "</ol>");
+  c.alert("info", WizardStatus(2).c_str());
 
   // generate form:
-  c.panel_start("primary", "Step 2/5: Connect to Internet");
+  c.panel_start("primary", WizardFormHeader(2).c_str());
 
   c.print(
     "<p>Your module now needs an internet connection to download the latest firmware"
@@ -829,18 +886,10 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
   }
 
   // Wizard status:
-  c.alert("info",
-    "<p class=\"lead\">Quick setup wizard</p>"
-    "<ol>"
-      "<li>Secure module access <span class=\"checkmark\">✔</span></li>"
-      "<li>Connect module to internet (via Wifi) <span class=\"checkmark\">✔</span></li>"
-      "<li><strong>Update to latest firmware version</strong></li>"
-      "<li>Configure vehicle type and server</li>"
-      "<li>Configure cellular modem (if equipped)</li>"
-    "</ol>");
+  c.alert("info", WizardStatus(3).c_str());
 
   // form:
-  c.panel_start("primary", "Step 3/5: Update Firmware");
+  c.panel_start("primary", WizardFormHeader(3).c_str());
   c.form_start(p.uri);
   c.input_radio_start("Update server", "server");
   c.input_radio_option("server", "Asia-Pacific (openvehicles.com)",
@@ -1027,18 +1076,10 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
   }
 
   // Wizard status:
-  c.alert("info",
-    "<p class=\"lead\">Quick setup wizard</p>"
-    "<ol>"
-      "<li>Secure module access <span class=\"checkmark\">✔</span></li>"
-      "<li>Connect module to internet (via Wifi) <span class=\"checkmark\">✔</span></li>"
-      "<li>Update to latest firmware version <span class=\"checkmark\">✔</span></li>"
-      "<li><strong>Configure vehicle type and server</strong></li>"
-      "<li>Configure cellular modem (if equipped)</li>"
-    "</ol>");
+  c.alert("info", WizardStatus(4).c_str());
 
   // form:
-  c.panel_start("primary", "Step 4/5: Vehicle &amp; Server");
+  c.panel_start("primary", WizardFormHeader(4).c_str());
   c.form_start(p.uri);
 
   c.input_select_start("Vehicle type", "vehicletype");
@@ -1207,18 +1248,10 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
   }
 
   // Wizard status:
-  c.alert("info",
-    "<p class=\"lead\">Quick setup wizard</p>"
-    "<ol>"
-      "<li>Secure module access <span class=\"checkmark\">✔</span></li>"
-      "<li>Connect module to internet (via Wifi) <span class=\"checkmark\">✔</span></li>"
-      "<li>Update to latest firmware version <span class=\"checkmark\">✔</span></li>"
-      "<li>Configure vehicle type and server <span class=\"checkmark\">✔</span></li>"
-      "<li><strong>Configure cellular modem (if equipped)</strong></li>"
-    "</ol>");
+  c.alert("info", WizardStatus(5).c_str());
 
   // form:
-  c.panel_start("primary", "Step 5/5: Cellular Modem");
+  c.panel_start("primary", WizardFormHeader(5).c_str());
   c.form_start(p.uri);
 
   std::string iccid = StdMetrics.ms_m_net_mdm_iccid->AsString();
