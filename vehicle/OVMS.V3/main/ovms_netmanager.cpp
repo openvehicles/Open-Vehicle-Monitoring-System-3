@@ -867,7 +867,8 @@ void SafePrioritiseAndIndicate(void* ctx)
 
 void OvmsNetManager::PrioritiseAndIndicate()
   {
-  tcpip_callback_with_block(SafePrioritiseAndIndicate, NULL, 1);
+  if (tcpip_callback_with_block(SafePrioritiseAndIndicate, NULL, 1) == ERR_OK)
+    m_tcpip_callback_done.Take();
   }
 
 void OvmsNetManager::DoSafePrioritiseAndIndicate()
@@ -905,6 +906,7 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
   if (search == NULL)
     {
     SetNetType("none");
+    m_tcpip_callback_done.Give();
     return;
     }
 
@@ -925,10 +927,12 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
         }
       netif_set_default(pri);
       SetDNSServer(dns);
+      m_tcpip_callback_done.Give();
       return;
       }
     }
   ESP_LOGE(TAG, "Inconsistent state: no interface of type '%s' found", search);
+  m_tcpip_callback_done.Give();
   }
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

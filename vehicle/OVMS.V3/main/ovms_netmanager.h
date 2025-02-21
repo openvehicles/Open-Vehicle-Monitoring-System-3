@@ -167,6 +167,7 @@ class OvmsNetManager
     struct mg_mgr m_mongoose_mgr;
     bool m_mongoose_running;
     QueueHandle_t m_jobqueue;
+    OvmsSemaphore m_tcpip_callback_done;    // block until tcpip callback done (see PrioritiseAndIndicate)
 
   public:
     void MongooseTask();
