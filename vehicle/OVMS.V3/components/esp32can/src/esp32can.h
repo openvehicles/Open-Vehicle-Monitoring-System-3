@@ -68,6 +68,7 @@ class esp32can : public canbus
 
   public:
     void SetPowerMode(PowerMode powermode);
+    bool GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags) override;
 
   public:
     gpio_num_t m_txpin;               // TX pin

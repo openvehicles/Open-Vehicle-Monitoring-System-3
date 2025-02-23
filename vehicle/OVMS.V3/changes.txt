@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- CAN: add error flag decoding (included in can status output)
+  New commands:
+    can <bus> explain [errorflags]    -- Decode error flags into human readable text 
 - DBC Files
   Add unit support
 - OVMS Server v3: Ability to define less frequent MQTT communication to save data charges and power

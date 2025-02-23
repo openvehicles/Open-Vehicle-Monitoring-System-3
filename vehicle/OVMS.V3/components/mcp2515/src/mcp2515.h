@@ -61,6 +61,7 @@ class mcp2515 : public canbus
 
   public:
     void SetPowerMode(PowerMode powermode);
+    bool GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags) override;
 
   public:
     spi* m_spibus;

@@ -697,3 +697,55 @@ void mcp2515::SetPowerMode(PowerMode powermode)
       break;
     }
   }
+
+
+/**
+ * GetErrorFlagsDesc: decode error flags into human readable text
+ */
+bool mcp2515::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
+  {
+  // error_flags = (intstat << 24) | (errflag << 16) | intflag;
+  uint8_t intstat   = (error_flags >> 24) & 0xff;
+  uint8_t errflag   = (error_flags >> 16) & 0xff;
+  uint16_t intflag  = error_flags & 0xffff;
+
+  std::ostringstream ss;
+
+  if (intstat)
+    {
+    if (intstat & CANINTF_MERRF)    ss << " | " << "IR.7 RX/TX Message error";
+    if (intstat & CANINTF_WAKIF)    ss << " | " << "IR.6 Wakeup";
+    if (intstat & CANINTF_ERRIF)    ss << " | " << "IR.5 Error state change";
+    if (intstat & CANINTF_TX2IF)    ss << " | " << "IR.4 TX buffer 2 empty";
+    if (intstat & CANINTF_TX1IF)    ss << " | " << "IR.3 TX buffer 1 empty";
+    if (intstat & CANINTF_TX0IF)    ss << " | " << "IR.2 TX buffer 0 empty";
+    if (intstat & CANINTF_RX1IF)    ss << " | " << "IR.1 RX buffer 1 full";
+    if (intstat & CANINTF_RX0IF)    ss << " | " << "IR.0 RX buffer 0 full";
+    }
+  
+  if (errflag)
+    {
+    if (ss.tellp() > 0) ss << "\n";
+    if (errflag & EFLG_RX1OVR)      ss << " | " << "EF.7 Receive Buffer 1 Overflow";
+    if (errflag & EFLG_RX0OVR)      ss << " | " << "EF.6 Receive Buffer 0 Overflow";
+    if (errflag & EFLG_TXBO)        ss << " | " << "EF.5 Bus-Off Error (TEC == 255)";
+    if (errflag & EFLG_TXEP)        ss << " | " << "EF.4 Transmit Error-Passive (TEC >= 128)";
+    if (errflag & EFLG_RXEP)        ss << " | " << "EF.3 Receive Error-Passive (REC >= 128)";
+    if (errflag & EFLG_TXWAR)       ss << " | " << "EF.2 Transmit Error Warning (TEC >= 96)";
+    if (errflag & EFLG_RXWAR)       ss << " | " << "EF.1 Receive Error Warning (REC >= 96)";
+    if (errflag & EFLG_EWARN)       ss << " | " << "EF.0 Error Warning (TXWAR or RXWAR set)";
+    }
+  
+  if (intflag & 0xff00)
+    {
+    if (ss.tellp() > 0) ss << "\n";
+    if (intflag & 0x0100)           ss << " | " << "IF.1 TX success detected, buffer(s) cleared";
+    if (intflag & 0x0200)           ss << " | " << "IF.2 RXB1 overflow detected (frame lost)";
+    if (intflag & 0x0400)           ss << " | " << "IF.3 RXB0 overflow detected (frame in RXB1)";
+    if (intflag & 0x0800)           ss << " | " << "IF.4 RX buffer overflow flags cleared";
+    if (intflag & 0x1000)           ss << " | " << "IF.5 Error & wakeup interrupts cleared";
+    }
+  
+  buffer = ss.str();
+  return true;
+  }

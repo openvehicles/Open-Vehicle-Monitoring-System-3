@@ -373,6 +373,12 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Tx fails:  %20" PRId32 "\n",sbus->m_status.tx_fails);
 
   writer->printf("\nErr flags: 0x%08" PRIx32 "\n",sbus->m_status.error_flags);
+  std::string efdesc;
+  if (sbus->GetErrorFlagsDesc(efdesc, sbus->m_status.error_flags))
+    {
+    replace_substrings(efdesc, "\n", "\n        ");
+    writer->printf("        %s\n", efdesc.c_str());
+    }
   writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
   writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
   writer->printf("Rx invalid:%20d\n",sbus->m_status.invalid_rx);
@@ -382,6 +388,40 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     writer->printf("Wdg Timer: %20" PRId32 " sec(s)\n",monotonictime-sbus->m_watchdog_timer);
     }
   writer->printf("Err Resets:%20d\n",sbus->m_status.error_resets);
+  }
+
+void can_explain_flags(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  uint32_t error_flags = 0;
+  if (argc == 0)
+    {
+    error_flags = sbus->m_status.error_flags;
+    }
+  else
+    {
+    const char *hex = argv[0];
+    if (hex[0] == '0' && hex[1] == 'x') hex += 2;
+    sscanf(hex, "%x", &error_flags);
+    }
+
+  std::string efdesc;
+  if (sbus->GetErrorFlagsDesc(efdesc, error_flags))
+    {
+    writer->printf("Bus error flags 0x%08" PRIx32 ":\n", error_flags);
+    writer->printf("%s\n", efdesc.empty() ? "No error indication" : efdesc.c_str());
+    }
+  else
+    {
+    writer->puts("ERROR: bus does not provide error flag decoding");
+    }
   }
 
 void can_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -774,6 +814,14 @@ const char* canbus::GetErrorStateName()
   return GetCanErrorStateName(GetErrorState());
   }
 
+/**
+ * GetErrorFlagsDesc: decode error flags into human readable text
+ *  (see overrides for bus specific implementations)
+ */
+bool canbus::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
+  {
+  return false;
+  }
 
 uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv, OvmsWriter* writer)
   {
@@ -1053,6 +1101,9 @@ can::can()
     cmd_cantesttx->RegisterCommand("extended","Transmit test extended CAN frames",can_testtx,"<id> <count> <delayms>", 3, 3);
     cmd_canx->RegisterCommand("status","Show CAN status",can_status);
     cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus);
+    cmd_canx->RegisterCommand("explain","Explain CAN error flags", can_explain_flags, "[<errorflags>]\n"
+      "Produce a human readable decoding of the current or given error flags for the bus, if available.\n"
+      "Enter <errorflags> hexadecimal as shown in the status output, with/without '0x' prefix.\n", 0, 1);
     cmd_canx->RegisterCommand("viewregisters","view can controller registers",can_view_registers);
     cmd_canx->RegisterCommand("setregister","set can controller register",can_set_register,"<reg> <value>",2,2);
     }

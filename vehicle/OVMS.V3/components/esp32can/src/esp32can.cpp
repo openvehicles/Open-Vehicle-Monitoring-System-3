@@ -731,3 +731,91 @@ void esp32can::SetPowerMode(PowerMode powermode)
       break;
     };
   }
+
+
+/**
+ * GetErrorFlagsDesc: decode error flags into human readable text
+ */
+bool esp32can::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
+  {
+  // error_flags = error_irqs << 16 | (status & 0b11001110) << 8 | (ecc & 0xff)
+  uint16_t irqs  = (error_flags >> 16) & 0xffff;
+  uint8_t status = (error_flags >> 8) & 0xff;
+  uint8_t ecc    = error_flags & 0xff;
+
+  std::ostringstream ss;
+
+  // Note: some IRQ bits are normally masked out, decode assuming all can occur:
+  if (irqs)
+    {
+    if (irqs & __CAN_IRQ_INVALID_RX)      ss << " | " << "IR.8 Invalid RX frame";
+    if (irqs & __CAN_IRQ_BUS_ERR)         ss << " | " << "IR.7 Bus error";
+    if (irqs & __CAN_IRQ_ARB_LOST)        ss << " | " << "IR.6 Arbitration lost";
+    if (irqs & __CAN_IRQ_ERR_PASSIVE)     ss << " | " << "IR.5 Error-passive state";
+    if (irqs & __CAN_IRQ_WAKEUP)          ss << " | " << "IR.4 Wakeup";
+    if (irqs & __CAN_IRQ_DATA_OVERRUN)    ss << " | " << "IR.3 Data overrun";
+    if (irqs & __CAN_IRQ_ERR_WARNING)     ss << " | " << "IR.2 Error-warning state";
+    if (irqs & __CAN_IRQ_TX)              ss << " | " << "IR.1 TX buffer free";
+    if (irqs & __CAN_IRQ_RX)              ss << " | " << "IR.0 RX buffer not empty";
+    }
+  
+  if (status)
+    {
+    if (ss.tellp() > 0) ss << "\n";
+    if (status & __CAN_STS_BUS_OFF)       ss << " | " << "SR.7 Bus-off state";
+    if (status & __CAN_STS_ERR_WARNING)   ss << " | " << "SR.6 Error count >= 96";
+    if (status & __CAN_STS_TXPEND)        ss << " | " << "SR.5 TX pending";
+    if (status & __CAN_STS_RXPEND)        ss << " | " << "SR.4 RX pending";
+    if (status & __CAN_STS_TXDONE)        ss << " | " << "SR.3 TX done";
+    if (status & __CAN_STS_TXFREE)        ss << " | " << "SR.2 TX buffer free";
+    if (status & __CAN_STS_DATA_OVERRUN)  ss << " | " << "SR.1 Data overrun";
+    if (status & __CAN_STS_RXBUF)         ss << " | " << "SR.0 RX buffer not empty";
+    }
+  
+  if (ecc)
+    {
+    if (ss.tellp() > 0) ss << "\n";
+    switch ((ecc & __CAN_ECC_ERRC) >> 6)
+      {
+      case 0b00: ss << " | " << "ECC Bit error"; break;
+      case 0b01: ss << " | " << "ECC Form error"; break;
+      case 0b10: ss << " | " << "ECC Stuff error"; break;
+      case 0b11: ss << " | " << "ECC Other error"; break;
+      }
+    ss
+      << " in "
+      << ((ecc & __CAN_ECC_DIR) ? "RX" : "TX")
+      << ", segment ";
+    switch (ecc & __CAN_ECC_SEGMENT)
+      {
+      case 0b00011: ss << "start of frame"; break;
+      case 0b00010: ss << "ID.28 to ID.21"; break;
+      case 0b00110: ss << "ID.20 to ID.18"; break;
+      case 0b00100: ss << "bit SRTR"; break;
+      case 0b00101: ss << "bit IDE"; break;
+      case 0b00111: ss << "ID.17 to ID.13"; break;
+      case 0b01111: ss << "ID.12 to ID.5"; break;
+      case 0b01110: ss << "ID.4 to ID.0"; break;
+      case 0b01100: ss << "bit RTR"; break;
+      case 0b01101: ss << "reserved bit 1"; break;
+      case 0b01001: ss << "reserved bit 0"; break;
+      case 0b01011: ss << "data length code"; break;
+      case 0b01010: ss << "data field"; break;
+      case 0b01000: ss << "CRC sequence"; break;
+      case 0b11000: ss << "CRC delimiter"; break;
+      case 0b11001: ss << "acknowledge slot"; break;
+      case 0b11011: ss << "acknowledge delimiter"; break;
+      case 0b11010: ss << "end of frame"; break;
+      case 0b10010: ss << "intermission"; break;
+      case 0b10001: ss << "active error flag"; break;
+      case 0b10110: ss << "passive error flag"; break;
+      case 0b10011: ss << "tolerate dominant bits"; break;
+      case 0b10111: ss << "error delimiter"; break;
+      case 0b11100: ss << "overload flag"; break;
+      default: ss << (int)(ecc & __CAN_ECC_SEGMENT);
+      }
+    }
+  
+  buffer = ss.str();
+  return true;
+  }

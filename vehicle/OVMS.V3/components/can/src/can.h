@@ -328,6 +328,7 @@ class canbus : public pcp, public InternalRamAllocated
     bool StatusChanged();
     CAN_errorstate_t GetErrorState();
     const char* GetErrorStateName();
+    virtual bool GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags);
 
   public:
     CAN_speed_t m_speed;
