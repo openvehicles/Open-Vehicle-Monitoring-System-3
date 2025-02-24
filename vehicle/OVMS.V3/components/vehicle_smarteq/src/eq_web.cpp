@@ -76,30 +76,69 @@ void OvmsVehicleSmartEQ::WebDeInit()
  */
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
-  std::string error, info, TPMS_FL, TPMS_FR, TPMS_RL, TPMS_RR;
-  bool canwrite, led, ios, resettrip;
+  std::string error, info, TPMS_FL, TPMS_FR, TPMS_RL, TPMS_RR, bstime,full_km, rebootnw, bsdbt, net_type;
+  bool canwrite, led, ios, resettrip, resettotal, bsact, bcvalue, climate, gpsonoff, charge12v, v2server;
 
   if (c.method == "POST") {
     // process form submission:
-    canwrite = (c.getvar("canwrite") == "yes");
-    led = (c.getvar("led") == "yes");
-    ios = (c.getvar("ios") == "yes");
-    resettrip = (c.getvar("resettrip") == "yes");
-    TPMS_FL = c.getvar("TPMS_FL");
-    TPMS_FR = c.getvar("TPMS_FR");
-    TPMS_RL = c.getvar("TPMS_RL");
-    TPMS_RR = c.getvar("TPMS_RR");
-
+    canwrite    = (c.getvar("canwrite") == "yes");
+    led         = (c.getvar("led") == "yes");
+    ios         = (c.getvar("ios") == "yes");
+    rebootnw    = (c.getvar("rebootnw"));
+    resettrip   = (c.getvar("resettrip") == "yes");
+    TPMS_FL     = c.getvar("TPMS_FL");
+    TPMS_FR     = c.getvar("TPMS_FR");
+    TPMS_RL     = c.getvar("TPMS_RL");
+    TPMS_RR     = c.getvar("TPMS_RR");
+    resettotal  = (c.getvar("resettotal") == "yes");
+    bsact       = (c.getvar("bsact") == "yes");
+    bsdbt       = (c.getvar("bsdbt"));
+    bstime      = (c.getvar("bstime"));
+    bcvalue     = (c.getvar("bcvalue") == "yes");
+    int bsactint = 0;
+    int bsdbtint = 1;
+    if(bsact){bsactint = 1;}else{bsactint = 0;};
+    if(atoi(bsdbt.c_str()) == 5 ){bsdbtint = 0;};
+    if(atoi(bsdbt.c_str()) == 10 ){bsdbtint = 1;};
+    if(atoi(bsdbt.c_str()) == 15 ){bsdbtint = 2;};
+    int bstimeint = atoi(bstime.c_str());
+    char buf[10];
+    if(bstimeint > 959){
+      sprintf(buf, "1,%d,0,%d,-1,-1,%d",bsactint , bstimeint, bsdbtint);
+    } else if((bstimeint < 960)&&(bstimeint > 59)){
+      sprintf(buf, "1,%d,0,0%d,-1,-1,%d",bsactint , bstimeint, bsdbtint);
+    } else if((bstimeint < 60)&&(bstimeint > 9)){
+      sprintf(buf, "1,%d,0,00%d,-1,-1,%d",bsactint , bstimeint, bsdbtint);
+    } else {
+      sprintf(buf, "1,%d,0,000%d,-1,-1,%d",bsactint , bstimeint, bsdbtint);
+    }
+    full_km  =  (c.getvar("full_km"));
+    climate = (c.getvar("climate") == "yes");
+    gpsonoff = (c.getvar("gpsonoff") == "yes");
+    charge12v = (c.getvar("charge12v") == "yes");
+    v2server = (c.getvar("v2server") == "yes");
+    net_type = c.getvar("net_type");
+    
     if (error == "") {
       // success:
       MyConfig.SetParamValueBool("xsq", "canwrite", canwrite);
       MyConfig.SetParamValueBool("xsq", "led", led);
       MyConfig.SetParamValueBool("xsq", "ios_tpms_fix", ios);
+      MyConfig.SetParamValue("xsq", "rebootnw", rebootnw);
       MyConfig.SetParamValueBool("xsq", "resettrip", resettrip);
       MyConfig.SetParamValue("xsq", "TPMS_FL", TPMS_FL);
       MyConfig.SetParamValue("xsq", "TPMS_FR", TPMS_FR);
       MyConfig.SetParamValue("xsq", "TPMS_RL", TPMS_RL);
       MyConfig.SetParamValue("xsq", "TPMS_RR", TPMS_RR);
+      MyConfig.SetParamValueBool("xsq", "resettotal", resettotal);
+      MyConfig.SetParamValue("usr", "b.data", string(buf));
+      MyConfig.SetParamValueBool("xsq", "bcvalue", bcvalue);
+      MyConfig.SetParamValue("xsq", "full.km", full_km);
+      MyConfig.SetParamValueBool("xsq", "booster.system", climate);
+      MyConfig.SetParamValueBool("xsq", "gps.onoff", gpsonoff);
+      MyConfig.SetParamValueBool("xsq", "12v.charge", charge12v);
+      MyConfig.SetParamValueBool("xsq", "v2.check", v2server);
+      MyConfig.SetParamValue("xsq", "modem.net.type", net_type);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -116,30 +155,42 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    canwrite = MyConfig.GetParamValueBool("xsq", "canwrite", false);
-    led = MyConfig.GetParamValueBool("xsq", "led", false);
-    ios = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
-    resettrip = MyConfig.GetParamValueBool("xsq", "resettrip", false);
-    TPMS_FL = MyConfig.GetParamValue("xsq", "TPMS_FL", "0");
-    TPMS_FR = MyConfig.GetParamValue("xsq", "TPMS_FR", "1");
-    TPMS_RL = MyConfig.GetParamValue("xsq", "TPMS_RL", "2");
-    TPMS_RR = MyConfig.GetParamValue("xsq", "TPMS_RR", "3");
+    canwrite    = MyConfig.GetParamValueBool("xsq", "canwrite", false);
+    led         = MyConfig.GetParamValueBool("xsq", "led", false);
+    ios         = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", true);
+    rebootnw    = MyConfig.GetParamValue("xsq", "rebootnw", "0");
+    resettrip   = MyConfig.GetParamValueBool("xsq", "resettrip", false);
+    TPMS_FL     = MyConfig.GetParamValue("xsq", "TPMS_FL", "0");
+    TPMS_FR     = MyConfig.GetParamValue("xsq", "TPMS_FR", "1");
+    TPMS_RL     = MyConfig.GetParamValue("xsq", "TPMS_RL", "2");
+    TPMS_RR     = MyConfig.GetParamValue("xsq", "TPMS_RR", "3");
+    resettotal  = MyConfig.GetParamValueBool("xsq", "resettotal", false);
+    bsact       = MyConfig.GetParamValueBool("xsq", "booster.on", false);
+    bsdbt       = MyConfig.GetParamValue("xsq", "booster.1to3", "1");
+    bstime      = MyConfig.GetParamValue("xsq", "booster.time", "0515");
+    bcvalue     = MyConfig.GetParamValueBool("xsq", "bcvalue", false);
+    full_km     = MyConfig.GetParamValue("xsq", "full.km", "135");
+    climate     = MyConfig.GetParamValueBool("xsq", "booster.system", false);
+    gpsonoff    = MyConfig.GetParamValueBool("xsq", "gps.onoff", false);
+    charge12v   = MyConfig.GetParamValueBool("xsq", "12v.charge", false);
+    v2server    = MyConfig.GetParamValueBool("xsq", "v2.check", false);
+    net_type    = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
     c.head(200);
   }
 
   // generate form:
-  c.panel_start("primary", "Smart EQ feature configuration");
+  c.panel_start("primary", "smart EQ features configuration");
   c.form_start(p.uri);
-
+  
   c.fieldset_start("Remote Control");
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
   c.fieldset_end();
 
+  // TPMS settings
   c.fieldset_start("TPMS Settings");
-  c.input_checkbox("Enable IOS TPMS fix", "ios", ios,
+  c.input_checkbox("Enable iOS TPMS fix", "ios", ios,
     "<p>Set External Temp to TPMS Temps to Display Tire Pressurs in IOS</p>");
-  
   c.input_select_start("Front Left Sensor", "TPMS_FL");
   c.input_select_option("Front_Left",  "0", TPMS_FL == "0");
   c.input_select_option("Front_Right", "1", TPMS_FL == "1");
@@ -169,14 +220,49 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_select_end();
   c.fieldset_end();
 
-  c.fieldset_start("Trip Settings");
+  // trip reset or OCS activation
+  c.fieldset_start("Trip on Car site, on Battery site long term calculated or OCS kWh/100km");
   c.input_checkbox("Enable Reset Trip when Charging", "resettrip", resettrip,
     "<p>Enable = Reset Trip Values when Chaging, Disable = Reset Trip Values when Driving</p>");
+  c.input_checkbox("Enable reset Battery site kWh/100km when Car switched on", "resettotal", resettotal,
+    "<p>Enable = Reset calculated kWh/100km values on Battery site when Car switched on, auto disabled when resetted</p>");
+  c.input_checkbox("Enable OCS kWh/100km value", "bcvalue", bcvalue,
+    "<p>Enable = show On-Board Computer System (OCS) kWh/100km value on Battery site</p>");
+  c.input_slider("WLTP km", "full_km", 3, "km",
+    atof(full_km.c_str()) > 0, atof(full_km.c_str()), 126, 100, 180, 1,
+  "<p>set default max Range (126km WLTP, 155km NFEZ) at full charged HV for calculate ideal Range</p>");
+  c.fieldset_end();
+
+  // scheduled_booster plugin
+  c.fieldset_start("Climate/Heater start timer");
+  c.input_checkbox("Enable Climate/Heater at time", "bsact", bsact,
+    "<p>Enable = start Climate/Heater at time</p>");
+  //c.input_checkbox("Enable two time activation Climate/Heater", "bsdbt", bsdbt,
+  c.input_slider("Enable two time activation Climate/Heater", "bsdbt", 3, "min",
+    atof(bsdbt.c_str()) > 0, atof(bsdbt.c_str()), 5, 5, 15, 5,
+    "<p>Enable = this option start Climate/Heater for 5-15 minutes</p>");
+  c.input_text("time", "bstime", bstime.c_str(), "515","<p>Time: 5:15 = 515 or 15:30 = 1530</p>");
   c.fieldset_end();
 
   c.fieldset_start("Diff Settings");
   c.input_checkbox("Enable/Disable Online state LED when installed", "led", led,
     "<p>RED=Internet no, BLUE=Internet yes, GREEN=Server v2 connected.<br>EGPIO Port 7,8,9 are used</p>");
+  c.input_checkbox("Enable Climate System", "climate", climate,
+    "<p>Enable = time based Climate control</p>");
+  c.input_checkbox("Enable GPS off at Parking", "gpsonoff", gpsonoff,
+    "<p>Enable = switch GPS off at Parking for power saving. Every 50 minutes powered on the GPS for 10 minutes.</p>");
+  c.input_checkbox("Enable 12V charging", "charge12v", charge12v,
+    "<p>Enable = charge the 12V if low 12V alert is raised</p>");
+  c.input_checkbox("Enable V2 Server", "v2server", v2server,
+    "<p>Enable = keep v2 Server connected</p>");
+  c.input_slider("Restart Network Time", "rebootnw", 3, "min",
+    atof(rebootnw.c_str()) > 0, atof(rebootnw.c_str()), 15, 0, 60, 1,
+    "<p>Default 0=off. Restart Network automatic when no v2Server connection.</p>");
+  c.input_select_start("Modem Network type", "net_type");
+  c.input_select_option("Auto", "auto", net_type == "auto");
+  c.input_select_option("GSM/LTE", "gsm", net_type == "gsm");
+  c.input_select_option("LTE", "lte", net_type == "lte");
+  c.input_select_end();
   c.fieldset_end();
 
   c.print("<hr>");
@@ -224,7 +310,7 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xsq", "cell_interval_chg", cell_interval_chg);
 
       c.head(200);
-      c.alert("success", "<p class=\"lead\">SmartED3 battery setup saved.</p>");
+      c.alert("success", "<p class=\"lead\">smart EQ battery setup saved.</p>");
       MyWebServer.OutputHome(p, c);
       c.done();
       return;
@@ -247,7 +333,7 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
 
-  c.panel_start("primary", "Smart EQ Battery Setup");
+  c.panel_start("primary", "smart SQ Battery Setup");
   c.form_start(p.uri);
 
   c.fieldset_start("Charge control");
@@ -282,7 +368,7 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 }
 
 /**
- * GetDashboardConfig: Smart EQ specific dashboard setup
+ * GetDashboardConfig: smart ED specific dashboard setup
  */
 void OvmsVehicleSmartEQ::GetDashboardConfig(DashboardConfig& cfg)
 {
