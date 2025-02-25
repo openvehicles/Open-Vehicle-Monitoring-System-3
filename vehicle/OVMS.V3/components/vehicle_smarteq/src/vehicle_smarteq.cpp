@@ -1139,6 +1139,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
   ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
   OvmsVehicle::vehicle_command_t res = NotImplemented;
 
+  if (StdMetrics.ms_v_bat_soc->AsInt() < 31) {
+    ESP_LOGI(TAG, "Battery SOC is too low for climate control");
+    return Fail;
+  }
+
   switch (button)
   {
     case 0:
