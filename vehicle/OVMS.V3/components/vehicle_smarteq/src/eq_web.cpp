@@ -270,10 +270,10 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
       }
 
       // Convert values
-      int booster_on_int = booster_on ? 1 : 0;
-      int booster_weekly_int = booster_weekly ? 1 : 0;
-      if(booster_on_int == 0){
-        booster_weekly_int = 0;
+      int booster_on_int = booster_on ? 1 : 2;
+      int booster_weekly_int = booster_weekly ? 1 : 2;
+      if(booster_on_int == 2){
+        booster_weekly_int = 2;
       }
       int booster_time_int = atoi(booster_time.c_str());
       int booster_ds_int = atoi(booster_ds.c_str());
