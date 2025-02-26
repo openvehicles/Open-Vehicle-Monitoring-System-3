@@ -48,8 +48,8 @@ static const char *TAG = "v-smarteq";
 #include "ovms_peripherals.h"
 #include "vehicle_smarteq.h"
 #include "ovms_time.h"
-#include "ovms_command.h"
 #include "ovms_plugins.h"
+#include "buffered_shell.h"
 
 static const OvmsPoller::poll_pid_t obdii_polls[] =
 {
@@ -59,9 +59,6 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
 //  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P1
 //  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P2
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,300,300,300 }, 0, ISOTP_STD }, // extern temp byte 2+3
-//  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2100, {  0,300,60,60 }, 0, ISOTP_STD }, // Data 4
-//  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2102, {  0,300,60,60 }, 0, ISOTP_STD }, // Data 5
-//  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2103, {  0,300,60,60 }, 0, ISOTP_STD }, // Data 6
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,60 }, 0, ISOTP_STD }, // OCS Trip Distance km
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, {  0,300,60,60 }, 0, ISOTP_STD }, // OCS Trip time s
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance data days
@@ -109,6 +106,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_booster_start = false;
   m_booster_start_day = false;
   m_booster_ticker = 0;
+  m_gps_off = false;
   m_gps_ticker = 0;
   m_12v_ticker = 0;
   m_v2_ticker = 0;
@@ -120,8 +118,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
 
-  network_type_ls = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
-  m_indicator = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
+  m_network_type_ls = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
+  m_indicator     = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
+  m_ddt4all       = MyConfig.GetParamValueBool("xsq", "ddt4all", false);                //!< DDT4ALL mode
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 3);
@@ -142,6 +141,16 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_ocs_mt_day_usual           = MyMetrics.InitInt("xsq.ocs.mt.day.usual", SM_STALE_MID, 0, Other);
   mt_ocs_mt_km_usual            = MyMetrics.InitInt("xsq.ocs.mt.km.usual", SM_STALE_MID, 0, Kilometers);
   mt_ocs_mt_level               = MyMetrics.InitString("xsq.ocs.mt.level", SM_STALE_MID, "unknown", Other);
+
+  mt_booster_on                 = MyMetrics.InitBool("xsq.booster.on", SM_STALE_MIN, false);
+  mt_booster_weekly             = MyMetrics.InitBool("xsq.booster.weekly", SM_STALE_MIN, false);
+  mt_booster_time               = MyMetrics.InitString("xsq.booster.time", SM_STALE_MIN, "0515", Other);
+  mt_booster_h                  = MyMetrics.InitInt("xsq.booster.h", SM_STALE_MIN, 5, Other);
+  mt_booster_m                  = MyMetrics.InitInt("xsq.booster.m", SM_STALE_MIN, 15, Other);
+  mt_booster_ds                 = MyMetrics.InitInt("xsq.booster.ds", SM_STALE_MIN, 1, Other);
+  mt_booster_de                 = MyMetrics.InitInt("xsq.booster.de", SM_STALE_MIN, 6, Other);
+  mt_booster_1to3               = MyMetrics.InitInt("xsq.booster.1to3", SM_STALE_MIN, 0, Other);
+  mt_booster_data               = MyMetrics.InitString("xsq.booster.data", SM_STALE_HIGH,"0,0,0,0,-1,-1,-1", Other);
 
   mt_pos_odometer_start         = MyMetrics.InitFloat("xsq.odometer.start", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_start_total   = MyMetrics.InitFloat("xsq.odometer.start.total", SM_STALE_MID, 0, Kilometers);
@@ -183,12 +192,11 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   MyConfig.RegisterParam("xsq", "Smart EQ", true, true);
   ConfigChanged(NULL);
 
-  // Set default values
   StdMetrics.ms_v_gen_current->SetValue(2);                // activate gen metrics to app transfer
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);  // set 12V alert to false
   
   if (MyConfig.GetParamValue("password", "pin","0") == "0") {
-    MyConfig.SetParamValueInt("password", "pin", 1234);          // set default pin
+    MyConfig.SetParamValueInt("password", "pin", 1234);           // set default pin
   }
 
   if (MyConfig.GetParamValue("xsq", "12v.charge","0") == "0") {
@@ -198,52 +206,28 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   if (MyConfig.GetParamValue("xsq", "v2.check","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "v2.check", false);
   }
-  MyConfig.SetParamValueBool("xsq", "v2.check", false);         // disable v2 check for check the fix
+
+  if (MyConfig.GetParamValue("xsq", "ddt4all","0") == "0") {
+    MyConfig.SetParamValueBool("xsq", "ddt4all", false);
+  }
 
   if(MyConfig.GetParamValue("xsq", "booster.system","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "booster.system", true);
-    MyConfig.SetParamValueBool("xsq", "booster.on", false);
-    MyConfig.SetParamValueBool("xsq", "booster.weekly", false);
-    MyConfig.SetParamValueInt("xsq", "booster.h", 5);
-    MyConfig.SetParamValueInt("xsq", "booster.m", 15);
-    MyConfig.SetParamValueInt("xsq", "booster.ds", 1);
-    MyConfig.SetParamValueInt("xsq", "booster.de", 6);
-    MyConfig.SetParamValueInt("xsq", "booster.1to3", 0);
-    MyConfig.SetParamValue("usr", "b.data", "0,0,0,0,-1,-1,-1");
-    StdMetrics.ms_v_gen_current->SetValue(3);               // activate gen metrics to app transfer and in-app plugin <> fw switch                                   
+    StdMetrics.ms_v_gen_current->SetValue(3);                  // activate gen metrics to app transfer and in-app plugin <> fw switch                                   
   }
 
+  
   if(MyConfig.GetParamValue("xsq", "gps.onoff","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "gps.onoff", true);
-    MyConfig.SetParamValueBool("xsq", "gps.off", false);
     MyConfig.SetParamValueInt("xsq", "gps.reactmin", 50);
   }
-
-  if(MyConfig.GetParamValueBool("usr", "b.init", false)) {
-    DisablePlugin("scheduled_booster");                         // set switch off schedule_booster plugin
-    MyConfig.SetParamValue("usr", "b.init", "no");
-    MyConfig.SetParamValue("usr", "b.activated", "no");
-  }
-
-  if(MyConfig.GetParamValueBool("usr", "gps.init", false)) {
-    DisablePlugin("gps_onoff");                                 // set switch off gps plugin
-    MyConfig.SetParamValue("usr", "gps.init", "no");
-    MyConfig.SetParamValue("usr", "gps.on", "no");
-  }
   
-  if(MyConfig.GetParamValueBool("usr", "12v.init", false)) {
-    DisablePlugin("booster_12V");                               // set switch off 12V charge plugin
-    MyConfig.SetParamValue("usr", "12v.init", "no");
-    MyConfig.SetParamValue("usr", "12v.charging","no"); 
-    MyConfig.SetParamValue("usr", "12v.counter","9999");
-  }
-  
-  if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0) {           // reset at boot
+  if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {              // reset at boot
     ResetTotalCounters();
     ResetTripCounters();
   }
-
-  TimeBasedClimateData();                                       // set default booster data from App values
+  ResetOldValues();                                                // removed old values from config usr/xsq
+  TimeBasedClimateData();                                          // set default booster data from App values
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -298,7 +282,7 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
 }
 
 /**
- * ConfigChanged: reload single/all configuration variables
+ * ConfigChanged: reload single/all configuration variables (cfgupdate)
  */
 void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   if (param && param->GetName() != "xsq")
@@ -308,7 +292,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   m_enable_write      = MyConfig.GetParamValueBool("xsq", "canwrite", false);
   m_enable_LED_state  = MyConfig.GetParamValueBool("xsq", "led", false);
-  m_ios_tpms_fix      = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", true);
+  m_ios_tpms_fix      = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
+  m_reboot_time       = MyConfig.GetParamValueInt("xsq", "rebootnw", 30);
   m_resettrip         = MyConfig.GetParamValueBool("xsq", "resettrip", false);
   m_resettotal        = MyConfig.GetParamValueBool("xsq", "resettotal", false);
 
@@ -316,27 +301,25 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_TPMS_FR           = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
   m_TPMS_RL           = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
   m_TPMS_RR           = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
-
-  m_reboot_time       = MyConfig.GetParamValueInt("xsq", "rebootnw", 30);
+  
+  m_ddt4all           = MyConfig.GetParamValueInt("xsq", "ddt4all", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
-
-  m_booster_system    = MyConfig.GetParamValueBool("xsq", "booster.system", false);
-  m_booster_on        = MyConfig.GetParamValueBool("xsq", "booster.on", false);
-  m_booster_weekly    = MyConfig.GetParamValueBool("xsq", "booster.weekly", false);
-  m_booster_h         = MyConfig.GetParamValueInt("xsq", "booster.h", 5);
-  m_booster_m         = MyConfig.GetParamValueInt("xsq", "booster.m", 15);
-  m_booster_ds        = MyConfig.GetParamValueInt("xsq", "booster.ds", 1);
-  m_booster_de        = MyConfig.GetParamValueInt("xsq", "booster.de", 6);
-  m_booster_1to3      = MyConfig.GetParamValueInt("xsq", "booster.1to3", 0);
-
+  m_booster_system    = MyConfig.GetParamValueBool("xsq", "booster.system", true);
   m_gps_onoff         = MyConfig.GetParamValueBool("xsq", "gps.onoff", true);
-  m_gps_off           = MyConfig.GetParamValueBool("xsq", "gps.off", false);
   m_gps_reactmin      = MyConfig.GetParamValueInt("xsq", "gps.reactmin", 50);
-  m_gps_ticker  	    = MyConfig.GetParamValueInt("xsq", "gps.ticker", 0);
-
-  network_type        = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
+  m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
   m_indicator         = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
+
+  // make older System/Plugin Booster data compatible
+  if(MyConfig.GetParamValue("xsq", "booster.data", "0,0,0,0,-1,-1,-1") != "0,0,0,0,-1,-1,-1") {
+    mt_booster_data->SetValue(MyConfig.GetParamValue("xsq", "booster.data", "0,0,0,0,-1,-1,-1"));
+    MyConfig.SetParamValue("xsq", "booster.data", "0,0,0,0,-1,-1,-1");
+  }
+  if(MyConfig.GetParamValue("usr", "b.data", "0,0,0,0,-1,-1,-1") != "0,0,0,0,-1,-1,-1") {
+    mt_booster_data->SetValue(MyConfig.GetParamValue("usr", "b.data", "0,0,0,0,-1,-1,-1"));
+    MyConfig.SetParamValue("usr", "b.data", "0,0,0,0,-1,-1,-1");
+  }
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (!m_enable_LED_state) {
@@ -527,8 +510,93 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 }
 
 void OvmsVehicleSmartEQ::DisablePlugin(const char* plugin) {
-  MyWebServer.ExecuteCommand("plugin disable " + std::string(plugin));
-  MyWebServer.ExecuteCommand("vfs rm /store/plugins/" + std::string(plugin) + "/*.*");
+  #ifdef CONFIG_OVMS_COMP_PLUGINS
+      if (!ExecuteCommand("plugin disable " + std::string(plugin))) {
+          ESP_LOGE(TAG, "Failed to disable plugin: %s", plugin);
+          return;
+      }
+      if (!ExecuteCommand("vfs rm /store/plugins/" + std::string(plugin) + "/*.*")) {
+          ESP_LOGE(TAG, "Failed to remove plugin files: %s", plugin);
+          return;
+      }
+  #else
+      ESP_LOGW(TAG, "Plugin system not enabled");
+  #endif
+}
+
+bool OvmsVehicleSmartEQ::ExecuteCommand(const std::string& command) {
+  
+  std::string result = BufferedShell::ExecuteCommand(command, true);
+  bool success = !result.empty();  // Consider command successful if output is not empty
+  
+  if (!success) {
+      ESP_LOGE(TAG, "Failed to execute command: %s", command.c_str());
+      return Fail;
+  }
+
+  return Success;
+}
+
+// temporary fix for old system/plugins data
+void OvmsVehicleSmartEQ::ResetOldValues() {
+  
+  if(MyConfig.GetParamValueInt("xsq", "booster.ds",0) > 0) {
+    ExecuteCommand("conf rm xsq booster.1to3");
+    ExecuteCommand("conf rm xsq booster.de");
+    ExecuteCommand("conf rm xsq booster.ds");
+    ExecuteCommand("conf rm xsq booster.h");
+    ExecuteCommand("conf rm xsq booster.m");
+    ExecuteCommand("conf rm xsq booster.on");
+    ExecuteCommand("conf rm xsq booster.time");
+    ExecuteCommand("conf rm xsq booster.weekly");
+    ExecuteCommand("conf rm xsq gps.off");    
+  }
+
+  if(MyConfig.GetParamValueBool("usr", "b.init", false)) {
+    DisablePlugin("scheduled_booster");                            // set switch off schedule_booster plugin
+  }
+  if(MyConfig.GetParamValueInt("usr", "b.ticker",0) > 0) {
+    ExecuteCommand("conf rm usr b.activated");
+    ExecuteCommand("conf rm usr b.day_end");
+    ExecuteCommand("conf rm usr b.day_start");
+    ExecuteCommand("conf rm usr b.init");
+    ExecuteCommand("conf rm usr b.ps_data");
+    ExecuteCommand("conf rm usr b.ps_end_day");
+    ExecuteCommand("conf rm usr b.ps_scheduled_boost");
+    ExecuteCommand("conf rm usr b.ps_scheduled_boost_2");
+    ExecuteCommand("conf rm usr b.ps_start_day");
+    ExecuteCommand("conf rm usr b.scheduled");
+    ExecuteCommand("conf rm usr b.scheduled_2");
+    ExecuteCommand("conf rm usr b.ticker");
+    ExecuteCommand("conf rm usr b.week");
+  }
+
+  if(MyConfig.GetParamValueBool("usr", "gps.init", false)) {
+    DisablePlugin("gps_onoff");                                    // set switch off gps plugin
+  }
+  if(MyConfig.GetParamValueInt("usr", "gps.counter_value",0) > 0) {
+    ExecuteCommand("conf rm usr gps.counter");
+    ExecuteCommand("conf rm usr gps.counter_add");
+    ExecuteCommand("conf rm usr gps.counter_value");
+    ExecuteCommand("conf rm usr gps.init");
+    ExecuteCommand("conf rm usr gps.on");
+    ExecuteCommand("conf rm usr gps.parktime");
+    ExecuteCommand("conf rm usr gps.power_switch");
+    ExecuteCommand("conf rm usr gps.pubsub");
+    ExecuteCommand("conf rm usr gps.ticker");
+    ExecuteCommand("conf rm usr 12v.charging");
+  }
+  
+  if(MyConfig.GetParamValueBool("usr", "12v.init", false)) {
+    DisablePlugin("booster_12V");                                  // set switch off 12V charge plugin
+  }
+  if(MyConfig.GetParamValueInt("usr", "12v.counter",0) > 0) {
+    ExecuteCommand("conf rm usr 12v.counter");
+    ExecuteCommand("conf rm usr 12v.init");
+    ExecuteCommand("conf rm usr 12v.ps_alert12v_off");
+    ExecuteCommand("conf rm usr 12v.ps_alert12v_on");
+    ExecuteCommand("conf rm usr 12v.ps_booster_2");
+  }
 }
 
 void OvmsVehicleSmartEQ::ResetChargingValues() {
@@ -562,33 +630,33 @@ void OvmsVehicleSmartEQ::TimeCheckTask() {
   localtime_r(&now, &timeinfo);
 
   // Check if the current time is the booster time
-  if (timeinfo.tm_hour == m_booster_h && timeinfo.tm_min == m_booster_m && m_booster_on && !StdMetrics.ms_v_env_hvac->AsBool()) {
-    CommandHomelink(m_booster_1to3);
+  if (timeinfo.tm_hour == mt_booster_h->AsInt() && timeinfo.tm_min == mt_booster_m->AsInt() && mt_booster_on->AsBool() && !StdMetrics.ms_v_env_hvac->AsBool()) {
+    CommandHomelink(mt_booster_1to3->AsInt());
   }
 
   // Check if the current day is within the booster days range
   int current_day = timeinfo.tm_wday;
   
-  if (current_day == m_booster_ds && m_booster_weekly && !m_booster_start_day) {
+  if (current_day == mt_booster_ds->AsInt() && mt_booster_weekly->AsBool() && !m_booster_start_day) {
     m_booster_start_day = true;
-    m_booster_on = true;
+    mt_booster_on->SetValue(true);
   }
-  if (current_day == m_booster_de && m_booster_weekly && m_booster_start_day) {
+  if (current_day == mt_booster_de->AsInt() && mt_booster_weekly->AsBool() && m_booster_start_day) {
     m_booster_start_day = false;
-    m_booster_on = false;
+    mt_booster_on->SetValue(false);
   }
-  if ((!m_booster_weekly || !m_booster_on) && m_booster_start_day) {
+  if ((!mt_booster_weekly->AsBool() || !mt_booster_on->AsBool()) && m_booster_start_day) {
     m_booster_start_day = false;
   }
 }
 
 void OvmsVehicleSmartEQ::TimeBasedClimateData() {
-  std::string _oldtime = MyConfig.GetParamValue("xsq", "booster.time", "0000");
-  std::string _newdata = MyConfig.GetParamValue("usr", "b.data", "0,0,0,0,-1,-1,-1");
+  std::string _oldtime = mt_booster_time->AsString();
+  std::string _newdata = mt_booster_data->AsString();
   std::vector<int> _data;
   std::stringstream _ss(_newdata);
   std::string _item, _booster_on, _booster_weekly, _booster_time;
-  char _timenew[10];
+  int _booster_ds, _booster_de, _booster_h, _booster_m;
 
   while (std::getline(_ss, _item, ',')) {
     _data.push_back(atoi(_item.c_str()));
@@ -596,42 +664,39 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
 
   if(_data[0]>0 || m_booster_init) {
     m_booster_init = false;
-    MyConfig.SetParamValue("usr", "b.data", "0,0,0,0,-1,-1,-1");
+    mt_booster_data->SetValue("0,0,0,0,-1,-1,-1");              // reset the data
     _booster_on = _data[1] == 1 ? "yes" : "no";
     _booster_weekly = _data[2] == 1 ? "yes" : "no";
-    if(_data[1]>0) { m_booster_on = _data[1] == 1; MyConfig.SetParamValueBool("xsq", "booster.on", m_booster_on); }
-    if(_data[2]>0) { m_booster_weekly = _data[2] == 1; MyConfig.SetParamValueBool("xsq", "booster.weekly", m_booster_weekly); }
-    if(_data[4]>-1) { m_booster_ds = _data[4] > 6 ? 0 : _data[4]; MyConfig.SetParamValueInt("xsq", "booster.ds", m_booster_ds); }
-    if(_data[5]>-1) { m_booster_de = _data[5] <= 5 ? _data[5]+1 : 0; MyConfig.SetParamValueInt("xsq", "booster.de", m_booster_de); }
-    if(_data[6]>-1) { m_booster_1to3 = _data[6]; MyConfig.SetParamValueInt("xsq", "booster.1to3", m_booster_1to3); }
+    if(_data[1]>0) { mt_booster_on->SetValue(_data[1] == 1);}
+    if(_data[2]>0) { mt_booster_weekly->SetValue(_data[2] == 1);}
+    if(_data[4]>-1) { _booster_ds = _data[4] > 6 ? 0 : _data[4]; mt_booster_ds->SetValue(_booster_ds);}
+    if(_data[5]>-1) { _booster_de = _data[5] <= 5 ? _data[5]+1 : 0; mt_booster_de->SetValue(_booster_de);}
+    if(_data[6]>-1) { mt_booster_1to3->SetValue(_data[6]);}
 
     if(_data[3]>0) { 
-      m_booster_h = (_data[3] / 100) % 24;  // Extract hours and ensure 24h format
-      m_booster_m = _data[3] % 100;         // Extract minutes
-      if(m_booster_m >= 60) {               // Handle invalid minutes
-          m_booster_h = (m_booster_h + m_booster_m / 60) % 24;
-          m_booster_m = m_booster_m % 60;
+      _booster_h = (_data[3] / 100) % 24;                      // Extract hours and ensure 24h format
+      _booster_m = _data[3] % 100;                             // Extract minutes
+      if(mt_booster_m->AsInt() >= 60) {                        // Handle invalid minutes
+          _booster_h = (_booster_h + _booster_m / 60) % 24;
+          _booster_m = mt_booster_m->AsInt() % 60;
       }
       
-      if (_data[3] > 959)
-          sprintf(_timenew, "%d", _data[3]);
-      else if (_data[3] > 59)
-          sprintf(_timenew, "0%d", _data[3]);
-      else if (_data[3] > 9)
-          sprintf(_timenew, "00%d", _data[3]);
-      else
-          sprintf(_timenew, "000%d", _data[3]);
-      m_booster_time = std::string(_timenew);
-      MyConfig.SetParamValueInt("xsq", "booster.h", m_booster_h); 
-      MyConfig.SetParamValueInt("xsq", "booster.m", m_booster_m); 
-      MyConfig.SetParamValue("xsq", "booster.time", m_booster_time);
+      if (_data[3] >= 0 && _data[3] <= 2359) {
+        std::ostringstream oss;
+        oss << std::setfill('0') << std::setw(4) << _data[3];
+        mt_booster_time->SetValue(oss.str());
+      } else {
+          ESP_LOGE(TAG, "Invalid time value: %d", _data[3]);
+      }
+      mt_booster_h->SetValue(_booster_h);
+      mt_booster_m->SetValue(_booster_m);
     } else {
-      m_booster_time = _oldtime;
+      mt_booster_time->SetValue(_oldtime);
     }     
     
     // booster;no;no;0515;1;6;0
     char buf[50];
-    sprintf(buf, "booster,%s,%s,%s,%d,%d,%d", _booster_on.c_str(), _booster_weekly.c_str(), m_booster_time.c_str(), m_booster_ds, m_booster_de, m_booster_1to3);
+    sprintf(buf, "booster,%s,%s,%s,%d,%d,%d", _booster_on.c_str(), _booster_weekly.c_str(), mt_booster_time->AsString().c_str(), mt_booster_ds->AsInt(), mt_booster_de->AsInt(), mt_booster_1to3->AsInt());
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
     StdMetrics.ms_v_gen_current->SetValue(3);
   }
@@ -639,82 +704,122 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
 
 // check the 12V alert periodically and charge the 12V battery if needed
 void OvmsVehicleSmartEQ::Check12vState() {
+  static const float MIN_VOLTAGE = 10.0f;
+  static const int ALERT_THRESHOLD_TICKS = 10;
+  static const int HOMELINK_BUTTON = 2;
+  
   float mref = StdMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
   float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
   bool alert_on = StdMetrics.ms_v_bat_12v_voltage_alert->AsBool();
   float volt = StdMetrics.ms_v_bat_12v_voltage->AsFloat();
-
-  if(mref > dref){
-    StdMetrics.ms_v_bat_12v_voltage_ref->SetValue(dref);
+  
+  // Validate and update reference voltage
+  if (mref > dref) {
+      ESP_LOGI(TAG, "Adjusting 12V reference voltage from %.1fV to %.1fV", mref, dref);
+      StdMetrics.ms_v_bat_12v_voltage_ref->SetValue(dref);
   }
-
-  if (alert_on && (volt > 10.0f)) {
-    m_12v_ticker += 1;
-  }
-  if ((m_12v_ticker > 10) && alert_on) {
-    m_12v_ticker = 0;
-    CommandHomelink(2);
-  }
-  if ((m_12v_ticker > 0) && !alert_on) {
-    m_12v_ticker = 0;
+  
+  // Handle alert conditions
+  if (alert_on && (volt > MIN_VOLTAGE)) {
+      m_12v_ticker++;
+      ESP_LOGI(TAG, "12V alert active for %d ticks, voltage: %.1fV", m_12v_ticker, volt);
+      
+      if (m_12v_ticker > ALERT_THRESHOLD_TICKS) {
+          m_12v_ticker = 0;
+          ESP_LOGI(TAG, "Initiating climate control due to 12V alert");
+          CommandHomelink(HOMELINK_BUTTON);
+      }
+  } else if (m_12v_ticker > 0) {
+      ESP_LOGI(TAG, "12V alert cleared, resetting ticker");
+      m_12v_ticker = 0;
   }
 }
 
 // switch the GPS on/off depending on the parktime and the bus state
 void OvmsVehicleSmartEQ::GPSOnOff() {
+  static const int PARK_TIMEOUT_SECS = 600;  // 10 minutes
+  static const int INITIAL_DELAY = 10;
+
   m_gps_ticker += 1;
-  if (StdMetrics.ms_v_env_parktime->AsInt()>600 && !StdMetrics.ms_v_env_on->AsBool() && m_gps_onoff && !m_gps_off && (m_gps_ticker > 10)) {
-    m_gps_off = true;
-    m_gps_ticker = 0;
-    MyConfig.SetParamValueBool("xsq", "gps.off", true);
-    MyPeripherals->m_cellular_modem->StopNMEA();
-  }
-  if ((m_gps_ticker >= m_gps_reactmin) && m_gps_onoff && m_gps_off) {
-    m_gps_off = false;
-    m_gps_ticker = 0;
-    MyConfig.SetParamValueBool("xsq", "gps.off", false);
-    MyPeripherals->m_cellular_modem->StartNMEA();
-  }
-  if (mt_bus_awake->AsBool() && m_gps_off) {
-    m_gps_off = false;
-    m_gps_ticker = 0;
-    MyConfig.SetParamValueBool("xsq", "gps.off", false);
-    MyPeripherals->m_cellular_modem->StartNMEA();
+
+  // Power saving: Turn off GPS
+  bool should_turn_off = (StdMetrics.ms_v_env_parktime->AsInt() > PARK_TIMEOUT_SECS &&
+                         !StdMetrics.ms_v_env_on->AsBool() &&
+                         m_gps_onoff &&
+                         !m_gps_off &&
+                         (m_gps_ticker > INITIAL_DELAY));
+
+  // Reactivation conditions
+  bool should_turn_on = ((m_gps_ticker >= m_gps_reactmin) && m_gps_onoff && m_gps_off) ||
+                       (mt_bus_awake->AsBool() && m_gps_off);
+
+  if (should_turn_off) {
+      ESP_LOGI(TAG, "Turning GPS off - vehicle parked and inactive");
+      m_gps_off = true;
+      m_gps_ticker = 0;
+      if (MyPeripherals && MyPeripherals->m_cellular_modem) {
+          MyPeripherals->m_cellular_modem->StopNMEA();
+      } else {
+          ESP_LOGE(TAG, "Cannot stop GPS NMEA - modem not available");
+      }
+  } else if (should_turn_on) {
+      ESP_LOGI(TAG, "Turning GPS on - timer/bus wake condition");
+      m_gps_off = false;
+      m_gps_ticker = 0;
+      if (MyPeripherals && MyPeripherals->m_cellular_modem) {
+          MyPeripherals->m_cellular_modem->StartNMEA();
+      } else {
+          ESP_LOGE(TAG, "Cannot start GPS NMEA - modem not available");
+      }
   }
 }
 
 // check the Server V2 connection and reboot the network if needed
 void OvmsVehicleSmartEQ::CheckV2State() {
-  if (!StdMetrics.ms_s_v2_connected->AsBool()) {
-    m_v2_ticker += 1;
-  }
-  if ((m_v2_ticker > 5) && !StdMetrics.ms_s_v2_connected->AsBool()) {
-    m_v2_restart = true;
-    MyWebServer.ExecuteCommand("server v2 stop");
-  }
-  if ((m_v2_ticker > 6) && m_v2_restart) {
-    m_v2_ticker = 0;
-    m_v2_restart = false;
-    MyWebServer.ExecuteCommand("server v2 start");
-  }
-  if ((m_v2_ticker > 0) && StdMetrics.ms_s_v2_connected->AsBool()) {
-    m_v2_ticker = 0;
-    m_v2_restart = false;
+  static const int DISCONNECT_THRESHOLD = 5;
+  static const int RESTART_DELAY = 1;
+  
+  bool is_connected = StdMetrics.ms_s_v2_connected->AsBool();
+  
+  if (!is_connected) {
+      m_v2_ticker++;
+      
+      if (m_v2_ticker > DISCONNECT_THRESHOLD && !m_v2_restart) {
+          ESP_LOGI(TAG, "V2 server disconnected for %d ticks, initiating restart", m_v2_ticker);
+          m_v2_restart = true;
+          if (!ExecuteCommand("server v2 stop")) {
+              ESP_LOGE(TAG, "Failed to stop V2 server");
+              return;
+          }
+      }
+      
+      if (m_v2_ticker > (DISCONNECT_THRESHOLD + RESTART_DELAY) && m_v2_restart) {
+          ESP_LOGI(TAG, "Restarting V2 server");
+          m_v2_ticker = 0;
+          m_v2_restart = false;
+          if (!ExecuteCommand("server v2 start")) {
+              ESP_LOGE(TAG, "Failed to start V2 server");
+          }
+      }
+  } else if (m_v2_ticker > 0) {
+      ESP_LOGI(TAG, "V2 server connection restored");
+      m_v2_ticker = 0;
+      m_v2_restart = false;
   }
 }
 
 // Cellular Modem Network type switch
 void OvmsVehicleSmartEQ::ModemNetworkType() {
-  if (network_type == "auto") {
-      MyWebServer.ExecuteCommand("cellular cmd AT+COPS=0,0,\"Telekom.de\",7");
+  if (m_network_type == "auto") {
+      ExecuteCommand("cellular cmd AT+COPS=0,0,\"Telekom.de\",7");  // set network to prefered Telekom.de LTE or the best available
   } 
-  if (network_type == "gsm") {
-      MyWebServer.ExecuteCommand("cellular cmd AT+CNMP=2");
+  if (m_network_type == "gsm") {
+      ExecuteCommand("cellular cmd AT+CNMP=2");                     // set network to GSM/3G/LTE
   }
-  if (network_type == "lte") {
-      MyWebServer.ExecuteCommand("cellular cmd AT+CNMP=38");
+  if (m_network_type == "lte") {
+      ExecuteCommand("cellular cmd AT+CNMP=38");                    // set network to LTE only
   }
-  network_type_ls = network_type;
+  m_network_type_ls = m_network_type;
 }
 
 /**
@@ -1033,14 +1138,14 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   if (m_enable_LED_state) OnlineState();
 
   if (ticker % 60 == 0) { // Every 60 seconds
-    if(m_booster_on) TimeCheckTask();
+    if(mt_booster_on->AsBool()) TimeCheckTask();
     if(m_12v_charge) Check12vState();
     if(m_gps_onoff) GPSOnOff();
     if(m_v2_check) CheckV2State();
   }
   if (ticker % 10 == 0) { // Every 10 seconds
     if(m_booster_system) TimeBasedClimateData();
-    if(network_type != network_type_ls) ModemNetworkType();
+    if(m_network_type != m_network_type_ls) ModemNetworkType();
   }
 }
 
@@ -1113,21 +1218,21 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uin
 
   std::string request;
   std::string response;
-  std::string reqstr = hl_canbyte;
+  std::string reqstr = m_hl_canbyte;
 
   CommandWakeup2();
   vTaskDelay(2000 / portTICK_PERIOD_MS);
   uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 300;
+  int timeout_ms = 500;
 
   request = hexdecode("10C0");
   PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-  
+  vTaskDelay(500 / portTICK_PERIOD_MS);
   request = hexdecode(reqstr);
   PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
 
   if (enable) {
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
     request = hexdecode("1103");  // key on/off
     PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
   }
@@ -1149,7 +1254,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
     case 0:
     {
       res =  CommandClimateControl(true);
-      m_booster_ticker = 0;
       break;
     }
     case 1:
@@ -1212,11 +1316,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
 
   if(!mt_bus_awake->AsBool()) {
     ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
-    uint8_t data[8] = {0xc1, 0x1b, 0x73, 0x57, 0x14, 0x70, 0x96, 0x85};
+    uint8_t data[8] = {0xc2, 0x1b, 0x73, 0x57, 0x14, 0x70, 0x96, 0x85};
     canbus *obd;
     obd = m_can1;
     obd->WriteStandard(0x350, 8, data);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
     ESP_LOGI(TAG, "Vehicle is awake");
     return Success;
   } else {
@@ -1542,23 +1645,18 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
       int bits = atoi(value);
       char buf[10];
       sprintf(buf, "1,%d,0,0,-1,-1,-1", bits);
-      MyConfig.SetParamValue("usr", "b.data", string(buf));
+      mt_booster_data->SetValue(std::string(buf));
       return true;
     }
     case 5:
     {
       int bits = atoi(value);
-      char buf[10];
-      if(bits > 959){
-        sprintf(buf, "1,1,0,%d,-1,-1,-1", bits);
-      } else if((bits < 960)&&(bits > 59)){
-        sprintf(buf, "1,1,0,0%d,-1,-1,-1", bits);
-      } else if((bits < 60)&&(bits > 9)){
-        sprintf(buf, "1,1,0,00%d,-1,-1,-1", bits);
-      } else {
-        sprintf(buf, "1,1,0,000%d,-1,-1,-1", bits);
-      }
-      MyConfig.SetParamValue("usr", "b.data", string(buf));
+      if(bits < 0) bits = 0;
+      if(bits > 2359) bits = 0;
+      
+      char buf[4];
+      snprintf(buf, sizeof(buf), "1,1,0,%04d,-1,-1,-1", bits);
+      mt_booster_data->SetValue(std::string(buf));
       return true;
     }
     case 6:
@@ -1568,7 +1666,7 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
       if(bits > 2) bits = 2;
       char buf[4];
       sprintf(buf, "1,0,0,0,-1,-1,%d", bits);
-      MyConfig.SetParamValue("usr", "b.data", string(buf));
+      mt_booster_data->SetValue(std::string(buf));
       return true;
     }
     case 7:
@@ -1577,7 +1675,7 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
       MyConfig.SetParamValueBool("xsq", "resettotal",  (bits& 1)!=0);
       return true;
     }
-    // case 8 -> Vehicle.cpp stream
+    // case 8 -> Vehicle.cpp GPS stream
     // case 9 -> Vehicle.cpp minsoc
     case 10:
     {
@@ -1609,7 +1707,8 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
     }
     case 16:
     {
-      MyConfig.SetParamValue("xsq", "rebootnw", value);
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xsq", "ddt4all",  (bits& 1)!=0);
       return true;
     }
     default:
@@ -1647,25 +1746,17 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
       return std::string(buf);
     }
     case 4:
-      if(m_booster_on){return std::string("1");}else{ return std::string("2");};
-      //if(MyConfig.GetParamValue("usr", "b.activated", STR(0))=="yes"){return std::string("1");}else{ return std::string("2");};
+      if(mt_booster_on->AsBool()){return std::string("1");}else{ return std::string("2");};
     case 5:
     {
-      /*int bitsh = m_booster_h;
-      int bitsm = m_booster_m;
-      char buf[4];
-      sprintf(buf, "%d%d", bitsh, bitsm);
-      return std::string(buf);*/
-      //return MyConfig.GetParamValue("usr", "b.scheduled", STR(0));
-      return MyConfig.GetParamValue("xsq", "booster.time", STR(0));
+      return mt_booster_time->AsString();
     }
     case 6:
     {
-      int bits = m_booster_1to3;
+      int bits = mt_booster_1to3->AsInt();
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
-      //if(MyConfig.GetParamValue("usr", "b.scheduled_2", STR(0))=="yes"){return std::string("1");}else{ return std::string("0");};
     }
     case 7:
     {
@@ -1698,7 +1789,12 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
       return std::string(buf);
     }
     case 16:
-      return MyConfig.GetParamValue("xsq", "rebootnw", STR(0));
+    {
+      int bits = ( MyConfig.GetParamValueBool("xsq", "ddt4all",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
     default:
       return OvmsVehicle::GetFeature(key);
   }

@@ -435,7 +435,12 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len) {
-  mt_obl_main_CHGpower->SetElemValue(0, (CAN_UINT(0) - 20000) / 1000.0);
+  if(CAN_UINT(0) > 20000) {
+    mt_obl_main_CHGpower->SetElemValue(0, (CAN_UINT(0) - 20000.0f) / 1000.0f);
+  }else{
+    mt_obl_main_CHGpower->SetElemValue(0, ((20000.0f - CAN_UINT(0)) / 1000.0f) * -1);
+  }
+  // mt_obl_main_CHGpower->SetElemValue(0, (CAN_UINT(0) - 20000) / 1000.0f);
   UpdateChargeMetrics();
 }
 
@@ -451,7 +456,7 @@ void OvmsVehicleSmartEQ::PollReply_ocs_time(const char* data, uint16_t reply_len
 
 void OvmsVehicleSmartEQ::PollReply_ocs_mt_day(const char* data, uint16_t reply_len) {
   int value = CAN_UINT(0);
-  if (value >0) { // excluding value of 0 seems to be necessary for now
+  if (value > 0) { // excluding value of 0 seems to be necessary for now
     // Send notification?
     int now = StdMetrics.ms_m_timeutc->AsInt();
     int threshold = mt_ocs_mt_day_prewarn->AsInt();
@@ -466,15 +471,17 @@ void OvmsVehicleSmartEQ::PollReply_ocs_mt_day(const char* data, uint16_t reply_l
     }
     mt_ocs_mt_day_usual->SetValue(value); // set next service in days
     StdMetrics.ms_v_env_service_time->SetValue(StdMetrics.ms_m_timeutc->AsInt() + (value * 86400));  // set next service at time
-    MyConfig.SetParamValueInt("xsq", "service.time", StdMetrics.ms_v_env_service_time->AsInt());
+    if(MyConfig.GetParamValueInt("xsq", "service.time", -1) > -1) {
+      MyConfig.SetParamValueInt("xsq", "service.time", -1);
+    }
   } else {
     // reset service time to current time if service time is 0
     if(MyConfig.GetParamValueInt("xsq", "service.time", -1) == -1) {
       StdMetrics.ms_v_env_service_time->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-      MyConfig.SetParamValueInt("xsq", "service.time", StdMetrics.ms_v_env_service_time->AsInt());
+      MyConfig.SetParamValueInt("xsq", "service.time", StdMetrics.ms_m_timeutc->AsInt());
     } else {
       // get service time from config if service time is < 0 Days
-      StdMetrics.ms_v_env_service_time->SetValue(MyConfig.GetParamValueInt("xsq", "service.time", 0));
+      StdMetrics.ms_v_env_service_time->SetValue(MyConfig.GetParamValueInt("xsq", "service.time", -1));
     }
     int now = StdMetrics.ms_m_timeutc->AsInt();
     int old_value = ROUNDPREC(( now - StdMetrics.ms_v_env_service_time->AsInt()) / 86400, 0);

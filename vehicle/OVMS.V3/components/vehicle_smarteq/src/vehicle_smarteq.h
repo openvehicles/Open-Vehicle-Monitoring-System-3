@@ -91,6 +91,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void CheckV2State();
     void DisablePlugin(const char* plugin);
     void ModemNetworkType();
+    bool ExecuteCommand(const std::string& command);
+    void ResetOldValues();
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -109,6 +111,7 @@ public:
     void WebInit();
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
 #endif
     void ConfigChanged(OvmsConfigParam* param) override;
@@ -172,20 +175,12 @@ public:
     int m_TPMS_RR;                          // TPMS Sensor Rear Right
     bool m_12v_charge;                      //!< 12V charge on/off
     bool m_booster_system;                  //!< booster system on/off
-    bool m_booster_on;                      //!< booster at time on/off
-    bool m_booster_weekly;                  //!< booster weekly auto on/off at day start/end
-    std::string m_booster_time;             //!< booster time
-    int m_booster_h;                        //!< booster hour
-    int m_booster_m;                        //!< booster minute
-    int m_booster_ds;                       //!< booster day start
-    int m_booster_de;                       //!< booster day end
-    int m_booster_1to3;                     //!< booster one to three (homelink 0-2) times in following time
     bool m_gps_onoff;                       //!< GPS on/off at parking activated
     bool m_gps_off;                         //!< GPS off while parking > 10 minutes
     int m_gps_reactmin;                     //!< GPS reactivate all x minutes after parking
-    std::string hl_canbyte;                 //!< homelink canbyte
-    std::string network_type;               //!< Network type from xsq.modem.net.type
-    std::string network_type_ls;            //!< Network type last state reminder
+    std::string m_hl_canbyte;                 //!< homelink canbyte
+    std::string m_network_type;               //!< Network type from xsq.modem.net.type
+    std::string m_network_type_ls;            //!< Network type last state reminder
 
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define MAX_POLL_DATA_LEN 126
@@ -237,6 +232,15 @@ public:
     OvmsMetricInt           *mt_ocs_mt_day_usual;       //!< Maintaince usual days
     OvmsMetricInt           *mt_ocs_mt_km_usual;        //!< Maintaince usual km
     OvmsMetricString        *mt_ocs_mt_level;           //!< Maintaince level
+    OvmsMetricBool          *mt_booster_on;             //!< booster at time on/off
+    OvmsMetricBool          *mt_booster_weekly;         //!< booster weekly auto on/off at day start/end
+    OvmsMetricString        *mt_booster_time;           //!< booster time
+    OvmsMetricInt           *mt_booster_h;              //!< booster time hour
+    OvmsMetricInt           *mt_booster_m;              //!< booster time minute
+    OvmsMetricInt           *mt_booster_ds;             //!< booster day start
+    OvmsMetricInt           *mt_booster_de;             //!< booster day end
+    OvmsMetricInt           *mt_booster_1to3;           //!< booster one to three (homelink 0-2) times in following time
+    OvmsMetricString        *mt_booster_data;           //!< booster data from app/website
 
   protected:
     bool m_booster_start;
@@ -245,6 +249,7 @@ public:
     bool m_v2_restart;
     bool m_v2_check;
     bool m_indicator;                       //!< activate indicator e.g. 7 times or whtever
+    bool m_ddt4all;                           //!< DDT4ALL mode
     int m_led_state;
     int m_booster_ticker;
     int m_gps_ticker;
