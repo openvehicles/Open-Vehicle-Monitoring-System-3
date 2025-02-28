@@ -228,6 +228,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   }
   ResetOldValues();                                                // removed old values from config usr/xsq
   TimeBasedClimateData();                                          // set default booster data from App values
+  CommandWakeup();                                                 // wake up the car to get the first data
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -1434,8 +1435,385 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandActivateValet(const ch
   return NotImplemented;
 }
 
+
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const char* pin) {
-  return NotImplemented;
+  
+  OvmsVehicle::vehicle_command_t res = Fail;
+  int number = atoi(pin);
+  ESP_LOGI(TAG, "DDT4all number=%d", number);
+  if(!m_ddt4all && !m_enable_write && number > 5) {
+    ESP_LOGE(TAG, "DDT4all failed / no write access");
+    return Fail;
+  }
+
+  switch (number)
+  {
+    case 0:
+    {
+      res = Fail;
+      break;
+    }
+    case 1:
+    {
+      res = Fail;
+      break;
+    }
+    case 2:
+    {
+      res = Fail;
+      break;
+    }
+    case 3:
+    {
+      res = Fail;
+      break;
+    }
+    case 4:
+    {
+      #ifdef CONFIG_OVMS_COMP_WIFI
+        if (MyPeripherals && MyPeripherals->m_esp32wifi) {
+            MyPeripherals->m_esp32wifi->Restart();
+            ESP_LOGI(TAG, "WiFi restart initiated");
+            res = Success;
+        } else {
+            ESP_LOGE(TAG, "WiFi restart failed - WiFi not available");
+            res = Fail;
+        }
+      #else
+        ESP_LOGE(TAG, "WiFi support not enabled");
+        res = NotImplemented;
+      #endif
+      break;
+    }
+    case 5:
+    {
+      #ifdef CONFIG_OVMS_COMP_CELLULAR
+        if (MyPeripherals && MyPeripherals->m_cellular_modem) {
+            MyPeripherals->m_cellular_modem->Restart();
+            ESP_LOGI(TAG, "Cellular modem restart initiated");
+            res = Success;
+        } else {
+            ESP_LOGE(TAG, "Cellular modem restart failed - modem not available");
+            res = Fail;
+        }
+      #else
+        ESP_LOGE(TAG, "Cellular support not enabled");
+        res = NotImplemented;
+      #endif
+      break;
+    }
+    // CommandCan(txid, rxid, enable, request)
+    case 6:
+    {
+      // BIPBIP_Lock false
+      m_hl_canbyte = "3B1400";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 7:
+    {
+      // BIPBIP_Lock true
+      m_hl_canbyte = "3B1480";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 8:
+    {
+      // REAR_WIPER_LINK false
+      m_hl_canbyte = "3B5800";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 9:
+    {
+      // REAR_WIPER_LINK true
+      m_hl_canbyte = "3B5880";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 10:
+    {
+      // RKE_Backdoor_open false
+      m_hl_canbyte = "3B7800";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 11:
+    {
+      // RKE_Backdoor_open true
+      m_hl_canbyte = "3B7880";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 12:
+    {
+      // Precond_by_key 00
+      m_hl_canbyte = "3B7700";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 13:
+    {
+      // Precond_by_key 03
+      m_hl_canbyte = "3B7703";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 14:
+    {
+      // ECOMODE_PRE_Restart false
+      m_hl_canbyte = "3B7600";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 15:
+    {
+      // ECOMODE_PRE_Restart true
+      m_hl_canbyte = "3B7680";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 16:
+    {
+      // Charging screen false
+      m_hl_canbyte = "2E013D00";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 17:
+    {
+      // Charging screen true
+      m_hl_canbyte = "2E013D01";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 26:
+    {
+      // AT_BeepInRPresent_CF false
+      m_hl_canbyte = "2E014900";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 27:
+    {
+      // AT_BeepInRPresent_CF true
+      m_hl_canbyte = "2E014980";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    
+    case 28:
+    {
+      // EVStartupSoundInhibition_CF false
+      m_hl_canbyte = "2E013501";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 29:
+    {
+      // EVStartupSoundInhibition_CF true
+      m_hl_canbyte = "2E013500";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 30:
+    {
+      // indicator 5x on
+      m_hl_canbyte = "30082002";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 31:
+    {
+      // open trunk
+      m_hl_canbyte = "300500";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 32:
+    {
+      // key reminder false
+      m_hl_canbyte = "3B5E00";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 33:
+    {
+      // key reminder true
+      m_hl_canbyte = "3B5E80";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 34:
+    {
+      // long tempo display false
+      m_hl_canbyte = "3B5700";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 35:
+    {
+      // long tempo display true
+      m_hl_canbyte = "3B5780";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 40:
+    {
+      // ClockDisplayed_CF not displayed
+      m_hl_canbyte = "2E012100";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 41:
+    {
+      // ClockDisplayed_CF displayed managed
+      m_hl_canbyte = "2E012101";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 42:
+    {
+      // ClockDisplayed_CF displayed not managed
+      m_hl_canbyte = "2E012102";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 43:
+    {
+      // ClockDisplayed_CF not used (EQ Smart Connect)
+      m_hl_canbyte = "2E012103";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 50:
+    {
+      // max AC current limitation configuration 20A only for slow charger!
+      if (!mt_obl_fastchg->AsBool()) {
+        m_hl_canbyte = "2E614150";
+        CommandCan(0x719, 0x739, false);
+        res = Success;
+      } else {
+        res = Fail;
+      }
+      break;
+    }
+    case 51:
+    {
+      // max AC current limitation configuration 32A only for slow charger!
+      if (!mt_obl_fastchg->AsBool()) {
+        m_hl_canbyte = "2E614180";
+        CommandCan(0x719, 0x739, false);
+        res = Success;
+      } else {
+        res = Fail;
+      }
+      break;
+    }
+    case 52:
+    {
+      // SBRLogic_CF Standard
+      m_hl_canbyte = "2E018500";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 53:
+    {
+      // SBRLogic_CF US
+      m_hl_canbyte = "2E018501";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 54:
+    {
+      // FrontSBRInhibition_CF false
+      m_hl_canbyte = "2E010900";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 55:
+    {
+      // FrontSBRInhibition_CF true
+      m_hl_canbyte = "2E010901";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 56:
+    {
+      // Speedmeter ring (Tacho) DayBacklightsPresent_CF false
+      m_hl_canbyte = "2E011800";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 57:
+    {
+      // Speedmeter ring (Tacho) DayBacklightsPresent_CF true
+      m_hl_canbyte = "2E011801";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 58:
+    {
+      // AdditionnalInstrumentPresent_CF false
+      m_hl_canbyte = "2E018001";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 59:
+    {
+      // AdditionnalInstrumentPresent_CF true
+      m_hl_canbyte = "2E018001";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 100:
+    {
+      // ClearDiagnosticInformation.All
+      m_hl_canbyte = "14FFFFFF";
+      CommandCan(0x745, 0x765, true);
+      res = Success;
+      break;
+    }
+    default:
+      res = Fail;
+      break;
+  }
+
+  return res;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, OvmsWriter* writer) {
