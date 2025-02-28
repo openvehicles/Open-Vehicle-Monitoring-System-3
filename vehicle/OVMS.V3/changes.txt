@@ -1,6 +1,13 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Smart EQ 453:
+    add timebased Pre-heat/cool Control 
+      - can set at Website -> Smart ED/EQ 4.Gen -> Climate/Heater 
+      - at App Features #4: on = 1 off = 2, #5 time like 05:15 = 515, #6 5/10/15 Minutes = 0/1/2
+    add GPS powersaving mode at parking
+    add 12V alert raised, the car starts the 12V charging process for 15 Minutes
+    add Network type switch, option to lock LTE only. Needed, when the Provider has no Datastream at GSM
 - CAN: add error flag decoding (included in can status output)
   New commands:
     can <bus> explain [errorflags]    -- Decode error flags into human readable text 
