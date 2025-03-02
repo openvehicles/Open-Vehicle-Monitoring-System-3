@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- VW e-Up: decode & display battery cell level health status,
+    provide v.b.capacity (net capacity in kWh)
+  New metrics:
+    xvu.b.c.soh           -- Array: SOH [%] of each HV battery cell
+  New web page:
+    /xvu/battsoh          -- Battery pack & cell SOH info
 - Smart EQ 453:
     add timebased Pre-heat/cool Control 
       - can set at Website -> Smart ED/EQ 4.Gen -> Climate/Heater 
