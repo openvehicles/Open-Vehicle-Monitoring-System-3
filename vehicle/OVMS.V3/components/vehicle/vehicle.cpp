@@ -640,7 +640,7 @@ void OvmsVehicle::OvmsVehicleSignal::IncomingPollTxCallback(const OvmsPoller::po
     m_parent->IncomingPollTxCallback(job, success);
   }
 
-bool OvmsVehicle::OvmsVehicleSignal::Ready()
+bool OvmsVehicle::OvmsVehicleSignal::Ready() const
   {
   return m_parent->m_ready;
   }

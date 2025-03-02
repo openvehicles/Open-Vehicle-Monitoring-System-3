@@ -174,7 +174,7 @@ class OvmsPoller : public InternalRamAllocated {
         virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
         virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
         virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
-        virtual bool Ready() = 0;
+        virtual bool Ready() const = 0;
       };
     enum class OvmsNextPollResult
       {
@@ -226,16 +226,16 @@ class OvmsPoller : public InternalRamAllocated {
         virtual void Removing() = 0;
 
         /// Return true if this series has any entries
-        virtual bool HasPollList() = 0;
+        virtual bool HasPollList() const = 0;
 
         /** Return true if this series has entries to retry/redo.
           This should mean that the list has been finished at least once,
           but also that the remaining todo don't NEED to be done before moving on.
          */
-        virtual bool HasRepeat() = 0;
+        virtual bool HasRepeat() const = 0;
         /** Return true if this series is ok to run.
          */
-        virtual bool Ready();
+        virtual bool Ready() const;
       };
 
     /// Named element in the series double-linked list.
@@ -302,7 +302,7 @@ class OvmsPoller : public InternalRamAllocated {
         OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry, uint8_t mybus, uint32_t pollticker, uint8_t pollstate);
 
         /// Are there any lists that have active entries?
-        bool HasPollList();
+        bool HasPollList() const;
 
         /** Return true if the current item is marked as blocking.
         */
@@ -315,7 +315,7 @@ class OvmsPoller : public InternalRamAllocated {
           This should mean that the list has been finished at least once,
           but also that the remaining todo don't NEED to be done before moving on.
          */
-        bool HasRepeat();
+        bool HasRepeat() const;
 
       };
 
@@ -358,9 +358,9 @@ class OvmsPoller : public InternalRamAllocated {
 
         void Removing() override;
 
-        bool HasPollList() override;
+        bool HasPollList() const override;
 
-        bool HasRepeat() override;
+        bool HasRepeat() const override;
       };
 
     // Standard Vehicle Poll series passing through various responses.
@@ -381,7 +381,7 @@ class OvmsPoller : public InternalRamAllocated {
         void IncomingTxReply(const OvmsPoller::poll_job_t& job, bool success) override;
 
         // Return true if this series is ok to run.
-        bool Ready() override;
+        bool Ready() const override;
       };
 
     typedef std::function<void(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data)> poll_success_func;
@@ -409,7 +409,7 @@ class OvmsPoller : public InternalRamAllocated {
         void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) override;
 
         // Return true if this series has entries to retry/redo.
-        bool HasRepeat() override;
+        bool HasRepeat() const override;
       };
 
     /** Base for Once off Poll series.
@@ -457,9 +457,9 @@ class OvmsPoller : public InternalRamAllocated {
         // Process An Error
         void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) override;
 
-        bool HasPollList() override;
+        bool HasPollList() const override;
 
-        bool HasRepeat() override;
+        bool HasRepeat() const override;
       };
 
   private:
@@ -512,7 +512,7 @@ class OvmsPoller : public InternalRamAllocated {
   protected:
     OvmsPollers*      m_parent;
 
-    OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
+    mutable OvmsRecMutex m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
   private:
     // Poll state
@@ -554,7 +554,7 @@ class OvmsPoller : public InternalRamAllocated {
     bool              m_poll_run_finished;
 
   private:
-    OvmsRecMutex      m_poll_single_mutex;    // PollSingleRequest() concurrency protection
+    mutable OvmsRecMutex m_poll_single_mutex;    // PollSingleRequest() concurrency protection
 
   protected:
     vwtp_channel_t    m_poll_vwtp;            // VWTP channel state
@@ -570,7 +570,7 @@ class OvmsPoller : public InternalRamAllocated {
       }
     void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
 
-    bool Ready();
+    bool Ready() const;
   private:
     void PollerSend(poller_source_t source);
 
@@ -586,10 +586,10 @@ class OvmsPoller : public InternalRamAllocated {
     static void DoPollerSendSuccess( void * pvParameter1, uint32_t ulParameter2 );
 
   public:
-    bool HasBus(canbus* bus) { return bus == m_poll.bus;}
-    uint8_t CanBusNo() { return m_poll.bus_no;}
+    bool HasBus(canbus* bus) const { return bus == m_poll.bus;}
+    uint8_t CanBusNo() const { return m_poll.bus_no;}
 
-    uint8_t PollState() { return m_poll_state;}
+    uint8_t PollState() const { return m_poll_state;}
 
   protected:
 
@@ -602,7 +602,7 @@ class OvmsPoller : public InternalRamAllocated {
     void Outgoing(const CAN_frame_t &frame, bool success);
 
     // Check for throttling.
-    bool CanPoll();
+    bool CanPoll() const;
 
     enum class OvmsPollEntryType : uint8_t
       {
@@ -658,7 +658,7 @@ class OvmsPoller : public InternalRamAllocated {
       const CanFrameCallback &polltxcallback);
     ~OvmsPoller();
 
-    bool HasPollList();
+    bool HasPollList() const;
 
     void ClearPollList();
 
@@ -705,7 +705,7 @@ class OvmsPollers : public InternalRamAllocated {
       BusPoweroff auto_poweroff;
     } bus_info_t;
     bus_info_t        m_canbusses[VEHICLE_MAXBUSSES];
-    OvmsRecMutex      m_poller_mutex;
+    mutable OvmsRecMutex m_poller_mutex;
     OvmsPoller*       m_pollers[VEHICLE_MAXBUSSES];
     uint8_t           m_poll_state;           // Current poll state
     uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
@@ -795,7 +795,7 @@ class OvmsPollers : public InternalRamAllocated {
     bool LoadTimesTrace( metric_unit_t ratio_unit, times_trace_t &trace);
   public:
     bool PollerTimesTrace( OvmsWriter* writer);
-    bool IsTracingTimes() { return (m_trace & trace_Times) != 0; }
+    bool IsTracingTimes() const { return (m_trace & trace_Times) != 0; }
     typedef std::function<void(canbus*, void *)> PollCallback;
     typedef std::function<void(const CAN_frame_t &)> FrameCallback;
 
@@ -960,32 +960,32 @@ class OvmsPollers : public InternalRamAllocated {
       {
       Queue_Command(OvmsPoller::OvmsPollCommand::Resume, (int)user_poll);
       }
-    bool IsUserPaused()
+    bool IsUserPaused() const
       {
       return m_user_paused;
       }
-    bool IsPaused()
+    bool IsPaused() const
       {
       return m_paused;
       }
     void PollSetState(uint8_t state, canbus* bus = nullptr);
 
-    uint32_t LastPollCmdReceived()
+    uint32_t LastPollCmdReceived() const
       {
       return m_poll_last;
       }
-    uint8_t GetBusNo(canbus* bus);
-    canbus* GetBus(uint8_t busno);
+    uint8_t GetBusNo(canbus* bus) const;
+    canbus* GetBus(uint8_t busno) const;
     canbus* RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, BusPoweroff autoPower);
 
     esp_err_t RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, BusPoweroff autoPower, canbus*& bus,int verbosity, OvmsWriter* writer );
 
     void PowerDownCanBus(int busno);
-    bool HasPollTask()
+    bool HasPollTask() const
       {
       return (Atomic_Get(m_polltask) != nullptr);
       }
-    bool Ready() { return m_ready;}
+    bool Ready() const { return m_ready;}
     void Ready(bool ready) { m_ready = ready;}
 
     // AutoInit stub for startup.

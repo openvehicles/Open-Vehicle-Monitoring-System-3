@@ -146,7 +146,7 @@ void OvmsPoller::IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool 
   m_polls.IncomingTxReply(job, success);
   }
 
-bool OvmsPoller::Ready()
+bool OvmsPoller::Ready() const
   {
   return m_parent->Ready();
   }
@@ -270,7 +270,7 @@ void OvmsPoller::ResetPollEntry(bool force)
     }
   }
 
-bool OvmsPoller::HasPollList()
+bool OvmsPoller::HasPollList() const
   {
   OvmsRecMutexLock lock(&m_poll_mutex);
   return m_polls.HasPollList();
@@ -282,7 +282,7 @@ void OvmsPoller::ClearPollList()
   return m_polls.Clear();
   }
 
-bool OvmsPoller::CanPoll()
+bool OvmsPoller::CanPoll() const
   {
   // Check Throttle
   return (!m_poll_sequence_max || m_poll_sequence_cnt < m_poll_sequence_max);
@@ -969,7 +969,7 @@ void OvmsPollers::ShuttingDownVehicle()
     }
   }
 
-uint8_t OvmsPollers::GetBusNo(canbus* bus)
+uint8_t OvmsPollers::GetBusNo(canbus* bus) const
   {
   for (int i = 0; i < VEHICLE_MAXBUSSES; ++i)
     {
@@ -978,7 +978,7 @@ uint8_t OvmsPollers::GetBusNo(canbus* bus)
     }
   return 0;
   }
-canbus* OvmsPollers::GetBus(uint8_t busno)
+canbus* OvmsPollers::GetBus(uint8_t busno) const
   {
   if (busno <1 || busno > VEHICLE_MAXBUSSES)
     return nullptr;
@@ -2592,7 +2592,7 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::PollSeriesList::NextPollEntry(poll_pi
     }
   }
 
-bool OvmsPoller::PollSeriesList::HasPollList()
+bool OvmsPoller::PollSeriesList::HasPollList() const
   {
   for (auto it = m_first; it != nullptr; it = it->next)
     {
@@ -2602,7 +2602,7 @@ bool OvmsPoller::PollSeriesList::HasPollList()
   return false;
   }
 
-bool OvmsPoller::PollSeriesList::HasRepeat()
+bool OvmsPoller::PollSeriesList::HasRepeat() const
   {
   for (auto it = m_first; it != nullptr; it = it->next)
     {
@@ -2619,7 +2619,7 @@ void OvmsPoller::PollSeriesEntry::IncomingTxReply(const OvmsPoller::poll_job_t& 
   // ignore
   }
 
-bool OvmsPoller::PollSeriesEntry::Ready()
+bool OvmsPoller::PollSeriesEntry::Ready() const
   {
   return true;
   }
@@ -2715,14 +2715,14 @@ void OvmsPoller::StandardPollSeries::Removing()
   m_poller = nullptr;
   }
 
-bool OvmsPoller::StandardPollSeries::HasPollList()
+bool OvmsPoller::StandardPollSeries::HasPollList() const
   {
   return (m_defaultbus != 0)
       && (m_poll_plist != NULL)
       && (m_poll_plist->txmoduleid != 0);
   }
 
-bool OvmsPoller::StandardPollSeries::HasRepeat()
+bool OvmsPoller::StandardPollSeries::HasRepeat() const
   {
   return false;
   }
@@ -2749,7 +2749,7 @@ void OvmsPoller::StandardVehiclePollSeries::IncomingError(const OvmsPoller::poll
  }
 
 // Return true if this series is ok to run.
-bool OvmsPoller::StandardVehiclePollSeries::Ready()
+bool OvmsPoller::StandardVehiclePollSeries::Ready() const
   {
   return (!m_signal) || m_signal->Ready();
   }
@@ -2825,7 +2825,7 @@ void OvmsPoller::StandardPacketPollSeries::IncomingError(const OvmsPoller::poll_
   }
 
 // Return true if this series has entries to retry/redo.
-bool OvmsPoller::StandardPacketPollSeries::HasRepeat()
+bool OvmsPoller::StandardPacketPollSeries::HasRepeat() const
   {
   return (m_repeat_count < m_repeat_max) && HasPollList();
   }
@@ -3009,12 +3009,12 @@ void OvmsPoller::OnceOffPollBase::IncomingError(const OvmsPoller::poll_job_t& jo
   Done(false);
   }
 
-bool OvmsPoller::OnceOffPollBase::HasPollList()
+bool OvmsPoller::OnceOffPollBase::HasPollList() const
   {
   return m_poll.txmoduleid != 0;
   }
 
-bool OvmsPoller::OnceOffPollBase::HasRepeat()
+bool OvmsPoller::OnceOffPollBase::HasRepeat() const
   {
   return false; // Don't retry in same tick.
   }
