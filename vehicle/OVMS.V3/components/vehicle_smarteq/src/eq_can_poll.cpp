@@ -308,9 +308,19 @@ void OvmsVehicleSmartEQ::PollReply_HVAC(const char* data, uint16_t reply_len) {
 }
 
 void OvmsVehicleSmartEQ::PollReply_TDB(const char* data, uint16_t reply_len) {
-  float temp = (float) (CAN_UINT(2)) >= 400.0 ? (float) (CAN_UINT(2) - 400.0) * 0.1 : (float) (400.0 - CAN_UINT(2)) * -0.1;
-  float temptpms = temp > 1.0 ? temp : 1.1;
-  StdMetrics.ms_v_env_temp->SetValue(temp);
+  float temp = (float)(CAN_UINT(2)) > 400.0f ? 
+    (float)(CAN_UINT(2) - 400.0f) * 0.1f : 
+    (float)(400.0f - CAN_UINT(2)) * -0.1f;
+
+  static const float MAX_VALID_TEMP = 100.0f;
+  static const float MIN_VALID_TEMP = -50.0f;
+  if (temp > MIN_VALID_TEMP && temp < MAX_VALID_TEMP) {
+      StdMetrics.ms_v_env_temp->SetValue(temp);
+      ESP_LOGV(TAG, "Ambient temperature updated: %.1f°C", temp);
+  } else {
+      ESP_LOGW(TAG, "Invalid temperature reading ignored: %.1f°C", temp);
+  }
+  float temptpms = temp > 1.0f && temp < MAX_VALID_TEMP ? temp : 1.1f;
   if (m_ios_tpms_fix) {
     StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, temptpms);
     StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, temptpms);
@@ -325,9 +335,9 @@ void OvmsVehicleSmartEQ::PollReply_VIN(const char* data, uint16_t reply_len) {
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len) {
-  mt_evc_hv_energy->SetValue( CAN_UINT(0) / 200.0 );
+  mt_evc_hv_energy->SetValue( CAN_UINT(0) / 200.0f );
   StdMetrics.ms_v_bat_capacity->SetValue(mt_evc_hv_energy->AsFloat());
-  StdMetrics.ms_v_bat_cac->SetValue(mt_evc_hv_energy->AsFloat() * 1000.0 / mt_bms_HV->AsFloat());
+  StdMetrics.ms_v_bat_cac->SetValue(mt_evc_hv_energy->AsFloat() * 1000.0f / mt_bms_HV->AsFloat());
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_State(const char* data, uint16_t reply_len) {
@@ -392,13 +402,13 @@ void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t repl
   //Get AC Power
   value = CAN_UINT(12);
   if (value < 0xEA00) {  //OBL showing only valid data while charging
-    mt_obl_main_CHGpower->SetElemValue(0, value / 2000.0);
+    mt_obl_main_CHGpower->SetElemValue(0, value / 2000.0f);
   } else {
     mt_obl_main_CHGpower->SetElemValue(0, 0);
   }
   value = CAN_UINT(14);
   if (value < 0xEA00) {  //OBL showing only valid data while charging
-    mt_obl_main_CHGpower->SetElemValue(1, value / 2000.0);
+    mt_obl_main_CHGpower->SetElemValue(1, value / 2000.0f);
   } else {
     mt_obl_main_CHGpower->SetElemValue(1, 0);
   }
@@ -438,7 +448,7 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t re
   if(CAN_UINT(0) > 20000) {
     mt_obl_main_CHGpower->SetElemValue(0, (CAN_UINT(0) - 20000.0f) / 1000.0f);
   }else{
-    mt_obl_main_CHGpower->SetElemValue(0, ((20000.0f - CAN_UINT(0)) / 1000.0f) * -1);
+    mt_obl_main_CHGpower->SetElemValue(0, ((20000.0f - CAN_UINT(0)) / 1000.0f) * -1.0f);
   }
   // mt_obl_main_CHGpower->SetElemValue(0, (CAN_UINT(0) - 20000) / 1000.0f);
   UpdateChargeMetrics();

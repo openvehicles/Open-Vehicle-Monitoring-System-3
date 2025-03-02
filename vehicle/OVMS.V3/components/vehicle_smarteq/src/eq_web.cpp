@@ -79,7 +79,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info, TPMS_FL, TPMS_FR, TPMS_RL, TPMS_RR, full_km, rebootnw, net_type;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server;
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, ddt4all;
 
   if (c.method == "POST") {
     // process form submission:
@@ -100,6 +100,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     charge12v = (c.getvar("charge12v") == "yes");
     v2server = (c.getvar("v2server") == "yes");
     net_type = c.getvar("net_type");
+    ddt4all = (c.getvar("ddt4all") == "yes");
     
     if (error == "") {
       // success:
@@ -120,6 +121,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "12v.charge", charge12v);
       MyConfig.SetParamValueBool("xsq", "v2.check", v2server);
       MyConfig.SetParamValue("xsq", "modem.net.type", net_type);
+      MyConfig.SetParamValueBool("xsq", "ddt4all", ddt4all);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -153,6 +155,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     charge12v   = MyConfig.GetParamValueBool("xsq", "12v.charge", false);
     v2server    = MyConfig.GetParamValueBool("xsq", "v2.check", false);
     net_type    = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
+    ddt4all     = MyConfig.GetParamValueBool("xsq", "ddt4all", false);
     c.head(200);
   }
 
@@ -225,6 +228,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",
     atof(rebootnw.c_str()) > 0, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>Default 0=off. Restart Network automatic when no v2Server connection.</p>");
+  c.input_checkbox("Enable DDT4all function", "ddt4all", ddt4all,
+    "<p>Enable = DDT4all commands aktivate, you can find a command list at www.smart-emotion.de.</br>WARNING!!! You can damaged your Car, used at own RISK!</p>");
   c.input_select_start("Modem Network type", "net_type");
   c.input_select_option("Auto", "auto", net_type == "auto");
   c.input_select_option("GSM/LTE", "gsm", net_type == "gsm");
@@ -248,7 +253,7 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
   OvmsVehicleSmartEQ* sq = (OvmsVehicleSmartEQ*)MyVehicleFactory.ActiveVehicle();
   if (!sq) {
       c.head(400);
-      c.alert("danger", "Error: SmartEQ vehicle not available");
+      c.alert("danger", "Error: smartEQ vehicle not available");
       c.done();
       return;
   }
@@ -424,7 +429,7 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
 
-  c.panel_start("primary", "smart SQ Battery Setup");
+  c.panel_start("primary", "smart EQ Battery Setup");
   c.form_start(p.uri);
 
   c.fieldset_start("Charge control");
@@ -459,7 +464,7 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 }
 
 /**
- * GetDashboardConfig: smart ED specific dashboard setup
+ * GetDashboardConfig: smart EQ specific dashboard setup
  */
 void OvmsVehicleSmartEQ::GetDashboardConfig(DashboardConfig& cfg)
 {

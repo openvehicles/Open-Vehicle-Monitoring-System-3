@@ -215,12 +215,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     MyConfig.SetParamValueBool("xsq", "booster.system", true);
     StdMetrics.ms_v_gen_current->SetValue(3);                  // activate gen metrics to app transfer and in-app plugin <> fw switch                                   
   }
-
-  
-  if(MyConfig.GetParamValue("xsq", "gps.onoff","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "gps.onoff", true);
-    MyConfig.SetParamValueInt("xsq", "gps.reactmin", 50);
-  }
   
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {              // reset at boot
     ResetTotalCounters();
@@ -230,6 +224,12 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   TimeBasedClimateData();                                          // set default booster data from App values
   CommandWakeup();                                                 // wake up the car to get the first data
 
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if(MyConfig.GetParamValue("xsq", "gps.onoff","0") == "0") {
+    MyConfig.SetParamValueBool("xsq", "gps.onoff", true);
+    MyConfig.SetParamValueInt("xsq", "gps.reactmin", 50);
+  }
+#endif
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
 #endif
@@ -402,10 +402,10 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x392:
       StdMetrics.ms_v_env_hvac->SetValue((CAN_BYTE(1) & 0x40) > 0);
-      StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40);
+      StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40.0f);
       break;
     case 0x42E: // HV Voltage
-      _temp = ((c >> 13) & 0x7Fu) >= 40.0 ? ((c >> 13) & 0x7Fu) - 40.0 : (40.0 - ((c >> 13) & 0x7Fu)) * -1;
+      _temp = ((c >> 13) & 0x7Fu) > 40.0f ? ((c >> 13) & 0x7Fu) - 40.0f : (40.0f - ((c >> 13) & 0x7Fu)) * -1.0f;
       if(_temp != 87) StdMetrics.ms_v_bat_temp->SetValue(_temp); // HVBatteryTemperature
       StdMetrics.ms_v_bat_voltage->SetValue((float) ((CAN_UINT(3)>>5)&0x3ff) / 2); // HV Voltage
       StdMetrics.ms_v_charge_climit->SetValue((c >> 20) & 0x3Fu); // MaxChargingNegotiatedCurrent
@@ -415,8 +415,8 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       StdMetrics.ms_v_env_awake->SetValue((CAN_BYTE(0) & 0x40) > 0); // Ignition on
       break;
     case 0x5D7: // Speed, ODO
-      StdMetrics.ms_v_pos_speed->SetValue((float) CAN_UINT(0) / 100);
-      StdMetrics.ms_v_pos_odometer->SetValue((float) (CAN_UINT32(2)>>4) / 100);
+      StdMetrics.ms_v_pos_speed->SetValue((float) CAN_UINT(0) / 100.0f);
+      StdMetrics.ms_v_pos_odometer->SetValue((float) (CAN_UINT32(2)>>4) / 100.0f);
       break;
     case 0x5de:
       StdMetrics.ms_v_env_headlights->SetValue((CAN_BYTE(0) & 0x04) > 0);
@@ -741,38 +741,38 @@ void OvmsVehicleSmartEQ::GPSOnOff() {
   static const int PARK_TIMEOUT_SECS = 600;  // 10 minutes
   static const int INITIAL_DELAY = 10;
 
-  m_gps_ticker += 1;
+  #ifdef CONFIG_OVMS_COMP_CELLULAR
+    m_gps_ticker += 1;
 
-  // Power saving: Turn off GPS
-  bool should_turn_off = (StdMetrics.ms_v_env_parktime->AsInt() > PARK_TIMEOUT_SECS &&
-                         !StdMetrics.ms_v_env_on->AsBool() &&
-                         m_gps_onoff &&
-                         !m_gps_off &&
-                         (m_gps_ticker > INITIAL_DELAY));
+    // Power saving: Turn off GPS
+    bool should_turn_off = (StdMetrics.ms_v_env_parktime->AsInt() > PARK_TIMEOUT_SECS &&
+                          !StdMetrics.ms_v_env_on->AsBool() &&
+                          m_gps_onoff &&
+                          !m_gps_off &&
+                          (m_gps_ticker > INITIAL_DELAY));
 
-  // Reactivation conditions
-  bool should_turn_on = ((m_gps_ticker >= m_gps_reactmin) && m_gps_onoff && m_gps_off) ||
-                       (mt_bus_awake->AsBool() && m_gps_off);
+    // Reactivation conditions
+    bool should_turn_on = ((m_gps_ticker >= m_gps_reactmin) && m_gps_onoff && m_gps_off) ||
+                        (mt_bus_awake->AsBool() && m_gps_off);
 
-  if (should_turn_off) {
-      ESP_LOGI(TAG, "Turning GPS off - vehicle parked and inactive");
-      m_gps_off = true;
-      m_gps_ticker = 0;
-      if (MyPeripherals && MyPeripherals->m_cellular_modem) {
-          MyPeripherals->m_cellular_modem->StopNMEA();
-      } else {
-          ESP_LOGE(TAG, "Cannot stop GPS NMEA - modem not available");
-      }
-  } else if (should_turn_on) {
-      ESP_LOGI(TAG, "Turning GPS on - timer/bus wake condition");
-      m_gps_off = false;
-      m_gps_ticker = 0;
-      if (MyPeripherals && MyPeripherals->m_cellular_modem) {
-          MyPeripherals->m_cellular_modem->StartNMEA();
-      } else {
-          ESP_LOGE(TAG, "Cannot start GPS NMEA - modem not available");
-      }
-  }
+    if (should_turn_off) {
+        ESP_LOGI(TAG, "Turning GPS off - vehicle parked and inactive");
+        m_gps_off = true;
+        m_gps_ticker = 0;
+        if (MyPeripherals && MyPeripherals->m_cellular_modem) {
+            MyPeripherals->m_cellular_modem->StopNMEA();
+        }
+    } else if (should_turn_on) {
+        ESP_LOGI(TAG, "Turning GPS on - timer/bus wake condition");
+        m_gps_off = false;
+        m_gps_ticker = 0;
+        if (MyPeripherals && MyPeripherals->m_cellular_modem) {
+            MyPeripherals->m_cellular_modem->StartNMEA();
+        }
+    }
+  #else
+      ESP_LOGD(TAG, "GPS control disabled - cellular modem support not enabled");
+  #endif // CONFIG_OVMS_COMP_CELLULAR
 }
 
 // check the Server V2 connection and reboot the network if needed
@@ -1087,14 +1087,16 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
       ResetTotalCounters();
     }
 
-    if (m_gps_off) {
-      m_gps_off = false;
-      MyConfig.SetParamValueBool("xsq", "gps.off", false);
-      m_gps_ticker = 0;
-      MyPeripherals->m_cellular_modem->StartNMEA();
-    }
-    m_12v_ticker = 0;
-    m_booster_ticker = 0;
+    #ifdef CONFIG_OVMS_COMP_CELLULAR
+      if (m_gps_off) {
+        m_gps_off = false;
+        MyConfig.SetParamValueBool("xsq", "gps.off", false);
+        m_gps_ticker = 0;
+        MyPeripherals->m_cellular_modem->StartNMEA();
+      }
+      m_12v_ticker = 0;
+      m_booster_ticker = 0;
+    #endif
   }
   else if (!isOn && StdMetrics.ms_v_env_on->AsBool()) {
     // Log once that car is being turned off
@@ -1435,7 +1437,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandActivateValet(const ch
   return NotImplemented;
 }
 
-
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const char* pin) {
   
   OvmsVehicle::vehicle_command_t res = Fail;
@@ -1450,12 +1451,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
   {
     case 0:
     {
-      res = Fail;
+      // indicator 5x on
+      m_hl_canbyte = "30082002";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
       break;
     }
     case 1:
     {
-      res = Fail;
+      // open trunk
+      m_hl_canbyte = "300500";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
       break;
     }
     case 2:
@@ -1800,11 +1807,52 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
       res = Success;
       break;
     }
+    
+    case 60:
+    {
+      // TPMSPresent_CF false
+      m_hl_canbyte = "2E010E00";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 61:
+    {
+      // TPMSPresent_CF true
+      m_hl_canbyte = "2E010E01";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
     case 100:
     {
       // ClearDiagnosticInformation.All
       m_hl_canbyte = "14FFFFFF";
       CommandCan(0x745, 0x765, true);
+      res = Success;
+      break;
+    }
+    case 719:
+    {
+      CommandCan(0x719, 0x739, false);
+      res = Success;
+      break;
+    }
+    case 743:
+    {
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 745:
+    {
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 746:
+    {
+      CommandCan(0x74d, 0x76d, false);
       res = Success;
       break;
     }
