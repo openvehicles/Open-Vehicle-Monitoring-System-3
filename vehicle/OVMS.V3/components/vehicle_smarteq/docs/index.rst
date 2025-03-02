@@ -33,6 +33,7 @@ Lock/Unlock Vehicle         No (not really Implementet, only when the car is ope
 Valet Mode Control          No
 Maintenance Reminders       Yes
 12V Battery Monitoring      Yes (if 12V alert raised, the car starts the 12V charging process for 15 Minutes. (homelink 3))
+DDT4all simple Support      Yes (a List of all possible commands at www.smart-EMOTION.de)
 
 =========================== ==============
 Others
