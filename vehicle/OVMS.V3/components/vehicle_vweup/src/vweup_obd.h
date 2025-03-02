@@ -162,6 +162,7 @@ using namespace std;
 #define VWUP_BAT_MGMT_CELL_T17          0x7425    // cell temperature for module #17 (gen1)
 #define VWUP_BAT_MGMT_HIST18            0x74CF    // "hist. data 18": total AC, CCS & regen Ah charged
 #define VWUP_BAT_MGMT_SOH_CAC           0x74CB    // Ah of HV battery and all cells
+#define VWUP_BAT_MGMT_SOH_HIST          0x74CC    // Ah history of each HV battery cell
 
 #define VWUP_BRKSENS_TEMP               0x1024    // sensor temperature
 
