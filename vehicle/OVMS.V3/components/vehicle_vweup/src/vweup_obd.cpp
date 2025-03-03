@@ -960,9 +960,13 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
       if (PollReply.FromUint16("VWUP_BAT_MGMT_SOH_CAC", value, 2)) {
         size_t cellcount = value;
         std::vector<float> cellsoh(cellcount);
+        float soh100 = (vweup_modelyear > 2019) ? 240.0f : 125.0f;
+        int cmods = (vweup_modelyear > 2019) ? 14 : 17;
         for (int i = 0; i < cellcount; i++) {
           if (PollReply.FromUint8("VWUP_BAT_MGMT_SOH_CAC", value, 4 + i)) {
-            cellsoh[i] = ROUNDPREC(value / ((vweup_modelyear > 2019) ? 240.0f : 125.0f) * 100.0f, 1);
+            // map sensor layout to pack layout:
+            int ci = (i % cmods) * 6 + (i / cmods);
+            cellsoh[ci] = ROUNDPREC(value / soh100 * 100.0f, 1);
           }
         }
         m_bat_cell_soh->SetValue(cellsoh);
