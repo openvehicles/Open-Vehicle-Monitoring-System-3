@@ -1090,7 +1090,6 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
     #ifdef CONFIG_OVMS_COMP_CELLULAR
       if (m_gps_off) {
         m_gps_off = false;
-        MyConfig.SetParamValueBool("xsq", "gps.off", false);
         m_gps_ticker = 0;
         MyPeripherals->m_cellular_modem->StartNMEA();
       }
