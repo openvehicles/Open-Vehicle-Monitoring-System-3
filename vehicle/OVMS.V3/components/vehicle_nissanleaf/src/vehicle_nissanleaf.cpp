@@ -720,9 +720,9 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Shunt(uint8_t reply_data[], uint16_t r
 
 void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len)
   {
-  if (reply_len != 14 && reply_len != 51)  //TODO: AEZ1 Leafs respond with 29 bytes  
+  if (reply_len != 14 && reply_len != 29)  //TODO: AEZ1 Leafs respond with 29 bytes  
     {
-    ESP_LOGI(TAG, "PollReply_BMS_Temp: len=%d != 14", reply_len);
+    ESP_LOGI(TAG, "PollReply_BMS_Temp: len=%d != 14 or != 29", reply_len);
     return;
     }
   //  > 0x79b 21 04
@@ -744,6 +744,13 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t re
   // 14 [02 57 0c  02 57 0c  ff ff ff  02 58 0b  0b 00 ]
   // 14 [02 5a 0b  02 59 0b  ff ff ff  02 5a 0b  0b 00 ]
   //
+
+  // AEZ1 Leafs respond with 29 bytes
+  //  0x7BB 10 1F 61 04 02 0D 13 02  0..3
+  //  0x7BB 21 03 14 FF FF FF 02 0B  4..10
+  //  0x7BB 22 13 13 00 FF FF FF FF  11..17
+  
+  // TODO: The above capture is incomplete
 
   int thermistor[4];
   int temp_int[6];
