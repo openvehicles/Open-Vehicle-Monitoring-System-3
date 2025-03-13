@@ -259,7 +259,7 @@ void OvmsVehicleNissanLeaf::CommandInit()
   cmd_xnl = MyCommandApp.RegisterCommand("xnl","Nissan Leaf framework");
 
   OvmsCommand* obd = cmd_xnl->RegisterCommand("obd", "OBD2 tools");
-  OvmsCommand* cmd_can1 = obd->RegisterCommand("can1", "Send OBD2 request, output response to EV can bus");
+    OvmsCommand* cmd_can1 = obd->RegisterCommand("can1", "Send OBD2 request, output response to EV can bus");
   cmd_can1->RegisterCommand("device", "Send OBD2 request to an ECU",shell_obd_request,
     "<txid> <rxid> <request>\n"
     "Where <request> includes mode (01, 02, 09, 10, 1A, 21 or 22) and pid.\n"
@@ -596,9 +596,11 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
 void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t reply_len)
   {
   if (reply_len != 39 &&    // 24 KWh Leafs
-      reply_len != 41)      // 30 KWh Leafs with Nissan BMS fix
+      reply_len != 41 &&    // 30 KWh Leafs
+      reply_len != 51)      // AEZ1 Leafs respond with 51 bytes
+                            // TODO: on startup the AEZ1 Leafs respond with 42 bytes
     {
-    ESP_LOGI(TAG, "PollReply_Battery: len=%d != 39 && != 41", reply_len);
+    ESP_LOGI(TAG, "PollReply_Battery: len=%d != 39 && != 41 && != 51", reply_len);
     return;
     }
 
@@ -620,20 +622,45 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t rep
   // [32..38] 000b3290 800001
   // [39..40] 0000
 
-  uint16_t hx = (reply_data[26] << 8)
-              |  reply_data[27];
-  m_hx->SetValue(hx / 100.0);
+  // AEZ1 Leafs respond with 51 bytes
+  // > 0x79b 21 01
+  // < 0x7bb 61 01
+  //  0x7BB 10 35 61 01 FF FF FC 18		0..3
+  //  0x7BB 21 02 AF FF FF FB 62 FF		4..10
+  //  0x7BB 22 FF F0 DD 0B 1C 30 D4		11..17
+  //  0x7BB 23 95 1D 33 06 03 95 00		18..24
+  //  0x7BB 24 01 70 00 26 9A 00 0C		25..31
+  //  0x7BB 25 44 B5 00 11 0B B8 80		32..38
+  //  0x7BB 26 00 01 FF FF FB 62 FF		39..45
+  //  0x7BB 27 FF FC AA 01 AD FF FF		46..52
 
-  uint32_t ah10000 = (reply_data[33] << 16)
-                   | (reply_data[34] << 8)
-                   |  reply_data[35];
+  uint16_t hx;
+  uint32_t ah10000;
+
+  if (reply_len == 51)
+  { 
+    hx = (reply_data[28] << 8) | reply_data[29];
+    ah10000 = (reply_data[35] << 16) | (reply_data[36] << 8) |  reply_data[37];
+  } else
+  {
+    hx = (reply_data[26] << 8) | reply_data[27];
+    ah10000 = (reply_data[33] << 16) | (reply_data[34] << 8) |  reply_data[35];
+  }
+
+  m_hx->SetValue(hx / 102.4); // from Dala's Leaf2018-CAN pdf use 102.4 not 100
+
   float ah = ah10000 / 10000.0;
   StandardMetrics.ms_v_bat_cac->SetValue(ah);
+
+
 
   // there may be a way to get the SoH directly from the BMS, but for now
   // divide by a configurable battery size
   // - For 24 KWh : xnl.newCarAh = 66 (default)
   // - For 30 KWh : xnl.newCarAh = 80 (i.e. shell command "config set xnl newCarAh 80")
+  
+  /// TODO: this can be read directly from the BMS (group 61) for AEZ1 Leafs
+
   float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
   float soh = ah / newCarAh * 100;
   m_soh_new_car->SetValue(soh);
@@ -693,7 +720,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Shunt(uint8_t reply_data[], uint16_t r
 
 void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len)
   {
-  if (reply_len != 14)
+  if (reply_len != 14 && reply_len != 51)  //TODO: AEZ1 Leafs respond with 29 bytes  
     {
     ESP_LOGI(TAG, "PollReply_BMS_Temp: len=%d != 14", reply_len);
     return;
