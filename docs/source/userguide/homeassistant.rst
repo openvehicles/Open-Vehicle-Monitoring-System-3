@@ -43,12 +43,12 @@ The OVMS integration uses MQTT for communication, which is designed to be lightw
 * Update frequency of metrics
 * Message payload size
 
-For most vehicles, the total MQTT traffic ranges from 0.04 MB - 1 MB per day with default settings, depending on how actively the vehicle is used and how many metrics are enabled. This averages to approximately 10 MB per month including when your car is connected to WiFi while at home.
+For most vehicles, the total MQTT traffic ranges from 0.04 MB - 1 MB per day with default settings, depending on how actively the vehicle is used and how many metrics are enabled. This averages to approximately 10 MB per month when your car is connected to WiFi while at home, and driven to work around 1 hour per day.
 
 Memory and CPU Usage
 ~~~~~~~~~~~~~~~~~~~
 
-The integration's resource footprint on Home Assistant is minimal:
+The integration's resource footprint on Home Assistant server is minimal:
 
 * **Memory**: Typically 10-30MB RAM depending on the number of entities
 * **CPU**: Negligible impact during normal operation (1-3% on average systems)
@@ -82,16 +82,17 @@ To reduce data usage:
 * **Don't use the V3 (MQTT) protocol if data usage is a concern**. MQTT needs significantly more bandwidth than the MP protocol used by V2.
 * Don't activate the App's background service mode (currently only applies to Android).
 * Don't activate GPS Streaming Mode (feature #8).
-* Reduce the general update intervals (web UI: Config → Server V2).
+* Reduce the general update intervals (web UI: Config → Server V2/V3).
 
 For MQTT-specific optimization:
 
 * Configure appropriate update intervals in your OVMS module
 * Use QoS level 0 for non-critical metrics
+* Use QoS level 1 for commands.
 * Consider disabling metrics you don't need in your OVMS configuration
 * For large deployments, use a dedicated MQTT broker with optimized settings
 
-Prerequisites
+Prerequisites for using the Home Assistant HACS integration
 ------------
 
 * Home Assistant (2025.2.5 or newer)
@@ -180,54 +181,6 @@ Manual Installation
 4. Configure topic structure to match your OVMS settings
 5. Select your vehicle ID when prompted
 
-Manual Configuration
-~~~~~~~~~~~~~~~~~~~
-
-As an alternative to using the integration, you can manually configure Home Assistant to work with OVMS using MQTT sensors defined in your configuration.yaml file. This approach gives you more control over which metrics are tracked and how they are displayed.
-
-1. Setup MQTT Broker Connection
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This can be either an external broker or the built-in MQTT broker in Home Assistant.
-
-2. Configure OVMS
-^^^^^^^^^^^^^^^
-
-Follow the same MQTT configuration as above in your OVMS module.
-
-3. Configure Home Assistant YAML
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Add MQTT sensors to your configuration.yaml file. Example sensors::
-
-   mqtt:
-     binary_sensor:
-       - name: "OVMS 12V Battery Alert"
-         state_topic: "ovms/CAR/UNIQUEID/metric/v/b/12v/voltage/alert"
-         icon: mdi:car-battery
-     sensor:
-       - name: "OVMS GPS Latitude"
-         state_topic: "ovms/CAR/UNIQUEID/metric/v/p/latitude"
-         icon: mdi:latitude
-       - name: "OVMS GPS Longitude"
-         state_topic: "ovms/CAR/UNIQUEID/metric/v/p/longitude"
-         icon: mdi:longitude
-       - name: "OVMS GPS Signal Strength"
-         state_topic: "ovms/CAR/UNIQUEID/metric/v/p/gpssq"
-         device_class: signal_strength
-         unit_of_measurement: '%'
-       - name: "OVMS GPS Time Updated"
-         state_topic: "ovms/CAR/UNIQUEID/metric/v/p/gpstime"
-         value_template: '{{ value_json | timestamp_local }}'
-         device_class: timestamp
-       - name: "OVMS 12V Battery"
-         state_topic: "ovms/CAR/UNIQUEID/metric/v/b/12v/voltage"
-         value_template: '{{ value | round(1) }}'
-         icon: mdi:car-battery
-         unit_of_measurement: 'V'
-
-Replace "CAR/UNIQUEID" with your actual vehicle identifier. Add additional sensors based on the metrics available from your vehicle.
-
 Available Services
 -----------------
 
@@ -297,3 +250,51 @@ Additional Resources
 
 For advanced usage, dashboard examples, and technical details, refer to the full documentation at:
 https://github.com/enoch85/ovms-home-assistant
+
+Manual Configuration (non HACS)
+~~~~~~~~~~~~~~~~~~~
+
+As an alternative to using the integration, you can manually configure Home Assistant to work with OVMS using MQTT sensors defined in your configuration.yaml file. This approach gives you more control over which metrics are tracked and how they are displayed.
+
+1. Setup MQTT Broker Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This can be either an external broker or the built-in MQTT broker in Home Assistant.
+
+2. Configure OVMS
+^^^^^^^^^^^^^^^
+
+Follow the same MQTT configuration as above in your OVMS module.
+
+3. Configure Home Assistant YAML
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Add MQTT sensors to your configuration.yaml file. Example sensors::
+
+   mqtt:
+     binary_sensor:
+       - name: "OVMS 12V Battery Alert"
+         state_topic: "ovms/CAR/UNIQUEID/metric/v/b/12v/voltage/alert"
+         icon: mdi:car-battery
+     sensor:
+       - name: "OVMS GPS Latitude"
+         state_topic: "ovms/CAR/UNIQUEID/metric/v/p/latitude"
+         icon: mdi:latitude
+       - name: "OVMS GPS Longitude"
+         state_topic: "ovms/CAR/UNIQUEID/metric/v/p/longitude"
+         icon: mdi:longitude
+       - name: "OVMS GPS Signal Strength"
+         state_topic: "ovms/CAR/UNIQUEID/metric/v/p/gpssq"
+         device_class: signal_strength
+         unit_of_measurement: '%'
+       - name: "OVMS GPS Time Updated"
+         state_topic: "ovms/CAR/UNIQUEID/metric/v/p/gpstime"
+         value_template: '{{ value_json | timestamp_local }}'
+         device_class: timestamp
+       - name: "OVMS 12V Battery"
+         state_topic: "ovms/CAR/UNIQUEID/metric/v/b/12v/voltage"
+         value_template: '{{ value | round(1) }}'
+         icon: mdi:car-battery
+         unit_of_measurement: 'V'
+
+Replace "CAR/UNIQUEID" with your actual vehicle identifier. Add additional sensors based on the metrics available from your vehicle.
