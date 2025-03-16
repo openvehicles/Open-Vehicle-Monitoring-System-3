@@ -69,7 +69,7 @@ Comparison with OVMS V2 Server
 +----------------------+------------------------------------+----------------------------------+
 | Scalability          | Excellent (thousands of clients)   | Good (limited by server)         |
 +----------------------+------------------------------------+----------------------------------+
-| Historical Data      | Uses Home Assistant's native history| Built-in data retention         |
+| Historical Data      | Home Assistant's native history    | Built-in data retention          |
 +----------------------+------------------------------------+----------------------------------+
 
 The V2 server generally provides better efficiency and lower data usage than the MQTT integration, while the MQTT integration offers deeper integration with home automation systems.
