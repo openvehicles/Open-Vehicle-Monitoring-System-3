@@ -1,5 +1,5 @@
 OVMS Home Assistant Integration
-===========================
+===============================
 
 Overview
 --------
@@ -17,7 +17,7 @@ Features
 * **Secure communication** with TLS/SSL support for MQTT connections
 
 How It Works
------------
+-------------
 
 The integration operates through these components:
 
@@ -32,10 +32,10 @@ The integration operates through these components:
    * Provides services for sending commands back to your vehicle
 
 MQTT Overhead and Performance
------------------------------
+------------------------------
 
 Data Usage and Bandwidth
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 The OVMS integration uses MQTT for communication, which is designed to be lightweight and efficient for IoT devices. Typical data usage depends on:
 
@@ -46,7 +46,7 @@ The OVMS integration uses MQTT for communication, which is designed to be lightw
 For most vehicles, the total MQTT traffic ranges from 0.04 MB - 1 MB per day with default settings, depending on how actively the vehicle is used and how many metrics are enabled. This averages to approximately 10 MB per month when your car is connected to WiFi while at home, and driven to work around 1 hour per day.
 
 Memory and CPU Usage
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 The integration's resource footprint on Home Assistant server is minimal:
 
@@ -55,7 +55,7 @@ The integration's resource footprint on Home Assistant server is minimal:
 * **Storage**: Minimal state data, primarily in Home Assistant's database
 
 Comparison with OVMS V2 Server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 +----------------------+------------------------------------+----------------------------------+
 | Aspect               | MQTT/Home Assistant Integration    | OVMS V2 Server                   |
@@ -75,7 +75,7 @@ Comparison with OVMS V2 Server
 The V2 server generally provides better efficiency and lower data usage than the MQTT integration, while the MQTT integration offers deeper integration with home automation systems.
 
 Optimization Tips
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 To reduce data usage:
 
@@ -93,7 +93,7 @@ For MQTT-specific optimization:
 * For large deployments, use a dedicated MQTT broker with optimized settings
 
 Prerequisites for using the Home Assistant HACS integration
-------------
+-----------------------------------------------------------
 
 * Home Assistant (2025.2.5 or newer)
 * MQTT integration configured in Home Assistant, or any external MQTT Broker that supports MQTTv3.1 (or newer). EMQX are confirmed to be working well.
@@ -101,13 +101,13 @@ Prerequisites for using the Home Assistant HACS integration
 * OVMS Server V3 enabled
 
 Installation
------------
+------------
 
 Integration Installation
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Configure OVMS Module
-^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 In your OVMS web UI:
 
@@ -123,7 +123,7 @@ In your OVMS web UI:
 3. Save your configuration
 
 2. Configure MQTT Broker Permissions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Ensure your MQTT broker permits these operations::
 
@@ -135,11 +135,11 @@ Ensure your MQTT broker permits these operations::
    - ovms/+/+/client/rr/command/# (For sending commands)
    - ovms/+/+/status (For publishing status)
 
-3. Install the Integration
-^^^^^^^^^^^^^^^^^^^^^^^^^
+3. Install the HACS Integration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 HACS Installation (Recommended)
-""""""""""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. In Home Assistant, go to **HACS → Integrations**
 2. Click on **+ Explore & Download Repositories**
@@ -147,8 +147,8 @@ HACS Installation (Recommended)
 4. Install the integration
 5. Restart Home Assistant
 
-Adding as a Custom Repository
-""""""""""""""""""""""""""""
+Adding the HACS integration as a Custom Repository
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If the integration is not available in the HACS store:
 
@@ -165,15 +165,15 @@ If the integration is not available in the HACS store:
 7. Click on it and select **Download**
 8. Restart Home Assistant after installation
 
-Manual Installation
-""""""""""""""""""
+Manual Installation of the HACS integration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Download the repository as a ZIP file
 2. Extract it and copy the ``custom_components/ovms`` folder to your Home Assistant's ``custom_components`` directory
 3. Restart Home Assistant
 
-4. Set Up the Integration
-^^^^^^^^^^^^^^^^^^^^^^^
+4. Set Up the HACS Integration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. In Home Assistant, go to **Settings → Devices & Services → Integrations**
 2. Click on **+ Add integration** and search for **OVMS**
@@ -182,7 +182,7 @@ Manual Installation
 5. Select your vehicle ID when prompted
 
 Available Services
------------------
+------------------
 
 The integration provides several services to control your vehicle:
 
@@ -192,7 +192,7 @@ The integration provides several services to control your vehicle:
 * **ovms.control_charging**: Control the vehicle's charging functions
 
 MQTT Topic Structure
-------------------
+--------------------
 
 The integration supports these MQTT topic structures:
 
@@ -202,12 +202,12 @@ The integration supports these MQTT topic structures:
 * Custom: Define your own structure with placeholders
 
 Secure MQTT with TLS
--------------------
+--------------------
 
 For secure MQTT connections, you can configure TLS/SSL. This is especially important for remote connections.
 
 Certificate Authority Setup
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Generate certificates on your MQTT broker
 2. Import the CA certificate to OVMS through the web interface:
@@ -217,7 +217,7 @@ Certificate Authority Setup
    * Run 'tls trust reload' from the OVMS shell
 
 Configure OVMS for Secure MQTT
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the OVMS web UI:
 
@@ -228,7 +228,7 @@ In the OVMS web UI:
 5. Save and restart the MQTT service
 
 Troubleshooting
---------------
+---------------
 
 If no entities are created:
 
@@ -246,28 +246,28 @@ If no entities are created:
 4. Verify ACL permissions in your MQTT broker
 
 Additional Resources
-------------------
+--------------------
 
 For advanced usage, dashboard examples, and technical details, refer to the full documentation at:
 https://github.com/enoch85/ovms-home-assistant
 
 Manual Configuration (non HACS)
-===============================
+-------------------------------
 
 As an alternative to using the integration, you can manually configure Home Assistant to work with OVMS using MQTT sensors defined in your configuration.yaml file. This approach gives you more control over which metrics are tracked and how they are displayed.
 
 1. Setup MQTT Broker Connection
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This can be either an external broker or the built-in MQTT broker in Home Assistant.
 
 2. Configure OVMS
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~
 
 Follow the same MQTT configuration as above in your OVMS module.
 
 3. Configure Home Assistant YAML
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Add MQTT sensors to your configuration.yaml file. Example sensors::
 
