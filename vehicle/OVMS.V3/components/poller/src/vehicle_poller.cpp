@@ -1365,7 +1365,10 @@ void OvmsPollers::PollerTask()
         }
       }
     if (m_shut_down)
+      {
+      ShuttingDown();
       break;
+      }
 
     std::unique_ptr<timer_util_t> timer;
 
