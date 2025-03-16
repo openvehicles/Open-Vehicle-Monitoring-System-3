@@ -82,6 +82,7 @@ provides data logging to SD card and to a server.
   - [User Support Forum](https://www.openvehicles.com/forum)
   - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US) [APK file](https://github.com/openvehicles/Open-Vehicle-Android/tree/master/release)
   - [iOS App](https://apps.apple.com/us/app/open-vehicles/id490098531)
+  - [Home Assistant integration](https://github.com/enoch85/ovms-home-assistant)
 - _Distributors_
   - [Medlock & Sons (North America)](https://medlockandsons.com/product/ovms-v3/)
   - [OpenEnergyMonitor (UK/Europe)](https://shop.openenergymonitor.com/ovms/)
