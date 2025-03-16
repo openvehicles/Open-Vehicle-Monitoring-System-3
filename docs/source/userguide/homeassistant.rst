@@ -252,7 +252,7 @@ For advanced usage, dashboard examples, and technical details, refer to the full
 https://github.com/enoch85/ovms-home-assistant
 
 Manual Configuration (non HACS)
-~~~~~~~~~~~~~~~~~~~
+------------------
 
 As an alternative to using the integration, you can manually configure Home Assistant to work with OVMS using MQTT sensors defined in your configuration.yaml file. This approach gives you more control over which metrics are tracked and how they are displayed.
 
