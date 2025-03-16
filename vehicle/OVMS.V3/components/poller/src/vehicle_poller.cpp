@@ -1605,7 +1605,7 @@ OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
     if (!busno)
       return nullptr;
 
-    IFTRACE(Poller) ESP_LOGD(TAG, "GetPoller( busno=%" PRIu8 ")", busno);
+    IFTRACE(Poller) ESP_LOGD(TAG, "GetPoller - create Poller ( busno=%" PRIu8 ")", busno);
     auto newpoller =  new OvmsPoller(can, busno, this, m_poll_txcallback);
     newpoller->m_poll_state = m_poll_state;
     newpoller->m_poll_sequence_max = m_poll_sequence_max;
@@ -2492,14 +2492,14 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::PollSeriesList::NextPollEntry(poll_pi
             }
           case OvmsPoller::SeriesStatus::RemoveNext:
             {
-            ESP_LOGD(TAG, "Poll Auto-Removing (next) '%s'", m_iter->name.c_str());
+            IFTRACE(Poller) ESP_LOGD(TAG, "Poll Auto-Removing (next) '%s'", m_iter->name.c_str());
             Remove(m_iter);
             break;
             }
           case OvmsPoller::SeriesStatus::RemoveRestart:
             {
             // Resume - skipping over 'StillAtEnd' iterators.
-            ESP_LOGD(TAG, "Poll Auto-Removing (restart) '%s'", m_iter->name.c_str());
+            IFTRACE(Poller) ESP_LOGD(TAG, "Poll Auto-Removing (restart) '%s'", m_iter->name.c_str());
             auto cur = m_iter;
             m_iter = nullptr;
             Remove(cur);
@@ -2742,7 +2742,7 @@ void OvmsPoller::StandardPacketPollSeries::IncomingError(const OvmsPoller::poll_
   {
   if (code == 0)
     {
-    ESP_LOGD(TAG, "Packet failed with zero error %.03" PRIx32 " TYPE:%x PID: %03x", job.moduleid_rec, job.type, job.pid);
+    IFTRACE(Poller) ESP_LOGD(TAG, "Packet failed with zero error %.03" PRIx32 " TYPE:%x PID: %03x", job.moduleid_rec, job.type, job.pid);
     m_data.clear();
     if (m_success)
       m_success(job.type, job.moduleid_sent, job.moduleid_rec, job.pid, m_data);
@@ -2827,7 +2827,7 @@ void OvmsPoller::OnceOffPollBase::ResetList(OvmsPoller::ResetMode mode)
   switch(m_sent)
     {
     case status_t::Init:
-      ESP_LOGV(TAG, "Once Off Poll: List reset to start");
+      IFTRACE(Poller) ESP_LOGV(TAG, "Once Off Poll: List reset to start");
       break;
     case status_t::Retry:
       if (mode == OvmsPoller::ResetMode::PollReset)
