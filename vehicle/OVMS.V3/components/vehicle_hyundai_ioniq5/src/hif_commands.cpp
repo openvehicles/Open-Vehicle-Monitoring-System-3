@@ -49,7 +49,7 @@ OvmsVehicle::vehicle_command_t OvmsHyundaiIoniqEv::CommandWakeup()
 {
   XARM("OvmsHyundaiIoniqEv::CommandWakeup");
   // Keep Awake for 5 mins.
-  hif_keep_awake = 30000;
+  hif_keep_awake = 300;
   PollState_Running();
   ESP_LOGI(TAG, "CommandWakeup - Keeping awake for 5 minutes");
   XDISARM;
