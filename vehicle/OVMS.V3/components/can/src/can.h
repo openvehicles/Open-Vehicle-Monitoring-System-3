@@ -391,6 +391,7 @@ class can : public InternalRamAllocated
 
   public:
     void RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback=false);
+    void RegisterCallbackFront(const char* caller, CanFrameCallback callback, bool txfeedback=false);
     void DeregisterCallback(const char* caller);
     int ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success);
 
