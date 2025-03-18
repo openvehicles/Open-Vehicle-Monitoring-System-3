@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "1.13.2"
+#define VERSION "1.13.3"
 
 #include <stdio.h>
 #include <string>
@@ -135,7 +135,9 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
 
   // init can bus:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  MyCan.RegisterCallback(TAG, std::bind(&OvmsVehicleRenaultTwizy::CanResponder, this, _1));
+
+  // to maximize response speed make sure our callback is called first:
+  MyCan.RegisterCallbackFront(TAG, std::bind(&OvmsVehicleRenaultTwizy::CanResponder, this, _1));
 
   // init SEVCON connection:
   m_sevcon = new SevconClient(this);

@@ -684,7 +684,7 @@ class OvmsPoller : public InternalRamAllocated {
                       uint8_t polltype, uint16_t pid, std::string& response,
                       int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
 
-    void PollRequest(const std::string &name, const std::shared_ptr<PollSeriesEntry> &series);
+    bool PollRequest(const std::string &name, const std::shared_ptr<PollSeriesEntry> &series, int timeout_ms = 5000);
     void RemovePollRequest(const std::string &name);
     void RemovePollRequestStarting(const std::string &name);
 
@@ -921,7 +921,7 @@ class OvmsPollers : public InternalRamAllocated {
 
     void PollSetPidList(canbus* defbus, const OvmsPoller::poll_pid_t* plist, OvmsPoller::VehicleSignal *signal);
 
-    void PollRequest(canbus* defbus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series);
+    bool PollRequest(canbus* defbus, const std::string &name, const std::shared_ptr<OvmsPoller::PollSeriesEntry> &series, int timeout_ms = 5000 );
 
     void PollRemove(canbus* defbus, const std::string &name);
 
