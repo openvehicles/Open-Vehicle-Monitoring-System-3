@@ -193,6 +193,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_ZE0_charger = false;
   m_AZE0_charger = false;
   m_climate_really_off = false;
+  m_AZE1 = false;
+  
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -636,12 +638,18 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t rep
 
   uint16_t hx;
   uint32_t ah10000;
+  uint32_t soc=0;
 
-  if (reply_len == 51)
+  if (reply_len == 51)  // AEZ1 Leafs
   { 
     hx = (reply_data[28] << 8) | reply_data[29];
     ah10000 = (reply_data[35] << 16) | (reply_data[36] << 8) |  reply_data[37];
-  } else
+
+    soc = (reply_data[31] << 16) | (reply_data[32] << 8) |  reply_data[33];
+    ESP_LOGI(TAG, "0x7BB SOC response: %d", soc);
+    StandardMetrics.ms_v_bat_soc->SetValue(soc / 10000.0);
+
+  } else // Eveything else  
   {
     hx = (reply_data[26] << 8) | reply_data[27];
     ah10000 = (reply_data[33] << 16) | (reply_data[34] << 8) |  reply_data[35];
@@ -822,6 +830,12 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_l
   strncpy(buf,(char*)reply_data,reply_len);
   string strbuf(buf);
   std::replace(strbuf.begin(), strbuf.end(), 0x1b, 0x20); // remove ESC character returned by AZE0 models
+
+  // Check if the 6th to 10th characters are "AZE1"
+  if (strncmp(&buf[5], "AZE1", 4) == 0) {
+    m_AZE1 = true;
+  }
+
   StandardMetrics.ms_v_vin->SetValue(strbuf); //(char*)reply_data
   }
 
@@ -964,16 +978,20 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
 
       // soc displayed on the instrument cluster
-      uint8_t soc = d[4] & 0x7f;
-      if (soc != 0x7f)
+      if (!m_AZE1) 
         {
-        m_soc_instrument->SetValue(soc);
-        // we use this unless the user has opted otherwise
-        if (!MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
+        uint8_t soc = d[4] & 0x7f;  // On the AEZ1 this is always 0
+        if (soc != 0x7f)
           {
-          StandardMetrics.ms_v_bat_soc->SetValue(soc);
+          m_soc_instrument->SetValue(soc);
+          // we use this unless the user has opted otherwise
+          if (!MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
+            {
+            StandardMetrics.ms_v_bat_soc->SetValue(soc);
+            }
           }
         }
+
     }
       break;
     case 0x1dc:

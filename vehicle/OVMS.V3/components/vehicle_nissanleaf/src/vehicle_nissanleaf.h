@@ -237,6 +237,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     bool    m_ZE0_charger;					        // True if 2011-2012 ZE0 LEAF with 0x380 message (Gen 1)
 	  bool    m_AZE0_charger;							    // True if 2013+ AZE0 LEAF with 0x390 message (Gen 2)
     bool    m_climate_really_off;           // Needed for AZE0 to shown correct hvac status while charging
+    bool    m_AZE1;                         // True if 2018+ AZE1 LEAF
 
 
   protected:
