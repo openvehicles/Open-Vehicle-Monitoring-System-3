@@ -70,6 +70,7 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   {
     // BUS 2
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 60, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },   // QC [2]
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD }, // L0/L1/L2 [2]
     // BUS 1
@@ -193,7 +194,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_ZE0_charger = false;
   m_AZE0_charger = false;
   m_climate_really_off = false;
-  m_AZE1 = false;
+ 
   
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -302,6 +303,8 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   //TODO nl_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
   cfg_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
   if (!cfg_enable_write) PollSetState(POLLSTATE_OFF);
+
+  cfg_aze1 = MyConfig.GetParamValueBool("xnl", "aze1", false);
   }
 
 
@@ -831,12 +834,9 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_l
   string strbuf(buf);
   std::replace(strbuf.begin(), strbuf.end(), 0x1b, 0x20); // remove ESC character returned by AZE0 models
 
-  // Check if the 6th to 10th characters are "AZE1"
-  if (strncmp(&buf[5], "AZE1", 4) == 0) {
-    m_AZE1 = true;
-  }
-
   StandardMetrics.ms_v_vin->SetValue(strbuf); //(char*)reply_data
+
+  ESP_LOGI(TAG, "VIN: %s", strbuf.c_str()); 
   }
 
 // Reassemble all pieces of a multi-frame reply.
@@ -978,7 +978,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
 
       // soc displayed on the instrument cluster
-      if (!m_AZE1) 
+      if (!cfg_aze1) 
         {
         uint8_t soc = d[4] & 0x7f;  // On the AEZ1 this is always 0
         if (soc != 0x7f)

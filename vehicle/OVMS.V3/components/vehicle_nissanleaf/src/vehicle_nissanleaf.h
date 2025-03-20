@@ -227,6 +227,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     int    cfg_allowed_socdrop;                         // Allowed drop of SOC after charging
     bool   cfg_enable_write;                            // Enable/disable can write (polling and commands
     bool   cfg_enable_autocharge;                       // Enable/disable automatic charge control based on SOC or range
+    bool   cfg_aze1;                                    // Enable/disable AZE1 specific features
     string cfg_limit_range_calc;                        // What range calc to use for charge to range feature
 
     int     m_MITM = 0;
@@ -237,7 +238,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     bool    m_ZE0_charger;					        // True if 2011-2012 ZE0 LEAF with 0x380 message (Gen 1)
 	  bool    m_AZE0_charger;							    // True if 2013+ AZE0 LEAF with 0x390 message (Gen 2)
     bool    m_climate_really_off;           // Needed for AZE0 to shown correct hvac status while charging
-    bool    m_AZE1;                         // True if 2018+ AZE1 LEAF
+
 
 
   protected:
