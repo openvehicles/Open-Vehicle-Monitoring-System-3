@@ -72,7 +72,7 @@ void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       ((ni->flags & NETIF_FLAG_UP) != 0),
       ((ni->flags & NETIF_FLAG_LINK_UP) != 0));
     writer->printf("  IPv4: " IPSTR "/" IPSTR " gateway " IPSTR "\n",
-      IP2STR(&ni->ip_addr.u_addr.ip4), IP2STR(&ni->netmask.u_addr.ip4), IP2STR(&ni->gw.u_addr.ip4));
+      IP2STR(ip_2_ip4(&ni->ip_addr)), IP2STR(ip_2_ip4(&ni->netmask)), IP2STR(ip_2_ip4(&ni->gw)));
     writer->puts("");
     }
 
@@ -84,10 +84,8 @@ void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     if (! ip_addr_isany(srv))
       {
       dnsservers++;
-      if (srv->type == IPADDR_TYPE_V4)
-        writer->printf(" " IPSTR, IP2STR(&srv->u_addr.ip4));
-      else if (srv->type == IPADDR_TYPE_V6)
-        writer->printf(" " IPSTR, IP2STR(&srv->u_addr.ip6));
+      if (IP_IS_V4(srv))
+        writer->printf(" " IPSTR, IP2STR(ip_2_ip4(srv)));
       }
     }
   if (dnsservers == 0)
@@ -99,9 +97,9 @@ void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     {
     writer->printf("\nDefault Interface: %c%c%d (" IPSTR "/" IPSTR " gateway " IPSTR ")\n",
       netif_default->name[0], netif_default->name[1], netif_default->num,
-      IP2STR(&netif_default->ip_addr.u_addr.ip4),
-      IP2STR(&netif_default->netmask.u_addr.ip4),
-      IP2STR(&netif_default->gw.u_addr.ip4));
+      IP2STR(ip_2_ip4(&netif_default->ip_addr)),
+      IP2STR(ip_2_ip4(&netif_default->netmask)),
+      IP2STR(ip_2_ip4(&netif_default->gw)));
     }
   else
     {
@@ -165,10 +163,12 @@ static void test_on_ping_end(esp_ping_handle_t hdl, void *args)
     {
     printf("\n--- %s ping statistics ---\n", inet_ntoa(*ip_2_ip4(&target_addr)));
     }
+#if CONFIG_LWIP_IPV6
   else
     {
     printf("\n--- %s ping statistics ---\n", inet6_ntoa(*ip_2_ip6(&target_addr)));
     }
+#endif
   writer->printf("%" PRIu32 " packets transmitted, %" PRIu32 " received, %" PRIu32 "%% packet loss, time %" PRIu32 "ms\n",
          transmitted, received, loss, total_time_ms);
   if (received > 0)
@@ -185,16 +185,20 @@ static void test_on_ping_end(esp_ping_handle_t hdl, void *args)
 void network_ping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   // parse hostname / IP address
+#if CONFIG_LWIP_IPV6
   struct sockaddr_in6 sock_addr6;
+#endif
   ip_addr_t target_addr;
   memset(&target_addr, 0, sizeof(target_addr));
 
+#if CONFIG_LWIP_IPV6
   if (inet_pton(AF_INET6, argv[0], &sock_addr6.sin6_addr) == 1)
     {
     /* convert ip6 string to ip6 address */
     ipaddr_aton(argv[0], &target_addr);
     }
   else
+#endif
     {
     struct addrinfo hint;
     struct addrinfo *res = NULL;
@@ -210,11 +214,13 @@ void network_ping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       struct in_addr addr4 = ((struct sockaddr_in *) (res->ai_addr))->sin_addr;
       inet_addr_to_ip4addr(ip_2_ip4(&target_addr), &addr4);
       }
+#if CONFIG_LWIP_IPV6
     else
       {
       struct in6_addr addr6 = ((struct sockaddr_in6 *) (res->ai_addr))->sin6_addr;
       inet6_addr_to_ip6addr(ip_2_ip6(&target_addr), &addr6);
       }
+#endif
     freeaddrinfo(res);
     }
 
@@ -806,7 +812,7 @@ void OvmsNetManager::SetDNSServer(ip_addr_t* dnsstore)
         sep = next+1;
         }
       ip4_addr_set_u32(ip_2_ip4(&serverip), ipaddr_addr(cserver.c_str()));
-      serverip.type = IPADDR_TYPE_V4;
+      IP_SET_TYPE(&serverip, IPADDR_TYPE_V4);
       if (!ip_addr_cmp(&serverip, &m_previous_dns[spos]))
         {
         m_previous_dns[spos] = serverip;
@@ -919,7 +925,7 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
         {
         ESP_LOGI(TAG, "Interface priority is %c%c%d (" IPSTR "/" IPSTR " gateway " IPSTR ")",
           pri->name[0], pri->name[1], pri->num,
-          IP2STR(&pri->ip_addr.u_addr.ip4), IP2STR(&pri->netmask.u_addr.ip4), IP2STR(&pri->gw.u_addr.ip4));
+          IP2STR(ip_2_ip4(&pri->ip_addr)), IP2STR(ip_2_ip4(&pri->netmask)), IP2STR(ip_2_ip4(&pri->gw)));
         m_previous_name[0] = search[0];
         m_previous_name[1] = search[1];
         for (int i=0; i<DNS_MAX_SERVERS; i++)

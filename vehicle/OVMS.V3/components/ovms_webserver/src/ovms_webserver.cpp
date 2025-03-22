@@ -39,6 +39,7 @@ static const char *TAG = "webserver";
 #include <string.h>
 #include <stdio.h>
 #include <fstream>
+#include <cmath>
 #include "ovms_webserver.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"

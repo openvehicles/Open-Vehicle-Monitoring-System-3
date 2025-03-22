@@ -61,6 +61,12 @@ static const char *TAG = "boot";
 #include "string_writer.h"
 #include <string.h>
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 4)
+#define ADC_ATTEN ADC_ATTEN_DB_12
+#else
+#define ADC_ATTEN ADC_ATTEN_DB_11
+#endif
+
 boot_data_t __attribute__((section(".rtc.noload"))) boot_data;
 
 Boot MyBoot __attribute__ ((init_priority (1100)));
@@ -337,7 +343,7 @@ Boot::Boot()
       if (min_12v_level > 0)
         {
         adc1_config_width(ADC_WIDTH_BIT_12);
-        adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
+        adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN);
         uint32_t adc_level = 0;
         for (int i = 0; i < 5; i++)
           {
