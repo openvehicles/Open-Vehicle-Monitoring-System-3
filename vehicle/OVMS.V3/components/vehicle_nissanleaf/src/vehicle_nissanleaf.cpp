@@ -650,7 +650,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t rep
     ah10000 = (reply_data[35] << 16) | (reply_data[36] << 8) |  reply_data[37];
 
     soc = (reply_data[31] << 16) | (reply_data[32] << 8) |  reply_data[33];
-    ESP_LOGI(TAG, "0x7BB SOC response: %d", soc);
+    ESP_LOGD(TAG, "0x7BB SOC response: %d", soc);
     StandardMetrics.ms_v_bat_soc->SetValue(soc / 10000.0);
 
   } else // Eveything else  
