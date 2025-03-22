@@ -785,11 +785,11 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t re
 
 
 // This is not used until we implement variant specific polling
-void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(uint8_t reply_data[], uint16_t reply_len)
-  {
-    uint16_t soh = (reply_data[10] << 8) | reply_data[11];
-    m_soh->SetValue(soh / 100.0);
-  }
+//void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(uint8_t reply_data[], uint16_t reply_len)
+//  {
+//    uint16_t soh = (reply_data[10] << 8) | reply_data[11];
+//    m_soh->SetValue(soh / 100.0);
+//  }
 
 
 void OvmsVehicleNissanLeaf::PollReply_QC(uint8_t reply_data[], uint16_t reply_len)
