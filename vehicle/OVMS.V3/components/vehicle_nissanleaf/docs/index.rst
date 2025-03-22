@@ -17,8 +17,8 @@ Hardware
 =========================== ==============
 Item                        Support Status
 =========================== ==============
-Module                      Any OVMS v3 (or later) module. Vehicle support: 2011-2017 (24kWh & 30kWh LEAF, 24kWh & 40KWh e-Nv200 & custom battery e.g. Muxsan)
-Vehicle Cable               1779000 Nissan Leaf OBD-II to DB9 Data Cable for OVMS
+Module                      Any OVMS v3 (or later) module. Vehicle support: 2011+ (24,30, 40, 62kWh LEAF, 24kWh & 40KWh e-Nv200 & custom battery e.g. Muxsan)
+Vehicle Cable               1779000 Nissan Leaf OBD-II to DB9 Data Cable for OVMS, CAN tap cable for AZE1 models.
 GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna)
 =========================== ==============
@@ -72,13 +72,13 @@ Charge Status               Yes
 Charge Interruption Alerts  Yes
 =========================== ==============
 
-.. [1] OVMS currently supports 2011-2017 Nissan LEAF and all models of Nissan e-NV200
+.. [1] OVMS currently supports all models of Nissan LEAF and all models of Nissan e-NV200
 
 .. [2] Some HVAC Status Items have been only verified with 2013-2016 MY cars and will only work if the year is set in configuration. Also HVAC needs to be in ON position before powering down the vehicle for the metrics to work during pre-heat.
 
 .. [3] Lock/Unlock will work if CAR can bus is awake, this can be activated by turning on A/C. Locking only appears to work for models 2016 onwards or 30kWh models. `GitHub issue <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/231>`_
 
-.. [4] ZE0 (2011-2013) vehicles are required to choose SoC display from "relative to fixed value", "dashboard display" SoC method does not work with these vehicles. 
+.. [4] ZE0 (2011-2013) vehicles are required to choose SoC display from "relative to fixed value", "dashboard display" SoC method does not work with these vehicles. AZE1 (2018+) models need to choose the "dashboard display" SoC method.
 
 ----------------------
 Remote Climate Control
