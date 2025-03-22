@@ -102,8 +102,20 @@ if (m_spibus->m_initialized == false) {
   gpio_isr_handler_add((gpio_num_t)m_intpin, MCP2515_isr, (void*)this);
 
   // Initialise in powered down mode
+  m_canctrl_mode = CANCTRL_MODE_CONFIG; // MCP2515 mode after reset
   m_powermode = Off; // Stop an event being raised
   SetPowerMode(Off);
+
+  // Register mcp2515 specific commands:
+  OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can", "CAN framework");
+  OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name, "CANx framework");
+  cmd_canx->RegisterCommand("setaccfilter", "Set MCP2515 acceptance filter", shell_setaccfilter,
+    "<mask0> <filter0> <filter1> <mask1> <filter2> <filter3> <filter4> <filter5>\n"
+    "Specify masks and filters as 32 bit hexadecimal values.\n"
+    "All arguments default to 0 = no filter.\n"
+    "To disable all filters, call without arguments.\n"
+    "Bit layout: see MCP2515 specification, section 4.5 Acceptance Filter.",
+    0, 8);
   }
 
 mcp2515::~mcp2515()
@@ -169,6 +181,7 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
 
   // Set CONFIG mode (abort transmisions, one-shot mode, clkout disabled)
   WriteReg(REG_CANCTRL, CANCTRL_MODE_CONFIG | CANCTRL_ABAT | CANCTRL_OSM);
+  m_canctrl_mode = CANCTRL_MODE_CONFIG;
 
   // Rx Buffer 0 control (receive all and enable buffer 1 rollover)
   WriteRegAndVerify(REG_RXB0CTRL, 0b01100100, 0b01101101);
@@ -282,6 +295,8 @@ esp_err_t mcp2515::ChangeMode( uint8_t mode )
     ESP_LOGE(TAG, "%s: Could not change mode to 0x%02x", this->GetName(), mode);
     return ESP_FAIL;
     }
+
+  m_canctrl_mode = mode;
   return ESP_OK;
   }
 
@@ -308,6 +323,109 @@ esp_err_t mcp2515::Stop()
 
   return ESP_OK;
   }
+
+
+/**
+ * SetAcceptanceFilter: configure MCP2515 specific hardware RX filter
+ * 
+ * Call this via casting the bus to mcp2515 or via MyPeripherals->m_mcp2515_1/_2.
+ * 
+ * See MCP2515 specification section 4.5 on how to define acceptance filters.
+ * 
+ * The MCP2515 has 6 filters, but only 2 masks. Mask #0 is applied to filters
+ * #0-1, mask #1 to filters #2-5. Each filter can only be in either standard
+ * or extended frame mode. In standard frame mode, the lower 16 bits of the
+ * extended ID can be applied to the first two data bytes.
+ * 
+ * The mcp2515_filter_config_t includes bit fields for simplified assembly, e.g.:
+ *   cfg.filter[0].b.sid = 0x19f;
+ *   cfg.mask[0].b.sid = 0x7ff;
+ * 
+ * Att: filter bits become relevant by setting the corresponding mask bit to 1.
+ */
+esp_err_t mcp2515::SetAcceptanceFilter(const mcp2515_filter_config_t& cfg)
+  {
+  uint8_t buf[16];
+
+  // Block TX in case of filter reconfiguration while started
+  OvmsMutexLock lock(&m_write_mutex);
+
+  // Enter config mode
+  uint8_t prev_mode = m_canctrl_mode;
+  if (prev_mode != CANCTRL_MODE_CONFIG && ChangeMode(CANCTRL_MODE_CONFIG) != ESP_OK)
+    {
+    return ESP_FAIL;
+    }
+
+  // Write filters 0-2:
+  m_spibus->spi_cmd(m_spi, buf, 0, 14, CMD_WRITE, REG_RXF0SIDH,
+    cfg.filter[0].u8[3], cfg.filter[0].u8[2], cfg.filter[0].u8[1],cfg.filter[0].u8[0],
+    cfg.filter[1].u8[3], cfg.filter[1].u8[2], cfg.filter[1].u8[1],cfg.filter[1].u8[0],
+    cfg.filter[2].u8[3], cfg.filter[2].u8[2], cfg.filter[2].u8[1],cfg.filter[2].u8[0]);
+
+  // Write filters 3-5:
+  m_spibus->spi_cmd(m_spi, buf, 0, 14, CMD_WRITE, REG_RXF3SIDH,
+    cfg.filter[3].u8[3], cfg.filter[3].u8[2], cfg.filter[3].u8[1],cfg.filter[3].u8[0],
+    cfg.filter[4].u8[3], cfg.filter[4].u8[2], cfg.filter[4].u8[1],cfg.filter[4].u8[0],
+    cfg.filter[5].u8[3], cfg.filter[5].u8[2], cfg.filter[5].u8[1],cfg.filter[5].u8[0]);
+
+  // Write masks 0-1:
+  m_spibus->spi_cmd(m_spi, buf, 0, 10, CMD_WRITE, REG_RXM0SIDH,
+    cfg.mask[0].u8[3], cfg.mask[0].u8[2], cfg.mask[0].u8[1],cfg.mask[0].u8[0],
+    cfg.mask[1].u8[3], cfg.mask[1].u8[2], cfg.mask[1].u8[1],cfg.mask[1].u8[0]);
+
+  // Exit config mode
+  if (prev_mode != CANCTRL_MODE_CONFIG && ChangeMode(prev_mode) != ESP_OK)
+    {
+    return ESP_FAIL;
+    }
+
+  return ESP_OK;
+  }
+
+
+/**
+ * shell_setaccfilter: shell command wrapper for SetAcceptanceFilter()
+ * 
+ * Syntax: can <bus> setaccfilter <msk0> <flt0> <flt1> <msk1> <flt2> <flt3> <flt4> <flt5>
+ */
+void mcp2515::shell_setaccfilter(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  mcp2515* sbus = (mcp2515*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->printf("ERROR: cannot find CAN bus %s\n", bus);
+    return;
+    }
+
+  mcp2515_filter_config_t cfg = {};
+  if (argc >= 1) cfg.mask[0].u32 = strtoul(argv[0], NULL, 16);
+  if (argc >= 2) cfg.filter[0].u32 = strtoul(argv[1], NULL, 16);
+  if (argc >= 3) cfg.filter[1].u32 = strtoul(argv[2], NULL, 16);
+  if (argc >= 4) cfg.mask[1].u32 = strtoul(argv[3], NULL, 16);
+  if (argc >= 5) cfg.filter[2].u32 = strtoul(argv[4], NULL, 16);
+  if (argc >= 6) cfg.filter[3].u32 = strtoul(argv[5], NULL, 16);
+  if (argc >= 7) cfg.filter[4].u32 = strtoul(argv[6], NULL, 16);
+  if (argc >= 8) cfg.filter[5].u32 = strtoul(argv[7], NULL, 16);
+  
+  esp_err_t res = sbus->SetAcceptanceFilter(cfg);
+  if (res == ESP_OK)
+    {
+    writer->printf("Acceptance filter for %s set to:\n"
+      "- mask 1: %08X filters %08X,%08X\n"
+      "- mask 2: %08X filters %08X,%08X,%08X,%08X\n",
+      bus,
+      cfg.mask[0].u32, cfg.filter[0].u32, cfg.filter[1].u32,
+      cfg.mask[1].u32, cfg.filter[2].u32, cfg.filter[3].u32,
+                       cfg.filter[4].u32, cfg.filter[5].u32);
+    }
+  else
+    {
+    writer->printf("ERROR: failed to configure acceptance filter for %s\n", bus);
+    }
+  }
+
 
 esp_err_t mcp2515::ViewRegisters()
   {
