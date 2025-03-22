@@ -78,7 +78,7 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery voltages [196]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery shunts [96]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // battery temperatures [14]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // SOH
+    // { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // SOH for AZE1
     POLL_LIST_END
   };
 
@@ -784,6 +784,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t re
   }
 
 
+// This is not used until we implement variant specific polling
 void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(uint8_t reply_data[], uint16_t reply_len)
   {
     uint16_t soh = (reply_data[10] << 8) | reply_data[11];
@@ -879,9 +880,10 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(const OvmsPoller::poll_job_t &job,
       case BMS_RXID<<16 | 0x04:
         PollReply_BMS_Temp(buf, rxbuf.size());
         break;
-      case BMS_RXID<<16 | 0x61:
-        PollReply_BMS_SOH(buf, rxbuf.size());
-        break;
+      // This is not usd until we implement variant specific polling
+      //case BMS_RXID<<16 | 0x61:
+      //  PollReply_BMS_SOH(buf, rxbuf.size());
+      //  break;
       case CHARGER_RXID<<16 | QC_COUNT_PID: // QC
         PollReply_QC(buf, rxbuf.size());
         break;
