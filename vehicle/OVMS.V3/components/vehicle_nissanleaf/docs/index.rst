@@ -158,13 +158,13 @@ https://www.aliexpress.com/item/1005007018521989.html (24pin male and female)
 
 Wiring instructions are taken from here https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323#issuecomment-2227069811, thanks @samr037.  Note: in this document @samr037 used a intermedite cat5 cable.
 
-[Leaf AZE1 CAN Tap Wiring.pdf](Leaf%20AZE1%20CAN%20Tap%20Wiring.pdf)
+[Leaf AZE1 CAN Tap Wiring.pdf](./Leaf%20AZE1%20CAN%20Tap%20Wiring.pdf)
 
 .. image:: Leaf%20CAN%20Tap.jpg
     :width: 480px
 The final assembled tap
 
-Dash disassembly instructions are here: https://www.youtube.com/watch?v=gkA1WDu8cq0&si=kII9XvEiAaXgggma.  Access to the M101 port behind the instument cluster is relatively straigh forward.
+Dash disassembly instructions are here: https://www.youtube.com/watch?v=gkA1WDu8cq0&si=kII9XvEiAaXgggma.  Access to the M101 port behind the instument cluster is relatively straight forward.
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^
