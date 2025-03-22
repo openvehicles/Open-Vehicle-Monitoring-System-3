@@ -78,6 +78,7 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery voltages [196]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery shunts [96]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // battery temperatures [14]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // SOH
     POLL_LIST_END
   };
 
@@ -731,7 +732,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Shunt(uint8_t reply_data[], uint16_t r
 
 void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len)
   {
-  if (reply_len != 14 && reply_len != 29)  //TODO: AEZ1 Leafs respond with 29 bytes  
+  if (reply_len != 14 && reply_len != 29)  // 14 bytes for ZE0 and AZE0, 29 bytes for AEZ1
     {
     ESP_LOGI(TAG, "PollReply_BMS_Temp: len=%d != 14 or != 29", reply_len);
     return;
@@ -781,6 +782,14 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t re
   m_bms_thermistor->SetElemValues(0, 4, thermistor);
   m_bms_temp_int->SetElemValues(0, 6, temp_int);
   }
+
+
+void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(uint8_t reply_data[], uint16_t reply_len)
+  {
+    uint16_t soh = (reply_data[10] << 8) | reply_data[11];
+    m_soh->SetValue(soh / 100.0);
+  }
+
 
 void OvmsVehicleNissanLeaf::PollReply_QC(uint8_t reply_data[], uint16_t reply_len)
   {
@@ -836,7 +845,7 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_l
 
   StandardMetrics.ms_v_vin->SetValue(strbuf); //(char*)reply_data
 
-  ESP_LOGI(TAG, "VIN: %s", strbuf.c_str()); 
+  ESP_LOGD(TAG, "VIN: %s", strbuf.c_str()); 
   }
 
 // Reassemble all pieces of a multi-frame reply.
@@ -869,6 +878,9 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(const OvmsPoller::poll_job_t &job,
         break;
       case BMS_RXID<<16 | 0x04:
         PollReply_BMS_Temp(buf, rxbuf.size());
+        break;
+      case BMS_RXID<<16 | 0x61:
+        PollReply_BMS_SOH(buf, rxbuf.size());
         break;
       case CHARGER_RXID<<16 | QC_COUNT_PID: // QC
         PollReply_QC(buf, rxbuf.size());
