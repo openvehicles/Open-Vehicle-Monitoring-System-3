@@ -191,6 +191,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   MyConfig.RegisterParam("xsq", "Smart EQ", true, true);
   ConfigChanged(NULL);
+  
+  // Firmware Dexter'S Web
+  MyConfig.SetParamValue("ota", "server", "https://ovms.dexters-web.de/firmware/ota");
+  MyConfig.SetParamValue("ota", "tag", "edge");
 
   StdMetrics.ms_v_gen_current->SetValue(2);                // activate gen metrics to app transfer
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);  // set 12V alert to false
@@ -812,7 +816,7 @@ void OvmsVehicleSmartEQ::CheckV2State() {
 // Cellular Modem Network type switch
 void OvmsVehicleSmartEQ::ModemNetworkType() {
   if (m_network_type == "auto") {
-      ExecuteCommand("cellular cmd AT+COPS=0,0,\"Telekom.de\",7");  // set network to prefered Telekom.de LTE or the best available
+      ExecuteCommand("cellular cmd AT+COPS=0");                     // set network to prefered Telekom.de LTE or the best available
   } 
   if (m_network_type == "gsm") {
       ExecuteCommand("cellular cmd AT+CNMP=2");                     // set network to GSM/3G/LTE
@@ -1318,7 +1322,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
 
   if(!mt_bus_awake->AsBool()) {
     ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
-    uint8_t data[8] = {0xc2, 0x1b, 0x73, 0x57, 0x14, 0x70, 0x96, 0x85};
+    uint8_t data[8] = {0xc1, 0x1b, 0x73, 0x57, 0x14, 0x70, 0x96, 0x85};
     canbus *obd;
     obd = m_can1;
     obd->WriteStandard(0x350, 8, data);
