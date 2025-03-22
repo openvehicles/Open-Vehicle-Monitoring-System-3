@@ -53,7 +53,7 @@ static const char *TAG = "esp32can";
 #endif
 
 
-esp32can* MyESP32can = NULL;
+static esp32can* MyESP32can = NULL;
 
 static portMUX_TYPE esp32can_spinlock = portMUX_INITIALIZER_UNLOCKED;
 #define ESP32CAN_ENTER_CRITICAL()       portENTER_CRITICAL(&esp32can_spinlock)
@@ -390,6 +390,23 @@ esp32can::esp32can(const char* name, int txpin, int rxpin)
   TaskHandle_t task = NULL;
   xTaskCreatePinnedToCore(ESP32CAN_init, "esp32can init", 2048, (void*)this, 23, &task, CORE(0));
   AddTaskToMap(task);
+
+  // Register esp32can specific commands:
+  OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can", "CAN framework");
+  OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name, "CANx framework");
+  OvmsCommand* cmd_setaf = cmd_canx->RegisterCommand("setaccfilter", "Set ESP32CAN (SJA1000) acceptance filter");
+  cmd_setaf->RegisterCommand("single", "Single filter mode", shell_setaccfilter,
+    "<mask> <code>\n"
+    "Specify mask and code as 32 bit hexadecimal values.\n"
+    "To disable all filters, set mask -1 and code 0.\n"
+    "Bit layout: see SJA1000 specification, section 6.4.15 Acceptance Filter.",
+    2, 2);
+  cmd_setaf->RegisterCommand("dual", "Dual filter mode", shell_setaccfilter,
+    "<mask> <code>\n"
+    "Specify mask and code as 32 bit hexadecimal values.\n"
+    "To disable all filters, set mask -1 and code 0.\n"
+    "Bit layout: see SJA1000 specification, section 6.4.15 Acceptance Filter.",
+    2, 2);
   }
 
 esp32can::~esp32can()
@@ -452,14 +469,14 @@ esp_err_t esp32can::InitController()
   MODULE_ESP32CAN->IER.U = ier;
 
   // No acceptance filtering, as we want to fetch all messages
-  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[0] = 0;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[1] = 0;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[2] = 0;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[3] = 0;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[0] = 0xff;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[1] = 0xff;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[2] = 0xff;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[3] = 0xff;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[0].B.ACR = 0;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[1].B.ACR = 0;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[2].B.ACR = 0;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[3].B.ACR = 0;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[0].B.AMR = 0xff;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[1].B.AMR = 0xff;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[2].B.AMR = 0xff;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[3].B.AMR = 0xff;
 
   // Set to normal mode
   MODULE_ESP32CAN->OCR.B.OCMODE=__CAN_OC_NOM;
@@ -579,6 +596,98 @@ esp_err_t esp32can::Stop()
   m_mode = CAN_MODE_OFF;
 
   return ESP_OK;
+  }
+
+
+/**
+ * SetAcceptanceFilter: configure ESP32CAN specific hardware RX filter
+ * 
+ * Call this via casting the bus to esp32can or via MyPeripherals->m_esp32can.
+ * 
+ * See SJA1000 specification section 6.4.15 on how to define acceptance filters.
+ * 
+ * In single filter mode, code & mask define a single long filter, covering the
+ * full 29 bit address + RTR bit of an extended frame or the 11 bit address +
+ * RTR bit + the first two data bytes of a standard frame.
+ * 
+ * In dual filter mode, code & mask are split into two filters, with 20/12 bits
+ * for standard frames, and 16/16 bits for extended frames.
+ * See SJA1000 specification for the rather crooked bit layout in dual mode.
+ * 
+ * The esp32can_filter_config_t includes bit fields for simplified assembly, e.g.:
+ *   cfg.code.bss.id = 0x19f;
+ *   cfg.mask.bss.id = 0x7ff;
+ *
+ * Att: code bits become relevant by setting the corresponding mask bit to 0.
+ */
+esp_err_t esp32can::SetAcceptanceFilter(const esp32can_filter_config_t& cfg)
+  {
+  // Block TX in case of filter reconfiguration while started
+  OvmsMutexLock lock(&m_write_mutex);
+
+  ESP32CAN_ENTER_CRITICAL();
+
+  // Enter reset mode
+  bool keep_resetmode = MODULE_ESP32CAN->MOD.B.RM;
+  while (!MODULE_ESP32CAN->MOD.B.RM)
+    MODULE_ESP32CAN->MOD.B.RM = 1;
+
+  // Set filter mode
+  MODULE_ESP32CAN->MOD.B.AFM = (cfg.single_filter) ? 1 : 0;
+
+  // Swap code and mask to match big endian registers
+  uint32_t code_swapped = __builtin_bswap32(cfg.code.u32);
+  uint32_t mask_swapped = __builtin_bswap32(cfg.mask.u32);
+  for (int i = 0; i < 4; i++)
+    {
+    MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[i].B.ACR = ((code_swapped >> (i * 8)) & 0xFF);
+    MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[i].B.AMR  = ((mask_swapped >> (i * 8)) & 0xFF);
+    }
+
+  // Exit reset mode
+  if (!keep_resetmode)
+    {
+    do
+      MODULE_ESP32CAN->MOD.B.RM = 0;
+    while (MODULE_ESP32CAN->MOD.B.RM);
+    }
+
+  ESP32CAN_EXIT_CRITICAL();
+
+  return ESP_OK;
+  }
+
+
+/**
+ * shell_setaccfilter: shell command wrapper for SetAcceptanceFilter()
+ * 
+ * Syntax: can <bus> setaccfilter <single|dual> <mask> <code>
+ */
+void esp32can::shell_setaccfilter(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetParent()->GetName();
+  esp32can* sbus = (esp32can*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->printf("ERROR: cannot find CAN bus %s\n", bus);
+    return;
+    }
+
+  esp32can_filter_config_t cfg = {};
+  cfg.single_filter = (strcmp(cmd->GetName(), "single") == 0);
+  cfg.mask.u32 = strtoul(argv[0], NULL, 16);
+  cfg.code.u32 = strtoul(argv[1], NULL, 16);
+
+  esp_err_t res = sbus->SetAcceptanceFilter(cfg);
+  if (res == ESP_OK)
+    {
+    writer->printf("Acceptance filter for %s set to %s filter mode with mask %08X, code %08X.\n",
+      bus, cmd->GetName(), cfg.mask.u32, cfg.code.u32);
+    }
+  else
+    {
+    writer->printf("ERROR: failed to configure acceptance filter for %s\n", bus);
+    }
   }
 
 
