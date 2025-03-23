@@ -600,6 +600,29 @@ esp_err_t esp32can::Stop()
 
 
 /**
+ * ChangeResetMode: enter/leave reset mode with verification & timeout
+ * 
+ * Note: this must be called within an ESP32CAN_ENTER_CRITICAL section.
+ */
+esp_err_t esp32can::ChangeResetMode(unsigned int newmode, int timeout_us /*=50*/)
+  {
+  MODULE_ESP32CAN->MOD.B.RM = newmode;
+  while (MODULE_ESP32CAN->MOD.B.RM != newmode && timeout_us > 0)
+    {
+    MODULE_ESP32CAN->MOD.B.RM = newmode;
+    ets_delay_us(1);
+    timeout_us--;
+    }
+  if (MODULE_ESP32CAN->MOD.B.RM != newmode)
+    {
+    ESP_LOGE(TAG, "%s failed to %s reset mode", m_name, newmode ? "enter" : "leave");
+    return ESP_FAIL;
+    }
+  return ESP_OK;
+  }
+
+
+/**
  * SetAcceptanceFilter: configure ESP32CAN specific hardware RX filter
  * 
  * Call this via casting the bus to esp32can or via MyPeripherals->m_esp32can.
@@ -628,9 +651,12 @@ esp_err_t esp32can::SetAcceptanceFilter(const esp32can_filter_config_t& cfg)
   ESP32CAN_ENTER_CRITICAL();
 
   // Enter reset mode
-  bool keep_resetmode = MODULE_ESP32CAN->MOD.B.RM;
-  while (!MODULE_ESP32CAN->MOD.B.RM)
-    MODULE_ESP32CAN->MOD.B.RM = 1;
+  bool prev_resetmode = MODULE_ESP32CAN->MOD.B.RM;
+  if (!prev_resetmode && ChangeResetMode(1) != ESP_OK)
+    {
+    ESP32CAN_EXIT_CRITICAL();
+    return ESP_FAIL;
+    }
 
   // Set filter mode
   MODULE_ESP32CAN->MOD.B.AFM = (cfg.single_filter) ? 1 : 0;
@@ -645,15 +671,13 @@ esp_err_t esp32can::SetAcceptanceFilter(const esp32can_filter_config_t& cfg)
     }
 
   // Exit reset mode
-  if (!keep_resetmode)
+  if (!prev_resetmode && ChangeResetMode(0) != ESP_OK)
     {
-    do
-      MODULE_ESP32CAN->MOD.B.RM = 0;
-    while (MODULE_ESP32CAN->MOD.B.RM);
+    ESP32CAN_EXIT_CRITICAL();
+    return ESP_FAIL;
     }
 
   ESP32CAN_EXIT_CRITICAL();
-
   return ESP_OK;
   }
 

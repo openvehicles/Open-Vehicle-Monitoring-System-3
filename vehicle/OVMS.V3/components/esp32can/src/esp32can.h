@@ -111,6 +111,7 @@ class esp32can : public canbus
   protected:
     esp_err_t WriteFrame(const CAN_frame_t* p_frame);
     void BusTicker10(std::string event, void* data);
+    esp_err_t ChangeResetMode(unsigned int newmode, int timeout_us=50);
 
   public:
     void SetPowerMode(PowerMode powermode);
