@@ -194,8 +194,9 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_AZE0_charger = false;
   m_climate_really_off = false;
 
-  RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-  RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  // register but don't auto-power-off the busses.
+  RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS, nullptr, false);
+  RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS, nullptr, false);
   PollSetState(POLLSTATE_OFF);
   PollSetResponseSeparationTime(0);
   PollSetPidList(m_can1,obdii_polls);
