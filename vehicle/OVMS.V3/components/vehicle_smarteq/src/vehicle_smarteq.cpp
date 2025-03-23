@@ -191,10 +191,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   MyConfig.RegisterParam("xsq", "Smart EQ", true, true);
   ConfigChanged(NULL);
-  
-  // Firmware Dexter'S Web
-  MyConfig.SetParamValue("ota", "server", "https://ovms.dexters-web.de/firmware/ota");
-  MyConfig.SetParamValue("ota", "tag", "edge");
 
   StdMetrics.ms_v_gen_current->SetValue(2);                // activate gen metrics to app transfer
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);  // set 12V alert to false
