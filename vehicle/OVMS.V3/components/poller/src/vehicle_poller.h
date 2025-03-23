@@ -697,10 +697,12 @@ class OvmsPoller : public InternalRamAllocated {
 
 #define VEHICLE_MAXBUSSES 4
 class OvmsPollers : public InternalRamAllocated {
+  public:
+    enum class BusPoweroff {None, System, Vehicle};
   private:
     typedef  struct {
       canbus* can;
-      bool from_vehicle;
+      BusPoweroff auto_poweroff;
     } bus_info_t;
     bus_info_t        m_canbusses[VEHICLE_MAXBUSSES];
     OvmsRecMutex      m_poller_mutex;
@@ -974,9 +976,9 @@ class OvmsPollers : public InternalRamAllocated {
       }
     uint8_t GetBusNo(canbus* bus);
     canbus* GetBus(uint8_t busno);
-    canbus* RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle);
+    canbus* RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, BusPoweroff autoPower);
 
-    esp_err_t RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle, canbus*& bus,int verbosity, OvmsWriter* writer );
+    esp_err_t RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, BusPoweroff autoPower, canbus*& bus,int verbosity, OvmsWriter* writer );
 
     void PowerDownCanBus(int busno);
     bool HasPollTask()

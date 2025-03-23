@@ -808,7 +808,7 @@ OvmsPollers::OvmsPollers()
     {
     m_pollers[idx] = nullptr;
     m_canbusses[idx].can = nullptr;
-    m_canbusses[idx].from_vehicle = false;
+    m_canbusses[idx].auto_poweroff = BusPoweroff::None;
     }
 
   m_overflow_count[0] = 0;
@@ -924,15 +924,34 @@ void OvmsPollers::ShuttingDown()
       m_pollers[i]->ClearPollList();
     }
 
-  ESP_LOGV(TAG, "Poller Shutdown Powering Down Busses");
-  for (int i = 1 ; i <= VEHICLE_MAXBUSSES; ++i)
-    PowerDownCanBus(i);
+  bool autoOff = MyConfig.GetParamValueBool("vehicle", "can.autooff", true);
+  ESP_LOGV(TAG, "Poller Shutdown Powering Down Busses%s", autoOff ? "" : " (disabled)");
+  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+    {
+    auto &can_info = m_canbusses[i];
+    switch (can_info.auto_poweroff)
+      {
+      case BusPoweroff::Vehicle:
+      case BusPoweroff::System:
+        if (can_info.can != nullptr)
+          {
+          if (autoOff)
+            can_info.can->SetPowerMode(Off);
+          can_info.auto_poweroff = BusPoweroff::None;
+          }
+        break;
+
+      case BusPoweroff::None:
+        break;
+      }
+    }
 
   ESP_LOGV(TAG, "Poller Shutdown Finished");
   }
 
 void OvmsPollers::ShuttingDownVehicle()
   {
+  bool autoOff = MyConfig.GetParamValueBool("vehicle", "can.autooff", true);
   OvmsRecMutexLock lock(&m_poller_mutex);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
@@ -941,10 +960,11 @@ void OvmsPollers::ShuttingDownVehicle()
       m_pollers[i]->RemovePollRequestStarting("!v.");
     // Power down pollers started from the 'vehicle'
     bus_info_t &info = m_canbusses[i];
-    if (info.can && info.from_vehicle)
+    if (info.can && info.auto_poweroff == BusPoweroff::Vehicle )
       {
-      info.can->SetPowerMode(Off);
-      info.from_vehicle = false;
+      if (autoOff)
+        info.can->SetPowerMode(Off);
+      info.auto_poweroff = BusPoweroff::None;
       }
     }
   }
@@ -964,15 +984,15 @@ canbus* OvmsPollers::GetBus(uint8_t busno)
     return nullptr;
   return m_canbusses[busno-1].can;
   }
-canbus* OvmsPollers::RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle)
+canbus* OvmsPollers::RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, BusPoweroff autoPower)
   {
 
   canbus *bus = nullptr;
-  OvmsPollers::RegisterCanBus(busno, mode, speed, dbcfile, from_vehicle, bus,0, nullptr);
+  OvmsPollers::RegisterCanBus(busno, mode, speed, dbcfile, autoPower, bus,0, nullptr);
   return bus;
   }
 
-esp_err_t OvmsPollers::RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool from_vehicle, canbus*& bus,int verbosity, OvmsWriter* writer )
+esp_err_t OvmsPollers::RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, BusPoweroff autoPower, canbus*& bus,int verbosity, OvmsWriter* writer )
   {
   bus = nullptr;
   if (m_shut_down)
@@ -1001,7 +1021,7 @@ esp_err_t OvmsPollers::RegisterCanBus(int busno, CAN_mode_t mode, CAN_speed_t sp
       }
     }
   bus = info.can;
-  info.from_vehicle = from_vehicle;
+  info.auto_poweroff = autoPower;
   info.can->SetPowerMode(On);
   return info.can->Start(mode,speed,dbcfile);
   }
