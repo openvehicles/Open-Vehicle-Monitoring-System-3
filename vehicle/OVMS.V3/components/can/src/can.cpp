@@ -129,7 +129,7 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     writer->puts("Error: invalid can bus number");
     return;
     }
-  res = MyPollers.RegisterCanBus(busno, smode, cspeed, dbcfile, false, sbus, verbosity, writer);
+  res = MyPollers.RegisterCanBus(busno, smode, cspeed, dbcfile, OvmsPollers::BusPoweroff::System, sbus, verbosity, writer);
 #else
   canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
   if (sbus == NULL)

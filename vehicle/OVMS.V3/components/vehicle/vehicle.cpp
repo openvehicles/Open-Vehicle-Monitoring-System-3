@@ -455,6 +455,8 @@ OvmsVehicle::OvmsVehicle()
   xTaskCreatePinnedToCore(OvmsVehicleTask, "OVMS Vehicle Poll",
       CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_vtask, CORE(1));
   MyCan.RegisterListener(m_vqueue);
+  for (int idx = 0; idx < VEHICLE_MAXBUSSES; ++idx)
+    m_autopoweroff[idx] = false;
 #endif
   }
 
@@ -552,10 +554,13 @@ void OvmsVehicle::ShuttingDown()
   entry.MsgID = 0;
   xQueueSendToFront(m_vqueue, &entry, 0);
 
-  if (m_can1) m_can1->SetPowerMode(Off);
-  if (m_can2) m_can2->SetPowerMode(Off);
-  if (m_can3) m_can3->SetPowerMode(Off);
-  if (m_can4) m_can4->SetPowerMode(Off);
+  if (MyConfig.GetParamValueBool("vehicle", "can.autooff", true))
+    {
+    if (m_can1 && m_autopoweroff[0]) m_can1->SetPowerMode(Off);
+    if (m_can2 && m_autopoweroff[1]) m_can2->SetPowerMode(Off);
+    if (m_can3 && m_autopoweroff[2]) m_can3->SetPowerMode(Off);
+    if (m_can4 && m_autopoweroff[3]) m_can4->SetPowerMode(Off);
+    }
 
 #endif
   MyEvents.DeregisterEvent(TAG);
@@ -661,17 +666,20 @@ void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
   writer->printf("Vehicle module '%s' (code %s) loaded and running\n", VehicleShortName(), VehicleType());
   }
 
-void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile)
+void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool autoPoweroff)
   {
   canbus *can;
 #ifdef CONFIG_OVMS_COMP_POLLER
-  can = MyPollers.RegisterCanBus(bus, mode, speed, dbcfile, true);
+  OvmsPollers::BusPoweroff unload = autoPoweroff ? OvmsPollers::BusPoweroff::Vehicle : OvmsPollers::BusPoweroff::None;
+  can = MyPollers.RegisterCanBus(bus, mode, speed, dbcfile, unload);
 #else
   {
     std::string busname = string_format("can%d", bus);
     can = (canbus*)MyPcpApp.FindDeviceByName(busname.c_str());
     can->SetPowerMode(On);
     can->Start(mode,speed,dbcfile);
+    if (bus <= VEHICLE_MAXBUSSES)
+      m_autopoweroff[bus-1] = autoPoweroff;
   }
 #endif
   switch (bus)
