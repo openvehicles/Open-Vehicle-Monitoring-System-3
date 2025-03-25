@@ -465,7 +465,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void Status(int verbosity, OvmsWriter* writer);
 
   protected:
-    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL);
+    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL, bool autoPoweroff = true);
     bool PinCheck(const char* pin);
 
   public:
@@ -576,6 +576,8 @@ class OvmsVehicle : public InternalRamAllocated
     void VehicleTask();
     QueueHandle_t m_vqueue;
     TaskHandle_t  m_vtask;
+
+    bool m_autopoweroff[VEHICLE_MAXBUSSES];
 #endif
     void SendIncomingFrame(const CAN_frame_t *frame);
 

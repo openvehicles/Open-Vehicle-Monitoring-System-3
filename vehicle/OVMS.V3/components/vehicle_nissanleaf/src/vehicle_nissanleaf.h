@@ -167,15 +167,13 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     virtual int GetNotifyChargeStateDelay(const char* state);
     RemoteCommand nl_remote_command; // command to send, see RemoteCommandTimer()
     uint8_t nl_remote_command_ticker; // number remaining remote command frames to send
-    void PollReply_Battery(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_QC(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_L0L1L2(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_VIN(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_BMS_Volt(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_BMS_Shunt(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len);
+    void PollReply_Battery(const uint8_t *reply_data, uint16_t reply_len);
+    void PollReply_QC(const uint8_t *reply_data, uint16_t reply_len);
+    void PollReply_L0L1L2(const uint8_t *reply_data, uint16_t reply_len);
+    void PollReply_VIN(const uint8_t *reply_data, uint16_t reply_len);
+    void PollReply_BMS_Volt(const uint8_t *reply_data, uint16_t reply_len);
+    void PollReply_BMS_Shunt(const uint8_t *reply_data, uint16_t reply_len);
     void PollReply_BMS_SOH(uint8_t reply_data[], uint16_t reply_len);
-
 
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
