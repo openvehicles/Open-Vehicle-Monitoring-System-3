@@ -173,7 +173,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void PollReply_VIN(const uint8_t *reply_data, uint16_t reply_len);
     void PollReply_BMS_Volt(const uint8_t *reply_data, uint16_t reply_len);
     void PollReply_BMS_Shunt(const uint8_t *reply_data, uint16_t reply_len);
-    void PollReply_BMS_SOH(uint8_t reply_data[], uint16_t reply_len);
+    void PollReply_BMS_Temp(const uint8_t *reply_data, uint16_t reply_len);
+    void PollReply_BMS_SOH(const uint8_t *reply_data, uint16_t reply_len);
 
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;

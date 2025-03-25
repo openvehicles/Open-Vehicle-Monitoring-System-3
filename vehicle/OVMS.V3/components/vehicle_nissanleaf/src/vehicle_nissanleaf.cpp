@@ -806,9 +806,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(const uint8_t *reply_data, uint16
   m_bms_temp_int->SetElemValues(0, 6, temp_int);
   }
 
-
-
-void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(const uint8_t *reply_data, uint16_t reply_len)
   {
     uint16_t soh = (reply_data[2] << 8) | reply_data[3];
     ESP_LOGD(TAG, "BMS SOH: %d", soh);
