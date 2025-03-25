@@ -594,7 +594,7 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
   return (rxok == pdTRUE);
   }
 
-void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_t reply_len)
   {
   if (reply_len != 39 &&    // 24 KWh Leafs
       reply_len != 41)      // 30 KWh Leafs with Nissan BMS fix
@@ -644,7 +644,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t rep
     }
   }
 
-void OvmsVehicleNissanLeaf::PollReply_BMS_Volt(uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_BMS_Volt(const uint8_t *reply_data, uint16_t reply_len)
   {
   if (reply_len != 196)
     {
@@ -668,7 +668,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Volt(uint8_t reply_data[], uint16_t re
     }
   }
 
-void OvmsVehicleNissanLeaf::PollReply_BMS_Shunt(uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_BMS_Shunt(const uint8_t *reply_data, uint16_t reply_len)
   {
   if (reply_len != 24)
     {
@@ -692,7 +692,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Shunt(uint8_t reply_data[], uint16_t r
   }
 
 
-void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(const uint8_t *reply_data, uint16_t reply_len)
   {
   if (reply_len != 14)
     {
@@ -738,7 +738,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t re
   m_bms_temp_int->SetElemValues(0, 6, temp_int);
   }
 
-void OvmsVehicleNissanLeaf::PollReply_QC(uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_QC(const uint8_t *reply_data, uint16_t reply_len)
   {
   if (reply_len != 2)
     {
@@ -756,7 +756,7 @@ void OvmsVehicleNissanLeaf::PollReply_QC(uint8_t reply_data[], uint16_t reply_le
     }
   }
 
-void OvmsVehicleNissanLeaf::PollReply_L0L1L2(uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_L0L1L2(const uint8_t *reply_data, uint16_t reply_len)
   {
   if (reply_len != 2)
     {
@@ -774,7 +774,7 @@ void OvmsVehicleNissanLeaf::PollReply_L0L1L2(uint8_t reply_data[], uint16_t repl
     }
   }
 
-void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_VIN(const uint8_t *reply_data, uint16_t reply_len)
   {
   if (reply_len != 19)
     {
@@ -799,14 +799,13 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(const OvmsPoller::poll_job_t &job,
   // init / fill rx buffer:
   if (job.mlframe == 0) {
     rxbuf.clear();
-    rxbuf.reserve(length + job.mlremain);
+    rxbuf.reserve(std::max(MAX_POLL_DATA_LEN, length + job.mlremain));
   }
   rxbuf.append((char*)data, length);
   if (job.mlremain)
     return;
 
-  static uint8_t buf[MAX_POLL_DATA_LEN];
-  memcpy(buf, rxbuf.c_str(), rxbuf.size());
+  const uint8_t *buf = reinterpret_cast<const uint8_t *>(rxbuf.c_str());
 
   uint32_t id_pid = job.moduleid_rec<<16 | job.pid;
     switch (id_pid)
