@@ -174,6 +174,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void PollReply_BMS_Volt(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_Shunt(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len);
+    void PollReply_BMS_SOH(uint8_t reply_data[], uint16_t reply_len);
+
 
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
@@ -239,7 +241,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
 	  bool    m_AZE0_charger;							    // True if 2013+ AZE0 LEAF with 0x390 message (Gen 2)
     bool    m_climate_really_off;           // Needed for AZE0 to shown correct hvac status while charging
 
-
+    OvmsPoller::poll_pid_t* obdii_polls;
 
   protected:
     OvmsCommand*        cmd_xnl;

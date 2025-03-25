@@ -66,7 +66,7 @@ enum poll_states
   POLLSTATE_CHARGING  //- car is charging
   };
 
-static const OvmsPoller::poll_pid_t obdii_polls[] =
+static const OvmsPoller::poll_pid_t obdii_polls_aze1[] =
   {
     // BUS 2
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
@@ -78,6 +78,20 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery shunts [96]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // battery temperatures [14]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // SOH for AZE1
+    POLL_LIST_END
+  };
+
+  static const OvmsPoller::poll_pid_t obdii_polls_aze0[] =
+  {
+    // BUS 2
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },   // QC [2]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD }, // L0/L1/L2 [2]
+    // BUS 1
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // bat [39/41]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery voltages [196]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery shunts [96]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // battery temperatures [14]
     POLL_LIST_END
   };
 
@@ -201,7 +215,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   PollSetState(POLLSTATE_OFF);
   //PollSetResponseSeparationTime(0);
-  PollSetPidList(m_can1,obdii_polls);
+
 
   MyConfig.RegisterParam("xnl", "Nissan Leaf", true, true);
   ConfigChanged(NULL);
@@ -216,6 +230,15 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 
   //load custom shell commands
   CommandInit();
+
+  if (cfg_aze1)
+    {
+    PollSetPidList(m_can1,obdii_polls_aze1);
+    }
+  else
+    {
+    PollSetPidList(m_can1,obdii_polls_aze0);
+    }
 
   using std::placeholders::_1;
   using std::placeholders::_2;
@@ -783,12 +806,16 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t re
   }
 
 
-// This is not used until we implement variant specific polling
-//void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(uint8_t reply_data[], uint16_t reply_len)
-//  {
-//    uint16_t soh = (reply_data[10] << 8) | reply_data[11];
-//    m_soh->SetValue(soh / 100.0);
-//  }
+void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(uint8_t reply_data[], uint16_t reply_len)
+  {
+    uint16_t soh = (reply_data[2] << 8) | reply_data[3];
+    ESP_LOGD(TAG, "BMS SOH: %d", soh);
+    m_soh_instrument->SetValue(soh / 100.0);
+    if (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+      {
+      StandardMetrics.ms_v_bat_soh->SetValue(soh / 100.0);
+      }
+  }
 
 
 void OvmsVehicleNissanLeaf::PollReply_QC(uint8_t reply_data[], uint16_t reply_len)
@@ -884,10 +911,9 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(const OvmsPoller::poll_job_t &job,
       case BMS_RXID<<16 | 0x04:
         PollReply_BMS_Temp(buf, rxbuf.size());
         break;
-      // This is not usd until we implement variant specific polling
-      //case BMS_RXID<<16 | 0x61:
-      //  PollReply_BMS_SOH(buf, rxbuf.size());
-      //  break;
+      case BMS_RXID<<16 | 0x61:
+        PollReply_BMS_SOH(buf, rxbuf.size());
+        break;
       case CHARGER_RXID<<16 | QC_COUNT_PID: // QC
         PollReply_QC(buf, rxbuf.size());
         break;
@@ -1624,15 +1650,18 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
     case 0x5b3:
       {
       // soh as percentage
-      uint8_t soh = d[1] >> 1;
-      if (soh != 0)
+      if (!cfg_aze1) // AEZ1 gets SOH by polling group 61
         {
-        m_soh_instrument->SetValue(soh);
-        // we use this unless the user has opted otherwise
-        if (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
-          {
-          StandardMetrics.ms_v_bat_soh->SetValue(soh);
-          }
+          uint8_t soh = d[1] >> 1;
+          if (soh != 0)
+            {
+            m_soh_instrument->SetValue(soh);
+            // we use this unless the user has opted otherwise
+            if (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+              {
+              StandardMetrics.ms_v_bat_soh->SetValue(soh);
+              }
+            }
         }
       break;
       }
