@@ -46,7 +46,7 @@ static const char *TAG = "v-nissanleaf";
 #include "ovms_command.h"
 #include "ovms_config.h"
 
-#define MAX_POLL_DATA_LEN         196
+#define MAX_POLL_DATA_LEN         329
 #define BMS_TXID                  0x79B
 #define BMS_RXID                  0x7BB
 #define CHARGER_TXID              0x797
@@ -77,7 +77,7 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery voltages [196]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery shunts [96]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // battery temperatures [14]
-    // { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // SOH for AZE1
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // SOH for AZE1
     POLL_LIST_END
   };
 
@@ -200,7 +200,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   PollSetState(POLLSTATE_OFF);
-  PollSetResponseSeparationTime(0);
+  //PollSetResponseSeparationTime(0);
   PollSetPidList(m_can1,obdii_polls);
 
   MyConfig.RegisterParam("xnl", "Nissan Leaf", true, true);
@@ -860,6 +860,11 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(const OvmsPoller::poll_job_t &job,
   rxbuf.append((char*)data, length);
   if (job.mlremain)
     return;
+
+  if (rxbuf.size() > MAX_POLL_DATA_LEN) {
+    ESP_LOGE(TAG, "IncomingPollReply: Buffer overflow! rxbuf.size()=%d > %d, moduleid=0x%X, pid=0x%X", rxbuf.size(), MAX_POLL_DATA_LEN, job.moduleid_rec, job.pid);
+    return;
+  }
 
   static uint8_t buf[MAX_POLL_DATA_LEN];
   memcpy(buf, rxbuf.c_str(), rxbuf.size());
