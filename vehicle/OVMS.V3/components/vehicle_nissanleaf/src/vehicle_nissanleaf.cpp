@@ -66,7 +66,7 @@ enum poll_states
   POLLSTATE_CHARGING  //- car is charging
   };
 
-static const OvmsPoller::poll_pid_t obdii_polls_aze1[] =
+static const OvmsPoller::poll_pid_t obdii_polls_ze1[] =
   {
     // BUS 2
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
@@ -77,7 +77,7 @@ static const OvmsPoller::poll_pid_t obdii_polls_aze1[] =
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery voltages [196]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery shunts [96]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // battery temperatures [14]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // SOH for AZE1
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // SOH for ZE1
     POLL_LIST_END
   };
 
@@ -232,9 +232,9 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   //load custom shell commands
   CommandInit();
 
-  if (cfg_aze1)
+  if (cfg_ze1)
     {
-    PollSetPidList(m_can1,obdii_polls_aze1);
+    PollSetPidList(m_can1,obdii_polls_ze1);
     }
   else
     {
@@ -328,7 +328,7 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   cfg_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
   if (!cfg_enable_write) PollSetState(POLLSTATE_OFF);
 
-  cfg_aze1 = MyConfig.GetParamValueBool("xnl", "aze1", false);
+  cfg_ze1 = MyConfig.GetParamValueBool("xnl", "ze1", false);
   }
 
 
@@ -626,8 +626,8 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   {
   if (reply_len != 39 &&    // 24 KWh Leafs
       reply_len != 41 &&    // 30 KWh Leafs
-      reply_len != 51)      // AZE1 Leafs respond with 51 bytes
-                            // TODO: on startup the AZE1 Leafs respond with 42 bytes
+      reply_len != 51)      // ZE1 Leafs respond with 51 bytes
+                            // TODO: on startup the ZE1 Leafs respond with 42 bytes
     {
     ESP_LOGI(TAG, "PollReply_Battery: len=%d != 39 && != 41 && != 51", reply_len);
     return;
@@ -651,7 +651,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   // [32..38] 000b3290 800001
   // [39..40] 0000
 
-  // AZE1 Leafs respond with 51 bytes
+  // ZE1 Leafs respond with 51 bytes
   // > 0x79b 21 01
   // < 0x7bb 61 01
   //  0x7BB 10 35 61 01 FF FF FC 18		0..3
@@ -667,7 +667,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   uint32_t ah10000;
   uint32_t soc=0;
 
-  if (reply_len == 51)  // AZE1 Leafs
+  if (reply_len == 51)  // ZE1 Leafs
   { 
     hx = (reply_data[28] << 8) | reply_data[29];
     ah10000 = (reply_data[35] << 16) | (reply_data[36] << 8) |  reply_data[37];
@@ -694,7 +694,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   // - For 24 KWh : xnl.newCarAh = 66 (default)
   // - For 30 KWh : xnl.newCarAh = 80 (i.e. shell command "config set xnl newCarAh 80")
   
-  /// TODO: this can be read directly from the BMS (group 61) for AZE1 Leafs
+  /// TODO: this can be read directly from the BMS (group 61) for ZE1 Leafs
 
   float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
   float soh = ah / newCarAh * 100;
@@ -755,7 +755,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Shunt(const uint8_t *reply_data, uint1
 
 void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(const uint8_t *reply_data, uint16_t reply_len)
   {
-  if (reply_len != 14 && reply_len != 29)  // 14 bytes for ZE0 and AZE0, 29 bytes for AZE1
+  if (reply_len != 14 && reply_len != 29)  // 14 bytes for ZE0 and AZE0, 29 bytes for ZE1
     {
     ESP_LOGI(TAG, "PollReply_BMS_Temp: len=%d != 14 or != 29", reply_len);
     return;
@@ -780,7 +780,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(const uint8_t *reply_data, uint16
   // 14 [02 5a 0b  02 59 0b  ff ff ff  02 5a 0b  0b 00 ]
   //
 
-  // AZE1 Leafs respond with 29 bytes
+  // ZE1 Leafs respond with 29 bytes
   //  0x7BB 10 1F 61 04 02 0D 13 02  0..3
   //  0x7BB 21 03 14 FF FF FF 02 0B  4..10
   //  0x7BB 22 13 13 00 FF FF FF FF  11..17
@@ -1021,9 +1021,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
 
       // soc displayed on the instrument cluster
-      if (!cfg_aze1) 
+      if (!cfg_ze1) 
         {
-        uint8_t soc = d[4] & 0x7f;  // On the AZE1 this is always 0
+        uint8_t soc = d[4] & 0x7f;  // On the ZE1 this is always 0
         if (soc != 0x7f)
           {
           m_soc_instrument->SetValue(soc);
@@ -1649,7 +1649,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
     case 0x5b3:
       {
       // soh as percentage
-      if (!cfg_aze1) // AZE1 gets SOH by polling group 61
+      if (!cfg_ze1) // ZE1 gets SOH by polling group 61
         {
           uint8_t soh = d[1] >> 1;
           if (soh != 0)

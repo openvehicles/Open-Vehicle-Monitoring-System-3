@@ -228,7 +228,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     int    cfg_allowed_socdrop;                         // Allowed drop of SOC after charging
     bool   cfg_enable_write;                            // Enable/disable can write (polling and commands
     bool   cfg_enable_autocharge;                       // Enable/disable automatic charge control based on SOC or range
-    bool   cfg_aze1;                                    // Enable/disable AZE1 specific features
+    bool   cfg_ze1;                                    // Enable/disable ZE1 specific features
     string cfg_limit_range_calc;                        // What range calc to use for charge to range feature
 
     int     m_MITM = 0;
