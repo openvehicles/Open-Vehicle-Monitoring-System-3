@@ -626,8 +626,8 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   {
   if (reply_len != 39 &&    // 24 KWh Leafs
       reply_len != 41 &&    // 30 KWh Leafs
-      reply_len != 51)      // AEZ1 Leafs respond with 51 bytes
-                            // TODO: on startup the AEZ1 Leafs respond with 42 bytes
+      reply_len != 51)      // AZE1 Leafs respond with 51 bytes
+                            // TODO: on startup the AZE1 Leafs respond with 42 bytes
     {
     ESP_LOGI(TAG, "PollReply_Battery: len=%d != 39 && != 41 && != 51", reply_len);
     return;
@@ -651,7 +651,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   // [32..38] 000b3290 800001
   // [39..40] 0000
 
-  // AEZ1 Leafs respond with 51 bytes
+  // AZE1 Leafs respond with 51 bytes
   // > 0x79b 21 01
   // < 0x7bb 61 01
   //  0x7BB 10 35 61 01 FF FF FC 18		0..3
@@ -667,7 +667,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   uint32_t ah10000;
   uint32_t soc=0;
 
-  if (reply_len == 51)  // AEZ1 Leafs
+  if (reply_len == 51)  // AZE1 Leafs
   { 
     hx = (reply_data[28] << 8) | reply_data[29];
     ah10000 = (reply_data[35] << 16) | (reply_data[36] << 8) |  reply_data[37];
@@ -694,7 +694,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   // - For 24 KWh : xnl.newCarAh = 66 (default)
   // - For 30 KWh : xnl.newCarAh = 80 (i.e. shell command "config set xnl newCarAh 80")
   
-  /// TODO: this can be read directly from the BMS (group 61) for AEZ1 Leafs
+  /// TODO: this can be read directly from the BMS (group 61) for AZE1 Leafs
 
   float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
   float soh = ah / newCarAh * 100;
@@ -755,7 +755,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Shunt(const uint8_t *reply_data, uint1
 
 void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(const uint8_t *reply_data, uint16_t reply_len)
   {
-  if (reply_len != 14 && reply_len != 29)  // 14 bytes for ZE0 and AZE0, 29 bytes for AEZ1
+  if (reply_len != 14 && reply_len != 29)  // 14 bytes for ZE0 and AZE0, 29 bytes for AZE1
     {
     ESP_LOGI(TAG, "PollReply_BMS_Temp: len=%d != 14 or != 29", reply_len);
     return;
@@ -780,7 +780,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(const uint8_t *reply_data, uint16
   // 14 [02 5a 0b  02 59 0b  ff ff ff  02 5a 0b  0b 00 ]
   //
 
-  // AEZ1 Leafs respond with 29 bytes
+  // AZE1 Leafs respond with 29 bytes
   //  0x7BB 10 1F 61 04 02 0D 13 02  0..3
   //  0x7BB 21 03 14 FF FF FF 02 0B  4..10
   //  0x7BB 22 13 13 00 FF FF FF FF  11..17
@@ -1023,7 +1023,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // soc displayed on the instrument cluster
       if (!cfg_aze1) 
         {
-        uint8_t soc = d[4] & 0x7f;  // On the AEZ1 this is always 0
+        uint8_t soc = d[4] & 0x7f;  // On the AZE1 this is always 0
         if (soc != 0x7f)
           {
           m_soc_instrument->SetValue(soc);
@@ -1649,7 +1649,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
     case 0x5b3:
       {
       // soh as percentage
-      if (!cfg_aze1) // AEZ1 gets SOH by polling group 61
+      if (!cfg_aze1) // AZE1 gets SOH by polling group 61
         {
           uint8_t soh = d[1] >> 1;
           if (soh != 0)
