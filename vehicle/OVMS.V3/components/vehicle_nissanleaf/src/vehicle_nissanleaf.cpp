@@ -808,6 +808,12 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(const uint8_t *reply_data, uint16
 
 void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(const uint8_t *reply_data, uint16_t reply_len)
   {
+  if (reply_len != 329)
+    {
+    ESP_LOGI(TAG, "PollReply_BMS_SOH: len=%d != 329", reply_len);
+    return;
+    }
+
     uint16_t soh = (reply_data[2] << 8) | reply_data[3];
     ESP_LOGD(TAG, "BMS SOH: %d", soh);
     m_soh_instrument->SetValue(soh / 100.0);
