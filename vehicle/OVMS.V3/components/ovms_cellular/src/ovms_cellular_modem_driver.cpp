@@ -34,8 +34,8 @@ static const char *TAG = "cellular-modem-auto";
 #include <string.h>
 
 #include "ovms_cellular.h"
-#include "ovms_peripherals.h"
 #include "ovms_config.h"
+#include "simcom_powering.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // The virtual modem driver.
@@ -60,7 +60,8 @@ autoInit::autoInit()
 modemdriver::modemdriver()
   {
   m_modem = MyPeripherals->m_cellular_modem;
-  m_powercyclefactor = 0;
+  m_pwridx = 0;
+  m_t_pwrcycle = 0;
   m_statuspoller_step = 0;
   }
 
@@ -89,36 +90,41 @@ void modemdriver::Restart()
 
 void modemdriver::PowerOff()
   {
+  int T_off = TimePwrOff;
+  ESP_LOGI(TAG, "Power Off - timing: %d ms",T_off);
   PowerSleep(false);
-#ifdef CONFIG_OVMS_COMP_MAX7317
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
-#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+  uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
+  uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
+
+  SimcomPowerOff(T_off);
   }
 
 void modemdriver::PowerCycle()
   {
-  unsigned int psd = 2000 * (++m_powercyclefactor);
-  m_powercyclefactor = m_powercyclefactor % 3;
-  ESP_LOGI(TAG, "Power Cycle %dms", psd);
+  // Check time since last Powercycle 
+  // State timeout usually occurs after 30s -> Powercycle triggered
+  // Frequent PowerCycles -> try different timing
+  int dt = (m_t_pwrcycle == 0) ? 0 : (time(NULL) - m_t_pwrcycle);
+  if (dt > 10 && dt < 60  ) m_pwridx = (m_pwridx+1) % (NPwrTime+1);  // toggle between different time settings
+  m_t_pwrcycle = time(NULL);
 
+  ESP_LOGI(TAG, "Power Cycle");
   uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
-  uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
-#ifdef CONFIG_OVMS_COMP_MAX7317
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 1); // Modem EN/PWR line high
-  vTaskDelay(psd / portTICK_PERIOD_MS);
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
-#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+  uart_flush(m_modem->m_uartnum);       // Flush the ring buffer, to try to address MUX start issues
+
+  SimcomPowerCycle(m_pwridx);
   }
 
 void modemdriver::PowerSleep(bool onoff)
   {
-  #ifdef CONFIG_OVMS_COMP_MAX7317
     if (onoff)
-      MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 1);
+    {
+      setDTRLevel(1);
+    }
     else
-      MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 0);
-  #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+    {
+      setDTRLevel(0);
+    }
   }
 
 int modemdriver::GetMuxChannels()    { return 4; }

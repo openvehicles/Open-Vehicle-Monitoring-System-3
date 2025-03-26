@@ -32,7 +32,7 @@
 static const char *TAG = "SIM7000";
 
 #include <string.h>
-#include "ovms_peripherals.h"
+#include "simcom_powering.h"
 #include "simcom_7000.h"
 
 const char model[] = "SIM7000";
@@ -67,20 +67,13 @@ const char* simcom7000::GetName()
   return name;
   }
 
+
 void simcom7000::PowerCycle()
   {
-  unsigned int psd = 2000 * (++m_powercyclefactor);
-  m_powercyclefactor = m_powercyclefactor % 3;
-  ESP_LOGI(TAG, "Power Cycle (SIM7000) %dms",psd);
-
+  ESP_LOGV(TAG, "Power Cycle");
   uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
-  uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
-#ifdef CONFIG_OVMS_COMP_MAX7317
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 1); // Modem EN/PWR line high
-  vTaskDelay(psd / portTICK_PERIOD_MS);
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
-#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+  uart_flush(m_modem->m_uartnum);       // Flush the ring buffer, to try to address MUX start issues
+  SimcomPowerCycle(-1,1050, 1250);
   }
 
 bool simcom7000::State1Leave(modem::modem_state1_t oldstate)
