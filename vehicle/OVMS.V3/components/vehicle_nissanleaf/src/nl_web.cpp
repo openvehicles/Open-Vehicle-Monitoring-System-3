@@ -75,6 +75,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   bool canwrite;
   bool socnewcar;
   bool sohnewcar;
+  bool ze1;
   std::string modelyear;
   std::string cabintempoffset;
   std::string maxgids;
@@ -91,6 +92,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     socnewcar           = (c.getvar("socnewcar") == "yes");
     sohnewcar           = (c.getvar("sohnewcar") == "yes");
     canwrite            = (c.getvar("canwrite") == "yes");
+    ze1                = (c.getvar("ze1") == "yes");
 
     // check:
     if (!modelyear.empty()) {
@@ -117,6 +119,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xnl", "soc.newcar", socnewcar);
       MyConfig.SetParamValueBool("xnl", "soh.newcar", sohnewcar);
       MyConfig.SetParamValueBool("xnl", "canwrite",   canwrite);
+      MyConfig.SetParamValueBool("xnl", "ze1", ze1);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Nissan Leaf feature configuration saved.</p>");
@@ -140,6 +143,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     socnewcar           = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
     sohnewcar           = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
     canwrite            = MyConfig.GetParamValueBool("xnl", "canwrite", false);
+    ze1                = MyConfig.GetParamValueBool("xnl", "ze1", false);
 
     c.head(200);
   }
@@ -150,6 +154,9 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
 
   c.fieldset_start("General");
+
+  c.input_checkbox("ZE1 model", "ze1", ze1, "<p>ZE1 models use a slightly different CAN structure to AZE0 or ZE0 cars</p>");
+
   c.input_radio_start("SOC Display", "socnewcar");
   c.input_radio_option("socnewcar", "from dashboard display",   "no",  socnewcar == false);
   c.input_radio_option("socnewcar", "relative to fixed value:", "yes", socnewcar == true);

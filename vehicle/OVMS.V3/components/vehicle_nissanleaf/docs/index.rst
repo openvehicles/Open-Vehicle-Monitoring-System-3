@@ -17,8 +17,8 @@ Hardware
 =========================== ==============
 Item                        Support Status
 =========================== ==============
-Module                      Any OVMS v3 (or later) module. Vehicle support: 2011-2017 (24kWh & 30kWh LEAF, 24kWh & 40KWh e-Nv200 & custom battery e.g. Muxsan)
-Vehicle Cable               1779000 Nissan Leaf OBD-II to DB9 Data Cable for OVMS
+Module                      Any OVMS v3 (or later) module. Vehicle support: 2011+ (24,30, 40, 62kWh LEAF, 24kWh & 40KWh e-Nv200 & custom battery e.g. Muxsan)
+Vehicle Cable               1779000 Nissan Leaf OBD-II to DB9 Data Cable for OVMS, CAN tap cable for AZE1 models.
 GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna)
 =========================== ==============
@@ -72,13 +72,13 @@ Charge Status               Yes
 Charge Interruption Alerts  Yes
 =========================== ==============
 
-.. [1] OVMS currently supports 2011-2017 Nissan LEAF and all models of Nissan e-NV200
+.. [1] OVMS currently supports all models of Nissan LEAF and all models of Nissan e-NV200
 
 .. [2] Some HVAC Status Items have been only verified with 2013-2016 MY cars and will only work if the year is set in configuration. Also HVAC needs to be in ON position before powering down the vehicle for the metrics to work during pre-heat.
 
 .. [3] Lock/Unlock will work if CAR can bus is awake, this can be activated by turning on A/C. Locking only appears to work for models 2016 onwards or 30kWh models. `GitHub issue <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/231>`_
 
-.. [4] ZE0 (2011-2013) vehicles are required to choose SoC display from "relative to fixed value", "dashboard display" SoC method does not work with these vehicles. 
+.. [4] ZE0 (2011-2013) vehicles are required to choose SoC display from "relative to fixed value", "dashboard display" SoC method does not work with these vehicles. AZE1 (2018+) models need to choose the "dashboard display" SoC method.
 
 ----------------------
 Remote Climate Control
@@ -146,10 +146,27 @@ or
 *Note: in latest OVMS fimware version model year and battery size can be set via the web config interface.*
 
 ^^^^^^^^^^^^^^^^^^
-2018+ models (ZE1)
+2018+ models (AZE1)
 ^^^^^^^^^^^^^^^^^^
 
-2018+ 40/62kWh LEAF is not yet supported. Please get in touch if your interested in helping to add support. Relevant 2018 CANbus messages have already been decoded and documented, see `MyNissanLEAF thread <https://mynissanleaf.com/viewtopic.php?f=44&t=4131&start=480>`_.
+OVMS works on AZE1 models however the factory TCU (Telematics Control Unit) must be bypassed to enable remote climate control, this (the TCU) is only installed in selected models. The TCU cannot be just unplugged as this will disconnect the handsfree microphone.  
+
+The OBD port cannot be used because of the CAN gateway that powers down when the ignition is off that isolates the port. Rather you need to tap the CAN busses from behind the instrument cluster. You will need to build an adaptor to plug into the M101 port.  It is easiest if you source pre made parts and modify them to suit.  The parts you need are:
+
+https://www.aliexpress.com/item/1005006083154220.html (DB9 female)
+
+https://www.aliexpress.com/item/1005007018521989.html (24pin male and female)
+
+Wiring instructions are taken from here https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323#issuecomment-2227069811, thanks @samr037.  Note: in this document @samr037 used a intermediate cat5 cable but this can be bypassed and the DB9 wired directly.
+
+`Leaf AZE1 CAN Tap Wiring.pdf <Leaf%20AZE1%20CAN%20Tap%20Wiring.pdf>`_
+
+.. image:: Leaf%20CAN%20Tap.jpg
+    :width: 480px
+The final assembled tap
+
+Dash disassembly instructions are here: https://www.youtube.com/watch?v=gkA1WDu8cq0&si=kII9XvEiAaXgggma.  Access to the M101 port behind the instument cluster is relatively straight forward.
+
 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Specific battery configs
@@ -187,6 +204,7 @@ Resources
 - Nissan LEAF support added by Tom Parker, see `his wiki <https://carrott.org/emini/Nissan_Leaf_OVMS>`_ for lots of documentation and resources. Some info is outdated e.g. climate control now turns off automatically.
 - Nissan LEAF features are being added by Jaunius Kapkan, see `his github profile <https://github.com/mjkapkan/Open-Vehicle-Monitoring-System-3>`_ to track the progress.
 - `MyNissanLEAF thread for Nissan CANbus decoding discussion <http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=440>`_
-- Database files (.DBC) for ZE0 and AZE0 Leaf can be found here: `Github LEAF Canbus database files <https://github.com/dalathegreat/leaf_can_bus_messages>`_
+- Database files (.DBC) for ZE0, AZE0 & AZE1 Leaf can be found here: `Github LEAF Canbus database files <https://github.com/dalathegreat/leaf_can_bus_messages>`_
+- Polling informaion for AZE1 can be found here: https://drive.google.com/file/d/1jH9cgm5v23qnqVnmZN3p4TvdaokWKPjM/view
 
 Assistance is appreciated as I haven't had time to try to override the TCU using the OVMS or find an alternative solution to prevent the TCU overriding the messages while still allowing the hands free microphone to work.
