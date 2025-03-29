@@ -806,6 +806,8 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(const uint8_t *reply_data, uint16
   temp_int[i++] = reply_data[13];
   m_bms_thermistor->SetElemValues(0, 4, thermistor);
   m_bms_temp_int->SetElemValues(0, 6, temp_int);
+
+  StandardMetrics.ms_v_bat_temp->SetValue(StandardMetrics.ms_v_bat_pack_tmax->AsFloat()); // copy this to v.b.temp for the app to display
   }
 
 void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(const uint8_t *reply_data, uint16_t reply_len)
