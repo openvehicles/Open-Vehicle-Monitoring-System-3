@@ -71,18 +71,20 @@ const int TimePwrOn[]  = {     200,       1000 };   // array of T_on (ms) settin
 
 // time (ms) from PWRKEY Off released to PWRKEY On asserted
 #define TPwrOffOn   5000
-// 
-// Powering of Simcom modems via PWRKEY and DTR pin 
+//
+// Powering of Simcom modems via PWRKEY and DTR pin
 //   Signal level might be inverted (driven by NPN transistor)
-// 
-#ifdef CONFIG_SIMCOM_INVERTED_PWRKEY
+//
+//#ifdef CONFIG_SIMCOM_INVERTED_PWRKEY
+
 // inverted PWR signal
   #define PwrKeyLow  1
   #define PwrKeyHigh 0
-#else
-  #define PwrKeyLow  0
-  #define PwrKeyHigh 1
-#endif
+
+//#else
+//  #define PwrKeyLow  0
+//  #define PwrKeyHigh 1
+//#endif
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
   #define setPWRLevel(level)  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, level)
