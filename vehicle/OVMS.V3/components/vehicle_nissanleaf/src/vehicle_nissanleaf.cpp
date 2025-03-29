@@ -161,7 +161,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_bms_temp_int = MyMetrics.InitVector<int>("xnl.bms.temp.int", SM_STALE_MIN, 0, Celcius);
   m_bms_balancing = MyMetrics.InitBitset<96>("xnl.bms.balancing", SM_STALE_HIGH, 0);
   m_soh_new_car = MyMetrics.InitFloat("xnl.v.b.soh.newcar", SM_STALE_HIGH, 0, Percentage);
-  m_soh_instrument = MyMetrics.InitInt("xnl.v.b.soh.instrument", SM_STALE_HIGH, 0, Percentage);
+  m_soh_instrument = MyMetrics.InitFloat("xnl.v.b.soh.instrument", SM_STALE_HIGH, 0, Percentage);
   m_battery_energy_capacity = MyMetrics.InitFloat("xnl.v.b.e.capacity", SM_STALE_HIGH, 0, kWh);
   m_battery_energy_available = MyMetrics.InitFloat("xnl.v.b.e.available", SM_STALE_HIGH, 0, kWh);
   m_battery_type = MyMetrics.InitInt("xnl.v.b.type", SM_STALE_HIGH, 0); // auto-detect version and size by can traffic
@@ -209,7 +209,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_AZE0_charger = false;
   m_climate_really_off = false;
  
-  
+  cfg_soh_newcar = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
 
   // register but don't auto-power-off the busses.
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS, nullptr, false);
@@ -701,7 +701,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
   float soh = ah / newCarAh * 100;
   m_soh_new_car->SetValue(soh);
-  if (MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+  if (cfg_soh_newcar)
     {
     StandardMetrics.ms_v_bat_soh->SetValue(soh);
     }
@@ -816,12 +816,13 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(const uint8_t *reply_data, uint16_
     return;
     }
 
-    uint16_t soh = (reply_data[2] << 8) | reply_data[3];
-    ESP_LOGD(TAG, "BMS SOH: %d", soh);
-    m_soh_instrument->SetValue(soh / 100.0);
-    if (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+    uint16_t uint_soh = (reply_data[2] << 8) | reply_data[3];
+    float soh = uint_soh / 100.0f;
+    ESP_LOGD(TAG, "BMS SOH: %.2f", soh);
+    m_soh_instrument->SetValue(soh);
+    if (!cfg_soh_newcar)
       {
-      StandardMetrics.ms_v_bat_soh->SetValue(soh / 100.0);
+      StandardMetrics.ms_v_bat_soh->SetValue(soh);
       }
   }
 
@@ -1658,7 +1659,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
             {
             m_soh_instrument->SetValue(soh);
             // we use this unless the user has opted otherwise
-            if (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+            if (!cfg_soh_newcar)
               {
               StandardMetrics.ms_v_bat_soh->SetValue(soh);
               }
@@ -2265,7 +2266,7 @@ int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc, float charge_p
  */
 void OvmsVehicleNissanLeaf::HandleRange()
   {
-  float bat_cap_kwh = m_battery_energy_capacity->AsFloat(24, kWh);
+  float bat_cap_kwh = m_battery_energy_capacity->AsFloat(24, kWh);  // TODO: check this.
   float bat_soc     = StandardMetrics.ms_v_bat_soc->AsFloat(0);
   float bat_soh     = StandardMetrics.ms_v_bat_soh->AsFloat(100);
   float bat_temp    = StandardMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
@@ -2276,7 +2277,7 @@ void OvmsVehicleNissanLeaf::HandleRange()
   float max_gids    = MyConfig.GetParamValueFloat("xnl", "maxGids",  GEN_1_NEW_CAR_GIDS);
 
   // we use detected battery capacity unless the user has opted otherwise
-  float max_kwh     = (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+  float max_kwh     = (!cfg_soh_newcar)
                             ? bat_cap_kwh
                             : max_gids * wh_per_gid / 1000.0;
 
