@@ -384,6 +384,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
       StandardMetrics.ms_v_charge_state->SetValue("stopped");
       StandardMetrics.ms_v_gen_substate->SetValue("stopped");
       StandardMetrics.ms_v_gen_state->SetValue("stopped");
+      PollSetState(POLLSTATE_OFF); //This need for this is inferred only, it may not be needed.
       break;
     case CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT:
       StandardMetrics.ms_v_door_chargeport->SetValue(true); //see 0x35d, can't use as only open signal
@@ -397,6 +398,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         StandardMetrics.ms_v_charge_substate->SetValue("powerwait");  
         StandardMetrics.ms_v_charge_state->SetValue("stopped");
         }
+        PollSetState(POLLSTATE_OFF);
       break;
     case CHARGER_STATUS_QUICK_CHARGING:
       fast_charge = true;
@@ -2330,7 +2332,7 @@ void OvmsVehicleNissanLeaf::HandleRange()
 // On Generation 2 Cars, a CAN bus message is sent to wake up the VCU. This
 // function sends that message even to Generation 1 cars which doesn't seem to
 // cause any problems.
-//
+
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   {
   // Shotgun approach to waking up the vehicle. Send all kinds of wakeup messages
