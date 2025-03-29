@@ -146,10 +146,10 @@ or
 *Note: in latest OVMS fimware version model year and battery size can be set via the web config interface.*
 
 ^^^^^^^^^^^^^^^^^^
-2018+ models (AZE1)
+2018+ models (ZE1)
 ^^^^^^^^^^^^^^^^^^
 
-OVMS works on AZE1 models however the factory TCU (Telematics Control Unit) must be bypassed to enable remote climate control, this (the TCU) is only installed in selected models. The TCU cannot be just unplugged as this will disconnect the handsfree microphone.  
+OVMS works on ZE1 models however the factory TCU (Telematics Control Unit) must be bypassed to enable remote climate control, this (the TCU) is only installed in selected models. The TCU cannot be just unplugged as this will disconnect the handsfree microphone.  
 
 The OBD port cannot be used because of the CAN gateway that powers down when the ignition is off that isolates the port. Rather you need to tap the CAN busses from behind the instrument cluster. You will need to build an adaptor to plug into the M101 port.  It is easiest if you source pre made parts and modify them to suit.  The parts you need are:
 
@@ -159,10 +159,11 @@ https://www.aliexpress.com/item/1005007018521989.html (24pin male and female)
 
 Wiring instructions are taken from here https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323#issuecomment-2227069811, thanks @samr037.  Note: in this document @samr037 used a intermediate cat5 cable but this can be bypassed and the DB9 wired directly.
 
-`Leaf AZE1 CAN Tap Wiring.pdf <Leaf%20AZE1%20CAN%20Tap%20Wiring.pdf>`_
+`Leaf ZE1 CAN Tap Wiring.pdf <Leaf%20AZE1%20CAN%20Tap%20Wiring.pdf>`_
 
 .. image:: Leaf%20CAN%20Tap.jpg
     :width: 480px
+    
 The final assembled tap
 
 Dash disassembly instructions are here: https://www.youtube.com/watch?v=gkA1WDu8cq0&si=kII9XvEiAaXgggma.  Access to the M101 port behind the instument cluster is relatively straight forward.
