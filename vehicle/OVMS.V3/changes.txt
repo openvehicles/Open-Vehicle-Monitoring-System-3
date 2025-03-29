@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Nissan Leaf:
+    ZE1 inital release
 - Smart EQ 453:
     DDT4all simple support, a full List of commands at www.smart-EMOTION.de
 - VW e-Up: decode & display battery cell level health status,
