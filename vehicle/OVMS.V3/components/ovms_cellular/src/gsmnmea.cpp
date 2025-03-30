@@ -121,11 +121,11 @@ void GsmNMEA::IncomingLine(const std::string line)
   std::istringstream sentence(line);
   std::string token;
 
-  if (line.find("+CGNSSINFO:",0) == 0)   // CGNSSINFO record
+  if ( line.find("+CGNSSINFO:",0) == 0 )   // CGNSSINFO record
     {
     // check for +CGNSSINFO output record
-    // no fix yet: +CGNSSINFO ,,,,,,,,
-    // GPS fix:    +CGNSSINFO 3,15,,01,01,52.3973694,N,7.1607476,E,040125,091435.00,121.7,2.072,161.56,4.11,2.21,3.46,05
+    // no fix yet: +CGNSSINFO: ,,,,,,,,
+    // GPS fix:    +CGNSSINFO: 3,15,,01,01,52.3973694,N,7.1607476,E,040125,091435.00,121.7,2.072,161.56,4.11,2.21,3.46,05
     // Info
     // 3,         : 3|2  3D fix|2D fix
     // 15,,01,01  : number of used sats of 4 GPS sytems (documentation of 76XX states only 3 fields!)
@@ -255,7 +255,7 @@ void GsmNMEA::IncomingLine(const std::string line)
     if (speedok)
       *StdMetrics.ms_v_pos_gpsspeed = speed;
 
-    ESP_LOGV(TAG, "CGNSSINFO: %s %s nsats %d lat %f lon %f ", date, timestr, satcnt, lat, lon);
+    ESP_LOGV(TAG, "CGNSSINFO: %s %s nsats %d lat %f lon %f hdop %f vdop %f pdop %f", date, timestr, satcnt, lat, lon, hdop, vdop, pdop);
     
     } // END "+CGNSSINFO" handler
   

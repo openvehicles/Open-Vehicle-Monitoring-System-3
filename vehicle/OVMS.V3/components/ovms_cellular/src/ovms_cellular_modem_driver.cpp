@@ -105,7 +105,7 @@ void modemdriver::PowerCycle()
   // State timeout usually occurs after 30s -> Powercycle triggered
   // Frequent PowerCycles -> try different timing
   int dt = (m_t_pwrcycle == 0) ? 0 : (time(NULL) - m_t_pwrcycle);
-  if (dt > 10 && dt < 60  ) m_pwridx = (m_pwridx+1) % (NPwrTime+1);  // toggle between different time settings
+  if (dt > 10 && dt < 60  ) m_pwridx = (m_pwridx+1) % NPwrTime;  // toggle between different time settings
   m_t_pwrcycle = time(NULL);
 
   ESP_LOGI(TAG, "Power Cycle");
