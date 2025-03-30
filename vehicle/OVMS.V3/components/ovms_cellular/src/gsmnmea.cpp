@@ -120,9 +120,8 @@ void GsmNMEA::IncomingLine(const std::string line)
   {
   std::istringstream sentence(line);
   std::string token;
-  std::string header;
 
-  if (std::getline(sentence, header, ' ') && header == "+CGNSSINFO:" )   // CGNSSINFO record
+  if (line.find("+CGNSSINFO:",0) == 0)   // CGNSSINFO record
     {
     // check for +CGNSSINFO output record
     // no fix yet: +CGNSSINFO ,,,,,,,,
@@ -144,6 +143,7 @@ void GsmNMEA::IncomingLine(const std::string line)
     // 3.46,      : VDOP 
     // 05 : not mentioned in the documentation. Checksum?
     ESP_LOGV(TAG, "Incoming location data: %s", line.c_str());
+    if (!std::getline(sentence, token, ' ')) return;  // skip the CGNSSINFO header
     if (!std::getline(sentence, token, ',')) return;
     float lat=0, lon=0, alt=0, hdop=0, vdop=0, pdop=0;
     char  ns='N', ew='E';
