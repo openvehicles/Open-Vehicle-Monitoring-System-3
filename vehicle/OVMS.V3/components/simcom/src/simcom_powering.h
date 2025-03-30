@@ -38,9 +38,9 @@
 // Timing of PWRKEY pin for Simcom modems
 //
 // procedure to power off via the PWRKEY pin
-//          T_off         
+//          T_off
 // High ---      ------- Wait for uart to be offline
-// LOW     ------        
+// LOW     ------
 //
 // procedure to power cycle via the PWRKEY pin
 //           T_off  4-5s   T_on
@@ -58,13 +58,13 @@
 // 5360    180       500
 // 7000   1000      1200
 // 7600    100      2500
-// 7670     50      2500 
+// 7670     50      2500
 //
-// In case of frequent power cycles, the T_on time is changed (see array below) 
+// In case of frequent power cycles, the T_on time is changed (see array below)
 //
 // Model                  5360/7600/7670  7000
 const int TimePwrOn[]  = {     200,       1000 };   // array of T_on (ms) settings
-#define NPwrTime    sizeof(TimePwrOn)/sizeof(TimePwrOn[0])  
+#define NPwrTime    sizeof(TimePwrOn)/sizeof(TimePwrOn[0])
 
 // T_off can be the same for all models
 #define TimePwrOff  2500
@@ -73,18 +73,11 @@ const int TimePwrOn[]  = {     200,       1000 };   // array of T_on (ms) settin
 #define TPwrOffOn   5000
 //
 // Powering of Simcom modems via PWRKEY and DTR pin
-//   Signal level might be inverted (driven by NPN transistor)
 //
-//#ifdef CONFIG_SIMCOM_INVERTED_PWRKEY
 
-// inverted PWR signal
+// PWRKEY signal is inverted by NPN transistor
   #define PwrKeyLow  1
   #define PwrKeyHigh 0
-
-//#else
-//  #define PwrKeyLow  0
-//  #define PwrKeyHigh 1
-//#endif
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
   #define setPWRLevel(level)  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, level)
