@@ -3,6 +3,9 @@ Open Vehicle Monitor System v3 - Change log
 ????-??-?? ???  ???????  OTA release
 - Nissan Leaf:
     ZE1 inital release
+    Fix: Poll state not set to off when charging stopped by OVMS
+    Enh: SOH_instrument now float not int to support ZE1 instrument values 
+    Enh: Copy v.b.p.temp.max to v.b.temp so that max battery temp displays in app
 - Smart EQ 453:
     DDT4all simple support, a full List of commands at www.smart-EMOTION.de
 - VW e-Up: decode & display battery cell level health status,
