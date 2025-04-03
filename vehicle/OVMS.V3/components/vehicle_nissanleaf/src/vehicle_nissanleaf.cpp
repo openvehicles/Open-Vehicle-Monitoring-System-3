@@ -1745,20 +1745,21 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
 void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
   {
   if (!cfg_enable_write) return; //disable commands unless canwrite is true
-  unsigned char data[4];
+  uint8_t data[4] = {0, 0, 0, 0};
+  esp_err_t result;
   uint8_t length;
   canbus *tcuBus;
   bool advancedCommand = false;
 
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2016)
     {
-    ESP_LOGI(TAG, "New TCU on CAR Bus");
+    ESP_LOGV(TAG, "Possible new TCU on CAR Bus");
     length = 4;
     tcuBus = m_can2;
     }
   else
     {
-    ESP_LOGI(TAG, "OLD TCU on EV Bus");
+    ESP_LOGV(TAG, "Possible old TCU on EV Bus");
     length = 1;
     tcuBus = m_can1;
     }
@@ -1830,7 +1831,11 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
     }
     else
     {
-      tcuBus->WriteStandard(0x56e, length, data);
+      result = tcuBus->WriteStandard(0x56e, length, data);
+      if (result != ESP_OK)
+      {
+          ESP_LOGE(TAG, "CAN TX Error: 0x56e, result=%d", result);
+      }
     }
   }
 
