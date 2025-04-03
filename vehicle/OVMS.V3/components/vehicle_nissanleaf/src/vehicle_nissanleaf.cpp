@@ -619,7 +619,14 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
   // restore default polling:
   nl_obd_rxwait.Give();
   vTaskDelay(pdMS_TO_TICKS(100));
-  PollSetPidList(obdii_polls);
+  if (cfg_ze1)
+    {
+    PollSetPidList(m_can1,obdii_polls_ze1);
+    }
+  else
+    {
+    PollSetPidList(m_can1,obdii_polls_aze0);
+    }
 
   return (rxok == pdTRUE);
   }
