@@ -2341,10 +2341,17 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   // Shotgun approach to waking up the vehicle. Send all kinds of wakeup messages
   if (!cfg_enable_write) return Fail; // Disable commands unless canwrite is true
   ESP_LOGI(TAG, "Sending Wakeup Frame");
+  /*
   unsigned char data = 0;
   m_can1->WriteStandard(0x679, 1, &data); //Wakes up the modules by spoofing VCM startup message
   m_can1->WriteStandard(0x679, 1, &data); //Tops up the 12V battery if connected to EVSE
   m_can1->WriteStandard(0x5C0, 8, &data); //Wakes up the VCM (by spoofing empty battery request heating)
+  */
+  uint8_t d8[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  uint8_t d1[1] = {0x00};
+  m_can1->WriteStandard(0x679, 1, d1); //Wakes up the modules by spoofing VCM startup message
+  m_can1->WriteStandard(0x5C0, 8, d8); //Wakes up the VCM (by spoofing empty battery request heating)
+
   return Success;
   }
 
