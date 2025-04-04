@@ -189,8 +189,11 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricVector<int> *m_bms_thermistor;
     OvmsMetricVector<int> *m_bms_temp_int;
     OvmsMetricBitset<96> *m_bms_balancing;
+    /// @brief State of health - calculated
+    /// @note ah / new car ah * 100
     OvmsMetricFloat *m_soh_new_car;
-    OvmsMetricInt *m_soh_instrument;
+    /// @brief State of health - read from BMS
+    OvmsMetricFloat *m_soh_instrument;
     OvmsMetricFloat *m_battery_energy_capacity;
     OvmsMetricFloat *m_battery_energy_available;
     OvmsMetricInt *m_battery_type;
@@ -228,7 +231,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     int    cfg_allowed_socdrop;                         // Allowed drop of SOC after charging
     bool   cfg_enable_write;                            // Enable/disable can write (polling and commands
     bool   cfg_enable_autocharge;                       // Enable/disable automatic charge control based on SOC or range
-    bool   cfg_ze1;                                    // Enable/disable ZE1 specific features
+    bool   cfg_ze1;                                     // Enable/disable ZE1 specific features
+    bool   cfg_soh_newcar;                              // True if SOH is calculated from new car max ah, false if from BMS
     string cfg_limit_range_calc;                        // What range calc to use for charge to range feature
 
     int     m_MITM = 0;
