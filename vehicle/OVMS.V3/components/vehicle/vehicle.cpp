@@ -2852,10 +2852,10 @@ OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &diff_last) const
   int32_t diff = (average_short - average_long);
   diff_last = diff;
 
-  if (average_short < m_low_threshold)
+  if (average_long < m_low_threshold)
     return OvmsBatteryState::Low;
 
-  if (average_short > m_charge_threshold)
+  if (average_long > m_charge_threshold)
     {
     if (diff < chdip_threshold)
       return OvmsBatteryState::ChargingDip;
