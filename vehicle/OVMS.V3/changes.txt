@@ -1,6 +1,14 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Add ability to report short-lived low 12v conditions
+  New metric:
+    v.b.12v.voltage.min  -- Minimum 12 volt value observed by OVMS hardware
+                         -- Can be tracked over time using Server v3; value is reset when transmitted
+                         -- On other systems, metric records lowest value since boot
+  New config:
+    [vehicle] 12v.low_warning_awake  -- Log a warning if 12v dips below this while the vehicle is awake
+                                     -- default 11.5
 - Nissan Leaf:
     ZE1 inital release
     Fix: Poll state not set to off when charging stopped by OVMS
