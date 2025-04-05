@@ -71,7 +71,7 @@ Open Vehicle Monitor System v3 - Change log
   New commands:
     vehicle aux [status]
     vehicle aux monitor [status]
-    vehicle aux monitor enable
+    vehicle aux monitor enable [[low-threshold] [charging-threshold]]
     vehicle aux monitor disable
   Duktape Support:
     OvmsVehicle.AuxMon.Enable
