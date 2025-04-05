@@ -318,6 +318,12 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
     MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
   ESP_LOGD(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
+
+  if (metric_name.compare(MS_V_BAT_12V_VOLTAGE_MIN) == 0)
+    {
+	// We've just published min voltage, so start again
+	metric->Clear();
+    }
   }
 
 int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
