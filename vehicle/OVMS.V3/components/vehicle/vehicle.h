@@ -547,7 +547,7 @@ class OvmsVehicle : public InternalRamAllocated
       void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
       void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success) override;
 
-      bool Ready() override;
+      bool Ready() const override;
     };
 #endif
 
