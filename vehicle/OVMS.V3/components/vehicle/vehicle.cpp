@@ -86,7 +86,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_aux->RegisterCommand("status", "Aux Battery Status", vehicle_aux);
   OvmsCommand *cmd_aux_mon = cmd_aux->RegisterCommand("monitor", "Aux Battery Monitor", vehicle_aux_monitor);
   cmd_aux_mon->RegisterCommand("status", "Aux Battery Status", vehicle_aux_monitor);
-  cmd_aux_mon->RegisterCommand("enable", "Enable Aux Monitor", vehicle_aux_monitor_enable);
+  cmd_aux_mon->RegisterCommand("enable", "Enable Aux Monitor", vehicle_aux_monitor_enable, "[<low-threshold> [<charging-threshold>]]", 0, 2);
   cmd_aux_mon->RegisterCommand("disable", "Disable Aux Monitor", vehicle_aux_monitor_disable);
 
 
