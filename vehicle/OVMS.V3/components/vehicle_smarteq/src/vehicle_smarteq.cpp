@@ -191,7 +191,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   MyConfig.RegisterParam("xsq", "Smart EQ", true, true);
   ConfigChanged(NULL);
-
+  
   StdMetrics.ms_v_gen_current->SetValue(2);                // activate gen metrics to app transfer
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);  // set 12V alert to false
   
@@ -602,7 +602,7 @@ void OvmsVehicleSmartEQ::ResetOldValues() {
 
 void OvmsVehicleSmartEQ::ResetChargingValues() {
   m_charge_finished = false;
-  StdMetrics.ms_v_charge_kwh->SetValue(0);
+  StdMetrics.ms_v_charge_kwh->SetValue(0); // charged Energy
   //StdMetrics.ms_v_charge_kwh_grid->SetValue(0);
 }
 
@@ -936,7 +936,7 @@ void OvmsVehicleSmartEQ::HandleChargeport(){
     if (m_resettrip) ResetTripCounters();
     ESP_LOGD(TAG,"Charge Start");
   } 
-  if (!StdMetrics.ms_v_door_chargeport->AsBool() && m_charge_start) {
+  if (!StdMetrics.ms_v_door_chargeport->AsBool() && !mt_evc_plug_present->AsBool() && m_charge_start) {
     m_charge_start = false;
     m_charge_finished = true;
     StdMetrics.ms_v_charge_power->SetValue(0);
