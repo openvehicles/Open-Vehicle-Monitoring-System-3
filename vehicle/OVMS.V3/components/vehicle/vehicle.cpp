@@ -86,7 +86,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_aux->RegisterCommand("status", "Aux Battery Status", vehicle_aux);
   OvmsCommand *cmd_aux_mon = cmd_aux->RegisterCommand("monitor", "Aux Battery Monitor", vehicle_aux_monitor);
   cmd_aux_mon->RegisterCommand("status", "Aux Battery Status", vehicle_aux_monitor);
-  cmd_aux_mon->RegisterCommand("enable", "Enable Aux Monitor", vehicle_aux_monitor_enable);
+  cmd_aux_mon->RegisterCommand("enable", "Enable Aux Monitor", vehicle_aux_monitor_enable, "[<low-threshold> [<charging-threshold>]]", 0, 2);
   cmd_aux_mon->RegisterCommand("disable", "Disable Aux Monitor", vehicle_aux_monitor_disable);
 
 
@@ -640,7 +640,7 @@ void OvmsVehicle::OvmsVehicleSignal::IncomingPollTxCallback(const OvmsPoller::po
     m_parent->IncomingPollTxCallback(job, success);
   }
 
-bool OvmsVehicle::OvmsVehicleSignal::Ready()
+bool OvmsVehicle::OvmsVehicleSignal::Ready() const
   {
   return m_parent->m_ready;
   }
@@ -2852,10 +2852,10 @@ OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &diff_last) const
   int32_t diff = (average_short - average_long);
   diff_last = diff;
 
-  if (average_short < m_low_threshold)
+  if (average_long < m_low_threshold)
     return OvmsBatteryState::Low;
 
-  if (average_short > m_charge_threshold)
+  if (average_long > m_charge_threshold)
     {
     if (diff < chdip_threshold)
       return OvmsBatteryState::ChargingDip;

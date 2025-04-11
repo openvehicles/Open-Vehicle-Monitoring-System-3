@@ -572,6 +572,71 @@ void dbc_signal_set_mux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
     }
   }
 
+void dbc_signal_set_mux_ext(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  uint32_t msgid = dbcMessageIdFromString(argv[0]);
+  dbcMessage* msg = MyDBC.m_selected->m_messages.FindMessage(msgid);
+  if (msg == NULL)
+    {
+    writer->printf("Error: Could not find message %s\n",argv[0]);
+    return;
+    }
+
+  dbcSignal* signal = msg->FindSignal(argv[1]);
+  if (signal == NULL)
+    {
+    writer->printf("Error: Could not find signal %s on message %s\n",argv[1],argv[0]);
+    return;
+    }
+
+  if (argc > 3)
+    {
+    dbcSignal* source = msg->FindSignal(argv[2]);
+    if (!source)
+      {
+      writer->printf("Error: Could not find signal source %s on message %s\n",argv[2],argv[0]);
+      return;
+      }
+    source->SetMultiplexSource();
+
+    bool first = true;
+    std::istringstream iss(argv[3]);
+    std::string item;
+    while (std::getline(iss, item, ',')) {
+      dbcSwitchRange_t range;
+      switch( sscanf(item.c_str(), "%" PRIu32 "-%" PRIu32, &range.min_val, &range.max_val) )
+        {
+        case 0: continue;
+        case 1:
+           range.max_val = range.min_val;
+           FALLTHROUGH;
+        case 2:
+          {
+          if (first)
+            {
+            first = false;
+            signal->SetMultiplexed(range.min_val); // first one.
+            signal->SetMultiplexSource(source);
+            }
+          signal->AddMultiplexRange(range);
+          }
+        }
+    }
+    writer->printf("DBC: Set mux %s for signal %s on message %s\n",argv[2],argv[1],argv[0]);
+    }
+  else
+    {
+    signal->ClearMultiplexed();
+    writer->printf("DBC: Cleared mux for signal %s on message %s\n",argv[1],argv[0]);
+    }
+  }
+
 dbc::dbc()
   {
   ESP_LOGI(TAG, "Initialising DBC (4520)");
@@ -594,6 +659,8 @@ dbc::dbc()
   cmd_set->RegisterCommand("timing", "Set bit timing for selected DBC file", dbc_set_timing, "<baud> <btr1> <btr2>", 3, 3);
   cmd_set->RegisterCommand("messagemux", "Set message mux for selected DBC file", dbc_message_set_mux, "<id> [<signal>]", 1, 2);
   cmd_set->RegisterCommand("signalmux", "Set signal mux for selected DBC file", dbc_signal_set_mux, "<id> <name> [<value>]", 2, 3);
+  cmd_set->RegisterCommand("signalmuxext", "Set extended signal mux link for selected DBC file",
+      dbc_signal_set_mux_ext, "<id> <name> [<messagesource> <value>-<value>{,<value_n>-<value_n>}]", 2, 4);
 
   OvmsCommand* cmd_add = cmd_dbc->RegisterCommand("add","DBC Add framework");
   cmd_add->RegisterCommand("node", "Add node for selected DBC file", dbc_node_add, "<node>", 1, 1);

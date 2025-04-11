@@ -82,9 +82,6 @@ void OvmsVehicleDBC::IncomingFrameCan3(CAN_frame_t* p_frame)
 
 void OvmsVehicleDBC::IncomingFrame(canbus* bus, CAN_frame_t* frame)
   {
-  dbcfile* dbc = bus->GetDBC();
-  if (dbc==NULL) return;
-  dbc->DecodeSignal(frame->FIR.B.FF, frame->MsgID, frame->data.u8, 8);
   }
 
 OvmsVehiclePureDBC::OvmsVehiclePureDBC()
