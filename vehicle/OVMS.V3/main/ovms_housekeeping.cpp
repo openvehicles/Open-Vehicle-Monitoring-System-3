@@ -74,6 +74,8 @@ static average_util_t<int32_t,4>  aux_avg_v;
 static float aux_factor = 195.7;
 #endif
 
+static bool warning_issued_12v = false;		// Have we logged a warning of low 12v?
+
 void HousekeepingUpdate12V()
   {
 #ifdef CONFIG_OVMS_COMP_ADC
@@ -84,16 +86,46 @@ void HousekeepingUpdate12V()
     return;
 
   // smooth out ADC errors & noise:
-  aux_avg_v.add(MyPeripherals->m_esp32adc->read());
+  float inst_v = MyPeripherals->m_esp32adc->read();
+  aux_avg_v.add(inst_v);
 
   // Allow the user to adjust the ADC conversion factor
+  inst_v = inst_v / aux_factor;
   float v = (float)aux_avg_v.get() / aux_factor;
+
   // Round to 2 decimal places
   v = truncf((v*100)+0.5) / 100;
   if (v < 1.0) v=0;
   m1->SetValue(v);
   if (StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat() == 0)
     StandardMetrics.ms_v_bat_12v_voltage_ref->SetValue(MyConfig.GetParamValueFloat("vehicle","12v.ref", 12.6));
+
+  // Check for new lowest voltage
+  OvmsMetricFloat* m2 = StandardMetrics.ms_v_bat_12v_voltage_min;
+  float warning_threshold_12v = MyConfig.GetParamValueFloat("vehicle","12v.low_warning_awake", 11.5);
+  if (m2->IsDefined() and inst_v > m2->AsFloat())
+    {
+    // This voltage is higher than warning level, so usually nothing to do
+    // unless a previous warning had been logged in which case we clear that
+    if (warning_issued_12v and inst_v > (warning_threshold_12v + 0.2))
+      {
+      ESP_LOGI(TAG, "12v restored: %.2f", inst_v);
+      warning_issued_12v = false;
+      }
+    }
+  else if (inst_v > 0.1)
+    {
+    // Record new lowest 12v value
+    m2->SetValue(inst_v);
+
+    if (StdMetrics.ms_v_env_awake->AsBool() and inst_v < warning_threshold_12v)
+      {
+      // Issue warning
+      ESP_LOGW(TAG, "Low 12v detected: %.2f", inst_v);
+      warning_issued_12v = true;
+      }
+    }
+
 #endif // #ifdef CONFIG_OVMS_COMP_ADC
   }
 

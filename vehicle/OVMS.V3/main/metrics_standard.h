@@ -104,6 +104,7 @@
 #define MS_V_BAT_12V_CURRENT        "v.b.12v.current"
 #define MS_V_BAT_12V_VOLTAGE_REF    "v.b.12v.voltage.ref"
 #define MS_V_BAT_12V_VOLTAGE_ALERT  "v.b.12v.voltage.alert"
+#define MS_V_BAT_12V_VOLTAGE_MIN    "v.b.12v.voltage.min"
 #define MS_V_BAT_TEMP               "v.b.temp"
 
 #define MS_V_BAT_PACK_LEVEL_MIN     "v.b.p.level.min"
@@ -353,6 +354,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_12v_current;               // Auxiliary 12V battery momentary current [A]
     OvmsMetricFloat*  ms_v_bat_12v_voltage_ref;           // Auxiliary 12V battery reference voltage [V]
     OvmsMetricBool*   ms_v_bat_12v_voltage_alert;         // True = auxiliary battery under voltage alert
+    OvmsMetricFloat*  ms_v_bat_12v_voltage_min;           // Auxiliary 12V battery minimum value since last report [V]
 
     OvmsMetricFloat*  ms_v_bat_pack_level_min;            // Cell level - weakest cell in pack [%]
     OvmsMetricFloat*  ms_v_bat_pack_level_max;            // Cell level - strongest cell in pack [%]
