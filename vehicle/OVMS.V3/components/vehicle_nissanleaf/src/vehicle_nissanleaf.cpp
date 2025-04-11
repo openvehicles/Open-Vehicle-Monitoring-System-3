@@ -1446,6 +1446,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             if (MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
               {
               StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
+
+              // 2012 Leaf has no instrument soc, battery capacity and max gids will be set from config, because it is not available on CAN
+              if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) == 2012) 
+                {
+                m_max_gids->SetValue(max_gids);
+                m_battery_energy_capacity->SetValue(max_gids * GEN_1_WH_PER_GID, WattHours);
+                }
               }
             }
             break;
