@@ -106,6 +106,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_12v_current = new OvmsMetricFloat(MS_V_BAT_12V_CURRENT, SM_STALE_HIGH, Amps);
   ms_v_bat_12v_voltage_ref = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE_REF, SM_STALE_HIGH, Volts, true);
   ms_v_bat_12v_voltage_alert = new OvmsMetricBool(MS_V_BAT_12V_VOLTAGE_ALERT, SM_STALE_MID);
+  ms_v_bat_12v_voltage_min = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE_MIN, SM_STALE_HIGH, Volts, true);
 
   ms_v_bat_pack_level_min = new OvmsMetricFloat(MS_V_BAT_PACK_LEVEL_MIN, SM_STALE_HIGH, Percentage);
   ms_v_bat_pack_level_max = new OvmsMetricFloat(MS_V_BAT_PACK_LEVEL_MAX, SM_STALE_HIGH, Percentage);
