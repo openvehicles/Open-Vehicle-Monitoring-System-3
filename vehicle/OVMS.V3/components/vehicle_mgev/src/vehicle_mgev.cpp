@@ -191,6 +191,8 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
 
     DRLFirstFrameSentCallback = std::bind(&OvmsVehicleMgEv::DRLFirstFrameSent, this, std::placeholders::_1, std::placeholders::_2);
     
+    m_poll_bus_default = m_can1;
+    
     // Register config params
     MyConfig.RegisterParam("xmg", "MG EV configuration", true, true);
     
@@ -291,7 +293,7 @@ void OvmsVehicleMgEv::ConfigurePollData(const OvmsPoller::poll_pid_t *SpecificPo
     ConfigurePollInterface(CanInterface());
     
 }
-
+/*
 //Call this function in variant specific code to setup poll data
 void OvmsVehicleMgEv::ConfigureMG5PollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize)
 {
@@ -302,7 +304,7 @@ void OvmsVehicleMgEv::ConfigureMG5PollData(const OvmsPoller::poll_pid_t *Specifi
         m_pollData = nullptr;
     }
     
-    //Allocate memory for m_pollData which should be enough for both the common_obdii_polls and SpecificPollData
+    //Allocate memory for m_pollData for SpecificPollData
     size_t size = DataSize;
     ESP_LOGI(TAG, "Number of Number of variant specific polls: %u, total size: %u", DataSize/sizeof(SpecificPollData[0]), DataSize);
     m_pollData = reinterpret_cast<OvmsPoller::poll_pid_t*>(ExternalRamMalloc(size));
@@ -318,7 +320,7 @@ void OvmsVehicleMgEv::ConfigureMG5PollData(const OvmsPoller::poll_pid_t *Specifi
     // Re-start CAN bus, setting up the PID list
     ConfigurePollInterface(CanInterface());
 }
-
+*/
 void OvmsVehicleMgEv::ConfigurePollData()
 {
     ConfigurePollData(nullptr, 0);
@@ -583,7 +585,7 @@ void OvmsVehicleMgEv::ConfigurePollInterface(int bus)
     
     if (oldBus != nullptr)
     {
-        ESP_LOGI(TAG, "Stopping previous CAN bus");
+        ESP_LOGI(TAG, "Stopping previous CAN bus, %s", oldBus->GetName());
         oldBus->Stop();
         oldBus->SetPowerMode(PowerMode::Off);
     }
