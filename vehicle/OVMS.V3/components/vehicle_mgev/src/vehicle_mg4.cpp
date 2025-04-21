@@ -161,10 +161,8 @@ OvmsVehicleMg4::OvmsVehicleMg4()
 	speed = StandardMetrics.ms_v_pos_gpsspeed->AsFloat();
 	
 	//Add variant specific poll data
-	//ConfigureMG5PollData(mg4_obdii_polls, sizeof(mg4_obdii_polls));
-    RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS, nullptr, false);
-    PollSetState(PollStateListenOnly);
-    PollSetPidList(m_can1,mg4_obdii_polls);
+	ConfigureMG5PollData(mg4_obdii_polls, sizeof(mg4_obdii_polls));
+	
 	//BMS Configuration
 	BmsSetCellArrangementVoltage(42, 2);
 	BmsSetCellArrangementTemperature(42, 2);
