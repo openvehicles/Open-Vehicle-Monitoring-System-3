@@ -80,6 +80,14 @@
         <div class="chart-box barchart" id="cell-soh"/>
       </div>
 
+      <h4>Cell Module History</h4>
+
+      <div class="metric chart" data-metric="xvu.b.hist.soh.mod.01,xvu.b.hist.soh.mod.02,xvu.b.hist.soh.mod.03,xvu.b.hist.soh.mod.04,xvu.b.hist.soh.mod.05,xvu.b.hist.soh.mod.06,xvu.b.hist.soh.mod.07,xvu.b.hist.soh.mod.08,xvu.b.hist.soh.mod.09,xvu.b.hist.soh.mod.10,xvu.b.hist.soh.mod.11,xvu.b.hist.soh.mod.12,xvu.b.hist.soh.mod.13,xvu.b.hist.soh.mod.14,xvu.b.hist.soh.mod.15,xvu.b.hist.soh.mod.16,xvu.b.hist.soh.mod.17" style="width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto">
+        <div class="chart-box linechart" id="cmod-hist"/>
+      </div>
+
+      <div>Hint: hover/long click on legend to highlight, click to toggle</div>
+
     </div>
 
   </div>
@@ -102,6 +110,10 @@
 .plot-line-packsoh {
   stroke: #0074ff;
   stroke-width: 2px;
+}
+.highcharts-series.cmod-soh-avg > .highcharts-graph {
+  stroke-width: 15px;
+  opacity: 0.6;
 }
 </style>
 
@@ -146,7 +158,7 @@
     yAxis: [{
       title: { text: null },
       labels: { format: "{value:.0f}%" },
-      min: 75, max: 100,
+      min: 75, max: 110,
       minTickInterval: 0.1,
       minorTickInterval: 'auto',
     }],
@@ -172,7 +184,85 @@
       this.series[0].setData(val0);
       let yext = this.yAxis[0].getExtremes();
       let ymin = Math.max(0, Math.floor((yext.dataMin-10) / 5) * 5);
-      let ymax = Math.min(100, Math.ceil((yext.dataMax+10) / 5) * 5);
+      let ymax = Math.min(110, Math.ceil((yext.dataMax+1) / 5) * 5);
+      this.yAxis[0].update({ min: ymin, max: ymax });
+      this.yAxis[0].setExtremes(ymin, ymax);
+    },
+  });
+
+  /* Init cell module history chart */
+  $("#cmod-hist").chart({
+    chart: {
+      type: 'line',
+      animation: { duration: 500, easing: 'easeOutExpo' },
+      zoomType: 'xy',
+      panning: true,
+      panKey: 'ctrl',
+    },
+    title: { text: null },
+    credits: { enabled: false },
+    tooltip: {
+      enabled: true,
+      shared: true,
+      headerFormat: '<u>{point.key}</u>:<br/>',
+      pointFormat: '{series.name}: <b>{point.y}</b><br/>',
+      valueSuffix: " %"
+    },
+    legend: { enabled: true },
+    xAxis: {
+      categories: []
+    },
+    yAxis: [{
+      title: { text: null },
+      labels: { format: "{value:.0f}%" },
+      min: 75, max: 110,
+      minTickInterval: 0.1,
+      minorTickInterval: 'auto',
+    }],
+    series: [],
+
+    /* Update method: */
+    onUpdate: function(update) {
+      // Create module series & average:
+      let series = [], avg = [];
+      for (let i = 1; i <= 17; i++) {
+        let modkey = Number(i).toString().padStart(2,'0');
+        let modhist = metrics["xvu.b.hist.soh.mod."+modkey] || [];
+        if (modhist.length > 0) {
+          series.push({
+            name: modkey, data: modhist,
+            className: 'cmod-soh', zIndex: i,
+            animation: { duration: 0 },
+          });
+          // prep avg:
+          modhist.forEach((el,i) => { avg[i] = (avg[i]||0) + el });
+        }
+      }
+      // finish avg:
+      if (series.length) {
+        avg.forEach((el,i) => { avg[i] = Number((avg[i] / series.length).toFixed(1)) });
+        series.unshift({
+          name: "Avg", data: avg,
+          className: 'cmod-soh-avg', zIndex: 100,
+          animation: { duration: 0 },
+        });
+      }
+      
+      // Create categories (cell numbers) & rounded values:
+      let date = new Date();
+      let cat = [];
+      for (let i = avg.length-1; i >= 0; i--) {
+        cat[i] = date.toISOString().substr(0,7);
+        date.setMonth(date.getMonth() - 3);
+      }
+
+      // Update chart:
+      this.xAxis[0].setCategories(cat);
+      this.update({ "series": series }, true, true);
+      let yext = this.yAxis[0].getExtremes();
+      let ymin = Math.max(0, Math.floor((yext.dataMin-10) / 5) * 5);
+      let ymax = Math.min(110, Math.ceil((yext.dataMax+1) / 5) * 5);
+      this.yAxis[0].update({ min: ymin, max: ymax });
       this.yAxis[0].setExtremes(ymin, ymax);
     },
   });

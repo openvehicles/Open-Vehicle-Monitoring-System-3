@@ -261,7 +261,12 @@ xvu.b.cap.kwh.abs                        39.1kWh                  Total energy c
 xvu.b.cap.kwh.norm                       36.21kWh                 Usable energy capacity estimation
 xvu.b.cap.kwh.range                      32.8947kWh               Usable energy capacity estimation from MFD range
 xvu.b.energy.range                       18.5kWh                  Current energy used by MFD range estimation
+xvu.b.c.soh                              88.8,91.3,91.3,90.4…     Array: SOH [%] of each HV battery cell
+xvu.b.hist.soh.mod.<NN>                  100,97.1,97.5,…          Array: SOH [%] history of each battery module (NN=01…14/17)
 ======================================== ======================== ============================================
+
+Note on cell module history: the e-Up records an overall SOH level of each module
+once every 3 months, up to a maximum time of 10 years.
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

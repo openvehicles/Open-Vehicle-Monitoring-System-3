@@ -8,10 +8,11 @@ Open Vehicle Monitor System v3 - Change log
     Enh: Copy v.b.p.temp.max to v.b.temp so that max battery temp displays in app
 - Smart EQ 453:
     DDT4all simple support, a full List of commands at www.smart-EMOTION.de
-- VW e-Up: decode & display battery cell level health status,
-    provide v.b.capacity (net capacity in kWh)
+- VW e-Up (OBD): decode & display battery cell level health status & battery module
+    health history, provide v.b.capacity (net capacity in kWh)
   New metrics:
-    xvu.b.c.soh           -- Array: SOH [%] of each HV battery cell
+    xvu.b.c.soh               -- Array: SOH [%] of each HV battery cell
+    xvu.b.hist.soh.mod.<NN>   -- Array: SOH [%] history of each battery module (NN=01…14/17)
   New web page:
     /xvu/battsoh          -- Battery pack & cell SOH info
 - Smart EQ 453:

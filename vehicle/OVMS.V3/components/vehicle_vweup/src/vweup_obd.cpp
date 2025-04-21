@@ -75,7 +75,8 @@ const OvmsPoller::poll_pid_t vweup_polls[] = {
 
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP,             {  0, 20, 20, 20}, 1, ISOTP_STD},
   //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST18,           {  0, 20, 20, 20}, 1, ISOTP_STD}, // not yet implemented
-  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOH_CAC,          {  0, 20, 20, 20}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOH_CAC,          {  0,600,600,600}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOH_HIST,         {  0,600,600,600}, 1, ISOTP_STD},
 
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  0, 10,  0}, 1, ISOTP_STD},
 
@@ -219,10 +220,46 @@ void OvmsVehicleVWeUp::OBDInit()
     m_smooth_cap_ah_norm .Init(15, m_bat_cap_ah_norm->AsFloat(),  m_bat_cap_ah_norm->AsFloat() != 0);
     m_smooth_cap_kwh_abs .Init(15, m_bat_cap_kwh_abs->AsFloat(),  m_bat_cap_kwh_abs->AsFloat() != 0);
     m_smooth_cap_kwh_norm.Init(15, m_bat_cap_kwh_norm->AsFloat(), m_bat_cap_kwh_norm->AsFloat() != 0);
+  }
 
+  // Init model year dependent cell module SOH history metrics:
+  int cmods = (vweup_modelyear > 2019) ? 14 : 17;
+  m_bat_cmod_hist.clear();
+  m_bat_cmod_hist.reserve(cmods);
+  char mname[30];
+  const char *sname;
+  for (int i = 0; i < 17; i++)
+  {
+    // query existing metric:
+    sprintf(mname, "xvu.b.hist.soh.mod.%02d", i+1);
+    OvmsMetricVector<float> *metric = (OvmsMetricVector<float>*) MyMetrics.Find(mname);
+
+    if (i >= cmods)
+    {
+      // no longer needed for the current model; delete:
+      if (metric) {
+        sname = metric->m_name;
+        MyMetrics.DeregisterMetric(metric);
+        free((void*)sname);
+      }
+    }
+    else
+    {
+      // create/store metric:
+      if (!metric) {
+        sname = strdup(mname); // safe, vehicle class is InternalRamAllocated
+        metric = new OvmsMetricVector<float>(sname, SM_STALE_HIGH, Percentage);
+      }
+      m_bat_cmod_hist[i] = metric;
+    }
+  }
+
+  if (m_obd_state == OBDS_Init)
+  {
     // Start can1:
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   }
+
 
   //
   // Init/reconfigure poller
@@ -970,6 +1007,56 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
           }
         }
         m_bat_cell_soh->SetValue(cellsoh);
+      }
+      break;
+
+    case VWUP_BAT_MGMT_SOH_HIST:
+      if (PollReply.FromUint8("VWUP_BAT_MGMT_SOH_HIST", ivalue, 0)) {
+        // Record structure:
+        //  Byte 0 = module count (14 or 17 depending on model)
+        //  Byte 1 = history bytes per module (normally 40, may possibly grow → adapt)
+        //  Bytes 2+3 = overall history size (= count x bytes, ie 560 or 680)
+        //  Bytes 4… = history data in <byte0> module blocks of <byte1> size
+        int cmods = (vweup_modelyear > 2019) ? 14 : 17;
+        if (ivalue != cmods) {
+          VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOH_HIST: SKIP: cell module count mismatch; expected=%d got=%d", cmods, ivalue);
+        }
+        else if (PollReply.FromUint8("VWUP_BAT_MGMT_SOH_HIST", ivalue, 1)) {
+          size_t histsize = ivalue;
+          std::vector<float> modsoh(histsize);
+          // Read module history: each byte represents a 3 month period, with
+          // 0xff = not yet filled byte. Initially, the first byte is identical
+          // to the nominal SOH. It isn't known yet if that persists or will be
+          // replaced once the history exceeds 10 years (39 x 3 months).
+          // To adapt to either way, we determine the first actual value index
+          // by testing if all bytes at index 0 are identical to the nominal SOH:
+          float soh100 = (vweup_modelyear > 2019) ? 240.0f : 125.0f;
+          int first_index = 1;
+          for (int i = 0; i < cmods; i++) {
+            if (PollReply.FromUint8("VWUP_BAT_MGMT_SOH_HIST", value, 4 + i*histsize)) {
+              if (value != soh100) {
+                first_index = 0;
+                break;
+              }
+            }
+          }
+          int valcnt = 0;
+          for (int i = 0; i < cmods; i++) {
+            modsoh.clear();
+            for (int j = first_index; j < histsize; j++) {
+              if (PollReply.FromUint8("VWUP_BAT_MGMT_SOH_HIST", value, 4 + i*histsize + j)) {
+                // stop at first 0xff placeholder byte:
+                if (value == 255.0f)
+                  break;
+                modsoh.resize(j-first_index+1, ROUNDPREC(value / soh100 * 100.0f, 1));
+                valcnt++;
+              }
+            }
+            // copy module history to metric:
+            m_bat_cmod_hist[i]->SetValue(modsoh);
+          }
+          VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOH_HIST: histsize=%d; read %d values for %d modules = %d months", histsize, valcnt, cmods, valcnt/cmods*3);
+        }
       }
       break;
 
