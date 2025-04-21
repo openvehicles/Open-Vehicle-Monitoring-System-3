@@ -360,6 +360,7 @@ OvmsVehicle::OvmsVehicle()
 #ifdef CONFIG_OVMS_COMP_POLLER
   m_poll_state = 0;
   m_pollsignal = nullptr;
+  m_poll_bus_default = nullptr;
 
   // Poll parameters.
   PollSetThrottling(1);
