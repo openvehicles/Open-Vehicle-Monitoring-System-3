@@ -161,10 +161,8 @@ OvmsVehicleMg5::OvmsVehicleMg5()
              m_max_dc_charge_rate->AsFloat());
         
     //Add variant specific poll data
-    //ConfigureMG5PollData(mg5_obdii_polls, sizeof(mg5_obdii_polls));
-    RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS, nullptr, false);
-    PollSetState(PollStateListenOnly);
-    PollSetPidList(m_can1,mg5_obdii_polls);
+    ConfigureMG5PollData(mg5_obdii_polls, sizeof(mg5_obdii_polls));
+    
     //BMS Configuration
     BmsSetCellArrangementVoltage(42, 2);
     BmsSetCellArrangementTemperature(42, 2);
