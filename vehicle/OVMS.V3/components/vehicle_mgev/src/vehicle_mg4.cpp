@@ -161,11 +161,11 @@ OvmsVehicleMg4::OvmsVehicleMg4()
 	speed = StandardMetrics.ms_v_pos_gpsspeed->AsFloat();
 	
 	//Add variant specific poll data
-    ESP_LOGV(TAG, "Configuring poll data");
-	ConfigurePollData(mg4_obdii_polls, sizeof(mg4_obdii_polls));
-    
+	//ConfigureMG5PollData(mg4_obdii_polls, sizeof(mg4_obdii_polls));
+    RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS, nullptr, false);
+    PollSetState(PollStateListenOnly);
+    PollSetPidList(m_can1,mg4_obdii_polls);
 	//BMS Configuration
-    ESP_LOGV(TAG, "Configuring BMS");
 	BmsSetCellArrangementVoltage(42, 2);
 	BmsSetCellArrangementTemperature(42, 2);
 	BmsSetCellLimitsVoltage(3.0, 5.0);
@@ -174,11 +174,9 @@ OvmsVehicleMg4::OvmsVehicleMg4()
 	BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
 	
 	// Register shell commands
-    ESP_LOGV(TAG, "Registering Commands");
 	cmd_xmg->RegisterCommand("polls", "Turn polling on", PollsCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
 	
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
-    ESP_LOGV(TAG, "Initialise MG4 Web Page");
 	Mg4WebInit();
 #endif
 }

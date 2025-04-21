@@ -174,7 +174,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void ConfigurePollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize);
     // Form the poll list for OVMS to use by using only the common list
     void ConfigurePollData();
-    //void ConfigureMG5PollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize);
+    void ConfigureMG5PollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize);
 
     // Integer to string without padding
     static string IntToString(int x);
