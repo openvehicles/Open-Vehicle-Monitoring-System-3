@@ -36,23 +36,25 @@
 #include "ovms_notify.h"
 #include "ovms_webserver.h"
 
-#include "vehicle_renaultzoe_ph2_obd.h"
+#include "vehicle_renaultzoe_ph2.h"
 
 using namespace std;
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
 
-void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
+void OvmsVehicleRenaultZoePh2::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
 {
   std::string error, rangeideal, battcapacity;
   bool UseBMScalculation;
+  bool vCanEnabled;
 
   if (c.method == "POST")
   {
     rangeideal = c.getvar("rangeideal");
     battcapacity = c.getvar("battcapacity");
     UseBMScalculation = (c.getvar("UseBMScalculation") == "no");
+    vCanEnabled = (c.getvar("vCanEnabled") == "yes");
 
     if (!rangeideal.empty())
     {
@@ -63,9 +65,10 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
     if (error == "")
     {
       // store:
-      MyConfig.SetParamValue("xrz2o", "rangeideal", rangeideal);
-      MyConfig.SetParamValue("xrz2o", "battcapacity", battcapacity);
-      MyConfig.SetParamValueBool("xrz2o", "UseBMScalculation", UseBMScalculation);
+      MyConfig.SetParamValue("xrz2", "rangeideal", rangeideal);
+      MyConfig.SetParamValue("xrz2", "battcapacity", battcapacity);
+      MyConfig.SetParamValueBool("xrz2", "UseBMScalculation", UseBMScalculation);
+      MyConfig.SetParamValueBool("xrz2", "vCanEnabled", vCanEnabled);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Renault Zoe Ph2 battery setup saved.</p>");
@@ -81,9 +84,10 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
   else
   {
     // read configuration:
-    rangeideal = MyConfig.GetParamValue("xrz2o", "rangeideal", "350");
-    battcapacity = MyConfig.GetParamValue("xrz2o", "battcapacity", "52000");
-    UseBMScalculation = MyConfig.GetParamValueBool("xrz2o", "UseBMScalculation", false);
+    rangeideal = MyConfig.GetParamValue("xrz2", "rangeideal", "350");
+    battcapacity = MyConfig.GetParamValue("xrz2", "battcapacity", "52000");
+    UseBMScalculation = MyConfig.GetParamValueBool("xrz2", "UseBMScalculation", false);
+    vCanEnabled = MyConfig.GetParamValueBool("xrz2", "vCanEnabled", false);
     c.head(200);
   }
 
@@ -93,13 +97,13 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
   c.fieldset_start("Battery size and ideal range");
 
   c.input_radio_start("Battery size", "battcapacity");
-  c.input_radio_option("battcapacity", "R240 (22kWh)", "22000", battcapacity == "22000");
   c.input_radio_option("battcapacity", "ZE40 (41kWh)", "41000", battcapacity == "41000");
   c.input_radio_option("battcapacity", "ZE50 (52kWh)", "52000", battcapacity == "52000");
   c.input_radio_end("");
 
   c.input_slider("Range Ideal", "rangeideal", 3, "km", -1, atoi(rangeideal.c_str()), 350, 80, 500, 1,
                  "<p>Default 350km. Ideal Range...</p>");
+  c.fieldset_end();
 
   c.fieldset_start("Battery energy calculation");
 
@@ -107,6 +111,14 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
   c.input_radio_option("UseBMScalculation", "OVMS energy calculation", "yes", UseBMScalculation == false);
   c.input_radio_option("UseBMScalculation", "BMS-based calculation", "no", UseBMScalculation == true);
   c.input_radio_end("");
+
+  c.fieldset_end();
+
+  c.fieldset_start("Additional CAN Bus settings");
+
+  c.input_checkbox("CAN1 interface is connected to Zoes V-CAN?", "vCanEnabled", vCanEnabled,
+    "<p>If you connect the CAN1 interface of the OVMS module directly to the V-CAN (BCM or CGW tapping required) you can trigger ECU wake-up (no HV), pre-heat function, "
+    "locking/unlocking functions and change configuration with DDT commands. Additonal all energy related metrics are used from Zoes ECUs instead of calculation within OVMS. </p>");
 
   c.fieldset_end();
 
@@ -120,19 +132,19 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
 /**
  * WebInit: register pages
  */
-void OvmsVehicleRenaultZoePh2OBD::WebInit()
+void OvmsVehicleRenaultZoePh2::WebInit()
 {
-  MyWebServer.RegisterPage("/xrz2o/battmon", "BMS View", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xrz2o/settings", "Setup", WebCfgCommon, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xrz2/battmon", "BMS View", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xrz2/settings", "Setup", WebCfgCommon, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
  * WebDeInit: deregister pages
  */
-void OvmsVehicleRenaultZoePh2OBD::WebDeInit()
+void OvmsVehicleRenaultZoePh2::WebDeInit()
 {
-  MyWebServer.DeregisterPage("/xrz2o/battmon");
-  MyWebServer.DeregisterPage("/xrz2o/settings");
+  MyWebServer.DeregisterPage("/xrz2/battmon");
+  MyWebServer.DeregisterPage("/xrz2/settings");
 }
 
 #endif // CONFIG_OVMS_COMP_WEBSERVER

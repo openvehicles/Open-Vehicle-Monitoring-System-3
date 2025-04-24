@@ -22,9 +22,9 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#include "vehicle_renaultzoe_ph2_obd.h"
+#include "vehicle_renaultzoe_ph2.h"
 
-void OvmsVehicleRenaultZoePh2OBD::IncomingUCM(uint16_t type, uint16_t pid, const char *data, uint16_t len)
+void OvmsVehicleRenaultZoePh2::IncomingUCM(uint16_t type, uint16_t pid, const char *data, uint16_t len)
 {
   switch (pid)
   {

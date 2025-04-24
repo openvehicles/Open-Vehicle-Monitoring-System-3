@@ -23,10 +23,11 @@
 ; THE SOFTWARE.
 */
 
-#include "vehicle_renaultzoe_ph2_obd.h"
+#include "vehicle_renaultzoe_ph2.h"
 
-void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const char *data, uint16_t len)
+void OvmsVehicleRenaultZoePh2::IncomingEVC(uint16_t type, uint16_t pid, const char *data, uint16_t len)
 {
+  float temp = 0;
   switch (pid)
   {
   case 0x2006:
@@ -57,7 +58,6 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
     else if (CAN_NIBL(0) == 2)
     {
       mt_inv_status->SetValue("Inverter on");
-      StandardMetrics.ms_v_door_chargeport->SetValue(false);
     }
     else if (CAN_NIBL(0) == 3)
     {
@@ -79,7 +79,11 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
   }
   case 0x2218:
   { // Ambient temperature
-    StandardMetrics.ms_v_env_temp->SetValue((float)(CAN_UINT(0) * 0.1 - 273), Celcius);
+    temp = (float)(CAN_UINT(0) * 0.1 - 273);
+    if ((temp > -39) && (temp < 80))
+    {
+      StandardMetrics.ms_v_env_temp->SetValue(temp);
+    }
     // ESP_LOGD(TAG, "2218 EVC ms_v_env_temp: %f", (CAN_UINT(0) * 0.1 - 273));
     break;
   }
@@ -115,6 +119,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
       StandardMetrics.ms_v_charge_state->SetValue("stopped");
       StandardMetrics.ms_v_charge_substate->SetValue("stopped");
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      StandardMetrics.ms_v_door_chargeport->SetValue(false);
       // ESP_LOGD(TAG, "2B6D Charge MMI States : No Charge");
     }
     if (CAN_NIBL(0) == 1)
@@ -128,6 +133,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
       StandardMetrics.ms_v_charge_state->SetValue("done");
       StandardMetrics.ms_v_charge_substate->SetValue("stopped");
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      StandardMetrics.ms_v_charge_power->SetValue(0);
       // ESP_LOGD(TAG, "2B6D Charge MMI States : Ended charge");
     }
     if (CAN_NIBL(0) == 3)
@@ -135,6 +141,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
       StandardMetrics.ms_v_charge_state->SetValue("charging");
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+      StandardMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
       // ESP_LOGD(TAG, "2B6D Charge MMI States : Charge in progress");
     }
     if (CAN_NIBL(0) == 4)
@@ -142,6 +149,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
       StandardMetrics.ms_v_charge_state->SetValue("stopped");
       StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      StandardMetrics.ms_v_charge_power->SetValue(0);
       // ESP_LOGD(TAG, "2B6D Charge MMI States : Charge failure");
     }
     if (CAN_NIBL(0) == 5)
@@ -149,6 +157,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
       StandardMetrics.ms_v_charge_state->SetValue("stopped");
       StandardMetrics.ms_v_charge_substate->SetValue("powerwait");
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      StandardMetrics.ms_v_charge_power->SetValue(0);
       // ESP_LOGD(TAG, "2B6D Charge MMI States : Waiting for current charge");
     }
     if (CAN_NIBL(0) == 6)
@@ -162,6 +171,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
       StandardMetrics.ms_v_charge_state->SetValue("prepare");
       StandardMetrics.ms_v_charge_substate->SetValue("powerwait");
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      StandardMetrics.ms_v_charge_power->SetValue(0);
       // ESP_LOGD(TAG, "2B6D Charge MMI States : Charge preparation");
     }
     if (!mt_bus_awake->AsBool())
@@ -181,6 +191,8 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
     {
       StandardMetrics.ms_v_charge_type->SetValue("type2");
       StandardMetrics.ms_v_charge_mode->SetValue("standard");
+      // Set Charge Limit to 32A, in BCB there is a current setting, but its value will be ignored and cannot be set during charging, so its useless
+      StandardMetrics.ms_v_charge_climit->SetValue(32);
     }
     if (CAN_NIBL(0) == 3)
     {
@@ -191,6 +203,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
     {
       StandardMetrics.ms_v_charge_type->SetValue("ccs");
       StandardMetrics.ms_v_charge_mode->SetValue("performance");
+      StandardMetrics.ms_v_charge_climit->SetValue(150);
     }
     break;
   }
@@ -265,7 +278,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
     }
     else if (StandardMetrics.ms_v_charge_current->AsFloat() < 6.0f && StandardMetrics.ms_v_charge_inprogress->AsBool(false))
     {
-      ACInputPowerFactor = 0.05;
+      ACInputPowerFactor = 0.5;
     }
     if (StandardMetrics.ms_v_charge_type->AsString() == "type2" && mt_main_phases_num->AsFloat() == 3 && StandardMetrics.ms_v_charge_inprogress->AsBool(false))
     {
@@ -311,6 +324,25 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingEVC(uint16_t type, uint16_t pid, const
   { // AC mains voltage
     StandardMetrics.ms_v_charge_voltage->SetValue((float)(CAN_UINT(0) * 0.5), Volts);
     // ESP_LOGD(TAG, "2B8A EVC ms_v_charge_voltage: %f", (CAN_UINT(0) * 0.5));
+    break;
+  }
+  case 0x2B61:
+  {
+    // Waterpump lifetime left
+    // Definition from DDT editor
+    // "PR_ALTERUNGSZÄHL. WASSERPUMPE WÄHR. D. FAHRT","PR160","222B61","(1.0*100*(0.1*(signed(A)*16777216+B*65536+C*256+D)))/36000000","0","0","%","7E4"
+
+    int32_t A = (int8_t)CAN_BYTE(0);
+    uint8_t B = CAN_BYTE(1);
+    uint8_t C = CAN_BYTE(2);
+    uint8_t D = CAN_BYTE(3);
+
+    int32_t raw = (A * 16777216) + (B * 65536) + (C * 256) + D;
+    float percentage = 100 - ((0.1f * raw) / 36000000.0f);
+
+    mt_hevc_waterpump_lifetime_left->SetValue(percentage, Percentage);
+
+    // ESP_LOGD(TAG, "2B61 EVC Waterpump lifetime left: %.2f%%", percentage);
     break;
   }
 

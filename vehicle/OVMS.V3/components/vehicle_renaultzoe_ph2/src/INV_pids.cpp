@@ -23,15 +23,17 @@
 ; THE SOFTWARE.
 */
 
-#include "vehicle_renaultzoe_ph2_obd.h"
+#include "vehicle_renaultzoe_ph2.h"
 
-void OvmsVehicleRenaultZoePh2OBD::IncomingINV(uint16_t type, uint16_t pid, const char *data, uint16_t len)
+void OvmsVehicleRenaultZoePh2::IncomingINV(uint16_t type, uint16_t pid, const char *data, uint16_t len)
 {
   switch (pid)
   {
   case 0x700C:
   { // Inverter temperature
     StandardMetrics.ms_v_inv_temp->SetValue(float((CAN_UINT24(0) * 0.001953125) - 40), Celcius);
+    // Zoe has no dedicated charger, it uses chameleon charger which uses motor and inverter to charge the battery, so we can use inverter temperature as charger temperature
+    StandardMetrics.ms_v_charge_temp->SetValue(float((CAN_UINT24(0) * 0.001953125) - 40), Celcius);
     // ESP_LOGD(TAG, "700C INV ms_v_inv_temp RAW: %f", float(CAN_UINT24(0)));
     // ESP_LOGD(TAG, "700C INV ms_v_inv_temp: %f", float((CAN_UINT24(0) * 0.001953125) - 40));
     break;

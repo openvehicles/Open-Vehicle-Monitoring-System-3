@@ -23,9 +23,9 @@
 ; THE SOFTWARE.
 */
 
-#include "vehicle_renaultzoe_ph2_obd.h"
+#include "vehicle_renaultzoe_ph2.h"
 
-void OvmsVehicleRenaultZoePh2OBD::IncomingBCM(uint16_t type, uint16_t pid, const char *data, uint16_t len)
+void OvmsVehicleRenaultZoePh2::IncomingBCM(uint16_t type, uint16_t pid, const char *data, uint16_t len)
 {
   switch (pid)
   {
@@ -223,10 +223,10 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingBCM(uint16_t type, uint16_t pid, const
       ESP_LOGD(TAG, "60C6 Ignition relay: inactive");
     }*/
     if (!CarIsCharging)
-    { // Igniton while charging
+    { // Ignore Igniton while charging
       StandardMetrics.ms_v_env_on->SetValue((bool)CAN_UINT(0));
-      StandardMetrics.ms_v_env_awake->SetValue((bool)CAN_UINT(0));
     }
+    StandardMetrics.ms_v_env_awake->SetValue((bool)CAN_UINT(0));
     break;
   }
   case 0x4060:

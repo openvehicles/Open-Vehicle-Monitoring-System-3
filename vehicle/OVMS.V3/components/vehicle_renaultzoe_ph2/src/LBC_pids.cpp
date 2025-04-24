@@ -23,9 +23,9 @@
 ; THE SOFTWARE.
 */
 
-#include "vehicle_renaultzoe_ph2_obd.h"
+#include "vehicle_renaultzoe_ph2.h"
 
-void OvmsVehicleRenaultZoePh2OBD::IncomingLBC(uint16_t type, uint16_t pid, const char *data, uint16_t len)
+void OvmsVehicleRenaultZoePh2::IncomingLBC(uint16_t type, uint16_t pid, const char *data, uint16_t len)
 {
   switch (pid)
   {
@@ -56,7 +56,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingLBC(uint16_t type, uint16_t pid, const
 
     if (bat_soc < 100.0f)
     {
-      StandardMetrics.ms_v_bat_soc->SetValue(bat_soc + (bat_soc * 0.03), Percentage);
+      StandardMetrics.ms_v_bat_soc->SetValue(bat_soc, Percentage);
     }
     else
     {
@@ -64,7 +64,6 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingLBC(uint16_t type, uint16_t pid, const
     }
 
     StandardMetrics.ms_v_bat_cac->SetValue(Bat_cell_capacity_Ah * CAN_UINT(0) * 0.0001);
-    StandardMetrics.ms_v_bat_capacity->SetValue((m_battery_capacity / 1000) * StandardMetrics.ms_v_bat_soh->AsFloat(0) * CAN_UINT(0) * 0.000001);
 
     // ESP_LOGD(TAG, "9002 LBC mt_bat_lbc_soc: %f", bat_soc);
     // ESP_LOGD(TAG, "9002 LBC mt_bat_lbc_soc calculated: %f", bat_soc + (bat_soc * 0.03));
@@ -114,7 +113,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingLBC(uint16_t type, uint16_t pid, const
   }
   case 0x91C8:
   { // Available charge in kWh
-    mt_bat_available_energy->SetValue(float(CAN_UINT24(0) * 0.001), kWh);
+    StandardMetrics.ms_v_bat_capacity->SetValue(float(CAN_UINT24(0) * 0.001), kWh);
     // ESP_LOGD(TAG, "91C8 LBC mt_bat_available_energy: %f", CAN_UINT24(0) * 0.001);
     break;
   }
