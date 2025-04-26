@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Smart EQ 453:
+    TPMS pressure alert settings at Features
 - Nissan Leaf:
     ZE1 inital release
     Fix: Poll state not set to off when charging stopped by OVMS

@@ -191,8 +191,20 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x2101: // OCS Trip Distance km
           PollReply_ocs_trip(m_rxbuf.data(), m_rxbuf.size());
           break;
+        case 0x2102: // OCS Trip Fuel used
+          PollReply_ocs_used(m_rxbuf.data(), m_rxbuf.size());
+          break;
         case 0x2104: // OCS Trip time s
           PollReply_ocs_time(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x01A0: // OCS Start Trip Distance km
+          PollReply_ocs_start_trip(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x01A1: // OCS Start Trip Fuel used
+          PollReply_ocs_start_used(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x01A2: // OCS Start Trip time s
+          PollReply_ocs_start_time(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x0188: // maintenance level
           PollReply_ocs_mt_level(m_rxbuf.data(), m_rxbuf.size());
@@ -462,6 +474,24 @@ void OvmsVehicleSmartEQ::PollReply_ocs_time(const char* data, uint16_t reply_len
   int value_1 = CAN_UINT24(0);
   std::string timeStr = SecondsToHHmm(value_1);
   mt_ocs_trip_time->SetValue( timeStr );
+}
+
+void OvmsVehicleSmartEQ::PollReply_ocs_used(const char* data, uint16_t reply_len) {
+  mt_ocs_trip_used->SetValue((float) CAN_UINT(0));
+}
+
+void OvmsVehicleSmartEQ::PollReply_ocs_start_trip(const char* data, uint16_t reply_len) {
+  mt_ocs_start_trip_km->SetValue((float) CAN_UINT(0));
+}
+
+void OvmsVehicleSmartEQ::PollReply_ocs_start_used(const char* data, uint16_t reply_len) {
+  mt_ocs_start_trip_used->SetValue((float) CAN_UINT(0));
+}
+
+void OvmsVehicleSmartEQ::PollReply_ocs_start_time(const char* data, uint16_t reply_len) {
+  int value_1 = CAN_UINT24(0);
+  std::string timeStr = SecondsToHHmm(value_1);
+  mt_ocs_start_trip_time->SetValue( timeStr );
 }
 
 void OvmsVehicleSmartEQ::PollReply_ocs_mt_day(const char* data, uint16_t reply_len) {

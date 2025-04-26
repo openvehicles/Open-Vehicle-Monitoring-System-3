@@ -92,7 +92,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void DisablePlugin(const char* plugin);
     void ModemNetworkType();
     bool ExecuteCommand(const std::string& command);
-    void ResetOldValues();
+    void setTPMSValue(int index, int indexcar);
+
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -124,6 +125,8 @@ public:
     unsigned int m_candata_poll;
     bool m_charge_start;
     bool m_charge_finished;
+    float tpms_pressure[4];
+    int tpms_index[4];
 
   protected:
     void Ticker1(uint32_t ticker) override;
@@ -155,7 +158,11 @@ public:
     void PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len);
     void PollReply_ocs_trip(const char* data, uint16_t reply_len);
+    void PollReply_ocs_used(const char* data, uint16_t reply_len);
     void PollReply_ocs_time(const char* data, uint16_t reply_len);
+    void PollReply_ocs_start_trip(const char* data, uint16_t reply_len);
+    void PollReply_ocs_start_used(const char* data, uint16_t reply_len);
+    void PollReply_ocs_start_time(const char* data, uint16_t reply_len);
     void PollReply_ocs_mt_day(const char* data, uint16_t reply_len);
     void PollReply_ocs_mt_km(const char* data, uint16_t reply_len);
     void PollReply_ocs_mt_level(const char* data, uint16_t reply_len);
@@ -173,12 +180,16 @@ public:
     int m_TPMS_FR;                          // TPMS Sensor Front Right
     int m_TPMS_RL;                          // TPMS Sensor Rear Left
     int m_TPMS_RR;                          // TPMS Sensor Rear Right
+    int m_front_pressure;                   // Front Tire Pressure
+    int m_rear_pressure;                    // Rear Tire Pressure
+    int m_pressure_warning;                 // Pressure Warning
+    int m_pressure_alert;                   // Pressure Alert
     bool m_12v_charge;                      //!< 12V charge on/off
     bool m_booster_system;                  //!< booster system on/off
     bool m_gps_onoff;                       //!< GPS on/off at parking activated
     bool m_gps_off;                         //!< GPS off while parking > 10 minutes
     int m_gps_reactmin;                     //!< GPS reactivate all x minutes after parking
-    std::string m_hl_canbyte;                 //!< homelink canbyte
+    std::string m_hl_canbyte;                 //!< canbyte variable for unv
     std::string m_network_type;               //!< Network type from xsq.modem.net.type
     std::string m_network_type_ls;            //!< Network type last state reminder
 
@@ -194,6 +205,8 @@ public:
     OvmsMetricVector<float> *mt_bms_temps;              // BMS temperatures
     OvmsMetricBool          *mt_bus_awake;              // Can Bus active
     OvmsMetricFloat         *mt_use_at_reset;           // kWh use at reset in Display
+    OvmsMetricFloat         *mt_use_at_start;           // kWh use at start in Display
+    OvmsMetricFloat         *mt_pos_odo_trip;           // odometer trip in km 
     OvmsMetricFloat         *mt_pos_odometer_start;     // remind odometer start
     OvmsMetricFloat         *mt_pos_odometer_start_total;     // remind odometer start for kWh/100km
     OvmsMetricFloat         *mt_pos_odometer_trip_total;// counted km for kWh/100km
@@ -227,7 +240,11 @@ public:
     OvmsMetricFloat         *mt_obl_main_freq;          //!< AC input frequency
     OvmsMetricInt           *mt_ocs_duration;           //!< OCS duration
     OvmsMetricFloat         *mt_ocs_trip_km;            //!< OCS trip data km
+    OvmsMetricFloat         *mt_ocs_start_trip_km;      //!< OCS trip data km start
+    OvmsMetricFloat         *mt_ocs_trip_used;          //!< OCS trip data kWh used
+    OvmsMetricFloat         *mt_ocs_start_trip_used;    //!< OCS trip data kWh used start
     OvmsMetricString        *mt_ocs_trip_time;          //!< OCS trip data HH:mm
+    OvmsMetricString        *mt_ocs_start_trip_time;    //!< OCS trip data HH:mm start
     OvmsMetricInt           *mt_ocs_mt_day_prewarn;     //!< Maintaince pre warning days
     OvmsMetricInt           *mt_ocs_mt_day_usual;       //!< Maintaince usual days
     OvmsMetricInt           *mt_ocs_mt_km_usual;        //!< Maintaince usual km
@@ -241,6 +258,7 @@ public:
     OvmsMetricInt           *mt_booster_de;             //!< booster day end
     OvmsMetricInt           *mt_booster_1to3;           //!< booster one to three (homelink 0-2) times in following time
     OvmsMetricString        *mt_booster_data;           //!< booster data from app/website
+    OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
 
   protected:
     bool m_booster_start;

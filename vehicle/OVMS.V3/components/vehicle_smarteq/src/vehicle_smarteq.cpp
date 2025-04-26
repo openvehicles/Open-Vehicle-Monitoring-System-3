@@ -60,7 +60,11 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
 //  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P2
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,300,300,300 }, 0, ISOTP_STD }, // extern temp byte 2+3
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,60 }, 0, ISOTP_STD }, // OCS Trip Distance km
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, {  0,300,60,60 }, 0, ISOTP_STD }, // OCS start Trip Distance km 
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2102, {  0,300,60,60 }, 0, ISOTP_STD }, // OCS Trip kWh used
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A1, {  0,300,60,60 }, 0, ISOTP_STD }, // OCS start Trip kWh used
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, {  0,300,60,60 }, 0, ISOTP_STD }, // OCS Trip time s
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, {  0,300,60,60 }, 0, ISOTP_STD }, // OCS start Trip time s
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance data days
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance data usual km
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance level
@@ -118,9 +122,14 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
 
+  for (int i = 0; i < 4; i++) {
+    tpms_pressure[i] = 0.0f;
+    tpms_index[i] = i;
+  }
+
   m_network_type_ls = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
-  m_indicator     = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
-  m_ddt4all       = MyConfig.GetParamValueBool("xsq", "ddt4all", false);                //!< DDT4ALL mode
+  m_indicator       = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
+  m_ddt4all         = MyConfig.GetParamValueBool("xsq", "ddt4all", false);                //!< DDT4ALL mode
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 3);
@@ -133,10 +142,16 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_temps                  = new OvmsMetricVector<float>("xsq.v.bms.temps", SM_STALE_HIGH, Celcius);
   mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, false);
   mt_use_at_reset               = MyMetrics.InitFloat("xsq.use.at.reset", SM_STALE_MID, 0, kWh);
+  mt_use_at_start               = MyMetrics.InitFloat("xsq.use.at.start", SM_STALE_MID, 0, kWh);
+  mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MIN, "", Other);
 
   mt_ocs_duration               = MyMetrics.InitInt("xsq.ocs.duration", SM_STALE_MIN, 0, Minutes);
   mt_ocs_trip_km                = MyMetrics.InitFloat("xsq.ocs.trip.km", SM_STALE_MID, 0, Kilometers);
+  mt_ocs_start_trip_km          = MyMetrics.InitFloat("xsq.ocs.trip.km.start", SM_STALE_MID, 0, Kilometers);
+  mt_ocs_trip_used              = MyMetrics.InitFloat("xsq.ocs.trip.used", SM_STALE_MID, 0, Watts);
+  mt_ocs_start_trip_used        = MyMetrics.InitFloat("xsq.ocs.trip.used.start", SM_STALE_MID, 0, Watts);
   mt_ocs_trip_time              = MyMetrics.InitString("xsq.ocs.trip.time", SM_STALE_MIN, 0, Other);
+  mt_ocs_start_trip_time        = MyMetrics.InitString("xsq.ocs.trip.time.start", SM_STALE_MIN, 0, Other);
   mt_ocs_mt_day_prewarn         = MyMetrics.InitInt("xsq.ocs.mt.day.prewarn", SM_STALE_MID, 45, Other);
   mt_ocs_mt_day_usual           = MyMetrics.InitInt("xsq.ocs.mt.day.usual", SM_STALE_MID, 0, Other);
   mt_ocs_mt_km_usual            = MyMetrics.InitInt("xsq.ocs.mt.km.usual", SM_STALE_MID, 0, Kilometers);
@@ -155,6 +170,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_pos_odometer_start         = MyMetrics.InitFloat("xsq.odometer.start", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_start_total   = MyMetrics.InitFloat("xsq.odometer.start.total", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_trip_total    = MyMetrics.InitFloat("xsq.odometer.trip.total", SM_STALE_MID, 0, Kilometers);
+  mt_pos_odo_trip               = MyMetrics.InitFloat("xsq.odo.trip", SM_STALE_MID, 0, Kilometers);
 
   mt_evc_hv_energy              = MyMetrics.InitFloat("xsq.evc.hv.energy", SM_STALE_MID, 0, kWh);
   mt_evc_LV_DCDC_amps           = MyMetrics.InitFloat("xsq.evc.lv.dcdc.amps", SM_STALE_MID, 0, Amps);
@@ -211,18 +227,24 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     MyConfig.SetParamValueBool("xsq", "ddt4all", false);
   }
 
+  if (MyConfig.GetParamValue("xsq", "tpms.front.pressure","0") == "0") {
+    MyConfig.SetParamValueInt("xsq", "tpms.front.pressure",  220); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.rear.pressure",  250); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.value.warn",  25); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.value.alert", 45); // kPa
+  }
+
   if(MyConfig.GetParamValue("xsq", "booster.system","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "booster.system", true);
     StdMetrics.ms_v_gen_current->SetValue(3);                  // activate gen metrics to app transfer and in-app plugin <> fw switch                                   
   }
   
-  if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {              // reset at boot
+  if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
     ResetTotalCounters();
     ResetTripCounters();
   }
-  ResetOldValues();                                                // removed old values from config usr/xsq
-  TimeBasedClimateData();                                          // set default booster data from App values
-  CommandWakeup();                                                 // wake up the car to get the first data
+
+  CommandWakeup();                                             // wake up the car to get the first data
 
 #ifdef CONFIG_OVMS_COMP_CELLULAR
   if(MyConfig.GetParamValue("xsq", "gps.onoff","0") == "0") {
@@ -297,11 +319,20 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_reboot_time       = MyConfig.GetParamValueInt("xsq", "rebootnw", 30);
   m_resettrip         = MyConfig.GetParamValueBool("xsq", "resettrip", false);
   m_resettotal        = MyConfig.GetParamValueBool("xsq", "resettotal", false);
-
+/*
   m_TPMS_FL           = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
   m_TPMS_FR           = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
   m_TPMS_RL           = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
   m_TPMS_RR           = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
+*/
+  tpms_index[3]       = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
+  tpms_index[2]       = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
+  tpms_index[1]       = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
+  tpms_index[0]       = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
+  m_front_pressure    = MyConfig.GetParamValueFloat("xsq", "tpms.front.pressure",  220); // kPa
+  m_rear_pressure     = MyConfig.GetParamValueFloat("xsq", "tpms.rear.pressure",  250); // kPa
+  m_pressure_warning  = MyConfig.GetParamValueFloat("xsq", "tpms.value.warn",  25); // kPa
+  m_pressure_alert    = MyConfig.GetParamValueFloat("xsq", "tpms.value.alert", 45); // kPa
   
   m_ddt4all           = MyConfig.GetParamValueInt("xsq", "ddt4all", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
@@ -311,16 +342,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_gps_reactmin      = MyConfig.GetParamValueInt("xsq", "gps.reactmin", 50);
   m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
   m_indicator         = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
-
-  // make older System/Plugin Booster data compatible
-  if(MyConfig.GetParamValue("xsq", "booster.data", "0,0,0,0,-1,-1,-1") != "0,0,0,0,-1,-1,-1") {
-    mt_booster_data->SetValue(MyConfig.GetParamValue("xsq", "booster.data", "0,0,0,0,-1,-1,-1"));
-    MyConfig.SetParamValue("xsq", "booster.data", "0,0,0,0,-1,-1,-1");
-  }
-  if(MyConfig.GetParamValue("usr", "b.data", "0,0,0,0,-1,-1,-1") != "0,0,0,0,-1,-1,-1") {
-    mt_booster_data->SetValue(MyConfig.GetParamValue("usr", "b.data", "0,0,0,0,-1,-1,-1"));
-    MyConfig.SetParamValue("usr", "b.data", "0,0,0,0,-1,-1,-1");
-  }
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (!m_enable_LED_state) {
@@ -363,6 +384,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   float _full_km;
   float _range_cac;
   float _soc;
+  float _soh;
   float _temp;
   int _duration_full;
   //char buf[10];
@@ -417,6 +439,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x5D7: // Speed, ODO
       StdMetrics.ms_v_pos_speed->SetValue((float) CAN_UINT(0) / 100.0f);
       StdMetrics.ms_v_pos_odometer->SetValue((float) (CAN_UINT32(2)>>4) / 100.0f);
+      mt_pos_odo_trip->SetValue((float) (CAN_UINT(4)>>4) / 100.0f); // ODO trip //TODO: check if this is correct
       break;
     case 0x5de:
       StdMetrics.ms_v_env_headlights->SetValue((CAN_BYTE(0) & 0x04) > 0);
@@ -428,6 +451,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x646:
       mt_use_at_reset->SetValue(CAN_BYTE(1) * 0.1);
+      mt_use_at_start->SetValue(CAN_BYTE(2) * 0.1);
       if( MyConfig.GetParamValueBool("xsq", "bcvalue",  false)){
         StdMetrics.ms_v_gen_kwh_grid_total->SetValue(mt_use_at_reset->AsFloat()); // not the best idea at the moment
       } else {
@@ -451,7 +475,15 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       }
       break;
     case 0x658: //
-      StdMetrics.ms_v_bat_soh->SetValue(CAN_BYTE(4) & 0x7Fu); // SOH ?
+      _soh = (float)(CAN_BYTE(4) & 0x7Fu);
+      StdMetrics.ms_v_bat_soh->SetValue(_soh); // SOH
+      StdMetrics.ms_v_bat_health->SetValue(
+        (_soh >= 95.0f) ? "excellent"
+      : (_soh >= 85.0f) ? "good"
+      : (_soh >= 75.0f) ? "average"
+      : (_soh >= 65.0f) ? "poor"
+      : "consider replacement");
+
       isCharging = (CAN_BYTE(5) & 0x20); // ChargeInProgress
       if (isCharging) { // STATE charge in progress
         //StdMetrics.ms_v_charge_inprogress->SetValue(isCharging);
@@ -495,19 +527,43 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       vehicle_smart_car_on((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
       break;
     case 0x673:
-      if (CAN_BYTE(2) != 0xff)
-        StdMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_RR, (float) CAN_BYTE(2)*3.1);
-      if (CAN_BYTE(3) != 0xff)
-        StdMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_RL, (float) CAN_BYTE(3)*3.1);
-      if (CAN_BYTE(4) != 0xff)
-        StdMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_FR, (float) CAN_BYTE(4)*3.1);
-      if (CAN_BYTE(5) != 0xff)
-        StdMetrics.ms_v_tpms_pressure->SetElemValue(m_TPMS_FL, (float) CAN_BYTE(5)*3.1);
+    {
+      // Read TPMS pressure values:
+      for (int i = 0; i < 4; i++) {
+        tpms_pressure[i] = (float) CAN_BYTE(2 + i) > 0.0f ? (float) CAN_BYTE(2 + i) * 3.1 : 0.0f; // kPa
+        setTPMSValue(i, tpms_index[i]);
+      }
       break;
+    }
     default:
       //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
   }
+}
+
+void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
+  if (index < 0 || index > 3) {
+    ESP_LOGE(TAG, "Invalid TPMS index: %d", index);
+    return;
+  }
+
+  int alert = 0;
+  int _pressure = tpms_pressure[index];
+  StdMetrics.ms_v_tpms_pressure->SetElemValue(indexcar, _pressure);
+
+  if(indexcar < 2) {
+    alert = ((_pressure > (m_front_pressure + m_pressure_alert)) ? 2 :
+             (_pressure > (m_front_pressure + m_pressure_warning)) ? 1 :
+             (_pressure < (m_front_pressure - m_pressure_alert)) ? 2 :
+             (_pressure < (m_front_pressure - m_pressure_warning)) ? 1 : 0);
+  } else {
+    alert = ((_pressure > (m_rear_pressure + m_pressure_alert)) ? 2 :
+             (_pressure > (m_rear_pressure + m_pressure_warning)) ? 1 :
+             (_pressure < (m_rear_pressure - m_pressure_alert)) ? 2 :
+             (_pressure < (m_rear_pressure - m_pressure_warning)) ? 1 : 0);
+  }
+
+  StdMetrics.ms_v_tpms_alert->SetElemValue(indexcar, alert);  
 }
 
 void OvmsVehicleSmartEQ::DisablePlugin(const char* plugin) {
@@ -536,68 +592,6 @@ bool OvmsVehicleSmartEQ::ExecuteCommand(const std::string& command) {
   }
 
   return Success;
-}
-
-// temporary fix for old system/plugins data
-void OvmsVehicleSmartEQ::ResetOldValues() {
-  
-  if(MyConfig.GetParamValueInt("xsq", "booster.ds",0) > 0) {
-    ExecuteCommand("conf rm xsq booster.1to3");
-    ExecuteCommand("conf rm xsq booster.de");
-    ExecuteCommand("conf rm xsq booster.ds");
-    ExecuteCommand("conf rm xsq booster.h");
-    ExecuteCommand("conf rm xsq booster.m");
-    ExecuteCommand("conf rm xsq booster.on");
-    ExecuteCommand("conf rm xsq booster.time");
-    ExecuteCommand("conf rm xsq booster.weekly");
-    ExecuteCommand("conf rm xsq gps.off");    
-  }
-
-  if(MyConfig.GetParamValueBool("usr", "b.init", false)) {
-    DisablePlugin("scheduled_booster");                            // set switch off schedule_booster plugin
-  }
-  if(MyConfig.GetParamValueInt("usr", "b.ticker",0) > 0) {
-    ExecuteCommand("conf rm usr b.activated");
-    ExecuteCommand("conf rm usr b.day_end");
-    ExecuteCommand("conf rm usr b.day_start");
-    ExecuteCommand("conf rm usr b.init");
-    ExecuteCommand("conf rm usr b.ps_data");
-    ExecuteCommand("conf rm usr b.ps_end_day");
-    ExecuteCommand("conf rm usr b.ps_scheduled_boost");
-    ExecuteCommand("conf rm usr b.ps_scheduled_boost_2");
-    ExecuteCommand("conf rm usr b.ps_start_day");
-    ExecuteCommand("conf rm usr b.scheduled");
-    ExecuteCommand("conf rm usr b.scheduled_2");
-    ExecuteCommand("conf rm usr b.ticker");
-    ExecuteCommand("conf rm usr b.week");
-  }
-
-  if(MyConfig.GetParamValueBool("usr", "gps.init", false)) {
-    DisablePlugin("gps_onoff");                                    // set switch off gps plugin
-  }
-  if(MyConfig.GetParamValueInt("usr", "gps.counter_value",0) > 0) {
-    ExecuteCommand("conf rm usr gps.counter");
-    ExecuteCommand("conf rm usr gps.counter_add");
-    ExecuteCommand("conf rm usr gps.counter_value");
-    ExecuteCommand("conf rm usr gps.init");
-    ExecuteCommand("conf rm usr gps.on");
-    ExecuteCommand("conf rm usr gps.parktime");
-    ExecuteCommand("conf rm usr gps.power_switch");
-    ExecuteCommand("conf rm usr gps.pubsub");
-    ExecuteCommand("conf rm usr gps.ticker");
-    ExecuteCommand("conf rm usr 12v.charging");
-  }
-  
-  if(MyConfig.GetParamValueBool("usr", "12v.init", false)) {
-    DisablePlugin("booster_12V");                                  // set switch off 12V charge plugin
-  }
-  if(MyConfig.GetParamValueInt("usr", "12v.counter",0) > 0) {
-    ExecuteCommand("conf rm usr 12v.counter");
-    ExecuteCommand("conf rm usr 12v.init");
-    ExecuteCommand("conf rm usr 12v.ps_alert12v_off");
-    ExecuteCommand("conf rm usr 12v.ps_alert12v_on");
-    ExecuteCommand("conf rm usr 12v.ps_booster_2");
-  }
 }
 
 void OvmsVehicleSmartEQ::ResetChargingValues() {
@@ -1718,6 +1712,54 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
       res = Success;
       break;
     }
+    case 44:
+    {
+      // Auto Light false
+      m_hl_canbyte = "2E002300";
+      CommandCan(0x74d, 0x76d, false);
+      res = Success;
+      break;
+    }
+    case 45:
+    {
+      // Auto Light true
+      m_hl_canbyte = "2E002380";
+      CommandCan(0x74d, 0x76d, false);
+      res = Success;
+      break;
+    }
+    case 46:
+    {
+      // Auto Light false
+      m_hl_canbyte = "2E104200";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 47:
+    {
+      // Auto Light true
+      m_hl_canbyte = "2E104201";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 48:
+    {
+      // Light by EMM false
+      m_hl_canbyte = "3B4F00";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 49:
+    {
+      // Light by EMM true
+      m_hl_canbyte = "3B4F80";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
     case 50:
     {
       // max AC current limitation configuration 20A only for slow charger!
@@ -1823,6 +1865,38 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
       res = Success;
       break;
     }
+    case 62:
+    {
+      // DRL + Tail false
+      m_hl_canbyte = "2E006700";
+      CommandCan(0x74d, 0x76d, false);
+      res = Success;
+      break;
+    }
+    case 63:
+    {
+      // DRL + Tail true
+      m_hl_canbyte = "2E006701";
+      CommandCan(0x74d, 0x76d, false);
+      res = Success;
+      break;
+    }
+    case 64:
+    {
+      // AUTO_WIPE false
+      m_hl_canbyte = "2E033C00";
+      CommandCan(0x74d, 0x76d, false);
+      res = Success;
+      break;
+    }
+    case 65:
+    {
+      // AUTO_WIPE true
+      m_hl_canbyte = "2E033C80";
+      CommandCan(0x74d, 0x76d, false);
+      res = Success;
+      break;
+    }
     case 100:
     {
       // ClearDiagnosticInformation.All
@@ -1833,24 +1907,28 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     }
     case 719:
     {
+      m_hl_canbyte = mt_canbyte->AsString();
       CommandCan(0x719, 0x739, false);
       res = Success;
       break;
     }
     case 743:
     {
+      m_hl_canbyte = mt_canbyte->AsString();
       CommandCan(0x743, 0x763, true);
       res = Success;
       break;
     }
     case 745:
     {
+      m_hl_canbyte = mt_canbyte->AsString();
       CommandCan(0x745, 0x765, false);
       res = Success;
       break;
     }
-    case 746:
+    case 746: // 746 is used for the 74d
     {
+      m_hl_canbyte = mt_canbyte->AsString();
       CommandCan(0x74d, 0x76d, false);
       res = Success;
       break;
@@ -1959,7 +2037,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, Ov
     }
 
   writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", ToUser, 1).c_str());
-
   if (StdMetrics.ms_v_bat_range_ideal->IsDefined())
     {
     const std::string& range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", ToUser, 0);
@@ -1987,8 +2064,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, Ov
   if (StdMetrics.ms_v_bat_soh->IsDefined())
     {
     const std::string& soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0);
-    writer->printf("SOH: %s\n", soh.c_str());
+    const std::string& health = StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0);
+    writer->printf("SOH: %s %s\n", soh.c_str(), health.c_str());
     }
+  
 
   if (mt_evc_hv_energy->IsDefined())
     {
@@ -1999,17 +2078,32 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, Ov
   if (mt_use_at_reset->IsDefined())
     {
     const std::string& use_at_reset = mt_use_at_reset->AsUnitString("-", ToUser, 1);
-    writer->printf("kWh/100km: %s\n", use_at_reset.c_str());
+    writer->printf("RESET kWh/100km: %s\n", use_at_reset.c_str());
     }
   if (mt_ocs_trip_km->IsDefined())
     {
     const std::string& ocs_trip_km = mt_ocs_trip_km->AsUnitString("-", ToUser, 1);
-    writer->printf("OCS Trip km: %s\n", ocs_trip_km.c_str());
+    writer->printf("RESET Trip km: %s\n", ocs_trip_km.c_str());
     }
   if (mt_ocs_trip_time->IsDefined())
     {
     const std::string& ocs_trip_time = mt_ocs_trip_time->AsUnitString("-", ToUser, 1);
-    writer->printf("OCS Trip time: %s\n", ocs_trip_time.c_str());
+    writer->printf("RESET Trip time: %s\n", ocs_trip_time.c_str());
+    }
+  if (mt_use_at_start->IsDefined())
+    {
+    const std::string& use_at_reset = mt_use_at_start->AsUnitString("-", ToUser, 1);
+    writer->printf("START kWh/100km: %s\n", use_at_reset.c_str());
+    }
+  if (mt_ocs_start_trip_km->IsDefined())
+    {
+    const std::string& ocs_trip_km = mt_ocs_start_trip_km->AsUnitString("-", ToUser, 1);
+    writer->printf("START Trip km: %s\n", ocs_trip_km.c_str());
+    }
+  if (mt_ocs_start_trip_time->IsDefined())
+    {
+    const std::string& ocs_trip_time = mt_ocs_start_trip_time->AsUnitString("-", ToUser, 1);
+    writer->printf("START Trip time: %s\n", ocs_trip_time.c_str());
     }
   if (StdMetrics.ms_v_env_service_time->IsDefined())
     {

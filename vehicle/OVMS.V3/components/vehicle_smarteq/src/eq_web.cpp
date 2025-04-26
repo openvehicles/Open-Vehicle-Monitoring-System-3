@@ -78,7 +78,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
  */
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
-  std::string error, info, TPMS_FL, TPMS_FR, TPMS_RL, TPMS_RR, full_km, rebootnw, net_type;
+  std::string error, info, TPMS_FL, TPMS_FR, TPMS_RL, TPMS_RR, full_km, rebootnw, net_type, front_pressure, rear_pressure, pressure_warning, pressure_alert;
   bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, ddt4all;
 
   if (c.method == "POST") {
@@ -92,6 +92,10 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     TPMS_FR     = c.getvar("TPMS_FR");
     TPMS_RL     = c.getvar("TPMS_RL");
     TPMS_RR     = c.getvar("TPMS_RR");
+    front_pressure = c.getvar("front_pressure");
+    rear_pressure  = c.getvar("rear_pressure");
+    pressure_warning = c.getvar("pressure_warning");
+    pressure_alert   = c.getvar("pressure_alert");
     resettotal  = (c.getvar("resettotal") == "yes");
     bcvalue     = (c.getvar("bcvalue") == "yes");
     full_km  =  (c.getvar("full_km"));
@@ -113,6 +117,10 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xsq", "TPMS_FR", TPMS_FR);
       MyConfig.SetParamValue("xsq", "TPMS_RL", TPMS_RL);
       MyConfig.SetParamValue("xsq", "TPMS_RR", TPMS_RR);
+      MyConfig.SetParamValue("xsq", "tpms.front.pressure", front_pressure);
+      MyConfig.SetParamValue("xsq", "tpms.rear.pressure", rear_pressure);
+      MyConfig.SetParamValue("xsq", "tpms.value.warn", pressure_warning);
+      MyConfig.SetParamValue("xsq", "tpms.value.alert", pressure_alert);
       MyConfig.SetParamValueBool("xsq", "resettotal", resettotal);
       MyConfig.SetParamValueBool("xsq", "bcvalue", bcvalue);
       MyConfig.SetParamValue("xsq", "full.km", full_km);
@@ -147,6 +155,10 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     TPMS_FR     = MyConfig.GetParamValue("xsq", "TPMS_FR", "1");
     TPMS_RL     = MyConfig.GetParamValue("xsq", "TPMS_RL", "2");
     TPMS_RR     = MyConfig.GetParamValue("xsq", "TPMS_RR", "3");
+    front_pressure = MyConfig.GetParamValue("xsq", "tpms.front.pressure", "220"); // kPa
+    rear_pressure  = MyConfig.GetParamValue("xsq", "tpms.rear.pressure", "250"); // kPa
+    pressure_warning = MyConfig.GetParamValue("xsq", "tpms.value.warn", "25"); // kPa
+    pressure_alert   = MyConfig.GetParamValue("xsq", "tpms.value.alert", "45"); // kPa
     resettotal  = MyConfig.GetParamValueBool("xsq", "resettotal", false);
     bcvalue     = MyConfig.GetParamValueBool("xsq", "bcvalue", false);
     full_km     = MyConfig.GetParamValue("xsq", "full.km", "135");
@@ -171,7 +183,19 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   // TPMS settings
   c.fieldset_start("TPMS Settings");
   c.input_checkbox("Enable iOS TPMS fix", "ios", ios,
-    "<p>Set External Temp to TPMS Temps to Display Tire Pressurs in IOS</p>");
+    "<p>Set External Temperatures to TPMS Temperatures to Display Tire Pressures in iOS App Open Vehicle</p>");
+  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",
+    atof(front_pressure.c_str()) > 0, atof(front_pressure.c_str()), 220, 170, 350, 5,
+    "<p>set Front Tire Pressure value</p>");
+  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",
+    atof(rear_pressure.c_str()) > 0, atof(rear_pressure.c_str()), 250, 170, 350, 5,
+    "<p>set Rear Tire Pressure value</p>");
+  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",
+    atof(pressure_warning.c_str()) > 0, atof(pressure_warning.c_str()), 25, 10, 60, 5,
+    "<p>set under/over Pressure Warning value</p>");
+  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",
+    atof(pressure_alert.c_str()) > 0, atof(pressure_alert.c_str()), 45, 30, 120, 5,
+    "<p>set under/over Pressure Alert value</p>");
   c.input_select_start("Front Left Sensor", "TPMS_FL");
   c.input_select_option("Front_Left",  "0", TPMS_FL == "0");
   c.input_select_option("Front_Right", "1", TPMS_FL == "1");
@@ -225,11 +249,11 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = charge the 12V if low 12V alert is raised</p>");
   c.input_checkbox("Enable V2 Server", "v2server", v2server,
     "<p>Enable = keep v2 Server connected</p>");
+  c.input_checkbox("Enable DDT4all function", "ddt4all", ddt4all,
+      "<p>Enable = DDT4all commands activate, you can find a command list at www.smart-emotion.de.</br>WARNING!!! You can damaged your Car, used at your own RISK!</p>");
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",
     atof(rebootnw.c_str()) > 0, atof(rebootnw.c_str()), 15, 0, 60, 1,
-    "<p>Default 0=off. Restart Network automatic when no v2Server connection.</p>");
-  c.input_checkbox("Enable DDT4all function", "ddt4all", ddt4all,
-    "<p>Enable = DDT4all commands aktivate, you can find a command list at www.smart-emotion.de.</br>WARNING!!! You can damaged your Car, used at own RISK!</p>");
+    "<p>Default 0 = off. Restart Network automatic when no v2Server connection.</p>");
   c.input_select_start("Modem Network type", "net_type");
   c.input_select_option("Auto", "auto", net_type == "auto");
   c.input_select_option("GSM/LTE", "gsm", net_type == "gsm");
