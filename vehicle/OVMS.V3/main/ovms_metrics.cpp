@@ -2319,8 +2319,9 @@ bool OvmsMetricFloat::SetValue(const dbcNumber& value, metric_unit_t units)
 
 void OvmsMetricFloat::Clear()
   {
-  SetValue(0);
   OvmsMetric::Clear();
+  // OvmsMetric::Clear() sets value to "", so make it a float again.
+  m_value = 0.0;
   }
 
 OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
