@@ -180,10 +180,10 @@ public:
     int m_TPMS_FR;                          // TPMS Sensor Front Right
     int m_TPMS_RL;                          // TPMS Sensor Rear Left
     int m_TPMS_RR;                          // TPMS Sensor Rear Right
-    int m_front_pressure;                   // Front Tire Pressure
-    int m_rear_pressure;                    // Rear Tire Pressure
-    int m_pressure_warning;                 // Pressure Warning
-    int m_pressure_alert;                   // Pressure Alert
+    float m_front_pressure;                 // Front Tire Pressure
+    float m_rear_pressure;                  // Rear Tire Pressure
+    float m_pressure_warning;               // Pressure Warning
+    float m_pressure_alert;                 // Pressure Alert
     bool m_12v_charge;                      //!< 12V charge on/off
     bool m_booster_system;                  //!< booster system on/off
     bool m_gps_onoff;                       //!< GPS on/off at parking activated

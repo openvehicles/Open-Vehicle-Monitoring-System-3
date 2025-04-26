@@ -530,7 +530,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     {
       // Read TPMS pressure values:
       for (int i = 0; i < 4; i++) {
-        tpms_pressure[i] = (float) CAN_BYTE(2 + i) > 0.0f ? (float) CAN_BYTE(2 + i) * 3.1 : 0.0f; // kPa
+        tpms_pressure[i] = CAN_BYTE(2 + i) != 0xff ? (float) CAN_BYTE(2 + i) * 3.1 : 0.0f; // kPa
         setTPMSValue(i, tpms_index[i]);
       }
       break;
@@ -541,6 +541,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   }
 }
 
+// Set TPMS pressure and alert values
 void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
   if (index < 0 || index > 3) {
     ESP_LOGE(TAG, "Invalid TPMS index: %d", index);
@@ -548,7 +549,12 @@ void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
   }
 
   int alert = 0;
-  int _pressure = tpms_pressure[index];
+  float _pressure = tpms_pressure[index];
+  if (_pressure < 10.0f || _pressure > 500.0f) {
+    ESP_LOGE(TAG, "Invalid TPMS pressure value: %f", _pressure);
+    return;
+  }
+
   StdMetrics.ms_v_tpms_pressure->SetElemValue(indexcar, _pressure);
 
   if(indexcar < 2) {
