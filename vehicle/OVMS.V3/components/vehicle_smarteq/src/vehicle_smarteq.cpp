@@ -550,7 +550,7 @@ void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
 
   int alert = 0;
   float _pressure = tpms_pressure[index];
-  if (_pressure < 10.0f || _pressure > 500.0f) {
+  if (_pressure < 0.0f || _pressure > 500.0f) {
     ESP_LOGE(TAG, "Invalid TPMS pressure value: %f", _pressure);
     return;
   }
