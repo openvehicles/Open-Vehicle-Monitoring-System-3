@@ -210,7 +210,7 @@ The extended REST API for command execution needs your vehicle ID, the vehicle
 password (both as entered in the module's V2 server configuration), and of
 course the command to execute:
 
-  - ``https://dexters-web.de/api/ovms/cmd&fn.vehicleid=…&fn.carpass=…&fn.cmd=…``
+  - ``https://dexters-web.de/api/ovms/cmd?fn.vehicleid=…&fn.carpass=…&fn.cmd=…``
 
 HTTP method may be ``GET`` or ``POST``. Don't forget to URI encode all arguments.
 This can be done easily when using `curl <https://curl.se/>`_ to access the API::
