@@ -79,7 +79,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info, TPMS_FL, TPMS_FR, TPMS_RL, TPMS_RR, full_km, rebootnw, net_type, front_pressure, rear_pressure, pressure_warning, pressure_alert;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, ddt4all;
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, ddt4all, extstats;
 
   if (c.method == "POST") {
     // process form submission:
@@ -105,6 +105,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     v2server = (c.getvar("v2server") == "yes");
     net_type = c.getvar("net_type");
     ddt4all = (c.getvar("ddt4all") == "yes");
+    extstats = (c.getvar("extstats") == "yes");
     
     if (error == "") {
       // success:
@@ -130,6 +131,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "v2.check", v2server);
       MyConfig.SetParamValue("xsq", "modem.net.type", net_type);
       MyConfig.SetParamValueBool("xsq", "ddt4all", ddt4all);
+      MyConfig.SetParamValueBool("xsq", "extended.stats", extstats);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -168,6 +170,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     v2server    = MyConfig.GetParamValueBool("xsq", "v2.check", false);
     net_type    = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
     ddt4all     = MyConfig.GetParamValueBool("xsq", "ddt4all", false);
+    extstats    = MyConfig.GetParamValueBool("xsq", "extended.stats", false);
     c.head(200);
   }
 
@@ -225,14 +228,14 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_select_end();
   c.fieldset_end();
 
-  // trip reset or OCS activation
-  c.fieldset_start("Trip on Car site, on Battery site long term calculated or OCS kWh/100km");
+  // trip reset or OBD activation
+  c.fieldset_start("Trip on Car site, on Battery site long term calculated or OBD kWh/100km");
   c.input_checkbox("Enable Reset Trip when Charging", "resettrip", resettrip,
     "<p>Enable = Reset Trip Values when Chaging, Disable = Reset Trip Values when Driving</p>");
   c.input_checkbox("Enable reset Battery site kWh/100km when Car switched on", "resettotal", resettotal,
     "<p>Enable = Reset calculated kWh/100km values on Battery site when Car switched on, auto disabled when resetted</p>");
-  c.input_checkbox("Enable OCS kWh/100km value", "bcvalue", bcvalue,
-    "<p>Enable = show On-Board Computer System (OCS) kWh/100km value on Battery site</p>");
+  c.input_checkbox("Enable OBD kWh/100km value", "bcvalue", bcvalue,
+    "<p>Enable = show On-Board Computer System (OBD) kWh/100km value on Battery site</p>");
   c.input_slider("WLTP km", "full_km", 3, "km",
     atof(full_km.c_str()) > 0, atof(full_km.c_str()), 126, 100, 180, 1,
   "<p>set default max Range (126km WLTP, 155km NFEZ) at full charged HV for calculate ideal Range</p>");
@@ -251,6 +254,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = keep v2 Server connected</p>");
   c.input_checkbox("Enable DDT4all function", "ddt4all", ddt4all,
       "<p>Enable = DDT4all commands activate, you can find a command list at www.smart-emotion.de.</br>WARNING!!! You can damaged your Car, used at your own RISK!</p>");
+  c.input_checkbox("Enable extended statistics", "extstats", extstats,
+      "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",
     atof(rebootnw.c_str()) > 0, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>Default 0 = off. Restart Network automatic when no v2Server connection.</p>");
