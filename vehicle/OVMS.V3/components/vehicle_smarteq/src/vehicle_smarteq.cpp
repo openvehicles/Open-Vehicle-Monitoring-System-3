@@ -136,8 +136,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_cfg_cell_interval_chg = 0;
 
   for (int i = 0; i < 4; i++) {
-    tpms_pressure[i] = 0.0f;
-    tpms_index[i] = i;
+    m_tpms_pressure[i] = 0.0f;
+    m_tpms_index[i] = i;
   }
 
   // BMS configuration:
@@ -153,6 +153,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_use_at_reset               = MyMetrics.InitFloat("xsq.use.at.reset", SM_STALE_MID, 0, kWh);
   mt_use_at_start               = MyMetrics.InitFloat("xsq.use.at.start", SM_STALE_MID, 0, kWh);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MIN, "", Other);
+  mt_dummy_pressure             = MyMetrics.InitFloat("xsq.dummy.pressure", SM_STALE_MIN, 235, kPa);  // Dummy pressure for TPMS alert testing
 
   mt_obd_duration               = MyMetrics.InitInt("xsq.obd.duration", SM_STALE_MIN, 0, Minutes);
   mt_obd_trip_km                = MyMetrics.InitFloat("xsq.obd.trip.km", SM_STALE_MID, 0, Kilometers);
@@ -222,6 +223,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("total", "Show vehicle trip total", xsq_trip_total);
   cmd_xsq->RegisterCommand("mtdata", "Show Maintenance data", xsq_maintenance);
   cmd_xsq->RegisterCommand("climate", "Show Climate timer data", xsq_climate);
+  cmd_xsq->RegisterCommand("tpmsset", "set TPMS dummy value ", xsq_tpms_set);
 
   MyConfig.RegisterParam("xsq", "smartEQ", true, true);
 
@@ -261,6 +263,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     MyConfig.SetParamValueInt("xsq", "tpms.value.alert", 45); // kPa
   }
 
+  if (MyConfig.GetParamValue("xsq", "tpms.alert.enable","0") == "0") {
+    MyConfig.SetParamValueBool("xsq", "tpms.alert.enable", true);
+  }
+
   if(MyConfig.GetParamValue("xsq", "booster.system","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "booster.system", true);
     StdMetrics.ms_v_gen_current->SetValue(3);                  // activate gen metrics to app transfer and in-app plugin <> fw switch                                   
@@ -272,6 +278,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   }
 
   CommandWakeup();                                             // wake up the car to get the first data
+  setTPMSValueBoot();                                          // set TPMS dummy values to 0
 
 #ifdef CONFIG_OVMS_COMP_CELLULAR
   if(MyConfig.GetParamValue("xsq", "gps.onoff","0") == "0") {
@@ -352,14 +359,15 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_TPMS_RL           = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
   m_TPMS_RR           = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
 */
-  tpms_index[3]       = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
-  tpms_index[2]       = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
-  tpms_index[1]       = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
-  tpms_index[0]       = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
+  m_tpms_index[3]       = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
+  m_tpms_index[2]       = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
+  m_tpms_index[1]       = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
+  m_tpms_index[0]       = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
   m_front_pressure    = MyConfig.GetParamValueFloat("xsq", "tpms.front.pressure",  220); // kPa
   m_rear_pressure     = MyConfig.GetParamValueFloat("xsq", "tpms.rear.pressure",  250); // kPa
   m_pressure_warning  = MyConfig.GetParamValueFloat("xsq", "tpms.value.warn",  25); // kPa
   m_pressure_alert    = MyConfig.GetParamValueFloat("xsq", "tpms.value.alert", 45); // kPa
+  m_tpms_alert_enable = MyConfig.GetParamValueBool("xsq", "tpms.alert.enable", true);
   
   m_ddt4all           = MyConfig.GetParamValueInt("xsq", "ddt4all", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
@@ -559,8 +567,8 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       // Read TPMS pressure values:
       for (int i = 0; i < 4; i++) {
         if (CAN_BYTE(2 + i) != 0xff) {
-          tpms_pressure[i] = (float) CAN_BYTE(2 + i) * 3.1; // kPa
-          setTPMSValue(i, tpms_index[i]);
+          m_tpms_pressure[i] = (float) CAN_BYTE(2 + i) * 3.1; // kPa
+          setTPMSValue(i, m_tpms_index[i]);
         }
       }
       break;
@@ -573,34 +581,51 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 
 // Set TPMS pressure and alert values
 void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
-  if (index < 0 || index > 3) {
-    ESP_LOGE(TAG, "Invalid TPMS index: %d", index);
+  if (index < 0 || index > 3 || indexcar < 0 || indexcar > 3) {
+    ESP_LOGE(TAG, "Invalid TPMS index: %d or indexcar: %d", index, indexcar);
     return;
   }
 
-  int alert = 0;
-  float _pressure = tpms_pressure[index];
-
-  if ( _pressure < 0.0f || _pressure > 500.0f ) {
+  float _pressure = m_tpms_pressure[index];
+  
+  // Validate pressure value
+  if (_pressure < 0.0f || _pressure > 500.0f) {
     ESP_LOGE(TAG, "Invalid TPMS pressure value: %f", _pressure);
     return;
   }
 
   StdMetrics.ms_v_tpms_pressure->SetElemValue(indexcar, _pressure);
 
-  if(indexcar < 2) {
-    alert = ((_pressure > (m_front_pressure + m_pressure_alert)) ? 2 :
-             (_pressure > (m_front_pressure + m_pressure_warning)) ? 1 :
-             (_pressure < (m_front_pressure - m_pressure_alert)) ? 2 :
-             (_pressure < (m_front_pressure - m_pressure_warning)) ? 1 : 0);
-  } else {
-    alert = ((_pressure > (m_rear_pressure + m_pressure_alert)) ? 2 :
-             (_pressure > (m_rear_pressure + m_pressure_warning)) ? 1 :
-             (_pressure < (m_rear_pressure - m_pressure_alert)) ? 2 :
-             (_pressure < (m_rear_pressure - m_pressure_warning)) ? 1 : 0);
+  // Skip alert processing if pressure is too low or alerts are disabled
+  if (_pressure < 10.0f || !m_tpms_alert_enable) {
+    StdMetrics.ms_v_tpms_alert->SetElemValue(indexcar, 0);
+    return;
   }
 
-  StdMetrics.ms_v_tpms_alert->SetElemValue(indexcar, alert);  
+  // Get reference pressure based on front/rear position
+  float reference_pressure = (indexcar < 2) ? m_front_pressure : m_rear_pressure;
+
+  // Calculate deviation from reference pressure
+  int _alert = 0;
+  float deviation = _pressure - reference_pressure;
+  float abs_deviation = std::abs(deviation);
+
+  if (abs_deviation > m_pressure_alert) {
+    _alert = 2;
+  } else if (abs_deviation > m_pressure_warning) {
+    _alert = 1;
+  }
+
+  StdMetrics.ms_v_tpms_alert->SetElemValue(indexcar, _alert);
+}
+
+// Set TPMS value at boot, cached values are not available
+// and we need to set dummy values to avoid alert messages
+void OvmsVehicleSmartEQ::setTPMSValueBoot() {
+  for (int i = 0; i < 4; i++) {
+    StdMetrics.ms_v_tpms_pressure->SetElemValue(i, 0.0f);
+    StdMetrics.ms_v_tpms_alert->SetElemValue(i, 0);
+  }
 }
 
 void OvmsVehicleSmartEQ::DisablePlugin(const char* plugin) {
@@ -859,7 +884,6 @@ void OvmsVehicleSmartEQ::ModemNetworkType() {
   }
   m_network_type_ls = m_network_type;
 }
-
 /**
  * Update derived energy metrics while driving
  * Called once per second from Ticker1
@@ -2361,6 +2385,21 @@ void OvmsVehicleSmartEQ::Notify12Vcharge() {
   MyNotify.NotifyString("info","xsq.12v.charge",buf.c_str());
 }
 
+void OvmsVehicleSmartEQ::xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+  
+    smarteq->CommandTPMSset(verbosity, writer);
+}
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTPMSset(int verbosity, OvmsWriter* writer) {
+  for (int i = 0; i < 4; i++) {
+    m_tpms_pressure[i] = mt_dummy_pressure->AsFloat(); // kPa
+    setTPMSValue(i, m_tpms_index[i]);
+  }
+  return Success;
+}
+
 /**
  * SetFeature: V2 compatibility config wrapper
  *  Note: V2 only supported integer values, V3 values may be text
@@ -2554,6 +2593,6 @@ class OvmsVehicleSmartEQInit {
 
 OvmsVehicleSmartEQInit::OvmsVehicleSmartEQInit() {
   ESP_LOGI(TAG, "Registering Vehicle: SMART EQ (9000)");
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleSmartEQ>("SQ", "Smart ED/EQ 4.Gen");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleSmartEQ>("SQ", "smart 453 4.Gen");
 }
 

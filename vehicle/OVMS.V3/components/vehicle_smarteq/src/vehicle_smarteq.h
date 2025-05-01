@@ -96,6 +96,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ModemNetworkType();
     bool ExecuteCommand(const std::string& command);
     void setTPMSValue(int index, int indexcar);
+    void setTPMSValueBoot();
     void NotifyClimate();
     void NotifyClimateTimer();
     void NotifyTripReset();
@@ -124,6 +125,7 @@ public:
     virtual vehicle_command_t CommandTripTotal(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandClimate(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t Command12Vcharge(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandTPMSset(int verbosity, OvmsWriter* writer);
 
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -131,6 +133,7 @@ public:
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgTPMS(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
 #endif
     void ConfigChanged(OvmsConfigParam* param) override;
@@ -145,14 +148,15 @@ public:
     static void xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_counters(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_total(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
     unsigned int m_candata_timer;
     unsigned int m_candata_poll;
     bool m_charge_start;
     bool m_charge_finished;
-    float tpms_pressure[4];
-    int tpms_index[4];
+    float m_tpms_pressure[4]; // kPa
+    int m_tpms_index[4];
 
   protected:
     void Ticker1(uint32_t ticker) override;
@@ -210,6 +214,7 @@ public:
     float m_rear_pressure;                  // Rear Tire Pressure
     float m_pressure_warning;               // Pressure Warning
     float m_pressure_alert;                 // Pressure Alert
+    bool m_tpms_alert_enable;               // TPMS Alert enabled
     bool m_12v_charge;                      //!< 12V charge on/off
     bool m_12v_charge_state;                //!< 12V charge state
     bool m_booster_system;                  //!< booster system on/off
@@ -288,6 +293,7 @@ public:
     OvmsMetricInt           *mt_booster_1to3;           //!< booster one to three (homelink 0-2) times in following time
     OvmsMetricString        *mt_booster_data;           //!< booster data from app/website
     OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
+    OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
 
   protected:
     bool m_booster_start;
