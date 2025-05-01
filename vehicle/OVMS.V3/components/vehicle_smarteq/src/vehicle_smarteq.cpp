@@ -600,7 +600,6 @@ void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
              (_pressure < (m_rear_pressure - m_pressure_warning)) ? 1 : 0);
   }
 
-  if(_pressure == 0.0f) alert = 0; // no alert if pressure is 0.0f
   StdMetrics.ms_v_tpms_alert->SetElemValue(indexcar, alert);  
 }
 
