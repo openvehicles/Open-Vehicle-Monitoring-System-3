@@ -66,6 +66,9 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsVehicleSmartEQ();
     ~OvmsVehicleSmartEQ();
 
+  private:
+    static OvmsVehicleSmartEQ* GetInstance(OvmsWriter* writer=NULL);
+
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
@@ -93,7 +96,15 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ModemNetworkType();
     bool ExecuteCommand(const std::string& command);
     void setTPMSValue(int index, int indexcar);
-
+    void setTPMSValueBoot();
+    void NotifyClimate();
+    void NotifyClimateTimer();
+    void NotifyTripReset();
+    void NotifyTripStart();
+    void NotifyTripCounters();
+    void NotifyTotalCounters();
+    void NotifyMaintenance();
+    void Notify12Vcharge();
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -106,6 +117,15 @@ public:
     vehicle_command_t CommandDeactivateValet(const char* pin) override;
     vehicle_command_t CommandCan(uint32_t txid,uint32_t rxid,bool enable=false);
     vehicle_command_t CommandWakeup2();
+    virtual vehicle_command_t CommandTripStart(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandTripReset(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandMaintenance(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandSetClimate(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandTripCounters(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandTripTotal(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandClimate(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t Command12Vcharge(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandTPMSset(int verbosity, OvmsWriter* writer);
 
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -113,6 +133,7 @@ public:
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgTPMS(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
 #endif
     void ConfigChanged(OvmsConfigParam* param) override;
@@ -120,13 +141,22 @@ public:
     const std::string GetFeature(int key);
     uint64_t swap_uint64(uint64_t val);
 
+  public:
+    static void xsq_trip_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_trip_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_maintenance(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_trip_counters(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_trip_total(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
   private:
     unsigned int m_candata_timer;
     unsigned int m_candata_poll;
     bool m_charge_start;
     bool m_charge_finished;
-    float tpms_pressure[4];
-    int tpms_index[4];
+    float m_tpms_pressure[4]; // kPa
+    int m_tpms_index[4];
 
   protected:
     void Ticker1(uint32_t ticker) override;
@@ -157,15 +187,15 @@ public:
     void PollReply_OBL_JB2AC_Ph23_RMS_V(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len);
-    void PollReply_ocs_trip(const char* data, uint16_t reply_len);
-    void PollReply_ocs_used(const char* data, uint16_t reply_len);
-    void PollReply_ocs_time(const char* data, uint16_t reply_len);
-    void PollReply_ocs_start_trip(const char* data, uint16_t reply_len);
-    void PollReply_ocs_start_used(const char* data, uint16_t reply_len);
-    void PollReply_ocs_start_time(const char* data, uint16_t reply_len);
-    void PollReply_ocs_mt_day(const char* data, uint16_t reply_len);
-    void PollReply_ocs_mt_km(const char* data, uint16_t reply_len);
-    void PollReply_ocs_mt_level(const char* data, uint16_t reply_len);
+    void PollReply_obd_trip(const char* data, uint16_t reply_len);
+    void PollReply_obd_used(const char* data, uint16_t reply_len);
+    void PollReply_obd_time(const char* data, uint16_t reply_len);
+    void PollReply_obd_start_trip(const char* data, uint16_t reply_len);
+    void PollReply_obd_start_used(const char* data, uint16_t reply_len);
+    void PollReply_obd_start_time(const char* data, uint16_t reply_len);
+    void PollReply_obd_mt_day(const char* data, uint16_t reply_len);
+    void PollReply_obd_mt_km(const char* data, uint16_t reply_len);
+    void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
 
   protected:
     bool m_enable_write;                    // canwrite
@@ -184,14 +214,17 @@ public:
     float m_rear_pressure;                  // Rear Tire Pressure
     float m_pressure_warning;               // Pressure Warning
     float m_pressure_alert;                 // Pressure Alert
+    bool m_tpms_alert_enable;               // TPMS Alert enabled
     bool m_12v_charge;                      //!< 12V charge on/off
+    bool m_12v_charge_state;                //!< 12V charge state
     bool m_booster_system;                  //!< booster system on/off
     bool m_gps_onoff;                       //!< GPS on/off at parking activated
     bool m_gps_off;                         //!< GPS off while parking > 10 minutes
     int m_gps_reactmin;                     //!< GPS reactivate all x minutes after parking
-    std::string m_hl_canbyte;                 //!< canbyte variable for unv
-    std::string m_network_type;               //!< Network type from xsq.modem.net.type
-    std::string m_network_type_ls;            //!< Network type last state reminder
+    std::string m_hl_canbyte;               //!< canbyte variable for unv
+    std::string m_network_type;             //!< Network type from xsq.modem.net.type
+    std::string m_network_type_ls;          //!< Network type last state reminder
+    bool m_extendedStats;                   //!< extended stats for trip and maintenance data
 
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define MAX_POLL_DATA_LEN 126
@@ -202,6 +235,7 @@ public:
     std::string   m_rxbuf;
 
   protected:
+    OvmsCommand *cmd_xsq;                               // command for xsq
     OvmsMetricVector<float> *mt_bms_temps;              // BMS temperatures
     OvmsMetricBool          *mt_bus_awake;              // Can Bus active
     OvmsMetricFloat         *mt_use_at_reset;           // kWh use at reset in Display
@@ -238,17 +272,17 @@ public:
     OvmsMetricVector<float> *mt_obl_main_volts;         //!< AC voltage of L1, L2, L3
     OvmsMetricVector<float> *mt_obl_main_CHGpower;      //!< Power of rail1, rail2 W (x/2) & max available kw (x/64)
     OvmsMetricFloat         *mt_obl_main_freq;          //!< AC input frequency
-    OvmsMetricInt           *mt_ocs_duration;           //!< OCS duration
-    OvmsMetricFloat         *mt_ocs_trip_km;            //!< OCS trip data km
-    OvmsMetricFloat         *mt_ocs_start_trip_km;      //!< OCS trip data km start
-    OvmsMetricFloat         *mt_ocs_trip_used;          //!< OCS trip data kWh used
-    OvmsMetricFloat         *mt_ocs_start_trip_used;    //!< OCS trip data kWh used start
-    OvmsMetricString        *mt_ocs_trip_time;          //!< OCS trip data HH:mm
-    OvmsMetricString        *mt_ocs_start_trip_time;    //!< OCS trip data HH:mm start
-    OvmsMetricInt           *mt_ocs_mt_day_prewarn;     //!< Maintaince pre warning days
-    OvmsMetricInt           *mt_ocs_mt_day_usual;       //!< Maintaince usual days
-    OvmsMetricInt           *mt_ocs_mt_km_usual;        //!< Maintaince usual km
-    OvmsMetricString        *mt_ocs_mt_level;           //!< Maintaince level
+    OvmsMetricInt           *mt_obd_duration;           //!< obd duration
+    OvmsMetricFloat         *mt_obd_trip_km;            //!< obd trip data km
+    OvmsMetricFloat         *mt_obd_start_trip_km;      //!< obd trip data km start
+    OvmsMetricFloat         *mt_obd_trip_used;          //!< obd trip data kWh used
+    OvmsMetricFloat         *mt_obd_start_trip_used;    //!< obd trip data kWh used start
+    OvmsMetricString        *mt_obd_trip_time;          //!< obd trip data HH:mm
+    OvmsMetricString        *mt_obd_start_trip_time;    //!< obd trip data HH:mm start
+    OvmsMetricInt           *mt_obd_mt_day_prewarn;     //!< Maintaince pre warning days
+    OvmsMetricInt           *mt_obd_mt_day_usual;       //!< Maintaince usual days
+    OvmsMetricInt           *mt_obd_mt_km_usual;        //!< Maintaince usual km
+    OvmsMetricString        *mt_obd_mt_level;           //!< Maintaince level
     OvmsMetricBool          *mt_booster_on;             //!< booster at time on/off
     OvmsMetricBool          *mt_booster_weekly;         //!< booster weekly auto on/off at day start/end
     OvmsMetricString        *mt_booster_time;           //!< booster time
@@ -259,6 +293,7 @@ public:
     OvmsMetricInt           *mt_booster_1to3;           //!< booster one to three (homelink 0-2) times in following time
     OvmsMetricString        *mt_booster_data;           //!< booster data from app/website
     OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
+    OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
 
   protected:
     bool m_booster_start;

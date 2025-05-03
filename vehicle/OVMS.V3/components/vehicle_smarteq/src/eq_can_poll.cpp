@@ -188,32 +188,32 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x200c: // temperature sensor values
           PollReply_TDB(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x2101: // OCS Trip Distance km
-          PollReply_ocs_trip(m_rxbuf.data(), m_rxbuf.size());
+        case 0x2101: // obd Trip Distance km
+          PollReply_obd_trip(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x2102: // OCS Trip Fuel used
-          PollReply_ocs_used(m_rxbuf.data(), m_rxbuf.size());
+        case 0x2102: // obd Trip Fuel used
+          PollReply_obd_used(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x2104: // OCS Trip time s
-          PollReply_ocs_time(m_rxbuf.data(), m_rxbuf.size());
+        case 0x2104: // obd Trip time s
+          PollReply_obd_time(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x01A0: // OCS Start Trip Distance km
-          PollReply_ocs_start_trip(m_rxbuf.data(), m_rxbuf.size());
+        case 0x01A0: // obd Start Trip Distance km
+          PollReply_obd_start_trip(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x01A1: // OCS Start Trip Fuel used
-          PollReply_ocs_start_used(m_rxbuf.data(), m_rxbuf.size());
+        case 0x01A1: // obd Start Trip Fuel used
+          PollReply_obd_start_used(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x01A2: // OCS Start Trip time s
-          PollReply_ocs_start_time(m_rxbuf.data(), m_rxbuf.size());
+        case 0x01A2: // obd Start Trip time s
+          PollReply_obd_start_time(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x0188: // maintenance level
-          PollReply_ocs_mt_level(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_obd_mt_level(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x0204: // maintenance data duration days
-          PollReply_ocs_mt_day(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_obd_mt_day(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x0203: // maintenance data usual km
-          PollReply_ocs_mt_km(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_obd_mt_km(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
       break;
@@ -466,50 +466,52 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t re
   UpdateChargeMetrics();
 }
 
-void OvmsVehicleSmartEQ::PollReply_ocs_trip(const char* data, uint16_t reply_len) {
-  mt_ocs_trip_km->SetValue((float) CAN_UINT(0));
+void OvmsVehicleSmartEQ::PollReply_obd_trip(const char* data, uint16_t reply_len) {
+  mt_obd_trip_km->SetValue((float) CAN_UINT(0));
 }
 
-void OvmsVehicleSmartEQ::PollReply_ocs_time(const char* data, uint16_t reply_len) {
+void OvmsVehicleSmartEQ::PollReply_obd_time(const char* data, uint16_t reply_len) {
   int value_1 = CAN_UINT24(0);
   std::string timeStr = SecondsToHHmm(value_1);
-  mt_ocs_trip_time->SetValue( timeStr );
+  mt_obd_trip_time->SetValue( timeStr );
 }
 
-void OvmsVehicleSmartEQ::PollReply_ocs_used(const char* data, uint16_t reply_len) {
-  mt_ocs_trip_used->SetValue((float) CAN_UINT(0));
+void OvmsVehicleSmartEQ::PollReply_obd_used(const char* data, uint16_t reply_len) {
+  mt_obd_trip_used->SetValue((float) CAN_UINT(0));
 }
 
-void OvmsVehicleSmartEQ::PollReply_ocs_start_trip(const char* data, uint16_t reply_len) {
-  mt_ocs_start_trip_km->SetValue((float) CAN_UINT(0));
+void OvmsVehicleSmartEQ::PollReply_obd_start_trip(const char* data, uint16_t reply_len) {
+  mt_obd_start_trip_km->SetValue((float) CAN_UINT(0));
 }
 
-void OvmsVehicleSmartEQ::PollReply_ocs_start_used(const char* data, uint16_t reply_len) {
-  mt_ocs_start_trip_used->SetValue((float) CAN_UINT(0));
+void OvmsVehicleSmartEQ::PollReply_obd_start_used(const char* data, uint16_t reply_len) {
+  mt_obd_start_trip_used->SetValue((float) CAN_UINT(0));
 }
 
-void OvmsVehicleSmartEQ::PollReply_ocs_start_time(const char* data, uint16_t reply_len) {
+void OvmsVehicleSmartEQ::PollReply_obd_start_time(const char* data, uint16_t reply_len) {
   int value_1 = CAN_UINT24(0);
   std::string timeStr = SecondsToHHmm(value_1);
-  mt_ocs_start_trip_time->SetValue( timeStr );
+  mt_obd_start_trip_time->SetValue( timeStr );
 }
 
-void OvmsVehicleSmartEQ::PollReply_ocs_mt_day(const char* data, uint16_t reply_len) {
+void OvmsVehicleSmartEQ::PollReply_obd_mt_day(const char* data, uint16_t reply_len) {
   int value = CAN_UINT(0);
   if (value > 0) { // excluding value of 0 seems to be necessary for now
     // Send notification?
     int now = StdMetrics.ms_m_timeutc->AsInt();
-    int threshold = mt_ocs_mt_day_prewarn->AsInt();
+    int threshold = mt_obd_mt_day_prewarn->AsInt();
     int old_value = ROUNDPREC((StdMetrics.ms_v_env_service_time->AsInt() - now) / 86400, 0);
     if (old_value > threshold && value <= threshold) {
-      MyNotify.NotifyStringf("info", "serv.time", "Service time left: %d days!", value);
-      mt_ocs_mt_day_prewarn->SetValue(threshold - 7); // send notification only once per threshold, todo: make configurable???
+      //MyNotify.NotifyStringf("info", "serv.time", "Service time left: %d days!", value);
+      NotifyMaintenance();
+      // send notification only once per threshold, todo: make configurable???
+      mt_obd_mt_day_prewarn->SetValue(threshold - 7);
     }
     // reset prewarn value after service time has been increased
     if (value > 100 && threshold < 100) {
-      mt_ocs_mt_day_prewarn->SetValue(45);  // default value 45 days, todo: make configurable???
+      mt_obd_mt_day_prewarn->SetValue(45);  // default value 45 days, todo: make configurable???
     }
-    mt_ocs_mt_day_usual->SetValue(value); // set next service in days
+    mt_obd_mt_day_usual->SetValue(value); // set next service in days
     StdMetrics.ms_v_env_service_time->SetValue(StdMetrics.ms_m_timeutc->AsInt() + (value * 86400));  // set next service at time
     if(MyConfig.GetParamValueInt("xsq", "service.time", -1) > -1) {
       MyConfig.SetParamValueInt("xsq", "service.time", -1);
@@ -525,17 +527,17 @@ void OvmsVehicleSmartEQ::PollReply_ocs_mt_day(const char* data, uint16_t reply_l
     }
     int now = StdMetrics.ms_m_timeutc->AsInt();
     int old_value = ROUNDPREC(( now - StdMetrics.ms_v_env_service_time->AsInt()) / 86400, 0);
-    mt_ocs_mt_day_usual->SetValue(old_value * -1);
+    mt_obd_mt_day_usual->SetValue(old_value * -1);
   }
 
 }
 
-void OvmsVehicleSmartEQ::PollReply_ocs_mt_km(const char* data, uint16_t reply_len) {
+void OvmsVehicleSmartEQ::PollReply_obd_mt_km(const char* data, uint16_t reply_len) {
   StdMetrics.ms_v_env_service_range->SetValue(CAN_UINT(0));
-  mt_ocs_mt_km_usual->SetValue(CAN_UINT(0));
+  mt_obd_mt_km_usual->SetValue(CAN_UINT(0));
 }
 
-void OvmsVehicleSmartEQ::PollReply_ocs_mt_level(const char* data, uint16_t reply_len) {
+void OvmsVehicleSmartEQ::PollReply_obd_mt_level(const char* data, uint16_t reply_len) {
   int value = CAN_UINT(0);
   std::string txt;
   if (value == 0) {
@@ -543,6 +545,6 @@ void OvmsVehicleSmartEQ::PollReply_ocs_mt_level(const char* data, uint16_t reply
   } else {
     txt = "Service B";
   }
-  mt_ocs_mt_level->SetValue(txt.c_str());
+  mt_obd_mt_level->SetValue(txt.c_str());
   StdMetrics.ms_v_gen_substate->SetValue(txt.c_str());
 }

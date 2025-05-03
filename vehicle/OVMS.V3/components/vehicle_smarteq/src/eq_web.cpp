@@ -58,6 +58,7 @@ void OvmsVehicleSmartEQ::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xsq/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/climate", "Climate/Heater", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xsq/tpms", "TPMS Config", WebCfgTPMS, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
@@ -69,6 +70,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xsq/features");
   MyWebServer.DeregisterPage("/xsq/climate");
+  MyWebServer.DeregisterPage("/xsq/tpms");
   MyWebServer.DeregisterPage("/xsq/battery");
   MyWebServer.DeregisterPage("/xsq/cellmon");
 }
@@ -78,8 +80,8 @@ void OvmsVehicleSmartEQ::WebDeInit()
  */
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
-  std::string error, info, TPMS_FL, TPMS_FR, TPMS_RL, TPMS_RR, full_km, rebootnw, net_type, front_pressure, rear_pressure, pressure_warning, pressure_alert;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, ddt4all;
+  std::string error, info, full_km, rebootnw, net_type;
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, ddt4all, extstats;
 
   if (c.method == "POST") {
     // process form submission:
@@ -88,14 +90,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     ios         = (c.getvar("ios") == "yes");
     rebootnw    = (c.getvar("rebootnw"));
     resettrip   = (c.getvar("resettrip") == "yes");
-    TPMS_FL     = c.getvar("TPMS_FL");
-    TPMS_FR     = c.getvar("TPMS_FR");
-    TPMS_RL     = c.getvar("TPMS_RL");
-    TPMS_RR     = c.getvar("TPMS_RR");
-    front_pressure = c.getvar("front_pressure");
-    rear_pressure  = c.getvar("rear_pressure");
-    pressure_warning = c.getvar("pressure_warning");
-    pressure_alert   = c.getvar("pressure_alert");
     resettotal  = (c.getvar("resettotal") == "yes");
     bcvalue     = (c.getvar("bcvalue") == "yes");
     full_km  =  (c.getvar("full_km"));
@@ -105,22 +99,15 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     v2server = (c.getvar("v2server") == "yes");
     net_type = c.getvar("net_type");
     ddt4all = (c.getvar("ddt4all") == "yes");
+    extstats = (c.getvar("extstats") == "yes");
     
-    if (error == "") {
+    if (error.empty()) {
       // success:
       MyConfig.SetParamValueBool("xsq", "canwrite", canwrite);
       MyConfig.SetParamValueBool("xsq", "led", led);
       MyConfig.SetParamValueBool("xsq", "ios_tpms_fix", ios);
       MyConfig.SetParamValue("xsq", "rebootnw", rebootnw);
       MyConfig.SetParamValueBool("xsq", "resettrip", resettrip);
-      MyConfig.SetParamValue("xsq", "TPMS_FL", TPMS_FL);
-      MyConfig.SetParamValue("xsq", "TPMS_FR", TPMS_FR);
-      MyConfig.SetParamValue("xsq", "TPMS_RL", TPMS_RL);
-      MyConfig.SetParamValue("xsq", "TPMS_RR", TPMS_RR);
-      MyConfig.SetParamValue("xsq", "tpms.front.pressure", front_pressure);
-      MyConfig.SetParamValue("xsq", "tpms.rear.pressure", rear_pressure);
-      MyConfig.SetParamValue("xsq", "tpms.value.warn", pressure_warning);
-      MyConfig.SetParamValue("xsq", "tpms.value.alert", pressure_alert);
       MyConfig.SetParamValueBool("xsq", "resettotal", resettotal);
       MyConfig.SetParamValueBool("xsq", "bcvalue", bcvalue);
       MyConfig.SetParamValue("xsq", "full.km", full_km);
@@ -130,6 +117,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "v2.check", v2server);
       MyConfig.SetParamValue("xsq", "modem.net.type", net_type);
       MyConfig.SetParamValueBool("xsq", "ddt4all", ddt4all);
+      MyConfig.SetParamValueBool("xsq", "extended.stats", extstats);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -143,22 +131,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
     c.head(400);
     c.alert("danger", error.c_str());
-  }
-  else {
+  } else {
     // read configuration:
     canwrite    = MyConfig.GetParamValueBool("xsq", "canwrite", false);
     led         = MyConfig.GetParamValueBool("xsq", "led", false);
     ios         = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
     rebootnw    = MyConfig.GetParamValue("xsq", "rebootnw", "0");
     resettrip   = MyConfig.GetParamValueBool("xsq", "resettrip", false);
-    TPMS_FL     = MyConfig.GetParamValue("xsq", "TPMS_FL", "0");
-    TPMS_FR     = MyConfig.GetParamValue("xsq", "TPMS_FR", "1");
-    TPMS_RL     = MyConfig.GetParamValue("xsq", "TPMS_RL", "2");
-    TPMS_RR     = MyConfig.GetParamValue("xsq", "TPMS_RR", "3");
-    front_pressure = MyConfig.GetParamValue("xsq", "tpms.front.pressure", "220"); // kPa
-    rear_pressure  = MyConfig.GetParamValue("xsq", "tpms.rear.pressure", "250"); // kPa
-    pressure_warning = MyConfig.GetParamValue("xsq", "tpms.value.warn", "25"); // kPa
-    pressure_alert   = MyConfig.GetParamValue("xsq", "tpms.value.alert", "45"); // kPa
     resettotal  = MyConfig.GetParamValueBool("xsq", "resettotal", false);
     bcvalue     = MyConfig.GetParamValueBool("xsq", "bcvalue", false);
     full_km     = MyConfig.GetParamValue("xsq", "full.km", "135");
@@ -168,6 +147,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     v2server    = MyConfig.GetParamValueBool("xsq", "v2.check", false);
     net_type    = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
     ddt4all     = MyConfig.GetParamValueBool("xsq", "ddt4all", false);
+    extstats    = MyConfig.GetParamValueBool("xsq", "extended.stats", false);
     c.head(200);
   }
 
@@ -179,60 +159,15 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
   c.fieldset_end();
-
-  // TPMS settings
-  c.fieldset_start("TPMS Settings");
-  c.input_checkbox("Enable iOS TPMS fix", "ios", ios,
-    "<p>Set External Temperatures to TPMS Temperatures to Display Tire Pressures in iOS App Open Vehicle</p>");
-  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",
-    atof(front_pressure.c_str()) > 0, atof(front_pressure.c_str()), 220, 170, 350, 5,
-    "<p>set Front Tire Pressure value</p>");
-  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",
-    atof(rear_pressure.c_str()) > 0, atof(rear_pressure.c_str()), 250, 170, 350, 5,
-    "<p>set Rear Tire Pressure value</p>");
-  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",
-    atof(pressure_warning.c_str()) > 0, atof(pressure_warning.c_str()), 25, 10, 60, 5,
-    "<p>set under/over Pressure Warning value</p>");
-  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",
-    atof(pressure_alert.c_str()) > 0, atof(pressure_alert.c_str()), 45, 30, 120, 5,
-    "<p>set under/over Pressure Alert value</p>");
-  c.input_select_start("Front Left Sensor", "TPMS_FL");
-  c.input_select_option("Front_Left",  "0", TPMS_FL == "0");
-  c.input_select_option("Front_Right", "1", TPMS_FL == "1");
-  c.input_select_option("Rear_Left",   "2", TPMS_FL == "2");
-  c.input_select_option("Rear_Right",  "3", TPMS_FL == "3");
-  c.input_select_end();
   
-  c.input_select_start("Front Right Sensor", "TPMS_FR");
-  c.input_select_option("Front_Left",  "0", TPMS_FR == "0");
-  c.input_select_option("Front_Right", "1", TPMS_FR == "1");
-  c.input_select_option("Rear_Left",   "2", TPMS_FR == "2");
-  c.input_select_option("Rear_Right",  "3", TPMS_FR == "3");
-  c.input_select_end();
-  
-  c.input_select_start("Rear Left Sensor", "TPMS_RL");
-  c.input_select_option("Front_Left",  "0", TPMS_RL == "0");
-  c.input_select_option("Front_Right", "1", TPMS_RL == "1");
-  c.input_select_option("Rear_Left",   "2", TPMS_RL == "2");
-  c.input_select_option("Rear_Right",  "3", TPMS_RL == "3");
-  c.input_select_end();
-  
-  c.input_select_start("Rear Right Sensor", "TPMS_RR");
-  c.input_select_option("Front_Left",  "0", TPMS_RR == "0");
-  c.input_select_option("Front_Right", "1", TPMS_RR == "1");
-  c.input_select_option("Rear_Left",   "2", TPMS_RR == "2");
-  c.input_select_option("Rear_Right",  "3", TPMS_RR == "3");
-  c.input_select_end();
-  c.fieldset_end();
-
-  // trip reset or OCS activation
-  c.fieldset_start("Trip on Car site, on Battery site long term calculated or OCS kWh/100km");
+  // trip reset or OBD activation
+  c.fieldset_start("Trip calculated or OBD kWh/100km");
   c.input_checkbox("Enable Reset Trip when Charging", "resettrip", resettrip,
     "<p>Enable = Reset Trip Values when Chaging, Disable = Reset Trip Values when Driving</p>");
-  c.input_checkbox("Enable reset Battery site kWh/100km when Car switched on", "resettotal", resettotal,
-    "<p>Enable = Reset calculated kWh/100km values on Battery site when Car switched on, auto disabled when resetted</p>");
-  c.input_checkbox("Enable OCS kWh/100km value", "bcvalue", bcvalue,
-    "<p>Enable = show On-Board Computer System (OCS) kWh/100km value on Battery site</p>");
+  c.input_checkbox("Enable reset kWh/100km when Car switched on", "resettotal", resettotal,
+    "<p>Enable = Reset calculated kWh/100km values on when Car switched on, auto disabled when resetted</p>");
+  c.input_checkbox("Enable OBD kWh/100km value", "bcvalue", bcvalue,
+    "<p>Enable = show OBD kWh/100km value</p>");
   c.input_slider("WLTP km", "full_km", 3, "km",
     atof(full_km.c_str()) > 0, atof(full_km.c_str()), 126, 100, 180, 1,
   "<p>set default max Range (126km WLTP, 155km NFEZ) at full charged HV for calculate ideal Range</p>");
@@ -241,6 +176,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.fieldset_start("Diff Settings");
   c.input_checkbox("Enable/Disable Online state LED when installed", "led", led,
     "<p>RED=Internet no, BLUE=Internet yes, GREEN=Server v2 connected.<br>EGPIO Port 7,8,9 are used</p>");
+  c.input_checkbox("Enable iOS TPMS fix", "ios", ios,
+    "<p>Set External Temperatures to TPMS Temperatures to Display Tire Pressures in iOS App Open Vehicle</p>");
   c.input_checkbox("Enable Climate System", "climate", climate,
     "<p>Enable = time based Climate control</p>");
   c.input_checkbox("Enable GPS off at Parking", "gpsonoff", gpsonoff,
@@ -251,6 +188,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = keep v2 Server connected</p>");
   c.input_checkbox("Enable DDT4all function", "ddt4all", ddt4all,
       "<p>Enable = DDT4all commands activate, you can find a command list at www.smart-emotion.de.</br>WARNING!!! You can damaged your Car, used at your own RISK!</p>");
+  c.input_checkbox("Enable extended statistics", "extstats", extstats,
+      "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",
     atof(rebootnw.c_str()) > 0, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>Default 0 = off. Restart Network automatic when no v2Server connection.</p>");
@@ -390,6 +329,131 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
     c.panel_end();
   }
     
+  c.done();
+}
+
+/**
+ * WebCfgTPMS: TPMS Configuration (URL /xsq/tpms)
+ */
+void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
+  OvmsVehicleSmartEQ* sq = (OvmsVehicleSmartEQ*)MyVehicleFactory.ActiveVehicle();
+  if (!sq) {
+      c.head(400);
+      c.alert("danger", "Error: smartEQ vehicle not available");
+      c.done();
+      return;
+  }
+
+  std::string error, info, TPMS_FL, TPMS_FR, TPMS_RL, TPMS_RR, front_pressure, rear_pressure, pressure_warning, pressure_alert;
+  bool iosfix, enable;
+  
+  if (c.method == "POST") {
+    // Process form submission
+    iosfix      = (c.getvar("iosfix") == "yes");
+    enable      = (c.getvar("enable") == "yes");
+    TPMS_FL     = c.getvar("TPMS_FL");
+    TPMS_FR     = c.getvar("TPMS_FR");
+    TPMS_RL     = c.getvar("TPMS_RL");
+    TPMS_RR     = c.getvar("TPMS_RR");
+    front_pressure = c.getvar("front_pressure");
+    rear_pressure  = c.getvar("rear_pressure");
+    pressure_warning = c.getvar("pressure_warning");
+    pressure_alert   = c.getvar("pressure_alert");
+
+    if (error.empty()) {
+      MyConfig.SetParamValueBool("xsq", "ios_tpms_fix", iosfix);
+      MyConfig.SetParamValueBool("xsq", "tpms.alert.enable", enable);
+      MyConfig.SetParamValue("xsq", "TPMS_FL", TPMS_FL);
+      MyConfig.SetParamValue("xsq", "TPMS_FR", TPMS_FR);
+      MyConfig.SetParamValue("xsq", "TPMS_RL", TPMS_RL);
+      MyConfig.SetParamValue("xsq", "TPMS_RR", TPMS_RR);
+      MyConfig.SetParamValue("xsq", "tpms.front.pressure", front_pressure);
+      MyConfig.SetParamValue("xsq", "tpms.rear.pressure", rear_pressure);
+      MyConfig.SetParamValue("xsq", "tpms.value.warn", pressure_warning);
+      MyConfig.SetParamValue("xsq", "tpms.value.alert", pressure_alert);
+        
+      // Success response
+      info = "<p>TPMS settings updated successfully</p>";
+      c.head(200);
+      c.alert("success", info.c_str());
+      MyWebServer.OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    // Error response
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  } else {
+    // read configuration:
+    iosfix      = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
+    enable      = MyConfig.GetParamValueBool("xsq", "tpms.alert.enable", true);
+    TPMS_FL     = MyConfig.GetParamValue("xsq", "TPMS_FL", "0");
+    TPMS_FR     = MyConfig.GetParamValue("xsq", "TPMS_FR", "1");
+    TPMS_RL     = MyConfig.GetParamValue("xsq", "TPMS_RL", "2");
+    TPMS_RR     = MyConfig.GetParamValue("xsq", "TPMS_RR", "3");
+    front_pressure = MyConfig.GetParamValue("xsq", "tpms.front.pressure", "220"); // kPa
+    rear_pressure  = MyConfig.GetParamValue("xsq", "tpms.rear.pressure", "250"); // kPa
+    pressure_warning = MyConfig.GetParamValue("xsq", "tpms.value.warn", "25"); // kPa
+    pressure_alert   = MyConfig.GetParamValue("xsq", "tpms.value.alert", "45"); // kPa
+  }
+      
+  c.head(200);
+  c.panel_start("primary", "TPMS Configuration");
+  c.form_start(p.uri);
+
+  // TPMS settings
+  c.fieldset_start("TPMS Settings");
+  c.input_checkbox("Enable iOS TPMS fix", "iosfix", iosfix,
+    "<p>Set External Temperatures to TPMS Temperatures to Display Tire Pressures in iOS App Open Vehicle</p>");
+  c.input_checkbox("Enable TPMS Alert", "enable", enable,
+    "<p>enable TPMS Tire Pressures low/high alert</p>");
+  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",
+    atof(front_pressure.c_str()) > 0, atof(front_pressure.c_str()), 220, 170, 350, 5,
+    "<p>set Front Tire Pressure value</p>");
+  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",
+    atof(rear_pressure.c_str()) > 0, atof(rear_pressure.c_str()), 250, 170, 350, 5,
+    "<p>set Rear Tire Pressure value</p>");
+  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",
+    atof(pressure_warning.c_str()) > 0, atof(pressure_warning.c_str()), 25, 10, 60, 5,
+    "<p>set under/over Pressure Warning value</p>");
+  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",
+    atof(pressure_alert.c_str()) > 0, atof(pressure_alert.c_str()), 45, 30, 120, 5,
+    "<p>set under/over Pressure Alert value</p>");
+  c.input_select_start("Front Left Sensor", "TPMS_FL");
+  c.input_select_option("Front_Left",  "0", TPMS_FL == "0");
+  c.input_select_option("Front_Right", "1", TPMS_FL == "1");
+  c.input_select_option("Rear_Left",   "2", TPMS_FL == "2");
+  c.input_select_option("Rear_Right",  "3", TPMS_FL == "3");
+  c.input_select_end();
+
+  c.input_select_start("Front Right Sensor", "TPMS_FR");
+  c.input_select_option("Front_Left",  "0", TPMS_FR == "0");
+  c.input_select_option("Front_Right", "1", TPMS_FR == "1");
+  c.input_select_option("Rear_Left",   "2", TPMS_FR == "2");
+  c.input_select_option("Rear_Right",  "3", TPMS_FR == "3");
+  c.input_select_end();
+
+  c.input_select_start("Rear Left Sensor", "TPMS_RL");
+  c.input_select_option("Front_Left",  "0", TPMS_RL == "0");
+  c.input_select_option("Front_Right", "1", TPMS_RL == "1");
+  c.input_select_option("Rear_Left",   "2", TPMS_RL == "2");
+  c.input_select_option("Rear_Right",  "3", TPMS_RL == "3");
+  c.input_select_end();
+
+  c.input_select_start("Rear Right Sensor", "TPMS_RR");
+  c.input_select_option("Front_Left",  "0", TPMS_RR == "0");
+  c.input_select_option("Front_Right", "1", TPMS_RR == "1");
+  c.input_select_option("Rear_Left",   "2", TPMS_RR == "2");
+  c.input_select_option("Rear_Right",  "3", TPMS_RR == "3");
+  c.input_select_end();
+  c.fieldset_end();
+
+  c.print("<hr>");
+    c.input_button("default", "Save");
+    c.form_end();
+    c.panel_end();
   c.done();
 }
 
