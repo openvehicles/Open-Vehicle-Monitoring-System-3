@@ -1752,6 +1752,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
       res = Success;
       break;
     }
+    case 36:
+    {
+      // AmbientLightPresent_CF false
+      m_hl_canbyte = "2E018900";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 37:
+    {
+      // AmbientLightPresent_CF true
+      m_hl_canbyte = "2E018980";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
     case 40:
     {
       // ClockDisplayed_CF not displayed
@@ -2009,7 +2025,20 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
       res = Fail;
       break;
   }
-
+  // Notify the user about the success/failed of the command
+  if (res == Success) {
+    char buf[50];
+    snprintf(buf, sizeof(buf), "DDT4all command %d executed", number);
+    std::string msg(buf);
+    ESP_LOGI(TAG, "%s", msg.c_str());
+    MyNotify.NotifyString("info", "ddt4all.success", msg.c_str());
+  } else {
+    char buf[50];
+    snprintf(buf, sizeof(buf), "DDT4all command %d failed", number);
+    std::string msg(buf);
+    ESP_LOGI(TAG, "%s", msg.c_str());
+    MyNotify.NotifyString("info", "ddt4all.failed", msg.c_str());
+  }
   return res;
 }
 
