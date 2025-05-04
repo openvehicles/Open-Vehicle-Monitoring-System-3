@@ -1509,6 +1509,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
   ESP_LOGI(TAG, "DDT4all number=%d", number);
   if(!m_ddt4all && !m_enable_write && number > 5) {
     ESP_LOGE(TAG, "DDT4all failed / no write access");
+    MyNotify.NotifyString("info", "ddt4all.failed", "DDT4all failed / no write access");
     return Fail;
   }
 
