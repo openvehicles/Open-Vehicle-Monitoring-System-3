@@ -1619,11 +1619,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
        }
      break;
     case 0x385:
-      // not sure if this order is correct
       if (d[2]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, d[2] / 4.0, PSI);
       if (d[3]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, d[3] / 4.0, PSI);
-      if (d[4]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, d[4] / 4.0, PSI);
-      if (d[5]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, d[5] / 4.0, PSI);
+      if (d[4]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, d[4] / 4.0, PSI);
+      if (d[5]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, d[5] / 4.0, PSI);
       break;
     case 0x421:
       switch ( (d[0] >> 3) & 7 )
