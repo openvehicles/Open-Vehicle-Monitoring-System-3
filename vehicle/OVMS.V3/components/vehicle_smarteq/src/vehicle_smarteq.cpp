@@ -1509,6 +1509,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
   ESP_LOGI(TAG, "DDT4all number=%d", number);
   if(!m_ddt4all && !m_enable_write && number > 5) {
     ESP_LOGE(TAG, "DDT4all failed / no write access");
+    MyNotify.NotifyString("info", "ddt4all.failed", "DDT4all failed / no write access");
     return Fail;
   }
 
@@ -1748,6 +1749,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // long tempo display true
       m_hl_canbyte = "3B5780";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 36:
+    {
+      // AmbientLightPresent_CF false
+      m_hl_canbyte = "2E018900";
+      CommandCan(0x745, 0x765, false);
+      res = Success;
+      break;
+    }
+    case 37:
+    {
+      // AmbientLightPresent_CF true
+      m_hl_canbyte = "2E018980";
       CommandCan(0x745, 0x765, false);
       res = Success;
       break;
@@ -2009,7 +2026,20 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
       res = Fail;
       break;
   }
-
+  // Notify the user about the success/failed of the command
+  if (res == Success) {
+    char buf[50];
+    snprintf(buf, sizeof(buf), "DDT4all command %d executed", number);
+    std::string msg(buf);
+    ESP_LOGI(TAG, "%s", msg.c_str());
+    MyNotify.NotifyString("info", "ddt4all.success", msg.c_str());
+  } else {
+    char buf[50];
+    snprintf(buf, sizeof(buf), "DDT4all command %d failed", number);
+    std::string msg(buf);
+    ESP_LOGI(TAG, "%s", msg.c_str());
+    MyNotify.NotifyString("info", "ddt4all.failed", msg.c_str());
+  }
   return res;
 }
 
