@@ -1757,15 +1757,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // AmbientLightPresent_CF false
       m_hl_canbyte = "2E018900";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x743, 0x763, true);
       res = Success;
       break;
     }
     case 37:
     {
       // AmbientLightPresent_CF true
-      m_hl_canbyte = "2E018980";
-      CommandCan(0x745, 0x765, false);
+      m_hl_canbyte = "2E018901";
+      CommandCan(0x743, 0x763, true);
       res = Success;
       break;
     }
@@ -1983,6 +1983,38 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
       // AUTO_WIPE true
       m_hl_canbyte = "2E033C80";
       CommandCan(0x74d, 0x76d, false);
+      res = Success;
+      break;
+    }
+    case 66:
+    {
+      // DigitalSpeedometerPresent_CF off
+      m_hl_canbyte = "2E013900";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 67:
+    {
+      // DigitalSpeedometerPresent_CF in mph
+      m_hl_canbyte = "2E013901";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 68:
+    {
+      // DigitalSpeedometerPresent_CF in km/h
+      m_hl_canbyte = "2E013902";
+      CommandCan(0x743, 0x763, true);
+      res = Success;
+      break;
+    }
+    case 69:
+    {
+      // DigitalSpeedometerPresent_CF always km/h
+      m_hl_canbyte = "2E013903";
+      CommandCan(0x743, 0x763, true);
       res = Success;
       break;
     }
