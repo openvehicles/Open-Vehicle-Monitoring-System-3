@@ -105,6 +105,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void NotifyTotalCounters();
     void NotifyMaintenance();
     void Notify12Vcharge();
+    void DoorLockState();
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -115,7 +116,7 @@ public:
     vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandActivateValet(const char* pin) override;
     vehicle_command_t CommandDeactivateValet(const char* pin) override;
-    vehicle_command_t CommandCan(uint32_t txid,uint32_t rxid,bool enable=false);
+    vehicle_command_t CommandCan(uint32_t txid,uint32_t rxid,bool reset=false,bool wakeup2=false);
     vehicle_command_t CommandWakeup2();
     virtual vehicle_command_t CommandTripStart(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTripReset(int verbosity, OvmsWriter* writer);
@@ -126,6 +127,7 @@ public:
     virtual vehicle_command_t CommandClimate(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t Command12Vcharge(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTPMSset(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandDDT4all(int number);
 
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -149,6 +151,7 @@ public:
     static void xsq_trip_counters(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_total(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_ddt4all(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
     unsigned int m_candata_timer;
@@ -200,6 +203,7 @@ public:
   protected:
     bool m_enable_write;                    // canwrite
     bool m_enable_LED_state;                // Online LED State
+    bool m_enable_lock_state;               // Lock State
     bool m_ios_tpms_fix;                    // IOS TPMS Display Fix
     bool m_resettrip;                       // Reset Trip Values when Charging/Driving
     bool m_resettotal;                      // Reset kWh/100km Values when Driving
@@ -217,7 +221,7 @@ public:
     bool m_tpms_alert_enable;               // TPMS Alert enabled
     bool m_12v_charge;                      //!< 12V charge on/off
     bool m_12v_charge_state;                //!< 12V charge state
-    bool m_booster_system;                  //!< booster system on/off
+    bool m_climate_system;                  //!< climate system on/off
     bool m_gps_onoff;                       //!< GPS on/off at parking activated
     bool m_gps_off;                         //!< GPS off while parking > 10 minutes
     int m_gps_reactmin;                     //!< GPS reactivate all x minutes after parking
@@ -283,28 +287,30 @@ public:
     OvmsMetricInt           *mt_obd_mt_day_usual;       //!< Maintaince usual days
     OvmsMetricInt           *mt_obd_mt_km_usual;        //!< Maintaince usual km
     OvmsMetricString        *mt_obd_mt_level;           //!< Maintaince level
-    OvmsMetricBool          *mt_booster_on;             //!< booster at time on/off
-    OvmsMetricBool          *mt_booster_weekly;         //!< booster weekly auto on/off at day start/end
-    OvmsMetricString        *mt_booster_time;           //!< booster time
-    OvmsMetricInt           *mt_booster_h;              //!< booster time hour
-    OvmsMetricInt           *mt_booster_m;              //!< booster time minute
-    OvmsMetricInt           *mt_booster_ds;             //!< booster day start
-    OvmsMetricInt           *mt_booster_de;             //!< booster day end
-    OvmsMetricInt           *mt_booster_1to3;           //!< booster one to three (homelink 0-2) times in following time
-    OvmsMetricString        *mt_booster_data;           //!< booster data from app/website
+    OvmsMetricBool          *mt_climate_on;             //!< climate at time on/off
+    OvmsMetricBool          *mt_climate_weekly;         //!< climate weekly auto on/off at day start/end
+    OvmsMetricString        *mt_climate_time;           //!< climate time
+    OvmsMetricInt           *mt_climate_h;              //!< climate time hour
+    OvmsMetricInt           *mt_climate_m;              //!< climate time minute
+    OvmsMetricInt           *mt_climate_ds;             //!< climate day start
+    OvmsMetricInt           *mt_climate_de;             //!< climate day end
+    OvmsMetricInt           *mt_climate_1to3;           //!< climate one to three (homelink 0-2) times in following time
+    OvmsMetricString        *mt_climate_data;           //!< climate data from app/website
     OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
 
   protected:
-    bool m_booster_start;
-    bool m_booster_start_day;
-    bool m_booster_init;                    //!< booster init after boot
+    bool m_climate_start;
+    bool m_climate_start_day;
+    bool m_climate_init;                    //!< climate init after boot
     bool m_v2_restart;
     bool m_v2_check;
     bool m_indicator;                       //!< activate indicator e.g. 7 times or whtever
-    bool m_ddt4all;                           //!< DDT4ALL mode
+    bool m_ddt4all;                         //!< DDT4ALL mode
+    bool m_warning_unlocked;                //!< unlocked warning
+    int m_ddt4all_ticker;
     int m_led_state;
-    int m_booster_ticker;
+    int m_climate_ticker;
     int m_gps_ticker;
     int m_12v_ticker;
     int m_v2_ticker;
