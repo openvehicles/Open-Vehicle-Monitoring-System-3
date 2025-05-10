@@ -102,7 +102,8 @@ typedef enum
   DUKTAPE_evalintresult,        // Execute script text (int result)
   DUKTAPE_callback,             // DuktapeObject callback
   DUKTAPE_command,              // Duktape command
-  DUKTAPE_shutdown              // Shutdown Duktape
+  DUKTAPE_shutdown,             // Shutdown Duktape
+  DUKTAPE_deleteobject          // Delete/uncouple/deregister object in duktape context.
   } duktape_msg_t;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -155,6 +156,15 @@ class DuktapeObject;
 class OvmsScripts;
 class DuktapeConsoleCommand;
 
+class DuktapeCallbackParameter
+  {
+  public:
+    virtual ~DuktapeCallbackParameter() { }
+    /** Push the parameter onto the stack.
+     */
+    virtual int Push(duk_context *ctx) = 0;
+  };
+
 typedef struct
   {
   union
@@ -183,7 +193,7 @@ typedef struct
       {
       DuktapeObject* instance;
       const char* method;
-      void* data;
+      DuktapeCallbackParameter* params;
       } dt_callback;
     struct
       {
@@ -192,11 +202,18 @@ typedef struct
       int argc;
       const char * const *argv;
       } dt_command;
+    struct
+      {
+      DuktapeObject *instance;
+      bool decouple:1;
+      bool deregister:1;
+      } dt_deleteobject;
     } body;
   duktape_msg_t type;
   QueueHandle_t waitcompletion;
   OvmsWriter* writer;
   } duktape_queue_t;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // DuktapeObject: coupled C++ / JS object
@@ -260,9 +277,9 @@ class DuktapeObject
     bool IsRegistered() { return m_registered; }
 
   public:
-    void RequestCallback(const char* method, void* data=NULL);
+    bool RequestCallback(const char* method, DuktapeCallbackParameter* params=nullptr);
     duk_ret_t DuktapeCallback(duk_context *ctx, duktape_queue_t &msg);
-    virtual duk_ret_t CallMethod(duk_context *ctx, const char* method, void* data=NULL);
+    virtual duk_ret_t CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params=nullptr);
 
   public:
     duk_idx_t Push(duk_context *ctx);
@@ -330,9 +347,11 @@ class OvmsDuktape
     void DuktapeEvalCommand(OvmsWriter* writer, const char *command, DuktapeConsoleCommand* dcc, int argc, const char* const* argv);
     void  DuktapeReload();
     void  DuktapeCompact(bool wait=true);
-    void  DuktapeRequestCallback(DuktapeObject* instance, const char* method, void* data);
+    bool  DuktapeRequestCallback(DuktapeObject* instance, const char* method, DuktapeCallbackParameter* params);
     OvmsWriter* GetDuktapeWriter();
     void DukGetCallInfo(duk_context *ctx, std::string *filename, int *linenumber, std::string *function);
+
+    bool DuktapeRequestDelete(DuktapeObject* instance, bool decouple, bool deregister);
 
   protected:
     void NotifyDuktapeModuleUnloadAll(duk_context *ctx);
