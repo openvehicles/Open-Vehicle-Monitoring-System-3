@@ -349,6 +349,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     // if a can message is found with the state of charge port this can removed
     StandardMetrics.ms_v_door_chargeport->SetValue(false); 
     // Reset trip values
+    ResetTripCounters();
     StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
     StandardMetrics.ms_v_bat_energy_used->SetValue(0);
     m_cum_energy_recd_wh = 0.0f;
@@ -1081,6 +1082,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       // verified by comparing derived trip odometer value with two ~20km GPS tracks
       StandardMetrics.ms_v_pos_speed->SetValue((float) car_speed16 / cfg_speed_divisor);
+
+      // update our trip odometer estimate now that we've got a fresh speed reading
+      UpdateTripCounters();
     }
       break;
     case 0x380:
@@ -2349,6 +2353,40 @@ void OvmsVehicleNissanLeaf::HandleRange()
   ESP_LOGV(TAG, "Range: ideal=%0.0f km, est=%0.0f km, full=%0.0f km", range_ideal, range_est, range_full);
   }
 
+/**
+ * Reset trip counters when vehicle is turned on, including energy usage values
+ */
+void OvmsVehicleNissanLeaf::ResetTripCounters()
+  {
+  StdMetrics.ms_v_pos_trip->SetValue(0);
+  m_trip_odo            = 0;
+  m_trip_last_upd_time  = esp_log_timestamp();
+  m_trip_last_upd_speed = StdMetrics.ms_v_pos_speed->AsFloat();
+  }
+
+/**
+ * Increment trip odometer and v.p.trip based on distance derived from speed
+ *
+ * Odometer granularity seems to be 1km, that's not really precise enough
+ */
+void OvmsVehicleNissanLeaf::UpdateTripCounters()
+  {
+  uint32_t now = esp_log_timestamp();
+  float speed = StdMetrics.ms_v_pos_speed->AsFloat();
+
+  if (m_trip_last_upd_time && now > m_trip_last_upd_time) {
+    float speed_avg = ABS(speed + m_trip_last_upd_speed) / 2;
+    uint32_t time_ms = now - m_trip_last_upd_time;
+
+    // 1 m/s = 3.6 km/h
+    double dist_meters = speed_avg / 3.6 * time_ms / 1000;
+    m_trip_odo += dist_meters / 1000;
+    StdMetrics.ms_v_pos_trip->SetValue(TRUNCPREC(m_trip_odo, 3));
+  }
+
+  m_trip_last_upd_time = now;
+  m_trip_last_upd_speed = speed;
+  }
 
 ////////////////////////////////////////////////////////////////////////
 // Wake up the car & send Climate Control or Remote Charge message to VCU,
