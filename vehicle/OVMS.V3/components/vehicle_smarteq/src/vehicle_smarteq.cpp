@@ -1325,7 +1325,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   return res;
 }
 
-OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uint32_t rxid,bool reset,bool wakeup2) {
+OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uint32_t rxid,bool reset,bool wakeup) {
   if(!m_enable_write) {
     ESP_LOGE(TAG, "CommandCan failed / no write access");
     return Fail;
@@ -1336,9 +1336,9 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uin
   std::string response;
   std::string reqstr = m_hl_canbyte;
 
-  if (wakeup2) 
-  CommandWakeup2();
-  else CommandWakeup();
+  if (wakeup) 
+  CommandWakeup();
+  else CommandWakeup2();
 
   vTaskDelay(2000 / portTICK_PERIOD_MS);
   uint8_t protocol = ISOTP_STD;
