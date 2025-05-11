@@ -81,7 +81,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info, full_km, rebootnw, net_type;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, ddt4all, extstats;
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, extstats, unlocked; //, ddt4all
 
   if (c.method == "POST") {
     // process form submission:
@@ -98,7 +98,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     charge12v = (c.getvar("charge12v") == "yes");
     v2server = (c.getvar("v2server") == "yes");
     net_type = c.getvar("net_type");
-    ddt4all = (c.getvar("ddt4all") == "yes");
+    //ddt4all = (c.getvar("ddt4all") == "yes");
+    unlocked = (c.getvar("unlock") == "yes");
     extstats = (c.getvar("extstats") == "yes");
     
     if (error.empty()) {
@@ -111,12 +112,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "resettotal", resettotal);
       MyConfig.SetParamValueBool("xsq", "bcvalue", bcvalue);
       MyConfig.SetParamValue("xsq", "full.km", full_km);
-      MyConfig.SetParamValueBool("xsq", "booster.system", climate);
+      MyConfig.SetParamValueBool("xsq", "climate.system", climate);
       MyConfig.SetParamValueBool("xsq", "gps.onoff", gpsonoff);
       MyConfig.SetParamValueBool("xsq", "12v.charge", charge12v);
       MyConfig.SetParamValueBool("xsq", "v2.check", v2server);
       MyConfig.SetParamValue("xsq", "modem.net.type", net_type);
-      MyConfig.SetParamValueBool("xsq", "ddt4all", ddt4all);
+      MyConfig.SetParamValueBool("xsq", "unlock.warning", unlocked);
+      //MyConfig.SetParamValueBool("xsq", "ddt4all", ddt4all);
       MyConfig.SetParamValueBool("xsq", "extended.stats", extstats);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
@@ -141,12 +143,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     resettotal  = MyConfig.GetParamValueBool("xsq", "resettotal", false);
     bcvalue     = MyConfig.GetParamValueBool("xsq", "bcvalue", false);
     full_km     = MyConfig.GetParamValue("xsq", "full.km", "135");
-    climate     = MyConfig.GetParamValueBool("xsq", "booster.system", false);
+    climate     = MyConfig.GetParamValueBool("xsq", "climate.system", false);
     gpsonoff    = MyConfig.GetParamValueBool("xsq", "gps.onoff", false);
     charge12v   = MyConfig.GetParamValueBool("xsq", "12v.charge", false);
     v2server    = MyConfig.GetParamValueBool("xsq", "v2.check", false);
     net_type    = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
-    ddt4all     = MyConfig.GetParamValueBool("xsq", "ddt4all", false);
+    unlocked      = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
+    //ddt4all     = MyConfig.GetParamValueBool("xsq", "ddt4all", false);
     extstats    = MyConfig.GetParamValueBool("xsq", "extended.stats", false);
     c.head(200);
   }
@@ -186,8 +189,12 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = charge the 12V if low 12V alert is raised</p>");
   c.input_checkbox("Enable V2 Server", "v2server", v2server,
     "<p>Enable = keep v2 Server connected</p>");
+  c.input_checkbox("Enable Door unlocked warning", "unlocked", unlocked,
+    "<p>Enable = send a warning when Car 10 minutes parked and unlocked</p>");
+/*
   c.input_checkbox("Enable DDT4all function", "ddt4all", ddt4all,
-      "<p>Enable = DDT4all commands activate, you can find a command list at www.smart-emotion.de.</br>WARNING!!! You can damaged your Car, used at your own RISK!</p>");
+      "<p>Enable = DDT4all commands activate, you can find a command list at www.smart-emotion.de.</br>Use at Shell: xsq ddt4all </br>WARNING!!! You can damaged your Car, used at your own RISK!</p>");
+*/
   c.input_checkbox("Enable extended statistics", "extstats", extstats,
       "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",
@@ -225,46 +232,46 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
   
   if (c.method == "POST") {
       // Process form submission
-      bool booster_on = (c.getvar("booster_on") == "yes");
-      bool booster_weekly = (c.getvar("booster_weekly") == "yes");
-      std::string booster_time = c.getvar("booster_time");
-      std::string booster_ds = c.getvar("booster_ds");
-      std::string booster_de = c.getvar("booster_de");
-      std::string booster_1to3 = c.getvar("booster_1to3");
+      bool climate_on = (c.getvar("climate_on") == "yes");
+      bool climate_weekly = (c.getvar("climate_weekly") == "yes");
+      std::string climate_time = c.getvar("climate_time");
+      std::string climate_ds = c.getvar("climate_ds");
+      std::string climate_de = c.getvar("climate_de");
+      std::string climate_1to3 = c.getvar("climate_1to3");
 
       // Input validation
-      if (booster_time.empty()) {
+      if (climate_time.empty()) {
           error += "<li>Time must be specified</li>";
       }
 
       // Convert values
-      int booster_on_int = booster_on ? 1 : 2;
-      int booster_weekly_int = booster_weekly ? 1 : 2;
-      if(booster_on_int == 2){
-        booster_weekly_int = 2;
+      int climate_on_int = climate_on ? 1 : 2;
+      int climate_weekly_int = climate_weekly ? 1 : 2;
+      if(climate_on_int == 2){
+        climate_weekly_int = 2;
       }
-      int booster_time_int = atoi(booster_time.c_str());
-      int booster_ds_int = atoi(booster_ds.c_str());
-      int booster_de_int = atoi(booster_de.c_str());
-      int booster_1to3_int = 0;
+      int climate_time_int = atoi(climate_time.c_str());
+      int climate_ds_int = atoi(climate_ds.c_str());
+      int climate_de_int = atoi(climate_de.c_str());
+      int climate_1to3_int = 0;
 
-      // Convert booster_1to3
-      if (atoi(booster_1to3.c_str()) == 5) booster_1to3_int = 0;
-      else if (atoi(booster_1to3.c_str()) == 10) booster_1to3_int = 1;
-      else if (atoi(booster_1to3.c_str()) == 15) booster_1to3_int = 2;
+      // Convert climate_1to3
+      if (atoi(climate_1to3.c_str()) == 5) climate_1to3_int = 0;
+      else if (atoi(climate_1to3.c_str()) == 10) climate_1to3_int = 1;
+      else if (atoi(climate_1to3.c_str()) == 15) climate_1to3_int = 2;
       else {
-          error += "<li>Invalid booster duration</li>";
+          error += "<li>Invalid climate duration</li>";
       }
 
       if (error.empty()) {
           // Format data string
           char buf[32];
           snprintf(buf, sizeof(buf), "1,%d,%d,%04d,%d,%d,%d",
-            booster_on_int, booster_weekly_int, booster_time_int,
-            booster_ds_int, booster_de_int, booster_1to3_int);
+            climate_on_int, climate_weekly_int, climate_time_int,
+            climate_ds_int, climate_de_int, climate_1to3_int);
 
           // Save configuration
-          sq->mt_booster_data->SetValue(std::string(buf));
+          sq->mt_climate_data->SetValue(std::string(buf));
           
           // Success response
           info = "<p>Climate control settings updated successfully</p>";
@@ -281,45 +288,45 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
       c.alert("danger", error.c_str());
   } else {
   // read configuration using vehicle instance:
-  std::string booster_time = sq->mt_booster_time->AsString();
-  std::string booster_ds = sq->mt_booster_ds->AsString();
-  std::string booster_de = sq->mt_booster_de->AsString();
-  std::string booster_1to3 = sq->mt_booster_1to3->AsString();
-  bool booster_on = sq->mt_booster_on->AsBool();
-  bool booster_weekly = sq->mt_booster_weekly->AsBool();
+  std::string climate_time = sq->mt_climate_time->AsString();
+  std::string climate_ds = sq->mt_climate_ds->AsString();
+  std::string climate_de = sq->mt_climate_de->AsString();
+  std::string climate_1to3 = sq->mt_climate_1to3->AsString();
+  bool climate_on = sq->mt_climate_on->AsBool();
+  bool climate_weekly = sq->mt_climate_weekly->AsBool();
       
   c.head(200);
   c.panel_start("primary", "Climate Control Settings");
   c.form_start(p.uri);
 
   c.fieldset_start("Climate/Heater start timer");
-  c.input_checkbox("Enable Climate/Heater at time", "booster_on", booster_on,
+  c.input_checkbox("Enable Climate/Heater at time", "climate_on", climate_on,
     "<p>Enable = start Climate/Heater at time</p>");
-  c.input_slider("Enable two time activation Climate/Heater", "booster_1to3", 3, "min",
-    atof(booster_1to3.c_str()) > -1, atof(booster_1to3.c_str()), 5, 5, 15, 5,
+  c.input_slider("Enable two time activation Climate/Heater", "climate_1to3", 3, "min",
+    atof(climate_1to3.c_str()) > -1, atof(climate_1to3.c_str()), 5, 5, 15, 5,
     "<p>Enable = this option start Climate/Heater for 5-15 minutes</p>");
-  c.input_text("time", "booster_time", booster_time.c_str(), "515","<p>Time: 5:15 = 515 or 15:30 = 1530</p>");
+  c.input_text("time", "climate_time", climate_time.c_str(), "515","<p>Time: 5:15 = 515 or 15:30 = 1530</p>");
 
-  c.input_checkbox("Enable auto timer activation Climate/Heater", "booster_weekly", booster_weekly,
+  c.input_checkbox("Enable auto timer activation Climate/Heater", "climate_weekly", climate_weekly,
     "<p>Enable = this option de/activate Climate/Heater at on/off day</p>");
-  c.input_select_start("Select Auto on Day", "booster_ds");
-  c.input_select_option("Sunday", "0", booster_ds == "0");
-  c.input_select_option("Monday", "1", booster_ds == "1");
-  c.input_select_option("Tuesday", "2", booster_ds == "2");
-  c.input_select_option("Wednesday", "3", booster_ds == "3");
-  c.input_select_option("Thursday", "4", booster_ds == "4");
-  c.input_select_option("Friday", "5", booster_ds == "5");
-  c.input_select_option("Saturday", "6", booster_ds == "6");
+  c.input_select_start("Select Auto on Day", "climate_ds");
+  c.input_select_option("Sunday", "0", climate_ds == "0");
+  c.input_select_option("Monday", "1", climate_ds == "1");
+  c.input_select_option("Tuesday", "2", climate_ds == "2");
+  c.input_select_option("Wednesday", "3", climate_ds == "3");
+  c.input_select_option("Thursday", "4", climate_ds == "4");
+  c.input_select_option("Friday", "5", climate_ds == "5");
+  c.input_select_option("Saturday", "6", climate_ds == "6");
   c.input_select_end();
 
-  c.input_select_start("Select Auto off Day", "booster_de");
-  c.input_select_option("Sunday", "0", booster_de == "0");
-  c.input_select_option("Monday", "1", booster_de == "1");
-  c.input_select_option("Tuesday", "2", booster_de == "2");
-  c.input_select_option("Wednesday", "3", booster_de == "3");
-  c.input_select_option("Thursday", "4", booster_de == "4");
-  c.input_select_option("Friday", "5", booster_de == "5");
-  c.input_select_option("Saturday", "6", booster_de == "6");
+  c.input_select_start("Select Auto off Day", "climate_de");
+  c.input_select_option("Sunday", "0", climate_de == "0");
+  c.input_select_option("Monday", "1", climate_de == "1");
+  c.input_select_option("Tuesday", "2", climate_de == "2");
+  c.input_select_option("Wednesday", "3", climate_de == "3");
+  c.input_select_option("Thursday", "4", climate_de == "4");
+  c.input_select_option("Friday", "5", climate_de == "5");
+  c.input_select_option("Saturday", "6", climate_de == "6");
   c.input_select_end();
   c.fieldset_end();
 

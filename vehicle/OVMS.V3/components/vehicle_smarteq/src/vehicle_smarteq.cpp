@@ -48,7 +48,9 @@ static const char *TAG = "v-smarteq";
 #include "ovms_peripherals.h"
 #include "vehicle_smarteq.h"
 #include "ovms_time.h"
-#include "ovms_plugins.h"
+#ifdef CONFIG_OVMS_COMP_PLUGINS
+  #include "ovms_plugins.h"
+#endif
 #include "buffered_shell.h"
 
 OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
@@ -118,16 +120,19 @@ static const OvmsPoller::poll_pid_t fast_charger_polls[] =
 OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ESP_LOGI(TAG, "Start Smart EQ vehicle module");
 
-  m_booster_init = true;
-  m_booster_start = false;
-  m_booster_start_day = false;
-  m_booster_ticker = 0;
+  m_climate_init = true;
+  m_climate_start = false;
+  m_climate_start_day = false;
+  m_climate_ticker = 0;
   m_gps_off = false;
   m_gps_ticker = 0;
   m_12v_ticker = 0;
   m_12v_charge_state = false;
   m_v2_ticker = 0;
   m_v2_restart = false;
+  m_ddt4all = false;
+  m_ddt4all_ticker = 0;
+  m_warning_unlocked = false;
 
   m_charge_start = false;
   m_charge_finished = true;
@@ -167,15 +172,15 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obd_mt_km_usual            = MyMetrics.InitInt("xsq.obd.mt.km.usual", SM_STALE_MID, 0, Kilometers);
   mt_obd_mt_level               = MyMetrics.InitString("xsq.obd.mt.level", SM_STALE_MID, "unknown", Other);
 
-  mt_booster_on                 = MyMetrics.InitBool("xsq.booster.on", SM_STALE_MIN, false);
-  mt_booster_weekly             = MyMetrics.InitBool("xsq.booster.weekly", SM_STALE_MIN, false);
-  mt_booster_time               = MyMetrics.InitString("xsq.booster.time", SM_STALE_MIN, "0515", Other);
-  mt_booster_h                  = MyMetrics.InitInt("xsq.booster.h", SM_STALE_MIN, 5, Other);
-  mt_booster_m                  = MyMetrics.InitInt("xsq.booster.m", SM_STALE_MIN, 15, Other);
-  mt_booster_ds                 = MyMetrics.InitInt("xsq.booster.ds", SM_STALE_MIN, 1, Other);
-  mt_booster_de                 = MyMetrics.InitInt("xsq.booster.de", SM_STALE_MIN, 6, Other);
-  mt_booster_1to3               = MyMetrics.InitInt("xsq.booster.1to3", SM_STALE_MIN, 0, Other);
-  mt_booster_data               = MyMetrics.InitString("xsq.booster.data", SM_STALE_HIGH,"0,0,0,0,-1,-1,-1", Other);
+  mt_climate_on                 = MyMetrics.InitBool("xsq.climate.on", SM_STALE_MIN, false);
+  mt_climate_weekly             = MyMetrics.InitBool("xsq.climate.weekly", SM_STALE_MIN, false);
+  mt_climate_time               = MyMetrics.InitString("xsq.climate.time", SM_STALE_MIN, "0515", Other);
+  mt_climate_h                  = MyMetrics.InitInt("xsq.climate.h", SM_STALE_MIN, 5, Other);
+  mt_climate_m                  = MyMetrics.InitInt("xsq.climate.m", SM_STALE_MIN, 15, Other);
+  mt_climate_ds                 = MyMetrics.InitInt("xsq.climate.ds", SM_STALE_MIN, 1, Other);
+  mt_climate_de                 = MyMetrics.InitInt("xsq.climate.de", SM_STALE_MIN, 6, Other);
+  mt_climate_1to3               = MyMetrics.InitInt("xsq.climate.1to3", SM_STALE_MIN, 0, Other);
+  mt_climate_data               = MyMetrics.InitString("xsq.climate.data", SM_STALE_HIGH,"0,0,0,0,-1,-1,-1", Other);
 
   mt_pos_odometer_start         = MyMetrics.InitFloat("xsq.odometer.start", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_start_total   = MyMetrics.InitFloat("xsq.odometer.start.total", SM_STALE_MID, 0, Kilometers);
@@ -223,7 +228,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("total", "Show vehicle trip total", xsq_trip_total);
   cmd_xsq->RegisterCommand("mtdata", "Show Maintenance data", xsq_maintenance);
   cmd_xsq->RegisterCommand("climate", "Show Climate timer data", xsq_climate);
-  cmd_xsq->RegisterCommand("tpmsset", "set TPMS dummy value ", xsq_tpms_set);
+  cmd_xsq->RegisterCommand("tpmsset", "set TPMS dummy value", xsq_tpms_set);
+  cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
 
   MyConfig.RegisterParam("xsq", "smartEQ", true, true);
 
@@ -234,7 +240,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   m_network_type_ls = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
   m_indicator       = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
-  m_ddt4all         = MyConfig.GetParamValueBool("xsq", "ddt4all", false);                //!< DDT4ALL mode
+  //m_ddt4all         = MyConfig.GetParamValueBool("xsq", "ddt4all", false);                //!< DDT4ALL mode
   
   if (MyConfig.GetParamValue("password", "pin","0") == "0") {
     MyConfig.SetParamValueInt("password", "pin", 1234);           // set default pin
@@ -247,9 +253,14 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   if (MyConfig.GetParamValue("xsq", "v2.check","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "v2.check", false);
   }
-
+/*
   if (MyConfig.GetParamValue("xsq", "ddt4all","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "ddt4all", false);
+  }
+*/
+  if (MyConfig.GetParamValue("xsq", "ddt4all","0") != "0") {
+    // remove old variables
+    ExecuteCommand("config rm xsq ddt4all");
   }
 
   if (MyConfig.GetParamValue("xsq", "extended.stats","0") == "0") {
@@ -267,9 +278,17 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     MyConfig.SetParamValueBool("xsq", "tpms.alert.enable", true);
   }
 
-  if(MyConfig.GetParamValue("xsq", "booster.system","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "booster.system", true);
-    StdMetrics.ms_v_gen_current->SetValue(3);                  // activate gen metrics to app transfer and in-app plugin <> fw switch                                   
+  if(MyConfig.GetParamValue("xsq", "booster.system","0") != "0") {
+    // remove old variables
+    ExecuteCommand("config rm xsq booster.system");                                  
+  }
+
+  if(MyConfig.GetParamValue("xsq", "unlock.warning","0") == "0") {
+    MyConfig.SetParamValueBool("xsq", "unlock.warning", true);                                 
+  }
+
+  if (MyConfig.GetParamValue("xsq", "extended.stats","0") == "0") {
+    MyConfig.SetParamValueBool("xsq", "extended.stats", false);;
   }
   
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
@@ -349,6 +368,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   m_enable_write      = MyConfig.GetParamValueBool("xsq", "canwrite", false);
   m_enable_LED_state  = MyConfig.GetParamValueBool("xsq", "led", false);
+  m_enable_lock_state = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
   m_ios_tpms_fix      = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
   m_reboot_time       = MyConfig.GetParamValueInt("xsq", "rebootnw", 30);
   m_resettrip         = MyConfig.GetParamValueBool("xsq", "resettrip", false);
@@ -369,10 +389,10 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_pressure_alert    = MyConfig.GetParamValueFloat("xsq", "tpms.value.alert", 45); // kPa
   m_tpms_alert_enable = MyConfig.GetParamValueBool("xsq", "tpms.alert.enable", true);
   
-  m_ddt4all           = MyConfig.GetParamValueInt("xsq", "ddt4all", false);
+  //m_ddt4all           = MyConfig.GetParamValueInt("xsq", "ddt4all", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
-  m_booster_system    = MyConfig.GetParamValueBool("xsq", "booster.system", true);
+  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", true);
   m_gps_onoff         = MyConfig.GetParamValueBool("xsq", "gps.onoff", true);
   m_gps_reactmin      = MyConfig.GetParamValueInt("xsq", "gps.reactmin", 50);
   m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
@@ -690,74 +710,74 @@ void OvmsVehicleSmartEQ::TimeCheckTask() {
   time(&now);
   localtime_r(&now, &timeinfo);
 
-  // Check if the current time is the booster time
-  if (timeinfo.tm_hour == mt_booster_h->AsInt() && timeinfo.tm_min == mt_booster_m->AsInt() && mt_booster_on->AsBool() && !StdMetrics.ms_v_env_hvac->AsBool()) {
-    CommandHomelink(mt_booster_1to3->AsInt());
+  // Check if the current time is the climate time
+  if (timeinfo.tm_hour == mt_climate_h->AsInt() && timeinfo.tm_min == mt_climate_m->AsInt() && mt_climate_on->AsBool() && !StdMetrics.ms_v_env_hvac->AsBool()) {
+    CommandHomelink(mt_climate_1to3->AsInt());
   }
 
-  // Check if the current day is within the booster days range
+  // Check if the current day is within the climate days range
   int current_day = timeinfo.tm_wday;
   
-  if (current_day == mt_booster_ds->AsInt() && mt_booster_weekly->AsBool() && !m_booster_start_day) {
-    m_booster_start_day = true;
-    mt_booster_on->SetValue(true);
+  if (current_day == mt_climate_ds->AsInt() && mt_climate_weekly->AsBool() && !m_climate_start_day) {
+    m_climate_start_day = true;
+    mt_climate_on->SetValue(true);
   }
-  if (current_day == mt_booster_de->AsInt() && mt_booster_weekly->AsBool() && m_booster_start_day) {
-    m_booster_start_day = false;
-    mt_booster_on->SetValue(false);
+  if (current_day == mt_climate_de->AsInt() && mt_climate_weekly->AsBool() && m_climate_start_day) {
+    m_climate_start_day = false;
+    mt_climate_on->SetValue(false);
   }
-  if ((!mt_booster_weekly->AsBool() || !mt_booster_on->AsBool()) && m_booster_start_day) {
-    m_booster_start_day = false;
+  if ((!mt_climate_weekly->AsBool() || !mt_climate_on->AsBool()) && m_climate_start_day) {
+    m_climate_start_day = false;
   }
 }
 
 void OvmsVehicleSmartEQ::TimeBasedClimateData() {
-  std::string _oldtime = mt_booster_time->AsString();
-  std::string _newdata = mt_booster_data->AsString();
+  std::string _oldtime = mt_climate_time->AsString();
+  std::string _newdata = mt_climate_data->AsString();
   std::vector<int> _data;
   std::stringstream _ss(_newdata);
-  std::string _item, _booster_on, _booster_weekly, _booster_time;
-  int _booster_ds, _booster_de, _booster_h, _booster_m;
+  std::string _item, _climate_on, _climate_weekly, _climate_time;
+  int _climate_ds, _climate_de, _climate_h, _climate_m;
 
   while (std::getline(_ss, _item, ',')) {
     _data.push_back(atoi(_item.c_str()));
   }
 
-  if(_data[0]>0 || m_booster_init) {
-    m_booster_init = false;
-    mt_booster_data->SetValue("0,0,0,0,-1,-1,-1");              // reset the data
-    _booster_on = _data[1] == 1 ? "yes" : "no";
-    _booster_weekly = _data[2] == 1 ? "yes" : "no";
-    if(_data[1]>0) { mt_booster_on->SetValue(_data[1] == 1);}
-    if(_data[2]>0) { mt_booster_weekly->SetValue(_data[2] == 1);}
-    if(_data[4]>-1) { _booster_ds = _data[4] > 6 ? 0 : _data[4]; mt_booster_ds->SetValue(_booster_ds);}
-    if(_data[5]>-1) { _booster_de = _data[5] <= 5 ? _data[5]+1 : 0; mt_booster_de->SetValue(_booster_de);}
-    if(_data[6]>-1) { mt_booster_1to3->SetValue(_data[6]);}
+  if(_data[0]>0 || m_climate_init) {
+    m_climate_init = false;
+    mt_climate_data->SetValue("0,0,0,0,-1,-1,-1");              // reset the data
+    _climate_on = _data[1] == 1 ? "yes" : "no";
+    _climate_weekly = _data[2] == 1 ? "yes" : "no";
+    if(_data[1]>0) { mt_climate_on->SetValue(_data[1] == 1);}
+    if(_data[2]>0) { mt_climate_weekly->SetValue(_data[2] == 1);}
+    if(_data[4]>-1) { _climate_ds = _data[4] > 6 ? 0 : _data[4]; mt_climate_ds->SetValue(_climate_ds);}
+    if(_data[5]>-1) { _climate_de = _data[5] <= 5 ? _data[5]+1 : 0; mt_climate_de->SetValue(_climate_de);}
+    if(_data[6]>-1) { mt_climate_1to3->SetValue(_data[6]);}
 
     if(_data[3]>0) { 
-      _booster_h = (_data[3] / 100) % 24;                      // Extract hours and ensure 24h format
-      _booster_m = _data[3] % 100;                             // Extract minutes
-      if(mt_booster_m->AsInt() >= 60) {                        // Handle invalid minutes
-          _booster_h = (_booster_h + _booster_m / 60) % 24;
-          _booster_m = mt_booster_m->AsInt() % 60;
+      _climate_h = (_data[3] / 100) % 24;                      // Extract hours and ensure 24h format
+      _climate_m = _data[3] % 100;                             // Extract minutes
+      if(mt_climate_m->AsInt() >= 60) {                        // Handle invalid minutes
+          _climate_h = (_climate_h + _climate_m / 60) % 24;
+          _climate_m = mt_climate_m->AsInt() % 60;
       }
       
       if (_data[3] >= 0 && _data[3] <= 2359) {
         std::ostringstream oss;
         oss << std::setfill('0') << std::setw(4) << _data[3];
-        mt_booster_time->SetValue(oss.str());
+        mt_climate_time->SetValue(oss.str());
       } else {
           ESP_LOGE(TAG, "Invalid time value: %d", _data[3]);
       }
-      mt_booster_h->SetValue(_booster_h);
-      mt_booster_m->SetValue(_booster_m);
+      mt_climate_h->SetValue(_climate_h);
+      mt_climate_m->SetValue(_climate_m);
     } else {
-      mt_booster_time->SetValue(_oldtime);
+      mt_climate_time->SetValue(_oldtime);
     }     
     
     // booster;no;no;0515;1;6;0
     char buf[50];
-    sprintf(buf, "booster,%s,%s,%s,%d,%d,%d", _booster_on.c_str(), _booster_weekly.c_str(), mt_booster_time->AsString().c_str(), mt_booster_ds->AsInt(), mt_booster_de->AsInt(), mt_booster_1to3->AsInt());
+    sprintf(buf, "booster,%s,%s,%s,%d,%d,%d", _climate_on.c_str(), _climate_weekly.c_str(), mt_climate_time->AsString().c_str(), mt_climate_ds->AsInt(), mt_climate_de->AsInt(), mt_climate_1to3->AsInt());
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
     StdMetrics.ms_v_gen_current->SetValue(3);
     NotifyClimateTimer();
@@ -790,7 +810,7 @@ void OvmsVehicleSmartEQ::Check12vState() {
           ESP_LOGI(TAG, "Initiating climate control due to 12V alert");
           m_12v_charge_state = true;
           CommandClimateControl(true);
-          m_booster_ticker = 3;
+          m_climate_ticker = 3;
       }
   } else if (m_12v_ticker > 0) {
       ESP_LOGI(TAG, "12V alert cleared, resetting ticker");
@@ -868,6 +888,20 @@ void OvmsVehicleSmartEQ::CheckV2State() {
       ESP_LOGI(TAG, "V2 server connection restored");
       m_v2_ticker = 0;
       m_v2_restart = false;
+  }
+}
+
+void OvmsVehicleSmartEQ::DoorLockState() {
+  static const int PARK_TIMEOUT_SECS = 600;  // 10 minutes
+  bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt() > PARK_TIMEOUT_SECS &&
+                          !StdMetrics.ms_v_env_on->AsBool() &&
+                          !StdMetrics.ms_v_env_locked->AsBool() &&
+                          !m_warning_unlocked);
+  
+  if (warning_unlocked) {
+      m_warning_unlocked = true;
+      ESP_LOGI(TAG, "Warning: Vehicle is unlocked and parked for more than 10 minutes");
+      MyNotify.NotifyString("warning", "vehicle.unlocked", "The vehicle is unlocked and parked for more than 10 minutes.");
   }
 }
 
@@ -1148,6 +1182,8 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
       ResetTotalCounters();
     }
 
+    m_warning_unlocked = false;
+
     #ifdef CONFIG_OVMS_COMP_CELLULAR
       if (m_gps_off) {
         m_gps_off = false;
@@ -1155,7 +1191,7 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
         MyPeripherals->m_cellular_modem->StartNMEA();
       }
       m_12v_ticker = 0;
-      m_booster_ticker = 0;
+      m_climate_ticker = 0;
     #endif
   }
   else if (!isOn && StdMetrics.ms_v_env_on->AsBool()) {
@@ -1179,21 +1215,20 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
     }
   }
 
-  // Booster start 2-3 times when Homelink 2 or 3
-  if (m_booster_ticker >= 1 && !StdMetrics.ms_v_env_hvac->AsBool() && !m_booster_start) {
+  // climate start 2-3 times when Homelink 2 or 3
+  if (m_climate_ticker >= 1 && !StdMetrics.ms_v_env_hvac->AsBool() && !m_climate_start) {
     CommandClimateControl(true);
   }
-  if (m_booster_start && StdMetrics.ms_v_env_hvac->AsBool()) {
-    m_booster_start = false;
+  if (m_climate_start && StdMetrics.ms_v_env_hvac->AsBool()) {
+    m_climate_start = false;
     if (m_12v_charge_state) {
       Notify12Vcharge();
     } else {
       NotifyClimate();
     }
-    //MyNotify.NotifyString("info", "hvac.enabled", "Booster on");
-    if (m_booster_ticker >= 1) { 
-      --m_booster_ticker;
-      ESP_LOGI(TAG,"Climate ticker: %d", m_booster_ticker);
+    if (m_climate_ticker >= 1) { 
+      --m_climate_ticker;
+      ESP_LOGI(TAG,"Climate ticker: %d", m_climate_ticker);
     }
   }
 
@@ -1204,15 +1239,28 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   HandleChargeport();
 
   if (m_enable_LED_state) OnlineState();
+  if (m_enable_lock_state) DoorLockState();
 
   if (ticker % 60 == 0) { // Every 60 seconds
-    if(mt_booster_on->AsBool()) TimeCheckTask();
+    if(mt_climate_on->AsBool()) TimeCheckTask();
     if(m_12v_charge) Check12vState();
     if(m_gps_onoff) GPSOnOff();
     if(m_v2_check) CheckV2State();
+
+    // DDT4ALL session timeout on 5 minutes
+    if (m_ddt4all) {
+      m_ddt4all_ticker++;
+      if (m_ddt4all_ticker >= 5) {
+        m_ddt4all = false;
+        m_ddt4all_ticker = 0;
+        ESP_LOGI(TAG, "DDT4ALL session timeout reached");
+        MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
+      }
+    }
   }
+
   if (ticker % 10 == 0) { // Every 10 seconds
-    if(m_booster_system) TimeBasedClimateData();
+    if(m_climate_system) TimeBasedClimateData();
     if(m_network_type != m_network_type_ls) ModemNetworkType();
   }
 }
@@ -1261,7 +1309,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
         obd->WriteStandard(0x634, 4, data);
         vTaskDelay(100 / portTICK_PERIOD_MS);
       }
-      m_booster_start = true;      
+      m_climate_start = true;      
       res = Success;
     } else {
       res = Fail;
@@ -1277,7 +1325,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   return res;
 }
 
-OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uint32_t rxid,bool enable) {
+OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uint32_t rxid,bool reset,bool wakeup) {
   if(!m_enable_write) {
     ESP_LOGE(TAG, "CommandCan failed / no write access");
     return Fail;
@@ -1288,7 +1336,10 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uin
   std::string response;
   std::string reqstr = m_hl_canbyte;
 
-  CommandWakeup2();
+  if (wakeup) 
+  CommandWakeup();
+  else CommandWakeup2();
+
   vTaskDelay(2000 / portTICK_PERIOD_MS);
   uint8_t protocol = ISOTP_STD;
   int timeout_ms = 500;
@@ -1299,7 +1350,7 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uin
   request = hexdecode(reqstr);
   PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
 
-  if (enable) {
+  if (reset) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     request = hexdecode("1103");  // key on/off
     PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
@@ -1327,13 +1378,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
     case 1:
     {
       res = CommandClimateControl(true);
-      m_booster_ticker = 2;
+      m_climate_ticker = 2;
       break;
     }
     case 2:
     {
       res = CommandClimateControl(true);
-      m_booster_ticker = 3;
+      m_climate_ticker = 3;
       break;
     }
     default:
@@ -1503,13 +1554,36 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandActivateValet(const ch
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const char* pin) {
+  return NotImplemented;
+}
+
+void OvmsVehicleSmartEQ::xsq_ddt4all(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+
+  if (argc != 1) {
+    writer->puts("Error: xsq ddt4all requires one numerical argument");
+    return;
+  }
   
+  smarteq->CommandDDT4all(atoi(argv[0]));
+}
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number) {
   OvmsVehicle::vehicle_command_t res = Fail;
-  int number = atoi(pin);
   ESP_LOGI(TAG, "DDT4all number=%d", number);
-  if(!m_ddt4all && !m_enable_write && number > 5) {
-    ESP_LOGE(TAG, "DDT4all failed / no write access");
-    MyNotify.NotifyString("info", "ddt4all.failed", "DDT4all failed / no write access");
+
+  if(number == 999) {
+    ESP_LOGI(TAG, "DDT4ALL session activated for 5 minutes");
+    MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session activated for 5 minutes");
+    m_ddt4all = true;
+    m_ddt4all_ticker = 0;
+    return Success;
+  }
+
+  if((!m_ddt4all || !m_enable_write) && number > 5) {
+    ESP_LOGE(TAG, "DDT4all failed / no Canbus write access or DDT4all not enabled");
+    MyNotify.NotifyString("info", "ddt4all.failed", "DDT4all failed / no Canbus write access or DDT4all not enabled");
     return Fail;
   }
 
@@ -1519,7 +1593,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // indicator 5x on
       m_hl_canbyte = "30082002";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1527,7 +1601,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // open trunk
       m_hl_canbyte = "300500";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1580,7 +1654,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // BIPBIP_Lock false
       m_hl_canbyte = "3B1400";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1588,7 +1662,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // BIPBIP_Lock true
       m_hl_canbyte = "3B1480";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1596,7 +1670,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // REAR_WIPER_LINK false
       m_hl_canbyte = "3B5800";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1604,7 +1678,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // REAR_WIPER_LINK true
       m_hl_canbyte = "3B5880";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1612,7 +1686,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // RKE_Backdoor_open false
       m_hl_canbyte = "3B7800";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1620,7 +1694,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // RKE_Backdoor_open true
       m_hl_canbyte = "3B7880";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1628,7 +1702,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Precond_by_key 00
       m_hl_canbyte = "3B7700";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1636,7 +1710,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Precond_by_key 03
       m_hl_canbyte = "3B7703";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1644,7 +1718,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // ECOMODE_PRE_Restart false
       m_hl_canbyte = "3B7600";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1652,7 +1726,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // ECOMODE_PRE_Restart true
       m_hl_canbyte = "3B7680";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1660,7 +1734,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Charging screen false
       m_hl_canbyte = "2E013D00";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1668,7 +1742,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Charging screen true
       m_hl_canbyte = "2E013D01";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1676,7 +1750,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // AT_BeepInRPresent_CF false
       m_hl_canbyte = "2E014900";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1684,7 +1758,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // AT_BeepInRPresent_CF true
       m_hl_canbyte = "2E014980";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1693,7 +1767,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // EVStartupSoundInhibition_CF false
       m_hl_canbyte = "2E013501";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1701,7 +1775,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // EVStartupSoundInhibition_CF true
       m_hl_canbyte = "2E013500";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1709,7 +1783,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // indicator 5x on
       m_hl_canbyte = "30082002";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1717,7 +1791,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // open trunk
       m_hl_canbyte = "300500";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1725,7 +1799,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // key reminder false
       m_hl_canbyte = "3B5E00";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1733,7 +1807,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // key reminder true
       m_hl_canbyte = "3B5E80";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1741,7 +1815,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // long tempo display false
       m_hl_canbyte = "3B5700";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1749,7 +1823,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // long tempo display true
       m_hl_canbyte = "3B5780";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1757,7 +1831,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // AmbientLightPresent_CF false
       m_hl_canbyte = "2E018900";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1765,7 +1839,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // AmbientLightPresent_CF true
       m_hl_canbyte = "2E018901";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1773,7 +1847,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // ClockDisplayed_CF not displayed
       m_hl_canbyte = "2E012100";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1781,7 +1855,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // ClockDisplayed_CF displayed managed
       m_hl_canbyte = "2E012101";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1789,7 +1863,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // ClockDisplayed_CF displayed not managed
       m_hl_canbyte = "2E012102";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1797,7 +1871,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // ClockDisplayed_CF not used (EQ Smart Connect)
       m_hl_canbyte = "2E012103";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1805,7 +1879,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Auto Light false
       m_hl_canbyte = "2E002300";
-      CommandCan(0x74d, 0x76d, false);
+      CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
     }
@@ -1813,7 +1887,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Auto Light true
       m_hl_canbyte = "2E002380";
-      CommandCan(0x74d, 0x76d, false);
+      CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
     }
@@ -1821,7 +1895,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Auto Light false
       m_hl_canbyte = "2E104200";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1829,7 +1903,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Auto Light true
       m_hl_canbyte = "2E104201";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1837,7 +1911,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Light by EMM false
       m_hl_canbyte = "3B4F00";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1845,7 +1919,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Light by EMM true
       m_hl_canbyte = "3B4F80";
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -1854,7 +1928,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
       // max AC current limitation configuration 20A only for slow charger!
       if (!mt_obl_fastchg->AsBool()) {
         m_hl_canbyte = "2E614150";
-        CommandCan(0x719, 0x739, false);
+        CommandCan(0x719, 0x739, false, true);
         res = Success;
       } else {
         res = Fail;
@@ -1866,7 +1940,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
       // max AC current limitation configuration 32A only for slow charger!
       if (!mt_obl_fastchg->AsBool()) {
         m_hl_canbyte = "2E614180";
-        CommandCan(0x719, 0x739, false);
+        CommandCan(0x719, 0x739, false, true);
         res = Success;
       } else {
         res = Fail;
@@ -1877,7 +1951,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // SBRLogic_CF Standard
       m_hl_canbyte = "2E018500";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1885,7 +1959,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // SBRLogic_CF US
       m_hl_canbyte = "2E018501";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1893,7 +1967,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // FrontSBRInhibition_CF false
       m_hl_canbyte = "2E010900";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1901,7 +1975,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // FrontSBRInhibition_CF true
       m_hl_canbyte = "2E010901";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1909,7 +1983,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Speedmeter ring (Tacho) DayBacklightsPresent_CF false
       m_hl_canbyte = "2E011800";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1917,7 +1991,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // Speedmeter ring (Tacho) DayBacklightsPresent_CF true
       m_hl_canbyte = "2E011801";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1925,7 +1999,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // AdditionnalInstrumentPresent_CF false
       m_hl_canbyte = "2E018001";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1933,7 +2007,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // AdditionnalInstrumentPresent_CF true
       m_hl_canbyte = "2E018001";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1942,7 +2016,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // TPMSPresent_CF false
       m_hl_canbyte = "2E010E00";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1950,7 +2024,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // TPMSPresent_CF true
       m_hl_canbyte = "2E010E01";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1958,7 +2032,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // DRL + Tail false
       m_hl_canbyte = "2E006700";
-      CommandCan(0x74d, 0x76d, false);
+      CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
     }
@@ -1966,7 +2040,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // DRL + Tail true
       m_hl_canbyte = "2E006701";
-      CommandCan(0x74d, 0x76d, false);
+      CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
     }
@@ -1974,7 +2048,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // AUTO_WIPE false
       m_hl_canbyte = "2E033C00";
-      CommandCan(0x74d, 0x76d, false);
+      CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
     }
@@ -1982,7 +2056,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // AUTO_WIPE true
       m_hl_canbyte = "2E033C80";
-      CommandCan(0x74d, 0x76d, false);
+      CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
     }
@@ -1990,7 +2064,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // DigitalSpeedometerPresent_CF off
       m_hl_canbyte = "2E013900";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -1998,7 +2072,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // DigitalSpeedometerPresent_CF in mph
       m_hl_canbyte = "2E013901";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -2006,7 +2080,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // DigitalSpeedometerPresent_CF in km/h
       m_hl_canbyte = "2E013902";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -2014,7 +2088,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // DigitalSpeedometerPresent_CF always km/h
       m_hl_canbyte = "2E013903";
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
@@ -2022,35 +2096,35 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const 
     {
       // ClearDiagnosticInformation.All
       m_hl_canbyte = "14FFFFFF";
-      CommandCan(0x745, 0x765, true);
+      CommandCan(0x745, 0x765, true, false);
       res = Success;
       break;
     }
     case 719:
     {
       m_hl_canbyte = mt_canbyte->AsString();
-      CommandCan(0x719, 0x739, false);
+      CommandCan(0x719, 0x739, false, true);
       res = Success;
       break;
     }
     case 743:
     {
       m_hl_canbyte = mt_canbyte->AsString();
-      CommandCan(0x743, 0x763, true);
+      CommandCan(0x743, 0x763, true, false);
       res = Success;
       break;
     }
     case 745:
     {
       m_hl_canbyte = mt_canbyte->AsString();
-      CommandCan(0x745, 0x765, false);
+      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
     case 746: // 746 is used for the 74d
     {
       m_hl_canbyte = mt_canbyte->AsString();
-      CommandCan(0x74d, 0x76d, false);
+      CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
     }
@@ -2399,16 +2473,16 @@ void OvmsVehicleSmartEQ::xsq_climate(int verbosity, OvmsWriter* writer, OvmsComm
     smarteq->CommandSetClimate(verbosity, writer);
 }
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetClimate(int verbosity, OvmsWriter* writer) {
-    int _ds = mt_booster_ds->AsInt();
-    int _de = mt_booster_de->AsInt() == 0 ? 6 : mt_booster_de->AsInt() - 1;
-    int _min = mt_booster_1to3->AsInt();
+    int _ds = mt_climate_ds->AsInt();
+    int _de = mt_climate_de->AsInt() == 0 ? 6 : mt_climate_de->AsInt() - 1;
+    int _min = mt_climate_1to3->AsInt();
     const char* _days[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
     const char* _time[3] = {"5 min", "10 min", "15 min"};
 
     writer->puts("Climate values:");
-    writer->printf("  on: %s\n", mt_booster_on->AsBool() ? "yes" : "no");
-    writer->printf("  time: %s:%s h\n", mt_booster_h->AsString().c_str(),mt_booster_m->AsString().c_str());
-    writer->printf("  weekly: %s\n", mt_booster_weekly->AsBool() ? "yes" : "no");
+    writer->printf("  on: %s\n", mt_climate_on->AsBool() ? "yes" : "no");
+    writer->printf("  time: %s:%s h\n", mt_climate_h->AsString().c_str(),mt_climate_m->AsString().c_str());
+    writer->printf("  weekly: %s\n", mt_climate_weekly->AsBool() ? "yes" : "no");
     writer->printf("  start Day: %s\n", _days[_ds]);
     writer->printf("  end Day: %s\n", _days[_de]);
     writer->printf("  runtime: %s\n", _time[_min]);
@@ -2493,7 +2567,7 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
       int bits = atoi(value);
       char buf[10];
       sprintf(buf, "1,%d,0,0,-1,-1,-1", bits);
-      mt_booster_data->SetValue(std::string(buf));
+      mt_climate_data->SetValue(std::string(buf));
       return true;
     }
     case 5:
@@ -2504,7 +2578,7 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
       
       char buf[4];
       snprintf(buf, sizeof(buf), "1,1,0,%04d,-1,-1,-1", bits);
-      mt_booster_data->SetValue(std::string(buf));
+      mt_climate_data->SetValue(std::string(buf));
       return true;
     }
     case 6:
@@ -2514,7 +2588,7 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
       if(bits > 2) bits = 2;
       char buf[4];
       sprintf(buf, "1,0,0,0,-1,-1,%d", bits);
-      mt_booster_data->SetValue(std::string(buf));
+      mt_climate_data->SetValue(std::string(buf));
       return true;
     }
     case 7:
@@ -2556,7 +2630,7 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
     case 16:
     {
       int bits = atoi(value);
-      MyConfig.SetParamValueBool("xsq", "ddt4all",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("xsq", "unlock.warning",  (bits& 1)!=0);
       return true;
     }
     default:
@@ -2594,14 +2668,14 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
       return std::string(buf);
     }
     case 4:
-      if(mt_booster_on->AsBool()){return std::string("1");}else{ return std::string("2");};
+      if(mt_climate_on->AsBool()){return std::string("1");}else{ return std::string("2");};
     case 5:
     {
-      return mt_booster_time->AsString();
+      return mt_climate_time->AsString();
     }
     case 6:
     {
-      int bits = mt_booster_1to3->AsInt();
+      int bits = mt_climate_1to3->AsInt();
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
@@ -2638,7 +2712,7 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
     }
     case 16:
     {
-      int bits = ( MyConfig.GetParamValueBool("xsq", "ddt4all",  false) ?  1 : 0);
+      int bits = ( MyConfig.GetParamValueBool("xsq", "unlock.warning",  false) ?  1 : 0);
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
