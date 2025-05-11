@@ -2262,7 +2262,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
  */
 int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc, float charge_power_w)
   { // updated to allow for V2X calculation
-  float bat_soc = m_soc_instrument->AsFloat(100);
+  float bat_soc = StandardMetrics.ms_v_bat_soc->AsFloat(100);
   if ( (bat_soc > target_soc && charge_power_w > 0) || (bat_soc < target_soc && charge_power_w < 0) )
     {
     return 0;   // Done!
