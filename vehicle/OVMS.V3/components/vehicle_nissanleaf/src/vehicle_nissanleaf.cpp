@@ -325,6 +325,7 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   cfg_allowed_rangedrop     = MyConfig.GetParamValueInt("xnl", "rangedrop", DEFAULT_RANGEDROP);
   cfg_allowed_socdrop       = MyConfig.GetParamValueInt("xnl", "socdrop", DEFAULT_SOCDROP);
   cfg_enable_autocharge     = MyConfig.GetParamValueBool("xnl", "autocharge", DEFAULT_AUTOCHARGE_ENABLED);
+  cfg_speed_divisor         = MyConfig.GetParamValueFloat("xnl", "speeddivisor", DEFAULT_SPEED_DIVISOR);
 
 
   //TODO nl_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
@@ -1079,7 +1080,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // allowing us to use it for deriving accurate trip odometer distances
 
       // verified by comparing derived trip odometer value with two ~20km GPS tracks
-      StandardMetrics.ms_v_pos_speed->SetValue((float) car_speed16 / 98);
+      StandardMetrics.ms_v_pos_speed->SetValue((float) car_speed16 / cfg_speed_divisor);
     }
       break;
     case 0x380:
