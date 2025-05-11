@@ -1079,7 +1079,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // allowing us to use it for deriving accurate trip odometer distances
 
       // verified by comparing derived trip odometer value with two ~20km GPS tracks
-      StandardMetrics.ms_v_pos_speed->SetValue(car_speed16 / 98);
+      StandardMetrics.ms_v_pos_speed->SetValue((float) car_speed16 / 98);
     }
       break;
     case 0x380:
