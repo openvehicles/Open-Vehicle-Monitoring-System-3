@@ -230,6 +230,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("climate", "Show Climate timer data", xsq_climate);
   cmd_xsq->RegisterCommand("tpmsset", "set TPMS dummy value", xsq_tpms_set);
   cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
+  cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
 
   MyConfig.RegisterParam("xsq", "smartEQ", true, true);
 
@@ -1607,12 +1608,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number) {
     }
     case 2:
     {
-      res = Fail;
+      // AUTO_WIPE false
+      m_hl_canbyte = "2E033C00";
+      CommandCan(0x74d, 0x76d, false, true);
+      res = Success;
       break;
     }
     case 3:
     {
-      res = Fail;
+      // AUTO_WIPE true
+      m_hl_canbyte = "2E033C80";
+      CommandCan(0x74d, 0x76d, false, true);
+      res = Success;
       break;
     }
     case 4:
@@ -1776,22 +1783,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number) {
       // EVStartupSoundInhibition_CF true
       m_hl_canbyte = "2E013500";
       CommandCan(0x743, 0x763, true, false);
-      res = Success;
-      break;
-    }
-    case 30:
-    {
-      // indicator 5x on
-      m_hl_canbyte = "30082002";
-      CommandCan(0x745, 0x765, false, true);
-      res = Success;
-      break;
-    }
-    case 31:
-    {
-      // open trunk
-      m_hl_canbyte = "300500";
-      CommandCan(0x745, 0x765, false, true);
       res = Success;
       break;
     }
@@ -2040,22 +2031,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number) {
     {
       // DRL + Tail true
       m_hl_canbyte = "2E006701";
-      CommandCan(0x74d, 0x76d, false, true);
-      res = Success;
-      break;
-    }
-    case 64:
-    {
-      // AUTO_WIPE false
-      m_hl_canbyte = "2E033C00";
-      CommandCan(0x74d, 0x76d, false, true);
-      res = Success;
-      break;
-    }
-    case 65:
-    {
-      // AUTO_WIPE true
-      m_hl_canbyte = "2E033C80";
       CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
@@ -2533,6 +2508,109 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTPMSset(int verbosity,
     m_tpms_pressure[i] = mt_dummy_pressure->AsFloat(); // kPa
     setTPMSValue(i, m_tpms_index[i]);
   }
+  return Success;
+}
+
+void OvmsVehicleSmartEQ::xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+  
+    smarteq->CommandDDT4List(verbosity, writer);
+}
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4List(int verbosity, OvmsWriter* writer) {
+  writer->puts("DDT4all Command list:");
+  writer->printf("--unlocked Car and key ignition on!\n");
+  writer->printf("--use: xsq ddt4all <number>\n");
+  writer->printf("--not all Commands works with all smart 453 (GAS/ED/EQ)\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  Clear Diagnostic Information: 100\n");
+  writer->printf("  activate DDT4all Commands for 5 minutes: 999\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  indicator 5x: 0\n");
+  writer->printf("  open trunk (unlocked Car): 1\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  AUTO WIPE true: 3\n");
+  writer->printf("  AUTO WIPE false: 2\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  Wifi restart: 4\n");
+  writer->printf("  Modem restart: 5\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("--OEM Alarm needed!\n");
+  writer->printf("  BIPBIP Lock true: 7\n");
+  writer->printf("  BIPBIP Lock false: 6\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  REAR WIPER LINK R true: 9\n");
+  writer->printf("  REAR WIPER LINK R false: 8\n");
+  writer->printf("  -------------------------------\n");  
+  writer->printf("--wapped the Trunk open Button to Pre-Climate\n");
+  writer->printf("  Precond by key 3: 13\n");
+  writer->printf("  Precond by no: 12\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  ECOMODE PRE Restart true: 15\n");
+  writer->printf("  ECOMODE PRE Restart false: 14\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("--Show Charging screen when Car is locked\n");
+  writer->printf("  Charging screen true: 17\n");
+  writer->printf("  Charging screen false: 16\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  Beep in Gear R true: 27\n");
+  writer->printf("  Beep in Gear R false: 26\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  EV Startup Sound true: 29\n");
+  writer->printf("  EV Startup Sound false: 28\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  key reminder true: 33\n");
+  writer->printf("  key reminder false: 32\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  long tempo display true: 35\n");
+  writer->printf("  long tempo display false: 34\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  Ambient Light true: 37\n");
+  writer->printf("  Ambient Light false: 36\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("--MMI displayed Clock sync with Radio\n");
+  writer->printf("  Clock not displayed: 40\n");
+  writer->printf("  Clock displayed managed: 41\n");
+  writer->printf("  Clock displayed not managed: 42\n");
+  writer->printf("  Clock not used: 43\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("--if the light sensor and steering column have been retrofitted,\n");
+  writer->printf("--set Auto Light 1, 2 and EMM true\n");
+  writer->printf("  Auto Light 1 true: 45\n");
+  writer->printf("  Auto Light 1 false: 44\n");
+  writer->printf("  Auto Light 2 true: 47\n");
+  writer->printf("  Auto Light 2 false: 46\n");
+  writer->printf("  Light by EMM true: 49\n");
+  writer->printf("  Light by EMM false: 48\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("--not for 22kW Charger!\n");
+  writer->printf("  max AC current limit 20A: 50\n");
+  writer->printf("  max AC current limit 32A: 51\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  SBR Logic US: 52\n");
+  writer->printf("  SBR Logic Standard: 53\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  Front SBR true: 55\n");
+  writer->printf("  Front SBR false: 54\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  Speedometer Day Backlights true: 57\n");
+  writer->printf("  Speedometer Day Backlights false: 56\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("--only makes sense with petrol engines\n");
+  writer->printf("  Additionnal Instrument true: 59\n");
+  writer->printf("  Additionnal Instrument false: 58\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  TPMS Present true: 61\n");
+  writer->printf("  TPMS Present false: 60\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  DRL + Tail true: 63\n");
+  writer->printf("  DRL + Tail false: 62\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  Digital Speedometer off: 66\n");
+  writer->printf("  Digital Speedometer in mph: 67\n");
+  writer->printf("  Digital Speedometer in km/h: 68\n");
+  writer->printf("  Digital Speedometer always km/h: 69\n");
   return Success;
 }
 

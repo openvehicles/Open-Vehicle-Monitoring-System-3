@@ -116,7 +116,7 @@ public:
     vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandActivateValet(const char* pin) override;
     vehicle_command_t CommandDeactivateValet(const char* pin) override;
-    vehicle_command_t CommandCan(uint32_t txid,uint32_t rxid,bool reset=false,bool wakeup2=false);
+    vehicle_command_t CommandCan(uint32_t txid,uint32_t rxid,bool reset=false,bool wakeup=false);
     vehicle_command_t CommandWakeup2();
     virtual vehicle_command_t CommandTripStart(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTripReset(int verbosity, OvmsWriter* writer);
@@ -128,6 +128,7 @@ public:
     virtual vehicle_command_t Command12Vcharge(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTPMSset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4all(int number);
+    virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
 
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -152,6 +153,7 @@ public:
     static void xsq_trip_total(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ddt4all(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
     unsigned int m_candata_timer;
