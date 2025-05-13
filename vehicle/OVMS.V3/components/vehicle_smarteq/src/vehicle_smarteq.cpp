@@ -2543,7 +2543,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4List(int verbosity
   writer->printf("  REAR WIPER LINK R true: 9\n");
   writer->printf("  REAR WIPER LINK R false: 8\n");
   writer->printf("  -------------------------------\n");  
-  writer->printf("--wapped the Trunk open Button to Pre-Climate\n");
+  writer->printf("--swapped the Trunk open Button to Pre-Climate\n");
   writer->printf("  Precond by key 3: 13\n");
   writer->printf("  Precond by no: 12\n");
   writer->printf("  -------------------------------\n");
