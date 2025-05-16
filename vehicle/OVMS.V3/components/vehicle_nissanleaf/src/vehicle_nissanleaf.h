@@ -51,6 +51,7 @@
 #define DEFAULT_RANGEDROP 0
 #define DEFAULT_SOCDROP 0
 #define DEFAULT_AUTOCHARGE_ENABLED true
+#define DEFAULT_SPEED_DIVISOR 98.0
 #define GEN_1_NEW_CAR_GIDS 281
 #define GEN_1_NEW_CAR_AH 66
 #define GEN_1_KM_PER_KWH 7.1
@@ -234,6 +235,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     bool   cfg_ze1;                                     // Enable/disable ZE1 specific features
     bool   cfg_soh_newcar;                              // True if SOH is calculated from new car max ah, false if from BMS
     string cfg_limit_range_calc;                        // What range calc to use for charge to range feature
+    float  cfg_speed_divisor;                           // Divisor used for dividing raw speed value received from can1 0x284 msg
 
     int     m_MITM = 0;
     float   m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval

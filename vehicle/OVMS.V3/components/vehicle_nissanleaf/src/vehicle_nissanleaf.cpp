@@ -325,6 +325,7 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   cfg_allowed_rangedrop     = MyConfig.GetParamValueInt("xnl", "rangedrop", DEFAULT_RANGEDROP);
   cfg_allowed_socdrop       = MyConfig.GetParamValueInt("xnl", "socdrop", DEFAULT_SOCDROP);
   cfg_enable_autocharge     = MyConfig.GetParamValueBool("xnl", "autocharge", DEFAULT_AUTOCHARGE_ENABLED);
+  cfg_speed_divisor         = MyConfig.GetParamValueFloat("xnl", "speeddivisor", DEFAULT_SPEED_DIVISOR);
 
 
   //TODO nl_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
@@ -1069,9 +1070,17 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       uint16_t car_speed16 = d[4];
       car_speed16 = car_speed16 << 8;
       car_speed16 = car_speed16 | d[5];
-      // this ratio determined by comparing with the dashboard speedometer
-      // it is approximately correct and converts to km/h on my car with km/h speedo
-      StandardMetrics.ms_v_pos_speed->SetValue(car_speed16 / 92);
+      // old ratio was 1/92, previously approximated by comparison with dashboard speedo.
+      // however, this figure appears to be ~4-4.5% lower than the speedometer speed, AND the
+      // speedometer speed is itself 10% higher than the actual speed reported by OBD-II standard
+      // PIDs and GPS speed (probably due to regulations allowing speedo speed to be up to 10%
+      // higher but not any lower than actual speed)
+
+      // dividing this value by 98 makes it approximately match OBD-II and GPS reported speeds,
+      // allowing us to use it for deriving accurate trip odometer distances
+
+      // verified by comparing derived trip odometer value with two ~20km GPS tracks
+      StandardMetrics.ms_v_pos_speed->SetValue((float) car_speed16 / cfg_speed_divisor);
     }
       break;
     case 0x380:
