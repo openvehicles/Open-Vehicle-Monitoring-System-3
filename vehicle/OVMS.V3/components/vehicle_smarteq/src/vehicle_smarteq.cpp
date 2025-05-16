@@ -2547,6 +2547,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4List(int verbosity
   writer->printf("  Precond by key 3: 13\n");
   writer->printf("  Precond by no: 12\n");
   writer->printf("  -------------------------------\n");
+  writer->printf("--Deactivate Backdoor open for Pre-Climate on key 3,\n");
+  writer->printf("--but this has no effect for convertible rooftop opening!\n");
+  writer->printf("--Convertible driver should pull the fuse for the roof opening\n");
+  writer->printf("  Backdoor open key 3 true: 11\n");
+  writer->printf("  Backdoor open key 3 false: 10\n");
+  writer->printf("  -------------------------------\n");
   writer->printf("  ECOMODE PRE Restart true: 15\n");
   writer->printf("  ECOMODE PRE Restart false: 14\n");
   writer->printf("  -------------------------------\n");
