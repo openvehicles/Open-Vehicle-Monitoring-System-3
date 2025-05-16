@@ -2525,6 +2525,18 @@ void OvmsVehicle::PollSetState(uint8_t state, canbus* bus)
   }
 
 #ifdef CONFIG_OVMS_COMP_POLLER
+int OvmsVehicle::PollSingleRequest(canbus*  bus, uint32_t txid, uint32_t rxid,
+                  uint8_t polltype, uint16_t pid, const std::string &payload, std::string& response,
+                  int timeout_ms, uint8_t protocol)
+  {
+  if (!m_ready)
+    return POLLSINGLE_TXFAILURE;
+  auto poller = MyPollers.GetPoller(bus, true);
+  if (!poller)
+    return POLLSINGLE_TXFAILURE;
+  return poller->PollSingleRequest(txid, rxid, polltype, pid, payload, response, timeout_ms, protocol);
+  }
+
 int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                 std::string request, std::string& response,
                 int timeout_ms, uint8_t protocol)
