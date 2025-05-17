@@ -1961,7 +1961,14 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
     {
     StandardMetrics.ms_v_env_charging12v->SetValue(true);  
     }
-  else StandardMetrics.ms_v_env_charging12v->SetValue(false);
+  else
+    {
+    StandardMetrics.ms_v_env_charging12v->SetValue(false);
+    // this is not quite correct, but if v.env.charging12v is off, then the vehicle is probably off too
+    // so the poller isn't running, and we won't be able to get fresh 12V current values
+    // this at least makes the value more believable (e.g. current is not positive/charging when DC-DC converter is off)
+    StandardMetrics.ms_v_bat_12v_current->SetValue(0.0);
+    }
   // FIXME
   // detecting that on is stale and therefor should turn off probably shouldn't
   // be done like this
