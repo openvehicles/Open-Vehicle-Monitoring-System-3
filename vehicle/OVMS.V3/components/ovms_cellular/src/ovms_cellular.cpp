@@ -1723,17 +1723,8 @@ void modem::SetSignalQuality(int newsq)
     {
     m_sq = newsq;
     ESP_LOGD(TAG, "Signal Quality is: %d (%d dBm)", m_sq, UnitConvert(sq, dbm, m_sq));
-    float current_dbm = UnitConvert(sq, dbm, m_sq);
     StdMetrics.ms_m_net_mdm_sq->SetValue(m_sq, sq);
-    if (StdMetrics.ms_m_net_type->AsString() == "modem")
-      {
-      StdMetrics.ms_m_net_sq->SetValue(m_sq, sq);
-      if (m_good_signal && current_dbm < m_bad_dbm)
-        m_good_signal = false;
-      if (!m_good_signal && current_dbm > m_good_dbm)
-        m_good_signal = true;
-      StdMetrics.ms_m_net_good_sq->SetValue(m_good_signal);
-      }
+    UpdateNetMetrics();
     }
   }
 
@@ -1763,6 +1754,12 @@ void modem::UpdateNetMetrics()
     {
     StdMetrics.ms_m_net_provider->SetValue(m_provider);
     StdMetrics.ms_m_net_sq->SetValue(m_sq, sq);
+    float current_dbm = UnitConvert(sq, dbm, m_sq);
+    if (m_good_signal && current_dbm < m_bad_dbm)
+      m_good_signal = false;
+    if (!m_good_signal && current_dbm > m_good_dbm)
+      m_good_signal = true;
+    StdMetrics.ms_m_net_good_sq->SetValue(m_good_signal);
     }
   }
 
