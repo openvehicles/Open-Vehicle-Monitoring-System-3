@@ -127,7 +127,7 @@ public:
     virtual vehicle_command_t CommandClimate(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t Command12Vcharge(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTPMSset(int verbosity, OvmsWriter* writer);
-    virtual vehicle_command_t CommandDDT4all(int number);
+    virtual vehicle_command_t CommandDDT4all(int number, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
 
 public:

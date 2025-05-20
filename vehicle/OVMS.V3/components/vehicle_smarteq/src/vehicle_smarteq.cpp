@@ -1568,15 +1568,15 @@ void OvmsVehicleSmartEQ::xsq_ddt4all(int verbosity, OvmsWriter* writer, OvmsComm
     return;
   }
   
-  smarteq->CommandDDT4all(atoi(argv[0]));
+  smarteq->CommandDDT4all(atoi(argv[0]), writer);
 }
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number) {
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, OvmsWriter* writer) {
   OvmsVehicle::vehicle_command_t res = Fail;
   ESP_LOGI(TAG, "DDT4all number=%d", number);
 
   if(number == 999) {
     ESP_LOGI(TAG, "DDT4ALL session activated for 5 minutes");
-    MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session activated for 5 minutes");
+    writer->printf("DDT4ALL session activated for 5 minutes");
     m_ddt4all = true;
     m_ddt4all_ticker = 0;
     return Success;
@@ -1584,7 +1584,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number) {
 
   if((!m_ddt4all || !m_enable_write) && number > 5) {
     ESP_LOGE(TAG, "DDT4all failed / no Canbus write access or DDT4all not enabled");
-    MyNotify.NotifyString("info", "ddt4all.failed", "DDT4all failed / no Canbus write access or DDT4all not enabled");
+    writer->printf("DDT4all failed / no Canbus write access or DDT4all not enabled");
     return Fail;
   }
 
@@ -2019,10 +2019,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number) {
       res = Success;
       break;
     }
+    
     case 62:
     {
       // DRL + Tail false
-      m_hl_canbyte = "2E006700";
+      m_hl_canbyte = "2E035300";
       CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
@@ -2030,7 +2031,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number) {
     case 63:
     {
       // DRL + Tail true
-      m_hl_canbyte = "2E006701";
+      m_hl_canbyte = "2E035301";
       CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
@@ -2113,13 +2114,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number) {
     snprintf(buf, sizeof(buf), "DDT4all command %d executed", number);
     std::string msg(buf);
     ESP_LOGI(TAG, "%s", msg.c_str());
-    MyNotify.NotifyString("info", "ddt4all.success", msg.c_str());
+    writer->printf("%s", msg.c_str());
   } else {
     char buf[50];
     snprintf(buf, sizeof(buf), "DDT4all command %d failed", number);
     std::string msg(buf);
     ESP_LOGI(TAG, "%s", msg.c_str());
-    MyNotify.NotifyString("info", "ddt4all.failed", msg.c_str());
+    writer->printf("%s", msg.c_str());
   }
   return res;
 }
