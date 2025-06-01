@@ -106,6 +106,9 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void NotifyMaintenance();
     void Notify12Vcharge();
     void DoorLockState();
+    void WifiRestart();
+    void ModemRestart();
+    void CheckModemState();
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -310,12 +313,16 @@ public:
     bool m_indicator;                       //!< activate indicator e.g. 7 times or whtever
     bool m_ddt4all;                         //!< DDT4ALL mode
     bool m_warning_unlocked;                //!< unlocked warning
+    bool m_modem_check;                     //!< modem check enabled
+    bool m_modem_restart;                   //!< modem restart enabled
     int m_ddt4all_ticker;
     int m_led_state;
     int m_climate_ticker;
     int m_gps_ticker;
     int m_12v_ticker;
     int m_v2_ticker;
+    int m_modem_ticker;
+    int m_park_timeout_secs;                //!< parking timeout in seconds
   
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll

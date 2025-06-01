@@ -133,6 +133,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_ddt4all = false;
   m_ddt4all_ticker = 0;
   m_warning_unlocked = false;
+  m_modem_restart = false;
+  m_modem_ticker = 0;
 
   m_charge_start = false;
   m_charge_finished = true;
@@ -265,7 +267,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   }
 
   if (MyConfig.GetParamValue("xsq", "extended.stats","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "extended.stats", false);;
+    MyConfig.SetParamValueBool("xsq", "extended.stats", false);
   }
 
   if (MyConfig.GetParamValue("xsq", "tpms.front.pressure","0") == "0") {
@@ -289,8 +291,12 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   }
 
   if (MyConfig.GetParamValue("xsq", "extended.stats","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "extended.stats", false);;
+    MyConfig.SetParamValueBool("xsq", "extended.stats", false);
   }
+
+  if (MyConfig.GetParamValue("xsq", "modem.check","0") == "0") {
+    MyConfig.SetParamValueBool("xsq", "modem.check", false);
+  }  
   
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
     ResetTotalCounters();
@@ -390,7 +396,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_pressure_alert    = MyConfig.GetParamValueFloat("xsq", "tpms.value.alert", 45); // kPa
   m_tpms_alert_enable = MyConfig.GetParamValueBool("xsq", "tpms.alert.enable", true);
   
-  //m_ddt4all           = MyConfig.GetParamValueInt("xsq", "ddt4all", false);
+  m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
   m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", true);
@@ -399,6 +405,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
   m_indicator         = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
   m_extendedStats     = MyConfig.GetParamValueBool("xsq", "extended.stats", false);         //!< activate extended stats e.g. trip and maintenance data
+  m_park_timeout_secs = MyConfig.GetParamValueInt("xsq", "park.timeout", 600);              //!< timeout in seconds for parking mode
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (!m_enable_LED_state) {
@@ -821,10 +828,9 @@ void OvmsVehicleSmartEQ::Check12vState() {
 
 // switch the GPS on/off depending on the parktime and the bus state
 void OvmsVehicleSmartEQ::GPSOnOff() {
-  static const int PARK_TIMEOUT_SECS = 600;  // 10 minutes
-  static const int INITIAL_DELAY = 10;
-
   #ifdef CONFIG_OVMS_COMP_CELLULAR
+    static const int PARK_TIMEOUT_SECS = 600;  // 10 minutes
+    static const int INITIAL_DELAY = 10;
     m_gps_ticker += 1;
 
     // Power saving: Turn off GPS
@@ -860,41 +866,43 @@ void OvmsVehicleSmartEQ::GPSOnOff() {
 
 // check the Server V2 connection and reboot the network if needed
 void OvmsVehicleSmartEQ::CheckV2State() {
-  static const int DISCONNECT_THRESHOLD = 5;
-  static const int RESTART_DELAY = 1;
-  
-  bool is_connected = StdMetrics.ms_s_v2_connected->AsBool();
-  
-  if (!is_connected) {
-      m_v2_ticker++;
-      
-      if (m_v2_ticker > DISCONNECT_THRESHOLD && !m_v2_restart) {
-          ESP_LOGI(TAG, "V2 server disconnected for %d ticks, initiating restart", m_v2_ticker);
-          m_v2_restart = true;
-          if (!ExecuteCommand("server v2 stop")) {
-              ESP_LOGE(TAG, "Failed to stop V2 server");
-              return;
-          }
-      }
-      
-      if (m_v2_ticker > (DISCONNECT_THRESHOLD + RESTART_DELAY) && m_v2_restart) {
-          ESP_LOGI(TAG, "Restarting V2 server");
-          m_v2_ticker = 0;
-          m_v2_restart = false;
-          if (!ExecuteCommand("server v2 start")) {
-              ESP_LOGE(TAG, "Failed to start V2 server");
-          }
-      }
-  } else if (m_v2_ticker > 0) {
-      ESP_LOGI(TAG, "V2 server connection restored");
-      m_v2_ticker = 0;
-      m_v2_restart = false;
-  }
+  #ifdef CONFIG_OVMS_COMP_SERVER_V2
+    static const int DISCONNECT_THRESHOLD = 5;
+    static const int RESTART_DELAY = 1;    
+    bool is_connected = StdMetrics.ms_s_v2_connected->AsBool();
+    
+    if (!is_connected) {
+        m_v2_ticker++;
+        
+        if (m_v2_ticker > DISCONNECT_THRESHOLD && !m_v2_restart) {
+            ESP_LOGI(TAG, "V2 server disconnected for %d ticks, initiating restart", m_v2_ticker);
+            m_v2_restart = true;
+            if (!ExecuteCommand("server v2 stop")) {
+                ESP_LOGE(TAG, "Failed to stop V2 server");
+                return;
+            }
+        }
+        
+        if (m_v2_ticker > (DISCONNECT_THRESHOLD + RESTART_DELAY) && m_v2_restart) {
+            ESP_LOGI(TAG, "Restarting V2 server");
+            m_v2_ticker = 0;
+            m_v2_restart = false;
+            if (!ExecuteCommand("server v2 start")) {
+                ESP_LOGE(TAG, "Failed to start V2 server");
+            }
+        }
+    } else if (m_v2_ticker > 0) {
+        ESP_LOGI(TAG, "V2 server connection restored");
+        m_v2_ticker = 0;
+        m_v2_restart = false;
+    }
+  #else
+      ESP_LOGD(TAG, "V2 server support not enabled");
+  #endif // CONFIG_OVMS_COMP_SERVER_V2
 }
 
 void OvmsVehicleSmartEQ::DoorLockState() {
-  static const int PARK_TIMEOUT_SECS = 600;  // 10 minutes
-  bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt() > PARK_TIMEOUT_SECS &&
+  bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs &&
                           !StdMetrics.ms_v_env_on->AsBool() &&
                           !StdMetrics.ms_v_env_locked->AsBool() &&
                           !m_warning_unlocked);
@@ -906,19 +914,75 @@ void OvmsVehicleSmartEQ::DoorLockState() {
   }
 }
 
+void OvmsVehicleSmartEQ::WifiRestart() {
+  #ifdef CONFIG_OVMS_COMP_WIFI
+    if (MyPeripherals && MyPeripherals->m_esp32wifi) {
+        MyPeripherals->m_esp32wifi->Restart();
+        ESP_LOGI(TAG, "WiFi restart initiated");
+    } else {
+        ESP_LOGE(TAG, "WiFi restart failed - WiFi not available");
+    }
+  #else
+    ESP_LOGE(TAG, "WiFi support not enabled");
+  #endif
+}
+
+void OvmsVehicleSmartEQ::ModemRestart() {
+  #ifdef CONFIG_OVMS_COMP_CELLULAR
+    m_modem_ticker = 0; // Reset modem ticker on restart
+
+    if (MyPeripherals && MyPeripherals->m_cellular_modem) {
+        MyPeripherals->m_cellular_modem->Restart();
+        ESP_LOGI(TAG, "Cellular modem restart initiated");
+    } else {
+        ESP_LOGE(TAG, "Cellular modem restart failed - modem not available");
+    }
+  #else
+    ESP_LOGE(TAG, "Cellular support not enabled");
+  #endif
+}
+
+void OvmsVehicleSmartEQ::CheckModemState() {
+  #ifdef CONFIG_OVMS_COMP_CELLULAR
+    m_modem_ticker++;
+    static const int mdm_dbm = 20;  // Signal strength threshold for modem restart
+    static const int mdm_ticker = 15; // Ticker threshold in minutes for modem restart
+
+    int signal_strength = StdMetrics.ms_m_net_mdm_sq->AsInt(0); // Get modem signal strength in dBm
+    bool should_restart = (signal_strength < mdm_dbm); // Check if signal strength is below threshold
+    
+    if (should_restart && !m_modem_restart) {
+        m_modem_restart = true;
+        m_modem_ticker = 0; // Reset modem ticker on restart
+        ESP_LOGI(TAG, "Cellular modem signal strength is low (%d dBm), restarting modem", signal_strength);
+        ModemRestart();
+    } else if ((!should_restart && m_modem_restart) || ((m_modem_ticker > mdm_ticker) && m_modem_restart)) {
+        m_modem_restart = false;
+        m_modem_ticker = 0;
+    }
+  #else
+      ESP_LOGD(TAG, "Cellular support not enabled");
+  #endif // CONFIG_OVMS_COMP_CELLULAR
+}
+
 // Cellular Modem Network type switch
 void OvmsVehicleSmartEQ::ModemNetworkType() {
-  if (m_network_type == "auto") {
-      ExecuteCommand("cellular cmd AT+COPS=0");                     // set network to prefered Telekom.de LTE or the best available
-  } 
-  if (m_network_type == "gsm") {
-      ExecuteCommand("cellular cmd AT+CNMP=2");                     // set network to GSM/3G/LTE
-  }
-  if (m_network_type == "lte") {
-      ExecuteCommand("cellular cmd AT+CNMP=38");                    // set network to LTE only
-  }
-  m_network_type_ls = m_network_type;
+  #ifdef CONFIG_OVMS_COMP_CELLULAR
+    if (m_network_type == "auto") {
+        ExecuteCommand("cellular cmd AT+COPS=0");                     // set network to prefered Telekom.de LTE or the best available
+    } 
+    if (m_network_type == "gsm") {
+        ExecuteCommand("cellular cmd AT+CNMP=2");                     // set network to GSM/3G/LTE
+    }
+    if (m_network_type == "lte") {
+        ExecuteCommand("cellular cmd AT+CNMP=38");                    // set network to LTE only
+    }
+    m_network_type_ls = m_network_type;
+  #else
+      ESP_LOGD(TAG, "Cellular support not enabled");
+  #endif
 }
+
 /**
  * Update derived energy metrics while driving
  * Called once per second from Ticker1
@@ -963,11 +1027,11 @@ void OvmsVehicleSmartEQ::HandleTripcounter(){
 void OvmsVehicleSmartEQ::Handlev2Server(){
   // Handle v2Server connection
   if (StdMetrics.ms_s_v2_connected->AsBool()) {
-    m_reboot_ticker = m_reboot_time * 60; // set reboot ticker
+    m_reboot_ticker = m_reboot_time; // set reboot ticker
   }
   else if (m_reboot_ticker > 0 && --m_reboot_ticker == 0) {
     MyNetManager.RestartNetwork();
-    m_reboot_ticker = m_reboot_time * 60;
+    m_reboot_ticker = m_reboot_time;
   }
 }
 
@@ -1236,7 +1300,6 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   HandleEnergy();
   HandleCharging();
   HandleTripcounter();
-  Handlev2Server();
   HandleChargeport();
 
   if (m_enable_LED_state) OnlineState();
@@ -1245,8 +1308,19 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   if (ticker % 60 == 0) { // Every 60 seconds
     if(mt_climate_on->AsBool()) TimeCheckTask();
     if(m_12v_charge) Check12vState();
-    if(m_gps_onoff) GPSOnOff();
-    if(m_v2_check) CheckV2State();
+
+    #ifdef CONFIG_OVMS_COMP_SERVER_V2
+      if(m_v2_check) CheckV2State();
+    #endif
+
+    #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
+      if(m_reboot_time > 0) Handlev2Server();
+    #endif
+
+    #ifdef CONFIG_OVMS_COMP_CELLULAR
+      if(m_gps_onoff) GPSOnOff();
+      if(m_modem_check) CheckModemState();
+    #endif
 
     // DDT4ALL session timeout on 5 minutes
     if (m_ddt4all) {
@@ -1582,7 +1656,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     return Success;
   }
 
-  if((!m_ddt4all || !m_enable_write) && number > 5) {
+  if((!m_ddt4all || !m_enable_write) && number > 9) {
     ESP_LOGE(TAG, "DDT4all failed / no Canbus write access or DDT4all not enabled");
     writer->printf("DDT4all failed / no Canbus write access or DDT4all not enabled");
     return Fail;
@@ -1626,11 +1700,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     {
       #ifdef CONFIG_OVMS_COMP_WIFI
         if (MyPeripherals && MyPeripherals->m_esp32wifi) {
-            MyPeripherals->m_esp32wifi->Restart();
-            ESP_LOGI(TAG, "WiFi restart initiated");
+            WifiRestart();
             res = Success;
         } else {
-            ESP_LOGE(TAG, "WiFi restart failed - WiFi not available");
             res = Fail;
         }
       #else
@@ -1643,11 +1715,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     {
       #ifdef CONFIG_OVMS_COMP_CELLULAR
         if (MyPeripherals && MyPeripherals->m_cellular_modem) {
-            MyPeripherals->m_cellular_modem->Restart();
-            ESP_LOGI(TAG, "Cellular modem restart initiated");
+            ModemRestart();
             res = Success;
         } else {
-            ESP_LOGE(TAG, "Cellular modem restart failed - modem not available");
             res = Fail;
         }
       #else
