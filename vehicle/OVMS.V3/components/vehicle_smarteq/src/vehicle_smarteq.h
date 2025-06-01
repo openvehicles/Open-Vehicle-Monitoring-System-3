@@ -322,6 +322,7 @@ public:
     int m_12v_ticker;
     int m_v2_ticker;
     int m_modem_ticker;
+    int m_modem_threshold;                  //!< modem threshold for restart
     int m_park_timeout_secs;                //!< parking timeout in seconds
   
   protected:

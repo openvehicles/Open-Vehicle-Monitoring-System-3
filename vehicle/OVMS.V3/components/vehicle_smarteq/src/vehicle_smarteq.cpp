@@ -298,6 +298,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     MyConfig.SetParamValueBool("xsq", "modem.check", false);
   }  
   
+  if (MyConfig.GetParamValue("xsq", "modem.threshold","0") == "0") {
+    MyConfig.SetParamValueInt("xsq", "modem.threshold", -20);
+  }
+  
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
     ResetTotalCounters();
     ResetTripCounters();
@@ -397,6 +401,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_tpms_alert_enable = MyConfig.GetParamValueBool("xsq", "tpms.alert.enable", true);
   
   m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
+  m_modem_threshold   = MyConfig.GetParamValueInt("xsq", "modem.threshold", -20);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
   m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", true);
@@ -945,11 +950,10 @@ void OvmsVehicleSmartEQ::ModemRestart() {
 void OvmsVehicleSmartEQ::CheckModemState() {
   #ifdef CONFIG_OVMS_COMP_CELLULAR
     m_modem_ticker++;
-    static const int mdm_dbm = 20;  // Signal strength threshold for modem restart
     static const int mdm_ticker = 15; // Ticker threshold in minutes for modem restart
 
-    int signal_strength = StdMetrics.ms_m_net_mdm_sq->AsInt(0); // Get modem signal strength in dBm
-    bool should_restart = (signal_strength < mdm_dbm); // Check if signal strength is below threshold
+    int signal_strength = StdMetrics.ms_m_net_mdm_sq->AsInt(0);  // Get modem signal strength in dBm
+    bool should_restart = (signal_strength > m_modem_threshold); // Check if the signal strength is above the threshold
     
     if (should_restart && !m_modem_restart) {
         m_modem_restart = true;
