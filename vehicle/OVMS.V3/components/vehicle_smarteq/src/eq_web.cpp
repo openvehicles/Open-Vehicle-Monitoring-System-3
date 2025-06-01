@@ -81,7 +81,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info, full_km, rebootnw, net_type;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, extstats, unlocked; //, ddt4all
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, extstats, unlocked, mdmcheck;
 
   if (c.method == "POST") {
     // process form submission:
@@ -98,7 +98,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     charge12v = (c.getvar("charge12v") == "yes");
     v2server = (c.getvar("v2server") == "yes");
     net_type = c.getvar("net_type");
-    //ddt4all = (c.getvar("ddt4all") == "yes");
+    mdmcheck = (c.getvar("mdmcheck") == "yes");
     unlocked = (c.getvar("unlock") == "yes");
     extstats = (c.getvar("extstats") == "yes");
     
@@ -118,7 +118,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "v2.check", v2server);
       MyConfig.SetParamValue("xsq", "modem.net.type", net_type);
       MyConfig.SetParamValueBool("xsq", "unlock.warning", unlocked);
-      //MyConfig.SetParamValueBool("xsq", "ddt4all", ddt4all);
+      MyConfig.SetParamValueBool("xsq", "modem.check", mdmcheck);
       MyConfig.SetParamValueBool("xsq", "extended.stats", extstats);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
@@ -148,8 +148,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     charge12v   = MyConfig.GetParamValueBool("xsq", "12v.charge", false);
     v2server    = MyConfig.GetParamValueBool("xsq", "v2.check", false);
     net_type    = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
-    unlocked      = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
-    //ddt4all     = MyConfig.GetParamValueBool("xsq", "ddt4all", false);
+    unlocked    = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
+    mdmcheck    = MyConfig.GetParamValueBool("xsq", "modem.check", false);
     extstats    = MyConfig.GetParamValueBool("xsq", "extended.stats", false);
     c.head(200);
   }
@@ -189,12 +189,10 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = charge the 12V if low 12V alert is raised</p>");
   c.input_checkbox("Enable V2 Server", "v2server", v2server,
     "<p>Enable = keep v2 Server connected</p>");
+  c.input_checkbox("Enable Modem check", "mdmcheck", mdmcheck,
+    "<p>Enable = Restart Modem, when signal strength if less than 20 dBm</p>");  
   c.input_checkbox("Enable Door unlocked warning", "unlocked", unlocked,
     "<p>Enable = send a warning when Car 10 minutes parked and unlocked</p>");
-/*
-  c.input_checkbox("Enable DDT4all function", "ddt4all", ddt4all,
-      "<p>Enable = DDT4all commands activate, you can find a command list at www.smart-emotion.de.</br>Use at Shell: xsq ddt4all </br>WARNING!!! You can damaged your Car, used at your own RISK!</p>");
-*/
   c.input_checkbox("Enable extended statistics", "extstats", extstats,
       "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",
