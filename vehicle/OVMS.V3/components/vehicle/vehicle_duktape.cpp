@@ -380,16 +380,18 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleStopCooldown(duk_context *ctx)
 
 
 /**
- * DukOvmsVehicleObdRequest: OBD/UDS PollSingleRequest wrapper (synchronous)
+ * DukOvmsVehicleObdRequest: OBD/UDS PollSingleRequest wrapper (synchronous).
  * 
  * Javascript API:
  *    var obdResult = OvmsVehicle.ObdRequest({
  *      txid: <int>,
  *      rxid: <int>,
- *      request: <string>|<Uint8Array>,   // hex encoded string or binary byte array
- *      [bus: <string>,]                  // default: "can1"
- *      [timeout: <int>,]                 // in ms, default: 3000
- *      [protocol: <int>,]                // default: 0 = ISOTP_STD, see vehicle.h
+ *      [bus: <string>,]    // default: "can1"
+ *      [timeout: <int>,]   // in ms, default: 3000
+ *      [protocol: <int>,]  // default: 0 = ISOTP_STD, see vehicle_common.h
+ *      [pid: <int>,]       // PID (otherwise embedded in request with type)
+ *      [type: <int>,]      // Package type (defaults to READDATA type 0x22 if pid specified)
+ *      [request: <string>|<Uint8Array>,]  // hex encoded string or binary byte array
  *    });
  * 
  *    obdResult = {
@@ -402,17 +404,9 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleStopCooldown(duk_context *ctx)
 duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
   {
   DukContext dc(ctx);
-
   int error = 0;
   std::string errordesc;
-  std::string bus = "can1";
-  uint32_t txid = 0, rxid = 0;
-  std::string request, response;
-  int timeout = 3000;
-#ifdef CONFIG_OVMS_COMP_POLLER
-  uint8_t protocol = ISOTP_STD;
-#endif
-
+  std::string response;
   if (!MyVehicleFactory.m_currentvehicle)
     {
     error = -1000;
@@ -423,65 +417,32 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
     error = -1001;
     errordesc = "No request object given";
     }
+#ifndef CONFIG_OVMS_COMP_POLLER
   else
     {
-    // Read arguments:
-    if (duk_get_prop_string(ctx, 0, "bus"))
-      bus = duk_to_string(ctx, -1);
-    duk_pop(ctx);
-    if (duk_get_prop_string(ctx, 0, "timeout"))
-      timeout = duk_to_int(ctx, -1);
-    duk_pop(ctx);
-#ifdef CONFIG_OVMS_COMP_POLLER
-    if (duk_get_prop_string(ctx, 0, "protocol"))
-      protocol = duk_to_int(ctx, -1);
-#endif
-    duk_pop(ctx);
-    if (duk_get_prop_string(ctx, 0, "txid"))
-      txid = duk_to_int(ctx, -1);
-    else
-      error = -1002;
-    duk_pop(ctx);
-    if (duk_get_prop_string(ctx, 0, "rxid"))
-      rxid = duk_to_int(ctx, -1);
-    else
-      error = -1002;
-    duk_pop(ctx);
-    if (duk_get_prop_string(ctx, 0, "request"))
-      {
-      if (duk_is_buffer_data(ctx, -1))
-        {
-        size_t size;
-        void *data = duk_get_buffer_data(ctx, -1, &size);
-        request.resize(size, '\0');
-        memcpy(&request[0], data, size);
-        }
-      else
-        {
-        request = hexdecode(duk_to_string(ctx, -1));
-        }
-      }
-    duk_pop(ctx);
+    error = -1;
+    errordesc = "Polling not implemented";
+    }
+#else
+  else
+    {
+    uint32_t txid, rxid;
+    uint8_t protocol;
+    std::string request;
+    int timeout;
+    uint16_t pid;
+    uint16_t type;
+    canbus* device;
 
-    // Validate arguments:
-    canbus* device = (canbus*)MyPcpApp.FindDeviceByName(bus.c_str());
-    if (error != 0)
-      {
-      errordesc = "Missing mandatory argument";
-      }
-    else if (device == NULL || (txid <= 0 || (txid != 0x7df && rxid <= 0) ||
-        request.size() == 0) || timeout <= 0)
-      {
-      error = -1003;
-      errordesc = "Invalid argument";
-      }
+    // Retrieve parameters
+    OvmsPollers::Duk_GetRequestFromObject(ctx, 0, "can1", true, device,
+        txid, rxid, protocol, type, pid, request, timeout, error, errordesc);
 
     // Execute request:
     if (error == 0)
       {
-#ifdef CONFIG_OVMS_COMP_POLLER
       error = MyVehicleFactory.m_currentvehicle->PollSingleRequest(
-        device, txid, rxid, request, response, timeout, protocol);
+        device, txid, rxid, type, pid, request, response, timeout, protocol);
 
       if (error == POLLSINGLE_TXFAILURE)
         errordesc = "Transmission failure (CAN bus error)";
@@ -497,12 +458,9 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
           errordesc += errname;
           }
         }
-#else
-      error = -1;
-      errordesc = "Polling not implemented";
-#endif
       }
     }
+#endif
 
   // Push result object:
   duk_idx_t obj_idx = dc.PushObject();

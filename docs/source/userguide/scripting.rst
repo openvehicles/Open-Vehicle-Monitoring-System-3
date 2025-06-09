@@ -1120,6 +1120,15 @@ OvmsPoller
 
 The Ovms Poller object represents the poller sub-system. It contains the following methods:
 
+- ``isregistered = OvmsPoller.RegisterBus(bus, mode, speed [,dbcfile])``: Register the can bus
+
+  - ``bus``: The can bus number (``1`` or ``can1``)
+  - ``mode``: The bus mode ('listen' or 'active')
+  - ``speed``: The speed (baud) of the bus (33333, 50000, 83333, 100000, 125000, 250000, 500000 or 1000000).
+    This can be 0 if it is specifed in the dbcfile.
+  - ``dbcfile``: The name of the loaded dbcfile if required.
+
+- ``OvmsPoller.PowerDown(bus)``: Power down the specified bus.
 - ``ispaused = OvmsPoller.GetPaused()``: Return true if the poller is paused by the system/user.
 - ``ispaused = OvmsPoller.GetUserPaused()``: Return true if the poller is paused by the user.
 - ``OvmsPoller.Pause()``: Pause the poller (adds User poller pause)
@@ -1206,6 +1215,109 @@ which contains the following methods:
       "tot_time_ms": 4.628
     };
 
+
+The ``Poll`` object is for the polling subsystem and has the following methods:
+
+- ``OvmsPoller.Poll.Add( list_ident, bus, dbc_file, poll_list [, poll_offset])``: Adds a poll list to the poller.
+
+  - ``list_ident`` - unique name to identify this list of polls.
+  - ``bus`` - Name of bus (eg "can1")
+  - ``dbc_file`` - Set to true to use the default dbc file on the bus for decoding. (decode sections ignored)
+                   - Set to a name to use the specifed dbc file.
+  - ``poll_list`` - Set to an object as follows
+
+     .. code-block:: javascript
+
+       [
+         {
+           "send": {
+              "txid": <int>,
+              "rxid": <int>,
+              "timeout": <int>,  // [Opt] in ms, default: 3000
+              "protocol": <int>|"Std"|"ExtAdr"|"ExtFrame"|"VWTP20", // [Opt] default: Std/0 (ISOTP_STD, see vehicle_common.h)
+              "pid": <int>,      // [Opt] PID (otherwise embedded in request for backwards compatibility)
+              "type": <int>,     // [Opt] type (defaults to READDATA type 0x22)
+              "request": <string>|<Uint8Array>,   // hex encoded string or binary byte array
+            },
+           "states": [ t0, t1, t2, t3 ], // Repeating poll states (offset by 'poll_offset' param) only 4 allowed.
+           "decode": { // [Not used if dbc_decode is true]
+             <metric.name>|<value_name> :
+               {
+               // [Opt] Section conditional on other flags.
+               "match": {
+                 "name": <value_name>, // The value to multiplex off.
+                 // A list of values/ranges to match the value of value_name specified.
+                 "values": [
+                    v1, | { "from": v1, "to": v2 }  // Either a single value or a range object.
+                 ]
+               },
+
+               "start": <offset>,  // [Opt] start in bytes
+               "len": <len>,  //[Opt] Length in bytes (default 1 byte)
+
+               // [Opt] Bit Start/Length within defined bytes (or whole entry if start not specified)
+               "bitstart": <offset>, // Adds to 'start'. (Defaults to 0 for little-endian, and 7 for big-endian)
+               "bitlen": <len>,   // overrides 'len' (effectively defaults to 8*len)
+
+               "factor": <mult>,      // [Opt] Multiple applied to value (default 1).
+               "offset": <offset>,    // [Opt] Offset in bytes (default 0).
+               "unit": <unit>,        // [Opt] Ovms Unit (ensures the final value is in the correct internal units).
+               "datatype": "int-be|uint-be|int-le|uint-le|flag",
+               "values":  // [Opt] Map of values to strings to set to the ovms unit
+                 {
+                 <n1>: <string1>,
+                 <n2>: <string2>
+                 }
+               }
+           }
+         }
+       ]
+
+  - ``poll_offset``: (optional) Offset of 4 poll states. Default is [0..3] but an offset of 4 would be states 4..7
+
+
+- ``OvmsPoller.Poll.Remove([busno,]list_ident)``: Removes the poll list ``list_ident``.
+- ``OvmsPoller.Poll.GetState([busno])``: Gets the 'poll state' (for the bus)
+- ``OvmsPoller.Poll.SetState([busno,] state)``: Sets the 'poll state' (for the bus)
+- ``OvmsPoller.Poll.Request(request, callback_obj)``: Performs a once-off asynchronous OBD request.
+- ``OvmsPoller.Poll.SetTrace(bool)``: Sets the trace mode for Duktape Polling configurations
+
+  - ``request``: Description of the request
+
+  .. code-block:: javascript
+
+    {
+      "txid": <int>,
+      "rxid": <int>,
+      ["bus": <string>,]    // default: "can1"
+      ["timeout": <int>,]   // in ms, default: 3000
+      ["protocol": <int>,]  // default: 0 = ISOTP_STD, see vehicle_common.h
+      ["pid": <int>,]       // PID (otherwise embedded in request with type)
+      ["type": <int>,]      // Package type (defaults to READDATA type 0x22 if pid specified)
+      ["request": <string>|<Uint8Array>,]  // hex encoded string or binary byte array
+    }
+
+  - ``callback_obj``: Call-backs for success and failed calls.
+    The call-backs both accept a single object as a parameter.
+
+    .. code-block:: javascript
+
+     {
+       "success": function( success-object ) { },
+       "failed": function( failed-object ) { }
+     }
+
+    - ``success-object``: An object of the following format -
+
+    .. code-block:: javascript
+
+      { "type": <int>, "txid": <int>, "rxid": <int>, "pid": <int>, "data": <BufferObject> }
+
+    - ``failed-object``: An object of the following format -
+
+    .. code-block:: javascript
+
+      { "type": <int>, "txid": <int>, "rxid": <int>, "pid": <int>, "errorcode": <int> }
 
 --------------
 Test Utilities
