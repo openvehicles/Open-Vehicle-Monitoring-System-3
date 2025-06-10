@@ -87,9 +87,11 @@ provides data logging to SD card and to a server.
   - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US) [APK file](https://github.com/openvehicles/Open-Vehicle-Android/tree/master/release)
   - [iOS App](https://apps.apple.com/us/app/open-vehicles/id490098531)
 - _Distributors_
-  - [Medlock & Sons (North America)](https://medlockandsons.com/product/ovms-v3/)
-  - [OpenEnergyMonitor (UK/Europe)](https://shop.openenergymonitor.com/ovms/)
-  - [e-mobility driving solutions GmbH (Germany/Europe)](https://e-mobility-driving-solutions.com/produkt-kategorie/ovms-products/?lang=en)
+  - _Original Design_
+    - [Medlock & Sons (North America)](https://medlockandsons.com/product/ovms-v3/)
+    - [OpenEnergyMonitor (UK/Europe)](https://shop.openenergymonitor.com/ovms/)
+  - _Customized Versions_
+    - [Optimized compact casing not only for Smart ED/EQ (Germany/Europe)](https://www.smart-emotion.de/shop/product/75-ovms-independent-app/)
 - _Servers_
   - [Asia-Pacific](https://www.openvehicles.com/)
   - [Germany/Europe](https://dexters-web.de/)
