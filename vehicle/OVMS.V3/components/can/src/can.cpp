@@ -1340,6 +1340,11 @@ void canbus::ClearStatus()
   m_watchdog_timer = monotonictime;
   }
 
+  void canbus::SetCanbusMode(CAN_mode_t mode)
+  {
+    m_mode = mode;
+  }
+
 void canbus::AttachDBC(dbcfile *dbcfile)
   {
   if (m_dbcfile) DetachDBC();

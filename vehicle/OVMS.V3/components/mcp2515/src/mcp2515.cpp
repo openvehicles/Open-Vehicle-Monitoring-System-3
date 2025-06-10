@@ -176,6 +176,9 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RESET);
   vTaskDelay(50 / portTICK_PERIOD_MS);
 
+  // Transceiver in listen only mode during configuration
+  SetTransceiverMode(false);
+
   // CANINTE (interrupt enable), disable all interrupts during configuration
   WriteRegAndVerify(REG_CANINTE, 0);
 
@@ -185,9 +188,6 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
 
   // Rx Buffer 0 control (receive all and enable buffer 1 rollover)
   WriteRegAndVerify(REG_RXB0CTRL, 0b01100100, 0b01101101);
-
-  // BFPCTRL RXnBF PIN CONTROL AND STATUS
-  WriteRegAndVerify(REG_BFPCTRL, 0b00001100);
 
   // Bus speed
   uint8_t cnf1 = 0;
@@ -241,11 +241,17 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   // Active/Listen Mode
   uint8_t ret;
   if (m_mode == CAN_MODE_LISTEN)
+  {
     ret=ChangeMode(CANCTRL_MODE_LISTEN);
+  }
   else
+  {
     ret=ChangeMode(CANCTRL_MODE_NORMAL);
+  }
   if (ret != ESP_OK)
       return ESP_FAIL;
+
+  SetCanbusMode(m_mode);
 
   // Clear abort transmisions & one-shot mode:
   m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANCTRL, CANCTRL_OSM | CANCTRL_ABAT, 0);
@@ -307,12 +313,12 @@ esp_err_t mcp2515::Stop()
 
   uint8_t buf[16];
 
+  // disable write of transceiver - listen only mode
+  SetTransceiverMode(false);
+
   // RESET command
   m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RESET);
   vTaskDelay(50 / portTICK_PERIOD_MS);
-
-  // BFPCTRL RXnBF PIN CONTROL AND STATUS
-  WriteRegAndVerify(REG_BFPCTRL, 0b00111100);
 
   // Set SLEEP mode
   ChangeMode(CANCTRL_MODE_SLEEP);
@@ -320,6 +326,7 @@ esp_err_t mcp2515::Stop()
   // And record that we are powered down
   pcp::SetPowerMode(Off);
   m_mode = CAN_MODE_OFF;
+  SetCanbusMode(m_mode);
 
   return ESP_OK;
   }
@@ -816,6 +823,31 @@ void mcp2515::SetPowerMode(PowerMode powermode)
     }
   }
 
+
+void mcp2515::SetCanbusMode(CAN_mode_t mode)
+  {
+    m_mode=mode;
+    SetTransceiverMode(m_mode == CAN_MODE_ACTIVE);
+  }
+
+/**
+ * SetTransceiverMode: enable or disable write driver of transceiver
+ * Pin RS of SN65 to 0 or 1 
+ * 
+ */
+void mcp2515::SetTransceiverMode(bool isactive)
+  {
+  if ( isactive ) 
+  {
+    // BFPCTRL RXnBF PIN CONTROL AND STATUS - enable TX driver of SN65 - rd/wr mode
+    WriteRegAndVerify(REG_BFPCTRL, 0b00001100);
+  } 
+  else
+  {
+    // BFPCTRL RXnBF PIN CONTROL AND STATUS - disable TX driver of SN65 - listen only mode
+    WriteRegAndVerify(REG_BFPCTRL, 0b00111100);
+  }
+  }
 
 /**
  * GetErrorFlagsDesc: decode error flags into human readable text

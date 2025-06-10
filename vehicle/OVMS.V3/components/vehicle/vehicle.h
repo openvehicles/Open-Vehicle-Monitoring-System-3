@@ -467,6 +467,7 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL, bool autoPoweroff = true);
     bool PinCheck(const char* pin);
+    void SetCanbusMode(int bus, CAN_mode_t mode);
 
   public:
     typedef enum

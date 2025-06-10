@@ -220,7 +220,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_CHGpower          = new OvmsMetricVector<float>("xsq.obl.power", SM_STALE_HIGH, kW);
   mt_obl_main_freq              = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);
   
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
   // init commands:
   cmd_xsq = MyCommandApp.RegisterCommand("xsq","SmartEQ 453 Gen.4");
@@ -237,7 +236,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   MyConfig.RegisterParam("xsq", "smartEQ", true, true);
 
   ConfigChanged(NULL);
-  
+
+  CAN_mode_t mode = m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
+  RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
+
   StdMetrics.ms_v_gen_current->SetValue(2);                // activate gen metrics to app transfer
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);  // set 12V alert to false
 
@@ -377,7 +379,10 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   ESP_LOGI(TAG, "Smart EQ reload configuration");
 
+  bool is_write_enabled = m_enable_write;
   m_enable_write      = MyConfig.GetParamValueBool("xsq", "canwrite", false);
+  if (m_enable_write != is_write_enabled ) SetCanbusMode(1, m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN); 
+
   m_enable_LED_state  = MyConfig.GetParamValueBool("xsq", "led", false);
   m_enable_lock_state = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
   m_ios_tpms_fix      = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);

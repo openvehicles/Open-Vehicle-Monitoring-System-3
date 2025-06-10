@@ -700,6 +700,15 @@ bool OvmsVehicle::PinCheck(const char* pin)
   return (strcmp(vpin.c_str(),pin)==0);
   }
 
+  void OvmsVehicle::SetCanbusMode(int bus, CAN_mode_t mode)
+  {
+  canbus *can;
+  std::string busname = string_format("can%d", bus);
+  can = (canbus*)MyPcpApp.FindDeviceByName(busname.c_str());
+  if (can)
+      can->SetCanbusMode( mode );
+  }
+
 void OvmsVehicle::PollRunFinishedNotify(canbus* bus, void *data)
   {
   PollRunFinished(bus);

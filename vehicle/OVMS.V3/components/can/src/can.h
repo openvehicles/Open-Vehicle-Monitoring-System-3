@@ -329,6 +329,7 @@ class canbus : public pcp, public InternalRamAllocated
     CAN_errorstate_t GetErrorState();
     const char* GetErrorStateName();
     virtual bool GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags);
+    virtual void SetCanbusMode( CAN_mode_t mode);
 
   public:
     CAN_speed_t m_speed;
