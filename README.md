@@ -44,7 +44,8 @@ provides data logging to SD card and to a server.
   - Chevrolet Volt / Opel Ampera
   - Chevrolet Bolt EV / Opel Ampera-e
   - [BMW i3 / i3s](https://docs.openvehicles.com/en/latest/components/vehicle_bmwi3/docs/index.html)
-  - [Mini Cooper SE](https://docs.openvehicles.com/en/latest/components/vehicle_minise/docs/index.html)
+  - [BYD Atto 3](https://docs.openvehicles.com/en/latest/components/vehicle_byd_atto3/docs/index.html)
+  - [Energica motorbikes](https://docs.openvehicles.com/en/latest/components/vehicle_energica/docs/index.html)
   - [Fiat 500e](https://docs.openvehicles.com/en/latest/components/vehicle_fiat500/docs/index.html)
   - [Hyundai Ioniq vFL](https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html)
   - [Hyundai Ioniq 5](https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniq5/docs/index.html)
@@ -52,10 +53,13 @@ provides data logging to SD card and to a server.
   - [Kia e-Niro / Hyundai Kona / Hyundai Ioniq FL](https://docs.openvehicles.com/en/latest/components/vehicle_kianiroev/docs/index.html)
   - [Kia Soul EV](https://docs.openvehicles.com/en/latest/components/vehicle_kiasoulev/docs/index.html)
   - [Maxus eDeliver 3](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html)
+  - [Maxus Euniq 5 6-seats](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_euniq56/docs/index.html)
   - [Mercedes-Benz B250E](https://docs.openvehicles.com/en/latest/components/vehicle_mercedesb250e/docs/index.html)
-  - [MG](https://docs.openvehicles.com/en/latest/components/vehicle_mgev/docs/index.html)
+  - [MG EV](https://docs.openvehicles.com/en/latest/components/vehicle_mgev/docs/index.html)
+  - [Mini Cooper SE](https://docs.openvehicles.com/en/latest/components/vehicle_minise/docs/index.html)
   - [Mitsubishi Trio (i-MiEV et al)](https://docs.openvehicles.com/en/latest/components/vehicle_mitsubishi/docs/index.html)
   - [Nissan Leaf / e-NV200](https://docs.openvehicles.com/en/latest/components/vehicle_nissanleaf/docs/index.html)
+  - [NIU MQi GT EVO / GT 100](https://docs.openvehicles.com/en/latest/components/vehicle_niu_gtevo/docs/index.html)
   - [Renault Twizy](https://docs.openvehicles.com/en/latest/components/vehicle_renaulttwizy/docs/index.html)
   - [Renault Zoe / Kangoo](https://docs.openvehicles.com/en/latest/components/vehicle_renaultzoe/docs/index.html)
   - [Renault Zoe Phase 2](https://docs.openvehicles.com/en/latest/components/vehicle_renaultzoe_ph2/docs/index.html)
@@ -65,7 +69,7 @@ provides data logging to SD card and to a server.
   - [Tesla Roadster](https://docs.openvehicles.com/en/latest/components/vehicle_teslaroadster/docs/index.html)
   - Think City
   - [Toyota RAV4 EV](https://docs.openvehicles.com/en/latest/components/vehicle_toyotarav4ev/docs/index.html)
-  - [VW e-Up](https://docs.openvehicles.com/en/latest/components/vehicle_vweup/docs/index.html)
+  - [VW e-Up / Skoda Citigo / Seat Mii](https://docs.openvehicles.com/en/latest/components/vehicle_vweup/docs/index.html)
 - _General Support_
   - [DBC File Based](https://docs.openvehicles.com/en/latest/components/vehicle_dbc/docs/index.html)
   - [GPS Tracking](https://docs.openvehicles.com/en/latest/components/vehicle_track/docs/index.html)
