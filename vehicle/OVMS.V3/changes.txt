@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- New vehicle: NIU MQi GT EVO or GT 100 electric scooters (NEVO)
+  https://docs.openvehicles.com/en/latest/components/vehicle_niu_gtevo/docs/index.html
 - Smart EQ 453:
     TPMS pressure alert settings at Features
     add information commads xsq climate|counter|mtdata|reset|start|total
