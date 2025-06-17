@@ -191,18 +191,18 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x2101: // obd Trip Distance km
           PollReply_obd_trip(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x2102: // obd Trip Fuel used
+        /*case 0x2102: // obd Trip Fuel used
           PollReply_obd_used(m_rxbuf.data(), m_rxbuf.size());
-          break;
+          break;*/
         case 0x2104: // obd Trip time s
           PollReply_obd_time(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x01A0: // obd Start Trip Distance km
           PollReply_obd_start_trip(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x01A1: // obd Start Trip Fuel used
+        /*case 0x01A1: // obd Start Trip Fuel used
           PollReply_obd_start_used(m_rxbuf.data(), m_rxbuf.size());
-          break;
+          break;*/
         case 0x01A2: // obd Start Trip time s
           PollReply_obd_start_time(m_rxbuf.data(), m_rxbuf.size());
           break;
