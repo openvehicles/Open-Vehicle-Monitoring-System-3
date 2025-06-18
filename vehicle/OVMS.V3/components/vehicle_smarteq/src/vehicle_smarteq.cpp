@@ -159,14 +159,14 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, false);
   mt_use_at_reset               = MyMetrics.InitFloat("xsq.use.at.reset", SM_STALE_MID, 0, kWh);
   mt_use_at_start               = MyMetrics.InitFloat("xsq.use.at.start", SM_STALE_MID, 0, kWh);
-  mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_HIGH, "", Other);
-  mt_dummy_pressure             = MyMetrics.InitFloat("xsq.dummy.pressure", SM_STALE_HIGH, 235, kPa);  // Dummy pressure for TPMS alert testing
+  mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_NONE, "", Other);
+  mt_dummy_pressure             = MyMetrics.InitFloat("xsq.dummy.pressure", SM_STALE_NONE, 235, kPa);  // Dummy pressure for TPMS alert testing
 
   mt_obd_duration               = MyMetrics.InitInt("xsq.obd.duration", SM_STALE_MID, 0, Minutes);
   mt_obd_trip_km                = MyMetrics.InitFloat("xsq.obd.trip.km", SM_STALE_MID, 0, Kilometers);
   mt_obd_start_trip_km          = MyMetrics.InitFloat("xsq.obd.trip.km.start", SM_STALE_MID, 0, Kilometers);
-  mt_obd_trip_used              = MyMetrics.InitFloat("xsq.obd.trip.used", SM_STALE_MID, 0, Watts);
-  mt_obd_start_trip_used        = MyMetrics.InitFloat("xsq.obd.trip.used.start", SM_STALE_MID, 0, Watts);
+  //mt_obd_trip_used              = MyMetrics.InitFloat("xsq.obd.trip.used", SM_STALE_MID, 0, Watts);
+  //mt_obd_start_trip_used        = MyMetrics.InitFloat("xsq.obd.trip.used.start", SM_STALE_MID, 0, Watts);
   mt_obd_trip_time              = MyMetrics.InitString("xsq.obd.trip.time", SM_STALE_MID, 0, Other);
   mt_obd_start_trip_time        = MyMetrics.InitString("xsq.obd.trip.time.start", SM_STALE_MID, 0, Other);
   mt_obd_mt_day_prewarn         = MyMetrics.InitInt("xsq.obd.mt.day.prewarn", SM_STALE_MID, 45, Other);
@@ -182,7 +182,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_climate_ds                 = MyMetrics.InitInt("xsq.climate.ds", SM_STALE_MID, 1, Other);
   mt_climate_de                 = MyMetrics.InitInt("xsq.climate.de", SM_STALE_MID, 6, Other);
   mt_climate_1to3               = MyMetrics.InitInt("xsq.climate.1to3", SM_STALE_MID, 0, Other);
-  mt_climate_data               = MyMetrics.InitString("xsq.climate.data", SM_STALE_HIGH,"0,0,0,0,-1,-1,-1", Other);
+  mt_climate_data               = MyMetrics.InitString("xsq.climate.data", SM_STALE_MID,"0,0,0,0,-1,-1,-1", Other);
 
   mt_pos_odometer_start         = MyMetrics.InitFloat("xsq.odometer.start", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_start_total   = MyMetrics.InitFloat("xsq.odometer.start.total", SM_STALE_MID, 0, Kilometers);
@@ -252,6 +252,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     MyConfig.SetParamValueBool("xsq", "12v.charge", true);
   }
 
+  if (MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6) == 1.6) {
+    MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
+  }
+
   if (MyConfig.GetParamValue("xsq", "v2.check","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "v2.check", false);
   }
@@ -290,7 +294,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   if (MyConfig.GetParamValue("xsq", "restart.wakeup","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "restart.wakeup", false);
   }
-  
+ 
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
     ResetTotalCounters();
     ResetTripCounters();
@@ -1300,6 +1304,17 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   HandleTripcounter();
   HandleChargeport();
 
+  // reactivate door lock warning if the car is parked and unlocked
+  if( m_enable_lock_state 
+      && m_warning_unlocked
+      && (StdMetrics.ms_v_door_fl->AsBool() 
+          || StdMetrics.ms_v_door_fr->AsBool() 
+          || StdMetrics.ms_v_door_rl->AsBool() 
+          || StdMetrics.ms_v_door_rr->AsBool()
+          || StdMetrics.ms_v_door_trunk->AsBool())) {
+              StdMetrics.ms_v_env_parktime->SetValue(0); // reset parking time
+              m_warning_unlocked = false;
+          }
   
   if (ticker % 60 == 0) { // Every 60 seconds
 
