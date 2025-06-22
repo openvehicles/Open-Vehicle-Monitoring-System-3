@@ -379,12 +379,17 @@ esp32can::esp32can(const char* name, int txpin, int rxpin)
   m_rxpin = (gpio_num_t)rxpin;
   MyESP32can = this;
 
-  // Due to startup order, we can't talk to MAX7317 during
-  // initialisation. So, we'll just enter reset mode for the
-  // on-chip controller, and let housekeeping power us down
-  // after startup.
   m_powermode = Off;
   m_tx_abort = false;
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  // The peripherals startup sequence guarantees we can talk to the MAX7317 here.
+  // Ensure the matching SN65 transceiver is set to listen mode:
+  MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 1);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+  // Enter controller reset mode:
+  ESP_LOGD(TAG, "Reset mode state on init: %d", MODULE_ESP32CAN->MOD.B.RM);
   MODULE_ESP32CAN->MOD.B.RM = 1;
 
   // Launch ISR allocator task on core 0:
@@ -559,6 +564,11 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   
   SetCanbusMode(m_mode);
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  // Set the matching SN65 transceiver to active mode
+  MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 0);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
   // And record that we are powered on
   pcp::SetPowerMode(On);
 
@@ -573,6 +583,11 @@ esp_err_t esp32can::Stop()
 
   // Clear TX queue
   xQueueReset(m_txqueue);
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  // Set the matching SN65 transceiver to listen mode
+  MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 1);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
   ESP32CAN_ENTER_CRITICAL();
 

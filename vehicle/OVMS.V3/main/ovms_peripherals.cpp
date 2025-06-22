@@ -50,6 +50,7 @@ static const char *TAG = "peripherals";
 Peripherals::Peripherals()
   {
   ESP_LOGI(TAG, "Initialising OVMS Peripherals...");
+  MyPeripherals = this;
 
 #if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_CELLULAR)
   if (MyConfig.IsDefined("network","mac"))

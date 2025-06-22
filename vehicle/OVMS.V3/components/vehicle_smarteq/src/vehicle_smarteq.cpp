@@ -75,8 +75,8 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,300,300,300 }, 0, ISOTP_STD }, // extern temp byte 2+3
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD Trip Distance km
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD start Trip Distance km 
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2102, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD Trip kWh used
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A1, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD start Trip kWh used
+//  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2102, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD Trip kWh used
+//  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A1, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD start Trip kWh used
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD Trip time s
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD start Trip time s
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance data days
@@ -159,30 +159,30 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, false);
   mt_use_at_reset               = MyMetrics.InitFloat("xsq.use.at.reset", SM_STALE_MID, 0, kWh);
   mt_use_at_start               = MyMetrics.InitFloat("xsq.use.at.start", SM_STALE_MID, 0, kWh);
-  mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MIN, "", Other);
-  mt_dummy_pressure             = MyMetrics.InitFloat("xsq.dummy.pressure", SM_STALE_MIN, 235, kPa);  // Dummy pressure for TPMS alert testing
+  mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_NONE, "", Other);
+  mt_dummy_pressure             = MyMetrics.InitFloat("xsq.dummy.pressure", SM_STALE_NONE, 235, kPa);  // Dummy pressure for TPMS alert testing
 
-  mt_obd_duration               = MyMetrics.InitInt("xsq.obd.duration", SM_STALE_MIN, 0, Minutes);
+  mt_obd_duration               = MyMetrics.InitInt("xsq.obd.duration", SM_STALE_MID, 0, Minutes);
   mt_obd_trip_km                = MyMetrics.InitFloat("xsq.obd.trip.km", SM_STALE_MID, 0, Kilometers);
   mt_obd_start_trip_km          = MyMetrics.InitFloat("xsq.obd.trip.km.start", SM_STALE_MID, 0, Kilometers);
-  mt_obd_trip_used              = MyMetrics.InitFloat("xsq.obd.trip.used", SM_STALE_MID, 0, Watts);
-  mt_obd_start_trip_used        = MyMetrics.InitFloat("xsq.obd.trip.used.start", SM_STALE_MID, 0, Watts);
-  mt_obd_trip_time              = MyMetrics.InitString("xsq.obd.trip.time", SM_STALE_MIN, 0, Other);
-  mt_obd_start_trip_time        = MyMetrics.InitString("xsq.obd.trip.time.start", SM_STALE_MIN, 0, Other);
+  //mt_obd_trip_used              = MyMetrics.InitFloat("xsq.obd.trip.used", SM_STALE_MID, 0, Watts);
+  //mt_obd_start_trip_used        = MyMetrics.InitFloat("xsq.obd.trip.used.start", SM_STALE_MID, 0, Watts);
+  mt_obd_trip_time              = MyMetrics.InitString("xsq.obd.trip.time", SM_STALE_MID, 0, Other);
+  mt_obd_start_trip_time        = MyMetrics.InitString("xsq.obd.trip.time.start", SM_STALE_MID, 0, Other);
   mt_obd_mt_day_prewarn         = MyMetrics.InitInt("xsq.obd.mt.day.prewarn", SM_STALE_MID, 45, Other);
   mt_obd_mt_day_usual           = MyMetrics.InitInt("xsq.obd.mt.day.usual", SM_STALE_MID, 0, Other);
   mt_obd_mt_km_usual            = MyMetrics.InitInt("xsq.obd.mt.km.usual", SM_STALE_MID, 0, Kilometers);
   mt_obd_mt_level               = MyMetrics.InitString("xsq.obd.mt.level", SM_STALE_MID, "unknown", Other);
 
-  mt_climate_on                 = MyMetrics.InitBool("xsq.climate.on", SM_STALE_MIN, false);
-  mt_climate_weekly             = MyMetrics.InitBool("xsq.climate.weekly", SM_STALE_MIN, false);
-  mt_climate_time               = MyMetrics.InitString("xsq.climate.time", SM_STALE_MIN, "0515", Other);
-  mt_climate_h                  = MyMetrics.InitInt("xsq.climate.h", SM_STALE_MIN, 5, Other);
-  mt_climate_m                  = MyMetrics.InitInt("xsq.climate.m", SM_STALE_MIN, 15, Other);
-  mt_climate_ds                 = MyMetrics.InitInt("xsq.climate.ds", SM_STALE_MIN, 1, Other);
-  mt_climate_de                 = MyMetrics.InitInt("xsq.climate.de", SM_STALE_MIN, 6, Other);
-  mt_climate_1to3               = MyMetrics.InitInt("xsq.climate.1to3", SM_STALE_MIN, 0, Other);
-  mt_climate_data               = MyMetrics.InitString("xsq.climate.data", SM_STALE_HIGH,"0,0,0,0,-1,-1,-1", Other);
+  mt_climate_on                 = MyMetrics.InitBool("xsq.climate.on", SM_STALE_MID, false);
+  mt_climate_weekly             = MyMetrics.InitBool("xsq.climate.weekly", SM_STALE_MID, false);
+  mt_climate_time               = MyMetrics.InitString("xsq.climate.time", SM_STALE_MID, "0515", Other);
+  mt_climate_h                  = MyMetrics.InitInt("xsq.climate.h", SM_STALE_MID, 5, Other);
+  mt_climate_m                  = MyMetrics.InitInt("xsq.climate.m", SM_STALE_MID, 15, Other);
+  mt_climate_ds                 = MyMetrics.InitInt("xsq.climate.ds", SM_STALE_MID, 1, Other);
+  mt_climate_de                 = MyMetrics.InitInt("xsq.climate.de", SM_STALE_MID, 6, Other);
+  mt_climate_1to3               = MyMetrics.InitInt("xsq.climate.1to3", SM_STALE_MID, 0, Other);
+  mt_climate_data               = MyMetrics.InitString("xsq.climate.data", SM_STALE_MID,"0,0,0,0,-1,-1,-1", Other);
 
   mt_pos_odometer_start         = MyMetrics.InitFloat("xsq.odometer.start", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_start_total   = MyMetrics.InitFloat("xsq.odometer.start.total", SM_STALE_MID, 0, Kilometers);
@@ -245,7 +245,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   m_network_type_ls = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
   m_indicator       = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
-  //m_ddt4all         = MyConfig.GetParamValueBool("xsq", "ddt4all", false);                //!< DDT4ALL mode
   
   if (MyConfig.GetParamValue("password", "pin","0") == "0") {
     MyConfig.SetParamValueInt("password", "pin", 1234);           // set default pin
@@ -255,17 +254,12 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     MyConfig.SetParamValueBool("xsq", "12v.charge", true);
   }
 
+  if (MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6) == 1.6) {
+    MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
+  }
+
   if (MyConfig.GetParamValue("xsq", "v2.check","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "v2.check", false);
-  }
-/*
-  if (MyConfig.GetParamValue("xsq", "ddt4all","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "ddt4all", false);
-  }
-*/
-  if (MyConfig.GetParamValue("xsq", "ddt4all","0") != "0") {
-    // remove old variables
-    ExecuteCommand("config rm xsq ddt4all");
   }
 
   if (MyConfig.GetParamValue("xsq", "extended.stats","0") == "0") {
@@ -273,19 +267,14 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   }
 
   if (MyConfig.GetParamValue("xsq", "tpms.front.pressure","0") == "0") {
-    MyConfig.SetParamValueInt("xsq", "tpms.front.pressure",  220); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.rear.pressure",  250); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.value.warn",  25); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.value.alert", 45); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.front.pressure",  225); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.rear.pressure",  255); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.value.warn",  30); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.value.alert", 50); // kPa
   }
 
   if (MyConfig.GetParamValue("xsq", "tpms.alert.enable","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "tpms.alert.enable", true);
-  }
-
-  if(MyConfig.GetParamValue("xsq", "booster.system","0") != "0") {
-    // remove old variables
-    ExecuteCommand("config rm xsq booster.system");                                  
   }
 
   if(MyConfig.GetParamValue("xsq", "unlock.warning","0") == "0") {
@@ -303,24 +292,31 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   if (MyConfig.GetParamValue("xsq", "modem.threshold","0") == "0") {
     MyConfig.SetParamValueInt("xsq", "modem.threshold", -20);
   }
-  
+
+  if (MyConfig.GetParamValue("xsq", "restart.wakeup","0") == "0") {
+    MyConfig.SetParamValueBool("xsq", "restart.wakeup", false);
+  }
+ 
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
     ResetTotalCounters();
     ResetTripCounters();
   }
 
-  CommandWakeup();                                             // wake up the car to get the first data
+  if (MyConfig.GetParamValueBool("xsq", "restart.wakeup",false)) {
+    CommandWakeup();                                           // wake up the car to get the first data
+  }
+  
   setTPMSValueBoot();                                          // set TPMS dummy values to 0
 
-#ifdef CONFIG_OVMS_COMP_CELLULAR
-  if(MyConfig.GetParamValue("xsq", "gps.onoff","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "gps.onoff", true);
-    MyConfig.SetParamValueInt("xsq", "gps.reactmin", 50);
-  }
-#endif
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-  WebInit();
-#endif
+  #ifdef CONFIG_OVMS_COMP_CELLULAR
+    if(MyConfig.GetParamValue("xsq", "gps.onoff","0") == "0") {
+      MyConfig.SetParamValueBool("xsq", "gps.onoff", true);
+      MyConfig.SetParamValueInt("xsq", "gps.reactmin", 50);
+    }
+  #endif
+  #ifdef CONFIG_OVMS_COMP_WEBSERVER
+    WebInit();
+  #endif
 }
 
 OvmsVehicleSmartEQ::~OvmsVehicleSmartEQ() {
@@ -841,7 +837,7 @@ void OvmsVehicleSmartEQ::GPSOnOff() {
   #ifdef CONFIG_OVMS_COMP_CELLULAR
     static const int PARK_TIMEOUT_SECS = 600;  // 10 minutes
     static const int INITIAL_DELAY = 10;
-    m_gps_ticker += 1;
+    m_gps_ticker++;
 
     // Power saving: Turn off GPS
     bool should_turn_off = (StdMetrics.ms_v_env_parktime->AsInt() > PARK_TIMEOUT_SECS &&
@@ -920,7 +916,9 @@ void OvmsVehicleSmartEQ::DoorLockState() {
   if (warning_unlocked) {
       m_warning_unlocked = true;
       ESP_LOGI(TAG, "Warning: Vehicle is unlocked and parked for more than 10 minutes");
-      MyNotify.NotifyString("warning", "vehicle.unlocked", "The vehicle is unlocked and parked for more than 10 minutes.");
+      MyNotify.NotifyString("alert", "vehicle.unlocked", "The vehicle is unlocked and parked for more than 10 minutes.");
+  } else if (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10 && !warning_unlocked){
+      m_warning_unlocked = true; // prevent warning if the vehicle is parked locked for more than 10 minutes
   }
 }
 
@@ -1311,12 +1309,23 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   HandleTripcounter();
   HandleChargeport();
 
-  if (m_enable_LED_state) OnlineState();
-  if (m_enable_lock_state) DoorLockState();
-
+  // reactivate door lock warning if the car is parked and unlocked
+  if( m_enable_lock_state 
+      && m_warning_unlocked
+      && (StdMetrics.ms_v_door_fl->AsBool() 
+          || StdMetrics.ms_v_door_fr->AsBool() 
+          || StdMetrics.ms_v_door_rl->AsBool() 
+          || StdMetrics.ms_v_door_rr->AsBool()
+          || StdMetrics.ms_v_door_trunk->AsBool())) {
+              StdMetrics.ms_v_env_parktime->SetValue(0); // reset parking time
+              m_warning_unlocked = false;
+          }
+  
   if (ticker % 60 == 0) { // Every 60 seconds
+
     if(mt_climate_on->AsBool()) TimeCheckTask();
-    if(m_12v_charge) Check12vState();
+    if(m_12v_charge && !StdMetrics.ms_v_env_on->AsBool()) Check12vState();
+    if(m_enable_lock_state && !StdMetrics.ms_v_env_on->AsBool()) DoorLockState();
 
     #ifdef CONFIG_OVMS_COMP_SERVER_V2
       if(m_v2_check) CheckV2State();
@@ -1327,8 +1336,9 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
     #endif
 
     #ifdef CONFIG_OVMS_COMP_CELLULAR
-      if(m_gps_onoff) GPSOnOff();
+      if(m_gps_onoff && !StdMetrics.ms_v_env_on->AsBool()) GPSOnOff();
       if(m_modem_check) CheckModemState();
+      if(m_network_type != m_network_type_ls) ModemNetworkType();
     #endif
 
     // DDT4ALL session timeout on 5 minutes
@@ -1344,8 +1354,8 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
   }
 
   if (ticker % 10 == 0) { // Every 10 seconds
+    if(m_enable_LED_state) OnlineState();
     if(m_climate_system) TimeBasedClimateData();
-    if(m_network_type != m_network_type_ls) ModemNetworkType();
   }
 }
 
@@ -1456,7 +1466,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
   {
     case 0:
     {
-      res =  CommandClimateControl(true);
+      res = CommandClimateControl(true);
       break;
     }
     case 1:
