@@ -132,6 +132,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_v2_restart = false;
   m_ddt4all = false;
   m_ddt4all_ticker = 0;
+  m_ddt4all_exec = 0;
   m_warning_unlocked = false;
   m_modem_restart = false;
   m_modem_ticker = 0;
@@ -294,6 +295,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   if (MyConfig.GetParamValue("xsq", "restart.wakeup","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "restart.wakeup", false);
   }
+
+  if (MyConfig.GetParamValue("xsq", "reset.notify", "0") == "0") {
+    MyConfig.SetParamValueBool("xsq", "reset.notify", true);
+  }
  
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
     ResetTotalCounters();
@@ -380,16 +385,17 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_reboot_time       = MyConfig.GetParamValueInt("xsq", "rebootnw", 30);
   m_resettrip         = MyConfig.GetParamValueBool("xsq", "resettrip", false);
   m_resettotal        = MyConfig.GetParamValueBool("xsq", "resettotal", false);
+  m_tripnotify        = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
 /*
   m_TPMS_FL           = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
   m_TPMS_FR           = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
   m_TPMS_RL           = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
   m_TPMS_RR           = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
 */
-  m_tpms_index[3]       = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
-  m_tpms_index[2]       = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
-  m_tpms_index[1]       = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
-  m_tpms_index[0]       = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
+  m_tpms_index[3]     = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
+  m_tpms_index[2]     = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
+  m_tpms_index[1]     = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
+  m_tpms_index[0]     = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
   m_front_pressure    = MyConfig.GetParamValueFloat("xsq", "tpms.front.pressure",  220); // kPa
   m_rear_pressure     = MyConfig.GetParamValueFloat("xsq", "tpms.rear.pressure",  250); // kPa
   m_pressure_warning  = MyConfig.GetParamValueFloat("xsq", "tpms.value.warn",  25); // kPa
@@ -692,7 +698,7 @@ void OvmsVehicleSmartEQ::ResetChargingValues() {
 }
 
 void OvmsVehicleSmartEQ::ResetTripCounters() {
-  NotifyTripCounters();
+  if (m_tripnotify) NotifyTripCounters();
   vTaskDelay(10 / portTICK_PERIOD_MS); // Give notification time to complete
   StdMetrics.ms_v_bat_energy_recd->SetValue(0);
   StdMetrics.ms_v_bat_energy_used->SetValue(0);
@@ -702,7 +708,7 @@ void OvmsVehicleSmartEQ::ResetTripCounters() {
 }
 
 void OvmsVehicleSmartEQ::ResetTotalCounters() {
-  NotifyTotalCounters();
+  if (m_tripnotify) NotifyTotalCounters();
   vTaskDelay(10 / portTICK_PERIOD_MS); // Give notification time to complete
   StdMetrics.ms_v_bat_energy_recd_total->SetValue(0);
   StdMetrics.ms_v_bat_energy_used_total->SetValue(0);
@@ -929,6 +935,7 @@ void OvmsVehicleSmartEQ::WifiRestart() {
     ESP_LOGE(TAG, "WiFi support not enabled");
   #endif
 }
+
 
 void OvmsVehicleSmartEQ::ModemRestart() {
   #ifdef CONFIG_OVMS_COMP_CELLULAR
@@ -1299,6 +1306,10 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
     }
   }
 
+  if (m_ddt4all_exec >= 1) { 
+    --m_ddt4all_exec;
+  }
+
   HandleEnergy();
   HandleCharging();
   HandleTripcounter();
@@ -1419,6 +1430,15 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uin
     ESP_LOGE(TAG, "CommandCan failed / no write access");
     return Fail;
   }
+
+  if(m_ddt4all_exec > 1) {
+    ESP_LOGE(TAG, "DDT4all command rejected - previous command still processing (%d seconds remaining)",
+             m_ddt4all_exec);
+    return Fail;
+  }
+
+  m_ddt4all_exec = 45; // 45 seconds delay for next DDT4ALL command execution
+
   ESP_LOGI(TAG, "CommandCan");
 
   std::string request;
@@ -1834,6 +1854,38 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
       // Charging screen true
       m_hl_canbyte = "2E013D01";
       CommandCan(0x743, 0x763, true, false);
+      res = Success;
+      break;
+    }
+    case 18:
+    {
+      // ONLY_DRL_OFF_CF false
+      m_hl_canbyte = "2E045F00";
+      CommandCan(0x74d, 0x76d, false, true);
+      res = Success;
+      break;
+    }
+    case 19:
+    {
+      // ONLY_DRL_OFF_CF true
+      m_hl_canbyte = "2E045F80";
+      CommandCan(0x74d, 0x76d, false, true);
+      res = Success;
+      break;
+    }
+    case 20:
+    {
+      // Welcome_Goodbye_CF false
+      m_hl_canbyte = "2E033400";
+      CommandCan(0x74d, 0x76d, false, true);
+      res = Success;
+      break;
+    }
+    case 21:
+    {
+      // Welcome_Goodbye_CF true
+      m_hl_canbyte = "2E033480";
+      CommandCan(0x74d, 0x76d, false, true);
       res = Success;
       break;
     }
@@ -2644,6 +2696,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4List(int verbosity
   writer->printf("--Show Charging screen when Car is locked\n");
   writer->printf("  Charging screen true: 17\n");
   writer->printf("  Charging screen false: 16\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  only DRL off true: 19\n");
+  writer->printf("  only DRL off false: 18\n");
+  writer->printf("  -------------------------------\n");
+  writer->printf("  Welcome/Goodbye true: 21\n");
+  writer->printf("  Welcome/Goodbye false: 20\n");
   writer->printf("  -------------------------------\n");
   writer->printf("  Beep in Gear R true: 27\n");
   writer->printf("  Beep in Gear R false: 26\n");
