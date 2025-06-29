@@ -198,8 +198,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = charge the 12V if low 12V alert is raised</p>");
   c.input_checkbox("Enable V2 Server", "v2server", v2server,
     "<p>Enable = keep v2 Server connected</p>");
-  c.input_checkbox("Enable Modem check", "mdmcheck", mdmcheck,
-    "<p>Enable = Restart Modem, when signal strength if less than 20 dBm</p>");  
+  c.input_checkbox("Enable auto restart modem on Wifi disconnect", "mdmcheck", mdmcheck,
+    "<p>Enable = The modem will restart as soon as the Wifi connection is no longer established.</p>");  
   c.input_checkbox("Enable Door unlocked warning", "unlocked", unlocked,
     "<p>Enable = send a warning when Car 10 minutes parked and unlocked</p>");
   c.input_checkbox("Enable Wakeup on Restart", "wakeup", wakeup,

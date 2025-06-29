@@ -286,10 +286,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   if (MyConfig.GetParamValue("xsq", "modem.check","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "modem.check", false);
-  }  
-  
-  if (MyConfig.GetParamValue("xsq", "modem.threshold","0") == "0") {
-    MyConfig.SetParamValueInt("xsq", "modem.threshold", -20);
   }
 
   if (MyConfig.GetParamValue("xsq", "restart.wakeup","0") == "0") {
@@ -316,6 +312,18 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
       MyConfig.SetParamValueBool("xsq", "gps.onoff", true);
       MyConfig.SetParamValueInt("xsq", "gps.reactmin", 50);
     }
+    
+    #ifdef CONFIG_OVMS_COMP_WIFI
+      // Features option: auto restart modem on wifi disconnect
+      using std::placeholders::_1;
+      using std::placeholders::_2;
+      MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
+      MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.disconnected", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
+      //MyEvents.RegisterEvent(TAG,"network.wifi.sta.bad", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
+      //MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
+      //MyEvents.RegisterEvent(TAG,"system.wifi.down", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
+    #endif // #ifdef CONFIG_OVMS_COMP_WIFI
+
   #endif
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
@@ -403,7 +411,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_tpms_alert_enable = MyConfig.GetParamValueBool("xsq", "tpms.alert.enable", true);
   
   m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
-  m_modem_threshold   = MyConfig.GetParamValueInt("xsq", "modem.threshold", -20);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
   m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", true);
@@ -952,26 +959,14 @@ void OvmsVehicleSmartEQ::ModemRestart() {
   #endif
 }
 
-void OvmsVehicleSmartEQ::CheckModemState() {
-  #ifdef CONFIG_OVMS_COMP_CELLULAR
-    m_modem_ticker++;
-    static const int mdm_ticker = 15; // Ticker threshold in minutes for modem restart
+void OvmsVehicleSmartEQ::ModemEventRestart(std::string event, void* data) {
+  if (!m_modem_check) {
+    // ESP_LOGE(TAG, "Modem auto restart is disabled");
+    return;
+  }
 
-    int signal_strength = StdMetrics.ms_m_net_mdm_sq->AsInt(0);  // Get modem signal strength in dBm
-    bool should_restart = (signal_strength > m_modem_threshold); // Check if the signal strength is above the threshold
-    
-    if (should_restart && !m_modem_restart) {
-        m_modem_restart = true;
-        m_modem_ticker = 0; // Reset modem ticker on restart
-        ESP_LOGI(TAG, "Cellular modem signal strength is low (%d dBm), restarting modem", signal_strength);
-        ModemRestart();
-    } else if ((!should_restart && m_modem_restart) || ((m_modem_ticker > mdm_ticker) && m_modem_restart)) {
-        m_modem_restart = false;
-        m_modem_ticker = 0;
-    }
-  #else
-      ESP_LOGD(TAG, "Cellular support not enabled");
-  #endif // CONFIG_OVMS_COMP_CELLULAR
+  ModemRestart();
+  ESP_LOGI(TAG, "Modem event '%s' triggered a modem restart", event.c_str());
 }
 
 // Cellular Modem Network type switch
@@ -1343,7 +1338,6 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
 
     #ifdef CONFIG_OVMS_COMP_CELLULAR
       if(m_gps_onoff && !StdMetrics.ms_v_env_on->AsBool()) GPSOnOff();
-      if(m_modem_check) CheckModemState();
       if(m_network_type != m_network_type_ls) ModemNetworkType();
     #endif
 

@@ -108,7 +108,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void DoorLockState();
     void WifiRestart();
     void ModemRestart();
-    void CheckModemState();
+    void ModemEventRestart(std::string event, void* data);
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -324,7 +324,6 @@ public:
     int m_12v_ticker;
     int m_v2_ticker;
     int m_modem_ticker;
-    int m_modem_threshold;                  //!< modem threshold for restart
     int m_park_timeout_secs;                //!< parking timeout in seconds
   
   protected:
