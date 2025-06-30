@@ -81,7 +81,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info, full_km, rebootnw, net_type;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup;
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify;
 
   if (c.method == "POST") {
     // process form submission:
@@ -102,6 +102,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     unlocked = (c.getvar("unlock") == "yes");
     extstats = (c.getvar("extstats") == "yes");
     wakeup   = (c.getvar("wakeup") == "yes");
+    tripnotify = (c.getvar("resetnotify") == "yes");
     
     if (error.empty()) {
       // success:
@@ -122,6 +123,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "modem.check", mdmcheck);
       MyConfig.SetParamValueBool("xsq", "extended.stats", extstats);
       MyConfig.SetParamValueBool("xsq", "restart.wakeup", wakeup);
+      MyConfig.SetParamValueBool("xsq", "reset.notify", tripnotify);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -154,6 +156,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     mdmcheck    = MyConfig.GetParamValueBool("xsq", "modem.check", false);
     extstats    = MyConfig.GetParamValueBool("xsq", "extended.stats", false);
     wakeup      = MyConfig.GetParamValueBool("xsq", "restart.wakeup", false);
+    tripnotify  = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
+
     c.head(200);
   }
 
@@ -169,9 +173,11 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   // trip reset or OBD activation
   c.fieldset_start("Trip calculated or OBD kWh/100km");
   c.input_checkbox("Enable Reset Trip when Charging", "resettrip", resettrip,
-    "<p>Enable = Reset Trip Values when Chaging, Disable = Reset Trip Values when Driving</p>");
+    "<p>Enable = Reset Trip Values when Charging, Disable = Reset Trip Values when Driving</p>");
   c.input_checkbox("Enable reset kWh/100km when Car switched on", "resettotal", resettotal,
     "<p>Enable = Reset calculated kWh/100km values on when Car switched on, auto disabled when resetted</p>");
+  c.input_checkbox("Enable Trip Reset Notification", "resetnotify", tripnotify,
+    "<p>Enable = send a notification with Trip values when Trip values are reseted</p>");
   c.input_checkbox("Enable OBD kWh/100km value", "bcvalue", bcvalue,
     "<p>Enable = show OBD kWh/100km value</p>");
   c.input_slider("WLTP km", "full_km", 3, "km",
@@ -192,8 +198,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = charge the 12V if low 12V alert is raised</p>");
   c.input_checkbox("Enable V2 Server", "v2server", v2server,
     "<p>Enable = keep v2 Server connected</p>");
-  c.input_checkbox("Enable Modem check", "mdmcheck", mdmcheck,
-    "<p>Enable = Restart Modem, when signal strength if less than 20 dBm</p>");  
+  c.input_checkbox("Enable auto restart modem on Wifi disconnect", "mdmcheck", mdmcheck,
+    "<p>Enable = The modem will restart as soon as the Wifi connection is no longer established.</p>");  
   c.input_checkbox("Enable Door unlocked warning", "unlocked", unlocked,
     "<p>Enable = send a warning when Car 10 minutes parked and unlocked</p>");
   c.input_checkbox("Enable Wakeup on Restart", "wakeup", wakeup,

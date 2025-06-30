@@ -108,7 +108,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void DoorLockState();
     void WifiRestart();
     void ModemRestart();
-    void CheckModemState();
+    void ModemEventRestart(std::string event, void* data);
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -212,6 +212,7 @@ public:
     bool m_ios_tpms_fix;                    // IOS TPMS Display Fix
     bool m_resettrip;                       // Reset Trip Values when Charging/Driving
     bool m_resettotal;                      // Reset kWh/100km Values when Driving
+    bool m_tripnotify;                      // Trip Reset Notification on/off
     bool m_bcvalue;                         // use kWh/100km Value from mt_use_at_reset = true, Calculated = false
     int m_reboot_ticker;
     int m_reboot_time;                      // Restart Network time
@@ -315,14 +316,14 @@ public:
     bool m_warning_unlocked;                //!< unlocked warning
     bool m_modem_check;                     //!< modem check enabled
     bool m_modem_restart;                   //!< modem restart enabled
-    int m_ddt4all_ticker;
+    int m_ddt4all_ticker;                   //!< DDT4ALL active ticker 
+    int m_ddt4all_exec;                     //!< DDT4ALL ticker for next execution
     int m_led_state;
     int m_climate_ticker;
     int m_gps_ticker;
     int m_12v_ticker;
     int m_v2_ticker;
     int m_modem_ticker;
-    int m_modem_threshold;                  //!< modem threshold for restart
     int m_park_timeout_secs;                //!< parking timeout in seconds
   
   protected:
