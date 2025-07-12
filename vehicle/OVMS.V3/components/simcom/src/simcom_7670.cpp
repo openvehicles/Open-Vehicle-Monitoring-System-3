@@ -77,9 +77,6 @@ void simcom7670::StartupNMEA()
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGNSSPWR=1\r\n");      //power GPS module on
     vTaskDelay(5000 / portTICK_PERIOD_MS);
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGNSSMODE=3\r\n");     // select used satellite networks 3: GPS, GLONASS, BEIDOU
-    using std::placeholders::_1;
-    using std::placeholders::_2;
-    MyEvents.RegisterEvent(TAG, "gnss.modem.request", std::bind(&simcom7670::SendGNSSRequest, this, _1, _2));
     }
   else
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
@@ -95,13 +92,6 @@ void simcom7670::ShutdownNMEA()
     }
   else
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
-  }
-
-
-void simcom7670::SendGNSSRequest(std::string event, void* data)
-  {
-    if (MySimcom7670 != NULL && MySimcom7670->m_modem->m_nmea) 
-      MySimcom7670->m_modem->muxtx(MySimcom7670->m_modem->m_mux_channel_POLL,"AT+CGNSSINFO\r\n");
   }
 
 void simcom7670::PowerOff()
@@ -141,10 +131,6 @@ void simcom7670::StatusPoller()
         //  +CPSI: LTE,Online,262-02,0xB0F5,13179412,448,EUTRAN-BAND1,100,4,4,-122,-1184,-874,9  
         break;
       case 3:
-        m_modem->muxtx(GetMuxChannelPOLL(), "AT+CGNSSINFO\r\n");
-        // request GNSS location
-        break;
-      case 4:
         m_modem->muxtx(GetMuxChannelPOLL(), "AT+COPS?\r\n");
         // → ~ 35 bytes, e.g.
         //  +COPS: 0,0,"vodafone.de Hologram",7  
@@ -182,6 +168,10 @@ modem::modem_state1_t simcom7670::State1Ticker1(modem::modem_state1_t state)
           ++m_modem->m_state1_ticker; 
           }
         }
+    }
+    if (m_modem->m_nmea != NULL && m_modem->GetPowerMode() != Sleep && m_modem->m_state1_ticker%5 == 0)
+    {
+	    m_modem->muxtx(GetMuxChannelPOLL(), "AT+CGNSSINFO\r\n");
     }
   return state;
   }
