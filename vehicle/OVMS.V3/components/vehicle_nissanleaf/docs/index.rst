@@ -163,7 +163,7 @@ Making the CAN tap cable
 It is easiest if you source pre made parts and modify them to suit your needs. The parts you need are:
 
 * DB9 female connector to connect to the CAN tap cable, e.g.: https://www.aliexpress.com/item/1005006083154220.html
-* 24 pin male and female connector to connect in between the CAN gateway and the original 24 pin male connector going into the CAN gateway, e.g.: https://www.aliexpress.com/item/1005007018521989.html
+* 24 pin male and female connector to connect in between the CAN gateway and the original 24 pin male connector going into the CAN gateway, e.g.: https://www.aliexpress.us/item/3256805736323340.html
 
 Detailed wiring instructions can be seen in :download:`this pdf<images/Leaf-ZE1-CAN-Tap-Wiring.pdf>`.
 These instructions are taken from `this GitHub issue comment <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323#issuecomment-2227069811>`_, thanks to @samr037. The example uses an intermediate CAT5 cable connector, but you can also wire the DB9 connector directly. `Here <https://nissanleaf.carhackingwiki.com/index.php/M101_(6CH_CAN_Gateway)>`_ is the CAN gateway 24 pin connector pinout for reference.
