@@ -288,6 +288,7 @@ Resources
 - Database files (.DBC) for ZE0, ZE0 & ZE1 Leaf can be found here: `Github LEAF Canbus database files <https://github.com/dalathegreat/leaf_can_bus_messages>`_
 - Polling information for ZE1 can be found here: https://drive.google.com/file/d/1jH9cgm5v23qnqVnmZN3p4TvdaokWKPjM/view
 - `Nissan Leaf Car Hacking Wiki <https://nissanleaf.carhackingwiki.com>`_ - a great resource for information on the Nissan Leaf and it's components.
+- Discord server related to the firmware releases here https://discord.gg/BDDMzr86dh. Taken from the GitHub comment here https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323#issuecomment-2720235567.
 
 -----------------
 Troubleshooting
