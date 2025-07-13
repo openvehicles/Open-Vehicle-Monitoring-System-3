@@ -305,3 +305,4 @@ Resources
 - `Nissan Leaf Car Hacking Wiki <https://nissanleaf.carhackingwiki.com>`_ - a great resource for information on the Nissan Leaf and it's components.
 - Discord server related to the firmware releases here https://discord.gg/BDDMzr86dh. Taken from the GitHub comment here https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323#issuecomment-2720235567.
 - A blog post how to integrate Nissan Leaf ZE1 with Home Assistant https://blog.jingo.uk/notes-on-integrating-a-nissan-leaf-ze1-and-home-assistant/.
+- Repo about TCU reverse engineering https://github.com/developerfromjokela/nissan-leaf-tcu/.
