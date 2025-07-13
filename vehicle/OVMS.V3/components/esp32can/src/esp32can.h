@@ -116,7 +116,8 @@ class esp32can : public canbus
   public:
     void SetPowerMode(PowerMode powermode);
     bool GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags) override;
-
+    void SetTransceiverMode(CAN_mode_t mode);
+ 
   public:
     static void shell_setaccfilter(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
