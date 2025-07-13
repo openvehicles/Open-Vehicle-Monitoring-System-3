@@ -120,6 +120,25 @@ Peripherals::Peripherals()
   gpio_set_pull_mode((gpio_num_t)SDCARD_PIN_D0, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
+#ifdef CONFIG_OVMS_HW_REMAP_GPIO
+#ifdef MODEM_GPIO_PWR
+  gpio_set_direction((gpio_num_t)MODEM_GPIO_PWR, GPIO_MODE_OUTPUT);
+  gpio_set_level((gpio_num_t)MODEM_GPIO_PWR, 0);    // signal is inverted by NPN transistor - set to high
+#endif
+#ifdef MODEM_GPIO_RESET
+  gpio_set_direction((gpio_num_t)MODEM_GPIO_RESET, GPIO_MODE_OUTPUT);
+  gpio_set_level((gpio_num_t)MODEM_GPIO_RESET,1);   // active LOW - NOT USED YET
+#endif
+#ifdef MODEM_GPIO_RING
+  gpio_set_direction((gpio_num_t)MODEM_GPIO_RING, GPIO_MODE_INPUT);
+#endif
+#ifdef MODEM_GPIO_DTR
+  gpio_set_direction((gpio_num_t)MODEM_GPIO_DTR, GPIO_MODE_OUTPUT);
+  gpio_set_level((gpio_num_t)MODEM_GPIO_DTR, 1);
+#endif
+#endif // #ifdef CONFIG_OVMS_HW_REMAP_GPIO
+
+
   ESP_LOGI(TAG, "  ESP32 system");
   m_esp32 = new esp32system("esp32");
 
