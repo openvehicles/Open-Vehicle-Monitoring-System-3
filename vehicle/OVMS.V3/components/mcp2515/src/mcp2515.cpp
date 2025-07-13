@@ -105,7 +105,7 @@ if (m_spibus->m_initialized == false) {
   m_canctrl_mode = CANCTRL_MODE_CONFIG; // MCP2515 mode after reset
   m_powermode = Off; // Stop an event being raised
   SetPowerMode(Off);
-  SetTransceiverMode(false);
+  SetTransceiverMode(CAN_MODE_LISTEN);
 
   // Register mcp2515 specific commands:
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can", "CAN framework");
@@ -121,7 +121,7 @@ if (m_spibus->m_initialized == false) {
 
 mcp2515::~mcp2515()
   {
-  SetTransceiverMode(false);
+  SetTransceiverMode(CAN_MODE_LISTEN);
   gpio_isr_handler_remove((gpio_num_t)m_intpin);
   spi_bus_remove_device(m_spi);
   }
@@ -188,7 +188,7 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   // Rx Buffer 0 control (receive all and enable buffer 1 rollover)
   WriteRegAndVerify(REG_RXB0CTRL, 0b01100100, 0b01101101);
 
-  SetTransceiverMode(mode == CAN_MODE_ACTIVE);
+  SetTransceiverMode(mode);
 
   // Bus speed
   uint8_t cnf1 = 0;
@@ -312,7 +312,7 @@ esp_err_t mcp2515::Stop()
   m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RESET);
   vTaskDelay(50 / portTICK_PERIOD_MS);
 
-  SetTransceiverMode(false);
+  SetTransceiverMode(CAN_MODE_LISTEN);
 
   // Set SLEEP mode
   ChangeMode(CANCTRL_MODE_SLEEP);
@@ -816,18 +816,18 @@ void mcp2515::SetPowerMode(PowerMode powermode)
     }
   }
 
-void mcp2515::SetTransceiverMode(bool isactive)
+void mcp2515::SetTransceiverMode(CAN_mode_t mode)
   {
-  if ( isactive ) 
-  {
-    // BFPCTRL RXnBF PIN CONTROL AND STATUS - enable TX driver of SN65 - rd/wr mode
-    WriteRegAndVerify(REG_BFPCTRL, 0b00001100);
-  } 
+  if ( mode == CAN_MODE_ACTIVE ) 
+    {
+      // BFPCTRL RXnBF PIN CONTROL AND STATUS - enable TX driver of SN65 - rd/wr mode
+      WriteRegAndVerify(REG_BFPCTRL, 0b00001100);
+    } 
   else
-  {
-    // BFPCTRL RXnBF PIN CONTROL AND STATUS - disable TX driver of SN65 - listen only mode
-    WriteRegAndVerify(REG_BFPCTRL, 0b00111100);
-  }
+    {
+      // BFPCTRL RXnBF PIN CONTROL AND STATUS - disable TX driver of SN65 - listen only mode
+      WriteRegAndVerify(REG_BFPCTRL, 0b00111100);
+    }
   }
 
 /**

@@ -211,7 +211,7 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
         {
         // Freeze TEC/REC by entering listen only mode
         MODULE_ESP32CAN->MOD.B.LOM = 1;
-        MyESP32can->SetTransceiverMode(false);
+        MyESP32can->SetTransceiverMode(CAN_MODE_LISTEN);
 
         // Re-trigger bus-off
         MODULE_ESP32CAN->TXERR.B.TXERR = 0;
@@ -382,7 +382,12 @@ esp32can::esp32can(const char* name, int txpin, int rxpin)
   m_powermode = Off;
   m_tx_abort = false;
 
-  MyESP32can->SetTransceiverMode(false);
+#if defined(CONFIG_OVMS_HW_REMAP_GPIO) && defined(ESP32CAN_PIN_RS)
+  // Configure the RS PIN of the CAN transceiver
+  gpio_set_direction((gpio_num_t)ESP32CAN_PIN_RS,GPIO_MODE_OUTPUT);
+#endif // defined(CONFIG_OVMS_HW_REMAP_GPIO) && defined(ESP32CAN_PIN_RS)
+
+  MyESP32can->SetTransceiverMode(CAN_MODE_LISTEN);
 
   // Enter controller reset mode:
   ESP_LOGD(TAG, "Reset mode state on init: %d", MODULE_ESP32CAN->MOD.B.RM);
@@ -489,7 +494,7 @@ esp_err_t esp32can::InitController()
   else
     MODULE_ESP32CAN->MOD.B.LOM = 0;
 
-  MyESP32can->SetTransceiverMode(m_mode != CAN_MODE_LISTEN);
+  MyESP32can->SetTransceiverMode(m_mode);
 
   // Clear error counters
   MODULE_ESP32CAN->TXERR.U = 0;
@@ -558,7 +563,7 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
     return err;
     }
 
-  MyESP32can->SetTransceiverMode(mode == CAN_MODE_ACTIVE);
+  MyESP32can->SetTransceiverMode(mode);
 
   // And record that we are powered on
   pcp::SetPowerMode(On);
@@ -575,7 +580,7 @@ esp_err_t esp32can::Stop()
   // Clear TX queue
   xQueueReset(m_txqueue);
 
-  MyESP32can->SetTransceiverMode(false);
+  MyESP32can->SetTransceiverMode(CAN_MODE_LISTEN);
 
   ESP32CAN_ENTER_CRITICAL();
 
@@ -601,9 +606,9 @@ esp_err_t esp32can::Stop()
  * Pin RS of SN65 to 0 or 1 
  * 
  */
-void esp32can::SetTransceiverMode(bool isactive)
+void esp32can::SetTransceiverMode(CAN_mode_t mode)
   {
-  int rs_state = isactive ? 0 : 1;
+  int rs_state = (mode == CAN_MODE_ACTIVE) ? 0 : 1;
   
 #ifdef CONFIG_OVMS_COMP_MAX7317
   // Enable TX driver of matching SN65 transceiver
