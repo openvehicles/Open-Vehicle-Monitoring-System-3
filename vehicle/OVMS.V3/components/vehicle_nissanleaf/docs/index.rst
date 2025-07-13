@@ -4,7 +4,9 @@ Nissan Leaf/e-NV200
 
 Vehicle Type: **NL**
 
-This vehicle type supports all Nissan Leaf ZE0 and ZE1 models, as well as all Nissan e-NV200 models. Vehicles with custom or upgraded battery packs, such as those from Muxsan, are also supported. Note that in some regions, ZE0 and ZE1 models may be referred to as AZE0 and AZE1, respectively. For simplicity, this document uses ZE0 and ZE1 throughout.
+This vehicle type supports all Nissan Leaf ZE0 and ZE1 models, as well as all Nissan e-NV200 models. Vehicles with custom or upgraded battery packs, such as those from Muxsan, are also supported.
+
+Note that in some regions, ZE0 and ZE1 models may be referred to as AZE0 and AZE1, respectively. For simplicity, this document uses ZE0 and ZE1 throughout.
 
 ----------------
 Support Overview
@@ -44,7 +46,7 @@ Additional Features
 Feature                     Description
 =========================== ==============
 BMS Cell Monitor            Allows to monitor individual battery cells in a configurable chart. Can be accessed from web user interface accessible over WiFi.
-Charge to Limit             Allows to automatically stop the charge when target SoC (state of charge) and/or range is reached. All parameters can be controlled through metrics or web user interface. Meanwhile Range and SoC can be controlled from the app as well, by adjusting fields 10 (SoC) and 11 (range) in feature section accessible through app settings.
+Charge to Limit             Allows to automatically stop the charge when target SOC (state of charge) and/or range is reached. All parameters can be controlled through metrics or web user interface. Meanwhile Range and SOC can be controlled from the app as well, by adjusting fields 10 (SOC) and 11 (range) in feature section accessible through app settings.
 =========================== ==============
 
 ^^^^^^^^^^^^^^^^
@@ -54,7 +56,7 @@ Metrics
 =========================== ==============
 Item                        Support Status
 =========================== ==============
-SoC                         Yes (by default based on GIDS) [4]_
+SOC                         Yes (by default based on GIDS) [4]_
 Range                       Yes (by default based on GIDS)
 GPS Location                Yes (from modem module GPS)
 Speed                       Yes (from vehicle speed PID)
@@ -78,25 +80,9 @@ Charge Interruption Alerts  Yes
 
 .. [3] Lock/Unlock will work if CAR can bus is awake, this can be activated by turning on A/C. Locking only appears to work for models 2016 onwards or 30kWh models. `GitHub issue <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/231>`_
 
-.. [4] For ZE0 (2011-2013) vehicles, select the "relative to fixed value" option for SoC display, as the "from dashboard display" method is not supported on these models. For ZE1 (2018+) vehicles, use the "from dashboard display" option for SoC. For further details, see the troubleshooting section :ref:`soc-and-soh-values-showing-0`.
+.. [4] For ZE0 (2011-2013) vehicles, select the "relative to fixed value" option for SOC display, as the "from dashboard display" method is not supported on these models. For ZE1 (2018+) vehicles, use the "from dashboard display" option for SOC. For further details, see the troubleshooting section :ref:`soc-and-soh-values-showing-0`.
 
-.. [5] For ZE1 models, a separate 8-wire CAN tap cable and DB9 connector are required. The standard OBD-II to DB9 cable supplied with OVMS cannot be used, as it only has 6 wires. Additionally, the OBD-II port itself cannot be used because the vehicle’s CAN gateway module powers down when the ignition is off, isolating the port from the rest of the CAN buses. Instead, you need to build an adapter cable to tap into the CAN buses going to the CAN gateway module located behind the instrument cluster. The easiest approach is to source pre-made parts and modify them as needed. See the :ref:`2018+ models (ZE1)` below for details.
-
--------------------------
-Installation Instructions
--------------------------
-
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-2011-2017 LEAF models (ZE0) and 2014-2022 e-NV200 models
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-OVMS supports all 2011-2017 ZE0 models of Nissan LEAF and all 2014-2022 e-NV200 models. For all these models, you can use the standard OBD-II to DB9 cable supplied with OVMS (part number 1779000). This cable connects to the OBD-II port located under the dashboard on the driver's side of the vehicle.
-
-^^^^^^^^^^^^^^^^^^^^^^^
-2018+ LEAF models (ZE1)
-^^^^^^^^^^^^^^^^^^^^^^^
-
-TODO
+.. [5] For ZE1 models, a separate 8-wire CAN tap cable and DB9 connector are required. The standard OBD-II to DB9 cable supplied with OVMS cannot be used, as it only has 6 wires. Additionally, the OBD-II port itself cannot be used because the vehicle’s CAN gateway module powers down when the ignition is off, isolating the port from the rest of the vehicle. Instead, you need to build an adapter cable to tap into the CAN buses going to the CAN gateway module located behind the instrument cluster. See the :ref:`2018+ models (ZE1)` for more details.
 
 ----------------------
 Remote Climate Control
@@ -124,13 +110,13 @@ Gen1 LEAFs (ZE0, 2011-2012) require a hardware modification to enable remote cli
 
 If you want to to enable remote climate control once the charge has finished, or if the vehicle is not plugged in, you need to do the following hardware modification. A cable wired to the pin 11 of Nissan TCU (Telematics Control Unit) needs to receive +12V so that "EV System Activation Request Signal" can be generated, which in turn allows to trigger climate control independently. This can be achieved by wiring the pin 18 (Ext 12V) from the OVMS DA26 socket to the cable going to pin 11 of the TCU by using a standard single conductor wire. The connection on the OVMS DA26 side can be made by using dedicated DA26 connector or a standard round 1mm jumper cable. Here's how to wire it up:
 
-.. image:: SchematicLEAF.png
-    :width: 480px
+.. image:: images/SchematicLEAF.png
+    :width: 700px
 
 Meanwhile on the TCU side the cable can be soldered or spliced in to by using a connector of your choice. When done, the original TCU can be left unplugged. `See this page for additional pictures <https://www.mynissanleaf.com/viewtopic.php?f=37&t=32935>`_.
 
-.. image:: TCU.png
-    :width: 480px
+.. image:: images/TCU.png
+    :width: 700px
 
 If you have a "smart" EVSE (or one connected to a "smart" outlet, you can sometimes wake up the EV system by turning it off, then back on. This obviously only helps if your vehicle is plugged in, but may be useful for some users.
 
@@ -176,22 +162,54 @@ It is easiest if you source pre made parts and modify them to suit your needs. T
 * DB9 female connector to connect to the CAN tap cable, e.g.: https://www.aliexpress.com/item/1005006083154220.html
 * 24 pin male and female connector to connect in between the CAN gateway and the original 24 pin male connector going into the CAN gateway, e.g.: https://www.aliexpress.com/item/1005007018521989.html
 
-Detailed wiring instructions can be downloaded :download:`here<Leaf-ZE1-CAN-Tap-Wiring.pdf>`.
-These instructions are taken from `this GitHub issue comment <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323#issuecomment-2227069811>`_, thanks to @samr037. The example uses an intermediate CAT5 cable connector, but you may also wire the DB9 connector directly if preferred. `Here <https://nissanleaf.carhackingwiki.com/index.php/M101_(6CH_CAN_Gateway)>`_ is the CAN gateway 24 pin connector pinout for reference.
+Detailed wiring instructions can be seen in :download:`this pdf<images/Leaf-ZE1-CAN-Tap-Wiring.pdf>`.
+These instructions are taken from `this GitHub issue comment <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323#issuecomment-2227069811>`_, thanks to @samr037. The example uses an intermediate CAT5 cable connector, but you can also wire the DB9 connector directly. `Here <https://nissanleaf.carhackingwiki.com/index.php/M101_(6CH_CAN_Gateway)>`_ is the CAN gateway 24 pin connector pinout for reference.
 
-Then the final cable should look something like this:
+The final cable should look like the one in the image below.
 
-.. image:: Leaf-CAN-Tap.jpg
-    :width: 480px
+.. image:: images/Leaf-CAN-Tap.jpg
+    :width: 700px
 
-Next, you will need to remove the instrument cluster to access the CAN gateway module. A step-by-step video guide for disassembling the instrument cluster is available here: https://www.youtube.com/watch?v=gkA1WDu8cq0&si=kII9XvEiAaXgggma. Once the cluster is removed, you can access the CAN gateway and connect the CAN tap cable. After connecting, you can easily route the DB9 cable from behind the cluster to the area behind the driver's footwell cover for convenient access.
+Once you have the cable, you will need to remove the instrument cluster to access the CAN gateway module behind it. Before you start disassembling the car, remove the 12V battery connection to avoid generating any error codes! If you have Leaf Spy Pro available, you can clear the error codes after the installation is complete.
 
-If you car is equipped with a TCU (Telematics Control Unit), OVMS remote climate control will not work. All other supported OVMS functions will work. To get the remote climate control working. You need to unplug the 2 CAN wires from TCU and leave the rest of the module connected. You could also unplug the whole TCU, which would do the same thing, but then the hands-free microphone will not work anymore. The reason is that the microphone line is running through TCU for some reason. That's why it's recommended to leave the TCU connected and just unplug or cut the CAN wires. The TCU is located behind the glovebox on LHD cars or on the right hand side of the drivers foot well on RHD cars.
+Removing the instrument cluster may sound difficult at first, but in reality, it's quite easy to do. A step-by-step video guide for removing the instrument cluster is available here: https://www.youtube.com/watch?v=gkA1WDu8cq0&si=kII9XvEiAaXgggma. Once the instrument cluster is removed, the module is the one circled in the image below.
 
-The TCU connector pinout is available here `https://nissanleaf.carhackingwiki.com/index.php/Telematics_Control_Unit_(TCU)#M67_(NAM)`_ and the 2 CAN wires you need to unpin or cut are the following:
+.. image:: images/ze1-can-gateway-behind-instrument-cluster.jpg
+   :width: 700px
 
-.. image:: ze1-tcu-connector.jpg
-   :width: 800px
+The CAN gateway is shown in the image below and can be removed by loosening a single screw.
+
+.. image:: images/ze1-can-gateway-module.jpg
+   :width: 700px
+
+After removing the instrument cluster, you need to connect the CAN tap cable between the module and the original 24-pin male header. Then, you can easily route the DB9 cable from behind the cluster to the area behind the driver's footwell cover, where you can conveniently access the OVMS module.
+
+At this point, you can also route and connect the GPS and GSM antennas to the OVMS module. Both antennas can be placed on the dashboard on the left, as shown in the image below, and the wires can be tucked between the plastic panels. You can also place them elsewhere, as long as they have good signal reception.
+
+.. image:: images/ze1-gps-and-gms-antennas.jpg
+   :width: 700px
+
+If your car is equipped with a TCU (Telematics Control Unit), OVMS remote climate control will not work. If you do not have this module, then your installation is complete, as all other supported OVMS functions will work. This module is used by the Nissan Connect app to connect to your car over the network. More information about the module is available here: `Telematics Control Unit (TCU) <https://nissanleaf.carhackingwiki.com/index.php/Telematics_Control_Unit_(TCU)>`_. This module will override the remote climate control CAN messages that OVMS is trying to send.
+
+To get the remote climate control working. You need to unpin or cut the 2 CAN wires from TCU and leave the rest of the module connected. You could also unplug the whole TCU, which would do the same thing, but then the hands-free microphone will not work anymore. The reason is that the microphone line is running through same TCU connector for some reason. That's why it's recommended to leave the TCU connected and just unpin or cut the CAN wires.
+
+The TCU is located behind the glovebox on LHD cars or on the right hand side of the drivers foot well on RHD cars. On the LHD cars how to remove the glovebox, watch this video https://www.youtube.com/watch?v=qHyt0eoKNOc.
+After removing the glovebox, the TCU module is the one circled in the image below. The image is from an LHD car.
+
+.. image:: images/ze1-tcu-location.jpg
+   :width: 700px
+
+After this you need to unpin or cut these two wires 2 circled in the image below. Before doing this double check the wiring and pin information from the `TCU wikipage <https://nissanleaf.carhackingwiki.com/index.php/Telematics_Control_Unit_(TCU)#M67_(NAM)>`_.
+
+.. image:: images/ze1-tcu-connector.jpg
+   :width: 700px
+
+An important consequence of doing this is that the car will permanently report error codes, and even after clearing them, they will reappear. So far, I have not noticed any negative effects on the car, but you should be aware of this. See the error codes read by Leaf Spy Pro in the image below.
+
+.. image:: images/ze1-error-codes-after-tcu-disconnected.jpg
+   :width: 300px
+
+Some people have also successfully disconnected the whole TCU, as discussed in the following thread: https://www.openvehicles.com/node/3809. However, this involves soldering a 5V regulator and connecting the microphone lines together. I have not tested this personally.
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -221,7 +239,7 @@ For models with a 62 kWhr battery pack, set the capacity manually with:
 Range Calculation
 -----------------
 
-The OVMS uses two configuration options to calculate remaining range, whPerGid (default 80Wh/gid) and kmPerKWh (default 7.1km/kWh). The range calculation is based on the remaining gids reported by the LBC and at the moment does not hold 5% in reserve like LeafSpy. Feedback on this calculation is welcomed.
+The OVMS uses two configuration options to calculate remaining range, whPerGid (default 80Wh/gid) and kmPerKWh (default 7.1km/kWh). The range calculation is based on the remaining GIDS reported by the LBC and at the moment does not hold 5% in reserve like Leaf Spy. Feedback on this calculation is welcomed.
 
 -----------------
 Resources
@@ -232,6 +250,7 @@ Resources
 - `MyNissanLEAF thread for Nissan CANbus decoding discussion <http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=440>`_
 - Database files (.DBC) for ZE0, AZE0 & AZE1 Leaf can be found here: `Github LEAF Canbus database files <https://github.com/dalathegreat/leaf_can_bus_messages>`_
 - Polling information for AZE1 can be found here: https://drive.google.com/file/d/1jH9cgm5v23qnqVnmZN3p4TvdaokWKPjM/view
+- `Nissan Leaf Car Hacking Wiki <https://nissanleaf.carhackingwiki.com>`_ - a great resource for information on the Nissan Leaf and it's components.
 
 -----------------
 Troubleshooting
@@ -245,5 +264,5 @@ SOC and SOH values showing 0
 
 If your SOC (State of Charge) and SOH (State of Health) values for ZE1 (2018+) models are showing 0. You may need to change the SOC and SOH display settings to "relative to fixed value" in the web interface and adjust the GIDS value to match the battery capacity you have when fully charged.
 
-.. image:: soc-and-soh-display-settings.jpg
+.. image:: images/soc-and-soh-display-settings.jpg
     :width: 300px
