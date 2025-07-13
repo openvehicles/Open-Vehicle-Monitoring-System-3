@@ -157,6 +157,9 @@ or
 
 With all ZE1 models, The OBD-II port cannot be directly used because it is isolated from the rest of the vehicle by a CAN gateway module. The module will power down when the ignition is off and it will isolate the port from the rest of the vehicle. Meaning that you cannot send messages to the CAN bus anymore. Instead, you need to tap the CAN busses going to the CAN gateway behind the instrument cluster. You will need to build an adapter cable to plug into the CAN gateway port. The OBD-II cable coming with the OVMS module is not suitable for this purpose, as it only has 6 wires and the ZE1 models require an 8-wire CAN tap cable. This also means you cannot re-use the DB9 connector from the cable as all the needed wires are not connected. In other words this means you need to build the whole cable yourself.
 
+Making the CAN tap cable
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 It is easiest if you source pre made parts and modify them to suit your needs. The parts you need are:
 
 * DB9 female connector to connect to the CAN tap cable, e.g.: https://www.aliexpress.com/item/1005006083154220.html
@@ -169,6 +172,9 @@ The final cable should look like the one in the image below.
 
 .. image:: images/Leaf-CAN-Tap.jpg
     :width: 700px
+
+Installing the CAN tap cable
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Once you have the cable, you will need to remove the instrument cluster to access the CAN gateway module behind it. Before you start disassembling the car, remove the 12V battery connection to avoid generating any error codes! If you have Leaf Spy Pro available, you can clear the error codes after the installation is complete.
 
@@ -189,7 +195,12 @@ At this point, you can also route and connect the GPS and GSM antennas to the OV
 .. image:: images/ze1-gps-and-gms-antennas.jpg
    :width: 700px
 
-If your car is equipped with a TCU (Telematics Control Unit), OVMS remote climate control will not work. If you do not have this module, then your installation is complete, as all other supported OVMS functions will work. This module is used by the Nissan Connect app to connect to your car over the network. More information about the module is available here: `Telematics Control Unit (TCU) <https://nissanleaf.carhackingwiki.com/index.php/Telematics_Control_Unit_(TCU)>`_. This module will override the remote climate control CAN messages that OVMS is trying to send.
+Disabling the TCU for remote climate control
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If your car is equipped with a TCU (Telematics Control Unit), OVMS remote climate control will not work. If you do not have this module, then your installation is complete, as all other supported OVMS functions will work.
+
+This module is used by the Nissan Connect app to connect to your car over the network. More information about the module is available here: `Telematics Control Unit (TCU) <https://nissanleaf.carhackingwiki.com/index.php/Telematics_Control_Unit_(TCU)>`_. This module will override the remote climate control CAN messages that OVMS is trying to send.
 
 To get the remote climate control working. You need to unpin or cut the 2 CAN wires from TCU and leave the rest of the module connected. You could also unplug the whole TCU, which would do the same thing, but then the hands-free microphone will not work anymore. The reason is that the microphone line is running through same TCU connector for some reason. That's why it's recommended to leave the TCU connected and just unpin or cut the CAN wires.
 
@@ -199,17 +210,42 @@ After removing the glovebox, the TCU module is the one circled in the image belo
 .. image:: images/ze1-tcu-location.jpg
    :width: 700px
 
-After this you need to unpin or cut these two wires 2 circled in the image below. Before doing this double check the wiring and pin information from the `TCU wikipage <https://nissanleaf.carhackingwiki.com/index.php/Telematics_Control_Unit_(TCU)#M67_(NAM)>`_.
+After this you need to unpin or cut these two wires 2 circled in the image below. Before doing this double check the wiring and pin information from the `TCU wikipage <https://nissanleaf.carhackingwiki.com/index.php/Telematics_Control_Unit_(TCU)#M67_(NAM)>`_. To see how to unpin the wires, see the section :ref:`unpinning-the-tcu-wires`.
 
 .. image:: images/ze1-tcu-connector.jpg
    :width: 700px
 
-An important consequence of doing this is that the car will permanently report error codes, and even after clearing them, they will reappear. So far, I have not noticed any negative effects on the car, but you should be aware of this. See the error codes read by Leaf Spy Pro in the image below.
+An important consequence of doing this is that the car will permanently report error codes, and even after clearing them, they will reappear. These should not have any negative effects on the car, but you should be aware of this. See the error codes read by Leaf Spy Pro in the image below.
 
 .. image:: images/ze1-error-codes-after-tcu-disconnected.jpg
    :width: 300px
 
-Some people have also successfully disconnected the whole TCU, as discussed in the following thread: https://www.openvehicles.com/node/3809. However, this involves soldering a 5V regulator and connecting the microphone lines together. I have not tested this personally.
+.. _unpinning-the-tcu-wires:
+
+Unpinning the TCU wires
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Unpinning the wires may vary between models, but the following steps worked for the 2018 ZE1 model. This method is better than cutting the wires, because if you later decide to remove the OVMS from the vehicle, you can simply push the pins back into the connector and it will look like the original.
+
+First, lift the white plastic cover on the connector in the direction of the arrow shown in the image on the left. The plastic cover will then move to the position shown on the right.
+
+.. image:: images/ze1-tcu-unpin1.jpg
+   :width: 500px
+
+Then you need to remove the top white plastic cover by prying it off with something small. In the image, the plastic cover appears slightly bent due to the removal process.
+
+.. image:: images/ze1-tcu-unpin2.jpg
+   :width: 300px
+
+After removing it, use a very small metal piece, such as a needle or a very small flat screwdriver, to push into the hole circled in the image below and gently pull the wire out from the other side. The wire should come out easily. If it does not, you may need to push the needle a bit further in to release the pin lock. Be careful not to damage the wire while doing this.
+
+.. image:: images/ze1-tcu-unpin3.jpg
+   :width: 300px
+
+Other TCU disconnection methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some people have also successfully disconnected the whole TCU, as discussed in the following thread: https://www.openvehicles.com/node/3809. However, this involves soldering a 5V regulator and connecting the microphone lines together. If tested successfully, the information could be updated here.
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -245,11 +281,12 @@ The OVMS uses two configuration options to calculate remaining range, whPerGid (
 Resources
 -----------------
 
+- GitHub issue for adding the Leaf ZE1 support https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323.
 - Nissan LEAF support added by Tom Parker, see `his wiki <https://carrott.org/emini/Nissan_Leaf_OVMS>`_ for lots of documentation and resources. Some info is outdated e.g. climate control now turns off automatically.
 - Nissan LEAF features are being added by Jaunius Kapkan, see `his github profile <https://github.com/mjkapkan/Open-Vehicle-Monitoring-System-3>`_ to track the progress.
 - `MyNissanLEAF thread for Nissan CANbus decoding discussion <http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=440>`_
-- Database files (.DBC) for ZE0, AZE0 & AZE1 Leaf can be found here: `Github LEAF Canbus database files <https://github.com/dalathegreat/leaf_can_bus_messages>`_
-- Polling information for AZE1 can be found here: https://drive.google.com/file/d/1jH9cgm5v23qnqVnmZN3p4TvdaokWKPjM/view
+- Database files (.DBC) for ZE0, ZE0 & ZE1 Leaf can be found here: `Github LEAF Canbus database files <https://github.com/dalathegreat/leaf_can_bus_messages>`_
+- Polling information for ZE1 can be found here: https://drive.google.com/file/d/1jH9cgm5v23qnqVnmZN3p4TvdaokWKPjM/view
 - `Nissan Leaf Car Hacking Wiki <https://nissanleaf.carhackingwiki.com>`_ - a great resource for information on the Nissan Leaf and it's components.
 
 -----------------
