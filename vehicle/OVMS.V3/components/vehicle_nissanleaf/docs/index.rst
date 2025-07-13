@@ -278,19 +278,6 @@ Range Calculation
 The OVMS uses two configuration options to calculate remaining range, whPerGid (default 80Wh/gid) and kmPerKWh (default 7.1km/kWh). The range calculation is based on the remaining GIDS reported by the LBC and at the moment does not hold 5% in reserve like Leaf Spy. Feedback on this calculation is welcomed.
 
 -----------------
-Resources
------------------
-
-- GitHub issue for adding the Leaf ZE1 support https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323.
-- Nissan LEAF support added by Tom Parker, see `his wiki <https://carrott.org/emini/Nissan_Leaf_OVMS>`_ for lots of documentation and resources. Some info is outdated e.g. climate control now turns off automatically.
-- Nissan LEAF features are being added by Jaunius Kapkan, see `his github profile <https://github.com/mjkapkan/Open-Vehicle-Monitoring-System-3>`_ to track the progress.
-- `MyNissanLEAF thread for Nissan CANbus decoding discussion <http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=440>`_
-- Database files (.DBC) for ZE0, ZE0 & ZE1 Leaf can be found here: `Github LEAF Canbus database files <https://github.com/dalathegreat/leaf_can_bus_messages>`_
-- Polling information for ZE1 can be found here: https://drive.google.com/file/d/1jH9cgm5v23qnqVnmZN3p4TvdaokWKPjM/view
-- `Nissan Leaf Car Hacking Wiki <https://nissanleaf.carhackingwiki.com>`_ - a great resource for information on the Nissan Leaf and it's components.
-- Discord server related to the firmware releases here https://discord.gg/BDDMzr86dh. Taken from the GitHub comment here https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323#issuecomment-2720235567.
-
------------------
 Troubleshooting
 -----------------
 
@@ -304,3 +291,17 @@ If your SOC (State of Charge) and SOH (State of Health) values for ZE1 (2018+) m
 
 .. image:: images/soc-and-soh-display-settings.jpg
     :width: 300px
+
+-----------------
+Resources
+-----------------
+
+- GitHub issue for adding the Leaf ZE1 support https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323.
+- Nissan LEAF support added by Tom Parker, see `his wiki <https://carrott.org/emini/Nissan_Leaf_OVMS>`_ for lots of documentation and resources. Some info is outdated e.g. climate control now turns off automatically.
+- Nissan LEAF features are being added by Jaunius Kapkan, see `his github profile <https://github.com/mjkapkan/Open-Vehicle-Monitoring-System-3>`_ to track the progress.
+- `MyNissanLEAF thread for Nissan CANbus decoding discussion <http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=440>`_
+- Database files (.DBC) for ZE0, ZE0 & ZE1 Leaf can be found here: `Github LEAF Canbus database files <https://github.com/dalathegreat/leaf_can_bus_messages>`_
+- Polling information for ZE1 can be found here: https://drive.google.com/file/d/1jH9cgm5v23qnqVnmZN3p4TvdaokWKPjM/view
+- `Nissan Leaf Car Hacking Wiki <https://nissanleaf.carhackingwiki.com>`_ - a great resource for information on the Nissan Leaf and it's components.
+- Discord server related to the firmware releases here https://discord.gg/BDDMzr86dh. Taken from the GitHub comment here https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/323#issuecomment-2720235567.
+- A blog post how to integrate Nissan Leaf ZE1 with Home Assistant https://blog.jingo.uk/notes-on-integrating-a-nissan-leaf-ze1-and-home-assistant/.
