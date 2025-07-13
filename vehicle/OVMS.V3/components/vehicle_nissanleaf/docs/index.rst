@@ -12,9 +12,9 @@ Note that in some regions, ZE0 and ZE1 models may be referred to as AZE0 and AZE
 Support Overview
 ----------------
 
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 Hardware
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 
 =========================== ==============
 Item                        Support Status
@@ -25,9 +25,9 @@ GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compa
 GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna).
 =========================== ==============
 
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 Controls
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 
 =========================== ==============
 Function                    Support Status
@@ -49,9 +49,9 @@ BMS Cell Monitor            Allows to monitor individual battery cells in a conf
 Charge to Limit             Allows to automatically stop the charge when target SOC (state of charge) and/or range is reached. All parameters can be controlled through metrics or web user interface. Meanwhile Range and SOC can be controlled from the app as well, by adjusting fields 10 (SOC) and 11 (range) in feature section accessible through app settings.
 =========================== ==============
 
-^^^^^^^^^^^^^^^^
+^^^^^^^
 Metrics
-^^^^^^^^^^^^^^^^
+^^^^^^^
 
 =========================== ==============
 Item                        Support Status
@@ -102,9 +102,9 @@ The model year can be set in the web interface or via the command:
 ``config set xnl modelyear 2015``
 
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 2011-2012 LEAF models (ZE0)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Gen1 LEAFs (ZE0, 2011-2012) require a hardware modification to enable remote climate control if the vehicle is not plugged in and charging. If you are ok with this, you don't need to do anything further.
 
@@ -120,9 +120,9 @@ Meanwhile on the TCU side the cable can be soldered or spliced in to by using a 
 
 If you have a "smart" EVSE (or one connected to a "smart" outlet, you can sometimes wake up the EV system by turning it off, then back on. This obviously only helps if your vehicle is plugged in, but may be useful for some users.
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 2013-2016 LEAF models (ZE0-0/1)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To use OVMS to activate remote climate the Nissan TCU (Telematics Control Unit) module must be unplugged if fitted e.g. satnav headunit (only on Acenta and Tekna models). The TCU is located behind the glovebox on LHD cars or on the right hand side of the drivers foot well on RHD cars. The large white plug on the rear of the TCU should be unplugged, push down tab in the middle and pull to unplug, `see video for RHD cars <https://photos.app.goo.gl/MuvpCaXQUjbCdoox6>`_ and `this page for LHD cars <http://www.arachnon.de/wb/pages/en/nissan-leaf/tcu.php>`_.
 
@@ -133,9 +133,9 @@ OVMS remote climate support will 'just work' on LEAF Visia models and Visia/Acen
 Note: If you prefer not to unplug the Nissan TCU, all OVMS functions appart from remote climate will function just fine alongside the Nissan TCU.
 
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 2016-2017 LEAF models (ZE0-2)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Remote climate control will only work when plugged in and actively charging on LEAF 2016-2017 models.** This is because in 2016 Nissan moved the TCU from the EV CAN bus to the CAR CAN bus.
 
@@ -151,9 +151,9 @@ or
 
 .. _2018+ models (ZE1):
 
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 2018+ models (ZE1)
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 With all ZE1 models, The OBD-II port cannot be directly used because it is isolated from the rest of the vehicle by a CAN gateway module. The module will power down when the ignition is off and it will isolate the port from the rest of the vehicle. Meaning that you cannot send messages to the CAN bus anymore. Instead, you need to tap the CAN busses going to the CAN gateway behind the instrument cluster. You will need to build an adapter cable to plug into the CAN gateway port. The OBD-II cable coming with the OVMS module is not suitable for this purpose, as it only has 6 wires and the ZE1 models require an 8-wire CAN tap cable. This also means you cannot re-use the DB9 connector from the cable as all the needed wires are not connected. In other words this means you need to build the whole cable yourself.
 
