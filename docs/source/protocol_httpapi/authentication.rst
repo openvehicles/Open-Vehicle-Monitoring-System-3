@@ -8,9 +8,31 @@ Alternatives
 
 Each API call must be authenticated, and there are currently three options for this:
 
-# Username+Passsword authentication: Specify parameters 'username' and 'password' in the URL, and they will be validated against registered users on the server.
-# Username+ApiToken authentication: Specify parameter 'username' as the registered user, and 'password' as a registered API token, in the URL, and they will be validated against registered API tokens for that user on the server.
-# Cookie authentication: A cookie may be obtained (by either of the above two authentication methods), and then used for subsequent API calls.
+* **Username+Passsword**: Specify parameters 'username' and 'password' in the URL,
+  and they will be validated against **registered users** (not vehicles) on the server.
+* **Username+ApiToken**: Specify parameter 'username' as the **registered user**
+  (not vehicle), and 'password' as a registered API token (see below), in the URL,
+  and they will be validated against registered API tokens for that user on the server.
+* **Cookie**: A cookie may be obtained (by either of the above two authentication
+  methods, see below), and then used for subsequent API calls.
+
+When creating/templating your requests, keep in mind URL parameters need to be **URL
+encoded**. Most frameworks include a method/function for this. If you're creating
+fixed URLs (e.g. for a ``curl`` script), use some online URL encoder tool.
+
+When using ``curl`` version 8.3.0 or higher, an option for automatic encoding
+of parameter values is to use curl variables. Example::
+
+  $ curl \
+    --variable 'USERNAME=yourlogin' \
+    --variable 'PASSWORD=yourpassword' \
+    --variable 'VEHICLEID=yourvehicleid' \
+    --expand-url \
+    'https://api.openvehicles.com:6869/api/status/{{VEHICLEID:url}}?username={{USERNAME:url}}&password={{PASSWORD:url}}'
+
+By the ``:url`` modifier ``curl`` encodes the variable values when expanding the
+URL, so you can fill the variables with your unencoded values.
+
 
 ---------------------------
 Cookie Based Authentication
