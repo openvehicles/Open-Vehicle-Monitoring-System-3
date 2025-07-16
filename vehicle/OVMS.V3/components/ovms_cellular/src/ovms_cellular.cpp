@@ -305,7 +305,7 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_err_driver_buffer_full = 0;
   m_nmea = NULL;
   m_gps_enabled = false;
-  m_gps_usermode = -1;
+  m_gps_usermode = GUM_DEFAULT;
   m_mux = NULL;
   m_ppp = NULL;
   m_driver = NULL;
@@ -1458,7 +1458,7 @@ void modem::StopTask()
 bool modem::StartNMEA()
   {
   if ( (m_nmea == NULL) &&
-       (m_gps_usermode == 1 || (m_gps_usermode == -1 && m_gps_enabled)) )
+       (m_gps_usermode == GUM_START || (m_gps_usermode == GUM_DEFAULT && m_gps_enabled)) )
     {
     if (!m_mux || !m_driver)
       {
@@ -1598,7 +1598,7 @@ void modem::ConfigChanged(std::string event, void* data)
     else if (enable_gps != m_gps_enabled)
       {
       // User changed GPS configuration; translate to status change:
-      m_gps_usermode = -1;
+      m_gps_usermode = GUM_DEFAULT;
       m_gps_enabled = enable_gps;
       if (m_gps_enabled && !m_nmea)
         StartNMEA();
@@ -1972,7 +1972,7 @@ void modem_gps_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     return;
     }
 
-  MyModem->m_gps_usermode = 1;
+  MyModem->m_gps_usermode = modem::GUM_START;
   if (MyModem->StartNMEA())
     {
     writer->puts("GPS started (may take a minute to find satellites).");
@@ -1996,7 +1996,7 @@ void modem_gps_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     return;
     }
 
-  MyModem->m_gps_usermode = 0;
+  MyModem->m_gps_usermode = modem::GUM_STOP;
   MyModem->StopNMEA();
   writer->puts("GPS stopped.");
   }

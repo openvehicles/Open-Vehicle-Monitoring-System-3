@@ -117,6 +117,12 @@ class modem : public pcp, public InternalRamAllocated
       NRT_GPRS = 1,
       NRT_EPS = 2
       } network_regtype_t;
+    typedef enum
+      {
+      GUM_DEFAULT = 0,          // no user GPS mode overlay, apply defaults
+      GUM_STOP = 1,             // user set GPS mode to stopped
+      GUM_START = 2             // user set GPS mode to started
+      } gps_usermode_t;
     typedef struct
       {
       event_type_t type;
@@ -169,7 +175,7 @@ class modem : public pcp, public InternalRamAllocated
     GsmNMEA*               m_nmea;
 
     bool                   m_gps_enabled;           // = config modem enable.gps
-    int                    m_gps_usermode;          // -1=default / 0=off / 1=on
+    gps_usermode_t         m_gps_usermode;          // manual GPS control status
 
     OvmsMutex              m_cmd_mutex;             // lock for the CMD channel
     bool                   m_cmd_running;           // true = collect rx lines in m_cmd_output
