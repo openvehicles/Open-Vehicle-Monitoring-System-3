@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Cellular: GPS auto pause on parking option added (power saving).
+  New config:
+    [modem] gps.parkpause     -- park time in seconds for auto pause, 0 = disabled (default)
 - New vehicle: NIU MQi GT EVO or GT 100 electric scooters (NEVO)
   https://docs.openvehicles.com/en/latest/components/vehicle_niu_gtevo/docs/index.html
 - Smart EQ 453:

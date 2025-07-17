@@ -880,7 +880,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
-  std::string apn, apn_user, apn_pass, network_dns, pincode, error;
+  std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause;
   bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode;
   float cfg_sq_good, cfg_sq_bad;
 
@@ -895,6 +895,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     enable_sms = (c.getvar("enable_sms") == "yes");
     enable_gps = (c.getvar("enable_gps") == "yes");
     enable_gpstime = (c.getvar("enable_gpstime") == "yes");
+    gps_parkpause = c.getvar("gps_parkpause");
     cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
     cfg_sq_bad = atof(c.getvar("cfg_sq_bad").c_str());
 
@@ -918,6 +919,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("modem", "enable.sms", enable_sms);
       MyConfig.SetParamValueBool("modem", "enable.gps", enable_gps);
       MyConfig.SetParamValueBool("modem", "enable.gpstime", enable_gpstime);
+      MyConfig.SetParamValue("modem", "gps.parkpause", gps_parkpause);
 
       MyConfig.SetParamValueFloat("network", "modem.sq.good", cfg_sq_good);
       MyConfig.SetParamValueFloat("network", "modem.sq.bad", cfg_sq_bad);
@@ -951,6 +953,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   enable_sms = MyConfig.GetParamValueBool("modem", "enable.sms", true);
   enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
   enable_gpstime = MyConfig.GetParamValueBool("modem", "enable.gpstime", false);
+  gps_parkpause = MyConfig.GetParamValue("modem", "gps.parkpause");
   cfg_sq_good = MyConfig.GetParamValueFloat("network", "modem.sq.good", -93);
   cfg_sq_bad = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -95);
 
@@ -998,6 +1001,12 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable SMS", "enable_sms", enable_sms);
   c.input_checkbox("Enable GPS", "enable_gps", enable_gps);
   c.input_checkbox("Use GPS time", "enable_gpstime", enable_gpstime);
+  c.input("number", "GPS park pause", "gps_parkpause", gps_parkpause.c_str(), "Default: 0 = disabled",
+    "<p>Auto pause GPS when parking for longer than this time / 0 = no auto pausing</p>"
+    "<p>Pausing the GPS subsystem can help to avoid draining the 12V battery, see"
+    " <a target=\"_blank\" href=\"https://docs.openvehicles.com/en/latest/userguide/warnings.html#average-power-usage\">user manual</a>"
+    " for details.</p>",
+    "min=\"0\" step=\"5\"", "Seconds");
   c.fieldset_end();
 
   c.fieldset_start("Cellular client options");

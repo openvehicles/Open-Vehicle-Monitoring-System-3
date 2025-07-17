@@ -158,6 +158,8 @@ void powermgmt::WebCleanup()
   c.panel_end(
     "<p>See <a href=\"/cfg/vehicle\" target=\"#main\">vehicle configuration</a> for automatic shutdown"
     " (deep sleep) when the 12V level gets too low, independent of the 12V alert state.</p>"
+    "<p>See <a href=\"/cfg/cellular\" target=\"#main\">cellular configuration</a> (if modem installed)"
+    " for automatic GPS pausing when parking.</p>"
   );
   c.done();
   }
