@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+
+2024-03-23 MB   3.3.005  OTA release
 - Cellular: GPS auto pause on parking option added (power saving).
   New config:
     [modem] gps.parkpause     -- park time in seconds for auto pause, 0 = disabled (default)
@@ -86,7 +89,6 @@ Open Vehicle Monitor System v3 - Change log
     OvmsVehicle.AuxMon.Enable
     OvmsVehicle.AuxMon.Disable
     OvmsVehicle.AuxMon.Status
-
 - Cellular: GPS run state signals added.
   New events:
     system.modem.gpsstart       -- GPS has started
