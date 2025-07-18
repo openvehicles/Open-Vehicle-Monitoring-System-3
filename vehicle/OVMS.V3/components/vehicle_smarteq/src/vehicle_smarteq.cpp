@@ -137,6 +137,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_modem_restart = false;
   m_modem_ticker = 0;
 
+  m_enable_write = false;
+
   m_charge_start = false;
   m_charge_finished = true;
   m_led_state = 4;
@@ -221,7 +223,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_CHGpower          = new OvmsMetricVector<float>("xsq.obl.power", SM_STALE_HIGH, kW);
   mt_obl_main_freq              = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);
   
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
+  RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
 
   // init commands:
   cmd_xsq = MyCommandApp.RegisterCommand("xsq","SmartEQ 453 Gen.4");
@@ -386,7 +389,14 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   ESP_LOGI(TAG, "Smart EQ reload configuration");
 
+  bool stateWrite = m_enable_write;
   m_enable_write      = MyConfig.GetParamValueBool("xsq", "canwrite", false);
+  // set CAN bus transceiver to active or listen-only depending on user selection
+  if ( stateWrite != m_enable_write )
+  {
+      CAN_mode_t mode = m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
+      RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
+  }
   m_enable_LED_state  = MyConfig.GetParamValueBool("xsq", "led", false);
   m_enable_lock_state = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
   m_ios_tpms_fix      = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);

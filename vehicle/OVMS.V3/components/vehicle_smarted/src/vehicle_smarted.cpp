@@ -103,6 +103,9 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() : smarted_obd_rxwait(1,1) {
   m_last_pid = 0;
   m_reboot_ticker = 0;
 
+  m_enable_write = false;
+
+
   // init commands:
   cmd_xse = MyCommandApp.RegisterCommand("xse","SmartED 451 Gen.3");
   cmd_xse->RegisterCommand("recu","Set recu..", xse_recu, "<up/down>",1,1);
@@ -114,8 +117,10 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() : smarted_obd_rxwait(1,1) {
 
   MyConfig.RegisterParam("xse", "Smart ED", true, true);
 
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+ // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
+
+  RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
+  RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
 
   // init OBD2 poller:
   ObdInitPoll();
@@ -153,7 +158,15 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
   m_egpio_timout    = MyConfig.GetParamValueInt("xse", "egpio_timout", 5);
   m_soc_rsoc        = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
 
+  bool stateWrite = m_enable_write;
   m_enable_write    = MyConfig.GetParamValueBool("xse", "canwrite", false);
+  // set CAN bus transceiver to active or listen-only depending on user selection
+  if ( stateWrite != m_enable_write )
+  {
+      CAN_mode_t mode = m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
+      RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
+      RegisterCanBus(2, mode, CAN_SPEED_500KBPS);
+  }
   m_lock_state      = MyConfig.GetParamValueBool("xse", "lockstate", false);
   m_reset_trip      = MyConfig.GetParamValueBool("xse", "reset.trip.charge", false);
   m_notify_trip     = MyConfig.GetParamValueBool("xse", "notify.trip", true);
