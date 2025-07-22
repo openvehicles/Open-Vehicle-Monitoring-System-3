@@ -178,6 +178,9 @@ class modem : public pcp, public InternalRamAllocated
     gps_usermode_t         m_gps_usermode;          // manual GPS control status
     int                    m_gps_parkpause;         // = config modem gps.parkpause (seconds, 0=off)
     int                    m_gps_stopticker;        // Park pause countdown
+    int                    m_gps_startticker;       // Re-activation countdown
+    int                    m_gps_reactivate;        // = config modem gps.parkreactivate (minutes, 0=off)
+    int                    m_gps_reactlock;         // = config modem gps.reactlock (minutes, default 5)
     OvmsMutex              m_gps_mutex;             // lock for start/stop NMEA
 
     OvmsMutex              m_cmd_mutex;             // lock for the CMD channel

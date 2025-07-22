@@ -268,8 +268,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   if (MyConfig.GetParamValue("xsq", "tpms.front.pressure","0") == "0") {
     MyConfig.SetParamValueInt("xsq", "tpms.front.pressure",  225); // kPa
     MyConfig.SetParamValueInt("xsq", "tpms.rear.pressure",  255); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.value.warn",  30); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.value.alert", 50); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.value.warn",  50); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.value.alert", 75); // kPa
   }
 
   if (MyConfig.GetParamValue("xsq", "tpms.alert.enable","0") == "0") {
@@ -845,6 +845,13 @@ void OvmsVehicleSmartEQ::GPSOnOff() {
   #ifdef CONFIG_OVMS_COMP_CELLULAR
     static const int PARK_TIMEOUT_SECS = 600;  // 10 minutes
     static const int INITIAL_DELAY = 10;
+    int gps_parkpause = MyConfig.GetParamValueInt("modem", "gps.parkpause", 0); // Check if GPS parking off is enabled in Cellular config
+    if (gps_parkpause > 0) {
+        ESP_LOGI(TAG, "smart EQ GPS on/off disabled, GPS parking off by Cellular config is enabled");
+        MyConfig.SetParamValueBool("xsq", "gps.onoff", false);
+        m_gps_onoff = false;
+        return;
+    }
     m_gps_ticker++;
 
     // Power saving: Turn off GPS

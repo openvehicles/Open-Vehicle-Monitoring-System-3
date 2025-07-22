@@ -1,7 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-
+- Cellular: GPS auto pause on parking re-activate option added (update position).
+  New config:
+    [modem] gps.reactivate    -- park time in minutes for auto re-activate for (default 5 minutes) GPS lock (gps.reactlock), 0 = disabled (default)
+    [modem] gps.reactlock     -- by default, GPS lock for 5 minutes until automatic shutdown during parking time
 
 2024-03-23 MB   3.3.005  OTA release
 - Cellular: GPS auto pause on parking option added (power saving).
