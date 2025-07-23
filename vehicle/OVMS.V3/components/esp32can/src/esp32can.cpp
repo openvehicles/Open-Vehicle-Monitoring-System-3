@@ -211,7 +211,6 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
         {
         // Freeze TEC/REC by entering listen only mode
         MODULE_ESP32CAN->MOD.B.LOM = 1;
-        MyESP32can->SetTransceiverMode(CAN_MODE_LISTEN);
 
         // Re-trigger bus-off
         MODULE_ESP32CAN->TXERR.B.TXERR = 0;
@@ -493,8 +492,6 @@ esp_err_t esp32can::InitController()
     MODULE_ESP32CAN->MOD.B.LOM = 1;
   else
     MODULE_ESP32CAN->MOD.B.LOM = 0;
-
-  MyESP32can->SetTransceiverMode(m_mode);
 
   // Clear error counters
   MODULE_ESP32CAN->TXERR.U = 0;
