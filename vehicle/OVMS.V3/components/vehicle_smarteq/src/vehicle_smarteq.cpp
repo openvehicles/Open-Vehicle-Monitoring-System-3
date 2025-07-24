@@ -139,6 +139,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   m_charge_start = false;
   m_charge_finished = true;
+  m_notifySOClimit = false;
   m_led_state = 4;
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
@@ -700,6 +701,7 @@ bool OvmsVehicleSmartEQ::ExecuteCommand(const std::string& command) {
 
 void OvmsVehicleSmartEQ::ResetChargingValues() {
   m_charge_finished = false;
+  m_notifySOClimit = false;
   StdMetrics.ms_v_charge_kwh->SetValue(0); // charged Energy
   //StdMetrics.ms_v_charge_kwh_grid->SetValue(0);
 }
@@ -1051,6 +1053,7 @@ void OvmsVehicleSmartEQ::Handlev2Server(){
  * Called once per 10 seconds from Ticker10
  */
 void OvmsVehicleSmartEQ::HandleCharging() {
+  float act_soc        = StdMetrics.ms_v_bat_soc->AsFloat(0);
   float limit_soc       = StdMetrics.ms_v_charge_limit_soc->AsFloat(0);
   float limit_range     = StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
   float max_range       = StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
@@ -1072,25 +1075,34 @@ void OvmsVehicleSmartEQ::HandleCharging() {
     float energy = power / 3600.0f * 1.0f;                         // 1 second worth of energy in kwh's
     StdMetrics.ms_v_charge_kwh->SetValue( StdMetrics.ms_v_charge_kwh->AsFloat() + energy);
 
-    // Calculate remaining time to full charge
-    if(StdMetrics.ms_v_charge_power->AsFloat() > 12.0f){
-      StdMetrics.ms_v_charge_duration_full->SetValue(mt_obd_duration->AsInt(), Minutes);
-      ESP_LOGV(TAG, "Time remaining: %d mins to 100%% soc", mt_obd_duration->AsInt());
-    } else {
-      float soc100 = 100.0f;
-      int remaining_soc = calcMinutesRemaining(soc100, charge_voltage, charge_current);
-      StdMetrics.ms_v_charge_duration_full->SetValue(remaining_soc, Minutes);
-      ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", remaining_soc, soc100);
-    }
+    // If no limits are set, then calculate remaining time to full charge
+    if (limit_soc <= 0 && limit_range <= 0) {
+      // If the charge power is above 12kW, then use the OBD duration value
+      if(StdMetrics.ms_v_charge_power->AsFloat() > 12.0f){
+        StdMetrics.ms_v_charge_duration_full->SetValue(mt_obd_duration->AsInt(), Minutes);
+        ESP_LOGV(TAG, "Time remaining: %d mins to 100%% soc", mt_obd_duration->AsInt());
+      } else {
+        float soc100 = 100.0f;
+        int remaining_soc = calcMinutesRemaining(soc100, charge_voltage, charge_current);
+        StdMetrics.ms_v_charge_duration_full->SetValue(remaining_soc, Minutes);
+        ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", remaining_soc, soc100);
+      }
+    }    
+    // if limit_soc is set, then calculate remaining time to limit_soc
     if (limit_soc > 0) {
-      // if limit_soc is set, then calculate remaining time to limit_soc
       int minsremaining_soc = calcMinutesRemaining(limit_soc, charge_voltage, charge_current);
 
       StdMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
+      if (act_soc >= limit_soc && !m_notifySOClimit) {
+        m_notifySOClimit = true;
+        StdMetrics.ms_v_charge_duration_soc->SetValue(0, Minutes);
+        ESP_LOGV(TAG, "Time remaining: 0 mins to %0.0f%% soc (already above limit)", limit_soc);
+        NotifySOClimit();
+      }
     }
+    // If limit_range is set, then calculate remaining time to that range
     if (limit_range > 0 && max_range > 0.0f) {
-      // if range limit is set, then compute required soc and then calculate remaining time to that soc
       float range_soc           = limit_range / max_range * 100.0f;
       int   minsremaining_range = calcMinutesRemaining(range_soc, charge_voltage, charge_current);
 
@@ -2459,6 +2471,44 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, Ov
 }
 
 /**
+ * ProcessMsgCommand: V2 compatibility protocol message command processing
+ *  result: optional payload or message to return to the caller with the command response
+ */
+OvmsVehicleSmartEQ::vehicle_command_t OvmsVehicleSmartEQ::ProcessMsgCommand(string& result, int command, const char* args)
+{
+  switch (command)
+  {
+    case CMD_SetChargeAlerts:
+      return MsgCommandCA(result, command, args);
+
+    default:
+      return NotImplemented;
+  }
+}
+
+/**
+ * MsgCommandCA:
+ *  - CMD_SetChargeAlerts(<soc>)
+ */
+OvmsVehicleSmartEQ::vehicle_command_t OvmsVehicleSmartEQ::MsgCommandCA(std::string &result, int command, const char* args)
+{
+  if (command == CMD_SetChargeAlerts && args && *args)
+  {
+    std::istringstream sentence(args);
+    std::string token;
+    
+    // CMD_SetChargeAlerts(<soc limit>)
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xsq", "suffsoc", atoi(token.c_str()));
+    
+    // Synchronize with config changes:
+    ConfigChanged(NULL);
+  }
+  return Success;
+}
+  
+
+/**
  * writer for command line interface
  */
 void OvmsVehicleSmartEQ::xsq_trip_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
@@ -2617,6 +2667,19 @@ void OvmsVehicleSmartEQ::NotifyClimate() {
   StringWriter buf(200);
   CommandClimate(COMMAND_RESULT_NORMAL, &buf);
   MyNotify.NotifyString("info","xsq.climate",buf.c_str());
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSOClimit(int verbosity, OvmsWriter* writer) {
+  writer->puts("SOC limit reached:");
+  writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
+  writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
+  writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
+  return Success;
+}
+void OvmsVehicleSmartEQ::NotifySOClimit() {
+  StringWriter buf(200);
+  CommandSOClimit(COMMAND_RESULT_NORMAL, &buf);
+  MyNotify.NotifyString("info","xsq.soclimit",buf.c_str());
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::Command12Vcharge(int verbosity, OvmsWriter* writer) {
