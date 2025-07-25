@@ -55,6 +55,9 @@
 #define CAN_NIBH(b)     (data[b] >> 4)
 #define CAN_NIB(n)      (((n)&1) ? CAN_NIBL((n)>>1) : CAN_NIBH((n)>>1))
 
+// VW e-Up specific MSG protocol commands:
+#define CMD_SetChargeAlerts         204 // (suffsoc)
+
 using namespace std;
 
 typedef std::vector<OvmsPoller::poll_pid_t, ExtRamAllocator<OvmsPoller::poll_pid_t>> poll_vector_t;
@@ -105,6 +108,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void NotifyTotalCounters();
     void NotifyMaintenance();
     void Notify12Vcharge();
+    void NotifySOClimit();
     void DoorLockState();
     void WifiRestart();
     void ModemRestart();
@@ -121,6 +125,8 @@ public:
     vehicle_command_t CommandDeactivateValet(const char* pin) override;
     vehicle_command_t CommandCan(uint32_t txid,uint32_t rxid,bool reset=false,bool wakeup=false);
     vehicle_command_t CommandWakeup2();
+    vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
+    vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
     virtual vehicle_command_t CommandTripStart(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTripReset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandMaintenance(int verbosity, OvmsWriter* writer);
@@ -132,6 +138,7 @@ public:
     virtual vehicle_command_t CommandTPMSset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4all(int number, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandSOClimit(int verbosity, OvmsWriter* writer);
 
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -316,6 +323,7 @@ public:
     bool m_warning_unlocked;                //!< unlocked warning
     bool m_modem_check;                     //!< modem check enabled
     bool m_modem_restart;                   //!< modem restart enabled
+    bool m_notifySOClimit;                  //!< notify SOClimit reached one time
     int m_ddt4all_ticker;                   //!< DDT4ALL active ticker 
     int m_ddt4all_exec;                     //!< DDT4ALL ticker for next execution
     int m_led_state;
