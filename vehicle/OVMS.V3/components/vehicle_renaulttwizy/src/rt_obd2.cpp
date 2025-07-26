@@ -473,31 +473,32 @@ void OvmsVehicleRenaultTwizy::shell_obd_cleardtc(int verbosity, OvmsWriter* writ
     return;
   }
 
-  twizy->ResetDTCStats();
-
-  CAN_frame_t txframe = {};
-  txframe.FIR.B.FF = CAN_frame_std;
-  txframe.FIR.B.DLC = 8;
-  txframe.MsgID = CLUSTER_TXID;
-
-  // StartDiagnosticSession.ExtendedDiagnostic:
-  //  - Request 10C0
-  //  - Response 50C0 (unchecked)
-  txframe.data.u8[0] = 0x02;
-  txframe.data.u8[1] = 0x10;
-  txframe.data.u8[2] = 0xC0;
-  txframe.Write(twizy->m_can1);
-
-  // ClearDiagnosticInformation.All:
+  // ClearDiagnosticInformation.All@CLUSTER:
   //  - Request 14FFFFFF
-  //  - Response 54 (unchecked)
-  txframe.data.u8[0] = 0x04;
-  txframe.data.u8[1] = 0x14;
-  txframe.data.u8[2] = 0xFF;
-  txframe.data.u8[3] = 0xFF;
-  txframe.data.u8[4] = 0xFF;
-  txframe.Write(twizy->m_can1);
+  //  - Response 54
+  uint16_t txid = CLUSTER_TXID, rxid = CLUSTER_RXID;
+  string request = "\x14\xFF\xFF\xFF";
+  string response;
+  
+  // execute request:
+  int err = twizy->ObdRequest(txid, rxid, request, response);
+  if (err == -1) {
+    writer->puts("ERROR: timeout waiting for response");
+    return;
+  } else if (err) {
+    writer->printf("ERROR: request failed with response error code %02X\n", err);
+    return;
+  }
 
+  // check result code:
+  uint8_t rc = (response.size() >= 1) ? response[0] : 0;
+  if (rc != 0x54) {
+    writer->printf("ERROR: DTC clear failed (result code %02X), please retry\n", rc);
+    return;
+  }
+
+  // success:
+  twizy->ResetDTCStats();
   writer->puts("DTC store has been cleared.");
 }
 
