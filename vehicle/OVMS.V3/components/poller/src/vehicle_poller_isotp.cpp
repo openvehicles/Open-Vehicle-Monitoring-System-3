@@ -227,18 +227,27 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       tp_len = fr_data[0] & 0x0f;
       tp_data = &fr_data[1];
       tp_datalen = tp_len;
+
+      m_poll.raw_data = tp_data;
+      m_poll.raw_data_len = tp_datalen;
       break;
     case ISOTP_FT_FIRST:
       tp_frameindex = 0;
       tp_len = (fr_data[0] & 0x0f) << 8 | fr_data[1];
       tp_data = &fr_data[2];
       tp_datalen = (tp_len > fr_maxlen-2) ? fr_maxlen-2 : tp_len;
+
+      m_poll.raw_data = tp_data;
+      m_poll.raw_data_len = tp_datalen;
       break;
     case ISOTP_FT_CONSECUTIVE:
       tp_frameindex = fr_data[0] & 0x0f;
       tp_len = m_poll.mlremain;
       tp_data = &fr_data[1];
       tp_datalen = (tp_len > fr_maxlen-1) ? fr_maxlen-1 : tp_len;
+
+      m_poll.raw_data = tp_data;
+      m_poll.raw_data_len = tp_datalen;
       break;
     case ISOTP_FT_FLOWCTRL:
       tp_fc_command  = fr_data[0] & 0x0f;

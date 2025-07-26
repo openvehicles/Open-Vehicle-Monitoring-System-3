@@ -813,17 +813,28 @@ void DuktapeObject::Deregister(duk_context *ctx)
 
 /**
  * RequestCallback: request object method call by Duktape context
+ * \param method The name of the method to call on the object.
+ * \param data The parameter pusher. (Deleted after call succeeds/push fails)
+ * \return true if succeeded in requesting the callback.
  */
-void DuktapeObject::RequestCallback(const char* method, void* data /*=NULL*/)
+bool DuktapeObject::RequestCallback(const char* method, DuktapeCallbackParameter* params /*=NULL*/)
   {
   if (MyDuktape.DukTapeAvailable())
     {
     Ref();
-    MyDuktape.DuktapeRequestCallback(this, method, data);
+    bool res = MyDuktape.DuktapeRequestCallback(this, method, params);
+
+    if (!res)
+      Unref();
+
+    return res;
     }
   else
     {
     ESP_LOGE(TAG, "DuktapeObject::RequestCallback(%s) failed: Duktape not available", method);
+    if (params != nullptr)
+      delete params;
+    return false;
     }
   }
 
@@ -834,7 +845,7 @@ duk_ret_t DuktapeObject::DuktapeCallback(duk_context *ctx, duktape_queue_t &msg)
   {
   duk_ret_t res = -1;
   if (ctx)
-    res = CallMethod(ctx, msg.body.dt_callback.method, msg.body.dt_callback.data);
+    res = CallMethod(ctx, msg.body.dt_callback.method, msg.body.dt_callback.params);
   else
     ESP_LOGE(TAG, "DuktapeObject::DuktapeCallback(%s) failed: Duktape shutdown", msg.body.dt_callback.method);
   Unref();
@@ -843,26 +854,41 @@ duk_ret_t DuktapeObject::DuktapeCallback(duk_context *ctx, duktape_queue_t &msg)
 
 /**
  * CallMethod: execute object method in Duktape context
- *  Default implementation: no args, no return values, no error processing
+ * \param ctx Duktape context.
+ * \param method Method to call.
+ * \param params Parameter pusher. Deleted after call.
  */
-duk_ret_t DuktapeObject::CallMethod(duk_context *ctx, const char* method, void* data /*=NULL*/)
+duk_ret_t DuktapeObject::CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params)
   {
   if (!ctx)
     {
-    RequestCallback(method, data);
+    // data paramter ownership delegated.
+    RequestCallback(method, params);
     return 0;
     }
   OvmsRecMutexLock lock(&m_mutex);
-  if (!IsCoupled()) return 0;
-  int entry_top = duk_get_top(ctx);
-  Push(ctx);
-  duk_push_string(ctx, method);
-  if (duk_pcall_prop(ctx, -2, 0) != 0)
+  if (!IsCoupled())
     {
-    DukOvmsErrorHandler(ctx, -1);
+    if (params != nullptr)
+      delete params;
+    return 0;
+    }
+  int entry_top = duk_get_top(ctx);
+  int paramcount = 0;
+  duk_idx_t objidx = Push(ctx);
+
+  duk_push_string(ctx, method);
+  if (params != nullptr)
+    paramcount = params->Push(ctx);
+  int call_res = duk_pcall_prop(ctx, objidx, paramcount);
+  if (call_res != 0)
+    {
+    DukOvmsErrorHandler(ctx, call_res);
     }
   // discard return values if any + this:
   duk_pop_n(ctx, duk_get_top(ctx) - entry_top);
+  if (params != nullptr)
+    delete params;
   return 0;
   }
 
@@ -1177,15 +1203,27 @@ void OvmsDuktape::DuktapeCompact(bool wait /*=true*/)
     DuktapeDispatch(&dmsg, 0);
   }
 
-void OvmsDuktape::DuktapeRequestCallback(DuktapeObject* instance, const char* method, void* data)
+bool OvmsDuktape::DuktapeRequestCallback(DuktapeObject* instance, const char* method, DuktapeCallbackParameter* params)
   {
   duktape_queue_t dmsg;
   memset(&dmsg, 0, sizeof(dmsg));
   dmsg.type = DUKTAPE_callback;
   dmsg.body.dt_callback.instance = instance;
   dmsg.body.dt_callback.method = method;
-  dmsg.body.dt_callback.data = data;
-  DuktapeDispatch(&dmsg);
+  dmsg.body.dt_callback.params = params;
+  return DuktapeDispatch(&dmsg);
+  }
+
+bool OvmsDuktape::DuktapeRequestDelete(DuktapeObject* instance, bool decouple, bool deregister)
+  {
+  duktape_queue_t dmsg;
+  memset(&dmsg, 0, sizeof(dmsg));
+
+  dmsg.type = DUKTAPE_deleteobject;
+  dmsg.body.dt_deleteobject.instance = instance;
+  dmsg.body.dt_deleteobject.decouple = decouple;
+  dmsg.body.dt_deleteobject.deregister = deregister;
+  return DuktapeDispatch(&dmsg);
   }
 
 OvmsWriter* OvmsDuktape::GetDuktapeWriter()
@@ -1768,6 +1806,14 @@ void OvmsDuktape::ProcessJob(duktape_queue_t& msg)
       DukTapeUnload();
       }
       break;
+    case DUKTAPE_deleteobject:
+      {
+      if (msg.body.dt_deleteobject.deregister)
+        msg.body.dt_deleteobject.instance->Deregister(m_dukctx);
+      if (msg.body.dt_deleteobject.decouple)
+        msg.body.dt_deleteobject.instance->Decouple(m_dukctx);
+      msg.body.dt_deleteobject.instance->Unref();
+      }break;
 
     default:
       ESP_LOGE(TAG,"Duktape: Unrecognised msg type 0x%04x",msg.type);
