@@ -115,11 +115,11 @@ OvmsVehicleNiuGTEVO::OvmsVehicleNiuGTEVO()
   // Hardware filter lets 0x18 and 0x19 prefix pass through, filter exact ID ranges via software filter
   /*esp32can_filter_config_t can1_hwflt = {
       .code = {.u32 = 0x18000000U << 3},
-      .mask = {.u32 = 0x1C000000U << 3},
+      .mask = {.u32 = 0x01FFFFFFU << 3},
       .single_filter = true,
   };*/
 
-  //MyPeripherals->m_esp32can->SetAcceptanceFilter(can1_hwflt);
+  // MyPeripherals->m_esp32can->SetAcceptanceFilter(can1_hwflt);
 
   // CAN1 Software filter
   MyPollers.AddFilter(1, 0x18f21302, 0x18f21302); // Light control unit (LCU)
@@ -283,6 +283,7 @@ void OvmsVehicleNiuGTEVO::Ticker10(uint32_t ticker)
       BmsSetCellArrangementVoltage(20, 1);
       BmsSetCellArrangementTemperature(5, 1);
       ESP_LOGW(TAG, "Battery A disconnected");
+      MyNotify.NotifyStringf("alert", "batt.A.disconnect", "Battery A disconnected");
     }
 
     if (!batB_now && batB_prev)
@@ -291,6 +292,7 @@ void OvmsVehicleNiuGTEVO::Ticker10(uint32_t ticker)
       BmsSetCellArrangementVoltage(20, 1);
       BmsSetCellArrangementTemperature(5, 1);
       ESP_LOGW(TAG, "Battery B disconnected");
+      MyNotify.NotifyStringf("alert", "batt.B.disconnect", "Battery B disconnected");
     }
 
     // Handle connection status
@@ -302,6 +304,7 @@ void OvmsVehicleNiuGTEVO::Ticker10(uint32_t ticker)
         BmsSetCellArrangementVoltage(20, 1);
         BmsSetCellArrangementTemperature(5, 1);
         ESP_LOGI(TAG, "Battery A connected");
+        MyNotify.NotifyStringf("info", "batt.A.connect", "Battery A connected");
       }
       else if (batB_now && !batB_prev)
       {
@@ -309,6 +312,7 @@ void OvmsVehicleNiuGTEVO::Ticker10(uint32_t ticker)
         BmsSetCellArrangementVoltage(20, 1);
         BmsSetCellArrangementTemperature(5, 1);
         ESP_LOGI(TAG, "Battery B connected");
+        MyNotify.NotifyStringf("info", "batt.B.connect", "Battery B connected");
       }
     }
     else if (batA_now && batB_now)
@@ -335,19 +339,48 @@ void OvmsVehicleNiuGTEVO::Ticker10(uint32_t ticker)
       ESP_LOGE(TAG, "No battery connected");
     }
 
-    // Range calulation
-    StandardMetrics.ms_v_bat_range_ideal->SetValue((StandardMetrics.ms_v_bat_soc->AsFloat() * 0.01) * m_range_ideal);
-    StandardMetrics.ms_v_bat_range_full->SetValue((m_range_ideal * (StandardMetrics.ms_v_bat_soh->AsFloat(100) * 0.01)), Kilometers);
-    if ((StandardMetrics.ms_v_bat_consumption->AsFloat(0, kWhP100K)) != 0)
+    // Define the minimum safe state of charge
+    const float MIN_SAFE_SOC_PERCENT = 15.0f;
+
+    float current_soc_percent = StandardMetrics.ms_v_bat_soc->AsFloat();
+    float available_kwh = StandardMetrics.ms_v_bat_capacity->AsFloat(0);
+
+    // Calculate the usable energy (from current SoC down to the minimum safe SoC)
+    float usable_kwh = 0.0f;
+    if (current_soc_percent > MIN_SAFE_SOC_PERCENT)
     {
-      // Calculate estimated range with consumption history and remaining battery capacity
-      StandardMetrics.ms_v_bat_range_est->SetValue(((StandardMetrics.ms_v_bat_capacity->AsFloat(0) / (StandardMetrics.ms_v_bat_consumption->AsFloat(1, kWhP100K))) * 100), Kilometers);
-      ESP_LOGD(TAG, "Avail bat capacity: %.1f kWh, Avg bat cons 15km: %.2f kWh/100km, range est calculated: %f km", StandardMetrics.ms_v_bat_capacity->AsFloat(), StandardMetrics.ms_v_bat_consumption->AsFloat(0, kWhP100K), StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers));
+      // Calculate the total capacity at the current state of health
+      // This is derived from the available energy and current SoC
+      float total_capacity_kwh = available_kwh / (current_soc_percent / 100.0f);
+
+      float usable_soc_percent = current_soc_percent - MIN_SAFE_SOC_PERCENT;
+      usable_kwh = total_capacity_kwh * (usable_soc_percent / 100.0f);
+    }
+
+    float usable_soc_for_ideal_range = 0.0f;
+    if (current_soc_percent > MIN_SAFE_SOC_PERCENT)
+    {
+      usable_soc_for_ideal_range = (current_soc_percent - MIN_SAFE_SOC_PERCENT) / 100.0f;
+    }
+    StandardMetrics.ms_v_bat_range_ideal->SetValue(m_range_ideal * usable_soc_for_ideal_range);
+
+    // theoretical maximum range on a full charge with the battery's current state of health.
+    StandardMetrics.ms_v_bat_range_full->SetValue((m_range_ideal * (StandardMetrics.ms_v_bat_soh->AsFloat(100) * 0.01)), Kilometers);
+
+    // Estimated Range: Based on the calculated usable energy.
+    if (StandardMetrics.ms_v_bat_consumption->AsFloat(0, kWhP100K) != 0)
+    {
+      // Calculate estimated range with consumption history and usable battery capacity
+      float consumption = StandardMetrics.ms_v_bat_consumption->AsFloat(1, kWhP100K);
+      float estimated_range = (consumption > 0) ? ((usable_kwh / consumption) * 100) : 0;
+      StandardMetrics.ms_v_bat_range_est->SetValue(estimated_range, Kilometers);
+
+      ESP_LOGD(TAG, "Usable bat capacity to 15%%: %.1f kWh, Avg bat cons: %.2f kWh/100km, Range est calculated: %.1f km", usable_kwh, consumption, estimated_range);
     }
     else
     {
-      // Use factory power consumption if we have no history
-      StandardMetrics.ms_v_bat_range_est->SetValue((StandardMetrics.ms_v_bat_capacity->AsFloat(0, WattHours) / 45), Kilometers);
+      // Use factory power consumption if we have no history, also with usable energy.
+      StandardMetrics.ms_v_bat_range_est->SetValue((usable_kwh * 1000 / 45), Kilometers);
     }
     // Energy statistics calculation
     EnergyStatistics();
@@ -363,8 +396,6 @@ void OvmsVehicleNiuGTEVO::Ticker10(uint32_t ticker)
       StandardMetrics.ms_v_charge_state->SetValue("prepare");
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
 
-      StandardMetrics.ms_v_charge_climit->SetValue(16);
-
       StandardMetrics.ms_v_charge_mode->SetValue("standard");
       ESP_LOGI(TAG, "Charger connected");
     }
@@ -375,10 +406,12 @@ void OvmsVehicleNiuGTEVO::Ticker10(uint32_t ticker)
       StandardMetrics.ms_v_charge_state->SetValue("done");
       StandardMetrics.ms_v_charge_substate->SetValue("stopped");
 
-      StandardMetrics.ms_v_charge_climit->SetValue(0);
       StandardMetrics.ms_v_charge_current->SetValue(0);
       StandardMetrics.ms_v_charge_voltage->SetValue(0);
       StandardMetrics.ms_v_charge_power->SetValue(0);
+
+      StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
+      StandardMetrics.ms_v_charge_limit_soc->SetValue(0);
 
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
       StandardMetrics.ms_v_charge_kwh->SetValue(0);
@@ -548,58 +581,79 @@ void OvmsVehicleNiuGTEVO::SyncMetrics()
 // Average rolling consumption over last 25km
 void OvmsVehicleNiuGTEVO::CalculateEfficiency()
 {
-  if (mt_bus_awake->AsBool())
+  if (!mt_bus_awake->AsBool())
   {
-    float speed = StdMetrics.ms_v_pos_speed->AsFloat();
-    float power = StdMetrics.ms_v_bat_power->AsFloat(0, Watts);
-    float distanceTraveled = speed / 3600.0f; // km/h to km/s
+    return;
+  }
 
-    float consumption = 0;
-    if (speed >= 10)
-    {
-      consumption = power / speed; // Wh/km
-    }
+  float speed = StandardMetrics.ms_v_pos_speed->AsFloat();
+  float power = StandardMetrics.ms_v_bat_power->AsFloat(0, Watts);
+  float distanceTraveled = speed / 3600.0f; // km/h to km/s
 
-    // Only record valid entries
-    if (distanceTraveled > 0 && std::isfinite(consumption))
-    {
-      consumptionHistory.push_back(std::make_pair(distanceTraveled, consumption));
-      totalConsumption += consumption * distanceTraveled;
-      totalDistance += distanceTraveled;
-    }
+  float consumption = 0;
+  // Only calculate consumption at reasonable speeds to avoid division by zero
+  // and artificially high values at near-standstill.
+  if (speed >= 10.0f)
+  {
+    consumption = power / speed; // Results in Wh/km
+  }
 
-    // Trim excess distance from front of buffer when over 25 km
-    while (totalDistance > 25.0f && !consumptionHistory.empty())
+  // Only add valid, finite data points to the history
+  if (distanceTraveled > 0 && std::isfinite(consumption))
+  {
+    // A data point is a pair of (distance_in_km, consumption_in_Wh/km)
+    consumptionHistory.push_back(std::make_pair(distanceTraveled, consumption));
+    totalDistance += distanceTraveled;
+    // totalConsumption is a running sum of energy in Wh (distance * Wh/km)
+    totalConsumption += distanceTraveled * consumption;
+  }
+
+  // --- Proportional Trimming Loop ---
+  // Trim the history to maintain a smooth 25km window
+  while (totalDistance > 25.0f && !consumptionHistory.empty())
+  {
+    // Use a reference to the oldest data point to allow modification
+    auto &oldest = consumptionHistory.front();
+    float excessDistance = totalDistance - 25.0f;
+
+    if (excessDistance >= oldest.first)
     {
-      auto oldest = consumptionHistory.front();
+      // The entire oldest data point is outside the 25km window, so remove it completely.
       totalDistance -= oldest.first;
       totalConsumption -= oldest.first * oldest.second;
       consumptionHistory.pop_front();
     }
-
-    // Ensure numbers stay clean
-    if (totalDistance < 0 || !std::isfinite(totalDistance))
-      totalDistance = 0;
-    if (totalConsumption < 0 || !std::isfinite(totalConsumption))
-      totalConsumption = 0;
-
-    // Calculate and set average
-    float avgConsumption = (totalDistance > 0) ? totalConsumption / totalDistance : 0;
-    StdMetrics.ms_v_bat_consumption->SetValue(TRUNCPREC(avgConsumption, 1));
-
-    // Logging
-    ESP_LOGD(TAG, "Average battery consumption: %.1f Wh/km (over %.1f km, buffer size: %zu)",
-             avgConsumption, totalDistance, consumptionHistory.size());
-
-    // Hard reset if buffer grows out of control
-    if (consumptionHistory.size() > 5000)
+    else
     {
-      ESP_LOGW(TAG, "Consumption history too large (%.1f km stored, %zu entries) — resetting!",
-               totalDistance, consumptionHistory.size());
-      consumptionHistory.clear();
-      totalDistance = 0;
-      totalConsumption = 0;
+      totalConsumption -= excessDistance * oldest.second;
+      totalDistance -= excessDistance;
+      oldest.first -= excessDistance;
+      break;
     }
+  }
+
+  // Safety checks to prevent corrupt data
+  if (totalDistance < 0 || !std::isfinite(totalDistance))
+    totalDistance = 0;
+  if (totalConsumption < 0 || !std::isfinite(totalConsumption))
+    totalConsumption = 0;
+
+  // Calculate and set the final average consumption
+  float avgConsumption = (totalDistance > 0) ? totalConsumption / totalDistance : 0;
+  StandardMetrics.ms_v_bat_consumption->SetValue(TRUNCPREC(avgConsumption, 1)); // Wh/km
+
+  // Logging
+  ESP_LOGD(TAG, "Average battery consumption: %.1f Wh/km (over %.2f km, buffer size: %zu)",
+           avgConsumption, totalDistance, consumptionHistory.size());
+
+  // Hard reset if buffer grows out of control
+  if (consumptionHistory.size() > 5000)
+  {
+    ESP_LOGW(TAG, "Consumption history too large (%.1f km stored, %zu entries) — resetting!",
+             totalDistance, consumptionHistory.size());
+    consumptionHistory.clear();
+    totalDistance = 0;
+    totalConsumption = 0;
   }
 }
 
@@ -611,8 +665,8 @@ void OvmsVehicleNiuGTEVO::ChargeStatistics()
 
   int minsremaining = 0;
 
-  // If the scooter is charging, populate the charging metrics and attempt to estimate the remaining time
-  if (charge_voltage > 0 && charge_current > 0)
+  // If the scooter is charging, populate the charging metrics and estimate the remaining time
+  if (charge_voltage > 0 && charge_current > 0.1)
   {
     float power = charge_voltage * charge_current / 1000.0;
     float energy = power / 3600.0 * 10.0;
@@ -652,14 +706,55 @@ void OvmsVehicleNiuGTEVO::EnergyStatistics()
 // Charge time remaining - helper function to get remaining charge time for ChargeStatistics
 int OvmsVehicleNiuGTEVO::calcMinutesRemaining(float charge_voltage, float charge_current)
 {
-  float bat_soc = StandardMetrics.ms_v_bat_soc->AsFloat(100);
+  float current_soc = StandardMetrics.ms_v_bat_soc->AsFloat(100);
+  if (current_soc >= 100)
+  {
+    StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
+    return 0; // Already full
+  }
 
-  float remaining_wh = m_battery_capacity - StandardMetrics.ms_v_bat_capacity->AsFloat(0, WattHours);
-  float remaining_hours = remaining_wh / (charge_current * charge_voltage);
-  float remaining_mins = remaining_hours * 60.0;
+  StandardMetrics.ms_v_charge_limit_soc->SetValue(m_final_charge_phase_soc);
 
-  ESP_LOGD(TAG, "SOC: %f, Current: %f, Voltage: %f, RemainWH: %f, RemainHour: %f, RemainMin: %f", bat_soc, charge_current, charge_voltage, remaining_wh, remaining_hours, remaining_mins);
-  return MIN(1440, (int)remaining_mins);
+  float charge_power_wh = charge_voltage * charge_current;
+
+  // Get total capacity from SOH (more stable than using remaining Wh)
+  float total_wh = m_battery_capacity * (StandardMetrics.ms_v_bat_soh->AsFloat(100) / 100.0f);
+
+  float remaining_mins = 0;
+
+  if (current_soc < m_final_charge_phase_soc)
+  {
+    // --- STAGE 1: Constant Current (CC) Phase ---
+    // Calculate time to reach the taper threshold (85%), the taper threshold is moving a bit, because BMS is not very precise
+    float wh_to_taper = total_wh * ((m_final_charge_phase_soc - current_soc) / 100.0f);
+    float hours_to_taper = wh_to_taper / charge_power_wh;
+    float mins_to_taper = hours_to_taper * 60.0f;
+
+    // Set the metric for time to the taper threshold ONLY
+    StandardMetrics.ms_v_charge_duration_soc->SetValue(mins_to_taper);
+
+    // Total remaining time is time to taper + the fixed time for the final phase
+    remaining_mins = mins_to_taper + m_final_charge_phase_minutes;
+  }
+  else
+  {
+    // --- STAGE 2: Constant Voltage (CV) / Taper Phase ---
+    // We are past the taper threshold, so time to taper is 0.
+    StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
+
+    // Calculate remaining time proportionally.
+    // The final 15% of SoC (from 85 to 100) will take m_final_charge_phase_minutes.
+    float soc_into_final_phase = current_soc - m_final_charge_phase_soc;
+    float total_final_phase_soc = 100.0f - m_final_charge_phase_soc;
+
+    if (total_final_phase_soc > 0)
+    {
+      float proportion_remaining = 1.0f - (soc_into_final_phase / total_final_phase_soc);
+      remaining_mins = m_final_charge_phase_minutes * proportion_remaining;
+    }
+  }
+
+  return static_cast<int>(remaining_mins);
 }
 
 // Handles incoming CAN-frames on bus 1
