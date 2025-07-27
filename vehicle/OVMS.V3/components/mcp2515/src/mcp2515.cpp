@@ -237,12 +237,7 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
       cnf1=0x41; cnf2=0xf1; cnf3=0x85;
       break;
     case CAN_SPEED_500KBPS:
-      // OVMS/unknown source:
-      // BRP=0, PRSEG=1, PS1=7, PS2=7, SJW=1, BTLMODE=1, SAM=1, SOF=1, WAKFIL=0 → Sample point at 9/16 = 56.3%
-      //cnf1=0x00; cnf2=0xf0; cnf3=0x86;
-      // SAE J2284-3:
-      // BRP=0, PRSEG=4, PS1=8, PS2=3, SJW=3, BTLMODE=1, SAM=0, SOF=1, WAKFIL=0 → Sample point at 13/16 = 81,25%
-      cnf1=0x80; cnf2=0xbb; cnf3=0x82;
+      cnf1=0x00; cnf2=0xf0; cnf3=0x86;
       break;
     case CAN_SPEED_1000KBPS:
       cnf1=0x00; cnf2=0xca; cnf3=0x81;
@@ -338,20 +333,20 @@ esp_err_t mcp2515::Stop()
 
 /**
  * SetAcceptanceFilter: configure MCP2515 specific hardware RX filter
- * 
+ *
  * Call this via casting the bus to mcp2515 or via MyPeripherals->m_mcp2515_1/_2.
- * 
+ *
  * See MCP2515 specification section 4.5 on how to define acceptance filters.
- * 
+ *
  * The MCP2515 has 6 filters, but only 2 masks. Mask #0 is applied to filters
  * #0-1, mask #1 to filters #2-5. Each filter can only be in either standard
  * or extended frame mode. In standard frame mode, the lower 16 bits of the
  * extended ID can be applied to the first two data bytes.
- * 
+ *
  * The mcp2515_filter_config_t includes bit fields for simplified assembly, e.g.:
  *   cfg.filter[0].b.sid = 0x19f;
  *   cfg.mask[0].b.sid = 0x7ff;
- * 
+ *
  * Att: filter bits become relevant by setting the corresponding mask bit to 1.
  */
 esp_err_t mcp2515::SetAcceptanceFilter(const mcp2515_filter_config_t& cfg)
@@ -397,7 +392,7 @@ esp_err_t mcp2515::SetAcceptanceFilter(const mcp2515_filter_config_t& cfg)
 
 /**
  * shell_setaccfilter: shell command wrapper for SetAcceptanceFilter()
- * 
+ *
  * Syntax: can <bus> setaccfilter <msk0> <flt0> <flt1> <msk1> <flt2> <flt3> <flt4> <flt5>
  */
 void mcp2515::shell_setaccfilter(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -419,7 +414,7 @@ void mcp2515::shell_setaccfilter(int verbosity, OvmsWriter* writer, OvmsCommand*
   if (argc >= 6) cfg.filter[3].u32 = strtoul(argv[5], NULL, 16);
   if (argc >= 7) cfg.filter[4].u32 = strtoul(argv[6], NULL, 16);
   if (argc >= 8) cfg.filter[5].u32 = strtoul(argv[7], NULL, 16);
-  
+
   esp_err_t res = sbus->SetAcceptanceFilter(cfg);
   if (res == ESP_OK)
     {
@@ -829,11 +824,11 @@ void mcp2515::SetPowerMode(PowerMode powermode)
 
 void mcp2515::SetTransceiverMode(CAN_mode_t mode)
   {
-  if ( mode == CAN_MODE_ACTIVE ) 
+  if ( mode == CAN_MODE_ACTIVE )
     {
       // BFPCTRL RXnBF PIN CONTROL AND STATUS - enable TX driver of SN65 - rd/wr mode
       WriteRegAndVerify(REG_BFPCTRL, 0b00001100);
-    } 
+    }
   else
     {
       // BFPCTRL RXnBF PIN CONTROL AND STATUS - disable TX driver of SN65 - listen only mode
@@ -864,7 +859,7 @@ bool mcp2515::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
     if (intstat & CANINTF_RX1IF)    ss << " | " << "IR.1 RX buffer 1 full";
     if (intstat & CANINTF_RX0IF)    ss << " | " << "IR.0 RX buffer 0 full";
     }
-  
+
   if (errflag)
     {
     if (ss.tellp() > 0) ss << "\n";
@@ -877,7 +872,7 @@ bool mcp2515::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
     if (errflag & EFLG_RXWAR)       ss << " | " << "EF.1 Receive Error Warning (REC >= 96)";
     if (errflag & EFLG_EWARN)       ss << " | " << "EF.0 Error Warning (TXWAR or RXWAR set)";
     }
-  
+
   if (intflag & 0xff00)
     {
     if (ss.tellp() > 0) ss << "\n";
@@ -887,7 +882,7 @@ bool mcp2515::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
     if (intflag & 0x0800)           ss << " | " << "IF.4 RX buffer overflow flags cleared";
     if (intflag & 0x1000)           ss << " | " << "IF.5 Error & wakeup interrupts cleared";
     }
-  
+
   buffer = ss.str();
   return true;
   }
