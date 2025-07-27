@@ -397,7 +397,10 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   {
       CAN_mode_t mode = m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
       RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
+      // reset CAN bus to apply new mode
+      ExecuteCommand("can can1 reset"); // TODO: not nice, but works
   }
+
   m_enable_LED_state  = MyConfig.GetParamValueBool("xsq", "led", false);
   m_enable_lock_state = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
   m_ios_tpms_fix      = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
