@@ -67,15 +67,15 @@ static inline uint32_t ESP32CAN_rxframe(esp32can *me, BaseType_t* task_woken)
   uint32_t error_irqs = 0;
 
   // The ESP32 CAN controller works different from the SJA1000 here.
-  //
+  // 
   // https://github.com/espressif/esp-idf/issues/4276:
-  //
+  // 
   //  "When bytes are received, they are written to the FIFO directly,
   //   and an overflow is not detected until the 64th byte is written.
   //   The bytes of the overflowing message will remain in the FIFO.
   //   The RMC should count all messages received (up to 64 messages)
   //   regardless of whether they were overflowing or not."
-  //
+  // 
   //  "Basically, what should happen is that whenever you release the
   //   receiver buffer, and the buffer window shifts to an overflowed
   //   message, the Data overrun interrupt will be set. If that is the
@@ -83,19 +83,19 @@ static inline uint32_t ESP32CAN_rxframe(esp32can *me, BaseType_t* task_woken)
   //   overrun command set, and the receiver buffer released again.
   //   Continue this process until RMC reaches zero, or until the
   //   buffer window rotates to a valid message."
-  //
+  // 
   // Results from single step tests:
-  //
+  // 
   //  - The interrupt flags are set with a delay after RRB / CDO
   //    → the RX loop must not use them (but can rely on the status flags)
-  //
+  // 
   //  - At DOS, RMC tells us how many frames need to be discarded
   //    → on DOS, issuing CDO, then RMC times RRB resyncs the RX to the next valid frame
-  //
+  // 
   //  - DOS can become set on the last RRB (i.e. without any more message
   //   in the FIFO, RMC=0 and no RI/RBS)
   //    → the RX loop must check & handle DOS independent of the other indicators
-  //
+  // 
   //  - After an overflow of the receive message counter RMC (at 64), the controller
   //    cannot recover and continues to deliver wrong & corrupted frames, even if
   //    clearing the FIFO completely until RMC=0
@@ -607,13 +607,13 @@ esp_err_t esp32can::Stop()
 
 /**
  * SetTransceiverMode: enable or disable write driver of transceiver
- * Pin RS of SN65 to 0 or 1
- *
+ * Pin RS of SN65 to 0 or 1 
+ * 
  */
 void esp32can::SetTransceiverMode(CAN_mode_t mode)
   {
   int rs_state = (mode == CAN_MODE_ACTIVE) ? 0 : 1;
-
+  
 #ifdef CONFIG_OVMS_COMP_MAX7317
   // Enable TX driver of matching SN65 transceiver
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, rs_state);
@@ -627,7 +627,7 @@ void esp32can::SetTransceiverMode(CAN_mode_t mode)
 
 /**
  * ChangeResetMode: enter/leave reset mode with verification & timeout
- *
+ * 
  * Note: this must be called within an ESP32CAN_ENTER_CRITICAL section.
  */
 esp_err_t esp32can::ChangeResetMode(unsigned int newmode, int timeout_us /*=50*/)
@@ -650,19 +650,19 @@ esp_err_t esp32can::ChangeResetMode(unsigned int newmode, int timeout_us /*=50*/
 
 /**
  * SetAcceptanceFilter: configure ESP32CAN specific hardware RX filter
- *
+ * 
  * Call this via casting the bus to esp32can or via MyPeripherals->m_esp32can.
- *
+ * 
  * See SJA1000 specification section 6.4.15 on how to define acceptance filters.
- *
+ * 
  * In single filter mode, code & mask define a single long filter, covering the
  * full 29 bit address + RTR bit of an extended frame or the 11 bit address +
  * RTR bit + the first two data bytes of a standard frame.
- *
+ * 
  * In dual filter mode, code & mask are split into two filters, with 20/12 bits
  * for standard frames, and 16/16 bits for extended frames.
  * See SJA1000 specification for the rather crooked bit layout in dual mode.
- *
+ * 
  * The esp32can_filter_config_t includes bit fields for simplified assembly, e.g.:
  *   cfg.code.bss.id = 0x19f;
  *   cfg.mask.bss.id = 0x7ff;
@@ -710,7 +710,7 @@ esp_err_t esp32can::SetAcceptanceFilter(const esp32can_filter_config_t& cfg)
 
 /**
  * shell_setaccfilter: shell command wrapper for SetAcceptanceFilter()
- *
+ * 
  * Syntax: can <bus> setaccfilter <single|dual> <mask> <code>
  */
 void esp32can::shell_setaccfilter(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -917,7 +917,7 @@ bool esp32can::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
     if (irqs & __CAN_IRQ_TX)              ss << " | " << "IR.1 TX buffer free";
     if (irqs & __CAN_IRQ_RX)              ss << " | " << "IR.0 RX buffer not empty";
     }
-
+  
   if (status)
     {
     if (ss.tellp() > 0) ss << "\n";
@@ -930,7 +930,7 @@ bool esp32can::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
     if (status & __CAN_STS_DATA_OVERRUN)  ss << " | " << "SR.1 Data overrun";
     if (status & __CAN_STS_RXBUF)         ss << " | " << "SR.0 RX buffer not empty";
     }
-
+  
   if (ecc)
     {
     if (ss.tellp() > 0) ss << "\n";
@@ -974,7 +974,7 @@ bool esp32can::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
       default: ss << (int)(ecc & __CAN_ECC_SEGMENT);
       }
     }
-
+  
   buffer = ss.str();
   return true;
   }
