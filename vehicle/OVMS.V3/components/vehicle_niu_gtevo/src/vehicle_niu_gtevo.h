@@ -171,7 +171,9 @@ private:
   // Define helper vars for 25km rolling consumption calculation
   std::deque<std::pair<float, float>> consumptionHistory; // distance, consumption queue as data source for rolling consumption calc
   float totalConsumption = 0.0;                           // total aggregated battery consumption
-  float totalDistance = 0.0;                              // total distance driven withng rolling cons. calc needed if less than 200km
+  float totalDistance = 0.0;                              // total distance driven within rolling cons
+  const int m_final_charge_phase_minutes = 60;            // Estimated minutes for the TAPER to 100% CV phase.
+  const int m_final_charge_phase_soc = 85.0f;             // SOC where taper phase (CV) begins, it is not exactly every time on 85
 };
 
 #endif // #ifndef __VEHICLE_NIU_GTEVO__
