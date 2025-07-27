@@ -475,7 +475,7 @@ void OvmsVehicleRenaultTwizy::shell_obd_cleardtc(int verbosity, OvmsWriter* writ
 
   // ClearDiagnosticInformation.All@CLUSTER:
   //  - Request 14FFFFFF
-  //  - Response 54
+  //  - Response 54 (ISO-TP ACK, no payload)
   uint16_t txid = CLUSTER_TXID, rxid = CLUSTER_RXID;
   string request = "\x14\xFF\xFF\xFF";
   string response;
@@ -487,13 +487,6 @@ void OvmsVehicleRenaultTwizy::shell_obd_cleardtc(int verbosity, OvmsWriter* writ
     return;
   } else if (err) {
     writer->printf("ERROR: request failed with response error code %02X\n", err);
-    return;
-  }
-
-  // check result code:
-  uint8_t rc = (response.size() >= 1) ? response[0] : 0;
-  if (rc != 0x54) {
-    writer->printf("ERROR: DTC clear failed (result code %02X), please retry\n", rc);
     return;
   }
 
