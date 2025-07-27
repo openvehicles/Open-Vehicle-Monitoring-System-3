@@ -506,6 +506,7 @@ esp_err_t esp32can::InitController()
 
 esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
+  // Check speed availability on current hardware:
   switch (speed)
     {
     case CAN_SPEED_33KBPS:
@@ -520,6 +521,12 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
         }
     default:
       break;
+    }
+
+  // Restarting an already started bus (e.g. for mode change)?
+  if (m_mode != CAN_MODE_OFF)
+    {
+    Stop();
     }
 
   canbus::Start(mode, speed);

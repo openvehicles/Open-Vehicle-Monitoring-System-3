@@ -168,6 +168,12 @@ esp_err_t mcp2515::WriteRegAndVerify( uint8_t reg, uint8_t value, uint8_t read_b
 
 esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
+  // Restarting an already started bus (e.g. for mode change)?
+  if (m_mode != CAN_MODE_OFF)
+    {
+    Stop();
+    }
+
   canbus::Start(mode, speed);
   uint8_t buf[16];
 
