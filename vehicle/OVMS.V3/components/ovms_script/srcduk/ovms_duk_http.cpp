@@ -109,7 +109,7 @@ class DuktapeHTTPRequest : public DuktapeObject
     void MongooseCallback(struct mg_connection *nc, int ev, void *ev_data);
 
   public:
-    duk_ret_t CallMethod(duk_context *ctx, const char* method, void* data=NULL);
+    duk_ret_t CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params=nullptr) override;
 
   protected:
     extram::string m_url;
@@ -397,11 +397,11 @@ void DuktapeHTTPRequest::MongooseCallback(struct mg_connection *nc, int ev, void
     }
   }
 
-duk_ret_t DuktapeHTTPRequest::CallMethod(duk_context *ctx, const char* method, void* data /*=NULL*/)
+duk_ret_t DuktapeHTTPRequest::CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params/*=nullptr*/)
   {
   if (!ctx)
     {
-    RequestCallback(method, data);
+    RequestCallback(method, params);
     return 0;
     }
   OvmsRecMutexLock lock(&m_mutex);

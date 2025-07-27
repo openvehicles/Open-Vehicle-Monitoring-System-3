@@ -53,7 +53,7 @@ static const char *TAG = "esp32can";
 #endif
 
 
-esp32can* MyESP32can = NULL;
+static esp32can* MyESP32can = NULL;
 
 static portMUX_TYPE esp32can_spinlock = portMUX_INITIALIZER_UNLOCKED;
 #define ESP32CAN_ENTER_CRITICAL()       portENTER_CRITICAL(&esp32can_spinlock)
@@ -378,18 +378,41 @@ esp32can::esp32can(const char* name, int txpin, int rxpin)
   m_rxpin = (gpio_num_t)rxpin;
   MyESP32can = this;
 
-  // Due to startup order, we can't talk to MAX7317 during
-  // initialisation. So, we'll just enter reset mode for the
-  // on-chip controller, and let housekeeping power us down
-  // after startup.
   m_powermode = Off;
   m_tx_abort = false;
+
+#if defined(CONFIG_OVMS_HW_REMAP_GPIO) && defined(ESP32CAN_PIN_RS)
+  // Configure the RS PIN of the CAN transceiver
+  gpio_set_direction((gpio_num_t)ESP32CAN_PIN_RS,GPIO_MODE_OUTPUT);
+#endif // defined(CONFIG_OVMS_HW_REMAP_GPIO) && defined(ESP32CAN_PIN_RS)
+
+  MyESP32can->SetTransceiverMode(CAN_MODE_LISTEN);
+
+  // Enter controller reset mode:
+  ESP_LOGD(TAG, "Reset mode state on init: %d", MODULE_ESP32CAN->MOD.B.RM);
   MODULE_ESP32CAN->MOD.B.RM = 1;
 
   // Launch ISR allocator task on core 0:
   TaskHandle_t task = NULL;
   xTaskCreatePinnedToCore(ESP32CAN_init, "esp32can init", 2048, (void*)this, 23, &task, CORE(0));
   AddTaskToMap(task);
+
+  // Register esp32can specific commands:
+  OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can", "CAN framework");
+  OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name, "CANx framework");
+  OvmsCommand* cmd_setaf = cmd_canx->RegisterCommand("setaccfilter", "Set ESP32CAN (SJA1000) acceptance filter");
+  cmd_setaf->RegisterCommand("single", "Single filter mode", shell_setaccfilter,
+    "<mask> <code>\n"
+    "Specify mask and code as 32 bit hexadecimal values.\n"
+    "To disable all filters, set mask -1 and code 0.\n"
+    "Bit layout: see SJA1000 specification, section 6.4.15 Acceptance Filter.",
+    2, 2);
+  cmd_setaf->RegisterCommand("dual", "Dual filter mode", shell_setaccfilter,
+    "<mask> <code>\n"
+    "Specify mask and code as 32 bit hexadecimal values.\n"
+    "To disable all filters, set mask -1 and code 0.\n"
+    "Bit layout: see SJA1000 specification, section 6.4.15 Acceptance Filter.",
+    2, 2);
   }
 
 esp32can::~esp32can()
@@ -460,14 +483,14 @@ esp_err_t esp32can::InitController()
   MODULE_ESP32CAN->IER.U = ier;
 
   // No acceptance filtering, as we want to fetch all messages
-  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[0] = 0;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[1] = 0;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[2] = 0;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[3] = 0;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[0] = 0xff;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[1] = 0xff;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[2] = 0xff;
-  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[3] = 0xff;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[0].B.ACR = 0;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[1].B.ACR = 0;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[2].B.ACR = 0;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[3].B.ACR = 0;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[0].B.AMR = 0xff;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[1].B.AMR = 0xff;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[2].B.AMR = 0xff;
+  MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[3].B.AMR = 0xff;
 
   // Set to normal mode
   MODULE_ESP32CAN->OCR.B.OCMODE=__CAN_OC_NOM;
@@ -491,6 +514,7 @@ esp_err_t esp32can::InitController()
 
 esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
+  // Check speed availability on current hardware:
   switch (speed)
     {
     case CAN_SPEED_33KBPS:
@@ -507,15 +531,16 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
       break;
     }
 
+  // Restarting an already started bus (e.g. for mode change)?
+  if (m_mode != CAN_MODE_OFF)
+    {
+    Stop();
+    }
+
   canbus::Start(mode, speed);
 
   m_mode = mode;
   m_speed = speed;
-
-#ifdef CONFIG_OVMS_COMP_MAX7317
-  // Power up the matching SN65 transciever
-  MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 0);
-#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
   // Enable module
   DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_CAN_CLK_EN);
@@ -550,6 +575,8 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
     return err;
     }
 
+  MyESP32can->SetTransceiverMode(mode);
+
   // And record that we are powered on
   pcp::SetPowerMode(On);
 
@@ -565,6 +592,8 @@ esp_err_t esp32can::Stop()
   // Clear TX queue
   xQueueReset(m_txqueue);
 
+  MyESP32can->SetTransceiverMode(CAN_MODE_LISTEN);
+
   ESP32CAN_ENTER_CRITICAL();
 
   // Abort TX
@@ -577,16 +606,146 @@ esp_err_t esp32can::Stop()
 
   ESP32CAN_EXIT_CRITICAL();
 
-#ifdef CONFIG_OVMS_COMP_MAX7317
-  // Power down the matching SN65 transciever
-  MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 1);
-#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
-
   // And record that we are powered down
   pcp::SetPowerMode(Off);
   m_mode = CAN_MODE_OFF;
 
   return ESP_OK;
+  }
+
+/**
+ * SetTransceiverMode: enable or disable write driver of transceiver
+ * Pin RS of SN65 to 0 or 1 
+ * 
+ */
+void esp32can::SetTransceiverMode(CAN_mode_t mode)
+  {
+  int rs_state = (mode == CAN_MODE_ACTIVE) ? 0 : 1;
+  
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  // Enable TX driver of matching SN65 transceiver
+  MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, rs_state);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+#if defined(CONFIG_OVMS_HW_REMAP_GPIO) && defined(ESP32CAN_PIN_RS)
+  // Enable TX driver of matching SN65 transceiver
+  gpio_set_level((gpio_num_t)ESP32CAN_PIN_RS, rs_state);
+#endif // defined(CONFIG_OVMS_HW_REMAP_GPIO) && defined(ESP32CAN_PIN_RS)
+  }
+
+/**
+ * ChangeResetMode: enter/leave reset mode with verification & timeout
+ * 
+ * Note: this must be called within an ESP32CAN_ENTER_CRITICAL section.
+ */
+esp_err_t esp32can::ChangeResetMode(unsigned int newmode, int timeout_us /*=50*/)
+  {
+  MODULE_ESP32CAN->MOD.B.RM = newmode;
+  while (MODULE_ESP32CAN->MOD.B.RM != newmode && timeout_us > 0)
+    {
+    MODULE_ESP32CAN->MOD.B.RM = newmode;
+    ets_delay_us(1);
+    timeout_us--;
+    }
+  if (MODULE_ESP32CAN->MOD.B.RM != newmode)
+    {
+    ESP_LOGE(TAG, "%s failed to %s reset mode", m_name, newmode ? "enter" : "leave");
+    return ESP_FAIL;
+    }
+  return ESP_OK;
+  }
+
+
+/**
+ * SetAcceptanceFilter: configure ESP32CAN specific hardware RX filter
+ * 
+ * Call this via casting the bus to esp32can or via MyPeripherals->m_esp32can.
+ * 
+ * See SJA1000 specification section 6.4.15 on how to define acceptance filters.
+ * 
+ * In single filter mode, code & mask define a single long filter, covering the
+ * full 29 bit address + RTR bit of an extended frame or the 11 bit address +
+ * RTR bit + the first two data bytes of a standard frame.
+ * 
+ * In dual filter mode, code & mask are split into two filters, with 20/12 bits
+ * for standard frames, and 16/16 bits for extended frames.
+ * See SJA1000 specification for the rather crooked bit layout in dual mode.
+ * 
+ * The esp32can_filter_config_t includes bit fields for simplified assembly, e.g.:
+ *   cfg.code.bss.id = 0x19f;
+ *   cfg.mask.bss.id = 0x7ff;
+ *
+ * Att: code bits become relevant by setting the corresponding mask bit to 0.
+ */
+esp_err_t esp32can::SetAcceptanceFilter(const esp32can_filter_config_t& cfg)
+  {
+  // Block TX in case of filter reconfiguration while started
+  OvmsMutexLock lock(&m_write_mutex);
+
+  ESP32CAN_ENTER_CRITICAL();
+
+  // Enter reset mode
+  bool prev_resetmode = MODULE_ESP32CAN->MOD.B.RM;
+  if (!prev_resetmode && ChangeResetMode(1) != ESP_OK)
+    {
+    ESP32CAN_EXIT_CRITICAL();
+    return ESP_FAIL;
+    }
+
+  // Set filter mode
+  MODULE_ESP32CAN->MOD.B.AFM = (cfg.single_filter) ? 1 : 0;
+
+  // Swap code and mask to match big endian registers
+  uint32_t code_swapped = __builtin_bswap32(cfg.code.u32);
+  uint32_t mask_swapped = __builtin_bswap32(cfg.mask.u32);
+  for (int i = 0; i < 4; i++)
+    {
+    MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[i].B.ACR = ((code_swapped >> (i * 8)) & 0xFF);
+    MODULE_ESP32CAN->MBX_CTRL.ACC.MASK[i].B.AMR  = ((mask_swapped >> (i * 8)) & 0xFF);
+    }
+
+  // Exit reset mode
+  if (!prev_resetmode && ChangeResetMode(0) != ESP_OK)
+    {
+    ESP32CAN_EXIT_CRITICAL();
+    return ESP_FAIL;
+    }
+
+  ESP32CAN_EXIT_CRITICAL();
+  return ESP_OK;
+  }
+
+
+/**
+ * shell_setaccfilter: shell command wrapper for SetAcceptanceFilter()
+ * 
+ * Syntax: can <bus> setaccfilter <single|dual> <mask> <code>
+ */
+void esp32can::shell_setaccfilter(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetParent()->GetName();
+  esp32can* sbus = (esp32can*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->printf("ERROR: cannot find CAN bus %s\n", bus);
+    return;
+    }
+
+  esp32can_filter_config_t cfg = {};
+  cfg.single_filter = (strcmp(cmd->GetName(), "single") == 0);
+  cfg.mask.u32 = strtoul(argv[0], NULL, 16);
+  cfg.code.u32 = strtoul(argv[1], NULL, 16);
+
+  esp_err_t res = sbus->SetAcceptanceFilter(cfg);
+  if (res == ESP_OK)
+    {
+    writer->printf("Acceptance filter for %s set to %s filter mode with mask %08X, code %08X.\n",
+      bus, cmd->GetName(), cfg.mask.u32, cfg.code.u32);
+    }
+  else
+    {
+    writer->printf("ERROR: failed to configure acceptance filter for %s\n", bus);
+    }
   }
 
 
@@ -738,4 +897,92 @@ void esp32can::SetPowerMode(PowerMode powermode)
     default:
       break;
     };
+  }
+
+
+/**
+ * GetErrorFlagsDesc: decode error flags into human readable text
+ */
+bool esp32can::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
+  {
+  // error_flags = error_irqs << 16 | (status & 0b11001110) << 8 | (ecc & 0xff)
+  uint16_t irqs  = (error_flags >> 16) & 0xffff;
+  uint8_t status = (error_flags >> 8) & 0xff;
+  uint8_t ecc    = error_flags & 0xff;
+
+  std::ostringstream ss;
+
+  // Note: some IRQ bits are normally masked out, decode assuming all can occur:
+  if (irqs)
+    {
+    if (irqs & __CAN_IRQ_INVALID_RX)      ss << " | " << "IR.8 Invalid RX frame";
+    if (irqs & __CAN_IRQ_BUS_ERR)         ss << " | " << "IR.7 Bus error";
+    if (irqs & __CAN_IRQ_ARB_LOST)        ss << " | " << "IR.6 Arbitration lost";
+    if (irqs & __CAN_IRQ_ERR_PASSIVE)     ss << " | " << "IR.5 Error-passive state";
+    if (irqs & __CAN_IRQ_WAKEUP)          ss << " | " << "IR.4 Wakeup";
+    if (irqs & __CAN_IRQ_DATA_OVERRUN)    ss << " | " << "IR.3 Data overrun";
+    if (irqs & __CAN_IRQ_ERR_WARNING)     ss << " | " << "IR.2 Error-warning state";
+    if (irqs & __CAN_IRQ_TX)              ss << " | " << "IR.1 TX buffer free";
+    if (irqs & __CAN_IRQ_RX)              ss << " | " << "IR.0 RX buffer not empty";
+    }
+  
+  if (status)
+    {
+    if (ss.tellp() > 0) ss << "\n";
+    if (status & __CAN_STS_BUS_OFF)       ss << " | " << "SR.7 Bus-off state";
+    if (status & __CAN_STS_ERR_WARNING)   ss << " | " << "SR.6 Error count >= 96";
+    if (status & __CAN_STS_TXPEND)        ss << " | " << "SR.5 TX pending";
+    if (status & __CAN_STS_RXPEND)        ss << " | " << "SR.4 RX pending";
+    if (status & __CAN_STS_TXDONE)        ss << " | " << "SR.3 TX done";
+    if (status & __CAN_STS_TXFREE)        ss << " | " << "SR.2 TX buffer free";
+    if (status & __CAN_STS_DATA_OVERRUN)  ss << " | " << "SR.1 Data overrun";
+    if (status & __CAN_STS_RXBUF)         ss << " | " << "SR.0 RX buffer not empty";
+    }
+  
+  if (ecc)
+    {
+    if (ss.tellp() > 0) ss << "\n";
+    switch ((ecc & __CAN_ECC_ERRC) >> 6)
+      {
+      case 0b00: ss << " | " << "ECC Bit error"; break;
+      case 0b01: ss << " | " << "ECC Form error"; break;
+      case 0b10: ss << " | " << "ECC Stuff error"; break;
+      case 0b11: ss << " | " << "ECC Other error"; break;
+      }
+    ss
+      << " in "
+      << ((ecc & __CAN_ECC_DIR) ? "RX" : "TX")
+      << ", segment ";
+    switch (ecc & __CAN_ECC_SEGMENT)
+      {
+      case 0b00011: ss << "start of frame"; break;
+      case 0b00010: ss << "ID.28 to ID.21"; break;
+      case 0b00110: ss << "ID.20 to ID.18"; break;
+      case 0b00100: ss << "bit SRTR"; break;
+      case 0b00101: ss << "bit IDE"; break;
+      case 0b00111: ss << "ID.17 to ID.13"; break;
+      case 0b01111: ss << "ID.12 to ID.5"; break;
+      case 0b01110: ss << "ID.4 to ID.0"; break;
+      case 0b01100: ss << "bit RTR"; break;
+      case 0b01101: ss << "reserved bit 1"; break;
+      case 0b01001: ss << "reserved bit 0"; break;
+      case 0b01011: ss << "data length code"; break;
+      case 0b01010: ss << "data field"; break;
+      case 0b01000: ss << "CRC sequence"; break;
+      case 0b11000: ss << "CRC delimiter"; break;
+      case 0b11001: ss << "acknowledge slot"; break;
+      case 0b11011: ss << "acknowledge delimiter"; break;
+      case 0b11010: ss << "end of frame"; break;
+      case 0b10010: ss << "intermission"; break;
+      case 0b10001: ss << "active error flag"; break;
+      case 0b10110: ss << "passive error flag"; break;
+      case 0b10011: ss << "tolerate dominant bits"; break;
+      case 0b10111: ss << "error delimiter"; break;
+      case 0b11100: ss << "overload flag"; break;
+      default: ss << (int)(ecc & __CAN_ECC_SEGMENT);
+      }
+    }
+  
+  buffer = ss.str();
+  return true;
   }

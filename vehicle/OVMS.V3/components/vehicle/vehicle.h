@@ -272,6 +272,9 @@ class OvmsVehicle : public InternalRamAllocated
       }
     OvmsPoller::VehicleSignal *GetPollerSignal();
 
+    int PollSingleRequest(canbus*  bus, uint32_t txid, uint32_t rxid,
+                      uint8_t polltype, uint16_t pid, const std::string &payload, std::string& response,
+                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       std::string request, std::string& response,
                       int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
@@ -465,7 +468,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void Status(int verbosity, OvmsWriter* writer);
 
   protected:
-    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL);
+    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL, bool autoPoweroff = true);
     bool PinCheck(const char* pin);
 
   public:
@@ -547,7 +550,7 @@ class OvmsVehicle : public InternalRamAllocated
       void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
       void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success) override;
 
-      bool Ready() override;
+      bool Ready() const override;
     };
 #endif
 
@@ -576,6 +579,8 @@ class OvmsVehicle : public InternalRamAllocated
     void VehicleTask();
     QueueHandle_t m_vqueue;
     TaskHandle_t  m_vtask;
+
+    bool m_autopoweroff[VEHICLE_MAXBUSSES];
 #endif
     void SendIncomingFrame(const CAN_frame_t *frame);
 

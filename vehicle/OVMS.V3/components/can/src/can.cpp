@@ -129,7 +129,7 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     writer->puts("Error: invalid can bus number");
     return;
     }
-  res = MyPollers.RegisterCanBus(busno, smode, cspeed, dbcfile, false, sbus, verbosity, writer);
+  res = MyPollers.RegisterCanBus(busno, smode, cspeed, dbcfile, OvmsPollers::BusPoweroff::System, sbus, verbosity, writer);
 #else
   canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
   if (sbus == NULL)
@@ -373,6 +373,12 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Tx fails:  %20" PRId32 "\n",sbus->m_status.tx_fails);
 
   writer->printf("\nErr flags: 0x%08" PRIx32 "\n",sbus->m_status.error_flags);
+  std::string efdesc;
+  if (sbus->GetErrorFlagsDesc(efdesc, sbus->m_status.error_flags))
+    {
+    replace_substrings(efdesc, "\n", "\n        ");
+    writer->printf("        %s\n", efdesc.c_str());
+    }
   writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
   writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
   writer->printf("Rx invalid:%20d\n",sbus->m_status.invalid_rx);
@@ -382,6 +388,40 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     writer->printf("Wdg Timer: %20" PRId32 " sec(s)\n",monotonictime-sbus->m_watchdog_timer);
     }
   writer->printf("Err Resets:%20d\n",sbus->m_status.error_resets);
+  }
+
+void can_explain_flags(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  uint32_t error_flags = 0;
+  if (argc == 0)
+    {
+    error_flags = sbus->m_status.error_flags;
+    }
+  else
+    {
+    const char *hex = argv[0];
+    if (hex[0] == '0' && hex[1] == 'x') hex += 2;
+    sscanf(hex, "%x", &error_flags);
+    }
+
+  std::string efdesc;
+  if (sbus->GetErrorFlagsDesc(efdesc, error_flags))
+    {
+    writer->printf("Bus error flags 0x%08" PRIx32 ":\n", error_flags);
+    writer->printf("%s\n", efdesc.empty() ? "No error indication" : efdesc.c_str());
+    }
+  else
+    {
+    writer->puts("ERROR: bus does not provide error flag decoding");
+    }
   }
 
 void can_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -774,6 +814,14 @@ const char* canbus::GetErrorStateName()
   return GetCanErrorStateName(GetErrorState());
   }
 
+/**
+ * GetErrorFlagsDesc: decode error flags into human readable text
+ *  (see overrides for bus specific implementations)
+ */
+bool canbus::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
+  {
+  return false;
+  }
 
 uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv, OvmsWriter* writer)
   {
@@ -1053,6 +1101,9 @@ can::can()
     cmd_cantesttx->RegisterCommand("extended","Transmit test extended CAN frames",can_testtx,"<id> <count> <delayms>", 3, 3);
     cmd_canx->RegisterCommand("status","Show CAN status",can_status);
     cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus);
+    cmd_canx->RegisterCommand("explain","Explain CAN error flags", can_explain_flags, "[<errorflags>]\n"
+      "Produce a human readable decoding of the current or given error flags for the bus, if available.\n"
+      "Enter <errorflags> hexadecimal as shown in the status output, with/without '0x' prefix.\n", 0, 1);
     cmd_canx->RegisterCommand("viewregisters","view can controller registers",can_view_registers);
     cmd_canx->RegisterCommand("setregister","set can controller register",can_set_register,"<reg> <value>",2,2);
     }
@@ -1096,7 +1147,24 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
   NotifyListeners(p_frame, false);
   }
 
-void can::RegisterListener(QueueHandle_t queue, bool txfeedback)
+/**
+ * RegisterListener: register an asynchronous CAN frame processor
+ * 
+ * This is the standard mechanism to hook into the CAN framework. All RX frames
+ * and all TX results for all CAN buses get copied to all listener queues as
+ * CAN_frame_t objects, to be processed asynchronously by application tasks.
+ * 
+ * Queue creation template:
+ *   my_rx_queue = xQueueCreate(CONFIG_OVMS_HW_CAN_RX_QUEUE_SIZE, sizeof(CAN_frame_t));
+ * 
+ * You're free to use whatever queue size is appropriate for your task, but be
+ * aware the system will silently drop queue overflows. The vehicle poller
+ * takes care of registering a queue and provides an additional filter API.
+ * 
+ * If you need to process incoming frames or TX results as fast as possible,
+ * register a synchronous CAN callback -- see below.
+ */
+void can::RegisterListener(QueueHandle_t queue, bool txfeedback /*=false*/)
   {
   m_listeners[queue] = txfeedback;
   }
@@ -1117,12 +1185,50 @@ void can::NotifyListeners(const CAN_frame_t* frame, bool tx)
     }
   }
 
-void can::RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback)
+/**
+ * RegisterCallback: register a synchronous CAN frame processor
+ * 
+ * This is the mechanism to hook into the CAN framework if you need to process
+ * incoming frames / transmission results as fast as possible.
+ * 
+ * A standard application for a CAN callback is a CAN processor that needs to
+ * respond to certain incoming frames within a defined maximum time span,
+ * e.g. to override control messages on the bus.
+ * 
+ * Callbacks are executed within the CAN task context, before the frames get
+ * distributed to the listener queues (see above).
+ * 
+ * Callbacks need to be highly optimized, and must not block. Avoid writing
+ * to metrics (as they may have listeners), avoid any kind of network or
+ * file operations or complex calculations (floating point math), avoid
+ * ESP_LOG* logging (as that may block). You may raise events from a callback,
+ * and you may write to queues/semaphores non-blocking.
+ */
+void can::RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback /*=false*/)
   {
   if (txfeedback)
     m_txcallbacks.push_back(new CanFrameCallbackEntry(caller, callback));
   else
     m_rxcallbacks.push_back(new CanFrameCallbackEntry(caller, callback));
+  }
+
+/**
+ * RegisterCallbackFront: register a callback at the front of the callback list
+ * 
+ * Use this if you want to make sure your callback is the first to process
+ * incoming frames / transmission results (until more callbacks get added to
+ * the front).
+ * 
+ * Be aware the vehicle poller also registers a callback (at the end) when you
+ * call OvmsVehicle::RegisterCanBus(), so if you need to add a critical callback
+ * later on, use this API method to prioritize your callback.
+ */
+void can::RegisterCallbackFront(const char* caller, CanFrameCallback callback, bool txfeedback /*=false*/)
+  {
+  if (txfeedback)
+    m_txcallbacks.push_front(new CanFrameCallbackEntry(caller, callback));
+  else
+    m_rxcallbacks.push_front(new CanFrameCallbackEntry(caller, callback));
   }
 
 void can::DeregisterCallback(const char* caller)

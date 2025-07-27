@@ -366,6 +366,7 @@ OvmsNetManager::OvmsNetManager()
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   m_mongoose_task = 0;
   m_mongoose_running = false;
+  m_mongoose_stopping = false;
   m_jobqueue = xQueueCreate(CONFIG_OVMS_HW_NETMANAGER_QUEUE_SIZE, sizeof(netman_job_t*));
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
@@ -867,7 +868,8 @@ void SafePrioritiseAndIndicate(void* ctx)
 
 void OvmsNetManager::PrioritiseAndIndicate()
   {
-  tcpip_callback_with_block(SafePrioritiseAndIndicate, NULL, 1);
+  if (tcpip_callback_with_block(SafePrioritiseAndIndicate, NULL, 1) == ERR_OK)
+    m_tcpip_callback_done.Take();
   }
 
 void OvmsNetManager::DoSafePrioritiseAndIndicate()
@@ -905,6 +907,7 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
   if (search == NULL)
     {
     SetNetType("none");
+    m_tcpip_callback_done.Give();
     return;
     }
 
@@ -925,10 +928,12 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
         }
       netif_set_default(pri);
       SetDNSServer(dns);
+      m_tcpip_callback_done.Give();
       return;
       }
     }
   ESP_LOGE(TAG, "Inconsistent state: no interface of type '%s' found", search);
+  m_tcpip_callback_done.Give();
   }
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
@@ -951,7 +956,7 @@ void OvmsNetManager::MongooseTask()
   m_mongoose_running = true;
 
   // Main event loop
-  while (m_mongoose_running)
+  while (!m_mongoose_stopping)
     {
     // poll interfaces:
     if (mg_mgr_poll(&m_mongoose_mgr, 250) == 0)
@@ -989,30 +994,44 @@ struct mg_mgr* OvmsNetManager::GetMongooseMgr()
 
 bool OvmsNetManager::MongooseRunning()
   {
-  return m_mongoose_running;
+  return m_mongoose_running && !m_mongoose_stopping;
   }
 
 void OvmsNetManager::StartMongooseTask()
   {
-  if (!m_mongoose_running)
+  if (m_network_any && (!m_mongoose_task || m_mongoose_stopping))
     {
-    if (m_network_any)
+    // wait for previous task to finish shutting down:
+    int wait_time = 0;
+    while (m_mongoose_stopping && m_mongoose_task)
       {
-      // wait for previous task to finish shutting down:
-      while (m_mongoose_task)
-        vTaskDelay(pdMS_TO_TICKS(50));
-      // start new task:
-      xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan",10*1024, (void*)this,
-                              CONFIG_OVMS_NETMAN_TASK_PRIORITY, &m_mongoose_task, CORE(1));
-      AddTaskToMap(m_mongoose_task);
+      if (wait_time % 1000 == 0)
+        ESP_LOGD(TAG, "StartMongooseTask: waiting for task shutdown");
+      vTaskDelay(pdMS_TO_TICKS(50));
+      wait_time += 50;
+      if (wait_time >= 5000)
+        {
+        // we're stuck, no other way to solve than rebooting:
+        ESP_LOGE(TAG, "StartMongooseTask: timeout on task shutdown -- reboot");
+        MyBoot.Restart();
+        return;
+        }
       }
+    // start new task:
+    m_mongoose_stopping = false;
+    xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan",10*1024, (void*)this,
+                            CONFIG_OVMS_NETMAN_TASK_PRIORITY, &m_mongoose_task, CORE(1));
+    AddTaskToMap(m_mongoose_task);
     }
   }
 
 void OvmsNetManager::StopMongooseTask()
   {
-  if (!m_network_any)
-    m_mongoose_running = false;
+  if (!m_network_any && m_mongoose_running)
+    {
+    ESP_LOGD(TAG, "StopMongooseTask: requesting task shutdown");
+    m_mongoose_stopping = true;
+    }
   }
 
 void OvmsNetManager::ProcessJobs()
@@ -1045,7 +1064,7 @@ void OvmsNetManager::ProcessJobs()
 
 bool OvmsNetManager::ExecuteJob(netman_job_t* job, TickType_t timeout /*=portMAX_DELAY*/)
   {
-  if (!m_mongoose_running)
+  if (!MongooseRunning())
     return false;
   if (timeout)
     {
@@ -1083,7 +1102,7 @@ void OvmsNetManager::ScheduleCleanup()
 
 int OvmsNetManager::ListConnections(int verbosity, OvmsWriter* writer)
   {
-  if (!m_mongoose_running)
+  if (!MongooseRunning())
     return 0;
   mg_connection *c;
   int cnt = 0;
@@ -1103,7 +1122,7 @@ int OvmsNetManager::ListConnections(int verbosity, OvmsWriter* writer)
 
 int OvmsNetManager::CloseConnection(uint32_t id)
   {
-  if (!m_mongoose_running)
+  if (!MongooseRunning())
     return 0;
   mg_connection *c;
   int cnt = 0;
@@ -1122,7 +1141,7 @@ int OvmsNetManager::CloseConnection(uint32_t id)
 
 int OvmsNetManager::CleanupConnections()
   {
-  if (!m_mongoose_running)
+  if (!MongooseRunning())
     return 0;
 
   struct netif *ni;

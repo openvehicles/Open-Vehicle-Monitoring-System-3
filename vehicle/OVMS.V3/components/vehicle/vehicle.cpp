@@ -86,7 +86,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_aux->RegisterCommand("status", "Aux Battery Status", vehicle_aux);
   OvmsCommand *cmd_aux_mon = cmd_aux->RegisterCommand("monitor", "Aux Battery Monitor", vehicle_aux_monitor);
   cmd_aux_mon->RegisterCommand("status", "Aux Battery Status", vehicle_aux_monitor);
-  cmd_aux_mon->RegisterCommand("enable", "Enable Aux Monitor", vehicle_aux_monitor_enable);
+  cmd_aux_mon->RegisterCommand("enable", "Enable Aux Monitor", vehicle_aux_monitor_enable, "[<low-threshold> [<charging-threshold>]]", 0, 2);
   cmd_aux_mon->RegisterCommand("disable", "Disable Aux Monitor", vehicle_aux_monitor_disable);
 
 
@@ -360,6 +360,7 @@ OvmsVehicle::OvmsVehicle()
 #ifdef CONFIG_OVMS_COMP_POLLER
   m_poll_state = 0;
   m_pollsignal = nullptr;
+  m_poll_bus_default = nullptr;
 
   // Poll parameters.
   PollSetThrottling(1);
@@ -455,6 +456,8 @@ OvmsVehicle::OvmsVehicle()
   xTaskCreatePinnedToCore(OvmsVehicleTask, "OVMS Vehicle Poll",
       CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_vtask, CORE(1));
   MyCan.RegisterListener(m_vqueue);
+  for (int idx = 0; idx < VEHICLE_MAXBUSSES; ++idx)
+    m_autopoweroff[idx] = false;
 #endif
   }
 
@@ -552,10 +555,13 @@ void OvmsVehicle::ShuttingDown()
   entry.MsgID = 0;
   xQueueSendToFront(m_vqueue, &entry, 0);
 
-  if (m_can1) m_can1->SetPowerMode(Off);
-  if (m_can2) m_can2->SetPowerMode(Off);
-  if (m_can3) m_can3->SetPowerMode(Off);
-  if (m_can4) m_can4->SetPowerMode(Off);
+  if (MyConfig.GetParamValueBool("vehicle", "can.autooff", true))
+    {
+    if (m_can1 && m_autopoweroff[0]) m_can1->SetPowerMode(Off);
+    if (m_can2 && m_autopoweroff[1]) m_can2->SetPowerMode(Off);
+    if (m_can3 && m_autopoweroff[2]) m_can3->SetPowerMode(Off);
+    if (m_can4 && m_autopoweroff[3]) m_can4->SetPowerMode(Off);
+    }
 
 #endif
   MyEvents.DeregisterEvent(TAG);
@@ -635,7 +641,7 @@ void OvmsVehicle::OvmsVehicleSignal::IncomingPollTxCallback(const OvmsPoller::po
     m_parent->IncomingPollTxCallback(job, success);
   }
 
-bool OvmsVehicle::OvmsVehicleSignal::Ready()
+bool OvmsVehicle::OvmsVehicleSignal::Ready() const
   {
   return m_parent->m_ready;
   }
@@ -661,17 +667,20 @@ void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
   writer->printf("Vehicle module '%s' (code %s) loaded and running\n", VehicleShortName(), VehicleType());
   }
 
-void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile)
+void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool autoPoweroff)
   {
   canbus *can;
 #ifdef CONFIG_OVMS_COMP_POLLER
-  can = MyPollers.RegisterCanBus(bus, mode, speed, dbcfile, true);
+  OvmsPollers::BusPoweroff unload = autoPoweroff ? OvmsPollers::BusPoweroff::Vehicle : OvmsPollers::BusPoweroff::None;
+  can = MyPollers.RegisterCanBus(bus, mode, speed, dbcfile, unload);
 #else
   {
     std::string busname = string_format("can%d", bus);
     can = (canbus*)MyPcpApp.FindDeviceByName(busname.c_str());
     can->SetPowerMode(On);
     can->Start(mode,speed,dbcfile);
+    if (bus <= VEHICLE_MAXBUSSES)
+      m_autopoweroff[bus-1] = autoPoweroff;
   }
 #endif
   switch (bus)
@@ -2516,6 +2525,18 @@ void OvmsVehicle::PollSetState(uint8_t state, canbus* bus)
   }
 
 #ifdef CONFIG_OVMS_COMP_POLLER
+int OvmsVehicle::PollSingleRequest(canbus*  bus, uint32_t txid, uint32_t rxid,
+                  uint8_t polltype, uint16_t pid, const std::string &payload, std::string& response,
+                  int timeout_ms, uint8_t protocol)
+  {
+  if (!m_ready)
+    return POLLSINGLE_TXFAILURE;
+  auto poller = MyPollers.GetPoller(bus, true);
+  if (!poller)
+    return POLLSINGLE_TXFAILURE;
+  return poller->PollSingleRequest(txid, rxid, polltype, pid, payload, response, timeout_ms, protocol);
+  }
+
 int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                 std::string request, std::string& response,
                 int timeout_ms, uint8_t protocol)
@@ -2844,10 +2865,10 @@ OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &diff_last) const
   int32_t diff = (average_short - average_long);
   diff_last = diff;
 
-  if (average_short < m_low_threshold)
+  if (average_long < m_low_threshold)
     return OvmsBatteryState::Low;
 
-  if (average_short > m_charge_threshold)
+  if (average_long > m_charge_threshold)
     {
     if (diff < chdip_threshold)
       return OvmsBatteryState::ChargingDip;

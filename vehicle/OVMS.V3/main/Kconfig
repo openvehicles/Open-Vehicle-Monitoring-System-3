@@ -398,6 +398,13 @@ config OVMS_VEHICLE_NISSANLEAF
     help
         Enable to include support for Nissan Leaf vehicles.
 
+config OVMS_VEHICLE_NIU_GTEVO
+    bool "Include support for NIU MQi GT EVO/100"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for NIU MQi GT EVO/100 electric scooters.
+
 config OVMS_VEHICLE_RENAULTTWIZY
     bool "Include support for Renault Twizy vehicles"
     default y
@@ -416,14 +423,14 @@ config OVMS_VEHICLE_RENAULTZOE
     help
         Enable to include support for Renault Zoe vehicles.
 
-config OVMS_VEHICLE_RENAULTZOE_PH2_OBD
-    bool "Include support for Renault Zoe Phase2 vehicles (OBD port version)"
+config OVMS_VEHICLE_RENAULTZOE_PH2
+    bool "Include support for Renault Zoe Phase2 vehicles"
     default y
     depends on OVMS
     depends on OVMS_COMP_CANOPEN
     depends on OVMS_COMP_POLLER
     help
-        Enable to include support for Renault Zoe Phase 2 vehicles (OBD port version).
+        Enable to include support for Renault Zoe Phase 2 vehicles.
         
 config OVMS_VEHICLE_MAXED3
     bool "Include support for Maxus eDeliver3 vehicle"

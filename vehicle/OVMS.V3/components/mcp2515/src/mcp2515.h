@@ -37,6 +37,37 @@
 #include "spi.h"
 #include "ovms_mutex.h"
 
+
+// MCP2515 filter bit layout & configuration:
+typedef struct
+  {
+  union
+    {
+    uint32_t u32;
+    uint8_t u8[4];
+    struct
+      {
+      unsigned eid:18;      // 18 bit Extended Identifier Mask / 16 bit Data Byte 0-1 Mask
+      unsigned :3;
+      unsigned sid:11;      // Standard Identifier Mask bits
+      } b;
+    } mask[2];
+  union
+    {
+    uint32_t u32;
+    uint8_t u8[4];
+    struct
+      {
+      unsigned eid:18;      // 18 bit Extended Identifier Filter / 16 bit Data Byte 0-1 Filter
+      unsigned :1;
+      unsigned exide:1;     // Filter is applied to: 1 = only Extended Frames / 0 = only Standard Frames
+      unsigned :1;
+      unsigned sid:11;      // Standard Identifier Filter bits
+      } b;
+    } filter[6];
+  } mcp2515_filter_config_t;
+
+
 class mcp2515 : public canbus
   {
   public:
@@ -50,6 +81,7 @@ class mcp2515 : public canbus
     esp_err_t WriteRegAndVerify( uint8_t reg, uint8_t value, uint8_t read_back_mask = 0xff);
     esp_err_t ChangeMode( uint8_t mode );
     esp_err_t ViewRegisters();
+    esp_err_t SetAcceptanceFilter(const mcp2515_filter_config_t& cfg);
 
   public:
     esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
@@ -61,6 +93,11 @@ class mcp2515 : public canbus
 
   public:
     void SetPowerMode(PowerMode powermode);
+    bool GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags) override;
+    void SetTransceiverMode(CAN_mode_t mode);
+
+  public:
+    static void shell_setaccfilter(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   public:
     spi* m_spibus;
@@ -72,6 +109,7 @@ class mcp2515 : public canbus
     int m_cspin;
     int m_intpin;
     uint8_t m_last_errflag = 0;
+    uint8_t m_canctrl_mode;
     OvmsMutex m_write_mutex;
   };
 

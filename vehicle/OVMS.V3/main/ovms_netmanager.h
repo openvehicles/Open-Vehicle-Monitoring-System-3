@@ -165,8 +165,10 @@ class OvmsNetManager
   protected:
     TaskHandle_t m_mongoose_task;
     struct mg_mgr m_mongoose_mgr;
-    bool m_mongoose_running;
+    bool m_mongoose_running;                // true = Mongoose task is fully operational
+    bool m_mongoose_stopping;               // true = Mongoose task shutdown requested
     QueueHandle_t m_jobqueue;
+    OvmsSemaphore m_tcpip_callback_done;    // block until tcpip callback done (see PrioritiseAndIndicate)
 
   public:
     void MongooseTask();

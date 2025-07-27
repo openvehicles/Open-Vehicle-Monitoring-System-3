@@ -265,6 +265,7 @@ protected:
   static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
   static void WebCfgClimate(PageEntry_t &p, PageContext_t &c);
   static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
+  static void WebDispBattHealth(PageEntry_t &p, PageContext_t &c);
 #endif
 
 public:
@@ -444,6 +445,8 @@ protected:
   OvmsMetricFloat     *m_bat_soh_vw = 0;          // Battery SOH from ECU 8C PID 74 CB via OBD [%]
   OvmsMetricFloat     *m_bat_soh_range = 0;       // Battery SOH based on MFD range estimation [%]
   OvmsMetricFloat     *m_bat_soh_charge = 0;      // Battery SOH based on coulomb charge count [%]
+  OvmsMetricVector<float> *m_bat_cell_soh;        // Battery cell SOH from ECU 8C PID 74 CB via OBD [%]
+  std::vector<OvmsMetricVector<float>*> m_bat_cmod_hist; // Battery cell module SOH history from ECU 8C PID 74 CC via OBD [%]
 
   OvmsMetricFloat     *m_bat_energy_range;        // Battery energy available from MFD range estimation [kWh]
   OvmsMetricFloat     *m_bat_cap_kwh_range;       // Battery usable capacity derived from MFD range estimation [kWh]

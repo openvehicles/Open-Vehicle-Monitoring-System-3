@@ -155,7 +155,8 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos
 	[[fallthrough]];
 #endif
     case ChanOpen:
-      if (frame[1] == (GSM_UIH + GSM_PF))
+      // GSM_UIH alone set for CGNSSINFO response
+      if (frame[1] == (GSM_UIH + GSM_PF) || frame[1] == GSM_UIH )  
         {
         for (size_t k=iframepos;k<length;k++)
           m_buffer.Push(frame[k]);

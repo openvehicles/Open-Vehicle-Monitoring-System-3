@@ -250,6 +250,24 @@ std::string stripesc(const char* s)
   }
 
 /**
+ * replace_substrings: replace all `from` substrings by `to` in `text`
+ */
+void replace_substrings(std::string &text, const std::string from, const std::string to)
+  {
+  if (from.length() > 0)
+    {
+    size_t pos = 0;
+    size_t len = from.length();
+    while ((pos = text.find(from, pos)) != std::string::npos)
+      {
+      text.replace(pos, len, to);
+      pos += to.length();
+      }
+    }
+  }
+
+
+/**
  * HexByte: Write a single byte as two hexadecimal characters
  * Returns new pointer to end of string (p + 2)
  */

@@ -43,6 +43,10 @@ static const char *TAG = "dbc-app";
 #include "ovms_events.h"
 #include "ovms_vfs.h"
 
+#undef bind  // Kludgy, but works
+using std::placeholders::_1;
+using std::placeholders::_2;
+
 dbc MyDBC __attribute__ ((init_priority (4520)));
 
 void dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -107,6 +111,69 @@ bool dbc::ExpandComplete(OvmsWriter* writer, const char *token, bool complete)
     return true;
     }
   }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+/// Implement  bool OvmsDBC.Load(name, file)
+duk_ret_t dbc::DukOvmsDBCLoad(duk_context *ctx)
+  {
+  std::string name, fname;
+
+  name = duk_get_string(ctx,0);
+  if (name.empty())
+    {
+    duk_push_boolean(ctx,0);
+    return 1;
+    }
+  fname = duk_get_string(ctx,1);
+
+  auto res = MyDBC.LoadFile(name.c_str(), fname.c_str());
+  duk_push_boolean(ctx, res ? 1 : 0 );
+  return 1;
+  }
+
+/// Implement bool OvmsDBC.Unload(name)
+duk_ret_t dbc::DukOvmsDBCUnload(duk_context *ctx)
+  {
+  std::string name = duk_get_string(ctx,0);
+  if (name.empty())
+    {
+    duk_push_boolean(ctx,0);
+    return 1;
+    }
+  auto res = MyDBC.Unload(name.c_str());
+
+  duk_push_boolean(ctx, res ? 1 : 0 );
+  return 1;
+  }
+
+void dbc_duk_get_callback(void* param, const char* buffer)
+  {
+  *((std::ostringstream *)param) << buffer;
+  }
+
+/// Implement string OvmsDBC.Get(name)
+duk_ret_t dbc::DukOvmsDBCGet(duk_context *ctx)
+  {
+  std::string name = duk_get_string(ctx,0);
+  if (name.empty())
+    {
+    duk_push_null(ctx);
+    return 1;
+    }
+  dbcfile* dbc;
+  dbc = MyDBC.Find(name.c_str());
+  if (dbc == nullptr)
+    {
+    duk_push_null(ctx);
+    return 1;
+    }
+  std::ostringstream writer;
+  dbc->WriteSummary(std::bind(dbc_duk_get_callback,_1,_2), &writer);
+  duk_push_string(ctx, writer.str().c_str());
+  return 1;
+  }
+
+#endif
 
 static int dbc_name_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
@@ -572,6 +639,71 @@ void dbc_signal_set_mux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
     }
   }
 
+void dbc_signal_set_mux_ext(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  uint32_t msgid = dbcMessageIdFromString(argv[0]);
+  dbcMessage* msg = MyDBC.m_selected->m_messages.FindMessage(msgid);
+  if (msg == NULL)
+    {
+    writer->printf("Error: Could not find message %s\n",argv[0]);
+    return;
+    }
+
+  dbcSignal* signal = msg->FindSignal(argv[1]);
+  if (signal == NULL)
+    {
+    writer->printf("Error: Could not find signal %s on message %s\n",argv[1],argv[0]);
+    return;
+    }
+
+  if (argc > 3)
+    {
+    dbcSignal* source = msg->FindSignal(argv[2]);
+    if (!source)
+      {
+      writer->printf("Error: Could not find signal source %s on message %s\n",argv[2],argv[0]);
+      return;
+      }
+    source->SetMultiplexSource();
+
+    bool first = true;
+    std::istringstream iss(argv[3]);
+    std::string item;
+    while (std::getline(iss, item, ',')) {
+      dbcSwitchRange_t range;
+      switch( sscanf(item.c_str(), "%" PRIu32 "-%" PRIu32, &range.min_val, &range.max_val) )
+        {
+        case 0: continue;
+        case 1:
+           range.max_val = range.min_val;
+           FALLTHROUGH;
+        case 2:
+          {
+          if (first)
+            {
+            first = false;
+            signal->SetMultiplexed(range.min_val); // first one.
+            signal->SetMultiplexSource(source);
+            }
+          signal->AddMultiplexRange(range);
+          }
+        }
+    }
+    writer->printf("DBC: Set mux %s for signal %s on message %s\n",argv[2],argv[1],argv[0]);
+    }
+  else
+    {
+    signal->ClearMultiplexed();
+    writer->printf("DBC: Cleared mux for signal %s on message %s\n",argv[1],argv[0]);
+    }
+  }
+
 dbc::dbc()
   {
   ESP_LOGI(TAG, "Initialising DBC (4520)");
@@ -594,6 +726,8 @@ dbc::dbc()
   cmd_set->RegisterCommand("timing", "Set bit timing for selected DBC file", dbc_set_timing, "<baud> <btr1> <btr2>", 3, 3);
   cmd_set->RegisterCommand("messagemux", "Set message mux for selected DBC file", dbc_message_set_mux, "<id> [<signal>]", 1, 2);
   cmd_set->RegisterCommand("signalmux", "Set signal mux for selected DBC file", dbc_signal_set_mux, "<id> <name> [<value>]", 2, 3);
+  cmd_set->RegisterCommand("signalmuxext", "Set extended signal mux link for selected DBC file",
+      dbc_signal_set_mux_ext, "<id> <name> [<messagesource> <value>-<value>{,<value_n>-<value_n>}]", 2, 4);
 
   OvmsCommand* cmd_add = cmd_dbc->RegisterCommand("add","DBC Add framework");
   cmd_add->RegisterCommand("node", "Add node for selected DBC file", dbc_node_add, "<node>", 1, 1);
@@ -614,9 +748,15 @@ dbc::dbc()
   // Our instances:
   //   'autodirs': Space separated list of directories to auto load DBC files from
 
-  #undef bind  // Kludgy, but works
-  using std::placeholders::_1;
-  using std::placeholders::_2;
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsDBC");
+  dto->RegisterDuktapeFunction(DukOvmsDBCLoad, 2, "Load");
+  dto->RegisterDuktapeFunction(DukOvmsDBCUnload, 1, "Unload");
+  dto->RegisterDuktapeFunction(DukOvmsDBCGet, 1, "Get");
+  MyDuktape.RegisterDuktapeObject(dto);
+
+#endif
+
   MyEvents.RegisterEvent(TAG, "sd.mounted", std::bind(&dbc_sdmounted, _1, _2));
   }
 

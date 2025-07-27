@@ -1,8 +1,8 @@
 set(srcs)
 set(include_dirs)
 
-if (CONFIG_OVMS_VEHICLE_RENAULTZOE_PH2_OBD)
-  list(APPEND srcs "src/BCM_pids.cpp" "src/EVC_pids.cpp" "src/HVAC_pids.cpp" "src/INV_pids.cpp" "src/LBC_pids.cpp" "src/UCM_pids.cpp" "src/rz2_web.cpp" "src/vehicle_renaultzoe_ph2_obd.cpp")
+if (CONFIG_OVMS_VEHICLE_NIU_GTEVO)
+  list(APPEND srcs "src/nevo_web.cpp" "src/nevo_commands.cpp" "src/vehicle_niu_gtevo.cpp")
   list(APPEND include_dirs "src")
 endif ()
 

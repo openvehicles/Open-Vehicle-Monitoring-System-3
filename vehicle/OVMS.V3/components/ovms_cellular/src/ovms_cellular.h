@@ -117,6 +117,12 @@ class modem : public pcp, public InternalRamAllocated
       NRT_GPRS = 1,
       NRT_EPS = 2
       } network_regtype_t;
+    typedef enum
+      {
+      GUM_DEFAULT = 0,          // no user GPS mode overlay, apply defaults
+      GUM_STOP = 1,             // user set GPS mode to stopped
+      GUM_START = 2             // user set GPS mode to started
+      } gps_usermode_t;
     typedef struct
       {
       event_type_t type;
@@ -169,7 +175,13 @@ class modem : public pcp, public InternalRamAllocated
     GsmNMEA*               m_nmea;
 
     bool                   m_gps_enabled;           // = config modem enable.gps
-    int                    m_gps_usermode;          // -1=default / 0=off / 1=on
+    gps_usermode_t         m_gps_usermode;          // manual GPS control status
+    int                    m_gps_parkpause;         // = config modem gps.parkpause (seconds, 0=off)
+    int                    m_gps_stopticker;        // Park pause countdown
+    int                    m_gps_startticker;       // Re-activation countdown
+    int                    m_gps_reactivate;        // = config modem gps.parkreactivate (minutes, 0=off)
+    int                    m_gps_reactlock;         // = config modem gps.reactlock (minutes, default 5)
+    OvmsMutex              m_gps_mutex;             // lock for start/stop NMEA
 
     OvmsMutex              m_cmd_mutex;             // lock for the CMD channel
     bool                   m_cmd_running;           // true = collect rx lines in m_cmd_output
@@ -266,7 +278,8 @@ class modemdriver : public InternalRamAllocated
     virtual modem::modem_state1_t State1Ticker1(modem::modem_state1_t curstate);
 
   protected:
-    unsigned int m_powercyclefactor;
+    unsigned int m_pwridx;
+    time_t m_t_pwrcycle;
     modem* m_modem;
     int m_statuspoller_step;
   };

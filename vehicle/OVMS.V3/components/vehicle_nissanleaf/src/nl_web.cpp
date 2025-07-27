@@ -75,8 +75,10 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   bool canwrite;
   bool socnewcar;
   bool sohnewcar;
+  bool ze1;
   std::string modelyear;
   std::string cabintempoffset;
+  std::string speeddivisor;
   std::string maxgids;
   std::string newcarah;
   std::string cfg_ev_request_port;
@@ -85,12 +87,14 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     // process form submission:
     modelyear           = c.getvar("modelyear");
     cabintempoffset     = c.getvar("cabintempoffset");
+    speeddivisor        = c.getvar("speeddivisor");
     cfg_ev_request_port = c.getvar("cfg_ev_request_port");
     maxgids             = c.getvar("maxgids");
     newcarah            = c.getvar("newcarah");
     socnewcar           = (c.getvar("socnewcar") == "yes");
     sohnewcar           = (c.getvar("sohnewcar") == "yes");
     canwrite            = (c.getvar("canwrite") == "yes");
+    ze1                 = (c.getvar("ze1") == "yes");
 
     // check:
     if (!modelyear.empty()) {
@@ -103,6 +107,10 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       error += "<li data-input=\"cabintempoffset\">Cabin Temperature Offset can not be empty</li>";
     }
 
+    if (speeddivisor.empty()) {
+      error += "<li data-input=\"speeddivisor\">Speed Divisor cannot be empty</li>";
+    }
+
     if (cfg_ev_request_port.empty()) {
       error += "<li data-input=\"cfg_ev_request_port\">EV SYSTEM ACTIVATION REQUEST Pin field cannot be empty</li>";
     }
@@ -111,12 +119,14 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       // store:
       MyConfig.SetParamValue("xnl", "modelyear", modelyear);
       MyConfig.SetParamValue("xnl", "cabintempoffset", cabintempoffset);
+      MyConfig.SetParamValue("xnl", "speeddivisor", speeddivisor);
       MyConfig.SetParamValue("xnl", "cfg_ev_request_port", cfg_ev_request_port);
       MyConfig.SetParamValue("xnl", "maxGids",   maxgids);
       MyConfig.SetParamValue("xnl", "newCarAh",  newcarah);
       MyConfig.SetParamValueBool("xnl", "soc.newcar", socnewcar);
       MyConfig.SetParamValueBool("xnl", "soh.newcar", sohnewcar);
       MyConfig.SetParamValueBool("xnl", "canwrite",   canwrite);
+      MyConfig.SetParamValueBool("xnl", "ze1", ze1);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Nissan Leaf feature configuration saved.</p>");
@@ -134,12 +144,14 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     modelyear           = MyConfig.GetParamValue("xnl", "modelyear", STR(DEFAULT_MODEL_YEAR));
     cabintempoffset     = MyConfig.GetParamValue("xnl", "cabintempoffset", STR(DEFAULT_CABINTEMP_OFFSET));
+    speeddivisor        = MyConfig.GetParamValue("xnl", "speeddivisor", STR(DEFAULT_SPEED_DIVISOR));
     cfg_ev_request_port = MyConfig.GetParamValue("xnl", "cfg_ev_request_port", STR(DEFAULT_PIN_EV));
     maxgids             = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
     newcarah            = MyConfig.GetParamValue("xnl", "newCarAh", STR(GEN_1_NEW_CAR_AH));
     socnewcar           = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
     sohnewcar           = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
     canwrite            = MyConfig.GetParamValueBool("xnl", "canwrite", false);
+    ze1                 = MyConfig.GetParamValueBool("xnl", "ze1", false);
 
     c.head(200);
   }
@@ -150,6 +162,9 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
 
   c.fieldset_start("General");
+
+  c.input_checkbox("ZE1 model", "ze1", ze1, "<p>ZE1 models use a slightly different CAN structure to AZE0 or ZE0 cars</p>");
+
   c.input_radio_start("SOC Display", "socnewcar");
   c.input_radio_option("socnewcar", "from dashboard display",   "no",  socnewcar == false);
   c.input_radio_option("socnewcar", "relative to fixed value:", "yes", socnewcar == true);
@@ -168,6 +183,10 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input("number", "Cabin Temperature Offset", "cabintempoffset", cabintempoffset.c_str(), "Default: " STR(DEFAULT_CABINTEMP_OFFSET),
       "<p>This allows an offset adjustment to the cabin temperature sensor readings in Celcius.</p>",
       "step=\"0.1\"", "");
+  c.input("number", "Speed Divisor", "speeddivisor", speeddivisor.c_str(), "Default: " STR(DEFAULT_SPEED_DIVISOR),
+      "<p>This allows the speed readings to be adjusted (which also affects the trip odometer), e.g. if wheel diameter has changed. This can be estimated by comparing trip odometer to GPS track distance.</p>"
+      "<p>The resulting speed will be much lower than the speedometer speed, as the speedometer display is deliberately set ~10% higher.</p>",
+      "min=\"1\" step=\"1\"", "");
   c.fieldset_end();
 
   c.fieldset_start("Remote Control");

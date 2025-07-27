@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.23.2"
+#define VERSION "0.25.1"
 
 #include <stdio.h>
 #include <string>
@@ -566,10 +566,12 @@ void OvmsVehicleVWeUp::SetSOH(float soh_new)
 {
   float soh_fct    = soh_new / 100;
   float cap_ah     = soh_fct * ((vweup_modelyear > 2019) ? 120.0f :  50.0f);
+  float cap_kwh    = soh_fct * ((vweup_modelyear > 2019) ? 32.3f  :  16.4f);
   float range_full = soh_fct * ((vweup_modelyear > 2019) ? 260.0f : 160.0f);
   float soc_fct    = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
   StdMetrics.ms_v_bat_soh->SetValue(soh_new);
   StdMetrics.ms_v_bat_cac->SetValue(cap_ah);
+  StdMetrics.ms_v_bat_capacity->SetValue(cap_kwh);
   StdMetrics.ms_v_bat_range_full->SetValue(range_full);
   StdMetrics.ms_v_bat_range_ideal->SetValue(range_full * soc_fct);
 }

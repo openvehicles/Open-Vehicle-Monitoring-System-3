@@ -134,6 +134,11 @@ extram::string stripcr(const extram::string& text);
 std::string stripesc(const char* s);
 
 /**
+ * replace_substrings: replace all `from` substrings by `to` in `text`
+ */
+void replace_substrings(std::string &text, const std::string from, const std::string to);
+
+/**
  * startsWith: std::string et al prefix check
  */
 template <class string_t>
