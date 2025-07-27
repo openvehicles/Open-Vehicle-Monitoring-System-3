@@ -1840,7 +1840,7 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2012) {
      CommandWakeup();
   } else if (MyConfig.GetParamValueBool("xnl", "command.wakeup", true)) {
-       CommandWakeupTCU();
+     CommandWakeupTCU();
   }
   switch (command)
     {
@@ -1979,14 +1979,6 @@ void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
   // Update any derived values
   // Energy used varies a lot during driving
   HandleEnergy();
-  // Handle Tripcounter
-  if (mt_pos_odometer_start->AsFloat(0) == 0 && StandardMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0) {
-    mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
-  }
-  if (StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0 && mt_pos_odometer_start->AsFloat(0) > 0.0) {
-    StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat(0) - mt_pos_odometer_start->AsFloat(0));
-  }
-
   }
 
 /**
@@ -2473,7 +2465,9 @@ void OvmsVehicleNissanLeaf::UpdateTripCounters()
 //
 // On Generation 2 Cars, a CAN bus message is sent to wake up the VCU. This
 // function sends that message even to Generation 1 cars which doesn't seem to
-// cause any problems. (UPDATE: It automatically starts charging every time)
+// cause any problems.
+// TODO (UPDATE for GEN1: It automatically prompts to starts charging
+// TODO every time there is no command issued after it like turning on A/C)
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   {
   // Shotgun approach to waking up the vehicle. Send all kinds of wakeup messages
@@ -2500,7 +2494,7 @@ void OvmsVehicleNissanLeaf::CommandWakeupTCU()
   ESP_LOGI(TAG, "Sending CarWings TCU->VCU Wakeup Frame");
   unsigned char data = 0;
   m_can1->WriteStandard(0x68c, 1, &data); //Wakes up VCM By sending a wakeup message
-  }
+}
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)
   {
