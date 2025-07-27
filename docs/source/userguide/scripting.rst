@@ -1115,6 +1115,15 @@ options in the App, as well as by executing the ``homelink`` shell command.
 To load this plugin automatically on boot, add the code to ``ovmsmain.js``, either
 inline or by loading a lib module (see `Persistent JavaScript`_).
 
+OvmsDBC
+^^^^^^^
+
+The Ovms DBC object represents the DBC file management sub-system. It has the following methods:
+
+- ``loaded = OvmsDBC.Load(name, dbcfile)``: Loads the dbc file under the given name.
+- ``OvmsDBC.Unload(name)``: Unloads the dbc file.
+- ``obj = OvmsDBC.Get(name)``: Exports the dbc file as a string.
+
 OvmsPoller
 ^^^^^^^^^^
 
