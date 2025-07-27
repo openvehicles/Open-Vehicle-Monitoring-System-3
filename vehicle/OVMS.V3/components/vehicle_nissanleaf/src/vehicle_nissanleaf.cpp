@@ -673,13 +673,39 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   // [32..38] 000b3290 800001
   // [39..40] 0000
 
-  uint16_t hx = (reply_data[26] << 8)
-              |  reply_data[27];
-  m_hx->SetValue(hx / 100.0);
+  // ZE1 Leafs respond with 51 bytes
+  // > 0x79b 21 01
+  // < 0x7bb 61 01
+  //  0x7BB 10 35 61 01 FF FF FC 18		0..3
+  //  0x7BB 21 02 AF FF FF FB 62 FF		4..10
+  //  0x7BB 22 FF F0 DD 0B 1C 30 D4		11..17
+  //  0x7BB 23 95 1D 33 06 03 95 00		18..24
+  //  0x7BB 24 01 70 00 26 9A 00 0C		25..31
+  //  0x7BB 25 44 B5 00 11 0B B8 80		32..38
+  //  0x7BB 26 00 01 FF FF FB 62 FF		39..45
+  //  0x7BB 27 FF FC AA 01 AD FF FF		46..52
 
-  uint32_t ah10000 = (reply_data[33] << 16)
-                   | (reply_data[34] << 8)
-                   |  reply_data[35];
+  uint16_t hx;
+  uint32_t ah10000;
+  uint32_t soc=0;
+
+  if (reply_len == 51)  // ZE1 Leafs
+  {
+    hx = (reply_data[28] << 8) | reply_data[29];
+    ah10000 = (reply_data[35] << 16) | (reply_data[36] << 8) |  reply_data[37];
+
+    soc = (reply_data[31] << 16) | (reply_data[32] << 8) |  reply_data[33];
+    ESP_LOGD(TAG, "0x7BB SOC response: %d", soc);
+    StandardMetrics.ms_v_bat_soc->SetValue(soc / 10000.0);
+    m_hx->SetValue(hx / 102.4); // from Dala's Leaf2018-CAN pdf use 102.4 not 100
+
+  } else // Eveything else
+  {
+    hx = (reply_data[26] << 8) | reply_data[27];
+    ah10000 = (reply_data[33] << 16) | (reply_data[34] << 8) |  reply_data[35];
+    m_hx->SetValue(hx / 100.0);
+  }
+
   float ah = ah10000 / 10000.0;
   StandardMetrics.ms_v_bat_cac->SetValue(ah);
 
