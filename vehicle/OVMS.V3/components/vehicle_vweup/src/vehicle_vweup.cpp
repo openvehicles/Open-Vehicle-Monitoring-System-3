@@ -282,8 +282,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::ProcessMsgCommand(string& 
   {
     case CMD_SetChargeAlerts:
       return MsgCommandCA(result, command, args);
-    case CMD_QueryChargeAlerts:
-      return MsgCommandCA(result, command, args);
+
     default:
       return NotImplemented;
   }
