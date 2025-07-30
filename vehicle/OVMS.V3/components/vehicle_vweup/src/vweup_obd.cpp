@@ -890,8 +890,8 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
 
     case VWUP_BAT_MGMT_SOC_ABS:
       if (PollReply.FromUint8("VWUP_BAT_MGMT_SOC_ABS", value)) {
-        BatMgmtSoCAbs->SetValue(value / 2.55f);
-        VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC_ABS=%f => %f", value, BatMgmtSoCAbs->AsFloat());
+        BatMgmtSoCAbs->SetValue(ROUNDPREC(value / 2.55f, 1));
+        VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC_ABS=%f => %.1f", value, BatMgmtSoCAbs->AsFloat());
       }
       break;
 
