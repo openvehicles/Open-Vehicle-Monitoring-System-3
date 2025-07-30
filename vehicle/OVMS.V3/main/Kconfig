@@ -34,12 +34,39 @@ config OVMS_HW_BASE_3_1
     help
         Select this: OVMS base production hardware v3.1
 
+
 endchoice # OVMS_HW_MODEL
+
+choice OVMS_HW_SELECT_GPIO_MAP
+    prompt "Choose GPIO Mapping "
+        default OVMS_HW_DEFAULT_GPIO_MAP
+        help
+                OVMS_HW_DEFAULT_GPIO_MAP                Default GPIO assignment of OVMS module
+                OVMS_HW_REMAP_GPIO                      Alternative GPIO mapping
+
+config OVMS_HW_DEFAULT_GPIO_MAP
+    bool "Default OVMS module GPIO Mapping"
+    help
+        Select this for the default OVMS module
+
+config OVMS_HW_REMAP_GPIO
+    bool "Enable alternative OVMS modules/GPIO Mapping"
+    help
+        Select this: Enable alternative mapping of ESP32 GPIOs
+
+endchoice # OVMS_HW_SELECT_GPIO_MAP
+
+config OVMS_GPIO_MAP_FILE
+    string "File with GPIO mapping: "
+    default NONE
+    depends on OVMS_HW_REMAP_GPIO
+    help
+        The GPIO mapping will be included in ovms_peripheral from the selected file 
 
 config OVMS_HW_SPIMEM_AGGRESSIVE
     bool "Aggressively use SPI RAM (rather than internal RAM)"
     default y
-    depends on OVMS && OVMS_HW_BASE_3_1
+    depends on OVMS && OVMS_HW_BASE_3_1 
     help
         Enable to aggressively allocate from SPI RAM (rather than internal RAM).
 
@@ -822,7 +849,7 @@ config OVMS_COMP_CELLULAR
 config OVMS_COMP_CELLULAR_SIMCOM
     bool "Include support for SIMCOM cellular modems"
     default y
-    depends on OVMS && OVMS_COMP_MAX7317 && OVMS_COMP_CELLULAR
+    depends on OVMS && OVMS_COMP_CELLULAR && ( OVMS_COMP_MAX7317 || OVMS_HW_REMAP_GPIO )
     help
         Enable to include support for SIMCOM cellular modems
 
