@@ -159,7 +159,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_hx = MyMetrics.InitFloat("xnl.v.b.hx", SM_STALE_HIGH, 0);
   m_soc_new_car = MyMetrics.InitFloat("xnl.v.b.soc.newcar", SM_STALE_HIGH, 0, Percentage);
   m_soc_instrument = MyMetrics.InitFloat("xnl.v.b.soc.instrument", SM_STALE_HIGH, 0, Percentage);
-  m_range_instrument = MyMetrics.InitInt("xnl.v.b.range.instrument", SM_STALE_HIGH, 0, Kilometers);
+  m_range_instrument = MyMetrics.InitInt("xnl.v.b.range.instrument", SM_STALE_HIGH, 0, Kilometers, true);
   m_bms_thermistor = MyMetrics.InitVector<int>("xnl.bms.thermistor", SM_STALE_MIN, 0, Native);
   m_bms_temp_int = MyMetrics.InitVector<int>("xnl.bms.temp.int", SM_STALE_MIN, 0, Celcius);
   m_bms_balancing = MyMetrics.InitBitset<96>("xnl.bms.balancing", SM_STALE_HIGH, 0);
@@ -184,6 +184,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_charge_minutes_3kW_remaining = MyMetrics.InitInt("xnl.v.c.chargeminutes3kW", SM_STALE_HIGH, 0);
   m_quick_charge = MyMetrics.InitInt("xnl.v.c.quick", SM_STALE_HIGH, 0);
   m_remaining_chargebars = MyMetrics.InitInt("xnl.v.c.chargebars", SM_STALE_HIGH, 0);
+  m_capacitybars = MyMetrics.InitInt("xnl.v.b.capacitybars", SM_STALE_HIGH, 0);
   m_soc_nominal = MyMetrics.InitFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, 0, Percentage);
   m_battery_out_power_limit = MyMetrics.InitFloat("xnl.v.b.output.limit", SM_STALE_HIGH, 0, kW);
   m_battery_in_power_limit = MyMetrics.InitFloat("xnl.v.b.regen.limit", SM_STALE_HIGH, 0, kW);
@@ -204,14 +205,19 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_charge_user_notified = MyMetrics.InitString("xnl.v.c.event.notification", SM_STALE_HIGH, 0);
   m_charge_event_reason = MyMetrics.InitString("xnl.v.c.event.reason", SM_STALE_HIGH, 0);
   m_climate_auto = MyMetrics.InitBool("xnl.v.e.hvac.auto", SM_STALE_MIN, false);
+  mt_pos_odometer_start   = MyMetrics.InitFloat("xnl.v.pos.odometer.start", SM_STALE_MID, 0, Kilometers);
+  m_qc_relay_status = MyMetrics.InitFloat("xnl.v.c.relay.qc", SM_STALE_HIGH, 0);
+  m_ac_relay_status = MyMetrics.InitFloat("xnl.v.c.relay.ac", SM_STALE_HIGH, 0);
+  m_charge_mode = MyMetrics.InitInt("xnl.v.c.mode.raw", SM_STALE_HIGH, 0);
   MyMetrics.InitBool("v.e.on", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.awake", SM_STALE_MID, false);
   MyMetrics.InitBool("v.e.locked", SM_STALE_MID, false);
   MyMetrics.InitString("v.c.state",SM_STALE_MID,"stopped");
   m_ZE0_charger = false;
+  m_kWh_capacity_read = false;
   m_AZE0_charger = false;
   m_climate_really_off = false;
- 
+
   cfg_soh_newcar = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
 
   // register but don't auto-power-off the busses.
@@ -352,6 +358,8 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     ResetTripCounters();
     StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
     StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+    mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
+    StandardMetrics.ms_v_pos_trip->SetValue(0);
     m_cum_energy_recd_wh = 0.0f;
     m_cum_energy_used_wh = 0.0f;
     }
@@ -682,24 +690,29 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   uint32_t soc=0;
 
   if (reply_len == 51)  // ZE1 Leafs
-  { 
+  {
     hx = (reply_data[28] << 8) | reply_data[29];
     ah10000 = (reply_data[35] << 16) | (reply_data[36] << 8) |  reply_data[37];
 
     soc = (reply_data[31] << 16) | (reply_data[32] << 8) |  reply_data[33];
     ESP_LOGD(TAG, "0x7BB SOC response: %d", soc);
     StandardMetrics.ms_v_bat_soc->SetValue(soc / 10000.0);
+    m_hx->SetValue(hx / 102.4); // from Dala's Leaf2018-CAN pdf use 102.4 not 100
 
-  } else // Eveything else  
+  } else // Eveything else
   {
     hx = (reply_data[26] << 8) | reply_data[27];
     ah10000 = (reply_data[33] << 16) | (reply_data[34] << 8) |  reply_data[35];
+    m_hx->SetValue(hx / 100.0);
   }
-
-  m_hx->SetValue(hx / 102.4); // from Dala's Leaf2018-CAN pdf use 102.4 not 100
 
   float ah = ah10000 / 10000.0;
   StandardMetrics.ms_v_bat_cac->SetValue(ah);
+
+  if (!m_kWh_capacity_read) {
+    // Because older LEAF models seem not to transmit 0x59e, calculate based on Ah and pack voltage
+    m_battery_energy_capacity->SetValue((ah*StandardMetrics.ms_v_bat_voltage->AsFloat())/1000.0);
+  }
 
 
 
@@ -707,7 +720,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
   // divide by a configurable battery size
   // - For 24 KWh : xnl.newCarAh = 66 (default)
   // - For 30 KWh : xnl.newCarAh = 80 (i.e. shell command "config set xnl newCarAh 80")
-  
+
   /// TODO: this can be read directly from the BMS (group 61) for ZE1 Leafs
 
   float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
@@ -798,7 +811,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(const uint8_t *reply_data, uint16
   //  0x7BB 10 1F 61 04 02 0D 13 02  0..3
   //  0x7BB 21 03 14 FF FF FF 02 0B  4..10
   //  0x7BB 22 13 13 00 FF FF FF FF  11..17
-  
+
   // TODO: The above capture is incomplete
 
   int thermistor[4];
@@ -894,7 +907,7 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(const uint8_t *reply_data, uint16_t re
 
   StandardMetrics.ms_v_vin->SetValue(strbuf); //(char*)reply_data
 
-  ESP_LOGD(TAG, "VIN: %s", strbuf.c_str()); 
+  ESP_LOGD(TAG, "VIN: %s", strbuf.c_str());
   }
 
 // Reassemble all pieces of a multi-frame reply.
@@ -1038,7 +1051,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
 
       // soc displayed on the instrument cluster
-      if (!cfg_ze1) 
+      if (!cfg_ze1)
         {
         uint8_t soc = d[4] & 0x7f;  // On the ZE1 this is always 0
         if (soc != 0x7f)
@@ -1094,16 +1107,38 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // Gen 1 ZE0 Charger
       // see https://github.com/dalathegreat/leaf_can_bus_messages
 
+      bool  ac_state = (d[4] & 0x40) != 0; // indicates ac charge state
+      bool  qc_state = (d[4] & 0x20) != 0; // indicates chademo relay state
+
+      m_qc_relay_status->SetValue((float)(d[4] & 0x20));
+      m_ac_relay_status->SetValue((float)(d[4] & 0x40));
+
+      if (ac_state || qc_state) {
+          StandardMetrics.ms_v_charge_pilot->SetValue(true);
+      } else {
+          // This only represents charging relay state. If timer, or cable still plugged in, relay is open.
+          // StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          StandardMetrics.ms_v_charge_voltage->SetValue(0);
+      }
+
       float max_charge_power = ( (d[2] & 0x01) << 8 | d[3]) * 100; // in W
       float ac_voltage = ( ((d[5] & 0x07) << 8 | ( d[6] & 0xFC)) >> 2) * 2; // in V
-      ac_voltage = ac_voltage + 70; //Offset with 70V
+      //ac_voltage = ac_voltage + 70; //Offset with 70V (why?)
 
-      StandardMetrics.ms_v_charge_voltage->SetValue(ac_voltage);
-      
-      if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0)
+      if (ac_state) {
+         StandardMetrics.ms_v_charge_voltage->SetValue(ac_voltage);
+      } else if (qc_state) {
+         StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
+      }
+
+      // AC Current limit on ZE0 charger is sent in another CAN message
+      if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0 && !ac_state)
       {
         StandardMetrics.ms_v_charge_climit->SetValue(max_charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
+      } else if (!qc_state) {
+        StandardMetrics.ms_v_charge_power->SetValue(0);
       }
+
     }
       break;
     case 0x390:
@@ -1118,7 +1153,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       bool  ac_state = (d[3] & 0x20) == 0x20; // indicates ac charge state
       bool  qc_state = (d[4] & 0x40) == 0x40; // indicates chademo relay state
       bool  vg_state = (d[0] >> 4 == 0x09);   // indicates v2x exporting state
-      
+
+      m_ac_relay_status->SetValue((float)(d[3] & 0x20));
+      m_qc_relay_status->SetValue((float)(d[4] & 0x40));
+
       if ( (qc_state || ac_state) && !vg_state ) 
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
       else
@@ -1275,7 +1313,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           d[1] == 0x4b || // Gen 2 Remote Heating
           d[1] == 0x71 || // Gen 2 Remote Cooling
           d[1] == 0x76 || // Auto
-          d[1] == 0x78;   // Manual A/C on
+          d[1] == 0x78 ||  // Manual A/C on
+          (m_climate_fan_speed->AsInt() != 0); // Older leafs do not transmit anything except fan speed (?), backup
 
         /* These may only reflect the centre console LEDs, which
         * means they don't change when remote CC is operating.
@@ -1407,6 +1446,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           {
           uint16_t cap_gid = d[2] << 4 | d[3] >> 4;
           m_battery_energy_capacity->SetValue(cap_gid * GEN_1_WH_PER_GID, WattHours);
+          m_kWh_capacity_read = true;
           }
           break;
         case BATTERY_TYPE_2_30kWh:
@@ -1436,12 +1476,43 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           m_charge_limit->SetValue("low temp");
           break;
         }
+
+      // ZE0 SOH
+      if (m_battery_type->AsInt(0) == BATTERY_TYPE_1_24kWh) {
+        uint8_t soh = (d[4] >> 1 & 0xF7);
+        m_soh_instrument->SetValue(soh);
+        if (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+        {
+          StandardMetrics.ms_v_bat_soh->SetValue(soh);
+        }
+      }
+
+
       uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
       uint8_t  mx_gids = (d[5] & 0x10) >> 4;
+      uint8_t  mx_bars_ZE0 = (d[4] & 0x01);
       int type = -1;
       // gids is invalid during startup
       if (nl_gids != 1023)
-        {
+      {
+        // On LEAF ZE0 200X-2012, some values differ from AZE0
+        switch (mx_bars_ZE0) {
+         case 0x00:
+           {
+             if (m_battery_type->AsInt(0) == BATTERY_TYPE_1_24kWh) {
+               uint8_t chargebars = (d[2] & 0x0F);
+               m_remaining_chargebars->SetValue(chargebars);
+             }
+           }
+           break;
+          case 0x01:
+           {
+             uint8_t capbars = (d[2] & 0x0F);
+             m_capacitybars->SetValue(capbars);
+             type = BATTERY_TYPE_1_24kWh;
+           }
+           break;
+        }
         switch (mx_gids)
           {
           case 0x00:
@@ -1459,13 +1530,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             if (MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
               {
               StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
-
-              // 2012 Leaf has no instrument soc, battery capacity and max gids will be set from config, because it is not available on CAN
-              if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) == 2012) 
-                {
-                m_max_gids->SetValue(max_gids);
-                m_battery_energy_capacity->SetValue(max_gids * GEN_1_WH_PER_GID, WattHours);
-                }
+              }
+            // 2012 Leaf has no instrument soc, battery capacity and max gids will be set from config, because it is not available on CAN
+            if (MyConfig.GetParamValueBool("xnl", "soc.newcar.capacity", false)) {
+              m_battery_energy_capacity->SetValue(max_gids * GEN_1_WH_PER_GID, WattHours);
+              m_kWh_capacity_read = true;
               }
             }
             break;
@@ -1475,6 +1544,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             m_max_gids->SetValue(nl_gids);
             m_battery_energy_capacity->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
             type = BATTERY_TYPE_2_30kWh;
+            m_kWh_capacity_read = true;
             }
             break;
           }
@@ -1546,15 +1616,16 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         // J1772 might be connected
         // d[2] is the J1772 maximum available current, 0 if we're not plugged in
+        // NOTE: this message doesn't update except when charging.
+        // Current limit doesn't seem to go to zero after ending
         // TODO enum?
         uint8_t current_limit = d[2] / 5;
         StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
         if (current_limit > 0 && current_limit <= 32)
           {
-          //StandardMetrics.ms_v_charge_type->SetValue("type1");
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           }
-		else // current limit is 0
+		else
 		  {
 		  StandardMetrics.ms_v_charge_pilot->SetValue(false);
 		  }
@@ -1562,7 +1633,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       switch (d[4])
         {
-        case 0x28:
+        case 0x70: // Starting to charge
+        case 0x18: // Signal cable plugged in (beep sound)
+          StandardMetrics.ms_v_charge_pilot->SetValue(true);
+          break;
+        case 0x38: // Present when vehicle is off, no cable plugged or charger is "asleep" (with cable plugged)
+          break;
+        case 0x28: // Present when vehicle is on
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x30:
@@ -1596,6 +1673,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_battery_heaterpresent->SetValue(d[4] & 0x01); // Heater pads present
         m_battery_heatrequested->SetValue(d[1] & 0x01); // Request permission to turn on
         }
+      break;
+    case 0x679:
+      ESP_LOGI(TAG, "J1772/VCM Wakeup!");
       break;
     }
   }
@@ -1782,7 +1862,12 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
     length = 1;
     tcuBus = m_can1;
     }
-  CommandWakeup();
+
+  if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2012) {
+     CommandWakeup();
+  } else if (MyConfig.GetParamValueBool("xnl", "command.wakeup", true)) {
+     CommandWakeupTCU();
+  }
   switch (command)
     {
     case ENABLE_CLIMATE_CONTROL:
@@ -1956,12 +2041,12 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
   }
   // assume charge port has been closed 2min after pilot signal finished
   else if ( StandardMetrics.ms_v_charge_pilot->IsStale() 
-    && StandardMetrics.ms_v_gen_pilot->IsStale() 
+    && ((MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013) || StandardMetrics.ms_v_gen_pilot->IsStale())
     && StandardMetrics.ms_v_door_chargeport->AsBool() )
     {
     std::string str = StandardMetrics.ms_v_charge_substate->AsString();
     if      (str == "timerwait") ;
-    else if (str == "powerwait") ;
+    else if (str == "powerwait" && (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2012));
     else StandardMetrics.ms_v_door_chargeport->SetValue(false);
     }
   }
@@ -2276,6 +2361,10 @@ void OvmsVehicleNissanLeaf::HandleCharging()
 int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc, float charge_power_w)
   { // updated to allow for V2X calculation
   float bat_soc = StandardMetrics.ms_v_bat_soc->AsFloat(100);
+  if (bat_soc == 0) {
+    // Cannot get instrument SOC, use soc from BMS
+    bat_soc = StandardMetrics.ms_v_bat_soc->AsFloat(100);
+  }
   if ( (bat_soc > target_soc && charge_power_w > 0) || (bat_soc < target_soc && charge_power_w < 0) )
     {
     return 0;   // Done!
@@ -2403,7 +2492,8 @@ void OvmsVehicleNissanLeaf::UpdateTripCounters()
 // On Generation 2 Cars, a CAN bus message is sent to wake up the VCU. This
 // function sends that message even to Generation 1 cars which doesn't seem to
 // cause any problems.
-
+// TODO (UPDATE for GEN1: It automatically prompts to starts charging
+// TODO every time there is no command issued after it like turning on A/C)
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   {
   // Shotgun approach to waking up the vehicle. Send all kinds of wakeup messages
@@ -2423,16 +2513,30 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   return Success;
   }
 
+// Wakeup VCM using command which allegedly is used by TCU (https://docs.google.com/spreadsheets/d/1EHa4R85BttuY4JZ-EnssH4YZddpsDVu6rUFm0P7ouwg/edit?gid=0#gid=0)
+void OvmsVehicleNissanLeaf::CommandWakeupTCU()
+  {
+  if (!cfg_enable_write) return; // Disable commands unless canwrite is true
+  ESP_LOGI(TAG, "Sending CarWings TCU->VCU Wakeup Frame");
+  unsigned char data = 0;
+  m_can1->WriteStandard(0x68c, 1, &data); //Wakes up VCM By sending a wakeup message
+}
+
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)
   {
   if (!cfg_enable_write) return Fail; //disable commands unless canwrite is true
   ESP_LOGI(TAG, "RemoteCommandHandler");
-  CommandWakeup();
   // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
   {
+    if (MyConfig.GetParamValueBool("xnl", "command.wakeup", true)) {
+       CommandWakeupTCU();
+    }
     MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 1);
     ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST ON");
+  } else {
+    // Use wakeup only for newer cars.
+    CommandWakeup();
   }
   // The GEN 2 Nissan TCU module sends the command repeatedly, so we start
   // m_remoteCommandTimer (which calls RemoteCommandTimer()) to do this
@@ -2474,7 +2578,24 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandUnlock(const char* 
   return RemoteCommandHandler(UNLOCK_DOORS);
   }
 
-void OvmsVehicleNissanLeaf::MITMDisableTimer() 
+/**
+ * ProcessMsgCommand: V2 compatibility protocol message command processing
+ *  result: optional payload or message to return to the caller with the command response
+ */
+OvmsVehicleNissanLeaf::vehicle_command_t OvmsVehicleNissanLeaf::ProcessMsgCommand(string& result, int command, const char* args)
+{
+  switch (command)
+  {
+    case CMD_SetChargeAlerts:
+      return MsgCommandCA(result, command, args);
+    case CMD_QueryChargeAlerts:
+      return MsgCommandCA(result, command, args);
+    default:
+      return NotImplemented;
+  }
+}
+
+void OvmsVehicleNissanLeaf::MITMDisableTimer()
 {
   ESP_LOGI(TAG, "MITM attempted off");
   if(m_MITM) {
@@ -2497,6 +2618,46 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandStartCharge()
   StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
   return RemoteCommandHandler(START_CHARGING);
   }
+
+/**
+ * MsgCommandCA:
+ *  - CMD_QueryChargeAlerts()
+ *  - CMD_SetChargeAlerts(<range>,<soc>,[<power>],[<stopmode>])
+ *  - Result: <range>,<soc>,<time_range>,<time_soc>,<time_full>,<power>,<stopmode>
+ */
+OvmsVehicleNissanLeaf::vehicle_command_t OvmsVehicleNissanLeaf::MsgCommandCA(std::string &result, int command, const char* args)
+{
+  if (command == CMD_SetChargeAlerts)
+  {
+    std::istringstream sentence(args);
+    std::string token;
+
+    // CMD_SetChargeAlerts(<range limit>,<soc limit>,<charge mode>,<range drop>, <soc drop>)
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xnl", "suffrange", atoi(token.c_str()));
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xnl", "suffsoc", atoi(token.c_str()));
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueBool("xnl", "autocharge", atoi(token.c_str()) == 1);
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xnl", "rangedrop", atoi(token.c_str()));
+    if (std::getline(sentence, token, ','))
+      MyConfig.SetParamValueInt("xnl", "socdrop", atoi(token.c_str()));
+    // Synchronize with config changes:
+    ConfigChanged(NULL);
+  }
+  // Result: <range>,<soc>,<stopmode>,<rangedrop>,<socdrop>
+  std::ostringstream buf;
+  buf
+    << std::setprecision(0)
+    << MyConfig.GetParamValue("xnl", "suffrange", "0") << ","
+    << MyConfig.GetParamValue("xnl", "suffsoc", "0") << ","
+    << ((MyConfig.GetParamValueBool("xnl", "autocharge", true) == true) ? "1" : "0") << ","
+    << MyConfig.GetParamValueInt("xnl", "rangedrop", DEFAULT_RANGEDROP) << ","
+    << MyConfig.GetParamValueInt("xnl", "socdrop", DEFAULT_SOCDROP);
+  result = buf.str();
+  return Success;
+}
 
 /**
  * SetFeature: V2 compatibility config wrapper
