@@ -152,6 +152,10 @@ void OvmsTLS::Reload()
   extern const unsigned char digicert_global_end[] asm("_binary_digicert_global_crt_end");
   m_trustlist["DigiCert Global Root CA"] = new OvmsTrustedCert(digicert_global, digicert_global_end - digicert_global);
 
+  extern const unsigned char digicert_g2[] asm("_binary_digicert_g2_crt_start");
+  extern const unsigned char digicert_g2_end[] asm("_binary_digicert_g2_crt_end");
+  m_trustlist["DigiCert Global Root G2"] = new OvmsTrustedCert(digicert_g2, digicert_g2_end - digicert_g2);
+
   extern const unsigned char starfield_class2[] asm("_binary_starfield_class2_crt_start");
   extern const unsigned char starfield_class2_end[] asm("_binary_starfield_class2_crt_end");
   m_trustlist["Starfield Class 2 CA"] = new OvmsTrustedCert(starfield_class2, starfield_class2_end - starfield_class2);
