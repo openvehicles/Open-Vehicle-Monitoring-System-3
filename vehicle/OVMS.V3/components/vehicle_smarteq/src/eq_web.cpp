@@ -99,7 +99,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     v2server = (c.getvar("v2server") == "yes");
     net_type = c.getvar("net_type");
     mdmcheck = (c.getvar("mdmcheck") == "yes");
-    unlocked = (c.getvar("unlock") == "yes");
+    unlocked = (c.getvar("unlocked") == "yes");
     extstats = (c.getvar("extstats") == "yes");
     wakeup   = (c.getvar("wakeup") == "yes");
     tripnotify = (c.getvar("resetnotify") == "yes");
