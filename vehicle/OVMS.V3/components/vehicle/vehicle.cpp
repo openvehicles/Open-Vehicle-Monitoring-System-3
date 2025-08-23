@@ -1765,7 +1765,7 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     {
     if (StandardMetrics.ms_v_charge_inprogress->AsBool())
       {
-      StandardMetrics.ms_v_charge_start_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
+      StandardMetrics.ms_v_charge_timestamp_start->SetValue(StdMetrics.ms_m_timeutc->AsInt());
       MyEvents.SignalEvent("vehicle.charge.start",NULL);
       NotifiedVehicleChargeStart();
       }
