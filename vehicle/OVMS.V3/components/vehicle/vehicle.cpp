@@ -1813,6 +1813,47 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       NotifiedVehicleChargeTimermodeOff();
       }
     }
+
+  else if (metric == StandardMetrics.ms_v_gen_inprogress)
+    {
+    if (StandardMetrics.ms_v_gen_inprogress->AsBool())
+      {
+      MyEvents.SignalEvent("vehicle.gen.start",NULL);
+      NotifiedVehicleGenStart();
+      }
+    else
+      {
+      MyEvents.SignalEvent("vehicle.gen.stop",NULL);
+      NotifiedVehicleGenStop();
+      }
+    }
+  else if (metric == StandardMetrics.ms_v_gen_pilot)
+    {
+    if (StandardMetrics.ms_v_gen_pilot->AsBool())
+      {
+      MyEvents.SignalEvent("vehicle.gen.pilot.on",NULL);
+      NotifiedVehicleGenPilotOn();
+      }
+    else
+      {
+      MyEvents.SignalEvent("vehicle.gen.pilot.off",NULL);
+      NotifiedVehicleGenPilotOff();
+      }
+    }
+  else if (metric == StandardMetrics.ms_v_gen_timermode)
+    {
+    if (StandardMetrics.ms_v_gen_timermode->AsBool())
+      {
+      MyEvents.SignalEvent("vehicle.gen.timermode.on",NULL);
+      NotifiedVehicleGenTimermodeOn();
+      }
+    else
+      {
+      MyEvents.SignalEvent("vehicle.gen.timermode.off",NULL);
+      NotifiedVehicleGenTimermodeOff();
+      }
+    }
+
   else if (metric == StandardMetrics.ms_v_env_aux12v)
     {
     if (StandardMetrics.ms_v_env_aux12v->AsBool())

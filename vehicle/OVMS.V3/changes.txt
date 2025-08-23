@@ -1,6 +1,14 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Vehicle framework: signal generator operation state changes
+  New events:
+    vehicle.gen.start         -- Power delivery started
+    vehicle.gen.stop          -- Power delivery stopped
+    vehicle.gen.pilot.on      -- Pilot signal present
+    vehicle.gen.pilot.off     -- Pilot signal gone
+    vehicle.gen.timermode.on  -- Generator timer has been enabled
+    vehicle.gen.timermode.off -- Generator timer has been disabled
 - Cellular: GPS auto pause on parking re-activate option added (update position).
   New config:
     [modem] gps.reactivate    -- park time in minutes for auto re-activate for (default 5 minutes) GPS lock (gps.reactlock), 0 = disabled (default)

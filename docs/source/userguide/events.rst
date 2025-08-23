@@ -191,7 +191,13 @@ vehicle.drivemode.<n>                         Vehicle drivemode has been set to 
 vehicle.gear.forward                          Vehicle has been put in forward gear
 vehicle.gear.neutral                          Vehicle has been put in neutral gear
 vehicle.gear.reverse                          Vehicle has been put in reverse gear
+vehicle.gen.pilot.off                         Vehicle generator pilot signal gone
+vehicle.gen.pilot.on                          Vehicle generator pilot signal present
+vehicle.gen.start                             Vehicle generator power delivery started
 vehicle.gen.state                   <state>   Vehicle generator state has changed
+vehicle.gen.stop                              Vehicle generator power delivery stopped
+vehicle.gen.timermode.on                      Vehicle generator timer has been enabled
+vehicle.gen.timermode.off                     Vehicle generator timer has been disabled
 vehicle.gen.type                    <type>    Vehicle generator connection type has changed
 vehicle.headlights.off                        Vehicle headlights are off
 vehicle.headlights.on                         Vehicle headlights are on
