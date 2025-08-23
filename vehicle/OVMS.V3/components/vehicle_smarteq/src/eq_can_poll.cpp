@@ -546,5 +546,7 @@ void OvmsVehicleSmartEQ::PollReply_obd_mt_level(const char* data, uint16_t reply
     txt = "Service B";
   }
   mt_obd_mt_level->SetValue(txt.c_str());
+  StdMetrics.ms_v_env_service_level->SetValue(txt.c_str());
+  // TODO: remove when PR accepted and Android App is updated to use new metric
   StdMetrics.ms_v_gen_substate->SetValue(txt.c_str());
 }

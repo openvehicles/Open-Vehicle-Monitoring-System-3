@@ -1031,7 +1031,8 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_bat_range_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_kwh_grid->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_kwh_grid_total->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_charge_timestamp->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_charge_timestamp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_timestamp_start->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1130,6 +1131,8 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << StandardMetrics.ms_v_bat_capacity->AsFloat()
     << ","
     << StandardMetrics.ms_v_charge_timestamp->AsString("-1", Seconds, 0)
+    << ","
+    << StandardMetrics.ms_v_charge_timestamp_start->AsString("-1", Seconds, 0)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1441,8 +1444,11 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_service_level->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_net_mdm_mode->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_m_net_mdm_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_gear->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_climate_timer_data->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1471,6 +1477,12 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << mp_encode(StandardMetrics.ms_m_hardware->AsString(""))
     << ","
     << mp_encode(StandardMetrics.ms_m_net_mdm_mode->AsString(""))
+    << ","
+    << StandardMetrics.ms_v_env_service_level->AsString("")
+    << ","
+    << StandardMetrics.ms_v_env_gear->AsInt(0)
+    << ","
+    << StandardMetrics.ms_v_env_climate_timer_data->AsString("")
     ;
 
   Transmit(buffer.str().c_str());

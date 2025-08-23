@@ -156,6 +156,7 @@
 #define MS_V_CHARGE_DURATION_SOC    "v.c.duration.soc"
 #define MS_V_CHARGE_TEMP            "v.c.temp"
 #define MS_V_CHARGE_TIMESTAMP       "v.c.timestamp"
+#define MS_V_CHARGE_TIMESTAMP_START "v.c.timestamp.start"
 
 #define MS_V_CHARGE_12V_CURRENT     "v.c.12v.current"
 #define MS_V_CHARGE_12V_POWER       "v.c.12v.power"
@@ -231,6 +232,8 @@
 #define MS_V_ENV_CABINVENT          "v.e.cabinvent"
 #define MS_V_ENV_SERV_RANGE         "v.e.serv.range"
 #define MS_V_ENV_SERV_TIME          "v.e.serv.time"
+#define MS_V_ENV_SERV_LEVEL         "v.e.serv.level"
+#define MS_V_ENV_CLIMATE_TIMER_DATA "v.e.climate.timerdata"
 
 #define MS_V_POS_GPSLOCK            "v.p.gpslock"
 #define MS_V_POS_GPSSTALE           "v.p.gpsstale"
@@ -412,6 +415,7 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_charge_duration_soc;           // … for sufficient SOC [min]
     OvmsMetricFloat*  ms_v_charge_temp;                   // Charger temperature [°C]
     OvmsMetricInt64*  ms_v_charge_timestamp;              // Date & time of last charge end [DateLocal]
+    OvmsMetricInt64*  ms_v_charge_timestamp_start;        // Date & time of charge started [DateLocal]
 
     OvmsMetricFloat*  ms_v_charge_12v_current;            // Output current of DC/DC-converter [A]
     OvmsMetricFloat*  ms_v_charge_12v_power;              // Output power of DC/DC-converter [W]
@@ -502,6 +506,8 @@ class MetricsStandard
     OvmsMetricString* ms_v_env_cabinvent;                 // Cabin vent type (comma-separated list of feet, face, screen, etc)
     OvmsMetricInt*    ms_v_env_service_range;             // Distance to next scheduled maintenance/service [km]
     OvmsMetricInt64*  ms_v_env_service_time;              // Time of scheduled maintenance/service [DateLocal]
+    OvmsMetricString* ms_v_env_service_level;             // Level of scheduled maintenance/service (bitfield, vehicle-specific)
+    OvmsMetricString* ms_v_env_climate_timer_data;        // Climate timer data (json array of timers) (for SQ time based Climate control)
 
     //
     // Position / location metrics

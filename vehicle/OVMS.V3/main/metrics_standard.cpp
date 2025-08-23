@@ -164,6 +164,7 @@ MetricsStandard::MetricsStandard()
   ms_v_charge_duration_soc = new OvmsMetricInt(MS_V_CHARGE_DURATION_SOC, SM_STALE_MID, Minutes);
   ms_v_charge_temp = new OvmsMetricFloat(MS_V_CHARGE_TEMP, SM_STALE_MID, Celcius, true);
   ms_v_charge_timestamp = new OvmsMetricInt64(MS_V_CHARGE_TIMESTAMP, SM_STALE_HIGH, DateLocal);
+  ms_v_charge_timestamp_start = new OvmsMetricInt64(MS_V_CHARGE_TIMESTAMP_START, SM_STALE_HIGH, DateLocal);
 
   ms_v_charge_12v_current = new OvmsMetricFloat(MS_V_CHARGE_12V_CURRENT, SM_STALE_MID, Amps);
   ms_v_charge_12v_power = new OvmsMetricFloat(MS_V_CHARGE_12V_POWER, SM_STALE_MID, Watts);
@@ -256,6 +257,9 @@ MetricsStandard::MetricsStandard()
 
   ms_v_env_service_range = new OvmsMetricInt(MS_V_ENV_SERV_RANGE, SM_STALE_MID, Kilometers);
   ms_v_env_service_time = new OvmsMetricInt64(MS_V_ENV_SERV_TIME, SM_STALE_MID, DateLocal);
+  ms_v_env_service_level = new OvmsMetricString(MS_V_ENV_SERV_LEVEL, SM_STALE_MID);
+  
+  ms_v_env_climate_timer_data = new OvmsMetricString(MS_V_ENV_CLIMATE_TIMER_DATA, SM_STALE_MID);
 
   //
   // Position / movement metrics
