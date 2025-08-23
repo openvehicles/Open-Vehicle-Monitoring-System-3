@@ -1770,6 +1770,7 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     else
       {
+      StandardMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
       MyEvents.SignalEvent("vehicle.charge.stop",NULL);
       NotifiedVehicleChargeStop();
       }
@@ -1823,6 +1824,7 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     else
       {
+      StandardMetrics.ms_v_gen_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
       MyEvents.SignalEvent("vehicle.gen.stop",NULL);
       NotifiedVehicleGenStop();
       }
