@@ -1482,7 +1482,7 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << ","
     << StandardMetrics.ms_v_env_gear->AsInt(0)
     << ","
-    << StandardMetrics.ms_v_env_climate_timer_data->AsString("")
+    << mp_encode(StandardMetrics.ms_v_env_climate_timer_data->AsString(""))
     ;
 
   Transmit(buffer.str().c_str());
