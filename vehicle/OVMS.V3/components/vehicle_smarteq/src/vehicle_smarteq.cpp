@@ -243,7 +243,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   ConfigChanged(NULL);
   
-  //StdMetrics.ms_v_gen_current->SetValue(2);                // activate gen metrics to app transfer
+  StdMetrics.ms_v_gen_current->SetValue(2);                // activate gen metrics to app transfer
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);  // set 12V alert to false
 
   m_network_type_ls = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
@@ -491,15 +491,19 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       switch(CAN_BYTE(6)) {
         case 0x00: // Parking
           StdMetrics.ms_v_env_gear->SetValue(0);
+          StdMetrics.ms_v_gen_limit_soc->SetValue(1);
           break;
         case 0x10: // Rear
           StdMetrics.ms_v_env_gear->SetValue(-1);
+          StdMetrics.ms_v_gen_limit_soc->SetValue(2);
           break;
         case 0x20: // Neutral
           StdMetrics.ms_v_env_gear->SetValue(1);
+          StdMetrics.ms_v_gen_limit_soc->SetValue(3);
           break;
         case 0x70: // Drive
           StdMetrics.ms_v_env_gear->SetValue(2);
+          StdMetrics.ms_v_gen_limit_soc->SetValue(4);
           break;
       }
       break;
@@ -582,8 +586,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           StdMetrics.ms_v_charge_type->SetValue("type2");
           StdMetrics.ms_v_charge_state->SetValue("charging");
           StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-          // TODO: remove when PR accepted and Android App is updated to use new metric
-          StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt()); // moved to vehicle.cpp as ms_v_charge_timestamp_start
+          StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
         } else { // EVENT stopped charging
           StdMetrics.ms_v_charge_pilot->SetValue(false);
           StdMetrics.ms_v_charge_inprogress->SetValue(isCharging);
@@ -593,8 +596,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           StdMetrics.ms_v_charge_duration_soc->SetValue(0);
           StdMetrics.ms_v_charge_duration_range->SetValue(0);
           StdMetrics.ms_v_charge_power->SetValue(0);
-          // TODO: remove when PR accepted and Android App is updated to use new metric
-          //StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt()); // moved to vehicle.cpp
+          StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
           if (StdMetrics.ms_v_bat_soc->AsInt() < 95) {
             // Assume the charge was interrupted
             ESP_LOGI(TAG,"Car charge session was interrupted");
@@ -810,10 +812,8 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     // booster;no;no;0515;1;6;0
     char buf[50];
     sprintf(buf, "booster,%s,%s,%s,%d,%d,%d", _climate_on.c_str(), _climate_weekly.c_str(), mt_climate_time->AsString().c_str(), mt_climate_ds->AsInt(), mt_climate_de->AsInt(), mt_climate_1to3->AsInt());
-    StdMetrics.ms_v_env_climate_timer_data->SetValue(std::string(buf));
-    // TODO: remove when PR accepted and Android App is updated to use new metric
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
-    //StdMetrics.ms_v_gen_current->SetValue(3);
+    StdMetrics.ms_v_gen_current->SetValue(3);
     NotifyClimateTimer();
   }
 }
