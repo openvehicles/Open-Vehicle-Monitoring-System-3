@@ -233,7 +233,7 @@
 #define MS_V_ENV_SERV_RANGE         "v.e.serv.range"
 #define MS_V_ENV_SERV_TIME          "v.e.serv.time"
 #define MS_V_ENV_SERV_LEVEL         "v.e.serv.level"
-#define MS_V_ENV_CLIMATE_TIMER_DATA "v.e.climate.timer.data"
+#define MS_V_ENV_CLIMATE_TIMER_DATA "v.e.climate.timerdata"
 
 #define MS_V_POS_GPSLOCK            "v.p.gpslock"
 #define MS_V_POS_GPSSTALE           "v.p.gpsstale"
