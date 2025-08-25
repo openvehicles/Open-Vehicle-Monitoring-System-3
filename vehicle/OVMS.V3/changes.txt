@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- smart EQ:
+  The Wi-Fi mode "APClient" will be changed to "Client" after 45 minutes, and the Wi-Fi will be restarted. "APClient" will be restored upon reboot.
+  switch off time based Climate/Heater when crash counter > 1 for stop spamming Climate information
+  new config:
+    [xsq] ap2client           -- Wifi Mode APClient to client timeout in minutes (default 45 minutes)
+    [xsq] wifi.mode           -- keep existing behaviour if desired ([auto] wifi.mode)
 - Vehicle framework: signal generator operation state changes
   New events:
     vehicle.gen.start         -- Power delivery started
