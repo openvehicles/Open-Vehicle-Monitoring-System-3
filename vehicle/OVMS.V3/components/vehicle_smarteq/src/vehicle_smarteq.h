@@ -113,6 +113,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void WifiRestart();
     void ModemRestart();
     void ModemEventRestart(std::string event, void* data);
+    void SendClimateAppData();
+    //void SendServiceLevel();
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -309,6 +311,7 @@ public:
     OvmsMetricInt           *mt_climate_de;             //!< climate day end
     OvmsMetricInt           *mt_climate_1to3;           //!< climate one to three (homelink 0-2) times in following time
     OvmsMetricString        *mt_climate_data;           //!< climate data from app/website
+    OvmsMetricString        *mt_climate_appdata;        //!< climate data to app/website
     OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
 

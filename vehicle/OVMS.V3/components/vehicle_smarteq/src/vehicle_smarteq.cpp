@@ -48,10 +48,14 @@ static const char *TAG = "v-smarteq";
 #include "ovms_peripherals.h"
 #include "vehicle_smarteq.h"
 #include "ovms_time.h"
+#include "buffered_shell.h"
+#include "ovms_boot.h" 
 #ifdef CONFIG_OVMS_COMP_PLUGINS
   #include "ovms_plugins.h"
 #endif
-#include "buffered_shell.h"
+#ifdef CONFIG_OVMS_COMP_SERVER_V2
+#include "ovms_server_v2.h"
+#endif
 
 OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 {
@@ -187,6 +191,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_climate_de                 = MyMetrics.InitInt("xsq.climate.de", SM_STALE_MID, 6, Other);
   mt_climate_1to3               = MyMetrics.InitInt("xsq.climate.1to3", SM_STALE_MID, 0, Other);
   mt_climate_data               = MyMetrics.InitString("xsq.climate.data", SM_STALE_MID,"0,0,0,0,-1,-1,-1", Other);
+  mt_climate_appdata            = MyMetrics.InitString("xsq.climate.appdata", SM_STALE_MID,"no;no;0515;1;6;0", Other);
 
   mt_pos_odometer_start         = MyMetrics.InitFloat("xsq.odometer.start", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_start_total   = MyMetrics.InitFloat("xsq.odometer.start.total", SM_STALE_MID, 0, Kilometers);
@@ -303,6 +308,14 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
     ResetTotalCounters();
     ResetTripCounters();
+  }
+
+  if (MyBoot.GetEarlyCrashCount() > 1 && MyConfig.GetParamValueBool("xsq", "climate.system",false)) {
+    MyConfig.SetParamValueBool("xsq", "climate.system", false);
+    char buf[100];
+    snprintf(buf, sizeof(buf), "Detected early crash count %d - disabled climate/heater start timer. So you don't get a climate message after every reboot. Find and fix the crash cause.", MyBoot.GetEarlyCrashCount());
+    MyNotify.NotifyString("alert", "xsq.climate", buf);
+    ESP_LOGW(TAG, "%s", buf);
   }
 
   if (MyConfig.GetParamValueBool("xsq", "restart.wakeup",false)) {
@@ -424,7 +437,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
-  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", true);
+  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", false);
   m_gps_onoff         = MyConfig.GetParamValueBool("xsq", "gps.onoff", true);
   m_gps_reactmin      = MyConfig.GetParamValueInt("xsq", "gps.reactmin", 50);
   m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
@@ -815,7 +828,25 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
     StdMetrics.ms_v_gen_current->SetValue(3);
     NotifyClimateTimer();
+    
+    // WIP: send climate data to app
+    if(MyConfig.GetParamValueBool("xsq", "climate.system.toapp",false)) {
+      mt_climate_appdata->SetValue(std::string(buf));
+      SendClimateAppData();
+    }
   }
+}
+
+// WIP: send climate data to app
+void OvmsVehicleSmartEQ::SendClimateAppData()
+{
+  std::ostringstream buf;
+  buf 
+  << "XSQ-APPDATA" << ","
+  << mt_climate_appdata->AsString()
+  ;
+
+  MyNotify.NotifyString("data", "xsq.climate.appdata", buf.str().c_str());
 }
 
 // check the 12V alert periodically and charge the 12V battery if needed
@@ -2516,7 +2547,6 @@ OvmsVehicleSmartEQ::vehicle_command_t OvmsVehicleSmartEQ::MsgCommandCA(std::stri
   }
   return Success;
 }
-  
 
 /**
  * writer for command line interface
