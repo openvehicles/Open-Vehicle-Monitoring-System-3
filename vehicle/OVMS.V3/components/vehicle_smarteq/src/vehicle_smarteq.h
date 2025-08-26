@@ -337,8 +337,9 @@ public:
     int m_v2_ticker;
     int m_modem_ticker;
     int m_park_timeout_secs;                //!< parking timeout in seconds
-    int m_ap2client;                        //!< Wifi Mode APClient to client timeout in minutes
-    bool m_ap2clienton;                     //!< Wifi Mode APClient
+    int m_ap2client_timeout;                //!< Wifi Mode APClient to client timeout in minutes
+    bool m_ap2client_on;                    //!< Wifi Mode APClient to client enable/disable
+    bool m_ap2client_off;                   //!< Wifi Mode APClient enabled and timeout reached
   
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll

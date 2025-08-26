@@ -150,20 +150,17 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
 
-  #ifdef CONFIG_OVMS_COMP_WIFI
-    if (MyConfig.GetParamValue("auto", "wifi.mode", "apclient") != MyConfig.GetParamValue("xsq", "wifi.mode", "apclient")) {
-      ESP_LOGI(TAG, "Set config wifi.mode to apclient");
-      MyConfig.SetParamValue("auto", "wifi.mode", "apclient"); // set default to apclient if not set
-      WifiRestart();
-    } 
+  m_ap2client_off = false;
 
-    if (MyConfig.GetParamValue("auto", "wifi.mode", "apclient") == "apclient") {
-      m_ap2clienton = true; 
-    } else {
-      m_ap2clienton = false;
+  #ifdef CONFIG_OVMS_COMP_WIFI
+    if(MyConfig.GetParamValueBool("xsq", "ap2client.on", true)) {
+      m_ap2client_off = true; // enable APClient to client switch
+      if (MyConfig.GetParamValue("auto", "wifi.mode", "apclient") != MyConfig.GetParamValue("xsq", "wifi.mode", "apclient")) {
+        ESP_LOGI(TAG, "Set config: auto wifi.mode apclient");
+        MyConfig.SetParamValue("auto", "wifi.mode", "apclient"); // set default to apclient if not set
+        WifiRestart();
+      }
     }
-  #else
-    m_ap2clienton = false;
   #endif
 
   for (int i = 0; i < 4; i++) {
@@ -461,7 +458,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_extendedStats     = MyConfig.GetParamValueBool("xsq", "extended.stats", false);         //!< activate extended stats e.g. trip and maintenance data
   m_park_timeout_secs = MyConfig.GetParamValueInt("xsq", "park.timeout", 600);              //!< timeout in seconds for parking mode
 
-  m_ap2client         = MyConfig.GetParamValueInt("xsq", "ap2client", 45);                  //!< Wifi Mode APClient to client timeout in minutes
+  m_ap2client_timeout  = MyConfig.GetParamValueInt("xsq", "ap2client.timeout", 45);           //!< Wifi Mode APClient to client timeout in minutes
+  m_ap2client_on       = MyConfig.GetParamValueInt("xsq", "ap2client.on", true);             //!< Wifi Mode APClient to client enable/disable
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (!m_enable_LED_state) {
@@ -999,7 +997,7 @@ void OvmsVehicleSmartEQ::DoorLockState() {
 }
 
 void OvmsVehicleSmartEQ::WifiAP2Client() {
-  m_ap2clienton = false;
+  m_ap2client_off = false;
   #ifdef CONFIG_OVMS_COMP_WIFI
     if (MyPeripherals && MyPeripherals->m_esp32wifi) {
       ESP_LOGI(TAG, "WiFi AP2Client initiated");
@@ -1165,7 +1163,7 @@ void OvmsVehicleSmartEQ::HandleCharging() {
       }
     }    
     // if limit_soc is set, then calculate remaining time to limit_soc
-    if (limit_soc > 0) {
+    if (limit_soc > 0.0f) {
       int minsremaining_soc = calcMinutesRemaining(limit_soc, charge_voltage, charge_current);
 
       StdMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
@@ -1178,7 +1176,7 @@ void OvmsVehicleSmartEQ::HandleCharging() {
       }
     }
     // If limit_range is set, then calculate remaining time to that range
-    if (limit_range > 0 && max_range > 0.0f) {
+    if (limit_range > 0.0f && max_range > 0.0f) {
       float range_soc           = limit_range / max_range * 100.0f;
       int   minsremaining_range = calcMinutesRemaining(range_soc, charge_voltage, charge_current);
 
@@ -1430,9 +1428,9 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
 
     #if defined(CONFIG_OVMS_COMP_WIFI)
       
-      if(m_ap2clienton) {
-         if(--m_ap2client == 0 && m_ap2clienton) {
-            m_ap2clienton = false;
+      if(m_ap2client_off && m_ap2client_on) {
+         if(--m_ap2client_timeout <= 0 && m_ap2client_on) {
+            m_ap2client_off = false;
             ESP_LOGI(TAG, "WiFi AP2Client timeout reached - reverting to client mode");
             MyNotify.NotifyString("info", "xsq.wifi.ap2client", "WiFi AP2Client timeout reached - reverting to client mode");
             WifiAP2Client();

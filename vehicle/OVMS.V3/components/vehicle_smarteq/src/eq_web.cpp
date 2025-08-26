@@ -80,8 +80,8 @@ void OvmsVehicleSmartEQ::WebDeInit()
  */
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
-  std::string error, info, full_km, rebootnw, net_type;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify;
+  std::string error, info, full_km, rebootnw, net_type, ap2client_timeout;
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify, ap2client_on;
 
   if (c.method == "POST") {
     // process form submission:
@@ -103,6 +103,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     extstats = (c.getvar("extstats") == "yes");
     wakeup   = (c.getvar("wakeup") == "yes");
     tripnotify = (c.getvar("resetnotify") == "yes");
+    ap2client_timeout = (c.getvar("ap2client_timeout"));
+    ap2client_on = (c.getvar("ap2client_on") == "yes");
     
     if (error.empty()) {
       // success:
@@ -124,6 +126,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "extended.stats", extstats);
       MyConfig.SetParamValueBool("xsq", "restart.wakeup", wakeup);
       MyConfig.SetParamValueBool("xsq", "reset.notify", tripnotify);
+      MyConfig.SetParamValue("xsq", "ap2client.timeout", ap2client_timeout);
+      MyConfig.SetParamValueBool("xsq", "ap2client.on", ap2client_on);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -157,6 +161,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     extstats    = MyConfig.GetParamValueBool("xsq", "extended.stats", false);
     wakeup      = MyConfig.GetParamValueBool("xsq", "restart.wakeup", false);
     tripnotify  = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
+    ap2client_timeout   = MyConfig.GetParamValue("xsq", "ap2client.timeout", "45");
+    ap2client_on = MyConfig.GetParamValueBool("xsq", "ap2client.on", true);
 
     c.head(200);
   }
@@ -205,7 +211,12 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable Wakeup on Restart", "wakeup", wakeup,
     "<p>Enable = Wakeup the Car on Restart of the OVMS</p>");
   c.input_checkbox("Enable extended statistics", "extstats", extstats,
-      "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");
+      "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");      
+  c.input_checkbox("Enable Wifi APClient to client timeout", "ap2client_on", ap2client_on,
+    "<p>Enable = The OVMS will switch from Wifi APClient to Wifi Client mode after the timeout reached.</p>"); 
+  c.input_slider("Wifi APClient to client timeout", "ap2client_timeout", 3, "min",
+    atof(ap2client_timeout.c_str()) > 0, atof(ap2client_timeout.c_str()), 45, 5, 90, 5,
+    "<p>Set the time in minutes when the OVMS should switch from Wifi APClient to Wifi Client mode. Default 45 minutes.</p>"); 
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",
     atof(rebootnw.c_str()) > 0, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>Default 0 = off. Restart Network automatic when no v2Server connection.</p>");
