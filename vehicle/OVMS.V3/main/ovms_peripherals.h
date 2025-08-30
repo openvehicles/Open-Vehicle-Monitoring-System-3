@@ -79,11 +79,16 @@
 #include "ext12v.h"
 #endif // #ifdef CONFIG_OVMS_COMP_EXT12V
 
+
 #define MODULE_GPIO_SW2           0       // SW2: firmware download / factory reset
+
+// ------------------------------- Default GPIO mapping ------------------------------------------
+#ifdef CONFIG_OVMS_HW_DEFAULT_GPIO_MAP
 
 #define VSPI_PIN_MISO             19
 #define VSPI_PIN_MOSI             23
 #define VSPI_PIN_CLK              18
+
 #define VSPI_PIN_MCP2515_1_CS     5
 #define VSPI_PIN_MAX7317_CS       21
 #define VSPI_PIN_MCP2515_2_CS     27
@@ -134,6 +139,13 @@
 
 #define MODEM_EGPIO_PWR           0
 #define MODEM_EGPIO_DTR           3
+
+#endif // CONFIG_HW_DEFAULT_GPIO_MAP
+
+// ------------------------------ Alternative GPIO mapping ------------------------------------------
+#ifdef CONFIG_OVMS_HW_REMAP_GPIO
+#include CONFIG_OVMS_GPIO_MAP_FILE
+#endif  // CONFIG_OVMS_HW_REMAP_GPIO
 
 class Peripherals : public InternalRamAllocated
   {
