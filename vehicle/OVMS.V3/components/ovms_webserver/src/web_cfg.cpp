@@ -2218,7 +2218,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable Wifi APClient to client notify", "cfg_ap2client_notify", cfg_ap2client_notify,
     "<p>Enable = Notify when Wifi APClient to Wifi Client mode switched.</p>");
   c.input_slider("Wifi APClient to client timeout", "cfg_ap2client_timeout", 3, "min",-1, cfg_ap2client_timeout, 30, 1, 120, 1,
-    "<p>Set the time in minutes when the OVMS should switch from Wifi APClient to Wifi Client mode. Default 45 minutes.</p>"); 
+    "<p>Set the time in minutes when the OVMS should switch from Wifi APClient to Wifi Client mode. Default 30 minutes.</p>"); 
   c.fieldset_end();
 
   c.fieldset_start("Wifi client networks");
