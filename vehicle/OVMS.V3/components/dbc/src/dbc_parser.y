@@ -106,10 +106,10 @@ std::list<dbcSwitchRange_t> current_range;
 %token T_PAR_OPEN
 %token T_PAR_CLOSE
 %token T_COMMA
-%token T_ID
-%token T_STRING_VAL
-%token T_INT_VAL
-%token T_DOUBLE_VAL
+%token <string> T_ID
+%token <string> T_STRING_VAL
+%token <number> T_INT_VAL
+%token <double_val> T_DOUBLE_VAL
 
 %token T_VERSION
 
@@ -156,9 +156,9 @@ std::list<dbcSwitchRange_t> current_range;
 %token T_SG_MUL_VAL
 %token T_DUMMY_NODE_VECTOR
 
-%type <string>                    T_ID T_STRING_VAL version_section signal_mux
-%type <number>                    T_INT_VAL signal_endian signal_sign signal_start signal_length
-%type <double_val>                T_DOUBLE_VAL double_val signal_scale signal_offset signal_min signal_max
+%type <string>                    version_section signal_mux
+%type <number>                    signal_endian signal_sign signal_start signal_length
+%type <double_val>                double_val signal_scale signal_offset signal_min signal_max
 %%
 
 dbc:
