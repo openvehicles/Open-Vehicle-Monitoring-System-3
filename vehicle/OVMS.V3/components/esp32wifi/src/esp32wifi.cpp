@@ -1239,6 +1239,7 @@ void esp32wifi::EventWifiApUpdate(std::string event, void* data)
 #endif
     ESP_LOGI(TAG, "AP station disconnected: id: %d, MAC: " MACSTR,
       sta_disconn.aid, MAC2STR(sta_disconn.mac));
+      m_ap2client_timeout = MyConfig.GetParamValueInt("network", "ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
     }
   }
 
