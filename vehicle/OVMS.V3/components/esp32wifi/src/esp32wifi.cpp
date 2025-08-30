@@ -793,7 +793,7 @@ void esp32wifi::AP2ClientCheck()
       if (--m_ap2client_timeout <= 0) {
         m_ap2client_active = false;   // disable further timeout checks
         ESP_LOGI(TAG, "WiFi APCLIENT timeout reached - reverting to client mode");
-        MyNotify.NotifyString("info", "network.apclient", "WiFi APCLIENT timeout reached - reverting to client mode");
+        if (MyConfig.GetParamValueBool("network", "ap2client.notify", false)) MyNotify.NotifyString("info", "network.apclient", "WiFi APCLIENT timeout reached - reverting to client mode");
         AP2ClientSwitch();
       }            
     }

@@ -2122,9 +2122,9 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
 
 void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
-  bool cfg_bad_reconnect;
-  bool cfg_reboot_no_ip;
+  bool cfg_bad_reconnect, cfg_reboot_no_ip, cfg_ap2client_enabled, cfg_ap2client_notify;
   float cfg_sq_good, cfg_sq_bad;
+  int cfg_ap2client_timeout;
 
   if (c.method == "POST") {
     std::string warn, error;
@@ -2133,10 +2133,13 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     UpdateWifiTable(p, c, "ap", "wifi.ap", warn, error, 8);
     UpdateWifiTable(p, c, "client", "wifi.ssid", warn, error, 0);
 
-    cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
-    cfg_sq_bad = atof(c.getvar("cfg_sq_bad").c_str());
-    cfg_bad_reconnect = (c.getvar("cfg_bad_reconnect") == "yes");
-    cfg_reboot_no_ip = (c.getvar("cfg_reboot_no_ip") == "yes");
+    cfg_sq_good           = atof(c.getvar("cfg_sq_good").c_str());
+    cfg_sq_bad            = atof(c.getvar("cfg_sq_bad").c_str());
+    cfg_bad_reconnect     = (c.getvar("cfg_bad_reconnect") == "yes");
+    cfg_reboot_no_ip      = (c.getvar("cfg_reboot_no_ip") == "yes");
+    cfg_ap2client_timeout = atof((c.getvar("cfg_ap2client_timeout")).c_str());
+    cfg_ap2client_enabled = (c.getvar("cfg_ap2client_enabled") == "yes");
+    cfg_ap2client_notify  = (c.getvar("cfg_ap2client_notify") == "yes");
 
     if (cfg_sq_bad >= cfg_sq_good) {
       error += "<li data-input=\"cfg_sq_bad\">'Bad' signal level must be lower than 'good' level.</li>";
@@ -2157,6 +2160,18 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
         MyConfig.DeleteInstance("network", "reboot.no.ip");
       else
         MyConfig.SetParamValueBool("network", "reboot.no.ip", cfg_reboot_no_ip);
+      if (cfg_ap2client_timeout == 30)  // default is 30 minutes
+        MyConfig.DeleteInstance("network", "ap2client.timeout");
+      else
+        MyConfig.SetParamValueInt("network", "ap2client.timeout", cfg_ap2client_timeout);
+      if (cfg_ap2client_enabled)  // default is enabled
+        MyConfig.DeleteInstance("network", "ap2client.enable");
+      else
+        MyConfig.SetParamValueBool("network", "ap2client.enable", cfg_ap2client_enabled);
+      if (!cfg_ap2client_notify) // default is disabled
+        MyConfig.DeleteInstance("network", "ap2client.notify");
+      else
+        MyConfig.SetParamValueBool("network", "ap2client.notify", cfg_ap2client_notify);
     }
 
     if (error == "") {
@@ -2177,10 +2192,13 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     c.alert("danger", error.c_str());
   }
   else {
-    cfg_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
-    cfg_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
-    cfg_bad_reconnect = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
-    cfg_reboot_no_ip = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
+    cfg_sq_good             = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
+    cfg_sq_bad              = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
+    cfg_bad_reconnect       = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
+    cfg_reboot_no_ip        = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
+    cfg_ap2client_timeout   = MyConfig.GetParamValueInt("network", "ap2client.timeout", 30);
+    cfg_ap2client_enabled   = MyConfig.GetParamValueBool("network", "ap2client.enable", true);
+    cfg_ap2client_notify    = MyConfig.GetParamValueBool("network", "ap2client.notify", false);
     c.head(200);
   }
 
@@ -2192,6 +2210,15 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Access point networks");
   OutputWifiTable(p, c, "ap", "wifi.ap", MyConfig.GetParamValue("auto", "wifi.ssid.ap", "OVMS"));
+  c.fieldset_end();
+
+  c.fieldset_start("Wifi APclient options");
+  c.input_checkbox("Enable Wifi APClient to client timeout", "cfg_ap2client_enabled", cfg_ap2client_enabled,
+    "<p>Enable = The OVMS will switch from Wifi APClient to Wifi Client mode after the timeout reached and a client is not connected.</p>"); 
+  c.input_checkbox("Enable Wifi APClient to client notify", "cfg_ap2client_notify", cfg_ap2client_notify,
+    "<p>Enable = Notify when Wifi APClient to Wifi Client mode switched.</p>");
+  c.input_slider("Wifi APClient to client timeout", "cfg_ap2client_timeout", 3, "min",-1, cfg_ap2client_timeout, 30, 1, 120, 1,
+    "<p>Set the time in minutes when the OVMS should switch from Wifi APClient to Wifi Client mode. Default 45 minutes.</p>"); 
   c.fieldset_end();
 
   c.fieldset_start("Wifi client networks");
