@@ -69,6 +69,8 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void SetPowerMode(PowerMode powermode);
     void PowerUp();
     void PowerDown();
+    void AP2ClientCheck();
+    void AP2ClientSwitch();
 
   public:
     void StartClientMode(std::string ssid, std::string password, uint8_t* bssid=NULL);
@@ -133,10 +135,13 @@ class esp32wifi : public pcp, public InternalRamAllocated
     bool m_sta_connected;
     uint32_t m_sta_reconnect;
     wifi_ap_record_t m_sta_ap_info;
-    int m_sta_rssi;                               // smoothed RSSI [dBm/10]
+    int m_sta_rssi;                              // smoothed RSSI [dBm/10]
     float m_good_dbm;
     float m_bad_dbm;
     bool m_good_signal;
+    int m_ap2client_timeout;                     //!< Wifi Mode APClient to client timeout in minutes
+    bool m_ap2client_enabled;                    //!< Wifi Mode APClient to client enable/disable
+    bool m_ap2client_active;                     //!< Wifi Mode APClient enabled and timeout not reached
   };
 
 #endif //#ifndef __ESP32WIFI_H__

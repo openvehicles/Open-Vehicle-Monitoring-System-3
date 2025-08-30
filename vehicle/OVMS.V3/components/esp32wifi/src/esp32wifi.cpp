@@ -42,6 +42,7 @@ static const char *TAG = "esp32wifi";
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
 #include "metrics_standard.h"
+#include "ovms_notify.h"
 #if ESP_IDF_VERSION_MAJOR >= 4
 #include <esp_wifi_types.h>
 #endif
@@ -376,6 +377,7 @@ esp32wifi::esp32wifi(const char* name)
   m_sta_connected = false;
   m_sta_rssi = -1270;
   m_good_signal = false;
+  m_ap2client_active = false;
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   memset(&m_mac_ap,0,sizeof(m_mac_ap));
@@ -673,6 +675,10 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   m_ap_password = appassword;
   m_sta_ssid = stassid;
   m_sta_password = stapassword;
+  m_ap2client_enabled = MyConfig.GetParamValueBool("network", "ap2client.enable", true);           //!< Wifi Mode APClient to client enable/disable
+  m_ap2client_timeout = MyConfig.GetParamValueInt("network", "ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
+  m_ap2client_active = true;  // APClient mode active
+
   if (stabssid)
     {
     m_sta_bssid_set = true;
@@ -779,6 +785,30 @@ void esp32wifi::StopStation()
   memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
 
   UpdateNetMetrics();
+  }
+
+void esp32wifi::AP2ClientCheck()
+  {
+    if (m_ap2client_active) {
+      if (--m_ap2client_timeout <= 0) {
+        m_ap2client_active = false;   // disable further timeout checks
+        ESP_LOGI(TAG, "WiFi APCLIENT timeout reached - reverting to client mode");
+        MyNotify.NotifyString("info", "network.apclient", "WiFi APCLIENT timeout reached - reverting to client mode");
+        AP2ClientSwitch();
+      }            
+    }
+  }
+
+void esp32wifi::AP2ClientSwitch() {
+    if (m_mode == ESP32WIFI_MODE_APCLIENT) {
+      ESP_LOGI(TAG, "WiFi AP2Client switch initiated");
+      std::string wifi_ssid_client = MyConfig.GetParamValue("auto", "wifi.ssid.client", "");
+      std::string wifi_pass_client = MyConfig.GetParamValue("wifi.ssid", wifi_ssid_client);
+      vTaskDelay(pdMS_TO_TICKS(500)); // wifi task cleanup time
+      StartClientMode(wifi_ssid_client, wifi_pass_client);
+    } else {
+      ESP_LOGE(TAG, "WiFi AP2Client switch failed. Not in APCLIENT mode");
+    }
   }
 
 wifi_active_scan_time_t esp32wifi::GetScanTime()
@@ -1216,6 +1246,21 @@ void esp32wifi::EventTimer1(std::string event, void* data)
   {
   UpdateNetMetrics();
 
+  // If in AP+Client mode, check number of connected AP stations and trigger AP->Client timeout if none
+  if (m_mode == ESP32WIFI_MODE_APCLIENT && m_ap2client_enabled && m_ap2client_active)
+    {
+    wifi_sta_list_t sta_list;
+    if (esp_wifi_ap_get_sta_list(&sta_list) == ESP_OK)
+      {
+      if (sta_list.num == 0) AP2ClientCheck();
+      }
+    else
+      {
+      // If query failed, still run timeout check
+      AP2ClientCheck();
+      }
+    }
+
   // reconnect?
   if ((m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
       && !m_sta_connected && m_sta_reconnect && monotonictime >= m_sta_reconnect)
@@ -1418,6 +1463,8 @@ void esp32wifi::ConfigChanged(std::string event, void* data)
     // Network config has been changed, apply:
     m_good_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     m_bad_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
+    m_ap2client_timeout  = MyConfig.GetParamValueInt("network", "ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
+    m_ap2client_enabled  = MyConfig.GetParamValueInt("network", "ap2client.enable", true);            //!< Wifi Mode APClient to client enable/disable
     }
   }
 

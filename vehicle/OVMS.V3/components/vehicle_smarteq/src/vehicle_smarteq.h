@@ -93,7 +93,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void Check12vState();
     void GPSOnOff();
     void TimeBasedClimateData();
-    void TimeBasedClimateDataApp();
     void CheckV2State();
     void DisablePlugin(const char* plugin);
     void ModemNetworkType();
@@ -113,6 +112,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void WifiRestart();
     void ModemRestart();
     void ModemEventRestart(std::string event, void* data);
+    void SendClimateAppData();
+    //void SendServiceLevel();
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -309,6 +310,7 @@ public:
     OvmsMetricInt           *mt_climate_de;             //!< climate day end
     OvmsMetricInt           *mt_climate_1to3;           //!< climate one to three (homelink 0-2) times in following time
     OvmsMetricString        *mt_climate_data;           //!< climate data from app/website
+    OvmsMetricString        *mt_climate_appdata;        //!< climate data to app/website
     OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
 
@@ -333,7 +335,7 @@ public:
     int m_v2_ticker;
     int m_modem_ticker;
     int m_park_timeout_secs;                //!< parking timeout in seconds
-  
+      
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll
     int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.
