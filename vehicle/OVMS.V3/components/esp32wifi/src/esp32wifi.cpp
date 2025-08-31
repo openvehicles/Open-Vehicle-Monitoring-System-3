@@ -676,7 +676,7 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   m_sta_ssid = stassid;
   m_sta_password = stapassword;
   m_ap2client_enabled = MyConfig.GetParamValueBool("network", "wifi.ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable
-  m_ap2client_timeout = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
+  m_ap2client_timeout = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 30) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
   m_ap2client_active = true;  // APClient mode active
 
   if (stabssid)
@@ -1246,7 +1246,7 @@ void esp32wifi::EventWifiApUpdate(std::string event, void* data)
 #endif
     ESP_LOGI(TAG, "AP station disconnected: id: %d, MAC: " MACSTR,
       sta_disconn.aid, MAC2STR(sta_disconn.mac));
-      m_ap2client_timeout = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
+      m_ap2client_timeout = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 30) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
     }
   }
 
@@ -1471,8 +1471,9 @@ void esp32wifi::ConfigChanged(std::string event, void* data)
     // Network config has been changed, apply:
     m_good_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     m_bad_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
-    m_ap2client_timeout  = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
-    m_ap2client_enabled  = MyConfig.GetParamValueInt("network", "wifi.ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable
+    m_ap2client_timeout  = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 30) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
+    m_ap2client_enabled  = MyConfig.GetParamValueInt("network", "wifi.ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable    
+    m_ap2client_active = m_ap2client_enabled;                                                              // Mirror enabled to active
     }
   }
 
