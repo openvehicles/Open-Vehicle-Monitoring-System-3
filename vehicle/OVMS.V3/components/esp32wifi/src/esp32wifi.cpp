@@ -1472,10 +1472,9 @@ void esp32wifi::ConfigChanged(std::string event, void* data)
     m_good_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     m_bad_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
     m_ap2client_timeout  = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 30) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
-    m_ap2client_enabled  = MyConfig.GetParamValueInt("network", "wifi.ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable
+    m_ap2client_enabled  = MyConfig.GetParamValueInt("network", "wifi.ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable    
+    m_ap2client_active = m_ap2client_enabled;                                                              // Mirror enabled to active
     }
-    // Mirror enabled to active
-    m_ap2client_active = m_ap2client_enabled;
   }
 
 void esp32wifi::StartDhcpClient()
