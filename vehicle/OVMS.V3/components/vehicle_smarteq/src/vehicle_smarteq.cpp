@@ -3032,4 +3032,3 @@ OvmsVehicleSmartEQInit::OvmsVehicleSmartEQInit() {
   ESP_LOGI(TAG, "Registering Vehicle: SMART EQ (9000)");
   MyVehicleFactory.RegisterVehicle<OvmsVehicleSmartEQ>("SQ", "smart 453 4.Gen");
 }
-
