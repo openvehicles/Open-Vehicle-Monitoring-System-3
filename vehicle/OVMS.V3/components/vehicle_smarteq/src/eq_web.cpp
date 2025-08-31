@@ -180,7 +180,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = send a notification with Trip values when Trip values are reseted</p>");
   c.input_checkbox("Enable OBD kWh/100km value", "bcvalue", bcvalue,
     "<p>Enable = show OBD kWh/100km value</p>");
-  c.input_slider("WLTP km", "full_km", 3, "km",-1, atof(full_km.c_str()), 126, 100, 180, 1,
+  c.input_slider("WLTP km", "full_km", 3, "km",
+    atof(full_km.c_str()) > 0, atof(full_km.c_str()), 126, 100, 180, 1,
   "<p>set default max Range (126km WLTP, 155km NFEZ) at full charged HV for calculate ideal Range</p>");
   c.fieldset_end();
 
@@ -204,8 +205,9 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable Wakeup on Restart", "wakeup", wakeup,
     "<p>Enable = Wakeup the Car on Restart of the OVMS</p>");
   c.input_checkbox("Enable extended statistics", "extstats", extstats,
-      "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");      
-  c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 15, 0, 60, 1,
+      "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");
+  c.input_slider("Restart Network Time", "rebootnw", 3, "min",
+    atof(rebootnw.c_str()) > 0, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>Default 0 = off. Restart Network automatic when no v2Server connection.</p>");
   c.input_select_start("Modem Network type", "net_type");
   c.input_select_option("Auto", "auto", net_type == "auto");
@@ -309,7 +311,8 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
   c.fieldset_start("Climate/Heater start timer");
   c.input_checkbox("Enable Climate/Heater at time", "climate_on", climate_on,
     "<p>Enable = start Climate/Heater at time</p>");
-  c.input_slider("Enable two time activation Climate/Heater", "climate_1to3", 3, "min",-1, atof(climate_1to3.c_str()), 5, 5, 15, 5,
+  c.input_slider("Enable two time activation Climate/Heater", "climate_1to3", 3, "min",
+    atof(climate_1to3.c_str()) > -1, atof(climate_1to3.c_str()), 5, 5, 15, 5,
     "<p>Enable = this option start Climate/Heater for 5-15 minutes</p>");
   c.input_text("time", "climate_time", climate_time.c_str(), "515","<p>Time: 5:15 = 515 or 15:30 = 1530</p>");
 
@@ -422,13 +425,17 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
     "<p>Set External Temperatures to TPMS Temperatures to Display Tire Pressures in iOS App Open Vehicle</p>");
   c.input_checkbox("Enable TPMS Alert", "enable", enable,
     "<p>enable TPMS Tire Pressures low/high alert</p>");
-  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",-1, atof(front_pressure.c_str()), 220, 170, 350, 5,
+  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",
+    atof(front_pressure.c_str()) > 0, atof(front_pressure.c_str()), 220, 170, 350, 5,
     "<p>set Front Tire Pressure value</p>");
-  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",-1, atof(rear_pressure.c_str()), 250, 170, 350, 5,
+  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",
+    atof(rear_pressure.c_str()) > 0, atof(rear_pressure.c_str()), 250, 170, 350, 5,
     "<p>set Rear Tire Pressure value</p>");
-  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",-1, atof(pressure_warning.c_str()), 25, 10, 60, 5,
+  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",
+    atof(pressure_warning.c_str()) > 0, atof(pressure_warning.c_str()), 25, 10, 60, 5,
     "<p>set under/over Pressure Warning value</p>");
-  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",-1, atof(pressure_alert.c_str()), 45, 30, 120, 5,
+  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",
+    atof(pressure_alert.c_str()) > 0, atof(pressure_alert.c_str()), 45, 30, 120, 5,
     "<p>set under/over Pressure Alert value</p>");
   c.input_select_start("Front Left Sensor", "TPMS_FL");
   c.input_select_option("Front_Left",  "0", TPMS_FL == "0");
@@ -531,19 +538,23 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Charge control");
 
-  c.input_slider("Sufficient range", "suffrange", 3, "km",-1, atof(suffrange.c_str()), 75, 0, 150, 1,
+  c.input_slider("Sufficient range", "suffrange", 3, "km",
+    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 75, 0, 150, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
-  c.input_slider("Sufficient SOC", "suffsoc", 3, "%",-1, atof(suffsoc.c_str()), 80, 0, 100, 1,
+  c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
+    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 80, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
   c.fieldset_end();
   
   c.fieldset_start("BMS Cell Monitoring");
-  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",-1, atof(cell_interval_drv.c_str()),
+  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",
+    atof(cell_interval_drv.c_str()) > 0, atof(cell_interval_drv.c_str()),
     60, 0, 300, 1,
     "<p>Default 60 seconds, 0=off.</p>");
-  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",-1, atof(cell_interval_chg.c_str()),
+  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",
+    atof(cell_interval_chg.c_str()) > 0, atof(cell_interval_chg.c_str()),
     60, 0, 300, 1,
     "<p>Default 60 seconds, 0=off.</p>");
   

@@ -4,9 +4,9 @@ Open Vehicle Monitor System v3 - Change log
 - esp32wifi:
   The OVMS will switch from Wifi APClient to Wifi Client mode after the timeout reached and a client is not connected. "APClient" will be restored upon reboot/network restart.
   new config, settings at Wifi:
-    [network] ap2client.timeout   -- Wifi Mode APClient to client timeout in minutes (default 30 minutes)
-    [network] ap2client.enable    -- Wifi Mode APClient to client enable/disable (default enable)
-    [network] ap2client.notify    -- Notify when Wifi APClient to Wifi Client mode switched (default disable)
+    [wifi] ap2client.timeout   -- Wifi Mode APClient to client timeout in minutes (default 30 minutes)
+    [wifi] ap2client.enable    -- Wifi Mode APClient to client enable/disable (default disable)
+    [wifi] ap2client.notify    -- Notify when Wifi APClient to Wifi Client mode switched (default disable)
 - Vehicle framework: signal generator operation state changes
   New events:
     vehicle.gen.start         -- Power delivery started

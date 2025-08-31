@@ -48,14 +48,10 @@ static const char *TAG = "v-smarteq";
 #include "ovms_peripherals.h"
 #include "vehicle_smarteq.h"
 #include "ovms_time.h"
-#include "buffered_shell.h"
-#include "ovms_boot.h" 
 #ifdef CONFIG_OVMS_COMP_PLUGINS
   #include "ovms_plugins.h"
 #endif
-#ifdef CONFIG_OVMS_COMP_SERVER_V2
-#include "ovms_server_v2.h"
-#endif
+#include "buffered_shell.h"
 
 OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 {
@@ -149,7 +145,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_led_state = 4;
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
-    
+
   for (int i = 0; i < 4; i++) {
     m_tpms_pressure[i] = 0.0f;
     m_tpms_index[i] = i;
@@ -191,7 +187,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_climate_de                 = MyMetrics.InitInt("xsq.climate.de", SM_STALE_MID, 6, Other);
   mt_climate_1to3               = MyMetrics.InitInt("xsq.climate.1to3", SM_STALE_MID, 0, Other);
   mt_climate_data               = MyMetrics.InitString("xsq.climate.data", SM_STALE_MID,"0,0,0,0,-1,-1,-1", Other);
-  mt_climate_appdata            = MyMetrics.InitString("xsq.climate.appdata", SM_STALE_MID,"no;no;0515;1;6;0", Other);
 
   mt_pos_odometer_start         = MyMetrics.InitFloat("xsq.odometer.start", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_start_total   = MyMetrics.InitFloat("xsq.odometer.start.total", SM_STALE_MID, 0, Kilometers);
@@ -310,14 +305,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     ResetTripCounters();
   }
 
-  if (MyBoot.GetCrashCount() > 1 && MyConfig.GetParamValueBool("xsq", "climate.system",false)) {
-    MyConfig.SetParamValueBool("xsq", "climate.system", false);
-    char buf[100];
-    snprintf(buf, sizeof(buf), "Detected crash count %d - disabled climate/heater start timer. So you don't get a climate message after every reboot. Find and fix the crash cause.", MyBoot.GetCrashCount());
-    MyNotify.NotifyString("alert", "xsq.climate", buf);
-    ESP_LOGW(TAG, "%s", buf);
-  }
-
   if (MyConfig.GetParamValueBool("xsq", "restart.wakeup",false)) {
     CommandWakeup();                                           // wake up the car to get the first data
   }
@@ -418,6 +405,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_resettrip         = MyConfig.GetParamValueBool("xsq", "resettrip", false);
   m_resettotal        = MyConfig.GetParamValueBool("xsq", "resettotal", false);
   m_tripnotify        = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
+/*
+  m_TPMS_FL           = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
+  m_TPMS_FR           = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
+  m_TPMS_RL           = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
+  m_TPMS_RR           = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
+*/
   m_tpms_index[3]     = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
   m_tpms_index[2]     = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
   m_tpms_index[1]     = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
@@ -431,7 +424,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
-  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", false);
+  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", true);
   m_gps_onoff         = MyConfig.GetParamValueBool("xsq", "gps.onoff", true);
   m_gps_reactmin      = MyConfig.GetParamValueInt("xsq", "gps.reactmin", 50);
   m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
@@ -822,25 +815,7 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
     StdMetrics.ms_v_gen_current->SetValue(3);
     NotifyClimateTimer();
-    
-    // WIP: send climate data to app
-    if(MyConfig.GetParamValueBool("xsq", "climate.system.toapp",false)) {
-      mt_climate_appdata->SetValue(std::string(buf));
-      SendClimateAppData();
-    }
   }
-}
-
-// WIP: send climate data to app
-void OvmsVehicleSmartEQ::SendClimateAppData()
-{
-  std::ostringstream buf;
-  buf 
-  << "XSQ-APPDATA" << ","
-  << mt_climate_appdata->AsString()
-  ;
-
-  MyNotify.NotifyString("data", "xsq.climate.appdata", buf.str().c_str());
 }
 
 // check the 12V alert periodically and charge the 12V battery if needed
@@ -977,8 +952,8 @@ void OvmsVehicleSmartEQ::DoorLockState() {
 void OvmsVehicleSmartEQ::WifiRestart() {
   #ifdef CONFIG_OVMS_COMP_WIFI
     if (MyPeripherals && MyPeripherals->m_esp32wifi) {
-        ESP_LOGI(TAG, "WiFi restart initiated");
         MyPeripherals->m_esp32wifi->Restart();
+        ESP_LOGI(TAG, "WiFi restart initiated");
     } else {
         ESP_LOGE(TAG, "WiFi restart failed - WiFi not available");
     }
@@ -1124,7 +1099,7 @@ void OvmsVehicleSmartEQ::HandleCharging() {
       }
     }    
     // if limit_soc is set, then calculate remaining time to limit_soc
-    if (limit_soc > 0.0f) {
+    if (limit_soc > 0) {
       int minsremaining_soc = calcMinutesRemaining(limit_soc, charge_voltage, charge_current);
 
       StdMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
@@ -1137,7 +1112,7 @@ void OvmsVehicleSmartEQ::HandleCharging() {
       }
     }
     // If limit_range is set, then calculate remaining time to that range
-    if (limit_range > 0.0f && max_range > 0.0f) {
+    if (limit_range > 0 && max_range > 0.0f) {
       float range_soc           = limit_range / max_range * 100.0f;
       int   minsremaining_range = calcMinutesRemaining(range_soc, charge_voltage, charge_current);
 
@@ -1384,6 +1359,9 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
 
     #ifdef CONFIG_OVMS_COMP_SERVER_V2
       if(m_v2_check) CheckV2State();
+    #endif
+
+    #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
       if(m_reboot_time > 0) Handlev2Server();
     #endif
 
@@ -2538,6 +2516,7 @@ OvmsVehicleSmartEQ::vehicle_command_t OvmsVehicleSmartEQ::MsgCommandCA(std::stri
   }
   return Success;
 }
+  
 
 /**
  * writer for command line interface
@@ -3053,4 +3032,3 @@ OvmsVehicleSmartEQInit::OvmsVehicleSmartEQInit() {
   ESP_LOGI(TAG, "Registering Vehicle: SMART EQ (9000)");
   MyVehicleFactory.RegisterVehicle<OvmsVehicleSmartEQ>("SQ", "smart 453 4.Gen");
 }
-
