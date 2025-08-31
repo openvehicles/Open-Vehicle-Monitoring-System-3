@@ -62,6 +62,8 @@
 #define GEN_2_40_NEW_CAR_AH 115
 #define GEN_2_62_NEW_CAR_GIDS 775
 #define GEN_2_62_NEW_CAR_AH 176
+#define CMD_QueryChargeAlerts 203 // ()
+#define CMD_SetChargeAlerts 204 // (range, soc)
 #define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
 #define ACTIVATION_REQUEST_TIME 10 // tenths of a second to hold activation request signal
 
@@ -95,16 +97,16 @@ typedef enum
   CHARGER_STATUS_INTERRUPTED,
   CHARGER_STATUS_V2X
   } ChargerStatus;
-  
-typedef enum 
+
+typedef enum
   {
-  NORMAL,      
-  CAPACITY_DROP,       
-  LBC_MALFUNCTION,  
+  NORMAL,
+  CAPACITY_DROP,
+  LBC_MALFUNCTION,
   HIGH_TEMP,
-  LOW_TEMP  
+  LOW_TEMP
   } PowerLimitStates;
-    
+
 class OvmsVehicleNissanLeaf : public OvmsVehicle
   {
   public:
@@ -115,6 +117,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     static OvmsVehicleNissanLeaf* GetInstance(OvmsWriter* writer=NULL);
     void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
+    vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
+    vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
     const std::string GetFeature(int key);
 
   public:
@@ -130,6 +134,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void RemoteCommandTimer();
     void CcDisableTimer();
     void MITMDisableTimer();
+    void CommandWakeupTCU(); // New wakeup command
 
   // --------------------------------------------------------------------------
   // Webserver subsystem
@@ -192,11 +197,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricVector<int> *m_bms_thermistor;
     OvmsMetricVector<int> *m_bms_temp_int;
     OvmsMetricBitset<96> *m_bms_balancing;
-    /// @brief State of health - calculated
-    /// @note ah / new car ah * 100
     OvmsMetricFloat *m_soh_new_car;
-    /// @brief State of health - read from BMS
-    OvmsMetricFloat *m_soh_instrument;
+    OvmsMetricInt *m_soh_instrument;
     OvmsMetricFloat *m_battery_energy_capacity;
     OvmsMetricFloat *m_battery_energy_available;
     OvmsMetricInt *m_battery_type;
@@ -204,13 +206,14 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricBool *m_battery_heatrequested;
     OvmsMetricBool *m_battery_heatergranted;
     OvmsMetricFloat *m_battery_out_power_limit;
-    OvmsMetricFloat *m_battery_in_power_limit; 
+    OvmsMetricFloat *m_battery_in_power_limit;
     OvmsMetricFloat *m_battery_chargerate_max;
-    OvmsMetricString *m_charge_limit;    
+    OvmsMetricString *m_charge_limit;
     OvmsMetricVector<int> *m_charge_duration;
     OvmsMetricVector<string> *m_charge_duration_label;
     OvmsMetricInt *m_charge_minutes_3kW_remaining;
     OvmsMetricInt *m_remaining_chargebars;
+    OvmsMetricInt *m_capacitybars;
     OvmsMetricInt *m_quick_charge;
     OvmsMetricString *m_charge_state_previous;
     OvmsMetricString *m_charge_user_notified;           // For sending autocharge notifications only after charge status has changed
@@ -228,7 +231,13 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricInt *m_climate_fan_speed_limit;
     OvmsMetricFloat *m_climate_setpoint;
     OvmsMetricBool *m_climate_auto;
-    
+    OvmsMetricFloat  *mt_pos_odometer_start;  // ODOmeter at Start to count trips
+
+    // Relay statuses
+    OvmsMetricFloat *m_qc_relay_status;
+    OvmsMetricFloat *m_ac_relay_status;
+    OvmsMetricInt *m_charge_mode;
+
     int    cfg_ev_request_port = DEFAULT_PIN_EV;        // EGPIO port number for EV SYSTEM ACTIVATION REQUEST
     int    cfg_allowed_rangedrop;                       // Allowed drop of range after charging
     int    cfg_allowed_socdrop;                         // Allowed drop of SOC after charging
@@ -238,6 +247,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     bool   cfg_soh_newcar;                              // True if SOH is calculated from new car max ah, false if from BMS
     string cfg_limit_range_calc;                        // What range calc to use for charge to range feature
     float  cfg_speed_divisor;                           // Divisor used for dividing raw speed value received from can1 0x284 msg
+
 
     int         m_MITM = 0;
     double      m_trip_odo;                             // trip distance estimated from speed
