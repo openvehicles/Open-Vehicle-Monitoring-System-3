@@ -197,8 +197,11 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricVector<int> *m_bms_thermistor;
     OvmsMetricVector<int> *m_bms_temp_int;
     OvmsMetricBitset<96> *m_bms_balancing;
+    /// @brief State of health - calculated
+    /// @note ah / new car ah * 100
     OvmsMetricFloat *m_soh_new_car;
-    OvmsMetricInt *m_soh_instrument;
+    /// @brief State of health - read from BMS
+    OvmsMetricFloat *m_soh_instrument;
     OvmsMetricFloat *m_battery_energy_capacity;
     OvmsMetricFloat *m_battery_energy_available;
     OvmsMetricInt *m_battery_type;
