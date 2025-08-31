@@ -675,8 +675,8 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   m_ap_password = appassword;
   m_sta_ssid = stassid;
   m_sta_password = stapassword;
-  m_ap2client_enabled = MyConfig.GetParamValueBool("wifi", "ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable
-  m_ap2client_timeout = MyConfig.GetParamValueInt("wifi", "ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
+  m_ap2client_enabled = MyConfig.GetParamValueBool("network", "wifi.ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable
+  m_ap2client_timeout = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
   m_ap2client_active = true;  // APClient mode active
 
   if (stabssid)
@@ -795,8 +795,8 @@ void esp32wifi::AP2ClientCheck()
       {
       m_ap2client_active = false;   // disable further timeout checks
       ESP_LOGI(TAG, "WiFi APCLIENT timeout reached - reverting to client mode");
-      
-      if (MyConfig.GetParamValueBool("wifi", "ap2client.notify", false))
+
+      if (MyConfig.GetParamValueBool("network", "wifi.ap2client.notify", false))
         MyNotify.NotifyString("info", "wifi.apclient", "WiFi APCLIENT timeout reached - reverting to client mode");
       AP2ClientSwitch();
       }            
@@ -1246,7 +1246,7 @@ void esp32wifi::EventWifiApUpdate(std::string event, void* data)
 #endif
     ESP_LOGI(TAG, "AP station disconnected: id: %d, MAC: " MACSTR,
       sta_disconn.aid, MAC2STR(sta_disconn.mac));
-      m_ap2client_timeout = MyConfig.GetParamValueInt("wifi", "ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
+      m_ap2client_timeout = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
     }
   }
 
@@ -1471,8 +1471,8 @@ void esp32wifi::ConfigChanged(std::string event, void* data)
     // Network config has been changed, apply:
     m_good_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     m_bad_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
-    m_ap2client_timeout  = MyConfig.GetParamValueInt("wifi", "ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
-    m_ap2client_enabled  = MyConfig.GetParamValueInt("wifi", "ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable
+    m_ap2client_timeout  = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 45) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
+    m_ap2client_enabled  = MyConfig.GetParamValueInt("network", "wifi.ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable
     }
   }
 

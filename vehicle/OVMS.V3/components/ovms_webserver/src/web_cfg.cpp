@@ -2161,17 +2161,17 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
       else
         MyConfig.SetParamValueBool("network", "reboot.no.ip", cfg_reboot_no_ip);
       if (cfg_ap2client_timeout == 30)    // default is 30 minutes
-        MyConfig.DeleteInstance("wifi", "ap2client.timeout");
+        MyConfig.DeleteInstance("network", "wifi.ap2client.timeout");
       else
-        MyConfig.SetParamValueInt("wifi", "ap2client.timeout", cfg_ap2client_timeout);
+        MyConfig.SetParamValueInt("network", "wifi.ap2client.timeout", cfg_ap2client_timeout);
       if (!cfg_ap2client_enabled)         // default is disabled
-        MyConfig.DeleteInstance("wifi", "ap2client.enable");
+        MyConfig.DeleteInstance("network", "wifi.ap2client.enable");
       else
-        MyConfig.SetParamValueBool("wifi", "ap2client.enable", cfg_ap2client_enabled);
+        MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", cfg_ap2client_enabled);
       if (!cfg_ap2client_notify)          // default is disabled
-        MyConfig.DeleteInstance("wifi", "ap2client.notify");
+        MyConfig.DeleteInstance("network", "wifi.ap2client.notify");
       else
-        MyConfig.SetParamValueBool("wifi", "ap2client.notify", cfg_ap2client_notify);
+        MyConfig.SetParamValueBool("network", "wifi.ap2client.notify", cfg_ap2client_notify);
     }
 
     if (error == "") {
@@ -2196,9 +2196,9 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_sq_bad              = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
     cfg_bad_reconnect       = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
     cfg_reboot_no_ip        = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
-    cfg_ap2client_timeout   = MyConfig.GetParamValueInt("wifi", "ap2client.timeout", 30);
-    cfg_ap2client_enabled   = MyConfig.GetParamValueBool("wifi", "ap2client.enable", false);
-    cfg_ap2client_notify    = MyConfig.GetParamValueBool("wifi", "ap2client.notify", false);
+    cfg_ap2client_timeout   = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 30);
+    cfg_ap2client_enabled   = MyConfig.GetParamValueBool("network", "wifi.ap2client.enable", false);
+    cfg_ap2client_notify    = MyConfig.GetParamValueBool("network", "wifi.ap2client.notify", false);
     c.head(200);
   }
 
