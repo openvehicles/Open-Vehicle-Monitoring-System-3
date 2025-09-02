@@ -902,8 +902,7 @@ void OvmsServerV3::NetmanStop(std::string event, void* data)
 void OvmsServerV3::Ticker1(std::string event, void* data)
   {
   m_connection_available = StdMetrics.ms_m_net_connected->AsBool() &&
-                              StdMetrics.ms_m_net_ip->AsBool() &&
-                              StdMetrics.ms_m_net_good_sq->AsBool();
+                              StdMetrics.ms_m_net_ip->AsBool();
   if (!m_connection_available && m_mgconn)
     {
     Disconnect();
