@@ -48,10 +48,13 @@ static const char *TAG = "v-smarteq";
 #include "ovms_peripherals.h"
 #include "vehicle_smarteq.h"
 #include "ovms_time.h"
+#include "buffered_shell.h"
 #ifdef CONFIG_OVMS_COMP_PLUGINS
   #include "ovms_plugins.h"
 #endif
-#include "buffered_shell.h"
+#ifdef CONFIG_OVMS_COMP_SERVER_V2
+  #include "ovms_server_v2.h"
+#endif
 
 OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 {
@@ -247,11 +250,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);  // set 12V alert to false
 
   m_network_type_ls = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
-  m_indicator       = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
-  
-  if (MyConfig.GetParamValue("password", "pin","0") == "0") {
-    MyConfig.SetParamValueInt("password", "pin", 1234);           // set default pin
-  }
 
   if (MyConfig.GetParamValue("xsq", "12v.charge","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "12v.charge", true);
@@ -263,10 +261,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   if (MyConfig.GetParamValue("xsq", "v2.check","0") == "0") {
     MyConfig.SetParamValueBool("xsq", "v2.check", false);
-  }
-
-  if (MyConfig.GetParamValue("xsq", "extended.stats","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "extended.stats", false);
   }
 
   if (MyConfig.GetParamValue("xsq", "tpms.front.pressure","0") == "0") {
@@ -322,11 +316,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
       using std::placeholders::_1;
       using std::placeholders::_2;
       MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
-      MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.disconnected", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
-      //MyEvents.RegisterEvent(TAG,"network.wifi.sta.bad", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
-      //MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
-      //MyEvents.RegisterEvent(TAG,"system.wifi.down", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
-    #endif // #ifdef CONFIG_OVMS_COMP_WIFI
+    #endif
 
   #endif
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -424,7 +414,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
-  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", true);
+  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", false);
   m_gps_onoff         = MyConfig.GetParamValueBool("xsq", "gps.onoff", true);
   m_gps_reactmin      = MyConfig.GetParamValueInt("xsq", "gps.reactmin", 50);
   m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
@@ -610,7 +600,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           }
         }
       }
-      lastCharging = isCharging;
+      lastCharging = isCharging; 
       break;
     case 0x668:
       vehicle_smart_car_on((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
@@ -814,7 +804,8 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     sprintf(buf, "booster,%s,%s,%s,%d,%d,%d", _climate_on.c_str(), _climate_weekly.c_str(), mt_climate_time->AsString().c_str(), mt_climate_ds->AsInt(), mt_climate_de->AsInt(), mt_climate_1to3->AsInt());
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
     StdMetrics.ms_v_gen_current->SetValue(3);
-    NotifyClimateTimer();
+    if(MyConfig.GetParamValueBool("xsq", "climate.system.notify",false))
+      NotifyClimateTimer();
   }
 }
 
@@ -1099,7 +1090,7 @@ void OvmsVehicleSmartEQ::HandleCharging() {
       }
     }    
     // if limit_soc is set, then calculate remaining time to limit_soc
-    if (limit_soc > 0) {
+    if (limit_soc > 0.0f) {
       int minsremaining_soc = calcMinutesRemaining(limit_soc, charge_voltage, charge_current);
 
       StdMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
@@ -1112,7 +1103,7 @@ void OvmsVehicleSmartEQ::HandleCharging() {
       }
     }
     // If limit_range is set, then calculate remaining time to that range
-    if (limit_range > 0 && max_range > 0.0f) {
+    if (limit_range > 0.0f && max_range > 0.0f) {
       float range_soc           = limit_range / max_range * 100.0f;
       int   minsremaining_range = calcMinutesRemaining(range_soc, charge_voltage, charge_current);
 
@@ -2517,7 +2508,6 @@ OvmsVehicleSmartEQ::vehicle_command_t OvmsVehicleSmartEQ::MsgCommandCA(std::stri
   return Success;
 }
   
-
 /**
  * writer for command line interface
  */
@@ -3013,7 +3003,7 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
     }
     case 16:
     {
-      int bits = ( MyConfig.GetParamValueBool("xsq", "unlock.warning",  false) ?  1 : 0);
+      int bits = ( MyConfig.GetParamValueBool("xsq", "unlock.warning",  true) ?  1 : 0);
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
