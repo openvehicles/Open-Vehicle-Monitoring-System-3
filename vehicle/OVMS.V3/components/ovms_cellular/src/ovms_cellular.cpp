@@ -50,6 +50,10 @@ static const char *TAG = "cellular";
 
 modem* MyModem = NULL;
 
+// retry counter to avoid tight NetLoss loops
+static int s_netloss_retries = 0;
+static const int s_netloss_retry_limit = 3;
+
 ////////////////////////////////////////////////////////////////////////////////
 // General utility functions
 
@@ -676,11 +680,34 @@ void modem::State1Enter(modem_state1_t newstate)
 
     case NetLoss:
       MyEvents.SignalEvent("system.modem.netloss", NULL);
+      s_netloss_retries++;      // increment NetLoss retry counter
       m_state1_timeout_ticks = 10;
       m_state1_timeout_goto = NetWait;
+
+      // If we've exceeded retry limit, escalate to a power cycle to break loops
+      if (s_netloss_retries >= s_netloss_retry_limit)
+        {
+        ESP_LOGW(TAG, "NetLoss: retry limit exceeded -> forcing power cycle");
+        m_state1_timeout_ticks = 3;
+        m_state1_timeout_goto = PowerOffOn;
+        break;
+        }
+
+      // Only attempt to detach/stop PPP if PPP is actually running/connected.
       if (m_mux != NULL)
-        { muxtx(m_mux_channel_POLL, "AT+CGATT=0\r\n"); }
-      StopPPP();
+        {
+        if (m_ppp != NULL && m_ppp->m_connected)
+          {
+          ESP_LOGI(TAG, "NetLoss: PPP connected - detaching PDP and stopping PPP");
+          muxtx(m_mux_channel_POLL, "AT+CGATT=0\r\n");
+          StopPPP();
+          s_netloss_retries = 0;    // reset NetLoss retry counter
+          }
+        else
+          {
+          ESP_LOGI(TAG, "NetLoss: PPP not connected - skipping detach/StopPPP");
+          }
+        }
       break;
 
     case NetHold:
@@ -737,6 +764,7 @@ void modem::State1Enter(modem_state1_t newstate)
       PowerCycle();
       m_state1_timeout_ticks = 3;
       m_state1_timeout_goto = PoweringOn;
+      s_netloss_retries = 0;    // reset NetLoss retry counter
       break;
 
     case Development:
