@@ -368,7 +368,11 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
   m_poll_vector.push_back(POLL_LIST_END);
   ESP_LOGI(TAG, "Poll vector: size=%d cap=%d", m_poll_vector.size(), m_poll_vector.capacity());
 
+  if (m_can1) {
   PollSetPidList(m_can1, m_poll_vector.data());
+  } else {
+    ESP_LOGW(TAG, "PollSetPidList skipped: m_can1==NULL");
+  }
 }
 
 /**
@@ -607,11 +611,20 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x673:
     {
-      // Read TPMS pressure values:
+      // Read TPMS pressure safely:
+      uint8_t dlc = p_frame->FIR.B.DLC;
+      ESP_LOGV(TAG, "TPMS frame %03X DLC=%d %s", p_frame->MsgID, dlc,hexencode(std::string((const char*)p_frame->data.u8, dlc)).c_str());
+
       for (int i = 0; i < 4; i++) {
-        if (CAN_BYTE(2 + i) != 0xff) {
-          m_tpms_pressure[i] = (float) CAN_BYTE(2 + i) * 3.1; // kPa
-          setTPMSValue(i, m_tpms_index[i]);
+        size_t press_idx = 2 + i;    // pressure bytes at offset 2..5 (as used previously)
+        if (press_idx < dlc && p_frame->data.u8[press_idx] != 0xFF) {
+          float pressure_kpa = (float)p_frame->data.u8[press_idx] * 3.1f; // kPa
+          if (pressure_kpa >= 0.0f && pressure_kpa <= 500.0f) {
+            m_tpms_pressure[i] = pressure_kpa;
+            setTPMSValue(i, m_tpms_index[i]);
+          } else {
+            ESP_LOGW(TAG, "TPMS pressure out of range idx=%d raw=0x%02X kPa=%.1f", i, p_frame->data.u8[press_idx], pressure_kpa);
+          }
         }
       }
       break;
