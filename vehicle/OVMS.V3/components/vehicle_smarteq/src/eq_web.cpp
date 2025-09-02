@@ -81,7 +81,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info, full_km, rebootnw, net_type;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate, gpsonoff, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify;
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate_system, gpsonoff, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify;
 
   if (c.method == "POST") {
     // process form submission:
@@ -93,7 +93,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     resettotal  = (c.getvar("resettotal") == "yes");
     bcvalue     = (c.getvar("bcvalue") == "yes");
     full_km  =  (c.getvar("full_km"));
-    climate = (c.getvar("climate") == "yes");
+    climate_system = (c.getvar("climate") == "yes");
     gpsonoff = (c.getvar("gpsonoff") == "yes");
     charge12v = (c.getvar("charge12v") == "yes");
     v2server = (c.getvar("v2server") == "yes");
@@ -114,7 +114,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "resettotal", resettotal);
       MyConfig.SetParamValueBool("xsq", "bcvalue", bcvalue);
       MyConfig.SetParamValue("xsq", "full.km", full_km);
-      MyConfig.SetParamValueBool("xsq", "climate.system", climate);
+      MyConfig.SetParamValueBool("xsq", "climate.system", climate_system);
       MyConfig.SetParamValueBool("xsq", "gps.onoff", gpsonoff);
       MyConfig.SetParamValueBool("xsq", "12v.charge", charge12v);
       MyConfig.SetParamValueBool("xsq", "v2.check", v2server);
@@ -146,8 +146,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     resettrip   = MyConfig.GetParamValueBool("xsq", "resettrip", false);
     resettotal  = MyConfig.GetParamValueBool("xsq", "resettotal", false);
     bcvalue     = MyConfig.GetParamValueBool("xsq", "bcvalue", false);
-    full_km     = MyConfig.GetParamValue("xsq", "full.km", "135");
-    climate     = MyConfig.GetParamValueBool("xsq", "climate.system", false);
+    full_km     = MyConfig.GetParamValue("xsq", "full.km", "126");
+    climate_system     = MyConfig.GetParamValueBool("xsq", "climate.system", false);
     gpsonoff    = MyConfig.GetParamValueBool("xsq", "gps.onoff", false);
     charge12v   = MyConfig.GetParamValueBool("xsq", "12v.charge", false);
     v2server    = MyConfig.GetParamValueBool("xsq", "v2.check", false);
@@ -180,8 +180,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = send a notification with Trip values when Trip values are reseted</p>");
   c.input_checkbox("Enable OBD kWh/100km value", "bcvalue", bcvalue,
     "<p>Enable = show OBD kWh/100km value</p>");
-  c.input_slider("WLTP km", "full_km", 3, "km",
-    atof(full_km.c_str()) > 0, atof(full_km.c_str()), 126, 100, 180, 1,
+  c.input_slider("WLTP km", "full_km", 3, "km",-1, atof(full_km.c_str()), 126, 100, 180, 1,
   "<p>set default max Range (126km WLTP, 155km NFEZ) at full charged HV for calculate ideal Range</p>");
   c.fieldset_end();
 
@@ -190,8 +189,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>RED=Internet no, BLUE=Internet yes, GREEN=Server v2 connected.<br>EGPIO Port 7,8,9 are used</p>");
   c.input_checkbox("Enable iOS TPMS fix", "ios", ios,
     "<p>Set External Temperatures to TPMS Temperatures to Display Tire Pressures in iOS App Open Vehicle</p>");
-  c.input_checkbox("Enable Climate System", "climate", climate,
-    "<p>Enable = time based Climate control</p>");
+  c.input_checkbox("Enable Climate System", "climate_system", climate_system,
+    "<p>Enable = Climate/Heater system and data transfer to Android App activated</p>");
   c.input_checkbox("Enable GPS off at Parking", "gpsonoff", gpsonoff,
     "<p>Enable = switch GPS off at Parking for power saving. Every 50 minutes powered on the GPS for 10 minutes.</p>");
   c.input_checkbox("Enable 12V charging", "charge12v", charge12v,
@@ -206,8 +205,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = Wakeup the Car on Restart of the OVMS</p>");
   c.input_checkbox("Enable extended statistics", "extstats", extstats,
       "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");
-  c.input_slider("Restart Network Time", "rebootnw", 3, "min",
-    atof(rebootnw.c_str()) > 0, atof(rebootnw.c_str()), 15, 0, 60, 1,
+  c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>Default 0 = off. Restart Network automatic when no v2Server connection.</p>");
   c.input_select_start("Modem Network type", "net_type");
   c.input_select_option("Auto", "auto", net_type == "auto");
@@ -237,82 +235,93 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
       return;
   }
 
-  std::string error, info;
+  std::string error, info, climate_time, climate_ds, climate_de, climate_1to3;
+  bool climate_on, climate_weekly, climate_notify, climate_system;
+  int climate_on_int, climate_weekly_int, climate_time_int, climate_ds_int, climate_de_int, climate_1to3_int;
   
   if (c.method == "POST") {
-      // Process form submission
-      bool climate_on = (c.getvar("climate_on") == "yes");
-      bool climate_weekly = (c.getvar("climate_weekly") == "yes");
-      std::string climate_time = c.getvar("climate_time");
-      std::string climate_ds = c.getvar("climate_ds");
-      std::string climate_de = c.getvar("climate_de");
-      std::string climate_1to3 = c.getvar("climate_1to3");
+    // Process form submission
+    climate_on = (c.getvar("climate_on") == "yes");
+    climate_weekly = (c.getvar("climate_weekly") == "yes");
+    climate_time = c.getvar("climate_time");
+    climate_ds = c.getvar("climate_ds");
+    climate_de = c.getvar("climate_de");
+    climate_1to3 = c.getvar("climate_1to3");
+    climate_notify = (c.getvar("climate_notify") == "yes");
+    climate_system = (c.getvar("climate_system") == "yes");
 
-      // Input validation
-      if (climate_time.empty()) {
-          error += "<li>Time must be specified</li>";
-      }
+    // Input validation
+    if (climate_time.empty()) {
+      error += "<li>Time must be specified</li>";
+    }
 
-      // Convert values
-      int climate_on_int = climate_on ? 1 : 2;
-      int climate_weekly_int = climate_weekly ? 1 : 2;
-      if(climate_on_int == 2){
-        climate_weekly_int = 2;
-      }
-      int climate_time_int = atoi(climate_time.c_str());
-      int climate_ds_int = atoi(climate_ds.c_str());
-      int climate_de_int = atoi(climate_de.c_str());
-      int climate_1to3_int = 0;
+    // Convert values
+    climate_on_int = climate_on ? 1 : 2;
+    climate_weekly_int = climate_weekly ? 1 : 2;
+    if(climate_on_int == 2){
+      climate_weekly_int = 2;
+    }
+    climate_time_int = atoi(climate_time.c_str());
+    climate_ds_int = atoi(climate_ds.c_str());
+    climate_de_int = atoi(climate_de.c_str());
+    climate_1to3_int = 0;
 
-      // Convert climate_1to3
-      if (atoi(climate_1to3.c_str()) == 5) climate_1to3_int = 0;
-      else if (atoi(climate_1to3.c_str()) == 10) climate_1to3_int = 1;
-      else if (atoi(climate_1to3.c_str()) == 15) climate_1to3_int = 2;
-      else {
-          error += "<li>Invalid climate duration</li>";
-      }
+    // Convert climate_1to3
+    if (atoi(climate_1to3.c_str()) == 5) climate_1to3_int = 0;
+    else if (atoi(climate_1to3.c_str()) == 10) climate_1to3_int = 1;
+    else if (atoi(climate_1to3.c_str()) == 15) climate_1to3_int = 2;
+    else {
+      error += "<li>Invalid climate duration</li>";
+    }
 
-      if (error.empty()) {
-          // Format data string
-          char buf[32];
-          snprintf(buf, sizeof(buf), "1,%d,%d,%04d,%d,%d,%d",
-            climate_on_int, climate_weekly_int, climate_time_int,
-            climate_ds_int, climate_de_int, climate_1to3_int);
+    if (error.empty()) {
+      // Format data string
+      char buf[32];
+      snprintf(buf, sizeof(buf), "1,%d,%d,%04d,%d,%d,%d",
+        climate_on_int, climate_weekly_int, climate_time_int,
+        climate_ds_int, climate_de_int, climate_1to3_int);
 
-          // Save configuration
-          sq->mt_climate_data->SetValue(std::string(buf));
-          
-          // Success response
-          info = "<p>Climate control settings updated successfully</p>";
-          c.head(200);
-          c.alert("success", info.c_str());
-          MyWebServer.OutputHome(p, c);
-          c.done();
-          return;
-      }
+      // Save configuration
+      sq->mt_climate_data->SetValue(std::string(buf));
+      MyConfig.SetParamValueBool("xsq", "climate.notify", climate_notify);
+      MyConfig.SetParamValueBool("xsq", "climate.system", climate_system);
+      
+      // Success response
+      info = "<p>Climate control settings updated successfully</p>";
+      c.head(200);
+      c.alert("success", info.c_str());
+      MyWebServer.OutputHome(p, c);
+      c.done();
+      return;
+    }
 
-      // Error response
-      error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
-      c.head(400);
-      c.alert("danger", error.c_str());
+    // Error response
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
   } else {
   // read configuration using vehicle instance:
-  std::string climate_time = sq->mt_climate_time->AsString();
-  std::string climate_ds = sq->mt_climate_ds->AsString();
-  std::string climate_de = sq->mt_climate_de->AsString();
-  std::string climate_1to3 = sq->mt_climate_1to3->AsString();
-  bool climate_on = sq->mt_climate_on->AsBool();
-  bool climate_weekly = sq->mt_climate_weekly->AsBool();
+  climate_time = sq->mt_climate_time->AsString();
+  climate_ds = sq->mt_climate_ds->AsString();
+  climate_de = sq->mt_climate_de->AsString();
+  climate_1to3 = sq->mt_climate_1to3->AsString();
+  climate_on = sq->mt_climate_on->AsBool();
+  climate_weekly = sq->mt_climate_weekly->AsBool();
+  climate_notify = MyConfig.GetParamValueBool("xsq", "climate.notify", false);
+  climate_system = MyConfig.GetParamValueBool("xsq", "climate.system", false);
       
   c.head(200);
   c.panel_start("primary", "Climate Control Settings");
   c.form_start(p.uri);
 
   c.fieldset_start("Climate/Heater start timer");
+  c.input_checkbox("Enable Climate/Heater system", "climate_system", climate_system,
+    "<p>Enable = Climate/Heater system and data transfer to Android App activated</p>");
   c.input_checkbox("Enable Climate/Heater at time", "climate_on", climate_on,
     "<p>Enable = start Climate/Heater at time</p>");
-  c.input_slider("Enable two time activation Climate/Heater", "climate_1to3", 3, "min",
-    atof(climate_1to3.c_str()) > -1, atof(climate_1to3.c_str()), 5, 5, 15, 5,
+  c.input_checkbox("Enable Climate/Heater change notification", "climate_notify", climate_notify,
+    "<p>Enable = sends a notification after a change in the set data</p>");  
+  c.input_slider("Enable two time activation Climate/Heater", "climate_1to3", 3, "min",-1, atof(climate_1to3.c_str()), 5, 5, 15, 5,
     "<p>Enable = this option start Climate/Heater for 5-15 minutes</p>");
   c.input_text("time", "climate_time", climate_time.c_str(), "515","<p>Time: 5:15 = 515 or 15:30 = 1530</p>");
 
@@ -425,17 +434,13 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
     "<p>Set External Temperatures to TPMS Temperatures to Display Tire Pressures in iOS App Open Vehicle</p>");
   c.input_checkbox("Enable TPMS Alert", "enable", enable,
     "<p>enable TPMS Tire Pressures low/high alert</p>");
-  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",
-    atof(front_pressure.c_str()) > 0, atof(front_pressure.c_str()), 220, 170, 350, 5,
+  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",-1, atof(front_pressure.c_str()), 220, 170, 350, 5,
     "<p>set Front Tire Pressure value</p>");
-  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",
-    atof(rear_pressure.c_str()) > 0, atof(rear_pressure.c_str()), 250, 170, 350, 5,
+  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",-1, atof(rear_pressure.c_str()), 250, 170, 350, 5,
     "<p>set Rear Tire Pressure value</p>");
-  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",
-    atof(pressure_warning.c_str()) > 0, atof(pressure_warning.c_str()), 25, 10, 60, 5,
+  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",-1, atof(pressure_warning.c_str()), 25, 10, 60, 5,
     "<p>set under/over Pressure Warning value</p>");
-  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",
-    atof(pressure_alert.c_str()) > 0, atof(pressure_alert.c_str()), 45, 30, 120, 5,
+  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",-1, atof(pressure_alert.c_str()), 45, 30, 120, 5,
     "<p>set under/over Pressure Alert value</p>");
   c.input_select_start("Front Left Sensor", "TPMS_FL");
   c.input_select_option("Front_Left",  "0", TPMS_FL == "0");
@@ -538,23 +543,19 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Charge control");
 
-  c.input_slider("Sufficient range", "suffrange", 3, "km",
-    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 75, 0, 150, 1,
+  c.input_slider("Sufficient range", "suffrange", 3, "km",-1, atof(suffrange.c_str()), 75, 0, 150, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
-  c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
-    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 80, 0, 100, 1,
+  c.input_slider("Sufficient SOC", "suffsoc", 3, "%",-1, atof(suffsoc.c_str()), 80, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
   c.fieldset_end();
   
   c.fieldset_start("BMS Cell Monitoring");
-  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",
-    atof(cell_interval_drv.c_str()) > 0, atof(cell_interval_drv.c_str()),
+  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",-1, atof(cell_interval_drv.c_str()),
     60, 0, 300, 1,
     "<p>Default 60 seconds, 0=off.</p>");
-  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",
-    atof(cell_interval_chg.c_str()) > 0, atof(cell_interval_chg.c_str()),
+  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",-1, atof(cell_interval_chg.c_str()),
     60, 0, 300, 1,
     "<p>Default 60 seconds, 0=off.</p>");
   
