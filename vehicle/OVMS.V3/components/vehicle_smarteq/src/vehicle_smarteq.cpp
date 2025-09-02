@@ -907,31 +907,34 @@ void OvmsVehicleSmartEQ::CheckV2State() {
     static const int DISCONNECT_THRESHOLD = 5;
     static const int RESTART_DELAY = 1;    
     bool is_connected = StdMetrics.ms_s_v2_connected->AsBool();
-    
-    if (!is_connected) {
-        m_v2_ticker++;
-        
-        if (m_v2_ticker > DISCONNECT_THRESHOLD && !m_v2_restart) {
-            ESP_LOGI(TAG, "V2 server disconnected for %d ticks, initiating restart", m_v2_ticker);
-            m_v2_restart = true;
-            if (!ExecuteCommand("server v2 stop")) {
-                ESP_LOGE(TAG, "Failed to stop V2 server");
-                return;
-            }
-        }
-        
-        if (m_v2_ticker > (DISCONNECT_THRESHOLD + RESTART_DELAY) && m_v2_restart) {
-            ESP_LOGI(TAG, "Restarting V2 server");
-            m_v2_ticker = 0;
-            m_v2_restart = false;
-            if (!ExecuteCommand("server v2 start")) {
-                ESP_LOGE(TAG, "Failed to start V2 server");
-            }
-        }
-    } else if (m_v2_ticker > 0) {
-        ESP_LOGI(TAG, "V2 server connection restored");
-        m_v2_ticker = 0;
-        m_v2_restart = false;
+    if (MyOvmsServerV2) {
+      if (!is_connected) {
+          m_v2_ticker++;
+          
+          if (m_v2_ticker > DISCONNECT_THRESHOLD && !m_v2_restart) {
+              ESP_LOGI(TAG, "V2 server disconnected for %d ticks, initiating restart", m_v2_ticker);
+              m_v2_restart = true;
+              if (!ExecuteCommand("server v2 stop")) {
+                  ESP_LOGE(TAG, "Failed to stop V2 server");
+                  return;
+              }
+          }
+          
+          if (m_v2_ticker > (DISCONNECT_THRESHOLD + RESTART_DELAY) && m_v2_restart) {
+              ESP_LOGI(TAG, "Restarting V2 server");
+              m_v2_ticker = 0;
+              m_v2_restart = false;
+              if (!ExecuteCommand("server v2 start")) {
+                  ESP_LOGE(TAG, "Failed to start V2 server");
+              }
+          }
+      } else if (m_v2_ticker > 0) {
+          ESP_LOGI(TAG, "V2 server connection restored");
+          m_v2_ticker = 0;
+          m_v2_restart = false;
+      }
+    } else {
+      ESP_LOGE(TAG, "V2 server instance not available");
     }
   #else
       ESP_LOGD(TAG, "V2 server support not enabled");
@@ -956,8 +959,8 @@ void OvmsVehicleSmartEQ::DoorLockState() {
 void OvmsVehicleSmartEQ::WifiRestart() {
   #ifdef CONFIG_OVMS_COMP_WIFI
     if (MyPeripherals && MyPeripherals->m_esp32wifi) {
-        MyPeripherals->m_esp32wifi->Restart();
         ESP_LOGI(TAG, "WiFi restart initiated");
+        MyPeripherals->m_esp32wifi->Restart();
     } else {
         ESP_LOGE(TAG, "WiFi restart failed - WiFi not available");
     }
@@ -971,7 +974,7 @@ void OvmsVehicleSmartEQ::ModemRestart() {
   #ifdef CONFIG_OVMS_COMP_CELLULAR
     m_modem_ticker = 0; // Reset modem ticker on restart
 
-    if (MyPeripherals && MyPeripherals->m_cellular_modem) {
+    if (MyPeripherals->m_cellular_modem->GetPowerMode()==On) {
         MyPeripherals->m_cellular_modem->Restart();
         ESP_LOGI(TAG, "Cellular modem restart initiated");
     } else {
@@ -987,9 +990,12 @@ void OvmsVehicleSmartEQ::ModemEventRestart(std::string event, void* data) {
     // ESP_LOGE(TAG, "Modem auto restart is disabled");
     return;
   }
-
-  ModemRestart();
-  ESP_LOGI(TAG, "Modem event '%s' triggered a modem restart", event.c_str());
+  #ifdef CONFIG_OVMS_COMP_CELLULAR
+    if (event == "system.wifi.sta.disconnected") ModemRestart();
+    ESP_LOGI(TAG, "Modem event '%s' triggered a modem restart", event.c_str());
+  #else
+    ESP_LOGE(TAG, "Cellular support not enabled");
+  #endif
 }
 
 // Cellular Modem Network type switch
@@ -1362,16 +1368,22 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
     if(m_enable_lock_state && !StdMetrics.ms_v_env_on->AsBool()) DoorLockState();
 
     #ifdef CONFIG_OVMS_COMP_SERVER_V2
-      if(m_v2_check) CheckV2State();
-    #endif
-
-    #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
-      if(m_reboot_time > 0) Handlev2Server();
+      if (MyOvmsServerV2) {
+        if(m_v2_check) CheckV2State();
+        if(m_reboot_time > 0) Handlev2Server();
+      }
+      else {
+        ESP_LOGE(TAG, "V2 server instance not available");
+      }
     #endif
 
     #ifdef CONFIG_OVMS_COMP_CELLULAR
-      if(m_gps_onoff && !StdMetrics.ms_v_env_on->AsBool()) GPSOnOff();
-      if(m_network_type != m_network_type_ls) ModemNetworkType();
+      if (MyPeripherals && MyPeripherals->m_cellular_modem) {
+        if(m_gps_onoff && !StdMetrics.ms_v_env_on->AsBool()) GPSOnOff();
+        if(m_network_type != m_network_type_ls) ModemNetworkType();
+      } else {
+        ESP_LOGE(TAG, "Cellular modem instance not available");
+      }
     #endif
 
     // DDT4ALL session timeout on 5 minutes
