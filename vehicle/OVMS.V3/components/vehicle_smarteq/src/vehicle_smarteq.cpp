@@ -817,8 +817,7 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     sprintf(buf, "booster,%s,%s,%s,%d,%d,%d", _climate_on.c_str(), _climate_weekly.c_str(), mt_climate_time->AsString().c_str(), mt_climate_ds->AsInt(), mt_climate_de->AsInt(), mt_climate_1to3->AsInt());
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
     StdMetrics.ms_v_gen_current->SetValue(3);
-    if(MyConfig.GetParamValueBool("xsq", "climate.system.notify",false))
-      NotifyClimateTimer();
+    if(MyConfig.GetParamValueBool("xsq", "climate.notify",false)) NotifyClimateTimer();
   }
 }
 
