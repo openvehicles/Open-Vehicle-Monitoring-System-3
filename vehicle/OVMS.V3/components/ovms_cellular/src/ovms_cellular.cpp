@@ -684,15 +684,6 @@ void modem::State1Enter(modem_state1_t newstate)
       m_state1_timeout_ticks = 10;
       m_state1_timeout_goto = NetWait;
 
-      if (StdMetrics.ms_m_net_mdm_model->AsString().find("7600M") != std::string::npos)
-        {
-        // We have a valid mode, so we can try to recover
-        ESP_LOGW(TAG, "NetLoss SIM7600M: attempting recovery");
-        m_state1_timeout_ticks = 10;
-        m_state1_timeout_goto = PowerOffOn;
-        break;
-        }
-
       // If we've exceeded retry limit, escalate to a power cycle to break loops
       if (s_netloss_retries >= s_netloss_retry_limit)
         {
