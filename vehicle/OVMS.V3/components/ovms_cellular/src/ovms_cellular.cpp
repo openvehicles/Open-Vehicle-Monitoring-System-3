@@ -668,6 +668,7 @@ void modem::State1Enter(modem_state1_t newstate)
 
     case NetWait:
       MyEvents.SignalEvent("system.modem.netwait", NULL);
+      muxtx(m_mux_channel_POLL, "AT+CGATT=1\r\n");
       if (GPS_SHALL_START())
         StartNMEA();
       break;
