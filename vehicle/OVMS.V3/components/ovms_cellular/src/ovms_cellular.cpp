@@ -668,7 +668,17 @@ void modem::State1Enter(modem_state1_t newstate)
 
     case NetWait:
       MyEvents.SignalEvent("system.modem.netwait", NULL);
-      muxtx(m_mux_channel_POLL, "AT+CGATT=1\r\n");
+        {
+        // Guard against calling muxtx before MUX POLL channel is actually open (was causing crash):
+        if (m_mux && m_mux->IsChannelOpen(m_mux_channel_POLL))
+          {
+          muxtx(m_mux_channel_POLL, "AT+CGATT=1\r\n");
+          }
+        else
+          {
+          ESP_LOGD(TAG, "Deferring CGATT attach: POLL channel not yet open");
+          }
+        }
       if (GPS_SHALL_START())
         StartNMEA();
       break;
