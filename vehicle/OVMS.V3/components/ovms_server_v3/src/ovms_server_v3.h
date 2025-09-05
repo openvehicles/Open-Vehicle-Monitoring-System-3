@@ -117,6 +117,9 @@ class OvmsServerV3 : public OvmsServer
     bool m_notify_alert_pending;
     bool m_notify_data_pending;
     int m_notify_data_waitcomp;
+    int m_conn_stable_wait;
+    int m_conn_jitter_max;
+    int m_connect_jitter;
     OvmsNotifyType* m_notify_data_waittype;
     OvmsNotifyEntry* m_notify_data_waitentry;
     OvmsServerV3ClientMap m_clients;

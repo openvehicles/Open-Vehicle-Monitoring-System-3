@@ -38,6 +38,7 @@ static const char *TAG = "ovms-server-v3";
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "esp_system.h"              // <- for esp_random() (jitter)
 #if CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
 #endif
@@ -218,6 +219,9 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_notify_data_waittype = NULL;
   m_notify_data_waitentry = NULL;
   m_connection_available = false;
+  m_conn_stable_wait = 10;      // seconds network must be stable before first connect
+  m_conn_jitter_max  = 5;       // max random extra seconds
+  m_connect_jitter   = -1;      // -1 = not yet chosen
 
   ESP_LOGI(TAG, "OVMS Server v3 running");
 
@@ -852,6 +856,11 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_legacy_event_topic = MyConfig.GetParamValueBool("server.v3", "events.legacy_topic", true);
   m_metrics_filter.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.include"),
                                MyConfig.GetParamValue("server.v3", "metrics.exclude"));
+  // New configurable timings:
+  m_conn_stable_wait = MyConfig.GetParamValueInt("server.v3", "conn.stable_wait", m_conn_stable_wait);
+  if (m_conn_stable_wait < 3) m_conn_stable_wait = 3;
+  m_conn_jitter_max  = MyConfig.GetParamValueInt("server.v3", "conn.jitter.max", m_conn_jitter_max);
+  if (m_conn_jitter_max < 0) m_conn_jitter_max = 0;
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)
@@ -904,31 +913,62 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
   m_connection_available = StdMetrics.ms_m_net_connected->AsBool() &&
                               StdMetrics.ms_m_net_ip->AsBool() &&
                               StdMetrics.ms_m_net_good_sq->AsBool();
-  if (!m_connection_available && m_mgconn)
+
+  // Reset jitter & counters when network lost
+  if (!m_connection_available)
     {
-    Disconnect();
-    m_connretry = 10;
-    }
-  
-  if (!m_connection_available) m_connection_counter = 0;
-  else if (m_connection_counter < 10) 
-    {
-    m_connection_counter++;
-    if (m_connretry == 0 && m_connection_counter == 10)
+    if (m_mgconn)
       {
-      if (m_mgconn) Disconnect(); // Disconnect first (timeout)
-      Connect();      // Kick off the connection
+      Disconnect();
+      m_connretry = 10;
+      }
+    m_connection_counter = 0;
+    m_connect_jitter = -1;
+    }
+  else
+    {
+    // Choose jitter once when network first becomes stable
+    if (m_connection_counter == 0 && m_connect_jitter == -1)
+      {
+        if (m_conn_jitter_max > 0)
+          m_connect_jitter = esp_random() % (m_conn_jitter_max + 1);
+        else
+          m_connect_jitter = 0;
+        ESP_LOGD(TAG, "Connect timing: stable_wait=%d jitter=%d (max %d)",
+                 m_conn_stable_wait, m_connect_jitter, m_conn_jitter_max);
+      }
+
+    if (m_connection_counter < (m_conn_stable_wait + m_connect_jitter))
+      {
+      m_connection_counter++;
+      }
+
+    // Attempt connect only when:
+    //  - no retry countdown active
+    //  - stable period + jitter reached
+    if (m_connretry == 0 &&
+        m_connection_counter == (m_conn_stable_wait + m_connect_jitter))
+      {
+      if (m_mgconn) Disconnect(); // clear stale
+      ESP_LOGI(TAG, "Network stable %d(+%d)s -> connecting",
+               m_conn_stable_wait, m_connect_jitter);
+      m_connect_jitter = -1; // next cycle will re-pick if needed
+      Connect();
       return;
       }
-    } 
+    }
 
+  // Retry backoff countdown
   if (m_connretry > 0)
     {
     m_connretry--;
-    if (m_connretry == 0 && m_connection_counter == 10)
+    if (m_connretry == 0 &&
+        m_connection_counter >= (m_conn_stable_wait + (m_connect_jitter<0?0:m_connect_jitter)))
       {
-      if (m_mgconn) Disconnect(); // Disconnect first (timeout)
-      Connect(); // Kick off the connection
+      if (m_mgconn) Disconnect();
+      ESP_LOGI(TAG, "Retry timer elapsed -> reconnect");
+      m_connect_jitter = -1;
+      Connect();
       return;
       }
     }
@@ -953,37 +993,28 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       m_sendall = false;
       }
 
-    if (m_notify_info_pending) TransmitPendingNotificationsInfo();
+    if (m_notify_info_pending)  TransmitPendingNotificationsInfo();
     if (m_notify_error_pending) TransmitPendingNotificationsError();
     if (m_notify_alert_pending) TransmitPendingNotificationsAlert();
-    if ((m_notify_data_pending)&&(m_notify_data_waitcomp==0))
+    if (m_notify_data_pending && m_notify_data_waitcomp==0)
       TransmitPendingNotificationsData();
 
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
-
-    // Next send time depends on the state of the car
     int next = m_updatetime_idle;
+    if (m_peers != 0 && m_updatetime_connected < next) next = m_updatetime_connected;
+    if (caron && m_streaming > 0 && m_streaming < next) next = m_streaming;
+    if (caron && m_updatetime_on < next) next = m_updatetime_on;
+    if (StandardMetrics.ms_v_charge_inprogress->AsBool() && m_updatetime_charging < next) next = m_updatetime_charging;
+    if (StandardMetrics.ms_v_env_awake->AsBool() && m_updatetime_awake < next) next = m_updatetime_awake;
 
-    // Use the lowest enabled update value
-    if (m_peers != 0 && m_updatetime_connected < next)
-      next = m_updatetime_connected;
-    if ((caron && m_streaming > 0) && m_streaming < next)
-      next = m_streaming;
-    if (caron && m_updatetime_on < next)
-      next = m_updatetime_on;
-    if (StandardMetrics.ms_v_charge_inprogress->AsBool() && m_updatetime_charging < next)
-      next = m_updatetime_charging;
-    if (StandardMetrics.ms_v_env_awake->AsBool() && m_updatetime_awake < next)
-      next = m_updatetime_awake;
-
-    if ((m_lasttx_sendall == 0) ||
-        (m_updatetime_sendall > 0 && now > (m_lasttx_sendall + m_updatetime_sendall)))
+    if ( (m_lasttx_sendall == 0) ||
+         (m_updatetime_sendall > 0 && now > (m_lasttx_sendall + m_updatetime_sendall)) )
       {
       ESP_LOGI(TAG, "Transmit all metrics");
       TransmitAllMetrics();
       m_lasttx_sendall = now;
       }
-    else if ((m_lasttx==0)||(now>(m_lasttx+next)))
+    else if ( (m_lasttx==0) || (now > (m_lasttx + next)) )
       {
       TransmitModifiedMetrics();
       m_lasttx = now;
