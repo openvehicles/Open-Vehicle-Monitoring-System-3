@@ -668,6 +668,7 @@ void modem::State1Enter(modem_state1_t newstate)
 
     case NetWait:
       MyEvents.SignalEvent("system.modem.netwait", NULL);
+      if (m_ppp != NULL && !m_ppp->m_connected)
         {
         // Guard against calling muxtx before MUX POLL channel is actually open (was causing crash):
         if (m_mux && m_mux->IsChannelOpen(m_mux_channel_POLL))
