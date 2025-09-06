@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Server V3: 
+  added configurable connect stabilization & random jitter (server.v3 conn.stable_wait / conn.jitter.max) before MQTT connect to reduce reconnect storms.
+- Cellular: 
+  safeguarded CGATT attach/detach (only with mux/PPP), added NetLoss retry limit & optional power‑cycle recovery to prevent loops.
 - esp32wifi:
   The OVMS will switch from Wifi APClient to Wifi Client mode after the timeout reached and a client is not connected. "APClient" will be restored upon reboot/network restart.
   new config, settings at Wifi:

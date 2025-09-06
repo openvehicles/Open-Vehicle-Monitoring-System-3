@@ -930,12 +930,11 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     // Choose jitter once when network first becomes stable
     if (m_connection_counter == 0 && m_connect_jitter == -1)
       {
-        if (m_conn_jitter_max > 0)
-          m_connect_jitter = esp_random() % (m_conn_jitter_max + 1);
-        else
-          m_connect_jitter = 0;
-        ESP_LOGD(TAG, "Connect timing: stable_wait=%d jitter=%d (max %d)",
-                 m_conn_stable_wait, m_connect_jitter, m_conn_jitter_max);
+      if (m_conn_jitter_max > 0)
+        m_connect_jitter = esp_random() % (m_conn_jitter_max + 1);
+      else
+        m_connect_jitter = 0;
+      ESP_LOGD(TAG, "Connect timing: stable_wait=%d jitter=%d (max %d)", m_conn_stable_wait, m_connect_jitter, m_conn_jitter_max);
       }
 
     if (m_connection_counter < (m_conn_stable_wait + m_connect_jitter))
@@ -946,12 +945,10 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     // Attempt connect only when:
     //  - no retry countdown active
     //  - stable period + jitter reached
-    if (m_connretry == 0 &&
-        m_connection_counter == (m_conn_stable_wait + m_connect_jitter))
+    if (m_connretry == 0 && m_connection_counter == (m_conn_stable_wait + m_connect_jitter))
       {
       if (m_mgconn) Disconnect(); // clear stale
-      ESP_LOGI(TAG, "Network stable %d(+%d)s -> connecting",
-               m_conn_stable_wait, m_connect_jitter);
+      ESP_LOGI(TAG, "Network stable %d(+%d)s -> connecting", m_conn_stable_wait, m_connect_jitter);
       m_connect_jitter = -1; // next cycle will re-pick if needed
       Connect();
       return;
@@ -962,8 +959,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
   if (m_connretry > 0)
     {
     m_connretry--;
-    if (m_connretry == 0 &&
-        m_connection_counter >= (m_conn_stable_wait + (m_connect_jitter<0?0:m_connect_jitter)))
+    if (m_connretry == 0 && m_connection_counter >= (m_conn_stable_wait + (m_connect_jitter<0?0:m_connect_jitter)))
       {
       if (m_mgconn) Disconnect();
       ESP_LOGI(TAG, "Retry timer elapsed -> reconnect");
@@ -1007,8 +1003,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     if (StandardMetrics.ms_v_charge_inprogress->AsBool() && m_updatetime_charging < next) next = m_updatetime_charging;
     if (StandardMetrics.ms_v_env_awake->AsBool() && m_updatetime_awake < next) next = m_updatetime_awake;
 
-    if ( (m_lasttx_sendall == 0) ||
-         (m_updatetime_sendall > 0 && now > (m_lasttx_sendall + m_updatetime_sendall)) )
+    if ( (m_lasttx_sendall == 0) || (m_updatetime_sendall > 0 && now > (m_lasttx_sendall + m_updatetime_sendall)) )
       {
       ESP_LOGI(TAG, "Transmit all metrics");
       TransmitAllMetrics();
