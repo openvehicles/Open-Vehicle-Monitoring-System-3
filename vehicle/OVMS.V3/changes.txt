@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Vehicle notifications: grid log (history records `*-LOG-Grid`) V2 additions:
+    pos_odometer
 - Server V3: 
   added configurable connect stabilization & random jitter (server.v3 conn.stable_wait / conn.jitter.max) before MQTT connect to reduce reconnect storms.
 - Cellular: 

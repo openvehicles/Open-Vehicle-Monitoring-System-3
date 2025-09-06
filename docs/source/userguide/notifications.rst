@@ -176,7 +176,7 @@ values on a power outage.
   - History record type: ``*-LOG-Grid``
   - Format: CSV
   - Archive time: config ``notify log.grid.storetime`` (days)
-  - Fields/columns:
+  - Fields/columns version 1:
 
     * pos_gpslock
     * pos_latitude
@@ -222,6 +222,10 @@ values on a power outage.
     * bat_energy_recd_total
     * bat_coulomb_used_total
     * bat_coulomb_recd_total
+
+  - Version 2 additions:
+
+    * pos_odometer
 
 
 ----------------

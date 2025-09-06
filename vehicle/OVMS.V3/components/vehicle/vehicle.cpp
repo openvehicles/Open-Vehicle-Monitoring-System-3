@@ -2259,7 +2259,7 @@ void OvmsVehicle::NotifyGridLog()
 
   std::ostringstream buf;
   buf
-    << "*-LOG-Grid,1," << storetime_days * 86400        // V1, increment on additions
+    << "*-LOG-Grid,2," << storetime_days * 86400        // V2, increment on additions
 
     << std::noboolalpha
     << "," << (StdMetrics.ms_v_pos_gpslock->AsBool() ? 1 : 0)
@@ -2324,6 +2324,10 @@ void OvmsVehicle::NotifyGridLog()
     << "," << StdMetrics.ms_v_bat_energy_recd_total->AsFloat()
     << "," << StdMetrics.ms_v_bat_coulomb_used_total->AsFloat()
     << "," << StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat()
+
+    // V2 additions:
+    << std::setprecision(1)
+    << "," << StdMetrics.ms_v_pos_odometer->AsFloat()
     ;
 
   MyNotify.NotifyString("data", "log.grid", buf.str().c_str());
