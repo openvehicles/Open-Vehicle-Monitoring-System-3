@@ -81,7 +81,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info, full_km, rebootnw, net_type;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate_system, gpsonoff, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify;
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate_system, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify;
 
   if (c.method == "POST") {
     // process form submission:
