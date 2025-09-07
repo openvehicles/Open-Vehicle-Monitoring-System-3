@@ -413,7 +413,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
-  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", true);
+  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", false);
   m_gps_onoff         = MyConfig.GetParamValueBool("xsq", "gps.onoff", true);
   m_gps_reactmin      = MyConfig.GetParamValueInt("xsq", "gps.reactmin", 50);
   m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
@@ -802,7 +802,7 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     sprintf(buf, "booster,%s,%s,%s,%d,%d,%d", _climate_on.c_str(), _climate_weekly.c_str(), mt_climate_time->AsString().c_str(), mt_climate_ds->AsInt(), mt_climate_de->AsInt(), mt_climate_1to3->AsInt());
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
     StdMetrics.ms_v_gen_current->SetValue(3);
-    NotifyClimateTimer();
+    if(MyConfig.GetParamValueBool("xsq", "climate.notify",false)) NotifyClimateTimer();
   }
 }
 
