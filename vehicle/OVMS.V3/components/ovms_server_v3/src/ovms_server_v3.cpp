@@ -83,7 +83,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
         opts.will_message = "no";
         opts.flags |= MG_MQTT_WILL_RETAIN;
-	opts.keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
+	      opts.keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
         mg_set_protocol_mqtt(nc);
         mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_vehicleid.c_str(), opts);
         }
@@ -273,19 +273,48 @@ OvmsServerV3::~OvmsServerV3()
 
 void OvmsServerV3::TransmitAllMetrics()
   {
+  // Chunked transmission to avoid flooding MQTT / job queues (job queue overflow issue):
+  // We send at most MAX_PER_CALL metrics per invocation. Remaining metrics
+  // will be sent on subsequent scheduler ticks (Ticker1 triggers this again).
+  // This prevents large bursts that could overflow internal queues.
+  static OvmsMetric* s_next = nullptr;
+  const int MAX_PER_CALL = 30;   // tune as needed
+
   OvmsMutexLock mg(&m_mgconn_mutex);
   if (!m_mgconn)
-    return;
-
-  OvmsMetric* metric = MyMetrics.m_first;
-  while (metric != NULL)
     {
+    s_next = nullptr;
+    return;
+    }
+
+  if (s_next == nullptr)
+    s_next = MyMetrics.m_first;
+
+  int sent = 0;
+  while (s_next != nullptr && sent < MAX_PER_CALL)
+    {
+    OvmsMetric* metric = s_next;
+    s_next = metric->m_next;
+
     metric->ClearModified(MyOvmsServerV3Modifier);
-    if (!metric->AsString().empty())
+    std::string val = metric->AsString();
+    if (!val.empty())
       {
       TransmitMetric(metric);
       }
-    metric = metric->m_next;
+    sent++;
+    }
+
+  // If not finished, request another immediate round (next tick) by forcing update timer:
+  if (s_next != nullptr)
+    {
+    // Force next modified-metric cycle soon:
+    m_lasttx = 0;
+    }
+  else
+    {
+    // Completed full pass
+    s_next = nullptr;
     }
   }
 
