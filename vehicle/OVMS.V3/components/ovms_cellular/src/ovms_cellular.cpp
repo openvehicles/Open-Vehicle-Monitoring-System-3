@@ -321,7 +321,7 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_gps_usermode = GUM_DEFAULT;
   m_gps_parkpause = 0;
   m_gps_stopticker = 0;
-  m_gps_startticker = MyConfig.GetParamValueInt("modem", "gps.parkreactivate", 0) * 60; // convert minutes to seconds
+  m_gps_startticker = 0;
   m_mux = NULL;
   m_ppp = NULL;
   m_driver = NULL;
@@ -1647,6 +1647,14 @@ void modem::Ticker(std::string event, void* data)
       ESP_LOGI(TAG, "GPS reactivation requested, but not enabled or in user mode");
       }
     }
+
+    if (!m_nmea && m_gps_enabled && m_gps_usermode == GUM_DEFAULT &&
+        m_gps_parkpause > 0 && StdMetrics.ms_v_env_on->AsBool() == false &&
+        MyConfig.GetParamValueInt("modem", "gps.parkreactivate", 0) > 0 &&
+        m_gps_startticker == 0 && m_gps_stopticker == 0)
+      {
+      m_gps_startticker = MyConfig.GetParamValueInt("modem", "gps.parkreactivate", 0) * 60; // convert minutes to seconds
+      }
   }
 
 void modem::EventListener(std::string event, void* data)
@@ -1715,7 +1723,8 @@ void modem::ConfigChanged(std::string event, void* data)
       m_gps_reactivate = gps_reactivate;
       m_gps_reactlock = gps_reactlock;
       }
-    else if (enable_gps != m_gps_enabled || gps_parkpause != m_gps_parkpause || gps_reactivate != m_gps_reactivate || gps_reactlock != m_gps_reactlock)
+    else if (enable_gps != m_gps_enabled || gps_parkpause != m_gps_parkpause || 
+            gps_reactivate != m_gps_reactivate || gps_reactlock != m_gps_reactlock)
       {
       // User changed GPS configuration; translate to status change:
       m_gps_usermode = GUM_DEFAULT;
@@ -1728,7 +1737,8 @@ void modem::ConfigChanged(std::string event, void* data)
       else if (m_nmea && GPS_SHALL_STOP())
         StopNMEA();
       // Adjust stop ticker:
-      if (m_nmea && m_gps_enabled && StdMetrics.ms_v_env_on->AsBool() == false && StdMetrics.ms_v_env_parktime->AsInt() < m_gps_parkpause)
+      if (m_nmea && m_gps_enabled && StdMetrics.ms_v_env_on->AsBool() == false && 
+          StdMetrics.ms_v_env_parktime->AsInt() < m_gps_parkpause)
         m_gps_stopticker = m_gps_parkpause - StdMetrics.ms_v_env_parktime->AsInt();
       else
         m_gps_stopticker = m_gps_parkpause;
