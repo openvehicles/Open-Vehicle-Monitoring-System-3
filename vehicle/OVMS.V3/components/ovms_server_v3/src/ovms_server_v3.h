@@ -109,6 +109,7 @@ class OvmsServerV3 : public OvmsServer
     int m_updatetime_charging;
     int m_updatetime_sendall;
     int m_updatetime_keepalive;
+    bool m_updatetime_priority;
     bool m_legacy_event_topic;
 
     bool m_connection_available;
@@ -130,6 +131,7 @@ class OvmsServerV3 : public OvmsServer
     void Disconnect();
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
+    void TransmitPriorityMetrics();
     int TransmitNotificationInfo(OvmsNotifyEntry* entry);
     int TransmitNotificationError(OvmsNotifyEntry* entry);
     int TransmitNotificationAlert(OvmsNotifyEntry* entry);

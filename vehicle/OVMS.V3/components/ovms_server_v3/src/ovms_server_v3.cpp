@@ -273,65 +273,112 @@ OvmsServerV3::~OvmsServerV3()
 
 void OvmsServerV3::TransmitAllMetrics()
   {
-  // Chunked transmission to avoid flooding MQTT / job queues (job queue overflow issue):
-  // We send at most MAX_PER_CALL metrics per invocation. Remaining metrics
-  // will be sent on subsequent scheduler ticks (Ticker1 triggers this again).
-  // This prevents large bursts that could overflow internal queues.
-  static OvmsMetric* s_next = nullptr;
-  const int MAX_PER_CALL = 30;   // tune as needed
+  static size_t s_next_index = 0;
+  const int MAX_PER_CALL = 20;
 
   OvmsMutexLock mg(&m_mgconn_mutex);
   if (!m_mgconn)
     {
-    s_next = nullptr;
+    s_next_index = 0;
     return;
     }
 
-  if (s_next == nullptr)
-    s_next = MyMetrics.m_first;
-
-  int sent = 0;
-  while (s_next != nullptr && sent < MAX_PER_CALL)
+  // Locate starting metric for current index:
+  OvmsMetric* m = MyMetrics.m_first;
+  size_t pos = 0;
+  while (m && pos < s_next_index)
     {
-    OvmsMetric* metric = s_next;
-    s_next = metric->m_next;
-
-    metric->ClearModified(MyOvmsServerV3Modifier);
-    std::string val = metric->AsString();
-    if (!val.empty())
-      {
-      TransmitMetric(metric);
-      }
-    sent++;
+    m = m->m_next;
+    pos++;
     }
 
-  // If not finished, request another immediate round (next tick) by forcing update timer:
-  if (s_next != nullptr)
+  // If metrics list shrank (index out of range), restart from beginning:
+  if (!m && s_next_index != 0)
     {
-    // Force next modified-metric cycle soon:
-    m_lasttx = 0;
+    s_next_index = 0;
+    m = MyMetrics.m_first;
+    pos = 0;
+    }
+
+  int sent = 0;
+  while (m && sent < MAX_PER_CALL)
+    {
+    OvmsMetric* cur = m;
+    m = m->m_next;
+
+    cur->ClearModified(MyOvmsServerV3Modifier);
+    // (TransmitMetric() itself applies include/exclude filters)
+    TransmitMetric(cur);
+
+    sent++;
+    s_next_index++;
+    }
+
+  if (!m)
+    {
+    // Completed a full pass
+    s_next_index = 0;
     }
   else
     {
-    // Completed full pass
-    s_next = nullptr;
+    // More remain; hint for rapid continuation (limited by caller behavior)
+    m_lasttx_sendall = 0;
     }
   }
 
 void OvmsServerV3::TransmitModifiedMetrics()
   {
+  static size_t s_mod_next_index = 0;
+  const int MAX_PER_CALL = 20; // Slightly larger than “all” chunk (tune as needed)
+
   OvmsMutexLock mg(&m_mgconn_mutex);
   if (!m_mgconn)
-    return;
-
-  OvmsMetric* metric = MyMetrics.m_first;
-  while (metric != NULL)
     {
-    if (metric->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    s_mod_next_index = 0;
+    return;
+    }
+
+  // Locate starting point:
+  OvmsMetric* m = MyMetrics.m_first;
+  size_t pos = 0;
+  while (m && pos < s_mod_next_index)
+    {
+    m = m->m_next;
+    pos++;
+    }
+
+  // List shrank? restart:
+  if (!m && s_mod_next_index != 0)
+    {
+    s_mod_next_index = 0;
+    m = MyMetrics.m_first;
+    pos = 0;
+    }
+
+  int sent = 0;
+  while (m && sent < MAX_PER_CALL)
+    {
+    OvmsMetric* cur = m;
+    m = m->m_next;
+
+    // Check & clear modification flag atomically for our modifier slot:
+    if (cur->IsModifiedAndClear(MyOvmsServerV3Modifier))
       {
-      TransmitMetric(metric);
+      TransmitMetric(cur);
+      sent++;
       }
-    metric = metric->m_next;
+    // Advance scan position regardless of modification:
+    s_mod_next_index++;
+    }
+
+  if (!m)
+    {
+    // Completed full pass; restart next call
+    s_mod_next_index = 0;
+    }
+  else
+    {
+    m_lasttx = 0;
     }
   }
 
@@ -351,6 +398,36 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
     MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
   ESP_LOGD(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
+  }
+
+static const char* s_priority_gps_metrics[] = {
+  "v.p.latitude",
+  "v.p.longitude",
+  "v.p.altitude",
+  "v.p.speed",
+  "m.time.utc",
+  "v.e.on",
+  "v.b.soc"
+};
+
+static const size_t s_priority_gps_metrics_count =
+  sizeof(s_priority_gps_metrics)/sizeof(s_priority_gps_metrics[0]);
+  
+void OvmsServerV3::TransmitPriorityMetrics()
+  {
+  OvmsMutexLock mg(&m_mgconn_mutex);
+  if (!m_mgconn) return;
+  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+
+  for (size_t i = 0; i < s_priority_gps_metrics_count; ++i)
+    {
+    OvmsMetric* m = MyMetrics.Find(s_priority_gps_metrics[i]);
+    if (!m) continue;
+    if (m->IsModifiedAndClear(MyOvmsServerV3Modifier))
+      {
+      TransmitMetric(m);
+      }
+    }
   }
 
 int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
@@ -882,6 +959,7 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_idle);
   m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", 0);
   m_updatetime_keepalive = MyConfig.GetParamValueInt("server.v3", "updatetime.keepalive", 29*60);
+  m_updatetime_priority = MyConfig.GetParamValueBool("server.v3", "updatetime.priority", false);
   m_legacy_event_topic = MyConfig.GetParamValueBool("server.v3", "events.legacy_topic", true);
   m_metrics_filter.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.include"),
                                MyConfig.GetParamValue("server.v3", "metrics.exclude"));
@@ -1001,6 +1079,8 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
   if (StandardMetrics.ms_s_v3_connected->AsBool())
     {
     int now = StandardMetrics.ms_m_monotonic->AsInt();
+    if (m_updatetime_priority && StandardMetrics.ms_v_env_awake->AsBool() && now % m_streaming == 0) 
+      TransmitPriorityMetrics();
     if (m_sendall)
       {
       ESP_LOGI(TAG, "Subscribe to MQTT topics");

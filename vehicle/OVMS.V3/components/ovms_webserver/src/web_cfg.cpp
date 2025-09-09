@@ -1584,7 +1584,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   std::string error;
   std::string server, user, password, port, topic_prefix;
   std::string updatetime_connected, updatetime_idle, updatetime_on, updatetime_charging, updatetime_awake, updatetime_sendall, updatetime_keepalive;
-  bool tls, legacy_event_topic;
+  bool tls, legacy_event_topic, updatetime_priority;
 
   if (c.method == "POST") {
     // process form submission:
@@ -1602,6 +1602,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_awake = c.getvar("updatetime_awake");
     updatetime_sendall = c.getvar("updatetime_sendall");
     updatetime_keepalive = c.getvar("updatetime_keepalive");
+    updatetime_priority = (c.getvar("updatetime_priority") == "yes");
 
     // validate:
     if (port != "") {
@@ -1646,6 +1647,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       }
     }
 
+
     if (error == "") {
       // success:
       MyConfig.SetParamValue("server.v3", "server", server);
@@ -1678,6 +1680,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
         MyConfig.DeleteInstance("server.v3", "updatetime.keepalive");
       else
         MyConfig.SetParamValue("server.v3", "updatetime.keepalive", updatetime_keepalive);
+      MyConfig.SetParamValueBool("server.v3", "updatetime.priority", updatetime_priority);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Server V3 (MQTT) connection configured.</p>");
@@ -1707,6 +1710,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_awake = MyConfig.GetParamValue("server.v3", "updatetime.awake");
     updatetime_sendall = MyConfig.GetParamValue("server.v3", "updatetime.sendall");
     updatetime_keepalive = MyConfig.GetParamValue("server.v3", "updatetime.keepalive");
+    updatetime_priority = MyConfig.GetParamValueBool("server.v3", "updatetime.priority", false);
 
     // generate form:
     c.head(200);
@@ -1749,6 +1753,9 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "optional, in seconds, only used if set");
   c.input_text("…keepalive", "updatetime_keepalive", updatetime_keepalive.c_str(),
     "optional, in seconds, default: 1740");
+  c.input_checkbox("…prioritize GPS tracking metrics", "updatetime_priority", updatetime_priority,
+    "<p>GPS tracking metrics should be updated before other MQTT traffic. This can contribute to smoother tracking on V3 servers.</p>"
+    "<p><strong>Note:</strong> The update interval corresponds to the <strong>Vehicle stream</strong> setting!</p>");
   c.fieldset_end();
 
   c.print("<span class=\"help-block\">"
