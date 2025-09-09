@@ -20,11 +20,11 @@ GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or an
 SOC Display                 Yes
 SOH Display                 Yes
 Range Display               Yes
-GPS Location                Yes (from modem module GPS, powersaving mode at parking, in 50* Minutes interval reactivate for 10 Minutes (*config set xsq gps.reactmin 50))
+GPS Location                Yes (from modem module)
 Speed Display               Yes
 Temperature Display         Yes (External Temp and Battery)
 BMS v+t Display             only Cell Volts atm.
-TPMS Display                Yes pressure only
+TPMS Display                Yes pressure only, for iOS App Open Vehicle activate at Features Web UI 'iOS TPMS fix' for showing pressure value
 Charge Status Display       Yes
 Charge Interruption Alerts  No
 Charge Control              No

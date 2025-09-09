@@ -124,8 +124,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_climate_start = false;
   m_climate_start_day = false;
   m_climate_ticker = 0;
-  m_gps_off = false;
-  m_gps_ticker = 0;
   m_12v_ticker = 0;
   m_12v_charge_state = false;
   m_v2_ticker = 0;
@@ -303,9 +301,17 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   setTPMSValueBoot();                                          // set TPMS dummy values to 0
 
   #ifdef CONFIG_OVMS_COMP_CELLULAR
-    if(MyConfig.GetParamValue("xsq", "gps.onoff","0") == "0") {
-      MyConfig.SetParamValueBool("xsq", "gps.onoff", true);
-      MyConfig.SetParamValueInt("xsq", "gps.reactmin", 50);
+    
+    // Features option: auto disable GPS when parked -> moved to cellular module
+    if(MyConfig.GetParamValueBool("xsq", "gps.onoff", true) && MyConfig.GetParamValueBool("xsq", "gps.deact", true)) {
+      MyConfig.SetParamValueBool("xsq", "gps.deact", false); // delete old config entry and set new entry one time
+      MyConfig.SetParamValue("modem", "gps.parkpause", "600"); // default 10 min.
+      MyConfig.SetParamValue("modem", "gps.parkreactivate", "50"); // default 50 min.
+      MyConfig.SetParamValue("modem", "gps.parkreactlock", "5"); // default 5 min.
+      MyConfig.SetParamValue("vehicle", "stream", "10"); // set stream to 10 sec.
+      if(MyConfig.GetParamValue("xsq", "gps.onoff","0") != "0") MyConfig.DeleteInstance("xsq", "gps.onoff");  // delete old config entry
+      if(MyConfig.GetParamValue("xsq", "gps.off","0") != "0") MyConfig.DeleteInstance("xsq", "gps.off");  // delete old config entry
+      if(MyConfig.GetParamValue("xsq", "gps.reactmin","0") != "0") MyConfig.DeleteInstance("xsq", "gps.reactmin");  // delete old config entry
     }
     
     #ifdef CONFIG_OVMS_COMP_WIFI
@@ -392,12 +398,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_resettrip         = MyConfig.GetParamValueBool("xsq", "resettrip", false);
   m_resettotal        = MyConfig.GetParamValueBool("xsq", "resettotal", false);
   m_tripnotify        = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
-/*
-  m_TPMS_FL           = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
-  m_TPMS_FR           = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
-  m_TPMS_RL           = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
-  m_TPMS_RR           = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
-*/
   m_tpms_index[3]     = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
   m_tpms_index[2]     = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
   m_tpms_index[1]     = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
@@ -412,8 +412,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
   m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", false);
-  m_gps_onoff         = MyConfig.GetParamValueBool("xsq", "gps.onoff", true);
-  m_gps_reactmin      = MyConfig.GetParamValueInt("xsq", "gps.reactmin", 50);
   m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
   m_indicator         = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
   m_extendedStats     = MyConfig.GetParamValueBool("xsq", "extended.stats", false);         //!< activate extended stats e.g. trip and maintenance data
@@ -839,51 +837,6 @@ void OvmsVehicleSmartEQ::Check12vState() {
   }
 }
 
-// switch the GPS on/off depending on the parktime and the bus state
-void OvmsVehicleSmartEQ::GPSOnOff() {
-  #ifdef CONFIG_OVMS_COMP_CELLULAR
-    static const int PARK_TIMEOUT_SECS = 600;  // 10 minutes
-    static const int INITIAL_DELAY = 10;
-    int gps_parkpause = MyConfig.GetParamValueInt("modem", "gps.parkpause", 0); // Check if GPS parking off is enabled in Cellular config
-    if (gps_parkpause > 0) {
-        ESP_LOGI(TAG, "smart EQ GPS on/off disabled, GPS parking off by Cellular config is enabled");
-        MyConfig.SetParamValueBool("xsq", "gps.onoff", false);
-        m_gps_onoff = false;
-        return;
-    }
-    m_gps_ticker++;
-
-    // Power saving: Turn off GPS
-    bool should_turn_off = (StdMetrics.ms_v_env_parktime->AsInt() > PARK_TIMEOUT_SECS &&
-                          !StdMetrics.ms_v_env_on->AsBool() &&
-                          m_gps_onoff &&
-                          !m_gps_off &&
-                          (m_gps_ticker > INITIAL_DELAY));
-
-    // Reactivation conditions
-    bool should_turn_on = ((m_gps_ticker >= m_gps_reactmin) && m_gps_onoff && m_gps_off) ||
-                        (mt_bus_awake->AsBool() && m_gps_off);
-
-    if (should_turn_off) {
-        ESP_LOGI(TAG, "Turning GPS off - vehicle parked and inactive");
-        m_gps_off = true;
-        m_gps_ticker = 0;
-        if (MyPeripherals && MyPeripherals->m_cellular_modem) {
-            MyPeripherals->m_cellular_modem->StopNMEA();
-        }
-    } else if (should_turn_on) {
-        ESP_LOGI(TAG, "Turning GPS on - timer/bus wake condition");
-        m_gps_off = false;
-        m_gps_ticker = 0;
-        if (MyPeripherals && MyPeripherals->m_cellular_modem) {
-            MyPeripherals->m_cellular_modem->StartNMEA();
-        }
-    }
-  #else
-      ESP_LOGD(TAG, "GPS control disabled - cellular modem support not enabled");
-  #endif // CONFIG_OVMS_COMP_CELLULAR
-}
-
 // check the Server V2 connection and reboot the network if needed
 void OvmsVehicleSmartEQ::CheckV2State() {
   #ifdef CONFIG_OVMS_COMP_SERVER_V2
@@ -1270,11 +1223,6 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
     m_warning_unlocked = false;
 
     #ifdef CONFIG_OVMS_COMP_CELLULAR
-      if (m_gps_off) {
-        m_gps_off = false;
-        m_gps_ticker = 0;
-        MyPeripherals->m_cellular_modem->StartNMEA();
-      }
       m_12v_ticker = 0;
       m_climate_ticker = 0;
     #endif
@@ -1353,7 +1301,6 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
     #endif
 
     #ifdef CONFIG_OVMS_COMP_CELLULAR
-      if(m_gps_onoff && !StdMetrics.ms_v_env_on->AsBool()) GPSOnOff();
       if(m_network_type != m_network_type_ls) ModemNetworkType();
     #endif
 

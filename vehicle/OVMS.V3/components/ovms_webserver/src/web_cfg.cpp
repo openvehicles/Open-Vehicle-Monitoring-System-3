@@ -876,11 +876,11 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 
 #ifdef CONFIG_OVMS_COMP_CELLULAR
 /**
- * HandleCfgModem: configure APN & cellular modem features (URL /cfg/modem)
+ * HandleCfgModem: configure APN & cellular modem features & GPS (URL /cfg/modem)
  */
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
-  std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause, gps_parkreactivate, gps_parkreactlock;
+  std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause, gps_parkreactivate, gps_parkreactlock, vehicle_stream;
   bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode;
   float cfg_sq_good, cfg_sq_bad;
 
@@ -898,6 +898,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     gps_parkpause = c.getvar("gps_parkpause");
     gps_parkreactivate = c.getvar("gps_parkreactivate");
     gps_parkreactlock = c.getvar("gps_parkreactlock");
+    vehicle_stream = c.getvar("vehicle_stream");
     cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
     cfg_sq_bad = atof(c.getvar("cfg_sq_bad").c_str());
 
@@ -924,6 +925,10 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("modem", "gps.parkpause", gps_parkpause);
       MyConfig.SetParamValue("modem", "gps.parkreactivate", gps_parkreactivate);
       MyConfig.SetParamValue("modem", "gps.parkreactlock", gps_parkreactlock);
+      if (vehicle_stream == "0")
+        MyConfig.DeleteInstance("vehicle", "stream");
+      else
+        MyConfig.SetParamValue("vehicle", "stream", vehicle_stream);
       MyConfig.SetParamValueFloat("network", "modem.sq.good", cfg_sq_good);
       MyConfig.SetParamValueFloat("network", "modem.sq.bad", cfg_sq_bad);
     }
@@ -959,6 +964,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   gps_parkpause = MyConfig.GetParamValue("modem", "gps.parkpause","0");
   gps_parkreactivate = MyConfig.GetParamValue("modem", "gps.parkreactivate","0");
   gps_parkreactlock = MyConfig.GetParamValue("modem", "gps.parkreactlock","5");
+  vehicle_stream = MyConfig.GetParamValue("vehicle", "stream","0");
   cfg_sq_good = MyConfig.GetParamValueFloat("network", "modem.sq.good", -93);
   cfg_sq_bad = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -95);
 
@@ -1006,6 +1012,16 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable SMS", "enable_sms", enable_sms);
   c.input_checkbox("Enable GPS", "enable_gps", enable_gps);
   c.input_checkbox("Use GPS time", "enable_gpstime", enable_gpstime);
+  c.fieldset_end();
+
+  c.fieldset_start("Cellular client options");
+  c.input_slider("Good signal level", "cfg_sq_good", 3, "dBm", -1, cfg_sq_good, -93.0, -128.0, 0.0, 0.1,
+    "<p>Threshold for usable cellular signal strength</p>");
+  c.input_slider("Bad signal level", "cfg_sq_bad", 3, "dBm", -1, cfg_sq_bad, -95.0, -128.0, 0.0, 0.1,
+    "<p>Threshold for unusable cellular signal strength</p>");
+  c.fieldset_end();
+
+  c.fieldset_start("GPS parking and tracking");
   c.input("number", "GPS park pause", "gps_parkpause", gps_parkpause.c_str(), "Default: 0 = disabled",
     "<p>Auto pause GPS when parking for longer than this time / 0 = no auto pausing</p>"
     "<p>Pausing the GPS subsystem can help to avoid draining the 12V battery, see"
@@ -1018,13 +1034,10 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.input("number", "GPS lock time", "gps_parkreactlock", gps_parkreactlock.c_str(), "Default: 5",
     "<p>by default, GPS lock for 5 minutes until automatic shutdown during parking time</p>",
     "min=\"5\" step=\"1\"", "Minutes");
-  c.fieldset_end();
-
-  c.fieldset_start("Cellular client options");
-  c.input_slider("Good signal level", "cfg_sq_good", 3, "dBm", -1, cfg_sq_good, -93.0, -128.0, 0.0, 0.1,
-    "<p>Threshold for usable cellular signal strength</p>");
-  c.input_slider("Bad signal level", "cfg_sq_bad", 3, "dBm", -1, cfg_sq_bad, -95.0, -128.0, 0.0, 0.1,
-    "<p>Threshold for unusable cellular signal strength</p>");
+  c.input("number", "Location streaming", "vehicle_stream", vehicle_stream.c_str(), "Default: 0",
+    "<p>While driving send location updates to server every n seconds, 0 = use default update interval</p>"
+    "<p>from server configuration. Same as App feature #8.</p>",
+    "min=\"0\" step=\"1\"", "Seconds");
   c.fieldset_end();
 
   c.hr();
@@ -1825,11 +1838,11 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // success:
-      if (vehicle_minsoc == "")
+      if (vehicle_minsoc == "0")
         MyConfig.DeleteInstance("vehicle", "minsoc");
       else
         MyConfig.SetParamValue("vehicle", "minsoc", vehicle_minsoc);
-      if (vehicle_stream == "")
+      if (vehicle_stream == "0")
         MyConfig.DeleteInstance("vehicle", "stream");
       else
         MyConfig.SetParamValue("vehicle", "stream", vehicle_stream);

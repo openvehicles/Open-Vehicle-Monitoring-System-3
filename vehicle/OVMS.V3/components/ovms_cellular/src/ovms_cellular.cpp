@@ -1631,7 +1631,7 @@ void modem::Ticker(std::string event, void* data)
   if (m_gps_stopticker > 0 && --m_gps_stopticker == 0)
     {
     ESP_LOGI(TAG, "Scheduled GPS stop");
-    StopNMEA();
+    if (m_nmea) StopNMEA();
     }
 
   // GPS reactivation:
@@ -1647,6 +1647,14 @@ void modem::Ticker(std::string event, void* data)
       ESP_LOGI(TAG, "GPS reactivation requested, but not enabled or in user mode");
       }
     }
+
+    if (!m_nmea && m_gps_enabled && m_gps_usermode == GUM_DEFAULT &&
+        m_gps_parkpause > 0 && StdMetrics.ms_v_env_on->AsBool() == false &&
+        m_gps_reactivate > 0 &&
+        m_gps_startticker == 0 && m_gps_stopticker == 0)
+      {
+      m_gps_startticker = m_gps_reactivate * 60; // convert minutes to seconds
+      }
   }
 
 void modem::EventListener(std::string event, void* data)
@@ -1664,6 +1672,7 @@ void modem::EventListener(std::string event, void* data)
     if (!m_nmea && m_gps_enabled && m_gps_usermode == GUM_DEFAULT)
       {
       ESP_LOGI(TAG, "Vehicle switched on, starting GPS");
+      m_gps_startticker = 0;
       StartNMEA();
       }
     m_gps_stopticker = 0;
@@ -1672,26 +1681,27 @@ void modem::EventListener(std::string event, void* data)
     {
     if (m_nmea && m_gps_enabled && m_gps_usermode == GUM_DEFAULT && m_gps_parkpause > 0)
       {
-      ESP_LOGI(TAG, "Vehicle switched off, scheduling GPS stop in %d seconds", m_gps_parkpause);
       m_gps_stopticker = m_gps_parkpause;
+      ESP_LOGI(TAG, "Vehicle switched off, scheduling GPS stop in %d seconds", m_gps_parkpause);
       }
     }
   else if (event == "system.modem.gpsstop")
     {
     if (m_gps_enabled && m_gps_usermode == GUM_DEFAULT && StdMetrics.ms_v_env_on->AsBool() == false)
       {
-      ESP_LOGI(TAG, "GPS stopped by GPS pause system, restarting in %d minutes", m_gps_reactivate);
       m_gps_startticker = m_gps_reactivate * 60; // convert minutes to seconds
+      m_gps_stopticker = StdMetrics.ms_v_env_parktime->AsInt() + m_gps_reactivate * 60; // ensure we don't stop again before reactivation
+      ESP_LOGI(TAG, "GPS stopped by GPS pause system, restarting in %d minutes", m_gps_reactivate);
       }    
     }
   else if (event == "system.modem.gotgps")
     {
     if (m_nmea && m_gps_enabled && m_gps_usermode == GUM_DEFAULT && m_gps_parkpause > 0 && StdMetrics.ms_v_env_on->AsBool() == false)
       {
+      m_gps_startticker = 0;
       m_gps_stopticker = m_gps_reactlock * 60; // default 5 minutes
       ESP_LOGI(TAG, "GPS got fix, scheduling GPS stop in %d seconds", m_gps_stopticker);
       }
-      
     }
   }
 
@@ -1703,8 +1713,8 @@ void modem::ConfigChanged(std::string event, void* data)
     {
     bool enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
     int gps_parkpause = MyConfig.GetParamValueInt("modem", "gps.parkpause", 0);
-    int gps_reactivate = MyConfig.GetParamValueInt("modem", "gps.reactivate", 0);
-    int gps_reactlock = MyConfig.GetParamValueInt("modem", "gps.reactlock", 5);
+    int gps_reactivate = MyConfig.GetParamValueInt("modem", "gps.parkreactivate", 0);
+    int gps_reactlock = MyConfig.GetParamValueInt("modem", "gps.parkreactlock", 5);
     if (event == "config.mounted")
       {
       // Init:
@@ -1713,7 +1723,8 @@ void modem::ConfigChanged(std::string event, void* data)
       m_gps_reactivate = gps_reactivate;
       m_gps_reactlock = gps_reactlock;
       }
-    else if (enable_gps != m_gps_enabled || gps_parkpause != m_gps_parkpause)
+    else if (enable_gps != m_gps_enabled || gps_parkpause != m_gps_parkpause || 
+            gps_reactivate != m_gps_reactivate || gps_reactlock != m_gps_reactlock)
       {
       // User changed GPS configuration; translate to status change:
       m_gps_usermode = GUM_DEFAULT;
@@ -1726,12 +1737,13 @@ void modem::ConfigChanged(std::string event, void* data)
       else if (m_nmea && GPS_SHALL_STOP())
         StopNMEA();
       // Adjust stop ticker:
-      if (m_nmea && m_gps_enabled && StdMetrics.ms_v_env_on->AsBool() == false &&
+      if (m_nmea && m_gps_enabled && StdMetrics.ms_v_env_on->AsBool() == false && 
           StdMetrics.ms_v_env_parktime->AsInt() < m_gps_parkpause)
         m_gps_stopticker = m_gps_parkpause - StdMetrics.ms_v_env_parktime->AsInt();
       else
-        m_gps_stopticker = 0;
-      }
+        m_gps_stopticker = m_gps_parkpause;
+        m_gps_startticker = m_gps_reactivate * 60;
+      }      
     }
 
   if (event == "config.mounted" || !param || param->GetName() == "network")
