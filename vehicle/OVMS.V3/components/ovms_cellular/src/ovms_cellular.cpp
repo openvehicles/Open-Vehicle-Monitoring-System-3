@@ -1650,10 +1650,10 @@ void modem::Ticker(std::string event, void* data)
 
     if (!m_nmea && m_gps_enabled && m_gps_usermode == GUM_DEFAULT &&
         m_gps_parkpause > 0 && StdMetrics.ms_v_env_on->AsBool() == false &&
-        MyConfig.GetParamValueInt("modem", "gps.parkreactivate", 0) > 0 &&
+        m_gps_reactivate > 0 &&
         m_gps_startticker == 0 && m_gps_stopticker == 0)
       {
-      m_gps_startticker = MyConfig.GetParamValueInt("modem", "gps.parkreactivate", 0) * 60; // convert minutes to seconds
+      m_gps_startticker = m_gps_reactivate * 60; // convert minutes to seconds
       }
   }
 
