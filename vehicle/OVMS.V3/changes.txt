@@ -1,6 +1,11 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- server V3:
+    The number of metrics sent per update is limited to 20 and is split into multiple packets if necessary. Only updated data is sent.
+    Prioritize GPS tracking metrics, update interval set at Vehicle stream setting for smoother tracking
+    new config:
+      [server.v3] "updatetime.priority" (bool) -- enable/disable prioritizing GPS tracking
 - smart EQ: removed vehicle specific GPS on/off at parking -> moved to cellular
 - Vehicle notifications: grid log (history records `*-LOG-Grid`) V2 additions:
     pos_odometer
