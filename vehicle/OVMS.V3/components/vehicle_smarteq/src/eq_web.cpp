@@ -81,7 +81,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info, full_km, rebootnw, net_type;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate_system, gpsonoff, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify;
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate_system, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify;
 
   if (c.method == "POST") {
     // process form submission:
@@ -94,7 +94,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     bcvalue     = (c.getvar("bcvalue") == "yes");
     full_km  =  (c.getvar("full_km"));
     climate_system = (c.getvar("climate") == "yes");
-    gpsonoff = (c.getvar("gpsonoff") == "yes");
     charge12v = (c.getvar("charge12v") == "yes");
     v2server = (c.getvar("v2server") == "yes");
     net_type = c.getvar("net_type");
@@ -115,7 +114,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "bcvalue", bcvalue);
       MyConfig.SetParamValue("xsq", "full.km", full_km);
       MyConfig.SetParamValueBool("xsq", "climate.system", climate_system);
-      MyConfig.SetParamValueBool("xsq", "gps.onoff", gpsonoff);
       MyConfig.SetParamValueBool("xsq", "12v.charge", charge12v);
       MyConfig.SetParamValueBool("xsq", "v2.check", v2server);
       MyConfig.SetParamValue("xsq", "modem.net.type", net_type);
@@ -148,7 +146,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     bcvalue     = MyConfig.GetParamValueBool("xsq", "bcvalue", false);
     full_km     = MyConfig.GetParamValue("xsq", "full.km", "126");
     climate_system     = MyConfig.GetParamValueBool("xsq", "climate.system", false);
-    gpsonoff    = MyConfig.GetParamValueBool("xsq", "gps.onoff", false);
     charge12v   = MyConfig.GetParamValueBool("xsq", "12v.charge", false);
     v2server    = MyConfig.GetParamValueBool("xsq", "v2.check", false);
     net_type    = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
@@ -191,8 +188,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Set External Temperatures to TPMS Temperatures to Display Tire Pressures in iOS App Open Vehicle</p>");
   c.input_checkbox("Enable Climate System", "climate_system", climate_system,
     "<p>Enable = Climate/Heater system and data transfer to Android App activated</p>");
-  c.input_checkbox("Enable GPS off at Parking", "gpsonoff", gpsonoff,
-    "<p>Enable = switch GPS off at Parking for power saving. Every 50 minutes powered on the GPS for 10 minutes.</p>");
   c.input_checkbox("Enable 12V charging", "charge12v", charge12v,
     "<p>Enable = charge the 12V if low 12V alert is raised</p>");
   c.input_checkbox("Enable V2 Server", "v2server", v2server,

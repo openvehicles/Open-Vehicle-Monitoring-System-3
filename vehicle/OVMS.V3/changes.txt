@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- smart EQ: removed vehicle specific GPS on/off at parking -> moved to cellular
 - Vehicle notifications: grid log (history records `*-LOG-Grid`) V2 additions:
     pos_odometer
 - Server V3: 

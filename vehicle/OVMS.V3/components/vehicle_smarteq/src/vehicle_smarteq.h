@@ -91,9 +91,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ResetTotalCounters();
     void TimeCheckTask();
     void Check12vState();
-    void GPSOnOff();
     void TimeBasedClimateData();
-    void TimeBasedClimateDataApp();
     void CheckV2State();
     void DisablePlugin(const char* plugin);
     void ModemNetworkType();
@@ -235,9 +233,6 @@ public:
     bool m_12v_charge;                      //!< 12V charge on/off
     bool m_12v_charge_state;                //!< 12V charge state
     bool m_climate_system;                  //!< climate system on/off
-    bool m_gps_onoff;                       //!< GPS on/off at parking activated
-    bool m_gps_off;                         //!< GPS off while parking > 10 minutes
-    int m_gps_reactmin;                     //!< GPS reactivate all x minutes after parking
     std::string m_hl_canbyte;               //!< canbyte variable for unv
     std::string m_network_type;             //!< Network type from xsq.modem.net.type
     std::string m_network_type_ls;          //!< Network type last state reminder
@@ -328,7 +323,6 @@ public:
     int m_ddt4all_exec;                     //!< DDT4ALL ticker for next execution
     int m_led_state;
     int m_climate_ticker;
-    int m_gps_ticker;
     int m_12v_ticker;
     int m_v2_ticker;
     int m_modem_ticker;
