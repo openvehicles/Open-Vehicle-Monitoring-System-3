@@ -946,7 +946,11 @@ void OvmsServerV3::EventListener(std::string event, void* data)
     {
     ConfigChanged((OvmsConfigParam*) data);
     }
-  else if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds")
+  else if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds" ||
+           event == "vehicle.charge.start" || event == "vehicle.charge.stop" ||
+           event == "app.connected" || event == "app.disconnected" ||           
+           event == "vehicle.locked" || event == "vehicle.unlocked" ||
+           event == "server.v3.connected" || event == "vehicle.charge.finished")
     {
     m_lasttx = 0; // Force immediate update on these events
     }
