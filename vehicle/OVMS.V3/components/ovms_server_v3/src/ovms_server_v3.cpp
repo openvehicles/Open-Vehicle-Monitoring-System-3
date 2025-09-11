@@ -946,11 +946,13 @@ void OvmsServerV3::EventListener(std::string event, void* data)
     {
     ConfigChanged((OvmsConfigParam*) data);
     }
-  else if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds" ||
+  else if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds" ||    
+           event == "app.connected" || event == "app.disconnected" ||  
            event == "vehicle.charge.start" || event == "vehicle.charge.stop" ||
-           event == "app.connected" || event == "app.disconnected" ||           
+           event == "vehicle.charge.finished" || event == "vehicle.awake" ||
+           event == "vehicle.on" || event == "vehicle.off" ||           
            event == "vehicle.locked" || event == "vehicle.unlocked" ||
-           event == "server.v3.connected" || event == "vehicle.charge.finished")
+           event == "server.v3.connected")
     {
     m_lasttx = 0; // Force immediate update on these events
     }
@@ -1127,7 +1129,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       m_lasttx_priority = now;
       m_lasttx = now;
       }
-    else if (m_updatetime_priority && carawake && m_vehicle_stream > 0 && (now > (m_lasttx_priority + m_vehicle_stream)))
+    else if ((m_lasttx_priority==0) || (m_updatetime_priority && carawake && m_vehicle_stream > 0 && (now > (m_lasttx_priority + m_vehicle_stream))))
       {
       //ESP_LOGI(TAG, "Transmit GPS priority metrics");
       TransmitPriorityMetrics();
