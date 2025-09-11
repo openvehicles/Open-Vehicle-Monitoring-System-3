@@ -1093,7 +1093,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     {
     int now = StandardMetrics.ms_m_monotonic->AsInt();
     int next = (m_peers==0) ? m_updatetime_idle : m_updatetime_connected;    
-    bool carawake = StandardMetrics.ms_v_env_awake->AsBool();
+    bool caron = StandardMetrics.ms_v_env_on->AsBool();
 
     if (m_sendall)
       {
@@ -1129,13 +1129,13 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       m_lasttx_priority = now;
       m_lasttx = now;
       }
-    else if ((m_lasttx_priority==0) || (m_updatetime_priority && carawake && m_vehicle_stream > 0 && (now > (m_lasttx_priority + m_vehicle_stream))))
+    else if ((m_lasttx_priority==0) || (m_updatetime_priority && caron && m_vehicle_stream > 0 && (now > (m_lasttx_priority + m_vehicle_stream))))
       {
       //ESP_LOGI(TAG, "Transmit GPS priority metrics");
       TransmitPriorityMetrics();
       m_lasttx_priority = now;
       }
-    else if ( (m_lasttx==0) || (now > (m_lasttx + next)) )
+    else if ((m_lasttx==0) || (now > (m_lasttx + next)))
       {
       //ESP_LOGI(TAG, "Transmit modified metrics");
       TransmitModifiedMetrics();
