@@ -1597,7 +1597,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   std::string error;
   std::string server, user, password, port, topic_prefix;
   std::string updatetime_connected, updatetime_idle, updatetime_on, updatetime_charging, updatetime_awake, updatetime_sendall, updatetime_keepalive;
-  bool tls, legacy_event_topic;
+  bool tls, legacy_event_topic, updatetime_priority;
 
   if (c.method == "POST") {
     // process form submission:
@@ -1615,6 +1615,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_awake = c.getvar("updatetime_awake");
     updatetime_sendall = c.getvar("updatetime_sendall");
     updatetime_keepalive = c.getvar("updatetime_keepalive");
+    updatetime_priority = (c.getvar("updatetime_priority") == "yes");
 
     // validate:
     if (port != "") {
@@ -1659,6 +1660,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       }
     }
 
+
     if (error == "") {
       // success:
       MyConfig.SetParamValue("server.v3", "server", server);
@@ -1691,6 +1693,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
         MyConfig.DeleteInstance("server.v3", "updatetime.keepalive");
       else
         MyConfig.SetParamValue("server.v3", "updatetime.keepalive", updatetime_keepalive);
+      MyConfig.SetParamValueBool("server.v3", "updatetime.priority", updatetime_priority);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Server V3 (MQTT) connection configured.</p>");
@@ -1720,6 +1723,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_awake = MyConfig.GetParamValue("server.v3", "updatetime.awake");
     updatetime_sendall = MyConfig.GetParamValue("server.v3", "updatetime.sendall");
     updatetime_keepalive = MyConfig.GetParamValue("server.v3", "updatetime.keepalive");
+    updatetime_priority = MyConfig.GetParamValueBool("server.v3", "updatetime.priority", false);
 
     // generate form:
     c.head(200);
@@ -1748,31 +1752,25 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "optional, default: ovms/<username>/<vehicle id>/");
 
   c.fieldset_start("Update intervals");
-  c.input_text("…connected", "updatetime_connected", updatetime_connected.c_str(),
-    "optional, in seconds, default: 60");
-  c.input_text("…idle", "updatetime_idle", updatetime_idle.c_str(),
-    "optional, in seconds, default: 600");
-  c.input_text("…on", "updatetime_on", updatetime_on.c_str(),
-    "optional, in seconds, only used if set");
-  c.input_text("…charging", "updatetime_charging", updatetime_charging.c_str(),
-    "optional, in seconds, only used if set");
-  c.input_text("…awake", "updatetime_awake", updatetime_awake.c_str(),
-    "optional, in seconds, only used if set");
-  c.input_text("…sendall", "updatetime_sendall", updatetime_sendall.c_str(),
-    "optional, in seconds, only used if set");
-  c.input_text("…keepalive", "updatetime_keepalive", updatetime_keepalive.c_str(),
-    "optional, in seconds, default: 1740");
+  c.input_checkbox("prioritize GPS tracking metrics", "updatetime_priority", updatetime_priority,
+    "<p>GPS tracking metrics should be updated before other MQTT traffic. This can contribute to smoother tracking on V3 servers.</p>"
+    "<p><strong>Note:</strong> The update interval corresponds to the <strong>Vehicle stream</strong> setting!</p>");
+  c.input("number", "…connected", "updatetime_connected", updatetime_connected.c_str(), "default: 60", "default: 60, update interval when client is connected", "min=\"0\" max=\"600\" step=\"1\"", "seconds");
+  c.input("number", "…idle", "updatetime_idle", updatetime_idle.c_str(), "default: 600", "default: 600, update interval when client not connected", "min=\"0\" max=\"1200\" step=\"1\"", "seconds");
+  //c.input("number", "…on", "updatetime_on", updatetime_on.c_str(), "default: 5", "default: 5", "min=\"0\" max=\"600\" step=\"1\"", "seconds");
+  //c.input("number", "…charging", "updatetime_charging", updatetime_charging.c_str(), "default: 20", "default: 20", "min=\"0\" max=\"600\" step=\"1\"", "seconds");
+  //c.input("number", "…awake", "updatetime_awake", updatetime_awake.c_str(), "default: 60", "default: 60", "min=\"0\" max=\"600\" step=\"1\"", "seconds");
+  //c.input("number", "…sendall", "updatetime_sendall", updatetime_sendall.c_str(), "default: 900", "default: 900", "min=\"0\" max=\"1800\" step=\"1\"", "seconds");
+  c.input("number", "…keepalive", "updatetime_keepalive", updatetime_keepalive.c_str(), "default: 1740",
+    "<p>default: 1740. Keepalive defines how often PINGREQs should be sent if there's inactivity. "
+    "It should be set slightly shorter than the network's NAT timeout "
+    "and the timeout of your MQTT server. If these are unknown you can use trial "
+    "and error. Symptoms of keepalive being too high are a lack of metric updates "
+    "after a certain point, or &quot;Disconnected from OVMS Server V3&quot; "
+    "appearing in the log.</p>",
+    "min=\"0\" max=\"3600\" step=\"1\"", "seconds");
+  
   c.fieldset_end();
-
-  c.print("<span class=\"help-block\">"
-	  "Keepalive defines how often PINGREQs should be sent if there's inactivity. "
-	  "It should be set slightly shorter than the network's NAT timeout "
-	  "and the timeout of your MQTT server. If these are unknown you can use trial "
-	  "and error. Symptoms of keepalive being too high are a lack of metric updates "
-	  "after a certain point, or &quot;Disconnected from OVMS Server V3&quot; "
-	  "appearing in the log."
-	  "</span>");
-
   c.hr();
   c.input_button("default", "Save");
   c.form_end();
