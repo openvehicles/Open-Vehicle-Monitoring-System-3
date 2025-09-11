@@ -203,7 +203,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_lasttx_sendall = 0;
   m_lasttx_priority = 0;
   m_peers = 0;
-  m_vehicle_stream = 10;
+  m_vehicle_stream = 0;
   m_updatetime_idle = 600;
   m_updatetime_connected = 60;
   m_updatetime_awake = 60;      // disabled, too much interval confusion
@@ -409,7 +409,8 @@ static const char* s_priority_gps_metrics[] = {
   "m.time.utc",
   "v.e.on",
   "v.b.soc",
-  "v.c.charging"
+  "v.c.charging",
+  "v.e.lock"
 };
 
 static const size_t s_priority_gps_metrics_count =
@@ -944,6 +945,10 @@ void OvmsServerV3::EventListener(std::string event, void* data)
   if (event == "config.changed" || event == "config.mounted")
     {
     ConfigChanged((OvmsConfigParam*) data);
+    }
+  else if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds")
+    {
+    m_lasttx = 0; // Force immediate update on these events
     }
   }
 
