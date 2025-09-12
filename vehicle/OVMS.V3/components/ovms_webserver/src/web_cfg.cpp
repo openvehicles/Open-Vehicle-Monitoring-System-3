@@ -1757,7 +1757,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "<p><strong>Note:</strong> The update interval corresponds to the <strong>Vehicle stream</strong> setting!</p>");
   c.input("number", "…connected", "updatetime_connected", updatetime_connected.c_str(), "default: 60", "default: 60, update interval when client is connected", "min=\"0\" max=\"600\" step=\"1\"", "seconds");
   c.input("number", "…idle", "updatetime_idle", updatetime_idle.c_str(), "default: 600", "default: 600, update interval when client not connected", "min=\"0\" max=\"1200\" step=\"1\"", "seconds");
-  //c.input("number", "…on", "updatetime_on", updatetime_on.c_str(), "default: 5", "default: 5", "min=\"0\" max=\"600\" step=\"1\"", "seconds");
+  c.input("number", "…on", "updatetime_on", updatetime_on.c_str(), "default: 5", "default: 5", "min=\"0\" max=\"600\" step=\"1\"", "seconds");
   //c.input("number", "…charging", "updatetime_charging", updatetime_charging.c_str(), "default: 20", "default: 20", "min=\"0\" max=\"600\" step=\"1\"", "seconds");
   //c.input("number", "…awake", "updatetime_awake", updatetime_awake.c_str(), "default: 60", "default: 60", "min=\"0\" max=\"600\" step=\"1\"", "seconds");
   //c.input("number", "…sendall", "updatetime_sendall", updatetime_sendall.c_str(), "default: 900", "default: 900", "min=\"0\" max=\"1800\" step=\"1\"", "seconds");

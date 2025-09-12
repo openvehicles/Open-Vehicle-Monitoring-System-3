@@ -206,8 +206,8 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_vehicle_stream = 0;
   m_updatetime_idle = 600;
   m_updatetime_connected = 60;
+  m_updatetime_on = 5;  
   m_updatetime_awake = 60;      // disabled, too much interval confusion
-  m_updatetime_on = 5;          // disabled, too much interval confusion
   m_updatetime_charging = 20;   // disabled, too much interval confusion
   m_updatetime_sendall = 900;   // disabled, too much interval confusion
   m_updatetime_keepalive = 29*60;
@@ -253,6 +253,19 @@ OvmsServerV3::OvmsServerV3(const char* name)
   MyEvents.RegisterEvent(TAG,"system.modem.received.ussd", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"location.alert.flatbed.moved", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"location.alert.valet.bounds",  std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"app.connected", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"app.disconnected", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.start", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.stop", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.finished", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.awake", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.on", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.off", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.locked", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.unlocked", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"server.v3.connected", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
 
   // read config:
   ConfigChanged(NULL);
@@ -406,11 +419,8 @@ static const char* s_priority_gps_metrics[] = {
   "v.p.longitude",
   "v.p.altitude",
   "v.p.speed",
+  "v.p.gpsspeed",
   "m.time.utc",
-  "v.e.on",
-  "v.b.soc",
-  "v.c.charging",
-  "v.e.lock"
 };
 
 static const size_t s_priority_gps_metrics_count =
@@ -942,19 +952,24 @@ bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
 
 void OvmsServerV3::EventListener(std::string event, void* data)
   {
+  int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
   if (event == "config.changed" || event == "config.mounted")
     {
     ConfigChanged((OvmsConfigParam*) data);
     }
-  else if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds" ||    
-           event == "app.connected" || event == "app.disconnected" ||  
-           event == "vehicle.charge.start" || event == "vehicle.charge.stop" ||
-           event == "vehicle.charge.finished" || event == "vehicle.awake" ||
-           event == "vehicle.on" || event == "vehicle.off" ||           
-           event == "vehicle.locked" || event == "vehicle.unlocked" ||
-           event == "server.v3.connected")
+  if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds" ||    
+      event == "app.connected" || event == "app.disconnected" ||  
+      event == "vehicle.charge.start" || event == "vehicle.charge.stop" ||
+      event == "vehicle.charge.finished" || event == "vehicle.awake" ||
+      event == "vehicle.on" || event == "vehicle.off" ||           
+      event == "vehicle.locked" || event == "vehicle.unlocked" ||
+      event == "server.v3.connected")
     {
-    m_lasttx = 0; // Force immediate update on these events
+    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+
+    //ESP_LOGI(TAG, "Transmit modified metrics by event");
+    TransmitModifiedMetrics();  // Force immediate update on these events
+    m_lasttx = now;             // and reset timer
     }
   }
 
@@ -1091,10 +1106,10 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
 
   if (StandardMetrics.ms_s_v3_connected->AsBool())
     {
-    int now = StandardMetrics.ms_m_monotonic->AsInt();
-    int next = (m_peers==0) ? m_updatetime_idle : m_updatetime_connected;    
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
-
+    int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
+    int next = (m_peers==0) ? m_updatetime_idle : caron ? m_updatetime_on : m_updatetime_connected;
+    
     if (m_sendall)
       {
       ESP_LOGI(TAG, "Subscribe to MQTT topics");
@@ -1275,7 +1290,7 @@ OvmsServerV3Init::OvmsServerV3Init()
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "*", std::bind(&OvmsServerV3Init::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "*", std::bind(&OvmsServerV3Init::EventListenerInit, this, _1, _2));
 
   MyConfig.RegisterParam("server.v3", "V3 Server Configuration", true, true);
   // Our instances:
@@ -1292,8 +1307,8 @@ void OvmsServerV3Init::AutoInit()
   if (MyConfig.GetParamValueBool("auto", "server.v3", false))
     MyOvmsServerV3 = new OvmsServerV3("oscv3");
   }
-
-void OvmsServerV3Init::EventListener(std::string event, void* data)
+  
+void OvmsServerV3Init::EventListenerInit(std::string event, void* data)
   {
   if (event.compare(0,7,"ticker.") == 0) return; // Skip ticker.* events
   if (event.compare(0,6,"clock.") == 0) return; // Skip clock.* events
@@ -1305,3 +1320,4 @@ void OvmsServerV3Init::EventListener(std::string event, void* data)
     MyOvmsServerV3->IncomingEvent(event, data);
     }
   }
+  

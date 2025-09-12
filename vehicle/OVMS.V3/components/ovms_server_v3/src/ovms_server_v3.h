@@ -98,9 +98,9 @@ class OvmsServerV3 : public OvmsServer
     int m_connection_counter;
     bool m_sendall;
     int m_msgid;
-    int m_lasttx;
-    int m_lasttx_sendall;
-    int m_lasttx_priority;
+    int64_t m_lasttx;
+    int64_t m_lasttx_sendall;
+    int64_t m_lasttx_priority;
     int m_peers;
     int m_vehicle_stream;
     int m_updatetime_idle;
@@ -162,7 +162,7 @@ class OvmsServerV3Init
     void AutoInit();
 
   public:
-    void EventListener(std::string event, void* data);
+    void EventListenerInit(std::string event, void* data);
   };
 
 extern OvmsServerV3Init MyOvmsServerV3Init;
