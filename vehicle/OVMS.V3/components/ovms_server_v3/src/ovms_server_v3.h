@@ -98,10 +98,11 @@ class OvmsServerV3 : public OvmsServer
     int m_connection_counter;
     bool m_sendall;
     int m_msgid;
-    int m_lasttx;
-    int m_lasttx_sendall;
+    int64_t m_lasttx;
+    int64_t m_lasttx_sendall;
+    int64_t m_lasttx_priority;
     int m_peers;
-    int m_streaming;
+    int m_vehicle_stream;
     int m_updatetime_idle;
     int m_updatetime_connected;
     int m_updatetime_awake;
@@ -109,6 +110,7 @@ class OvmsServerV3 : public OvmsServer
     int m_updatetime_charging;
     int m_updatetime_sendall;
     int m_updatetime_keepalive;
+    bool m_updatetime_priority;
     bool m_legacy_event_topic;
 
     bool m_connection_available;
@@ -130,6 +132,7 @@ class OvmsServerV3 : public OvmsServer
     void Disconnect();
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
+    void TransmitPriorityMetrics();
     int TransmitNotificationInfo(OvmsNotifyEntry* entry);
     int TransmitNotificationError(OvmsNotifyEntry* entry);
     int TransmitNotificationAlert(OvmsNotifyEntry* entry);
@@ -159,7 +162,7 @@ class OvmsServerV3Init
     void AutoInit();
 
   public:
-    void EventListener(std::string event, void* data);
+    void EventListenerInit(std::string event, void* data);
   };
 
 extern OvmsServerV3Init MyOvmsServerV3Init;
