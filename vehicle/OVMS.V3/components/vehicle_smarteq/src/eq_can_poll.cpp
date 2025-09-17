@@ -171,8 +171,56 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x503B: // rqJB2AC_Ph3_RMS_A
           PollReply_OBL_JB2AC_Ph3_RMS_A(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x504A: // rqJB2AC_Power
+        case 0x5049: // Mains phase frequency (Hz)
+          PollReply_OBL_JB2AC_Frequency(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x504A: // Mains active power consumed (W)
           PollReply_OBL_JB2AC_Power(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x504B: // Mains current sum (A)
+          PollReply_OBL_JB2AC_CurrentSum(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x504C: // Mains voltage sum (V)
+          PollReply_OBL_JB2AC_VoltageSum(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x504D: // HV Network measured current (A)
+          PollReply_OBL_JB2AC_HVNetCurrent(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x504E: // HV voltage measured (V)
+          PollReply_OBL_JB2AC_HVVoltageSum(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5057: // Raw leakage current - DC part measurement (mA)
+          PollReply_OBL_JB2AC_RawDCCurrent(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5058: // Raw leakage current - High Frequency 10kHz part measurement (mA)
+          PollReply_OBL_JB2AC_RawHF10kHz(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5059: // Raw leakage current - High Frequency 1st part measurement (mA)
+          PollReply_OBL_JB2AC_RawHFCurrent(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x505A: // Raw leakage current - Low Frequency part measurement (50Hz)
+          PollReply_OBL_JB2AC_RawLFCurrent(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5062: // Mains ground resistance (Ohm)
+          PollReply_OBL_JB2AC_GroundResistance(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5064: // leakage current diagnostics
+          PollReply_OBL_JB2AC_LeakageDiag(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5065: // Leakage DC current saved indicator after failure (mA)
+          PollReply_OBL_JB2AC_DCCurrent(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5066: // Leakage HF 10kHz current saved indicator after failure (mA)
+          PollReply_OBL_JB2AC_HF10kHz(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5067: // Leakage HF current saved indicator after failure (mA) 
+          PollReply_OBL_JB2AC_HFCurrent(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5068: // Leakage LF current saved indicator after failure (mA)
+          PollReply_OBL_JB2AC_LFCurrent(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5070: // max AC current limitation configuration (A)
+          PollReply_OBL_JB2AC_MaxCurrent(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
       break;
@@ -191,18 +239,12 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x2101: // obd Trip Distance km
           PollReply_obd_trip(m_rxbuf.data(), m_rxbuf.size());
           break;
-        /*case 0x2102: // obd Trip Fuel used
-          PollReply_obd_used(m_rxbuf.data(), m_rxbuf.size());
-          break;*/
         case 0x2104: // obd Trip time s
           PollReply_obd_time(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x01A0: // obd Start Trip Distance km
           PollReply_obd_start_trip(m_rxbuf.data(), m_rxbuf.size());
           break;
-        /*case 0x01A1: // obd Start Trip Fuel used
-          PollReply_obd_start_used(m_rxbuf.data(), m_rxbuf.size());
-          break;*/
         case 0x01A2: // obd Start Trip time s
           PollReply_obd_start_time(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -405,12 +447,13 @@ void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t repl
     mt_obl_main_volts->SetElemValue(0, 0);
   }
   mt_obl_main_volts->SetElemValue(1, 0); mt_obl_main_volts->SetElemValue(2, 0);
+/*
   if (mt_obl_main_amps->GetElemValue(0) > 0 || mt_obl_main_amps->GetElemValue(1) > 0) {
     mt_obl_main_freq->SetValue( CAN_BYTE(11) );
   } else {
     mt_obl_main_freq->SetValue(0);
   }
-
+*/
   //Get AC Power
   value = CAN_UINT(12);
   if (value < 0xEA00) {  //OBL showing only valid data while charging
@@ -465,6 +508,142 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t re
   // mt_obl_main_CHGpower->SetElemValue(0, (CAN_UINT(0) - 20000) / 1000.0f);
   UpdateChargeMetrics();
 }
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Frequency(const char* data, uint16_t reply_len) {
+  mt_obl_main_freq->SetValue((float) CAN_UINT(0) + 10.0f);
+}
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_CurrentSum(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -600.0f >= 0.0f ? value1 -600.0f : (-600.0f - value1) * -1.0f;
+  mt_obl_main_amps_sum->SetValue(value2 / 1000.0f);
+}
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_VoltageSum(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -16000.0f >= 0.0f ? value1 -16000.0f : (-16000.0f - value1) * -1.0f;
+  mt_obl_main_volts_sum->SetValue(value2 / 1000.0f);
+}
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HVNetCurrent(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -200.0f >= 0.0f ? value1 -200.0f : (-200.0f - value1) * -1.0f;
+  mt_obl_main_hv_net_amps->SetValue(value2 / 1000.0f);
+}
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HVVoltageSum(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -1023.0f >= 0.0f ? value1 -1023.0f : (-1023.0f - value1) * -1.0f;
+  mt_obl_main_hv_volts_sum->SetValue(value2 / 1000.0f);
+}
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_RawDCCurrent(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -2048.0f >= 0.0f ? value1 -2048.0f : (-2048.0f - value1) * -1.0f;
+  mt_obl_main_current_leakage_dc_raw->SetValue(value2 / 1000.0f);
+} 
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_RawHF10kHz(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -2048.0f >= 0.0f ? value1 -2048.0f : (-2048.0f - value1) * -1.0f;
+  mt_obl_main_current_leakage_hf_10khz_raw->SetValue(value2 / 1000.0f);
+}
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_RawHFCurrent(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -2048.0f >= 0.0f ? value1 -2048.0f : (-2048.0f - value1) * -1.0f;
+  mt_obl_main_current_leakage_hf_raw->SetValue(value2 / 1000.0f);
+}
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_RawLFCurrent(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -2048.0f >= 0.0f ? value1 -2048.0f : (-2048.0f - value1) * -1.0f;
+  mt_obl_main_current_leakage_lf_raw->SetValue(value2 / 1000.0f);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_GroundResistance(const char* data, uint16_t reply_len) {
+  mt_obl_main_ground_resistance->SetValue((float) CAN_UINT(0));
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len) {
+  int code = CAN_BYTE(0);
+  std::string msgtxt = "";
+  switch(code) {
+    case 0:{
+      msgtxt = "init";
+      break;
+    } 
+    case 1:{
+      msgtxt = "HF10";
+      break;
+    }
+    case 3:{
+      msgtxt = "Mains Ground Default";
+      break;
+    }
+    case 97:{
+      msgtxt = "Means Leakage LF+HF";
+      break;
+    }
+    case 5:{
+      msgtxt = "Earth Current default";
+      break;
+    }
+    case 81:{
+      msgtxt = "Means Leakage DC+HF";
+      break;
+    }
+    case 65:{
+      msgtxt = "Means Leakage HF";
+      break;
+    }
+    case 9:{
+      msgtxt = "Ground Default";
+      break;
+    }
+    case 49:{
+      msgtxt = "Means Leakage DC+LF";
+      break;
+    }
+    case 17:{
+      msgtxt = "Means Leakage DC";
+      break;
+    }
+    case 113:{
+      msgtxt = "Means Leakage DC+LF+HF";
+      break;
+    }
+    case 33:{
+      msgtxt = "Means Leakage LF";
+      break;
+    }
+    default:{
+      msgtxt = "Unknown code";
+      break;
+    }
+  }
+  mt_obl_main_leakage_diag->SetValue(msgtxt);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_DCCurrent(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -32768.0f >= 0.0f ? value1 -32768.0f : (-32768.0f - value1) * -1.0f;
+  mt_obl_main_current_leakage_dc->SetValue(value2 / 1000.0f);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HF10kHz(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -32768.0f >= 0.0f ? value1 -32768.0f : (-32768.0f - value1) * -1.0f;
+  mt_obl_main_current_leakage_hf_10khz->SetValue(value2 / 1000.0f);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -32768.0f >= 0.0f ? value1 -32768.0f : (-32768.0f - value1) * -1.0f;
+  mt_obl_main_current_leakage_hf->SetValue(value2 / 1000.0f);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len) {
+  float value1 = (float) CAN_UINT(0);
+  float value2 = value1 -32768.0f >= 0.0f ? value1 -32768.0f : (-32768.0f - value1) * -1.0f;
+  mt_obl_main_current_leakage_lf->SetValue(value2 / 1000.0f);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len) {
+  mt_obl_main_max_current->SetValue((float) CAN_BYTE(0));
+}
+
 
 void OvmsVehicleSmartEQ::PollReply_obd_trip(const char* data, uint16_t reply_len) {
   mt_obd_trip_km->SetValue((float) CAN_UINT(0));
@@ -476,16 +655,8 @@ void OvmsVehicleSmartEQ::PollReply_obd_time(const char* data, uint16_t reply_len
   mt_obd_trip_time->SetValue( timeStr );
 }
 
-void OvmsVehicleSmartEQ::PollReply_obd_used(const char* data, uint16_t reply_len) {
-  mt_obd_trip_used->SetValue((float) CAN_UINT(0));
-}
-
 void OvmsVehicleSmartEQ::PollReply_obd_start_trip(const char* data, uint16_t reply_len) {
   mt_obd_start_trip_km->SetValue((float) CAN_UINT(0));
-}
-
-void OvmsVehicleSmartEQ::PollReply_obd_start_used(const char* data, uint16_t reply_len) {
-  mt_obd_start_trip_used->SetValue((float) CAN_UINT(0));
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_start_time(const char* data, uint16_t reply_len) {

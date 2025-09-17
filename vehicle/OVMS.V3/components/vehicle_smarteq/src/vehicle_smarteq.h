@@ -201,14 +201,29 @@ public:
     void PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len);
     void PollReply_obd_trip(const char* data, uint16_t reply_len);
-    void PollReply_obd_used(const char* data, uint16_t reply_len);
     void PollReply_obd_time(const char* data, uint16_t reply_len);
     void PollReply_obd_start_trip(const char* data, uint16_t reply_len);
-    void PollReply_obd_start_used(const char* data, uint16_t reply_len);
     void PollReply_obd_start_time(const char* data, uint16_t reply_len);
     void PollReply_obd_mt_day(const char* data, uint16_t reply_len);
     void PollReply_obd_mt_km(const char* data, uint16_t reply_len);
     void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_GroundResistance(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_DCCurrent(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_HF10kHz(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_CurrentSum(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_VoltageSum(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_HVNetCurrent(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_HVVoltageSum(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_RawDCCurrent(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_RawHVVoltage(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_RawHF10kHz(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_RawHFCurrent(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_RawLFCurrent(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Frequency(const char* data, uint16_t reply_len);
 
   protected:
     bool m_enable_write;                    // canwrite
@@ -284,11 +299,26 @@ public:
     OvmsMetricVector<float> *mt_obl_main_volts;         //!< AC voltage of L1, L2, L3
     OvmsMetricVector<float> *mt_obl_main_CHGpower;      //!< Power of rail1, rail2 W (x/2) & max available kw (x/64)
     OvmsMetricFloat         *mt_obl_main_freq;          //!< AC input frequency
+    OvmsMetricFloat         *mt_obl_main_ground_resistance;           //!< Ground resistance in (Ohm)
+    OvmsMetricInt           *mt_obl_main_max_current;                 //!< Charger max current setting (A)
+    OvmsMetricString        *mt_obl_main_leakage_diag;                //!< Leakage diagnostic
+    OvmsMetricFloat         *mt_obl_main_current_leakage_dc;          //!< DC leakage current (A)
+    OvmsMetricFloat         *mt_obl_main_current_leakage_hf_10khz;    //!< HF 10kHz leakage (A)
+    OvmsMetricFloat         *mt_obl_main_current_leakage_hf;          //!< HF leakage current (A)
+    OvmsMetricFloat         *mt_obl_main_current_leakage_lf;          //!< LF leakage current (A)
+    OvmsMetricFloat         *mt_obl_main_hv_net_amps;                 //!< Net current (A)
+    OvmsMetricFloat         *mt_obl_main_hv_net_volts;                //!< Net voltage (V)
+    OvmsMetricFloat         *mt_obl_main_amps_sum;                    //!< Current sum (A)
+    OvmsMetricFloat         *mt_obl_main_volts_sum;                   //!< Voltage sum (V)
+    OvmsMetricFloat         *mt_obl_main_hv_volts_sum;                //!< HV Voltage sum (V)
+    OvmsMetricFloat         *mt_obl_main_current_leakage_ac;          //!< AC leakage current (A)
+    OvmsMetricFloat         *mt_obl_main_current_leakage_dc_raw;      //!< DC leakage current raw value
+    OvmsMetricFloat         *mt_obl_main_current_leakage_hf_10khz_raw;//!< HF 10kHz leakage raw value
+    OvmsMetricFloat         *mt_obl_main_current_leakage_hf_raw;     //!< HF leakage current raw value
+    OvmsMetricFloat         *mt_obl_main_current_leakage_lf_raw;     //!< LF leakage current raw value
     OvmsMetricInt           *mt_obd_duration;           //!< obd duration
     OvmsMetricFloat         *mt_obd_trip_km;            //!< obd trip data km
     OvmsMetricFloat         *mt_obd_start_trip_km;      //!< obd trip data km start
-    OvmsMetricFloat         *mt_obd_trip_used;          //!< obd trip data kWh used
-    OvmsMetricFloat         *mt_obd_start_trip_used;    //!< obd trip data kWh used start
     OvmsMetricString        *mt_obd_trip_time;          //!< obd trip data HH:mm
     OvmsMetricString        *mt_obd_start_trip_time;    //!< obd trip data HH:mm start
     OvmsMetricInt           *mt_obd_mt_day_prewarn;     //!< Maintaince pre warning days
