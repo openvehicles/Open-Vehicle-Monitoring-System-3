@@ -43,7 +43,7 @@
 
 typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 
-#define MQTT_CONN_NTOPICS 2
+#define MQTT_CONN_NTOPICS 4   // active, command, request/metric, request/config
 
 class OvmsServerV3 : public OvmsServer
   {
@@ -65,6 +65,9 @@ class OvmsServerV3 : public OvmsServer
     void Ticker1(std::string event, void* data);
     void Ticker60(std::string event, void* data);
     void RequestUpdate(bool txall);
+    void ProcessClientMetricRequest(const std::string& clientid, const std::string& payload);
+    void ProcessClientConfigRequest(const std::string& clientid, const std::string& payload);
+    static bool MatchPattern(const std::string& name, const std::string& pattern);
 
   public:
     enum State

@@ -39,6 +39,8 @@ static const char *TAG = "ovms-server-v3";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "esp_system.h"              // <- for esp_random() (jitter)
+#include <vector>
+#include <algorithm>
 #if CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
 #endif
@@ -223,6 +225,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_conn_stable_wait = 10;      // seconds network must be stable before first connect
   m_conn_jitter_max  = 5;       // max random extra seconds
   m_connect_jitter   = -1;      // -1 = not yet chosen
+  m_updatetime_priority = false;
 
   ESP_LOGI(TAG, "OVMS Server v3 running");
 
@@ -288,7 +291,7 @@ OvmsServerV3::~OvmsServerV3()
 void OvmsServerV3::TransmitAllMetrics()
   {
   static size_t s_next_index = 0;
-  const int MAX_PER_CALL = 20;
+  const int MAX_PER_CALL = 40;
 
   OvmsMutexLock mg(&m_mgconn_mutex);
   if (!m_mgconn)
@@ -343,7 +346,7 @@ void OvmsServerV3::TransmitAllMetrics()
 void OvmsServerV3::TransmitModifiedMetrics()
   {
   static size_t s_mod_next_index = 0;
-  const int MAX_PER_CALL = 20; // Slightly larger than “all” chunk (tune as needed)
+  const int MAX_PER_CALL = 45; // Slightly larger than “all” chunk (tune as needed)
 
   OvmsMutexLock mg(&m_mgconn_mutex);
   if (!m_mgconn)
@@ -609,31 +612,40 @@ void OvmsServerV3::TransmitPendingNotificationsData()
 
 void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
   {
-  if (topic.compare(0,m_topic_prefix.length(),m_topic_prefix)==0)
+  if (topic.compare(0,m_topic_prefix.length(),m_topic_prefix)!=0)
+    return;
+
+  topic = topic.substr(m_topic_prefix.length());
+  if (topic.compare(0,7,"client/")!=0)
+    return;
+
+  topic = topic.substr(7);
+  size_t delim = topic.find('/');
+  if (delim == std::string::npos)
+    return;
+
+  std::string clientid = topic.substr(0,delim);
+  topic = topic.substr(delim+1);
+
+  if (topic == "active")
     {
-    topic = topic.substr(m_topic_prefix.length());
-    if (topic.compare(0,7,"client/")==0)
-      {
-      topic = topic.substr(7);
-      size_t delim = topic.find('/');
-      if (delim != string::npos)
-        {
-        std::string clientid = topic.substr(0,delim);
-        topic = topic.substr(delim+1);
-        if (topic == "active")
-          {
-          if ((payload.empty())||(payload == "0"))
-            RemoveClient(clientid);
-          else
-            AddClient(clientid);
-          }
-        else if (topic.compare(0,8,"command/") == 0)
-          {
-          topic = topic.substr(8);
-          RunCommand(clientid, topic, payload);
-          }
-        }
-      }
+    if ((payload.empty())||(payload=="0"))
+      RemoveClient(clientid);
+    else
+      AddClient(clientid);
+    }
+  else if (topic.compare(0,8,"command/")==0)
+    {
+    std::string id = topic.substr(8);
+    RunCommand(clientid, id, payload);
+    }
+  else if (topic.compare(0,8,"request/")==0)
+    {
+    std::string req = topic.substr(8);
+    if (req == "metric")
+      ProcessClientMetricRequest(clientid, payload);
+    else if (req == "config")
+      ProcessClientConfigRequest(clientid, payload);
     }
   }
 
@@ -797,6 +809,13 @@ void OvmsServerV3::Connect()
 
   m_conn_topic[1] = std::string(m_topic_prefix);
   m_conn_topic[1].append("client/+/command/+");
+
+  // Request new Topics:
+  m_conn_topic[2] = std::string(m_topic_prefix);
+  m_conn_topic[2].append("client/+/request/metric");
+
+  m_conn_topic[3] = std::string(m_topic_prefix);
+  m_conn_topic[3].append("client/+/request/config");
 
   if (m_port.empty())
     {
@@ -987,8 +1006,12 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_charging);
   m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", m_updatetime_sendall);
   m_updatetime_keepalive = MyConfig.GetParamValueInt("server.v3", "updatetime.keepalive", m_updatetime_keepalive);
-  m_updatetime_priority = MyConfig.GetParamValueBool("server.v3", "updatetime.priority", false);
   m_legacy_event_topic = MyConfig.GetParamValueBool("server.v3", "events.legacy_topic", true);
+
+  #ifdef CONFIG_OVMS_COMP_CELLULAR
+    m_updatetime_priority = MyConfig.GetParamValueBool("server.v3", "updatetime.priority", false);
+  #endif
+
   m_metrics_filter.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.include"),
                                MyConfig.GetParamValue("server.v3", "metrics.exclude"));
   // New configurable timings:
@@ -1105,11 +1128,12 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     }
 
   if (StandardMetrics.ms_s_v3_connected->AsBool())
-    {
+    {      
+    bool carawake = StandardMetrics.ms_v_env_awake->AsBool();
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
     int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
-    int next = (m_peers==0) ? m_updatetime_idle : caron ? m_updatetime_on : m_updatetime_connected;
-    
+    int next = caron ? m_updatetime_on : (m_peers > 0 || carawake) ? m_updatetime_connected : m_updatetime_idle;
+
     if (m_sendall)
       {
       ESP_LOGI(TAG, "Subscribe to MQTT topics");
@@ -1122,11 +1146,11 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       mg_mqtt_subscribe(m_mgconn, topics, MQTT_CONN_NTOPICS, m_msgid++);
 
       ESP_LOGI(TAG, "Transmit all metrics");
-      TransmitAllMetrics();
       m_lasttx_sendall = now;
       m_lasttx_priority = now;
       m_lasttx = now;
       m_sendall = false;
+      TransmitAllMetrics();
       }
 
     if (m_notify_info_pending)  TransmitPendingNotificationsInfo();
@@ -1139,22 +1163,22 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     if (m_lasttx_sendall == 0)
       {
       ESP_LOGI(TAG, "Transmit all metrics");
-      TransmitAllMetrics();
       m_lasttx_sendall = now;
       m_lasttx_priority = now;
       m_lasttx = now;
+      TransmitAllMetrics();
       }
-    else if ((m_lasttx_priority==0) || (m_updatetime_priority && caron && m_vehicle_stream > 0 && (now > (m_lasttx_priority + m_vehicle_stream))))
+    else if ((m_lasttx_priority==0) || (m_updatetime_priority && carawake && m_vehicle_stream > 0 && (now > (m_lasttx_priority + m_vehicle_stream))))
       {
       //ESP_LOGI(TAG, "Transmit GPS priority metrics");
-      TransmitPriorityMetrics();
       m_lasttx_priority = now;
+      TransmitPriorityMetrics();
       }
     else if ((m_lasttx==0) || (now > (m_lasttx + next)))
       {
       //ESP_LOGI(TAG, "Transmit modified metrics");
-      TransmitModifiedMetrics();
       m_lasttx = now;
+      TransmitModifiedMetrics();
       }
     }
   }
@@ -1270,6 +1294,72 @@ void ovmsv3_update(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     writer->printf("Server V3 data update for %s metrics has been scheduled\n",
       txall ? "all" : "modified");
     }
+  }
+
+// Process metric request (payload: multiple patterns separated by whitespace / , ; or newlines)
+void OvmsServerV3::ProcessClientMetricRequest(const std::string& clientid, const std::string& payload)
+  {
+  if (payload.empty()) return;
+  std::vector<std::string> patterns;
+  std::string cur;
+  for (char c: payload)
+    {
+    if (c==' '||c=='\t'||c=='\r'||c=='\n'||c==','||c==';')
+      { if (!cur.empty()) { patterns.push_back(cur); cur.clear(); } }
+    else cur.push_back(c);
+    }
+  if (!cur.empty()) patterns.push_back(cur);
+  if (patterns.empty()) return;
+
+  for (OvmsMetric* m = MyMetrics.m_first; m; m = m->m_next)
+    {
+    const std::string name(m->m_name);
+    bool match=false;
+    for (auto& p: patterns)
+      {
+      if (MatchPattern(name,p)) { match=true; break; }
+      }
+    if (!match) continue;
+    TransmitMetric(m);
+    }
+  }
+
+// Process config request (payload: param/instance)
+void OvmsServerV3::ProcessClientConfigRequest(const std::string& clientid, const std::string& payload)
+  {
+  if (payload.empty()) return;
+  std::string req = payload;
+  auto trim=[&](std::string& s){
+    size_t a=s.find_first_not_of(" \t\r\n");
+    size_t b=s.find_last_not_of(" \t\r\n");
+    if (a==std::string::npos){ s.clear(); return; }
+    s=s.substr(a,b-a+1);
+  };
+  trim(req);
+  size_t sep=req.find('/');
+  if (sep==std::string::npos) return;
+  std::string param=req.substr(0,sep);
+  std::string inst =req.substr(sep+1);
+  if (param.empty()||inst.empty()) return;
+
+  std::string value = MyConfig.GetParamValue(param.c_str(), inst.c_str());
+
+  std::string topic(m_topic_prefix);
+  topic.append("client/").append(clientid).append("/config/");
+  topic.append(mqtt_topic(param)).append("/").append(mqtt_topic(inst));
+
+  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+                  MG_MQTT_QOS(0), value.c_str(), value.length());
+  ESP_LOGD(TAG,"Tx config %s=%s", topic.c_str(), value.c_str());
+  }
+
+// Wildcard Match (* or prefix*)
+bool OvmsServerV3::MatchPattern(const std::string& name, const std::string& pattern)
+  {
+  if (pattern == "*") return true;
+  if (!pattern.empty() && pattern.back() == '*')
+    return name.compare(0, pattern.size()-1, pattern, 0, pattern.size()-1) == 0;
+  return name == pattern;
   }
 
 OvmsServerV3Init MyOvmsServerV3Init  __attribute__ ((init_priority (6200)));
