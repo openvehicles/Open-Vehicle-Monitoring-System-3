@@ -68,17 +68,15 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 static const OvmsPoller::poll_pid_t obdii_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,300,3,3 }, 0, ISOTP_STD }, // rqBattState
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,300,10,10 }, 0, ISOTP_STD }, // rqBattState
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,300,300 }, 0, ISOTP_STD }, // rqBattTemperatures
 //  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P1
 //  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P2
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,300,300,300 }, 0, ISOTP_STD }, // extern temp byte 2+3
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD Trip Distance km
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD start Trip Distance km 
-//  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2102, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD Trip kWh used
-//  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A1, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD start Trip kWh used
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD Trip time s
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, {  0,300,60,60 }, 0, ISOTP_STD }, // OBD start Trip time s
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD Trip Distance km
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD start Trip Distance km 
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD Trip time s
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD start Trip time s
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance data days
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance data usual km
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance level
@@ -89,28 +87,45 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_volt_measure
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Amps
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Power
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x33BA, {  0,300,60,3 }, 0, ISOTP_STD }, // indicates ext power supply
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, {  0,300,60,3 }, 0, ISOTP_STD }, // charging plug present
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x33BA, {  0,300,60,60 }, 0, ISOTP_STD }, // indicates ext power supply
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, {  0,0,0,10 }, 0, ISOTP_STD }, // charging plug present
 };
 
 static const OvmsPoller::poll_pid_t slow_charger_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7303, {  0,0,0,3 }, 0, ISOTP_STD }, // rqChargerAC
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7303, {  0,0,0,10 }, 0, ISOTP_STD }, // rqChargerAC
 };
 
 static const OvmsPoller::poll_pid_t fast_charger_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503F, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph12_RMS_V
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5041, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph23_RMS_V
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5042, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph31_RMS_V
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2001, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph1_RMS_A
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503A, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph2_RMS_A
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503B, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph3_RMS_A
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Power
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x500E, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Power
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5038, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Power
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503F, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Ph12_RMS_V
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5041, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Ph23_RMS_V
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5042, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Ph31_RMS_V
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2001, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Ph1_RMS_A
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503A, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Ph2_RMS_A
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503B, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Ph3_RMS_A
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Power
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x500E, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Power
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5038, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Power
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5049, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Frequency
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, {  0,0,0,10 }, 0, ISOTP_STD }, // Mains phase frequency (Hz)
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504B, {  0,0,0,10 }, 0, ISOTP_STD }, // Mains current sum (A)
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504C, {  0,0,0,10 }, 0, ISOTP_STD }, // Mains voltage sum (V)
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504D, {  0,0,0,10 }, 0, ISOTP_STD }, // HV net current (A)
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504E, {  0,0,0,10 }, 0, ISOTP_STD }, // HV net voltage (V)
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5057, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - DC part measurement (mA)
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5058, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - HF 10kHz part measurement (mA)
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5059, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - HF part measurement (mA)
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x505A, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - LF part measurement (mA)
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5070, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Max Current limitation
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Ground Resistance
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5064, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Leakage Diag
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5065, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_DC Current
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5066, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_HF10kHz Current
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5067, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_HF Current
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5068, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_LF Current
 };
 
 /**
@@ -167,8 +182,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obd_duration               = MyMetrics.InitInt("xsq.obd.duration", SM_STALE_MID, 0, Minutes);
   mt_obd_trip_km                = MyMetrics.InitFloat("xsq.obd.trip.km", SM_STALE_MID, 0, Kilometers);
   mt_obd_start_trip_km          = MyMetrics.InitFloat("xsq.obd.trip.km.start", SM_STALE_MID, 0, Kilometers);
-  //mt_obd_trip_used              = MyMetrics.InitFloat("xsq.obd.trip.used", SM_STALE_MID, 0, Watts);
-  //mt_obd_start_trip_used        = MyMetrics.InitFloat("xsq.obd.trip.used.start", SM_STALE_MID, 0, Watts);
   mt_obd_trip_time              = MyMetrics.InitString("xsq.obd.trip.time", SM_STALE_MID, 0, Other);
   mt_obd_start_trip_time        = MyMetrics.InitString("xsq.obd.trip.time.start", SM_STALE_MID, 0, Other);
   mt_obd_mt_day_prewarn         = MyMetrics.InitInt("xsq.obd.mt.day.prewarn", SM_STALE_MID, 45, Other);
@@ -220,8 +233,23 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_volts             = new OvmsMetricVector<float>("xsq.obl.volts", SM_STALE_HIGH, Volts);
   mt_obl_main_amps              = new OvmsMetricVector<float>("xsq.obl.amps", SM_STALE_HIGH, Amps);
   mt_obl_main_CHGpower          = new OvmsMetricVector<float>("xsq.obl.power", SM_STALE_HIGH, kW);
+  mt_obl_main_ground_resistance = MyMetrics.InitFloat("xsq.obl.ground.resistance", SM_STALE_MID, 0, Amps);
   mt_obl_main_freq              = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);
-  
+  mt_obl_main_max_current       = MyMetrics.InitInt("xsq.obl.max.current", SM_STALE_MID, 0, Amps);
+  mt_obl_main_leakage_diag      = MyMetrics.InitString("xsq.obl.leakdiag", SM_STALE_MID, "", Other);
+  mt_obl_main_current_leakage_dc        = MyMetrics.InitFloat("xsq.obl.current.dc", SM_STALE_MID, 0, Amps);
+  mt_obl_main_current_leakage_hf_10khz  = MyMetrics.InitFloat("xsq.obl.current.hf10kHz", SM_STALE_MID, 0, Amps);
+  mt_obl_main_current_leakage_hf        = MyMetrics.InitFloat("xsq.obl.current.hf", SM_STALE_MID, 0, Amps);
+  mt_obl_main_current_leakage_lf        = MyMetrics.InitFloat("xsq.obl.current.lf", SM_STALE_MID, 0, Amps);
+  mt_obl_main_current_leakage_dc_raw    = MyMetrics.InitFloat("xsq.obl.current.dc.raw", SM_STALE_MID, 0, Amps);
+  mt_obl_main_current_leakage_hf_10khz_raw = MyMetrics.InitFloat("xsq.obl.current.hf10kHz.raw", SM_STALE_MID, 0, Amps);
+  mt_obl_main_current_leakage_hf_raw    = MyMetrics.InitFloat("xsq.obl.current.hf.raw", SM_STALE_MID, 0, Amps);
+  mt_obl_main_current_leakage_lf_raw    = MyMetrics.InitFloat("xsq.obl.current.lf.raw", SM_STALE_MID, 0, Amps);
+  mt_obl_main_amps_sum          = MyMetrics.InitFloat("xsq.obl.amps.sum", SM_STALE_MID, 0, Amps);
+  mt_obl_main_volts_sum         = MyMetrics.InitFloat("xsq.obl.volts.sum", SM_STALE_MID, 0, Volts);
+  mt_obl_main_hv_net_amps       = MyMetrics.InitFloat("xsq.obl.hv.net.amps", SM_STALE_MID, 0, Amps);
+  mt_obl_main_hv_net_volts      = MyMetrics.InitFloat("xsq.obl.hv.net.volts", SM_STALE_MID, 0, Volts);
+
   // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
   RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
 
@@ -287,6 +315,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   if (MyConfig.GetParamValue("xsq", "reset.notify", "0") == "0") {
     MyConfig.SetParamValueBool("xsq", "reset.notify", true);
+  }
+  
+  if (MyConfig.GetParamValue("server.v3", "updatetime.priority","0") == "0") {
+    MyConfig.SetParamValueBool("server.v3", "updatetime.priority", true);
   }
  
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
