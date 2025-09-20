@@ -794,6 +794,12 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     _data.push_back(atoi(_item.c_str()));
   }
 
+  // Need at least 7 fields: [trigger,on,weekly,time,ds,de,btn]
+  if (_data.size() < 7) {
+    ESP_LOGE(TAG, "Invalid climate data payload, need 7 ints, got %u", (unsigned)_data.size());
+    return;
+  }
+
   if(_data[0]>0 || m_climate_init) {
     m_climate_init = false;
     mt_climate_data->SetValue("0,0,0,0,-1,-1,-1");              // reset the data
@@ -827,8 +833,8 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     }     
     
     // booster;no;no;0515;1;6;0
-    char buf[50];
-    sprintf(buf, "booster,%s,%s,%s,%d,%d,%d", _climate_on.c_str(), _climate_weekly.c_str(), mt_climate_time->AsString().c_str(), mt_climate_ds->AsInt(), mt_climate_de->AsInt(), mt_climate_1to3->AsInt());
+    char buf[64];
+    snprintf(buf, sizeof(buf), "booster,%s,%s,%s,%d,%d,%d", _climate_on.c_str(), _climate_weekly.c_str(), mt_climate_time->AsString().c_str(), mt_climate_ds->AsInt(), mt_climate_de->AsInt(), mt_climate_1to3->AsInt());
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
     StdMetrics.ms_v_gen_current->SetValue(3);
     if(MyConfig.GetParamValueBool("xsq", "climate.notify",false)) NotifyClimateTimer();
@@ -2852,8 +2858,8 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
       int bits = atoi(value);
       if(bits < 0) bits = 0;
       if(bits > 2) bits = 2;
-      char buf[4];
-      sprintf(buf, "1,0,0,0,-1,-1,%d", bits);
+      char buf[64];
+      snprintf(buf, sizeof(buf), "1,0,0,0,-1,-1,%d", bits);
       mt_climate_data->SetValue(std::string(buf));
       return true;
     }
