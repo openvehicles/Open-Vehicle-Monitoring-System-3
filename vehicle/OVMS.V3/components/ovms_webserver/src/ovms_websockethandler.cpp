@@ -57,7 +57,7 @@ static const char *TAG = "websocket";
  * successive sends, the UpdateTicker sends collected intermediate updates.
  */
 
-WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifier, size_t reader)
+WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifier, size_t reader, size_t txqueuesize)
   : MgHandler(nc)
 {
   ESP_LOGV(TAG, "WebSocketHandler[%p] init: handler=%p modifier=%d", nc, this, modifier);
@@ -65,7 +65,7 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
   m_slot = slot;
   m_modifier = modifier;
   m_reader = reader;
-  m_jobqueue = xQueueCreate(50, sizeof(WebSocketTxJob));
+  m_jobqueue = xQueueCreate(txqueuesize, sizeof(WebSocketTxJob));
   m_jobqueue_overflow_status = 0;
   m_jobqueue_overflow_logged = 0;
   m_jobqueue_overflow_dropcnt = 0;
@@ -593,7 +593,7 @@ WebSocketHandler* OvmsWebServer::CreateWebSocketHandler(mg_connection* nc)
   }
   
   // create handler:
-  WebSocketHandler* handler = new WebSocketHandler(nc, i, m_client_slots[i].modifier, m_client_slots[i].reader);
+  WebSocketHandler* handler = new WebSocketHandler(nc, i, m_client_slots[i].modifier, m_client_slots[i].reader, m_client_txqueuesize);
   m_client_slots[i].handler = handler;
   
   // start ticker:

@@ -1967,12 +1967,13 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, warn;
-  std::string docroot, auth_domain, auth_file;
+  std::string ws_txqueuesize, docroot, auth_domain, auth_file;
   bool enable_files, enable_dirlist, auth_global;
   extram::string tls_cert, tls_key;
 
   if (c.method == "POST") {
     // process form submission:
+    ws_txqueuesize = c.getvar("ws_txqueuesize");
     docroot = c.getvar("docroot");
     auth_domain = c.getvar("auth_domain");
     auth_file = c.getvar("auth_file");
@@ -1983,6 +1984,9 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
     c.getvar("tls_key", tls_key);
 
     // validate:
+    if (ws_txqueuesize != "" && atoi(ws_txqueuesize.c_str()) < 10) {
+      error += "<li data-input=\"ws_txqueuesize\">TX queue size must be at least 10</li>";
+    }
     if (docroot != "" && docroot[0] != '/') {
       error += "<li data-input=\"docroot\">Document root must start with '/'</li>";
     }
@@ -2021,12 +2025,14 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // success:
-      if (docroot == "")      MyConfig.DeleteInstance("http.server", "docroot");
-      else                    MyConfig.SetParamValue("http.server", "docroot", docroot);
-      if (auth_domain == "")  MyConfig.DeleteInstance("http.server", "auth.domain");
-      else                    MyConfig.SetParamValue("http.server", "auth.domain", auth_domain);
-      if (auth_file == "")    MyConfig.DeleteInstance("http.server", "auth.file");
-      else                    MyConfig.SetParamValue("http.server", "auth.file", auth_file);
+      if (ws_txqueuesize == "")   MyConfig.DeleteInstance("http.server", "ws.txqueuesize");
+      else                        MyConfig.SetParamValue("http.server", "ws.txqueuesize", ws_txqueuesize);
+      if (docroot == "")          MyConfig.DeleteInstance("http.server", "docroot");
+      else                        MyConfig.SetParamValue("http.server", "docroot", docroot);
+      if (auth_domain == "")      MyConfig.DeleteInstance("http.server", "auth.domain");
+      else                        MyConfig.SetParamValue("http.server", "auth.domain", auth_domain);
+      if (auth_file == "")        MyConfig.DeleteInstance("http.server", "auth.file");
+      else                        MyConfig.SetParamValue("http.server", "auth.file", auth_file);
 
       MyConfig.SetParamValueBool("http.server", "enable.files", enable_files);
       MyConfig.SetParamValueBool("http.server", "enable.dirlist", enable_dirlist);
@@ -2052,6 +2058,7 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
+    ws_txqueuesize = MyConfig.GetParamValue("http.server", "ws.txqueuesize");
     docroot = MyConfig.GetParamValue("http.server", "docroot");
     auth_domain = MyConfig.GetParamValue("http.server", "auth.domain");
     auth_file = MyConfig.GetParamValue("http.server", "auth.file");
@@ -2068,6 +2075,8 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Webserver configuration");
   c.form_start(p.uri);
 
+  c.fieldset_start("File Access");
+
   c.input_checkbox("Enable file access", "enable_files", enable_files,
     "<p>If enabled, paths not handled by the webserver itself are mapped to files below the web root path.</p>"
     "<p>Example: <code>&lt;img src=\"/icons/smiley.png\"&gt;</code> → file <code>/sd/icons/smiley.png</code>"
@@ -2083,6 +2092,22 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
   c.input_text("Directory auth file", "auth_file", auth_file.c_str(), "Default: .htpasswd",
     "<p>Note: sub directories do <u>not</u> inherit the parent auth file.</p>");
   c.input_text("Auth domain/realm", "auth_domain", auth_domain.c_str(), "Default: ovms");
+
+  c.fieldset_end();
+
+  c.fieldset_start("WebSocket Connection");
+
+  c.input("number", "TX job queue size", "ws_txqueuesize", ws_txqueuesize.c_str(), "10-250, default: 50",
+    "<p>The queue buffers metrics updates, events, logs, streaming data etc. to be sent to a connected "
+    "browser / websocket client, each client has a separate queue.</p>"
+    "<p>If you have many and frequent updates or a slow client connection, you can try raising "
+    "the queue size to avoid dropped updates due to job queue overflows.</p>"
+    "<p>Note: changes only affect new connections (reload browser window to reconnect).</p>",
+    "min=\"10\" max=\"250\" step=\"10\"");
+
+  c.fieldset_end();
+
+  c.fieldset_start("Encryption");
 
   c.printf(
     "<div class=\"form-group\">\n"
@@ -2106,6 +2131,8 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
       "</div>\n"
     "</div>\n"
     , c.encode_html(tls_key).c_str());
+
+  c.fieldset_end();
 
   c.input_button("default", "Save");
   c.form_end();

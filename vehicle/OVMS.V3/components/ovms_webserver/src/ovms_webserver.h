@@ -394,7 +394,7 @@ struct WebSocketTxTodo
 class WebSocketHandler : public MgHandler, public OvmsWriter
 {
   public:
-    WebSocketHandler(mg_connection* nc, size_t slot, size_t modifier, size_t reader);
+    WebSocketHandler(mg_connection* nc, size_t slot, size_t modifier, size_t reader, size_t txqueuesize);
     ~WebSocketHandler();
 
   public:
@@ -610,6 +610,7 @@ class OvmsWebServer : public ExternalRamAllocated
     size_t                    m_client_cnt;                 // number of active WebSocket clients
     SemaphoreHandle_t         m_client_mutex;
     WebSocketSlots            m_client_slots;
+    size_t                    m_client_txqueuesize;         // size of WebSocketTxJob queue (config http.server ws.txqueuesize)
     QueueHandle_t             m_client_backlog;
     TimerHandle_t             m_update_ticker;
 

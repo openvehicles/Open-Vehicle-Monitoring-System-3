@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Webserver: adjustable websocket TX job queue size to accomodate high update
+    frequencies / stream payload sizes and/or slow clients / client connections
+  New config:
+    [http.server] ws.txqueuesize  -- in jobs, default 50
 - server V3:
     The number of metrics sent per update is limited to 20 and is split into multiple packets if necessary. Only updated data is sent.
     Prioritize GPS tracking metrics, update interval set at Vehicle stream setting for smoother tracking
