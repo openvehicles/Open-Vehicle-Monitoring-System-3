@@ -110,6 +110,7 @@ static const OvmsPoller::poll_pid_t fast_charger_polls[] =
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x500E, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Power
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5038, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Power
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5049, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Frequency
+  /* The following PIDs are defined, but not used (yet):
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, {  0,0,0,10 }, 0, ISOTP_STD }, // Mains phase frequency (Hz)
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504B, {  0,0,0,10 }, 0, ISOTP_STD }, // Mains current sum (A)
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504C, {  0,0,0,10 }, 0, ISOTP_STD }, // Mains voltage sum (V)
@@ -119,6 +120,7 @@ static const OvmsPoller::poll_pid_t fast_charger_polls[] =
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5058, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - HF 10kHz part measurement (mA)
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5059, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - HF part measurement (mA)
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x505A, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - LF part measurement (mA)
+  */
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5070, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Max Current limitation
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Ground Resistance
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5064, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Leakage Diag
@@ -151,6 +153,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_modem_ticker = 0;
 
   m_enable_write = false;
+  m_candata_timer = 0;
+  m_candata_poll  = 0;
 
   m_charge_start = false;
   m_charge_finished = true;
@@ -233,7 +237,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_volts             = new OvmsMetricVector<float>("xsq.obl.volts", SM_STALE_HIGH, Volts);
   mt_obl_main_amps              = new OvmsMetricVector<float>("xsq.obl.amps", SM_STALE_HIGH, Amps);
   mt_obl_main_CHGpower          = new OvmsMetricVector<float>("xsq.obl.power", SM_STALE_HIGH, kW);
-  mt_obl_main_ground_resistance = MyMetrics.InitFloat("xsq.obl.ground.resistance", SM_STALE_MID, 0, Amps);
+  mt_obl_main_ground_resistance = MyMetrics.InitFloat("xsq.obl.ground.resistance", SM_STALE_MID, 0, Other);
   mt_obl_main_freq              = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);
   mt_obl_main_max_current       = MyMetrics.InitInt("xsq.obl.max.current", SM_STALE_MID, 0, Amps);
   mt_obl_main_leakage_diag      = MyMetrics.InitString("xsq.obl.leakdiag", SM_STALE_MID, "", Other);
@@ -566,7 +570,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x654: // SOC(b)
       StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(3));
-      StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(0) & 0x20)); // ChargingPlugConnected
+      StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(0) & 0x20) != 0); // ChargingPlugConnected
       _duration_full = (((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0;
       mt_obd_duration->SetValue((int)(_duration_full), Minutes);
       _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy
@@ -574,11 +578,16 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       _full_km = MyConfig.GetParamValueFloat("xsq", "full.km", 126.0);
       _range_cac = _full_km + (_bat_temp); // temperature compensation +/- range
       _soc = StdMetrics.ms_v_bat_soc->AsFloat();
-      if ( _range_est != 1023.0 ) {
-        StdMetrics.ms_v_bat_range_est->SetValue(_range_est); // VehicleAutonomy
-        StdMetrics.ms_v_bat_range_full->SetValue((_range_est / _soc) * 100.0); // ToDo
-        StdMetrics.ms_v_bat_range_ideal->SetValue((_range_cac * _soc) / 100.0); // ToDo  // try variable calculated range: est - (20 - (BATTtemp))
-      }
+      if (_range_est != 1023.0f) 
+        {
+        StdMetrics.ms_v_bat_range_est->SetValue(_range_est);
+
+        if (_soc > 0.1f)  // prevent div/0
+          {
+          StdMetrics.ms_v_bat_range_full->SetValue((_range_est / _soc) * 100.0f);
+          StdMetrics.ms_v_bat_range_ideal->SetValue((_range_cac * _soc) / 100.0f);
+          }
+        }
       break;
     case 0x658: //
       _soh = (float)(CAN_BYTE(4) & 0x7Fu);
@@ -734,8 +743,10 @@ void OvmsVehicleSmartEQ::ResetChargingValues() {
 }
 
 void OvmsVehicleSmartEQ::ResetTripCounters() {
-  if (m_tripnotify) NotifyTripCounters();
-  vTaskDelay(10 / portTICK_PERIOD_MS); // Give notification time to complete
+  if (m_tripnotify) {
+    NotifyTripCounters();
+    vTaskDelay(10 / portTICK_PERIOD_MS); // Give notification time
+  }
   StdMetrics.ms_v_bat_energy_recd->SetValue(0);
   StdMetrics.ms_v_bat_energy_used->SetValue(0);
   mt_pos_odometer_start->SetValue(StdMetrics.ms_v_pos_odometer->AsFloat());
@@ -744,8 +755,10 @@ void OvmsVehicleSmartEQ::ResetTripCounters() {
 }
 
 void OvmsVehicleSmartEQ::ResetTotalCounters() {
-  if (m_tripnotify) NotifyTotalCounters();
-  vTaskDelay(10 / portTICK_PERIOD_MS); // Give notification time to complete
+  if (m_tripnotify) {
+    NotifyTotalCounters();
+    vTaskDelay(10 / portTICK_PERIOD_MS); // Give notification time to complete
+  }
   StdMetrics.ms_v_bat_energy_recd_total->SetValue(0);
   StdMetrics.ms_v_bat_energy_used_total->SetValue(0);
   mt_pos_odometer_trip_total->SetValue(0);
