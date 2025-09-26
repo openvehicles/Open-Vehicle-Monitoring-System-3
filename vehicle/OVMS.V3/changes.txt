@@ -1,10 +1,39 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- server V3 (changes):
+    Chunked metric transmission to limit burst size:
+      TransmitAllMetrics(): up to 100 metrics per tick, continues next call.
+      TransmitModifiedMetrics(): up to 150 modified metrics per tick.
+    Priority path for GPS/time metrics with optional extras:
+      Default priority: v.p.latitude, v.p.longitude, v.p.altitude, v.p.speed, v.p.gpsspeed, m.time.utc
+    New update Command:
+      server v3 update priority                   -- send prioritized metrics
+- Webserver: Server V3 (MQTT) config page
+    Added priority sending controls:
+      [server.v3] updatetime.priority (bool)      -- prioritize selected metrics while the vehicle is awake, update in car on interval
+      [server.v3] updatetime.immediately (bool)   -- metrics should be sent immediately when they change
+      [server.v3] metrics.priority (string)       -- comma separated metric names; supports * and prefix* wildcards
+      [server.v3] metrics.include (string)        -- comma separated metric names; supports * and prefix* wildcards
+      [server.v3] metrics.exclude (string)        -- comma separated metric names; supports * and prefix* wildcards
+      [server.v3] metrics.include.immediately (string)    -- comma separated metric names; supports * and prefix* wildcards
+      [server.v3] metrics.exclude.immediately (string)    -- comma separated metric names; supports * and prefix* wildcards
+      [server.v3] queue.sendall (int)             -- queue size send 'sendall' metrics, default 100 metrics per ticker1
+      [server.v3] queue.modified (int)            -- queue size send 'modified' metrics, default 150 metrics per ticker1
 - Webserver: adjustable websocket TX job queue size to accomodate high update
     frequencies / stream payload sizes and/or slow clients / client connections
   New config:
     [http.server] ws.txqueuesize  -- in jobs, default 50
+- server V3 (additions):
+    Added client on-demand requests to reduce baseline data usage:
+      <prefix>/client/<clientid>/request/metric   -- payload: one or multiple metric name patterns
+                                                     Supports wildcards: * (all), prefix* (simple prefix match)
+                                                     Each matching metric is published immediately on its normal topic.
+      <prefix>/client/<clientid>/request/config   -- payload: param/instance (single pair)
+                                                     Response topic: <prefix>/client/<clientid>/config/<param>/<instance>
+    Subscription topic count increased (MQTT_CONN_NTOPICS=4) to include the two new request channels.
+    Pattern matcher kept intentionally minimal (no ? or mid-string *) for low CPU usage.
+    Requests do not clear modified flags; normal delta sending behaviour remains unaffected.
 - server V3:
     The number of metrics sent per update is limited to 20 and is split into multiple packets if necessary. Only updated data is sent.
     Prioritize GPS tracking metrics, update interval set at Vehicle stream setting for smoother tracking

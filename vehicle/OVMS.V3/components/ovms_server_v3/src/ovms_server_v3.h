@@ -43,7 +43,7 @@
 
 typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 
-#define MQTT_CONN_NTOPICS 2
+#define MQTT_CONN_NTOPICS 4   // active, command, request/metric, request/config
 
 class OvmsServerV3 : public OvmsServer
   {
@@ -64,7 +64,10 @@ class OvmsServerV3 : public OvmsServer
     void NetmanStop(std::string event, void* data);
     void Ticker1(std::string event, void* data);
     void Ticker60(std::string event, void* data);
-    void RequestUpdate(bool txall);
+    void RequestUpdate(const char* requested);
+    void ProcessClientMetricRequest(const std::string& clientid, const std::string& payload);
+    void ProcessClientConfigRequest(const std::string& clientid, const std::string& payload);
+    static bool MatchPattern(const std::string& name, const std::string& pattern);
 
   public:
     enum State
@@ -102,7 +105,6 @@ class OvmsServerV3 : public OvmsServer
     int64_t m_lasttx_sendall;
     int64_t m_lasttx_priority;
     int m_peers;
-    int m_vehicle_stream;
     int m_updatetime_idle;
     int m_updatetime_connected;
     int m_updatetime_awake;
@@ -110,9 +112,11 @@ class OvmsServerV3 : public OvmsServer
     int m_updatetime_charging;
     int m_updatetime_sendall;
     int m_updatetime_keepalive;
+    int m_max_per_call_sendall;
+    int m_max_per_call_modified;
     bool m_updatetime_priority;
     bool m_legacy_event_topic;
-
+    bool m_updatetime_immediately;
     bool m_connection_available;
     bool m_notify_info_pending;
     bool m_notify_error_pending;
@@ -152,7 +156,9 @@ class OvmsServerV3 : public OvmsServer
   private:
     void TransmitMetric(OvmsMetric* metric);
 
-    IdIncludeExcludeFilter m_metrics_filter;
+    IdIncludeExcludeFilter m_metrics_filter;    // server.v3.include, server.v3.exclude
+    IdIncludeExcludeFilter m_metrics_priority;  // server.v3.priority
+    IdIncludeExcludeFilter m_metrics_immediately;  // server.v3.immediately
   };
 
 class OvmsServerV3Init
