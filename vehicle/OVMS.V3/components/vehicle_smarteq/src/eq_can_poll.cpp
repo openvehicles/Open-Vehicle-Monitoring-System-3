@@ -496,7 +496,7 @@ void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t repl
   mt_obl_main_volts->SetElemValue(1, 0); mt_obl_main_volts->SetElemValue(2, 0);
   //Get AC Frequency
   if (mt_obl_main_amps->GetElemValue(0) > 0 || mt_obl_main_amps->GetElemValue(1) > 0) {
-    mt_obl_main_freq->SetValue( CAN_BYTE(11) );
+    mt_obl_main_freq->SetValue( CAN_BYTE(11) / 100.0f);
   } else {
     mt_obl_main_freq->SetValue(0);
   }

@@ -245,14 +245,14 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_current_leakage_hf_10khz  = MyMetrics.InitFloat("xsq.obl.current.hf10kHz", SM_STALE_MID, 0, Amps);
   mt_obl_main_current_leakage_hf        = MyMetrics.InitFloat("xsq.obl.current.hf", SM_STALE_MID, 0, Amps);
   mt_obl_main_current_leakage_lf        = MyMetrics.InitFloat("xsq.obl.current.lf", SM_STALE_MID, 0, Amps);
-  mt_obl_main_current_leakage_dc_raw    = MyMetrics.InitFloat("xsq.obl.current.dc.raw", SM_STALE_MID, 0, Amps);
-  mt_obl_main_current_leakage_hf_10khz_raw = MyMetrics.InitFloat("xsq.obl.current.hf10kHz.raw", SM_STALE_MID, 0, Amps);
-  mt_obl_main_current_leakage_hf_raw    = MyMetrics.InitFloat("xsq.obl.current.hf.raw", SM_STALE_MID, 0, Amps);
-  mt_obl_main_current_leakage_lf_raw    = MyMetrics.InitFloat("xsq.obl.current.lf.raw", SM_STALE_MID, 0, Amps);
-  mt_obl_main_amps_sum          = MyMetrics.InitFloat("xsq.obl.amps.sum", SM_STALE_MID, 0, Amps);
-  mt_obl_main_volts_sum         = MyMetrics.InitFloat("xsq.obl.volts.sum", SM_STALE_MID, 0, Volts);
-  mt_obl_main_hv_net_amps       = MyMetrics.InitFloat("xsq.obl.hv.net.amps", SM_STALE_MID, 0, Amps);
-  mt_obl_main_hv_net_volts      = MyMetrics.InitFloat("xsq.obl.hv.net.volts", SM_STALE_MID, 0, Volts);
+  //mt_obl_main_current_leakage_dc_raw    = MyMetrics.InitFloat("xsq.obl.current.dc.raw", SM_STALE_MID, 0, Amps);
+  //mt_obl_main_current_leakage_hf_10khz_raw = MyMetrics.InitFloat("xsq.obl.current.hf10kHz.raw", SM_STALE_MID, 0, Amps);
+  //mt_obl_main_current_leakage_hf_raw    = MyMetrics.InitFloat("xsq.obl.current.hf.raw", SM_STALE_MID, 0, Amps);
+  //mt_obl_main_current_leakage_lf_raw    = MyMetrics.InitFloat("xsq.obl.current.lf.raw", SM_STALE_MID, 0, Amps);
+  //mt_obl_main_amps_sum          = MyMetrics.InitFloat("xsq.obl.amps.sum", SM_STALE_MID, 0, Amps);
+  //mt_obl_main_volts_sum         = MyMetrics.InitFloat("xsq.obl.volts.sum", SM_STALE_MID, 0, Volts);
+  //mt_obl_main_hv_net_amps       = MyMetrics.InitFloat("xsq.obl.hv.net.amps", SM_STALE_MID, 0, Amps);
+  //mt_obl_main_hv_net_volts      = MyMetrics.InitFloat("xsq.obl.hv.net.volts", SM_STALE_MID, 0, Volts);
 
   // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
   RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
