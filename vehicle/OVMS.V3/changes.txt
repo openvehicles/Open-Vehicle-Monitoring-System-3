@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Cellular: GPS auto pause on parking re-activate when Car awakes. This reduces time to first GPS fix.
+  New config:
+    [modem] enable.gps.awake   -- GPS powered on for park re-activate time when parked and Car awakes (default: false)
 - Webserver: adjustable websocket TX job queue size to accomodate high update
     frequencies / stream payload sizes and/or slow clients / client connections
   New config:
