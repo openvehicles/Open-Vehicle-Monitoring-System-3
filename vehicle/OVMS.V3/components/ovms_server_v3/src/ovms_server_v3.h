@@ -67,8 +67,6 @@ class OvmsServerV3 : public OvmsServer
     void RequestUpdate(const char* requested);
     void ProcessClientMetricRequest(const std::string& clientid, const std::string& payload);
     void ProcessClientConfigRequest(const std::string& clientid, const std::string& payload);
-    static bool MatchPattern(const std::string& name, const std::string& pattern);
-
   public:
     enum State
       {

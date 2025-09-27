@@ -25,15 +25,14 @@ Open Vehicle Monitor System v3 - Change log
   New config:
     [http.server] ws.txqueuesize  -- in jobs, default 50
 - server V3 (additions):
-    Added client on-demand requests to reduce baseline data usage:
-      <prefix>/client/<clientid>/request/metric   -- payload: one or multiple metric name patterns
-                                                     Supports wildcards: * (all), prefix* (simple prefix match)
+    Added MQTT client on-demand requests to reduce baseline data usage (authenticated per client, with basic rate-limiting to prevent abuse):
+      <prefix>/client/<clientid>/request/metric   -- payload: one or multiple metric name
+                                                     Supports wildcards: * (all), prefix* (simple prefix match); mid-string wildcards (e.g. "bat*temp") and '?' are not supported.
+                                                     Example: "v.b.*" matches all metrics starting with "v.b."
                                                      Each matching metric is published immediately on its normal topic.
       <prefix>/client/<clientid>/request/config   -- payload: param/instance (single pair)
                                                      Response topic: <prefix>/client/<clientid>/config/<param>/<instance>
     Subscription topic count increased (MQTT_CONN_NTOPICS=4) to include the two new request channels.
-    Pattern matcher kept intentionally minimal (no ? or mid-string *) for low CPU usage.
-    Requests do not clear modified flags; normal delta sending behaviour remains unaffected.
 - server V3:
     The number of metrics sent per update is limited to 20 and is split into multiple packets if necessary. Only updated data is sent.
     Prioritize GPS tracking metrics, update interval set at Vehicle stream setting for smoother tracking
