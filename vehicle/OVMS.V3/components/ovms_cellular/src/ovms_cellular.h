@@ -181,6 +181,7 @@ class modem : public pcp, public InternalRamAllocated
     int                    m_gps_startticker;       // Re-activation countdown
     int                    m_gps_reactivate;        // = config modem gps.parkreactivate (minutes, 0=off)
     int                    m_gps_reactlock;         // = config modem gps.reactlock (minutes, default 5)
+    bool                   m_gps_awake_start;       // start GPS when vehicle awakes
     OvmsMutex              m_gps_mutex;             // lock for start/stop NMEA
 
     OvmsMutex              m_cmd_mutex;             // lock for the CMD channel
