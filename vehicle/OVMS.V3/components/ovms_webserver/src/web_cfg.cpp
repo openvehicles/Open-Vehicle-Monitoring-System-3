@@ -881,7 +881,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
   std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause, gps_parkreactivate, gps_parkreactlock, vehicle_stream;
-  bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode, enable_gps_awake;
+  bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode, gps_parkreactawake;
   float cfg_sq_good, cfg_sq_bad;
 
   if (c.method == "POST") {
@@ -894,11 +894,11 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     enable_net = (c.getvar("enable_net") == "yes");
     enable_sms = (c.getvar("enable_sms") == "yes");
     enable_gps = (c.getvar("enable_gps") == "yes");
-    enable_gps_awake = (c.getvar("gps_awake_start") == "yes");
     enable_gpstime = (c.getvar("enable_gpstime") == "yes");
     gps_parkpause = c.getvar("gps_parkpause");
     gps_parkreactivate = c.getvar("gps_parkreactivate");
-    gps_parkreactlock = c.getvar("gps_parkreactlock");
+    gps_parkreactlock = c.getvar("gps_parkreactlock");    
+    gps_parkreactawake = (c.getvar("gps_awake_start") == "yes");
     vehicle_stream = c.getvar("vehicle_stream");
     cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
     cfg_sq_bad = atof(c.getvar("cfg_sq_bad").c_str());
@@ -922,11 +922,11 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("modem", "enable.net", enable_net);
       MyConfig.SetParamValueBool("modem", "enable.sms", enable_sms);
       MyConfig.SetParamValueBool("modem", "enable.gps", enable_gps);
-      MyConfig.SetParamValueBool("modem", "enable.gps.awake", enable_gps_awake);
       MyConfig.SetParamValueBool("modem", "enable.gpstime", enable_gpstime);
       MyConfig.SetParamValue("modem", "gps.parkpause", gps_parkpause);
       MyConfig.SetParamValue("modem", "gps.parkreactivate", gps_parkreactivate);
       MyConfig.SetParamValue("modem", "gps.parkreactlock", gps_parkreactlock);
+      MyConfig.SetParamValueBool("modem", "gps.parkreactawake", gps_parkreactawake);
       if (vehicle_stream == "0")
         MyConfig.DeleteInstance("vehicle", "stream");
       else
@@ -962,11 +962,11 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   enable_net = MyConfig.GetParamValueBool("modem", "enable.net", true);
   enable_sms = MyConfig.GetParamValueBool("modem", "enable.sms", true);
   enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
-  enable_gps_awake = MyConfig.GetParamValueBool("modem", "enable.gps.awake", false);
   enable_gpstime = MyConfig.GetParamValueBool("modem", "enable.gpstime", false);
   gps_parkpause = MyConfig.GetParamValue("modem", "gps.parkpause","0");
   gps_parkreactivate = MyConfig.GetParamValue("modem", "gps.parkreactivate","0");
   gps_parkreactlock = MyConfig.GetParamValue("modem", "gps.parkreactlock","5");
+  gps_parkreactawake = MyConfig.GetParamValueBool("modem", "gps.parkreactawake", false);
   vehicle_stream = MyConfig.GetParamValue("vehicle", "stream","0");
   cfg_sq_good = MyConfig.GetParamValueFloat("network", "modem.sq.good", -93);
   cfg_sq_bad = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -95);
@@ -1025,8 +1025,6 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.fieldset_end();
 
   c.fieldset_start("GPS parking and tracking");
-  c.input_checkbox("Start GPS when Car awakes", "gps_awake_start", enable_gps_awake,
-    "<p>GPS powered on for park re-activate time when parked and Car awakes. This reduces time to first GPS fix, but increases power consumption when Car is awake.</p>");
   c.input("number", "GPS park pause", "gps_parkpause", gps_parkpause.c_str(), "Default: 0 = disabled",
     "<p>Auto pause GPS when parking for longer than this time / 0 = no auto pausing</p>"
     "<p>Pausing the GPS subsystem can help to avoid draining the 12V battery, see"
@@ -1038,7 +1036,10 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     "min=\"0\" step=\"5\"", "Minutes");
   c.input("number", "GPS lock time", "gps_parkreactlock", gps_parkreactlock.c_str(), "Default: 5",
     "<p>by default, GPS lock for 5 minutes until automatic shutdown during parking time</p>",
-    "min=\"5\" step=\"1\"", "Minutes");
+    "min=\"5\" step=\"1\"", "Minutes");  
+  c.input_checkbox("Start GPS when Car awakes", "gps_awake_start", gps_parkreactawake,
+    "<p>GPS is switched on for the GPS lock time when the GPS parking pause is active and the car wakes up.</p>"
+    "<p>This reduces time to first GPS fix, but increases power consumption when Car is awake.</p>");
   c.input("number", "Location streaming", "vehicle_stream", vehicle_stream.c_str(), "Default: 0",
     "<p>While driving send location updates to server every n seconds, 0 = use default update interval</p>"
     "<p>from server configuration. Same as App feature #8.</p>",

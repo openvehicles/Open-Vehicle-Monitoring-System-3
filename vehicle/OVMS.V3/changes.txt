@@ -34,10 +34,11 @@ Open Vehicle Monitor System v3 - Change log
     vehicle.gen.pilot.off     -- Pilot signal gone
     vehicle.gen.timermode.on  -- Generator timer has been enabled
     vehicle.gen.timermode.off -- Generator timer has been disabled
-- Cellular: GPS auto pause on parking re-activate option added (update position).
+- Cellular: GPS auto pause on parking reactivate option added (update position).
   New config:
-    [modem] gps.reactivate    -- park time in minutes for auto re-activate for (default 5 minutes) GPS lock (gps.reactlock), 0 = disabled (default)
-    [modem] gps.reactlock     -- by default, GPS lock for 5 minutes until automatic shutdown during parking time
+    [modem] gps.parkreactivate    -- park time in minutes for auto reactivate for (default 5 minutes) GPS lock (gps.parkreactlock), 0 = disabled (default)
+    [modem] gps.parkreactlock     -- by default, GPS lock for 5 minutes until automatic shutdown during parking time
+    [modem] gps.parkreactawake    -- GPS is switched on for the gps.parkreactlock time when the GPS parking pause is active and the car wakes up
 
 2024-03-23 MB   3.3.005  OTA release
 - Cellular: GPS auto pause on parking option added (power saving).

@@ -1723,7 +1723,7 @@ void modem::ConfigChanged(std::string event, void* data)
   if (!param || param->GetName() == "modem")
     {
     bool enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
-    bool enable_gps_awake = MyConfig.GetParamValueBool("modem", "enable.gps.awake", false);
+    bool gps_reactawake = MyConfig.GetParamValueBool("modem", "gps.parkreactawake", false);
     int gps_parkpause = MyConfig.GetParamValueInt("modem", "gps.parkpause", 0);
     int gps_reactivate = MyConfig.GetParamValueInt("modem", "gps.parkreactivate", 0);
     int gps_reactlock = MyConfig.GetParamValueInt("modem", "gps.parkreactlock", 5);
@@ -1734,18 +1734,18 @@ void modem::ConfigChanged(std::string event, void* data)
       m_gps_parkpause = gps_parkpause;
       m_gps_reactivate = gps_reactivate;
       m_gps_reactlock = gps_reactlock;
-      m_gps_awake_start = enable_gps_awake;
+      m_gps_awake_start = gps_reactawake;
       }
     else if (enable_gps != m_gps_enabled ||
             gps_parkpause != m_gps_parkpause || 
             gps_reactivate != m_gps_reactivate ||
             gps_reactlock != m_gps_reactlock ||
-            enable_gps_awake != m_gps_awake_start)
+            gps_reactawake != m_gps_awake_start)
       {
       // User changed GPS configuration; translate to status change:
       m_gps_usermode = GUM_DEFAULT;
       m_gps_enabled = enable_gps;
-      m_gps_awake_start = enable_gps_awake;
+      m_gps_awake_start = gps_reactawake;
       m_gps_parkpause = gps_parkpause;
       m_gps_reactivate = gps_reactivate;
       m_gps_reactlock = gps_reactlock;
