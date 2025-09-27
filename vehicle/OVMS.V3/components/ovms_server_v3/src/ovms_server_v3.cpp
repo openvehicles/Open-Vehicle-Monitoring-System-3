@@ -1427,15 +1427,6 @@ void OvmsServerV3::ProcessClientConfigRequest(const std::string& clientid, const
   ESP_LOGD(TAG,"Tx config %s=%s", topic.c_str(), value.c_str());
   }
 
-// Wildcard Match (* or prefix*)
-bool OvmsServerV3::MatchPattern(const std::string& name, const std::string& pattern)
-  {
-  if (pattern == "*") return true;
-  if (!pattern.empty() && pattern.back() == '*')
-    return name.compare(0, pattern.size()-1, pattern, 0, pattern.size()-1) == 0;
-  return name == pattern;
-  }
-
 OvmsServerV3Init MyOvmsServerV3Init  __attribute__ ((init_priority (6200)));
 
 OvmsServerV3Init::OvmsServerV3Init()
