@@ -33,7 +33,7 @@
 #define __VEHICLE_SMARTEQ_H__
 
 #include <atomic>
-
+#include <stdint.h>
 #include "can.h"
 #include "vehicle.h"
 
@@ -48,14 +48,14 @@
 
 // CAN buffer access macros: b=byte# 0..7 / n=nibble# 0..15
 #define CAN_BYTE(b)     data[b]
-#define CAN_UINT(b)     (((UINT)CAN_BYTE(b) << 8) | CAN_BYTE(b+1))
-#define CAN_UINT24(b)   (((uint32_t)CAN_BYTE(b) << 16) | ((UINT)CAN_BYTE(b+1) << 8) | CAN_BYTE(b+2))
-#define CAN_UINT32(b)   (((uint32_t)CAN_BYTE(b) << 24) | ((uint32_t)CAN_BYTE(b+1) << 16)  | ((UINT)CAN_BYTE(b+2) << 8) | CAN_BYTE(b+3))
+#define CAN_UINT(b)     (uint16_t(((uint16_t)CAN_BYTE(b) << 8) | (uint16_t)CAN_BYTE((b)+1)))
+#define CAN_UINT24(b)   (uint32_t( ((uint32_t)CAN_BYTE(b) << 16) | ((uint32_t)CAN_BYTE((b)+1) << 8) | (uint32_t)CAN_BYTE((b)+2) ))
+#define CAN_UINT32(b)   (uint32_t( ((uint32_t)CAN_BYTE(b) << 24) | ((uint32_t)CAN_BYTE((b)+1) << 16) | ((uint32_t)CAN_BYTE((b)+2) << 8) | (uint32_t)CAN_BYTE((b)+3) ))
 #define CAN_NIBL(b)     (data[b] & 0x0f)
 #define CAN_NIBH(b)     (data[b] >> 4)
 #define CAN_NIB(n)      (((n)&1) ? CAN_NIBL((n)>>1) : CAN_NIBH((n)>>1))
 
-// VW e-Up specific MSG protocol commands:
+// Vehicle specific MSG protocol command IDs:
 #define CMD_SetChargeAlerts         204 // (suffsoc)
 
 using namespace std;
@@ -219,7 +219,6 @@ public:
     void PollReply_OBL_JB2AC_HVNetCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_HVVoltageSum(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_RawDCCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_RawHVVoltage(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_RawHF10kHz(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_RawHFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_RawLFCurrent(const char* data, uint16_t reply_len);
