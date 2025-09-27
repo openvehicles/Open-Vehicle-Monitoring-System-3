@@ -4,6 +4,9 @@ Open Vehicle Monitor System v3 - Change log
 - Cellular: GPS auto pause on parking re-activate when Car awakes. This reduces time to first GPS fix.
   New config:
     [modem] enable.gps.awake   -- GPS powered on for park re-activate time when parked and Car awakes (default: false)
+- Cellular: GPS auto pause on parking reactivate when Car awakes. This reduces time to first GPS fix.
+  New config:    
+    [modem] gps.parkreactawake (bool)   -- GPS is switched on for the gps.parkreactlock (minutes) time when the GPS parking pause is active and the car wakes up (default: no)
 - Webserver: adjustable websocket TX job queue size to accomodate high update
     frequencies / stream payload sizes and/or slow clients / client connections
   New config:
@@ -36,9 +39,8 @@ Open Vehicle Monitor System v3 - Change log
     vehicle.gen.timermode.off -- Generator timer has been disabled
 - Cellular: GPS auto pause on parking reactivate option added (update position).
   New config:
-    [modem] gps.parkreactivate    -- park time in minutes for auto reactivate for (default 5 minutes) GPS lock (gps.parkreactlock), 0 = disabled (default)
-    [modem] gps.parkreactlock     -- by default, GPS lock for 5 minutes until automatic shutdown during parking time
-    [modem] gps.parkreactawake    -- GPS is switched on for the gps.parkreactlock time when the GPS parking pause is active and the car wakes up
+    [modem] gps.parkreactivate (minutes)   -- park time in minutes for auto reactivate for (default 5 minutes) GPS lock (gps.parkreactlock), 0 = disabled
+    [modem] gps.parkreactlock  (minutes)   -- GPS lock for 5 minutes until automatic shutdown during parking time
 
 2024-03-23 MB   3.3.005  OTA release
 - Cellular: GPS auto pause on parking option added (power saving).

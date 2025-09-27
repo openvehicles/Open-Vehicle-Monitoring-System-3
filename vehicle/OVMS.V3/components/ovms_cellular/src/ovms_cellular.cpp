@@ -1711,7 +1711,7 @@ void modem::EventListener(std::string event, void* data)
       ESP_LOGI(TAG, "Vehicle awake, starting GPS");
       m_gps_startticker = 0;
       StartNMEA();
-      m_gps_stopticker = m_gps_parkpause;
+      m_gps_stopticker = m_gps_reactlock * 60; // default 5 minutes;
       }
     }
   }
