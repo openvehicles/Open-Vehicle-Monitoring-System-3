@@ -1795,7 +1795,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   c.input("number", "queue size sendall", "queue_sendall", queue_sendall.c_str(), "default: 100", "default: 100", "min=\"1\" max=\"500\" step=\"1\"", "size");
   c.input("number", "queue size modified", "queue_modified", queue_modified.c_str(), "default: 150", "default: 150", "min=\"1\" max=\"500\" step=\"1\"", "size");
   c.input_text("priority metrics", "metrics_priority", metrics_priority.c_str(), NULL,
-    "<p>default priority: v.p.latitude, v.p.longitude, v.p.altitude, v.p.speed, v.p.gpsspeed, m.time.utc</br>"
+    "<p>default priority: v.p.latitude, v.p.longitude, v.p.altitude, v.p.speed, v.p.gpsspeed</br>"
     "additional comma-separated list of metrics to prioritize when Car is awake, wildcard supported e.g. v.c.*, m.net.*</p>");
   c.input_text("metrics include", "metrics_include", metrics_include.c_str(), NULL,
     "<p>comma-separated list of metrics to include update, wildcard supported e.g. v.c.*, m.net.*</p>");

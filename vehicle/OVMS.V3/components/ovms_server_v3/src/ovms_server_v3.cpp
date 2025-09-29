@@ -441,7 +441,6 @@ void OvmsServerV3::TransmitPriorityMetrics()
       "v.p.altitude",
       "v.p.speed",
       "v.p.gpsspeed",
-      "m.time.utc",
     };
 
     const size_t s_priority_gps_metrics_count =

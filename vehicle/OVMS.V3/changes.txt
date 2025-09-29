@@ -9,7 +9,7 @@ Open Vehicle Monitor System v3 - Change log
       TransmitAllMetrics(): up to 100 metrics per tick, continues next call.
       TransmitModifiedMetrics(): up to 150 modified metrics per tick.
     Priority path for GPS/time metrics with optional extras:
-      Default priority: v.p.latitude, v.p.longitude, v.p.altitude, v.p.speed, v.p.gpsspeed, m.time.utc
+      Default priority: v.p.latitude, v.p.longitude, v.p.altitude, v.p.speed, v.p.gpsspeed
     New update Command:
       server v3 update priority                   -- send prioritized metrics
 - Webserver: Server V3 (MQTT) config page
