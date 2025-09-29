@@ -99,7 +99,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           StandardMetrics.ms_s_v3_connected->SetValue(false);
           StandardMetrics.ms_s_v3_peers->SetValue(0);
           MyOvmsServerV3->SetStatus("Error: Connection failed", true, OvmsServerV3::WaitReconnect);
-          MyOvmsServerV3->m_connretry = 60;
+          MyOvmsServerV3->m_connretry = 30;
           MyOvmsServerV3->m_connection_counter = 0;
           }
         }
@@ -113,7 +113,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV3)
           {
           MyOvmsServerV3->Disconnect();
-          MyOvmsServerV3->m_connretry = 60;
+          MyOvmsServerV3->m_connretry = 30;
           MyOvmsServerV3->m_connection_counter = 0;
           }
         }
@@ -131,6 +131,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           MyOvmsServerV3->m_notify_data_waitentry = NULL;
           StandardMetrics.ms_s_v3_connected->SetValue(true);
           MyOvmsServerV3->SetStatus("OVMS V3 MQTT login successful", false, OvmsServerV3::Connected);
+          MyOvmsServerV3->m_connect_jitter = -1; // reset: allow new jitter selection in next network phase
           }
         }
       break;
@@ -1030,21 +1031,31 @@ void OvmsServerV3::EventListener(std::string event, void* data)
       event == "vehicle.charge.start" || event == "vehicle.charge.stop" ||
       event == "vehicle.charge.finished" || event == "vehicle.awake" ||
       event == "vehicle.on" || event == "vehicle.off" ||           
-      event == "vehicle.locked" || event == "vehicle.unlocked")
+      event == "vehicle.locked" || event == "vehicle.unlocked" ||
+      event == "app.disconnected")
     {
     if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
     m_lasttx_priority = now;
     m_lasttx = now;
     TransmitModifiedMetrics();
     }
-  if (event == "app.connected" || event == "app.disconnected" ||
-      event == "server.v3.connected")
+  if (event == "app.connected" || event == "server.v3.connected")
     {
     if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
-    m_lasttx_sendall = now;
-    m_lasttx_priority = now;
-    m_lasttx = now;
-    TransmitAllMetrics();
+    
+    if ( (now - m_lasttx_sendall) > 30 )
+      {
+      m_lasttx_sendall = now;
+      m_lasttx_priority = now;
+      m_lasttx = now;
+      TransmitAllMetrics();
+      }
+    else if ( (now - m_lasttx) > 20 )
+      {
+      m_lasttx_priority = now;
+      m_lasttx = now;
+      TransmitModifiedMetrics();
+      }
     }
   }
 
@@ -1129,18 +1140,26 @@ void OvmsServerV3::NetmanStop(std::string event, void* data)
 
 void OvmsServerV3::Ticker1(std::string event, void* data)
   {
-  m_connection_available = StdMetrics.ms_m_net_connected->AsBool() &&
-                              StdMetrics.ms_m_net_ip->AsBool() &&
-                              StdMetrics.ms_m_net_good_sq->AsBool();
+  bool net_connected = StdMetrics.ms_m_net_connected->AsBool();
+  bool net_ip        = StdMetrics.ms_m_net_ip->AsBool();
+  bool net_good_sq   = true; // tolerant: unbekannt = true
+  if (StdMetrics.ms_m_net_good_sq->IsDefined())
+    net_good_sq = StdMetrics.ms_m_net_good_sq->AsBool();
+
+  m_connection_available = (net_connected && net_ip && net_good_sq);
 
   // Reset jitter & counters when network lost
   if (!m_connection_available)
     {
     if (m_mgconn)
       {
+      ESP_LOGW(TAG,"Network lost (connected=%d ip=%d gSQ=%d) → disconnect",
+               (int)net_connected,(int)net_ip,(int)net_good_sq);
       Disconnect();
       m_connretry = 10;
       }
+    if (m_connection_counter != 0 || m_connect_jitter != -1)
+      ESP_LOGD(TAG,"Reset counters (counter=%d jitter=%d)", m_connection_counter, m_connect_jitter);
     m_connection_counter = 0;
     m_connect_jitter = -1;
     }
@@ -1149,11 +1168,8 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     // Choose jitter once when network first becomes stable
     if (m_connection_counter == 0 && m_connect_jitter == -1)
       {
-      if (m_conn_jitter_max > 0)
-        m_connect_jitter = esp_random() % (m_conn_jitter_max + 1);
-      else
-        m_connect_jitter = 0;
-      ESP_LOGD(TAG, "Connect timing: stable_wait=%d jitter=%d (max %d)", m_conn_stable_wait, m_connect_jitter, m_conn_jitter_max);
+      m_connect_jitter = (m_conn_jitter_max > 0) ? (esp_random() % (m_conn_jitter_max+1)) : 0;
+      ESP_LOGI(TAG,"Pick jitter=%d (stable_wait=%d)", m_connect_jitter, m_conn_stable_wait);
       }
 
     if (m_connection_counter < (m_conn_stable_wait + m_connect_jitter))
@@ -1164,25 +1180,48 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     // Attempt connect only when:
     //  - no retry countdown active
     //  - stable period + jitter reached
-    if (m_connretry == 0 && m_connection_counter == (m_conn_stable_wait + m_connect_jitter))
+    // Initial connect countdown
+    if (m_connretry == 0 &&
+        m_connection_counter >= (m_conn_stable_wait + m_connect_jitter) &&
+        !StandardMetrics.ms_s_v3_connected->AsBool() &&
+        m_mgconn == NULL)
       {
-      if (m_mgconn) Disconnect(); // clear stale
-      ESP_LOGI(TAG, "Network stable %d(+%d)s -> connecting", m_conn_stable_wait, m_connect_jitter);
-      m_connect_jitter = -1; // next cycle will re-pick if needed
+      ESP_LOGI(TAG,"Attempt connect: counter=%d need=%d jitter=%d",
+               m_connection_counter, m_conn_stable_wait + m_connect_jitter, m_connect_jitter);
       Connect();
       return;
       }
     }
+    if (m_connretry == 0 &&
+        m_connection_counter >= (m_conn_stable_wait + m_connect_jitter) &&
+        !StandardMetrics.ms_s_v3_connected->AsBool() &&
+        m_mgconn == NULL)
+      {
+      ESP_LOGI(TAG,"Attempt connect: counter=%d need=%d jitter=%d",
+               m_connection_counter, m_conn_stable_wait + m_connect_jitter, m_connect_jitter);
+      Connect();
+      return;
+      }
+    
 
   // Retry backoff countdown
   if (m_connretry > 0)
     {
     m_connretry--;
-    if (m_connretry == 0 && m_connection_counter >= (m_conn_stable_wait + (m_connect_jitter<0?0:m_connect_jitter)))
+    ESP_LOGD(TAG, "Retry countdown: %d (counter=%d jitter=%d stable_wait=%d)",
+             m_connretry, m_connection_counter, m_connect_jitter, m_conn_stable_wait);
+    if (m_connretry == 0 &&
+        m_connection_counter >= (m_conn_stable_wait + (m_connect_jitter<0?0:m_connect_jitter)))
       {
       if (m_mgconn) Disconnect();
-      ESP_LOGI(TAG, "Retry timer elapsed -> reconnect");
-      m_connect_jitter = -1;
+      ESP_LOGI(TAG, "Retry timer elapsed -> reconnect (counter=%d jitter=%d)",
+               m_connection_counter, m_connect_jitter);
+      // If desired, pick a new jitter value for retries:
+      if (m_conn_jitter_max > 0 && m_connect_jitter >= 0)
+        {
+        m_connect_jitter = esp_random() % (m_conn_jitter_max + 1);
+        ESP_LOGD(TAG, "Re-pick jitter for retry: %d", m_connect_jitter);
+        }
       Connect();
       return;
       }
