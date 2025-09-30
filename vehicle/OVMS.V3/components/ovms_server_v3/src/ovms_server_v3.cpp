@@ -301,7 +301,9 @@ void OvmsServerV3::TransmitAllMetrics()
     {
     s_next_index = 0;
     return;
-    }
+    }  
+  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+  CountClients();
 
   // Locate starting metric for current index:
   OvmsMetric* m = MyMetrics.m_first;
@@ -367,6 +369,8 @@ void OvmsServerV3::TransmitModifiedMetrics()
     s_mod_next_index = 0;
     return;
     }
+  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+  CountClients();
 
   // Locate starting point:
   OvmsMetric* m = MyMetrics.m_first;
@@ -451,6 +455,7 @@ void OvmsServerV3::TransmitPriorityMetrics()
     OvmsMutexLock mg(&m_mgconn_mutex);
     if (!m_mgconn) return;
     if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+    CountClients();
 
     // Helper to collect what we've already handled to avoid duplicates:
     std::vector<std::string> processed;
@@ -961,6 +966,7 @@ void OvmsServerV3::SetStatus(const char* status, bool fault /*=false*/, State ne
 
 void OvmsServerV3::MetricModified(OvmsMetric* metric)
   {
+  if (metric == NULL) return;
   if (!m_updatetime_immediately) return;
   if (!m_mgconn) return;
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
@@ -1142,7 +1148,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
   {
   bool net_connected = StdMetrics.ms_m_net_connected->AsBool();
   bool net_ip        = StdMetrics.ms_m_net_ip->AsBool();
-  bool net_good_sq   = true; // tolerant: unbekannt = true
+  bool net_good_sq   = true;
   if (StdMetrics.ms_m_net_good_sq->IsDefined())
     net_good_sq = StdMetrics.ms_m_net_good_sq->AsBool();
 
