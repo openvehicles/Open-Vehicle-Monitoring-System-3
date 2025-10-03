@@ -42,6 +42,7 @@
 #include "ovms_metrics.h"
 #include "ovms_command.h"
 #include "freertos/timers.h"
+#include "esp_timer.h"
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
 #endif
@@ -57,6 +58,37 @@
 
 // Vehicle specific MSG protocol command IDs:
 #define CMD_SetChargeAlerts         204 // (suffsoc)
+
+// Add near top (after TAG definition, before other code) if not present:
+#define TICKER1_BUDGET_GUARD(now)                                                            \
+  do {                                                                                            \
+    if ((int64_t)(esp_timer_get_time() - (now)) > (int64_t)m_ticker1_budget_us) {            \
+      ESP_LOGW(TAG,"Ticker1 budget %u us exceeded -> early exit", (unsigned)m_ticker1_budget_us); \
+      return;                                                                                     \
+    }                                                                                             \
+  } while(0)
+
+// DLC (Data Length Code) guard helper:
+// Returns false if the CAN frame has fewer bytes than needed for this case.
+#define REQ_DLC(minlen)                                                 \
+  do {                                                                  \
+    if (p_frame->FIR.B.DLC < (minlen)) {                                \
+      ESP_LOGV(TAG,"CAN %03X: DLC %u < %u -> skip",                     \
+        p_frame->MsgID, p_frame->FIR.B.DLC, (unsigned)(minlen)); break; \
+      }                                                                 \
+  } while(0)
+
+// Central reply length guard for poll parsers:
+// Use at start of every PollReply_* before accessing data[offset] / CAN_UINT(offset).
+// If reply too short, logs (verbose) once and returns.
+#define REQUIRE_LEN(minlen)                                             \
+  do {                                                                  \
+    if (reply_len < (minlen)) {                                         \
+      ESP_LOGV(TAG, "%s: short reply (%u < %u)",                        \
+        __FUNCTION__, (unsigned)reply_len, (unsigned)(minlen));         \
+      return;                                                           \
+    }                                                                   \
+  } while(0)
 
 using namespace std;
 
@@ -111,6 +143,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void WifiRestart();
     void ModemRestart();
     void ModemEventRestart(std::string event, void* data);
+    void ReCalcADCfactor(float can12V);
+    void EventListener(std::string event, void* data);
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -170,6 +204,8 @@ public:
     bool m_charge_finished;
     float m_tpms_pressure[4]; // kPa
     int m_tpms_index[4];
+    bool m_ADCfactor_recalc;       // request recalculation of ADC factor
+    int m_ADCfactor_recalc_timer;  // countdown timer for ADC factor recalculation
 
   protected:
     void Ticker1(uint32_t ticker) override;
@@ -184,9 +220,12 @@ public:
     void PollReply_HVAC(const char* data, uint16_t reply_len);
     void PollReply_TDB(const char* data, uint16_t reply_len);
     void PollReply_VIN(const char* data, uint16_t reply_len);
+    void PollReply_VehicleState(const char* data, uint16_t reply_len);
+    void PollReply_DoorUnderhoodOpened(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_State(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
+    void PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Volt(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len);
@@ -214,15 +253,6 @@ public:
     void PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_CurrentSum(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_VoltageSum(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_HVNetCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_HVVoltageSum(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_RawDCCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_RawHF10kHz(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_RawHFCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_RawLFCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Frequency(const char* data, uint16_t reply_len);
 
   protected:
     bool m_enable_write;                    // canwrite
@@ -251,6 +281,8 @@ public:
     std::string m_network_type;             //!< Network type from xsq.modem.net.type
     std::string m_network_type_ls;          //!< Network type last state reminder
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
+    uint32_t m_ticker1_budget_us = 14000;   // configurable time budget (µs) for Ticker1 workload
+
 
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define MAX_POLL_DATA_LEN 126
@@ -274,6 +306,7 @@ public:
     OvmsMetricFloat         *mt_evc_hv_energy;          //!< available energy in kWh
     OvmsMetricFloat         *mt_evc_LV_DCDC_amps;       //!< current of DC/DC LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_load;       //!< load in % of DC/DC LV system, not 12V battery!
+    OvmsMetricFloat         *mt_evc_LV_DCDC_volt_req;   //!< voltage request in V of DC/DC LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_volt;       //!< voltage in V of DC/DC output of LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_power;      //!< power in W (x/10) of DC/DC output of LV system, not 12V battery!
     OvmsMetricInt           *mt_evc_LV_DCDC_state;      //!< DC/DC state
@@ -287,10 +320,12 @@ public:
     OvmsMetricFloat         *mt_bms_BattPower_voltage;  //!< voltage value sample (raw), (x/64) for actual value
     OvmsMetricFloat         *mt_bms_BattPower_current;  //!< current value sample (raw), (x/32) for actual value
     OvmsMetricFloat         *mt_bms_BattPower_power;    //!< calculated power of sample in kW
-    OvmsMetricInt           *mt_bms_HVcontactState;     //!< contactor state: 0 := OFF, 1 := PRECHARGE, 2 := ON
+    OvmsMetricInt           *mt_bms_HVcontactStateCode; //!< contactor state: 0 := OFF, 1 := PRECHARGE, 2 := ON
+    OvmsMetricString        *mt_bms_HVcontactStateTXT;  //!< contactor state text
     OvmsMetricFloat         *mt_bms_HV;                 //!< total voltage of HV system in V
-    OvmsMetricInt           *mt_bms_EVmode;             //!< Mode the EV is actually in: 0 = none, 1 = slow charge, 2 = fast charge, 3 = normal, 4 = fast balance
-    OvmsMetricFloat         *mt_bms_LV;                 //!< 12V onboard voltage / LV system
+    OvmsMetricInt           *mt_bms_EVmode;             //!< Mode the EV is actually in: 0 = none, 1 = slow charge, 2 = fast charge, 3 = normal, 4 = Quick Drop, 5 = Cameleon (Non-Isolated Charging)
+    OvmsMetricString        *mt_bms_EVmode_txt;         //!< Mode the EV is actually in text
+    OvmsMetricFloat         *mt_bms_12v;                //!< 12V onboard voltage / LV system
     OvmsMetricFloat         *mt_bms_Amps;               //!< battery current in ampere (x/32) reported by by BMS
     OvmsMetricFloat         *mt_bms_Amps2;              //!< battery current in ampere read by live data on CAN or from BMS
     OvmsMetricFloat         *mt_bms_Power;              //!< power as product of voltage and amps in kW
@@ -305,16 +340,7 @@ public:
     OvmsMetricFloat         *mt_obl_main_current_leakage_hf_10khz;    //!< HF 10kHz leakage (A)
     OvmsMetricFloat         *mt_obl_main_current_leakage_hf;          //!< HF leakage current (A)
     OvmsMetricFloat         *mt_obl_main_current_leakage_lf;          //!< LF leakage current (A)
-    OvmsMetricFloat         *mt_obl_main_hv_net_amps;                 //!< Net current (A)
-    OvmsMetricFloat         *mt_obl_main_hv_net_volts;                //!< Net voltage (V)
-    OvmsMetricFloat         *mt_obl_main_amps_sum;                    //!< Current sum (A)
-    OvmsMetricFloat         *mt_obl_main_volts_sum;                   //!< Voltage sum (V)
-    OvmsMetricFloat         *mt_obl_main_hv_volts_sum;                //!< HV Voltage sum (V)
     OvmsMetricFloat         *mt_obl_main_current_leakage_ac;          //!< AC leakage current (A)
-    OvmsMetricFloat         *mt_obl_main_current_leakage_dc_raw;      //!< DC leakage current raw value
-    OvmsMetricFloat         *mt_obl_main_current_leakage_hf_10khz_raw;//!< HF 10kHz leakage raw value
-    OvmsMetricFloat         *mt_obl_main_current_leakage_hf_raw;     //!< HF leakage current raw value
-    OvmsMetricFloat         *mt_obl_main_current_leakage_lf_raw;     //!< LF leakage current raw value
     OvmsMetricInt           *mt_obd_duration;           //!< obd duration
     OvmsMetricFloat         *mt_obd_trip_km;            //!< obd trip data km
     OvmsMetricFloat         *mt_obd_start_trip_km;      //!< obd trip data km start
@@ -335,6 +361,8 @@ public:
     OvmsMetricString        *mt_climate_data;           //!< climate data from app/website
     OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
+    OvmsMetricString        *mt_vehicle_state;          //!< vehicle state
+    OvmsMetricInt           *mt_vehicle_state_code;     //!< vehicle state code
 
   protected:
     bool m_climate_start;
@@ -342,12 +370,14 @@ public:
     bool m_climate_init;                    //!< climate init after boot
     bool m_v2_restart;
     bool m_v2_check;
-    bool m_indicator;                       //!< activate indicator e.g. 7 times or whtever
+    bool m_indicator;                       //!< activate indicator e.g. 7 times or whatever
     bool m_ddt4all;                         //!< DDT4ALL mode
     bool m_warning_unlocked;                //!< unlocked warning
     bool m_modem_check;                     //!< modem check enabled
     bool m_modem_restart;                   //!< modem restart enabled
     bool m_notifySOClimit;                  //!< notify SOClimit reached one time
+    bool m_enable_calcADCfactor;            //!< enable calculation of ADC factor
+    float m_12v_measured_BMS_offset;       //!< 12V battery voltage measure offset BMS <> 12V System in V
     int m_ddt4all_ticker;                   //!< DDT4ALL active ticker 
     int m_ddt4all_exec;                     //!< DDT4ALL ticker for next execution
     int m_led_state;

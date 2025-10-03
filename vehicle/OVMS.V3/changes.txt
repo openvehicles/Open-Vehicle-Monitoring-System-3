@@ -1,6 +1,14 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- smart EQ:
+    Added Ticker1 time budget guard to cap per tick workload.
+    Hardened poll reply & CAN parsing (REQUIRE_LEN / DLC guards, corrected switch fallthrough).
+    Automatic 12V ADC factor recalculation using BMS 12V voltage with adjustable offset and web UI controls.
+    New config:
+    [xsq] ticker1.budget (uint32_t)         -- time budget guard to cap per tick workload in µs (default 14000)
+    [xsq] calc.adcfactor (bool)             -- activate sutomatic ADC factor recalculation (default false)
+    [xsq] 12v.measured.BMS.offset (float)   -- 12V battery voltage measure offset BMS <> 12V System in V (default 0.25V)
 - Cellular: GPS auto pause on parking reactivate when Car awakes. This reduces time to first GPS fix.
   New config:    
     [modem] gps.parkreactawake (bool)   -- GPS is switched on for the gps.parkreactlock (minutes) time when the GPS parking pause is active and the car wakes up (default: no)

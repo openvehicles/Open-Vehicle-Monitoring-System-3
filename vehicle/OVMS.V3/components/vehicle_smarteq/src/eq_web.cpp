@@ -80,8 +80,10 @@ void OvmsVehicleSmartEQ::WebDeInit()
  */
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
-  std::string error, info, full_km, rebootnw, net_type;
-  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate_system, charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify;
+  std::string error, info, full_km, rebootnw, net_type, measured12vBMSoffset;
+  bool canwrite, led, ios, resettrip, resettotal, bcvalue, climate_system;
+  bool charge12v, v2server, extstats, unlocked, mdmcheck, wakeup, tripnotify;
+  bool calcADCfactor;
 
   if (c.method == "POST") {
     // process form submission:
@@ -102,7 +104,9 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     extstats = (c.getvar("extstats") == "yes");
     wakeup   = (c.getvar("wakeup") == "yes");
     tripnotify = (c.getvar("resetnotify") == "yes");
-    
+    calcADCfactor = (c.getvar("calcADCfactor") == "yes");
+    measured12vBMSoffset = (c.getvar("measured12vBMSoffset"));
+
     if (error.empty()) {
       // success:
       MyConfig.SetParamValueBool("xsq", "canwrite", canwrite);
@@ -122,6 +126,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "extended.stats", extstats);
       MyConfig.SetParamValueBool("xsq", "restart.wakeup", wakeup);
       MyConfig.SetParamValueBool("xsq", "reset.notify", tripnotify);
+      MyConfig.SetParamValueBool("xsq", "calc.adcfactor", calcADCfactor);
+      MyConfig.SetParamValue("xsq", "12v.measured.BMS.offset", measured12vBMSoffset);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -154,6 +160,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     extstats    = MyConfig.GetParamValueBool("xsq", "extended.stats", false);
     wakeup      = MyConfig.GetParamValueBool("xsq", "restart.wakeup", false);
     tripnotify  = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
+    calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", false);
+    measured12vBMSoffset = MyConfig.GetParamValue("xsq", "12v.measured.BMS.offset", "0.25");
 
     c.head(200);
   }
@@ -190,6 +198,14 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = Climate/Heater system and data transfer to Android App activated</p>");
   c.input_checkbox("Enable 12V charging", "charge12v", charge12v,
     "<p>Enable = charge the 12V if low 12V alert is raised</p>");
+  c.input_slider("12V measured BMS offset", "measured12vBMSoffset", 2, "V",-1, atof(measured12vBMSoffset.c_str()), 0.25, -1, 5, 0.01,
+    "<p>Offset between 12V battery voltage measured by BMS and 12V system voltage.</p>"
+    "<p>Useful for automatic ADC calibration or when fine-tuning the 12V measurement by BMS. (12V BMS metric: xsq.bms.12v)</p>"
+    "<p>Default 0.25V</p>");
+  c.input_checkbox("Enable automatic recalculation of ADC factor", "calcADCfactor", calcADCfactor,
+      "<p>Enable = Automatic recalculation of the ADC factor for the 12V battery voltage measurement.</p>"
+      "<p>The ADC factor is recalculated one time each 12V charging process by BMS 12V measure.</p>"
+      "<p>This ensures that the 12V battery voltage is always measured correctly.</p>");
   c.input_checkbox("Enable V2 Server", "v2server", v2server,
     "<p>Enable = keep v2 Server connected</p>");
   c.input_checkbox("Enable auto restart modem on Wifi disconnect", "mdmcheck", mdmcheck,
@@ -199,7 +215,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable Wakeup on Restart", "wakeup", wakeup,
     "<p>Enable = Wakeup the Car on Restart of the OVMS</p>");
   c.input_checkbox("Enable extended statistics", "extstats", extstats,
-      "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");
+      "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");  
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>Default 0 = off. Restart Network automatic when no v2Server connection.</p>");
   c.input_select_start("Modem Network type", "net_type");
