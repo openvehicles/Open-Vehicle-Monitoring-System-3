@@ -606,7 +606,8 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x654:        // SOC / charge port status
       REQ_DLC(4);
-      StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(3));
+      _soc = CAN_BYTE(3);
+      if (_soc <= 101.0f) StdMetrics.ms_v_bat_soc->SetValue(_soc);
       StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(0) & 0x20) != 0); // ChargingPlugConnected
       _duration_full = (((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0;
       mt_obd_duration->SetValue((int)(_duration_full), Minutes);
@@ -969,7 +970,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V) {
     adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
     uint32_t sum = 0;
     for (int i=0;i<20;i++) {
-      ets_delay_us(1000);
+      ets_delay_us(2000);
       sum += adc1_get_raw(ADC1_CHANNEL_0);
     }
     float adc_factor = MyConfig.GetParamValueFloat("system.adc","factor12v", 195.7f);
