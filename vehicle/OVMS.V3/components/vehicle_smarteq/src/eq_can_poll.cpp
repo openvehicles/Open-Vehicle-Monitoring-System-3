@@ -496,7 +496,7 @@ void OvmsVehicleSmartEQ::PollReply_VehicleState(const char* data, uint16_t reply
   }
   mt_vehicle_state->SetValue(msgtxt);
   mt_vehicle_state_code->SetValue(code);
-  mt_bus_awake->SetValue(code > 0);
+  //mt_bus_awake->SetValue(code > 0);
 }
 
 void OvmsVehicleSmartEQ::PollReply_DoorUnderhoodOpened(const char* data, uint16_t reply_len) {
