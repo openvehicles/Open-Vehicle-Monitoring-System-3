@@ -182,6 +182,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_use_at_start               = MyMetrics.InitFloat("xsq.use.at.start", SM_STALE_MID, 0, kWh);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_NONE, "", Other);
   mt_dummy_pressure             = MyMetrics.InitFloat("xsq.dummy.pressure", SM_STALE_NONE, 235, kPa);  // Dummy pressure for TPMS alert testing
+  mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_NONE, 0, Other);
+  mt_adc_factor_history         = new OvmsMetricVector<float>("xsq.adc.factor.history", SM_STALE_NONE, Other);
 
   mt_obd_duration               = MyMetrics.InitInt("xsq.obd.duration", SM_STALE_MID, 0, Minutes);
   mt_obd_trip_km                = MyMetrics.InitFloat("xsq.obd.trip.km", SM_STALE_MID, 0, Kilometers);
@@ -268,7 +270,12 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("tpmsset", "set TPMS dummy value", xsq_tpms_set);
   cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
+  cmd_xsq->RegisterCommand("calcadc", "Recalculate ADC factor (optional: 12V voltage override)", xsq_calc_adc, "[voltage]", 0, 1);
 
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.12v.start", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.12v.stop", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
   MyConfig.RegisterParam("xsq", "smartEQ", true, true);
 
   ConfigChanged(NULL);
@@ -352,8 +359,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     
     #ifdef CONFIG_OVMS_COMP_WIFI
       // Features option: auto restart modem on wifi disconnect
-      using std::placeholders::_1;
-      using std::placeholders::_2;
       MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
 #endif
 
@@ -447,6 +452,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
+  m_12v_measured_BMS_offset = MyConfig.GetParamValueFloat("xsq", "12v.measured.BMS.offset", 0.25);
+  m_enable_calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", false);
   m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", false);
   m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
   m_indicator         = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
@@ -475,6 +482,19 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   }
   StdMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffsoc", 0), Percentage );
   StdMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffrange", 0), Kilometers );
+}
+
+void OvmsVehicleSmartEQ::EventListener(std::string event, void* data) {
+  if (event == "vehicle.charge.start") {
+    if(m_enable_calcADCfactor && !m_ADCfactor_recalc) {
+      m_ADCfactor_recalc_timer = 4;   // wait at least 4 min. before recalculation
+      m_ADCfactor_recalc = true;      // recalculate ADC factor when HV charging
+    }
+  }
+  if (event == "vehicle.charge.stop") {
+      m_ADCfactor_recalc_timer = 0;
+      m_ADCfactor_recalc = false;     // stop recalculation when HV charging stopped
+  }
 }
 
 uint64_t OvmsVehicleSmartEQ::swap_uint64(uint64_t val) {
@@ -925,6 +945,50 @@ void OvmsVehicleSmartEQ::CheckV2State() {
   #endif // CONFIG_OVMS_COMP_SERVER_V2
 }
 
+void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
+  #ifdef CONFIG_OVMS_COMP_ADC
+    if (can12V < 10.0f || can12V > 15.0f) {
+      ESP_LOGW(TAG, "Skip ADC factor recalculation (invalid 12V input %.2f)", can12V);
+      if (writer) writer->printf("Skip ADC factor recalculation (invalid 12V input %.2f)\n", can12V);
+      return;
+    }
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
+    uint32_t sum = 0;
+    for (int i=0;i<20;i++) {
+      vTaskDelay(3 / portTICK_PERIOD_MS);
+      sum += adc1_get_raw(ADC1_CHANNEL_0);
+    }
+    float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc","factor12v", 195.7f);
+    float avg_raw = sum / 20.0f;
+    float V_batt = can12V;
+    float adc_factor_new = (V_batt > 0) ? (avg_raw / V_batt) : 0;
+    ESP_LOGI(TAG, "ADC recalculation: avg_raw=%.2f  V_batt=%.3f  factor=%.3f", avg_raw, V_batt, adc_factor_new);
+    if (writer) writer->printf("ADC recalculation: avg_raw=%.2f  V_batt=%.3f  factor=%.3f\n", avg_raw, V_batt, adc_factor_new);
+    if (adc_factor_new < 160.0f || adc_factor_new > 230.0f) {
+      ESP_LOGW(TAG, "Reject ADC factor %.3f (out of bounds, keeping %.3f)", adc_factor_new, adc_factor_prev);
+      if (writer) writer->printf("Reject ADC factor %.3f (out of bounds, keeping %.3f)\n", adc_factor_new, adc_factor_prev);
+      return;
+    }
+    m_adc_factor_history.push_back(adc_factor_new);
+    if (m_adc_factor_history.size() > 20)
+      m_adc_factor_history.pop_front();
+    float hist[20];
+    size_t n = m_adc_factor_history.size();
+    for (size_t i=0; i<n; ++i)
+      hist[i] = m_adc_factor_history[i];
+    if (n > 0)
+      mt_adc_factor_history->SetElemValues(0, n, hist);
+    mt_adc_factor->SetValue(adc_factor_new);
+    MyConfig.SetParamValueFloat("system.adc","factor12v", adc_factor_new);
+    ESP_LOGI(TAG, "New ADC factor stored: %.3f (prev %.3f, history size %u)", adc_factor_new, adc_factor_prev, (unsigned)n);
+    if (writer) writer->printf("New ADC factor stored: %.3f (prev %.3f, history size %u)\n", adc_factor_new, adc_factor_prev, (unsigned)n);
+  #else
+    ESP_LOGD(TAG, "ADC support not enabled");
+    if (writer) writer->puts("ADC support not enabled");
+  #endif
+}
+
 void OvmsVehicleSmartEQ::DoorLockState() {
   bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs &&
                           !StdMetrics.ms_v_env_on->AsBool() &&
@@ -1367,10 +1431,17 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
     }
   }
 
-  if (ticker % 10 == 0) { // Every 10 seconds
-    if(m_enable_LED_state) OnlineState();
-    if(m_climate_system) TimeBasedClimateData();
-  }
+  #ifdef CONFIG_OVMS_COMP_ADC
+  if (m_enable_calcADCfactor && m_ADCfactor_recalc) 
+    {
+    if (--m_ADCfactor_recalc_timer == 0) 
+      {
+      m_ADCfactor_recalc = false;
+      m_ADCfactor_recalc_timer = 4; // reset timer
+      ReCalcADCfactor(mt_bms_12v->AsFloat());
+      }
+    }
+  #endif
 }
 
 /**
@@ -2819,6 +2890,52 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4List(int verbosity
   writer->printf("  Digital Speedometer in km/h: 68\n");
   writer->printf("  Digital Speedometer always km/h: 69\n");
   return Success;
+}
+
+void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+  #ifdef CONFIG_OVMS_COMP_ADC
+  if (argc == 1) 
+    {
+    char* endp = nullptr;
+    double val = strtod(argv[0], &endp);
+    if (endp == argv[0] || *endp != 0) 
+      {
+      writer->puts("Error: invalid number");
+      return;
+      }
+    if (val < 11.0 || val > 15.0) 
+      {
+      writer->puts("Error: voltage out of plausible range (11.0–15.0)");
+      return;
+      }
+    writer->printf("Recalculating ADC factor using override voltage %.2fV\n", val);
+    smarteq->ReCalcADCfactor((float)val, writer);
+    return;
+    } 
+  else if (argc == 0) 
+    {
+    if (!smarteq->mt_bms_12v->IsDefined()) 
+      {
+      writer->puts("Error: BMS 12V metric not defined");
+      return;
+      }
+    float val = smarteq->mt_bms_12v->AsFloat();
+    if (val < 11.0 || val > 15.0) 
+      {
+      writer->puts("Error: BMS 12V voltage out of plausible range (11.0–15.0)");
+      return;
+      }
+    smarteq->ReCalcADCfactor(val, writer);
+    writer->printf("Recalculating ADC factor using %.2fV BMS voltage\n", val);
+    return;
+   }
+  #else
+    writer->puts("ADC component not enabled");
+    return;
+  #endif
 }
 
 /**

@@ -34,6 +34,7 @@
 
 #include <atomic>
 #include <stdint.h>
+#include <deque>
 #include "can.h"
 #include "vehicle.h"
 
@@ -42,6 +43,7 @@
 #include "ovms_metrics.h"
 #include "ovms_command.h"
 #include "freertos/timers.h"
+#include "esp_timer.h"
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
 #endif
@@ -111,6 +113,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void WifiRestart();
     void ModemRestart();
     void ModemEventRestart(std::string event, void* data);
+    void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
+    void EventListener(std::string event, void* data);
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -162,6 +166,7 @@ public:
     static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ddt4all(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
     unsigned int m_candata_timer;
@@ -170,6 +175,8 @@ public:
     bool m_charge_finished;
     float m_tpms_pressure[4]; // kPa
     int m_tpms_index[4];
+    bool m_ADCfactor_recalc;       // request recalculation of ADC factor
+    int m_ADCfactor_recalc_timer;  // countdown timer for ADC factor recalculation
 
   protected:
     void Ticker1(uint32_t ticker) override;
@@ -251,6 +258,7 @@ public:
     std::string m_network_type;             //!< Network type from xsq.modem.net.type
     std::string m_network_type_ls;          //!< Network type last state reminder
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
+    std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
 
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define MAX_POLL_DATA_LEN 126
@@ -266,6 +274,8 @@ public:
     OvmsMetricBool          *mt_bus_awake;              // Can Bus active
     OvmsMetricFloat         *mt_use_at_reset;           // kWh use at reset in Display
     OvmsMetricFloat         *mt_use_at_start;           // kWh use at start in Display
+    OvmsMetricFloat         *mt_adc_factor;             // calculated ADC factor for 12V measurement
+    OvmsMetricVector<float> *mt_adc_factor_history;     // last 20 calculated ADC factors for 12V measurement
     OvmsMetricFloat         *mt_pos_odo_trip;           // odometer trip in km 
     OvmsMetricFloat         *mt_pos_odometer_start;     // remind odometer start
     OvmsMetricFloat         *mt_pos_odometer_start_total;     // remind odometer start for kWh/100km
@@ -348,6 +358,8 @@ public:
     bool m_modem_check;                     //!< modem check enabled
     bool m_modem_restart;                   //!< modem restart enabled
     bool m_notifySOClimit;                  //!< notify SOClimit reached one time
+    bool m_enable_calcADCfactor;            //!< enable calculation of ADC factor
+    float m_12v_measured_BMS_offset;       //!< 12V battery voltage measure offset BMS <> 12V System in V
     int m_ddt4all_ticker;                   //!< DDT4ALL active ticker 
     int m_ddt4all_exec;                     //!< DDT4ALL ticker for next execution
     int m_led_state;
