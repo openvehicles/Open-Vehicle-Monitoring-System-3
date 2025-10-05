@@ -34,6 +34,7 @@
 
 #include <atomic>
 #include <stdint.h>
+#include <deque>
 #include "can.h"
 #include "vehicle.h"
 
@@ -42,6 +43,7 @@
 #include "ovms_metrics.h"
 #include "ovms_command.h"
 #include "freertos/timers.h"
+#include "esp_timer.h"
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
 #endif
@@ -111,6 +113,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void WifiRestart();
     void ModemRestart();
     void ModemEventRestart(std::string event, void* data);
+    void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
+    void EventListener(std::string event, void* data);
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -162,6 +166,7 @@ public:
     static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ddt4all(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
     unsigned int m_candata_timer;
@@ -170,9 +175,12 @@ public:
     bool m_charge_finished;
     float m_tpms_pressure[4]; // kPa
     int m_tpms_index[4];
+    bool m_ADCfactor_recalc;       // request recalculation of ADC factor
+    int m_ADCfactor_recalc_timer;  // countdown timer for ADC factor recalculation
 
   protected:
     void Ticker1(uint32_t ticker) override;
+    void Ticker60(uint32_t ticker) override;
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
     virtual void CalculateEfficiency();
@@ -184,9 +192,12 @@ public:
     void PollReply_HVAC(const char* data, uint16_t reply_len);
     void PollReply_TDB(const char* data, uint16_t reply_len);
     void PollReply_VIN(const char* data, uint16_t reply_len);
+    void PollReply_VehicleState(const char* data, uint16_t reply_len);
+    void PollReply_DoorUnderhoodOpened(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_State(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
+    void PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Volt(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len);
@@ -214,15 +225,6 @@ public:
     void PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_CurrentSum(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_VoltageSum(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_HVNetCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_HVVoltageSum(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_RawDCCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_RawHF10kHz(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_RawHFCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_RawLFCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Frequency(const char* data, uint16_t reply_len);
 
   protected:
     bool m_enable_write;                    // canwrite
@@ -251,6 +253,7 @@ public:
     std::string m_network_type;             //!< Network type from xsq.modem.net.type
     std::string m_network_type_ls;          //!< Network type last state reminder
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
+    std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
 
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define MAX_POLL_DATA_LEN 126
@@ -262,41 +265,66 @@ public:
 
   protected:
     OvmsCommand *cmd_xsq;                               // command for xsq
-    OvmsMetricVector<float> *mt_bms_temps;              // BMS temperatures
     OvmsMetricBool          *mt_bus_awake;              // Can Bus active
     OvmsMetricFloat         *mt_use_at_reset;           // kWh use at reset in Display
     OvmsMetricFloat         *mt_use_at_start;           // kWh use at start in Display
+    OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
+    OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
+    OvmsMetricString        *mt_vehicle_state;          //!< vehicle state
+    OvmsMetricInt           *mt_vehicle_state_code;     //!< vehicle state code
+    OvmsMetricFloat         *mt_adc_factor;             // calculated ADC factor for 12V measurement
+    OvmsMetricVector<float> *mt_adc_factor_history;     // last 20 calculated ADC factors for 12V measurement
+
     OvmsMetricFloat         *mt_pos_odo_trip;           // odometer trip in km 
     OvmsMetricFloat         *mt_pos_odometer_start;     // remind odometer start
     OvmsMetricFloat         *mt_pos_odometer_start_total;     // remind odometer start for kWh/100km
     OvmsMetricFloat         *mt_pos_odometer_trip_total;// counted km for kWh/100km
-    OvmsMetricBool          *mt_obl_fastchg;            // ODOmeter at Start
+
     OvmsMetricFloat         *mt_evc_hv_energy;          //!< available energy in kWh
     OvmsMetricFloat         *mt_evc_LV_DCDC_amps;       //!< current of DC/DC LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_load;       //!< load in % of DC/DC LV system, not 12V battery!
+    OvmsMetricFloat         *mt_evc_LV_DCDC_volt_req;   //!< voltage request in V of DC/DC LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_volt;       //!< voltage in V of DC/DC output of LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_power;      //!< power in W (x/10) of DC/DC output of LV system, not 12V battery!
     OvmsMetricInt           *mt_evc_LV_DCDC_state;      //!< DC/DC state
     OvmsMetricBool          *mt_evc_ext_power;          //!< indicates ext power supply
     OvmsMetricBool          *mt_evc_plug_present;       //!< charging plug present
+
+    OvmsMetricVector<float> *mt_bms_temps;              // BMS temperatures
     OvmsMetricFloat         *mt_bms_CV_Range_min;       //!< minimum cell voltage in V, no offset
     OvmsMetricFloat         *mt_bms_CV_Range_max;       //!< maximum cell voltage in V, no offset
     OvmsMetricFloat         *mt_bms_CV_Range_mean;      //!< average cell voltage in V, no offset
     OvmsMetricFloat         *mt_bms_BattLinkVoltage;    //!< Link voltage to drivetrain inverter
+    OvmsMetricFloat         *mt_bms_BattContactorVoltage;   //!< voltage at the battery contactor
     OvmsMetricFloat         *mt_bms_BattCV_Sum;         //!< Sum of single cell voltages
     OvmsMetricFloat         *mt_bms_BattPower_voltage;  //!< voltage value sample (raw), (x/64) for actual value
     OvmsMetricFloat         *mt_bms_BattPower_current;  //!< current value sample (raw), (x/32) for actual value
     OvmsMetricFloat         *mt_bms_BattPower_power;    //!< calculated power of sample in kW
-    OvmsMetricInt           *mt_bms_HVcontactState;     //!< contactor state: 0 := OFF, 1 := PRECHARGE, 2 := ON
+    OvmsMetricInt           *mt_bms_HVcontactStateCode; //!< contactor state: 0 := OFF, 1 := PRECHARGE, 2 := ON
+    OvmsMetricString        *mt_bms_HVcontactStateTXT;  //!< contactor state text
     OvmsMetricFloat         *mt_bms_HV;                 //!< total voltage of HV system in V
-    OvmsMetricInt           *mt_bms_EVmode;             //!< Mode the EV is actually in: 0 = none, 1 = slow charge, 2 = fast charge, 3 = normal, 4 = fast balance
-    OvmsMetricFloat         *mt_bms_LV;                 //!< 12V onboard voltage / LV system
+    OvmsMetricInt           *mt_bms_EVmode;             //!< Mode the EV is actually in: 0 = none, 1 = slow charge, 2 = fast charge, 3 = normal, 4 = Quick Drop, 5 = Cameleon (Non-Isolated Charging)
+    OvmsMetricString        *mt_bms_EVmode_txt;         //!< Mode the EV is actually in text
+    OvmsMetricFloat         *mt_bms_12v;                //!< 12V onboard voltage / Clamp 30 Voltage
     OvmsMetricFloat         *mt_bms_Amps;               //!< battery current in ampere (x/32) reported by by BMS
     OvmsMetricFloat         *mt_bms_Amps2;              //!< battery current in ampere read by live data on CAN or from BMS
     OvmsMetricFloat         *mt_bms_Power;              //!< power as product of voltage and amps in kW
+    OvmsMetricBool          *mt_bms_interlock_hvplug;       //!< HV plug interlock
+    OvmsMetricBool          *mt_bms_interlock_service;      //!< Service disconnect interlock
+    OvmsMetricInt           *mt_bms_fusi_mode;              //!< FUSI mode code
+    OvmsMetricString        *mt_bms_fusi_mode_txt;          //!< FUSI mode text
+    OvmsMetricFloat         *mt_bms_mg_rpm;                 //!< MG output revolution (rpm/2)
+    OvmsMetricInt           *mt_bms_safety_mode;            //!< Safety mode code
+    OvmsMetricString        *mt_bms_safety_mode_txt;        //!< Safety mode text
+    OvmsMetricInt           *mt_bms_relay_hv_status;        //!< HV relay status flag
+    OvmsMetricString        *mt_bms_relay_hv_status_txt;    //!< HV relay status text
+    OvmsMetricInt           *mt_bms_relay_permit_flag;      //!< Relay on permit flag
+    OvmsMetricString        *mt_bms_relay_permit_flag_txt;  //!< Relay on permit flag text
+
     OvmsMetricVector<float> *mt_obl_main_amps;          //!< AC current of L1, L2, L3
     OvmsMetricVector<float> *mt_obl_main_volts;         //!< AC voltage of L1, L2, L3
-    OvmsMetricVector<float> *mt_obl_main_CHGpower;      //!< Power of rail1, rail2 W (x/2) & max available kw (x/64)
+    OvmsMetricVector<float> *mt_obl_main_CHGpower;      //!< Power of rail1, rail2 W (x/2) & max available kw (x/64)    
+    OvmsMetricBool          *mt_obl_fastchg;            // ODOmeter at Start
     OvmsMetricFloat         *mt_obl_main_freq;          //!< AC input frequency
     OvmsMetricFloat         *mt_obl_main_ground_resistance;           //!< Ground resistance in (Ohm)
     OvmsMetricInt           *mt_obl_main_max_current;                 //!< Charger max current setting (A)
@@ -305,16 +333,8 @@ public:
     OvmsMetricFloat         *mt_obl_main_current_leakage_hf_10khz;    //!< HF 10kHz leakage (A)
     OvmsMetricFloat         *mt_obl_main_current_leakage_hf;          //!< HF leakage current (A)
     OvmsMetricFloat         *mt_obl_main_current_leakage_lf;          //!< LF leakage current (A)
-    OvmsMetricFloat         *mt_obl_main_hv_net_amps;                 //!< Net current (A)
-    OvmsMetricFloat         *mt_obl_main_hv_net_volts;                //!< Net voltage (V)
-    OvmsMetricFloat         *mt_obl_main_amps_sum;                    //!< Current sum (A)
-    OvmsMetricFloat         *mt_obl_main_volts_sum;                   //!< Voltage sum (V)
-    OvmsMetricFloat         *mt_obl_main_hv_volts_sum;                //!< HV Voltage sum (V)
     OvmsMetricFloat         *mt_obl_main_current_leakage_ac;          //!< AC leakage current (A)
-    OvmsMetricFloat         *mt_obl_main_current_leakage_dc_raw;      //!< DC leakage current raw value
-    OvmsMetricFloat         *mt_obl_main_current_leakage_hf_10khz_raw;//!< HF 10kHz leakage raw value
-    OvmsMetricFloat         *mt_obl_main_current_leakage_hf_raw;     //!< HF leakage current raw value
-    OvmsMetricFloat         *mt_obl_main_current_leakage_lf_raw;     //!< LF leakage current raw value
+
     OvmsMetricInt           *mt_obd_duration;           //!< obd duration
     OvmsMetricFloat         *mt_obd_trip_km;            //!< obd trip data km
     OvmsMetricFloat         *mt_obd_start_trip_km;      //!< obd trip data km start
@@ -324,6 +344,7 @@ public:
     OvmsMetricInt           *mt_obd_mt_day_usual;       //!< Maintaince usual days
     OvmsMetricInt           *mt_obd_mt_km_usual;        //!< Maintaince usual km
     OvmsMetricString        *mt_obd_mt_level;           //!< Maintaince level
+
     OvmsMetricBool          *mt_climate_on;             //!< climate at time on/off
     OvmsMetricBool          *mt_climate_weekly;         //!< climate weekly auto on/off at day start/end
     OvmsMetricString        *mt_climate_time;           //!< climate time
@@ -333,21 +354,21 @@ public:
     OvmsMetricInt           *mt_climate_de;             //!< climate day end
     OvmsMetricInt           *mt_climate_1to3;           //!< climate one to three (homelink 0-2) times in following time
     OvmsMetricString        *mt_climate_data;           //!< climate data from app/website
-    OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
-    OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
-
+    
   protected:
     bool m_climate_start;
     bool m_climate_start_day;
     bool m_climate_init;                    //!< climate init after boot
     bool m_v2_restart;
     bool m_v2_check;
-    bool m_indicator;                       //!< activate indicator e.g. 7 times or whtever
+    bool m_indicator;                       //!< activate indicator e.g. 7 times or whatever
     bool m_ddt4all;                         //!< DDT4ALL mode
     bool m_warning_unlocked;                //!< unlocked warning
     bool m_modem_check;                     //!< modem check enabled
     bool m_modem_restart;                   //!< modem restart enabled
     bool m_notifySOClimit;                  //!< notify SOClimit reached one time
+    bool m_enable_calcADCfactor;            //!< enable calculation of ADC factor
+    float m_12v_measured_BMS_offset;       //!< 12V battery voltage measure offset BMS <> 12V System in V
     int m_ddt4all_ticker;                   //!< DDT4ALL active ticker 
     int m_ddt4all_exec;                     //!< DDT4ALL ticker for next execution
     int m_led_state;
@@ -356,7 +377,7 @@ public:
     int m_v2_ticker;
     int m_modem_ticker;
     int m_park_timeout_secs;                //!< parking timeout in seconds
-  
+    
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll
     int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.
