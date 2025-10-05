@@ -88,6 +88,21 @@ std::string SecondsToHHmm(int totalSeconds) {
     return oss.str();
 }
 
+// Central reply length guard for poll parsers (enhanced):
+// Logs only when reply_len changes to avoid log spam on repeated truncated frames.
+#define REQUIRE_LEN(minlen)                                                    \
+  do {                                                                         \
+    if (reply_len < (minlen)) {                                                \
+      static uint16_t __last_short_len = 0xFFFF;                               \
+      if (__last_short_len != reply_len) {                                     \
+        ESP_LOGV(TAG, "%s: short reply (%u < %u)",                             \
+          __FUNCTION__, (unsigned)reply_len, (unsigned)(minlen));              \
+        __last_short_len = reply_len;                                          \
+      }                                                                        \
+      return;                                                                  \
+    }                                                                          \
+  } while(0)
+
 /**
  * Incoming poll reply messages
  */
@@ -107,7 +122,7 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
   
   switch (job.moduleid_rec) {
     case 0x7EC:
-      switch (job.pid) {
+      switch (job.pid) {        
         case 0x320C: // rqHV_Energy
           PollReply_EVC_HV_Energy(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -117,10 +132,13 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x3495: // rqDCDC_Load
           PollReply_EVC_DCDC_Load(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x3024: // rqDCDC_volt_measure
+        case 0x3023: // 14V DCDC voltage request
+          PollReply_EVC_DCDC_VoltReq(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x3024: // 14V DCDC voltage measure
           PollReply_EVC_DCDC_Volt(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x3025: // rqDCDC_Amps
+        case 0x3025: // 14V DCDC current measure
           PollReply_EVC_DCDC_Amps(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x3494: // rqDCDC_Power
@@ -173,35 +191,8 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x503B: // rqJB2AC_Ph3_RMS_A
           PollReply_OBL_JB2AC_Ph3_RMS_A(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x5049: // Mains phase frequency (Hz)
-          PollReply_OBL_JB2AC_Frequency(m_rxbuf.data(), m_rxbuf.size());
-          break;
         case 0x504A: // Mains active power consumed (W)
           PollReply_OBL_JB2AC_Power(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x504B: // Mains current sum (A)
-          PollReply_OBL_JB2AC_CurrentSum(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x504C: // Mains voltage sum (V)
-          PollReply_OBL_JB2AC_VoltageSum(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x504D: // HV Network measured current (A)
-          PollReply_OBL_JB2AC_HVNetCurrent(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x504E: // HV voltage measured (V)
-          PollReply_OBL_JB2AC_HVVoltageSum(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x5057: // Raw leakage current - DC part measurement (mA)
-          PollReply_OBL_JB2AC_RawDCCurrent(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x5058: // Raw leakage current - High Frequency 10kHz part measurement (mA)
-          PollReply_OBL_JB2AC_RawHF10kHz(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x5059: // Raw leakage current - High Frequency 1st part measurement (mA)
-          PollReply_OBL_JB2AC_RawHFCurrent(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x505A: // Raw leakage current - Low Frequency part measurement (50Hz)
-          PollReply_OBL_JB2AC_RawLFCurrent(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x5062: // Mains ground resistance (Ohm)
           PollReply_OBL_JB2AC_GroundResistance(m_rxbuf.data(), m_rxbuf.size());
@@ -266,6 +257,12 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x81: // req.VIN
           PollReply_VIN(m_rxbuf.data(), m_rxbuf.size());
           break;
+        case 0x8003: // rq_VehicleState
+          PollReply_VehicleState(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x605e: // rq_UNDERHOOD_OPENED
+          PollReply_DoorUnderhoodOpened(m_rxbuf.data(), m_rxbuf.size());
+          break;
       }
       break;
     default:
@@ -294,38 +291,30 @@ void OvmsVehicleSmartEQ::IncomingPollError(const OvmsPoller::poll_job_t &job, ui
 
 void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start)
 {
-  // Each cell voltage uses 2 bytes (pair loop originally stepped by 2).
-  if (reply_len < 1) return;
-
-  bool cellstat = false;
-  float first = CAN_UINT(0);
-  if (first == 5120 && start == 0)
-    cellstat = false;
-  else if (first != 5120 && start == 0)
-    cellstat = true;
-  else
-    cellstat = true; // for subsequent parts assume active
-
-  if (!cellstat)
-    return;
-
+  REQUIRE_LEN(2);
   uint16_t max_bytes = reply_len & 0xFFFE;
   for (uint16_t off = 0; off < max_bytes; off += 2)
     {
-    uint16_t cell_index = (off / 2) + start;
-    float CV = CAN_UINT(off) / 1024.0f;
-    BmsSetCellVoltage(cell_index, CV);
-    ESP_LOGV(TAG, "CellVoltage: id=%u volt=%.3f", cell_index, CV);
+      if (off+1 >= reply_len)
+        break;
+      uint16_t cell_index = (off / 2) + start;
+      if (cell_index >= CELLCOUNT)   // safety bound
+        break;
+      float CV = CAN_UINT(off) / 1024.0f;
+      if (CV >= 0.5f && CV <= 5.5f)  // simple sanity window
+        BmsSetCellVoltage(cell_index, CV);
     }
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_BattTemps(const char* data, uint16_t reply_len)
 {
   // Each temperature = 2 bytes. reply_len is number of bytes.
-  if (reply_len < 6) return;
+  REQUIRE_LEN(6);
 
   // We will not read beyond reply_len:
   uint16_t max_bytes = reply_len & 0xFFFE; // even boundary
+  if (max_bytes > 62) max_bytes = 62;      // max 31 pairs
+  // Each pair = 2 bytes:
   uint16_t max_pairs = max_bytes / 2;
   if (max_pairs > 31) max_pairs = 31;
 
@@ -360,38 +349,160 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattTemps(const char* data, uint16_t repl
   if (cellcount > 27) cellcount = 27; // 31 total - 3 offset = 28 max, but original loop used <30 -> 27 cells
   for (uint16_t i = 0; i < cellcount; i++)
     {
-    if (!std::isnan(BMStemps[i+3]))
-      BmsSetCellTemperature(i, BMStemps[i+3]);
+      if (!std::isnan(BMStemps[i+3]) && i < 27) // ensure bound 0..26
+        BmsSetCellTemperature(i, BMStemps[i+3]);
     }
 }
 
-void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t reply_len) {
-  // Offsets used: up to byte 22 -> need >= 23 bytes
-  if (reply_len < 23) return;
-  mt_bms_CV_Range_min->SetValue( CAN_UINT(0) / 1024.0 );
-  mt_bms_CV_Range_max->SetValue( CAN_UINT(2) / 1024.0 );
-  mt_bms_CV_Range_mean->SetValue( (mt_bms_CV_Range_max->AsFloat() + mt_bms_CV_Range_min->AsFloat()) / 2.0 );
-  mt_bms_BattLinkVoltage->SetValue( CAN_UINT(4) / 64.0 );
-  mt_bms_BattCV_Sum->SetValue( CAN_UINT(6) / 64.0 );
-  mt_bms_BattPower_voltage->SetValue( CAN_UINT(8) );
-  int16_t value = CAN_UINT(10);
-  if (value > 0x1fff) {
-    mt_bms_BattPower_current->SetValue( (float) value - 0xffff );
-  } else {
-    mt_bms_BattPower_current->SetValue( value );
+void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t reply_len)
+{
+  // New layout per “ReadData.Actual Data Read” spec:
+  // Byte 0 : 0x61 (positive response to 0x21)
+  // Byte 1 : 0x07 (identifier)
+  // Byte 2 : status / unused (observed 0x00)
+  // Byte 3-4  Minimum Cell Voltage        /1024 (V)
+  // Byte 5-6  Maximum Cell Voltage        /1024 (V)
+  // Byte 7-8  Traction (Link) Voltage     /64   (V)
+  // Byte 9-10 Sum of Cell Voltages        (raw total HV = BattCV_Sum/64)
+  // Byte 11-12 Battery Voltage            /64   (V)
+  // Byte 13-14 Battery Current            /32 (A)
+  // Byte 15   State Contactor             enum (0=open,1=precharge,2=closed,3=SNA)
+  // Byte 16   Interlock HV Plug           0=disable,1=enable
+  // Byte 17   Interlock Service Disc      0=disable,1=enable
+  // Byte 18-19 LBC FUSI Mode              enum (0=No Error,4=HVBatLevel1 Failure,6=HVBatLevel2 Failure)
+  // Byte 20-21 MG Output Revolution       /2 (rpm)
+  // Byte 22   SafetyMode1Flag             enum (0 Not Used,1 No Safety Mode,2 Safety Mode 1 Requested,3 Unavailable)
+  // Byte 23   Bitfield:
+  //            bits4-5 High voltage relay status flag (0 not active,1 active,2 undefined)
+  //            bits6-7 Relay on Permit Flag          (0 not active,1 active,2 undefined)
+  // Byte 24   Vehicle Mode Request        enum (0..7)
+  // Byte 25   Clamp 30 Voltage            /8 (V) (+ optional offset)
+  //
+  // Need at least up to byte 22 => length >= 23
+  REQUIRE_LEN(23);
+
+  float v_cell_min = (float)CAN_UINT(0) / 1024.0f;
+  float v_cell_max = (float)CAN_UINT(2) / 1024.0f;
+  float v_link     = (float)CAN_UINT(4) / 64.0f;
+  float cv_sum_raw = (float)CAN_UINT(6) / 64.0f;
+  float v_power_raw = (float)CAN_UINT(8);  // raw scaled*64
+  float v_pack_term = (float)CAN_UINT(9) / 64.0f; // battery terminal voltage (may equal link voltage depending on contactor)
+  uint16_t cur_u = CAN_UINT(10);
+  int16_t  cur_s = (int16_t)cur_u;
+  float    cur_raw = (float)cur_s;      // raw signed counts
+  float i_pack = cur_raw / 32.0f;
+
+  mt_bms_CV_Range_min->SetValue(v_cell_min);
+  mt_bms_CV_Range_max->SetValue(v_cell_max);
+  mt_bms_CV_Range_mean->SetValue((v_cell_min + v_cell_max) / 2.0f);
+
+  mt_bms_BattLinkVoltage->SetValue(v_link);
+  mt_bms_BattContactorVoltage->SetValue(v_pack_term);
+  mt_bms_BattCV_Sum->SetValue(cv_sum_raw);
+  mt_bms_BattPower_voltage->SetValue(v_power_raw); // store raw scaled*64 so existing power calc logic can adapt if needed
+  mt_bms_BattPower_current->SetValue(cur_raw);        // raw current counts
+
+  // Compute power (re-using prior scaling: voltage_raw/64 * current_raw/32)
+  float pack_power_kw = ((v_power_raw  / 64.0f) * ( (float)cur_raw / 32.0f )) / 1000.0f;
+  mt_bms_BattPower_power->SetValue(pack_power_kw);
+
+  int contactor_code = CAN_BYTE(12);
+  const char* contactor_txt;
+  switch (contactor_code)
+  {
+    case 0: contactor_txt="open"; break;
+    case 1: contactor_txt="precharge"; break;
+    case 2: contactor_txt="closed"; break;
+    case 3: contactor_txt="SNA"; break;
+    default: contactor_txt="Unknown"; break;
   }
-  mt_bms_BattPower_power->SetValue( mt_bms_BattPower_voltage->AsFloat() / 64.0 * mt_bms_BattPower_current->AsFloat() / 32.0 / 1000.0 );
+  mt_bms_HVcontactStateCode->SetValue(contactor_code);
+  mt_bms_HVcontactStateTXT->SetValue(contactor_txt);
 
-  mt_bms_HVcontactState->SetValue( CAN_BYTE(12) );
-  mt_bms_HV->SetValue( mt_bms_BattCV_Sum->AsFloat() );
-  mt_bms_EVmode->SetValue( CAN_BYTE(21) );
-  mt_bms_LV->SetValue( CAN_BYTE(22) / 8.0 );
+  // HV (sum of cell voltages) – keep legacy assignment:
+  mt_bms_HV->SetValue(mt_bms_BattCV_Sum->AsFloat());
 
-  mt_bms_Amps->SetValue( mt_bms_BattPower_current->AsFloat() );
-  mt_bms_Amps2->SetValue( mt_bms_BattPower_current->AsFloat() / 32.0 );
-  mt_bms_Power->SetValue( mt_bms_HV->AsFloat() * mt_bms_Amps2->AsFloat() / 1000.0 );
-  StdMetrics.ms_v_bat_current->SetValue( mt_bms_Amps2->AsFloat(0) * -1.0f );
-  StdMetrics.ms_v_bat_power->SetValue( mt_bms_Power->AsFloat(0) );
+  int veh_mode = CAN_BYTE(21);
+  const char* veh_mode_txt;
+  switch (veh_mode)
+  {
+    case 0: veh_mode_txt="No Request"; break;
+    case 1: veh_mode_txt="Slow Charging(Isolated Charging)"; break;
+    case 2: veh_mode_txt="Fast Charging"; break;
+    case 3: veh_mode_txt="Normal"; break;
+    case 4: veh_mode_txt="Quick Drop"; break;
+    case 5: veh_mode_txt="Cameleon (Non-Isolated Charging)"; break;
+    case 6: veh_mode_txt="Not Used"; break;
+    case 7: veh_mode_txt="Unavailable Value"; break;
+    default: veh_mode_txt="Unknown"; break;
+  }
+  mt_bms_EVmode->SetValue(veh_mode);
+  mt_bms_EVmode_txt->SetValue(veh_mode_txt);
+
+  // Clamp 30 Voltage:
+  float clamp30 = ((float)(uint8_t)CAN_BYTE(22)) / 8.0f + m_12v_measured_BMS_offset;
+  if (clamp30 > 5 && clamp30 < 20)  // plausible 12V system window
+    mt_bms_12v->SetValue(clamp30);
+
+  // Publish derived standard metrics (sign convention: discharge negative):
+  StdMetrics.ms_v_bat_current->SetValue(i_pack * -1.0f);
+  StdMetrics.ms_v_bat_power->SetValue(pack_power_kw);
+
+  mt_bms_interlock_hvplug->SetValue(((int)CAN_BYTE(13)) == 1);
+  mt_bms_interlock_service->SetValue(((int)CAN_BYTE(14)) == 1);
+
+  int16_t flags23 = (int16_t)CAN_UINT(20);
+  uint8_t hv_relay_flag = (flags23 >> 4) & 0x03;
+  uint8_t relay_permit_flag = (flags23 >> 6) & 0x03;
+
+  mt_bms_relay_hv_status->SetValue(hv_relay_flag);
+  const char* hv_relay_txt;
+  switch (hv_relay_flag)
+  {
+    case 0: hv_relay_txt="not active"; break;
+    case 1: hv_relay_txt="active"; break;
+    default: hv_relay_txt="undefined"; break;
+  }
+  mt_bms_relay_hv_status_txt->SetValue(hv_relay_txt);
+
+  mt_bms_relay_permit_flag->SetValue(relay_permit_flag);
+  const char* relay_permit_txt;
+  switch (relay_permit_flag)
+  {
+    case 0: relay_permit_txt="not active"; break;
+    case 1: relay_permit_txt="active"; break;
+    default: relay_permit_txt="undefined"; break;
+  }
+  mt_bms_relay_permit_flag_txt->SetValue(relay_permit_txt);
+
+  int fusi = CAN_BYTE(15);
+  const char* fusi_txt;
+  if (fusi == 0) fusi_txt = "No Error";
+  switch (fusi)
+  {
+    case 0: fusi_txt="No Error"; break;
+    case 4: fusi_txt="HVBatLevel1 Failure"; break;
+    case 6: fusi_txt="HVBatLevel2 Failure"; break;
+    default: fusi_txt="Unavailable Value"; break;
+  }
+  mt_bms_fusi_mode->SetValue((int)fusi);
+  mt_bms_fusi_mode_txt->SetValue(fusi_txt);
+
+  float mg_rpm_raw = CAN_UINT(17);
+  float mg_rpm = mg_rpm_raw / 2.0f;
+  mt_bms_mg_rpm->SetValue(mg_rpm);
+
+  int safety = CAN_BYTE(19);
+  const char* safety_txt;
+  switch (safety)
+  {
+    case 0: safety_txt="Not Used"; break;
+    case 1: safety_txt="No Safety Mode"; break;
+    case 2: safety_txt="Safety Mode 1 Requested"; break;
+    default: safety_txt="Unavailable Value"; break;
+  }
+  mt_bms_safety_mode->SetValue(safety);
+  mt_bms_safety_mode_txt->SetValue(safety_txt);
 }
 
 void OvmsVehicleSmartEQ::PollReply_HVAC(const char* data, uint16_t reply_len) {
@@ -399,7 +510,7 @@ void OvmsVehicleSmartEQ::PollReply_HVAC(const char* data, uint16_t reply_len) {
 }
 
 void OvmsVehicleSmartEQ::PollReply_TDB(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(5);             // minimal sanity
   float temp = (float)(CAN_UINT(2)) > 400.0f ? 
     (float)(CAN_UINT(2) - 400.0f) * 0.1f : 
     (float)(400.0f - CAN_UINT(2)) * -0.1f;
@@ -422,54 +533,101 @@ void OvmsVehicleSmartEQ::PollReply_TDB(const char* data, uint16_t reply_len) {
 }
 
 void OvmsVehicleSmartEQ::PollReply_VIN(const char* data, uint16_t reply_len) {
-  std::string vin = data;
-  StdMetrics.ms_v_vin->SetValue(vin.substr(0, vin.length() - 2));
+  // Expect at least 17 VIN chars; responses often carry +2 bytes (CRC / filler)
+  if (reply_len < 17) {
+    ESP_LOGW(TAG,"VIN reply too short (%u)", reply_len);
+    return;
+  }
+  size_t vinlen = (reply_len >= 19) ? 17 : reply_len; // if only 17, take all
+  std::string vin(data, vinlen);
+  // Basic sanity: only allow [A-Z0-9]
+  for (char &c: vin) {
+    if (!( (c>='A'&&c<='Z') || (c>='0'&&c<='9') ))
+    { ESP_LOGW(TAG,"Discarding VIN (invalid char)"); return; }
+  }
+  StdMetrics.ms_v_vin->SetValue(vin);
+}
+
+void OvmsVehicleSmartEQ::PollReply_VehicleState(const char* data, uint16_t reply_len) {
+  REQUIRE_LEN(1);
+  int code = CAN_BYTE(0);
+  std::string msgtxt = "";
+  switch(code) {
+    case 0: msgtxt = "SLEEPING"; break; 
+    case 1: msgtxt = "TECHNICAL WAKE UP"; break;
+    case 2: msgtxt = "CUT OFF PENDING"; break;
+    case 3: msgtxt = "BAT TEMPO LEVEL"; break;
+    case 4: msgtxt = "BAT TEMPO LEVEL"; break;
+    case 5: msgtxt = "ACCESSORY LEVEL"; break;
+    case 6: msgtxt = "IGNITION LEVEL"; break;
+    case 7: msgtxt = "STARTING IN PROGRESS"; break;
+    case 8: msgtxt = "ENGINE RUNNING"; break;
+    case 9: msgtxt = "AUTOSTART"; break;
+    case 10: msgtxt = "ENGINE SYSTEM STOP"; break;
+    default: msgtxt = "Unknown code"; break;
+  }
+  mt_vehicle_state->SetValue(msgtxt);
+  mt_vehicle_state_code->SetValue(code);
+  //mt_bus_awake->SetValue(code > 0);
+}
+
+void OvmsVehicleSmartEQ::PollReply_DoorUnderhoodOpened(const char* data, uint16_t reply_len) {
+  REQUIRE_LEN(1);
+  int code = CAN_BYTE(0);
+  StdMetrics.ms_v_door_hood->SetValue(code==1);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   mt_evc_hv_energy->SetValue( CAN_UINT(0) / 200.0f );
   StdMetrics.ms_v_bat_capacity->SetValue(mt_evc_hv_energy->AsFloat());
   StdMetrics.ms_v_bat_cac->SetValue(mt_evc_hv_energy->AsFloat() * 1000.0f / mt_bms_HV->AsFloat());
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_State(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(1);
   mt_evc_LV_DCDC_amps->SetValue( CAN_BYTE(0) );
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(1);
   mt_evc_LV_DCDC_load->SetValue( CAN_BYTE(0) == 0xFE ? 0 : CAN_BYTE(0) );
 }
 
+void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len) {
+  REQUIRE_LEN(1);
+  float value = CAN_BYTE(0);
+  mt_evc_LV_DCDC_volt_req->SetValue( value - 12.0f );
+}
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Volt(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
-  mt_evc_LV_DCDC_volt->SetValue( CAN_BYTE(0) );
+  REQUIRE_LEN(1);  
+  float value = CAN_BYTE(0);
+  mt_evc_LV_DCDC_volt->SetValue( value - 4.0f);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
-  mt_evc_LV_DCDC_power->SetValue( CAN_BYTE(0) );
+  REQUIRE_LEN(1);    
+  float value = CAN_BYTE(0);
+  mt_evc_LV_DCDC_power->SetValue( value );
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   mt_evc_LV_DCDC_state->SetValue( CAN_UINT(0) );
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_ext_power(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   mt_evc_ext_power->SetValue(CAN_UINT(0)>0);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_plug_present(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   mt_evc_plug_present->SetValue(CAN_UINT(0)>0);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len) {
-  if (reply_len < 16) return;
+  REQUIRE_LEN(16);
   int32_t value;
   //Get AC Currents (two rails from >= 20A, sum up for total current)
   value = CAN_UINT(6);
@@ -496,7 +654,9 @@ void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t repl
   mt_obl_main_volts->SetElemValue(1, 0); mt_obl_main_volts->SetElemValue(2, 0);
   //Get AC Frequency
   if (mt_obl_main_amps->GetElemValue(0) > 0 || mt_obl_main_amps->GetElemValue(1) > 0) {
-    mt_obl_main_freq->SetValue( CAN_BYTE(11) / 100.0f);
+    float value = CAN_BYTE(11);
+    if (value < 0xF0)  //OBL showing only valid data while charging
+      mt_obl_main_freq->SetValue( CAN_BYTE(11) + 10.0f);
   } else {
     mt_obl_main_freq->SetValue(0);
   }
@@ -517,42 +677,42 @@ void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t repl
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
   mt_obl_main_amps->SetElemValue(0, value);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph2_RMS_A(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
   mt_obl_main_amps->SetElemValue(1, value);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph3_RMS_A(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
   mt_obl_main_amps->SetElemValue(2, value);
   UpdateChargeMetrics();
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph12_RMS_V(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   mt_obl_main_volts->SetElemValue(0, CAN_UINT(0) / 2.0);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph23_RMS_V(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   mt_obl_main_volts->SetElemValue(1, CAN_UINT(0) / 2.0);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   mt_obl_main_volts->SetElemValue(2, CAN_UINT(0) / 2.0);
   UpdateChargeMetrics();
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   if(CAN_UINT(0) > 20000) {
     mt_obl_main_CHGpower->SetElemValue(0, (CAN_UINT(0) - 20000.0f) / 1000.0f);
   }else{
@@ -561,186 +721,94 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t re
   // mt_obl_main_CHGpower->SetElemValue(0, (CAN_UINT(0) - 20000) / 1000.0f);
   UpdateChargeMetrics();
 }
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Frequency(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
-  mt_obl_main_freq->SetValue((float) CAN_UINT(0) + 10.0f);
-}
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_CurrentSum(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
-  float value1 = (float) CAN_UINT(0);
-  float value2 = value1 -600.0f >= 0.0f ? value1 -600.0f : (-600.0f - value1) * -1.0f;
-  mt_obl_main_amps_sum->SetValue(value2 / 1000.0f);
-}
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_VoltageSum(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
-  float value1 = (float) CAN_UINT(0);
-  float value2 = value1 -16000.0f >= 0.0f ? value1 -16000.0f : (-16000.0f - value1) * -1.0f;
-  mt_obl_main_volts_sum->SetValue(value2 / 1000.0f);
-}
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HVNetCurrent(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
-  float value1 = (float) CAN_UINT(0);
-  float value2 = value1 -200.0f >= 0.0f ? value1 -200.0f : (-200.0f - value1) * -1.0f;
-  mt_obl_main_hv_net_amps->SetValue(value2 / 1000.0f);
-}
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HVVoltageSum(const char* data, uint16_t reply_len)
-{
-  if (reply_len < 1) return;
-  float value1 = (float)CAN_UINT(0);
-  float value2 = value1 >= 1023.0f ? (value1 - 1023.0f) : (1023.0f - value1) * -1.0f;
-  mt_obl_main_hv_volts_sum->SetValue(value2 / 1000.0f);
-}
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_RawDCCurrent(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
-  float value1 = (float) CAN_UINT(0);
-  float value2 = value1 -2048.0f >= 0.0f ? value1 -2048.0f : (-2048.0f - value1) * -1.0f;
-  mt_obl_main_current_leakage_dc_raw->SetValue(value2 / 1000.0f);
-} 
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_RawHF10kHz(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
-  float value1 = (float) CAN_UINT(0);
-  float value2 = value1 -2048.0f >= 0.0f ? value1 -2048.0f : (-2048.0f - value1) * -1.0f;
-  mt_obl_main_current_leakage_hf_10khz_raw->SetValue(value2 / 1000.0f);
-}
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_RawHFCurrent(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
-  float value1 = (float) CAN_UINT(0);
-  float value2 = value1 -2048.0f >= 0.0f ? value1 -2048.0f : (-2048.0f - value1) * -1.0f;
-  mt_obl_main_current_leakage_hf_raw->SetValue(value2 / 1000.0f);
-}
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_RawLFCurrent(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
-  float value1 = (float) CAN_UINT(0);
-  float value2 = value1 -2048.0f >= 0.0f ? value1 -2048.0f : (-2048.0f - value1) * -1.0f;
-  mt_obl_main_current_leakage_lf_raw->SetValue(value2 / 1000.0f);
-}
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_GroundResistance(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   mt_obl_main_ground_resistance->SetValue((float) CAN_UINT(0));
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(1);
   int code = CAN_BYTE(0);
   std::string msgtxt = "";
   switch(code) {
-    case 0:{
-      msgtxt = "init";
-      break;
-    } 
-    case 1:{
-      msgtxt = "HF10";
-      break;
-    }
-    case 3:{
-      msgtxt = "Mains Ground Default";
-      break;
-    }
-    case 97:{
-      msgtxt = "Means Leakage LF+HF";
-      break;
-    }
-    case 5:{
-      msgtxt = "Earth Current default";
-      break;
-    }
-    case 81:{
-      msgtxt = "Means Leakage DC+HF";
-      break;
-    }
-    case 65:{
-      msgtxt = "Means Leakage HF";
-      break;
-    }
-    case 9:{
-      msgtxt = "Ground Default";
-      break;
-    }
-    case 49:{
-      msgtxt = "Means Leakage DC+LF";
-      break;
-    }
-    case 17:{
-      msgtxt = "Means Leakage DC";
-      break;
-    }
-    case 113:{
-      msgtxt = "Means Leakage DC+LF+HF";
-      break;
-    }
-    case 33:{
-      msgtxt = "Means Leakage LF";
-      break;
-    }
-    default:{
-      msgtxt = "Unknown code";
-      break;
-    }
+    case 0: msgtxt = "init"; break;
+    case 1: msgtxt = "HF10"; break;
+    case 3: msgtxt = "Mains Ground Default"; break;
+    case 97: msgtxt = "Means Leakage LF+HF"; break;
+    case 5: msgtxt = "Earth Current default"; break;
+    case 81: msgtxt = "Means Leakage DC+HF"; break;
+    case 65: msgtxt = "Means Leakage HF"; break;
+    case 9: msgtxt = "Ground Default"; break;
+    case 49: msgtxt = "Means Leakage DC+LF"; break;
+    case 17: msgtxt = "Means Leakage DC"; break;
+    case 113: msgtxt = "Means Leakage DC+LF+HF"; break;
+    case 33: msgtxt = "Means Leakage LF"; break;
+    default: msgtxt = "Unknown code"; break;
   }
   mt_obl_main_leakage_diag->SetValue(msgtxt);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_DCCurrent(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   float value1 = (float) CAN_UINT(0);
   float value2 = value1 -32768.0f >= 0.0f ? value1 -32768.0f : (-32768.0f - value1) * -1.0f;
   mt_obl_main_current_leakage_dc->SetValue(value2 / 1000.0f);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HF10kHz(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   float value1 = (float) CAN_UINT(0);
   float value2 = value1 -32768.0f >= 0.0f ? value1 -32768.0f : (-32768.0f - value1) * -1.0f;
   mt_obl_main_current_leakage_hf_10khz->SetValue(value2 / 1000.0f);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   float value1 = (float) CAN_UINT(0);
   float value2 = value1 -32768.0f >= 0.0f ? value1 -32768.0f : (-32768.0f - value1) * -1.0f;
   mt_obl_main_current_leakage_hf->SetValue(value2 / 1000.0f);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   float value1 = (float) CAN_UINT(0);
   float value2 = value1 -32768.0f >= 0.0f ? value1 -32768.0f : (-32768.0f - value1) * -1.0f;
   mt_obl_main_current_leakage_lf->SetValue(value2 / 1000.0f);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(1);
   mt_obl_main_max_current->SetValue((float) CAN_BYTE(0));
 }
 
 
 void OvmsVehicleSmartEQ::PollReply_obd_trip(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   mt_obd_trip_km->SetValue((float) CAN_UINT(0));
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_time(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(3);
   int value_1 = CAN_UINT24(0);
   std::string timeStr = SecondsToHHmm(value_1);
   mt_obd_trip_time->SetValue( timeStr );
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_start_trip(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   mt_obd_start_trip_km->SetValue((float) CAN_UINT(0));
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_start_time(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(3);
   int value_1 = CAN_UINT24(0);
   std::string timeStr = SecondsToHHmm(value_1);
   mt_obd_start_trip_time->SetValue( timeStr );
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_mt_day(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   int value = CAN_UINT(0);
   if (value > 0) { // excluding value of 0 seems to be necessary for now
     // Send notification?
@@ -779,7 +847,7 @@ void OvmsVehicleSmartEQ::PollReply_obd_mt_day(const char* data, uint16_t reply_l
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_mt_km(const char* data, uint16_t reply_len) {
-  if (reply_len < 1) return;
+  REQUIRE_LEN(2);
   int value = CAN_UINT(0);
   StdMetrics.ms_v_env_service_range->SetValue(value); // set next service in km
   mt_obd_mt_km_usual->SetValue(value);
@@ -789,11 +857,20 @@ void OvmsVehicleSmartEQ::PollReply_obd_mt_level(const char* data, uint16_t reply
   if (reply_len < 1) return;
   int value = CAN_UINT(0);
   std::string txt;
-  if (value == 0) {
+  if (value == 0) 
+    {
     txt = "Service A";
-  } else {
+    }
+  else if (value == 1) 
+    {
     txt = "Service B";
-  }
+    } 
+  else 
+    {
+    std::ostringstream oss;
+    oss << "Unknown " << value;
+    txt = oss.str();
+    }
   mt_obd_mt_level->SetValue(txt.c_str());
   StdMetrics.ms_v_gen_substate->SetValue(txt.c_str());
 }

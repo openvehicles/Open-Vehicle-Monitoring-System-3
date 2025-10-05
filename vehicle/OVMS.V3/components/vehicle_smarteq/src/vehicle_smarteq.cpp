@@ -53,6 +53,14 @@ static const char *TAG = "v-smarteq";
 #endif
 #include "buffered_shell.h"
 
+// Abort frame processing early on short DLC.
+#define REQ_DLC(minlen)                                                \
+  if (p_frame->FIR.B.DLC < (minlen)) {                                 \
+    ESP_LOGV(TAG,"CAN %03X: DLC %u < %u -> ignore frame",              \
+      p_frame->MsgID, p_frame->FIR.B.DLC, (unsigned)(minlen));         \
+    return;                                                            \
+  }
+
 OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 {
   OvmsVehicleSmartEQ* smarteq = (OvmsVehicleSmartEQ*) MyVehicleFactory.ActiveVehicle();
@@ -68,7 +76,7 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 static const OvmsPoller::poll_pid_t obdii_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,300,10,10 }, 0, ISOTP_STD }, // rqBattState
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,300,60,60 }, 0, ISOTP_STD }, // rqBattState
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,300,300 }, 0, ISOTP_STD }, // rqBattTemperatures
 //  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P1
 //  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P2
@@ -77,18 +85,21 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD start Trip Distance km 
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD Trip time s
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD start Trip time s
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance data days
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance data usual km
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // maintenance level
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // req.VIN
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, {  0,300,60,60 }, 0, ISOTP_STD }, // rqHV_Energy
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x302A, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_State
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Load
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_volt_measure
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Amps
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, {  0,300,60,60 }, 0, ISOTP_STD }, // rqDCDC_Power
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x33BA, {  0,300,60,60 }, 0, ISOTP_STD }, // indicates ext power supply
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, {  0,0,0,10 }, 0, ISOTP_STD }, // charging plug present
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,3600,300,0 }, 0, ISOTP_STD }, // maintenance data days
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,3600,300,0 }, 0, ISOTP_STD }, // maintenance data usual km
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, {  0,3600,300,0 }, 0, ISOTP_STD }, // maintenance level
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,3600,0,0 }, 0, ISOTP_STD }, // req.VIN
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8003, {  0,300,10,10 }, 0, ISOTP_STD },   // rq VehicleState
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x605e, {  0,300,10,10 }, 0, ISOTP_STD },   // rq UNDERHOOD_OPENED
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, {  0,300,60,30 }, 0, ISOTP_STD }, // rqHV_Energy
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x302A, {  0,300,60,30 }, 0, ISOTP_STD }, // rqDCDC_State
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, {  0,300,60,30 }, 0, ISOTP_STD }, // rqDCDC_Load
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3023, {  0,300,60,30 }, 0, ISOTP_STD }, // 14V DCDC voltage request
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, {  0,300,60,30 }, 0, ISOTP_STD }, // 14V DCDC voltage measure
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, {  0,300,60,30 }, 0, ISOTP_STD }, // 14V DCDC current measure
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, {  0,300,60,30 }, 0, ISOTP_STD }, // rqDCDC_Power
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x33BA, {  0,300,60,30 }, 0, ISOTP_STD }, // indicates ext power supply
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, {  0,300,10,10 }, 0, ISOTP_STD }, // charging plug present
 };
 
 static const OvmsPoller::poll_pid_t slow_charger_polls[] =
@@ -151,6 +162,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_warning_unlocked = false;
   m_modem_restart = false;
   m_modem_ticker = 0;
+  m_ADCfactor_recalc = false;
+  m_ADCfactor_recalc_timer = 0;
 
   m_enable_write = false;
   m_candata_timer = 0;
@@ -176,12 +189,15 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
   BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
 
-  mt_bms_temps                  = new OvmsMetricVector<float>("xsq.v.bms.temps", SM_STALE_HIGH, Celcius);
   mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, false);
   mt_use_at_reset               = MyMetrics.InitFloat("xsq.use.at.reset", SM_STALE_MID, 0, kWh);
   mt_use_at_start               = MyMetrics.InitFloat("xsq.use.at.start", SM_STALE_MID, 0, kWh);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_NONE, "", Other);
   mt_dummy_pressure             = MyMetrics.InitFloat("xsq.dummy.pressure", SM_STALE_NONE, 235, kPa);  // Dummy pressure for TPMS alert testing
+  mt_vehicle_state              = MyMetrics.InitString("xsq.v.state", SM_STALE_MIN, "UNKNOWN", Other);
+  mt_vehicle_state_code         = MyMetrics.InitInt("xsq.v.state.code", SM_STALE_MIN, 0, Other);
+  mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_NONE, 0, Other);
+  mt_adc_factor_history         = new OvmsMetricVector<float>("xsq.adc.factor.history", SM_STALE_NONE, Other);
 
   mt_obd_duration               = MyMetrics.InitInt("xsq.obd.duration", SM_STALE_MID, 0, Minutes);
   mt_obd_trip_km                = MyMetrics.InitFloat("xsq.obd.trip.km", SM_STALE_MID, 0, Kilometers);
@@ -211,27 +227,12 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_evc_hv_energy              = MyMetrics.InitFloat("xsq.evc.hv.energy", SM_STALE_MID, 0, kWh);
   mt_evc_LV_DCDC_amps           = MyMetrics.InitFloat("xsq.evc.lv.dcdc.amps", SM_STALE_MID, 0, Amps);
   mt_evc_LV_DCDC_load           = MyMetrics.InitFloat("xsq.evc.lv.dcdc.load", SM_STALE_MID, 0, Percentage);
+  mt_evc_LV_DCDC_volt_req       = MyMetrics.InitFloat("xsq.evc.lv.dcdc.volt.req", SM_STALE_MID, 0, Volts);
   mt_evc_LV_DCDC_volt           = MyMetrics.InitFloat("xsq.evc.lv.dcdc.volt", SM_STALE_MID, 0, Volts);
   mt_evc_LV_DCDC_power          = MyMetrics.InitFloat("xsq.evc.lv.dcdc.power", SM_STALE_MID, 0, Watts);
   mt_evc_LV_DCDC_state          = MyMetrics.InitInt("xsq.evc.lv.dcdc.state", SM_STALE_MID, 0, Other);
   mt_evc_ext_power              = MyMetrics.InitBool("xsq.evc.ext.power", SM_STALE_MIN, false);
   mt_evc_plug_present           = MyMetrics.InitBool("xsq.evc.plug.present", SM_STALE_MIN, false);
-
-  mt_bms_CV_Range_min           = MyMetrics.InitFloat("xsq.bms.cv.range.min", SM_STALE_MID, 0, Volts);
-  mt_bms_CV_Range_max           = MyMetrics.InitFloat("xsq.bms.cv.range.max", SM_STALE_MID, 0, Volts);
-  mt_bms_CV_Range_mean          = MyMetrics.InitFloat("xsq.bms.cv.range.mean", SM_STALE_MID, 0, Volts);
-  mt_bms_BattLinkVoltage        = MyMetrics.InitFloat("xsq.bms.batt.link.voltage", SM_STALE_MID, 0, Volts);
-  mt_bms_BattCV_Sum             = MyMetrics.InitFloat("xsq.bms.batt.cv.sum", SM_STALE_MID, 0, Volts);
-  mt_bms_BattPower_voltage      = MyMetrics.InitFloat("xsq.bms.batt.voltage", SM_STALE_MID, 0, Volts);
-  mt_bms_BattPower_current      = MyMetrics.InitFloat("xsq.bms.batt.current", SM_STALE_MID, 0, Amps);
-  mt_bms_BattPower_power        = MyMetrics.InitFloat("xsq.bms.batt.power", SM_STALE_MID, 0, kW);
-  mt_bms_HVcontactState         = MyMetrics.InitInt("xsq.bms.hv.contact.state", SM_STALE_MID, 0, Other);
-  mt_bms_HV                     = MyMetrics.InitFloat("xsq.bms.hv", SM_STALE_MID, 0, Volts);
-  mt_bms_EVmode                 = MyMetrics.InitInt("xsq.bms.ev.mode", SM_STALE_MID, 0, Other);
-  mt_bms_LV                     = MyMetrics.InitFloat("xsq.bms.lv", SM_STALE_MID, 0, Volts);
-  mt_bms_Amps                   = MyMetrics.InitFloat("xsq.bms.amps", SM_STALE_MID, 0, Amps);
-  mt_bms_Amps2                  = MyMetrics.InitFloat("xsq.bms.amp2", SM_STALE_MID, 0, Amps);
-  mt_bms_Power                  = MyMetrics.InitFloat("xsq.bms.power", SM_STALE_MID, 0, kW);
 
   mt_obl_fastchg                = MyMetrics.InitBool("xsq.obl.fastchg", SM_STALE_MIN, false);
   mt_obl_main_volts             = new OvmsMetricVector<float>("xsq.obl.volts", SM_STALE_HIGH, Volts);
@@ -245,14 +246,37 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_current_leakage_hf_10khz  = MyMetrics.InitFloat("xsq.obl.current.hf10kHz", SM_STALE_MID, 0, Amps);
   mt_obl_main_current_leakage_hf        = MyMetrics.InitFloat("xsq.obl.current.hf", SM_STALE_MID, 0, Amps);
   mt_obl_main_current_leakage_lf        = MyMetrics.InitFloat("xsq.obl.current.lf", SM_STALE_MID, 0, Amps);
-  //mt_obl_main_current_leakage_dc_raw    = MyMetrics.InitFloat("xsq.obl.current.dc.raw", SM_STALE_MID, 0, Amps);
-  //mt_obl_main_current_leakage_hf_10khz_raw = MyMetrics.InitFloat("xsq.obl.current.hf10kHz.raw", SM_STALE_MID, 0, Amps);
-  //mt_obl_main_current_leakage_hf_raw    = MyMetrics.InitFloat("xsq.obl.current.hf.raw", SM_STALE_MID, 0, Amps);
-  //mt_obl_main_current_leakage_lf_raw    = MyMetrics.InitFloat("xsq.obl.current.lf.raw", SM_STALE_MID, 0, Amps);
-  //mt_obl_main_amps_sum          = MyMetrics.InitFloat("xsq.obl.amps.sum", SM_STALE_MID, 0, Amps);
-  //mt_obl_main_volts_sum         = MyMetrics.InitFloat("xsq.obl.volts.sum", SM_STALE_MID, 0, Volts);
-  //mt_obl_main_hv_net_amps       = MyMetrics.InitFloat("xsq.obl.hv.net.amps", SM_STALE_MID, 0, Amps);
-  //mt_obl_main_hv_net_volts      = MyMetrics.InitFloat("xsq.obl.hv.net.volts", SM_STALE_MID, 0, Volts);
+
+  mt_bms_temps                  = new OvmsMetricVector<float>("xsq.bms.temps", SM_STALE_HIGH, Celcius);
+  mt_bms_CV_Range_min           = MyMetrics.InitFloat("xsq.bms.cv.range.min", SM_STALE_MID, 0, Volts);
+  mt_bms_CV_Range_max           = MyMetrics.InitFloat("xsq.bms.cv.range.max", SM_STALE_MID, 0, Volts);
+  mt_bms_CV_Range_mean          = MyMetrics.InitFloat("xsq.bms.cv.range.mean", SM_STALE_MID, 0, Volts);
+  mt_bms_BattLinkVoltage        = MyMetrics.InitFloat("xsq.bms.batt.link.voltage", SM_STALE_MID, 0, Volts);
+  mt_bms_BattContactorVoltage   = MyMetrics.InitFloat("xsq.bms.batt.contactor.voltage", SM_STALE_MID, 0, Volts);
+  mt_bms_BattCV_Sum             = MyMetrics.InitFloat("xsq.bms.batt.cv.sum", SM_STALE_MID, 0, Volts);
+  mt_bms_BattPower_voltage      = MyMetrics.InitFloat("xsq.bms.batt.voltage", SM_STALE_MID, 0, Volts);
+  mt_bms_BattPower_current      = MyMetrics.InitFloat("xsq.bms.batt.current", SM_STALE_MID, 0, Amps);
+  mt_bms_BattPower_power        = MyMetrics.InitFloat("xsq.bms.batt.power", SM_STALE_MID, 0, kW);
+  mt_bms_HVcontactStateCode     = MyMetrics.InitInt("xsq.bms.contact.code", SM_STALE_MID, 0, Other);
+  mt_bms_HVcontactStateTXT      = MyMetrics.InitString("xsq.bms.contact", SM_STALE_MID, "", Other);
+  mt_bms_HV                     = MyMetrics.InitFloat("xsq.bms.hv", SM_STALE_MID, 0, Volts);
+  mt_bms_EVmode                 = MyMetrics.InitInt("xsq.bms.ev.mode.code", SM_STALE_MID, 0, Other);
+  mt_bms_EVmode_txt             = MyMetrics.InitString("xsq.bms.ev.mode", SM_STALE_MID, "", Other);
+  mt_bms_12v                    = MyMetrics.InitFloat("xsq.bms.12v", SM_STALE_MID, 0, Volts);
+  mt_bms_Amps                   = MyMetrics.InitFloat("xsq.bms.amps", SM_STALE_MID, 0, Amps);
+  mt_bms_Amps2                  = MyMetrics.InitFloat("xsq.bms.amp2", SM_STALE_MID, 0, Amps);
+  mt_bms_Power                  = MyMetrics.InitFloat("xsq.bms.power", SM_STALE_MID, 0, kW);
+  mt_bms_interlock_hvplug       = MyMetrics.InitBool("xsq.bms.interlock.hvplug",SM_STALE_MID, false);
+  mt_bms_interlock_service      = MyMetrics.InitBool("xsq.bms.interlock.service", SM_STALE_MID, false);
+  mt_bms_fusi_mode              = MyMetrics.InitInt("xsq.bms.fusi.code",SM_STALE_MID, 0, Other);
+  mt_bms_fusi_mode_txt          = MyMetrics.InitString("xsq.bms.fusi",SM_STALE_MID, "", Other);
+  mt_bms_mg_rpm                 = MyMetrics.InitFloat("xsq.bms.mg.rpm",SM_STALE_MID, 0, Other);
+  mt_bms_safety_mode            = MyMetrics.InitInt("xsq.bms.safety.code",SM_STALE_MID, 0, Other);
+  mt_bms_safety_mode_txt        = MyMetrics.InitString("xsq.bms.safety",SM_STALE_MID, "", Other);
+  mt_bms_relay_hv_status        = MyMetrics.InitInt("xsq.bms.relay.hv.code",SM_STALE_MID, 0, Other);
+  mt_bms_relay_hv_status_txt    = MyMetrics.InitString("xsq.bms.relay.hv",SM_STALE_MID, "", Other);
+  mt_bms_relay_permit_flag      = MyMetrics.InitInt("xsq.bms.relay.permit.code",SM_STALE_MID, 0, Other);
+  mt_bms_relay_permit_flag_txt  = MyMetrics.InitString("xsq.bms.relay.permit",SM_STALE_MID, "", Other);
 
   // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
   RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
@@ -268,7 +292,12 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("tpmsset", "set TPMS dummy value", xsq_tpms_set);
   cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
+  cmd_xsq->RegisterCommand("calcadc", "Recalculate ADC factor (optional: 12V voltage override)", xsq_calc_adc, "[voltage]", 0, 1);
 
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.12v.start", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.12v.stop", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
   MyConfig.RegisterParam("xsq", "smartEQ", true, true);
 
   ConfigChanged(NULL);
@@ -352,8 +381,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     
     #ifdef CONFIG_OVMS_COMP_WIFI
       // Features option: auto restart modem on wifi disconnect
-      using std::placeholders::_1;
-      using std::placeholders::_2;
       MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
 #endif
 
@@ -447,6 +474,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
   m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
   m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
+  m_12v_measured_BMS_offset = MyConfig.GetParamValueFloat("xsq", "12v.measured.BMS.offset", 0.25);
+  m_enable_calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", false);
   m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", false);
   m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
   m_indicator         = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
@@ -475,6 +504,19 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   }
   StdMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffsoc", 0), Percentage );
   StdMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffrange", 0), Kilometers );
+}
+
+void OvmsVehicleSmartEQ::EventListener(std::string event, void* data) {
+  if (event == "vehicle.charge.start") {
+    if(m_enable_calcADCfactor && !m_ADCfactor_recalc) {
+      m_ADCfactor_recalc_timer = 4;   // wait at least 4 min. before recalculation
+      m_ADCfactor_recalc = true;      // recalculate ADC factor when HV charging
+    }
+  }
+  if (event == "vehicle.charge.stop") {
+      m_ADCfactor_recalc_timer = 0;
+      m_ADCfactor_recalc = false;     // stop recalculation when HV charging stopped
+  }
 }
 
 uint64_t OvmsVehicleSmartEQ::swap_uint64(uint64_t val) {
@@ -509,6 +551,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   switch (p_frame->MsgID) {
     case 0x17e: //gear shift
     {
+      REQ_DLC(7);      // uses bytes up to at least index 6, so DLC must be 7 or more
       switch(CAN_BYTE(6)) {
         case 0x00: // Parking
           StdMetrics.ms_v_env_gear->SetValue(0);
@@ -530,28 +573,38 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     }
     case 0x350:
+      REQ_DLC(7);
       StdMetrics.ms_v_env_locked->SetValue((CAN_BYTE(6) == 0x96));
       break;
     case 0x392:
+      REQ_DLC(6);
       StdMetrics.ms_v_env_hvac->SetValue((CAN_BYTE(1) & 0x40) > 0);
       StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40.0f);
       break;
-    case 0x42E: // HV Voltage
-      _temp = ((c >> 13) & 0x7Fu) > 40.0f ? ((c >> 13) & 0x7Fu) - 40.0f : (40.0f - ((c >> 13) & 0x7Fu)) * -1.0f;
-      if(_temp != 87) StdMetrics.ms_v_bat_temp->SetValue(_temp); // HVBatteryTemperature
-      StdMetrics.ms_v_bat_voltage->SetValue((float) ((CAN_UINT(3)>>5)&0x3ff) / 2); // HV Voltage
-      StdMetrics.ms_v_charge_climit->SetValue((c >> 20) & 0x3Fu); // MaxChargingNegotiatedCurrent
+    case 0x42E:        // HV voltage / temp frame
+      REQ_DLC(6);
+      _temp = ((c >> 13) & 0x7Fu) > 40.0f
+              ? ((c >> 13) & 0x7Fu) - 40.0f
+              : (40.0f - ((c >> 13) & 0x7Fu)) * -1.0f;
+      if (_temp != 87.0f)
+        StdMetrics.ms_v_bat_temp->SetValue(_temp);
+      // needs bytes 3 & 4 (CAN_UINT(3)) ? DLC=5 already covered by 6 above
+      StdMetrics.ms_v_bat_voltage->SetValue((float)((CAN_UINT(3) >> 5) & 0x3ff) / 2.0f);
+      StdMetrics.ms_v_charge_climit->SetValue((c >> 20) & 0x3Fu);
       break;
     case 0x4F8:
+      REQ_DLC(3);
       StdMetrics.ms_v_env_handbrake->SetValue((CAN_BYTE(0) & 0x08) > 0);
       StdMetrics.ms_v_env_awake->SetValue((CAN_BYTE(0) & 0x40) > 0); // Ignition on
       break;
     case 0x5D7: // Speed, ODO
+      REQ_DLC(6);
       StdMetrics.ms_v_pos_speed->SetValue((float) CAN_UINT(0) / 100.0f);
       StdMetrics.ms_v_pos_odometer->SetValue((float) (CAN_UINT32(2)>>4) / 100.0f);
       mt_pos_odo_trip->SetValue((float) (CAN_UINT(4)>>4) / 100.0f); // ODO trip //TODO: check if this is correct
       break;
     case 0x5de:
+      REQ_DLC(8);
       StdMetrics.ms_v_env_headlights->SetValue((CAN_BYTE(0) & 0x04) > 0);
       StdMetrics.ms_v_door_fl->SetValue((CAN_BYTE(1) & 0x08) > 0);
       StdMetrics.ms_v_door_fr->SetValue((CAN_BYTE(1) & 0x02) > 0);
@@ -560,6 +613,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       StdMetrics.ms_v_door_trunk->SetValue((CAN_BYTE(7) & 0x10) > 0);
       break;
     case 0x646:
+      REQ_DLC(3);
       mt_use_at_reset->SetValue(CAN_BYTE(1) * 0.1);
       mt_use_at_start->SetValue(CAN_BYTE(2) * 0.1);
       if( MyConfig.GetParamValueBool("xsq", "bcvalue",  false)){
@@ -568,8 +622,10 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         StdMetrics.ms_v_gen_kwh_grid_total->SetValue(0.0f);
       }
       break;
-    case 0x654: // SOC(b)
-      StdMetrics.ms_v_bat_soc->SetValue(CAN_BYTE(3));
+    case 0x654:        // SOC / charge port status
+      REQ_DLC(4);
+      _soc = (float) CAN_BYTE(3);
+      if (_soc <= 100.0f) StdMetrics.ms_v_bat_soc->SetValue(_soc); // SOC
       StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(0) & 0x20) != 0); // ChargingPlugConnected
       _duration_full = (((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0;
       mt_obd_duration->SetValue((int)(_duration_full), Minutes);
@@ -577,7 +633,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       _bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(0) - 20.0;
       _full_km = MyConfig.GetParamValueFloat("xsq", "full.km", 126.0);
       _range_cac = _full_km + (_bat_temp); // temperature compensation +/- range
-      _soc = StdMetrics.ms_v_bat_soc->AsFloat();
       if (_range_est != 1023.0f) 
         {
         StdMetrics.ms_v_bat_range_est->SetValue(_range_est);
@@ -589,9 +644,10 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           }
         }
       break;
-    case 0x658: //
+    case 0x658:
+      REQ_DLC(6);
       _soh = (float)(CAN_BYTE(4) & 0x7Fu);
-      StdMetrics.ms_v_bat_soh->SetValue(_soh); // SOH
+      if (_soh <= 100.0f) StdMetrics.ms_v_bat_soh->SetValue(_soh); // SOH
       StdMetrics.ms_v_bat_health->SetValue(
         (_soh >= 95.0f) ? "excellent"
       : (_soh >= 85.0f) ? "good"
@@ -639,19 +695,22 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       lastCharging = isCharging;
       break;
     case 0x668:
+      REQ_DLC(1);
       vehicle_smart_car_on((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
       break;
     case 0x673:
-    {
+      REQ_DLC(8);
       // Read TPMS pressure values:
-      for (int i = 0; i < 4; i++) {
-        if (CAN_BYTE(2 + i) != 0xff) {
+      for (int i = 0; i < 4; i++) 
+        {
+        if (CAN_BYTE(2 + i) != 0xff) 
+          {
           m_tpms_pressure[i] = (float) CAN_BYTE(2 + i) * 3.1; // kPa
           setTPMSValue(i, m_tpms_index[i]);
         }
       }
       break;
-    }
+    
     default:
       //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
@@ -723,7 +782,11 @@ void OvmsVehicleSmartEQ::DisablePlugin(const char* plugin) {
 }
 
 bool OvmsVehicleSmartEQ::ExecuteCommand(const std::string& command) {
-  
+  if (command.empty()) {
+    ESP_LOGE(TAG,"ExecuteCommand: empty command");
+    return Fail;
+  }
+
   std::string result = BufferedShell::ExecuteCommand(command, true);
   bool success = !result.empty();  // Consider command successful if output is not empty
   
@@ -825,22 +888,24 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     if(_data[6]>-1) { mt_climate_1to3->SetValue(_data[6]);}
 
     if(_data[3]>0) { 
-      _climate_h = (_data[3] / 100) % 24;                      // Extract hours and ensure 24h format
-      _climate_m = _data[3] % 100;                             // Extract minutes
-      if(mt_climate_m->AsInt() >= 60) {                        // Handle invalid minutes
-          _climate_h = (_climate_h + _climate_m / 60) % 24;
-          _climate_m = mt_climate_m->AsInt() % 60;
-      }
-      
-      if (_data[3] >= 0 && _data[3] <= 2359) {
-        std::ostringstream oss;
-        oss << std::setfill('0') << std::setw(4) << _data[3];
-        mt_climate_time->SetValue(oss.str());
+      if (_data[3] > 2359 || (_data[3] % 100) > 59) {
+        ESP_LOGE(TAG,"Invalid HHMM time %d", _data[3]);
       } else {
-          ESP_LOGE(TAG, "Invalid time value: %d", _data[3]);
+        _climate_h = (_data[3] / 100) % 24;                      // Extract hours and ensure 24h format
+        _climate_m = _data[3] % 100;                             // Extract minutes
+        if(mt_climate_m->AsInt() >= 60) {                        // Handle invalid minutes
+            _climate_h = (_climate_h + _climate_m / 60) % 24;
+            _climate_m = mt_climate_m->AsInt() % 60;
+        }
+        
+        if (_data[3] >= 0 && _data[3] <= 2359) {
+          std::ostringstream oss;
+          oss << std::setfill('0') << std::setw(4) << _data[3];
+          mt_climate_time->SetValue(oss.str());
+        } else {
+            ESP_LOGE(TAG, "Invalid time value: %d", _data[3]);
+        }
       }
-      mt_climate_h->SetValue(_climate_h);
-      mt_climate_m->SetValue(_climate_m);
     } else {
       mt_climate_time->SetValue(_oldtime);
     }     
@@ -879,6 +944,7 @@ void OvmsVehicleSmartEQ::Check12vState() {
           m_12v_ticker = 0;
           ESP_LOGI(TAG, "Initiating climate control due to 12V alert");
           m_12v_charge_state = true;
+          m_climate_ticker = 3;
           CommandClimateControl(true);
           m_climate_ticker = 3;
       }
@@ -923,6 +989,50 @@ void OvmsVehicleSmartEQ::CheckV2State() {
   #else
       ESP_LOGD(TAG, "V2 server support not enabled");
   #endif // CONFIG_OVMS_COMP_SERVER_V2
+}
+
+void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
+  #ifdef CONFIG_OVMS_COMP_ADC
+    if (can12V < 10.0f || can12V > 15.0f) {
+      ESP_LOGW(TAG, "Skip ADC factor recalculation (invalid 12V input %.2f)", can12V);
+      if (writer) writer->printf("Skip ADC factor recalculation (invalid 12V input %.2f)\n", can12V);
+      return;
+    }
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
+    uint32_t sum = 0;
+    for (int i=0;i<20;i++) {
+      vTaskDelay(3 / portTICK_PERIOD_MS);
+      sum += adc1_get_raw(ADC1_CHANNEL_0);
+    }
+    float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc","factor12v", 195.7f);
+    float avg_raw = sum / 20.0f;
+    float V_batt = can12V;
+    float adc_factor_new = (V_batt > 0) ? (avg_raw / V_batt) : 0;
+    ESP_LOGI(TAG, "ADC recalculation: avg_raw=%.2f  V_batt=%.3f  factor=%.3f", avg_raw, V_batt, adc_factor_new);
+    if (writer) writer->printf("ADC recalculation: avg_raw=%.2f  V_batt=%.3f  factor=%.3f\n", avg_raw, V_batt, adc_factor_new);
+    if (adc_factor_new < 160.0f || adc_factor_new > 230.0f) {
+      ESP_LOGW(TAG, "Reject ADC factor %.3f (out of bounds, keeping %.3f)", adc_factor_new, adc_factor_prev);
+      if (writer) writer->printf("Reject ADC factor %.3f (out of bounds, keeping %.3f)\n", adc_factor_new, adc_factor_prev);
+      return;
+    }
+    m_adc_factor_history.push_back(adc_factor_new);
+    if (m_adc_factor_history.size() > 20)
+      m_adc_factor_history.pop_front();
+    float hist[20];
+    size_t n = m_adc_factor_history.size();
+    for (size_t i=0; i<n; ++i)
+      hist[i] = m_adc_factor_history[i];
+    if (n > 0)
+      mt_adc_factor_history->SetElemValues(0, n, hist);
+    mt_adc_factor->SetValue(adc_factor_new);
+    MyConfig.SetParamValueFloat("system.adc","factor12v", adc_factor_new);
+    ESP_LOGI(TAG, "New ADC factor stored: %.3f (prev %.3f, history size %u)", adc_factor_new, adc_factor_prev, (unsigned)n);
+    if (writer) writer->printf("New ADC factor stored: %.3f (prev %.3f, history size %u)\n", adc_factor_new, adc_factor_prev, (unsigned)n);
+  #else
+    ESP_LOGD(TAG, "ADC support not enabled");
+    if (writer) writer->puts("ADC support not enabled");
+  #endif
 }
 
 void OvmsVehicleSmartEQ::DoorLockState() {
@@ -1010,8 +1120,8 @@ void OvmsVehicleSmartEQ::HandleEnergy() {
 
   // Are we driving?
   if (power != 0.0 && StdMetrics.ms_v_env_on->AsBool()) {
-    // Update energy used and recovered
-    float energy = power / 3600.0;    // 1 second worth of energy in kwh's
+    // Update energy used and recovered   
+    float energy = power / 3600.0;       // 1 second worth of energy in kwh's
     if (energy < 0.0f){
       StdMetrics.ms_v_bat_energy_used->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat() - energy);
       StdMetrics.ms_v_bat_energy_used_total->SetValue( StdMetrics.ms_v_bat_energy_used_total->AsFloat() - energy);
@@ -1054,8 +1164,8 @@ void OvmsVehicleSmartEQ::Handlev2Server(){
  * Called once per 10 seconds from Ticker10
  */
 void OvmsVehicleSmartEQ::HandleCharging() {
-  float act_soc        = StdMetrics.ms_v_bat_soc->AsFloat(0);
-  float limit_soc       = StdMetrics.ms_v_charge_limit_soc->AsFloat(0);
+  float act_soc        = StdMetrics.ms_v_bat_soc->AsFloat(0, Percentage);
+  float limit_soc       = StdMetrics.ms_v_charge_limit_soc->AsFloat(0, Percentage);
   float limit_range     = StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
   float max_range       = StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
   float charge_current  = -StdMetrics.ms_v_bat_current->AsFloat(0, Amps);
@@ -1176,7 +1286,7 @@ void OvmsVehicleSmartEQ::UpdateChargeMetrics() {
  * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
  */
 int OvmsVehicleSmartEQ::calcMinutesRemaining(float target_soc, float charge_voltage, float charge_current) {
-  float bat_soc = StdMetrics.ms_v_bat_soc->AsFloat(100);
+  float bat_soc = StdMetrics.ms_v_bat_soc->AsFloat(0, Percentage);
   if (bat_soc > target_soc) {
     return 0;   // Done!
   }
@@ -1209,9 +1319,19 @@ void OvmsVehicleSmartEQ::HandlePollState() {
 void OvmsVehicleSmartEQ::CalculateEfficiency() {
   // float consumption = 0;
   if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5) {
-    StdMetrics.ms_v_charge_kwh_grid->SetValue(((StdMetrics.ms_v_bat_energy_used->AsFloat() - StdMetrics.ms_v_bat_energy_recd->AsFloat()) / StdMetrics.ms_v_pos_trip->AsFloat()) * 100.0);
-    StdMetrics.ms_v_charge_kwh_grid_total->SetValue(((StdMetrics.ms_v_bat_energy_used_total->AsFloat() - StdMetrics.ms_v_bat_energy_recd_total->AsFloat()) / mt_pos_odometer_trip_total->AsFloat()) * 100.0);
-    StdMetrics.ms_v_bat_consumption->SetValue(mt_use_at_reset->AsFloat() * 10.0);
+    float mt_use_at_reset = StdMetrics.ms_v_bat_energy_used->AsFloat() - StdMetrics.ms_v_bat_energy_recd->AsFloat();
+    float mt_use_at_total = StdMetrics.ms_v_bat_energy_used_total->AsFloat() - StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+    float trip_km = StdMetrics.ms_v_pos_trip->AsFloat();
+    float trip_total_km = mt_pos_odometer_trip_total->AsFloat();
+    if (mt_use_at_reset > 0.1f) 
+      {
+      StdMetrics.ms_v_bat_consumption->SetValue(mt_use_at_reset * 10.0f);
+      if (trip_km > 0.1f) StdMetrics.ms_v_charge_kwh_grid->SetValue((mt_use_at_reset / trip_km) * 100.0f);
+      }
+    if (mt_use_at_total > 0.1f) 
+      {
+      if (trip_total_km > 0.1f) StdMetrics.ms_v_charge_kwh_grid_total->SetValue((mt_use_at_total / trip_total_km) * 100.0f);
+      }
   }
 }
 
@@ -1337,40 +1457,54 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) {
               m_warning_unlocked = false;
           }
   
-  if (ticker % 60 == 0) { // Every 60 seconds
-
-    if(mt_climate_on->AsBool()) TimeCheckTask();
-    if(m_12v_charge && !StdMetrics.ms_v_env_on->AsBool()) Check12vState();
-    if(m_enable_lock_state && !StdMetrics.ms_v_env_on->AsBool()) DoorLockState();
-
-    #ifdef CONFIG_OVMS_COMP_SERVER_V2
-      if(m_v2_check) CheckV2State();
-    #endif
-
-    #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
-      if(m_reboot_time > 0) Handlev2Server();
-    #endif
-
-    #ifdef CONFIG_OVMS_COMP_CELLULAR
-      if(m_network_type != m_network_type_ls) ModemNetworkType();
-    #endif
-
-    // DDT4ALL session timeout on 5 minutes
-    if (m_ddt4all) {
-      m_ddt4all_ticker++;
-      if (m_ddt4all_ticker >= 5) {
-        m_ddt4all = false;
-        m_ddt4all_ticker = 0;
-        ESP_LOGI(TAG, "DDT4ALL session timeout reached");
-        MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
-      }
-    }
-  }
-
-  if (ticker % 10 == 0) { // Every 10 seconds
+  if (ticker % 10 == 0) // Every 10 seconds
+    {
     if(m_enable_LED_state) OnlineState();
     if(m_climate_system) TimeBasedClimateData();
-  }
+    }
+}
+
+void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
+  if(mt_climate_on->AsBool()) TimeCheckTask();
+  if(m_12v_charge && !StdMetrics.ms_v_env_on->AsBool()) Check12vState();
+  if(m_enable_lock_state && !StdMetrics.ms_v_env_on->AsBool()) DoorLockState();
+
+  #ifdef CONFIG_OVMS_COMP_SERVER_V2
+    if(m_v2_check) CheckV2State();
+  #endif
+
+  #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
+    if(m_reboot_time > 0) Handlev2Server();
+  #endif
+
+  #ifdef CONFIG_OVMS_COMP_CELLULAR
+    if(m_network_type != m_network_type_ls) ModemNetworkType();
+  #endif
+
+  // DDT4ALL session timeout on 5 minutes
+  if (m_ddt4all) 
+    {
+    m_ddt4all_ticker++;
+    if (m_ddt4all_ticker >= 5) 
+      {
+      m_ddt4all = false;
+      m_ddt4all_ticker = 0;
+      ESP_LOGI(TAG, "DDT4ALL session timeout reached");
+      MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
+      }
+    }
+
+  #ifdef CONFIG_OVMS_COMP_ADC
+  if (m_enable_calcADCfactor && m_ADCfactor_recalc) 
+    {
+    if (--m_ADCfactor_recalc_timer == 0) 
+      {
+      m_ADCfactor_recalc = false;
+      m_ADCfactor_recalc_timer = 4; // reset timer
+      ReCalcADCfactor(mt_bms_12v->AsFloat());
+      }
+    }
+  #endif
 }
 
 /**
@@ -1452,10 +1586,16 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uin
   std::string request;
   std::string response;
   std::string reqstr = m_hl_canbyte;
+  if (reqstr.size() % 2 != 0) 
+    {
+    ESP_LOGE(TAG,"Invalid hex length");
+    return Fail;
+    }
 
-  if (wakeup) 
-  CommandWakeup();
-  else CommandWakeup2();
+  if (wakeup)
+    CommandWakeup();
+  else
+    CommandWakeup2();
 
   vTaskDelay(2000 / portTICK_PERIOD_MS);
   uint8_t protocol = ISOTP_STD;
@@ -1494,14 +1634,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
     }
     case 1:
     {
-      res = CommandClimateControl(true);
       m_climate_ticker = 2;
+      res = CommandClimateControl(true);
       break;
     }
     case 2:
-    {
-      res = CommandClimateControl(true);
+    {      
       m_climate_ticker = 3;
+      res = CommandClimateControl(true);
       break;
     }
     default:
@@ -1581,6 +1721,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
   std::string request;
   std::string response;
   std::string reqstr = MyConfig.GetParamValue("xsq", "lock.byte", "30010000");
+  if (reqstr.size() % 2 != 0) 
+    {
+    ESP_LOGE(TAG,"Invalid hex length");
+    return Fail;
+    }
   
   request = hexdecode("10C0");
   int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
@@ -1632,6 +1777,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin
   std::string request;
   std::string response;
   std::string reqstr = MyConfig.GetParamValue("xsq", "unlock.byte", "30010001");
+  if (reqstr.size() % 2 != 0) 
+    {
+    ESP_LOGE(TAG,"Invalid hex length");
+    return Fail;
+    }
   
   request = hexdecode("10C0");
   int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
@@ -1687,6 +1837,11 @@ void OvmsVehicleSmartEQ::xsq_ddt4all(int verbosity, OvmsWriter* writer, OvmsComm
   smarteq->CommandDDT4all(atoi(argv[0]), writer);
 }
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, OvmsWriter* writer) {
+  if (number < 0 || number > 1000) {
+    writer->printf("DDT4all command out of range");
+    return Fail;
+  }
+
   OvmsVehicle::vehicle_command_t res = Fail;
   ESP_LOGI(TAG, "DDT4all number=%d", number);
 
@@ -2678,6 +2833,7 @@ void OvmsVehicleSmartEQ::NotifySOClimit() {
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::Command12Vcharge(int verbosity, OvmsWriter* writer) {
   writer->puts("12V charge on:");
+ 
   writer->printf("  12V: %s\n", (char*) StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Native, 1).c_str());
   writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
   writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
@@ -2722,7 +2878,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4List(int verbosity
   writer->printf("  Clear Diagnostic Information: 100\n");
   writer->printf("  activate DDT4all Commands for 5 minutes: 999\n");
   writer->printf("  -------------------------------\n");
-  writer->printf("  indicator 5x: 0\n");
+  writer->printf("  indicator 5x on: 0\n");
   writer->printf("  open tailgate (unlocked Car): 1\n");
   writer->printf("  -------------------------------\n");
   writer->printf("  AUTO WIPE true: 3\n");
@@ -2819,6 +2975,52 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4List(int verbosity
   writer->printf("  Digital Speedometer in km/h: 68\n");
   writer->printf("  Digital Speedometer always km/h: 69\n");
   return Success;
+}
+
+void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+  #ifdef CONFIG_OVMS_COMP_ADC
+  if (argc == 1) 
+    {
+    char* endp = nullptr;
+    double val = strtod(argv[0], &endp);
+    if (endp == argv[0] || *endp != 0) 
+      {
+      writer->puts("Error: invalid number");
+      return;
+      }
+    if (val < 11.0 || val > 15.0) 
+      {
+      writer->puts("Error: voltage out of plausible range (11.0–15.0)");
+      return;
+      }
+    writer->printf("Recalculating ADC factor using override voltage %.2fV\n", val);
+    smarteq->ReCalcADCfactor((float)val, writer);
+    return;
+    } 
+  else if (argc == 0) 
+    {
+    if (!smarteq->mt_bms_12v->IsDefined()) 
+      {
+      writer->puts("Error: BMS 12V metric not defined");
+      return;
+      }
+    float val = smarteq->mt_bms_12v->AsFloat();
+    if (val < 11.0 || val > 15.0) 
+      {
+      writer->puts("Error: BMS 12V voltage out of plausible range (11.0–15.0)");
+      return;
+      }
+    smarteq->ReCalcADCfactor(val, writer);
+    writer->printf("Recalculating ADC factor using %.2fV BMS voltage\n", val);
+    return;
+   }
+  #else
+    writer->puts("ADC component not enabled");
+    return;
+  #endif
 }
 
 /**
@@ -3009,7 +3211,7 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
 
 class OvmsVehicleSmartEQInit {
   public:
-  OvmsVehicleSmartEQInit();
+    OvmsVehicleSmartEQInit();
 } MyOvmsVehicleSmartEQInit __attribute__ ((init_priority (9000)));
 
 OvmsVehicleSmartEQInit::OvmsVehicleSmartEQInit() {
