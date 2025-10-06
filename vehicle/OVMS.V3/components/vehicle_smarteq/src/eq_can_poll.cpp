@@ -26,8 +26,8 @@
  ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  ; THE SOFTWARE.
  ;
- ; Most of the CAN Messages are based on https://github.com/MyLab-odyssey/ED_BMSdiag
- ; http://ed.no-limit.de/wiki/index.php/Hauptseite
+ ; Most of the CAN Messages are based on https://github.com/MyLab-odyssey/ED_BMSdiag 
+ ; https://github.com/MyLab-odyssey/ED4scan
  
 const PROGMEM uint32_t rqID_BMS                   = 0x79B;
 const PROGMEM uint32_t respID_BMS                 = 0x7BB; 
@@ -57,25 +57,9 @@ const PROGMEM byte rqBattLogData_P1[2]            = {0x21, 0x30};
 const PROGMEM byte rqBattProdDate[3]              = {0x22, 0x03, 0x04};
  */
 
-#include "ovms_log.h"
 static const char *TAG = "v-smarteq";
 
-#include <stdio.h>
-#include <string>
-#include <iomanip>
-#include <cmath>
-#include "pcp.h"
-#include "ovms_metrics.h"
-#include "ovms_events.h"
-#include "ovms_config.h"
-#include "ovms_command.h"
-#include "metrics_standard.h"
-#include "ovms_notify.h"
-
 #include "vehicle_smarteq.h"
-#include <iostream>
-#include <iomanip>
-#include <sstream>
 
 std::string SecondsToHHmm(int totalSeconds) {
     int hours = totalSeconds / 3600;
