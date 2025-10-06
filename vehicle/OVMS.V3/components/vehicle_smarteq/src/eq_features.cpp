@@ -335,7 +335,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
       if (writer) writer->printf("Reject ADC factor %.3f (out of bounds, keeping %.3f)\n", adc_factor_new, adc_factor_prev);
       return;
     }
-    m_adc_factor_history.push_back(adc_factor_new);
+    m_adc_factor_history.push_back(adc_factor_prev);
     if (m_adc_factor_history.size() > 20)
       m_adc_factor_history.pop_front();
     float hist[20];

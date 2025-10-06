@@ -277,8 +277,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"vehicle.charge.12v.start", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"vehicle.charge.12v.stop", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.start", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.stop", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
   MyConfig.RegisterParam("xsq", "smartEQ", true, true);
 
   ConfigChanged(NULL);
@@ -680,7 +680,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       vehicle_smart_car_on((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
       break;
     case 0x673:
-      REQ_DLC(8);
+      REQ_DLC(2);
       // Read TPMS pressure values:
       for (int i = 0; i < 4; i++) 
         {
