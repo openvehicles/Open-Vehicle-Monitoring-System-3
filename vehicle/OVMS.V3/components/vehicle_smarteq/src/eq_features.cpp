@@ -247,9 +247,9 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
         mt_climate_m->SetValue(_climate_m);
         }
       } 
-    else 
+    else    
       {
-      mt_climate_time->SetValue(_oldtime);
+      mt_climate_time->SetValue(_oldtime);    
       }     
     
     // booster;no;no;0515;1;6;0

@@ -488,16 +488,20 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 }
 
 void OvmsVehicleSmartEQ::EventListener(std::string event, void* data) {
-  if (event == "vehicle.charge.start") {
-    if(m_enable_calcADCfactor && !m_ADCfactor_recalc) {
+
+  if (event == "vehicle.charge.start") 
+    {
+    if(m_enable_calcADCfactor && !m_ADCfactor_recalc) 
+      {
       m_ADCfactor_recalc_timer = 4;   // wait at least 4 min. before recalculation
       m_ADCfactor_recalc = true;      // recalculate ADC factor when HV charging
+      }
     }
-  }
-  if (event == "vehicle.charge.stop") {
+  if (event == "vehicle.charge.stop") 
+    {
       m_ADCfactor_recalc_timer = 0;
       m_ADCfactor_recalc = false;     // stop recalculation when HV charging stopped
-  }
+    }
 }
 
 uint64_t OvmsVehicleSmartEQ::swap_uint64(uint64_t val) {
