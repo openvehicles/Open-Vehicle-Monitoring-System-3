@@ -157,24 +157,28 @@ void OvmsVehicleSmartEQ::TimeCheckTask() {
   localtime_r(&now, &timeinfo);
 
   // Check if the current time is the climate time
-  if (timeinfo.tm_hour == mt_climate_h->AsInt() && timeinfo.tm_min == mt_climate_m->AsInt() && mt_climate_on->AsBool() && !StdMetrics.ms_v_env_hvac->AsBool()) {
+  if (timeinfo.tm_hour == mt_climate_h->AsInt() && timeinfo.tm_min == mt_climate_m->AsInt() && mt_climate_on->AsBool() && !StdMetrics.ms_v_env_hvac->AsBool()) 
+    {
     CommandHomelink(mt_climate_1to3->AsInt());
-  }
+    }
 
   // Check if the current day is within the climate days range
   int current_day = timeinfo.tm_wday;
   
-  if (current_day == mt_climate_ds->AsInt() && mt_climate_weekly->AsBool() && !m_climate_start_day) {
+  if (current_day == mt_climate_ds->AsInt() && mt_climate_weekly->AsBool() && !m_climate_start_day) 
+    {
     m_climate_start_day = true;
     mt_climate_on->SetValue(true);
-  }
-  if (current_day == mt_climate_de->AsInt() && mt_climate_weekly->AsBool() && m_climate_start_day) {
+    }
+  if (current_day == mt_climate_de->AsInt() && mt_climate_weekly->AsBool() && m_climate_start_day) 
+    {
     m_climate_start_day = false;
     mt_climate_on->SetValue(false);
-  }
-  if ((!mt_climate_weekly->AsBool() || !mt_climate_on->AsBool()) && m_climate_start_day) {
+    }
+  if ((!mt_climate_weekly->AsBool() || !mt_climate_on->AsBool()) && m_climate_start_day) 
+    {
     m_climate_start_day = false;
-  }
+    }
 }
 
 void OvmsVehicleSmartEQ::TimeBasedClimateData() {
@@ -185,17 +189,20 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
   std::string _item, _climate_on, _climate_weekly, _climate_time;
   int _climate_ds, _climate_de, _climate_h, _climate_m;
 
-  while (std::getline(_ss, _item, ',')) {
+  while (std::getline(_ss, _item, ',')) 
+    {
     _data.push_back(atoi(_item.c_str()));
-  }
+    }
 
   // Need at least 7 fields: [trigger,on,weekly,time,ds,de,btn]
-  if (_data.size() < 7) {
+  if (_data.size() < 7) 
+    {
     ESP_LOGE(TAG, "Invalid climate data payload, need 7 ints, got %u", (unsigned)_data.size());
     return;
-  }
+    }
 
-  if(_data[0]>0 || m_climate_init) {
+  if(_data[0]>0 || m_climate_init) 
+  {
     m_climate_init = false;
     mt_climate_data->SetValue("0,0,0,0,-1,-1,-1");              // reset the data
     _climate_on = _data[1] == 1 ? "yes" : "no";
@@ -206,28 +213,44 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     if(_data[5]>-1) { _climate_de = _data[5] <= 5 ? _data[5]+1 : 0; mt_climate_de->SetValue(_climate_de);}
     if(_data[6]>-1) { mt_climate_1to3->SetValue(_data[6]);}
 
-    if(_data[3]>0) { 
-      if (_data[3] > 2359 || (_data[3] % 100) > 59) {
+    if(_data[3]>0) 
+      { 
+      if (_data[3] > 2359 || (_data[3] % 100) > 59) 
+        {
         ESP_LOGE(TAG,"Invalid HHMM time %d", _data[3]);
-      } else {
+        return;
+        } 
+      else 
+        {
         _climate_h = (_data[3] / 100) % 24;                      // Extract hours and ensure 24h format
         _climate_m = _data[3] % 100;                             // Extract minutes
-        if(mt_climate_m->AsInt() >= 60) {                        // Handle invalid minutes
-            _climate_h = (_climate_h + _climate_m / 60) % 24;
-            _climate_m = mt_climate_m->AsInt() % 60;
-        }
         
-        if (_data[3] >= 0 && _data[3] <= 2359) {
+        if(_climate_m >= 60) 
+          {                                   // Handle invalid minutes
+            _climate_h = (_climate_h + _climate_m / 60) % 24;
+            _climate_m = _climate_m % 60;
+          }
+
+        if (_data[3] >= 0 && _data[3] <= 2359)
+          {
           std::ostringstream oss;
           oss << std::setfill('0') << std::setw(4) << _data[3];
           mt_climate_time->SetValue(oss.str());
-        } else {
-            ESP_LOGE(TAG, "Invalid time value: %d", _data[3]);
+          } 
+        else 
+          {
+          ESP_LOGE(TAG, "Invalid time value: %d", _data[3]);
+          return;
+          }
+
+        mt_climate_h->SetValue(_climate_h);
+        mt_climate_m->SetValue(_climate_m);
         }
-      }
-    } else {
+      } 
+    else 
+      {
       mt_climate_time->SetValue(_oldtime);
-    }     
+      }     
     
     // booster;no;no;0515;1;6;0
     char buf[64];
@@ -235,7 +258,7 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
     StdMetrics.ms_v_gen_current->SetValue(3);
     if(MyConfig.GetParamValueBool("xsq", "climate.notify",false)) NotifyClimateTimer();
-  }
+    }
 }
 
 // check the 12V alert periodically and charge the 12V battery if needed
