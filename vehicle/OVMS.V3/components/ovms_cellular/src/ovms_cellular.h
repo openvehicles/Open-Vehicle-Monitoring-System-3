@@ -277,12 +277,15 @@ class modemdriver : public InternalRamAllocated
     virtual bool State1Enter(modem::modem_state1_t newstate);
     virtual modem::modem_state1_t State1Activity(modem::modem_state1_t curstate);
     virtual modem::modem_state1_t State1Ticker1(modem::modem_state1_t curstate);
+    virtual std::string GetNetTypes();
+    virtual bool SetNetworkType(std::string);
 
   protected:
     unsigned int m_pwridx;
     time_t m_t_pwrcycle;
     modem* m_modem;
     int m_statuspoller_step;
+    std::string net_type;
   };
 
 template<typename Type> modemdriver* CreateCellularModemDriver()

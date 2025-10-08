@@ -57,6 +57,10 @@ simcom7600::~simcom7600()
   {
   }
 
+std::string simcom7600::GetNetTypes() {
+  return "auto 2G 3G 4G";
+}
+
 const char* simcom7600::GetModel()
   {
   return model;
@@ -110,7 +114,7 @@ void simcom7600::ShutdownNMEA()
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
   }
 
-void simcom7600::StatusPoller()
+  void simcom7600::StatusPoller()
   {
   if (m_modem->m_mux != NULL)
     {
@@ -218,7 +222,7 @@ modem::modem_state1_t simcom7600::State1Ticker1(modem::modem_state1_t curstate)
         m_modem->tx("AT+CPIN?;+CREG=1;+CGREG=1;+CEREG=1;+CTZU=1;+CTZR=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0;S0=0\r\n");
         break;
       case 12:
-        m_modem->tx("AT+CGMR;+ICCID\r\n");
+        m_modem->tx("AT+CGMR;+CICCID\r\n");
         break;
       case 20:
         // start MUX mode, route URCs to MUX channel 3 (POLL)

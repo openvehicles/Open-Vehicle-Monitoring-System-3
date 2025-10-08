@@ -924,11 +924,14 @@ modem::modem_state1_t modem::State1Ticker1()
         }
       switch (m_state1_ticker)
         {
+        case 8:
+          if (m_driver) m_driver->SetNetworkType(MyConfig.GetParamValue("modem", "net.type","auto"));
+          break;
         case 10:
           tx("AT+CPIN?;+CREG=1;+CTZU=1;+CTZR=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0;S0=0\r\n");
           break;
         case 12:
-          tx("AT+CGMR;+ICCID\r\n");
+          tx("AT+CGMR;+CICCID\r\n");
           break;
         case 20:
           tx("AT+CMUX=0\r\n");
@@ -1616,6 +1619,8 @@ void modem::SetCellularModemDriver(const char* ModelType)
   m_mux_channel_DATA = m_driver->GetMuxChannelDATA();
   m_mux_channel_POLL = m_driver->GetMuxChannelPOLL();
   m_mux_channel_CMD = m_driver->GetMuxChannelCMD();
+  MyConfig.SetParamValue("modem", "model", ModelType);
+  MyConfig.SetParamValue("modem", "net.typessupported", m_driver->GetNetTypes().c_str());
 
   if (m_model != "auto")
     MyEvents.SignalEvent("system.modem.installed", NULL);
@@ -1689,7 +1694,7 @@ void modem::EventListener(std::string event, void* data)
     }
   else if (event == "system.modem.gpsstop")
     {
-    if (m_gps_enabled && m_gps_usermode == GUM_DEFAULT && StdMetrics.ms_v_env_on->AsBool() == false)
+    if (m_gps_enabled && m_gps_usermode == GUM_DEFAULT && m_gps_parkpause > 0 && StdMetrics.ms_v_env_on->AsBool() == false)
       {
       m_gps_startticker = m_gps_reactivate * 60;  // convert minutes to seconds
       m_gps_stopticker = StdMetrics.ms_v_env_parktime->AsInt() + m_gps_reactivate * 60; // ensure we don't stop again before reactivation
@@ -1737,6 +1742,10 @@ void modem::ConfigChanged(std::string event, void* data)
     int gps_parkpause = MyConfig.GetParamValueInt("modem", "gps.parkpause", 0);
     int gps_reactivate = MyConfig.GetParamValueInt("modem", "gps.parkreactivate", 0);
     int gps_reactlock = MyConfig.GetParamValueInt("modem", "gps.parkreactlock", 5);
+    if (m_driver)
+      {
+      m_driver->SetNetworkType(MyConfig.GetParamValue("modem", "net.type", "auto")); 
+      }
     if (event == "config.mounted")
       {
       // Init:

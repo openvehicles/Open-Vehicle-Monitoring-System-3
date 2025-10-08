@@ -57,6 +57,10 @@ simcom7000::~simcom7000()
   {
   }
 
+std::string simcom7000::GetNetTypes() {
+  return "auto 2G 4G";
+}
+
 const char* simcom7000::GetModel()
   {
   return model;
@@ -117,7 +121,7 @@ modem::modem_state1_t simcom7000::State1Ticker1(modem::modem_state1_t curstate)
         m_modem->tx("AT+CPIN?;+CREG=1;+CTZU=1;+CTZR=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;S0=0\r\n");
         break;
       case 12:
-        m_modem->tx("AT+CGMR;+ICCID\r\n");
+        m_modem->tx("AT+CGMR;+CICCID\r\n");
         break;
       case 20:
         // start MUX mode, route URCs to MUX channel 3 (POLL)

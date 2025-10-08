@@ -69,6 +69,10 @@ simcom7670::~simcom7670()
     MySimcom7670 = NULL;
   }
 
+std::string simcom7670::GetNetTypes() {
+  return "auto 2G 4G";
+}
+
 void simcom7670::StartupNMEA()
   {
     // GPS config for simcom 7670 - will use AT+CGNSSINFO to get location
