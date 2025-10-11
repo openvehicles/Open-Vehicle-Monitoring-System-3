@@ -35,7 +35,6 @@ static const char *TAG = "v-smarteq";
 #include "vehicle_smarteq.h"
 #include "buffered_shell.h"
 #include "pcp.h"
-#include "id_filter.h"
 
 // Set TPMS pressure and alert values
 void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
