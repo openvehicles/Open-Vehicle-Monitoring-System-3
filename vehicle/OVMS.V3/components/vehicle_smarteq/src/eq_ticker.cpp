@@ -45,7 +45,6 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
       ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
       mt_bus_awake->SetValue(false);
       m_candata_poll = 0;
-      // PollSetState(0);
       }
     }
 
@@ -88,7 +87,8 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
           StdMetrics.ms_v_door_fr->AsBool() ||
           StdMetrics.ms_v_door_rl->AsBool() ||
           StdMetrics.ms_v_door_rr->AsBool() ||
-          StdMetrics.ms_v_door_trunk->AsBool())) 
+          StdMetrics.ms_v_door_trunk->AsBool() ||
+          StdMetrics.ms_v_door_hood->AsBool())) 
     {
     StdMetrics.ms_v_env_parktime->SetValue(0); // reset parking time
     m_warning_unlocked = false;
@@ -108,13 +108,10 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     TimeCheckTask();
   if(m_12v_charge && !StdMetrics.ms_v_env_on->AsBool()) 
     Check12vState();
-  if(m_enable_lock_state && !StdMetrics.ms_v_env_on->AsBool()) 
+  if(m_enable_lock_state && !m_warning_unlocked && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
     DoorLockState();
-
-  #ifdef CONFIG_OVMS_COMP_SERVER_V2
-    if(m_v2_check) 
-      CheckV2State();
-  #endif
+  if(m_enable_door_state && !m_warning_dooropen && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
+    DoorOpenState();
 
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
     if(m_reboot_time > 0) 
@@ -159,7 +156,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) 
   {
   bool car_online = mt_bus_awake->AsBool();
-  bool lv_pwrstate = (StdMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 12.8);
+  bool lv_pwrstate = (StdMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 13.4);
   
   // - base system is awake if we've got a fresh lv_pwrstate:
   StdMetrics.ms_v_env_aux12v->SetValue(car_online);
