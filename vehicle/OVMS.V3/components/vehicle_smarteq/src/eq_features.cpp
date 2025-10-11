@@ -335,7 +335,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
       vTaskDelay(3 / portTICK_PERIOD_MS);
       sum += adc1_get_raw(ADC1_CHANNEL_0);
     }
-    float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc","factor12v", 195.7f);
+    float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc", "factor12v", 195.7f);
     float avg_raw = sum / 20.0f;
     float V_batt = can12V;
     float adc_factor_new = (V_batt > 0) ? (avg_raw / V_batt) : 0;
@@ -356,7 +356,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
     if (n > 0)
       mt_adc_factor_history->SetElemValues(0, n, hist);
     mt_adc_factor->SetValue(adc_factor_new);
-    MyConfig.SetParamValueFloat("system.adc","factor12v", adc_factor_new);
+    MyConfig.SetParamValueFloat("system.adc", "factor12v", adc_factor_new);
     ESP_LOGI(TAG, "New ADC factor stored: %.3f (prev %.3f, history size %u)", adc_factor_new, adc_factor_prev, (unsigned)n);
     if (writer) writer->printf("New ADC factor stored: %.3f (prev %.3f, history size %u)\n", adc_factor_new, adc_factor_prev, (unsigned)n);
   #else
