@@ -880,7 +880,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
-  std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause, gps_parkreactivate, gps_parkreactlock, vehicle_stream;
+  std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause, gps_parkreactivate, gps_parkreactlock, vehicle_stream, model, modem_net_type, modem_net_types_avail;
   bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode, gps_parkreactawake;
   float cfg_sq_good, cfg_sq_bad;
 
@@ -902,6 +902,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     vehicle_stream = c.getvar("vehicle_stream");
     cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
     cfg_sq_bad = atof(c.getvar("cfg_sq_bad").c_str());
+    modem_net_type = c.getvar("modem_net_type");
 
     if (cfg_sq_bad >= cfg_sq_good)
       {
@@ -919,6 +920,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
         }
       MyConfig.SetParamValue("modem", "pincode", pincode);
       MyConfig.SetParamValue("network", "dns", network_dns);
+      if (modem_net_type != "undef") MyConfig.SetParamValue("modem", "net.type", modem_net_type);
       MyConfig.SetParamValueBool("modem", "enable.net", enable_net);
       MyConfig.SetParamValueBool("modem", "enable.sms", enable_sms);
       MyConfig.SetParamValueBool("modem", "enable.gps", enable_gps);
@@ -957,6 +959,12 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   apn_user = MyConfig.GetParamValue("modem", "apn.user");
   apn_pass = MyConfig.GetParamValue("modem", "apn.password");
   pincode = MyConfig.GetParamValue("modem", "pincode");
+
+  modem* m_modem=MyPeripherals->m_cellular_modem;
+  model = m_modem && m_modem->m_driver ? m_modem->m_model : "auto";
+  modem_net_type = MyConfig.GetParamValue("modem", "net.type","auto");
+  modem_net_types_avail = m_modem && m_modem->m_driver ? m_modem->m_driver->GetNetTypes() : "auto"; 
+
   wrongpincode = MyConfig.GetParamValueBool("modem", "wrongpincode",false);
   network_dns = MyConfig.GetParamValue("network", "dns");
   enable_net = MyConfig.GetParamValueBool("modem", "enable.net", true);
@@ -1009,7 +1017,26 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.input_text("…password", "apn_pass", apn_pass.c_str());
   c.input_text("DNS", "network_dns", network_dns.c_str(), "optional fixed DNS servers (space separated)",
     "<p>Set this to i.e. <code>8.8.8.8 8.8.4.4</code> (Google public DNS) if you encounter problems with your network provider DNS</p>");
-  c.fieldset_end();
+
+  if ( model != "auto")
+  {
+    c.input_radiobtn_start("Network type preference", "modem_net_type");
+    if (modem_net_types_avail.find(modem_net_type) == string::npos) modem_net_type = "auto";
+    c.input_radiobtn_option("modem_net_type", "auto", "auto", modem_net_type == "auto");
+    if (modem_net_types_avail.find("2G") != string::npos) c.input_radiobtn_option("modem_net_type", "2G (GSM)", "2G", modem_net_type == "2G");
+    if (modem_net_types_avail.find("3G") != string::npos) c.input_radiobtn_option("modem_net_type", "3G (UMTS/)", "3G", modem_net_type == "3G");
+    if (modem_net_types_avail.find("4G") != string::npos) c.input_radiobtn_option("modem_net_type", "4G (LTE)", "4G", modem_net_type == "4G");
+    if (modem_net_types_avail.find("5G") != string::npos) c.input_radiobtn_option("modem_net_type", "5G", "5G", modem_net_type == "5G");
+    c.input_radiobtn_end(
+    "<p>Automatic mode should work in most cases. In case of frequent net losses, it can help to limit the network type.</p>"
+    "<p>The 3G standard has been switched off in most areas around the world. 2G/GSM is often still available.</p>");
+  }
+  else{
+    c.input_info("Network type preference", "Modem model not identified yet");
+    modem_net_type="undef";
+  }
+
+    c.fieldset_end();
 
   c.fieldset_start("Features");
   c.input_checkbox("Enable SMS", "enable_sms", enable_sms);

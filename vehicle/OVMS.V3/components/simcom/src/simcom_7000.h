@@ -51,6 +51,8 @@ class simcom7000 : public modemdriver
     int GetMuxChannelCMD()  { return 4; }
 
     void PowerCycle();
+    std::string GetNetTypes();
+
     bool State1Leave(modem::modem_state1_t oldstate);
     bool State1Enter(modem::modem_state1_t newstate);
     modem::modem_state1_t State1Activity(modem::modem_state1_t curstate);

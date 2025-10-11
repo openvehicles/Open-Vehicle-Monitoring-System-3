@@ -198,3 +198,45 @@ modem::modem_state1_t modemdriver::State1Ticker1(modem::modem_state1_t curstate)
     }
   return curstate;
   }
+
+std::string modemdriver::GetNetTypes()
+  {
+    return "auto";
+  }
+
+#define SET_NET_MODE(at) if(m_modem->m_mux != NULL) m_modem->muxtx(GetMuxChannelCMD(), at); else m_modem->tx(at);
+
+bool modemdriver::SetNetworkType(std::string new_net_type)
+  {
+  if (m_modem != NULL && (new_net_type != net_type || net_type == "undef") )
+    {
+    std::string net_avail=GetNetTypes();
+    net_type = new_net_type;
+    ESP_LOGI(TAG, "Set network mode to %s", net_type.c_str());
+    if (net_type == "auto" && net_avail.find("auto") < string::npos)
+      {
+      SET_NET_MODE("AT+CNMP=2\r\n");
+      }
+    else if (net_type == "2G" && net_avail.find("2G") < string::npos)
+      {
+      SET_NET_MODE("AT+CNMP=13\r\n");
+      }
+    else if (net_type == "3G" && net_avail.find("3G") < string::npos)
+      {
+      SET_NET_MODE("AT+CNMP=14\r\n");
+      }
+    else if (net_type == "4G" && net_avail.find("4G") < string::npos)
+      {
+      SET_NET_MODE("AT+CNMP=38\r\n");
+      }
+    else
+      {
+      ESP_LOGE(TAG, "Requested network type %s is invalid -> set to automatic mode", net_type.c_str());
+      SET_NET_MODE("AT+CNMP=2\r\n");  // no valid mode -> set to AUTO
+      net_type = "auto";
+      }
+    return true;
+    }
+    return false;
+  }
+

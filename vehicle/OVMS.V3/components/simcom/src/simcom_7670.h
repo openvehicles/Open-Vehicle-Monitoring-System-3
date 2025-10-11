@@ -49,6 +49,7 @@ class simcom7670 : public modemdriver
     void StatusPoller();
     modem::modem_state1_t State1Ticker1(modem::modem_state1_t state);
     void SendGNSSRequest(std::string event, void* data);
+    std::string GetNetTypes();
 
   private:
     TimerHandle_t m_timer;
