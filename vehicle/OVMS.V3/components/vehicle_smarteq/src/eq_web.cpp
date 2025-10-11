@@ -27,28 +27,18 @@
  ; THE SOFTWARE.
  ;
  ; Most of the CAN Messages are based on https://github.com/MyLab-odyssey/ED_BMSdiag
+ ; https://github.com/MyLab-odyssey/ED4scan
  */
 
-#include <sdkconfig.h>
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-
-#include <stdio.h>
-#include <string>
-#include "ovms_metrics.h"
-#include "ovms_events.h"
-#include "ovms_config.h"
-#include "ovms_command.h"
-#include "metrics_standard.h"
-#include "ovms_notify.h"
-#include "ovms_webserver.h"
-
+ 
 #include "vehicle_smarteq.h"
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 
 using namespace std;
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
-
 
 /**
  * WebInit: register pages

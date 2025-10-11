@@ -27,23 +27,39 @@
  ; THE SOFTWARE.
  ;
  ; Most of the CAN Messages are based on https://github.com/MyLab-odyssey/ED_BMSdiag
+ ; https://github.com/MyLab-odyssey/ED4scan
  */
 
 #ifndef __VEHICLE_SMARTEQ_H__
 #define __VEHICLE_SMARTEQ_H__
 
-#include <atomic>
-#include <stdint.h>
-#include <deque>
-#include "can.h"
-#include "vehicle.h"
+#define VERSION "2.0.0"
 
 #include "ovms_log.h"
+
+#include <deque>
+#include <string>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <cmath>
+
+#include <stdint.h>
+#include <stdio.h>
+#include <sdkconfig.h>
+
+#include "can.h"
+#include "vehicle.h"
+#include "metrics_standard.h"
+
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "ovms_command.h"
-#include "freertos/timers.h"
-#include "esp_timer.h"
+#include "ovms_events.h"
+#include "ovms_notify.h"
+#include "ovms_peripherals.h"
+#include "ovms_time.h"
+
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
 #endif
