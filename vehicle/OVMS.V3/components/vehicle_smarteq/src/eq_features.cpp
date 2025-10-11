@@ -44,6 +44,9 @@ void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
   }
 
   float _pressure = m_tpms_pressure[index];
+  float _temp = m_tpms_temperature[index];
+  bool _lowbatt = m_tpms_lowbatt[index];
+  bool _missing_tx = m_tpms_missing_tx[index];
   
   // Validate pressure value
   if (_pressure < 0.0f || _pressure > 500.0f) {
@@ -52,6 +55,12 @@ void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
   }
 
   StdMetrics.ms_v_tpms_pressure->SetElemValue(indexcar, _pressure);
+  if (m_tpms_temp_enable) StdMetrics.ms_v_tpms_temp->SetElemValue(indexcar, _temp);
+  
+  mt_tpms_pressure->SetElemValue(indexcar, _pressure);
+  mt_tpms_temp->SetElemValue(indexcar, _temp);
+  mt_tpms_low_batt->SetElemValue(indexcar, _lowbatt);
+  mt_tpms_missing_tx->SetElemValue(indexcar, _missing_tx);
 
   // Skip alert processing if pressure is too low or alerts are disabled
   if (_pressure < 10.0f || !m_tpms_alert_enable) {
@@ -67,11 +76,25 @@ void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
   float deviation = _pressure - reference_pressure;
   float abs_deviation = std::abs(deviation);
 
-  if (abs_deviation > m_pressure_alert) {
-    _alert = 2;
-  } else if (abs_deviation > m_pressure_warning) {
+  if (_lowbatt) 
+    {
     _alert = 1;
-  }
+    MyNotify.NotifyStringf("alert", "tpms.lowbatt", "TPMS low battery on wheel %d", indexcar + 1);
+    }
+  else if (_missing_tx) 
+    {
+    _alert = 2;
+    MyNotify.NotifyStringf("alert", "tpms.missing_tx", "TPMS missing transmission on wheel %d", indexcar + 1);
+    }
+  else if (abs_deviation > m_pressure_alert) 
+    {
+    _alert = 2;
+    }
+  else if 
+    (abs_deviation > m_pressure_warning) 
+    {
+    _alert = 1;
+    }
 
   StdMetrics.ms_v_tpms_alert->SetElemValue(indexcar, _alert);
 }
@@ -81,6 +104,7 @@ void OvmsVehicleSmartEQ::setTPMSValue(int index, int indexcar) {
 void OvmsVehicleSmartEQ::setTPMSValueBoot() {
   for (int i = 0; i < 4; i++) {
     StdMetrics.ms_v_tpms_pressure->SetElemValue(i, 0.0f);
+    StdMetrics.ms_v_tpms_temp->SetElemValue(i, 0.0f);
     StdMetrics.ms_v_tpms_alert->SetElemValue(i, 0);
   }
 }
@@ -198,6 +222,7 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
   if (_data.size() < 7) 
     {
     ESP_LOGE(TAG, "Invalid climate data payload, need 7 ints, got %u", (unsigned)_data.size());
+    mt_climate_data->SetValue("0,0,0,0,-1,-1,-1");             // reset the data
     return;
     }
 
@@ -296,43 +321,6 @@ void OvmsVehicleSmartEQ::Check12vState() {
   }
 }
 
-// check the Server V2 connection and reboot the network if needed
-void OvmsVehicleSmartEQ::CheckV2State() {
-  #ifdef CONFIG_OVMS_COMP_SERVER_V2
-    static const int DISCONNECT_THRESHOLD = 5;
-    static const int RESTART_DELAY = 1;    
-    bool is_connected = StdMetrics.ms_s_v2_connected->AsBool();
-    
-    if (!is_connected) {
-        m_v2_ticker++;
-        
-        if (m_v2_ticker > DISCONNECT_THRESHOLD && !m_v2_restart) {
-            ESP_LOGI(TAG, "V2 server disconnected for %d ticks, initiating restart", m_v2_ticker);
-            m_v2_restart = true;
-            if (!ExecuteCommand("server v2 stop")) {
-                ESP_LOGE(TAG, "Failed to stop V2 server");
-                return;
-            }
-        }
-        
-        if (m_v2_ticker > (DISCONNECT_THRESHOLD + RESTART_DELAY) && m_v2_restart) {
-            ESP_LOGI(TAG, "Restarting V2 server");
-            m_v2_ticker = 0;
-            m_v2_restart = false;
-            if (!ExecuteCommand("server v2 start")) {
-                ESP_LOGE(TAG, "Failed to start V2 server");
-            }
-        }
-    } else if (m_v2_ticker > 0) {
-        ESP_LOGI(TAG, "V2 server connection restored");
-        m_v2_ticker = 0;
-        m_v2_restart = false;
-    }
-  #else
-      ESP_LOGD(TAG, "V2 server support not enabled");
-  #endif // CONFIG_OVMS_COMP_SERVER_V2
-}
-
 void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
   #ifdef CONFIG_OVMS_COMP_ADC
     if (can12V < 10.0f || can12V > 15.0f) {
@@ -347,7 +335,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
       vTaskDelay(3 / portTICK_PERIOD_MS);
       sum += adc1_get_raw(ADC1_CHANNEL_0);
     }
-    float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc","factor12v", 195.7f);
+    float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc", "factor12v", 195.7f);
     float avg_raw = sum / 20.0f;
     float V_batt = can12V;
     float adc_factor_new = (V_batt > 0) ? (avg_raw / V_batt) : 0;
@@ -368,7 +356,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
     if (n > 0)
       mt_adc_factor_history->SetElemValues(0, n, hist);
     mt_adc_factor->SetValue(adc_factor_new);
-    MyConfig.SetParamValueFloat("system.adc","factor12v", adc_factor_new);
+    MyConfig.SetParamValueFloat("system.adc", "factor12v", adc_factor_new);
     ESP_LOGI(TAG, "New ADC factor stored: %.3f (prev %.3f, history size %u)", adc_factor_new, adc_factor_prev, (unsigned)n);
     if (writer) writer->printf("New ADC factor stored: %.3f (prev %.3f, history size %u)\n", adc_factor_new, adc_factor_prev, (unsigned)n);
   #else
@@ -389,6 +377,24 @@ void OvmsVehicleSmartEQ::DoorLockState() {
       MyNotify.NotifyString("alert", "vehicle.unlocked", "The vehicle is unlocked and parked for more than 10 minutes.");
   } else if (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10 && !warning_unlocked){
       m_warning_unlocked = true; // prevent warning if the vehicle is parked locked for more than 10 minutes
+  }
+}
+
+void OvmsVehicleSmartEQ::DoorOpenState() {
+  bool open_doors = (StdMetrics.ms_v_door_fl->AsBool() ||
+                     StdMetrics.ms_v_door_fr->AsBool() ||
+                     StdMetrics.ms_v_door_rl->AsBool() ||
+                     StdMetrics.ms_v_door_rr->AsBool() ||
+                     StdMetrics.ms_v_door_trunk->AsBool() ||
+                     StdMetrics.ms_v_door_hood->AsBool()) &&
+                     !m_warning_dooropen;
+
+  if (open_doors) {
+      m_warning_dooropen = true;
+      ESP_LOGI(TAG, "Warning: Vehicle has open doors");
+      MyNotify.NotifyString("alert", "vehicle.open_doors", "The vehicle has open doors.");
+  } else if (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10 && !open_doors){
+      m_warning_dooropen = true; // prevent warning if the vehicle is parked locked for more than 10 minutes
   }
 }
 
@@ -467,7 +473,7 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
     case 2:
     {
       int bits = atoi(value);
-      MyConfig.SetParamValueBool("xsq", "ios_tpms_fix",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("xsq", "tpms.temp",  (bits& 1)!=0);
       return true;
     }
     case 3:
@@ -569,7 +575,7 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
     }
     case 2:
     {
-      int bits = ( MyConfig.GetParamValueBool("xsq", "ios_tpms_fix",  false) ?  1 : 0);
+      int bits = ( MyConfig.GetParamValueBool("xsq", "tpms.temp",  false) ?  1 : 0);
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);

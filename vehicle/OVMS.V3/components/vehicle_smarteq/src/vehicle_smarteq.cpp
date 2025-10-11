@@ -34,14 +34,6 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
-// Abort frame processing early on short DLC.
-#define REQ_DLC(minlen)                                                \
-  if (p_frame->FIR.B.DLC < (minlen)) {                                 \
-    ESP_LOGV(TAG,"CAN %03X: DLC %u < %u -> ignore frame",              \
-      p_frame->MsgID, p_frame->FIR.B.DLC, (unsigned)(minlen));         \
-    return;                                                            \
-  }
-
 OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 {
   OvmsVehicleSmartEQ* smarteq = (OvmsVehicleSmartEQ*) MyVehicleFactory.ActiveVehicle();
@@ -57,30 +49,39 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 static const OvmsPoller::poll_pid_t obdii_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,300,60,60 }, 0, ISOTP_STD }, // rqBattState
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,300,300 }, 0, ISOTP_STD }, // rqBattTemperatures
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattState
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattTemperatures
 //  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P1
 //  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P2
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,300,300,300 }, 0, ISOTP_STD }, // extern temp byte 2+3
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD Trip Distance km
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD start Trip Distance km 
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD Trip time s
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, {  0,300,60,300 }, 0, ISOTP_STD }, // OBD start Trip time s
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,3600,300,0 }, 0, ISOTP_STD }, // maintenance data days
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,3600,300,0 }, 0, ISOTP_STD }, // maintenance data usual km
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, {  0,3600,300,0 }, 0, ISOTP_STD }, // maintenance level
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD Trip Distance km
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD start Trip Distance km 
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD Trip time s
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD start Trip time s
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,3600,0,0 }, 0, ISOTP_STD }, // maintenance data days
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,3600,0,0 }, 0, ISOTP_STD }, // maintenance data usual km
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, {  0,3600,0,0 }, 0, ISOTP_STD }, // maintenance level
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,3600,0,0 }, 0, ISOTP_STD }, // req.VIN
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8003, {  0,300,10,10 }, 0, ISOTP_STD },   // rq VehicleState
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x605e, {  0,300,10,10 }, 0, ISOTP_STD },   // rq UNDERHOOD_OPENED
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, {  0,300,60,30 }, 0, ISOTP_STD }, // rqHV_Energy
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x302A, {  0,300,60,30 }, 0, ISOTP_STD }, // rqDCDC_State
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, {  0,300,60,30 }, 0, ISOTP_STD }, // rqDCDC_Load
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3023, {  0,300,60,30 }, 0, ISOTP_STD }, // 14V DCDC voltage request
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, {  0,300,60,30 }, 0, ISOTP_STD }, // 14V DCDC voltage measure
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, {  0,300,60,30 }, 0, ISOTP_STD }, // 14V DCDC current measure
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, {  0,300,60,30 }, 0, ISOTP_STD }, // rqDCDC_Power
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x33BA, {  0,300,60,30 }, 0, ISOTP_STD }, // indicates ext power supply
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, {  0,300,10,10 }, 0, ISOTP_STD }, // charging plug present
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, {  0,0,60,0 }, 0, ISOTP_STD }, // TPMS input capture
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, {  0,0,60,0 }, 0, ISOTP_STD }, // TPMS counters/status (missing transmitters)
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8003, {  0,300,10,10 }, 0, ISOTP_STD }, // rq VehicleState
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x605e, {  0,300,10,10 }, 0, ISOTP_STD }, // rq UNDERHOOD_OPENED
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, {  0,300,60,10 }, 0, ISOTP_STD }, // rqHV_Energy
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x302A, {  0,300,10,10 }, 0, ISOTP_STD }, // rqDCDC_State
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, {  0,300,10,10 }, 0, ISOTP_STD }, // rqDCDC_Load
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3023, {  0,300,60,60 }, 0, ISOTP_STD }, // 14V DCDC voltage request
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, {  0,300,60,60 }, 0, ISOTP_STD }, // 14V DCDC voltage measure
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, {  0,300,60,60 }, 0, ISOTP_STD }, // 14V DCDC current measure
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, {  0,300,10,10 }, 0, ISOTP_STD }, // rqDCDC_Power
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x33BA, {  0,300,10,10 }, 0, ISOTP_STD }, // indicates ext power supply
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, {  0,300,60,10 }, 0, ISOTP_STD }, // charging plug present
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, {  0,300,10,10 }, 0, ISOTP_STD }, // rqDCDC_Power
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3302, {  0,300,10,10 }, 0, ISOTP_STD }, // Wake Up Type
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3301, {  0,300,10,10 }, 0, ISOTP_STD }, // USM 14V voltage (CAN)
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3433, {  0,300,60,60 }, 0, ISOTP_STD }, // Battery voltage request (SCH)
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3431, {  0,300,0,60 }, 0, ISOTP_STD }, // Parking duration (SCH)
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, {  0,300,60,60 }, 0, ISOTP_STD }, // Battery voltage 14V
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3486, {  0,300,60,60 }, 0, ISOTP_STD }, // 14V battery alert
 };
 
 static const OvmsPoller::poll_pid_t slow_charger_polls[] =
@@ -102,17 +103,6 @@ static const OvmsPoller::poll_pid_t fast_charger_polls[] =
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x500E, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Power
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5038, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Power
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5049, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Frequency
-  /* The following PIDs are defined, but not used (yet):
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, {  0,0,0,10 }, 0, ISOTP_STD }, // Mains phase frequency (Hz)
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504B, {  0,0,0,10 }, 0, ISOTP_STD }, // Mains current sum (A)
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504C, {  0,0,0,10 }, 0, ISOTP_STD }, // Mains voltage sum (V)
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504D, {  0,0,0,10 }, 0, ISOTP_STD }, // HV net current (A)
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504E, {  0,0,0,10 }, 0, ISOTP_STD }, // HV net voltage (V)
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5057, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - DC part measurement (mA)
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5058, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - HF 10kHz part measurement (mA)
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5059, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - HF part measurement (mA)
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x505A, {  0,0,0,10 }, 0, ISOTP_STD }, // Raw leakage current - LF part measurement (mA)
-  */
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5070, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Max Current limitation
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Ground Resistance
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5064, {  0,0,0,10 }, 0, ISOTP_STD }, // rqJB2AC_Leakage Diag
@@ -135,12 +125,11 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_climate_ticker = 0;
   m_12v_ticker = 0;
   m_12v_charge_state = false;
-  m_v2_ticker = 0;
-  m_v2_restart = false;
   m_ddt4all = false;
   m_ddt4all_ticker = 0;
   m_ddt4all_exec = 0;
   m_warning_unlocked = false;
+  m_warning_dooropen = false;
   m_modem_restart = false;
   m_modem_ticker = 0;
   m_ADCfactor_recalc = false;
@@ -159,6 +148,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   for (int i = 0; i < 4; i++) {
     m_tpms_pressure[i] = 0.0f;
+    m_tpms_temperature[i] = 0.0f;
+    m_tpms_lowbatt[i] = false;
+    m_tpms_missing_tx[i] = false;
     m_tpms_index[i] = i;
   }
 
@@ -205,15 +197,30 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_pos_odometer_trip_total    = MyMetrics.InitFloat("xsq.odometer.trip.total", SM_STALE_MID, 0, Kilometers);
   mt_pos_odo_trip               = MyMetrics.InitFloat("xsq.odo.trip", SM_STALE_MID, 0, Kilometers);
 
+  mt_tpms_temp                   = MyMetrics.InitVector<float>("xsq.tpms.temp", SM_STALE_MID, nullptr, Celcius);
+  mt_tpms_pressure               = MyMetrics.InitVector<float>("xsq.tpms.pressure", SM_STALE_MID, nullptr, kPa);
+  mt_tpms_low_batt               = MyMetrics.InitVector<bool> ("xsq.tpms.lowbatt", SM_STALE_MID, nullptr, Other);
+  mt_tpms_missing_tx             = MyMetrics.InitVector<bool> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);
+
   mt_evc_hv_energy              = MyMetrics.InitFloat("xsq.evc.hv.energy", SM_STALE_MID, 0, kWh);
-  mt_evc_LV_DCDC_amps           = MyMetrics.InitFloat("xsq.evc.lv.dcdc.amps", SM_STALE_MID, 0, Amps);
-  mt_evc_LV_DCDC_load           = MyMetrics.InitFloat("xsq.evc.lv.dcdc.load", SM_STALE_MID, 0, Percentage);
-  mt_evc_LV_DCDC_volt_req       = MyMetrics.InitFloat("xsq.evc.lv.dcdc.volt.req", SM_STALE_MID, 0, Volts);
-  mt_evc_LV_DCDC_volt           = MyMetrics.InitFloat("xsq.evc.lv.dcdc.volt", SM_STALE_MID, 0, Volts);
-  mt_evc_LV_DCDC_power          = MyMetrics.InitFloat("xsq.evc.lv.dcdc.power", SM_STALE_MID, 0, Watts);
-  mt_evc_LV_DCDC_state          = MyMetrics.InitInt("xsq.evc.lv.dcdc.state", SM_STALE_MID, 0, Other);
+  mt_evc_LV_DCDC_amps           = MyMetrics.InitFloat("xsq.evc.12V.dcdc.amps", SM_STALE_MID, 0, Amps);
+  mt_evc_LV_DCDC_load           = MyMetrics.InitFloat("xsq.evc.12V.dcdc.load", SM_STALE_MID, 0, Percentage);
+  mt_evc_LV_DCDC_volt_req       = MyMetrics.InitFloat("xsq.evc.12V.dcdc.volt.req", SM_STALE_MID, 0, Volts);
+  mt_evc_LV_DCDC_volt           = MyMetrics.InitFloat("xsq.evc.12V.dcdc.volt", SM_STALE_MID, 0, Volts);
+  mt_evc_LV_DCDC_power          = MyMetrics.InitFloat("xsq.evc.12V.dcdc.power", SM_STALE_MID, 0, Watts);
+  mt_evc_LV_DCDC_state          = MyMetrics.InitInt("xsq.evc.12V.dcdc.state", SM_STALE_MID, 0, Other);
+  mt_evc_LV_DCDC_state_txt      = MyMetrics.InitString("xsq.evc.12V.dcdc.state.txt", SM_STALE_MID, "Standby", Other);  
+  mt_evc_LV_USM_volt            = MyMetrics.InitFloat("xsq.evc.12V.usm.volt", SM_STALE_MIN, 0, Volts);
+  mt_evc_LV_batt_voltage_can    = MyMetrics.InitFloat("xsq.evc.12V.batt.volt", SM_STALE_MIN, 0, Volts);
+  mt_evc_LV_batt_alert          = MyMetrics.InitInt("xsq.evc.12V.batt.alert", SM_STALE_MIN, 0, Other);
+  mt_evc_LV_batt_alert_txt      = MyMetrics.InitString("xsq.evc.12V.batt.alert.txt", SM_STALE_MIN, "No display", Other);
+  mt_evc_LV_batt_voltage_req    = MyMetrics.InitFloat("xsq.evc.12V.batt.volt.req.int", SM_STALE_MIN, 0, Volts);
   mt_evc_ext_power              = MyMetrics.InitBool("xsq.evc.ext.power", SM_STALE_MIN, false);
+  mt_evc_ext_power_txt          = MyMetrics.InitString("xsq.evc.ext.power.txt", SM_STALE_MIN, "No Ext Power", Other);
   mt_evc_plug_present           = MyMetrics.InitBool("xsq.evc.plug.present", SM_STALE_MIN, false);
+  mt_evc_wakeup_type            = MyMetrics.InitInt("xsq.evc.wakeup.type", SM_STALE_MIN, 0, Other);
+  mt_evc_wakeup_type_txt        = MyMetrics.InitString("xsq.evc.wakeup.type.txt", SM_STALE_MIN, "Customer Wake Up", Other);
+  mt_evc_parking_duration_min   = MyMetrics.InitInt("xsq.evc.parking.minutes", SM_STALE_MIN, 0, Minutes);
 
   mt_obl_fastchg                = MyMetrics.InitBool("xsq.obl.fastchg", SM_STALE_MIN, false);
   mt_obl_main_volts             = new OvmsMetricVector<float>("xsq.obl.volts", SM_STALE_HIGH, Volts);
@@ -244,8 +251,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_EVmode                 = MyMetrics.InitInt("xsq.bms.ev.mode.code", SM_STALE_MID, 0, Other);
   mt_bms_EVmode_txt             = MyMetrics.InitString("xsq.bms.ev.mode", SM_STALE_MID, "", Other);
   mt_bms_12v                    = MyMetrics.InitFloat("xsq.bms.12v", SM_STALE_MID, 0, Volts);
-  mt_bms_Amps                   = MyMetrics.InitFloat("xsq.bms.amps", SM_STALE_MID, 0, Amps);
-  mt_bms_Amps2                  = MyMetrics.InitFloat("xsq.bms.amp2", SM_STALE_MID, 0, Amps);
   mt_bms_Power                  = MyMetrics.InitFloat("xsq.bms.power", SM_STALE_MID, 0, kW);
   mt_bms_interlock_hvplug       = MyMetrics.InitBool("xsq.bms.interlock.hvplug",SM_STALE_MID, false);
   mt_bms_interlock_service      = MyMetrics.InitBool("xsq.bms.interlock.service", SM_STALE_MID, false);
@@ -279,6 +284,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"vehicle.charge.start", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"vehicle.charge.stop", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
+  //MyEvents.RegisterEvent(TAG,"server.v3.connected", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
   MyConfig.RegisterParam("xsq", "smartEQ", true, true);
 
   ConfigChanged(NULL);
@@ -294,10 +300,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   if (MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6) == 1.6) {
     MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
-  }
-
-  if (MyConfig.GetParamValue("xsq", "v2.check","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "v2.check", false);
   }
 
   if (MyConfig.GetParamValue("xsq", "tpms.front.pressure","0") == "0") {
@@ -334,6 +336,22 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   if (MyConfig.GetParamValue("server.v3", "updatetime.priority","0") == "0") {
     MyConfig.SetParamValueBool("server.v3", "updatetime.priority", true);
   }
+
+  if (MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false)) {
+    MyConfig.SetParamValueBool("xsq", "tpms.temp", true); 
+  }
+
+  if (MyConfig.IsDefined("xsq", "ios_tpms_fix")) {
+    MyConfig.DeleteInstance("xsq", "ios_tpms_fix"); // delete old config entry and set new entry one time
+  }
+
+  if (MyConfig.IsDefined("xsq", "v2.check")) {
+    MyConfig.DeleteInstance("xsq", "v2.check"); // delete old config entry and set new entry one time
+  }
+
+  if (MyConfig.IsDefined("xsq", "12v.measured.offset")) {
+    MyConfig.DeleteInstance("xsq", "12v.measured.offset");
+  }
  
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
     ResetTotalCounters();
@@ -345,6 +363,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   }
   
   setTPMSValueBoot();                                          // set TPMS dummy values to 0
+  //CleanupDeprecatedMetrics();                                  // delete deprecated metrics from OVMS
 
   #ifdef CONFIG_OVMS_COMP_CELLULAR
     
@@ -386,6 +405,73 @@ OvmsVehicleSmartEQ::~OvmsVehicleSmartEQ() {
 #endif
 }
 
+/**
+ * ConfigChanged: reload single/all configuration variables (cfgupdate)
+ */
+void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
+  if (param && param->GetName() != "xsq")
+    return;
+
+  ESP_LOGI(TAG, "Smart EQ reload configuration");
+
+  bool stateWrite = m_enable_write;
+  m_enable_write      = MyConfig.GetParamValueBool("xsq", "canwrite", false);
+  // set CAN bus transceiver to active or listen-only depending on user selection
+  if ( stateWrite != m_enable_write )
+  {
+      CAN_mode_t mode = m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
+      RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
+  }
+  m_enable_LED_state  = MyConfig.GetParamValueBool("xsq", "led", false);
+  m_enable_lock_state = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
+  m_enable_door_state = MyConfig.GetParamValueBool("xsq", "door.warning", false);
+  m_tpms_temp_enable  = MyConfig.GetParamValueBool("xsq", "tpms.temp", false);
+  m_reboot_time       = MyConfig.GetParamValueInt("xsq", "rebootnw", 30);
+  m_resettrip         = MyConfig.GetParamValueBool("xsq", "resettrip", false);
+  m_resettotal        = MyConfig.GetParamValueBool("xsq", "resettotal", false);
+  m_tripnotify        = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
+  m_tpms_index[0]     = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
+  m_tpms_index[1]     = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
+  m_tpms_index[2]     = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
+  m_tpms_index[3]     = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
+  m_front_pressure    = MyConfig.GetParamValueFloat("xsq", "tpms.front.pressure",  220); // kPa
+  m_rear_pressure     = MyConfig.GetParamValueFloat("xsq", "tpms.rear.pressure",  250); // kPa
+  m_pressure_warning  = MyConfig.GetParamValueFloat("xsq", "tpms.value.warn",  25); // kPa
+  m_pressure_alert    = MyConfig.GetParamValueFloat("xsq", "tpms.value.alert", 45); // kPa
+  m_tpms_alert_enable = MyConfig.GetParamValueBool("xsq", "tpms.alert.enable", true);  
+  m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
+  m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
+  m_enable_calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", false);
+  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", false);
+  m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
+  m_indicator         = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
+  m_extendedStats     = MyConfig.GetParamValueBool("xsq", "extended.stats", false);         //!< activate extended stats e.g. trip and maintenance data
+  m_park_timeout_secs = MyConfig.GetParamValueInt("xsq", "park.timeout", 600);              //!< timeout in seconds for parking mode
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  if (!m_enable_LED_state) {
+    MyPeripherals->m_max7317->Output(9, 1);
+    MyPeripherals->m_max7317->Output(8, 1);
+    MyPeripherals->m_max7317->Output(7, 1);
+  }
+#endif
+  int cell_interval_drv = MyConfig.GetParamValueInt("xsq", "cell_interval_drv", 60);
+  int cell_interval_chg = MyConfig.GetParamValueInt("xsq", "cell_interval_chg", 60);
+
+  bool do_modify_poll = (
+    (cell_interval_drv != m_cfg_cell_interval_drv) ||
+    (cell_interval_chg != m_cfg_cell_interval_chg));
+
+  m_cfg_cell_interval_drv = cell_interval_drv;
+  m_cfg_cell_interval_chg = cell_interval_chg;
+
+  if (do_modify_poll) {
+    ObdModifyPoll();
+  }
+  StdMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffsoc", 0), Percentage );
+  StdMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffrange", 0), Kilometers );
+}
+
 void OvmsVehicleSmartEQ::ObdModifyPoll() {
   PollSetPidList(m_can1, NULL);
   PollSetState(0);
@@ -418,75 +504,6 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
   PollSetPidList(m_can1, m_poll_vector.data());
 }
 
-/**
- * ConfigChanged: reload single/all configuration variables (cfgupdate)
- */
-void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
-  if (param && param->GetName() != "xsq")
-    return;
-
-  ESP_LOGI(TAG, "Smart EQ reload configuration");
-
-  bool stateWrite = m_enable_write;
-  m_enable_write      = MyConfig.GetParamValueBool("xsq", "canwrite", false);
-  // set CAN bus transceiver to active or listen-only depending on user selection
-  if ( stateWrite != m_enable_write )
-  {
-      CAN_mode_t mode = m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
-      RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
-  }
-  m_enable_LED_state  = MyConfig.GetParamValueBool("xsq", "led", false);
-  m_enable_lock_state = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
-  m_ios_tpms_fix      = MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false);
-  m_reboot_time       = MyConfig.GetParamValueInt("xsq", "rebootnw", 30);
-  m_resettrip         = MyConfig.GetParamValueBool("xsq", "resettrip", false);
-  m_resettotal        = MyConfig.GetParamValueBool("xsq", "resettotal", false);
-  m_tripnotify        = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
-  m_tpms_index[3]     = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
-  m_tpms_index[2]     = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
-  m_tpms_index[1]     = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
-  m_tpms_index[0]     = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
-  m_front_pressure    = MyConfig.GetParamValueFloat("xsq", "tpms.front.pressure",  220); // kPa
-  m_rear_pressure     = MyConfig.GetParamValueFloat("xsq", "tpms.rear.pressure",  250); // kPa
-  m_pressure_warning  = MyConfig.GetParamValueFloat("xsq", "tpms.value.warn",  25); // kPa
-  m_pressure_alert    = MyConfig.GetParamValueFloat("xsq", "tpms.value.alert", 45); // kPa
-  m_tpms_alert_enable = MyConfig.GetParamValueBool("xsq", "tpms.alert.enable", true);
-  
-  m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
-  m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
-  m_v2_check          = MyConfig.GetParamValueBool("xsq", "v2.check", false);
-  m_12v_measured_BMS_offset = MyConfig.GetParamValueFloat("xsq", "12v.measured.BMS.offset", 0.25);
-  m_enable_calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", false);
-  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", false);
-  m_network_type      = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
-  m_indicator         = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
-  m_extendedStats     = MyConfig.GetParamValueBool("xsq", "extended.stats", false);         //!< activate extended stats e.g. trip and maintenance data
-  m_park_timeout_secs = MyConfig.GetParamValueInt("xsq", "park.timeout", 600);              //!< timeout in seconds for parking mode
-
-#ifdef CONFIG_OVMS_COMP_MAX7317
-  if (!m_enable_LED_state) {
-    MyPeripherals->m_max7317->Output(9, 1);
-    MyPeripherals->m_max7317->Output(8, 1);
-    MyPeripherals->m_max7317->Output(7, 1);
-  }
-#endif
-  int cell_interval_drv = MyConfig.GetParamValueInt("xsq", "cell_interval_drv", 60);
-  int cell_interval_chg = MyConfig.GetParamValueInt("xsq", "cell_interval_chg", 60);
-
-  bool do_modify_poll = (
-    (cell_interval_drv != m_cfg_cell_interval_drv) ||
-    (cell_interval_chg != m_cfg_cell_interval_chg));
-
-  m_cfg_cell_interval_drv = cell_interval_drv;
-  m_cfg_cell_interval_chg = cell_interval_chg;
-
-  if (do_modify_poll) {
-    ObdModifyPoll();
-  }
-  StdMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffsoc", 0), Percentage );
-  StdMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffrange", 0), Kilometers );
-}
-
 void OvmsVehicleSmartEQ::EventListener(std::string event, void* data) {
 
   if (event == "vehicle.charge.start") 
@@ -502,204 +519,16 @@ void OvmsVehicleSmartEQ::EventListener(std::string event, void* data) {
       m_ADCfactor_recalc_timer = 0;
       m_ADCfactor_recalc = false;     // stop recalculation when HV charging stopped
     }
+  /*if (event == "server.v3.connected") 
+    {
+      CleanupDeprecatedMetricsFromMQTT(); // delete deprecated metrics from OVMS and MQTT
+    }*/
 }
 
 uint64_t OvmsVehicleSmartEQ::swap_uint64(uint64_t val) {
   val = ((val << 8) & 0xFF00FF00FF00FF00ull) | ((val >> 8) & 0x00FF00FF00FF00FFull);
   val = ((val << 16) & 0xFFFF0000FFFF0000ull) | ((val >> 16) & 0x0000FFFF0000FFFFull);
   return (val << 32) | (val >> 32);
-}
-
-void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
-  uint8_t *data = p_frame->data.u8;
-  uint64_t c = swap_uint64(p_frame->data.u64);
-  
-  static bool isCharging = false;
-  static bool lastCharging = false;
-  float _range_est;
-  float _bat_temp;
-  float _full_km;
-  float _range_cac;
-  float _soc;
-  float _soh;
-  float _temp;
-  int _duration_full;
-  //char buf[10];
-
-  if (m_candata_poll != 1 && StdMetrics.ms_v_bat_voltage->AsFloat(0, Volts) > 100) {
-    ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
-    mt_bus_awake->SetValue(true);
-    m_candata_poll = 1;
-  }
-  m_candata_timer = SQ_CANDATA_TIMEOUT;
-  
-  switch (p_frame->MsgID) {
-    case 0x17e: //gear shift
-    {
-      REQ_DLC(7);      // uses bytes up to at least index 6, so DLC must be 7 or more
-      switch(CAN_BYTE(6)) {
-        case 0x00: // Parking
-          StdMetrics.ms_v_env_gear->SetValue(0);
-          StdMetrics.ms_v_gen_limit_soc->SetValue(1);
-          break;
-        case 0x10: // Rear
-          StdMetrics.ms_v_env_gear->SetValue(-1);
-          StdMetrics.ms_v_gen_limit_soc->SetValue(2);
-          break;
-        case 0x20: // Neutral
-          StdMetrics.ms_v_env_gear->SetValue(1);
-          StdMetrics.ms_v_gen_limit_soc->SetValue(3);
-          break;
-        case 0x70: // Drive
-          StdMetrics.ms_v_env_gear->SetValue(2);
-          StdMetrics.ms_v_gen_limit_soc->SetValue(4);
-          break;
-      }
-      break;
-    }
-    case 0x350:
-      REQ_DLC(7);
-      StdMetrics.ms_v_env_locked->SetValue((CAN_BYTE(6) == 0x96));
-      break;
-    case 0x392:
-      REQ_DLC(6);
-      StdMetrics.ms_v_env_hvac->SetValue((CAN_BYTE(1) & 0x40) > 0);
-      StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40.0f);
-      break;
-    case 0x42E:        // HV voltage / temp frame
-      REQ_DLC(6);
-      _temp = ((c >> 13) & 0x7Fu) > 40.0f
-              ? ((c >> 13) & 0x7Fu) - 40.0f
-              : (40.0f - ((c >> 13) & 0x7Fu)) * -1.0f;
-      if (_temp != 87.0f)
-        StdMetrics.ms_v_bat_temp->SetValue(_temp);
-      // needs bytes 3 & 4 (CAN_UINT(3)) ? DLC=5 already covered by 6 above
-      StdMetrics.ms_v_bat_voltage->SetValue((float)((CAN_UINT(3) >> 5) & 0x3ff) / 2.0f);
-      StdMetrics.ms_v_charge_climit->SetValue((c >> 20) & 0x3Fu);
-      break;
-    case 0x4F8:
-      REQ_DLC(3);
-      StdMetrics.ms_v_env_handbrake->SetValue((CAN_BYTE(0) & 0x08) > 0);
-      StdMetrics.ms_v_env_awake->SetValue((CAN_BYTE(0) & 0x40) > 0); // Ignition on
-      break;
-    case 0x5D7: // Speed, ODO
-      REQ_DLC(6);
-      StdMetrics.ms_v_pos_speed->SetValue((float) CAN_UINT(0) / 100.0f);
-      StdMetrics.ms_v_pos_odometer->SetValue((float) (CAN_UINT32(2)>>4) / 100.0f);
-      mt_pos_odo_trip->SetValue((float) (CAN_UINT(4)>>4) / 100.0f); // ODO trip //TODO: check if this is correct
-      break;
-    case 0x5de:
-      REQ_DLC(8);
-      StdMetrics.ms_v_env_headlights->SetValue((CAN_BYTE(0) & 0x04) > 0);
-      StdMetrics.ms_v_door_fl->SetValue((CAN_BYTE(1) & 0x08) > 0);
-      StdMetrics.ms_v_door_fr->SetValue((CAN_BYTE(1) & 0x02) > 0);
-      StdMetrics.ms_v_door_rl->SetValue((CAN_BYTE(2) & 0x40) > 0);
-      StdMetrics.ms_v_door_rr->SetValue((CAN_BYTE(2) & 0x10) > 0);
-      StdMetrics.ms_v_door_trunk->SetValue((CAN_BYTE(7) & 0x10) > 0);
-      break;
-    case 0x646:
-      REQ_DLC(3);
-      mt_use_at_reset->SetValue(CAN_BYTE(1) * 0.1);
-      mt_use_at_start->SetValue(CAN_BYTE(2) * 0.1);
-      if( MyConfig.GetParamValueBool("xsq", "bcvalue",  false)){
-        StdMetrics.ms_v_gen_kwh_grid_total->SetValue(mt_use_at_reset->AsFloat()); // not the best idea at the moment
-      } else {
-        StdMetrics.ms_v_gen_kwh_grid_total->SetValue(0.0f);
-      }
-      break;
-    case 0x654:        // SOC / charge port status
-      REQ_DLC(4);
-      _soc = (float) CAN_BYTE(3);
-      if (_soc <= 100.0f) StdMetrics.ms_v_bat_soc->SetValue(_soc); // SOC
-      StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(0) & 0x20) != 0); // ChargingPlugConnected
-      _duration_full = (((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0;
-      mt_obd_duration->SetValue((int)(_duration_full), Minutes);
-      _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy
-      _bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(0) - 20.0;
-      _full_km = MyConfig.GetParamValueFloat("xsq", "full.km", 126.0);
-      _range_cac = _full_km + (_bat_temp); // temperature compensation +/- range
-      if (_range_est != 1023.0f) 
-        {
-        StdMetrics.ms_v_bat_range_est->SetValue(_range_est);
-
-        if (_soc > 0.1f)  // prevent div/0
-          {
-          StdMetrics.ms_v_bat_range_full->SetValue((_range_est / _soc) * 100.0f);
-          StdMetrics.ms_v_bat_range_ideal->SetValue((_range_cac * _soc) / 100.0f);
-          }
-        }
-      break;
-    case 0x658:
-      REQ_DLC(6);
-      _soh = (float)(CAN_BYTE(4) & 0x7Fu);
-      if (_soh <= 100.0f) StdMetrics.ms_v_bat_soh->SetValue(_soh); // SOH
-      StdMetrics.ms_v_bat_health->SetValue(
-        (_soh >= 95.0f) ? "excellent"
-      : (_soh >= 85.0f) ? "good"
-      : (_soh >= 75.0f) ? "average"
-      : (_soh >= 65.0f) ? "poor"
-      : "consider replacement");
-
-      isCharging = (CAN_BYTE(5) & 0x20); // ChargeInProgress
-      if (isCharging) { // STATE charge in progress
-        //StdMetrics.ms_v_charge_inprogress->SetValue(isCharging);
-      }
-      if (isCharging != lastCharging) { // EVENT charge state changed
-        if (isCharging) { // EVENT started charging
-          // Set charging metrics
-          StdMetrics.ms_v_charge_pilot->SetValue(true);
-          StdMetrics.ms_v_charge_inprogress->SetValue(isCharging);
-          StdMetrics.ms_v_charge_mode->SetValue("standard");
-          StdMetrics.ms_v_charge_type->SetValue("type2");
-          StdMetrics.ms_v_charge_state->SetValue("charging");
-          StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-          StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-        } else { // EVENT stopped charging
-          StdMetrics.ms_v_charge_pilot->SetValue(false);
-          StdMetrics.ms_v_charge_inprogress->SetValue(isCharging);
-          StdMetrics.ms_v_charge_mode->SetValue("standard");
-          StdMetrics.ms_v_charge_type->SetValue("type2");
-          StdMetrics.ms_v_charge_duration_full->SetValue(0);
-          StdMetrics.ms_v_charge_duration_soc->SetValue(0);
-          StdMetrics.ms_v_charge_duration_range->SetValue(0);
-          StdMetrics.ms_v_charge_power->SetValue(0);
-          StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-          if (StdMetrics.ms_v_bat_soc->AsInt() < 95) {
-            // Assume the charge was interrupted
-            ESP_LOGI(TAG,"Car charge session was interrupted");
-            StdMetrics.ms_v_charge_state->SetValue("stopped");
-            StdMetrics.ms_v_charge_substate->SetValue("interrupted");
-          } else {
-            // Assume the charge completed normally
-            ESP_LOGI(TAG,"Car charge session completed");
-            StdMetrics.ms_v_charge_state->SetValue("done");
-            StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-          }
-        }
-      }
-      lastCharging = isCharging;
-      break;
-    case 0x668:
-      REQ_DLC(1);
-      vehicle_smart_car_on((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
-      break;
-    case 0x673:
-      REQ_DLC(2);
-      // Read TPMS pressure values:
-      for (int i = 0; i < 4; i++) 
-        {
-        if (CAN_BYTE(2 + i) != 0xff) 
-          {
-          m_tpms_pressure[i] = (float) CAN_BYTE(2 + i) * 3.1; // kPa
-          setTPMSValue(i, m_tpms_index[i]);
-        }
-      }
-      break;
-    
-    default:
-      //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
-      break;
-  }
 }
 
 /**
@@ -905,7 +734,7 @@ void OvmsVehicleSmartEQ::HandlePollState() {
     PollSetState(1);
     ESP_LOGI(TAG,"Pollstate Awake");
   }
-  else if ( !mt_bus_awake->AsBool() && m_poll_state != 0 ) {
+  else if ( !mt_bus_awake->AsBool() && m_poll_state != 0) {
     PollSetState(0);
     ESP_LOGI(TAG,"Pollstate Off");
   }
@@ -987,6 +816,7 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
     }
 
     m_warning_unlocked = false;
+    m_warning_dooropen = false;
 
     #ifdef CONFIG_OVMS_COMP_CELLULAR
       m_12v_ticker = 0;

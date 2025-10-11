@@ -202,7 +202,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
 
   if(!mt_bus_awake->AsBool()) {
     ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
-    uint8_t data[8] = {0xc1, 0x1b, 0x73, 0x57, 0x14, 0x70, 0x96, 0x85};
+    uint8_t data[8] = {0xc3, 0x1b, 0x73, 0x57, 0x14, 0x70, 0x96, 0x85};
     canbus *obd;
     obd = m_can1;
     obd->WriteStandard(0x350, 8, data);
@@ -799,19 +799,21 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
     } 
   else if (argc == 0) 
     {
-    if (!smarteq->mt_bms_12v->IsDefined()) 
+    smarteq->CommandWakeup();
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    if (!smarteq->mt_evc_LV_USM_volt->IsDefined()) 
       {
-      writer->puts("Error: BMS 12V metric not defined");
+      writer->puts("Error: CAN 12V metric not defined");
       return;
       }
-    float val = smarteq->mt_bms_12v->AsFloat();
+    float val = smarteq->mt_evc_LV_USM_volt->AsFloat();
     if (val < 11.0 || val > 15.0) 
       {
-      writer->puts("Error: BMS 12V voltage out of plausible range (11.0–15.0)");
+      writer->puts("Error: CAN 12V voltage out of plausible range (11.0–15.0)");
       return;
       }
     smarteq->ReCalcADCfactor(val, writer);
-    writer->printf("Recalculating ADC factor using %.2fV BMS voltage\n", val);
+    writer->printf("Recalculating ADC factor using %.2fV CAN voltage\n", val);
     return;
    }
   #else
