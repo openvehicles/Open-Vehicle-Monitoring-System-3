@@ -955,13 +955,16 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   }
 
   // read configuration:
-  model = MyConfig.GetParamValue("modem", "model");
   apn = MyConfig.GetParamValue("modem", "apn");
   apn_user = MyConfig.GetParamValue("modem", "apn.user");
   apn_pass = MyConfig.GetParamValue("modem", "apn.password");
   pincode = MyConfig.GetParamValue("modem", "pincode");
+
+  modem* m_modem=MyPeripherals->m_cellular_modem;
+  model = m_modem && m_modem->m_driver ? m_modem->m_model : "auto";
   modem_net_type = MyConfig.GetParamValue("modem", "net.type","auto");
-  modem_net_types_avail = MyConfig.GetParamValue("modem", "net.typessupported","auto"); 
+  modem_net_types_avail = m_modem && m_modem->m_driver ? m_modem->m_driver->GetNetTypes() : "auto"; 
+
   wrongpincode = MyConfig.GetParamValueBool("modem", "wrongpincode",false);
   network_dns = MyConfig.GetParamValue("network", "dns");
   enable_net = MyConfig.GetParamValueBool("modem", "enable.net", true);
@@ -1014,6 +1017,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.input_text("…password", "apn_pass", apn_pass.c_str());
   c.input_text("DNS", "network_dns", network_dns.c_str(), "optional fixed DNS servers (space separated)",
     "<p>Set this to i.e. <code>8.8.8.8 8.8.4.4</code> (Google public DNS) if you encounter problems with your network provider DNS</p>");
+
   if ( model != "auto")
   {
     c.input_radiobtn_start("Network type preference", "modem_net_type");
@@ -1028,7 +1032,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     "<p>The 3G standard has been switched off in most areas around the world. 2G/GSM is often still available.</p>");
   }
   else{
-    c.input_info("Modem model not identified yet - Network type preference not available.", info.c_str());
+    c.input_info("Network type preference", "Modem model not identified yet");
     modem_net_type="undef";
   }
 

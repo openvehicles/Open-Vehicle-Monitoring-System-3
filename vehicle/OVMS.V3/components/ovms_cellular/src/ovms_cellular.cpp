@@ -1619,8 +1619,6 @@ void modem::SetCellularModemDriver(const char* ModelType)
   m_mux_channel_DATA = m_driver->GetMuxChannelDATA();
   m_mux_channel_POLL = m_driver->GetMuxChannelPOLL();
   m_mux_channel_CMD = m_driver->GetMuxChannelCMD();
-  MyConfig.SetParamValue("modem", "model", ModelType);
-  MyConfig.SetParamValue("modem", "net.typessupported", m_driver->GetNetTypes().c_str());
 
   if (m_model != "auto")
     MyEvents.SignalEvent("system.modem.installed", NULL);
