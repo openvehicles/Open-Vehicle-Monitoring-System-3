@@ -24,7 +24,7 @@ GPS Location                Yes (from modem module)
 Speed Display               Yes
 Temperature Display         Yes (External Temp and Battery)
 BMS v+t Display             only Cell Volts atm.
-TPMS Display                Yes pressure only, for iOS App Open Vehicle activate at Features Web UI 'iOS TPMS fix' for showing pressure value
+TPMS Display                Yes pressure & enable at TPMS settings -> temperature / battery low & sensor is missing (TPMS alert)
 Charge Status Display       Yes
 Charge Interruption Alerts  No
 Charge Control              No
@@ -59,14 +59,13 @@ Shell commands:
 xsq - read all data
 xsq ddt4list - list all ddt4all commands
 xsq ddt4all <value> - set ddt4all command
-xsq calcadc - calculated ADC values by BMS 12V measurement
+xsq calcadc - calculated ADC values by CAN 12V measurement
 xsq calcadc <value> - calculated ADC by value
 -------------------------
 
 -------------------------
 Known Issues
 -------------------------
-- TPMS: The TPMS values are only pressure values. The iOS App needs the 'iOS TPMS fix' activated at Features Web UI to show the pressure values.
 - Lock/Unlock: The Lock/Unlock function is not really implemented. You can only close the car when it is open. The lock indicator always shows unlocked.
 - Charge Control: Not implemented yet.
 -------------------------

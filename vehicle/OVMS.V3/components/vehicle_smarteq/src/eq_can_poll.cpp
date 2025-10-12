@@ -129,10 +129,28 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           PollReply_EVC_DCDC_Power(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x33BA: // indicates ext power supply
-          PollReply_EVC_ext_power(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_EVC_ext_power(m_rxbuf.data(), m_rxbuf.size());  
           break;
         case 0x339D: // charging plug present
           PollReply_EVC_plug_present(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x3302: // Wake Up Type
+          PollReply_EVC_WakeUpType(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x3301: // USM 14V Voltage measure (CAN)
+          PollReply_EVC_USM14VVoltage(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x3433: // Battery voltage request (internal SCH)
+          PollReply_EVC_14VBatteryVoltageReq(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x3431: // Time since parked (SCH)
+          PollReply_EVC_ParkingDuration(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x2005: // Battery voltage 14V
+          PollReply_EVC_14VBatteryVoltage(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x3486: // Alert for changing battery
+          PollReply_EVC_14VBatteryAlert(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
       break;  // FIX: prevent fallthrough into 0x7BB
@@ -240,6 +258,12 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
       switch (job.pid) {
         case 0x81: // req.VIN
           PollReply_VIN(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x74: // TPMS input capture actual
+          PollReply_TPMS_InputCapt(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x79: // TPMS counters/status (missing transmitters)
+          PollReply_TPMS_Status(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x8003: // rq_VehicleState
           PollReply_VehicleState(m_rxbuf.data(), m_rxbuf.size());
@@ -369,7 +393,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
   float v_cell_max = (float)CAN_UINT(2) / 1024.0f;
   float v_link     = (float)CAN_UINT(4) / 64.0f;
   float cv_sum_raw = (float)CAN_UINT(6) / 64.0f;
-  float v_power_raw = (float)CAN_UINT(8);  // raw scaled*64
+  float v_power_raw = (float)CAN_UINT(8) < 20000.0f ? (float)CAN_UINT(8) : 0.0f;         // raw scaled*64
   float v_pack_term = (float)CAN_UINT(9) / 64.0f; // battery terminal voltage (may equal link voltage depending on contactor)
   uint16_t cur_u = CAN_UINT(10);
   int16_t  cur_s = (int16_t)cur_u;
@@ -383,7 +407,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
   mt_bms_BattLinkVoltage->SetValue(v_link);
   mt_bms_BattContactorVoltage->SetValue(v_pack_term);
   mt_bms_BattCV_Sum->SetValue(cv_sum_raw);
-  mt_bms_BattPower_voltage->SetValue(v_power_raw); // store raw scaled*64 so existing power calc logic can adapt if needed
+  mt_bms_BattPower_voltage->SetValue(v_power_raw);    // store raw scaled*64 so existing power calc logic can adapt if needed
   mt_bms_BattPower_current->SetValue(cur_raw);        // raw current counts
 
   // Compute power (re-using prior scaling: voltage_raw/64 * current_raw/32)
@@ -424,7 +448,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
   mt_bms_EVmode_txt->SetValue(veh_mode_txt);
 
   // Clamp 30 Voltage:
-  float clamp30 = ((float)(uint8_t)CAN_BYTE(22)) / 8.0f + m_12v_measured_BMS_offset;
+  float clamp30 = ((float)(uint8_t)CAN_BYTE(22)) / 8.0f;
   if (clamp30 > 5 && clamp30 < 20)  // plausible 12V system window
     mt_bms_12v->SetValue(clamp30);
 
@@ -435,9 +459,11 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
   mt_bms_interlock_hvplug->SetValue(((int)CAN_BYTE(13)) == 1);
   mt_bms_interlock_service->SetValue(((int)CAN_BYTE(14)) == 1);
 
-  int16_t flags23 = (int16_t)CAN_UINT(20);
-  uint8_t hv_relay_flag = (flags23 >> 4) & 0x03;
-  uint8_t relay_permit_flag = (flags23 >> 6) & 0x03;
+  // Byte 23 bitfield: 3 Byte header + 20 data bytes = byte index 23
+  //   bits 4-5: HV relay status flag (0=not active, 1=active, 2=undefined)
+  //   bits 6-7: Relay on Permit Flag (0=not active, 1=active, 2=undefined)
+  uint8_t hv_relay_flag = (CAN_BYTE(20) >> 4) & 0x03;
+  uint8_t relay_permit_flag = (CAN_BYTE(20) >> 6) & 0x03;
 
   mt_bms_relay_hv_status->SetValue(hv_relay_flag);
   const char* hv_relay_txt;
@@ -494,25 +520,14 @@ void OvmsVehicleSmartEQ::PollReply_HVAC(const char* data, uint16_t reply_len) {
 }
 
 void OvmsVehicleSmartEQ::PollReply_TDB(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(5);             // minimal sanity
-  float temp = (float)(CAN_UINT(2)) > 400.0f ? 
-    (float)(CAN_UINT(2) - 400.0f) * 0.1f : 
-    (float)(400.0f - CAN_UINT(2)) * -0.1f;
+  REQUIRE_LEN(4);
+  const int raw = static_cast<int>(CAN_UINT(2));
+  const float temp = (raw - 400) * 0.1f;
 
-  static const float MAX_VALID_TEMP = 100.0f;
-  static const float MIN_VALID_TEMP = -50.0f;
+  constexpr float MAX_VALID_TEMP = 100.0f;
+  constexpr float MIN_VALID_TEMP = -50.0f;
   if (temp > MIN_VALID_TEMP && temp < MAX_VALID_TEMP) {
-      StdMetrics.ms_v_env_temp->SetValue(temp);
-      ESP_LOGV(TAG, "Ambient temperature updated: %.1f°C", temp);
-  } else {
-      ESP_LOGW(TAG, "Invalid temperature reading ignored: %.1f°C", temp);
-  }
-  float temptpms = temp > 1.0f && temp < MAX_VALID_TEMP ? temp : 1.1f;
-  if (m_ios_tpms_fix) {
-    StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, temptpms);
-    StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, temptpms);
-    StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, temptpms);
-    StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, temptpms);
+    StdMetrics.ms_v_env_temp->SetValue(temp);
   }
 }
 
@@ -532,6 +547,42 @@ void OvmsVehicleSmartEQ::PollReply_VIN(const char* data, uint16_t reply_len) {
   StdMetrics.ms_v_vin->SetValue(vin);
 }
 
+void OvmsVehicleSmartEQ::PollReply_TPMS_InputCapt(const char* data, uint16_t reply_len) {
+  // so require >=22 bytes of payload (indices 0..21).
+  REQUIRE_LEN(22);
+
+  // Index mapping (payload):
+  //  0..3   RF event types (wheel 1..4)
+  //  4..7  Motion status (wheel 1..4)
+  //  8-9 / 10-11 / 12-13 / 14-15 pressures raw16
+  //  16-19 temperatures raw8 (offset -30.0 °C)
+  //  20 bits 0..3 temp incoh (w1..w4), bits 4..7 internal incoh (w1..w4)
+  //  21 bits 0..3 low battery (w1..w4)
+
+  uint8_t lowbatt_bits = (uint8_t)CAN_BYTE(21);
+
+  for (int i=0;i<4;i++) {
+    // Pressure: big-endian 16 bit *0.75 kPa
+    uint16_t praw = CAN_UINT(8 + (i*2));
+    m_tpms_pressure[i] = (float)praw != 0xffff ? (float)praw * 0.75f : 0.0f;
+    // Temperature: raw byte + offset -30.0
+    uint16_t traw = (uint16_t)(uint8_t)CAN_BYTE(16 + i);
+    m_tpms_temperature[i] = traw != 0xffff ? (float)traw - 30.0f : 0.0f;    
+    m_tpms_lowbatt[i]     = (lowbatt_bits >> i) & 0x01;
+    setTPMSValue(i, m_tpms_index[i]); // update standard metric for this wheel
+  }
+}
+
+void OvmsVehicleSmartEQ::PollReply_TPMS_Status(const char* data, uint16_t reply_len) {
+  // Byte 26 (1-based) → index 28 (0-based): bits 0..3 = missing transmitter flags for wheels 1..4
+  REQUIRE_LEN(25);
+  uint8_t b = CAN_BYTE(25);
+  for (int i = 0; i < 4; i++) {
+    bool missing = ((b >> i) & 0x01) != 0;
+    m_tpms_missing_tx[i] = missing;
+  }
+}
+
 void OvmsVehicleSmartEQ::PollReply_VehicleState(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(1);
   int code = CAN_BYTE(0);
@@ -541,18 +592,17 @@ void OvmsVehicleSmartEQ::PollReply_VehicleState(const char* data, uint16_t reply
     case 1: msgtxt = "TECHNICAL WAKE UP"; break;
     case 2: msgtxt = "CUT OFF PENDING"; break;
     case 3: msgtxt = "BAT TEMPO LEVEL"; break;
-    case 4: msgtxt = "BAT TEMPO LEVEL"; break;
-    case 5: msgtxt = "ACCESSORY LEVEL"; break;
-    case 6: msgtxt = "IGNITION LEVEL"; break;
-    case 7: msgtxt = "STARTING IN PROGRESS"; break;
-    case 8: msgtxt = "ENGINE RUNNING"; break;
-    case 9: msgtxt = "AUTOSTART"; break;
-    case 10: msgtxt = "ENGINE SYSTEM STOP"; break;
+    case 4: msgtxt = "ACCESSORY LEVEL"; break;
+    case 5: msgtxt = "IGNITION LEVEL"; break;
+    case 6: msgtxt = "STARTING IN PROGRESS"; break;
+    case 7: msgtxt = "ENGINE RUNNING"; break;
+    case 8: msgtxt = "AUTOSTART"; break;
+    case 9: msgtxt = "ENGINE SYSTEM STOP"; break;
     default: msgtxt = "Unknown code"; break;
   }
   mt_vehicle_state->SetValue(msgtxt);
   mt_vehicle_state_code->SetValue(code);
-  //mt_bus_awake->SetValue(code > 0);
+  //StdMetrics.ms_v_env_awake->SetValue(code > 0);
 }
 
 void OvmsVehicleSmartEQ::PollReply_DoorUnderhoodOpened(const char* data, uint16_t reply_len) {
@@ -562,52 +612,180 @@ void OvmsVehicleSmartEQ::PollReply_DoorUnderhoodOpened(const char* data, uint16_
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 32 0C <Byte> <Byte>
   REQUIRE_LEN(2);
-  mt_evc_hv_energy->SetValue( CAN_UINT(0) / 200.0f );
-  StdMetrics.ms_v_bat_capacity->SetValue(mt_evc_hv_energy->AsFloat());
-  StdMetrics.ms_v_bat_cac->SetValue(mt_evc_hv_energy->AsFloat() * 1000.0f / mt_bms_HV->AsFloat());
+  uint16_t raw = CAN_UINT(0);
+  // step 0.005 kWh
+  float value = raw * 0.005f;
+  mt_evc_hv_energy->SetValue(value);
+  // (Optional: keep legacy standard metrics updates)
+  if (mt_bms_HV->IsDefined() && mt_bms_HV->AsFloat() > 0) {
+    StdMetrics.ms_v_bat_capacity->SetValue(value);
+    StdMetrics.ms_v_bat_cac->SetValue(value * 1000.0f / mt_bms_HV->AsFloat());
+  }
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_State(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 30 2A <Byte>  
+  // bitoffset 6, bitscount 2  -> bits 6..7
   REQUIRE_LEN(1);
-  mt_evc_LV_DCDC_amps->SetValue( CAN_BYTE(0) );
+  uint8_t state = (CAN_BYTE(0) >> 6) & 0x03;
+  const char* txt;
+  switch (state) {
+    case 1: txt = "wake up but not activated"; break;
+    case 2: txt = "wake up and activated"; break;
+    default: txt = "Standby"; break;
+  }
+  mt_evc_LV_DCDC_state->SetValue(state);
+  mt_evc_LV_DCDC_state_txt->SetValue(txt);
+  //StdMetrics.ms_v_env_charging12v->SetValue(state == 2);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 34 95 <Byte>
   REQUIRE_LEN(1);
-  mt_evc_LV_DCDC_load->SetValue( CAN_BYTE(0) == 0xFE ? 0 : CAN_BYTE(0) );
+  uint8_t raw = CAN_BYTE(0);
+  if (raw == 0xFE || raw == 0xFF) {
+    // 0xFE/0xFF often used as invalid
+    mt_evc_LV_DCDC_load->SetValue(0);
+    return;
+  }
+  // step 0.390625 %
+  float pct = raw * 0.390625f;
+  mt_evc_LV_DCDC_load->SetValue(pct);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 30 23 <Byte>
   REQUIRE_LEN(1);
-  float value = CAN_BYTE(0);
-  mt_evc_LV_DCDC_volt_req->SetValue( value - 12.0f );
+  uint8_t raw = CAN_BYTE(0);
+  float value = 12.0f + raw * 0.05f;   // offset 12.0, step 0.05
+  mt_evc_LV_DCDC_volt_req->SetValue(value);
 }
+
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Volt(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(1);  
-  float value = CAN_BYTE(0);
-  mt_evc_LV_DCDC_volt->SetValue( value - 4.0f);
+  // POSITIVE RESPONSE FORMAT: 62 30 24 <Byte>
+  REQUIRE_LEN(1);
+  uint8_t raw = CAN_BYTE(0);
+  float value = 4.0f + raw * 0.1f;     // offset 4.0, step 0.1
+  mt_evc_LV_DCDC_volt->SetValue(value);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(1);    
-  float value = CAN_BYTE(0);
-  mt_evc_LV_DCDC_power->SetValue( value );
+  // POSITIVE RESPONSE FORMAT: 62 30 25 <Byte>
+  REQUIRE_LEN(1);
+  uint8_t raw = CAN_BYTE(0);
+  // Spec only says "scaled": true, no step provided -> assume 1 count = 1 A
+  // (Adjust here if later scale/offset is known)
+  mt_evc_LV_DCDC_amps->SetValue((float)raw);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 34 94 <Byte> <Byte>
   REQUIRE_LEN(2);
-  mt_evc_LV_DCDC_state->SetValue( CAN_UINT(0) );
+  uint16_t raw = CAN_UINT(0);
+  // step 10 W
+  float watts = raw * 10.0f;
+  mt_evc_LV_DCDC_power->SetValue(watts);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_ext_power(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  mt_evc_ext_power->SetValue(CAN_UINT(0)>0);
+  // POSITIVE RESPONSE FORMAT: 62 33 BA <Byte> 
+  // bitoffset 6, bitscount 2  -> bits 6..7
+  REQUIRE_LEN(1);
+  uint8_t state = (CAN_BYTE(0) >> 6) & 0x03;
+  const char* txt;
+  switch (state) {
+    case 1: txt = "Slow Ext Energy Avail"; break;
+    case 2: txt = "Quick Ext Energy Avail"; break;
+    default: txt = "No Ext Energy Avail"; break;
+  }
+  mt_evc_ext_power->SetValue(state > 0);
+  mt_evc_ext_power_txt->SetValue(txt);
+  /*if (charging) {
+    StdMetrics.ms_v_charge_pilot->SetValue(true);
+    StdMetrics.ms_v_charge_mode->SetValue(state == 2 ? "performance" : "standard");
+  } else {
+    StdMetrics.ms_v_charge_pilot->SetValue(false);
+  }*/
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_plug_present(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 33 9D <Byte>
+  REQUIRE_LEN(1);
+  uint8_t raw = CAN_BYTE(0);
+  bool present = raw > 0; //((raw >> 7) & 0x01) != 0;  // bitoffset 7, bitscount 1
+  mt_evc_plug_present->SetValue(present);
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_WakeUpType(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 32 02 <Byte>
+  REQUIRE_LEN(1);
+  uint8_t raw = CAN_BYTE(0);
+  int wake = raw; //(raw >> 7) & 0x01;
+  const char* txt = wake ? "System Wake Up" : "Customer Wake Up";
+  mt_evc_wakeup_type->SetValue(wake);
+  mt_evc_wakeup_type_txt->SetValue(txt);
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_USM14VVoltage(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 33 01 <Byte>
+  REQUIRE_LEN(1);
+  uint8_t raw = CAN_BYTE(0);
+  float value = 6.0f + raw * 0.06f;
+  mt_evc_LV_USM_volt->SetValue(value);
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 20 05  <Byte> <Byte>
   REQUIRE_LEN(2);
-  mt_evc_plug_present->SetValue(CAN_UINT(0)>0);
+  uint16_t raw = CAN_UINT(0);
+  float value = raw * 0.01f;
+  mt_evc_LV_batt_voltage_can->SetValue(value);
+  //if (value > 5.0f && value < 20.0f) {
+  ///  StdMetrics.ms_v_bat_12v_voltage->SetValue(value);
+  //}
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryAlert(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 32 02 <Byte>
+  REQUIRE_LEN(1);
+  uint8_t raw = ((uint8_t)CAN_BYTE(0) >> 5) & 0x07;
+  const char* txt;
+  switch (raw) {
+    case 1: txt = "Safety Reserved 1"; break;
+    case 2: txt = "Safety Reserved 2"; break;
+    case 3: txt = "Information: Battery should be changed soon"; break;
+    case 4: txt = "Safety Reserved 4"; break;
+    case 5: txt = "Alert: Battery should be changed now"; break;
+    case 6: txt = "Safety Reserved 6"; break;
+    case 7: txt = "Safety Reserved 7"; break;
+    default: txt = "No display"; break;
+  }
+  mt_evc_LV_batt_alert->SetValue(raw);
+  mt_evc_LV_batt_alert_txt->SetValue(txt);
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltageReq(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 34 33 <Byte>
+  REQUIRE_LEN(1);
+  uint8_t raw = CAN_BYTE(0);
+  float value = 12.0f + raw * 0.05f;
+  mt_evc_LV_batt_voltage_req->SetValue(value);
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_ParkingDuration(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 34 31 <Byte> <Byte> <Byte> <Byte>
+  REQUIRE_LEN(3);
+  uint32_t raw = CAN_UINT32(0);
+  // Interpret as unsigned int32 (two's complement)
+  // with offset of 2147483648 (2^31) to get range -2147483648 .. +2147483647
+  // to avoid negative parking duration values.
+  int64_t minutes = (int64_t)raw - 2147483648LL;
+  // Sanity clamp (parking duration cannot be negative in normal use):
+  if (minutes < 0) minutes = 0;
+  int parking_minutes = (int)minutes;
+  mt_evc_parking_duration_min->SetValue(parking_minutes);
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len) {
@@ -845,15 +1023,9 @@ void OvmsVehicleSmartEQ::PollReply_obd_mt_level(const char* data, uint16_t reply
     {
     txt = "Service A";
     }
-  else if (value == 1) 
+  else
     {
     txt = "Service B";
-    } 
-  else 
-    {
-    std::ostringstream oss;
-    oss << "Unknown " << value;
-    txt = oss.str();
     }
   mt_obd_mt_level->SetValue(txt.c_str());
   StdMetrics.ms_v_gen_substate->SetValue(txt.c_str());
