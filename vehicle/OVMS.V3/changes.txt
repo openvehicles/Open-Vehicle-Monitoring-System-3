@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Cellular: added option to restrict the modem network type to 2G/3G/4G. Restricting
+    the network type may help in case of frequent network losses / reconnects.
+  New config:
+    [modem] net.type (string)           -- auto/2G/3G/4G, default/empty=auto
 - smart EQ:
     Hardened poll reply & CAN parsing (REQUIRE_LEN / DLC guards, corrected switch fallthrough).
     Automatic 12V ADC factor recalculation using CAN 12V voltage.

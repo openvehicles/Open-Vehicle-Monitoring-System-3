@@ -1024,7 +1024,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     if (modem_net_types_avail.find(modem_net_type) == string::npos) modem_net_type = "auto";
     c.input_radiobtn_option("modem_net_type", "auto", "auto", modem_net_type == "auto");
     if (modem_net_types_avail.find("2G") != string::npos) c.input_radiobtn_option("modem_net_type", "2G (GSM)", "2G", modem_net_type == "2G");
-    if (modem_net_types_avail.find("3G") != string::npos) c.input_radiobtn_option("modem_net_type", "3G (UMTS/)", "3G", modem_net_type == "3G");
+    if (modem_net_types_avail.find("3G") != string::npos) c.input_radiobtn_option("modem_net_type", "3G (UMTS)", "3G", modem_net_type == "3G");
     if (modem_net_types_avail.find("4G") != string::npos) c.input_radiobtn_option("modem_net_type", "4G (LTE)", "4G", modem_net_type == "4G");
     if (modem_net_types_avail.find("5G") != string::npos) c.input_radiobtn_option("modem_net_type", "5G", "5G", modem_net_type == "5G");
     c.input_radiobtn_end(
