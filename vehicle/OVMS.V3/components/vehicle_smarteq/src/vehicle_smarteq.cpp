@@ -679,7 +679,8 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   else if ( !StdMetrics.ms_v_env_awake->AsBool() && !mt_bus_awake->AsBool() && m_poll_state != 0) {
     PollSetState(0);
     ESP_LOGI(TAG,"Pollstate Off");
-  }
+  }  
+  mt_poll_state->SetValue(m_poll_state);
 }
 
 void OvmsVehicleSmartEQ::CalculateEfficiency() {

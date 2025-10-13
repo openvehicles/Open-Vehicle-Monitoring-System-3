@@ -52,8 +52,8 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     mt_bus_awake->SetValue(false);
     m_candata_poll = false;
     m_candata_timer = -1;
-    HandlePollState();
     }
+    
 
   // climate start 2-3 times when Homelink 2 or 3
   if (m_climate_ticker >= 1 && !StdMetrics.ms_v_env_hvac->AsBool() && !m_climate_start)
@@ -85,7 +85,8 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   HandleEnergy();
   HandleCharging();
   HandleTripcounter();
-  HandleChargeport();
+  HandleChargeport();  
+  HandlePollState();
 
   // reactivate door lock warning if the car is parked and unlocked
   if( m_enable_lock_state && 
