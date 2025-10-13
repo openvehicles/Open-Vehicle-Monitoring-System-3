@@ -70,7 +70,7 @@ simcom7670::~simcom7670()
   }
 
 std::string simcom7670::GetNetTypes() {
-  return "auto 2G 4G";
+  return "auto 2G 3G 4G";
 }
 
 void simcom7670::StartupNMEA()
@@ -78,7 +78,8 @@ void simcom7670::StartupNMEA()
     // GPS config for simcom 7670 - will use AT+CGNSSINFO to get location
   if (m_modem->m_mux != NULL)
     {
-    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGNSSPWR=1\r\n");      //power GPS module on
+    std::string atcmd= m_modem->m_gps_hot_start ? "AT+CGNSSPWR=1,1\r\n" : "AT+CGNSSPWR=1\r\n"; 
+    m_modem->muxtx(GetMuxChannelCMD(), atcmd.c_str());      //power GPS module on
     vTaskDelay(5000 / portTICK_PERIOD_MS);
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGNSSMODE=3\r\n");     // select used satellite networks 3: GPS, GLONASS, BEIDOU
     }
@@ -91,7 +92,8 @@ void simcom7670::ShutdownNMEA()
   // Switch off GPS:
   if (m_modem->m_mux != NULL)
     {
-    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGNSSPWR=0\r\n");  // power gps module off
+    std::string atcmd= m_modem->m_gps_hot_start ? "AT+CGNSSPWR=0,1\r\n" : "AT+CGNSSPWR=0\r\n"; 
+    m_modem->muxtx(GetMuxChannelCMD(), atcmd.c_str());  // power gps module off
     MyEvents.DeregisterEvent(TAG);
     }
   else
@@ -156,6 +158,10 @@ modem::modem_state1_t simcom7670::State1Ticker1(modem::modem_state1_t state)
     {
       if (m_modem->m_state1_ticker == 1)  
         {
+        if (!m_modem->m_gps_hot_start)
+          {
+           m_modem->muxtx(GetMuxChannelCMD(), "AT+CGNSSPWR=?\r\n");     // query, if GPS hot start supported
+          }
         m_modem->m_state1_userdata = 1;
         if (m_modem->m_mux != NULL)
           {
