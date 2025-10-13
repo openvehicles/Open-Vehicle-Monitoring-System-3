@@ -111,7 +111,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void Check12vState();
     void TimeBasedClimateData();
     void DisablePlugin(const char* plugin);
-    void ModemNetworkType();
     bool ExecuteCommand(const std::string& command);
     void setTPMSValue(int index, int indexcar);
     void setTPMSValueBoot();
@@ -184,10 +183,11 @@ public:
     static void xsq_ddt4all(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
-    unsigned int m_candata_timer;
-    unsigned int m_candata_poll;
+    int m_candata_timer;
+    bool m_candata_poll;
     bool m_charge_start;
     bool m_charge_finished;
     float m_tpms_pressure[4]; // kPa
@@ -214,6 +214,7 @@ public:
     void PollReply_VIN(const char* data, uint16_t reply_len);
     void PollReply_VehicleState(const char* data, uint16_t reply_len);
     void PollReply_DoorUnderhoodOpened(const char* data, uint16_t reply_len);
+    void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_State(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
@@ -251,6 +252,7 @@ public:
     void PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);
     void PollReply_TPMS_InputCapt(const char* data, uint16_t reply_len);
     void PollReply_TPMS_Status(const char* data, uint16_t reply_len);
 
@@ -279,15 +281,13 @@ public:
     bool m_12v_charge_state;                //!< 12V charge state
     bool m_climate_system;                  //!< climate system on/off
     std::string m_hl_canbyte;               //!< canbyte variable for unv
-    std::string m_network_type;             //!< Network type from xsq.modem.net.type
-    std::string m_network_type_ls;          //!< Network type last state reminder
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
 
     #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
     #define MAX_POLL_DATA_LEN 126
     #define CELLCOUNT 96
-    #define SQ_CANDATA_TIMEOUT 10 // seconds until car goes to sleep without CAN activity
+    #define SQ_CANDATA_TIMEOUT 60 // seconds until car goes to sleep without CAN activity
 
   protected:
     std::string   m_rxbuf;
@@ -303,6 +303,7 @@ public:
     OvmsMetricInt           *mt_vehicle_state_code;     //!< vehicle state code
     OvmsMetricFloat         *mt_adc_factor;             // calculated ADC factor for 12V measurement
     OvmsMetricVector<float> *mt_adc_factor_history;     // last 20 calculated ADC factors for 12V measurement
+    OvmsMetricInt           *mt_poll_state;             // Poller state
 
     OvmsMetricFloat         *mt_pos_odo_trip;           // odometer trip in km 
     OvmsMetricFloat         *mt_pos_odometer_start;     // remind odometer start
@@ -310,6 +311,7 @@ public:
     OvmsMetricFloat         *mt_pos_odometer_trip_total;// counted km for kWh/100km
 
     OvmsMetricFloat         *mt_evc_hv_energy;          //!< available energy in kWh
+    OvmsMetricBool          *mt_evc_LV_DCDC_act_req;    //!< indicates if DC/DC LV system is active, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_amps;       //!< current of DC/DC LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_load;       //!< load in % of DC/DC LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_volt_req;   //!< voltage request in V of DC/DC LV system, not 12V battery!

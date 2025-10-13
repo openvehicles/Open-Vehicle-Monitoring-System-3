@@ -72,7 +72,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
  */
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
-  std::string error, info, full_km, rebootnw, net_type;
+  std::string error, info, full_km, rebootnw;
   bool canwrite, led, resettrip, resettotal, bcvalue, climate_system;
   bool charge12v, extstats, unlocked, mdmcheck, wakeup, tripnotify, opendoors;
 
@@ -87,7 +87,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     full_km  =  (c.getvar("full_km"));
     climate_system = (c.getvar("climate") == "yes");
     charge12v = (c.getvar("charge12v") == "yes");
-    net_type = c.getvar("net_type");
     mdmcheck = (c.getvar("mdmcheck") == "yes");
     unlocked = (c.getvar("unlocked") == "yes");
     extstats = (c.getvar("extstats") == "yes");
@@ -120,7 +119,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xsq", "full.km", full_km);
       MyConfig.SetParamValueBool("xsq", "climate.system", climate_system);
       MyConfig.SetParamValueBool("xsq", "12v.charge", charge12v);
-      MyConfig.SetParamValue("xsq", "modem.net.type", net_type);
       MyConfig.SetParamValueBool("xsq", "unlock.warning", unlocked);
       MyConfig.SetParamValueBool("xsq", "modem.check", mdmcheck);
       MyConfig.SetParamValueBool("xsq", "extended.stats", extstats);
@@ -151,7 +149,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     full_km     = MyConfig.GetParamValue("xsq", "full.km", "126");
     climate_system     = MyConfig.GetParamValueBool("xsq", "climate.system", false);
     charge12v   = MyConfig.GetParamValueBool("xsq", "12v.charge", false);
-    net_type    = MyConfig.GetParamValue("xsq", "modem.net.type", "auto");
     unlocked    = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
     mdmcheck    = MyConfig.GetParamValueBool("xsq", "modem.check", false);
     extstats    = MyConfig.GetParamValueBool("xsq", "extended.stats", false);
@@ -204,11 +201,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");  
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>Default 0 = off. Restart Network automatic when no v2Server connection.</p>");
-  c.input_select_start("Modem Network type", "net_type");
-  c.input_select_option("Auto", "auto", net_type == "auto");
-  c.input_select_option("GSM/LTE", "gsm", net_type == "gsm");
-  c.input_select_option("LTE", "lte", net_type == "lte");
-  c.input_select_end();
   c.fieldset_end();
 
   c.print("<hr>");

@@ -116,6 +116,9 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x3495: // rqDCDC_Load
           PollReply_EVC_DCDC_Load(m_rxbuf.data(), m_rxbuf.size());
           break;
+        case 0x3022: // DCDC activation request
+          PollReply_EVC_DCDC_ActReq(m_rxbuf.data(), m_rxbuf.size());
+          break;
         case 0x3023: // 14V DCDC voltage request
           PollReply_EVC_DCDC_VoltReq(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -216,6 +219,9 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           break;
         case 0x5070: // max AC current limitation configuration (A)
           PollReply_OBL_JB2AC_MaxCurrent(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x5049: // Mains phase frequency
+          PollReply_OBL_JB2AC_PhaseFreq(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
       break;
@@ -603,6 +609,7 @@ void OvmsVehicleSmartEQ::PollReply_VehicleState(const char* data, uint16_t reply
   mt_vehicle_state->SetValue(msgtxt);
   mt_vehicle_state_code->SetValue(code);
   //StdMetrics.ms_v_env_awake->SetValue(code > 0);
+  //vehicle_smart_car_on(code == 7);
 }
 
 void OvmsVehicleSmartEQ::PollReply_DoorUnderhoodOpened(const char* data, uint16_t reply_len) {
@@ -653,6 +660,15 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Load(const char* data, uint16_t repl
   // step 0.390625 %
   float pct = raw * 0.390625f;
   mt_evc_LV_DCDC_load->SetValue(pct);
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 30 22 <Byte>
+  // Spec: bitoffset 7, bitscount 1 (MSB of byte 0 in payload)
+  REQUIRE_LEN(1);
+  uint8_t raw = CAN_BYTE(0);
+  bool active = ((raw >> 7) & 0x01) != 0;  // Bit 7
+  mt_evc_LV_DCDC_act_req->SetValue(active);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len) {
@@ -748,7 +764,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltage(const char* data, uint1
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryAlert(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 32 02 <Byte>
+  // POSITIVE RESPONSE FORMAT: 62 34 86 <Byte>
   REQUIRE_LEN(1);
   uint8_t raw = ((uint8_t)CAN_BYTE(0) >> 5) & 0x07;
   const char* txt;
@@ -814,14 +830,6 @@ void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t repl
     mt_obl_main_volts->SetElemValue(0, 0);
   }
   mt_obl_main_volts->SetElemValue(1, 0); mt_obl_main_volts->SetElemValue(2, 0);
-  //Get AC Frequency
-  if (mt_obl_main_amps->GetElemValue(0) > 0 || mt_obl_main_amps->GetElemValue(1) > 0) {
-    float value = CAN_BYTE(11);
-    if (value < 0xF0)  //OBL showing only valid data while charging
-      mt_obl_main_freq->SetValue( CAN_BYTE(11) + 10.0f);
-  } else {
-    mt_obl_main_freq->SetValue(0);
-  }
   //Get AC Power
   value = CAN_UINT(12);
   if (value < 0xEA00) {  //OBL showing only valid data while charging
@@ -944,6 +952,14 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16
   mt_obl_main_max_current->SetValue((float) CAN_BYTE(0));
 }
 
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 50 49 <Byte> <Byte>
+  // Spec: offset 10.0, step 0.0078125, bytescount 2
+  REQUIRE_LEN(2);
+  uint16_t raw = CAN_UINT(0);
+  float freq = 10.0f + (raw * 0.0078125f);
+  mt_obl_main_freq->SetValue(freq);
+}
 
 void OvmsVehicleSmartEQ::PollReply_obd_trip(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(2);

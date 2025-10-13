@@ -37,15 +37,22 @@ static const char *TAG = "v-smarteq";
 
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) 
   {
-  if (m_candata_timer > 0) 
+  bool car_online = StdMetrics.ms_v_env_awake->AsBool(false);
+  bool car_bus = mt_bus_awake->AsBool(false);
+  if (car_online != car_bus && !m_candata_poll) 
     {
-    if (--m_candata_timer == 0) 
-      {
-      // Car has gone to sleep
-      ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
-      mt_bus_awake->SetValue(false);
-      m_candata_poll = 0;
-      }
+    m_candata_poll = true;
+    m_candata_timer = SQ_CANDATA_TIMEOUT;
+    }
+  
+  if (m_candata_timer > 0 && --m_candata_timer == 0 && m_candata_poll) 
+    {
+    // Car has gone to sleep
+    ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
+    mt_bus_awake->SetValue(false);
+    m_candata_poll = false;
+    m_candata_timer = -1;
+    HandlePollState();
     }
 
   // climate start 2-3 times when Homelink 2 or 3
@@ -118,11 +125,6 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       Handlev2Server();
   #endif
 
-  #ifdef CONFIG_OVMS_COMP_CELLULAR
-    if(m_network_type != m_network_type_ls) 
-      ModemNetworkType();
-  #endif
-
   // DDT4ALL session timeout on 5 minutes
   if (m_ddt4all) 
     {
@@ -155,7 +157,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
  */
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) 
   {
-  bool car_online = mt_bus_awake->AsBool();
+  bool car_online = mt_bus_awake->AsBool(false);
   bool lv_pwrstate = (StdMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 13.4);
   
   // - base system is awake if we've got a fresh lv_pwrstate:
