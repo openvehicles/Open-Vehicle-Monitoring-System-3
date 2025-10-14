@@ -468,8 +468,8 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
   // Byte 23 bitfield: 3 Byte header + 20 data bytes = byte index 23
   //   bits 4-5: HV relay status flag (0=not active, 1=active, 2=undefined)
   //   bits 6-7: Relay on Permit Flag (0=not active, 1=active, 2=undefined)
-  uint8_t hv_relay_flag = (CAN_BYTE(20) >> 4) & 0x03;
-  uint8_t relay_permit_flag = (CAN_BYTE(20) >> 6) & 0x03;
+  uint8_t hv_relay_flag = ((uint8_t)CAN_BYTE(20) >> 4) & 0x03;
+  uint8_t relay_permit_flag = ((uint8_t)CAN_BYTE(20) >> 6) & 0x03;
 
   mt_bms_relay_hv_status->SetValue(hv_relay_flag);
   const char* hv_relay_txt;
@@ -507,6 +507,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
   float mg_rpm_raw = CAN_UINT(17);
   float mg_rpm = mg_rpm_raw / 2.0f;
   mt_bms_mg_rpm->SetValue(mg_rpm);
+  StdMetrics.ms_v_mot_rpm->SetValue(mg_rpm);
 
   int safety = CAN_BYTE(19);
   const char* safety_txt;
@@ -608,7 +609,7 @@ void OvmsVehicleSmartEQ::PollReply_VehicleState(const char* data, uint16_t reply
   }
   mt_vehicle_state->SetValue(msgtxt);
   mt_vehicle_state_code->SetValue(code);
-  //StdMetrics.ms_v_env_awake->SetValue(code > 0);
+  StdMetrics.ms_v_env_awake->SetValue(code > 0);
   //vehicle_smart_car_on(code == 7);
 }
 
@@ -636,7 +637,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_State(const char* data, uint16_t rep
   // POSITIVE RESPONSE FORMAT: 62 30 2A <Byte>  
   // bitoffset 6, bitscount 2  -> bits 6..7
   REQUIRE_LEN(1);
-  uint8_t state = (CAN_BYTE(0) >> 6) & 0x03;
+  uint8_t state = ((uint8_t)CAN_BYTE(0) >> 6) & 0x03;
   const char* txt;
   switch (state) {
     case 1: txt = "wake up but not activated"; break;
@@ -685,6 +686,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Volt(const char* data, uint16_t repl
   uint8_t raw = CAN_BYTE(0);
   float value = 4.0f + raw * 0.1f;     // offset 4.0, step 0.1
   mt_evc_LV_DCDC_volt->SetValue(value);
+  StdMetrics.ms_v_charge_12v_voltage->SetValue(value);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len) {
@@ -694,6 +696,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Amps(const char* data, uint16_t repl
   // Spec only says "scaled": true, no step provided -> assume 1 count = 1 A
   // (Adjust here if later scale/offset is known)
   mt_evc_LV_DCDC_amps->SetValue((float)raw);
+  StdMetrics.ms_v_charge_12v_current->SetValue((float)raw);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len) {
@@ -703,13 +706,14 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Power(const char* data, uint16_t rep
   // step 10 W
   float watts = raw * 10.0f;
   mt_evc_LV_DCDC_power->SetValue(watts);
+  StdMetrics.ms_v_charge_12v_power->SetValue(watts);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_ext_power(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 62 33 BA <Byte> 
   // bitoffset 6, bitscount 2  -> bits 6..7
   REQUIRE_LEN(1);
-  uint8_t state = (CAN_BYTE(0) >> 6) & 0x03;
+  uint8_t state = ((uint8_t)CAN_BYTE(0) >> 6) & 0x03;
   const char* txt;
   switch (state) {
     case 1: txt = "Slow Ext Energy Avail"; break;
@@ -737,10 +741,14 @@ void OvmsVehicleSmartEQ::PollReply_EVC_plug_present(const char* data, uint16_t r
 void OvmsVehicleSmartEQ::PollReply_EVC_WakeUpType(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 62 32 02 <Byte>
   REQUIRE_LEN(1);
-  uint8_t raw = CAN_BYTE(0);
-  int wake = raw; //(raw >> 7) & 0x01;
-  const char* txt = wake ? "System Wake Up" : "Customer Wake Up";
-  mt_evc_wakeup_type->SetValue(wake);
+  int raw = ((uint8_t)CAN_BYTE(0) >> 7) & 0x01;
+  const char* txt;
+  switch (raw) {
+    case 0: txt = "Customer Wake Up"; break;
+    case 1: txt = "System Wake Up"; break;
+    default: txt = "unknown"; break;
+  }
+  mt_evc_wakeup_type->SetValue(raw);
   mt_evc_wakeup_type_txt->SetValue(txt);
 }
 
@@ -758,9 +766,6 @@ void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltage(const char* data, uint1
   uint16_t raw = CAN_UINT(0);
   float value = raw * 0.01f;
   mt_evc_LV_batt_voltage_can->SetValue(value);
-  //if (value > 5.0f && value < 20.0f) {
-  ///  StdMetrics.ms_v_bat_12v_voltage->SetValue(value);
-  //}
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryAlert(const char* data, uint16_t reply_len) {

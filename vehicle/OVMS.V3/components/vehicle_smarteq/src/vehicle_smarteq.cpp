@@ -106,7 +106,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_vehicle_state_code         = MyMetrics.InitInt("xsq.v.state.code", SM_STALE_MIN, 0, Other);
   mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_NONE, 0, Other);
   mt_adc_factor_history         = new OvmsMetricVector<float>("xsq.adc.factor.history", SM_STALE_NONE, Other);
-  mt_poll_state                 = MyMetrics.InitInt("xsq.poll.state", SM_STALE_NONE, 0, Other);
+  mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_NONE, "UNKNOWN", Other);
 
   mt_obd_duration               = MyMetrics.InitInt("xsq.obd.duration", SM_STALE_MID, 0, Minutes);
   mt_obd_trip_km                = MyMetrics.InitFloat("xsq.obd.trip.km", SM_STALE_MID, 0, Kilometers);
@@ -147,8 +147,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_evc_LV_DCDC_power          = MyMetrics.InitFloat("xsq.evc.12V.dcdc.power", SM_STALE_MID, 0, Watts);
   mt_evc_LV_DCDC_state          = MyMetrics.InitInt("xsq.evc.12V.dcdc.state", SM_STALE_MID, 0, Other);
   mt_evc_LV_DCDC_state_txt      = MyMetrics.InitString("xsq.evc.12V.dcdc.state.txt", SM_STALE_MID, "Standby", Other);  
-  mt_evc_LV_USM_volt            = MyMetrics.InitFloat("xsq.evc.12V.usm.volt", SM_STALE_MIN, 0, Volts);
-  mt_evc_LV_batt_voltage_can    = MyMetrics.InitFloat("xsq.evc.12V.batt.volt", SM_STALE_MIN, 0, Volts);
+  mt_evc_LV_USM_volt            = MyMetrics.InitFloat("xsq.evc.12V.volt.usm", SM_STALE_MIN, 0, Volts);
+  mt_evc_LV_batt_voltage_can    = MyMetrics.InitFloat("xsq.evc.12V.volt.can", SM_STALE_MIN, 0, Volts);
   mt_evc_LV_batt_alert          = MyMetrics.InitInt("xsq.evc.12V.batt.alert", SM_STALE_MIN, 0, Other);
   mt_evc_LV_batt_alert_txt      = MyMetrics.InitString("xsq.evc.12V.batt.alert.txt", SM_STALE_MIN, "No display", Other);
   mt_evc_LV_batt_voltage_req    = MyMetrics.InitFloat("xsq.evc.12V.batt.volt.req.int", SM_STALE_MIN, 0, Volts);
@@ -664,23 +664,34 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   // 2 = Running (ignition on)
   // 3 = Charging
 
-  if ( StdMetrics.ms_v_charge_pilot->AsBool() && m_poll_state != 3 && m_enable_write ) {
-    PollSetState(3);
-    ESP_LOGI(TAG,"Pollstate Charging");
+  if (!m_enable_write) {
+    if (m_poll_state != 0) {
+      PollSetState(0);
+      ESP_LOGI(TAG, "Pollstate Off (write disabled)");
+    }
+    mt_poll_state->SetValue("Pollstate Off (write disabled)");
+    return;
   }
-  else if ( !StdMetrics.ms_v_charge_pilot->AsBool() && StdMetrics.ms_v_env_on->AsBool() && m_poll_state != 2 && m_enable_write ) {
-    PollSetState(2);
-    ESP_LOGI(TAG,"Pollstate Running");
+
+  static const char* state_names[] = {"Off", "Awake", "Running", "Charging"};
+  
+  int desired_state = m_poll_state;
+
+  if (StdMetrics.ms_v_charge_pilot->AsBool(false) || StdMetrics.ms_v_charge_inprogress->AsBool(false))
+    desired_state = 3;
+  else if (StdMetrics.ms_v_env_on->AsBool(false))
+    desired_state = 2;
+  else if (mt_bus_awake->AsBool(false) || StdMetrics.ms_v_env_awake->AsBool(false))
+    desired_state = 1;
+  else if (!StdMetrics.ms_v_env_awake->AsBool(false) && !mt_bus_awake->AsBool(false) && 
+          (!StdMetrics.ms_v_charge_pilot->AsBool(false) || !StdMetrics.ms_v_charge_inprogress->AsBool(false)))
+    desired_state = 0;
+
+  if (desired_state != m_poll_state) {
+    PollSetState(desired_state);
+    ESP_LOGI(TAG, "Pollstate %s", state_names[desired_state]);
+    mt_poll_state->SetValue(state_names[desired_state]);
   }
-  else if ( !StdMetrics.ms_v_charge_pilot->AsBool() && !StdMetrics.ms_v_env_on->AsBool() && mt_bus_awake->AsBool() && m_poll_state != 1 && m_enable_write ) {
-    PollSetState(1);
-    ESP_LOGI(TAG,"Pollstate Awake");
-  }
-  else if ( !StdMetrics.ms_v_env_awake->AsBool() && !mt_bus_awake->AsBool() && m_poll_state != 0) {
-    PollSetState(0);
-    ESP_LOGI(TAG,"Pollstate Off");
-  }  
-  mt_poll_state->SetValue(m_poll_state);
 }
 
 void OvmsVehicleSmartEQ::CalculateEfficiency() {

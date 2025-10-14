@@ -190,6 +190,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           StdMetrics.ms_v_charge_state->SetValue("charging");
           StdMetrics.ms_v_charge_substate->SetValue("onrequest");
           StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
+          mt_bus_awake->SetValue(true);
         } else { // EVENT stopped charging
           StdMetrics.ms_v_charge_pilot->SetValue(false);
           StdMetrics.ms_v_charge_inprogress->SetValue(isCharging);

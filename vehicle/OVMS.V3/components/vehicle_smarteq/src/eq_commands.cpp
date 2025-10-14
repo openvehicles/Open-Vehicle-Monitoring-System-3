@@ -837,16 +837,16 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
       return;
       } 
         
-    float usm = smarteq->mt_evc_LV_USM_volt->AsFloat(0.0f);
-    float lvdcdc = smarteq->mt_evc_LV_DCDC_volt->AsFloat(0.0f) + 0.25f; // offset
-    float val = smarteq->mt_evc_LV_DCDC_act_req->AsBool(false) ? lvdcdc : usm;
-    if (val < 11.0f || val > 15.0f) 
+    float can12V = smarteq->mt_evc_LV_DCDC_act_req->AsBool(false) 
+                     ? smarteq->mt_evc_LV_DCDC_volt->AsFloat(0.0f) + 0.25f   // DCDC voltage + offset
+                     : smarteq->mt_evc_LV_USM_volt->AsFloat(0.0f);           // USM voltage
+    if (can12V < 11.0f || can12V > 15.0f) 
       {
       writer->puts("Error: CAN 12V voltage out of plausible range (11.0–15.0)");
       return;
       }
-    smarteq->ReCalcADCfactor(val, writer);
-    writer->printf("Recalculating ADC factor using %.2fV CAN voltage\n", val);
+    smarteq->ReCalcADCfactor(can12V, writer);
+    writer->printf("Recalculating ADC factor using %.2fV CAN voltage\n", can12V);
     return;
    }
   #else

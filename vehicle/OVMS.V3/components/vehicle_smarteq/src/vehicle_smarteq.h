@@ -303,7 +303,7 @@ public:
     OvmsMetricInt           *mt_vehicle_state_code;     //!< vehicle state code
     OvmsMetricFloat         *mt_adc_factor;             // calculated ADC factor for 12V measurement
     OvmsMetricVector<float> *mt_adc_factor_history;     // last 20 calculated ADC factors for 12V measurement
-    OvmsMetricInt           *mt_poll_state;             // Poller state
+    OvmsMetricString        *mt_poll_state;             // Poller state
 
     OvmsMetricFloat         *mt_pos_odo_trip;           // odometer trip in km 
     OvmsMetricFloat         *mt_pos_odometer_start;     // remind odometer start
