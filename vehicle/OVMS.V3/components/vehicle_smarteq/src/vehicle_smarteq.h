@@ -104,6 +104,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void HandlePollState();
     void OnlineState();
     void ObdModifyPoll();
+    void AddCellPoll(uint16_t pid, uint16_t interval_drv, uint16_t interval_chg);
     void ResetChargingValues();
     void ResetTripCounters();
     void ResetTotalCounters();
@@ -252,7 +253,8 @@ public:
     void PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);    
+    void PollReply_OBL_JB2AC_WakeupReq(const char* data, uint16_t reply_len);
     void PollReply_TPMS_InputCapt(const char* data, uint16_t reply_len);
     void PollReply_TPMS_Status(const char* data, uint16_t reply_len);
 
@@ -363,8 +365,9 @@ public:
     OvmsMetricVector<float> *mt_obl_main_amps;          //!< AC current of L1, L2, L3
     OvmsMetricVector<float> *mt_obl_main_volts;         //!< AC voltage of L1, L2, L3
     OvmsMetricVector<float> *mt_obl_main_CHGpower;      //!< Power of rail1, rail2 W (x/2) & max available kw (x/64)    
-    OvmsMetricBool          *mt_obl_fastchg;            // ODOmeter at Start
+    OvmsMetricBool          *mt_obl_fastchg;            // 22kw fast charge enabled
     OvmsMetricFloat         *mt_obl_main_freq;          //!< AC input frequency
+    OvmsMetricBool          *mt_obl_wakeup_request;     //!< Wake-up request from Mains or plug presence
     OvmsMetricFloat         *mt_obl_main_ground_resistance;           //!< Ground resistance in (Ohm)
     OvmsMetricInt           *mt_obl_main_max_current;                 //!< Charger max current setting (A)
     OvmsMetricString        *mt_obl_main_leakage_diag;                //!< Leakage diagnostic

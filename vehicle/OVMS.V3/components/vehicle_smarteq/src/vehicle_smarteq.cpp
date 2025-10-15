@@ -164,7 +164,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_amps              = new OvmsMetricVector<float>("xsq.obl.amps", SM_STALE_HIGH, Amps);
   mt_obl_main_CHGpower          = new OvmsMetricVector<float>("xsq.obl.power", SM_STALE_HIGH, kW);
   mt_obl_main_ground_resistance = MyMetrics.InitFloat("xsq.obl.ground.resistance", SM_STALE_MID, 0, Other);
-  mt_obl_main_freq              = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);
+  mt_obl_main_freq              = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);  
+  mt_obl_wakeup_request         = MyMetrics.InitBool("xsq.obl.wakeup.req", SM_STALE_MID, false);
   mt_obl_main_max_current       = MyMetrics.InitInt("xsq.obl.max.current", SM_STALE_MID, 0, Amps);
   mt_obl_main_leakage_diag      = MyMetrics.InitString("xsq.obl.leakdiag", SM_STALE_MID, "", Other);
   mt_obl_main_current_leakage_dc        = MyMetrics.InitFloat("xsq.obl.current.dc", SM_STALE_MID, 0, Amps);
@@ -412,36 +413,67 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   StdMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffrange", 0), Kilometers );
 }
 
+static size_t poll_array_size(const OvmsPoller::poll_pid_t* polls) {
+  size_t count = 0;
+  while (polls[count].txmoduleid != 0 || polls[count].rxmoduleid != 0) {
+    count++;
+  }
+  return count;
+}
+
 void OvmsVehicleSmartEQ::ObdModifyPoll() {
+  // Disable current polling
   PollSetPidList(m_can1, NULL);
   PollSetState(0);
   PollSetThrottling(0);
   PollSetResponseSeparationTime(20);
 
-  // modify Poller..
+  // Reserve capacity to avoid reallocations
   m_poll_vector.clear();
-  // Add PIDs to poll list:
+  m_poll_vector.reserve(128);
+
+  // Add base OBD-II polls
   m_poll_vector.insert(m_poll_vector.end(), obdii_polls, endof_array(obdii_polls));
-  if (mt_obl_fastchg->AsBool()) {
-    m_poll_vector.insert(m_poll_vector.end(), fast_charger_polls, endof_array(fast_charger_polls));
-  } else {
-    m_poll_vector.insert(m_poll_vector.end(), slow_charger_polls, endof_array(slow_charger_polls));
-  }
-  OvmsPoller::poll_pid_t p1 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,0,0 }, 0, ISOTP_STD };
-  p1.polltime[2] = m_cfg_cell_interval_drv;
-  p1.polltime[3] = m_cfg_cell_interval_chg;
-  m_poll_vector.push_back(p1);
+
+  // Add charger-specific polls (conditional)
+  const OvmsPoller::poll_pid_t* charger_polls = mt_obl_fastchg->AsBool() 
+                                                ? fast_charger_polls 
+                                                : slow_charger_polls;
   
-  OvmsPoller::poll_pid_t p2 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,0,0 }, 0, ISOTP_STD };
-  p2.polltime[2] = m_cfg_cell_interval_drv;
-  p2.polltime[3] = m_cfg_cell_interval_chg;
-  m_poll_vector.push_back(p2);
+  // ✅ FIX: Manuell Array-Ende berechnen
+  size_t charger_poll_count = poll_array_size(charger_polls);
+  m_poll_vector.insert(m_poll_vector.end(), charger_polls, charger_polls + charger_poll_count);
 
-  // Terminate poll list:
+  // Add dynamic cell monitoring polls
+  AddCellPoll(0x41, m_cfg_cell_interval_drv, m_cfg_cell_interval_chg);
+  AddCellPoll(0x42, m_cfg_cell_interval_drv, m_cfg_cell_interval_chg);
+
+  // Terminate poll list
   m_poll_vector.push_back(POLL_LIST_END);
-  ESP_LOGI(TAG, "Poll vector: size=%d cap=%d", m_poll_vector.size(), m_poll_vector.capacity());
 
+  ESP_LOGI(TAG, "Poll vector rebuilt: size=%d cap=%d charger=%s", 
+           m_poll_vector.size(), m_poll_vector.capacity(),
+           mt_obl_fastchg->AsBool() ? "fast" : "slow");
+
+  // Activate new poll list
   PollSetPidList(m_can1, m_poll_vector.data());
+}
+
+void OvmsVehicleSmartEQ::AddCellPoll(uint16_t pid, uint16_t interval_drv, uint16_t interval_chg) {
+  OvmsPoller::poll_pid_t poll = {
+    0x79B,                        // txmoduleid
+    0x7BB,                        // rxmoduleid
+    VEHICLE_POLL_TYPE_OBDIIGROUP, // type
+    pid,                          // pid
+    { 0, 300, 0, 0 },            // polltime: {OFF, AWAKE, DRIVING, CHARGING}
+    0,                            // pollbus
+    ISOTP_STD                     // protocol
+  };
+  
+  poll.polltime[2] = interval_drv;  // DRIVING state
+  poll.polltime[3] = interval_chg;  // CHARGING state
+  
+  m_poll_vector.push_back(poll);
 }
 
 void OvmsVehicleSmartEQ::EventListener(std::string event, void* data) {
@@ -599,46 +631,59 @@ void OvmsVehicleSmartEQ::HandleChargeport(){
 }
 
 void OvmsVehicleSmartEQ::UpdateChargeMetrics() {
-  int phasecnt = 0, i = 0, n = 0;
-  float voltagesum = 0, ampsum = 0;
+  // Phase detection and voltage calculation
+  int phasecnt = 0;
+  int active_phase = -1;
+  float voltagesum = 0.0f;
   
-  for(i = 0; i < 3; i++) {
-    if (mt_obl_main_volts->GetElemValue(i) > 120) {
+  for (int i = 0; i < 3; i++) {
+    float voltage = mt_obl_main_volts->GetElemValue(i);
+    if (voltage > 120.0f) {
       phasecnt++;
-      n = i;
-      voltagesum += mt_obl_main_volts->GetElemValue(i);
+      active_phase = i;
+      voltagesum += voltage;
     }
   }
-  if (phasecnt > 1) {
-    voltagesum /= phasecnt;
-  }
-  StdMetrics.ms_v_charge_voltage->SetValue(voltagesum);
-
-  if( phasecnt == 1 && mt_obl_fastchg->AsBool() ) {
-    StdMetrics.ms_v_charge_current->SetValue(mt_obl_main_amps->GetElemValue(n));
-    } else if( phasecnt == 3 && mt_obl_fastchg->AsBool() ) {
-    for(i = 0; i < 3; i++) {
-      if (mt_obl_main_amps->GetElemValue(i) > 0) {
-        ampsum += mt_obl_main_amps->GetElemValue(i);
-      }
-    }
-    StdMetrics.ms_v_charge_current->SetValue(ampsum/3);
+  
+  // Calculate average voltage for multi-phase
+  float avg_voltage = (phasecnt > 1) ? (voltagesum / phasecnt) : voltagesum;
+  StdMetrics.ms_v_charge_voltage->SetValue(avg_voltage);
+  
+  // Current calculation based on charging mode
+  float total_current = 0.0f;
+  bool is_fast_charge = mt_obl_fastchg->AsBool();
+  
+  if (phasecnt == 1 && is_fast_charge) {
+    // Single-phase DC fast charge: use only active phase
+    total_current = mt_obl_main_amps->GetElemValue(active_phase);
   } else {
-    for(i = 0; i < 3; i++) {
-      if (mt_obl_main_amps->GetElemValue(i) > 0) {
-        ampsum += mt_obl_main_amps->GetElemValue(i);
+    // Multi-phase or AC charging: sum all positive currents
+    for (int i = 0; i < 3; i++) {
+      float current = mt_obl_main_amps->GetElemValue(i);
+      if (current > 0.0f) {
+        total_current += current;
       }
     }
-    StdMetrics.ms_v_charge_current->SetValue(ampsum);
+    
+    // For 3-phase DC fast charge, use average (as per original logic)
+    if (phasecnt == 3 && is_fast_charge) {
+      total_current /= 3.0f;
+    }
   }
-
-  StdMetrics.ms_v_charge_power->SetValue( mt_obl_main_CHGpower->GetElemValue(0) + mt_obl_main_CHGpower->GetElemValue(1) );
-  float power = StdMetrics.ms_v_charge_power->AsFloat();
-  float efficiency = (power == 0)
-                     ? 0
-                     : (StdMetrics.ms_v_bat_power->AsFloat() / power) * 100;
+  
+  StdMetrics.ms_v_charge_current->SetValue(total_current);
+  
+  // Power and efficiency calculation
+  float power = mt_obl_main_CHGpower->GetElemValue(0) + mt_obl_main_CHGpower->GetElemValue(1);
+  StdMetrics.ms_v_charge_power->SetValue(power);
+  
+  float efficiency = (power > 0.001f) 
+                     ? (StdMetrics.ms_v_bat_power->AsFloat() / power) * 100.0f 
+                     : 0.0f;
   StdMetrics.ms_v_charge_efficiency->SetValue(efficiency);
-  ESP_LOGD(TAG, "SmartEQ_CHG_EFF_STD=%f", efficiency);
+  
+  ESP_LOGD(TAG, "Charge: %dph %.1fV %.1fA %.2fkW eff=%.1f%%", 
+           phasecnt, avg_voltage, total_current, power, efficiency);
 }
 
 /**

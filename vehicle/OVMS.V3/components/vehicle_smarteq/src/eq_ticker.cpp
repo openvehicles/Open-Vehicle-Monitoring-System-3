@@ -38,9 +38,16 @@ static const char *TAG = "v-smarteq";
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) 
   {
   bool car_online = StdMetrics.ms_v_env_awake->AsBool(false);
-  bool car_charging = StdMetrics.ms_v_charge_inprogress->AsBool(false);
+  bool car_charging = StdMetrics.ms_v_charge_inprogress->AsBool(false) || StdMetrics.ms_v_charge_pilot->AsBool(false);
   bool car_bus = mt_bus_awake->AsBool(false);
-  if (car_online != car_bus && !car_charging && !m_candata_poll) 
+
+  if (car_online != car_bus && !m_candata_poll) 
+    {
+    m_candata_poll = true;
+    m_candata_timer = SQ_CANDATA_TIMEOUT;
+    }
+
+  if (car_charging != car_bus && !m_candata_poll) 
     {
     m_candata_poll = true;
     m_candata_timer = SQ_CANDATA_TIMEOUT;
@@ -86,8 +93,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   HandleEnergy();
   HandleCharging();
   HandleTripcounter();
-  HandleChargeport();  
-  //HandlePollState();
+  HandleChargeport();
 
   // reactivate door lock warning if the car is parked and unlocked
   if( m_enable_lock_state && 
@@ -148,15 +154,12 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       m_ADCfactor_recalc = false;
       m_ADCfactor_recalc_timer = 4;
       // calculate new ADC factor
-      float can12V = mt_evc_LV_DCDC_act_req->AsBool(false) 
-                     ? mt_evc_LV_DCDC_volt->AsFloat(0.0f) + 0.25f   // DCDC voltage + offset
-                     : mt_evc_LV_USM_volt->AsFloat(0.0f);           // USM voltage
-      
-      if (can12V >= 11.0f && can12V <= 15.0f) {
+      float can12V = mt_bms_12v->AsFloat(0.0f) + 0.25f;   // BMS 12V voltage + offset
+      if (can12V >= 13.10f) {
         ReCalcADCfactor(can12V, nullptr);  // nullptr = no Log-Output
         ESP_LOGI(TAG, "Auto ADC recalibration started (%.2fV)", can12V);
       } else {
-        ESP_LOGW(TAG, "Auto ADC recalibration skipped: CAN voltage out of range (%.2fV)", can12V);
+        ESP_LOGW(TAG, "Error: Auto ADC recalibration, 12V voltage is not stable for ADC calibration! (%.2fV)", can12V);
       }
       }
     }
