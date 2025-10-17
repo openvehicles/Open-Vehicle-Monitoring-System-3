@@ -174,6 +174,8 @@ class modem : public pcp, public InternalRamAllocated
     GsmPPPOS*              m_ppp;
     GsmNMEA*               m_nmea;
 
+    bool                   m_gps_hot_start;
+
     bool                   m_gps_enabled;           // = config modem enable.gps
     gps_usermode_t         m_gps_usermode;          // manual GPS control status
     int                    m_gps_parkpause;         // = config modem gps.parkpause (seconds, 0=off)

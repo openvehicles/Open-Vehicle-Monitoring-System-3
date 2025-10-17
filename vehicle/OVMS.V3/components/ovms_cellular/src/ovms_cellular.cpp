@@ -317,6 +317,7 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_err_uart_frame = 0;
   m_err_driver_buffer_full = 0;
   m_nmea = NULL;
+  m_gps_hot_start = false;
   m_gps_enabled = false;
   m_gps_usermode = GUM_DEFAULT;
   m_gps_parkpause = 0;
@@ -1380,6 +1381,11 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
       m_line_unfinished = -1;
       m_line_buffer.clear();
       }
+    }
+  else if (line.compare(0, 11, "+CGNSSPWR: ") == 0)
+    {
+    m_gps_hot_start = line.find("(1,1)") < std::string::npos || line.find("(0,1)") < std::string::npos;
+    ESP_LOGV(TAG, "GPS hot start : %s ", m_gps_hot_start ? "OK" : "not supported");
     }
   }
 
