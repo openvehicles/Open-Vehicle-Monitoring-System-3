@@ -163,55 +163,71 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
-  if(!m_enable_write) {
+  if(!m_enable_write) 
+    {
     ESP_LOGE(TAG, "CommandWakeup failed: no write access!");
     return Fail;
-  }
+    }
 
   OvmsVehicle::vehicle_command_t res;
 
   ESP_LOGI(TAG, "Send Wakeup Command");
   res = Fail;
-  if(!mt_bus_awake->AsBool()) {
+  if(!mt_bus_awake->AsBool()) 
+    {
     uint8_t data[4] = {0x40, 0x00, 0x00, 0x00};
     canbus *obd;
     obd = m_can1;
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 20; i++) 
+      {
       obd->WriteStandard(0x634, 4, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
-      if (mt_bus_awake->AsBool()) {
-        res = Success;
-        ESP_LOGI(TAG, "Vehicle is now awake");
-        break;
       }
-    }
-  } else {
+    mt_bus_awake->SetValue(true);
+    res = Success;
+    ESP_LOGI(TAG, "Vehicle is now awake");
+    } 
+  else 
+    {
     res = Success;
     ESP_LOGI(TAG, "Vehicle is awake");
-  }
-
+    }
   return res;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
-  if(!m_enable_write) {
+  if(!m_enable_write) 
+    {
     ESP_LOGE(TAG, "CommandWakeup2 failed: no write access!");
     return Fail;
-  }
+    }
+  OvmsVehicle::vehicle_command_t res;
 
-  if(!mt_bus_awake->AsBool()) {
+  ESP_LOGI(TAG, "Send Wakeup Command 2");
+  res = Fail;
+
+  if(!mt_bus_awake->AsBool()) 
+    {
     ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
     uint8_t data[8] = {0xc3, 0x1b, 0x73, 0x57, 0x14, 0x70, 0x96, 0x85};
     canbus *obd;
     obd = m_can1;
-    obd->WriteStandard(0x350, 8, data);
+    for (int i = 0; i < 10; i++) 
+      {
+      obd->WriteStandard(0x350, 8, data);
+      vTaskDelay(200 / portTICK_PERIOD_MS);
+      }
+    mt_bus_awake->SetValue(true);
     ESP_LOGI(TAG, "Vehicle is awake");
-    return Success;
-  } else {
+    if(mt_bus_awake->AsBool()) res = Success;
+    } 
+  else 
+    {
     ESP_LOGI(TAG, "Vehicle is awake");
-    return Success;
-  }
+    res = Success;
+    }
+  return res;
 }
 
 // lock: can can1 tx st 745 04 30 01 00 00
@@ -570,6 +586,13 @@ OvmsVehicleSmartEQ::vehicle_command_t OvmsVehicleSmartEQ::MsgCommandCA(std::stri
 /**
  * writer for command line interface
  */
+void OvmsVehicleSmartEQ::xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+
+  smarteq->CommandWakeup2();
+}
 void OvmsVehicleSmartEQ::xsq_trip_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
   OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
   if (!smarteq)
@@ -799,21 +822,29 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
     } 
   else if (argc == 0) 
     {
-    smarteq->CommandWakeup();
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
-    if (!smarteq->mt_evc_LV_USM_volt->IsDefined()) 
+    if (!smarteq->m_enable_write) 
       {
-      writer->puts("Error: CAN 12V metric not defined");
+      writer->puts("Error: no write access");
       return;
       }
-    float val = smarteq->mt_evc_LV_USM_volt->AsFloat();
-    if (val < 11.0 || val > 15.0) 
+    OvmsVehicle::vehicle_command_t res;
+
+    res = smarteq->CommandWakeup2();
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    if (res != Success) 
       {
-      writer->puts("Error: CAN 12V voltage out of plausible range (11.0–15.0)");
+      writer->puts("Error: vehicle not awake");
+      return;
+      } 
+        
+    float can12V = smarteq->mt_bms_12v->AsFloat(0.0f) + 0.25f;   // BMS 12V voltage + offset
+    if (can12V <= 13.10f) 
+      {
+      writer->puts("Error: vehicle 12V is not charging, 12V voltage is not stable for ADC calibration!");
       return;
       }
-    smarteq->ReCalcADCfactor(val, writer);
-    writer->printf("Recalculating ADC factor using %.2fV CAN voltage\n", val);
+    writer->printf("Recalculating ADC factor using vehicle 12V voltage %.2fV\n", can12V);
+    smarteq->ReCalcADCfactor(can12V, writer);
     return;
    }
   #else

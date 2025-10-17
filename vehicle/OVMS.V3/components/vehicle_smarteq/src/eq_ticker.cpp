@@ -37,17 +37,6 @@ static const char *TAG = "v-smarteq";
 
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) 
   {
-  if (m_candata_timer > 0) 
-    {
-    if (--m_candata_timer == 0) 
-      {
-      // Car has gone to sleep
-      ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
-      mt_bus_awake->SetValue(false);
-      m_candata_poll = 0;
-      }
-    }
-
   // climate start 2-3 times when Homelink 2 or 3
   if (m_climate_ticker >= 1 && !StdMetrics.ms_v_env_hvac->AsBool() && !m_climate_start)
       CommandClimateControl(true);
@@ -75,10 +64,14 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     --m_ddt4all_exec;
     }
 
-  HandleEnergy();
-  HandleCharging();
-  HandleTripcounter();
-  HandleChargeport();
+  if (StdMetrics.ms_v_env_on->AsBool(false)) 
+    HandleEnergy();
+  if (StdMetrics.ms_v_env_on->AsBool(false))
+    HandleTripcounter();
+  if (StdMetrics.ms_v_charge_pilot->AsBool(false))
+    HandleCharging();
+  if (StdMetrics.ms_v_env_on->AsBool(false))
+    HandleChargeport();
 
   // reactivate door lock warning if the car is parked and unlocked
   if( m_enable_lock_state && 
@@ -118,11 +111,6 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       Handlev2Server();
   #endif
 
-  #ifdef CONFIG_OVMS_COMP_CELLULAR
-    if(m_network_type != m_network_type_ls) 
-      ModemNetworkType();
-  #endif
-
   // DDT4ALL session timeout on 5 minutes
   if (m_ddt4all) 
     {
@@ -142,8 +130,15 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     if (--m_ADCfactor_recalc_timer == 0) 
       {
       m_ADCfactor_recalc = false;
-      m_ADCfactor_recalc_timer = 4; // reset timer
-      ReCalcADCfactor(mt_bms_12v->AsFloat());
+      m_ADCfactor_recalc_timer = 4;
+      // calculate new ADC factor
+      float can12V = mt_bms_12v->AsFloat(0.0f) + 0.25f;   // BMS 12V voltage + offset
+      if (can12V >= 13.10f) {
+        ReCalcADCfactor(can12V, nullptr);  // nullptr = no Log-Output
+        ESP_LOGI(TAG, "Auto ADC recalibration started (%.2fV)", can12V);
+      } else {
+        ESP_LOGW(TAG, "Error: Auto ADC recalibration, 12V voltage is not stable for ADC calibration! (%.2fV)", can12V);
+      }
       }
     }
   #endif
@@ -155,14 +150,30 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
  */
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) 
   {
-  bool car_online = mt_bus_awake->AsBool();
-  bool lv_pwrstate = (StdMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 13.4);
+  bool lv_pwrstate =  mt_evc_LV_DCDC_act_req->AsBool(false); //(StdMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 13.4f);  
+  bool car_online = StdMetrics.ms_v_env_awake->AsBool(false);  
+  bool car_bus = mt_bus_awake->AsBool(false);
+
+  if (car_online != car_bus && !m_candata_poll) 
+    {
+    m_candata_poll = true;
+    m_candata_timer = SQ_CANDATA_TIMEOUT;
+    }
+  
+  if (m_candata_timer > 0 && --m_candata_timer == 0 && m_candata_poll) 
+    {
+    // Car has gone to sleep
+    ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
+    mt_bus_awake->SetValue(false);
+    m_candata_poll = false;
+    m_candata_timer = -1;
+    }
   
   // - base system is awake if we've got a fresh lv_pwrstate:
   StdMetrics.ms_v_env_aux12v->SetValue(car_online);
 
   // - charging / trickle charging 12V battery is active when lv_pwrstate is true:
-  StdMetrics.ms_v_env_charging12v->SetValue(car_online && lv_pwrstate);
+  StdMetrics.ms_v_env_charging12v->SetValue(lv_pwrstate);
   
   HandlePollState();
   }

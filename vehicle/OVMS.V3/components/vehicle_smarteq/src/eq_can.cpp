@@ -60,13 +60,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   int _duration_full;
   //char buf[10];
 
-  if (m_candata_poll != 1 && StdMetrics.ms_v_bat_voltage->AsFloat(0, Volts) > 100) {
-    ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
-    mt_bus_awake->SetValue(true);
-    m_candata_poll = 1;
-    }
-  m_candata_timer = SQ_CANDATA_TIMEOUT;
-  
   switch (p_frame->MsgID) {
     case 0x17e: //gear shift
     {
@@ -93,16 +86,16 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x350:
       REQ_DLC(7);
-      _bool = CAN_BYTE(0) > 0xc0;
+      _bool = (CAN_BYTE(0) > 0xc0);
       StdMetrics.ms_v_env_locked->SetValue((CAN_BYTE(6) == 0x96));
       StdMetrics.ms_v_env_awake->SetValue(_bool);
       if (_bool && !mt_bus_awake->AsBool())
         {
         ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
         mt_bus_awake->SetValue(true);
-        m_candata_poll = 1;
+        m_candata_poll = false;
+        m_candata_timer = -1;
         }
-      vehicle_smart_car_on((CAN_BYTE(0) == 0xc7)); // Drive Ready
       break;
     case 0x392:
       REQ_DLC(6);
@@ -110,7 +103,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40.0f);
       break;
     case 0x42E:        // HV voltage / temp frame
-      REQ_DLC(6);
+      REQ_DLC(5);
       _temp = ((c >> 13) & 0x7Fu) > 40.0f
               ? ((c >> 13) & 0x7Fu) - 40.0f
               : (40.0f - ((c >> 13) & 0x7Fu)) * -1.0f;
@@ -129,7 +122,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       REQ_DLC(6);
       StdMetrics.ms_v_pos_speed->SetValue((float) CAN_UINT(0) / 100.0f);
       StdMetrics.ms_v_pos_odometer->SetValue((float) (CAN_UINT32(2)>>4) / 100.0f);
-      mt_pos_odo_trip->SetValue((float) (CAN_UINT(4)>>4) / 100.0f); // ODO trip //TODO: check if this is correct
+      mt_pos_odometer_trip->SetValue((float) (CAN_UINT(4)>>4) / 100.0f);
       break;
     case 0x5de:
       REQ_DLC(8);
@@ -197,6 +190,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           StdMetrics.ms_v_charge_state->SetValue("charging");
           StdMetrics.ms_v_charge_substate->SetValue("onrequest");
           StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
+          mt_bus_awake->SetValue(true);
         } else { // EVENT stopped charging
           StdMetrics.ms_v_charge_pilot->SetValue(false);
           StdMetrics.ms_v_charge_inprogress->SetValue(isCharging);
@@ -223,11 +217,11 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       lastCharging = isCharging;
       break;
 
-    /*case 0x668:
+    case 0x668:
       REQ_DLC(1);
       vehicle_smart_car_on((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
       break;
-      case 0x673:  // TPMS status -> PollReply_TPMS_InputCapt
+    /*case 0x673:  // TPMS status -> PollReply_TPMS_InputCapt
       REQ_DLC(2);
       // Read TPMS pressure values:
       for (int i = 0; i < 4; i++) 
