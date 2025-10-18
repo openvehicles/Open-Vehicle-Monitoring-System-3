@@ -2837,6 +2837,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     auto_hour = c.getvar("auto_hour");
     server = c.getvar("server");
     tag = c.getvar("tag");
+    hardware = GetOVMSProduct();
 
     if (action.substr(0,3) == "set") {
       info.partition_boot = c.getvar("boot_old");
