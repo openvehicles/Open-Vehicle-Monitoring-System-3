@@ -2821,7 +2821,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   std::string action;
   ota_info info;
   bool auto_enable, auto_allow_modem;
-  std::string auto_hour, server, tag;
+  std::string auto_hour, server, tag, hardware;
   std::string output;
   std::string version;
   const char *what;
@@ -2837,6 +2837,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     auto_hour = c.getvar("auto_hour");
     server = c.getvar("server");
     tag = c.getvar("tag");
+    hardware = GetOVMSProduct();
 
     if (action.substr(0,3) == "set") {
       info.partition_boot = c.getvar("boot_old");
@@ -2895,7 +2896,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     auto_hour = MyConfig.GetParamValue("ota", "auto.hour", "2");
     server = MyConfig.GetParamValue("ota", "server");
     tag = MyConfig.GetParamValue("ota", "tag");
-
+    hardware = GetOVMSProduct();
     // generate form:
     c.head(200);
   }
@@ -2907,7 +2908,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
   c.input_info("Firmware version", info.version_firmware.c_str());
   output = info.version_server;
-  output.append(" <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\">Version info</button>");
+  output.append(" <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\">Version info</button>"
+                " <button type=\"button\" class=\"btn btn-default action-update-now\">Update now</button>");
   c.input_info("…available", output.c_str());
 
   c.print(
@@ -2972,6 +2974,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   c.input_text("Version tag", "tag", tag.c_str(), "Specify or select from list (clear to see all options)",
     "<p>Default is <code>main</code> for standard releases. Use <code>eap</code> (early access program) for stable or <code>edge</code> for bleeding edge developer builds.</p>",
     "list=\"tag-list\"");
+  c.input_info("Hardware version", hardware.c_str());
 
   c.print(
     "<hr>"
@@ -3137,6 +3140,20 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "if (on) $(sel).addClass(\"loading\");"
         "else $(sel).removeClass(\"loading\");"
       "}"
+      "$(\".action-update-now\").on(\"click\", function(ev){"
+        "var server = $(\"input[name=server]\").val() || \"https://api.openvehicles.com/firmware/ota\";"
+        "var tag = $(\"input[name=tag]\").val() || \"main\";"
+        "var hardware = \"" + hardware + "\";"
+        "var url = server.replace(/\\/$/, \"\") + \"/\" + hardware + \"/\" + tag + \"/ovms3.bin\";"
+        "$(\"#output\").text(\"Processing… (do not interrupt, may take some minutes)\\n\");"
+        "setloading(\"#flash-dialog\", true);"
+        "$(\"#flash-dialog\").modal(\"show\");"
+        "loadcmd(\"ota flash http \" + url, \"+#output\").done(function(resp){"
+          "setloading(\"#flash-dialog\", false);"
+        "});"
+        "ev.stopPropagation();"
+        "return false;"
+      "});"
       "$(\".section-flash button\").on(\"click\", function(ev){"
         "var action = $(this).attr(\"value\");"
         "if (!action) return;"
