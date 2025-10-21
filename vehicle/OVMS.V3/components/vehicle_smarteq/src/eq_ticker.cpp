@@ -64,15 +64,14 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     --m_ddt4all_exec;
     }
 
+  HandleCharging();
+  HandleChargeport();
+  
   if (StdMetrics.ms_v_env_on->AsBool(false)) 
     HandleEnergy();
   if (StdMetrics.ms_v_env_on->AsBool(false))
     HandleTripcounter();
-  if (StdMetrics.ms_v_charge_pilot->AsBool(false))
-    HandleCharging();
-  if (StdMetrics.ms_v_env_on->AsBool(false))
-    HandleChargeport();
-
+  
   // reactivate door lock warning if the car is parked and unlocked
   if( m_enable_lock_state && 
         m_warning_unlocked &&

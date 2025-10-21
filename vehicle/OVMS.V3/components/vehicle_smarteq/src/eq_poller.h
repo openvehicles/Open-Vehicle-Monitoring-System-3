@@ -58,20 +58,21 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8003, {  0,5,5,5 }, 0, ISOTP_STD }, // rq VehicleState
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x605e, {  0,5,5,5 }, 0, ISOTP_STD }, // rq UNDERHOOD_OPENED  
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8079, {  0,10,10,10 }, 0, ISOTP_STD }, // Generator mode
-  { 0x765, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x403A, {  0,60,60,60 }, 0, ISOTP_STD }, // Engine/Coolant temperature
-  { 0x765, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x403B, {  0,60,60,60 }, 0, ISOTP_STD }, // Equipment/Conditioning temperature
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x403A, {  0,60,60,60 }, 0, ISOTP_STD }, // Engine/Coolant temperature
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x403B, {  0,60,60,60 }, 0, ISOTP_STD }, // Equipment/Conditioning temperature
 
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, {  0,300,60,10 }, 0, ISOTP_STD }, // rqHV_Energy
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, {  0,10,10,10 }, 0, ISOTP_STD }, // rqDCDC_Load
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3022, {  0,10,10,10 }, 0, ISOTP_STD }, // DCDC activation request
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3023, {  0,10,10,10 }, 0, ISOTP_STD }, // 14V DCDC voltage request
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, {  0,10,10,10 }, 0, ISOTP_STD }, // 14V DCDC voltage measure -> mt_evc_LV_DCDC_volt
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, {  0,10,10,10 }, 0, ISOTP_STD }, // 14V DCDC voltage measure
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, {  0,10,10,10 }, 0, ISOTP_STD }, // 14V DCDC current measure
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, {  0,10,10,10 }, 0, ISOTP_STD }, // rqDCDC_Power
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, {  0,5,5,5 }, 0, ISOTP_STD }, // charging plug present
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3301, {  0,10,10,10 }, 0, ISOTP_STD }, // USM 14V voltage (CAN) -> mt_evc_LV_USM_volt
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3433, {  0,60,60,10 }, 0, ISOTP_STD }, // Battery voltage request (internal) -> mt_evc_LV_batt_voltage_req
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3301, {  0,10,10,10 }, 0, ISOTP_STD }, // USM 14V voltage (CAN)
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3433, {  0,60,60,10 }, 0, ISOTP_STD }, // Battery voltage request (internal)
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3431, {  0,60,60,60 }, 0, ISOTP_STD }, // Parking duration (SCH)
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, {  0,30,30,30 }, 0, ISOTP_STD }, // Cabin blower command
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, {  0,10,10,10 }, 0, ISOTP_STD }, // Battery voltage 14V request
 };
 
