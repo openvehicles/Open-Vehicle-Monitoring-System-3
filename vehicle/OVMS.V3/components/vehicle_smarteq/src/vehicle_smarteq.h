@@ -225,11 +225,9 @@ public:
     void PollReply_EVC_DCDC_Volt(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len);
-    void PollReply_EVC_plug_present(const char* data, uint16_t reply_len);
     void PollReply_EVC_USM14VVoltage(const char* data, uint16_t reply_len);
     void PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len);
     void PollReply_EVC_14VBatteryVoltageReq(const char* data, uint16_t reply_len);
-    void PollReply_EVC_ParkingDuration(const char* data, uint16_t reply_len);
     void PollReply_EVC_CabinBlower(const char* data, uint16_t reply_len);
     void PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len);
@@ -253,9 +251,8 @@ public:
     void PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);    
-    void PollReply_OBL_JB2AC_WakeupReq(const char* data, uint16_t reply_len);
-
+    void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);
+    
   protected:
     bool m_enable_write;                    // canwrite
     bool m_enable_LED_state;                // Online LED State
@@ -314,11 +311,9 @@ public:
     OvmsMetricFloat         *mt_evc_LV_DCDC_volt_req;   //!< voltage request in V of DC/DC LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_volt;       //!< voltage in V of DC/DC output of LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_power;      //!< power in W (x/10) of DC/DC output of LV system, not 12V battery!
-    OvmsMetricBool          *mt_evc_plug_present;       //!< charging plug present
     OvmsMetricFloat         *mt_evc_LV_USM_volt;        //!< USM 14V voltage (CAN)
     OvmsMetricFloat         *mt_evc_LV_batt_voltage_can; //!< 14V battery voltage (CAN)
     OvmsMetricFloat         *mt_evc_LV_batt_voltage_req; //!< Internal requested 14V
-    OvmsMetricInt           *mt_evc_parking_duration_min; //!< Time since parked (SCH, minutes)
 
     OvmsMetricVector<float> *mt_bms_temps;              // BMS temperatures
     OvmsMetricFloat         *mt_bms_CV_Range_min;       //!< minimum cell voltage in V, no offset
@@ -347,7 +342,6 @@ public:
     OvmsMetricVector<float> *mt_obl_main_CHGpower;      //!< Power of rail1, rail2 W (x/2) & max available kw (x/64)    
     OvmsMetricBool          *mt_obl_fastchg;            // 22kw fast charge enabled
     OvmsMetricFloat         *mt_obl_main_freq;          //!< AC input frequency
-    OvmsMetricBool          *mt_obl_wakeup_request;     //!< Wake-up request from Mains or plug presence
     OvmsMetricFloat         *mt_obl_main_ground_resistance;           //!< Ground resistance in (Ohm)
     OvmsMetricInt           *mt_obl_main_max_current;                 //!< Charger max current setting (A)
     OvmsMetricString        *mt_obl_main_leakage_diag;                //!< Leakage diagnostic

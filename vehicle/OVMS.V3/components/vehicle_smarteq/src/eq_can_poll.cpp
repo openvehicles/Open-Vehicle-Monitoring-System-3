@@ -128,17 +128,11 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x3494: // rqDCDC_Power
           PollReply_EVC_DCDC_Power(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x339D: // charging plug present
-          PollReply_EVC_plug_present(m_rxbuf.data(), m_rxbuf.size());
-          break;
         case 0x3301: // USM 14V Voltage measure (CAN)
           PollReply_EVC_USM14VVoltage(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x3433: // Battery voltage request (internal SCH)
           PollReply_EVC_14VBatteryVoltageReq(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x3431: // Time since parked (SCH)
-          PollReply_EVC_ParkingDuration(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x34CB: // Cabin blower command
           PollReply_EVC_CabinBlower(m_rxbuf.data(), m_rxbuf.size());
@@ -213,9 +207,6 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           break;
         case 0x5049: // Mains phase frequency
           PollReply_OBL_JB2AC_PhaseFreq(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x500E: // Wake-up request from Mains or plug presence
-          PollReply_OBL_JB2AC_WakeupReq(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
       break;
@@ -635,6 +626,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_ActReq(const char* data, uint16_t re
   uint8_t raw = CAN_BYTE(0);
   bool active = raw != 0;  // Bit 7
   mt_evc_LV_DCDC_act_req->SetValue(active);
+  StdMetrics.ms_v_env_charging12v->SetValue(active);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len) {
@@ -672,14 +664,6 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Power(const char* data, uint16_t rep
   StdMetrics.ms_v_charge_12v_power->SetValue(watts);
 }
 
-void OvmsVehicleSmartEQ::PollReply_EVC_plug_present(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 33 9D <Byte>
-  // Spec: bitoffset 7, bitscount 1
-  REQUIRE_LEN(1);
-  uint8_t raw = CAN_BYTE(0);
-  mt_evc_plug_present->SetValue((raw & 0x01) != 0);
-}
-
 void OvmsVehicleSmartEQ::PollReply_EVC_USM14VVoltage(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 62 33 01 <Byte>
   REQUIRE_LEN(1);
@@ -702,20 +686,6 @@ void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltageReq(const char* data, ui
   uint8_t raw = CAN_BYTE(0);
   float value = 12.0f + raw * 0.05f;
   mt_evc_LV_batt_voltage_req->SetValue(value);
-}
-
-void OvmsVehicleSmartEQ::PollReply_EVC_ParkingDuration(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 34 31 <Byte> <Byte> <Byte> <Byte>
-  REQUIRE_LEN(3);
-  uint32_t raw = CAN_UINT32(0);
-  // Interpret as unsigned int32 (two's complement)
-  // with offset of 2147483648 (2^31) to get range -2147483648 .. +2147483647
-  // to avoid negative parking duration values.
-  int64_t minutes = (int64_t)raw - 2147483648LL;
-  // Sanity clamp (parking duration cannot be negative in normal use):
-  if (minutes < 0) minutes = 0;
-  int parking_minutes = (int)minutes;
-  mt_evc_parking_duration_min->SetValue(parking_minutes);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_CabinBlower(const char* data, uint16_t reply_len) {
@@ -884,15 +854,6 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_
   float freq = 10.0f + (raw * 0.0078125f);
   if (freq > 40.0f) // plausibility check
     mt_obl_main_freq->SetValue(freq);
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_WakeupReq(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 50 0E <Byte>
-  // Spec: bitoffset 7, bitscount 1 (MSB of byte 0 in payload)
-  REQUIRE_LEN(1);
-  uint8_t raw = CAN_BYTE(0);
-  //bool wakeup_req = ((raw >> 7) & 0x01) != 0;  // Bit 7
-  mt_obl_wakeup_request->SetValue((raw & 0x01) != 0);
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_trip(const char* data, uint16_t reply_len) {
