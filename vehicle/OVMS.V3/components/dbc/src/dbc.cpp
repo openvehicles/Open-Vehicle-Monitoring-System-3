@@ -599,6 +599,87 @@ metric_unit_t dbcOvmsMetric::DefaultUnit() const
   }
 
 ////////////////////////////////////////////////////////////////////////
+// dbcOvmsMetricIndex
+//
+dbcOvmsMetricIndex::dbcOvmsMetricIndex(OvmsMetric *metric, int16_t index)
+  : m_metric(metric), m_index(index)
+  {
+  }
+void dbcOvmsMetricIndex::SetValue(dbcNumber value, metric_unit_t unit)
+  {
+  m_metric->SetValueAt(m_index, value, unit);
+  }
+void dbcOvmsMetricIndex::SetValue(const std::string &value)
+  {
+  m_metric->SetValueAt(m_index, value);
+  }
+
+metric_unit_t dbcOvmsMetricIndex::DefaultUnit() const
+  {
+  return m_metric->GetUnits();
+  }
+
+
+////////////////////////////////////////////////////////////////////////
+// OvmsMetricEvent
+//
+OvmsMetricEvent::OvmsMetricEvent(OvmsMetricEventType type, int index, const std::string &strval)
+  : m_index(index), m_type(type),
+    m_string(strval), m_unit(UnitNotFound), m_value()
+  {
+  }
+OvmsMetricEvent::OvmsMetricEvent(OvmsMetricEventType type, int index, metric_unit_t unit, dbcNumber value)
+  : m_index(index), m_type(type),
+    m_string(), m_unit(UnitNotFound), m_value(value)
+  {
+  }
+void MetricEventDataFree(const char* event, void* data)
+  {
+  delete static_cast<OvmsMetricEvent *>(data);
+  }
+
+bool OvmsMetricEvent::GetValue(double &number) const
+  {
+  if (HasString())
+    {
+    return (sscanf(m_string.c_str(), "%lf", &number) == 1);
+    }
+  number = m_value.GetDouble();
+  return true;
+  }
+bool OvmsMetricEvent::GetValue(uint32_t &number) const
+  {
+  if (HasString())
+    {
+    // Get unsigned value
+    return (sscanf(m_string.c_str(), "%" SCNo32, &number) == 1);
+    }
+  number = m_value.GetUnsignedInteger();
+  return true;
+  }
+
+
+////////////////////////////////////////////////////////////////////////
+// dbcEventMetric
+//
+dbcEventMetric::dbcEventMetric(const std::string event, OvmsMetricEventType type, int index, metric_unit_t unit)
+  : m_event(event), m_index(index), m_type(type), m_unit(unit)
+  {
+  }
+void dbcEventMetric::SetValue(dbcNumber value, metric_unit_t unit)
+  {
+  if (unit == Native)
+    unit = m_unit;
+  OvmsMetricEvent *evt = new OvmsMetricEvent(m_type, m_index, unit, value);
+  MyEvents.SignalEvent(m_event, evt, MetricEventDataFree);
+  }
+void dbcEventMetric::SetValue(const std::string &value)
+  {
+  OvmsMetricEvent *evt = new OvmsMetricEvent(m_type, m_index, value);
+  MyEvents.SignalEvent(m_event, evt, MetricEventDataFree);
+  }
+
+////////////////////////////////////////////////////////////////////////
 // dbcMultiplexor_t
 
 dbcMultiplexor_t::dbcMultiplexor_t()
@@ -704,21 +785,133 @@ const std::string& dbcSignal::GetName() const
   return m_name;
   }
 
+static OvmsMetricEventType get_event_type(char ch, bool hasIndex)
+  {
+  switch (ch)
+    {
+    case 'c':
+    case 'C':
+      if (hasIndex)
+        return OvmsMetricEventType::Value;
+      break;
+    case 'r':
+    case 'R':
+      return hasIndex ? OvmsMetricEventType::ResetWithValue : OvmsMetricEventType::Reset;
+    case 'n':
+    case 'N':
+      if (!hasIndex)
+        return OvmsMetricEventType::SetNumber;
+      break;
+    case 'm':
+    case 'M':
+      if (!hasIndex)
+        return OvmsMetricEventType::SetModuleSize;
+      break;
+    default:
+      ;
+    }
+  return OvmsMetricEventType::Unknown;
+  }
+
 void dbcSignal::SetName(const std::string& name)
   {
   m_name = name;
 
   std::string mappedname(name);
   std::replace( mappedname.begin(), mappedname.end(), '_', '.');
+
+  // Search for metric.
   auto metric = MyMetrics.Find(mappedname.c_str());
   if (metric != nullptr)
     {
     AssignMetric(metric);
     return;
     }
-  // TODO bms.v[] and bms.t[]
 
-  // Not found.
+  // Search for metric vector.index
+  // eg:  v.t.pressure.0
+  std::size_t dot = mappedname.rfind('.');
+  if (dot != std::string::npos)
+    {
+    int16_t num = 0;
+    bool found_number = false;
+    bool all_ok = true;
+    for (auto it = mappedname.begin()+dot+1; it!= mappedname.end();++it)
+      {
+      auto ch = *it;
+      if (ch >= '0' && ch <= '9')
+        {
+        found_number = true;
+        num *= 10;
+        num += (ch - '0');
+        }
+      else
+        {
+        all_ok = false;
+        break;
+        }
+      }
+    if (found_number && all_ok)
+      {
+      // Found the number at the back.
+      // Search for the name without the number at the end.
+      std::string found_name = mappedname.substr(0, dot);
+      auto metric = MyMetrics.Find(mappedname.c_str());
+      if (metric != nullptr)
+        {
+        AttachDbcMetric(new dbcOvmsMetricIndex(metric, num));
+        return;
+        }
+      }
+    }
+
+  // Use internal BMS functions so that averages, min/max etc, as well as alarms
+  // all happen.
+  // bms.v.r    Reset stats for cell voltages (ignore value)
+  // bms.v.n    Set total number of cell voltage readings to value.
+  // bms.v.m    Set cell voltage readings per module (grouping count) to value.
+  // bms.t.n    Set total number of cell temperature readings to value.
+  // bms.t.m    Set cell temperature readings per module (grouping count) to value.
+  // bms.v.r.0  Reset stats, and set Voltage at index 0 to value
+  // bms.v.c.1  Set cell voltage at index 1 to value.
+  // bms.t.c.5  Set cell temperature at index 5 to value.
+
+  char bms_type, bms_extra;
+  uint32_t index;
+
+  auto found = sscanf(mappedname.c_str(), "bms.%c.%c.%" SCNd32, &bms_type, &bms_extra, &index);
+  if (found >= 2)
+    {
+    switch (bms_type)
+      {
+      case 'v':
+      case 't':
+        break;
+      case 'V':
+        bms_type = 'v';
+        break;
+      case 'T':
+        bms_type = 't';
+        break;
+      default:
+        bms_type = '\0';
+      }
+    if (bms_type != '\0')
+      {
+      auto et = get_event_type(bms_extra, found == 3);
+      if (et != OvmsMetricEventType::Unknown)
+        {
+        auto name = string_format("bms.%c",bms_type);
+        if (found == 2)
+          AttachDbcMetric(new dbcEventMetric(name, et, -1, m_metric_unit));
+        else
+          AttachDbcMetric(new dbcEventMetric(name, et, index, m_metric_unit));
+        return;
+        }
+      }
+    }
+
+  // Not found or invalid
   AttachDbcMetric(nullptr);
   }
 

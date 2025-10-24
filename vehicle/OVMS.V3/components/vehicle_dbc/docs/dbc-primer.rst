@@ -23,6 +23,64 @@ decode the results (instead of doing the decoding in C++ code). So a DBC file ca
 for a real vehicle module. To request OBD2 data during development, you can use the ``re obdii``
 commands.
 
+-----------
+DBC Signals
+-----------
+
+DBC Signal names can be used to store values directly into metrics.  Eg a signal ``v_b_soc`` would be
+sent to the metric ``v.b.soc``.  If the unit name on a signal matches a valid 'unit code' or 'unit label',
+then this will be passed on too.
+
+For signal names, ``_`` will get translated to a ``.`` for looking up metrics (``.`` is still a valid character in a DBC ID).
+
+It is also possible to store into a vector by putting a number at the end of the signal id. Eg the
+signal ``v_t_pressure_0`` would be sent to the first element of the ``v.t.pressure`` vector. 
+
+-----------
+BMS Targets
+-----------
+
+There are also special BMS (battery management) targets that make sure the averages etc are calculated.
+The format is: **bms.**\ *{type}*\ **.**\ *{operation}*\ [\ *.*\ *{index}*\ ].
+
+The *{type}* is either **v** for voltage or **t** for temperature.
+
+.. list-table::
+   :header-rows:  1
+
+   * - Operation
+     - Description
+     - Has Index
+   * - **n**
+     - Total number of cell voltage readings
+     - No
+   * - **m**
+     - Readings per module
+     - No
+   * - **r**
+     - Reset stats
+     - Optional
+   * - **c**
+     - Cell value
+     - Yes
+ 
+.. list-table:: DBC Examples
+   :header-rows: 1
+
+   * - Example
+     - Description
+   * - ``bms.t.n``
+     - Set total number of cell temperature readings to incoming value.
+   * - ``bms.t.m``
+     - Set total number of cells per grouping to incoming value.
+   * - ``bms.v.r``
+     - Reset stats for cell voltages (ignore value)
+   * - ``bms.v.r.0``
+     - Reset stats and set Voltage at index *0* to incoming value
+   * - ``bms.t.c.2``
+     - Set cell temperature at index *2* to incoming value.
+   * - ``bms.v.c.5``
+     - Set cell voltage at index *5* to incoming value.
 
 -------------
 Basic Example
@@ -42,12 +100,11 @@ message if using DBC.
 - Bytes 1+2: momentary battery current [A], big endian, lower 12 bits, scaled by -0.25, offset +500: ``_6 E7`` → **58.25A**
 - Bytes 4+5: SOC [%], big endian, scaled by 0.0025, no offset: ``6D 58`` → **69.98%**
 
-These can be translated to metrics directly:
+These can be translated to metrics directly by specifying these as the name of the element:
 
 - Charge current limit: ``v.c.climit``
 - Momentary battery current: ``v.b.current``
 - Battery SOC: ``v.b.soc``
-
 
 ---------------
 Create DBC File

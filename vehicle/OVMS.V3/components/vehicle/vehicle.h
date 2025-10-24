@@ -259,6 +259,10 @@ class OvmsVehicle : public InternalRamAllocated
     void VehicleConfigChanged(std::string event, void* data);
     void PollRunFinishedNotify(canbus* bus, void *data);
     void PollerStateTickerNotify(canbus* bus, void *data);
+
+    void EventDBCBmsMetricV(std::string event, void* data);
+    void EventDBCBmsMetricT(std::string event, void* data);
+
   protected:
     // Signal poller
     void PausePolling();

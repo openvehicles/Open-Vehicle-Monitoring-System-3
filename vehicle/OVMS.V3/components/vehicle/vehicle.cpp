@@ -32,6 +32,8 @@
 static const char *TAG = "vehicle";
 // static const char *TAGRX = "vehicle-rx";
 static const char *CHECK_SHUTDOWN_TAG = "vehicle-shutdown";
+// static const char *BMS_VOLTAGE_EVENT = "vehicle-bms-v"
+// static const char *BMS_TEMPERATURE_EVENT = "vehicle-bms-t"
 
 #include <stdio.h>
 #include <algorithm>
@@ -67,7 +69,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   m_currentvehicletype.clear();
 
   MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsVehicleFactory::EventSystemShuttingDown, this, _1, _2));
-  
+
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework", vehicle_status, "", 0, 0, false);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1,true,vehicle_validate);
   cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list);
@@ -595,7 +597,11 @@ OvmsVehicle::OvmsVehicle()
 
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
+
   VehicleConfigChanged("config.mounted", NULL);
+
+  MyEvents.RegisterEvent(TAG, "bms.v", std::bind(&OvmsVehicle::EventDBCBmsMetricV, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "bms.t", std::bind(&OvmsVehicle::EventDBCBmsMetricT, this, _1, _2));
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
 
