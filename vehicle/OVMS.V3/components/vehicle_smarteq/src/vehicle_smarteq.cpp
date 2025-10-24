@@ -105,7 +105,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_adc_factor_history         = new OvmsMetricVector<float>("xsq.adc.factor.history", SM_STALE_NONE, Other);
   mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_NONE, "UNKNOWN", Other);
   
-  mt_obd_duration               = MyMetrics.InitInt("xsq.obd.duration", SM_STALE_MID, 0, Minutes);
+  mt_obd_duration               = MyMetrics.InitInt("xsq.obd.charge.duration", SM_STALE_MID, 0, Minutes);
   mt_obd_trip_km                = MyMetrics.InitFloat("xsq.obd.trip.km", SM_STALE_MID, 0, Kilometers);
   mt_obd_start_trip_km          = MyMetrics.InitFloat("xsq.obd.trip.km.start", SM_STALE_MID, 0, Kilometers);
   mt_obd_trip_time              = MyMetrics.InitString("xsq.obd.trip.time", SM_STALE_MID, 0, Other);
@@ -137,8 +137,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 235, kPa);  // Dummy pressure for TPMS alert testing
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
   mt_bcm_gen_mode                = MyMetrics.InitString("xsq.bcm.gen.mode", SM_STALE_MID, "UNKNOWN", Other);
-  mt_bcm_engine_temp             = MyMetrics.InitFloat("xsq.bcm.engine.temp", SM_STALE_MID, 0, Celcius);  
-  mt_bcm_cond_temp               = MyMetrics.InitFloat("xsq.bcm.cond.temp", SM_STALE_MID, 0, Celcius);
 
   mt_evc_hv_energy              = MyMetrics.InitFloat("xsq.evc.hv.energy", SM_STALE_MID, 0, kWh);
   mt_evc_LV_DCDC_act_req        = MyMetrics.InitBool("xsq.evc.12V.dcdc.act.req", SM_STALE_MID, false);
@@ -150,16 +148,13 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_evc_LV_USM_volt            = MyMetrics.InitFloat("xsq.evc.12V.volt.usm", SM_STALE_MIN, 0, Volts);
   mt_evc_LV_batt_voltage_can    = MyMetrics.InitFloat("xsq.evc.12V.volt.can", SM_STALE_MIN, 0, Volts);
   mt_evc_LV_batt_voltage_req    = MyMetrics.InitFloat("xsq.evc.12V.batt.volt.req.int", SM_STALE_MIN, 0, Volts);
-  mt_evc_plug_present           = MyMetrics.InitBool("xsq.evc.plug.present", SM_STALE_MIN, false);
-  mt_evc_parking_duration_min   = MyMetrics.InitInt("xsq.evc.parking.minutes", SM_STALE_MIN, 0, Minutes);
 
   mt_obl_fastchg                = MyMetrics.InitBool("xsq.obl.fastchg", SM_STALE_MIN, false);
   mt_obl_main_volts             = new OvmsMetricVector<float>("xsq.obl.volts", SM_STALE_HIGH, Volts);
   mt_obl_main_amps              = new OvmsMetricVector<float>("xsq.obl.amps", SM_STALE_HIGH, Amps);
   mt_obl_main_CHGpower          = new OvmsMetricVector<float>("xsq.obl.power", SM_STALE_HIGH, kW);
   mt_obl_main_ground_resistance = MyMetrics.InitFloat("xsq.obl.ground.resistance", SM_STALE_MID, 0, Other);
-  mt_obl_main_freq              = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);  
-  mt_obl_wakeup_request         = MyMetrics.InitBool("xsq.obl.wakeup.req", SM_STALE_MID, false);
+  mt_obl_main_freq              = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);
   mt_obl_main_max_current       = MyMetrics.InitInt("xsq.obl.max.current", SM_STALE_MID, 0, Amps);
   mt_obl_main_leakage_diag      = MyMetrics.InitString("xsq.obl.leakdiag", SM_STALE_MID, "", Other);
   mt_obl_main_current_leakage_dc        = MyMetrics.InitFloat("xsq.obl.current.dc", SM_STALE_MID, 0, Amps);
@@ -174,14 +169,11 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_BattLinkVoltage        = MyMetrics.InitFloat("xsq.bms.batt.link.voltage", SM_STALE_MID, 0, Volts);
   mt_bms_BattContactorVoltage   = MyMetrics.InitFloat("xsq.bms.batt.contactor.voltage", SM_STALE_MID, 0, Volts);
   mt_bms_BattCV_Sum             = MyMetrics.InitFloat("xsq.bms.batt.cv.sum", SM_STALE_MID, 0, Volts);
-  mt_bms_BattPower_voltage      = MyMetrics.InitFloat("xsq.bms.batt.voltage", SM_STALE_MID, 0, Volts);
-  mt_bms_BattPower_current      = MyMetrics.InitFloat("xsq.bms.batt.current", SM_STALE_MID, 0, Amps);
   mt_bms_BattPower_power        = MyMetrics.InitFloat("xsq.bms.batt.power", SM_STALE_MID, 0, kW);
   mt_bms_HVcontactStateTXT      = MyMetrics.InitString("xsq.bms.contact", SM_STALE_MID, "", Other);
   mt_bms_HV                     = MyMetrics.InitFloat("xsq.bms.hv", SM_STALE_MID, 0, Volts);
   mt_bms_EVmode_txt             = MyMetrics.InitString("xsq.bms.ev.mode", SM_STALE_MID, "", Other);
   mt_bms_12v                    = MyMetrics.InitFloat("xsq.bms.12v", SM_STALE_MID, 0, Volts);
-  mt_bms_Power                  = MyMetrics.InitFloat("xsq.bms.power", SM_STALE_MID, 0, kW);
   mt_bms_interlock_hvplug       = MyMetrics.InitBool("xsq.bms.interlock.hvplug",SM_STALE_MID, false);
   mt_bms_interlock_service      = MyMetrics.InitBool("xsq.bms.interlock.service", SM_STALE_MID, false);
   mt_bms_fusi_mode_txt          = MyMetrics.InitString("xsq.bms.fusi",SM_STALE_MID, "", Other);
@@ -577,7 +569,7 @@ void OvmsVehicleSmartEQ::HandleChargeport(){
     if (m_resettrip) ResetTripCounters();
     ESP_LOGD(TAG,"Charge Start");
   } 
-  if (!StdMetrics.ms_v_door_chargeport->AsBool() && !mt_evc_plug_present->AsBool() && m_charge_start) {
+  if (!StdMetrics.ms_v_door_chargeport->AsBool() && m_charge_start) {
     m_charge_start = false;
     m_charge_finished = true;
     StdMetrics.ms_v_charge_power->SetValue(0);
@@ -628,17 +620,25 @@ void OvmsVehicleSmartEQ::UpdateChargeMetrics() {
   
   StdMetrics.ms_v_charge_current->SetValue(total_current);
   
-  // Power and efficiency calculation
-  float power = mt_obl_main_CHGpower->GetElemValue(0) + mt_obl_main_CHGpower->GetElemValue(1);
-  StdMetrics.ms_v_charge_power->SetValue(power);
+  float power_grid = mt_obl_main_CHGpower->GetElemValue(0) + mt_obl_main_CHGpower->GetElemValue(1);
+  StdMetrics.ms_v_charge_power->SetValue(power_grid);
   
-  float efficiency = (power > 0.001f) 
-                     ? (StdMetrics.ms_v_bat_power->AsFloat() / power) * 100.0f 
-                     : 0.0f;
+  // Use absolute value of battery power for efficiency calculation
+  float power_battery = fabs(StdMetrics.ms_v_bat_power->AsFloat());
+  
+  float efficiency = 0.0f;
+  if (power_grid > 0.01f) {  // Avoid division by zero, require at least 10W
+    efficiency = (power_battery / power_grid) * 100.0f;
+    
+    // Sanity check: efficiency should be between 0-100%
+    if (efficiency > 100.0f) {
+      efficiency = 100.0f;
+    } else if (efficiency < 0.0f) {
+      efficiency = 0.0f;
+    }
+  }
+  
   StdMetrics.ms_v_charge_efficiency->SetValue(efficiency);
-  
-  ESP_LOGD(TAG, "Charge: %dph %.1fV %.1fA %.2fkW eff=%.1f%%", 
-           phasecnt, avg_voltage, total_current, power, efficiency);
 }
 
 /**

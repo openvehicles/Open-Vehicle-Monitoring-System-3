@@ -64,15 +64,14 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     --m_ddt4all_exec;
     }
 
+  HandleCharging();
+  HandleChargeport();
+  
   if (StdMetrics.ms_v_env_on->AsBool(false)) 
     HandleEnergy();
   if (StdMetrics.ms_v_env_on->AsBool(false))
     HandleTripcounter();
-  if (StdMetrics.ms_v_charge_pilot->AsBool(false))
-    HandleCharging();
-  if (StdMetrics.ms_v_env_on->AsBool(false))
-    HandleChargeport();
-
+  
   // reactivate door lock warning if the car is parked and unlocked
   if( m_enable_lock_state && 
         m_warning_unlocked &&
@@ -150,7 +149,6 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
  */
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) 
   {
-  bool lv_pwrstate =  mt_evc_LV_DCDC_act_req->AsBool(false); //(StdMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 13.4f);  
   bool car_online = StdMetrics.ms_v_env_awake->AsBool(false);  
   bool car_bus = mt_bus_awake->AsBool(false);
 
@@ -170,10 +168,6 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
     }
   
   // - base system is awake if we've got a fresh lv_pwrstate:
-  StdMetrics.ms_v_env_aux12v->SetValue(car_online);
-
-  // - charging / trickle charging 12V battery is active when lv_pwrstate is true:
-  StdMetrics.ms_v_env_charging12v->SetValue(lv_pwrstate);
-  
+  StdMetrics.ms_v_env_aux12v->SetValue(car_online);   
   HandlePollState();
   }

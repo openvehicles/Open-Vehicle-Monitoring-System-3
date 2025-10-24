@@ -205,11 +205,12 @@ public:
     void GetDashboardConfig(DashboardConfig& cfg);
     virtual void CalculateEfficiency();
     void vehicle_smart_car_on(bool isOn);
+
+    void IncomingEVC(uint16_t type, uint16_t pid, const char *data, uint16_t len);
     
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* data, uint16_t reply_len);
     void PollReply_BMS_BattState(const char* data, uint16_t reply_len);
-    void PollReply_HVAC(const char* data, uint16_t reply_len);
     void PollReply_TDB(const char* data, uint16_t reply_len);
     void PollReply_BCM_VIN(const char* data, uint16_t reply_len);
     void PollReply_BCM_VehicleState(const char* data, uint16_t reply_len);
@@ -217,8 +218,6 @@ public:
     void PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len);
     void PollReply_BCM_GenMode(const char* data, uint16_t reply_len);
-    void PollReply_BCM_EngineTemp(const char* data, uint16_t reply_len);
-    void PollReply_BCM_CondTemp(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
@@ -226,11 +225,10 @@ public:
     void PollReply_EVC_DCDC_Volt(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len);
-    void PollReply_EVC_plug_present(const char* data, uint16_t reply_len);
     void PollReply_EVC_USM14VVoltage(const char* data, uint16_t reply_len);
     void PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len);
     void PollReply_EVC_14VBatteryVoltageReq(const char* data, uint16_t reply_len);
-    void PollReply_EVC_ParkingDuration(const char* data, uint16_t reply_len);
+    void PollReply_EVC_CabinBlower(const char* data, uint16_t reply_len);
     void PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph2_RMS_A(const char* data, uint16_t reply_len);
@@ -253,9 +251,8 @@ public:
     void PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);    
-    void PollReply_OBL_JB2AC_WakeupReq(const char* data, uint16_t reply_len);
-
+    void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);
+    
   protected:
     bool m_enable_write;                    // canwrite
     bool m_enable_LED_state;                // Online LED State
@@ -314,11 +311,9 @@ public:
     OvmsMetricFloat         *mt_evc_LV_DCDC_volt_req;   //!< voltage request in V of DC/DC LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_volt;       //!< voltage in V of DC/DC output of LV system, not 12V battery!
     OvmsMetricFloat         *mt_evc_LV_DCDC_power;      //!< power in W (x/10) of DC/DC output of LV system, not 12V battery!
-    OvmsMetricBool          *mt_evc_plug_present;       //!< charging plug present
     OvmsMetricFloat         *mt_evc_LV_USM_volt;        //!< USM 14V voltage (CAN)
     OvmsMetricFloat         *mt_evc_LV_batt_voltage_can; //!< 14V battery voltage (CAN)
     OvmsMetricFloat         *mt_evc_LV_batt_voltage_req; //!< Internal requested 14V
-    OvmsMetricInt           *mt_evc_parking_duration_min; //!< Time since parked (SCH, minutes)
 
     OvmsMetricVector<float> *mt_bms_temps;              // BMS temperatures
     OvmsMetricFloat         *mt_bms_CV_Range_min;       //!< minimum cell voltage in V, no offset
@@ -327,18 +322,19 @@ public:
     OvmsMetricFloat         *mt_bms_BattLinkVoltage;    //!< Link voltage to drivetrain inverter
     OvmsMetricFloat         *mt_bms_BattContactorVoltage;   //!< voltage at the battery contactor
     OvmsMetricFloat         *mt_bms_BattCV_Sum;         //!< Sum of single cell voltages
-    OvmsMetricFloat         *mt_bms_BattPower_voltage;  //!< voltage value sample (raw), (x/64) for actual value
-    OvmsMetricFloat         *mt_bms_BattPower_current;  //!< current value sample (raw), (x/32) for actual value
     OvmsMetricFloat         *mt_bms_BattPower_power;    //!< calculated power of sample in kW
+    OvmsMetricInt           *mt_bms_HVcontactStateCode; //!< contactor state: 0 := OFF, 1 := PRECHARGE, 2 := ON
     OvmsMetricString        *mt_bms_HVcontactStateTXT;  //!< contactor state text
     OvmsMetricFloat         *mt_bms_HV;                 //!< total voltage of HV system in V
+    OvmsMetricInt           *mt_bms_EVmode;             //!< Mode the EV is actually in: 0 = none, 1 = slow charge, 2 = fast charge, 3 = normal, 4 = Quick Drop, 5 = Cameleon (Non-Isolated Charging)
     OvmsMetricString        *mt_bms_EVmode_txt;         //!< Mode the EV is actually in text
     OvmsMetricFloat         *mt_bms_12v;                //!< 12V onboard voltage / Clamp 30 Voltage
-    OvmsMetricFloat         *mt_bms_Power;              //!< power as product of voltage and amps in kW
     OvmsMetricBool          *mt_bms_interlock_hvplug;       //!< HV plug interlock
     OvmsMetricBool          *mt_bms_interlock_service;      //!< Service disconnect interlock
+    OvmsMetricInt           *mt_bms_fusi_mode;              //!< FUSI mode code
     OvmsMetricString        *mt_bms_fusi_mode_txt;          //!< FUSI mode text
     OvmsMetricFloat         *mt_bms_mg_rpm;                 //!< MG output revolution (rpm/2)
+    OvmsMetricInt           *mt_bms_safety_mode;            //!< Safety mode code
     OvmsMetricString        *mt_bms_safety_mode_txt;        //!< Safety mode text
 
     OvmsMetricVector<float> *mt_obl_main_amps;          //!< AC current of L1, L2, L3
@@ -346,7 +342,6 @@ public:
     OvmsMetricVector<float> *mt_obl_main_CHGpower;      //!< Power of rail1, rail2 W (x/2) & max available kw (x/64)    
     OvmsMetricBool          *mt_obl_fastchg;            // 22kw fast charge enabled
     OvmsMetricFloat         *mt_obl_main_freq;          //!< AC input frequency
-    OvmsMetricBool          *mt_obl_wakeup_request;     //!< Wake-up request from Mains or plug presence
     OvmsMetricFloat         *mt_obl_main_ground_resistance;           //!< Ground resistance in (Ohm)
     OvmsMetricInt           *mt_obl_main_max_current;                 //!< Charger max current setting (A)
     OvmsMetricString        *mt_obl_main_leakage_diag;                //!< Leakage diagnostic
@@ -383,8 +378,6 @@ public:
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
     OvmsMetricString        *mt_bcm_vehicle_state;      //!< vehicle state
     OvmsMetricString        *mt_bcm_gen_mode;           //!< Generator mode text
-    OvmsMetricFloat         *mt_bcm_engine_temp;        //!< Engine/Coolant temperature
-    OvmsMetricFloat         *mt_bcm_cond_temp;          //!< Equipment/Conditioning temperature
     
   protected:
     bool m_climate_start;
