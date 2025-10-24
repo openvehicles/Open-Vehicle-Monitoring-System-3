@@ -323,49 +323,58 @@ void OvmsVehicleSmartEQ::Check12vState() {
 
 void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
   #ifdef CONFIG_OVMS_COMP_ADC
-    if (can12V < 10.0f || can12V > 15.0f) {
+    if (can12V < 12.0f || can12V > 15.0f) 
+      {
       ESP_LOGW(TAG, "Skip ADC factor recalculation (invalid 12V input %.2f)", can12V);
       if (writer) writer->printf("Skip ADC factor recalculation (invalid 12V input %.2f)\n", can12V);
       return;
-    }
+      }
+      
+    // Configure ADC
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
 
     const int NUM_SAMPLES = MyConfig.GetParamValueInt("xsq", "calc.adcfactor.samples", 10);
     uint16_t samples_adc[NUM_SAMPLES];
-    float avg_usm = 0.0f;
     
     // Collect samples
-    for (int i = 0; i < NUM_SAMPLES; i++) {
-      vTaskDelay(100 / portTICK_PERIOD_MS);
+    for (int i = 0; i < NUM_SAMPLES; i++) 
+      {
+      vTaskDelay(5 / portTICK_PERIOD_MS);
       samples_adc[i] = adc1_get_raw(ADC1_CHANNEL_0);
-      avg_usm += mt_evc_LV_USM_volt->AsFloat(0.0f);
-    }
+      }
 
     // Bubble sort for median calculation
-    for (int i = 0; i < NUM_SAMPLES - 1; i++) {
-      for (int j = 0; j < NUM_SAMPLES - i - 1; j++) {
-        if (samples_adc[j] > samples_adc[j + 1]) {
+    for (int i = 0; i < NUM_SAMPLES - 1; i++) 
+      {
+      for (int j = 0; j < NUM_SAMPLES - i - 1; j++) 
+        {
+        if (samples_adc[j] > samples_adc[j + 1]) 
+          {
           uint16_t temp = samples_adc[j];
           samples_adc[j] = samples_adc[j + 1];
           samples_adc[j + 1] = temp;
+          }
         }
       }
-    }
 
     // Calculate median
     float median_raw;
-    if (NUM_SAMPLES % 2 == 0) {
+    if (NUM_SAMPLES % 2 == 0) 
+      {
       median_raw = (samples_adc[(NUM_SAMPLES / 2) - 1] + samples_adc[NUM_SAMPLES / 2]) / 2.0f;
-    } else {
+      } 
+      else 
+      {
       median_raw = samples_adc[NUM_SAMPLES / 2];
-    }
+      }
 
     // Calculate average of ADC samples
     uint32_t summid = 0;
-    for (int i = 0; i < NUM_SAMPLES; i++) {
+    for (int i = 0; i < NUM_SAMPLES; i++) 
+      {
       summid += samples_adc[i];
-    }
+      }
     float avg_raw = summid / (float)NUM_SAMPLES;    
 
     // After collecting samples, don't sort, instead:
@@ -375,29 +384,30 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
     float trimmed_avg = (summid - min_val - max_val) / (float)(NUM_SAMPLES - 2);
     
     // Calculate average of USM voltage samples
-    float V_batt = avg_usm / (float)NUM_SAMPLES; //float V_batt = can12V;
+    float V_batt = can12V;
 
-    float adc_factor_median = (V_batt > 0) ? (median_raw / V_batt) : 0;
-    float adc_factor_avg = (V_batt > 0) ? (avg_raw / V_batt) : 0;
-    float adc_factor_trimmed = (V_batt > 0) ? (trimmed_avg / V_batt) : 0;
+    float adc_factor_median = (V_batt > 12.0f) ? (median_raw / V_batt) : 0.0f;
+    float adc_factor_avg = (V_batt > 12.0f) ? (avg_raw / V_batt) : 0.0f;
+    float adc_factor_trimmed = (V_batt > 12.0f) ? (trimmed_avg / V_batt) : 0.0f;
 
     float adc_factor_new = adc_factor_median;
     float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc", "factor12v", 195.7f);
 
-   if (writer) {
+    if (writer) 
+      {
       writer->printf("ADC samples (sorted): min=%u max=%u median=%.2f avg=%.2f trimmed=%.2f\n",
-                     min_val, max_val, median_raw, avg_raw, trimmed_avg);
+                      min_val, max_val, median_raw, avg_raw, trimmed_avg);
       writer->printf("     factor_median=%.3f factor_avg=%.3f factor_trimmed=%.3f\n",
-                     adc_factor_median, adc_factor_avg, adc_factor_trimmed);
-    }
+                      adc_factor_median, adc_factor_avg, adc_factor_trimmed);
+      }
 
     if (writer) writer->printf("ADC recalculation: avg_raw=%.2f  V_batt=%.3f  factor=%.3f\n", avg_raw, V_batt, adc_factor_new);
-    if (adc_factor_new < 160.0f || adc_factor_new > 230.0f) {
+    if (adc_factor_new < 180.0f || adc_factor_new > 210.0f) 
+      {
       if (writer) writer->printf("Reject ADC factor %.3f (out of bounds, keeping %.3f)\n", adc_factor_new, adc_factor_prev);
       return;
-    }   
+      }    
     
-
     m_adc_factor_history.push_back(adc_factor_prev);
     if (m_adc_factor_history.size() > 10)
       m_adc_factor_history.pop_front();

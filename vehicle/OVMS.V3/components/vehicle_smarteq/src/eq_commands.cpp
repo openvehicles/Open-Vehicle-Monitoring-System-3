@@ -811,9 +811,9 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
       writer->puts("Error: invalid number");
       return;
       }
-    if (val < 11.0 || val > 15.0) 
+    if (val < 12.0 || val > 15.0) 
       {
-      writer->puts("Error: voltage out of plausible range (11.0–15.0)");
+      writer->puts("Error: voltage out of plausible range (12.0–15.0)");
       return;
       }
     writer->printf("Recalculating ADC factor using override voltage %.2fV\n", val);
@@ -827,17 +827,14 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
       writer->puts("Error: no write access");
       return;
       }
-    OvmsVehicle::vehicle_command_t res;
 
-    res = smarteq->CommandWakeup2();
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
-    if (res != Success) 
+    if (!smarteq->mt_evc_LV_DCDC_act_req->AsBool(false)) 
       {
-      writer->puts("Error: vehicle not awake");
+      writer->puts("Error: vehicle 12V DC-DC converter not active");
       return;
       } 
         
-    float can12V = smarteq->mt_evc_LV_USM_volt->AsFloat(0.0f);   // USM 12V voltage from CAN
+    float can12V = smarteq->mt_evc_LV_DCDC_volt->AsFloat(0.0f) + 0.25f;   // DCDC 12V voltage from CAN bus plus offset
     if (can12V <= 13.10f) 
       {
       writer->puts("Error: vehicle 12V is not charging, 12V voltage is not stable for ADC calibration!");
