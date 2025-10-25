@@ -74,7 +74,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info, full_km, rebootnw;
   bool canwrite, led, resettrip, resettotal, bcvalue, climate_system;
-  bool charge12v, extstats, unlocked, mdmcheck, wakeup, tripnotify, opendoors;
+  bool charge12v, extstats, unlocked, mdmcheck, tripnotify, opendoors;
 
   if (c.method == "POST") {
     // process form submission:
@@ -90,7 +90,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     mdmcheck = (c.getvar("mdmcheck") == "yes");
     unlocked = (c.getvar("unlocked") == "yes");
     extstats = (c.getvar("extstats") == "yes");
-    wakeup   = (c.getvar("wakeup") == "yes");
     tripnotify = (c.getvar("resetnotify") == "yes");
     opendoors = (c.getvar("opendoors") == "yes");
 
@@ -122,7 +121,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xsq", "unlock.warning", unlocked);
       MyConfig.SetParamValueBool("xsq", "modem.check", mdmcheck);
       MyConfig.SetParamValueBool("xsq", "extended.stats", extstats);
-      MyConfig.SetParamValueBool("xsq", "restart.wakeup", wakeup);
       MyConfig.SetParamValueBool("xsq", "reset.notify", tripnotify);
       MyConfig.SetParamValueBool("xsq", "door.warning", opendoors);
 
@@ -152,7 +150,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     unlocked    = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
     mdmcheck    = MyConfig.GetParamValueBool("xsq", "modem.check", false);
     extstats    = MyConfig.GetParamValueBool("xsq", "extended.stats", false);
-    wakeup      = MyConfig.GetParamValueBool("xsq", "restart.wakeup", false);
     tripnotify  = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
     opendoors   = MyConfig.GetParamValueBool("xsq", "door.warning", false);
 
@@ -195,8 +192,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Enable = send a warning when Car 10 minutes parked and unlocked</p>");
   c.input_checkbox("Enable Door open warning", "opendoors", opendoors,
     "<p>Enable = send a warning when Car 10 minutes parked and doors are open</p>");
-  c.input_checkbox("Enable Wakeup on Restart", "wakeup", wakeup,
-    "<p>Enable = Wakeup the Car on Restart of the OVMS</p>");
   c.input_checkbox("Enable extended statistics", "extstats", extstats,
       "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");  
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 15, 0, 60, 1,

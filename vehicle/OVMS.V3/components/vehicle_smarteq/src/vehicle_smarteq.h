@@ -156,6 +156,7 @@ public:
     virtual vehicle_command_t CommandDDT4all(int number, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandSOClimit(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
 
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -184,6 +185,7 @@ public:
     static void xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
     int m_candata_timer;
@@ -204,10 +206,7 @@ public:
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
     virtual void CalculateEfficiency();
-    void vehicle_smart_car_on(bool isOn);
-
-    void IncomingEVC(uint16_t type, uint16_t pid, const char *data, uint16_t len);
-    
+    void vehicle_smart_car_on(bool isOn);    
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* data, uint16_t reply_len);
     void PollReply_BMS_BattState(const char* data, uint16_t reply_len);

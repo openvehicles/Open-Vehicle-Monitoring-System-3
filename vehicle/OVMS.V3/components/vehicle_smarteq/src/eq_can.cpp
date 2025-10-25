@@ -137,7 +137,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       REQ_DLC(3);
       mt_use_at_reset->SetValue(CAN_BYTE(1) * 0.1);
       mt_use_at_start->SetValue(CAN_BYTE(2) * 0.1);
-      if( MyConfig.GetParamValueBool("xsq", "bcvalue",  false)){
+      if(m_bcvalue){
         StdMetrics.ms_v_gen_kwh_grid_total->SetValue(mt_use_at_reset->AsFloat()); // not the best idea at the moment
       } else {
         StdMetrics.ms_v_gen_kwh_grid_total->SetValue(0.0f);
@@ -236,7 +236,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           }
         }
       }
-      break;    
+      break;
     default:
       //ESP_LOGI(TAG, "PID:%x DATA: %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
       break;

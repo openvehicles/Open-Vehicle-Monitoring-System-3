@@ -849,3 +849,159 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
     return;
   #endif
 }
+
+void OvmsVehicleSmartEQ::xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+
+  smarteq->CommandPreset(verbosity, writer);
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, OvmsWriter* writer) {
+  MyConfig.SetParamValueBool("xsq", "cfg.preset.act",  true); // activate preset config
+  MyConfig.SetParamValue("xsq", "cfg.preset.ver",  "1.0"); // preset config version
+
+  if (!MyConfig.IsDefined("xsq", "tpms.front.pressure")) 
+    {
+    MyConfig.SetParamValueInt("xsq", "tpms.front.pressure",  225); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.rear.pressure",  255); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.value.warn",  50); // kPa
+    MyConfig.SetParamValueInt("xsq", "tpms.value.alert", 75); // kPa
+    }
+
+  if (!MyConfig.IsDefined("xsq", "tpms.alert.enable")) 
+    {
+    MyConfig.SetParamValueBool("xsq", "tpms.alert.enable", true);
+    }
+
+  if (!MyConfig.IsDefined("xsq", "tpms.temp")) 
+    {
+    MyConfig.SetParamValueBool("xsq", "tpms.temp", true); 
+    }
+
+  if (!MyConfig.IsDefined("xsq", "climate.system")) 
+    {
+    MyConfig.SetParamValueBool("xsq", "climate.system", true); 
+    }
+
+  if (!MyConfig.IsDefined("xsq", "12v.charge")) 
+    {
+    MyConfig.SetParamValueBool("xsq", "12v.charge", true);
+    }
+
+  if (!MyConfig.IsDefined("vehicle", "12v.alert")) 
+    {
+    MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
+    }
+
+  if (!MyConfig.IsDefined("xsq", "unlock.warning")) 
+    {
+    MyConfig.SetParamValueBool("xsq", "unlock.warning", true);                                 
+    }
+
+  if (!MyConfig.IsDefined("xsq", "door.warning")) 
+    {
+    MyConfig.SetParamValueBool("xsq", "door.warning", true);                                 
+    }
+
+  if (!MyConfig.IsDefined("xsq", "extended.stats"))
+    {
+    MyConfig.SetParamValueBool("xsq", "extended.stats", false);
+    }
+
+  if (!MyConfig.IsDefined("xsq", "modem.check")) 
+    {
+    MyConfig.SetParamValueBool("xsq", "modem.check", false);
+    }
+
+  if (!MyConfig.IsDefined("xsq", "reset.notify")) 
+    {
+    MyConfig.SetParamValueBool("xsq", "reset.notify", true);
+    }
+
+  if (!MyConfig.IsDefined("modem", "gps.parkpause")) 
+    {
+    MyConfig.SetParamValue("modem", "gps.parkpause", "600"); // default 10 min.
+    MyConfig.SetParamValue("modem", "gps.parkreactivate", "50"); // default 50 min.
+    MyConfig.SetParamValue("modem", "gps.parkreactlock", "5"); // default 5 min.
+    MyConfig.SetParamValue("vehicle", "stream", "10"); // set stream to 10 sec.
+    }
+  
+  if (!MyConfig.IsDefined("modem", "gps.parkreactawake")) 
+    {
+    MyConfig.SetParamValueBool("modem", "gps.parkreactawake", true);
+    }
+
+  if (!MyConfig.IsDefined("net", "type")) 
+    {
+    MyConfig.SetParamValue("net", "type", "4G");
+    }
+
+  if (!MyConfig.IsDefined("network", "wifi.ap2client.enable")) 
+    {
+    MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
+    }
+
+
+  // delete old config entry and set new entry one time
+
+  if (MyConfig.IsDefined("xsq", "ios_tpms_fix")) 
+    {
+    MyConfig.DeleteInstance("xsq", "ios_tpms_fix");
+    }
+
+  if (MyConfig.IsDefined("xsq", "restart.wakeup")) 
+    {
+    MyConfig.DeleteInstance("xsq", "restart.wakeup");
+    }
+
+  if (MyConfig.IsDefined("xsq", "v2.check")) 
+    {
+    MyConfig.DeleteInstance("xsq", "v2.check");
+    }
+
+  if (MyConfig.IsDefined("xsq", "12v.measured.offset")) 
+    {
+    MyConfig.DeleteInstance("xsq", "12v.measured.offset");
+    }
+  
+  if (MyConfig.IsDefined("xsq", "modem.net.type")) 
+    {
+    MyConfig.DeleteInstance("xsq", "modem.net.type");
+    }
+  
+  if (MyConfig.IsDefined("xsq", "booster.system")) 
+    {
+    MyConfig.DeleteInstance("xsq", "booster.1to3");
+    MyConfig.DeleteInstance("xsq", "booster.de");
+    MyConfig.DeleteInstance("xsq", "booster.ds");
+    MyConfig.DeleteInstance("xsq", "booster.h");
+    MyConfig.DeleteInstance("xsq", "booster.m");
+    MyConfig.DeleteInstance("xsq", "booster.on");
+    MyConfig.DeleteInstance("xsq", "booster.system");
+    MyConfig.DeleteInstance("xsq", "booster.weekly");
+    }
+
+  if (MyConfig.IsDefined("xsq", "gps.onoff")) 
+    {
+    MyConfig.DeleteInstance("xsq", "gps.onoff");
+    MyConfig.DeleteInstance("xsq", "gps.off");
+    MyConfig.DeleteInstance("xsq", "gps.reactmin");
+    }
+
+  if (MyConfig.IsDefined("xsq", "gps.deact")) 
+    {
+    MyConfig.DeleteInstance("xsq", "gps.deact");
+    }
+
+  if (MyConfig.GetParamValue("ota", "server", "0") == "https://ovms.dimitrie.eu/firmware/ota" && 
+      MyConfig.GetParamValue("ota", "tag", "0") == "smarteq")
+    {
+    MyConfig.SetParamValue("ota", "server", "https://ovms.dexters-web.de/firmware/ota");
+    MyConfig.SetParamValue("ota", "tag", "edge");
+    }
+
+  writer->printf("config setting activated");
+  return Success;
+}
