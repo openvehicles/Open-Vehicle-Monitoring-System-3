@@ -512,7 +512,7 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
         return std::string(buf);
       };
       
-      // ✅ FIX: Read all TPMS values using sq->
+      // Read all TPMS values using sq->
       tpms_temp        = getBool("tpms.temp", sq->m_tpms_temp_enable);
       enable           = getBool("tpms.alert.enable", sq->m_tpms_alert_enable);
       TPMS_FL          = getStringInt("TPMS_FL", sq->m_tpms_index[0]);
