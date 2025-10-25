@@ -206,9 +206,16 @@ void OvmsHyundaiIoniqEv::IncomingCM_Full(uint16_t type, uint16_t pid, const std:
       if (!get_uint_buff_be<3>(data, 6, value)) {
         ESP_LOGE(TAGP, "IoniqISOTP.CM: ODO: Bad Buffer");
       }
-      else {
-        StdMetrics.ms_v_pos_odometer->SetValue(value, GetConsoleUnits());
+      else if (value > 0) {
+        StdMetrics.ms_v_pos_odometer->SetValue(value, Kilometers);
         ESP_LOGD(TAGP, "IoniqISOTP.CM: ODO : %" PRId32 " km", value);
+      } // It seems if above is 0, then the next 3 bytes are the odo in miles
+      else if (!get_uint_buff_be<3>(data, 9, value)) {
+        ESP_LOGE(TAGP, "IoniqISOTP.CM: ODO(mi): Bad Buffer");
+      }
+      else if (value != 0) {
+        StdMetrics.ms_v_pos_odometer->SetValue(value, Miles);
+        ESP_LOGD(TAGP, "IoniqISOTP.CM: ODO : %" PRId32 " mi", value);
       }
     }
     break;
