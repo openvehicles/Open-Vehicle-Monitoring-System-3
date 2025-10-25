@@ -1,6 +1,11 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Wifi: added command to restart the Wifi network into the default (autostart) config,
+    and added default for the AP SSID on the apclient mode.
+  New/changed commands:
+    wifi restart                        -- Restart Wifi network into autostart config
+    wifi mode apclient                  -- Parameter <apssid> is now optional, defaults to autostart config
 - Cellular: added option to restrict the modem network type to 2G/3G/4G. Restricting
     the network type may help in case of frequent network losses / reconnects.
   New config:

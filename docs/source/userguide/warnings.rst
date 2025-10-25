@@ -155,6 +155,11 @@ Beginning with firmware release 3.3.004, the 12V monitoring can be configured to
 deep sleep based on a low 12V voltage level. On most vehicles, this can be used to
 automatically shut down the module when parking and reboot when driving or charging.
 
+Beginning with firmware release 3.3.005, you can couple the GPS operation mode
+to the parking/driving state, and you can set the Wifi AP+client mode to switch
+back to client only mode if no stations connected to the AP for a given timeout
+(see Cellular & Wifi configurations).
+
 
 ~~~~~~~~~~~~~~~~~~
 Module Version 3.3

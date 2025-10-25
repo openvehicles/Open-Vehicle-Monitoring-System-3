@@ -230,6 +230,8 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.panel_end(
     "<ul class=\"list-inline\">"
       "<li><button type=\"button\" class=\"btn btn-default btn-sm\" name=\"action\" value=\"wifi reconnect\">Reconnect Wifi</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" name=\"action\" value=\"wifi restart\">Restart Wifi</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" name=\"action\" value=\"wifi mode apclient\">Start AP+client mode</button></li>"
     "</ul>");
 
   c.print(
@@ -2306,20 +2308,26 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
   // generate form:
   c.panel_start("primary", "Wifi configuration");
   c.printf(
-    "<form method=\"post\" action=\"%s\" target=\"#main\">"
+    "<form class=\"form-horizontal\" method=\"post\" action=\"%s\" target=\"#main\">"
     , _attr(p.uri));
 
   c.fieldset_start("Access point networks");
   OutputWifiTable(p, c, "ap", "wifi.ap", MyConfig.GetParamValue("auto", "wifi.ssid.ap", "OVMS"));
   c.fieldset_end();
 
-  c.fieldset_start("Wifi APclient options");
-  c.input_checkbox("Enable Wifi APClient to client timeout", "cfg_ap2client_enabled", cfg_ap2client_enabled,
-    "<p>Enable = The OVMS will switch from Wifi APClient to Wifi Client mode after the timeout reached and a client is not connected.</p>"); 
-  c.input_checkbox("Enable Wifi APClient to client notify", "cfg_ap2client_notify", cfg_ap2client_notify,
-    "<p>Enable = Notify when Wifi APClient to Wifi Client mode switched.</p>");
-  c.input_slider("Wifi APClient to client timeout", "cfg_ap2client_timeout", 3, "min",-1, cfg_ap2client_timeout, 30, 1, 120, 1,
-    "<p>Set the time in minutes when the OVMS should switch from Wifi APClient to Wifi Client mode. Default 30 minutes.</p>"); 
+  c.fieldset_start("Wifi »Access point + client« mode timeout");
+  c.input_checkbox("Enable Wifi »Access point + client« mode timeout", "cfg_ap2client_enabled", cfg_ap2client_enabled,
+    "<p>Enable = Switch from Wifi AP+client to client only mode when no stations were connected to the AP for the given timeout.</p>");
+  c.input_slider("Timeout", "cfg_ap2client_timeout", 3, "min", -1, cfg_ap2client_timeout, 30, 1, 120, 1); 
+  c.input_checkbox("Send notification on AP+client mode timeout", "cfg_ap2client_notify", cfg_ap2client_notify);
+  c.print(
+    "<div class=\"form-group\"><div class=\"col-sm-12\"><div class=\"help-block\">"
+      "<p>Shutting down the module's Wifi access point reduces power consumption (see <a target=\"_blank\""
+      " href=\"https://docs.openvehicles.com/en/latest/userguide/warnings.html#average-power-usage\">User Guide</a>)"
+      " and frees bandwidth for standard (client) connections.</p>"
+      "<p>Note: switching the mode implies a client reconnect. To re-enable the AP after a timeout, issue shell command"
+      " <kbd>wifi mode apclient</kbd> or <kbd>wifi restart</kbd>, or reboot/restart the module.</p>"
+    "</div></div></div>");
   c.fieldset_end();
 
   c.fieldset_start("Wifi client networks");
