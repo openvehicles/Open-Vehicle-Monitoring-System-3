@@ -862,62 +862,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   MyConfig.SetParamValueBool("xsq", "cfg.preset.act",  true); // activate preset config
   MyConfig.SetParamValue("xsq", "cfg.preset.ver",  "1.0"); // preset config version
 
-  if (!MyConfig.IsDefined("xsq", "tpms.front.pressure")) 
-    {
-    MyConfig.SetParamValueInt("xsq", "tpms.front.pressure",  225); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.rear.pressure",  255); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.value.warn",  50); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.value.alert", 75); // kPa
-    }
-
-  if (!MyConfig.IsDefined("xsq", "tpms.alert.enable")) 
-    {
-    MyConfig.SetParamValueBool("xsq", "tpms.alert.enable", true);
-    }
-
-  if (!MyConfig.IsDefined("xsq", "tpms.temp")) 
-    {
-    MyConfig.SetParamValueBool("xsq", "tpms.temp", true); 
-    }
-
-  if (!MyConfig.IsDefined("xsq", "climate.system")) 
-    {
-    MyConfig.SetParamValueBool("xsq", "climate.system", true); 
-    }
-
-  if (!MyConfig.IsDefined("xsq", "12v.charge")) 
-    {
-    MyConfig.SetParamValueBool("xsq", "12v.charge", true);
-    }
-
   if (!MyConfig.IsDefined("vehicle", "12v.alert")) 
     {
     MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
-    }
-
-  if (!MyConfig.IsDefined("xsq", "unlock.warning")) 
-    {
-    MyConfig.SetParamValueBool("xsq", "unlock.warning", true);                                 
-    }
-
-  if (!MyConfig.IsDefined("xsq", "door.warning")) 
-    {
-    MyConfig.SetParamValueBool("xsq", "door.warning", true);                                 
-    }
-
-  if (!MyConfig.IsDefined("xsq", "extended.stats"))
-    {
-    MyConfig.SetParamValueBool("xsq", "extended.stats", false);
-    }
-
-  if (!MyConfig.IsDefined("xsq", "modem.check")) 
-    {
-    MyConfig.SetParamValueBool("xsq", "modem.check", false);
-    }
-
-  if (!MyConfig.IsDefined("xsq", "reset.notify")) 
-    {
-    MyConfig.SetParamValueBool("xsq", "reset.notify", true);
     }
 
   if (!MyConfig.IsDefined("modem", "gps.parkpause")) 
@@ -943,58 +890,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
     }
 
-
-  // delete old config entry and set new entry one time
-
-  if (MyConfig.IsDefined("xsq", "ios_tpms_fix")) 
-    {
-    MyConfig.DeleteInstance("xsq", "ios_tpms_fix");
-    }
-
-  if (MyConfig.IsDefined("xsq", "restart.wakeup")) 
-    {
-    MyConfig.DeleteInstance("xsq", "restart.wakeup");
-    }
-
-  if (MyConfig.IsDefined("xsq", "v2.check")) 
-    {
-    MyConfig.DeleteInstance("xsq", "v2.check");
-    }
-
-  if (MyConfig.IsDefined("xsq", "12v.measured.offset")) 
-    {
-    MyConfig.DeleteInstance("xsq", "12v.measured.offset");
-    }
-  
-  if (MyConfig.IsDefined("xsq", "modem.net.type")) 
-    {
-    MyConfig.DeleteInstance("xsq", "modem.net.type");
-    }
-  
-  if (MyConfig.IsDefined("xsq", "booster.system")) 
-    {
-    MyConfig.DeleteInstance("xsq", "booster.1to3");
-    MyConfig.DeleteInstance("xsq", "booster.de");
-    MyConfig.DeleteInstance("xsq", "booster.ds");
-    MyConfig.DeleteInstance("xsq", "booster.h");
-    MyConfig.DeleteInstance("xsq", "booster.m");
-    MyConfig.DeleteInstance("xsq", "booster.on");
-    MyConfig.DeleteInstance("xsq", "booster.system");
-    MyConfig.DeleteInstance("xsq", "booster.weekly");
-    }
-
-  if (MyConfig.IsDefined("xsq", "gps.onoff")) 
-    {
-    MyConfig.DeleteInstance("xsq", "gps.onoff");
-    MyConfig.DeleteInstance("xsq", "gps.off");
-    MyConfig.DeleteInstance("xsq", "gps.reactmin");
-    }
-
-  if (MyConfig.IsDefined("xsq", "gps.deact")) 
-    {
-    MyConfig.DeleteInstance("xsq", "gps.deact");
-    }
-
   if (MyConfig.GetParamValue("ota", "server", "0") == "https://ovms.dimitrie.eu/firmware/ota" && 
       MyConfig.GetParamValue("ota", "tag", "0") == "smarteq")
     {
@@ -1002,6 +897,55 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     MyConfig.SetParamValue("ota", "tag", "edge");
     }
 
-  writer->printf("config setting activated");
+
+  // delete old config entry and set new entry one time
+  OvmsConfigParam* param = MyConfig.CachedParam("xsq");
+  if (param) {
+    auto map = param->GetMap();  // Get copy of current map
+    
+    // List of deprecated keys to remove
+    const char* deprecated_keys[] = {
+      "ios_tpms_fix",
+      "restart.wakeup",
+      "v2.check",
+      "12v.measured.offset",
+      "modem.net.type",
+      "booster.1to3",
+      "booster.de",
+      "booster.ds",
+      "booster.h",
+      "booster.m",
+      "booster.on",
+      "booster.system",
+      "booster.weekly",
+      "gps.onoff",
+      "gps.off",
+      "gps.reactmin",
+      "gps.deact"
+    };
+    
+    // Remove all deprecated keys from map
+    int removed_count = 0;
+    for (const char* key : deprecated_keys) {
+      auto it = map.find(key);
+      if (it != map.end()) {
+        map.erase(it);
+        removed_count++;
+      }
+    }
+    
+    // Write updated map back (only if something was removed)
+    if (removed_count > 0) {
+      MyConfig.SetParamMap("xsq", map);
+      if (writer) {
+        writer->printf("Removed %d deprecated config entries\n", removed_count);
+      }
+      ESP_LOGI(TAG, "Removed %d deprecated config entries", removed_count);
+    }
+  }
+
+  if (writer) {
+    writer->puts("Config preset activated");
+  }
   return Success;
 }

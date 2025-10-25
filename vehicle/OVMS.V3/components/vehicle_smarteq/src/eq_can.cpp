@@ -152,7 +152,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       mt_obd_duration->SetValue((int)(_duration_full), Minutes);
       _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy
       _bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(0) - 20.0;
-      _full_km = MyConfig.GetParamValueFloat("xsq", "full.km", 126.0);
+      _full_km = m_full_km;
       _range_cac = _full_km + (_bat_temp); // temperature compensation +/- range
       if (_range_est != 1023.0f) 
         {

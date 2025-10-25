@@ -276,6 +276,7 @@ public:
     bool m_12v_charge;                      //!< 12V charge on/off
     bool m_12v_charge_state;                //!< 12V charge state
     bool m_climate_system;                  //!< climate system on/off
+    bool m_climate_notify;                  //!< climate notification on/off
     std::string m_hl_canbyte;               //!< canbyte variable for unv
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
@@ -397,6 +398,7 @@ public:
     int m_12v_ticker;
     int m_modem_ticker;
     int m_park_timeout_secs;                //!< parking timeout in seconds
+    float m_full_km;                        //!< full battery km value for SoC calculation
     
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll

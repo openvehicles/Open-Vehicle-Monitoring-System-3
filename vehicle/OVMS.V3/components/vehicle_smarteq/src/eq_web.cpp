@@ -72,6 +72,14 @@ void OvmsVehicleSmartEQ::WebDeInit()
  */
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
+  OvmsVehicleSmartEQ* sq = (OvmsVehicleSmartEQ*)MyVehicleFactory.ActiveVehicle();
+  if (!sq) {
+    c.head(400);
+    c.alert("danger", "Error: smartEQ vehicle not available");
+    c.done();
+    return;
+  }
+
   std::string error, info, full_km, rebootnw;
   bool canwrite, led, resettrip, resettotal, bcvalue, climate_system;
   bool charge12v, extstats, unlocked, mdmcheck, tripnotify, opendoors;
@@ -104,25 +112,39 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       }
       return true;
     };
-    if(!validFloat(full_km, 50, 300, "WLTP km")) full_km = "126";
+    if(!validFloat(full_km, 50, 300, "WLTP km")) full_km = "126.0";
     if(!validFloat(rebootnw, 0, 1440, "Restart Network Time")) rebootnw = "0";
 
     if (error.empty()) {
-      // success:
-      MyConfig.SetParamValueBool("xsq", "canwrite", canwrite);
-      MyConfig.SetParamValueBool("xsq", "led", led);
-      MyConfig.SetParamValue("xsq", "rebootnw", rebootnw);
-      MyConfig.SetParamValueBool("xsq", "resettrip", resettrip);
-      MyConfig.SetParamValueBool("xsq", "resettotal", resettotal);
-      MyConfig.SetParamValueBool("xsq", "bcvalue", bcvalue);
-      MyConfig.SetParamValue("xsq", "full.km", full_km);
-      MyConfig.SetParamValueBool("xsq", "climate.system", climate_system);
-      MyConfig.SetParamValueBool("xsq", "12v.charge", charge12v);
-      MyConfig.SetParamValueBool("xsq", "unlock.warning", unlocked);
-      MyConfig.SetParamValueBool("xsq", "modem.check", mdmcheck);
-      MyConfig.SetParamValueBool("xsq", "extended.stats", extstats);
-      MyConfig.SetParamValueBool("xsq", "reset.notify", tripnotify);
-      MyConfig.SetParamValueBool("xsq", "door.warning", opendoors);
+      // Use SetMap to write all values in one transaction
+      OvmsConfigParam* param = MyConfig.CachedParam("xsq");
+      if (param) {
+        auto map = param->GetMap();  // Get copy of current map
+        
+        // Helper lambda to set bool values
+        auto setBool = [&map](const char* key, bool val) {
+          map[key] = val ? "yes" : "no";
+        };
+        
+        // Update all values in local map
+        setBool("canwrite", canwrite);
+        setBool("led", led);
+        map["rebootnw"] = rebootnw;
+        setBool("resettrip", resettrip);
+        setBool("resettotal", resettotal);
+        setBool("bcvalue", bcvalue);
+        map["full.km"] = full_km;
+        setBool("climate.system", climate_system);
+        setBool("12v.charge", charge12v);
+        setBool("unlock.warning", unlocked);
+        setBool("modem.check", mdmcheck);
+        setBool("extended.stats", extstats);
+        setBool("reset.notify", tripnotify);
+        setBool("door.warning", opendoors);
+        
+        // Write all changes in one operation
+        MyConfig.SetParamMap("xsq", map);
+      }
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -137,21 +159,67 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     c.head(400);
     c.alert("danger", error.c_str());
   } else {
-    // read configuration:
-    canwrite    = MyConfig.GetParamValueBool("xsq", "canwrite", false);
-    led         = MyConfig.GetParamValueBool("xsq", "led", false);
-    rebootnw    = MyConfig.GetParamValue("xsq", "rebootnw", "0");
-    resettrip   = MyConfig.GetParamValueBool("xsq", "resettrip", false);
-    resettotal  = MyConfig.GetParamValueBool("xsq", "resettotal", false);
-    bcvalue     = MyConfig.GetParamValueBool("xsq", "bcvalue", false);
-    full_km     = MyConfig.GetParamValue("xsq", "full.km", "126");
-    climate_system     = MyConfig.GetParamValueBool("xsq", "climate.system", false);
-    charge12v   = MyConfig.GetParamValueBool("xsq", "12v.charge", false);
-    unlocked    = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
-    mdmcheck    = MyConfig.GetParamValueBool("xsq", "modem.check", false);
-    extstats    = MyConfig.GetParamValueBool("xsq", "extended.stats", false);
-    tripnotify  = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
-    opendoors   = MyConfig.GetParamValueBool("xsq", "door.warning", false);
+    // read configuration using GetParamMap
+    OvmsConfigParam* param = MyConfig.CachedParam("xsq");
+    
+    if (param) {
+      const auto& m = param->GetMap();
+      
+      // Use sq-> instead of m_*
+      canwrite    = (m.count("canwrite") ? (m.at("canwrite") == "yes") : sq->m_enable_write);
+      led         = (m.count("led") ? (m.at("led") == "yes") : sq->m_enable_LED_state);
+      resettrip   = (m.count("resettrip") ? (m.at("resettrip") == "yes") : sq->m_resettrip);
+      resettotal  = (m.count("resettotal") ? (m.at("resettotal") == "yes") : sq->m_resettotal);
+      bcvalue     = (m.count("bcvalue") ? (m.at("bcvalue") == "yes") : sq->m_bcvalue);
+      climate_system = (m.count("climate.system") ? (m.at("climate.system") == "yes") : sq->m_climate_system);
+      charge12v   = (m.count("12v.charge") ? (m.at("12v.charge") == "yes") : sq->m_12v_charge);
+      unlocked    = (m.count("unlock.warning") ? (m.at("unlock.warning") == "yes") : sq->m_enable_lock_state);
+      mdmcheck    = (m.count("modem.check") ? (m.at("modem.check") == "yes") : sq->m_modem_check);
+      extstats    = (m.count("extended.stats") ? (m.at("extended.stats") == "yes") : sq->m_extendedStats);
+      tripnotify  = (m.count("reset.notify") ? (m.at("reset.notify") == "yes") : sq->m_tripnotify);
+      opendoors   = (m.count("door.warning") ? (m.at("door.warning") == "yes") : sq->m_enable_door_state);
+      
+      // Strings - need to convert to string
+      if (m.count("rebootnw")) {
+        rebootnw = m.at("rebootnw");
+      } else {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%d", sq->m_reboot_time);
+        rebootnw = buf;
+      }
+      
+      if (m.count("full.km")) {
+        full_km = m.at("full.km");
+      } else {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%.1f", sq->m_full_km);
+        full_km = buf;
+      }
+    } else {
+      // Fallback defaults - use snprintf
+      char buf[16];
+      
+      canwrite = sq->m_enable_write;
+      led = sq->m_enable_LED_state;
+      
+      snprintf(buf, sizeof(buf), "%d", sq->m_reboot_time);
+      rebootnw = buf;
+      
+      resettrip = sq->m_resettrip;
+      resettotal = sq->m_resettotal;
+      bcvalue = sq->m_bcvalue;
+      
+      snprintf(buf, sizeof(buf), "%.1f", sq->m_full_km);
+      full_km = buf;
+      
+      climate_system = sq->m_climate_system;
+      charge12v = sq->m_12v_charge;
+      unlocked = sq->m_enable_lock_state;
+      mdmcheck = sq->m_modem_check;
+      extstats = sq->m_extendedStats;
+      tripnotify = sq->m_tripnotify;
+      opendoors = sq->m_enable_door_state;
+    }
 
     c.head(200);
   }
@@ -289,16 +357,18 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
     c.head(400);
     c.alert("danger", error.c_str());
   } else {
-  // read configuration using vehicle instance:
-  climate_time = sq->mt_climate_time->AsString();
-  climate_ds = sq->mt_climate_ds->AsString();
-  climate_de = sq->mt_climate_de->AsString();
-  climate_1to3 = sq->mt_climate_1to3->AsString();
-  climate_on = sq->mt_climate_on->AsBool();
-  climate_weekly = sq->mt_climate_weekly->AsBool();
-  climate_notify = MyConfig.GetParamValueBool("xsq", "climate.notify", false);
-  climate_system = MyConfig.GetParamValueBool("xsq", "climate.system", false);
-      
+    // read configuration using vehicle instance:
+    climate_time = sq->mt_climate_time->AsString();
+    climate_ds = sq->mt_climate_ds->AsString();
+    climate_de = sq->mt_climate_de->AsString();
+    climate_1to3 = sq->mt_climate_1to3->AsString();
+    climate_on = sq->mt_climate_on->AsBool();
+    climate_weekly = sq->mt_climate_weekly->AsBool();
+
+    // Use sq-> for member variables
+    climate_notify = MyConfig.GetParamValueBool("xsq", "climate.notify", sq->m_climate_notify);
+    climate_system = MyConfig.GetParamValueBool("xsq", "climate.system", sq->m_climate_system); 
+    
   c.head(200);
   c.panel_start("primary", "Climate Control Settings");
   c.form_start(p.uri);
@@ -364,27 +434,37 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
   if (c.method == "POST") {
     // Process form submission
     tpms_temp      = (c.getvar("tpms.temp") == "yes");
-    enable      = (c.getvar("enable") == "yes");
-    TPMS_FL     = c.getvar("TPMS_FL");
-    TPMS_FR     = c.getvar("TPMS_FR");
-    TPMS_RL     = c.getvar("TPMS_RL");
-    TPMS_RR     = c.getvar("TPMS_RR");
+    enable         = (c.getvar("enable") == "yes");
+    TPMS_FL        = c.getvar("TPMS_FL");
+    TPMS_FR        = c.getvar("TPMS_FR");
+    TPMS_RL        = c.getvar("TPMS_RL");
+    TPMS_RR        = c.getvar("TPMS_RR");
     front_pressure = c.getvar("front_pressure");
     rear_pressure  = c.getvar("rear_pressure");
     pressure_warning = c.getvar("pressure_warning");
     pressure_alert   = c.getvar("pressure_alert");
 
     if (error.empty()) {
-      MyConfig.SetParamValueBool("xsq", "tpms.temp", tpms_temp);
-      MyConfig.SetParamValueBool("xsq", "tpms.alert.enable", enable);
-      MyConfig.SetParamValue("xsq", "TPMS_FL", TPMS_FL);
-      MyConfig.SetParamValue("xsq", "TPMS_FR", TPMS_FR);
-      MyConfig.SetParamValue("xsq", "TPMS_RL", TPMS_RL);
-      MyConfig.SetParamValue("xsq", "TPMS_RR", TPMS_RR);
-      MyConfig.SetParamValue("xsq", "tpms.front.pressure", front_pressure);
-      MyConfig.SetParamValue("xsq", "tpms.rear.pressure", rear_pressure);
-      MyConfig.SetParamValue("xsq", "tpms.value.warn", pressure_warning);
-      MyConfig.SetParamValue("xsq", "tpms.value.alert", pressure_alert);
+      // Use SetParamMap to write all values in one transaction
+      OvmsConfigParam* param = MyConfig.CachedParam("xsq");
+      if (param) {
+        auto map = param->GetMap();  // Get copy of current map
+        
+        // Update all values in local map
+        map["tpms.temp"] = tpms_temp ? "yes" : "no";
+        map["tpms.alert.enable"] = enable ? "yes" : "no";
+        map["TPMS_FL"] = TPMS_FL;
+        map["TPMS_FR"] = TPMS_FR;
+        map["TPMS_RL"] = TPMS_RL;
+        map["TPMS_RR"] = TPMS_RR;
+        map["tpms.front.pressure"] = front_pressure;
+        map["tpms.rear.pressure"] = rear_pressure;
+        map["tpms.value.warn"] = pressure_warning;
+        map["tpms.value.alert"] = pressure_alert;
+        
+        // Write all changes in one operation
+        MyConfig.SetParamMap("xsq", map);
+      }
         
       // Success response
       info = "<p>TPMS settings updated successfully</p>";
@@ -400,17 +480,73 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
     c.head(400);
     c.alert("danger", error.c_str());
   } else {
-    // read configuration:
-    tpms_temp   = MyConfig.GetParamValueBool("xsq", "tpms.temp", false);
-    enable      = MyConfig.GetParamValueBool("xsq", "tpms.alert.enable", true);
-    TPMS_FL     = MyConfig.GetParamValue("xsq", "TPMS_FL", "0");
-    TPMS_FR     = MyConfig.GetParamValue("xsq", "TPMS_FR", "1");
-    TPMS_RL     = MyConfig.GetParamValue("xsq", "TPMS_RL", "2");
-    TPMS_RR     = MyConfig.GetParamValue("xsq", "TPMS_RR", "3");
-    front_pressure = MyConfig.GetParamValue("xsq", "tpms.front.pressure", "220"); // kPa
-    rear_pressure  = MyConfig.GetParamValue("xsq", "tpms.rear.pressure", "250"); // kPa
-    pressure_warning = MyConfig.GetParamValue("xsq", "tpms.value.warn", "25"); // kPa
-    pressure_alert   = MyConfig.GetParamValue("xsq", "tpms.value.alert", "45"); // kPa
+    // Read configuration using GetParamMap
+    OvmsConfigParam* param = MyConfig.CachedParam("xsq");
+    
+    if (param) {
+      const auto& m = param->GetMap();
+      
+      // Helper lambda for bool values
+      auto getBool = [&m](const char* key, bool def) -> bool {
+        auto it = m.find(key);
+        if (it == m.end()) return def;
+        const std::string& val = it->second;
+        return (val == "yes" || val == "true" || val == "1");
+      };
+      
+      // Helper lambda for string values (with float default conversion)
+      auto getString = [&m](const char* key, float def) -> std::string {
+        auto it = m.find(key);
+        if (it != m.end()) return it->second;
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%.0f", def);
+        return std::string(buf);
+      };
+      
+      // Helper lambda for int array conversion
+      auto getStringInt = [&m](const char* key, int def) -> std::string {
+        auto it = m.find(key);
+        if (it != m.end()) return it->second;
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%d", def);
+        return std::string(buf);
+      };
+      
+      // ✅ FIX: Read all TPMS values using sq->
+      tpms_temp        = getBool("tpms.temp", sq->m_tpms_temp_enable);
+      enable           = getBool("tpms.alert.enable", sq->m_tpms_alert_enable);
+      TPMS_FL          = getStringInt("TPMS_FL", sq->m_tpms_index[0]);
+      TPMS_FR          = getStringInt("TPMS_FR", sq->m_tpms_index[1]);
+      TPMS_RL          = getStringInt("TPMS_RL", sq->m_tpms_index[2]);
+      TPMS_RR          = getStringInt("TPMS_RR", sq->m_tpms_index[3]);
+      front_pressure   = getString("tpms.front.pressure", sq->m_front_pressure);
+      rear_pressure    = getString("tpms.rear.pressure", sq->m_rear_pressure);
+      pressure_warning = getString("tpms.value.warn", sq->m_pressure_warning);
+      pressure_alert   = getString("tpms.value.alert", sq->m_pressure_alert);
+    } else {
+      char buf[16];
+      
+      tpms_temp        = sq->m_tpms_temp_enable;
+      enable           = sq->m_tpms_alert_enable;
+      
+      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index[0]);
+      TPMS_FL = buf;
+      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index[1]);
+      TPMS_FR = buf;
+      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index[2]);
+      TPMS_RL = buf;
+      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index[3]);
+      TPMS_RR = buf;
+      
+      snprintf(buf, sizeof(buf), "%.0f", sq->m_front_pressure);
+      front_pressure = buf;
+      snprintf(buf, sizeof(buf), "%.0f", sq->m_rear_pressure);
+      rear_pressure = buf;
+      snprintf(buf, sizeof(buf), "%.0f", sq->m_pressure_warning);
+      pressure_warning = buf;
+      snprintf(buf, sizeof(buf), "%.0f", sq->m_pressure_alert);
+      pressure_alert = buf;
+    }
   }
       
   c.head(200);
