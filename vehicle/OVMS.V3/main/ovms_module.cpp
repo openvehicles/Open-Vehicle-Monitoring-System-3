@@ -51,6 +51,7 @@ static const char *TAG = "module";
 #include "ovms_mutex.h"
 #include "ovms_notify.h"
 #include "string_writer.h"
+#include "buffered_shell.h"
 
 #define MAX_TASKS 30
 #define DUMPSIZE 1000
@@ -1200,7 +1201,25 @@ static void module_summary(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
   writer->puts("\nModule");
   writer->printf("  Version:  %s\n",StandardMetrics.ms_m_version->AsString().c_str());
   writer->printf("  Hardware: %s\n",StandardMetrics.ms_m_hardware->AsString().c_str());
-  writer->printf("  12v:      %0.1fv\n",StandardMetrics.ms_v_bat_12v_voltage->AsFloat());
+
+  size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+  size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
+  size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+  size_t free_spiram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+  size_t lgst_spiram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+  writer->printf("  Free RAM: 8bit=%zu-%zu 32bit=%zu SPIRAM=%zu-%zu bytes\n",
+    lgst_8bit, free_8bit, free_32bit-free_8bit, lgst_spiram, free_spiram);
+
+  writer->printf("  12V:      %0.1fV\n",StandardMetrics.ms_v_bat_12v_voltage->AsFloat());
+
+  std::string sum_df = BufferedShell::ExecuteCommand(std::string("vfs df"), true);
+  replace_substrings(sum_df, "\n", "\n  ");
+  writer->printf("\nStorage\n  %s", sum_df.c_str());
+
+#ifdef CONFIG_OVMS_COMP_WIFI
+  writer->puts("");
+  MyPeripherals->m_esp32wifi->SupportSummary(writer);
+#endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
 
 #ifdef CONFIG_OVMS_COMP_CELLULAR
   writer->puts("");

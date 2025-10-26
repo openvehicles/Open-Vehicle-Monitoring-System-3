@@ -453,6 +453,7 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
     }
 
   writer->printf("  Model: %s\n",m_model.c_str());
+  writer->printf("  Revision: %s\n",StandardMetrics.ms_m_net_mdm_model->AsString().c_str());
 
   if (m_powermode != Off)
     {

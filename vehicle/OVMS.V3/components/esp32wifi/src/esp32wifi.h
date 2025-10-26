@@ -103,6 +103,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void EventWifiScanDone(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
     void OutputStatus(int verbosity, OvmsWriter* writer);
+    void SupportSummary(OvmsWriter* writer);
     void ConfigChanged(std::string event, void *data);
 
   protected:

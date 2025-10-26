@@ -43,6 +43,7 @@ static const char *TAG = "esp32wifi";
 #include "ovms_events.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
+#include "string_writer.h"
 #if ESP_IDF_VERSION_MAJOR >= 4
 #include <esp_wifi_types.h>
 #endif
@@ -1431,6 +1432,15 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
 void esp32wifi::EventSystemShuttingDown(std::string event, void* data)
   {
   PowerDown();
+  }
+
+void esp32wifi::SupportSummary(OvmsWriter* writer)
+  {
+  StringWriter output;
+  output.assign("WIFI Status\n");
+  OutputStatus(COMMAND_RESULT_VERBOSE, &output);
+  replace_substrings(output, "\n", "\n  ");
+  writer->write(output.data(), output.size());
   }
 
 void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
