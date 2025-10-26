@@ -39,11 +39,12 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 {
   OvmsVehicleSmartEQ* smarteq = (OvmsVehicleSmartEQ*) MyVehicleFactory.ActiveVehicle();
   string type = StdMetrics.ms_v_type->AsString();
-  if (!smarteq || type != "SQ") {
+  if (!smarteq || type != "SQ") 
+    {
     if (writer)
       writer->puts("Error: Smart EQ vehicle module not selected");
     return NULL;
-  }
+    }
   return smarteq;
 }
 
@@ -81,13 +82,14 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++) 
+    {
     m_tpms_pressure[i] = 0.0f;
     m_tpms_temperature[i] = 0.0f;
     m_tpms_lowbatt[i] = false;
     m_tpms_missing_tx[i] = false;
     m_tpms_index[i] = i;
-  }
+    }
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 3);
@@ -97,7 +99,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
   BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
 
-  mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, false);
+  mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, true);
   mt_use_at_reset               = MyMetrics.InitFloat("xsq.use.at.reset", SM_STALE_MID, 0, kWh);
   mt_use_at_start               = MyMetrics.InitFloat("xsq.use.at.start", SM_STALE_MID, 0, kWh);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_NONE, "", Other);
@@ -196,115 +198,42 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
   cmd_xsq->RegisterCommand("calcadc", "Recalculate ADC factor (optional: 12V voltage override)", xsq_calc_adc, "[voltage]", 0, 1);
   cmd_xsq->RegisterCommand("wakeup", "Wake up the car", xsq_wakeup);
+  cmd_xsq->RegisterCommand("preset", "smart EQ config preset", xsq_preset);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"vehicle.charge.start", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"vehicle.charge.stop", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
-  //MyEvents.RegisterEvent(TAG,"server.v3.connected", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
   MyConfig.RegisterParam("xsq", "smartEQ", true, true);
 
   ConfigChanged(NULL);
-  
-  StdMetrics.ms_v_gen_current->SetValue(2);                // activate gen metrics to app transfer
-  StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);  // set 12V alert to false
+  StdMetrics.ms_v_gen_current->SetValue(2);                    // activate gen metrics to app transfer
+  StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);      // set 12V alert to false
 
-  if (MyConfig.GetParamValue("xsq", "12v.charge","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "12v.charge", true);
-  }
-
-  if (MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6) == 1.6) {
-    MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
-  }
-
-  if (MyConfig.GetParamValue("xsq", "tpms.front.pressure","0") == "0") {
-    MyConfig.SetParamValueInt("xsq", "tpms.front.pressure",  225); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.rear.pressure",  255); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.value.warn",  50); // kPa
-    MyConfig.SetParamValueInt("xsq", "tpms.value.alert", 75); // kPa
-  }
-
-  if (MyConfig.GetParamValue("xsq", "tpms.alert.enable","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "tpms.alert.enable", true);
-  }
-
-  if(MyConfig.GetParamValue("xsq", "unlock.warning","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "unlock.warning", true);                                 
-  }
-
-  if (MyConfig.GetParamValue("xsq", "extended.stats","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "extended.stats", false);
-  }
-
-  if (MyConfig.GetParamValue("xsq", "modem.check","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "modem.check", false);
-  }
-
-  if (MyConfig.GetParamValue("xsq", "restart.wakeup","0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "restart.wakeup", false);
-  }
-
-  if (MyConfig.GetParamValue("xsq", "reset.notify", "0") == "0") {
-    MyConfig.SetParamValueBool("xsq", "reset.notify", true);
-  }
-  
-  if (MyConfig.GetParamValue("server.v3", "updatetime.priority","0") == "0") {
-    MyConfig.SetParamValueBool("server.v3", "updatetime.priority", true);
-  }
-
-  if (MyConfig.GetParamValueBool("xsq", "ios_tpms_fix", false)) {
-    MyConfig.SetParamValueBool("xsq", "tpms.temp", true); 
-  }
-
-  if (MyConfig.IsDefined("xsq", "ios_tpms_fix")) {
-    MyConfig.DeleteInstance("xsq", "ios_tpms_fix"); // delete old config entry and set new entry one time
-  }
-
-  if (MyConfig.IsDefined("xsq", "v2.check")) {
-    MyConfig.DeleteInstance("xsq", "v2.check"); // delete old config entry and set new entry one time
-  }
-
-  if (MyConfig.IsDefined("xsq", "12v.measured.offset")) {
-    MyConfig.DeleteInstance("xsq", "12v.measured.offset");
-  }
-  
-  if (MyConfig.IsDefined("xsq", "modem.net.type")) {
-    MyConfig.DeleteInstance("xsq", "modem.net.type");
-  }
- 
-  if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f) {         // reset at boot
+  if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f)           // reset at boot
+    {
     ResetTotalCounters();
     ResetTripCounters();
-  }
+    }
 
-  if (MyConfig.GetParamValueBool("xsq", "restart.wakeup",false)) {
-    CommandWakeup();                                         // wake up the car to get the first data
-    PollSetState(1);                                         // start polling
-  }
+  setTPMSValueBoot();                                          // set TPMS dummy values to 0
 
-  setTPMSValueBoot();                                        // set TPMS dummy values to 0
-  //CleanupDeprecatedMetrics();                              // delete deprecated metrics from OVMS
+    if (m_enable_write)
+      PollSetState(1);                                           // start polling to get the first data
+
+  if (m_enable_write && m_cfg_preset_version != PRESET_VERSION)  // preset version changed
+    CommandPreset(0, NULL);                                      // set smart EQ config preset
 
   #ifdef CONFIG_OVMS_COMP_CELLULAR
-    
-    // Features option: auto disable GPS when parked -> moved to cellular module
-    if(MyConfig.GetParamValueBool("xsq", "gps.onoff", true) && MyConfig.GetParamValueBool("xsq", "gps.deact", true)) {
-      MyConfig.SetParamValueBool("xsq", "gps.deact", false); // delete old config entry and set new entry one time
-      MyConfig.SetParamValue("modem", "gps.parkpause", "600"); // default 10 min.
-      MyConfig.SetParamValue("modem", "gps.parkreactivate", "50"); // default 50 min.
-      MyConfig.SetParamValue("modem", "gps.parkreactlock", "5"); // default 5 min.
-      MyConfig.SetParamValue("vehicle", "stream", "10"); // set stream to 10 sec.
-      if(MyConfig.GetParamValue("xsq", "gps.onoff","0") != "0") MyConfig.DeleteInstance("xsq", "gps.onoff");  // delete old config entry
-      if(MyConfig.GetParamValue("xsq", "gps.off","0") != "0") MyConfig.DeleteInstance("xsq", "gps.off");  // delete old config entry
-      if(MyConfig.GetParamValue("xsq", "gps.reactmin","0") != "0") MyConfig.DeleteInstance("xsq", "gps.reactmin");  // delete old config entry
-    }
-    
     #ifdef CONFIG_OVMS_COMP_WIFI
       // Features option: auto restart modem on wifi disconnect
-      MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
-#endif
-
+      if (m_modem_check) 
+      {
+      MyEvents.RegisterEvent(TAG,"cellular.modem.disconnected", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
+      }
+    #endif
   #endif
+
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
   #endif
@@ -317,11 +246,12 @@ OvmsVehicleSmartEQ::~OvmsVehicleSmartEQ() {
   WebDeInit();
 #endif
 #ifdef CONFIG_OVMS_COMP_MAX7317
-  if (m_enable_LED_state) {
+  if (m_enable_LED_state) 
+    {
     MyPeripherals->m_max7317->Output(9, 0);
     MyPeripherals->m_max7317->Output(8, 1);
     MyPeripherals->m_max7317->Output(7, 1);
-  }
+    }
 #endif
 }
 
@@ -332,51 +262,91 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   if (param && param->GetName() != "xsq")
     return;
 
-  ESP_LOGI(TAG, "Smart EQ reload configuration");
+  ESP_LOGI(TAG, "smart EQ reload configuration");
 
   bool stateWrite = m_enable_write;
-  m_enable_write      = MyConfig.GetParamValueBool("xsq", "canwrite", false);
+  m_enable_write  = MyConfig.GetParamValueBool("xsq", "canwrite", false);
+
   // set CAN bus transceiver to active or listen-only depending on user selection
   if ( stateWrite != m_enable_write )
-  {
-      CAN_mode_t mode = m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
-      RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
-  }
-  m_enable_LED_state  = MyConfig.GetParamValueBool("xsq", "led", false);
-  m_enable_lock_state = MyConfig.GetParamValueBool("xsq", "unlock.warning", false);
-  m_enable_door_state = MyConfig.GetParamValueBool("xsq", "door.warning", false);
-  m_tpms_temp_enable  = MyConfig.GetParamValueBool("xsq", "tpms.temp", false);
-  m_reboot_time       = MyConfig.GetParamValueInt("xsq", "rebootnw", 30);
-  m_resettrip         = MyConfig.GetParamValueBool("xsq", "resettrip", false);
-  m_resettotal        = MyConfig.GetParamValueBool("xsq", "resettotal", false);
-  m_tripnotify        = MyConfig.GetParamValueBool("xsq", "reset.notify", false);
-  m_tpms_index[0]     = MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0);
-  m_tpms_index[1]     = MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1);
-  m_tpms_index[2]     = MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2);
-  m_tpms_index[3]     = MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3);
-  m_front_pressure    = MyConfig.GetParamValueFloat("xsq", "tpms.front.pressure",  220); // kPa
-  m_rear_pressure     = MyConfig.GetParamValueFloat("xsq", "tpms.rear.pressure",  250); // kPa
-  m_pressure_warning  = MyConfig.GetParamValueFloat("xsq", "tpms.value.warn",  25); // kPa
-  m_pressure_alert    = MyConfig.GetParamValueFloat("xsq", "tpms.value.alert", 45); // kPa
-  m_tpms_alert_enable = MyConfig.GetParamValueBool("xsq", "tpms.alert.enable", true);  
-  m_modem_check       = MyConfig.GetParamValueBool("xsq", "modem.check", false);
-  m_12v_charge        = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
-  m_enable_calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", false);
-  m_climate_system    = MyConfig.GetParamValueBool("xsq", "climate.system", false);
-  m_indicator         = MyConfig.GetParamValueBool("xsq", "indicator", false);              //!< activate indicator e.g. 7 times or whtever
-  m_extendedStats     = MyConfig.GetParamValueBool("xsq", "extended.stats", false);         //!< activate extended stats e.g. trip and maintenance data
-  m_park_timeout_secs = MyConfig.GetParamValueInt("xsq", "park.timeout", 600);              //!< timeout in seconds for parking mode
+    {
+    CAN_mode_t mode = m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
+    RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
+    }
+
+  // Use GetParamMap for efficient bulk reading
+  OvmsConfigParam* xsq_param = MyConfig.CachedParam("xsq");
+  
+  int cell_interval_drv   = 60;
+  int cell_interval_chg   = 60;
+  
+  if (xsq_param) 
+    {
+    const auto& xsqcfg = xsq_param->GetMap();
+    
+    // Helper lambdas
+    auto getBool = [&xsqcfg](const char* key, bool def) -> bool {
+      auto it = xsqcfg.find(key);
+      if (it == xsqcfg.end()) return def;
+      const std::string& val = it->second;
+      return (val == "yes" || val == "true" || val == "1");
+    };
+    
+    auto getInt = [&xsqcfg](const char* key, int def) -> int {
+      auto it = xsqcfg.find(key);
+      return (it != xsqcfg.end()) ? atoi(it->second.c_str()) : def;
+    };
+    
+    auto getFloat = [&xsqcfg](const char* key, float def) -> float {
+      auto it = xsqcfg.find(key);
+      return (it != xsqcfg.end()) ? atof(it->second.c_str()) : def;
+    };
+    
+    // Read all config values from map
+    m_enable_LED_state     = getBool("led", false);
+    m_bcvalue              = getBool("bcvalue", false);
+    m_enable_lock_state    = getBool("unlock.warning", true);
+    m_enable_door_state    = getBool("door.warning", true);
+    m_reboot_time          = getInt("rebootnw", 30);
+    m_resettrip            = getBool("resettrip", true);
+    m_resettotal           = getBool("resettotal", false);
+    m_tripnotify           = getBool("reset.notify", false);
+    m_tpms_index[0]        = getInt("TPMS_FL", 0);
+    m_tpms_index[1]        = getInt("TPMS_FR", 1);
+    m_tpms_index[2]        = getInt("TPMS_RL", 2);
+    m_tpms_index[3]        = getInt("TPMS_RR", 3);
+    m_front_pressure       = getFloat("tpms.front.pressure", 225.0f);
+    m_rear_pressure        = getFloat("tpms.rear.pressure", 255.0f);
+    m_pressure_warning     = getFloat("tpms.value.warn", 40.0f);
+    m_pressure_alert       = getFloat("tpms.value.alert", 70.0f);
+    m_tpms_alert_enable    = getBool("tpms.alert.enable", true);
+    m_tpms_temp_enable     = getBool("tpms.temp", true);
+    m_modem_check          = getBool("modem.check", false);
+    m_12v_charge           = getBool("12v.charge", true);
+    m_enable_calcADCfactor = getBool("calc.adcfactor", false);
+    m_climate_system       = getBool("climate.system", true);
+    m_climate_notify       = getBool("climate.notify", false);
+    m_indicator            = getBool("indicator", false);
+    m_extendedStats        = getBool("extended.stats", false);
+    m_park_timeout_secs    = getInt("park.timeout", 600);
+    m_full_km              = getInt("full.km", 126);
+    m_cfg_preset_version   = getInt("cfg.preset.ver", 0);
+    m_suffsoc              = getInt("suffsoc", 0);
+    m_suffrange            = getInt("suffrange", 0);
+
+    cell_interval_drv      = getInt("cell_interval_drv", 60);
+    cell_interval_chg      = getInt("cell_interval_chg", 60);
+    }
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
-  if (!m_enable_LED_state) {
+  if (!m_enable_LED_state) 
+    {
     MyPeripherals->m_max7317->Output(9, 1);
     MyPeripherals->m_max7317->Output(8, 1);
     MyPeripherals->m_max7317->Output(7, 1);
-  }
+    }
 #endif
-  int cell_interval_drv = MyConfig.GetParamValueInt("xsq", "cell_interval_drv", 60);
-  int cell_interval_chg = MyConfig.GetParamValueInt("xsq", "cell_interval_chg", 60);
-
+  
   bool do_modify_poll = (
     (cell_interval_drv != m_cfg_cell_interval_drv) ||
     (cell_interval_chg != m_cfg_cell_interval_chg));
@@ -384,11 +354,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_cfg_cell_interval_drv = cell_interval_drv;
   m_cfg_cell_interval_chg = cell_interval_chg;
 
-  if (do_modify_poll) {
+  if (do_modify_poll) 
+    {
     ObdModifyPoll();
-  }
-  StdMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffsoc", 0), Percentage );
-  StdMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xsq", "suffrange", 0), Kilometers );
+    }
+  StdMetrics.ms_v_charge_limit_soc->SetValue((float) m_suffsoc, Percentage );
+  StdMetrics.ms_v_charge_limit_range->SetValue((float) m_suffrange, Kilometers );
 }
 
 void OvmsVehicleSmartEQ::ObdModifyPoll() {
@@ -435,8 +406,8 @@ void OvmsVehicleSmartEQ::EventListener(std::string event, void* data) {
     }
   if (event == "vehicle.charge.stop") 
     {
-      m_ADCfactor_recalc_timer = 0;
-      m_ADCfactor_recalc = false;     // stop recalculation when HV charging stopped
+    m_ADCfactor_recalc_timer = 0;
+    m_ADCfactor_recalc = false;     // stop recalculation when HV charging stopped
     }
 }
 

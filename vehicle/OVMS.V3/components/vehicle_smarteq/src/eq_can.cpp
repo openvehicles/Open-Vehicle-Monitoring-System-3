@@ -137,7 +137,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       REQ_DLC(3);
       mt_use_at_reset->SetValue(CAN_BYTE(1) * 0.1);
       mt_use_at_start->SetValue(CAN_BYTE(2) * 0.1);
-      if( MyConfig.GetParamValueBool("xsq", "bcvalue",  false)){
+      if(m_bcvalue){
         StdMetrics.ms_v_gen_kwh_grid_total->SetValue(mt_use_at_reset->AsFloat()); // not the best idea at the moment
       } else {
         StdMetrics.ms_v_gen_kwh_grid_total->SetValue(0.0f);
@@ -152,7 +152,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       mt_obd_duration->SetValue((int)(_duration_full), Minutes);
       _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy
       _bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(0) - 20.0;
-      _full_km = MyConfig.GetParamValueFloat("xsq", "full.km", 126.0);
+      _full_km = m_full_km;
       _range_cac = _full_km + (_bat_temp); // temperature compensation +/- range
       if (_range_est != 1023.0f) 
         {
@@ -236,7 +236,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           }
         }
       }
-      break;    
+      break;
     default:
       //ESP_LOGI(TAG, "PID:%x DATA: %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
       break;

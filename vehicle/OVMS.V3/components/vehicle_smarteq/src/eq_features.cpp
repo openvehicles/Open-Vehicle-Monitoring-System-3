@@ -282,7 +282,7 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     snprintf(buf, sizeof(buf), "booster,%s,%s,%s,%d,%d,%d", _climate_on.c_str(), _climate_weekly.c_str(), mt_climate_time->AsString().c_str(), mt_climate_ds->AsInt(), mt_climate_de->AsInt(), mt_climate_1to3->AsInt());
     StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
     StdMetrics.ms_v_gen_current->SetValue(3);
-    if(MyConfig.GetParamValueBool("xsq", "climate.notify",false)) NotifyClimateTimer();
+    if(m_climate_notify) NotifyClimateTimer();
     }
 }
 
@@ -595,6 +595,12 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
       MyConfig.SetParamValueBool("xsq", "unlock.warning",  (bits& 1)!=0);
       return true;
     }
+    case 17:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xsq", "door.warning",  (bits& 1)!=0);
+      return true;
+    }
     default:
       return OvmsVehicle::SetFeature(key, value);
   }
@@ -610,21 +616,21 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
   {
     case 1:
     {
-      int bits = ( MyConfig.GetParamValueBool("xsq", "led",  false) ?  1 : 0);
+      int bits = m_enable_LED_state ?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
     }
     case 2:
     {
-      int bits = ( MyConfig.GetParamValueBool("xsq", "tpms.temp",  false) ?  1 : 0);
+      int bits = m_tpms_temp_enable ?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
     }
     case 3:
     {
-      int bits = ( MyConfig.GetParamValueBool("xsq", "resettrip",  false) ?  1 : 0);
+      int bits = m_resettrip ?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
@@ -644,7 +650,7 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
     }
     case 7:
     {
-      int bits = ( MyConfig.GetParamValueBool("xsq", "resettotal",  false) ?  1 : 0);
+      int bits = m_resettotal?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
@@ -652,29 +658,51 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
     // case 8 -> Vehicle.cpp stream
     // case 9 -> Vehicle.cpp minsoc
     case 10:
-      return MyConfig.GetParamValue("xsq", "suffsoc", STR(0));
+    {
+      int bits = m_suffsoc;
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
     case 11:
-      return MyConfig.GetParamValue("xsq", "suffrange", STR(0));
+    {
+      int bits = m_suffrange;
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
     case 12:
     {
-      int bits = ( MyConfig.GetParamValueBool("xsq", "bcvalue",  false) ?  1 : 0);
+      int bits = m_bcvalue ?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
     }
     case 13:
-      return MyConfig.GetParamValue("xsq", "full.km", STR(126.0));
+    {
+      int bits = m_full_km;
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
     // case 14 -> Vehicle.cpp carbits
     case 15:
     {
-      int bits = ( MyConfig.GetParamValueBool("xsq", "canwrite",  false) ?  1 : 0);
+      int bits = m_enable_write ?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
     }
     case 16:
     {
-      int bits = ( MyConfig.GetParamValueBool("xsq", "unlock.warning",  true) ?  1 : 0);
+      int bits = m_enable_lock_state ?  1 : 0;
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    case 17:
+    {
+      int bits = m_enable_door_state ?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);

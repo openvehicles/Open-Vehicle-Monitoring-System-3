@@ -849,3 +849,99 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
     return;
   #endif
 }
+
+void OvmsVehicleSmartEQ::xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+
+  smarteq->CommandPreset(verbosity, writer);
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, OvmsWriter* writer) {
+  //MyConfig.SetParamValueBool("xsq", "cfg.preset.act",  true); // activate preset config
+  MyConfig.SetParamValueInt("xsq", "cfg.preset.ver",  PRESET_VERSION); // preset config version
+
+  if (!MyConfig.IsDefined("vehicle", "12v.alert")) 
+    {
+    MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
+    }
+
+  if (!MyConfig.IsDefined("modem", "gps.parkpause")) 
+    {
+    MyConfig.SetParamValue("modem", "gps.parkpause", "600"); // default 10 min.
+    MyConfig.SetParamValue("modem", "gps.parkreactivate", "50"); // default 50 min.
+    MyConfig.SetParamValue("modem", "gps.parkreactlock", "5"); // default 5 min.
+    MyConfig.SetParamValue("vehicle", "stream", "10"); // set stream to 10 sec.
+    }
+  
+  if (!MyConfig.IsDefined("modem", "gps.parkreactawake")) 
+    {
+    MyConfig.SetParamValueBool("modem", "gps.parkreactawake", true);
+    }
+
+  if (!MyConfig.IsDefined("net", "type")) 
+    {
+    MyConfig.SetParamValue("net", "type", "4G");
+    }
+
+  if (!MyConfig.IsDefined("network", "wifi.ap2client.enable")) 
+    {
+    MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
+    }
+
+  if (MyConfig.GetParamValue("ota", "server", "0") == "https://ovms.dimitrie.eu/firmware/ota" && 
+      MyConfig.GetParamValue("ota", "tag", "0") == "smarteq")
+    {
+    MyConfig.SetParamValue("ota", "server", "https://ovms.dexters-web.de/firmware/ota");
+    MyConfig.SetParamValue("ota", "tag", "edge");
+    }
+
+  // Delete old config entries using GetParamMap() to get a COPY
+  auto map = MyConfig.GetParamMap("xsq");
+  
+  // List of deprecated keys to remove
+  const char* deprecated_keys[] = {
+    "ios_tpms_fix",
+    "restart.wakeup",
+    "v2.check",
+    "12v.measured.offset",
+    "modem.net.type",
+    "booster.1to3",
+    "booster.de",
+    "booster.ds",
+    "booster.h",
+    "booster.m",
+    "booster.on",
+    "booster.system",
+    "booster.weekly",
+    "gps.onoff",
+    "gps.off",
+    "gps.reactmin",
+    "gps.deact"
+  };
+  
+  // Remove all deprecated keys from map
+  int removed_count = 0;
+  for (const char* key : deprecated_keys) {
+    auto it = map.find(key);
+    if (it != map.end()) {
+      map.erase(it);
+      removed_count++;
+    }
+  }
+  
+  // Write updated map back (only if something was removed)
+  if (removed_count > 0) {
+    MyConfig.SetParamMap("xsq", map);
+    if (writer) {
+      writer->printf("Removed %d deprecated config entries\n", removed_count);
+    }
+    ESP_LOGI(TAG, "Removed %d deprecated config entries", removed_count);
+  }
+
+  if (writer) {
+    writer->printf("Config V%d preset activated", PRESET_VERSION);
+  }
+  return Success;
+}

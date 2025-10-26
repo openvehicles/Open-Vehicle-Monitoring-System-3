@@ -34,6 +34,7 @@
 #define __VEHICLE_SMARTEQ_H__
 
 #define VERSION "2.0.0"
+#define PRESET_VERSION 1
 
 #include "ovms_log.h"
 
@@ -156,6 +157,7 @@ public:
     virtual vehicle_command_t CommandDDT4all(int number, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandSOClimit(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
 
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -184,6 +186,7 @@ public:
     static void xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
     int m_candata_timer;
@@ -204,10 +207,7 @@ public:
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
     virtual void CalculateEfficiency();
-    void vehicle_smart_car_on(bool isOn);
-
-    void IncomingEVC(uint16_t type, uint16_t pid, const char *data, uint16_t len);
-    
+    void vehicle_smart_car_on(bool isOn);    
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* data, uint16_t reply_len);
     void PollReply_BMS_BattState(const char* data, uint16_t reply_len);
@@ -277,6 +277,7 @@ public:
     bool m_12v_charge;                      //!< 12V charge on/off
     bool m_12v_charge_state;                //!< 12V charge state
     bool m_climate_system;                  //!< climate system on/off
+    bool m_climate_notify;                  //!< climate notification on/off
     std::string m_hl_canbyte;               //!< canbyte variable for unv
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
@@ -398,7 +399,11 @@ public:
     int m_12v_ticker;
     int m_modem_ticker;
     int m_park_timeout_secs;                //!< parking timeout in seconds
-    
+    int m_full_km;                          //!< full battery km value for SoC calculation
+    int m_cfg_preset_version;               //!< config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
+    int m_suffsoc;                          //!< minimum SoC for charging
+    int m_suffrange;                        //!< minimum range for charging
+
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll
     int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.
