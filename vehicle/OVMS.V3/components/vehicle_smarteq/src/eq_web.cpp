@@ -116,35 +116,32 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     if(!validFloat(rebootnw, 0, 1440, "Restart Network Time")) rebootnw = "0";
 
     if (error.empty()) {
-      // Use SetMap to write all values in one transaction
-      OvmsConfigParam* param = MyConfig.CachedParam("xsq");
-      if (param) {
-        auto map = param->GetMap();  // Get copy of current map
-        
-        // Helper lambda to set bool values
-        auto setBool = [&map](const char* key, bool val) {
-          map[key] = val ? "yes" : "no";
-        };
-        
-        // Update all values in local map
-        setBool("canwrite", canwrite);
-        setBool("led", led);
-        map["rebootnw"] = rebootnw;
-        setBool("resettrip", resettrip);
-        setBool("resettotal", resettotal);
-        setBool("bcvalue", bcvalue);
-        map["full.km"] = full_km;
-        setBool("climate.system", climate_system);
-        setBool("12v.charge", charge12v);
-        setBool("unlock.warning", unlocked);
-        setBool("modem.check", mdmcheck);
-        setBool("extended.stats", extstats);
-        setBool("reset.notify", tripnotify);
-        setBool("door.warning", opendoors);
-        
-        // Write all changes in one operation
-        MyConfig.SetParamMap("xsq", map);
-      }
+      // Use GetParamMap() to get a COPY of the map
+      auto map = MyConfig.GetParamMap("xsq");
+      
+      // Helper lambda to set bool values
+      auto setBool = [&map](const char* key, bool val) {
+        map[key] = val ? "yes" : "no";
+      };
+      
+      // Update all values in local map
+      setBool("canwrite", canwrite);
+      setBool("led", led);
+      map["rebootnw"] = rebootnw;
+      setBool("resettrip", resettrip);
+      setBool("resettotal", resettotal);
+      setBool("bcvalue", bcvalue);
+      map["full.km"] = full_km;
+      setBool("climate.system", climate_system);
+      setBool("12v.charge", charge12v);
+      setBool("unlock.warning", unlocked);
+      setBool("modem.check", mdmcheck);
+      setBool("extended.stats", extstats);
+      setBool("reset.notify", tripnotify);
+      setBool("door.warning", opendoors);
+      
+      // Write all changes in one operation
+      MyConfig.SetParamMap("xsq", map);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -192,7 +189,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
         full_km = m.at("full.km");
       } else {
         char buf[16];
-        snprintf(buf, sizeof(buf), "%.1f", sq->m_full_km);
+        snprintf(buf, sizeof(buf), "%d", sq->m_full_km);
         full_km = buf;
       }
     } else {
@@ -209,7 +206,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       resettotal = sq->m_resettotal;
       bcvalue = sq->m_bcvalue;
       
-      snprintf(buf, sizeof(buf), "%.1f", sq->m_full_km);
+      snprintf(buf, sizeof(buf), "%d", sq->m_full_km);
       full_km = buf;
       
       climate_system = sq->m_climate_system;
@@ -368,7 +365,7 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
     // Use sq-> for member variables
     climate_notify = MyConfig.GetParamValueBool("xsq", "climate.notify", sq->m_climate_notify);
     climate_system = MyConfig.GetParamValueBool("xsq", "climate.system", sq->m_climate_system); 
-    
+
   c.head(200);
   c.panel_start("primary", "Climate Control Settings");
   c.form_start(p.uri);
@@ -445,26 +442,23 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
     pressure_alert   = c.getvar("pressure_alert");
 
     if (error.empty()) {
-      // Use SetParamMap to write all values in one transaction
-      OvmsConfigParam* param = MyConfig.CachedParam("xsq");
-      if (param) {
-        auto map = param->GetMap();  // Get copy of current map
-        
-        // Update all values in local map
-        map["tpms.temp"] = tpms_temp ? "yes" : "no";
-        map["tpms.alert.enable"] = enable ? "yes" : "no";
-        map["TPMS_FL"] = TPMS_FL;
-        map["TPMS_FR"] = TPMS_FR;
-        map["TPMS_RL"] = TPMS_RL;
-        map["TPMS_RR"] = TPMS_RR;
-        map["tpms.front.pressure"] = front_pressure;
-        map["tpms.rear.pressure"] = rear_pressure;
-        map["tpms.value.warn"] = pressure_warning;
-        map["tpms.value.alert"] = pressure_alert;
-        
-        // Write all changes in one operation
-        MyConfig.SetParamMap("xsq", map);
-      }
+      // Use GetParamMap() to get a COPY of the map
+      auto map = MyConfig.GetParamMap("xsq");
+      
+      // Update all values in local map
+      map["tpms.temp"] = tpms_temp ? "yes" : "no";
+      map["tpms.alert.enable"] = enable ? "yes" : "no";
+      map["TPMS_FL"] = TPMS_FL;
+      map["TPMS_FR"] = TPMS_FR;
+      map["TPMS_RL"] = TPMS_RL;
+      map["TPMS_RR"] = TPMS_RR;
+      map["tpms.front.pressure"] = front_pressure;
+      map["tpms.rear.pressure"] = rear_pressure;
+      map["tpms.value.warn"] = pressure_warning;
+      map["tpms.value.alert"] = pressure_alert;
+      
+      // Write all changes in one operation
+      MyConfig.SetParamMap("xsq", map);
         
       // Success response
       info = "<p>TPMS settings updated successfully</p>";

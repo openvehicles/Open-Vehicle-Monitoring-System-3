@@ -34,6 +34,7 @@
 #define __VEHICLE_SMARTEQ_H__
 
 #define VERSION "2.0.0"
+#define PRESET_VERSION 1
 
 #include "ovms_log.h"
 
@@ -398,8 +399,11 @@ public:
     int m_12v_ticker;
     int m_modem_ticker;
     int m_park_timeout_secs;                //!< parking timeout in seconds
-    float m_full_km;                        //!< full battery km value for SoC calculation
-    
+    int m_full_km;                          //!< full battery km value for SoC calculation
+    int m_cfg_preset_version;               //!< config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
+    int m_suffsoc;                          //!< minimum SoC for charging
+    int m_suffrange;                        //!< minimum range for charging
+
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll
     int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.

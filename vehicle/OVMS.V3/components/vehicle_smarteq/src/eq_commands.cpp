@@ -859,8 +859,8 @@ void OvmsVehicleSmartEQ::xsq_preset(int verbosity, OvmsWriter* writer, OvmsComma
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, OvmsWriter* writer) {
-  MyConfig.SetParamValueBool("xsq", "cfg.preset.act",  true); // activate preset config
-  MyConfig.SetParamValue("xsq", "cfg.preset.ver",  "1.0"); // preset config version
+  //MyConfig.SetParamValueBool("xsq", "cfg.preset.act",  true); // activate preset config
+  MyConfig.SetParamValueInt("xsq", "cfg.preset.ver",  PRESET_VERSION); // preset config version
 
   if (!MyConfig.IsDefined("vehicle", "12v.alert")) 
     {
@@ -897,55 +897,51 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     MyConfig.SetParamValue("ota", "tag", "edge");
     }
 
-
-  // delete old config entry and set new entry one time
-  OvmsConfigParam* param = MyConfig.CachedParam("xsq");
-  if (param) {
-    auto map = param->GetMap();  // Get copy of current map
-    
-    // List of deprecated keys to remove
-    const char* deprecated_keys[] = {
-      "ios_tpms_fix",
-      "restart.wakeup",
-      "v2.check",
-      "12v.measured.offset",
-      "modem.net.type",
-      "booster.1to3",
-      "booster.de",
-      "booster.ds",
-      "booster.h",
-      "booster.m",
-      "booster.on",
-      "booster.system",
-      "booster.weekly",
-      "gps.onoff",
-      "gps.off",
-      "gps.reactmin",
-      "gps.deact"
-    };
-    
-    // Remove all deprecated keys from map
-    int removed_count = 0;
-    for (const char* key : deprecated_keys) {
-      auto it = map.find(key);
-      if (it != map.end()) {
-        map.erase(it);
-        removed_count++;
-      }
+  // Delete old config entries using GetParamMap() to get a COPY
+  auto map = MyConfig.GetParamMap("xsq");
+  
+  // List of deprecated keys to remove
+  const char* deprecated_keys[] = {
+    "ios_tpms_fix",
+    "restart.wakeup",
+    "v2.check",
+    "12v.measured.offset",
+    "modem.net.type",
+    "booster.1to3",
+    "booster.de",
+    "booster.ds",
+    "booster.h",
+    "booster.m",
+    "booster.on",
+    "booster.system",
+    "booster.weekly",
+    "gps.onoff",
+    "gps.off",
+    "gps.reactmin",
+    "gps.deact"
+  };
+  
+  // Remove all deprecated keys from map
+  int removed_count = 0;
+  for (const char* key : deprecated_keys) {
+    auto it = map.find(key);
+    if (it != map.end()) {
+      map.erase(it);
+      removed_count++;
     }
-    
-    // Write updated map back (only if something was removed)
-    if (removed_count > 0) {
-      MyConfig.SetParamMap("xsq", map);
-      if (writer) {
-        writer->printf("Removed %d deprecated config entries\n", removed_count);
-      }
-      ESP_LOGI(TAG, "Removed %d deprecated config entries", removed_count);
+  }
+  
+  // Write updated map back (only if something was removed)
+  if (removed_count > 0) {
+    MyConfig.SetParamMap("xsq", map);
+    if (writer) {
+      writer->printf("Removed %d deprecated config entries\n", removed_count);
     }
+    ESP_LOGI(TAG, "Removed %d deprecated config entries", removed_count);
   }
 
   if (writer) {
-    writer->puts("Config preset activated");
+    writer->printf("Config V%d preset activated", PRESET_VERSION);
   }
   return Success;
 }
