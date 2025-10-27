@@ -1,0 +1,7 @@
+menu "Vehicle: Maxus T90 EV"
+config OVMS_VEHICLE_MAXUS_T90
+    bool "Enable Maxus T90 EV"
+    default y
+    help
+      Minimal vehicle module that polls SoC from 0x7e3/0x7eb PID 0xe002 and updates v.b.soc.
+endmenu
