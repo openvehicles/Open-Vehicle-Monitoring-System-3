@@ -22,9 +22,28 @@ jobs:
           run: |
             set -e
             cd /workspace/vehicle/OVMS.V3
+
+            echo "🔹 Sourcing ESP-IDF..."
             source ${IDF_PATH}/export.sh
-            [ -f sdkconfig ] || cp sdkconfig.default sdkconfig
+
+            echo "🔹 Checking for sdkconfig..."
+            if [ ! -f sdkconfig ]; then
+              if [ -f sdkconfig.default ]; then
+                echo "Using sdkconfig.default"
+                cp sdkconfig.default sdkconfig
+              elif [ -f sdkconfig.minimal ]; then
+                echo "Using sdkconfig.minimal"
+                cp sdkconfig.minimal sdkconfig
+              else
+                echo "❌ ERROR: no sdkconfig.default or sdkconfig.minimal found"
+                exit 1
+              fi
+            fi
+
+            echo "🔹 Enabling Maxus T90 module..."
             echo -e '\nCONFIG_OVMS_VEHICLE_MAXUS_T90=y' >> sdkconfig
+
+            echo "🔹 Starting build..."
             make -j4
 
       - name: Upload build artifacts
