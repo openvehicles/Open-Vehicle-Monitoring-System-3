@@ -8,32 +8,25 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: espressif/idf:release-v3.3
+
     steps:
-      - name: Checkout
+      - name: Checkout (host)
         uses: actions/checkout@v4
+
+      - name: Build in Espressif container
+        uses: addnab/docker-run-action@v3
         with:
-          fetch-depth: 0
+          image: espressif/idf:release-v3.3
+          options: -v ${{ github.workspace }}:/workspace
+          run: |
+            set -e
+            cd /workspace/vehicle/OVMS.V3
+            . ${IDF_PATH}/export.sh
+            [ -f sdkconfig ] || cp sdkconfig.default sdkconfig
+            echo -e '\nCONFIG_OVMS_VEHICLE_MAXUS_T90=y' >> sdkconfig
+            make -j4
 
-      - name: Prepare env
-        working-directory: vehicle/OVMS.V3
-        shell: bash
-        run: |
-          set -e
-          . ${IDF_PATH}/export.sh
-          [ -f sdkconfig ] || cp sdkconfig.default sdkconfig
-          echo -e '\nCONFIG_OVMS_VEHICLE_MAXUS_T90=y' >> sdkconfig
-
-      - name: Build
-        working-directory: vehicle/OVMS.V3
-        shell: bash
-        run: |
-          set -e
-          . ${IDF_PATH}/export.sh
-          make -j4
-
-      - name: Upload artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ovms3-maxus-t90
