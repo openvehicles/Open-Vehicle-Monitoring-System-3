@@ -18,10 +18,11 @@ jobs:
         with:
           image: espressif/idf:release-v3.3
           options: -v ${{ github.workspace }}:/workspace
+          shell: bash
           run: |
             set -e
             cd /workspace/vehicle/OVMS.V3
-            . ${IDF_PATH}/export.sh
+            source ${IDF_PATH}/export.sh
             [ -f sdkconfig ] || cp sdkconfig.default sdkconfig
             echo -e '\nCONFIG_OVMS_VEHICLE_MAXUS_T90=y' >> sdkconfig
             make -j4
