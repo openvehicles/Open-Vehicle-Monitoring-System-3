@@ -1,0 +1,44 @@
+name: Build OVMS Maxus T90 (SoC)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:release-v3.3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare env
+        working-directory: vehicle/OVMS.V3
+        shell: bash
+        run: |
+          set -e
+          . ${IDF_PATH}/export.sh
+          [ -f sdkconfig ] || cp sdkconfig.default sdkconfig
+          echo -e '\nCONFIG_OVMS_VEHICLE_MAXUS_T90=y' >> sdkconfig
+
+      - name: Build
+        working-directory: vehicle/OVMS.V3
+        shell: bash
+        run: |
+          set -e
+          . ${IDF_PATH}/export.sh
+          make -j4
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ovms3-maxus-t90
+          path: |
+            vehicle/OVMS.V3/build/ovms3.bin
+            vehicle/OVMS.V3/build/partitions.bin
+            vehicle/OVMS.V3/build/bootloader/bootloader.bin
+            vehicle/OVMS.V3/build/ota_data_initial.bin
