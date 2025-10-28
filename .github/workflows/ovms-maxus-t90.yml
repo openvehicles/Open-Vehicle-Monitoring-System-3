@@ -19,15 +19,15 @@ jobs:
       - name: Build in Espressif container
         uses: addnab/docker-run-action@v3
         with:
-          image: espressif/idf:release-v3.3
+          image: espressif/idf:release-v3.3.6   # ✅ updated version
           options: -v ${{ github.workspace }}:/workspace
           shell: bash
           run: |
             set -e
             cd /workspace/vehicle/OVMS.V3
 
-            echo "🔹 Sourcing ESP-IDF..."
-            source ${IDF_PATH}/export.sh
+            echo "🔹 ESP-IDF version:"
+            cat $IDF_PATH/version.txt || true
 
             echo "🔹 Checking for sdkconfig..."
             if [ ! -f sdkconfig ]; then
