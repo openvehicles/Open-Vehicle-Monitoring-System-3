@@ -44,7 +44,7 @@ jobs:
             echo "CONFIG_OVMS_VEHICLE_MAXUS_T90=y" >> sdkconfig
 
             echo "🔹 Running oldconfig non-interactively..."
-            yes "" | make oldconfig
+            yes "" | make defconfig
 
             echo "🔹 Building firmware..."
             make clean
