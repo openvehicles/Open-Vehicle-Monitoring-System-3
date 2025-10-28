@@ -19,7 +19,7 @@ jobs:
       - name: Build in Espressif container
         uses: addnab/docker-run-action@v3
         with:
-          image: espressif/idf:release-v4.4   # ✅ Updated image (CMake 3.21+)
+          image: espressif/idf:release-v5.1   # ✅ now using IDF v5.1 to match manifest
           options: -v ${{ github.workspace }}:/workspace
           shell: bash
           run: |
