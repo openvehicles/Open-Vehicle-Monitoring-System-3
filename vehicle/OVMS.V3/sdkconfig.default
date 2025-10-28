@@ -1,7 +1,6 @@
-# Automatically generated full sdkconfig for OVMS.V3
-# Target: ESP-IDF v3.3 (ESP32)
-# Note: This is a best-effort, non-interactive complete sdkconfig to avoid CI prompts.
-# After adding this file, run an interactive `idf.py menuconfig` locally to validate and tune.
+# Non-interactive sdkconfig for OVMS.V3 (ESP-IDF v3.3)
+# Generated to pre-seed kconfig NEW prompts so CI doesn't stop for interactive input.
+# After committing this, run an interactive `idf.py menuconfig` locally once to validate.
 
 # Toolchain/tool prefix (prevents interactive prompt)
 CONFIG_TOOLPREFIX="xtensa-esp32-elf-"
@@ -60,7 +59,9 @@ CONFIG_SPIFFS_CACHE=y
 # Logging
 CONFIG_LOG_DEFAULT_LEVEL_INFO=y
 
-# Bootloader log
+# Bootloader log: pre-seed to avoid interactive choice
+CONFIG_LOG_BOOTLOADER_LEVEL=4
+CONFIG_LOG_BOOTLOADER_LEVEL_INFO=y
 CONFIG_BOOTLOADER_LOG_LEVEL_INFO=y
 
 # Partition / flash encryption (disabled by default)
