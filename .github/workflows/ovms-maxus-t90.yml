@@ -19,7 +19,7 @@ jobs:
       - name: Build in Espressif container
         uses: addnab/docker-run-action@v3
         with:
-          image: espressif/idf:release-v5.1   # ✅ now using IDF v5.1 to match manifest
+          image: espressif/idf:release-v3.3
           options: -v ${{ github.workspace }}:/workspace
           shell: bash
           run: |
@@ -29,16 +29,11 @@ jobs:
             echo "🔹 Sourcing ESP-IDF environment..."
             source ${IDF_PATH}/export.sh
 
-            echo "🔹 ESP-IDF version:"
-            idf.py --version || echo "Skipping version check (version.txt not found)"
-
             echo "🔹 Checking for sdkconfig..."
             if [ ! -f sdkconfig ]; then
               if [ -f sdkconfig.default ]; then
-                echo "Using sdkconfig.default"
                 cp sdkconfig.default sdkconfig
               elif [ -f sdkconfig.minimal ]; then
-                echo "Using sdkconfig.minimal"
                 cp sdkconfig.minimal sdkconfig
               else
                 echo "❌ ERROR: no sdkconfig.default or sdkconfig.minimal found"
@@ -49,8 +44,9 @@ jobs:
             echo "🔹 Enabling Maxus T90 module..."
             echo -e '\nCONFIG_OVMS_VEHICLE_MAXUS_T90=y' >> sdkconfig
 
-            echo "🔹 Starting build..."
-            idf.py build
+            echo "🔹 Building..."
+            make clean
+            make -j4
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
