@@ -19,7 +19,7 @@ jobs:
       - name: Build in Espressif container
         uses: addnab/docker-run-action@v3
         with:
-          image: espressif/idf:release-v3.3.6   # ✅ updated version
+          image: espressif/idf:release-v3.3
           options: -v ${{ github.workspace }}:/workspace
           shell: bash
           run: |
