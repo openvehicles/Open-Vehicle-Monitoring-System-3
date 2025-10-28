@@ -38,9 +38,16 @@ jobs:
           idf_component_register(SRCS "vehicle_me6.cpp" INCLUDE_DIRS ".")
           EOF
 
-      - name: Prepare sdkconfig
+      - name: Prepare sdkconfig and sdkconfig.defaults
         run: |
           echo "🔹 Creating CI sdkconfig..."
+          # sdkconfig.defaults is applied *before* CMake configure, ensuring WolfSSL picks up the flag
+          cat <<EOF > vehicle/OVMS.V3/sdkconfig.defaults
+          CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
+          CONFIG_OVMS_VEHICLE_MAXUS_T90=y
+          EOF
+
+          # sdkconfig can remain minimal, as sdkconfig.defaults seeds it anyway
           cat <<EOF > vehicle/OVMS.V3/sdkconfig
           CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
           CONFIG_OVMS_VEHICLE_MAXUS_T90=y
@@ -59,11 +66,15 @@ jobs:
             echo "🔹 Sourcing ESP-IDF environment..."
             source ${IDF_PATH}/export.sh
 
-            echo "🔹 Using pre-seeded sdkconfig..."
+            echo "🔹 Using sdkconfig.defaults and sdkconfig..."
+            cat sdkconfig.defaults
             cat sdkconfig
 
             echo "🔹 Setting target..."
             idf.py set-target esp32
+
+            echo "🔹 Applying defaults..."
+            idf.py defconfig
 
             echo "🔹 Building..."
             idf.py build
