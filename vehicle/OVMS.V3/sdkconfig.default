@@ -6,6 +6,9 @@
 # Toolchain/tool prefix (prevents interactive prompt)
 CONFIG_TOOLPREFIX="xtensa-esp32-elf-"
 
+# Python interpreter (prevents interactive prompt for PYTHON)
+CONFIG_PYTHON="python"
+
 # Target
 CONFIG_IDF_TARGET="esp32"
 
@@ -20,7 +23,9 @@ CONFIG_ESPTOOLPY_FLASHSIZE="4MB"
 CONFIG_ESPTOOLPY_FLASHFREQ_40M=y
 CONFIG_ESPTOOLPY_FLASHFREQ="40m"
 CONFIG_BOOTLOADER_OFFSET_IN_FLASH=0x1000
-CONFIG_PARTITION_TABLE_SINGLE_APP=y
+
+# Partition table: use custom partition table (avoid conflicting choices)
+CONFIG_PARTITION_TABLE_SINGLE_APP=n
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
 CONFIG_PARTITION_TABLE_OFFSET=0x8000
@@ -68,9 +73,6 @@ CONFIG_ESP_COREDUMP_ENABLE_TO_NONE=y
 # Kconfig/Build system
 CONFIG_COMPILER_CLANG=n
 CONFIG_COMPILER_FORCE_PIE=n
-
-# SDK toolchain path — keep default prefix but set explicitly to avoid prompts
-CONFIG_SDK_TOOLCHAIN_PYTHON="python"
 
 # Project-specific OVMS settings (from provided minimal defaults)
 CONFIG_OVMS_SC_ACL=y
@@ -126,13 +128,8 @@ CONFIG_ISR_IRAM_SAFE=y
 CONFIG_HEAP_POISONING_DISABLED=n
 
 # Disable components not used by default (explicitly set to avoid prompts)
-# (Set explicit 'n' for a few optional components commonly prompting)
 CONFIG_ESP32_WIFI_SOFTAP=y
 CONFIG_ESP32_WIFI_STA=y
 CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=n
-
-# Placeholder string and numeric configs to satisfy IDF v3.3 Kconfig prompts
-CONFIG_EXAMPLE_FOO=""
-CONFIG_EXAMPLE_BAR=0
 
 # End of configuration
