@@ -65,8 +65,8 @@ jobs:
             echo "🔹 Enabling Maxus T90 module..."
             echo "CONFIG_OVMS_VEHICLE_MAXUS_T90=y" >> sdkconfig
 
-            echo "🔹 Applying defaults..."
-            idf.py defconfig
+            echo "🔹 Setting target..."
+            idf.py set-target esp32
 
             echo "🔹 Building..."
             idf.py build
