@@ -36,13 +36,16 @@ jobs:
           shell: bash
           run: |
             set -e
-            apt-get update
-            apt-get install -y wget software-properties-common lsb-release
-            apt-get purge -y cmake
-            wget -qO- https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor -o /usr/share/keyrings/kitware-archive-keyring.gpg
-            echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/kitware.list
-            apt-get update
-            apt-get install -y cmake ccache
+
+            echo "🔸 Installing CMake 3.26.4..."
+            wget -q https://github.com/Kitware/CMake/releases/download/v3.26.4/cmake-3.26.4-linux-x86_64.sh
+            chmod +x cmake-3.26.4-linux-x86_64.sh
+            ./cmake-3.26.4-linux-x86_64.sh --skip-license --prefix=/usr/local
+            cmake --version
+
+            echo "🔸 Installing ccache..."
+            apt-get update -y
+            apt-get install -y ccache
 
             cd /workspace/vehicle/OVMS.V3
 
