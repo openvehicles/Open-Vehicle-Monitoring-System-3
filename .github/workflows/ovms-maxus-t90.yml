@@ -16,10 +16,10 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Build in Espressif container (IDF 4.4)
+      - name: Build in Espressif container (IDF 5.1)
         uses: addnab/docker-run-action@v3
         with:
-          image: espressif/idf:release-v4.4
+          image: espressif/idf:release-v5.1
           options: -v ${{ github.workspace }}:/workspace
           shell: bash
           run: |
@@ -40,13 +40,13 @@ jobs:
               exit 1
             fi
 
-            echo "🔹 Enabling Maxus T90 vehicle module..."
+            echo "🔹 Adding Maxus T90 module..."
             echo "CONFIG_OVMS_VEHICLE_MAXUS_T90=y" >> sdkconfig
 
             echo "🔹 Applying defaults..."
             idf.py defconfig
 
-            echo "🔹 Building firmware..."
+            echo "🔹 Building..."
             idf.py build
 
       - name: Upload build artifacts
