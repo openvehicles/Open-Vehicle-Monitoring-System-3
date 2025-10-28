@@ -1,8 +1,8 @@
-name: Build OVMS Maxus T90 (SoC)
+name: Build OVMS Firmware
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -10,81 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (host)
+      - name: Checkout source
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Stub out missing components
-        run: |
-          echo "🔸 Stubbing missing components..."
-
-          mkdir -p vehicle/OVMS.V3/components/simcom
-          echo '// Dummy to satisfy build' > vehicle/OVMS.V3/components/simcom/simcom_powering.cpp
-          cat <<EOF > vehicle/OVMS.V3/components/simcom/CMakeLists.txt
-          idf_component_register(SRCS "simcom_powering.cpp" INCLUDE_DIRS ".")
-          EOF
-
-          mkdir -p vehicle/OVMS.V3/components/vehicle_maple60s/src
-          echo '// Dummy to satisfy build' > vehicle/OVMS.V3/components/vehicle_maple60s/src/vehicle_maple60s.cpp
-          cat <<EOF > vehicle/OVMS.V3/components/vehicle_maple60s/CMakeLists.txt
-          idf_component_register(SRCS "src/vehicle_maple60s.cpp" INCLUDE_DIRS "src")
-          EOF
-
-          mkdir -p vehicle/OVMS.V3/components/vehicle_maxus_euniq6
-          echo '// Dummy to satisfy build' > vehicle/OVMS.V3/components/vehicle_maxus_euniq6/vehicle_me6.cpp
-          cat <<EOF > vehicle/OVMS.V3/components/vehicle_maxus_euniq6/CMakeLists.txt
-          idf_component_register(SRCS "vehicle_me6.cpp" INCLUDE_DIRS ".")
-          EOF
-
-      - name: Prepare sdkconfig and sdkconfig.defaults
-        run: |
-          echo "🔹 Creating CI sdkconfig..."
-          # sdkconfig.defaults is applied *before* CMake configure, ensuring WolfSSL picks up the flag
-          cat <<EOF > vehicle/OVMS.V3/sdkconfig.defaults
-          CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
-          CONFIG_OVMS_VEHICLE_MAXUS_T90=y
-          EOF
-
-          # sdkconfig can remain minimal, as sdkconfig.defaults seeds it anyway
-          cat <<EOF > vehicle/OVMS.V3/sdkconfig
-          CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
-          CONFIG_OVMS_VEHICLE_MAXUS_T90=y
-          EOF
-
-      - name: Build in Espressif container (IDF 5.1)
+      - name: Build in Espressif container
         uses: addnab/docker-run-action@v3
         with:
-          image: espressif/idf:release-v5.1
+          image: espressif/idf:release-v3.3
           options: -v ${{ github.workspace }}:/workspace
           shell: bash
           run: |
             set -e
             cd /workspace/vehicle/OVMS.V3
 
-            echo "🔹 Sourcing ESP-IDF environment..."
+            echo "🔹 Preparing sdkconfig..."
+            if [ ! -f sdkconfig ]; then
+              cp sdkconfig.default sdkconfig
+            fi
+
+            echo "🔹 Sourcing ESP-IDF..."
             source ${IDF_PATH}/export.sh
 
-            echo "🔹 Using sdkconfig.defaults and sdkconfig..."
-            cat sdkconfig.defaults
-            cat sdkconfig
-
-            echo "🔹 Setting target..."
-            idf.py set-target esp32
-
-            echo "🔹 Applying defaults..."
-            idf.py defconfig
-
-            echo "🔹 Building..."
+            echo "🔹 Building firmware..."
             idf.py build
 
-      - name: Upload build artifacts
+            echo "✅ Build finished"
+      
+      - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ovms3-maxus-t90-${{ github.run_number }}
-          path: |
-            vehicle/OVMS.V3/build/ovms3.bin
-            vehicle/OVMS.V3/build/partitions.bin
-            vehicle/OVMS.V3/build/bootloader/bootloader.bin
-            vehicle/OVMS.V3/build/ota_data_initial.bin
+          name: ovms-firmware
+          path: vehicle/OVMS.V3/build/ovms3.bin
