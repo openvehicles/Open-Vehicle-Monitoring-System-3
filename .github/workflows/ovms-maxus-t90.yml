@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout (host)
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Build in Espressif container
         uses: addnab/docker-run-action@v3
