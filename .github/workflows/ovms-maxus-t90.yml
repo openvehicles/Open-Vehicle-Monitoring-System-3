@@ -1,3 +1,43 @@
+name: Build OVMS Maxus T90 (SoC)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (host)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Stub out missing components
+        run: |
+          echo "🔸 Stubbing missing components..."
+
+          mkdir -p vehicle/OVMS.V3/components/simcom
+          echo '// Dummy to satisfy build' > vehicle/OVMS.V3/components/simcom/simcom_powering.cpp
+          cat <<EOF > vehicle/OVMS.V3/components/simcom/CMakeLists.txt
+          idf_component_register(SRCS "simcom_powering.cpp" INCLUDE_DIRS ".")
+          EOF
+
+          mkdir -p vehicle/OVMS.V3/components/vehicle_maple60s/src
+          echo '// Dummy to satisfy build' > vehicle/OVMS.V3/components/vehicle_maple60s/src/vehicle_maple60s.cpp
+          cat <<EOF > vehicle/OVMS.V3/components/vehicle_maple60s/CMakeLists.txt
+          idf_component_register(SRCS "src/vehicle_maple60s.cpp" INCLUDE_DIRS "src")
+          EOF
+
+          mkdir -p vehicle/OVMS.V3/components/vehicle_maxus_euniq6
+          echo '// Dummy to satisfy build' > vehicle/OVMS.V3/components/vehicle_maxus_euniq6/vehicle_me6.cpp
+          cat <<EOF > vehicle/OVMS.V3/components/vehicle_maxus_euniq6/CMakeLists.txt
+          idf_component_register(SRCS "vehicle_me6.cpp" INCLUDE_DIRS ".")
+          EOF
+
       - name: Build in Espressif container (IDF 5.1)
         uses: addnab/docker-run-action@v3
         with:
@@ -33,3 +73,13 @@
 
             echo "🔹 Building..."
             idf.py build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ovms3-maxus-t90-${{ github.run_number }}
+          path: |
+            vehicle/OVMS.V3/build/ovms3.bin
+            vehicle/OVMS.V3/build/partitions.bin
+            vehicle/OVMS.V3/build/bootloader/bootloader.bin
+            vehicle/OVMS.V3/build/ota_data_initial.bin
