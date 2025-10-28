@@ -38,6 +38,14 @@ jobs:
           idf_component_register(SRCS "vehicle_me6.cpp" INCLUDE_DIRS ".")
           EOF
 
+      - name: Prepare sdkconfig
+        run: |
+          echo "🔹 Creating CI sdkconfig..."
+          cat <<EOF > vehicle/OVMS.V3/sdkconfig
+          CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
+          CONFIG_OVMS_VEHICLE_MAXUS_T90=y
+          EOF
+
       - name: Build in Espressif container (IDF 5.1)
         uses: addnab/docker-run-action@v3
         with:
@@ -51,22 +59,8 @@ jobs:
             echo "🔹 Sourcing ESP-IDF environment..."
             source ${IDF_PATH}/export.sh
 
-            echo "🔹 Resetting sdkconfig..."
-            rm -f sdkconfig
-            if [ -f sdkconfig.default ]; then
-              cp sdkconfig.default sdkconfig
-            elif [ -f sdkconfig.minimal ]; then
-              cp sdkconfig.minimal sdkconfig
-            else
-              echo "❌ ERROR: no sdkconfig.default or sdkconfig.minimal found"
-              exit 1
-            fi
-
-            echo "🔹 Enabling Maxus T90 module..."
-            echo "CONFIG_OVMS_VEHICLE_MAXUS_T90=y" >> sdkconfig
-
-            echo "🔹 Enabling FreeRTOS backward compatibility..."
-            echo "CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y" >> sdkconfig
+            echo "🔹 Using pre-seeded sdkconfig..."
+            cat sdkconfig
 
             echo "🔹 Setting target..."
             idf.py set-target esp32
