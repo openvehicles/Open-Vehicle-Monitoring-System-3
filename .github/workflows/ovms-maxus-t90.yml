@@ -16,6 +16,28 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Stub out missing components
+        run: |
+          echo "🔸 Stubbing missing components..."
+
+          mkdir -p vehicle/OVMS.V3/components/simcom
+          echo '// Dummy to satisfy build' > vehicle/OVMS.V3/components/simcom/simcom_powering.cpp
+          cat <<EOF > vehicle/OVMS.V3/components/simcom/CMakeLists.txt
+          idf_component_register(SRCS "simcom_powering.cpp" INCLUDE_DIRS ".")
+          EOF
+
+          mkdir -p vehicle/OVMS.V3/components/vehicle_maple60s/src
+          echo '// Dummy to satisfy build' > vehicle/OVMS.V3/components/vehicle_maple60s/src/vehicle_maple60s.cpp
+          cat <<EOF > vehicle/OVMS.V3/components/vehicle_maple60s/CMakeLists.txt
+          idf_component_register(SRCS "src/vehicle_maple60s.cpp" INCLUDE_DIRS "src")
+          EOF
+
+          mkdir -p vehicle/OVMS.V3/components/vehicle_maxus_euniq6
+          echo '// Dummy to satisfy build' > vehicle/OVMS.V3/components/vehicle_maxus_euniq6/vehicle_me6.cpp
+          cat <<EOF > vehicle/OVMS.V3/components/vehicle_maxus_euniq6/CMakeLists.txt
+          idf_component_register(SRCS "vehicle_me6.cpp" INCLUDE_DIRS ".")
+          EOF
+
       - name: Build in Espressif container (IDF 5.1)
         uses: addnab/docker-run-action@v3
         with:
@@ -40,7 +62,7 @@ jobs:
               exit 1
             fi
 
-            echo "🔹 Adding Maxus T90 module..."
+            echo "🔹 Enabling Maxus T90 module..."
             echo "CONFIG_OVMS_VEHICLE_MAXUS_T90=y" >> sdkconfig
 
             echo "🔹 Applying defaults..."
