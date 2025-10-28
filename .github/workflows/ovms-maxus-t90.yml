@@ -26,9 +26,6 @@ jobs:
             set -e
             cd /workspace/vehicle/OVMS.V3
 
-            echo "🔹 ESP-IDF version:"
-            cat $IDF_PATH/version.txt || true
-
             echo "🔹 Checking for sdkconfig..."
             if [ ! -f sdkconfig ]; then
               if [ -f sdkconfig.default ]; then
