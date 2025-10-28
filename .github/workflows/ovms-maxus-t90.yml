@@ -37,13 +37,14 @@ jobs:
           run: |
             set -e
 
-            echo "🔸 Installing CMake 3.26.4..."
+            echo "🔸 Installing CMake 3.26.4 to /opt/cmake..."
+            mkdir -p /opt/cmake
             wget -q https://github.com/Kitware/CMake/releases/download/v3.26.4/cmake-3.26.4-linux-x86_64.sh
             chmod +x cmake-3.26.4-linux-x86_64.sh
-            ./cmake-3.26.4-linux-x86_64.sh --skip-license --prefix=/usr/local/cmake
+            ./cmake-3.26.4-linux-x86_64.sh --skip-license --prefix=/opt/cmake
 
             # Force the new cmake to the front of PATH
-            export PATH="/usr/local/cmake/bin:$PATH"
+            export PATH="/opt/cmake/bin:$PATH"
             cmake --version
 
             echo "🔸 Installing ccache..."
