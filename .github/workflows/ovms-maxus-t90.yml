@@ -3,8 +3,6 @@ name: Build OVMS Firmware
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -18,10 +16,10 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Build OVMS in Espressif container
+      - name: Build OVMS in official OVMS builder
         uses: addnab/docker-run-action@v3
         with:
-          image: espressif/idf:release-v4.4
+          image: openvehicles/ovms3-builder:latest
           options: -v ${{ github.workspace }}:/workspace
           shell: bash
           run: |
@@ -36,7 +34,7 @@ jobs:
             fi
 
             echo "🔸 Sourcing ESP-IDF..."
-            source ${IDF_PATH}/export.sh
+            source /opt/esp/idf/export.sh
 
             echo "🔸 Building firmware..."
             idf.py build
