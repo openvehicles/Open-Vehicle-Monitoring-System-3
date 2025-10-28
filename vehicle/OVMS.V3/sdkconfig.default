@@ -135,4 +135,7 @@ CONFIG_ESP32_WIFI_SOFTAP=y
 CONFIG_ESP32_WIFI_STA=y
 CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=n
 
+# Application manager options (pre-answer NEW prompts)
+CONFIG_APP_COMPILE_TIME_DATE=y
+
 # End of configuration
