@@ -26,6 +26,12 @@ jobs:
             set -e
             cd /workspace/vehicle/OVMS.V3
 
+            echo "🔹 Sourcing ESP-IDF environment..."
+            source ${IDF_PATH}/export.sh
+
+            echo "🔹 ESP-IDF version:"
+            idf.py --version || echo "Skipping version check (version.txt not found)"
+
             echo "🔹 Checking for sdkconfig..."
             if [ ! -f sdkconfig ]; then
               if [ -f sdkconfig.default ]; then
@@ -44,7 +50,7 @@ jobs:
             echo -e '\nCONFIG_OVMS_VEHICLE_MAXUS_T90=y' >> sdkconfig
 
             echo "🔹 Starting build..."
-            make -j4
+            idf.py build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
