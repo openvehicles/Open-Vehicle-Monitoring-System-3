@@ -74,6 +74,9 @@ CONFIG_ESP_COREDUMP_ENABLE_TO_NONE=y
 CONFIG_COMPILER_CLANG=n
 CONFIG_COMPILER_FORCE_PIE=n
 
+# Prevent interactive make warning prompt in non-interactive CI
+CONFIG_MAKE_WARN_UNDEFINED_VARIABLES=y
+
 # Project-specific OVMS settings (from provided minimal defaults)
 CONFIG_OVMS_SC_ACL=y
 CONFIG_OVMS_SC_GSM=y
