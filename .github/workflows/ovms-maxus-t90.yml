@@ -29,27 +29,24 @@ jobs:
             echo "🔹 Sourcing ESP-IDF environment..."
             source ${IDF_PATH}/export.sh
 
-            echo "🔹 Checking for sdkconfig..."
-            if [ ! -f sdkconfig ]; then
-              if [ -f sdkconfig.default ]; then
-                echo "Using sdkconfig.default"
-                cp sdkconfig.default sdkconfig
-              elif [ -f sdkconfig.minimal ]; then
-                echo "Using sdkconfig.minimal"
-                cp sdkconfig.minimal sdkconfig
-              else
-                echo "❌ ERROR: no sdkconfig.default or sdkconfig.minimal found"
-                exit 1
-              fi
+            echo "🔹 Resetting sdkconfig to a known good base..."
+            rm -f sdkconfig
+            if [ -f sdkconfig.default ]; then
+              cp sdkconfig.default sdkconfig
+            elif [ -f sdkconfig.minimal ]; then
+              cp sdkconfig.minimal sdkconfig
+            else
+              echo "❌ ERROR: no sdkconfig.default or sdkconfig.minimal found"
+              exit 1
             fi
 
-            echo "🔹 Enabling Maxus T90 module..."
-            echo -e '\nCONFIG_OVMS_VEHICLE_MAXUS_T90=y' >> sdkconfig
+            echo "🔹 Adding Maxus T90 vehicle module..."
+            echo "CONFIG_OVMS_VEHICLE_MAXUS_T90=y" >> sdkconfig
 
-            echo "🔹 Running oldconfig to skip interactive prompts..."
-            make oldconfig
+            echo "🔹 Running oldconfig non-interactively..."
+            yes "" | make oldconfig
 
-            echo "🔹 Starting build..."
+            echo "🔹 Building firmware..."
             make clean
             make -j4
 
