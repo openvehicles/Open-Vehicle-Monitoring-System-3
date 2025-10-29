@@ -392,6 +392,7 @@ public:
     bool m_modem_restart;                   //!< modem restart enabled
     bool m_notifySOClimit;                  //!< notify SOClimit reached one time
     bool m_enable_calcADCfactor;            //!< enable calculation of ADC factor
+    int m_adc_samples;                      //!< number of samples for ADC factor calculation
     int m_ddt4all_ticker;                   //!< DDT4ALL active ticker 
     int m_ddt4all_exec;                     //!< DDT4ALL ticker for next execution
     int m_led_state;

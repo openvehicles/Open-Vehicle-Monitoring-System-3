@@ -333,21 +333,19 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
     // Configure ADC
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
-
-    const int NUM_SAMPLES = MyConfig.GetParamValueInt("xsq", "calc.adcfactor.samples", 10);
-    uint16_t samples_adc[NUM_SAMPLES];
+    uint16_t samples_adc[m_adc_samples];
     
     // Collect samples
-    for (int i = 0; i < NUM_SAMPLES; i++) 
+    for (int i = 0; i < m_adc_samples; i++) 
       {
-      vTaskDelay(5 / portTICK_PERIOD_MS);
+      vTaskDelay(2 / portTICK_PERIOD_MS);
       samples_adc[i] = adc1_get_raw(ADC1_CHANNEL_0);
       }
 
     // Bubble sort for median calculation
-    for (int i = 0; i < NUM_SAMPLES - 1; i++) 
+    for (int i = 0; i < m_adc_samples - 1; i++) 
       {
-      for (int j = 0; j < NUM_SAMPLES - i - 1; j++) 
+      for (int j = 0; j < m_adc_samples - i - 1; j++) 
         {
         if (samples_adc[j] > samples_adc[j + 1]) 
           {
@@ -360,28 +358,28 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
 
     // Calculate median
     float median_raw;
-    if (NUM_SAMPLES % 2 == 0) 
+    if (m_adc_samples % 2 == 0) 
       {
-      median_raw = (samples_adc[(NUM_SAMPLES / 2) - 1] + samples_adc[NUM_SAMPLES / 2]) / 2.0f;
+      median_raw = (samples_adc[(m_adc_samples / 2) - 1] + samples_adc[m_adc_samples / 2]) / 2.0f;
       } 
       else 
       {
-      median_raw = samples_adc[NUM_SAMPLES / 2];
+      median_raw = samples_adc[m_adc_samples / 2];
       }
 
     // Calculate average of ADC samples
     uint32_t summid = 0;
-    for (int i = 0; i < NUM_SAMPLES; i++) 
+    for (int i = 0; i < m_adc_samples; i++) 
       {
       summid += samples_adc[i];
       }
-    float avg_raw = summid / (float)NUM_SAMPLES;    
+    float avg_raw = summid / (float)m_adc_samples;    
 
     // After collecting samples, don't sort, instead:
     uint16_t min_val = samples_adc[0];          // Smallest value (after sorting)
-    uint16_t max_val = samples_adc[NUM_SAMPLES - 1];  // Largest value (after sorting)
+    uint16_t max_val = samples_adc[m_adc_samples - 1];  // Largest value (after sorting)
     // Trimmed Mean: Remove Min + Max
-    float trimmed_avg = (summid - min_val - max_val) / (float)(NUM_SAMPLES - 2);
+    float trimmed_avg = (summid - min_val - max_val) / (float)(m_adc_samples - 2);
     
     // Calculate average of USM voltage samples
     float V_batt = can12V;

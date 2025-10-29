@@ -324,6 +324,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_modem_check          = getBool("modem.check", false);
     m_12v_charge           = getBool("12v.charge", true);
     m_enable_calcADCfactor = getBool("calc.adcfactor", false);
+    m_adc_samples          = getInt("adc.samples", 4);
     m_climate_system       = getBool("climate.system", true);
     m_climate_notify       = getBool("climate.notify", false);
     m_indicator            = getBool("indicator", false);
