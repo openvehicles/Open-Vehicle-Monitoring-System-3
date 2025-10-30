@@ -1,11 +1,8 @@
 set(srcs)
 set(include_dirs)
 
-# Conditional compilation for the Maxus T90 EV
-if (CONFIG_OVMS_VEHICLE_MAXT90EV)
-  # Assuming the primary vehicle logic is in vehicle_maxt90ev.cpp
-  # and the web configuration handler is in maxt90ev_web.cpp
-  list(APPEND srcs "src/maxt90ev_web.cpp" "src/vehicle_maxt90ev.cpp")
+if (CONFIG_OVMS_VEHICLE_MAXT90)
+  list(APPEND srcs "src/vehicle_maxt90.cpp")
   list(APPEND include_dirs "src")
 endif ()
 

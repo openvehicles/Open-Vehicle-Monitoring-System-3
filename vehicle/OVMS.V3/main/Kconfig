@@ -367,6 +367,13 @@ config OVMS_VEHICLE_NONE
     help
         Enable to include support for base NONE vehicle stub.
 
+config OVMS_VEHICLE_MAXT90
+    bool "Include support for base MAXT90 vehicle stub"
+    default n
+    depends on OVMS
+    help
+        Enable to include support for base MAXT90 vehicle stub.
+
 config OVMS_VEHICLE_OBDII
     bool "Include support for OBDII vehicles"
     default y
@@ -458,14 +465,6 @@ config OVMS_VEHICLE_RENAULTZOE_PH2
     depends on OVMS_COMP_POLLER
     help
         Enable to include support for Renault Zoe Phase 2 vehicles.
-        
-config OVMS_VEHICLE_MAXT90EV
-    bool "Include support for Maxus T90EV vehicle"
-    default y
-    depends on OVMS
-    depends on OVMS_COMP_POLLER
-    help
-        Enable to include support for Maxus T90EV vehicle.
 
 config OVMS_VEHICLE_MAXED3
     bool "Include support for Maxus eDeliver3 vehicle"
