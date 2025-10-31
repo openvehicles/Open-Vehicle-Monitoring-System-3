@@ -1,82 +1,68 @@
-name: Build OVMS Firmware
+name: Build OVMS (ESP-IDF v3.3)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Run all steps inside the IDF v3.3 toolchain container
+    container:
+      image: espressif/idf:release-v3.3
+
+    env:
+      # We'll clone the OVMS ESP-IDF fork into the workspace and use that as IDF_PATH
+      IDF_PATH: ${{ github.workspace }}/esp-idf
+      CCACHE_DIR: /root/.ccache
 
     steps:
-      - name: Checkout source
+      - name: Checkout repository (with submodules)
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Cache build output
+      - name: Cache ccache
         uses: actions/cache@v4
         with:
-          path: |
-            vehicle/OVMS.V3/build
-            ~/.ccache
-          key: ovms-build-${{ runner.os }}-${{ hashFiles('vehicle/OVMS.V3/**', '!**/build/**') }}
+          path: /root/.ccache
+          key: ovms-ccache-${{ runner.os }}-${{ github.ref_name }}-${{ hashFiles('vehicle/OVMS.V3/**') }}
           restore-keys: |
-            ovms-build-${{ runner.os }}-
+            ovms-ccache-${{ runner.os }}-${{ github.ref_name }}-
+            ovms-ccache-${{ runner.os }}-
 
-      - name: Build OVMS with upgraded CMake
-        uses: addnab/docker-run-action@v3
-        with:
-          image: espressif/idf:release-v3.3
-          options: -v ${{ github.workspace }}:/workspace
-          shell: bash
-          run: |
-            set -e
+      - name: Get OVMS ESP-IDF v3.3 fork
+        run: |
+          git clone https://github.com/openvehicles/esp-idf.git "$IDF_PATH"
+          cd "$IDF_PATH"
+          git submodule update --init --recursive
 
-            echo "🔸 Installing CMake 3.26.4 to /opt/cmake..."
-            mkdir -p /opt/cmake
-            wget -q https://github.com/Kitware/CMake/releases/download/v3.26.4/cmake-3.26.4-linux-x86_64.sh
-            chmod +x cmake-3.26.4-linux-x86_64.sh
-            ./cmake-3.26.4-linux-x86_64.sh --skip-license --prefix=/opt/cmake
+      - name: Prepare sdkconfig
+        working-directory: vehicle/OVMS.V3
+        run: |
+          if [ ! -f sdkconfig ]; then
+            # Match your Windows guide: use the HW31 default unless you keep a committed sdkconfig
+            cp support/sdkconfig.default.hw31 sdkconfig
+          fi
 
-            # Force the new cmake to the front of PATH
-            export PATH="/opt/cmake/bin:$PATH"
-            cmake --version
-
-            echo "🔸 Installing ccache..."
-            apt-get update -y
-            apt-get install -y ccache
-
-            cd /workspace/vehicle/OVMS.V3
-
-            echo "🔸 Preparing sdkconfig..."
-            if [ ! -f sdkconfig ]; then
-              if [ -f sdkconfig.default ]; then
-                cp sdkconfig.default sdkconfig
-              fi
-            fi
-
-            echo "🔸 Sourcing ESP-IDF..."
-            source ${IDF_PATH}/export.sh
-
-            echo "🔸 Enabling ccache..."
-            export IDF_CCACHE_ENABLE=1
-
-            echo "🔸 Building firmware..."
-            idf.py build
-
-            echo "✅ Build complete"
+      - name: Build (make, parallel)
+        working-directory: vehicle/OVMS.V3
+        run: |
+          echo "Using IDF_PATH=$IDF_PATH"
+          make -j"$(nproc)" all
 
       - name: Upload firmware artefacts
         uses: actions/upload-artifact@v4
         with:
-          name: ovms-firmware
+          name: ovms-firmware-${{ github.sha }}
           path: |
             vehicle/OVMS.V3/build/ovms3.bin
             vehicle/OVMS.V3/build/bootloader/bootloader.bin
-            vehicle/OVMS.V3/build/partition_table/partition-table.bin
+            vehicle/OVMS.V3/build/partitions_*.bin
             vehicle/OVMS.V3/build/ota_data_initial.bin
+            vehicle/OVMS.V3/build/*.elf
+            vehicle/OVMS.V3/build/*.map
+          if-no-files-found: warn
