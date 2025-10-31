@@ -9,17 +9,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Run all steps inside the IDF v3.3 toolchain container
-    container:
-      image: espressif/idf:release-v3.3
 
     env:
-      # We'll clone the OVMS ESP-IDF fork into the workspace and use that as IDF_PATH
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
       IDF_PATH: ${{ github.workspace }}/esp-idf
-      CCACHE_DIR: /root/.ccache
 
     steps:
-      - name: Checkout repository (with submodules)
+      - name: Checkout (submodules)
         uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -28,31 +24,35 @@ jobs:
       - name: Cache ccache
         uses: actions/cache@v4
         with:
-          path: /root/.ccache
+          path: ${{ env.CCACHE_DIR }}
           key: ovms-ccache-${{ runner.os }}-${{ github.ref_name }}-${{ hashFiles('vehicle/OVMS.V3/**') }}
           restore-keys: |
             ovms-ccache-${{ runner.os }}-${{ github.ref_name }}-
             ovms-ccache-${{ runner.os }}-
 
-      - name: Get OVMS ESP-IDF v3.3 fork
-        run: |
-          git clone https://github.com/openvehicles/esp-idf.git "$IDF_PATH"
-          cd "$IDF_PATH"
-          git submodule update --init --recursive
+      - name: Build in Espressif container (v3.3)
+        uses: addnab/docker-run-action@v3
+        with:
+          image: espressif/idf:release-v3.3
+          options: >-
+            -e IDF_PATH=${{ env.IDF_PATH }}
+            -e CCACHE_DIR=${{ env.CCACHE_DIR }}
+            -v ${{ github.workspace }}:/workspace
+          run: |
+            set -euxo pipefail
+            cd /workspace
+            # Get OVMS ESP-IDF fork
+            if [ ! -d "$IDF_PATH/.git" ]; then
+              git clone https://github.com/openvehicles/esp-idf.git "$IDF_PATH"
+              (cd "$IDF_PATH" && git submodule update --init --recursive)
+            fi
 
-      - name: Prepare sdkconfig
-        working-directory: vehicle/OVMS.V3
-        run: |
-          if [ ! -f sdkconfig ]; then
-            # Match your Windows guide: use the HW31 default unless you keep a committed sdkconfig
-            cp support/sdkconfig.default.hw31 sdkconfig
-          fi
+            cd /workspace/vehicle/OVMS.V3
+            # Prepare sdkconfig if missing
+            [ -f sdkconfig ] || cp support/sdkconfig.default.hw31 sdkconfig
 
-      - name: Build (make, parallel)
-        working-directory: vehicle/OVMS.V3
-        run: |
-          echo "Using IDF_PATH=$IDF_PATH"
-          make -j"$(nproc)" all
+            echo "Using IDF_PATH=$IDF_PATH"
+            make -j"$(nproc)" all
 
       - name: Upload firmware artefacts
         uses: actions/upload-artifact@v4
