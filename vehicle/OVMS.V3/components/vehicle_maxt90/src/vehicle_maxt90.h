@@ -35,7 +35,7 @@
 
 using namespace std;
 
-class OvmsVehicleMaxt90 : public OvmsVehicle
+class OvmsVehicleMaxt90 : public OvmsVehicleOBDII
   {
   public:
     OvmsVehicleMaxt90();
