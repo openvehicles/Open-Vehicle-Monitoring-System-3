@@ -33,26 +33,66 @@ static const char *TAG = "v-maxt90";
 
 #include <stdio.h>
 #include "vehicle_maxt90.h"
+#include "vehicle_obdii.h"
+
+//
+// ────────────────────────────────────────────────────────────────
+//   Class Definition
+// ────────────────────────────────────────────────────────────────
+//
 
 OvmsVehicleMaxt90::OvmsVehicleMaxt90()
-  {
-  ESP_LOGI(TAG, "Generic MAXT90 vehicle module");
-  }
+{
+  ESP_LOGI(TAG, "Initialising Maxus T90 EV vehicle module (derived from OBDII)");
+
+  // Register CAN1 bus at 500 kbps
+  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+
+  //
+  // Define our T90 poll list (VIN, SOC, SOH)
+  //
+  static const OvmsPoller::poll_pid_t maxt90_polls[] = {
+    // VIN – 0x22F190
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x22F190,
+      { 0, 999, 999 }, 0, ISOTP_STD },
+
+    // SOC – 0x22E002
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x22E002,
+      { 10, 10, 10 }, 0, ISOTP_STD },
+
+    // SOH – 0x22E003
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x22E003,
+      { 30, 30, 30 }, 0, ISOTP_STD },
+
+    POLL_LIST_END
+  };
+
+  // Attach the poll list to CAN1
+  PollSetPidList(m_can1, maxt90_polls);
+  PollSetState(0);
+
+  ESP_LOGI(TAG, "Maxus T90 EV poller configured on CAN1 @ 500 kbps");
+}
 
 OvmsVehicleMaxt90::~OvmsVehicleMaxt90()
-  {
-  ESP_LOGI(TAG, "Shutdown MAXT90 vehicle module");
-  }
+{
+  ESP_LOGI(TAG, "Shutdown Maxus T90 EV vehicle module");
+}
+
+//
+// ────────────────────────────────────────────────────────────────
+//   Module Registration
+// ────────────────────────────────────────────────────────────────
+//
 
 class OvmsVehicleMaxt90Init
-  {
-  public: OvmsVehicleMaxt90Init();
-} MyOvmsVehicleMaxt90Init  __attribute__ ((init_priority (9000)));
+{
+public:
+  OvmsVehicleMaxt90Init();
+} MyOvmsVehicleMaxt90Init __attribute__((init_priority(9000)));
 
 OvmsVehicleMaxt90Init::OvmsVehicleMaxt90Init()
-  {
-  ESP_LOGI(TAG, "Registering Vehicle: MAXT90 (9000)");
-
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxt90>("MAXT90","Empty Vehicle");
-  }
-
+{
+  ESP_LOGI(TAG, "Registering Vehicle: Maxus T90 EV (9000)");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxt90>("MAXT90", "Maxus T90 EV");
+}
