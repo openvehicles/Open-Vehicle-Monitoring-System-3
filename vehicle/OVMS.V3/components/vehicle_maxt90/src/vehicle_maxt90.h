@@ -31,15 +31,15 @@
 #ifndef __VEHICLE_MAXT90_H__
 #define __VEHICLE_MAXT90_H__
 
-#include "vehicle.h"
+#include "vehicle_obdii.h"
 
 using namespace std;
 
 class OvmsVehicleMaxt90 : public OvmsVehicleOBDII
-  {
-  public:
-    OvmsVehicleMaxt90();
-    ~OvmsVehicleMaxt90();
-  };
+{
+public:
+  OvmsVehicleMaxt90();
+  ~OvmsVehicleMaxt90();
+};
 
-#endif //#ifndef __VEHICLE_MAXT90_H__
+#endif // __VEHICLE_MAXT90_H__
