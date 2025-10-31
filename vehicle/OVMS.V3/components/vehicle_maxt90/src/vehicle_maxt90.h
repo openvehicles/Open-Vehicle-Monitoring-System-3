@@ -11,9 +11,9 @@ public:
   ~OvmsVehicleMaxt90();
 
 protected:
-  // Handle decoded poll replies:
-  void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid,
-                         uint8_t* data, uint8_t length, uint16_t mlremain) override;
+  // Correct override signature for OBDII poll replies:
+  void IncomingPollReply(const OvmsPoller::poll_job_t& job,
+                         uint8_t* data, uint8_t length) override;
 
 private:
   // Custom metrics:
