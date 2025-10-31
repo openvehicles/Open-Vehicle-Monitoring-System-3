@@ -834,7 +834,7 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
       return;
       } 
         
-    float can12V = smarteq->mt_evc_LV_DCDC_volt->AsFloat(0.0f) + 0.25f;   // DCDC 12V voltage from CAN bus plus offset
+    float can12V = smarteq->mt_evc_LV_DCDC_volt->AsFloat(0.0f);   // DCDC 12V voltage from CAN bus
     if (can12V <= 13.10f) 
       {
       writer->puts("Error: vehicle 12V is not charging, 12V voltage is not stable for ADC calibration!");
