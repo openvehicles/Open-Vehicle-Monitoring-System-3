@@ -52,16 +52,16 @@ OvmsVehicleMaxt90::OvmsVehicleMaxt90()
   // Define our T90 poll list (VIN, SOC, SOH)
   //
   static const OvmsPoller::poll_pid_t maxt90_polls[] = {
-    // VIN – 0x22F190
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x22F190,
+    // VIN – Service 0x22, PID 0xF190
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190,
       { 0, 999, 999 }, 0, ISOTP_STD },
 
-    // SOC – 0x22E002
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x22E002,
+    // SOC – Service 0x22, PID 0xE002
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE002,
       { 10, 10, 10 }, 0, ISOTP_STD },
 
-    // SOH – 0x22E003
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x22E003,
+    // SOH – Service 0x22, PID 0xE003
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE003,
       { 30, 30, 30 }, 0, ISOTP_STD },
 
     POLL_LIST_END
