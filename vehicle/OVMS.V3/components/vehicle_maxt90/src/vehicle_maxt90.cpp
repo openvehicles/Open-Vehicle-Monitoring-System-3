@@ -14,11 +14,14 @@ OvmsVehicleMaxt90::OvmsVehicleMaxt90()
   // Register CAN1 bus at 500 kbps
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
-  // Custom metric for HVAC/Coolant temp (°C). Use unit enum, not string:
-  // If your tree provides 'Celcius' (sic) use that; 'Other' is always valid.
+  // Custom metrics:
+  // HVAC/Coolant temp (°C). Use unit enum; 'Other' is safe on all trees.
   m_hvac_temp_c = MyMetrics.InitFloat("x.maxt90.hvac_temp_c", 10, 0.0f, Other, false);
 
-  // Define poll list (VIN, SOC, SOH, HVAC temp, Ambient temp)
+  // Battery capacity (kWh) – static, for dashboards/HA use:
+  m_pack_capacity_kwh = MyMetrics.InitFloat("x.maxt90.capacity_kwh", 0, 88.5f, Other, true);
+
+  // Define poll list (VIN, SOC, SOH, READY flag, Plug present, HVAC temp, Ambient temp)
   static const OvmsPoller::poll_pid_t maxt90_polls[] = {
     // VIN – 0x22 F190: one-shot
     { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190,
@@ -31,6 +34,14 @@ OvmsVehicleMaxt90::OvmsVehicleMaxt90()
     // SOH – 0x22 E003: medium
     { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE003,
       { 30, 30, 30 }, 0, ISOTP_STD },
+
+    // Ignition/READY bitfield – 0x22 E004: fast (we only need two bits, but sample often)
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE004,
+      { 10, 10, 10 }, 0, ISOTP_STD },
+
+    // Plug present – 0x22 E009: fast
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE009,
+      { 10, 10, 10 }, 0, ISOTP_STD },
 
     // HVAC/Coolant temp (°C) – 0x22 E010: medium
     { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE010,
@@ -86,6 +97,26 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
         if (soh > 150.0f) soh = 150.0f; // sanity clamp
         StdMetrics.ms_v_bat_soh->SetValue(soh);
         ESP_LOGD(TAG, "SOH: %.2f %%", soh);
+      }
+      break;
+    }
+
+    case 0xE004: { // READY bitfield (u16): READY when (val & 0x000C) != 0
+      if (length >= 2) {
+        uint16_t v = u16be(data);
+        bool ready = (v & 0x000C) != 0;
+        StdMetrics.ms_v_env_on->SetValue(ready);
+        ESP_LOGD(TAG, "READY flag: raw=0x%04x ready=%s", v, ready ? "true" : "false");
+      }
+      break;
+    }
+
+    case 0xE009: { // Plug present (u16): plug if low byte == 0x00
+      if (length >= 2) {
+        uint16_t v = u16be(data);
+        bool plug_present = ((v & 0x00FF) == 0x00);
+        StdMetrics.ms_v_charge_pilot->SetValue(plug_present);
+        ESP_LOGD(TAG, "Plug present: raw=0x%04x plug=%s", v, plug_present ? "true" : "false");
       }
       break;
     }
