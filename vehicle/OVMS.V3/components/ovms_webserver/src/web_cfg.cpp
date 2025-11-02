@@ -2831,7 +2831,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   bool auto_enable, auto_allow_modem;
   std::string auto_hour, server, tag, hardware;
   std::string output;
-  std::string version;
+  std::string version, inactive_version;
   const char *what;
   char buf[132];
 
@@ -2874,6 +2874,33 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     else if (action == "reboot") {
       reboot = true;
     }
+    else if (action == "erase-inactive") {
+      info.partition_boot = c.getvar("boot_old");
+      
+      std::string inactive_partition;
+      if (info.partition_boot == "ota_0") {
+        inactive_partition = "ota_1";
+      } else if (info.partition_boot == "ota_1") {
+        inactive_partition = "ota_0";
+      } else {
+        c.head(400);
+        c.print("<p>Cannot erase: boot partition is not OTA_0 or OTA_1</p>");
+        c.done();
+        return;
+      }
+      
+      cmdres = ExecuteCommand("ota erase " + inactive_partition);
+      
+      if (cmdres.find("Error:") != std::string::npos) {
+        c.head(400);
+        c.printf("<p>Erase failed:</p><samp>%s</samp>", _html(cmdres));
+      } else {
+        c.head(200);
+        c.printf("<p class=\"lead\">Partition erased successfully.</p><samp>%s</samp>", _html(cmdres));
+      }
+      c.done();
+      return;
+    }
     else {
       error = true;
       output = "<p>Unknown action.</p>";
@@ -2905,6 +2932,11 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     server = MyConfig.GetParamValue("ota", "server");
     tag = MyConfig.GetParamValue("ota", "tag");
     hardware = GetOVMSProduct();
+    inactive_version = "";
+    if  (info.partition_boot == "factory")
+      inactive_version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_OTA_0);
+    else
+      inactive_version = info.partition_boot == "ota_0" ? GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_OTA_1) : GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_OTA_0);
     // generate form:
     c.head(200);
   }
@@ -2957,6 +2989,19 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   }
   c.input_select_option(what, "ota_1", (info.partition_boot == "ota_1"));
   c.input_select_end();
+
+  // Add erase button
+  c.print(
+    "<div class=\"form-group\">\n"
+      "<label class=\"control-label col-sm-3\">Inactive partition:</label>\n"
+      "<div class=\"col-sm-9\">\n"
+        "<button type=\"button\" class=\"btn btn-warning action-erase-inactive\">Erase inactive OTA partition</button>\n"
+        "<span class=\"help-block\">\n"
+          "<p>This will permanently erase the inactive OTA partition to free up flash space. "
+          "The factory partition and currently running partition will not be affected.</p>\n"
+        "</span>\n"
+      "</div>\n"
+    "</div>\n");
 
   // Server & auto update:
   c.print("<hr>");
@@ -3187,6 +3232,34 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "ev.stopPropagation();"
         "return false;"
       "});"
+      "$('.action-erase-inactive').on('click', function(ev) {\n"
+        "var boot = $('select[name=boot]').val() || '" + info.partition_boot + "';\n"
+        "var inactive = (boot == 'ota_0') ? 'OTA_1' : (boot == 'ota_1') ? 'OTA_0' : 'unknown';\n"
+        "var inactive_version = \"" + inactive_version + "\";\n"
+        "if (inactive == 'unknown') {\n"
+          "confirmdialog('Error', 'Cannot determine inactive partition. Boot partition must be OTA_0 or OTA_1.', ['OK']);\n"
+          "return;\n"
+        "}\n"
+      "confirmdialog('Erase '+inactive+' ('+inactive_version+')?', "
+        "'<p>This will <strong>permanently erase</strong> the inactive OTA partition <code>'+inactive+'</code>.</p>"
+          "<p>You will not be able to boot from this partition until you flash a new firmware to it.</p>"
+          "<p><strong>Continue?</strong></p>', "
+          "['Cancel', 'Erase'], function(ok) {\n"
+          "if (ok) {\n"
+            "$(\"#output\").text(\"Erasing partition...\\n\");\n"
+          "$(\"#flash-dialog .modal-title\").text(\"Erasing \"+inactive+\"...\");\n"
+            "$(\"#flash-dialog\").modal(\"show\");\n"
+            "setloading(\"#flash-dialog\", true);\n"
+            "$.post('/cfg/firmware', { action: 'erase-inactive', boot_old: boot }, function(resp) {\n"
+              "setloading(\"#flash-dialog\", false);\n"
+              "$(\"#output\").html(resp);\n"
+            "}).fail(function() {\n"
+              "setloading(\"#flash-dialog\", false);\n"
+              "$(\"#output\").text(\"Erase operation failed.\\n\");\n"
+            "});\n"
+          "}\n"
+        "});\n"
+      "});\n"
       "$(\".action-reboot\").on(\"click\", function(ev){"
         "$(\"#flash-dialog\").removeClass(\"fade\").modal(\"hide\");"
         "loaduri(\"#main\", \"post\", \"/cfg/firmware\", { \"action\": \"reboot\" });"
