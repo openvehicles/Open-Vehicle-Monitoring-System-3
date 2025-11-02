@@ -101,8 +101,8 @@ void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, 
 				{
 				if (mlframe == 0)
 					{
-					uint32_t odo = CAN_UINT32(0);
-					if (odo > 0) 
+					uint32_t odometer = CAN_UINT32(0);
+					if (odometer >= 1) 
 						{
 						StdMetrics.ms_v_pos_odometer->SetValue(odo, GetConsoleUnits() );
 						}
@@ -119,7 +119,7 @@ void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, 
 				if (mlframe == 2)
 					{
 					odo+=CAN_UINT(0);
-					if (odo > 0)
+					if (odo >= 1)
 						{
 						StdMetrics.ms_v_pos_odometer->SetValue(odo, GetConsoleUnits());
 						}
@@ -130,7 +130,7 @@ void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, 
 				if (mlframe == 1)
 					{
 					odo = CAN_UINT24(3);
-					if (odo > 0)
+					if (odo >= 1)
 						{
 						StdMetrics.ms_v_pos_odometer->SetValue(odo, GetConsoleUnits());
 						}
