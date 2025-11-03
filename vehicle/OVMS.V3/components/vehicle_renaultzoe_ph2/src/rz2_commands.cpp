@@ -25,8 +25,6 @@
 
 #include "vehicle_renaultzoe_ph2.h"
 
-// Useful commands which sends CAN messages are ClimateControl, Wakeup and DDT commands. The other is actual a playground
-
 OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandClimateControl(bool climatecontrolon)
 {
     OvmsVehicle::vehicle_command_t res;
@@ -70,13 +68,49 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandClimateControl(b
         {
             // HFM to BCM wake up car and start preheat on V-CAN - all in one
             uint8_t data[8] = {0x74, 0x15, 0xFF, 0x00, 0xA4, 0x84, 0x07, 0x11};
+            int tx_success_count = 0;
+            int tx_attempt_count = 0;
+            const int min_successes = 3;   // Need at least 3 successful transmissions
+            const int max_attempts = 15;   // Maximum attempts to get those successes
 
-            for (int i = 0; i < 11; i++)
+            // Send multiple messages to wake up bus and trigger climate control
+            // Stop early if we get enough successful transmissions
+            for (int i = 0; i < max_attempts && tx_success_count < min_successes; i++)
             {
-                m_can1->WriteStandard(0x46F, 8, data);
-                vTaskDelay(250 / portTICK_PERIOD_MS);
-                ESP_LOGI(TAG, "Send wake-up and pre-heat command to V-CAN (%d/10) ...", i);
+                // Clear success flag before sending
+                m_tx_success_flag.store(false);
+
+                // Send the frame
+                m_can1->WriteStandard(HFM_A1_ID, 8, data);
+                tx_attempt_count++;
+
+                // Wait for transmission and callback
+                vTaskDelay(100 / portTICK_PERIOD_MS);
+
+                // Check if this specific frame was successfully transmitted
+                if (m_tx_success_flag.load() && m_tx_success_id.load() == HFM_A1_ID)
+                {
+                    tx_success_count++;
+                    ESP_LOGI(TAG, "Pre-heat command transmitted successfully (%d/%d successes, attempt %d)",
+                             tx_success_count, min_successes, tx_attempt_count);
+                }
+                else
+                {
+                    ESP_LOGW(TAG, "Pre-heat command transmission failed (attempt %d)", tx_attempt_count);
+                }
+
+                // Add delay between attempts (total ~250ms per iteration)
+                vTaskDelay(150 / portTICK_PERIOD_MS);
             }
+
+            if (tx_success_count == 0)
+            {
+                ESP_LOGE(TAG, "ClimateControl failed - no messages were successfully transmitted after %d attempts", tx_attempt_count);
+                MyNotify.NotifyString("error", "climate.control", "Failed to transmit commands to V-CAN");
+                return Fail;
+            }
+
+            ESP_LOGI(TAG, "ClimateControl: %d/%d messages transmitted successfully", tx_success_count, tx_attempt_count);
 
             // We know the car will wake up and switch on DC-DC converter, so we can start polling
             if (!rz2->mt_bus_awake->AsBool())
@@ -88,8 +122,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandClimateControl(b
                 }
             }
 
-            // Wait one second for hvac ecu to switch on compressor or ptc and set hvac to on for user experience directly
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
             StandardMetrics.ms_v_env_hvac->SetValue(true);
 
             res = Success;
@@ -116,7 +148,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandWakeup()
     }
     else
     {
-        // Sending idle HFM commands, HFM, BCM and EVC are waking up for abount 20 secs wihout DC-DC, enough to get all metrics
+        // Sending idle HFM commands, HFM, BCM and EVC are waking up for about 20 secs wihout DC-DC, enough to get all metrics
         uint8_t wake_cmd1[8] = {0x64, 0x78, 0x60, 0x00, 0x48, 0x84, 0x07, 0x10};
         uint8_t wake_cmd2[8] = {0x74, 0x47, 0x95, 0x00, 0x48, 0x84, 0x07, 0x10};
         uint8_t wake_cmd3[8] = {0x84, 0x47, 0x95, 0x00, 0x48, 0x84, 0x07, 0x10};
@@ -126,22 +158,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandWakeup()
 
         for (int i = 0; i < 3; i++)
         {
-            m_can1->WriteStandard(0x46f, 8, wake_cmd1);
+            m_can1->WriteStandard(HFM_A1_ID, 8, wake_cmd1);
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
         for (int i = 0; i < 3; i++)
         {
-            m_can1->WriteStandard(0x46f, 8, wake_cmd2);
+            m_can1->WriteStandard(HFM_A1_ID, 8, wake_cmd2);
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
         for (int i = 0; i < 3; i++)
         {
-            m_can1->WriteStandard(0x46f, 8, wake_cmd3);
+            m_can1->WriteStandard(HFM_A1_ID, 8, wake_cmd3);
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
         for (int i = 0; i < 3; i++)
         {
-            m_can1->WriteStandard(0x46f, 8, wake_cmd4);
+            m_can1->WriteStandard(HFM_A1_ID, 8, wake_cmd4);
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
 
@@ -160,23 +192,42 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandLock(const char 
     else
     {
         uint8_t lock[8] = {0x44, 0xE3, 0x4F, 0x10, 0x04, 0x84, 0x07, 0x10};
+        int max_attempts = (!mt_bus_awake->AsBool()) ? 10 : 3;
+        bool tx_success = false;
 
-        if (!mt_bus_awake->AsBool())
+        // Send frames until we get actual transmission confirmation from TxCallback
+        for (int i = 0; i < max_attempts && !tx_success; i++)
         {
-            for (int i = 0; i < 5; i++)
+            // Clear success flag before sending
+            m_tx_success_flag.store(false);
+
+            // Send the frame
+            m_can1->WriteStandard(HFM_A1_ID, 8, lock);
+
+            // Wait for transmission and callback
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+
+            // Check if this specific frame was successfully transmitted
+            if (m_tx_success_flag.load() && m_tx_success_id.load() == HFM_A1_ID)
             {
-                m_can1->WriteStandard(0x46f, 8, lock);
-                vTaskDelay(50 / portTICK_PERIOD_MS);
+                tx_success = true;
+                ESP_LOGI(TAG, "Lock command transmitted successfully on attempt %d", i + 1);
             }
+            else
+            {
+                ESP_LOGW(TAG, "Lock command transmission failed (attempt %d/%d)", i + 1, max_attempts);
+            }
+        }
+
+        if (tx_success)
+        {
+            return Success;
         }
         else
         {
-            m_can1->WriteStandard(0x46f, 8, lock);
-            vTaskDelay(50 / portTICK_PERIOD_MS);
-            m_can1->WriteStandard(0x46f, 8, lock);
+            ESP_LOGE(TAG, "Lock command failed - no successful transmission after %d attempts", max_attempts);
+            return Fail;
         }
-
-        return Success;
     }
 }
 
@@ -191,23 +242,92 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandUnlock(const cha
     else
     {
         uint8_t unlock[8] = {0x44, 0xE3, 0x4F, 0x18, 0x04, 0x84, 0x07, 0x10};
+        int max_attempts = (!mt_bus_awake->AsBool()) ? 10 : 3;
+        bool tx_success = false;
 
-        if (!mt_bus_awake->AsBool())
+        // Send frames until we get actual transmission confirmation from TxCallback
+        for (int i = 0; i < max_attempts && !tx_success; i++)
         {
-            for (int i = 0; i < 5; i++)
+            // Clear success flag before sending
+            m_tx_success_flag.store(false);
+
+            // Send the frame
+            m_can1->WriteStandard(HFM_A1_ID, 8, unlock);
+
+            // Wait for transmission and callback
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+
+            // Check if this specific frame was successfully transmitted
+            if (m_tx_success_flag.load() && m_tx_success_id.load() == HFM_A1_ID)
             {
-                m_can1->WriteStandard(0x46f, 8, unlock);
-                vTaskDelay(50 / portTICK_PERIOD_MS);
+                tx_success = true;
+                ESP_LOGI(TAG, "Unlock command transmitted successfully on attempt %d", i + 1);
             }
+            else
+            {
+                ESP_LOGW(TAG, "Unlock command transmission failed (attempt %d/%d)", i + 1, max_attempts);
+            }
+        }
+
+        if (tx_success)
+        {
+            return Success;
         }
         else
         {
-            m_can1->WriteStandard(0x46f, 8, unlock);
-            vTaskDelay(50 / portTICK_PERIOD_MS);
-            m_can1->WriteStandard(0x46f, 8, unlock);
+            ESP_LOGE(TAG, "Unlock command failed - no successful transmission after %d attempts", max_attempts);
+            return Fail;
+        }
+    }
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandUnlockTrunk(const char *pin)
+{
+    if (!m_vcan_enabled)
+    {
+        ESP_LOGW(TAG, "CommandUnlockTrunk not possible, because V-CAN is not enabled");
+        MyNotify.NotifyString("error", "trunk.control", "V-CAN is not enabled");
+        return Fail;
+    }
+    else
+    {
+        uint8_t unlock_trunk[8] = {0x94, 0xE3, 0x4F, 0x20, 0x24, 0x84, 0x07, 0x10};
+        int max_attempts = (!mt_bus_awake->AsBool()) ? 10 : 3;
+        bool tx_success = false;
+
+        // Send frames until we get actual transmission confirmation from TxCallback
+        for (int i = 0; i < max_attempts && !tx_success; i++)
+        {
+            // Clear success flag before sending
+            m_tx_success_flag.store(false);
+
+            // Send the frame
+            m_can1->WriteStandard(HFM_A1_ID, 8, unlock_trunk);
+
+            // Wait for transmission and callback
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+
+            // Check if this specific frame was successfully transmitted
+            if (m_tx_success_flag.load() && m_tx_success_id.load() == HFM_A1_ID)
+            {
+                tx_success = true;
+                ESP_LOGI(TAG, "Unlock trunk command transmitted successfully on attempt %d", i + 1);
+            }
+            else
+            {
+                ESP_LOGW(TAG, "Unlock trunk command transmission failed (attempt %d/%d)", i + 1, max_attempts);
+            }
         }
 
-        return Success;
+        if (tx_success)
+        {
+            return Success;
+        }
+        else
+        {
+            ESP_LOGE(TAG, "Unlock trunk command failed - no successful transmission after %d attempts", max_attempts);
+            return Fail;
+        }
     }
 }
 
@@ -293,77 +413,78 @@ void OvmsVehicleRenaultZoePh2::CommandPollerStop(int verbosity, OvmsWriter *writ
     writer->puts("Stop Ph2 poller");
 }
 
-void OvmsVehicleRenaultZoePh2::CommandUnlockTrunk(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+void OvmsVehicleRenaultZoePh2::CommandLighting(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
 {
     OvmsVehicleRenaultZoePh2 *rz2 = (OvmsVehicleRenaultZoePh2 *)MyVehicleFactory.ActiveVehicle();
+
     if (!rz2->m_vcan_enabled)
     {
-        ESP_LOGW(TAG, "CommandUnlock not possible, because V-CAN is not enabled");
-        MyNotify.NotifyString("error", "lock.control", "V-CAN is not enabled");
+        ESP_LOGW(TAG, "CommandLighting not possible, because V-CAN is not enabled");
+        writer->puts("CommandLighting not possible, because V-CAN is not enabled");
+        return;
     }
-    else
-    {
-        uint8_t unlock[8] = {0x44, 0xE3, 0x4F, 0x20, 0x04, 0x84, 0x07, 0x10};
 
-        if (!rz2->mt_bus_awake->AsBool())
+    uint8_t lighting_cmd[8] = {0x44, 0xE3, 0x4F, 0x40, 0x04, 0x84, 0x07, 0x10};
+    int max_attempts = (!rz2->mt_bus_awake->AsBool()) ? 10 : 3;
+    bool tx_success = false;
+
+    // Send frames until we get actual transmission confirmation from TxCallback
+    for (int i = 0; i < max_attempts && !tx_success; i++)
+    {
+        // Clear success flag before sending
+        rz2->m_tx_success_flag.store(false);
+
+        // Send the frame
+        rz2->m_can1->WriteStandard(HFM_A1_ID, 8, lighting_cmd);
+
+        // Wait for transmission and callback
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+
+        // Check if this specific frame was successfully transmitted
+        if (rz2->m_tx_success_flag.load() && rz2->m_tx_success_id.load() == HFM_A1_ID)
         {
-            for (int i = 0; i < 5; i++)
-            {
-                rz2->m_can1->WriteStandard(0x46f, 8, unlock);
-                vTaskDelay(50 / portTICK_PERIOD_MS);
-            }
+            tx_success = true;
+            ESP_LOGI(TAG, "Lighting command transmitted successfully on attempt %d", i + 1);
         }
         else
         {
-            rz2->m_can1->WriteStandard(0x46f, 8, unlock);
-            vTaskDelay(50 / portTICK_PERIOD_MS);
-            rz2->m_can1->WriteStandard(0x46f, 8, unlock);
+            ESP_LOGW(TAG, "Lighting command transmission failed (attempt %d/%d)", i + 1, max_attempts);
         }
     }
 
-    ESP_LOGI(TAG, "Send Trunk unlock command");
-    writer->puts("Send Trunk unlock command");
+    if (tx_success)
+    {
+        ESP_LOGI(TAG, "Lighting command completed - headlights should turn on for ~30 seconds");
+        writer->puts("Lighting command sent - headlights will stay on for ~30 seconds");
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Lighting command failed - no successful transmission after %d attempts", max_attempts);
+        writer->puts("Lighting command failed - CAN transmission error");
+    }
 }
 
-void OvmsVehicleRenaultZoePh2::CommandUnlockChargeport(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+void OvmsVehicleRenaultZoePh2::CommandUnlockTrunkShell(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
 {
-    // This commands are special, not working everytime even if prerequisites are met, look further into it and how to start a charge if stopped
     OvmsVehicleRenaultZoePh2 *rz2 = (OvmsVehicleRenaultZoePh2 *)MyVehicleFactory.ActiveVehicle();
-    uint8_t ext_session[8] = {0x02, 0x10, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00};
-    uint8_t open_chgport_cmd1[8] = {0x05, 0x2F, 0x2B, 0x47, 0x03, 0x01, 0x00, 0x00};
-    uint8_t open_chgport_cmd2[8] = {0x05, 0x2F, 0x2B, 0x47, 0x03, 0x00, 0x00, 0x00};
-    uint8_t open_chgport_cmd3[8] = {0x05, 0x2F, 0x2B, 0x47, 0x00, 0x00, 0x00, 0x00};
-    uint8_t abort_charge_cmd1[8] = {0x05, 0x2F, 0x2B, 0x48, 0x03, 0x01, 0x00, 0x00};
-    uint8_t abort_charge_cmd2[8] = {0x05, 0x2F, 0x2B, 0x48, 0x03, 0x00, 0x00, 0x00};
-    uint8_t abort_charge_cmd3[8] = {0x05, 0x2F, 0x2B, 0x48, 0x00, 0x00, 0x00, 0x00};
 
-    // Init sequence
-    if (!rz2->mt_bus_awake->AsBool())
+    if (!rz2->m_vcan_enabled)
     {
-        rz2->CommandWakeup();
+        ESP_LOGW(TAG, "CommandUnlockTrunk not possible, because V-CAN is not enabled");
+        writer->puts("CommandUnlockTrunk not possible, because V-CAN is not enabled");
+        return;
     }
 
-    rz2->m_can1->WriteExtended(0x18DADAF1, 8, ext_session);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    OvmsVehicle::vehicle_command_t result = rz2->CommandUnlockTrunk(NULL);
 
-    if (StandardMetrics.ms_v_charge_pilot->AsBool())
+    if (result == OvmsVehicle::Success)
     {
-        rz2->m_can1->WriteExtended(0x18DADAF1, 8, abort_charge_cmd1);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-        rz2->m_can1->WriteExtended(0x18DADAF1, 8, abort_charge_cmd2);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-        rz2->m_can1->WriteExtended(0x18DADAF1, 8, abort_charge_cmd3);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        writer->puts("Trunk unlock command sent successfully");
     }
-    rz2->m_can1->WriteExtended(0x18DADAF1, 8, open_chgport_cmd1);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-    rz2->m_can1->WriteExtended(0x18DADAF1, 8, open_chgport_cmd2);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-    rz2->m_can1->WriteExtended(0x18DADAF1, 8, open_chgport_cmd3);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-
-    ESP_LOGI(TAG, "Send Chargeport open command");
-    writer->puts("Send Chargeport open command");
+    else
+    {
+        writer->puts("Trunk unlock command failed");
+    }
 }
 
 void OvmsVehicleRenaultZoePh2::CommandDebug(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
@@ -412,93 +533,268 @@ void OvmsVehicleRenaultZoePh2::CommandPollerResume(int verbosity, OvmsWriter *wr
 // ISO TP common function to send ISO TP requests to ECUs connected to V-CAN to change configuration or clear DTCs
 OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandDDT(uint32_t txid, uint32_t rxid, bool ext_frame, string request)
 {
-    OvmsVehicleRenaultZoePh2 *rz2 = (OvmsVehicleRenaultZoePh2 *)MyVehicleFactory.ActiveVehicle();
-
-    uint8_t protocol = ISOTP_STD;
-    int timeout_ms = 250;
+    uint8_t protocol = ext_frame ? ISOTP_EXTADR : ISOTP_STD;
+    int timeout_ms = 1000;  // 1 second timeout for busy CAN bus
     std::string response;
-    canbus *can1 = rz2->m_can1;
 
-    if (ext_frame)
+    ESP_LOGD(TAG, "CommandDDT: TX=0x%03" PRIX32 " RX=0x%03" PRIX32 " Protocol=%s Request=%s",
+             txid, rxid, ext_frame ? "EXTADR" : "STD", hexencode(request).c_str());
+
+    int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+    if (err == POLLSINGLE_OK)
     {
-        protocol = ISOTP_EXTADR;
+        ESP_LOGD(TAG, "CommandDDT: Success - Response: %s", hexencode(response).c_str());
+        return Success;
     }
-
-    int err = rz2->PollSingleRequest(can1, txid, rxid, request, response, timeout_ms, protocol);
-
-    if (err == POLLSINGLE_TXFAILURE)
+    else if (err == POLLSINGLE_TXFAILURE)
     {
-        ESP_LOGE(TAG, "ERROR: transmission failure (CAN bus error)");
+        ESP_LOGE(TAG, "CommandDDT: Transmission failure (CAN bus error)");
         return Fail;
     }
-    else if (err < 0)
+    else if (err == POLLSINGLE_TIMEOUT)
     {
-        ESP_LOGE(TAG, "ERROR: timeout waiting for poller/response");
-        return Fail;
-    }
-    else if (err)
-    {
-        ESP_LOGE(TAG, "ERROR: request failed with response error code %02X\n", err);
+        ESP_LOGE(TAG, "CommandDDT: Timeout waiting for response");
         return Fail;
     }
     else
     {
-        return Success;
+        // UDS/ISO-TP error code (positive value)
+        ESP_LOGE(TAG, "CommandDDT: Request failed with error code 0x%02X (%s)",
+                 err, OvmsPoller::PollResultCodeName(err));
+        return Fail;
     }
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
 }
 
 void OvmsVehicleRenaultZoePh2::CommandDdtHvacEnableCompressor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
 {
     OvmsVehicleRenaultZoePh2 *rz2 = (OvmsVehicleRenaultZoePh2 *)MyVehicleFactory.ActiveVehicle();
-    if (StandardMetrics.ms_v_env_awake->AsBool() && StandardMetrics.ms_v_pos_speed->AsFloat() == 0)
-    {
-        ESP_LOGI(TAG, "Try to send HVAC compressor enable command");
-        writer->puts("Try to send HVAC compressor enable command");
-
-        // Extended session
-        rz2->CommandDDT(0x744, 0x764, false, hexdecode("1003"));
-
-        // Enable hot loop
-        rz2->CommandDDT(0x744, 0x764, false, hexdecode("2E422402"));
-
-        // Enable cold loop
-        rz2->CommandDDT(0x744, 0x764, false, hexdecode("2E421F06"));
-
-        // Reset ECU
-        rz2->CommandDDT(0x744, 0x764, false, hexdecode("1101"));
-    }
-    else
+    if (!StandardMetrics.ms_v_env_awake->AsBool() || StandardMetrics.ms_v_pos_speed->AsFloat() != 0)
     {
         ESP_LOGI(TAG, "Zoe is not alive or is driving");
         writer->puts("Zoe is not alive or is driving");
+        return;
+    }
+
+    ESP_LOGI(TAG, "Try to send HVAC compressor enable command");
+    writer->puts("Try to send HVAC compressor enable command");
+
+    const int max_retries = 3;
+    OvmsVehicle::vehicle_command_t result;
+    bool all_successful = true;
+
+    // Extended session
+    int retry_count = 0;
+    do {
+        result = rz2->CommandDDT(HVAC_DDT_REQ_ID, HVAC_DDT_RESP_ID, false, hexdecode("1003"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "Extended session command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "Extended session command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "Extended session command failed after %d attempts", max_retries);
+        writer->puts("ERROR: Extended session command failed");
+        all_successful = false;
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
+    // Enable hot loop
+    retry_count = 0;
+    do {
+        result = rz2->CommandDDT(HVAC_DDT_REQ_ID, HVAC_DDT_RESP_ID, false, hexdecode("2E422402"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "Hot loop enable command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "Hot loop enable command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "Hot loop enable command failed after %d attempts", max_retries);
+        writer->puts("ERROR: Hot loop enable command failed");
+        all_successful = false;
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
+    // Enable cold loop
+    retry_count = 0;
+    do {
+        result = rz2->CommandDDT(HVAC_DDT_REQ_ID, HVAC_DDT_RESP_ID, false, hexdecode("2E421F06"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "Cold loop enable command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "Cold loop enable command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "Cold loop enable command failed after %d attempts", max_retries);
+        writer->puts("ERROR: Cold loop enable command failed");
+        all_successful = false;
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
+    // Reset ECU
+    retry_count = 0;
+    do {
+        result = rz2->CommandDDT(HVAC_DDT_REQ_ID, HVAC_DDT_RESP_ID, false, hexdecode("1101"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "ECU reset command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "ECU reset command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "ECU reset command failed after %d attempts", max_retries);
+        writer->puts("ERROR: ECU reset command failed");
+        all_successful = false;
+    }
+
+    if (all_successful) {
+        ESP_LOGI(TAG, "All compressor enable commands completed successfully");
+        writer->puts("Compressor enabled successfully (hot and cold loops active)");
+    } else {
+        ESP_LOGW(TAG, "Some compressor enable commands failed - check logs for details");
+        writer->puts("WARNING: Some compressor enable commands failed - check logs");
     }
 }
 
 void OvmsVehicleRenaultZoePh2::CommandDdtHvacDisableCompressor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
 {
     OvmsVehicleRenaultZoePh2 *rz2 = (OvmsVehicleRenaultZoePh2 *)MyVehicleFactory.ActiveVehicle();
-    if (StandardMetrics.ms_v_env_awake->AsBool() && StandardMetrics.ms_v_pos_speed->AsFloat() == 0)
-    {
-        ESP_LOGI(TAG, "Try to send HVAC compressor disable command");
-        writer->puts("Try to send HVAC compressor disable command");
-
-        // Extended session
-        rz2->CommandDDT(0x744, 0x764, false, hexdecode("1003"));
-
-        // Disable hot loop
-        rz2->CommandDDT(0x744, 0x764, false, hexdecode("2E422401"));
-
-        // Disable cold loop
-        rz2->CommandDDT(0x744, 0x764, false, hexdecode("2E421F01"));
-
-        // Reset ECU
-        rz2->CommandDDT(0x744, 0x764, false, hexdecode("1101"));
-    }
-    else
+    if (!StandardMetrics.ms_v_env_awake->AsBool() || StandardMetrics.ms_v_pos_speed->AsFloat() != 0)
     {
         ESP_LOGI(TAG, "Zoe is not alive or is driving");
         writer->puts("Zoe is not alive or is driving");
+        return;
+    }
+
+    ESP_LOGI(TAG, "Try to send HVAC compressor disable command");
+    writer->puts("Try to send HVAC compressor disable command");
+
+    const int max_retries = 3;
+    OvmsVehicle::vehicle_command_t result;
+    bool all_successful = true;
+
+    // Extended session
+    int retry_count = 0;
+    do {
+        result = rz2->CommandDDT(HVAC_DDT_REQ_ID, HVAC_DDT_RESP_ID, false, hexdecode("1003"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "Extended session command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "Extended session command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "Extended session command failed after %d attempts", max_retries);
+        writer->puts("ERROR: Extended session command failed");
+        all_successful = false;
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
+    // Disable hot loop
+    retry_count = 0;
+    do {
+        result = rz2->CommandDDT(HVAC_DDT_REQ_ID, HVAC_DDT_RESP_ID, false, hexdecode("2E422401"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "Hot loop disable command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "Hot loop disable command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "Hot loop disable command failed after %d attempts", max_retries);
+        writer->puts("ERROR: Hot loop disable command failed");
+        all_successful = false;
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
+    // Disable cold loop
+    retry_count = 0;
+    do {
+        result = rz2->CommandDDT(HVAC_DDT_REQ_ID, HVAC_DDT_RESP_ID, false, hexdecode("2E421F01"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "Cold loop disable command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "Cold loop disable command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "Cold loop disable command failed after %d attempts", max_retries);
+        writer->puts("ERROR: Cold loop disable command failed");
+        all_successful = false;
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
+    // Reset ECU
+    retry_count = 0;
+    do {
+        result = rz2->CommandDDT(HVAC_DDT_REQ_ID, HVAC_DDT_RESP_ID, false, hexdecode("1101"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "ECU reset command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "ECU reset command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "ECU reset command failed after %d attempts", max_retries);
+        writer->puts("ERROR: ECU reset command failed");
+        all_successful = false;
+    }
+
+    if (all_successful) {
+        ESP_LOGI(TAG, "All compressor disable commands completed successfully");
+        writer->puts("Compressor disabled successfully (hot and cold loops inactive)");
+    } else {
+        ESP_LOGW(TAG, "Some compressor disable commands failed - check logs for details");
+        writer->puts("WARNING: Some compressor disable commands failed - check logs");
     }
 }
 
@@ -511,11 +807,13 @@ void OvmsVehicleRenaultZoePh2::CommandDdtClusterResetService(int verbosity, Ovms
         writer->puts("Try to send Cluster service reset command");
 
         // Extended session
-        rz2->CommandDDT(0x743, 0x763, false, hexdecode("1003"));
+        rz2->CommandDDT(METER_DDT_REQ_ID, METER_DDT_RESP_ID, false, hexdecode("1003"));
+        vTaskDelay(500 / portTICK_PERIOD_MS);
 
         // Reset command
-        rz2->CommandDDT(0x743, 0x763, false, hexdecode("3101500500"));
-        rz2->CommandDDT(0x743, 0x763, false, hexdecode("3101500200"));
+        rz2->CommandDDT(METER_DDT_REQ_ID, METER_DDT_RESP_ID, false, hexdecode("3101500500"));
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        rz2->CommandDDT(METER_DDT_REQ_ID, METER_DDT_RESP_ID, false, hexdecode("3101500200"));
     }
     else
     {
@@ -524,23 +822,552 @@ void OvmsVehicleRenaultZoePh2::CommandDdtClusterResetService(int verbosity, Ovms
     }
 }
 
-void OvmsVehicleRenaultZoePh2::CommandDdtHEVCResetWaterPumpCounter(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+void OvmsVehicleRenaultZoePh2::CommandDdtHvacEnablePTC(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
 {
     OvmsVehicleRenaultZoePh2 *rz2 = (OvmsVehicleRenaultZoePh2 *)MyVehicleFactory.ActiveVehicle();
-    if (StandardMetrics.ms_v_env_awake->AsBool() && StandardMetrics.ms_v_pos_speed->AsFloat() == 0)
-    {
-        ESP_LOGI(TAG, "Try to send HEVC Water pump counter reset command");
-        writer->puts("Try to send HEVC Water pump counter reset command");
 
-        // Extended session
-        rz2->CommandDDT(0x18DADAF1, 0x18DAF1DA, true, hexdecode("1003"));
+    ESP_LOGI(TAG, "Try to send HVAC PTC enable command");
+    writer->puts("Try to send HVAC PTC enable command");
 
-        // Reset command
-        rz2->CommandDDT(0x18DADAF1, 0x18DAF1DA, true, hexdecode("2E2B6100000000"));
+    const int max_retries = 3;
+    OvmsVehicle::vehicle_command_t result;
+    bool all_successful = true;
+
+    // Enable PTC1
+    int retry_count = 0;
+    do {
+        result = rz2->CommandDDT(BCM_DDT_REQ_ID, BCM_DDT_RESP_ID, false, hexdecode("2E0533D400"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "PTC1 enable command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "PTC1 command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "PTC1 enable command failed after %d attempts", max_retries);
+        writer->puts("ERROR: PTC1 enable command failed");
+        all_successful = false;
     }
-    else
+
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    // Enable PTC2
+    retry_count = 0;
+    do {
+        result = rz2->CommandDDT(BCM_DDT_REQ_ID, BCM_DDT_RESP_ID, false, hexdecode("2E0534BC00"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "PTC2 enable command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "PTC2 command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "PTC2 enable command failed after %d attempts", max_retries);
+        writer->puts("ERROR: PTC2 enable command failed");
+        all_successful = false;
+    }
+
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    // Enable PTC3
+    retry_count = 0;
+    do {
+        result = rz2->CommandDDT(BCM_DDT_REQ_ID, BCM_DDT_RESP_ID, false, hexdecode("2E05358C00"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "PTC3 enable command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "PTC3 command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "PTC3 enable command failed after %d attempts", max_retries);
+        writer->puts("ERROR: PTC3 enable command failed");
+        all_successful = false;
+    }
+
+    if (all_successful) {
+        ESP_LOGI(TAG, "All PTC enable commands completed successfully");
+        writer->puts("All PTC heaters enabled successfully");
+    } else {
+        ESP_LOGW(TAG, "Some PTC enable commands failed - check logs for details");
+        writer->puts("WARNING: Some PTC commands failed - check logs");
+    }
+}
+
+void OvmsVehicleRenaultZoePh2::CommandDdtHvacDisablePTC(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+{
+    OvmsVehicleRenaultZoePh2 *rz2 = (OvmsVehicleRenaultZoePh2 *)MyVehicleFactory.ActiveVehicle();
+
+    ESP_LOGI(TAG, "Try to send HVAC PTC disable command");
+    writer->puts("Try to send HVAC PTC disable command");
+
+    const int max_retries = 3;
+    OvmsVehicle::vehicle_command_t result;
+    bool all_successful = true;
+
+    // Disable PTC1
+    int retry_count = 0;
+    do {
+        result = rz2->CommandDDT(BCM_DDT_REQ_ID, BCM_DDT_RESP_ID, false, hexdecode("2E05335400"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "PTC1 disable command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "PTC1 command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "PTC1 disable command failed after %d attempts", max_retries);
+        writer->puts("ERROR: PTC1 disable command failed");
+        all_successful = false;
+    }
+
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    // Disable PTC2
+    retry_count = 0;
+    do {
+        result = rz2->CommandDDT(BCM_DDT_REQ_ID, BCM_DDT_RESP_ID, false, hexdecode("2E05343C00"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "PTC2 disable command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "PTC2 command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "PTC2 disable command failed after %d attempts", max_retries);
+        writer->puts("ERROR: PTC2 disable command failed");
+        all_successful = false;
+    }
+
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    // Disable PTC3
+    retry_count = 0;
+    do {
+        result = rz2->CommandDDT(BCM_DDT_REQ_ID, BCM_DDT_RESP_ID, false, hexdecode("2E05350C00"));
+        if (result == OvmsVehicle::Success) {
+            ESP_LOGI(TAG, "PTC3 disable command sent successfully");
+            break;
+        }
+        retry_count++;
+        if (retry_count < max_retries) {
+            ESP_LOGW(TAG, "PTC3 command failed, retrying (%d/%d)", retry_count, max_retries);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+    } while (retry_count < max_retries);
+
+    if (result != OvmsVehicle::Success) {
+        ESP_LOGE(TAG, "PTC3 disable command failed after %d attempts", max_retries);
+        writer->puts("ERROR: PTC3 disable command failed");
+        all_successful = false;
+    }
+
+    if (all_successful) {
+        ESP_LOGI(TAG, "All PTC disable commands completed successfully");
+        writer->puts("All PTC heaters disabled successfully");
+    } else {
+        ESP_LOGW(TAG, "Some PTC disable commands failed - check logs for details");
+        writer->puts("WARNING: Some PTC commands failed - check logs");
+    }
+}
+
+void OvmsVehicleRenaultZoePh2::CommandDcdcEnable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+{
+    OvmsVehicleRenaultZoePh2 *rz2 = (OvmsVehicleRenaultZoePh2 *)MyVehicleFactory.ActiveVehicle();
+
+    if (!rz2->m_vcan_enabled)
     {
-        ESP_LOGI(TAG, "Zoe is not alive or is driving");
-        writer->puts("Zoe is not alive or is driving");
+        ESP_LOGW(TAG, "DCDC control not possible, because V-CAN is not enabled");
+        writer->puts("DCDC control not possible, because V-CAN is not enabled");
+        return;
     }
+
+    rz2->EnableDCDC(true);
+    ESP_LOGI(TAG, "Manual DCDC converter enabled");
+    writer->puts("Manual DCDC converter enabled - sending CAN message every second");
+}
+
+void OvmsVehicleRenaultZoePh2::CommandDcdcDisable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+{
+    OvmsVehicleRenaultZoePh2 *rz2 = (OvmsVehicleRenaultZoePh2 *)MyVehicleFactory.ActiveVehicle();
+
+    if (!rz2->m_vcan_enabled)
+    {
+        ESP_LOGW(TAG, "DCDC control not possible, because V-CAN is not enabled");
+        writer->puts("DCDC control not possible, because V-CAN is not enabled");
+        return;
+    }
+
+    rz2->DisableDCDC();
+    ESP_LOGI(TAG, "DCDC converter disabled");
+    writer->puts("DCDC converter disabled");
+}
+
+// ================================================================================
+// Scheduled Pre-Climate Functions
+// ================================================================================
+
+/**
+ * Parse a schedule time string and check if it matches the current time
+ * Schedule format: "HH:MM,HH:MM,..." (multiple times can be specified)
+ * Returns true if any of the times match the current hour and minute
+ */
+bool OvmsVehicleRenaultZoePh2::ParseScheduleTime(const std::string& schedule, int current_hour, int current_min)
+{
+    if (schedule.empty())
+        return false;
+
+    // Parse comma-separated times
+    size_t start = 0;
+    size_t end = schedule.find(',');
+
+    while (start != std::string::npos)
+    {
+        std::string time_str = (end == std::string::npos) ?
+                               schedule.substr(start) :
+                               schedule.substr(start, end - start);
+
+        // Find the ':' separator
+        size_t colon_pos = time_str.find(':');
+        if (colon_pos != std::string::npos && colon_pos > 0)
+        {
+            int hour = atoi(time_str.substr(0, colon_pos).c_str());
+            int min = atoi(time_str.substr(colon_pos + 1).c_str());
+
+            // Validate time range
+            if (hour >= 0 && hour < 24 && min >= 0 && min < 60)
+            {
+                // Check if this time matches current time
+                if (hour == current_hour && min == current_min)
+                {
+                    return true;
+                }
+            }
+        }
+
+        // Move to next time in the list
+        if (end == std::string::npos)
+            break;
+        start = end + 1;
+        end = schedule.find(',', start);
+    }
+
+    return false;
+}
+
+/**
+ * Check if pre-climate should be triggered based on configured schedules
+ * Called every 60 seconds by the ticker.60 event
+ */
+void OvmsVehicleRenaultZoePh2::CheckPreclimateSchedule(std::string event, void* data)
+{
+    // Get current time
+    time_t rawtime;
+    struct tm* timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    if (timeinfo == NULL)
+    {
+        ESP_LOGW(TAG, "CheckPreclimateSchedule: Failed to get current time");
+        return;
+    }
+
+    int current_day = timeinfo->tm_wday;    // 0 = Sunday, 6 = Saturday
+    int current_hour = timeinfo->tm_hour;
+    int current_min = timeinfo->tm_min;
+
+    // Check if we already triggered at this exact time today (prevent duplicate triggers)
+    if (m_preclimate_last_triggered_day == current_day &&
+        m_preclimate_last_triggered_hour == current_hour &&
+        m_preclimate_last_triggered_min == current_min)
+    {
+        return; // Already triggered at this time
+    }
+
+    // Day name mapping (used for config keys)
+    const char* day_names[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+
+    // Get schedule for current day from config
+    std::string schedule = MyConfig.GetParamValue("xrz2.preclimate", day_names[current_day]);
+
+    // Check if current time matches any scheduled time
+    if (ParseScheduleTime(schedule, current_hour, current_min))
+    {
+        ESP_LOGI(TAG, "Scheduled pre-climate triggered for %s at %02d:%02d",
+                 day_names[current_day], current_hour, current_min);
+
+        // Check if we can actually trigger pre-climate
+        if (!m_vcan_enabled)
+        {
+            ESP_LOGW(TAG, "Scheduled pre-climate: V-CAN is not enabled");
+            MyNotify.NotifyString("alert", "preclimate.schedule",
+                                 "Scheduled pre-climate failed: V-CAN not enabled");
+            return;
+        }
+
+        if (!StandardMetrics.ms_v_env_locked->AsBool())
+        {
+            ESP_LOGW(TAG, "Scheduled pre-climate: Vehicle is not locked");
+            MyNotify.NotifyString("info", "preclimate.schedule",
+                                 "Scheduled pre-climate skipped: Vehicle not locked");
+            return;
+        }
+
+        if (StandardMetrics.ms_v_env_hvac->AsBool())
+        {
+            ESP_LOGI(TAG, "Scheduled pre-climate: HVAC already running");
+            return;
+        }
+
+        if (StandardMetrics.ms_v_bat_soc->AsInt() < 15)
+        {
+            ESP_LOGW(TAG, "Scheduled pre-climate: Battery SoC too low");
+            MyNotify.NotifyString("alert", "preclimate.schedule",
+                                 "Scheduled pre-climate failed: Battery SoC too low");
+            return;
+        }
+
+        // All checks passed - trigger pre-climate
+        OvmsVehicle::vehicle_command_t result = CommandClimateControl(true);
+
+        if (result == Success)
+        {
+            ESP_LOGI(TAG, "Scheduled pre-climate started successfully");
+            MyNotify.NotifyString("info", "preclimate.schedule",
+                                 "Scheduled pre-climate started");
+
+            // Update last triggered time to prevent duplicate triggers
+            m_preclimate_last_triggered_day = current_day;
+            m_preclimate_last_triggered_hour = current_hour;
+            m_preclimate_last_triggered_min = current_min;
+        }
+        else
+        {
+            ESP_LOGE(TAG, "Scheduled pre-climate failed to start");
+            MyNotify.NotifyString("error", "preclimate.schedule",
+                                 "Scheduled pre-climate failed to start");
+        }
+    }
+}
+
+/**
+ * Shell command: Set pre-climate schedule for a specific day
+ * Usage: xrz2 preclimate schedule <day> <time>
+ * Example: xrz2 preclimate schedule mon 07:30
+ * Example with multiple times: xrz2 preclimate schedule mon 07:30,17:45
+ */
+void OvmsVehicleRenaultZoePh2::CommandPreclimateScheduleSet(int verbosity, OvmsWriter *writer,
+                                                             OvmsCommand *cmd, int argc, const char *const *argv)
+{
+    if (argc < 2)
+    {
+        writer->puts("Usage: xrz2 preclimate schedule <day> <time>");
+        writer->puts("  day: mon, tue, wed, thu, fri, sat, sun");
+        writer->puts("  time: HH:MM or HH:MM,HH:MM,... for multiple times");
+        writer->puts("Examples:");
+        writer->puts("  xrz2 preclimate schedule mon 07:30");
+        writer->puts("  xrz2 preclimate schedule fri 07:00,17:30");
+        return;
+    }
+
+    const char* day = argv[0];
+    const char* time = argv[1];
+
+    // Validate day
+    const char* valid_days[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
+    bool day_valid = false;
+    for (int i = 0; i < 7; i++)
+    {
+        if (strcasecmp(day, valid_days[i]) == 0)
+        {
+            day_valid = true;
+            break;
+        }
+    }
+
+    if (!day_valid)
+    {
+        writer->puts("ERROR: Invalid day. Use: mon, tue, wed, thu, fri, sat, sun");
+        return;
+    }
+
+    // Validate time format (basic check for HH:MM format)
+    std::string time_str(time);
+    bool time_valid = false;
+    size_t start = 0;
+    size_t end = time_str.find(',');
+
+    while (start != std::string::npos)
+    {
+        std::string single_time = (end == std::string::npos) ?
+                                   time_str.substr(start) :
+                                   time_str.substr(start, end - start);
+
+        size_t colon_pos = single_time.find(':');
+        if (colon_pos != std::string::npos && colon_pos > 0)
+        {
+            int hour = atoi(single_time.substr(0, colon_pos).c_str());
+            int min = atoi(single_time.substr(colon_pos + 1).c_str());
+
+            // Validate parsed values
+            if (hour >= 0 && hour < 24 && min >= 0 && min < 60)
+            {
+                time_valid = true;
+            }
+            else
+            {
+                writer->printf("ERROR: Invalid time '%s'. Hour must be 0-23, minute must be 0-59\n",
+                               single_time.c_str());
+                return;
+            }
+        }
+        else
+        {
+            writer->printf("ERROR: Invalid time format '%s'. Use HH:MM\n", single_time.c_str());
+            return;
+        }
+
+        if (end == std::string::npos)
+            break;
+        start = end + 1;
+        end = time_str.find(',', start);
+    }
+
+    if (!time_valid)
+    {
+        writer->puts("ERROR: No valid times found");
+        return;
+    }
+
+    // Save schedule to config
+    MyConfig.SetParamValue("xrz2.preclimate", day, time);
+
+    writer->printf("Pre-climate schedule set for %s at %s\n", day, time);
+    ESP_LOGI(TAG, "Pre-climate schedule set for %s at %s", day, time);
+}
+
+/**
+ * Shell command: List all configured pre-climate schedules
+ * Usage: xrz2 preclimate list
+ */
+void OvmsVehicleRenaultZoePh2::CommandPreclimateScheduleList(int verbosity, OvmsWriter *writer,
+                                                              OvmsCommand *cmd, int argc, const char *const *argv)
+{
+    const char* day_names[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+    const char* day_full[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+
+    writer->puts("Pre-climate schedules:");
+    writer->puts("======================");
+
+    bool has_schedules = false;
+
+    for (int i = 0; i < 7; i++)
+    {
+        std::string schedule = MyConfig.GetParamValue("xrz2.preclimate", day_names[i]);
+        if (!schedule.empty())
+        {
+            writer->printf("%s: %s\n", day_full[i], schedule.c_str());
+            has_schedules = true;
+        }
+    }
+
+    if (!has_schedules)
+    {
+        writer->puts("No schedules configured");
+    }
+
+    // Get current time and show next scheduled event
+    time_t rawtime;
+    struct tm* timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    if (timeinfo != NULL && has_schedules)
+    {
+        writer->printf("\nCurrent time: %s %02d:%02d\n",
+                       day_full[timeinfo->tm_wday],
+                       timeinfo->tm_hour,
+                       timeinfo->tm_min);
+    }
+}
+
+/**
+ * Shell command: Clear pre-climate schedule for a specific day
+ * Usage: xrz2 preclimate clear <day>
+ * Example: xrz2 preclimate clear mon
+ */
+void OvmsVehicleRenaultZoePh2::CommandPreclimateScheduleClear(int verbosity, OvmsWriter *writer,
+                                                               OvmsCommand *cmd, int argc, const char *const *argv)
+{
+    if (argc < 1)
+    {
+        writer->puts("Usage: xrz2 preclimate clear <day>");
+        writer->puts("  day: mon, tue, wed, thu, fri, sat, sun (or 'all')");
+        return;
+    }
+
+    const char* day = argv[0];
+
+    // Check for "all" option
+    if (strcasecmp(day, "all") == 0)
+    {
+        const char* day_names[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+        for (int i = 0; i < 7; i++)
+        {
+            MyConfig.DeleteInstance("xrz2.preclimate", day_names[i]);
+        }
+        writer->puts("All pre-climate schedules cleared");
+        ESP_LOGI(TAG, "All pre-climate schedules cleared");
+        return;
+    }
+
+    // Validate day
+    const char* valid_days[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
+    bool day_valid = false;
+    for (int i = 0; i < 7; i++)
+    {
+        if (strcasecmp(day, valid_days[i]) == 0)
+        {
+            day_valid = true;
+            break;
+        }
+    }
+
+    if (!day_valid)
+    {
+        writer->puts("ERROR: Invalid day. Use: mon, tue, wed, thu, fri, sat, sun, or 'all'");
+        return;
+    }
+
+    // Clear schedule from config
+    MyConfig.DeleteInstance("xrz2.preclimate", day);
+
+    writer->printf("Pre-climate schedule cleared for %s\n", day);
+    ESP_LOGI(TAG, "Pre-climate schedule cleared for %s", day);
 }
