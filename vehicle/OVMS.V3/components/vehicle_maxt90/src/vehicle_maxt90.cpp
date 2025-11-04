@@ -15,46 +15,22 @@ OvmsVehicleMaxt90::OvmsVehicleMaxt90()
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
   // Custom metrics:
-  // HVAC/Coolant temp (°C). Use unit enum; 'Other' is safe on all trees.
   m_hvac_temp_c = MyMetrics.InitFloat("x.maxt90.hvac_temp_c", 10, 0.0f, Other, false);
-
-  // Battery capacity (kWh) – static, for dashboards/HA use:
   m_pack_capacity_kwh = MyMetrics.InitFloat("x.maxt90.capacity_kwh", 0, 88.5f, Other, true);
 
   // Define poll list (VIN, SOC, SOH, READY flag, Plug present, HVAC temp, Ambient temp)
   static const OvmsPoller::poll_pid_t maxt90_polls[] = {
-    // VIN – 0x22 F190: one-shot
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190,
-      { 0, 999, 999 }, 0, ISOTP_STD },
-
-    // SOC – 0x22 E002: fast
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE002,
-      { 10, 10, 10 }, 0, ISOTP_STD },
-
-    // SOH – 0x22 E003: medium
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE003,
-      { 30, 30, 30 }, 0, ISOTP_STD },
-
-    // Ignition/READY bitfield – 0x22 E004: fast (we only need two bits, but sample often)
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE004,
-      { 10, 10, 10 }, 0, ISOTP_STD },
-
-    // Plug present – 0x22 E009: fast
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE009,
-      { 10, 10, 10 }, 0, ISOTP_STD },
-
-    // HVAC/Coolant temp (°C) – 0x22 E010: medium
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE010,
-      { 30, 30, 30 }, 0, ISOTP_STD },
-
-    // Ambient temp (°C) – 0x22 E025: medium
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE025,
-      { 30, 30, 30 }, 0, ISOTP_STD },
-
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, { 0, 999, 999 }, 0, ISOTP_STD }, // VIN
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE002, { 10, 10, 10 }, 0, ISOTP_STD }, // SOC
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE003, { 30, 30, 30 }, 0, ISOTP_STD }, // SOH
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE004, { 10, 10, 10 }, 0, ISOTP_STD }, // READY
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE009, { 10, 10, 10 }, 0, ISOTP_STD }, // Plug
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE010, { 30, 30, 30 }, 0, ISOTP_STD }, // HVAC temp
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE025, { 30, 30, 30 }, 0, ISOTP_STD }, // Ambient temp
     POLL_LIST_END
   };
 
-  // Attach the poll list to CAN1 & start
+  // Attach the poll list to CAN1 & start idle
   PollSetPidList(m_can1, maxt90_polls);
   PollSetState(0);
 
@@ -69,8 +45,6 @@ OvmsVehicleMaxt90::~OvmsVehicleMaxt90()
 void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
                                           uint8_t* data, uint8_t length)
 {
-  // 'job.pid' is the DID; payload is already assembled for you.
-
   switch (job.pid)
   {
     case 0xF190: { // VIN (ASCII)
@@ -82,36 +56,63 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
       break;
     }
 
-    case 0xE002: { // SOC (%): dat[0]
+    case 0xE002: { // SOC (%)
       if (length >= 1) {
         float soc = data[0];
-        StdMetrics.ms_v_bat_soc->SetValue(soc);
-        ESP_LOGD(TAG, "SOC: %.0f %%", soc);
+
+        // Ignore invalid or zero readings (vehicle off / timeout)
+        if (soc > 0 && soc <= 100) {
+          if (StdMetrics.ms_v_bat_soc->AsFloat() != soc) {
+            StdMetrics.ms_v_bat_soc->SetValue(soc);
+            ESP_LOGD(TAG, "SOC: %.0f %%", soc);
+          }
+        } else {
+          ESP_LOGW(TAG, "Invalid SOC %.1f ignored (car likely off or poll timeout)", soc);
+        }
       }
       break;
     }
 
-    case 0xE003: { // SOH (%): (dat[0]*256 + dat[1]) / 100
+    case 0xE003: { // SOH (%)
       if (length >= 2) {
         float soh = (static_cast<uint16_t>(data[0]) << 8 | data[1]) / 100.0f;
-        if (soh > 150.0f) soh = 150.0f; // sanity clamp
-        StdMetrics.ms_v_bat_soh->SetValue(soh);
-        ESP_LOGD(TAG, "SOH: %.2f %%", soh);
+        if (soh > 150.0f || soh < 50.0f) {
+          ESP_LOGW(TAG, "Invalid SOH %.2f ignored", soh);
+          break;
+        }
+
+        if (StdMetrics.ms_v_bat_soh->AsFloat() != soh) {
+          StdMetrics.ms_v_bat_soh->SetValue(soh);
+          ESP_LOGD(TAG, "SOH: %.2f %%", soh);
+        }
       }
       break;
     }
 
-    case 0xE004: { // READY bitfield (u16): READY when (val & 0x000C) != 0
+    case 0xE004: { // READY bitfield
       if (length >= 2) {
         uint16_t v = u16be(data);
         bool ready = (v & 0x000C) != 0;
+        bool prev_ready = StdMetrics.ms_v_env_on->AsBool();
         StdMetrics.ms_v_env_on->SetValue(ready);
-        ESP_LOGD(TAG, "READY flag: raw=0x%04x ready=%s", v, ready ? "true" : "false");
+
+        if (ready != prev_ready) {
+          ESP_LOGI(TAG, "READY flag changed: raw=0x%04x ready=%s", v, ready ? "true" : "false");
+
+          if (!ready && PollState() != 0) {
+            ESP_LOGI(TAG, "Vehicle OFF detected, suspending polling");
+            PollSetState(0);
+          }
+          else if (ready && PollState() == 0) {
+            ESP_LOGI(TAG, "Vehicle ON detected, resuming polling");
+            PollSetState(1);
+          }
+        }
       }
       break;
     }
 
-    case 0xE009: { // Plug present (u16): plug if low byte == 0x00
+    case 0xE009: { // Plug present (u16)
       if (length >= 2) {
         uint16_t v = u16be(data);
         bool plug_present = ((v & 0x00FF) == 0x00);
@@ -121,26 +122,33 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
       break;
     }
 
-    case 0xE010: { // HVAC/Coolant temperature (°C): u16 / 10
+    case 0xE010: { // HVAC/Coolant temperature (°C)
       if (length >= 2 && m_hvac_temp_c) {
         float t = u16be(data) / 10.0f;
-        m_hvac_temp_c->SetValue(t);
-        ESP_LOGD(TAG, "HVAC/Coolant temp: %.1f °C", t);
+        if (t > -40 && t < 125) { // sanity range
+          m_hvac_temp_c->SetValue(t);
+          ESP_LOGD(TAG, "HVAC/Coolant temp: %.1f °C", t);
+        } else {
+          ESP_LOGW(TAG, "Invalid HVAC temp %.1f ignored", t);
+        }
       }
       break;
     }
 
-    case 0xE025: { // Ambient temperature (°C): u16 / 10
+    case 0xE025: { // Ambient temperature (°C)
       if (length >= 2) {
         float ta = u16be(data) / 10.0f;
-        StdMetrics.ms_v_env_temp->SetValue(ta);
-        ESP_LOGD(TAG, "Ambient temp: %.1f °C", ta);
+        if (ta > -50 && ta < 80) {
+          StdMetrics.ms_v_env_temp->SetValue(ta);
+          ESP_LOGD(TAG, "Ambient temp: %.1f °C", ta);
+        } else {
+          ESP_LOGW(TAG, "Invalid ambient temp %.1f ignored", ta);
+        }
       }
       break;
     }
 
     default:
-      // Not handled yet
       break;
   }
 }
