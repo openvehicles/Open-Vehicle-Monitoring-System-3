@@ -99,13 +99,14 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
         if (ready != prev_ready) {
           ESP_LOGI(TAG, "READY flag changed: raw=0x%04x ready=%s", v, ready ? "true" : "false");
 
-          if (!ready && OvmsVehicle::PollState() != 0) {
+          // Use m_poll_state to decide whether to change poll state
+          if (!ready && m_poll_state != 0) {
             ESP_LOGI(TAG, "Vehicle OFF detected, suspending polling");
-            OvmsVehicle::PollSetState(0);
+            PollSetState(0);
           }
-          else if (ready && OvmsVehicle::PollState() == 0) {
+          else if (ready && m_poll_state == 0) {
             ESP_LOGI(TAG, "Vehicle ON detected, resuming polling");
-            OvmsVehicle::PollSetState(1);
+            PollSetState(1);
           }
         }
       }
