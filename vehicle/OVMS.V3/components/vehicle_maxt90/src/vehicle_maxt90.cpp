@@ -59,8 +59,6 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
     case 0xE002: { // SOC (%)
       if (length >= 1) {
         float soc = data[0];
-
-        // Ignore invalid or zero readings (vehicle off / timeout)
         if (soc > 0 && soc <= 100) {
           if (StdMetrics.ms_v_bat_soc->AsFloat() != soc) {
             StdMetrics.ms_v_bat_soc->SetValue(soc);
@@ -75,9 +73,12 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
 
     case 0xE003: { // SOH (%)
       if (length >= 2) {
-        float soh = (static_cast<uint16_t>(data[0]) << 8 | data[1]) / 100.0f;
-        if (soh > 150.0f || soh < 50.0f) {
-          ESP_LOGW(TAG, "Invalid SOH %.2f ignored", soh);
+        uint16_t raw = u16be(data);
+        float soh = raw / 100.0f;
+
+        // Filter out bogus default values (0xFFFF, 0x1800 = 61.44%, etc.)
+        if (raw == 0xFFFF || raw == 0x1800 || soh <= 50.0f || soh > 150.0f) {
+          ESP_LOGW(TAG, "Invalid SOH raw=0x%04x (%.2f %%) ignored", raw, soh);
           break;
         }
 
@@ -99,7 +100,6 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
         if (ready != prev_ready) {
           ESP_LOGI(TAG, "READY flag changed: raw=0x%04x ready=%s", v, ready ? "true" : "false");
 
-          // Use m_poll_state to decide whether to change poll state
           if (!ready && m_poll_state != 0) {
             ESP_LOGI(TAG, "Vehicle OFF detected, suspending polling");
             PollSetState(0);
@@ -125,26 +125,34 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
 
     case 0xE010: { // HVAC/Coolant temperature (°C)
       if (length >= 2 && m_hvac_temp_c) {
-        float t = u16be(data) / 10.0f;
-        if (t > -40 && t < 125) { // sanity range
-          m_hvac_temp_c->SetValue(t);
-          ESP_LOGD(TAG, "HVAC/Coolant temp: %.1f °C", t);
-        } else {
-          ESP_LOGW(TAG, "Invalid HVAC temp %.1f ignored", t);
+        uint16_t raw = u16be(data);
+        float t = raw / 10.0f;
+
+        // Filter out known bogus patterns (default buffer or timeout)
+        if (raw == 0x0200 || raw == 0xFFFF || t < -40 || t > 125) {
+          ESP_LOGW(TAG, "Invalid HVAC temp raw=0x%04x (%.1f °C) ignored", raw, t);
+          break;
         }
+
+        m_hvac_temp_c->SetValue(t);
+        ESP_LOGD(TAG, "HVAC/Coolant temp: %.1f °C", t);
       }
       break;
     }
 
     case 0xE025: { // Ambient temperature (°C)
       if (length >= 2) {
-        float ta = u16be(data) / 10.0f;
-        if (ta > -50 && ta < 80) {
-          StdMetrics.ms_v_env_temp->SetValue(ta);
-          ESP_LOGD(TAG, "Ambient temp: %.1f °C", ta);
-        } else {
-          ESP_LOGW(TAG, "Invalid ambient temp %.1f ignored", ta);
+        uint16_t raw = u16be(data);
+        float ta = raw / 10.0f;
+
+        // Filter out default/bogus data
+        if (raw == 0x0200 || raw == 0xFFFF || ta < -50 || ta > 80) {
+          ESP_LOGW(TAG, "Invalid ambient temp raw=0x%04x (%.1f °C) ignored", raw, ta);
+          break;
         }
+
+        StdMetrics.ms_v_env_temp->SetValue(ta);
+        ESP_LOGD(TAG, "Ambient temp: %.1f °C", ta);
       }
       break;
     }
