@@ -1,218 +1,235 @@
-#include "ovms_log.h"
-static const char *TAG = "v-maxt90";
-
-#include <stdio.h>
-#include <string>
-#include "vehicle_maxt90.h"
-#include "vehicle_obdii.h"
-#include "metrics_standard.h"
-
-OvmsVehicleMaxt90::OvmsVehicleMaxt90()
+void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
-  ESP_LOGI(TAG, "Initialising Maxus T90 EV vehicle module (derived from OBDII)");
+  // Let base class do any generic processing:
+  OvmsVehicle::IncomingFrameCan1(p_frame);
 
-  // Register CAN1 bus at 500 kbps
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  const uint8_t* d = p_frame->data.u8;
 
-  // Custom metrics:
-  m_hvac_temp_c = MyMetrics.InitFloat("x.maxt90.hvac_temp_c", 10, 0.0f, Other, false);
-  m_pack_capacity_kwh = MyMetrics.InitFloat("x.maxt90.capacity_kwh", 0, 88.5f, Other, true);
-
-  // Optionally initialise the standard lock metric to a known state:
-  StdMetrics.ms_v_env_locked->SetValue(false);
-
-  // Define poll list (VIN, SOC, SOH, READY flag, Plug present, HVAC temp, Ambient temp)
-  static const OvmsPoller::poll_pid_t maxt90_polls[] = {
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, { 0, 999, 999 }, 0, ISOTP_STD }, // VIN
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE002, { 10, 10, 10 }, 0, ISOTP_STD }, // SOC
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE003, { 30, 30, 30 }, 0, ISOTP_STD }, // SOH
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE004, { 10, 10, 10 }, 0, ISOTP_STD }, // READY
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE009, { 10, 10, 10 }, 0, ISOTP_STD }, // Plug
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE010, { 30, 30, 30 }, 0, ISOTP_STD }, // HVAC temp
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE025, { 30, 30, 30 }, 0, ISOTP_STD }, // Ambient temp
-    POLL_LIST_END
-  };
-
-  // Attach the poll list to CAN1 & start idle
-  PollSetPidList(m_can1, maxt90_polls);
-  PollSetState(0);
-
-  ESP_LOGI(TAG, "Maxus T90 EV poller configured on CAN1 @ 500 kbps");
-}
-
-OvmsVehicleMaxt90::~OvmsVehicleMaxt90()
-{
-  ESP_LOGI(TAG, "Shutdown Maxus T90 EV vehicle module");
-}
-
-void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
-                                          uint8_t* data, uint8_t length)
-{
-  switch (job.pid)
+  switch (p_frame->MsgID)
   {
-    case 0xF190: { // VIN (ASCII)
-      if (length >= 1) {
-        std::string vin(reinterpret_cast<char*>(data), reinterpret_cast<char*>(data) + length);
-        StdMetrics.ms_v_vin->SetValue(vin);
-        ESP_LOGD(TAG, "VIN: %s", vin.c_str());
+    // ─────────────────────────────────────────────
+    // 0x266: Steering wheel
+    //   Examples you gave:
+    //     EC 17 00  -- full left
+    //     B9 E7 00  -- full right
+    //     00 08 00  -- centre
+    //
+    // We'll expose the raw 16-bit little-endian value and log it.
+    // You can later turn this into degrees if you want.
+    // ─────────────────────────────────────────────
+    case 0x266:
+    {
+      // 16-bit little-endian from bytes 0+1:
+      int16_t steer_raw = (int16_t)((uint16_t(d[1]) << 8) | uint16_t(d[0]));
+
+      // For now, just log it:
+      ESP_LOGD(TAG, "0x266 steering raw=0x%04x (%d)", uint16_t(steer_raw), steer_raw);
+
+      // If you later want a custom metric:
+      // MyMetrics.InitInt("x.maxt90.steer_raw", 0, 0, Other, false)->SetValue(steer_raw);
+      break;
+    }
+
+    // ─────────────────────────────────────────────
+    // 0x281: Lock state + indicators + reverse + key positions
+    //
+    // From your notes:
+    //   0001 = locked, 0000 = unlocked
+    //   1000 = flash right
+    //   0800 = flash left
+    //   0001 = "Bil på ett hakk" (1st key position?)
+    //   0002 = "Bil på 2/3 hakk" (2nd/3rd?)
+    //   2000 = reverse
+    //
+    // We already know lock_word is at bytes 3+4 (little-endian).
+    // ─────────────────────────────────────────────
+    case 0x281:
+    {
+      uint16_t w = uint16_t(d[3]) | (uint16_t(d[4]) << 8);
+
+      bool locked       = (w & 0x0001) == 0x0001;  // 0001 = locked
+      bool flash_right  = (w & 0x1000) != 0;       // 1000
+      bool flash_left   = (w & 0x0800) != 0;       // 0800
+      bool key_pos_1    = (w & 0x0001) != 0;       // first click
+      bool key_pos_2_3  = (w & 0x0002) != 0;       // second / third click
+      bool reverse_gear = (w & 0x0020) != 0;       // 0020
+
+      bool prev_locked = StdMetrics.ms_v_env_locked->AsBool();
+      if (locked != prev_locked) {
+        StdMetrics.ms_v_env_locked->SetValue(locked);
+        ESP_LOGI(TAG, "0x281 lock: raw=0x%04x locked=%s",
+                 w, locked ? "true" : "false");
+      }
+
+      // Just log the other bits for now – you can turn them into metrics later:
+      static uint16_t last_281 = 0xffff;
+      if (w != last_281) {
+        ESP_LOGD(TAG,
+          "0x281 raw=0x%04x L=%d R=%d key1=%d key23=%d rev=%d",
+          w, flash_left, flash_right, key_pos_1, key_pos_2_3, reverse_gear);
+        last_281 = w;
+      }
+
+      // If you later want indicators as metrics you could add:
+      //   MyMetrics.InitBool("x.maxt90.ind_left",   0, false, Other, false)->SetValue(flash_left);
+      //   MyMetrics.InitBool("x.maxt90.ind_right",  0, false, Other, false)->SetValue(flash_right);
+      break;
+    }
+
+    // ─────────────────────────────────────────────
+    // 0x355: Dashboard seatbelt / passenger sensor
+    //
+    // Your notes:
+    //   00 00 80       - Passenger “fasten seatbelt” sign
+    //   00 00 00 40    - Driver fasten seatbelt
+    //   00 00 00 20    - Rear3 fasten seatbelt
+    //   00 00 00 02    - Rear1 fasten seatbelt
+    //   00 00 00 08    - Rear2 fasten seatbelt
+    //   00 00 00 00 08 - passenger sensor
+    //
+    // Bit layout still a bit fuzzy, so we just log a 32-bit mask for now.
+    // ─────────────────────────────────────────────
+    case 0x355:
+    {
+      // Take last 4 bytes as big-endian mask (adjust if needed once we see real frames):
+      uint32_t mask = (uint32_t(d[4]) << 24) |
+                      (uint32_t(d[5]) << 16) |
+                      (uint32_t(d[6]) << 8)  |
+                       uint32_t(d[7]);
+
+      ESP_LOGD(TAG,
+        "0x355 seatbelt mask=0x%08x", mask);
+
+      // Later you can decode:
+      //   passenger_belt  = mask & 0x00008000;
+      //   driver_belt     = mask & 0x00000040;
+      //   rear3_belt      = mask & 0x00000020;
+      //   rear1_belt      = mask & 0x00000002;
+      //   rear2_belt      = mask & 0x00000008;
+      //   passenger_sensor= mask & 0x00000008 (different byte?)
+      break;
+    }
+
+    // ─────────────────────────────────────────────
+    // 0x362: Odometer (broadcast)
+    //
+    // You’ve said “0x362 ODOMETER”.
+    // Common pattern on similar EVs is a 24-bit or 32-bit counter in metres.
+    // We’ll start with bytes [4..6] as 24-bit big-endian and log it.
+    // ─────────────────────────────────────────────
+    case 0x362:
+    {
+      // 24-bit big-endian from bytes 4,5,6:
+      uint32_t raw = (uint32_t(d[4]) << 16) |
+                     (uint32_t(d[5]) << 8)  |
+                      uint32_t(d[6]);
+
+      float odom_km = raw / 1000.0f;   // assume metres → km
+      StdMetrics.ms_v_pos_odometer->SetValue(odom_km);
+
+      static uint32_t last_raw = 0;
+      if (raw != last_raw) {
+        ESP_LOGI(TAG, "0x362 odometer: raw=0x%06x (%.1f km)", raw, odom_km);
+        last_raw = raw;
       }
       break;
     }
 
-    case 0xE002: { // SOC (%)
-      if (length >= 1) {
-        float soc = data[0];
-        if (soc > 0 && soc <= 100) {
-          if (StdMetrics.ms_v_bat_soc->AsFloat() != soc) {
-            StdMetrics.ms_v_bat_soc->SetValue(soc);
-            ESP_LOGD(TAG, "SOC: %.0f %%", soc);
-          }
-        } else {
-          ESP_LOGW(TAG, "Invalid SOC %.1f ignored (car likely off or poll timeout)", soc);
-        }
-      }
+    // ─────────────────────────────────────────────
+    // 0x373: Trip counter? (Your note: 15 29 01 83 EC 00 02 D8)
+    //
+    // We don’t know scaling yet. Just log raw for now so you can correlate:
+    // ─────────────────────────────────────────────
+    case 0x373:
+    {
+      uint64_t raw =
+        (uint64_t(d[0]) << 56) |
+        (uint64_t(d[1]) << 48) |
+        (uint64_t(d[2]) << 40) |
+        (uint64_t(d[3]) << 32) |
+        (uint64_t(d[4]) << 24) |
+        (uint64_t(d[5]) << 16) |
+        (uint64_t(d[6]) << 8)  |
+         uint64_t(d[7]);
+
+      ESP_LOGD(TAG, "0x373 trip raw=0x%016llx",
+               (unsigned long long) raw);
+
+      // Once you know which bytes move with trip A/B, we can split & scale.
       break;
     }
 
-    case 0xE003: { // SOH (%)
-      if (length >= 2) {
-        uint16_t raw = u16be(data);
-        float soh = raw / 100.0f;
+    // ─────────────────────────────────────────────
+    // 0x375: Dashboard lights + door status
+    //
+    // Your notes:
+    //   Door bits (16-bit):
+    //     0001 - LR door
+    //     8000 - RR door
+    //     4000 - passenger door
+    //     2000 - driver door
+    //
+    //   Start behaviour:
+    //     03 80 00 00 7F 04 00 00  = car on
+    //     00 80 00 00 00 00 00 00  = car off
+    //
+    //   Lights (first byte):
+    //     00 - no lights
+    //     01 - park
+    //     03 - dipped
+    //     07 - high
+    //     13 - fog + dipped
+    //
+    // We’ll:
+    //   - decode light mode from d[0],
+    //   - extract door bits from a 16-bit word in bytes 4+5 (big-endian guess),
+    //   - map doors to the standard v.door_* metrics.
+    // ─────────────────────────────────────────────
+    case 0x375:
+    {
+      uint8_t light_raw = d[0];
 
-        // Filter out bogus default values (0xFFFF, 0x1800 = 61.44%, etc.)
-        if (raw == 0xFFFF || raw == 0x1800 || soh <= 50.0f || soh > 150.0f) {
-          ESP_LOGW(TAG, "Invalid SOH raw=0x%04x (%.2f %%) ignored", raw, soh);
-          break;
-        }
+      // Simple mapping: any of bits 0x02 (dipped/high) means "headlights on":
+      bool headlights = (light_raw & 0x02) != 0;
+      StdMetrics.ms_v_env_headlights->SetValue(headlights);
 
-        if (StdMetrics.ms_v_bat_soh->AsFloat() != soh) {
-          StdMetrics.ms_v_bat_soh->SetValue(soh);
-          ESP_LOGD(TAG, "SOH: %.2f %%", soh);
-        }
+      // Decode a simple numeric light mode metric:
+      //   0 = off, 1 = park, 2 = dipped, 3 = high, 4 = fog+dipped
+      int light_mode = 0;
+      switch (light_raw)
+      {
+        case 0x00: light_mode = 0; break; // off
+        case 0x01: light_mode = 1; break; // park
+        case 0x03: light_mode = 2; break; // dipped
+        case 0x07: light_mode = 3; break; // high
+        case 0x13: light_mode = 4; break; // fog+dipped
+        default:   light_mode = -1; break; // unknown combo
       }
-      break;
-    }
 
-    case 0xE004: { // READY bitfield
-      if (length >= 2) {
-        uint16_t v = u16be(data);
-        bool ready = (v & 0x000C) != 0;
-        bool prev_ready = StdMetrics.ms_v_env_on->AsBool();
-        StdMetrics.ms_v_env_on->SetValue(ready);
+      // Door bits – assume 16-bit big-endian word from bytes 4+5:
+      uint16_t dw = (uint16_t(d[4]) << 8) | uint16_t(d[5]);
 
-        if (ready != prev_ready) {
-          ESP_LOGI(TAG, "READY flag changed: raw=0x%04x ready=%s", v, ready ? "true" : "false");
+      bool door_rl = (dw & 0x0001) != 0; // LR door
+      bool door_rr = (dw & 0x8000) != 0; // RR door
+      bool door_fr = (dw & 0x4000) != 0; // passenger front
+      bool door_fl = (dw & 0x2000) != 0; // driver front
 
-          if (!ready && m_poll_state != 0) {
-            ESP_LOGI(TAG, "Vehicle OFF detected, suspending polling");
-            PollSetState(0);
-          }
-          else if (ready && m_poll_state == 0) {
-            ESP_LOGI(TAG, "Vehicle ON detected, resuming polling");
-            PollSetState(1);
-          }
-        }
-      }
-      break;
-    }
+      // Map to standard door metrics:
+      StdMetrics.ms_v_door_fl->SetValue(door_fl);
+      StdMetrics.ms_v_door_fr->SetValue(door_fr);
+      StdMetrics.ms_v_door_rl->SetValue(door_rl);
+      StdMetrics.ms_v_door_rr->SetValue(door_rr);
+      // trunk/bonnet not mapped here
 
-    case 0xE009: { // Plug present (u16)
-      if (length >= 2) {
-        uint16_t v = u16be(data);
-        bool plug_present = ((v & 0x00FF) == 0x00);
-        StdMetrics.ms_v_charge_pilot->SetValue(plug_present);
-        ESP_LOGD(TAG, "Plug present: raw=0x%04x plug=%s", v, plug_present ? "true" : "false");
-      }
-      break;
-    }
+      ESP_LOGD(TAG,
+        "0x375 lights: raw=0x%02x mode=%d, doors: raw=0x%04x fl=%d fr=%d rl=%d rr=%d",
+        light_raw, light_mode, dw,
+        door_fl, door_fr, door_rl, door_rr);
 
-    case 0xE010: { // HVAC/Coolant temperature (°C)
-      if (length >= 2 && m_hvac_temp_c) {
-        uint16_t raw = u16be(data);
-        float t = raw / 10.0f;
-
-        // Filter out known bogus patterns (default buffer or timeout)
-        if (raw == 0x0200 || raw == 0xFFFF || t < -40 || t > 125) {
-          ESP_LOGW(TAG, "Invalid HVAC temp raw=0x%04x (%.1f °C) ignored", raw, t);
-          break;
-        }
-
-        m_hvac_temp_c->SetValue(t);
-        ESP_LOGD(TAG, "HVAC/Coolant temp: %.1f °C", t);
-      }
-      break;
-    }
-
-    case 0xE025: { // Ambient temperature (°C)
-      if (length >= 2) {
-        uint16_t raw = u16be(data);
-        float ta = raw / 10.0f;
-
-        // Filter out default/bogus data
-        if (raw == 0x0200 || raw == 0xFFFF || ta < -50 || ta > 80) {
-          ESP_LOGW(TAG, "Invalid ambient temp raw=0x%04x (%.1f °C) ignored", raw, ta);
-          break;
-        }
-
-        StdMetrics.ms_v_env_temp->SetValue(ta);
-        ESP_LOGD(TAG, "Ambient temp: %.1f °C", ta);
-      }
       break;
     }
 
     default:
       break;
   }
-}
-
-// ────────────────────────────────────────────────────────────────
-//   Incoming CAN frames on bus 1 (lock state on ID 0x281)
-// ────────────────────────────────────────────────────────────────
-
-void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
-{
-  // Let the base class handle any generic processing:
-  OvmsVehicle::IncomingFrameCan1(p_frame);
-
-  // 0x281: door lock state
-  // Data bytes (from your logs):
-  //   [0] = 0x02
-  //   [1] = 0xA8
-  //   [2] = 0x02
-  //   [3] = 0x00 or 0x01  (lock flag LSB)
-  //   [4] = 0x00          (lock flag MSB)
-  //   [5] = 0x02
-  //   [6],[7] = counter/checksum
-  if (p_frame->MsgID == 0x281) {
-    const uint8_t* d = p_frame->data.u8;
-
-    // Treat bytes 3+4 as little-endian 16-bit:
-    uint16_t lock_word = static_cast<uint16_t>(d[3]) |
-                         (static_cast<uint16_t>(d[4]) << 8);
-
-    bool locked = (lock_word == 0x0001);  // 0x0001 = locked, 0x0000 = unlocked
-    bool prev_locked = StdMetrics.ms_v_env_locked->AsBool();
-
-    if (locked != prev_locked) {
-      StdMetrics.ms_v_env_locked->SetValue(locked);
-      ESP_LOGI(TAG, "Door lock state changed: raw=0x%04x locked=%s",
-               lock_word, locked ? "true" : "false");
-    }
-  }
-}
-
-// ────────────────────────────────────────────────────────────────
-//   Module Registration
-// ────────────────────────────────────────────────────────────────
-
-class OvmsVehicleMaxt90Init
-{
-public:
-  OvmsVehicleMaxt90Init();
-} MyOvmsVehicleMaxt90Init __attribute__((init_priority(9000)));
-
-OvmsVehicleMaxt90Init::OvmsVehicleMaxt90Init()
-{
-  ESP_LOGI(TAG, "Registering Vehicle: Maxus T90 EV (9000)");
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxt90>("MAXT90", "Maxus T90 EV");
 }
