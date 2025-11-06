@@ -9,13 +9,6 @@ void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
     // ─────────────────────────────────────────────
     // 0x266: Steering wheel
-    //   Examples you gave:
-    //     EC 17 00  -- full left
-    //     B9 E7 00  -- full right
-    //     00 08 00  -- centre
-    //
-    // We'll expose the raw 16-bit little-endian value and log it.
-    // You can later turn this into degrees if you want.
     // ─────────────────────────────────────────────
     case 0x266:
     {
@@ -31,42 +24,47 @@ void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
 
     // ─────────────────────────────────────────────
-    // 0x281: Lock state + indicators + reverse + key positions
+    // 0x281: Lock/unlock + indicators + reverse + key positions
     //
-    // From your notes:
-    //   0001 = locked, 0000 = unlocked
-    //   1000 = flash right
+    // From your notes (bitfield in bytes 3+4, little-endian word):
+    //   0001 = unlock pulse / "Bil på ett hakk" (1st key position?)
+    //   0002 = "Bil på 2/3 hakk"
     //   0800 = flash left
-    //   0001 = "Bil på ett hakk" (1st key position?)
-    //   0002 = "Bil på 2/3 hakk" (2nd/3rd?)
+    //   1000 = flash right
     //   2000 = reverse
     //
-    // We already know lock_word is at bytes 3+4 (little-endian).
+    // IMPORTANT: this appears to be an *event/pulse* frame, not a persistent state.
+    // So we treat 0x0001 as an "unlock command" and force locked = false here,
+    // rather than trying to derive full lock state from this ID.
     // ─────────────────────────────────────────────
     case 0x281:
     {
       uint16_t w = uint16_t(d[3]) | (uint16_t(d[4]) << 8);
 
-      bool locked       = (w & 0x0001) == 0x0001;  // 0001 = locked
-      bool flash_right  = (w & 0x1000) != 0;       // 1000
-      bool flash_left   = (w & 0x0800) != 0;       // 0800
-      bool key_pos_1    = (w & 0x0001) != 0;       // first click
-      bool key_pos_2_3  = (w & 0x0002) != 0;       // second / third click
-      bool reverse_gear = (w & 0x0020) != 0;       // 0020
+      bool unlock_pulse = (w & 0x0001) != 0;      // seen when you press driver's unlock
+      bool key_pos_2_3  = (w & 0x0002) != 0;      // placeholder decode
+      bool flash_left   = (w & 0x0800) != 0;      // 0800
+      bool flash_right  = (w & 0x1000) != 0;      // 1000
+      bool reverse_gear = (w & 0x2000) != 0;      // 2000 (fixed from 0x0020)
 
-      bool prev_locked = StdMetrics.ms_v_env_locked->AsBool();
-      if (locked != prev_locked) {
-        StdMetrics.ms_v_env_locked->SetValue(locked);
-        ESP_LOGI(TAG, "0x281 lock: raw=0x%04x locked=%s",
-                 w, locked ? "true" : "false");
+      // Treat 0x0001 as an UNLOCK command, not "locked":
+      if (unlock_pulse)
+      {
+        bool was_locked = StdMetrics.ms_v_env_locked->AsBool();
+        if (was_locked) {
+          ESP_LOGI(TAG, "0x281 unlock pulse: raw=0x%04x -> locked=false", w);
+        } else {
+          ESP_LOGD(TAG, "0x281 unlock pulse while already unlocked: raw=0x%04x", w);
+        }
+        StdMetrics.ms_v_env_locked->SetValue(false);
       }
 
-      // Just log the other bits for now – you can turn them into metrics later:
+      // Just log everything so you can refine the bit meanings later:
       static uint16_t last_281 = 0xffff;
       if (w != last_281) {
         ESP_LOGD(TAG,
-          "0x281 raw=0x%04x L=%d R=%d key1=%d key23=%d rev=%d",
-          w, flash_left, flash_right, key_pos_1, key_pos_2_3, reverse_gear);
+          "0x281 raw=0x%04x L=%d R=%d unlock=%d key23=%d rev=%d",
+          w, flash_left, flash_right, unlock_pulse, key_pos_2_3, reverse_gear);
         last_281 = w;
       }
 
@@ -78,16 +76,6 @@ void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
 
     // ─────────────────────────────────────────────
     // 0x355: Dashboard seatbelt / passenger sensor
-    //
-    // Your notes:
-    //   00 00 80       - Passenger “fasten seatbelt” sign
-    //   00 00 00 40    - Driver fasten seatbelt
-    //   00 00 00 20    - Rear3 fasten seatbelt
-    //   00 00 00 02    - Rear1 fasten seatbelt
-    //   00 00 00 08    - Rear2 fasten seatbelt
-    //   00 00 00 00 08 - passenger sensor
-    //
-    // Bit layout still a bit fuzzy, so we just log a 32-bit mask for now.
     // ─────────────────────────────────────────────
     case 0x355:
     {
@@ -112,10 +100,6 @@ void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
 
     // ─────────────────────────────────────────────
     // 0x362: Odometer (broadcast)
-    //
-    // You’ve said “0x362 ODOMETER”.
-    // Common pattern on similar EVs is a 24-bit or 32-bit counter in metres.
-    // We’ll start with bytes [4..6] as 24-bit big-endian and log it.
     // ─────────────────────────────────────────────
     case 0x362:
     {
@@ -136,9 +120,7 @@ void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
 
     // ─────────────────────────────────────────────
-    // 0x373: Trip counter? (Your note: 15 29 01 83 EC 00 02 D8)
-    //
-    // We don’t know scaling yet. Just log raw for now so you can correlate:
+    // 0x373: Trip counter? (unknown scaling)
     // ─────────────────────────────────────────────
     case 0x373:
     {
@@ -161,29 +143,6 @@ void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
 
     // ─────────────────────────────────────────────
     // 0x375: Dashboard lights + door status
-    //
-    // Your notes:
-    //   Door bits (16-bit):
-    //     0001 - LR door
-    //     8000 - RR door
-    //     4000 - passenger door
-    //     2000 - driver door
-    //
-    //   Start behaviour:
-    //     03 80 00 00 7F 04 00 00  = car on
-    //     00 80 00 00 00 00 00 00  = car off
-    //
-    //   Lights (first byte):
-    //     00 - no lights
-    //     01 - park
-    //     03 - dipped
-    //     07 - high
-    //     13 - fog + dipped
-    //
-    // We’ll:
-    //   - decode light mode from d[0],
-    //   - extract door bits from a 16-bit word in bytes 4+5 (big-endian guess),
-    //   - map doors to the standard v.door_* metrics.
     // ─────────────────────────────────────────────
     case 0x375:
     {
