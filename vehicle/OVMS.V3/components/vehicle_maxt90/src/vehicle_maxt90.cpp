@@ -18,6 +18,9 @@ OvmsVehicleMaxt90::OvmsVehicleMaxt90()
   m_hvac_temp_c = MyMetrics.InitFloat("x.maxt90.hvac_temp_c", 10, 0.0f, Other, false);
   m_pack_capacity_kwh = MyMetrics.InitFloat("x.maxt90.capacity_kwh", 0, 88.5f, Other, true);
 
+  // Optionally initialise the standard lock metric to a known state:
+  StdMetrics.ms_v_env_locked->SetValue(false);
+
   // Define poll list (VIN, SOC, SOH, READY flag, Plug present, HVAC temp, Ambient temp)
   static const OvmsPoller::poll_pid_t maxt90_polls[] = {
     { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, { 0, 999, 999 }, 0, ISOTP_STD }, // VIN
@@ -159,6 +162,42 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
 
     default:
       break;
+  }
+}
+
+// ────────────────────────────────────────────────────────────────
+//   Incoming CAN frames on bus 1 (lock state on ID 0x281)
+// ────────────────────────────────────────────────────────────────
+
+void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
+{
+  // Let the base class handle any generic processing:
+  OvmsVehicle::IncomingFrameCan1(p_frame);
+
+  // 0x281: door lock state
+  // Data bytes (from your logs):
+  //   [0] = 0x02
+  //   [1] = 0xA8
+  //   [2] = 0x02
+  //   [3] = 0x00 or 0x01  (lock flag LSB)
+  //   [4] = 0x00          (lock flag MSB)
+  //   [5] = 0x02
+  //   [6],[7] = counter/checksum
+  if (p_frame->MsgID == 0x281) {
+    const uint8_t* d = p_frame->data.u8;
+
+    // Treat bytes 3+4 as little-endian 16-bit:
+    uint16_t lock_word = static_cast<uint16_t>(d[3]) |
+                         (static_cast<uint16_t>(d[4]) << 8);
+
+    bool locked = (lock_word == 0x0001);  // 0x0001 = locked, 0x0000 = unlocked
+    bool prev_locked = StdMetrics.ms_v_env_locked->AsBool();
+
+    if (locked != prev_locked) {
+      StdMetrics.ms_v_env_locked->SetValue(locked);
+      ESP_LOGI(TAG, "Door lock state changed: raw=0x%04x locked=%s",
+               lock_word, locked ? "true" : "false");
+    }
   }
 }
 
