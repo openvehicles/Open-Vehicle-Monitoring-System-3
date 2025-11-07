@@ -183,6 +183,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandWakeup()
 
 OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandLock(const char *pin)
 {
+    if (!PinCheck(pin))
+    {
+        ESP_LOGW(TAG, "CommandLock: PIN check failed");
+        MyNotify.NotifyString("error", "lock.control", "PIN check failed");
+        return Fail;
+    }
+
     if (!m_vcan_enabled)
     {
         ESP_LOGW(TAG, "CommandLock not possible, because V-CAN is not enabled");
@@ -192,40 +199,107 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandLock(const char 
     else
     {
         uint8_t lock[8] = {0x44, 0xE3, 0x4F, 0x10, 0x04, 0x84, 0x07, 0x10};
-        int max_attempts = (!mt_bus_awake->AsBool()) ? 10 : 3;
-        bool tx_success = false;
+        bool bus_was_sleeping = !mt_bus_awake->AsBool();
 
-        // Send frames until we get actual transmission confirmation from TxCallback
-        for (int i = 0; i < max_attempts && !tx_success; i++)
+        // Send BCM wakeup frame if CAN is sleeping
+        if (bus_was_sleeping)
         {
-            // Clear success flag before sending
-            m_tx_success_flag.store(false);
+            ESP_LOGI(TAG, "CommandLock: CAN is sleeping, sending BCM wakeup frame");
+            uint8_t wakeup[2] = {0x83, 0xC0};
+            int wakeup_success_count = 0;
+            const int required_successes = 3;
+            const int max_wakeup_attempts = 10;
 
-            // Send the frame
-            m_can1->WriteStandard(HFM_A1_ID, 8, lock);
-
-            // Wait for transmission and callback
-            vTaskDelay(100 / portTICK_PERIOD_MS);
-
-            // Check if this specific frame was successfully transmitted
-            if (m_tx_success_flag.load() && m_tx_success_id.load() == HFM_A1_ID)
+            // Try to send wakeup frame and verify transmission - need 3 successful transmissions
+            for (int i = 0; i < max_wakeup_attempts && wakeup_success_count < required_successes; i++)
             {
-                tx_success = true;
-                ESP_LOGI(TAG, "Lock command transmitted successfully on attempt %d", i + 1);
+                m_tx_success_flag.store(false);
+                m_can1->WriteStandard(0x682, 2, wakeup);
+                vTaskDelay(100 / portTICK_PERIOD_MS);
+
+                if (m_tx_success_flag.load() && m_tx_success_id.load() == 0x682)
+                {
+                    wakeup_success_count++;
+                    ESP_LOGI(TAG, "BCM wakeup frame transmitted successfully (%d/%d successes, attempt %d)",
+                             wakeup_success_count, required_successes, i + 1);
+                }
+                else
+                {
+                    ESP_LOGW(TAG, "BCM wakeup frame transmission failed (attempt %d)", i + 1);
+                }
+            }
+
+            if (wakeup_success_count < required_successes)
+            {
+                ESP_LOGE(TAG, "CommandLock: Failed to send BCM wakeup frame - only %d/%d successful",
+                         wakeup_success_count, required_successes);
+                MyNotify.NotifyString("error", "lock.control", "Failed to wake up CAN bus");
+                return Fail;
+            }
+
+            // Wait for bus to wake up
+            vTaskDelay(200 / portTICK_PERIOD_MS);
+        }
+
+        // Determine how many times to send the command
+        int send_count = bus_was_sleeping ? 2 : 1;
+        int successful_sends = 0;
+
+        for (int send = 0; send < send_count; send++)
+        {
+            bool tx_success = false;
+            int max_attempts = 10;
+
+            // Send frames until we get actual transmission confirmation from TxCallback
+            for (int i = 0; i < max_attempts && !tx_success; i++)
+            {
+                // Clear success flag before sending
+                m_tx_success_flag.store(false);
+
+                // Send the frame
+                m_can1->WriteStandard(HFM_A1_ID, 8, lock);
+
+                // Wait for transmission and callback
+                vTaskDelay(100 / portTICK_PERIOD_MS);
+
+                // Check if this specific frame was successfully transmitted
+                if (m_tx_success_flag.load() && m_tx_success_id.load() == HFM_A1_ID)
+                {
+                    tx_success = true;
+                    ESP_LOGI(TAG, "Lock command transmitted successfully (send %d/%d, attempt %d)",
+                             send + 1, send_count, i + 1);
+                }
+                else
+                {
+                    ESP_LOGW(TAG, "Lock command transmission failed (send %d/%d, attempt %d/%d)",
+                             send + 1, send_count, i + 1, max_attempts);
+                }
+            }
+
+            if (tx_success)
+            {
+                successful_sends++;
+                // Add small delay between commands when bus was sleeping
+                if (bus_was_sleeping && send < send_count - 1)
+                {
+                    vTaskDelay(50 / portTICK_PERIOD_MS);
+                }
             }
             else
             {
-                ESP_LOGW(TAG, "Lock command transmission failed (attempt %d/%d)", i + 1, max_attempts);
+                ESP_LOGE(TAG, "Lock command failed on send %d/%d after %d attempts",
+                         send + 1, send_count, max_attempts);
             }
         }
 
-        if (tx_success)
+        if (successful_sends > 0)
         {
+            ESP_LOGI(TAG, "Lock command completed: %d/%d successful sends", successful_sends, send_count);
             return Success;
         }
         else
         {
-            ESP_LOGE(TAG, "Lock command failed - no successful transmission after %d attempts", max_attempts);
+            ESP_LOGE(TAG, "Lock command failed - no successful transmissions");
             return Fail;
         }
     }
@@ -233,6 +307,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandLock(const char 
 
 OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandUnlock(const char *pin)
 {
+    if (!PinCheck(pin))
+    {
+        ESP_LOGW(TAG, "CommandUnlock: PIN check failed");
+        MyNotify.NotifyString("error", "lock.control", "PIN check failed");
+        return Fail;
+    }
+
     if (!m_vcan_enabled)
     {
         ESP_LOGW(TAG, "CommandUnlock not possible, because V-CAN is not enabled");
@@ -242,40 +323,107 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoePh2::CommandUnlock(const cha
     else
     {
         uint8_t unlock[8] = {0x44, 0xE3, 0x4F, 0x18, 0x04, 0x84, 0x07, 0x10};
-        int max_attempts = (!mt_bus_awake->AsBool()) ? 10 : 3;
-        bool tx_success = false;
+        bool bus_was_sleeping = !mt_bus_awake->AsBool();
 
-        // Send frames until we get actual transmission confirmation from TxCallback
-        for (int i = 0; i < max_attempts && !tx_success; i++)
+        // Send BCM wakeup frame if CAN is sleeping
+        if (bus_was_sleeping)
         {
-            // Clear success flag before sending
-            m_tx_success_flag.store(false);
+            ESP_LOGI(TAG, "CommandUnlock: CAN is sleeping, sending BCM wakeup frame");
+            uint8_t wakeup[2] = {0x83, 0xC0};
+            int wakeup_success_count = 0;
+            const int required_successes = 3;
+            const int max_wakeup_attempts = 10;
 
-            // Send the frame
-            m_can1->WriteStandard(HFM_A1_ID, 8, unlock);
-
-            // Wait for transmission and callback
-            vTaskDelay(100 / portTICK_PERIOD_MS);
-
-            // Check if this specific frame was successfully transmitted
-            if (m_tx_success_flag.load() && m_tx_success_id.load() == HFM_A1_ID)
+            // Try to send wakeup frame and verify transmission - need 3 successful transmissions
+            for (int i = 0; i < max_wakeup_attempts && wakeup_success_count < required_successes; i++)
             {
-                tx_success = true;
-                ESP_LOGI(TAG, "Unlock command transmitted successfully on attempt %d", i + 1);
+                m_tx_success_flag.store(false);
+                m_can1->WriteStandard(0x682, 2, wakeup);
+                vTaskDelay(100 / portTICK_PERIOD_MS);
+
+                if (m_tx_success_flag.load() && m_tx_success_id.load() == 0x682)
+                {
+                    wakeup_success_count++;
+                    ESP_LOGI(TAG, "BCM wakeup frame transmitted successfully (%d/%d successes, attempt %d)",
+                             wakeup_success_count, required_successes, i + 1);
+                }
+                else
+                {
+                    ESP_LOGW(TAG, "BCM wakeup frame transmission failed (attempt %d)", i + 1);
+                }
+            }
+
+            if (wakeup_success_count < required_successes)
+            {
+                ESP_LOGE(TAG, "CommandUnlock: Failed to send BCM wakeup frame - only %d/%d successful",
+                         wakeup_success_count, required_successes);
+                MyNotify.NotifyString("error", "lock.control", "Failed to wake up CAN bus");
+                return Fail;
+            }
+
+            // Wait for bus to wake up
+            vTaskDelay(200 / portTICK_PERIOD_MS);
+        }
+
+        // Determine how many times to send the command
+        int send_count = bus_was_sleeping ? 2 : 1;
+        int successful_sends = 0;
+
+        for (int send = 0; send < send_count; send++)
+        {
+            bool tx_success = false;
+            int max_attempts = 10;
+
+            // Send frames until we get actual transmission confirmation from TxCallback
+            for (int i = 0; i < max_attempts && !tx_success; i++)
+            {
+                // Clear success flag before sending
+                m_tx_success_flag.store(false);
+
+                // Send the frame
+                m_can1->WriteStandard(HFM_A1_ID, 8, unlock);
+
+                // Wait for transmission and callback
+                vTaskDelay(100 / portTICK_PERIOD_MS);
+
+                // Check if this specific frame was successfully transmitted
+                if (m_tx_success_flag.load() && m_tx_success_id.load() == HFM_A1_ID)
+                {
+                    tx_success = true;
+                    ESP_LOGI(TAG, "Unlock command transmitted successfully (send %d/%d, attempt %d)",
+                             send + 1, send_count, i + 1);
+                }
+                else
+                {
+                    ESP_LOGW(TAG, "Unlock command transmission failed (send %d/%d, attempt %d/%d)",
+                             send + 1, send_count, i + 1, max_attempts);
+                }
+            }
+
+            if (tx_success)
+            {
+                successful_sends++;
+                // Add small delay between commands when bus was sleeping
+                if (bus_was_sleeping && send < send_count - 1)
+                {
+                    vTaskDelay(50 / portTICK_PERIOD_MS);
+                }
             }
             else
             {
-                ESP_LOGW(TAG, "Unlock command transmission failed (attempt %d/%d)", i + 1, max_attempts);
+                ESP_LOGE(TAG, "Unlock command failed on send %d/%d after %d attempts",
+                         send + 1, send_count, max_attempts);
             }
         }
 
-        if (tx_success)
+        if (successful_sends > 0)
         {
+            ESP_LOGI(TAG, "Unlock command completed: %d/%d successful sends", successful_sends, send_count);
             return Success;
         }
         else
         {
-            ESP_LOGE(TAG, "Unlock command failed - no successful transmission after %d attempts", max_attempts);
+            ESP_LOGE(TAG, "Unlock command failed - no successful transmissions");
             return Fail;
         }
     }
