@@ -44,7 +44,7 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
 //  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P2
 
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,300,300,300 }, 0, ISOTP_STD }, // extern temp byte 2+3
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD Trip Distance km
+  //{ 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD Trip Distance km
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD start Trip Distance km 
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD Trip time s
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD start Trip time s

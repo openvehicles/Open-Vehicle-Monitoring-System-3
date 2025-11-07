@@ -487,26 +487,26 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, Ov
   
   if (m_extendedStats)
   { 
-    if (mt_use_at_reset->IsDefined())
+    if (mt_reset_consumption->IsDefined())
       {
-      const std::string& use_at_reset = mt_use_at_reset->AsUnitString("-", ToUser, 1);
-      writer->printf("RESET kWh/100km: %s\n", use_at_reset.c_str());
+      const std::string& reset_used = mt_reset_consumption->AsUnitString("-", ToUser, 1);
+      writer->printf("RESET kWh/100km: %s\n", reset_used.c_str());
       }
     
-    if (mt_obd_trip_km->IsDefined())
+    if (mt_reset_distance->IsDefined())
       {
-      const std::string& obd_trip_km = mt_obd_trip_km->AsUnitString("-", ToUser, 1);
-      writer->printf("RESET Trip km: %s\n", obd_trip_km.c_str());
+      const std::string& reset_trip_km = mt_reset_distance->AsUnitString("-", ToUser, 1);
+      writer->printf("RESET Trip km: %s\n", reset_trip_km.c_str());
       }
-    if (mt_obd_trip_time->IsDefined())
+    if (mt_reset_time->IsDefined())
       {
-      const std::string& obd_trip_time = mt_obd_trip_time->AsUnitString("-", ToUser, 1);
-      writer->printf("RESET Trip time: %s\n", obd_trip_time.c_str());
+      const std::string& reset_time = mt_reset_time->AsUnitString("-", ToUser, 1);
+      writer->printf("RESET Trip time: %s\n", reset_time.c_str());
       }
     if (mt_use_at_start->IsDefined())
       {
-      const std::string& use_at_reset = mt_use_at_start->AsUnitString("-", ToUser, 1);
-      writer->printf("START kWh/100km: %s\n", use_at_reset.c_str());
+      const std::string& use_at_start = mt_use_at_start->AsUnitString("-", ToUser, 1);
+      writer->printf("START kWh: %s\n", use_at_start.c_str());
       }
     if (mt_obd_start_trip_km->IsDefined())
       {
@@ -626,8 +626,8 @@ void OvmsVehicleSmartEQ::xsq_trip_reset(int verbosity, OvmsWriter* writer, OvmsC
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripReset(int verbosity, OvmsWriter* writer) {
     metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
     writer->puts("Trip reset values:");
-    writer->printf("  distance: %s\n", (char*) mt_obd_trip_km->AsUnitString("-", rangeUnit, 1).c_str());
-    writer->printf("  time: %s\n", (char*) mt_obd_trip_time->AsUnitString("-", Native, 1).c_str());
+    writer->printf("  distance: %s\n", (char*) mt_start_distance->AsUnitString("-", rangeUnit, 1).c_str());
+    writer->printf("  time: %s\n", (char*) mt_start_time->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
     writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());

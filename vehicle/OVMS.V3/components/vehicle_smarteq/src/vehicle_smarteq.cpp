@@ -42,7 +42,7 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
   if (!smarteq || type != "SQ") 
     {
     if (writer)
-      writer->puts("Error: Smart EQ vehicle module not selected");
+      writer->puts("Error: smart EQ vehicle module not selected");
     return NULL;
     }
   return smarteq;
@@ -53,7 +53,7 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
  */
 
 OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
-  ESP_LOGI(TAG, "Start Smart EQ vehicle module");
+  ESP_LOGI(TAG, "Start smart EQ vehicle module");
 
   m_climate_init = true;
   m_climate_start = false;
@@ -106,11 +106,44 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_NONE, 0, Other);
   mt_adc_factor_history         = new OvmsMetricVector<float>("xsq.adc.factor.history", SM_STALE_NONE, Other);
   mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_NONE, "UNKNOWN", Other);
-  
+
+  mt_start_time                 = MyMetrics.InitString("xsq.v.start.time", SM_STALE_MID, 0, Other);
+  mt_start_consumption          = MyMetrics.InitFloat("xsq.v.start.consumption", SM_STALE_MID, 0, kWhP100K);
+  mt_start_distance             = MyMetrics.InitFloat("xsq.v.start.distance", SM_STALE_MID, 0, Kilometers);
+
+  mt_reset_time                 = MyMetrics.InitString("xsq.v.reset.time", SM_STALE_MID, 0, Other);
+  mt_reset_consumption          = MyMetrics.InitFloat("xsq.v.reset.consumption", SM_STALE_MID, 0, kWhP100K);
+  mt_reset_distance             = MyMetrics.InitFloat("xsq.v.reset.distance", SM_STALE_MID, 0, Kilometers);
+  mt_reset_energy               = MyMetrics.InitFloat("xsq.v.reset.energy", SM_STALE_MID, 0, kWh);
+  mt_reset_speed                = MyMetrics.InitFloat("xsq.v.reset.speed", SM_STALE_MID, 0, Kph);
+  // 0x658 metrics
+  mt_bat_serial                 = MyMetrics.InitString("xsq.v.bat.serial", SM_STALE_MAX, "");
+  // 0x646 metrics
+  mt_energy_used                = MyMetrics.InitFloat("xsq.v.energy.used", SM_STALE_MID, 0, kWh);
+  mt_energy_recd                = MyMetrics.InitFloat("xsq.v.energy.recd", SM_STALE_MID, 0, kWh);
+  mt_aux_consumption            = MyMetrics.InitFloat("xsq.v.aux.consumption", SM_STALE_MID, 0, kWh);
+  mt_eco_score                  = MyMetrics.InitInt("xsq.v.eco.score", SM_STALE_MID, 0, Percentage);
+  mt_total_recovery             = MyMetrics.InitFloat("xsq.v.total.recovery", SM_STALE_MID, 0, kWh);
+  mt_charge_flap_warning        = MyMetrics.InitBool("xsq.v.charge.flap.warning", SM_STALE_MID, false);
+
+  // 0x62d
+  mt_worst_consumption          = MyMetrics.InitFloat("xsq.v.bat.consumption.worst", SM_STALE_MID, 0, kWhP100K);
+  mt_best_consumption           = MyMetrics.InitFloat("xsq.v.bat.consumption.best", SM_STALE_MID, 0, kWhP100K);
+  mt_bcb_power_mains            = MyMetrics.InitFloat("xsq.v.charge.bcb.power", SM_STALE_MID, 0, Watts);
+
+  // 0x634
+  mt_tcu_refuse_sleep           = MyMetrics.InitInt("xsq.v.tcu.refuse.sleep", SM_STALE_MID, 0);
+  mt_charging_timer_value       = MyMetrics.InitInt("xsq.v.charge.timer.value", SM_STALE_MID, 0, Minutes);
+  mt_remote_preac               = MyMetrics.InitBool("xsq.v.remote.preac", SM_STALE_MID, false);
+  mt_charging_timer_status      = MyMetrics.InitInt("xsq.v.charge.timer.status", SM_STALE_MID, 0);
+  mt_charge_prohibited          = MyMetrics.InitInt("xsq.v.charge.prohibited", SM_STALE_MID, 0);
+  mt_charge_authorization       = MyMetrics.InitInt("xsq.v.charge.authorization", SM_STALE_MID, 0);
+  mt_ext_charge_manager         = MyMetrics.InitInt("xsq.v.charge.ext.manager", SM_STALE_MID, 0);
+
   mt_obd_duration               = MyMetrics.InitInt("xsq.obd.charge.duration", SM_STALE_MID, 0, Minutes);
   mt_obd_trip_km                = MyMetrics.InitFloat("xsq.obd.trip.km", SM_STALE_MID, 0, Kilometers);
+  mt_obd_trip_time              = MyMetrics.InitString("xsq.obd.trip.time", SM_STALE_MID, 0, Other);  
   mt_obd_start_trip_km          = MyMetrics.InitFloat("xsq.obd.trip.km.start", SM_STALE_MID, 0, Kilometers);
-  mt_obd_trip_time              = MyMetrics.InitString("xsq.obd.trip.time", SM_STALE_MID, 0, Other);
   mt_obd_start_trip_time        = MyMetrics.InitString("xsq.obd.trip.time.start", SM_STALE_MID, 0, Other);
   mt_obd_mt_day_prewarn         = MyMetrics.InitInt("xsq.obd.mt.day.prewarn", SM_STALE_MID, 45, Other);
   mt_obd_mt_day_usual           = MyMetrics.InitInt("xsq.obd.mt.day.usual", SM_STALE_MID, 0, Other);
@@ -240,7 +273,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 }
 
 OvmsVehicleSmartEQ::~OvmsVehicleSmartEQ() {
-  ESP_LOGI(TAG, "Stop Smart EQ vehicle module");
+  ESP_LOGI(TAG, "Stop smart EQ vehicle module");
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebDeInit();
@@ -669,18 +702,17 @@ void OvmsVehicleSmartEQ::HandlePollState() {
 void OvmsVehicleSmartEQ::CalculateEfficiency() {
   // float consumption = 0;
   if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5) {
-    float mt_use_at_reset = StdMetrics.ms_v_bat_energy_used->AsFloat() - StdMetrics.ms_v_bat_energy_recd->AsFloat();
-    float mt_use_at_total = StdMetrics.ms_v_bat_energy_used_total->AsFloat() - StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
-    float trip_km = StdMetrics.ms_v_pos_trip->AsFloat();
-    float trip_total_km = mt_pos_odometer_trip_total->AsFloat();
-    if (mt_use_at_reset > 0.1f) 
+    float _use_grid = StdMetrics.ms_v_bat_energy_used->AsFloat() - StdMetrics.ms_v_bat_energy_recd->AsFloat();
+    float _use_grid_total = StdMetrics.ms_v_bat_energy_used_total->AsFloat() - StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+    float _trip_km = StdMetrics.ms_v_pos_trip->AsFloat();
+    float _trip_total_km = mt_pos_odometer_trip_total->AsFloat();
+    if (_use_grid > 0.1f) 
       {
-      StdMetrics.ms_v_bat_consumption->SetValue(mt_use_at_reset * 10.0f);
-      if (trip_km > 0.1f) StdMetrics.ms_v_charge_kwh_grid->SetValue((mt_use_at_reset / trip_km) * 100.0f);
+      if (_trip_km > 0.1f) StdMetrics.ms_v_charge_kwh_grid->SetValue((_use_grid / _trip_km) * 100.0f);
       }
-    if (mt_use_at_total > 0.1f) 
+    if (_use_grid_total > 0.1f) 
       {
-      if (trip_total_km > 0.1f) StdMetrics.ms_v_charge_kwh_grid_total->SetValue((mt_use_at_total / trip_total_km) * 100.0f);
+      if (_trip_total_km > 0.1f) StdMetrics.ms_v_charge_kwh_grid_total->SetValue((_use_grid_total / _trip_total_km) * 100.0f);
       }
   }
 }
@@ -764,6 +796,6 @@ class OvmsVehicleSmartEQInit {
 } MyOvmsVehicleSmartEQInit __attribute__ ((init_priority (9000)));
 
 OvmsVehicleSmartEQInit::OvmsVehicleSmartEQInit() {
-  ESP_LOGI(TAG, "Registering Vehicle: SMART EQ (9000)");
+  ESP_LOGI(TAG, "Registering Vehicle: smart EQ (9000)");
   MyVehicleFactory.RegisterVehicle<OvmsVehicleSmartEQ>("SQ", "smart 453 4.Gen");
 }
