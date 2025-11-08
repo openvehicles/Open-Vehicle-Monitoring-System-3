@@ -15,8 +15,11 @@ OvmsVehicleMaxt90::OvmsVehicleMaxt90()
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
   // Custom metrics:
-  m_hvac_temp_c = MyMetrics.InitFloat("x.maxt90.hvac_temp_c", 10, 0.0f, Other, false);
-  m_pack_capacity_kwh = MyMetrics.InitFloat("x.maxt90.capacity_kwh", 0, 88.5f, Other, true);
+  // Prefix "xmt" = Maxus T90 (to match xnl, xmg, etc. in other vehicles)
+  m_hvac_temp_c =
+    MyMetrics.InitFloat("xmt.v.hvac.temp", 10, 0.0f, Other, false);
+  m_pack_capacity_kwh =
+    MyMetrics.InitFloat("xmt.b.capacity", 0, 88.5f, Other, true);
 
   // Define poll list (VIN, SOC, SOH, READY flag, Plug present, HVAC temp, Ambient temp)
   static const OvmsPoller::poll_pid_t maxt90_polls[] = {
@@ -49,7 +52,8 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
   {
     case 0xF190: { // VIN (ASCII)
       if (length >= 1) {
-        std::string vin(reinterpret_cast<char*>(data), reinterpret_cast<char*>(data) + length);
+        std::string vin(reinterpret_cast<char*>(data),
+                        reinterpret_cast<char*>(data) + length);
         StdMetrics.ms_v_vin->SetValue(vin);
         ESP_LOGD(TAG, "VIN: %s", vin.c_str());
       }
@@ -65,7 +69,9 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
             ESP_LOGD(TAG, "SOC: %.0f %%", soc);
           }
         } else {
-          ESP_LOGW(TAG, "Invalid SOC %.1f ignored (car likely off or poll timeout)", soc);
+          ESP_LOGW(TAG,
+                   "Invalid SOC %.1f ignored (car likely off or poll timeout)",
+                   soc);
         }
       }
       break;
@@ -98,7 +104,8 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
         StdMetrics.ms_v_env_on->SetValue(ready);
 
         if (ready != prev_ready) {
-          ESP_LOGI(TAG, "READY flag changed: raw=0x%04x ready=%s", v, ready ? "true" : "false");
+          ESP_LOGI(TAG, "READY flag changed: raw=0x%04x ready=%s",
+                   v, ready ? "true" : "false");
 
           if (!ready && m_poll_state != 0) {
             ESP_LOGI(TAG, "Vehicle OFF detected, suspending polling");
@@ -118,7 +125,8 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
         uint16_t v = u16be(data);
         bool plug_present = ((v & 0x00FF) == 0x00);
         StdMetrics.ms_v_charge_pilot->SetValue(plug_present);
-        ESP_LOGD(TAG, "Plug present: raw=0x%04x plug=%s", v, plug_present ? "true" : "false");
+        ESP_LOGD(TAG, "Plug present: raw=0x%04x plug=%s",
+                 v, plug_present ? "true" : "false");
       }
       break;
     }
@@ -130,7 +138,8 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
 
         // Filter out known bogus patterns (default buffer or timeout)
         if (raw == 0x0200 || raw == 0xFFFF || t < -40 || t > 125) {
-          ESP_LOGW(TAG, "Invalid HVAC temp raw=0x%04x (%.1f °C) ignored", raw, t);
+          ESP_LOGW(TAG, "Invalid HVAC temp raw=0x%04x (%.1f °C) ignored",
+                   raw, t);
           break;
         }
 
@@ -147,7 +156,8 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
 
         // Filter out default/bogus data
         if (raw == 0x0200 || raw == 0xFFFF || ta < -50 || ta > 80) {
-          ESP_LOGW(TAG, "Invalid ambient temp raw=0x%04x (%.1f °C) ignored", raw, ta);
+          ESP_LOGW(TAG, "Invalid ambient temp raw=0x%04x (%.1f °C) ignored",
+                   raw, ta);
           break;
         }
 
@@ -175,5 +185,7 @@ public:
 OvmsVehicleMaxt90Init::OvmsVehicleMaxt90Init()
 {
   ESP_LOGI(TAG, "Registering Vehicle: Maxus T90 EV (9000)");
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxt90>("MAXT90", "Maxus T90 EV");
+  // Vehicle type string "MAXT90" is what will appear as type code in OVMS:
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxt90>("MAXT90",
+                                                      "Maxus T90 EV");
 }
