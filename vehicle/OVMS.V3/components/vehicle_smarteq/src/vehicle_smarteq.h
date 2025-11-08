@@ -130,7 +130,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ModemRestart();
     void ModemEventRestart(std::string event, void* data);
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
-    void EventListener(std::string event, void* data);
+    void EventListener(std::string event, void* data);    
+    // Scheduled Pre-Climate Functions
+    bool ParseScheduleTime(const std::string& schedule, int current_hour, int current_min);
+    void CheckPreclimateSchedule();
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -158,7 +161,7 @@ public:
     virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandSOClimit(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
-
+    
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     void WebInit();
@@ -168,6 +171,7 @@ public:
     static void WebCfgTPMS(PageEntry_t& p, PageContext_t& c);
     static void WebCfgADC(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgPreclimate(PageEntry_t& p, PageContext_t& c);
 #endif
     void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
@@ -187,6 +191,9 @@ public:
     static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_preclimate_schedule_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_preclimate_schedule_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_preclimate_schedule_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
     int m_candata_timer;
@@ -278,9 +285,17 @@ public:
     bool m_12v_charge_state;                //!< 12V charge state
     bool m_climate_system;                  //!< climate system on/off
     bool m_climate_notify;                  //!< climate notification on/off
+    bool m_climate_data_store;              //!< climate data store on/off
+    std::string m_climate_data;             //!< climate data stored
+    bool m_preclimate;                      //!< new pre-climate schedule enabled
     std::string m_hl_canbyte;               //!< canbyte variable for unv
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
+    
+    // Scheduled Pre-Climate state
+    int m_preclimate_last_triggered_day = -1;    // Last day schedule was triggered (0-6)
+    int m_preclimate_last_triggered_hour = -1;   // Last hour schedule was triggered
+    int m_preclimate_last_triggered_min = -1;    // Last minute schedule was triggered
 
     #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
     #define MAX_POLL_DATA_LEN 126

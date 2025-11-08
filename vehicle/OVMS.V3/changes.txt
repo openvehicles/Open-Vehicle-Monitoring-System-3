@@ -1,7 +1,63 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- smart EQ:
+    Add scheduled pre-climate functionality (ported from Renault Zoe Ph2)
+    Add multiple CAN frame parsers for energy and charging metrics
+    Add automatic 12V ADC factor recalculation history tracking
+  New commands:
+    xsq preclimate schedule <day> <time>  -- Set pre-climate schedule for specific day
+    xsq preclimate list                   -- List all configured pre-climate schedules
+    xsq preclimate clear <day|all>        -- Clear pre-climate schedule
+  New config namespace:
+    [xsq.preclimate]                      -- Pre-climate schedules storage (day=time,time,...)
+  New metrics:
+    xsq.v.bat.serial                      -- Battery serial number (hex string)
+    xsq.v.energy.used                     -- Energy used since mission start [kWh]
+    xsq.v.energy.recd                     -- Energy recovered since mission start [kWh]
+    xsq.v.aux.consumption                 -- Auxiliary consumption since mission start [kWh]
+    xsq.v.eco.score                       -- Eco score indicator [%]
+    xsq.v.total.recovery                  -- Total energy recovery [kWh]
+    xsq.v.charge.flap.warning             -- Charge flap open warning [bool]
+    xsq.v.bat.consumption.worst           -- Worst average consumption [kWh/100km]
+    xsq.v.bat.consumption.best            -- Best average consumption [kWh/100km]
+    xsq.v.charge.bcb.power                -- BCB power from mains [W]
+    xsq.v.tcu.refuse.sleep                -- TCU refuse to sleep status
+    xsq.v.charge.timer.value              -- Charging timer value [min]
+    xsq.v.remote.preac                    -- Remote pre-AC activation [bool]
+    xsq.v.charge.timer.status             -- Charging timer status
+    xsq.v.charge.prohibited               -- Charge prohibited status
+    xsq.v.charge.authorization            -- Charge authorization status
+    xsq.v.charge.ext.manager              -- External charging manager status
+    xsq.v.reset.consumption               -- Average trip consumption (reset) [kWh/100km]
+    xsq.v.reset.distance                  -- Trip distance (reset) [km]
+    xsq.v.reset.energy                    -- Trip energy consumption (reset) [kWh]
+    xsq.v.reset.speed                     -- Average trip speed (reset) [km/h]
+    xsq.v.start.time                      -- Time since start [hh:mm]
+    xsq.v.start.distance                  -- Trip distance since start [km]
+    xsq.v.start.consumption               -- Average consumption since start [kWh/100km]
+    xsq.adc.factor.history                -- Last 20 calculated ADC factors (ring buffer)
+  Pre-climate scheduler features: (ported from ZOE PH2)
+    - Multiple times per day support (comma-separated: "07:30,17:45")
+    - Individual schedule per weekday
+    - Automatic trigger based on system time
+    - SOC requirement check (minimum 31%)
+    - Integration with existing climate control
+    - Web UI configuration page at /xsq/preclimate
 - Renault Zoe Ph2:
+  New commands:
+    xrz2 preclimate schedule <day> <time>  -- Set pre-climate schedule for specific day
+    xrz2 preclimate list                   -- List all configured pre-climate schedules
+    xrz2 preclimate clear <day|all>        -- Clear pre-climate schedule
+  New config namespace:
+    [xrz2.preclimate]                     -- Pre-climate schedules storage (day=time,time,...)
+    Pre-climate scheduler features:
+      - Multiple times per day support (comma-separated: "07:30,17:45")
+      - Individual schedule per weekday
+      - Automatic trigger based on system time
+      - SOC requirement check (minimum 31%)
+      - Integration with existing climate control
+      - Web UI configuration page at /xrz2/preclimate
     Remove waterpump lifetime left metric and waterpump reset command
     Add manual PTC activation (heating while charging or defective compressor)
     Add lighting command (same like key fob button)

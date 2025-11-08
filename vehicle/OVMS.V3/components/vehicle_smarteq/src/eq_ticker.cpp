@@ -98,6 +98,8 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
 void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
   if(mt_climate_on->AsBool()) 
     TimeCheckTask();
+  if(m_preclimate) 
+    CheckPreclimateSchedule();
   if(m_12v_charge && !StdMetrics.ms_v_env_on->AsBool()) 
     Check12vState();
   if(m_enable_lock_state && !m_warning_unlocked && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 

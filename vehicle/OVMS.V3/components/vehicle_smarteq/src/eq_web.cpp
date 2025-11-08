@@ -48,6 +48,7 @@ void OvmsVehicleSmartEQ::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xsq/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/climate", "Climate/Heater", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xsq/preclimate", "Pre-Climate Schedule", WebCfgPreclimate, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/tpms", "TPMS Config", WebCfgTPMS, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/adc", "ADC Calc", WebCfgADC, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
@@ -61,6 +62,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xsq/features");
   MyWebServer.DeregisterPage("/xsq/climate");
+  MyWebServer.DeregisterPage("/xsq/preclimate");
   MyWebServer.DeregisterPage("/xsq/tpms");
   MyWebServer.DeregisterPage("/xsq/adc");
   MyWebServer.DeregisterPage("/xsq/battery");
@@ -81,7 +83,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
 
   std::string error, info, full_km, rebootnw;
-  bool canwrite, led, resettrip, resettotal, bcvalue, climate_system;
+  bool canwrite, led, resettrip, resettotal, bcvalue, climate_system, preclimate;
   bool charge12v, extstats, unlocked, mdmcheck, tripnotify, opendoors;
 
   if (c.method == "POST") {
@@ -93,7 +95,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     resettotal  = (c.getvar("resettotal") == "yes");
     bcvalue     = (c.getvar("bcvalue") == "yes");
     full_km  =  (c.getvar("full_km"));
-    climate_system = (c.getvar("climate") == "yes");
+    climate_system = (c.getvar("climate_system") == "yes");
+    preclimate = (c.getvar("preclimate") == "yes");
     charge12v = (c.getvar("charge12v") == "yes");
     mdmcheck = (c.getvar("mdmcheck") == "yes");
     unlocked = (c.getvar("unlocked") == "yes");
@@ -133,6 +136,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       setBool("bcvalue", bcvalue);
       map["full.km"] = full_km;
       setBool("climate.system", climate_system);
+      setBool("preclimate", preclimate);
       setBool("12v.charge", charge12v);
       setBool("unlock.warning", unlocked);
       setBool("modem.check", mdmcheck);
@@ -169,6 +173,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       resettotal  = (m.count("resettotal") ? (m.at("resettotal") == "yes") : sq->m_resettotal);
       bcvalue     = (m.count("bcvalue") ? (m.at("bcvalue") == "yes") : sq->m_bcvalue);
       climate_system = (m.count("climate.system") ? (m.at("climate.system") == "yes") : sq->m_climate_system);
+      preclimate  = (m.count("preclimate") ? (m.at("preclimate") == "yes") : sq->m_preclimate);
       charge12v   = (m.count("12v.charge") ? (m.at("12v.charge") == "yes") : sq->m_12v_charge);
       unlocked    = (m.count("unlock.warning") ? (m.at("unlock.warning") == "yes") : sq->m_enable_lock_state);
       mdmcheck    = (m.count("modem.check") ? (m.at("modem.check") == "yes") : sq->m_modem_check);
@@ -210,6 +215,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       full_km = buf;
       
       climate_system = sq->m_climate_system;
+      preclimate = sq->m_preclimate;
       charge12v = sq->m_12v_charge;
       unlocked = sq->m_enable_lock_state;
       mdmcheck = sq->m_modem_check;
@@ -249,6 +255,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>RED=Internet no, BLUE=Internet yes, GREEN=Server v2 connected.<br>EGPIO Port 7,8,9 are used</p>");
   c.input_checkbox("Enable Climate System", "climate_system", climate_system,
     "<p>Enable = Climate/Heater system and data transfer to Android App activated</p>");
+  c.input_checkbox("Enable Pre-Climate Schedule", "preclimate", preclimate,
+    "<p>Enable = new multiple time Pre-Climate Schedule system activated</p>");
   c.input_checkbox("Enable 12V charging", "charge12v", charge12v,
     "<p>Enable = charge the 12V if low 12V alert is raised</p>");
   c.input_checkbox("Enable auto restart modem on Wifi disconnect", "mdmcheck", mdmcheck,
@@ -285,7 +293,7 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
   }
 
   std::string error, info, climate_time, climate_ds, climate_de, climate_1to3;
-  bool climate_on, climate_weekly, climate_notify, climate_system;
+  bool climate_on, climate_weekly, climate_notify, climate_system, climate_data_store;
   int climate_on_int, climate_weekly_int, climate_time_int, climate_ds_int, climate_de_int, climate_1to3_int;
   
   if (c.method == "POST") {
@@ -298,6 +306,7 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
     climate_1to3 = c.getvar("climate_1to3");
     climate_notify = (c.getvar("climate_notify") == "yes");
     climate_system = (c.getvar("climate_system") == "yes");
+    climate_data_store = (c.getvar("climate_data_store") == "yes");
 
     // Input validation
     if (climate_time.empty()) {
@@ -339,6 +348,7 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
       sq->mt_climate_data->SetValue(std::string(buf));
       MyConfig.SetParamValueBool("xsq", "climate.notify", climate_notify);
       MyConfig.SetParamValueBool("xsq", "climate.system", climate_system);
+      MyConfig.SetParamValueBool("xsq", "climate.data.store", climate_data_store);
       
       // Success response
       info = "<p>Climate control settings updated successfully</p>";
@@ -364,7 +374,8 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
 
     // Use sq-> for member variables
     climate_notify = MyConfig.GetParamValueBool("xsq", "climate.notify", sq->m_climate_notify);
-    climate_system = MyConfig.GetParamValueBool("xsq", "climate.system", sq->m_climate_system); 
+    climate_system = MyConfig.GetParamValueBool("xsq", "climate.system", sq->m_climate_system);
+    climate_data_store = MyConfig.GetParamValueBool("xsq", "climate.data.store", sq->m_climate_data_store);
 
   c.head(200);
   c.panel_start("primary", "Climate Control Settings");
@@ -376,7 +387,10 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
   c.input_checkbox("Enable Climate/Heater at time", "climate_on", climate_on,
     "<p>Enable = start Climate/Heater at time</p>");
   c.input_checkbox("Enable Climate/Heater change notification", "climate_notify", climate_notify,
-    "<p>Enable = sends a notification after a change in the set data</p>");  
+    "<p>Enable = sends a notification after a change in the set data</p>");
+  c.input_checkbox("Enable Climate/Heater data store", "climate_data_store", climate_data_store,
+    "<p>Enable = store Climate/Heater data in the OVMS flash</p>"
+    "<p>high frequency data storage can reduce the life of the flash memory!</p>");
   c.input_slider("Enable two time activation Climate/Heater", "climate_1to3", 3, "min",-1, atof(climate_1to3.c_str()), 5, 5, 15, 5,
     "<p>Enable = this option start Climate/Heater for 5-15 minutes</p>");
   c.input_text("time", "climate_time", climate_time.c_str(), "515","<p>Time: 5:15 = 515 or 15:30 = 1530</p>");
@@ -410,6 +424,247 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
     c.panel_end();
   }
     
+  c.done();
+}
+
+/**
+ * WebCfgPreclimate: configure pre-climate schedule (URL /xsq/preclimate) ported from ZOE Ph2
+ */
+void OvmsVehicleSmartEQ::WebCfgPreclimate(PageEntry_t &p, PageContext_t &c)
+{
+  std::string error;
+  const char* day_names[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
+  const char* day_full[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+
+  if (c.method == "POST")
+  {
+    for (int i = 0; i < 7; i++)
+    {
+      std::string enabled_var = std::string("enabled_") + day_names[i];
+      std::string time_var = std::string("time_") + day_names[i];
+
+      bool enabled = (c.getvar(enabled_var) == "yes");
+      std::string times = c.getvar(time_var);
+
+      if (enabled && !times.empty())
+      {
+        // Validate time format
+        bool valid = true;
+        size_t start = 0;
+        size_t end = times.find(',');
+
+        while (start != std::string::npos && valid)
+        {
+          std::string single_time = (end == std::string::npos) ?
+                                     times.substr(start) :
+                                     times.substr(start, end - start);
+
+          // Trim whitespace
+          size_t first = single_time.find_first_not_of(" \t");
+          size_t last = single_time.find_last_not_of(" \t");
+          if (first != std::string::npos)
+            single_time = single_time.substr(first, (last - first + 1));
+
+          size_t colon_pos = single_time.find(':');
+          if (colon_pos != std::string::npos && colon_pos > 0)
+          {
+            int hour = atoi(single_time.substr(0, colon_pos).c_str());
+            int min = atoi(single_time.substr(colon_pos + 1).c_str());
+
+            if (hour < 0 || hour > 23 || min < 0 || min > 59)
+            {
+              error += "<li data-input=\"time_" + std::string(day_names[i]) +
+                       "\">Invalid time for " + std::string(day_full[i]) +
+                       ": hour must be 0-23, minute must be 0-59</li>";
+              valid = false;
+            }
+          }
+          else
+          {
+            error += "<li data-input=\"time_" + std::string(day_names[i]) +
+                     "\">Invalid time format for " + std::string(day_full[i]) +
+                     ": use HH:MM</li>";
+            valid = false;
+          }
+
+          if (end == std::string::npos)
+            break;
+          start = end + 1;
+          end = times.find(',', start);
+        }
+
+        if (valid)
+        {
+          MyConfig.SetParamValue("xsq.preclimate", day_names[i], times);
+        }
+      }
+      else
+      {
+        // Clear schedule for this day
+        MyConfig.DeleteInstance("xsq.preclimate", day_names[i]);
+      }
+    }
+
+    if (error == "")
+    {
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Pre-climate schedules saved.</p>");
+      MyWebServer.OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else
+  {
+    c.head(200);
+  }
+
+  c.panel_start("primary", "Scheduled Pre-Climate Configuration");
+  c.form_start(p.uri);
+
+  c.print(
+    "<p class=\"lead\">Configure automatic pre-climate activation times for each day of the week.</p>"
+    "<p>For multiple times per day, separate them with commas (e.g., <code>07:30,17:45</code>).</p>"
+    "<p><strong>Note:</strong> CANbus write required. Pre-climate will only activate if the battery SoC is above 31%.</p>"
+    "<p>High frequency data storage can reduce the life of the flash memory!</p>"
+  );
+
+  c.fieldset_start("Weekly Schedule");
+
+  // Create schedule inputs for each day
+  for (int i = 0; i < 7; i++)
+  {
+    std::string schedule = MyConfig.GetParamValue("xsq.preclimate", day_names[i]);
+    bool enabled = !schedule.empty();
+
+    c.print("<div class=\"form-group\">");
+    c.printf("<label class=\"control-label col-sm-3\">%s:</label>", day_full[i]);
+    c.print("<div class=\"col-sm-9\">");
+    c.print("<div class=\"input-group\">");
+    c.print("<span class=\"input-group-addon\">");
+    c.printf("<input type=\"checkbox\" name=\"enabled_%s\" value=\"yes\"%s "
+             "onchange=\"this.form.time_%s.disabled=!this.checked\">",
+             day_names[i], enabled ? " checked" : "", day_names[i]);
+    c.print("</span>");
+    c.printf("<input type=\"text\" class=\"form-control\" name=\"time_%s\" "
+             "value=\"%s\" placeholder=\"HH:MM or HH:MM,HH:MM\"%s "
+             "pattern=\"[0-2][0-9]:[0-5][0-9](,[0-2][0-9]:[0-5][0-9])*\">",
+             day_names[i], _attr(schedule), enabled ? "" : " disabled");
+    c.print("</div>");
+    c.printf("<span class=\"help-block\">Example: 07:30 or 07:00,17:30</span>");
+    c.print("</div>");
+    c.print("</div>");
+  }
+
+  c.fieldset_end();
+
+  // Show current time and next scheduled event
+  time_t rawtime;
+  struct tm* timeinfo;
+  time(&rawtime);
+  timeinfo = localtime(&rawtime);
+
+  if (timeinfo != NULL)
+  {
+    c.print("<div class=\"alert alert-info\">");
+    c.printf("<strong>Current time:</strong> %s %02d:%02d",
+             day_full[timeinfo->tm_wday == 0 ? 6 : timeinfo->tm_wday - 1],
+             timeinfo->tm_hour,
+             timeinfo->tm_min);
+
+    // Find next scheduled event
+    int current_day = timeinfo->tm_wday;
+    int current_hour = timeinfo->tm_hour;
+    int current_min = timeinfo->tm_min;
+    int current_total_min = current_day * 24 * 60 + current_hour * 60 + current_min;
+
+    int next_day = -1;
+    int next_hour = -1;
+    int next_min = -1;
+    int next_total_min = current_total_min + 10000; // Start with large value
+
+    // Search all days for the next scheduled event
+    for (int day_offset = 0; day_offset < 7; day_offset++)
+    {
+      int check_day = (current_day + day_offset) % 7;
+      int day_index = (check_day == 0) ? 6 : check_day - 1; // Convert Sunday=0 to array index
+
+      std::string schedule = MyConfig.GetParamValue("xsq.preclimate", day_names[day_index]);
+      if (!schedule.empty())
+      {
+        // Parse times in this day's schedule
+        size_t start = 0;
+        size_t end = schedule.find(',');
+
+        while (start != std::string::npos)
+        {
+          std::string time_str = (end == std::string::npos) ?
+                                 schedule.substr(start) :
+                                 schedule.substr(start, end - start);
+
+          size_t colon_pos = time_str.find(':');
+          if (colon_pos != std::string::npos)
+          {
+            int hour = atoi(time_str.substr(0, colon_pos).c_str());
+            int min = atoi(time_str.substr(colon_pos + 1).c_str());
+
+            // Validate time range before using
+            if (hour >= 0 && hour < 24 && min >= 0 && min < 60)
+            {
+              int event_total_min = check_day * 24 * 60 + hour * 60 + min;
+
+              // If this is in the future and earlier than our current next event
+              if (event_total_min > current_total_min && event_total_min < next_total_min)
+              {
+                next_total_min = event_total_min;
+                next_day = check_day;
+                next_hour = hour;
+                next_min = min;
+              }
+            }
+          }
+
+          if (end == std::string::npos)
+            break;
+          start = end + 1;
+          end = schedule.find(',', start);
+        }
+      }
+    }
+
+    if (next_day >= 0)
+    {
+      int day_index = (next_day == 0) ? 6 : next_day - 1;
+      c.printf("<br><strong>Next scheduled:</strong> %s at %02d:%02d",
+               day_full[day_index], next_hour, next_min);
+    }
+
+    c.print("</div>");
+  }
+
+  c.print("<hr>");
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+
+  // Add JavaScript for better UX
+  c.print(
+    "<script>\n"
+    "$(document).ready(function() {\n"
+    "  // Initialize disabled state on page load\n"
+    "  $('input[type=checkbox][name^=enabled_]').each(function() {\n"
+    "    var day = this.name.replace('enabled_', '');\n"
+    "    var timeInput = $('input[name=time_' + day + ']');\n"
+    "    timeInput.prop('disabled', !this.checked);\n"
+    "  });\n"
+    "});\n"
+    "</script>\n"
+  );
+
   c.done();
 }
 
@@ -905,5 +1160,4 @@ void OvmsVehicleSmartEQ::GetDashboardConfig(DashboardConfig& cfg)
       << "]";
   cfg.gaugeset1 = str.str();
 }
-
 #endif //CONFIG_OVMS_COMP_WEBSERVER

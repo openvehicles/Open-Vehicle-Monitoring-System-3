@@ -85,7 +85,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   for (int i = 0; i < 4; i++) 
     {
     m_tpms_pressure[i] = 0.0f;
-    m_tpms_temperature[i] = 0.0f;
+    m_tpms_temperature[i] = 2.0f;
     m_tpms_lowbatt[i] = false;
     m_tpms_missing_tx[i] = false;
     m_tpms_index[i] = i;
@@ -232,12 +232,19 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("calcadc", "Recalculate ADC factor (optional: 12V voltage override)", xsq_calc_adc, "[voltage]", 0, 1);
   cmd_xsq->RegisterCommand("wakeup", "Wake up the car", xsq_wakeup);
   cmd_xsq->RegisterCommand("preset", "smart EQ config preset", xsq_preset);
+  
+  // Pre-climate schedule commands
+  OvmsCommand* preclimate = cmd_xsq->RegisterCommand("preclimate", "Pre-Climate Schedule Management");
+  preclimate->RegisterCommand("schedule", "Set schedule for pre-climate (day hour:min)", xsq_preclimate_schedule_set, "<day> <time>", 2, 2);
+  preclimate->RegisterCommand("list", "List all configured pre-climate schedules", xsq_preclimate_schedule_list);
+  preclimate->RegisterCommand("clear", "Clear pre-climate schedule for day", xsq_preclimate_schedule_clear, "<day|all>", 1, 1);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"vehicle.charge.start", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"vehicle.charge.stop", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
-  MyConfig.RegisterParam("xsq", "smartEQ", true, true);
+  MyConfig.RegisterParam("xsq", "smartEQ", true, true);  
+  MyConfig.RegisterParam("xsq.preclimate", "smart EQ pre-climate schedules", true, true);
 
   ConfigChanged(NULL);
   StdMetrics.ms_v_gen_current->SetValue(2);                    // activate gen metrics to app transfer
@@ -334,6 +341,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
       auto it = xsqcfg.find(key);
       return (it != xsqcfg.end()) ? atof(it->second.c_str()) : def;
     };
+
+    
+    auto getString = [&xsqcfg](const char* key, const char* def) -> std::string {
+      auto it = xsqcfg.find(key);
+      return (it != xsqcfg.end()) ? it->second : def;
+    };
     
     // Read all config values from map
     m_enable_LED_state     = getBool("led", false);
@@ -360,6 +373,9 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_adc_samples          = getInt("adc.samples", 4);
     m_climate_system       = getBool("climate.system", true);
     m_climate_notify       = getBool("climate.notify", false);
+    m_climate_data_store   = getBool("climate.data.store", true);
+    m_climate_data         = getString("climate.data", "0,0,0,0,-1,-1,-1");
+    m_preclimate           = getBool("preclimate", false);
     m_indicator            = getBool("indicator", false);
     m_extendedStats        = getBool("extended.stats", false);
     m_park_timeout_secs    = getInt("park.timeout", 600);
