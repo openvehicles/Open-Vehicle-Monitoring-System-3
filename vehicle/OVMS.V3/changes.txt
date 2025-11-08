@@ -55,7 +55,7 @@ Open Vehicle Monitor System v3 - Change log
       - Multiple times per day support (comma-separated: "07:30,17:45")
       - Individual schedule per weekday
       - Automatic trigger based on system time
-      - SOC requirement check (minimum 31%)
+      - SOC requirement check (minimum 15%)
       - Integration with existing climate control
       - Web UI configuration page at /xrz2/preclimate
     Remove waterpump lifetime left metric and waterpump reset command
