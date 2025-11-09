@@ -21,8 +21,6 @@ OvmsVehicleMaxt90::OvmsVehicleMaxt90()
     MyMetrics.InitFloat("xmt.v.hvac.temp", 10, 0.0f, Other, false);
   m_pack_capacity_kwh =
     MyMetrics.InitFloat("xmt.b.capacity", 0, 88.5f, Other, true);
-  m_lock_state =
-    MyMetrics.InitBool("xmt.v.locked", 0, false, Other, true);
 
   // Define poll list (VIN, SOC, SOH, READY flag, Plug present, HVAC temp, Ambient temp)
   static const OvmsPoller::poll_pid_t maxt90_polls[] = {
@@ -48,6 +46,50 @@ OvmsVehicleMaxt90::~OvmsVehicleMaxt90()
   ESP_LOGI(TAG, "Shutdown Maxus T90 EV vehicle module");
 }
 
+// ─────────────────────────────────────────────
+//  Live CAN Frame Handler (Lock/Unlock etc.)
+// ─────────────────────────────────────────────
+void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
+{
+  // Let the base class see the frame as well (for diagnostics etc.)
+  OvmsVehicleOBDII::IncomingFrameCan1(p_frame);
+
+  if (p_frame->origin != m_can1)
+    return;
+
+  const uint8_t* d = p_frame->data.u8;
+
+  switch (p_frame->MsgID)
+  {
+    case 0x281: // Body Control Module: Lock state
+    {
+      uint8_t state = d[1];
+      static uint8_t last_state = 0x00;
+
+      // 0xA9 = locked, 0xA8 = unlocked
+      if (state != last_state && (state == 0xA9 || state == 0xA8))
+      {
+        bool locked = (state == 0xA9);
+
+        // Standard OVMS env lock metric – used by HA & apps:
+        StdMetrics.ms_v_env_locked->SetValue(locked);
+
+        ESP_LOGI(TAG, "Lock state changed: %s (CAN 0x281 byte1=0x%02x)",
+                 locked ? "LOCKED" : "UNLOCKED", state);
+
+        last_state = state;
+      }
+      break;
+    }
+
+    default:
+      break;
+  }
+}
+
+// ─────────────────────────────────────────────
+//  OBDII Poll Reply Handler
+// ─────────────────────────────────────────────
 void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
                                           uint8_t* data, uint8_t length)
 {
@@ -142,7 +184,6 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
         bool env_on = StdMetrics.ms_v_env_on->AsBool();
 
         // Ignore the constant bogus 45.8 °C we see when the car is off
-        // 45.8 °C → raw = 458
         if (!env_on && raw == 458) {
           ESP_LOGW(TAG,
                    "HVAC temp raw=0x%04x (%.1f °C) ignored (car off/default)",
@@ -171,7 +212,6 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
         bool env_on = StdMetrics.ms_v_env_on->AsBool();
 
         // Ignore the constant bogus 7.5 °C we see when the car is off
-        // 7.5 °C → raw = 75
         if (!env_on && raw == 75) {
           ESP_LOGW(TAG,
                    "Ambient temp raw=0x%04x (%.1f °C) ignored (car off/default)",
@@ -188,38 +228,6 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
 
         StdMetrics.ms_v_env_temp->SetValue(ta);
         ESP_LOGD(TAG, "Ambient temp: %.1f °C", ta);
-      }
-      break;
-    }
-
-    default:
-      break;
-  }
-}
-
-// ─────────────────────────────────────────────
-//  Live CAN Frame Handler (Lock/Unlock etc.)
-// ─────────────────────────────────────────────
-void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
-{
-  // Call base class first
-  OvmsVehicle::IncomingFrameCan1(p_frame);
-  const uint8_t* d = p_frame->data.u8;
-
-  switch (p_frame->MsgID)
-  {
-    case 0x281: // Body Control Module: Lock state
-    {
-      uint8_t state = d[1];
-      static uint8_t last_state = 0x00;
-
-      if (state != last_state && (state == 0xA9 || state == 0xA8))
-      {
-        bool locked = (state == 0xA9);
-        m_lock_state->SetValue(locked);
-        ESP_LOGI(TAG, "Lock state changed: %s (byte1=0x%02x)",
-                 locked ? "LOCKED" : "UNLOCKED", state);
-        last_state = state;
       }
       break;
     }
