@@ -85,7 +85,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   for (int i = 0; i < 4; i++) 
     {
     m_tpms_pressure[i] = 0.0f;
-    m_tpms_temperature[i] = 0.0f;
+    m_tpms_temperature[i] = 2.0f;
     m_tpms_lowbatt[i] = false;
     m_tpms_missing_tx[i] = false;
     m_tpms_index[i] = i;
@@ -334,6 +334,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
       auto it = xsqcfg.find(key);
       return (it != xsqcfg.end()) ? atof(it->second.c_str()) : def;
     };
+
+    
+    auto getString = [&xsqcfg](const char* key, const char* def) -> std::string {
+      auto it = xsqcfg.find(key);
+      return (it != xsqcfg.end()) ? it->second : def;
+    };
     
     // Read all config values from map
     m_enable_LED_state     = getBool("led", false);
@@ -360,6 +366,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_adc_samples          = getInt("adc.samples", 4);
     m_climate_system       = getBool("climate.system", true);
     m_climate_notify       = getBool("climate.notify", false);
+    m_climate_data_store   = getBool("climate.data.store", true);
+    m_climate_data         = getString("climate.data", "0,0,0,0,-1,-1,-1");
     m_indicator            = getBool("indicator", false);
     m_extendedStats        = getBool("extended.stats", false);
     m_park_timeout_secs    = getInt("park.timeout", 600);

@@ -34,12 +34,55 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
+/**
+ * CommandClimateControl: Climate control with duration support
+ * SmartEQ supports native duration control via CommandHomelink mapping.
+ */
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable, int duration)
+{
+  if (!enable)
+  {
+    // Deactivation doesn't need duration
+    return CommandClimateControl(false);
+  }
+
+  // Map duration to homelink button: 5min=0, 10min=1, 15min=2
+  int ticker = 0;
+  if (duration <= 5)
+    ticker = 1;
+  else if (duration <= 10)
+    ticker = 2;
+  else if (duration > 10)
+    ticker = 3;
+  else
+  {
+    ESP_LOGW(TAG, "Invalid duration %d, using default 5 minutes", duration);
+    ticker = 0;
+  }
+
+  m_climate_ticker = ticker;
+  return CommandClimateControl(true);
+}
+
 // can can1 tx st 634 40 01 72 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
   if(!m_enable_write) {
     ESP_LOGE(TAG, "CommandClimateControl failed / no write access");
+    m_climate_ticker = 0;
     return Fail;
   }
+
+  if (StandardMetrics.ms_v_bat_soc->AsInt(0) < 31)
+  {    
+    char msg[100];
+    snprintf(msg, sizeof(msg), "Scheduled precondition skipped: Battery SOC too low (%d%%)",
+             StandardMetrics.ms_v_bat_soc->AsInt(0));
+    ESP_LOGW(TAG, "%s", msg);
+    MyNotify.NotifyString("alert", "climatecontrol.schedule", msg);
+    m_climate_ticker = 0;
+    return Fail;
+  }
+
   if (StdMetrics.ms_v_env_hvac->AsBool()) {
     MyNotify.NotifyString("info", "hvac.enabled", "Climate already on");
     ESP_LOGI(TAG, "CommandClimateControl already on");
@@ -130,15 +173,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
   ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
   OvmsVehicle::vehicle_command_t res = NotImplemented;
 
-  if (StdMetrics.ms_v_bat_soc->AsInt() < 31) {
-    ESP_LOGI(TAG, "Battery SOC is too low for climate control");
-    return Fail;
-  }
-
   switch (button)
   {
     case 0:
     {
+      m_climate_ticker = 1; 
       res = CommandClimateControl(true);
       break;
     }
@@ -918,6 +957,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "gps.onoff",
     "gps.off",
     "gps.reactmin",
+    "precondition",
     "gps.deact"
   };
   
@@ -943,5 +983,59 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   if (writer) {
     writer->printf("Config V%d preset activated", PRESET_VERSION);
   }
+
+  MyConfig.DeregisterParam("xsq.preclimate");
   return Success;
+}
+
+// ================================================================================
+// Scheduled precondition Functions
+// ================================================================================
+
+/**
+ * Parse a schedule time string and check if it matches the current time
+ * Schedule format: "HH:MM,HH:MM,..." (multiple times can be specified)
+ * Returns true if any of the times match the current hour and minute
+ */
+bool OvmsVehicleSmartEQ::ParseScheduleTime(const std::string& schedule, int current_hour, int current_min)
+{
+  if (schedule.empty())
+      return false;
+
+  // Parse comma-separated times
+  size_t start = 0;
+  size_t end = schedule.find(',');
+
+  while (start != std::string::npos)
+  {
+      std::string time_str = (end == std::string::npos) ?
+                              schedule.substr(start) :
+                              schedule.substr(start, end - start);
+
+      // Find the ':' separator
+      size_t colon_pos = time_str.find(':');
+      if (colon_pos != std::string::npos && colon_pos > 0)
+      {
+          int hour = atoi(time_str.substr(0, colon_pos).c_str());
+          int min = atoi(time_str.substr(colon_pos + 1).c_str());
+
+          // Validate time range
+          if (hour >= 0 && hour < 24 && min >= 0 && min < 60)
+          {
+              // Check if this time matches current time
+              if (hour == current_hour && min == current_min)
+              {
+                  return true;
+              }
+          }
+      }
+
+      // Move to next time in the list
+      if (end == std::string::npos)
+          break;
+      start = end + 1;
+      end = schedule.find(',', start);
+  }
+
+  return false;
 }

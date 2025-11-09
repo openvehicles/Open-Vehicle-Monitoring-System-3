@@ -207,7 +207,7 @@ void OvmsVehicleSmartEQ::TimeCheckTask() {
 
 void OvmsVehicleSmartEQ::TimeBasedClimateData() {
   std::string _oldtime = mt_climate_time->AsString();
-  std::string _newdata = mt_climate_data->AsString();
+  std::string _newdata = m_climate_init ? m_climate_data_store ? m_climate_data : mt_climate_data->AsString() : mt_climate_data->AsString();
   std::vector<int> _data;
   std::stringstream _ss(_newdata);
   std::string _item, _climate_on, _climate_weekly, _climate_time;
@@ -223,12 +223,14 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
     {
     ESP_LOGE(TAG, "Invalid climate data payload, need 7 ints, got %u", (unsigned)_data.size());
     mt_climate_data->SetValue("0,0,0,0,-1,-1,-1");             // reset the data
+    MyConfig.SetParamValue("xsq", "climate.data", "0,0,0,0,-1,-1,-1");
     return;
     }
 
   if(_data[0]>0 || m_climate_init) 
   {
     m_climate_init = false;
+    MyConfig.SetParamValue("xsq", "climate.data", _newdata);
     mt_climate_data->SetValue("0,0,0,0,-1,-1,-1");              // reset the data
     _climate_on = _data[1] == 1 ? "yes" : "no";
     _climate_weekly = _data[2] == 1 ? "yes" : "no";

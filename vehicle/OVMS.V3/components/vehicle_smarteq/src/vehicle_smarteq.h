@@ -130,10 +130,13 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ModemRestart();
     void ModemEventRestart(std::string event, void* data);
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
-    void EventListener(std::string event, void* data);
+    void EventListener(std::string event, void* data);    
+    // Scheduled Pre-Climate Functions
+    bool ParseScheduleTime(const std::string& schedule, int current_hour, int current_min);
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
+    vehicle_command_t CommandClimateControl(bool enable, int duration) override;
     vehicle_command_t CommandHomelink(int button, int durationms=1000) override;
     vehicle_command_t CommandWakeup() override;
     vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer) override;
@@ -158,7 +161,7 @@ public:
     virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandSOClimit(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
-
+    
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     void WebInit();
@@ -278,6 +281,8 @@ public:
     bool m_12v_charge_state;                //!< 12V charge state
     bool m_climate_system;                  //!< climate system on/off
     bool m_climate_notify;                  //!< climate notification on/off
+    bool m_climate_data_store;              //!< climate data store on/off
+    std::string m_climate_data;             //!< climate data stored
     std::string m_hl_canbyte;               //!< canbyte variable for unv
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors

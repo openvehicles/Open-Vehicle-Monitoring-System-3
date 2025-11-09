@@ -93,7 +93,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     resettotal  = (c.getvar("resettotal") == "yes");
     bcvalue     = (c.getvar("bcvalue") == "yes");
     full_km  =  (c.getvar("full_km"));
-    climate_system = (c.getvar("climate") == "yes");
+    climate_system = (c.getvar("climate_system") == "yes");
     charge12v = (c.getvar("charge12v") == "yes");
     mdmcheck = (c.getvar("mdmcheck") == "yes");
     unlocked = (c.getvar("unlocked") == "yes");
@@ -285,7 +285,7 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
   }
 
   std::string error, info, climate_time, climate_ds, climate_de, climate_1to3;
-  bool climate_on, climate_weekly, climate_notify, climate_system;
+  bool climate_on, climate_weekly, climate_notify, climate_system, climate_data_store;
   int climate_on_int, climate_weekly_int, climate_time_int, climate_ds_int, climate_de_int, climate_1to3_int;
   
   if (c.method == "POST") {
@@ -298,6 +298,7 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
     climate_1to3 = c.getvar("climate_1to3");
     climate_notify = (c.getvar("climate_notify") == "yes");
     climate_system = (c.getvar("climate_system") == "yes");
+    climate_data_store = (c.getvar("climate_data_store") == "yes");
 
     // Input validation
     if (climate_time.empty()) {
@@ -318,15 +319,7 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
     climate_time_int = atoi(climate_time.c_str());
     climate_ds_int = atoi(climate_ds.c_str());
     climate_de_int = atoi(climate_de.c_str());
-    climate_1to3_int = 0;
-
-    // Convert climate_1to3
-    if (atoi(climate_1to3.c_str()) == 5) climate_1to3_int = 0;
-    else if (atoi(climate_1to3.c_str()) == 10) climate_1to3_int = 1;
-    else if (atoi(climate_1to3.c_str()) == 15) climate_1to3_int = 2;
-    else {
-      error += "<li>Invalid climate duration</li>";
-    }
+    climate_1to3_int = atoi(climate_1to3.c_str());
 
     if (error.empty()) {
       // Format data string
@@ -339,6 +332,7 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
       sq->mt_climate_data->SetValue(std::string(buf));
       MyConfig.SetParamValueBool("xsq", "climate.notify", climate_notify);
       MyConfig.SetParamValueBool("xsq", "climate.system", climate_system);
+      MyConfig.SetParamValueBool("xsq", "climate.data.store", climate_data_store);
       
       // Success response
       info = "<p>Climate control settings updated successfully</p>";
@@ -364,7 +358,8 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
 
     // Use sq-> for member variables
     climate_notify = MyConfig.GetParamValueBool("xsq", "climate.notify", sq->m_climate_notify);
-    climate_system = MyConfig.GetParamValueBool("xsq", "climate.system", sq->m_climate_system); 
+    climate_system = MyConfig.GetParamValueBool("xsq", "climate.system", sq->m_climate_system);
+    climate_data_store = MyConfig.GetParamValueBool("xsq", "climate.data.store", sq->m_climate_data_store);
 
   c.head(200);
   c.panel_start("primary", "Climate Control Settings");
@@ -376,10 +371,17 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
   c.input_checkbox("Enable Climate/Heater at time", "climate_on", climate_on,
     "<p>Enable = start Climate/Heater at time</p>");
   c.input_checkbox("Enable Climate/Heater change notification", "climate_notify", climate_notify,
-    "<p>Enable = sends a notification after a change in the set data</p>");  
-  c.input_slider("Enable two time activation Climate/Heater", "climate_1to3", 3, "min",-1, atof(climate_1to3.c_str()), 5, 5, 15, 5,
-    "<p>Enable = this option start Climate/Heater for 5-15 minutes</p>");
+    "<p>Enable = sends a notification after a change in the set data</p>");
+  c.input_checkbox("Enable Climate/Heater data store", "climate_data_store", climate_data_store,
+    "<p>Enable = store Climate/Heater data in the OVMS flash</p>"
+    "<p>high frequency data storage can reduce the life of the flash memory!</p>");  
   c.input_text("time", "climate_time", climate_time.c_str(), "515","<p>Time: 5:15 = 515 or 15:30 = 1530</p>");
+  // Additional climate options
+  c.input_select_start("Select duration", "climate_1to3");
+  c.input_select_option("5 minutes", "0", climate_1to3 == "0");
+  c.input_select_option("10 minutes", "1", climate_1to3 == "1");
+  c.input_select_option("15 minutes", "2", climate_1to3 == "2");
+  c.input_select_end();
 
   c.input_checkbox("Enable auto timer activation Climate/Heater", "climate_weekly", climate_weekly,
     "<p>Enable = this option de/activate Climate/Heater at on/off day</p>");
@@ -905,5 +907,4 @@ void OvmsVehicleSmartEQ::GetDashboardConfig(DashboardConfig& cfg)
       << "]";
   cfg.gaugeset1 = str.str();
 }
-
 #endif //CONFIG_OVMS_COMP_WEBSERVER
