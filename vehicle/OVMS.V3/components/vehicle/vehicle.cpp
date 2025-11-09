@@ -696,9 +696,6 @@ void OvmsVehicle::CheckPreconditionSchedule()
         if (slash_pos != std::string::npos)
         {
           duration = atoi(entry.substr(slash_pos + 1).c_str());
-          // Validate duration
-          if (duration != 5 && duration != 10 && duration != 15)
-            duration = 5; // fallback to default
         }
 
         ESP_LOGI(TAG, "Scheduled precondition triggered for %s at %02d:%02d (duration: %d min)",
