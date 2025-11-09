@@ -154,6 +154,17 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
         uint16_t raw = u16be(data);
         float ta = raw / 10.0f;
 
+        bool env_on = StdMetrics.ms_v_env_on->AsBool();
+
+        // Ignore the constant bogus 7.5 °C we see when the car is off
+        // 7.5 °C → raw = 75
+        if (!env_on && raw == 75) {
+          ESP_LOGW(TAG,
+                   "Ambient temp raw=0x%04x (%.1f °C) ignored (car off/default)",
+                   raw, ta);
+          break;
+        }
+
         // Filter out default/bogus data
         if (raw == 0x0200 || raw == 0xFFFF || ta < -50 || ta > 80) {
           ESP_LOGW(TAG, "Invalid ambient temp raw=0x%04x (%.1f °C) ignored",
@@ -166,7 +177,6 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
       }
       break;
     }
-
     default:
       break;
   }
