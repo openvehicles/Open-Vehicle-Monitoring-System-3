@@ -15,9 +15,9 @@ Open Vehicle Monitor System v3 - Change log
     climatecontrol schedule disable            -- Disable scheduled precondition (global switch)
     climatecontrol schedule status             -- Show schedule status and configured times
   New config:
-    [vehicle] schedule.<day>               -- Schedule for day (mon/tue/wed/thu/fri/sat/sun)
-                                              Format: HH:MM[/duration][,HH:MM[/duration],...]
-    [vehicle] precondition                 -- Enable/disable scheduled precondition (bool, default false)
+    [vehicle] climate.schedule.<day>           -- Schedule for day (mon/tue/wed/thu/fri/sat/sun)
+                                                  Format: HH:MM[/duration][,HH:MM[/duration],...]
+    [vehicle] climate.precondition             -- Enable/disable scheduled precondition (bool, default false)
   precondition scheduler features: (ported from ZOE PH2)
     - Multiple times per day support (comma-separated: "07:30/5,17:45/10")
     - Individual schedule per weekday
