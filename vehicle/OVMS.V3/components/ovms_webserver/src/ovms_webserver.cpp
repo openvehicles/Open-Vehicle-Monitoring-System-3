@@ -117,7 +117,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/wifi", "Wifi", HandleCfgWifi, PageMenu_Config, PageAuth_Cookie);
 #ifdef CONFIG_OVMS_COMP_CELLULAR
-  RegisterPage("/cfg/cellular", "Cellular / GPS", HandleCfgModem, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/cellular", "Cellular / GPS", HandleCfgModem, PageMenu_Config, PageAuth_Cookie);    
 #endif
 #ifdef CONFIG_OVMS_COMP_SERVER
 #ifdef CONFIG_OVMS_COMP_SERVER_V2

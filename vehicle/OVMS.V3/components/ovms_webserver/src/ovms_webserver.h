@@ -557,7 +557,8 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c);
     static void HandleEditor(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgPassword(PageEntry_t& p, PageContext_t& c);
-    static void HandleCfgVehicle(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgVehicle(PageEntry_t& p, PageContext_t& c);    
+    static void HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgModem(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgServerV2(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgServerV3(PageEntry_t& p, PageContext_t& c);

@@ -1,13 +1,78 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Vehicle framework: Scheduled precondition control with duration support
+    Centralized implementation for all vehicles with per-vehicle override capability.
+    Supports multiple time slots per day with individual duration settings.
+    Global enable/disable switch with config persistence.
+  New commands:
+    climatecontrol schedule set <day> <times>  -- Set schedule for a day, times format: HH:MM[/duration][,HH:MM[/duration],...]
+                                                     Examples: "07:30", "07:30/10", "07:00/5,17:30/15"
+                                                     Duration in minutes
+    climatecontrol schedule list               -- List all configured schedules with next scheduled event
+    climatecontrol schedule clear <day|all>    -- Clear schedule for specific day or all days
+    climatecontrol schedule enable             -- Enable scheduled precondition (global switch)
+    climatecontrol schedule disable            -- Disable scheduled precondition (global switch)
+    climatecontrol schedule status             -- Show schedule status and configured times
+  New config:
+    [vehicle] climate.schedule.<day>           -- Schedule for day (mon/tue/wed/thu/fri/sat/sun)
+                                                  Format: HH:MM[/duration][,HH:MM[/duration],...]
+    [vehicle] climate.precondition             -- Enable/disable scheduled precondition (bool, default false)
+  precondition scheduler features: (ported from ZOE PH2)
+    - Multiple times per day support (comma-separated: "07:30/5,17:45/10")
+    - Individual schedule per weekday
+    - Automatic trigger based on system time
+    - Integration with existing climate control
+    - Web UI configuration page at /cfg/preconditionschedule
+- smart EQ:
+    Add multiple CAN frame parsers for energy and charging metrics
+    Add automatic 12V ADC factor recalculation history tracking
+  New metrics:
+    xsq.v.bat.serial                      -- Battery serial number (hex string)
+    xsq.v.energy.used                     -- Energy used since mission start [kWh]
+    xsq.v.energy.recd                     -- Energy recovered since mission start [kWh]
+    xsq.v.aux.consumption                 -- Auxiliary consumption since mission start [kWh]
+    xsq.v.eco.score                       -- Eco score indicator [%]
+    xsq.v.total.recovery                  -- Total energy recovery [kWh]
+    xsq.v.charge.flap.warning             -- Charge flap open warning [bool]
+    xsq.v.bat.consumption.worst           -- Worst average consumption [kWh/100km]
+    xsq.v.bat.consumption.best            -- Best average consumption [kWh/100km]
+    xsq.v.charge.bcb.power                -- BCB power from mains [W]
+    xsq.v.tcu.refuse.sleep                -- TCU refuse to sleep status
+    xsq.v.charge.timer.value              -- Charging timer value [min]
+    xsq.v.remote.preac                    -- Remote pre-AC activation [bool]
+    xsq.v.charge.timer.status             -- Charging timer status
+    xsq.v.charge.prohibited               -- Charge prohibited status
+    xsq.v.charge.authorization            -- Charge authorization status
+    xsq.v.charge.ext.manager              -- External charging manager status
+    xsq.v.reset.consumption               -- Average trip consumption (reset) [kWh/100km]
+    xsq.v.reset.distance                  -- Trip distance (reset) [km]
+    xsq.v.reset.energy                    -- Trip energy consumption (reset) [kWh]
+    xsq.v.reset.speed                     -- Average trip speed (reset) [km/h]
+    xsq.v.start.time                      -- Time since start [hh:mm]
+    xsq.v.start.distance                  -- Trip distance since start [km]
+    xsq.v.start.consumption               -- Average consumption since start [kWh/100km]
+    xsq.adc.factor.history                -- Last 20 calculated ADC factors (ring buffer)
 - Renault Zoe Ph2:
+  New commands:
+    xrz2 preclimate schedule <day> <time>  -- Set precondition schedule for specific day
+    xrz2 preclimate list                   -- List all configured precondition schedules
+    xrz2 preclimate clear <day|all>        -- Clear precondition schedule
+  New config namespace:
+    [xrz2.preclimate]                     -- precondition schedules storage (day=time,time,...)
+    precondition scheduler features:
+      - Multiple times per day support (comma-separated: "07:30,17:45")
+      - Individual schedule per weekday
+      - Automatic trigger based on system time
+      - SOC requirement check (minimum 15%)
+      - Integration with existing climate control
+      - Web UI configuration page at /xrz2/preclimate
     Remove waterpump lifetime left metric and waterpump reset command
     Add manual PTC activation (heating while charging or defective compressor)
     Add lighting command (same like key fob button)
     Add coming home function 
-    Add remote pre-climate with key fob
-    Add simple pre-climate scheduler
+    Add remote precondition with key fob
+    Add simple precondition scheduler
     Add dcdc manual activation
     Add automatic dcdc activation if battery threshold reached
     Add working trunk unlock command
