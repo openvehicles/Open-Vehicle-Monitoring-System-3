@@ -114,8 +114,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/init", "Setup wizard", HandleCfgInit, PageMenu_None, PageAuth_Cookie);
 #endif
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
-  RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);  
-  RegisterPage("/cfg/preconditionschedule", "Precondition Schedule", HandleCfgPreconditionSchedule, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/wifi", "Wifi", HandleCfgWifi, PageMenu_Config, PageAuth_Cookie);
 #ifdef CONFIG_OVMS_COMP_CELLULAR
   RegisterPage("/cfg/cellular", "Cellular / GPS", HandleCfgModem, PageMenu_Config, PageAuth_Cookie);    

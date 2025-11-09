@@ -44,12 +44,12 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
   std::string error, info;
   const char* day_names[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
   const char* day_full[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-  bool enabled = false;
+  bool precondition = false;
 
   if (c.method == "POST") {
     // Read enable/disable checkbox
-    enabled = (c.getvar("enabled") == "yes");
-    MyConfig.SetParamValueBool("vehicle", "precondition", enabled);
+    precondition = (c.getvar("precondition") == "yes");
+    MyConfig.SetParamValueBool("vehicle", "precondition", precondition);
 
     // Process form submission
     for (int i = 0; i < 7; i++) {
@@ -137,7 +137,7 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
   }
   else {
     // Read current enable state
-    enabled = MyConfig.GetParamValueBool("vehicle", "precondition", false);
+    precondition = MyConfig.GetParamValueBool("vehicle", "precondition", false);
     c.head(200);
   }
 
@@ -147,7 +147,7 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
 
   // Add global enable/disable switch
   c.fieldset_start("Global Settings");
-  c.input_checkbox("Enable scheduled precondition", "enabled", enabled,
+  c.input_checkbox("Enable scheduled precondition", "precondition", precondition,
     "<p>Master switch: activate automatic precondition based on configured schedules.</p>");
   c.fieldset_end();
   

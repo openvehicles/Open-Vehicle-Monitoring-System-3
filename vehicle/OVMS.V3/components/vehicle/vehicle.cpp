@@ -412,7 +412,7 @@ void OvmsVehicleFactory::vehicle_climate_schedule_set(int verbosity, OvmsWriter*
   }
 
   // Save schedule to config
-  std::string config_key = std::string("schedule.") + day;
+  std::string config_key = std::string("climate.schedule.") + day;
   MyConfig.SetParamValue("vehicle", config_key.c_str(), times);
 
   writer->printf("Climate control schedule set for %s: %s\n", day, times);
@@ -431,7 +431,7 @@ void OvmsVehicleFactory::vehicle_climate_schedule_list(int verbosity, OvmsWriter
 
   for (int i = 0; i < 7; i++)
   {
-    std::string config_key = std::string("schedule.") + day_names[i];
+    std::string config_key = std::string("climate.schedule.") + day_names[i];
     std::string schedule = MyConfig.GetParamValue("vehicle", config_key.c_str());
     
     if (!schedule.empty())
@@ -470,7 +470,7 @@ void OvmsVehicleFactory::vehicle_climate_schedule_list(int verbosity, OvmsWriter
       int check_day = (current_day + day_offset) % 7;
       int day_index = check_day;
 
-      std::string config_key = std::string("schedule.") + day_names[day_index];
+      std::string config_key = std::string("climate.schedule.") + day_names[day_index];
       std::string schedule = MyConfig.GetParamValue("vehicle", config_key.c_str());
       
       if (!schedule.empty())
@@ -546,7 +546,7 @@ void OvmsVehicleFactory::vehicle_climate_schedule_clear(int verbosity, OvmsWrite
     const char* day_names[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
     for (int i = 0; i < 7; i++)
     {
-      std::string config_key = std::string("schedule.") + day_names[i];
+      std::string config_key = std::string("climate.schedule.") + day_names[i];
       MyConfig.DeleteInstance("vehicle", config_key.c_str());
     }
     writer->puts("All climate control schedules cleared");
@@ -571,7 +571,7 @@ void OvmsVehicleFactory::vehicle_climate_schedule_clear(int verbosity, OvmsWrite
     return;
   }
 
-  std::string config_key = std::string("schedule.") + day;
+  std::string config_key = std::string("climate.schedule.") + day;
   MyConfig.DeleteInstance("vehicle", config_key.c_str());
 
   writer->printf("Climate control schedule cleared for %s\n", day);
@@ -580,21 +580,21 @@ void OvmsVehicleFactory::vehicle_climate_schedule_clear(int verbosity, OvmsWrite
 
 void OvmsVehicleFactory::vehicle_climate_schedule_enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 {
-  MyConfig.SetParamValueBool("vehicle", "precondition", true);
+  MyConfig.SetParamValueBool("vehicle", "climate.precondition", true);
   writer->puts("Scheduled precondition enabled");
   ESP_LOGI(TAG, "Scheduled precondition enabled");
 }
 
 void OvmsVehicleFactory::vehicle_climate_schedule_disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 {
-  MyConfig.SetParamValueBool("vehicle", "precondition", false);
+  MyConfig.SetParamValueBool("vehicle", "climate.precondition", false);
   writer->puts("Scheduled precondition disabled");
   ESP_LOGI(TAG, "Scheduled precondition disabled");
 }
 
 void OvmsVehicleFactory::vehicle_climate_schedule_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 {
-  bool enabled = MyConfig.GetParamValueBool("vehicle", "precondition", false);
+  bool enabled = MyConfig.GetParamValueBool("vehicle", "climate.precondition", false);
   
   writer->printf("Scheduled precondition: %s\n", enabled ? "ENABLED" : "DISABLED");
   
@@ -618,16 +618,16 @@ void OvmsVehicleFactory::vehicle_climate_schedule_status(int verbosity, OvmsWrit
  * This base implementation reads from the global "vehicle" config namespace.
  * Vehicles can override this to add custom checks or behavior.
  * 
- * Schedule format in config: [vehicle] schedule.<day> = HH:MM[/duration][,HH:MM[/duration],...]
+ * Schedule format in config: [vehicle] climate.schedule.<day> = HH:MM[/duration][,HH:MM[/duration],...]
  * Examples:
- *   schedule.mon = 07:30
- *   schedule.mon = 07:30/10
- *   schedule.fri = 07:00/5,17:30/15
+ *   climate.schedule.mon = 07:30
+ *   climate.schedule.mon = 07:30/10
+ *   climate.schedule.fri = 07:00/5,17:30/15
  */
 void OvmsVehicle::CheckPreconditionSchedule()
 {
   // Check if scheduled precondition is enabled
-  if (!MyConfig.GetParamValueBool("vehicle", "precondition", false))
+  if (!MyConfig.GetParamValueBool("vehicle", "climate.precondition", false))
   {
     return; // Feature disabled
   }
@@ -649,9 +649,9 @@ void OvmsVehicle::CheckPreconditionSchedule()
   int current_min = timeinfo->tm_min;
 
   // Check if we already triggered at this exact time today
-  if (m_Precondition_last_triggered_day == current_day &&
-      m_Precondition_last_triggered_hour == current_hour &&
-      m_Precondition_last_triggered_min == current_min)
+  if (m_precondition_last_triggered_day == current_day &&
+      m_precondition_last_triggered_hour == current_hour &&
+      m_precondition_last_triggered_min == current_min)
   {
     return; // Already triggered at this time
   }
@@ -660,7 +660,7 @@ void OvmsVehicle::CheckPreconditionSchedule()
   const char* day_names[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
 
   // Get schedule for current day from config structure
-  std::string config_key = std::string("schedule.") + day_names[current_day];
+  std::string config_key = std::string("climate.schedule.") + day_names[current_day];
   std::string schedule = MyConfig.GetParamValue("vehicle", config_key.c_str());
 
   if (schedule.empty())
@@ -720,9 +720,9 @@ void OvmsVehicle::CheckPreconditionSchedule()
 
         if (result == Success)
         {
-          m_Precondition_last_triggered_day = current_day;
-          m_Precondition_last_triggered_hour = current_hour;
-          m_Precondition_last_triggered_min = current_min;
+          m_precondition_last_triggered_day = current_day;
+          m_precondition_last_triggered_hour = current_hour;
+          m_precondition_last_triggered_min = current_min;
           ESP_LOGI(TAG, "Precondition activated successfully");
           MyNotify.NotifyString("info", "climatecontrol.schedule",
                                 "Scheduled precondition started");
@@ -762,9 +762,9 @@ OvmsVehicle::OvmsVehicle()
   m_last_parktime = 0;
 
   // Initialize precondition schedule tracking
-  m_Precondition_last_triggered_day = -1;
-  m_Precondition_last_triggered_hour = -1;
-  m_Precondition_last_triggered_min = -1;
+  m_precondition_last_triggered_day = -1;
+  m_precondition_last_triggered_hour = -1;
+  m_precondition_last_triggered_min = -1;
 
   m_drive_startsoc = StdMetrics.ms_v_bat_soc->AsFloat();
   m_drive_startrange = StdMetrics.ms_v_bat_range_est->AsFloat();
@@ -1157,9 +1157,6 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     Ticker10(m_ticker);
     if ((m_ticker % 60) == 0)
       {
-      // Check if global scheduled precondition are enabled
-      if(MyConfig.GetParamValueBool("vehicle", "precondition", false)) 
-        CheckPreconditionSchedule();
       Ticker60(m_ticker);
       if ((m_ticker % 300) == 0)
         {
@@ -1367,7 +1364,10 @@ void OvmsVehicle::Ticker10(uint32_t ticker)
   }
 
 void OvmsVehicle::Ticker60(uint32_t ticker)
-  {
+  {    
+  // Check if global scheduled precondition are enabled
+  if(MyConfig.GetParamValueBool("vehicle", "climate.precondition", false)) 
+    CheckPreconditionSchedule();
   }
 
 void OvmsVehicle::Ticker300(uint32_t ticker)

@@ -609,7 +609,6 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   std::string error, info;
   std::string vehicleid, vehicletype, vehiclename, timezone, timezone_region, pin;
   std::string bat12v_factor, bat12v_ref, bat12v_alert, bat12v_shutdown, bat12v_shutdown_delay, bat12v_wakeup, bat12v_wakeup_interval;
-  bool precondition = false;
 
   std::map<metric_group_t,std::string> units_values;
   metric_group_list_t unit_groups;
@@ -622,7 +621,6 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehiclename = c.getvar("vehiclename");
     timezone = c.getvar("timezone");
     timezone_region = c.getvar("timezone_region");
-    precondition = (c.getvar("precondition") == "yes");
     for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
       std::string name = OvmsMetricGroupName(*grpiter);
       std::string cfg = "units_";
@@ -658,8 +656,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("auto", "vehicle.type", vehicletype);
       MyConfig.SetParamValue("vehicle", "name", vehiclename);
       MyConfig.SetParamValue("vehicle", "timezone", timezone);
-      MyConfig.SetParamValue("vehicle", "timezone_region", timezone_region);      
-      MyConfig.SetParamValueBool("vehicle", "precondition", precondition);
+      MyConfig.SetParamValue("vehicle", "timezone_region", timezone_region);
       for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
         std::string name = OvmsMetricGroupName(*grpiter);
         std::string value = units_values[*grpiter];
@@ -707,7 +704,6 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     bat12v_shutdown_delay = MyConfig.GetParamValue("vehicle", "12v.shutdown_delay");
     bat12v_wakeup = MyConfig.GetParamValue("vehicle", "12v.wakeup");
     bat12v_wakeup_interval = MyConfig.GetParamValue("vehicle", "12v.wakeup_interval");
-    precondition = MyConfig.GetParamValueBool("vehicle", "precondition", false);
     c.head(200);
   }
 
@@ -750,9 +746,6 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     "</div>"
     , _attr(timezone_region)
     , _attr(timezone));
-  
-  c.input_checkbox("Enable scheduled precondition", "precondition", precondition,
-    "<p>Master switch: activate automatic precondition based on configured schedules.</p>");
 
   for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
     std::string name = OvmsMetricGroupName(*grpiter);

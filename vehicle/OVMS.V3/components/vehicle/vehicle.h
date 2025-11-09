@@ -352,9 +352,9 @@ class OvmsVehicle : public InternalRamAllocated
     int m_last_gentime;                     // duration of current/most recent generator run [s]
 
     // Scheduled schedulede state tracking
-    int m_Precondition_last_triggered_day;    // Last day schedule was triggered (0-6, Sun-Sat, -1=never)
-    int m_Precondition_last_triggered_hour;   // Last hour schedule was triggered (0-23, -1=never)
-    int m_Precondition_last_triggered_min;    // Last minute schedule was triggered (0-59, -1=never)
+    int m_precondition_last_triggered_day;    // Last day schedule was triggered (0-6, Sun-Sat, -1=never)
+    int m_precondition_last_triggered_hour;   // Last hour schedule was triggered (0-23, -1=never)
+    int m_precondition_last_triggered_min;    // Last minute schedule was triggered (0-59, -1=never)
 
     float m_drive_startsoc;                 // SOC at drive start (vehicle.on)
     float m_drive_startrange;               // Range estimation at drive start (vehicle.on)
