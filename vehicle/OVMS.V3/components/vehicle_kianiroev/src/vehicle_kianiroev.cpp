@@ -101,7 +101,7 @@ static const OvmsPoller::poll_pid_t vehicle_kianiroev_polls[] =
 
 		{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0100, 		{       0,   10,  10 }, 0, ISOTP_STD },  // AirCon
 		//{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   10,  10 } },  // AirCon - No usable values found yet
-
+		{ 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xA020, 		{       0,   19, 120 }, 0, ISOTP_STD },  // Cluster. ODO
 		{ 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB002, 		{       0,   19, 120 }, 0, ISOTP_STD },  // Cluster. ODO
 
 		{ 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xc101, 		{       0,   27,  27 }, 0, ISOTP_STD },  // ABS/ESP - Emergency lights
@@ -377,7 +377,7 @@ void OvmsVehicleKiaNiroEv::vehicle_kianiroev_car_on(bool isOn)
  */
 void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 	{
-	//ESP_LOGD(TAG,"Pollstate: %d sec with no client: %d ",m_poll_state, kn_secs_with_no_client);
+	ESP_LOGD(TAG,"Pollstate: %d ",m_poll_state);
 
 	// Register car as locked only if all doors are locked
 	StdMetrics.ms_v_env_locked->SetValue(

@@ -65,6 +65,7 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   StandardMetrics.ms_v_type->SetValue("RZ2");
 
   MyConfig.RegisterParam("xrz2", "Renault Zoe Ph2 configuration", true, true);
+  MyConfig.RegisterParam("xrz2.preclimate", "Renault Zoe Ph2 pre-climate schedules", true, true);
   ConfigChanged(NULL);
 
   // Init Zoe Ph2 CAN connections
@@ -99,8 +100,6 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   mt_hvac_heating_cond_temp = MyMetrics.InitFloat("xrz2.h.heating.cond.temp", SM_STALE_MID, 0, Celcius);
   mt_hvac_heating_ptc_req = MyMetrics.InitFloat("xrz2.h.heating.ptc.req", SM_STALE_MID, 0, Other);
   mt_hvac_heating_temp = MyMetrics.InitFloat("xrz2.h.heating.temp", SM_STALE_MID, 0, Celcius);
-  // Waterpump lifetime left counter - seems Zoe Ph2 is not counting
-  mt_hevc_waterpump_lifetime_left = MyMetrics.InitFloat("xrz2.v.e.waterpump.lifetime.left", SM_STALE_HIGH, 0, Percentage);
   // Inverter metrics
   mt_inv_hv_current = MyMetrics.InitFloat("xrz2.i.current", SM_STALE_MIN, 0, Amps);
   mt_inv_hv_voltage = MyMetrics.InitFloat("xrz2.i.voltage", SM_STALE_MIN, 0, Volts);
@@ -127,14 +126,13 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   // Init commands / menu structure
   OvmsCommand *cmd_xrz2 = MyCommandApp.RegisterCommand("xrz2", "Renault Zoe Ph2");
   OvmsCommand *poller;
-  OvmsCommand *unlock;
   OvmsCommand *ddt;
   OvmsCommand *hvac;
   OvmsCommand *compressor;
+  OvmsCommand *ptc;
+  OvmsCommand *dcdc;
   OvmsCommand *cluster;
   OvmsCommand *cluster_reset;
-  OvmsCommand *hevc;
-  OvmsCommand *hevc_reset;
 
   // Poller custom commands
   poller = cmd_xrz2->RegisterCommand("poller", "Start, stop, inhibit or resume poller");
@@ -143,10 +141,11 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   poller->RegisterCommand("inhibit", "Disable poller for vehicle maintenance", CommandPollerInhibit);
   poller->RegisterCommand("resume", "Resume poller for normal operation", CommandPollerResume);
 
-  // Lock, Unlock custom commands
-  unlock = cmd_xrz2->RegisterCommand("unlock", "Unlock trunk or open chargeport");
-  unlock->RegisterCommand("trunk", "Unlock trunk", CommandUnlockTrunk);
-  unlock->RegisterCommand("chargeport", "Open chargeport", CommandUnlockChargeport);
+  // Lighting command (coming home function)
+  cmd_xrz2->RegisterCommand("lighting", "Enable headlights for 30 seconds (coming home)", CommandLighting);
+
+  // Unlock trunk command
+  cmd_xrz2->RegisterCommand("unlocktrunk", "Unlock trunk/tailgate", CommandUnlockTrunkShell);
 
   // Debug output of custom functions
   cmd_xrz2->RegisterCommand("debug", "Debug output of custom functions", CommandDebug);
@@ -157,15 +156,25 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   compressor = hvac->RegisterCommand("compressor", "Enable or disable compressor");
   compressor->RegisterCommand("enable", "Enable compressor for normal operation", CommandDdtHvacEnableCompressor);
   compressor->RegisterCommand("disable", "Disable compressor if there are problems with it", CommandDdtHvacDisableCompressor);
+  ptc = hvac->RegisterCommand("ptc", "Enable or disable ptc");
+  ptc->RegisterCommand("enable", "Enable PTC for permanent heating", CommandDdtHvacEnablePTC);
+  ptc->RegisterCommand("disable", "Reset PTC control to Auto mode", CommandDdtHvacDisablePTC);
+
+  // DCDC control commands
+  dcdc = cmd_xrz2->RegisterCommand("dcdc", "Manual DCDC converter control");
+  dcdc->RegisterCommand("enable", "Enable DCDC converter manually", CommandDcdcEnable);
+  dcdc->RegisterCommand("disable", "Disable DCDC converter", CommandDcdcDisable);
 
   // Reset and service functions
   cluster = ddt->RegisterCommand("cluster", "Service functions of Instrument cluster");
   cluster_reset = cluster->RegisterCommand("reset", "Reset functions");
   cluster_reset->RegisterCommand("service", "Reset service reminder", CommandDdtClusterResetService);
 
-  hevc = ddt->RegisterCommand("hevc", "Service functions of HEVC ECU");
-  hevc_reset = hevc->RegisterCommand("reset", "Reset functions");
-  hevc_reset->RegisterCommand("reset", "Reset water pump usage counter", CommandDdtHEVCResetWaterPumpCounter);
+  // Scheduled pre-climate commands
+  OvmsCommand *preclimate = cmd_xrz2->RegisterCommand("preclimate", "Scheduled pre-climate control");
+  preclimate->RegisterCommand("schedule", "Set schedule for pre-climate (day hour:min)", CommandPreclimateScheduleSet, "<day> <time>", 2, 2);
+  preclimate->RegisterCommand("list", "List all configured pre-climate schedules", CommandPreclimateScheduleList);
+  preclimate->RegisterCommand("clear", "Clear schedule for a specific day", CommandPreclimateScheduleClear, "<day>", 1, 1);
 
   // CAN1 Software filter - Poll response
   MyPollers.AddFilter(1, 0x18daf1da, 0x18daf1df);
@@ -176,20 +185,31 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   MyPollers.AddFilter(1, 0x0A4, 0x0A4);
   MyPollers.AddFilter(1, 0x3C0, 0x3C3);
   MyPollers.AddFilter(1, 0x418, 0x418);
-  MyPollers.AddFilter(1, 0x437, 0x437); // VDC_A8_ID 0x438 actually not used
+  MyPollers.AddFilter(1, 0x46F, 0x46F);
+  MyPollers.AddFilter(1, 0x437, 0x437);
   MyPollers.AddFilter(1, 0x480, 0x480);
   MyPollers.AddFilter(1, 0x491, 0x491);
   MyPollers.AddFilter(1, 0x43E, 0x43E);
   MyPollers.AddFilter(1, 0x46C, 0x46C);
   MyPollers.AddFilter(1, 0x47C, 0x47F);
-  MyPollers.AddFilter(1, 0x4FE, 0x4FE);
   MyPollers.AddFilter(1, 0x5B9, 0x5BA);
   MyPollers.AddFilter(1, 0x5C2, 0x5C5);
   MyPollers.AddFilter(1, 0x625, 0x625);
-  MyPollers.AddFilter(1, 0x676, 0x676);
   MyPollers.AddFilter(1, 0x6C9, 0x6C9);
   MyPollers.AddFilter(1, 0x6E9, 0x6E9);
   MyPollers.AddFilter(1, 0x6F2, 0x6F2);
+
+  // Initialize TX callback tracking
+  m_tx_success_id.store(0);
+  m_tx_success_flag.store(false);
+
+  // Register TX callback to track actual transmission success
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyCan.RegisterCallback(TAG, std::bind(&OvmsVehicleRenaultZoePh2::TxCallback, this, _1, _2), true);
+
+  // Register ticker event for scheduled pre-climate
+  MyEvents.RegisterEvent(TAG, "ticker.60", std::bind(&OvmsVehicleRenaultZoePh2::CheckPreclimateSchedule, this, _1, _2));
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -215,8 +235,15 @@ void OvmsVehicleRenaultZoePh2::ConfigChanged(OvmsConfigParam *param)
   m_battery_capacity = MyConfig.GetParamValueInt("xrz2", "battcapacity", 52000);
   m_UseBMScalculation = MyConfig.GetParamValueBool("xrz2", "UseBMScalculation", false);
   m_vcan_enabled = MyConfig.GetParamValueBool("xrz2", "vCanEnabled", false);
+  m_auto_12v_recharge_enabled = MyConfig.GetParamValueBool("xrz2", "auto_12v_recharge_enabled", false);
+  m_auto_12v_threshold = MyConfig.GetParamValueFloat("xrz2", "auto_12v_threshold", 12.4);
+  m_coming_home_enabled = MyConfig.GetParamValueBool("xrz2", "coming_home_enabled", false);
+  m_remote_climate_enabled = MyConfig.GetParamValueBool("xrz2", "remote_climate_enabled", false);
 
   ESP_LOGI(TAG, "Renault Zoe Ph2 reload configuration: Range ideal: %d, Battery capacity: %d, Use BMS as energy counter: %s, V-CAN connected: %s", m_range_ideal, m_battery_capacity, m_UseBMScalculation ? "yes" : "no", m_vcan_enabled ? "yes" : "no");
+  ESP_LOGI(TAG, "12V auto-recharge: %s, Threshold: %.1fV", m_auto_12v_recharge_enabled ? "enabled" : "disabled", m_auto_12v_threshold);
+  ESP_LOGI(TAG, "Coming home function: %s", m_coming_home_enabled ? "enabled" : "disabled");
+  ESP_LOGI(TAG, "Remote climate trigger: %s", m_remote_climate_enabled ? "enabled" : "disabled");
 }
 
 // Poller lists for Renault Zoe Ph2
@@ -251,7 +278,6 @@ static const OvmsPoller::poll_pid_t zoe_ph2_polls_obd[] = {
     {0x18dadaf1, 0x18daf1da, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x300D, {0, 10, 0, 3}, 0, ISOTP_EXTFRAME},      // AC mains current
     {0x18dadaf1, 0x18daf1da, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x300B, {0, 2, 0, 10}, 0, ISOTP_EXTFRAME},      // AC phases
     {0x18dadaf1, 0x18daf1da, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2B8A, {0, 2, 0, 10}, 0, ISOTP_EXTFRAME},      // AC mains voltage
-    {0x18dadaf1, 0x18daf1da, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2B61, {0, 600, 600, 600}, 0, ISOTP_EXTFRAME}, // Waterpump lifetime left in percent
 
     // BCM
     {0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x6300, {0, 0, 300, 0}, 0, ISOTP_STD}, // TPMS pressure - front left
@@ -439,7 +465,6 @@ static const OvmsPoller::poll_pid_t zoe_ph2_polls_vcan[] = {
     {0x18dadaf1, 0x18daf1da, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x300D, {0, 10, 0, 3}, 0, ISOTP_EXTFRAME},      // AC mains current
     {0x18dadaf1, 0x18daf1da, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x300B, {0, 2, 0, 10}, 0, ISOTP_EXTFRAME},      // AC phases
     {0x18dadaf1, 0x18daf1da, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2B8A, {0, 2, 0, 10}, 0, ISOTP_EXTFRAME},      // AC mains voltage
-    {0x18dadaf1, 0x18daf1da, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2B61, {0, 600, 600, 600}, 0, ISOTP_EXTFRAME}, // Waterpump lifetime left in percent
 
     // BCM
     {0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x6310, {0, 0, 300, 0}, 0, ISOTP_STD}, // TPMS temp - front left
@@ -658,6 +683,11 @@ void OvmsVehicleRenaultZoePh2::Ticker1(uint32_t ticker)
   {
     CarIsDriving = false;
     CarIsDrivingInit = false;
+
+    // Save headlight state for coming home function (before door opens and turns them off)
+    m_last_headlight_state = vcan_light_lowbeam;
+    ESP_LOGD(TAG, "Ignition turned off, saved headlight state: %s", m_last_headlight_state ? "ON" : "OFF");
+
     ESP_LOGI(TAG, "Pollstate switched to ON");
     POLLSTATE_ON;
   }
@@ -819,6 +849,30 @@ void OvmsVehicleRenaultZoePh2::Ticker1(uint32_t ticker)
   {
     SyncVCANtoMetrics();
   }
+
+  // 12V auto-recharge monitoring - check if auto-recharge should be enabled/disabled
+  CheckAutoRecharge();
+
+  // Send DCDC message every second if active
+  if (m_dcdc_active)
+  {
+    uint32_t currentTime = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    if ((currentTime - m_dcdc_last_send_time) >= 1000)
+    {
+      SendDCDCMessage();
+      m_dcdc_last_send_time = currentTime;
+    }
+  }
+
+  // Coming home function - monitor lock state changes
+  bool current_locked_state = StandardMetrics.ms_v_env_locked->AsBool();
+  if (current_locked_state && !m_last_locked_state)
+  {
+    // Car just got locked (transition from unlocked to locked)
+    ESP_LOGD(TAG, "Lock state changed: unlocked -> locked");
+    TriggerComingHomeLighting();
+  }
+  m_last_locked_state = current_locked_state;
 }
 
 void OvmsVehicleRenaultZoePh2::Ticker10(uint32_t ticker)
@@ -1108,7 +1162,7 @@ void OvmsVehicleRenaultZoePh2::IncomingFrameCan1(CAN_frame_t *p_frame)
     }
   }
 
-  // Use data from V-CAN to fill metrics - work in progress, reverse engieering is time consuming
+  // Use data from V-CAN to fill metrics
   // --
   // In DDT Database there is a CAN_MESSAGE_SET_C1A_Q4_2017_(...).XML file, there are most of the CAN IDs described floating on V-CAN
   // I converted this file to a Database CAN file to analyze my dumps and real traffic on my Zoe with SavvyCAN, this speeds up finding and decoding of metrics on V-CAN a lot
@@ -1306,9 +1360,6 @@ void OvmsVehicleRenaultZoePh2::IncomingFrameCan1(CAN_frame_t *p_frame)
     uint16_t rawHVVolt = (((uint16_t)(CAN_BYTE(4) & 0x1F) << 8) | CAN_BYTE(5)) & 0x1FFF;
     vcan_hvBat_voltage = rawHVVolt * 0.1;
 
-    // current scaling unknown atm
-    vcan_hvBat_current = 0;
-
     break;
   }
 
@@ -1343,8 +1394,6 @@ void OvmsVehicleRenaultZoePh2::IncomingFrameCan1(CAN_frame_t *p_frame)
   {
     // --- Compressor mode and power cons ---
     vcan_hvac_compressor_power = ((CAN_BYTE(1) >> 1) & 0x7F) * 50.0;
-    // mode stil missing
-    vcan_hvac_compressor_mode = 0;
     break;
   }
 
@@ -1402,6 +1451,43 @@ void OvmsVehicleRenaultZoePh2::IncomingFrameCan1(CAN_frame_t *p_frame)
     // uint8_t rawTripUnit = (CAN_BYTE(3) >> 4) & 0x03;
     // const char *unitStr = (rawTripUnit == 1) ? "mi" : "km";
 
+    break;
+  }
+
+  case HFM_A1_ID:
+  {
+    // --- HFM (Hand Free Module) commands for remote climate trigger ---
+    // Monitor for "Remote Lighting" button press (HFM_RKE_Request = 8) to trigger climate control
+    if (m_remote_climate_enabled && m_vcan_enabled)
+    {
+      uint8_t hfm_rke_request = (CAN_BYTE(3) >> 3) & 0x1F;
+
+      // Value 8 = "Short Press - Remote Lighting"
+      // Implement debouncing to prevent multiple triggers from single button press
+      if (hfm_rke_request == 8 && m_remote_climate_last_button_state != 8)
+      {
+        // Button state changed from not-pressed to pressed (edge detection)
+        uint32_t current_time = esp_log_timestamp();
+        uint32_t time_since_last_trigger = current_time - m_remote_climate_last_trigger_time;
+
+        // Require at least 30 seconds between triggers to prevent accidental repeated activations,
+        // this is the time the headlights stays on
+        if (time_since_last_trigger > 30000 || m_remote_climate_last_trigger_time == 0)
+        {
+          ESP_LOGI(TAG, "Remote lighting button pressed on key fob, triggering climate control");
+          CommandClimateControl(true);
+          m_remote_climate_last_trigger_time = current_time;
+        }
+        else
+        {
+          ESP_LOGD(TAG, "Remote lighting button pressed, but ignoring due to debounce (last trigger %dms ago)",
+                   time_since_last_trigger);
+        }
+      }
+
+      // Save current button state for next iteration
+      m_remote_climate_last_button_state = hfm_rke_request;
+    }
     break;
   }
   }
@@ -1474,7 +1560,7 @@ void OvmsVehicleRenaultZoePh2::SyncVCANtoMetrics()
   }
 
   // HEVC boot up, suppress invalid values
-  if (vcan_hvBat_estimatedRange < 500)
+  if (vcan_hvBat_estimatedRange < 500 && vcan_hvBat_estimatedRange > 0)
   {
     StandardMetrics.ms_v_bat_range_est->SetValue(vcan_hvBat_estimatedRange, Kilometers);
   }
@@ -1605,6 +1691,18 @@ void OvmsVehicleRenaultZoePh2::SyncVCANtoMetrics()
   }
 }
 
+// TX callback to track actual CAN frame transmission success/failure, this is needed because of the heavy bus load (1700-2200msg/s)
+void OvmsVehicleRenaultZoePh2::TxCallback(const CAN_frame_t* frame, bool success)
+{
+  // Only track frames on CAN1 (V-CAN)
+  if (frame->origin == m_can1)
+  {
+    // Store the frame ID and success status atomically
+    m_tx_success_id.store(frame->MsgID);
+    m_tx_success_flag.store(success);
+  }
+}
+
 // Handles incoming poll results on bus 1
 void OvmsVehicleRenaultZoePh2::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length)
 {
@@ -1648,5 +1746,158 @@ void OvmsVehicleRenaultZoePh2::IncomingPollReply(const OvmsPoller::poll_job_t &j
   case 0x76D:
     IncomingUCM(job.type, job.pid, rxbuf.data(), rxbuf.size());
     break;
+  }
+}
+
+// DCDC converter control functions for 12V battery recharging
+void OvmsVehicleRenaultZoePh2::SendDCDCMessage()
+{
+  if (!m_vcan_enabled)
+  {
+    ESP_LOGW(TAG, "Cannot send DCDC message, V-CAN not enabled");
+    return;
+  }
+
+  // Send the DCDC enable message, we are faking driver door open to the HEVC
+  uint8_t dcdc_cmd[8] = {0x30, 0x06, 0x00, 0x03, 0x08, 0x74, 0x10, 0x20};
+
+  esp_err_t result = m_can1->WriteStandard(0x418, 8, dcdc_cmd);
+
+  if (result == ESP_OK || result == ESP_QUEUED)
+  {
+    ESP_LOGV(TAG, "DCDC message sent (result: %d)", result);
+  }
+  else
+  {
+    ESP_LOGD(TAG, "DCDC message send failed (result: %d), will retry in 1 second", result);
+  }
+}
+
+void OvmsVehicleRenaultZoePh2::EnableDCDC(bool manual)
+{
+  if (manual)
+  {
+    m_dcdc_manual_enabled = true;
+  }
+  m_dcdc_active = true;
+  m_dcdc_last_send_time = 0; // Force immediate send
+  m_dcdc_start_time = xTaskGetTickCount() * portTICK_PERIOD_MS; // Record start time
+  ESP_LOGI(TAG, "DCDC converter %s (will run for 30 minutes)", manual ? "manually enabled" : "auto-enabled");
+}
+
+void OvmsVehicleRenaultZoePh2::DisableDCDC()
+{
+  m_dcdc_manual_enabled = false;
+  m_dcdc_active = false;
+  m_dcdc_start_time = 0;
+  ESP_LOGI(TAG, "DCDC converter disabled");
+}
+
+void OvmsVehicleRenaultZoePh2::CheckAutoRecharge()
+{
+  uint32_t currentTime = xTaskGetTickCount() * portTICK_PERIOD_MS;
+  bool is_locked = StandardMetrics.ms_v_env_locked->AsBool();
+
+  // Check if DCDC is active and needs to be stopped
+  if (m_dcdc_active)
+  {
+    // Stop if car is unlocked (applies to both manual and automatic mode)
+    if (!is_locked)
+    {
+      ESP_LOGI(TAG, "Vehicle unlocked, stopping DCDC converter keepalive");
+      DisableDCDC();
+      return;
+    }
+
+    // Stop after 30 minutes (applies to both manual and automatic mode)
+    uint32_t elapsed_time = currentTime - m_dcdc_start_time;
+    if (elapsed_time >= (30 * 60 * 1000)) // 30 minutes in milliseconds
+    {
+      ESP_LOGI(TAG, "DCDC converter timeout (30 minutes), stopping");
+      DisableDCDC();
+      return;
+    }
+  }
+
+  // Only check for starting auto-recharge if enabled and not manually controlled
+  if (!m_auto_12v_recharge_enabled || !m_vcan_enabled || m_dcdc_manual_enabled)
+  {
+    return;
+  }
+
+  float voltage_12v = StandardMetrics.ms_v_bat_12v_voltage->AsFloat(0);
+
+  // If car is locked and voltage is below threshold, enable DCDC
+  if (is_locked && voltage_12v > 0 && voltage_12v < m_auto_12v_threshold && !m_dcdc_active)
+  {
+    ESP_LOGI(TAG, "12V voltage %.2fV below threshold %.2fV, enabling auto-recharge", voltage_12v, m_auto_12v_threshold);
+    EnableDCDC(false);
+  }
+}
+
+// Coming home function - triggers lighting after locking if headlights were on
+void OvmsVehicleRenaultZoePh2::TriggerComingHomeLighting()
+{
+  if (!m_vcan_enabled)
+  {
+    ESP_LOGD(TAG, "Coming home function skipped - V-CAN not enabled");
+    return;
+  }
+
+  if (!m_coming_home_enabled)
+  {
+    ESP_LOGD(TAG, "Coming home function skipped - not enabled");
+    return;
+  }
+
+  // Check if headlights (lowbeam) were on when ignition was turned off
+  // We use saved state because headlights turn off when driver door opens
+  if (m_last_headlight_state)
+  {
+    ESP_LOGI(TAG, "Coming home function activated - headlights were on when ignition turned off, triggering lighting");
+
+    uint8_t lighting_cmd[8] = {0xF4, 0xB7, 0xA8, 0x40, 0x24, 0x84, 0x07, 0x10};
+    int max_attempts = (!mt_bus_awake->AsBool()) ? 10 : 3;
+    bool tx_success = false;
+
+    // Send frames until we get actual transmission confirmation from TxCallback
+    for (int i = 0; i < max_attempts && !tx_success; i++)
+    {
+      // Clear success flag before sending
+      m_tx_success_flag.store(false);
+
+      // Send the frame
+      m_can1->WriteStandard(HFM_A1_ID, 8, lighting_cmd);
+
+      // Wait for transmission and callback
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+
+      // Check if this specific frame was successfully transmitted
+      if (m_tx_success_flag.load() && m_tx_success_id.load() == HFM_A1_ID)
+      {
+        tx_success = true;
+        ESP_LOGI(TAG, "Coming home lighting command transmitted successfully on attempt %d", i + 1);
+      }
+      else
+      {
+        ESP_LOGW(TAG, "Coming home lighting command transmission failed (attempt %d/%d)", i + 1, max_attempts);
+      }
+    }
+
+    if (tx_success)
+    {
+      ESP_LOGI(TAG, "Coming home lighting completed - headlights should turn on for ~30 seconds");
+      // Reset the saved state after successful transmission
+      m_last_headlight_state = false;
+    }
+    else
+    {
+      ESP_LOGE(TAG, "Coming home lighting failed - no successful transmission after %d attempts", max_attempts);
+      // Keep the state so we can retry on next lock
+    }
+  }
+  else
+  {
+    ESP_LOGD(TAG, "Coming home function skipped - headlights were not on when ignition turned off");
   }
 }

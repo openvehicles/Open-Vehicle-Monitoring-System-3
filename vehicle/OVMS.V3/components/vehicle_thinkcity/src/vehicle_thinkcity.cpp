@@ -220,6 +220,26 @@ void OvmsVehicleThinkCity::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_charge_climit->SetValue(((unsigned char) d[1]) * 0.2);
       break;
 
+      case 0x344: // TPMS
+        // TODO: Add Warnings and Alerts --- e.g. for sensor not responding (data is 0xFF)
+			  if (d[0]!=0xFF) // Front-left
+		    {
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float)d[0] * 0.3625, PSI);
+		    }
+		    if (d[1]!=0xFF) // Front-right
+		    {
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float)d[1] * 0.3625, PSI);
+		    }
+		    if (d[2]!=0xFF) // Rear-right
+		    {
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float)d[2] * 0.3625, PSI);
+		    }
+		    if (d[3]!=0xFF) // Rear-left
+		    {
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float)d[3] * 0.3625, PSI);
+		    }
+		  break;
+
     case 0x511:
       // Enerdel battery pack?
       // TODO: Enable battery pack cells monitoring
