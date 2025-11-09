@@ -368,11 +368,10 @@ config OVMS_VEHICLE_NONE
         Enable to include support for base NONE vehicle stub.
 
 config OVMS_VEHICLE_MAXT90
-    bool "Include support for base MAXT90 vehicle stub"
-    default n
-    depends on OVMS
+    bool "Maxus T90 EV (MT90)"
+    default y
     help
-        Enable to include support for base MAXT90 vehicle stub.
+      Enable to include support for Maxus T90 EV.
 
 config OVMS_VEHICLE_OBDII
     bool "Include support for OBDII vehicles"
