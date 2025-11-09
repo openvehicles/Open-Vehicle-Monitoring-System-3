@@ -34,36 +34,6 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
-/**
- * CommandClimateControl: Climate control with duration support
- * smartEQ supports native duration control via mapping.
- */
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable, int duration)
-{
-  if (!enable)
-  {
-    // Deactivation doesn't need duration
-    return CommandClimateControl(false);
-  }
-
-  // Map duration: 5min=1, 10min=2, 15min=3
-  int ticker = 0;
-  if (duration <= 5)
-    ticker = 1;
-  else if (duration <= 10)
-    ticker = 2;
-  else if (duration > 10)
-    ticker = 3;
-  else
-  {
-    ESP_LOGW(TAG, "Invalid duration %d, using default 5 minutes", duration);
-    ticker = 0;
-  }
-
-  m_climate_ticker = ticker;
-  return CommandClimateControl(true);
-}
-
 // can can1 tx st 634 40 01 72 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
   if(!m_enable_write) {
