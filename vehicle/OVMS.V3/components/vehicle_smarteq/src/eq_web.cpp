@@ -47,7 +47,8 @@ void OvmsVehicleSmartEQ::WebInit()
 {
   // vehicle menu:
   MyWebServer.RegisterPage("/xsq/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xsq/climate", "Climate/Heater", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xsq/climate", "Climate/Heater", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);  
+  MyWebServer.RegisterPage("/xsq/climateschedule", "Climate Schedule", WebCfgClimateSchedule, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/tpms", "TPMS Config", WebCfgTPMS, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/adc", "ADC Calc", WebCfgADC, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
@@ -61,6 +62,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xsq/features");
   MyWebServer.DeregisterPage("/xsq/climate");
+  MyWebServer.DeregisterPage("/xsq/climateschedule");
   MyWebServer.DeregisterPage("/xsq/tpms");
   MyWebServer.DeregisterPage("/xsq/adc");
   MyWebServer.DeregisterPage("/xsq/battery");

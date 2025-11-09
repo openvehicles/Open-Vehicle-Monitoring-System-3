@@ -36,7 +36,7 @@ static const char *TAG = "v-smarteq";
 
 /**
  * CommandClimateControl: Climate control with duration support
- * SmartEQ supports native duration control via CommandHomelink mapping.
+ * smartEQ supports native duration control via mapping.
  */
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable, int duration)
 {
@@ -46,7 +46,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     return CommandClimateControl(false);
   }
 
-  // Map duration to homelink button: 5min=0, 10min=1, 15min=2
+  // Map duration: 5min=1, 10min=2, 15min=3
   int ticker = 0;
   if (duration <= 5)
     ticker = 1;
@@ -986,56 +986,4 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
 
   MyConfig.DeregisterParam("xsq.preclimate");
   return Success;
-}
-
-// ================================================================================
-// Scheduled precondition Functions
-// ================================================================================
-
-/**
- * Parse a schedule time string and check if it matches the current time
- * Schedule format: "HH:MM,HH:MM,..." (multiple times can be specified)
- * Returns true if any of the times match the current hour and minute
- */
-bool OvmsVehicleSmartEQ::ParseScheduleTime(const std::string& schedule, int current_hour, int current_min)
-{
-  if (schedule.empty())
-      return false;
-
-  // Parse comma-separated times
-  size_t start = 0;
-  size_t end = schedule.find(',');
-
-  while (start != std::string::npos)
-  {
-      std::string time_str = (end == std::string::npos) ?
-                              schedule.substr(start) :
-                              schedule.substr(start, end - start);
-
-      // Find the ':' separator
-      size_t colon_pos = time_str.find(':');
-      if (colon_pos != std::string::npos && colon_pos > 0)
-      {
-          int hour = atoi(time_str.substr(0, colon_pos).c_str());
-          int min = atoi(time_str.substr(colon_pos + 1).c_str());
-
-          // Validate time range
-          if (hour >= 0 && hour < 24 && min >= 0 && min < 60)
-          {
-              // Check if this time matches current time
-              if (hour == current_hour && min == current_min)
-              {
-                  return true;
-              }
-          }
-      }
-
-      // Move to next time in the list
-      if (end == std::string::npos)
-          break;
-      start = end + 1;
-      end = schedule.find(',', start);
-  }
-
-  return false;
 }

@@ -130,9 +130,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ModemRestart();
     void ModemEventRestart(std::string event, void* data);
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
-    void EventListener(std::string event, void* data);    
-    // Scheduled Pre-Climate Functions
-    bool ParseScheduleTime(const std::string& schedule, int current_hour, int current_min);
+    void EventListener(std::string event, void* data);
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -171,6 +169,7 @@ public:
     static void WebCfgTPMS(PageEntry_t& p, PageContext_t& c);
     static void WebCfgADC(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgClimateSchedule(PageEntry_t& p, PageContext_t& c);
 #endif
     void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
