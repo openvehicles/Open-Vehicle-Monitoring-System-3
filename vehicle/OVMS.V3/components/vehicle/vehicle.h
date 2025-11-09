@@ -355,6 +355,8 @@ class OvmsVehicle : public InternalRamAllocated
     int m_precondition_last_triggered_day;    // Last day schedule was triggered (0-6, Sun-Sat, -1=never)
     int m_precondition_last_triggered_hour;   // Last hour schedule was triggered (0-23, -1=never)
     int m_precondition_last_triggered_min;    // Last minute schedule was triggered (0-59, -1=never)
+    bool m_climate_restart;                   // Climate duration restart
+    int m_climate_restart_ticker;             // Ticker to suppress repeated climate starts
 
     float m_drive_startsoc;                 // SOC at drive start (vehicle.on)
     float m_drive_startrange;               // Range estimation at drive start (vehicle.on)
@@ -514,8 +516,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart);
     virtual vehicle_command_t CommandCooldown(bool cooldownon);
     virtual vehicle_command_t CommandWakeup();
-    virtual vehicle_command_t CommandClimateControl(bool enable);    
-    virtual vehicle_command_t CommandClimateControl(bool enable, int duration);
+    virtual vehicle_command_t CommandClimateControl(bool enable);
     virtual vehicle_command_t CommandLock(const char* pin);
     virtual vehicle_command_t CommandUnlock(const char* pin);
     virtual vehicle_command_t CommandActivateValet(const char* pin);

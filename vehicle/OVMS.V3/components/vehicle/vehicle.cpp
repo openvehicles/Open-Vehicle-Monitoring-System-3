@@ -708,18 +708,12 @@ void OvmsVehicle::CheckPreconditionSchedule()
           return;
         }
 
-        // Try CommandClimateControl with duration first (new API)
-        vehicle_command_t result = CommandClimateControl(true, duration);
-
-        if (result == NotImplemented)
-        {
-          // Vehicle doesn't support native duration control, use fallback
-          ESP_LOGD(TAG, "Vehicle doesn't support native duration control, using fallback method");
-          result = CommandClimateControl(true);
-        }
+        vehicle_command_t result = CommandClimateControl(true);
 
         if (result == Success)
         {
+          m_climate_restart = true;
+          m_climate_restart_ticker = duration - 1; // Subtract 1 minute for ticker countdown
           m_precondition_last_triggered_day = current_day;
           m_precondition_last_triggered_hour = current_hour;
           m_precondition_last_triggered_min = current_min;
@@ -765,6 +759,8 @@ OvmsVehicle::OvmsVehicle()
   m_precondition_last_triggered_day = -1;
   m_precondition_last_triggered_hour = -1;
   m_precondition_last_triggered_min = -1;
+  m_climate_restart = false;
+  m_climate_restart_ticker = 0;
 
   m_drive_startsoc = StdMetrics.ms_v_bat_soc->AsFloat();
   m_drive_startrange = StdMetrics.ms_v_bat_range_est->AsFloat();
@@ -1368,6 +1364,22 @@ void OvmsVehicle::Ticker60(uint32_t ticker)
   // Check if global scheduled precondition are enabled
   if(MyConfig.GetParamValueBool("vehicle", "climate.precondition", false)) 
     CheckPreconditionSchedule();
+  // Handle scheduled climate restarts
+  if (m_climate_restart_ticker > 0  && m_climate_restart && !StdMetrics.ms_v_env_hvac->AsBool())
+    {
+    CommandClimateControl(true);
+    ESP_LOGI(TAG,"Restarting climate control as per schedule");
+    }
+  if (m_climate_restart && StdMetrics.ms_v_env_hvac->AsBool())
+    {
+    --m_climate_restart_ticker;
+    ESP_LOGI(TAG,"Climate ticker: %d", m_climate_restart_ticker);
+    if (m_climate_restart_ticker <= 0) 
+      { 
+      m_climate_restart = false;
+      m_climate_restart_ticker = 0;
+      }
+    }
   }
 
 void OvmsVehicle::Ticker300(uint32_t ticker)
@@ -1677,30 +1689,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandCooldown(bool cooldownon)
     }
 #endif
   return NotImplemented;
-  }
-
-/**
- * CommandClimateControl: Climate control with duration support
- * Base implementation returns NotImplemented to indicate the vehicle doesn't support native duration control.
- * Vehicles supporting duration natively should override this method.
- * 
- * @param enable  true to activate, false to deactivate
- * @param duration  duration in minutes (typically 5, 10, or 15)
- * @return Success if command was sent successfully, NotImplemented if not supported
- */
-OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool enable, int duration)
-  {
-  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    if (MyDuktape.DukTapeAvailable())
-      {
-      StringWriter dukcmd;
-      dukcmd.printf("(!OvmsVehicle.ClimateControl.prototype)?-1:"
-        "OvmsVehicle.ClimateControl(%s,%d)", enable ? "true" : "false", duration);
-      int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
-      if (res >= 0) return res ? Success : Fail;
-      }
-  #endif
-    return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool enable)
