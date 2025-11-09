@@ -31,8 +31,8 @@ static const char *TAG = "v-kianiroev";
  */
 void OvmsVehicleKiaNiroEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
-	//ESP_LOGD(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_low, job.type, job.pid, length, data[0], data[1], data[2], data[3],
-	//	data[4], data[5], data[6], data[7]);
+	ESP_LOGV(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_low, job.type, job.pid, length, data[0], data[1], data[2], data[3],
+		data[4], data[5], data[6], data[7]);
 	switch (job.moduleid_rec)
 		{
 		// ****** IGMP *****
@@ -104,7 +104,7 @@ void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, 
 					uint32_t odometer = CAN_UINT32(0);
 					if (odometer >= 1) 
 						{
-						StdMetrics.ms_v_pos_odometer->SetValue(odo, GetConsoleUnits() );
+						StdMetrics.ms_v_pos_odometer->SetValue(odometer, GetConsoleUnits() );
 						}
 					}
 				}
