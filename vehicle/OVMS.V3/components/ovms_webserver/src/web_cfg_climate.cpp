@@ -37,7 +37,17 @@
 
 
 /**
- * HandleCfgPreconditionSchedule: configure precondition schedule (URL /cfg/preconditionschedule)
+ * HandleCfgPreconditionSchedule: configure climate precondition schedule
+ * 
+ * Note: this is not enabled by default, as some vehicles do not provide climate control.
+ * To enable, include something like this in your vehicle init:
+ *   MyWebServer.RegisterPage("/xxx/climateprecondition", "Climate Preconditioning",
+ *      OvmsWebServer::HandleCfgPreconditionSchedule, PageMenu_Vehicle, PageAuth_Cookie);
+ * (with "xxx" = your vehicle namespace)
+ * You can change the URL path, title, menu association and authentication as you like.
+ * For a clean shutdown, add
+ *   MyWebServer.DeregisterPage("/xxx/climateprecondition");
+ * …in your vehicle cleanup.
  */
 void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t& c)
 {
@@ -59,7 +69,7 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
       bool enabled = (c.getvar(enabled_key) == "yes");
       std::string times = c.getvar(time_key);
       
-      std::string config_key = std::string("schedule.") + day_names[i];
+      std::string config_key = std::string("climate.schedule.") + day_names[i];
       
       if (!enabled || times.empty()) {
         // Clear schedule for this day
@@ -161,7 +171,7 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
 
   // Create schedule inputs for each day
   for (int i = 0; i < 7; i++) {
-    std::string config_key = std::string("schedule.") + day_names[i];
+    std::string config_key = std::string("climate.schedule.") + day_names[i];
     std::string schedule = MyConfig.GetParamValue("vehicle", config_key);
     bool enabled = !schedule.empty();
 
@@ -216,7 +226,7 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
       int check_day = (current_day + day_offset) % 7;
       int check_day_index = (check_day == 0) ? 6 : check_day - 1;
       
-      std::string config_key = std::string("schedule.") + day_names[check_day_index];
+      std::string config_key = std::string("climate.schedule.") + day_names[check_day_index];
       std::string schedule = MyConfig.GetParamValue("vehicle", config_key);
       
       if (schedule.empty())
