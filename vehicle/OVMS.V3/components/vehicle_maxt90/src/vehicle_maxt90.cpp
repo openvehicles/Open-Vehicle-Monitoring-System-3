@@ -17,28 +17,51 @@ OvmsVehicleMaxt90::OvmsVehicleMaxt90()
 
   // Custom metrics:
   // Prefix "xmt" = Maxus T90 (to match xnl, xmg, etc. in other vehicles)
-  // NOTE: adjust Celcius/kWh names to match metric_unit_t in ovms_metrics.h if needed.
+  // NOTE: adjust Celcius / kWh to match your metric_unit_t enum names
   m_hvac_temp_c =
     MyMetrics.InitFloat("xmt.v.hvac.temp", 10, 0.0f, Celcius, false);
   m_pack_capacity_kwh =
     MyMetrics.InitFloat("xmt.b.capacity", 0, 88.5f, kWh, true);
 
-  // Define poll list (VIN, SOC, SOH, READY flag, Plug present, HVAC temp, Ambient temp)
-  // Feedback applied:
-  //  - Only 0xE004 (READY) polled in "off" state to detect wake-up.
-  //  - Other PIDs only polled in ON/CHARGE to avoid keeping ECUs awake.
+  // Define poll list:
+  //  - State 0: vehicle off
+  //  - State 1: vehicle on / driving
+  //  - State 2: charging (not used yet, but kept for future)
+  //
+  // Only READY (0xE004) is polled in state 0 to avoid keeping ECUs awake.
   static const OvmsPoller::poll_pid_t maxt90_polls[] = {
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, { 0,   999, 999 }, 0, ISOTP_STD }, // VIN (once on connect)
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE002, { 0,    10,  10 }, 0, ISOTP_STD }, // SOC (on/charge only)
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE003, { 0,    30,  30 }, 0, ISOTP_STD }, // SOH (on/charge only)
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE004, { 5,    10,  10 }, 0, ISOTP_STD }, // READY (polled while off to detect on)
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE009, { 0,    10,  10 }, 0, ISOTP_STD }, // Plug (on/charge only)
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE010, { 0,    30,  30 }, 0, ISOTP_STD }, // HVAC temp (on/charge only)
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE025, { 0,    30,  30 }, 0, ISOTP_STD }, // Ambient temp (on/charge only)
+    // VIN (only when on / charge, slow rate)
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190,
+      { 0, 3600, 3600 }, 0, ISOTP_STD },
+
+    // SOC
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE002,
+      { 0, 10, 10 }, 0, ISOTP_STD },
+
+    // SOH
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE003,
+      { 0, 1800, 1800 }, 0, ISOTP_STD },
+
+    // READY flag – polled in all states, faster in "off" to detect wake
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE004,
+      { 5, 10, 10 }, 0, ISOTP_STD },
+
+    // Plug present
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE009,
+      { 0, 10, 10 }, 0, ISOTP_STD },
+
+    // HVAC temp
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE010,
+      { 0, 30, 30 }, 0, ISOTP_STD },
+
+    // Ambient temp
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE025,
+      { 0, 30, 30 }, 0, ISOTP_STD },
+
     POLL_LIST_END
   };
 
-  // Attach the poll list to CAN1 & start idle
+  // Attach the poll list to CAN1 & start in "off" state
   PollSetPidList(m_can1, maxt90_polls);
   PollSetState(0);
 
@@ -51,7 +74,7 @@ OvmsVehicleMaxt90::~OvmsVehicleMaxt90()
 }
 
 // ─────────────────────────────────────────────
-//  Live CAN Frame Handler (Lock, Odometer, etc.)
+//  Live CAN Frame Handler (Lock + Odometer)
 // ─────────────────────────────────────────────
 void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
@@ -65,7 +88,7 @@ void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
   {
-    case 0x281: // Body Control Module: Lock state
+    case 0x281: // Body Control Module: lock state
     {
       uint8_t state = d[1];
       static uint8_t last_state = 0x00;
@@ -75,7 +98,7 @@ void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
         bool locked = (state == 0xA9);
 
-        // Standard OVMS env lock metric – used by apps & integrations:
+        // Standard OVMS metric – used by apps / HA:
         StdMetrics.ms_v_env_locked->SetValue(locked);
 
         ESP_LOGI(TAG, "Lock state changed: %s (CAN 0x281 byte1=0x%02x)",
@@ -86,24 +109,33 @@ void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     }
 
-    case 0x540: // Odometer broadcast
+    case 0x540: // Odometer (from your trace)
     {
-      // Example frame seen: 540 00 00 00 00 90 f0 02 00
-      // Use bytes 4–6 (big endian) as metres, convert to km.
-      if (p_frame->FIR.B.DLC >= 7)
+      // Frame example seen:
+      // 540 00 00 00 00 90 f0 02 00
+      //
+      // Treat bytes [4..6] as 24-bit little-endian, resolution 0.1 km:
+      //   raw = d4 + d5*256 + d6*65536
+      //   km  = raw / 10
+      uint32_t raw =
+        (uint32_t)d[4] |
+        ((uint32_t)d[5] << 8) |
+        ((uint32_t)d[6] << 16);
+
+      float km = raw / 10.0f;
+
+      if (km > 0 && km < 1000000.0f)
       {
-        uint32_t raw_m = (uint32_t(d[4]) << 16) |
-                         (uint32_t(d[5]) <<  8) |
-                         (uint32_t(d[6]));
-
-        float km = raw_m / 1000.0f;
-
-        float old_km = StdMetrics.ms_v_pos_odometer->AsFloat();
-        if (km > 0 && km < 1e6 && fabsf(km - old_km) > 0.1f)
+        if (StdMetrics.ms_v_pos_odometer->AsFloat() != km)
         {
           StdMetrics.ms_v_pos_odometer->SetValue(km);
-          ESP_LOGD(TAG, "Odometer: %.1f km (raw=%u m)", km, raw_m);
+          ESP_LOGI(TAG, "Odometer: %.1f km (raw=0x%06x)", km, raw);
         }
+      }
+      else
+      {
+        ESP_LOGW(TAG, "Odometer raw=0x%06x (%.1f km) out of range, ignored",
+                 raw, km);
       }
       break;
     }
@@ -179,11 +211,11 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
                    v, ready ? "true" : "false");
 
           if (!ready && m_poll_state != 0) {
-            ESP_LOGI(TAG, "Vehicle OFF detected, suspending polling");
+            ESP_LOGI(TAG, "Vehicle OFF detected, setting poll state 0");
             PollSetState(0);
           }
           else if (ready && m_poll_state == 0) {
-            ESP_LOGI(TAG, "Vehicle ON detected, resuming polling");
+            ESP_LOGI(TAG, "Vehicle ON detected, setting poll state 1");
             PollSetState(1);
           }
         }
@@ -276,7 +308,7 @@ public:
 OvmsVehicleMaxt90Init::OvmsVehicleMaxt90Init()
 {
   ESP_LOGI(TAG, "Registering Vehicle: Maxus T90 EV (9000)");
-  // Vehicle type code shortened to "MT90" per review feedback:
+  // Vehicle type string "MT90" is the type code in OVMS:
   MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxt90>(
     "MT90", "Maxus T90 EV");
 }
