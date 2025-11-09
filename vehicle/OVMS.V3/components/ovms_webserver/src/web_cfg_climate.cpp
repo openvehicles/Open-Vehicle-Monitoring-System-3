@@ -49,7 +49,7 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
   if (c.method == "POST") {
     // Read enable/disable checkbox
     precondition = (c.getvar("precondition") == "yes");
-    MyConfig.SetParamValueBool("vehicle", "precondition", precondition);
+    MyConfig.SetParamValueBool("vehicle", "climate.precondition", precondition);
 
     // Process form submission
     for (int i = 0; i < 7; i++) {
@@ -137,7 +137,7 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
   }
   else {
     // Read current enable state
-    precondition = MyConfig.GetParamValueBool("vehicle", "precondition", false);
+    precondition = MyConfig.GetParamValueBool("vehicle", "climate.precondition", false);
     c.head(200);
   }
 
