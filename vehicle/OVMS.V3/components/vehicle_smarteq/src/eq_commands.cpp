@@ -42,6 +42,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     return Fail;
   }
 
+  if(!enable) {
+    m_climate_ticker = 0;
+    m_climate_start = false; 
+    return NotImplemented;
+  }
+
   if (StandardMetrics.ms_v_bat_soc->AsInt(0) < 31)
   {    
     char msg[100];
