@@ -15,7 +15,7 @@ protected:
   void IncomingPollReply(const OvmsPoller::poll_job_t& job,
                          uint8_t* data, uint8_t length) override;
 
-  // Raw CAN1 frames (for lock status on 0x281, odometer on 0x540, etc.):
+  // Raw CAN1 frames (for lock status, odometer etc.):
   void IncomingFrameCan1(CAN_frame_t* p_frame) override;
 
 private:
