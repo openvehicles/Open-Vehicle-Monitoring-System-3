@@ -47,7 +47,7 @@ OvmsVehicleMaxt90::~OvmsVehicleMaxt90()
 }
 
 // ─────────────────────────────────────────────
-//  Live CAN Frame Handler (Lock/Unlock etc.)
+//  Live CAN Frame Handler (Lock state, Odometer)
 // ─────────────────────────────────────────────
 void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
@@ -78,6 +78,27 @@ void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
                  locked ? "LOCKED" : "UNLOCKED", state);
 
         last_state = state;
+      }
+      break;
+    }
+
+    case 0x540: // Odometer / distance
+    {
+      // Example from your log: 00 00 00 00 90 F0 02 00
+      // Assume odometer = (d4<<8 | d5) / 10.0 km  (0.1 km units)
+      uint16_t raw = (uint16_t(d[4]) << 8) | uint16_t(d[5]);
+      static uint16_t last_raw = 0;
+
+      if (raw != last_raw && raw != 0x0000 && raw != 0xFFFF)
+      {
+        float odo_km = raw / 10.0f;   // adjust factor later if needed
+
+        if (odo_km > 0 && odo_km < 2000000.0f)
+        {
+          StdMetrics.ms_v_pos_odometer->SetValue(odo_km);
+          ESP_LOGI(TAG, "Odometer: raw=0x%04x -> %.1f km", raw, odo_km);
+          last_raw = raw;
+        }
       }
       break;
     }
