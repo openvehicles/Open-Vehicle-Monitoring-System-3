@@ -6,7 +6,8 @@ Open Vehicle Monitor System v3 - Change log
     Add multiple CAN frame parsers for energy and charging metrics
     Add automatic 12V ADC factor recalculation history tracking
   New commands:
-    xsq preclimate schedule <day> <time>  -- Set pre-climate schedule for specific day
+    xsq preclimate schedule <day> <time> <duration>  -- Set pre-climate schedule for specific day 
+                                                        Duration: 5, 10, or 15 (minutes) - optional, defaults to current setting
     xsq preclimate list                   -- List all configured pre-climate schedules
     xsq preclimate clear <day|all>        -- Clear pre-climate schedule
   New config namespace:
