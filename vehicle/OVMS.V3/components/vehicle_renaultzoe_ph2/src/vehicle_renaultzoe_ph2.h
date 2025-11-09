@@ -66,24 +66,30 @@
 #define HEVC_A2_ID 0x3C3
 #define BCM_A4_ID 0x418
 #define HEVC_A1_ID 0x437
-#define VDC_A8_ID 0x438 // Odometer values scaling or calculation unknown, so actually not used
 #define HEVC_R17_ID 0x480
 #define BCM_A11_ID 0x491
 #define HVAC_A2_ID 0x43E // scaling needs to be checked
 #define BCM_A3_ID 0x46C
+#define HFM_A1_ID 0x46F
 #define USM_A2_ID 0x47C
 #define BCM_A7_ID 0x47D
 #define METER_A3_ID 0x47F
-#define HEVC_A4_ID 0x4FE
 #define METER_A5_ID 0x5B9
 #define BCM_A2_ID 0x5BA
 #define HVAC_R3_ID 0x5C2
 #define HEVC_A101_ID 0x5C5
 #define HEVC_A23_ID 0x625
-#define HEVC_R15_ID 0x676 // Bat power values are crazy
-#define HEVC_A22_ID 0x6C9 // current scaling is changing, so actually not used
+#define HEVC_A22_ID 0x6C9
 #define HEVC_R11_ID 0x6E9
 #define HEVC_R12_ID 0x6F2
+
+// Define ISO-TP diagnostic request/response IDs
+#define METER_DDT_REQ_ID 0x743
+#define METER_DDT_RESP_ID 0x763
+#define HVAC_DDT_REQ_ID 0x744
+#define HVAC_DDT_RESP_ID 0x764
+#define BCM_DDT_REQ_ID 0x745
+#define BCM_DDT_RESP_ID 0x765
 
 using namespace std;
 
@@ -102,6 +108,7 @@ public:
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   static void WebCfgCommon(PageEntry_t &p, PageContext_t &c);
+  static void WebCfgPreclimate(PageEntry_t &p, PageContext_t &c);
 #endif
   // Define OVMS vehicle and zoe specific functions
   void ConfigChanged(OvmsConfigParam *param) override;
@@ -110,6 +117,7 @@ public:
   void IncomingFrameCan1(CAN_frame_t *p_frame) override;
   void SyncVCANtoMetrics();
   void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length) override;
+  void TxCallback(const CAN_frame_t* frame, bool success);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   void WebInit();
@@ -138,12 +146,10 @@ public:
   bool vcan_door_trunk = false;
   float vcan_hvac_blower = 0;
   float vcan_hvac_cabin_setpoint = 0;
-  int vcan_hvac_compressor_mode = 0;
   float vcan_hvac_compressor_power = 0;
   float vcan_hvac_ptc_heater_active = 0;
   float vcan_hvBat_available_energy = 0;
   float vcan_hvBat_ChargeTimeRemaining = 0;
-  float vcan_hvBat_current = 0;
   float vcan_hvBat_estimatedRange = 0;
   float vcan_hvBat_max_chg_power = 0;
   float vcan_hvBat_SoC = 0;
@@ -187,6 +193,33 @@ protected:
   int vcan_message_counter = 0;
   bool vcan_poller_state = false;
   uint32_t vcan_lastActivityTime = 0;
+
+  // 12V auto-recharge settings and state
+  bool m_auto_12v_recharge_enabled = false;
+  float m_auto_12v_threshold = 12.4;
+  bool m_dcdc_manual_enabled = false;
+  bool m_dcdc_active = false;
+  uint32_t m_dcdc_last_send_time = 0;
+  uint32_t m_dcdc_start_time = 0;
+
+  // Coming home function settings
+  bool m_coming_home_enabled = false;
+  bool m_last_locked_state = false;
+  bool m_last_headlight_state = false;
+
+  // Remote climate trigger (via key fob remote lighting button)
+  bool m_remote_climate_enabled = false;
+  uint32_t m_remote_climate_last_trigger_time = 0;  // Timestamp of last trigger to prevent multiple activations
+  uint8_t m_remote_climate_last_button_state = 0;   // Last button state for edge detection
+
+  // Scheduled pre-climate tracking
+  int m_preclimate_last_triggered_day = -1;    // Last day schedule was triggered (0-6)
+  int m_preclimate_last_triggered_hour = -1;   // Last hour schedule was triggered
+  int m_preclimate_last_triggered_min = -1;    // Last minute schedule was triggered
+
+  // TX callback tracking for command verification
+  std::atomic<uint32_t> m_tx_success_id;   // ID of last successfully transmitted frame
+  std::atomic<bool> m_tx_success_flag;     // Flag indicating successful transmission
 
   // Define poll response functions by ECU
   void IncomingINV(uint16_t type, uint16_t pid, const char *data, uint16_t len);
@@ -234,7 +267,6 @@ protected:
   OvmsMetricFloat *mt_hvac_heating_cond_temp;         // Heating mode - cond temp (before PTC)
   OvmsMetricFloat *mt_hvac_heating_temp;              // Heating mode - temp after PTC (Air outlet)
   OvmsMetricFloat *mt_hvac_heating_ptc_req;           // Heating mode - request PTCs (0-5) (compensation of cond_temp to temp)
-  OvmsMetricFloat *mt_hevc_waterpump_lifetime_left;   // Waterpump lifetime left in percent
   OvmsMetricFloat *mt_12v_dcdc_load;                  // DC-DC converter load in percent
   OvmsMetricFloat *mt_bat_cons_aux;                   // Aux power consumption trip (Compressor consumption)
 
@@ -244,21 +276,43 @@ public:
   vehicle_command_t CommandWakeup();
   vehicle_command_t CommandLock(const char *pin);
   vehicle_command_t CommandUnlock(const char *pin);
+  vehicle_command_t CommandUnlockTrunk(const char *pin);
   vehicle_command_t CommandHomelink(int button, int durationms = 1000);
   vehicle_command_t CommandDDT(uint32_t txid, uint32_t rxid, bool ext_frame, string request);
 
   // Shell commands:
   static void CommandPollerStartIdle(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
   static void CommandPollerStop(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandUnlockTrunk(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandUnlockChargeport(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandLighting(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandUnlockTrunkShell(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
   static void CommandDebug(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
   static void CommandPollerInhibit(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
   static void CommandPollerResume(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
   static void CommandDdtHvacEnableCompressor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
   static void CommandDdtHvacDisableCompressor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
   static void CommandDdtClusterResetService(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandDdtHEVCResetWaterPumpCounter(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandDdtHvacEnablePTC(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandDdtHvacDisablePTC(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandDcdcEnable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandDcdcDisable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+
+  // DCDC control functions
+  void SendDCDCMessage();
+  void EnableDCDC(bool manual = true);
+  void DisableDCDC();
+  void CheckAutoRecharge();
+
+  // Coming home function
+  void TriggerComingHomeLighting();
+
+  // Scheduled pre-climate functions
+  void CheckPreclimateSchedule(std::string event, void* data);
+  bool ParseScheduleTime(const std::string& schedule, int current_hour, int current_min);
+
+  // Shell commands for schedule management:
+  static void CommandPreclimateScheduleSet(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandPreclimateScheduleList(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandPreclimateScheduleClear(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 
 private:
   // Define helper vars for 100km rolling consumption calculation

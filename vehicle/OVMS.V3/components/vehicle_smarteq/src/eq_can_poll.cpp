@@ -865,19 +865,19 @@ void OvmsVehicleSmartEQ::PollReply_obd_time(const char* data, uint16_t reply_len
   REQUIRE_LEN(3);
   int value_1 = CAN_UINT24(0);
   std::string timeStr = SecondsToHHmm(value_1);
-  mt_obd_trip_time->SetValue( timeStr );
+  mt_reset_time->SetValue( timeStr );
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_start_trip(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(2);
-  mt_obd_start_trip_km->SetValue((float) CAN_UINT(0));
+  mt_start_distance->SetValue((float) CAN_UINT(0));
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_start_time(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(3);
   int value_1 = CAN_UINT24(0);
   std::string timeStr = SecondsToHHmm(value_1);
-  mt_obd_start_trip_time->SetValue( timeStr );
+  mt_start_time->SetValue( timeStr );
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_mt_day(const char* data, uint16_t reply_len) {

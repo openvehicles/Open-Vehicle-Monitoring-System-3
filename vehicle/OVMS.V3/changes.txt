@@ -1,6 +1,18 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Renault Zoe Ph2:
+    Remove waterpump lifetime left metric and waterpump reset command
+    Add manual PTC activation (heating while charging or defective compressor)
+    Add lighting command (same like key fob button)
+    Add coming home function 
+    Add remote pre-climate with key fob
+    Add simple pre-climate scheduler
+    Add dcdc manual activation
+    Add automatic dcdc activation if battery threshold reached
+    Add working trunk unlock command
+    Use TXCallback for checking successful transmissions
+    Use wake up messages when CAN is sleeping
 - Wifi: added command to restart the Wifi network into the default (autostart) config,
     and added default for the AP SSID on the apclient mode.
   New/changed commands:
