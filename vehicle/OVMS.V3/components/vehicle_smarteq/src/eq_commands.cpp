@@ -1056,7 +1056,8 @@ void OvmsVehicleSmartEQ::CheckPreclimateSchedule()
       }
 
       // All checks passed - trigger pre-climate
-      OvmsVehicle::vehicle_command_t result = CommandClimateControl(true);
+      int duration = MyConfig.GetParamValueInt("xsq.preclimate", "duration", 0); // default 0 = 5 min
+      OvmsVehicle::vehicle_command_t result = CommandHomelink(duration);
 
       if (result == Success)
       {
@@ -1080,26 +1081,31 @@ void OvmsVehicleSmartEQ::CheckPreclimateSchedule()
 
 /**
  * Shell command: Set pre-climate schedule for a specific day
- * Usage: xsq preclimate schedule <day> <time>
+ * Usage: xsq preclimate schedule <day> <time> <duration>
  * Example: xsq preclimate schedule mon 07:30
- *          xsq preclimate schedule fri 07:00,17:30
+ *          xsq preclimate schedule mon 07:30 5
+ *          xsq preclimate schedule fri 07:00,17:30 10
+ * Duration: 5, 10, or 15 (minutes) - optional, defaults to current setting
  */
 void OvmsVehicleSmartEQ::xsq_preclimate_schedule_set(int verbosity, OvmsWriter *writer,
                                                       OvmsCommand *cmd, int argc, const char *const *argv)
 {
     if (argc < 2)
     {
-        writer->puts("Usage: xsq preclimate schedule <day> <time>");
+        writer->puts("Usage: xsq preclimate schedule <day> <time> <duration>");
         writer->puts("  day: mon, tue, wed, thu, fri, sat, sun");
         writer->puts("  time: HH:MM or HH:MM,HH:MM,... for multiple times");
+        writer->puts("  duration: 5, 10, or 15 minutes (optional, default: current setting)");
         writer->puts("Examples:");
         writer->puts("  xsq preclimate schedule mon 07:30");
-        writer->puts("  xsq preclimate schedule fri 07:00,17:30");
+        writer->puts("  xsq preclimate schedule mon 07:30 5");
+        writer->puts("  xsq preclimate schedule fri 07:00,17:30 10");
         return;
     }
 
     const char* day = argv[0];
     const char* time = argv[1];
+    const char* duration = (argc >= 3) ? argv[2] : nullptr;
 
     // Validate day
     const char* valid_days[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
@@ -1167,11 +1173,44 @@ void OvmsVehicleSmartEQ::xsq_preclimate_schedule_set(int verbosity, OvmsWriter *
         return;
     }
 
+    // Validate and set duration if provided
+    if (duration != nullptr)
+    {
+        int duration_val = atoi(duration);
+        int duration_code = -1;
+
+        // Map duration to config value (0=5min, 1=10min, 2=15min)
+        if (duration_val == 5)
+            duration_code = 0;
+        else if (duration_val == 10)
+            duration_code = 1;
+        else if (duration_val == 15)
+            duration_code = 2;
+        else
+        {
+            writer->puts("ERROR: Invalid duration. Use 5, 10, or 15 minutes");
+            return;
+        }
+
+        // Save duration to config
+        MyConfig.SetParamValueInt("xsq.preclimate", "duration", duration_code);
+        writer->printf("Pre-climate runtime set to %d minutes\n", duration_val);
+        ESP_LOGI(TAG, "Pre-climate runtime set to %d minutes", duration_val);
+    }
+
     // Save schedule to config
     MyConfig.SetParamValue("xsq.preclimate", day, time);
 
-    writer->printf("Pre-climate schedule set for %s at %s\n", day, time);
-    ESP_LOGI(TAG, "Pre-climate schedule set for %s at %s", day, time);
+    // Get current duration setting for confirmation message
+    int current_duration_code = MyConfig.GetParamValueInt("xsq.preclimate", "duration", 0);
+    int current_duration_min = (current_duration_code == 0) ? 5 :
+                               (current_duration_code == 1) ? 10 : 
+                               (current_duration_code == 2) ? 15 : 5;
+
+    writer->printf("Pre-climate schedule set for %s at %s (%d min runtime)\n", 
+                   day, time, current_duration_min);
+    ESP_LOGI(TAG, "Pre-climate schedule set for %s at %s (%d min runtime)", 
+             day, time, current_duration_min);
 }
 
 /**
@@ -1198,6 +1237,11 @@ void OvmsVehicleSmartEQ::xsq_preclimate_schedule_list(int verbosity, OvmsWriter 
             has_schedules = true;
         }
     }
+    int duration = MyConfig.GetParamValueInt("xsq.preclimate", "duration", 0);
+    std::string duration_str = (duration == 0) ? "5 min" :
+                                   (duration == 1) ? "10 min" :
+                                   (duration == 2) ? "15 min" : "5 min";
+    writer->printf("runtime: %s\n", duration_str.c_str());
 
     if (!has_schedules)
     {

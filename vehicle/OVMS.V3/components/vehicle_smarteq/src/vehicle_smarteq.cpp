@@ -235,7 +235,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   
   // Pre-climate schedule commands
   OvmsCommand* preclimate = cmd_xsq->RegisterCommand("preclimate", "Pre-Climate Schedule Management");
-  preclimate->RegisterCommand("schedule", "Set schedule for pre-climate (day hour:min)", xsq_preclimate_schedule_set, "<day> <time>", 2, 2);
+  preclimate->RegisterCommand("schedule", "Set schedule for pre-climate (day hour:min)", xsq_preclimate_schedule_set, "<day> <time> <duration>", 2, 2);
   preclimate->RegisterCommand("list", "List all configured pre-climate schedules", xsq_preclimate_schedule_list);
   preclimate->RegisterCommand("clear", "Clear pre-climate schedule for day", xsq_preclimate_schedule_clear, "<day|all>", 1, 1);
 

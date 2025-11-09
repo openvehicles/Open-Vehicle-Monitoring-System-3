@@ -327,15 +327,7 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
     climate_time_int = atoi(climate_time.c_str());
     climate_ds_int = atoi(climate_ds.c_str());
     climate_de_int = atoi(climate_de.c_str());
-    climate_1to3_int = 0;
-
-    // Convert climate_1to3
-    if (atoi(climate_1to3.c_str()) == 5) climate_1to3_int = 0;
-    else if (atoi(climate_1to3.c_str()) == 10) climate_1to3_int = 1;
-    else if (atoi(climate_1to3.c_str()) == 15) climate_1to3_int = 2;
-    else {
-      error += "<li>Invalid climate duration</li>";
-    }
+    climate_1to3_int = atoi(climate_1to3.c_str());
 
     if (error.empty()) {
       // Format data string
@@ -390,10 +382,14 @@ void OvmsVehicleSmartEQ::WebCfgClimate(PageEntry_t& p, PageContext_t& c) {
     "<p>Enable = sends a notification after a change in the set data</p>");
   c.input_checkbox("Enable Climate/Heater data store", "climate_data_store", climate_data_store,
     "<p>Enable = store Climate/Heater data in the OVMS flash</p>"
-    "<p>high frequency data storage can reduce the life of the flash memory!</p>");
-  c.input_slider("Enable two time activation Climate/Heater", "climate_1to3", 3, "min",-1, atof(climate_1to3.c_str()), 5, 5, 15, 5,
-    "<p>Enable = this option start Climate/Heater for 5-15 minutes</p>");
+    "<p>high frequency data storage can reduce the life of the flash memory!</p>");  
   c.input_text("time", "climate_time", climate_time.c_str(), "515","<p>Time: 5:15 = 515 or 15:30 = 1530</p>");
+  // Additional climate options
+  c.input_select_start("Select duration", "climate_1to3");
+  c.input_select_option("5 minutes", "0", climate_1to3 == "0");
+  c.input_select_option("10 minutes", "1", climate_1to3 == "1");
+  c.input_select_option("15 minutes", "2", climate_1to3 == "2");
+  c.input_select_end();
 
   c.input_checkbox("Enable auto timer activation Climate/Heater", "climate_weekly", climate_weekly,
     "<p>Enable = this option de/activate Climate/Heater at on/off day</p>");
@@ -445,6 +441,7 @@ void OvmsVehicleSmartEQ::WebCfgPreclimate(PageEntry_t &p, PageContext_t &c)
 
       bool enabled = (c.getvar(enabled_var) == "yes");
       std::string times = c.getvar(time_var);
+      int duration = atoi(c.getvar("duration").c_str());
 
       if (enabled && !times.empty())
       {
@@ -496,6 +493,7 @@ void OvmsVehicleSmartEQ::WebCfgPreclimate(PageEntry_t &p, PageContext_t &c)
         if (valid)
         {
           MyConfig.SetParamValue("xsq.preclimate", day_names[i], times);
+          MyConfig.SetParamValueInt("xsq.preclimate", "duration", duration);
         }
       }
       else
@@ -559,6 +557,14 @@ void OvmsVehicleSmartEQ::WebCfgPreclimate(PageEntry_t &p, PageContext_t &c)
     c.print("</div>");
     c.print("</div>");
   }
+  // Get current duration value
+  std::string duration = MyConfig.GetParamValue("xsq.preclimate", "duration", "0");
+  // Additional climate options
+  c.input_select_start("Select duration", "duration");
+  c.input_select_option("5 minutes", "0", duration == "0");
+  c.input_select_option("10 minutes", "1", duration == "1");
+  c.input_select_option("15 minutes", "2", duration == "2");
+  c.input_select_end();
 
   c.fieldset_end();
 
