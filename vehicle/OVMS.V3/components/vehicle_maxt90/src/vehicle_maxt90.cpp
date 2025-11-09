@@ -6,6 +6,7 @@ static const char *TAG = "v-maxt90";
 #include "vehicle_maxt90.h"
 #include "vehicle_obdii.h"
 #include "metrics_standard.h"
+#include "ovms_metrics.h"
 
 OvmsVehicleMaxt90::OvmsVehicleMaxt90()
 {
@@ -20,6 +21,8 @@ OvmsVehicleMaxt90::OvmsVehicleMaxt90()
     MyMetrics.InitFloat("xmt.v.hvac.temp", 10, 0.0f, Other, false);
   m_pack_capacity_kwh =
     MyMetrics.InitFloat("xmt.b.capacity", 0, 88.5f, Other, true);
+  m_lock_state =
+    MyMetrics.InitBool("xmt.v.locked", 0, false, Other, true);
 
   // Define poll list (VIN, SOC, SOH, READY flag, Plug present, HVAC temp, Ambient temp)
   static const OvmsPoller::poll_pid_t maxt90_polls[] = {
@@ -160,7 +163,6 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
       break;
     }
 
-
     case 0xE025: { // Ambient temperature (°C)
       if (length >= 2) {
         uint16_t raw = u16be(data);
@@ -189,14 +191,47 @@ void OvmsVehicleMaxt90::IncomingPollReply(const OvmsPoller::poll_job_t& job,
       }
       break;
     }
+
     default:
       break;
   }
 }
 
-// ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+//  Live CAN Frame Handler (Lock/Unlock etc.)
+// ─────────────────────────────────────────────
+void OvmsVehicleMaxt90::IncomingFrameCan1(CAN_frame_t* p_frame)
+{
+  // Call base class first
+  OvmsVehicle::IncomingFrameCan1(p_frame);
+  const uint8_t* d = p_frame->data.u8;
+
+  switch (p_frame->MsgID)
+  {
+    case 0x281: // Body Control Module: Lock state
+    {
+      uint8_t state = d[1];
+      static uint8_t last_state = 0x00;
+
+      if (state != last_state && (state == 0xA9 || state == 0xA8))
+      {
+        bool locked = (state == 0xA9);
+        m_lock_state->SetValue(locked);
+        ESP_LOGI(TAG, "Lock state changed: %s (byte1=0x%02x)",
+                 locked ? "LOCKED" : "UNLOCKED", state);
+        last_state = state;
+      }
+      break;
+    }
+
+    default:
+      break;
+  }
+}
+
+// ─────────────────────────────────────────────
 //   Module Registration
-// ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 
 class OvmsVehicleMaxt90Init
 {
@@ -207,7 +242,6 @@ public:
 OvmsVehicleMaxt90Init::OvmsVehicleMaxt90Init()
 {
   ESP_LOGI(TAG, "Registering Vehicle: Maxus T90 EV (9000)");
-  // Vehicle type string "MAXT90" is what will appear as type code in OVMS:
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxt90>("MAXT90",
-                                                      "Maxus T90 EV");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleMaxt90>(
+    "MAXT90", "Maxus T90 EV");
 }
