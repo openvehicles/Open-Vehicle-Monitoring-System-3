@@ -397,9 +397,9 @@ void OvmsVehicleFactory::vehicle_climate_schedule_set(int verbosity, OvmsWriter*
     {
       std::string duration_str = entry.substr(slash_pos + 1);
       int duration = atoi(duration_str.c_str());
-      if (duration != 5 && duration != 10 && duration != 15)
+      if (duration < 5 || duration > 30)
       {
-        writer->printf("ERROR: Invalid duration '%s'. Use 5, 10, or 15 minutes\n", duration_str.c_str());
+        writer->printf("ERROR: Invalid duration '%s'. Use 5 to 30 minutes\n", duration_str.c_str());
         return;
       }
     }
@@ -696,6 +696,10 @@ void OvmsVehicle::CheckPreconditionSchedule()
         if (slash_pos != std::string::npos)
         {
           duration = atoi(entry.substr(slash_pos + 1).c_str());
+          if (duration < 5 || duration > 30)
+          {
+            duration = 10; // Fallback to default
+          }
         }
 
         ESP_LOGI(TAG, "Scheduled precondition triggered for %s at %02d:%02d (duration: %d min)",

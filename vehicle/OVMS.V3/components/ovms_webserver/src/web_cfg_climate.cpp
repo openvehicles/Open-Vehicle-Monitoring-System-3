@@ -112,9 +112,9 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
         // Validate optional duration if present
         if (slash_pos != std::string::npos) {
           int duration = atoi(entry.substr(slash_pos + 1).c_str());
-          if (duration != 5 && duration != 10 && duration != 15) {
+          if (duration < 5 || duration > 30) {
             valid = false;
-            error += "<li>" + std::string(day_full[i]) + ": invalid duration (use 5, 10, or 15)</li>";
+            error += "<li>" + std::string(day_full[i]) + ": invalid duration (use 5 to 30)</li>";
             break;
           }
         }
