@@ -38,8 +38,27 @@ static const char *TAG = "v-smarteq";
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
   if(!m_enable_write) {
     ESP_LOGE(TAG, "CommandClimateControl failed / no write access");
+    m_climate_ticker = 0;
     return Fail;
   }
+
+  if(!enable) {
+    m_climate_ticker = 0;
+    m_climate_start = false; 
+    return NotImplemented;
+  }
+
+  if (StandardMetrics.ms_v_bat_soc->AsInt(0) < 31)
+  {    
+    char msg[100];
+    snprintf(msg, sizeof(msg), "Scheduled precondition skipped: Battery SOC too low (%d%%)",
+             StandardMetrics.ms_v_bat_soc->AsInt(0));
+    ESP_LOGW(TAG, "%s", msg);
+    MyNotify.NotifyString("alert", "climatecontrol.schedule", msg);
+    m_climate_ticker = 0;
+    return Fail;
+  }
+
   if (StdMetrics.ms_v_env_hvac->AsBool()) {
     MyNotify.NotifyString("info", "hvac.enabled", "Climate already on");
     ESP_LOGI(TAG, "CommandClimateControl already on");
@@ -130,15 +149,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
   ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
   OvmsVehicle::vehicle_command_t res = NotImplemented;
 
-  if (StdMetrics.ms_v_bat_soc->AsInt() < 31) {
-    ESP_LOGI(TAG, "Battery SOC is too low for climate control");
-    return Fail;
-  }
-
   switch (button)
   {
     case 0:
     {
+      m_climate_ticker = 1; 
       res = CommandClimateControl(true);
       break;
     }
@@ -918,6 +933,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "gps.onoff",
     "gps.off",
     "gps.reactmin",
+    "precondition",
     "gps.deact"
   };
   
@@ -943,5 +959,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   if (writer) {
     writer->printf("Config V%d preset activated", PRESET_VERSION);
   }
+
+  MyConfig.DeregisterParam("xsq.preclimate");
   return Success;
 }

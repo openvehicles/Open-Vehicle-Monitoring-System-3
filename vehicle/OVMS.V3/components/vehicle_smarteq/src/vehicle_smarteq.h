@@ -158,7 +158,7 @@ public:
     virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandSOClimit(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
-
+    
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     void WebInit();
@@ -168,6 +168,7 @@ public:
     static void WebCfgTPMS(PageEntry_t& p, PageContext_t& c);
     static void WebCfgADC(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgClimateSchedule(PageEntry_t& p, PageContext_t& c);
 #endif
     void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
@@ -278,6 +279,8 @@ public:
     bool m_12v_charge_state;                //!< 12V charge state
     bool m_climate_system;                  //!< climate system on/off
     bool m_climate_notify;                  //!< climate notification on/off
+    bool m_climate_data_store;              //!< climate data store on/off
+    std::string m_climate_data;             //!< climate data stored
     std::string m_hl_canbyte;               //!< canbyte variable for unv
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
