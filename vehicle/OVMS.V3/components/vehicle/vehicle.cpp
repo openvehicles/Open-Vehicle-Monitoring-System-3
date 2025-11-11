@@ -1307,7 +1307,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
           ESP_LOGI(TAG,"Stopping climate control as per schedule");
           }
         }
-      } // end ((m_ticker % 60) == 0)
+      }
       
     // Handle scheduled climate restarts
     if (m_climate_restart_ticker > 0  && m_climate_restart && !StdMetrics.ms_v_env_hvac->AsBool())
