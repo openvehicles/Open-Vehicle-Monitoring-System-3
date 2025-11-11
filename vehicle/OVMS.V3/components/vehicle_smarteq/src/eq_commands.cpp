@@ -38,13 +38,14 @@ static const char *TAG = "v-smarteq";
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
   if(!m_enable_write) {
     ESP_LOGE(TAG, "CommandClimateControl failed / no write access");
-    m_climate_ticker = 0;
+    m_climate_restart_ticker = 0;
+    m_climate_restart = false; 
     return Fail;
   }
 
   if(!enable) {
-    m_climate_ticker = 0;
-    m_climate_start = false; 
+    m_climate_restart_ticker = 0;
+    m_climate_restart = false; 
     return NotImplemented;
   }
 
@@ -55,7 +56,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
              StandardMetrics.ms_v_bat_soc->AsInt(0));
     ESP_LOGW(TAG, "%s", msg);
     MyNotify.NotifyString("alert", "climatecontrol.schedule", msg);
-    m_climate_ticker = 0;
+    m_climate_restart_ticker = 0;
+    m_climate_restart = false; 
     return Fail;
   }
 
@@ -79,8 +81,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
       for (int i = 0; i < 10; i++) {
         obd->WriteStandard(0x634, 4, data);
         vTaskDelay(100 / portTICK_PERIOD_MS);
-      }
-      m_climate_start = true;      
+      }     
       res = Success;
     } else {
       res = Fail;
@@ -153,20 +154,62 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
   {
     case 0:
     {
-      m_climate_ticker = 1; 
       res = CommandClimateControl(true);
+
+      if (res == Success)
+        {
+          m_climate_restart = false;
+          m_climate_restart_ticker = 0; // 5 minutes default runtime, no ticker required
+          ESP_LOGI(TAG, "Precondition activated successfully");
+          MyNotify.NotifyString("info", "climatecontrol.schedule",
+                                "5 minutes precondition started");
+        }
+      else
+        {
+          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
+          MyNotify.NotifyString("error", "climatecontrol.schedule",
+                                "precondition failed to start");
+        }
       break;
     }
     case 1:
     {
-      m_climate_ticker = 2;
       res = CommandClimateControl(true);
+
+      if (res == Success)
+        {
+          m_climate_restart = true;
+          m_climate_restart_ticker = 8; // 10 minutes
+          ESP_LOGI(TAG, "Precondition activated successfully");
+          MyNotify.NotifyString("info", "climatecontrol.schedule",
+                                "10 minutes precondition started");
+        }
+      else
+        {
+          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
+          MyNotify.NotifyString("error", "climatecontrol.schedule",
+                                "precondition failed to start");
+        }
       break;
     }
     case 2:
-    {      
-      m_climate_ticker = 3;
+    { 
       res = CommandClimateControl(true);
+
+      if (res == Success)
+        {
+          m_climate_restart = true;
+          m_climate_restart_ticker = 12; // 15 minutes
+          ESP_LOGI(TAG, "Precondition activated successfully");
+          MyNotify.NotifyString("info", "climatecontrol.schedule",
+                                "15 minutes precondition started");
+        }
+      else
+        {
+          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
+          MyNotify.NotifyString("error", "climatecontrol.schedule",
+                                "precondition failed to start");
+        }
       break;
     }
     default:
@@ -789,7 +832,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::Command12Vcharge(int verbosit
   return Success;
 }
 void OvmsVehicleSmartEQ::Notify12Vcharge() {
-  m_12v_charge_state = false;
   StringWriter buf(200);
   Command12Vcharge(COMMAND_RESULT_NORMAL, &buf);
   MyNotify.NotifyString("info","xsq.12v.charge",buf.c_str());

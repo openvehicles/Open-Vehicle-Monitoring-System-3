@@ -37,28 +37,6 @@ static const char *TAG = "v-smarteq";
 
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) 
   {
-  // climate start 2-3 times when Homelink 2 or 3
-  if (m_climate_ticker >= 1 && !StdMetrics.ms_v_env_hvac->AsBool() && !m_climate_start)
-      CommandClimateControl(true);
-
-  if (m_climate_start && StdMetrics.ms_v_env_hvac->AsBool()) 
-    {
-    m_climate_start = false;
-    if (m_12v_charge_state) 
-      {
-      Notify12Vcharge();
-      } 
-    else 
-      {
-      NotifyClimate();
-      }
-    if (m_climate_ticker >= 1) 
-      { 
-      --m_climate_ticker;
-      ESP_LOGI(TAG,"Climate ticker: %d", m_climate_ticker);
-      }
-    }
-
   if (m_ddt4all_exec >= 1) 
     { 
     --m_ddt4all_exec;

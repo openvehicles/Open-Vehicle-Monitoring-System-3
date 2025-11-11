@@ -56,11 +56,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ESP_LOGI(TAG, "Start smart EQ vehicle module");
 
   m_climate_init = true;
-  m_climate_start = false;
   m_climate_start_day = false;
-  m_climate_ticker = 0;
   m_12v_ticker = 0;
-  m_12v_charge_state = false;
   m_ddt4all = false;
   m_ddt4all_ticker = 0;
   m_ddt4all_exec = 0;
@@ -783,11 +780,9 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
 
     m_warning_unlocked = false;
     m_warning_dooropen = false;
-
-    #ifdef CONFIG_OVMS_COMP_CELLULAR
-      m_12v_ticker = 0;
-      m_climate_ticker = 0;
-    #endif
+    m_12v_ticker = 0;
+    m_climate_restart = false;
+    m_climate_restart_ticker = 0;
   }
   else if (!isOn && StdMetrics.ms_v_env_on->AsBool()) {
     // Log once that car is being turned off
