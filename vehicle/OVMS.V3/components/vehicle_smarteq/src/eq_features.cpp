@@ -290,6 +290,7 @@ void OvmsVehicleSmartEQ::TimeBasedClimateData() {
 
 // check the 12V alert periodically and charge the 12V battery if needed
 void OvmsVehicleSmartEQ::Check12vState() {
+  OvmsVehicle::vehicle_command_t res = NotImplemented;
   static const float MIN_VOLTAGE = 10.0f;
   static const int ALERT_THRESHOLD_TICKS = 10;
   
@@ -299,28 +300,42 @@ void OvmsVehicleSmartEQ::Check12vState() {
   float volt = StdMetrics.ms_v_bat_12v_voltage->AsFloat();
   
   // Validate and update reference voltage
-  if (mref > dref) {
-      ESP_LOGI(TAG, "Adjusting 12V reference voltage from %.1fV to %.1fV", mref, dref);
-      StdMetrics.ms_v_bat_12v_voltage_ref->SetValue(dref);
-  }
+  if (mref > dref) 
+    {
+    ESP_LOGI(TAG, "Adjusting 12V reference voltage from %.1fV to %.1fV", mref, dref);
+    StdMetrics.ms_v_bat_12v_voltage_ref->SetValue(dref);
+    }
   
   // Handle alert conditions
-  if (alert_on && (volt > MIN_VOLTAGE)) {
-      m_12v_ticker++;
-      ESP_LOGI(TAG, "12V alert active for %d ticks, voltage: %.1fV", m_12v_ticker, volt);
-      
-      if (m_12v_ticker > ALERT_THRESHOLD_TICKS) {
-          m_12v_ticker = 0;
-          ESP_LOGI(TAG, "Initiating climate control due to 12V alert");
-          m_12v_charge_state = true;
-          m_climate_ticker = 3;
-          CommandClimateControl(true);
-          m_climate_ticker = 3;
+  if (alert_on && (volt > MIN_VOLTAGE)) 
+    {
+    m_12v_ticker++;
+    ESP_LOGI(TAG, "12V alert active for %d ticks, voltage: %.1fV", m_12v_ticker, volt);
+    
+    if (m_12v_ticker > ALERT_THRESHOLD_TICKS) 
+      {
+        m_12v_ticker = 0;
+        ESP_LOGI(TAG, "Initiating climate control due to 12V alert");
+        res = CommandClimateControl(true);
+
+      if (res == Success)
+        {
+        m_climate_restart = true;
+        m_climate_restart_ticker = 12; // 15 minutes
+        ESP_LOGI(TAG, "activated 12V charging successfully");
+        Notify12Vcharge();
+        }
+      else 
+        {
+        ESP_LOGE(TAG, "Failed to activate 12V charging");
+        }
       }
-  } else if (m_12v_ticker > 0) {
-      ESP_LOGI(TAG, "12V alert cleared, resetting ticker");
-      m_12v_ticker = 0;
-  }
+    } 
+  else if (m_12v_ticker > 0) 
+    {
+    ESP_LOGI(TAG, "12V alert cleared, resetting ticker");
+    m_12v_ticker = 0;
+    }
 }
 
 void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {

@@ -415,7 +415,6 @@ public:
     OvmsMetricString        *mt_bcm_gen_mode;           //!< Generator mode text
     
   protected:
-    bool m_climate_start;
     bool m_climate_start_day;
     bool m_climate_init;                      //!< climate init after boot
     bool m_indicator;                       //!< activate indicator e.g. 7 times or whatever
@@ -430,7 +429,6 @@ public:
     int m_ddt4all_ticker;                   //!< DDT4ALL active ticker 
     int m_ddt4all_exec;                     //!< DDT4ALL ticker for next execution
     int m_led_state;
-    int m_climate_ticker;
     int m_12v_ticker;
     int m_modem_ticker;
     int m_park_timeout_secs;                //!< parking timeout in seconds
