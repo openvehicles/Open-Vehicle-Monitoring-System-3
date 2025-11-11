@@ -1315,7 +1315,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       CommandClimateControl(true);
       ESP_LOGI(TAG,"Restarting climate control as per schedule");
       }
-    }
+    } // end ((m_ticker % 60) == 0)
 
   if (m_12v_shutdown_ticker > 0 && --m_12v_shutdown_ticker == 0)
     {
