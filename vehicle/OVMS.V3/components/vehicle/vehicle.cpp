@@ -629,6 +629,7 @@ void OvmsVehicle::CheckPreconditionSchedule()
   // Check if scheduled precondition is enabled
   if (!MyConfig.GetParamValueBool("vehicle", "climate.precondition", false))
   {
+    ESP_LOGW(TAG, "Precondition Schedule: Scheduled precondition is disabled");
     return; // Feature disabled
   }
   
@@ -640,7 +641,7 @@ void OvmsVehicle::CheckPreconditionSchedule()
 
   if (timeinfo == NULL)
   {
-    ESP_LOGW(TAG, "CheckPreconditionSchedule: Failed to get current time");
+    ESP_LOGW(TAG, "Precondition Schedule: Failed to get current time");
     return;
   }
 
@@ -1287,7 +1288,34 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
           }
         }
       }
-    }
+          
+    // Check if global scheduled precondition are enabled
+    if(MyConfig.GetParamValueBool("vehicle", "climate.precondition", false)) 
+      CheckPreconditionSchedule();
+      
+    if (m_climate_restart && StdMetrics.ms_v_env_hvac->AsBool())
+      {
+      --m_climate_restart_ticker;
+      ESP_LOGI(TAG,"Climate ticker: %d", m_climate_restart_ticker);
+      if (m_climate_restart_ticker <= 0) 
+        { 
+        m_climate_restart = false;
+        m_climate_restart_ticker = 0;
+        if (StdMetrics.ms_v_env_hvac->AsBool())
+          {          
+          CommandClimateControl(false);
+          ESP_LOGI(TAG,"Stopping climate control as per schedule");
+          }
+        }
+      }
+      
+    // Handle scheduled climate restarts
+    if (m_climate_restart_ticker > 0  && m_climate_restart && !StdMetrics.ms_v_env_hvac->AsBool())
+      {
+      CommandClimateControl(true);
+      ESP_LOGI(TAG,"Restarting climate control as per schedule");
+      }
+    } // end ((m_ticker % 60) == 0)
 
   if (m_12v_shutdown_ticker > 0 && --m_12v_shutdown_ticker == 0)
     {
@@ -1364,33 +1392,7 @@ void OvmsVehicle::Ticker10(uint32_t ticker)
   }
 
 void OvmsVehicle::Ticker60(uint32_t ticker)
-  {    
-  // Check if global scheduled precondition are enabled
-  if(MyConfig.GetParamValueBool("vehicle", "climate.precondition", false)) 
-    CheckPreconditionSchedule();
-    
-  if (m_climate_restart && StdMetrics.ms_v_env_hvac->AsBool())
-    {
-    --m_climate_restart_ticker;
-    ESP_LOGI(TAG,"Climate ticker: %d", m_climate_restart_ticker);
-    if (m_climate_restart_ticker <= 0) 
-      { 
-      m_climate_restart = false;
-      m_climate_restart_ticker = 0;
-      if (StdMetrics.ms_v_env_hvac->AsBool())
-        {          
-        CommandClimateControl(false);
-        ESP_LOGI(TAG,"Stopping climate control as per schedule");
-        }
-      }
-    }
-    
-  // Handle scheduled climate restarts
-  if (m_climate_restart_ticker > 0  && m_climate_restart && !StdMetrics.ms_v_env_hvac->AsBool())
-    {
-    CommandClimateControl(true);
-    ESP_LOGI(TAG,"Restarting climate control as per schedule");
-    }
+  {
   }
 
 void OvmsVehicle::Ticker300(uint32_t ticker)
