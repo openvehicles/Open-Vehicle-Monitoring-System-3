@@ -111,7 +111,7 @@
   stroke: #0074ff;
   stroke-width: 2px;
 }
-.highcharts-series.cmod-soh-avg > .highcharts-graph {
+.highcharts-series.cmod-soh-min > .highcharts-graph {
   stroke-width: 15px;
   opacity: 0.6;
 }
@@ -223,8 +223,8 @@
 
     /* Update method: */
     onUpdate: function(update) {
-      // Create module series & average:
-      let series = [], avg = [];
+      // Create module series & minimum:
+      let series = [], min = [];
       for (let i = 1; i <= 17; i++) {
         let modkey = Number(i).toString().padStart(2,'0');
         let modhist = metrics["xvu.b.hist.soh.mod."+modkey] || [];
@@ -234,16 +234,15 @@
             className: 'cmod-soh', zIndex: i,
             animation: { duration: 0 },
           });
-          // prep avg:
-          modhist.forEach((el,i) => { avg[i] = (avg[i]||0) + el });
+          // prep min:
+          modhist.forEach((el,i) => { min[i] = Math.min(min[i]||200, el) });
         }
       }
-      // finish avg:
+      // finish min:
       if (series.length) {
-        avg.forEach((el,i) => { avg[i] = Number((avg[i] / series.length).toFixed(1)) });
         series.unshift({
-          name: "Avg", data: avg,
-          className: 'cmod-soh-avg', zIndex: 100,
+          name: "Min", data: min,
+          className: 'cmod-soh-min', zIndex: 100,
           animation: { duration: 0 },
         });
       }
@@ -251,7 +250,7 @@
       // Create categories (cell numbers) & rounded values:
       let date = new Date();
       let cat = [];
-      for (let i = avg.length-1; i >= 0; i--) {
+      for (let i = min.length-1; i >= 0; i--) {
         cat[i] = date.toISOString().substr(0,7);
         date.setMonth(date.getMonth() - 3);
       }
