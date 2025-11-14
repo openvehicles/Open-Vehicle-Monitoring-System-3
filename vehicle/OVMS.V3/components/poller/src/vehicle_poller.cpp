@@ -4069,6 +4069,9 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::StandardPollSeries::NextPollEntry(pol
   if (!Ready())
     return OvmsNextPollResult::NotReady;
 
+  if (m_poll_plist == NULL)
+    return OvmsNextPollResult::NotReady;
+
   // Offset pollstate and check it is within polltime bounds.
   if (pollstate < m_state_offset)
     return OvmsNextPollResult::StillAtEnd;
