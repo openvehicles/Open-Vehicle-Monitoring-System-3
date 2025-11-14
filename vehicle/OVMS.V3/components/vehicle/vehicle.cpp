@@ -83,6 +83,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_climate_schedule->RegisterCommand("set", "Set schedule for a day", vehicle_climate_schedule_set, "<day> <times>", 2, 2);
   cmd_climate_schedule->RegisterCommand("list", "List all configured schedules", vehicle_climate_schedule_list);
   cmd_climate_schedule->RegisterCommand("clear", "Clear schedule for day", vehicle_climate_schedule_clear, "<day|all>", 1, 1);
+  cmd_climate_schedule->RegisterCommand("copy", "Copy schedule from one day to others", vehicle_climate_schedule_copy, "<source-day> <target-days>", 2, 2);
   cmd_climate_schedule->RegisterCommand("enable", "Enable scheduled precondition", vehicle_climate_schedule_enable);
   cmd_climate_schedule->RegisterCommand("disable", "Disable scheduled precondition", vehicle_climate_schedule_disable);
   cmd_climate_schedule->RegisterCommand("status", "Show schedule status", vehicle_climate_schedule_status);
@@ -576,6 +577,162 @@ void OvmsVehicleFactory::vehicle_climate_schedule_clear(int verbosity, OvmsWrite
 
   writer->printf("Climate control schedule cleared for %s\n", day);
   ESP_LOGI(TAG, "Climate control schedule cleared for %s", day);
+}
+
+void OvmsVehicleFactory::vehicle_climate_schedule_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+{
+  const char* source_day = argv[0];
+  const char* target_spec = argv[1];
+  
+  const char* valid_days[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
+  
+  // Validate source day
+  bool source_valid = false;
+  for (int i = 0; i < 7; i++)
+  {
+    if (strcasecmp(source_day, valid_days[i]) == 0)
+    {
+      source_valid = true;
+      break;
+    }
+  }
+  
+  if (!source_valid)
+  {
+    writer->puts("ERROR: Invalid source day. Use: mon, tue, wed, thu, fri, sat, sun");
+    return;
+  }
+  
+  // Get source schedule
+  std::string source_config_key = std::string("climate.schedule.") + source_day;
+  std::string source_schedule = MyConfig.GetParamValue("vehicle", source_config_key.c_str());
+  
+  if (source_schedule.empty())
+  {
+    writer->printf("ERROR: No schedule configured for %s\n", source_day);
+    return;
+  }
+  
+  // Parse target specification
+  std::vector<std::string> target_days;
+  std::string target_str(target_spec);
+  
+  // Check for range pattern (e.g., "tue-fri" or "mon-sun")
+  size_t dash_pos = target_str.find('-');
+  if (dash_pos != std::string::npos && dash_pos > 0 && dash_pos < target_str.length() - 1)
+  {
+    std::string start_day = target_str.substr(0, dash_pos);
+    std::string end_day = target_str.substr(dash_pos + 1);
+    
+    // Find start and end indices
+    int start_idx = -1;
+    int end_idx = -1;
+    for (int i = 0; i < 7; i++)
+    {
+      if (strcasecmp(start_day.c_str(), valid_days[i]) == 0)
+        start_idx = i;
+      if (strcasecmp(end_day.c_str(), valid_days[i]) == 0)
+        end_idx = i;
+    }
+    
+    if (start_idx < 0 || end_idx < 0)
+    {
+      writer->printf("ERROR: Invalid day range '%s'\n", target_spec);
+      return;
+    }
+    
+    // Add all days in range
+    if (start_idx <= end_idx)
+    {
+      for (int i = start_idx; i <= end_idx; i++)
+        target_days.push_back(valid_days[i]);
+    }
+    else
+    {
+      // Wrap around (e.g., fri-mon = fri, sat, sun, mon)
+      for (int i = start_idx; i < 7; i++)
+        target_days.push_back(valid_days[i]);
+      for (int i = 0; i <= end_idx; i++)
+        target_days.push_back(valid_days[i]);
+    }
+  }
+  else
+  {
+    // Parse comma-separated list
+    size_t start = 0;
+    size_t comma_pos = target_str.find(',');
+    
+    while (start != std::string::npos)
+    {
+      std::string day = (comma_pos == std::string::npos) ?
+                        target_str.substr(start) :
+                        target_str.substr(start, comma_pos - start);
+      
+      // Trim whitespace
+      size_t first = day.find_first_not_of(" \t");
+      size_t last = day.find_last_not_of(" \t");
+      if (first != std::string::npos && last != std::string::npos)
+        day = day.substr(first, last - first + 1);
+      
+      // Validate day
+      bool day_valid = false;
+      for (int i = 0; i < 7; i++)
+      {
+        if (strcasecmp(day.c_str(), valid_days[i]) == 0)
+        {
+          target_days.push_back(valid_days[i]);
+          day_valid = true;
+          break;
+        }
+      }
+      
+      if (!day_valid)
+      {
+        writer->printf("ERROR: Invalid target day '%s'\n", day.c_str());
+        return;
+      }
+      
+      if (comma_pos == std::string::npos)
+        break;
+      start = comma_pos + 1;
+      comma_pos = target_str.find(',', start);
+    }
+  }
+  
+  if (target_days.empty())
+  {
+    writer->puts("ERROR: No valid target days specified");
+    return;
+  }
+  
+  // Copy schedule to all target days
+  int copied_count = 0;
+  for (const auto& day : target_days)
+  {
+    // Skip source day
+    if (strcasecmp(day.c_str(), source_day) == 0)
+      continue;
+    
+    std::string config_key = std::string("climate.schedule.") + day;
+    MyConfig.SetParamValue("vehicle", config_key.c_str(), source_schedule);
+    copied_count++;
+  }
+  
+  if (copied_count > 0)
+  {
+    writer->printf("Schedule '%s' copied from %s to %d day(s):\n",
+                   source_schedule.c_str(), source_day, copied_count);
+    for (const auto& day : target_days)
+    {
+      if (strcasecmp(day.c_str(), source_day) != 0)
+        writer->printf("  %s\n", day.c_str());
+    }
+    ESP_LOGI(TAG, "Climate schedule copied from %s to %d target days", source_day, copied_count);
+  }
+  else
+  {
+    writer->puts("No schedules were copied (source day was in target list)");
+  }
 }
 
 void OvmsVehicleFactory::vehicle_climate_schedule_enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
