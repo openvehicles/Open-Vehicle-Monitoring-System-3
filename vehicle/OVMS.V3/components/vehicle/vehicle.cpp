@@ -1236,7 +1236,7 @@ void OvmsVehicle::OvmsVehicleSignal::IncomingPollReply(const OvmsPoller::poll_jo
     m_parent->IncomingPollReply(job, data, length);
   }
 
-void OvmsVehicle::OvmsVehicleSignal::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+void OvmsVehicle::OvmsVehicleSignal::IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code)
   {
   if (Ready())
     m_parent->IncomingPollError(job, code);
@@ -3379,7 +3379,7 @@ void OvmsVehicle::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* 
  *  @param code
  *    NRC detail code
  */
-void OvmsVehicle::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+void OvmsVehicle::IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code)
   {
   }
 

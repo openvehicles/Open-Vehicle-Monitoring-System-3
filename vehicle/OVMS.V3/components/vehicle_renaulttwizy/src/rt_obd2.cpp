@@ -217,7 +217,7 @@ void OvmsVehicleRenaultTwizy::IncomingPollReply(const OvmsPoller::poll_job_t &jo
 }
 
 
-void OvmsVehicleRenaultTwizy::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+void OvmsVehicleRenaultTwizy::IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code)
 {
   // single poll?
   if (!twizy_obd_rxwait.IsAvail()) {
