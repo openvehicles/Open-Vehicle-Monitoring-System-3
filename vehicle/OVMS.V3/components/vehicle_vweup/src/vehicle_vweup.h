@@ -363,8 +363,8 @@ public:
   
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
-  TimerHandle_t m_sendOcuHeartbeat;
-  TimerHandle_t profile0_timer;
+  TimerHandle_t m_sendOcuHeartbeat = 0;
+  TimerHandle_t profile0_timer = 0;
 
 
   // --------------------------------------------------------------------------
