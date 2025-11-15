@@ -267,7 +267,7 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
     c.print("</span>");
     c.printf("<input type=\"text\" class=\"form-control\" name=\"time_%s\" "
              "value=\"%s\" placeholder=\"HH:MM[/duration] or HH:MM,HH:MM\"%s "
-             "pattern=\"[0-2][0-9]:[0-5][0-9](/([5-9]|[12][0-9]|30))?(,[0-2][0-9]:[0-5][0-9](/([5-9]|[12][0-9]|30))?)*\">",
+             "pattern=\"[0-2]?[0-9]:[0-5][0-9](/([5-9]|[12][0-9]|30))?(,[0-2]?[0-9]:[0-5][0-9](/([5-9]|[12][0-9]|30))?)*\">",
              day_names[i], _attr(schedule), enabled ? "" : " disabled");
     c.print("</div>");
     c.printf("<span class=\"help-block\">Example: 07:30/10 or 07:00,17:30/15</span>");

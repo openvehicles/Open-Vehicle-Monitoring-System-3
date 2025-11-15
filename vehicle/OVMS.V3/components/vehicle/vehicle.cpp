@@ -360,8 +360,9 @@ void OvmsVehicleFactory::vehicle_climate_schedule_set(int verbosity, OvmsWriter*
     return;
   }
 
-  // Validate time format: HH:MM[/duration][,HH:MM[/duration],...]
+  // Validate and normalize time format: HH:MM[/duration][,HH:MM[/duration],...]
   std::string time_str(times);
+  std::string normalized_schedule;
   size_t start = 0;
   size_t end = time_str.find(',');
 
@@ -376,11 +377,11 @@ void OvmsVehicleFactory::vehicle_climate_schedule_set(int verbosity, OvmsWriter*
     std::string time_part = (slash_pos != std::string::npos) ?
                             entry.substr(0, slash_pos) : entry;
     
-    // Validate time part (HH:MM)
+    // Validate time part (HH:MM or H:MM)
     size_t colon_pos = time_part.find(':');
     if (colon_pos == std::string::npos || colon_pos == 0)
     {
-      writer->printf("ERROR: Invalid time format '%s'. Use HH:MM or HH:MM/duration\n", entry.c_str());
+      writer->printf("ERROR: Invalid time format '%s'. Use HH:MM or H:MM\n", entry.c_str());
       return;
     }
 
@@ -394,16 +395,33 @@ void OvmsVehicleFactory::vehicle_climate_schedule_set(int verbosity, OvmsWriter*
     }
 
     // Validate duration if present
+    int duration = -1;
     if (slash_pos != std::string::npos)
     {
       std::string duration_str = entry.substr(slash_pos + 1);
-      int duration = atoi(duration_str.c_str());
+      duration = atoi(duration_str.c_str());
       if (duration < 5 || duration > 30)
       {
         writer->printf("ERROR: Invalid duration '%s'. Use 5 to 30 minutes\n", duration_str.c_str());
         return;
       }
     }
+
+    // Normalize to HH:MM[/duration] format
+    char normalized_entry[16];
+    if (duration >= 0)
+    {
+      snprintf(normalized_entry, sizeof(normalized_entry), "%02d:%02d/%d", hour, min, duration);
+    }
+    else
+    {
+      snprintf(normalized_entry, sizeof(normalized_entry), "%02d:%02d", hour, min);
+    }
+
+    // Append to normalized schedule
+    if (!normalized_schedule.empty())
+      normalized_schedule += ",";
+    normalized_schedule += normalized_entry;
 
     // Move to next entry
     if (end == std::string::npos)
@@ -412,12 +430,12 @@ void OvmsVehicleFactory::vehicle_climate_schedule_set(int verbosity, OvmsWriter*
     end = time_str.find(',', start);
   }
 
-  // Save schedule to config
+  // Save normalized schedule to config
   std::string config_key = std::string("climate.schedule.") + day;
-  MyConfig.SetParamValue("vehicle", config_key.c_str(), times);
+  MyConfig.SetParamValue("vehicle", config_key.c_str(), normalized_schedule.c_str());
 
-  writer->printf("Climate control schedule set for %s: %s\n", day, times);
-  ESP_LOGI(TAG, "Climate control schedule set for %s: %s", day, times);
+  writer->printf("Climate control schedule set for %s: %s\n", day, normalized_schedule.c_str());
+  ESP_LOGI(TAG, "Climate control schedule set for %s: %s", day, normalized_schedule.c_str());
 }
 
 void OvmsVehicleFactory::vehicle_climate_schedule_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
