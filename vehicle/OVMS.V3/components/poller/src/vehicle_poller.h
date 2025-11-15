@@ -176,7 +176,7 @@ class OvmsPoller : public InternalRamAllocated {
         virtual ~VehicleSignal() { }
         // Signals for vehicle
         virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
-        virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
+        virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code);
         virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
         virtual bool Ready() const = 0;
       };
@@ -221,7 +221,7 @@ class OvmsPoller : public InternalRamAllocated {
         /// Process an incoming packet.
         virtual void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length) = 0;
         /// Process An Error
-        virtual void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) = 0;
+        virtual void IncomingError(const OvmsPoller::poll_job_t& job, int32_t code) = 0;
 
         /// Send on an imcoming TX reply
         virtual void IncomingTxReply(const OvmsPoller::poll_job_t& job, bool success);
@@ -299,7 +299,7 @@ class OvmsPoller : public InternalRamAllocated {
         void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length);
 
         /// Process An Error
-        void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code);
+        void IncomingError(const OvmsPoller::poll_job_t& job, int32_t code);
 
         /// Send on an imcoming TX reply
         void IncomingTxReply(const OvmsPoller::poll_job_t& job, bool success);
@@ -363,7 +363,7 @@ class OvmsPoller : public InternalRamAllocated {
         void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length) override;
 
         // Process An Error. (pass through to m_poller)
-        void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) override;
+        void IncomingError(const OvmsPoller::poll_job_t& job, int32_t code) override;
 
         // Called when run is finished to determine what happens next.
         SeriesStatus FinishRun() override;
@@ -387,7 +387,7 @@ class OvmsPoller : public InternalRamAllocated {
         void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length) override;
 
         // Process An Error
-        void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) override;
+        void IncomingError(const OvmsPoller::poll_job_t& job, int32_t code) override;
 
         // Send on an imcoming TX reply
         void IncomingTxReply(const OvmsPoller::poll_job_t& job, bool success) override;
@@ -420,7 +420,7 @@ class OvmsPoller : public InternalRamAllocated {
         void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length) override;
 
         // Process An Error
-        void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) override;
+        void IncomingError(const OvmsPoller::poll_job_t& job, int32_t code) override;
 
         // Return true if this series has entries to retry/redo.
         bool HasRepeat() const override;
@@ -444,7 +444,7 @@ class OvmsPoller : public InternalRamAllocated {
         std::string m_poll_data; // Request buffer data
         poll_pid_t m_poll; // Poll Entry
         std::string *m_poll_rxbuf;    // … response buffer
-        int         *m_poll_rxerr;    // … response error code (NRC) / TX failure code
+        int32_t     *m_poll_rxerr;    // … response error code (NRC) / TX failure code
         int16_t     m_retry_fail;
         CAN_frame_format_t m_format;
 
@@ -455,8 +455,8 @@ class OvmsPoller : public InternalRamAllocated {
         void SetPollPid( uint32_t txid, uint32_t rxid, const std::string &request, uint8_t protocol=ISOTP_STD, uint8_t pollbus = 0, uint16_t polltime = 1);
         void SetPollPid( uint32_t txid, uint32_t rxid, uint8_t polltype, uint16_t pid,  uint8_t protocol, const std::string &request, uint8_t pollbus = 0, uint16_t polltime = 1);
       public:
-        OnceOffPollBase(const poll_pid_t &pollentry, std::string *rxbuf, int *rxerr, uint8_t retry_fail = 0);
-        OnceOffPollBase(std::string *rxbuf, int *rxerr, uint8_t retry_fail = 0);
+        OnceOffPollBase(const poll_pid_t &pollentry, std::string *rxbuf, int32_t *rxerr, uint8_t retry_fail = 0);
+        OnceOffPollBase(std::string *rxbuf, int32_t *rxerr, uint8_t retry_fail = 0);
 
         // Move list to start.
         void ResetList(ResetMode mode) override;
@@ -470,7 +470,7 @@ class OvmsPoller : public InternalRamAllocated {
         void IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length) override;
 
         // Process An Error
-        void IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code) override;
+        void IncomingError(const OvmsPoller::poll_job_t& job, int32_t code) override;
 
         bool HasPollList() const override;
 
@@ -490,7 +490,7 @@ class OvmsPoller : public InternalRamAllocated {
         OvmsSemaphore *m_poll_rxdone;   // … response done (ok/error)
         void Done(bool success) override;
       public:
-        BlockingOnceOffPoll(const poll_pid_t &pollentry, std::string *rxbuf, int *rxerr, OvmsSemaphore *rxdone );
+        BlockingOnceOffPoll(const poll_pid_t &pollentry, std::string *rxbuf, int32_t *rxerr, OvmsSemaphore *rxdone );
 
         // Called To null out the call-back pointers (particularly before they go out of scope).
         void Finished();
@@ -582,7 +582,7 @@ class OvmsPoller : public InternalRamAllocated {
     // Signals for vehicle
     void PollRunFinished();
 
-    void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+    void IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code)
       {
       m_polls.IncomingError(job, code);
       }

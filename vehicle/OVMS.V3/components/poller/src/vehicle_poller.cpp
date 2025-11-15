@@ -635,7 +635,7 @@ int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::str
   OvmsRecMutexLock slock(&m_poll_single_mutex, pdMS_TO_TICKS(timeout_ms));
   if (!slock.IsLocked())
     return POLLSINGLE_TIMEOUT;
-  int rx_error = POLLSINGLE_TIMEOUT; // will be replaced by POLLSINGLE_OK on success
+  int32_t rx_error = POLLSINGLE_TIMEOUT; // will be replaced by POLLSINGLE_OK on success
   OvmsSemaphore     single_rxdone;   // … response done (ok/error)
   std::shared_ptr<BlockingOnceOffPoll> poller( new BlockingOnceOffPoll(poll, &response, &rx_error, &single_rxdone));
 
@@ -3831,7 +3831,7 @@ void OvmsPoller::PollSeriesList::IncomingPacket(const OvmsPoller::poll_job_t& jo
   }
 
 // Process An Error
-void OvmsPoller::PollSeriesList::IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code)
+void OvmsPoller::PollSeriesList::IncomingError(const OvmsPoller::poll_job_t& job, int32_t code)
   {
   if ((m_iter != nullptr) && (m_iter->series != nullptr))
     {
@@ -4112,7 +4112,7 @@ void OvmsPoller::StandardPollSeries::IncomingPacket(const OvmsPoller::poll_job_t
   {
   }
 
-void OvmsPoller::StandardPollSeries::IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code)
+void OvmsPoller::StandardPollSeries::IncomingError(const OvmsPoller::poll_job_t& job, int32_t code)
   {
   }
 
@@ -4153,7 +4153,7 @@ void OvmsPoller::StandardVehiclePollSeries::IncomingPacket(const OvmsPoller::pol
  }
 
 // Process An Error.
-void OvmsPoller::StandardVehiclePollSeries::IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code)
+void OvmsPoller::StandardVehiclePollSeries::IncomingError(const OvmsPoller::poll_job_t& job, int32_t code)
  {
  if (m_signal)
    m_signal->IncomingPollError(job, code);
@@ -4236,7 +4236,7 @@ void OvmsPoller::StandardPacketPollSeries::IncomingPacket(const OvmsPoller::poll
   }
 
 // Process An Error
-void OvmsPoller::StandardPacketPollSeries::IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code)
+void OvmsPoller::StandardPacketPollSeries::IncomingError(const OvmsPoller::poll_job_t& job, int32_t code)
   {
   if (code == 0)
     {
@@ -4261,7 +4261,7 @@ bool OvmsPoller::StandardPacketPollSeries::HasRepeat() const
 
 // OvmsPoller::OnceOffPollBase class
 
-OvmsPoller::OnceOffPollBase::OnceOffPollBase( const poll_pid_t &pollentry, std::string *rxbuf, int *rxerr, uint8_t retry_fail)
+OvmsPoller::OnceOffPollBase::OnceOffPollBase( const poll_pid_t &pollentry, std::string *rxbuf, int32_t *rxerr, uint8_t retry_fail)
    : m_sent(status_t::Init), m_poll(pollentry), m_poll_rxbuf(rxbuf), m_poll_rxerr(rxerr),
     m_retry_fail(retry_fail), m_format(CAN_frame_std)
   {
@@ -4270,7 +4270,7 @@ void OvmsPoller::OnceOffPollBase::SetParentPoller(OvmsPoller *poller)
   {
   }
 
-OvmsPoller::OnceOffPollBase::OnceOffPollBase(std::string *rxbuf, int *rxerr, uint8_t retry_fail)
+OvmsPoller::OnceOffPollBase::OnceOffPollBase(std::string *rxbuf, int32_t *rxerr, uint8_t retry_fail)
    : m_sent(status_t::Init),
     m_poll({ 0, 0, 0, 0, { 1, 1, 1, 1 }, 0, 0 }),
     m_poll_rxbuf(rxbuf), m_poll_rxerr(rxerr),
@@ -4418,7 +4418,7 @@ void OvmsPoller::OnceOffPollBase::IncomingPacket(const OvmsPoller::poll_job_t& j
   }
 
 // Process An Error
-void OvmsPoller::OnceOffPollBase::IncomingError(const OvmsPoller::poll_job_t& job, uint16_t code)
+void OvmsPoller::OnceOffPollBase::IncomingError(const OvmsPoller::poll_job_t& job, int32_t code)
   {
   IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Error %" PRIu16, code);
 
@@ -4426,8 +4426,7 @@ void OvmsPoller::OnceOffPollBase::IncomingError(const OvmsPoller::poll_job_t& jo
     {
     // As IncomingError() is now also used for internal errors (ie POLLSINGLE_TXFAILURE),
     // code needs to be reinterpreted as a signed value for the caller.
-    // (TOCHECK: change IncomingError signatures to int16_t/int code?)
-    *m_poll_rxerr = static_cast<int16_t>(code);
+    *m_poll_rxerr = code;
     }
   if (m_poll_rxbuf)
     m_poll_rxbuf->clear();
@@ -4469,7 +4468,7 @@ bool OvmsPoller::OnceOffPollBase::HasRepeat() const
   }
 
 // OvmsPoller::BlockingOnceOffPoll class
-OvmsPoller::BlockingOnceOffPoll::BlockingOnceOffPoll(const poll_pid_t &pollentry, std::string *rxbuf, int *rxerr, OvmsSemaphore *rxdone )
+OvmsPoller::BlockingOnceOffPoll::BlockingOnceOffPoll(const poll_pid_t &pollentry, std::string *rxbuf, int32_t *rxerr, OvmsSemaphore *rxdone )
    : OvmsPoller::OnceOffPollBase(pollentry, rxbuf, rxerr),  m_poll_rxdone(rxdone)
   {
   }
