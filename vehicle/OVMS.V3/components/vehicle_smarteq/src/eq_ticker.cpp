@@ -68,14 +68,10 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     {
     if(m_enable_LED_state) 
       OnlineState();
-    if(m_climate_system) 
-      TimeBasedClimateData();
     }
   }
 
 void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
-  if(mt_climate_on->AsBool()) 
-    TimeCheckTask();
   if(m_12v_charge && !StdMetrics.ms_v_env_on->AsBool()) 
     Check12vState();
   if(m_enable_lock_state && !m_warning_unlocked && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
@@ -109,7 +105,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       m_ADCfactor_recalc = false;
       m_ADCfactor_recalc_timer = 4;
       // calculate new ADC factor
-      float can12V = mt_bms_12v->AsFloat(0.0f) + 0.25f;   // BMS 12V voltage + offset
+      float can12V = mt_evc_LV_DCDC_volt->AsFloat(0.0f) + 0.25f;   // BMS 12V voltage + offset
       if (can12V >= 13.10f) {
         ReCalcADCfactor(can12V, nullptr);  // nullptr = no Log-Output
         ESP_LOGI(TAG, "Auto ADC recalibration started (%.2fV)", can12V);

@@ -108,9 +108,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ResetChargingValues();
     void ResetTripCounters();
     void ResetTotalCounters();
-    void TimeCheckTask();
     void Check12vState();
-    void TimeBasedClimateData();
     void DisablePlugin(const char* plugin);
     bool ExecuteCommand(const std::string& command);
     void setTPMSValue(int index, int indexcar);
@@ -148,10 +146,8 @@ public:
     virtual vehicle_command_t CommandTripStart(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTripReset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandMaintenance(int verbosity, OvmsWriter* writer);
-    virtual vehicle_command_t CommandSetClimate(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTripCounters(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTripTotal(int verbosity, OvmsWriter* writer);
-    virtual vehicle_command_t CommandClimate(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t Command12Vcharge(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTPMSset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4all(int number, OvmsWriter* writer);
@@ -164,11 +160,9 @@ public:
     void WebInit();
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
-    static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
     static void WebCfgTPMS(PageEntry_t& p, PageContext_t& c);
     static void WebCfgADC(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
-    static void WebCfgClimateSchedule(PageEntry_t& p, PageContext_t& c);
 #endif
     void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
@@ -179,7 +173,6 @@ public:
     static void xsq_trip_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_maintenance(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-    static void xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_counters(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_total(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -277,10 +270,6 @@ public:
     bool m_tpms_alert_enable;               // TPMS Alert enabled
     bool m_12v_charge;                      //!< 12V charge on/off
     bool m_12v_charge_state;                //!< 12V charge state
-    bool m_climate_system;                  //!< climate system on/off
-    bool m_climate_notify;                  //!< climate notification on/off
-    bool m_climate_data_store;              //!< climate data store on/off
-    std::string m_climate_data;             //!< climate data stored
     std::string m_hl_canbyte;               //!< canbyte variable for unv
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
@@ -395,16 +384,6 @@ public:
     OvmsMetricInt           *mt_obd_mt_day_usual;       //!< Maintaince usual days
     OvmsMetricInt           *mt_obd_mt_km_usual;        //!< Maintaince usual km
     OvmsMetricString        *mt_obd_mt_level;           //!< Maintaince level
-
-    OvmsMetricBool          *mt_climate_on;             //!< climate at time on/off
-    OvmsMetricBool          *mt_climate_weekly;         //!< climate weekly auto on/off at day start/end
-    OvmsMetricString        *mt_climate_time;           //!< climate time
-    OvmsMetricInt           *mt_climate_h;              //!< climate time hour
-    OvmsMetricInt           *mt_climate_m;              //!< climate time minute
-    OvmsMetricInt           *mt_climate_ds;             //!< climate day start
-    OvmsMetricInt           *mt_climate_de;             //!< climate day end
-    OvmsMetricInt           *mt_climate_1to3;           //!< climate one to three (homelink 0-2) times in following time
-    OvmsMetricString        *mt_climate_data;           //!< climate data from app/website
  
     OvmsMetricVector<float> *mt_tpms_temp;              // 4 wheel temperatures (°C)
     OvmsMetricVector<float> *mt_tpms_pressure;          // 4 wheel pressures (kPa)
@@ -415,8 +394,6 @@ public:
     OvmsMetricString        *mt_bcm_gen_mode;           //!< Generator mode text
     
   protected:
-    bool m_climate_start_day;
-    bool m_climate_init;                      //!< climate init after boot
     bool m_indicator;                       //!< activate indicator e.g. 7 times or whatever
     bool m_ddt4all;                         //!< DDT4ALL mode
     bool m_warning_unlocked;                //!< unlocked warning

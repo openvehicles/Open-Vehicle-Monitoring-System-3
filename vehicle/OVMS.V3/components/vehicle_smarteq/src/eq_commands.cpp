@@ -768,47 +768,6 @@ void OvmsVehicleSmartEQ::NotifyMaintenance() {
   MyNotify.NotifyString("info","xsq.maintenance",buf.c_str());
 }
 
-void OvmsVehicleSmartEQ::xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
-  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
-  if (!smarteq)
-    return;
-  
-    smarteq->CommandSetClimate(verbosity, writer);
-}
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetClimate(int verbosity, OvmsWriter* writer) {
-    int _ds = mt_climate_ds->AsInt();
-    int _de = mt_climate_de->AsInt() == 0 ? 6 : mt_climate_de->AsInt() - 1;
-    int _min = mt_climate_1to3->AsInt();
-    const char* _days[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-    const char* _time[3] = {"5 min", "10 min", "15 min"};
-
-    writer->puts("Climate values:");
-    writer->printf("  on: %s\n", mt_climate_on->AsBool() ? "yes" : "no");
-    writer->printf("  time: %s:%s h\n", mt_climate_h->AsString().c_str(),mt_climate_m->AsString().c_str());
-    writer->printf("  weekly: %s\n", mt_climate_weekly->AsBool() ? "yes" : "no");
-    writer->printf("  start Day: %s\n", _days[_ds]);
-    writer->printf("  end Day: %s\n", _days[_de]);
-    writer->printf("  runtime: %s\n", _time[_min]);
-    return Success;
-}
-void OvmsVehicleSmartEQ::NotifyClimateTimer() {
-  StringWriter buf(200);
-  CommandSetClimate(COMMAND_RESULT_NORMAL, &buf);
-  MyNotify.NotifyString("info","xsq.climate.timer",buf.c_str());
-}
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimate(int verbosity, OvmsWriter* writer) {
-  writer->puts("Climate on:");
-  writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-  writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
-  writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
-  return Success;
-}
-void OvmsVehicleSmartEQ::NotifyClimate() {
-  StringWriter buf(200);
-  CommandClimate(COMMAND_RESULT_NORMAL, &buf);
-  MyNotify.NotifyString("info","xsq.climate",buf.c_str());
-}
-
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSOClimit(int verbosity, OvmsWriter* writer) {
   writer->puts("SOC limit reached:");
   writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
@@ -976,6 +935,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "gps.off",
     "gps.reactmin",
     "precondition",
+    "climate.system",
+    "climate.data",
+    "climate.notify",
+    "climate.data.store",
     "gps.deact"
   };
   

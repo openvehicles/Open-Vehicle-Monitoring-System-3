@@ -55,8 +55,6 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ESP_LOGI(TAG, "Start smart EQ vehicle module");
 
-  m_climate_init = true;
-  m_climate_start_day = false;
   m_12v_ticker = 0;
   m_ddt4all = false;
   m_ddt4all_ticker = 0;
@@ -147,16 +145,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obd_mt_km_usual            = MyMetrics.InitInt("xsq.obd.mt.km.usual", SM_STALE_MID, 0, Kilometers);
   mt_obd_mt_level               = MyMetrics.InitString("xsq.obd.mt.level", SM_STALE_MID, "unknown", Other);
 
-  mt_climate_on                 = MyMetrics.InitBool("xsq.climate.on", SM_STALE_MID, false);
-  mt_climate_weekly             = MyMetrics.InitBool("xsq.climate.weekly", SM_STALE_MID, false);
-  mt_climate_time               = MyMetrics.InitString("xsq.climate.time", SM_STALE_MID, "0515", Other);
-  mt_climate_h                  = MyMetrics.InitInt("xsq.climate.h", SM_STALE_MID, 5, Other);
-  mt_climate_m                  = MyMetrics.InitInt("xsq.climate.m", SM_STALE_MID, 15, Other);
-  mt_climate_ds                 = MyMetrics.InitInt("xsq.climate.ds", SM_STALE_MID, 1, Other);
-  mt_climate_de                 = MyMetrics.InitInt("xsq.climate.de", SM_STALE_MID, 6, Other);
-  mt_climate_1to3               = MyMetrics.InitInt("xsq.climate.1to3", SM_STALE_MID, 0, Other);
-  mt_climate_data               = MyMetrics.InitString("xsq.climate.data", SM_STALE_MID,"0,0,0,0,-1,-1,-1", Other);
-
   mt_pos_odometer_start         = MyMetrics.InitFloat("xsq.odometer.start", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_start_total   = MyMetrics.InitFloat("xsq.odometer.start.total", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_trip_total    = MyMetrics.InitFloat("xsq.odometer.trip.total", SM_STALE_MID, 0, Kilometers);
@@ -216,13 +204,12 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
 
   // init commands:
-  cmd_xsq = MyCommandApp.RegisterCommand("xsq","SmartEQ 453 Gen.4");
+  cmd_xsq = MyCommandApp.RegisterCommand("xsq","smartEQ 453 Gen.4");
   cmd_xsq->RegisterCommand("start", "Show OBD trip start", xsq_trip_start);
   cmd_xsq->RegisterCommand("reset", "Show OBD trip total", xsq_trip_reset);
   cmd_xsq->RegisterCommand("counter", "Show vehicle trip counter", xsq_trip_counters);
   cmd_xsq->RegisterCommand("total", "Show vehicle trip total", xsq_trip_total);
   cmd_xsq->RegisterCommand("mtdata", "Show Maintenance data", xsq_maintenance);
-  cmd_xsq->RegisterCommand("climate", "Show Climate timer data", xsq_climate);
   cmd_xsq->RegisterCommand("tpmsset", "set TPMS dummy value", xsq_tpms_set);
   cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
@@ -361,10 +348,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_12v_charge           = getBool("12v.charge", true);
     m_enable_calcADCfactor = getBool("calc.adcfactor", false);
     m_adc_samples          = getInt("adc.samples", 4);
-    m_climate_system       = getBool("climate.system", true);
-    m_climate_notify       = getBool("climate.notify", false);
-    m_climate_data_store   = getBool("climate.data.store", true);
-    m_climate_data         = getString("climate.data", "0,0,0,0,-1,-1,-1");
     m_indicator            = getBool("indicator", false);
     m_extendedStats        = getBool("extended.stats", false);
     m_park_timeout_secs    = getInt("park.timeout", 600);
