@@ -319,11 +319,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
       return (it != xsqcfg.end()) ? atof(it->second.c_str()) : def;
     };
 
-    
+    /*  // not used currently
     auto getString = [&xsqcfg](const char* key, const char* def) -> std::string {
       auto it = xsqcfg.find(key);
       return (it != xsqcfg.end()) ? it->second : def;
     };
+    */
     
     // Read all config values from map
     m_enable_LED_state     = getBool("led", false);
@@ -355,7 +356,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_cfg_preset_version   = getInt("cfg.preset.ver", 0);
     m_suffsoc              = getInt("suffsoc", 0);
     m_suffrange            = getInt("suffrange", 0);
-
     cell_interval_drv      = getInt("cell_interval_drv", 60);
     cell_interval_chg      = getInt("cell_interval_chg", 60);
     }
