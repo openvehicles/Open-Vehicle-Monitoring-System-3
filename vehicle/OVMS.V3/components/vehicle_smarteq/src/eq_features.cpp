@@ -173,121 +173,6 @@ void OvmsVehicleSmartEQ::ResetTotalCounters() {
   MyConfig.SetParamValueBool("xsq", "resettotal", false);
 }
 
-// Task to check the time periodically
-void OvmsVehicleSmartEQ::TimeCheckTask() {
-  time_t now;
-  struct tm timeinfo;
-  time(&now);
-  localtime_r(&now, &timeinfo);
-
-  // Check if the current time is the climate time
-  if (timeinfo.tm_hour == mt_climate_h->AsInt() && timeinfo.tm_min == mt_climate_m->AsInt() && mt_climate_on->AsBool() && !StdMetrics.ms_v_env_hvac->AsBool()) 
-    {
-    CommandHomelink(mt_climate_1to3->AsInt());
-    }
-
-  // Check if the current day is within the climate days range
-  int current_day = timeinfo.tm_wday;
-  
-  if (current_day == mt_climate_ds->AsInt() && mt_climate_weekly->AsBool() && !m_climate_start_day) 
-    {
-    m_climate_start_day = true;
-    mt_climate_on->SetValue(true);
-    }
-  if (current_day == mt_climate_de->AsInt() && mt_climate_weekly->AsBool() && m_climate_start_day) 
-    {
-    m_climate_start_day = false;
-    mt_climate_on->SetValue(false);
-    }
-  if ((!mt_climate_weekly->AsBool() || !mt_climate_on->AsBool()) && m_climate_start_day) 
-    {
-    m_climate_start_day = false;
-    }
-}
-
-void OvmsVehicleSmartEQ::TimeBasedClimateData() {
-  std::string _oldtime = mt_climate_time->AsString();
-  std::string _newdata = m_climate_init ? m_climate_data_store ? m_climate_data : mt_climate_data->AsString() : mt_climate_data->AsString();
-  std::vector<int> _data;
-  std::stringstream _ss(_newdata);
-  std::string _item, _climate_on, _climate_weekly, _climate_time;
-  int _climate_ds, _climate_de, _climate_h, _climate_m;
-
-  while (std::getline(_ss, _item, ',')) 
-    {
-    _data.push_back(atoi(_item.c_str()));
-    }
-
-  // Need at least 7 fields: [trigger,on,weekly,time,ds,de,btn]
-  if (_data.size() < 7) 
-    {
-    ESP_LOGE(TAG, "Invalid climate data payload, need 7 ints, got %u", (unsigned)_data.size());
-    mt_climate_data->SetValue("0,0,0,0,-1,-1,-1");             // reset the data
-    MyConfig.SetParamValue("xsq", "climate.data", "0,0,0,0,-1,-1,-1");
-    return;
-    }
-
-  if(_data[0]>0 || m_climate_init) 
-  {
-    m_climate_init = false;
-    MyConfig.SetParamValue("xsq", "climate.data", _newdata);
-    mt_climate_data->SetValue("0,0,0,0,-1,-1,-1");              // reset the data
-    _climate_on = _data[1] == 1 ? "yes" : "no";
-    _climate_weekly = _data[2] == 1 ? "yes" : "no";
-    if(_data[1]>0) { mt_climate_on->SetValue(_data[1] == 1);}
-    if(_data[2]>0) { mt_climate_weekly->SetValue(_data[2] == 1);}
-    if(_data[4]>-1) { _climate_ds = _data[4] > 6 ? 0 : _data[4]; mt_climate_ds->SetValue(_climate_ds);}
-    if(_data[5]>-1) { _climate_de = _data[5] <= 5 ? _data[5]+1 : 0; mt_climate_de->SetValue(_climate_de);}
-    if(_data[6]>-1) { mt_climate_1to3->SetValue(_data[6]);}
-
-    if(_data[3]>0) 
-      { 
-      if (_data[3] > 2359 || (_data[3] % 100) > 59) 
-        {
-        ESP_LOGE(TAG,"Invalid HHMM time %d", _data[3]);
-        return;
-        } 
-      else 
-        {
-        _climate_h = (_data[3] / 100) % 24;                      // Extract hours and ensure 24h format
-        _climate_m = _data[3] % 100;                             // Extract minutes
-        
-        if(_climate_m >= 60) 
-          {                                   // Handle invalid minutes
-            _climate_h = (_climate_h + _climate_m / 60) % 24;
-            _climate_m = _climate_m % 60;
-          }
-
-        if (_data[3] >= 0 && _data[3] <= 2359)
-          {
-          std::ostringstream oss;
-          oss << std::setfill('0') << std::setw(4) << _data[3];
-          mt_climate_time->SetValue(oss.str());
-          } 
-        else 
-          {
-          ESP_LOGE(TAG, "Invalid time value: %d", _data[3]);
-          return;
-          }
-
-        mt_climate_h->SetValue(_climate_h);
-        mt_climate_m->SetValue(_climate_m);
-        }
-      } 
-    else    
-      {
-      mt_climate_time->SetValue(_oldtime);    
-      }     
-    
-    // booster;no;no;0515;1;6;0
-    char buf[64];
-    snprintf(buf, sizeof(buf), "booster,%s,%s,%s,%d,%d,%d", _climate_on.c_str(), _climate_weekly.c_str(), mt_climate_time->AsString().c_str(), mt_climate_ds->AsInt(), mt_climate_de->AsInt(), mt_climate_1to3->AsInt());
-    StdMetrics.ms_v_gen_mode->SetValue(std::string(buf));
-    StdMetrics.ms_v_gen_current->SetValue(3);
-    if(m_climate_notify) NotifyClimateTimer();
-    }
-}
-
 // check the 12V alert periodically and charge the 12V battery if needed
 void OvmsVehicleSmartEQ::Check12vState() {
   OvmsVehicle::vehicle_command_t res = NotImplemented;
@@ -542,36 +427,25 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
     case 4:
     {
       int bits = atoi(value);
-      char buf[10];
-      sprintf(buf, "1,%d,0,0,-1,-1,-1", bits);
-      mt_climate_data->SetValue(std::string(buf));
+      MyConfig.SetParamValueBool("xsq", "resettotal",  (bits& 1)!=0);
       return true;
     }
     case 5:
     {
       int bits = atoi(value);
-      if(bits < 0) bits = 0;
-      if(bits > 2359) bits = 0;
-      
-      char buf[4];
-      snprintf(buf, sizeof(buf), "1,1,0,%04d,-1,-1,-1", bits);
-      mt_climate_data->SetValue(std::string(buf));
+      MyConfig.SetParamValueBool("xsq", "12v.charge",  (bits& 1)!=0);
       return true;
-    }
+    }  
     case 6:
     {
       int bits = atoi(value);
-      if(bits < 0) bits = 0;
-      if(bits > 2) bits = 2;
-      char buf[64];
-      snprintf(buf, sizeof(buf), "1,0,0,0,-1,-1,%d", bits);
-      mt_climate_data->SetValue(std::string(buf));
+      MyConfig.SetParamValueBool("xsq", "unlock.warning",  (bits& 1)!=0);
       return true;
     }
     case 7:
     {
       int bits = atoi(value);
-      MyConfig.SetParamValueBool("xsq", "resettotal",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("xsq", "door.warning",  (bits& 1)!=0);
       return true;
     }
     // case 8 -> Vehicle.cpp GPS stream
@@ -583,7 +457,8 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
     }
     case 11:
     {
-      MyConfig.SetParamValue("xsq", "suffrange", value);
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xsq", "calc.adcfactor",  (bits& 1)!=0);
       return true;
     }
     case 12:
@@ -602,18 +477,6 @@ bool OvmsVehicleSmartEQ::SetFeature(int key, const char *value)
     {
       int bits = atoi(value);
       MyConfig.SetParamValueBool("xsq", "canwrite",  (bits& 1)!=0);
-      return true;
-    }
-    case 16:
-    {
-      int bits = atoi(value);
-      MyConfig.SetParamValueBool("xsq", "unlock.warning",  (bits& 1)!=0);
-      return true;
-    }
-    case 17:
-    {
-      int bits = atoi(value);
-      MyConfig.SetParamValueBool("xsq", "door.warning",  (bits& 1)!=0);
       return true;
     }
     default:
@@ -649,23 +512,31 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
-    }
+    }    
     case 4:
-      if(mt_climate_on->AsBool()){return std::string("1");}else{ return std::string("2");};
+    {
+      int bits = m_resettotal?  1 : 0;
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
     case 5:
     {
-      return mt_climate_time->AsString();
-    }
+      int bits = m_12v_charge ?  1 : 0;
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }   
     case 6:
     {
-      int bits = mt_climate_1to3->AsInt();
+      int bits = m_enable_lock_state ?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
     }
     case 7:
     {
-      int bits = m_resettotal?  1 : 0;
+      int bits = m_enable_door_state ?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
@@ -681,7 +552,7 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
     }
     case 11:
     {
-      int bits = m_suffrange;
+      int bits = m_enable_calcADCfactor ?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
@@ -704,20 +575,6 @@ const std::string OvmsVehicleSmartEQ::GetFeature(int key)
     case 15:
     {
       int bits = m_enable_write ?  1 : 0;
-      char buf[4];
-      sprintf(buf, "%d", bits);
-      return std::string(buf);
-    }
-    case 16:
-    {
-      int bits = m_enable_lock_state ?  1 : 0;
-      char buf[4];
-      sprintf(buf, "%d", bits);
-      return std::string(buf);
-    }
-    case 17:
-    {
-      int bits = m_enable_door_state ?  1 : 0;
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
