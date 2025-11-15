@@ -160,7 +160,8 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
       
       // Status flags:
       
-      unsigned CarAwake:1;          // Twizy switched on
+      unsigned SysAwake:1;          // Twizy base system awake
+      unsigned CarAwake:1;          // Twizy fully awake (switched on by the user)
       unsigned CarON:1;             // Twizy in GO mode
       
       unsigned PilotSignal:1;       // Power cable connected
