@@ -285,7 +285,7 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
   }
 }
 
-void OvmsVehicleSmartEQ::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) {
+void OvmsVehicleSmartEQ::IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code) {
   switch (job.moduleid_rec) {
     case 0x793:
       switch (job.pid) {
