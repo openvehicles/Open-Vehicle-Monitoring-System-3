@@ -54,7 +54,11 @@ void OvmsVehicleVWeUp::WebInit()
 {
   // vehicle menu:
   MyWebServer.RegisterPage("/xvu/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xvu/climate", "Climate control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
+  if (HasT26()) {
+    // only useful with T26 access:
+    MyWebServer.RegisterPage("/xvu/climate", "Climate Control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
+    MyWebServer.RegisterPage("/xvu/climate_schedule", "Climate Schedule", OvmsWebServer::HandleCfgPreconditionSchedule, PageMenu_Vehicle, PageAuth_Cookie);
+  }
   if (HasOBD()) {
     // only useful with OBD metrics:
     MyWebServer.RegisterPage("/xvu/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
@@ -70,6 +74,7 @@ void OvmsVehicleVWeUp::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xvu/features");
   MyWebServer.DeregisterPage("/xvu/climate");
+  MyWebServer.DeregisterPage("/xvu/climate_schedule");
   MyWebServer.DeregisterPage("/xvu/metrics_charger");
   MyWebServer.DeregisterPage("/xvu/battmon");
   MyWebServer.DeregisterPage("/xvu/battsoh");

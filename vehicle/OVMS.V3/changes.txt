@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- VW e-Up: enable framework climate preconditioning scheduler web UI
+    (Note: climate control only available with T26 connection)
 - Vehicle framework: Scheduled precondition control with duration support
     Centralized implementation for all vehicles with per-vehicle override capability.
     Supports multiple time slots per day with individual duration settings (5-30 minutes).
