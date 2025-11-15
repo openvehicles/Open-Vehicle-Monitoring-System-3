@@ -83,7 +83,7 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
   m_poll.format = CAN_frame_std;
   m_poll.raw_data = nullptr;
   m_poll.raw_data_len = 0;
-  m_poll_wait = 0;
+  m_poll_wait_timeout = 0;
   m_poll_sequence_max = 1;
   m_poll_sequence_cnt = 0;
   m_poll_fc_septime = 25;       // response default timing: 25 milliseconds
@@ -127,7 +127,7 @@ bool OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
       IFTRACE(TXRX) ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Incoming - dropped (no poll entry)", m_poll.bus_no);
       return false;
       }
-    if (!m_poll_wait)
+    if (!GetPollWaiting())
       {
       IFTRACE(TXRX) ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Incoming - timed out", m_poll.bus_no);
       return false;
@@ -395,17 +395,13 @@ void OvmsPoller::PollerSend(poller_source_t source)
     }
   if (fromPrimaryOrOnceOffTicker)
     {
-    // Timer ticker call: check response timeout
-    if (m_poll_wait > 0)
-      m_poll_wait--;
-
     // Protocol specific ticker calls:
     PollerVWTPTicker();
     }
 
-  if (m_poll_wait > 0)
+  if (GetPollWaiting())
     {
-    IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Waiting %" PRIu8, m_poll.bus_no, m_poll_wait);
+    IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Waiting %" PRIu16 "ms", m_poll.bus_no, GetWaiting_ms());
     return;
     }
 
@@ -507,9 +503,10 @@ void OvmsPoller::PollerSend(poller_source_t source)
     case OvmsNextPollResult::FoundEntry:
       {
       IFTRACE(Poller) 
-        ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend(%s)[%" PRIu8 "]: entry at[type=%02X, pid=%X], ticker=%" PRIu32 ", wait=%u, cnt=%u/%u",
+        ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend(%s)[%" PRIu8 "]: entry at[type=%02" PRIX16 ", pid=%" PRIX16 "], ticker=%"
+            PRIu32 ", wait=%" PRIu16 ", cnt=%" PRIu8 "/%" PRIu8 ,
              m_poll.bus_no, PollerSource(source), m_poll_state, m_poll.entry.type, m_poll.entry.pid,
-             m_poll.ticker, m_poll_wait, m_poll_sequence_cnt, m_poll_sequence_max);
+             m_poll.ticker, GetWaiting_ms(), m_poll_sequence_cnt, m_poll_sequence_max);
       // We need to poll this one...
       m_poll.protocol = m_poll.entry.protocol;
       m_poll.type = m_poll.entry.type;
@@ -532,11 +529,11 @@ void OvmsPoller::Outgoing(const CAN_frame_t &frame, bool success)
   {
 
   // Check for a late callback:
-  if (!m_poll_wait || !m_poll.entry.txmoduleid || frame.origin != m_poll.bus || frame.MsgID != m_poll_txmsgid)
+  if (!GetPollWaiting() || !m_poll.entry.txmoduleid || frame.origin != m_poll.bus || frame.MsgID != m_poll_txmsgid)
     {
     IFTRACE(Poller) ESP_LOGD(TAG,
-        "Outgoing %s Result (wait=%" PRIu8 ") Dropped: TX=%" PRIx32 " Frm Msg=%" PRIx32 " exp TXMsg=%" PRIx32,
-        (success ? "success" : "fail"), m_poll_wait, m_poll.entry.txmoduleid, frame.MsgID, m_poll_txmsgid);
+        "Outgoing %s Result (wait=%" PRIu16 ") Dropped: TX=%" PRIx32 " Frm Msg=%" PRIx32 " exp TXMsg=%" PRIx32,
+        (success ? "success" : "fail"), GetWaiting_ms(), m_poll.entry.txmoduleid, frame.MsgID, m_poll_txmsgid);
     return;
     }
 
@@ -547,7 +544,7 @@ void OvmsPoller::Outgoing(const CAN_frame_t &frame, bool success)
   // On failure, try to speed up the current poll timeout:
   if (!success)
     {
-    m_poll_wait = 0;
+    ResetPollWaiting();
     OvmsRecMutexLock lock(&m_poll_mutex, pdMS_TO_TICKS(10));
     if (lock.IsLocked())
       m_polls.IncomingError(m_poll, POLLSINGLE_TXFAILURE);
@@ -722,7 +719,7 @@ void OvmsPoller::PollerSucceededPollNext()
   // Immediately send the next poll for this tick if…
   // - we are not waiting for another frame
   // - poll throttling is unlimited or limit isn't reached yet
-  if (m_poll_wait == 0 && CanPoll())
+  if (!GetPollWaiting() && CanPoll())
     {
     Queue_PollerSendSuccess();
     }

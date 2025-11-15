@@ -75,7 +75,6 @@
 #define POLL_PID_DATA(pid, datastring) \
   {.xargs={ (pid), POLL_TXDATA, sizeof(datastring)-1, reinterpret_cast<const uint8_t*>(datastring) }}
 
-
 // VWTP_20 channel states:
 typedef enum
   {
@@ -548,19 +547,44 @@ class OvmsPoller : public InternalRamAllocated {
     uint16_t          m_poll_tx_remain;       // Payload bytes remaining for multi frame request
     uint16_t          m_poll_tx_offset;       // Payload offset of multi frame request
     uint16_t          m_poll_tx_frame;        // Frame number for multi frame request
-    uint8_t           m_poll_wait;            // Wait counter for a reply from a sent poll or bytes remaining.
-                                              // Gets set = 2 when a poll is sent OR when bytes are remaining after receiving.
+    uint32_t          m_poll_wait_timeout;    // Wait timeout for for a reply from a sent poll or bytes remaining.
+                                              // Gets set = 2000 when a poll is sent OR when bytes are remaining after receiving.
                                               // Gets set = 0 when a poll is received.
-                                              // Gets decremented with every second/tick in PollerSend().
-                                              // PollerSend() aborts when > 0.
-                                              // Why set = 2: When a poll gets send just before the next ticker occurs
-                                              //              PollerSend() decrements to 1 and doesn't send the next poll.
-                                              //              Only when the reply doesn't get in until the next ticker occurs
-                                              //              PollserSend() decrements to 0 and abandons the outstanding reply (=timeout)
+                                              // PollerSend() aborts when currrent time > than the timeout value
+    bool GetPollWaiting() const
+      {
+      if (m_poll_wait_timeout == 0)
+        return false;
+      return esp_log_timestamp() < m_poll_wait_timeout;
+      }
+    void ResetPollWaiting()
+      {
+      m_poll_wait_timeout = 0;
+      }
+    void SetPollWaiting( uint16_t ms)
+      {
+      m_poll_wait_timeout = ms + esp_log_timestamp();
+      }
+    void AddPollWaiting(uint16_t ms)
+      {
+      if (!GetPollWaiting())
+        SetPollWaiting(ms);
+      else
+        m_poll_wait_timeout += ms;
+      }
+    uint16_t GetWaiting_ms()
+      {
+      uint32_t pwt = m_poll_wait_timeout;
+      if (pwt == 0)
+        return 0;
+      uint32_t ts = esp_log_timestamp();
+      if (ts >= pwt)
+        return 0;
+      return static_cast<uint16_t>(pwt-ts);
+      }
 
     CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback
     uint32_t          m_poll_txmsgid;         // Poller last TX CAN ID (frame MsgID)
-
 
   private:
     uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
