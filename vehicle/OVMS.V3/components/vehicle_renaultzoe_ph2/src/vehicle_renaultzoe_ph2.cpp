@@ -65,7 +65,6 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   StandardMetrics.ms_v_type->SetValue("RZ2");
 
   MyConfig.RegisterParam("xrz2", "Renault Zoe Ph2 configuration", true, true);
-  MyConfig.RegisterParam("xrz2.preclimate", "Renault Zoe Ph2 pre-climate schedules", true, true);
   ConfigChanged(NULL);
 
   // Init Zoe Ph2 CAN connections
@@ -165,16 +164,15 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   dcdc->RegisterCommand("enable", "Enable DCDC converter manually", CommandDcdcEnable);
   dcdc->RegisterCommand("disable", "Disable DCDC converter", CommandDcdcDisable);
 
+  // TPMS sensor ID commands
+  OvmsCommand *tpms = cmd_xrz2->RegisterCommand("tpms", "TPMS sensor ID management");
+  tpms->RegisterCommand("list", "List all TPMS sensor IDs (wheels 1-4 and spares 5-12)", CommandTpmsList);
+  tpms->RegisterCommand("set", "Set TPMS sensor ID for a wheel (1-4 only)", CommandTpmsSet, "<wheel> <sensor_id>", 2, 2);
+
   // Reset and service functions
   cluster = ddt->RegisterCommand("cluster", "Service functions of Instrument cluster");
   cluster_reset = cluster->RegisterCommand("reset", "Reset functions");
   cluster_reset->RegisterCommand("service", "Reset service reminder", CommandDdtClusterResetService);
-
-  // Scheduled pre-climate commands
-  OvmsCommand *preclimate = cmd_xrz2->RegisterCommand("preclimate", "Scheduled pre-climate control");
-  preclimate->RegisterCommand("schedule", "Set schedule for pre-climate (day hour:min)", CommandPreclimateScheduleSet, "<day> <time>", 2, 2);
-  preclimate->RegisterCommand("list", "List all configured pre-climate schedules", CommandPreclimateScheduleList);
-  preclimate->RegisterCommand("clear", "Clear schedule for a specific day", CommandPreclimateScheduleClear, "<day>", 1, 1);
 
   // CAN1 Software filter - Poll response
   MyPollers.AddFilter(1, 0x18daf1da, 0x18daf1df);
@@ -207,9 +205,6 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyCan.RegisterCallback(TAG, std::bind(&OvmsVehicleRenaultZoePh2::TxCallback, this, _1, _2), true);
-
-  // Register ticker event for scheduled pre-climate
-  MyEvents.RegisterEvent(TAG, "ticker.60", std::bind(&OvmsVehicleRenaultZoePh2::CheckPreclimateSchedule, this, _1, _2));
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
