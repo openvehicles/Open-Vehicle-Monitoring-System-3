@@ -153,12 +153,6 @@ Additional Zoe Phase 2 Commands
      - Manually deactivates the DC/DC converter.
    * - **xrz2 debug**
      - Debug output of custom functions like rolling average consumption calculation.
-   * - **xrz2 preclimate schedule <day> <time>***
-     - Set scheduled pre-climate activation time(s) for a specific day of the week.
-   * - **xrz2 preclimate list***
-     - List all configured pre-climate schedules and show the next scheduled activation.
-   * - **xrz2 preclimate clear <day>***
-     - Clear pre-climate schedule for a specific day (or "all" to clear all schedules).
    * - **xrz2 ddt hvac compressor enable***
      - Permanently enable the HVAC compressor (allows both cooling and heating modes).
    * - **xrz2 ddt hvac compressor disable***
@@ -169,6 +163,10 @@ Additional Zoe Phase 2 Commands
      - Reset PTC control to automatic mode.
    * - **xrz2 ddt cluster reset service***
      - Reset the service reminder in the instrument cluster.
+   * - **xrz2 tpms list***
+     - List all TPMS sensor IDs from BCM (wheels 1-4 and spares 5-12).
+   * - **xrz2 tpms set <wheel> <sensor_id>***
+     - Write a new TPMS sensor ID to a specific wheel (1-4 only).
 
 (* Requires V-CAN connection)
 
@@ -195,6 +193,8 @@ OVMS Default Commands
      - Long pre conditioning, fires pre-climate three times in a row, about 30 mins runtime.
    * - **homelink 3***
      - Abort Long pre conditioning, it will also aborted if you unlock your Zoe.
+   * - **climatecontrol schedule ...***
+     - Global scheduler commands (``set``, ``list``, ``copy``, ``clear``, ``enable``, ``disable``) for automatic preconditioning. See *Scheduled Pre-Climate* section for details.
 
 (* Requires V-CAN connection)
 
@@ -202,74 +202,71 @@ OVMS Default Commands
 Scheduled Pre-Climate
 ---------------------
 
-The Zoe Ph2 integration supports automatic pre-climate activation based on a weekly schedule. This allows you to have your car pre-heated or pre-cooled at specific times without manual intervention.
+The Zoe Ph2 integration now uses the global OVMS climate scheduler. This adds support for
+durations (``HH:MM/15``), the shared CLI/OVMS App pages and the generic ``climatecontrol schedule`` commands while still enforcing the Zoe specific requirements.
 
 **Requirements:**
 
 - V-CAN connection enabled
 - Vehicle must be locked
 - Battery SoC must be above 15%
+- ``climatecontrol schedule`` must be enabled (either via the page or CLI)
 
 **Configuration Methods:**
 
 1. **Web Interface** (recommended): Navigate to **Renault Zoe Ph2 → Pre-Climate Schedule**
-2. **Shell Commands**: Use ``xrz2 preclimate`` commands
+2. **Shell Commands**: Use the global ``climatecontrol schedule`` commands
 
 **Shell Command Examples:**
 
-Set Monday morning pre-climate at 7:30 AM::
+Enable / disable the scheduler::
 
-  xrz2 preclimate schedule mon 07:30
+  climatecontrol schedule enable
+  climatecontrol schedule disable
 
-Set Friday for both morning and evening::
+Set Monday morning pre-climate at 07:30 for 15 minutes::
 
-  xrz2 preclimate schedule fri 07:00,17:30
+  climatecontrol schedule set mon 07:30/15
+
+Set Friday for both morning and evening (default 5 min duration)::
+
+  climatecontrol schedule set fri 07:00,17:30
+
+Copy Monday's schedule to Tuesday and Wednesday::
+
+  climatecontrol schedule copy mon tue,wed
 
 View all configured schedules::
 
-  xrz2 preclimate list
+  climatecontrol schedule list
 
 Clear Monday's schedule::
 
-  xrz2 preclimate clear mon
+  climatecontrol schedule clear mon
 
 Clear all schedules::
 
-  xrz2 preclimate clear all
+  climatecontrol schedule clear all
 
-**Day Names:**
+**Day Names:** ``mon, tue, wed, thu, fri, sat, sun`` (Sunday is ``sun``)
 
-Use these three-letter abbreviations:
-
-- ``mon`` - Monday
-- ``tue`` - Tuesday
-- ``wed`` - Wednesday
-- ``thu`` - Thursday
-- ``fri`` - Friday
-- ``sat`` - Saturday
-- ``sun`` - Sunday
-
-**Time Format:**
-
-Times must be in 24-hour format: ``HH:MM`` (e.g., ``07:30``, ``17:45``)
-
-Multiple times can be specified separated by commas: ``07:00,17:30``
+**Time Format:** ``HH:MM`` or ``HH:MM/Duration`` (duration 5–30 minutes). Multiple entries are comma separated.
 
 **Example Output:**
 
-When you run ``xrz2 preclimate list``::
+When you run ``climatecontrol schedule list``::
 
-  Pre-climate schedules:
-  ======================
-  Monday: 07:30
-  Friday: 07:00,17:30
-  Saturday: 09:00
+  Climate control schedules:
+  ==========================
+  Monday    : 07:30/15
+  Friday    : 07:00,17:30
+  Saturday  : 09:00
 
-  Current time: Monday 07:15
+  Next scheduled: Friday at 07:00 (15 min)
 
 **Notifications:**
 
-The system sends notifications for:
+The system sends notifications via ``climatecontrol.schedule`` for:
 
 - Successful pre-climate activation
 - Failed activation (with reason: not locked, low SoC, V-CAN not enabled, etc.)
@@ -342,6 +339,48 @@ If a command fails::
   ERROR: Hot loop enable command failed
   WARNING: Some compressor enable commands failed - check logs
 
+------------------------------
+TPMS Sensor ID Management
+------------------------------
+
+The Zoe Ph2 integration includes commands to read and write TPMS (Tire Pressure Monitoring System) sensor IDs stored in the BCM. These commands are useful when replacing TPMS sensors or swapping wheels.
+
+**List All TPMS Sensor IDs**
+
+View all stored sensor IDs::
+
+  xrz2 tpms list
+
+This command reads and displays sensor IDs for:
+
+- **Wheel 1-4**: Current active wheels (FL, FR, RL, RR)
+- **Wheel 5-12**: Historical or spare wheel sensor IDs
+
+**Write TPMS Sensor ID**
+
+Set a new sensor ID for a specific wheel (1-4 only)::
+
+  xrz2 tpms set <wheel> <sensor_id>
+
+**Parameters:**
+
+- ``<wheel>``: Wheel number 1-4 (1=FL, 2=FR, 3=RL, 4=RR)
+- ``<sensor_id>``: 32-bit sensor ID in hex (with 0x prefix) or decimal format
+
+**Examples:**
+
+Write sensor ID in hexadecimal format::
+
+  xrz2 tpms set 1 0x12345678
+
+Write sensor ID in decimal format::
+
+  xrz2 tpms set 2 305419896
+
+**Automatic Learning:**
+
+Note that the Zoe can also auto-learn sensor IDs through a driving procedure, but manual programming via these commands is faster and doesn't require driving.
+
 ---------------------------
 Web Interface Configuration
 ---------------------------
@@ -375,20 +414,21 @@ The following features can be configured via the OVMS web interface under **Rena
 **Scheduled Pre-Climate Configuration**
   A dedicated web page for managing weekly pre-climate schedules is available at **Renault Zoe Ph2 → Pre-Climate Schedule**.
 
-  **Features:**
+  **Features (powered by the OVMS global scheduler):**
 
-  - Visual weekly schedule configuration
+  - Visual weekly schedule configuration including optional durations (``HH:MM/15``)
   - Enable/disable individual days with checkboxes
   - Set multiple times per day (e.g., morning and evening)
+  - Bulk copy and "Clear all" helpers
   - Input validation with helpful error messages
-  - Displays current time and next scheduled event
+  - Displays current time and the next scheduled activation
   - Real-time calculation of upcoming activations
 
   **Usage:**
 
   1. Navigate to **Vehicle → Renault Zoe Ph2 → Pre-Climate Schedule**
   2. Check the box for days you want to enable
-  3. Enter time(s) in HH:MM format (e.g., ``07:30`` or ``07:00,17:30``)
+  3. Enter time(s) in ``HH:MM`` or ``HH:MM/Duration`` format (e.g., ``07:30/10`` or ``07:00,17:30/15``)
   4. Click Save
   5. The page will show your current time and the next scheduled activation
 
@@ -398,7 +438,7 @@ The following features can be configured via the OVMS web interface under **Rena
   - Tuesday: ☐ (disabled)
   - Wednesday: ☐ (disabled)
   - Thursday: ☐ (disabled)
-  - Friday: ✓ ``07:00,17:30``
+  - Friday: ✓ ``07:00/10,17:30/15``
   - Saturday: ✓ ``09:00``
   - Sunday: ☐ (disabled)
 

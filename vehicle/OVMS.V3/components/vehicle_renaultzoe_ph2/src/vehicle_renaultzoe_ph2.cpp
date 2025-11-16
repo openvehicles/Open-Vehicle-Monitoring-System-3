@@ -65,7 +65,6 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   StandardMetrics.ms_v_type->SetValue("RZ2");
 
   MyConfig.RegisterParam("xrz2", "Renault Zoe Ph2 configuration", true, true);
-  MyConfig.RegisterParam("xrz2.preclimate", "Renault Zoe Ph2 pre-climate schedules", true, true);
   ConfigChanged(NULL);
 
   // Init Zoe Ph2 CAN connections
@@ -170,12 +169,6 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   cluster_reset = cluster->RegisterCommand("reset", "Reset functions");
   cluster_reset->RegisterCommand("service", "Reset service reminder", CommandDdtClusterResetService);
 
-  // Scheduled pre-climate commands
-  OvmsCommand *preclimate = cmd_xrz2->RegisterCommand("preclimate", "Scheduled pre-climate control");
-  preclimate->RegisterCommand("schedule", "Set schedule for pre-climate (day hour:min)", CommandPreclimateScheduleSet, "<day> <time>", 2, 2);
-  preclimate->RegisterCommand("list", "List all configured pre-climate schedules", CommandPreclimateScheduleList);
-  preclimate->RegisterCommand("clear", "Clear schedule for a specific day", CommandPreclimateScheduleClear, "<day>", 1, 1);
-
   // CAN1 Software filter - Poll response
   MyPollers.AddFilter(1, 0x18daf1da, 0x18daf1df);
   MyPollers.AddFilter(1, 0x763, 0x765);
@@ -207,9 +200,6 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyCan.RegisterCallback(TAG, std::bind(&OvmsVehicleRenaultZoePh2::TxCallback, this, _1, _2), true);
-
-  // Register ticker event for scheduled pre-climate
-  MyEvents.RegisterEvent(TAG, "ticker.60", std::bind(&OvmsVehicleRenaultZoePh2::CheckPreclimateSchedule, this, _1, _2));
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
