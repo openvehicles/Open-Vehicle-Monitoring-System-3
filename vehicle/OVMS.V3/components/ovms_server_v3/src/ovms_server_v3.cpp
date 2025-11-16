@@ -470,7 +470,7 @@ void OvmsServerV3::TransmitPriorityMetrics()
       if (name.empty() || already_processed(name)) return;
       OvmsMetric* m = MyMetrics.Find(name.c_str());
       if (!m) return;
-      if (m->IsModifiedAndClear(MyOvmsServerV3Modifier))
+      if (m->IsModifiedAndClear(MyOvmsServerV3Modifier) && m->IsDefined())
         TransmitMetric(m);
       mark_processed(name);
     };
@@ -975,7 +975,8 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
     return;
     
   if (m_metrics_immediately.CheckFilter(metric_name) && 
-      metric->IsModifiedAndClear(MyOvmsServerV3Modifier))
+      metric->IsModifiedAndClear(MyOvmsServerV3Modifier) &&
+      metric->IsDefined())
     {
     TransmitMetric(metric);
     }
@@ -1439,7 +1440,8 @@ void OvmsServerV3::ProcessClientMetricRequest(const std::string& clientid, const
   const std::string name(m->m_name);
   if (!reqfilter.CheckFilter(name))
     continue;
-  TransmitMetric(m);
+  if (m->IsDefined())
+    TransmitMetric(m);
   }
 }
 
