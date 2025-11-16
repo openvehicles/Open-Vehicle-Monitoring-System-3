@@ -1463,24 +1463,26 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
           }
         }
       }
-          
     // Check if global scheduled precondition are enabled
     if(MyConfig.GetParamValueBool("vehicle", "climate.precondition", false)) 
       CheckPreconditionSchedule();
-      
-    if (m_climate_restart && StdMetrics.ms_v_env_hvac->AsBool())
+
+    if (m_climate_restart && StdMetrics.ms_v_env_on->AsBool(false))
       {
-      --m_climate_restart_ticker;
-      //ESP_LOGI(TAG,"Climate ticker: %d", m_climate_restart_ticker);
-      if (m_climate_restart_ticker <= 0) 
-        { 
-        m_climate_restart = false;
-        m_climate_restart_ticker = 0;
-        if (StdMetrics.ms_v_env_hvac->AsBool())
-          {          
-          CommandClimateControl(false);
-          ESP_LOGI(TAG,"Stopping climate control as per schedule");
-          }
+      // Vehicle turned on - cancel scheduled climate restart
+      m_climate_restart = false;
+      m_climate_restart_ticker = 0;
+      ESP_LOGI(TAG,"Cancelling scheduled climate restart due to vehicle on");
+      }
+
+    if (m_climate_restart_ticker > 0 && --m_climate_restart_ticker == 0)
+      { 
+      m_climate_restart = false;
+      m_climate_restart_ticker = 0;
+      if (StdMetrics.ms_v_env_hvac->AsBool(false) && !StdMetrics.ms_v_env_on->AsBool(false))
+        {          
+        CommandClimateControl(false);
+        ESP_LOGI(TAG,"Stopping climate control as per schedule");
         }
       }
     } // end every 60 seconds
@@ -1512,9 +1514,12 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
         m_minsoc_triggered = soc - 1;
       else
         m_minsoc_triggered = 0;
-      }      
+      }  
     // Handle scheduled climate restarts
-    if (m_climate_restart_ticker > 0 && m_climate_restart && !StdMetrics.ms_v_env_hvac->AsBool())
+    if (m_climate_restart && 
+        m_climate_restart_ticker > 0 &&
+        !StdMetrics.ms_v_env_on->AsBool(false) && 
+        !StdMetrics.ms_v_env_hvac->AsBool(false) )
       {
       CommandClimateControl(true);
       ESP_LOGI(TAG,"Restarting climate control as per schedule");
