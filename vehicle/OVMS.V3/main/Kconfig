@@ -727,6 +727,23 @@ config OVMS_COMP_MAX7317_MONITOR_INTERVAL
         If enabled, the monitoring polls the ports with this interval by default.
         The interval can be configured via param egpio[monitor.interval].
 
+config OVMS_COMP_ESP32EGPIO
+    bool "Include support for ESP32 native GPIO (esp32egpio)"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for ESP32 native GPIO pins as extended GPIO.
+
+config OVMS_COMP_ESP32EGPIO_MONITOR_INTERVAL
+    int "ESP32 EGPIO port monitor default polling interval [ms]"
+    range 10 10000
+    default 50
+    depends on OVMS_COMP_ESP32EGPIO
+    help
+        The ESP32 EGPIO has no IRQ so needs to be polled to monitor port changes.
+        If enabled, the monitoring polls the ports with this interval by default.
+        The interval can be configured via param egpio[monitor.interval].
+
 config OVMS_COMP_ESP32CAN
     bool "Include support for ESP32 on-board CAN controller (can1)"
     default y

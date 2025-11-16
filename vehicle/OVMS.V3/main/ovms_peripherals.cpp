@@ -150,6 +150,17 @@ Peripherals::Peripherals()
   m_max7317 = new max7317("egpio", m_spibus, VSPI_HOST, 10000000, VSPI_PIN_MAX7317_CS);
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
+#ifdef CONFIG_OVMS_COMP_ESP32EGPIO
+  static const int8_t esp32egpio_pins[10] = {
+    ESP32EGPIO_PIN_0, ESP32EGPIO_PIN_1, ESP32EGPIO_PIN_2,
+    ESP32EGPIO_PIN_3, ESP32EGPIO_PIN_4, ESP32EGPIO_PIN_5,
+    ESP32EGPIO_PIN_6, ESP32EGPIO_PIN_7, ESP32EGPIO_PIN_8,
+    ESP32EGPIO_PIN_9
+  };
+  ESP_LOGI(TAG, "  ESP32 EGPIO");
+  m_esp32egpio = new esp32egpio("esp32egpio", esp32egpio_pins);
+#endif // #ifdef CONFIG_OVMS_COMP_ESP32EGPIO
+
 #ifdef CONFIG_OVMS_COMP_ESP32CAN
   ESP_LOGI(TAG, "  ESP32 CAN");
   m_esp32can = new esp32can("can1", ESP32CAN_PIN_TX, ESP32CAN_PIN_RX);

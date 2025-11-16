@@ -55,6 +55,10 @@
 #include "max7317.h"
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
+#ifdef CONFIG_OVMS_COMP_ESP32EGPIO
+#include "esp32egpio.h"
+#endif // #ifdef CONFIG_OVMS_COMP_ESP32EGPIO
+
 #ifdef CONFIG_OVMS_COMP_BLUETOOTH
 #include "esp32bluetooth.h"
 #endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
@@ -160,6 +164,10 @@ class Peripherals : public InternalRamAllocated
 #ifdef CONFIG_OVMS_COMP_MAX7317
     max7317* m_max7317;
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+#ifdef CONFIG_OVMS_COMP_ESP32EGPIO
+    esp32egpio* m_esp32egpio;
+#endif // #ifdef CONFIG_OVMS_COMP_ESP32EGPIO
 
 #ifdef CONFIG_OVMS_COMP_ESP32CAN
     esp32can* m_esp32can;
