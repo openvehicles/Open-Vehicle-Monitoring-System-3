@@ -1409,7 +1409,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       }
     }
 
-  if ((m_ticker % 60) == 0)
+  if ((m_ticker % 60) == 0) // every 60 seconds
     {
     // check 12V voltage:
     float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
@@ -1471,7 +1471,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     if (m_climate_restart && StdMetrics.ms_v_env_hvac->AsBool())
       {
       --m_climate_restart_ticker;
-      ESP_LOGI(TAG,"Climate ticker: %d", m_climate_restart_ticker);
+      //ESP_LOGI(TAG,"Climate ticker: %d", m_climate_restart_ticker);
       if (m_climate_restart_ticker <= 0) 
         { 
         m_climate_restart = false;
@@ -1483,14 +1483,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
           }
         }
       }
-      
-    // Handle scheduled climate restarts
-    if (m_climate_restart_ticker > 0  && m_climate_restart && !StdMetrics.ms_v_env_hvac->AsBool())
-      {
-      CommandClimateControl(true);
-      ESP_LOGI(TAG,"Restarting climate control as per schedule");
-      }
-    } // end ((m_ticker % 60) == 0)
+    } // end every 60 seconds
 
   if (m_12v_shutdown_ticker > 0 && --m_12v_shutdown_ticker == 0)
     {
@@ -1498,7 +1491,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     MyBoot.DeepSleep(wakeup_interval);
     }
 
-  if ((m_ticker % 10)==0)
+  if ((m_ticker % 10)==0) // every 10 seconds
     {
     // Check MINSOC
     int soc = (int) ceil(StandardMetrics.ms_v_bat_soc->AsFloat());
@@ -1519,8 +1512,14 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
         m_minsoc_triggered = soc - 1;
       else
         m_minsoc_triggered = 0;
+      }      
+    // Handle scheduled climate restarts
+    if (m_climate_restart_ticker > 0 && m_climate_restart && !StdMetrics.ms_v_env_hvac->AsBool())
+      {
+      CommandClimateControl(true);
+      ESP_LOGI(TAG,"Restarting climate control as per schedule");
       }
-    }
+    } // end every 10 seconds
 
   // BMS ticker:
   BmsTicker();
