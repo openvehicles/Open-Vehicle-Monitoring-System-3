@@ -153,12 +153,6 @@ Additional Zoe Phase 2 Commands
      - Manually deactivates the DC/DC converter.
    * - **xrz2 debug**
      - Debug output of custom functions like rolling average consumption calculation.
-   * - **xrz2 preclimate schedule <day> <time>***
-     - Set scheduled pre-climate activation time(s) for a specific day of the week.
-   * - **xrz2 preclimate list***
-     - List all configured pre-climate schedules and show the next scheduled activation.
-   * - **xrz2 preclimate clear <day>***
-     - Clear pre-climate schedule for a specific day (or "all" to clear all schedules).
    * - **xrz2 ddt hvac compressor enable***
      - Permanently enable the HVAC compressor (allows both cooling and heating modes).
    * - **xrz2 ddt hvac compressor disable***
@@ -195,85 +189,24 @@ OVMS Default Commands
      - Long pre conditioning, fires pre-climate three times in a row, about 30 mins runtime.
    * - **homelink 3***
      - Abort Long pre conditioning, it will also aborted if you unlock your Zoe.
+   * - **climatecontrol schedule ...***
+     - Global scheduler commands (``set``, ``list``, ``copy``, ``clear``, ``enable``, ``disable``) for automatic preconditioning.
 
 (* Requires V-CAN connection)
 
----------------------
-Scheduled Pre-Climate
----------------------
+-------------------------
+Scheduled Preconditioning
+-------------------------
 
-The Zoe Ph2 integration supports automatic pre-climate activation based on a weekly schedule. This allows you to have your car pre-heated or pre-cooled at specific times without manual intervention.
+The Zoe Ph2 integration now uses the global OVMS climate scheduler.
 
 **Requirements:**
 
 - V-CAN connection enabled
 - Vehicle must be locked
 - Battery SoC must be above 15%
+- ``climatecontrol schedule`` must be enabled (either via the page or CLI)
 
-**Configuration Methods:**
-
-1. **Web Interface** (recommended): Navigate to **Renault Zoe Ph2 → Pre-Climate Schedule**
-2. **Shell Commands**: Use ``xrz2 preclimate`` commands
-
-**Shell Command Examples:**
-
-Set Monday morning pre-climate at 7:30 AM::
-
-  xrz2 preclimate schedule mon 07:30
-
-Set Friday for both morning and evening::
-
-  xrz2 preclimate schedule fri 07:00,17:30
-
-View all configured schedules::
-
-  xrz2 preclimate list
-
-Clear Monday's schedule::
-
-  xrz2 preclimate clear mon
-
-Clear all schedules::
-
-  xrz2 preclimate clear all
-
-**Day Names:**
-
-Use these three-letter abbreviations:
-
-- ``mon`` - Monday
-- ``tue`` - Tuesday
-- ``wed`` - Wednesday
-- ``thu`` - Thursday
-- ``fri`` - Friday
-- ``sat`` - Saturday
-- ``sun`` - Sunday
-
-**Time Format:**
-
-Times must be in 24-hour format: ``HH:MM`` (e.g., ``07:30``, ``17:45``)
-
-Multiple times can be specified separated by commas: ``07:00,17:30``
-
-**Example Output:**
-
-When you run ``xrz2 preclimate list``::
-
-  Pre-climate schedules:
-  ======================
-  Monday: 07:30
-  Friday: 07:00,17:30
-  Saturday: 09:00
-
-  Current time: Monday 07:15
-
-**Notifications:**
-
-The system sends notifications for:
-
-- Successful pre-climate activation
-- Failed activation (with reason: not locked, low SoC, V-CAN not enabled, etc.)
-- Skipped activation (e.g., vehicle not locked)
 
 --------------------------------
 DDT Commands - ECU Configuration
@@ -373,37 +306,7 @@ The following features can be configured via the OVMS web interface under **Rena
   - Manual override available via ``xrz2 dcdc enable/disable`` commands
 
 **Scheduled Pre-Climate Configuration**
-  A dedicated web page for managing weekly pre-climate schedules is available at **Renault Zoe Ph2 → Pre-Climate Schedule**.
-
-  **Features:**
-
-  - Visual weekly schedule configuration
-  - Enable/disable individual days with checkboxes
-  - Set multiple times per day (e.g., morning and evening)
-  - Input validation with helpful error messages
-  - Displays current time and next scheduled event
-  - Real-time calculation of upcoming activations
-
-  **Usage:**
-
-  1. Navigate to **Vehicle → Renault Zoe Ph2 → Pre-Climate Schedule**
-  2. Check the box for days you want to enable
-  3. Enter time(s) in HH:MM format (e.g., ``07:30`` or ``07:00,17:30``)
-  4. Click Save
-  5. The page will show your current time and the next scheduled activation
-
-  **Example:**
-
-  - Monday: ✓ ``07:30``
-  - Tuesday: ☐ (disabled)
-  - Wednesday: ☐ (disabled)
-  - Thursday: ☐ (disabled)
-  - Friday: ✓ ``07:00,17:30``
-  - Saturday: ✓ ``09:00``
-  - Sunday: ☐ (disabled)
-
-  The system will display: "Current time: Monday 14:35" and "Next scheduled: Friday at 07:00"
-
+  A dedicated web page for managing weekly preconditioning schedules is available at **Renault Zoe Ph2 → Preconditioning Schedule**.
 
 -------------------------------------------
 CAN security gateway & OBD port limitations
