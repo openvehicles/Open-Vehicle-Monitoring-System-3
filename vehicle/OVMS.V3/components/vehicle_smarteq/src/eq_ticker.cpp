@@ -105,13 +105,16 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       m_ADCfactor_recalc = false;
       m_ADCfactor_recalc_timer = 4;
       // calculate new ADC factor
-      float can12V = mt_evc_LV_DCDC_volt->AsFloat(0.0f) + 0.25f;   // BMS 12V voltage + offset
-      if (can12V >= 13.10f) {
+      if (mt_evc_LV_DCDC_act_req->AsBool(false))
+        {        
+        float can12V = mt_evc_LV_DCDC_volt->AsFloat(0.0f);
         ReCalcADCfactor(can12V, nullptr);  // nullptr = no Log-Output
         ESP_LOGI(TAG, "Auto ADC recalibration started (%.2fV)", can12V);
-      } else {
+        } 
+      else 
+        {
         ESP_LOGW(TAG, "Error: Auto ADC recalibration, 12V voltage is not stable for ADC calibration! (%.2fV)", can12V);
-      }
+        }
       }
     }
   #endif
