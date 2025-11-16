@@ -335,7 +335,7 @@ void OvmsServerV3::TransmitAllMetrics()
     // Clear our modified slot for full-sync pass:
     cur->ClearModified(MyOvmsServerV3Modifier);
 
-    if (included)
+    if (included && cur->IsDefined())
       {
       TransmitMetric(cur); // applies filter again internally, harmless
       sent++;
@@ -395,7 +395,7 @@ void OvmsServerV3::TransmitModifiedMetrics()
     OvmsMetric* cur = m;
     m = m->m_next;
     // Check & clear modification flag for our modifier slot.
-    if (cur->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    if (cur->IsModifiedAndClear(MyOvmsServerV3Modifier) && cur->IsDefined())
       {
       TransmitMetric(cur);
       sent++;
