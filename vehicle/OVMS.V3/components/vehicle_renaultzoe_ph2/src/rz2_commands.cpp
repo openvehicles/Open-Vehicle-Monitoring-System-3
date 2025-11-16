@@ -1175,5 +1175,3 @@ void OvmsVehicleRenaultZoePh2::CommandDcdcDisable(int verbosity, OvmsWriter *wri
     ESP_LOGI(TAG, "DCDC converter disabled");
     writer->puts("DCDC converter disabled");
 }
- 
-}

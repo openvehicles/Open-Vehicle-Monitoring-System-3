@@ -164,11 +164,6 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   dcdc->RegisterCommand("enable", "Enable DCDC converter manually", CommandDcdcEnable);
   dcdc->RegisterCommand("disable", "Disable DCDC converter", CommandDcdcDisable);
 
-  // TPMS sensor ID commands
-  OvmsCommand *tpms = cmd_xrz2->RegisterCommand("tpms", "TPMS sensor ID management");
-  tpms->RegisterCommand("list", "List all TPMS sensor IDs (wheels 1-4 and spares 5-12)", CommandTpmsList);
-  tpms->RegisterCommand("set", "Set TPMS sensor ID for a wheel (1-4 only)", CommandTpmsSet, "<wheel> <sensor_id>", 2, 2);
-
   // Reset and service functions
   cluster = ddt->RegisterCommand("cluster", "Service functions of Instrument cluster");
   cluster_reset = cluster->RegisterCommand("reset", "Reset functions");
