@@ -185,8 +185,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       uint16_t raw_aux = ((CAN_BYTE(2) & 0x0F) << 6) | (CAN_BYTE(3) >> 2);
       float aux_consumption = (float)raw_aux / 10.0f;
       uint8_t eco_score = CAN_BYTE(4) & 0x7F;
-      uint16_t raw_total_recovery = (CAN_BYTE(5) << 4) | (CAN_BYTE(6) >> 4);
-      float total_recovery = (float)raw_total_recovery;
       bool charge_flap_warning = (CAN_BYTE(6) & 0x10) > 0;
 
       mt_energy_used->SetValue(consumption_mission);
@@ -194,7 +192,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       mt_aux_consumption->SetValue(aux_consumption);
       if(eco_score > 0 && eco_score <= 100)
         mt_eco_score->SetValue(eco_score);
-      mt_total_recovery->SetValue(total_recovery);
       mt_charge_flap_warning->SetValue(charge_flap_warning);
       break;
       }
@@ -203,14 +200,12 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       REQ_DLC(7);
       // Extract multi-byte values
       uint16_t rest_consumption = (CAN_BYTE(1) * 0.1);
-      uint16_t start_consumption = (CAN_BYTE(2) * 0.1);
       uint32_t trip_distance = ((CAN_BYTE(2) << 9) | (CAN_BYTE(3) << 1) | (CAN_BYTE(4) >> 7)) & 0x1FFFF;
       uint16_t trip_energy = ((CAN_BYTE(4) & 0x7F) << 8) | CAN_BYTE(5);
       uint16_t avg_speed = (CAN_BYTE(6) << 4) | (CAN_BYTE(7) >> 4);
       
       // Apply scaling (all × 0.1)
       mt_reset_consumption->SetValue((float)rest_consumption);
-      mt_start_consumption->SetValue((float)start_consumption);
       StdMetrics.ms_v_bat_consumption->SetValue((float)rest_consumption * 10.0f); // current consumption
       mt_reset_distance->SetValue((float)trip_distance * 0.1f);
       if(trip_energy < 0x7FFF) 

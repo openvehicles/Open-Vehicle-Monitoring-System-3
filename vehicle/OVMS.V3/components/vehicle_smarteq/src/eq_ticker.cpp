@@ -68,7 +68,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     {
     if(m_enable_LED_state) 
       OnlineState();
-    }
+    } // end every 10 seconds
   }
 
 void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {

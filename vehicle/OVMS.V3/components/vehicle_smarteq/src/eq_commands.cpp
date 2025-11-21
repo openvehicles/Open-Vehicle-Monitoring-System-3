@@ -561,10 +561,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, Ov
       const std::string& reset_time = mt_reset_time->AsUnitString("-", ToUser, 1);
       writer->printf("RESET Trip time: %s\n", reset_time.c_str());
       }
-    if (mt_use_at_start->IsDefined())
+    if (mt_reset_consumption->IsDefined())
       {
-      const std::string& use_at_start = mt_use_at_start->AsUnitString("-", ToUser, 1);
-      writer->printf("START kWh: %s\n", use_at_start.c_str());
+      const std::string& reset_consumption = mt_reset_consumption->AsUnitString("-", ToUser, 1);
+      writer->printf("START kWh: %s\n", reset_consumption.c_str());
       }
     if (mt_obd_start_trip_km->IsDefined())
       {

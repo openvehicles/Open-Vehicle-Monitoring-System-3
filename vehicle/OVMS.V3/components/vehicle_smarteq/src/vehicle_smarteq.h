@@ -201,17 +201,21 @@ public:
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
     virtual void CalculateEfficiency();
-    void vehicle_smart_car_on(bool isOn);    
+    void vehicle_smart_car_on(bool isOn);
+
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* data, uint16_t reply_len);
     void PollReply_BMS_BattState(const char* data, uint16_t reply_len);
+
     void PollReply_TDB(const char* data, uint16_t reply_len);
+
     void PollReply_BCM_VIN(const char* data, uint16_t reply_len);
     void PollReply_BCM_VehicleState(const char* data, uint16_t reply_len);
     void PollReply_BCM_DoorUnderhoodOpened(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len);
     void PollReply_BCM_GenMode(const char* data, uint16_t reply_len);
+
     void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
@@ -223,6 +227,7 @@ public:
     void PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len);
     void PollReply_EVC_14VBatteryVoltageReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_CabinBlower(const char* data, uint16_t reply_len);
+
     void PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph2_RMS_A(const char* data, uint16_t reply_len);
@@ -230,14 +235,7 @@ public:
     void PollReply_OBL_JB2AC_Ph12_RMS_V(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph23_RMS_V(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len);
-    void PollReply_obd_trip(const char* data, uint16_t reply_len);
-    void PollReply_obd_time(const char* data, uint16_t reply_len);
-    void PollReply_obd_start_trip(const char* data, uint16_t reply_len);
-    void PollReply_obd_start_time(const char* data, uint16_t reply_len);
-    void PollReply_obd_mt_day(const char* data, uint16_t reply_len);
-    void PollReply_obd_mt_km(const char* data, uint16_t reply_len);
-    void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len);    
     void PollReply_OBL_JB2AC_GroundResistance(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_DCCurrent(const char* data, uint16_t reply_len);
@@ -246,6 +244,14 @@ public:
     void PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);
+
+    void PollReply_obd_trip(const char* data, uint16_t reply_len);
+    void PollReply_obd_time(const char* data, uint16_t reply_len);
+    void PollReply_obd_start_trip(const char* data, uint16_t reply_len);
+    void PollReply_obd_start_time(const char* data, uint16_t reply_len);
+    void PollReply_obd_mt_day(const char* data, uint16_t reply_len);
+    void PollReply_obd_mt_km(const char* data, uint16_t reply_len);
+    void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
     
   protected:
     bool m_enable_write;                    // canwrite
@@ -285,8 +291,6 @@ public:
   protected:
     OvmsCommand *cmd_xsq;                               // command for xsq
     OvmsMetricBool          *mt_bus_awake;              // Can Bus active
-    OvmsMetricFloat         *mt_use_at_reset;           // kWh use at reset in Display
-    OvmsMetricFloat         *mt_use_at_start;           // kWh use at start in Display
     OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
     OvmsMetricFloat         *mt_adc_factor;             // calculated ADC factor for 12V measurement
     OvmsMetricVector<float> *mt_adc_factor_history;     // last 20 calculated ADC factors for 12V measurement
@@ -390,6 +394,7 @@ public:
     OvmsMetricVector<bool>  *mt_tpms_low_batt;          // 4 wheel low battery flags (0=ok, 1=low)
     OvmsMetricVector<bool>  *mt_tpms_missing_tx;        // 4 wheel missing transmitter flags (0=ok, 1=missing)    
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
+
     OvmsMetricString        *mt_bcm_vehicle_state;      //!< vehicle state
     OvmsMetricString        *mt_bcm_gen_mode;           //!< Generator mode text
     

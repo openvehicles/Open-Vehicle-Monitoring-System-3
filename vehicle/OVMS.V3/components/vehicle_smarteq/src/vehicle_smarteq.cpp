@@ -95,8 +95,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
 
   mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, true);
-  mt_use_at_reset               = MyMetrics.InitFloat("xsq.use.at.reset", SM_STALE_MID, 0, kWh);
-  mt_use_at_start               = MyMetrics.InitFloat("xsq.use.at.start", SM_STALE_MID, 0, kWh);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_NONE, "", Other);
   mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_NONE, 0, Other);
   mt_adc_factor_history         = new OvmsMetricVector<float>("xsq.adc.factor.history", SM_STALE_NONE, Other);
@@ -120,12 +118,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_eco_score                  = MyMetrics.InitInt("xsq.v.eco.score", SM_STALE_MID, 0, Percentage);
   mt_total_recovery             = MyMetrics.InitFloat("xsq.v.total.recovery", SM_STALE_MID, 0, kWh);
   mt_charge_flap_warning        = MyMetrics.InitBool("xsq.v.charge.flap.warning", SM_STALE_MID, false);
-
   // 0x62d
   mt_worst_consumption          = MyMetrics.InitFloat("xsq.v.bat.consumption.worst", SM_STALE_MID, 0, kWhP100K);
   mt_best_consumption           = MyMetrics.InitFloat("xsq.v.bat.consumption.best", SM_STALE_MID, 0, kWhP100K);
   mt_bcb_power_mains            = MyMetrics.InitFloat("xsq.v.charge.bcb.power", SM_STALE_MID, 0, Watts);
-
   // 0x634
   mt_tcu_refuse_sleep           = MyMetrics.InitInt("xsq.v.tcu.refuse.sleep", SM_STALE_MID, 0);
   mt_charging_timer_value       = MyMetrics.InitInt("xsq.v.charge.timer.value", SM_STALE_MID, 0, Minutes);
@@ -155,6 +151,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_tpms_low_batt               = MyMetrics.InitVector<bool> ("xsq.tpms.lowbatt", SM_STALE_MID, nullptr, Other);
   mt_tpms_missing_tx             = MyMetrics.InitVector<bool> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);  
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 235, kPa);  // Dummy pressure for TPMS alert testing
+  // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
   mt_bcm_gen_mode                = MyMetrics.InitString("xsq.bcm.gen.mode", SM_STALE_MID, "UNKNOWN", Other);
 
