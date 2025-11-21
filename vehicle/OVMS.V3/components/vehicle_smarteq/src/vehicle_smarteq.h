@@ -33,8 +33,8 @@
 #ifndef __VEHICLE_SMARTEQ_H__
 #define __VEHICLE_SMARTEQ_H__
 
-#define VERSION "2.0.0"
-#define PRESET_VERSION 1
+#define VERSION "2.1.0"
+#define PRESET_VERSION 4 // Configuration preset version
 
 #include "ovms_log.h"
 
@@ -191,7 +191,7 @@ public:
     float m_tpms_temperature[4]; // °C
     bool m_tpms_lowbatt[4]; // 0=ok, 1=low
     bool m_tpms_missing_tx[4]; // 0=ok, 1=missing
-    int m_tpms_index[4];
+    int m_tpms_index_sq[4];
     bool m_ADCfactor_recalc;       // request recalculation of ADC factor
     int m_ADCfactor_recalc_timer;  // countdown timer for ADC factor recalculation
 

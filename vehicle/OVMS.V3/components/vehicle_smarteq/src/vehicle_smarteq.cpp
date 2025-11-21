@@ -83,7 +83,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     m_tpms_temperature[i] = 2.0f;
     m_tpms_lowbatt[i] = false;
     m_tpms_missing_tx[i] = false;
-    m_tpms_index[i] = i;
+    m_tpms_index_sq[i] = i;
     }
 
   // BMS configuration:
@@ -276,6 +276,14 @@ OvmsVehicleSmartEQ::~OvmsVehicleSmartEQ() {
  * ConfigChanged: reload single/all configuration variables (cfgupdate)
  */
 void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
+  if (!param || param->GetName() == "vehicle")
+    {    // read TPMS sensor index configuration
+    m_tpms_index_sq[0] = MyConfig.GetParamValueInt("vehicle", "tpms.fl", 0);
+    m_tpms_index_sq[1] = MyConfig.GetParamValueInt("vehicle", "tpms.fr", 1);
+    m_tpms_index_sq[2] = MyConfig.GetParamValueInt("vehicle", "tpms.rl", 2);
+    m_tpms_index_sq[3] = MyConfig.GetParamValueInt("vehicle", "tpms.rr", 3);
+    }
+
   if (param && param->GetName() != "xsq")
     return;
 
@@ -335,10 +343,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_resettrip            = getBool("resettrip", true);
     m_resettotal           = getBool("resettotal", false);
     m_tripnotify           = getBool("reset.notify", false);
-    m_tpms_index[0]        = getInt("TPMS_FL", 0);
-    m_tpms_index[1]        = getInt("TPMS_FR", 1);
-    m_tpms_index[2]        = getInt("TPMS_RL", 2);
-    m_tpms_index[3]        = getInt("TPMS_RR", 3);
     m_front_pressure       = getFloat("tpms.front.pressure", 225.0f);
     m_rear_pressure        = getFloat("tpms.rear.pressure", 255.0f);
     m_pressure_warning     = getFloat("tpms.value.warn", 40.0f);
