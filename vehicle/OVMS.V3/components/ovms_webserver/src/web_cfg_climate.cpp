@@ -270,7 +270,7 @@ void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t&
              "pattern=\"[0-2]?[0-9]:[0-5][0-9](/([5-9]|[12][0-9]|30))?(,[0-2]?[0-9]:[0-5][0-9](/([5-9]|[12][0-9]|30))?)*\">",
              day_names[i], _attr(schedule), enabled ? "" : " disabled");
     c.print("</div>");
-    c.printf("<span class=\"help-block\">Example: 07:30/10 or 07:00,17:30/15</span>");
+    c.printf("<span class=\"help-block\">Example: 7:30/10 or 7:00,17:30/15</span>");
     c.print("</div>");
     c.print("</div>");
   } 
