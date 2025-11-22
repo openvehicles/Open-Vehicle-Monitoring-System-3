@@ -111,7 +111,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void Check12vState();
     void DisablePlugin(const char* plugin);
     bool ExecuteCommand(const std::string& command);
-    void setTPMSValue(int index, int indexcar);
+    void setTPMSValue();
     void setTPMSValueBoot();
     void NotifyClimate();
     void NotifyClimateTimer();
@@ -393,8 +393,9 @@ public:
  
     OvmsMetricVector<float> *mt_tpms_temp;              // 4 wheel temperatures (°C)
     OvmsMetricVector<float> *mt_tpms_pressure;          // 4 wheel pressures (kPa)
-    OvmsMetricVector<bool>  *mt_tpms_low_batt;          // 4 wheel low battery flags (0=ok, 1=low)
-    OvmsMetricVector<bool>  *mt_tpms_missing_tx;        // 4 wheel missing transmitter flags (0=ok, 1=missing)    
+    OvmsMetricVector<short> *mt_tpms_alert;             // 4 wheel alert flags (0=ok, 1=warning, 2=alert)
+    OvmsMetricVector<short>  *mt_tpms_low_batt;          // 4 wheel low battery flags (0=ok, 1=low)
+    OvmsMetricVector<short>  *mt_tpms_missing_tx;        // 4 wheel missing transmitter flags (0=ok, 1=missing)    
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
 
     OvmsMetricString        *mt_bcm_vehicle_state;      //!< vehicle state

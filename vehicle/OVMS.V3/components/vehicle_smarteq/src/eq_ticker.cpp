@@ -79,6 +79,8 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
   if(m_enable_door_state && !m_warning_dooropen && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
     DoorOpenState();
 
+  setTPMSValue();   // update TPMS metrics
+
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
     if(m_reboot_time > 0) 
       Handlev2Server();

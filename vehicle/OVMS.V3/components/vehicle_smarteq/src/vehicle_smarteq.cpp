@@ -80,7 +80,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   for (int i = 0; i < 4; i++) 
     {
     m_tpms_pressure[i] = 0.0f;
-    m_tpms_temperature[i] = 2.0f;
+    m_tpms_temperature[i] = 0.0f;
     m_tpms_lowbatt[i] = false;
     m_tpms_missing_tx[i] = false;
     }
@@ -147,8 +147,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   mt_tpms_temp                   = MyMetrics.InitVector<float>("xsq.tpms.temp", SM_STALE_MID, nullptr, Celcius);
   mt_tpms_pressure               = MyMetrics.InitVector<float>("xsq.tpms.pressure", SM_STALE_MID, nullptr, kPa);
-  mt_tpms_low_batt               = MyMetrics.InitVector<bool> ("xsq.tpms.lowbatt", SM_STALE_MID, nullptr, Other);
-  mt_tpms_missing_tx             = MyMetrics.InitVector<bool> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);  
+  mt_tpms_alert                  = MyMetrics.InitVector<short> ("xsq.tpms.alert", SM_STALE_MID, nullptr, Other);
+  mt_tpms_low_batt               = MyMetrics.InitVector<short> ("xsq.tpms.lowbatt", SM_STALE_MID, nullptr, Other);
+  mt_tpms_missing_tx             = MyMetrics.InitVector<short> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);  
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 235, kPa);  // Dummy pressure for TPMS alert testing
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);

@@ -807,7 +807,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTPMSset(int verbosity,
   float dummy_pressure = mt_dummy_pressure->AsFloat();
   for (int i = 0; i < 4; i++) {
     m_tpms_pressure[i] = dummy_pressure; // kPa
-    setTPMSValue(i, m_tpms_index[i]);
   }
   writer->printf("set TPMS dummy pressure: %.2f", dummy_pressure);
   return Success;
