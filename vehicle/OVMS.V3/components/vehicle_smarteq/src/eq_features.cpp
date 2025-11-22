@@ -45,6 +45,11 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
   std::vector<float> tpms_temp(count);
   std::vector<short> tpms_alert(count);
 
+  float _threshold_front = m_front_pressure;
+  float _threshold_rear = m_rear_pressure;
+  float _threshold_warn = m_pressure_warning;
+  float _threshold_alert = m_pressure_alert;
+
   for (int i=0; i < count; i++) 
     {
     int indexcar = m_tpms_index[i];
@@ -53,11 +58,6 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
     float _temp = m_tpms_temperature[indexcar];
     short _lowbatt = m_tpms_lowbatt[indexcar];
     short _missing_tx = m_tpms_missing_tx[indexcar];
-
-    float _threshold_front = m_front_pressure;
-    float _threshold_rear = m_rear_pressure;
-    float _threshold_warn = m_pressure_warning;
-    float _threshold_alert = m_pressure_alert;
     
     short _alert = 0;
     bool _flag = true;
