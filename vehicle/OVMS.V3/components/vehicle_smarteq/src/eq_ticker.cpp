@@ -45,10 +45,11 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   HandleCharging();
   HandleChargeport();
   
-  if (StdMetrics.ms_v_env_on->AsBool(false)) 
-    HandleEnergy();
   if (StdMetrics.ms_v_env_on->AsBool(false))
+    {
+    HandleEnergy();
     HandleTripcounter();
+    }
   
   // reactivate door lock warning if the car is parked and unlocked
   if( m_enable_lock_state && 
@@ -71,15 +72,15 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     } // end every 10 seconds
   }
 
-void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
+void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {  
   if(m_12v_charge && !StdMetrics.ms_v_env_on->AsBool()) 
     Check12vState();
   if(m_enable_lock_state && !m_warning_unlocked && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
     DoorLockState();
   if(m_enable_door_state && !m_warning_dooropen && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
     DoorOpenState();
-
-  setTPMSValue();   // update TPMS metrics
+  if(StdMetrics.ms_v_env_on->AsBool(false)) 
+    setTPMSValue();   // update TPMS metrics
 
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
     if(m_reboot_time > 0) 
