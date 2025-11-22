@@ -906,6 +906,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
     }
 
+  if (!MyConfig.IsDefined("xsq", "TPMS_FL")) 
+    {
+    MyConfig.SetParamValueInt("vehicle", "tpms.fl", MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0));
+    MyConfig.SetParamValueInt("vehicle", "tpms.fr", MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1));
+    MyConfig.SetParamValueInt("vehicle", "tpms.rl", MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2));
+    MyConfig.SetParamValueInt("vehicle", "tpms.rr", MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3));
+    }
+
   if (MyConfig.GetParamValue("ota", "server", "0") == "https://ovms.dimitrie.eu/firmware/ota" && 
       MyConfig.GetParamValue("ota", "tag", "0") == "smarteq")
     {
@@ -939,7 +947,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "climate.data",
     "climate.notify",
     "climate.data.store",
-    "gps.deact"
+    "gps.deact",
+    "TPMS_FL",
+    "TPMS_FR",
+    "TPMS_RL",
+    "TPMS_RR"
   };
   
   // Remove all deprecated keys from map

@@ -296,14 +296,15 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
     if (error.empty()) {
       // Use GetParamMap() to get a COPY of the map
       auto map = MyConfig.GetParamMap("xsq");
+      auto map_veh = MyConfig.GetParamMap("vehicle");
       
       // Update all values in local map
       map["tpms.temp"] = tpms_temp ? "yes" : "no";
       map["tpms.alert.enable"] = enable ? "yes" : "no";
-      map["TPMS_FL"] = TPMS_FL;
-      map["TPMS_FR"] = TPMS_FR;
-      map["TPMS_RL"] = TPMS_RL;
-      map["TPMS_RR"] = TPMS_RR;
+      map_veh["tpms.fl"] = TPMS_FL;
+      map_veh["tpms.fr"] = TPMS_FR;
+      map_veh["tpms.rl"] = TPMS_RL;
+      map_veh["tpms.rr"] = TPMS_RR;
       map["tpms.front.pressure"] = front_pressure;
       map["tpms.rear.pressure"] = rear_pressure;
       map["tpms.value.warn"] = pressure_warning;
@@ -311,6 +312,7 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
       
       // Write all changes in one operation
       MyConfig.SetParamMap("xsq", map);
+      MyConfig.SetParamMap("vehicle", map_veh);
         
       // Success response
       info = "<p>TPMS settings updated successfully</p>";

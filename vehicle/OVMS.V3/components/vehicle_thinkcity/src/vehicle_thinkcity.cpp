@@ -224,19 +224,19 @@ void OvmsVehicleThinkCity::IncomingFrameCan1(CAN_frame_t* p_frame)
         // TODO: Add Warnings and Alerts --- e.g. for sensor not responding (data is 0xFF)
 			  if (d[0]!=0xFF) // Front-left
 		    {
-		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float)d[0] * 0.3625, PSI);
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_tpms_index[0], (float)d[0] * 0.3625, PSI);
 		    }
 		    if (d[1]!=0xFF) // Front-right
 		    {
-		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float)d[1] * 0.3625, PSI);
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_tpms_index[1], (float)d[1] * 0.3625, PSI);
 		    }
 		    if (d[2]!=0xFF) // Rear-right
 		    {
-		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float)d[2] * 0.3625, PSI);
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_tpms_index[2], (float)d[2] * 0.3625, PSI);
 		    }
 		    if (d[3]!=0xFF) // Rear-left
 		    {
-		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float)d[3] * 0.3625, PSI);
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_tpms_index[3], (float)d[3] * 0.3625, PSI);
 		    }
 		  break;
     case 0x345: // TPMS Status Alerts and Warnings
@@ -248,13 +248,13 @@ void OvmsVehicleThinkCity::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
           tpms_warning = 0;
           
-          if (j == MS_V_TPMS_IDX_FL)  // Front-left tire
+          if (j == m_tpms_index[0])  // Front-left tire
             tpms_warning = (d[0] & 0x0E) >> 1;  // Extract LF warning bits
-          else if (j == MS_V_TPMS_IDX_FR) // Front-right tire
+          else if (j == m_tpms_index[1]) // Front-right tire
             tpms_warning = (d[1] & 0xE0) >> 5;  // Extract RF warning bits
-          else if (j == MS_V_TPMS_IDX_RR)  // Rear-right tire
+          else if (j == m_tpms_index[2])  // Rear-right tire
             tpms_warning = (d[1] & 0x0E) >> 1;  // Extract RR warning bits
-          else if (j ==MS_V_TPMS_IDX_RL)  //Rear-left tire
+          else if (j == m_tpms_index[3])  //Rear-left tire
             tpms_warning = (d[2] & 0xE0) >> 5;  // Extract LR warning bits
           
           if ((tpms_warning == 2) || (tpms_warning == 7)) // Very Low (Red) or missing sensor

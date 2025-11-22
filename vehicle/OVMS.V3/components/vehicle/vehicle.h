@@ -373,6 +373,8 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t m_inv_reftime;                 // last time inverter(motor) power was measured
     float m_inv_refpower;                   // last inverter(motor) power
 
+    int m_tpms_index[4];                    // TPMS wheel index mapping default FL=0,FR=1,RL=2,RR=3
+
   protected:
 
     uint32_t m_ticker;
