@@ -115,7 +115,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       #ifdef CONFIG_OVMS_COMP_TPMS
       if (!vehicle_changed && vehicle && vehicle->UsesTpmsSensorMapping()) {
         for (int i = 0; i < wheels.size(); i++) {
-          MyConfig.SetParamValue("vehicle", std::string("tpms.")+wheels[i], c.getvar(std::string("tpms_")+wheels[i]));
+          MyConfig.SetParamValue("vehicle", std::string("tpms.")+str_tolower(wheels[i]), c.getvar(std::string("tpms_")+wheels[i]));
         }
       }
       #endif
@@ -179,7 +179,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       }
       tpms_map.resize(wheels.size());
       for (int i = 0; i < wheels.size(); i++) {
-        tpms_map[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+wheels[i], i);
+        tpms_map[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(wheels[i]), i);
       }
     }
     

@@ -2341,7 +2341,7 @@ void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
     m_tpms_index.resize(wheels.size());
     for (int i = 0; i < wheels.size(); i++)
       {
-      m_tpms_index[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+wheels[i], i);
+      m_tpms_index[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(wheels[i]), i);
       }
     }
 
