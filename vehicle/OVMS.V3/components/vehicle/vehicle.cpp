@@ -2331,6 +2331,11 @@ void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
     m_brakelight_basepwr = MyConfig.GetParamValueFloat("vehicle", "brakelight.basepwr", 0);
     m_brakelight_ignftbrk = MyConfig.GetParamValueBool("vehicle", "brakelight.ignftbrk", false);
     m_brakelight_start = 0;
+
+    m_tpms_index[0] = MyConfig.GetParamValueInt("vehicle", "tpms.fl", MS_V_TPMS_IDX_FL);
+    m_tpms_index[1] = MyConfig.GetParamValueInt("vehicle", "tpms.fr", MS_V_TPMS_IDX_FR);
+    m_tpms_index[2] = MyConfig.GetParamValueInt("vehicle", "tpms.rl", MS_V_TPMS_IDX_RL);
+    m_tpms_index[3] = MyConfig.GetParamValueInt("vehicle", "tpms.rr", MS_V_TPMS_IDX_RR);
     }
 
   // read vehicle specific config:
