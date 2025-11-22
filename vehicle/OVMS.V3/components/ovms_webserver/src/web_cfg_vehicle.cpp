@@ -42,15 +42,26 @@
  */
 void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 {
+  OvmsVehicle *vehicle = MyVehicleFactory.ActiveVehicle();
+  bool vehicle_changed = false;
+  bool read_config = false;
+
   std::string error, info;
   std::string vehicleid, vehicletype, vehiclename, timezone, timezone_region, pin;
   std::string bat12v_factor, bat12v_ref, bat12v_alert, bat12v_shutdown, bat12v_shutdown_delay, bat12v_wakeup, bat12v_wakeup_interval;
-  // TPMS variables
-  std::string tpms_fl, tpms_fr, tpms_rl, tpms_rr;
 
   std::map<metric_group_t,std::string> units_values;
   metric_group_list_t unit_groups;
   OvmsMetricGroupConfigList(unit_groups);
+
+  // TPMS variables
+  std::vector<std::string> wheels;
+  std::vector<std::string> wheelnames;
+  std::vector<int> tpms_map;
+  if (vehicle) {
+    wheels = vehicle->GetTpmsLayout();
+    wheelnames = vehicle->GetTpmsLayoutNames();
+  }
 
   if (c.method == "POST") {
     // process form submission:
@@ -59,12 +70,6 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehiclename = c.getvar("vehiclename");
     timezone = c.getvar("timezone");
     timezone_region = c.getvar("timezone_region");
-    
-    // Read TPMS values
-    tpms_fl = c.getvar("tpms_fl");
-    tpms_fr = c.getvar("tpms_fr");
-    tpms_rl = c.getvar("tpms_rl");
-    tpms_rr = c.getvar("tpms_rr");
     
     for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
       std::string name = OvmsMetricGroupName(*grpiter);
@@ -89,10 +94,14 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 
     if (error == "" && StdMetrics.ms_v_type->AsString() != vehicletype) {
       MyVehicleFactory.SetVehicle(vehicletype.c_str());
-      if (!MyVehicleFactory.ActiveVehicle())
+      vehicle = MyVehicleFactory.ActiveVehicle();
+      if (!vehicle) {
         error += "<li data-input=\"vehicletype\">Cannot set vehicle type <code>" + vehicletype + "</code></li>";
-      else
+      }
+      else {
         info += "<li>New vehicle type <code>" + vehicletype + "</code> has been set.</li>";
+        vehicle_changed = true;
+      }
     }
 
     if (error == "") {
@@ -104,11 +113,11 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("vehicle", "timezone_region", timezone_region);
     
       #ifdef CONFIG_OVMS_COMP_TPMS
-        // Save TPMS values
-        MyConfig.SetParamValue("vehicle", "tpms.fl", tpms_fl);
-        MyConfig.SetParamValue("vehicle", "tpms.fr", tpms_fr);
-        MyConfig.SetParamValue("vehicle", "tpms.rl", tpms_rl);
-        MyConfig.SetParamValue("vehicle", "tpms.rr", tpms_rr);
+      if (!vehicle_changed && vehicle && vehicle->UsesTpmsSensorMapping()) {
+        for (int i = 0; i < wheels.size(); i++) {
+          MyConfig.SetParamValue("vehicle", std::string("tpms.")+wheels[i], c.getvar(std::string("tpms_")+wheels[i]));
+        }
+      }
       #endif
       
       for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
@@ -132,17 +141,29 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
         + "\");$(\"#menu\").load(\"/menu\")</script>";
       c.head(200);
       c.alert("success", info.c_str());
-      OutputHome(p, c);
-      c.done();
-      return;
+      // stay on page if vehicle was changed, for additional elements like TPMS mapping
+      if (vehicle_changed) {
+        read_config = true;
+      }
+      else {
+        OutputHome(p, c);
+        c.done();
+        return;
+      }
     }
-
-    // output error, return to form:
-    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
-    c.head(400);
-    c.alert("danger", error.c_str());
+    else {
+      // output error, return to form:
+      error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+      c.head(400);
+      c.alert("danger", error.c_str());
+    }
   }
   else {
+    read_config = true;
+    c.head(200);
+  }
+
+  if (read_config) {
     // read configuration:
     vehicleid = MyConfig.GetParamValue("vehicle", "id");
     vehicletype = MyConfig.GetParamValue("auto", "vehicle.type");
@@ -150,11 +171,17 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     timezone = MyConfig.GetParamValue("vehicle", "timezone");
     timezone_region = MyConfig.GetParamValue("vehicle", "timezone_region");
     
-    // Read TPMS values
-    tpms_fl = MyConfig.GetParamValue("vehicle", "tpms.fl", "0");
-    tpms_fr = MyConfig.GetParamValue("vehicle", "tpms.fr", "1");
-    tpms_rl = MyConfig.GetParamValue("vehicle", "tpms.rl", "2");
-    tpms_rr = MyConfig.GetParamValue("vehicle", "tpms.rr", "3");
+    // read TPMS mapping
+    if (vehicle && vehicle->UsesTpmsSensorMapping()) {
+      if (vehicle_changed) {
+        wheels = vehicle->GetTpmsLayout();
+        wheelnames = vehicle->GetTpmsLayoutNames();
+      }
+      tpms_map.resize(wheels.size());
+      for (int i = 0; i < wheels.size(); i++) {
+        tpms_map[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+wheels[i], i);
+      }
+    }
     
     for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter)
       units_values[*grpiter] = OvmsMetricGetUserConfig(*grpiter);
@@ -165,7 +192,6 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     bat12v_shutdown_delay = MyConfig.GetParamValue("vehicle", "12v.shutdown_delay");
     bat12v_wakeup = MyConfig.GetParamValue("vehicle", "12v.wakeup");
     bat12v_wakeup_interval = MyConfig.GetParamValue("vehicle", "12v.wakeup_interval");
-    c.head(200);
   }
 
   // generate form:
@@ -175,8 +201,13 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.print(
     "<ul class=\"nav nav-tabs\">"
       "<li class=\"active\"><a data-toggle=\"tab\" href=\"#tab-vehicle\">Vehicle</a></li>"
-      "<li><a data-toggle=\"tab\" href=\"#tab-bat12v\">12V Monitor</a></li>"
-      "<li><a data-toggle=\"tab\" href=\"#tab-tpms\">TPMS</a></li>"  // NEW
+      "<li><a data-toggle=\"tab\" href=\"#tab-bat12v\">12V Monitor</a></li>");
+    // TPMS Tab: only if sensor mapping is used by the vehicle
+    if (vehicle && vehicle->UsesTpmsSensorMapping()) {
+    c.print(
+      "<li><a data-toggle=\"tab\" href=\"#tab-tpms\">TPMS</a></li>");
+  }
+  c.print(
     "</ul>"
     "<div class=\"tab-content\">"
       "<div id=\"tab-vehicle\" class=\"tab-pane fade in active section-vehicle\">");
@@ -291,42 +322,47 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.fieldset_end();
 
   c.print(
-      "</div>"
-      // TPMS Tab
+      "</div>");
+
+  // TPMS Tab: only if sensor mapping is used by the vehicle
+  if (vehicle && vehicle->UsesTpmsSensorMapping()) {
+    c.print(
       "<div id=\"tab-tpms\" class=\"tab-pane fade section-tpms\">");
 
-  c.fieldset_start("TPMS Sensor Mapping");
-  c.input_select_start("Front Left Sensor", "tpms_fl");
-  c.input_select_option("Front_Left",  "0", tpms_fl == "0");
-  c.input_select_option("Front_Right", "1", tpms_fl == "1");
-  c.input_select_option("Rear_Left",   "2", tpms_fl == "2");
-  c.input_select_option("Rear_Right",  "3", tpms_fl == "3");
-  c.input_select_end("<p>Select which physical TPMS sensor corresponds to the front left tire position.</p>");
+    c.fieldset_start("TPMS Sensor Mapping");
+    c.printf(
+      "<div class=\"form-control-static\">"
+        "<p>The %s does not have a fixed TPMS sensor to wheel assignment, but"
+        " instead assigns sensors individually per vehicle. The OVMS doesn't yet"
+        " know how to decode the mapping, so you need to do this manually.</p>"
+        "<p>Use this editor to select the actual wheel per nominal sensor position."
+        " To determine the actual wheels, try lowering/raising the pressure of <u>one"
+        " wheel at a time</u>, and watch which OVMS wheel pressure gets changed.</p>"
+        "<p>Note: you may need to take a short trip to get a TPMS update. <b>Take care"
+        " not to drive on too low/high pressure.</b></p>"
+      "</div>",
+      MyVehicleFactory.ActiveVehicleName());
 
-  c.input_select_start("Front Right Sensor", "tpms_fr");
-  c.input_select_option("Front_Left",  "0", tpms_fr == "0");
-  c.input_select_option("Front_Right", "1", tpms_fr == "1");
-  c.input_select_option("Rear_Left",   "2", tpms_fr == "2");
-  c.input_select_option("Rear_Right",  "3", tpms_fr == "3");
-  c.input_select_end("<p>Select which physical TPMS sensor corresponds to the front right tire position.</p>");
+    std::string label, code;
+    for (int i = 0; i < wheels.size(); i++) {
+      label = wheelnames[i] + " Sensor";
+      code = std::string("tpms_") + wheels[i];
+      c.input_select_start(label.c_str(), code.c_str());
+      for (int j = 0; j < wheels.size(); j++) {
+        label = wheelnames[j] + " Wheel";
+        code = string_format("%d", j);
+        c.input_select_option(label.c_str(), code.c_str(), tpms_map[i] == j);
+      }
+      c.input_select_end();
+    }
 
-  c.input_select_start("Rear Left Sensor", "tpms_rl");
-  c.input_select_option("Front_Left",  "0", tpms_rl == "0");
-  c.input_select_option("Front_Right", "1", tpms_rl == "1");
-  c.input_select_option("Rear_Left",   "2", tpms_rl == "2");
-  c.input_select_option("Rear_Right",  "3", tpms_rl == "3");
-  c.input_select_end("<p>Select which physical TPMS sensor corresponds to the rear left tire position.</p>");
+    c.fieldset_end();
 
-  c.input_select_start("Rear Right Sensor", "tpms_rr");
-  c.input_select_option("Front_Left",  "0", tpms_rr == "0");
-  c.input_select_option("Front_Right", "1", tpms_rr == "1");
-  c.input_select_option("Rear_Left",   "2", tpms_rr == "2");
-  c.input_select_option("Rear_Right",  "3", tpms_rr == "3");
-  c.input_select_end("<p>Select which physical TPMS sensor corresponds to the rear right tire position.</p>");
-  c.fieldset_end();
+    c.print(
+      "</div>");
+  }
 
   c.print(
-      "</div>"
     "</div>"
     "<br>");
 

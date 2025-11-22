@@ -1741,6 +1741,10 @@ std::vector<std::string> OvmsVehicle::GetTpmsLayout()
   {
   return { "FL", "FR", "RL", "RR" };
   }
+std::vector<std::string> OvmsVehicle::GetTpmsLayoutNames()
+  {
+  return { "Front Left", "Front Right", "Rear Left", "Rear Right" };
+  }
 
 void OvmsVehicle::NotifyTpmsAlerts()
   {
@@ -2332,10 +2336,13 @@ void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
     m_brakelight_ignftbrk = MyConfig.GetParamValueBool("vehicle", "brakelight.ignftbrk", false);
     m_brakelight_start = 0;
 
-    m_tpms_index[0] = MyConfig.GetParamValueInt("vehicle", "tpms.fl", MS_V_TPMS_IDX_FL);
-    m_tpms_index[1] = MyConfig.GetParamValueInt("vehicle", "tpms.fr", MS_V_TPMS_IDX_FR);
-    m_tpms_index[2] = MyConfig.GetParamValueInt("vehicle", "tpms.rl", MS_V_TPMS_IDX_RL);
-    m_tpms_index[3] = MyConfig.GetParamValueInt("vehicle", "tpms.rr", MS_V_TPMS_IDX_RR);
+    // TPMS sensor mapping:
+    std::vector<std::string> wheels = GetTpmsLayout();
+    m_tpms_index.resize(wheels.size());
+    for (int i = 0; i < wheels.size(); i++)
+      {
+      m_tpms_index[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+wheels[i], i);
+      }
     }
 
   // read vehicle specific config:

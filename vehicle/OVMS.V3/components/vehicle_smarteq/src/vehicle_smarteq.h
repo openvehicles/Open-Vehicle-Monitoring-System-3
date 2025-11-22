@@ -194,6 +194,9 @@ public:
     bool m_ADCfactor_recalc;       // request recalculation of ADC factor
     int m_ADCfactor_recalc_timer;  // countdown timer for ADC factor recalculation
 
+  public:
+    bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]
+
   protected:
     void Ticker1(uint32_t ticker) override;
     void Ticker60(uint32_t ticker) override;
