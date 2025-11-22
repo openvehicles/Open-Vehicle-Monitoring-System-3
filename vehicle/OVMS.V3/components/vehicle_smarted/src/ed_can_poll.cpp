@@ -444,7 +444,7 @@ void OvmsVehicleSmartED::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
   }
 }
 
-void OvmsVehicleSmartED::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+void OvmsVehicleSmartED::IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code)
 {
   // single poll?
   if (!smarted_obd_rxwait.IsAvail()) {
