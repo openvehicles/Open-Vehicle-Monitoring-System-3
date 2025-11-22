@@ -83,7 +83,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     m_tpms_temperature[i] = 2.0f;
     m_tpms_lowbatt[i] = false;
     m_tpms_missing_tx[i] = false;
-    m_tpms_index_sq[i] = i;
     }
 
   // BMS configuration:
@@ -276,14 +275,6 @@ OvmsVehicleSmartEQ::~OvmsVehicleSmartEQ() {
  * ConfigChanged: reload single/all configuration variables (cfgupdate)
  */
 void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
-  if (!param || param->GetName() == "vehicle")
-    {    // read TPMS sensor index configuration
-    m_tpms_index_sq[0] = MyConfig.GetParamValueInt("vehicle", "tpms.fl", 0);
-    m_tpms_index_sq[1] = MyConfig.GetParamValueInt("vehicle", "tpms.fr", 1);
-    m_tpms_index_sq[2] = MyConfig.GetParamValueInt("vehicle", "tpms.rl", 2);
-    m_tpms_index_sq[3] = MyConfig.GetParamValueInt("vehicle", "tpms.rr", 3);
-    }
-
   if (param && param->GetName() != "xsq")
     return;
 

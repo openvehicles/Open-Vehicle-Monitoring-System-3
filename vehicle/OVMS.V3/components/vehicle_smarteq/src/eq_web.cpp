@@ -363,10 +363,10 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
       // Read all TPMS values using sq->
       tpms_temp        = getBool("tpms.temp", sq->m_tpms_temp_enable);
       enable           = getBool("tpms.alert.enable", sq->m_tpms_alert_enable);
-      TPMS_FL          = getStringInt("TPMS_FL", sq->m_tpms_index_sq[0]);
-      TPMS_FR          = getStringInt("TPMS_FR", sq->m_tpms_index_sq[1]);
-      TPMS_RL          = getStringInt("TPMS_RL", sq->m_tpms_index_sq[2]);
-      TPMS_RR          = getStringInt("TPMS_RR", sq->m_tpms_index_sq[3]);
+      TPMS_FL          = getStringInt("TPMS_FL", sq->m_tpms_index[0]);
+      TPMS_FR          = getStringInt("TPMS_FR", sq->m_tpms_index[1]);
+      TPMS_RL          = getStringInt("TPMS_RL", sq->m_tpms_index[2]);
+      TPMS_RR          = getStringInt("TPMS_RR", sq->m_tpms_index[3]);
       front_pressure   = getString("tpms.front.pressure", sq->m_front_pressure);
       rear_pressure    = getString("tpms.rear.pressure", sq->m_rear_pressure);
       pressure_warning = getString("tpms.value.warn", sq->m_pressure_warning);
@@ -377,13 +377,13 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
       tpms_temp        = sq->m_tpms_temp_enable;
       enable           = sq->m_tpms_alert_enable;
       
-      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index_sq[0]);
+      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index[0]);
       TPMS_FL = buf;
-      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index_sq[1]);
+      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index[1]);
       TPMS_FR = buf;
-      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index_sq[2]);
+      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index[2]);
       TPMS_RL = buf;
-      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index_sq[3]);
+      snprintf(buf, sizeof(buf), "%d", sq->m_tpms_index[3]);
       TPMS_RR = buf;
       
       snprintf(buf, sizeof(buf), "%.0f", sq->m_front_pressure);

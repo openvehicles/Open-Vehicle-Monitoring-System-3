@@ -191,7 +191,6 @@ public:
     float m_tpms_temperature[4]; // °C
     bool m_tpms_lowbatt[4]; // 0=ok, 1=low
     bool m_tpms_missing_tx[4]; // 0=ok, 1=missing
-    int m_tpms_index_sq[4];
     bool m_ADCfactor_recalc;       // request recalculation of ADC factor
     int m_ADCfactor_recalc_timer;  // countdown timer for ADC factor recalculation
 
