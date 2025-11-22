@@ -53,8 +53,8 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, {  0,3600,0,0 }, 0, ISOTP_STD }, // maintenance level
 
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,3600,0,0 }, 0, ISOTP_STD }, // req.VIN
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, {  0,0,60,0 }, 0, ISOTP_STD }, // TPMS input capture
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, {  0,0,60,0 }, 0, ISOTP_STD }, // TPMS counters/status (missing transmitters)
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, {  0,60,60,0 }, 0, ISOTP_STD }, // TPMS input capture
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, {  0,60,60,0 }, 0, ISOTP_STD }, // TPMS counters/status (missing transmitters)
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8003, {  0,5,5,5 }, 0, ISOTP_STD }, // rq VehicleState
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x605e, {  0,5,5,5 }, 0, ISOTP_STD }, // rq UNDERHOOD_OPENED  
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8079, {  0,10,10,10 }, 0, ISOTP_STD }, // Generator mode

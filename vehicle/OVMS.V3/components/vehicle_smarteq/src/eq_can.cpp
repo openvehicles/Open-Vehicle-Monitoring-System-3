@@ -157,18 +157,23 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x634:
       REQ_DLC(2);
       {
-      uint8_t tcu_refuse_sleep = CAN_BYTE(0) & 0x03;
+      bool tcu_refuse_sleep = ((CAN_BYTE(0) & 0x03) > 0);
       uint8_t raw_timer = CAN_BYTE(1) & 0x7F;
       uint16_t charging_timer_value = (uint16_t)raw_timer * 15;
-      bool remote_preac = (CAN_BYTE(1) & 0x80) > 0;
       uint8_t charging_timer_status = CAN_BYTE(2) & 0x03;
       uint8_t charge_prohibited = (CAN_BYTE(2) >> 2) & 0x03;
       uint8_t charge_authorization = (CAN_BYTE(2) >> 4) & 0x03;
       uint8_t ext_charge_manager = (CAN_BYTE(2) >> 6) & 0x03;
       
       mt_tcu_refuse_sleep->SetValue(tcu_refuse_sleep);
+      if (tcu_refuse_sleep) {
+        time_t now = time(NULL);
+        struct tm *tm_info = localtime(&now);
+        char timestamp[20];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
+        mt_tcu_refuse_timestamp->SetValue(timestamp);
+      }
       mt_charging_timer_value->SetValue(charging_timer_value);
-      mt_remote_preac->SetValue(remote_preac);
       mt_charging_timer_status->SetValue(charging_timer_status);
       mt_charge_prohibited->SetValue(charge_prohibited);
       mt_charge_authorization->SetValue(charge_authorization);
@@ -184,16 +189,10 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       float recovery_mission = (float)raw_recovery / 10.0f;
       uint16_t raw_aux = ((CAN_BYTE(2) & 0x0F) << 6) | (CAN_BYTE(3) >> 2);
       float aux_consumption = (float)raw_aux / 10.0f;
-      uint8_t eco_score = CAN_BYTE(4) & 0x7F;
-      bool charge_flap_warning = (CAN_BYTE(6) & 0x10) > 0;
 
       mt_energy_used->SetValue(consumption_mission);
       mt_energy_recd->SetValue(recovery_mission);
       mt_aux_consumption->SetValue(aux_consumption);
-      if(eco_score > 0 && eco_score <= 100)
-        mt_eco_score->SetValue(eco_score);
-      mt_charge_flap_warning->SetValue(charge_flap_warning);
-      break;
       }
     case 0x646:
       {
