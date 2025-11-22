@@ -317,6 +317,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           if (CAN_BYTE(2 + i) != 0xff) 
             {
             m_tpms_pressure[i] = (float) CAN_BYTE(2 + i) * 3.1; // kPa
+            setTPMSValue(i, m_tpms_index[i]);
           }
         }
       }
