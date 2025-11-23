@@ -113,7 +113,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_energy_used                = MyMetrics.InitFloat("xsq.v.energy.used", SM_STALE_MID, 0, kWh);
   mt_energy_recd                = MyMetrics.InitFloat("xsq.v.energy.recd", SM_STALE_MID, 0, kWh);
   mt_aux_consumption            = MyMetrics.InitFloat("xsq.v.aux.consumption", SM_STALE_MID, 0, kWh);
-  mt_total_recovery             = MyMetrics.InitFloat("xsq.v.total.recovery", SM_STALE_MID, 0, kWh);
   // 0x62d
   mt_worst_consumption          = MyMetrics.InitFloat("xsq.v.bat.consumption.worst", SM_STALE_MID, 0, kWhP100K);
   mt_best_consumption           = MyMetrics.InitFloat("xsq.v.bat.consumption.best", SM_STALE_MID, 0, kWhP100K);

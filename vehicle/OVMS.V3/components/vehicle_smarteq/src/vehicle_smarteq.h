@@ -312,7 +312,6 @@ public:
     OvmsMetricFloat         *mt_energy_used;            // Energy used since mission start (kWh)
     OvmsMetricFloat         *mt_energy_recd;            // Energy recovered since mission start (kWh)
     OvmsMetricFloat         *mt_aux_consumption;        // Auxiliary consumption since mission start (kWh)
-    OvmsMetricFloat         *mt_total_recovery;         // Total energy recovery (kWh)
     // 0x62d metrics
     OvmsMetricFloat         *mt_worst_consumption;      // Worst average consumption (kWh/100km)
     OvmsMetricFloat         *mt_best_consumption;       // Best average consumption (kWh/100km)
