@@ -1,0 +1,68 @@
+name: Build OVMS (ESP-IDF v3.3)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      IDF_PATH: ${{ github.workspace }}/esp-idf
+
+    steps:
+      - name: Checkout (submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ovms-ccache-${{ runner.os }}-${{ github.ref_name }}-${{ hashFiles('vehicle/OVMS.V3/**') }}
+          restore-keys: |
+            ovms-ccache-${{ runner.os }}-${{ github.ref_name }}-
+            ovms-ccache-${{ runner.os }}-
+
+      - name: Build in Espressif container (v3.3)
+        uses: addnab/docker-run-action@v3
+        with:
+          image: espressif/idf:release-v3.3
+          options: >-
+            -e IDF_PATH=${{ env.IDF_PATH }}
+            -e CCACHE_DIR=${{ env.CCACHE_DIR }}
+            -v ${{ github.workspace }}:/workspace
+          run: |
+            set -euxo pipefail
+            cd /workspace
+            # Get OVMS ESP-IDF fork
+            if [ ! -d "$IDF_PATH/.git" ]; then
+              git clone https://github.com/openvehicles/esp-idf.git "$IDF_PATH"
+              (cd "$IDF_PATH" && git submodule update --init --recursive)
+            fi
+
+            cd /workspace/vehicle/OVMS.V3
+            # Prepare sdkconfig if missing
+            [ -f sdkconfig ] || cp support/sdkconfig.default.hw31 sdkconfig
+
+            echo "Using IDF_PATH=$IDF_PATH"
+            make -j"$(nproc)" all
+
+      - name: Upload firmware artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ovms-firmware-${{ github.sha }}
+          path: |
+            vehicle/OVMS.V3/build/ovms3.bin
+            vehicle/OVMS.V3/build/bootloader/bootloader.bin
+            vehicle/OVMS.V3/build/partitions_*.bin
+            vehicle/OVMS.V3/build/ota_data_initial.bin
+            vehicle/OVMS.V3/build/*.elf
+            vehicle/OVMS.V3/build/*.map
+          if-no-files-found: warn
