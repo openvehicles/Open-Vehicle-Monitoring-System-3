@@ -144,16 +144,16 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
       break;  // FIX: prevent fallthrough into 0x7BB
     case 0x7BB:
       switch (job.pid) {
-        case 0x07: // rqBattState
+        case 0x07: // Battery State
           PollReply_BMS_BattState(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x41: // rqBattVoltages_P1
+        case 0x41: // Battery Voltages Part 1 (Cells 1-48)
           PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 0);
           break;
-        case 0x42: // rqBattVoltages_P2
+        case 0x42: // Battery Voltages Part 2 (Cells 49-96)
           PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 48);
           break;
-        case 0x04: // rqBattTemperatures
+        case 0x04: // Battery Temperatures (27 sensors)
           PollReply_BMS_BattTemps(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
