@@ -300,7 +300,6 @@ public:
     OvmsMetricString        *mt_reset_time;             // Time since last reset (hh:mm)
     OvmsMetricString        *mt_start_time;             // Time since start (hh:mm)
     OvmsMetricFloat         *mt_start_distance;         // Trip distance since start (km)
-    OvmsMetricFloat         *mt_start_consumption;      // Average consumption since start (kWh/100km)
 
     // 0x646 metrics
     OvmsMetricFloat         *mt_reset_consumption;      // Average trip consumption (kWh/100km) reset
@@ -313,17 +312,15 @@ public:
     OvmsMetricFloat         *mt_energy_used;            // Energy used since mission start (kWh)
     OvmsMetricFloat         *mt_energy_recd;            // Energy recovered since mission start (kWh)
     OvmsMetricFloat         *mt_aux_consumption;        // Auxiliary consumption since mission start (kWh)
-    OvmsMetricInt           *mt_eco_score;              // Eco score indicator (%)
     OvmsMetricFloat         *mt_total_recovery;         // Total energy recovery (kWh)
-    OvmsMetricBool          *mt_charge_flap_warning;    // Charge flap open warning
     // 0x62d metrics
     OvmsMetricFloat         *mt_worst_consumption;      // Worst average consumption (kWh/100km)
     OvmsMetricFloat         *mt_best_consumption;       // Best average consumption (kWh/100km)
     OvmsMetricFloat         *mt_bcb_power_mains;        // BCB power from mains (W)
     // 0x634 metrics
-    OvmsMetricInt           *mt_tcu_refuse_sleep;       // TCU refuse to sleep status
+    OvmsMetricBool          *mt_tcu_refuse_sleep;       // TCU refuse to sleep status
+    OvmsMetricString        *mt_tcu_refuse_timestamp;   // TCU refuse to sleep timestamp
     OvmsMetricInt           *mt_charging_timer_value;   // Charging timer value (min)
-    OvmsMetricBool          *mt_remote_preac;           // Remote pre-AC activation
     OvmsMetricInt           *mt_charging_timer_status;  // Charging timer status
     OvmsMetricInt           *mt_charge_prohibited;      // Charge prohibited status
     OvmsMetricInt           *mt_charge_authorization;   // Charge authorization status
@@ -382,10 +379,6 @@ public:
     OvmsMetricFloat         *mt_obl_main_current_leakage_ac;          //!< AC leakage current (A)
 
     OvmsMetricInt           *mt_obd_duration;           //!< obd duration
-    OvmsMetricFloat         *mt_obd_trip_km;            //!< obd trip data km
-    OvmsMetricFloat         *mt_obd_start_trip_km;      //!< obd trip data km start
-    OvmsMetricString        *mt_obd_trip_time;          //!< obd trip data HH:mm
-    OvmsMetricString        *mt_obd_start_trip_time;    //!< obd trip data HH:mm start
     OvmsMetricInt           *mt_obd_mt_day_prewarn;     //!< Maintaince pre warning days
     OvmsMetricInt           *mt_obd_mt_day_usual;       //!< Maintaince usual days
     OvmsMetricInt           *mt_obd_mt_km_usual;        //!< Maintaince usual km

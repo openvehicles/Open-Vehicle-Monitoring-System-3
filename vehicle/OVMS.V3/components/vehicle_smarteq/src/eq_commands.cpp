@@ -566,14 +566,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, Ov
       const std::string& reset_consumption = mt_reset_consumption->AsUnitString("-", ToUser, 1);
       writer->printf("START kWh: %s\n", reset_consumption.c_str());
       }
-    if (mt_obd_start_trip_km->IsDefined())
+    if (mt_start_distance->IsDefined())
       {
-      const std::string& obd_trip_km = mt_obd_start_trip_km->AsUnitString("-", ToUser, 1);
+      const std::string& obd_trip_km = mt_start_distance->AsUnitString("-", ToUser, 1);
       writer->printf("START Trip km: %s\n", obd_trip_km.c_str());
       }
-    if (mt_obd_start_trip_time->IsDefined())
+    if (mt_start_time->IsDefined())
       {
-      const std::string& obd_trip_time = mt_obd_start_trip_time->AsUnitString("-", ToUser, 1);
+      const std::string& obd_trip_time = mt_start_time->AsUnitString("-", ToUser, 1);
       writer->printf("START Trip time: %s\n", obd_trip_time.c_str());
       }
     if (StdMetrics.ms_v_env_service_time->IsDefined())
@@ -661,8 +661,8 @@ void OvmsVehicleSmartEQ::xsq_trip_start(int verbosity, OvmsWriter* writer, OvmsC
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripStart(int verbosity, OvmsWriter* writer) {
     metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
     writer->puts("Trip start values:");
-    writer->printf("  distance: %s\n", (char*) mt_obd_start_trip_km->AsUnitString("-", rangeUnit, 1).c_str());
-    writer->printf("  time: %s\n", (char*) mt_obd_start_trip_time->AsUnitString("-", Native, 1).c_str());
+    writer->printf("  distance: %s\n", (char*) mt_start_distance->AsUnitString("-", rangeUnit, 1).c_str());
+    writer->printf("  time: %s\n", (char*) mt_start_time->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
     writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());

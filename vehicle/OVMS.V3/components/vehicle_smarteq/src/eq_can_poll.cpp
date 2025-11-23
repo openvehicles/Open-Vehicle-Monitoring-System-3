@@ -215,9 +215,6 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x200c: // temperature sensor values
           PollReply_TDB(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x2101: // obd Trip Distance km
-          PollReply_obd_trip(m_rxbuf.data(), m_rxbuf.size());
-          break;
         case 0x2104: // obd Trip time s
           PollReply_obd_time(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -854,11 +851,6 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_
   float freq = 10.0f + (raw * 0.0078125f);
   if (freq > 40.0f) // plausibility check
     mt_obl_main_freq->SetValue(freq);
-}
-
-void OvmsVehicleSmartEQ::PollReply_obd_trip(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  mt_obd_trip_km->SetValue((float) CAN_UINT(0));
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_time(const char* data, uint16_t reply_len) {
