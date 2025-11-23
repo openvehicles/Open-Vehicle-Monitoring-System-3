@@ -518,7 +518,6 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t
     uint16_t traw = (uint16_t)(uint8_t)CAN_BYTE(16 + i);
     m_tpms_temperature[i] = traw != 0xffff ? (float)traw - 30.0f : 0.0f;
     m_tpms_lowbatt[i]     = (lowbatt_bits >> i) & 0x01;
-    setTPMSValue(i, m_tpms_index[i]); // update standard metric for this wheel
   }
 }
 
