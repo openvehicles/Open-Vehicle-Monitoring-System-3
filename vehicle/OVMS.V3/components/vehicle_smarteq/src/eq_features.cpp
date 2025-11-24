@@ -72,8 +72,8 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
 
     float _pressure = m_tpms_pressure[indexcar];
     float _temp = m_tpms_temperature[indexcar];
-    short _lowbatt = m_tpms_lowbatt[indexcar];
-    short _missing_tx = m_tpms_missing_tx[indexcar];
+    bool _lowbatt = m_tpms_lowbatt[indexcar];
+    bool _missing_tx = m_tpms_missing_tx[indexcar];
     
     short _alert = 0;
     bool _flag = false;
@@ -106,8 +106,8 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
     if (!pressure_valid || !alerts_enabled)
       {
       // Sensor not working or alerts disabled - clear all alerts
-      _lowbatt = 0;
-      _missing_tx = 0;
+      _lowbatt = false;
+      _missing_tx = false;
       tpms_alert[i] = 0;
       _flag = false;
       
@@ -133,14 +133,14 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
       float abs_deviation = std::abs(deviation);
       
       // Priority: low battery > missing transmission > pressure deviation
-      if (_lowbatt > 0) 
+      if (_lowbatt) 
         {
         _alert = 1;
         MyNotify.NotifyStringf("alert", "tpms.lowbatt", 
                                "TPMS low battery on wheel %s", 
                                tpms_layout[i].c_str());
         }
-      else if (_missing_tx > 0) 
+      else if (_missing_tx) 
         {
         _alert = 2;
         MyNotify.NotifyStringf("alert", "tpms.missing_tx", 
@@ -190,11 +190,18 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
 // Set TPMS value at boot, cached values are not available
 // and we need to set dummy values to avoid alert messages
 void OvmsVehicleSmartEQ::setTPMSValueBoot() {
-  for (int i = 0; i < 4; i++) {
-    StdMetrics.ms_v_tpms_pressure->SetElemValue(i, 0.0f);
-    StdMetrics.ms_v_tpms_temp->SetElemValue(i, 0.0f);
-    StdMetrics.ms_v_tpms_alert->SetElemValue(i, 0);
-  }
+  // Get actual TPMS layout size (same as in setTPMSValue)
+  std::vector<std::string> tpms_layout = GetTpmsLayout();
+  int count = (int)tpms_layout.size();
+  
+  // Initialize with actual count, not hardcoded 4
+  std::vector<float> tpms_pressure(count, 0.0f);
+  std::vector<float> tpms_temp(count, 0.0f);
+  std::vector<short> tpms_alert(count, -1);  // -1 = no data available yet
+  
+  StdMetrics.ms_v_tpms_pressure->SetValue(tpms_pressure);
+  StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp);
+  StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
 }
 
 void OvmsVehicleSmartEQ::DisablePlugin(const char* plugin) {

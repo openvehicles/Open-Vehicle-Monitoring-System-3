@@ -77,14 +77,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
 
-  for (int i = 0; i < 4; i++) 
-    {
-    m_tpms_pressure[i] = 0.0f;
-    m_tpms_temperature[i] = 0.0f;
-    m_tpms_lowbatt[i] = false;
-    m_tpms_missing_tx[i] = false;
-    }
-
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);               // 96 cells, 1 series string
   BmsSetCellArrangementTemperature(27, 1);           // 27 temp sensors, 1 series string
@@ -220,7 +212,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     ResetTripCounters();
     }
 
-  setTPMSValueBoot();                                          // set TPMS dummy values to 0
+  setTPMSValueBoot();                                          // set TPMS values to 0
 
     if (m_enable_write)
       PollSetState(1);                                           // start polling to get the first data
