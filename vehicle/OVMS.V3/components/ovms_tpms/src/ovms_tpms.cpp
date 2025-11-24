@@ -320,6 +320,7 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     auto alerts    = StandardMetrics.ms_v_tpms_alert->AsVector();
     auto healths   = StandardMetrics.ms_v_tpms_health->AsVector();
     
+    // Array with 3 entries: 0=OK, 1=WARN, 2=ALERT
     const char* alert_names[] = {"OK", "WARN", "ALERT"};
     
     for (int i = 0; i < count; i++) 
@@ -333,13 +334,16 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
         float temp = (idx < (int)temps.size()) ? temps[idx] : 0.0f;
         int alert = (idx < (int)alerts.size()) ? alerts[idx] : 0;
         float health = (idx < (int)healths.size()) ? healths[idx] : 0.0f;
+        const char* alert_str = (alert >= 0 && alert <= 2) 
+                            ? alert_names[alert] 
+                            : "N/A";
         
         writer->printf("%-*s  %6.1f %s  %5.1f %s  %-6s  %5.1f%%  #%d\n",
                        (int)max_name_length,
                        wheel_names[i].c_str(),
                        pressure, OvmsMetricUnitLabel(user_pressure),
                        temp, OvmsMetricUnitLabel(user_temp),
-                       alert_names[alert],
+                       alert_str,
                        health,
                        idx);
         } 
