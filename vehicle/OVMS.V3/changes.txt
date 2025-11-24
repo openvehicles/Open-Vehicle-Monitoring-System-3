@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- iOS OVMS App TPMS integration workaround:
+    - Prevents the iOS app from ignoring TPMS data due to low temperature readings. The iOS app only displays the values ​​above 1°F/C.
+    - Active only when the vehicle is awake and temperature values ​​are available.
+    - Configurable via web UI (Vehicle Config -> TPMS tab)
+  New config:
+    [vehicle] tpms.ios              -- Enable iOS TPMS workaround (bool, default false)
 - Renault Twizy: support added for standard metric "v.e.aux12v" (base system awake),
     OBD polling (DTC checks) enabled already with base system awake
     (= DTC available in STOP conditions)
