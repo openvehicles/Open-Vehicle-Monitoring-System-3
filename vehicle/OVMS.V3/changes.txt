@@ -1,6 +1,16 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- TPMS framework: new command to display current sensor mapping configuration
+  New commands:
+    tpms mapping                    -- Show TPMS sensor mapping and current data with health status
+  Features:
+    - Displays wheel position names from vehicle layout
+    - Shows configured sensor-to-wheel assignments from vehicle.tpms.<position> config
+    - Lists current pressure, temperature, alert level and health for each wheel
+    - Validates mapping for duplicates and out-of-range indices
+    - Auto-aligns output based on longest wheel name
+    - Uses user-configured units for pressure and temperature display
 - Renault Twizy: support added for standard metric "v.e.aux12v" (base system awake),
     OBD polling (DTC checks) enabled already with base system awake
     (= DTC available in STOP conditions)
