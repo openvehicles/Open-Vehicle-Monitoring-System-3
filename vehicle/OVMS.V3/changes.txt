@@ -11,6 +11,7 @@ Open Vehicle Monitor System v3 - Change log
     - Validates mapping for duplicates and out-of-range indices
     - Auto-aligns output based on longest wheel name
     - Uses user-configured units for pressure and temperature display
+    - Handles undefined alert states (-1) as "N/A" without crashes
 - Renault Twizy: support added for standard metric "v.e.aux12v" (base system awake),
     OBD polling (DTC checks) enabled already with base system awake
     (= DTC available in STOP conditions)
