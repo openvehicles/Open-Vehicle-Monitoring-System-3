@@ -317,8 +317,6 @@ public:
     OvmsMetricFloat         *mt_best_consumption;       // Best average consumption (kWh/100km)
     OvmsMetricFloat         *mt_bcb_power_mains;        // BCB power from mains (W)
     // 0x634 metrics
-    OvmsMetricBool          *mt_tcu_refuse_sleep;       // TCU refuse to sleep status
-    OvmsMetricString        *mt_tcu_refuse_timestamp;   // TCU refuse to sleep timestamp
     OvmsMetricInt           *mt_charging_timer_value;   // Charging timer value (min)
     OvmsMetricInt           *mt_charging_timer_status;  // Charging timer status
     OvmsMetricInt           *mt_charge_prohibited;      // Charge prohibited status

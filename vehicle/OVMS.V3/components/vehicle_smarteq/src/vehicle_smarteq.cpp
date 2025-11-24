@@ -118,8 +118,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_best_consumption           = MyMetrics.InitFloat("xsq.v.bat.consumption.best", SM_STALE_MID, 0, kWhP100K);
   mt_bcb_power_mains            = MyMetrics.InitFloat("xsq.v.charge.bcb.power", SM_STALE_MID, 0, Watts);
   // 0x634
-  mt_tcu_refuse_sleep           = MyMetrics.InitBool("xsq.v.tcu.refuse.sleep", SM_STALE_MID, 0);
-  mt_tcu_refuse_timestamp       = MyMetrics.InitString("xsq.v.tcu.refuse.timestamp", SM_STALE_MID, "unknown", Other);
   mt_charging_timer_value       = MyMetrics.InitInt("xsq.v.charge.timer.value", SM_STALE_MID, 0, Minutes);
   mt_charging_timer_status      = MyMetrics.InitInt("xsq.v.charge.timer.status", SM_STALE_MID, 0);
   mt_charge_prohibited          = MyMetrics.InitInt("xsq.v.charge.prohibited", SM_STALE_MID, 0);
