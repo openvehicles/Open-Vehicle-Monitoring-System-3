@@ -1485,6 +1485,20 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
         ESP_LOGI(TAG,"Stopping climate control as per schedule");
         }
       }
+    // TPMS temperature fix for iOS Open Vehicle app
+    if (MyConfig.GetParamValueBool("vehicle", "tpms.ios", false) &&
+        StdMetrics.ms_v_env_awake->AsBool(false) &&
+        StdMetrics.ms_v_tpms_temp->IsDefined())
+      {
+      auto tpms_temp_org = StdMetrics.ms_v_tpms_temp->AsVector();
+      std::vector<float> tpms_temp_fix(tpms_temp_org.size(), 1.1f);
+      for (int i = 0; i < tpms_temp_fix.size(); i++)
+        {
+        if (tpms_temp_org[i] > tpms_temp_fix[i])
+        tpms_temp_fix[i] = tpms_temp_org[i];
+        }
+      StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp_fix);
+      }
     } // end every 60 seconds
 
   if (m_12v_shutdown_ticker > 0 && --m_12v_shutdown_ticker == 0)
