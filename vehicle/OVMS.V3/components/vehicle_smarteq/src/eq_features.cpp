@@ -197,7 +197,7 @@ void OvmsVehicleSmartEQ::setTPMSValueBoot() {
   // Initialize with actual count, not hardcoded 4
   std::vector<float> tpms_pressure(count, 0.0f);
   std::vector<float> tpms_temp(count, 0.0f);
-  std::vector<short> tpms_alert(count, -1);  // -1 = no data available yet
+  std::vector<short> tpms_alert(count, -1); // -1 indicates unknown at boot
   
   StdMetrics.ms_v_tpms_pressure->SetValue(tpms_pressure);
   StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp);
