@@ -63,7 +63,7 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
     bool _flag = true;
 
     // Validate pressure value
-    if (_pressure < 20.0f)
+    if (_pressure < 500.0f)
       tpms_pressure[i] = _pressure;
     if (m_tpms_temp_enable) 
       tpms_temp[i] = _temp;
