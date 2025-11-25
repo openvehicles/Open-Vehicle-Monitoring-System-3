@@ -393,7 +393,7 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     } 
   else 
     {
-    writer->puts("\nPlease fix the mapping with: config set vehicle tpms.<position> <sensor#>");
+    writer->puts("\nPlease fix the mapping with: config set vehicle tpms.<position> <sensor#> (e.g., tpms.fl 0)");
     }
   }
 
