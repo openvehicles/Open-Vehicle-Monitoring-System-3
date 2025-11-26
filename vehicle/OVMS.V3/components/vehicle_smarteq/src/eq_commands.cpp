@@ -809,7 +809,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTPMSset(int verbosity,
     m_tpms_pressure[i] = dummy_pressure + i; // kPa
     m_tpms_temperature[i] = 21 + i; // Celsius
   }
-  writer->printf("set TPMS dummy pressure: %.2f", dummy_pressure);
+  writer->printf("set TPMS dummy pressure: %.2f temp: %.2f\n", dummy_pressure, m_tpms_temperature[0]);
+  setTPMSValue();   // update TPMS metrics
   return Success;
 }
 
