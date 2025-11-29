@@ -29,7 +29,15 @@ jobs:
           restore-keys: |
             ovms-ccache-${{ runner.os }}-${{ github.ref_name }}-
             ovms-ccache-${{ runner.os }}-
-
+      - name: Restore ccache
+          uses: actions/cache@v2
+          with:
+            path: ~/.ccache
+            key: ovms-ccache-Linux-${{ github.event.pull_request.number }}-merge-${{ github.sha }}
+            restore-keys: |
+              ovms-ccache-Linux-${{ github.event.pull_request.number }}-merge-
+              ovms-ccache-Linux-
+            fail-on-cache-miss: true
       - name: Build in Espressif container (v3.3)
         uses: addnab/docker-run-action@v3
         with:
