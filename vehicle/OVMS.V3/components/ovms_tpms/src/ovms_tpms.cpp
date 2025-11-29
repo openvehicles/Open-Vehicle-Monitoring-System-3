@@ -121,10 +121,18 @@ void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   if (StandardMetrics.ms_v_tpms_alert->IsDefined())
     {
-    const char* alertname[] = { "OK", "WARN", "ALERT" };
+    const char* alertname[] = { "OK", "WARN", "ALERT", "UNKNOWN" };  // Added UNKNOWN
     writer->printf("Alert level.....: ");
     for (auto val : StandardMetrics.ms_v_tpms_alert->AsVector())
-      writer->printf(" %8s", alertname[val]);
+      {
+      // Bounds check to prevent array overflow
+      if (val >= 0 && val <= 2)
+        writer->printf(" %8s", alertname[val]);
+      else if (val < 0)
+        writer->printf(" %8s", "UNKNOWN");
+      else
+        writer->printf(" %8s", "INVALID");
+      }
     writer->puts(StandardMetrics.ms_v_tpms_alert->IsStale() ? "  [stale]" : "");
     data_shown = true;
     }
@@ -133,18 +141,29 @@ void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     {
     writer->printf("Health.......[%%]: ");
     for (auto val : StandardMetrics.ms_v_tpms_health->AsVector())
-      writer->printf(" %8.1f", val);
+      {
+      // Validate value before printing
+      if (val >= 0.0f && val <= 100.0f)
+        writer->printf(" %8.1f", val);
+      else
+        writer->printf(" %8s", "-");
+      }
     writer->puts(StandardMetrics.ms_v_tpms_health->IsStale() ? "  [stale]" : "");
     data_shown = true;
     }
 
   if (StandardMetrics.ms_v_tpms_pressure->IsDefined())
     {
-
     metric_unit_t user_pressure = OvmsMetricGetUserUnit(GrpPressure, kPa);
-    writer->printf("Pressure...[%s]: ", OvmsMetricUnitLabel(user_pressure) );
+    writer->printf("Pressure...[%s]: ", OvmsMetricUnitLabel(user_pressure));
     for (auto val : StandardMetrics.ms_v_tpms_pressure->AsVector(user_pressure))
-      writer->printf(" %8.1f", val);
+      {
+      // Validate pressure (typical range 0-500 kPa)
+      if (!std::isnan(val) && val >= 0.0f && val <= 500.0f)
+        writer->printf(" %8.1f", val);
+      else
+        writer->printf(" %8s", "-");
+      }
     writer->puts(StandardMetrics.ms_v_tpms_pressure->IsStale() ? "  [stale]" : "");
     data_shown = true;
     }
@@ -154,7 +173,13 @@ void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     metric_unit_t user_temp = OvmsMetricGetUserUnit(GrpTemp, Celcius);
     writer->printf("Temperature.[%s]: ", OvmsMetricUnitLabel(user_temp));
     for (auto val : StandardMetrics.ms_v_tpms_temp->AsVector(user_temp))
-      writer->printf(" %8.1f", val);
+      {
+      // Validate temperature (typical range -40 to +150 °C)
+      if (!std::isnan(val) && val >= -50.0f && val <= 200.0f)
+        writer->printf(" %8.1f", val);
+      else
+        writer->printf(" %8s", "-");
+      }
     writer->puts(StandardMetrics.ms_v_tpms_temp->IsStale() ? "  [stale]" : "");
     data_shown = true;
     }
@@ -241,6 +266,106 @@ void tpms_write(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     }
   }
 
+void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("\nTPMS Sensor Mapping:");
+  
+  if (!MyVehicleFactory.m_currentvehicle) 
+    {
+    writer->puts("Error: No vehicle module loaded");
+    return;
+    }
+  
+  OvmsVehicle* vehicle = MyVehicleFactory.m_currentvehicle;
+  
+  // Get wheel position names and layout from vehicle
+  std::vector<std::string> wheel_names = vehicle->GetTpmsLayoutNames();
+  std::vector<std::string> tpms_layout = vehicle->GetTpmsLayout();
+  
+  if (tpms_layout.empty()) 
+    {
+    writer->puts("No TPMS layout defined for this vehicle");
+    return;
+    }
+  
+  if (wheel_names.empty() || wheel_names.size() != tpms_layout.size())
+    {
+    writer->puts("Error: Invalid TPMS layout configuration");
+    return;
+    }
+  
+  int count = (int)tpms_layout.size();
+  
+  // Find maximum wheel name length for alignment
+  size_t max_name_length = 0;
+  for (const auto& name : wheel_names)
+    {
+    if (name.length() > max_name_length)
+      max_name_length = name.length();
+    }
+  
+  // Read mapping from configuration
+  int map[4] = 
+    {
+    MyConfig.GetParamValueInt("vehicle", "tpms.fl", 0),
+    MyConfig.GetParamValueInt("vehicle", "tpms.fr", 1),
+    MyConfig.GetParamValueInt("vehicle", "tpms.rl", 2),
+    MyConfig.GetParamValueInt("vehicle", "tpms.rr", 3)
+    };
+  
+  // Display current mapping configuration
+  for (int i = 0; i < count; i++) 
+    {
+    int idx = map[i];
+    std::string sensor_name = (idx >= 0 && idx < (int)tpms_layout.size()) 
+                              ? tpms_layout[idx] 
+                              : "Invalid";
+    writer->printf("  %-*s (%s): Sensor #%d (%s)\n", 
+                   (int)max_name_length,
+                   wheel_names[i].c_str(), 
+                   tpms_layout[i].c_str(), 
+                   idx, 
+                   sensor_name.c_str());
+    }
+  
+  // Show detailed TPMS data with applied mapping
+  if (StandardMetrics.ms_v_tpms_pressure->IsDefined()) 
+    {
+    // Call tpms_status to display current TPMS values
+    tpms_status(verbosity, writer, NULL, 0, NULL);
+    }
+  
+  // Validate mapping configuration
+  bool has_issues = false;
+  
+  // Check for duplicate sensor assignments
+  for (int i = 0; i < count; i++) 
+    {
+    for (int j = i+1; j < count; j++)
+      {
+      if (map[i] == map[j]) 
+        {
+        if (!has_issues) writer->puts("\nWARNINGS:");
+        writer->printf("  Duplicate mapping: %s and %s both use Sensor #%d\n",
+                       wheel_names[i].c_str(), wheel_names[j].c_str(), map[i]);
+        has_issues = true;
+        }
+      }
+    }
+  
+  // Check for out-of-range sensor indices
+  for (int i = 0; i < count; i++) 
+    {
+    if (map[i] < 0 || map[i] >= (int)tpms_layout.size()) 
+      {
+      if (!has_issues) writer->puts("\nWARNINGS:");
+      writer->printf("  %s: Sensor #%d is out of range (valid: 0-%d)\n",
+                     wheel_names[i].c_str(), map[i], (int)tpms_layout.size()-1);
+      has_issues = true;
+      }
+    }
+  }
+
 OvmsTPMS::OvmsTPMS()
   {
   ESP_LOGI(TAG, "Initialising TPMS (4700)");
@@ -253,6 +378,7 @@ OvmsTPMS::OvmsTPMS()
   cmd_tpms->RegisterCommand("write","Write TPMS IDs from sepecified tyre set",tpms_write,"<set>",1,1);
   cmd_tpms->RegisterCommand("set","Manually configure IDs in a tyre set",tpms_set,"<set> <id(s)>",1,9);
   cmd_tpms->RegisterCommand("delete","Delete the specified TPMS tyre set configuration",tpms_delete,"<set>",1,1);
+  cmd_tpms->RegisterCommand("mapping","Show current TPMS sensor mapping",tpms_mapping);
 
   // Register our parameters
   MyConfig.RegisterParam(TPMS_PARAM, "TPMS tyre sets", true, true);
