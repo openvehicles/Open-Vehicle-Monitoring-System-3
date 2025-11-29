@@ -1,6 +1,13 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- New vehicle: Maxus T90 EV (MT90) via OBD-II port
+    Initial support added for:
+      • VIN, SOC, SOH & READY state
+      • AC plug / pilot detection
+      • Lock status
+      • Odometer
+      • Temperature metrics
 - Vehicle framework: Scheduled precondition control with duration support
     Centralized implementation for all vehicles with per-vehicle override capability.
     Supports multiple time slots per day with individual duration settings.
