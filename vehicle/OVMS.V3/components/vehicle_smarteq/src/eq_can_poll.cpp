@@ -514,11 +514,11 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t
     {
     // Pressure: big-endian 16 bit *0.75 kPa
     uint16_t praw = CAN_UINT(8 + (i*2));
-    m_tpms_pressure[i] = (float)praw != 0xffff ? (float)praw * 0.75f : 0.0f;
+    m_tpms_pressure[m_tpms_index[i]] = (float)praw != 0xffff ? (float)praw * 0.75f : 0.0f;
     // Temperature: raw byte + offset -30.0
     uint16_t traw = (uint16_t)(uint8_t)CAN_BYTE(16 + i);
-    m_tpms_temperature[i] = traw != 0xffff ? (float)traw - 30.0f : 0.0f;
-    m_tpms_lowbatt[i] = static_cast<bool>((raw >> i) & 0x01);
+    m_tpms_temperature[m_tpms_index[i]] = traw != 0xffff ? (float)traw - 30.0f : 0.0f;
+    m_tpms_lowbatt[m_tpms_index[i]] = static_cast<bool>((raw >> i) & 0x01);
     }
 }
 
@@ -528,7 +528,7 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_Status(const char* data, uint16_t re
   uint8_t raw = CAN_BYTE(25);
   for (int i = 0; i < 4; i++) 
     {
-    m_tpms_missing_tx[i] = static_cast<bool>((raw >> i) & 0x01);
+    m_tpms_missing_tx[m_tpms_index[i]] = static_cast<bool>((raw >> i) & 0x01);
     }
 }
 

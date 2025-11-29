@@ -58,22 +58,10 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
 
   for (int i=0; i < count; i++) 
     {
-    int indexcar = m_tpms_index[i];
-    
-    // Bounds check for indexcar
-    if (indexcar < 0 || indexcar >= count)
-      {
-      ESP_LOGW(TAG, "Invalid TPMS index mapping: %d -> %d (max: %d)", i, indexcar, count-1);
-      tpms_pressure[i] = 0.0f;
-      tpms_temp[i] = 0.0f;
-      tpms_alert[i] = 0;
-      continue;
-      }
-
-    float _pressure = m_tpms_pressure[indexcar];
-    float _temp = m_tpms_temperature[indexcar];
-    bool _lowbatt = m_tpms_lowbatt[indexcar];
-    bool _missing_tx = m_tpms_missing_tx[indexcar];
+    float _pressure = m_tpms_pressure[i];
+    float _temp = m_tpms_temperature[i];
+    bool _lowbatt = m_tpms_lowbatt[i];
+    bool _missing_tx = m_tpms_missing_tx[i];
     
     short _alert = 0;
     bool _flag = false;
@@ -112,21 +100,21 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
       _flag = false;
       
       // Clear stored alert states
-      mt_tpms_low_batt->SetElemValue(indexcar, 0);
-      mt_tpms_missing_tx->SetElemValue(indexcar, 0);
+      mt_tpms_low_batt->SetElemValue(i, 0);
+      mt_tpms_missing_tx->SetElemValue(i, 0);
       }
     else
       {
       // Sensor working and alerts enabled - update alert states
-      mt_tpms_low_batt->SetElemValue(indexcar, _lowbatt);
-      mt_tpms_missing_tx->SetElemValue(indexcar, _missing_tx);
+      mt_tpms_low_batt->SetElemValue(i, _lowbatt);
+      mt_tpms_missing_tx->SetElemValue(i, _missing_tx);
       }
     
     // Calculate pressure deviation alerts
     if (alerts_enabled && _flag)
       {
       // Get reference pressure based on front/rear position
-      float reference_pressure = (indexcar < (count / 2)) ? _threshold_front : _threshold_rear;
+      float reference_pressure = (i < (count / 2)) ? _threshold_front : _threshold_rear;
       
       // Calculate deviation from reference pressure      
       float deviation = _pressure - reference_pressure;
