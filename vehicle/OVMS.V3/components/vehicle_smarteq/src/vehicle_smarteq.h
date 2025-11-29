@@ -60,6 +60,7 @@
 #include "ovms_notify.h"
 #include "ovms_peripherals.h"
 #include "ovms_time.h"
+#include "ovms_tpms.h"
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
@@ -187,10 +188,10 @@ public:
     bool m_candata_poll;
     bool m_charge_start;
     bool m_charge_finished;
-    float m_tpms_pressure[4]; // kPa
-    float m_tpms_temperature[4]; // °C
-    bool m_tpms_lowbatt[4]; // 0=ok, 1=low
-    bool m_tpms_missing_tx[4]; // 0=ok, 1=missing
+    float m_tpms_pressure[4];      // kPa
+    float m_tpms_temperature[4];   // °C
+    bool m_tpms_lowbatt[4];        // 0=ok, 1=low
+    bool m_tpms_missing_tx[4];     // 0=ok, 1=missing
     bool m_ADCfactor_recalc;       // request recalculation of ADC factor
     int m_ADCfactor_recalc_timer;  // countdown timer for ADC factor recalculation
 

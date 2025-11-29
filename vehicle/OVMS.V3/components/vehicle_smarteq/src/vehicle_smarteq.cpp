@@ -255,8 +255,7 @@ OvmsVehicleSmartEQ::~OvmsVehicleSmartEQ() {
  * ConfigChanged: reload single/all configuration variables (cfgupdate)
  */
 void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
-  if (param && param->GetName() == "vehicle")
-    setTPMSValue();   // update TPMS metrics
+      
   if (param && param->GetName() != "xsq")
     return;
 

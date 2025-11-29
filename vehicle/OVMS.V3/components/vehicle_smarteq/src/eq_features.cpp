@@ -41,9 +41,9 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
   
   std::vector<string> tpms_layout = OvmsVehicle::GetTpmsLayout();
   int count = (int)tpms_layout.size();
-  std::vector<float> tpms_pressure(count);
-  std::vector<float> tpms_temp(count);
-  std::vector<short> tpms_alert(count);
+  std::vector<float> tpms_pressure(count, 0.0f);
+  std::vector<float> tpms_temp(count, 0.0f);
+  std::vector<short> tpms_alert(count, 0);
 
   float _threshold_front = m_front_pressure;
   float _threshold_rear = m_rear_pressure;
@@ -185,7 +185,7 @@ void OvmsVehicleSmartEQ::setTPMSValueBoot() {
   // Initialize with actual count, not hardcoded 4
   std::vector<float> tpms_pressure(count, 0.0f);
   std::vector<float> tpms_temp(count, 0.0f);
-  std::vector<short> tpms_alert(count, -1); // -1 indicates unknown at boot
+  std::vector<short> tpms_alert(count, -1); // -1 = unknown
   
   StdMetrics.ms_v_tpms_pressure->SetValue(tpms_pressure);
   StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp);
