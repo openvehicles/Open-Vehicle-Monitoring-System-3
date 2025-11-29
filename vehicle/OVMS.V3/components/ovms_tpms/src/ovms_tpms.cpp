@@ -121,10 +121,18 @@ void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   if (StandardMetrics.ms_v_tpms_alert->IsDefined())
     {
-    const char* alertname[] = { "OK", "WARN", "ALERT" };
+    const char* alertname[] = { "OK", "WARN", "ALERT", "UNKNOWN" };  // Added UNKNOWN
     writer->printf("Alert level.....: ");
     for (auto val : StandardMetrics.ms_v_tpms_alert->AsVector())
-      writer->printf(" %8s", alertname[val]);
+      {
+      // Bounds check to prevent array overflow
+      if (val >= 0 && val <= 2)
+        writer->printf(" %8s", alertname[val]);
+      else if (val < 0)
+        writer->printf(" %8s", "UNKNOWN");
+      else
+        writer->printf(" %8s", "INVALID");
+      }
     writer->puts(StandardMetrics.ms_v_tpms_alert->IsStale() ? "  [stale]" : "");
     data_shown = true;
     }
@@ -133,18 +141,29 @@ void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     {
     writer->printf("Health.......[%%]: ");
     for (auto val : StandardMetrics.ms_v_tpms_health->AsVector())
-      writer->printf(" %8.1f", val);
+      {
+      // Validate value before printing
+      if (val >= 0.0f && val <= 100.0f)
+        writer->printf(" %8.1f", val);
+      else
+        writer->printf(" %8s", "-");
+      }
     writer->puts(StandardMetrics.ms_v_tpms_health->IsStale() ? "  [stale]" : "");
     data_shown = true;
     }
 
   if (StandardMetrics.ms_v_tpms_pressure->IsDefined())
     {
-
     metric_unit_t user_pressure = OvmsMetricGetUserUnit(GrpPressure, kPa);
-    writer->printf("Pressure...[%s]: ", OvmsMetricUnitLabel(user_pressure) );
+    writer->printf("Pressure...[%s]: ", OvmsMetricUnitLabel(user_pressure));
     for (auto val : StandardMetrics.ms_v_tpms_pressure->AsVector(user_pressure))
-      writer->printf(" %8.1f", val);
+      {
+      // Validate pressure (typical range 0-500 kPa)
+      if (!std::isnan(val) && val >= 0.0f && val <= 500.0f)
+        writer->printf(" %8.1f", val);
+      else
+        writer->printf(" %8s", "-");
+      }
     writer->puts(StandardMetrics.ms_v_tpms_pressure->IsStale() ? "  [stale]" : "");
     data_shown = true;
     }
@@ -154,7 +173,13 @@ void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     metric_unit_t user_temp = OvmsMetricGetUserUnit(GrpTemp, Celcius);
     writer->printf("Temperature.[%s]: ", OvmsMetricUnitLabel(user_temp));
     for (auto val : StandardMetrics.ms_v_tpms_temp->AsVector(user_temp))
-      writer->printf(" %8.1f", val);
+      {
+      // Validate temperature (typical range -40 to +150 °C)
+      if (!std::isnan(val) && val >= -50.0f && val <= 200.0f)
+        writer->printf(" %8.1f", val);
+      else
+        writer->printf(" %8s", "-");
+      }
     writer->puts(StandardMetrics.ms_v_tpms_temp->IsStale() ? "  [stale]" : "");
     data_shown = true;
     }
@@ -306,55 +331,8 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   // Show detailed TPMS data with applied mapping
   if (StandardMetrics.ms_v_tpms_pressure->IsDefined()) 
     {
-    writer->puts("\nCurrent TPMS Data:");
-    writer->puts("Position      Pressure  Temp    Alert   Health   Status");
-    writer->puts("--------------------------------------------------------");
-    
-    // Get user preferred units
-    metric_unit_t user_pressure = OvmsMetricGetUserUnit(GrpPressure, kPa);
-    metric_unit_t user_temp = OvmsMetricGetUserUnit(GrpTemp, Celcius);
-    
-    // Retrieve vectors with unit conversion applied
-    auto pressures = StandardMetrics.ms_v_tpms_pressure->AsVector(user_pressure);
-    auto temps     = StandardMetrics.ms_v_tpms_temp->AsVector(user_temp);
-    auto alerts    = StandardMetrics.ms_v_tpms_alert->AsVector();
-    auto healths   = StandardMetrics.ms_v_tpms_health->AsVector();
-    
-    // Array with 3 entries: 0=OK, 1=WARN, 2=ALERT
-    const char* alert_names[] = {"OK", "WARN", "ALERT"};
-    
-    for (int i = 0; i < count; i++) 
-      {
-      int idx = map[i];
-      
-      if (idx >= 0 && idx < (int)pressures.size()) 
-        {
-        // Values are already converted to user units
-        float pressure = pressures[idx];
-        float temp = (idx < (int)temps.size()) ? temps[idx] : 0.0f;
-        int alert = (idx < (int)alerts.size()) ? alerts[idx] : 0;
-        float health = (idx < (int)healths.size()) ? healths[idx] : 0.0f;
-        const char* alert_str = (alert >= 0 && alert <= 2) 
-                            ? alert_names[alert] 
-                            : "N/A";
-        
-        writer->printf("%-*s  %6.1f %s  %5.1f %s  %-6s  %5.1f%%  #%d\n",
-                       (int)max_name_length,
-                       wheel_names[i].c_str(),
-                       pressure, OvmsMetricUnitLabel(user_pressure),
-                       temp, OvmsMetricUnitLabel(user_temp),
-                       alert_str,
-                       health,
-                       idx);
-        } 
-      else 
-        {
-        writer->printf("%-*s  N/A (Invalid mapping: %d)\n", 
-                       (int)max_name_length,
-                       wheel_names[i].c_str(), 
-                       idx);
-        }
-      }
+    // Call tpms_status to display current TPMS values
+    tpms_status(verbosity, writer, NULL, 0, NULL);
     }
   
   // Validate mapping configuration
@@ -385,15 +363,6 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
                      wheel_names[i].c_str(), map[i], (int)tpms_layout.size()-1);
       has_issues = true;
       }
-    }
-  
-  if (!has_issues) 
-    {
-    writer->puts("\nMapping is valid.");
-    } 
-  else 
-    {
-    writer->puts("\nPlease fix the mapping with: config set vehicle tpms.<position> <sensor#> (e.g., tpms.fl 0)");
     }
   }
 
