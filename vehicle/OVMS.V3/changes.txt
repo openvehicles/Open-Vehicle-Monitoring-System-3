@@ -1,6 +1,13 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- New vehicle: Maxus T90 EV (MT90) via OBD-II port
+    Initial support added for:
+      VIN, SOC, SOH & READY state
+      AC plug / pilot detection
+      Lock status
+      Odometer
+      Temperature metrics
 - Renault Twizy: support added for standard metric "v.e.aux12v" (base system awake),
     OBD polling (DTC checks) enabled already with base system awake
     (= DTC available in STOP conditions)
