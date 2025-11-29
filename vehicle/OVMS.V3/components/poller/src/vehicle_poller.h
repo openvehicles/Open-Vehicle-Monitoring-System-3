@@ -104,7 +104,7 @@ typedef struct
   uint32_t                septime;          // Min separation time [us] between blocks (data frames)
   uint32_t                txseqnr;          // TX packet sequence number
   uint32_t                rxseqnr;          // RX packet sequence number
-  uint32_t                lastused;         // Timestamp of last channel access
+  uint32_t                lastused;         // Timestamp of last channel access (uptime in ms)
   } vwtp_channel_t;
 
 class OvmsPollers;

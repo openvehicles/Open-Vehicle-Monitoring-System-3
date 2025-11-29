@@ -108,7 +108,6 @@ public:
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   static void WebCfgCommon(PageEntry_t &p, PageContext_t &c);
-  static void WebCfgPreclimate(PageEntry_t &p, PageContext_t &c);
 #endif
   // Define OVMS vehicle and zoe specific functions
   void ConfigChanged(OvmsConfigParam *param) override;
@@ -212,11 +211,6 @@ protected:
   uint32_t m_remote_climate_last_trigger_time = 0;  // Timestamp of last trigger to prevent multiple activations
   uint8_t m_remote_climate_last_button_state = 0;   // Last button state for edge detection
 
-  // Scheduled pre-climate tracking
-  int m_preclimate_last_triggered_day = -1;    // Last day schedule was triggered (0-6)
-  int m_preclimate_last_triggered_hour = -1;   // Last hour schedule was triggered
-  int m_preclimate_last_triggered_min = -1;    // Last minute schedule was triggered
-
   // TX callback tracking for command verification
   std::atomic<uint32_t> m_tx_success_id;   // ID of last successfully transmitted frame
   std::atomic<bool> m_tx_success_flag;     // Flag indicating successful transmission
@@ -304,15 +298,6 @@ public:
 
   // Coming home function
   void TriggerComingHomeLighting();
-
-  // Scheduled pre-climate functions
-  void CheckPreclimateSchedule(std::string event, void* data);
-  bool ParseScheduleTime(const std::string& schedule, int current_hour, int current_min);
-
-  // Shell commands for schedule management:
-  static void CommandPreclimateScheduleSet(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandPreclimateScheduleList(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandPreclimateScheduleClear(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 
 private:
   // Define helper vars for 100km rolling consumption calculation

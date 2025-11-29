@@ -3,21 +3,31 @@ Open Vehicle Monitor System v3 - Change log
 ????-??-?? ???  ???????  OTA release
 - New vehicle: Maxus T90 EV (MT90) via OBD-II port
     Initial support added for:
-      • VIN, SOC, SOH & READY state
-      • AC plug / pilot detection
-      • Lock status
-      • Odometer
-      • Temperature metrics
+      VIN, SOC, SOH & READY state
+      AC plug / pilot detection
+      Lock status
+      Odometer
+      Temperature metrics
+- Renault Twizy: support added for standard metric "v.e.aux12v" (base system awake),
+    OBD polling (DTC checks) enabled already with base system awake
+    (= DTC available in STOP conditions)
+- VW e-Up: enable framework climate preconditioning scheduler web UI
+    (Note: climate control only available with T26 connection)
 - Vehicle framework: Scheduled precondition control with duration support
     Centralized implementation for all vehicles with per-vehicle override capability.
-    Supports multiple time slots per day with individual duration settings.
+    Supports multiple time slots per day with individual duration settings (5-30 minutes).
     Global enable/disable switch with config persistence.
+    copy function to duplicate schedules across multiple days.
   New commands:
     climatecontrol schedule set <day> <times>  -- Set schedule for a day, times format: HH:MM[/duration][,HH:MM[/duration],...]
                                                      Examples: "07:30", "07:30/10", "07:00/5,17:30/15"
                                                      Duration in minutes
     climatecontrol schedule list               -- List all configured schedules with next scheduled event
     climatecontrol schedule clear <day|all>    -- Clear schedule for specific day or all days
+    climatecontrol schedule copy <source-day> <target-days>
+                                               -- Copy schedule from one day to others
+                                                     Examples: "mon tue-fri", "fri sat,sun"
+                                                     Supports range syntax (tue-fri) and comma-separated lists
     climatecontrol schedule enable             -- Enable scheduled precondition (global switch)
     climatecontrol schedule disable            -- Disable scheduled precondition (global switch)
     climatecontrol schedule status             -- Show schedule status and configured times
@@ -31,6 +41,9 @@ Open Vehicle Monitor System v3 - Change log
     - Automatic trigger based on system time
     - Integration with existing climate control
     - Web UI configuration page at /cfg/preconditionschedule
+    - Automatic restart mechanism for extended runtime (configurable HVAC duration)
+    - Duplicate prevention (same time won't trigger twice)
+    - Copy function for quick weekly schedule setup
 - smart EQ:
     Add multiple CAN frame parsers for energy and charging metrics
     Add automatic 12V ADC factor recalculation history tracking

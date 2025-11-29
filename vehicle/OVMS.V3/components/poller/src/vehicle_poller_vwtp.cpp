@@ -42,7 +42,7 @@ static const char *TAG = "vehicle-vwtp";
  */
 void OvmsPoller::PollerVWTPStart(bool fromTicker)
   {
-  m_poll_vwtp.lastused = monotonictime;
+  m_poll_vwtp.lastused = esp_log_timestamp();
 
   // Check connection state:
   if (m_poll_vwtp.bus != m_poll.bus ||
@@ -139,7 +139,7 @@ void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
 
         m_poll_wait = 2;
         m_poll_vwtp.state = VWTP_ChannelSetup;
-        m_poll_vwtp.lastused = monotonictime;
+        m_poll_vwtp.lastused = esp_log_timestamp();
         m_poll_vwtp.bus->Write(&txframe);
         }
       break;
@@ -205,7 +205,7 @@ void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
       ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: idle bus=%d txid=%03X rxid=%03X",
         m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.entry.pollbus, m_poll_vwtp.txid, m_poll_vwtp.rxid);
       m_poll_vwtp.state = VWTP_Idle;
-      m_poll_vwtp.lastused = monotonictime;
+      m_poll_vwtp.lastused = esp_log_timestamp();
       m_poll_wait = 0;
       break;
       }
@@ -305,7 +305,7 @@ void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
       m_poll.moduleid_high = m_poll_vwtp.rxid;
       m_poll_wait = 2;
       m_poll_vwtp.state = VWTP_Transmit;
-      m_poll_vwtp.lastused = monotonictime;
+      m_poll_vwtp.lastused = esp_log_timestamp();
       break;
       }
 
@@ -314,7 +314,7 @@ void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
       ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPEnter[%02X]: receive frame=%u remain=%u",
         m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.mlframe, m_poll.mlremain);
       m_poll_vwtp.state = VWTP_Receive;
-      m_poll_vwtp.lastused = monotonictime;
+      m_poll_vwtp.lastused = esp_log_timestamp();
       m_poll_wait = 2;
       break;
       }
@@ -344,7 +344,7 @@ void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
       m_poll_tx_remain = 0;
       m_poll.mlremain = 0;
       m_poll_vwtp.state = VWTP_Idle;
-      m_poll_vwtp.lastused = monotonictime;
+      m_poll_vwtp.lastused = esp_log_timestamp();
       m_poll_wait = 0;
       m_poll_vwtp.bus->Write(&txframe);
       break;
@@ -612,7 +612,7 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
         // Data frame received: check sequence number
         // 
 
-        m_poll_vwtp.lastused = monotonictime;
+        m_poll_vwtp.lastused = esp_log_timestamp();
         uint32_t rxseqnr = m_poll_vwtp.rxseqnr++;
         if ((opcode & 0x0f) != (rxseqnr & 0x0f))
           {
@@ -768,7 +768,7 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
       break;
     }
 
-  if (m_poll.mlremain == 0)
+  if (m_poll_wait == 0)
     {
     // Succeeded - No more expected so check to send the next poll
     PollerSucceededPollNext();
@@ -783,6 +783,17 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
  */
 void OvmsPoller::PollerVWTPTicker()
   {
+  uint32_t currenttime_ms = esp_log_timestamp();
+  uint32_t timediff_ms = currenttime_ms - m_poll_vwtp.lastused;
+
+  // As a VWTP operation may start at any time between two Ticker runs,
+  // we need to adjust the wait time if the ticker offset is too short:
+  if (m_poll_wait == 1 && timediff_ms < 200)
+    {
+    m_poll_wait = 2;
+    return;
+    }
+
   if (m_poll_wait > 0)
     {
     // State timeout?
@@ -814,7 +825,7 @@ void OvmsPoller::PollerVWTPTicker()
 
   // Keepalive timeout?
   if (m_poll_vwtp.state == VWTP_Idle && m_poll_ch_keepalive > 0 &&
-      m_poll_vwtp.lastused + m_poll_ch_keepalive < monotonictime)
+      timediff_ms > m_poll_ch_keepalive * 1000)
     {
     ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPTicker[%02X]: channel inactivity timeout",
       m_poll.bus_no, m_poll_vwtp.moduleid);

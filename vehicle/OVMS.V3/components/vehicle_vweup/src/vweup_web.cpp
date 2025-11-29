@@ -54,7 +54,11 @@ void OvmsVehicleVWeUp::WebInit()
 {
   // vehicle menu:
   MyWebServer.RegisterPage("/xvu/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xvu/climate", "Climate control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
+  if (HasT26()) {
+    // only useful with T26 access:
+    MyWebServer.RegisterPage("/xvu/climate", "Climate Control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
+    MyWebServer.RegisterPage("/xvu/climate_schedule", "Climate Schedule", OvmsWebServer::HandleCfgPreconditionSchedule, PageMenu_Vehicle, PageAuth_Cookie);
+  }
   if (HasOBD()) {
     // only useful with OBD metrics:
     MyWebServer.RegisterPage("/xvu/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
@@ -70,6 +74,7 @@ void OvmsVehicleVWeUp::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xvu/features");
   MyWebServer.DeregisterPage("/xvu/climate");
+  MyWebServer.DeregisterPage("/xvu/climate_schedule");
   MyWebServer.DeregisterPage("/xvu/metrics_charger");
   MyWebServer.DeregisterPage("/xvu/battmon");
   MyWebServer.DeregisterPage("/xvu/battsoh");
@@ -756,7 +761,7 @@ void OvmsVehicleVWeUp::WebDispBattHealth(PageEntry_t &p, PageContext_t &c)
       "stroke: #0074ff;\n"
       "stroke-width: 2px;\n"
     "}\n"
-    ".highcharts-series.cmod-soh-avg > .highcharts-graph {\n"
+    ".highcharts-series.cmod-soh-min > .highcharts-graph {\n"
       "stroke-width: 15px;\n"
       "opacity: 0.6;\n"
     "}\n"
@@ -862,8 +867,8 @@ void OvmsVehicleVWeUp::WebDispBattHealth(PageEntry_t &p, PageContext_t &c)
         "series: [],\n"
         "/* Update method: */\n"
         "onUpdate: function(update) {\n"
-          "// Create module series & average:\n"
-          "let series = [], avg = [];\n"
+          "// Create module series & minimum:\n"
+          "let series = [], min = [];\n"
           "for (let i = 1; i <= 17; i++) {\n"
             "let modkey = Number(i).toString().padStart(2,'0');\n"
             "let modhist = metrics[\"xvu.b.hist.soh.mod.\"+modkey] || [];\n"
@@ -873,23 +878,22 @@ void OvmsVehicleVWeUp::WebDispBattHealth(PageEntry_t &p, PageContext_t &c)
                 "className: 'cmod-soh', zIndex: i,\n"
                 "animation: { duration: 0 },\n"
               "});\n"
-              "// prep avg:\n"
-              "modhist.forEach((el,i) => { avg[i] = (avg[i]||0) + el });\n"
+              "// prep min:\n"
+              "modhist.forEach((el,i) => { min[i] = Math.min(min[i]||200, el) });\n"
             "}\n"
           "}\n"
-          "// finish avg:\n"
+          "// finish min:\n"
           "if (series.length) {\n"
-            "avg.forEach((el,i) => { avg[i] = Number((avg[i] / series.length).toFixed(1)) });\n"
             "series.unshift({\n"
-              "name: \"Avg\", data: avg,\n"
-              "className: 'cmod-soh-avg', zIndex: 100,\n"
+              "name: \"Min\", data: min,\n"
+              "className: 'cmod-soh-min', zIndex: 100,\n"
               "animation: { duration: 0 },\n"
             "});\n"
           "}\n"
           "// Create categories (cell numbers) & rounded values:\n"
           "let date = new Date();\n"
           "let cat = [];\n"
-          "for (let i = avg.length-1; i >= 0; i--) {\n"
+          "for (let i = min.length-1; i >= 0; i--) {\n"
             "cat[i] = date.toISOString().substr(0,7);\n"
             "date.setMonth(date.getMonth() - 3);\n"
           "}\n"

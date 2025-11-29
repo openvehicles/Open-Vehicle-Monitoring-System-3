@@ -589,6 +589,7 @@ void LoadPollRequest( OvmsPoller::poll_pid_t &poll,
     poll.xargs.data = (const uint8_t*)request.data()+1;
     }
   }
+
 /**
  * PollSingleRequest: perform prioritized synchronous single OBD2/UDS request
  *  Pass a full OBD2/UDS request (mode/type, PID, additional payload).
@@ -619,7 +620,7 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
                                    int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
   {
   if (!Ready())
-    return -1;
+    return POLLSINGLE_TIMEOUT;
 
   // prepare single poll:
   OvmsPoller::poll_pid_t poll;
@@ -633,8 +634,8 @@ int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::str
   {
   OvmsRecMutexLock slock(&m_poll_single_mutex, pdMS_TO_TICKS(timeout_ms));
   if (!slock.IsLocked())
-    return -1;
-  int rx_error;
+    return POLLSINGLE_TIMEOUT;
+  int rx_error = POLLSINGLE_TIMEOUT; // will be replaced by POLLSINGLE_OK on success
   OvmsSemaphore     single_rxdone;   // … response done (ok/error)
   std::shared_ptr<BlockingOnceOffPoll> poller( new BlockingOnceOffPoll(poll, &response, &rx_error, &single_rxdone));
 
@@ -642,7 +643,7 @@ int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::str
     {
     OvmsRecMutexLock lock(&m_poll_mutex, pdMS_TO_TICKS(timeout_ms));
     if (!lock.IsLocked())
-      return -1;
+      return POLLSINGLE_TIMEOUT;
     // start single poll:
     m_polls.SetEntry("!v.single", poller, true);
     }
@@ -657,7 +658,7 @@ int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::str
   // Make sure if it is still sticking around that it's not accessing
   // stack objects!
   poller->Finished();
-  return (rxok == pdFALSE) ? -1 : rx_error;
+  return (rxok == pdFALSE) ? POLLSINGLE_TIMEOUT : rx_error;
   }
 
 int OvmsPoller::PollSingleRequest( uint32_t txid, uint32_t rxid,
@@ -692,7 +693,7 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
                   int timeout_ms, uint8_t protocol)
   {
   if (!Ready())
-    return -1;
+    return POLLSINGLE_TIMEOUT;
   OvmsPoller::poll_pid_t poll;
   poll = { txid, rxid, polltype, pid, { 1, 1, 1, 1 }, 0, protocol };
   poll.xargs.tag = POLL_TXDATA;
@@ -4068,6 +4069,9 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::StandardPollSeries::NextPollEntry(pol
   if (!Ready())
     return OvmsNextPollResult::NotReady;
 
+  if (m_poll_plist == NULL)
+    return OvmsNextPollResult::NotReady;
+
   // Offset pollstate and check it is within polltime bounds.
   if (pollstate < m_state_offset)
     return OvmsNextPollResult::StillAtEnd;
@@ -4419,7 +4423,12 @@ void OvmsPoller::OnceOffPollBase::IncomingError(const OvmsPoller::poll_job_t& jo
   IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Error %" PRIu16, code);
 
   if (m_poll_rxerr)
-    *m_poll_rxerr = code;
+    {
+    // As IncomingError() is now also used for internal errors (ie POLLSINGLE_TXFAILURE),
+    // code needs to be reinterpreted as a signed value for the caller.
+    // (TOCHECK: change IncomingError signatures to int16_t/int code?)
+    *m_poll_rxerr = static_cast<int16_t>(code);
+    }
   if (m_poll_rxbuf)
     m_poll_rxbuf->clear();
   if (code == 0)

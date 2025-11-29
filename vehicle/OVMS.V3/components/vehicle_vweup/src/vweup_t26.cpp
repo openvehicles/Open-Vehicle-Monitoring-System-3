@@ -144,19 +144,6 @@ static const char *TAG = "v-vweup";
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
-void OvmsVehicleVWeUp::sendOcuHeartbeat(TimerHandle_t timer)
-{
-  // Workaround for FreeRTOS duplicate timer callback bug
-  // (see https://github.com/espressif/esp-idf/issues/8234)
-  static TickType_t last_tick = 0;
-  TickType_t tick = xTaskGetTickCount();
-  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
-  last_tick = tick;
-
-  OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
-  vweup->SendOcuHeartbeat();
-}
-
 void OvmsVehicleVWeUp::T26Init()
 {
   ESP_LOGI(TAG, "T26: Starting connection: T26A (Comfort CAN)");
@@ -223,10 +210,17 @@ void OvmsVehicleVWeUp::T26Init()
     StdMetrics.ms_v_charge_mode->SetValue("standard");
   }
 
+  // create OCU heartbeat timer:
+  if (!m_sendOcuHeartbeat) {
+    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdTRUE, this, sendOcuHeartbeat);
+  }
+
   // update values from ECU:
   t26_init = true;
   profile0_state = PROFILE0_INIT;
-  profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(profile0_delay), pdFALSE, this, Profile0RetryTimer);
+  if (!profile0_timer) {
+    profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(profile0_delay), pdFALSE, this, Profile0RetryTimer);
+  }
   xTimerStart(profile0_timer, 0);
 }
 
@@ -289,8 +283,6 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     if (ocu_awake && m_sendOcuHeartbeat != NULL) {
       ESP_LOGD(TAG, "T26: stopping OCU heartbeat timer");
       xTimerStop(m_sendOcuHeartbeat, pdMS_TO_TICKS(100));
-      xTimerDelete(m_sendOcuHeartbeat, pdMS_TO_TICKS(100));
-      m_sendOcuHeartbeat = NULL;
     }
     ocu_awake = false;
     ocu_working = false;
@@ -566,8 +558,6 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         if (m_sendOcuHeartbeat != NULL) {
           ESP_LOGD(TAG, "T26: stopping OCU heartbeat timer");
           xTimerStop(m_sendOcuHeartbeat, pdMS_TO_TICKS(100));
-          xTimerDelete(m_sendOcuHeartbeat, pdMS_TO_TICKS(100));
-          m_sendOcuHeartbeat = NULL;
         }
         if (ocu_awake) { // We should go to sleep, no matter what
           ESP_LOGI(TAG, "T26: Comfort CAN calls for sleep");
@@ -761,6 +751,7 @@ void OvmsVehicleVWeUp::WakeupT26Stage2()
   ESP_LOGD(TAG, "T26: WakeupT26Stage2 called");
   canbus *comfBus;
   comfBus = m_can3;
+
   if (!comfBus || HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: WakeupT26Stage2 failed: T26 not ready / no write access!");
     wakeup_success = false;
@@ -768,6 +759,7 @@ void OvmsVehicleVWeUp::WakeupT26Stage2()
       xSemaphoreGive(xWakeSemaphore);
     return;
   }
+
   ESP_LOGI(TAG, "T26: Waking Comfort CAN");
   if (!ocu_response && !StdMetrics.ms_v_env_on->AsBool()) {
     unsigned char data[8];
@@ -797,7 +789,15 @@ void OvmsVehicleVWeUp::WakeupT26Stage2()
     data[6] = 0x00;
     data[7] = 0x00;
     comfBus->WriteStandard(0x43D, length, data);
-    SendOcuHeartbeat();
+
+    // start sending OCU heartbeat:
+    if (xTimerStart(m_sendOcuHeartbeat, pdMS_TO_TICKS(100)) == pdFAIL) {
+      ESP_LOGE(TAG, "T26: WakeupT26Stage2: could not start OCU heartbeat, please retry wakeup");
+    } else {
+      // timer running, send first heartbeat:
+      SendOcuHeartbeat();
+    }
+
     ocu_working = true; // XXX put all of this in WakeupT26Stage3?
     ocu_awake = true;
     StdMetrics.ms_v_env_charging12v->SetValue(true);
@@ -838,6 +838,13 @@ void OvmsVehicleVWeUp::WakeupT26Stage3()
   ESP_LOGI(TAG, "T26: Vehicle has been woken");
 }
 
+
+void OvmsVehicleVWeUp::sendOcuHeartbeat(TimerHandle_t timer)
+{
+  OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
+  vweup->SendOcuHeartbeat();
+}
+
 void OvmsVehicleVWeUp::SendOcuHeartbeat()
 {
   ESP_LOGV(TAG, "OCU heartbeat called (cc: %d, fas_on: %d, fas_off: %d, p0: %d)", vweup_cc_on, fas_counter_on, fas_counter_off, profile0_state);
@@ -845,8 +852,11 @@ void OvmsVehicleVWeUp::SendOcuHeartbeat()
   comfBus = m_can3;
   uint8_t length = 8;
   unsigned char data[length];
+
   if (!comfBus || HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: SendOcuHeartbeat failed: T26 not ready / no write access!");
+    // stop our timer:
+    xTimerStop(m_sendOcuHeartbeat, 0);
     return;
   }
   else if (!vweup_cc_on) {
@@ -876,6 +886,7 @@ void OvmsVehicleVWeUp::SendOcuHeartbeat()
     if (fas_counter_on < 10)
       fas_counter_on++;
   }
+
   ESP_LOGV(TAG, "sending OCU heartbeat (cc: %d, fas_on: %d, fas_off: %d, p0: %d)", vweup_cc_on, fas_counter_on, fas_counter_off, profile0_state);
   data[0] = 0x00;
   data[1] = 0x00;
@@ -886,6 +897,7 @@ void OvmsVehicleVWeUp::SendOcuHeartbeat()
   data[6] = 0x00;
   data[7] = 0x00;
   comfBus->WriteStandard(0x5A9, length, data);
+
   if ((fas_counter_on > 0 && fas_counter_on < 10) || (fas_counter_off > 0 && fas_counter_off < 10)) {
     data[0] = 0x60;
     ESP_LOGV(TAG, "T26: OCU Heartbeat - 5A7 60");
@@ -896,8 +908,6 @@ void OvmsVehicleVWeUp::SendOcuHeartbeat()
   }
   data[1] = 0x16;
   comfBus->WriteStandard(0x5A7, length, data);
-  m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdFALSE, this, sendOcuHeartbeat);
-  xTimerStart(m_sendOcuHeartbeat, 0);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandLock(const char *pin)
@@ -1265,12 +1275,6 @@ void OvmsVehicleVWeUp::WriteProfile0()
 
 void OvmsVehicleVWeUp::Profile0RetryTimer(TimerHandle_t timer)
 {
-  // Workaround for FreeRTOS duplicate timer callback bug
-  // (see https://github.com/espressif/esp-idf/issues/8234)
-  static TickType_t last_tick = 0;
-  TickType_t tick = xTaskGetTickCount();
-  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
-  last_tick = tick;
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
   vweup->Profile0RetryCallBack();
 }
@@ -1278,9 +1282,7 @@ void OvmsVehicleVWeUp::Profile0RetryTimer(TimerHandle_t timer)
 void OvmsVehicleVWeUp::Profile0RetryCallBack()
 {
   ESP_LOGD(TAG, "T26: Profile0RetryCallBack in state %d (cntr: %d,%d,%d, key %d, val %d, mode %d, current %d, temp %d, recv %d)", profile0_state, profile0_cntr[0], profile0_cntr[1], profile0_cntr[2], profile0_key, profile0_val, profile0_mode, profile0_charge_current, profile0_cc_temp, profile0_recv);
-  ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
-  int timer_stopped = xTimerStop(profile0_timer, pdMS_TO_TICKS(100));
-  ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
+
   if (HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: Profile0RetryCallBack failed: T26 not ready / no write access! (%d, %d, %d)", HasOBD(), IsT26Ready(), vweup_enable_write);
     return;

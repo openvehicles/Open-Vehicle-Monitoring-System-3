@@ -38,8 +38,29 @@ static const char *TAG = "v-smarteq";
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
   if(!m_enable_write) {
     ESP_LOGE(TAG, "CommandClimateControl failed / no write access");
+    m_climate_restart_ticker = 0;
+    m_climate_restart = false; 
     return Fail;
   }
+
+  if(!enable) {
+    m_climate_restart_ticker = 0;
+    m_climate_restart = false; 
+    return NotImplemented;
+  }
+
+  if (StandardMetrics.ms_v_bat_soc->AsInt(0) < 31)
+  {    
+    char msg[100];
+    snprintf(msg, sizeof(msg), "Scheduled precondition skipped: Battery SOC too low (%d%%)",
+             StandardMetrics.ms_v_bat_soc->AsInt(0));
+    ESP_LOGW(TAG, "%s", msg);
+    MyNotify.NotifyString("alert", "climatecontrol.schedule", msg);
+    m_climate_restart_ticker = 0;
+    m_climate_restart = false; 
+    return Fail;
+  }
+
   if (StdMetrics.ms_v_env_hvac->AsBool()) {
     MyNotify.NotifyString("info", "hvac.enabled", "Climate already on");
     ESP_LOGI(TAG, "CommandClimateControl already on");
@@ -60,8 +81,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
       for (int i = 0; i < 10; i++) {
         obd->WriteStandard(0x634, 4, data);
         vTaskDelay(100 / portTICK_PERIOD_MS);
-      }
-      m_climate_start = true;      
+      }     
       res = Success;
     } else {
       res = Fail;
@@ -130,28 +150,66 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
   ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
   OvmsVehicle::vehicle_command_t res = NotImplemented;
 
-  if (StdMetrics.ms_v_bat_soc->AsInt() < 31) {
-    ESP_LOGI(TAG, "Battery SOC is too low for climate control");
-    return Fail;
-  }
-
   switch (button)
   {
     case 0:
     {
       res = CommandClimateControl(true);
+
+      if (res == Success)
+        {
+          m_climate_restart = false;
+          m_climate_restart_ticker = 0; // 5 minutes default runtime, no ticker required
+          ESP_LOGI(TAG, "Precondition activated successfully");
+          MyNotify.NotifyString("info", "climatecontrol.schedule",
+                                "5 minutes precondition started");
+        }
+      else
+        {
+          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
+          MyNotify.NotifyString("error", "climatecontrol.schedule",
+                                "precondition failed to start");
+        }
       break;
     }
     case 1:
     {
-      m_climate_ticker = 2;
       res = CommandClimateControl(true);
+
+      if (res == Success)
+        {
+          m_climate_restart = true;
+          m_climate_restart_ticker = 8; // 10 minutes
+          ESP_LOGI(TAG, "Precondition activated successfully");
+          MyNotify.NotifyString("info", "climatecontrol.schedule",
+                                "10 minutes precondition started");
+        }
+      else
+        {
+          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
+          MyNotify.NotifyString("error", "climatecontrol.schedule",
+                                "precondition failed to start");
+        }
       break;
     }
     case 2:
-    {      
-      m_climate_ticker = 3;
+    { 
       res = CommandClimateControl(true);
+
+      if (res == Success)
+        {
+          m_climate_restart = true;
+          m_climate_restart_ticker = 12; // 15 minutes
+          ESP_LOGI(TAG, "Precondition activated successfully");
+          MyNotify.NotifyString("info", "climatecontrol.schedule",
+                                "15 minutes precondition started");
+        }
+      else
+        {
+          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
+          MyNotify.NotifyString("error", "climatecontrol.schedule",
+                                "precondition failed to start");
+        }
       break;
     }
     default:
@@ -503,19 +561,19 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, Ov
       const std::string& reset_time = mt_reset_time->AsUnitString("-", ToUser, 1);
       writer->printf("RESET Trip time: %s\n", reset_time.c_str());
       }
-    if (mt_use_at_start->IsDefined())
+    if (mt_reset_consumption->IsDefined())
       {
-      const std::string& use_at_start = mt_use_at_start->AsUnitString("-", ToUser, 1);
-      writer->printf("START kWh: %s\n", use_at_start.c_str());
+      const std::string& reset_consumption = mt_reset_consumption->AsUnitString("-", ToUser, 1);
+      writer->printf("START kWh: %s\n", reset_consumption.c_str());
       }
-    if (mt_obd_start_trip_km->IsDefined())
+    if (mt_start_distance->IsDefined())
       {
-      const std::string& obd_trip_km = mt_obd_start_trip_km->AsUnitString("-", ToUser, 1);
+      const std::string& obd_trip_km = mt_start_distance->AsUnitString("-", ToUser, 1);
       writer->printf("START Trip km: %s\n", obd_trip_km.c_str());
       }
-    if (mt_obd_start_trip_time->IsDefined())
+    if (mt_start_time->IsDefined())
       {
-      const std::string& obd_trip_time = mt_obd_start_trip_time->AsUnitString("-", ToUser, 1);
+      const std::string& obd_trip_time = mt_start_time->AsUnitString("-", ToUser, 1);
       writer->printf("START Trip time: %s\n", obd_trip_time.c_str());
       }
     if (StdMetrics.ms_v_env_service_time->IsDefined())
@@ -603,8 +661,8 @@ void OvmsVehicleSmartEQ::xsq_trip_start(int verbosity, OvmsWriter* writer, OvmsC
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripStart(int verbosity, OvmsWriter* writer) {
     metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
     writer->puts("Trip start values:");
-    writer->printf("  distance: %s\n", (char*) mt_obd_start_trip_km->AsUnitString("-", rangeUnit, 1).c_str());
-    writer->printf("  time: %s\n", (char*) mt_obd_start_trip_time->AsUnitString("-", Native, 1).c_str());
+    writer->printf("  distance: %s\n", (char*) mt_start_distance->AsUnitString("-", rangeUnit, 1).c_str());
+    writer->printf("  time: %s\n", (char*) mt_start_time->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
     writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
@@ -710,47 +768,6 @@ void OvmsVehicleSmartEQ::NotifyMaintenance() {
   MyNotify.NotifyString("info","xsq.maintenance",buf.c_str());
 }
 
-void OvmsVehicleSmartEQ::xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
-  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
-  if (!smarteq)
-    return;
-  
-    smarteq->CommandSetClimate(verbosity, writer);
-}
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetClimate(int verbosity, OvmsWriter* writer) {
-    int _ds = mt_climate_ds->AsInt();
-    int _de = mt_climate_de->AsInt() == 0 ? 6 : mt_climate_de->AsInt() - 1;
-    int _min = mt_climate_1to3->AsInt();
-    const char* _days[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-    const char* _time[3] = {"5 min", "10 min", "15 min"};
-
-    writer->puts("Climate values:");
-    writer->printf("  on: %s\n", mt_climate_on->AsBool() ? "yes" : "no");
-    writer->printf("  time: %s:%s h\n", mt_climate_h->AsString().c_str(),mt_climate_m->AsString().c_str());
-    writer->printf("  weekly: %s\n", mt_climate_weekly->AsBool() ? "yes" : "no");
-    writer->printf("  start Day: %s\n", _days[_ds]);
-    writer->printf("  end Day: %s\n", _days[_de]);
-    writer->printf("  runtime: %s\n", _time[_min]);
-    return Success;
-}
-void OvmsVehicleSmartEQ::NotifyClimateTimer() {
-  StringWriter buf(200);
-  CommandSetClimate(COMMAND_RESULT_NORMAL, &buf);
-  MyNotify.NotifyString("info","xsq.climate.timer",buf.c_str());
-}
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimate(int verbosity, OvmsWriter* writer) {
-  writer->puts("Climate on:");
-  writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-  writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
-  writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
-  return Success;
-}
-void OvmsVehicleSmartEQ::NotifyClimate() {
-  StringWriter buf(200);
-  CommandClimate(COMMAND_RESULT_NORMAL, &buf);
-  MyNotify.NotifyString("info","xsq.climate",buf.c_str());
-}
-
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSOClimit(int verbosity, OvmsWriter* writer) {
   writer->puts("SOC limit reached:");
   writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
@@ -774,7 +791,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::Command12Vcharge(int verbosit
   return Success;
 }
 void OvmsVehicleSmartEQ::Notify12Vcharge() {
-  m_12v_charge_state = false;
   StringWriter buf(200);
   Command12Vcharge(COMMAND_RESULT_NORMAL, &buf);
   MyNotify.NotifyString("info","xsq.12v.charge",buf.c_str());
@@ -790,10 +806,13 @@ void OvmsVehicleSmartEQ::xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCom
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTPMSset(int verbosity, OvmsWriter* writer) {
   float dummy_pressure = mt_dummy_pressure->AsFloat();
   for (int i = 0; i < 4; i++) {
-    m_tpms_pressure[i] = dummy_pressure; // kPa
-    setTPMSValue(i, m_tpms_index[i]);
+    m_tpms_pressure[i] = dummy_pressure + (i * 10); // kPa
+    m_tpms_temperature[i] = 21 + i; // Celsius
+    m_tpms_lowbatt[i] = false;
+    m_tpms_missing_tx[i] = false;
   }
-  writer->printf("set TPMS dummy pressure: %.2f", dummy_pressure);
+  writer->printf("set TPMS dummy pressure: %.2f temp: %.2f\n", dummy_pressure, m_tpms_temperature[0]);
+  setTPMSValue();   // update TPMS metrics
   return Success;
 }
 
@@ -890,6 +909,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
     }
 
+  if (!MyConfig.IsDefined("xsq", "TPMS_FL")) 
+    {
+    MyConfig.SetParamValueInt("vehicle", "tpms.fl", MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0));
+    MyConfig.SetParamValueInt("vehicle", "tpms.fr", MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1));
+    MyConfig.SetParamValueInt("vehicle", "tpms.rl", MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2));
+    MyConfig.SetParamValueInt("vehicle", "tpms.rr", MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3));
+    }
+
   if (MyConfig.GetParamValue("ota", "server", "0") == "https://ovms.dimitrie.eu/firmware/ota" && 
       MyConfig.GetParamValue("ota", "tag", "0") == "smarteq")
     {
@@ -918,7 +945,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "gps.onoff",
     "gps.off",
     "gps.reactmin",
-    "gps.deact"
+    "precondition",
+    "climate.system",
+    "climate.data",
+    "climate.notify",
+    "climate.data.store",
+    "gps.deact",
+    "TPMS_FL",
+    "TPMS_FR",
+    "TPMS_RL",
+    "TPMS_RR"
   };
   
   // Remove all deprecated keys from map
@@ -943,5 +979,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   if (writer) {
     writer->printf("Config V%d preset activated", PRESET_VERSION);
   }
+
+  MyConfig.DeregisterParam("xsq.preclimate");
   return Success;
 }

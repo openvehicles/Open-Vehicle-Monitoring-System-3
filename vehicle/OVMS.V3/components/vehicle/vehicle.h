@@ -530,11 +530,15 @@ class OvmsVehicle : public InternalRamAllocated
 #endif // #ifdef CONFIG_OVMS_COMP_TPMS
 
   public:
-    virtual std::vector<std::string> GetTpmsLayout();
+    virtual std::vector<std::string> GetTpmsLayout();       // override to customize TPMS wheel layout
+    virtual std::vector<std::string> GetTpmsLayoutNames();  // override to customize TPMS wheel layout
+    virtual bool UsesTpmsSensorMapping() { return false; }  // return true if using m_tpms_index[]
 
   protected:
     uint32_t m_tpms_lastcheck;              // monotonictime of last TPMS alert check
     std::vector<short> m_tpms_laststate;    // last TPMS alert state for change detection
+    std::vector<int> m_tpms_index;          // TPMS wheel sensor index mapping via config vehicle tpms.<wheelcode>
+                                            // (corresponding to GetTpmsLayout(), default FL=0,FR=1,RL=2,RR=3)
 
   protected:
     virtual void NotifyTpmsAlerts();
@@ -741,6 +745,7 @@ class OvmsVehicleFactory
     static void vehicle_climate_schedule_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_climate_schedule_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_climate_schedule_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climate_schedule_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_climate_schedule_enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_climate_schedule_disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_climate_schedule_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);

@@ -55,12 +55,7 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ESP_LOGI(TAG, "Start smart EQ vehicle module");
 
-  m_climate_init = true;
-  m_climate_start = false;
-  m_climate_start_day = false;
-  m_climate_ticker = 0;
   m_12v_ticker = 0;
-  m_12v_charge_state = false;
   m_ddt4all = false;
   m_ddt4all_ticker = 0;
   m_ddt4all_exec = 0;
@@ -82,33 +77,21 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
 
-  for (int i = 0; i < 4; i++) 
-    {
-    m_tpms_pressure[i] = 0.0f;
-    m_tpms_temperature[i] = 0.0f;
-    m_tpms_lowbatt[i] = false;
-    m_tpms_missing_tx[i] = false;
-    m_tpms_index[i] = i;
-    }
-
   // BMS configuration:
-  BmsSetCellArrangementVoltage(96, 3);
-  BmsSetCellArrangementTemperature(27, 1);
-  BmsSetCellLimitsVoltage(2.0, 5.0);
-  BmsSetCellLimitsTemperature(-39, 200);
-  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
-  BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+  BmsSetCellArrangementVoltage(96, 1);               // 96 cells, 1 series string
+  BmsSetCellArrangementTemperature(27, 1);           // 27 temp sensors, 1 series string
+  BmsSetCellLimitsVoltage(2.0, 5.0);                 // Min 2.0V, Max 5.0V
+  BmsSetCellLimitsTemperature(-39, 200);             // Min -39°C, Max 200°C
+  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);  // Warn: 20mV, Alert: 30mV
+  BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);  // Warn: 2°C, Alert: 3°C
 
   mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, true);
-  mt_use_at_reset               = MyMetrics.InitFloat("xsq.use.at.reset", SM_STALE_MID, 0, kWh);
-  mt_use_at_start               = MyMetrics.InitFloat("xsq.use.at.start", SM_STALE_MID, 0, kWh);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_NONE, "", Other);
   mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_NONE, 0, Other);
   mt_adc_factor_history         = new OvmsMetricVector<float>("xsq.adc.factor.history", SM_STALE_NONE, Other);
   mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_NONE, "UNKNOWN", Other);
 
   mt_start_time                 = MyMetrics.InitString("xsq.v.start.time", SM_STALE_MID, 0, Other);
-  mt_start_consumption          = MyMetrics.InitFloat("xsq.v.start.consumption", SM_STALE_MID, 0, kWhP100K);
   mt_start_distance             = MyMetrics.InitFloat("xsq.v.start.distance", SM_STALE_MID, 0, Kilometers);
 
   mt_reset_time                 = MyMetrics.InitString("xsq.v.reset.time", SM_STALE_MID, 0, Other);
@@ -122,43 +105,22 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_energy_used                = MyMetrics.InitFloat("xsq.v.energy.used", SM_STALE_MID, 0, kWh);
   mt_energy_recd                = MyMetrics.InitFloat("xsq.v.energy.recd", SM_STALE_MID, 0, kWh);
   mt_aux_consumption            = MyMetrics.InitFloat("xsq.v.aux.consumption", SM_STALE_MID, 0, kWh);
-  mt_eco_score                  = MyMetrics.InitInt("xsq.v.eco.score", SM_STALE_MID, 0, Percentage);
-  mt_total_recovery             = MyMetrics.InitFloat("xsq.v.total.recovery", SM_STALE_MID, 0, kWh);
-  mt_charge_flap_warning        = MyMetrics.InitBool("xsq.v.charge.flap.warning", SM_STALE_MID, false);
-
   // 0x62d
   mt_worst_consumption          = MyMetrics.InitFloat("xsq.v.bat.consumption.worst", SM_STALE_MID, 0, kWhP100K);
   mt_best_consumption           = MyMetrics.InitFloat("xsq.v.bat.consumption.best", SM_STALE_MID, 0, kWhP100K);
   mt_bcb_power_mains            = MyMetrics.InitFloat("xsq.v.charge.bcb.power", SM_STALE_MID, 0, Watts);
-
   // 0x634
-  mt_tcu_refuse_sleep           = MyMetrics.InitInt("xsq.v.tcu.refuse.sleep", SM_STALE_MID, 0);
   mt_charging_timer_value       = MyMetrics.InitInt("xsq.v.charge.timer.value", SM_STALE_MID, 0, Minutes);
-  mt_remote_preac               = MyMetrics.InitBool("xsq.v.remote.preac", SM_STALE_MID, false);
   mt_charging_timer_status      = MyMetrics.InitInt("xsq.v.charge.timer.status", SM_STALE_MID, 0);
   mt_charge_prohibited          = MyMetrics.InitInt("xsq.v.charge.prohibited", SM_STALE_MID, 0);
   mt_charge_authorization       = MyMetrics.InitInt("xsq.v.charge.authorization", SM_STALE_MID, 0);
   mt_ext_charge_manager         = MyMetrics.InitInt("xsq.v.charge.ext.manager", SM_STALE_MID, 0);
 
   mt_obd_duration               = MyMetrics.InitInt("xsq.obd.charge.duration", SM_STALE_MID, 0, Minutes);
-  mt_obd_trip_km                = MyMetrics.InitFloat("xsq.obd.trip.km", SM_STALE_MID, 0, Kilometers);
-  mt_obd_trip_time              = MyMetrics.InitString("xsq.obd.trip.time", SM_STALE_MID, 0, Other);  
-  mt_obd_start_trip_km          = MyMetrics.InitFloat("xsq.obd.trip.km.start", SM_STALE_MID, 0, Kilometers);
-  mt_obd_start_trip_time        = MyMetrics.InitString("xsq.obd.trip.time.start", SM_STALE_MID, 0, Other);
   mt_obd_mt_day_prewarn         = MyMetrics.InitInt("xsq.obd.mt.day.prewarn", SM_STALE_MID, 45, Other);
   mt_obd_mt_day_usual           = MyMetrics.InitInt("xsq.obd.mt.day.usual", SM_STALE_MID, 0, Other);
   mt_obd_mt_km_usual            = MyMetrics.InitInt("xsq.obd.mt.km.usual", SM_STALE_MID, 0, Kilometers);
   mt_obd_mt_level               = MyMetrics.InitString("xsq.obd.mt.level", SM_STALE_MID, "unknown", Other);
-
-  mt_climate_on                 = MyMetrics.InitBool("xsq.climate.on", SM_STALE_MID, false);
-  mt_climate_weekly             = MyMetrics.InitBool("xsq.climate.weekly", SM_STALE_MID, false);
-  mt_climate_time               = MyMetrics.InitString("xsq.climate.time", SM_STALE_MID, "0515", Other);
-  mt_climate_h                  = MyMetrics.InitInt("xsq.climate.h", SM_STALE_MID, 5, Other);
-  mt_climate_m                  = MyMetrics.InitInt("xsq.climate.m", SM_STALE_MID, 15, Other);
-  mt_climate_ds                 = MyMetrics.InitInt("xsq.climate.ds", SM_STALE_MID, 1, Other);
-  mt_climate_de                 = MyMetrics.InitInt("xsq.climate.de", SM_STALE_MID, 6, Other);
-  mt_climate_1to3               = MyMetrics.InitInt("xsq.climate.1to3", SM_STALE_MID, 0, Other);
-  mt_climate_data               = MyMetrics.InitString("xsq.climate.data", SM_STALE_MID,"0,0,0,0,-1,-1,-1", Other);
 
   mt_pos_odometer_start         = MyMetrics.InitFloat("xsq.odometer.start", SM_STALE_MID, 0, Kilometers);
   mt_pos_odometer_start_total   = MyMetrics.InitFloat("xsq.odometer.start.total", SM_STALE_MID, 0, Kilometers);
@@ -167,9 +129,11 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   mt_tpms_temp                   = MyMetrics.InitVector<float>("xsq.tpms.temp", SM_STALE_MID, nullptr, Celcius);
   mt_tpms_pressure               = MyMetrics.InitVector<float>("xsq.tpms.pressure", SM_STALE_MID, nullptr, kPa);
-  mt_tpms_low_batt               = MyMetrics.InitVector<bool> ("xsq.tpms.lowbatt", SM_STALE_MID, nullptr, Other);
-  mt_tpms_missing_tx             = MyMetrics.InitVector<bool> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);  
-  mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 235, kPa);  // Dummy pressure for TPMS alert testing
+  mt_tpms_alert                  = MyMetrics.InitVector<short> ("xsq.tpms.alert", SM_STALE_MID, nullptr, Other);
+  mt_tpms_low_batt               = MyMetrics.InitVector<short> ("xsq.tpms.lowbatt", SM_STALE_MID, nullptr, Other);
+  mt_tpms_missing_tx             = MyMetrics.InitVector<short> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);  
+  mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 230, kPa);  // Dummy pressure for TPMS alert testing
+  // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
   mt_bcm_gen_mode                = MyMetrics.InitString("xsq.bcm.gen.mode", SM_STALE_MID, "UNKNOWN", Other);
 
@@ -219,13 +183,12 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
 
   // init commands:
-  cmd_xsq = MyCommandApp.RegisterCommand("xsq","SmartEQ 453 Gen.4");
+  cmd_xsq = MyCommandApp.RegisterCommand("xsq","smartEQ 453 Gen.4");
   cmd_xsq->RegisterCommand("start", "Show OBD trip start", xsq_trip_start);
   cmd_xsq->RegisterCommand("reset", "Show OBD trip total", xsq_trip_reset);
   cmd_xsq->RegisterCommand("counter", "Show vehicle trip counter", xsq_trip_counters);
   cmd_xsq->RegisterCommand("total", "Show vehicle trip total", xsq_trip_total);
   cmd_xsq->RegisterCommand("mtdata", "Show Maintenance data", xsq_maintenance);
-  cmd_xsq->RegisterCommand("climate", "Show Climate timer data", xsq_climate);
   cmd_xsq->RegisterCommand("tpmsset", "set TPMS dummy value", xsq_tpms_set);
   cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
@@ -249,7 +212,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     ResetTripCounters();
     }
 
-  setTPMSValueBoot();                                          // set TPMS dummy values to 0
+  setTPMSValueBoot();                                          // set TPMS values to 0
 
     if (m_enable_write)
       PollSetState(1);                                           // start polling to get the first data
@@ -292,6 +255,8 @@ OvmsVehicleSmartEQ::~OvmsVehicleSmartEQ() {
  * ConfigChanged: reload single/all configuration variables (cfgupdate)
  */
 void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
+  if (param && param->GetName() == "vehicle")
+    setTPMSValue();   // update TPMS metrics
   if (param && param->GetName() != "xsq")
     return;
 
@@ -334,6 +299,13 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
       auto it = xsqcfg.find(key);
       return (it != xsqcfg.end()) ? atof(it->second.c_str()) : def;
     };
+
+    /*  // not used currently
+    auto getString = [&xsqcfg](const char* key, const char* def) -> std::string {
+      auto it = xsqcfg.find(key);
+      return (it != xsqcfg.end()) ? it->second : def;
+    };
+    */
     
     // Read all config values from map
     m_enable_LED_state     = getBool("led", false);
@@ -344,10 +316,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_resettrip            = getBool("resettrip", true);
     m_resettotal           = getBool("resettotal", false);
     m_tripnotify           = getBool("reset.notify", false);
-    m_tpms_index[0]        = getInt("TPMS_FL", 0);
-    m_tpms_index[1]        = getInt("TPMS_FR", 1);
-    m_tpms_index[2]        = getInt("TPMS_RL", 2);
-    m_tpms_index[3]        = getInt("TPMS_RR", 3);
     m_front_pressure       = getFloat("tpms.front.pressure", 225.0f);
     m_rear_pressure        = getFloat("tpms.rear.pressure", 255.0f);
     m_pressure_warning     = getFloat("tpms.value.warn", 40.0f);
@@ -358,8 +326,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_12v_charge           = getBool("12v.charge", true);
     m_enable_calcADCfactor = getBool("calc.adcfactor", false);
     m_adc_samples          = getInt("adc.samples", 4);
-    m_climate_system       = getBool("climate.system", true);
-    m_climate_notify       = getBool("climate.notify", false);
     m_indicator            = getBool("indicator", false);
     m_extendedStats        = getBool("extended.stats", false);
     m_park_timeout_secs    = getInt("park.timeout", 600);
@@ -367,7 +333,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_cfg_preset_version   = getInt("cfg.preset.ver", 0);
     m_suffsoc              = getInt("suffsoc", 0);
     m_suffrange            = getInt("suffrange", 0);
-
     cell_interval_drv      = getInt("cell_interval_drv", 60);
     cell_interval_chg      = getInt("cell_interval_chg", 60);
     }
@@ -775,11 +740,9 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
 
     m_warning_unlocked = false;
     m_warning_dooropen = false;
-
-    #ifdef CONFIG_OVMS_COMP_CELLULAR
-      m_12v_ticker = 0;
-      m_climate_ticker = 0;
-    #endif
+    m_12v_ticker = 0;
+    m_climate_restart = false;
+    m_climate_restart_ticker = 0;
   }
   else if (!isOn && StdMetrics.ms_v_env_on->AsBool()) {
     // Log once that car is being turned off

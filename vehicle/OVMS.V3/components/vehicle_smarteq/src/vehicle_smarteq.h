@@ -33,8 +33,8 @@
 #ifndef __VEHICLE_SMARTEQ_H__
 #define __VEHICLE_SMARTEQ_H__
 
-#define VERSION "2.0.0"
-#define PRESET_VERSION 1
+#define VERSION "2.1.0"
+#define PRESET_VERSION 4 // Configuration preset version
 
 #include "ovms_log.h"
 
@@ -108,12 +108,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ResetChargingValues();
     void ResetTripCounters();
     void ResetTotalCounters();
-    void TimeCheckTask();
     void Check12vState();
-    void TimeBasedClimateData();
     void DisablePlugin(const char* plugin);
     bool ExecuteCommand(const std::string& command);
-    void setTPMSValue(int index, int indexcar);
+    void setTPMSValue();
     void setTPMSValueBoot();
     void NotifyClimate();
     void NotifyClimateTimer();
@@ -148,23 +146,20 @@ public:
     virtual vehicle_command_t CommandTripStart(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTripReset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandMaintenance(int verbosity, OvmsWriter* writer);
-    virtual vehicle_command_t CommandSetClimate(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTripCounters(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTripTotal(int verbosity, OvmsWriter* writer);
-    virtual vehicle_command_t CommandClimate(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t Command12Vcharge(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTPMSset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4all(int number, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandSOClimit(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
-
+    
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     void WebInit();
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
-    static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
     static void WebCfgTPMS(PageEntry_t& p, PageContext_t& c);
     static void WebCfgADC(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
@@ -178,7 +173,6 @@ public:
     static void xsq_trip_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_maintenance(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-    static void xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_counters(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_total(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -197,9 +191,11 @@ public:
     float m_tpms_temperature[4]; // °C
     bool m_tpms_lowbatt[4]; // 0=ok, 1=low
     bool m_tpms_missing_tx[4]; // 0=ok, 1=missing
-    int m_tpms_index[4];
     bool m_ADCfactor_recalc;       // request recalculation of ADC factor
     int m_ADCfactor_recalc_timer;  // countdown timer for ADC factor recalculation
+
+  public:
+    bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]
 
   protected:
     void Ticker1(uint32_t ticker) override;
@@ -207,17 +203,21 @@ public:
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
     virtual void CalculateEfficiency();
-    void vehicle_smart_car_on(bool isOn);    
+    void vehicle_smart_car_on(bool isOn);
+
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* data, uint16_t reply_len);
     void PollReply_BMS_BattState(const char* data, uint16_t reply_len);
+
     void PollReply_TDB(const char* data, uint16_t reply_len);
+
     void PollReply_BCM_VIN(const char* data, uint16_t reply_len);
     void PollReply_BCM_VehicleState(const char* data, uint16_t reply_len);
     void PollReply_BCM_DoorUnderhoodOpened(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len);
     void PollReply_BCM_GenMode(const char* data, uint16_t reply_len);
+
     void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
@@ -229,6 +229,7 @@ public:
     void PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len);
     void PollReply_EVC_14VBatteryVoltageReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_CabinBlower(const char* data, uint16_t reply_len);
+
     void PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph2_RMS_A(const char* data, uint16_t reply_len);
@@ -236,14 +237,7 @@ public:
     void PollReply_OBL_JB2AC_Ph12_RMS_V(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph23_RMS_V(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len);
-    void PollReply_obd_trip(const char* data, uint16_t reply_len);
-    void PollReply_obd_time(const char* data, uint16_t reply_len);
-    void PollReply_obd_start_trip(const char* data, uint16_t reply_len);
-    void PollReply_obd_start_time(const char* data, uint16_t reply_len);
-    void PollReply_obd_mt_day(const char* data, uint16_t reply_len);
-    void PollReply_obd_mt_km(const char* data, uint16_t reply_len);
-    void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len);    
     void PollReply_OBL_JB2AC_GroundResistance(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_DCCurrent(const char* data, uint16_t reply_len);
@@ -252,6 +246,14 @@ public:
     void PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);
+
+    void PollReply_obd_trip(const char* data, uint16_t reply_len);
+    void PollReply_obd_time(const char* data, uint16_t reply_len);
+    void PollReply_obd_start_trip(const char* data, uint16_t reply_len);
+    void PollReply_obd_start_time(const char* data, uint16_t reply_len);
+    void PollReply_obd_mt_day(const char* data, uint16_t reply_len);
+    void PollReply_obd_mt_km(const char* data, uint16_t reply_len);
+    void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
     
   protected:
     bool m_enable_write;                    // canwrite
@@ -276,8 +278,6 @@ public:
     bool m_tpms_alert_enable;               // TPMS Alert enabled
     bool m_12v_charge;                      //!< 12V charge on/off
     bool m_12v_charge_state;                //!< 12V charge state
-    bool m_climate_system;                  //!< climate system on/off
-    bool m_climate_notify;                  //!< climate notification on/off
     std::string m_hl_canbyte;               //!< canbyte variable for unv
     bool m_extendedStats;                   //!< extended stats for trip and maintenance data
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
@@ -293,8 +293,6 @@ public:
   protected:
     OvmsCommand *cmd_xsq;                               // command for xsq
     OvmsMetricBool          *mt_bus_awake;              // Can Bus active
-    OvmsMetricFloat         *mt_use_at_reset;           // kWh use at reset in Display
-    OvmsMetricFloat         *mt_use_at_start;           // kWh use at start in Display
     OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
     OvmsMetricFloat         *mt_adc_factor;             // calculated ADC factor for 12V measurement
     OvmsMetricVector<float> *mt_adc_factor_history;     // last 20 calculated ADC factors for 12V measurement
@@ -302,7 +300,6 @@ public:
     OvmsMetricString        *mt_reset_time;             // Time since last reset (hh:mm)
     OvmsMetricString        *mt_start_time;             // Time since start (hh:mm)
     OvmsMetricFloat         *mt_start_distance;         // Trip distance since start (km)
-    OvmsMetricFloat         *mt_start_consumption;      // Average consumption since start (kWh/100km)
 
     // 0x646 metrics
     OvmsMetricFloat         *mt_reset_consumption;      // Average trip consumption (kWh/100km) reset
@@ -315,17 +312,12 @@ public:
     OvmsMetricFloat         *mt_energy_used;            // Energy used since mission start (kWh)
     OvmsMetricFloat         *mt_energy_recd;            // Energy recovered since mission start (kWh)
     OvmsMetricFloat         *mt_aux_consumption;        // Auxiliary consumption since mission start (kWh)
-    OvmsMetricInt           *mt_eco_score;              // Eco score indicator (%)
-    OvmsMetricFloat         *mt_total_recovery;         // Total energy recovery (kWh)
-    OvmsMetricBool          *mt_charge_flap_warning;    // Charge flap open warning
     // 0x62d metrics
     OvmsMetricFloat         *mt_worst_consumption;      // Worst average consumption (kWh/100km)
     OvmsMetricFloat         *mt_best_consumption;       // Best average consumption (kWh/100km)
     OvmsMetricFloat         *mt_bcb_power_mains;        // BCB power from mains (W)
     // 0x634 metrics
-    OvmsMetricInt           *mt_tcu_refuse_sleep;       // TCU refuse to sleep status
     OvmsMetricInt           *mt_charging_timer_value;   // Charging timer value (min)
-    OvmsMetricBool          *mt_remote_preac;           // Remote pre-AC activation
     OvmsMetricInt           *mt_charging_timer_status;  // Charging timer status
     OvmsMetricInt           *mt_charge_prohibited;      // Charge prohibited status
     OvmsMetricInt           *mt_charge_authorization;   // Charge authorization status
@@ -384,37 +376,22 @@ public:
     OvmsMetricFloat         *mt_obl_main_current_leakage_ac;          //!< AC leakage current (A)
 
     OvmsMetricInt           *mt_obd_duration;           //!< obd duration
-    OvmsMetricFloat         *mt_obd_trip_km;            //!< obd trip data km
-    OvmsMetricFloat         *mt_obd_start_trip_km;      //!< obd trip data km start
-    OvmsMetricString        *mt_obd_trip_time;          //!< obd trip data HH:mm
-    OvmsMetricString        *mt_obd_start_trip_time;    //!< obd trip data HH:mm start
     OvmsMetricInt           *mt_obd_mt_day_prewarn;     //!< Maintaince pre warning days
     OvmsMetricInt           *mt_obd_mt_day_usual;       //!< Maintaince usual days
     OvmsMetricInt           *mt_obd_mt_km_usual;        //!< Maintaince usual km
     OvmsMetricString        *mt_obd_mt_level;           //!< Maintaince level
-
-    OvmsMetricBool          *mt_climate_on;             //!< climate at time on/off
-    OvmsMetricBool          *mt_climate_weekly;         //!< climate weekly auto on/off at day start/end
-    OvmsMetricString        *mt_climate_time;           //!< climate time
-    OvmsMetricInt           *mt_climate_h;              //!< climate time hour
-    OvmsMetricInt           *mt_climate_m;              //!< climate time minute
-    OvmsMetricInt           *mt_climate_ds;             //!< climate day start
-    OvmsMetricInt           *mt_climate_de;             //!< climate day end
-    OvmsMetricInt           *mt_climate_1to3;           //!< climate one to three (homelink 0-2) times in following time
-    OvmsMetricString        *mt_climate_data;           //!< climate data from app/website
  
     OvmsMetricVector<float> *mt_tpms_temp;              // 4 wheel temperatures (°C)
     OvmsMetricVector<float> *mt_tpms_pressure;          // 4 wheel pressures (kPa)
-    OvmsMetricVector<bool>  *mt_tpms_low_batt;          // 4 wheel low battery flags (0=ok, 1=low)
-    OvmsMetricVector<bool>  *mt_tpms_missing_tx;        // 4 wheel missing transmitter flags (0=ok, 1=missing)    
+    OvmsMetricVector<short> *mt_tpms_alert;             // 4 wheel alert flags (0=ok, 1=warning, 2=alert)
+    OvmsMetricVector<short>  *mt_tpms_low_batt;          // 4 wheel low battery flags (0=ok, 1=low)
+    OvmsMetricVector<short>  *mt_tpms_missing_tx;        // 4 wheel missing transmitter flags (0=ok, 1=missing)    
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
+
     OvmsMetricString        *mt_bcm_vehicle_state;      //!< vehicle state
     OvmsMetricString        *mt_bcm_gen_mode;           //!< Generator mode text
     
   protected:
-    bool m_climate_start;
-    bool m_climate_start_day;
-    bool m_climate_init;                      //!< climate init after boot
     bool m_indicator;                       //!< activate indicator e.g. 7 times or whatever
     bool m_ddt4all;                         //!< DDT4ALL mode
     bool m_warning_unlocked;                //!< unlocked warning
@@ -427,7 +404,6 @@ public:
     int m_ddt4all_ticker;                   //!< DDT4ALL active ticker 
     int m_ddt4all_exec;                     //!< DDT4ALL ticker for next execution
     int m_led_state;
-    int m_climate_ticker;
     int m_12v_ticker;
     int m_modem_ticker;
     int m_park_timeout_secs;                //!< parking timeout in seconds
