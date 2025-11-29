@@ -1,6 +1,17 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- TPMS framework: new command to display current sensor mapping configuration
+  New commands:
+    tpms mapping                    -- Show TPMS sensor mapping and current data with health status
+  Features:
+    - Displays wheel position names from vehicle layout
+    - Shows configured sensor-to-wheel assignments from vehicle.tpms.<position> config
+    - Lists current pressure, temperature, alert level and health for each wheel
+    - Validates mapping for duplicates and out-of-range indices
+    - Auto-aligns output based on longest wheel name
+    - Uses user-configured units for pressure and temperature display
+    - Handles undefined alert states (-1) as "N/A" without crashes
 - New vehicle: Maxus T90 EV (MT90) via OBD-II port
     Initial support added for:
       VIN, SOC, SOH & READY state
