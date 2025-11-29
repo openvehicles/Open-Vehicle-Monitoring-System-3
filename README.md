@@ -54,6 +54,7 @@ provides data logging to SD card and to a server.
   - [Kia Soul EV](https://docs.openvehicles.com/en/latest/components/vehicle_kiasoulev/docs/index.html)
   - [Maxus eDeliver 3](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html)
   - [Maxus Euniq 5 6-seats](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_euniq56/docs/index.html)
+  - [Maxus T90 EV](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_t90/docs/index.html)
   - [Mercedes-Benz B250E](https://docs.openvehicles.com/en/latest/components/vehicle_mercedesb250e/docs/index.html)
   - [MG EV](https://docs.openvehicles.com/en/latest/components/vehicle_mgev/docs/index.html)
   - [Mini Cooper SE](https://docs.openvehicles.com/en/latest/components/vehicle_minise/docs/index.html)
