@@ -50,74 +50,136 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
   float _threshold_warn = m_pressure_warning;
   float _threshold_alert = m_pressure_alert;
 
+  // Pressure validation limits
+  static const float PRESSURE_MIN = 10.0f;   // Below this = sensor not working
+  static const float PRESSURE_MAX = 500.0f;  // Above this = invalid reading
+  static const float TEMP_MIN = -40.0f;
+  static const float TEMP_MAX = 150.0f;
+
   for (int i=0; i < count; i++) 
     {
     int indexcar = m_tpms_index[i];
+    
+    // Bounds check for indexcar
+    if (indexcar < 0 || indexcar >= count)
+      {
+      ESP_LOGW(TAG, "Invalid TPMS index mapping: %d -> %d (max: %d)", i, indexcar, count-1);
+      tpms_pressure[i] = 0.0f;
+      tpms_temp[i] = 0.0f;
+      tpms_alert[i] = 0;
+      continue;
+      }
 
     float _pressure = m_tpms_pressure[indexcar];
     float _temp = m_tpms_temperature[indexcar];
-    short _lowbatt = m_tpms_lowbatt[indexcar];
-    short _missing_tx = m_tpms_missing_tx[indexcar];
+    bool _lowbatt = m_tpms_lowbatt[indexcar];
+    bool _missing_tx = m_tpms_missing_tx[indexcar];
     
     short _alert = 0;
-    bool _flag = true;
+    bool _flag = false;
 
-    // Validate pressure value
-    if (_pressure < 20.0f)
-      tpms_pressure[i] = _pressure;
-    if (m_tpms_temp_enable) 
-      tpms_temp[i] = _temp;
-    if (_pressure < 10.0f || !m_tpms_alert_enable)
+    // Validate pressure value and check if sensor is active
+    bool pressure_valid = (_pressure >= PRESSURE_MIN && _pressure < PRESSURE_MAX);
+    bool alerts_enabled = m_tpms_alert_enable;
+    
+    if (pressure_valid)
       {
-      _lowbatt = 0;
-      _missing_tx = 0;
-      tpms_alert[i] = 0;
-      _flag = false;
+      tpms_pressure[i] = _pressure;
+      _flag = true;
       }
     else
       {
+      tpms_pressure[i] = 0.0f;
+      }
+    
+    // Validate and set temperature
+    if (m_tpms_temp_enable && _temp >= TEMP_MIN && _temp < TEMP_MAX) 
+      {
+      tpms_temp[i] = _temp;
+      }
+    else
+      {
+      tpms_temp[i] = 0.0f;
+      }
+    
+    // Handle alert conditions only if sensor is working and alerts are enabled
+    if (!pressure_valid || !alerts_enabled)
+      {
+      // Sensor not working or alerts disabled - clear all alerts
+      _lowbatt = false;
+      _missing_tx = false;
+      tpms_alert[i] = 0;
+      _flag = false;
+      
+      // Clear stored alert states
+      mt_tpms_low_batt->SetElemValue(indexcar, 0);
+      mt_tpms_missing_tx->SetElemValue(indexcar, 0);
+      }
+    else
+      {
+      // Sensor working and alerts enabled - update alert states
       mt_tpms_low_batt->SetElemValue(indexcar, _lowbatt);
       mt_tpms_missing_tx->SetElemValue(indexcar, _missing_tx);
       }
-    if (m_tpms_alert_enable && _flag)
+    
+    // Calculate pressure deviation alerts
+    if (alerts_enabled && _flag)
       {
       // Get reference pressure based on front/rear position
       float reference_pressure = (indexcar < (count / 2)) ? _threshold_front : _threshold_rear;
+      
       // Calculate deviation from reference pressure      
       float deviation = _pressure - reference_pressure;
       float abs_deviation = std::abs(deviation);
-      if (_lowbatt > 0) 
+      
+      // Priority: low battery > missing transmission > pressure deviation
+      if (_lowbatt) 
         {
         _alert = 1;
-        MyNotify.NotifyStringf("alert", "tpms.lowbatt", "TPMS low battery on wheel %s", tpms_layout[i].c_str());
+        MyNotify.NotifyStringf("alert", "tpms.lowbatt", 
+                               "TPMS low battery on wheel %s", 
+                               tpms_layout[i].c_str());
         }
-      else if (_missing_tx > 0) 
+      else if (_missing_tx) 
         {
         _alert = 2;
-        MyNotify.NotifyStringf("alert", "tpms.missing_tx", "TPMS missing transmission on wheel %s", tpms_layout[i].c_str());
+        MyNotify.NotifyStringf("alert", "tpms.missing_tx", 
+                               "TPMS missing transmission on wheel %s", 
+                               tpms_layout[i].c_str());
         }
       else if (abs_deviation > _threshold_alert) 
         {
         _alert = 2;
-        MyNotify.NotifyStringf("alert", "tpms.alert", "TPMS pressure alert on wheel %s", tpms_layout[i].c_str());
+        MyNotify.NotifyStringf("alert", "tpms.alert", 
+                               "TPMS pressure alert on wheel %s: %.1f kPa (ref: %.1f kPa)", 
+                               tpms_layout[i].c_str(), _pressure, reference_pressure);
         }
-      else if 
-        (abs_deviation > _threshold_warn) 
+      else if (abs_deviation > _threshold_warn) 
         {
         _alert = 1;
-        MyNotify.NotifyStringf("alert", "tpms.warning", "TPMS pressure warning on wheel %s", tpms_layout[i].c_str());
-        }        
+        MyNotify.NotifyStringf("alert", "tpms.warning", 
+                               "TPMS pressure warning on wheel %s: %.1f kPa (ref: %.1f kPa)", 
+                               tpms_layout[i].c_str(), _pressure, reference_pressure);
+        }
+      
       tpms_alert[i] = _alert;
       }
+    else
+      {
+      tpms_alert[i] = 0;
+      }
     } // end for loop
+    
   // Set the metrics  
   StdMetrics.ms_v_tpms_pressure->SetValue(tpms_pressure);
   mt_tpms_pressure->SetValue(tpms_pressure);
+  
   if (m_tpms_temp_enable)
     {
     StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp);
     mt_tpms_temp->SetValue(tpms_temp);    
     }
+    
   if (m_tpms_alert_enable)
     {
     StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
@@ -128,11 +190,18 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
 // Set TPMS value at boot, cached values are not available
 // and we need to set dummy values to avoid alert messages
 void OvmsVehicleSmartEQ::setTPMSValueBoot() {
-  for (int i = 0; i < 4; i++) {
-    StdMetrics.ms_v_tpms_pressure->SetElemValue(i, 0.0f);
-    StdMetrics.ms_v_tpms_temp->SetElemValue(i, 0.0f);
-    StdMetrics.ms_v_tpms_alert->SetElemValue(i, 0);
-  }
+  // Get actual TPMS layout size (same as in setTPMSValue)
+  std::vector<std::string> tpms_layout = GetTpmsLayout();
+  int count = (int)tpms_layout.size();
+  
+  // Initialize with actual count, not hardcoded 4
+  std::vector<float> tpms_pressure(count, 0.0f);
+  std::vector<float> tpms_temp(count, 0.0f);
+  std::vector<short> tpms_alert(count, -1); // -1 indicates unknown at boot
+  
+  StdMetrics.ms_v_tpms_pressure->SetValue(tpms_pressure);
+  StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp);
+  StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
 }
 
 void OvmsVehicleSmartEQ::DisablePlugin(const char* plugin) {

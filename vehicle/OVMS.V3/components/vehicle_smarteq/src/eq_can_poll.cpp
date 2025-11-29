@@ -144,16 +144,16 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
       break;  // FIX: prevent fallthrough into 0x7BB
     case 0x7BB:
       switch (job.pid) {
-        case 0x07: // rqBattState
+        case 0x07: // Battery State
           PollReply_BMS_BattState(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x41: // rqBattVoltages_P1
+        case 0x41: // Battery Voltages Part 1 (Cells 1-48)
           PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 0);
           break;
-        case 0x42: // rqBattVoltages_P2
+        case 0x42: // Battery Voltages Part 2 (Cells 49-96)
           PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 48);
           break;
-        case 0x04: // rqBattTemperatures
+        case 0x04: // Battery Temperatures (27 sensors)
           PollReply_BMS_BattTemps(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
@@ -508,27 +508,28 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t
   //  20 bits 0..3 temp incoh (w1..w4), bits 4..7 internal incoh (w1..w4)
   //  21 bits 0..3 low battery (w1..w4)
 
-  uint8_t lowbatt_bits = (uint8_t)CAN_BYTE(21);
+  uint8_t raw = (uint8_t)CAN_BYTE(21);
 
-  for (int i=0;i<4;i++) {
+  for (int i=0;i<4;i++) 
+    {
     // Pressure: big-endian 16 bit *0.75 kPa
     uint16_t praw = CAN_UINT(8 + (i*2));
     m_tpms_pressure[i] = (float)praw != 0xffff ? (float)praw * 0.75f : 0.0f;
     // Temperature: raw byte + offset -30.0
     uint16_t traw = (uint16_t)(uint8_t)CAN_BYTE(16 + i);
     m_tpms_temperature[i] = traw != 0xffff ? (float)traw - 30.0f : 0.0f;
-    m_tpms_lowbatt[i]     = (lowbatt_bits >> i) & 0x01;
-  }
+    m_tpms_lowbatt[i] = static_cast<bool>((raw >> i) & 0x01);
+    }
 }
 
 void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len) {
   // Byte 26 (1-based) → index 28 (0-based): bits 0..3 = missing transmitter flags for wheels 1..4
   REQUIRE_LEN(25);
   uint8_t raw = CAN_BYTE(25);
-  for (int i = 0; i < 4; i++) {
-    bool missing = ((raw >> i) & 0x01) != 0;
-    m_tpms_missing_tx[i] = missing;
-  }
+  for (int i = 0; i < 4; i++) 
+    {
+    m_tpms_missing_tx[i] = static_cast<bool>((raw >> i) & 0x01);
+    }
 }
 
 void OvmsVehicleSmartEQ::PollReply_BCM_VehicleState(const char* data, uint16_t reply_len) {

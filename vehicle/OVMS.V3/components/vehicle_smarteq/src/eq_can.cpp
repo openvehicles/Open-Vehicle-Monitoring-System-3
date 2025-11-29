@@ -157,7 +157,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x634:
       REQ_DLC(2);
       {
-      bool tcu_refuse_sleep = ((CAN_BYTE(0) & 0x03) > 0);
       uint8_t raw_timer = CAN_BYTE(1) & 0x7F;
       uint16_t charging_timer_value = (uint16_t)raw_timer * 15;
       uint8_t charging_timer_status = CAN_BYTE(2) & 0x03;
@@ -165,14 +164,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       uint8_t charge_authorization = (CAN_BYTE(2) >> 4) & 0x03;
       uint8_t ext_charge_manager = (CAN_BYTE(2) >> 6) & 0x03;
       
-      mt_tcu_refuse_sleep->SetValue(tcu_refuse_sleep);
-      if (tcu_refuse_sleep) {
-        time_t now = time(NULL);
-        struct tm *tm_info = localtime(&now);
-        char timestamp[20];
-        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
-        mt_tcu_refuse_timestamp->SetValue(timestamp);
-      }
       mt_charging_timer_value->SetValue(charging_timer_value);
       mt_charging_timer_status->SetValue(charging_timer_status);
       mt_charge_prohibited->SetValue(charge_prohibited);

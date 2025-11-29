@@ -77,21 +77,13 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_cfg_cell_interval_drv = 0;
   m_cfg_cell_interval_chg = 0;
 
-  for (int i = 0; i < 4; i++) 
-    {
-    m_tpms_pressure[i] = 0.0f;
-    m_tpms_temperature[i] = 0.0f;
-    m_tpms_lowbatt[i] = false;
-    m_tpms_missing_tx[i] = false;
-    }
-
   // BMS configuration:
-  BmsSetCellArrangementVoltage(96, 3);
-  BmsSetCellArrangementTemperature(27, 1);
-  BmsSetCellLimitsVoltage(2.0, 5.0);
-  BmsSetCellLimitsTemperature(-39, 200);
-  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
-  BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+  BmsSetCellArrangementVoltage(96, 1);               // 96 cells, 1 series string
+  BmsSetCellArrangementTemperature(27, 1);           // 27 temp sensors, 1 series string
+  BmsSetCellLimitsVoltage(2.0, 5.0);                 // Min 2.0V, Max 5.0V
+  BmsSetCellLimitsTemperature(-39, 200);             // Min -39°C, Max 200°C
+  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);  // Warn: 20mV, Alert: 30mV
+  BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);  // Warn: 2°C, Alert: 3°C
 
   mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, true);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_NONE, "", Other);
@@ -113,14 +105,11 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_energy_used                = MyMetrics.InitFloat("xsq.v.energy.used", SM_STALE_MID, 0, kWh);
   mt_energy_recd                = MyMetrics.InitFloat("xsq.v.energy.recd", SM_STALE_MID, 0, kWh);
   mt_aux_consumption            = MyMetrics.InitFloat("xsq.v.aux.consumption", SM_STALE_MID, 0, kWh);
-  mt_total_recovery             = MyMetrics.InitFloat("xsq.v.total.recovery", SM_STALE_MID, 0, kWh);
   // 0x62d
   mt_worst_consumption          = MyMetrics.InitFloat("xsq.v.bat.consumption.worst", SM_STALE_MID, 0, kWhP100K);
   mt_best_consumption           = MyMetrics.InitFloat("xsq.v.bat.consumption.best", SM_STALE_MID, 0, kWhP100K);
   mt_bcb_power_mains            = MyMetrics.InitFloat("xsq.v.charge.bcb.power", SM_STALE_MID, 0, Watts);
   // 0x634
-  mt_tcu_refuse_sleep           = MyMetrics.InitBool("xsq.v.tcu.refuse.sleep", SM_STALE_MID, 0);
-  mt_tcu_refuse_timestamp       = MyMetrics.InitString("xsq.v.tcu.refuse.timestamp", SM_STALE_MID, "unknown", Other);
   mt_charging_timer_value       = MyMetrics.InitInt("xsq.v.charge.timer.value", SM_STALE_MID, 0, Minutes);
   mt_charging_timer_status      = MyMetrics.InitInt("xsq.v.charge.timer.status", SM_STALE_MID, 0);
   mt_charge_prohibited          = MyMetrics.InitInt("xsq.v.charge.prohibited", SM_STALE_MID, 0);
@@ -143,7 +132,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_tpms_alert                  = MyMetrics.InitVector<short> ("xsq.tpms.alert", SM_STALE_MID, nullptr, Other);
   mt_tpms_low_batt               = MyMetrics.InitVector<short> ("xsq.tpms.lowbatt", SM_STALE_MID, nullptr, Other);
   mt_tpms_missing_tx             = MyMetrics.InitVector<short> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);  
-  mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 235, kPa);  // Dummy pressure for TPMS alert testing
+  mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 230, kPa);  // Dummy pressure for TPMS alert testing
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
   mt_bcm_gen_mode                = MyMetrics.InitString("xsq.bcm.gen.mode", SM_STALE_MID, "UNKNOWN", Other);
@@ -223,7 +212,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     ResetTripCounters();
     }
 
-  setTPMSValueBoot();                                          // set TPMS dummy values to 0
+  setTPMSValueBoot();                                          // set TPMS values to 0
 
     if (m_enable_write)
       PollSetState(1);                                           // start polling to get the first data
@@ -266,6 +255,8 @@ OvmsVehicleSmartEQ::~OvmsVehicleSmartEQ() {
  * ConfigChanged: reload single/all configuration variables (cfgupdate)
  */
 void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
+  if (param && param->GetName() == "vehicle")
+    setTPMSValue();   // update TPMS metrics
   if (param && param->GetName() != "xsq")
     return;
 
