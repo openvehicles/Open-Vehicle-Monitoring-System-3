@@ -38,10 +38,10 @@
 static const OvmsPoller::poll_pid_t obdii_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,60,5,5 }, 0, ISOTP_STD }, // rqBattState
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,300,300 }, 0, ISOTP_STD }, // rqBattTemperatures
-//  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P1
-//  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,300,60 }, 0, ISOTP_STD }, // rqBattVoltages_P2
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,60,5,5 }, 0, ISOTP_STD },     // Battery State
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,300,60 }, 0, ISOTP_STD }, // Battery Temperatures (27 sensors)
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,300,60 }, 0, ISOTP_STD }, // Battery Voltages Part 1 (Cells 1-48)
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,300,60 }, 0, ISOTP_STD }, // Battery Voltages Part 2 (Cells 49-96)
 
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,300,300,300 }, 0, ISOTP_STD }, // extern temp byte 2+3
   //{ 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD Trip Distance km
@@ -53,8 +53,8 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, {  0,3600,0,0 }, 0, ISOTP_STD }, // maintenance level
 
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,3600,0,0 }, 0, ISOTP_STD }, // req.VIN
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, {  0,60,60,0 }, 0, ISOTP_STD }, // TPMS input capture
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, {  0,60,60,0 }, 0, ISOTP_STD }, // TPMS counters/status (missing transmitters)
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, {  0,0,60,0 }, 0, ISOTP_STD }, // TPMS input capture
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, {  0,0,60,0 }, 0, ISOTP_STD }, // TPMS counters/status (missing transmitters)
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8003, {  0,5,5,5 }, 0, ISOTP_STD }, // rq VehicleState
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x605e, {  0,5,5,5 }, 0, ISOTP_STD }, // rq UNDERHOOD_OPENED  
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8079, {  0,10,10,10 }, 0, ISOTP_STD }, // Generator mode
