@@ -2345,7 +2345,11 @@ void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
     bool changed = false;
 
     if (m_tpms_index.size() < count)// initialize on first run
-      m_tpms_index.resize(count, 0);
+      {
+      m_tpms_index.resize(count);
+      for (int i = 0; i < count; i++)
+        m_tpms_index[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(wheels[i]), i);
+      }
     
     for (int i = 0; i < count; i++)
       {
