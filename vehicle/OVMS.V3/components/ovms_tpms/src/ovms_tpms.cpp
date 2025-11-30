@@ -372,12 +372,16 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
  *   <pressure_count>,<pressures...>,<pressure_validity>,
  *   <temp_count>,<temps...>,<temp_validity>,
  *   <health_count>,<healths...>,<health_validity>,
- *   <alert_count>,<alerts...>,<alert_validity>
+ *   <alert_count>,<alerts...>,<alert_validity>,
+ *   <mapping_count>,<mappings...>,<mapping_validity>
  * 
  * Validity indicators: -1=undefined, 0=stale, 1=valid
+ * Empty sections: 0,-1 (zero count, undefined)
  * 
- * Example (4 wheels):
- *   4,FL,FR,RL,RR,4,230.5,245.0,238.2,241.8,1,4,21.0,22.5,20.8,23.1,1,4,100.0,100.0,100.0,100.0,1,4,0,0,0,0,1
+ * Examples:
+ *   Full data:    4,FL,FR,RL,RR,4,230.5,245.0,238.2,241.8,1,4,21.0,22.5,20.8,23.1,1,4,100.0,100.0,100.0,100.0,1,4,0,0,0,0,1,4,0,1,2,3,1
+ *   smartEQ:      4,FL,FR,RL,RR,4,230.0,240.0,250.0,260.0,1,4,21.0,22.0,23.0,24.0,1,0,-1,4,0,0,0,0,1
+ *   e-Up no map:  4,FL,FR,RL,RR,0,-1,0,-1,4,97.6,99.6,89.0,97.6,0,4,0,0,0,0,0,0,-1
  */
 void tpms_map_get(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -390,14 +394,14 @@ void tpms_map_get(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   OvmsVehicle* vehicle = MyVehicleFactory.m_currentvehicle;
   std::vector<std::string> tpms_layout = vehicle->GetTpmsLayout();
   
-  bool sensor_mapping = vehicle->UsesTpmsSensorMapping();
-  if (!sensor_mapping || tpms_layout.empty()) 
+  if (tpms_layout.empty()) 
     {
     writer->puts("0");  // 0 wheels = no layout
     return;
     }
   
-  int count = (int)tpms_layout.size();
+  int wheel_count = (int)tpms_layout.size();
+  bool uses_mapping = vehicle->UsesTpmsSensorMapping();
   
   // Helper lambda for validity indicator: -1=undefined, 0=stale, 1=valid
   auto get_validity = [](OvmsMetric* m) -> int {
@@ -407,60 +411,109 @@ void tpms_map_get(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     };
   
   // Wheel names section
-  writer->printf("%d", count);
-  for (int i = 0; i < count; i++)
+  writer->printf("%d", wheel_count);
+  for (int i = 0; i < wheel_count; i++)
     {
     writer->printf(",%s", tpms_layout[i].c_str());
     }
   
   // Pressure section
-  auto pressure = StandardMetrics.ms_v_tpms_pressure->AsVector();
-  int p_count = (int)pressure.size();
-  writer->printf(",%d", p_count);
-  for (int i = 0; i < p_count; i++)
+  int p_validity = get_validity(StandardMetrics.ms_v_tpms_pressure);
+  if (p_validity == -1)
     {
-    if (!std::isnan(pressure[i]))
-      writer->printf(",%.1f", pressure[i]);
-    else
-      writer->printf(",");
+    writer->printf(",0,-1");
     }
-  writer->printf(",%d", get_validity(StandardMetrics.ms_v_tpms_pressure));
+  else
+    {
+    auto pressure = StandardMetrics.ms_v_tpms_pressure->AsVector();
+    int p_count = (int)pressure.size();
+    writer->printf(",%d", p_count);
+    for (int i = 0; i < p_count; i++)
+      {
+      if (!std::isnan(pressure[i]))
+        writer->printf(",%.1f", pressure[i]);
+      else
+        writer->printf(",");
+      }
+    writer->printf(",%d", p_validity);
+    }
   
   // Temperature section
-  auto temp = StandardMetrics.ms_v_tpms_temp->AsVector();
-  int t_count = (int)temp.size();
-  writer->printf(",%d", t_count);
-  for (int i = 0; i < t_count; i++)
+  int t_validity = get_validity(StandardMetrics.ms_v_tpms_temp);
+  if (t_validity == -1)
     {
-    if (!std::isnan(temp[i]))
-      writer->printf(",%.1f", temp[i]);
-    else
-      writer->printf(",");
+    writer->printf(",0,-1");
     }
-  writer->printf(",%d", get_validity(StandardMetrics.ms_v_tpms_temp));
+  else
+    {
+    auto temp = StandardMetrics.ms_v_tpms_temp->AsVector();
+    int t_count = (int)temp.size();
+    writer->printf(",%d", t_count);
+    for (int i = 0; i < t_count; i++)
+      {
+      if (!std::isnan(temp[i]))
+        writer->printf(",%.1f", temp[i]);
+      else
+        writer->printf(",");
+      }
+    writer->printf(",%d", t_validity);
+    }
   
   // Health section
-  auto health = StandardMetrics.ms_v_tpms_health->AsVector();
-  int h_count = (int)health.size();
-  writer->printf(",%d", h_count);
-  for (int i = 0; i < h_count; i++)
+  int h_validity = get_validity(StandardMetrics.ms_v_tpms_health);
+  if (h_validity == -1)
     {
-    if (!std::isnan(health[i]))
-      writer->printf(",%.1f", health[i]);
-    else
-      writer->printf(",");
+    writer->printf(",0,-1");
     }
-  writer->printf(",%d", get_validity(StandardMetrics.ms_v_tpms_health));
+  else
+    {
+    auto health = StandardMetrics.ms_v_tpms_health->AsVector();
+    int h_count = (int)health.size();
+    writer->printf(",%d", h_count);
+    for (int i = 0; i < h_count; i++)
+      {
+      if (!std::isnan(health[i]))
+        writer->printf(",%.1f", health[i]);
+      else
+        writer->printf(",");
+      }
+    writer->printf(",%d", h_validity);
+    }
   
   // Alert section
-  auto alert = StandardMetrics.ms_v_tpms_alert->AsVector();
-  int a_count = (int)alert.size();
-  writer->printf(",%d", a_count);
-  for (int i = 0; i < a_count; i++)
+  int a_validity = get_validity(StandardMetrics.ms_v_tpms_alert);
+  if (a_validity == -1)
     {
-    writer->printf(",%d", alert[i]);
+    writer->printf(",0,-1");
     }
-  writer->printf(",%d", get_validity(StandardMetrics.ms_v_tpms_alert));
+  else
+    {
+    auto alert = StandardMetrics.ms_v_tpms_alert->AsVector();
+    int a_count = (int)alert.size();
+    writer->printf(",%d", a_count);
+    for (int i = 0; i < a_count; i++)
+      {
+      writer->printf(",%d", alert[i]);
+      }
+    writer->printf(",%d", a_validity);
+    }
+  
+  // Mapping section
+  if (!uses_mapping)
+    {
+    writer->printf(",0,-1");
+    }
+  else
+    {
+    writer->printf(",%d", wheel_count);
+    for (int i = 0; i < wheel_count; i++)
+      {
+      int map_idx = MyConfig.GetParamValueInt("vehicle", 
+                      std::string("tpms.") + str_tolower(tpms_layout[i]), i);
+      writer->printf(",%d", map_idx);
+      }
+    writer->printf(",1");  // mapping is always valid if defined
+    }
   
   writer->puts("");
   }
