@@ -30,3 +30,4 @@ User Guide
    egpio
    tpms
    kline
+   homeassistant
