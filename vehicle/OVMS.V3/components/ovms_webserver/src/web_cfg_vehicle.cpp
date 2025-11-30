@@ -58,6 +58,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   std::vector<std::string> wheels;
   std::vector<std::string> wheelnames;
   std::vector<int> tpms_map;
+  bool tpms_ios = false;
   if (vehicle) {
     wheels = vehicle->GetTpmsLayout();
     wheelnames = vehicle->GetTpmsLayoutNames();
@@ -86,6 +87,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     bat12v_wakeup = c.getvar("bat12v_wakeup");
     bat12v_wakeup_interval = c.getvar("bat12v_wakeup_interval");
     pin = c.getvar("pin");
+    tpms_ios = (c.getvar("tpms_ios") == "yes");
 
     if (vehicleid.length() == 0)
       error += "<li data-input=\"vehicleid\">Vehicle ID must not be empty</li>";
@@ -117,6 +119,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
         for (int i = 0; i < wheels.size(); i++) {
           MyConfig.SetParamValue("vehicle", std::string("tpms.")+str_tolower(wheels[i]), c.getvar(std::string("tpms_")+wheels[i]));
         }
+        // Save TPMS iOS setting
+        MyConfig.SetParamValueBool("vehicle", "tpms.ios", tpms_ios);
       }
       #endif
       
@@ -181,6 +185,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       for (int i = 0; i < wheels.size(); i++) {
         tpms_map[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(wheels[i]), i);
       }
+      tpms_ios = MyConfig.GetParamValueBool("vehicle", "tpms.ios", false);
     }
     
     for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter)
@@ -356,6 +361,12 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       c.input_select_end();
     }
 
+    c.fieldset_end();
+    
+    c.fieldset_start("iOS Integration");
+    c.input_checkbox("Enable iOS TPMS fix", "tpms_ios", tpms_ios,
+      "<p>Enable this to support iOS Open Vehicle App TPMS integration. When enabled, TPMS data will be showed.</p>"
+      "<p>This fix keeps the tire temperature values ​​above 1 so that the TPMS values ​​are displayed in iOS.</p>");
     c.fieldset_end();
 
     c.print(
