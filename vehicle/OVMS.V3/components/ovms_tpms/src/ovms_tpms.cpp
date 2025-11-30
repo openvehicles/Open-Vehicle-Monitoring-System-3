@@ -390,7 +390,8 @@ void tpms_map_get(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   OvmsVehicle* vehicle = MyVehicleFactory.m_currentvehicle;
   std::vector<std::string> tpms_layout = vehicle->GetTpmsLayout();
   
-  if (tpms_layout.empty()) 
+  bool sensor_mapping = vehicle->UsesTpmsSensorMapping();
+  if (!sensor_mapping || tpms_layout.empty()) 
     {
     writer->puts("0");  // 0 wheels = no layout
     return;
