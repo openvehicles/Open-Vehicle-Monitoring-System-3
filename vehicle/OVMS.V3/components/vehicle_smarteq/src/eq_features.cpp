@@ -54,7 +54,7 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
   static const float PRESSURE_MIN = 10.0f;   // Below this = sensor not working
   static const float PRESSURE_MAX = 500.0f;  // Above this = invalid reading
   static const float TEMP_MIN = -40.0f;
-  static const float TEMP_MAX = 150.0f;
+  static const float TEMP_MAX = 90.0f;
 
   for (int i=0; i < count; i++) 
     {
