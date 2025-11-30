@@ -2337,11 +2337,75 @@ void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
     m_brakelight_start = 0;
 
     // TPMS sensor mapping:
+    // Read new TPMS mapping from config
+    bool sensor_mapping = UsesTpmsSensorMapping();
     std::vector<std::string> wheels = GetTpmsLayout();
-    m_tpms_index.resize(wheels.size());
-    for (int i = 0; i < wheels.size(); i++)
+    int count = wheels.size();
+    std::vector<int> new_map(count);
+    bool changed = false;
+
+    if (m_tpms_index.size() < count)// initialize on first run
+      m_tpms_index.resize(count, 0);
+    
+    for (int i = 0; i < count; i++)
       {
-      m_tpms_index[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(wheels[i]), i);
+      new_map[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(wheels[i]), i);
+      if (new_map[i] != m_tpms_index[i])
+        changed = true;
+      }
+    
+    // If mapping changed, rearrange the TPMS data
+    if (changed && sensor_mapping)
+      {
+      ESP_LOGI(TAG, "TPMS mapping changed, rearranging metrics");
+      
+      // Get current values using AsVector() - no parameters!
+      std::vector<float> old_pressure = StdMetrics.ms_v_tpms_pressure->AsVector();
+      std::vector<float> old_temp = StdMetrics.ms_v_tpms_temp->AsVector();
+      std::vector<short> old_alert = StdMetrics.ms_v_tpms_alert->AsVector();
+      std::vector<float> old_health = StdMetrics.ms_v_tpms_health->AsVector();
+      
+      // Create new arrays with remapped values
+      std::vector<float> new_pressure(count, 0.0f);
+      std::vector<float> new_temp(count, 0.0f);
+      std::vector<short> new_alert(count, 0);
+      std::vector<float> new_health(count, 0.0f);
+      
+      // Debug logging
+      ESP_LOGD(TAG, "TPMS remap: old_pressure.size=%d, count=%d", (int)old_pressure.size(), count);
+      for (int i = 0; i < count; i++)
+        ESP_LOGD(TAG, "  Wheel[%d]: old_sensor_idx=%d -> new_sensor_idx=%d", i, m_tpms_index[i], new_map[i]);
+      
+      // Remap: for each wheel position i, copy data from physical sensor new_map[i]
+      for (int i = 0; i < count; i++)
+        {
+        int sensor_idx = new_map[i];  // Which physical sensor is assigned to this wheel
+        
+        // Bounds check for ALL vectors to avoid crashes
+        bool pressure_valid = (sensor_idx >= 0 && sensor_idx < (int)old_pressure.size());
+        bool temp_valid = (sensor_idx >= 0 && sensor_idx < (int)old_temp.size());
+        bool alert_valid = (sensor_idx >= 0 && sensor_idx < (int)old_alert.size());
+        bool health_valid = (sensor_idx >= 0 && sensor_idx < (int)old_health.size());
+        
+        new_pressure[i] = pressure_valid ? old_pressure[sensor_idx] : 0.0f;
+        new_temp[i] = temp_valid ? old_temp[sensor_idx] : 0.0f;
+        new_alert[i] = alert_valid ? old_alert[sensor_idx] : 0;
+        new_health[i] = health_valid ? old_health[sensor_idx] : 0.0f;
+        }
+      
+      // Write remapped values back to metrics
+      if (StdMetrics.ms_v_tpms_pressure->IsDefined())
+        StdMetrics.ms_v_tpms_pressure->SetValue(new_pressure);
+      if (StdMetrics.ms_v_tpms_temp->IsDefined())
+        StdMetrics.ms_v_tpms_temp->SetValue(new_temp);
+      if (StdMetrics.ms_v_tpms_alert->IsDefined())
+        StdMetrics.ms_v_tpms_alert->SetValue(new_alert);
+      if (StdMetrics.ms_v_tpms_health->IsDefined())
+        StdMetrics.ms_v_tpms_health->SetValue(new_health);
+      
+      // Update m_tpms_index with new mapping
+      for (int i = 0; i < count; i++)
+        m_tpms_index[i] = new_map[i];
       }
     }
 
