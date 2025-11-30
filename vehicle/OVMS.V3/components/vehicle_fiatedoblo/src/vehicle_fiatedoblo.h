@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          29th of November 2025
+;    Date:          30th of November 2025
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -37,69 +37,70 @@
 using namespace std;
 
 class OvmsVehicleFiatEDoblo : public OvmsVehicle
+{
+public:
+  OvmsVehicleFiatEDoblo();
+  ~OvmsVehicleFiatEDoblo();
+public:
+  void IncomingFrameCan1(CAN_frame_t* p_frame) override;
+  void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
+  void Ticker60(uint32_t ticker) override;
+    
+protected:
+  void IncomingBatteryPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
+  void IncomingVCUPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
+  void IncomingVINPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
+
+  // Inline functions to handle the different Poll states.
+  inline int PollGetState()
   {
-  public:
-    OvmsVehicleFiatEDoblo();
-    ~OvmsVehicleFiatEDoblo();
-  public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
-    void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
-    void Ticker1(uint32_t ticker) override;
-    void Ticker60(uint32_t ticker) override;
-    
-  protected:
-    void IncomingBatteryPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
-    void IncomingVCUPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
-    void IncomingVINPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
-    void SendTesterPresentMessage( uint32_t id );
+    return m_poll_state;
+  }
+  inline void PollState_Off()
+  {
+    PollSetState(0);
+  }
+  inline bool IsPollState_Off()
+  {
+    return m_poll_state == 0;
+  }
 
-    // Inline functions to handle the different Poll states.
-    inline int PollGetState()
-    {
-      return m_poll_state;
-    }
-    inline void PollState_Off()
-    {
-      PollSetState(0);
-    }
-    inline bool IsPollState_Off()
-    {
-      return m_poll_state == 0;
-    }
-
-    inline void PollState_Running()
-    {
-      PollSetState(1);
-    }
-    inline bool IsPollState_Running()
-    {
-      return m_poll_state == 1;
-    }
+  inline void PollState_Running()
+  {
+    PollSetState(1);
+  }
+  inline bool IsPollState_Running()
+  {
+    return m_poll_state == 1;
+  }
     
-    inline void PollState_Charging()
-    {
-      PollSetState(2);
-    }
-    inline bool IsPollState_Charging()
-    {
-      return m_poll_state == 2;
-    }
+  inline void PollState_Charging()
+  {
+    PollSetState(2);
+  }
+  inline bool IsPollState_Charging()
+  {
+    return m_poll_state == 2;
+  }
 
-    inline void PollState_Ping()
-    {
-      PollSetState(3);
-    }
+  inline void PollState_Ping()
+  {
+    PollSetState(3);
+  }
     
-  protected:
-    char m_vin[18];
+protected:
+  uint32_t m_lastCanFrameTime = 0;
+  uint32_t m_last305FrameTime = 0;
+  
+  std::string m_vin;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
-    // --------------------------------------------------------------------------
-    // Webserver subsystem
-    public:
-      void GetDashboardConfig(DashboardConfig& cfg);
+  // --------------------------------------------------------------------------
+  // Webserver subsystem
+public:
+  void GetDashboardConfig(DashboardConfig& cfg);
 #endif //CONFIG_OVMS_COMP_WEBSERVER
     
-  };
+};
 
 #endif //#ifndef __VEHICLE_FIATEDOBLO_H__

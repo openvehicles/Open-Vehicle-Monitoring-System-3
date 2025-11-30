@@ -1,6 +1,14 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+- New vehicle: FIAT eDoblo via OBD-II port
+    Initial support added for:
+      VIN, SoC, SoH
+      Door status
+      Odometer
+      HV, LV battery voltage
+      temperatures
 - New vehicle: Maxus T90 EV (MT90) via OBD-II port
     Initial support added for:
       VIN, SOC, SOH & READY state
