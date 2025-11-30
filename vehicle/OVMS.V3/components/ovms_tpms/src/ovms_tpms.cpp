@@ -109,8 +109,8 @@ void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   writer->printf("TPMS status       ");
   if (MyVehicleFactory.m_currentvehicle)
     {
-    std::vector<std::string> wheels = MyVehicleFactory.m_currentvehicle->GetTpmsLayout();
-    for (auto wheel : wheels)
+    std::vector<std::string> tpms_layout = MyVehicleFactory.m_currentvehicle->GetTpmsLayout();
+    for (auto wheel : tpms_layout)
       writer->printf(" %8s", wheel.c_str());
     writer->puts("");
     }
@@ -282,9 +282,10 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   std::vector<std::string> wheel_names = vehicle->GetTpmsLayoutNames();
   std::vector<std::string> tpms_layout = vehicle->GetTpmsLayout();
   
-  if (tpms_layout.empty()) 
+  bool sensor_mapping = vehicle->UsesTpmsSensorMapping();
+  if (!sensor_mapping || tpms_layout.empty()) 
     {
-    writer->puts("No TPMS layout defined for this vehicle");
+    writer->puts("Error: No TPMS layout defined for this vehicle");
     return;
     }
   
@@ -294,8 +295,6 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     return;
     }
   
-  int count = (int)tpms_layout.size();
-  
   // Find maximum wheel name length for alignment
   size_t max_name_length = 0;
   for (const auto& name : wheel_names)
@@ -304,19 +303,18 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       max_name_length = name.length();
     }
   
-  // Read mapping from configuration
-  int map[4] = 
+  int count = (int)tpms_layout.size();
+  std::vector<int> current_map(count);
+  // Read mapping
+  for (int i = 0; i < count; i++)
     {
-    MyConfig.GetParamValueInt("vehicle", "tpms.fl", 0),
-    MyConfig.GetParamValueInt("vehicle", "tpms.fr", 1),
-    MyConfig.GetParamValueInt("vehicle", "tpms.rl", 2),
-    MyConfig.GetParamValueInt("vehicle", "tpms.rr", 3)
-    };
+    current_map[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(tpms_layout[i]), i);
+    }
   
   // Display current mapping configuration
   for (int i = 0; i < count; i++) 
     {
-    int idx = map[i];
+    int idx = current_map[i];
     std::string sensor_name = (idx >= 0 && idx < (int)tpms_layout.size()) 
                               ? tpms_layout[idx] 
                               : "Invalid";
@@ -343,11 +341,11 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     {
     for (int j = i+1; j < count; j++)
       {
-      if (map[i] == map[j]) 
+      if (current_map[i] == current_map[j]) 
         {
         if (!has_issues) writer->puts("\nWARNINGS:");
         writer->printf("  Duplicate mapping: %s and %s both use Sensor #%d\n",
-                       wheel_names[i].c_str(), wheel_names[j].c_str(), map[i]);
+                       wheel_names[i].c_str(), wheel_names[j].c_str(), current_map[i]);
         has_issues = true;
         }
       }
@@ -356,14 +354,235 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   // Check for out-of-range sensor indices
   for (int i = 0; i < count; i++) 
     {
-    if (map[i] < 0 || map[i] >= (int)tpms_layout.size()) 
+    if (current_map[i] < 0 || current_map[i] >= (int)tpms_layout.size()) 
       {
       if (!has_issues) writer->puts("\nWARNINGS:");
       writer->printf("  %s: Sensor #%d is out of range (valid: 0-%d)\n",
-                     wheel_names[i].c_str(), map[i], (int)tpms_layout.size()-1);
+                     wheel_names[i].c_str(), current_map[i], (int)tpms_layout.size()-1);
       has_issues = true;
       }
     }
+  }
+/**
+ * tpms_map_show: Display mapping in machine-readable format for apps
+ * Output format: FL:0,FR:1,RL:2,RR:3,P:230.0:240.0:250.0:260.0,T:21.0:22.0:23.0:24.0,A:0:0:0:0
+ */
+void tpms_map_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyVehicleFactory.m_currentvehicle) 
+    {
+    writer->puts("ERROR:NO_VEHICLE");
+    return;
+    }
+  
+  OvmsVehicle* vehicle = MyVehicleFactory.m_currentvehicle;
+  // Get wheel position names and layout from vehicle
+  std::vector<std::string> tpms_layout = vehicle->GetTpmsLayout();
+  
+  if (tpms_layout.empty()) 
+    {
+    writer->puts("ERROR:NO_LAYOUT");
+    return;
+    }
+  
+  int count = (int)tpms_layout.size();
+  std::vector<int> current_map(count);
+  // Read mapping
+  for (int i = 0; i < count; i++)
+    {
+    current_map[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(tpms_layout[i]), i);
+    }
+  
+  // Output mapping: FL:0,FR:1,RL:2,RR:3
+  for (int i = 0; i < count; i++)
+    {
+    if (i > 0) writer->printf(",");
+    writer->printf("%s:%d", tpms_layout[i].c_str(), current_map[i]);
+    }
+  
+  // Add pressure values if available
+  if (StandardMetrics.ms_v_tpms_pressure->IsDefined())
+    {
+    writer->printf(",P:");
+    auto pressure = StandardMetrics.ms_v_tpms_pressure->AsVector();
+    for (size_t i = 0; i < pressure.size(); i++)
+      {
+      if (i > 0) writer->printf(":");
+      if (!std::isnan(pressure[i]) && pressure[i] >= 0.0f)
+        writer->printf("%.1f", pressure[i]);
+      else
+        writer->printf("-");
+      }
+    }
+  
+  // Add temperature values if available
+  if (StandardMetrics.ms_v_tpms_temp->IsDefined())
+    {
+    writer->printf(",T:");
+    auto temp = StandardMetrics.ms_v_tpms_temp->AsVector();
+    for (size_t i = 0; i < temp.size(); i++)
+      {
+      if (i > 0) writer->printf(":");
+      if (!std::isnan(temp[i]) && temp[i] >= -50.0f)
+        writer->printf("%.1f", temp[i]);
+      else
+        writer->printf("-");
+      }
+    }
+  
+  // Add alert values if available
+  if (StandardMetrics.ms_v_tpms_alert->IsDefined())
+    {
+    writer->printf(",A:");
+    auto alert = StandardMetrics.ms_v_tpms_alert->AsVector();
+    for (size_t i = 0; i < alert.size(); i++)
+      {
+      if (i > 0) writer->printf(":");
+      writer->printf("%d", alert[i]);
+      }
+    }
+
+  // Add health values if available
+  if (StandardMetrics.ms_v_tpms_health->IsDefined())
+    {
+    writer->printf(",H:");
+    auto health = StandardMetrics.ms_v_tpms_health->AsVector();
+    for (size_t i = 0; i < health.size(); i++)
+      {
+      if (i > 0) writer->printf(":");
+      writer->printf("%.1f", health[i]);
+      }
+    }
+  
+  writer->puts("");
+  }
+
+/**
+ * tpms_map_set: Set TPMS sensor mapping using wheel position names
+ * Usage: tpms map set fl=fr fr=rr rl=fl rr=rl
+ * This remaps which physical sensor data is shown at which wheel position
+ */
+void tpms_map_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyVehicleFactory.m_currentvehicle) 
+    {
+    writer->puts("Error: No vehicle module loaded");
+    return;
+    }
+  
+  OvmsVehicle* vehicle = MyVehicleFactory.m_currentvehicle;
+  // Get wheel position names and layout from vehicle
+  std::vector<std::string> tpms_layout = vehicle->GetTpmsLayout();
+  
+  bool sensor_mapping = vehicle->UsesTpmsSensorMapping();
+  if (!sensor_mapping || tpms_layout.empty()) 
+    {
+    writer->puts("Error: No TPMS layout defined for this vehicle");
+    return;
+    }
+  
+  int count = (int)tpms_layout.size();
+  std::vector<int> current_map(count);
+  // Read current mapping: which sensor index is assigned to each wheel
+  for (int i = 0; i < count; i++)
+    {
+    current_map[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(tpms_layout[i]), i);
+    }
+  std::vector<int> new_map = current_map;
+
+  // Process each argument of the form wheel=sensor
+  for (int i = 0; i < argc; i++)
+    {
+    std::string arg(argv[i]);
+    size_t pos = arg.find('=');
+    
+    if (pos == std::string::npos)
+      {
+      writer->printf("Error: Invalid argument '%s' (expected format: wheel=wheel)\n", argv[i]);
+      writer->puts("Example: fl=fr fr=rr rl=fl rr=rl");
+      return;
+      }
+    
+    std::string dest_wheel = arg.substr(0, pos);
+    std::string src_wheel = arg.substr(pos + 1);
+    
+    // Convert to lowercase
+    std::transform(dest_wheel.begin(), dest_wheel.end(), dest_wheel.begin(), ::tolower);
+    std::transform(src_wheel.begin(), src_wheel.end(), src_wheel.begin(), ::tolower);
+    
+    // Find indices for dest_wheel and src_wheel
+    int dest_idx = -1, src_idx = -1;
+    for (int j = 0; j < count; ++j)
+      {
+      std::string layout_lower = tpms_layout[j];
+      std::transform(layout_lower.begin(), layout_lower.end(), layout_lower.begin(), ::tolower);
+      
+      if (layout_lower == dest_wheel) dest_idx = j;
+      if (layout_lower == src_wheel) src_idx = j;
+      }
+    
+    if (dest_idx == -1)
+      {
+      writer->printf("Error: Unknown destination wheel '%s'\n", dest_wheel.c_str());
+      return;
+      }
+    if (src_idx == -1)
+      {
+      writer->printf("Error: Unknown source wheel '%s'\n", src_wheel.c_str());
+      return;
+      }
+    // Map: dest_wheel gets the sensor that was previously at src_wheel
+    new_map[dest_idx] = current_map[src_idx];
+    }
+  
+  
+  // Save new mapping to config
+  for (int i = 0; i < count; i++)
+    {
+    MyConfig.SetParamValueInt("vehicle", std::string("tpms.") + str_tolower(tpms_layout[i]), new_map[i]);
+    }
+  
+  writer->puts("Mapping saved successfully");
+  
+  // Show current status
+  writer->puts("");
+  tpms_mapping(verbosity, writer, cmd, 0, nullptr);
+  }
+
+/**
+ * tpms_map_reset: Reset TPMS sensor mapping to default (FL=0, FR=1, RL=2, RR=3)
+ */
+void tpms_map_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyVehicleFactory.m_currentvehicle) 
+    {
+    writer->puts("Error: No vehicle module loaded");
+    return;
+    }
+  
+  OvmsVehicle* vehicle = MyVehicleFactory.m_currentvehicle;
+  std::vector<std::string> tpms_layout = vehicle->GetTpmsLayout();
+
+  bool sensor_mapping = vehicle->UsesTpmsSensorMapping();
+  if (!sensor_mapping || tpms_layout.empty()) 
+    {
+    writer->puts("Error: No TPMS layout defined for this vehicle");
+    return;
+    }
+  
+  int count = (int)tpms_layout.size();
+  
+  // Reset mapping to default: wheel[i] = sensor[i]
+  for (int i = 0; i < count; i++)
+    {
+    MyConfig.SetParamValueInt("vehicle", std::string("tpms.") + str_tolower(tpms_layout[i]), i);
+    }
+  
+  writer->puts("TPMS mapping reset to default");
+  
+  // Show current status
+  writer->puts("");
+  tpms_mapping(verbosity, writer, cmd, 0, nullptr);
   }
 
 OvmsTPMS::OvmsTPMS()
@@ -378,7 +597,12 @@ OvmsTPMS::OvmsTPMS()
   cmd_tpms->RegisterCommand("write","Write TPMS IDs from sepecified tyre set",tpms_write,"<set>",1,1);
   cmd_tpms->RegisterCommand("set","Manually configure IDs in a tyre set",tpms_set,"<set> <id(s)>",1,9);
   cmd_tpms->RegisterCommand("delete","Delete the specified TPMS tyre set configuration",tpms_delete,"<set>",1,1);
-  cmd_tpms->RegisterCommand("mapping","Show current TPMS sensor mapping",tpms_mapping);
+  // TPMS mapping commands
+  OvmsCommand* cmd_map = cmd_tpms->RegisterCommand("map","TPMS sensor mapping");
+  cmd_map->RegisterCommand("show","Show mapping in machine-readable format",tpms_map_show);
+  cmd_map->RegisterCommand("status","Show current mapping with details",tpms_mapping);
+  cmd_map->RegisterCommand("set","Set sensor mapping",tpms_map_set,"<wheel=sensor> [...]",1,4);
+  cmd_map->RegisterCommand("reset","Reset mapping to default",tpms_map_reset);
 
   // Register our parameters
   MyConfig.RegisterParam(TPMS_PARAM, "TPMS tyre sets", true, true);
