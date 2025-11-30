@@ -364,10 +364,10 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
   }
 /**
- * tpms_map_show: Display mapping in machine-readable format for apps
+ * tpms_map_get: Display mapping in machine-readable format for apps
  * Output format: FL:0,FR:1,RL:2,RR:3,P:230.0:240.0:250.0:260.0,T:21.0:22.0:23.0:24.0,A:0:0:0:0
  */
-void tpms_map_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void tpms_map_get(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (!MyVehicleFactory.m_currentvehicle) 
     {
@@ -599,7 +599,7 @@ OvmsTPMS::OvmsTPMS()
   cmd_tpms->RegisterCommand("delete","Delete the specified TPMS tyre set configuration",tpms_delete,"<set>",1,1);
   // TPMS mapping commands
   OvmsCommand* cmd_map = cmd_tpms->RegisterCommand("map","TPMS sensor mapping");
-  cmd_map->RegisterCommand("show","Show mapping in machine-readable format",tpms_map_show);
+  cmd_map->RegisterCommand("get","Show mapping in machine-readable format",tpms_map_get);
   cmd_map->RegisterCommand("status","Show current mapping with details",tpms_mapping);
   cmd_map->RegisterCommand("set","Set sensor mapping",tpms_map_set,"<wheel=sensor> [...]",1,4);
   cmd_map->RegisterCommand("reset","Reset mapping to default",tpms_map_reset);
