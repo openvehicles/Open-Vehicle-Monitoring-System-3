@@ -121,7 +121,7 @@ void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   if (StandardMetrics.ms_v_tpms_alert->IsDefined())
     {
-    const char* alertname[] = { "OK", "WARN", "ALERT", "UNKNOWN" };  // Added UNKNOWN
+    const char* alertname[] = { "OK", "WARN", "ALERT" };  // Added UNKNOWN
     writer->printf("Alert level.....: ");
     for (auto val : StandardMetrics.ms_v_tpms_alert->AsVector())
       {
@@ -363,96 +363,103 @@ void tpms_mapping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       }
     }
   }
+
 /**
- * tpms_map_get: Display mapping in machine-readable format for apps
- * Output format: FL:0,FR:1,RL:2,RR:3,P:230.0:240.0:250.0:260.0,T:21.0:22.0:23.0:24.0,A:0:0:0:0
+ * tpms_map_get: Display TPMS data in V2/MP Y message format for apps
+ * 
+ * Format (comma-separated):
+ *   <wheel_count>,<wheel_names...>,
+ *   <pressure_count>,<pressures...>,<pressure_validity>,
+ *   <temp_count>,<temps...>,<temp_validity>,
+ *   <health_count>,<healths...>,<health_validity>,
+ *   <alert_count>,<alerts...>,<alert_validity>
+ * 
+ * Validity indicators: -1=undefined, 0=stale, 1=valid
+ * 
+ * Example (4 wheels):
+ *   4,FL,FR,RL,RR,4,230.5,245.0,238.2,241.8,1,4,21.0,22.5,20.8,23.1,1,4,100.0,100.0,100.0,100.0,1,4,0,0,0,0,1
  */
 void tpms_map_get(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (!MyVehicleFactory.m_currentvehicle) 
     {
-    writer->puts("ERROR:NO_VEHICLE");
+    writer->puts("0");  // 0 wheels = no vehicle
     return;
     }
   
   OvmsVehicle* vehicle = MyVehicleFactory.m_currentvehicle;
-  // Get wheel position names and layout from vehicle
   std::vector<std::string> tpms_layout = vehicle->GetTpmsLayout();
   
   if (tpms_layout.empty()) 
     {
-    writer->puts("ERROR:NO_LAYOUT");
+    writer->puts("0");  // 0 wheels = no layout
     return;
     }
   
   int count = (int)tpms_layout.size();
-  std::vector<int> current_map(count);
-  // Read mapping
+  
+  // Helper lambda for validity indicator: -1=undefined, 0=stale, 1=valid
+  auto get_validity = [](OvmsMetric* m) -> int {
+    if (!m || !m->IsDefined()) return -1;
+    if (m->IsStale()) return 0;
+    return 1;
+    };
+  
+  // Wheel names section
+  writer->printf("%d", count);
   for (int i = 0; i < count; i++)
     {
-    current_map[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(tpms_layout[i]), i);
+    writer->printf(",%s", tpms_layout[i].c_str());
     }
   
-  // Output mapping: FL:0,FR:1,RL:2,RR:3
-  for (int i = 0; i < count; i++)
+  // Pressure section
+  auto pressure = StandardMetrics.ms_v_tpms_pressure->AsVector();
+  int p_count = (int)pressure.size();
+  writer->printf(",%d", p_count);
+  for (int i = 0; i < p_count; i++)
     {
-    if (i > 0) writer->printf(",");
-    writer->printf("%s:%d", tpms_layout[i].c_str(), current_map[i]);
+    if (!std::isnan(pressure[i]))
+      writer->printf(",%.1f", pressure[i]);
+    else
+      writer->printf(",");
     }
+  writer->printf(",%d", get_validity(StandardMetrics.ms_v_tpms_pressure));
   
-  // Add pressure values if available
-  if (StandardMetrics.ms_v_tpms_pressure->IsDefined())
+  // Temperature section
+  auto temp = StandardMetrics.ms_v_tpms_temp->AsVector();
+  int t_count = (int)temp.size();
+  writer->printf(",%d", t_count);
+  for (int i = 0; i < t_count; i++)
     {
-    writer->printf(",P:");
-    auto pressure = StandardMetrics.ms_v_tpms_pressure->AsVector();
-    for (size_t i = 0; i < pressure.size(); i++)
-      {
-      if (i > 0) writer->printf(":");
-      if (!std::isnan(pressure[i]) && pressure[i] >= 0.0f)
-        writer->printf("%.1f", pressure[i]);
-      else
-        writer->printf("-");
-      }
+    if (!std::isnan(temp[i]))
+      writer->printf(",%.1f", temp[i]);
+    else
+      writer->printf(",");
     }
+  writer->printf(",%d", get_validity(StandardMetrics.ms_v_tpms_temp));
   
-  // Add temperature values if available
-  if (StandardMetrics.ms_v_tpms_temp->IsDefined())
+  // Health section
+  auto health = StandardMetrics.ms_v_tpms_health->AsVector();
+  int h_count = (int)health.size();
+  writer->printf(",%d", h_count);
+  for (int i = 0; i < h_count; i++)
     {
-    writer->printf(",T:");
-    auto temp = StandardMetrics.ms_v_tpms_temp->AsVector();
-    for (size_t i = 0; i < temp.size(); i++)
-      {
-      if (i > 0) writer->printf(":");
-      if (!std::isnan(temp[i]) && temp[i] >= -50.0f)
-        writer->printf("%.1f", temp[i]);
-      else
-        writer->printf("-");
-      }
+    if (!std::isnan(health[i]))
+      writer->printf(",%.1f", health[i]);
+    else
+      writer->printf(",");
     }
+  writer->printf(",%d", get_validity(StandardMetrics.ms_v_tpms_health));
   
-  // Add alert values if available
-  if (StandardMetrics.ms_v_tpms_alert->IsDefined())
+  // Alert section
+  auto alert = StandardMetrics.ms_v_tpms_alert->AsVector();
+  int a_count = (int)alert.size();
+  writer->printf(",%d", a_count);
+  for (int i = 0; i < a_count; i++)
     {
-    writer->printf(",A:");
-    auto alert = StandardMetrics.ms_v_tpms_alert->AsVector();
-    for (size_t i = 0; i < alert.size(); i++)
-      {
-      if (i > 0) writer->printf(":");
-      writer->printf("%d", alert[i]);
-      }
+    writer->printf(",%d", alert[i]);
     }
-
-  // Add health values if available
-  if (StandardMetrics.ms_v_tpms_health->IsDefined())
-    {
-    writer->printf(",H:");
-    auto health = StandardMetrics.ms_v_tpms_health->AsVector();
-    for (size_t i = 0; i < health.size(); i++)
-      {
-      if (i > 0) writer->printf(":");
-      writer->printf("%.1f", health[i]);
-      }
-    }
+  writer->printf(",%d", get_validity(StandardMetrics.ms_v_tpms_alert));
   
   writer->puts("");
   }
