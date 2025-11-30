@@ -75,19 +75,11 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
       tpms_pressure[i] = _pressure;
       _flag = true;
       }
-    else
-      {
-      tpms_pressure[i] = 0.0f;
-      }
     
     // Validate and set temperature
     if (m_tpms_temp_enable && _temp >= TEMP_MIN && _temp < TEMP_MAX) 
       {
       tpms_temp[i] = _temp;
-      }
-    else
-      {
-      tpms_temp[i] = 0.0f;
       }
     
     // Handle alert conditions only if sensor is working and alerts are enabled
