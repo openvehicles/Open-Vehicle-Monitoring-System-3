@@ -803,6 +803,7 @@ void OvmsVehicleSmartEQ::xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCom
   
     smarteq->CommandTPMSset(verbosity, writer);
 }
+
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTPMSset(int verbosity, OvmsWriter* writer) {
   float dummy_pressure = mt_dummy_pressure->AsFloat();
   for (int i = 0; i < 4; i++) {
@@ -811,8 +812,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTPMSset(int verbosity,
     m_tpms_lowbatt[i] = false;
     m_tpms_missing_tx[i] = false;
   }
-  writer->printf("set TPMS dummy pressure: %.2f temp: %.2f\n", dummy_pressure, m_tpms_temperature[0]);
   setTPMSValue();   // update TPMS metrics
+  writer->puts("TPMS dummy values set");
   return Success;
 }
 
