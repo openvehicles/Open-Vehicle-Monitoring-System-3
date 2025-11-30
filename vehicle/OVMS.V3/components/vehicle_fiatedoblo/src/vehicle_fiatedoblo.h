@@ -49,7 +49,7 @@ class OvmsVehicleFiatEDoblo : public OvmsVehicle
     
   protected:
     void IncomingBatteryPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
-    void IncomingTempPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
+    void IncomingVCUPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
     void IncomingVINPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
     void SendTesterPresentMessage( uint32_t id );
 

@@ -48,9 +48,19 @@ static const OvmsPoller::poll_pid_t vehicle_ftdo_polls[]
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT,   0x1f, {  0,  10, 999,  10 }, 0, ISOTP_STD }, // runtime since engine start (s)
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT,   0x2f, {  0,  10, 999,  30 }, 0, ISOTP_STD }, // Fuel level
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT,   0x46, {  0,  30, 999,  30 }, 0, ISOTP_STD }, // Ambiant temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x02, {  0,  10, 999, 999 }, 0, ISOTP_STD }, // VIN //maybe like this or with other POLL type data received... or with poll below
+
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT,   0x03, {  0,  10, 999,  10 }, 0, ISOTP_STD }, // fuel system status 0 motor off ... normally not interesting, but it looks like it is requested
+
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x00, {  0,  10, 1, 999 }, 0, ISOTP_STD }, // Service 9 supported PIDs ($01 to $20) 
+    //    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x01, {  0,  10, 1, 999 }, 0, ISOTP_STD }, // VIN length
+    // { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x02, {  0,  10, 1, 999 }, 0, ISOTP_STD }, // VIN maybe like this or with other POLL type data received... or with poll below
+
+    //    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x0A, {  0,  10, 1, 999 }, 0, ISOTP_STD }, // ECU name
 
     { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x02, {  0,  10, 15, 25 }, 0, ISOTP_STD }, // VIN //maybe like this or with other POLL type data received... or with poll below
+
+    // does this answer?
+    // { 0x6b4, 0x694, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x0a, {  0,  16,   16, 999 }, 0, ISOTP_STD }, // ECU name
 
     // Battery details
     { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd815, {  0,  5,   1, 999 }, 0, ISOTP_STD }, // Battery voltage
@@ -67,7 +77,7 @@ static const OvmsPoller::poll_pid_t vehicle_ftdo_polls[]
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd434, {  0,  30,   1,   0 }, 0, ISOTP_STD }, // Ambient temp
     //    { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd49c, {  0,  30,   1,   0 }, 0, ISOTP_STD }, // total milage
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8ef, {  0,  30,   1,   0 }, 0, ISOTP_STD }, // Battery temp
-    { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8cd, {  0,  30,   1,   0 }, 0, ISOTP_STD }, // drive motor statur temperature?
+    { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8cd, {  0,  30,   1,   0 }, 0, ISOTP_STD }, // drive motor stator temperature?
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8ce, {  0,  30,   1,   0 }, 0, ISOTP_STD }, // DC-DC converter temperature or Drive motor coolant inlet temperature?
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8e1, {  0,  30,   1,   0 }, 0, ISOTP_STD }, // on-board charger temperature?
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8f9, {  0,  30,   1,   0 }, 0, ISOTP_STD }, // Traction cicuit coolant temperature * 10
@@ -78,40 +88,13 @@ static const OvmsPoller::poll_pid_t vehicle_ftdo_polls[]
   };
 
 uint32_t lastCanFrameTime = 0;
+std::string vin;
 
 /**
  * Ticker1: Called every second
  */
-void OvmsVehicleFiatEDoblo::Ticker1(uint32_t ticker)
-{
-  //    SendTesterPresentMessage(0x6b4);
-
-  // TODO: when switching state to IGN on do a single poll
-        // Fetch VIN once:
-  if (ticker % 33 == 0) {// (!StdMetrics.ms_v_vin->IsDefined()) {
-    std::string vin;
-    ESP_LOGI(TAG, "polling VIN...");
-    //    int32_t a = PollSingleRequest(m_can1, 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xf802, vin);
-    //    int32_t a = PollSingleRequest(m_can1, 0x7df, 0x0, VEHICLE_POLL_TYPE_READDATA, 0xf190, vin); // trying broadcast
-    int32_t a = PollSingleRequest(m_can1, 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_READDATA, 0xf190, vin); // trying broadcast
-
-    /*
-      once I've seen the VIN:
-      I (965278) ovms-server-v3: Tx event clock.1940
-I (971268) v-fiatedoblo: unexpected poll reply on ID 0x 7e8 (pid = 0x   2, len = 4)
-I (971268) v-fiatedoblo: poll reply 0x 7e8 (pid = 0x2, len = 4): 0x 1 0x56 0x59 0x46  0x 0 0x 0 0x 0 0x 0
-I (971298) v-fiatedoblo: unexpected poll reply on ID 0x 7e8 (pid = 0x   2, len = 7)
-I (971298) v-fiatedoblo: poll reply 0x 7e8 (pid = 0x2, len = 7): 0x45 0x5a 0x5a 0x4b  0x58 0x5a 0x50 0x 0
-I (971328) v-fiatedoblo: unexpected poll reply on ID 0x 7e8 (pid = 0x   2, len = 7)
-I (971328) v-fiatedoblo: poll reply 0x 7e8 (pid = 0x2, len = 7): 0x4a 0x37 0x38 0x38  0x39 0x34 0x35 0x 0
-     */
-    ESP_LOGI(TAG, "VIN poll: %d %x", a, a);
-    if (a == 0) {
-      ESP_LOGI(TAG, "received VIN: %s", vin.c_str());
-      StdMetrics.ms_v_vin->SetValue(vin.substr(1));
-    }
-  }
-
+void OvmsVehicleFiatEDoblo::Ticker1(uint32_t ticker){
+  //    SendTesterPresentMessage(0x6b4);  
 }
 
 /**
@@ -210,12 +193,14 @@ void OvmsVehicleFiatEDoblo::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   case 0x3a8:
     {
+      // TODO       ESP_LOGI(TAG, "received SoC: %f", (float)d[3] + ((float)d[4] / 256.0));
+
       StandardMetrics.ms_v_bat_soc->SetValue((float)d[3] + ((float)d[4] / 256.0));
     }
     break;
   case 0x552:
     {
-      // todo: check
+      // TODO: which odometer setting is correct
       StandardMetrics.ms_v_pos_odometer->SetValue((float)(((uint32_t)d[4] << 16) + ((uint32_t)d[5] << 8) + d[6]));
     }
     break;
@@ -319,7 +304,7 @@ void OvmsVehicleFiatEDoblo::IncomingPollReply(const OvmsPoller::poll_job_t &job,
   switch (job.moduleid_rec) {
   case 0x682:
     // temperatures and other data from VCU
-    IncomingTempPoll(job, data, length);
+    IncomingVCUPoll(job, data, length);
     break;
   case 0x694:
     // battery details
@@ -328,29 +313,20 @@ void OvmsVehicleFiatEDoblo::IncomingPollReply(const OvmsPoller::poll_job_t &job,
   case 0x7e8:
     // more details
     IncomingVINPoll(job, data, length);
-    //    break;
+    break;
   default:
     ESP_LOGI(TAG, "unexpected poll reply on ID 0x%4x (pid = 0x%4x, len = %d)", job.moduleid_rec, job.pid, length);
-    ESP_LOGI(TAG, "poll reply 0x%4x (pid = 0x%x, len = %d): 0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x", job.moduleid_rec, job.pid, length, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]); // TODO remove
+    ESP_LOGI(TAG, "unexpected poll reply 0x%4x (pid = 0x%x, len = %d): 0x%2x %c 0x%2x %c 0x%2x %c 0x%2x %c  0x%2x %c 0x%2x %c 0x%2x %c 0x%2x %c",
+	     job.moduleid_rec, job.pid, length,
+	     data[0], (char)data[0],
+	     data[1], (char)data[1],
+	     data[2], (char)data[2],
+	     data[3], (char)data[3],
+	     data[4], (char)data[4],
+	     data[5], (char)data[5],
+	     data[6], (char)data[6],
+	     data[7], (char)data[7]);
   }
-  // TODO: handle multi-line responses like the VIN
-  /*  switch (job.pid)
-    {
-    case 0x02:  // VIN (multi-line response)
-      // Data in the first frame starts with 0x01 for some (all?) vehicles
-      if (length > 1 && data[0] == 0x01)
-        {
-        ++data;
-        --length;
-        }
-      strncat(m_vin, (char*)data, length);
-      if (job.mlremain==0)
-        {
-        StandardMetrics.ms_v_vin->SetValue(m_vin);
-        m_vin[0] = 0;
-        }
-      break;
-  */
   /*    case 0x1f:  // runtime since engine start
       ESP_LOGI(TAG, "runtime since engine start %d", value2);
       StandardMetrics.ms_v_env_drivetime->SetValue(value2);
@@ -367,11 +343,27 @@ void OvmsVehicleFiatEDoblo::IncomingPollReply(const OvmsPoller::poll_job_t &job,
 void OvmsVehicleFiatEDoblo::IncomingVINPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   if(job.pid == 0x02) {
-    ESP_LOGI(TAG, "received VIN %.*s", length, data);
+    if(job.mlremain > 13) {
+      vin.clear();
+    }
+    vin.append((char*)data, length);
+    if(job.mlremain == 0) {
+      ESP_LOGI(TAG, "rrrrreceived VIN: %s", vin.c_str());
+      StdMetrics.ms_v_vin->SetValue(vin);
+    }
   }else{
-    ESP_LOGI(TAG, "unexpected poll reply 0x%4x (pid = 0x%x, len = %d): 0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x", job.moduleid_rec, job.pid, length, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]); // TODO remove    
+    ESP_LOGI(TAG, "unexpected poll reply 0x%4x (pid = 0x%x, len = %d): 0x%2x %c 0x%2x %c 0x%2x %c 0x%2x %c  0x%2x %c 0x%2x %c 0x%2x %c 0x%2x %c",
+	     job.moduleid_rec, job.pid, length,
+	     data[0], (char)data[0],
+	     data[1], (char)data[1],
+	     data[2], (char)data[2],
+	     data[3], (char)data[3],
+	     data[4], (char)data[4],
+	     data[5], (char)data[5],
+	     data[6], (char)data[6],
+	     data[7], (char)data[7]);
   }
-  ESP_LOGI(TAG, "mlremain %d", job.mlremain);
+  // TODO  ESP_LOGI(TAG, "mlremain %d", job.mlremain);
 }
 
 /**
@@ -392,40 +384,44 @@ void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &jo
     break;
   case 0xd816:  // battery current
     {
-      int32_t value = (data[2] << 8) + data[3];
+      uint32_t value = (data[2] << 8) + data[3];
+      int32_t v;
       float fin;
-      value &= ~0x800;
-      value -= 2048;
-      fin = value / 64.0;
+      value &= 0x7ff;
+      value = value << 9;
+      v = (int32_t) value;
+      
+      fin = v / 64.0;
     //https://www.goingelectric.de/forum/viewtopic.php?p=1903069&sid=2cadc1e2d2a3312a436b2dfed52ce479#p1903069
     // is it an offset binary representation in 11 bits?
     
       StandardMetrics.ms_v_bat_current->SetValue(fin);
-      ESP_LOGI(TAG, "received battery current: %d  %f   %d, %x %x %x %x", value, fin, (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3], data[0], data[1], data[2], data[3]);
+      ESP_LOGI(TAG, "received battery current: %d %d  %f  %d, %x %x %x %x", value, v, fin, (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3], data[0], data[1], data[2], data[3]);
     
       break;
+     
     }
   case 0xd860:
     soh = (data[0] << 16) + (data[1] << 8) + (data[2]);
     soh = (soh - 65536) / 16.0;
     StandardMetrics.ms_v_bat_soh->SetValue(soh);
-    ESP_LOGI(TAG, "received SOH: %f", soh);
+    // TODO: remove ESP_LOGI(TAG, "received SOH: %f", soh);
     break;
 
   case 0xd86f: // min cell voltage ok
-    ESP_LOGI(TAG, "min cell voltage: %f", value2 / 1000.0);
+    // TODO remove    ESP_LOGI(TAG, "min cell voltage: %f", value2 / 1000.0);
     StandardMetrics.ms_v_bat_pack_vmin->SetValue(value2 / 1000.0);
     break;
     
   case 0xd870: // max cell voltage ok
-    ESP_LOGI(TAG, "max cell voltage: %f", value2 / 1000.0);
+    // TODO remove    ESP_LOGI(TAG, "max cell voltage: %f", value2 / 1000.0);
     StandardMetrics.ms_v_bat_pack_vmax->SetValue(value2 / 1000.0);      
     break;
 
   case 0xd865: // kWh - probably wrong conversion
-    kwh = (float)value2 / 64.0;
+    kwh = (float)value2 / 50.0; // 64.0;
     ESP_LOGI(TAG, "received kWh: %f", kwh);
-    // TODO:    StandardMetrics.ms_v_bat_capacity->SetValue(kwh);
+    StandardMetrics.ms_v_bat_capacity->SetValue(kwh);
     break;
     
   default:
@@ -439,7 +435,7 @@ void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &jo
  *
  */
 // TODO: rename as not only temp but all VCU
-void OvmsVehicleFiatEDoblo::IncomingTempPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
+void OvmsVehicleFiatEDoblo::IncomingVCUPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   switch (job.pid) {
     case 0xd434:  // Ambient temperature
@@ -455,18 +451,19 @@ void OvmsVehicleFiatEDoblo::IncomingTempPoll(const OvmsPoller::poll_job_t &job, 
       StandardMetrics.ms_v_pos_speed->SetValue((int)data[0]);
       break;
     case 0xd49c:
+      // TODO: which odometer setting is correct
       // total milage
       // todo check
       StandardMetrics.ms_v_pos_odometer->SetValue((((uint32_t)data[0] << 16) + ((uint32_t)data[1] << 8) + data[2]));
       ESP_LOGI(TAG, "total km: %i", (((uint32_t)data[0] << 16) + ((uint32_t)data[1] << 8) + data[2]));
       break;
-    case 0xd8cd:
-    case 0xd8ce:
-    case 0xd8f9:
-      ESP_LOGI(TAG, "temp poll reply on ID 0x%4x (pid = 0x%0x, len = %d) %x %x  %i", job.moduleid_rec, job.pid, length, data[0], data[1], (((uint32_t)data[1] << 8) + data[2]));
+      
+    case 0xd8cd:  // drive motor temp?
+      StandardMetrics.ms_v_mot_temp->SetValue((((uint32_t)data[0] << 8) + (uint32_t)data[1]) / 2); // just a guess, TODO: check it!
+      break;
     
   default:
-    ESP_LOGI(TAG, "unexpected temp poll reply on ID 0x%4x (pid = 0x%0x, len = %d)", job.moduleid_rec, job.pid, length);    
+    ESP_LOGI(TAG, "unexpected VCU poll reply on ID 0x%4x (pid = 0x%0x, len = %d) %x %x  %i", job.moduleid_rec, job.pid, length, data[0], data[1], (((uint32_t)data[1] << 8) + data[2]));
     break;
   }
 }

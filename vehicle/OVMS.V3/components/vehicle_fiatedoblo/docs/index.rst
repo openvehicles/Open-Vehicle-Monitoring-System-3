@@ -30,5 +30,5 @@ Charge Control              tba
 Cabin Pre-heat/cool Control tba
 Lock/Unlock Vehicle         tba
 Valet Mode Control          ??
-Others                      12V battery
+Others                      12V battery, SoH, HV Battery voltage, odometer, front+read doors and trunk open status, footbrake (only pressed yes/no status), handbrake, VIN
 =========================== ==============
