@@ -593,7 +593,7 @@ void tpms_map_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       return;
       }
     // Map: dest_wheel gets the sensor that was previously at src_wheel
-    new_map[dest_idx] = current_map[src_idx];
+    new_map[dest_idx] = src_idx;
     }
   
   
