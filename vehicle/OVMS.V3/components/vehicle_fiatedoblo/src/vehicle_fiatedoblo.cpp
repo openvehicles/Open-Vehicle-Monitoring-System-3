@@ -162,21 +162,21 @@ void OvmsVehicleFiatEDoblo::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   case 0x3a8:
     {
+      float newSoC = (float)d[3] + ((float)d[4] / 256.0);
       // on startup sometime we get bad frame with: 1R11 3A8 06 06 fe 00 00 00
       // d[1] == 0x06 seems to indicate an invalid state, all plausible frames we received had 0x08, 0x0a, 0x0c, 0x16 or 0x14
       if(d[1] != 0x06)
         {
-          float newSoC = (float)d[3] + ((float)d[4] / 256.0);
           
           if(newSoC > StandardMetrics.ms_v_bat_soc->AsFloat())
             {
               PollState_Charging(); // until we find the signal with the charging status we use the indication of increasing SoC, even though it might be wrong during recuperation
               StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-              ESP_LOGD(TAG, "charging started SoC: %f (0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x)", (float)d[3] + ((float)d[4] / 256.0), d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);            
+              ESP_LOGD(TAG, "charging started SoC: %f (0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x)", newSoC, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);            
             }
           if(newSoC < 1)
             {
-              ESP_LOGW(TAG, "received small SoC: %f (0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x)", (float)d[3] + ((float)d[4] / 256.0), d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+              ESP_LOGW(TAG, "received small SoC: %f (0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x)", newSoC, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
             }
           else
             {
@@ -189,7 +189,7 @@ void OvmsVehicleFiatEDoblo::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       else
         {
-          ESP_LOGW(TAG, "received strange SoC: %f (0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x)", (float)d[3] + ((float)d[4] / 256.0), d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+          ESP_LOGW(TAG, "received strange SoC: %f (0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x)", newSoC, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       }
     }
     break;
@@ -340,7 +340,7 @@ void OvmsVehicleFiatEDoblo::IncomingVINPoll(const OvmsPoller::poll_job_t &job, u
  */
 void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
-  int value2 = (data[0] << 8) + data[1];
+  int value2 = (int)((uint16_t)data[0] << 8) + data[1];
   float kwh;
   float soh;
   
@@ -351,7 +351,7 @@ void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &jo
   case 0xd816:  // battery current
     {
       /*
-        uint32_t value = (data[2] << 8) + data[3];
+        uint32_t value = ((uint32_t)data[2] << 8) + data[3];
         TODO: check how to convert into current (or power)
         int32_t v;
         float fin;
@@ -368,7 +368,7 @@ void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &jo
       break;
     }
   case 0xd860:
-    soh = (data[0] << 16) + (data[1] << 8) + (data[2]);
+    soh = (((uint32_t)data[0] << 16) + ((uint32_t)data[1] << 8) + (data[2]));
     soh = (soh - 65536) / 16.0;
     StandardMetrics.ms_v_bat_soh->SetValue(soh);
     break;
@@ -381,7 +381,7 @@ void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &jo
     StandardMetrics.ms_v_bat_pack_vmax->SetValue(value2 / 1000.0);      
     break;
 
-  case 0xd865: // kWh - probably wrong conversion
+  case 0xd865: // kWh - maybe wrong conversion
     kwh = (float)value2 / 50.0; //64.0;
     ESP_LOGD(TAG, "received kWh: %f (maybe %f or %f)", kwh, (float)value2 / 50.0 , (float)value2 / 64.0);
     StandardMetrics.ms_v_bat_capacity->SetValue(kwh);
@@ -400,16 +400,16 @@ void OvmsVehicleFiatEDoblo::IncomingVCUPoll(const OvmsPoller::poll_job_t &job, u
 {
   switch (job.pid) {
   case 0xd434:  // Ambient temperature
-    StandardMetrics.ms_v_env_temp->SetValue((int)data[0]);
+    StandardMetrics.ms_v_env_temp->SetValue((int8_t)data[0]);
     break;
   case 0xd8ef:  // Battery temperature
-    StandardMetrics.ms_v_bat_temp->SetValue((int)data[0]);
+    StandardMetrics.ms_v_bat_temp->SetValue((int8_t)data[0]);
     break;
   case 0xd8e1:  // on-board charger temperature ??
-    StandardMetrics.ms_v_charge_temp->SetValue((int)data[0]);
+    StandardMetrics.ms_v_charge_temp->SetValue((int8_t)data[0]);
     break;
   case 0xd402:  // speed
-    //    StandardMetrics.ms_v_pos_speed->SetValue((int)data[0]);
+    //    StandardMetrics.ms_v_pos_speed->SetValue((uint8_t)data[0]);
     // set via CAN frame
     break;
   case 0xd8cd:  // drive motor temp?
