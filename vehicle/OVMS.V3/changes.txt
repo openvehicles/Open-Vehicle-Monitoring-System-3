@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Workaround for iOS Open Vehicle App 1.8.6
+    Workaround for legacy iOS App, hiding zero/negative temperatures to keep other TPMS data visible.
+    This workaround only manipulates the TPMS temperature metric in message W.
 - New vehicle: FIAT eDoblo via OBD-II port
     Initial support added for:
       VIN, SoC, SoH
@@ -11,7 +14,7 @@ Open Vehicle Monitor System v3 - Change log
 - TPMS framework: added sensor mapping commands for wheel rotation/swap scenarios
     New commands:
       tpms map status   -- show current TPMS sensor-to-wheel mapping with details
-      tpms map show     -- machine-readable output for apps (FL:0,FR:1,RL:2,RR:3,P:...,T:...,A:...,H:...)
+      tpms map get      -- machine-readable output like message Y without header MP-0 Y
       tpms map set      -- remap sensors using wheel position names (e.g., fl=rr fr=fl rl=fr rr=rl)
       tpms map reset    -- reset mapping to default (e.g. FL=0, FR=1, RL=2, RR=3)
     Config: [vehicle] tpms.xx (sensor index per wheel position, layout by GetTpmsLayout())
@@ -67,15 +70,10 @@ Open Vehicle Monitor System v3 - Change log
     xsq.v.energy.used                     -- Energy used since mission start [kWh]
     xsq.v.energy.recd                     -- Energy recovered since mission start [kWh]
     xsq.v.aux.consumption                 -- Auxiliary consumption since mission start [kWh]
-    xsq.v.eco.score                       -- Eco score indicator [%]
-    xsq.v.total.recovery                  -- Total energy recovery [kWh]
-    xsq.v.charge.flap.warning             -- Charge flap open warning [bool]
     xsq.v.bat.consumption.worst           -- Worst average consumption [kWh/100km]
     xsq.v.bat.consumption.best            -- Best average consumption [kWh/100km]
     xsq.v.charge.bcb.power                -- BCB power from mains [W]
-    xsq.v.tcu.refuse.sleep                -- TCU refuse to sleep status
     xsq.v.charge.timer.value              -- Charging timer value [min]
-    xsq.v.remote.preac                    -- Remote pre-AC activation [bool]
     xsq.v.charge.timer.status             -- Charging timer status
     xsq.v.charge.prohibited               -- Charge prohibited status
     xsq.v.charge.authorization            -- Charge authorization status
