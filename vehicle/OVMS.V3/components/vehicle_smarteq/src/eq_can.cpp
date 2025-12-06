@@ -298,8 +298,8 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       vehicle_smart_car_on((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
       break;
     case 0x673:  
-      // TPMS values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt
-      if ( !m_enable_write )
+      // TPMS pressure values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt
+      if (!m_enable_write)
       {
         REQ_DLC(7);
         // Read TPMS pressure values:
@@ -307,7 +307,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           {
           if (CAN_BYTE(2 + i) != 0xff) 
             {
-            m_tpms_pressure[i] = (float) CAN_BYTE(2 + i) * 3.1; // kPa
+            m_tpms_pressure[3-i] = (float) CAN_BYTE(2 + i) * 3.1;  // kPa, counter m_tpms_pressure indexing FL=3, FR=2, RL=1, RR=0
           }
         }
       }

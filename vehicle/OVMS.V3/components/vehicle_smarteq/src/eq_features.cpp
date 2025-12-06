@@ -41,9 +41,9 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
   
   std::vector<string> tpms_layout = OvmsVehicle::GetTpmsLayout();
   int count = (int)tpms_layout.size();
-  std::vector<float> tpms_pressure(count);
-  std::vector<float> tpms_temp(count);
-  std::vector<short> tpms_alert(count);
+  std::vector<float> tpms_pressure(count, 0.0f);
+  std::vector<float> tpms_temp(count, 0.0f);
+  std::vector<short> tpms_alert(count, 0);
 
   float _threshold_front = m_front_pressure;
   float _threshold_rear = m_rear_pressure;
@@ -54,22 +54,11 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
   static const float PRESSURE_MIN = 10.0f;   // Below this = sensor not working
   static const float PRESSURE_MAX = 500.0f;  // Above this = invalid reading
   static const float TEMP_MIN = -40.0f;
-  static const float TEMP_MAX = 150.0f;
+  static const float TEMP_MAX = 90.0f;
 
   for (int i=0; i < count; i++) 
     {
     int indexcar = m_tpms_index[i];
-    
-    // Bounds check for indexcar
-    if (indexcar < 0 || indexcar >= count)
-      {
-      ESP_LOGW(TAG, "Invalid TPMS index mapping: %d -> %d (max: %d)", i, indexcar, count-1);
-      tpms_pressure[i] = 0.0f;
-      tpms_temp[i] = 0.0f;
-      tpms_alert[i] = 0;
-      continue;
-      }
-
     float _pressure = m_tpms_pressure[indexcar];
     float _temp = m_tpms_temperature[indexcar];
     bool _lowbatt = m_tpms_lowbatt[indexcar];
@@ -87,19 +76,11 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
       tpms_pressure[i] = _pressure;
       _flag = true;
       }
-    else
-      {
-      tpms_pressure[i] = 0.0f;
-      }
     
     // Validate and set temperature
     if (m_tpms_temp_enable && _temp >= TEMP_MIN && _temp < TEMP_MAX) 
       {
       tpms_temp[i] = _temp;
-      }
-    else
-      {
-      tpms_temp[i] = 0.0f;
       }
     
     // Handle alert conditions only if sensor is working and alerts are enabled
