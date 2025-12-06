@@ -567,6 +567,13 @@ config OVMS_VEHICLE_FIAT500
     help
         Enable to include support for FIAT 500 vehicle.
 
+config OVMS_VEHICLE_FIATEDOBLO
+    bool "Include support for Fiat e-Doblo vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for FIAT e-Doblo vehicle.
+
 config OVMS_VEHICLE_VWEUP
     bool "Include support for VW e-up! vehicle"
     default y
