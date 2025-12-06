@@ -1466,6 +1466,8 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     { defstale = 1; }
 
   auto temp = StandardMetrics.ms_v_tpms_temp->AsVector();
+  if (temp.size() < 4)
+    temp.resize(4);
   bool ios_tpms_workaround = MyConfig.GetParamValueBool("server.v2", "workaround.ios_tpms_display", true);  // default enabled, effective only for iOS OVMS app 1.8.6
   int temp_workaround = 1; // workaround value
   // iOS TPMS display workaround: if no TPMS temperature data available, but pressure is there,
