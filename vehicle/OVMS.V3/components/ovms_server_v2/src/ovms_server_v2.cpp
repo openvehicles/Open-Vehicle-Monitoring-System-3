@@ -1443,7 +1443,7 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
 
   Transmit(buffer.str().c_str());
 
-  // Transmit legacy "W" message (fixed four tyres, only pressures & temperatures):
+  // Transmit legacy "W" message (fixed four tyres, only for iOS OVMS app 1.8.6 pressures & temperatures):
 
   bool stale =
     StandardMetrics.ms_v_tpms_pressure->IsStale() ||
@@ -1465,25 +1465,31 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   else
     { defstale = 1; }
 
+  auto temp = StandardMetrics.ms_v_tpms_temp->AsVector();
+  bool ios_tpms_workaround = MyConfig.GetParamValueBool("server.v2", "workaround.ios_tpms_display", true);  // default enabled, effective only for iOS OVMS app 1.8.6
+  int temp_workaround = 1; // workaround value
+  // iOS TPMS display workaround: if no TPMS temperature data available, but pressure is there,
+  // send the temp_workaround values as TPMS temperature, so iOS OVMS app 1.8.6 can at least show pressures. 
+
   buffer.str("");
   buffer.clear();
   buffer
     << "MP-0 W"
     << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_FR, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_FR, "0")
+    << (temp[MS_V_TPMS_IDX_FR] > temp_workaround || !ios_tpms_workaround ? temp[MS_V_TPMS_IDX_FR] : temp_workaround)
     << ","
     << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_RR, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_RR, "0")
+    << (temp[MS_V_TPMS_IDX_RR] > temp_workaround || !ios_tpms_workaround ? temp[MS_V_TPMS_IDX_RR] : temp_workaround)
     << ","
     << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_FL, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_FL, "0")
+    << (temp[MS_V_TPMS_IDX_FL] > temp_workaround || !ios_tpms_workaround ? temp[MS_V_TPMS_IDX_FL] : temp_workaround)
     << ","
     << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_RL, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_RL, "0")
+    << (temp[MS_V_TPMS_IDX_RL] > temp_workaround || !ios_tpms_workaround ? temp[MS_V_TPMS_IDX_RL] : temp_workaround)
     << ","
     << defstale
     ;
