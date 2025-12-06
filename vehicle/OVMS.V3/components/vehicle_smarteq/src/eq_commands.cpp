@@ -803,16 +803,32 @@ void OvmsVehicleSmartEQ::xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCom
   
     smarteq->CommandTPMSset(verbosity, writer);
 }
+
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTPMSset(int verbosity, OvmsWriter* writer) {
   float dummy_pressure = mt_dummy_pressure->AsFloat();
+  writer->printf("Setting dummy TPMS values (base pressure: %.1f kPa)\n", dummy_pressure);
+  
   for (int i = 0; i < 4; i++) {
     m_tpms_pressure[i] = dummy_pressure + (i * 10); // kPa
     m_tpms_temperature[i] = 21 + i; // Celsius
     m_tpms_lowbatt[i] = false;
     m_tpms_missing_tx[i] = false;
+    writer->printf("  Sensor %d: pressure=%.1f kPa, temp=%.1f°C\n", 
+                   i, m_tpms_pressure[i], m_tpms_temperature[i]);
   }
-  writer->printf("set TPMS dummy pressure: %.2f temp: %.2f\n", dummy_pressure, m_tpms_temperature[0]);
+  
   setTPMSValue();   // update TPMS metrics
+  
+  // Show what was actually set in metrics
+  writer->puts("\nAfter setTPMSValue():");
+  auto pressure = StdMetrics.ms_v_tpms_pressure->AsVector();
+  auto temp = StdMetrics.ms_v_tpms_temp->AsVector();
+  for (size_t i = 0; i < pressure.size(); i++) {
+    writer->printf("  Wheel %d: pressure=%.1f kPa, temp=%.1f°C\n", 
+                   (int)i, pressure[i], temp[i]);
+  }
+  
+  writer->puts("TPMS dummy values set");
   return Success;
 }
 
