@@ -47,6 +47,7 @@ provides data logging to SD card and to a server.
   - [BYD Atto 3](https://docs.openvehicles.com/en/latest/components/vehicle_byd_atto3/docs/index.html)
   - [Energica motorbikes](https://docs.openvehicles.com/en/latest/components/vehicle_energica/docs/index.html)
   - [Fiat 500e](https://docs.openvehicles.com/en/latest/components/vehicle_fiat500/docs/index.html)
+  - [Fiat e-Doblo](https://docs.openvehicles.com/en/latest/components/vehicle_fiatedoblo/docs/index.html)
   - [Hyundai Ioniq vFL](https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html)
   - [Hyundai Ioniq 5](https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniq5/docs/index.html)
   - [Jaguar Ipace](https://docs.openvehicles.com/en/latest/components/vehicle_jaguaripace/docs/index.html)
