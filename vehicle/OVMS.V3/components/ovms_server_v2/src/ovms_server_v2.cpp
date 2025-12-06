@@ -46,6 +46,8 @@ static const char *TAG = "ovms-server-v2";
 #include "esp_system.h"
 #include "ovms_utils.h"
 #include "ovms_boot.h"
+#include <iomanip>  // für std::fixed, std::setprecision
+#include <cmath>    // für std::isnan
 #if CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
 #endif
@@ -1320,58 +1322,125 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
 
   extram::ostringstream buffer;
 
-  // Transmit new "Y" message:
+  // Helper lambda for validity indicator: -1=undefined, 0=stale, 1=valid
+  auto get_validity = [](OvmsMetric* m) -> int {
+    if (!m || !m->IsDefined()) return -1;
+    if (m->IsStale()) return 0;
+    return 1;
+    };
 
-  int defstale_pressure =
-    StandardMetrics.ms_v_tpms_pressure->IsDefined()
-    ? (StandardMetrics.ms_v_tpms_pressure->IsStale() ? 0 : 1)
-    : -1;
-  int defstale_temp =
-    StandardMetrics.ms_v_tpms_temp->IsDefined()
-    ? (StandardMetrics.ms_v_tpms_temp->IsStale() ? 0 : 1)
-    : -1;
-  int defstale_health =
-    StandardMetrics.ms_v_tpms_health->IsDefined()
-    ? (StandardMetrics.ms_v_tpms_health->IsStale() ? 0 : 1)
-    : -1;
-  int defstale_alert =
-    StandardMetrics.ms_v_tpms_alert->IsDefined()
-    ? (StandardMetrics.ms_v_tpms_alert->IsStale() ? 0 : 1)
-    : -1;
-
+  // Get wheel layout
   std::vector<std::string> wheels;
+  bool uses_mapping = false;
   if (MyVehicleFactory.m_currentvehicle)
+    {
     wheels = MyVehicleFactory.m_currentvehicle->GetTpmsLayout();
+    uses_mapping = MyVehicleFactory.m_currentvehicle->UsesTpmsSensorMapping();
+    }
+  
+  int wheel_count = (int)wheels.size();
 
-  buffer
-    << "MP-0 Y"
-    << wheels.size();
-  for (auto wheel : wheels)
+  // Start Y message with wheel count and names
+  buffer << "MP-0 Y" << wheel_count;
+  for (auto& wheel : wheels)
     {
     buffer << "," << wheel;
     }
-  buffer
-    << ","
-    << StandardMetrics.ms_v_tpms_pressure->GetSize()
-    << (StandardMetrics.ms_v_tpms_pressure->GetSize() ? "," : "")
-    << StandardMetrics.ms_v_tpms_pressure->AsString("", kPa, 1)
-    << "," << defstale_pressure
-    << ","
-    << StandardMetrics.ms_v_tpms_temp->GetSize()
-    << (StandardMetrics.ms_v_tpms_temp->GetSize() ? "," : "")
-    << StandardMetrics.ms_v_tpms_temp->AsString("", Celcius, 1)
-    << "," << defstale_temp
-    << ","
-    << StandardMetrics.ms_v_tpms_health->GetSize()
-    << (StandardMetrics.ms_v_tpms_health->GetSize() ? "," : "")
-    << StandardMetrics.ms_v_tpms_health->AsString("", Percentage, 1)
-    << "," << defstale_health
-    << ","
-    << StandardMetrics.ms_v_tpms_alert->GetSize()
-    << (StandardMetrics.ms_v_tpms_alert->GetSize() ? "," : "")
-    << StandardMetrics.ms_v_tpms_alert->AsString("")
-    << "," << defstale_alert
-    ;
+
+  // Pressure section
+  int p_validity = get_validity(StandardMetrics.ms_v_tpms_pressure);
+  if (p_validity == -1)
+    {
+    buffer << ",0,-1";
+    }
+  else
+    {
+    auto pressure = StandardMetrics.ms_v_tpms_pressure->AsVector();
+    buffer << "," << pressure.size();
+    for (size_t i = 0; i < pressure.size(); i++)
+      {
+      if (!std::isnan(pressure[i]))
+        buffer << "," << std::fixed << std::setprecision(1) << pressure[i];
+      else
+        buffer << ",";
+      }
+    buffer << "," << p_validity;
+    }
+
+  // Temperature section
+  int t_validity = get_validity(StandardMetrics.ms_v_tpms_temp);
+  if (t_validity == -1)
+    {
+    buffer << ",0,-1";
+    }
+  else
+    {
+    auto temp = StandardMetrics.ms_v_tpms_temp->AsVector();
+    buffer << "," << temp.size();
+    for (size_t i = 0; i < temp.size(); i++)
+      {
+      if (!std::isnan(temp[i]))
+        buffer << "," << std::fixed << std::setprecision(1) << temp[i];
+      else
+        buffer << ",";
+      }
+    buffer << "," << t_validity;
+    }
+
+  // Health section
+  int h_validity = get_validity(StandardMetrics.ms_v_tpms_health);
+  if (h_validity == -1)
+    {
+    buffer << ",0,-1";
+    }
+  else
+    {
+    auto health = StandardMetrics.ms_v_tpms_health->AsVector();
+    buffer << "," << health.size();
+    for (size_t i = 0; i < health.size(); i++)
+      {
+      if (!std::isnan(health[i]))
+        buffer << "," << std::fixed << std::setprecision(1) << health[i];
+      else
+        buffer << ",";
+      }
+    buffer << "," << h_validity;
+    }
+
+  // Alert section
+  int a_validity = get_validity(StandardMetrics.ms_v_tpms_alert);
+  if (a_validity == -1)
+    {
+    buffer << ",0,-1";
+    }
+  else
+    {
+    auto alert = StandardMetrics.ms_v_tpms_alert->AsVector();
+    buffer << "," << alert.size();
+    for (size_t i = 0; i < alert.size(); i++)
+      {
+      buffer << "," << alert[i];
+      }
+    buffer << "," << a_validity;
+    }
+
+  // Mapping section
+  if (!uses_mapping || wheel_count == 0)
+    {
+    buffer << ",0,-1";
+    }
+  else
+    {
+    buffer << "," << wheel_count;
+    for (int i = 0; i < wheel_count; i++)
+      {
+      int map_idx = MyConfig.GetParamValueInt("vehicle", 
+                      std::string("tpms.") + str_tolower(wheels[i]), i);
+      buffer << "," << map_idx;
+      }
+    buffer << ",1";  // mapping is always valid if defined
+    }
+
   Transmit(buffer.str().c_str());
 
   // Transmit legacy "W" message (fixed four tyres, only pressures & temperatures):
