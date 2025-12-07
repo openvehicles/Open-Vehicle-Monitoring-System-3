@@ -1,10 +1,7 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          November 2025
-;
-;    Changes:
-;    1.0  Initial release - Climate schedule configuration
-;
+;    Date:          December 2025
+;;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
 ; in the Software without restriction, including without limitation the rights
@@ -24,22 +21,16 @@
 ; THE SOFTWARE.
 */
 
-#include "ovms_log.h"
-#include <string.h>
-#include <stdio.h>
-#include <sstream> 
 #include "ovms_webserver.h"
-#include "ovms_config.h"
-#include "ovms_metrics.h"
-#include "metrics_standard.h"
-#include "vehicle.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
 
-
 #ifdef CONFIG_OVMS_COMP_SERVER
 #ifdef CONFIG_OVMS_COMP_SERVER_V2
+
+#include "ovms_server_v2.h"
+
 /**
  * HandleCfgServerV2: configure server v2 connection (URL /cfg/server/v2)
  */

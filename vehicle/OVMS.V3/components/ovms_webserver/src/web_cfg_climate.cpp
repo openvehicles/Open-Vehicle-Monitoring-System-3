@@ -24,18 +24,11 @@
 ; THE SOFTWARE.
 */
 
-#include "ovms_log.h"
-#include <string.h>
-#include <stdio.h>
-#include <sstream> 
+#include <sstream>
 #include "ovms_webserver.h"
-#include "ovms_config.h"
-#include "ovms_metrics.h"
-#include "metrics_standard.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
-
 
 /**
  * HandleCfgPreconditionSchedule: configure climate precondition schedule

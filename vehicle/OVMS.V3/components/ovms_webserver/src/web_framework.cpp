@@ -26,19 +26,8 @@
 ; THE SOFTWARE.
 */
 
-#include "ovms_log.h"
-//static const char *TAG = "webserver";
-
-#include <string.h>
-#include <stdio.h>
 #include "ovms_webserver.h"
-#include "ovms_config.h"
-#include "ovms_metrics.h"
-#include "ovms_housekeeping.h"
 #include "buffered_shell.h"
-#include "metrics_standard.h"
-#include "vehicle.h"
-
 
 /**
  * encode_html: HTML encode value

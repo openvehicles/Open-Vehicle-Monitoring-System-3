@@ -35,6 +35,7 @@ static const char *TAG = "websocket";
 
 #include <string.h>
 #include <stdio.h>
+#include <sstream>
 #include "ovms_webserver.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
