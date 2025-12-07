@@ -33,22 +33,16 @@
 #define __WEBSERVER_H__
 
 #include <forward_list>
-#include <iterator>
 #include <vector>
-#include <memory>
 #include <utility>
 #include <map>
-#include <string.h>
-#include <stdio.h>
+#include <set>
 #include <string>
-#include <sstream>
-#include <fstream>
-#include <dirent.h>
+#include <ostream>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 
-#include "ovms_log.h"
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 #include "ovms_config.h"
@@ -57,25 +51,9 @@
 #include "ovms_shell.h"
 #include "ovms_netmanager.h"
 #include "ovms_utils.h"
-#include "ovms_housekeeping.h"
-#include "ovms_peripherals.h"
-#include "ovms_version.h"
 
 #include "log_buffers.h"
-#include "metrics_standard.h"
 #include "vehicle.h"
-
-#ifdef CONFIG_OVMS_COMP_OTA
-#include "ovms_ota.h"
-#endif
-
-#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
-#include "ovms_server_v2.h"
-#endif
-
-#ifdef CONFIG_OVMS_COMP_PUSHOVER
-#include "pushover.h"
-#endif
 
 // The setup wizard currently is tailored to be used with a WiFi enabled module:
 #ifdef CONFIG_OVMS_COMP_WIFI

@@ -26,10 +26,12 @@
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
 
+#ifdef CONFIG_OVMS_COMP_PUSHOVER
+#include "pushover.h"
+
 /**
  * HandleCfgPushover: Configure pushover notifications (URL /cfg/pushover)
  */
-#ifdef CONFIG_OVMS_COMP_PUSHOVER
 void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;

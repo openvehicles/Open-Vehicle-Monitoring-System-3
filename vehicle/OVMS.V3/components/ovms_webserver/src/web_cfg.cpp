@@ -26,7 +26,10 @@
 ; THE SOFTWARE.
 */
 
+#include <fstream>
+#include <sstream>
 #include "ovms_webserver.h"
+#include "ovms_peripherals.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())

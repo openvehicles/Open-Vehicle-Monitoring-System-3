@@ -26,14 +26,25 @@
 ; THE SOFTWARE.
 */
 
+#include "ovms_log.h"
+static const char *TAG = "webserver";
+
+#include <sstream>
 #include "ovms_webserver.h"
 #include "ovms_boot.h"
+#include "ovms_peripherals.h"
+#include "metrics_standard.h"
 
+#ifdef CONFIG_OVMS_COMP_OTA
+#include "ovms_ota.h"
+#endif
+
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+#include "ovms_server_v2.h"
+#endif
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
-
-static const char *TAG = "webserver";
 
 #ifdef WEBSRV_HAVE_SETUPWIZARD
 

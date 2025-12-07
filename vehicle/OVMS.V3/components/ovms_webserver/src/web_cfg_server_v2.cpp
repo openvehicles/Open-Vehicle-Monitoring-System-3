@@ -28,6 +28,9 @@
 
 #ifdef CONFIG_OVMS_COMP_SERVER
 #ifdef CONFIG_OVMS_COMP_SERVER_V2
+
+#include "ovms_server_v2.h"
+
 /**
  * HandleCfgServerV2: configure server v2 connection (URL /cfg/server/v2)
  */

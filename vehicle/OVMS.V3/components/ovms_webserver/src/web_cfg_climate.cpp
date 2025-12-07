@@ -24,6 +24,7 @@
 ; THE SOFTWARE.
 */
 
+#include <sstream>
 #include "ovms_webserver.h"
 
 #define _attr(text) (c.encode_html(text).c_str())

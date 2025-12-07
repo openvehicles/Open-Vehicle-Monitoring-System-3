@@ -20,13 +20,15 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+#include "ovms_log.h"
+static const char *TAG = "webserver";
 
 #include "ovms_webserver.h"
+#include "ovms_peripherals.h"
+#include "metrics_standard.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
-
-static const char *TAG = "webserver";
 
 #ifdef CONFIG_OVMS_COMP_CELLULAR
 

@@ -22,6 +22,7 @@
 */
 
 #include "ovms_webserver.h"
+#include "metrics_standard.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())

@@ -21,12 +21,15 @@
 ; THE SOFTWARE.
 */
 
+#include <dirent.h>
 #include "ovms_webserver.h"
+#include "ovms_version.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
 
 #ifdef CONFIG_OVMS_COMP_OTA
+#include "ovms_ota.h"
 
 /**
  * HandleCfgFirmware: OTA firmware update & boot setup (URL /cfg/firmware)
