@@ -299,9 +299,9 @@ public:
   void ReadProfile0(uint8_t *data);
   void WriteProfile0();
   void ActivateProfile0();
-  SemaphoreHandle_t xWakeSemaphore;
-  SemaphoreHandle_t xChargeSemaphore;
-  SemaphoreHandle_t xCurrentSemaphore;
+  SemaphoreHandle_t xWakeSemaphore = 0;
+  SemaphoreHandle_t xChargeSemaphore = 0;
+  SemaphoreHandle_t xCurrentSemaphore = 0;
 
 private:
   void SendCommand(RemoteCommand);

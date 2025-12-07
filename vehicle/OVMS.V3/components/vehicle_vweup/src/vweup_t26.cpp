@@ -148,10 +148,7 @@ void OvmsVehicleVWeUp::T26Init()
 {
   ESP_LOGI(TAG, "T26: Starting connection: T26A (Comfort CAN)");
   memset(m_vin, 0, sizeof(m_vin));
-
-  RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
   
-  MyConfig.RegisterParam("xvu", "VW e-Up", true, true);
   vin_part1 = false;
   vin_part2 = false;
   vin_part3 = false;
@@ -185,9 +182,18 @@ void OvmsVehicleVWeUp::T26Init()
   profile0_key = P0_KEY_NOP;
   profile0_val = 0;
   profile0_activate = false;
-  xWakeSemaphore = xSemaphoreCreateBinary();
-  xChargeSemaphore = xSemaphoreCreateBinary();
-  xCurrentSemaphore = xSemaphoreCreateBinary();
+
+  // create semaphores:
+  if (!xWakeSemaphore) {
+    xWakeSemaphore = xSemaphoreCreateBinary();
+  }
+  if (!xChargeSemaphore) {
+    xChargeSemaphore = xSemaphoreCreateBinary();
+  }
+  if (!xCurrentSemaphore) {
+    xCurrentSemaphore = xSemaphoreCreateBinary();
+  }
+
   ocu_response = false;
   fakestop = false;
   climit_max = (vweup_modelyear > 2019)? 32 : 16;
@@ -210,17 +216,20 @@ void OvmsVehicleVWeUp::T26Init()
     StdMetrics.ms_v_charge_mode->SetValue("standard");
   }
 
-  // create OCU heartbeat timer:
+  // create timers:
   if (!m_sendOcuHeartbeat) {
     m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdTRUE, this, sendOcuHeartbeat);
   }
+  if (!profile0_timer) {
+    profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(profile0_delay), pdFALSE, this, Profile0RetryTimer);
+  }
+
+  // fully initialized, start T26 CAN bus:
+  RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
   // update values from ECU:
   t26_init = true;
   profile0_state = PROFILE0_INIT;
-  if (!profile0_timer) {
-    profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(profile0_delay), pdFALSE, this, Profile0RetryTimer);
-  }
   xTimerStart(profile0_timer, 0);
 }
 
