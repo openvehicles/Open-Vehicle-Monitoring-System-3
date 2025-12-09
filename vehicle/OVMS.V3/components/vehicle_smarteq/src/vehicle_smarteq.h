@@ -34,7 +34,7 @@
 #define __VEHICLE_SMARTEQ_H__
 
 #define VERSION "2.1.0"
-#define PRESET_VERSION 4 // Configuration preset version
+#define PRESET_VERSION 5 // Configuration preset version
 
 #include "ovms_log.h"
 
@@ -44,10 +44,11 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
-
 #include <stdint.h>
 #include <stdio.h>
 #include <sdkconfig.h>
+#include <vector>
+#include <string>
 
 #include "can.h"
 #include "vehicle.h"
@@ -139,7 +140,8 @@ public:
     vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandActivateValet(const char* pin) override;
     vehicle_command_t CommandDeactivateValet(const char* pin) override;
-    vehicle_command_t CommandCan(uint32_t txid,uint32_t rxid,bool reset=false,bool wakeup=false);
+    vehicle_command_t CommandCan(uint32_t txid,uint32_t rxid,std::string hexbytes,bool reset=false,bool wakeup=false);
+    vehicle_command_t CommandCanVector(uint32_t txid, uint32_t rxid, std::vector<std::string> hexbytes, bool reset=false, bool wakeup=false);
     vehicle_command_t CommandWakeup2();
     vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
     vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
