@@ -218,6 +218,22 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
       "<li><samp id=\"modem-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
+  output = ExecuteCommand("tpms map get");
+  // Show TPMS panel only if we have actual data (not just "0,-1" empty sections)
+  // Format: wheel_count,names...,pressure_count,data,validity,...
+  // Empty example: 4,FL,FR,RL,RR,0,-1,0,-1,0,-1,0,-1,0,-1 (all data sections are 0,-1)
+  if (!output.empty() &&
+      output.find(",0,-1,0,-1,0,-1,0,-1,") == std::string::npos)
+    {
+    c.print(
+      "</div>"
+      "<div class=\"col-sm-6 col-lg-4\">");
+    c.panel_start("primary", "TPMS");
+    output = ExecuteCommand("tpms status");
+    c.printf("<samp class=\"monitor\" data-updcmd=\"tpms status\" data-events=\"\\.tpms\\.\">%s</samp>", _html(output));
+    c.panel_end();
+    }
+
   c.print(
     "</div>"
     "</div>"
