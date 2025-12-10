@@ -77,6 +77,14 @@
 // Vehicle specific MSG protocol command IDs:
 #define CMD_SetChargeAlerts         204 // (suffsoc)
 
+enum poll_states
+  {
+  POLLSTATE_OFF,      //- car is off
+  POLLSTATE_ON,       //- car is on
+  POLLSTATE_RUNNING,  //- car is in drive/reverse
+  POLLSTATE_CHARGING  //- car is charging
+  };
+
 using namespace std;
 
 typedef std::vector<OvmsPoller::poll_pid_t, ExtRamAllocator<OvmsPoller::poll_pid_t>> poll_vector_t;
