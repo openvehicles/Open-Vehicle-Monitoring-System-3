@@ -175,6 +175,7 @@ GsmPPPOS::GsmPPPOS(GsmMux* mux, int channel)
   m_connected = false;
   m_connectcount = 0;
   m_lasterrcode = -1;
+  m_shutdown = false;
   }
 
 GsmPPPOS::~GsmPPPOS()
@@ -189,6 +190,7 @@ GsmPPPOS::~GsmPPPOS()
 
 void GsmPPPOS::IncomingData(uint8_t *data, size_t len)
   {
+  if (m_shutdown || m_ppp == NULL) return;  // Skip if shutting down
   MyCommandApp.HexDump(TAG, "rx", (const char*)data, len);
   pppos_input_tcpip(m_ppp, (u8_t*)data, (int)len);
   }
@@ -217,6 +219,7 @@ void GsmPPPOS::Startup()
   {
   if (m_ppp == NULL) return;
 
+  m_shutdown = false;  // Reset shutdown flag
   ppp_set_auth(m_ppp, PPPAUTHTYPE_PAP,
     MyConfig.GetParamValue("modem", "apn.user").c_str(),
     MyConfig.GetParamValue("modem", "apn.password").c_str());
@@ -237,14 +240,17 @@ void GsmPPPOS::Shutdown(bool hard)
       {
       ESP_LOGI(TAG, "Shutting down (soft)...");
       }
+    m_shutdown = true;  // Prevent new data from being processed
     m_connected = false;
     MyEvents.SignalEvent("system.modem.down",NULL);
+    vTaskDelay(pdMS_TO_TICKS(100));  // Allow pending data to drain
     pppapi_close(m_ppp, nocarrier);
     ESP_LOGI(TAG, "PPP is shutdown");
     }
   else
     {
     ESP_LOGI(TAG, "Shutdown (direct)");
+    m_shutdown = true;
     m_connected = false;
     }
   }
