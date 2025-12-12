@@ -421,6 +421,9 @@ void OvmsServerV3::TransmitModifiedMetrics()
 
 void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   {
+  if (!m_mgconn)
+    return;
+
   std::string metric_name(metric->m_name);
 
   if (!m_metrics_filter.CheckFilter(metric_name))
@@ -492,6 +495,9 @@ void OvmsServerV3::TransmitPriorityMetrics()
 
 int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
   {
+  if (!m_mgconn)
+    return 0;
+
   std::string topic(m_topic_prefix);
   topic.append("notify/info/");
   topic.append(mqtt_topic(entry->m_subtype));
@@ -507,6 +513,9 @@ int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
 
 int OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
   {
+  if (!m_mgconn)
+    return 0;
+
   std::string topic(m_topic_prefix);
   topic.append("notify/error/");
   topic.append(mqtt_topic(entry->m_subtype));
@@ -522,6 +531,9 @@ int OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
 
 int OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
   {
+  if (!m_mgconn)
+    return 0;
+
   std::string topic(m_topic_prefix);
   topic.append("notify/alert/");
   topic.append(mqtt_topic(entry->m_subtype));
@@ -537,6 +549,9 @@ int OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
 
 int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
   {
+  if (!m_mgconn)
+    return 0;
+
   char base[32];
   std::string topic(m_topic_prefix);
   topic.append("notify/data/");
@@ -712,7 +727,7 @@ void OvmsServerV3::IncomingPubRec(int id)
 void OvmsServerV3::IncomingEvent(std::string event, void* data)
   {
   // Publish the event, if we are connected...
-  if (m_mgconn == NULL) return;
+  if (!m_mgconn) return;
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
 
   std::string topic(m_topic_prefix);
@@ -722,6 +737,7 @@ void OvmsServerV3::IncomingEvent(std::string event, void* data)
   // Legacy: publish event name on fixed topic
   if (m_legacy_event_topic)
     {
+    if (!m_mgconn) return;
     mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
       MG_MQTT_QOS(0), event.c_str(), event.length());
     }
@@ -729,6 +745,7 @@ void OvmsServerV3::IncomingEvent(std::string event, void* data)
   // Publish MQTT style event topic, payload reserved for event data serialization:
   topic.append("/");
   topic.append(mqtt_topic(event));
+  if (!m_mgconn) return;
   mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
     MG_MQTT_QOS(0), "", 0);
 
@@ -745,6 +762,8 @@ void OvmsServerV3::RunCommand(std::string client, std::string id, std::string co
   bs->ProcessChar('\n');
   std::string val; bs->Dump(val);
   delete bs;
+
+  if (!m_mgconn) return;
 
   std::string topic(m_topic_prefix);
   topic.append("client/");
@@ -1464,6 +1483,8 @@ void OvmsServerV3::ProcessClientConfigRequest(const std::string& clientid, const
   if (param.empty()||inst.empty()) return;
 
   std::string value = MyConfig.GetParamValue(param.c_str(), inst.c_str());
+
+  if (!m_mgconn) return;
 
   std::string topic(m_topic_prefix);
   topic.append("client/").append(clientid).append("/config/");
