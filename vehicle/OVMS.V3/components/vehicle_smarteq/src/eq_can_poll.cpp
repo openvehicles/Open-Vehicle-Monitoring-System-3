@@ -790,7 +790,7 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t re
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_GroundResistance(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(2);
-  mt_obl_main_ground_resistance->SetValue((float) CAN_UINT(0));
+  mt_obl_misc->SetElemValue(1, (float) CAN_UINT(0));  // ground_resistance
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len) {
@@ -818,30 +818,30 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint1
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_DCCurrent(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(2);
   int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_main_current_leakage_dc->SetValue((float)raw / 1000.0f);
+  mt_obl_leakage_currents->SetElemValue(0, (float)raw / 1000.0f);  // dc
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HF10kHz(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(2);
   int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_main_current_leakage_hf_10khz->SetValue((float)raw / 1000.0f);
+  mt_obl_leakage_currents->SetElemValue(1, (float)raw / 1000.0f);  // hf10kHz
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(2);
   int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_main_current_leakage_hf->SetValue((float)raw / 1000.0f);
+  mt_obl_leakage_currents->SetElemValue(2, (float)raw / 1000.0f);  // hf
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(2);
   int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_main_current_leakage_lf->SetValue((float)raw / 1000.0f);
+  mt_obl_leakage_currents->SetElemValue(3, (float)raw / 1000.0f);  // lf
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(1);
-  mt_obl_main_max_current->SetValue((float) CAN_BYTE(0));
+  mt_obl_misc->SetElemValue(2, (float) CAN_BYTE(0));  // max_current
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len) {
@@ -851,7 +851,7 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_
   uint16_t raw = CAN_UINT(0);
   float freq = 10.0f + (raw * 0.0078125f);
   if (freq > 40.0f) // plausibility check
-    mt_obl_main_freq->SetValue(freq);
+    mt_obl_misc->SetElemValue(0, freq);  // freq
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_time(const char* data, uint16_t reply_len) {

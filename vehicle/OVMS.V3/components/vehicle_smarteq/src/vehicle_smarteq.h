@@ -33,8 +33,8 @@
 #ifndef __VEHICLE_SMARTEQ_H__
 #define __VEHICLE_SMARTEQ_H__
 
-#define VERSION "2.1.1"
-#define PRESET_VERSION 6 // Configuration preset version
+#define VERSION "2.1.2"
+#define PRESET_VERSION 7 // Configuration preset version
 
 #include "ovms_log.h"
 
@@ -121,7 +121,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void DisablePlugin(const char* plugin);
     bool ExecuteCommand(const std::string& command);
     void setTPMSValue();
-    void setTPMSValueBoot();
     void NotifyClimate();
     void NotifyClimateTimer();
     void NotifyTripReset();
@@ -375,15 +374,11 @@ public:
     OvmsMetricVector<float> *mt_obl_main_volts;         //!< AC voltage of L1, L2, L3
     OvmsMetricVector<float> *mt_obl_main_CHGpower;      //!< Power of rail1, rail2 W (x/2) & max available kw (x/64)    
     OvmsMetricBool          *mt_obl_fastchg;            // 22kw fast charge enabled
-    OvmsMetricFloat         *mt_obl_main_freq;          //!< AC input frequency
-    OvmsMetricFloat         *mt_obl_main_ground_resistance;           //!< Ground resistance in (Ohm)
-    OvmsMetricInt           *mt_obl_main_max_current;                 //!< Charger max current setting (A)
+    // OBL misc values: Index 0=freq, 1=ground_resistance, 2=max_current
+    OvmsMetricVector<float> *mt_obl_misc;               //!< OBL misc values vector
     OvmsMetricString        *mt_obl_main_leakage_diag;                //!< Leakage diagnostic
-    OvmsMetricFloat         *mt_obl_main_current_leakage_dc;          //!< DC leakage current (A)
-    OvmsMetricFloat         *mt_obl_main_current_leakage_hf_10khz;    //!< HF 10kHz leakage (A)
-    OvmsMetricFloat         *mt_obl_main_current_leakage_hf;          //!< HF leakage current (A)
-    OvmsMetricFloat         *mt_obl_main_current_leakage_lf;          //!< LF leakage current (A)
-    OvmsMetricFloat         *mt_obl_main_current_leakage_ac;          //!< AC leakage current (A)
+    // Leakage currents: Index 0=dc, 1=hf10kHz, 2=hf, 3=lf
+    OvmsMetricVector<float> *mt_obl_leakage_currents;               //!< Leakage currents vector (A)
 
     OvmsMetricInt           *mt_obd_duration;           //!< obd duration
     OvmsMetricInt           *mt_obd_mt_day_prewarn;     //!< Maintaince pre warning days
