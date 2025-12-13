@@ -70,6 +70,7 @@ class GsmPPPOS : public InternalRamAllocated
     bool         m_connected;
     int          m_connectcount;
     int          m_lasterrcode;
+    bool         m_shutdown;  // Flag to prevent data processing during shutdown
   };
 
 #endif //#ifndef __GSM_PPPOS__
