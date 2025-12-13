@@ -373,7 +373,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
   
   uint32_t txid = 0x745, rxid = 0x765;
   uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 200;
+  int timeout_ms = 500;
   
   std::string request;
   std::string response;
@@ -431,7 +431,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin
   
   uint32_t txid = 0x745, rxid = 0x765;
   uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 200;
+  int timeout_ms = 500;
   std::string request;
   std::string response;
   std::string reqstr = "30010001";
