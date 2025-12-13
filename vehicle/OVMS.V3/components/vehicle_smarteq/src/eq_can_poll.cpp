@@ -498,7 +498,7 @@ void OvmsVehicleSmartEQ::PollReply_BCM_VIN(const char* data, uint16_t reply_len)
 
 void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len) {
   // so require >=22 bytes of payload (indices 0..21).
-  REQUIRE_LEN(22);
+  REQUIRE_LEN(20);
 
   // Index mapping (payload):
   //  0..3   RF event types (wheel 1..4)
