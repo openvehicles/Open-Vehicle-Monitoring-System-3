@@ -652,13 +652,16 @@ double float2double(float f)
 
 /**
  * idtag: create object instance tag for registrations
+ * 
+ * Uses snprintf instead of std::ostringstream to reduce stack usage
+ * by ~200-450 bytes. This is critical for small-stack tasks like
+ * DuktapeVFSSave which register shutdown events.
  */
 std::string idtag(const char* tag, void* instance)
   {
-  std::ostringstream buf;
-  buf << tag << "-" << instance;
-  std::string res = buf.str();
-  return res;
+  char buf[48];
+  snprintf(buf, sizeof(buf), "%s-%p", tag, instance);
+  return std::string(buf);
   }
 
 /**
