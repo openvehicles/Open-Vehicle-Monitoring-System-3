@@ -100,7 +100,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x392:
       REQ_DLC(6);
       StdMetrics.ms_v_env_hvac->SetValue((CAN_BYTE(1) & 0x40) > 0);
-      StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40.0f);
+      StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(0) - 40.0f);
       break;
     case 0x42E:        // HV voltage / temp frame
       {
@@ -301,7 +301,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       // TPMS pressure values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt
       if (!m_enable_write)
       {
-        REQ_DLC(7);
+        REQ_DLC(6);
         // Read TPMS pressure values:
         for (int i = 0; i < 4; i++) 
           {
