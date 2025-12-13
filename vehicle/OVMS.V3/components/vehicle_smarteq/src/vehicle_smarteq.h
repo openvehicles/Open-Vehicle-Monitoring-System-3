@@ -33,8 +33,8 @@
 #ifndef __VEHICLE_SMARTEQ_H__
 #define __VEHICLE_SMARTEQ_H__
 
-#define VERSION "2.1.0"
-#define PRESET_VERSION 5 // Configuration preset version
+#define VERSION "2.1.1"
+#define PRESET_VERSION 6 // Configuration preset version
 
 #include "ovms_log.h"
 
@@ -77,6 +77,14 @@
 
 // Vehicle specific MSG protocol command IDs:
 #define CMD_SetChargeAlerts         204 // (suffsoc)
+
+enum poll_states
+  {
+  POLLSTATE_OFF,      //- car is off
+  POLLSTATE_ON,       //- car is on
+  POLLSTATE_RUNNING,  //- car is in drive/reverse
+  POLLSTATE_CHARGING  //- car is charging
+  };
 
 using namespace std;
 
