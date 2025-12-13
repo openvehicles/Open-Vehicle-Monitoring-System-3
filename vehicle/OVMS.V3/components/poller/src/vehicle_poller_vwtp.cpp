@@ -137,7 +137,7 @@ void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
         m_poll.moduleid_low = m_poll_vwtp.rxid;
         m_poll.moduleid_high = m_poll_vwtp.rxid;
 
-        set_poll_waiting(1000);
+        set_poll_waiting(2000);
         m_poll_vwtp.state = VWTP_ChannelSetup;
         m_poll_vwtp.lastused = esp_log_timestamp();
         m_poll_vwtp.bus->Write(&txframe);
@@ -163,7 +163,7 @@ void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
       m_poll.moduleid_sent = m_poll_vwtp.txid;
       m_poll.moduleid_low = m_poll_vwtp.rxid;
       m_poll.moduleid_high = m_poll_vwtp.rxid;
-      set_poll_waiting(1000);
+      set_poll_waiting(2000);
 
       m_poll_vwtp.state = VWTP_ChannelParams;
       m_poll_vwtp.bus->Write(&txframe);
@@ -183,7 +183,7 @@ void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
       m_poll.moduleid_sent = m_poll_vwtp.txid;
       m_poll.moduleid_low = m_poll_vwtp.rxid;
       m_poll.moduleid_high = m_poll_vwtp.rxid;
-      set_poll_waiting(1000);
+      set_poll_waiting(2000);
 
       m_poll_vwtp.state = VWTP_ChannelClose;
       m_poll_vwtp.bus->Write(&txframe);
@@ -303,7 +303,7 @@ void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
       m_poll.moduleid_sent = m_poll_vwtp.txid;
       m_poll.moduleid_low = m_poll_vwtp.rxid;
       m_poll.moduleid_high = m_poll_vwtp.rxid;
-      set_poll_waiting(1000);
+      set_poll_waiting(2000);
       m_poll_vwtp.state = VWTP_Transmit;
       m_poll_vwtp.lastused = esp_log_timestamp();
       break;
@@ -315,7 +315,7 @@ void OvmsPoller::PollerVWTPEnter(vwtp_channelstate_t state)
         m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.mlframe, m_poll.mlremain);
       m_poll_vwtp.state = VWTP_Receive;
       m_poll_vwtp.lastused = esp_log_timestamp();
-      set_poll_waiting(1000);
+      set_poll_waiting(2000);
       break;
       }
 
@@ -695,7 +695,7 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
             ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPReceive[%02X]: got OBD/UDS info %02X(%X) code=%02X (pending)",
                       m_poll.bus_no, m_poll_vwtp.moduleid, m_poll.type, m_poll.pid, error_code);
             // reset wait time:
-            set_poll_waiting(1000);
+            set_poll_waiting(2000);
             return true;
             }
           else
@@ -748,7 +748,7 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
           {
           m_poll.mlframe++;
           m_poll.mloffset += response_datalen;
-          set_poll_waiting(1000);
+          set_poll_waiting(2000);
           }
         else
           {
@@ -788,9 +788,9 @@ void OvmsPoller::PollerVWTPTicker()
 
   // As a VWTP operation may start at any time between two Ticker runs,
   // we need to adjust the wait time if the ticker offset is too short:
-  if (get_poll_waiting() && get_waiting_ms() <= 500 && timediff_ms < 200)
+  if (get_poll_waiting() && timediff_ms < 200)
     {
-    set_poll_waiting(1000);
+    set_poll_waiting(2000);
     return;
     }
 
