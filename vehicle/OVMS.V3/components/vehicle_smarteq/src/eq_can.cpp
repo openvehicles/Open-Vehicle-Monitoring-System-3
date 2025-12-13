@@ -98,13 +98,13 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         }
       break;
     case 0x392:
+      {
       REQ_DLC(6);
-      bool hvac_on = (CAN_BYTE(1) & 0x40) > 0;
-      StdMetrics.ms_v_env_hvac->SetValue(hvac_on);
-      if (hvac_on)
-        {
-        StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40.0f);
-        }      
+      bool cabin_plausible = (float)(CAN_BYTE(5) - 40.0f) != 0.0f;
+      StdMetrics.ms_v_env_hvac->SetValue((CAN_BYTE(1) & 0x40) > 0);
+      if (cabin_plausible)
+        StdMetrics.ms_v_env_cabintemp->SetValue((float)(CAN_BYTE(5) - 40.0f));
+      }
       break;
     case 0x42E:        // HV voltage / temp frame
       {
