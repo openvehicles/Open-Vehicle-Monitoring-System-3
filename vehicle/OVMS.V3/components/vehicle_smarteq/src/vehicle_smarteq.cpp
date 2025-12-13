@@ -65,6 +65,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_modem_ticker = 0;
   m_ADCfactor_recalc = false;
   m_ADCfactor_recalc_timer = 0;
+  m_adc_samples = 5;
 
   m_enable_write = false;
   m_candata_poll = false;
@@ -86,10 +87,11 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);  // Warn: 2°C, Alert: 3°C
 
   mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, true);
-  mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_NONE, "", Other);
-  mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_NONE, 0, Other);
-  mt_adc_factor_history         = new OvmsMetricVector<float>("xsq.adc.factor.history", SM_STALE_NONE, Other);
-  mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_NONE, "UNKNOWN", Other);
+  mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MAX, "", Other);
+  mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_MAX, 0, Other);
+  mt_adc_factor_history         = MyMetrics.InitVector<float>("xsq.adc.factor.history", SM_STALE_MAX, nullptr, Other);
+  mt_adc_factor_history->SetElemValue(m_adc_samples -1, 0.0f);  // Pre-allocate x samples to avoid reallocs
+  mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_MAX, "UNKNOWN", Other);
 
   mt_start_time                 = MyMetrics.InitString("xsq.v.start.time", SM_STALE_MID, 0, Other);
   mt_start_distance             = MyMetrics.InitFloat("xsq.v.start.distance", SM_STALE_MID, 0, Kilometers);
@@ -131,7 +133,13 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_tpms_pressure               = MyMetrics.InitVector<float>("xsq.tpms.pressure", SM_STALE_MID, nullptr, kPa);
   mt_tpms_alert                  = MyMetrics.InitVector<short> ("xsq.tpms.alert", SM_STALE_MID, nullptr, Other);
   mt_tpms_low_batt               = MyMetrics.InitVector<short> ("xsq.tpms.lowbatt", SM_STALE_MID, nullptr, Other);
-  mt_tpms_missing_tx             = MyMetrics.InitVector<short> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);  
+  mt_tpms_missing_tx             = MyMetrics.InitVector<short> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);
+  // Pre-allocate TPMS vectors for 4 wheels to avoid heap fragmentation
+  mt_tpms_temp->SetElemValue(3, 0.0f);
+  mt_tpms_pressure->SetElemValue(3, 0.0f);
+  mt_tpms_alert->SetElemValue(3, -1);
+  mt_tpms_low_batt->SetElemValue(3, 0);
+  mt_tpms_missing_tx->SetElemValue(3, 0);
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 210, kPa);  // Dummy pressure for TPMS alert testing
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
@@ -149,19 +157,23 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_evc_LV_batt_voltage_req    = MyMetrics.InitFloat("xsq.evc.12V.batt.volt.req.int", SM_STALE_MIN, 0, Volts);
 
   mt_obl_fastchg                = MyMetrics.InitBool("xsq.obl.fastchg", SM_STALE_MIN, false);
-  mt_obl_main_volts             = new OvmsMetricVector<float>("xsq.obl.volts", SM_STALE_HIGH, Volts);
-  mt_obl_main_amps              = new OvmsMetricVector<float>("xsq.obl.amps", SM_STALE_HIGH, Amps);
-  mt_obl_main_CHGpower          = new OvmsMetricVector<float>("xsq.obl.power", SM_STALE_HIGH, kW);
-  mt_obl_main_ground_resistance = MyMetrics.InitFloat("xsq.obl.ground.resistance", SM_STALE_MID, 0, Other);
-  mt_obl_main_freq              = MyMetrics.InitFloat("xsq.obl.freq", SM_STALE_MID, 0, Other);
-  mt_obl_main_max_current       = MyMetrics.InitInt("xsq.obl.max.current", SM_STALE_MID, 0, Amps);
+  mt_obl_main_volts             = MyMetrics.InitVector<float>("xsq.obl.volts", SM_STALE_HIGH, nullptr, Volts);
+  mt_obl_main_amps              = MyMetrics.InitVector<float>("xsq.obl.amps", SM_STALE_HIGH, nullptr, Amps);
+  mt_obl_main_CHGpower          = MyMetrics.InitVector<float>("xsq.obl.power", SM_STALE_HIGH, nullptr, kW);
+  // Pre-allocate OBL charger vectors for 3 phases to avoid reallocs
+  mt_obl_main_volts->SetElemValue(2, 0.0f);
+  mt_obl_main_amps->SetElemValue(2, 0.0f);
+  mt_obl_main_CHGpower->SetElemValue(1, 0.0f);
+  // OBL misc values: Index 0=freq, 1=ground_resistance, 2=max_current
+  mt_obl_misc                   = MyMetrics.InitVector<float>("xsq.obl.misc", SM_STALE_MID, nullptr, Other);
+  mt_obl_misc->SetElemValue(2, 0.0f);  // Pre-allocate 3 entries
   mt_obl_main_leakage_diag      = MyMetrics.InitString("xsq.obl.leakdiag", SM_STALE_MID, "", Other);
-  mt_obl_main_current_leakage_dc        = MyMetrics.InitFloat("xsq.obl.current.dc", SM_STALE_MID, 0, Amps);
-  mt_obl_main_current_leakage_hf_10khz  = MyMetrics.InitFloat("xsq.obl.current.hf10kHz", SM_STALE_MID, 0, Amps);
-  mt_obl_main_current_leakage_hf        = MyMetrics.InitFloat("xsq.obl.current.hf", SM_STALE_MID, 0, Amps);
-  mt_obl_main_current_leakage_lf        = MyMetrics.InitFloat("xsq.obl.current.lf", SM_STALE_MID, 0, Amps);
+  // Leakage currents as vector: Index 0=dc, 1=hf10kHz, 2=hf, 3=lf
+  mt_obl_leakage_currents       = MyMetrics.InitVector<float>("xsq.obl.current", SM_STALE_MID, nullptr, Amps);
+  mt_obl_leakage_currents->SetElemValue(3, 0.0f);  // Pre-allocate 4 entries
 
-  mt_bms_temps                  = new OvmsMetricVector<float>("xsq.bms.temps", SM_STALE_HIGH, Celcius);
+  mt_bms_temps                  = MyMetrics.InitVector<float>("xsq.bms.temps", SM_STALE_HIGH, nullptr, Celcius);
+  mt_bms_temps->SetElemValue(30, 0.0f);  // Pre-allocate 31 temp sensors to avoid reallocs
   mt_bms_CV_Range_min           = MyMetrics.InitFloat("xsq.bms.cv.range.min", SM_STALE_MID, 0, Volts);
   mt_bms_CV_Range_max           = MyMetrics.InitFloat("xsq.bms.cv.range.max", SM_STALE_MID, 0, Volts);
   mt_bms_CV_Range_mean          = MyMetrics.InitFloat("xsq.bms.cv.range.mean", SM_STALE_MID, 0, Volts);
@@ -212,10 +224,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     ResetTripCounters();
     }
 
-  setTPMSValueBoot();                                          // set TPMS values to 0
-
-    if (m_enable_write)
-      PollSetState(POLLSTATE_ON);                                // start polling to get the first data
+  if (m_enable_write)
+    PollSetState(POLLSTATE_ON);                                  // start polling to get the first data
 
   if (m_enable_write && m_cfg_preset_version != PRESET_VERSION)  // preset version changed
     CommandPreset(0, NULL);                                      // set smart EQ config preset
@@ -325,7 +335,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_modem_check          = getBool("modem.check", false);
     m_12v_charge           = getBool("12v.charge", true);
     m_enable_calcADCfactor = getBool("calc.adcfactor", false);
-    m_adc_samples          = getInt("adc.samples", 4);
     m_indicator            = getBool("indicator", false);
     m_extendedStats        = getBool("extended.stats", false);
     m_park_timeout_secs    = getInt("park.timeout", 600);
@@ -369,6 +378,9 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
 
   // modify Poller..
   m_poll_vector.clear();
+  // Pre-allocate capacity to avoid reallocs during insert operations
+  // obdii_polls + slow/fast_charger_polls + 2 cell polls + terminator = ~50 entries max
+  m_poll_vector.reserve(50);
   // Add PIDs to poll list:
   m_poll_vector.insert(m_poll_vector.end(), obdii_polls, endof_array(obdii_polls));
   if (mt_obl_fastchg->AsBool()) {
@@ -388,6 +400,8 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
 
   // Terminate poll list:
   m_poll_vector.push_back(POLL_LIST_END);
+  // Release excess capacity to free unused heap memory
+  m_poll_vector.shrink_to_fit();
   ESP_LOGI(TAG, "Poll vector: size=%d cap=%d", m_poll_vector.size(), m_poll_vector.capacity());
 
   PollSetPidList(m_can1, m_poll_vector.data());
@@ -627,17 +641,18 @@ int OvmsVehicleSmartEQ::calcMinutesRemaining(float target_soc, float charge_volt
   return MIN( 1440, (int)remaining_mins );
 }
 
-void OvmsVehicleSmartEQ::HandlePollState() {
+void OvmsVehicleSmartEQ::HandlePollState() {  
+
+  static const char* state_names[] = {"Off", "Awake", "Running", "Charging"};
+  static const char* state_disabled = "Pollstate Off (write disabled)";
   if (!m_enable_write) {
     if (m_poll_state != POLLSTATE_OFF) {
       PollSetState(POLLSTATE_OFF);
       ESP_LOGI(TAG, "Pollstate Off (write disabled)");
     }
-    mt_poll_state->SetValue("Pollstate Off (write disabled)");
+    mt_poll_state->SetValue(state_disabled);
     return;
   }
-
-  static const char* state_names[] = {"Off", "Awake", "Running", "Charging"};
   
   int desired_state = m_poll_state;
 

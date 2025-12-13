@@ -168,23 +168,6 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
     }
 }
 
-// Set TPMS value at boot, cached values are not available
-// and we need to set dummy values to avoid alert messages
-void OvmsVehicleSmartEQ::setTPMSValueBoot() {
-  // Get actual TPMS layout size (same as in setTPMSValue)
-  std::vector<std::string> tpms_layout = GetTpmsLayout();
-  int count = (int)tpms_layout.size();
-  
-  // Initialize with actual count, not hardcoded 4
-  std::vector<float> tpms_pressure(count, 0.0f);
-  std::vector<float> tpms_temp(count, 0.0f);
-  std::vector<short> tpms_alert(count, -1); // -1 indicates unknown at boot
-  
-  StdMetrics.ms_v_tpms_pressure->SetValue(tpms_pressure);
-  StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp);
-  StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
-}
-
 void OvmsVehicleSmartEQ::DisablePlugin(const char* plugin) {
   #ifdef CONFIG_OVMS_COMP_PLUGINS
       if (!ExecuteCommand("plugin disable " + std::string(plugin))) {
