@@ -137,7 +137,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // Pre-allocate TPMS vectors for 4 wheels to avoid heap fragmentation
   mt_tpms_temp->SetElemValue(3, 0.0f);
   mt_tpms_pressure->SetElemValue(3, 0.0f);
-  mt_tpms_alert->SetElemValue(3, -1);
+  mt_tpms_alert->SetElemValue(3, 0);
   mt_tpms_low_batt->SetElemValue(3, 0);
   mt_tpms_missing_tx->SetElemValue(3, 0);
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 210, kPa);  // Dummy pressure for TPMS alert testing
