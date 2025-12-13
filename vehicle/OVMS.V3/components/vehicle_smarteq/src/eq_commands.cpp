@@ -97,7 +97,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   return res;
 }
 
-OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uint32_t rxid,bool reset,bool wakeup) {
+OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uint32_t rxid,std::string hexbytes,bool reset,bool wakeup) {
   if(!m_enable_write) {
     ESP_LOGE(TAG, "CommandCan failed / no write access");
     return Fail;
@@ -109,36 +109,104 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uin
     return Fail;
   }
 
-  m_ddt4all_exec = 45; // 45 seconds delay for next DDT4ALL command execution
+  m_ddt4all_exec = 20; // 20 seconds delay for next DDT4ALL command execution
 
   ESP_LOGI(TAG, "CommandCan");
 
   std::string request;
   std::string response;
-  std::string reqstr = m_hl_canbyte;
-  if (reqstr.size() % 2 != 0) 
+  if (hexbytes.size() % 2 != 0) 
     {
     ESP_LOGE(TAG,"Invalid hex length");
+    m_ddt4all_exec = 5; // reduce cooldown on error
     return Fail;
     }
+
+  mt_canbyte->SetValue(hexbytes.c_str());
 
   if (wakeup)
     CommandWakeup();
   else
     CommandWakeup2();
 
-  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  vTaskDelay(3500 / portTICK_PERIOD_MS);
   uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 500;
+  int timeout_ms = 200;
 
   request = hexdecode("10C0");
   PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-  vTaskDelay(500 / portTICK_PERIOD_MS);
-  request = hexdecode(reqstr);
+
+  vTaskDelay(200 / portTICK_PERIOD_MS);
+  request = hexdecode(hexbytes);
   PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
 
   if (reset) {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    m_ddt4all_exec = 30; // 30 seconds delay for next DDT4ALL command execution
+    request = hexdecode("1103");  // key on/off
+    PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+  }
+  return Success;
+}
+
+OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t txid,uint32_t rxid, std::vector<std::string> hexbytes,bool reset,bool wakeup) {
+  if(!m_enable_write) {
+    ESP_LOGE(TAG, "CommandCan failed / no write access");
+    return Fail;
+  }
+
+  if(m_ddt4all_exec > 1) {
+    ESP_LOGE(TAG, "DDT4all command rejected - previous command still processing (%d seconds remaining)",
+             m_ddt4all_exec);
+    return Fail;
+  }
+
+  m_ddt4all_exec = 20; // 20 seconds delay for next DDT4ALL command execution
+
+  ESP_LOGI(TAG, "CommandCanVector");
+
+  std::string request;
+  std::string response;
+
+  int vecsize = hexbytes.size();
+  if (vecsize == 0) {
+    ESP_LOGE(TAG, "Empty hexbytes vector");
+    m_ddt4all_exec = 5; // reduce cooldown on error
+    return Fail;
+  }
+  // Validate all hex strings before starting
+  for (int i = 0; i < vecsize; i++) {
+    if (hexbytes[i].size() % 2 != 0) {
+      ESP_LOGE(TAG, "Invalid hex length at index %d", i);
+      m_ddt4all_exec = 5; // reduce cooldown on error
+      return Fail;
+    }
+  }
+
+  mt_canbyte->SetValue(hexbytes[0].c_str());
+
+  if (wakeup)
+    CommandWakeup();
+  else
+    CommandWakeup2();
+
+  vTaskDelay(3500 / portTICK_PERIOD_MS);
+  uint8_t protocol = ISOTP_STD;
+  int timeout_ms = 200;
+
+  request = hexdecode("10C0");
+  PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+  
+  vTaskDelay(200 / portTICK_PERIOD_MS);
+  for (int i = 0; i < vecsize; i++) {
+    request = hexdecode(hexbytes[i]);
+    PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);    
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+  }
+
+  if (reset) {
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    m_ddt4all_exec = 30; // 30 seconds delay for next DDT4ALL command execution
     request = hexdecode("1103");  // key on/off
     PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
   }
@@ -237,7 +305,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
     canbus *obd;
     obd = m_can1;
 
-    for (int i = 0; i < 20; i++) 
+    for (int i = 0; i < 15; i++) 
       {
       obd->WriteStandard(0x634, 4, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
@@ -296,7 +364,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
   }
   ESP_LOGI(TAG, "CommandLock");
   CommandWakeup();
-  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  vTaskDelay(3500 / portTICK_PERIOD_MS);
+  if(!mt_bus_awake->AsBool()) 
+    {
+    ESP_LOGE(TAG, "CommandLock failed / vehicle not awake");
+    return Fail;
+    }
   
   uint32_t txid = 0x745, rxid = 0x765;
   uint8_t protocol = ISOTP_STD;
@@ -304,22 +377,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
   
   std::string request;
   std::string response;
-  std::string reqstr = MyConfig.GetParamValue("xsq", "lock.byte", "30010000");
-  if (reqstr.size() % 2 != 0) 
-    {
-    ESP_LOGE(TAG,"Invalid hex length");
-    return Fail;
-    }
+  std::string reqstr = "30010000";
   
   request = hexdecode("10C0");
   int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-  
+
+  vTaskDelay(200 / portTICK_PERIOD_MS);  
   request = hexdecode(reqstr);
   err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
 
   if(m_indicator) {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    std::string indstr = MyConfig.GetParamValue("xsq", "indicator", "30082002");
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    std::string indstr = "30082002";
     request = hexdecode(indstr); // indicator light
     err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
   }
@@ -353,29 +422,30 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin
   }
   ESP_LOGI(TAG, "CommandUnlock");
   CommandWakeup();
-  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  vTaskDelay(3500 / portTICK_PERIOD_MS);
+  if(!mt_bus_awake->AsBool()) 
+    {
+    ESP_LOGE(TAG, "CommandLock failed / vehicle not awake");
+    return Fail;
+    }
   
   uint32_t txid = 0x745, rxid = 0x765;
   uint8_t protocol = ISOTP_STD;
   int timeout_ms = 200;
   std::string request;
   std::string response;
-  std::string reqstr = MyConfig.GetParamValue("xsq", "unlock.byte", "30010001");
-  if (reqstr.size() % 2 != 0) 
-    {
-    ESP_LOGE(TAG,"Invalid hex length");
-    return Fail;
-    }
+  std::string reqstr = "30010001";
   
   request = hexdecode("10C0");
   int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
   
+  vTaskDelay(200 / portTICK_PERIOD_MS);
   request = hexdecode(reqstr);
   err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
 
   if(m_indicator) {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    std::string indstr = MyConfig.GetParamValue("xsq", "indicator", "30082002");
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    std::string indstr = "30082002";
     request = hexdecode(indstr); // indicator light
     err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
   }
@@ -949,6 +1019,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "restart.wakeup",
     "v2.check",
     "12v.measured.offset",
+    "12v.measured.BMS.offset",
     "modem.net.type",
     "booster.1to3",
     "booster.de",
@@ -958,6 +1029,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "booster.on",
     "booster.system",
     "booster.weekly",
+    "booster.time",
+    "ddt4all",
     "gps.onoff",
     "gps.off",
     "gps.reactmin",
@@ -967,10 +1040,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "climate.notify",
     "climate.data.store",
     "gps.deact",
+    "modem.threshold",
     "TPMS_FL",
     "TPMS_FR",
     "TPMS_RL",
-    "TPMS_RR"
+    "TPMS_RR",
+    "lock.byte",
+    "unlock.byte",
+    "indicator"
   };
   
   // Remove all deprecated keys from map
