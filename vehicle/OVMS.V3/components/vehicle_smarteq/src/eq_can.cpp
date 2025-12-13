@@ -49,7 +49,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   
   static bool isCharging = false;
   static bool lastCharging = false;
-  bool _bool = false;
   float _range_est;
   float _bat_temp;
   float _full_km;
@@ -62,7 +61,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 
   switch (p_frame->MsgID) {
     case 0x17e: //gear shift
-    {
+      {
       REQ_DLC(7);      // uses bytes up to at least index 6, so DLC must be 7 or more
       switch(CAN_BYTE(6)) {
         case 0x00: // Parking
@@ -81,15 +80,16 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           StdMetrics.ms_v_env_gear->SetValue(2);
           StdMetrics.ms_v_gen_limit_soc->SetValue(4);
           break;
-      }
+        }
       break;
-    }
+      }
     case 0x350:
+      {
       REQ_DLC(7);
-      _bool = (CAN_BYTE(0) > 0xc0);
+      bool awake = (CAN_BYTE(0) > 0xc0);
       StdMetrics.ms_v_env_locked->SetValue((CAN_BYTE(6) == 0x96));
-      StdMetrics.ms_v_env_awake->SetValue(_bool);
-      if (_bool && !mt_bus_awake->AsBool())
+      StdMetrics.ms_v_env_awake->SetValue(awake);
+      if (awake && !mt_bus_awake->AsBool())
         {
         ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
         mt_bus_awake->SetValue(true);
@@ -97,11 +97,18 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         m_candata_timer = -1;
         }
       break;
+      }
     case 0x392:
+      {
       REQ_DLC(6);
-      StdMetrics.ms_v_env_hvac->SetValue((CAN_BYTE(1) & 0x40) > 0);
-      StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40.0f);
+      bool hvac_on = (CAN_BYTE(1) & 0x40) > 0;
+      StdMetrics.ms_v_env_hvac->SetValue(hvac_on);
+      if (hvac_on)
+        {
+        StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40.0f);
+        }      
       break;
+      }
     case 0x42E:        // HV voltage / temp frame
       {
       REQ_DLC(5);

@@ -61,15 +61,16 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
+/**
+ * SecondsToHHmm: Convert seconds to "HH:MM" string
+ * Uses snprintf instead of ostringstream to reduce stack usage (~256 bytes saved)
+ */
 std::string SecondsToHHmm(int totalSeconds) {
     int hours = totalSeconds / 3600;
     int minutes = (totalSeconds % 3600) / 60;
-
-    std::ostringstream oss;
-    oss << std::setw(2) << std::setfill('0') << hours << ":"
-        << std::setw(2) << std::setfill('0') << minutes;
-
-    return oss.str();
+    char buf[6];  // "HH:MM\0"
+    snprintf(buf, sizeof(buf), "%02d:%02d", hours, minutes);
+    return std::string(buf);
 }
 
 // Central reply length guard for poll parsers (enhanced):
