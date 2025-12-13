@@ -487,6 +487,7 @@ void OvmsPoller::PollerSend(poller_source_t source)
 
   PollEntryStyle found_style;
   OvmsPoller::OvmsNextPollResult res;
+  bool reach_repeat;
   {
     OvmsRecMutexLock lock(&m_poll_mutex, pdMS_TO_TICKS(50));
     if (!lock.IsLocked())
@@ -495,8 +496,9 @@ void OvmsPoller::PollerSend(poller_source_t source)
       return; // Something is blocking .. don't bind things up.
       }
     res = m_polls.NextPollEntry(m_poll.entry, found_style, m_poll.bus_no, m_poll.ticker, m_poll_state, m_poll_sequence_limiter);
+    reach_repeat = res == OvmsNextPollResult::ReachedEnd && m_polls.HasRepeat();
   }
-  if (res == OvmsNextPollResult::ReachedEnd && m_polls.HasRepeat())
+  if (reach_repeat)
     {
     ++m_poll_repeat_count;
     if (m_poll_repeat_count > max_poll_repeat)
@@ -507,6 +509,12 @@ void OvmsPoller::PollerSend(poller_source_t source)
       }
     else
       {
+      OvmsRecMutexLock lock(&m_poll_mutex, pdMS_TO_TICKS(50));
+      if (!lock.IsLocked())
+        {
+        IFTRACE(Poller) ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend - Failed to lock for RestartPoll+NextPollEntry", m_poll.bus_no);
+        return; // Something is blocking .. don't bind things up.
+        }
       IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]Poller Reset for Repeat (%s)", m_poll.bus_no, OvmsPoller::PollerSource(source));
       m_polls.RestartPoll(OvmsPoller::ResetMode::LoopReset);
       // If this poll is from a ISOTP success, don't overwhelm the ECU,
