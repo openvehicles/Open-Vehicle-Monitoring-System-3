@@ -1047,7 +1047,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "TPMS_RR",
     "lock.byte",
     "unlock.byte",
-    "indicator"
+    "indicator",
+    "adc.samples"
   };
   
   // Remove all deprecated keys from map
