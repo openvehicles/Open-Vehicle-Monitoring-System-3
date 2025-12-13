@@ -215,7 +215,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   setTPMSValueBoot();                                          // set TPMS values to 0
 
     if (m_enable_write)
-      PollSetState(1);                                           // start polling to get the first data
+      PollSetState(POLLSTATE_ON);                                // start polling to get the first data
 
   if (m_enable_write && m_cfg_preset_version != PRESET_VERSION)  // preset version changed
     CommandPreset(0, NULL);                                      // set smart EQ config preset
@@ -363,7 +363,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
 void OvmsVehicleSmartEQ::ObdModifyPoll() {
   PollSetPidList(m_can1, NULL);
-  PollSetState(0);
+  PollSetState(POLLSTATE_OFF);
   PollSetThrottling(0);
   PollSetResponseSeparationTime(20);
 
@@ -628,15 +628,9 @@ int OvmsVehicleSmartEQ::calcMinutesRemaining(float target_soc, float charge_volt
 }
 
 void OvmsVehicleSmartEQ::HandlePollState() {
-  // Determine poll state:
-  // 0 = Off
-  // 1 = Awake (accessories on)
-  // 2 = Running (ignition on)
-  // 3 = Charging
-
   if (!m_enable_write) {
-    if (m_poll_state != 0) {
-      PollSetState(0);
+    if (m_poll_state != POLLSTATE_OFF) {
+      PollSetState(POLLSTATE_OFF);
       ESP_LOGI(TAG, "Pollstate Off (write disabled)");
     }
     mt_poll_state->SetValue("Pollstate Off (write disabled)");
@@ -648,14 +642,14 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   int desired_state = m_poll_state;
 
   if (StdMetrics.ms_v_charge_pilot->AsBool(false) || StdMetrics.ms_v_charge_inprogress->AsBool(false))
-    desired_state = 3;
+    desired_state = POLLSTATE_CHARGING;   //- car is charging
   else if (StdMetrics.ms_v_env_on->AsBool(false))
-    desired_state = 2;
+    desired_state = POLLSTATE_RUNNING;    //- car is on
   else if (mt_bus_awake->AsBool(false) || StdMetrics.ms_v_env_awake->AsBool(false))
-    desired_state = 1;
+    desired_state = POLLSTATE_ON;         //- car is awake
   else if (!StdMetrics.ms_v_env_awake->AsBool(false) && !mt_bus_awake->AsBool(false) && 
           (!StdMetrics.ms_v_charge_pilot->AsBool(false) || !StdMetrics.ms_v_charge_inprogress->AsBool(false)))
-    desired_state = 0;
+    desired_state = POLLSTATE_OFF;        //- car is asleep
 
   if (desired_state != m_poll_state) {
     PollSetState(desired_state);
