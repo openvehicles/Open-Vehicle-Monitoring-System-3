@@ -2,7 +2,7 @@ set(srcs)
 set(include_dirs)
 
 if (CONFIG_OVMS_VEHICLE_SMARTEQ)
-  list(APPEND srcs "src/eq_can_poll.cpp" "src/eq_web.cpp" "src/vehicle_smarteq.cpp")
+  list(APPEND srcs "src/eq_can.cpp" "src/eq_can_poll.cpp" "src/eq_commands.cpp" "src/eq_ddt4all.cpp" "src/eq_features.cpp" "src/eq_ticker.cpp" "src/eq_web.cpp" "src/vehicle_smarteq.cpp")
   list(APPEND include_dirs "src")
 endif ()
 

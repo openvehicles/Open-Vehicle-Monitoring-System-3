@@ -3,7 +3,7 @@ set(include_dirs)
 set(embedded_files "assets/script.js.gz" "assets/charts.js.gz" "assets/tables.js.gz" "assets/style.css.gz" "assets/zones.json.gz" "assets/favicon.png")
 
 if (CONFIG_OVMS_SC_GPL_MONGOOSE AND CONFIG_OVMS_COMP_WEBSERVER)
-  list(APPEND srcs "src/ovms_commandstream.cpp" "src/ovms_webserver.cpp" "src/ovms_websockethandler.cpp" "src/web_cfg.cpp" "src/web_cfg_init.cpp" "src/web_displays.cpp" "src/web_framework.cpp")
+  list(APPEND srcs "src/ovms_commandstream.cpp" "src/ovms_webserver.cpp" "src/ovms_websockethandler.cpp" "src/web_cfg.cpp" "src/web_cfg_autostart.cpp" "src/web_cfg_backup.cpp" "src/web_cfg_cellular.cpp" "src/web_cfg_climate.cpp" "src/web_cfg_firmware.cpp" "src/web_cfg_init.cpp" "src/web_cfg_locations.cpp" "src/web_cfg_logging.cpp" "src/web_cfg_notifications.cpp" "src/web_cfg_pushover.cpp" "src/web_cfg_server_v2.cpp" "src/web_cfg_server_v3.cpp" "src/web_cfg_status.cpp" "src/web_cfg_vehicle.cpp" "src/web_cfg_webserver.cpp" "src/web_cfg_wifi.cpp" "src/web_displays.cpp" "src/web_framework.cpp")
   list(APPEND include_dirs "src" "assets")
 endif ()
 
