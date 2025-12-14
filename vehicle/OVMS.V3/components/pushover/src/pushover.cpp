@@ -43,6 +43,12 @@ static const char *TAG = "pushover";
 #include "ovms_events.h"
 #include "ovms_tls.h"
 
+// Helper function to get value from const ConfigParamMap (avoids operator[] on const)
+static inline std::string GetMapValue(const ConfigParamMap& map, const std::string& key)
+  {
+  auto it = map.find(key);
+  return (it != map.end()) ? it->second : std::string();
+  }
 
 #include "mongoose.h"
 
@@ -156,21 +162,20 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
   ESP_LOGD(TAG,"IncomingNotification: Handling notification (%s:%s:%s)",type->m_name,entry->GetSubType(),entry->GetValue().c_str());      
 
   OvmsConfigParam* param = MyConfig.CachedParam("pushover");
-  ConfigParamMap pmap;
-  pmap = param->m_map;
+  const ConfigParamMap& pmap = param->m_map;  // Use reference, avoid copy!
 
   // try to find configuration for specific type/subtype
   nfy = "np.";
   nfy.append(type->m_name);
   nfy.append("/");
   nfy.append(entry->GetSubType());
-  priority = pmap[nfy];
+  priority = GetMapValue(pmap, nfy);
   if (priority == "")
     {
     // try more general type
     nfy = "np.";
     nfy.append(type->m_name);
-    priority = pmap[nfy];
+    priority = GetMapValue(pmap, nfy);
     if (priority == "")
       {
       ESP_LOGD(TAG,"IncomingNotification: No priority set -> ignore notification");
@@ -180,11 +185,11 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
 
   msg = std::string(entry->GetValue().c_str());
   if (priority == "0")
-    sound = pmap["sound.normal"];
+    sound = GetMapValue(pmap, "sound.normal");
   else if (priority == "1")
-    sound = pmap["sound.high"];
+    sound = GetMapValue(pmap, "sound.high");
   else if (priority == "2")
-    sound = pmap["sound.emergency"];
+    sound = GetMapValue(pmap, "sound.emergency");
 
   SendMessage(msg, atoi(priority.c_str()), sound);
   return true;
@@ -210,12 +215,11 @@ void Pushover::EventListener(std::string event, void* data)
   ESP_LOGD(TAG,"EventListener: Handling event (%s)",event.c_str());      
 
   OvmsConfigParam* param = MyConfig.CachedParam("pushover");
-  ConfigParamMap pmap;
-  pmap = param->m_map;
+  const ConfigParamMap& pmap = param->m_map;  // Use reference, avoid copy!
 
   name = "ep.";
   name.append(event);
-  setting = pmap[name];
+  setting = GetMapValue(pmap, name);
   if (setting == "")
     {
     ESP_LOGD(TAG,"EventListener: No priority set -> ignore notification");
@@ -235,11 +239,11 @@ void Pushover::EventListener(std::string event, void* data)
 
   // lower priorities don't make sound
   if (pri == "0")
-    sound = pmap["sound.normal"];
+    sound = GetMapValue(pmap, "sound.normal");
   else if (pri == "1")
-    sound = pmap["sound.high"];
+    sound = GetMapValue(pmap, "sound.high");
   else if (pri == "2")
-    sound = pmap["sound.emergency"];
+    sound = GetMapValue(pmap, "sound.emergency");
   SendMessage(msg, atoi(pri.c_str()), sound);
 
   }
