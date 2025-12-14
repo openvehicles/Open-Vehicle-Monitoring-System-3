@@ -144,11 +144,6 @@ bool Pushover::NotificationFilter(OvmsNotifyType* type, const char* subtype)
 
 bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   {
-  std::string nfy;
-  std::string priority;
-  std::string sound;
-  std::string msg;
-
   if (MyConfig.GetParamValueBool("pushover","enable", false) == false)
     {
     //ESP_LOGD(TAG,"IncomingNotification: Ignore notification (%s:%s:%s) (pushover not enabled)",type->m_name,entry->GetSubType(),entry->GetValue().c_str());
@@ -164,43 +159,43 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
   OvmsConfigParam* param = MyConfig.CachedParam("pushover");
   const ConfigParamMap& pmap = param->m_map;  // Use reference, avoid copy!
 
-  // try to find configuration for specific type/subtype
-  nfy = "np.";
-  nfy.append(type->m_name);
-  nfy.append("/");
-  nfy.append(entry->GetSubType());
-  priority = GetMapValue(pmap, nfy);
-  if (priority == "")
+  // Use stack buffer instead of std::string for key lookup
+  char nfy[80];
+  snprintf(nfy, sizeof(nfy), "np.%s/%s", type->m_name, entry->GetSubType());
+  std::string priority = GetMapValue(pmap, nfy);
+  if (priority.empty())
     {
     // try more general type
-    nfy = "np.";
-    nfy.append(type->m_name);
+    snprintf(nfy, sizeof(nfy), "np.%s", type->m_name);
     priority = GetMapValue(pmap, nfy);
-    if (priority == "")
+    if (priority.empty())
       {
       ESP_LOGD(TAG,"IncomingNotification: No priority set -> ignore notification");
       return true;
       }
     }
 
-  msg = std::string(entry->GetValue().c_str());
-  if (priority == "0")
+  int pri = atoi(priority.c_str());
+  std::string sound;
+  if (pri == 0)
     sound = GetMapValue(pmap, "sound.normal");
-  else if (priority == "1")
+  else if (pri == 1)
     sound = GetMapValue(pmap, "sound.high");
-  else if (priority == "2")
+  else if (pri == 2)
     sound = GetMapValue(pmap, "sound.emergency");
 
-  SendMessage(msg, atoi(priority.c_str()), sound);
+  SendMessage(entry->GetValue(), pri, sound);
   return true;
   }
 
 
 void Pushover::EventListener(std::string event, void* data)
   {
-  std::string name, setting, pri, msg, sound;
+  // Early exit for frequent events - before any string allocations
   if ( (event == "ticker.1") || (event == "ticker.10") )
     return;
+
+  std::string setting, msg, sound;
 
   if (MyConfig.GetParamValueBool("pushover","enable", false) == false)
     {
@@ -217,8 +212,9 @@ void Pushover::EventListener(std::string event, void* data)
   OvmsConfigParam* param = MyConfig.CachedParam("pushover");
   const ConfigParamMap& pmap = param->m_map;  // Use reference, avoid copy!
 
-  name = "ep.";
-  name.append(event);
+  // Use stack buffer instead of std::string for key lookup
+  char name[64];
+  snprintf(name, sizeof(name), "ep.%s", event.c_str());
   setting = GetMapValue(pmap, name);
   if (setting == "")
     {
@@ -226,25 +222,23 @@ void Pushover::EventListener(std::string event, void* data)
     return;
     }
   // Priority and message is saved as "priority/message" tuple (eg. "-1/this is a message")
-  if (setting[1]=='/') 
+  // Parse priority as int directly, avoid std::string for pri
+  int priority = 0;
+  const char* slash = strchr(setting.c_str(), '/');
+  if (slash)
     {
-    pri = setting.substr(0,1);
-    msg = setting.substr(2);
-    } 
-  else if (setting[2]=='/') 
-    {
-    pri = setting.substr(0,2);
-    msg = setting.substr(3);
+    priority = atoi(setting.c_str());
+    msg = slash + 1;
     }
 
   // lower priorities don't make sound
-  if (pri == "0")
+  if (priority == 0)
     sound = GetMapValue(pmap, "sound.normal");
-  else if (pri == "1")
+  else if (priority == 1)
     sound = GetMapValue(pmap, "sound.high");
-  else if (pri == "2")
+  else if (priority == 2)
     sound = GetMapValue(pmap, "sound.emergency");
-  SendMessage(msg, atoi(pri.c_str()), sound);
+  SendMessage(msg, priority, sound);
 
   }
 
