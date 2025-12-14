@@ -299,6 +299,8 @@ class OvmsPoller : public InternalRamAllocated {
         poll_series_t *m_first, *m_last;
         // Current poll entry.
         poll_series_t *m_iter;
+        // Current poll entry changed since last Fetch
+        bool m_iter_changed;
         volatile uint16_t m_blocking_count;
 
         // Remove an item out of the linked list.
