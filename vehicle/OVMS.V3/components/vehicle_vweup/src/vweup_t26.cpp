@@ -216,6 +216,8 @@ void OvmsVehicleVWeUp::T26Init()
     StdMetrics.ms_v_charge_mode->SetValue("standard");
   }
 
+  StartJobTask();
+
   // create timers:
   if (!m_sendOcuHeartbeat) {
     m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdTRUE, this, sendOcuHeartbeat);
@@ -851,7 +853,7 @@ void OvmsVehicleVWeUp::WakeupT26Stage3()
 void OvmsVehicleVWeUp::sendOcuHeartbeat(TimerHandle_t timer)
 {
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
-  vweup->SendOcuHeartbeat();
+  vweup->QueueJob({ VWUJ_T26_EcuHeartBeat });
 }
 
 void OvmsVehicleVWeUp::SendOcuHeartbeat()
@@ -1302,7 +1304,7 @@ void OvmsVehicleVWeUp::WriteProfile0()
 void OvmsVehicleVWeUp::Profile0RetryTimer(TimerHandle_t timer)
 {
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
-  vweup->Profile0RetryCallBack();
+  vweup->QueueJob({ VWUJ_T26_Profile0Retry });
 }
 
 void OvmsVehicleVWeUp::Profile0RetryCallBack()

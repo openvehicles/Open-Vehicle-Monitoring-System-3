@@ -126,6 +126,30 @@ typedef enum {
   UP_Driving,
 } use_phase_t;
 
+
+/**
+ * VW eUp worker task job definition
+ *   (currently only used for T26 connection)
+ */
+
+enum VWeUpJobType
+{
+  VWUJ_NOP = 0,
+  VWUJ_EXIT,                      // payload: -
+  VWUJ_T26_EcuHeartBeat,          // payload: -
+  VWUJ_T26_Profile0Retry,         // payload: -
+};
+
+struct VWeUpJob
+{
+  VWeUpJobType type;
+  // no jobs requiring payload defined yet
+};
+
+
+/**
+ * VW eUp vehicle class
+ */
 class OvmsVehicleVWeUp : public OvmsVehicle
 {
   // --------------------------------------------------------------------------
@@ -250,6 +274,19 @@ private:
   float m_chargestate_lastsoc;
   int m_timermode_ticker;
   bool m_timermode_new;
+
+
+public:
+  bool StartJobTask();
+  static void JobTaskEntry(void *pvParameters);
+  void JobTask();
+  bool QueueJob(const VWeUpJob &job, int maxwait_ms=0);
+
+public:
+  QueueHandle_t     m_jobqueue = NULL;
+private:
+  TaskHandle_t      m_jobtask = NULL;
+
 
   // --------------------------------------------------------------------------
   // Web UI Subsystem
