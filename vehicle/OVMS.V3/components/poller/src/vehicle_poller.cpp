@@ -3741,7 +3741,6 @@ OvmsPoller::PollSeriesList::~PollSeriesList()
 void OvmsPoller::PollSeriesList::SetEntry(const std::string &name, std::shared_ptr<PollSeriesEntry> series)
   {
   bool blocking = series->style() == PollEntryStyle::Blocking;
-  bool activate = blocking;
   for (poll_series_t *it = m_first; it != nullptr; it = it->next)
     {
     if (it->name == name)
@@ -3756,11 +3755,10 @@ void OvmsPoller::PollSeriesList::SetEntry(const std::string &name, std::shared_p
         it->series->Removing();
         }
       it->series = series;
-      if (activate && it == m_first)
-        m_iter = it;
+
       if (blocking)
         blocking_inc();
-      ESP_LOGD(TAG, "Poll List: Replaced Entry %s (%s)%s", it->name.c_str(), name.c_str(), activate ? " (active)" : "");
+      ESP_LOGD(TAG, "Poll List: Replaced Entry %s (%s)", it->name.c_str(), name.c_str());
       return;
       }
     }
@@ -3778,19 +3776,15 @@ void OvmsPoller::PollSeriesList::SetEntry(const std::string &name, std::shared_p
   if (blocking)
     {
     before = m_first;
-    while (before && before->is_blocking())
-      {
+    while (before != nullptr && before->is_blocking())
       before = before->next;
-      activate = false; // not first.
-      }
     }
 
   InsertBefore(newval, before);
-  if (activate)
-    m_iter = newval;
+
   if (blocking)
     blocking_inc();
-  ESP_LOGD(TAG, "Poll List: Added Entry %s%s%s", newval->name.c_str(), blocking ? " (blocking)" : "", activate ? " (active)" : "");
+  ESP_LOGD(TAG, "Poll List: Added Entry %s%s", newval->name.c_str(), blocking ? " (blocking)" : "");
   }
 
 bool OvmsPoller::PollSeriesList::IsEmpty()
@@ -3940,6 +3934,20 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::PollSeriesList::NextPollEntry(poll_pi
     {
     IFTRACE(Poller) ESP_LOGV(TAG, "PollSeriesList::NextPollEntry - No List Set");
     return OvmsPoller::OvmsNextPollResult::StillAtEnd;
+    }
+  if (!m_iter || !m_iter->is_blocking())
+    {
+    // If there's not already a blocking source then
+    // jump to a blocking source as a priority if it exists.
+    poll_series_t *first = m_first;
+    while (first != nullptr && first->series == nullptr)
+      first = first->next;
+
+    if (first != nullptr && first->is_blocking())
+      {
+      m_iter = first;
+      IFTRACE(Poller) ESP_LOGV(TAG, "PollSeriesList::NextPollEntry - Jump to first blocking Poll Series");
+      }
     }
   if (!m_iter)
     {
