@@ -3729,7 +3729,9 @@ static const char *PollResStr( OvmsPoller::OvmsNextPollResult res)
 // List of Poll Series
 
 OvmsPoller::PollSeriesList::PollSeriesList()
-  : m_first(nullptr), m_last(nullptr), m_iter(nullptr)
+  : m_first(nullptr), m_last(nullptr),
+    m_iter(nullptr), m_iter_changed(true),
+    m_blocking_count(0)
   {
   }
 
@@ -3804,7 +3806,10 @@ void OvmsPoller::PollSeriesList::Remove( poll_series_t *iter)
   iter->prev = nullptr;
 
   if (m_iter == iter)
+    {
     m_iter = iternext;
+    m_iter_changed = true;
+    }
   if (m_first == iter)
     m_first = iternext;
   if (m_last == iter)
@@ -3876,6 +3881,7 @@ void OvmsPoller::PollSeriesList::Clear()
 void OvmsPoller::PollSeriesList::RestartPoll(OvmsPoller::ResetMode mode)
   {
   m_iter = m_first;
+  m_iter_changed = true;
   for ( auto iter = m_first; iter != nullptr; iter = iter->next)
     {
     if (iter->series != nullptr)
@@ -3886,7 +3892,7 @@ void OvmsPoller::PollSeriesList::RestartPoll(OvmsPoller::ResetMode mode)
 // Process an incoming packet.
 void OvmsPoller::PollSeriesList::IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length)
   {
-  if ((m_iter != nullptr) && (m_iter->series != nullptr))
+  if ((m_iter != nullptr) && (m_iter->series != nullptr) && !m_iter_changed)
     {
     IFTRACE(Poller) ESP_LOGD(TAG, "Poll List:[%s] IncomingPacket TYPE:%x PID: %03x LEN: %d REM: %d ", m_iter->name.c_str(), job.type, job.pid, length, job.mlremain);
 
@@ -3901,7 +3907,7 @@ void OvmsPoller::PollSeriesList::IncomingPacket(const OvmsPoller::poll_job_t& jo
 // Process An Error
 void OvmsPoller::PollSeriesList::IncomingError(const OvmsPoller::poll_job_t& job, int32_t code)
   {
-  if ((m_iter != nullptr) && (m_iter->series != nullptr))
+  if ((m_iter != nullptr) && (m_iter->series != nullptr) && !m_iter_changed)
     {
     IFTRACE(Poller) ESP_LOGD(TAG, "Poll List:[%s] IncomingError TYPE:%x PID: %03x Code: %02X", m_iter->name.c_str(), job.type, job.pid, code);
     m_iter->series->IncomingError(job, code);
@@ -3915,7 +3921,7 @@ void OvmsPoller::PollSeriesList::IncomingError(const OvmsPoller::poll_job_t& job
 /// Send on an imcoming TX reply
 void OvmsPoller::PollSeriesList::IncomingTxReply(const OvmsPoller::poll_job_t& job, bool success)
   {
-  if ((m_iter != nullptr) && (m_iter->series != nullptr))
+  if ((m_iter != nullptr) && (m_iter->series != nullptr) && !m_iter_changed)
     {
     IFTRACE(TXRX) ESP_LOGV(TAG, "Poll List:[%s] IncomingTXReply TYPE:%x PID: %03x Success: %s", m_iter->name.c_str(), job.type, job.pid, success ? "true" : "false");
     m_iter->series->IncomingTxReply(job, success);
@@ -3978,6 +3984,9 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::PollSeriesList::NextPollEntry(poll_pi
       found_style = m_iter->style;
       return OvmsPoller::OvmsNextPollResult::LimitReached;
       }
+
+    // Reset the changed flag.
+    m_iter_changed = false;
 
     res = m_iter->series->NextPollEntry(entry, mybus, pollticker, pollstate);
     if (res == OvmsNextPollResult::FoundEntry)
