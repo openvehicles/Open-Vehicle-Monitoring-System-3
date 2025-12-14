@@ -184,7 +184,7 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
   else if (pri == 2)
     sound = GetMapValue(pmap, "sound.emergency");
 
-  SendMessage(entry->GetValue(), pri, sound);
+  SendMessage(entry->GetValue().c_str(), pri, sound);
   return true;
   }
 
