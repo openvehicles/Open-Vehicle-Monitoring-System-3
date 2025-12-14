@@ -147,7 +147,7 @@ bool OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
     return false;
 
   // Pass frame to poller protocol handlers:
-  if (frame.origin == m_poll_vwtp.bus && frame.MsgID == m_poll_vwtp.rxid)
+  if (m_poll.protocol == VWTP_20 && frame.origin == m_poll_vwtp.bus && frame.MsgID == m_poll_vwtp.rxid)
     {
     // Keep raw Data for DBC
     m_poll.format = frame.FIR.B.FF;
