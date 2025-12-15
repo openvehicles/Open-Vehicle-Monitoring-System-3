@@ -67,10 +67,8 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
   m_modifier = modifier;
   m_reader = reader;
   m_jobqueue = xQueueCreate(txqueuesize, sizeof(WebSocketTxJob));
-  m_jobqueue_overflow_status = 0;
-  m_jobqueue_overflow_logged = 0;
   m_jobqueue_overflow_dropcnt = 0;
-  m_jobqueue_overflow_dropcntref = 0;
+  m_jobqueue_overflow_logged = 0;
   m_job.type = WSTX_None;
   m_sent = m_ack = m_last = 0;
   m_units_subscribed = false;
@@ -87,11 +85,15 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
 WebSocketHandler::~WebSocketHandler()
 {
   MyCommandApp.DeregisterConsole(this);
+
   if (m_jobqueue) {
     while (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE)
       ClearTxJob(m_job);
     vQueueDelete(m_jobqueue);
   }
+
+  // log final status infos:
+  LogStatus();
 }
 
 
@@ -419,13 +421,10 @@ bool WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
 {
   if (!m_jobqueue) return false;
   if (xQueueSend(m_jobqueue, &job, 0) != pdTRUE) {
-    m_jobqueue_overflow_status |= 1;
     m_jobqueue_overflow_dropcnt++;
     return false;
   }
   else {
-    if (m_jobqueue_overflow_status & 1)
-      m_jobqueue_overflow_status++;
     if (init_tx && uxQueueMessagesWaiting(m_jobqueue) == 1)
       RequestPoll();
     return true;
@@ -441,6 +440,17 @@ bool WebSocketHandler::GetNextTxJob()
     return true;
   } else {
     return false;
+  }
+}
+
+
+void WebSocketHandler::LogStatus()
+{
+  // log job queue overflows:
+  if (m_jobqueue_overflow_logged != m_jobqueue_overflow_dropcnt) {
+    uint32_t dropcnt = m_jobqueue_overflow_dropcnt - m_jobqueue_overflow_logged;
+    m_jobqueue_overflow_logged = m_jobqueue_overflow_dropcnt;
+    ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow occurred, %" PRIu32 " drops", m_nc, dropcnt);
   }
 }
 
@@ -489,18 +499,6 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
         m_jobqueue ? uxQueueMessagesWaiting(m_jobqueue) : -1, m_job.type, m_sent, m_ack);
       // Check for new transmission:
       InitTx();
-      // Log queue overflows & resolves:
-      if (m_jobqueue_overflow_status > m_jobqueue_overflow_logged) {
-        m_jobqueue_overflow_logged = m_jobqueue_overflow_status;
-        if (m_jobqueue_overflow_status & 1) {
-          ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", m_nc);
-        }
-        else {
-          uint32_t dropcnt = m_jobqueue_overflow_dropcnt;
-          ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %" PRIu32 " drops", m_nc, dropcnt - m_jobqueue_overflow_dropcntref);
-          m_jobqueue_overflow_dropcntref = dropcnt;
-        }
-      }
       break;
     
     case MG_EV_SEND:
@@ -666,6 +664,7 @@ void OvmsWebServer::EventListener(std::string event, void* data)
 
   // ticker:
   else if (event == "ticker.1") {
+    m_tick++;
     #ifdef WEBSRV_HAVE_SETUPWIZARD
       CfgInitTicker();
     #endif
@@ -704,6 +703,15 @@ void OvmsWebServer::EventListener(std::string event, void* data)
         free(job.event);
       // Note: init_tx false to prevent mg_broadcast() deadlock on network events
       //  and keep processing time low
+    }
+  }
+  
+  // log handler status every 8 seconds:
+  if (event == "ticker.1" && (m_tick & 7) == 0) {
+    for (auto slot: m_client_slots) {
+      if (slot.handler) {
+        slot.handler->LogStatus();
+      }
     }
   }
   

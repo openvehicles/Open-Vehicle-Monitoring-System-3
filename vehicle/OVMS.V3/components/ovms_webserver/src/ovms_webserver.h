@@ -411,6 +411,7 @@ class WebSocketHandler : public MgHandler, public OvmsWriter
     void ProcessTxJob();
     int HandleEvent(int ev, void* p);
     void HandleIncomingMsg(std::string msg);
+    void LogStatus();
 
   public:
     void Subscribe(std::string topic);
@@ -430,10 +431,8 @@ class WebSocketHandler : public MgHandler, public OvmsWriter
     size_t                    m_modifier = 0;         // "our" metrics modifier
     size_t                    m_reader = 0;           // "our" notification reader id
     QueueHandle_t             m_jobqueue = NULL;
-    uint32_t                  m_jobqueue_overflow_status = 0;
-    uint32_t                  m_jobqueue_overflow_logged = 0;
     uint32_t                  m_jobqueue_overflow_dropcnt = 0;
-    uint32_t                  m_jobqueue_overflow_dropcntref = 0;
+    uint32_t                  m_jobqueue_overflow_logged = 0;
     WebSocketTxJob            m_job = {};
     int                       m_sent = 0;
     int                       m_ack = 0;
@@ -620,6 +619,7 @@ class OvmsWebServer : public ExternalRamAllocated
 
     int                       m_init_timeout;
     int                       m_shutdown_countdown;
+    uint32_t                  m_tick;
 };
 
 extern OvmsWebServer MyWebServer;

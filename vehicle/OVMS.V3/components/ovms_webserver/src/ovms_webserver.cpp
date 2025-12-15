@@ -72,6 +72,8 @@ OvmsWebServer::OvmsWebServer()
   m_client_backlog = xQueueCreate(50, sizeof(WebSocketTxTodo));
   m_update_ticker = xTimerCreate("Web client update ticker", 250 / portTICK_PERIOD_MS, pdTRUE, NULL, UpdateTicker);
 
+  m_tick = 0;
+
   MyConfig.RegisterParam("http.server", "Webserver configuration", true, true);
   MyConfig.RegisterParam("http.plugin", "Webserver plugins", true, true);
 
