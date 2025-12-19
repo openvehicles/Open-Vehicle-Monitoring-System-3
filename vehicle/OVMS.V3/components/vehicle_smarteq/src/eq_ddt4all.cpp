@@ -79,28 +79,28 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 0:
     {
       // indicator 5x on
-      CommandCan(0x745, 0x765, "30082002", false, true);
+      CommandCanVector(0x745, 0x765, {"30082002","30082002"}, false, true);
       res = Success;
       break;
     }
     case 1:
     {
       // open trunk
-      CommandCan(0x745, 0x765, "300500", false, true);
+      CommandCanVector(0x745, 0x765, {"300500","300500","300500","300500","300500"}, false, true);
       res = Success;
       break;
     }
     case 2:
     {
       // AUTO_WIPE false
-      CommandCan(0x74d, 0x76d, "2E033C00", false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033C00"}, false, true);
       res = Success;
       break;
     }
     case 3:
     {
       // AUTO_WIPE true
-      CommandCan(0x74d, 0x76d, "2E033C80", false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033C80"}, false, true);
       res = Success;
       break;
     }
@@ -134,116 +134,116 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
       #endif
       break;
     }
-    // CommandCan(txid, rxid, enable, request)
+    // CommandCan(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/ CommandWakeup2 = false)
     case 6:
     {
       // BIPBIP_Lock false
-      CommandCan(0x745, 0x765, "3B1400", false, true);
+      CommandCanVector(0x745, 0x765, {"3B1400"}, false, true);
       res = Success;
       break;
     }
     case 7:
     {
       // BIPBIP_Lock true
-      CommandCan(0x745, 0x765, "3B1480", false, true);
+      CommandCanVector(0x745, 0x765, {"3B1480"}, false, true);
       res = Success;
       break;
     }
     case 8:
     {
       // REAR_WIPER_LINK false
-      CommandCan(0x745, 0x765, "3B5800", false, true);
+      CommandCanVector(0x745, 0x765, {"3B5800"}, false, true);
       res = Success;
       break;
     }
     case 9:
     {
       // REAR_WIPER_LINK true
-      CommandCan(0x745, 0x765, "3B5880", false, true);
+      CommandCanVector(0x745, 0x765, {"3B5880"}, false, true);
       res = Success;
       break;
     }
     case 10:
     {
       // RKE_Backdoor_open false
-      CommandCan(0x745, 0x765, "3B7800", false, true);
+      CommandCanVector(0x745, 0x765, {"3B7800"}, false, true);
       res = Success;
       break;
     }
     case 11:
     {
       // RKE_Backdoor_open true
-      CommandCan(0x745, 0x765, "3B7880", false, true);
+      CommandCanVector(0x745, 0x765, {"3B7880"}, false, true);
       res = Success;
       break;
     }
     case 12:
     {
       // Precond_by_key 00
-      CommandCan(0x745, 0x765, "3B7700", false, true);
+      CommandCanVector(0x745, 0x765, {"3B7700"}, false, true);
       res = Success;
       break;
     }
     case 13:
     {
       // Precond_by_key 03
-      CommandCan(0x745, 0x765, "3B7703", false, true);
+      CommandCanVector(0x745, 0x765, {"3B7703"}, false, true);
       res = Success;
       break;
     }
     case 14:
     {
       // ECOMODE_PRE_Restart false
-      CommandCan(0x745, 0x765, "3B7600", false, true);
+      CommandCanVector(0x745, 0x765, {"3B7600"}, false, true);
       res = Success;
       break;
     }
     case 15:
     {
       // ECOMODE_PRE_Restart true
-      CommandCan(0x745, 0x765, "3B7680", false, true);
+      CommandCanVector(0x745, 0x765, {"3B7680"}, false, true);
       res = Success;
       break;
     }
     case 16:
     {
       // Charging screen false
-      CommandCan(0x743, 0x763, "2E013D00", true, false);
+      CommandCanVector(0x743, 0x763, {"2E013D00"}, true, false);
       res = Success;
       break;
     }
     case 17:
     {
       // Charging screen true
-      CommandCan(0x743, 0x763, "2E013D01", true, false);
+      CommandCanVector(0x743, 0x763, {"2E013D01"}, true, false);
       res = Success;
       break;
     }
     case 18:
     {
       // ONLY_DRL_OFF_CF false
-      CommandCan(0x74d, 0x76d, "2E045F00", false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E045F00"}, false, true);
       res = Success;
       break;
     }
     case 19:
     {
       // ONLY_DRL_OFF_CF true
-      CommandCan(0x74d, 0x76d, "2E045F80", false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E045F80"}, false, true);
       res = Success;
       break;
     }
     case 20:
     {
       // Welcome_Goodbye_CF false
-      CommandCan(0x74d, 0x76d, "2E033400", false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033400"}, false, true);
       res = Success;
       break;
     }
     case 21:
     {
       // Welcome_Goodbye_CF true
-      CommandCan(0x74d, 0x76d, "2E033480", false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033480"}, false, true);
       res = Success;
       break;
     }    
@@ -264,14 +264,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 26:
     {
       // AT_BeepInRPresent_CF false
-      CommandCan(0x743, 0x763, "2E014900", true, false);
+      CommandCanVector(0x743, 0x763, {"2E014900"}, true, false);
       res = Success;
       break;
     }
     case 27:
     {
       // AT_BeepInRPresent_CF true
-      CommandCan(0x743, 0x763, "2E014980", true, false);
+      CommandCanVector(0x743, 0x763, {"2E014980"}, true, false);
       res = Success;
       break;
     }
@@ -279,126 +279,126 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 28:
     {
       // EVStartupSoundInhibition_CF false
-      CommandCan(0x743, 0x763, "2E013501", true, false);
+      CommandCanVector(0x743, 0x763, {"2E013501"}, true, false);
       res = Success;
       break;
     }
     case 29:
     {
       // EVStartupSoundInhibition_CF true
-      CommandCan(0x743, 0x763, "2E013500", true, false);
+      CommandCanVector(0x743, 0x763, {"2E013500"}, true, false);
       res = Success;
       break;
     }
     case 32:
     {
       // key reminder false
-      CommandCan(0x745, 0x765, "3B5E00", false, true);
+      CommandCanVector(0x745, 0x765, {"3B5E00"}, false, true);
       res = Success;
       break;
     }
     case 33:
     {
       // key reminder true
-      CommandCan(0x745, 0x765, "3B5E80", false, true);
+      CommandCanVector(0x745, 0x765, {"3B5E80"}, false, true);
       res = Success;
       break;
     }
     case 34:
     {
       // long tempo display false
-      CommandCan(0x745, 0x765, "3B5700", false, true);
+      CommandCanVector(0x745, 0x765, {"3B5700"}, false, true);
       res = Success;
       break;
     }
     case 35:
     {
       // long tempo display true
-      CommandCan(0x745, 0x765, "3B5780", false, true);
+      CommandCanVector(0x745, 0x765, {"3B5780"}, false, true);
       res = Success;
       break;
     }
     case 36:
     {
       // AmbientLightPresent_CF false
-      CommandCan(0x743, 0x763, "2E018900", true, false);
+      CommandCanVector(0x743, 0x763, {"2E018900"}, true, false);
       res = Success;
       break;
     }
     case 37:
     {
       // AmbientLightPresent_CF true
-      CommandCan(0x743, 0x763, "2E018901", true, false);
+      CommandCanVector(0x743, 0x763, {"2E018901"}, true, false);
       res = Success;
       break;
     }
     case 40:
     {
       // ClockDisplayed_CF not displayed
-      CommandCan(0x743, 0x763, "2E012100", true, false);
+      CommandCanVector(0x743, 0x763, {"2E012100"}, true, false);
       res = Success;
       break;
     }
     case 41:
     {
       // ClockDisplayed_CF displayed managed
-      CommandCan(0x743, 0x763, "2E012101", true, false);
+      CommandCanVector(0x743, 0x763, {"2E012101"}, true, false);
       res = Success;
       break;
     }
     case 42:
     {
       // ClockDisplayed_CF displayed not managed
-      CommandCan(0x743, 0x763, "2E012102", true, false);
+      CommandCanVector(0x743, 0x763, {"2E012102"}, true, false);
       res = Success;
       break;
     }
     case 43:
     {
       // ClockDisplayed_CF not used (EQ Smart Connect)
-      CommandCan(0x743, 0x763, "2E012103", true, false);
+      CommandCanVector(0x743, 0x763, {"2E012103"}, true, false);
       res = Success;
       break;
     }
     case 44:
     {
       // Auto Light false
-      CommandCan(0x74d, 0x76d, "2E002300", false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E002300"}, false, true);
       res = Success;
       break;
     }
     case 45:
     {
       // Auto Light true
-      CommandCan(0x74d, 0x76d, "2E002380", false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E002380"}, false, true);
       res = Success;
       break;
     }
     case 46:
     {
       // Auto Light false
-      CommandCan(0x745, 0x765, "2E104200", false, true);
+      CommandCanVector(0x745, 0x765, {"2E104200"}, false, true);
       res = Success;
       break;
     }
     case 47:
     {
       // Auto Light true
-      CommandCan(0x745, 0x765, "2E104201", false, true);
+      CommandCanVector(0x745, 0x765, {"2E104201"}, false, true);
       res = Success;
       break;
     }
     case 48:
     {
       // Light by EMM false
-      CommandCan(0x745, 0x765, "3B4F00", false, true);
+      CommandCanVector(0x745, 0x765, {"3B4F00"}, false, true);
       res = Success;
       break;
     }
     case 49:
     {
       // Light by EMM true
-      CommandCan(0x745, 0x765, "3B4F80", false, true);
+      CommandCanVector(0x745, 0x765, {"3B4F80"}, false, true);
       res = Success;
       break;
     }
@@ -406,7 +406,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     {
       // max AC current limitation configuration 20A only for slow charger!
       if (!mt_obl_fastchg->AsBool()) {
-        CommandCan(0x719, 0x739, "2E614150", false, true);
+        CommandCanVector(0x719, 0x739, {"2E614150"}, false, true);
         res = Success;
       } else {
         res = Fail;
@@ -417,7 +417,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     {
       // max AC current limitation configuration 32A only for slow charger!
       if (!mt_obl_fastchg->AsBool()) {
-        CommandCan(0x719, 0x739, "2E614180", false, true);
+        CommandCanVector(0x719, 0x739, {"2E614180"}, false, true);
         res = Success;
       } else {
         res = Fail;
@@ -427,56 +427,56 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 52:
     {
       // SBRLogic_CF Standard
-      CommandCan(0x743, 0x763, "2E018500", true, false);
+      CommandCanVector(0x743, 0x763, {"2E018500"}, true, false);
       res = Success;
       break;
     }
     case 53:
     {
       // SBRLogic_CF US
-      CommandCan(0x743, 0x763, "2E018501", true, false);
+      CommandCanVector(0x743, 0x763, {"2E018501"}, true, false);
       res = Success;
       break;
     }
     case 54:
     {
       // FrontSBRInhibition_CF false
-      CommandCan(0x743, 0x763, "2E010900", true, false);
+      CommandCanVector(0x743, 0x763, {"2E010900"}, true, false);
       res = Success;
       break;
     }
     case 55:
     {
       // FrontSBRInhibition_CF true
-      CommandCan(0x743, 0x763, "2E010901", true, false);
+      CommandCanVector(0x743, 0x763, {"2E010901"}, true, false);
       res = Success;
       break;
     }
     case 56:
     {
       // Speedmeter ring (Tacho) DayBacklightsPresent_CF false
-      CommandCan(0x743, 0x763, "2E011800", true, false);
+      CommandCanVector(0x743, 0x763, {"2E011800"}, true, false);
       res = Success;
       break;
     }
     case 57:
     {
       // Speedmeter ring (Tacho) DayBacklightsPresent_CF true
-      CommandCan(0x743, 0x763, "2E011801", true, false);
+      CommandCanVector(0x743, 0x763, {"2E011801"}, true, false);
       res = Success;
       break;
     }
     case 58:
     {
       // AdditionnalInstrumentPresent_CF false
-      CommandCan(0x743, 0x763, "2E018000", true, false);
+      CommandCanVector(0x743, 0x763, {"2E018000"}, true, false);
       res = Success;
       break;
     }
     case 59:
     {
       // AdditionnalInstrumentPresent_CF true
-      CommandCan(0x743, 0x763, "2E018001", true, false);
+      CommandCanVector(0x743, 0x763, {"2E018001"}, true, false);
       res = Success;
       break;
     }
@@ -484,14 +484,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 60:
     {
       // TPMSPresent_CF false
-      CommandCan(0x743, 0x763, "2E010E00", true, false);
+      CommandCanVector(0x743, 0x763, {"2E010E00"}, true, false);
       res = Success;
       break;
     }
     case 61:
     {
       // TPMSPresent_CF true
-      CommandCan(0x743, 0x763, "2E010E01", true, false);
+      CommandCanVector(0x743, 0x763, {"2E010E01"}, true, false);
       res = Success;
       break;
     }
@@ -499,77 +499,77 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 62:
     {
       // DRL + Tail false
-      CommandCan(0x74d, 0x76d, "2E035300", false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E035300"}, false, true);
       res = Success;
       break;
     }
     case 63:
     {
       // DRL + Tail true
-      CommandCan(0x74d, 0x76d, "2E035301", false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E035301"}, false, true);
       res = Success;
       break;
     }
     case 66:
     {
       // DigitalSpeedometerPresent_CF off
-      CommandCan(0x743, 0x763, "2E013900", true, false);
+      CommandCanVector(0x743, 0x763, {"2E013900"}, true, false);
       res = Success;
       break;
     }
     case 67:
     {
       // DigitalSpeedometerPresent_CF in mph
-      CommandCan(0x743, 0x763, "2E013901", true, false);
+      CommandCanVector(0x743, 0x763, {"2E013901"}, true, false);
       res = Success;
       break;
     }
     case 68:
     {
       // DigitalSpeedometerPresent_CF in km/h
-      CommandCan(0x743, 0x763, "2E013902", true, false);
+      CommandCanVector(0x743, 0x763, {"2E013902"}, true, false);
       res = Success;
       break;
     }
     case 69:
     {
       // DigitalSpeedometerPresent_CF always km/h
-      CommandCan(0x743, 0x763, "2E013903", true, false);
+      CommandCanVector(0x743, 0x763, {"2E013903"}, true, false);
       res = Success;
       break;
     }
     case 100:
     {
       // ClearDiagnosticInformation.All
-      CommandCan(0x745, 0x765, "14FFFFFF", true, false);
+      CommandCanVector(0x745, 0x765, {"14FFFFFF"}, true, false);
       res = Success;
       break;
     }
     case 719:
     {
       std::string hexbytes = mt_canbyte->AsString();
-      CommandCan(0x719, 0x739, hexbytes, false, true);
+      CommandCanVector(0x719, 0x739, {hexbytes}, false, true);
       res = Success;
       break;
     }
     case 743:
     {
       std::string hexbytes = mt_canbyte->AsString();
-      CommandCan(0x743, 0x763, hexbytes, true, false);
+      CommandCanVector(0x743, 0x763, {hexbytes}, true, false);
       res = Success;
       break;
     }
     case 745:
     {
       std::string hexbytes = mt_canbyte->AsString();
-      CommandCan(0x745, 0x765, hexbytes, false, true);
+      CommandCanVector(0x745, 0x765, {hexbytes}, false, true);
       res = Success;
       break;
     }
     case 746: // 746 is used for the 74d
     {
       std::string hexbytes = mt_canbyte->AsString();
-      CommandCan(0x74d, 0x76d, hexbytes, false, true);
+      CommandCanVector(0x74d, 0x76d, {hexbytes}, false, true);
       res = Success;
       break;
     }

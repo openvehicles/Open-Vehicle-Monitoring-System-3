@@ -136,10 +136,14 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_tpms_missing_tx             = MyMetrics.InitVector<short> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);
   // Pre-allocate TPMS vectors for 4 wheels to avoid heap fragmentation
   mt_tpms_temp->SetElemValue(3, 0.0f);
+  StdMetrics.ms_v_tpms_temp->SetElemValue(3, 0.0f);
   mt_tpms_pressure->SetElemValue(3, 0.0f);
+  StdMetrics.ms_v_tpms_pressure->SetElemValue(3, 0.0f);
   mt_tpms_alert->SetElemValue(3, 0);
+  StdMetrics.ms_v_tpms_alert->SetElemValue(3, 0);
   mt_tpms_low_batt->SetElemValue(3, 0);
   mt_tpms_missing_tx->SetElemValue(3, 0);
+
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 210, kPa);  // Dummy pressure for TPMS alert testing
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
