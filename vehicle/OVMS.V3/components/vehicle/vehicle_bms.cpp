@@ -87,54 +87,65 @@ struct reading_entry_t
  */
 bool OvmsVehicle::BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule /*=0*/)
   {
-  bool res = false;
-  if (readingspermodule <= 0)
-    {
-    // Passing in 0 will leave the readings per module unchanged.
-    readingspermodule = m_bms_readingspermodule_v;
-    }
-  if (readings != m_bms_readings_v)
-    {
-    res = true;
-    if (m_bms_bitset_cv == 0)
+    bool res = false;
+
+    // Defining valid readingspermodule
+    if (readingspermodule <= 0)
       {
-      BmsSetCellArrangementVoltage(readings, readingspermodule);
+        // Passing in 0 will leave the readings per module unchanged.
+        readingspermodule = m_bms_readingspermodule_v;
       }
-    else
+
+    //  Does the layout need to be changed?
+    bool change_readings =
+        (readings != m_bms_readings_v);
+
+    bool change_rpm =
+        (readingspermodule != m_bms_readingspermodule_v);
+
+    if (change_readings || change_rpm)
       {
-      // Store (potentially) sparse readings into a vector.
-      std::vector<reading_entry_t> cells;
-      // At most we will need the number of voltages set in the bitset.
-      cells.reserve(m_bms_bitset_cv);
-      reading_entry_t reading;
-      int maxv = readings;
-      if (m_bms_readings_v < maxv)
-        {
-        maxv = m_bms_readings_v;
-        }
-      for (int i = 0; i< maxv; ++i)
-        {
-        if (m_bms_bitset_v[i])
+        res = true;
+
+        // Temporarily save existing values ​​(if bitset)
+        if (m_bms_bitset_cv != 0)
           {
-          reading.cell_no = i;
-          reading.entry = m_bms_voltages[i];
-          cells.insert(cells.end(),reading);
+            std::vector<reading_entry_t> cells;
+            cells.reserve(m_bms_bitset_cv);
+
+            int maxv = readings;
+            if (m_bms_readings_v < maxv)
+              {              
+                maxv = m_bms_readings_v;
+              }
+            for (int i = 0; i< maxv; ++i)
+              {
+                if (m_bms_bitset_v[i])
+                  {
+                    reading_entry_t reading;
+                    reading.cell_no = i;
+                    reading.entry   = m_bms_voltages[i];
+                    cells.push_back(reading);
+                  }
+              }
+
+            // Building a new layout
+            ESP_LOGD("BMS","Rebuild cell arrangement: readings=%d, readingspermodule=%d",readings, readingspermodule);
+            BmsSetCellArrangementVoltage(readings, readingspermodule);
+
+            // Restore Values
+            for (auto& c : cells)
+              {
+                BmsSetCellVoltage(c.cell_no, c.entry);
+              }
           }
-        }
-      BmsSetCellArrangementVoltage(readings, readingspermodule);
-      for ( std::vector<reading_entry_t>::iterator iter = cells.begin(); iter != cells.end(); ++iter)
-        {
-        BmsSetCellVoltage(iter->cell_no, iter->entry);
-        }
+        else
+          {
+            // Nothing to save → clean rebuild
+            BmsSetCellArrangementVoltage(readings, readingspermodule);
+          }
       }
-    }
-  else if (readingspermodule != m_bms_readingspermodule_v)
-    {
-    // This only changes the read-out.
-    m_bms_readingspermodule_v = readingspermodule;
-    res = true;
-    }
-  return res;
+    return res;
   }
 
 /**
