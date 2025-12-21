@@ -186,6 +186,35 @@ status and control the car. This is a foundation that others hopefully will inte
 - Provide documentation in the user guide
 - Use pull requests to submit your code for inclusion
 
+
+**"Vibe" submissions will be rejected and closed without comment.**
+
+**If** using "AI" tools, it is *your* responsibility to validate all "AI" output you decide to include in your 
+submission, or decide to base your work or suggestions on, *prior to* the publication.
+
+Submitting unvalidated "AI" output is a waste of our time and an insult to our dedication to the Open Source 
+idea of sharing knowledge and helping each other to grow.
+
+Don't fall for the hype. Generative "AI" does not understand or reason. It produces output that *looks* similar 
+to answers to comparable questions it was trained with.
+
+LLM learn patterns and correlations, not reasoning or causalities. *If* (!) given enough training material, 
+and *if* (!) given enough context memory to hold all relevant aspects, the output *may* be useful to get an 
+*idea* about an issue. Not less, not more.
+
+As of 2025/2026 no currently available "AI" tool is capable of producing factually correct or consistent code, 
+fault analysis or even documentation for the OVMS framework. Current "AI" tools do not even get the most basic 
+function call analysis right, let alone code generation for complex custom environments like this.
+
+Still none of the current AI tools will inform you about its limitations and cease to perform an order it cannot 
+fulfill. They will rather produce something that looks like a professional and plausible result, that on closer 
+inspection then turns out to be complete nonsense.
+
+Examples:
+- [AI not understanding STL containers or OVMS event processing](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/pull/1294)
+- [AI not understanding code coverage and suggesting model change to fix view issue](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/pull/1296)
+
+
 **A note on pull requests:**
 
 Pull requests shall focus on one specific issue / feature / vehicle at a time and shall only mix 
