@@ -36,21 +36,23 @@ static const char *TAG = "v-smarteq";
 
 // can can1 tx st 634 40 01 72 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
-  if(!m_enable_write) {
+  if(!m_enable_write)
+    {
     ESP_LOGE(TAG, "CommandClimateControl failed / no write access");
     m_climate_restart_ticker = 0;
     m_climate_restart = false; 
     return Fail;
-  }
+    }
 
-  if(!enable) {
+  if(!enable) // HVAC off not implemented by vehicle
+    {
     m_climate_restart_ticker = 0;
     m_climate_restart = false; 
     return NotImplemented;
-  }
+    }
 
   if (StandardMetrics.ms_v_bat_soc->AsInt(0) < 31)
-  {    
+    {    
     char msg[100];
     snprintf(msg, sizeof(msg), "Scheduled precondition skipped: Battery SOC too low (%d%%)",
              StandardMetrics.ms_v_bat_soc->AsInt(0));
@@ -59,109 +61,73 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     m_climate_restart_ticker = 0;
     m_climate_restart = false; 
     return Fail;
-  }
+    }
 
-  if (StdMetrics.ms_v_env_hvac->AsBool()) {
+  if (StdMetrics.ms_v_env_hvac->AsBool()) 
+    {
     MyNotify.NotifyString("info", "hvac.enabled", "Climate already on");
     ESP_LOGI(TAG, "CommandClimateControl already on");
     return Success;
-  }
+    }
   ESP_LOGI(TAG, "CommandClimateControl %s", enable ? "ON" : "OFF");
 
   OvmsVehicle::vehicle_command_t res;
 
-  if (enable) {
+  if (enable) 
+    {
     uint8_t data[4] = {0x40, 0x01, 0x00, 0x00};
     canbus *obd;
     obd = m_can1;
 
     res = CommandWakeup();
-    if (res == Success) {
+    if (res == Success) 
+      {
       vTaskDelay(2000 / portTICK_PERIOD_MS);
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 10; i++) 
+        {
         obd->WriteStandard(0x634, 4, data);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-      }     
+        vTaskDelay(200 / portTICK_PERIOD_MS);
+        if (StdMetrics.ms_v_env_hvac->AsBool(false)) 
+          {
+          ESP_LOGI(TAG, "Climate control started");
+          break;
+          }
+        }     
       res = Success;
-    } else {
+      }
+    else
+      {
       res = Fail;
+      }
     }
-  } else {
+  else
+    {
     res = NotImplemented;
-  }
+    }
 
   // fallback to default implementation?
-  if (res == NotImplemented) {
+  if (res == NotImplemented) 
+    {
     res = OvmsVehicle::CommandClimateControl(enable);
-  }
+    }
   return res;
 }
 
-OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCan(uint32_t txid,uint32_t rxid,std::string hexbytes,bool reset,bool wakeup) {
-  if(!m_enable_write) {
-    ESP_LOGE(TAG, "CommandCan failed / no write access");
-    return Fail;
-  }
-
-  if(m_ddt4all_exec > 1) {
-    ESP_LOGE(TAG, "DDT4all command rejected - previous command still processing (%d seconds remaining)",
-             m_ddt4all_exec);
-    return Fail;
-  }
-
-  m_ddt4all_exec = 20; // 20 seconds delay for next DDT4ALL command execution
-
-  ESP_LOGI(TAG, "CommandCan");
-
-  std::string request;
-  std::string response;
-  if (hexbytes.size() % 2 != 0) 
+// CommandCanVector(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/ CommandWakeup2 = false)
+OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t txid,uint32_t rxid, std::vector<std::string> hexbytes,bool reset,bool wakeup) {
+  if(!m_enable_write) 
     {
-    ESP_LOGE(TAG,"Invalid hex length");
-    m_ddt4all_exec = 5; // reduce cooldown on error
+    ESP_LOGE(TAG, "CommandCanVector failed / no write access");
     return Fail;
     }
 
-  mt_canbyte->SetValue(hexbytes.c_str());
-
-  if (wakeup)
-    CommandWakeup();
-  else
-    CommandWakeup2();
-
-  vTaskDelay(3500 / portTICK_PERIOD_MS);
-  uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 200;
-
-  request = hexdecode("10C0");
-  PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-
-  vTaskDelay(200 / portTICK_PERIOD_MS);
-  request = hexdecode(hexbytes);
-  PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-
-  if (reset) {
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    m_ddt4all_exec = 30; // 30 seconds delay for next DDT4ALL command execution
-    request = hexdecode("1103");  // key on/off
-    PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-  }
-  return Success;
-}
-
-OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t txid,uint32_t rxid, std::vector<std::string> hexbytes,bool reset,bool wakeup) {
-  if(!m_enable_write) {
-    ESP_LOGE(TAG, "CommandCan failed / no write access");
+  if(m_ddt4all_exec > 1) 
+    {
+    ESP_LOGE(TAG, "DDT4all command rejected - previous command still processing (%d seconds remaining)",m_ddt4all_exec);
     return Fail;
-  }
+    }
 
-  if(m_ddt4all_exec > 1) {
-    ESP_LOGE(TAG, "DDT4all command rejected - previous command still processing (%d seconds remaining)",
-             m_ddt4all_exec);
-    return Fail;
-  }
-
-  m_ddt4all_exec = 20; // 20 seconds delay for next DDT4ALL command execution
+  m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution
 
   ESP_LOGI(TAG, "CommandCanVector");
 
@@ -169,48 +135,84 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
   std::string response;
 
   int vecsize = hexbytes.size();
-  if (vecsize == 0) {
+  if (vecsize == 0) 
+    {
     ESP_LOGE(TAG, "Empty hexbytes vector");
     m_ddt4all_exec = 5; // reduce cooldown on error
     return Fail;
-  }
+    }
   // Validate all hex strings before starting
-  for (int i = 0; i < vecsize; i++) {
-    if (hexbytes[i].size() % 2 != 0) {
+  for (int i = 0; i < vecsize; i++) 
+    {
+    if (hexbytes[i].size() % 2 != 0) 
+      {
       ESP_LOGE(TAG, "Invalid hex length at index %d", i);
       m_ddt4all_exec = 5; // reduce cooldown on error
       return Fail;
+      }
     }
-  }
 
   mt_canbyte->SetValue(hexbytes[0].c_str());
 
-  if (wakeup)
-    CommandWakeup();
-  else
-    CommandWakeup2();
-
-  vTaskDelay(3500 / portTICK_PERIOD_MS);
-  uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 200;
-
-  request = hexdecode("10C0");
-  PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+  OvmsVehicle::vehicle_command_t res = Fail;
+  res = wakeup ? CommandWakeup() : CommandWakeup2();
   
-  vTaskDelay(200 / portTICK_PERIOD_MS);
-  for (int i = 0; i < vecsize; i++) {
-    request = hexdecode(hexbytes[i]);
-    PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);    
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-  }
+  if (res == Success)
+    {
+    PollSetState(POLLSTATE_ON);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    if (!mt_bus_awake->AsBool(false)) 
+      {
+      ESP_LOGE(TAG, "vehicle not awake");
+      m_ddt4all_exec = 5; // reduce cooldown on error
+      return Fail;
+      }
 
-  if (reset) {
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    m_ddt4all_exec = 30; // 30 seconds delay for next DDT4ALL command execution
-    request = hexdecode("1103");  // key on/off
+    uint8_t protocol = ISOTP_STD;
+    int timeout_ms = 200;
+    int err = 0;
+
+    request = hexdecode("10C0");
     PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-  }
-  return Success;
+    
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    for (int i = 0; i < vecsize; i++) 
+      {
+      request = hexdecode(hexbytes[i]);
+      err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);    
+      vTaskDelay(200 / portTICK_PERIOD_MS);
+      }
+
+    if (reset) {
+      vTaskDelay(500 / portTICK_PERIOD_MS);
+      m_ddt4all_exec = 30; // 30 seconds delay for next DDT4ALL command execution
+      request = hexdecode("1103");  // key on/off
+      PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+    }
+
+    if (err == POLLSINGLE_TXFAILURE)
+      {
+      ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
+      return Fail;
+      }
+    else if (err < 0)
+      {
+      ESP_LOGD(TAG, "ERROR: timeout waiting for poller/response");
+      return Fail;
+      }
+    else if (err)
+      {
+      ESP_LOGD(TAG, "ERROR: request failed with response error code %02X\n", err);
+      return Fail;
+      }
+    return Success;
+    } 
+  else
+    {
+    m_ddt4all_exec = 5; // reduce cooldown on error
+    MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during wakeup");
+    return res;
+    }
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, int durationms) {
@@ -295,11 +297,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
     return Fail;
     }
 
-  OvmsVehicle::vehicle_command_t res;
-
   ESP_LOGI(TAG, "Send Wakeup Command");
-  res = Fail;
-  if(!mt_bus_awake->AsBool()) 
+
+  OvmsVehicle::vehicle_command_t res = Fail;
+
+  if(!mt_bus_awake->AsBool(false)) 
     {
     uint8_t data[4] = {0x40, 0x00, 0x00, 0x00};
     canbus *obd;
@@ -309,6 +311,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
       {
       obd->WriteStandard(0x634, 4, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
+      if (mt_bus_awake->AsBool(false)) 
+        {
+        res = Success;
+        break;
+        }
       }
     mt_bus_awake->SetValue(true);
     res = Success;
@@ -328,25 +335,30 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
     ESP_LOGE(TAG, "CommandWakeup2 failed: no write access!");
     return Fail;
     }
-  OvmsVehicle::vehicle_command_t res;
 
-  ESP_LOGI(TAG, "Send Wakeup Command 2");
-  res = Fail;
+  ESP_LOGI(TAG, "Send Wakeup Command 2");  
 
-  if(!mt_bus_awake->AsBool()) 
+  OvmsVehicle::vehicle_command_t res = Fail;
+
+  if(!mt_bus_awake->AsBool(false)) 
     {
     ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
-    uint8_t data[8] = {0xc3, 0x1b, 0x73, 0x57, 0x14, 0x70, 0x96, 0x85};
+    uint8_t data[8] = {0xc3, 0x11, 0x96, 0xef, 0x14, 0x10, 0x96, 0x85};
     canbus *obd;
     obd = m_can1;
     for (int i = 0; i < 10; i++) 
       {
       obd->WriteStandard(0x350, 8, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
+      if (mt_bus_awake->AsBool(false)) 
+        {
+        res = Success;
+        break;
+        }
       }
-    mt_bus_awake->SetValue(true);
+    mt_bus_awake->SetValue(true);    
+    res = Success;
     ESP_LOGI(TAG, "Vehicle is awake");
-    if(mt_bus_awake->AsBool()) res = Success;
     } 
   else 
     {
@@ -362,55 +374,29 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
     ESP_LOGE(TAG, "CommandLock failed / no write access");
     return Fail;
   }
-  ESP_LOGI(TAG, "CommandLock");
-  CommandWakeup();
-  vTaskDelay(3500 / portTICK_PERIOD_MS);
-  if(!mt_bus_awake->AsBool()) 
+  ESP_LOGI(TAG, "CommandLock");  
+
+  OvmsVehicle::vehicle_command_t res = Fail;
+
+  if(m_indicator) 
     {
-    ESP_LOGE(TAG, "CommandLock failed / vehicle not awake");
-    return Fail;
+    res = CommandCanVector(0x745, 0x765, {"30010000","30010000","30010000","30010000","30010000","30082002"}, false, true);
     }
-  
-  uint32_t txid = 0x745, rxid = 0x765;
-  uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 500;
-  
-  std::string request;
-  std::string response;
-  std::string reqstr = "30010000";
-  
-  request = hexdecode("10C0");
-  int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-
-  vTaskDelay(200 / portTICK_PERIOD_MS);  
-  request = hexdecode(reqstr);
-  err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-
-  if(m_indicator) {
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    std::string indstr = "30082002";
-    request = hexdecode(indstr); // indicator light
-    err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-  }
-
-  if (err == POLLSINGLE_TXFAILURE)
-  {
-    ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
-    return Fail;
-  }
-  else if (err < 0)
-  {
-    ESP_LOGD(TAG, "ERROR: timeout waiting for poller/response");
-    return Fail;
-  }
-  else if (err)
-  {
-    ESP_LOGD(TAG, "ERROR: request failed with response error code %02X\n", err);
-    return Fail;
-  }
-
-  StdMetrics.ms_v_env_locked->SetValue(true);
-  return Success;
+  else 
+    {
+    res = CommandCanVector(0x745, 0x765, {"30010000","30010000","30010000","30010000","30010000"}, false, true);
+    }
+    
+  if(res == Success)  
+    {
+    ESP_LOGI(TAG, "Lock successful");
+    StdMetrics.ms_v_env_locked->SetValue(true);
+    }
+  else
+    {
+    ESP_LOGE(TAG, "Lock failed");
+    }
+  return res;
 }
 
 // unlock: can can1 tx st 745 04 30 01 00 01
@@ -421,53 +407,28 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin
     return Fail;
   }
   ESP_LOGI(TAG, "CommandUnlock");
-  CommandWakeup();
-  vTaskDelay(3500 / portTICK_PERIOD_MS);
-  if(!mt_bus_awake->AsBool()) 
+
+  OvmsVehicle::vehicle_command_t res = Fail;
+
+  if(m_indicator) 
     {
-    ESP_LOGE(TAG, "CommandLock failed / vehicle not awake");
-    return Fail;
+    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001","30082002"}, false, true);
     }
-  
-  uint32_t txid = 0x745, rxid = 0x765;
-  uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 500;
-  std::string request;
-  std::string response;
-  std::string reqstr = "30010001";
-  
-  request = hexdecode("10C0");
-  int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-  
-  vTaskDelay(200 / portTICK_PERIOD_MS);
-  request = hexdecode(reqstr);
-  err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+  else 
+    {
+    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001"}, false, true);
+    }
 
-  if(m_indicator) {
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    std::string indstr = "30082002";
-    request = hexdecode(indstr); // indicator light
-    err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-  }
-
-  if (err == POLLSINGLE_TXFAILURE)
-  {
-    ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
-    return Fail;
-  }
-  else if (err < 0)
-  {
-    ESP_LOGD(TAG, "ERROR: timeout waiting for poller/response");
-    return Fail;
-  }
-  else if (err)
-  {
-    ESP_LOGD(TAG, "ERROR: request failed with response error code %02X\n", err);
-    return Fail;
-  }
-
-  StdMetrics.ms_v_env_locked->SetValue(false);
-  return Success;
+  if(res == Success) 
+    {
+    ESP_LOGI(TAG, "Unlock successful");
+    StdMetrics.ms_v_env_locked->SetValue(false);
+    }
+  else
+    {
+    ESP_LOGE(TAG, "Unlock failed");
+    }    
+  return res;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandActivateValet(const char* pin) {
