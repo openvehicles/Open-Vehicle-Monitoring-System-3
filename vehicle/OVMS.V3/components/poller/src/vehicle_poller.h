@@ -34,6 +34,7 @@
 #define POLLSINGLE_OK                   0
 #define POLLSINGLE_TIMEOUT              -1
 #define POLLSINGLE_TXFAILURE            -2
+#define POLSSINGLE_NORESPONSE           -3
 
 #define VEHICLE_POLL_TYPE_NONE          0x00
 
