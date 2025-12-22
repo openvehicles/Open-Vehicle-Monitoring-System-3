@@ -981,7 +981,17 @@ void OvmsNetManager::MongooseTask()
 
   // Shutdown cleanly
   ESP_LOGD(TAG, "MongooseTask stopping");
-  MyEvents.SignalEvent("network.mgr.stop",NULL);
+
+  // Signal network clients to close & cleanup; to avoid race conditions from concurrent
+  // mg_mgr_free() execution, wait for all event listeners to have finished:
+    {
+    OvmsSemaphore eventdone;
+    auto callback = [](const char* event, void* data) { ((OvmsSemaphore*)data)->Give(); };
+    MyEvents.SignalEvent("network.mgr.stop", &eventdone, callback);
+    eventdone.Take();
+    }
+
+  // Cleanup mongoose:
   mg_mgr_free(&m_mongoose_mgr);
   uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
   ESP_LOGD(TAG, "MongooseTask done, min stack free=%u", minstackfree);
