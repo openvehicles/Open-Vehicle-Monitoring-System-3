@@ -159,7 +159,18 @@ void wifi_mode_ap(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     return;
     }
 
-  std::string password = MyConfig.GetParamValue("wifi.ap", argv[0]);
+  std::string apssid = (argc >= 1) ? argv[0] : "";
+  if (apssid == "")
+    {
+    apssid = MyConfig.GetParamValue("auto", "wifi.ssid.ap");
+    }
+  if (apssid == "")
+    {
+    writer->puts("Error: no AP SSID given and no auto start AP SSID defined");
+    return;
+    }
+
+  std::string password = MyConfig.GetParamValue("wifi.ap", apssid);
   if (password.empty())
     {
     writer->puts("Error: SSID password must be defined in config wifi.ap");
@@ -173,7 +184,7 @@ void wifi_mode_ap(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
 
   writer->puts("Starting WIFI as access point...");
-  me->StartAccessPointMode(argv[0],password);
+  me->StartAccessPointMode(apssid,password);
   }
 
 void wifi_mode_apclient(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -239,12 +250,12 @@ void wifi_mode_apclient(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
     writer->printf("Starting WIFI as Access Point and client to %s (%02x:%02x:%02x:%02x:%02x:%02x)...\n",
       stassid.c_str(),
       bssid[0],bssid[1],bssid[2],bssid[3],bssid[4],bssid[5]);
-    me->StartAccessPointClientMode(argv[0], appassword, stassid, stapassword, bssid);
+    me->StartAccessPointClientMode(apssid, appassword, stassid, stapassword, bssid);
     }
   else
     {
     writer->puts("Starting WIFI as Access Point and Client...");
-    me->StartAccessPointClientMode(argv[0], appassword, stassid, stapassword);
+    me->StartAccessPointClientMode(apssid, appassword, stassid, stapassword);
     }
   }
 
@@ -371,7 +382,9 @@ esp32wifiInit::esp32wifiInit()
     "[<ssid>] [<bssid>]\n"
     "Omit <ssid> or pass empty string to activate scanning mode.\n"
     "Set <bssid> to a MAC address to bind to a specific access point.", 0, 2);
-  cmd_mode->RegisterCommand("ap","Acts as a WIFI Access Point",wifi_mode_ap, "<ssid>", 1, 1);
+  cmd_mode->RegisterCommand("ap","Acts as a WIFI Access Point",wifi_mode_ap,
+    "[<apssid>]\n"
+    "Omit <apssid> or pass empty string to use default (autostart) AP SSID.\n", 0, 1);
   cmd_mode->RegisterCommand("apclient","Acts as a WIFI Access Point and Client",wifi_mode_apclient,
     "[<apssid>] [<stassid>] [<stabssid>]\n"
     "Omit <apssid> or pass empty string to use default (autostart) AP SSID.\n"
