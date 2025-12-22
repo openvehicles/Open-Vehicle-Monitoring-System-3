@@ -983,6 +983,8 @@ void OvmsNetManager::MongooseTask()
   ESP_LOGD(TAG, "MongooseTask stopping");
   MyEvents.SignalEvent("network.mgr.stop",NULL);
   mg_mgr_free(&m_mongoose_mgr);
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "MongooseTask done, min stack free=%u", minstackfree);
   m_mongoose_task = NULL;
   vTaskDelete(NULL);
   }

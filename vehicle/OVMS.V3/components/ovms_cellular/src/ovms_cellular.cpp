@@ -124,6 +124,7 @@ void modem::Task()
   uint8_t data[128];
 
   // Init UART:
+  ESP_LOGD(TAG, "UART init");
   uart_config_t uart_config =
     {
     .baud_rate = m_baud,
@@ -278,7 +279,11 @@ void modem::Task()
   uart_wait_tx_done(m_uartnum, portMAX_DELAY);
   uart_flush(m_uartnum);
   uart_driver_delete(m_uartnum);
+
   if (MyBoot.IsShuttingDown()) MyBoot.ShutdownReady(TAG);
+
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "UART task done, min stack free=%u", minstackfree);
   vTaskDelete(NULL);
   }
 

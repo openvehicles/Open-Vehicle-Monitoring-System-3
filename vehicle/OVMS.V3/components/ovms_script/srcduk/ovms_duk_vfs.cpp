@@ -164,6 +164,8 @@ void DuktapeVFSLoad::LoadTask(void *param)
     me->Load();
     me->Unref();
     }
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "DuktapeVFSLoad done, min stack free=%u bytes", minstackfree);
   vTaskDelete(NULL);
   }
 
@@ -471,6 +473,8 @@ void DuktapeVFSSave::SaveTask(void *param)
     if (shuttingdown) MyBoot.ShutdownReady(tag.c_str());
     }
 
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "DuktapeVFSSave done, min stack free=%u bytes", minstackfree);
   vTaskDelete(NULL);
   }
 

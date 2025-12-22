@@ -1238,6 +1238,8 @@ void OvmsCommandApp::LogTask()
   m_logtask = NULL;
   if (cmd.type == LogTaskCmd::LTC_Exit && cmd.data.cmdack)
     cmd.data.cmdack->Give();
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "LogTask done, min stack free=%u", minstackfree);
   vTaskDelete(NULL);
   }
 
@@ -1527,6 +1529,8 @@ void OvmsCommandApp::ExpireTask(void* data)
   int keepdays = MyConfig.GetParamValueInt("log", "file.keepdays", 30);
   MyCommandApp.ExpireLogFiles(0, NULL, keepdays);
   MyCommandApp.m_expiretask = 0;
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "ExpireTask done, min stack free=%u", minstackfree);
   vTaskDelete(NULL);
   }
 

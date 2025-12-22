@@ -129,6 +129,8 @@ void HttpCommandStream::CommandTask(void* object)
   }
 #endif // MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
 
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "HttpCommandStream[%p] done, min stack free=%u bytes", me->m_nc, minstackfree);
   while (me->m_nc)
     vTaskDelay(10/portTICK_PERIOD_MS);
   delete me;

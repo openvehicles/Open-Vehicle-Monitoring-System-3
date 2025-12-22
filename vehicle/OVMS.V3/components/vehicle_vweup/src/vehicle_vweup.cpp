@@ -222,7 +222,7 @@ void OvmsVehicleVWeUp::JobTaskEntry(void *pvParameters)
 }
 void OvmsVehicleVWeUp::JobTask()
 {
-  ESP_LOGI(TAG, "JobTask: up & running");
+  ESP_LOGD(TAG, "JobTask: up & running");
 
   VWeUpJob job;
   bool running = true;
@@ -245,7 +245,8 @@ void OvmsVehicleVWeUp::JobTask()
     }
   }
 
-  ESP_LOGI(TAG, "JobTask: shut down");
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "JobTask: shut down, min stack free=%d bytes", minstackfree);
   m_jobtask = NULL;
   vTaskDelete(NULL);
 }
