@@ -34,6 +34,7 @@ static const char *TAG = "gsm-ppp";
 #include <lwip/ip_addr.h>
 #include <lwip/netif.h>
 #include <lwip/dns.h>
+#include "ovms_cellular.h"
 #include "gsmpppos.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
@@ -45,6 +46,12 @@ static const char *TAG = "gsm-ppp";
 static u32_t GsmPPPOS_OutputCallback(ppp_pcb *pcb, u8_t *data, u32_t len, void *ctx)
   {
   GsmPPPOS* me = (GsmPPPOS*)ctx;
+
+  // This is called in LwIP (tiT task) context, i.e. on core #1 (cellular task on #0).
+  // A final PPP termination request may result from an LwIP mbox timeout, potentially
+  // concurrently to a running MUX shutdown, so lock & check MUX:
+  OvmsMutexLock lock(&me->m_modem->m_mux_mutex);
+  if (!me->m_mux) return 0;
 
   MyCommandApp.HexDump(TAG, "tx", (const char*)data, len);
   return me->m_mux->tx(me->m_channel, data, len);
@@ -167,15 +174,16 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
   ppp_connect(pcb, 30);
   }
 
-GsmPPPOS::GsmPPPOS(GsmMux* mux, int channel)
+GsmPPPOS::GsmPPPOS(modem* modem)
   {
-  m_mux = mux;
-  m_channel = channel;
+  m_modem = modem;
+  m_mux = NULL;
+  m_channel = -1;
   m_ppp = NULL;
   m_connected = false;
   m_connectcount = 0;
   m_lasterrcode = -1;
-  m_shutdown = false;
+  m_shutdown = true;
   }
 
 GsmPPPOS::~GsmPPPOS()
@@ -215,9 +223,14 @@ void GsmPPPOS::Initialise(GsmMux* mux, int channel)
   pppapi_set_default(m_ppp);
   }
 
+void GsmPPPOS::DeInitialise()
+  {
+  m_mux = NULL;
+  }
+
 void GsmPPPOS::Startup()
   {
-  if (m_ppp == NULL) return;
+  if (!m_mux || !m_ppp) return;
 
   m_shutdown = false;  // Reset shutdown flag
   ppp_set_auth(m_ppp, PPPAUTHTYPE_PAP,

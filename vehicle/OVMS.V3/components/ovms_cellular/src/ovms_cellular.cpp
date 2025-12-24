@@ -1573,6 +1573,7 @@ void modem::StopNMEA()
 
 void modem::StartMux()
   {
+  OvmsMutexLock lock(&m_mux_mutex);
   if (m_mux == NULL)
     {
     ESP_LOGV(TAG, "Starting MUX");
@@ -1583,9 +1584,20 @@ void modem::StartMux()
 
 void modem::StopMux()
   {
+  OvmsMutexLock lock(&m_mux_mutex);
   if (m_mux != NULL)
     {
     ESP_LOGV(TAG, "Stopping MUX");
+    // shut down MUX users:
+    StopNMEA();
+    StopPPP();
+    if (m_ppp)
+      {
+      // as the PPP driver is now kept running, make sure it doesn't hold
+      // a dangling reference to the deleted MUX driver:
+      m_ppp->DeInitialise();
+      }
+    // shut down & delete MUX driver:
     m_mux->Shutdown();
     delete m_mux;
     m_mux = NULL;
@@ -1597,7 +1609,7 @@ void modem::StartPPP()
   if (m_ppp == NULL)
     {
     ESP_LOGV(TAG, "Launching PPP");
-    m_ppp = new GsmPPPOS(m_mux, m_mux_channel_DATA);
+    m_ppp = new GsmPPPOS(this);
     }
   ESP_LOGV(TAG, "Starting PPP");
   m_ppp->Initialise(m_mux, m_mux_channel_DATA);
@@ -1606,7 +1618,7 @@ void modem::StartPPP()
 
 void modem::StopPPP()
   {
-  if (m_ppp != NULL)
+  if (m_ppp != NULL && !m_ppp->m_shutdown)
     {
     ESP_LOGV(TAG, "Stopping PPP");
     m_ppp->Shutdown(true);

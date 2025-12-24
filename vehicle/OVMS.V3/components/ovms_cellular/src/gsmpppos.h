@@ -52,17 +52,19 @@ extern "C"
 class GsmPPPOS : public InternalRamAllocated
   {
   public:
-    GsmPPPOS(GsmMux* mux, int channel);
+    GsmPPPOS(modem* modem);
     ~GsmPPPOS();
 
   public:
     void IncomingData(uint8_t *data, size_t len);
     void Initialise(GsmMux* mux, int channel);
+    void DeInitialise();
     void Startup();
     void Shutdown(bool hard=false);
     const char* ErrCodeName(int errcode);
 
   public:
+    modem*       m_modem;
     GsmMux*      m_mux;
     int          m_channel;
     ppp_pcb*     m_ppp;
