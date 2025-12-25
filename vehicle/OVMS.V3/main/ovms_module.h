@@ -30,7 +30,31 @@
 
 #ifndef __OVMS_MODULE_H__
 
+class OvmsWriter;
+
 extern void AddTaskToMap(TaskHandle_t task);
+
+/**
+ * module_check_heap_integrity: perform heap integrity check, output results to memory buffer (0-terminated)
+ * 
+ * Note: the buffer will only contain details if heapok == false.
+ * 
+ * @param buf           -- buffer address
+ * @param size          -- buffer capacity
+ * @return heapok       -- true = heap integrity valid
+ */
+extern bool module_check_heap_integrity(char* buf, size_t size);
+
+/**
+ * module_check_heap_integrity: perform heap integrity check, output results to OvmsWriter
+ * 
+ * Note: will additionally output a "heap OK" info if the heap is valid.
+ * 
+ * @param verbosity     -- channel capacity
+ * @param OvmsWriter    -- channel
+ * @return heapok       -- true = heap integrity valid
+ */
+extern bool module_check_heap_integrity(int verbosity, OvmsWriter* writer);
 
 #define __OVMS_MODULE_H__
 

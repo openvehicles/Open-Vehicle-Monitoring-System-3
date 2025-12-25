@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Module framework: enable remote use of the system's heap corruption test, i.e. command "module check"
+    can now be used within any shell or command channel, not just the USB console.
+  New command(s):
+    test heapcorruption -- test for heap integrity checker
 - Workaround for iOS Open Vehicle App 1.8.6
     Workaround for legacy iOS App, hiding zero/negative temperatures to keep other TPMS data visible.
     This workaround only manipulates the TPMS temperature metric in message W.

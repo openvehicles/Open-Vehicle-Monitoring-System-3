@@ -44,6 +44,7 @@ static const char *TAG = "test";
 #include "ovms_script.h"
 #include "metrics_standard.h"
 #include "ovms_config.h"
+#include "ovms_module.h"
 #include "can.h"
 #if ESP_IDF_VERSION_MAJOR < 4
 #include "strverscmp.h"
@@ -193,13 +194,13 @@ void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   void *interfere = NULL;
 
   writer->puts("First check heap integrity...");
-  heap_caps_check_integrity_all(true);
+  module_check_heap_integrity(verbosity, writer);
 
   writer->puts("Now allocate 4KB RAM...");
   buf = ExternalRamMalloc(4096);
 
   writer->puts("Check heap integrity...");
-  heap_caps_check_integrity_all(true);
+  module_check_heap_integrity(verbosity, writer);
 
   writer->puts("Now re-allocate bigger, 1,000 times...");
   for (int k=1; k<1001; k++)
@@ -217,7 +218,7 @@ void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
 
   writer->puts("Check heap integrity...");
-  heap_caps_check_integrity_all(true);
+  module_check_heap_integrity(verbosity, writer);
 
   writer->puts("Now re-allocate smaller, 1,000 times...");
   for (int k=1001; k>0; k--)
@@ -235,14 +236,69 @@ void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
 
   writer->puts("Check heap integrity...");
-  heap_caps_check_integrity_all(true);
+  module_check_heap_integrity(verbosity, writer);
 
   writer->puts("And free the buffer...");
   free(buf);
   if (interfere != NULL) free(interfere);
 
   writer->puts("Final check of heap integrity...");
-  heap_caps_check_integrity_all(true);
+  module_check_heap_integrity(verbosity, writer);
+  }
+
+void test_heapcorruption(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+#ifdef CONFIG_HEAP_POISONING_DISABLED
+  writer->puts("Heap integrity checking disabled.");
+#else
+  // Heap integrity checking works by wrapping each memory allocation block
+  // into head & tail 4 byte canary blocks. To test the detection, we write
+  // beyond an allocated buffer into the tail canary on purpose.
+
+  size_t outbufsize = (verbosity > 4096) ? 4096 : verbosity;
+  char* outbuf = new char[outbufsize];
+  if (!outbuf)
+    {
+    writer->puts("ERROR: out of memory!");
+    return;
+    }
+
+  char *membuf;
+  char bak;
+
+  writer->puts("Initial check of heap integrity...");
+  if (!module_check_heap_integrity(outbuf, outbufsize))
+    {
+    writer->puts("ABORT -- heap already corrupted:");
+    writer->puts(outbuf);
+    return;
+    }
+
+  // Simulate out of bounds write:
+  membuf = new char[4];
+  writer->printf("OK, corrupting heap integrity now at address %p, canary %#0x\n", membuf+4, membuf[4]);
+  bak = membuf[4];
+  membuf[4] = 0;
+
+  writer->puts("Check heap integrity...");
+  if (!module_check_heap_integrity(outbuf, outbufsize))
+    {
+    writer->puts("CHECK SUCCEEDED: corruption was detected (expected result):");
+    writer->puts(outbuf);
+    }
+  else
+    {
+    writer->puts("CHECK FAILED: corruption was NOT detected!");
+    }
+
+  // Restore canary so free() won't abort():
+  membuf[4] = bak;
+  writer->printf("Restored address %p, canary %#0x\n", membuf+4, membuf[4]);
+  delete [] membuf;
+  delete [] outbuf;
+
+  writer->puts("Done.");
+#endif
   }
 
 void test_spiram(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -404,6 +460,7 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("echo", "Test getchar", test_echo);
   cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog);
   cmd_test->RegisterCommand("stackoverflow", "Test stack overflow detection (crashes)", test_stackoverflow);
+  cmd_test->RegisterCommand("heapcorruption", "Test heap integrity checker", test_heapcorruption);
   cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc);
   cmd_test->RegisterCommand("spiram", "Test SPI RAM memory usage", test_spiram);
   cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2);

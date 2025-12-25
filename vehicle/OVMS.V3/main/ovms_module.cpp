@@ -909,10 +909,99 @@ static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cm
     }
   }
 
+
+/**
+ * capture_putc: memory capturing utility for ets_printf() output, to be installed via ets_install_putc1()
+ *   -- see module_check_heap_integrity() for complete usage
+ */
+static portMUX_TYPE capture_spinlock = portMUX_INITIALIZER_UNLOCKED;
+static char* capture_buf = NULL;
+static size_t capture_size = 0;
+static void capture_putc(char c)
+  {
+  // reserve last byte for '\0' termination:
+  if (capture_buf && capture_size > 1)
+    {
+    *capture_buf++ = c;
+    capture_size--;
+    }
+  }
+
+/**
+ * module_check_heap_integrity: perform heap integrity check, output results to memory buffer (0-terminated)
+ * 
+ * Note: the buffer will only contain details if heapok == false.
+ * 
+ * @param buf           -- buffer address
+ * @param size          -- buffer capacity
+ * @return heapok       -- true = heap integrity valid
+ */
+bool module_check_heap_integrity(char* buf, size_t size)
+  {
+  bool heapok;
+  portENTER_CRITICAL(&capture_spinlock);
+  
+  // capture ets_printf() output:
+  capture_buf = buf;
+  capture_size = size;
+  ets_install_putc1(capture_putc);
+
+  // run heap integrity check:
+  heapok = heap_caps_check_integrity_all(true);
+  
+  // terminate captured output if any:
+  *capture_buf = 0;
+
+  // restore ets_printf() default:
+  ets_install_uart_printf();
+  capture_buf = NULL;
+  capture_size = 0;
+  
+  portEXIT_CRITICAL(&capture_spinlock);
+  return heapok;
+  }
+
+/**
+ * module_check_heap_integrity: perform heap integrity check, output results to OvmsWriter
+ * 
+ * Note: will additionally output a "heap OK" info if the heap is valid.
+ * 
+ * @param verbosity     -- channel capacity
+ * @param OvmsWriter    -- channel
+ * @return heapok       -- true = heap integrity valid
+ */
+bool module_check_heap_integrity(int verbosity, OvmsWriter* writer)
+  {
+  size_t outbufsize = (verbosity > 4096) ? 4096 : verbosity;
+  char* outbuf = new char[outbufsize];
+  if (!outbuf)
+    {
+    writer->puts("ERROR: out of memory!");
+    return false;
+    }
+
+  bool heapok = module_check_heap_integrity(outbuf, outbufsize);
+  if (!heapok)
+    {
+    writer->write(outbuf, strlen(outbuf));
+    }
+  else
+    {
+    writer->puts("Heap integrity OK");
+    }
+
+  delete [] outbuf;
+  return heapok;
+  }
+
+/**
+ * module_check: shell command "module check"
+ */
 static void module_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  heap_caps_check_integrity_all(true);
+  module_check_heap_integrity(verbosity, writer);
   }
+
 #endif // NOGO
 
 static void module_fault(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
