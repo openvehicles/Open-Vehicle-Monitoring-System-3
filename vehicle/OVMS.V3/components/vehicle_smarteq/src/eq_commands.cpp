@@ -786,10 +786,21 @@ void OvmsVehicleSmartEQ::xsq_maintenance(int verbosity, OvmsWriter* writer, Ovms
     smarteq->CommandMaintenance(verbosity, writer);
 }
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandMaintenance(int verbosity, OvmsWriter* writer) {
-    writer->puts("Maintenance values:");
+    writer->puts("Maintenance values:");    
+    if (StdMetrics.ms_v_env_service_time->IsDefined()) {
+      time_t service_time = StdMetrics.ms_v_env_service_time->AsInt();
+      char service_date[32];
+      struct tm service_tm;
+      localtime_r(&service_time, &service_tm);
+      strftime(service_date, sizeof(service_date), "%d.%m.%Y", &service_tm);
+      writer->printf("  service date: %s\n", service_date);
+    }
     writer->printf("  days: %d\n", mt_obd_mt_day_usual->AsInt());
     writer->printf("  level: %s\n", mt_obd_mt_level->AsString().c_str());
-    writer->printf("  km: %d\n", mt_obd_mt_km_usual->AsInt());
+    writer->printf("  km: %d\n", mt_obd_mt_km_usual->AsInt());    
+    writer->printf("  HV contactor cycles: %d / %d\n", 
+                   mt_bms_contactor_cycles->AsInt(), 
+                   mt_bms_contactor_cycles_max->AsInt());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
     return Success;
 }
@@ -1036,5 +1047,80 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   }
 
   MyConfig.DeregisterParam("xsq.preclimate");
+  return Success;
+}
+
+void OvmsVehicleSmartEQ::xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+
+  smarteq->CommandED4scan(verbosity, writer);
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity, OvmsWriter* writer) {
+  writer->puts("=== ED4scan-like BMS Data Output ===\n");
+  
+  writer->puts("--- Battery Health (PID 0x61) ---");
+  writer->printf("  State of Health:         %.1f%%\n", mt_bms_soh->AsFloat());
+  writer->printf("  Usable Capacity:         %.2f Ah\n", mt_bms_cap_usable_max->AsFloat());
+  writer->printf("  Battery Mileage:         %.0f km\n", mt_bms_mileage->AsFloat());
+  writer->printf("  Total Energy:            %.2f kWh\n", mt_bms_energy_total->AsFloat());
+  
+  writer->puts("\n--- HV Contactor Cycles (PID 0x02) ---");
+  writer->printf("  Max Cycles:              %d\n", mt_bms_contactor_cycles_max->AsInt());
+  writer->printf("  Available Cycles:        %d\n", mt_bms_contactor_cycles->AsInt());
+  
+  writer->puts("\n--- SOC Kernel Data (PID 0x08) ---");
+  writer->printf("  Open Circuit Voltage:    %.2f V\n", mt_bms_ocv_voltage->AsFloat());
+  writer->printf("  Real SOC (Min):          %.2f%%\n", mt_bms_soc_min->AsFloat());
+  writer->printf("  Real SOC (Max):          %.2f%%\n", mt_bms_soc_max->AsFloat());
+  writer->printf("  Kernel SOC:              %.2f%%\n", mt_bms_soc->AsFloat());
+  writer->printf("  Capacity Loss:           %.2f%%\n", mt_bms_cap_loss_percent->AsFloat());
+  writer->printf("  Initial Capacity:        %.2f Ah\n", mt_bms_cap_init->AsFloat());
+  writer->printf("  Estimated Capacity:      %.2f Ah\n", mt_bms_cap_estimate->AsFloat());
+  writer->printf("  Voltage State:           %s\n", mt_bms_voltage_state->AsString().c_str());
+  
+  writer->puts("\n--- SOC Recalibration (PID 0x25) ---");
+  writer->printf("  Recalibration State:     %s\n", mt_bms_soc_recal_state->AsString().c_str());
+  writer->printf("  Display SOC:             %.2f%%\n", mt_display_soc->AsFloat());
+  
+  writer->puts("\n--- Cell Resistance (PID 0x10/0x11) ---");
+  const std::vector<float> resistance_values = mt_bms_cell_resistance->AsVector();
+  if (resistance_values.size() >= CELLCOUNT) {
+    writer->puts("  Relative Resistance (first 10 cells):");
+    for (int i = 0; i < 10 && i < CELLCOUNT; i++) {
+      writer->printf("    Cell %02d: %.6f\n", i + 1, resistance_values[i]);
+    }
+    writer->printf("  ... (showing 10 of %d cells)\n", CELLCOUNT);
+  } else {
+    writer->puts("  Cell resistance data not available");
+  }
+  
+  writer->puts("\n--- Battery State (PID 0x07) ---");
+  writer->printf("  Cell Voltage Min:        %.3f V\n", mt_bms_CV_Range_min->AsFloat());
+  writer->printf("  Cell Voltage Max:        %.3f V\n", mt_bms_CV_Range_max->AsFloat());
+  writer->printf("  Cell Voltage Mean:       %.3f V\n", mt_bms_CV_Range_mean->AsFloat());
+  writer->printf("  Link Voltage:            %.2f V\n", mt_bms_BattLinkVoltage->AsFloat());
+  writer->printf("  Pack Voltage:            %.2f V\n", mt_bms_BattContactorVoltage->AsFloat());
+  writer->printf("  Pack Current:            %.2f A\n", StdMetrics.ms_v_bat_current->AsFloat());
+  writer->printf("  Pack Power:              %.2f kW\n", mt_bms_BattPower_power->AsFloat());
+  writer->printf("  Contactor State:         %s\n", mt_bms_HVcontactStateTXT->AsString().c_str());
+  writer->printf("  Vehicle Mode:            %s\n", mt_bms_EVmode_txt->AsString().c_str());
+  writer->printf("  12V System:              %.2f V\n", mt_bms_12v->AsFloat());
+  
+  writer->puts("\n--- Temperature Data (PID 0x04) ---");
+  const std::vector<float> temp_values = mt_bms_temps->AsVector();
+  if (temp_values.size() >= 6) {
+    writer->puts("  Temperatures (first 6 sensors):");
+    for (int i = 0; i < 6 && i < (int)temp_values.size(); i++) {
+      writer->printf("    Sensor %02d: %.1f°C\n", i + 1, temp_values[i]);
+    }
+    writer->printf("  ... (showing 6 of %d sensors)\n", (int)temp_values.size());
+  } else {
+    writer->puts("  Temperature data not available");
+  }
+  
+  writer->puts("\n=== End of ED4scan Data ===");
   return Success;
 }

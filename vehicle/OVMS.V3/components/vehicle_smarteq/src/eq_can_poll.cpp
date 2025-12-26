@@ -142,11 +142,26 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           PollReply_EVC_14VBatteryVoltage(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
-      break;  // FIX: prevent fallthrough into 0x7BB
+      break;  // FIX: prevent fallthrough into 0x7BB BMS case
     case 0x7BB:
       switch (job.pid) {
+        case 0x02: // HV Contactor Cycles
+          PollReply_BMS_HVContactorCycles(m_rxbuf.data(), m_rxbuf.size());
+          break;
         case 0x07: // Battery State
           PollReply_BMS_BattState(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x08: // SOC
+          PollReply_BMS_SOC(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x10: // Cell Resistance Part 1
+          PollReply_BMS_CellResistance(m_rxbuf.data(), m_rxbuf.size(), 0);
+          break;
+        case 0x11: // Cell Resistance Part 2
+          PollReply_BMS_CellResistance(m_rxbuf.data(), m_rxbuf.size(), 48);
+          break;
+        case 0x25: // SOC Recalibration
+          PollReply_BMS_SOCRecal(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x41: // Battery Voltages Part 1 (Cells 1-48)
           PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 0);
@@ -156,6 +171,9 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           break;
         case 0x04: // Battery Temperatures (27 sensors)
           PollReply_BMS_BattTemps(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x61: // Battery Health (SOH)
+          PollReply_BMS_BattHealth(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
       break;
@@ -286,6 +304,9 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t repl
 {
   REQUIRE_LEN(2);
   uint16_t max_bytes = reply_len & 0xFFFE;
+  if (max_bytes > 96)
+    max_bytes = 96;
+
   for (uint16_t off = 0; off < max_bytes; off += 2)
     {
       if (off+1 >= reply_len)
@@ -296,6 +317,86 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t repl
       float CV = CAN_UINT(off) / 1024.0f;
       if (CV >= 0.5f && CV <= 5.5f)  // simple sanity window
         BmsSetCellVoltage(cell_index, CV);
+    }
+}
+
+void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint16_t reply_len) {
+  REQUIRE_LEN(8);
+  int32_t cycles = (int32_t)CAN_UINT32(0);
+  int32_t cycles_max = (int32_t)CAN_UINT32(4);
+  mt_bms_contactor_cycles->SetValue((float)cycles);
+  mt_bms_contactor_cycles_max->SetValue((float)cycles_max);
+}
+
+void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len) {
+  REQUIRE_LEN(15);
+  uint16_t ocv_raw = CAN_UINT(0);
+  if (ocv_raw > 0 && ocv_raw < 65535) {
+    float ocv = ocv_raw / 100.0f;
+    mt_bms_ocv_voltage->SetValue(ocv);
+  }
+  float real_soc_min = (float)CAN_UINT(2) / 16.0f;
+  float real_soc_max = (float)CAN_UINT(4) / 16.0f;
+  float soc = (float)CAN_UINT(6) / 16.0f;
+  float cap_loss = (float)CAN_UINT(8) / 16.0f;
+  uint16_t cap_init_raw = CAN_UINT(10);
+  float cap_init = (cap_init_raw * 10.0f) / 3600.0f;
+  uint16_t cap_estimate_raw = CAN_UINT(12);
+  float cap_estimate = (cap_estimate_raw * 10.0f) / 3600.0f;
+  uint8_t voltage_state = CAN_BYTE(14);
+  
+  const char* voltage_state_txt;
+  switch (voltage_state) {
+    case 0: voltage_state_txt = "Actual voltage is not open load voltage"; break;
+    case 1: voltage_state_txt = "not defined"; break;
+    case 2: voltage_state_txt = "Actual voltage is open load voltage"; break;
+    case 3: voltage_state_txt = "Signal not available"; break;
+    case 4: voltage_state_txt = "value not defined"; break;
+    default: voltage_state_txt = "Unknown"; break;
+  }
+  mt_real_soc->SetValue((real_soc_min + real_soc_max) / 2.0f);
+  mt_bms_soc_min->SetValue(real_soc_min);
+  mt_bms_soc_max->SetValue(real_soc_max);
+  mt_bms_soc->SetValue(soc);
+  mt_bms_cap_loss_percent->SetValue(cap_loss);
+  mt_bms_cap_init->SetValue(cap_init);
+  mt_bms_cap_estimate->SetValue(cap_estimate);
+  mt_bms_voltage_state->SetValue(voltage_state_txt);
+}
+
+void OvmsVehicleSmartEQ::PollReply_BMS_SOCRecal(const char* data, uint16_t reply_len) {
+  REQUIRE_LEN(3);
+  uint8_t recal_state = CAN_BYTE(0);
+  const char* recal_state_txt;
+  switch (recal_state) {
+    case 0: recal_state_txt = "Not Running"; break;
+    case 1: recal_state_txt = "Running"; break;
+    case 2: recal_state_txt = "Finished OK"; break;
+    case 3: recal_state_txt = "Failed"; break;
+    default: recal_state_txt = "Unknown"; break;
+  }
+  uint16_t soc_raw = CAN_UINT(1);
+  float display_soc = soc_raw / 16.0f;
+  mt_bms_soc_recal_state->SetValue(recal_state_txt);
+  
+  if (display_soc >= 0 && display_soc <= 100.0f) {
+    mt_display_soc->SetValue(display_soc);
+    //StdMetrics.ms_v_bat_soc->SetValue(display_soc);
+  }
+}
+
+void OvmsVehicleSmartEQ::PollReply_BMS_CellResistance(const char* data, uint16_t reply_len, uint16_t start) {
+  REQUIRE_LEN(2);
+  uint16_t max_bytes = reply_len & 0xFFFE;
+  for (uint16_t i = 0; i < max_bytes; i += 2) 
+    {
+    if (i+1 >= reply_len) break;
+    
+    uint16_t cell_index = (i / 2) + start;
+    if (cell_index >= CELLCOUNT) break;
+    
+    float resistance = (float)CAN_UINT(i) / 8192.0f;
+    mt_bms_cell_resistance->SetElemValue(cell_index, resistance);
     }
 }
 
@@ -314,17 +415,16 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattTemps(const char* data, uint16_t repl
   int16_t Temps[31];
   float   BMStemps[31];
 
+  // Read raw temps pass 1: (like ED4Scan)
   for (uint16_t idx = 0; idx < max_pairs; idx++)
     {
-    uint16_t byte_off = idx * 2;
-    // Bounds safe due to max_bytes calculation
-    int16_t value = CAN_UINT(byte_off);
-
+    int16_t value = (int16_t)CAN_UINT(idx * 2);
+    Temps[idx] = value;
+    
     // For indices beyond first two (= after original header area) adjust negative base using second value:
     if (idx > 2 && (Temps[1] & 0x8000))
       value -= 0x0A00;
-
-    Temps[idx] = value;
+      
     BMStemps[idx] = value / 64.0f;
     }
 
@@ -342,9 +442,34 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattTemps(const char* data, uint16_t repl
   if (cellcount > 27) cellcount = 27; // 31 total - 3 offset = 28 max, but original loop used <30 -> 27 cells
   for (uint16_t i = 0; i < cellcount; i++)
     {
-      if (!std::isnan(BMStemps[i+3]) && i < 27) // ensure bound 0..26
-        BmsSetCellTemperature(i, BMStemps[i+3]);
+    if (!std::isnan(BMStemps[i+3]) && i < 27) // ensure bound 0..26
+      BmsSetCellTemperature(i, BMStemps[i+3]);
     }
+}
+
+void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t reply_len) {
+  REQUIRE_LEN(16);  
+  uint8_t soh_raw = (uint8_t)CAN_BYTE(8);
+  float soh = soh_raw / 2.0f;
+  mt_bms_soh->SetValue(soh);
+  //StdMetrics.ms_v_bat_soh->SetValue(soh);
+
+  uint16_t cap_raw = CAN_UINT(6);
+  if (cap_raw != 0xFFFF && cap_raw > 0) {
+    float cap_full = (cap_raw * 10.0f) / 3600.0f;  // Convert to Ah
+    mt_bms_cap_usable_max->SetValue(cap_full);
+  }
+
+  int32_t mileage_raw = (int32_t)CAN_UINT32(9);
+  if (mileage_raw > 0) {
+    mt_bms_mileage->SetValue((float)mileage_raw);
+  }
+
+  int32_t energy_raw = (int32_t)CAN_UINT32(13);
+  if (energy_raw != 0) {
+    float energy_kWh = (energy_raw * 3600000.0f) / 3600000000.0f;  // Convert J to kWh
+    mt_bms_energy_total->SetValue(energy_kWh);
+  }
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t reply_len)

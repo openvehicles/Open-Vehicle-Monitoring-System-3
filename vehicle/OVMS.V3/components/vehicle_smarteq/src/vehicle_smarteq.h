@@ -161,6 +161,7 @@ public:
     virtual vehicle_command_t CommandDDT4all(int number, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandSOClimit(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandED4scan(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
     
 public:
@@ -188,6 +189,7 @@ public:
     static void xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
@@ -216,6 +218,11 @@ public:
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* data, uint16_t reply_len);
     void PollReply_BMS_BattState(const char* data, uint16_t reply_len);
+    void PollReply_BMS_HVContactorCycles(const char* data, uint16_t reply_len);
+    void PollReply_BMS_SOC(const char* data, uint16_t reply_len);
+    void PollReply_BMS_SOCRecal(const char* data, uint16_t reply_len);
+    void PollReply_BMS_CellResistance(const char* data, uint16_t reply_len, uint16_t start);
+    void PollReply_BMS_BattHealth(const char* data, uint16_t reply_len);
 
     void PollReply_TDB(const char* data, uint16_t reply_len);
 
@@ -351,6 +358,25 @@ public:
     OvmsMetricFloat         *mt_bms_CV_Range_min;       //!< minimum cell voltage in V, no offset
     OvmsMetricFloat         *mt_bms_CV_Range_max;       //!< maximum cell voltage in V, no offset
     OvmsMetricFloat         *mt_bms_CV_Range_mean;      //!< average cell voltage in V, no offset
+    OvmsMetricInt           *mt_bms_contactor_cycles;        //!< Total HV contactor cycles
+    OvmsMetricInt           *mt_bms_contactor_cycles_max;    //!< Max HV contactor cycles
+    OvmsMetricFloat         *mt_real_soc;                    //!< Real SOC (%)
+    OvmsMetricFloat         *mt_display_soc;                 //!< Display SOC (%)
+    OvmsMetricString        *mt_bms_soc_recal_state;         //!< SOC Recalibration State
+    OvmsMetricFloat         *mt_bms_soc_min;                 //!< Real SOC minimum
+    OvmsMetricFloat         *mt_bms_soc_max;                 //!< Real SOC maximum
+    OvmsMetricFloat         *mt_bms_soh;                     //!< State of Health (%)
+    OvmsMetricFloat         *mt_bms_cap_usable_max;          //!< Max usable capacity (Ah)
+    OvmsMetricFloat         *mt_bms_cap_init;                //!< Initial capacity (Ah)
+    OvmsMetricFloat         *mt_bms_cap_estimate;            //!< Estimated capacity (Ah)
+    OvmsMetricFloat         *mt_bms_mileage;                 //!< Battery mileage (km)
+    OvmsMetricFloat         *mt_bms_energy_total;            //!< Total energy throughput (kWh)
+    OvmsMetricFloat         *mt_bms_ocv_voltage;             //!< Open Circuit Voltage of Battery (V)
+    OvmsMetricFloat         *mt_bms_soc;                     //!< SOC kernel data (%)
+    OvmsMetricFloat         *mt_bms_cap_loss_percent;        //!< Percent Capacity Loss (%)
+    OvmsMetricString        *mt_bms_voltage_state;           //!< Voltage State text
+    OvmsMetricVector<float> *mt_bms_cell_resistance;         //!< Cell resistances (mOhm)
+    OvmsMetricFloat         *mt_bms_nominal_energy;          //!< Nominal battery energy (kWh)
     OvmsMetricFloat         *mt_bms_BattLinkVoltage;    //!< Link voltage to drivetrain inverter
     OvmsMetricFloat         *mt_bms_BattContactorVoltage;   //!< voltage at the battery contactor
     OvmsMetricFloat         *mt_bms_BattCV_Sum;         //!< Sum of single cell voltages
