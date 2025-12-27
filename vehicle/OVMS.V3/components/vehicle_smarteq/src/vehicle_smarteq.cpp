@@ -91,7 +91,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_MAX, 0, Other);
   mt_adc_factor_history         = MyMetrics.InitVector<float>("xsq.adc.factor.history", SM_STALE_MAX, nullptr, Other);
   mt_adc_factor_history->SetElemValue(m_adc_samples -1, 0.0f);  // Pre-allocate x samples to avoid reallocs
-  mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_MAX, "UNKNOWN", Other);
+  mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_MAX, "UNKNOWN", Other);  
+  mt_ed4_values                 = MyMetrics.InitInt("xsq.ed4.values", SM_STALE_MAX, 10);
 
   mt_start_time                 = MyMetrics.InitString("xsq.v.start.time", SM_STALE_MID, 0, Other);
   mt_start_distance             = MyMetrics.InitFloat("xsq.v.start.distance", SM_STALE_MID, 0, Kilometers);
@@ -193,7 +194,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_cap_init               = MyMetrics.InitFloat("xsq.bms.cap.init", SM_STALE_MID, 0, AmpHours);
   mt_bms_cap_estimate           = MyMetrics.InitFloat("xsq.bms.cap.estimate", SM_STALE_MID, 0, AmpHours);
   mt_bms_mileage                = MyMetrics.InitFloat("xsq.bms.mileage", SM_STALE_HIGH, 0, Kilometers);
-  mt_bms_energy_total           = MyMetrics.InitFloat("xsq.bms.energy.total", SM_STALE_HIGH, 0, kWh);
+  mt_bms_energy_total           = MyMetrics.InitInt("xsq.bms.energy.total", SM_STALE_HIGH, 0, kWh);
   mt_bms_ocv_voltage            = MyMetrics.InitFloat("xsq.bms.ocv.voltage", SM_STALE_MID, 0, Volts);
   mt_bms_soc                    = MyMetrics.InitFloat("xsq.bms.soc", SM_STALE_MID, 0, Percentage);
   mt_bms_cap_loss_percent       = MyMetrics.InitFloat("xsq.bms.cap.loss.pct", SM_STALE_HIGH, 0, Percentage);

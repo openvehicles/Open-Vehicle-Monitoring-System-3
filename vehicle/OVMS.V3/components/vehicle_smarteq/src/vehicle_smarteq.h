@@ -312,6 +312,7 @@ public:
     OvmsMetricFloat         *mt_adc_factor;             // calculated ADC factor for 12V measurement
     OvmsMetricVector<float> *mt_adc_factor_history;     // last 20 calculated ADC factors for 12V measurement
     OvmsMetricString        *mt_poll_state;             // Poller state
+    OvmsMetricInt           *mt_ed4_values;             // ED4scan: number of cells to show
     OvmsMetricString        *mt_reset_time;             // Time since last reset (hh:mm)
     OvmsMetricString        *mt_start_time;             // Time since start (hh:mm)
     OvmsMetricFloat         *mt_start_distance;         // Trip distance since start (km)
@@ -370,7 +371,7 @@ public:
     OvmsMetricFloat         *mt_bms_cap_init;                //!< Initial capacity (Ah)
     OvmsMetricFloat         *mt_bms_cap_estimate;            //!< Estimated capacity (Ah)
     OvmsMetricFloat         *mt_bms_mileage;                 //!< Battery mileage (km)
-    OvmsMetricFloat         *mt_bms_energy_total;            //!< Total energy throughput (kWh)
+    OvmsMetricInt           *mt_bms_energy_total;            //!< Total energy throughput (kWh)
     OvmsMetricFloat         *mt_bms_ocv_voltage;             //!< Open Circuit Voltage of Battery (V)
     OvmsMetricFloat         *mt_bms_soc;                     //!< SOC kernel data (%)
     OvmsMetricFloat         *mt_bms_cap_loss_percent;        //!< Percent Capacity Loss (%)

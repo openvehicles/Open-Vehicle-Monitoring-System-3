@@ -104,6 +104,7 @@ metrics
     xsq.adc.factor                        -- Current ADC factor for 12V calculation
     xsq.adc.factor.history                -- Last calculated ADC factors (ring buffer)
     xsq.poll.state                        -- Current poll state (OFF/ON/RUNNING/CHARGING)
+    xsq.ed4.values                        -- ED4scan: number of cells to show
     xsq.ddt4all.canbyte                   -- DDT4all CAN response bytes [hex string]
     xsq.odometer.start                    -- Odometer at trip start [km]
     xsq.odometer.start.total              -- Odometer at total trip start [km]

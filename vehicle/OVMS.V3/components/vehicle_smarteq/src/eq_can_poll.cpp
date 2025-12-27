@@ -338,7 +338,8 @@ void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len)
   float real_soc_min = (float)CAN_UINT(2) / 16.0f;
   float real_soc_max = (float)CAN_UINT(4) / 16.0f;
   float soc = (float)CAN_UINT(6) / 16.0f;
-  float cap_loss = (float)CAN_UINT(8) / 16.0f;
+  uint16_t cap_loss_raw = CAN_UINT(8);
+  float cap_loss = (cap_loss_raw != 0xFFFF && cap_loss_raw < 0xFFF0) ? (float)cap_loss_raw / 16.0f : 0.0f;
   uint16_t cap_init_raw = CAN_UINT(10);
   float cap_init = (cap_init_raw * 10.0f) / 3600.0f;
   uint16_t cap_estimate_raw = CAN_UINT(12);
@@ -465,9 +466,9 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t rep
     mt_bms_mileage->SetValue((float)mileage_raw);
   }
 
-  int32_t energy_raw = (int32_t)CAN_UINT32(13);
-  if (energy_raw != 0) {
-    float energy_kWh = (energy_raw * 3600000.0f) / 3600000000.0f;  // Convert J to kWh
+  // Sum of Energy: signed int32, step=3600000 J (= 1 kWh per count)
+  int32_t energy_kWh = (int32_t)CAN_UINT32(13);
+  if (energy_kWh != 0) {
     mt_bms_energy_total->SetValue(energy_kWh);
   }
 }
