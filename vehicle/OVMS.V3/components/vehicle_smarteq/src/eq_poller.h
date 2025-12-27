@@ -48,6 +48,7 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x11, {  0,300,60,60 }, 0, ISOTP_STD },  // Cell Resistance P2
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, {  0,300,60,60 }, 0, ISOTP_STD },  // SOC Recalibration
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {  0,300,300,60 }, 0, ISOTP_STD }, // Battery Health (SOH)
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x90, {  0,3600,0,0 }, 0, ISOTP_STD },   // BMS Production Number Supplier Read
 
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, {  0,300,300,300 }, 0, ISOTP_STD }, // extern temp byte 2+3
   //{ 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2101, {  0,300,60,0 }, 0, ISOTP_STD }, // OBD Trip Distance km

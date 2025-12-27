@@ -223,6 +223,7 @@ public:
     void PollReply_BMS_SOCRecal(const char* data, uint16_t reply_len);
     void PollReply_BMS_CellResistance(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattHealth(const char* data, uint16_t reply_len);
+    void PollReply_BMS_ProductionData(const char* data, uint16_t reply_len);
 
     void PollReply_TDB(const char* data, uint16_t reply_len);
 
@@ -324,6 +325,8 @@ public:
     OvmsMetricFloat         *mt_reset_speed;            // Average trip speed (km/h) reset
     // 0x658 metrics
     OvmsMetricString        *mt_bat_serial;             // Battery serial number (hex string)
+    // BMS production data (PID 0x90)
+    OvmsMetricString        *mt_bms_prod_data;          // BMS production data formatted (serial, MM/YYYY)
     // 0x637 metrics
     OvmsMetricFloat         *mt_energy_used;            // Energy used since mission start (kWh)
     OvmsMetricFloat         *mt_energy_recd;            // Energy recovered since mission start (kWh)

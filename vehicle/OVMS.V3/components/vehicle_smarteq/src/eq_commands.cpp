@@ -1060,7 +1060,8 @@ void OvmsVehicleSmartEQ::xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsComm
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity, OvmsWriter* writer) {
   writer->puts("=== ED4scan-like BMS Data Output ===\n");
-  writer->printf("  Batt Serialnumber:       %s\n", mt_bat_serial->AsString().c_str());
+  writer->printf("  HV Batt Serialnumber:    %s\n", mt_bat_serial->AsString().c_str());
+  writer->printf("  BMS Serialnumber:        %s\n", mt_bms_prod_data->AsString().c_str());
 
   writer->puts("--- Battery Health (PID 0x61) ---");
   writer->printf("  State of Health:         %.1f%%\n", mt_bms_soh->AsFloat());
@@ -1105,7 +1106,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   if (voltage_values.size() >= show) {
     writer->printf("  Voltages (first %d sensors):\n", show);
     for (int i = 0; i < show && i < (int)voltage_values.size(); i++) {
-      writer->printf("    Sensor %02d: %.3f V\n", i + 1, voltage_values[i]);
+      writer->printf("    Sensor %02d: %.4f V\n", i + 1, voltage_values[i]);
     }
     writer->printf("  ... (showing %d of 96 cells)\n", show);
   } else {

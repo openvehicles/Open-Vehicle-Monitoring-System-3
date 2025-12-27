@@ -140,6 +140,7 @@ metrics
     xsq.obl.misc                          -- OBL miscellaneous data vector
     xsq.obl.leakdiag                      -- OBL leakage diagnostic status
     xsq.obl.current                       -- OBL leakage currents vector [A]
+    xsq.bms.prod.data                     -- BMS production data formatted (serial, MM/YYYY)
     xsq.bms.temps                         -- BMS temperature sensors vector [°C]
     xsq.bms.cv.range.min                  -- Minimum cell voltage [V]
     xsq.bms.cv.range.max                  -- Maximum cell voltage [V]

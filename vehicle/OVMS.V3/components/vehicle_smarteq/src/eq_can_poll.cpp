@@ -175,6 +175,9 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x61: // Battery Health (SOH)
           PollReply_BMS_BattHealth(m_rxbuf.data(), m_rxbuf.size());
           break;
+        case 0x90: // BMS Production Number Supplier Read
+          PollReply_BMS_ProductionData(m_rxbuf.data(), m_rxbuf.size());
+          break;
       }
       break;
     case 0x793:
@@ -471,6 +474,18 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t rep
   if (energy_kWh != 0) {
     mt_bms_energy_total->SetValue(energy_kWh);
   }
+}
+
+void OvmsVehicleSmartEQ::PollReply_BMS_ProductionData(const char* data, uint16_t reply_len) {
+  REQUIRE_LEN(7);
+  uint8_t year = (uint8_t)CAN_BYTE(0);
+  uint8_t month = (uint8_t)CAN_BYTE(1);
+  uint32_t serial = CAN_UINT32(2);
+  
+  // Create formatted production data string: "serial, MM/YYYY"
+  char prod_data[32];
+  snprintf(prod_data, sizeof(prod_data), "%08lu, %02d.%04d", (unsigned long)serial, month, 2000 + year);
+  mt_bms_prod_data->SetValue(prod_data);
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t reply_len)
