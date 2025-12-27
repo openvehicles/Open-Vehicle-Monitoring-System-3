@@ -1088,11 +1088,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->puts("\n--- Cell Resistance (PID 0x10/0x11) ---");
   const std::vector<float> resistance_values = mt_bms_cell_resistance->AsVector();
   if (resistance_values.size() >= CELLCOUNT) {
-    writer->puts("  Relative Resistance (first 10 cells):");
-    for (int i = 0; i < 10 && i < CELLCOUNT; i++) {
+    writer->puts("  Relative Resistance (first 6 cells):");
+    for (int i = 0; i < 6 && i < CELLCOUNT; i++) {
       writer->printf("    Cell %02d: %.6f\n", i + 1, resistance_values[i]);
     }
-    writer->printf("  ... (showing 10 of %d cells)\n", CELLCOUNT);
+    writer->printf("  ... (showing 6 of %d cells)\n", CELLCOUNT);
   } else {
     writer->puts("  Cell resistance data not available");
   }
@@ -1109,7 +1109,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  Vehicle Mode:            %s\n", mt_bms_EVmode_txt->AsString().c_str());
   writer->printf("  12V System:              %.2f V\n", mt_bms_12v->AsFloat());
   
-  writer->puts("\n--- Temperature Data (PID 0x04) ---");
+  writer->puts("\n--- Cell Temperature Data (PID 0x04) ---");
   const std::vector<float> temp_values = mt_bms_temps->AsVector();
   if (temp_values.size() >= 6) {
     writer->puts("  Temperatures (first 6 sensors):");
@@ -1119,6 +1119,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
     writer->printf("  ... (showing 6 of %d sensors)\n", (int)temp_values.size());
   } else {
     writer->puts("  Temperature data not available");
+  }
+
+  writer->puts("\n--- Cell Voltage Data (PID 0x41/0x42) ---");
+  const std::vector<float> voltage_values = StdMetrics.ms_v_bat_cell_voltage->AsVector();
+  if (voltage_values.size() >= 6) {
+    writer->puts("  Voltages (first 6 sensors):");
+    for (int i = 0; i < 6 && i < (int)voltage_values.size(); i++) {
+      writer->printf("    Sensor %02d: %.1f V\n", i + 1, voltage_values[i]);
+    }
+    writer->printf("  ... (showing 6 of %d sensors)\n", (int)voltage_values.size());
+  } else {
+    writer->puts("  Voltage data not available");
   }
   
   writer->puts("\n=== End of ED4scan Data ===");
