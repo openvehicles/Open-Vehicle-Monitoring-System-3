@@ -1060,7 +1060,8 @@ void OvmsVehicleSmartEQ::xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsComm
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity, OvmsWriter* writer) {
   writer->puts("=== ED4scan-like BMS Data Output ===\n");
-  
+  writer->printf("  Batt Serialnumber:       %s\n", mt_bat_serial->AsString().c_str());
+
   writer->puts("--- Battery Health (PID 0x61) ---");
   writer->printf("  State of Health:         %.1f%%\n", mt_bms_soh->AsFloat());
   writer->printf("  Usable Capacity:         %.2f Ah\n", mt_bms_cap_usable_max->AsFloat());
