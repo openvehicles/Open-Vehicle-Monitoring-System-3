@@ -374,7 +374,6 @@ public:
     OvmsMetricFloat         *mt_bms_cap_init;                //!< Initial capacity (Ah)
     OvmsMetricFloat         *mt_bms_cap_estimate;            //!< Estimated capacity (Ah)
     OvmsMetricFloat         *mt_bms_mileage;                 //!< Battery mileage (km)
-    OvmsMetricInt           *mt_bms_energy_total;            //!< Total energy throughput (kWh)
     OvmsMetricFloat         *mt_bms_ocv_voltage;             //!< Open Circuit Voltage of Battery (V)
     OvmsMetricFloat         *mt_bms_soc;                     //!< SOC kernel data (%)
     OvmsMetricFloat         *mt_bms_cap_loss_percent;        //!< Percent Capacity Loss (%)

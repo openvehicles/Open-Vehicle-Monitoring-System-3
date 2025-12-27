@@ -1067,7 +1067,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  State of Health:         %.1f%%\n", mt_bms_soh->AsFloat());
   writer->printf("  Usable Capacity:         %.2f Ah\n", mt_bms_cap_usable_max->AsFloat());
   writer->printf("  Battery Mileage:         %.0f km\n", mt_bms_mileage->AsFloat());
-  writer->printf("  Total Energy throughput: %d kWh\n", mt_bms_energy_total->AsInt());
   
   writer->puts("\n--- HV Contactor Cycles (PID 0x02) ---");
   writer->printf("  Max Cycles:              %d\n", mt_bms_contactor_cycles_max->AsInt());

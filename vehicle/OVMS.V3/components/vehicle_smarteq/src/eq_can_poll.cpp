@@ -468,23 +468,18 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t rep
   if (mileage_raw > 0) {
     mt_bms_mileage->SetValue((float)mileage_raw);
   }
-
-  // Sum of Energy: signed int32, step=3600000 J (= 1 kWh per count)
-  int32_t energy_kWh = (int32_t)CAN_UINT32(13);
-  if (energy_kWh != 0) {
-    mt_bms_energy_total->SetValue(energy_kWh);
-  }
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_ProductionData(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(7);
+  REQUIRE_LEN(8);
   uint8_t year = (uint8_t)CAN_BYTE(0);
   uint8_t month = (uint8_t)CAN_BYTE(1);
-  uint32_t serial = CAN_UINT32(2);
+  // Read 6 bytes: combine 4 bytes (UINT32) + 2 bytes (UINT16)
+  uint64_t serial = ((uint64_t)CAN_UINT32(2) << 16) | CAN_UINT(6);
   
   // Create formatted production data string: "serial, MM/YYYY"
   char prod_data[32];
-  snprintf(prod_data, sizeof(prod_data), "%08lu, %02d.%04d", (unsigned long)serial, month, 2000 + year);
+  snprintf(prod_data, sizeof(prod_data), "%012llu, %02d/%04d", (unsigned long long)serial, month, 2000 + year);
   mt_bms_prod_data->SetValue(prod_data);
 }
 

@@ -159,7 +159,6 @@ metrics
     xsq.bms.cap.estimate                  -- Estimated capacity [Ah]
     xsq.bms.cap.loss.pct                  -- Capacity loss percentage [%]
     xsq.bms.mileage                       -- Battery mileage [km]
-    xsq.bms.energy.total                  -- Total energy through battery [kWh]
     xsq.bms.energy.nominal                -- Nominal battery energy [kWh]
     xsq.bms.ocv.voltage                   -- Open circuit voltage [V]
     xsq.bms.voltage.state                 -- Voltage state description
