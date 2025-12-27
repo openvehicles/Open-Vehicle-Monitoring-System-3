@@ -1065,7 +1065,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  State of Health:         %.1f%%\n", mt_bms_soh->AsFloat());
   writer->printf("  Usable Capacity:         %.2f Ah\n", mt_bms_cap_usable_max->AsFloat());
   writer->printf("  Battery Mileage:         %.0f km\n", mt_bms_mileage->AsFloat());
-  writer->printf("  Total Energy:            %.2f kWh\n", mt_bms_energy_total->AsFloat());
+  writer->printf("  Total output Energy:     %.2f kWh\n", mt_bms_energy_total->AsFloat());
   
   writer->puts("\n--- HV Contactor Cycles (PID 0x02) ---");
   writer->printf("  Max Cycles:              %d\n", mt_bms_contactor_cycles_max->AsInt());
@@ -1085,18 +1085,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  Recalibration State:     %s\n", mt_bms_soc_recal_state->AsString().c_str());
   writer->printf("  Display SOC:             %.2f%%\n", mt_display_soc->AsFloat());
   
-  writer->puts("\n--- Cell Resistance (PID 0x10/0x11) ---");
-  const std::vector<float> resistance_values = mt_bms_cell_resistance->AsVector();
-  if (resistance_values.size() >= CELLCOUNT) {
-    writer->puts("  Relative Resistance (first 6 cells):");
-    for (int i = 0; i < 6 && i < CELLCOUNT; i++) {
-      writer->printf("    Cell %02d: %.6f\n", i + 1, resistance_values[i]);
-    }
-    writer->printf("  ... (showing 6 of %d cells)\n", CELLCOUNT);
-  } else {
-    writer->puts("  Cell resistance data not available");
-  }
-  
   writer->puts("\n--- Battery State (PID 0x07) ---");
   writer->printf("  Cell Voltage Min:        %.3f V\n", mt_bms_CV_Range_min->AsFloat());
   writer->printf("  Cell Voltage Max:        %.3f V\n", mt_bms_CV_Range_max->AsFloat());
@@ -1108,6 +1096,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  Contactor State:         %s\n", mt_bms_HVcontactStateTXT->AsString().c_str());
   writer->printf("  Vehicle Mode:            %s\n", mt_bms_EVmode_txt->AsString().c_str());
   writer->printf("  12V System:              %.2f V\n", mt_bms_12v->AsFloat());
+
+  writer->puts("\n--- Cell Voltage Data (PID 0x41/0x42) ---");
+  const std::vector<float> voltage_values = StdMetrics.ms_v_bat_cell_voltage->AsVector();
+  if (voltage_values.size() >= 6) {
+    writer->puts("  Voltages (first 6 sensors):");
+    for (int i = 0; i < 6 && i < (int)voltage_values.size(); i++) {
+      writer->printf("    Sensor %02d: %.1f V\n", i + 1, voltage_values[i]);
+    }
+    writer->printf("  ... (showing 6 of %d sensors)\n", (int)voltage_values.size());
+  } else {
+    writer->puts("  Voltage data not available");
+  }
   
   writer->puts("\n--- Cell Temperature Data (PID 0x04) ---");
   const std::vector<float> temp_values = mt_bms_temps->AsVector();
@@ -1120,17 +1120,17 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   } else {
     writer->puts("  Temperature data not available");
   }
-
-  writer->puts("\n--- Cell Voltage Data (PID 0x41/0x42) ---");
-  const std::vector<float> voltage_values = StdMetrics.ms_v_bat_cell_voltage->AsVector();
-  if (voltage_values.size() >= 6) {
-    writer->puts("  Voltages (first 6 sensors):");
-    for (int i = 0; i < 6 && i < (int)voltage_values.size(); i++) {
-      writer->printf("    Sensor %02d: %.1f V\n", i + 1, voltage_values[i]);
+  
+  writer->puts("\n--- Cell Resistance (PID 0x10/0x11) ---");
+  const std::vector<float> resistance_values = mt_bms_cell_resistance->AsVector();
+  if (resistance_values.size() >= CELLCOUNT) {
+    writer->puts("  Relative Resistance (first 6 cells):");
+    for (int i = 0; i < 6 && i < CELLCOUNT; i++) {
+      writer->printf("    Cell %02d: %.6f\n", i + 1, resistance_values[i]);
     }
-    writer->printf("  ... (showing 6 of %d sensors)\n", (int)voltage_values.size());
+    writer->printf("  ... (showing 6 of %d cells)\n", CELLCOUNT);
   } else {
-    writer->puts("  Voltage data not available");
+    writer->puts("  Cell resistance data not available");
   }
   
   writer->puts("\n=== End of ED4scan Data ===");
