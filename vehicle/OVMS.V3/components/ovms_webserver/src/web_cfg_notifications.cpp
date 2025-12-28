@@ -35,6 +35,7 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
   std::string vehicle_minsoc, vehicle_stream;
   std::string log_trip_storetime, log_trip_minlength, log_grid_storetime;
   bool report_trip_enable;
+  bool debug_tasks, debug_heap_alert;
   std::string report_trip_minlength;
 
   if (c.method == "POST") {
@@ -46,6 +47,8 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     log_grid_storetime = c.getvar("log_grid_storetime");
     report_trip_enable = (c.getvar("report_trip_enable") == "yes");
     report_trip_minlength = c.getvar("report_trip_minlength");
+    debug_tasks = (c.getvar("debug_tasks") == "yes");
+    debug_heap_alert = (c.getvar("debug_heap_alert") == "yes");
 
     if (vehicle_minsoc != "") {
       if (atoi(vehicle_minsoc.c_str()) < 0 || atoi(vehicle_minsoc.c_str()) > 100) {
@@ -110,6 +113,9 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
       else
         MyConfig.SetParamValue("notify", "report.trip.minlength", report_trip_minlength);
 
+      MyConfig.SetParamValueBool("module", "debug.tasks", debug_tasks);
+      MyConfig.SetParamValueBool("module", "debug.heap.alert", debug_heap_alert);
+
       c.head(200);
       c.alert("success", "<p class=\"lead\">Notifications configured.</p>");
       OutputHome(p, c);
@@ -132,6 +138,8 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     log_grid_storetime = MyConfig.GetParamValue("notify", "log.grid.storetime");
     report_trip_enable = MyConfig.GetParamValueBool("notify", "report.trip.enable");
     report_trip_minlength = MyConfig.GetParamValue("notify", "report.trip.minlength");
+    debug_tasks = MyConfig.GetParamValueBool("module", "debug.tasks");
+    debug_heap_alert = MyConfig.GetParamValueBool("module", "debug.heap.alert");
 
     // generate form:
     c.head(200);
@@ -183,6 +191,22 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     "https://docs.openvehicles.com/en/latest/userguide/notifications.html#grid-history-log"
     "\">user manual</a> for details.</p>",
     "min=\"0\" max=\"365\" step=\"1\"", "days");
+
+  c.fieldset_end();
+
+  c.fieldset_start("OVMS Debugging");
+
+  c.input_checkbox("Enable task logging", "debug_tasks", debug_tasks,
+    "<p>Record running task statistics every 5 minutes in server table <code>*-OVM-DebugTasks</code>.</p>"
+    "<p>The data recorded is the same as shown in the <kbd class=\"autoselect\">module tasks</kbd> command output.</p>"
+    "<p>Enable this if your module spuriously becomes slow or unresponsive, or if you encounter"
+    " random crashes, so a developer can check the log for unusual task behaviour.</p>");
+
+  c.input_checkbox("Enable heap integrity alert", "debug_heap_alert", debug_heap_alert,
+    "<p>Check heap memory integrity every 5 minutes and send an alert notification when a corruption is detected.</p>"
+    "<p>Enable this if you encounter random crashes, reboot ASAP on receiving the alert.</p>"
+    "<p>To be able to provide additional info to a developer, also enable task logging above and"
+    " <a href=\"/cfg/logging\" target=\"#main\">file logging</a> at debug level.</p>");
 
   c.fieldset_end();
 

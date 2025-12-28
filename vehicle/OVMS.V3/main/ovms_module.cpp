@@ -47,6 +47,9 @@ static const char *TAG = "module";
 #ifdef CONFIG_HEAP_TASK_TRACKING
 #include "esp_heap_task_info.h"
 #endif
+#ifdef CONFIG_HEAP_TRACING
+#include "esp_heap_trace.h"
+#endif
 #include "ovms_boot.h"
 #include "ovms_mutex.h"
 #include "ovms_notify.h"
@@ -859,7 +862,8 @@ static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cm
   uint32_t diff_totalruntime = totalruntime - last_totalruntime;
 
   // output task count & total runtime diff:
-  buf.printf("*-OVM-DebugTasks,1,86400,%u,%" PRIu32, n, diff_totalruntime);
+  //  - v2: +<handle>
+  buf.printf("*-OVM-DebugTasks,2,86400,%u,%" PRIu32, n, diff_totalruntime);
 
   // output tasks sorted by xTaskNumber:
   num = 0;
@@ -885,11 +889,11 @@ static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cm
         //  ,<num>,<name>,<state>
         //  ,<stack_now>,<stack_max>,<stack_total>
         //  ,<heaptotal>,<heap32bit>,<heapspi>
-        //  ,<runtime>
-        buf.printf(",%u,%-.15s,%s,%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%u,%u,%u,%" PRIu32,
+        //  ,<runtime>,<handle>
+        buf.printf(",%u,%-.15s,%s,%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%u,%u,%u,%" PRIu32 ",%p",
           taskstatus[i].xTaskNumber, taskstatus[i].pcTaskName, states[taskstatus[i].eCurrentState],
           used, total - taskstatus[i].usStackHighWaterMark, total,
-          heaptotal, heap32bit, heapspi, runtime);
+          heaptotal, heap32bit, heapspi, runtime, taskstatus[i].xHandle);
 
         ++j;
         break;
@@ -958,6 +962,13 @@ bool module_check_heap_integrity(char* buf, size_t size)
   capture_size = 0;
   
   portEXIT_CRITICAL(&capture_spinlock);
+
+  if (!heapok)
+    {
+    // set crash debug flag and emit signal:
+    MyBoot.SetHeapCorruption();
+    }
+
   return heapok;
   }
 
@@ -1002,7 +1013,196 @@ static void module_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   module_check_heap_integrity(verbosity, writer);
   }
 
+/**
+ * module_check_alert: send alert notification on heap corruption
+ *    To enable the check every 5 minutes, set config "module" "debug.heap" or "debug.all" to "yes"
+ *    (see module_eventhandler()).
+ * 
+ * @return heapok       -- false = heap corrupted/full
+ */
+static bool module_check_alert()
+  {
+  static bool module_check_alert_sent = false;
+
+  // only send once:
+  if (module_check_alert_sent)
+    return false;
+
+  size_t outbufsize = 4096;
+  char* outbuf = new char[outbufsize];
+  if (!outbuf)
+    {
+    ESP_LOGE(TAG, "module_check_alert: out of memory!");
+    return false; // corruption state unknown, treat as "not ok"
+    }
+
+  bool heapok = module_check_heap_integrity(outbuf, outbufsize);
+  if (!heapok)
+    {
+    MyNotify.NotifyStringf("alert", "debug.heap.corruption",
+      "Heap corruption detected, reboot advised ASAP!\n"
+      "Please forward including task records and system log:\n\n"
+      "%s", outbuf);
+    module_check_alert_sent = true;
+    }
+
+  delete [] outbuf;
+  return heapok;
+  }
+
 #endif // NOGO
+
+
+
+/**
+ * module_trace: shell commands for heap tracing
+ *  see: https://docs.espressif.com/projects/esp-idf/en/v3.3/api-reference/system/heap_debug.html#heap-tracing
+ */
+
+#ifndef CONFIG_HEAP_TRACING
+
+static void module_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("ERROR: Heap tracing not available (needs CONFIG_HEAP_TRACING=Y)");
+  }
+
+#else
+
+static heap_trace_record_t* trace_records = NULL;
+static size_t trace_num_records = 0;
+static unsigned trace_ccount_ref = 0;
+static uint32_t trace_logtime_ref = 0;
+static bool trace_paused = false;
+
+static void module_trace_dump(char* buf, size_t size)
+  {
+  portENTER_CRITICAL(&capture_spinlock);
+  
+  // capture ets_printf() output:
+  capture_buf = buf;
+  capture_size = size;
+  ets_install_putc1(capture_putc);
+
+  // dump heap tracing status:
+  heap_trace_dump();
+  
+  // terminate captured output if any:
+  *capture_buf = 0;
+
+  // restore ets_printf() default:
+  ets_install_uart_printf();
+  capture_buf = NULL;
+  capture_size = 0;
+  
+  portEXIT_CRITICAL(&capture_spinlock);
+  }
+
+static void module_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string cmdname = cmd->GetName();
+
+  if (cmdname == "start")
+    {
+    if (trace_records)
+      {
+      writer->puts("ERROR: heap tracing already started, stop before restart");
+      return;
+      }
+
+    // Records must be in internal RAM:
+    int num_records = (argc >= 1) ? atoi(argv[0]) : 500;
+    if (num_records < 10) num_records = 10;
+    trace_records = (heap_trace_record_t*)InternalRamMalloc(sizeof(heap_trace_record_t) * num_records);
+    if (!trace_records)
+      {
+      writer->printf("ERROR: insufficient internal memory for %d records, try less (need %d bytes/record)\n",
+        num_records, sizeof(heap_trace_record_t));
+      return;
+      }
+
+    trace_num_records = num_records;
+    trace_ccount_ref = xthal_get_ccount();
+    trace_logtime_ref = esp_log_timestamp();
+
+    if (heap_trace_init_standalone(trace_records, num_records) != ESP_OK
+        || heap_trace_start(HEAP_TRACE_ALL) != ESP_OK)
+      {
+      writer->puts("ERROR: start tracing failed");
+      free(trace_records);
+      trace_records = NULL;
+      return;
+      }
+
+    writer->printf("Heap tracing started at ccount 0x%08x = logtime %u, recording %d allocations\n",
+      trace_ccount_ref, trace_logtime_ref, num_records);
+    trace_paused = false;
+    return;
+    }
+
+  // all other commands need tracing started:
+  if (!trace_records)
+    {
+    writer->puts("Heap tracing not started");
+    return;
+    }
+
+  if (cmdname == "stop")
+    {
+    heap_trace_stop();
+    free(trace_records);
+    trace_records = NULL;
+    trace_num_records = 0;
+    writer->puts("Heap tracing stopped");
+    }
+  else if (cmdname == "pause")
+    {
+    heap_trace_stop();
+    trace_paused = true;
+    writer->printf("Heap tracing paused, recorded %d/%d allocations\n",
+      heap_trace_get_count(), trace_num_records);
+    }
+  else if (cmdname == "resume")
+    {
+    trace_ccount_ref = xthal_get_ccount();
+    trace_logtime_ref = esp_log_timestamp();
+    heap_trace_resume();
+    trace_paused = false;
+    writer->printf("Heap tracing resumed at ccount 0x%08x = logtime %u\n",
+      trace_ccount_ref, trace_logtime_ref);
+    }
+  else if (cmdname == "dump")
+    {
+    // A dump regularly needs <= 81 bytes + 2x 21 bytes stack info + 32 bytes task info per record,
+    //  + <= 213 bytes for additional info. Leave some headroom:
+    size_t bufsize = trace_num_records * (116 + 2*11*CONFIG_HEAP_TRACING_STACK_DEPTH) + 256;
+    // … = 16256 bytes for 100 records at standard stack trace depth of 2
+    // Note: we need to ignore the writer's preferred verbosity here, as the dump exceeds
+    //  COMMAND_RESULT_VERBOSE (65535) bytes already with 410 records -- our standard shells
+    //  (USB console, web shell, V2 command execution) have been tested with 1000 records.
+    //if (bufsize > verbosity) bufsize = verbosity;
+    char* buf = new char[bufsize];
+    if (!buf)
+      {
+      writer->puts("ERROR: out of memory!");
+      return;
+      }
+    module_trace_dump(buf, bufsize);
+    writer->printf("Heap tracing started/resumed at ccount 0x%08x = logtime %u\n",
+      trace_ccount_ref, trace_logtime_ref);
+    writer->write(buf, strlen(buf));
+    delete [] buf;
+    }
+  else // "status"
+    {
+    writer->printf("Heap tracing %s, started/resumed at ccount 0x%08x = logtime %u, recorded %d/%d allocations\n",
+      trace_paused ? "paused" : "running",
+      trace_ccount_ref, trace_logtime_ref,
+      heap_trace_get_count(), trace_num_records);
+    }
+  }
+
+#endif // CONFIG_HEAP_TRACING
+
 
 static void module_fault(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -1246,8 +1446,22 @@ static void module_eventhandler(std::string event, void* data)
   {
   if (event == "ticker.300")
     {
-    if (MyConfig.GetParamValueBool("module", "debug.tasks", false))
+    bool debug_heap_alert = MyConfig.GetParamValueBool("module", "debug.heap.alert");
+    bool debug_tasks      = MyConfig.GetParamValueBool("module", "debug.tasks");
+
+    if (debug_heap_alert)
+      {
+      if (module_check_alert() == false)
+        {
+        // heap corrupted, inhibit task debugging (would abort()):
+        debug_tasks = false;
+        }
+      }
+
+    if (debug_tasks)
+      {
       module_tasks_data(0, NULL, NULL, 0, NULL);
+      }
     }
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
@@ -1360,6 +1574,18 @@ class OvmsModuleInit
       " - sleep until monday 6:30: module sleep monday 06:30\n"
       , 1, 2);
     cmd_module->RegisterCommand("check","Check heap integrity",module_check);
+
+    OvmsCommand* cmd_trace = cmd_module->RegisterCommand("trace", "Heap tracing", module_trace);
+    cmd_trace->RegisterCommand("start", "Start tracing", module_trace,
+      "[num_records]\n"
+      "Defaults to tracing 500 allocations, min 10. Note: buffer needs to be in internal RAM.\n",
+      0, 1);
+    cmd_trace->RegisterCommand("stop", "Stop tracing", module_trace);
+    cmd_trace->RegisterCommand("pause", "Pause tracing", module_trace);
+    cmd_trace->RegisterCommand("resume", "Resume tracing", module_trace);
+    cmd_trace->RegisterCommand("status", "Show tracing status", module_trace);
+    cmd_trace->RegisterCommand("dump", "Dump traced allocations", module_trace);
+
     cmd_module->RegisterCommand("summary","Show module summary",module_summary);
     OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework");
     cmd_factory->RegisterCommand("reset","Factory Reset module",module_factory_reset,"[-noconfirm]",0,1);
