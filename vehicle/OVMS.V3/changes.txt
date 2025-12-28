@@ -1,6 +1,18 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Module: add heap tracing tools -- NOTE: heap tracing will for now not be enabled by default on user builds.
+    This is meant to be used by developers to track down heap corruptions. If you encounter many
+    random crashes, ask your maintainer to provide a debug build to you with heap tracing enabled,
+    and let her/him guide you through the usage, or grant him/her remote access to your module.
+    See: https://docs.espressif.com/projects/esp-idf/en/v3.3/api-reference/system/heap_debug.html
+  New commands:
+    module trace start [num_records]    -- init & start heap tracing, num_records defaults to 500
+    module trace stop                   -- stop heap tracing & cleanup memory
+    module trace pause                  -- pause heap tracing for inspection
+    module trace resume                 -- resume heap tracing
+    module trace status                 -- show current status
+    module trace dump                   -- dump allocations & frees recorded
 - Module: added heap integrity alert, added task ownership to heap check report, added task handles to
     task log, added debug options to web UI (Config → Notifications)
   New config:
