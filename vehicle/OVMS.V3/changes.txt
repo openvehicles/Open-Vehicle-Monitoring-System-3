@@ -1,6 +1,11 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- smart EQ:
+  New commands:
+    xsq ed4scan                           -- Output ED4scan-like BMS diagnostic data
+                                             (battery health, SOC kernel data, cell resistance,
+                                             contactor cycles, temperatures, voltages)
 - Module: add heap tracing tools -- NOTE: heap tracing will for now not be enabled by default on user builds.
     This is meant to be used by developers to track down heap corruptions. If you encounter many
     random crashes, ask your maintainer to provide a debug build to you with heap tracing enabled,
@@ -89,27 +94,6 @@ Open Vehicle Monitor System v3 - Change log
 - smart EQ:
     Add multiple CAN frame parsers for energy and charging metrics
     Add automatic 12V ADC factor recalculation history tracking
-  New metrics:
-    xsq.v.bat.serial                      -- Battery serial number (hex string)
-    xsq.v.energy.used                     -- Energy used since mission start [kWh]
-    xsq.v.energy.recd                     -- Energy recovered since mission start [kWh]
-    xsq.v.aux.consumption                 -- Auxiliary consumption since mission start [kWh]
-    xsq.v.bat.consumption.worst           -- Worst average consumption [kWh/100km]
-    xsq.v.bat.consumption.best            -- Best average consumption [kWh/100km]
-    xsq.v.charge.bcb.power                -- BCB power from mains [W]
-    xsq.v.charge.timer.value              -- Charging timer value [min]
-    xsq.v.charge.timer.status             -- Charging timer status
-    xsq.v.charge.prohibited               -- Charge prohibited status
-    xsq.v.charge.authorization            -- Charge authorization status
-    xsq.v.charge.ext.manager              -- External charging manager status
-    xsq.v.reset.consumption               -- Average trip consumption (reset) [kWh/100km]
-    xsq.v.reset.distance                  -- Trip distance (reset) [km]
-    xsq.v.reset.energy                    -- Trip energy consumption (reset) [kWh]
-    xsq.v.reset.speed                     -- Average trip speed (reset) [km/h]
-    xsq.v.start.time                      -- Time since start [hh:mm]
-    xsq.v.start.distance                  -- Trip distance since start [km]
-    xsq.v.start.consumption               -- Average consumption since start [kWh/100km]
-    xsq.adc.factor.history                -- Last 20 calculated ADC factors (ring buffer)
 - Renault Zoe Ph2:
   New commands:
     xrz2 preclimate schedule <day> <time>  -- Set precondition schedule for specific day

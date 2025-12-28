@@ -91,7 +91,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_MAX, 0, Other);
   mt_adc_factor_history         = MyMetrics.InitVector<float>("xsq.adc.factor.history", SM_STALE_MAX, nullptr, Other);
   mt_adc_factor_history->SetElemValue(m_adc_samples -1, 0.0f);  // Pre-allocate x samples to avoid reallocs
-  mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_MAX, "UNKNOWN", Other);
+  mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_MAX, "UNKNOWN", Other);  
+  mt_ed4_values                 = MyMetrics.InitInt("xsq.ed4.values", SM_STALE_MAX, 10);
 
   mt_start_time                 = MyMetrics.InitString("xsq.v.start.time", SM_STALE_MID, 0, Other);
   mt_start_distance             = MyMetrics.InitFloat("xsq.v.start.distance", SM_STALE_MID, 0, Kilometers);
@@ -103,6 +104,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_reset_speed                = MyMetrics.InitFloat("xsq.v.reset.speed", SM_STALE_MID, 0, Kph);
   // 0x658 metrics
   mt_bat_serial                 = MyMetrics.InitString("xsq.v.bat.serial", SM_STALE_MAX, "");
+  // BMS production data (PID 0x9000)
+  mt_bms_prod_data              = MyMetrics.InitString("xsq.bms.prod.data", SM_STALE_MAX, "");
   // 0x646 metrics
   mt_energy_used                = MyMetrics.InitFloat("xsq.v.energy.used", SM_STALE_MID, 0, kWh);
   mt_energy_recd                = MyMetrics.InitFloat("xsq.v.energy.recd", SM_STALE_MID, 0, kWh);
@@ -181,6 +184,25 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_CV_Range_min           = MyMetrics.InitFloat("xsq.bms.cv.range.min", SM_STALE_MID, 0, Volts);
   mt_bms_CV_Range_max           = MyMetrics.InitFloat("xsq.bms.cv.range.max", SM_STALE_MID, 0, Volts);
   mt_bms_CV_Range_mean          = MyMetrics.InitFloat("xsq.bms.cv.range.mean", SM_STALE_MID, 0, Volts);
+  mt_bms_contactor_cycles       = MyMetrics.InitInt("xsq.bms.contactor.cycles", SM_STALE_HIGH, 0);
+  mt_bms_contactor_cycles_max   = MyMetrics.InitInt("xsq.bms.contactor.cycles.max", SM_STALE_HIGH, 0);
+  mt_real_soc                   = MyMetrics.InitFloat("xsq.bms.soc.real", SM_STALE_MID, 0, Percentage);
+  mt_display_soc                = MyMetrics.InitFloat("xsq.bms.soc.display", SM_STALE_MID, 0, Percentage);
+  mt_bms_soc_recal_state        = MyMetrics.InitString("xsq.bms.soc.recal.state", SM_STALE_MID, "");
+  mt_bms_soc_min                = MyMetrics.InitFloat("xsq.bms.soc.min", SM_STALE_MID, 0, Percentage);
+  mt_bms_soc_max                = MyMetrics.InitFloat("xsq.bms.soc.max", SM_STALE_MID, 0, Percentage);
+  mt_bms_soh                    = MyMetrics.InitFloat("xsq.bms.soh", SM_STALE_MID, 0, Percentage);
+  mt_bms_cap_usable_max         = MyMetrics.InitFloat("xsq.bms.cap.usable.max", SM_STALE_MID, 0, AmpHours);
+  mt_bms_cap_init               = MyMetrics.InitFloat("xsq.bms.cap.init", SM_STALE_MID, 0, AmpHours);
+  mt_bms_cap_estimate           = MyMetrics.InitFloat("xsq.bms.cap.estimate", SM_STALE_MID, 0, AmpHours);
+  mt_bms_mileage                = MyMetrics.InitFloat("xsq.bms.mileage", SM_STALE_HIGH, 0, Kilometers);
+  mt_bms_ocv_voltage            = MyMetrics.InitFloat("xsq.bms.ocv.voltage", SM_STALE_MID, 0, Volts);
+  mt_bms_soc                    = MyMetrics.InitFloat("xsq.bms.soc", SM_STALE_MID, 0, Percentage);
+  mt_bms_cap_loss_percent       = MyMetrics.InitFloat("xsq.bms.cap.loss.pct", SM_STALE_HIGH, 0, Percentage);
+  mt_bms_voltage_state          = MyMetrics.InitString("xsq.bms.voltage.state", SM_STALE_MID, "");
+  mt_bms_cell_resistance        = MyMetrics.InitVector<float>("xsq.bms.cell.resistance", SM_STALE_HIGH, nullptr, Other);
+  mt_bms_cell_resistance->SetElemValue(CELLCOUNT - 1, 0.0f);  // Pre-allocate for all 96 cells
+  mt_bms_nominal_energy         = MyMetrics.InitFloat("xsq.bms.energy.nominal", SM_STALE_HIGH, 0, kWh);
   mt_bms_BattLinkVoltage        = MyMetrics.InitFloat("xsq.bms.batt.link.voltage", SM_STALE_MID, 0, Volts);
   mt_bms_BattContactorVoltage   = MyMetrics.InitFloat("xsq.bms.batt.contactor.voltage", SM_STALE_MID, 0, Volts);
   mt_bms_BattCV_Sum             = MyMetrics.InitFloat("xsq.bms.batt.cv.sum", SM_STALE_MID, 0, Volts);
@@ -210,6 +232,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
   cmd_xsq->RegisterCommand("calcadc", "Recalculate ADC factor (optional: 12V voltage override)", xsq_calc_adc, "[voltage]", 0, 1);
   cmd_xsq->RegisterCommand("wakeup", "Wake up the car", xsq_wakeup);
+  cmd_xsq->RegisterCommand("ed4scan", "ED4scan-like BMS Data", xsq_ed4scan);
   cmd_xsq->RegisterCommand("preset", "smart EQ config preset", xsq_preset);
 
   using std::placeholders::_1;
