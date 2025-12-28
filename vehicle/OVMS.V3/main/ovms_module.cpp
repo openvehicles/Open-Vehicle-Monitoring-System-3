@@ -859,7 +859,8 @@ static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cm
   uint32_t diff_totalruntime = totalruntime - last_totalruntime;
 
   // output task count & total runtime diff:
-  buf.printf("*-OVM-DebugTasks,1,86400,%u,%" PRIu32, n, diff_totalruntime);
+  //  - v2: +<handle>
+  buf.printf("*-OVM-DebugTasks,2,86400,%u,%" PRIu32, n, diff_totalruntime);
 
   // output tasks sorted by xTaskNumber:
   num = 0;
@@ -885,11 +886,11 @@ static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cm
         //  ,<num>,<name>,<state>
         //  ,<stack_now>,<stack_max>,<stack_total>
         //  ,<heaptotal>,<heap32bit>,<heapspi>
-        //  ,<runtime>
-        buf.printf(",%u,%-.15s,%s,%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%u,%u,%u,%" PRIu32,
+        //  ,<runtime>,<handle>
+        buf.printf(",%u,%-.15s,%s,%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%u,%u,%u,%" PRIu32 ",%p",
           taskstatus[i].xTaskNumber, taskstatus[i].pcTaskName, states[taskstatus[i].eCurrentState],
           used, total - taskstatus[i].usStackHighWaterMark, total,
-          heaptotal, heap32bit, heapspi, runtime);
+          heaptotal, heap32bit, heapspi, runtime, taskstatus[i].xHandle);
 
         ++j;
         break;
@@ -958,6 +959,13 @@ bool module_check_heap_integrity(char* buf, size_t size)
   capture_size = 0;
   
   portEXIT_CRITICAL(&capture_spinlock);
+
+  if (!heapok)
+    {
+    // set crash debug flag and emit signal:
+    MyBoot.SetHeapCorruption();
+    }
+
   return heapok;
   }
 
@@ -1000,6 +1008,43 @@ bool module_check_heap_integrity(int verbosity, OvmsWriter* writer)
 static void module_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   module_check_heap_integrity(verbosity, writer);
+  }
+
+/**
+ * module_check_alert: send alert notification on heap corruption
+ *    To enable the check every 5 minutes, set config "module" "debug.heap" or "debug.all" to "yes"
+ *    (see module_eventhandler()).
+ * 
+ * @return heapok       -- false = heap corrupted/full
+ */
+static bool module_check_alert()
+  {
+  static bool module_check_alert_sent = false;
+
+  // only send once:
+  if (module_check_alert_sent)
+    return false;
+
+  size_t outbufsize = 4096;
+  char* outbuf = new char[outbufsize];
+  if (!outbuf)
+    {
+    ESP_LOGE(TAG, "module_check_alert: out of memory!");
+    return false; // corruption state unknown, treat as "not ok"
+    }
+
+  bool heapok = module_check_heap_integrity(outbuf, outbufsize);
+  if (!heapok)
+    {
+    MyNotify.NotifyStringf("alert", "debug.heap.corruption",
+      "Heap corruption detected, reboot advised ASAP!\n"
+      "Please forward including task records and system log:\n\n"
+      "%s", outbuf);
+    module_check_alert_sent = true;
+    }
+
+  delete [] outbuf;
+  return heapok;
   }
 
 #endif // NOGO
@@ -1246,8 +1291,22 @@ static void module_eventhandler(std::string event, void* data)
   {
   if (event == "ticker.300")
     {
-    if (MyConfig.GetParamValueBool("module", "debug.tasks", false))
+    bool debug_heap_alert = MyConfig.GetParamValueBool("module", "debug.heap.alert");
+    bool debug_tasks      = MyConfig.GetParamValueBool("module", "debug.tasks");
+
+    if (debug_heap_alert)
+      {
+      if (module_check_alert() == false)
+        {
+        // heap corrupted, inhibit task debugging (would abort()):
+        debug_tasks = false;
+        }
+      }
+
+    if (debug_tasks)
+      {
       module_tasks_data(0, NULL, NULL, 0, NULL);
+      }
     }
 
 #ifdef CONFIG_OVMS_COMP_SDCARD

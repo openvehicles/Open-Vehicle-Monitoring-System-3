@@ -1,6 +1,14 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Module: added heap integrity alert, added task ownership to heap check report, added task handles to
+    task log, added debug options to web UI (Config → Notifications)
+  New config:
+    [module] debug.heap.alert   -- [bool] perform heap check every 5 minutes, send alert on corruption (default: no)
+  Command extension:
+    test heapcorruption <restore|keep>  -- default: 'restore', use 'keep' to test heap alert
+  History record extension:
+    "*-OVM-DebugTasks" v2: per task record extended by <handle>
 - Module framework: enable remote use of the system's heap corruption test, i.e. command "module check"
     can now be used within any shell or command channel, not just the USB console.
   New command(s):

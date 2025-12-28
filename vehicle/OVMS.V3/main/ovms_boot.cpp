@@ -413,6 +413,8 @@ Boot::Boot()
   if (!m_stack_overflow)
     boot_data.stack_overflow_taskname[0] = 0;
 
+  m_heap_corruption = boot_data.heap_corruption;
+
   boot_data.bootreason_cpu0 = cpu0;
   boot_data.bootreason_cpu1 = cpu1;
   boot_data.reset_hint = ESP_RST_UNKNOWN;
@@ -422,6 +424,7 @@ Boot::Boot()
   boot_data.firmware_update = false;
   boot_data.stable_reached = false;
   boot_data.stack_overflow = false;
+  boot_data.heap_corruption = false;
 
   boot_data.crc = boot_data.calc_crc();
 
@@ -490,6 +493,17 @@ void Boot::SetFirmwareUpdate()
   boot_data.crc = boot_data.calc_crc();
   }
 
+void Boot::SetHeapCorruption()
+  {
+  if (!boot_data.heap_corruption)
+    {
+    // set crash debug flag and emit signal:
+    boot_data.heap_corruption = true;
+    boot_data.crc = boot_data.calc_crc();
+    MyEvents.SignalEvent("system.heap.corrupted", NULL);
+    }
+  }
+
 const char* Boot::GetBootReasonName()
   {
   return (m_bootreason >= 0 && m_bootreason < NUM_BOOTREASONS)
@@ -501,6 +515,8 @@ const char* Boot::GetResetReasonName()
   {
   if (m_stack_overflow)
     return "Stack overflow";
+  else if (m_heap_corruption)
+    return "Heap corruption";
   return (m_resetreason >= 0 && m_resetreason < NUM_RESETREASONS)
     ? resetreason_name[m_resetreason]
     : "Unknown reset reason";
@@ -765,6 +781,9 @@ void Boot::ErrorCallback(const void *f, int core_id, bool is_abort, esp_reset_re
       }
     }
   panicPutStr("\r\n");
+
+  // Record final heap corruption result:
+  boot_data.heap_corruption = !heap_caps_check_integrity_all(false);
 
   boot_data.crc = boot_data.calc_crc();
   }

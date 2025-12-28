@@ -255,6 +255,8 @@ void test_heapcorruption(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   // into head & tail 4 byte canary blocks. To test the detection, we write
   // beyond an allocated buffer into the tail canary on purpose.
 
+  bool keep = (strcmp(cmd->GetName(), "keep") == 0);
+
   size_t outbufsize = (verbosity > 4096) ? 4096 : verbosity;
   char* outbuf = new char[outbufsize];
   if (!outbuf)
@@ -266,12 +268,15 @@ void test_heapcorruption(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   char *membuf;
   char bak;
 
-  writer->puts("Initial check of heap integrity...");
-  if (!module_check_heap_integrity(outbuf, outbufsize))
+  if (!keep)
     {
-    writer->puts("ABORT -- heap already corrupted:");
-    writer->puts(outbuf);
-    return;
+    writer->puts("Initial check of heap integrity...");
+    if (!module_check_heap_integrity(outbuf, outbufsize))
+      {
+      writer->puts("ABORT -- heap already corrupted:");
+      writer->puts(outbuf);
+      return;
+      }
     }
 
   // Simulate out of bounds write:
@@ -291,10 +296,18 @@ void test_heapcorruption(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     writer->puts("CHECK FAILED: corruption was NOT detected!");
     }
 
-  // Restore canary so free() won't abort():
-  membuf[4] = bak;
-  writer->printf("Restored address %p, canary %#0x\n", membuf+4, membuf[4]);
-  delete [] membuf;
+  if (keep)
+    {
+    writer->puts("Keeping test corruption in place (testing module heap alert).");
+    }
+  else
+    {
+    // Restore canary so free() won't abort():
+    membuf[4] = bak;
+    writer->printf("Restored address %p, canary %#0x\n", membuf+4, membuf[4]);
+    delete [] membuf;
+    }
+
   delete [] outbuf;
 
   writer->puts("Done.");
@@ -460,7 +473,9 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("echo", "Test getchar", test_echo);
   cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog);
   cmd_test->RegisterCommand("stackoverflow", "Test stack overflow detection (crashes)", test_stackoverflow);
-  cmd_test->RegisterCommand("heapcorruption", "Test heap integrity checker", test_heapcorruption);
+  OvmsCommand* cmd_heap = cmd_test->RegisterCommand("heapcorruption", "Test heap integrity checker", test_heapcorruption);
+  cmd_heap->RegisterCommand("keep", "Keep test corruption in place", test_heapcorruption);
+  cmd_heap->RegisterCommand("restore", "Restore heap after test (default operation)", test_heapcorruption);
   cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc);
   cmd_test->RegisterCommand("spiram", "Test SPI RAM memory usage", test_spiram);
   cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2);

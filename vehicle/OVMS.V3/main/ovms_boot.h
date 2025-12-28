@@ -105,6 +105,7 @@ typedef struct
   bool stack_overflow;
   char stack_overflow_taskname[16];
   task_info_t curr_task[portNUM_PROCESSORS];
+  bool heap_corruption;
   } boot_data_t;
 
 extern boot_data_t boot_data;
@@ -125,6 +126,8 @@ class Boot
     unsigned int GetEarlyCrashCount() { return m_crash_count_early; }
     bool GetStable() { return boot_data.stable_reached; }
     void SetStable();
+    bool GetHeapCorruption() { return boot_data.heap_corruption; }
+    void SetHeapCorruption();
 
   public:
     void SetSoftReset();
@@ -163,6 +166,7 @@ class Boot
     esp_reset_reason_t m_resetreason;
     unsigned int m_crash_count_early;
     bool m_stack_overflow;
+    bool m_heap_corruption;
   };
 
 extern Boot MyBoot;
