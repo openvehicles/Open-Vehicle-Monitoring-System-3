@@ -2,11 +2,15 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 - smart EQ:
-  updated doc
   New commands:
     xsq ed4scan                           -- Output ED4scan-like BMS diagnostic data
                                              (battery health, SOC kernel data, cell resistance,
                                              contactor cycles, temperatures, voltages)
+- Module: add heap tracing tools -- NOTE: heap tracing will for now not be enabled by default on user builds.
+    This is meant to be used by developers to track down heap corruptions. If you encounter many
+    random crashes, ask your maintainer to provide a debug build to you with heap tracing enabled,
+    and let her/him guide you through the usage, or grant him/her remote access to your module.
+    See: https://docs.espressif.com/projects/esp-idf/en/v3.3/api-reference/system/heap_debug.html
 - Module framework: enable remote use of the system's heap corruption test, i.e. command "module check"
     can now be used within any shell or command channel, not just the USB console.
   New command(s):
