@@ -114,6 +114,7 @@ server.v3.waitnetwork                         V3 server connection is waiting fo
 server.v3.waitreconnect                       V3 server is pausing before re-connection
 server.web.socket.closed            <cnt>     Web server lost a websocket client
 server.web.socket.opened            <cnt>     Web server has a new websocket client
+system.heap.corrupted                         Heap memory corruption has been detected (reboot advised)
 system.modem.down                             Modem has been disconnected
 system.modem.gotgps                           Modem GPS has obtained lock
 system.modem.gotip                            Modem received IP address from DATA

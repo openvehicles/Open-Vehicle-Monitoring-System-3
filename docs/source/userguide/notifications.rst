@@ -132,6 +132,7 @@ info    charge.toppingoff           ``stat`` on start of topping off charge/phas
 info    charge.stopped              ``stat`` on planned charge stop
 alert   charge.stopped              ``stat`` on unplanned charge stop
 data    debug.crash                 Transmit crash backtraces (→ ``*-OVM-DebugCrash``)
+alert   debug.heap.corruption       Heap corruption details
 data    debug.tasks                 Transmit task statistics (→ ``*-OVM-DebugTasks``)
 info    drive.trip.report           Trip driving statistics (see `Trip report`_)
 alert   flatbed.moved               Vehicle is being transported while parked - possible theft/flatbed

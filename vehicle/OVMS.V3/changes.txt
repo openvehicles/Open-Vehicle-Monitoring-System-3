@@ -24,7 +24,12 @@ Open Vehicle Monitor System v3 - Change log
 - Module: added heap integrity alert, added task ownership to heap check report, added task handles to
     task log, added debug options to web UI (Config → Notifications)
   New config:
-    [module] debug.heap.alert   -- [bool] perform heap check every 5 minutes, send alert on corruption (default: no)
+    [module] debug.heap.alert           -- [bool] perform heap check every 5 minutes, send alert on
+                                            corruption (default: no)
+  New event:
+    system.heap.corrupted               -- Heap corruption detected
+  New notification:
+    [alert] debug.heap.corruption       -- Heap corruption details
   Command extension:
     test heapcorruption <restore|keep>  -- default: 'restore', use 'keep' to test heap alert
   History record extension:
