@@ -56,6 +56,21 @@ extern bool module_check_heap_integrity(char* buf, size_t size);
  */
 extern bool module_check_heap_integrity(int verbosity, OvmsWriter* writer);
 
+/**
+ * module_check_heap_alert: check for and send one-off alert notification on heap corruption
+ * 
+ *    To enable the check every 5 minutes, set config "module" "debug.heap" or "debug.all" to "yes".
+ * 
+ *    To add custom checks, call from your code, or register event scripts as needed.
+ *    Example: perform heap integrity check when the server V2 gets stopped:
+ *      vfs echo "module check alert" /store/events/server.v2.stopped/90-checkheap
+ * 
+ * @param verbosity     -- optional: channel capacity (default 0)
+ * @param OvmsWriter    -- optional: channel (default NULL)
+ * @return heapok       -- false = heap corrupted/full
+ */
+extern bool module_check_heap_alert(int verbosity=0, OvmsWriter* writer=NULL);
+
 #define __OVMS_MODULE_H__
 
 #endif //#ifndef __OVMS_MODULE_H__

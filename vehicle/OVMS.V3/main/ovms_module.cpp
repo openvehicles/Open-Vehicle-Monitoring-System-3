@@ -1010,29 +1010,51 @@ bool module_check_heap_integrity(int verbosity, OvmsWriter* writer)
  */
 static void module_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  module_check_heap_integrity(verbosity, writer);
+  std::string cmdname = cmd->GetName();
+
+  if (cmdname == "alert")
+    {
+    module_check_heap_alert(verbosity, writer);
+    }
+  else
+    {
+    module_check_heap_integrity(verbosity, writer);
+    }
   }
 
 /**
- * module_check_alert: send alert notification on heap corruption
- *    To enable the check every 5 minutes, set config "module" "debug.heap" or "debug.all" to "yes"
- *    (see module_eventhandler()).
+ * module_check_heap_alert: check for and send one-off alert notification on heap corruption
  * 
+ *    To enable the check every 5 minutes, set config "module" "debug.heap" or "debug.all" to "yes".
+ * 
+ *    To add custom checks, call from your code, or register event scripts as needed.
+ *    Example: perform heap integrity check when the server V2 gets stopped:
+ *      vfs echo "module check alert" /store/events/server.v2.stopped/90-checkheap
+ * 
+ * @param verbosity     -- optional: channel capacity (default 0)
+ * @param OvmsWriter    -- optional: channel (default NULL)
  * @return heapok       -- false = heap corrupted/full
  */
-static bool module_check_alert()
+bool module_check_heap_alert(int verbosity /*=0*/, OvmsWriter* writer /*=NULL*/)
   {
   static bool module_check_alert_sent = false;
 
   // only send once:
   if (module_check_alert_sent)
+    {
+    if (writer)
+      writer->puts("Heap corrupted");
     return false;
+    }
 
   size_t outbufsize = 4096;
   char* outbuf = new char[outbufsize];
   if (!outbuf)
     {
-    ESP_LOGE(TAG, "module_check_alert: out of memory!");
+    if (writer)
+      writer->puts("ERROR: out of memory!");
+    else
+      ESP_LOGE(TAG, "module_check_heap_alert: out of memory!");
     return false; // corruption state unknown, treat as "not ok"
     }
 
@@ -1044,6 +1066,13 @@ static bool module_check_alert()
       "Please forward including task records and system log:\n\n"
       "%s", outbuf);
     module_check_alert_sent = true;
+    if (writer)
+      writer->puts("Heap corrupted, alert sent");
+    }
+  else
+    {
+    if (writer)
+      writer->puts("Heap integrity OK");
     }
 
   delete [] outbuf;
@@ -1451,7 +1480,7 @@ static void module_eventhandler(std::string event, void* data)
 
     if (debug_heap_alert)
       {
-      if (module_check_alert() == false)
+      if (module_check_heap_alert() == false)
         {
         // heap corrupted, inhibit task debugging (would abort()):
         debug_tasks = false;
@@ -1573,7 +1602,9 @@ class OvmsModuleInit
       " - sleep for 30 minutes: module sleep 1800\n"
       " - sleep until monday 6:30: module sleep monday 06:30\n"
       , 1, 2);
-    cmd_module->RegisterCommand("check","Check heap integrity",module_check);
+
+    OvmsCommand* cmd_check = cmd_module->RegisterCommand("check","Check heap integrity",module_check);
+    cmd_check->RegisterCommand("alert", "Check for and send one-off alert on heap corruption", module_check);
 
     OvmsCommand* cmd_trace = cmd_module->RegisterCommand("trace", "Heap tracing", module_trace);
     cmd_trace->RegisterCommand("start", "Start tracing", module_trace,
