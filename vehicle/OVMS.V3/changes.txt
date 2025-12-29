@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- VFS: added echo command to write a line to a file
+  New commands:
+    vfs echo <line> <file>                -- Write <line> to <file>, creating/replacing the file
 - smart EQ:
   New commands:
     xsq ed4scan                           -- Output ED4scan-like BMS diagnostic data
