@@ -1025,7 +1025,7 @@ static void module_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
 /**
  * module_check_heap_alert: check for and send one-off alert notification on heap corruption
  * 
- *    To enable the check every 5 minutes, set config "module" "debug.heap" or "debug.all" to "yes".
+ *    To enable the check every 5 minutes, set config "module" "debug.heap" to "yes".
  * 
  *    To add custom checks, call from your code, or register event scripts as needed.
  *    Example: perform heap integrity check when the server V2 gets stopped:
