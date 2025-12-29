@@ -107,7 +107,7 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
     if (alerts_enabled && _flag)
       {
       // Get reference pressure based on front/rear position
-      float reference_pressure = (indexcar < (count / 2)) ? _threshold_front : _threshold_rear;
+      float reference_pressure = (i < (count / 2)) ? _threshold_front : _threshold_rear;
       
       // Calculate deviation from reference pressure      
       float deviation = _pressure - reference_pressure;
