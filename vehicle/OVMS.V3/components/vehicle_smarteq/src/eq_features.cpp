@@ -93,14 +93,14 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
       _flag = false;
       
       // Clear stored alert states
-      mt_tpms_low_batt->SetElemValue(indexcar, 0);
-      mt_tpms_missing_tx->SetElemValue(indexcar, 0);
+      mt_tpms_low_batt->SetElemValue(i, 0);
+      mt_tpms_missing_tx->SetElemValue(i, 0);
       }
     else
       {
       // Sensor working and alerts enabled - update alert states
-      mt_tpms_low_batt->SetElemValue(indexcar, _lowbatt);
-      mt_tpms_missing_tx->SetElemValue(indexcar, _missing_tx);
+      mt_tpms_low_batt->SetElemValue(i, _lowbatt);
+      mt_tpms_missing_tx->SetElemValue(i, _missing_tx);
       }
     
     // Calculate pressure deviation alerts
