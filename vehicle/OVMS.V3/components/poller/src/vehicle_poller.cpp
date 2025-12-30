@@ -142,12 +142,12 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
 bool OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
   {
 
-  // No multiframe request is active.
-  if (m_poll.type == VEHICLE_POLL_TYPE_NONE)
-    return false;
-
   // Pass frame to poller protocol handlers:
-  if (frame.origin == m_poll_vwtp.bus && frame.MsgID == m_poll_vwtp.rxid)
+  if (
+    frame.origin == m_poll_vwtp.bus &&
+    frame.MsgID == m_poll_vwtp.rxid &&
+    m_poll_vwtp.state != VWTP_Closed
+    )
     {
     // Keep raw Data for DBC
     m_poll.format = frame.FIR.B.FF;
@@ -158,6 +158,13 @@ bool OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
     m_poll.raw_data = nullptr;
     m_poll.raw_data_len = 0;
     return ret;
+    }
+  else if (m_poll.type == VEHICLE_POLL_TYPE_NONE)
+    {
+    // No multiframe request is active.
+    // Check after the VWTP which needs to respond to
+    // Ping requests
+    return false;
     }
   else if (frame.origin != m_poll.bus)
     {
@@ -1582,7 +1589,7 @@ void OvmsPollers::PollerTask()
         {
         bool processed = false;
         canbus* bus = entry.entry_FrameRxTx.frame.origin;
-        auto poller = GetPoller(entry.entry_FrameRxTx.frame.origin);
+        auto poller = GetPoller(bus);
         IFTRACE(Poller) ESP_LOGV(TAG, "Pollers: FrameRx(bus=%d)", GetBusNo(entry.entry_FrameRxTx.frame.origin));
         if (poller)
           processed = poller->Incoming(entry.entry_FrameRxTx.frame, entry.entry_FrameRxTx.success);
