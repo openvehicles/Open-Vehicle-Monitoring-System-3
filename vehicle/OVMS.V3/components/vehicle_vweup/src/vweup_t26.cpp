@@ -819,7 +819,9 @@ void OvmsVehicleVWeUp::WakeupT26Stage2()
     if (ocu_response)
       WakeupT26Stage3();
     else {
-      xTimerStart(profile0_timer, 0);
+      if (xTimerIsTimerActive(profile0_timer) == pdFALSE)
+        xTimerStart(profile0_timer, 0);
+      else ESP_LOGD(TAG,"T26: WakeupT26Stage2 profile0_timer already running!");
     }
   }
   else {
@@ -836,7 +838,9 @@ void OvmsVehicleVWeUp::WakeupT26Stage3()
       memset(profile0_cntr, 0, sizeof(profile0_cntr));
       profile0_state = PROFILE0_REQUEST;
       ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
-      xTimerStart(profile0_timer, 0);
+      if (xTimerIsTimerActive(profile0_timer) == pdFALSE)
+        xTimerStart(profile0_timer, 0);
+      else ESP_LOGD(TAG,"T26: WakeupT26Stage3 profile0_timer already running!");
     }
   else
     profile0_state = PROFILE0_IDLE;
@@ -1072,7 +1076,9 @@ void OvmsVehicleVWeUp::RequestProfile0()
   data[7] = 0x01; // request one profile
   comfBus->WriteStandard(0x69E, length, data);
   ESP_LOGD(TAG, "T26: Starting profile0 request timer...");
-  xTimerStart(profile0_timer, 0);
+  if (xTimerIsTimerActive(profile0_timer) == pdFALSE)
+    xTimerStart(profile0_timer, 0);
+  else ESP_LOGD(TAG,"T26: RequestProfile0 profile0_timer already running!");
 }
 
 void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
@@ -1113,7 +1119,9 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
       ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
     }
     ESP_LOGD(TAG, "T26: Starting profile0 read timer...");
-    xTimerStart(profile0_timer, 0);
+    if (xTimerIsTimerActive(profile0_timer) == pdFALSE)
+      xTimerStart(profile0_timer, 0);
+    else ESP_LOGD(TAG,"T26: ReadProfile0 profile0_timer already running!");
   }
   else if (profile0_idx == profile0_len)
   {
@@ -1296,7 +1304,9 @@ void OvmsVehicleVWeUp::WriteProfile0()
 
   // start timer to check if profile was written correctly
   ESP_LOGD(TAG, "T26: Starting profile0 write timer...");
-  xTimerStart(profile0_timer, 0);
+  if (xTimerIsTimerActive(profile0_timer) == pdFALSE)
+    xTimerStart(profile0_timer, 0);
+  else ESP_LOGD(TAG,"T26: WriteProfile0 profile0_timer already running!");
 }
 
 void OvmsVehicleVWeUp::Profile0RetryTimer(TimerHandle_t timer)
@@ -1632,7 +1642,9 @@ void OvmsVehicleVWeUp::ActivateProfile0() // only sends on/off command, profile0
     ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
   }
   ESP_LOGD(TAG, "T26: Starting profile0 activate timer...");
-  xTimerStart(profile0_timer, 0);
+  if (xTimerIsTimerActive(profile0_timer) == pdFALSE)
+    xTimerStart(profile0_timer, 0);
+  else ESP_LOGD(TAG,"T26: ActivateProfile0 profile0_timer already running!");
 }
 
 void OvmsVehicleVWeUp::CommandReadProfile0(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
