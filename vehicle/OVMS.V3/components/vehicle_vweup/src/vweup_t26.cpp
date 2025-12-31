@@ -127,6 +127,8 @@
 ;
 ;    0.6.3 read profile0 on boot
 ;
+;    0.6.4 bug fixes, hardening against buffer overflow
+;
 ;    (C) 2021       Chris van der Meijden
 ;        2024       Urwa Khattak, sharkcow      
 ;
