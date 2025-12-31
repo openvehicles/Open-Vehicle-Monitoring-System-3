@@ -93,21 +93,21 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
       _flag = false;
       
       // Clear stored alert states
-      mt_tpms_low_batt->SetElemValue(indexcar, 0);
-      mt_tpms_missing_tx->SetElemValue(indexcar, 0);
+      mt_tpms_low_batt->SetElemValue(i, 0);
+      mt_tpms_missing_tx->SetElemValue(i, 0);
       }
     else
       {
       // Sensor working and alerts enabled - update alert states
-      mt_tpms_low_batt->SetElemValue(indexcar, _lowbatt);
-      mt_tpms_missing_tx->SetElemValue(indexcar, _missing_tx);
+      mt_tpms_low_batt->SetElemValue(i, _lowbatt);
+      mt_tpms_missing_tx->SetElemValue(i, _missing_tx);
       }
     
     // Calculate pressure deviation alerts
     if (alerts_enabled && _flag)
       {
       // Get reference pressure based on front/rear position
-      float reference_pressure = (indexcar < (count / 2)) ? _threshold_front : _threshold_rear;
+      float reference_pressure = (i < (count / 2)) ? _threshold_front : _threshold_rear;
       
       // Calculate deviation from reference pressure      
       float deviation = _pressure - reference_pressure;
