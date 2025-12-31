@@ -104,7 +104,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_reset_speed                = MyMetrics.InitFloat("xsq.v.reset.speed", SM_STALE_MID, 0, Kph);
   // 0x658 metrics
   mt_bat_serial                 = MyMetrics.InitString("xsq.v.bat.serial", SM_STALE_MAX, "");
-  // BMS production data (PID 0x9000)
+    // BMS production data (PID 0x9000)
   mt_bms_prod_data              = MyMetrics.InitString("xsq.bms.prod.data", SM_STALE_MAX, "");
   // 0x646 metrics
   mt_energy_used                = MyMetrics.InitFloat("xsq.v.energy.used", SM_STALE_MID, 0, kWh);
@@ -120,7 +120,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_charge_prohibited          = MyMetrics.InitInt("xsq.v.charge.prohibited", SM_STALE_MID, 0);
   mt_charge_authorization       = MyMetrics.InitInt("xsq.v.charge.authorization", SM_STALE_MID, 0);
   mt_ext_charge_manager         = MyMetrics.InitInt("xsq.v.charge.ext.manager", SM_STALE_MID, 0);
-
+  // 0x763 OBD metrics
   mt_obd_duration               = MyMetrics.InitInt("xsq.obd.charge.duration", SM_STALE_MID, 0, Minutes);
   mt_obd_mt_day_prewarn         = MyMetrics.InitInt("xsq.obd.mt.day.prewarn", SM_STALE_MID, 45, Other);
   mt_obd_mt_day_usual           = MyMetrics.InitInt("xsq.obd.mt.day.usual", SM_STALE_MID, 0, Other);
@@ -137,7 +137,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_tpms_alert                  = MyMetrics.InitVector<short> ("xsq.tpms.alert", SM_STALE_MID, nullptr, Other);
   mt_tpms_low_batt               = MyMetrics.InitVector<short> ("xsq.tpms.lowbatt", SM_STALE_MID, nullptr, Other);
   mt_tpms_missing_tx             = MyMetrics.InitVector<short> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);
-  // Pre-allocate TPMS vectors for 4 wheels to avoid heap fragmentation
+    // Pre-allocate TPMS vectors for 4 wheels to avoid heap fragmentation
   mt_tpms_temp->SetElemValue(3, 0.0f);
   StdMetrics.ms_v_tpms_temp->SetElemValue(3, 0.0f);
   mt_tpms_pressure->SetElemValue(3, 0.0f);
@@ -151,7 +151,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
   mt_bcm_gen_mode                = MyMetrics.InitString("xsq.bcm.gen.mode", SM_STALE_MID, "UNKNOWN", Other);
-
+  // 0x7EC EVC metrics
   mt_evc_hv_energy              = MyMetrics.InitFloat("xsq.evc.hv.energy", SM_STALE_MID, 0, kWh);
   mt_evc_LV_DCDC_act_req        = MyMetrics.InitBool("xsq.evc.12V.dcdc.act.req", SM_STALE_MID, false);
   mt_evc_LV_DCDC_amps           = MyMetrics.InitFloat("xsq.evc.12V.dcdc.amps", SM_STALE_MID, 0, Amps);
@@ -162,53 +162,46 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_evc_LV_USM_volt            = MyMetrics.InitFloat("xsq.evc.12V.volt.usm", SM_STALE_MIN, 0, Volts);
   mt_evc_LV_batt_voltage_can    = MyMetrics.InitFloat("xsq.evc.12V.volt.can", SM_STALE_MIN, 0, Volts);
   mt_evc_LV_batt_voltage_req    = MyMetrics.InitFloat("xsq.evc.12V.batt.volt.req.int", SM_STALE_MIN, 0, Volts);
-
+  mt_evc_traceability           = MyMetrics.InitString("xsq.evc.traceability", SM_STALE_MAX, "");
+  // 0x793 OBL charger metrics
   mt_obl_fastchg                = MyMetrics.InitBool("xsq.obl.fastchg", SM_STALE_MIN, false);
   mt_obl_main_volts             = MyMetrics.InitVector<float>("xsq.obl.volts", SM_STALE_HIGH, nullptr, Volts);
   mt_obl_main_amps              = MyMetrics.InitVector<float>("xsq.obl.amps", SM_STALE_HIGH, nullptr, Amps);
   mt_obl_main_CHGpower          = MyMetrics.InitVector<float>("xsq.obl.power", SM_STALE_HIGH, nullptr, kW);
-  // Pre-allocate OBL charger vectors for 3 phases to avoid reallocs
+    // Pre-allocate OBL charger vectors for 3 phases to avoid reallocs
   mt_obl_main_volts->SetElemValue(2, 0.0f);
   mt_obl_main_amps->SetElemValue(2, 0.0f);
   mt_obl_main_CHGpower->SetElemValue(1, 0.0f);
-  // OBL misc values: Index 0=freq, 1=ground_resistance, 2=max_current
+    // OBL misc values: Index 0=freq, 1=ground_resistance, 2=max_current
   mt_obl_misc                   = MyMetrics.InitVector<float>("xsq.obl.misc", SM_STALE_MID, nullptr, Other);
   mt_obl_misc->SetElemValue(2, 0.0f);  // Pre-allocate 3 entries
   mt_obl_main_leakage_diag      = MyMetrics.InitString("xsq.obl.leakdiag", SM_STALE_MID, "", Other);
-  // Leakage currents as vector: Index 0=dc, 1=hf10kHz, 2=hf, 3=lf
+    // Leakage currents as vector: Index 0=dc, 1=hf10kHz, 2=hf, 3=lf
   mt_obl_leakage_currents       = MyMetrics.InitVector<float>("xsq.obl.current", SM_STALE_MID, nullptr, Amps);
   mt_obl_leakage_currents->SetElemValue(3, 0.0f);  // Pre-allocate 4 entries
-
+  // 0x7BB BMS metrics
   mt_bms_temps                  = MyMetrics.InitVector<float>("xsq.bms.temps", SM_STALE_HIGH, nullptr, Celcius);
   mt_bms_temps->SetElemValue(30, 0.0f);  // Pre-allocate 31 temp sensors to avoid reallocs
-  mt_bms_CV_Range_min           = MyMetrics.InitFloat("xsq.bms.cv.range.min", SM_STALE_MID, 0, Volts);
-  mt_bms_CV_Range_max           = MyMetrics.InitFloat("xsq.bms.cv.range.max", SM_STALE_MID, 0, Volts);
-  mt_bms_CV_Range_mean          = MyMetrics.InitFloat("xsq.bms.cv.range.mean", SM_STALE_MID, 0, Volts);
-  mt_bms_contactor_cycles       = MyMetrics.InitInt("xsq.bms.contactor.cycles", SM_STALE_HIGH, 0);
-  mt_bms_contactor_cycles_max   = MyMetrics.InitInt("xsq.bms.contactor.cycles.max", SM_STALE_HIGH, 0);
-  mt_real_soc                   = MyMetrics.InitFloat("xsq.bms.soc.real", SM_STALE_MID, 0, Percentage);
-  mt_display_soc                = MyMetrics.InitFloat("xsq.bms.soc.display", SM_STALE_MID, 0, Percentage);
+  mt_bms_voltages               = MyMetrics.InitVector<float>("xsq.bms.voltages", SM_STALE_MID, nullptr, Volts);
+  mt_bms_voltages->SetElemValue(5, 0.0f);  // Pre-allocate: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor, [5]=cv_sum
+  mt_bms_contactor_cycles       = MyMetrics.InitVector<int>("xsq.bms.contactor.cycles", SM_STALE_HIGH, nullptr);
+  mt_bms_contactor_cycles->SetElemValue(1, 0);  // Pre-allocate Max/Total entries
+  mt_bms_soc_values             = MyMetrics.InitVector<float>("xsq.bms.soc.values", SM_STALE_MID, nullptr, Percentage);
+  mt_bms_soc_values->SetElemValue(4, 0.0f);  // Pre-allocate: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
   mt_bms_soc_recal_state        = MyMetrics.InitString("xsq.bms.soc.recal.state", SM_STALE_MID, "");
-  mt_bms_soc_min                = MyMetrics.InitFloat("xsq.bms.soc.min", SM_STALE_MID, 0, Percentage);
-  mt_bms_soc_max                = MyMetrics.InitFloat("xsq.bms.soc.max", SM_STALE_MID, 0, Percentage);
   mt_bms_soh                    = MyMetrics.InitFloat("xsq.bms.soh", SM_STALE_MID, 0, Percentage);
   mt_bms_cap_usable_max         = MyMetrics.InitFloat("xsq.bms.cap.usable.max", SM_STALE_MID, 0, AmpHours);
   mt_bms_cap_init               = MyMetrics.InitFloat("xsq.bms.cap.init", SM_STALE_MID, 0, AmpHours);
   mt_bms_cap_estimate           = MyMetrics.InitFloat("xsq.bms.cap.estimate", SM_STALE_MID, 0, AmpHours);
-  mt_bms_mileage                = MyMetrics.InitFloat("xsq.bms.mileage", SM_STALE_HIGH, 0, Kilometers);
+  mt_bms_mileage                = MyMetrics.InitInt("xsq.bms.mileage", SM_STALE_HIGH, 0, Kilometers);
   mt_bms_ocv_voltage            = MyMetrics.InitFloat("xsq.bms.ocv.voltage", SM_STALE_MID, 0, Volts);
-  mt_bms_soc                    = MyMetrics.InitFloat("xsq.bms.soc", SM_STALE_MID, 0, Percentage);
   mt_bms_cap_loss_percent       = MyMetrics.InitFloat("xsq.bms.cap.loss.pct", SM_STALE_HIGH, 0, Percentage);
   mt_bms_voltage_state          = MyMetrics.InitString("xsq.bms.voltage.state", SM_STALE_MID, "");
   mt_bms_cell_resistance        = MyMetrics.InitVector<float>("xsq.bms.cell.resistance", SM_STALE_HIGH, nullptr, Other);
   mt_bms_cell_resistance->SetElemValue(CELLCOUNT - 1, 0.0f);  // Pre-allocate for all 96 cells
   mt_bms_nominal_energy         = MyMetrics.InitFloat("xsq.bms.energy.nominal", SM_STALE_HIGH, 0, kWh);
-  mt_bms_BattLinkVoltage        = MyMetrics.InitFloat("xsq.bms.batt.link.voltage", SM_STALE_MID, 0, Volts);
-  mt_bms_BattContactorVoltage   = MyMetrics.InitFloat("xsq.bms.batt.contactor.voltage", SM_STALE_MID, 0, Volts);
-  mt_bms_BattCV_Sum             = MyMetrics.InitFloat("xsq.bms.batt.cv.sum", SM_STALE_MID, 0, Volts);
   mt_bms_BattPower_power        = MyMetrics.InitFloat("xsq.bms.batt.power", SM_STALE_MID, 0, kW);
   mt_bms_HVcontactStateTXT      = MyMetrics.InitString("xsq.bms.contact", SM_STALE_MID, "", Other);
-  mt_bms_HV                     = MyMetrics.InitFloat("xsq.bms.hv", SM_STALE_MID, 0, Volts);
   mt_bms_EVmode_txt             = MyMetrics.InitString("xsq.bms.ev.mode", SM_STALE_MID, "", Other);
   mt_bms_12v                    = MyMetrics.InitFloat("xsq.bms.12v", SM_STALE_MID, 0, Volts);
   mt_bms_interlock_hvplug       = MyMetrics.InitBool("xsq.bms.interlock.hvplug",SM_STALE_MID, false);

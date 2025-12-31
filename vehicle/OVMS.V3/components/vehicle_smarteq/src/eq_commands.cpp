@@ -798,9 +798,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandMaintenance(int verbos
     writer->printf("  days: %d\n", mt_obd_mt_day_usual->AsInt());
     writer->printf("  level: %s\n", mt_obd_mt_level->AsString().c_str());
     writer->printf("  km: %d\n", mt_obd_mt_km_usual->AsInt());    
-    writer->printf("  HV contactor cycles: %d / %d\n", 
-                   mt_bms_contactor_cycles->AsInt(), 
-                   mt_bms_contactor_cycles_max->AsInt());
+    writer->printf("  remaining HV contactor cycles: %d / %d\n", 
+                   mt_bms_contactor_cycles->GetElemValue(1), 
+                   mt_bms_contactor_cycles->GetElemValue(0));
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
     return Success;
 }
@@ -1059,24 +1059,26 @@ void OvmsVehicleSmartEQ::xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsComm
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity, OvmsWriter* writer) {
-  writer->puts("=== ED4scan-like BMS Data Output ===\n");
+  writer->puts("=== ED4scan-like BMS/EVC Data Output ===\n");
   writer->printf("  HV Batt Serialnumber:    %s\n", mt_bat_serial->AsString().c_str());
   writer->printf("  BMS Serialnumber:        %s\n", mt_bms_prod_data->AsString().c_str());
+  writer->printf("  EVC Traceability:        %s\n", mt_evc_traceability->AsString().c_str());
+  writer->printf("  Battery Mileage:         %.0f km\n", mt_bms_mileage->AsFloat());
+  writer->printf("  Odometer:                %.0f km\n", StdMetrics.ms_v_pos_odometer->AsFloat()); 
 
   writer->puts("--- Battery Health (PID 0x61) ---");
-  writer->printf("  State of Health:         %.1f%%\n", mt_bms_soh->AsFloat());
+  writer->printf("  State of Health:         %.0f%%\n", mt_bms_soh->AsFloat());
   writer->printf("  Usable Capacity:         %.2f Ah\n", mt_bms_cap_usable_max->AsFloat());
-  writer->printf("  Battery Mileage:         %.0f km\n", mt_bms_mileage->AsFloat());
   
   writer->puts("\n--- HV Contactor Cycles (PID 0x02) ---");
-  writer->printf("  Max Cycles:              %d\n", mt_bms_contactor_cycles_max->AsInt());
-  writer->printf("  Available Cycles:        %d\n", mt_bms_contactor_cycles->AsInt());
+  writer->printf("  Max Cycles:              %d\n", mt_bms_contactor_cycles->GetElemValue(0));
+  writer->printf("  remaining Cycles:        %d\n", mt_bms_contactor_cycles->GetElemValue(1));
   
   writer->puts("\n--- SOC Kernel Data (PID 0x08) ---");
   writer->printf("  Open Circuit Voltage:    %.2f V\n", mt_bms_ocv_voltage->AsFloat());
-  writer->printf("  Real SOC (Min):          %.2f%%\n", mt_bms_soc_min->AsFloat());
-  writer->printf("  Real SOC (Max):          %.2f%%\n", mt_bms_soc_max->AsFloat());
-  writer->printf("  Kernel SOC:              %.2f%%\n", mt_bms_soc->AsFloat());
+  writer->printf("  Real SOC (Min):          %.2f%%\n", mt_bms_soc_values->GetElemValue(2));
+  writer->printf("  Real SOC (Max):          %.2f%%\n", mt_bms_soc_values->GetElemValue(3));
+  writer->printf("  Kernel SOC:              %.2f%%\n", mt_bms_soc_values->GetElemValue(0));
   writer->printf("  Capacity Loss:           %.2f%%\n", mt_bms_cap_loss_percent->AsFloat());
   writer->printf("  Initial Capacity:        %.2f Ah\n", mt_bms_cap_init->AsFloat());
   writer->printf("  Estimated Capacity:      %.2f Ah\n", mt_bms_cap_estimate->AsFloat());
@@ -1084,19 +1086,31 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   
   writer->puts("\n--- SOC Recalibration (PID 0x25) ---");
   writer->printf("  Recalibration State:     %s\n", mt_bms_soc_recal_state->AsString().c_str());
-  writer->printf("  Display SOC:             %.2f%%\n", mt_display_soc->AsFloat());
+  writer->printf("  Display SOC:             %.2f%%\n", mt_bms_soc_values->GetElemValue(4));
   
   writer->puts("\n--- Battery State (PID 0x07) ---");
-  writer->printf("  Cell Voltage Min:        %.3f V\n", mt_bms_CV_Range_min->AsFloat());
-  writer->printf("  Cell Voltage Max:        %.3f V\n", mt_bms_CV_Range_max->AsFloat());
-  writer->printf("  Cell Voltage Mean:       %.3f V\n", mt_bms_CV_Range_mean->AsFloat());
-  writer->printf("  Link Voltage:            %.2f V\n", mt_bms_BattLinkVoltage->AsFloat());
-  writer->printf("  Pack Voltage:            %.2f V\n", mt_bms_BattContactorVoltage->AsFloat());
+  writer->printf("  Cell Voltage Min:        %.3f V\n", mt_bms_voltages->GetElemValue(0));
+  writer->printf("  Cell Voltage Max:        %.3f V\n", mt_bms_voltages->GetElemValue(1));
+  writer->printf("  Cell Voltage Mean:       %.3f V\n", mt_bms_voltages->GetElemValue(2));
+  writer->printf("  Link Voltage:            %.2f V\n", mt_bms_voltages->GetElemValue(3));
+  writer->printf("  Pack Voltage:            %.2f V\n", mt_bms_voltages->GetElemValue(4));
   writer->printf("  Pack Current:            %.2f A\n", StdMetrics.ms_v_bat_current->AsFloat());
   writer->printf("  Pack Power:              %.2f kW\n", mt_bms_BattPower_power->AsFloat());
   writer->printf("  Contactor State:         %s\n", mt_bms_HVcontactStateTXT->AsString().c_str());
   writer->printf("  Vehicle Mode:            %s\n", mt_bms_EVmode_txt->AsString().c_str());
   writer->printf("  12V BMS System:          %.2f V\n", mt_bms_12v->AsFloat());
+
+  writer->puts("\n--- EVC Data (0x7EC) ---");
+  writer->printf("  HV Energy:               %.3f kWh\n", mt_evc_hv_energy->AsFloat());
+  writer->printf("  DCDC Active Request:     %s\n", mt_evc_LV_DCDC_act_req->AsBool() ? "Yes" : "No");
+  writer->printf("  DCDC Voltage Request:    %.2f V\n", mt_evc_LV_DCDC_volt_req->AsFloat());
+  writer->printf("  DCDC Voltage:            %.2f V\n", mt_evc_LV_DCDC_volt->AsFloat());
+  writer->printf("  DCDC Current:            %.1f A\n", mt_evc_LV_DCDC_amps->AsFloat());
+  writer->printf("  DCDC Power:              %.0f W\n", mt_evc_LV_DCDC_power->AsFloat());
+  writer->printf("  DCDC Load:               %.1f%%\n", mt_evc_LV_DCDC_load->AsFloat());
+  writer->printf("  USM 12V Voltage:         %.2f V\n", mt_evc_LV_USM_volt->AsFloat());
+  writer->printf("  12V Battery (CAN):       %.2f V\n", mt_evc_LV_batt_voltage_can->AsFloat());
+  writer->printf("  12V Battery Req (int):   %.2f V\n", mt_evc_LV_batt_voltage_req->AsFloat());
 
   int show = mt_ed4_values->AsInt(10); // number of cells to show
 

@@ -236,6 +236,7 @@ public:
 
     void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
+    void PollReply_EVC_Traceability(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Volt(const char* data, uint16_t reply_len);
@@ -357,36 +358,26 @@ public:
     OvmsMetricFloat         *mt_evc_LV_USM_volt;        //!< USM 14V voltage (CAN)
     OvmsMetricFloat         *mt_evc_LV_batt_voltage_can; //!< 14V battery voltage (CAN)
     OvmsMetricFloat         *mt_evc_LV_batt_voltage_req; //!< Internal requested 14V
+    OvmsMetricString        *mt_evc_traceability;        //!< Frame Traceability: ITG/Factory/Serial
 
     OvmsMetricVector<float> *mt_bms_temps;              // BMS temperatures
-    OvmsMetricFloat         *mt_bms_CV_Range_min;       //!< minimum cell voltage in V, no offset
-    OvmsMetricFloat         *mt_bms_CV_Range_max;       //!< maximum cell voltage in V, no offset
-    OvmsMetricFloat         *mt_bms_CV_Range_mean;      //!< average cell voltage in V, no offset
-    OvmsMetricInt           *mt_bms_contactor_cycles;        //!< Total HV contactor cycles
-    OvmsMetricInt           *mt_bms_contactor_cycles_max;    //!< Max HV contactor cycles
-    OvmsMetricFloat         *mt_real_soc;                    //!< Real SOC (%)
-    OvmsMetricFloat         *mt_display_soc;                 //!< Display SOC (%)
+    OvmsMetricVector<float> *mt_bms_voltages;            //!< Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
+    OvmsMetricVector<int>   *mt_bms_contactor_cycles;        //!< Max/Total HV contactor cycles
+    OvmsMetricVector<float> *mt_bms_soc_values;              //!< SOC values: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
     OvmsMetricString        *mt_bms_soc_recal_state;         //!< SOC Recalibration State
-    OvmsMetricFloat         *mt_bms_soc_min;                 //!< Real SOC minimum
-    OvmsMetricFloat         *mt_bms_soc_max;                 //!< Real SOC maximum
     OvmsMetricFloat         *mt_bms_soh;                     //!< State of Health (%)
     OvmsMetricFloat         *mt_bms_cap_usable_max;          //!< Max usable capacity (Ah)
     OvmsMetricFloat         *mt_bms_cap_init;                //!< Initial capacity (Ah)
     OvmsMetricFloat         *mt_bms_cap_estimate;            //!< Estimated capacity (Ah)
-    OvmsMetricFloat         *mt_bms_mileage;                 //!< Battery mileage (km)
+    OvmsMetricInt           *mt_bms_mileage;                 //!< Battery mileage (km)
     OvmsMetricFloat         *mt_bms_ocv_voltage;             //!< Open Circuit Voltage of Battery (V)
-    OvmsMetricFloat         *mt_bms_soc;                     //!< SOC kernel data (%)
     OvmsMetricFloat         *mt_bms_cap_loss_percent;        //!< Percent Capacity Loss (%)
     OvmsMetricString        *mt_bms_voltage_state;           //!< Voltage State text
     OvmsMetricVector<float> *mt_bms_cell_resistance;         //!< Cell resistances (mOhm)
     OvmsMetricFloat         *mt_bms_nominal_energy;          //!< Nominal battery energy (kWh)
-    OvmsMetricFloat         *mt_bms_BattLinkVoltage;    //!< Link voltage to drivetrain inverter
-    OvmsMetricFloat         *mt_bms_BattContactorVoltage;   //!< voltage at the battery contactor
-    OvmsMetricFloat         *mt_bms_BattCV_Sum;         //!< Sum of single cell voltages
     OvmsMetricFloat         *mt_bms_BattPower_power;    //!< calculated power of sample in kW
     OvmsMetricInt           *mt_bms_HVcontactStateCode; //!< contactor state: 0 := OFF, 1 := PRECHARGE, 2 := ON
     OvmsMetricString        *mt_bms_HVcontactStateTXT;  //!< contactor state text
-    OvmsMetricFloat         *mt_bms_HV;                 //!< total voltage of HV system in V
     OvmsMetricInt           *mt_bms_EVmode;             //!< Mode the EV is actually in: 0 = none, 1 = slow charge, 2 = fast charge, 3 = normal, 4 = Quick Drop, 5 = Cameleon (Non-Isolated Charging)
     OvmsMetricString        *mt_bms_EVmode_txt;         //!< Mode the EV is actually in text
     OvmsMetricFloat         *mt_bms_12v;                //!< 12V onboard voltage / Clamp 30 Voltage
