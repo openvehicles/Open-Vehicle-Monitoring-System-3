@@ -191,6 +191,7 @@ public:
     static void xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
     int m_candata_timer;
@@ -209,6 +210,7 @@ public:
 
   protected:
     void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
     void Ticker60(uint32_t ticker) override;
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
@@ -309,6 +311,8 @@ public:
 
   protected:
     OvmsCommand *cmd_xsq;                               // command for xsq
+    OvmsCommand *cmd_tpms;                              // command for tpms
+    OvmsCommand *cmd_show;                              // command for show
     OvmsMetricBool          *mt_bus_awake;              // Can Bus active
     OvmsMetricString        *mt_canbyte;                //!< DDT4all canbyte
     OvmsMetricFloat         *mt_adc_factor;             // calculated ADC factor for 12V measurement
@@ -336,42 +340,25 @@ public:
     OvmsMetricFloat         *mt_worst_consumption;      // Worst average consumption (kWh/100km)
     OvmsMetricFloat         *mt_best_consumption;       // Best average consumption (kWh/100km)
     OvmsMetricFloat         *mt_bcb_power_mains;        // BCB power from mains (W)
-    // 0x634 metrics
-    OvmsMetricInt           *mt_charging_timer_value;   // Charging timer value (min)
-    OvmsMetricInt           *mt_charging_timer_status;  // Charging timer status
-    OvmsMetricInt           *mt_charge_prohibited;      // Charge prohibited status
-    OvmsMetricInt           *mt_charge_authorization;   // Charge authorization status
-    OvmsMetricInt           *mt_ext_charge_manager;     // External charging manager
 
     OvmsMetricFloat         *mt_pos_odometer_trip;           // odometer trip in km 
     OvmsMetricFloat         *mt_pos_odometer_start;          // remind odometer start
     OvmsMetricFloat         *mt_pos_odometer_start_total;    // remind odometer start for kWh/100km
     OvmsMetricFloat         *mt_pos_odometer_trip_total;     // counted km for kWh/100km
+    
+    // EVC 12V values: Index 0=dcdc_volt_req, 1=dcdc_volt, 2=dcdc_power, 3=usm_volt, 4=batt_volt_can, 5=batt_volt_req, 6=dcdc_amps, 7=dcdc_load
+    OvmsMetricVector<float> *mt_evc_dcdc;                    //!< EVC 12V system values vector
+    OvmsMetricString        *mt_evc_traceability;            //!< Frame Traceability: ITG/Factory/Serial
 
-    OvmsMetricFloat         *mt_evc_hv_energy;          //!< available energy in kWh
-    OvmsMetricBool          *mt_evc_LV_DCDC_act_req;    //!< indicates if DC/DC LV system is active, not 12V battery!
-    OvmsMetricFloat         *mt_evc_LV_DCDC_amps;       //!< current of DC/DC LV system, not 12V battery!
-    OvmsMetricFloat         *mt_evc_LV_DCDC_load;       //!< load in % of DC/DC LV system, not 12V battery!
-    OvmsMetricFloat         *mt_evc_LV_DCDC_volt_req;   //!< voltage request in V of DC/DC LV system, not 12V battery!
-    OvmsMetricFloat         *mt_evc_LV_DCDC_volt;       //!< voltage in V of DC/DC output of LV system, not 12V battery!
-    OvmsMetricFloat         *mt_evc_LV_DCDC_power;      //!< power in W (x/10) of DC/DC output of LV system, not 12V battery!
-    OvmsMetricFloat         *mt_evc_LV_USM_volt;        //!< USM 14V voltage (CAN)
-    OvmsMetricFloat         *mt_evc_LV_batt_voltage_can; //!< 14V battery voltage (CAN)
-    OvmsMetricFloat         *mt_evc_LV_batt_voltage_req; //!< Internal requested 14V
-    OvmsMetricString        *mt_evc_traceability;        //!< Frame Traceability: ITG/Factory/Serial
-
-    OvmsMetricVector<float> *mt_bms_temps;              // BMS temperatures
-    OvmsMetricVector<float> *mt_bms_voltages;            //!< Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
+    OvmsMetricVector<float> *mt_bms_temps;                   // BMS temperatures
+    OvmsMetricVector<float> *mt_bms_voltages;                //!< Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
     OvmsMetricVector<int>   *mt_bms_contactor_cycles;        //!< Max/Total HV contactor cycles
     OvmsMetricVector<float> *mt_bms_soc_values;              //!< SOC values: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
     OvmsMetricString        *mt_bms_soc_recal_state;         //!< SOC Recalibration State
     OvmsMetricFloat         *mt_bms_soh;                     //!< State of Health (%)
-    OvmsMetricFloat         *mt_bms_cap_usable_max;          //!< Max usable capacity (Ah)
-    OvmsMetricFloat         *mt_bms_cap_init;                //!< Initial capacity (Ah)
-    OvmsMetricFloat         *mt_bms_cap_estimate;            //!< Estimated capacity (Ah)
+    // BMS capacity values: Index 0=usable_max, 1=init, 2=estimate, 3=loss_pct
+    OvmsMetricVector<float> *mt_bms_cap;                     //!< BMS capacity values vector
     OvmsMetricInt           *mt_bms_mileage;                 //!< Battery mileage (km)
-    OvmsMetricFloat         *mt_bms_ocv_voltage;             //!< Open Circuit Voltage of Battery (V)
-    OvmsMetricFloat         *mt_bms_cap_loss_percent;        //!< Percent Capacity Loss (%)
     OvmsMetricString        *mt_bms_voltage_state;           //!< Voltage State text
     OvmsMetricVector<float> *mt_bms_cell_resistance;         //!< Cell resistances (mOhm)
     OvmsMetricFloat         *mt_bms_nominal_energy;          //!< Nominal battery energy (kWh)
@@ -380,7 +367,6 @@ public:
     OvmsMetricString        *mt_bms_HVcontactStateTXT;  //!< contactor state text
     OvmsMetricInt           *mt_bms_EVmode;             //!< Mode the EV is actually in: 0 = none, 1 = slow charge, 2 = fast charge, 3 = normal, 4 = Quick Drop, 5 = Cameleon (Non-Isolated Charging)
     OvmsMetricString        *mt_bms_EVmode_txt;         //!< Mode the EV is actually in text
-    OvmsMetricFloat         *mt_bms_12v;                //!< 12V onboard voltage / Clamp 30 Voltage
     OvmsMetricBool          *mt_bms_interlock_hvplug;       //!< HV plug interlock
     OvmsMetricBool          *mt_bms_interlock_service;      //!< Service disconnect interlock
     OvmsMetricInt           *mt_bms_fusi_mode;              //!< FUSI mode code
@@ -393,11 +379,9 @@ public:
     OvmsMetricVector<float> *mt_obl_main_volts;         //!< AC voltage of L1, L2, L3
     OvmsMetricVector<float> *mt_obl_main_CHGpower;      //!< Power of rail1, rail2 W (x/2) & max available kw (x/64)    
     OvmsMetricBool          *mt_obl_fastchg;            // 22kw fast charge enabled
-    // OBL misc values: Index 0=freq, 1=ground_resistance, 2=max_current
+    // OBL misc values: Index 0=freq, 1=ground_resistance, 2=max_current, 3=dc_current, 4=hf10kHz_current, 5=hf_current, 6=lf_current
     OvmsMetricVector<float> *mt_obl_misc;               //!< OBL misc values vector
     OvmsMetricString        *mt_obl_main_leakage_diag;                //!< Leakage diagnostic
-    // Leakage currents: Index 0=dc, 1=hf10kHz, 2=hf, 3=lf
-    OvmsMetricVector<float> *mt_obl_leakage_currents;               //!< Leakage currents vector (A)
 
     OvmsMetricInt           *mt_obd_duration;           //!< obd duration
     OvmsMetricInt           *mt_obd_mt_day_prewarn;     //!< Maintaince pre warning days
@@ -405,11 +389,8 @@ public:
     OvmsMetricInt           *mt_obd_mt_km_usual;        //!< Maintaince usual km
     OvmsMetricString        *mt_obd_mt_level;           //!< Maintaince level
  
-    OvmsMetricVector<float> *mt_tpms_temp;              // 4 wheel temperatures (°C)
-    OvmsMetricVector<float> *mt_tpms_pressure;          // 4 wheel pressures (kPa)
-    OvmsMetricVector<short> *mt_tpms_alert;             // 4 wheel alert flags (0=ok, 1=warning, 2=alert)
-    OvmsMetricVector<short>  *mt_tpms_low_batt;          // 4 wheel low battery flags (0=ok, 1=low)
-    OvmsMetricVector<short>  *mt_tpms_missing_tx;        // 4 wheel missing transmitter flags (0=ok, 1=missing)    
+    OvmsMetricVector<short> *mt_tpms_low_batt;          // 4 wheel low battery flags (0=ok, 1=low)
+    OvmsMetricVector<short> *mt_tpms_missing_tx;        // 4 wheel missing transmitter flags (0=ok, 1=missing)    
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
 
     OvmsMetricString        *mt_bcm_vehicle_state;      //!< vehicle state

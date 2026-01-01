@@ -50,26 +50,26 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     HandleEnergy();
     HandleTripcounter();
     }
-    
-  if (ticker % 10 == 0) // Every 10 seconds
-    {
-    // reactivate door lock warning if the car is parked and unlocked
-    if( m_enable_lock_state && 
-          m_warning_unlocked &&
-          (StdMetrics.ms_v_door_fl->AsBool()  || 
-            StdMetrics.ms_v_door_fr->AsBool() ||
-            StdMetrics.ms_v_door_rl->AsBool() ||
-            StdMetrics.ms_v_door_rr->AsBool() ||
-            StdMetrics.ms_v_door_trunk->AsBool() ||
-            StdMetrics.ms_v_door_hood->AsBool())) 
-      {
-      StdMetrics.ms_v_env_parktime->SetValue(0); // reset parking time
-      m_warning_unlocked = false;
-      }
+  }
 
-    if(m_enable_LED_state) 
-      OnlineState();
-    } // end every 10 seconds
+void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker) 
+  {
+  // reactivate door lock warning if the car is parked and unlocked
+  if( m_enable_lock_state && 
+        m_warning_unlocked &&
+        (StdMetrics.ms_v_door_fl->AsBool()  || 
+          StdMetrics.ms_v_door_fr->AsBool() ||
+          StdMetrics.ms_v_door_rl->AsBool() ||
+          StdMetrics.ms_v_door_rr->AsBool() ||
+          StdMetrics.ms_v_door_trunk->AsBool() ||
+          StdMetrics.ms_v_door_hood->AsBool())) 
+    {
+    StdMetrics.ms_v_env_parktime->SetValue(0); // reset parking time
+    m_warning_unlocked = false;
+    }
+
+  if(m_enable_LED_state) 
+    OnlineState();
   }
 
 void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {  
@@ -108,8 +108,8 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       m_ADCfactor_recalc = false;
       m_ADCfactor_recalc_timer = 4;
       // calculate new ADC factor      
-      float can12V = mt_evc_LV_DCDC_volt->AsFloat(0.0f);
-      if (mt_evc_LV_DCDC_act_req->AsBool(false))
+      float can12V = mt_evc_dcdc->GetElemValue(1);   // DCDC voltage
+      if (StdMetrics.ms_v_env_charging12v->AsBool(false))
         {
         ReCalcADCfactor(can12V, nullptr);  // nullptr = no Log-Output
         ESP_LOGI(TAG, "Auto ADC recalibration started (%.2fV)", can12V);

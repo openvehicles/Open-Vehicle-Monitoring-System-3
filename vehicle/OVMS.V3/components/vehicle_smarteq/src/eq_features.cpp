@@ -153,18 +153,15 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
     
   // Set the metrics  
   StdMetrics.ms_v_tpms_pressure->SetValue(tpms_pressure);
-  mt_tpms_pressure->SetValue(tpms_pressure);
   
   if (m_tpms_temp_enable)
     {
     StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp);
-    mt_tpms_temp->SetValue(tpms_temp);    
     }
     
   if (m_tpms_alert_enable)
     {
     StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
-    mt_tpms_alert->SetValue(tpms_alert);    
     }
 }
 
