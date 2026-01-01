@@ -491,13 +491,11 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
       // Refresh values from config/metrics to show latest state after command execution
       calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", calcADCfactor);
       adc_factor  = MyConfig.GetParamValue("system.adc", "factor12v", adc_factor.empty() ? "195.7" : adc_factor);
-      if (sq->mt_evc_LV_USM_volt) {
-        std::string latest = sq->mt_evc_LV_USM_volt->AsString("0.000");
-        if (!latest.empty())
-          onboard_12v = latest;
+      if (sq->mt_evc_dcdc && sq->mt_evc_dcdc->GetElemValue(1) > 10.0f) {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%.3f", sq->mt_evc_dcdc->GetElemValue(1));  // DCDC voltage
+        onboard_12v = buf;
       }
-      if (onboard_12v.empty())
-        onboard_12v  = sq->mt_evc_LV_USM_volt->AsString("0.000");
       if (onboard_12v.empty())
         onboard_12v = "12.600";
       if (sq->mt_adc_factor_history)
@@ -527,8 +525,11 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
     // read configuration:
     calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", false);
     adc_factor  = MyConfig.GetParamValue("system.adc", "factor12v", "195.7");
-    if (sq->mt_evc_LV_USM_volt)
-      onboard_12v  = sq->mt_evc_LV_USM_volt->AsString("0.000");
+    if (sq->mt_evc_dcdc && sq->mt_evc_dcdc->GetElemValue(1) > 10.0f) {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%.3f", sq->mt_evc_dcdc->GetElemValue(1));  // DCDC voltage
+        onboard_12v = buf;
+      }
     if (onboard_12v.empty())
       onboard_12v = "12.600";
     if (sq->mt_adc_factor_history)

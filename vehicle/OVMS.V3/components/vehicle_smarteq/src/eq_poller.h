@@ -76,7 +76,7 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3301, {  0,10,10,10 }, 0, ISOTP_STD }, // USM 14V voltage (CAN)
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3433, {  0,60,60,60 }, 0, ISOTP_STD }, // Battery voltage request (internal)
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, {  0,60,60,60 }, 0, ISOTP_STD }, // Cabin blower command
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, {  0,60,60,60 }, 0, ISOTP_STD }, // Battery voltage 14V request
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, {  0,60,60,60 }, 0, ISOTP_STD }, // Battery voltage 14V
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, {  0,3600,0,0 }, 0, ISOTP_STD }, // Frame Traceability Information 
 };
 

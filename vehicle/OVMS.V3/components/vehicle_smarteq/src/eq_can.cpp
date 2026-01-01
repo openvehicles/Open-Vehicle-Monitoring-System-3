@@ -160,23 +160,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       mt_best_consumption->SetValue(best_consumption);
       mt_bcb_power_mains->SetValue(bcb_power_mains);
       break;
-      }    
-    case 0x634:
-      REQ_DLC(2);
-      {
-      uint8_t raw_timer = CAN_BYTE(1) & 0x7F;
-      uint16_t charging_timer_value = (uint16_t)raw_timer * 15;
-      uint8_t charging_timer_status = CAN_BYTE(2) & 0x03;
-      uint8_t charge_prohibited = (CAN_BYTE(2) >> 2) & 0x03;
-      uint8_t charge_authorization = (CAN_BYTE(2) >> 4) & 0x03;
-      uint8_t ext_charge_manager = (CAN_BYTE(2) >> 6) & 0x03;
-      
-      mt_charging_timer_value->SetValue(charging_timer_value);
-      mt_charging_timer_status->SetValue(charging_timer_status);
-      mt_charge_prohibited->SetValue(charge_prohibited);
-      mt_charge_authorization->SetValue(charge_authorization);
-      mt_ext_charge_manager->SetValue(ext_charge_manager);
-      break;
       }
     case 0x637:
       REQ_DLC(6);

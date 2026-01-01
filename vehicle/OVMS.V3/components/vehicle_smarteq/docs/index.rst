@@ -57,18 +57,21 @@ You can use some DDT4all commands. A list of all possible commands you can find 
 -------------------------
 Shell commands:
 -------------------------
-xsq start                  -- Show OBD trip start data
-xsq reset                  -- Show OBD trip total data
-xsq counter                -- Show vehicle trip counter
-xsq total                  -- Show vehicle trip total
-xsq mtdata                 -- Show maintenance data
-xsq tpmsset                -- Set TPMS dummy value for testing
+xsq mtdata                 -- maintenance data
 xsq ddt4all <number>       -- Execute DDT4all command by number
 xsq ddt4list               -- List all available DDT4all commands
 xsq calcadc [voltage]      -- Recalculate ADC factor (optional: 12V voltage override)
 xsq wakeup                 -- Wake up the car
 xsq ed4scan                -- Output ED4scan-like BMS diagnostic data
 xsq preset                 -- Apply smart EQ config preset
+
+xsq tpms stat              -- Show smartEQ TPMS status incl. battery & missing
+xsq tpms setdummy          -- Set TPMS dummy value for testing
+
+xsq show start             -- Show OBD trip start data
+xsq show reset             -- Show OBD trip total data
+xsq show counter           -- Show vehicle trip counter
+xsq show total             -- Show vehicle trip total data
 
 -------------------------
 Known Issues
@@ -89,11 +92,6 @@ metrics
     xsq.v.bat.consumption.worst           -- Worst average consumption [kWh/100km]
     xsq.v.bat.consumption.best            -- Best average consumption [kWh/100km]
     xsq.v.charge.bcb.power                -- BCB power from mains [W]
-    xsq.v.charge.timer.value              -- Charging timer value [min]
-    xsq.v.charge.timer.status             -- Charging timer status
-    xsq.v.charge.prohibited               -- Charge prohibited status
-    xsq.v.charge.authorization            -- Charge authorization status
-    xsq.v.charge.ext.manager              -- External charging manager status
     xsq.v.reset.time                      -- Trip time (reset) [hh:mm]
     xsq.v.reset.consumption               -- Average trip consumption (reset) [kWh/100km]
     xsq.v.reset.distance                  -- Trip distance (reset) [km]
@@ -118,57 +116,41 @@ metrics
     xsq.obd.mt.day.usual                  -- Usual maintenance interval [days]
     xsq.obd.mt.km.usual                   -- Usual maintenance interval [km]
     xsq.obd.mt.level                      -- Maintenance level status
-
-    xsq.tpms.temp                         -- TPMS tyre temperatures vector [°C]
-    xsq.tpms.pressure                     -- TPMS tyre pressures vector [kPa]
-    xsq.tpms.alert                        -- TPMS alert levels vector
+    
     xsq.tpms.lowbatt                      -- TPMS low battery status vector
     xsq.tpms.missing                      -- TPMS missing transmission status vector
     xsq.tpms.dummy                        -- Dummy pressure for TPMS alert testing [kPa]
 
     xsq.bcm.state                         -- BCM vehicle state
     xsq.bcm.gen.mode                      -- BCM generator mode
-
+    
     xsq.evc.hv.energy                     -- EVC HV energy [kWh]
     xsq.evc.12V.dcdc.act.req              -- DCDC active request [bool]
-    xsq.evc.12V.dcdc.amps                 -- DCDC current [A]
-    xsq.evc.12V.dcdc.load                 -- DCDC load [%]
-    xsq.evc.12V.dcdc.volt.req             -- DCDC voltage request [V]
-    xsq.evc.12V.dcdc.volt                 -- DCDC voltage [V]
-    xsq.evc.12V.dcdc.power                -- DCDC power [W]
-    xsq.evc.12V.volt.usm                  -- USM 12V voltage [V]
-    xsq.evc.12V.volt.can                  -- 12V battery voltage from CAN [V]
-    xsq.evc.12V.batt.volt.req.int         -- 12V battery voltage request internal [V]
+    xsq.evc.12v.dcdc                      -- EVC 12V system values vector: [0]=dcdc_volt_req(V), [1]=dcdc_volt(V), [2]=dcdc_power(W), [3]=usm_volt(V), [4]=batt_volt(V), [5]=batt_volt_req(V), [6]=dcdc_amps(A), [7]=dcdc_load(%)
     xsq.evc.traceability                  -- EVC frame traceability information [string] 
 
     xsq.obl.fastchg                       -- Fast charge active [bool]
     xsq.obl.volts                         -- OBL voltage phases vector [V]
     xsq.obl.amps                          -- OBL current phases vector [A]
     xsq.obl.power                         -- OBL power phases vector [kW]
-    xsq.obl.misc                          -- OBL miscellaneous data vector
+    xsq.obl.misc                          -- OBL miscellaneous data vector: [0]=freq(Hz), [1]=ground_resistance(Ohm), [2]=max_current(A), [3]=dc_current(mA), [4]=hf10kHz_current(mA), [5]=hf_current(mA), [6]=lf_current(mA)
     xsq.obl.leakdiag                      -- OBL leakage diagnostic status
-    xsq.obl.current                       -- OBL leakage currents vector [A]
 
     xsq.bms.prod.data                     -- BMS production data formatted (serial, MM/YYYY)
     xsq.bms.temps                         -- BMS temperature sensors vector [°C]
-    xsq.bms.voltages                      -- Voltage values [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor, [5]=cv_sum [V]
+    xsq.bms.voltages                      -- BMS voltage values vector: [0]=cell_min(V), [1]=cell_max(V), [2]=cell_mean(V), [3]=link_volt(V), [4]=pack_volt(V), [5]=ocv_volt(V), [6]=12v_system(V)
     xsq.bms.contactor.cycles              -- HV contactor maximum/available cycles
     xsq.bms.soc.values                    -- SOC values vector [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display [%]
     xsq.bms.soc.recal.state               -- SOC recalibration state
     xsq.bms.soh                           -- State of Health [%]
-    xsq.bms.cap.usable.max                -- Maximum usable capacity [Ah]
-    xsq.bms.cap.init                      -- Initial capacity [Ah]
-    xsq.bms.cap.estimate                  -- Estimated capacity [Ah]
-    xsq.bms.cap.loss.pct                  -- Capacity loss percentage [%]
+    xsq.bms.cap                           -- BMS capacity values vector: [0]=usable_max(Ah), [1]=init(Ah), [2]=estimate(Ah), [3]=loss_pct(%)
     xsq.bms.mileage                       -- Battery mileage [km]
     xsq.bms.energy.nominal                -- Nominal battery energy [kWh]
-    xsq.bms.ocv.voltage                   -- Open circuit voltage [V]
     xsq.bms.voltage.state                 -- Voltage state description
     xsq.bms.cell.resistance               -- Cell resistance values vector
     xsq.bms.batt.power                    -- Battery power [kW]
     xsq.bms.contact                       -- HV contactor state text
     xsq.bms.ev.mode                       -- EV mode text
-    xsq.bms.12v                           -- 12V system voltage [V]
     xsq.bms.interlock.hvplug              -- HV plug interlock status [bool]
     xsq.bms.interlock.service             -- Service interlock status [bool]
     xsq.bms.fusi                          -- FUSI mode text
