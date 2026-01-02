@@ -1103,9 +1103,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->puts("\n--- EVC Data (0x7EC) ---");
   writer->printf("  HV Energy:               %.3f kWh\n", StdMetrics.ms_v_bat_capacity->AsFloat());
   writer->printf("  DCDC Active Request:     %s\n", StdMetrics.ms_v_env_charging12v->AsBool() ? "Yes" : "No");
-  writer->printf("  DCDC Current:            %.1f A\n", mt_evc_dcdc->GetElemValue(6));
+  writer->printf("  DCDC Current:            %.2f A\n", mt_evc_dcdc->GetElemValue(6));
   writer->printf("  DCDC Power:              %.0f W\n", mt_evc_dcdc->GetElemValue(2));
-  writer->printf("  DCDC Load:               %.1f%%\n", mt_evc_dcdc->GetElemValue(7));
+  writer->printf("  DCDC Load:               %.2f%%\n", mt_evc_dcdc->GetElemValue(7));
   writer->printf("  Req (int) 12V Voltage:   %.2f V\n", mt_evc_dcdc->GetElemValue(5));
   writer->printf("  DCDC Voltage Request:    %.2f V\n", mt_evc_dcdc->GetElemValue(0));
   writer->printf("  DCDC 12V Voltage:        %.2f V\n", mt_evc_dcdc->GetElemValue(1));
@@ -1113,14 +1113,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  Batt 12V Voltage:        %.2f V\n", mt_evc_dcdc->GetElemValue(4));
 
   writer->puts("\n--- OBL Charger Data (0x793) ---");
-  writer->printf("  Fast Charge Active:      %s\n", mt_obl_fastchg->AsBool() ? "Yes" : "No");
+  writer->printf("  Fast Charge Active:      %s\n", mt_obl_fastchg->AsBool() ? "Yes" : "No");  
+  writer->printf("  Max AC Current:          %.0f A\n", mt_obl_misc->GetElemValue(2));
   writer->printf("  Mains Frequency:         %.2f Hz\n", mt_obl_misc->GetElemValue(0));
-  writer->printf("  Ground Resistance:       %.1f Ohm\n", mt_obl_misc->GetElemValue(1));
-  writer->printf("  Max AC Current:          %.1f A\n", mt_obl_misc->GetElemValue(2));
-  writer->printf("  Leakage DC Current:      %.3f mA\n", mt_obl_misc->GetElemValue(3));
-  writer->printf("  Leakage HF10kHz:         %.3f mA\n", mt_obl_misc->GetElemValue(4));
-  writer->printf("  Leakage HF Current:      %.3f mA\n", mt_obl_misc->GetElemValue(5));
-  writer->printf("  Leakage LF Current:      %.3f mA\n", mt_obl_misc->GetElemValue(6));
+  writer->printf("  Ground Resistance:       %.4f Ohm\n", mt_obl_misc->GetElemValue(1));
+  writer->printf("  Leakage DC Current:      %.4f mA\n", mt_obl_misc->GetElemValue(3));
+  writer->printf("  Leakage HF10kHz:         %.4f mA\n", mt_obl_misc->GetElemValue(4));
+  writer->printf("  Leakage HF Current:      %.4f mA\n", mt_obl_misc->GetElemValue(5));
+  writer->printf("  Leakage LF Current:      %.4f mA\n", mt_obl_misc->GetElemValue(6));
   writer->printf("  Leakage Diagnostic:      %s\n", mt_obl_main_leakage_diag->AsString().c_str());
 
   int show = mt_ed4_values->AsInt(10); // number of cells to show

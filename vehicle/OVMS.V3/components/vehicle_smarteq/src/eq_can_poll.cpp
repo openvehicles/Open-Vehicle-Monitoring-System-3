@@ -336,14 +336,14 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
 
 void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(15);
-  float ocv = (int16_t)CAN_UINT(0) / 100.0f;
-  float real_soc_min = (int16_t)CAN_UINT(2) / 16.0f;
-  float real_soc_max = (int16_t)CAN_UINT(4) / 16.0f;
-  float soc = (int16_t)CAN_UINT(6) / 16.0f;
-  float cap_loss = ((int16_t)CAN_UINT(8)) / 16.0f;
-  float cap_init = ((int16_t)CAN_UINT(10) * 10.0f) / 3600.0f;
-  float cap_estimate = ((int16_t)CAN_UINT(12) * 10.0f) / 3600.0f;
-  int8_t voltage_state = (int8_t)CAN_BYTE(14);
+  float ocv = CAN_UINT(0) / 100.0f;
+  float real_soc_min = CAN_UINT(2) / 16.0f;
+  float real_soc_max = CAN_UINT(4) / 16.0f;
+  float soc = CAN_UINT(6) / 16.0f;
+  float cap_loss = CAN_UINT(8) / 16.0f;
+  float cap_init = (CAN_UINT(10) * 10.0f) / 3600.0f;
+  float cap_estimate = (CAN_UINT(12) * 10.0f) / 3600.0f;
+  int voltage_state = CAN_BYTE(14);
   
   const char* voltage_state_txt;
   switch (voltage_state) {
@@ -354,6 +354,10 @@ void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len)
     case 4: voltage_state_txt = "value not defined"; break;
     default: voltage_state_txt = "Unknown"; break;
   }
+  if(ocv < 0.0f || ocv > 500.0f)
+    ocv = 0.0f;
+  if(cap_loss < 0.0f || cap_loss > 100.0f)
+    cap_loss = 0.0f;
   mt_bms_voltages->SetElemValue(5, ocv);  // ocv_voltage
   mt_bms_soc_values->SetElemValue(0, soc);                              // kernel SOC
   mt_bms_soc_values->SetElemValue(1, (real_soc_min + real_soc_max) / 2.0f);  // real SOC
@@ -367,7 +371,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len)
 
 void OvmsVehicleSmartEQ::PollReply_BMS_SOCRecal(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(3);
-  int8_t recal_state = (int8_t)CAN_BYTE(0);
+  int recal_state = CAN_BYTE(0);
   const char* recal_state_txt;
   switch (recal_state) {
     case 0: recal_state_txt = "Not Running"; break;
@@ -376,7 +380,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_SOCRecal(const char* data, uint16_t reply
     case 3: recal_state_txt = "Failed"; break;
     default: recal_state_txt = "Unknown"; break;
   }
-  float display_soc = (int16_t)CAN_UINT(1) / 16.0f;
+  float display_soc = CAN_UINT(1) / 16.0f;
   mt_bms_soc_recal_state->SetValue(recal_state_txt);
   
   if (display_soc >= 0 && display_soc <= 100.0f) {
