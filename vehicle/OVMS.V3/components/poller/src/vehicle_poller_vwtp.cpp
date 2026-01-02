@@ -788,30 +788,38 @@ void OvmsPoller::PollerVWTPTicker()
   uint32_t currenttime_ms = esp_log_timestamp();
   uint32_t timediff_ms = currenttime_ms - m_poll_vwtp.lastused;
 
-  // As a VWTP operation may start at any time between two Ticker runs,
-  // we need to adjust the wait time if the ticker offset is too short:
-  if (GetPollWaiting() && timediff_ms < 200)
-    {
-    SetPollWaiting(2000);
-    return;
-    }
-
   if (GetPollWaiting())
     {
-    // State timeout?
-    if (m_poll_vwtp.state == VWTP_ChannelSetup || m_poll_vwtp.state == VWTP_ChannelParams)
+    // As a VWTP operation may start at any time between two Ticker runs,
+    // we need to adjust the wait time if the ticker offset is too short:
+  	if (timediff_ms < 200)
       {
-      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPTicker[%02X]: setup/params timeout",
-        m_poll.bus_no, m_poll_vwtp.moduleid);
-      PollerVWTPEnter(VWTP_Closed);
+      SetPollWaiting(2000);
+	  return;
       }
-    else if (m_poll_vwtp.state == VWTP_ChannelClose)
+
+    // State timeout?
+    switch (m_poll_vwtp.state)
       {
-      ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPTicker[%02X]: close timeout",
-         m_poll.bus_no,  m_poll_vwtp.moduleid);
-      PollerVWTPEnter(VWTP_Closed);
-      if (m_poll.protocol == VWTP_20)
-        PollerVWTPStart(true);
+      case VWTP_ChannelSetup:
+      case VWTP_ChannelParams:
+        {
+        ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPTicker[%02X]: setup/params timeout",
+          m_poll.bus_no, m_poll_vwtp.moduleid);
+        PollerVWTPEnter(VWTP_Closed);
+        break;
+        }
+      case VWTP_ChannelClose:
+        {
+        ESP_LOGD(TAG, "[%" PRIu8 "]PollerVWTPTicker[%02X]: close timeout",
+           m_poll.bus_no,  m_poll_vwtp.moduleid);
+        PollerVWTPEnter(VWTP_Closed);
+        if (m_poll.protocol == VWTP_20)
+          PollerVWTPStart(true);
+        break;
+        }
+      default:
+        break;
       }
     }
   else

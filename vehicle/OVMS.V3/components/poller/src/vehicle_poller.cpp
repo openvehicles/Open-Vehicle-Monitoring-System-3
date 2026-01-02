@@ -142,12 +142,12 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, OvmsPollers *parent,
 bool OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
   {
 
-  // No multiframe request is active.
-  if (m_poll.type == VEHICLE_POLL_TYPE_NONE)
-    return false;
-
   // Pass frame to poller protocol handlers:
-  if (frame.origin == m_poll_vwtp.bus && frame.MsgID == m_poll_vwtp.rxid)
+  if (
+    frame.origin == m_poll_vwtp.bus &&
+    frame.MsgID == m_poll_vwtp.rxid &&
+    m_poll_vwtp.state != VWTP_Closed
+    )
     {
     // Keep raw Data for DBC
     m_poll.format = frame.FIR.B.FF;
@@ -158,6 +158,13 @@ bool OvmsPoller::Incoming(CAN_frame_t &frame, bool success)
     m_poll.raw_data = nullptr;
     m_poll.raw_data_len = 0;
     return ret;
+    }
+  else if (m_poll.type == VEHICLE_POLL_TYPE_NONE)
+    {
+    // No multiframe request is active.
+    // Check after the VWTP which needs to respond to
+    // Ping requests
+    return false;
     }
   else if (frame.origin != m_poll.bus)
     {
@@ -665,6 +672,7 @@ void LoadPollRequest( OvmsPoller::poll_pid_t &poll,
  *  @return             POLLSINGLE_OK         (0)   -- success, response is valid
  *                      POLLSINGLE_TIMEOUT    (-1)  -- timeout/poller unavailable
  *                      POLLSINGLE_TXFAILURE  (-2)  -- CAN transmission failure
+ *                      POLSSINGLE_NORESPONSE (-3)  -- No response assigned
  *                      else                  (>0)  -- UDS NRC detail code
  *                      Note: response is only valid with return value 0
  */
@@ -673,7 +681,10 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
                                    int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
   {
   if (!Ready())
+    {
+    ESP_LOGD(TAG, "PollSingleRequest: Not Ready");
     return POLLSINGLE_TIMEOUT;
+    }
 
   // prepare single poll:
   OvmsPoller::poll_pid_t poll;
@@ -687,8 +698,11 @@ int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::str
   {
   OvmsRecMutexLock slock(&m_poll_single_mutex, pdMS_TO_TICKS(timeout_ms));
   if (!slock.IsLocked())
+    {
+    ESP_LOGD(TAG, "PollSingleRequest: Timeout obtaining single Request lock");
     return POLLSINGLE_TIMEOUT;
-  int32_t rx_error = POLLSINGLE_TIMEOUT; // will be replaced by POLLSINGLE_OK on success
+    }
+  int32_t rx_error = POLSSINGLE_NORESPONSE; // will be replaced by POLLSINGLE_OK on success
   OvmsSemaphore     single_rxdone;   // … response done (ok/error)
   std::shared_ptr<BlockingOnceOffPoll> poller( new BlockingOnceOffPoll(poll, &response, &rx_error, &single_rxdone));
 
@@ -696,7 +710,10 @@ int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::str
     {
     OvmsRecMutexLock lock(&m_poll_mutex, pdMS_TO_TICKS(timeout_ms));
     if (!lock.IsLocked())
+      {
+      ESP_LOGD(TAG, "PollSingleRequest: Timeout obtaining Poller Lock to set v.single");
       return POLLSINGLE_TIMEOUT;
+      }
     // start single poll:
     m_polls.SetEntry("!v.single", poller);
     }
@@ -707,11 +724,18 @@ int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::str
   // wait for response:
   IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]Single Request Waiting for response", m_poll.bus_no);
   bool rxok = single_rxdone.Take(pdMS_TO_TICKS(timeout_ms));
+  if (!rxok)
+    ESP_LOGD(TAG, "[%" PRIu8 "]PollSingRequest: Timeout Waiting on Response", m_poll.bus_no);
+  else if (rx_error == POLSSINGLE_NORESPONSE)
+    ESP_LOGD(TAG, "[%" PRIu8 "]PollSingRequest: No Response Allocated", m_poll.bus_no);
+  else if (rx_error > 0)
+    ESP_LOGD(TAG, "[%" PRIu8 "]PollSingRequest: Protocol Error Response (%" PRIi32 ")", m_poll.bus_no, rx_error);
+
   IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollSingleRequest: Response done ", m_poll.bus_no);
   // Make sure if it is still sticking around that it's not accessing
   // stack objects!
   poller->Finished();
-  return (rxok == pdFALSE) ? POLLSINGLE_TIMEOUT : rx_error;
+  return (!rxok) ? POLLSINGLE_TIMEOUT : rx_error;
   }
 
 int OvmsPoller::PollSingleRequest( uint32_t txid, uint32_t rxid,
@@ -1565,7 +1589,7 @@ void OvmsPollers::PollerTask()
         {
         bool processed = false;
         canbus* bus = entry.entry_FrameRxTx.frame.origin;
-        auto poller = GetPoller(entry.entry_FrameRxTx.frame.origin);
+        auto poller = GetPoller(bus);
         IFTRACE(Poller) ESP_LOGV(TAG, "Pollers: FrameRx(bus=%d)", GetBusNo(entry.entry_FrameRxTx.frame.origin));
         if (poller)
           processed = poller->Incoming(entry.entry_FrameRxTx.frame, entry.entry_FrameRxTx.success);
