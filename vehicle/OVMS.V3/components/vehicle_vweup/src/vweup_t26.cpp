@@ -1122,8 +1122,14 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
     for (uint8_t i = 0; i < profile0_len; i+=8) {
       ESP_LOGD(TAG, "T26: Profile0: %02x %02x %02x %02x %02x %02x %02x %02x", profile0[i+0], profile0[i+1], profile0[i+2], profile0[i+3],profile0[i+4], profile0[i+5], profile0[i+6], profile0[i+7]);
     }
-    if(profile0[28] != 0 && profile0[29] != 0)
+    if(profile0[28] == 0 || profile0[29] == 0)
     {
+      ESP_LOGW(TAG, "T26: ReadProfile0 possibly invalid data! Continuing...");
+      // empty profile, set state for existing timer to retry request
+      //profile0_cntr[0] = 0;
+      //profile0_state = PROFILE0_REQUEST;
+      //ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
+    }
       ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
       int timer_stopped = xTimerStop(profile0_timer, pdMS_TO_TICKS(100));
       ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
@@ -1217,15 +1223,6 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
         ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
         profile0_key = P0_KEY_NOP;
       }
-    }
-    else
-    {
-      ESP_LOGD(TAG, "T26: ReadProfile0 invalid data!");
-      // empty profile, set state for existing timer to retry request
-      profile0_cntr[0] = 0;
-      profile0_state = PROFILE0_REQUEST;
-      ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
-    }
   }
 }
 
