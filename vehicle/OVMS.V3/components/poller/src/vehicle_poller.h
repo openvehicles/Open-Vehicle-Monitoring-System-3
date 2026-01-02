@@ -25,6 +25,7 @@
 #define __VEHICLE_POLLER_H__
 
 #include "vehicle_common.h"
+#include "ovms_utils.h"
 
 #include <cstdint>
 #include <memory>
@@ -75,7 +76,6 @@
 #define POLL_PID_DATA(pid, datastring) \
   {.xargs={ (pid), POLL_TXDATA, sizeof(datastring)-1, reinterpret_cast<const uint8_t*>(datastring) }}
 
-
 // VWTP_20 channel states:
 typedef enum
   {
@@ -108,6 +108,32 @@ typedef struct
   } vwtp_channel_t;
 
 class OvmsPollers;
+
+enum class PollEntryStyle : uint8_t
+  {
+  Standard = 0,
+  OnceOff,
+  Blocking
+  };
+class OvmsPollLimiter {
+  private:
+    uint8_t m_max[3]; // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
+    uint8_t m_cnt[3]; // Polls already sent in the current time tick (second)
+  public:
+    OvmsPollLimiter();
+
+    // Check for throttling.
+    bool CanPoll(PollEntryStyle style) const;
+    bool CanPoll(bool has_blocking) const;
+    void Reset();
+    void Reset(PollEntryStyle style);
+    void MarkPolled(PollEntryStyle style);
+    void SetMax(PollEntryStyle style, uint8_t maxval);
+    uint8_t GetMax(PollEntryStyle style) const
+      { return m_max[static_cast<uint8_t>(style)]; }
+    uint8_t GetCount(PollEntryStyle style) const
+      { return m_cnt[static_cast<uint8_t>(style)]; }
+  };
 
 class OvmsPoller : public InternalRamAllocated {
   public:
@@ -185,6 +211,7 @@ class OvmsPoller : public InternalRamAllocated {
       NotReady,   ///< Not ready - ignore and move on.
       StillAtEnd, ///< Still at end of list.
       FoundEntry, ///< Found an entry
+      LimitReached, ///< Limit reached for poller type.
       ReachedEnd, ///< Reached the end.
       Ignore      ///< Ignore this (don't move to next poller index)
       };
@@ -210,6 +237,8 @@ class OvmsPoller : public InternalRamAllocated {
 
         /// Destructed by pointer.
         virtual ~PollSeriesEntry() { }
+
+        virtual PollEntryStyle style() { return PollEntryStyle::Standard;}
 
         /** Move list to start.
           * @arg  mode Specify Resetting for Poll-Start or for Retry
@@ -251,7 +280,8 @@ class OvmsPoller : public InternalRamAllocated {
       std::string name;
       std::shared_ptr<PollSeriesEntry> series;
 
-      bool is_blocking;
+      PollEntryStyle style; // Denormalised series->style()
+      bool is_blocking() { return style == PollEntryStyle::Blocking; }
       OvmsPoller::OvmsNextPollResult last_status;
       uint32_t last_status_monotonic;
 
@@ -269,23 +299,30 @@ class OvmsPoller : public InternalRamAllocated {
         poll_series_t *m_first, *m_last;
         // Current poll entry.
         poll_series_t *m_iter;
+        // Current poll entry changed since last Fetch
+        bool m_iter_changed;
+        volatile uint16_t m_blocking_count;
 
         // Remove an item out of the linked list.
         void Remove( poll_series_t *iter);
         // Insert an item into the linked list (before == null means the end)
         void InsertBefore( poll_series_t *iter, poll_series_t *before);
+
+        void blocking_inc() { Atomic_Increment<uint16_t>(m_blocking_count, 1U);  }
+        void blocking_dec() { Atomic_Subtract<uint16_t>(m_blocking_count, 1U); }
       public:
         PollSeriesList();
         ~PollSeriesList();
 
+        bool has_blocking() const { return Atomic_Get<uint16_t>(m_blocking_count) > 0;}
         // List functions:
 
         /** Set/Add the named entry to the series specified.
          * @param name Name of the entry.
          * @param series Shared pointer to the series
-         * @param blocking This is a blocking poll entry.
          */
-        void SetEntry(const std::string &name, std::shared_ptr<PollSeriesEntry> series, bool blocking = false);
+        void SetEntry(const std::string &name, std::shared_ptr<PollSeriesEntry> series);
+
         /// Remove the named entry from the list.
         void RemoveEntry( const std::string &name, bool starts_with = false);
         /// Are there any entries/lists
@@ -308,7 +345,8 @@ class OvmsPoller : public InternalRamAllocated {
         void RestartPoll(ResetMode mode);
 
         /// Get the next poll entry
-        OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry, uint8_t mybus, uint32_t pollticker, uint8_t pollstate);
+        OvmsPoller::OvmsNextPollResult NextPollEntry(poll_pid_t &entry, PollEntryStyle &found_style, uint8_t mybus, uint32_t pollticker, uint8_t pollstate,
+            const OvmsPollLimiter &limiter);
 
         /// Are there any lists that have active entries?
         bool HasPollList() const;
@@ -317,7 +355,7 @@ class OvmsPoller : public InternalRamAllocated {
         */
         bool PollIsBlocking()
           {
-          return (m_iter != nullptr) && (m_iter->is_blocking) && (m_iter->series != nullptr);
+          return (m_iter != nullptr) && (m_iter->is_blocking()) && (m_iter->series != nullptr);
           }
 
         /** Return true if this series has entries to retry/redo.
@@ -458,6 +496,8 @@ class OvmsPoller : public InternalRamAllocated {
         OnceOffPollBase(const poll_pid_t &pollentry, std::string *rxbuf, int32_t *rxerr, uint8_t retry_fail = 0);
         OnceOffPollBase(std::string *rxbuf, int32_t *rxerr, uint8_t retry_fail = 0);
 
+        PollEntryStyle style() override;
+
         // Move list to start.
         void ResetList(ResetMode mode) override;
 
@@ -494,6 +534,9 @@ class OvmsPoller : public InternalRamAllocated {
 
         // Called To null out the call-back pointers (particularly before they go out of scope).
         void Finished();
+
+        // Get the style
+        PollEntryStyle style() override;
       public:
         // Called when run is finished to determine what happens next.
         SeriesStatus FinishRun() override;
@@ -548,23 +591,48 @@ class OvmsPoller : public InternalRamAllocated {
     uint16_t          m_poll_tx_remain;       // Payload bytes remaining for multi frame request
     uint16_t          m_poll_tx_offset;       // Payload offset of multi frame request
     uint16_t          m_poll_tx_frame;        // Frame number for multi frame request
-    uint8_t           m_poll_wait;            // Wait counter for a reply from a sent poll or bytes remaining.
-                                              // Gets set = 2 when a poll is sent OR when bytes are remaining after receiving.
+    uint32_t          m_poll_wait_timeout;    // Wait timeout for for a reply from a sent poll or bytes remaining.
+                                              // Gets set = 2000 when a poll is sent OR when bytes are remaining after receiving.
                                               // Gets set = 0 when a poll is received.
-                                              // Gets decremented with every second/tick in PollerSend().
-                                              // PollerSend() aborts when > 0.
-                                              // Why set = 2: When a poll gets send just before the next ticker occurs
-                                              //              PollerSend() decrements to 1 and doesn't send the next poll.
-                                              //              Only when the reply doesn't get in until the next ticker occurs
-                                              //              PollserSend() decrements to 0 and abandons the outstanding reply (=timeout)
+                                              // PollerSend() aborts when currrent time > than the timeout value
+    bool GetPollWaiting() const
+      {
+      if (m_poll_wait_timeout == 0)
+        return false;
+      return esp_log_timestamp() < m_poll_wait_timeout;
+      }
+    void ResetPollWaiting()
+      {
+      m_poll_wait_timeout = 0;
+      }
+    void SetPollWaiting( uint16_t ms)
+      {
+      m_poll_wait_timeout = ms + esp_log_timestamp();
+      }
+    void AddPollWaiting(uint16_t ms)
+      {
+      if (!GetPollWaiting())
+        SetPollWaiting(ms);
+      else
+        m_poll_wait_timeout += ms;
+      }
+    uint16_t GetWaiting_ms()
+      {
+      uint32_t pwt = m_poll_wait_timeout;
+      if (pwt == 0)
+        return 0;
+      uint32_t ts = esp_log_timestamp();
+      if (ts >= pwt)
+        return 0;
+      return static_cast<uint16_t>(pwt-ts);
+      }
 
     CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback
     uint32_t          m_poll_txmsgid;         // Poller last TX CAN ID (frame MsgID)
 
-
   private:
-    uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
-    uint8_t           m_poll_sequence_cnt;    // Polls already sent in the current time tick (second)
+    OvmsPollLimiter  m_poll_sequence_limiter;
+                                              //
     uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
     uint16_t          m_poll_ch_keepalive;    // Seconds to keep an inactive channel (e.g. VWTP) alive (default: 60)
     uint16_t          m_poll_between_success;
@@ -618,6 +686,9 @@ class OvmsPoller : public InternalRamAllocated {
 
     bool Incoming(CAN_frame_t &frame, bool success);
     void Outgoing(const CAN_frame_t &frame, bool success);
+
+    // Check for throttling for area.
+    bool CanPoll(PollEntryStyle style ) const { return m_poll_sequence_limiter.CanPoll(style); }
 
     // Check for throttling.
     bool CanPoll() const;
@@ -688,7 +759,7 @@ class OvmsPoller : public InternalRamAllocated {
     void Queue_PollerSendSuccess();
     void PollerSucceededPollNext();
 
-    void PollSetThrottling(uint8_t sequence_max);
+    void PollSetThrottling(uint8_t sequence_max, PollEntryStyle style = PollEntryStyle::Standard);
 
     void PollSetResponseSeparationTime(uint8_t septime);
     void PollSetChannelKeepalive(uint16_t keepalive_seconds);
@@ -733,7 +804,7 @@ class OvmsPollers : public InternalRamAllocated {
     mutable OvmsRecMutex m_poller_mutex;
     OvmsPoller*       m_pollers[VEHICLE_MAXBUSSES];
     uint8_t           m_poll_state;           // Current poll state
-    uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
+    uint8_t           m_poll_sequence_max[3]; // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
     uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
     uint16_t          m_poll_ch_keepalive;    // Seconds to keep an inactive channel (e.g. VWTP) alive (default: 60)
     uint16_t          m_poll_between_success;
@@ -983,9 +1054,10 @@ class OvmsPollers : public InternalRamAllocated {
 
     void CheckStartPollTask( bool force = false);
 
-    void PollSetThrottling(uint8_t sequence_max)
+    void PollSetThrottling(uint8_t sequence_max, PollEntryStyle style = PollEntryStyle::Standard)
       {
-      Queue_Command(OvmsPoller::OvmsPollCommand::Throttle, sequence_max);
+      uint16_t cmd = sequence_max | (static_cast<uint16_t>(style) << 8);
+      Queue_Command(OvmsPoller::OvmsPollCommand::Throttle, cmd);
       }
     void PollSetResponseSeparationTime(uint8_t septime)
       {
