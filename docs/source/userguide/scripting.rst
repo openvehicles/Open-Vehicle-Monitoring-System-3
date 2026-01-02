@@ -1227,17 +1227,27 @@ which contains the following methods:
 
 The ``Poll`` object is for the polling subsystem and has the following methods:
 
-- ``OvmsPoller.Poll.Add( list_ident, bus, dbc_file, poll_list [, poll_offset])``: Adds a poll list to the poller.
+- | ``OvmsPoller.Poll.Add( list_ident, bus, dbc_file, poll_list [, poll_offset])``
+  | Adds a poll list to the poller.
 
-  - ``list_ident`` - unique name to identify this list of polls.
-  - ``bus`` - Name of bus (eg "can1")
-  - ``dbc_file`` - Set to true to use the default dbc file on the bus for decoding. (decode sections ignored)
-                   - Set to a name to use the specifed dbc file.
-  - ``poll_list`` - Set to an object as follows
+  +-----------------+--------------------------------------------------------+
+  | ``list_ident``  | Unique name to identify this list of polls.            |
+  +-----------------+--------------------------------------------------------+
+  | ``bus``         | Name of bus (eg "can1")                                |
+  +-----------------+--------------------------------------------------------+
+  | ``dbc_file``    | * Set to true to use the default dbc file on the bus   |
+  |                 |   for decoding. (decode sections ignored)              |
+  |                 | * Set to a name to use the specifed dbc file.          |
+  +-----------------+--------------------------------------------------------+
+  | ``poll_list``   | Set to an object defined below:                        |
+  +-----------------+--------------------------------------------------------+
+  | ``poll_offset`` | (optional) Offset of 4 poll states. Default is [0..3]  |
+  |                 | but an offset of 4 would be states 4..7                |
+  +-----------------+--------------------------------------------------------+
 
      .. code-block:: javascript
 
-       [
+       poll_list = [
          {
            "send": {
               "txid": <int>,
@@ -1282,14 +1292,16 @@ The ``Poll`` object is for the polling subsystem and has the following methods:
          }
        ]
 
-  - ``poll_offset``: (optional) Offset of 4 poll states. Default is [0..3] but an offset of 4 would be states 4..7
-
-
-- ``OvmsPoller.Poll.Remove([busno,]list_ident)``: Removes the poll list ``list_ident``.
-- ``OvmsPoller.Poll.GetState([busno])``: Gets the 'poll state' (for the bus)
-- ``OvmsPoller.Poll.SetState([busno,] state)``: Sets the 'poll state' (for the bus)
-- ``OvmsPoller.Poll.Request(request, callback_obj)``: Performs a once-off asynchronous OBD request.
-- ``OvmsPoller.Poll.SetTrace(bool)``: Sets the trace mode for Duktape Polling configurations
+- | ``OvmsPoller.Poll.Remove([busno,]list_ident)``
+  | Removes the poll list ``list_ident``.
+- | ``OvmsPoller.Poll.GetState([busno])``
+  | Gets the 'poll state' (for the bus)
+- | ``OvmsPoller.Poll.SetState([busno,] state)``
+  | Sets the 'poll state' (for the bus)
+- | ``OvmsPoller.Poll.SetTrace(bool)``
+  | Sets the trace mode for Duktape Polling configurations
+- | ``OvmsPoller.Poll.Request(request, callback_obj)``
+  | Performs a once-off asynchronous OBD request.
 
   - ``request``: Description of the request
 

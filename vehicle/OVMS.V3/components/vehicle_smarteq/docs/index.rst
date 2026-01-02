@@ -34,25 +34,28 @@ Valet Mode Control          No
 Maintenance Reminders       Yes
 12V Battery Monitoring      Yes (if 12V alert raised, the car starts the 12V charging process for 15 Minutes. (homelink 3))
 DDT4all simple Support      Yes (a List of all possible commands at www.smart-EMOTION.de)
+=========================== ==============
 
 =========================== ==============
 Others
 =========================== ==============
 
--------------------------
+
+--------------------------
 Using Cabin Pre-heat/cool:
+--------------------------
 Only 5 Minutes Booster are Implementet white 
 Climatecontrol on or 
 homelink 1 = 5 Minutes
 homelink 2 = 10 Minutes
 homelink 3 = 15 Minutes
 For Timebased Pre-heat/cool you can use the Android App or Web UI.
--------------------------
+
 
 -------------------------
 Using DDT4all:
-You can use some DDT4all commands. A list of all possible commands you can find at www.smart-EMOTION.de (german).
 -------------------------
+You can use some DDT4all commands. A list of all possible commands you can find at www.smart-EMOTION.de (german).
 
 -------------------------
 Shell commands:
@@ -78,7 +81,6 @@ Known Issues
 -------------------------
 - Lock/Unlock: The Lock/Unlock function is not really implemented. You can only close the car when it is open. The lock indicator always shows unlocked.
 - Charge Control: Not implemented yet.
--------------------------
 
 -------------------------
 metrics
