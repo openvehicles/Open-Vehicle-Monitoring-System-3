@@ -259,7 +259,7 @@ void OvmsWebServer::CfgInitTicker()
   else if (step == "4.test.start") {
     std::string vehicletype = MyConfig.GetParamValue("auto", "vehicle.type");
     std::string server = MyConfig.GetParamValue("server.v2", "server");
-    if (StdMetrics.ms_v_type->AsString() != vehicletype) {
+    if (vehicletype != MyVehicleFactory.ActiveVehicleType()) {
       // stage 1: configure vehicle type:
       ESP_LOGI(TAG, "CfgInitTicker: step 4: setting vehicle type '%s'", vehicletype.c_str());
       MyVehicleFactory.SetVehicle(vehicletype.c_str());

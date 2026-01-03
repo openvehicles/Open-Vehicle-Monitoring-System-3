@@ -82,7 +82,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     if (vehicleid.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-") != std::string::npos)
       error += "<li data-input=\"vehicleid\">Vehicle ID may only contain ASCII letters, digits and '-'</li>";
 
-    if (error == "" && StdMetrics.ms_v_type->AsString() != vehicletype) {
+    if (error == "" && vehicletype != MyVehicleFactory.ActiveVehicleType()) {
       MyVehicleFactory.SetVehicle(vehicletype.c_str());
       vehicle = MyVehicleFactory.ActiveVehicle();
       if (!vehicle) {
