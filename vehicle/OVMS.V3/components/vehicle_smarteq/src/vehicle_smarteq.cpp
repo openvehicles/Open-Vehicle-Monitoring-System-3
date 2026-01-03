@@ -777,9 +777,13 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
 // Override to prevent idling state when vehicle is awake but not running
 void OvmsVehicleSmartEQ::NotifyVehicleIdling()
 {
-    if (m_poll_state == POLLSTATE_RUNNING)
+  if (m_poll_state == POLLSTATE_RUNNING)
     {
-        OvmsVehicle::NotifyVehicleIdling();
+    OvmsVehicle::NotifyVehicleIdling();
+    }
+  else
+    {
+    m_idle_ticker = 15 * 60;  // reset idle ticker to prevent trigger every 60 sec.
     }
 }
 
