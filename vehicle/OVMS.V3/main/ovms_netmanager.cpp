@@ -366,6 +366,7 @@ OvmsNetManager::OvmsNetManager()
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   m_mongoose_task = 0;
   m_mongoose_running = false;
+  m_mongoose_starting = false;
   m_mongoose_stopping = false;
   m_jobqueue = xQueueCreate(CONFIG_OVMS_HW_NETMANAGER_QUEUE_SIZE, sizeof(netman_job_t*));
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
@@ -658,6 +659,13 @@ void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
 
 void OvmsNetManager::Ticker1(std::string event, void *data)
   {
+  // Mongoose startup requested?
+  if (m_mongoose_starting)
+    {
+    StartMongooseTask();
+    }
+
+  // Check for reboot due to continuously lacking network connectivity:
   if (m_cfg_reboot_no_connection)
     {
     if (m_connected_any && !m_has_ip && StdMetrics.ms_m_net_good_sq->AsBool())
@@ -953,6 +961,7 @@ void OvmsNetManager::MongooseTask()
   mg_mgr_init(&m_mongoose_mgr, NULL);
   MyEvents.SignalEvent("network.mgr.init",NULL);
 
+  m_mongoose_starting = false;
   m_mongoose_running = true;
 
   // Main event loop
@@ -986,8 +995,7 @@ void OvmsNetManager::MongooseTask()
   // mg_mgr_free() execution, wait for all event listeners to have finished:
     {
     OvmsSemaphore eventdone;
-    auto callback = [](const char* event, void* data) { ((OvmsSemaphore*)data)->Give(); };
-    MyEvents.SignalEvent("network.mgr.stop", &eventdone, callback);
+    MyEvents.SignalEvent("network.mgr.stop", NULL, eventdone);
     eventdone.Take();
     }
 
@@ -1013,27 +1021,25 @@ void OvmsNetManager::StartMongooseTask()
   {
   if (m_network_any && (!m_mongoose_task || m_mongoose_stopping))
     {
-    // wait for previous task to finish shutting down:
-    int wait_time = 0;
-    while (m_mongoose_stopping && m_mongoose_task)
+    // check for previous task still shutting down:
+    if (m_mongoose_stopping && m_mongoose_task)
       {
-      if (wait_time % 1000 == 0)
-        ESP_LOGD(TAG, "StartMongooseTask: waiting for task shutdown");
-      vTaskDelay(pdMS_TO_TICKS(50));
-      wait_time += 50;
-      if (wait_time >= 5000)
-        {
-        // we're stuck, no other way to solve than rebooting:
-        ESP_LOGE(TAG, "StartMongooseTask: timeout on task shutdown -- reboot");
-        MyBoot.Restart();
-        return;
-        }
+      ESP_LOGD(TAG, "StartMongooseTask: waiting for task shutdown");
+      // retry on next ticker.1
+      m_mongoose_starting = true;
+      return;
       }
-    // start new task:
+    // start new task now:
+    m_mongoose_starting = false;
     m_mongoose_stopping = false;
     xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan",10*1024, (void*)this,
                             CONFIG_OVMS_NETMAN_TASK_PRIORITY, &m_mongoose_task, CORE(1));
     AddTaskToMap(m_mongoose_task);
+    }
+  else
+    {
+    // no network or task already running: cancel start request
+    m_mongoose_starting = false;
     }
   }
 
@@ -1042,6 +1048,7 @@ void OvmsNetManager::StopMongooseTask()
   if (!m_network_any && m_mongoose_running)
     {
     ESP_LOGD(TAG, "StopMongooseTask: requesting task shutdown");
+    m_mongoose_starting = false;
     m_mongoose_stopping = true;
     }
   }
