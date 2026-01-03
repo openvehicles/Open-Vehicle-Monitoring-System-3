@@ -773,6 +773,16 @@ void OvmsVehicleSmartEQ::vehicle_smart_car_on(bool isOn) {
   StdMetrics.ms_v_env_on->SetValue(isOn);
 }
 
+// Called by OVMS when it detects vehicle is idling (bus active but not moving)
+// Override to prevent idling state when vehicle is awake but not running
+void OvmsVehicleSmartEQ::NotifyVehicleIdling()
+{
+    if (m_poll_state == POLLSTATE_RUNNING)
+    {
+        OvmsVehicle::NotifyVehicleIdling();
+    }
+}
+
 class OvmsVehicleSmartEQInit {
   public:
     OvmsVehicleSmartEQInit();

@@ -215,7 +215,8 @@ public:
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
     virtual void CalculateEfficiency();
-    void vehicle_smart_car_on(bool isOn);
+    void vehicle_smart_car_on(bool isOn);    
+    void NotifyVehicleIdling() override;
 
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* data, uint16_t reply_len);
