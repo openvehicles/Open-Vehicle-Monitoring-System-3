@@ -57,10 +57,18 @@ class OvmsMutexLock
   {
   public:
     OvmsMutexLock(OvmsMutex* mutex, TickType_t timeout = portMAX_DELAY);
+    OvmsMutexLock(const OvmsMutexLock& src) = delete; // copying not allowed
+    OvmsMutexLock& operator=(const OvmsMutexLock& src) = delete;
+    OvmsMutexLock(OvmsMutexLock&& src);
     ~OvmsMutexLock();
 
   public:
-    bool IsLocked();
+    bool Lock(TickType_t timeout = portMAX_DELAY);
+    void Unlock();
+
+  public:
+    bool IsLocked() const { return m_locked; }
+    operator bool() const { return m_locked; }
 
   protected:
     OvmsMutex* m_mutex;
@@ -80,18 +88,31 @@ class OvmsRecMutex
     bool Lock(TickType_t timeout = portMAX_DELAY);
     void Unlock();
 
+  public:
+    unsigned int GetCount() { return m_count; }
+
   protected:
     QueueHandle_t m_mutex;
+    unsigned m_count;       // can be removed when FreeRTOS exposes uxRecursiveCallCount
   };
 
 class OvmsRecMutexLock
   {
   public:
     OvmsRecMutexLock(OvmsRecMutex* mutex, TickType_t timeout = portMAX_DELAY);
+    OvmsRecMutexLock(const OvmsRecMutexLock& src) = delete; // copying not allowed
+    OvmsRecMutexLock& operator=(const OvmsRecMutexLock& src) = delete;
+    OvmsRecMutexLock(OvmsRecMutexLock&& src);
     ~OvmsRecMutexLock();
 
   public:
-    bool IsLocked();
+    bool Lock(TickType_t timeout = portMAX_DELAY);
+    void Unlock();
+
+  public:
+    bool IsLocked() const { return m_locked; }
+    operator bool() const { return m_locked; }
+    unsigned int GetCount() { return m_mutex->GetCount(); }
 
   protected:
     OvmsRecMutex* m_mutex;

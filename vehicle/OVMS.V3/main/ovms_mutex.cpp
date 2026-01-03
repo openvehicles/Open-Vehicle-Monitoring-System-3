@@ -70,19 +70,42 @@ void OvmsMutex::Unlock()
 
 OvmsMutexLock::OvmsMutexLock(OvmsMutex* mutex, TickType_t timeout)
   {
+  assert(mutex != NULL);
   m_mutex = mutex;
   m_locked = m_mutex->Lock(timeout);
   }
 
-OvmsMutexLock::~OvmsMutexLock()
+OvmsMutexLock::OvmsMutexLock(OvmsMutexLock&& src)
   {
-  if (m_locked) m_mutex->Unlock();
+  assert(src.m_mutex != NULL);
+  m_mutex = src.m_mutex;
+  m_locked = src.m_locked;
+  src.m_locked = false;
   }
 
-bool OvmsMutexLock::IsLocked()
+OvmsMutexLock::~OvmsMutexLock()
   {
+  Unlock();
+  }
+
+bool OvmsMutexLock::Lock(TickType_t timeout)
+  {
+  if (!m_locked)
+    {
+    m_locked = m_mutex->Lock(timeout);
+    }
   return m_locked;
   }
+
+void OvmsMutexLock::Unlock()
+  {
+  if (m_locked)
+    {
+    m_mutex->Unlock();
+    m_locked = false;
+    }
+  }
+
 
 /**
  * Recursive Mutex:
@@ -90,6 +113,7 @@ bool OvmsMutexLock::IsLocked()
 OvmsRecMutex::OvmsRecMutex()
   {
   m_mutex = xSemaphoreCreateRecursiveMutex();
+  m_count = 0;
   }
 
 OvmsRecMutex::~OvmsRecMutex()
@@ -114,26 +138,55 @@ OvmsRecMutex::~OvmsRecMutex()
 
 bool OvmsRecMutex::Lock(TickType_t timeout)
   {
-  return (xSemaphoreTakeRecursive(m_mutex, timeout) == pdTRUE);
+  bool locked = (xSemaphoreTakeRecursive(m_mutex, timeout) == pdTRUE);
+  if (locked) m_count++;
+  return locked;
   }
 
 void OvmsRecMutex::Unlock()
   {
-  xSemaphoreGiveRecursive(m_mutex);
+  if (m_count > 0)
+    {
+    xSemaphoreGiveRecursive(m_mutex);
+    m_count--;
+    }
   }
 
 OvmsRecMutexLock::OvmsRecMutexLock(OvmsRecMutex* mutex, TickType_t timeout)
   {
+  assert(mutex != NULL);
   m_mutex = mutex;
   m_locked = m_mutex->Lock(timeout);
   }
 
-OvmsRecMutexLock::~OvmsRecMutexLock()
+OvmsRecMutexLock::OvmsRecMutexLock(OvmsRecMutexLock&& src)
   {
-  if (m_locked) m_mutex->Unlock();
+  assert(src.m_mutex != NULL);
+  m_mutex = src.m_mutex;
+  m_locked = src.m_locked;
+  src.m_locked = false;
   }
 
-bool OvmsRecMutexLock::IsLocked()
+OvmsRecMutexLock::~OvmsRecMutexLock()
   {
+  Unlock();
+  }
+
+bool OvmsRecMutexLock::Lock(TickType_t timeout)
+  {
+  if (!m_locked)
+    {
+    m_locked = m_mutex->Lock(timeout);
+    }
   return m_locked;
   }
+
+void OvmsRecMutexLock::Unlock()
+  {
+  if (m_locked)
+    {
+    m_mutex->Unlock();
+    m_locked = false;
+    }
+  }
+
