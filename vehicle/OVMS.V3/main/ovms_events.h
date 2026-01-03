@@ -47,6 +47,7 @@
 #include "freertos/timers.h"
 #include "ovms_command.h"
 #include "ovms_mutex.h"
+#include "ovms_semaphore.h"
 
 typedef std::function<void(std::string,void*)> EventCallback;
 
@@ -99,6 +100,7 @@ typedef struct
       char* event;
       void* data;
       event_signal_done_fn donefn;
+      OvmsSemaphore* donesemaphore;
       } signal;
     } body;
   event_msg_t type;
@@ -117,6 +119,7 @@ class OvmsEvents
     void RegisterEvent(std::string caller, std::string event, EventCallback callback);
     void DeregisterEvent(std::string caller);
     void SignalEvent(std::string event, void* data, event_signal_done_fn callback = NULL, uint32_t delay_ms = 0);
+    void SignalEvent(std::string event, void* data, OvmsSemaphore& semaphore, uint32_t delay_ms = 0);
     void SignalEvent(std::string event, void* data, size_t length, uint32_t delay_ms = 0);
 
   public:

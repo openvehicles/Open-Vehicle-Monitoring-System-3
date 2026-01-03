@@ -360,6 +360,10 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
 
 void OvmsEvents::FreeQueueSignalEvent(event_queue_t* msg)
   {
+  if (msg->body.signal.donesemaphore != NULL)
+    {
+    msg->body.signal.donesemaphore->Give();
+    }
   if (msg->body.signal.donefn != NULL)
     {
     msg->body.signal.donefn(msg->body.signal.event, msg->body.signal.data);
@@ -619,6 +623,35 @@ void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_done_fn
   strcpy(msg.body.signal.event, event.c_str());
   msg.body.signal.data = data;
   msg.body.signal.donefn = callback;
+
+  if (delay_ms == 0)
+    {
+    if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+      {
+      CheckQueueOverflow("SignalEvent", msg.body.signal.event);
+      FreeQueueSignalEvent(&msg);
+      }
+    }
+  else
+    {
+    if (ScheduleEvent(&msg, delay_ms) != true)
+      {
+      ESP_LOGE(TAG, "SignalEvent: no timer available, event '%s' dropped", msg.body.signal.event);
+      FreeQueueSignalEvent(&msg);
+      }
+    }
+  }
+
+void OvmsEvents::SignalEvent(std::string event, void* data, OvmsSemaphore& semaphore, uint32_t delay_ms /*=0*/)
+  {
+  event_queue_t msg;
+  memset(&msg, 0, sizeof(msg));
+
+  msg.type = EVENT_signal;
+  msg.body.signal.event = (char*)ExternalRamMalloc(event.size()+1);
+  strcpy(msg.body.signal.event, event.c_str());
+  msg.body.signal.data = data;
+  msg.body.signal.donesemaphore = &semaphore;
 
   if (delay_ms == 0)
     {
