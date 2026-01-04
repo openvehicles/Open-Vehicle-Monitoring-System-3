@@ -36,6 +36,7 @@
  */
 void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string cmdres, mru;
   std::string action;
   ota_info info;

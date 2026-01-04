@@ -421,6 +421,7 @@ void PagePluginContent::LoadContent()
 
 void OvmsWebServer::RegisterPlugins()
 {
+  auto lock = MyConfig.Lock();
   OvmsConfigParam* cp = MyConfig.CachedParam("http.plugin");
   if (!cp)
     return;

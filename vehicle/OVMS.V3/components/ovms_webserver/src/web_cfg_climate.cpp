@@ -45,6 +45,7 @@
  */
 void OvmsWebServer::HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error, info;
   const char* day_names[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
   const char* day_full[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};

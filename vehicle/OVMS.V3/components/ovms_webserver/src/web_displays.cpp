@@ -581,6 +581,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   float stemwidth_v = 0.5, stemwidth_t = 0.5;
   float
     volt_warn_def = BMS_DEFTHR_VWARN, volt_alert_def = BMS_DEFTHR_VALERT,
@@ -1246,6 +1247,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error, info;
   bool enable, ignftbrk;
   std::string smooth_acc, smooth_bat, port, level_on, level_off, basepwr;

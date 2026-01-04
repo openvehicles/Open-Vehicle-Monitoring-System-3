@@ -799,25 +799,28 @@ void obd2ecu::LoadMap()
   Addpid(0x20);
 
   // Look for metric overrides...
-  OvmsConfigParam* cm = MyConfig.CachedParam("obd2ecu.map");
-  for (ConfigParamMap::iterator it=cm->m_map.begin(); it!=cm->m_map.end(); ++it)
     {
-    int pid = atoi(it->first.c_str());
-
-    OvmsMetric* m = MyMetrics.Find(it->second.c_str());
-    if ((pid>0) && m)
+    auto lock = MyConfig.Lock();
+    OvmsConfigParam* cm = MyConfig.CachedParam("obd2ecu.map");
+    for (ConfigParamMap::iterator it=cm->m_instances.begin(); it!=cm->m_instances.end(); ++it)
       {
-      ESP_LOGI(TAG, "Using custom metric for pid #%d (0x%02x)",pid,pid);
-      if (m_pidmap.find(pid) == m_pidmap.end())
-      { m_pidmap[pid] = new obd2pid(pid,obd2pid::Metric,m);
-      }
-      else
-        { ESP_LOGI(TAG, "Updating custom metric for pid #%d (0x%02x)",pid,pid);
-          m_pidmap[pid]->SetType(obd2pid::Metric);
-          m_pidmap[pid]->SetMetric(m);
+      int pid = atoi(it->first.c_str());
+
+      OvmsMetric* m = MyMetrics.Find(it->second.c_str());
+      if ((pid>0) && m)
+        {
+        ESP_LOGI(TAG, "Using custom metric for pid #%d (0x%02x)",pid,pid);
+        if (m_pidmap.find(pid) == m_pidmap.end())
+        { m_pidmap[pid] = new obd2pid(pid,obd2pid::Metric,m);
         }
+        else
+          { ESP_LOGI(TAG, "Updating custom metric for pid #%d (0x%02x)",pid,pid);
+            m_pidmap[pid]->SetType(obd2pid::Metric);
+            m_pidmap[pid]->SetMetric(m);
+          }
+        }
+        else if(pid) ESP_LOGI(TAG, "Metric '%s' not found; ignored.",it->second.c_str());
       }
-      else if(pid) ESP_LOGI(TAG, "Metric '%s' not found; ignored.",it->second.c_str());
     }
 
   // Look for scripts (if javascript enabled)...

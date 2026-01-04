@@ -45,6 +45,7 @@ using namespace std;
 
 void OvmsVehicleNiuGTEVO::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
 {
+  auto lock = MyConfig.Lock();
   std::string error, rangeideal, soh_user, cap_user;
   
   if (c.method == "POST")

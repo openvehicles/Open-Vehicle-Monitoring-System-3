@@ -31,6 +31,7 @@
  */
 void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   OvmsConfigParam* param = MyConfig.CachedParam("locations");
   ConfigParamMap pmap;
@@ -68,9 +69,7 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
     valet_time = c.getvar("valet.interval");
     if (error == "") {
       // save:
-      param->m_map.clear();
-      param->m_map = std::move(pmap);
-      param->Save();
+      param->SetMap(pmap);
 
       MyConfig.SetParamValue("vehicle", "flatbed.alarmdistance", flatbed_dist);
       MyConfig.SetParamValue("vehicle", "flatbed.alarminterval", flatbed_time);
@@ -91,7 +90,7 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    pmap = param->m_map;
+    pmap = param->GetMap();
 
     flatbed_dist = MyConfig.GetParamValue("vehicle", "flatbed.alarmdistance");
     flatbed_time = MyConfig.GetParamValue("vehicle", "flatbed.alarminterval");

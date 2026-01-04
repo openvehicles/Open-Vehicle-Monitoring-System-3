@@ -1589,13 +1589,15 @@ void OvmsCommandApp::EventHandler(std::string event, void* data)
 
 void OvmsCommandApp::ReadConfig()
   {
+  auto lock = MyConfig.Lock();
   OvmsConfigParam* param = MyConfig.CachedParam("log");
+  if (!param) return;
 
   // configure log levels:
   std::string level = MyConfig.GetParamValue("log", "level");
   if (!level.empty())
     SetLoglevel("*", level);
-  for (auto const& kv : param->m_map)
+  for (auto const& kv : param->m_instances)
     {
     if (startsWith(kv.first, "level.") && !kv.second.empty())
       SetLoglevel(kv.first.substr(6), kv.second);

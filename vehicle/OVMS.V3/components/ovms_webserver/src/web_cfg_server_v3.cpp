@@ -33,6 +33,7 @@
  */
 void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string server, user, password, port, topic_prefix;
   std::string updatetime_connected, updatetime_idle, updatetime_on;

@@ -936,6 +936,8 @@ void OvmsVehicleSmartEQ::xsq_preset(int verbosity, OvmsWriter* writer, OvmsComma
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, OvmsWriter* writer) {
+  auto lock = MyConfig.Lock();
+
   //MyConfig.SetParamValueBool("xsq", "cfg.preset.act",  true); // activate preset config
   MyConfig.SetParamValueInt("xsq", "cfg.preset.ver",  PRESET_VERSION); // preset config version
 

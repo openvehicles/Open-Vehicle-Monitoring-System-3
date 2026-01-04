@@ -275,6 +275,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
 
 void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error, info;
   std::string oldpass, newpass1, newpass2;
 
@@ -461,6 +462,7 @@ static void OutputPluginList(PageEntry_t& p, PageContext_t& c)
     "});\n"
     );
 
+  auto lock = MyConfig.Lock();
   OvmsConfigParam* cp = MyConfig.CachedParam("http.plugin");
   if (cp)
   {
@@ -487,6 +489,7 @@ static void OutputPluginList(PageEntry_t& p, PageContext_t& c)
 
 static bool SavePluginList(PageEntry_t& p, PageContext_t& c, std::string& error)
 {
+  auto lock = MyConfig.Lock();
   OvmsConfigParam* cp = MyConfig.CachedParam("http.plugin");
   if (!cp) {
     error += "<li>Internal error: <code>http.plugin</code> config not found</li>";
@@ -538,6 +541,7 @@ static bool SavePluginList(PageEntry_t& p, PageContext_t& c, std::string& error)
 
 static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string key = c.getvar("key");
   std::string type = c.getvar("type");
   std::string page, hook, label, menu, auth;
@@ -707,6 +711,7 @@ static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
 
 static bool SavePluginEditor(PageEntry_t& p, PageContext_t& c, std::string& error)
 {
+  auto lock = MyConfig.Lock();
   OvmsConfigParam* cp = MyConfig.CachedParam("http.plugin");
   if (!cp) {
     error += "<li>Internal error: <code>http.plugin</code> config not found</li>";
@@ -748,6 +753,8 @@ static bool SavePluginEditor(PageEntry_t& p, PageContext_t& c, std::string& erro
 
 void OvmsWebServer::HandleCfgPlugins(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
+
   std::string cnt = c.getvar("cnt");
   std::string key = c.getvar("key");
   std::string error, info;

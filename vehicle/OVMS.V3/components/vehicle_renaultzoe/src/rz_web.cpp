@@ -77,6 +77,7 @@ void OvmsVehicleRenaultZoe::WebDeInit()
  */
 void OvmsVehicleRenaultZoe::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error, info;
   bool canwrite, use_gpios;
   std::string vehicle_type;
@@ -150,6 +151,7 @@ void OvmsVehicleRenaultZoe::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsVehicleRenaultZoe::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   //  rangeideal        Ideal Range (Default: 160km)
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)

@@ -322,6 +322,7 @@ void OvmsPluginStore::PluginRemove(OvmsWriter* writer, std::string plugin)
 
 void OvmsPluginStore::PluginEnable(OvmsWriter* writer, std::string plugin)
   {
+  auto lock = MyConfig.Lock();
   if (MyConfig.IsDefined("plugin.disabled", plugin))
     {
     std::string version = MyConfig.GetParamValue("plugin.disabled", plugin);
@@ -337,6 +338,7 @@ void OvmsPluginStore::PluginEnable(OvmsWriter* writer, std::string plugin)
 
 void OvmsPluginStore::PluginDisable(OvmsWriter* writer, std::string plugin)
   {
+  auto lock = MyConfig.Lock();
   if (MyConfig.IsDefined("plugin.enabled", plugin))
     {
     std::string version = MyConfig.GetParamValue("plugin.enabled", plugin);
@@ -965,6 +967,8 @@ bool OvmsPlugin::Download()
 
 bool OvmsPlugin::Enable()
   {
+  auto lock = MyConfig.Lock();
+
   if (MyConfig.IsDefined("plugin.disabled", m_name))
     {
     MyConfig.DeleteInstance("plugin.disabled", m_name);
@@ -977,6 +981,8 @@ bool OvmsPlugin::Enable()
 
 bool OvmsPlugin::Disable()
   {
+  auto lock = MyConfig.Lock();
+
   if (MyConfig.IsDefined("plugin.enabled", m_name))
     {
     MyConfig.DeleteInstance("plugin.enabled", m_name);
@@ -989,6 +995,7 @@ bool OvmsPlugin::Disable()
 
 std::string OvmsPlugin::InstalledVersion()
   {
+  auto lock = MyConfig.Lock();
   std::string version;
   if (MyConfig.IsDefined("plugin.enabled", m_name))
     {

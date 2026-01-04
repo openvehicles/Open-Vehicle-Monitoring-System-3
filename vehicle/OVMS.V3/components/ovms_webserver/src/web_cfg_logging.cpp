@@ -31,6 +31,7 @@
  */
 void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   OvmsConfigParam* param = MyConfig.CachedParam("log");
   ConfigParamMap pmap;
@@ -69,9 +70,7 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // save:
-      param->m_map.clear();
-      param->m_map = std::move(pmap);
-      param->Save();
+      param->SetMap(pmap);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Logging configuration saved.</p>");
@@ -87,7 +86,7 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    pmap = param->m_map;
+    pmap = param->GetMap();
 
     // generate form:
     c.head(200);

@@ -46,14 +46,15 @@ OvmsTPMS MyTPMS __attribute__ ((init_priority (4700)));
 void tpms_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("\nTyre Sets:");
+  auto lock = MyConfig.Lock();
   OvmsConfigParam *p = MyConfig.CachedParam(TPMS_PARAM);
-  if (!p || p->m_map.empty())
+  if (!p || p->m_instances.empty())
     {
     writer->puts("No tyre sets defined.");
     }
   else if (p)
     {
-    for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
+    for (ConfigParamMap::iterator it=p->m_instances.begin(); it!=p->m_instances.end(); ++it)
       {
       writer->printf("  %s: %s\n", it->first.c_str(),it->second.c_str());
       }
@@ -91,6 +92,7 @@ void tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
 void tpms_delete(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  auto lock = MyConfig.Lock();
   if (MyConfig.IsDefined(TPMS_PARAM,argv[0]))
     {
     MyConfig.DeleteInstance(TPMS_PARAM,argv[0]);

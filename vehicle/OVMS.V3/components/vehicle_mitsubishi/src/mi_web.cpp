@@ -73,6 +73,7 @@ void OvmsVehicleMitsubishi::WebInit()
  */
 void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error,soh,ideal;
   bool oldheater,newcell;
 

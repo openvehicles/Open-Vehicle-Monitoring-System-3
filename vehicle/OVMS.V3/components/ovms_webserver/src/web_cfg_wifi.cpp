@@ -32,6 +32,7 @@
 
 void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   bool cfg_bad_reconnect, cfg_reboot_no_ip, cfg_ap2client_enabled, cfg_ap2client_notify;
   float cfg_sq_good, cfg_sq_bad;
   int cfg_ap2client_timeout;
@@ -261,6 +262,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 
 void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, const std::string autostart_ssid)
 {
+  auto lock = MyConfig.Lock();
   OvmsConfigParam* param = MyConfig.CachedParam(paramname);
   int pos = 0, pos_autostart = 0, max;
   char buf[50];
@@ -272,7 +274,7 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
     pos_autostart = atoi(c.getvar(buf).c_str());
   }
   else {
-    max = param->m_map.size();
+    max = param->m_instances.size();
   }
 
   c.printf(
@@ -332,7 +334,7 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
     }
   }
   else {
-    for (auto const& kv : param->m_map) {
+    for (auto const& kv : param->m_instances) {
       pos++;
       ssid = kv.first;
       if (endsWith(ssid, ".ovms.staticip"))
@@ -360,6 +362,7 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
 void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname,
   std::string& warn, std::string& error, int pass_minlen)
 {
+  auto lock = MyConfig.Lock();
   OvmsConfigParam* param = MyConfig.CachedParam(paramname);
   int i, max, pos_autostart;
   std::string ssid, pass, ssid_autostart;
@@ -401,9 +404,7 @@ void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std:
 
   if (error == "") {
     // save new map:
-    param->m_map.clear();
-    param->m_map = std::move(newmap);
-    param->Save();
+    param->SetMap(newmap);
 
     // set new autostart ssid:
     if (ssid_autostart != "")

@@ -63,6 +63,7 @@ void OvmsVehicleKiaNiroEv::WebInit()
  */
 void OvmsVehicleKiaNiroEv::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   bool canwrite;
   bool consoleKilometers;
@@ -133,6 +134,7 @@ void OvmsVehicleKiaNiroEv::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsVehicleKiaNiroEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   //  cap_act_kwh       Battery capacity in wH (Default: 64000)
   //  suffsoc           Sufficient SOC [%] (Default: 0=disabled)

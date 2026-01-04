@@ -39,17 +39,21 @@
 #include "ovms_mutex.h"
 #include "ovms_command.h"
 
+class OvmsConfig;
+extern OvmsConfig MyConfig;
+
 typedef NameMap<std::string> ConfigParamMap;
 
 class OvmsConfigParam
   {
+  friend class OvmsConfig;
+
   public:
     OvmsConfigParam(std::string name, std::string title, bool writable, bool readable);
     ~OvmsConfigParam();
 
   public:
     void SetValue(std::string instance, std::string value);
-    void DeleteParam();
     bool DeleteInstance(std::string instance);
     std::string GetValue(std::string instance);
     bool IsDefined(std::string instance);
@@ -61,10 +65,11 @@ class OvmsConfigParam
     void SetTitle(std::string title) { m_title = title; }
     void Load();
     void Save();
-    const ConfigParamMap& GetMap() { return m_map; }
+    const ConfigParamMap& GetMap() { return m_instances; }
     void SetMap(ConfigParamMap& map);
 
   protected:
+    void DeleteConfig();
     void RewriteConfig();
     void LoadConfig();
 
@@ -76,7 +81,7 @@ class OvmsConfigParam
     bool m_loaded;
 
   public:
-    ConfigParamMap m_map;
+    ConfigParamMap m_instances;
   };
 
 typedef NameMap<OvmsConfigParam*> ConfigMap;
@@ -89,9 +94,57 @@ typedef enum
 
 class OvmsConfig
   {
+  friend class OvmsConfigParam;
+
   public:
     OvmsConfig();
     ~OvmsConfig();
+
+  // On config locks/transactions:
+  // 
+  // Any direct access to the param map or any instance map MUST aquire a lock to prevent race conditions
+  // by concurrent writes / deletions. MyConfig main API calls are safe to use without an explicit lock
+  // (they use implicit locking), but be aware setters will then do a full rewrite on each change
+  // (i.e. slow and wearing the flash memory).
+  // 
+  // To avoid this, either use the map getters & setters, or encapsulate all blocks of multiple config
+  // changes in series in a transactional block. Within a transaction, all actual storage operations and
+  // signals are postponed to the commit, to avoid repeated flash file rewrites & `config.changed` events
+  // for the same param.
+  // 
+  // Usage:
+  //    {
+  //    auto lock = MyConfig.Lock();
+  //    … perform changes …
+  //    }
+  // 
+  // Nesting locks is allowed (within the same task), the final (outer) release will do the commit.
+  // When trying to lock (short timeout), use `lock.IsLocked()` to query the success.
+  // 
+  // Note: config event listeners (except scripts) are called within a config transaction already
+  //   created by the event framework, so do not need to create their own.
+
+  public:
+    class Transaction : public OvmsRecMutexLock
+      {
+      public:
+        Transaction(OvmsRecMutex* mutex, TickType_t timeout=portMAX_DELAY);
+        Transaction(const Transaction& src) = delete; // copying not allowed
+        Transaction& operator=(const Transaction& src) = delete;
+        Transaction(Transaction&& src);
+        ~Transaction();
+      };
+    Transaction Lock(TickType_t timeout=portMAX_DELAY) { return Transaction(&m_mutex, timeout); }
+    Transaction* CreateLock(TickType_t timeout=portMAX_DELAY) { return new Transaction(&m_mutex, timeout); }
+
+  protected:
+    typedef enum
+      {
+      Save = 0,
+      Delete,
+      } TransOp;
+    void TransactionAdd(OvmsConfigParam* param, TransOp todo);
+    void TransactionCommit();
 
   public:
     void RegisterParam(std::string name, std::string title, bool writable=true, bool readable=true);
@@ -133,15 +186,18 @@ class OvmsConfig
     void upgrade();
 
   protected:
-    bool m_mounted;
+    bool m_mounted = false;
     esp_vfs_fat_mount_config_t m_store_fat;
     wl_handle_t m_store_wlh;
 
+  private:
+    OvmsRecMutex m_mutex;                                 // config cache/transactional access
+    OvmsMutex m_store_mutex;                              // config file storage access
+    std::map<OvmsConfigParam*, TransOp> m_transaction;    // deferred transactional operations
+
   public:
-    ConfigMap m_map;
-    OvmsMutex m_store_lock;
+    ConfigMap m_params;
   };
 
-extern OvmsConfig MyConfig;
 
 #endif //#ifndef __CONFIG_H__
