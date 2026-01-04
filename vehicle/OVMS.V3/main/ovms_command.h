@@ -104,17 +104,17 @@ class NameMap : public std::map<std::string, T>
       size_t len = strlen(token);
       const T* found = NULL;
       for (typename NameMap<T>::const_iterator it = NameMap<T>::begin(); it != NameMap<T>::end(); ++it)
-	{
-	if (it->first.compare(0, len, token) == 0)
-	  {
-	  if (len == it->first.length())
-	    return &it->second;
-	  if (found)
-	    return NULL;
-	  else
-	    found = &it->second;
-	  }
-	}
+        {
+        if (it->first.compare(0, len, token) == 0)
+          {
+          if (len == it->first.length())
+            return &it->second;
+          if (found)
+            return NULL;
+          else
+            found = &it->second;
+          }
+        }
       return found;
       }
 
@@ -141,19 +141,19 @@ class NameMap : public std::map<std::string, T>
     int Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const
       {
       if (complete)
-	{
-	if (!GetCompletion(writer, token))
-	  return -1;
-	}
+        {
+        if (!GetCompletion(writer, token))
+          return -1;
+        }
       else
-	{
-	if (FindUniquePrefix(token) == NULL)
-	  {
+        {
+        if (FindUniquePrefix(token) == NULL)
+          {
           if (strcmp(token, "?") != 0)
             writer->printf("Error: %s is not defined\n", token);
-	  return -1;
-	  }
-	}
+          return -1;
+          }
+        }
       return argc;
       }
   };
@@ -167,17 +167,17 @@ class CNameMap : public std::map<const char*, T, CmpStrOp>
       size_t len = strlen(token);
       const T* found = NULL;
       for (typename CNameMap<T>::const_iterator it = CNameMap<T>::begin(); it != CNameMap<T>::end(); ++it)
-	{
-	if (strncmp(it->first, token, len) == 0)
-	  {
-	  if (len == strlen(it->first))
-	    return &it->second;
-	  if (found)
-	    return NULL;
-	  else
-	    found = &it->second;
-	  }
-	}
+        {
+        if (strncmp(it->first, token, len) == 0)
+          {
+          if (len == strlen(it->first))
+            return &it->second;
+          if (found)
+            return NULL;
+          else
+            found = &it->second;
+          }
+        }
       return found;
       }
 
@@ -204,19 +204,19 @@ class CNameMap : public std::map<const char*, T, CmpStrOp>
     int Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const
       {
       if (complete)
-	{
-	if (!GetCompletion(writer, token))
-	  return -1;
-	}
+        {
+        if (!GetCompletion(writer, token))
+          return -1;
+        }
       else
-	{
-	if (FindUniquePrefix(token) == NULL)
-	  {
+        {
+        if (FindUniquePrefix(token) == NULL)
+          {
           if (strcmp(token, "?") != 0)
             writer->printf("Error: %s is not defined\n", token);
-	  return -1;
-	  }
-	}
+          return -1;
+          }
+        }
       return argc;
       }
   };
@@ -396,6 +396,7 @@ class OvmsCommandApp : public OvmsWriter
     std::string m_logfile_path;
     size_t m_logfile_size;
     size_t m_logfile_maxsize;
+    int m_logfile_syncperiod;
     TaskHandle_t m_logtask;
     OvmsMutex m_logtask_mutex;
     QueueHandle_t m_logtask_queue;
