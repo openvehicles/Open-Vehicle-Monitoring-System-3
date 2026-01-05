@@ -295,7 +295,7 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     ResetTripCounters();
     if (ocu_awake && m_sendOcuHeartbeat != NULL) {
       ESP_LOGD(TAG, "T26: stopping OCU heartbeat timer");
-      xTimerStop(m_sendOcuHeartbeat, pdMS_TO_TICKS(100));
+      xTimerStop(m_sendOcuHeartbeat, 0);
     }
     ocu_awake = false;
     ocu_working = false;
@@ -570,7 +570,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
       if (d[1] == 0x31) {
         if (m_sendOcuHeartbeat != NULL) {
           ESP_LOGD(TAG, "T26: stopping OCU heartbeat timer");
-          xTimerStop(m_sendOcuHeartbeat, pdMS_TO_TICKS(100));
+          xTimerStop(m_sendOcuHeartbeat, 0);
         }
         if (ocu_awake) { // We should go to sleep, no matter what
           ESP_LOGI(TAG, "T26: Comfort CAN calls for sleep");
@@ -1088,7 +1088,7 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
   // check index vs buffer space:
   if (profile0_idx + 8 > profile0_len) {
     ESP_LOGE(TAG, "T26: ReadProfile0: profile buffer overrun -> aborting profile processing");
-    xTimerStop(profile0_timer, pdMS_TO_TICKS(100));
+    xTimerStop(profile0_timer, 0);
     profile0_recv = false;
     profile0_state = PROFILE0_IDLE;
     profile0_key = P0_KEY_NOP;
@@ -1104,7 +1104,7 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
   if (profile0_idx == 8) {
     // first profile frame received
     ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
-    int timer_stopped = xTimerStop(profile0_timer, pdMS_TO_TICKS(100));
+    int timer_stopped = xTimerStop(profile0_timer, 0);
     ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
     if (profile0_state == PROFILE0_REQUEST) {
       profile0_cntr[1] = 0;
