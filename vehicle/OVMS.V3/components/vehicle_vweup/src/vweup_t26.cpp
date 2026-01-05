@@ -1186,7 +1186,7 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
     {
       if (profile0_cntr[0] >= profile0_retries) {
         ESP_LOGE(TAG, "T26: maximum retries for reading profile0 exceeded! Stopping request.");
-        MyNotify.NotifyString("alert", "Profile0", "Failed to read pfrofile0!");
+        MyNotify.NotifyString("alert", "Profile0", "Failed to read profile0!");
         ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
         int timer_stopped = xTimerStop(profile0_timer, 0);
         ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
