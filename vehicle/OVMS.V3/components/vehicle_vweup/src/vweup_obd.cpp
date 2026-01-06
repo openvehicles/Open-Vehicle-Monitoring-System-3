@@ -560,10 +560,19 @@ void OvmsVehicleVWeUp::PollerStateTicker(canbus *bus)
 
       // Fetch VIN once:
       if (!StdMetrics.ms_v_vin->IsDefined()) {
-        std::string vin;
-        if (PollSingleRequest(m_can1, VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_VIN, vin) == 0) {
-          StdMetrics.ms_v_vin->SetValue(vin.substr(1));
-        }
+        // PollerStateTicker() is now called within the poller context, and the blocking PollSingleRequest()
+        // call is not allowed from within the poller context, so queue async request:
+        auto poll_entry = std::shared_ptr<OvmsPoller::OnceOffPoll>(
+          new OvmsPoller::OnceOffPoll(
+            [](uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid,
+                CAN_frame_format_t format, const std::string &data)
+            {
+              StdMetrics.ms_v_vin->SetValue(data.substr(1));
+            },
+            nullptr,
+            VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_VIN,
+            ISOTP_STD, 0, 3));
+        PollRequest(m_can1, "!xvu.vin", poll_entry);
       }
 
       // Start regular polling:
