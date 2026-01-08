@@ -562,6 +562,7 @@ void OvmsVehicleFactory::vehicle_climate_schedule_clear(int verbosity, OvmsWrite
 
   if (strcasecmp(day, "all") == 0)
   {
+    auto lock = MyConfig.Lock();
     const char* day_names[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
     for (int i = 0; i < 7; i++)
     {
@@ -603,6 +604,8 @@ void OvmsVehicleFactory::vehicle_climate_schedule_copy(int verbosity, OvmsWriter
   const char* target_spec = argv[1];
   
   const char* valid_days[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
+  
+  auto lock = MyConfig.Lock();
   
   // Validate source day
   bool source_valid = false;
