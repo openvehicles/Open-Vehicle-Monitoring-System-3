@@ -489,8 +489,30 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
       c.alert(alert_type.c_str(), info.c_str());
 
       // Refresh values from config/metrics to show latest state after command execution
-      calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", calcADCfactor);
-      adc_factor  = MyConfig.GetParamValue("system.adc", "factor12v", adc_factor.empty() ? "195.7" : adc_factor);
+      OvmsConfigParam* param_xsq_refresh = MyConfig.CachedParam("xsq");
+      OvmsConfigParam* param_adc_refresh = MyConfig.CachedParam("system.adc");
+      
+      if (param_xsq_refresh) {
+        const auto& m = param_xsq_refresh->GetMap();
+        auto it = m.find("calc.adcfactor");
+        if (it != m.end()) {
+          const std::string& val = it->second;
+          calcADCfactor = (val == "yes" || val == "true" || val == "1");
+        }
+      }
+      
+      if (param_adc_refresh) {
+        const auto& m = param_adc_refresh->GetMap();
+        auto it = m.find("factor12v");
+        if (it != m.end()) {
+          adc_factor = it->second;
+        } else if (adc_factor.empty()) {
+          adc_factor = "195.7";
+        }
+      } else if (adc_factor.empty()) {
+        adc_factor = "195.7";
+      }
+      
       if (sq->mt_evc_dcdc && sq->mt_evc_dcdc->GetElemValue(1) > 10.0f) {
         char buf[16];
         snprintf(buf, sizeof(buf), "%.3f", sq->mt_evc_dcdc->GetElemValue(1));  // DCDC voltage
@@ -502,8 +524,13 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
         adc_history = sq->mt_adc_factor_history->AsString();
     }
     else if (error.empty()) {
-      MyConfig.SetParamValue("system.adc", "factor12v", adc_factor);
-      MyConfig.SetParamValueBool("xsq", "calc.adcfactor", calcADCfactor);
+      // Use GetParamMap() to get COPYs and update in transactions
+      auto map_adc = MyConfig.GetParamMap("system.adc");
+      auto map_xsq = MyConfig.GetParamMap("xsq");
+      map_adc["factor12v"] = adc_factor;
+      map_xsq["calc.adcfactor"] = calcADCfactor ? "yes" : "no";
+      MyConfig.SetParamMap("system.adc", map_adc);
+      MyConfig.SetParamMap("xsq", map_xsq);
 
       // Success response
       info = "<p>ADC settings updated successfully</p>";
@@ -522,9 +549,31 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
       c.alert("danger", error.c_str());
     }
   } else {
-    // read configuration:
-    calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", false);
-    adc_factor  = MyConfig.GetParamValue("system.adc", "factor12v", "195.7");
+    // read configuration using GetParamMap
+    OvmsConfigParam* param_xsq = MyConfig.CachedParam("xsq");
+    OvmsConfigParam* param_adc = MyConfig.CachedParam("system.adc");
+    
+    if (param_xsq) {
+      const auto& m = param_xsq->GetMap();
+      auto it = m.find("calc.adcfactor");
+      if (it != m.end()) {
+        const std::string& val = it->second;
+        calcADCfactor = (val == "yes" || val == "true" || val == "1");
+      } else {
+        calcADCfactor = false;
+      }
+    } else {
+      calcADCfactor = false;
+    }
+    
+    if (param_adc) {
+      const auto& m = param_adc->GetMap();
+      auto it = m.find("factor12v");
+      adc_factor = (it != m.end()) ? it->second : "195.7";
+    } else {
+      adc_factor = "195.7";
+    }
+    
     if (sq->mt_evc_dcdc && sq->mt_evc_dcdc->GetElemValue(1) > 10.0f) {
         char buf[16];
         snprintf(buf, sizeof(buf), "%.3f", sq->mt_evc_dcdc->GetElemValue(1));  // DCDC voltage
@@ -616,11 +665,13 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     }
 
     if (error == "") {
-      // store:
-      MyConfig.SetParamValue("xsq", "suffrange", suffrange);
-      MyConfig.SetParamValue("xsq", "suffsoc", suffsoc);
-      MyConfig.SetParamValue("xsq", "cell_interval_drv", cell_interval_drv);
-      MyConfig.SetParamValue("xsq", "cell_interval_chg", cell_interval_chg);
+      // store: Use GetParamMap() to get a COPY and update in one transaction
+      auto map = MyConfig.GetParamMap("xsq");
+      map["suffrange"] = suffrange;
+      map["suffsoc"] = suffsoc;
+      map["cell_interval_drv"] = cell_interval_drv;
+      map["cell_interval_chg"] = cell_interval_chg;
+      MyConfig.SetParamMap("xsq", map);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">smart EQ battery setup saved.</p>");
@@ -635,11 +686,27 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     c.alert("danger", error.c_str());
   }
   else {
-    // read configuration:
-    suffrange = MyConfig.GetParamValue("xsq", "suffrange", "0");
-    suffsoc   = MyConfig.GetParamValue("xsq", "suffsoc", "0");
-    cell_interval_drv = MyConfig.GetParamValue("xsq", "cell_interval_drv", "60");
-    cell_interval_chg = MyConfig.GetParamValue("xsq", "cell_interval_chg", "60");
+    // read configuration using GetParamMap
+    OvmsConfigParam* param = MyConfig.CachedParam("xsq");
+    
+    if (param) {
+      const auto& m = param->GetMap();
+      
+      auto getString = [&m](const char* key, const char* def) -> std::string {
+        auto it = m.find(key);
+        return (it != m.end()) ? it->second : def;
+      };
+      
+      suffrange = getString("suffrange", "0");
+      suffsoc = getString("suffsoc", "0");
+      cell_interval_drv = getString("cell_interval_drv", "60");
+      cell_interval_chg = getString("cell_interval_chg", "60");
+    } else {
+      suffrange = "0";
+      suffsoc = "0";
+      cell_interval_drv = "60";
+      cell_interval_chg = "60";
+    }
 
     c.head(200);
   }

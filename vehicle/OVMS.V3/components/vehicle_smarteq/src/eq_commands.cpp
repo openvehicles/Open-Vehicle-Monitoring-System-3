@@ -936,55 +936,97 @@ void OvmsVehicleSmartEQ::xsq_preset(int verbosity, OvmsWriter* writer, OvmsComma
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, OvmsWriter* writer) {
-  //MyConfig.SetParamValueBool("xsq", "cfg.preset.act",  true); // activate preset config
-  MyConfig.SetParamValueInt("xsq", "cfg.preset.ver",  PRESET_VERSION); // preset config version
+  // Use GetParamMap() to get COPYs and update in transactions
+  auto map_xsq = MyConfig.GetParamMap("xsq");
+  auto map_vehicle = MyConfig.GetParamMap("vehicle");
+  auto map_modem = MyConfig.GetParamMap("modem");
+  auto map_net = MyConfig.GetParamMap("net");
+  auto map_network = MyConfig.GetParamMap("network");
+  auto map_ota = MyConfig.GetParamMap("ota");
+  
+  bool update_xsq = false;
+  bool update_vehicle = false;
+  bool update_modem = false;
+  bool update_net = false;
+  bool update_network = false;
+  bool update_ota = false;
+  
+  // Update xsq preset version
+  char buf[16];
+  snprintf(buf, sizeof(buf), "%d", PRESET_VERSION);
+  map_xsq["cfg.preset.ver"] = buf;
+  update_xsq = true;
 
+  // Set default 12V alert threshold if not defined
   if (!MyConfig.IsDefined("vehicle", "12v.alert")) 
     {
-    MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
+    map_vehicle["12v.alert"] = "0.8";
+    update_vehicle = true;
     }
 
+  // Set GPS parking defaults if not defined
   if (!MyConfig.IsDefined("modem", "gps.parkpause")) 
     {
-    MyConfig.SetParamValue("modem", "gps.parkpause", "600"); // default 10 min.
-    MyConfig.SetParamValue("modem", "gps.parkreactivate", "50"); // default 50 min.
-    MyConfig.SetParamValue("modem", "gps.parkreactlock", "5"); // default 5 min.
-    MyConfig.SetParamValue("vehicle", "stream", "10"); // set stream to 10 sec.
+    map_modem["gps.parkpause"] = "600";        // default 10 min.
+    map_modem["gps.parkreactivate"] = "50";    // default 50 min.
+    map_modem["gps.parkreactlock"] = "5";      // default 5 min.
+    map_vehicle["stream"] = "10";              // set stream to 10 sec.
+    update_modem = true;
+    update_vehicle = true;
     }
   
   if (!MyConfig.IsDefined("modem", "gps.parkreactawake")) 
     {
-    MyConfig.SetParamValueBool("modem", "gps.parkreactawake", true);
+    map_modem["gps.parkreactawake"] = "yes";
+    update_modem = true;
     }
 
   if (!MyConfig.IsDefined("net", "type")) 
     {
-    MyConfig.SetParamValue("net", "type", "4G");
+    map_net["type"] = "4G";
+    update_net = true;
     }
 
   if (!MyConfig.IsDefined("network", "wifi.ap2client.enable")) 
     {
-    MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
+    map_network["wifi.ap2client.enable"] = "yes";
+    update_network = true;
     }
 
-  if (!MyConfig.IsDefined("xsq", "TPMS_FL")) 
+  // Migrate old TPMS config from xsq to vehicle
+  if (MyConfig.IsDefined("xsq", "TPMS_FL")) 
     {
-    MyConfig.SetParamValueInt("vehicle", "tpms.fl", MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0));
-    MyConfig.SetParamValueInt("vehicle", "tpms.fr", MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1));
-    MyConfig.SetParamValueInt("vehicle", "tpms.rl", MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2));
-    MyConfig.SetParamValueInt("vehicle", "tpms.rr", MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3));
+    auto getString = [&map_xsq](const char* key, const char* def) -> std::string {
+      auto it = map_xsq.find(key);
+      return (it != map_xsq.end()) ? it->second : def;
+    };
+    
+    map_vehicle["tpms.fl"] = getString("TPMS_FL", "0");
+    map_vehicle["tpms.fr"] = getString("TPMS_FR", "1");
+    map_vehicle["tpms.rl"] = getString("TPMS_RL", "2");
+    map_vehicle["tpms.rr"] = getString("TPMS_RR", "3");
+    update_vehicle = true;
     }
 
-  if (MyConfig.GetParamValue("ota", "server", "0") == "https://ovms.dimitrie.eu/firmware/ota" && 
-      MyConfig.GetParamValue("ota", "tag", "0") == "smarteq")
+  // Update OTA server if still using old server
+  auto it_server = map_ota.find("server");
+  auto it_tag = map_ota.find("tag");
+  if (it_server != map_ota.end() && it_tag != map_ota.end()) 
     {
-    MyConfig.SetParamValue("ota", "server", "https://ovms.dexters-web.de/firmware/ota");
-    MyConfig.SetParamValue("ota", "tag", "edge");
+    if (it_server->second == "https://ovms.dimitrie.eu/firmware/ota" && 
+        it_tag->second == "smarteq")
+      {
+      map_ota["server"] = "https://ovms.dexters-web.de/firmware/ota";
+      map_ota["tag"] = "edge";
+      update_ota = true;
+      }
     }
 
-  // Delete old config entries using GetParamMap() to get a COPY
-  auto map = MyConfig.GetParamMap("xsq");
-  
+  // Remove deprecated preclimate section
+  if (MyConfig.CachedParam("xsq.preclimate"))
+    MyConfig.DeregisterParam("xsq.preclimate");
+
+  // Delete old config entries - reuse existing map_xsq
   // List of deprecated keys to remove
   const char* deprecated_keys[] = {
     "ios_tpms_fix",
@@ -1026,27 +1068,32 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   // Remove all deprecated keys from map
   int removed_count = 0;
   for (const char* key : deprecated_keys) {
-    auto it = map.find(key);
-    if (it != map.end()) {
-      map.erase(it);
+    auto it = map_xsq.find(key);
+    if (it != map_xsq.end()) 
+      {
+      map_xsq.erase(it);
       removed_count++;
-    }
-  }
+      }
+    }  
   
-  // Write updated map back (only if something was removed)
-  if (removed_count > 0) {
-    MyConfig.SetParamMap("xsq", map);
-    if (writer) {
-      writer->printf("Removed %d deprecated config entries\n", removed_count);
-    }
-    ESP_LOGI(TAG, "Removed %d deprecated config entries", removed_count);
-  }
+  // Write all changes in transactions (one per config section)
+  if (update_xsq) MyConfig.SetParamMap("xsq", map_xsq);
+  if (update_vehicle) MyConfig.SetParamMap("vehicle", map_vehicle);
+  if (update_modem) MyConfig.SetParamMap("modem", map_modem);
+  if (update_net) MyConfig.SetParamMap("net", map_net);
+  if (update_network) MyConfig.SetParamMap("network", map_network);
+  if (update_ota) MyConfig.SetParamMap("ota", map_ota);
 
-  if (writer) {
+  if (writer) 
+    {
     writer->printf("Config V%d preset activated", PRESET_VERSION);
-  }
+    if (removed_count > 0) 
+      {
+      writer->printf("Removed %d deprecated config entries\n", removed_count);
+      ESP_LOGI(TAG, "Removed %d deprecated config entries", removed_count);
+      }
+    }
 
-  MyConfig.DeregisterParam("xsq.preclimate");
   return Success;
 }
 

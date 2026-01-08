@@ -34,7 +34,7 @@
 #define __VEHICLE_SMARTEQ_H__
 
 #define VERSION "2.1.2"
-#define PRESET_VERSION 7 // Configuration preset version
+#define PRESET_VERSION 20260108 // Configuration preset version
 
 #include "ovms_log.h"
 

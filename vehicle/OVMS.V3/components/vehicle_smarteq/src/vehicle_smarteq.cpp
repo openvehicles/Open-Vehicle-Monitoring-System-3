@@ -81,10 +81,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);               // 96 cells, 1 series string
   BmsSetCellArrangementTemperature(27, 1);           // 27 temp sensors, 1 series string
-  BmsSetCellLimitsVoltage(2.0, 5.0);                 // Min 2.0V, Max 5.0V
-  BmsSetCellLimitsTemperature(-39, 200);             // Min -39°C, Max 200°C
-  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);  // Warn: 20mV, Alert: 30mV
-  BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);  // Warn: 2°C, Alert: 3°C
+  BmsSetCellLimitsVoltage(2.0, 4.5);                 // Min 2.0V, Max 4.5V
+  BmsSetCellLimitsTemperature(-39, 60);              // Min -39°C, Max 60°C
+  BmsSetCellDefaultThresholdsVoltage(0.035, 0.050);  // Warn: 35mV, Alert: 50mV
+  BmsSetCellDefaultThresholdsTemperature(3.5, 5.0);  // Warn: 3,5°C, Alert: 5,0°C
 
   mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, true);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MAX, "", Other);
