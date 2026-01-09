@@ -1423,7 +1423,14 @@ void OvmsConfigParam::Save()
 void OvmsConfigParam::SetMap(ConfigParamMap& map)
   {
   auto lock = MyConfig.Lock();
-  m_instances.clear();
-  m_instances = std::move(map);
-  Save();
+  if (!map_equal(map, m_instances))
+    {
+    m_instances.clear();
+    m_instances = std::move(map);
+    Save();
+    }
+  else
+    {
+    map.clear();
+    }
   }
