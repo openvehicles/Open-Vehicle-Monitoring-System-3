@@ -686,6 +686,13 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
     return POLLSINGLE_TIMEOUT;
     }
 
+  if (Atomic_Get(m_parent->m_polltask) == xTaskGetCurrentTaskHandle())
+    {
+    // NB: PollerStateTicker is called from the poller task.
+    ESP_LOGE(TAG, "PollSingleRequest: Unable to call from poller task");
+    return POLLSINGLE_TIMEOUT;
+    }
+
   // prepare single poll:
   OvmsPoller::poll_pid_t poll;
   LoadPollRequest(poll, txid, rxid, request, protocol, 1);
