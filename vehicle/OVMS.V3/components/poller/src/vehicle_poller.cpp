@@ -741,6 +741,19 @@ int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::str
   IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollSingleRequest: Response done ", m_poll.bus_no);
   // Make sure if it is still sticking around that it's not accessing
   // stack objects!
+  // This is the safest way of making sure it is removed from circulation.
+    {
+    OvmsRecMutexLock lock(&m_poll_mutex, pdMS_TO_TICKS(timeout_ms));
+    if (!lock.IsLocked())
+      {
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollSingleRequest: Timeout obtaining Poller Lock to remove v.single", m_poll.bus_no);
+      }
+    else
+      {
+      m_polls.RemoveEntry(POLL_SINGLE_ENTRY);
+      }
+    }
+  // In case this failed - this will make sure it removes itself.
   poller->Finished();
   return (!rxok) ? POLLSINGLE_TIMEOUT : rx_error;
   }
