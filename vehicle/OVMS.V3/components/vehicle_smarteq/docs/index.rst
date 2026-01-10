@@ -67,6 +67,7 @@ xsq calcadc [voltage]      -- Recalculate ADC factor (optional: 12V voltage over
 xsq wakeup                 -- Wake up the car
 xsq ed4scan                -- Output ED4scan-like BMS diagnostic data
 xsq preset                 -- Apply smart EQ config preset
+xsq default                -- Set smart EQ config to default values
 
 xsq tpms stat              -- Show smartEQ TPMS status incl. battery & missing
 xsq tpms setdummy          -- Set TPMS dummy value for testing
