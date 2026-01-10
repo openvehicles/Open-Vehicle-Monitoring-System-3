@@ -775,6 +775,17 @@ void OvmsConfig::DeregisterParam(std::string name)
     }
   }
 
+
+bool OvmsConfig::IsDefined(std::string param, std::string instance)
+  {
+  if (!m_mounted) return false;
+  auto lock = Lock();
+  OvmsConfigParam *p = CachedParam(param);
+  if (p == NULL) return false;
+  return p->IsDefined(instance);
+  }
+
+
 void OvmsConfig::SetParamValue(std::string param, std::string instance, std::string value)
   {
   if (!m_mounted) return;
@@ -782,42 +793,94 @@ void OvmsConfig::SetParamValue(std::string param, std::string instance, std::str
   OvmsConfigParam *p = CachedParam(param);
   if (p)
     {
-    p->SetValue(instance,value);
+    p->SetValue(instance, value);
+    }
+  }
+
+void OvmsConfig::SetParamValueInt(std::string param, std::string instance, int value)
+  {
+  if (!m_mounted) return;
+  auto lock = Lock();
+  OvmsConfigParam *p = CachedParam(param);
+  if (p)
+    {
+    p->SetValueInt(instance, value);
+    }
+  }
+
+void OvmsConfig::SetParamValueFloat(std::string param, std::string instance, float value)
+  {
+  if (!m_mounted) return;
+  auto lock = Lock();
+  OvmsConfigParam *p = CachedParam(param);
+  if (p)
+    {
+    p->SetValueFloat(instance, value);
+    }
+  }
+
+void OvmsConfig::SetParamValueBool(std::string param, std::string instance, bool value)
+  {
+  if (!m_mounted) return;
+  auto lock = Lock();
+  OvmsConfigParam *p = CachedParam(param);
+  if (p)
+    {
+    p->SetValueBool(instance, value);
     }
   }
 
 void OvmsConfig::SetParamValueBinary(std::string param, std::string instance, std::string value, BinaryEncoding_t encoding /*=Encoding_HEX*/)
   {
-  std::string encval;
-  if (encoding == Encoding_BASE64)
+  if (!m_mounted) return;
+  auto lock = Lock();
+  OvmsConfigParam *p = CachedParam(param);
+  if (p)
     {
-    encval = base64encode(value);
+    p->SetValueBinary(instance, value, encoding);
     }
-  else // Encoding_HEX
-    {
-    encval = hexencode(value);
-    }
-  SetParamValue(param, instance, encval);
   }
 
-void OvmsConfig::SetParamValueInt(std::string param, std::string instance, int value)
+std::string OvmsConfig::GetParamValue(std::string param, std::string instance, std::string defvalue /*=""*/)
   {
-  std::ostringstream ss;
-  ss << value;
-  SetParamValue(param, instance, std::string(ss.str()));
+  if (!m_mounted) return defvalue;
+  auto lock = Lock();
+  OvmsConfigParam *p = CachedParam(param);
+  return (p) ? p->GetValue(instance, defvalue) : defvalue;
   }
 
-void OvmsConfig::SetParamValueFloat(std::string param, std::string instance, float value)
+int OvmsConfig::GetParamValueInt(std::string param, std::string instance, int defvalue /*=0*/)
   {
-  std::ostringstream ss;
-  ss << value;
-  SetParamValue(param, instance, std::string(ss.str()));
+  if (!m_mounted) return defvalue;
+  auto lock = Lock();
+  OvmsConfigParam *p = CachedParam(param);
+  return (p) ? p->GetValueInt(instance, defvalue) : defvalue;
   }
 
-void OvmsConfig::SetParamValueBool(std::string param, std::string instance, bool value)
+float OvmsConfig::GetParamValueFloat(std::string param, std::string instance, float defvalue /*=0*/)
   {
-  SetParamValue(param, instance, std::string(value ? "yes" : "no"));
+  if (!m_mounted) return defvalue;
+  auto lock = Lock();
+  OvmsConfigParam *p = CachedParam(param);
+  return (p) ? p->GetValueFloat(instance, defvalue) : defvalue;
   }
+
+bool OvmsConfig::GetParamValueBool(std::string param, std::string instance, bool defvalue /*=false*/)
+  {
+  if (!m_mounted) return defvalue;
+  auto lock = Lock();
+  OvmsConfigParam *p = CachedParam(param);
+  return (p) ? p->GetValueBool(instance, defvalue) : defvalue;
+  }
+
+std::string OvmsConfig::GetParamValueBinary(std::string param, std::string instance, std::string defvalue /*=""*/, BinaryEncoding_t encoding /*=Encoding_HEX*/)
+  {
+  if (!m_mounted) return defvalue;
+  auto lock = Lock();
+  OvmsConfigParam *p = CachedParam(param);
+  return (p) ? p->GetValueBinary(instance, defvalue, encoding) : defvalue;
+  }
+
 
 void OvmsConfig::DeleteInstance(std::string param, std::string instance)
   {
@@ -829,72 +892,6 @@ void OvmsConfig::DeleteInstance(std::string param, std::string instance)
     }
   }
 
-std::string OvmsConfig::GetParamValue(std::string param, std::string instance, std::string defvalue)
-  {
-  if (!m_mounted) return defvalue;
-  auto lock = Lock();
-  OvmsConfigParam *p = CachedParam(param);
-  if (p && p->IsDefined(instance))
-    {
-    return p->GetValue(instance);
-    }
-  else
-    {
-    return defvalue;
-    }
-  }
-
-std::string OvmsConfig::GetParamValueBinary(std::string param, std::string instance, std::string defvalue, BinaryEncoding_t encoding /*=Encoding_HEX*/)
-  {
-  std::string encval = GetParamValue(param,instance);
-  size_t len = encval.length();
-  if (len == 0) return defvalue;
-  if (encoding == Encoding_BASE64)
-    {
-    return base64decode(encval);
-    }
-  else // Encoding_HEX
-    {
-    std::string value = hexdecode(encval);
-    if (value.empty())
-      {
-      ESP_LOGE(TAG, "Invalid non-hex value for config param %s instance %s",
-        param.c_str(), instance.c_str());
-      return defvalue;
-      }
-    return value;
-    }
-  }
-
-int OvmsConfig::GetParamValueInt(std::string param, std::string instance, int defvalue)
-  {
-  std::string value = GetParamValue(param,instance);
-  if (value.length() == 0) return defvalue;
-  return atoi(value.c_str());
-  }
-
-float OvmsConfig::GetParamValueFloat(std::string param, std::string instance, float defvalue)
-  {
-  std::string value = GetParamValue(param,instance);
-  if (value.length() == 0) return defvalue;
-  return atof(value.c_str());
-  }
-
-bool OvmsConfig::GetParamValueBool(std::string param, std::string instance, bool defvalue)
-  {
-  std::string value = GetParamValue(param,instance);
-  if (value.length() == 0) return defvalue;
-  return strtobool(value);
-  }
-
-bool OvmsConfig::IsDefined(std::string param, std::string instance)
-  {
-  if (!m_mounted) return false;
-  auto lock = Lock();
-  OvmsConfigParam *p = CachedParam(param);
-  if (p == NULL) return false;
-  return p->IsDefined(instance);
-  }
 
 OvmsConfigParam* OvmsConfig::CachedParam(std::string param)
   {
@@ -1230,6 +1227,11 @@ void OvmsConfig::SupportSummary(OvmsWriter* writer)
     }
   }
 
+
+/***************************************************************************************************************
+ * class OvmsConfigParam
+ */
+
 OvmsConfigParam::OvmsConfigParam(std::string name, std::string title, bool writable, bool readable)
   {
   m_name = name;
@@ -1301,16 +1303,6 @@ void OvmsConfigParam::LoadConfig()
   m_loaded = true;
   }
 
-void OvmsConfigParam::SetValue(std::string instance, std::string value)
-  {
-  auto lock = MyConfig.Lock();
-  if (m_instances.find(instance) == m_instances.end() || m_instances[instance] != value)
-    {
-    m_instances[instance] = value;
-    Save();
-    }
-  }
-
 void OvmsConfigParam::DeleteConfig()
   {
   // Att: must only be called by OvmsConfig::DeregisterParam(), never directly!
@@ -1320,41 +1312,99 @@ void OvmsConfigParam::DeleteConfig()
   unlink(path.c_str());
   }
 
-bool OvmsConfigParam::DeleteInstance(std::string instance)
-  {
-  bool ret = false;
-  auto lock = MyConfig.Lock();
-  auto k = m_instances.find(instance);
-  if (k != m_instances.end())
-    {
-    m_instances.erase(k);
-    Save();
-    ret = true;
-    }
-  return ret;
-  }
-
-std::string OvmsConfigParam::GetValue(std::string instance)
-  {
-  auto lock = MyConfig.Lock();
-  auto k = m_instances.find(instance);
-  if (k == m_instances.end())
-    return std::string("");
-  else
-    return k->second;
-  }
 
 bool OvmsConfigParam::IsDefined(std::string instance)
   {
   auto lock = MyConfig.Lock();
-  if (instance.empty())
-    return !m_instances.empty();
-  auto k = m_instances.find(instance);
-  if (k == m_instances.end())
-    return false;
-  else
-    return true;
+  return m_instances.IsDefined(instance);
   }
+
+void OvmsConfigParam::SetValue(std::string instance, std::string value)
+  {
+  auto lock = MyConfig.Lock();
+  if (m_instances.SetValue(instance, value))
+    {
+    Save();
+    }
+  }
+
+void OvmsConfigParam::SetValueInt(std::string instance, int value)
+  {
+  auto lock = MyConfig.Lock();
+  if (m_instances.SetValueInt(instance, value))
+    {
+    Save();
+    }
+  }
+
+void OvmsConfigParam::SetValueFloat(std::string instance, float value)
+  {
+  auto lock = MyConfig.Lock();
+  if (m_instances.SetValueFloat(instance, value))
+    {
+    Save();
+    }
+  }
+
+void OvmsConfigParam::SetValueBool(std::string instance, bool value)
+  {
+  auto lock = MyConfig.Lock();
+  if (m_instances.SetValueBool(instance, value))
+    {
+    Save();
+    }
+  }
+
+void OvmsConfigParam::SetValueBinary(std::string instance, std::string value, BinaryEncoding_t encoding /*=Encoding_HEX*/)
+  {
+  auto lock = MyConfig.Lock();
+  if (m_instances.SetValueBinary(instance, value, encoding))
+    {
+    Save();
+    }
+  }
+
+std::string OvmsConfigParam::GetValue(std::string instance, std::string defvalue /*=""*/)
+  {
+  auto lock = MyConfig.Lock();
+  return m_instances.GetValue(instance, defvalue);
+  }
+
+int OvmsConfigParam::GetValueInt(std::string instance, int defvalue /*=0*/)
+  {
+  auto lock = MyConfig.Lock();
+  return m_instances.GetValueInt(instance, defvalue);
+  }
+
+float OvmsConfigParam::GetValueFloat(std::string instance, float defvalue /*=0*/)
+  {
+  auto lock = MyConfig.Lock();
+  return m_instances.GetValueFloat(instance, defvalue);
+  }
+
+bool OvmsConfigParam::GetValueBool(std::string instance, bool defvalue /*=false*/)
+  {
+  auto lock = MyConfig.Lock();
+  return m_instances.GetValueBool(instance, defvalue);
+  }
+
+std::string OvmsConfigParam::GetValueBinary(std::string instance, std::string defvalue /*=""*/, BinaryEncoding_t encoding /*=Encoding_HEX*/)
+  {
+  auto lock = MyConfig.Lock();
+  return m_instances.GetValueBinary(instance, defvalue, encoding);
+  }
+
+bool OvmsConfigParam::DeleteInstance(std::string instance)
+  {
+  auto lock = MyConfig.Lock();
+  if (m_instances.DeleteInstance(instance))
+    {
+    Save();
+    return true;
+    }
+  return false;
+  }
+
 
 bool OvmsConfigParam::Writable()
   {
@@ -1434,3 +1484,123 @@ void OvmsConfigParam::SetMap(ConfigParamMap& map)
     map.clear();
     }
   }
+
+
+/***************************************************************************************************************
+ * class ConfigParamMap
+ */
+
+bool ConfigParamMap::IsDefined(std::string instance)
+  {
+  // special case: testing for "" = map not empty
+  if (instance.empty())
+    return !empty();
+  return find(instance) != end();
+  }
+
+bool ConfigParamMap::SetValue(std::string instance, std::string value)
+  {
+  auto it = find(instance);
+  if (it == end())
+    {
+    insert({ instance, value });
+    return true;
+    }
+  else if (it->second != value)
+    {
+    it->second = value;
+    return true;
+    }
+  else
+    {
+    return false;
+    }
+  }
+
+bool ConfigParamMap::SetValueInt(std::string instance, int value)
+  {
+  std::ostringstream ss;
+  ss << value;
+  return SetValue(instance, ss.str());
+  }
+
+bool ConfigParamMap::SetValueFloat(std::string instance, float value)
+  {
+  std::ostringstream ss;
+  ss << value;
+  return SetValue(instance, ss.str());
+  }
+
+bool ConfigParamMap::SetValueBool(std::string instance, bool value)
+  {
+  return SetValue(instance, value ? "yes" : "no");
+  }
+
+bool ConfigParamMap::SetValueBinary(std::string instance, std::string value, BinaryEncoding_t encoding /*=Encoding_HEX*/)
+  {
+  std::string encval;
+  if (encoding == Encoding_BASE64)
+    {
+    encval = base64encode(value);
+    }
+  else // Encoding_HEX
+    {
+    encval = hexencode(value);
+    }
+  return SetValue(instance, encval);
+  }
+
+std::string ConfigParamMap::GetValue(std::string instance, std::string defvalue /*=""*/)
+  {
+  auto it = find(instance);
+  return (it != end()) ? it->second : defvalue;
+  }
+
+int ConfigParamMap::GetValueInt(std::string instance, int defvalue /*=0*/)
+  {
+  std::string value = GetValue(instance);
+  if (value.length() == 0) return defvalue;
+  return atoi(value.c_str());
+  }
+
+float ConfigParamMap::GetValueFloat(std::string instance, float defvalue /*=0*/)
+  {
+  std::string value = GetValue(instance);
+  if (value.length() == 0) return defvalue;
+  return atof(value.c_str());
+  }
+
+bool ConfigParamMap::GetValueBool(std::string instance, bool defvalue /*=false*/)
+  {
+  std::string value = GetValue(instance);
+  if (value.length() == 0) return defvalue;
+  return strtobool(value);
+  }
+
+std::string ConfigParamMap::GetValueBinary(std::string instance, std::string defvalue /*=""*/, BinaryEncoding_t encoding /*=Encoding_HEX*/)
+  {
+  std::string encval = GetValue(instance);
+  size_t len = encval.length();
+  if (len == 0) return defvalue;
+  if (encoding == Encoding_BASE64)
+    {
+    return base64decode(encval);
+    }
+  else // Encoding_HEX
+    {
+    std::string value = hexdecode(encval);
+    return value.empty() ? defvalue : value;
+    }
+  }
+
+bool ConfigParamMap::DeleteInstance(std::string instance)
+  {
+  auto it = find(instance);
+  if (it != end())
+    {
+    erase(it);
+    return true;
+    }
+  return false;
+  }
+
