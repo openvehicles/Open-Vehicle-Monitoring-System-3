@@ -81,10 +81,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);               // 96 cells, 1 series string
   BmsSetCellArrangementTemperature(27, 1);           // 27 temp sensors, 1 series string
-  BmsSetCellLimitsVoltage(2.0, 5.0);                 // Min 2.0V, Max 5.0V
-  BmsSetCellLimitsTemperature(-39, 200);             // Min -39°C, Max 200°C
-  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);  // Warn: 20mV, Alert: 30mV
-  BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);  // Warn: 2°C, Alert: 3°C
+  BmsSetCellLimitsVoltage(2.0, 4.5);                 // Min 2.0V, Max 4.5V
+  BmsSetCellLimitsTemperature(-39, 60);              // Min -39°C, Max 60°C
+  BmsSetCellDefaultThresholdsVoltage(0.035, 0.050);  // Warn: 35mV, Alert: 50mV
+  BmsSetCellDefaultThresholdsTemperature(3.5, 5.0);  // Warn: 3,5°C, Alert: 5,0°C
 
   mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, true);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MAX, "", Other);
@@ -200,6 +200,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("wakeup", "Wake up the car", xsq_wakeup);
   cmd_xsq->RegisterCommand("ed4scan", "ED4scan-like BMS Data", xsq_ed4scan);
   cmd_xsq->RegisterCommand("preset", "smart EQ config preset", xsq_preset);
+  cmd_xsq->RegisterCommand("default", "smart EQ config set default", xsq_setdefault);
 
   cmd_tpms = cmd_xsq->RegisterCommand("tpms", "TPMS status");
   cmd_tpms->RegisterCommand("setdummy", "set TPMS dummy value", xsq_tpms_set);
@@ -232,16 +233,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   if (m_enable_write && m_cfg_preset_version != PRESET_VERSION)  // preset version changed
     CommandPreset(0, NULL);                                      // set smart EQ config preset
-
-  #ifdef CONFIG_OVMS_COMP_CELLULAR
-    #ifdef CONFIG_OVMS_COMP_WIFI
-      // Features option: auto restart modem on wifi disconnect
-      if (m_modem_check) 
-      {
-      MyEvents.RegisterEvent(TAG,"cellular.modem.disconnected", std::bind(&OvmsVehicleSmartEQ::ModemEventRestart, this, _1, _2));
-      }
-    #endif
-  #endif
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
@@ -335,7 +326,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_pressure_alert       = getFloat("tpms.value.alert", 70.0f);
     m_tpms_alert_enable    = getBool("tpms.alert.enable", true);
     m_tpms_temp_enable     = getBool("tpms.temp", true);
-    m_modem_check          = getBool("modem.check", false);
     m_12v_charge           = getBool("12v.charge", true);
     m_enable_calcADCfactor = getBool("calc.adcfactor", false);
     m_indicator            = getBool("indicator", false);
