@@ -72,6 +72,7 @@ void OvmsVehicleBoltEV::WebCleanup()
  */
 void OvmsVehicleBoltEV::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
+    auto lock = MyConfig.Lock();
     std::string error;
     bool preheat_override_BCM;
     bool extended_wakeup;

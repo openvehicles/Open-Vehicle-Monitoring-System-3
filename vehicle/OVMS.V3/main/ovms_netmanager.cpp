@@ -352,8 +352,10 @@ OvmsNetManager::OvmsNetManager()
   m_wifi_good = false;
   m_wifi_ap = false;
   m_network_any = false;
+  m_cfg_dnslist = "";
   m_cfg_wifi_sq_good = -87;
   m_cfg_wifi_sq_bad = -89;
+  m_cfg_wifi_bad_reconnect = false;
 
   for (int i=0; i<DNS_MAX_SERVERS; i++)
     {
@@ -583,8 +585,7 @@ void OvmsNetManager::WifiStaBad(std::string event, void* data)
     WifiDisconnect();
     // If enabled, start reconnecting immediately (for fast transition to next best
     //  AP instead of trying to reassociate to current AP):
-    if (MyPeripherals && MyPeripherals->m_esp32wifi &&
-        MyConfig.GetParamValueBool("network", "wifi.bad.reconnect") == true)
+    if (MyPeripherals && MyPeripherals->m_esp32wifi && m_cfg_wifi_bad_reconnect)
       {
       MyPeripherals->m_esp32wifi->Reconnect(NULL);
       }
@@ -755,9 +756,11 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
   if (!param || param->GetName() == "network")
     {
     // Network config has been changed, apply:
+    m_cfg_dnslist = MyConfig.GetParamValue("network", "dns");
     m_cfg_reboot_no_connection = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
     m_cfg_wifi_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     m_cfg_wifi_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad",  -89);
+    m_cfg_wifi_bad_reconnect = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect");
     if (m_cfg_wifi_sq_good < m_cfg_wifi_sq_bad)
       {
       float x = m_cfg_wifi_sq_good;
@@ -791,7 +794,7 @@ void OvmsNetManager::SaveDNSServer(ip_addr_t* dnsstore)
 void OvmsNetManager::SetDNSServer(ip_addr_t* dnsstore)
   {
   // Read DNS configuration:
-  std::string servers = MyConfig.GetParamValue("network", "dns");
+  std::string servers = m_cfg_dnslist;
   if (!servers.empty())
     {
     int spos = 0;

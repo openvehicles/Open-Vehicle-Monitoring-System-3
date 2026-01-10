@@ -2629,6 +2629,7 @@ OvmsVehicleNissanLeaf::vehicle_command_t OvmsVehicleNissanLeaf::MsgCommandCA(std
 {
   if (command == CMD_SetChargeAlerts)
   {
+    auto lock = MyConfig.Lock();
     std::istringstream sentence(args);
     std::string token;
 

@@ -31,6 +31,7 @@
  */
 void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string vehicle_minsoc, vehicle_stream;
   std::string log_trip_storetime, log_trip_minlength, log_grid_storetime;

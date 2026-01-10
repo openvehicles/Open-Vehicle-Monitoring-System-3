@@ -397,10 +397,13 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   //TODO cmd_hiq->RegisterCommand("trunk", "Open trunk", CommandOpenTrunk, "<pin>", 1, 1);
 
-  MyConfig.SetParamValueBool("modem", "enable.gps", true);
-  MyConfig.SetParamValueBool("modem", "enable.gpstime", true);
-  MyConfig.SetParamValueBool("modem", "enable.net", true);
-  MyConfig.SetParamValueBool("modem", "enable.sms", true);
+  {
+    auto lock = MyConfig.Lock();
+    MyConfig.SetParamValueBool("modem", "enable.gps", true);
+    MyConfig.SetParamValueBool("modem", "enable.gpstime", true);
+    MyConfig.SetParamValueBool("modem", "enable.net", true);
+    MyConfig.SetParamValueBool("modem", "enable.sms", true);
+  }
 
   // Require GPS.
   MyEvents.SignalEvent("vehicle.require.gps", NULL);

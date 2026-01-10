@@ -45,6 +45,7 @@ using namespace std;
 
 void OvmsVehicleRenaultZoePh2::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
 {
+  auto lock = MyConfig.Lock();
   std::string error, rangeideal, battcapacity, auto_12v_threshold;
   bool UseBMScalculation;
   bool vCanEnabled;

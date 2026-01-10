@@ -410,10 +410,13 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   cmd_xks->RegisterCommand("sjb","Send command to SJB ECU", xks_sjb, "<b1><b2><b3>", 3,3);
   cmd_xks->RegisterCommand("bcm","Send command to BCM ECU", xks_bcm, "<b1><b2><b3>", 3,3);
 
-  MyConfig.SetParamValueBool("modem","enable.gps", true);
-  MyConfig.SetParamValueBool("modem","enable.gpstime", true);
-  MyConfig.SetParamValueBool("modem","enable.net", true);
-  MyConfig.SetParamValueBool("modem","enable.sms", true);
+  {
+    auto lock = MyConfig.Lock();
+    MyConfig.SetParamValueBool("modem","enable.gps", true);
+    MyConfig.SetParamValueBool("modem","enable.gpstime", true);
+    MyConfig.SetParamValueBool("modem","enable.net", true);
+    MyConfig.SetParamValueBool("modem","enable.sms", true);
+  }
 
   // Require GPS.
   MyEvents.SignalEvent("vehicle.require.gps", NULL);

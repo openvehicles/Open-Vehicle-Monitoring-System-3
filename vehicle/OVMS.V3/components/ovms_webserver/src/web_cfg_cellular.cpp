@@ -37,6 +37,7 @@ static const char *TAG = "webserver";
  */
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause, gps_parkreactivate, gps_parkreactlock, vehicle_stream, model, modem_net_type, modem_net_types_avail;
   bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode, gps_parkreactawake;
   float cfg_sq_good, cfg_sq_bad;

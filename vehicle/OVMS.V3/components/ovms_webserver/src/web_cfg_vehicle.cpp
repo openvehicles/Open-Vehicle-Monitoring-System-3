@@ -96,6 +96,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // success:
+      auto lock = MyConfig.Lock();
       MyConfig.SetParamValue("vehicle", "id", vehicleid);
       MyConfig.SetParamValue("auto", "vehicle.type", vehicletype);
       MyConfig.SetParamValue("vehicle", "name", vehiclename);
@@ -155,6 +156,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 
   if (read_config) {
     // read configuration:
+    auto lock = MyConfig.Lock();
     vehicleid = MyConfig.GetParamValue("vehicle", "id");
     vehicletype = MyConfig.GetParamValue("auto", "vehicle.type");
     vehiclename = MyConfig.GetParamValue("vehicle", "name");

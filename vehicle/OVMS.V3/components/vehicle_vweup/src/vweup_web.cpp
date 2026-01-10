@@ -85,6 +85,7 @@ void OvmsVehicleVWeUp::WebDeInit()
  */
 void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
+  auto lock = MyConfig.Lock();
   ConfigParamMap pmap = MyConfig.GetParamMap("xvu");
   ConfigParamMap nmap = pmap;
   std::string error, warn;
@@ -299,6 +300,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
  */
 void OvmsVehicleVWeUp::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string cc_temp;
   ConfigParamMap pmap = MyConfig.GetParamMap("xvu");

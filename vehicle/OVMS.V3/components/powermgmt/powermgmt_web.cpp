@@ -56,6 +56,7 @@ void powermgmt::WebCleanup()
  */
  void powermgmt::WebCfgPowerManagement(PageEntry_t& p, PageContext_t& c)
   {
+  auto lock = MyConfig.Lock();
   std::string error;
   bool enabled;
   std::string modemoff_delay, wifioff_delay, b12v_shutdown_delay;

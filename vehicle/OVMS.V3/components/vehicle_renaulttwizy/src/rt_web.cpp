@@ -96,6 +96,7 @@ void OvmsVehicleRenaultTwizy::WebShutdown()
  */
 void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   bool canwrite, autopower, autoreset, console, kickdown;
   std::string kd_compzero, kd_threshold, gpslogint;
@@ -209,6 +210,7 @@ void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string cap_nom_ah, cap_act_prc, maxrange, chargelevel, chargemode, suffrange, suffsoc;
 
@@ -344,6 +346,7 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
 static void print_loadmenu_buttons(PageContext_t& c, cfg_drivemode drivemode)
 {
+  auto lock = MyConfig.Lock();
   int prof;
   StringWriter pfx;
   std::string key, label, title;

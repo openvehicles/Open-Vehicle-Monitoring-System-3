@@ -36,6 +36,7 @@
  */
 void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string server, vehicleid, password, port;
   std::string updatetime_connected, updatetime_idle;

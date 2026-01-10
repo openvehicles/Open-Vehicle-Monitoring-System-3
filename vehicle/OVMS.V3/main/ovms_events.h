@@ -72,6 +72,14 @@ class EventMap : public  std::map<std::string, EventCallbackList*>
 
 typedef void (*event_signal_done_fn)(const char* event, void* data);
 
+typedef enum
+  {
+  EVPH_PreCallbackLoop,       // Before execution of all registered listener callbacks
+  EVPH_PostCallbackLoop,      // After execution of all registered listener callbacks, before script execution
+  EVPH_FreeData,              // Cleanup (Att: not necessarily called in the OVMS Events context!)
+  } event_phase_t;
+typedef void (*event_signal_phase_fn)(const char* event, void* data, event_phase_t phase, void** phasedata);
+
 extern void EventStdFree(const char* event, void* data);
 
 typedef enum
@@ -79,7 +87,8 @@ typedef enum
   EVENT_none = 0,             // Do nothing
   EVENT_addhandler,           // Add an event handler
   EVENT_removehandlers,       // Remove event handlers
-  EVENT_signal                // Raise a signal
+  EVENT_signal,               // Raise a signal, optionally with a "done" callback and/or semaphore
+  EVENT_phasedsignal,         // Raise a signal with an associated phase callback
   } event_msg_t;
 
 typedef struct
@@ -102,6 +111,13 @@ typedef struct
       event_signal_done_fn donefn;
       OvmsSemaphore* donesemaphore;
       } signal;
+    struct
+      {
+      char* event;
+      void* data;
+      event_signal_phase_fn phasefn;
+      void* phasedata;
+      } phasedsignal;
     } body;
   event_msg_t type;
   } event_queue_t;
@@ -119,6 +135,7 @@ class OvmsEvents
     void RegisterEvent(std::string caller, std::string event, EventCallback callback);
     void DeregisterEvent(std::string caller);
     void SignalEvent(std::string event, void* data, event_signal_done_fn callback = NULL, uint32_t delay_ms = 0);
+    void SignalEvent(std::string event, void* data, event_signal_phase_fn callback, void* phasedata = NULL, uint32_t delay_ms = 0);
     void SignalEvent(std::string event, void* data, OvmsSemaphore& semaphore, uint32_t delay_ms = 0);
     void SignalEvent(std::string event, void* data, size_t length, uint32_t delay_ms = 0);
 

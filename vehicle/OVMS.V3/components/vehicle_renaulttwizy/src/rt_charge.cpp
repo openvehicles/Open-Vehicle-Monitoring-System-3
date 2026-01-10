@@ -87,6 +87,7 @@ void OvmsVehicleRenaultTwizy::ChargeShutdown()
 
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 {
+  auto lock = MyConfig.Lock();
   metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
   int capacity = verbosity;
   
@@ -246,6 +247,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandCA
 {
   if (command == CMD_SetChargeAlerts)
   {
+    auto lock = MyConfig.Lock();
     std::istringstream sentence(args);
     std::string token;
     

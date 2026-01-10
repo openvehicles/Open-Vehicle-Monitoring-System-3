@@ -80,6 +80,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     return;
   }
 
+  auto lock = MyConfig.Lock();
+
   std::string error, info, full_km, rebootnw;
   bool canwrite, led, resettrip, resettotal, bcvalue;
   bool charge12v, extstats, unlocked, mdmcheck, tripnotify, opendoors;
@@ -277,6 +279,8 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
       return;
   }
 
+  auto lock = MyConfig.Lock();
+
   std::string error, info, TPMS_FL, TPMS_FR, TPMS_RL, TPMS_RR, front_pressure, rear_pressure, pressure_warning, pressure_alert;
   bool tpms_temp, enable;
   
@@ -462,6 +466,7 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
       c.done();
       return;
   }
+  auto lock = MyConfig.Lock();
   std::string error, info, adc_factor, onboard_12v, adc_history;
   bool calcADCfactor;
   bool header_sent = false;
@@ -591,6 +596,7 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
  */
 void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)

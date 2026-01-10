@@ -31,6 +31,7 @@
  */
 void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error, warn;
   std::string ws_txqueuesize, docroot, auth_domain, auth_file;
   bool enable_files, enable_dirlist, auth_global;

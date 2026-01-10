@@ -70,6 +70,7 @@ void OvmsHyundaiIoniqEv::WebInit()
 void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
   XARM("OvmsHyundaiIoniqEv::WebCfgFeatures");
+  auto lock = MyConfig.Lock();
   std::string error;
 #ifdef XIQ_CAN_WRITE
   bool canwrite;
@@ -171,6 +172,7 @@ void OvmsHyundaiIoniqEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
 {
   XARM("OvmsHyundaiIoniqEv::WebCfgBattery");
+  auto lock = MyConfig.Lock();
   std::string error;
   //    cap_act_kwh     Battery capacity override in wH
   //  suffsoc           Sufficient SOC [%] (Default: 0=disabled)

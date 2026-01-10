@@ -191,6 +191,7 @@ void OvmsWebServer::CfgInitTicker()
   else if (step == "restore") {
     // revert to factory default AP & password:
     ESP_LOGE(TAG, "CfgInitTicker: restoring default access, AP 'OVMS'/'OVMSinit'");
+    auto lock = MyConfig.Lock();
     MyConfig.DeleteInstance("password", "module");
     MyConfig.DeleteInstance("auto", "wifi.mode");
     MyConfig.DeleteInstance("auto", "wifi.ssid.ap");
@@ -216,6 +217,7 @@ void OvmsWebServer::CfgInitTicker()
     std::string cl_pass = MyConfig.GetParamValue("wifi.ssid", cl_ssid);
     if (cl_ssid.empty() || cl_pass.empty()) {
       ESP_LOGE(TAG, "CfgInitTicker: step 2: wifi client config invalid");
+      auto lock = MyConfig.Lock();
       MyConfig.DeleteInstance("auto", "wifi.mode");
       MyConfig.DeleteInstance("auto", "wifi.ssid.client");
       MyConfig.DeleteInstance("network", "dns");
@@ -232,6 +234,7 @@ void OvmsWebServer::CfgInitTicker()
     std::string ssid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
     if (!MyNetManager.m_connected_wifi || MyPeripherals->m_esp32wifi->GetSSID() != ssid) {
       ESP_LOGI(TAG, "CfgInitTicker: step 2: wifi connection to '%s' failed, reverting to AP mode", ssid.c_str());
+      auto lock = MyConfig.Lock();
       MyConfig.DeleteInstance("auto", "wifi.mode");
       MyConfig.DeleteInstance("auto", "wifi.ssid.client");
       MyConfig.DeleteInstance("network", "dns");
@@ -317,6 +320,7 @@ void OvmsWebServer::CfgInitTicker()
  */
 std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::string step)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string moduleid, newpass1, newpass2;
 
@@ -475,6 +479,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
  */
 std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::string step)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string ssid, pass, dns;
 
@@ -712,6 +717,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
 std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::string step)
 {
 #ifdef CONFIG_OVMS_COMP_OTA
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string action;
   std::string server;
@@ -873,6 +879,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
  */
 std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::string step)
 {
+  auto lock = MyConfig.Lock();
   std::string error, info;
   std::string vehicletype, units_distance, units_temp, units_pressure;
   std::string server, vehicleid, password;
@@ -1099,6 +1106,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
  */
 std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::string step)
 {
+  auto lock = MyConfig.Lock();
   std::string error, info;
   bool modem = false, gps = false;
   std::string apn, apn_user, apn_pass;

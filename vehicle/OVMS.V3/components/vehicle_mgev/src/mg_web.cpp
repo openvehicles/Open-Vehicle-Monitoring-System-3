@@ -112,6 +112,7 @@ void OvmsVehicleMgEv::VersionWebDeInit()
  */
 void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
+    auto lock = MyConfig.Lock();
     std::string error;
     std::string bmstype;
     int bmsval;
@@ -169,6 +170,7 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
  */
 void OvmsVehicleMgEv::MG5WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
+    auto lock = MyConfig.Lock();
     std::string error;
     bool pollingmanual = MyConfig.GetParamValueInt("xmg", "polling.manual");
     
@@ -227,6 +229,7 @@ void OvmsVehicleMgEv::MG5WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
  */
 void OvmsVehicleMgEv::MG5WebCfgVersion(PageEntry_t &p, PageContext_t &c)
 {
+    auto lock = MyConfig.Lock();
     std::string error;
     std::string vehtype;
     int vehval;
@@ -281,6 +284,7 @@ void OvmsVehicleMgEv::MG5WebCfgVersion(PageEntry_t &p, PageContext_t &c)
  */
 void OvmsVehicleMgEv::MG4WebCfgVersion(PageEntry_t &p, PageContext_t &c)
 {
+    auto lock = MyConfig.Lock();
     std::string error;
     std::string vehtype;
     int vehval;
@@ -336,6 +340,7 @@ void OvmsVehicleMgEv::MG4WebCfgVersion(PageEntry_t &p, PageContext_t &c)
  */
 void OvmsVehicleMgEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
+    auto lock = MyConfig.Lock();
     std::string error;
     //  suffsoc              Sufficient SOC [%] (Default: 0=disabled)
     //  suffrange            Sufficient range [km] (Default: 0=disabled)

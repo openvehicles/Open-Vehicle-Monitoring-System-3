@@ -153,9 +153,11 @@ class OvmsNetManager
     char m_previous_name[2];
 
   protected:
-    bool m_cfg_reboot_no_connection;
+    std::string m_cfg_dnslist;              // config network dns            [iplist] default ""
+    bool m_cfg_reboot_no_connection;        // config network reboot.no.ip   [bool] default false
     float m_cfg_wifi_sq_good;               // config network wifi.sq.good   [dBm] default -87
     float m_cfg_wifi_sq_bad;                // config network wifi.sq.bad    [dBm] default -89
+    bool m_cfg_wifi_bad_reconnect;          // config network wifi.bad.reconnect [bool] default false
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   protected:

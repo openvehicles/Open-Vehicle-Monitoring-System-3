@@ -1146,6 +1146,7 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
           profile0_state = PROFILE0_IDLE;
           ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
           if (t26_init) {
+            auto lock = MyConfig.Lock();
             profile0_charge_current_old = (profile0_charge_current < 4)? climit_max : profile0_charge_current;
             MyConfig.SetParamValueInt("xvu", "chg_climit", profile0_charge_current);
             profile0_cc_temp_old = profile0_cc_temp;

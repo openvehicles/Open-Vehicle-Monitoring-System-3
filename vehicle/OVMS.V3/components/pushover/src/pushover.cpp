@@ -155,9 +155,7 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
     } 
   ESP_LOGD(TAG,"IncomingNotification: Handling notification (%s:%s:%s)",type->m_name,entry->GetSubType(),entry->GetValue().c_str());      
 
-  OvmsConfigParam* param = MyConfig.CachedParam("pushover");
-  ConfigParamMap pmap;
-  pmap = param->m_map;
+  ConfigParamMap pmap = MyConfig.GetParamMap("pushover");
 
   // try to find configuration for specific type/subtype
   nfy = "np.";
@@ -209,9 +207,7 @@ void Pushover::EventListener(std::string event, void* data)
     } 
   ESP_LOGD(TAG,"EventListener: Handling event (%s)",event.c_str());      
 
-  OvmsConfigParam* param = MyConfig.CachedParam("pushover");
-  ConfigParamMap pmap;
-  pmap = param->m_map;
+  ConfigParamMap pmap = MyConfig.GetParamMap("pushover");
 
   name = "ep.";
   name.append(event);

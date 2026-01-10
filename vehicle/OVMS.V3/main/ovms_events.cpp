@@ -57,7 +57,6 @@ static const char *TAG = "events";
 
 OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
 
-typedef void (*event_signal_done_fn)(const char* event, void* data);
 static void CheckQueueOverflow(const char* from, char* event);
 
 bool EventMap::GetCompletion(OvmsWriter* writer, const char* token) const
@@ -274,6 +273,12 @@ void OvmsEvents::EventTask()
           esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
           m_current_event.clear();
           break;
+        case EVENT_phasedsignal:
+          m_current_event = msg.body.phasedsignal.event;
+          HandleQueueSignalEvent(&msg);
+          esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
+          m_current_event.clear();
+          break;
         default:
           break;
         }
@@ -308,10 +313,17 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
       ESP_LOGD(TAG, "Signal(%s)",m_current_event.c_str());
     }
 
+  if (msg->type == EVENT_phasedsignal)
+    {
+    msg->body.phasedsignal.phasefn(msg->body.phasedsignal.event, msg->body.phasedsignal.data,
+      EVPH_PreCallbackLoop, &msg->body.phasedsignal.phasedata);
+    }
+
   // Run callbacks:
     {
     OvmsRecMutexLock lock(&m_map_mutex);
 
+    // run callbacks registered specifically for the event:
     auto k = m_map.find(m_current_event);
     if (k != m_map.end())
       {
@@ -331,6 +343,7 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
         }
       }
 
+    // run callbacks registered for any event:
     k = m_map.find("*");
     if (k != m_map.end())
       {
@@ -351,6 +364,12 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
       }
     }
 
+  if (msg->type == EVENT_phasedsignal)
+    {
+    msg->body.phasedsignal.phasefn(msg->body.phasedsignal.event, msg->body.phasedsignal.data,
+      EVPH_PostCallbackLoop, &msg->body.phasedsignal.phasedata);
+    }
+
   // Run scripts:
   m_current_started = monotonictime;
   MyScripts.EventScript(m_current_event, msg->body.signal.data);
@@ -360,15 +379,24 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
 
 void OvmsEvents::FreeQueueSignalEvent(event_queue_t* msg)
   {
-  if (msg->body.signal.donesemaphore != NULL)
+  if (msg->type == EVENT_phasedsignal)
     {
-    msg->body.signal.donesemaphore->Give();
+    msg->body.phasedsignal.phasefn(msg->body.phasedsignal.event, msg->body.phasedsignal.data,
+      EVPH_FreeData, &msg->body.phasedsignal.phasedata);
+    free(msg->body.phasedsignal.event);
     }
-  if (msg->body.signal.donefn != NULL)
+  else // msg->type == EVENT_signal
     {
-    msg->body.signal.donefn(msg->body.signal.event, msg->body.signal.data);
+    if (msg->body.signal.donesemaphore != NULL)
+      {
+      msg->body.signal.donesemaphore->Give();
+      }
+    if (msg->body.signal.donefn != NULL)
+      {
+      msg->body.signal.donefn(msg->body.signal.event, msg->body.signal.data);
+      }
+    free(msg->body.signal.event);
     }
-  free(msg->body.signal.event);
   }
 
 
@@ -637,6 +665,37 @@ void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_done_fn
     if (ScheduleEvent(&msg, delay_ms) != true)
       {
       ESP_LOGE(TAG, "SignalEvent: no timer available, event '%s' dropped", msg.body.signal.event);
+      FreeQueueSignalEvent(&msg);
+      }
+    }
+  }
+
+void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_phase_fn callback,
+                             void* phasedata /*=NULL*/, uint32_t delay_ms /*=0*/)
+  {
+  event_queue_t msg;
+  memset(&msg, 0, sizeof(msg));
+
+  msg.type = EVENT_phasedsignal;
+  msg.body.phasedsignal.event = (char*)ExternalRamMalloc(event.size()+1);
+  strcpy(msg.body.phasedsignal.event, event.c_str());
+  msg.body.phasedsignal.data = data;
+  msg.body.phasedsignal.phasefn = callback;
+  msg.body.phasedsignal.phasedata = phasedata;
+
+  if (delay_ms == 0)
+    {
+    if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+      {
+      CheckQueueOverflow("SignalEvent", msg.body.phasedsignal.event);
+      FreeQueueSignalEvent(&msg);
+      }
+    }
+  else
+    {
+    if (ScheduleEvent(&msg, delay_ms) != true)
+      {
+      ESP_LOGE(TAG, "SignalEvent: no timer available, event '%s' dropped", msg.body.phasedsignal.event);
       FreeQueueSignalEvent(&msg);
       }
     }

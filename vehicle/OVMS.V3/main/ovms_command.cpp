@@ -828,6 +828,7 @@ OvmsCommandApp::OvmsCommandApp()
   m_logfile_path = "";
   m_logfile_size = 0;
   m_logfile_maxsize = 0;
+  m_logfile_syncperiod = 3;
   m_logtask = NULL;
   m_logtask_queue = NULL;
   m_logtask_dropcnt = 0;
@@ -1124,7 +1125,7 @@ void OvmsCommandApp::LogTask()
 
   // syncperiod: 0 = never, <0 = every n lines, >0 = after n/2 seconds idle
   uint32_t linecnt_synced = 0;
-  int syncperiod = MyConfig.GetParamValueInt("log", "file.syncperiod", 3);
+  int syncperiod = m_logfile_syncperiod;
   TickType_t timeout = (syncperiod<=0) ? portMAX_DELAY : pdMS_TO_TICKS(syncperiod*500);
 
   for (;;)
@@ -1588,13 +1589,15 @@ void OvmsCommandApp::EventHandler(std::string event, void* data)
 
 void OvmsCommandApp::ReadConfig()
   {
+  auto lock = MyConfig.Lock();
   OvmsConfigParam* param = MyConfig.CachedParam("log");
+  if (!param) return;
 
   // configure log levels:
   std::string level = MyConfig.GetParamValue("log", "level");
   if (!level.empty())
     SetLoglevel("*", level);
-  for (auto const& kv : param->m_map)
+  for (auto const& kv : param->m_instances)
     {
     if (startsWith(kv.first, "level.") && !kv.second.empty())
       SetLoglevel(kv.first.substr(6), kv.second);
@@ -1602,6 +1605,7 @@ void OvmsCommandApp::ReadConfig()
 
   // configure log file:
   m_logfile_maxsize = MyConfig.GetParamValueInt("log", "file.maxsize", 1024);
+  m_logfile_syncperiod = MyConfig.GetParamValueInt("log", "file.syncperiod", 3);
   if (MyConfig.GetParamValueBool("log", "file.enable", false) == true)
     SetLogfile(MyConfig.GetParamValue("log", "file.path"));
   }
