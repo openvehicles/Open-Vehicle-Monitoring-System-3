@@ -84,7 +84,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   std::string error, info, full_km, rebootnw;
   bool canwrite, led, resettrip, resettotal, bcvalue;
-  bool charge12v, extstats, unlocked, mdmcheck, tripnotify, opendoors;
+  bool charge12v, extstats, unlocked, tripnotify, opendoors;
 
   if (c.method == "POST") {
     // process form submission:
@@ -96,7 +96,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     bcvalue     = (c.getvar("bcvalue") == "yes");
     full_km  =  (c.getvar("full_km"));
     charge12v = (c.getvar("charge12v") == "yes");
-    mdmcheck = (c.getvar("mdmcheck") == "yes");
     unlocked = (c.getvar("unlocked") == "yes");
     extstats = (c.getvar("extstats") == "yes");
     tripnotify = (c.getvar("resetnotify") == "yes");
@@ -135,7 +134,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       map["full.km"] = full_km;
       setBool("12v.charge", charge12v);
       setBool("unlock.warning", unlocked);
-      setBool("modem.check", mdmcheck);
       setBool("extended.stats", extstats);
       setBool("reset.notify", tripnotify);
       setBool("door.warning", opendoors);
@@ -170,7 +168,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       bcvalue     = (m.count("bcvalue") ? (m.at("bcvalue") == "yes") : sq->m_bcvalue);
       charge12v   = (m.count("12v.charge") ? (m.at("12v.charge") == "yes") : sq->m_12v_charge);
       unlocked    = (m.count("unlock.warning") ? (m.at("unlock.warning") == "yes") : sq->m_enable_lock_state);
-      mdmcheck    = (m.count("modem.check") ? (m.at("modem.check") == "yes") : sq->m_modem_check);
       extstats    = (m.count("extended.stats") ? (m.at("extended.stats") == "yes") : sq->m_extendedStats);
       tripnotify  = (m.count("reset.notify") ? (m.at("reset.notify") == "yes") : sq->m_tripnotify);
       opendoors   = (m.count("door.warning") ? (m.at("door.warning") == "yes") : sq->m_enable_door_state);
@@ -210,7 +207,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       
       charge12v = sq->m_12v_charge;
       unlocked = sq->m_enable_lock_state;
-      mdmcheck = sq->m_modem_check;
       extstats = sq->m_extendedStats;
       tripnotify = sq->m_tripnotify;
       opendoors = sq->m_enable_door_state;
@@ -246,9 +242,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable/Disable Online state LED when installed", "led", led,
     "<p>RED=Internet no, BLUE=Internet yes, GREEN=Server v2 connected.<br>EGPIO Port 7,8,9 are used</p>");
   c.input_checkbox("Enable 12V charging", "charge12v", charge12v,
-    "<p>Enable = charge the 12V if low 12V alert is raised</p>");
-  c.input_checkbox("Enable auto restart modem on Wifi disconnect", "mdmcheck", mdmcheck,
-    "<p>Enable = The modem will restart as soon as the Wifi connection is no longer established.</p>");  
+    "<p>Enable = charge the 12V if low 12V alert is raised</p>"); 
   c.input_checkbox("Enable Door unlocked warning", "unlocked", unlocked,
     "<p>Enable = send a warning when Car 10 minutes parked and unlocked</p>");
   c.input_checkbox("Enable Door open warning", "opendoors", opendoors,

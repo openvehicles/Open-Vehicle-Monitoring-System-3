@@ -444,16 +444,6 @@ void OvmsVehicleSmartEQ::ModemRestart() {
   #endif
 }
 
-void OvmsVehicleSmartEQ::ModemEventRestart(std::string event, void* data) {
-  if (!m_modem_check) {
-    // ESP_LOGE(TAG, "Modem auto restart is disabled");
-    return;
-  }
-
-  ModemRestart();
-  ESP_LOGI(TAG, "Modem event '%s' triggered a modem restart", event.c_str());
-}
-
 /**
  * SetFeature: V2 compatibility config wrapper
  *  Note: V2 only supported integer values, V3 values may be text

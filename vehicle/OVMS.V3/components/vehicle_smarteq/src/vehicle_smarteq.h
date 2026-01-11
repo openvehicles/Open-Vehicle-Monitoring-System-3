@@ -34,7 +34,7 @@
 #define __VEHICLE_SMARTEQ_H__
 
 #define VERSION "2.1.2"
-#define PRESET_VERSION 7 // Configuration preset version
+#define PRESET_VERSION 20260110 // Configuration preset version
 
 #include "ovms_log.h"
 
@@ -134,7 +134,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void DoorOpenState();
     void WifiRestart();
     void ModemRestart();
-    void ModemEventRestart(std::string event, void* data);
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
     void EventListener(std::string event, void* data);
 
@@ -163,6 +162,7 @@ public:
     virtual vehicle_command_t CommandSOClimit(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandED4scan(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandSetDefault(int verbosity, OvmsWriter* writer);
     
 public:
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -192,6 +192,7 @@ public:
     static void xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_setdefault(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   private:
     int m_candata_timer;
@@ -402,7 +403,6 @@ public:
     bool m_ddt4all;                         //!< DDT4ALL mode
     bool m_warning_unlocked;                //!< unlocked warning
     bool m_warning_dooropen;                //!< open doors warning
-    bool m_modem_check;                     //!< modem check enabled
     bool m_modem_restart;                   //!< modem restart enabled
     bool m_notifySOClimit;                  //!< notify SOClimit reached one time
     bool m_enable_calcADCfactor;            //!< enable calculation of ADC factor

@@ -937,10 +937,12 @@ void OvmsVehicleSmartEQ::xsq_preset(int verbosity, OvmsWriter* writer, OvmsComma
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, OvmsWriter* writer) {
   auto lock = MyConfig.Lock();
+  auto map_xsq = MyConfig.GetParamMap("xsq");
 
-  //MyConfig.SetParamValueBool("xsq", "cfg.preset.act",  true); // activate preset config
-  MyConfig.SetParamValueInt("xsq", "cfg.preset.ver",  PRESET_VERSION); // preset config version
+  // Update xsq preset version
+  map_xsq["cfg.preset.ver"] = STR(PRESET_VERSION);
 
+  // Set default 12V alert threshold if not defined
   if (!MyConfig.IsDefined("vehicle", "12v.alert")) 
     {
     MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
@@ -959,9 +961,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     MyConfig.SetParamValueBool("modem", "gps.parkreactawake", true);
     }
 
-  if (!MyConfig.IsDefined("net", "type")) 
+  if (!MyConfig.IsDefined("modem", "net.type")) 
     {
-    MyConfig.SetParamValue("net", "type", "4G");
+    MyConfig.SetParamValue("modem", "net.type", "4G");
     }
 
   if (!MyConfig.IsDefined("network", "wifi.ap2client.enable")) 
@@ -969,7 +971,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
     }
 
-  if (!MyConfig.IsDefined("xsq", "TPMS_FL")) 
+  if (MyConfig.IsDefined("network", "type")) 
+    {
+    MyConfig.DeleteInstance("network", "type");
+    }
+
+  if (MyConfig.IsDefined("xsq", "TPMS_FL")) 
     {
     MyConfig.SetParamValueInt("vehicle", "tpms.fl", MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0));
     MyConfig.SetParamValueInt("vehicle", "tpms.fr", MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1));
@@ -984,9 +991,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     MyConfig.SetParamValue("ota", "tag", "edge");
     }
 
-  // Delete old config entries using GetParamMap() to get a COPY
-  auto map = MyConfig.GetParamMap("xsq");
-  
+  // Remove deprecated preclimate section
+  if (MyConfig.CachedParam("xsq.preclimate"))
+    MyConfig.DeregisterParam("xsq.preclimate");
+
+  // Delete old config entries - reuse existing map_xsq
   // List of deprecated keys to remove
   const char* deprecated_keys[] = {
     "ios_tpms_fix",
@@ -1015,6 +1024,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "climate.data.store",
     "gps.deact",
     "modem.threshold",
+    "modem.check",
     "TPMS_FL",
     "TPMS_FR",
     "TPMS_RL",
@@ -1028,27 +1038,76 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   // Remove all deprecated keys from map
   int removed_count = 0;
   for (const char* key : deprecated_keys) {
-    auto it = map.find(key);
-    if (it != map.end()) {
-      map.erase(it);
+    auto it = map_xsq.find(key);
+    if (it != map_xsq.end()) 
+      {
+      map_xsq.erase(it);
       removed_count++;
+      }
     }
-  }
   
-  // Write updated map back (only if something was removed)
-  if (removed_count > 0) {
-    MyConfig.SetParamMap("xsq", map);
-    if (writer) {
-      writer->printf("Removed %d deprecated config entries\n", removed_count);
-    }
-    ESP_LOGI(TAG, "Removed %d deprecated config entries", removed_count);
-  }
+  // Write all changes in transactions (one per config section)
+  MyConfig.SetParamMap("xsq", map_xsq);
 
-  if (writer) {
+  if (writer) 
+    {
     writer->printf("Config V%d preset activated", PRESET_VERSION);
-  }
+    if (removed_count > 0) 
+      {
+      writer->printf("Removed %d deprecated config entries\n", removed_count);
+      ESP_LOGI(TAG, "Removed %d deprecated config entries", removed_count);
+      }
+    }
 
-  MyConfig.DeregisterParam("xsq.preclimate");
+  return Success;
+}
+
+void OvmsVehicleSmartEQ::xsq_setdefault(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+
+  smarteq->CommandSetDefault(verbosity, writer);
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosity, OvmsWriter* writer) {
+  auto lock = MyConfig.Lock();
+  
+  // Clear all xsq config entries
+  ConfigParamMap empty_map;
+  MyConfig.SetParamMap("xsq", empty_map);
+
+  MyConfig.SetParamValueBool("auto", "init", true);
+  MyConfig.SetParamValueBool("auto", "ota", false);
+  MyConfig.SetParamValueBool("auto", "modem", true);
+  MyConfig.SetParamValueBool("auto", "server.v2", true);
+
+  MyConfig.SetParamValue("modem", "net.type", "4G");
+  MyConfig.SetParamValueBool("modem", "gps.parkreactawake", true);
+  MyConfig.SetParamValue("modem", "gps.parkpause", "600"); // default 10 min.
+  MyConfig.SetParamValue("modem", "gps.parkreactivate", "50"); // default 50 min.
+  MyConfig.SetParamValue("modem", "gps.parkreactlock", "5"); // default 5 min.
+
+  MyConfig.SetParamValue("vehicle", "stream", "10"); // set stream to 10 sec.
+  MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
+  
+  MyConfig.SetParamValue("ota", "server", "https://ovms.dexters-web.de/firmware/ota");
+  MyConfig.SetParamValue("ota", "tag", "main");
+  MyConfig.SetParamValue("ota", "http.mru", "https://ovms.dexters-web.de/firmware/ota/edge/ovms.bin");
+  
+  MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
+  MyConfig.DeleteInstance("network", "wifi.bad.reconnect");
+  MyConfig.DeleteInstance("network", "wifi.sq.good");
+  MyConfig.DeleteInstance("network", "wifi.sq.bad");
+  MyConfig.DeleteInstance("network", "modem.sq.good");
+  MyConfig.DeleteInstance("network", "modem.sq.bad");
+  
+  if (writer) 
+    {
+    writer->puts("SmartEQ config reset to defaults");
+    ESP_LOGI(TAG, "SmartEQ config reset to defaults");
+    }
+  
   return Success;
 }
 
