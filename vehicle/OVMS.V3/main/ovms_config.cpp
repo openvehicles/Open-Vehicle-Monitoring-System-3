@@ -691,11 +691,17 @@ OvmsConfig::Transaction::Transaction(OvmsConfig::Transaction&& src)
 
 OvmsConfig::Transaction::~Transaction()
   {
-  if (m_mutex->GetCount() == 1)
+  Unlock();
+  }
+
+void OvmsConfig::Transaction::Unlock()
+  {
+  if (IsLocked() && GetCount() == 1)
     {
     // last lock is about to be released, commit changes:
     MyConfig.TransactionCommit();
     }
+  OvmsRecMutexLock::Unlock();
   }
 
 /**

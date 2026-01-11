@@ -213,6 +213,7 @@ class OvmsConfig
         Transaction& operator=(const Transaction& src) = delete;
         Transaction(Transaction&& src);
         ~Transaction();
+        void Unlock();
       };
     Transaction Lock(TickType_t timeout=portMAX_DELAY) { return Transaction(&m_mutex, timeout); }
     Transaction* CreateLock(TickType_t timeout=portMAX_DELAY) { return new Transaction(&m_mutex, timeout); }
