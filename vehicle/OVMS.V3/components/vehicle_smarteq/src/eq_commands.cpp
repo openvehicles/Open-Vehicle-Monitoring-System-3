@@ -1093,7 +1093,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   
   MyConfig.SetParamValue("ota", "server", "https://ovms.dexters-web.de/firmware/ota");
   MyConfig.SetParamValue("ota", "tag", "main");
-  MyConfig.SetParamValue("ota", "http.mru", "https://ovms.dexters-web.de/firmware/ota/edge/ovms.bin");
+  MyConfig.SetParamValue("ota", "http.mru", "https://ovms.dexters-web.de/firmware/ota/v3.3/edge/ovms3.bin");
   
   MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
   MyConfig.DeleteInstance("network", "wifi.bad.reconnect");
