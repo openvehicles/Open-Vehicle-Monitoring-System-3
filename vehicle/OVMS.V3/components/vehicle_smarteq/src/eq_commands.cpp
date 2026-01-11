@@ -940,9 +940,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   auto map_xsq = MyConfig.GetParamMap("xsq");
 
   // Update xsq preset version
-  char buf[16];
-  snprintf(buf, sizeof(buf), "%d", PRESET_VERSION);
-  map_xsq["cfg.preset.ver"] = buf;
+  map_xsq["cfg.preset.ver"] = STR(PRESET_VERSION);
 
   // Set default 12V alert threshold if not defined
   if (!MyConfig.IsDefined("vehicle", "12v.alert")) 
