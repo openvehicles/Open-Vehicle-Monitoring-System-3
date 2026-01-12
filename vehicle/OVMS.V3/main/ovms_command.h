@@ -389,9 +389,12 @@ class OvmsCommandApp : public OvmsWriter
 
   private:
     OvmsCommand m_root;
+
     typedef std::set<OvmsWriter*> ConsoleSet;
-    ConsoleSet m_consoles;
+    ConsoleSet m_consoles;                          // set of registered consoles (= log receivers)
     PartialLogs m_partials;
+    OvmsMutex m_consoles_mutex;                     // m_consoles access synchronization
+
     FILE* m_logfile;
     std::string m_logfile_path;
     size_t m_logfile_size;

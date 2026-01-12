@@ -960,15 +960,31 @@ OvmsCommand* OvmsCommandApp::FindCommandFullName(const char* name, bool allow_cr
   return found;
   }
 
+
+/**
+ * Registry of active console instances (= log receivers)
+ */
 void OvmsCommandApp::RegisterConsole(OvmsWriter* writer)
   {
+  OvmsMutexLock consoles_lock(&m_consoles_mutex);
   m_consoles.insert(writer);
   }
 
 void OvmsCommandApp::DeregisterConsole(OvmsWriter* writer)
   {
+  OvmsMutexLock consoles_lock(&m_consoles_mutex);
   m_consoles.erase(writer);
   }
+
+
+/**
+ * OvmsCommandApp::Log: this is the central entry point for all log messages via the ESP log framework
+ *    (… called by ConsoleAsync::ConsoleLogger()
+ *     … registered by ConsoleAsync::Service() as the esp-idf log printf (via esp_log_set_vprintf()))
+ * 
+ * Log messages are stored in LogBuffers instances (shared memory pointer management),
+ *    with each listener decrementing the share count, last release freeing the log message.
+ */
 
 int OvmsCommandApp::Log(const char* fmt, ...)
   {
@@ -992,6 +1008,9 @@ int OvmsCommandApp::Log(const char* fmt, va_list args)
     m_partials.erase(task);
     }
   int ret = LogBuffer(lb, fmt, args);
+
+  // send the log message to all registered consoles:
+  OvmsMutexLock consoles_lock(&m_consoles_mutex);
   lb->set(m_consoles.size());
   for (ConsoleSet::iterator it = m_consoles.begin(); it != m_consoles.end(); ++it)
     {
