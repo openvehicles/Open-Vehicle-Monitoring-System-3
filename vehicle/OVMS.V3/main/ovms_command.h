@@ -55,7 +55,6 @@ class OvmsWriter;
 class OvmsCommand;
 class OvmsCommandMap;
 class LogBuffers;
-typedef std::map<TaskHandle_t, LogBuffers*> PartialLogs;
 typedef bool (*InsertCallback)(OvmsWriter* writer, void* userData, char);
 
 class OvmsWriter
@@ -353,7 +352,6 @@ class OvmsCommandApp : public OvmsWriter
     void DeregisterConsole(OvmsWriter* writer);
     int Log(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
     int Log(const char* fmt, va_list args) __attribute__ ((format (printf, 2, 0)));
-    int LogPartial(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
     int HexDump(const char* tag, const char* prefix, const char* data, size_t length, size_t colsize=16);
     void Display(OvmsWriter* writer);
 
@@ -392,7 +390,6 @@ class OvmsCommandApp : public OvmsWriter
 
     typedef std::set<OvmsWriter*> ConsoleSet;
     ConsoleSet m_consoles;                          // set of registered consoles (= log receivers)
-    PartialLogs m_partials;
     OvmsMutex m_consoles_mutex;                     // m_consoles access synchronization
 
     FILE* m_logfile;

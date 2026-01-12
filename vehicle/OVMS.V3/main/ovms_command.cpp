@@ -997,16 +997,9 @@ int OvmsCommandApp::Log(const char* fmt, ...)
 
 int OvmsCommandApp::Log(const char* fmt, va_list args)
   {
-  LogBuffers* lb;
-  TaskHandle_t task = xTaskGetCurrentTaskHandle();
-  PartialLogs::iterator it = m_partials.find(task);
-  if (it == m_partials.end())
-    lb = new LogBuffers();
-  else
-    {
-    lb = it->second;
-    m_partials.erase(task);
-    }
+  // format & store the log message:
+  LogBuffers* lb = new LogBuffers();
+  assert(lb);
   int ret = LogBuffer(lb, fmt, args);
 
   // send the log message to all registered consoles:
@@ -1016,30 +1009,14 @@ int OvmsCommandApp::Log(const char* fmt, va_list args)
     {
     (*it)->Log(lb);
     }
+
   return ret;
   }
 
-int OvmsCommandApp::LogPartial(const char* fmt, ...)
-  {
-  LogBuffers* lb;
-  TaskHandle_t task = xTaskGetCurrentTaskHandle();
-  PartialLogs::iterator it = m_partials.find(task);
-  if (it == m_partials.end())
-    {
-    lb = new LogBuffers();
-    m_partials[task] = lb;
-    }
-  else
-    {
-    lb = it->second;
-    }
-  va_list args;
-  va_start(args, fmt);
-  int ret = LogBuffer(lb, fmt, args);
-  va_end(args);
-  return ret;
-  }
-
+/**
+ * OvmsCommandApp::LogBuffer: internal printf utility for Log()
+ *    (format log message & add to LogBuffers instance)
+ */
 int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
   {
   char *buffer;
