@@ -80,6 +80,8 @@ ConsoleAsync::ConsoleAsync()
 
 ConsoleAsync::~ConsoleAsync()
   {
+  // Never called: the USB console does not exit, so we don't need to
+  //    Kill() the service and uninstall the UART driver here.
   }
 
 void ConsoleAsync::Service()

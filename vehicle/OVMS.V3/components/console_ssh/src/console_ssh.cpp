@@ -328,8 +328,8 @@ ConsoleSSH::~ConsoleSSH()
   WOLFSSH* ssh = m_ssh;
   m_ssh = NULL;
   wolfSSH_free(ssh);
-  vQueueDelete(m_queue);
   m_dirs.clear();
+  // m_queue deleted by OvmsConsole::~OvmsConsole()
   }
 
 // Handle MG_EV_RECV event.

@@ -51,8 +51,8 @@ OvmsBluetoothConsole::OvmsBluetoothConsole(OvmsBluetoothAppConsole* app)
 
 OvmsBluetoothConsole::~OvmsBluetoothConsole()
   {
-  vQueueDelete(m_queue);
   ESP_LOGD(tag, "Deleted OvmsBluetoothConsole");
+  // m_queue deleted by OvmsConsole::~OvmsConsole()
   }
 
 void OvmsBluetoothConsole::DataToConsole(uint8_t* data, size_t len)

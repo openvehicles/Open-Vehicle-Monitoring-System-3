@@ -178,7 +178,7 @@ ConsoleTelnet::~ConsoleTelnet()
   telnet_t *telnet = m_telnet;
   m_telnet = NULL;
   telnet_free(telnet);
-  vQueueDelete(m_queue);
+  // m_queue deleted by OvmsConsole::~OvmsConsole()
   }
 
 void ConsoleTelnet::Receive()
