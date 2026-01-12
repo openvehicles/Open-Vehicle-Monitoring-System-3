@@ -216,6 +216,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"vehicle.charge.start", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"vehicle.charge.stop", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.on", std::bind(&OvmsVehicleSmartEQ::EventListener, this, _1, _2));
   MyConfig.RegisterParam("xsq", "smartEQ", true, true);
 
   ConfigChanged(NULL);
@@ -417,6 +418,10 @@ void OvmsVehicleSmartEQ::EventListener(std::string event, void* data) {
     {
     m_ADCfactor_recalc_timer = 0;
     m_ADCfactor_recalc = false;     // stop recalculation when HV charging stopped
+    }
+  else if (event == "vehicle.on") 
+    { 
+    m_idle_ticker = 15 * 60;  // reset idle ticker when vehicle turned on
     }
 }
 

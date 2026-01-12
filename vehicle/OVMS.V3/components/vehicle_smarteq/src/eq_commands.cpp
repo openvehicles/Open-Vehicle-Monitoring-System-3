@@ -695,7 +695,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripStart(int verbosit
     writer->printf("  distance: %s\n", (char*) mt_start_distance->AsUnitString("-", rangeUnit, 1).c_str());
     writer->printf("  time: %s\n", (char*) mt_start_time->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-    writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
+    writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
     return Success;
 }
@@ -718,7 +718,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripReset(int verbosit
     writer->printf("  distance: %s\n", (char*) mt_start_distance->AsUnitString("-", rangeUnit, 1).c_str());
     writer->printf("  time: %s\n", (char*) mt_start_time->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-    writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
+    writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
     return Success;
 }
@@ -743,7 +743,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripCounters(int verbo
 	  writer->printf("  Energy recd: %s\n", (char*) StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", Native, 3).c_str());
     writer->printf("  Energy grid: %s\n", (char*) StdMetrics.ms_v_charge_kwh_grid->AsUnitString("-", Native, 3).c_str());
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-    writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
+    writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
     return Success;
 }
@@ -768,7 +768,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripTotal(int verbosit
 	  writer->printf("  Energy recd: %s\n", (char*) StdMetrics.ms_v_bat_energy_recd_total->AsUnitString("-", Native, 3).c_str());
     writer->printf("  Energy grid: %s\n", (char*) StdMetrics.ms_v_charge_kwh_grid_total->AsUnitString("-", Native, 3).c_str());
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-    writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
+    writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
     return Success;
 }
@@ -813,7 +813,7 @@ void OvmsVehicleSmartEQ::NotifyMaintenance() {
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSOClimit(int verbosity, OvmsWriter* writer) {
   writer->puts("SOC limit reached:");
   writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-  writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
+  writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
   writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
   return Success;
 }
@@ -828,7 +828,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::Command12Vcharge(int verbosit
  
   writer->printf("  12V: %s\n", (char*) StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Native, 1).c_str());
   writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-  writer->printf("  CAC: %s\n", (char*) StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
+  writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
   writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
   return Success;
 }
@@ -1093,7 +1093,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   
   MyConfig.SetParamValue("ota", "server", "https://ovms.dexters-web.de/firmware/ota");
   MyConfig.SetParamValue("ota", "tag", "main");
-  MyConfig.SetParamValue("ota", "http.mru", "https://ovms.dexters-web.de/firmware/ota/edge/ovms.bin");
+  MyConfig.SetParamValue("ota", "http.mru", "https://ovms.dexters-web.de/firmware/ota/v3.3/edge/ovms3.bin");
   
   MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
   MyConfig.DeleteInstance("network", "wifi.bad.reconnect");

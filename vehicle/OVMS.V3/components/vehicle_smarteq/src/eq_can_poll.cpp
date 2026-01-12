@@ -459,6 +459,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t rep
   mt_bms_soh->SetValue(soh);
   //StdMetrics.ms_v_bat_soh->SetValue(soh);
   mt_bms_cap->SetElemValue(0, cap_full);  // usable_max
+  StdMetrics.ms_v_bat_cac->SetValue(cap_full);
   mt_bms_mileage->SetValue(mileage_raw);
 }
 
@@ -721,11 +722,6 @@ void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t repl
   // step 0.005 kWh
   float value = raw * 0.005f;
   StdMetrics.ms_v_bat_capacity->SetValue(value);
-  // (Optional: keep legacy standard metrics updates)
-  float cv_sum = mt_bms_voltages->GetElemValue(5); // cv_sum (HV)
-  if (cv_sum > 0) {
-    StdMetrics.ms_v_bat_cac->SetValue(value * 1000.0f / cv_sum);
-  }
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_Traceability(const char* data, uint16_t reply_len) {
