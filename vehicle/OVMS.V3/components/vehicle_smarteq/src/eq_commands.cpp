@@ -1129,7 +1129,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
 
   writer->puts("--- Battery Health (PID 0x61) ---");
   writer->printf("  State of Health:         %.0f%%\n", mt_bms_soh->AsFloat());
-  writer->printf("  Usable Capacity:         %.2f Ah\n", mt_bms_cap->GetElemValue(0));
+  writer->printf("  Usable max Capacity:     %.2f Ah\n", mt_bms_cap->GetElemValue(0));
   
   writer->puts("\n--- HV Contactor Cycles (PID 0x02) ---");
   writer->printf("  Max Cycles:              %d\n", mt_bms_contactor_cycles->GetElemValue(0));
@@ -1148,6 +1148,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->puts("\n--- SOC Recalibration (PID 0x25) ---");
   writer->printf("  Recalibration State:     %s\n", mt_bms_soc_recal_state->AsString().c_str());
   writer->printf("  Display SOC:             %.2f%%\n", mt_bms_soc_values->GetElemValue(4));
+  writer->printf("  Usable Capacity:         %.2f Ah\n", mt_bms_cap->GetElemValue(4));
   
   writer->puts("\n--- Battery State (PID 0x07) ---");
   writer->printf("  Cell Voltage Min:        %.3f V\n", mt_bms_voltages->GetElemValue(0));

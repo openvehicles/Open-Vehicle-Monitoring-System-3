@@ -458,8 +458,10 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t rep
   int32_t mileage_raw = (int32_t)CAN_UINT32(9);
   mt_bms_soh->SetValue(soh);
   //StdMetrics.ms_v_bat_soh->SetValue(soh);
-  mt_bms_cap->SetElemValue(0, cap_full);  // usable_max
-  StdMetrics.ms_v_bat_cac->SetValue(cap_full);
+  mt_bms_cap->SetElemValue(0, cap_full);      // usable_max_capacity
+  float cap_useable = (soh >= 0.0f && soh <= 100.0f && cap_full > 0.0f) ? (cap_full * soh / 100.0f) : 0.0f;
+  mt_bms_cap->SetElemValue(4, cap_useable);   // usable_capacity 
+  StdMetrics.ms_v_bat_cac->SetValue(cap_useable);
   mt_bms_mileage->SetValue(mileage_raw);
 }
 
