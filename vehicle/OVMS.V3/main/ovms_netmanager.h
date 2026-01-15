@@ -126,6 +126,7 @@ class OvmsNetManager
 
   public:
     void DoSafePrioritiseAndIndicate();
+    esp_err_t GetNetifList(std::vector<struct netif>& netiflist, int& netifdefault);
 
   protected:
     void PrioritiseAndIndicate();

@@ -62,17 +62,25 @@ OvmsNetManager MyNetManager __attribute__ ((init_priority (8999)));
 
 void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  struct netif *ni;
-  for (ni = netif_list; ni; ni = ni->next)
+  std::vector<struct netif> netiflist;
+  int netifdefault;
+
+  if (MyNetManager.GetNetifList(netiflist, netifdefault) != ESP_OK)
     {
-    if (ni->name[0]=='l' && ni->name[1]=='o')
+    writer->puts("ERROR: cannot get netif list!");
+    return;
+    }
+
+  for (auto ni : netiflist)
+    {
+    if (ni.name[0]=='l' && ni.name[1]=='o')
       continue;
     writer->printf("Interface#%d: %c%c%d (ifup=%d linkup=%d)\n",
-      ni->num,ni->name[0],ni->name[1],ni->num,
-      ((ni->flags & NETIF_FLAG_UP) != 0),
-      ((ni->flags & NETIF_FLAG_LINK_UP) != 0));
+      ni.num,ni.name[0],ni.name[1],ni.num,
+      ((ni.flags & NETIF_FLAG_UP) != 0),
+      ((ni.flags & NETIF_FLAG_LINK_UP) != 0));
     writer->printf("  IPv4: " IPSTR "/" IPSTR " gateway " IPSTR "\n",
-      IP2STR(&ni->ip_addr.u_addr.ip4), IP2STR(&ni->netmask.u_addr.ip4), IP2STR(&ni->gw.u_addr.ip4));
+      IP2STR(&ni.ip_addr.u_addr.ip4), IP2STR(&ni.netmask.u_addr.ip4), IP2STR(&ni.gw.u_addr.ip4));
     writer->puts("");
     }
 
@@ -95,13 +103,14 @@ void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   else
     writer->puts("");
 
-  if (netif_default)
+  if (netifdefault >= 0)
     {
+    struct netif& ni = netiflist[netifdefault];
     writer->printf("\nDefault Interface: %c%c%d (" IPSTR "/" IPSTR " gateway " IPSTR ")\n",
-      netif_default->name[0], netif_default->name[1], netif_default->num,
-      IP2STR(&netif_default->ip_addr.u_addr.ip4),
-      IP2STR(&netif_default->netmask.u_addr.ip4),
-      IP2STR(&netif_default->gw.u_addr.ip4));
+      ni.name[0], ni.name[1], ni.num,
+      IP2STR(&ni.ip_addr.u_addr.ip4),
+      IP2STR(&ni.netmask.u_addr.ip4),
+      IP2STR(&ni.gw.u_addr.ip4));
     }
   else
     {
@@ -922,6 +931,8 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
     return;
     }
 
+  // Walk through list of network interfaces:
+  // (this is safe, as we're in the LwIP context)
   for (struct netif *pri = netif_list; pri != NULL; pri=pri->next)
     {
     if ((pri->name[0]==search[0])&&
@@ -1166,7 +1177,6 @@ int OvmsNetManager::CleanupConnections()
   if (!MongooseRunning())
     return 0;
 
-  struct netif *ni;
   mg_connection *c;
 #if ESP_IDF_VERSION_MAJOR >= 5
   wifi_sta_mac_ip_list_t ap_ip_list;
@@ -1199,6 +1209,16 @@ int OvmsNetManager::CleanupConnections()
     }
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
+  // get snapshot of LwIP network interface list:
+  std::vector<struct netif> netiflist;
+  int netifdefault;
+  if (GetNetifList(netiflist, netifdefault) != ESP_OK)
+    {
+    ESP_LOGW(TAG, "CleanupConnections: can't get LwIP netif list");
+    return 0;
+    }
+
+  // walk through Mongoose connections:
   for (c = mg_next(&m_mongoose_mgr, NULL); c; c = mg_next(&m_mongoose_mgr, c))
     {
     if (c->flags & MG_F_LISTENING)
@@ -1216,10 +1236,14 @@ int OvmsNetManager::CleanupConnections()
       continue;
 
     // find interface:
-    for (ni = netif_list; ni; ni = ni->next)
+    struct netif *ni = NULL;
+    for (auto candidate : netiflist)
       {
-      if (sa.sin.sin_addr.s_addr == ip4_addr_get_u32(netif_ip4_addr(ni)))
+      if (sa.sin.sin_addr.s_addr == ip4_addr_get_u32(netif_ip4_addr(&candidate)))
+        {
+        ni = &candidate;
         break;
+        }
       }
 
     if (ni)
@@ -1264,6 +1288,52 @@ int OvmsNetManager::CleanupConnections()
       } // AP remotes
     } // connection loop
   return cnt;
+  }
+
+/**
+ * OvmsNetManager::GetNetifList: get a snapshot (copy) of the LwIP internal network interface list;
+ *    this is done via a callback within the LwIP context, to avoid concurrent access
+ *    to the LwIP managed netif_list & netif_default.
+ * 
+ * @param &netiflist      -- ref to vector of netif, will be cleared & filled
+ * @param &netifdefault   -- ref to int, will be set to index of default interface in netiflist or -1 if none
+ * @result                -- ESP_OK or ESP_FAIL
+ */
+esp_err_t OvmsNetManager::GetNetifList(std::vector<struct netif>& netiflist, int& netifdefault)
+  {
+  OvmsSemaphore donesem;
+
+  struct cb_context
+    {
+    std::vector<struct netif>* netiflist;
+    int* netifdefault;
+    OvmsSemaphore* donesem;
+    } context = { &netiflist, &netifdefault, &donesem };
+
+  auto get_netiflist_cb = [](void* data)
+    {
+    cb_context* ctx = (cb_context*)data;
+    for (struct netif* ni = netif_list; ni; ni = ni->next)
+      {
+      if (ni == netif_default) *ctx->netifdefault = ctx->netiflist->size();
+      ctx->netiflist->push_back(*ni);
+      }
+    ctx->donesem->Give();
+    };
+
+  netiflist.clear();
+  netiflist.reserve(4); // lo, st, pp, ap
+  netifdefault = -1;
+
+  if (tcpip_callback_with_block(get_netiflist_cb, &context, 1) == ERR_OK)
+    {
+    donesem.Take();
+    return ESP_OK;
+    }
+  else
+    {
+    return ESP_FAIL;
+    }
   }
 
 bool OvmsNetManager::IsNetManagerTask()
