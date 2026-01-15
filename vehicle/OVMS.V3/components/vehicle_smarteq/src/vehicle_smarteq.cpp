@@ -170,7 +170,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_soh                    = MyMetrics.InitFloat("xsq.bms.soh", SM_STALE_MID, 0, Percentage);
   // BMS capacity values: Index 0=usable_max, 1=init, 2=estimate, 3=loss_pct
   mt_bms_cap                    = MyMetrics.InitVector<float>("xsq.bms.cap", SM_STALE_MID, nullptr, Other);
-  mt_bms_cap->SetElemValue(3, 0.0f);  // Pre-allocate 4 entries
+  mt_bms_cap->SetElemValue(4, 0.0f);  // Pre-allocate 5 entries
   mt_bms_mileage                = MyMetrics.InitInt("xsq.bms.mileage", SM_STALE_HIGH, 0, Kilometers);
   mt_bms_voltage_state          = MyMetrics.InitString("xsq.bms.voltage.state", SM_STALE_MID, "");
   mt_bms_cell_resistance        = MyMetrics.InitVector<float>("xsq.bms.cell.resistance", SM_STALE_HIGH, nullptr, Other);

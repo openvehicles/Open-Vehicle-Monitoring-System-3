@@ -146,7 +146,7 @@ metrics
     xsq.bms.soc.values                    -- SOC values vector [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display [%]
     xsq.bms.soc.recal.state               -- SOC recalibration state
     xsq.bms.soh                           -- State of Health [%]
-    xsq.bms.cap                           -- BMS capacity values vector: [0]=usable_max(Ah), [1]=init(Ah), [2]=estimate(Ah), [3]=loss_pct(%)
+    xsq.bms.cap                           -- BMS capacity values vector: [0]=usable_max(Ah), [1]=init(Ah), [2]=estimate(Ah), [3]=loss_pct(%), [4]=usable_capacity(Ah)
     xsq.bms.mileage                       -- Battery mileage [km]
     xsq.bms.energy.nominal                -- Nominal battery energy [kWh]
     xsq.bms.voltage.state                 -- Voltage state description
