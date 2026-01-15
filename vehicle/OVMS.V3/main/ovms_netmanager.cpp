@@ -1004,6 +1004,7 @@ void OvmsNetManager::MongooseTask()
 
   // Shutdown cleanly
   ESP_LOGD(TAG, "MongooseTask stopping");
+  DiscardJobs();
 
   // Signal network clients to close & cleanup; to avoid race conditions from concurrent
   // mg_mgr_free() execution, wait for all event listeners to have finished:
@@ -1092,6 +1093,16 @@ void OvmsNetManager::ProcessJobs()
     if (job->caller)
       xTaskNotifyGive(job->caller);
     ESP_LOGD(TAG, "MongooseTask: done cmd %d from %p", job->cmd, job->caller);
+    }
+  }
+
+void OvmsNetManager::DiscardJobs()
+  {
+  netman_job_t* job;
+  while (xQueueReceive(m_jobqueue, &job, 0) == pdTRUE)
+    {
+    ESP_LOGD(TAG, "MongooseTask: discard cmd %d from %p", job->cmd, job->caller);
+    if (job->caller) xTaskNotifyGive(job->caller);
     }
   }
 

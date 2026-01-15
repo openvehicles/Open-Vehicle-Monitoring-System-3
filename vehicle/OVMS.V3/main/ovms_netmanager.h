@@ -180,6 +180,7 @@ class OvmsNetManager
     struct mg_mgr* GetMongooseMgr();
     bool MongooseRunning();
     void ProcessJobs();
+    void DiscardJobs();
     bool ExecuteJob(netman_job_t* job, TickType_t timeout=portMAX_DELAY);
     void ScheduleCleanup();
     int ListConnections(int verbosity, OvmsWriter* writer);
