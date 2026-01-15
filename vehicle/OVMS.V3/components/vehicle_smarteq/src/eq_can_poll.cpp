@@ -386,7 +386,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_SOCRecal(const char* data, uint16_t reply
   if (display_soc >= 0 && display_soc <= 100.0f) {
     mt_bms_soc_values->SetElemValue(4, display_soc);  // display SOC
     //StdMetrics.ms_v_bat_soc->SetValue(display_soc);
-  }
+    }
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_CellResistance(const char* data, uint16_t reply_len, uint16_t start) {
@@ -456,13 +456,14 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t rep
   float soh = (float)CAN_BYTE(8) / 2.0f;
   float cap_full = ((int16_t)CAN_UINT(6) * 10.0f) / 3600.0f;  // Convert As to Ah
   int32_t mileage_raw = (int32_t)CAN_UINT32(9);
+  float soc = StdMetrics.ms_v_bat_soc->AsFloat(0.0f);
+  float cap_useable = (soc >= 0.0f && soc <= 100.0f && cap_full > 0.0f) ? (cap_full * soc / 100.0f) : 0.0f;
   mt_bms_soh->SetValue(soh);
-  //StdMetrics.ms_v_bat_soh->SetValue(soh);
-  mt_bms_cap->SetElemValue(0, cap_full);      // usable_max_capacity
-  float cap_useable = (soh >= 0.0f && soh <= 100.0f && cap_full > 0.0f) ? (cap_full * soh / 100.0f) : 0.0f;
+  mt_bms_cap->SetElemValue(0, cap_full);      // usable_max_capacity  
   mt_bms_cap->SetElemValue(4, cap_useable);   // usable_capacity 
+  mt_bms_mileage->SetValue(mileage_raw);      // total mileage stored in BMS
   StdMetrics.ms_v_bat_cac->SetValue(cap_useable);
-  mt_bms_mileage->SetValue(mileage_raw);
+  //StdMetrics.ms_v_bat_soh->SetValue(soh);
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_ProductionData(const char* data, uint16_t reply_len) {
