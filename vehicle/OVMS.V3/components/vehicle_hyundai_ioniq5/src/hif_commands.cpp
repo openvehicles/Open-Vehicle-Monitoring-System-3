@@ -536,6 +536,7 @@ void xiq_trip_( const char *title,  OvmsWriter *writer, OvmsMetricFloat *metric_
     const std::string &ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1);
     writer->printf("ODO %s\n", ODO.c_str());
   }
+
   XDISARM;
 }
 
@@ -579,8 +580,8 @@ void OvmsHyundaiIoniqEv::RangeCalcStat(OvmsWriter *writer)
     iq_range_calc->displayStoredTrips(writer);
   }
 
+  metric_unit_t rangeUnit = MyUnitConfig.GetUserUnit(GrpDistance, Kilometers);
   if (kia_park_trip_counter.Started()) {
-    metric_unit_t rangeUnit = MyUnitConfig.GetUserUnit(GrpDistance, Kilometers);
 
     writer->puts("Current Trip Counter");
     writer->printf("Dist: %.2f%s\n",
@@ -621,15 +622,21 @@ void OvmsHyundaiIoniqEv::RangeCalcStat(OvmsWriter *writer)
     }
   }
 
+  const std::string &val = m_v_p_odo_ext->AsUnitString("-", rangeUnit, 3);
+  writer->printf("Extended ODO: %s\n", val.c_str() );
+
+  metric_unit_t shortRangeUnit = MyUnitConfig.GetUserUnit(GrpDistanceShort, Meters);
+  float show_ave = UnitConvert(Kilometers, shortRangeUnit, m_extra_diff_ave);
+  writer->printf("Ave Ext ODO Diff: %.*f%s\n", 0, show_ave,  OvmsMetricUnitLabel(shortRangeUnit));
 }
 
 void xiq_range_stat(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
 {
-  if (MyVehicleFactory.m_currentvehicle == NULL) {
+  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
+  if (mycar == nullptr) {
     writer->puts("Error: No vehicle module selected");
     return;
   }
-  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
   mycar->RangeCalcStat(writer);
 }
 

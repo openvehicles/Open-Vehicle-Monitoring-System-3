@@ -21,8 +21,9 @@
 ;               Improve responsiveness for OBD2ECU
 ;               Add indicators and warning light metrics
 ;       0.0.6:  Improve the battery monitor
+;       0.0.7:  Approximate better ODO resolution for range
 ;
-;    (C) 2022,2023 Michael Geddes
+;    (C) 2022-2026 Michael Geddes
 ; ----- Kona/Kia Module -----
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
@@ -47,7 +48,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#define IONIQ5_VERSION "0.0.6"
+#define IONIQ5_VERSION "0.0.7"
 
 #include "vehicle_hyundai_ioniq5.h"
 
@@ -82,7 +83,7 @@ using namespace std::placeholders;
 static const OvmsPoller::poll_pid_t vehicle_ioniq_polls[] = {
   //                                                    0    1    2   3
   //                                                   Off  On  Chrg Ping
-  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   2,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
+  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   1,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
   { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe004, { 0,   1,   4,  4}, 0, ISOTP_STD },   // VMCU - Drive status + Accellerator
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   2,   4,  4}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 1 - BMC Diag page 02
@@ -108,7 +109,7 @@ static const OvmsPoller::poll_pid_t vehicle_ioniq_polls[] = {
 
   //{0x7b3,0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  10,  10,  0} },  // AirCon - No usable values found yet
 
-  { 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_READDATA, 0xB002, { 0,  5, 120,  0}, 0, ISOTP_STD },  // Cluster. ODO
+  { 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_READDATA, 0xB002, { 0,  2, 120,  0}, 0, ISOTP_STD },  // Cluster. ODO
 
   // TODO 0x7e5 OBC - On Board Charger?
 
@@ -357,15 +358,36 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_v_door_lock_fr = MyMetrics.InitBool("xiq.v.d.l.fr", 10, false);
   m_v_door_lock_rl = MyMetrics.InitBool("xiq.v.d.l.rl", 10, false);
   m_v_door_lock_rr = MyMetrics.InitBool("xiq.v.d.l.rr", 10, false);
+  m_v_p_odo_ext    = MyMetrics.InitFloat("xiq.v.p.odometer.ext", SM_STALE_MID, 0, Kilometers, true);
 
   m_v_accum_op_time           = MyMetrics.InitInt("xiq.v.accum.op.time",         SM_STALE_MAX, 0, Seconds );
 
+  m_extra_diff_ave = 0;
+  m_last_speed = 0;
+  m_distance_reftime = 0;
+
+  m_extra_odo = 0;
+  m_reached_next_odo = false;
+
   m_v_charge_current_request = MyMetrics.InitFloat("xiq.v.c.current.req", SM_STALE_MID, 0, Amps);
+
+  // Guess if odo is in miles or kilometers
+  float odo = StdMetrics.ms_v_pos_odometer->AsFloat(Kilometers);
+  if (std::abs(odo - std::floor(odo)) < 0.0001) {
+    m_next_odo = odo + 1;
+  } else {
+    m_next_odo = odo + UnitConvert(Miles, Kilometers, static_cast<float>(1.0));
+  }
+
+  // Initialise
+  if (m_v_p_odo_ext->AsFloat(Kilometers) < odo) {
+    m_v_p_odo_ext->SetValue(odo, Kilometers);
+  }
 
   // Setting a minimum trip size of 5km as the granuality of trips is +/- 1km.
   // The default range and battery size are overridden below in ConfigChanged() .. and
   // when the battery size is loaded from OBD.
-  iq_range_calc = new RangeCalculator(5/*minTrip*/, 4/*weightCurrent*/, 450, 74);
+  iq_range_calc = new RangeCalculator(2/*minTrip*/, 4/*weightCurrent*/, 450, 74);
 
   m_b_cell_det_min->SetValue(0);
 
@@ -623,6 +645,10 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
   float coulomb_rec = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh);
   float coulomb_used = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh);
   bool isCharge = StdMetrics.ms_v_charge_inprogress->AsBool();
+
+  float odoext = m_v_p_odo_ext->AsFloat(Kilometers);
+  if (odoext == 0)
+    odoext = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
   if (isOn) {
     // Car is ON
     ESP_LOGI(TAG, "CAR IS ON");
@@ -631,19 +657,26 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
     StdMetrics.ms_v_env_charging12v->SetValue( true );
     kia_ready_for_chargepollstate = true;
 
-    kia_park_trip_counter.Reset(POS_ODO, charg_used, charg_rec, coulomb_used, coulomb_rec, isCharge);
+    kia_park_trip_counter.Reset(
+        odoext,
+        charg_used, charg_rec, coulomb_used, coulomb_rec, isCharge);
     BmsResetCellStats();
   }
-  else if (!isOn) {
+  else {
     // Car is OFF
     ESP_LOGI(TAG, "CAR IS OFF");
     if (kia_park_trip_counter.Started()) {
-      kia_park_trip_counter.Update(POS_ODO, charg_used, charg_rec, coulomb_used, coulomb_rec);
+      kia_park_trip_counter.Update(
+          odoext,
+          charg_used, charg_rec, coulomb_used, coulomb_rec);
+
       if (isCharge != kia_park_trip_counter.Charging()) {
         kia_park_trip_counter.StartCharge(charg_rec, coulomb_rec);
       }
     } else {
-      kia_park_trip_counter.Reset(POS_ODO, charg_used, charg_rec, coulomb_used, coulomb_rec, isCharge);
+      kia_park_trip_counter.Reset(
+          odoext,
+          charg_used, charg_rec, coulomb_used, coulomb_rec, isCharge);
     }
     kia_secs_with_no_client = 0;
     StdMetrics.ms_v_pos_speed->SetValue( 0 );
@@ -684,7 +717,9 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
     float energy_recovered = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh);
     float coulomb_used = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh);
     float coulomb_recovered = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh);
-    float odo =  StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+    float odo = m_v_p_odo_ext->AsFloat(Kilometers);
+    if (odo == 0)
+      odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
 
     if (kia_park_trip_counter.Started()) {
       kia_park_trip_counter.Update(odo, energy_used, energy_recovered, coulomb_used, coulomb_recovered);
@@ -1152,8 +1187,11 @@ void OvmsHyundaiIoniqEv::HandleCharging()
     float est_range = StdMetrics.ms_v_bat_range_est->AsFloat(400, Kilometers);
     float limit_range = StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
     float ideal_range = StdMetrics.ms_v_bat_range_ideal->AsFloat(450, Kilometers);
+    float odoext = m_v_p_odo_ext->AsFloat(Kilometers);
+    if (odoext == 0)
+      odoext = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
     kia_park_trip_counter.Update(
-      POS_ODO,
+      odoext,
       StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
       StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
     );
@@ -1276,7 +1314,11 @@ void OvmsHyundaiIoniqEv::HandleChargeStop()
   StdMetrics.ms_v_charge_duration_range->Clear();
 
   // Reset trip counter for this charge
-  kia_charge_trip_counter.Reset(POS_ODO,
+  float odoext = m_v_p_odo_ext->AsFloat(Kilometers);
+  if (odoext == 0)
+    odoext = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+  kia_charge_trip_counter.Reset(
+    odoext,
     StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
     StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
     );
@@ -1353,9 +1395,6 @@ void OvmsHyundaiIoniqEv::UpdateMaxRangeAndSOH(void)
     StdMetrics.ms_v_bat_range_ideal->SetValue( maxRange * BAT_SOC / 100.0, Kilometers);
   }
   StdMetrics.ms_v_bat_range_full->SetValue(maxRange, Kilometers);
-
-  //TODO How to find the range as displayed in the cluster? Use the WLTP until we find it
-  //wltpRange = (wltpRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
   StdMetrics.ms_v_bat_range_est->SetValue( wltpRange * BAT_SOC / 100.0, Kilometers);
   XDISARM;
 }

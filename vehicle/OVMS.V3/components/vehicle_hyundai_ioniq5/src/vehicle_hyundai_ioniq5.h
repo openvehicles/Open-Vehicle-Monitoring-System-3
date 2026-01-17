@@ -389,14 +389,32 @@ protected:
   OvmsMetricInt   *m_b_bms_availpower;
   OvmsMetricFloat *m_v_bat_calc_cap;
 
-  OvmsMetricBool   *m_v_env_parklights;
-  OvmsMetricFloat   *m_v_charge_current_request;
+  OvmsMetricBool  *m_v_env_parklights;
+  OvmsMetricFloat *m_v_charge_current_request;
 
   OvmsMetricBool  *m_v_env_indicator_l;
   OvmsMetricBool  *m_v_env_indicator_r;
 
   /// Accumulated operating time
   OvmsMetricInt *m_v_accum_op_time;
+
+  /// Calculate more accurage odo.
+  OvmsMetricFloat *m_v_p_odo_ext;
+
+protected:
+
+  /// The next ODO reading in km.
+  float m_next_odo; // Km
+
+  /// Distance between the projected and actual distance.
+  float m_extra_odo; // Km
+
+  bool m_reached_next_odo;
+  /// ODO plus calculated extra distance used to calculate consumption.
+  float m_extra_diff_ave; // make-up differences.
+
+  uint8_t m_last_speed; // The last speed read (Kph)
+  uint32_t m_distance_reftime; // Time (ms) of last read.
 
   struct {
     unsigned char ChargingCCS : 1;
