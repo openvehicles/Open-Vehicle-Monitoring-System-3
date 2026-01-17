@@ -150,7 +150,7 @@ config OVMS_HW_CELLULAR_MODEM_QUEUE_SIZE
 
 config OVMS_HW_CELLULAR_MODEM_STACK_SIZE
     int "Stack size for MODEM task"
-    default 4096
+    default 5120
     depends on OVMS && OVMS_COMP_CELLULAR
     help
         The stack size of the OVMS Console and dynamic command tasks.
