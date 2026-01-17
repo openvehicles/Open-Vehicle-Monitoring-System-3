@@ -672,7 +672,7 @@ void LoadPollRequest( OvmsPoller::poll_pid_t &poll,
  *  @return             POLLSINGLE_OK         (0)   -- success, response is valid
  *                      POLLSINGLE_TIMEOUT    (-1)  -- timeout/poller unavailable
  *                      POLLSINGLE_TXFAILURE  (-2)  -- CAN transmission failure
- *                      POLSSINGLE_NORESPONSE (-3)  -- No response assigned
+ *                      POLLSINGLE_NORESPONSE (-3)  -- No response assigned
  *                      else                  (>0)  -- UDS NRC detail code
  *                      Note: response is only valid with return value 0
  */
@@ -686,6 +686,13 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
     return POLLSINGLE_TIMEOUT;
     }
 
+  if (Atomic_Get(m_parent->m_polltask) == xTaskGetCurrentTaskHandle())
+    {
+    // NB: PollerStateTicker is called from the poller task.
+    ESP_LOGE(TAG, "PollSingleRequest: Unable to call from poller task");
+    return POLLSINGLE_TIMEOUT;
+    }
+
   // prepare single poll:
   OvmsPoller::poll_pid_t poll;
   LoadPollRequest(poll, txid, rxid, request, protocol, 1);
@@ -693,29 +700,28 @@ int OvmsPoller::PollSingleRequest(uint32_t txid, uint32_t rxid,
   return DoPollSingleRequest(poll,response,timeout_ms);
   }
 
+static const char * POLL_SINGLE_ENTRY = "!v.single";
 int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::string& response,
                                    int timeout_ms)
   {
   OvmsRecMutexLock slock(&m_poll_single_mutex, pdMS_TO_TICKS(timeout_ms));
   if (!slock.IsLocked())
     {
-    ESP_LOGD(TAG, "PollSingleRequest: Timeout obtaining single Request lock");
+    ESP_LOGD(TAG, "[%" PRIu8 "]PollSingleRequest: Timeout obtaining single Request lock", m_poll.bus_no);
     return POLLSINGLE_TIMEOUT;
     }
-  int32_t rx_error = POLSSINGLE_NORESPONSE; // will be replaced by POLLSINGLE_OK on success
-  OvmsSemaphore     single_rxdone;   // … response done (ok/error)
-  std::shared_ptr<BlockingOnceOffPoll> poller( new BlockingOnceOffPoll(poll, &response, &rx_error, &single_rxdone));
+  std::shared_ptr<BlockingOnceOffPoll> poller( new BlockingOnceOffPoll(poll, &response));
 
   // acquire poller access:
     {
     OvmsRecMutexLock lock(&m_poll_mutex, pdMS_TO_TICKS(timeout_ms));
     if (!lock.IsLocked())
       {
-      ESP_LOGD(TAG, "PollSingleRequest: Timeout obtaining Poller Lock to set v.single");
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollSingleRequest: Timeout obtaining Poller Lock to set v.single", m_poll.bus_no);
       return POLLSINGLE_TIMEOUT;
       }
     // start single poll:
-    m_polls.SetEntry("!v.single", poller);
+    m_polls.SetEntry(POLL_SINGLE_ENTRY, poller);
     }
 
   IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]Single Request Sending", m_poll.bus_no);
@@ -723,10 +729,11 @@ int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::str
 
   // wait for response:
   IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]Single Request Waiting for response", m_poll.bus_no);
-  bool rxok = single_rxdone.Take(pdMS_TO_TICKS(timeout_ms));
+  bool rxok = poller->Take(timeout_ms);
+  int32_t rx_error = poller->GetError();
   if (!rxok)
     ESP_LOGD(TAG, "[%" PRIu8 "]PollSingRequest: Timeout Waiting on Response", m_poll.bus_no);
-  else if (rx_error == POLSSINGLE_NORESPONSE)
+  else if (rx_error == POLLSINGLE_NORESPONSE)
     ESP_LOGD(TAG, "[%" PRIu8 "]PollSingRequest: No Response Allocated", m_poll.bus_no);
   else if (rx_error > 0)
     ESP_LOGD(TAG, "[%" PRIu8 "]PollSingRequest: Protocol Error Response (%" PRIi32 ")", m_poll.bus_no, rx_error);
@@ -734,6 +741,19 @@ int OvmsPoller::DoPollSingleRequest( const OvmsPoller::poll_pid_t &poll,std::str
   IFTRACE(Poller) ESP_LOGV(TAG, "[%" PRIu8 "]PollSingleRequest: Response done ", m_poll.bus_no);
   // Make sure if it is still sticking around that it's not accessing
   // stack objects!
+  // This is the safest way of making sure it is removed from circulation.
+    {
+    OvmsRecMutexLock lock(&m_poll_mutex, pdMS_TO_TICKS(timeout_ms));
+    if (!lock.IsLocked())
+      {
+      ESP_LOGD(TAG, "[%" PRIu8 "]PollSingleRequest: Timeout obtaining Poller Lock to remove v.single", m_poll.bus_no);
+      }
+    else
+      {
+      m_polls.RemoveEntry(POLL_SINGLE_ENTRY);
+      }
+    }
+  // In case this failed - this will make sure it removes itself.
   poller->Finished();
   return (!rxok) ? POLLSINGLE_TIMEOUT : rx_error;
   }
@@ -4388,8 +4408,8 @@ bool OvmsPoller::StandardPacketPollSeries::HasRepeat() const
 
 // OvmsPoller::OnceOffPollBase class
 
-OvmsPoller::OnceOffPollBase::OnceOffPollBase( const poll_pid_t &pollentry, std::string *rxbuf, int32_t *rxerr, uint8_t retry_fail)
-   : m_sent(status_t::Init), m_poll(pollentry), m_poll_rxbuf(rxbuf), m_poll_rxerr(rxerr),
+OvmsPoller::OnceOffPollBase::OnceOffPollBase( const poll_pid_t &pollentry, std::string *rxbuf, uint8_t retry_fail)
+   : m_sent(status_t::Init), m_shutdown(false), m_poll(pollentry), m_poll_rxbuf(rxbuf), m_poll_rxerr(POLLSINGLE_NORESPONSE),
     m_retry_fail(retry_fail), m_format(CAN_frame_std)
   {
   }
@@ -4397,10 +4417,10 @@ void OvmsPoller::OnceOffPollBase::SetParentPoller(OvmsPoller *poller)
   {
   }
 
-OvmsPoller::OnceOffPollBase::OnceOffPollBase(std::string *rxbuf, int32_t *rxerr, uint8_t retry_fail)
-   : m_sent(status_t::Init),
+OvmsPoller::OnceOffPollBase::OnceOffPollBase(std::string *rxbuf, uint8_t retry_fail)
+   : m_sent(status_t::Init), m_shutdown(false),
     m_poll({ 0, 0, 0, 0, { 1, 1, 1, 1 }, 0, 0 }),
-    m_poll_rxbuf(rxbuf), m_poll_rxerr(rxerr),
+    m_poll_rxbuf(rxbuf), m_poll_rxerr(POLLSINGLE_NORESPONSE),
     m_retry_fail(retry_fail), m_format(CAN_frame_std)
   {
   }
@@ -4458,7 +4478,13 @@ void OvmsPoller::OnceOffPollBase::SetPollPid( uint32_t txid, uint32_t rxid, uint
 // Move list to start.
 void OvmsPoller::OnceOffPollBase::ResetList(OvmsPoller::ResetMode mode)
   {
-  switch(m_sent)
+  if ( ShutDownSignaled() && (GetStatus() != status_t::Stopped) )
+    {
+    UpdateStatus(status_t::Stopping);
+    IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Shutdown Signaled stopping");
+    }
+
+  switch(GetStatus())
     {
     case status_t::Init:
       IFTRACE(Poller) ESP_LOGV(TAG, "Once Off Poll: List reset to start");
@@ -4470,46 +4496,64 @@ void OvmsPoller::OnceOffPollBase::ResetList(OvmsPoller::ResetMode mode)
         if (m_retry_fail < 0)
           {
           IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Retry exceeded - no reset");
-          m_sent = status_t::Stopping;
+          UpdateStatus(status_t::Stopping);
           return;
           }
-        IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Reset for retry");
-        m_sent = status_t::RetryInit;
+        if (ShutDownSignaled())
+          {
+          UpdateStatus(status_t::Stopping);
+          IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Shutdown Signaled stopping");
+          }
+        else
+          {
+          IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Reset for retry");
+          UpdateStatus(status_t::RetryInit);
+          }
         }
       break;
     default:
-      m_sent = status_t::Stopping;
+      UpdateStatus(status_t::Stopping);
     }
   }
 
 // Find the next poll entry.
 OvmsPoller::OvmsNextPollResult OvmsPoller::OnceOffPollBase::NextPollEntry(poll_pid_t &entry, uint8_t mybus, uint32_t pollticker, uint8_t pollstate)
   {
-  switch (m_sent)
+  if ( ShutDownSignaled() && (GetStatus() != status_t::Stopped) )
+    {
+    UpdateStatus(status_t::Stopping);
+    IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Shutdown Signaled stopping");
+    }
+  switch (GetStatus())
     {
     case status_t::Init:
       {
       entry = m_poll;
-      m_sent = status_t::Sent;
+      UpdateStatus(status_t::Sent);
       return OvmsNextPollResult::FoundEntry;
       }
     case status_t::RetrySent:
     case status_t::Sent:
       {
-      if ((m_retry_fail < 0) || (!m_poll_rxerr) || *m_poll_rxerr == 0)
+      if ((m_retry_fail < 0) || m_poll_rxerr == 0)
         {
+        UpdateStatus(status_t::Stopped);
         IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: No Retries left, stopping");
-        m_sent = status_t::Stopped;
+        }
+      else if (ShutDownSignaled())
+        {
+        UpdateStatus(status_t::Stopped);
+        IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Shutdown Signaled stopping");
         }
       else
         {
-        m_sent = status_t::Retry;
+        UpdateStatus(status_t::Retry);
         IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Retries left %d", m_retry_fail);
         }
       return OvmsPoller::OvmsNextPollResult::ReachedEnd;
       }
     case status_t::Stopping:
-      m_sent = status_t::Stopped;
+      UpdateStatus(status_t::Stopped);
       return OvmsPoller::OvmsNextPollResult::ReachedEnd;
     case status_t::Stopped:
       return OvmsPoller::OvmsNextPollResult::StillAtEnd;
@@ -4518,7 +4562,7 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::OnceOffPollBase::NextPollEntry(poll_p
     case status_t::RetryInit:
       {
       entry = m_poll;
-      m_sent = status_t::RetrySent;
+      UpdateStatus(status_t::RetrySent);
       return OvmsNextPollResult::FoundEntry;
       }
     default:
@@ -4529,22 +4573,23 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::OnceOffPollBase::NextPollEntry(poll_p
 // Process an incoming packet.
 void OvmsPoller::OnceOffPollBase::IncomingPacket(const OvmsPoller::poll_job_t& job, uint8_t* data, uint8_t length)
   {
-  if (m_poll_rxbuf != nullptr)
     {
-    if (job.mlframe == 0 )
+    OvmsRecMutexLock lock(&m_oneoff_mutex);
+    if (m_poll_rxbuf != nullptr)
       {
-      m_format = job.format;
-      m_poll_rxbuf->clear();
-      m_poll_rxbuf->reserve(length+job.mlremain);
+      if (job.mlframe == 0 )
+        {
+        m_format = job.format;
+        m_poll_rxbuf->clear();
+        m_poll_rxbuf->reserve(length+job.mlremain);
+        }
+      m_poll_rxbuf->append((char*)data, length);
       }
-    m_poll_rxbuf->append((char*)data, length);
     }
   if (job.mlremain == 0)
     {
-    if (m_poll_rxerr)
-      *m_poll_rxerr = 0;
-
-    m_sent = status_t::Stopping;
+    m_poll_rxerr = 0;
+    UpdateStatus(status_t::Stopping);
     Done(true);
     }
   }
@@ -4554,19 +4599,20 @@ void OvmsPoller::OnceOffPollBase::IncomingError(const OvmsPoller::poll_job_t& jo
   {
   IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Error %" PRIu16, code);
 
-  if (m_poll_rxerr)
     {
-    // As IncomingError() is now also used for internal errors (ie POLLSINGLE_TXFAILURE),
-    // code needs to be reinterpreted as a signed value for the caller.
-    *m_poll_rxerr = code;
+    m_poll_rxerr = code;
+
+    OvmsRecMutexLock lock(&m_oneoff_mutex);
+    if (m_poll_rxbuf)
+      m_poll_rxbuf->clear();
     }
-  if (m_poll_rxbuf)
-    m_poll_rxbuf->clear();
   if (code == 0)
-    m_sent = status_t::Stopping;
+    {
+    UpdateStatus(status_t::Stopping);
+    }
   else
     {
-    switch (m_sent)
+    switch (GetStatus())
       {
       case status_t::Retry:
         IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Dropped Error %" PRIu16 , code);
@@ -4574,14 +4620,14 @@ void OvmsPoller::OnceOffPollBase::IncomingError(const OvmsPoller::poll_job_t& jo
       case status_t::Sent:
       case status_t::RetrySent:
         {
-        if (m_retry_fail > 0)
+        if (m_retry_fail > 0 && !ShutDownSignaled())
           {
           IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Error %" PRIu16 " Retry Rem=%" PRIi16 , code,  m_retry_fail);
-          m_sent = status_t::Retry;
+          UpdateStatus(status_t::Retry);
           return;
           }
         IFTRACE(Poller) ESP_LOGD(TAG, "Once Off Poll: Retry Stopping");
-        m_sent = status_t::Stopping;
+        UpdateStatus( status_t::Stopping);
         }
       default: break;
       }
@@ -4600,8 +4646,8 @@ bool OvmsPoller::OnceOffPollBase::HasRepeat() const
   }
 
 // OvmsPoller::BlockingOnceOffPoll class
-OvmsPoller::BlockingOnceOffPoll::BlockingOnceOffPoll(const poll_pid_t &pollentry, std::string *rxbuf, int32_t *rxerr, OvmsSemaphore *rxdone )
-   : OvmsPoller::OnceOffPollBase(pollentry, rxbuf, rxerr),  m_poll_rxdone(rxdone)
+OvmsPoller::BlockingOnceOffPoll::BlockingOnceOffPoll(const poll_pid_t &pollentry, std::string *rxbuf)
+   : OvmsPoller::OnceOffPollBase(pollentry, rxbuf)
   {
   }
 
@@ -4612,12 +4658,14 @@ PollEntryStyle OvmsPoller::BlockingOnceOffPoll::style()
 
 void OvmsPoller::BlockingOnceOffPoll::Done(bool success)
   {
-  if (m_poll_rxdone)
-    {
-    ESP_LOGD(TAG, "Blocking Poll: Done %s", success ? "success" : "fail");
-    m_poll_rxdone->Give();
-    Finished();
-    }
+  ESP_LOGD(TAG, "Blocking Poll: Done %s", success ? "success" : "fail");
+  m_poll_rxdone.Give();
+  Finished();
+  }
+
+bool OvmsPoller::BlockingOnceOffPoll::Take(int32_t timeout_ms)
+  {
+  return m_poll_rxdone.Take(pdMS_TO_TICKS(timeout_ms));
   }
 
 // Called when run is finished to determine what happens next.
@@ -4635,9 +4683,10 @@ void OvmsPoller::BlockingOnceOffPoll::Removing()
 // Called To null out the call-back pointers.
 void OvmsPoller::BlockingOnceOffPoll::Finished()
   {
+  Atomic_SwapIf(m_shutdown, false, true);
+
+  OvmsRecMutexLock lock(&m_oneoff_mutex);
   m_poll_rxbuf = nullptr;
-  m_poll_rxdone = nullptr;
-  m_poll_rxerr = nullptr;
   }
 
 // OnceOffPoll class
@@ -4645,24 +4694,24 @@ void OvmsPoller::BlockingOnceOffPoll::Finished()
 // Once off poll entry with buffer and result.
 OvmsPoller::OnceOffPoll::OnceOffPoll(poll_success_func success, poll_fail_func fail,
     uint32_t txid, uint32_t rxid, const std::string &request, uint8_t protocol, uint8_t pollbus, uint8_t retry_fail)
-  : OvmsPoller::OnceOffPollBase(&m_data, &m_error, retry_fail),
-    m_success(success), m_fail(fail), m_error(0), m_result_sent(false)
+  : OvmsPoller::OnceOffPollBase(&m_data, retry_fail),
+    m_success(success), m_fail(fail), m_result_sent(false)
   {
   SetPollPid(txid, rxid, request, protocol, pollbus);
   }
 
 OvmsPoller::OnceOffPoll::OnceOffPoll( poll_success_func success, poll_fail_func fail,
             uint32_t txid, uint32_t rxid, uint8_t polltype, uint16_t pid,  uint8_t protocol, uint8_t pollbus, uint8_t retry_fail)
-  : OvmsPoller::OnceOffPollBase( &m_data, &m_error, retry_fail),
-    m_success(success), m_fail(fail), m_error(0), m_result_sent(false)
+  : OvmsPoller::OnceOffPollBase( &m_data, retry_fail),
+    m_success(success), m_fail(fail), m_result_sent(false)
   {
   SetPollPid(txid, rxid, polltype, pid, protocol, "", pollbus);
   }
 
 OvmsPoller::OnceOffPoll::OnceOffPoll(poll_success_func success, poll_fail_func fail,
     uint32_t txid, uint32_t rxid, uint8_t polltype, uint16_t pid,  uint8_t protocol, const std::string &request, uint8_t pollbus, uint8_t retry_fail)
-  : OvmsPoller::OnceOffPollBase( &m_data, &m_error, retry_fail),
-    m_success(success), m_fail(fail), m_error(0), m_result_sent(false)
+  : OvmsPoller::OnceOffPollBase( &m_data, retry_fail),
+    m_success(success), m_fail(fail), m_result_sent(false)
   {
   SetPollPid(txid, rxid, polltype, pid, protocol, request, pollbus);
   }
@@ -4670,7 +4719,11 @@ OvmsPoller::OnceOffPoll::OnceOffPoll(poll_success_func success, poll_fail_func f
 void OvmsPoller::OnceOffPoll::Done(bool success)
   {
   ESP_LOGD(TAG, "Once-Off Poll: Done %s", success ? "success" : "fail");
-  m_poll_rxbuf = nullptr;
+
+    {
+    OvmsRecMutexLock lock(&m_oneoff_mutex);
+    m_poll_rxbuf = nullptr;
+    }
   m_result_sent = true;
   if (success)
     {
@@ -4680,14 +4733,14 @@ void OvmsPoller::OnceOffPoll::Done(bool success)
   else
     {
     if (m_fail)
-      m_fail(m_poll.type, m_poll.txmoduleid, m_poll.rxmoduleid, m_poll.pid, m_error);
+      m_fail(m_poll.type, m_poll.txmoduleid, m_poll.rxmoduleid, m_poll.pid, GetError());
     }
   }
 
 // Called when run is finished to determine what happens next.
 OvmsPoller::SeriesStatus OvmsPoller::OnceOffPoll::FinishRun()
   {
-  if (m_sent == status_t::Retry)
+  if (GetStatus() == status_t::Retry)
     return OvmsPoller::SeriesStatus::Next;
   return OvmsPoller::SeriesStatus::RemoveNext;
   }
@@ -4697,7 +4750,7 @@ void OvmsPoller::OnceOffPoll::Removing()
   if (!m_result_sent)
     {
     // Timed out probably.
-    m_error = 0;
+    m_poll_rxerr = POLLSINGLE_TIMEOUT;
     Done(false);
     }
   }

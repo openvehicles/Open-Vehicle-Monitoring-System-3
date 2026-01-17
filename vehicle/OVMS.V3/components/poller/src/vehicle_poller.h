@@ -34,7 +34,7 @@
 #define POLLSINGLE_OK                   0
 #define POLLSINGLE_TIMEOUT              -1
 #define POLLSINGLE_TXFAILURE            -2
-#define POLSSINGLE_NORESPONSE           -3
+#define POLLSINGLE_NORESPONSE           -3
 
 #define VEHICLE_POLL_TYPE_NONE          0x00
 
@@ -480,12 +480,14 @@ class OvmsPoller : public InternalRamAllocated {
           RetrySent, /// Retry has sent
           };
         status_t m_sent;
+        bool m_shutdown;
         std::string m_poll_data; // Request buffer data
         poll_pid_t m_poll; // Poll Entry
         std::string *m_poll_rxbuf;    // … response buffer
-        int32_t     *m_poll_rxerr;    // … response error code (NRC) / TX failure code
+        int32_t     m_poll_rxerr;     // … response error code (NRC) / TX failure code
         int16_t     m_retry_fail;
         CAN_frame_format_t m_format;
+        mutable OvmsRecMutex m_oneoff_mutex;
 
         // Called when the one-off is finished (for semaphore etc).
         // Called with NULL bus when on Removing
@@ -493,9 +495,18 @@ class OvmsPoller : public InternalRamAllocated {
 
         void SetPollPid( uint32_t txid, uint32_t rxid, const std::string &request, uint8_t protocol=ISOTP_STD, uint8_t pollbus = 0, uint16_t polltime = 1);
         void SetPollPid( uint32_t txid, uint32_t rxid, uint8_t polltype, uint16_t pid,  uint8_t protocol, const std::string &request, uint8_t pollbus = 0, uint16_t polltime = 1);
+
+        status_t GetStatus() { return m_sent; }
+        void UpdateStatus(status_t newval) { m_sent = newval; }
+
+        bool ShutDownSignaled()
+          {
+          return (Atomic_Get(m_shutdown));
+          }
+
       public:
-        OnceOffPollBase(const poll_pid_t &pollentry, std::string *rxbuf, int32_t *rxerr, uint8_t retry_fail = 0);
-        OnceOffPollBase(std::string *rxbuf, int32_t *rxerr, uint8_t retry_fail = 0);
+        OnceOffPollBase(const poll_pid_t &pollentry, std::string *rxbuf, uint8_t retry_fail = 0);
+        OnceOffPollBase(std::string *rxbuf, uint8_t retry_fail = 0);
 
         PollEntryStyle style() override;
 
@@ -516,6 +527,8 @@ class OvmsPoller : public InternalRamAllocated {
         bool HasPollList() const override;
 
         bool HasRepeat() const override;
+
+        int32_t GetError(){ return m_poll_rxerr;}
       };
 
   private:
@@ -528,10 +541,10 @@ class OvmsPoller : public InternalRamAllocated {
     class BlockingOnceOffPoll : public OnceOffPollBase
       {
       protected:
-        OvmsSemaphore *m_poll_rxdone;   // … response done (ok/error)
+        OvmsSemaphore m_poll_rxdone;   // … response done (ok/error)
         void Done(bool success) override;
       public:
-        BlockingOnceOffPoll(const poll_pid_t &pollentry, std::string *rxbuf, int32_t *rxerr, OvmsSemaphore *rxdone );
+        BlockingOnceOffPoll(const poll_pid_t &pollentry, std::string *rxbuf);
 
         // Called To null out the call-back pointers (particularly before they go out of scope).
         void Finished();
@@ -543,6 +556,8 @@ class OvmsPoller : public InternalRamAllocated {
         SeriesStatus FinishRun() override;
 
         void Removing() override;
+
+        bool Take(int32_t timeout_ms);
       };
   public:
    /** Once off poll entry with buffer and asynchronous result call-backs.
@@ -553,7 +568,6 @@ class OvmsPoller : public InternalRamAllocated {
         poll_success_func m_success;
         poll_fail_func m_fail;
         std::string m_data;
-        int m_error;
         bool m_result_sent;
 
         void Done(bool success) override;
