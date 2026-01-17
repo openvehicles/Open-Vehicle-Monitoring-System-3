@@ -278,6 +278,8 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_checklock_retry = 0;
   m_checklock_start = 0;
   m_checklock_notify = 0;
+  m_aux_is_charging = false;
+  m_aux_is_low = false;
 
   memset( kia_send_can.byte, 0, sizeof(kia_send_can.byte));
 
@@ -446,6 +448,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 #endif
 
   MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsHyundaiIoniqEv::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "location.alert.flatbed.moved", std::bind(&OvmsHyundaiIoniqEv::FlatbedListener, this, _1, _2));
 
   MyConfig.RegisterParam("xiq", "Ioniq 5/EV6 specific settings.", true, true);
   ConfigChanged(NULL);
@@ -824,7 +827,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
     HandleChargeStop();
   }
 
-  if ( !(ticker & 1) && m_aux_battery_mon.state() == OvmsBatteryState::Charging) {
+  if ( !(ticker & 1) && Atomic_Get(m_aux_is_charging) ) {
     BatteryStateStillCharging();
   }
   if (IsPollState_Off() && StdMetrics.ms_v_door_chargeport->AsBool() && kia_ready_for_chargepollstate) {
@@ -861,7 +864,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   //**** AUX Battery drain prevention code ***
   bool isRunning = StdMetrics.ms_v_env_on->AsBool();
   if (StdMetrics.ms_v_bat_12v_voltage_alert->AsBool()) {
-    ESP_LOGV(TAG, "12V Battery Alert");
+    ESP_LOGV(TAG, "Aux Battery Alert");
     if (hif_keep_awake == 0) {
       ESP_LOGD(TAG, "PollState->Off (Aux Battery Alert)");
       PollState_Off();
@@ -996,6 +999,22 @@ void OvmsHyundaiIoniqEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_
   ESP_LOGV(TAG, "Aux Battery: %s", monitor.to_string().c_str());
 #endif
   switch (new_state) {
+    case OvmsBatteryState::Charging:
+    case OvmsBatteryState::ChargingDip:
+    case OvmsBatteryState::ChargingBlip:
+      Atomic_Swap(m_aux_is_charging, true);
+      Atomic_Swap(m_aux_is_low, false);
+      break;
+    case OvmsBatteryState::Low:
+      Atomic_Swap(m_aux_is_charging, false);
+      Atomic_Swap(m_aux_is_low, true);
+      break;
+    default:
+      Atomic_Swap(m_aux_is_charging, false);
+      Atomic_Swap(m_aux_is_low, false);
+      break;
+  }
+  switch (new_state) {
     case OvmsBatteryState::Unknown:
       break;
     case OvmsBatteryState::Normal:
@@ -1009,31 +1028,31 @@ void OvmsHyundaiIoniqEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_
       ESP_LOGD(TAG, "Aux Battery state: Charging %g Dip %g",
           monitor.average_lastf(), monitor.diff_lastf());
       if ( IsPollState_Off()) {
-        ESP_LOGD(TAG, "PollState->Ping for 30 (Charge Dip)");
-        PollState_Ping(30);
+        ESP_LOGD(TAG, "PollState->Ping for 180 (Charge Dip)");
+        PollState_Ping(180);
       }
       break;
     case OvmsBatteryState::ChargingBlip:
       ESP_LOGD(TAG, "Aux Battery state: Charging %g Blip %g",
           monitor.average_lastf(), monitor.diff_lastf());
       if ( IsPollState_Off()) {
-        ESP_LOGD(TAG, "PollState->Ping for 30 (Charge Blip)");
-        PollState_Ping(30);
+        ESP_LOGD(TAG, "PollState->Ping for 180 (Charge Blip)");
+        PollState_Ping(180);
       }
       break;
     case OvmsBatteryState::Blip: {
       ESP_LOGD(TAG, "Aux Battery state: Blip %g", monitor.diff_lastf());
       if ( IsPollState_Off()) {
-        ESP_LOGD(TAG, "PollState->Ping for 30 (Blip)");
-        PollState_Ping(30);
+        ESP_LOGD(TAG, "PollState->Ping for 90 (Blip)");
+        PollState_Ping(90);
       }
     }
     break;
     case OvmsBatteryState::Dip: {
       ESP_LOGD(TAG, "Aux Battery state: Dip %g", monitor.diff_lastf());
       if ( IsPollState_Off()) {
-        ESP_LOGD(TAG, "PollState->Ping for 30 (Dip)");
-        PollState_Ping(30);
+        ESP_LOGD(TAG, "PollState->Ping for 90 (Dip)");
+        PollState_Ping(90);
       }
     }
     break;
@@ -1068,6 +1087,13 @@ void OvmsHyundaiIoniqEv::Ticker10(uint32_t ticker)
     ESP_LOGI(TAG, "Checking for VIN.");
     if (PollRequestVIN()) {
       ++m_vin_retry;
+    }
+  }
+
+  if (Atomic_Get(m_aux_is_charging)) {
+    if (IsPollState_Off()) {
+      ESP_LOGD(TAG, "PollState->Ping for 10 (Aux Charging)");
+      PollState_Ping(10);
     }
   }
 }
@@ -1156,6 +1182,15 @@ void OvmsHyundaiIoniqEv::EventListener(std::string event, void *data)
   XDISARM;
 }
 
+void OvmsHyundaiIoniqEv::FlatbedListener(std::string event, void *data)
+{
+  if (Atomic_Get(m_aux_is_low))
+    return;
+
+  // Make sure the car is really off.
+  ESP_LOGD(TAG, "PollState->Ping for 30 (Flatbed)");
+  PollState_Ping(30);
+}
 
 /**
  * Update metrics when charging

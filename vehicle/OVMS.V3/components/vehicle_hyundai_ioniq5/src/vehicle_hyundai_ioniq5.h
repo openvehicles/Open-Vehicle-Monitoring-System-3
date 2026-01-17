@@ -114,6 +114,7 @@ protected:
   void Ticker60(uint32_t ticker) override;
   void Ticker300(uint32_t ticker) override;
   void EventListener(std::string event, void *data);
+  void FlatbedListener(std::string event, void *data);
   void UpdatedAverageTemp(OvmsMetric* metric);
   void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
   void ConfigChanged(OvmsConfigParam *param) override;
@@ -167,6 +168,7 @@ protected:
   bool  kn_emergency_message_sent;
 
   int m_checklock_retry, m_checklock_start, m_checklock_notify;
+  bool m_aux_is_charging, m_aux_is_low;
 
   void HandleCharging();
   void HandleChargeStop();
