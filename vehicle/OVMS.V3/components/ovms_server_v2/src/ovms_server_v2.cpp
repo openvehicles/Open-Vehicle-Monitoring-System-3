@@ -207,23 +207,19 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
       ESP_LOGV(TAG, "OvmsServerV2MongooseCallback(MG_EV_CLOSE)");
       if (MyOvmsServerV2)
         {
+        // The only case of a scheduled disconnect is by "server v2 stop", in which case MyOvmsServerV2 is
+        // alread NULL, so this can only be an unexpected connection drop; check cause:
         if (MyOvmsServerV2->m_state == OvmsServerV2::Authenticating)
           {
           // Auth issue, user needs to fix config:
           MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", true, OvmsServerV2::WaitReconnect);
           MyOvmsServerV2->Reconnect(120);
           }
-        else if (MyOvmsServerV2->m_state == OvmsServerV2::Connecting ||
-                 MyOvmsServerV2->m_state == OvmsServerV2::Connected)
-          {
-          // Unscheduled connection drop:
-          MyOvmsServerV2->SetStatus("Connection lost, reconnecting", true, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->Reconnect(10);
-          }
         else
           {
-          // Scheduled disconnect:
-          MyOvmsServerV2->SetStatus("Disconnected", false, OvmsServerV2::Disconnected);
+          // Unscheduled connection drop from any other state:
+          MyOvmsServerV2->SetStatus("Connection lost, reconnecting", true, OvmsServerV2::WaitReconnect);
+          MyOvmsServerV2->Reconnect(10);
           }
         }
       break;
@@ -822,7 +818,7 @@ void OvmsServerV2::SetStatus(const char* status, bool fault, State newstate)
   else
     ESP_LOGI(TAG, "Status: %s", status);
   m_status = status;
-  if (newstate != Undefined)
+  if (newstate != Undefined && newstate != m_state)
     {
     m_state = newstate;
     switch (m_state)
