@@ -122,14 +122,14 @@ static const OvmsPoller::poll_pid_t vehicle_kianiroev_polls[] =
 // Based mostly on this graph: https://support.fastned.nl/hc/en-gb/articles/360007699174-Charging-with-a-Kia-e-Niro
 charging_profile ioniq_charge_steps[] = {
 		//from%, to%, Chargespeed in Wh
-       {  0,	 0, 	0 },
-	   { 0,		20,	35000},
-	   { 20,	55,	48000},
-	   { 55,	60,	44000},
-	   { 60,	75,	36000},
-	   { 75,	80,	24000},
-	   { 80,	90,	15000},
-       { 90, 	 100, 	7200 },
+       { 0,	 	0,     0 },
+	   { 0,		20,    35000},
+	   { 20,	55,	   48000},
+	   { 55,	60,	   44000},
+	   { 60,	75,	   36000},
+	   { 75,	80,	   24000},
+	   { 80,	90,	   15000},
+       { 90, 	100,   7200 },
 
 };
 
