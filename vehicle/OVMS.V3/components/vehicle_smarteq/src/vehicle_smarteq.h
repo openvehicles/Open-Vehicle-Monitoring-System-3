@@ -130,6 +130,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void NotifyMaintenance();
     void Notify12Vcharge();
     void NotifySOClimit();
+    bool DoorOpen();
     void DoorLockState();
     void DoorOpenState();
     void WifiRestart();
@@ -146,10 +147,14 @@ public:
     vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandActivateValet(const char* pin) override;
     vehicle_command_t CommandDeactivateValet(const char* pin) override;
+    vehicle_command_t CommandStartCharge() override;
+    vehicle_command_t CommandStopCharge() override;
+
     vehicle_command_t CommandCanVector(uint32_t txid, uint32_t rxid, std::vector<std::string> hexbytes, bool reset=false, bool wakeup=false);
     vehicle_command_t CommandWakeup2();
     vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
     vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
+    
     virtual vehicle_command_t CommandTripStart(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandTripReset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandMaintenance(int verbosity, OvmsWriter* writer);
@@ -159,6 +164,7 @@ public:
     virtual vehicle_command_t CommandTPMSset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4all(int number, OvmsWriter* writer);
     virtual vehicle_command_t CommandDDT4List(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandCanWrite(const std::string& params, OvmsWriter* writer);
     virtual vehicle_command_t CommandSOClimit(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandED4scan(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
@@ -187,6 +193,7 @@ public:
     static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ddt4all(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_canwrite(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -237,6 +244,7 @@ public:
     void PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len);
     void PollReply_BCM_GenMode(const char* data, uint16_t reply_len);
+    void PollReply_BCM_DoorlockEEPROM(const char* data, uint16_t reply_len);
 
     void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
@@ -306,7 +314,7 @@ public:
     #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
     #define MAX_POLL_DATA_LEN 126
     #define CELLCOUNT 96
-    #define SQ_CANDATA_TIMEOUT 15 // seconds until car goes to sleep without CAN activity
+    #define SQ_CANDATA_TIMEOUT 70 // seconds until car goes to sleep without CAN activity
 
   protected:
     std::string   m_rxbuf;
@@ -397,6 +405,8 @@ public:
 
     OvmsMetricString        *mt_bcm_vehicle_state;      //!< vehicle state
     OvmsMetricString        *mt_bcm_gen_mode;           //!< Generator mode text
+    OvmsMetricBool          *mt_driver_door_locked;            //!< Driver door locked status
+    OvmsMetricBool          *mt_driver_door_superlocked;       //!< Driver door superlocked status
     
   protected:
     bool m_indicator;                       //!< activate indicator e.g. 7 times or whatever

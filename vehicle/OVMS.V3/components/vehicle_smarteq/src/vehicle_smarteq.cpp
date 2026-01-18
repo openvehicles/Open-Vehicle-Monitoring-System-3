@@ -139,6 +139,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
   mt_bcm_gen_mode                = MyMetrics.InitString("xsq.bcm.gen.mode", SM_STALE_MID, "UNKNOWN", Other);
+  mt_driver_door_locked          = MyMetrics.InitBool("xsq.bcm.door.driver.locked", SM_STALE_MID, false);
+  mt_driver_door_superlocked     = MyMetrics.InitBool("xsq.bcm.door.driver.superlocked", SM_STALE_MID, false);
   // 0x7EC EVC metrics
   // EVC 12V values: Index 0=dcdc_volt_req, 1=dcdc_volt, 2=dcdc_power, 3=usm_volt, 4=batt_volt_can, 5=batt_volt_req, 6=dcdc_amps, 7=dcdc_load
   mt_evc_dcdc                    = MyMetrics.InitVector<float>("xsq.evc.12v.dcdc", SM_STALE_MID, nullptr, Other);
@@ -196,6 +198,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("mtdata", "Maintenance data", xsq_maintenance);
   cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
+  cmd_xsq->RegisterCommand("canwrite", "Send CAN command", xsq_canwrite,"<txid,rxid,hexbytes[,reset,wakeup]>",1,1);
   cmd_xsq->RegisterCommand("calcadc", "Recalculate ADC factor (optional: 12V voltage override)", xsq_calc_adc, "[voltage]", 0, 1);
   cmd_xsq->RegisterCommand("wakeup", "Wake up the car", xsq_wakeup);
   cmd_xsq->RegisterCommand("ed4scan", "ED4scan-like BMS Data", xsq_ed4scan);

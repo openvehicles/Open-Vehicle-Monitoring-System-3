@@ -57,12 +57,7 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   // reactivate door lock warning if the car is parked and unlocked
   if( m_enable_lock_state && 
         m_warning_unlocked &&
-        (StdMetrics.ms_v_door_fl->AsBool()  || 
-          StdMetrics.ms_v_door_fr->AsBool() ||
-          StdMetrics.ms_v_door_rl->AsBool() ||
-          StdMetrics.ms_v_door_rr->AsBool() ||
-          StdMetrics.ms_v_door_trunk->AsBool() ||
-          StdMetrics.ms_v_door_hood->AsBool())) 
+        DoorOpen()) 
     {
     StdMetrics.ms_v_env_parktime->SetValue(0); // reset parking time
     m_warning_unlocked = false;

@@ -87,7 +87,8 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       {
       REQ_DLC(7);
       bool awake = (CAN_BYTE(0) > 0xc0);
-      StdMetrics.ms_v_env_locked->SetValue((CAN_BYTE(6) == 0x96));
+      bool locked = (CAN_BYTE(6) == 0x96) || (mt_driver_door_locked->AsBool(false) && !DoorOpen());
+      StdMetrics.ms_v_env_locked->SetValue(locked);
       StdMetrics.ms_v_env_awake->SetValue(awake);
       if (awake && !mt_bus_awake->AsBool())
         {
