@@ -171,6 +171,12 @@ class OvmsVehicleKiaNiroEv : public KiaVehicle
 		#define CGF_DEFAULT_BATTERY_CAPACITY 64000
     float kn_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY; //TODO Detect battery capacity from VIN or number of batterycells
 
+    #define CHARGE_REGEN_TOT  StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh)
+    #define CHARGE_USED_TOT   StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh)
+    #define COULOMB_REGEN_TOT  StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
+    #define COULOMB_USED_TOT   StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh)
+    #define ISCHARGING   StdMetrics.ms_v_charge_inprogress->AsBool()
+
     unsigned int kn_notifications = 0;
 
     KnShiftBits kn_shift_bits;

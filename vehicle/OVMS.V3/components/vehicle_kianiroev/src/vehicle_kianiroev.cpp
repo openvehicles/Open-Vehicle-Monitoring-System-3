@@ -191,8 +191,9 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   memset( kia_send_can.byte, 0, sizeof(kia_send_can.byte));
 
   kn_maxrange = CFG_DEFAULT_MAXRANGE;
-
-  BmsSetCellArrangementVoltage(98, 1);
+  
+  // The Ioniq battery pack is 2 Large packs, 2 Smaller pacs and a 1 tiny pack totalling 88
+  BmsSetCellArrangementVoltage(88, 1); 
   BmsSetCellArrangementTemperature(4, 1);
   BmsSetCellLimitsVoltage(2.0,5.0);
   BmsSetCellLimitsTemperature(-35,90);
@@ -280,6 +281,11 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   cmd_xkn->RegisterCommand("tpms","Tire pressure monitor", xkn_tpms);
   cmd_xkn->RegisterCommand("aux","Aux battery", xkn_aux);
   cmd_xkn->RegisterCommand("vin","VIN information", xkn_vin);
+  
+  OvmsCommand *cmd_trip = cmd_xkn->RegisterCommand("range", "Show Range information");
+//   cmd_trip->RegisterCommand("status", "Show Status of Range Calculator", xkn_range_stat);
+  cmd_trip->RegisterCommand("reset", "Reset ranage calculation stats", xkn_range_reset);
+
 
   cmd_xkn->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pin>",1,1);
 
@@ -330,7 +336,7 @@ OvmsVehicleKiaNiroEv::~OvmsVehicleKiaNiroEv()
  * ConfigChanged: reload single/all configuration variables
  */
 void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
-	{
+{
   ESP_LOGD(TAG, "Kia Niro / Hyundai Kona EV reload configuration");
 
   // Instances:
@@ -350,7 +356,7 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
   *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xkn", "suffrange");
 
   kia_enable_write = MyConfig.GetParamValueBool("xkn", "canwrite", false);
-	}
+}
 
 /**
  * Takes care of setting all the state appropriate when the car is on
@@ -368,14 +374,22 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 			POLLSTATE_RUNNING;
 			StdMetrics.ms_v_env_charging12v->SetValue(true);
 			kia_ready_for_chargepollstate = true;
-			kia_park_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+			ESP_LOGD(TAG, "Trip Park Reset: %f %f %f %f %f", POS_ODO, CHARGE_USED_TOT, CHARGE_REGEN_TOT, COULOMB_USED_TOT, COULOMB_REGEN_TOT);
+    		kia_park_trip_counter.Reset(POS_ODO, CHARGE_USED_TOT, CHARGE_REGEN_TOT, COULOMB_USED_TOT, COULOMB_REGEN_TOT, ISCHARGING);
 			BmsResetCellStats();
 		}
 		else if (!isOn)
 		{
 			// Car is OFF
 			ESP_LOGI(TAG, "CAR IS OFF");
-			kia_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+			if (kia_park_trip_counter.Started()) {
+				ESP_LOGD(TAG, "Trip Park Update: %f %f %f %f %f", POS_ODO, CHARGE_USED_TOT, CHARGE_REGEN_TOT, COULOMB_USED_TOT, COULOMB_REGEN_TOT);
+				kia_park_trip_counter.Update(POS_ODO, CHARGE_USED_TOT, CHARGE_REGEN_TOT, COULOMB_USED_TOT, COULOMB_REGEN_TOT);
+				if (ISCHARGING != kia_park_trip_counter.Charging()) {
+					ESP_LOGD(TAG, "Trip Park Update (Start Charge): %f %f %f %f %f", POS_ODO, CHARGE_USED_TOT, COULOMB_REGEN_TOT, COULOMB_USED_TOT, COULOMB_REGEN_TOT);
+					kia_park_trip_counter.StartCharge(CHARGE_USED_TOT, COULOMB_REGEN_TOT);
+				}
+			}
 			kia_secs_with_no_client = 0;
 			StdMetrics.ms_v_pos_speed->SetValue(0);
 			StdMetrics.ms_v_pos_trip->SetValue(kia_park_trip_counter.GetDistance());
@@ -404,28 +418,49 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 
 		UpdateMaxRangeAndSOH();
 
-		// Update trip data
-		if (StdMetrics.ms_v_env_on->AsBool())
-		{
-			if (kia_park_trip_counter.Started())
-			{
-				kia_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
-				StdMetrics.ms_v_pos_trip->SetValue(kia_park_trip_counter.GetDistance(), Kilometers);
-				if (kia_park_trip_counter.HasEnergyData())
-				{
-					StdMetrics.ms_v_bat_energy_used->SetValue(kia_park_trip_counter.GetEnergyUsed(), kWh);
-					StdMetrics.ms_v_bat_energy_recd->SetValue(kia_park_trip_counter.GetEnergyRecuperated(), kWh);
+		// Update trip data (Duplicate of vehicle_hyundai_ioniq5.cpp:679)
+		if (StdMetrics.ms_v_env_on->AsBool()) {
+			float energy_used, energy_recovered, coulomb_used, coulomb_recovered, odo;
+
+			if (kia_park_trip_counter.Started()) {
+				energy_used = StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh);
+				energy_recovered = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh);
+				coulomb_used = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh);
+				coulomb_recovered = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh);
+				odo =  StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+				
+				ESP_LOGD(TAG, "Trip Park (T1) Update: %f %f %f %f %f", odo, energy_used, energy_recovered, coulomb_used, coulomb_recovered);
+				kia_park_trip_counter.Update(odo, energy_used, energy_recovered, coulomb_used, coulomb_recovered);
+				if (StdMetrics.ms_v_charge_inprogress->AsBool() != kia_park_trip_counter.Charging()) {
+					kia_park_trip_counter.StartCharge( energy_recovered, coulomb_recovered );
 				}
+
+				StdMetrics.ms_v_pos_trip->SetValue( kia_park_trip_counter.GetDistance(), Kilometers);
+				if ( kia_park_trip_counter.HasEnergyData()) {
+					StdMetrics.ms_v_bat_energy_used->SetValue( kia_park_trip_counter.GetEnergyConsumed(), kWh );
+					StdMetrics.ms_v_bat_energy_recd->SetValue( kia_park_trip_counter.GetEnergyRecuperated(), kWh );
+				}
+				
+				if ( kia_park_trip_counter.HasChargeData()) {
+					StdMetrics.ms_v_bat_coulomb_used->SetValue( kia_park_trip_counter.GetChargeUsed(), kWh );
+					StdMetrics.ms_v_bat_coulomb_recd->SetValue( kia_park_trip_counter.GetChargeRecuperated(), kWh );
+				}
+				
 			}
 
-			if (kia_charge_trip_counter.Started())
-			{
-				kia_charge_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
-				ms_v_pos_trip->SetValue(kia_charge_trip_counter.GetDistance(), Kilometers);
-				if (kia_charge_trip_counter.HasEnergyData())
-				{
-					ms_v_trip_energy_used->SetValue(kia_charge_trip_counter.GetEnergyUsed(), kWh);
-					ms_v_trip_energy_recd->SetValue(kia_charge_trip_counter.GetEnergyRecuperated(), kWh);
+			if (kia_charge_trip_counter.Started()) {
+				energy_used = StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh);
+				energy_recovered = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh);
+				coulomb_used = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh);
+				coulomb_recovered = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh);
+				odo =  StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+
+				ESP_LOGI(TAG, "Trip Charge Update: %f %f %f %f %f", odo, energy_used, energy_recovered, coulomb_used, coulomb_recovered);
+				kia_charge_trip_counter.Update(odo, energy_used, energy_recovered, coulomb_used, coulomb_recovered);
+				ms_v_pos_trip->SetValue( kia_charge_trip_counter.GetDistance(), Kilometers);
+				if ( kia_charge_trip_counter.HasEnergyData()) {
+					ms_v_trip_energy_used->SetValue( kia_charge_trip_counter.GetEnergyConsumed(), kWh );
+					ms_v_trip_energy_recd->SetValue( kia_charge_trip_counter.GetEnergyRecuperated(), kWh );
 				}
 			}
 		}
@@ -457,12 +492,6 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 			kn_charge_bits.ChargingCCS = false;
 			kn_charge_bits.ChargingType2 = false;
 		}
-
-		// AC charge current on kona not yet found, so we'll fake it by looking at battery power
-		/* if (IsKona())
-			{
-			kia_obc_ac_current=-StdMetrics.ms_v_bat_power->AsFloat(0, Watts)/kia_obc_ac_voltage;
-			} */
 
 		// Keep charging metrics up to date
 		if (kn_charge_bits.ChargingType2) // **** Type 2  charging ****
@@ -787,10 +816,16 @@ uint16_t OvmsVehicleKiaNiroEv::calcMinutesRemaining(float target)
  */
 void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 	{
+	float Distance, EnergyUsed;
 	//Update State of Health using following assumption: 10% buffer
-	StdMetrics.ms_v_bat_cac->SetValue( (kn_battery_capacity * BAT_SOH * BAT_SOC /10000.0) / 400, AmpHours);
-
-	kn_range_calc->updateTrip(kia_park_trip_counter.GetDistance(), kia_park_trip_counter.GetEnergyUsed());
+	StdMetrics.ms_v_bat_cac->SetValue((kn_battery_capacity * BAT_SOH * BAT_SOC /10000.0) / 400, AmpHours);
+	
+	Distance = kia_park_trip_counter.GetDistance();
+	EnergyUsed = kia_park_trip_counter.GetEnergyUsed();
+	if (Distance > 0 || EnergyUsed > 0)
+		ESP_LOGD(TAG, "Update Range: %f %f",kia_park_trip_counter.GetDistance(), kia_park_trip_counter.GetEnergyUsed());
+	
+	kn_range_calc->updateTrip(Distance, EnergyUsed);
 
 	float maxRange = kn_maxrange;// * MIN(BAT_SOH,100) / 100.0;
 	float wltpRange = kn_range_calc->getRange();
@@ -801,10 +836,10 @@ void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 	//   - Assumes standard maxRange specified at 20 degrees C
 	//   - Range halved at -20C.
 	if (maxRange != 0)
-		{
+	{
 		maxRange = (maxRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
 		StdMetrics.ms_v_bat_range_ideal->SetValue( maxRange * BAT_SOC / 100.0, Kilometers);
-		}
+	}
 	StdMetrics.ms_v_bat_range_full->SetValue(maxRange, Kilometers);
 
 	//TODO How to find the range as displayed in the cluster? Use the WLTP until we find it
