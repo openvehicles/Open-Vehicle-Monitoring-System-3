@@ -397,20 +397,23 @@ void OvmsVehicleSmartEQ::DoorLockState() {
   }
 }
 
+bool OvmsVehicleSmartEQ::DoorOpen() {
+  return (StdMetrics.ms_v_door_fl->AsBool(false) ||
+          StdMetrics.ms_v_door_fr->AsBool(false) ||
+          StdMetrics.ms_v_door_rl->AsBool(false) ||
+          StdMetrics.ms_v_door_rr->AsBool(false) ||
+          StdMetrics.ms_v_door_trunk->AsBool(false) ||
+          StdMetrics.ms_v_door_hood->AsBool(false));
+}
+
 void OvmsVehicleSmartEQ::DoorOpenState() {
-  bool open_doors = (StdMetrics.ms_v_door_fl->AsBool() ||
-                     StdMetrics.ms_v_door_fr->AsBool() ||
-                     StdMetrics.ms_v_door_rl->AsBool() ||
-                     StdMetrics.ms_v_door_rr->AsBool() ||
-                     StdMetrics.ms_v_door_trunk->AsBool() ||
-                     StdMetrics.ms_v_door_hood->AsBool()) &&
-                     !m_warning_dooropen;
+  bool open_doors = !m_warning_dooropen && DoorOpen();
 
   if (open_doors) {
       m_warning_dooropen = true;
       ESP_LOGI(TAG, "Warning: Vehicle has open doors");
       MyNotify.NotifyString("alert", "vehicle.open_doors", "The vehicle has open doors.");
-  } else if (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10 && !open_doors){
+  } else if (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10 && !DoorOpen()){
       m_warning_dooropen = true; // prevent warning if the vehicle is parked locked for more than 10 minutes
   }
 }

@@ -51,18 +51,13 @@ homelink 2 = 10 Minutes
 homelink 3 = 15 Minutes
 For Timebased Pre-heat/cool you can use the Android App or Web UI.
 
-
--------------------------
-Using DDT4all:
--------------------------
-You can use some DDT4all commands. A list of all possible commands you can find at www.smart-EMOTION.de (german).
-
 -------------------------
 Shell commands:
 -------------------------
 xsq mtdata                 -- maintenance data
 xsq ddt4all <number>       -- Execute DDT4all command by number
-xsq ddt4list               -- List all available DDT4all commands
+xsq ddt4list               -- List all available DDT4all commands (see below for details)
+xsq canwrite <params>      -- Send custom CAN command (see below for details)
 xsq calcadc [voltage]      -- Recalculate ADC factor (optional: 12V voltage override)
 xsq wakeup                 -- Wake up the car
 xsq ed4scan                -- Output ED4scan-like BMS diagnostic data
@@ -80,8 +75,9 @@ xsq show total             -- Show vehicle trip total data
 -------------------------
 Known Issues
 -------------------------
-- Lock/Unlock: The Lock/Unlock function is not really implemented. You can only close the car when it is open. The lock indicator always shows unlocked.
-- Charge Control: Not implemented yet.
+- Lock/Unlock: The Lock/Unlock function is not really implemented. You can only lock the car when it is open, car is not secured locked.
+- Valet Mode: Not implemented.
+- Charge Control: Not implemented.
 
 -------------------------
 metrics
@@ -126,7 +122,7 @@ metrics
 
     xsq.bcm.state                         -- BCM vehicle state
     xsq.bcm.gen.mode                      -- BCM generator mode
-    
+
     xsq.evc.hv.energy                     -- EVC HV energy [kWh]
     xsq.evc.12V.dcdc.act.req              -- DCDC active request [bool]
     xsq.evc.12v.dcdc                      -- EVC 12V system values vector: [0]=dcdc_volt_req(V), [1]=dcdc_volt(V), [2]=dcdc_power(W), [3]=usm_volt(V), [4]=batt_volt(V), [5]=batt_volt_req(V), [6]=dcdc_amps(A), [7]=dcdc_load(%)
@@ -159,3 +155,80 @@ metrics
     xsq.bms.fusi                          -- FUSI mode text
     xsq.bms.mg.rpm                        -- Motor generator RPM
     xsq.bms.safety                        -- Safety mode text
+
+
+-------------------------
+Using DDT4all:
+-------------------------
+You can use some DDT4all commands. A list of all possible commands you can find at www.smart-EMOTION.de (german).
+
+**Note:** Before using DDT4all commands, you must:
+
+1. Enable CAN write access in configuration: ``config set xsq canwrite yes``
+2. Activate DDT4all session: ``xsq ddt4all 999`` (activates for 5 minutes)
+3. Observe command cooldown: 10 seconds between executions
+4. Use the command number from the DDT4all list ``xsq ddt4list``
+
+**Syntax:**
+::
+    xsq ddt4all <number>
+
+**Parameters:**
+- ``number`` - DDT4all command number from the list
+
+**Examples:**
+::
+    xsq ddt4all 42
+
+**Output example:**
+::
+    Executing DDT4all command number: 42
+
+
+    
+-------------------------
+Using xsq canwrite:
+-------------------------
+The ``xsq canwrite`` command allows sending custom CAN commands directly to the vehicle.
+
+**Requirements:**
+
+- CAN write access must be enabled: ``config set xsq canwrite yes``
+- DDT4all session must be active: ``xsq ddt4all 999``   // activates for 5 minutes
+- Command cooldown: 10 seconds between executions
+
+**Syntax:**
+::
+
+    xsq canwrite <txid,rxid,hexbytes[,reset,wakeup]>
+
+**Parameters:**
+
+- ``txid`` - Transmit CAN ID (hex, with or without 0x prefix)
+- ``rxid`` - Receive CAN ID (hex, with or without 0x prefix)
+- ``hexbytes`` - Hex data bytes to send (multiple bytes separated by /)
+- ``reset`` - (optional) Reset CAN session after command (default: false)
+- ``wakeup`` - (optional) Wake up vehicle before command (default: true)
+
+**Examples:**
+::
+
+    # Single command
+    xsq canwrite 745,765,3B5880,false,true
+    
+    # Multiple data bytes (open tailgate 5x)
+    xsq canwrite 745,765,300500/300500/300500/300500/300500,false,true
+    
+    # Indicator 5x on
+    xsq canwrite 0x745,0x765,2E012100/2E012100
+
+**Output example:**
+::
+
+    Sending CAN command:
+      txid:    0x745
+      rxid:    0x765
+      data:    30082002 / 30082002
+      reset:   false
+      wakeup:  true
+    Command executed successfully

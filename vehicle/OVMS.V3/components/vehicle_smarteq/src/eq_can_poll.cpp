@@ -146,6 +146,7 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           break;
       }
       break;  // FIX: prevent fallthrough into 0x7BB BMS case
+
     case 0x7BB:
       switch (job.pid) {
         case 0x02: // HV Contactor Cycles
@@ -183,6 +184,7 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           break;
       }
       break;
+
     case 0x793:
       switch (job.pid) {
         case 0x7303: // rqChargerAC
@@ -235,6 +237,7 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           break;
       }
       break;
+
     case 0x763:
       switch (job.pid) {
         case 0x200c: // temperature sensor values
@@ -260,6 +263,7 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           break;
       }
       break;
+
     case 0x765:  // BCM
       switch (job.pid) {
         case 0x81: // req.VIN
@@ -279,9 +283,12 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           break;
         case 0x8079: // Generator mode
           PollReply_BCM_GenMode(m_rxbuf.data(), m_rxbuf.size());
+        case 0x25: // Doorlock EEPROM
+          PollReply_BCM_DoorlockEEPROM(m_rxbuf.data(), m_rxbuf.size());
           break;
       }
       break;
+
     default:
       ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
       break;
@@ -1056,6 +1063,20 @@ void OvmsVehicleSmartEQ::PollReply_obd_mt_km(const char* data, uint16_t reply_le
   int value = CAN_UINT(0);
   StdMetrics.ms_v_env_service_range->SetValue(value); // set next service in km
   mt_obd_mt_km_usual->SetValue(value);
+}
+
+void OvmsVehicleSmartEQ::PollReply_BCM_DoorlockEEPROM(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 61 25 <Byte> <Byte> <Byte> <Byte> ...
+  // Service 0x21, PID 0x25
+  REQUIRE_LEN(4);
+  
+  // DRIVER_DOOR_LOCKED_S:
+  bool driver_locked = (CAN_BYTE(0) > 0);
+  mt_driver_door_locked->SetValue(driver_locked);
+  
+  // DRIVER_DOOR_SUPERLOCKED_S:
+  bool driver_superlocked = (CAN_BYTE(1) > 0);
+  mt_driver_door_superlocked->SetValue(driver_superlocked);
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_mt_level(const char* data, uint16_t reply_len) {
