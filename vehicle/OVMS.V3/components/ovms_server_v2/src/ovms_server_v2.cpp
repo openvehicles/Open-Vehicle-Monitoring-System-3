@@ -200,6 +200,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         ESP_LOGW(TAG, "Connection failed");
         if (MyOvmsServerV2)
           {
+          OvmsMutexLock mg(&MyOvmsServerV2->m_mgconn_mutex);
           MyOvmsServerV2->m_mgconn = NULL;
           MyOvmsServerV2->SetStatus("Error: Connection failed", true, OvmsServerV2::WaitReconnect);
           MyOvmsServerV2->m_connretry = 60;

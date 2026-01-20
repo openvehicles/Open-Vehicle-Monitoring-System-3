@@ -104,6 +104,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         ESP_LOGW(TAG, "Connection failed");
         if (MyOvmsServerV3)
           {
+          OvmsMutexLock mg(&MyOvmsServerV3->m_mgconn_mutex);
           MyOvmsServerV3->m_mgconn = NULL;
           StandardMetrics.ms_s_v3_connected->SetValue(false);
           StandardMetrics.ms_s_v3_peers->SetValue(0);
