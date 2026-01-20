@@ -327,7 +327,9 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
   ESP_LOGI(TAG,"Sending message %s with priority %d", message.c_str(), priority);
 
   extram::ostringstream* post = new extram::ostringstream();
+  assert(post);
   extram::ostringstream* http = new extram::ostringstream();
+  assert(http);
 
   // construct body
   *post << "token=" << token 
@@ -352,6 +354,8 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
   if (!m_mgconn_mutex.Lock(MG_CONN_MUTEX_TIMEOUT))
     {
     ESP_LOGE(TAG,"Transmit pending (mg_conn_mutex timeout)! Not sending msg..");
+    delete http;
+    delete post;
     return false;
     }
 
@@ -369,6 +373,8 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
     {
     m_mgconn_mutex.Unlock();
     ESP_LOGE(TAG, "mg_connect_opt(%s) failed: %s", _server.c_str(), err);
+    delete http;
+    delete post;
     return false;
     }
 
