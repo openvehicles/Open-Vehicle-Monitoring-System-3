@@ -189,7 +189,10 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         // Successful connection
         ESP_LOGI(TAG, "Connection successful");
-        if (MyOvmsServerV2) MyOvmsServerV2->SendLogin(nc);
+        if (MyOvmsServerV2)
+          {
+          MyOvmsServerV2->SendLogin(nc);
+          }
         }
       else
         {
@@ -197,6 +200,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         ESP_LOGW(TAG, "Connection failed");
         if (MyOvmsServerV2)
           {
+          MyOvmsServerV2->m_mgconn = NULL;
           MyOvmsServerV2->SetStatus("Error: Connection failed", true, OvmsServerV2::WaitReconnect);
           MyOvmsServerV2->m_connretry = 60;
           }
@@ -226,7 +230,10 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
     case MG_EV_RECV:
       ESP_LOGV(TAG, "OvmsServerV2MongooseCallback(MG_EV_RECV)");
       if (MyOvmsServerV2)
-        mbuf_remove(&nc->recv_mbuf, MyOvmsServerV2->IncomingData((uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len));
+        {
+        size_t read = MyOvmsServerV2->IncomingData((uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len);
+        mbuf_remove(&nc->recv_mbuf, read);
+        }
       break;
     default:
       break;

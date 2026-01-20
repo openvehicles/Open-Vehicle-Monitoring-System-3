@@ -78,17 +78,25 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       if (*success == 0)
         {
         // Successful connection
-        ESP_LOGI(TAG, "Connection successful");
-        struct mg_send_mqtt_handshake_opts opts;
-        memset(&opts, 0, sizeof(opts));
-        opts.user_name = MyOvmsServerV3->m_user.c_str();
-        opts.password = MyOvmsServerV3->m_password.c_str();
-        opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
-        opts.will_message = "no";
-        opts.flags |= MG_MQTT_WILL_RETAIN;
-	      opts.keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
-        mg_set_protocol_mqtt(nc);
-        mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_vehicleid.c_str(), opts);
+        if (MyOvmsServerV3)
+          {
+          ESP_LOGI(TAG, "Connection successful");
+          struct mg_send_mqtt_handshake_opts opts;
+          memset(&opts, 0, sizeof(opts));
+          opts.user_name = MyOvmsServerV3->m_user.c_str();
+          opts.password = MyOvmsServerV3->m_password.c_str();
+          opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
+          opts.will_message = "no";
+          opts.flags |= MG_MQTT_WILL_RETAIN;
+          opts.keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
+          mg_set_protocol_mqtt(nc);
+          mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_vehicleid.c_str(), opts);
+          }
+        else
+          {
+          ESP_LOGI(TAG, "Canceling connection");
+          nc->flags |= MG_F_CLOSE_IMMEDIATELY;
+          }
         }
       else
         {
@@ -96,6 +104,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         ESP_LOGW(TAG, "Connection failed");
         if (MyOvmsServerV3)
           {
+          MyOvmsServerV3->m_mgconn = NULL;
           StandardMetrics.ms_s_v3_connected->SetValue(false);
           StandardMetrics.ms_s_v3_peers->SetValue(0);
           MyOvmsServerV3->SetStatus("Error: Connection failed", true, OvmsServerV3::WaitReconnect);
