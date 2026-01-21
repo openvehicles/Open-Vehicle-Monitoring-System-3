@@ -160,6 +160,7 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
     ConfigChanged("config.mounted", NULL);
   }
 
+  auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
 
   char *error_string;
@@ -615,6 +616,7 @@ void OvmsWebServer::EventHandler(mg_connection *nc, int ev, void *p)
  */
 void PageEntry::Serve(PageContext_t& c)
 {
+  // Mongoose event handler context, MongooseLock not needed
   // check auth:
   if
 #if MG_ENABLE_FILESYSTEM
@@ -732,6 +734,7 @@ void MgHandler::RequestPoll()
     // we're in the NetManTask, can send directly:
     HandleEvent(MG_EV_POLL, NULL);
   } else {
+    auto mglock = MongooseLock();
     MgHandler* origin = this;
     mg_broadcast(MyNetManager.GetMongooseMgr(), HandlePoll, &origin, sizeof(origin));
   }

@@ -38,14 +38,13 @@
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 #include "ovms_config.h"
-#include "ovms_mutex.h"
 #include "id_include_exclude_filter.h"
 
 typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 
 #define MQTT_CONN_NTOPICS 4   // active, command, request/metric, request/config
 
-class OvmsServerV3 : public OvmsServer
+class OvmsServerV3 : public OvmsServer, MongooseClient
   {
   public:
     OvmsServerV3(const char* name);
@@ -94,7 +93,6 @@ class OvmsServerV3 : public OvmsServer
     std::string m_will_topic;
     std::string m_conn_topic[MQTT_CONN_NTOPICS];
     struct mg_connection *m_mgconn;
-    OvmsMutex m_mgconn_mutex;
     int m_connretry;
     int m_connection_counter;
     bool m_sendall;

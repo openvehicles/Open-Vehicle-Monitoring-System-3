@@ -493,7 +493,7 @@ class HttpCommandStream : public OvmsShell, public MgHandler
  * Register custom page handlers through the RegisterPage() API.
  */
 
-class OvmsWebServer : public ExternalRamAllocated
+class OvmsWebServer : public ExternalRamAllocated, MongooseClient
 {
   public:
     OvmsWebServer();

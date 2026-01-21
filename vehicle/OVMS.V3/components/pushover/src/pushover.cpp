@@ -369,6 +369,7 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
 
   opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
 
+  auto mglock = MongooseLock();
   if ((m_mgconn = mg_connect_opt(mgr, _server.c_str(), PushoverMongooseCallback, opts)) == NULL)
     {
     m_mgconn_mutex.Unlock();

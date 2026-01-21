@@ -151,6 +151,7 @@ bool canlog_tcpclient::Open()
   {
   if (m_isopen) return true;
 
+  auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   if (mgr != NULL)
     {

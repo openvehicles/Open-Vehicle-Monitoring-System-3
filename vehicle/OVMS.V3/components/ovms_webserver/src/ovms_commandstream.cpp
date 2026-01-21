@@ -140,6 +140,7 @@ void HttpCommandStream::CommandTask(void* object)
 
 void HttpCommandStream::ProcessQueue()
 {
+  // Note: running within Mongoose context, MongooseLock not needed
   size_t txlen = 0;
   hcs_writebuf wbuf;
 

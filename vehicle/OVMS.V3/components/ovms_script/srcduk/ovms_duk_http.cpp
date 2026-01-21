@@ -94,7 +94,7 @@ static const char *TAG = "ovms-duk-http";
 //    request.url = last URL used if redirected
 //    request.redirectCount = number of redirects
 
-class DuktapeHTTPRequest : public DuktapeObject
+class DuktapeHTTPRequest : public DuktapeObject, MongooseClient
   {
   public:
     DuktapeHTTPRequest(duk_context *ctx, int obj_idx);
@@ -227,6 +227,7 @@ DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
 bool DuktapeHTTPRequest::StartRequest(duk_context *ctx /*=NULL*/)
   {
   // create connection:
+  auto mglock = MongooseLock();
   m_mgconn = NULL;
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   struct mg_connect_opts opts = {};

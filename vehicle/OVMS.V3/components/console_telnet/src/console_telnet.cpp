@@ -127,6 +127,7 @@ void OvmsTelnet::NetManInit(std::string event, void* data)
   m_running = true;
 
   ESP_LOGI(tag, "Launching Telnet Server");
+  auto mglock = console->MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   mg_connection* nc = mg_bind(mgr, ":23", MongooseHandler);
   if (nc)

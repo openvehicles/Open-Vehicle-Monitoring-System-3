@@ -158,6 +158,7 @@ bool canlog_tcpserver::Open()
   if (m_isopen) return true;
 
   ESP_LOGI(TAG, "Launching TCP server at %s",m_path.c_str());
+  auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   if (mgr != NULL)
     {

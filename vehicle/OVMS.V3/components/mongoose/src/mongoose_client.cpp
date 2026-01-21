@@ -1,13 +1,14 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
+;    Date:          18th January 2026
 ;
 ;    Changes:
 ;    1.0  Initial release
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
+;    (C) 2011-2026  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2026       Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -27,49 +28,26 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#ifndef __CONSOLE_TELNET_H__
-#define __CONSOLE_TELNET_H__
 
-#include "libtelnet.h"
-#include "ovms_console.h"
+#include "mongoose_client.h"
 
-struct mg_connection;
+OvmsRecMutex MongooseClient::m_mongoose_mutex __attribute__ ((init_priority (500)));
+// Note: init priority may be adjusted if needed, just needs to be lower than any sub class
 
-class OvmsTelnet : public MongooseClient
+void MongooseClient::mg_mgr_init(struct mg_mgr *mgr, void *user_data)
   {
-  public:
-    OvmsTelnet();
+  auto lock = MongooseLock();
+  ::mg_mgr_init(mgr, user_data);
+  }
 
-  public:
-    void NetManInit(std::string event, void* data);
-    void NetManStop(std::string event, void* data);
-    void EventHandler(struct mg_connection *nc, int ev, void *p);
-
-  public:
-    bool m_running;
-  };
-
-class ConsoleTelnet : public OvmsConsole, public MongooseClient
+void MongooseClient::mg_mgr_free(struct mg_mgr *mgr)
   {
-  public:
-    ConsoleTelnet(struct mg_connection* nc);
-    virtual ~ConsoleTelnet();
+  auto lock = MongooseLock();
+  ::mg_mgr_free(mgr);
+  }
 
-  private:
-    void HandleDeviceEvent(void* pEvent);
-    static void TelnetCallback(telnet_t *telnet, telnet_event_t *event, void *userData);
-    void TelnetHandler(telnet_event_t *event);
-
-  public:
-    void Receive();
-    void Exit();
-    int puts(const char* s);
-    int printf(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
-    ssize_t write(const void *buf, size_t nbyte);
-
-  protected:
-    mg_connection* m_connection;
-    telnet_t *m_telnet;
-  };
-
-#endif //#ifndef __CONSOLE_TELNET_H__
+time_t MongooseClient::mg_mgr_poll(struct mg_mgr *mgr, int milli)
+  {
+  auto lock = MongooseLock();
+  return ::mg_mgr_poll(mgr, milli);
+  }

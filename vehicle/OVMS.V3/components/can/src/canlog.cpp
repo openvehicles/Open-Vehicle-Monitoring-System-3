@@ -236,6 +236,7 @@ void canlogconnection::OutputMsg(CAN_log_message_t& msg, std::string &result)
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   // The standard base implemention here is for mongoose network connections
+  auto mglock = MongooseLock();
   if (m_nc != NULL)
     {
     if (result.length()>0)
@@ -263,6 +264,7 @@ void canlogconnection::TransmitCallback(uint8_t *buffer, size_t len)
 
   m_msgcount++;
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  auto mglock = MongooseLock();
   if ((m_nc != NULL)&&(m_nc->send_mbuf.len < 32768))
     {
     mg_send(m_nc, buffer, len);

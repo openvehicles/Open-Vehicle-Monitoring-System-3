@@ -982,7 +982,7 @@ void OvmsNetManager::MongooseTask()
   while (!m_mongoose_stopping)
     {
     // poll interfaces:
-    if (mg_mgr_poll(&m_mongoose_mgr, 250) == 0)
+    if (mg_mgr_poll(&m_mongoose_mgr, 100) == 0)
       {
       ESP_LOGD(TAG, "MongooseTask: no interfaces available => exit");
       break;
@@ -1148,6 +1148,7 @@ int OvmsNetManager::ListConnections(int verbosity, OvmsWriter* writer)
   {
   if (!MongooseRunning())
     return 0;
+  auto mglock = MongooseLock();
   mg_connection *c;
   int cnt = 0;
   char local[48], remote[48];
@@ -1168,6 +1169,7 @@ int OvmsNetManager::CloseConnection(uint32_t id)
   {
   if (!MongooseRunning())
     return 0;
+  auto mglock = MongooseLock();
   mg_connection *c;
   int cnt = 0;
   for (c = mg_next(&m_mongoose_mgr, NULL); c; c = mg_next(&m_mongoose_mgr, c))
@@ -1187,6 +1189,7 @@ int OvmsNetManager::CleanupConnections()
   {
   if (!MongooseRunning())
     return 0;
+  auto mglock = MongooseLock();
 
   mg_connection *c;
 #if ESP_IDF_VERSION_MAJOR >= 5

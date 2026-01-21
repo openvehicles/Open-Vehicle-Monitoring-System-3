@@ -70,6 +70,7 @@ OvmsNetTcpClient::OvmsNetTcpClient()
 
 OvmsNetTcpClient::~OvmsNetTcpClient()
   {
+  auto mglock = MongooseLock();
   if (m_mgconn)
     {
     m_mgconn->user_data = NULL;
@@ -123,7 +124,6 @@ void OvmsNetTcpClient::Mongoose(struct mg_connection *nc, int ev, void *ev_data)
       size_t removed = IncomingData(nc->recv_mbuf.buf, nc->recv_mbuf.len);
       if (removed > 0)
         {
-        OvmsMutexLock mg(&m_mgconn_mutex);
         mbuf_remove(&nc->recv_mbuf, removed);
         }
       }
@@ -135,10 +135,10 @@ void OvmsNetTcpClient::Mongoose(struct mg_connection *nc, int ev, void *ev_data)
 
 bool OvmsNetTcpClient::Connect(std::string dest, struct mg_connect_opts opts, double timeout)
   {
+  auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   if (mgr == NULL) return false;
 
-  OvmsMutexLock mg(&m_mgconn_mutex);
   m_dest = dest;
   opts.user_data = this;
   if ((m_mgconn = mg_connect_opt(mgr, dest.c_str(), OvmsMongooseWrapperCallback, opts)) == NULL)
@@ -155,6 +155,7 @@ bool OvmsNetTcpClient::Connect(std::string dest, struct mg_connect_opts opts, do
 
 void OvmsNetTcpClient::Disconnect()
   {
+  auto mglock = MongooseLock();
   if (m_mgconn)
     {
     m_mgconn->user_data = NULL;
@@ -172,9 +173,9 @@ bool OvmsNetTcpClient::IsConnected()
 size_t OvmsNetTcpClient::SendData(uint8_t *data, size_t length)
   {
   ESP_LOGD(TAG, "OvmsNetTcpClient Send data (%d bytes)", length);
+  auto mglock = MongooseLock();
   if (m_mgconn != NULL)
     {
-    OvmsMutexLock mg(&m_mgconn_mutex);
     mg_send(m_mgconn, data, length);
     return length;
     }

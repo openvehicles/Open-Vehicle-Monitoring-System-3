@@ -43,11 +43,10 @@
 #include "crypt_md5.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
-#include "ovms_mutex.h"
 
 #define OVMS_PROTOCOL_V2_TOKENSIZE 22
 
-class OvmsServerV2 : public OvmsServer
+class OvmsServerV2 : public OvmsServer, MongooseClient
   {
   public:
     OvmsServerV2(const char* name);
@@ -115,7 +114,6 @@ class OvmsServerV2 : public OvmsServer
 
   public:
     struct mg_connection *m_mgconn;
-    OvmsMutex m_mgconn_mutex;
     int m_connretry;
     bool m_loggedin;
 

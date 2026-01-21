@@ -52,8 +52,7 @@ extern "C"
 #include "ovms_semaphore.h"
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-#define MG_LOCALS 1
-#include "mongoose.h"
+#include "mongoose_client.h"
 
 typedef enum
   {
@@ -96,6 +95,9 @@ typedef struct
   } ping_callback_args_t;
 
 class OvmsNetManager
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  : public MongooseClient
+#endif
   {
   public:
     OvmsNetManager();

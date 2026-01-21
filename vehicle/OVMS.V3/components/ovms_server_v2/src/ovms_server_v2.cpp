@@ -200,7 +200,6 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         ESP_LOGW(TAG, "Connection failed");
         if (MyOvmsServerV2)
           {
-          OvmsMutexLock mg(&MyOvmsServerV2->m_mgconn_mutex);
           MyOvmsServerV2->m_mgconn = NULL;
           MyOvmsServerV2->SetStatus("Error: Connection failed", true, OvmsServerV2::WaitReconnect);
           MyOvmsServerV2->m_connretry = 60;
@@ -764,7 +763,8 @@ void OvmsServerV2::ProcessCommand(const char* payload)
 
 bool OvmsServerV2::Transmit(const std::string& message)
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  auto mglock = MongooseLock();
+
   if (!m_mgconn)
     return false;
 
@@ -896,7 +896,7 @@ void OvmsServerV2::Connect()
     }
 
   SetStatus("Connecting...", false, Connecting);
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   struct mg_connect_opts opts;
   const char* err;
@@ -925,7 +925,7 @@ void OvmsServerV2::Connect()
 
 void OvmsServerV2::Disconnect()
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  auto mglock = MongooseLock();
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -939,7 +939,7 @@ void OvmsServerV2::Disconnect()
 
 void OvmsServerV2::Reconnect(int connretry)
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  auto mglock = MongooseLock();
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -968,7 +968,7 @@ size_t OvmsServerV2::IncomingData(uint8_t* data, size_t len)
 
 void OvmsServerV2::SendLogin(struct mg_connection *nc)
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  // Mongoose event handler, mongoose lock already set
 
   SetStatus("Logging in...", false, Authenticating);
 

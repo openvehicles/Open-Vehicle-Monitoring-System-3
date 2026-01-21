@@ -99,6 +99,7 @@ WebSocketHandler::~WebSocketHandler()
 
 void WebSocketHandler::ProcessTxJob()
 {
+  // Mongoose event handler context, MongooseLock not needed
   ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d, sent=%d ack=%d", m_nc, m_job.type, m_sent, m_ack);
   
   // process job, send next chunk:
@@ -457,6 +458,7 @@ void WebSocketHandler::LogStatus()
 
 void WebSocketHandler::InitTx()
 {
+  // Mongoose event handler context, MongooseLock not needed
   if (m_job.type != WSTX_None)
     return;
   
@@ -470,6 +472,7 @@ void WebSocketHandler::InitTx()
 
 void WebSocketHandler::ContinueTx()
 {
+  // Mongoose event handler context, MongooseLock not needed
   m_ack = m_sent;
   
   do {

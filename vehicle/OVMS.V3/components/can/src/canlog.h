@@ -59,7 +59,11 @@
  */
 
 class canlog;
-class canlogconnection: public InternalRamAllocated
+class canlogconnection
+  : public InternalRamAllocated
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    , public MongooseClient
+#endif
   {
   public:
     canlogconnection(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode);
@@ -97,7 +101,11 @@ class canlogconnection: public InternalRamAllocated
     uint32_t       m_filtercount;
   };
 
-class canlog : public InternalRamAllocated
+class canlog
+  : public InternalRamAllocated
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    , public MongooseClient
+#endif
   {
   public:
     canlog(const char* type, std::string format, canformat::canformat_serve_mode_t mode=canformat::Discard);
