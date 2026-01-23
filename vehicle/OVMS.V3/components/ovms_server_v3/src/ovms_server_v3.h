@@ -96,7 +96,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     int m_connretry;
     int m_connection_counter;
     bool m_sendall;
-    int m_msgid;
+    uint16_t m_msgid;
     int64_t m_lasttx;
     int64_t m_lasttx_sendall;
     int64_t m_lasttx_priority;
@@ -130,6 +130,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     virtual void SetPowerMode(PowerMode powermode);
     void Connect();
     void Disconnect();
+    uint16_t NextMsgId();
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
     void TransmitPriorityMetrics();
@@ -142,7 +143,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     void TransmitPendingNotificationsAlert();
     void TransmitPendingNotificationsData();
     void IncomingMsg(std::string topic, std::string payload);
-    void IncomingPubRec(int id);
+    void IncomingPubRec(uint16_t id);
     void IncomingEvent(std::string event, void* data);
     void RunCommand(std::string client, std::string id, std::string command);
     void AddClient(std::string id);

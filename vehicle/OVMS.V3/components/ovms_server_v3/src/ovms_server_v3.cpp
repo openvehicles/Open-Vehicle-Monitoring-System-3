@@ -175,7 +175,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       mg_mqtt_pubcomp(nc, msg->message_id);
       break;
     case MG_EV_MQTT_PUBREC:
-      ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBCOMP)");
+      ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBREC)");
       if (MyOvmsServerV3)
         {
         MyOvmsServerV3->IncomingPubRec(msg->message_id);
@@ -445,7 +445,7 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
 
   std::string val = metric->AsString();
 
-  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+  mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
     MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
   ESP_LOGD(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
@@ -515,7 +515,7 @@ int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
 
   const extram::string result = entry->GetValue();
 
-  int id = m_msgid++;
+  int id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(1), result.c_str(), result.length());
   ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
@@ -534,7 +534,7 @@ int OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
 
   const extram::string result = entry->GetValue();
 
-  int id = m_msgid++;
+  int id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(1), result.c_str(), result.length());
   ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
@@ -553,7 +553,7 @@ int OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
 
   const extram::string result = entry->GetValue();
 
-  int id = m_msgid++;
+  int id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(1), result.c_str(), result.length());
   ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
@@ -584,10 +584,10 @@ int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
 
   const char* result = msg.c_str();
 
-  int id = m_msgid++;
+  int id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(2), result, strlen(result));
-  ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result);
+  ESP_LOGI(TAG,"Tx notify %s=%s msgid=%d",topic.c_str(),result,id);
   return id;
   }
 
@@ -722,9 +722,10 @@ void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
     }
   }
 
-void OvmsServerV3::IncomingPubRec(int id)
+void OvmsServerV3::IncomingPubRec(uint16_t id)
   {
   // Mongoose event handler, MongooseLock already set
+  ESP_LOGD(TAG,"IncomingPubRec msgid=%d", id);
   mg_mqtt_pubrel(m_mgconn, id);
   if ((id == m_notify_data_waitcomp)&&
       (m_notify_data_waittype != NULL)&&
@@ -754,14 +755,14 @@ void OvmsServerV3::IncomingEvent(std::string event, void* data)
   // Legacy: publish event name on fixed topic
   if (m_legacy_event_topic)
     {
-    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+    mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
       MG_MQTT_QOS(0), event.c_str(), event.length());
     }
 
   // Publish MQTT style event topic, payload reserved for event data serialization:
   topic.append("/");
   topic.append(mqtt_topic(event));
-  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+  mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
     MG_MQTT_QOS(0), "", 0);
 
   ESP_LOGD(TAG,"Tx event %s",event.c_str());
@@ -786,7 +787,7 @@ void OvmsServerV3::RunCommand(std::string client, std::string id, std::string co
   topic.append(client);
   topic.append("/response/");
   topic.append(id);
-  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+  mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
     MG_MQTT_QOS(1), val.c_str(), val.length());
   }
 
@@ -958,6 +959,13 @@ void OvmsServerV3::Disconnect()
   m_connretry = 0;
   StandardMetrics.ms_s_v3_connected->SetValue(false);
   StandardMetrics.ms_s_v3_peers->SetValue(0);
+  }
+
+uint16_t OvmsServerV3::NextMsgId()
+  {
+  // skip id 0:
+  if (m_msgid == 0) m_msgid = 1;
+  return m_msgid++;
   }
 
 void OvmsServerV3::SetStatus(const char* status, bool fault /*=false*/, State newstate /*=Undefined*/)
@@ -1295,7 +1303,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
         topics[k].topic = m_conn_topic[k].c_str();
         topics[k].qos = 1;
         }
-      mg_mqtt_subscribe(m_mgconn, topics, MQTT_CONN_NTOPICS, m_msgid++);
+      mg_mqtt_subscribe(m_mgconn, topics, MQTT_CONN_NTOPICS, NextMsgId());
 
       ESP_LOGI(TAG, "Transmit all metrics");
       m_lasttx_sendall = now;
@@ -1508,7 +1516,7 @@ void OvmsServerV3::ProcessClientConfigRequest(const std::string& clientid, const
   topic.append("client/").append(clientid).append("/config/");
   topic.append(mqtt_topic(param)).append("/").append(mqtt_topic(inst));
 
-  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+  mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
                   MG_MQTT_QOS(0), value.c_str(), value.length());
   ESP_LOGD(TAG,"Tx config %s=%s", topic.c_str(), value.c_str());
   }
