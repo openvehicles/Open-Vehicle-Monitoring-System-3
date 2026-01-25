@@ -454,7 +454,10 @@ void OvmsEvents::DeregisterEvent(std::string caller)
   // being called from within a callback (ie within HandleQueueSignalEvent).
   // Actual deletion of the handlers is then delegated to the EventTask.
 
-  // Invalidate callbacks:
+  // !! Invalidation of handlers must only be done when running within the events context,
+  //    to avoid potential deadlocks with remote command calls implying a deregistration and
+  //    concurrently executing event handlers needing to lock Mongoose (like server v3):
+  if (xTaskGetCurrentTaskHandle() == m_taskid)
     {
     OvmsRecMutexLock lock(&m_map_mutex);
     EventMap::iterator itm=m_map.begin();
