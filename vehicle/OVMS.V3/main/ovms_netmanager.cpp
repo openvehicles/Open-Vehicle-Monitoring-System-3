@@ -968,7 +968,7 @@ static void MongooseRawTask(void *pvParameters)
 
 void OvmsNetManager::MongooseTask()
   {
-  int pri, lastpri = CONFIG_OVMS_NETMAN_TASK_PRIORITY;
+  int pri, basepri = CONFIG_OVMS_NETMAN_TASK_PRIORITY;
 
   // Initialise the mongoose manager
   ESP_LOGD(TAG, "MongooseTask starting");
@@ -991,13 +991,17 @@ void OvmsNetManager::MongooseTask()
     // check for netmanager control jobs:
     ProcessJobs();
 
-    // Detect broken mutex priority inheritance:
-    // (may be removed if solved by esp-idf commit 22d636b7b0d6006e06b5b3cfddfbf6e2cf69b4b8)
-    if ((pri = uxTaskPriorityGet(NULL)) != lastpri)
+    // Detect & fix broken mutex priority inheritance:
+    // (not solved by esp-idf commit 22d636b7b0d6006e06b5b3cfddfbf6e2cf69b4b8)
+    if ((pri = uxTaskPriorityGet(NULL)) != basepri)
       {
-      ESP_LOGD(TAG, "MongooseTask: priority changed from %d to %d", lastpri, pri);
-      lastpri = pri;
+      ESP_LOGD(TAG, "MongooseTask: priority changed from %d to %d, reverting", basepri, pri);
+      // revert to avoid blocking lower priority tasks:
+      vTaskPrioritySet(NULL, basepri);
       }
+    
+    // avoid busy looping from continuous network activity:
+    vTaskDelay(0);
     }
 
   m_mongoose_running = false;
