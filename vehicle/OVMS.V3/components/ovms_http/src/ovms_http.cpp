@@ -176,12 +176,12 @@ void OvmsHttpClient::Disconnect()
   OvmsNetTcpConnection::Disconnect();
   }
 
-size_t OvmsHttpClient::BodyRead(void *buf, size_t nbyte)
+ssize_t OvmsHttpClient::BodyRead(void *buf, size_t nbyte)
   {
   // char *x = (char*)buf;
   if ((m_buf == NULL)||(m_buf->UsedSpace() == 0))
     {
-    size_t n = Read(buf,nbyte);
+    ssize_t n = Read(buf,nbyte);
     // ESP_EARLY_LOGI(TAG, "BodyRead got %d bytes direct (%02x %02x %02x %02x)",n,x[0],x[1],x[2],x[3]);
     return n;
     }
@@ -250,7 +250,8 @@ std::string OvmsHttpClient::GetBodyAsString()
 
   uint8_t rbuf[512];
   size_t filesize = 0;
-  while (int k = BodyRead(rbuf,512))
+  ssize_t k;
+  while ((k = BodyRead(rbuf,512)) > 0)
     {
     filesize += k;
     body.append((const char*)rbuf,k);

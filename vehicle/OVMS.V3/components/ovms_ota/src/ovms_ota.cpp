@@ -346,15 +346,16 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   uint8_t rbuf[512];
   size_t filesize = 0;
   size_t sofar = 0;
+  ssize_t k;
   MyOTA.SetFlashStatus("OTA Flash HTTP: Downloading OTA image...");
-  while (int k = http.BodyRead(rbuf,512))
+  while ((k = http.BodyRead(rbuf,512)) > 0)
     {
     filesize += k;
     sofar += k;
     MyOTA.SetFlashPerc((filesize*100)/expected);
-    if (sofar > 100000)
+    if (sofar > 200000)
       {
-      writer->printf("Downloading... (%d bytes so far)\n",filesize);
+      writer->printf("Downloading... %d%% (%d bytes so far)\n",MyOTA.m_flashperc,filesize);
       sofar = 0;
       }
     if (filesize > target->size)
@@ -376,7 +377,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       }
     }
   http.Disconnect();
-  writer->printf("Download complete (at %d bytes)\n",filesize);
+  writer->printf("Download %s (at %d bytes)\n",(k<0) ? "failed" : "complete",filesize);
 
   if (filesize != expected)
     {
@@ -851,7 +852,8 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
         {
         info.version_server = http.BodyReadLine();
         char rbuf[512];
-        while (size_t k = http.BodyRead(rbuf,512))
+        ssize_t k;
+        while ((k = http.BodyRead(rbuf,512)) > 0)
           {
           info.changelog_server.append(rbuf,k);
           }
@@ -908,6 +910,8 @@ void OvmsOTA::SetFlashStatus(const char* status, int perc, bool dolog)
 
 void OvmsOTA::SetFlashPerc(int perc)
   {
+  if (m_flashperc/10 != perc/10)
+    { ESP_LOGI(TAG, "%s %d%%", m_flashstatus, perc); }
   m_flashperc = perc;
   }
 
@@ -1090,7 +1094,8 @@ bool OvmsOTA::AutoFlash(bool force)
   SetFlashStatus("OTA Auto Flash: Downloading OTA image...");
   uint8_t rbuf[512];
   size_t filesize = 0;
-  while (int k = http.BodyRead(rbuf,512))
+  ssize_t k;
+  while ((k = http.BodyRead(rbuf,512)) > 0)
     {
     filesize += k;
     SetFlashPerc((filesize*100)/expected);
@@ -1113,7 +1118,7 @@ bool OvmsOTA::AutoFlash(bool force)
       }
     }
   http.Disconnect();
-  ESP_LOGI(TAG, "AutoFlash:: Download complete (at %d bytes)", filesize);
+  ESP_LOGI(TAG, "AutoFlash:: Download %s (at %d bytes)", (k<0) ? "failed" : "complete", filesize);
 
   if (filesize != expected)
     {

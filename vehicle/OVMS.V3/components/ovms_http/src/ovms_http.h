@@ -47,7 +47,7 @@ class OvmsHttpClient : public OvmsNetTcpConnection
 
   public:
     bool Request(std::string url, const char* method = "GET");
-    size_t BodyRead(void *buf, size_t nbyte);
+    ssize_t BodyRead(void *buf, size_t nbyte);
     int BodyHasLine();
     std::string BodyReadLine();
     size_t BodySize();
