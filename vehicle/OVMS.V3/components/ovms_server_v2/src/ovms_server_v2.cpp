@@ -242,7 +242,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
 
 void OvmsServerV2::ProcessServerMsg()
   {
-  m_lastrx_time = esp_log_timestamp();
+  m_lastrx_time = monotonictime;
   std::string line = m_buffer->ReadLine();
 
   if (line.compare(0,7,"MP-S 0 ") == 0)
@@ -325,6 +325,7 @@ void OvmsServerV2::ProcessServerMsg()
     m_pending_notify_data_last = 0;
     m_pending_notify_data_retransmit = 0;
     m_connretry = 0;
+    m_ping_ticker = 0;
 
     StandardMetrics.ms_s_v2_connected->SetValue(true);
     if (m_paranoid)
@@ -2133,17 +2134,29 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
 
   if (StandardMetrics.ms_s_v2_connected->AsBool())
     {
+    uint32_t now = monotonictime;
+
     // check for issue #241 condition:
-    if (esp_log_timestamp() - m_lastrx_time > MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960) * 1000)
+    int rxtimeout = MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960);
+    if (rxtimeout != 0)
       {
-      ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
-      MyNetManager.RestartNetwork();
-      return;
+      if (rxtimeout < 120) rxtimeout = 120;
+      if (++m_ping_ticker >= rxtimeout - 60)
+        {
+        // send ping:
+        Transmit("MP-0 A");
+        m_ping_ticker = 0;
+        }
+      else if (now >= m_lastrx_time + rxtimeout)
+        {
+        ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
+        MyNetManager.RestartNetwork();
+        return;
+        }
       }
 
     // Periodic transmission of metrics
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
-    int now = StandardMetrics.ms_m_monotonic->AsInt();
     int next = (m_peers==0) ? m_updatetime_idle : m_updatetime_connected;
     if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
