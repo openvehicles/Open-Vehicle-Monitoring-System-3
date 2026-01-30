@@ -979,6 +979,7 @@ void OvmsNetManager::MongooseTask()
   m_mongoose_running = true;
 
   // Main event loop
+  uint32_t busystart = esp_log_timestamp();
   while (!m_mongoose_stopping)
     {
     // poll interfaces:
@@ -1001,7 +1002,17 @@ void OvmsNetManager::MongooseTask()
       }
     
     // avoid busy looping from continuous network activity:
-    vTaskDelay(0);
+    // mg_mgr_poll() returns immediately if sockets were ready, so force a 10 ms yield per second
+    uint32_t now = esp_log_timestamp();
+    if (now >= busystart + 1000)
+      {
+      vTaskDelay(pdMS_TO_TICKS(10));
+      busystart = now;
+      }
+    else
+      {
+      vTaskDelay(0);
+      }
     }
 
   m_mongoose_running = false;
