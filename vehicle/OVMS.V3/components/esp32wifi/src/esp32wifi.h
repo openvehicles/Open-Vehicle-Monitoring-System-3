@@ -108,7 +108,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
 
   protected:
     bool m_poweredup;
-    OvmsMutex m_mutex;
+    OvmsRecMutex m_mutex;
     esp32wifi_mode_t m_mode;
     std::string m_sta_ssid;
     std::string m_sta_password;

@@ -578,7 +578,7 @@ void esp32wifi::PowerUp()
   ESP_LOGI(TAG, "Powering up WIFI driver");
   if (!m_poweredup)
     {
-    OvmsMutexLock exclusive(&m_mutex);
+    OvmsRecMutexLock exclusive(&m_mutex);
     m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
@@ -594,7 +594,7 @@ void esp32wifi::PowerDown()
   ESP_LOGI(TAG, "Powering down WIFI driver");
   if (m_poweredup)
     {
-    OvmsMutexLock exclusive(&m_mutex);
+    OvmsRecMutexLock exclusive(&m_mutex);
     ESP_ERROR_CHECK(esp_wifi_deinit());
     m_poweredup = false;
     }
@@ -633,7 +633,8 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
 
   // configure wifi mode:
   {
-  OvmsMutexLock exclusive(&m_mutex);
+  OvmsRecMutexLock exclusive(&m_mutex);
+  esp_wifi_scan_stop();
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
@@ -673,7 +674,8 @@ void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
 
   // configure wifi mode:
   {
-  OvmsMutexLock exclusive(&m_mutex);
+  OvmsRecMutexLock exclusive(&m_mutex);
+  esp_wifi_scan_stop();
 
   // we need APSTA mode to be able to do scans:
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
@@ -738,7 +740,8 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
 
   // configure wifi mode:
   {
-  OvmsMutexLock exclusive(&m_mutex);
+  OvmsRecMutexLock exclusive(&m_mutex);
+  esp_wifi_scan_stop();
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
   SetAPWifiBW();
@@ -802,13 +805,14 @@ void esp32wifi::Reconnect(OvmsWriter* writer)
 
 void esp32wifi::StopStation()
   {
-  OvmsMutexLock exclusive(&m_mutex);
+  OvmsRecMutexLock exclusive(&m_mutex);
 
   if (m_mode != ESP32WIFI_MODE_OFF)
     {
     ESP_LOGI(TAG, "Stopping WIFI station");
 
     MyEvents.SignalEvent("system.wifi.down",NULL);
+    esp_wifi_scan_stop();
     if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
       ESP_ERROR_CHECK(esp_wifi_disconnect());
     ESP_ERROR_CHECK(esp_wifi_stop());
@@ -887,6 +891,9 @@ void esp32wifi::Scan(OvmsWriter* writer, bool json)
   wifi_ap_record_t* list = NULL;
   esp32wifi_mode_t mode = m_mode;
 
+  // get exclusive Wifi mode control during the scan:
+  OvmsRecMutexLock exclusive(&m_mutex);
+
   if (m_mode == ESP32WIFI_MODE_OFF)
     {
     if (m_powermode != On)
@@ -894,15 +901,12 @@ void esp32wifi::Scan(OvmsWriter* writer, bool json)
       SetPowerMode(On);
       }
 
-    {
-    OvmsMutexLock exclusive(&m_mutex);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
     m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
     m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
     ESP_ERROR_CHECK(esp_wifi_start());
-    }
     }
 
   m_mode = ESP32WIFI_MODE_SCAN;
@@ -1325,6 +1329,9 @@ void esp32wifi::StartConnect()
   // scheme on first call among multiple APs of the same SSID. Instead we always
   // do a scan and connect explicitly to the AP with the strongest signal.
 
+  OvmsRecMutexLock exclusive(&m_mutex);
+  esp_wifi_scan_stop();
+
   wifi_scan_config_t scanConf;
   memset(&scanConf,0,sizeof(scanConf));
   scanConf.ssid = NULL;
@@ -1414,6 +1421,7 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
       }
     else
       {
+      OvmsRecMutexLock exclusive(&m_mutex);
       int k = ap_connect;
       ssid = (const char*)list[k].ssid;
       if (ssid.empty())
