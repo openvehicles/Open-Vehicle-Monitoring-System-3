@@ -37,19 +37,14 @@ static const char *TAG = "v-smarteq";
 
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) 
   {
-  if (m_ddt4all_exec >= 1) 
-    { 
+  if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
-    }
 
-  HandleCharging();
-  HandleChargeport();
+  if (m_charge_start)
+    HandleCharging();
   
-  if (StdMetrics.ms_v_env_on->AsBool(false))
-    {
+  if(StdMetrics.ms_v_env_on->AsBool(false) || StdMetrics.ms_v_env_hvac->AsBool(false))
     HandleEnergy();
-    HandleTripcounter();
-    }
   }
 
 void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker) 
@@ -62,6 +57,9 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
     StdMetrics.ms_v_env_parktime->SetValue(0); // reset parking time
     m_warning_unlocked = false;
     }
+
+  if(StdMetrics.ms_v_env_on->AsBool(false))
+    HandleTripcounter();
 
   if(m_enable_LED_state) 
     OnlineState();

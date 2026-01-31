@@ -47,18 +47,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   uint8_t *data = p_frame->data.u8;
   uint64_t c = swap_uint64(p_frame->data.u64);
   
-  static bool isCharging = false;
-  static bool lastCharging = false;
-  float _range_est;
-  float _bat_temp;
-  float _full_km;
-  float _range_cac;
-  float _soc;
-  float _soh;
-  float _temp;
-  int _duration_full;
-  //char buf[10];
-
   switch (p_frame->MsgID) {
     case 0x17e: //gear shift
       {
@@ -114,7 +102,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       {
       REQ_DLC(5);
       uint8_t raw_temp = (c >> 13) & 0x7Fu;
-      _temp = (float)raw_temp - 40.0f;
+      float _temp = (float)raw_temp - 40.0f;
       
       // Ignore invalid sensor reading (0x7F = 127 → 87°C after offset)
       if (raw_temp != 0x7F) 
@@ -159,7 +147,8 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 
       mt_worst_consumption->SetValue(worst_consumption);
       mt_best_consumption->SetValue(best_consumption);
-      mt_bcb_power_mains->SetValue(bcb_power_mains);
+      mt_bcb_power_mains->SetValue(bcb_power_mains);      
+      StdMetrics.ms_v_bat_consumption->SetValue(best_consumption * 10.0f); // convert to Wh/km
       break;
       }
     case 0x637:
@@ -174,7 +163,9 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 
       mt_energy_used->SetValue(consumption_mission);
       mt_energy_recd->SetValue(recovery_mission);
-      mt_aux_consumption->SetValue(aux_consumption);
+      mt_energy_aux->SetValue(aux_consumption);
+      //StdMetrics.ms_v_bat_coulomb_used->SetValue(consumption_mission + aux_consumption);
+      //StdMetrics.ms_v_bat_coulomb_recd->SetValue(recovery_mission);
       }
     case 0x646:
       {
@@ -187,7 +178,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       
       // Apply scaling (all × 0.1)
       mt_reset_consumption->SetValue((float)rest_consumption);
-      StdMetrics.ms_v_bat_consumption->SetValue((float)rest_consumption * 10.0f); // current consumption
       mt_reset_distance->SetValue((float)trip_distance * 0.1f);
       if(trip_energy < 0x7FFF) 
         mt_reset_energy->SetValue((float)trip_energy * 0.1f);
@@ -200,16 +190,17 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
       }
     case 0x654:        // SOC / charge port status
+      {
       REQ_DLC(4);
-      _soc = (float) CAN_BYTE(3);
+      float _soc = (float) CAN_BYTE(3);
       if (_soc <= 100.0f) StdMetrics.ms_v_bat_soc->SetValue(_soc); // SOC
       StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(0) & 0x20) != 0); // ChargingPlugConnected
-      _duration_full = (((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0;
+      int _duration_full = (((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0;
       mt_obd_duration->SetValue((int)(_duration_full), Minutes);
-      _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy
-      _bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(0) - 20.0;
-      _full_km = m_full_km;
-      _range_cac = _full_km + (_bat_temp); // temperature compensation +/- range
+      float _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy
+      float _bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(0) - 20.0;
+      float _full_km = m_full_km;
+      float _range_cac = _full_km + (_bat_temp); // temperature compensation +/- range
       if (_range_est != 1023.0f) 
         {
         StdMetrics.ms_v_bat_range_est->SetValue(_range_est);
@@ -221,8 +212,9 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
           }
         }
       break;
+      }
     case 0x658:
-    {
+      {
       REQ_DLC(6);
       uint32_t bat_serial = CAN_UINT32(0);
       
@@ -234,7 +226,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         mt_bat_serial->SetValue(serial_str);
         last_bat_serial = bat_serial;
       }
-      _soh = (float)(CAN_BYTE(4) & 0x7Fu);
+      float _soh = (float)(CAN_BYTE(4) & 0x7Fu);
       if (_soh <= 100.0f) StdMetrics.ms_v_bat_soh->SetValue(_soh); // SOH
       StdMetrics.ms_v_bat_health->SetValue(
         (_soh >= 95.0f) ? "excellent"
@@ -242,51 +234,12 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       : (_soh >= 75.0f) ? "average"
       : (_soh >= 65.0f) ? "poor"
       : "consider replacement");
-
-      isCharging = (CAN_BYTE(5) & 0x20); // ChargeInProgress
-      if (isCharging) { // STATE charge in progress
-        //StdMetrics.ms_v_charge_inprogress->SetValue(isCharging);
-      }
-      if (isCharging != lastCharging) { // EVENT charge state changed
-        if (isCharging) { // EVENT started charging
-          // Set charging metrics
-          StdMetrics.ms_v_charge_pilot->SetValue(true);
-          StdMetrics.ms_v_charge_inprogress->SetValue(isCharging);
-          StdMetrics.ms_v_charge_mode->SetValue("standard");
-          StdMetrics.ms_v_charge_type->SetValue("type2");
-          StdMetrics.ms_v_charge_state->SetValue("charging");
-          StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-          StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-          mt_bus_awake->SetValue(true);
-        } else { // EVENT stopped charging
-          StdMetrics.ms_v_charge_pilot->SetValue(false);
-          StdMetrics.ms_v_charge_inprogress->SetValue(isCharging);
-          StdMetrics.ms_v_charge_mode->SetValue("standard");
-          StdMetrics.ms_v_charge_type->SetValue("type2");
-          StdMetrics.ms_v_charge_duration_full->SetValue(0);
-          StdMetrics.ms_v_charge_duration_soc->SetValue(0);
-          StdMetrics.ms_v_charge_duration_range->SetValue(0);
-          StdMetrics.ms_v_charge_power->SetValue(0);
-          StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-          if (StdMetrics.ms_v_bat_soc->AsInt() < 95) {
-            // Assume the charge was interrupted
-            ESP_LOGI(TAG,"Car charge session was interrupted");
-            StdMetrics.ms_v_charge_state->SetValue("stopped");
-            StdMetrics.ms_v_charge_substate->SetValue("interrupted");
-          } else {
-            // Assume the charge completed normally
-            ESP_LOGI(TAG,"Car charge session completed");
-            StdMetrics.ms_v_charge_state->SetValue("done");
-            StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-          }
-        }
-      }
-      lastCharging = isCharging;
+      StdMetrics.ms_v_charge_inprogress->SetValue(CAN_BYTE(5) & 0x20);
       break;
-    }
+      }
     case 0x668:
       REQ_DLC(1);
-      vehicle_smart_car_on((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
+      StdMetrics.ms_v_env_on->SetValue((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
       break;
     case 0x673:  
       // TPMS pressure values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt

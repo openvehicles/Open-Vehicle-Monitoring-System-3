@@ -153,7 +153,6 @@ metrics
     xsq.bms.interlock.hvplug              -- HV plug interlock status [bool]
     xsq.bms.interlock.service             -- Service interlock status [bool]
     xsq.bms.fusi                          -- FUSI mode text
-    xsq.bms.mg.rpm                        -- Motor generator RPM
     xsq.bms.safety                        -- Safety mode text
 
 

@@ -107,7 +107,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void HandleCharging();
     void HandleEnergy();
     void HandleTripcounter();
-    void HandleChargeport();
     void Handlev2Server();
     void UpdateChargeMetrics();
     int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
@@ -136,7 +135,11 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void WifiRestart();
     void ModemRestart();
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
-    void EventListener(std::string event, void* data);
+    void smartOn();
+    void smartChargeStart();
+    void smartChargeStop();
+    void smartChargePrepare();
+    void smartChargeFinish();    
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -222,9 +225,18 @@ public:
     void Ticker60(uint32_t ticker) override;
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
-    virtual void CalculateEfficiency();
-    void vehicle_smart_car_on(bool isOn);    
+    virtual void CalculateEfficiency();  
     void NotifyVehicleIdling() override;
+    void NotifiedVehicleOn() override;
+    void NotifiedVehicleOff() override;
+    void NotifiedVehicleAwake() override;
+    void NotifiedVehicleAsleep() override;
+    void NotifiedVehicleChargeStart() override;
+    void NotifiedVehicleChargeStop() override;
+    void NotifiedVehicleChargePrepare() override;
+    void NotifiedVehicleChargeFinish() override;
+    void NotifiedVehicleChargePilotOn() override;
+    void NotifiedVehicleChargePilotOff() override;
 
     void PollReply_BMS_BattVolts(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattTemps(const char* data, uint16_t reply_len);
@@ -241,6 +253,7 @@ public:
     void PollReply_BCM_VIN(const char* data, uint16_t reply_len);
     void PollReply_BCM_VehicleState(const char* data, uint16_t reply_len);
     void PollReply_BCM_DoorUnderhoodOpened(const char* data, uint16_t reply_len);
+    void PollReply_BCM_CarSecured(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len);
     void PollReply_BCM_GenMode(const char* data, uint16_t reply_len);
@@ -248,6 +261,8 @@ public:
 
     void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
+    void PollReply_EVC_PlugDetected(const char* data, uint16_t reply_len);
+    void PollReply_EVC_PlugStatus(const char* data, uint16_t reply_len);
     void PollReply_EVC_Traceability(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len);
@@ -345,7 +360,7 @@ public:
     // 0x637 metrics
     OvmsMetricFloat         *mt_energy_used;            // Energy used since mission start (kWh)
     OvmsMetricFloat         *mt_energy_recd;            // Energy recovered since mission start (kWh)
-    OvmsMetricFloat         *mt_aux_consumption;        // Auxiliary consumption since mission start (kWh)
+    OvmsMetricFloat         *mt_energy_aux;        // Auxiliary consumption since mission start (kWh)
     // 0x62d metrics
     OvmsMetricFloat         *mt_worst_consumption;      // Worst average consumption (kWh/100km)
     OvmsMetricFloat         *mt_best_consumption;       // Best average consumption (kWh/100km)
@@ -359,8 +374,9 @@ public:
     // EVC 12V values: Index 0=dcdc_volt_req, 1=dcdc_volt, 2=dcdc_power, 3=usm_volt, 4=batt_volt_can, 5=batt_volt_req, 6=dcdc_amps, 7=dcdc_load
     OvmsMetricVector<float> *mt_evc_dcdc;                    //!< EVC 12V system values vector
     OvmsMetricString        *mt_evc_traceability;            //!< Frame Traceability: ITG/Factory/Serial
+    OvmsMetricBool          *mt_evc_plug_detected;           //!< Charging plug detected by charger (0x339D)
+    OvmsMetricString        *mt_evc_plug_status;             //!< Plug connection status (0x33EA): 0=none, 2=connected, 4=+button, 6=2plugs, 7=unavail
 
-    OvmsMetricVector<float> *mt_bms_temps;                   // BMS temperatures
     OvmsMetricVector<float> *mt_bms_voltages;                //!< Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
     OvmsMetricVector<int>   *mt_bms_contactor_cycles;        //!< Max/Total HV contactor cycles
     OvmsMetricVector<float> *mt_bms_soc_values;              //!< SOC values: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
@@ -372,7 +388,6 @@ public:
     OvmsMetricString        *mt_bms_voltage_state;           //!< Voltage State text
     OvmsMetricVector<float> *mt_bms_cell_resistance;         //!< Cell resistances (mOhm)
     OvmsMetricFloat         *mt_bms_nominal_energy;          //!< Nominal battery energy (kWh)
-    OvmsMetricFloat         *mt_bms_BattPower_power;    //!< calculated power of sample in kW
     OvmsMetricInt           *mt_bms_HVcontactStateCode; //!< contactor state: 0 := OFF, 1 := PRECHARGE, 2 := ON
     OvmsMetricString        *mt_bms_HVcontactStateTXT;  //!< contactor state text
     OvmsMetricInt           *mt_bms_EVmode;             //!< Mode the EV is actually in: 0 = none, 1 = slow charge, 2 = fast charge, 3 = normal, 4 = Quick Drop, 5 = Cameleon (Non-Isolated Charging)
@@ -381,7 +396,6 @@ public:
     OvmsMetricBool          *mt_bms_interlock_service;      //!< Service disconnect interlock
     OvmsMetricInt           *mt_bms_fusi_mode;              //!< FUSI mode code
     OvmsMetricString        *mt_bms_fusi_mode_txt;          //!< FUSI mode text
-    OvmsMetricFloat         *mt_bms_mg_rpm;                 //!< MG output revolution (rpm/2)
     OvmsMetricInt           *mt_bms_safety_mode;            //!< Safety mode code
     OvmsMetricString        *mt_bms_safety_mode_txt;        //!< Safety mode text
 
@@ -405,8 +419,8 @@ public:
 
     OvmsMetricString        *mt_bcm_vehicle_state;      //!< vehicle state
     OvmsMetricString        *mt_bcm_gen_mode;           //!< Generator mode text
-    OvmsMetricBool          *mt_driver_door_locked;            //!< Driver door locked status
-    OvmsMetricBool          *mt_driver_door_superlocked;       //!< Driver door superlocked status
+    OvmsMetricBool          *mt_driver_door_locked;     //!< Driver door locked status
+    OvmsMetricBool          *mt_car_secured;            //!< Car secured status (alarm armed)
     
   protected:
     bool m_indicator;                       //!< activate indicator e.g. 7 times or whatever

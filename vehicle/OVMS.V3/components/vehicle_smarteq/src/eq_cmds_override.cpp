@@ -530,24 +530,88 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStat(int verbosity, Ov
   return Success;
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandActivateValet(const char* pin) {
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandActivateValet(const char* pin) 
+  {
   return NotImplemented;
-}
+  }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const char* pin) {
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDeactivateValet(const char* pin) 
+  {
   return NotImplemented;
-}
+  }
  
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStartCharge()
   {
   return NotImplemented;
-  //CommandCanVector(0x7aa, 0x7ad, {"2F90020301","2F90020301"}, false, true);
-  //return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandStopCharge()
   {
   return NotImplemented;
-  //CommandCanVector(0x7aa, 0x7ad, {"2F90020300","2F90020300"}, false, true);
-  //return Success;
   }
+
+  
+// Called by OVMS when it detects vehicle is idling (bus active but not moving)
+// Override to prevent idling state when vehicle is awake but not running
+void OvmsVehicleSmartEQ::NotifyVehicleIdling()
+{
+  if (m_poll_state == POLLSTATE_RUNNING)
+    {
+    OvmsVehicle::NotifyVehicleIdling();
+    }
+}
+
+void OvmsVehicleSmartEQ::NotifiedVehicleOn()
+{
+  // Log once that car is being turned on
+  ESP_LOGI(TAG,"car is on");
+  smartOn();
+}
+
+void OvmsVehicleSmartEQ::NotifiedVehicleOff()
+{
+  ESP_LOGI(TAG,"car is off");
+}
+
+void OvmsVehicleSmartEQ::NotifiedVehicleAwake()
+{
+  ESP_LOGI(TAG,"car is awake");
+}
+
+void OvmsVehicleSmartEQ::NotifiedVehicleAsleep()
+{  
+  ESP_LOGI(TAG,"car is asleep");
+}
+
+void OvmsVehicleSmartEQ::NotifiedVehicleChargeStart()
+{
+  ESP_LOGI(TAG,"charge started");
+  smartChargeStart();
+}
+
+void OvmsVehicleSmartEQ::NotifiedVehicleChargeStop()
+{
+  smartChargeStop();
+}
+
+void OvmsVehicleSmartEQ::NotifiedVehicleChargePrepare()
+{
+  ESP_LOGI(TAG,"charge prepared");
+  smartChargePrepare();
+}
+
+void OvmsVehicleSmartEQ::NotifiedVehicleChargeFinish()
+{
+  ESP_LOGI(TAG,"charge finished");
+  smartChargeFinish();
+}
+
+void OvmsVehicleSmartEQ::NotifiedVehicleChargePilotOn()
+{
+  ESP_LOGI(TAG,"charge pilot on");
+}
+
+void OvmsVehicleSmartEQ::NotifiedVehicleChargePilotOff()
+{
+  ESP_LOGI(TAG,"charge pilot off");
+}
