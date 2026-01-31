@@ -1115,6 +1115,9 @@ void OvmsServerV3::EventListener(std::string event, void* data)
  */
 void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   {
+  // as we're also called from the constructor, ensure exclusive config access:
+  auto cfglock = MyConfig.Lock();
+
   if (param == NULL)
     param = MyConfig.CachedParam("server.v3");
   else if (param->GetName() != "server.v3")
