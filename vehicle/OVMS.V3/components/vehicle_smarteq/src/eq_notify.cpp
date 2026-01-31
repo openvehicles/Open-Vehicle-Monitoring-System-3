@@ -163,6 +163,7 @@ void OvmsVehicleSmartEQ::NotifyMaintenance() {
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSOClimit(int verbosity, OvmsWriter* writer) {
   writer->puts("SOC limit reached:");
+  writer->printf("  kWh: %s in %s\n", (char*) StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 1).c_str(), (char*) StdMetrics.ms_v_charge_time->AsUnitString("-", Minutes, 0).c_str());
   writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
   writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
   writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
@@ -278,7 +279,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   }
   
   writer->puts("\n--- Cell Temperature Data (PID 0x04) ---");
-  const std::vector<float> temp_values = mt_bms_temps->AsVector();
+  const std::vector<float> temp_values = StdMetrics.ms_v_bat_cell_temp->AsVector();
   if (temp_values.size() >= show) {
     writer->printf("  Temperatures (first %d sensors):\n", show);
     for (int i = 0; i < show && i < (int)temp_values.size(); i++) {

@@ -211,6 +211,8 @@ void OvmsVehicleSmartEQ::ResetTripCounters() {
   }
   StdMetrics.ms_v_bat_energy_recd->SetValue(0);
   StdMetrics.ms_v_bat_energy_used->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_recd->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_used->SetValue(0);
   mt_pos_odometer_start->SetValue(StdMetrics.ms_v_pos_odometer->AsFloat());
   StdMetrics.ms_v_pos_trip->SetValue(0);
   StdMetrics.ms_v_charge_kwh_grid->SetValue(0);
@@ -223,10 +225,13 @@ void OvmsVehicleSmartEQ::ResetTotalCounters() {
   }
   StdMetrics.ms_v_bat_energy_recd_total->SetValue(0);
   StdMetrics.ms_v_bat_energy_used_total->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_used_total->SetValue(0);
   mt_pos_odometer_trip_total->SetValue(0);
   mt_pos_odometer_start_total->SetValue(StdMetrics.ms_v_pos_odometer->AsFloat());
   StdMetrics.ms_v_charge_kwh_grid_total->SetValue(0);
-  MyConfig.SetParamValueBool("xsq", "resettotal", false);
+  if (m_resettotal)
+    MyConfig.SetParamValueBool("xsq", "resettotal", false);
 }
 
 // check the 12V alert periodically and charge the 12V battery if needed
@@ -445,6 +450,85 @@ void OvmsVehicleSmartEQ::ModemRestart() {
   #else
     ESP_LOGE(TAG, "Cellular support not enabled");
   #endif
+}
+
+void OvmsVehicleSmartEQ::smartOn()
+{
+  // Reset trip values
+  if (!m_resettrip)
+    ResetTripCounters();
+  // Reset kWh/100km values
+  if (m_resettotal)
+    ResetTotalCounters();
+  // Reset warning flags
+  m_warning_unlocked = false;
+  m_warning_dooropen = false;
+  // Reset 12V and climate control tickers
+  m_12v_ticker = 0;
+  m_climate_restart = false;
+  m_climate_restart_ticker = 0;
+  // reset idle ticker when vehicle turned on to prevent trigger every 60 sec.
+  m_idle_ticker = 15 * 60;
+}
+
+void OvmsVehicleSmartEQ::smartChargeStart()
+{
+  // Set charging metrics
+  StdMetrics.ms_v_charge_pilot->SetValue(true);
+  StdMetrics.ms_v_charge_mode->SetValue("standard");
+  StdMetrics.ms_v_charge_type->SetValue("type2");
+  StdMetrics.ms_v_charge_state->SetValue("charging");
+  StdMetrics.ms_v_charge_substate->SetValue("onrequest");
+  StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
+  mt_bus_awake->SetValue(true);
+  // trigger ADC factor recalculation when HV charging started
+  if(m_enable_calcADCfactor && !m_ADCfactor_recalc) 
+    {
+    m_ADCfactor_recalc_timer = 4;   // wait at least 4 min. before recalculation
+    m_ADCfactor_recalc = true;      // recalculate ADC factor when HV charging
+    }
+}
+
+void OvmsVehicleSmartEQ::smartChargeStop()
+{
+  StdMetrics.ms_v_charge_pilot->SetValue(false);
+  StdMetrics.ms_v_charge_mode->SetValue("standard");
+  StdMetrics.ms_v_charge_type->SetValue("type2");
+  StdMetrics.ms_v_charge_duration_full->SetValue(0);
+  StdMetrics.ms_v_charge_duration_soc->SetValue(0);
+  StdMetrics.ms_v_charge_duration_range->SetValue(0);
+  StdMetrics.ms_v_charge_power->SetValue(0);
+  StdMetrics.ms_v_charge_current->SetValue(0);
+  StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
+
+  if (StdMetrics.ms_v_bat_soc->AsInt() < 95) {
+    // Assume the charge was interrupted
+    ESP_LOGI(TAG,"charge session was interrupted");
+    StdMetrics.ms_v_charge_state->SetValue("stopped");
+    StdMetrics.ms_v_charge_substate->SetValue("interrupted");
+  } else {
+    // Assume the charge completed normally
+    ESP_LOGI(TAG,"charge session completed");
+    StdMetrics.ms_v_charge_state->SetValue("done");
+    StdMetrics.ms_v_charge_substate->SetValue("onrequest");
+  }
+  // stop recalculation when HV charging stopped
+  m_ADCfactor_recalc_timer = 0;
+  m_ADCfactor_recalc = false;
+}
+
+void OvmsVehicleSmartEQ::smartChargePrepare()
+{
+  m_charge_start = true;
+  if (m_charge_finished) ResetChargingValues();
+  if (m_resettrip) ResetTripCounters();
+}
+
+void OvmsVehicleSmartEQ::smartChargeFinish()
+{
+  m_charge_start = false;
+  m_charge_finished = true;
+  StdMetrics.ms_v_charge_power->SetValue(0);
 }
 
 /**

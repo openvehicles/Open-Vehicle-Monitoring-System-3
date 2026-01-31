@@ -141,6 +141,12 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x2005: // Battery voltage 14V
           PollReply_EVC_14VBatteryVoltage(m_rxbuf.data(), m_rxbuf.size());
           break;
+        case 0x339D: // Charging plug detected (B_PlugConnected_bcb_status_S)
+          PollReply_EVC_PlugDetected(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x33EA: // Plug connection status (K_PlugConnected_bcb_status)
+          PollReply_EVC_PlugStatus(m_rxbuf.data(), m_rxbuf.size());
+          break;
         case 0x84: // Frame Traceability Information
           PollReply_EVC_Traceability(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -278,11 +284,15 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x8003: // rq_VehicleState
           PollReply_BCM_VehicleState(m_rxbuf.data(), m_rxbuf.size());
           break;
+        case 0x404D: // rq_CAR_SECURED_S
+          PollReply_BCM_CarSecured(m_rxbuf.data(), m_rxbuf.size());
+          break;
         case 0x605e: // rq_UNDERHOOD_OPENED
           PollReply_BCM_DoorUnderhoodOpened(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x8079: // Generator mode
           PollReply_BCM_GenMode(m_rxbuf.data(), m_rxbuf.size());
+          break;
         case 0x25: // Doorlock EEPROM
           PollReply_BCM_DoorlockEEPROM(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -317,8 +327,8 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t repl
 {
   REQUIRE_LEN(2);
   uint16_t max_bytes = reply_len & 0xFFFE;
-  if (max_bytes > 96)
-    max_bytes = 96;
+  if (max_bytes > CELLCOUNT)
+    max_bytes = CELLCOUNT;
 
   for (uint16_t off = 0; off < max_bytes; off += 2)
     {
@@ -439,14 +449,20 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattTemps(const char* data, uint16_t repl
     BMStemps[idx] = value / 64.0f;
     }
 
-  // Fill remaining (if any) with NAN to avoid stale data:
+  // Fill remaining (if any) with Avg Temperature to avoid stale data:
   for (uint16_t i = max_pairs; i < 31; i++)
     {
-    Temps[i] = 0;
-    BMStemps[i] = NAN;
+    Temps[i] = BMStemps[2];
+    BMStemps[i] = BMStemps[2];
     }
 
-  mt_bms_temps->SetElemValues(0, 31, BMStemps);
+  // Store summary temperatures if available:
+  if (max_pairs >= 3) 
+    {
+    StdMetrics.ms_v_bat_pack_tmin->SetValue(BMStemps[0]);  // Min temperature (index 0, byte 3-4)
+    StdMetrics.ms_v_bat_pack_tmax->SetValue(BMStemps[1]);  // Max temperature (index 1, byte 5-6)
+    StdMetrics.ms_v_bat_pack_tavg->SetValue(BMStemps[2]);  // Averaged temperature (index 2, byte 7-8)
+    }
 
   // Cell temperatures start at index 3 (as in original), ensure bounds:
   uint16_t cellcount = (max_pairs > 3) ? (max_pairs - 3) : 0;
@@ -536,7 +552,6 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
 
   // P = V × I (in kW)
   float pack_power_kw = (v_pack_term * i_pack) / 1000.0f;
-  mt_bms_BattPower_power->SetValue(pack_power_kw);
   StdMetrics.ms_v_bat_voltage->SetValue(v_pack_term);
   StdMetrics.ms_v_bat_current->SetValue(i_pack * -1.0f); // invert to charge(+)/discharge(-) convention
   StdMetrics.ms_v_bat_power->SetValue(pack_power_kw);
@@ -590,7 +605,6 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
 
   float mg_rpm_raw = CAN_UINT(17); // motor rpm
   float mg_rpm = mg_rpm_raw / 2.0f;
-  mt_bms_mg_rpm->SetValue(mg_rpm);
   StdMetrics.ms_v_mot_rpm->SetValue(mg_rpm);
 
   int safety = CAN_BYTE(19);
@@ -692,8 +706,16 @@ void OvmsVehicleSmartEQ::PollReply_BCM_VehicleState(const char* data, uint16_t r
 
 void OvmsVehicleSmartEQ::PollReply_BCM_DoorUnderhoodOpened(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(1);
-  int code = CAN_BYTE(0);
-  StdMetrics.ms_v_door_hood->SetValue(code==1);
+  bool open = (CAN_BYTE(0) > 0);
+  StdMetrics.ms_v_door_hood->SetValue(open);
+}
+
+void OvmsVehicleSmartEQ::PollReply_BCM_CarSecured(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 40 4D <Byte>
+  // CAR_SECURE_S: true if alarm armed/car secured
+  REQUIRE_LEN(1);
+  bool secured = (CAN_BYTE(0) > 0);
+  mt_car_secured->SetValue(secured);
 }
 
 void OvmsVehicleSmartEQ::PollReply_BCM_GenMode(const char* data, uint16_t reply_len) {
@@ -821,6 +843,30 @@ void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltageReq(const char* data, ui
   uint8_t raw = CAN_BYTE(0);
   float value = 12.0f + raw * 0.05f;
   mt_evc_dcdc->SetElemValue(5, value);  // batt_volt_req
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_PlugDetected(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 33 9D <Byte>
+  // 0 = No charging plug, 1 = Charging plug detected
+  REQUIRE_LEN(1);
+  mt_evc_plug_detected->SetValue(CAN_NIBL(0) > 0);
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_PlugStatus(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 33 EA <Byte>
+  // 0=none, 2=connected, 4=+button, 6=2plugs, 7=unavailable
+  REQUIRE_LEN(1);
+  int code = CAN_NIBL(0);
+  std::string msgtxt = "";
+  switch(code) {
+    case 0: msgtxt = "none"; break;
+    case 2: msgtxt = "connected"; break;
+    case 4: msgtxt = "connected + button"; break;
+    case 6: msgtxt = "2 plugs"; break;
+    case 7: msgtxt = "unavailable"; break;
+    default: msgtxt = "Unknown code"; break;
+  }
+  mt_evc_plug_status->SetValue(msgtxt);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len) {
@@ -1009,13 +1055,14 @@ void OvmsVehicleSmartEQ::PollReply_obd_time(const char* data, uint16_t reply_len
 
 void OvmsVehicleSmartEQ::PollReply_obd_start_trip(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(2);
-  mt_start_distance->SetValue((float) CAN_UINT(0));
+  float value = (float) CAN_UINT(0);
+  mt_start_distance->SetValue(value);
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_start_time(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(3);
-  int value_1 = CAN_UINT24(0);
-  std::string timeStr = SecondsToHHmm(value_1);
+  int value = CAN_UINT24(0);   
+  std::string timeStr = SecondsToHHmm(value);
   mt_start_time->SetValue( timeStr );
 }
 
@@ -1073,10 +1120,6 @@ void OvmsVehicleSmartEQ::PollReply_BCM_DoorlockEEPROM(const char* data, uint16_t
   // DRIVER_DOOR_LOCKED_S:
   bool driver_locked = (CAN_BYTE(0) > 0);
   mt_driver_door_locked->SetValue(driver_locked);
-  
-  // DRIVER_DOOR_SUPERLOCKED_S:
-  bool driver_superlocked = (CAN_BYTE(1) > 0);
-  mt_driver_door_superlocked->SetValue(driver_superlocked);
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_mt_level(const char* data, uint16_t reply_len) {
