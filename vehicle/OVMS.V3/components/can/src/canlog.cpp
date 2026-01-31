@@ -448,24 +448,13 @@ void canlog::RxTask(void *context)
  */
 void canlog::LoadConfig()
   {
-  std::size_t str_hash;
-
   std::string list_of_events_filters = MyConfig.GetParamValue(CAN_PARAM, "log.events_filters", "x*,vehicle*");
-  str_hash = std::hash<std::string>{}(list_of_events_filters);
-  if (str_hash != m_events_filters_hash)
-    {
-    m_events_filters_hash = str_hash;
-    m_events_filters.LoadFilters(list_of_events_filters);
+  if (m_events_filters.LoadFilters(list_of_events_filters))
     MyCan.LogInfo(NULL, CAN_LogInfo_Config, ("Events filters: " + list_of_events_filters).c_str());
-    }
+
   std::string list_of_metrics_filters = MyConfig.GetParamValue(CAN_PARAM, "log.metrics_filters");
-  str_hash = std::hash<std::string>{}(list_of_metrics_filters);
-  if (str_hash != m_metrics_filters_hash)
-    {
-    m_metrics_filters_hash = str_hash;
-    m_metrics_filters.LoadFilters(list_of_metrics_filters);
+  if (m_metrics_filters.LoadFilters(list_of_metrics_filters))
     MyCan.LogInfo(NULL, CAN_LogInfo_Config, ("Metrics filters: " + list_of_metrics_filters).c_str());
-    }
   }
 
 /**

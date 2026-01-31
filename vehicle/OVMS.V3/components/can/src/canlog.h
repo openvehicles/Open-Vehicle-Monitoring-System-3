@@ -169,9 +169,7 @@ class canlog
 
   protected:
     IdFilter            m_events_filters;
-    size_t              m_events_filters_hash = 0;
     IdFilter            m_metrics_filters;
-    size_t              m_metrics_filters_hash = 0;
   };
 
 #endif // __CANLOG_H__
