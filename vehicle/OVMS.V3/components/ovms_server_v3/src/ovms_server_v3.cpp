@@ -1115,31 +1115,36 @@ void OvmsServerV3::EventListener(std::string event, void* data)
  */
 void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   {
-  m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", m_updatetime_connected);
-  m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", m_updatetime_idle);
-  m_updatetime_on = MyConfig.GetParamValueInt("server.v3", "updatetime.on", m_updatetime_on);
-  m_updatetime_awake = MyConfig.GetParamValueInt("server.v3", "updatetime.awake", m_updatetime_awake);
-  m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_charging);
-  m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", m_updatetime_sendall);
-  m_updatetime_keepalive = MyConfig.GetParamValueInt("server.v3", "updatetime.keepalive", m_updatetime_keepalive);
-  m_legacy_event_topic = MyConfig.GetParamValueBool("server.v3", "events.legacy_topic", true);
-  m_updatetime_priority = MyConfig.GetParamValueBool("server.v3", "updatetime.priority", false);
-  m_updatetime_immediately = MyConfig.GetParamValueBool("server.v3", "updatetime.immediately", false);
-  m_max_per_call_sendall = MyConfig.GetParamValueInt("server.v3", "queue.sendall", m_max_per_call_sendall);
+  if (param == NULL)
+    param = MyConfig.CachedParam("server.v3");
+  else if (param->GetName() != "server.v3")
+    return;
+
+  m_updatetime_connected = param->GetValueInt("updatetime.connected", m_updatetime_connected);
+  m_updatetime_idle = param->GetValueInt("updatetime.idle", m_updatetime_idle);
+  m_updatetime_on = param->GetValueInt("updatetime.on", m_updatetime_on);
+  m_updatetime_awake = param->GetValueInt("updatetime.awake", m_updatetime_awake);
+  m_updatetime_charging = param->GetValueInt("updatetime.charging", m_updatetime_charging);
+  m_updatetime_sendall = param->GetValueInt("updatetime.sendall", m_updatetime_sendall);
+  m_updatetime_keepalive = param->GetValueInt("updatetime.keepalive", m_updatetime_keepalive);
+  m_legacy_event_topic = param->GetValueBool("events.legacy_topic", true);
+  m_updatetime_priority = param->GetValueBool("updatetime.priority", false);
+  m_updatetime_immediately = param->GetValueBool("updatetime.immediately", false);
+  m_max_per_call_sendall = param->GetValueInt("queue.sendall", m_max_per_call_sendall);
   if (m_max_per_call_sendall < 1) m_max_per_call_sendall = 1;
-  m_max_per_call_modified = MyConfig.GetParamValueInt("server.v3", "queue.modified", m_max_per_call_modified);
+  m_max_per_call_modified = param->GetValueInt("queue.modified", m_max_per_call_modified);
   if (m_max_per_call_modified < 1) m_max_per_call_modified = 1;
 
-  m_metrics_filter.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.include"),
-                               MyConfig.GetParamValue("server.v3", "metrics.exclude"));
-  m_metrics_priority.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.priority"),
-                               MyConfig.GetParamValue("server.v3", "metrics.exclude"));
-  m_metrics_immediately.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.include.immediately"),
-                               MyConfig.GetParamValue("server.v3", "metrics.exclude.immediately"));
+  m_metrics_filter.LoadFilters(param->GetValue("metrics.include"),
+                               param->GetValue("metrics.exclude"));
+  m_metrics_priority.LoadFilters(param->GetValue("metrics.priority"),
+                                 param->GetValue("metrics.exclude"));
+  m_metrics_immediately.LoadFilters(param->GetValue("metrics.include.immediately"),
+                                    param->GetValue("metrics.exclude.immediately"));
   // New configurable timings:
-  m_conn_stable_wait = MyConfig.GetParamValueInt("server.v3", "conn.stable_wait", m_conn_stable_wait);
+  m_conn_stable_wait = param->GetValueInt("conn.stable_wait", m_conn_stable_wait);
   if (m_conn_stable_wait < 3) m_conn_stable_wait = 3;
-  m_conn_jitter_max  = MyConfig.GetParamValueInt("server.v3", "conn.jitter.max", m_conn_jitter_max);
+  m_conn_jitter_max  = param->GetValueInt("conn.jitter.max", m_conn_jitter_max);
   if (m_conn_jitter_max < 0) m_conn_jitter_max = 0;
   }
 
