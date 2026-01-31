@@ -22,6 +22,7 @@
 ;               Add indicators and warning light metrics
 ;       0.0.6:  Improve the battery monitor
 ;       0.0.7:  Approximate better ODO resolution for range
+;               Improve weighting for GoM range prediction.
 ;
 ;    (C) 2022-2026 Michael Geddes
 ; ----- Kona/Kia Module -----
@@ -384,10 +385,18 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
     m_v_p_odo_ext->SetValue(odo, Kilometers);
   }
 
-  // Setting a minimum trip size of 5km as the granuality of trips is +/- 1km.
+  // Setting a minimum trip size of 2km since the granuality of trips is much improved.
   // The default range and battery size are overridden below in ConfigChanged() .. and
   // when the battery size is loaded from OBD.
-  iq_range_calc = new RangeCalculator(2/*minTrip*/, 4/*weightCurrent*/, 450, 74);
+
+  /* weightCurrent=1.5 (new)            weightCurrent=4 (orig)
+   * prevDegrade=0.87                   prevDegrade=1
+   *   cur      = 17.35%                  cur     = 17.39%
+   *   prev     = 11.56%                  prev    =  4.36%
+   *   first 5  = 55.34%                  first 5 = 34.78%
+   *   first 10 = 80.91%                  first 10= 56.52%
+   */
+  iq_range_calc = new RangeCalculator(2/*minTrip*/, 1.5/*weightCurrent*/, 450, 74, 0.87 /*successive decrease*/);
 
   m_b_cell_det_min->SetValue(0);
 
@@ -413,7 +422,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   cmd_hiq->RegisterCommand("vin", "VIN information", xiq_vin);
 
-  OvmsCommand *cmd_trip = cmd_hiq->RegisterCommand("range", "Show Range information");
+  OvmsCommand *cmd_trip = cmd_hiq->RegisterCommand("range", "Show Range information", xiq_range_stat);
   cmd_trip->RegisterCommand("status", "Show Status of Range Calculator", xiq_range_stat);
   cmd_trip->RegisterCommand("reset", "Reset ranage calculation stats", xiq_range_reset);
 
