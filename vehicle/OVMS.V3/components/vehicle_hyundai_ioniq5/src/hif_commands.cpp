@@ -641,7 +641,7 @@ void OvmsHyundaiIoniqEv::RangeCalcReset()
 void xiq_range_reset(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
 {
   OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
-  if (mycar) {
+  if (mycar == nullptr) {
     writer->puts("Error: No vehicle module selected");
     return;
   }
