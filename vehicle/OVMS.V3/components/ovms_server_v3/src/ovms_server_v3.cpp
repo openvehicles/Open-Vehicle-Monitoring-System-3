@@ -71,6 +71,19 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
   struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;
   switch (ev)
     {
+    case MG_EV_POLL:
+      {
+      if (MyOvmsServerV3)
+        {
+        // Transmit metrics classified as 'immediately' if indicated by MetricModified():
+        bool have_immediately = MyOvmsServerV3->m_have_immediately.exchange(false);
+        if (have_immediately)
+          {
+          MyOvmsServerV3->TransmitImmediateMetrics();
+          }
+        }
+      }
+      break;
     case MG_EV_CONNECT:
       {
       int *success = (int*)p;
@@ -237,6 +250,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_connect_jitter   = -1;          // -1 = not yet chosen
   m_updatetime_priority = false;
   m_updatetime_immediately = false;
+  m_have_immediately = false;
   m_max_per_call_sendall = 100;      // max messages to send per Ticker1 call in sendall mode, default 100
   m_max_per_call_modified = 150;     // max messages to send per Ticker1 call in modified mode, default 150
 
@@ -430,13 +444,12 @@ void OvmsServerV3::TransmitModifiedMetrics()
 
 void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   {
-  auto mglock = MongooseLock();
-  if (!m_mgconn)
+  std::string metric_name(metric->m_name);
+  if (!m_metrics_filter.CheckFilter(metric_name))
     return;
 
-  std::string metric_name(metric->m_name);
-
-  if (!m_metrics_filter.CheckFilter(metric_name))
+  auto mglock = MongooseLock();
+  if (!m_mgconn)
     return;
 
   std::string topic(m_topic_prefix);
@@ -449,7 +462,7 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
     MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
   ESP_LOGD(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
-  
+
 void OvmsServerV3::TransmitPriorityMetrics()
   {
     // Default priority metrics (GPS + time)
@@ -501,6 +514,24 @@ void OvmsServerV3::TransmitPriorityMetrics()
       if (m_metrics_priority.CheckFilter(mname))
         send_metric_by_name(mname);
       }
+  }
+
+void OvmsServerV3::TransmitImmediateMetrics()
+  {
+  if (!m_updatetime_immediately) return;
+  if (!m_mgconn) return;
+  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+
+  for (OvmsMetric* m = MyMetrics.m_first; m; m = m->m_next)
+    {
+    if (m->IsDefined() &&
+        m->IsModified(MyOvmsServerV3Modifier) &&
+        m_metrics_immediately.CheckFilter(m->m_name))
+      {
+      m->ClearModified(MyOvmsServerV3Modifier);
+      TransmitMetric(m);
+      }
+    }
   }
 
 int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
@@ -1013,15 +1044,13 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
   if (!m_updatetime_immediately) return;
   if (!m_mgconn) return;
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
-  const std::string metric_name(metric->m_name);
-  if (!m_metrics_filter.CheckFilter(metric_name))
-    return;
-    
-  if (m_metrics_immediately.CheckFilter(metric_name) && 
-      metric->IsModifiedAndClear(MyOvmsServerV3Modifier) &&
-      metric->IsDefined())
+
+  if (metric->IsDefined() &&
+      metric->IsModified(MyOvmsServerV3Modifier) &&
+      m_metrics_immediately.CheckFilter(metric->m_name))
     {
-    TransmitMetric(metric);
+    m_have_immediately = true;
+    // TransmitMetric() done by OvmsServerV3MongooseCallback(MG_EV_POLL)
     }
   }
 

@@ -33,6 +33,7 @@
 
 #include <string>
 #include <map>
+#include <atomic>
 #include "ovms_server.h"
 #include "ovms_netmanager.h"
 #include "ovms_metrics.h"
@@ -113,6 +114,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     bool m_updatetime_priority;
     bool m_legacy_event_topic;
     bool m_updatetime_immediately;
+    std::atomic<bool> m_have_immediately;
     bool m_connection_available;
     bool m_notify_info_pending;
     bool m_notify_error_pending;
@@ -134,6 +136,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
     void TransmitPriorityMetrics();
+    void TransmitImmediateMetrics();
     int TransmitNotificationInfo(OvmsNotifyEntry* entry);
     int TransmitNotificationError(OvmsNotifyEntry* entry);
     int TransmitNotificationAlert(OvmsNotifyEntry* entry);
