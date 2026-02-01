@@ -444,14 +444,16 @@ static const char *CALCTAG = "rangecalc";
  * float weightOfCurrentTrip - How much the current trip should be weighted compared to the others. Should be 1 or higher
  * float defaultRange - A default start range in km with 100% battery. WLTP.
  * float batteryCapacity - Battery capacity in kWh
+ * float prevDegrade - Amount each successive range weighting is degraded
  */
-RangeCalculator::RangeCalculator(float minimumTrip, float weightOfCurrentTrip, float defaultRange, float batteryCapacity)
+RangeCalculator::RangeCalculator(float minimumTrip, float weightOfCurrentTrip, float defaultRange, float batteryCapacity, float prevDegrade)
+	: m_currentTrip(0),
+	  m_minimumTrip(minimumTrip),
+	  m_weightOfCurrentTrip(weightOfCurrentTrip),
+	  m_previousTripDegrade(prevDegrade),
+	  m_batteryCapacity(batteryCapacity),
+	  m_defaultRange(defaultRange)
 	{
-	this->minimumTrip = minimumTrip;
-	this->weightOfCurrentTrip = weightOfCurrentTrip;
-	this->batteryCapacity = batteryCapacity;
-	this->defaultRange = defaultRange;
-
 	clearTrips();
 	restoreTrips();
 #ifdef bind
@@ -487,8 +489,8 @@ void RangeCalculator::storeTrips()
 		{
 		return;
 		}
-	fwrite(&currentTripPointer, sizeof(int), 1, sf);
-	fwrite(trips, sizeof(TripConsumption), 20, sf);
+	fwrite(&m_currentTrip, sizeof(int), 1, sf);
+	fwrite(m_trips, sizeof(TripConsumption), 20, sf);
 	fclose(sf);
 #endif
 	}
@@ -510,23 +512,23 @@ void RangeCalculator::restoreTrips()
 		{
 		return;
 		}
-	fread(&currentTripPointer, sizeof(int), 1, sf);
-	fread(trips, sizeof(TripConsumption), 20, sf);
+	fread(&m_currentTrip, sizeof(int), 1, sf);
+	fread(m_trips, sizeof(TripConsumption), 20, sf);
 	fclose(sf);
-	if (currentTripPointer >= 20 || currentTripPointer<0) currentTripPointer = 0;
+	if (m_currentTrip >= 20 || m_currentTrip<0) m_currentTrip = 0;
 #endif
 	}
 
 void RangeCalculator::updateCapacity(float capacity)
 	{
-	if (capacity != batteryCapacity)
+	if (capacity != m_batteryCapacity)
 		{
-		float oldCap = batteryCapacity;
-		batteryCapacity = capacity;
+		float oldCap = m_batteryCapacity;
+		m_batteryCapacity = capacity;
 		for (int i = 0; i < 20; i++)
 			{
-			TripConsumption &entry = trips[i];
-			if (entry.distance == defaultRange && entry.consumption == oldCap)
+			TripConsumption &entry = m_trips[i];
+			if (entry.distance == m_defaultRange && entry.consumption == oldCap)
 				entry.consumption = capacity;
 			}
 		}
@@ -537,8 +539,15 @@ void RangeCalculator::updateCapacity(float capacity)
  */
 void RangeCalculator::updateTrip(float distance, float consumption)
 	{
-	trips[currentTripPointer].consumption = consumption;
-	trips[currentTripPointer].distance = distance;
+	m_trips[m_currentTrip].consumption = consumption;
+	m_trips[m_currentTrip].distance = distance;
+	}
+
+float RangeCalculator::calcEfficiency(const TripConsumption &trip)
+	{
+	if (trip.consumption == 0 || trip.distance == 0)
+		return m_defaultRange / m_batteryCapacity;
+	return trip.distance / trip.consumption;
 	}
 
 /*
@@ -551,12 +560,12 @@ void RangeCalculator::updateTrip(float distance, float consumption)
 void RangeCalculator::tripEnded(float distance, float consumption)
 	{
 	updateTrip(distance, consumption);
-	if (distance > minimumTrip)
+	if (distance > m_minimumTrip)
 		{
-		currentTripPointer++;
-		if (currentTripPointer >= 20)
+		m_currentTrip++;
+		if (m_currentTrip >= 20)
 			{
-			currentTripPointer = 0;
+			m_currentTrip = 0;
 			}
 		storeTrips();
 		}
@@ -565,25 +574,45 @@ void RangeCalculator::tripEnded(float distance, float consumption)
  /// Efficiency In km/kWh
 float RangeCalculator::getEfficiency()
 	{
-	float totalDistance = 0, totalConsumption = 0;
-	for (int i = 0; i < 20; i++)
-		{
-		totalDistance += trips[i].distance;
-		totalConsumption += trips[i].consumption;
-		}
 
+	TripConsumption weighted = {0,0};
 	// Make current trip count more than the rest
-	int useCurrent = currentTripPointer;
-	if (trips[currentTripPointer].distance < 1)
+	int currTrip = m_currentTrip;
+	while (m_trips[currTrip].distance < 0.1)
 		{
-		if (--useCurrent < 0)
-			useCurrent = 19;
+		currTrip = (currTrip == 0) ? 19 : (currTrip-1);
+		if (currTrip == m_currentTrip)
+			break;
 		}
 
-	totalDistance += trips[useCurrent].distance * (weightOfCurrentTrip - 1);
-	totalConsumption += trips[useCurrent].consumption * (weightOfCurrentTrip - 1);
+	// Add in current trip with current trip weight
+	const TripConsumption &cur = m_trips[currTrip];
+	float weight = m_weightOfCurrentTrip;
+	weighted.distance    += cur.distance    * weight;
+	weighted.consumption += cur.consumption * weight;
 
-	return totalDistance / totalConsumption ;
+	// Rest added at successively decreased weight
+	weight = 1.0;
+
+	bool found_default = false;
+	// Go backwards in time from previous
+	for (int i = 19; i > 0; --i)
+		{
+		const TripConsumption &cur = m_trips[(currTrip + i) % 20];
+		// Reached the filled in default range section.
+		if (!found_default && cur.distance == m_defaultRange)
+			{
+			// Step down the weight of the default.
+			weight *= 0.5;
+			found_default = true;
+			}
+
+		weighted.distance    += cur.distance    * weight;
+		weighted.consumption += cur.consumption * weight;
+		weight *= m_previousTripDegrade;
+		}
+
+	return calcEfficiency(weighted);
 	}
 
 /**
@@ -591,7 +620,7 @@ float RangeCalculator::getEfficiency()
  */
 float RangeCalculator::getRange()
 	{
-	return batteryCapacity * getEfficiency();
+	return m_batteryCapacity * getEfficiency();
 	}
 /**
  * Reset the trips used for the range calculator.
@@ -600,8 +629,8 @@ float RangeCalculator::getRange()
 void RangeCalculator::resetTrips()
 	{
 	clearTrips();
-	currentTripPointer = 0;
-	TripConsumption &entry = trips[0];
+	m_currentTrip = 0;
+	TripConsumption &entry = m_trips[0];
 	entry.distance = 0;
 	entry.consumption = 0;
 	storeToFile = true;
@@ -614,9 +643,9 @@ void RangeCalculator::clearTrips()
 	{
 	for (int i = 0; i < 20; ++i)
 		{
-		TripConsumption &entry = trips[i];
-		entry.distance = defaultRange;
-		entry.consumption = batteryCapacity;
+		TripConsumption &entry = m_trips[i];
+		entry.distance = m_defaultRange;
+		entry.consumption = m_batteryCapacity;
 		}
 	storeToFile = false;
 	}
@@ -654,7 +683,7 @@ void RangeCalculator::displayStoredTrips(OvmsWriter *writer)
 	// Put the 'current' one at the end (it's a circular buffer)
 	for (int i= 1; i < 21; ++i)
 		{
-		const TripConsumption &entry = trips[(i+currentTripPointer)%20];
+		const TripConsumption &entry = m_trips[(i+m_currentTrip)%20];
 		float effic = UnitConvert(KPkWh, cons_unit, entry.distance/entry.consumption);
 		float dist = UnitConvert(Kilometers, dist_unit, entry.distance);
 		float energy = UnitConvert(kWh, energy_unit, entry.consumption);
@@ -665,7 +694,7 @@ void RangeCalculator::displayStoredTrips(OvmsWriter *writer)
 			(i == 20) ? "<< current" : "");
 		}
 	writer->puts("+--------+----------+----------+");
-	float batCap = UnitConvert(kWh, energy_unit, batteryCapacity);
+	float batCap = UnitConvert(kWh, energy_unit, m_batteryCapacity);
 	writer->printf("Battery Capacity: %g%s\n", ROUNDPREC(batCap, 2), OvmsMetricUnitLabel(energy_unit));
 
 	auto efficiency = UnitConvert(KPkWh, cons_unit, getEfficiency());
