@@ -60,7 +60,7 @@ class OvmsBuffer
     std::string ReadLine();
 
   public:
-    int PollSocket(int sock, long timeoutms);
+    ssize_t PollSocket(int sock, long timeoutms);
 
   public:
     void* m_userdata;

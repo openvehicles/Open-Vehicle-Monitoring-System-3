@@ -189,7 +189,7 @@ std::string OvmsBuffer::ReadLine()
   return std::string((char*)result,hl);
   }
 
-int OvmsBuffer::PollSocket(int sock, long timeoutms)
+ssize_t OvmsBuffer::PollSocket(int sock, long timeoutms)
   {
   fd_set fds;
 
@@ -205,21 +205,17 @@ int OvmsBuffer::PollSocket(int sock, long timeoutms)
   timeout.tv_usec = (timeoutms%1000)*1000;
   int result = select((int) sock + 1, &fds, 0, 0, &timeout);
   // ESP_LOGI(TAG, "Polling Socket select result %d",result);
-  if (result <= 0) return -1;
+  if (result <= 0) return -1; // timeout or error
 
-  // We have some data ready to read
+  // We have some data ready to read (or EOF)
   size_t avail = FreeSpace();
   if (avail==0) return 0;
   // ESP_LOGI(TAG,"Polling Socket allocating %d bytes",avail);
   uint8_t *buf = new uint8_t[avail];
-  size_t n = read(sock, buf, avail);
+  ssize_t n = read(sock, buf, avail);
   // ESP_LOGI(TAG,"Polling Socket read %d bytes",n);
   // MyCommandApp.HexDump(TAG, "PollSocket", (const char*)buf, n);
-  if (n == 0)
-    {
-    n = -1;
-    }
-  else if (n > 0)
+  if (n > 0)
     {
     Push(buf,n);
     }

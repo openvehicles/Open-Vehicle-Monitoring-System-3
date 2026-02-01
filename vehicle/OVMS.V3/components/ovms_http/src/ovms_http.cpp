@@ -35,16 +35,18 @@ static const char *TAG = "http";
 #include "ovms_config.h"
 #include "metrics_standard.h"
 
-OvmsHttpClient::OvmsHttpClient()
+OvmsHttpClient::OvmsHttpClient(long timeout_ms /*= 10000*/)
   {
   m_buf = NULL;
   m_bodysize = 0;
   m_responsecode = 0;
+  m_timeout_ms = timeout_ms;
   }
 
-OvmsHttpClient::OvmsHttpClient(std::string url, const char* method)
+OvmsHttpClient::OvmsHttpClient(std::string url, const char* method, long timeout_ms /*= 10000*/)
   {
   m_buf = NULL;
+  m_timeout_ms = timeout_ms;
   Request(url, method);
   }
 
@@ -120,9 +122,10 @@ bool OvmsHttpClient::Request(std::string url, const char* method)
     }
 
   m_buf = new OvmsBuffer(1024);
+  assert(m_buf);
   bool inheaders = true;
   // ESP_LOGI(TAG,"Reading headers...");
-  while((inheaders)&&(m_buf->PollSocket(m_sock, 10000) >= 0))
+  while((inheaders)&&(m_buf->PollSocket(m_sock, m_timeout_ms) > 0))
     {
     // ESP_LOGI(TAG, "Now buffered %d bytes",m_buf->UsedSpace());
     int k = m_buf->HasLine();
@@ -178,24 +181,22 @@ void OvmsHttpClient::Disconnect()
 
 ssize_t OvmsHttpClient::BodyRead(void *buf, size_t nbyte)
   {
-  // char *x = (char*)buf;
-  if ((m_buf == NULL)||(m_buf->UsedSpace() == 0))
+  if (m_buf == NULL)
     {
-    ssize_t n = Read(buf,nbyte);
-    // ESP_EARLY_LOGI(TAG, "BodyRead got %d bytes direct (%02x %02x %02x %02x)",n,x[0],x[1],x[2],x[3]);
-    return n;
+    m_buf = new OvmsBuffer(1024);
+    assert(m_buf);
     }
-  else
+
+  if (m_buf->UsedSpace() == 0)
     {
-    size_t n = m_buf->Pop(nbyte,(uint8_t*)buf);
-    // ESP_EARLY_LOGI(TAG, "Body Read got %d bytes from buf (%d left) (%02x %02x %02x %02x)",n,m_buf->UsedSpace(),x[0],x[1],x[2],x[3]);
-    if (m_buf->UsedSpace() == 0)
-      {
-      delete m_buf;
-      m_buf = NULL;
-      }
-    return n;
+    // fill buffer using select() (non-blocking):
+    ssize_t rlen = m_buf->PollSocket(m_sock, m_timeout_ms);
+    if (rlen <= 0) return rlen; // EOF or error
     }
+
+  // read from buffer:
+  size_t n = m_buf->Pop(nbyte, (uint8_t*) buf);
+  return (ssize_t) n;
   }
 
 int OvmsHttpClient::BodyHasLine()
@@ -205,7 +206,7 @@ int OvmsHttpClient::BodyHasLine()
 
   if (m_buf->HasLine()<0)
     {
-    m_buf->PollSocket(m_sock, 10000);
+    m_buf->PollSocket(m_sock, m_timeout_ms);
     // m_buf->Diagnostics();
     }
   return m_buf->HasLine();
@@ -218,7 +219,7 @@ std::string OvmsHttpClient::BodyReadLine()
 
   if (m_buf->HasLine()<0)
     {
-    m_buf->PollSocket(m_sock, 10000);
+    m_buf->PollSocket(m_sock, m_timeout_ms);
     // m_buf->Diagnostics();
     }
 
