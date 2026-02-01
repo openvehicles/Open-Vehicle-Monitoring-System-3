@@ -1,0 +1,101 @@
+<!--
+  Web UI page plugin: Command Monitor
+    - Selected live metrics
+    - Two command sequence monitors (attached to ticker.1)
+-->
+
+<style>
+.metrics {
+  margin-bottom: 20px;
+}
+textarea {
+  resize: vertical;
+}
+.output {
+  height: 150px;
+  resize: vertical;
+  overflow: auto;
+}
+</style>
+
+<div class="panel panel-primary receiver" id="cmdmon">
+  <div class="panel-heading">Command Monitor</div>
+  <div class="panel-body">
+    <div class="row">
+
+      <div class="col-sm-12 col-lg-6">
+        <div class="metrics clearfix">
+
+          <div class="metric number" data-metric="v.c.12v.voltage" data-prec="2">
+            <span class="label">DCDC U:</span>
+            <span class="value">?</span>
+            <span class="unit">V</span>
+          </div>
+
+          <div class="metric number" data-metric="v.c.12v.current" data-prec="2">
+            <span class="label">DCDC I:</span>
+            <span class="value">?</span>
+            <span class="unit">A</span>
+          </div>
+
+          <div class="metric number" data-metric="v.b.12v.voltage" data-prec="2">
+            <span class="label">12V:</span>
+            <span class="value">?</span>
+            <span class="unit">V</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+    <div class="row">
+
+      <div class="col-sm-12 col-lg-6">
+        <label>Enter commands:</label>
+        <textarea class="form-control font-monospace" rows="6" autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false">
+          met lis -s v.c.12v.voltage
+          obd can1 req dev -t100 765 7cf 221dec
+          obd can1 req dev -t100 765 7cf 221ded
+          obd can1 req dev -t100 765 7cf 221dd6
+        </textarea>
+        <button class="btn btn-primary">Execute</button>
+        <label class="btn btn-info"><input type="checkbox" class="run-control">&nbsp;Monitor</label>
+        <pre class="output" />
+      </div>
+
+      <div class="col-sm-12 col-lg-6">
+        <label>Enter commands:</label>
+        <textarea class="form-control font-monospace" rows="6" autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false">
+          met lis -s xvu.e.
+          obd can1 req dev -t100 765 7cf 221dd9
+        </textarea>
+        <button class="btn btn-primary">Execute</button>
+        <label class="btn btn-info"><input type="checkbox" class="run-control">&nbsp;Monitor</label>
+        <pre class="output" />
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // Trim input lines & attach execution handler:
+  $('textarea').each(function() {
+    let $in = $(this), $btn = $in.next(), $out = $btn.nextAll('.output');
+    $in.val($in.val().replace(/^\s+/mg, ""));
+    $btn.on('click', function() { loadcmd($in.val(), $out); });
+  });
+
+  // Monitor execution on ticker.1:
+  $('#cmdmon').on('msg:event', function(e, event) {
+    if (event == "ticker.1") {
+      $('.run-control:checked').each(function () {
+        $(this).parent().prev().trigger('click');
+      });
+    }
+  });
+
+})();
+</script>
