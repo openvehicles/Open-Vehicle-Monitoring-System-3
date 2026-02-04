@@ -382,6 +382,8 @@ OvmsNetManager::OvmsNetManager()
   m_jobqueue = xQueueCreate(CONFIG_OVMS_HW_NETMANAGER_QUEUE_SIZE, sizeof(netman_job_t*));
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
+  m_restart_network = false;
+
   // Register our commands
   OvmsCommand* cmd_network = MyCommandApp.RegisterCommand("network","NETWORK framework",network_status, "", 0, 0, false);
   cmd_network->RegisterCommand("status","Show network status",network_status, "", 0, 0, false);
@@ -440,15 +442,27 @@ OvmsNetManager::~OvmsNetManager()
 
 void OvmsNetManager::RestartNetwork()
   {
-#ifdef CONFIG_OVMS_COMP_WIFI
-  if (MyPeripherals && MyPeripherals->m_esp32wifi)
-    MyPeripherals->m_esp32wifi->Restart();
-#endif // #ifdef CONFIG_OVMS_COMP_WIFI
+  if (MongooseRunning() && !IsNetManagerTask())
+    {
+    // signal task to do the restart:
+    ESP_LOGD(TAG, "Requesting network restart");
+    m_restart_network = true;
+    }
+  else
+    {
+    // perform restart:
+    ESP_LOGI(TAG, "Performing network restart");
+    m_restart_network = false;
+    #ifdef CONFIG_OVMS_COMP_WIFI
+      if (MyPeripherals && MyPeripherals->m_esp32wifi)
+        MyPeripherals->m_esp32wifi->Restart();
+    #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
-#ifdef CONFIG_OVMS_COMP_CELLULAR
-  if (MyPeripherals && MyPeripherals->m_cellular_modem)
-    MyPeripherals->m_cellular_modem->Restart();
-#endif // CONFIG_OVMS_COMP_CELLULAR
+    #ifdef CONFIG_OVMS_COMP_CELLULAR
+      if (MyPeripherals && MyPeripherals->m_cellular_modem)
+        MyPeripherals->m_cellular_modem->Restart();
+    #endif // CONFIG_OVMS_COMP_CELLULAR
+    }
   }
 
 #ifdef CONFIG_OVMS_COMP_WIFI
@@ -980,7 +994,7 @@ void OvmsNetManager::MongooseTask()
 
   // Main event loop
   uint32_t busystart = esp_log_timestamp();
-  while (!m_mongoose_stopping)
+  while (!m_mongoose_stopping && !m_restart_network)
     {
     // poll interfaces:
     if (mg_mgr_poll(&m_mongoose_mgr, 100) == 0)
@@ -1031,6 +1045,12 @@ void OvmsNetManager::MongooseTask()
 
   // Cleanup mongoose:
   mg_mgr_free(&m_mongoose_mgr);
+
+  if (m_restart_network)
+    {
+    RestartNetwork();
+    }
+
   uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
   ESP_LOGD(TAG, "MongooseTask done, min stack free=%u", minstackfree);
   m_mongoose_task = NULL;

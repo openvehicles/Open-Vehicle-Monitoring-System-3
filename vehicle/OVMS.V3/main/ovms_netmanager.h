@@ -173,6 +173,7 @@ class OvmsNetManager
     bool m_mongoose_running;                // true = Mongoose task is fully operational
     bool m_mongoose_starting;               // true = Mongoose task startup requested
     bool m_mongoose_stopping;               // true = Mongoose task shutdown requested
+    bool m_restart_network;                 // true = Mongoose task shall restart network
     QueueHandle_t m_jobqueue;
     OvmsSemaphore m_tcpip_callback_done;    // block until tcpip callback done (see PrioritiseAndIndicate)
 
