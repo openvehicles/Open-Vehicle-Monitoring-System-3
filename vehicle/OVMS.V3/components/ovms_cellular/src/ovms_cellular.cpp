@@ -410,7 +410,11 @@ void modem::Restart()
   {
   if (m_driver == NULL)
     {
-    ESP_LOGW(TAG, "Cannot restart, as modem driver is not loaded");
+    ESP_LOGI(TAG, "Restart");
+    if (MyConfig.GetParamValueBool("auto", "modem", false))
+      SendSetState1((GetState1() != PoweredOff) ? PowerOffOn : PoweringOn);
+    else
+      SendSetState1(PoweringOff);
     }
   else
     { m_driver->Restart(); }
