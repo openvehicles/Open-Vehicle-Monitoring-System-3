@@ -32,21 +32,6 @@ static const char *TAG = "v-vwegolf";
 // #include <stdio.h>
 #include "vehicle_vwegolf.h"
 
-
-
-static volatile bool car_online_b = true;
-static volatile uint8_t last_message_received = 255;
-
-static volatile uint8_t temperatureWeb_u8 = 19;
-static volatile bool chargingOnBattery_b = false;
-static volatile bool activateMirrorFoldIn_b = false;
-static volatile bool activateHornWeb_b = false;
-static volatile bool activateIndicatorsWeb_b = false;
-static volatile bool activatePanicModeWeb_b = false;
-static volatile bool unlockCarWeb_b = false;
-static volatile bool lockCarWeb_b = false;
-
-
 OvmsVehicleVWeGolf::OvmsVehicleVWeGolf()
 {
   ESP_LOGI(TAG, "Start vehicle module: VW e-Golf");
@@ -78,23 +63,15 @@ class OvmsVehicleVWeGolfInit
   public: OvmsVehicleVWeGolfInit();
 } MyOvmsVehicleVWeGolfInit  __attribute__ ((init_priority (9000)));
 
-static volatile uint8_t Spiegelanklappen_u8 = 0;
-static volatile bool OVMS_control_active_b = false;
-
 void vweg_OfflineCall(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 {
-  OVMS_control_active_b = false;
+  m_is_control_active = false;
   ESP_LOGI(TAG, "Heartbeat sending should be stopped");
 }
 
 void vweg_SpiegelanklappenCall(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 {
   ESP_LOGI(TAG, "Test command Spiegelanklappen call executed");
-  if(Spiegelanklappen_u8 == 0) Spiegelanklappen_u8 = 1;
-
-  if(Spiegelanklappen_u8 == 1) Spiegelanklappen_u8 = 0;
-
-  ESP_LOGI(TAG, "Spiegelanklappen_u8 Testcommand, %u", Spiegelanklappen_u8);
 }
 
 OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit()
@@ -125,7 +102,7 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit()
   StdMetrics.ms_v_door_trunk->SetValue(0);
   StdMetrics.ms_v_door_hood->SetValue(1);
 
-  last_message_received = 255;
+  m_last_message_received = 255;
 }
 
 void OvmsVehicleVWeGolf::IncomingFrameCan1(CAN_frame_t* p_frame)
@@ -138,7 +115,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame)
 
 void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame)
 {
-  last_message_received = 0;
+  m_last_message_received = 0;
   uint8_t *d = p_frame->data.u8;
 
   uint8_t tmp_u8 = 0;
@@ -1005,25 +982,13 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame)
 
 void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker)
 {
-  
-  if(last_message_received < 10) //10 seconds after last received message we assume that the car is sleeping
-  {
-    car_online_b = true;
-    //ESP_LOGI(TAG, "no message received counter: %u < 128 => online", last_message_received);
-  }
-  else
-  {
-    car_online_b = false;
-   //ESP_LOGI(TAG, "no message received counter: %u > 128 => offline", last_message_received);
-  }
-  last_message_received++;
-  if (last_message_received > 254)
-  {
-    last_message_received = 254;
-  }
-  ESP_LOGV(TAG, "last_message_received: %u", last_message_received);
+  //10 seconds after last received message we assume that the car is sleeping
+  m_is_car_online = m_last_message_received < 10;
 
-  if(OVMS_control_active_b == true && car_online_b == true) //after wakeup the other ECUs waiting for the car to be online before we send some Heartbeat messages otherwise we have some serious txerrors just before the car ist active
+  m_last_message_received = std::min(m_last_message_received + 1, 254);
+  ESP_LOGV(TAG, "m_last_message_received: %u", m_last_message_received);
+
+  if(m_is_control_active && m_is_car_online_b) //after wakeup the other ECUs waiting for the car to be online before we send some Heartbeat messages otherwise we have some serious txerrors just before the car ist active
   {
     SendOcuHeartbeat();//working
     ESP_LOGV(TAG, "Heartbeat sending triggered");
@@ -1034,17 +999,17 @@ void OvmsVehicleVWeGolf::Ticker10(uint32_t ticker)
 {
 
 //working
-  temperatureWeb_u8 = MyConfig.GetParamValueInt("xvg", "cc_temp", 21);
-  chargingOnBattery_b = (MyConfig.GetParamValueBool("xvg", "cc_onbat", false) ? 1 : 0);
-  activateMirrorFoldIn_b = (MyConfig.GetParamValueBool("xvg", "control_mirror", false) ? 1 : 0);
-  activateHornWeb_b = (MyConfig.GetParamValueBool("xvg", "control_horn", false) ? 1 : 0);
-  activateIndicatorsWeb_b = (MyConfig.GetParamValueBool("xvg", "control_indicator", false) ? 1 : 0);
-  activatePanicModeWeb_b = (MyConfig.GetParamValueBool("xvg", "control_panicMode", false) ? 1 : 0);
-  unlockCarWeb_b = (MyConfig.GetParamValueBool("xvg", "control_unlokc", false) ? 1 : 0);
-  lockCarWeb_b = (MyConfig.GetParamValueBool("xvg", "control_lock", false) ? 1 : 0);
+  m_temperature_web = MyConfig.GetParamValueInt("xvg", "cc_temp", 21);
+  m_is_charging_on_battery = (MyConfig.GetParamValueBool("xvg", "cc_onbat", false) ? 1 : 0);
+  m_mirror_fold_in_requested = (MyConfig.GetParamValueBool("xvg", "control_mirror", false) ? 1 : 0);
+  m_web_horn_requested = (MyConfig.GetParamValueBool("xvg", "control_horn", false) ? 1 : 0);
+  m_web_indicators_requested = (MyConfig.GetParamValueBool("xvg", "control_indicator", false) ? 1 : 0);
+  m_web_panic_mode_requested = (MyConfig.GetParamValueBool("xvg", "control_panicMode", false) ? 1 : 0);
+  m_web_unlock_requested = (MyConfig.GetParamValueBool("xvg", "control_unlock", false) ? 1 : 0);
+  m_web_lock_requested = (MyConfig.GetParamValueBool("xvg", "control_lock", false) ? 1 : 0);
 
 
-  ESP_LOGV(TAG, "Trigger10 cc_temp: %u °C, cc_onbat: %u, control_mirror %u, control_horn: %u, control_indicator: %u, control_panicMode: %u, control_unlock %u, control_lock %u", temperatureWeb_u8, chargingOnBattery_b, activateMirrorFoldIn_b, activateHornWeb_b, activateIndicatorsWeb_b, activatePanicModeWeb_b, unlockCarWeb_b, lockCarWeb_b);
+  ESP_LOGV(TAG, "Trigger10 cc_temp: %u °C, cc_onbat: %u, control_mirror %u, control_horn: %u, control_indicator: %u, control_panicMode: %u, control_unlock %u, control_lock %u", m_temperature_web, m_is_charging_on_battery, m_mirror_fold_in_requested, m_web_horn_requested, m_web_indicators_requested, m_web_panic_mode_requested, m_web_unlock_requested, m_web_lock_requested);
 
   MyConfig.SetParamValueBool("xvg", "control_mirror", false);
   MyConfig.SetParamValueBool("xvg", "control_horn", false);
@@ -1068,7 +1033,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup()
 //Info: eGolf300 after sending only the heartbeat message ID:0x5A7 or the first message here ID:0x17330301 one ECU with ID:0x5F5 is answering on the bus perhaps ID:0x66E and ID:0x6B5 too
 //Info: perhaps this could be used for another method to wakeup the car comf CAN perhaps changing the settings is possible without weaking up everything
 
-  if(car_online_b == false)
+  if(!m_is_car_online_b)
   {
     ESP_LOGI(TAG, "Car is sleeping we are trying to wake it up");
     // Wake up the Bus //CLI: can can3 tx extended 0x17330301 0x40 0x00 0x01 0x1F 0x00 0x00 0x00 0x00
@@ -1104,15 +1069,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup()
     ESP_LOGV(TAG, "second message send ID: data 0->7");
     ESP_LOGV(TAG, "second message send ID:0x1B000067 data %02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 
-    OVMS_control_active_b = true;
-    return Success;
-  }
-  else
-  {
+    m_is_control_active = true;
+  } else {
     ESP_LOGI(TAG, "Wakeup not necessary car was online before");
-    OVMS_control_active_b = true;
-    return Success;
   }
+  return Success;
 }
 
 
@@ -1138,16 +1099,15 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat()
 
 
   //Spiegelanklappen
-  if(activateMirrorFoldIn_b == true)
+  if(m_mirror_fold_in_requested)
   {
     tmp_u8 = 1;
     data[5] = (((uint8_t) tmp_u8) << 7) & 0x80;
-    //To trigger it by Tescommand Spiegelanklappen_u8 = 0;
     ESP_LOGI(TAG, "Spiegelanklappen");
   }
 
   //Hupen
-  if(activateHornWeb_b == true)
+  if(m_web_horn_requested)
   {
     tmp_u8 = 1;
     data[6] = (((uint8_t) tmp_u8) >> 0) & 0x1;
@@ -1155,7 +1115,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat()
   }
 
   //Door Lock //TODO there must be some vehicle specific identification send together with this signal so not working OOB
-  if(lockCarWeb_b >= 1)
+  if(m_web_lock_requested >= 1)
   {
     tmp_u8 = 1;
     data[6] = (((uint8_t) tmp_u8) << 1) & 0x2;
@@ -1163,7 +1123,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat()
   }
 
   //Door Unlock //TODO there must be some vehicle specific identification send together with this signal so not working OOB
-  if(unlockCarWeb_b == true)
+  if(m_web_unlock_requested)
   {
     tmp_u8 = 1;
     data[6] = (((uint8_t) tmp_u8) << 2) & 0x4;
@@ -1171,7 +1131,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat()
   }
 
   //Warnblinken
-  if(activateIndicatorsWeb_b == true)
+  if(m_web_indicators_requested)
   {
     tmp_u8 = 1;
     data[6] = (((uint8_t) tmp_u8) << 3) & 0x8;
@@ -1179,7 +1139,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat()
   }
 
   //Panicalarm
-  if(activatePanicModeWeb_b == true)
+  if(m_web_panic_mode_requested)
   {
     tmp_u8 = 1;
     data[6] = (((uint8_t) tmp_u8) << 4) & 0x10;
@@ -1187,6 +1147,8 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat()
   }
 
   //signature
+  // It appears like signature is always zero, so we never go in this if block
+  // If we somehow do go in, it's always a constant value
   static volatile uint16_t signature_u16 = 0;
   if(signature_u16 > 2047)
   {

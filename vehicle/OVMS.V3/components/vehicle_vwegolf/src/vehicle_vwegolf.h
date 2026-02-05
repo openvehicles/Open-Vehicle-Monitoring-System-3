@@ -40,31 +40,11 @@
 #include "ovms_webserver.h"
 // #endif
 
-// #include "ovms_mutex.h"
-// #include "ovms_semaphore.h"
-
-// #include "poll_reply_helper.h"
-// #include "vweup_utils.h"
-
-// #define DEFAULT_MODEL_YEAR 2020
-// #define CC_TEMP_MIN 15
-// #define CC_TEMP_MAX 30
-
-using namespace std;
-
-
-
-
-
-
 // Car (poll) states
 #define VWEGOLF_OFF         0           // All systems sleeping
 #define VWEGOLF_AWAKE       1           // Base systems online
 #define VWEGOLF_CHARGING    2           // Base systems online & car is charging the main battery
 #define VWEGOLF_ON          3           // All systems online & car is drivable
-
-
-
 
 class OvmsVehicleVWeGolf : public OvmsVehicle
 {
@@ -72,12 +52,10 @@ public:
   OvmsVehicleVWeGolf();
   ~OvmsVehicleVWeGolf();
 
-public:
   void IncomingFrameCan1(CAN_frame_t* p_frame);
   void IncomingFrameCan2(CAN_frame_t* p_frame);
   void IncomingFrameCan3(CAN_frame_t* p_frame);
 
-public:
   vehicle_command_t CommandWakeup() override;
   void SendOcuHeartbeat();
 
@@ -86,7 +64,7 @@ protected:
   void Ticker10(uint32_t ticker) override;
   void Ticker60(uint32_t ticker) override;
 
-  public:
+public:
   // bool IsOff() {
   //   return m_poll_state == VWEGOLF_OFF;
   // }
@@ -99,12 +77,6 @@ protected:
   // bool IsOn() {
   //   return m_poll_state == VWEGOLF_ON;
   // }
-
-public:
-  bool Testbutton;
-
-
-
 
   // --------------------------------------------------------------------------
   // Web UI Subsystem
@@ -125,7 +97,18 @@ public:
   
   public:
     void GetDashboardConfig(DashboardConfig& cfg);
-  
+private:
+  bool m_is_car_online = true;
+  uint8_t m_last_message_received = 255;
+  uint8_t m_temperature_web = 19;
+  bool m_is_charging_on_battery_b = false;
+  bool m_mirror_fold_in_requested = false;
+  bool m_web_horn_requested = false;
+  bool m_web_indicators_requested = false;
+  bool m_web_panic_mode_requested = false;
+  bool m_web_unlock_requested = false;
+  bool m_web_lock_requested = false;
+  bool m_is_control_active = false;
 };
 
 #endif //#ifndef __VEHICLE_VWEG_H__
