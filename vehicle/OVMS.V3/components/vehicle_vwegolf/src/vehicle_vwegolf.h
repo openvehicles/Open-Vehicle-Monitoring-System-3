@@ -95,13 +95,14 @@ public:
     // static void WebDispBattHealth(PageEntry_t &p, PageContext_t &c);
   #endif
   
-  public:
-    void GetDashboardConfig(DashboardConfig& cfg);
+public:
+  void GetDashboardConfig(DashboardConfig& cfg);
+
 private:
   bool m_is_car_online = true;
   uint8_t m_last_message_received = 255;
   uint8_t m_temperature_web = 19;
-  bool m_is_charging_on_battery_b = false;
+  bool m_is_charging_on_battery = false;
   bool m_mirror_fold_in_requested = false;
   bool m_web_horn_requested = false;
   bool m_web_indicators_requested = false;

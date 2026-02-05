@@ -49,38 +49,15 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf()
   RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS); //KCAN -> convenience CAN
 
   WebInit();
-}
 
-OvmsVehicleVWeGolf::~OvmsVehicleVWeGolf()
-{
-  WebDeInit();
-  ESP_LOGI(TAG, "Stop vehicle module: VW e-Golf");
-}
-
-class OvmsVehicleVWeGolfInit
-{
-  public: OvmsVehicleVWeGolfInit();
-} MyOvmsVehicleVWeGolfInit  __attribute__ ((init_priority (9000)));
-
-void vweg_OfflineCall(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-{
-  m_is_control_active = false;
-  ESP_LOGI(TAG, "Heartbeat sending should be stopped");
-}
-
-void vweg_SpiegelanklappenCall(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-{
-  ESP_LOGI(TAG, "Test command Spiegelanklappen call executed");
-}
-
-OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit()
-{
-	ESP_LOGI(TAG, "Registering Vehicle: VW e-Golf (9000)");
-	MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeGolf>("VWEG","VW e-Golf");
-
-  OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("vweg","VW-eGolf framework");
-  cmd_vweg->RegisterCommand("Offline","OVMS please go offline",vweg_OfflineCall);
-  cmd_vweg->RegisterCommand("Spiegelanklappen","VW eGolf please Klappe die Spiegel an",vweg_SpiegelanklappenCall);
+  OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg","VW-eGolf framework");
+  cmd_vweg->RegisterCommand("offline","OVMS please go offline", [this](...){
+    m_is_control_active = false;
+    ESP_LOGI(TAG, "Heartbeat sending should be stopped");
+  });
+  cmd_vweg->RegisterCommand("fold_mirrors","fold mirror toggle", [](...){
+    ESP_LOGI(TAG, "Test command fold_mirrors call executed");
+  });
   ESP_LOGI(TAG, "Commands for testing purposes registerd");
 
   StandardMetrics.ms_v_bat_current->SetValue(4.2F);
@@ -102,6 +79,24 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit()
   StdMetrics.ms_v_door_hood->SetValue(1);
 
   m_last_message_received = 255;
+}
+
+OvmsVehicleVWeGolf::~OvmsVehicleVWeGolf()
+{
+  WebDeInit();
+  MyCommandApp.UnregisterCommand("xvg");
+  ESP_LOGI(TAG, "Stop vehicle module: VW e-Golf");
+}
+
+class OvmsVehicleVWeGolfInit
+{
+  public: OvmsVehicleVWeGolfInit();
+} MyOvmsVehicleVWeGolfInit  __attribute__ ((init_priority (9000)));
+
+OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit()
+{
+	ESP_LOGI(TAG, "Registering Vehicle: VW e-Golf (9000)");
+	MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeGolf>("VWEG","VW e-Golf");
 }
 
 void OvmsVehicleVWeGolf::IncomingFrameCan1(CAN_frame_t* p_frame)
@@ -987,7 +982,7 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker)
   m_last_message_received = std::min(m_last_message_received + 1, 254);
   ESP_LOGV(TAG, "m_last_message_received: %u", m_last_message_received);
 
-  if(m_is_control_active && m_is_car_online_b) //after wakeup the other ECUs waiting for the car to be online before we send some Heartbeat messages otherwise we have some serious txerrors just before the car ist active
+  if(m_is_control_active && m_is_car_online) //after wakeup the other ECUs waiting for the car to be online before we send some Heartbeat messages otherwise we have some serious txerrors just before the car ist active
   {
     SendOcuHeartbeat();//working
     ESP_LOGV(TAG, "Heartbeat sending triggered");
@@ -1032,7 +1027,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup()
 //Info: eGolf300 after sending only the heartbeat message ID:0x5A7 or the first message here ID:0x17330301 one ECU with ID:0x5F5 is answering on the bus perhaps ID:0x66E and ID:0x6B5 too
 //Info: perhaps this could be used for another method to wakeup the car comf CAN perhaps changing the settings is possible without weaking up everything
 
-  if(!m_is_car_online_b)
+  if(!m_is_car_online)
   {
     ESP_LOGI(TAG, "Car is sleeping we are trying to wake it up");
     // Wake up the Bus //CLI: can can3 tx extended 0x17330301 0x40 0x00 0x01 0x1F 0x00 0x00 0x00 0x00
