@@ -2150,6 +2150,8 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
       else if (now >= m_lastrx_time + rxtimeout)
         {
         ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
+        SetStatus("Restarting network", false, WaitNetwork);
+        Disconnect();
         MyNetManager.RestartNetwork();
         return;
         }
