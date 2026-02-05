@@ -38,7 +38,6 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf()
 
   // init configs:
   MyConfig.RegisterParam("xvg", "VW e-Golf", true, true);
-  Testbutton = MyConfig.GetParamValueBool("xvg", "Testbutton");
 
   // Pinout source:
   // https://i.ytimg.com/vi/YXnpnKqsZME/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAKpYqTVTQjVzcyorpJt8FnLgstxw
