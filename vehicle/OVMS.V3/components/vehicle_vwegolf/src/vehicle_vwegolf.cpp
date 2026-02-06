@@ -81,14 +81,6 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit()
 	MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeGolf>("VWEG","VW e-Golf");
 }
 
-void OvmsVehicleVWeGolf::IncomingFrameCan1(CAN_frame_t* p_frame)
-{
-}
-
-void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame)
-{
-}
-
 void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame)
 {
   m_last_message_received = 0;
@@ -971,37 +963,51 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker)
   }
 }
 
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandLock(const char *pin) {
+  // not quite sure what to do with the pin argument. 
+  // Schedule the command for later
+  m_lock_requested = true;
+  return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandUnlock(const char *pin) {
+  // not quite sure what to do with the pin argument. 
+  // Schedule the command for later
+  m_unlock_requested = true;
+  return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandMirrorFoldIn() {
+  m_mirror_fold_in_requested = true;
+  return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandHorn() {
+  m_horn_requested = true;
+  return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandIndicators() {
+  m_indicators_requested = true;
+  return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandPanic() {
+  m_panic_mode_requested = true;
+  return Success;
+}
+
 void OvmsVehicleVWeGolf::Ticker10(uint32_t ticker)
 {
 
 //working
   m_temperature_web = MyConfig.GetParamValueInt("xvg", "cc_temp", 21);
   m_is_charging_on_battery = (MyConfig.GetParamValueBool("xvg", "cc_onbat", false) ? 1 : 0);
-  m_mirror_fold_in_requested = (MyConfig.GetParamValueBool("xvg", "control_mirror", false) ? 1 : 0);
-  m_web_horn_requested = (MyConfig.GetParamValueBool("xvg", "control_horn", false) ? 1 : 0);
-  m_web_indicators_requested = (MyConfig.GetParamValueBool("xvg", "control_indicator", false) ? 1 : 0);
-  m_web_panic_mode_requested = (MyConfig.GetParamValueBool("xvg", "control_panicMode", false) ? 1 : 0);
-  m_web_unlock_requested = (MyConfig.GetParamValueBool("xvg", "control_unlock", false) ? 1 : 0);
-  m_web_lock_requested = (MyConfig.GetParamValueBool("xvg", "control_lock", false) ? 1 : 0);
 
 
-  ESP_LOGV(TAG, "Trigger10 cc_temp: %u °C, cc_onbat: %u, control_mirror %u, control_horn: %u, control_indicator: %u, control_panicMode: %u, control_unlock %u, control_lock %u", m_temperature_web, m_is_charging_on_battery, m_mirror_fold_in_requested, m_web_horn_requested, m_web_indicators_requested, m_web_panic_mode_requested, m_web_unlock_requested, m_web_lock_requested);
-
-  MyConfig.SetParamValueBool("xvg", "control_mirror", false);
-  MyConfig.SetParamValueBool("xvg", "control_horn", false);
-  MyConfig.SetParamValueBool("xvg", "control_indicator", false);
-  MyConfig.SetParamValueBool("xvg", "control_panicMode", false);
-  MyConfig.SetParamValueBool("xvg", "control_unlokc", false);
-  MyConfig.SetParamValueBool("xvg", "control_lock", false);
-//working
-
+  ESP_LOGV(TAG, "Trigger10 cc_temp: %u °C, cc_onbat: %u, control_mirror %u, control_horn: %u, control_indicator: %u, control_panicMode: %u, control_unlock %u, control_lock %u", m_temperature_web, m_is_charging_on_battery, m_mirror_fold_in_requested, m_horn_requested, m_indicators_requested, m_panic_mode_requested, m_unlock_requested, m_lock_requested);
 }
 
-void OvmsVehicleVWeGolf::Ticker60(uint32_t ticker)
-{
-}
-
-  
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup()
 {
   ESP_LOGV(TAG, "Wakeup triggered");
@@ -1079,46 +1085,52 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat()
   {
     tmp_u8 = 1;
     data[5] = (((uint8_t) tmp_u8) << 7) & 0x80;
+    m_mirror_fold_in_requested = false;
     ESP_LOGI(TAG, "Spiegelanklappen");
   }
 
   //Hupen
-  if(m_web_horn_requested)
+  if(m_horn_requested)
   {
     tmp_u8 = 1;
     data[6] = (((uint8_t) tmp_u8) >> 0) & 0x1;
+    m_horn_requested = false;
     ESP_LOGI(TAG, "Hupen");
   }
 
   //Door Lock //TODO there must be some vehicle specific identification send together with this signal so not working OOB
-  if(m_web_lock_requested >= 1)
+  if(m_lock_requested >= 1)
   {
     tmp_u8 = 1;
     data[6] = (((uint8_t) tmp_u8) << 1) & 0x2;
+    m_lock_requested = false;
     ESP_LOGI(TAG, "DoorLock");
   }
 
   //Door Unlock //TODO there must be some vehicle specific identification send together with this signal so not working OOB
-  if(m_web_unlock_requested)
+  if(m_unlock_requested)
   {
     tmp_u8 = 1;
     data[6] = (((uint8_t) tmp_u8) << 2) & 0x4;
+    m_unlock_requested = false;
     ESP_LOGI(TAG, "DoorUnlock");
   }
 
   //Warnblinken
-  if(m_web_indicators_requested)
+  if(m_indicators_requested)
   {
     tmp_u8 = 1;
     data[6] = (((uint8_t) tmp_u8) << 3) & 0x8;
+    m_indicators_requested = false;
     ESP_LOGI(TAG, "Warnblinken");
   }
 
   //Panicalarm
-  if(m_web_panic_mode_requested)
+  if(m_panic_mode_requested)
   {
     tmp_u8 = 1;
     data[6] = (((uint8_t) tmp_u8) << 4) & 0x10;
+    m_panic_mode_requested = false;
     ESP_LOGI(TAG, "PanicAlarm!");
   }
 

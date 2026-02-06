@@ -52,17 +52,20 @@ public:
   OvmsVehicleVWeGolf();
   ~OvmsVehicleVWeGolf();
 
-  void IncomingFrameCan1(CAN_frame_t* p_frame);
-  void IncomingFrameCan2(CAN_frame_t* p_frame);
-  void IncomingFrameCan3(CAN_frame_t* p_frame);
+  void IncomingFrameCan3(CAN_frame_t* p_frame) override;
 
+  vehicle_command_t CommandHorn();
+  vehicle_command_t CommandPanic();
+  vehicle_command_t CommandIndicators();
+  vehicle_command_t CommandMirrorFoldIn();
+  vehicle_command_t CommandLock(const char *pin) override;
+  vehicle_command_t CommandUnlock(const char *pin) override;
   vehicle_command_t CommandWakeup() override;
   void SendOcuHeartbeat();
 
 protected:
   void Ticker1(uint32_t ticker) override;
   void Ticker10(uint32_t ticker) override;
-  void Ticker60(uint32_t ticker) override;
 
 public:
   // bool IsOff() {
@@ -104,11 +107,11 @@ private:
   uint8_t m_temperature_web = 19;
   bool m_is_charging_on_battery = false;
   bool m_mirror_fold_in_requested = false;
-  bool m_web_horn_requested = false;
-  bool m_web_indicators_requested = false;
-  bool m_web_panic_mode_requested = false;
-  bool m_web_unlock_requested = false;
-  bool m_web_lock_requested = false;
+  bool m_horn_requested = false;
+  bool m_indicators_requested = false;
+  bool m_panic_mode_requested = false;
+  bool m_unlock_requested = false;
+  bool m_lock_requested = false;
   bool m_is_control_active = false;
 };
 
