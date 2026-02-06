@@ -460,7 +460,7 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
 
   mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
     MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
-  ESP_LOGD(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
+  ESP_LOGV(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
 
 void OvmsServerV3::TransmitPriorityMetrics()
@@ -796,7 +796,7 @@ void OvmsServerV3::IncomingEvent(std::string event, void* data)
   mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
     MG_MQTT_QOS(0), "", 0);
 
-  ESP_LOGD(TAG,"Tx event %s",event.c_str());
+  ESP_LOGV(TAG,"Tx event %s",event.c_str());
   }
 
 void OvmsServerV3::RunCommand(std::string client, std::string id, std::string command)
