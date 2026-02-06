@@ -60,24 +60,6 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf()
   });
   ESP_LOGI(TAG, "Commands for testing purposes registerd");
 
-  StandardMetrics.ms_v_bat_current->SetValue(4.2F);
-  StandardMetrics.ms_v_bat_voltage->SetValue(442.0F);
-  StandardMetrics.ms_v_bat_soc->SetValue(42.0F);
-  StandardMetrics.ms_v_pos_speed->SetValue(69.0F);
-  StandardMetrics.ms_v_env_temp->SetValue(24.0F);
-  StandardMetrics.ms_v_pos_odometer->SetValue(42.0F);
-  StandardMetrics.ms_v_bat_range_est->SetValue(469.0F);
-  StdMetrics.ms_v_bat_range_ideal->SetValue(469.0F);
-  StandardMetrics.ms_v_env_cabintemp->SetValue(69.0F);
-  StandardMetrics.ms_v_bat_energy_recd->SetValue(42.0F);
-  StandardMetrics.ms_v_bat_energy_used->SetValue(42.0F);
-  StdMetrics.ms_v_door_fl->SetValue(0);
-  StdMetrics.ms_v_door_fr->SetValue(0);
-  StdMetrics.ms_v_door_rl->SetValue(1);
-  StdMetrics.ms_v_door_rr->SetValue(1);
-  StdMetrics.ms_v_door_trunk->SetValue(0);
-  StdMetrics.ms_v_door_hood->SetValue(1);
-
   m_last_message_received = 255;
 }
 
