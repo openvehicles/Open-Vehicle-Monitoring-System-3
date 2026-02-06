@@ -55,7 +55,8 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf()
     m_is_control_active = false;
     ESP_LOGI(TAG, "Heartbeat sending should be stopped");
   });
-  cmd_vweg->RegisterCommand("fold_mirrors","fold mirror toggle", [](...){
+  cmd_vweg->RegisterCommand("fold_mirrors","fold mirror toggle", [this](...){
+    CommandMirrorFoldIn();
     ESP_LOGI(TAG, "Test command fold_mirrors call executed");
   });
   ESP_LOGI(TAG, "Commands for testing purposes registerd");
