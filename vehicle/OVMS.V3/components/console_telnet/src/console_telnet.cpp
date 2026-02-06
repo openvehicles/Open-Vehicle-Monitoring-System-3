@@ -129,6 +129,12 @@ void OvmsTelnet::NetManInit(std::string event, void* data)
   ESP_LOGI(tag, "Launching Telnet Server");
   auto mglock = console->MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (!mgr)
+    {
+    ESP_LOGE(tag, "Network manager is not available");
+    return;
+    }
+
   mg_connection* nc = mg_bind(mgr, ":23", MongooseHandler);
   if (nc)
     nc->user_data = NULL;

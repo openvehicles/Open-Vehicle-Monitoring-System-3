@@ -137,7 +137,11 @@ bool OvmsNetTcpClient::Connect(std::string dest, struct mg_connect_opts opts, do
   {
   auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
-  if (mgr == NULL) return false;
+  if (!mgr)
+    {
+    ESP_LOGE(TAG, "Network manager is not available");
+    return false;
+    }
 
   m_dest = dest;
   opts.user_data = this;

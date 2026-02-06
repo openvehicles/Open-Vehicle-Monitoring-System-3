@@ -220,6 +220,12 @@ void OvmsSSH::NetManInit(std::string event, void* data)
 
   auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (!mgr)
+    {
+    ESP_LOGE(tag, "Network manager is not available");
+    return;
+    }
+
   mg_connection* nc = mg_bind(mgr, ":22", MongooseHandler);
   if (nc)
     nc->user_data = NULL;

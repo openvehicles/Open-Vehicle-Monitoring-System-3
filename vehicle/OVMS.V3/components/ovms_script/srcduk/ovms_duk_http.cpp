@@ -227,9 +227,18 @@ DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
 bool DuktapeHTTPRequest::StartRequest(duk_context *ctx /*=NULL*/)
   {
   // create connection:
-  auto mglock = MongooseLock();
   m_mgconn = NULL;
+  auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (!mgr)
+    {
+    mglock.Unlock();
+    ESP_LOGE(TAG, "DuktapeHTTPRequest: network manager not available");
+    m_error = "Network manager not available";
+    CallMethod(ctx, "fail");
+    return false;
+    }
+
   struct mg_connect_opts opts = {};
   opts.user_data = this;
   const char* err;
@@ -240,6 +249,7 @@ bool DuktapeHTTPRequest::StartRequest(duk_context *ctx /*=NULL*/)
     #if MG_ENABLE_SSL
       opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     #else
+      mglock.Unlock();
       m_error = "SSL support disabled";
       ESP_LOGD(TAG, "DuktapeHTTPRequest: connect to '%s' failed: %s", m_url.c_str(), m_error.c_str());
       CallMethod(ctx, "fail");
@@ -252,6 +262,7 @@ bool DuktapeHTTPRequest::StartRequest(duk_context *ctx /*=NULL*/)
 
   if (!m_mgconn)
     {
+    mglock.Unlock();
     ESP_LOGD(TAG, "DuktapeHTTPRequest: connect to '%s' failed: %s", m_url.c_str(), err);
     m_error = (err && *err) ? err : "unknown";
     CallMethod(ctx, "fail");

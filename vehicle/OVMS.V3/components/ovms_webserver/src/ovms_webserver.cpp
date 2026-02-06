@@ -162,6 +162,12 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
 
   auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (!mgr)
+    {
+    ESP_LOGE(TAG, "Network manager is not available");
+    m_running = false;
+    return;
+    }
 
   char *error_string;
   struct mg_bind_opts bind_opts = {};
@@ -735,8 +741,14 @@ void MgHandler::RequestPoll()
     HandleEvent(MG_EV_POLL, NULL);
   } else {
     auto mglock = MongooseLock();
+    struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+    if (!mgr)
+      {
+      ESP_LOGE(TAG, "Network manager is not available");
+      return;
+      }
     MgHandler* origin = this;
-    mg_broadcast(MyNetManager.GetMongooseMgr(), HandlePoll, &origin, sizeof(origin));
+    mg_broadcast(mgr, HandlePoll, &origin, sizeof(origin));
   }
 #endif // MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
 }

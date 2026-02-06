@@ -899,6 +899,13 @@ void OvmsServerV2::Connect()
   SetStatus("Connecting...", false, Connecting);
   auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (!mgr)
+    {
+    SetStatus("Error: network manager not available", true, WaitReconnect);
+    m_connretry = 20; // Try again in 20 seconds...
+    return;
+    }
+
   struct mg_connect_opts opts;
   const char* err;
   memset(&opts, 0, sizeof(opts));

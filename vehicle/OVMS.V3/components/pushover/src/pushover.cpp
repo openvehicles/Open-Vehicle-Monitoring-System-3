@@ -361,7 +361,17 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
 
   m_reply = "";
   sendReplyNotification = replyNotification;
+
+  auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (!mgr)
+    {
+    ESP_LOGE(TAG, "Network manager is not available");
+    delete http;
+    delete post;
+    return false;
+    }
+
   struct mg_connect_opts opts;
   const char* err;
   memset(&opts, 0, sizeof(opts));
@@ -369,7 +379,6 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
 
   opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
 
-  auto mglock = MongooseLock();
   if ((m_mgconn = mg_connect_opt(mgr, _server.c_str(), PushoverMongooseCallback, opts)) == NULL)
     {
     m_mgconn_mutex.Unlock();
