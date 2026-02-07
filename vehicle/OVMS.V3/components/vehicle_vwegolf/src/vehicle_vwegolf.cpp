@@ -878,46 +878,15 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame)
       }
     case 0x3C0: //clamp status received
      {
-      tmp_u8 = 
-      ((uint8_t) (d[2] & 0x1) << 0) |
-      0; // KL_S Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-      tmp_u8 = (uint8_t) tmp_u8;
-
-      tmp_u8 = 
-      ((uint8_t) (d[2] & 0x2) >> 1) |
-      0; // KL_15 Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-      tmp_u8 = (uint8_t) tmp_u8;
-
-      tmp_u8 = 
-      ((uint8_t) (d[2] & 0x4) >> 2) |
-      0; // KL_X Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-      tmp_u8 = (uint8_t) tmp_u8;
-
-      tmp_u8 = 
-      ((uint8_t) (d[2] & 0x8) >> 3) |
-      0; // KL_50 Startanforderung Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-      tmp_u8 = (uint8_t) tmp_u8;
-
-      tmp_u8 = 
-      ((uint8_t) (d[2] & 0x10) >> 4) |
-      0; // Remotestart Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-      tmp_u8 = (uint8_t) tmp_u8;
-
-      tmp_u8 = 
-      ((uint8_t) (d[2] & 0x20) >> 5) |
-      0; // KL_Infotainment Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-      tmp_u8 = (uint8_t) tmp_u8;
-
-      tmp_u8 = 
-      ((uint8_t) (d[2] & 0x40) >> 6) |
-      0; // Remotestart_KL15_Anf Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-      tmp_u8 = (uint8_t) tmp_u8;
-
-      tmp_u8 = 
-      ((uint8_t) (d[2] & 0x80) >> 7) |
-      0; // Remotestart_Motor_Start Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-      tmp_u8 = (uint8_t) tmp_u8;
-
+      // the following are from d[2]
+      // KL_S Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+      // KL_15 Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+      // KL_X Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+      // KL_50 Startanforderung Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+      // Remotestart Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+      // KL_Infotainment Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+      // Remotestart_KL15_Anf Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+      // Remotestart_Motor_Start Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
      break;
      }
     case 0x6B4: //VIN
@@ -965,15 +934,19 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker)
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandLock(const char *pin) {
-  // not quite sure what to do with the pin argument. 
-  // Schedule the command for later
+  if (!PinCheck(pin)) {
+    ESP_LOGW(TAG, "PinCheck failed in CommandLock");
+    return Fail;
+  }
   m_lock_requested = true;
   return Success;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandUnlock(const char *pin) {
-  // not quite sure what to do with the pin argument. 
-  // Schedule the command for later
+  if (!PinCheck(pin)) {
+    ESP_LOGW(TAG, "PinCheck failed in CommandUnlock");
+    return Fail;
+  }
   m_unlock_requested = true;
   return Success;
 }
