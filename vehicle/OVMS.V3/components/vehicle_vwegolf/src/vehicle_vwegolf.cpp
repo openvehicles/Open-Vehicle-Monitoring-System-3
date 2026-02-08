@@ -975,11 +975,11 @@ void OvmsVehicleVWeGolf::Ticker10(uint32_t ticker)
 {
 
 //working
-  m_temperature_web = MyConfig.GetParamValueInt("xvg", "cc_temp", 21);
-  m_is_charging_on_battery = (MyConfig.GetParamValueBool("xvg", "cc_onbat", false) ? 1 : 0);
+  m_climate_control_temp = MyConfig.GetParamValueInt("xvg", "cc_temp", 21);
+  m_climate_control_on_battery = (MyConfig.GetParamValueBool("xvg", "cc_onbat", false) ? 1 : 0);
 
 
-  ESP_LOGV(TAG, "Trigger10 cc_temp: %u °C, cc_onbat: %u, control_mirror %u, control_horn: %u, control_indicator: %u, control_panicMode: %u, control_unlock %u, control_lock %u", m_temperature_web, m_is_charging_on_battery, m_mirror_fold_in_requested, m_horn_requested, m_indicators_requested, m_panic_mode_requested, m_unlock_requested, m_lock_requested);
+  ESP_LOGV(TAG, "Trigger10 cc_temp: %u °C, cc_onbat: %u, control_mirror %u, control_horn: %u, control_indicator: %u, control_panicMode: %u, control_unlock %u, control_lock %u", m_climate_control_temp, m_climate_control_on_battery, m_mirror_fold_in_requested, m_horn_requested, m_indicators_requested, m_panic_mode_requested, m_unlock_requested, m_lock_requested);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup()

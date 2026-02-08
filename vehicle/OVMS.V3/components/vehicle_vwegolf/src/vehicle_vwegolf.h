@@ -67,45 +67,11 @@ protected:
   void Ticker1(uint32_t ticker) override;
   void Ticker10(uint32_t ticker) override;
 
-public:
-  // bool IsOff() {
-  //   return m_poll_state == VWEGOLF_OFF;
-  // }
-  // bool IsAwake() {
-  //   return m_poll_state == VWEGOLF_AWAKE;
-  // }
-  // bool IsCharging() {
-  //   return m_poll_state == VWEGOLF_CHARGING;
-  // }
-  // bool IsOn() {
-  //   return m_poll_state == VWEGOLF_ON;
-  // }
-
-  // --------------------------------------------------------------------------
-  // Web UI Subsystem
-  //  - implementation: vweup_web.(h,cpp)
-  //
-
-  #ifdef CONFIG_OVMS_COMP_WEBSERVER
-  protected:
-    void WebInit();
-    void WebDeInit();
-  
-    // static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
-    static void WebCfgClimate(PageEntry_t &p, PageContext_t &c);
-    static void WebCfgTesting(PageEntry_t &p, PageContext_t &c);
-    static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
-    // static void WebDispBattHealth(PageEntry_t &p, PageContext_t &c);
-  #endif
-  
-public:
-  void GetDashboardConfig(DashboardConfig& cfg);
-
 private:
   bool m_is_car_online = true;
   uint8_t m_last_message_received = 255;
-  uint8_t m_temperature_web = 19;
-  bool m_is_charging_on_battery = false;
+  uint8_t m_climate_control_temp = 19;
+  bool m_climate_control_on_battery = false;
   bool m_mirror_fold_in_requested = false;
   bool m_horn_requested = false;
   bool m_indicators_requested = false;
