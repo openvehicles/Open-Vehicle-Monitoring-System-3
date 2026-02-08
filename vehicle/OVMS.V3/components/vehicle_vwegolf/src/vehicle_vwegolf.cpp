@@ -3,9 +3,9 @@
 ;	 Subproject:    Integrate VW e-Golf
 ;
 ;    Changes:
-;    Sept 6, 2023: stub made
+;    February 7 2026: Initial Implementation
 ;
-;    (C) 2023  Jared Greco <jaredgreco@gmail.com>
+;    (C) 2026  Erick Fuentes <fuentes.erick@gmail.com>
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
