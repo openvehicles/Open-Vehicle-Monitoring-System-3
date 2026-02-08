@@ -79,7 +79,7 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit()
 	MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeGolf>("VWEG","VW e-Golf");
 }
 
-void OvmsVehicleVWeGolf::IncomingFrameCan3(const CAN_frame_t* p_frame)
+void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame)
 {
   m_last_message_received = 0;
   uint8_t *d = p_frame->data.u8;

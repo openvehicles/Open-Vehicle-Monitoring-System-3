@@ -48,7 +48,7 @@ public:
   OvmsVehicleVWeGolf();
   ~OvmsVehicleVWeGolf();
 
-  void IncomingFrameCan3(const CAN_frame_t* p_frame) override;
+  void IncomingFrameCan3(CAN_frame_t* p_frame) override;
 
   vehicle_command_t CommandHorn();
   vehicle_command_t CommandPanic();
