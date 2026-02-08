@@ -142,6 +142,8 @@ protected:
     uint8_t b5, uint8_t b6, uint8_t mode );
 #endif
 
+  bool m_off_ping;
+
 public:
   bool SetFeature(int key, const char *value) override;
   const std::string GetFeature(int key) override;

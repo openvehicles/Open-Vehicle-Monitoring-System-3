@@ -280,6 +280,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_checklock_notify = 0;
   m_aux_is_charging = false;
   m_aux_is_low = false;
+  m_off_ping = false;
 
   memset( kia_send_can.byte, 0, sizeof(kia_send_can.byte));
 
