@@ -29,52 +29,50 @@
 #include <atomic>
 
 #include "can.h"
+#include "ovms_command.h"
+#include "ovms_config.h"
+#include "ovms_log.h"
+#include "ovms_metrics.h"
 #include "vehicle.h"
 
-#include "ovms_log.h"
-#include "ovms_config.h"
-#include "ovms_metrics.h"
-#include "ovms_command.h"
-
 // Car (poll) states
-#define VWEGOLF_OFF         0           // All systems sleeping
-#define VWEGOLF_AWAKE       1           // Base systems online
-#define VWEGOLF_CHARGING    2           // Base systems online & car is charging the main battery
-#define VWEGOLF_ON          3           // All systems online & car is drivable
+#define VWEGOLF_OFF 0       // All systems sleeping
+#define VWEGOLF_AWAKE 1     // Base systems online
+#define VWEGOLF_CHARGING 2  // Base systems online & car is charging the main battery
+#define VWEGOLF_ON 3        // All systems online & car is drivable
 
-class OvmsVehicleVWeGolf : public OvmsVehicle
-{
-public:
-  OvmsVehicleVWeGolf();
-  ~OvmsVehicleVWeGolf();
+class OvmsVehicleVWeGolf : public OvmsVehicle {
+ public:
+    OvmsVehicleVWeGolf();
+    ~OvmsVehicleVWeGolf();
 
-  void IncomingFrameCan3(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan3(CAN_frame_t *p_frame) override;
 
-  vehicle_command_t CommandHorn();
-  vehicle_command_t CommandPanic();
-  vehicle_command_t CommandIndicators();
-  vehicle_command_t CommandMirrorFoldIn();
-  vehicle_command_t CommandLock(const char *pin) override;
-  vehicle_command_t CommandUnlock(const char *pin) override;
-  vehicle_command_t CommandWakeup() override;
-  void SendOcuHeartbeat();
+    vehicle_command_t CommandHorn();
+    vehicle_command_t CommandPanic();
+    vehicle_command_t CommandIndicators();
+    vehicle_command_t CommandMirrorFoldIn();
+    vehicle_command_t CommandLock(const char *pin) override;
+    vehicle_command_t CommandUnlock(const char *pin) override;
+    vehicle_command_t CommandWakeup() override;
+    void SendOcuHeartbeat();
 
-protected:
-  void Ticker1(uint32_t ticker) override;
-  void Ticker10(uint32_t ticker) override;
+ protected:
+    void Ticker1(uint32_t ticker) override;
+    void Ticker10(uint32_t ticker) override;
 
-private:
-  bool m_is_car_online = true;
-  uint8_t m_last_message_received = 255;
-  uint8_t m_climate_control_temp = 19;
-  bool m_climate_control_on_battery = false;
-  bool m_mirror_fold_in_requested = false;
-  bool m_horn_requested = false;
-  bool m_indicators_requested = false;
-  bool m_panic_mode_requested = false;
-  bool m_unlock_requested = false;
-  bool m_lock_requested = false;
-  bool m_is_control_active = false;
+ private:
+    bool m_is_car_online = true;
+    uint8_t m_last_message_received = 255;
+    uint8_t m_climate_control_temp = 19;
+    bool m_climate_control_on_battery = false;
+    bool m_mirror_fold_in_requested = false;
+    bool m_horn_requested = false;
+    bool m_indicators_requested = false;
+    bool m_panic_mode_requested = false;
+    bool m_unlock_requested = false;
+    bool m_lock_requested = false;
+    bool m_is_control_active = false;
 };
 
-#endif //#ifndef __VEHICLE_VWEG_H__
+#endif  // #ifndef __VEHICLE_VWEG_H__
