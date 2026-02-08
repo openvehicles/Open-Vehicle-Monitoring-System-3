@@ -173,11 +173,27 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   dto->RegisterDuktapeFunction(DukOvmsVehicleStopCooldown, 0, "StopCooldown");
   dto->RegisterDuktapeFunction(DukOvmsVehicleObdRequest, 1, "ObdRequest");
 
-  DuktapeObjectRegistration* dto_aux= new DuktapeObjectRegistration("OvmsAuxMonitor");;
+  DuktapeObjectRegistration* dto_aux= new DuktapeObjectRegistration("OvmsAuxMonitor");
   dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonEnable, DUK_VARARGS /*0..2*/, "Enable");
   dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonDisable, 0, "Disable");
   dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonStatus, 0, "Status");
   dto->RegisterDuktapeObject(dto_aux, "AuxMon");
+
+  DuktapeObjectRegistration* dto_bms= new DuktapeObjectRegistration("OvmsBms");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellArrangement, 2, "VoltageSetCellArrangement");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellDefaultThresholds, DUK_VARARGS, "VoltageSetCellDefaultThresholds");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellLimits, 2, "VoltageSetCellLimits");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCell, 2, "VoltageSetCell");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageResetCells, DUK_VARARGS, "VoltageResetCells");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltagesRestartCell, 0, "VoltagesRestartCell");
+
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellArrangement, 2, "TemperatureSetCellArrangement");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellDefaultThresholds,  2, "TemperatureSetCellDefaultThresholds");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellLimits, 2, "TemperatureSetCellLimits");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCell, 2, "TemperatureSetCell");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureResetCells, DUK_VARARGS, "TemperatureResetCells");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureRestartCells, 0, "TemperatureRestartCells");
+  dto->RegisterDuktapeObject(dto_bms, "BMS");
 
   MyDuktape.RegisterDuktapeObject(dto);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE

@@ -1,7 +1,24 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-- DukTape: Support for BMS Management and arrays as BMS/Scripted Poller metric pseudo targets.
+- DBC: Support for BMS Management and arrays as DBC (and Scripted Poller) metric pseudo targets.
+    bms.v.r.0   -- Reset voltage BMS metrics and store BMS voltage[0]
+    bms.v.1     -- Store BMS voltage[1]
+    bms.t.1     -- Store BMS temperature[1]
+- DukTape: Support for BMS Management
+  Add OvmsVehicle.BMS methods:
+    VoltageSetCellArrangement
+    VoltageSetCellDefaultThresholds
+    VoltageSetCellLimits
+    VoltageSetCell
+    VoltageResetCells
+    VoltagesRestartCell
+    TemperatureSetCellArrangement
+    TemperatureSetCellDefaultThresholds
+    TemperatureSetCellLimits
+    TemperatureSetCell
+    TemperatureResetCells
+    TemperatureRestartCells
 
 2026-05-17 MB   3.3.006  OTA release
 - VW e-Up: extended battery health / aging info (with web UI integration): total battery age,
