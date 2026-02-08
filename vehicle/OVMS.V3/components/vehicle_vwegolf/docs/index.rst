@@ -25,14 +25,14 @@ Splicing for OMVS connection is done at one of the connectors, by pinout describ
 === ==== ================================
 DB9 J533 Meaning
 === ==== ================================
-3   11  Ground
-2   9   OBD port CAN Low
-7   19  OBD port CAN High
-4   6   Powertrain CAN Low
-5   16  Powertrain CAN High
-6   5   Comfort CAN Low
-8   15  Comfort CAN High
-9   1   +12V Power
+3   11   Ground
+2   9    OBD port CAN Low
+7   19   OBD port CAN High
+4   6    Powertrain CAN Low
+5   16   Powertrain CAN High
+6   5    Comfort CAN Low
+8   15   Comfort CAN High
+9   1    +12V Power
 === ==== ================================
 
 .. image:: adapter.jpg
@@ -46,7 +46,7 @@ Installation is pretty quick, as it does not require removal of any trim pieces.
 Gateway module is located under steering wheel, above pedals. 
 To install adapter, you must position yourself in way, that you are laying face up, looking up at the bottom of the dashboard, from there you should be able to see Gateway module with red connector.
 
-.. image:: installing_position.png
+.. image:: installing_position.jpg
     :width: 480px
     
 .. image:: gateway.jpg
