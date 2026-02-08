@@ -48,8 +48,6 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf()
   //RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS); //FCAN -> Powertrain CAN
   RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS); //KCAN -> convenience CAN
 
-  WebInit();
-
   OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg","VW-eGolf framework");
   cmd_vweg->RegisterCommand("offline","OVMS please go offline", [this](...){
     m_is_control_active = false;
@@ -66,7 +64,6 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf()
 
 OvmsVehicleVWeGolf::~OvmsVehicleVWeGolf()
 {
-  WebDeInit();
   MyCommandApp.UnregisterCommand("xvg");
   ESP_LOGI(TAG, "Stop vehicle module: VW e-Golf");
 }
@@ -82,7 +79,7 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit()
 	MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeGolf>("VWEG","VW e-Golf");
 }
 
-void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicleVWeGolf::IncomingFrameCan3(const CAN_frame_t* p_frame)
 {
   m_last_message_received = 0;
   uint8_t *d = p_frame->data.u8;

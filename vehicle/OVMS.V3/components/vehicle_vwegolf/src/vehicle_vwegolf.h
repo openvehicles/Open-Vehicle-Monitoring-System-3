@@ -36,10 +36,6 @@
 #include "ovms_metrics.h"
 #include "ovms_command.h"
 
-// #ifdef CONFIG_OVMS_COMP_WEBSERVER
-#include "ovms_webserver.h"
-// #endif
-
 // Car (poll) states
 #define VWEGOLF_OFF         0           // All systems sleeping
 #define VWEGOLF_AWAKE       1           // Base systems online
@@ -52,7 +48,7 @@ public:
   OvmsVehicleVWeGolf();
   ~OvmsVehicleVWeGolf();
 
-  void IncomingFrameCan3(CAN_frame_t* p_frame) override;
+  void IncomingFrameCan3(const CAN_frame_t* p_frame) override;
 
   vehicle_command_t CommandHorn();
   vehicle_command_t CommandPanic();
