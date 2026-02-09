@@ -209,7 +209,6 @@ void OvmsVehicleKiaNiroEv::IncomingFull_CM(uint16_t type, uint16_t pid, const st
 	}
 }
 
-
 void OvmsVehicleKiaNiroEv::IncomingFull_AirCon(uint16_t type, uint16_t pid, const std::string &data)
 {
 	switch (pid)
@@ -432,6 +431,8 @@ void OvmsVehicleKiaNiroEv::IncomingFull_MCU(uint16_t type, uint16_t pid, const s
 void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const std::string &data)
 {
 	uint32_t value;
+	std::string cells;
+	float current;
 	switch (pid)
 	{
 		// 3 7 7 7 7 7 7 7 7
@@ -467,102 +468,99 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 
 
 		if (get_buff_int_be<1>(data, 4, value))
-			m_b_bms_soc->SetValue((float)value / 2.0);
+			m_b_bms_soc->SetValue(value / 2.0);
 
-		// MAx regen: ((CAN_BYTE(1)<<8) + CAN_BYTE(2))/100
-		if (get_buff_int_be<2>(data, 5, bVal))
-			ESP_LOGD(TAG, "C-Power: %f", ((float)bVal / 100.0));
-		// m_c_power->SetValue((float)bVal / 100.0, kW);
-
-		// m_c_power->SetValue( (float)CAN_UINT(2)/100.0, kW);
+		if (get_uint_buff_be<2>(data, 5, value)){
+			m_c_power->SetValue((float)value / 100.0, kW);
+			ESP_LOGD(TAG, "Bat c-power: %f ", (float)value / 100.0);
+		}
 		if (get_buff_int_be<1>(data, 9, value))
 		{
 			ESP_LOGD(TAG, "BMS Relay: %d", get_bit<0>(value));
 			m_b_bms_relay->SetValue(get_bit<0>(value));
 		}
 
-		float current = 0;
+		current = 0;
         int32_t signedValue;
         if (!get_buff_int_be<2>(data, 10, signedValue )) {
-        	ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Current: Bad Buffer");
+			ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Current: Bad Buffer");
         }
         else {
-			ESP_LOGD(TAG, "Bat Amp: %f", ((float)bVal / 10.0));
+			ESP_LOGD(TAG, "Bat Amp: %f", ((float)signedValue / 10.0));
         	current = (float)signedValue / 10.0;
         	StdMetrics.ms_v_bat_current->SetValue(current, Amps);
         }
 
         if (!get_uint_buff_be<2>(data, 12, value )) {
-          	ESP_LOGE(TAGP, "IoniqISOTP.BMC: BMS Voltage: Bad Buffer");
+          	ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Voltage: Bad Buffer");
         } else {
-			ESP_LOGD(TAG, "Bat Volt: %f", ((float)bVal / 10.0));
+			ESP_LOGD(TAG, "Bat Volt: %f", ((float)value / 10.0));
 			float voltage = (float)value / 10.0;
 			StdMetrics.ms_v_bat_voltage->SetValue(voltage, Volts);
 
 			if (current != 0) {
-				m_c_power->SetValue( current * voltage, Watts);
+				ESP_LOGD(TAG, "Bat c-power: %f (old)", (float)(current * voltage));
 			}
 
-			if (current < 0) {
+			/* if (current < 0) {
 				StdMetrics.ms_v_charge_power->SetValue(-current * voltage, Watts);
 			} else {
 				StdMetrics.ms_v_charge_power->Clear();
-			}
+			} */
         }
 
-		if (get_buff_int_be<1>(data, 14, value))
-			ESP_LOGD(TAG, "Bat temp max: %d", value);
-		// m_b_max_temperature->SetValue(value);
-
-		if (get_buff_int_be<1>(data, 15, value))
-			ESP_LOGD(TAG, "Bat temp min: %d", value);
-		// m_b_min_temperature->SetValue(value);
-
-		BmsRestartCellTemperatures();
-		if (get_buff_int_be<1>(data, 16, value))
-			ESP_LOGD(TAG, "Bat Cell temp 0: %d", value);
-		// BmsSetCellTemperature(0, value);
-
-		if (get_buff_int_be<1>(data, 16, value))
-			ESP_LOGD(TAG, "Bat overall? temp: %d", value);
-		// StdMetrics.ms_v_bat_temp->SetValue((float)value, Celcius); // TODO Should we use Min temp or Max Temp?
-
-		if (get_buff_int_be<1>(data, 17, value))
-			BmsSetCellTemperature(1, value);
-
-		if (get_buff_int_be<1>(data, 18, value))
-			BmsSetCellTemperature(2, value);
-
-		if (get_buff_int_be<1>(data, 19, value))
-			BmsSetCellTemperature(3, value);
-
-		if (get_buff_int_be<1>(data, 22, value))
-			ESP_LOGD(TAG, "Bat Inlet? temp: %d", value);
-		// m_b_inlet_temperature->SetValue(value);
-
-		if (get_buff_int_be<1>(data, 23, value))
-			ESP_LOGD(TAG, "Bat Max V: %d", value);
-		// m_b_cell_volt_max->SetValue((float)value / 50.0, Volts);
-
-		// This doesn't make sense given 879:0
-		if (get_buff_int_be<1>(data, 18, value))
-			ESP_LOGD(TAG, "Bat Max(?) V: %d", value);
-		// StandardMetrics.ms_v_bat_cell_vmax->SetValue((float)value / 50.0, Volts);
-
-		if (get_buff_int_be<1>(data, 24, value))
-			ESP_LOGD(TAG, "Number of cells at max: %d", value);
-		// m_b_cell_volt_max_no->SetValue(value);
-
-		if (get_buff_int_be<1>(data, 25, value))
-		{
-			ESP_LOGD(TAG, "Bat Min V: %d", value);
-			// m_b_cell_volt_min->SetValue((float)value / 50.0, Volts);
-			// StandardMetrics.ms_v_bat_cell_vmin->SetValue((float)value / 50.0, Volts);
+		if (get_buff_int_be<1>(data, 14, value)){
+			StdMetrics.ms_v_bat_pack_tmax->SetValue(value);
+			m_b_max_temperature->SetValue(value);
 		}
 
-		if (get_buff_int_be<1>(data, 26, value))
-			ESP_LOGD(TAG, "Number of cells at min: %d", value);
-		// m_b_cell_volt_min_no->SetValue(value);
+		if (get_buff_int_be<1>(data, 15, value)){
+			StdMetrics.ms_v_bat_pack_tmin->SetValue((float)value);
+			m_b_min_temperature->SetValue(value);
+		}
+
+		BmsRestartCellTemperatures();
+        int32_t temp;
+		if (get_buff_int_be<1>(data, 16, temp))
+			BmsSetCellTemperature(0, temp);
+
+		if (get_buff_int_be<1>(data, 16, temp))
+			StdMetrics.ms_v_bat_temp->SetValue(temp, Celcius); // TODO Should we use Min temp or Max Temp?
+
+		if (get_buff_int_be<1>(data, 17, temp))
+			BmsSetCellTemperature(1, temp);
+
+		if (get_buff_int_be<1>(data, 18, temp))
+			BmsSetCellTemperature(2, temp);
+
+		if (get_buff_int_be<1>(data, 19, temp))
+			BmsSetCellTemperature(3, temp);
+
+		if (get_buff_int_be<1>(data, 22, value))
+			m_b_inlet_temperature->SetValue(value);
+		// ESP_LOGD(TAG, "Bat Inlet? temp: %d", value);
+
+		if (get_uint_buff_be<1>(data, 23, value)){
+			StdMetrics.ms_v_bat_cell_vmax->SetValue((float)value / 50.0, Volts);
+			m_b_cell_volt_max->SetValue((float)value / 50.0, Volts);
+		}
+
+		// This doesn't make sense given 879:0
+		if (get_uint_buff_be<1>(data, 18, value)){
+			m_b_cell_volt_max_no->SetValue(value);
+		}
+		
+		if (get_uint_buff_be<1>(data, 24, value))
+			m_b_cell_volt_min_no->SetValue(value);
+
+		if (get_uint_buff_be<1>(data, 25, value)){
+			StdMetrics.ms_v_bat_cell_vmin->SetValue((float)value / 50.0, Volts);
+			m_b_cell_volt_min->SetValue((float)value / 50.0, Volts);
+		}
+
+		if (get_uint_buff_be<1>(data, 26, value))
+			m_b_cell_volt_min_no->SetValue(value);
+		// ESP_LOGD(TAG, "Number of cells at min: %d", value);
 
 		// TODO Battery fan feedback
 		/* if (get_buff_int_be<1>(data, 27, value))
@@ -572,36 +570,31 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 		if (get_buff_int_be<1>(data, 28, value))
 				kn_charge_bits.FanStatus = value & 0xF; */
 
-		if (get_uint_buff_be<4>(data, 30, bVal)){
-          	StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(bVal * 0.1f, AmpHours);
-			ESP_LOGD(TAG, "CCC: %d", bVal);
+		if (get_uint_buff_be<4>(data, 34, value)){
+			StdMetrics.ms_v_bat_energy_recd_total->SetValue(value*100, WattHours);
 		}
 
-		if (get_uint_buff_be<4>(data, 34, bVal)){
-			StdMetrics.ms_v_bat_coulomb_used_total->SetValue(bVal/10, AmpHours);
-			ESP_LOGD(TAG, "CDC: %d", bVal);
+		if (get_uint_buff_be<4>(data, 30, value)){
+			StdMetrics.ms_v_bat_energy_used_total->SetValue(value*100, WattHours);
 		}
 
-		if (get_uint_buff_be<4>(data, 38, bVal)){
-			StdMetrics.ms_v_bat_energy_recd_total->SetValue(bVal*100, WattHours);
-			kia_battery_cum_charge = bVal;
-			ESP_LOGD(TAG, "CCP: %d", bVal);
+		if (get_uint_buff_be<4>(data, 42, value)){
+			StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(value * 0.1f, AmpHours);
+			kia_battery_cum_charge = value;
 		}
 
-		if (get_uint_buff_be<4>(data, 42, bVal)){
-          	StdMetrics.ms_v_bat_energy_used_total->SetValue(value*100, WattHours);
-			ESP_LOGD(TAG, "CDP: %d", bVal);
-			kia_battery_cum_discharge = bVal;
+		if (get_uint_buff_be<4>(data, 38, value)){
+			StdMetrics.ms_v_bat_coulomb_used_total->SetValue(value/10, AmpHours);
+			// kia_battery_cum_discharge = value;
 		}
 
-		if (get_uint_buff_be<4>(data, 46, bVal)){
+		if (get_uint_buff_be<4>(data, 46, value)){
 			// this could be a standard metric
-			kia_battery_cum_op_time = (bVal / 3600);
+			kia_battery_cum_op_time = (value / 3600);
 		}
 
 		if (get_buff_int_be<1>(data, 50, value))
 		{
-			ESP_LOGD(TAG, "BMS Ignition: %d", value);
 			m_b_bms_ignition->SetValue(get_bit<2>(value));
 		}
 
@@ -609,33 +602,30 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 
 	// 3 7 7 7 7 5
 	case 0x0102:
+		BmsRestartCellVoltages();
 	// 3 7 7 7 7 5
 	case 0x0103:
 	// 3 7 7 7 7 7 5
-	case 0x0104:65
+	case 0x0104:
 		int8_t count;
 		int8_t offset;
-		if (pid == 0x0102)
-		{
-			BmsRestartCellVoltages();
-		}
 
 		count = pid != 0x104 ? 36 : 28;
-		offset = ((pid - 0x102) * 30);
-
-		for (int8_t base = 4; base > count; base++)
+		offset = ((pid - 0x102) * 32);
+		for (int32_t base = 4; base < count; base++)
 		{
-			if (!get_buff_int_be<1>(data, base, value))
+            int32_t cellNo = (base - 4) + offset;
+			if (!get_uint_buff_be<1>(data, base, value))
 			{
-				ESP_LOGE(TAG, "IoniqISOTP.Battery Cell %d", (base + offset));
+				ESP_LOGE(TAG, "IoniqISOTP.Battery Cell %d", cellNo);
 			}
 			else
 			{
-				// BmsSetCellVoltage((uint8_t)(base + offset), (float)value * 2);
-				ESP_LOGD(TAG, " Cell %d: %f", (base + offset), (float)value * 2);
+				float voltage = (float)value * 0.02;
+				BmsSetCellVoltage(cellNo, voltage);
+				ESP_LOGV(TAG, "IoniqISOTP.Battery Cell %d: %f", cellNo, voltage);
 			}
 		}
-		// 104-32:4
 		break;
 
 	// 3 7 7 7 7 7 5
@@ -644,29 +634,26 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 		// if (get_buff_int_be<1>(data, 23, value))
 		//	m_b_heat_1_temperature->SetValue(value);
 
-		if (get_uint_buff_be<2>(data, 25, bVal))
-			ESP_LOGD(TAG, "SOH: %f", ((float)bVal / 10.0));
-		// StdMetrics.ms_v_bat_soh->SetValue((float)bVal / 10.0);
+		if (get_uint_buff_be<2>(data, 25, value))
+			StdMetrics.ms_v_bat_soh->SetValue((float)value / 10.0);
 
 		/* if (get_buff_int_be<1>(data, 27, value))
 			m_b_cell_det_max_no->SetValue(value);
 
-		if (get_uint_buff_be<2>(data, 28, bVal))
-			m_b_cell_det_min->SetValue((float)bVal / 10.0);
+		if (get_uint_buff_be<2>(data, 28, value))
+			m_b_cell_det_min->SetValue((float)value / 10.0);
 
 		if (get_buff_int_be<1>(data, 30, value))
 			m_b_cell_det_min_no->SetValue(value); */
 
-		if (get_buff_int_be<1>(data, 31, value))
-			StdMetrics.ms_v_bat_soc->SetValue(value / 2.0);
+		if (!get_uint_buff_be<1>(data, 31, value)) {
+          ESP_LOGE(TAG, "IoniqISOTP.BMC: SOC: Bad Buffer");
+        }
+        else {
+          ESP_LOGD(TAG, "IoniqISOTP.BMC: SOC: %f", value / 2.0);
+          StdMetrics.ms_v_bat_soc->SetValue(value / 2.0, Percentage);
+        }
 
-		if (get_buff_int_be<1>(data, 32, value))
-			ESP_LOGD(TAG, "Cell 96: %f", (float)value * 0.02);
-		// BmsSetCellVoltage(96, (float)value * 0.02);
-
-		if (get_buff_int_be<1>(data, 33, value))
-			ESP_LOGD(TAG, "Cell 97: %f", (float)value * 0.02);
-		// BmsSetCellVoltage(97, (float)value * 0.02);
 		break;
 	}
 }
@@ -701,84 +688,64 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BCM(uint16_t type, uint16_t pid, const s
 	}
 	break;
 
-		// 3 7 7 3
-	case 0xC002:
-	{
-		uint32_t lVal;
-		if (get_uint_buff_be<3>(data, 2, value))
-		{
-			SET_TPMS_ID(0, value);
-		}
-
-		if (get_uint_buff_be<2>(data, 6, value))
-		{
-			lVal = (kia_tpms_id[1] & 0x0000ffff) | (value << 16);
-			SET_TPMS_ID(1, lVal);
-		}
-
-		if (get_uint_buff_be<2>(data, 10, value))
-		{
-			lVal = value | (kia_tpms_id[1] & 0xffff0000);
-			SET_TPMS_ID(1, lVal);
-		}
-		if (get_uint_buff_be<3>(data, 12, value))
-		{
-			SET_TPMS_ID(2, value);
-		}
-
-		if (get_uint_buff_be<1>(data, 15, value))
-		{
-			lVal = (kia_tpms_id[1] & 0x00ffffff) | (value << 24);
-			SET_TPMS_ID(3, lVal);
-		}
-
-		if (get_uint_buff_be<3>(data, 17, value))
-		{
-			lVal = value | (kia_tpms_id[3] & 0xff000000);
-			SET_TPMS_ID(3, lVal);
-		}
-	}
+	// 3 7 7 3
+	case 0xC002: { // TPMS ID
+        uint32_t idPart;
+        for (int idx = 0; idx < 4; ++idx) {
+          if (get_uint_buff_be<3>(data, 4 + (idx * 4), idPart)) {
+            if (idPart != 0) {
+              kia_tpms_id[idx] = idPart;
+            }
+          }
+        }
+      }
 	break;
 
 		// 3 7 7 3
 	case 0xC00B:
 	{
-		uint32_t iPSI, iTemp;
-		if (get_uint_buff_be<1>(data, 4, iPSI) && iPSI > 0)
-		{
-			StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, iPSI / 5.0, PSI);
-		}
-		if (get_uint_buff_be<1>(data, 5, iTemp) && iTemp > 0)
-		{
-			StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, iTemp - 50.0, Celcius);
-		}
+		uint8_t iPSI;
+		uint16_t iTemp;
 
-		if (get_uint_buff_be<1>(data, 9, iPSI) && iPSI > 0)
-		{
-			StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, iPSI / 5.0, PSI);
-		}
-		if (get_uint_buff_be<1>(data, 10, iTemp) && iTemp > 0)
-		{
-			StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, iTemp - 50.0, Celcius);
-		}
+		for (int idx = 0; idx < 4; ++idx) {
+        //   if (get_uint_buff_be<3>(data, 4 + (idx * 4), idPart)) {
+          if (get_uint_buff_be<1>(data, 4 + (idx * 4), iPSI) || get_uint_buff_be<2>(data, 5 + (idx * 4), iTemp)) {
+              StdMetrics.ms_v_tpms_pressure->SetElemValue(kia_tpms_id[idx], iPSI / 5);
+              StdMetrics.ms_v_tpms_temp->SetElemValue(kia_tpms_id[idx], iTemp / 1000);
+          }
+        }
 
-		if (get_uint_buff_be<1>(data, 12, iPSI) && iPSI > 0)
-		{
-			StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, iPSI / 5.0, PSI);
-		}
-		if (get_uint_buff_be<1>(data, 13, iTemp) && iTemp > 0)
-		{
-			StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, iTemp - 50.0, Celcius);
-		}
+		/* if (get_uint_buff_be<1>(data, 4, iPSI) || get_uint_buff_be<2>(data, 5, iTemp)) {
+          if (iPSI > 0) 
+            StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, iPSI / 5.0, PSI);
+          
+          if (iTemp > 0) 
+            StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, iTemp / 1000, Celcius);
+        }
 
-		if (get_uint_buff_be<1>(data, 16, iPSI) && iPSI > 0)
-		{
-			StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, iPSI / 5.0, PSI);
-		}
-		if (get_uint_buff_be<1>(data, 17, iTemp) && iTemp > 0)
-		{
-			StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, iTemp - 50.0, Celcius);
-		}
+		if (get_uint_buff_be<1>(data, 9, iPSI) || get_uint_buff_be<2>(data, 10, iTemp)) {
+          if (iPSI > 0) 
+            StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, iPSI / 5.0, PSI);
+          
+          if (iTemp > 0) 
+            StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, iTemp / 1000, Celcius);
+        }
+
+		if (get_uint_buff_be<1>(data, 12, iPSI) || get_uint_buff_be<2>(data, 13, iTemp)) {
+          if (iPSI > 0) 
+            StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, iPSI / 5.0, PSI);
+          
+          if (iTemp > 0) 
+            StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, iTemp / 1000, Celcius);
+        }
+
+		if (get_uint_buff_be<1>(data, 16, iPSI) || get_uint_buff_be<2>(data, 17, iTemp)) {
+          if (iPSI > 0) 
+            StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, iPSI / 5.0, PSI);
+          
+          if (iTemp > 0) 
+            StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, iTemp / 1000, Celcius);
+        } */
 	}
 	break;
 	}
