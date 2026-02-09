@@ -31,59 +31,24 @@ static const char *TAG = "v-kianiroev";
  */
 void OvmsVehicleKiaNiroEv::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length)
 {
-	/* ESP_LOGD(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", job.moduleid_low, job.type, job.pid, length, data[0], data[1], data[2], data[3],
-		data[4], data[5], data[6], data[7]); */
 	bool process_all = false;
 	switch (job.moduleid_rec)
-	{
-		// ****** IGMP *****
-	case 0x778:
-		process_all = true;
-		break;
+	{		
+		case 0x778: // IGMP
+		case 0x7ed: // OBC
+		case 0x7a8: // BCM
+		case 0x7bb: // AirCon
+		case 0x7d9: // ABS 
+		case 0x7ea: // VMCU
+		case 0x7eb: // MCU
+		case 0x7ec: // BMC
+		case 0x7ce: // CM
+			process_all = true;
+			break;
 
-		// ****** OBC ******
-	case 0x7ed:
-		process_all = true;
-		break;
-
-		// ****** BCM ******
-	case 0x7a8:
-		process_all = true;
-		break;
-
-		// ****** AirCon ******
-	case 0x7bb:
-		process_all = true;
-		break;
-
-		// ****** ABS ESP ******
-	case 0x7d9:
-		process_all = true;
-		break;
-
-		// ******* VMCU ******
-	case 0x7ea:
-		process_all = true;
-		break;
-
-		// ******* MCU ******
-	case 0x7eb:
-		process_all = true;
-		break;
-
-		// ***** BMC ****
-	case 0x7ec:
-		process_all = true;
-		break;
-
-		// ***** CM ****
-	case 0x7ce:
-		process_all = true;
-		break;
-
-	default:
-		ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_rec);
-		break;
+		default:
+			ESP_LOGD(TAG, "Unknown module: %03" PRIx32, job.moduleid_rec);
+			break;
 	}
 
 	// Enabled above as they are converted.
@@ -434,6 +399,7 @@ void OvmsVehicleKiaNiroEv::IncomingFull_MCU(uint16_t type, uint16_t pid, const s
 	int8_t value;
 	switch (pid)
 	{
+		// 0x01
 		// 4 7 7 7 7 7 7 7 3
 		// Example: 07 ff ff ff 00 00 00 00 00 00 1c 00 08 0a 0c 0c fd ff ff ff 61 d7 cd ab c2 cd 0c 01 b7 04 36 00 0e 62 d7 26 a8 2f c1 cd 23 00 b2 33 00 00 00 00 00 00 00 00 00 00 00 00
 	case 0x02:
@@ -447,6 +413,10 @@ void OvmsVehicleKiaNiroEv::IncomingFull_MCU(uint16_t type, uint16_t pid, const s
 			StdMetrics.ms_v_inv_temp->SetValue(value);
 		}
 		break;
+		
+		// 0x03
+		// 0x04
+		// 0x05
 	}
 }
 
