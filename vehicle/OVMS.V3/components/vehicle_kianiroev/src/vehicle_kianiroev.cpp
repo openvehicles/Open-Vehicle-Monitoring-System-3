@@ -314,7 +314,7 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   // D-Bus
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
-  POLLSTATE_RUNNING;
+  POLLSTATE_OFF;
   kia_secs_with_no_client=0;
   PollSetPidList(m_can1,vehicle_kianiroev_polls);
 
@@ -409,7 +409,12 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 
 		// Register car as locked only if all doors are locked
 		StdMetrics.ms_v_env_locked->SetValue(
-			m_v_door_lock_fr->AsBool() & m_v_door_lock_fl->AsBool() & m_v_door_lock_rr->AsBool() & m_v_door_lock_rl->AsBool() & !StdMetrics.ms_v_door_trunk->AsBool());
+			m_v_door_lock_fr->AsBool() &
+			m_v_door_lock_fl->AsBool() &
+			m_v_door_lock_rr->AsBool() &
+			m_v_door_lock_rl->AsBool() &
+			!StdMetrics.ms_v_door_trunk->AsBool()
+		);
 
 		if (kn_shift_bits.CarOn != StdMetrics.ms_v_env_on->AsBool())
 		{
@@ -505,33 +510,15 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 
 		// Check for charging status changes:
 		bool isCharging = false;
-		if (IsKona())
+		// check battery power incase the car is just charging the 12v and not HV
+		if (m_b_bms_relay->IsStale() || m_b_bms_ignition->IsStale())
 		{
-			// check battery power incase the car is just charging the 12v and not HV
-			if (m_b_bms_relay->IsStale() || m_b_bms_ignition->IsStale())
-			{
-				isCharging = false;
-			}
-			else
-			{
-				// See https://docs.google.com/spreadsheets/d/1JyJnXh7DOvzTl0cbWZRpW9qB_OgEOM-w_XOiAY_a64o/edit#gid=1990128420
-				isCharging = (m_b_bms_relay->AsBool(false) - m_b_bms_ignition->AsBool(false)) == 1;
-			}
-			// fake charge port door
-			// StdMetrics.ms_v_door_chargeport->SetValue(isCharging);
+			isCharging = false;
 		}
 		else
-		// use same logic on eNiro as Kona to prevent false charging messages when regenerating Issue#
 		{
-			if (m_b_bms_relay->IsStale() || m_b_bms_ignition->IsStale())
-			{
-				isCharging = false;
-			}
-			else
-			{
-				// See https://docs.google.com/spreadsheets/d/1JyJnXh7DOvzTl0cbWZRpW9qB_OgEOM-w_XOiAY_a64o/edit#gid=1990128420
-				isCharging = (m_b_bms_relay->AsBool(false) - m_b_bms_ignition->AsBool(false)) == 1;
-			}
+			// See https://docs.google.com/spreadsheets/d/1JyJnXh7DOvzTl0cbWZRpW9qB_OgEOM-w_XOiAY_a64o/edit#gid=1990128420
+			isCharging = (m_b_bms_relay->AsBool(false) - m_b_bms_ignition->AsBool(false)) == 1;
 		}
 
 		if (isCharging && StdMetrics.ms_v_door_chargeport->AsBool() && kia_obc_ac_current != 0)
@@ -543,7 +530,7 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 			HandleChargeStop();
 		}
 
-		if (m_poll_state == 0 && StdMetrics.ms_v_door_chargeport->AsBool() && kia_ready_for_chargepollstate)
+		if (ISPOLLING_OFF && StdMetrics.ms_v_door_chargeport->AsBool() && kia_ready_for_chargepollstate)
 		{
 			// Set pollstate charging if car is off and chargeport is open.
 			ESP_LOGI(TAG, "CHARGEDOOR OPEN. READY FOR CHARGING.");
@@ -553,50 +540,115 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 		}
 
 		// Wake up if car starts charging again
-		if (m_poll_state == 0 && kia_last_battery_cum_charge < kia_battery_cum_charge)
+		if (ISPOLLING_OFF && kia_last_battery_cum_charge < kia_battery_cum_charge)
 		{
 			kia_secs_with_no_client = 0;
 			kia_last_battery_cum_charge = kia_battery_cum_charge;
-			if (StdMetrics.ms_v_env_on->AsBool())
-			{
-				POLLSTATE_RUNNING;
+			if (StdMetrics.ms_v_env_on->AsBool()) {
+				if (!ISPOLLING_RUNNING) {
+					ESP_LOGD(TAG, "PollState->Running (ON)");
+					POLLSTATE_RUNNING
+				}
 			}
-			else
-			{
-				POLLSTATE_CHARGING;
+			else if (!ISPOLLING_CHARGING) {
+				ESP_LOGD(TAG, "PollState->Charging (Not On - Other)");
+				POLLSTATE_CHARGING
 			}
 		}
 
+		bool wasPaused = (xkn_keep_awake > 0);
+		if (xkn_keep_awake > 0) 
+			--xkn_keep_awake;
+
 		// *** AUX Battery drain prevention code ***
-		// If no clients are connected for 60 seconds, we'll turn off polling.
-		if ((StdMetrics.ms_s_v2_peers->AsInt() + StdMetrics.ms_s_v3_peers->AsInt()) == 0)
-		{
-			if (!StdMetrics.ms_v_env_on->AsBool() && !isCharging)
+		#ifndef __GNUC__
+		#pragma region AUX Drain
+		#endif
+  		bool isRunning = StdMetrics.ms_v_env_on->AsBool();
+		bool isLocked = StdMetrics.ms_v_env_locked->AsBool();
+		if(StdMetrics.ms_v_bat_12v_voltage_alert->AsBool()) {
+			ESP_LOGV(TAG,"12 Battery Alert");
+			if (xkn_keep_awake == 0) {
+				ESP_LOGD(TAG, "Setting PollState to Off");
+				POLLSTATE_OFF
+			}
+		} else {
+			// If no clients are connected for 60 seconds, we'll turn off polling.
+			uint32_t clients = 0;
+			if (StdMetrics.ms_s_v2_connected->AsBool())
 			{
-				kia_secs_with_no_client++;
-				if (kia_secs_with_no_client > 60)
-				{
-					if (m_poll_state != 0)
-					{
-						ESP_LOGI(TAG, "NO CLIENTS. Turning off polling.");
+				clients += StdMetrics.ms_s_v2_peers->AsInt();
+			}
+			
+			if (StdMetrics.ms_s_v3_connected->AsBool())
+			{
+				clients += StdMetrics.ms_s_v3_peers->AsInt();
+			}
+			ESP_LOGD(TAG,"Clients: %d", clients);
+			
+			if (clients == 0){
+				if(!isRunning && !isCharging){
+					kia_secs_with_no_client++;
+					if (kia_secs_with_no_client > 60)
+						if (!ISPOLLING_OFF) {
+							
+							// If vehicle is Unlocked and 
+							if(!ISPOLLING_PING && !isLocked) {
+								ESP_LOGI(TAG, "NO CLIENTS: Vehicle is Unlocked so wait");
+								ESP_LOGD(TAG, "Setting PollState to Ping(120)");
+								PollState_Ping(120);
+							}
+							else if (xkn_keep_awake == 0) {
+              					ESP_LOGI(TAG, "NO CLIENTS. Turning off polling.");
+								ESP_LOGD(TAG, "Setting PollState to Off");
+								POLLSTATE_OFF
+							}
+							else if (!ISPOLLING_PING) {
+              					ESP_LOGI(TAG, "NO CLIENTS.Polling state Ping, for %d more seconds.", xkn_keep_awake);
+								PollState_Ping();
+							}
+						}
+				}
+			} else {
+				if (!isRunning && !isCharging) {
+					if(!ISPOLLING_PING && !ISPOLLING_OFF) {
+						if(isLocked) {
+							ESP_LOGI(TAG, "CLIENT CONNECTED. Locked");
+							ESP_LOGD(TAG,"Setting PollState to Ping(60)");
+							PollState_Ping(60);
+						} else {
+							ESP_LOGI(TAG, "CLIENT CONNECTED. Unlocked");
+							ESP_LOGD(TAG, "Setting PollState to Ping(300)");
+							PollState_Ping(300);
+						}
+					} else if (isLocked && ISPOLLING_PING) {
+          				PollState_PingCap(60);
 					}
-					POLLSTATE_OFF;
+				} else if (ISPOLLING_OFF || ISPOLLING_PING) {
+        			//If client connects while poll state is off
+					//Update the state to relevent state
+
+					xkn_keep_awake = 0;
+					kia_secs_with_no_client = 0;
+					ESP_LOGI(TAG,"Client Connected, Turning on polling");
+					if (isRunning) {
+						if (!ISPOLLING_RUNNING) {
+							ESP_LOGD(TAG,"Setting PollState to Running");
+							POLLSTATE_RUNNING
+						} 
+					} else if (!ISPOLLING_CHARGING) {
+						ESP_LOGD(TAG,"Setting PollState to Charging");
+						POLLSTATE_CHARGING
+					}
 				}
 			}
 		}
 
-		// If client connects while poll state is off, we set the appropriate poll state
-		else if (m_poll_state == 0)
-		{
-			kia_secs_with_no_client = 0;
-			ESP_LOGI(TAG, "CLIENT CONNECTED. Turning on polling.");
-			if (StdMetrics.ms_v_env_on->AsBool())
-			{
-				POLLSTATE_RUNNING;
-			}
-			else
-			{
-				POLLSTATE_CHARGING;
+		if(!isRunning && !isCharging && wasPaused && (xkn_keep_awake == 0)) {
+			if (ISPOLLING_OFF) {
+				ESP_LOGD(TAG,"Timed Out");
+				ESP_LOGD(TAG,"Setting Polling to Off");
+				POLLSTATE_OFF
 			}
 		}
 		//**** End of AUX Battery drain prevention code ***
@@ -809,6 +861,75 @@ uint16_t OvmsVehicleKiaNiroEv::calcMinutesRemaining(float target)
 	  return MIN( 1440, (uint16_t) (((target - (kn_battery_capacity * BAT_SOC) / 100.0)*60.0) /
               (CHARGE_VOLTAGE * CHARGE_CURRENT)));
   		}
+
+void OvmsVehicleKiaNiroEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_state, const OvmsBatteryMon &monitor)
+{
+	switch (new_state)
+	{
+	case OvmsBatteryState::Unknown:
+		break;
+
+	case OvmsBatteryState::Normal:
+		ESP_LOGD(TAG, "Aux Battery State: Normal");
+		m_b_aux_soc->SetValue( CalcAUXSoc(monitor.average_lastf()), Percentage );
+		break;
+
+	case OvmsBatteryState::Charging:
+		ESP_LOGD(TAG, "Aux Battery State: Charging (%g)", monitor.average_lastf());
+		break;
+
+	case OvmsBatteryState::ChargingDip:
+		ESP_LOGD(TAG,"Aux Battery State: Charging (%g) with Dip (%g)",
+			monitor.average_lastf(),
+			monitor.diff_lastf()
+		);
+
+		if (ISPOLLING_OFF) {
+			ESP_LOGD(TAG, "Setting PollState to Ping (30)\n Reason: Charging Dip");
+			PollState_Ping(30);
+		}
+		break;
+
+	case OvmsBatteryState::ChargingBlip:
+		ESP_LOGD(TAG,"Aux Battery State: Charging (%g) with Spike (%g)",
+			monitor.average_lastf(),
+			monitor.diff_lastf()
+		);
+
+		if (ISPOLLING_OFF) {
+			ESP_LOGD(TAG, "Setting PollState to Ping (30)\n Reason: Charging Spike");
+			PollState_Ping(30);
+		}
+		break;
+
+	case OvmsBatteryState::Blip:
+		ESP_LOGD(TAG, "Aux Battery State: Spike (%g)", monitor.diff_lastf());
+		
+		if (ISPOLLING_OFF) {
+			ESP_LOGD(TAG, "Setting PollState to Ping (30)\n Reason: Spike");
+			PollState_Ping(30);
+		}
+		break;
+
+	case OvmsBatteryState::Dip:
+		ESP_LOGD(TAG, "Aux Battery State: Dip (%g)", monitor.diff_lastf());
+		
+		if (ISPOLLING_OFF) {
+			ESP_LOGD(TAG, "Setting PollState to Ping (30)\n Reason: Dip");
+			PollState_Ping(30);
+		}
+		break;
+
+	case OvmsBatteryState::Low:
+     	ESP_LOGD(TAG, "Aux Battery state: Low (%g)", monitor.diff_lastf());
+		if (!ISPOLLING_OFF) {
+			ESP_LOGD(TAG, "Setting PollState to Off (LV SOC Low)");
+			POLLSTATE_OFF
+		}
+      	m_b_aux_soc->SetValue( CalcAUXSoc(monitor.average_lastf()), Percentage );
+		break;
+	}
+}
 
 /**
  * Updates the maximum real world range at current temperature.

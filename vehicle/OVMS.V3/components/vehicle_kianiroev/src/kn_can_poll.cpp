@@ -358,23 +358,21 @@ void OvmsVehicleKiaNiroEv::IncomingFull_VMCU(uint16_t type, uint16_t pid, const 
 	// Example: ["f8","ff","fc","00","01","01","00","00","00","93","07","a3","7a","80","39","a5","02","87","7f","0d","39","60","80","56","f5","21","70","00","00","01","01","01","00","00","00","07","00"]
 	// Example: f8 ff fc 00 01 01 00 00 00 93 07 a3 7a 80 39 a5 02 87 7f 0d 39 60 80 56 f5 21 70 00 00 01 01 01 00 00 00 07 00
 	case 0x02:
-		uint16_t valueB;
 		if (get_uint_buff_be<2>(data, 16, value))
 		{
 			// This is the closest appoximation i can find to the 12V Amperage
-			StdMetrics.ms_v_bat_12v_current->SetValue(value / 1000.0, Amps);
+			StdMetrics.ms_v_bat_12v_current->SetValue(value / 100.0, Amps);
 		}
 
-		if (get_uint_buff_be<1>(data, 19, value) &&
-			get_uint_buff_be<1>(data, 20, valueB))
+		/* if (get_uint_buff_be<2>(data, 19, value))
 		{
-			StdMetrics.ms_v_bat_12v_voltage->SetValue(((value << 8) + valueB) / 1000.0, Volts);
-		}
+			StdMetrics.ms_v_bat_12v_voltage->SetValue(value / 1000.0, Volts);
+		} */
 
-		if (get_uint_buff_be<1>(data, 23, value))
+		/* if (get_uint_buff_be<1>(data, 23, value))
 		{
 			m_b_aux_soc->SetValue(value, Percentage);
-		}
+		} */
 		break;
 
 	case 0x80:
