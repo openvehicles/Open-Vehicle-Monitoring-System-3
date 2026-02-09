@@ -1422,28 +1422,46 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
     else
       {
       OvmsRecMutexLock exclusive(&m_mutex);
-      int k = ap_connect;
-      ssid = (const char*)list[k].ssid;
-      if (ssid.empty())
-        ssid = m_sta_ssid; // assume configured SSID on a hidden entry
-      ESP_LOGI(TAG, "ScanDone: connect to ssid='%s' bssid='" MACSTR "' chan=%d rssi=%d",
-        ssid.c_str(), MAC2STR(list[k].bssid), list[k].primary, list[k].rssi);
-      memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
-      strcpy((char*)m_wifi_sta_cfg.sta.ssid, ssid.c_str());
-      strcpy((char*)m_wifi_sta_cfg.sta.password, password.c_str());
-      m_wifi_sta_cfg.sta.bssid_set = true;
-      memcpy(m_wifi_sta_cfg.sta.bssid, list[k].bssid, sizeof(m_wifi_sta_cfg.sta.bssid));
-      m_wifi_sta_cfg.sta.channel = list[k].primary;
-      m_wifi_sta_cfg.sta.scan_method = WIFI_FAST_SCAN;
-      m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
-      ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
-      ESP_ERROR_CHECK(esp_wifi_connect());
-      std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
-      if (!ipconfig.empty())
+      if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
         {
-        SetSTAWifiIP();
+        int k = ap_connect;
+        ssid = (const char*)list[k].ssid;
+        if (ssid.empty())
+          ssid = m_sta_ssid; // assume configured SSID on a hidden entry
+        ESP_LOGI(TAG, "ScanDone: connect to ssid='%s' bssid='" MACSTR "' chan=%d rssi=%d",
+          ssid.c_str(), MAC2STR(list[k].bssid), list[k].primary, list[k].rssi);
+
+        memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
+        strcpy((char*)m_wifi_sta_cfg.sta.ssid, ssid.c_str());
+        strcpy((char*)m_wifi_sta_cfg.sta.password, password.c_str());
+        m_wifi_sta_cfg.sta.bssid_set = true;
+        memcpy(m_wifi_sta_cfg.sta.bssid, list[k].bssid, sizeof(m_wifi_sta_cfg.sta.bssid));
+        m_wifi_sta_cfg.sta.channel = list[k].primary;
+        m_wifi_sta_cfg.sta.scan_method = WIFI_FAST_SCAN;
+        m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+
+        res = esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg);
+        if (res != ESP_OK)
+          {
+          ESP_LOGE(TAG, "ScanDone: esp_wifi_set_config returned wifi error %d", res - ESP_ERR_WIFI_BASE);
+          }
+        else
+          {
+          res = esp_wifi_connect();
+          if (res != ESP_OK)
+            {
+            ESP_LOGE(TAG, "ScanDone: esp_wifi_connect returned wifi error %d", res - ESP_ERR_WIFI_BASE);
+            }
+          else
+            {
+            std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
+            if (!ipconfig.empty())
+              SetSTAWifiIP();
+            else
+              StartDhcpClient();
+            }
+          }
         }
-      else StartDhcpClient();
       }
     }
   if (list)
