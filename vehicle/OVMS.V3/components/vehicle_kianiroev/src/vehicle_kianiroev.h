@@ -144,6 +144,7 @@ class OvmsVehicleKiaNiroEv : public KiaVehicle
     void vehicle_kianiroev_car_on(bool isOn);
     void UpdateMaxRangeAndSOH(void);
     uint16_t calcMinutesRemaining(float target);
+    void NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_state, const OvmsBatteryMon &monitor) override;
     bool SetDoorLock(bool open, const char* password);
     bool LeftIndicator(bool);
     bool RightIndicator(bool);
@@ -167,6 +168,11 @@ class OvmsVehicleKiaNiroEv : public KiaVehicle
     #define COULOMB_REGEN_TOT  StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
     #define COULOMB_USED_TOT   StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh)
     #define ISCHARGING   StdMetrics.ms_v_charge_inprogress->AsBool()
+
+    #define ISPOLLING_OFF (m_poll_state == 0)
+    #define ISPOLLING_RUNNING (m_poll_state == 1)
+    #define ISPOLLING_CHARGING (m_poll_state == 2)
+    #define ISPOLLING_PING (m_poll_state == 3)
 
     unsigned int kn_notifications = 0;
 
@@ -197,6 +203,25 @@ class OvmsVehicleKiaNiroEv : public KiaVehicle
     } kn_charge_bits;
 
     RangeCalculator *kn_range_calc;
+
+    int16_t xkn_keep_awake;
+    inline void PollState_Ping() { PollSetState(3); }
+    inline void PollState_Ping(uint32_t ticks)
+    {
+      if (xkn_keep_awake < ticks) {
+        xkn_keep_awake = ticks;
+      }
+
+      PollSetState(3);
+    }
+
+    inline void PollState_PingCap(uint32_t ticks)
+    {
+      if (xkn_keep_awake > ticks) {
+        xkn_keep_awake = ticks;
+      }
+    }
+
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------

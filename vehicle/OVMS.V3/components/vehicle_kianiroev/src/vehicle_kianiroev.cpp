@@ -187,6 +187,7 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 
   kia_ready_for_chargepollstate = true;
   kia_secs_with_no_client = 0;
+  xkn_keep_awake = 0;
 
   memset( kia_send_can.byte, 0, sizeof(kia_send_can.byte));
 
@@ -282,11 +283,6 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   cmd_xkn->RegisterCommand("aux","Aux battery", xkn_aux);
   cmd_xkn->RegisterCommand("vin","VIN information", xkn_vin);
   
-  OvmsCommand *cmd_trip = cmd_xkn->RegisterCommand("range", "Show Range information");
-//   cmd_trip->RegisterCommand("status", "Show Status of Range Calculator", xkn_range_stat);
-  cmd_trip->RegisterCommand("reset", "Reset ranage calculation stats", xkn_range_reset);
-
-
   cmd_xkn->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pin>",1,1);
 
   MyConfig.SetParamValueBool("modem","enable.gps", true);
@@ -651,22 +647,26 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 				POLLSTATE_OFF
 			}
 		}
+
+		#ifndef __GNUC__
+		#pragma endregion
+		#endif
 		//**** End of AUX Battery drain prevention code ***
 
 		// Reset emergency light if it is stale.
-		if (m_v_emergency_lights->IsStale())
+		if ( m_v_emergency_lights->IsStale() ) {
 			m_v_emergency_lights->SetValue(false);
+		} else {
 
-		// Notify if emergency light are turned on or off.
-		if (m_v_emergency_lights->AsBool() && !kn_emergency_message_sent)
-		{
+			// Notify if emergency light are turned on or off.
+			if ( m_v_emergency_lights->AsBool() && !kn_emergency_message_sent) {
 			kn_emergency_message_sent = true;
 			RequestNotify(SEND_EmergencyAlert);
-		}
-		else if (!m_v_emergency_lights->AsBool() && kn_emergency_message_sent)
-		{
+			}
+			else if ( !m_v_emergency_lights->AsBool() && kn_emergency_message_sent) {
 			kn_emergency_message_sent = false;
 			RequestNotify(SEND_EmergencyAlertOff);
+			}
 		}
 
 		// Send tester present
@@ -692,21 +692,14 @@ void OvmsVehicleKiaNiroEv::Ticker300(uint32_t ticker)
 
 void OvmsVehicleKiaNiroEv::EventListener(std::string event, void* data)
   {
-  if (event == "app.connected")
-    {
-    	kia_secs_with_no_client=0;
-		if(StdMetrics.ms_v_env_on->AsBool())
-			{
-			POLLSTATE_RUNNING;
-			}
-		else
-			{
-			POLLSTATE_CHARGING;
-			}
-    }
+   	if (event == "app.connected") {
+    	kia_secs_with_no_client = 0;
+  	}
   }
 
-
+#ifndef __GNUC__
+#pragma region Hndle chrge
+#endif
 /**
  * Update metrics when charging
  */
@@ -861,6 +854,9 @@ uint16_t OvmsVehicleKiaNiroEv::calcMinutesRemaining(float target)
 	  return MIN( 1440, (uint16_t) (((target - (kn_battery_capacity * BAT_SOC) / 100.0)*60.0) /
               (CHARGE_VOLTAGE * CHARGE_CURRENT)));
   		}
+#ifndef __GNUC__
+#pragma endregion
+#endif
 
 void OvmsVehicleKiaNiroEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_state, const OvmsBatteryMon &monitor)
 {
@@ -969,7 +965,9 @@ void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 
 	}
 
-
+#ifndef __GNUC__
+	#pragma region CAN Send
+#endif
 /**
  * Open or lock the doors
  */
@@ -1128,7 +1126,9 @@ bool OvmsVehicleKiaNiroEv::StartRelay(bool on, const char* password)
 		}
 	return false;
 	}
-
+#ifndef __GNUC__
+#pragma endregion
+#endif
 /**
  * RequestNotify: send notifications / alerts / data updates
  */
