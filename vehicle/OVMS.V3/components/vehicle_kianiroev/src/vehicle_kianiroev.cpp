@@ -314,7 +314,12 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   kia_secs_with_no_client=0;
   PollSetPidList(m_can1,vehicle_kianiroev_polls);
 
-  kn_range_calc = new RangeCalculator(1, 4, 455, 64);
+  kn_range_calc = new RangeCalculator(5, 4, 300, 39);
+  
+  ESP_LOGD(TAG, "PollState->Ping for 30 (Init)");
+  PollState_Ping(30);
+
+  EnableAuxMonitor();
   }
 
 /**
@@ -526,7 +531,7 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 			HandleChargeStop();
 		}
 
-		if (ISPOLLING_OFF && StdMetrics.ms_v_door_chargeport->AsBool() && kia_ready_for_chargepollstate)
+		if ((ISPOLLING_OFF || ISPOLLING_PING) && StdMetrics.ms_v_door_chargeport->AsBool() && kia_ready_for_chargepollstate)
 		{
 			// Set pollstate charging if car is off and chargeport is open.
 			ESP_LOGI(TAG, "CHARGEDOOR OPEN. READY FOR CHARGING.");
@@ -536,7 +541,7 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 		}
 
 		// Wake up if car starts charging again
-		if (ISPOLLING_OFF && kia_last_battery_cum_charge < kia_battery_cum_charge)
+		if ((ISPOLLING_OFF || ISPOLLING_PING) && kia_last_battery_cum_charge < kia_battery_cum_charge)
 		{
 			kia_secs_with_no_client = 0;
 			kia_last_battery_cum_charge = kia_battery_cum_charge;
@@ -860,6 +865,7 @@ uint16_t OvmsVehicleKiaNiroEv::calcMinutesRemaining(float target)
 
 void OvmsVehicleKiaNiroEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_state, const OvmsBatteryMon &monitor)
 {
+ 	ESP_LOGD(TAG, "Aux Battery: %s", monitor.to_string().c_str());
 	switch (new_state)
 	{
 	case OvmsBatteryState::Unknown:
