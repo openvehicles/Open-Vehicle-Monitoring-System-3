@@ -36,6 +36,13 @@ Maintenance Reminders       Yes
 DDT4all simple Support      Yes (a List of all possible commands at www.smart-EMOTION.de)
 =========================== ==============
 
+-------------------------
+Known Issues
+-------------------------
+- Lock/Unlock: The Lock/Unlock function is not really implemented. You can only lock the car when it is open, car is not secured locked.
+- Valet Mode: Not implemented.
+- Charge Control: Not implemented.
+
 ------------------------------
 Using Cabin Precand-heat/cool:
 ------------------------------
@@ -54,7 +61,7 @@ Only 5 Minutes preconditioning are implementet by Vehicle
    For Timebased Pre-heat/cool you can use the Android App or Web UI.
 
 -------------------------
-Shell commands:
+Vehicle shell commands:
 -------------------------
 =========================== ==============
 Command                     description
@@ -77,11 +84,8 @@ xsq show total              Show vehicle trip total data
 =========================== ==============
 
 -------------------------
-Known Issues
+Vehicle metrics:
 -------------------------
-- Lock/Unlock: The Lock/Unlock function is not really implemented. You can only lock the car when it is open, car is not secured locked.
-- Valet Mode: Not implemented.
-- Charge Control: Not implemented.
 
 =========================== ==============
 Metric                      description
