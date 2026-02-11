@@ -44,7 +44,7 @@ Known Issues
 - Charge Control: Not implemented.
 
 ------------------------------
-Using Cabin Precand-heat/cool:
+Using Cabin Precond-heat/cool:
 ------------------------------
 
 Only 5 Minutes preconditioning are implementet by Vehicle
