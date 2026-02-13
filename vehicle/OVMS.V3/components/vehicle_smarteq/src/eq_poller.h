@@ -38,12 +38,12 @@
 static const OvmsPoller::poll_pid_t obdii_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,60,3,3}, 0, ISOTP_STD },   // Battery State
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {  0,60,10,5}, 0, ISOTP_STD },   // Battery State
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,300,60 }, 0, ISOTP_STD }, // Battery Temperatures (27 sensors)
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,300,60 }, 0, ISOTP_STD }, // Battery Voltages Part 1 (Cells 1-48)
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,300,60 }, 0, ISOTP_STD }, // Battery Voltages Part 2 (Cells 49-96)
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0,300,60,60 }, 0, ISOTP_STD },  // HV Contactor Cycles
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x08, {  0,60,10,10 }, 0, ISOTP_STD },   // SOC
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x08, {  0,60,60,60 }, 0, ISOTP_STD },   // SOC
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x10, {  0,300,60,60 }, 0, ISOTP_STD },  // Cell Resistance P1
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x11, {  0,300,60,60 }, 0, ISOTP_STD },  // Cell Resistance P2
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, {  0,300,60,60 }, 0, ISOTP_STD },  // SOC Recalibration
@@ -87,19 +87,19 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
 static const OvmsPoller::poll_pid_t slow_charger_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7303, {  0,0,0,3 }, 0, ISOTP_STD }, // rqChargerAC
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7303, {  0,0,0,5 }, 0, ISOTP_STD }, // rqChargerAC
 };
 
 static const OvmsPoller::poll_pid_t fast_charger_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503F, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph12_RMS_V
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5041, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph23_RMS_V
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5042, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph31_RMS_V
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2001, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph1_RMS_A
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503A, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph2_RMS_A
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503B, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC_Ph3_RMS_A
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, {  0,0,0,3 }, 0, ISOTP_STD }, // rqJB2AC Mains active power consumed
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503F, {  0,0,0,5 }, 0, ISOTP_STD }, // rqJB2AC_Ph12_RMS_V
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5041, {  0,0,0,5 }, 0, ISOTP_STD }, // rqJB2AC_Ph23_RMS_V
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5042, {  0,0,0,5 }, 0, ISOTP_STD }, // rqJB2AC_Ph31_RMS_V
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2001, {  0,0,0,5 }, 0, ISOTP_STD }, // rqJB2AC_Ph1_RMS_A
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503A, {  0,0,0,5 }, 0, ISOTP_STD }, // rqJB2AC_Ph2_RMS_A
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503B, {  0,0,0,5 }, 0, ISOTP_STD }, // rqJB2AC_Ph3_RMS_A
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, {  0,0,0,5 }, 0, ISOTP_STD }, // rqJB2AC Mains active power consumed
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5049, {  0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_Mains phase frequency
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5070, {  0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_Max Current limitation
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, {  0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_Ground Resistance
