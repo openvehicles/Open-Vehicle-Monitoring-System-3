@@ -903,7 +903,10 @@ void SafePrioritiseAndIndicate(void* ctx)
 void OvmsNetManager::PrioritiseAndIndicate()
   {
   if (tcpip_callback_with_block(SafePrioritiseAndIndicate, NULL, 1) == ERR_OK)
-    m_tcpip_callback_done.Take();
+    {
+    if (!m_tcpip_callback_done.Take(pdMS_TO_TICKS(10000)))
+      ESP_LOGE(TAG, "PrioritiseAndIndicate: timeout waiting for TCPIP callback");
+    }
   }
 
 void OvmsNetManager::DoSafePrioritiseAndIndicate()
