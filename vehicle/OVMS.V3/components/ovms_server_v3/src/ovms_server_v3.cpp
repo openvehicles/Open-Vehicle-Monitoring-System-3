@@ -31,6 +31,11 @@
 #include "ovms_log.h"
 static const char *TAG = "ovms-server-v3";
 
+// Timeout for MongooseLock in event handler context to prevent Task Watchdog crashes.
+// The Mongoose task holds the lock for up to 100ms per poll cycle; 5s is generous but
+// safely below the 120s WDT limit.
+#define MONGOOSELOCK_TIMEOUT pdMS_TO_TICKS(5000)
+
 #include <string.h>
 #include <stdint.h>
 #include <vector>
@@ -280,7 +285,6 @@ OvmsServerV3::OvmsServerV3(const char* name)
   MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsServerV3::NetmanStop, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.1", std::bind(&OvmsServerV3::Ticker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.60", std::bind(&OvmsServerV3::Ticker60, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"system.modem.received.ussd", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"location.alert.flatbed.moved", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
@@ -319,7 +323,8 @@ void OvmsServerV3::TransmitAllMetrics()
   {
   static size_t s_next_index = 0;
 
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "TransmitAllMetrics: MongooseLock timeout"); return; }
   if (!m_mgconn)
     {
     s_next_index = 0;
@@ -386,7 +391,8 @@ void OvmsServerV3::TransmitModifiedMetrics()
   {
   static size_t s_mod_next_index = 0;
 
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "TransmitModifiedMetrics: MongooseLock timeout"); return; }
   if (!m_mgconn)
     {
     s_mod_next_index = 0;
@@ -448,7 +454,8 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   if (!m_metrics_filter.CheckFilter(metric_name))
     return;
 
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "TransmitMetric: MongooseLock timeout"); return; }
   if (!m_mgconn)
     return;
 
@@ -478,7 +485,8 @@ void OvmsServerV3::TransmitPriorityMetrics()
     const size_t s_priority_gps_metrics_count =
       sizeof(s_priority_gps_metrics) / sizeof(s_priority_gps_metrics[0]);
 
-    auto mglock = MongooseLock();
+    auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+    if (!mglock) { ESP_LOGW(TAG, "TransmitPriorityMetrics: MongooseLock timeout"); return; }
     if (!m_mgconn) return;
     if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
     CountClients();
@@ -536,7 +544,8 @@ void OvmsServerV3::TransmitImmediateMetrics()
 
 int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "TransmitNotificationInfo: MongooseLock timeout"); return 0; }
   if (!m_mgconn)
     return 0;
 
@@ -555,7 +564,8 @@ int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
 
 int OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "TransmitNotificationError: MongooseLock timeout"); return 0; }
   if (!m_mgconn)
     return 0;
 
@@ -574,7 +584,8 @@ int OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
 
 int OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "TransmitNotificationAlert: MongooseLock timeout"); return 0; }
   if (!m_mgconn)
     return 0;
 
@@ -593,7 +604,8 @@ int OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
 
 int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "TransmitNotificationData: MongooseLock timeout"); return 0; }
   if (!m_mgconn)
     return 0;
 
@@ -773,7 +785,8 @@ void OvmsServerV3::IncomingPubRec(uint16_t id)
 
 void OvmsServerV3::IncomingEvent(std::string event, void* data)
   {
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "IncomingEvent(%s): MongooseLock timeout", event.c_str()); return; }
 
   // Publish the event, if we are connected...
   if (!m_mgconn) return;
@@ -810,7 +823,8 @@ void OvmsServerV3::RunCommand(std::string client, std::string id, std::string co
   std::string val; bs->Dump(val);
   delete bs;
 
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "RunCommand: MongooseLock timeout"); return; }
   if (!m_mgconn) return;
 
   std::string topic(m_topic_prefix);
@@ -951,7 +965,14 @@ void OvmsServerV3::Connect()
     }
 
   SetStatus("Connecting...", false, Connecting);
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock)
+    {
+    ESP_LOGW(TAG, "Connect: MongooseLock timeout");
+    m_connretry = 10;
+    m_connection_counter = 0;
+    return;
+    }
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   if (!mgr)
     {
@@ -988,7 +1009,8 @@ void OvmsServerV3::Connect()
 
 void OvmsServerV3::Disconnect()
   {
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "Disconnect: MongooseLock timeout"); return; }
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -1340,7 +1362,8 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
 
     if (m_sendall)
       {
-      auto mglock = MongooseLock();
+      auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+      if (!mglock) { ESP_LOGW(TAG, "Ticker1: MongooseLock timeout for subscribe"); return; }
       ESP_LOGI(TAG, "Subscribe to MQTT topics");
       struct mg_mqtt_topic_expression topics[MQTT_CONN_NTOPICS];
       for (int k=0;k<MQTT_CONN_NTOPICS;k++)
@@ -1554,7 +1577,8 @@ void OvmsServerV3::ProcessClientConfigRequest(const std::string& clientid, const
 
   std::string value = MyConfig.GetParamValue(param.c_str(), inst.c_str());
 
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "HandleConfigRequest: MongooseLock timeout"); return; }
   if (!m_mgconn) return;
 
   std::string topic(m_topic_prefix);
