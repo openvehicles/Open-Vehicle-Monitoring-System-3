@@ -293,9 +293,6 @@ void ota_flash_sd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     writer->puts("Error: SD card is not mounted");
     return;
     }
-  if (!MyNetManager.m_connected_wifi)
-    writer->puts("Warning: The mobile connection between the module and the website/ioBroker"
-      " will be interrupted for approximately 10 minutes! Don't panic!");
 
   // URL: use argument, or MRU, or build from config
   if (argc > 0)
@@ -500,8 +497,6 @@ void ota_flash_sd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   writer->printf("OTA flash was successful\n  Downloaded and flashed %d bytes from %s\n  Next boot will be from '%s'\n",
                  filesize,url.c_str(),target->label);
   MyConfig.SetParamValue("ota", "http.mru", url);
-  if (!MyNetManager.m_connected_wifi)
-    MyNotify.NotifyString("info","ota.flash.finished","OTA flash finished");
   }
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
@@ -537,10 +532,6 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     writer->puts("Error: Cannot flash to running image partition");
     return;
     }
-  
-  if (!MyNetManager.m_connected_wifi)
-    writer->puts("Warning: The mobile connection between the module and the website/ioBroker"
-      " will be interrupted for approximately 10 minutes! Don't panic!");
 
   // URL
   if (argc == 0)
@@ -666,8 +657,6 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
                  http.BodySize(),url.c_str(),target->label);
   MyConfig.SetParamValue("ota", "http.mru", url);
-  if (!MyNetManager.m_connected_wifi)
-    MyNotify.NotifyString("info","ota.flash.finished","OTA flash finished");
   }
 
 void ota_flash_auto(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
