@@ -243,6 +243,9 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   c.print("</datalist>");
 
   c.input_button("default", "Flash now", "action", "flash-http");
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  c.input_button("default", "Download to SD &amp; Flash", "action", "flash-sd");
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
   c.form_end();
 
   c.print(
@@ -383,6 +386,12 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "if (action == \"flash-http\") {"
           "var flash_http = $(\"input[name=flash_http]\").val();"
           "loadcmd(\"ota flash http \" + flash_http, \"+#output\").done(function(resp){"
+            "setloading(\"#flash-dialog\", false);"
+          "});"
+        "}"
+        "else if (action == \"flash-sd\") {"
+          "var flash_http = $(\"input[name=flash_http]\").val();"
+          "loadcmd(\"ota flash sd \" + flash_http, \"+#output\").done(function(resp){"
             "setloading(\"#flash-dialog\", false);"
           "});"
         "}"
