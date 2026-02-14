@@ -136,6 +136,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ModemRestart();
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
     void smartOn();
+    void smartOff();
     void smartChargeStart();
     void smartChargeStop();
     void smartChargePrepare();
@@ -207,7 +208,6 @@ public:
   private:
     int m_candata_timer;
     bool m_candata_poll;
-    bool m_charge_start;
     bool m_charge_finished;
     float m_tpms_pressure[4]; // kPa
     float m_tpms_temperature[4]; // °C
@@ -215,6 +215,7 @@ public:
     bool m_tpms_missing_tx[4]; // 0=ok, 1=missing
     bool m_ADCfactor_recalc;       // request recalculation of ADC factor
     int m_ADCfactor_recalc_timer;  // countdown timer for ADC factor recalculation
+    int m_gear; // <0 = reverse, 0 = park/neutral, >0 = drive -- logic by vehicle.cpp events
 
   public:
     bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]

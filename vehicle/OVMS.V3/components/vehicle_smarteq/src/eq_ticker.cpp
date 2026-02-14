@@ -40,11 +40,17 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
 
-  if (m_charge_start)
+  if(StdMetrics.ms_v_charge_pilot->AsBool(false) || StdMetrics.ms_v_charge_inprogress->AsBool(false)) 
     HandleCharging();
   
   if(StdMetrics.ms_v_env_on->AsBool(false) || StdMetrics.ms_v_env_hvac->AsBool(false))
     HandleEnergy();
+  
+  if(StdMetrics.ms_v_env_on->AsBool(false))
+    {
+    if(StdMetrics.ms_v_env_gear->AsInt(0) != m_gear)
+      StdMetrics.ms_v_env_gear->SetValue(m_gear);
+    }
   }
 
 void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker) 
