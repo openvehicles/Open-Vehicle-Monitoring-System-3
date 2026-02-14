@@ -31,6 +31,9 @@
 #include "ovms_log.h"
 static const char *TAG = "ovms-server-v2";
 
+// Timeout for MongooseLock in event handler context to prevent Task Watchdog crashes.
+#define MONGOOSELOCK_TIMEOUT pdMS_TO_TICKS(5000)
+
 #include "ovms.h"
 #include "buffered_shell.h"
 #include "ovms_peripherals.h"
@@ -764,7 +767,8 @@ void OvmsServerV2::ProcessCommand(const char* payload)
 
 bool OvmsServerV2::Transmit(const std::string& message)
   {
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "Transmit: MongooseLock timeout"); return false; }
 
   if (!m_mgconn)
     return false;
@@ -897,7 +901,13 @@ void OvmsServerV2::Connect()
     }
 
   SetStatus("Connecting...", false, Connecting);
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock)
+    {
+    ESP_LOGW(TAG, "Connect: MongooseLock timeout");
+    m_connretry = 10;
+    return;
+    }
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   if (!mgr)
     {
@@ -933,7 +943,8 @@ void OvmsServerV2::Connect()
 
 void OvmsServerV2::Disconnect()
   {
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "Disconnect: MongooseLock timeout"); return; }
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -947,7 +958,8 @@ void OvmsServerV2::Disconnect()
 
 void OvmsServerV2::Reconnect(int connretry)
   {
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(MONGOOSELOCK_TIMEOUT);
+  if (!mglock) { ESP_LOGW(TAG, "Reconnect: MongooseLock timeout"); return; }
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
