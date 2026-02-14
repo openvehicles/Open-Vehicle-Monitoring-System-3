@@ -571,6 +571,7 @@ void OvmsVehicleSmartEQ::NotifiedVehicleOn()
 void OvmsVehicleSmartEQ::NotifiedVehicleOff()
 {
   ESP_LOGI(TAG,"car is off");
+  smartOff();
 }
 
 void OvmsVehicleSmartEQ::NotifiedVehicleAwake()

@@ -50,23 +50,19 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   switch (p_frame->MsgID) {
     case 0x17e: //gear shift
       {
-      REQ_DLC(7);      // uses bytes up to at least index 6, so DLC must be 7 or more
+      REQ_DLC(7);      // logic by vehicle.cpp events
       switch(CAN_BYTE(6)) {
         case 0x00: // Parking
-          StdMetrics.ms_v_env_gear->SetValue(0);
-          StdMetrics.ms_v_gen_limit_soc->SetValue(1);
+          m_gear = 0;
           break;
         case 0x10: // Rear
-          StdMetrics.ms_v_env_gear->SetValue(-1);
-          StdMetrics.ms_v_gen_limit_soc->SetValue(2);
+          m_gear = -1;
           break;
         case 0x20: // Neutral
-          StdMetrics.ms_v_env_gear->SetValue(1);
-          StdMetrics.ms_v_gen_limit_soc->SetValue(3);
+          m_gear = 0;
           break;
         case 0x70: // Drive
-          StdMetrics.ms_v_env_gear->SetValue(2);
-          StdMetrics.ms_v_gen_limit_soc->SetValue(4);
+          m_gear = 1;
           break;
         }
       break;
@@ -147,7 +143,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 
       mt_worst_consumption->SetValue(worst_consumption);
       mt_best_consumption->SetValue(best_consumption);
-      mt_bcb_power_mains->SetValue(bcb_power_mains);      
+      mt_bcb_power_mains->SetValue(bcb_power_mains);
       StdMetrics.ms_v_bat_consumption->SetValue(best_consumption * 10.0f); // convert to Wh/km
       break;
       }
@@ -164,8 +160,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       mt_energy_used->SetValue(consumption_mission);
       mt_energy_recd->SetValue(recovery_mission);
       mt_energy_aux->SetValue(aux_consumption);
-      //StdMetrics.ms_v_bat_coulomb_used->SetValue(consumption_mission + aux_consumption);
-      //StdMetrics.ms_v_bat_coulomb_recd->SetValue(recovery_mission);
       }
     case 0x646:
       {
