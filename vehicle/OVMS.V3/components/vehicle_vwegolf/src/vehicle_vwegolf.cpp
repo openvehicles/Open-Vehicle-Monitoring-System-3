@@ -26,11 +26,11 @@
 ; THE SOFTWARE.
 */
 
-// #include "ovms_log.h"
-static const char *TAG = "v-vwegolf";
-
 // #include <stdio.h>
 #include "vehicle_vwegolf.h"
+
+#undef TAG
+#define TAG "v-vwegolf"
 
 OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     ESP_LOGI(TAG, "Start vehicle module: VW e-Golf");
@@ -93,6 +93,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
     // //TODO end doesn't work ECU timeout
 
     switch (p_frame->MsgID) {
+        // TODO: Need to move to verify
         case 0xFD:  // Message from ESP speed
         {
             tmp_u16 =
@@ -101,7 +102,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u16 = (uint16_t)tmp_u16;
             tmp_f32 = ((float)tmp_u16) * 0.01F;
             StandardMetrics.ms_v_pos_speed->SetValue(tmp_f32);  // working
-            ESP_LOGV(TAG, "ms_v_pos_speed: %f", tmp_f32);
+            ESP_LOGV(TAG "_0xFD", "ms_v_pos_speed: %f", tmp_f32);
             break;
         }
         case 0x131:  // SOC
@@ -111,7 +112,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u8 = (uint8_t)tmp_u8;
             tmp_f32 = ((float)tmp_u8) * 0.5F;
             StandardMetrics.ms_v_bat_soc->SetValue(tmp_f32);  // working
-            ESP_LOGV(TAG, "ms_v_bat_soc: %f", tmp_f32);
+            ESP_LOGV(TAG "_0x131", "ms_v_bat_soc: %f", tmp_f32);
             break;
         }
         case 0x191:  // Messages from BMS on the drivetrain CAN
@@ -122,7 +123,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u16 = (uint16_t)tmp_u16;
             tmp_f32 = ((float)tmp_u16) * 1.0F - 2047.0F;
             StandardMetrics.ms_v_bat_current->SetValue(tmp_f32);  // working
-            ESP_LOGV(TAG, "ms_v_bat_current: %f", tmp_f32);
+            ESP_LOGV(TAG "_0x191", "ms_v_bat_current: %f", tmp_f32);
 
             tmp_u16 = ((uint16_t)(d[3] & 0xff) << 0) | ((uint16_t)(d[4] & 0xf) << 8) |
                       0;  // Ist BMS Spannung Faktor 0,25 Offset 0, Minimum 0, Maximum 1023,25 [V]
@@ -130,7 +131,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u16 = (uint16_t)tmp_u16;
             tmp_f32 = ((float)tmp_u16) * 0.25F;
             StandardMetrics.ms_v_bat_voltage->SetValue(tmp_f32);  // working
-            ESP_LOGV(TAG, "ms_v_bat_voltage: %f", tmp_f32);
+            ESP_LOGV(TAG "_0x191", "ms_v_bat_voltage: %f", tmp_f32);
 
             // calculate power
             tmp_f32 = -1.0F *
@@ -139,10 +140,11 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
                       1000;
             StandardMetrics.ms_v_bat_power->SetValue(
                 tmp_f32);  // working negative is charging, positive is driving
-            ESP_LOGV(TAG, "ms_v_bat_power: %f", tmp_f32);
+            ESP_LOGV(TAG "_0x191", "ms_v_bat_power: %f", tmp_f32);
 
             break;
         }
+        // TODO: This is currently reading zero
         case 0x2AF:  // Energy
         {
             tmp_u16 =
@@ -151,7 +153,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u16 = (uint16_t)tmp_u16;
             tmp_f32 = (((float)tmp_u16) * 10.0F) / 3600000.0F;
             StandardMetrics.ms_v_bat_energy_recd->SetValue(tmp_f32);
-            ESP_LOGV(TAG, "ms_v_bat_energy_recd: %f", tmp_f32);
+            ESP_LOGV(TAG "_0x2AF", "ms_v_bat_energy_recd: %f", tmp_f32);
 
             tmp_u16 =
                 ((uint16_t)(d[6] & 0xff) << 0) | ((uint16_t)(d[7] & 0x7f) << 8) |
@@ -159,31 +161,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u16 = (uint16_t)tmp_u16;
             tmp_f32 = (((float)tmp_u16) * 10.0F) / 3600000.0F;
             StandardMetrics.ms_v_bat_energy_used->SetValue(tmp_f32);
-            ESP_LOGV(TAG, "ms_v_bat_energy_used: %f", tmp_f32);
-            break;
-        }
-        case 0x3CE:  // Rear door driver side
-        {
-            // StdMetrics.ms_v_door_rl->SetValue((d[0] & 0x1) << 0);
-            // ESP_LOGV(TAG, "ms_v_door_rl: %u", (d[0] & 0x1) << 0);
-            break;
-        }
-        case 0x3CF:  // Rear door passenger side
-        {
-            // StdMetrics.ms_v_door_rr->SetValue((d[0] & 0x1) << 0);
-            // ESP_LOGV(TAG, "ms_v_door_rr: %u", (d[0] & 0x1) << 0);
-            break;
-        }
-        case 0x3D0:  // Front door driver side
-        {
-            // StdMetrics.ms_v_door_fl->SetValue((d[0] & 0x1) << 0);
-            // ESP_LOGV(TAG, "ms_v_door_fl: %u", (d[0] & 0x1) << 0);
-            break;
-        }
-        case 0x3D1:  // Front door passenger side
-        {
-            // StdMetrics.ms_v_door_fr->SetValue((d[0] & 0x1) << 0);
-            // ESP_LOGV(TAG, "ms_v_door_fr: %u", (d[0] & 0x1) << 0);
+            ESP_LOGV(TAG "_0x2AF", "ms_v_bat_energy_used: %f", tmp_f32);
             break;
         }
         // case 0x3D6: //Ladezustand
@@ -212,6 +190,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
 
         //   break;
         //   }
+        // TODO: PRNDL isn't working
         case 0x3DC:  // Energieinhalt HV-Batterie
         {
             // 0x3dc => Gateway_73: P, R, N, D
@@ -248,13 +227,15 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             cnt2++;
             if (cnt2 == 15) {
                 cnt2 = 0;
-                ESP_LOGV(TAG, "Drivemode: %u", tmp_u8);  // Gangwahl Not working right now
+                ESP_LOGV(TAG "_0x3DC", "Drivemode: %u", tmp_u8);  // Gangwahl Not working right now
             }
 
             break;
         }
+        // Working, but sign bit missing
         case 0x486:  // Longitude/Latitude
         {
+            // I'm getting metrics, but it might be from GPS
             tmp_u32 = ((uint32_t)(d[0] & 0xff) << 0) | ((uint32_t)(d[1] & 0xff) << 8) |
                       ((uint32_t)(d[2] & 0xff) << 16) | ((uint32_t)(d[3] & 0x7) << 24) |
                       0;  // LatDegree Faktor 1e-006 Offset 0, Minimum 0, Maximum 90 [°] Initial
@@ -262,7 +243,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u32 = (uint32_t)tmp_u32;
             tmp_f32 = ((float)tmp_u32) * 0.000001F;
             StandardMetrics.ms_v_pos_latitude->SetValue(tmp_f32);  // working
-            ESP_LOGV(TAG, "ms_v_pos_latitude: %f /r/n", tmp_f32);
+            ESP_LOGV(TAG "_0x486", "ms_v_pos_latitude: %f /r/n", tmp_f32);
 
             tmp_u32 = ((uint32_t)(d[3] & 0xf8) >> 3) | ((uint32_t)(d[4] & 0xff) << 5) |
                       ((uint32_t)(d[5] & 0xff) << 13) | ((uint32_t)(d[6] & 0x7f) << 21) |
@@ -271,15 +252,15 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u32 = (uint32_t)tmp_u32;
             tmp_f32 = ((float)tmp_u32) * 0.000001F;
             StandardMetrics.ms_v_pos_longitude->SetValue(tmp_f32);  // working
-            ESP_LOGV(TAG, "ms_v_pos_longitude: %f /r/n", tmp_f32);
+            ESP_LOGV(TAG "_0x486", "ms_v_pos_longitude: %f /r/n", tmp_f32);
 
             if (StandardMetrics.ms_v_pos_latitude->AsFloat() < 91.0F &&
                 StandardMetrics.ms_v_pos_longitude->AsFloat() < 181.0F) {
                 StandardMetrics.ms_v_pos_gpslock->SetValue(true);
-                ESP_LOGV(TAG, "GPS position fix");  // working
+                ESP_LOGV(TAG "_0x486", "GPS position fix");  // working
             } else {
                 StandardMetrics.ms_v_pos_gpslock->SetValue(false);
-                ESP_LOGV(TAG, "no GPS position fix");  // working
+                ESP_LOGV(TAG "_0x486", "no GPS position fix");  // working
             }
             break;
         }
@@ -303,16 +284,16 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             cnt++;
             if (cnt == 15) {
                 cnt = 0;
-                ESP_LOGV(TAG, "ms_v_env_locked verriegelt: %u",
+                ESP_LOGV(TAG "_0x583", "ms_v_env_locked verriegelt: %u",
                          (d[2] & 0x2) >> 1);  // working //verriegelt extern ist
-                // not working ESP_LOGV(TAG, "ms_v_env_locked gesafet: %u", (d[2] & 0x10) >>
+                // not working ESP_LOGV(TAG "_0x583", "ms_v_env_locked gesafet: %u", (d[2] & 0x10) >>
                 // 14);//gesafet extern ist
-                ESP_LOGV(TAG, "ms_v_door_fl: %u", (d[3] & 0x1) << 0);
-                ESP_LOGV(TAG, "ms_v_door_fr: %u", (d[3] & 0x2) >> 1);
-                ESP_LOGV(TAG, "ms_v_door_rl: %u", (d[3] & 0x4) >> 2);
-                ESP_LOGV(TAG, "ms_v_door_rr: %u", (d[3] & 0x8) >> 3);
-                ESP_LOGV(TAG, "ms_v_door_trunk: %u", (d[3] & 0x10) >> 4);
-                ESP_LOGI(TAG, "ms_v_door_chargeport: %u", (d[7] & 0x1) << 0);
+                ESP_LOGV(TAG "_0x583", "ms_v_door_fl: %u", (d[3] & 0x1) << 0);
+                ESP_LOGV(TAG "_0x583", "ms_v_door_fr: %u", (d[3] & 0x2) >> 1);
+                ESP_LOGV(TAG "_0x583", "ms_v_door_rl: %u", (d[3] & 0x4) >> 2);
+                ESP_LOGV(TAG "_0x583", "ms_v_door_rr: %u", (d[3] & 0x8) >> 3);
+                ESP_LOGV(TAG "_0x583", "ms_v_door_trunk: %u", (d[3] & 0x10) >> 4);
+                ESP_LOGI(TAG "_0x583", "ms_v_door_chargeport: %u", (d[7] & 0x1) << 0);
             }
             break;
         }
@@ -549,24 +530,24 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             cnt5++;
             if (cnt5 == 15) {
                 cnt5 = 0;
-                ESP_LOGV(TAG, "ms_v_charge_duration_full: %u",
+                ESP_LOGV(TAG "_0x594", "ms_v_charge_duration_full: %u",
                          StdMetrics.ms_v_charge_duration_full->AsInt());  // working
-                ESP_LOGI(TAG, "ms_v_charge_timermode: %u",
+                ESP_LOGI(TAG "_0x594", "ms_v_charge_timermode: %u",
                          StdMetrics.ms_v_charge_timermode->AsBool());
-                ESP_LOGV(TAG, "ms_v_charge_inprogress: %u",
+                ESP_LOGV(TAG "_0x594", "ms_v_charge_inprogress: %u",
                          StdMetrics.ms_v_charge_inprogress->AsBool());  // working
-                ESP_LOGV(TAG, "ms_v_env_cabinsetpoint: %f",
+                ESP_LOGV(TAG "_0x594", "ms_v_env_cabinsetpoint: %f",
                          StdMetrics.ms_v_env_cabinsetpoint->AsFloat());  // working
                 if (StdMetrics.ms_v_charge_type->AsString() == "ccs") {
-                    ESP_LOGI(TAG, "ms_v_charge_type: ccs");
+                    ESP_LOGI(TAG "_0x594", "ms_v_charge_type: ccs");
                 }
                 if (StdMetrics.ms_v_charge_type->AsString() == "type2")  // working
                 {
-                    ESP_LOGV(TAG, "ms_v_charge_type: type2");
+                    ESP_LOGV(TAG "_0x594", "ms_v_charge_type: type2");
                 }
                 if (StdMetrics.ms_v_charge_type->AsString() == "undefined")  // working
                 {
-                    ESP_LOGV(TAG, "ms_v_charge_type: undefined");
+                    ESP_LOGV(TAG "_0x594", "ms_v_charge_type: undefined");
                 }
             }
 
@@ -590,7 +571,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             cnt59++;
             if (cnt59 == 10) {
                 cnt59 = 0;
-                ESP_LOGV(TAG, "0x59E: ms_v_bat_temp: %f", tmp_f32);  // working
+                ESP_LOGV(TAG "_0x59E", "ms_v_bat_temp: %f", tmp_f32);  // working
             }
             break;
         }
@@ -600,14 +581,14 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
                       0;  // energieinhalt Faktor 50 Offset 0, Minimum 0, Maximum 102250 [Wh]
                           // Initial 102300
             tmp_u16 = (uint16_t)tmp_u16;
-            tmp_f32 = ((float)tmp_u16) * 50.0F;
+            tmp_f32 = ((float)tmp_u16) * 50.0F / 1000.0F;
             StandardMetrics.ms_v_bat_capacity->SetValue(tmp_f32);  // working
 
             static uint8_t cnt590 = 0;
             cnt590++;
             if (cnt590 == 10) {
                 cnt590 = 0;
-                ESP_LOGV(TAG, "0x5CA: ms_v_bat_capacity: %f", tmp_f32);  // working
+                ESP_LOGV(TAG "_0x5CA", "ms_v_bat_capacity: %f", tmp_f32);  // working
             }
 
             break;
@@ -616,6 +597,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
         //   {
         //   break;
         //   }
+        //  TODO(:I'm not sure what this is reporting, doesn't seem to change with me setting climate control
         case 0x5EA:  // Temperatur, Stati der Standklimatisierung
         {
             tmp_u16 = ((uint16_t)(d[6] & 0xfc) >> 2) | ((uint16_t)(d[7] & 0xf) << 6) |
@@ -627,7 +609,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             static uint8_t cnt592 = 0;
             cnt592++;
             if (cnt592 == 10) {
-                ESP_LOGI(TAG, "0x5EA: cabinTempClimateController: %f", tmp_f32);
+                ESP_LOGI(TAG "_0x5EA", "cabinTempClimateController: %f", tmp_f32);
             }
 
             tmp_u8 = ((uint8_t)(d[3] & 0xc0) >> 6) | ((uint8_t)(d[4] & 0x1) << 2) |
@@ -635,7 +617,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u8 = (uint8_t)tmp_u8;
 
             if (cnt592 == 10) {
-                ESP_LOGI(TAG, "0x5EA: StandklimaRemoteModus: %u", tmp_u8);
+                ESP_LOGI(TAG "_0x5EA", "StandklimaRemoteModus: %u", tmp_u8);
             }
 
             tmp_u8 = ((uint8_t)(d[3] & 0x38) >> 6) |
@@ -643,7 +625,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u8 = (uint8_t)tmp_u8;
 
             if (cnt592 == 10) {
-                ESP_LOGI(TAG, "0x5EA: StandklimaStatus_02: %u", tmp_u8);
+                ESP_LOGI(TAG "_0x5EA", "StandklimaStatus_02: %u", tmp_u8);
             }
 
             tmp_u8 = ((uint8_t)(d[0] & 0xe) >> 1) |
@@ -652,7 +634,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
 
             if (cnt592 == 10) {
                 cnt592 = 0;
-                ESP_LOGI(TAG, "0x5EA: StandklimaStatus_03: %u", tmp_u8);
+                ESP_LOGI(TAG "_0x5EA", "StandklimaStatus_03: %u", tmp_u8);
             }
 
             break;
@@ -664,14 +646,16 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u16 = (uint16_t)tmp_u16;
             tmp_f32 = ((float)tmp_u16) * 1.0F;
             StandardMetrics.ms_v_bat_range_est->SetValue(tmp_f32);  // working
-            ESP_LOGV(TAG, "ms_v_bat_range_est: %f", tmp_f32);
+            // This matches what is reported on the instrument cluster
+            ESP_LOGV(TAG "_0x5F5", "ms_v_bat_range_est: %f", tmp_f32);
 
             tmp_u16 = ((uint16_t)(d[0] & 0xff) << 0) | ((uint16_t)(d[1] & 0x7) << 8) |
                       0;  // Reichweite Faktor 1 Offset 0, Minimum 0, Maximum 2044 [km] Initial 0
             tmp_u16 = (uint16_t)tmp_u16;
             tmp_f32 = ((float)tmp_u16) * 1.0F;
+            // This is currently lower than the estimated range
             StdMetrics.ms_v_bat_range_ideal->SetValue(tmp_f32);  // working
-            ESP_LOGV(TAG, "ms_v_bat_range_ideal: %f", tmp_f32);
+            ESP_LOGV(TAG "_0x5F5", "ms_v_bat_range_ideal: %f", tmp_f32);
             break;
         }
         case 0x65A:  // BCM_01
@@ -683,14 +667,14 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             static uint8_t cnt3 = 0;
             cnt3++;
             if (cnt3 == 10) {
-                ESP_LOGI(TAG, "0x65A: MHSchalter: %u", tmp_u8);
+                ESP_LOGI(TAG "_0x65A", "MHSchalter: %u", tmp_u8);
             }
             tmp_u8 = ((uint8_t)(d[4] & 0x1) << 0) |
                      0;                /// Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
             tmp_u8 = (uint8_t)tmp_u8;  // MHWIVSchalter
             if (cnt3 == 10) {
                 cnt3 = 0;
-                ESP_LOGI(TAG, "0x65A: MHWIVSchalter: %u", tmp_u8);
+                ESP_LOGI(TAG "_0x65A", "MHWIVSchalter: %u", tmp_u8);
             }
             StdMetrics.ms_v_door_hood->SetValue(tmp_u8);
             break;
@@ -707,7 +691,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             cnt3++;
             if (cnt3 == 10) {
                 cnt3 = 0;
-                ESP_LOGI(TAG, "0x66E: ms_v_env_cabintemp: %f", tmp_f32);
+                ESP_LOGI(TAG "_0x66E", "ms_v_env_cabintemp: %f", tmp_f32);
             }
             break;
         }
@@ -723,7 +707,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             cnt40++;
             if (cnt40 == 10) {
                 cnt40 = 0;
-                ESP_LOGI(TAG, "0x6B0: FS Temperatur: %f", tmp_f32);
+                ESP_LOGI(TAG "_0x6B0", "FS Temperatur: %f", tmp_f32);
             }
             break;
         }
@@ -737,7 +721,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             static uint8_t cnt4 = 0;
             cnt4++;
             if (cnt4 == 10) {
-                ESP_LOGI(TAG, "0x6B5: FSATempSensor: %f", tmp_f32);
+                ESP_LOGI(TAG "_0x6B5", "FSATempSensor: %f", tmp_f32);
             }
 
             tmp_u16 =
@@ -747,7 +731,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_f32 = ((float)tmp_u16) * 0.1F - 40.0F;
             if (cnt4 == 10) {
                 cnt4 = 0;
-                ESP_LOGI(TAG, "0x6B5: FSATempLuft: %f", tmp_f32);  // only initial temp shown
+                ESP_LOGI(TAG "_0x6B5", "FSATempLuft: %f", tmp_f32);  // only initial temp shown
             }
             break;
         }
@@ -760,7 +744,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u32 = (uint32_t)tmp_u32;
             // tmp_f32 = ((float)tmp_u32)*1.0F;
             StandardMetrics.ms_v_pos_odometer->SetValue(tmp_u32);  // working
-            ESP_LOGV(TAG, "ms_v_pos_odometer: %u", tmp_u32);
+            ESP_LOGV(TAG "_0x6B7", "ms_v_pos_odometer: %u", tmp_u32);
 
             tmp_u32 =
                 ((uint32_t)(d[2] & 0xf0) << 4) | ((uint32_t)(d[3] & 0xff) << 4) |
@@ -769,14 +753,14 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
             tmp_u32 = (uint32_t)tmp_u32;
             // tmp_f32 = ((float)tmp_u32)*1.0F;
             StandardMetrics.ms_v_env_parktime->SetValue(tmp_u32);
-            ESP_LOGV(TAG, "ms_v_env_parktime: %u", tmp_u32);  // working
+            ESP_LOGV(TAG "_0x6B7", "ms_v_env_parktime: %u", tmp_u32);  // working
 
             tmp_u8 = ((uint8_t)(d[7] & 0xff) << 0) |
                      0;  // outerTemp Faktor 0.5 Offset -50, Minimum -50, Maximum 75 [°C] Initial 77
             tmp_u8 = (uint8_t)tmp_u8;
             tmp_f32 = ((float)tmp_u8) * 0.5F - 50.0F;
             StandardMetrics.ms_v_env_temp->SetValue(tmp_f32);  // working
-            ESP_LOGV(TAG, "ms_v_env_temp: %f", tmp_f32);
+            ESP_LOGV(TAG "_0x6B7", "ms_v_env_temp: %f", tmp_f32);
             break;
         }
         case 0x3C0:  // clamp status received
