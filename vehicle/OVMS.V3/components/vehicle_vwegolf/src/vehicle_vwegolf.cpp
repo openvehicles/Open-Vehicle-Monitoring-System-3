@@ -47,7 +47,7 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS); //FCAN -> Powertrain CAN
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN -> convenience CAN
 
-    OvmsCommand *cmd_vweg = MyCommandApp.RegisterCommand("xvg", "VW-eGolf framework");
+    OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg", "VW-eGolf framework");
     cmd_vweg->RegisterCommand("offline", "OVMS please go offline", [this](...) {
         m_is_control_active = false;
         ESP_LOGI(TAG, "Heartbeat sending should be stopped");
@@ -76,9 +76,9 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit() {
     MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeGolf>("VWEG", "VW e-Golf");
 }
 
-void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
+void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
     m_last_message_received = 0;
-    uint8_t *d = p_frame->data.u8;
+    uint8_t* d = p_frame->data.u8;
 
     uint8_t tmp_u8 = 0;
     uint16_t tmp_u16 = 0;
@@ -286,8 +286,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
                 cnt = 0;
                 ESP_LOGV(TAG "_0x583", "ms_v_env_locked verriegelt: %u",
                          (d[2] & 0x2) >> 1);  // working //verriegelt extern ist
-                // not working ESP_LOGV(TAG "_0x583", "ms_v_env_locked gesafet: %u", (d[2] & 0x10) >>
-                // 14);//gesafet extern ist
+                // not working ESP_LOGV(TAG "_0x583", "ms_v_env_locked gesafet: %u", (d[2] & 0x10)
+                // >> 14);//gesafet extern ist
                 ESP_LOGV(TAG "_0x583", "ms_v_door_fl: %u", (d[3] & 0x1) << 0);
                 ESP_LOGV(TAG "_0x583", "ms_v_door_fr: %u", (d[3] & 0x2) >> 1);
                 ESP_LOGV(TAG "_0x583", "ms_v_door_rl: %u", (d[3] & 0x4) >> 2);
@@ -597,7 +597,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t *p_frame) {
         //   {
         //   break;
         //   }
-        //  TODO(:I'm not sure what this is reporting, doesn't seem to change with me setting climate control
+        //  TODO:I'm not sure what this is reporting, doesn't seem to change with me setting
+        //  climate control
         case 0x5EA:  // Temperatur, Stati der Standklimatisierung
         {
             tmp_u16 = ((uint16_t)(d[6] & 0xfc) >> 2) | ((uint16_t)(d[7] & 0xf) << 6) |
@@ -815,7 +816,7 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     }
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandLock(const char *pin) {
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandLock(const char* pin) {
     if (!PinCheck(pin)) {
         ESP_LOGW(TAG, "PinCheck failed in CommandLock");
         return Fail;
@@ -824,7 +825,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandLock(const char *pin) 
     return Success;
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandUnlock(const char *pin) {
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandUnlock(const char* pin) {
     if (!PinCheck(pin)) {
         ESP_LOGW(TAG, "PinCheck failed in CommandUnlock");
         return Fail;
@@ -878,7 +879,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
         ESP_LOGI(TAG, "Car is sleeping we are trying to wake it up");
         // Wake up the Bus //CLI: can can3 tx extended 0x17330301 0x40 0x00 0x01 0x1F 0x00 0x00 0x00
         // 0x00
-        canbus *comfBus;
+        canbus* comfBus;
         comfBus = m_can3;
         uint8_t length = 8;
         uint8_t data[length];
@@ -927,7 +928,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
     // uint32_t tmp_u32 = 0;
     // float tmp_f32 = 0.0F;
 
-    canbus *comfBus;
+    canbus* comfBus;
     comfBus = m_can3;
     uint8_t length = 8;
     uint8_t data[length];

@@ -46,14 +46,14 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     OvmsVehicleVWeGolf();
     ~OvmsVehicleVWeGolf();
 
-    void IncomingFrameCan3(CAN_frame_t *p_frame) override;
+    void IncomingFrameCan3(CAN_frame_t* p_frame) override;
 
     vehicle_command_t CommandHorn();
     vehicle_command_t CommandPanic();
     vehicle_command_t CommandIndicators();
     vehicle_command_t CommandMirrorFoldIn();
-    vehicle_command_t CommandLock(const char *pin) override;
-    vehicle_command_t CommandUnlock(const char *pin) override;
+    vehicle_command_t CommandLock(const char* pin) override;
+    vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandWakeup() override;
     void SendOcuHeartbeat();
 
