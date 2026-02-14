@@ -666,6 +666,9 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
     odoext = odo;
   else if (odoext > m_next_odo)
     odoext = m_next_odo;
+
+  if (odo == 0) // Edge case
+    odoext = 0;
   if (isOn) {
     // Car is ON
     ESP_LOGI(TAG, "CAR IS ON");
