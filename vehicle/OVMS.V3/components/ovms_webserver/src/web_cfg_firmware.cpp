@@ -40,8 +40,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   std::string cmdres, mru;
   std::string action;
   ota_info info;
-  bool auto_enable, auto_allow_modem;
-  std::string auto_hour, server, tag, hardware;
+  bool auto_enable, auto_allow_modem, auto_buffer, auto_reboot;
+  std::string auto_hour, min_sd_space, server, tag, hardware;
   std::string output;
   std::string version;
   const char *what;
@@ -54,7 +54,10 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
     auto_enable = (c.getvar("auto_enable") == "yes");
     auto_allow_modem = (c.getvar("auto_allow_modem") == "yes");
+    auto_buffer = (c.getvar("auto_buffer") == "yes");
+    auto_reboot = (c.getvar("auto_reboot") == "yes");
     auto_hour = c.getvar("auto_hour");
+    min_sd_space = c.getvar("min_sd_space");
     server = c.getvar("server");
     tag = c.getvar("tag");
     hardware = GetOVMSProduct();
@@ -75,7 +78,10 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       if (!error) {
         MyConfig.SetParamValueBool("auto", "ota", auto_enable);
         MyConfig.SetParamValueBool("ota", "auto.allow.modem", auto_allow_modem);
+        MyConfig.SetParamValueBool("ota", "auto.buffer", auto_buffer);
+        MyConfig.SetParamValueBool("ota", "auto.reboot", auto_reboot);
         MyConfig.SetParamValue("ota", "auto.hour", auto_hour);
+        MyConfig.SetParamValue("ota", "min.sd.space", min_sd_space);
         MyConfig.SetParamValue("ota", "server", server);
         MyConfig.SetParamValue("ota", "tag", tag);
       }
@@ -113,7 +119,10 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     // read config:
     auto_enable = MyConfig.GetParamValueBool("auto", "ota", true);
     auto_allow_modem = MyConfig.GetParamValueBool("ota", "auto.allow.modem", false);
+    auto_buffer = MyConfig.GetParamValueBool("ota", "auto.buffer", false);
+    auto_reboot = MyConfig.GetParamValueBool("ota", "auto.reboot", false);
     auto_hour = MyConfig.GetParamValue("ota", "auto.hour", "2");
+    min_sd_space = MyConfig.GetParamValue("ota", "min.sd.space", "50");
     server = MyConfig.GetParamValue("ota", "server");
     tag = MyConfig.GetParamValue("ota", "tag");
     hardware = GetOVMSProduct();
@@ -177,6 +186,18 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   c.input("number", "Auto update hour of day", "auto_hour", auto_hour.c_str(), "0-23, default: 2", NULL, "min=\"0\" max=\"23\" step=\"1\"");
   c.input_checkbox("…allow via modem", "auto_allow_modem", auto_allow_modem,
     "<p>Automatic updates are normally only done if a wifi connection is available at the time. Before allowing updates via modem, be aware a single firmware image has a size of around 3 MB, which may lead to additional costs on your data plan.</p>");
+  c.input_checkbox("… auto reboot", "auto_reboot", auto_reboot,
+    "<p>If enabled, the module will automatically reboot after a successful manual flash (HTTP, SD or VFS)."
+    " If disabled, the new firmware is written but not activated until the next manual reboot."
+    " Auto updates always reboot regardless of this setting.</p>");
+  c.input_checkbox("…buffer on SD card", "auto_buffer", auto_buffer,
+    "<p>If enabled, auto updates will try to download firmware to the SD card first, then flash from there."
+    " This is more reliable on slow or unstable connections. Falls back to direct flash if the SD card"
+    " is not available or has insufficient space.</p>");
+  c.input("number", "Minimal SD card space (MB)", "min_sd_space", min_sd_space.c_str(), "Default: 50",
+    "<p>Free space to keep on SD card when downloading firmware (headroom for logs, CAN traces, etc.).</p>",
+    "min=\"0\" max=\"10000\" step=\"1\"", "MB");
+  c.print("<hr>");
   c.print(
     "<datalist id=\"server-list\">"
       "<option value=\"https://api.openvehicles.com/firmware/ota\">"
@@ -260,7 +281,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<ol>"
       "<li>Place the file <code>ovms3.bin</code> in the SD root directory.</li>"
       "<li>Insert the SD card, wait until the module reboots.</li>"
-      "<li>Note: after processing the file will be renamed to <code>ovms3.done</code>.</li>"
+      "<li>Note: after processing the file will be renamed to <code>ovms3.&lt;partition&gt;.done</code> (e.g. <code>ovms3.ota_0.done</code>).</li>"
     "</ol>");
   c.input_info("Upload",
     "Not yet implemented. Please copy your update file to an SD card and enter the path below.");
@@ -358,64 +379,86 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "}' />\n"
     "\n"
     "<script>\n"
+      "var flashPollTimer=null;\n"
       "function setloading(sel, on){"
         "$(sel+\" button\").prop(\"disabled\", on);"
         "if (on) $(sel).addClass(\"loading\");"
         "else $(sel).removeClass(\"loading\");"
-      "}"
+      "}\n"
+      "function flashPoll(){"
+        "$.post(\"/api/execute\",{command:\"ota flash status\",type:\"text\"},function(data){"
+          "var s=data.replace(/^\\s+|\\s+$/g,\"\");"
+          "if(s.indexOf(\"idle\")>=0){"
+            "clearInterval(flashPollTimer); flashPollTimer=null;"
+            "$(\"#output\").append(\"\\nFlash task finished.\\n\");"
+            "setloading(\"#flash-dialog\",false);"
+            "return;"
+          "}"
+          "if(s.indexOf(\"reboot disabled\")>=0){"
+            "clearInterval(flashPollTimer); flashPollTimer=null;"
+            "$(\"#output\").append(\"\\nFlash complete \\u2013 reboot manually to activate new firmware.\\n\");"
+            "setloading(\"#flash-dialog\",false);"
+            "return;"
+          "}"
+          "var m=s.match(/\\(([0-9]+)%\\)/);"
+          "var perc=m?parseInt(m[1]):0;"
+          "var bar=\"[\"+Array(Math.round(perc/2)+1).join(\"#\")+Array(51-Math.round(perc/2)).join(\".\")+\"] \"+perc+\"%\";"
+          "var lines=$(\"#output\").text().split(\"\\n\");"
+          "if(lines.length>0 && lines[lines.length-1].indexOf(\"[\")===0) lines.pop();"
+          "lines.push(bar);"
+          "$(\"#output\").text(lines.join(\"\\n\"));"
+          "$(\"#output\").scrollTop($(\"#output\")[0].scrollHeight);"
+        "}).fail(function(){"
+          "clearInterval(flashPollTimer); flashPollTimer=null;"
+          "$(\"#output\").append(\"\\nConnection lost \\u2013 module is rebooting\\u2026\\n\");"
+          "setloading(\"#flash-dialog\",false);"
+          "setTimeout(function(){location.reload();},15000);"
+        "});"
+      "}\n"
+      "function startFlash(cmd){"
+        "$(\"#output\").text(\"Launching flash task\\u2026\\n\");"
+        "setloading(\"#flash-dialog\",true);"
+        "$(\"#flash-dialog\").modal(\"show\");"
+        "loadcmd(cmd, \"+#output\").done(function(){"
+          "flashPollTimer=setInterval(flashPoll,2000);"
+        "});"
+      "}\n"
       "$(\".action-update-now\").on(\"click\", function(ev){"
         "var server = $(\"input[name=server]\").val() || \"https://api.openvehicles.com/firmware/ota\";"
         "var tag = $(\"input[name=tag]\").val() || \"main\";"
         "var hardware = \"" + hardware + "\";"
         "var url = server.replace(/\\/$/, \"\") + \"/\" + hardware + \"/\" + tag + \"/ovms3.bin\";"
-        "$(\"#output\").text(\"Processing… (do not interrupt, may take some minutes)\\n\");"
-        "setloading(\"#flash-dialog\", true);"
-        "$(\"#flash-dialog\").modal(\"show\");"
-        "loadcmd(\"ota flash http \" + url, \"+#output\").done(function(resp){"
-          "setloading(\"#flash-dialog\", false);"
-        "});"
+        "startFlash(\"ota flash http \" + url);"
         "ev.stopPropagation();"
         "return false;"
-      "});"
+      "});\n"
       "$(\".section-flash button\").on(\"click\", function(ev){"
         "var action = $(this).attr(\"value\");"
         "if (!action) return;"
-        "$(\"#output\").text(\"Processing… (do not interrupt, may take some minutes)\\n\");"
-        "setloading(\"#flash-dialog\", true);"
-        "$(\"#flash-dialog\").modal(\"show\");"
         "if (action == \"flash-http\") {"
-          "var flash_http = $(\"input[name=flash_http]\").val();"
-          "loadcmd(\"ota flash http \" + flash_http, \"+#output\").done(function(resp){"
-            "setloading(\"#flash-dialog\", false);"
-          "});"
+          "startFlash(\"ota flash http \" + $(\"input[name=flash_http]\").val());"
         "}"
         "else if (action == \"flash-sd\") {"
-          "var flash_http = $(\"input[name=flash_http]\").val();"
-          "loadcmd(\"ota flash sd \" + flash_http, \"+#output\").done(function(resp){"
-            "setloading(\"#flash-dialog\", false);"
-          "});"
+          "startFlash(\"ota flash sd \" + $(\"input[name=flash_http]\").val());"
         "}"
         "else if (action == \"flash-vfs\") {"
-          "var flash_vfs = $(\"input[name=flash_vfs]\").val();"
-          "loadcmd(\"ota flash vfs \" + flash_vfs, \"+#output\").done(function(resp){"
-            "setloading(\"#flash-dialog\", false);"
-          "});"
+          "startFlash(\"ota flash vfs \" + $(\"input[name=flash_vfs]\").val());"
         "}"
         "else {"
           "$(\"#output\").text(\"Unknown action.\");"
-          "setloading(\"#flash-dialog\", false);"
         "}"
         "ev.stopPropagation();"
         "return false;"
-      "});"
+      "});\n"
       "$(\".action-reboot\").on(\"click\", function(ev){"
         "$(\"#flash-dialog\").removeClass(\"fade\").modal(\"hide\");"
         "loaduri(\"#main\", \"post\", \"/cfg/firmware\", { \"action\": \"reboot\" });"
-      "});"
+      "});\n"
       "$(\".action-close\").on(\"click\", function(ev){"
+        "if(flashPollTimer){clearInterval(flashPollTimer);flashPollTimer=null;}"
         "$(\"#flash-dialog\").removeClass(\"fade\").modal(\"hide\");"
         "loaduri(\"#main\", \"get\", \"/cfg/firmware\");"
-      "});"
+      "});\n"
     "</script>");
 
   c.done();

@@ -52,8 +52,18 @@ typedef enum
   {
   OTA_FlashCfg_Default,         // standard OTA update
   OTA_FlashCfg_Force,           // force OTA update (skip version check)
-  OTA_FlashCfg_FromSD           // perform update from SD card (/sd/ovms3.bin)
+  OTA_FlashCfg_FromSD,          // perform update from SD card (/sd/ovms3.bin)
+  OTA_FlashCfg_HTTP,            // manual OTA flash via HTTP
+  OTA_FlashCfg_SD,              // manual download to SD and flash
+  OTA_FlashCfg_VFS              // manual OTA flash from VFS file
   } ota_flashcfg_t;
+
+struct ota_flash_params_t
+  {
+  ota_flashcfg_t cfg;
+  std::string url;
+  bool reboot;
+  };
 
 class OvmsOTA
   {
@@ -65,8 +75,10 @@ class OvmsOTA
     static void GetStatus(ota_info& info, bool check_update=true);
 
   public:
-    void LaunchAutoFlash(ota_flashcfg_t cfg=OTA_FlashCfg_Default);
+    void LaunchOTAFlash(ota_flashcfg_t cfg=OTA_FlashCfg_Default, const std::string& url="", bool reboot=false);
     bool AutoFlash(bool force=false);
+    bool FlashHTTP(const std::string& url);
+    bool FlashVFS(const std::string& path);
     void Ticker600(std::string event, void* data);
 
   public:
@@ -90,6 +102,7 @@ class OvmsOTA
     void CheckFlashSD(std::string event, void* data);
   public:
     bool AutoFlashSD();
+    bool FlashSD(const std::string& url);
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
   };
 

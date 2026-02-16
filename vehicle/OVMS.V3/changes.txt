@@ -4,12 +4,21 @@ Open Vehicle Monitor System v3 - Change log
 - OTA: added optional firmware download to SD card before flashing
     Downloads firmware image to SD card first, then flashes from local file.
     Useful on slow/unstable connections (cellular) to avoid flash corruption on transfer errors.
-    Uses .dl extension during download, renames to .done on completion for crash safety.
+    Uses .dl extension during download, renames to ovms3.<partition>.done on completion
+    (e.g. ovms3.ota_0.done), preserving history for both OTA partitions.
     URL resolution: explicit argument > http.mru > server config (same as ota flash http).
-    Shows cellular connection warning when not on WiFi.
-    Web UI: "Download to SD & Flash" button added to firmware page (if SD card available).
+    All flash operations run as background tasks with progress polling via "ota flash status".
+    SD card I/O uses 8KB heap buffers + 4KB stdio buffering for ~16x faster transfers.
+    Web UI: "Download to SD & Flash" button added to firmware page (if SD card available),
+    with live progress bar and automatic page reload after reboot.
+    Shows cellular connection warning when on WiFi-AP.
   New command:
     ota flash sd [<url>]                  -- Download firmware to SD card, then flash
+    ota flash status                      -- Show current flash operation progress
+  New config:
+    [ota] auto.buffer (bool)              -- Buffer auto/http-update downloads to SD card (default: no)
+    [ota] min.sd.space (int)              -- SD card free space reserve in MB (default: 50)
+    [ota] auto.reboot (bool)              -- Automatic reboot after successful flash (default: no)
 - Module: added heap integrity check + alert command for usage in e.g. custom event scripts,
     enables adding checks on specific system events and/or with higher frequency.
     Example: perform heap integrity check when the server V2 gets stopped:
