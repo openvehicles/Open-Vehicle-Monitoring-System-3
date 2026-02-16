@@ -387,7 +387,7 @@ void OvmsVehicleKiaNiroEv::IncomingFull_VMCU(uint16_t type, uint16_t pid, const 
 }
 
 /**
- * Handle incoming messages from VMCU-poll
+ * Handle incoming messages from MCU-poll
  *
  * -
  */
@@ -430,7 +430,7 @@ void OvmsVehicleKiaNiroEv::IncomingFull_MCU(uint16_t type, uint16_t pid, const s
  */
 void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const std::string &data)
 {
-	uint32_t value;
+	uint16_t value;
 	std::string cells;
 	float current;
 	switch (pid)
@@ -469,11 +469,12 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 
 		if (get_buff_int_be<1>(data, 4, value))
 			m_b_bms_soc->SetValue(value / 2.0);
-
+		
 		if (get_uint_buff_be<2>(data, 5, value)){
 			m_c_power->SetValue((float)value / 100.0, kW);
 			ESP_LOGD(TAG, "Bat c-power: %f ", (float)value / 100.0);
 		}
+
 		if (get_buff_int_be<1>(data, 9, value))
 		{
 			ESP_LOGD(TAG, "BMS Relay: %d", get_bit<0>(value));
@@ -570,28 +571,28 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 		if (get_buff_int_be<1>(data, 28, value))
 				kn_charge_bits.FanStatus = value & 0xF; */
 
-		if (get_uint_buff_be<4>(data, 34, value)){
+		if (get_uint_buff_be<4>(data, 39, value)){
 			StdMetrics.ms_v_bat_energy_recd_total->SetValue(value*100, WattHours);
-		}
-
-		if (get_uint_buff_be<4>(data, 30, value)){
-			StdMetrics.ms_v_bat_energy_used_total->SetValue(value*100, WattHours);
-		}
-
-		if (get_uint_buff_be<4>(data, 42, value)){
-			StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(value * 0.1f, AmpHours);
 			kia_battery_cum_charge = value;
 		}
 
-		if (get_uint_buff_be<4>(data, 38, value)){
+		if (get_uint_buff_be<4>(data, 34, value)){
+			StdMetrics.ms_v_bat_energy_used_total->SetValue(value*100, WattHours);
+			kia_battery_cum_discharge = value;
+		}
+
+		/* if (get_uint_buff_be<4>(data, 43, value)){
+			StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(value/10, AmpHours);
+		}
+
+		if (get_uint_buff_be<4>(data, 36, value)){
 			StdMetrics.ms_v_bat_coulomb_used_total->SetValue(value/10, AmpHours);
-			// kia_battery_cum_discharge = value;
 		}
 
 		if (get_uint_buff_be<4>(data, 46, value)){
 			// this could be a standard metric
 			kia_battery_cum_op_time = (value / 3600);
-		}
+		} */
 
 		if (get_buff_int_be<1>(data, 50, value))
 		{
@@ -709,43 +710,16 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BCM(uint16_t type, uint16_t pid, const s
 
 		for (int idx = 0; idx < 4; ++idx) {
         //   if (get_uint_buff_be<3>(data, 4 + (idx * 4), idPart)) {
-          if (get_uint_buff_be<1>(data, 4 + (idx * 4), iPSI) || get_uint_buff_be<2>(data, 5 + (idx * 4), iTemp)) {
-              StdMetrics.ms_v_tpms_pressure->SetElemValue(kia_tpms_id[idx], iPSI / 5);
-              StdMetrics.ms_v_tpms_temp->SetElemValue(kia_tpms_id[idx], iTemp / 1000);
-          }
-        }
+			if (get_uint_buff_be<1>(data, 4 + (idx * 4), iPSI)){
+			  	if (iPSI > 0)
+			  		StdMetrics.ms_v_tpms_pressure->SetElemValue(idx, iPSI / 5.0, PSI);
+			}
 
-		/* if (get_uint_buff_be<1>(data, 4, iPSI) || get_uint_buff_be<2>(data, 5, iTemp)) {
-          if (iPSI > 0) 
-            StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, iPSI / 5.0, PSI);
-          
-          if (iTemp > 0) 
-            StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, iTemp / 1000, Celcius);
+			if (get_uint_buff_be<2>(data, 5 + (idx * 4), iTemp)){
+				if (iTemp > 0)
+					StdMetrics.ms_v_tpms_temp->SetElemValue(idx, iTemp / 1000, Celcius);
+          	}
         }
-
-		if (get_uint_buff_be<1>(data, 9, iPSI) || get_uint_buff_be<2>(data, 10, iTemp)) {
-          if (iPSI > 0) 
-            StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, iPSI / 5.0, PSI);
-          
-          if (iTemp > 0) 
-            StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, iTemp / 1000, Celcius);
-        }
-
-		if (get_uint_buff_be<1>(data, 12, iPSI) || get_uint_buff_be<2>(data, 13, iTemp)) {
-          if (iPSI > 0) 
-            StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, iPSI / 5.0, PSI);
-          
-          if (iTemp > 0) 
-            StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, iTemp / 1000, Celcius);
-        }
-
-		if (get_uint_buff_be<1>(data, 16, iPSI) || get_uint_buff_be<2>(data, 17, iTemp)) {
-          if (iPSI > 0) 
-            StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, iPSI / 5.0, PSI);
-          
-          if (iTemp > 0) 
-            StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, iTemp / 1000, Celcius);
-        } */
 	}
 	break;
 	}

@@ -133,7 +133,7 @@ static const OvmsPoller::poll_pid_t vehicle_kianiroev_polls[] =
   };
 
 // Charging profile
-// Based mostly on this graph: https://support.fastned.nl/hc/en-gb/articles/360007699174-Charging-with-a-Kia-e-Niro
+// Based mostly on this graph: https://ev-database.org/img/fastcharge/1165-FastchargeCurve.png
 charging_profile ioniq_charge_steps[] = {
 		//from%, to%, Chargespeed in Wh
        { 0,	 	0,     0 },
@@ -327,10 +327,10 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
  */
 OvmsVehicleKiaNiroEv::~OvmsVehicleKiaNiroEv()
   {
-  ESP_LOGI(TAG, "Shutdown Kia Niro / Hyundai Kona EV vehicle module");
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.DeregisterPage("/bms/cellmon");
-#endif
+  	ESP_LOGI(TAG, "Shutdown Kia Niro / Hyundai Kona EV vehicle module");
+	#ifdef CONFIG_OVMS_COMP_WEBSERVER
+	MyWebServer.DeregisterPage("/bms/cellmon");
+	#endif
   }
 
 /**
@@ -562,9 +562,9 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 			--xkn_keep_awake;
 
 		// *** AUX Battery drain prevention code ***
-		#ifndef __GNUC__
+		/* #ifndef __GNUC__
 		#pragma region AUX Drain
-		#endif
+		#endif */
   		bool isRunning = StdMetrics.ms_v_env_on->AsBool();
 		bool isLocked = StdMetrics.ms_v_env_locked->AsBool();
 		if(StdMetrics.ms_v_bat_12v_voltage_alert->AsBool()) {
@@ -626,7 +626,7 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
           				PollState_PingCap(60);
 					}
 				} else if (ISPOLLING_OFF || ISPOLLING_PING) {
-        			//If client connects while poll state is off
+        			//If client ckonnects while poll state is off
 					//Update the state to relevent state
 
 					xkn_keep_awake = 0;
@@ -646,16 +646,16 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 		}
 
 		if(!isRunning && !isCharging && wasPaused && (xkn_keep_awake == 0)) {
+			ESP_LOGD(TAG,"Timed Out");
 			if (ISPOLLING_OFF) {
-				ESP_LOGD(TAG,"Timed Out");
 				ESP_LOGD(TAG,"Setting Polling to Off");
 				POLLSTATE_OFF
 			}
 		}
 
-		#ifndef __GNUC__
+		/* #ifndef __GNUC__
 		#pragma endregion
-		#endif
+		#endif */
 		//**** End of AUX Battery drain prevention code ***
 
 		// Reset emergency light if it is stale.
@@ -845,9 +845,17 @@ void OvmsVehicleKiaNiroEv::HandleChargeStop()
 		// ESP_LOGI(TAG, "SetChargeMetrics: volt=%1f current=%1f chargeLimit=%1f", voltage, current, climit);
 
 		//"Typical" consumption based on battery temperature and ambient temperature.
-		float temp = ((StdMetrics.ms_v_bat_temp->AsFloat(Celcius) * 3) + StdMetrics.ms_v_env_temp->AsFloat(Celcius)) / 4;
-		float consumption = 15 + (20 - temp) * 3.0 / 8.0; // kWh/100km
-		m_c_speed->SetValue((voltage * current) / (consumption * 10), Kph);
+		float temperature = StdMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
+		float temp =  temperature;
+		if (StdMetrics.ms_v_env_temp->IsDefined()) {
+			if (StdMetrics.ms_v_bat_temp->IsDefined()) {
+			temp = (( temp * 3) + StdMetrics.ms_v_env_temp->AsFloat(Celcius)) / 4;
+			} else {
+			temp = StdMetrics.ms_v_env_temp->AsFloat(Celcius);
+			}
+		}
+		float consumption = 15 + (20 - temp) * 3.0 / 8.0; //kWh/100km
+		m_c_speed->SetValue( (voltage * current) / (consumption * 10), Kph);
 	}
 
 /**
@@ -936,12 +944,13 @@ void OvmsVehicleKiaNiroEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState ne
 /**
  * Updates the maximum real world range at current temperature.
  * Also updates the State of Health
+ * TODO: Update Range estimation to read what the SOC
  */
 void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 	{
 	float Distance, EnergyUsed;
 	//Update State of Health using following assumption: 10% buffer
-	StdMetrics.ms_v_bat_cac->SetValue((kn_battery_capacity * BAT_SOH * BAT_SOC /10000.0) / 400, AmpHours);
+	StdMetrics.ms_v_bat_cac->SetValue((kn_battery_capacity * BAT_SOH /10000.0) / 400, AmpHours);
 	
 	Distance = kia_park_trip_counter.GetDistance();
 	EnergyUsed = kia_park_trip_counter.GetEnergyUsed();
