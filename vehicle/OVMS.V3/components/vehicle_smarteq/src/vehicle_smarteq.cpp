@@ -66,12 +66,12 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_ADCfactor_recalc = false;
   m_ADCfactor_recalc_timer = 0;
   m_adc_samples = 5;
+  m_gear = 0;
 
   m_enable_write = false;
   m_candata_poll = false;
   m_candata_timer = -1;
 
-  m_charge_start = false;
   m_charge_finished = true;
   m_notifySOClimit = false;
   m_led_state = 4;
@@ -411,13 +411,13 @@ void OvmsVehicleSmartEQ::HandleEnergy() {
     {
     // Update energy used and recovered   
     float energy = fabs(power / 3600.0f);       // 1 second worth of energy in kwh's
+    float current_Ah = fabs(StdMetrics.ms_v_bat_current->AsFloat(0.0f) / 3600.0f);   // 1 second worth of current in Ah
     if (power < 0.0f)
       {
       float energy_used = StdMetrics.ms_v_bat_energy_used->AsFloat(0.0f) + energy;
       float energy_used_total = StdMetrics.ms_v_bat_energy_used_total->AsFloat(0.0f) + energy;
       StdMetrics.ms_v_bat_energy_used->SetValue(energy_used);
       StdMetrics.ms_v_bat_energy_used_total->SetValue(energy_used_total);
-      float current_Ah = StdMetrics.ms_v_bat_current->AsFloat(0.0f) / 3600.0f;   // 1 second worth of current in Ah
       float coulomb_used = StdMetrics.ms_v_bat_coulomb_used->AsFloat(0.0f) + current_Ah;
       float coulomb_used_total = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(0.0f) + current_Ah;
       StdMetrics.ms_v_bat_coulomb_used->SetValue(coulomb_used);
@@ -429,7 +429,6 @@ void OvmsVehicleSmartEQ::HandleEnergy() {
       float energy_recd_total = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(0.0f) + energy;
       StdMetrics.ms_v_bat_energy_recd->SetValue(energy_recd);
       StdMetrics.ms_v_bat_energy_recd_total->SetValue(energy_recd_total);
-      float current_Ah = StdMetrics.ms_v_bat_current->AsFloat(0.0f) / 3600.0f;   // 1 second worth of current in Ah
       float coulomb_recd = StdMetrics.ms_v_bat_coulomb_recd->AsFloat(0.0f) + current_Ah;
       float coulomb_recd_total = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(0.0f) + current_Ah;
       StdMetrics.ms_v_bat_coulomb_recd->SetValue(coulomb_recd);
@@ -469,64 +468,63 @@ void OvmsVehicleSmartEQ::Handlev2Server(){
  * Update derived metrics when charging
  * Called once per 10 seconds from Ticker10
  */
-void OvmsVehicleSmartEQ::HandleCharging() {
-  float act_soc        = StdMetrics.ms_v_bat_soc->AsFloat(0, Percentage);
-  float limit_soc       = StdMetrics.ms_v_charge_limit_soc->AsFloat(0, Percentage);
-  float limit_range     = StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
-  float max_range       = StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
-  float charge_current  = fabs(StdMetrics.ms_v_bat_current->AsFloat(0, Amps));
-  float charge_voltage  = StdMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
-
-  // Are we charging?
-  if (!StdMetrics.ms_v_charge_pilot->AsBool()      ||
-      !StdMetrics.ms_v_charge_inprogress->AsBool() ||
-      (charge_current <= 0.0f) ) {
-    return;
-  }
+void OvmsVehicleSmartEQ::HandleCharging() {    
+  float act_soc         = StdMetrics.ms_v_bat_soc->AsFloat(0.0f);
+  float limit_soc       = StdMetrics.ms_v_charge_limit_soc->AsFloat(0.0f);
+  float limit_range     = StdMetrics.ms_v_charge_limit_range->AsFloat(0.0f);
+  float max_range       = StdMetrics.ms_v_bat_range_full->AsFloat(0.0f);
+  float charge_voltage  = StdMetrics.ms_v_bat_voltage->AsFloat(0.0f);  
+  float charge_current  = fabs(StdMetrics.ms_v_bat_current->AsFloat(0.0f));
+  float energy = fabs(StdMetrics.ms_v_bat_power->AsFloat(0.0f) / 3600.0f);
+  float charged = StdMetrics.ms_v_charge_kwh->AsFloat(0.0f);
 
   // Check if we have what is needed to calculate energy and remaining minutes
-  if (charge_voltage > 0.0f && charge_current > 0.0f) {
+  if (charge_voltage > 0.0f && charge_current > 0.0f) 
+    {
     // Update energy taken
-    // Value is reset to 0 when a new charging session starts...
-    float power  = charge_voltage * charge_current / 1000.0f;     // power in kw
-    float energy = power / 3600.0f * 1.0f;                         // 1 second worth of energy in kwh's
-    StdMetrics.ms_v_charge_kwh->SetValue( StdMetrics.ms_v_charge_kwh->AsFloat() + energy);
-
+    StdMetrics.ms_v_charge_kwh->SetValue( charged + energy);
     // If no limits are set, then calculate remaining time to full charge
-    if (limit_soc <= 0.0f && limit_range <= 0.0f) {
+    if (limit_soc <= 0.0f && limit_range <= 0.0f) 
+      {
       // If the charge power is above 12kW, then use the OBD duration value
-      if(StdMetrics.ms_v_charge_power->AsFloat() > 12.0f){
-        StdMetrics.ms_v_charge_duration_full->SetValue(mt_obd_duration->AsInt(), Minutes);
-        ESP_LOGV(TAG, "Time remaining: %d mins to 100%% soc", mt_obd_duration->AsInt());
-      } else {
+      if(StdMetrics.ms_v_charge_power->AsFloat(0.0f) > 12.0f)
+        {
+        StdMetrics.ms_v_charge_duration_full->SetValue(mt_obd_duration->AsInt(0));
+        ESP_LOGV(TAG, "Time remaining: %d mins to 100%% soc", mt_obd_duration->AsInt(0));
+        } 
+      else 
+        {
         float soc100 = 100.0f;
         int remaining_soc = calcMinutesRemaining(soc100, charge_voltage, charge_current);
         StdMetrics.ms_v_charge_duration_full->SetValue(remaining_soc, Minutes);
         ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", remaining_soc, soc100);
-      }
-    }    
+        }
+      }    
     // if limit_soc is set, then calculate remaining time to limit_soc
-    if (limit_soc > 0.0f) {
+    if (limit_soc > 0.0f) 
+      {
       int minsremaining_soc = calcMinutesRemaining(limit_soc, charge_voltage, charge_current);
 
       StdMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
-      if (act_soc >= limit_soc && !m_notifySOClimit) {
+      if (act_soc >= limit_soc && !m_notifySOClimit) 
+        {
         m_notifySOClimit = true;
         StdMetrics.ms_v_charge_duration_soc->SetValue(0, Minutes);
         ESP_LOGV(TAG, "Time remaining: 0 mins to %0.0f%% soc (already above limit)", limit_soc);
         NotifySOClimit();
+        }
       }
-    }
     // If limit_range is set, then calculate remaining time to that range
-    if (limit_range > 0.0f && max_range > 0.0f) {
+    if (limit_range > 0.0f && max_range > 0.0f) 
+      {
       float range_soc           = limit_range / max_range * 100.0f;
       int   minsremaining_range = calcMinutesRemaining(range_soc, charge_voltage, charge_current);
 
       StdMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
+      }
     }
-  }
 }
 
 void OvmsVehicleSmartEQ::UpdateChargeMetrics() {

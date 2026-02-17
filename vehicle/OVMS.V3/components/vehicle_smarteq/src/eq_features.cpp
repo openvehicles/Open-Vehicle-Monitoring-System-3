@@ -471,6 +471,12 @@ void OvmsVehicleSmartEQ::smartOn()
   m_idle_ticker = 15 * 60;
 }
 
+void OvmsVehicleSmartEQ::smartOff()
+{
+  // Reset gear
+  StdMetrics.ms_v_env_gear->SetValue(0);
+}
+
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
   // Set charging metrics
@@ -519,14 +525,12 @@ void OvmsVehicleSmartEQ::smartChargeStop()
 
 void OvmsVehicleSmartEQ::smartChargePrepare()
 {
-  m_charge_start = true;
   if (m_charge_finished) ResetChargingValues();
   if (m_resettrip) ResetTripCounters();
 }
 
 void OvmsVehicleSmartEQ::smartChargeFinish()
 {
-  m_charge_start = false;
   m_charge_finished = true;
   StdMetrics.ms_v_charge_power->SetValue(0);
 }

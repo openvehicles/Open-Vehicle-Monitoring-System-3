@@ -362,9 +362,12 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
   m_reply = "";
   sendReplyNotification = replyNotification;
 
-  auto mglock = MongooseLock();
+  // Note: as the pushover module has no retry feature (yet) and marks all incoming notifications as
+  //  read regardless of the actual transmission success, we try acquiring Mongoose for 250ms here;
+  //  can be reduced to 0 once a ticker retry mechanism has been implemented
+  auto mglock = MongooseLock(pdMS_TO_TICKS(250));
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
-  if (!mgr)
+  if (!mglock || !mgr)
     {
     ESP_LOGE(TAG, "Network manager is not available");
     delete http;
