@@ -430,183 +430,170 @@ void OvmsVehicleKiaNiroEv::IncomingFull_MCU(uint16_t type, uint16_t pid, const s
  */
 void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const std::string &data)
 {
-	uint16_t value;
+	uint8_t sValue = 0;
+	uint16_t value = 0;
+	uint16_t drive1 = 0, drive2 = 0;
+	uint32_t bValue = 0;
 	std::string cells;
 	float current;
 	switch (pid)
 	{
-		// 3 7 7 7 7 7 7 7 7
-		// ff fd e7 ff 30 0e c8 00 8e 03 ff 78 0c 67 0f 0d 0d 0d 0e 0e 0f 00 12 b4 02 b4 1f 00 00 98 00 00 b3 61 00 00 ae 4e 00 00 3b 5e 00 00 37 00 00 49 69 5c 09 01 3d 00 00 00 00 0b b8
-	case 0x0101:
-		// diag page 01: skip first frame (no data)
-		// ESP_LOGD(TAG, "Frame number %x",mlframe);
-		// ESP_LOGD(TAG, "BMC PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, mlframe, data[0], data[1], data[2], data[3],
-		// 		data[4], data[5], data[6]);
-
-		// --------------"Stolen" from HIF_can_poll 346------------------------------
-		          /* m_b_bms_relay->SetValue(get_bit<0>(value));
-          m_b_bms_soc->SetValue(value / 2.0);
-          StdMetrics.ms_v_bat_current->SetValue(current, Amps);
-          StdMetrics.ms_v_bat_voltage->SetValue(voltage, Volts);
-            m_c_power->SetValue( current * voltage, Watts);
-            StdMetrics.ms_v_charge_power->SetValue(-current * voltage, Watts);
-            StdMetrics.ms_v_charge_power->Clear();
-          m_b_min_temperature->SetValue( value );
-          m_b_max_temperature->SetValue( value );
-        BmsRestartCellTemperatures();
-          BmsSetCellTemperature(i, temp);
-          m_b_inlet_temperature->SetValue( value, Celcius );
-          StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(value * 0.1f, AmpHours);
-          StdMetrics.ms_v_bat_coulomb_used_total->SetValue(value/10, AmpHours);
-          StdMetrics.ms_v_bat_energy_recd_total->SetValue(value*100, WattHours);
-          StdMetrics.ms_v_bat_energy_used_total->SetValue(value*100, WattHours);
-          m_v_accum_op_time->SetValue(value, Seconds);
-          m_b_bms_ignition->SetValue(get_bit<2>(value));
-          // StandardMetrics.ms_v_mot_rpm->SetValue(drive); (Unable to verify)
-           */
-		// --------------------------------------------------------------------------
-
-
-		if (get_buff_int_be<1>(data, 4, value))
-			m_b_bms_soc->SetValue(value / 2.0);
-		
-		if (get_uint_buff_be<2>(data, 5, value)){
-			m_c_power->SetValue((float)value / 100.0, kW);
-			ESP_LOGD(TAG, "Bat c-power: %f ", (float)value / 100.0);
-		}
-
-		if (get_buff_int_be<1>(data, 9, value))
-		{
-			ESP_LOGD(TAG, "BMS Relay: %d", get_bit<0>(value));
-			m_b_bms_relay->SetValue(get_bit<0>(value));
-		}
-
-		current = 0;
-        int32_t signedValue;
-        if (!get_buff_int_be<2>(data, 10, signedValue )) {
-			ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Current: Bad Buffer");
-        }
-        else {
-			ESP_LOGD(TAG, "Bat Amp: %f", ((float)signedValue / 10.0));
-        	current = (float)signedValue / 10.0;
-        	StdMetrics.ms_v_bat_current->SetValue(current, Amps);
-        }
-
-        if (!get_uint_buff_be<2>(data, 12, value )) {
-          	ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Voltage: Bad Buffer");
-        } else {
-			ESP_LOGD(TAG, "Bat Volt: %f", ((float)value / 10.0));
-			float voltage = (float)value / 10.0;
-			StdMetrics.ms_v_bat_voltage->SetValue(voltage, Volts);
-
-			if (current != 0) {
-				ESP_LOGD(TAG, "Bat c-power: %f (old)", (float)(current * voltage));
+		case 0x0101:
+			if (get_uint_buff_be<1>(data, 4, sValue))
+				m_b_bms_soc->SetValue(sValue / 2.0);
+			
+			if (get_uint_buff_be<2>(data, 5, value)){
+				m_c_power->SetValue((float)value / 100.0, kW);
+				ESP_LOGD(TAG, "Max charge: %f ", (float)value / 100.0);
 			}
 
-			/* if (current < 0) {
-				StdMetrics.ms_v_charge_power->SetValue(-current * voltage, Watts);
-			} else {
-				StdMetrics.ms_v_charge_power->Clear();
-			} */
-        }
+			if (get_uint_buff_be<2>(data, 7, value)) {
+				m_c_power->SetValue((float)value / 100.0, kW);
+				ESP_LOGD(TAG, "Max power: %f ", (float)value / 100.0);
+			}
 
-		if (get_buff_int_be<1>(data, 14, value)){
-			StdMetrics.ms_v_bat_pack_tmax->SetValue(value);
-			m_b_max_temperature->SetValue(value);
-		}
+			/* Bit 0 - BMS relay Bit
+			*  Bit 1 - ???
+			*  Bit 5 - normal charge,
+			*  Bit 6 - rapid charge
+			*  Bit 7 - charging 
+			*/
+			if (get_buff_int_be<1>(data, 9, value))
+			{
+				ESP_LOGD(TAG, "BMS Relay: %d", get_bit<0>(value));
+				m_b_bms_relay->SetValue(get_bit<0>(value));
+			}
 
-		if (get_buff_int_be<1>(data, 15, value)){
-			StdMetrics.ms_v_bat_pack_tmin->SetValue((float)value);
-			m_b_min_temperature->SetValue(value);
-		}
+			current = 0;
+			int32_t signedValue;
+			if (get_buff_int_be<2>(data, 10, signedValue )) {
+				ESP_LOGD(TAG, "Bat Amp: %f", ((float)signedValue / 10.0));
+				current = (float)signedValue / 10.0;
+				StdMetrics.ms_v_bat_current->SetValue(current, Amps);
+			}
 
-		BmsRestartCellTemperatures();
-        int32_t temp;
-		if (get_buff_int_be<1>(data, 16, temp))
-			BmsSetCellTemperature(0, temp);
+			if (get_uint_buff_be<2>(data, 12, value )) {
+				float voltage = (float)value / 10.0;
+				ESP_LOGD(TAG, "Bat Volt: %f", voltage);
+				StdMetrics.ms_v_bat_voltage->SetValue(voltage, Volts);
+			}
 
-		if (get_buff_int_be<1>(data, 16, temp))
-			StdMetrics.ms_v_bat_temp->SetValue(temp, Celcius); // TODO Should we use Min temp or Max Temp?
+			if (get_buff_int_be<1>(data, 14, value)){
+				StdMetrics.ms_v_bat_pack_tmax->SetValue(value);
+				m_b_max_temperature->SetValue(value);
+			}
 
-		if (get_buff_int_be<1>(data, 17, temp))
-			BmsSetCellTemperature(1, temp);
+			if (get_buff_int_be<1>(data, 15, value)){
+				StdMetrics.ms_v_bat_pack_tmin->SetValue((float)value);
+				m_b_min_temperature->SetValue(value);
+			}
 
-		if (get_buff_int_be<1>(data, 18, temp))
-			BmsSetCellTemperature(2, temp);
+			BmsRestartCellTemperatures();
+			int32_t temp;
+			if (get_buff_int_be<1>(data, 16, temp))
+				BmsSetCellTemperature(0, temp);
 
-		if (get_buff_int_be<1>(data, 19, temp))
-			BmsSetCellTemperature(3, temp);
+				
+			if (get_buff_int_be<1>(data, 17, temp))
+				BmsSetCellTemperature(1, temp);
+				
+			if (get_buff_int_be<1>(data, 18, temp))
+				BmsSetCellTemperature(2, temp);
+				
+			if (get_buff_int_be<1>(data, 19, temp))
+				BmsSetCellTemperature(3, temp);
 
-		if (get_buff_int_be<1>(data, 22, value))
-			m_b_inlet_temperature->SetValue(value);
-		// ESP_LOGD(TAG, "Bat Inlet? temp: %d", value);
+			if (get_buff_int_be<1>(data, 20, temp))
+				BmsSetCellTemperature(4, temp);
+				
+			if (get_buff_int_be<1>(data, 22, value))
+				m_b_inlet_temperature->SetValue(value);
+				// ESP_LOGD(TAG, "Bat Inlet? temp: %d", value);
 
-		if (get_uint_buff_be<1>(data, 23, value)){
-			StdMetrics.ms_v_bat_cell_vmax->SetValue((float)value / 50.0, Volts);
-			m_b_cell_volt_max->SetValue((float)value / 50.0, Volts);
-		}
 
-		// This doesn't make sense given 879:0
-		if (get_uint_buff_be<1>(data, 18, value)){
-			m_b_cell_volt_max_no->SetValue(value);
-		}
-		
-		if (get_uint_buff_be<1>(data, 24, value))
-			m_b_cell_volt_min_no->SetValue(value);
+			if (get_uint_buff_be<1>(data, 23, value)){
+				StdMetrics.ms_v_bat_cell_vmax->SetValue((float)value / 50.0, Volts);
+				m_b_cell_volt_max->SetValue((float)value / 50.0, Volts);
+			}
 
-		if (get_uint_buff_be<1>(data, 25, value)){
-			StdMetrics.ms_v_bat_cell_vmin->SetValue((float)value / 50.0, Volts);
-			m_b_cell_volt_min->SetValue((float)value / 50.0, Volts);
-		}
+			if (get_uint_buff_be<1>(data, 18, value))
+				m_b_cell_volt_max_no->SetValue(value);
+			
+			if (get_uint_buff_be<1>(data, 24, value))
+				m_b_cell_volt_min_no->SetValue(value);
 
-		if (get_uint_buff_be<1>(data, 26, value))
-			m_b_cell_volt_min_no->SetValue(value);
-		// ESP_LOGD(TAG, "Number of cells at min: %d", value);
+			if (get_uint_buff_be<1>(data, 25, value)){
+				StdMetrics.ms_v_bat_cell_vmin->SetValue((float)value / 50.0, Volts);
+				m_b_cell_volt_min->SetValue((float)value / 50.0, Volts);
+			}
 
-		// TODO Battery fan feedback
-		/* if (get_buff_int_be<1>(data, 27, value))
-			kn_battery_fan_feedback = value;
+			if (get_uint_buff_be<1>(data, 26, value))
+				m_b_cell_volt_min_no->SetValue(value);
 
-		// TODO Battery fan speed
-		if (get_buff_int_be<1>(data, 28, value))
-				kn_charge_bits.FanStatus = value & 0xF; */
+			// TODO: Check Battery fan feedback
+			if (get_uint_buff_be<1>(data, 27, value))
+				kn_battery_fan_feedback = value;
 
-		if (get_uint_buff_be<4>(data, 39, value)){
-			StdMetrics.ms_v_bat_energy_recd_total->SetValue(value*100, WattHours);
-			kia_battery_cum_charge = value;
-		}
+			// TODO: Check Battery fan speed
+			if (get_uint_buff_be<1>(data, 28, value))
+				kn_charge_bits.FanStatus = value;
+			
+			if (get_uint_buff_be<1>(data, 29, sValue))
+				ESP_LOGD(TAG, "Aux Batt Voltage (BMS): %f",(float) sValue/10);
+				
+			// 30 CCC
+			if (get_uint_buff_be<4>(data, 30, bValue))
+				StdMetrics.ms_v_bat_coulomb_recd_total->SetValue((float)bValue/10);
+			
+			// 35 CDC
+			if (get_uint_buff_be<4>(data, 34, bValue))
+				StdMetrics.ms_v_bat_coulomb_used_total->SetValue((float)bValue/10);
 
-		if (get_uint_buff_be<4>(data, 34, value)){
-			StdMetrics.ms_v_bat_energy_used_total->SetValue(value*100, WattHours);
-			kia_battery_cum_discharge = value;
-		}
-
-		/* if (get_uint_buff_be<4>(data, 43, value)){
-			StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(value/10, AmpHours);
-		}
-
-		if (get_uint_buff_be<4>(data, 36, value)){
-			StdMetrics.ms_v_bat_coulomb_used_total->SetValue(value/10, AmpHours);
-		}
-
-		if (get_uint_buff_be<4>(data, 46, value)){
+			// 38 CEC
+			if (get_uint_buff_be<4>(data, 38, bValue)){
+				StdMetrics.ms_v_bat_energy_recd_total->SetValue(bValue*100, WattHours);
+				kia_battery_cum_charge = value;
+			}
+			
+			// 42 CED
+			if (get_uint_buff_be<4>(data, 42, bValue)){
+				StdMetrics.ms_v_bat_energy_used_total->SetValue(bValue*100, WattHours);
+				kia_battery_cum_discharge = value;
+			}
+			
 			// this could be a standard metric
-			kia_battery_cum_op_time = (value / 3600);
-		} */
+			if (get_uint_buff_be<4>(data, 46, bValue))
+				kia_battery_cum_op_time = (value / 3600);
+			
 
-		if (get_buff_int_be<1>(data, 50, value))
-		{
-			m_b_bms_ignition->SetValue(get_bit<2>(value));
-		}
+			if (get_buff_int_be<1>(data, 50, value))
+				m_b_bms_ignition->SetValue(get_bit<2>(value));
 
+			
+			if (get_uint_buff_be<2>(data, 51, value))
+				ESP_LOGD(TAG, "BMS Capacitor: %f",(float) sValue);
+
+			if (get_uint_buff_be<2>(data, 53, drive1)
+				&& get_uint_buff_be<2>(data, 55, drive2)) {
+				uint16_t drive;
+				if (drive2 == 0) {
+					drive = drive1;
+				} else if (drive1 == 0) {
+					drive = drive2;
+				} else {
+					drive = ((drive1 + drive2) + 1) / 2;
+				}
+
+				StandardMetrics.ms_v_mot_rpm->SetValue(drive);
+			}
+			
+			if (get_uint_buff_be<2>(data, 57, value))
+				ESP_LOGD(TAG, "Surge Resistor: %f",(float) value);
 		break;
 
-	// 3 7 7 7 7 5
 	case 0x0102:
 		BmsRestartCellVoltages();
-	// 3 7 7 7 7 5
 	case 0x0103:
-	// 3 7 7 7 7 7 5
 	case 0x0104:
 		int8_t count;
 		int8_t offset;
