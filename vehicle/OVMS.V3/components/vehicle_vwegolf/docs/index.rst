@@ -1,7 +1,7 @@
 
-========
+=========
 VW e-Golf
-========
+=========
 
 Vehicle Type: **VWEG**
 
@@ -9,9 +9,9 @@ This vehicle type supports the VW e-Golf
 Connection is made by connecting to the car's Comfort CAN bus at Gateway (J553) module, prefferably by making adatper, that plugs in car harness.
 At the moment only reading from CAN bus is realized.
 
-----------
+-------
 Adapter
-----------
+-------
 
 Described adapter connects to three of CAN buses available at the Gateway module, but only CAN3 (Comfort CAN) is used for read/write access to the car.
 This allows to implement some functionality in future, via OBDII port, without the need to change the adapter, or for simpler installation by connecting only to OBDII port (but with limited functionality).
@@ -38,9 +38,9 @@ DB9 J533 Meaning
 .. image:: adapter.jpg
     :width: 480px
 
-----------
+------------
 Installation
-----------
+------------
 
 Installation is pretty quick, as it does not require removal of any trim pieces.
 Gateway module is located under steering wheel, above pedals. 
