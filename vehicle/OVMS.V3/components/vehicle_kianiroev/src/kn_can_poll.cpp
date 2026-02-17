@@ -281,10 +281,10 @@ void OvmsVehicleKiaNiroEv::IncomingFull_OBC(uint16_t type, uint16_t pid, const s
 		//  example: ff fe 57 fc 01 8a f5 82 53 5b e9 05 f0 9e 02 47 00 bc 05 b8 43 0e c8 00 98 08 e5 02 13 76 00 00 00 00 01 f4 00 00 7c 86 00 00 9f 32 03 e8 05 c0 03 0d 0e 07 0d fb 05 f0
 		if (get_uint_buff_be<1>(data, 27, value))
 		{
-			m_obc_pilot_duty->SetValue((float)value / 10.0); // Untested
+			m_obc_pilot_duty->SetValue((float)value); // Untested
 		}
 
-		if (get_uint_buff_be<1>(data, 42, value))
+		if (get_uint_buff_be<1>(data, 41, value))
 		{
 			StdMetrics.ms_v_charge_temp->SetValue((float)(value / 2.0) - 40.0, Celcius); // Untested
 		}
@@ -294,7 +294,7 @@ void OvmsVehicleKiaNiroEv::IncomingFull_OBC(uint16_t type, uint16_t pid, const s
 			kia_obc_ac_voltage = (float)value;
 		}
 
-		if (get_uint_buff_be<2>(data, 49, value))
+		if (get_uint_buff_be<2>(data, 48, value))
 		{
 			float main_batt_voltage = value / 10.0;
 			ESP_LOGD(TAG, "OBC Main batt: %f", main_batt_voltage);
@@ -309,7 +309,7 @@ void OvmsVehicleKiaNiroEv::IncomingFull_OBC(uint16_t type, uint16_t pid, const s
 		// 4 7 7 7 7 7 7 2
 		// example ["fe","ff","ff","e0","0c","72","20","06","97","06","8e","00","00","0b","60","00","00","48","09","00","0c","02","80","69","04","01","34","01","03","01","39","00","6d","00","6d","00","a6","01","1f","01","1a","00","29","00","2c","00","13","49"]
 		// example fe ff ff e0 0c 72 20 06 97 06 8e 00 00 0b 60 00 00 48 09 00 0c 02 80 69 04 01 34 01 03 01 39 00 6d 00 6d 00 a6 01 1f 01 1a 00 29 00 2c 00 13 49
-		if (get_uint_buff_be<2>(data, 4, value))
+		if (get_uint_buff_be<2>(data, 3, value))
 		{
 			kia_obc_ac_current = (float)value / 100.0;
 		}
@@ -357,21 +357,13 @@ void OvmsVehicleKiaNiroEv::IncomingFull_VMCU(uint16_t type, uint16_t pid, const 
 	// Example: ["f8","ff","fc","00","01","01","00","00","00","93","07","a3","7a","80","39","a5","02","87","7f","0d","39","60","80","56","f5","21","70","00","00","01","01","01","00","00","00","07","00"]
 	// Example: f8 ff fc 00 01 01 00 00 00 93 07 a3 7a 80 39 a5 02 87 7f 0d 39 60 80 56 f5 21 70 00 00 01 01 01 00 00 00 07 00
 	case 0x02:
-		if (get_uint_buff_be<2>(data, 16, value))
-		{
-			// This is the closest appoximation i can find to the 12V Amperage
-			StdMetrics.ms_v_bat_12v_current->SetValue(value / 100.0, Amps);
+		if (get_uint_buff_be<2>(data,15,value)){
+			StdMetrics.ms_v_charge_12v_current->SetValue((float)value/100,Amps);
+			m_ldc_out_current->SetValue(value,Amps);
 		}
 
-		/* if (get_uint_buff_be<2>(data, 19, value))
-		{
-			StdMetrics.ms_v_bat_12v_voltage->SetValue(value / 1000.0, Volts);
-		} */
-
-		/* if (get_uint_buff_be<1>(data, 23, value))
-		{
-			m_b_aux_soc->SetValue(value, Percentage);
-		} */
+		if (get_bytes_uint_be<2>(data, 23, value))
+			ESP_LOGD(TAG,"(VCU) Aux SOC: %f", value);
 		break;
 
 	case 0x80:
@@ -619,31 +611,42 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 	// 3 7 7 7 7 7 5
 	// 00 3f 46 10 00 00 00 00 00 00 00 00 00 14 94 00 25 52 2c 24 00 01 50 1e 9f 03 c4 07 00 4f 03 9f 00 12 03 11 01 03 13 5d 01 00 00
 	case 0x0105:
-		// if (get_buff_int_be<1>(data, 23, value))
-		//	m_b_heat_1_temperature->SetValue(value);
+		if(get_uint_buff_be<1>(data, 20, value))
+			ESP_LOGD(TAG,"Voltage Diff: %f", value / 50)
+
+		if (get_uint_buff_be<1>(data, 22, value))
+			ESP_LOGD(TAG, "Airbag %f", value);
+
+		if (get_uint_buff_be<1>(data, 23, value))
+			m_b_heat_1_temperature->SetValue(value);
 
 		if (get_uint_buff_be<2>(data, 25, value))
 			StdMetrics.ms_v_bat_soh->SetValue((float)value / 10.0);
 
-		/* if (get_buff_int_be<1>(data, 27, value))
+		if (get_uint_buff_be<1>(data, 27, value))
 			m_b_cell_det_max_no->SetValue(value);
 
 		if (get_uint_buff_be<2>(data, 28, value))
 			m_b_cell_det_min->SetValue((float)value / 10.0);
 
-		if (get_buff_int_be<1>(data, 30, value))
-			m_b_cell_det_min_no->SetValue(value); */
+		if (get_uint_buff_be<1>(data, 30, value))
+			m_b_cell_det_min_no->SetValue(value);
 
-		if (!get_uint_buff_be<1>(data, 31, value)) {
-          ESP_LOGE(TAG, "IoniqISOTP.BMC: SOC: Bad Buffer");
-        }
-        else {
+		if (get_uint_buff_be<1>(data, 31, value)) {
           ESP_LOGD(TAG, "IoniqISOTP.BMC: SOC: %f", value / 2.0);
           StdMetrics.ms_v_bat_soc->SetValue(value / 2.0, Percentage);
         }
 
 		break;
 	}
+
+	// not added
+	case 0x106:
+		// Unvalidated
+		if(get_uint_buff_be<1>(data,4,value))
+			ESP_LOGD(TAG, "Coolant Temp: %f", value);
+
+		break;
 }
 
 /**
