@@ -67,4 +67,7 @@ sdkconfig.old
 # Tmp
 tmp/*
 
+# Local environment variables
+.env
+
 managed_components/

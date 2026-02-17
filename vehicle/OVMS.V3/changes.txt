@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- New vehicle: Volkswagen e-Golf via J533 connector
+    Initial support added for: Odometer, SoC, Est. Range, Charge Status
+    https://docs.openvehicles.com/en/latest/components/vehicle_vwegolf/docs/index.html
 - Module: added heap integrity check + alert command for usage in e.g. custom event scripts,
     enables adding checks on specific system events and/or with higher frequency.
     Example: perform heap integrity check when the server V2 gets stopped:
