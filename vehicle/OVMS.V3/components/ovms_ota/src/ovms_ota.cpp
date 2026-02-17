@@ -60,6 +60,7 @@ static const char *TAG = "ota";
 #include "crypt_md5.h"
 #include "ovms_vfs.h"
 
+#define OTA_BUF_SIZE 8192  // buffer size for OTA download to SD card
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -268,7 +269,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   bool reboot = MyConfig.GetParamValueBool("ota", "auto.reboot", false);
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
-  if (MyConfig.GetParamValueBool("ota", "auto.buffer", false) && path_exists("/sd"))
+  if (MyConfig.GetParamValueBool("ota", "sd.buffer", false) && path_exists("/sd"))
     {
     writer->printf("SD buffer enabled: routing download via SD card from %s...\n", url.c_str());
     MyOTA.LaunchOTAFlash(OTA_FlashCfg_SD, url, reboot);
@@ -298,9 +299,9 @@ void ota_flash_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
 void ota_flash_auto(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   bool force = (strcmp(cmd->GetName(), "force")==0);
-
+  bool reboot = true; // reboot always for auto update (MyConfig.GetParamValueBool("ota", "auto.reboot", false);)
   writer->puts("Triggering automatic firmware update...");
-  MyOTA.LaunchOTAFlash(force ? OTA_FlashCfg_Force : OTA_FlashCfg_Default);
+  MyOTA.LaunchOTAFlash(force ? OTA_FlashCfg_Force : OTA_FlashCfg_Default, "", reboot);
   }
 
 void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -525,7 +526,8 @@ void OvmsOTA::CheckFlashSD(std::string event, void* data)
   {
   if (path_exists("/sd/ovms3.bin"))
     {
-    LaunchOTAFlash(OTA_FlashCfg_FromSD);
+    bool reboot = true; // reboot always for auto update (MyConfig.GetParamValueBool("ota", "auto.reboot", false);)
+    LaunchOTAFlash(OTA_FlashCfg_FromSD, "", reboot);
     }
   }
 
@@ -590,7 +592,7 @@ bool OvmsOTA::AutoFlashSD()
     }
 
   SetFlashStatus("OTA Auto Flash SD: Flashing image paritition...",0,true);
-  char* buf = (char*)malloc(8192);
+  char* buf = (char*)malloc(OTA_BUF_SIZE);
   if (buf == NULL)
     {
     ClearFlashStatus();
@@ -600,7 +602,7 @@ bool OvmsOTA::AutoFlashSD()
     return false;
     }
   size_t done = 0;
-  while(size_t n = fread(buf, 1, 8192, f))
+  while(size_t n = fread(buf, 1, OTA_BUF_SIZE, f))
     {
     err = esp_ota_write(otah, buf, n);
     if (err != ESP_OK)
@@ -791,7 +793,8 @@ void OvmsOTA::Ticker600(std::string event, void* data)
       (tmu.tm_mday != m_lastcheckday))
     {
     m_lastcheckday = tmu.tm_mday;  // So we only try once a day (unless cleared due to a temporary fault)
-    LaunchOTAFlash(OTA_FlashCfg_Default);
+    bool reboot = true; // reboot always for auto update (MyConfig.GetParamValueBool("ota", "auto.reboot", false);)
+    LaunchOTAFlash(OTA_FlashCfg_Default, "", reboot);
     }
   }
 
@@ -1120,7 +1123,7 @@ bool OvmsOTA::FlashSD(const std::string& url)
     }
   setvbuf(f, NULL, _IOFBF, 4096);
 
-  uint8_t* rbuf = (uint8_t*)malloc(8192);
+  uint8_t* rbuf = (uint8_t*)malloc(OTA_BUF_SIZE);
   if (rbuf == NULL)
     {
     ClearFlashStatus();
@@ -1132,7 +1135,7 @@ bool OvmsOTA::FlashSD(const std::string& url)
   size_t filesize = 0;
   ssize_t k;
   bool dl_ok = true;
-  while ((k = http.BodyRead(rbuf,8192)) > 0)
+  while ((k = http.BodyRead(rbuf,OTA_BUF_SIZE)) > 0)
     {
     filesize += k;
     SetFlashPerc((filesize*50)/expected);
@@ -1195,7 +1198,7 @@ bool OvmsOTA::FlashSD(const std::string& url)
     return false;
     }
 
-  char* fbuf = (char*)malloc(8192);
+  char* fbuf = (char*)malloc(OTA_BUF_SIZE);
   if (fbuf == NULL)
     {
     ClearFlashStatus();
@@ -1207,7 +1210,7 @@ bool OvmsOTA::FlashSD(const std::string& url)
 
   SetFlashStatus("OTA SD Flash: Flashing from SD card...");
   size_t done = 0;
-  while (size_t n = fread(fbuf, 1, 8192, f))
+  while (size_t n = fread(fbuf, 1, OTA_BUF_SIZE, f))
     {
     err = esp_ota_write(otah, fbuf, n);
     if (err != ESP_OK)
@@ -1440,7 +1443,7 @@ bool OvmsOTA::AutoFlash(bool force)
 
   // Try SD-buffered download if configured (auto.buffer)
 #ifdef CONFIG_OVMS_COMP_SDCARD
-  if (MyConfig.GetParamValueBool("ota", "auto.buffer", false)
+  if (MyConfig.GetParamValueBool("ota", "sd.buffer", false)
       && path_exists("/sd") && CheckSDFreeSpace(expected, NULL))
     {
     ESP_LOGI(TAG, "AutoFlash: Buffering download to SD card (auto.buffer)...");
@@ -1450,7 +1453,7 @@ bool OvmsOTA::AutoFlash(bool force)
     if (f != NULL)
       {
       setvbuf(f, NULL, _IOFBF, 4096);
-      uint8_t* rbuf = (uint8_t*)malloc(8192);
+      uint8_t* rbuf = (uint8_t*)malloc(OTA_BUF_SIZE);
       if (rbuf == NULL)
         {
         ESP_LOGE(TAG, "AutoFlash: Cannot allocate download buffer");
@@ -1463,7 +1466,7 @@ bool OvmsOTA::AutoFlash(bool force)
       size_t filesize = 0;
       ssize_t k;
       bool dl_ok = true;
-      while ((k = http.BodyRead(rbuf,8192)) > 0)
+      while ((k = http.BodyRead(rbuf,OTA_BUF_SIZE)) > 0)
         {
         filesize += k;
         SetFlashPerc((filesize*50)/expected);
@@ -1516,7 +1519,7 @@ bool OvmsOTA::AutoFlash(bool force)
             return false;
             }
 
-          char* fbuf = (char*)malloc(8192);
+          char* fbuf = (char*)malloc(OTA_BUF_SIZE);
           if (fbuf == NULL)
             {
             ClearFlashStatus();
@@ -1528,7 +1531,7 @@ bool OvmsOTA::AutoFlash(bool force)
 
           SetFlashStatus("OTA Auto Flash: Flashing from SD card...");
           size_t done = 0;
-          while (size_t n = fread(fbuf, 1, 8192, f))
+          while (size_t n = fread(fbuf, 1, OTA_BUF_SIZE, f))
             {
             err = esp_ota_write(otah, fbuf, n);
             if (err != ESP_OK)
@@ -1569,7 +1572,6 @@ bool OvmsOTA::AutoFlash(bool force)
           rename("/sd/ovms3.bin", done_path);
 
           ESP_LOGI(TAG, "AutoFlash: SD-buffered flash of %d bytes from %s to %s", (int)ds.st_size, url.c_str(), target->label);
-          MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
           MyConfig.SetParamValue("ota", "http.mru", url);
           return true;
           }
@@ -1660,7 +1662,6 @@ bool OvmsOTA::AutoFlash(bool force)
     }
 
   ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", expected, url.c_str());
-  MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
   MyConfig.SetParamValue("ota", "http.mru", url);
 
   return true;

@@ -40,7 +40,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   std::string cmdres, mru;
   std::string action;
   ota_info info;
-  bool auto_enable, auto_allow_modem, auto_buffer, auto_reboot;
+  bool auto_enable, auto_allow_modem, sd_buffer, auto_reboot;
   std::string auto_hour, min_sd_space, server, tag, hardware;
   std::string output;
   std::string version;
@@ -54,7 +54,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
     auto_enable = (c.getvar("auto_enable") == "yes");
     auto_allow_modem = (c.getvar("auto_allow_modem") == "yes");
-    auto_buffer = (c.getvar("auto_buffer") == "yes");
+    sd_buffer = (c.getvar("sd_buffer") == "yes");
     auto_reboot = (c.getvar("auto_reboot") == "yes");
     auto_hour = c.getvar("auto_hour");
     min_sd_space = c.getvar("min_sd_space");
@@ -78,7 +78,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       if (!error) {
         MyConfig.SetParamValueBool("auto", "ota", auto_enable);
         MyConfig.SetParamValueBool("ota", "auto.allow.modem", auto_allow_modem);
-        MyConfig.SetParamValueBool("ota", "auto.buffer", auto_buffer);
+        MyConfig.SetParamValueBool("ota", "sd.buffer", sd_buffer);
         MyConfig.SetParamValueBool("ota", "auto.reboot", auto_reboot);
         MyConfig.SetParamValue("ota", "auto.hour", auto_hour);
         MyConfig.SetParamValue("ota", "min.sd.space", min_sd_space);
@@ -119,7 +119,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     // read config:
     auto_enable = MyConfig.GetParamValueBool("auto", "ota", true);
     auto_allow_modem = MyConfig.GetParamValueBool("ota", "auto.allow.modem", false);
-    auto_buffer = MyConfig.GetParamValueBool("ota", "auto.buffer", false);
+    sd_buffer = MyConfig.GetParamValueBool("ota", "sd.buffer", false);
     auto_reboot = MyConfig.GetParamValueBool("ota", "auto.reboot", false);
     auto_hour = MyConfig.GetParamValue("ota", "auto.hour", "2");
     min_sd_space = MyConfig.GetParamValue("ota", "min.sd.space", "50");
@@ -190,8 +190,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<p>If enabled, the module will automatically reboot after a successful manual flash (HTTP, SD or VFS)."
     " If disabled, the new firmware is written but not activated until the next manual reboot."
     " Auto updates always reboot regardless of this setting.</p>");
-  c.input_checkbox("…buffer on SD card", "auto_buffer", auto_buffer,
-    "<p>If enabled, auto updates will try to download firmware to the SD card first, then flash from there."
+  c.input_checkbox("…buffer on SD card", "sd_buffer", sd_buffer,
+    "<p>If enabled, OTA updates will try to download firmware to the SD card first, then flash from there."
     " This is more reliable on slow or unstable connections. Falls back to direct flash if the SD card"
     " is not available or has insufficient space.</p>");
   c.input("number", "Minimal SD card space (MB)", "min_sd_space", min_sd_space.c_str(), "Default: 50",
