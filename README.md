@@ -53,8 +53,10 @@ provides data logging to SD card and to a server.
   - [Jaguar Ipace](https://docs.openvehicles.com/en/latest/components/vehicle_jaguaripace/docs/index.html)
   - [Kia e-Niro / Hyundai Kona / Hyundai Ioniq FL](https://docs.openvehicles.com/en/latest/components/vehicle_kianiroev/docs/index.html)
   - [Kia Soul EV](https://docs.openvehicles.com/en/latest/components/vehicle_kiasoulev/docs/index.html)
+  - Livan Maple 60s
   - [Maxus eDeliver 3](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html)
   - [Maxus Euniq 5 6-seats](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_euniq56/docs/index.html)
+  - Maxus Euniq 6
   - [Maxus T90 EV](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_t90/docs/index.html)
   - [Mercedes-Benz B250E](https://docs.openvehicles.com/en/latest/components/vehicle_mercedesb250e/docs/index.html)
   - [MG EV](https://docs.openvehicles.com/en/latest/components/vehicle_mgev/docs/index.html)
@@ -71,12 +73,14 @@ provides data logging to SD card and to a server.
   - [Tesla Roadster](https://docs.openvehicles.com/en/latest/components/vehicle_teslaroadster/docs/index.html)
   - Think City
   - [Toyota RAV4 EV](https://docs.openvehicles.com/en/latest/components/vehicle_toyotarav4ev/docs/index.html)
+  - [VW e-Golf](https://docs.openvehicles.com/en/latest/components/vehicle_vwegolf/docs/index.html)
   - [VW e-Up / Skoda Citigo / Seat Mii](https://docs.openvehicles.com/en/latest/components/vehicle_vweup/docs/index.html)
 - _General Support_
   - [DBC File Based](https://docs.openvehicles.com/en/latest/components/vehicle_dbc/docs/index.html)
   - [GPS Tracking](https://docs.openvehicles.com/en/latest/components/vehicle_track/docs/index.html)
   - [OBD-II Standard](https://docs.openvehicles.com/en/latest/components/vehicle_obdii/docs/index.html)
   - Zeva BMS
+  - [ZombieVerter VCU](https://docs.openvehicles.com/en/latest/components/vehicle_zombie_vcu/docs/index.html)
 
 
 ## Links
