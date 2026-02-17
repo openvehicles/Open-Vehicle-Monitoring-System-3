@@ -762,11 +762,11 @@ void OvmsServerV2::ProcessCommand(const char* payload)
   delete buffer;
   }
 
-bool OvmsServerV2::Transmit(const std::string& message)
+bool OvmsServerV2::Transmit(const std::string& message, TickType_t timeout /*=portMAX_DELAY*/)
   {
-  auto mglock = MongooseLock();
+  auto mglock = MongooseLock(timeout);
 
-  if (!m_mgconn)
+  if (!mglock || !m_mgconn)
     return false;
 
   int len = message.length();
@@ -2007,7 +2007,9 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PI"
       << mp_encode(entry->GetValue());
-    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
+    bool txok = Transmit(buffer.str().c_str(), 0);
+    if (!txok) m_pending_notify_info = true;
+    return txok; // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"error")==0)
     {
@@ -2021,7 +2023,9 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PE"
       << entry->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
-    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
+    bool txok = Transmit(buffer.str().c_str(), 0);
+    if (!txok) m_pending_notify_error = true;
+    return txok; // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"alert")==0)
     {
@@ -2035,7 +2039,9 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PA"
       << mp_encode(entry->GetValue());
-    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
+    bool txok = Transmit(buffer.str().c_str(), 0);
+    if (!txok) m_pending_notify_alert = true;
+    return txok; // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"data")==0)
     {

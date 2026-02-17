@@ -63,7 +63,7 @@ class OvmsServerV2 : public OvmsServer, MongooseClient
   protected:
     void ProcessServerMsg();
     void ProcessCommand(const char* payload);
-    bool Transmit(const std::string& message);
+    bool Transmit(const std::string& message, TickType_t timeout=portMAX_DELAY);
 
   protected:
     void TransmitMsgStat(bool always = false);

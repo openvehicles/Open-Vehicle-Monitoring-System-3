@@ -534,10 +534,10 @@ void OvmsServerV3::TransmitImmediateMetrics()
     }
   }
 
-int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
+uint16_t OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock();
-  if (!m_mgconn)
+  auto mglock = MongooseLock(0);
+  if (!mglock || !m_mgconn)
     return 0;
 
   std::string topic(m_topic_prefix);
@@ -546,17 +546,17 @@ int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
 
   const extram::string result = entry->GetValue();
 
-  int id = NextMsgId();
+  uint16_t id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(1), result.c_str(), result.length());
   ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
   return id;
   }
 
-int OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
+uint16_t OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock();
-  if (!m_mgconn)
+  auto mglock = MongooseLock(0);
+  if (!mglock || !m_mgconn)
     return 0;
 
   std::string topic(m_topic_prefix);
@@ -565,17 +565,17 @@ int OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
 
   const extram::string result = entry->GetValue();
 
-  int id = NextMsgId();
+  uint16_t id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(1), result.c_str(), result.length());
   ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
   return id;
   }
 
-int OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
+uint16_t OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock();
-  if (!m_mgconn)
+  auto mglock = MongooseLock(0);
+  if (!mglock || !m_mgconn)
     return 0;
 
   std::string topic(m_topic_prefix);
@@ -584,17 +584,17 @@ int OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
 
   const extram::string result = entry->GetValue();
 
-  int id = NextMsgId();
+  uint16_t id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(1), result.c_str(), result.length());
   ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
   return id;
   }
 
-int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
+uint16_t OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock();
-  if (!m_mgconn)
+  auto mglock = MongooseLock(0);
+  if (!mglock || !m_mgconn)
     return 0;
 
   char base[32];
@@ -615,7 +615,7 @@ int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
 
   const char* result = msg.c_str();
 
-  int id = NextMsgId();
+  uint16_t id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(2), result, strlen(result));
   ESP_LOGI(TAG,"Tx notify %s=%s msgid=%d",topic.c_str(),result,id);
@@ -640,8 +640,8 @@ void OvmsServerV3::TransmitPendingNotificationsInfo()
     return;
     }
 
-  TransmitNotificationInfo(e);
-  info->MarkRead(MyOvmsServerV3Reader, e);
+  if (TransmitNotificationInfo(e))
+    info->MarkRead(MyOvmsServerV3Reader, e);
   }
 
 void OvmsServerV3::TransmitPendingNotificationsError()
@@ -662,8 +662,8 @@ void OvmsServerV3::TransmitPendingNotificationsError()
     return;
     }
 
-  TransmitNotificationError(e);
-  error->MarkRead(MyOvmsServerV3Reader, e);
+  if (TransmitNotificationError(e))
+    error->MarkRead(MyOvmsServerV3Reader, e);
   }
 
 void OvmsServerV3::TransmitPendingNotificationsAlert()
@@ -684,8 +684,8 @@ void OvmsServerV3::TransmitPendingNotificationsAlert()
     return;
     }
 
-  TransmitNotificationAlert(e);
-  alert->MarkRead(MyOvmsServerV3Reader, e);
+  if (TransmitNotificationAlert(e))
+    alert->MarkRead(MyOvmsServerV3Reader, e);
   }
 
 void OvmsServerV3::TransmitPendingNotificationsData()
@@ -708,10 +708,20 @@ void OvmsServerV3::TransmitPendingNotificationsData()
     return;
     }
 
-  m_notify_data_waittype = data;
-  m_notify_data_waitentry = e;
-  m_notify_data_waitcomp = TransmitNotificationData(e);
-  m_notify_data_pending = false;
+  uint16_t txid = TransmitNotificationData(e);
+  if (txid)
+    {
+    // wait for ack:
+    m_notify_data_waittype = data;
+    m_notify_data_waitentry = e;
+    m_notify_data_waitcomp = txid;
+    m_notify_data_pending = false;
+    }
+  else
+    {
+    // retry:
+    m_notify_data_pending = true;
+    }
   }
 
 void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
@@ -1079,22 +1089,25 @@ bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     {
     // Info notifications
     if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
-    TransmitNotificationInfo(entry);
-    return true; // Mark it as read, as we've managed to send it
+    uint16_t txid = TransmitNotificationInfo(entry);
+    if (!txid) m_notify_info_pending = true;
+    return (txid != 0);
     }
   else if (strcmp(type->m_name,"error")==0)
     {
     // Error notification
     if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
-    TransmitNotificationError(entry);
-    return true; // Mark it as read, as we've managed to send it
+    uint16_t txid = TransmitNotificationError(entry);
+    if (!txid) m_notify_error_pending = true;
+    return (txid != 0);
     }
   else if (strcmp(type->m_name,"alert")==0)
     {
     // Alert notifications
     if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
-    TransmitNotificationAlert(entry);
-    return true; // Mark it as read, as we've managed to send it
+    uint16_t txid = TransmitNotificationAlert(entry);
+    if (!txid) m_notify_alert_pending = true;
+    return (txid != 0);
     }
   else if (strcmp(type->m_name,"data")==0)
     {

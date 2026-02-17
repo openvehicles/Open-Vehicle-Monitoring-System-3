@@ -120,7 +120,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     bool m_notify_error_pending;
     bool m_notify_alert_pending;
     bool m_notify_data_pending;
-    int m_notify_data_waitcomp;
+    uint16_t m_notify_data_waitcomp;
     int m_conn_stable_wait;
     int m_conn_jitter_max;
     int m_connect_jitter;
@@ -137,10 +137,10 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     void TransmitModifiedMetrics();
     void TransmitPriorityMetrics();
     void TransmitImmediateMetrics();
-    int TransmitNotificationInfo(OvmsNotifyEntry* entry);
-    int TransmitNotificationError(OvmsNotifyEntry* entry);
-    int TransmitNotificationAlert(OvmsNotifyEntry* entry);
-    int TransmitNotificationData(OvmsNotifyEntry* entry);
+    uint16_t TransmitNotificationInfo(OvmsNotifyEntry* entry);
+    uint16_t TransmitNotificationError(OvmsNotifyEntry* entry);
+    uint16_t TransmitNotificationAlert(OvmsNotifyEntry* entry);
+    uint16_t TransmitNotificationData(OvmsNotifyEntry* entry);
     void TransmitPendingNotificationsInfo();
     void TransmitPendingNotificationsError();
     void TransmitPendingNotificationsAlert();
