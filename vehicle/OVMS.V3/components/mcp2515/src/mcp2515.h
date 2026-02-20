@@ -111,6 +111,7 @@ class mcp2515 : public canbus
     uint8_t m_last_errflag = 0;
     uint8_t m_canctrl_mode;
     OvmsMutex m_write_mutex;
+    OvmsCommand* m_cmd_canx;
   };
 
 #endif //#ifndef __MCP2515_H__

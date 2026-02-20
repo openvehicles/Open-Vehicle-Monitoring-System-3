@@ -76,6 +76,7 @@ void OvmsVehicleBoltEV::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     std::string error;
     bool preheat_override_BCM;
     bool extended_wakeup;
+    bool use_swcan_adapter;
     std::string preheat_max_time;
 
     if (c.method == "POST") {
@@ -83,6 +84,7 @@ void OvmsVehicleBoltEV::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
         preheat_override_BCM = (c.getvar("preheat_override_BCM") == "yes");
         preheat_max_time = c.getvar("preheat_max_time");
         extended_wakeup = (c.getvar("extended_wakeup") == "yes");
+        use_swcan_adapter = (c.getvar("use_swcan_adapter") == "yes");
 
         // check values
         if (!preheat_max_time.empty()) {
@@ -96,6 +98,7 @@ void OvmsVehicleBoltEV::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
             MyConfig.SetParamValueBool("xcb", "preheat.override_bcm", preheat_override_BCM);
             MyConfig.SetParamValue("xcb", "preheat.max_time", preheat_max_time);
             MyConfig.SetParamValueBool("xcb", "extended_wakeup", extended_wakeup);
+            MyConfig.SetParamValueBool("xcb", "use_swcan_adapter", use_swcan_adapter);
 
             c.head(200);
             c.alert("success", "<p class=\"lead\">Bolt EV feature configuration saved.</p>");
@@ -113,6 +116,7 @@ void OvmsVehicleBoltEV::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
         preheat_override_BCM = MyConfig.GetParamValueBool("xcb", "preheat.override_bcm", false);
         preheat_max_time = MyConfig.GetParamValue("xcb", "preheat.max_time", STR(VA_PREHEAT_MAX_TIME_DEFAULT));
         extended_wakeup = MyConfig.GetParamValueBool("xcb", "extended_wakeup", false);
+        use_swcan_adapter = MyConfig.GetParamValueBool("xcb", "use_swcan_adapter", false);
 
         c.head(200);
     }
@@ -129,6 +133,9 @@ void OvmsVehicleBoltEV::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     c.print("disabled");
 #endif
     c.print("</p>");
+    c.input_checkbox("External SWCAN adapter installed", "use_swcan_adapter", use_swcan_adapter,
+                     "<p>Use external MCP2515 + TH8056 module as CAN4</p>");
+    c.fieldset_end();
     c.input_checkbox("Enable Extended Wake Up sequence", "extended_wakeup", extended_wakeup,
                      "<p>Waking up only the Body Control Module and HVAC module should be enough for our purposes. If for some reason the Remote Start / Preheating "
                      "or other Onstar functions do not work, please enable the Extended Wakeup feature which wakes up all the known modules and mimics better the wakeup sequence "

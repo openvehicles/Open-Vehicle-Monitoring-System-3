@@ -1288,6 +1288,7 @@ canbus::canbus(const char* name)
 
 canbus::~canbus()
   {
+  MyEvents.DeregisterEvent(TAG);
   vQueueDelete(m_txqueue);
   }
 

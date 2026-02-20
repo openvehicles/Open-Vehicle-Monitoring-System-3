@@ -857,9 +857,6 @@ void OvmsVehicleSmartED::ShutDown() {
 #ifdef CONFIG_OVMS_COMP_CELLULAR
     MyPeripherals->m_cellular_modem->SetPowerMode(Off);
 #endif
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-    MyPeripherals->m_mcp2515_swcan->SetPowerMode(Off);
-#endif
 #ifdef CONFIG_OVMS_COMP_ESP32CAN
     MyPeripherals->m_esp32can->SetPowerMode(Off);
 #endif

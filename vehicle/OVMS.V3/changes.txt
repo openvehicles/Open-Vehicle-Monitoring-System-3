@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- swcan: module included in the default build configuration. SWCAN bus must be initialized manually 
+	from the car module. During initialization, CAN3 will be deinitialized and CAN4 used for SWCAN. 
+	Configuration "use_swcan_adapter" has been added to Voltampera and Boltev vehicles.
 - New vehicle: Volkswagen e-Golf via J533 connector
     Initial support added for: Odometer, SoC, Est. Range, Charge Status
     https://docs.openvehicles.com/en/latest/components/vehicle_vwegolf/docs/index.html
