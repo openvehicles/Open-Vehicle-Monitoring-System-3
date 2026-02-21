@@ -763,10 +763,12 @@ config OVMS_COMP_MCP2515
 
 config OVMS_COMP_EXTERNAL_SWCAN
     bool "Include support for external SWCAN module (swcan bus)"
-    default n
+    default y
     depends on OVMS
     help
-        Enable to include support for external SWCAN module. Replaces the second internal MCP2515 CAN controller
+        Enable to include support for external SWCAN module.
+        Replaces the second internal MCP2515 CAN controller if requested by a vehicle.
+        Currently Bolt and Volt/Ampera support this.
 
 config OVMS_COMP_ADC
     bool "Include support for ADC (reading 12V line voltage)"
