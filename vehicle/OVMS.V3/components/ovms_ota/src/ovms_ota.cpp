@@ -62,8 +62,9 @@ static const char *TAG = "ota";
 #include "ovms_malloc.h"
 
 #define SOFAR 300000                    // update progress callback interval in bytes
-#define EXT_RAM_BUF_SIZE 4096           // buffer size for OTA operations in external RAM
-#define OTA_MINIMAL_SIZE 2*1024*1024    // Minimum expected size of a valid firmware file (2MB)
+#define SD_WRITE_BUF_SIZE 2048          // buffer size for SD write operations in internal RAM - setvbuf
+#define EXT_RAM_BUF_SIZE 8192           // buffer size for OTA operations in external RAM - ExternalRamMalloc
+#define OTA_MINIMAL_SIZE 2*1024*1024    // Minimum expected size of a valid firmware file (>2MB)
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
@@ -887,6 +888,8 @@ int OvmsOTA::DownloadToSD(OvmsHttpClient& http, uint8_t* buf, size_t bufsize,
       ESP_LOGW(TAG, "Cannot create temp file on SD card");
     return 0;  // soft failure, http not consumed
     }
+
+  setvbuf(sf, NULL, _IOFBF, SD_WRITE_BUF_SIZE); // set buffering for SD write
 
   SetFlashStatus("OTA: Downloading to SD card...", 0, (writer == NULL));
   if (writer) writer->puts(GetFlashStatus());
