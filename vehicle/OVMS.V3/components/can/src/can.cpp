@@ -1283,12 +1283,12 @@ canbus::canbus(const char* name)
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "ticker.10", std::bind(&canbus::BusTicker10, this, _1, _2));
+  MyEvents.RegisterEvent(m_name, "ticker.10", std::bind(&canbus::BusTicker10, this, _1, _2));
   }
 
 canbus::~canbus()
   {
-  MyEvents.DeregisterEvent(TAG);
+  MyEvents.DeregisterEvent(m_name);
   vQueueDelete(m_txqueue);
   }
 
