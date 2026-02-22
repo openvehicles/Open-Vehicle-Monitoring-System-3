@@ -59,6 +59,13 @@ static const char *TAG = "ota";
 #include "ovms_version.h"
 #include "crypt_md5.h"
 #include "ovms_vfs.h"
+#include "ovms_malloc.h"
+
+#define SOFAR 300000                    // update progress callback interval in bytes
+#define TASK_MEM_SIZE 3584              // size for auto OTA flash task (in bytes) - set to 3584 after testing with 2048 to 4096. old value 6144
+#define SD_WRITE_BUF_SIZE 2048          // buffer size for SD write operations in internal RAM - setvbuf
+#define EXT_RAM_BUF_SIZE 8192           // buffer size for OTA operations in external RAM - ExternalRamMalloc
+#define OTA_MINIMAL_SIZE 2097152        // Minimum expected size of a valid firmware file (>2MB)
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
@@ -89,6 +96,56 @@ int buildverscmp(std::string v1, std::string v2)
     return 1;
   return cmp;
   }
+
+#ifdef CONFIG_OVMS_COMP_SDCARD
+/**
+ * CheckSDFreeSpace: check if SD card has enough free space.
+ * Includes a configurable spare reserve (ota > sd.minspace, in MB, default 50)
+ * to leave headroom for logs, CAN traces and other data on the SD card.
+ * @param needed    minimum bytes required for the download
+ * @param writer    optional OvmsWriter for user output (may be NULL)
+ * @return true if enough space available, false if not or check failed
+ */
+static bool CheckSDFreeSpace(size_t needed, OvmsWriter* writer)
+  {
+  FATFS *fs;
+  DWORD fre_clust;
+  if (f_getfree("1:", &fre_clust, &fs) == FR_OK && MyPeripherals && MyPeripherals->m_sdcard)
+    {
+    int sector_size = (MyPeripherals->m_sdcard->m_card)
+                    ? MyPeripherals->m_sdcard->m_card->csd.sector_size : 512;
+    uint64_t free_bytes = (uint64_t)fre_clust * fs->csize * sector_size;
+    int spare_mb = MyConfig.GetParamValueInt("ota", "sd.minspace", 50);
+    uint64_t spare_bytes = (uint64_t)spare_mb * 1024 * 1024;
+    uint64_t required = (uint64_t)needed + spare_bytes;
+    if (writer)
+      writer->printf("SD card free space: %llu MB (reserve: %d MB)\n",
+                     free_bytes / (1024*1024), spare_mb);
+    else
+      ESP_LOGI(TAG, "SD card free space: %llu MB (reserve: %d MB)",
+               free_bytes / (1024*1024), spare_mb);
+    if (free_bytes < required)
+      {
+      if (writer)
+        writer->printf("Warning: SD card space low (%llu MB free, %llu MB needed incl. %d MB reserve)\n",
+          free_bytes / (1024*1024), required / (1024*1024), spare_mb);
+      else
+        ESP_LOGW(TAG, "SD card space low (%llu MB free, %llu MB needed incl. %d MB reserve)",
+                 free_bytes / (1024*1024), required / (1024*1024), spare_mb);
+      return false;
+      }
+    return true;
+    }
+  else
+    {
+    if (writer)
+      writer->puts("Warning: Cannot determine SD card free space");
+    else
+      ESP_LOGW(TAG, "Cannot determine SD card free space");
+    return false;
+    }
+  }
+#endif // CONFIG_OVMS_COMP_SDCARD
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
@@ -322,14 +379,61 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   size_t expected = http.BodySize();
-  if (expected < 32)
+  if (expected < OTA_MINIMAL_SIZE)
     {
-    writer->printf("Error: Expected download file size (%d) is invalid\n",expected);
+    writer->printf("Error: Expected download file size (%d bytes) is invalid\n",expected);
     return;
     }
 
-  writer->printf("Expected file size is %d\n",expected);
+  writer->printf("Expected file size is %d bytes\n",expected);
 
+  // Allocate download buffer in PSRAM
+  const size_t bufsize = EXT_RAM_BUF_SIZE;
+  uint8_t *buf = (uint8_t*)ExternalRamMalloc(bufsize);
+  if (buf == NULL)
+    {
+    writer->puts("Error: Cannot allocate download buffer");
+    http.Disconnect();
+    return;
+    }
+
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  // SD card buffering: download to SD first, then flash from file
+  bool use_sd = MyConfig.GetParamValueBool("ota", "sd.buffer", false);
+  if (use_sd && !CheckSDFreeSpace(expected, writer))
+    {
+    writer->puts("Falling back to direct flash");
+    use_sd = false;
+    }
+  if (use_sd)
+    {
+    int rc = MyOTA.DownloadToSD(http, buf, bufsize, expected, writer);
+    if (rc == 1)
+      {
+      if (MyOTA.FlashPartitionFromFile("/sd/ovms3.bin", target, buf, bufsize, writer))
+        {
+        MyNotify.NotifyString("info", "ota.update", "Flashed new firmware version finished");
+        writer->printf("OTA flash was successful\n  Flashed %d bytes from %s (via SD)\n  Next boot will be from '%s'\n",
+                       expected, url.c_str(), target->label);
+        MyConfig.SetParamValue("ota", "http.mru", url);
+        }
+      free(buf);
+      return;
+      }
+    else if (rc == 0)
+      {
+      writer->puts("Warning: Cannot create file on SD card - falling back to direct flash");
+      }
+    else
+      {
+      // Download failed, HTTP consumed - cannot fallback
+      free(buf);
+      return;
+      }
+    }
+#endif // CONFIG_OVMS_COMP_SDCARD
+
+  // Direct HTTP-to-flash path
   MyOTA.SetFlashStatus("OTA Flash HTTP: Preparing flash partition...");
   writer->puts(MyOTA.GetFlashStatus());
   esp_ota_handle_t otah;
@@ -339,21 +443,21 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     MyOTA.ClearFlashStatus();
     writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
     http.Disconnect();
+    free(buf);
     return;
     }
 
   // Now, process the body
-  uint8_t rbuf[512];
   size_t filesize = 0;
   size_t sofar = 0;
   ssize_t k;
   MyOTA.SetFlashStatus("OTA Flash HTTP: Downloading OTA image...");
-  while ((k = http.BodyRead(rbuf,512)) > 0)
+  while ((k = http.BodyRead(buf,bufsize)) > 0)
     {
     filesize += k;
     sofar += k;
     MyOTA.SetFlashPerc((filesize*100)/expected);
-    if (sofar > 200000)
+    if (sofar > SOFAR)
       {
       writer->printf("Downloading... %d%% (%d bytes so far)\n",MyOTA.m_flashperc,filesize);
       sofar = 0;
@@ -364,15 +468,17 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       writer->printf("Error: Download firmware is bigger than available partition space - state is inconsistent\n");
       esp_ota_end(otah);
       http.Disconnect();
+      free(buf);
       return;
       }
-    err = esp_ota_write(otah, rbuf, k);
+    err = esp_ota_write(otah, buf, k);
     if (err != ESP_OK)
       {
       MyOTA.ClearFlashStatus();
       writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err);
       esp_ota_end(otah);
       http.Disconnect();
+      free(buf);
       return;
       }
     }
@@ -384,6 +490,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     MyOTA.ClearFlashStatus();
     writer->printf("Error: Download file size (%d) does not match expected (%d)\n",filesize,expected);
     esp_ota_end(otah);
+    free(buf);
     return;
     }
 
@@ -393,6 +500,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     {
     MyOTA.ClearFlashStatus();
     writer->printf("Error: ESP32 error #%d finalising OTA operation - state is inconsistent\n",err);
+    free(buf);
     return;
     }
 
@@ -404,12 +512,15 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   if (err != ESP_OK)
     {
     writer->printf("Error: ESP32 error #%d setting boot partition - check before rebooting\n",err);
+    free(buf);
     return;
     }
-
+  
+  MyNotify.NotifyString("info", "ota.update", "Flashed new firmware version finished");
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
-                 http.BodySize(),url.c_str(),target->label);
+                 expected,url.c_str(),target->label);
   MyConfig.SetParamValue("ota", "http.mru", url);
+  free(buf);
   }
 
 void ota_flash_auto(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -754,7 +865,207 @@ bool OvmsOTA::AutoFlashSD()
                  (int)ds.st_size,target->label);
   return true;
   }
+
+/**
+ * DownloadToSD: Download HTTP body to SD card via temp file.
+ * Downloads to /sd/ovms3.bin.tmp, validates size, renames to /sd/ovms3.bin.
+ * Note: on success or download error, HTTP connection is consumed.
+ * @param http      open HTTP client connection
+ * @param buf       transfer buffer (caller allocated)
+ * @param bufsize   size of transfer buffer
+ * @param expected  expected download size in bytes
+ * @param writer    optional OvmsWriter for progress output (may be NULL)
+ * @return 1=success, 0=cannot create file (http NOT consumed), -1=download error (http consumed)
+ */
+int OvmsOTA::DownloadToSD(OvmsHttpClient& http, uint8_t* buf, size_t bufsize,
+                           size_t expected, OvmsWriter* writer)
+  {
+  FILE *sf = fopen("/sd/ovms3.bin.tmp", "w");
+  if (sf == NULL)
+    {
+    if (writer)
+      writer->puts("Warning: Cannot create file on SD card");
+    else
+      ESP_LOGW(TAG, "Cannot create temp file on SD card");
+    return 0;  // soft failure, http not consumed
+    }
+
+  setvbuf(sf, NULL, _IOFBF, SD_WRITE_BUF_SIZE); // set buffering for SD write
+
+  SetFlashStatus("OTA: Downloading to SD card...", 0, (writer == NULL));
+  if (writer) writer->puts(GetFlashStatus());
+
+  size_t filesize = 0;
+  size_t sofar = 0;
+  ssize_t k;
+  bool download_ok = true;
+  while ((k = http.BodyRead(buf, bufsize)) > 0)
+    {
+    if (fwrite(buf, 1, k, sf) != (size_t)k)
+      {
+      if (writer)
+        writer->puts("Error: SD card write failed");
+      else
+        ESP_LOGE(TAG, "SD card write failed during download");
+      download_ok = false;
+      break;
+      }
+    filesize += k;    
+    sofar += k;
+    SetFlashPerc((filesize * 100) / expected);
+    if (sofar > SOFAR)
+      {
+      if (writer)
+        writer->printf("Downloading to SD... %d%% (%d bytes so far)\n",
+                       m_flashperc, (int)filesize);
+      sofar = 0;
+      }
+    }
+  fclose(sf);
+  http.Disconnect();
+
+  if (!download_ok || filesize != expected)
+    {
+    remove("/sd/ovms3.bin.tmp");
+    ClearFlashStatus();
+    if (download_ok)
+      {
+      if (writer)
+        writer->printf("Error: Download size (%d) does not match expected (%d)\n", filesize, expected);
+      else
+        ESP_LOGE(TAG, "Download size (%d) does not match expected (%d)", filesize, expected);
+      }
+    return -1;  // hard failure, http consumed
+    }
+
+  // Download complete - rename temp file
+  remove("/sd/ovms3.bin");
+  rename("/sd/ovms3.bin.tmp", "/sd/ovms3.bin");
+  if (writer)
+    writer->printf("Download to SD complete (%d bytes), flashing...\n", filesize);
+  else
+    ESP_LOGI(TAG, "Download to SD complete (%d bytes)", filesize);
+
+  return 1;  // success
+  }
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
+/**
+ * FlashPartitionFromFile: Flash a firmware file to the target partition.
+ * Opens the file, validates size, flashes to partition, sets boot partition.
+ * @param path      path to firmware file
+ * @param target    target OTA partition
+ * @param buf       transfer buffer (caller allocated)
+ * @param bufsize   size of transfer buffer
+ * @param writer    optional OvmsWriter for progress output (may be NULL)
+ * @return true on success (boot partition set), false on error
+ */
+bool OvmsOTA::FlashPartitionFromFile(const char* path, const esp_partition_t* target,
+                                      uint8_t* buf, size_t bufsize, OvmsWriter* writer)
+  {
+  struct stat ds;
+  if (stat(path, &ds) != 0)
+    {
+    ClearFlashStatus();
+    if (writer)
+      writer->printf("Error: Cannot stat file %s\n", path);
+    else
+      ESP_LOGE(TAG, "Cannot stat file %s", path);
+    return false;
+    }
+
+  FILE *f = fopen(path, "r");
+  if (f == NULL)
+    {
+    ClearFlashStatus();
+    if (writer)
+      writer->printf("Error: Cannot open file %s\n", path);
+    else
+      ESP_LOGE(TAG, "Cannot open file %s", path);
+    return false;
+    }
+
+  SetFlashStatus("OTA: Preparing flash partition...", 0, (writer == NULL));
+  if (writer) writer->puts(GetFlashStatus());
+
+  esp_ota_handle_t otah;
+  esp_err_t err = esp_ota_begin(target, ds.st_size, &otah);
+  if (err != ESP_OK)
+    {
+    ClearFlashStatus();
+    if (writer)
+      writer->printf("Error: ESP32 error #%d when starting OTA operation\n", err);
+    else
+      ESP_LOGE(TAG, "ESP32 error #%d when starting OTA operation", err);
+    fclose(f);
+    return false;
+    }
+
+  SetFlashStatus("OTA: Flashing from file...", 0, (writer == NULL));
+  if (writer) writer->puts(GetFlashStatus());
+
+  size_t done = 0;
+  size_t sofar = 0;
+  size_t n;
+  while ((n = fread(buf, 1, bufsize, f)) > 0)
+    {
+    err = esp_ota_write(otah, buf, n);
+    if (err != ESP_OK)
+      {
+      ClearFlashStatus();
+      if (writer)
+        writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n", err);
+      else
+        ESP_LOGE(TAG, "ESP32 error #%d when writing to flash - state is inconsistent", err);
+      esp_ota_end(otah);
+      fclose(f);
+      return false;
+      }
+    done += n;
+    sofar += n;
+    SetFlashPerc(((done * 100) / ds.st_size));
+    if (sofar > SOFAR)
+      {
+      if (writer)
+        writer->printf("Flashing from file... %d%%\n",m_flashperc);
+        sofar = 0;
+      }
+  }
+  fclose(f);
+
+  SetFlashStatus("OTA: Finalising flash write...", 0, (writer == NULL));
+  err = esp_ota_end(otah);
+  if (err != ESP_OK)
+    {
+    ClearFlashStatus();
+    if (writer)
+      writer->printf("Error: ESP32 error #%d finalising OTA operation - state is inconsistent\n", err);
+    else
+      ESP_LOGE(TAG, "ESP32 error #%d finalising OTA operation - state is inconsistent", err);
+    return false;
+    }
+
+  SetFlashStatus("OTA: Setting boot partition...", 0, (writer == NULL));
+  if (writer) writer->puts(GetFlashStatus());
+
+  err = esp_ota_set_boot_partition(target);
+  ClearFlashStatus();
+  if (err != ESP_OK)
+    {    
+    remove("/sd/ovms3.bin"); // prevent re-flash attempt on next boot
+    if (writer)
+      writer->printf("Error: ESP32 error #%d setting boot partition - check before rebooting\n", err);
+    else
+      ESP_LOGE(TAG, "ESP32 error #%d setting boot partition - check before rebooting", err);
+    return false;
+    }
+
+  char done_path[40];
+  snprintf(done_path, sizeof(done_path), "/sd/ovms3.%s", target->label);
+  remove(done_path);
+  rename("/sd/ovms3.bin", done_path);
+  return true;
+  }
 
 OvmsOTA::OvmsOTA()
   {
@@ -977,7 +1288,7 @@ void OvmsOTA::LaunchAutoFlash(ota_flashcfg_t cfg /*=OTA_FlashCfg_Default*/)
     }
 
   xTaskCreatePinnedToCore(OTAFlashTask, "OVMS AutoFlash",
-    6144, (void*)cfg, 5, &m_autotask, CORE(1));
+    TASK_MEM_SIZE, (void*)cfg, 5, &m_autotask, CORE(1));
   }
 
 bool OvmsOTA::AutoFlash(bool force)
@@ -1072,13 +1383,58 @@ bool OvmsOTA::AutoFlash(bool force)
     }
 
   size_t expected = http.BodySize();
-  if (expected < 32)
+  if (expected < OTA_MINIMAL_SIZE)
     {
     ESP_LOGE(TAG, "AutoFlash: Expected download file size (%d) is invalid", expected);
     m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 
+  // Allocate download buffer in PSRAM
+  const size_t bufsize = EXT_RAM_BUF_SIZE;
+  uint8_t *buf = (uint8_t*)ExternalRamMalloc(bufsize);
+  if (buf == NULL)
+    {
+    ESP_LOGE(TAG, "AutoFlash: Cannot allocate download buffer");
+    http.Disconnect();
+    m_lastcheckday = -1;
+    return false;
+    }
+
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  // SD card buffering: download to SD first, then flash from file
+  if (MyConfig.GetParamValueBool("ota", "sd.buffer", false) && CheckSDFreeSpace(expected, NULL))
+    {
+    int rc = DownloadToSD(http, buf, bufsize, expected, NULL);
+    if (rc == 1)
+      {
+      bool success = FlashPartitionFromFile("/sd/ovms3.bin", target, buf, bufsize, NULL);
+      free(buf);
+      if (success)
+        {
+        ESP_LOGI(TAG, "AutoFlash: Success flash via SD, %d bytes from %s", expected, url.c_str());
+        MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
+        MyConfig.SetParamValue("ota", "http.mru", url);
+        }
+      else
+        {
+        m_lastcheckday = -1;
+        }
+      return success;
+      }
+    else if (rc < 0)
+      {
+      ESP_LOGE(TAG, "AutoFlash: Download to SD card failed");
+      free(buf);
+      m_lastcheckday = -1;
+      return false;
+      }
+    // rc == 0: cannot create SD file, fall through to direct flash
+    ESP_LOGW(TAG, "AutoFlash: SD card not writable, falling back to direct flash");
+    }
+#endif // CONFIG_OVMS_COMP_SDCARD
+
+  // Direct HTTP-to-flash path
   SetFlashStatus("OTA Auto Flash: Preparing flash partition...",0,true);
   esp_ota_handle_t otah;
   esp_err_t err = esp_ota_begin(target, expected, &otah);
@@ -1087,15 +1443,15 @@ bool OvmsOTA::AutoFlash(bool force)
     ClearFlashStatus();
     ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when starting OTA operation", err);
     http.Disconnect();
+    free(buf);
     return false;
     }
 
   // Now, process the body
   SetFlashStatus("OTA Auto Flash: Downloading OTA image...");
-  uint8_t rbuf[512];
   size_t filesize = 0;
   ssize_t k;
-  while ((k = http.BodyRead(rbuf,512)) > 0)
+  while ((k = http.BodyRead(buf,bufsize)) > 0)
     {
     filesize += k;
     SetFlashPerc((filesize*100)/expected);
@@ -1105,26 +1461,29 @@ bool OvmsOTA::AutoFlash(bool force)
       ESP_LOGE(TAG, "AutoFlash: Download firmware is bigger than available partition space - state is inconsistent");
       esp_ota_end(otah);
       http.Disconnect();
+      free(buf);
       return false;
       }
-    err = esp_ota_write(otah, rbuf, k);
+    err = esp_ota_write(otah, buf, k);
     if (err != ESP_OK)
       {
       ClearFlashStatus();
       ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when writing to flash - state is inconsistent", err);
       esp_ota_end(otah);
       http.Disconnect();
+      free(buf);
       return false;
       }
     }
   http.Disconnect();
-  ESP_LOGI(TAG, "AutoFlash:: Download %s (at %d bytes)", (k<0) ? "failed" : "complete", filesize);
+  ESP_LOGI(TAG, "AutoFlash: Download %s (at %d bytes)", (k<0) ? "failed" : "complete", filesize);
 
   if (filesize != expected)
     {
     ClearFlashStatus();
     ESP_LOGE(TAG, "AutoFlash: Download file size (%d) does not match expected (%d)", filesize, expected);
     esp_ota_end(otah);
+    free(buf);
     m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
@@ -1135,6 +1494,7 @@ bool OvmsOTA::AutoFlash(bool force)
   if (err != ESP_OK)
     {
     ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d finalising OTA operation - state is inconsistent", err);
+    free(buf);
     return false;
     }
 
@@ -1144,12 +1504,14 @@ bool OvmsOTA::AutoFlash(bool force)
   if (err != ESP_OK)
     {
     ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d setting boot partition - check before rebooting", err);
+    free(buf);
     return false;
     }
 
-  ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", http.BodySize(), url.c_str());
+  ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", expected, url.c_str());
   MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
   MyConfig.SetParamValue("ota", "http.mru", url);
+  free(buf);
 
   return true;
   }
