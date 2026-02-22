@@ -42,10 +42,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   ota_info info;
   bool auto_enable, auto_allow_modem;
   std::string auto_hour, server, tag, hardware;
-#ifdef CONFIG_OVMS_COMP_SDCARD
-  bool sd_buffer;
-  std::string sd_minspace;
-#endif
   std::string output;
   std::string version;
   const char *what;
@@ -62,10 +58,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     server = c.getvar("server");
     tag = c.getvar("tag");
     hardware = GetOVMSProduct();
-#ifdef CONFIG_OVMS_COMP_SDCARD
-    sd_buffer = (c.getvar("sd_buffer") == "yes");
-    sd_minspace = c.getvar("sd_minspace");
-#endif
 
     if (action.substr(0,3) == "set") {
       info.partition_boot = c.getvar("boot_old");
@@ -86,10 +78,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         MyConfig.SetParamValue("ota", "auto.hour", auto_hour);
         MyConfig.SetParamValue("ota", "server", server);
         MyConfig.SetParamValue("ota", "tag", tag);
-#ifdef CONFIG_OVMS_COMP_SDCARD
-        MyConfig.SetParamValueBool("ota", "sd.buffer", sd_buffer);
-        MyConfig.SetParamValue("ota", "sd.minspace", sd_minspace);
-#endif
       }
 
       if (!error && action == "set-reboot")
@@ -129,10 +117,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     server = MyConfig.GetParamValue("ota", "server");
     tag = MyConfig.GetParamValue("ota", "tag");
     hardware = GetOVMSProduct();
-#ifdef CONFIG_OVMS_COMP_SDCARD
-    sd_buffer = MyConfig.GetParamValueBool("ota", "sd.buffer", false);
-    sd_minspace = MyConfig.GetParamValue("ota", "sd.minspace", "50");
-#endif
     // generate form:
     c.head(200);
   }
@@ -211,16 +195,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<p>Default is <code>main</code> for standard releases. Use <code>eap</code> (early access program) for stable or <code>edge</code> for bleeding edge developer builds.</p>",
     "list=\"tag-list\"");
   c.input_info("Hardware version", hardware.c_str());
-
-#ifdef CONFIG_OVMS_COMP_SDCARD
-  c.print("<hr>");
-  c.input_checkbox("Buffer OTA downloads on SD card", "sd_buffer", sd_buffer,
-    "<p>If enabled, OTA updates will download the firmware to the SD card first, then flash from there."
-    " This reduces RAM pressure during the flash process and provides a local backup of the firmware file.</p>");
-  c.input("number", "SD card reserve (MB)", "sd_minspace", sd_minspace.c_str(), "default: 50",
-    "<p>Minimum free space to keep on the SD card after downloading (in MB).</p>",
-    "min=\"0\" max=\"10000\" step=\"1\"");
-#endif
 
   c.print(
     "<hr>"

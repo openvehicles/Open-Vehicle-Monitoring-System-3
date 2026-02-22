@@ -35,10 +35,6 @@
 #include "freertos/task.h"
 #include "ovms_events.h"
 #include "ovms_mutex.h"
-#include <esp_ota_ops.h>
-
-class OvmsHttpClient;
-class OvmsWriter;
 
 struct ota_info
   {
@@ -72,12 +68,6 @@ class OvmsOTA
     void LaunchAutoFlash(ota_flashcfg_t cfg=OTA_FlashCfg_Default);
     bool AutoFlash(bool force=false);
     void Ticker600(std::string event, void* data);
-    bool FlashPartitionFromFile(const char* path, const esp_partition_t* target,
-                                 uint8_t* buf, size_t bufsize, OvmsWriter* writer=NULL);
-#ifdef CONFIG_OVMS_COMP_SDCARD
-    int DownloadToSD(OvmsHttpClient& http, uint8_t* buf, size_t bufsize,
-                     size_t expected, OvmsWriter* writer=NULL);
-#endif
 
   public:
     bool IsFlashStatus();
