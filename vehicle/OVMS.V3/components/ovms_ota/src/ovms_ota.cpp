@@ -62,9 +62,10 @@ static const char *TAG = "ota";
 #include "ovms_malloc.h"
 
 #define SOFAR 300000                    // update progress callback interval in bytes
+#define TASK_MEM_SIZE 3584              // size for auto OTA flash task (in bytes) - set to 3584 after testing with 2048 to 4096. old value 6144
 #define SD_WRITE_BUF_SIZE 2048          // buffer size for SD write operations in internal RAM - setvbuf
 #define EXT_RAM_BUF_SIZE 8192           // buffer size for OTA operations in external RAM - ExternalRamMalloc
-#define OTA_MINIMAL_SIZE 2*1024*1024    // Minimum expected size of a valid firmware file (>2MB)
+#define OTA_MINIMAL_SIZE 2097152        // Minimum expected size of a valid firmware file (>2MB)
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
@@ -1287,7 +1288,7 @@ void OvmsOTA::LaunchAutoFlash(ota_flashcfg_t cfg /*=OTA_FlashCfg_Default*/)
     }
 
   xTaskCreatePinnedToCore(OTAFlashTask, "OVMS AutoFlash",
-    6144, (void*)cfg, 5, &m_autotask, CORE(1));
+    TASK_MEM_SIZE, (void*)cfg, 5, &m_autotask, CORE(1));
   }
 
 bool OvmsOTA::AutoFlash(bool force)
