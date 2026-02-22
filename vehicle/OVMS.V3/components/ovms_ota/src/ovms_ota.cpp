@@ -61,11 +61,10 @@ static const char *TAG = "ota";
 #include "ovms_vfs.h"
 #include "ovms_malloc.h"
 
-#define SOFAR 300000                    // update progress callback interval in bytes
-#define TASK_MEM_SIZE 3584              // size for auto OTA flash task (in bytes) - set to 3584 after testing with 2048 to 4096. old value 6144
-#define SD_WRITE_BUF_SIZE 2048          // buffer size for SD write operations in internal RAM - setvbuf
-#define EXT_RAM_BUF_SIZE 8192           // buffer size for OTA operations in external RAM - ExternalRamMalloc
-#define OTA_MINIMAL_SIZE 2097152        // Minimum expected size of a valid firmware file (>2MB)
+#define PROGRESS_INTERVAL     300000        // update progress info interval in bytes
+#define TASK_STACK_SIZE       4*1024        // stack size for auto OTA flash task in bytes
+#define OTA_BUF_SIZE          8192          // buffer size for OTA operations (download & flash) in bytes
+#define OTA_MIN_IMAGE_SIZE    128*1024      // Minimum expected size of a valid firmware file in bytes
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
@@ -379,7 +378,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   size_t expected = http.BodySize();
-  if (expected < OTA_MINIMAL_SIZE)
+  if (expected < OTA_MIN_IMAGE_SIZE)
     {
     writer->printf("Error: Expected download file size (%d bytes) is invalid\n",expected);
     return;
@@ -388,7 +387,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   writer->printf("Expected file size is %d bytes\n",expected);
 
   // Allocate download buffer in PSRAM
-  const size_t bufsize = EXT_RAM_BUF_SIZE;
+  const size_t bufsize = OTA_BUF_SIZE;
   uint8_t *buf = (uint8_t*)ExternalRamMalloc(bufsize);
   if (buf == NULL)
     {
@@ -457,7 +456,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     filesize += k;
     sofar += k;
     MyOTA.SetFlashPerc((filesize*100)/expected);
-    if (sofar > SOFAR)
+    if (sofar > PROGRESS_INTERVAL)
       {
       writer->printf("Downloading... %d%% (%d bytes so far)\n",MyOTA.m_flashperc,filesize);
       sofar = 0;
@@ -816,7 +815,7 @@ bool OvmsOTA::AutoFlashSD()
     return false;
     }
 
-  SetFlashStatus("OTA Auto Flash SD: Flashing image paritition...",0,true);
+  SetFlashStatus("OTA Auto Flash SD: Flashing image partition...",0,true);
   char buf[512];
   size_t done = 0;
   while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
@@ -890,7 +889,12 @@ int OvmsOTA::DownloadToSD(OvmsHttpClient& http, uint8_t* buf, size_t bufsize,
     return 0;  // soft failure, http not consumed
     }
 
-  setvbuf(sf, NULL, _IOFBF, SD_WRITE_BUF_SIZE); // set buffering for SD write
+  // try to allocate matching buffer for SD write:
+  char *sfbuf = (char*) ExternalRamMalloc(bufsize);
+  if (sfbuf)
+    {
+    setvbuf(sf, sfbuf, _IOFBF, bufsize);
+    }
 
   SetFlashStatus("OTA: Downloading to SD card...", 0, (writer == NULL));
   if (writer) writer->puts(GetFlashStatus());
@@ -913,7 +917,7 @@ int OvmsOTA::DownloadToSD(OvmsHttpClient& http, uint8_t* buf, size_t bufsize,
     filesize += k;    
     sofar += k;
     SetFlashPerc((filesize * 100) / expected);
-    if (sofar > SOFAR)
+    if (sofar > PROGRESS_INTERVAL)
       {
       if (writer)
         writer->printf("Downloading to SD... %d%% (%d bytes so far)\n",
@@ -922,6 +926,7 @@ int OvmsOTA::DownloadToSD(OvmsHttpClient& http, uint8_t* buf, size_t bufsize,
       }
     }
   fclose(sf);
+  if (sfbuf) free(sfbuf);
   http.Disconnect();
 
   if (!download_ok || filesize != expected)
@@ -1024,7 +1029,7 @@ bool OvmsOTA::FlashPartitionFromFile(const char* path, const esp_partition_t* ta
     done += n;
     sofar += n;
     SetFlashPerc(((done * 100) / ds.st_size));
-    if (sofar > SOFAR)
+    if (sofar > PROGRESS_INTERVAL)
       {
       if (writer)
         writer->printf("Flashing from file... %d%%\n",m_flashperc);
@@ -1276,6 +1281,8 @@ static void OTAFlashTask(void *pvParameters)
     }
 
   MyOTA.m_autotask = NULL;
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGI(TAG, "AutoFlash %s: Task min stack free=%u bytes", (fromsd)?"SD":"OTA", minstackfree);
   vTaskDelete(NULL);
   }
 
@@ -1288,7 +1295,7 @@ void OvmsOTA::LaunchAutoFlash(ota_flashcfg_t cfg /*=OTA_FlashCfg_Default*/)
     }
 
   xTaskCreatePinnedToCore(OTAFlashTask, "OVMS AutoFlash",
-    TASK_MEM_SIZE, (void*)cfg, 5, &m_autotask, CORE(1));
+    TASK_STACK_SIZE, (void*)cfg, 5, &m_autotask, CORE(1));
   }
 
 bool OvmsOTA::AutoFlash(bool force)
@@ -1383,7 +1390,7 @@ bool OvmsOTA::AutoFlash(bool force)
     }
 
   size_t expected = http.BodySize();
-  if (expected < OTA_MINIMAL_SIZE)
+  if (expected < OTA_MIN_IMAGE_SIZE)
     {
     ESP_LOGE(TAG, "AutoFlash: Expected download file size (%d) is invalid", expected);
     m_lastcheckday = -1; // Allow to try again within the same day
@@ -1391,7 +1398,7 @@ bool OvmsOTA::AutoFlash(bool force)
     }
 
   // Allocate download buffer in PSRAM
-  const size_t bufsize = EXT_RAM_BUF_SIZE;
+  const size_t bufsize = OTA_BUF_SIZE;
   uint8_t *buf = (uint8_t*)ExternalRamMalloc(bufsize);
   if (buf == NULL)
     {
