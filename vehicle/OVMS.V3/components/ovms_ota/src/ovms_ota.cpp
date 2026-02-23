@@ -244,69 +244,22 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   writer->printf("Source image is %ld bytes in size\n",ds.st_size);
 
-  FILE* f = fopen(argv[0], "r");
-  if (f == NULL)
+  // Allocate flash buffer in PSRAM
+  const size_t bufsize = OTA_BUF_SIZE;
+  uint8_t *buf = (uint8_t*)ExternalRamMalloc(bufsize);
+  if (buf == NULL)
     {
-    writer->printf("Error: Cannot open %s\n",argv[0]);
+    writer->puts("Error: Cannot allocate flash buffer");
     return;
     }
 
-  MyOTA.SetFlashStatus("OTA Flash VFS: Preparing flash partition...");
-  writer->puts(MyOTA.GetFlashStatus());
-  esp_ota_handle_t otah;
-  esp_err_t err = esp_ota_begin(target, ds.st_size, &otah);
-  if (err != ESP_OK)
+  if (MyOTA.FlashPartitionFromFile(argv[0], target, buf, bufsize, writer))
     {
-    MyOTA.ClearFlashStatus();
-    writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
-    fclose(f);
-    return;
+    writer->printf("OTA flash was successful\n  Flashed %ld bytes from %s\n  Next boot will be from '%s'\n",
+                   ds.st_size, argv[0], target->label);
+    MyConfig.SetParamValue("ota", "vfs.mru", argv[0]);
     }
-
-  MyOTA.SetFlashStatus("OTA Flash VFS: Flashing image partition...");
-  writer->puts(MyOTA.GetFlashStatus());
-  char buf[512];
-  size_t done = 0;
-  while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
-    {
-    err = esp_ota_write(otah, buf, n);
-    if (err != ESP_OK)
-      {
-      MyOTA.ClearFlashStatus();
-      writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err);
-      esp_ota_end(otah);
-      fclose(f);
-      return;
-      }
-    done += n;
-    MyOTA.SetFlashPerc((done*100)/ds.st_size);
-    }
-  fclose(f);
-
-  MyOTA.SetFlashStatus("OTA Flash VFS: Finalising flash write");
-  err = esp_ota_end(otah);
-  if (err != ESP_OK)
-    {
-    MyOTA.ClearFlashStatus();
-    writer->printf("Error: ESP32 error #%d finalising OTA operation - state is inconsistent\n",err);
-    return;
-    }
-
-  fclose(f);
-
-  MyOTA.SetFlashStatus("OTA Flash VFS: Setting boot partition...");
-  writer->puts(MyOTA.GetFlashStatus());
-  err = esp_ota_set_boot_partition(target);
-  MyOTA.ClearFlashStatus();
-  if (err != ESP_OK)
-    {
-    writer->printf("Error: ESP32 error #%d setting boot partition - check before rebooting\n",err);
-    return;
-    }
-
-  writer->printf("OTA flash was successful\n  Flashed %ld bytes from %s\n  Next boot will be from '%s'\n",
-                 ds.st_size,argv[0],target->label);
-  MyConfig.SetParamValue("ota", "vfs.mru", argv[0]);
+  free(buf);
   }
 
 void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -411,10 +364,18 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       {
       if (MyOTA.FlashPartitionFromFile("/sd/ovms3.bin", target, buf, bufsize, writer))
         {
+        char done_path[40];
+        snprintf(done_path, sizeof(done_path), "/sd/ovms3.%s", target->label);
+        remove(done_path);
+        rename("/sd/ovms3.bin", done_path);
         MyNotify.NotifyString("info", "ota.update", "Flashed new firmware version finished");
         writer->printf("OTA flash was successful\n  Flashed %d bytes from %s (via SD)\n  Next boot will be from '%s'\n",
                        expected, url.c_str(), target->label);
         MyConfig.SetParamValue("ota", "http.mru", url);
+        }
+      else
+        {
+        remove("/sd/ovms3.bin");
         }
       free(buf);
       return;
@@ -758,8 +719,7 @@ void OvmsOTA::CheckFlashSD(std::string event, void* data)
 
 bool OvmsOTA::AutoFlashSD()
   {
-  FILE* f = fopen("/sd/ovms3.bin", "r");
-  if (f == NULL) return false;
+  if (!path_exists("/sd/ovms3.bin")) return false;
 
   const esp_partition_t *running = esp_ota_get_running_partition();
   const esp_partition_t *target = esp_ota_get_next_update_partition(running);
@@ -768,14 +728,12 @@ bool OvmsOTA::AutoFlashSD()
   if (!m_lock.IsLocked())
     {
     ESP_LOGW(TAG, "AutoFlashSD: Flash operation already in progress - cannot auto flash");
-    fclose(f);
     return false;
     }
 
   if (running==NULL)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: Current running image cannot be determined - aborting");
-    fclose(f);
     return false;
     }
   ESP_LOGW(TAG, "AutoFlashSD Current running partition is: %s",running->label);
@@ -783,7 +741,6 @@ bool OvmsOTA::AutoFlashSD()
   if (target==NULL)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: Target partition cannot be determined - aborting");
-    fclose(f);
     return false;
     }
   ESP_LOGW(TAG, "AutoFlashSD Target partition is: %s",target->label);
@@ -791,78 +748,33 @@ bool OvmsOTA::AutoFlashSD()
   if (running == target)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: Cannot flash to running image partition");
-    fclose(f);
     return false;
     }
 
-  struct stat ds;
-  if (stat("/sd/ovms3.bin", &ds) != 0)
+  // Allocate flash buffer in PSRAM
+  const size_t bufsize = OTA_BUF_SIZE;
+  uint8_t *buf = (uint8_t*)ExternalRamMalloc(bufsize);
+  if (buf == NULL)
     {
-    ESP_LOGE(TAG, "AutoFlashSD Error: Cannot stat file");
-    fclose(f);
-    return false;
-    }
-  ESP_LOGW(TAG, "AutoFlashSD Source image is %d bytes in size",(int)ds.st_size);
-
-  SetFlashStatus("OTA Auto Flash SD: Preparing flash partition...",0,true);
-  esp_ota_handle_t otah;
-  esp_err_t err = esp_ota_begin(target, ds.st_size, &otah);
-  if (err != ESP_OK)
-    {
-    ClearFlashStatus();
-    ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d when starting OTA operation",err);
-    fclose(f);
+    ESP_LOGE(TAG, "AutoFlashSD Error: Cannot allocate flash buffer");
     return false;
     }
 
-  SetFlashStatus("OTA Auto Flash SD: Flashing image partition...",0,true);
-  char buf[512];
-  size_t done = 0;
-  while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
+  bool success = FlashPartitionFromFile("/sd/ovms3.bin", target, buf, bufsize, NULL);
+  free(buf);
+
+  if (success)
     {
-    err = esp_ota_write(otah, buf, n);
-    if (err != ESP_OK)
+    remove("/sd/ovms3.done");
+    if (rename("/sd/ovms3.bin", "/sd/ovms3.done") != 0)
       {
-      ClearFlashStatus();
-      ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d when writing to flash - state is inconsistent",err);
-      esp_ota_end(otah);
-      fclose(f);
+      ESP_LOGE(TAG, "AutoFlashSD Error: ovms3.bin could not be renamed to ovms3.done - check before rebooting");
       return false;
       }
-    done += n;
-    SetFlashPerc((done*100)/ds.st_size);
+    ESP_LOGW(TAG, "AutoFlashSD OTA flash successful: booting from '%s'", target->label);
     }
 
-  fclose(f);
-
-  SetFlashStatus("OTA Auto Flash SD: Finalising flash image...",0,true);
-  err = esp_ota_end(otah);
-  if (err != ESP_OK)
-    {
-    ClearFlashStatus();
-    ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d finalising OTA operation - state is inconsistent",err);
-    return false;
-    }
-
-  SetFlashStatus("OTA Auto Flash SD: Setting boot partition...",0,true);
-  err = esp_ota_set_boot_partition(target);
-  ClearFlashStatus();
-  if (err != ESP_OK)
-    {
-    ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d setting boot partition - check before rebooting",err);
-    return false;
-    }
-
-  remove("/sd/ovms3.done"); // Ensure the target is removed first
-  if (rename("/sd/ovms3.bin","/sd/ovms3.done") != 0)
-    {
-    ESP_LOGE(TAG, "AutoFlashSD Error: ovms3.bin could not be renamed to ovms3.done - check before rebooting");
-    return false;
-    }
-
-  ESP_LOGW(TAG, "AutoFlashSD OTA flash successful: Flashed %d bytes, and booting from '%s'",
-                 (int)ds.st_size,target->label);
-  return true;
+  return success;
   }
 
 /**
@@ -1056,8 +968,7 @@ bool OvmsOTA::FlashPartitionFromFile(const char* path, const esp_partition_t* ta
   err = esp_ota_set_boot_partition(target);
   ClearFlashStatus();
   if (err != ESP_OK)
-    {    
-    remove("/sd/ovms3.bin"); // prevent re-flash attempt on next boot
+    {
     if (writer)
       writer->printf("Error: ESP32 error #%d setting boot partition - check before rebooting\n", err);
     else
@@ -1065,10 +976,6 @@ bool OvmsOTA::FlashPartitionFromFile(const char* path, const esp_partition_t* ta
     return false;
     }
 
-  char done_path[40];
-  snprintf(done_path, sizeof(done_path), "/sd/ovms3.%s", target->label);
-  remove(done_path);
-  rename("/sd/ovms3.bin", done_path);
   return true;
   }
 
@@ -1419,12 +1326,17 @@ bool OvmsOTA::AutoFlash(bool force)
       free(buf);
       if (success)
         {
+        char done_path[40];
+        snprintf(done_path, sizeof(done_path), "/sd/ovms3.%s", target->label);
+        remove(done_path);
+        rename("/sd/ovms3.bin", done_path);
         ESP_LOGI(TAG, "AutoFlash: Success flash via SD, %d bytes from %s", expected, url.c_str());
         MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
         MyConfig.SetParamValue("ota", "http.mru", url);
         }
       else
         {
+        remove("/sd/ovms3.bin");
         m_lastcheckday = -1;
         }
       return success;
