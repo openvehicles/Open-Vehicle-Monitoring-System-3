@@ -362,8 +362,8 @@ void OvmsVehicleKiaNiroEv::IncomingFull_VMCU(uint16_t type, uint16_t pid, const 
 			m_ldc_out_current->SetValue(value,Amps);
 		}
 		
-		if (get_bytes_uint_be<2>(data, 23, value))
-			ESP_LOGD(TAG,"(VCU) Aux SOC: %f", value);
+		if (get_uint_buff_be<2>(data, 23, value))
+			ESP_LOGD(TAG,"(VCU) Aux SOC: %d", value);
 		break;
 
 	case 0x80:
@@ -612,10 +612,10 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 	// 00 3f 46 10 00 00 00 00 00 00 00 00 00 14 94 00 25 52 2c 24 00 01 50 1e 9f 03 c4 07 00 4f 03 9f 00 12 03 11 01 03 13 5d 01 00 00
 	case 0x0105:
 		if(get_uint_buff_be<1>(data, 20, value))
-			ESP_LOGD(TAG,"Voltage Diff: %f", value / 50);
+			ESP_LOGD(TAG,"Voltage Diff: %f",(float) value / 50);
 
 		if (get_uint_buff_be<1>(data, 22, value))
-			ESP_LOGD(TAG, "Airbag %f", value);
+			ESP_LOGD(TAG, "Airbag %d", value);
 
 		if (get_uint_buff_be<1>(data, 23, value))
 			m_b_heat_1_temperature->SetValue(value);
@@ -642,8 +642,8 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 	// not added
 	case 0x106:
 		// Unvalidated
-		if(get_uint_buff_be<1>(data,4,value))
-			ESP_LOGD(TAG, "Coolant Temp: %f", value);
+		if(get_uint_buff_be<1>(data, 4, value))
+			ESP_LOGD(TAG, "Coolant Temp: %d", value);
 
 		break;
 	}
