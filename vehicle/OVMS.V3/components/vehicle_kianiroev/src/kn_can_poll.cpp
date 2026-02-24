@@ -361,7 +361,7 @@ void OvmsVehicleKiaNiroEv::IncomingFull_VMCU(uint16_t type, uint16_t pid, const 
 			StdMetrics.ms_v_charge_12v_current->SetValue((float)value/100,Amps);
 			m_ldc_out_current->SetValue(value,Amps);
 		}
-
+		
 		if (get_bytes_uint_be<2>(data, 23, value))
 			ESP_LOGD(TAG,"(VCU) Aux SOC: %f", value);
 		break;
@@ -448,7 +448,7 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 			*  Bit 1 - ???
 			*  Bit 5 - normal charge,
 			*  Bit 6 - rapid charge
-			*  Bit 7 - charging 
+			*  Bit 7 - charging
 			*/
 			if (get_buff_int_be<1>(data, 9, value))
 			{
@@ -612,7 +612,7 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 	// 00 3f 46 10 00 00 00 00 00 00 00 00 00 14 94 00 25 52 2c 24 00 01 50 1e 9f 03 c4 07 00 4f 03 9f 00 12 03 11 01 03 13 5d 01 00 00
 	case 0x0105:
 		if(get_uint_buff_be<1>(data, 20, value))
-			ESP_LOGD(TAG,"Voltage Diff: %f", value / 50)
+			ESP_LOGD(TAG,"Voltage Diff: %f", value / 50);
 
 		if (get_uint_buff_be<1>(data, 22, value))
 			ESP_LOGD(TAG, "Airbag %f", value);
@@ -638,7 +638,6 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
         }
 
 		break;
-	}
 
 	// not added
 	case 0x106:
@@ -647,6 +646,7 @@ void OvmsVehicleKiaNiroEv::IncomingFull_BMC(uint16_t type, uint16_t pid, const s
 			ESP_LOGD(TAG, "Coolant Temp: %f", value);
 
 		break;
+	}
 }
 
 /**

@@ -950,7 +950,7 @@ void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 	{
 	float Distance, EnergyUsed;
 	//Update State of Health using following assumption: 10% buffer
-	StdMetrics.ms_v_bat_cac->SetValue((kn_battery_capacity * BAT_SOH /10000.0) / 400, AmpHours);
+	StdMetrics.ms_v_bat_cac->SetValue((kn_battery_capacity * (BAT_SOH /100.0)) / 325, AmpHours);
 	
 	Distance = kia_park_trip_counter.GetDistance();
 	EnergyUsed = kia_park_trip_counter.GetEnergyUsed();
