@@ -45,6 +45,7 @@ static const char *TAG = "ota";
 #include <spi_flash_mmap.h>
 #endif
 #include "ovms_ota.h"
+#include "ovms_partitions.h"
 #include "ovms_command.h"
 #include "ovms_boot.h"
 #include "ovms_config.h"
@@ -57,8 +58,8 @@ static const char *TAG = "ota";
 #include "ovms_boot.h"
 #include "ovms_netmanager.h"
 #include "ovms_version.h"
-#include "crypt_md5.h"
 #include "ovms_vfs.h"
+#include "crypt_md5.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
@@ -105,6 +106,8 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     len += writer->printf("Hardware:          %s\n", info.hardware_info.c_str());
   if (info.version_firmware != "")
     len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
+  len += writer->printf("Partition type:    %s\n", info.flashpartition_type_string.c_str());
+  len += writer->printf("Partition table:   0x%4.4x\n", info.flashpartition_table_address);
   if (info.partition_running != "")
     len += writer->printf("Running partition: %s\n", info.partition_running.c_str());
   if (info.partition_boot != "")
@@ -632,6 +635,82 @@ void ota_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   writer->puts("OTA copy complete");
   }
 
+void ota_partition_table_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot access partition table");
+    return;
+    }
+  ovms_partition_table_list(writer);
+  }
+
+void ota_perform_partition_table_upgrade(OvmsWriter* writer)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot upgrade partition table");
+    return;
+    }
+  
+  ovms_partition_table_upgrade(writer);
+  }
+
+bool ota_partition_table_upgrade_yesno(OvmsWriter* writer, void* ctx, char ch)
+  {
+  writer->printf("%c\n",ch);
+
+  if (ch != 'y')
+    {
+    writer->puts("Partition table upgrade aborted");
+    return false;
+    }
+
+  ota_perform_partition_table_upgrade(writer);
+
+  return false;
+  }
+
+void ota_partition_table_upgrade(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (ovms_partition_table_get_type() != OVMS_FlashPartition_f12)
+    {
+    writer->puts("Error: Cannot upgrade partition tables not in original v3 (factory, ota1, ota2) format");
+    return;
+    }
+
+  const esp_partition_t *p = esp_ota_get_running_partition();
+  if ((p != NULL)&&(strcmp(p->label,"factory")!=0))
+    {
+    writer->puts("Error: Cannot upgrade partition table if running partition is not factory");
+    return;
+    }
+  
+  p = esp_ota_get_boot_partition();
+  if ((p != NULL)&&(strcmp(p->label,"factory")!=0))
+    {
+    writer->puts("Error: Cannot upgrade partition table if boot partition is not factory");
+    return;
+    } 
+  
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
+    ota_perform_partition_table_upgrade(writer);
+    }
+  else
+    {
+    writer->printf("Upgrade partition table to new format (y/n): ");
+    writer->RegisterInsertCallback(ota_partition_table_upgrade_yesno, NULL);
+    }
+  }
+
 ////////////////////////////////////////////////////////////////////////////////
 // OvmsOTA
 //
@@ -788,25 +867,37 @@ OvmsOTA::OvmsOTA()
   cmd_otaflash_auto->RegisterCommand("force","…force update (even if server version older)",ota_flash_auto);
 
   OvmsCommand* cmd_otaboot = cmd_ota->RegisterCommand("boot","OTA boot");
-  cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot);
+  if (ovms_partition_table_has_factory())
+    cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot);
   cmd_otaboot->RegisterCommand("ota_0","Boot from ota_0 image",ota_boot);
   cmd_otaboot->RegisterCommand("ota_1","Boot from ota_1 image",ota_boot);
 
   OvmsCommand* cmd_otaerase = cmd_ota->RegisterCommand("erase","OTA erase");
-  cmd_otaerase->RegisterCommand("factory","Erase factory image",ota_erase);
+  if (ovms_partition_table_has_factory())
+    cmd_otaerase->RegisterCommand("factory","Erase factory image",ota_erase);
   cmd_otaerase->RegisterCommand("ota_0","Erase ota_0 image",ota_erase);
   cmd_otaerase->RegisterCommand("ota_1","Erase ota_1 image",ota_erase);
 
   OvmsCommand* cmd_otacopy = cmd_ota->RegisterCommand("copy","OTA copy");
-  OvmsCommand* cmd_otacopyf = cmd_otacopy->RegisterCommand("factory","OTA copy factory <to>");
-  cmd_otacopyf->RegisterCommand("ota_0","Copy factory to ota_0 image",ota_copy);
-  cmd_otacopyf->RegisterCommand("ota_1","Copy factory to ota_1 image",ota_copy);
+  if (ovms_partition_table_has_factory())
+    {
+    OvmsCommand* cmd_otacopyf = cmd_otacopy->RegisterCommand("factory","OTA copy factory <to>");
+    cmd_otacopyf->RegisterCommand("ota_0","Copy factory to ota_0 image",ota_copy);
+    cmd_otacopyf->RegisterCommand("ota_1","Copy factory to ota_1 image",ota_copy);
+    }
   OvmsCommand* cmd_otacopy0 = cmd_otacopy->RegisterCommand("ota_0","OTA copy ota_0 <to>");
-  cmd_otacopy0->RegisterCommand("factory","Copy ota_0 to factory image",ota_copy);
+  if (ovms_partition_table_has_factory())
+    cmd_otacopy0->RegisterCommand("factory","Copy ota_0 to factory image",ota_copy);
   cmd_otacopy0->RegisterCommand("ota_1","Copy ota_0 to ota_1 image",ota_copy);
   OvmsCommand* cmd_otacopy1 = cmd_otacopy->RegisterCommand("ota_1","OTA copy ota_1 <to>");
-  cmd_otacopy1->RegisterCommand("factory","Copy ota_1 to factory image",ota_copy);
+  if (ovms_partition_table_has_factory())
+    cmd_otacopy1->RegisterCommand("factory","Copy ota_1 to factory image",ota_copy);
   cmd_otacopy1->RegisterCommand("ota_0","Copy ota_1 to ota_0 image",ota_copy);
+
+  OvmsCommand* cmd_otapartition = cmd_ota->RegisterCommand("partitions","OTA partitions");
+  cmd_otapartition->RegisterCommand("list","Show partition table",ota_partition_table_list);
+  if (ovms_partition_table_get_type() != OVMS_FlashPartition_12)
+    cmd_otapartition->RegisterCommand("upgrade","Upgrade partition table",ota_partition_table_upgrade,"[-noconfirm]",0,1);
   }
 
 OvmsOTA::~OvmsOTA()
@@ -822,6 +913,9 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
   info.partition_running = "";
   info.partition_boot = "";
   info.changelog_server = "";
+  info.flashpartition_type = ovms_partition_table_get_type();
+  info.flashpartition_type_string = ovms_partition_table_get_type_string(info.flashpartition_type);
+  info.flashpartition_table_address = ovms_partition_table_find();
 
   if (StdMetrics.ms_m_hardware)
     info.hardware_info = StdMetrics.ms_m_hardware->AsString();
