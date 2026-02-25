@@ -147,13 +147,15 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   c.input_info("Running partition", info.partition_running.c_str());
   c.printf("<input type=\"hidden\" name=\"boot_old\" value=\"%s\">", _attr(info.partition_boot));
   c.input_select_start("Boot from", "boot");
-  what = "Factory image";
-  version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_FACTORY);
-  if (version != "") {
-    snprintf(buf, sizeof(buf), "%s (%s)", what, version.c_str());
-    what = buf;
+  if (ovms_partition_table_has_factory()) {
+    what = "Factory image";
+    version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_FACTORY);
+    if (version != "") {
+      snprintf(buf, sizeof(buf), "%s (%s)", what, version.c_str());
+      what = buf;
+    }
+    c.input_select_option(what, "factory", (info.partition_boot == "factory"));
   }
-  c.input_select_option(what, "factory", (info.partition_boot == "factory"));
   what = "OTA_0 image";
   version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_OTA_0);
   if (version != "") {
