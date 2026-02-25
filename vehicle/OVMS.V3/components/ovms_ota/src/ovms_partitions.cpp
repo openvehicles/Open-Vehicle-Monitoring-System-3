@@ -408,6 +408,7 @@ bool ovms_partition_table_upgrade(OvmsWriter* writer)
       }
     ovms_partition_table_free(table);
     writer->puts("Partition table upgraded successfully - reboot required");
+    partition_table_type = OVMS_FlashPartition_12;
     return true;
     }
   else
