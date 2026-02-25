@@ -60,7 +60,6 @@ static const char *TAG = "ota";
 #include "ovms_version.h"
 #include "ovms_vfs.h"
 #include "crypt_md5.h"
-#include "ovms_malloc.h"
 
 #define TASK_STACK_SIZE       4*1024        // stack size for auto OTA flash task in bytes
 #define OTA_MIN_IMAGE_SIZE    128*1024      // Minimum expected size of a valid firmware file in bytes
