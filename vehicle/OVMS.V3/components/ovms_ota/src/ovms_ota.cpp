@@ -600,50 +600,112 @@ void ota_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
-  writer->printf("OTA copy %s (%08" PRIu32 ") -> %s (%08" PRIx32 ") size %" PRIu32 "\n",
+  writer->printf("OTA copy %s (%08" PRIu32 ") -> %s (%08" PRIx32 ") size %" PRIu32 " with block size %d\n",
     fn.c_str(), from_p->address,
-    tn.c_str(), to_p->address, to_p->size);
+    tn.c_str(), to_p->address, to_p->size, SPI_FLASH_SEC_SIZE);
 
-  MyOTA.SetFlashStatus("OTA Copy: Preparing flash partition...");
-  esp_ota_handle_t otah;
-  esp_err_t err = esp_ota_begin(to_p, OTA_SIZE_UNKNOWN, &otah);
-  if (err != ESP_OK)
+  char *buf = (char *)InternalRamMalloc(SPI_FLASH_SEC_SIZE);
+  if (buf == NULL)
     {
-    MyOTA.ClearFlashStatus();
-    writer->printf("Error: ESP32 error #%d starting OTA operation\n",err);
+    writer->puts("Error: Failed to allocate buffer in internal RAM");
     return;
     }
 
-  MyOTA.SetFlashStatus("OTA Copy: Copying flash image...");
-  size_t offset = 0;
-  while (offset < to_p->size)
+  if (to == ESP_PARTITION_SUBTYPE_APP_FACTORY)
     {
-    char buf[512];
-    size_t todo = to_p->size - offset;
-    if (todo > sizeof(buf)) todo=sizeof(buf);
-    esp_err_t err = esp_partition_read(from_p, offset, buf, todo);
+    // Writing to a factory partition cannot be done using OTA operators,
+    // so we need to use the regular flash write functions.
+    MyOTA.SetFlashStatus("OTA Factory Copy: Preparing flash partition...");
+    esp_err_t err = esp_partition_erase_range(to_p, 0, to_p->size);
     if (err != ESP_OK)
       {
       MyOTA.ClearFlashStatus();
-      writer->printf("Error: ESP32 error #%d reading source at offset %d",err,offset);
-      esp_ota_end(otah);
+      writer->printf("Error: ESP32 error #%d starting factory OTA erase operation\n",err);
+      free(buf);
       return;
       }
-    err = esp_ota_write(otah, buf, todo);
+    MyOTA.SetFlashStatus("OTA Factory Copy: Copying flash image...");
+    size_t offset = 0;
+    while (offset < to_p->size)
+      {
+      size_t todo = to_p->size - offset;
+      if (todo > SPI_FLASH_SEC_SIZE) todo=SPI_FLASH_SEC_SIZE;
+      esp_err_t err = esp_partition_read(from_p, offset, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d reading source at offset %d",err,offset);
+        free(buf);
+        return;
+        }
+      err = esp_partition_write(to_p, offset, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d writing factory destination at offset %d",err,offset);
+        free(buf);
+        return;
+        }
+      offset += todo;
+      if (offset % (SPI_FLASH_SEC_SIZE*64) == 0)
+        {
+        writer->printf("OTA Factory Copy: %d%% progress (%d bytes)\n",(offset*100)/to_p->size,offset);
+        }
+      MyOTA.SetFlashPerc((offset*100)/to_p->size);
+      }
+    MyOTA.SetFlashStatus("OTA Factory Copy: Finalising copy...");
+    }
+  else
+    {
+    // Writing to OTA partitions (whether the source is OTA or factory) can
+    // be done using regular OTA operators.
+    MyOTA.SetFlashStatus("OTA Copy: Preparing flash partition...");
+    esp_ota_handle_t otah;
+    esp_err_t err = esp_ota_begin(to_p, OTA_SIZE_UNKNOWN, &otah);
     if (err != ESP_OK)
       {
       MyOTA.ClearFlashStatus();
-      writer->printf("Error: ESP32 error #%d writing destinatio at offset %d",err,offset);
-      esp_ota_end(otah);
+      writer->printf("Error: ESP32 error #%d starting OTA operation\n",err);
+      free(buf);
       return;
       }
-    offset += todo;
-    MyOTA.SetFlashPerc((offset*100)/to_p->size);
+    MyOTA.SetFlashStatus("OTA Copy: Copying flash image...");
+    size_t offset = 0;
+    while (offset < to_p->size)
+      {
+      size_t todo = to_p->size - offset;
+      if (todo > SPI_FLASH_SEC_SIZE) todo=SPI_FLASH_SEC_SIZE;
+      esp_err_t err = esp_partition_read(from_p, offset, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d reading source at offset %d",err,offset);
+        esp_ota_end(otah);
+        free(buf);
+        return;
+        }
+      err = esp_ota_write(otah, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d writing destination at offset %d",err,offset);
+        esp_ota_end(otah);
+        free(buf);
+        return;
+        }
+      offset += todo;
+      if (offset % (SPI_FLASH_SEC_SIZE*64) == 0)
+        {
+        writer->printf("OTA Copy: %d%% progress (%d bytes)\n",(offset*100)/to_p->size,offset);
+        }
+      MyOTA.SetFlashPerc((offset*100)/to_p->size);
+      }
+    MyOTA.SetFlashStatus("OTA Copy: Finalising copy...");
+    esp_ota_end(otah);
     }
 
-  MyOTA.SetFlashStatus("OTA Copy: Finalising copy...");
-  esp_ota_end(otah);
   MyOTA.ClearFlashStatus();
+  free(buf);
   writer->puts("OTA copy complete");
   }
 
