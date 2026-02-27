@@ -238,7 +238,13 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
       cnf1=0x41; cnf2=0xf1; cnf3=0x85;
       break;
     case CAN_SPEED_500KBPS:
-      cnf1=0x00; cnf2=0xf0; cnf3=0x86;
+      // cnf1=0x00; cnf2=0xf0; cnf3=0x86; original code
+      // SAE/CiA recommendation
+      // PROP=5, PS1=8, PS2=2, SJW=2, Sample 1x @87.5%
+      cnf1=0x40; cnf2=0xbc; cnf3=0x81;
+      // Arduino MCP_CAN lib
+      // PROP=6, PS1=5, PS2=4, SJW=2, Sample 3x @75%
+      // cnf1=0x40; cnf2=0xe5; cnf3=0x83;
       break;
     case CAN_SPEED_1000KBPS:
       cnf1=0x00; cnf2=0xca; cnf3=0x81;
