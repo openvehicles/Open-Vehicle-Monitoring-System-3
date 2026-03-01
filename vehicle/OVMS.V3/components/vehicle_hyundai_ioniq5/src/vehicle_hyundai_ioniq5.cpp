@@ -126,8 +126,8 @@ static const OvmsPoller::poll_pid_t vehicle_ioniq_polls_second[] = {
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0103, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 2 - BMC Diag page 03
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0104, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 3 - BMC Diag page 04
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0105, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 4 - BMC Diag page 05 (Other - Battery Pack Temp)
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc03, { 150,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc04, { 150,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc03, {  30,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc04, {  30,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status
   POLL_LIST_END
 };
 
@@ -858,7 +858,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   }
 
   bool wasPaused = hif_keep_awake > 0;
-  if (hif_keep_awake > 0) {
+  if (wasPaused) {
     --hif_keep_awake;
   }
 
@@ -1074,8 +1074,13 @@ void OvmsHyundaiIoniqEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_
 void OvmsHyundaiIoniqEv::BatteryStateStillCharging()
 {
   if (IsPollState_Off()) {
-    ESP_LOGD(TAG, "PollState->PingAux for 30 (Charging)");
-    PollState_PingAux(30);
+    if (!StdMetrics.ms_v_charge_inprogress->AsBool()) {
+      ESP_LOGD(TAG, "PollState->PingAux for 30 (Charging)");
+      PollState_PingAux(30);
+    } else {
+      ESP_LOGD(TAG, "PollState->Ping for 30 (Charging)");
+      PollState_Ping(30);
+    }
   }
 }
 
@@ -1088,13 +1093,6 @@ void OvmsHyundaiIoniqEv::Ticker10(uint32_t ticker)
     ESP_LOGI(TAG, "Checking for VIN.");
     if (PollRequestVIN()) {
       ++m_vin_retry;
-    }
-  }
-
-  if (Atomic_Get(m_aux_is_charging)) {
-    if (IsPollState_Off()) {
-      ESP_LOGD(TAG, "PollState->Ping for 10 (Aux Charging)");
-      PollState_Ping(10);
     }
   }
 }
@@ -1189,8 +1187,10 @@ void OvmsHyundaiIoniqEv::FlatbedListener(std::string event, void *data)
     return;
 
   // Make sure the car is really off.
-  ESP_LOGD(TAG, "PollState->Ping for 30 (Flatbed)");
-  PollState_Ping(30);
+  if (IsPollState_Off()) {
+    ESP_LOGD(TAG, "PollState->Ping for 30 (Flatbed)");
+    PollState_Ping(30);
+  }
 }
 
 /**
