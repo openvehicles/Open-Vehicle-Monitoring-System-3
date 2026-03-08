@@ -50,6 +50,7 @@ static const char *TAG = "command";
 #include "ovms_utils.h"
 #include "ovms_script.h"
 #include "buffered_shell.h"
+#include "background_shell.h"
 #include "log_buffers.h"
 #include "ovms_semaphore.h"
 #include "ovms_vfs.h"
@@ -437,6 +438,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
   if (m_execute && (m_children.empty() || argc == 0))
     {
     //puts("Executing directly...");
+    writer->SetCommand(this);
     if (argc < m_min || argc > m_max || (argc > 0 && strcmp(argv[argc-1],"?")==0))
       {
       PutUsage(writer);
@@ -455,9 +457,10 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       int used = m_validate(writer, this, argc > m_max ? m_max : argc, argv, false);
       if (used < 0)
         {
+        writer->SetCommand(this);
         if (argc > 0 && strcmp(argv[argc-1],"?") != 0)
           writer->puts("Unrecognised command");
-	PutUsage(writer);
+        PutUsage(writer);
         return;
         }
       argc -= used;
@@ -466,6 +469,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     //puts("Looking for a matching command");
     if (argc <= 0)
       {
+      writer->SetCommand(this);
       if (m_execute)
         {
         if ((!m_secure)||(m_secure && writer->m_issecure))
@@ -480,6 +484,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       }
     if (strcmp(argv[0],"?")==0)
       {
+      writer->SetCommand(this);
       // Skip usage line if it's just the one-line list of children.
       if (m_usage_template.empty() || m_execute)
         PutUsage(writer);
@@ -501,11 +506,13 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     OvmsCommand* cmd = m_children.FindUniquePrefix(argv[0]);
     if (!cmd)
       {
+      writer->SetCommand(this);
       writer->puts("Unrecognised command");
       if (GetParent())    // No usage line for root command
         PutUsage(writer);
       return;
       }
+    // Continue in sub command:
     cmd->Execute(verbosity,writer,argc-1,++argv);
     }
   }
@@ -753,6 +760,87 @@ void cmd_echo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     writer->puts("");
   }
 
+void cmd_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int i;
+  int stacksize = CONFIG_OVMS_SYS_COMMAND_STACK_SIZE;
+  UBaseType_t priority = CONFIG_OVMS_SYS_COMMAND_PRIORITY;
+  char notify_mode = 'i';
+
+  // parse options:
+  for (i = 0; i < argc; i++)
+    {
+    if (argv[i][0] != '-')
+      break;
+    else if (argv[i][1] == 'n')
+      notify_mode = argv[i][2];
+    else if (argv[i][1] == 'S')
+      stacksize = atoi(argv[i]+2);
+    else if (argv[i][1] == 'P')
+      priority = atoi(argv[i]+2);
+    else
+      {
+      writer->printf("ERROR: unknown option: %s\n", argv[i]);
+      cmd->PutUsage(writer);
+      return;
+      }
+    }
+
+  // validate args:
+  if (i == argc)
+    {
+    writer->puts("ERROR: no command");
+    return;
+    }
+  if (stacksize < 512) stacksize = 512;
+  if (priority > 23) priority = 23;
+
+  // start background shell:
+  BackgroundShell* bs = new BackgroundShell("OVMS BgShell", verbosity, stacksize, priority);
+  if (bs)
+    {
+    bs->SetSecure(true); // safe to assume, the run command is only available in secure mode
+    bs->SetNotifyMode(notify_mode);
+    }
+  if (!bs || !bs->Init())
+    {
+    writer->puts("ERROR: out of memory");
+    return;
+    }
+
+  // send command(s) to background shell:
+  char quotechar = 0;
+  for (; i < argc; i++)
+    {
+    if (argv[i][0] == ';' && argv[i][1] == 0)
+      {
+      // translate single ';' into command separation:
+      bs->QueueChar('\n');
+      }
+    else
+      {
+      // quote argument if necessary:
+      if (strchr(argv[i], ' '))
+        {
+        quotechar = (strchr(argv[i], '"')) ? '\'' : '"';
+        bs->QueueChar(quotechar);
+        }
+      bs->QueueChars(argv[i]);
+      if (quotechar)
+        {
+        bs->QueueChar(quotechar);
+        quotechar = 0;
+        }
+      if (i < argc-1) bs->QueueChar(' ');
+      }
+    }
+  
+  // terminate background shell after last command:
+  bs->QueueChars("\nexit\n");
+  
+  writer->puts("Background execution started.");
+  }
+
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 static duk_ret_t DukOvmsCommandExec(duk_context *ctx)
@@ -837,7 +925,7 @@ OvmsCommandApp::OvmsCommandApp()
 
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0, false);
   m_root.RegisterCommand("exit", "End console session", cmd_exit, "", 0, 0, false);
-  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework", log_status, "", 0, 0, false);
+  OvmsCommand* cmd_log = m_root.RegisterCommand("log","LOG framework", log_status, "", 0, 0, false);
   cmd_log->RegisterCommand("file", "Start logging to specified file", log_file, "[<vfspath>]\nDefault: config log[file.path]", 0, 1, true, vfs_file_validate);
   cmd_log->RegisterCommand("open", "Start file logging", log_open);
   cmd_log->RegisterCommand("close", "Stop file logging", log_close);
@@ -859,6 +947,16 @@ OvmsCommandApp::OvmsCommandApp()
     "<seconds>\nFractions of seconds are supported, e.g. 0.2 = 200 ms", 1, 1);
   m_root.RegisterCommand("echo", "Script utility: output text", cmd_echo,
     "[<text>] […]\nOutputs up to 10 arguments as separate lines, just a newline if no text is given.", 0, 10);
+  m_root.RegisterCommand("run", "Run command(s) in background task", cmd_run,
+    "[-n<i|o|s>] [-S<stacksize>] [-P<priority>] <command…> [; <command…>]\n"
+    "Run command(s) in background task (log tag: 'bgshell'), send output via notification.\n"
+    "Use a single ';' to separate multiple commands.\n"
+    "Notification default mode (type) is 'info' (-ni), -ns = 'stream', -no = off.\n"
+    "Notification subtype scheme: 'cmd.full.command.name'\n"
+    "Default task stacksize is " STR(CONFIG_OVMS_SYS_COMMAND_STACK_SIZE)
+    ", default task priority is " STR(CONFIG_OVMS_SYS_COMMAND_PRIORITY) "."
+    , 1, 1000, true);
+
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
@@ -1073,6 +1171,7 @@ char ** OvmsCommandApp::Complete(OvmsWriter* writer, int argc, const char * cons
 
 void OvmsCommandApp::Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv)
   {
+  writer->SetCommand(nullptr);
   if (argc == 0)
     {
     writer->puts("Error: Empty command unrecognised");

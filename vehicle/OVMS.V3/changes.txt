@@ -1,6 +1,19 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Command framework: add command to run commands in a background task, allowing the execution of long
+    running commands via the server v2/v3 command channel or ssh without triggering the watchdog.
+    Example: run ota flash http ; module reset
+    Commands will be interpreted just as in a regular shell/console, so can be abbreviated etc.
+    Note: using this is not strictly necessary for the builtin web shell & HTTP REST API, as the web
+      framework already uses an individual task for each command execution, but it's still possible.
+  New command:
+    run [-n<i|o|s>] [-S<stacksize>] [-P<priority>] <command…> [; <command…>]
+      Run command(s) in background task (log tag: 'bgshell'), send output via notification.
+      Use a single ';' to separate multiple commands.
+      Notification default mode (type) is 'info' (-ni), -ns = 'stream', -no = off.
+      Notification subtype scheme: 'cmd.full.command.name'
+      Default task stacksize is 6144, default task priority is 5.
 - swcan: module included in the default build configuration. SWCAN bus must be initialized manually 
 	from the car module. During initialization, CAN3 will be deinitialized and CAN4 used for SWCAN. 
 	Configuration "use_swcan_adapter" has been added to Voltampera and Boltev vehicles.

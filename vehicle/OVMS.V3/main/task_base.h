@@ -87,7 +87,7 @@ class TaskBase
     friend class Parent;
     void DeleteTask();
 
-  private:
+  protected:
     TaskHandle_t m_taskid;
     const char* m_name;
     int m_stack;
