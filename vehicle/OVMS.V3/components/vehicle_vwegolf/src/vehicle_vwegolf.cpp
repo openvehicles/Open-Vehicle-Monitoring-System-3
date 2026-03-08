@@ -44,7 +44,7 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // https://forums.ross-tech.com/index.php?threads/13163/
     //
     // RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS); //OBD -> Diagnosis CAN
-    RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS); //FCAN -> Powertrain CAN
+    RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // FCAN -> Powertrain CAN
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN -> convenience CAN
 
     OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg", "VW-eGolf framework");
@@ -86,11 +86,11 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
                 StandardMetrics.ms_v_env_gear->SetValue(0);
                 StandardMetrics.ms_v_env_drivemode->SetValue(0);
             } else if (gear_nibble == 3) {
-                // Reverse 
+                // Reverse
                 StandardMetrics.ms_v_env_gear->SetValue(-1);
                 StandardMetrics.ms_v_env_drivemode->SetValue(0);
             } else if (gear_nibble == 4) {
-                // Neutral 
+                // Neutral
                 StandardMetrics.ms_v_env_gear->SetValue(0);
                 StandardMetrics.ms_v_env_drivemode->SetValue(0);
             } else if (gear_nibble == 5) {
