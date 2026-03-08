@@ -44,7 +44,7 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // https://forums.ross-tech.com/index.php?threads/13163/
     //
     // RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS); //OBD -> Diagnosis CAN
-    RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS); //FCAN -> Powertrain CAN
+    RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS); //FCAN -> Powertrain CAN
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN -> convenience CAN
 
     OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg", "VW-eGolf framework");
