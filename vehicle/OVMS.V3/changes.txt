@@ -14,6 +14,7 @@ Open Vehicle Monitor System v3 - Change log
       Notification default mode (type) is 'info' (-ni), -ns = 'stream', -no = off.
       Notification subtype scheme: 'cmd.full.command.name'
       Default task stacksize is 6144, default task priority is 5.
+- chevrolet_c6_corvette: Add TPMS support.
 - swcan: module included in the default build configuration. SWCAN bus must be initialized manually 
 	from the car module. During initialization, CAN3 will be deinitialized and CAN4 used for SWCAN. 
 	Configuration "use_swcan_adapter" has been added to Voltampera and Boltev vehicles.
