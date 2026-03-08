@@ -104,6 +104,29 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
             }
             break;
         }
+        case 0x6B4:  // VIN (3-part multi-frame)
+        {
+            uint8_t frame_idx = p_frame->data.u8[0];
+            ESP_LOGV(TAG "-P6B4", "6B4 frame_idx=%d parts=0x%02x", frame_idx, m_vin_parts_received);
+            if (frame_idx == 0) {
+                m_vin_buf[0] = p_frame->data.u8[5];
+                m_vin_buf[1] = p_frame->data.u8[6];
+                m_vin_buf[2] = p_frame->data.u8[7];
+                m_vin_parts_received |= 0x01;
+            } else if (frame_idx == 1) {
+                memcpy(&m_vin_buf[3], &p_frame->data.u8[1], 7);
+                m_vin_parts_received |= 0x02;
+            } else if (frame_idx == 2) {
+                memcpy(&m_vin_buf[10], &p_frame->data.u8[1], 7);
+                m_vin_parts_received |= 0x04;
+            }
+            if (m_vin_parts_received == 0x07) {
+                m_vin_buf[17] = '\0';
+                StandardMetrics.ms_v_vin->SetValue(m_vin_buf);
+                m_vin_parts_received = 0;
+            }
+            break;
+        }
     }
 }
 
@@ -764,10 +787,6 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // KL_Infotainment Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
             // Remotestart_KL15_Anf Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
             // Remotestart_Motor_Start Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-            break;
-        }
-        case 0x6B4:  // VIN
-        {
             break;
         }
         default: {
