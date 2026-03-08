@@ -44,7 +44,7 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // https://forums.ross-tech.com/index.php?threads/13163/
     //
     // RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS); //OBD -> Diagnosis CAN
-    // RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS); //FCAN -> Powertrain CAN
+    RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // FCAN -> Powertrain CAN
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN -> convenience CAN
 
     OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg", "VW-eGolf framework");
@@ -74,6 +74,37 @@ class OvmsVehicleVWeGolfInit {
 OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit() {
     ESP_LOGI(TAG, "Registering Vehicle: VW e-Golf (9000)");
     MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeGolf>("VWEG", "VW e-Golf");
+}
+
+void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
+    switch (p_frame->MsgID) {
+        case 0x187: {
+            const uint8_t gear_nibble = p_frame->data.u8[2] & 0x0F;
+            ESP_LOGV(TAG "-P187", ": gear_nibble: %d", gear_nibble);
+            if (gear_nibble == 2) {
+                // Park
+                StandardMetrics.ms_v_env_gear->SetValue(0);
+                StandardMetrics.ms_v_env_drivemode->SetValue(0);
+            } else if (gear_nibble == 3) {
+                // Reverse
+                StandardMetrics.ms_v_env_gear->SetValue(-1);
+                StandardMetrics.ms_v_env_drivemode->SetValue(0);
+            } else if (gear_nibble == 4) {
+                // Neutral
+                StandardMetrics.ms_v_env_gear->SetValue(0);
+                StandardMetrics.ms_v_env_drivemode->SetValue(0);
+            } else if (gear_nibble == 5) {
+                // Drive
+                StandardMetrics.ms_v_env_gear->SetValue(1);
+                StandardMetrics.ms_v_env_drivemode->SetValue(0);
+            } else if (gear_nibble == 6) {
+                // B mode
+                StandardMetrics.ms_v_env_gear->SetValue(1);
+                StandardMetrics.ms_v_env_drivemode->SetValue(1);
+            }
+            break;
+        }
+    }
 }
 
 void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
@@ -190,48 +221,6 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
 
         //   break;
         //   }
-        // TODO: PRNDL isn't working
-        case 0x3DC:  // Energieinhalt HV-Batterie
-        {
-            // 0x3dc => Gateway_73: P, R, N, D
-            tmp_u8 = ((uint8_t)(d[5] & 0xf) << 0) |
-                     0;  // outerTemp Faktor 1 Offset 0, Minimum 0, Maximum 15 [] Initial 1
-            tmp_u8 =
-                (uint8_t)tmp_u8;  // 0x0 zwischenstellung, 0x1 Init, 0x5 P, 0x6 R, 0x7 N, 0x8 D, 0x9
-                                  // S, 0xA Efficency, 0xD Tipp in S, 0xE Tipp in E, 0xF error
-            switch (tmp_u8) {
-                case 0x5:  // P
-                    StandardMetrics.ms_v_env_drivemode->SetValue(0);
-                    StdMetrics.ms_v_env_gear->SetValue(0);
-                    break;
-                case 0x6:  // R
-                    StandardMetrics.ms_v_env_drivemode->SetValue(1);
-                    StdMetrics.ms_v_env_gear->SetValue(-1);
-                    break;
-                case 0x7:  // N
-                    StandardMetrics.ms_v_env_drivemode->SetValue(1);
-                    StdMetrics.ms_v_env_gear->SetValue(0);
-                    break;
-                case 0x8:  // D
-                    StandardMetrics.ms_v_env_drivemode->SetValue(1);
-                    StdMetrics.ms_v_env_gear->SetValue(1);
-                    break;
-                case 0x9:  // S
-                    StandardMetrics.ms_v_env_drivemode->SetValue(2);
-                    StdMetrics.ms_v_env_gear->SetValue(2);
-                    break;
-                default:
-                    break;
-            }
-            static uint8_t cnt2 = 0;
-            cnt2++;
-            if (cnt2 == 15) {
-                cnt2 = 0;
-                ESP_LOGV(TAG "-3DC", "Drivemode: %u", tmp_u8);  // Gangwahl Not working right now
-            }
-
-            break;
-        }
         // Working, but sign bit missing
         case 0x486:  // Longitude/Latitude
         {

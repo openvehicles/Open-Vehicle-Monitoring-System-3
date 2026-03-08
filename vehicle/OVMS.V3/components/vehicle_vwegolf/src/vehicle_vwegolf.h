@@ -46,6 +46,7 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     OvmsVehicleVWeGolf();
     ~OvmsVehicleVWeGolf();
 
+    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
     void IncomingFrameCan3(CAN_frame_t* p_frame) override;
 
     vehicle_command_t CommandHorn();
