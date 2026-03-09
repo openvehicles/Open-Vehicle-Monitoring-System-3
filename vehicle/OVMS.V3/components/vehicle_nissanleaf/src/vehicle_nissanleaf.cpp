@@ -1863,11 +1863,6 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
     tcuBus = m_can1;
     }
 
-  if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2012) {
-     CommandWakeup();
-  } else if (MyConfig.GetParamValueBool("xnl", "command.wakeup", true)) {
-     CommandWakeupTCU();
-  }
   switch (command)
     {
     case ENABLE_CLIMATE_CONTROL:
