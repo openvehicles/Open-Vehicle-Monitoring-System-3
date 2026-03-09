@@ -104,11 +104,17 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
             }
             break;
         }
-        case 0x6B4:  // VIN (3-part multi-frame)
+        case 0x6B4:
         {
+            // This message contains the VIN in 3 parts, with the first byte identifying the frame.
+            // We only set the VIN after all three parts have been received. Once the VIN has been
+            // set, we ignore future VIN frames.
             uint8_t frame_idx = p_frame->data.u8[0];
             ESP_LOGV(TAG "-P6B4", "6B4 frame_idx=%d parts=0x%02x", frame_idx, m_vin_parts_received);
-            if (frame_idx == 0) {
+            if (m_vin_parts_received == 0x07) {
+                // We've already received three VIN frames and set the VIN in the metrics.
+                break;
+            } else if (frame_idx == 0) {
                 m_vin_buf[0] = p_frame->data.u8[5];
                 m_vin_buf[1] = p_frame->data.u8[6];
                 m_vin_buf[2] = p_frame->data.u8[7];
@@ -120,10 +126,11 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
                 memcpy(&m_vin_buf[10], &p_frame->data.u8[1], 7);
                 m_vin_parts_received |= 0x04;
             }
+
             if (m_vin_parts_received == 0x07) {
+                // Set the VIN now that we've received all three parts.
                 m_vin_buf[17] = '\0';
                 StandardMetrics.ms_v_vin->SetValue(m_vin_buf);
-                m_vin_parts_received = 0;
             }
             break;
         }
