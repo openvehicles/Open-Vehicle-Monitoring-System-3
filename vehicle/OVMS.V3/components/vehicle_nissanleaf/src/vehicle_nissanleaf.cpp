@@ -1852,13 +1852,13 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
 
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2016)
     {
-    ESP_LOGV(TAG, "Possible new TCU on CAR Bus");
+    ESP_LOGV(TAG, "Model year => 2016, sending command on CAR Bus");
     length = 4;
     tcuBus = m_can2;
     }
   else
     {
-    ESP_LOGV(TAG, "Possible old TCU on EV Bus");
+    ESP_LOGV(TAG, "Model year < 2016, sending command on EV Bus");
     length = 1;
     tcuBus = m_can1;
     }
