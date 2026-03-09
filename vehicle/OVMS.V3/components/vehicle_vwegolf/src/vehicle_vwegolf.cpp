@@ -104,8 +104,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
             }
             break;
         }
-        case 0x6B4:
-        {
+        case 0x6B4: {
             // This message contains the VIN in 3 parts, with the first byte identifying the frame.
             // We only set the VIN after all three parts have been received. Once the VIN has been
             // set, we ignore future VIN frames.
