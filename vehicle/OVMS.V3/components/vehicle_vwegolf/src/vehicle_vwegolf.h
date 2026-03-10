@@ -74,6 +74,8 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     bool m_unlock_requested = false;
     bool m_lock_requested = false;
     bool m_is_control_active = false;
+    uint8_t m_vin_parts_received = 0;
+    char m_vin_buf[18] = {};
 };
 
 #endif  // #ifndef __VEHICLE_VWEG_H__
