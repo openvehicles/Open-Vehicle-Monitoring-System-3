@@ -55,6 +55,7 @@ static const char *TAG = "v-nissanleaf";
 #define BROADCAST_RXID            0x0
 // other pairs 743/763 744/764 745/765 784/78C 792/793 79D/7BD
 #define VIN_PID                   0x81
+#define CURRENT_12V_PID           0x1183
 #define QC_COUNT_PID              0x1203
 #define L1L2_COUNT_PID            0x1205
 
@@ -72,9 +73,10 @@ enum poll_states
 static const OvmsPoller::poll_pid_t obdii_polls_ze1[] =
   {
     // BUS 2
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 3600, 0, 0 }, 2, ISOTP_STD },           // VIN [19] Never changes
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 0, 0, 3600 }, 2, ISOTP_STD },   // QC [2] Only changes when charging. Do not update when car is active to reduce traffic.
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 0, 0, 3600 }, 2, ISOTP_STD }, // L0/L1/L2 [2] Only changes when charging. Do not update when car is active to reduce traffic.
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 3600, 0, 0 }, 2, ISOTP_STD },            // VIN [19] Never changes
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, CURRENT_12V_PID, {  0, 10, 10, 10 }, 2, ISOTP_STD }, // 12V battery current [2]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 0, 0, 3600 }, 2, ISOTP_STD },    // QC [2] Only changes when charging. Do not update when car is active to reduce traffic.
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 0, 0, 3600 }, 2, ISOTP_STD },  // L0/L1/L2 [2] Only changes when charging. Do not update when car is active to reduce traffic.
     // BUS 1
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 60, 60 }, 1, ISOTP_STD },   // bat [39/41]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 60, 60 }, 1, ISOTP_STD },   // battery voltages [196]
@@ -88,6 +90,7 @@ static const OvmsPoller::poll_pid_t obdii_polls_ze1[] =
   {
     // BUS 2
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 3600, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, CURRENT_12V_PID, {  0, 10, 10, 10 }, 2, ISOTP_STD }, // 12V battery current [2]
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 0, 0, 3600 }, 2, ISOTP_STD },   // QC [2]
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 0, 0, 3600 }, 2, ISOTP_STD }, // L0/L1/L2 [2]
     // BUS 1
@@ -889,6 +892,24 @@ void OvmsVehicleNissanLeaf::PollReply_L0L1L2(const uint8_t *reply_data, uint16_t
     }
   }
 
+void OvmsVehicleNissanLeaf::PollReply_Current_12V(const uint8_t *reply_data, uint16_t reply_len)
+  {
+  if (reply_len != 2)
+    {
+    ESP_LOGI(TAG, "PollReply_12V_Current: len=%d != 2", reply_len);
+    return;
+    }
+  //  > 0x797 22 11 83
+  //  < 0x79a 62 11 83
+  // [ 0..3] FF 72 00 00
+
+  // value is signed, since 12V current can be negative
+  int16_t current_12v_raw = (int16_t) (reply_data[2] << 8 | reply_data[3]);
+  float current_12v = (float) current_12v_raw / 256;
+
+  StandardMetrics.ms_v_bat_12v_current->SetValue(current_12v);
+  }
+
 void OvmsVehicleNissanLeaf::PollReply_VIN(const uint8_t *reply_data, uint16_t reply_len)
   {
   if (reply_len != 19)
@@ -948,6 +969,9 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(const OvmsPoller::poll_job_t &job,
         break;
       case CHARGER_RXID<<16 | L1L2_COUNT_PID: // L0/L1/L2
         PollReply_L0L1L2(buf, rxbuf.size());
+        break;
+      case CHARGER_RXID<<16 | CURRENT_12V_PID: // 12V battery current
+        PollReply_Current_12V(buf, rxbuf.size());
         break;
       case CHARGER_RXID<<16 | VIN_PID: // VIN
         PollReply_VIN(buf, rxbuf.size());
@@ -2022,7 +2046,14 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
     {
     StandardMetrics.ms_v_env_charging12v->SetValue(true);
     }
-  else StandardMetrics.ms_v_env_charging12v->SetValue(false);
+  else
+    {
+    StandardMetrics.ms_v_env_charging12v->SetValue(false);
+    // this is not quite correct, but if v.env.charging12v is off, then the vehicle is probably off too
+    // so the poller isn't running, and we won't be able to get fresh 12V current values
+    // this at least makes the value more believable (e.g. current is not positive/charging when DC-DC converter is off)
+    StandardMetrics.ms_v_bat_12v_current->SetValue(0.0);
+    }
   // FIXME
   // detecting that on is stale and therefor should turn off probably shouldn't
   // be done like this
