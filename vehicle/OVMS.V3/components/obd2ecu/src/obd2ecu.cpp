@@ -148,13 +148,28 @@ static void OBD2ECU_task(void *pvParameters)
   {
   obd2ecu *me = (obd2ecu*)pvParameters;
 
+  me->m_can->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+
+  while (me->m_can->GetPowerMode() != On)
+    {
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    ESP_LOGD(TAG, "Retrying OBD2ECU CAN -> ON");
+    // Retries same mode/speed.
+    me->m_can->SetPowerMode(On);
+    }
+
+  me->LoadMap();
+
   CAN_frame_t frame;
   while(1)
     {
     if (xQueueReceive(me->m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
       // Only handle incoming frames on our CAN bus
-      if (frame.origin == me->m_can) me->IncomingFrame(&frame);
+      if (frame.origin == me->m_can)
+        {
+        me->IncomingFrame(&frame);
+        }
       }
     }
   }
@@ -163,13 +178,10 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
   : pcp(name)
   {
   m_can = can;
-  m_can->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-  m_can->SetPowerMode(On);
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
 
   m_starttime = time(NULL);
-  LoadMap();
 
   xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, CORE(1));
 

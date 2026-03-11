@@ -802,21 +802,23 @@ void mcp2515::TxCallback(CAN_frame_t* p_frame, bool success)
 
 void mcp2515::SetPowerMode(PowerMode powermode)
   {
-  pcp::SetPowerMode(powermode);
   switch (powermode)
     {
-    case  On:
-      ESP_LOGI(TAG, "%s: SetPowerMode on", this->GetName());
-      if (m_mode != CAN_MODE_OFF)
+    case On:
         {
+        ESP_LOGI(TAG, "%s: SetPowerMode on", this->GetName());
+        // Start() will call base SetPowerMode(On) if it actually turns on.
         Start(m_mode, m_speed);
         }
       break;
     case Sleep:
     case DeepSleep:
     case Off:
+      {
+      pcp::SetPowerMode(powermode);
       ESP_LOGI(TAG, "%s: SetPowerMode off", this->GetName());
       Stop();
+      }
       break;
     default:
       break;
