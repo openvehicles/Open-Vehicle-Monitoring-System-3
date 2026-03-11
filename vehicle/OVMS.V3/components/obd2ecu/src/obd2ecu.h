@@ -89,6 +89,7 @@ class obd2ecu : public pcp, public InternalRamAllocated
     QueueHandle_t m_rxqueue;
     TaskHandle_t m_task;
     time_t m_starttime;
+    OvmsMutex m_map_mutex;
     PidMap m_pidmap;
     uint32_t m_supported_01_20;  // bitmap of PIDs configured 0x01 through 0x20
     uint32_t m_supported_21_40;  // bitmap of PIDs configured 0x21 through 0x40
@@ -96,6 +97,7 @@ class obd2ecu : public pcp, public InternalRamAllocated
   public:
     void NotifyStartup();
     void NotifyShutdown();
+    void DumpMap( std::vector<string> &dump, int pid = -1);
 
     void IncomingFrame(CAN_frame_t* p_frame);
     void LoadMap();
