@@ -288,24 +288,30 @@ void obd2ecu_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
 
   writer->printf("%-7s %14s %12s %s\n","  PID","Type","Value","   Metric");
-
-  for (PidMap::iterator it=MyPeripherals->m_obd2ecu->m_pidmap.begin(); it!=MyPeripherals->m_obd2ecu->m_pidmap.end(); ++it)
+  std::vector<string> dump;
     {
-    if ((argc==0)||(it->second->GetPid() == atoi(argv[0])))
+    OvmsMutexLock lock(&MyPeripherals->m_obd2ecu->m_map_mutex);
+    for (PidMap::iterator it=MyPeripherals->m_obd2ecu->m_pidmap.begin(); it!=MyPeripherals->m_obd2ecu->m_pidmap.end(); ++it)
       {
-      const char *ms;
-      if (it->second->GetMetric() && (it->second->GetType() != obd2pid::Script))
-        ms = it->second->GetMetric()->m_name;
-      else
-        ms = "";
+      if ((argc==0)||(it->second->GetPid() == atoi(argv[0])))
+        {
+        const char *ms;
+        if (it->second->GetMetric() && (it->second->GetType() != obd2pid::Script))
+          ms = it->second->GetMetric()->m_name;
+        else
+          ms = "";
 
-      writer->printf("%-3d (0x%02x) %14s %12f %s\n",
-        it->first, it->first,
-        it->second->GetTypeString(),
-        it->second->Execute(),
-        ms);
+        dump.push_back(string_format("%-3d (0x%02x) %14s %12f %s",
+          it->first, it->first,
+          it->second->GetTypeString(),
+          it->second->Execute(),
+          ms));
+        }
       }
     }
+
+  for (auto it = dump.begin(); it != dump.end(); ++it)
+    writer->puts(it->c_str());
   }
 
 void obd2ecu_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -317,6 +323,7 @@ void obd2ecu_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   MyPeripherals->m_obd2ecu->LoadMap();
+
   writer->puts("OBDII ECU pid map reloaded");
   }
 
@@ -534,35 +541,46 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
                       p_d[0],p_d[1],p_d[2],p_d[3],p_d[4],p_d[5],p_d[6],p_d[7]);
 
   /* handle both standard and extended frame types - return like for like */
-  if (p_frame->MsgID == REQUEST_PID) reply = RESPONSE_PID;
-  else if (p_frame->MsgID == REQUEST_EXT_PID) reply = RESPONSE_EXT_PID;
-       else
-       { /* check for flow control frames - they're received on the response MsgID minus 8 */
-         if ((p_frame->MsgID == FLOWCONTROL_PID || p_frame->MsgID == FLOWCONTROL_EXT_PID) && p_frame->data.u8[0] == 0x30)
-         {  ESP_LOGD(TAG, "flow control frame - ignored");
-           return;  /* ignore it.  We just sleep for a bit instead */
-         }
-         /* if none of the above, no idea what it is.  Ignore */
-         ESP_LOGD(TAG, "unknown MsgID %" PRIx32,p_frame->MsgID);
-         return;
-       }
+  if (p_frame->MsgID == REQUEST_PID)
+    reply = RESPONSE_PID;
+  else if (p_frame->MsgID == REQUEST_EXT_PID)
+    reply = RESPONSE_EXT_PID;
+  else
+    { /* check for flow control frames - they're received on the response MsgID minus 8 */
+    if ((p_frame->MsgID == FLOWCONTROL_PID || p_frame->MsgID == FLOWCONTROL_EXT_PID) && p_frame->data.u8[0] == 0x30)
+      {
+      ESP_LOGD(TAG, "flow control frame - ignored");
+      return;  /* ignore it.  We just sleep for a bit instead */
+      }
+    /* if none of the above, no idea what it is.  Ignore */
+    ESP_LOGD(TAG, "unknown MsgID %" PRIx32,p_frame->MsgID);
+    return;
+    }
 
   jitter = time(NULL)&0xf;  /* 0-15 range for simulation purposes */
 
   switch(p_d[1])  /* switch on the incoming frame mode */
     {
     case 1:  /* Mode 1 (main real-time PIDs are here */
-
+      {
       mapped_pid = p_d[2];
-      if (m_pidmap.find(mapped_pid) != m_pidmap.end()) // m_pidmap[pid] contains the obd2pid object to work with
-      { metric = m_pidmap[mapped_pid]->Execute();
-      }
-      else
-      { if (MyConfig.GetParamValueBool("obd2ecu","autocreate"))
-          m_pidmap[mapped_pid] = new obd2pid(mapped_pid); // Creates it as Unimplemented, if enabled
-          // note: don't 'Addpid' the PID to the supported vectors.  Only done when support set by config.
-        metric = 0.0;
-      }
+        {
+        OvmsMutexLock lock(&m_map_mutex, 1000);
+        if (!lock.IsLocked())
+          return;
+
+        if (m_pidmap.find(mapped_pid) != m_pidmap.end()) // m_pidmap[pid] contains the obd2pid object to work with
+          {
+          metric = m_pidmap[mapped_pid]->Execute();
+          }
+        else
+          {
+          if (MyConfig.GetParamValueBool("obd2ecu","autocreate"))
+            m_pidmap[mapped_pid] = new obd2pid(mapped_pid); // Creates it as Unimplemented, if enabled
+            // note: don't 'Addpid' the PID to the supported vectors.  Only done when support set by config.
+          metric = 0.0;
+          }
+        }
 
       switch (mapped_pid)  /* switch on the what the requested PID was (before mapping!) */
         {
@@ -607,13 +625,18 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* Also a Minimum "idle" RPM, but only if not moving, for HUD device */
 
           // Test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)
-          if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script)
             {
-            if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0)
-              metric = 500;
-            else if (metric < 0)
-              metric = -metric;
-            metric += jitter;
+            OvmsMutexLock lock(&m_map_mutex, 1000);
+            if (!lock.IsLocked())
+              return;
+            if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script)
+              {
+              if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0)
+                metric = 500;
+              else if (metric < 0)
+                metric = -metric;
+              metric += jitter;
+              }
             }
 
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
@@ -625,10 +648,18 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* HUD devices seem to have a display range of 0-19.9 */
           /* Scaling provides a 1:1 metric pass-through, so be aware of limmits of the display device */
           /* Use with display set to L/hr (not L/km).  Note: scripting this metric is not pre-scaled. */
+          {
 
-          if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script) metric = metric*3.0;
+            {
+            OvmsMutexLock lock(&m_map_mutex, 1000);
+            if (!lock.IsLocked())
+              return;
+            if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script)
+              metric *= 3.0;
+            }
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
+          }
           break;
 
         case 0x20:  /* request more capabilities, PIDs 0x21 - 0x40 */
@@ -637,7 +668,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_frame.FIR.B.DLC = 8;
           r_frame.FIR.B.FF = CAN_frame_format_t (reply != RESPONSE_PID);
           r_frame.MsgID = reply;
-          r_d[0] = 6;		/* # additional bytes (ok to have extra) */
+          r_d[0] = 6;     /* # additional bytes (ok to have extra) */
           r_d[1] = 0x41;  /* Mode 1 + 0x40 indicating a reply */
           r_d[2] = 0x20;
           r_d[3] = (m_supported_21_40 >> 24) & 0xff;
@@ -668,14 +699,16 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
 
         default:  /* most PIDs get processed here */
           if(mapped_pid > sizeof(pid_format))
-          { ESP_LOGI(TAG, "unknown capability requested %x",r_frame.data.u8[2]);
+            {
+            ESP_LOGI(TAG, "unknown capability requested %x",r_frame.data.u8[2]);
             break;
-          }
+            }
 
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
 
-	}
+        }
+      }
       break;
 
     case 9:
@@ -791,24 +824,30 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   return;
   }
 
+void addPid(uint32_t &supp_01_20, uint32_t&supp_21_40, uint8_t pid);
+
 void obd2ecu::LoadMap()
   {
-  ClearMap();
+
+  // New Copies of map.
+  PidMap new_pidmap;
+  uint32_t supp_01 = 0, supp_21 = 0;
+
   // Create default PID maps
-  m_pidmap[0x00] = new obd2pid(0x00,obd2pid::Internal);                                 // PIDs 1-20 supported (internally)
+  new_pidmap[0x00] = new obd2pid(0x00,obd2pid::Internal);                                 // PIDs 1-20 supported (internally)
   // PID 00 is assumed; don't addpid it
-  m_pidmap[0x04] = new obd2pid(0x04,obd2pid::Internal,StandardMetrics.ms_v_bat_soc);    // Engine load (use as proxy for SoC)
-  Addpid(0x04);
-  m_pidmap[0x05] = new obd2pid(0x05,obd2pid::Internal,StandardMetrics.ms_v_mot_temp);   // Coolant Temperature (use motor temp)
-  Addpid(0x05);
-  m_pidmap[0x0c] = new obd2pid(0x0c,obd2pid::Internal,StandardMetrics.ms_v_mot_rpm);    // Engine RPM
-  Addpid(0x0c);
-  m_pidmap[0x0d] = new obd2pid(0x0d,obd2pid::Internal,StandardMetrics.ms_v_pos_speed);  // Vehicle Speed
-  Addpid(0x0d);
-  m_pidmap[0x10] = new obd2pid(0x10,obd2pid::Internal,StandardMetrics.ms_v_bat_12v_voltage);  // Mass Air Flow  (Note: display limited 0-19.9 on HUDs)
-  Addpid(0x10);
-  m_pidmap[0x20] = new obd2pid(0x20,obd2pid::Internal);                                 // PIDs 21-40 supported (internally)
-  Addpid(0x20);
+  new_pidmap[0x04] = new obd2pid(0x04,obd2pid::Internal,StandardMetrics.ms_v_bat_soc);    // Engine load (use as proxy for SoC)
+  addPid(supp_01, supp_21, 0x04);
+  new_pidmap[0x05] = new obd2pid(0x05,obd2pid::Internal,StandardMetrics.ms_v_mot_temp);   // Coolant Temperature (use motor temp)
+  addPid(supp_01, supp_21, 0x05);
+  new_pidmap[0x0c] = new obd2pid(0x0c,obd2pid::Internal,StandardMetrics.ms_v_mot_rpm);    // Engine RPM
+  addPid(supp_01, supp_21, 0x0c);
+  new_pidmap[0x0d] = new obd2pid(0x0d,obd2pid::Internal,StandardMetrics.ms_v_pos_speed);  // Vehicle Speed
+  addPid(supp_01, supp_21, 0x0d);
+  new_pidmap[0x10] = new obd2pid(0x10,obd2pid::Internal,StandardMetrics.ms_v_bat_12v_voltage);  // Mass Air Flow  (Note: display limited 0-19.9 on HUDs)
+  addPid(supp_01, supp_21, 0x10);
+  new_pidmap[0x20] = new obd2pid(0x20,obd2pid::Internal);                                 // PIDs 21-40 supported (internally)
+  addPid(supp_01, supp_21, 0x20);
 
   // Look for metric overrides...
     {
@@ -822,16 +861,20 @@ void obd2ecu::LoadMap()
       if ((pid>0) && m)
         {
         ESP_LOGI(TAG, "Using custom metric for pid #%d (0x%02x)",pid,pid);
-        if (m_pidmap.find(pid) == m_pidmap.end())
-        { m_pidmap[pid] = new obd2pid(pid,obd2pid::Metric,m);
-        }
+        if (new_pidmap.find(pid) == new_pidmap.end())
+          {
+          new_pidmap[pid] = new obd2pid(pid,obd2pid::Metric,m);
+          addPid(supp_01, supp_21, pid);
+          }
         else
-          { ESP_LOGI(TAG, "Updating custom metric for pid #%d (0x%02x)",pid,pid);
-            m_pidmap[pid]->SetType(obd2pid::Metric);
-            m_pidmap[pid]->SetMetric(m);
+          {
+          ESP_LOGI(TAG, "Updating custom metric for pid #%d (0x%02x)",pid,pid);
+          new_pidmap[pid]->SetType(obd2pid::Metric);
+          new_pidmap[pid]->SetMetric(m);
           }
         }
-        else if(pid) ESP_LOGI(TAG, "Metric '%s' not found; ignored.",it->second.c_str());
+      else if(pid)
+        ESP_LOGI(TAG, "Metric '%s' not found; ignored.",it->second.c_str());
       }
     }
 
@@ -849,16 +892,23 @@ void obd2ecu::LoadMap()
         {
         std::string fpath("/store/obd2ecu/");
         fpath.append(dp->d_name);
-        if (m_pidmap.find(pid) == m_pidmap.end())
-          m_pidmap[pid] = new obd2pid(pid,obd2pid::Script);
+        if (new_pidmap.find(pid) == new_pidmap.end())
+          new_pidmap[pid] = new obd2pid(pid,obd2pid::Script);
         else
-          m_pidmap[pid]->SetType(obd2pid::Script);
-        m_pidmap[pid]->LoadScript(fpath);
+          new_pidmap[pid]->SetType(obd2pid::Script);
+        new_pidmap[pid]->LoadScript(fpath);
+        addPid(supp_01, supp_21, pid);
         }
       }
     closedir(dir);
     }
   #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+         //
+  OvmsMutexLock lock(&m_map_mutex);
+  ClearMap();
+  m_pidmap = new_pidmap;
+  m_supported_01_20 = supp_01;
+  m_supported_21_40 = supp_21;
   }
 
 void obd2ecu::ClearMap()
@@ -874,24 +924,31 @@ void obd2ecu::ClearMap()
   }
 /* procedure to add a PID to the vectors of supported PIDS, used with PID 0 & 0x20 */
 
-void obd2ecu::Addpid(uint8_t pid)
-{
-  if(pid == 0) return;  // pid 0 assumed
+void addPid(uint32_t &supp_01_20, uint32_t &supp_21_40, uint8_t pid)
+  {
+  if(pid == 0)
+    return;  // pid 0 assumed
 
   if(pid <= 0x20)       // PIDs 1-20
-  { m_supported_01_20 |= 1 << (32-pid);
-    ESP_LOGD(TAG, "Added 0x%02x resulting 0x%08" PRIx32,pid,m_supported_01_20);
+    {
+    supp_01_20 |= 1 << (32-pid);
+    ESP_LOGD(TAG, "Added 0x%02x resulting 0x%08" PRIx32,pid,supp_01_20);
     return;
-  }
+    }
 
   if(pid <= 0x40)        // PIDs 21-40
-  { m_supported_21_40 |= 1 << (32-(pid-0x20));
+    {
+    supp_21_40 |= 1 << (32-(pid-0x20));
     return;
-  }
+    }
 
   ESP_LOGI(TAG, "PID %d (0x%02x) unsupportable",pid,pid);
-  return;
-}
+  }
+
+void obd2ecu::Addpid(uint8_t pid)
+  {
+  addPid(m_supported_01_20, m_supported_21_40, pid);
+  }
 
 class obd2ecuInit obd2ecuInit __attribute__ ((init_priority (7000)));
 
