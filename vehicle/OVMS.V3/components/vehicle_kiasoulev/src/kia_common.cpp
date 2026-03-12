@@ -284,7 +284,7 @@ bool Kia_Trip_Counter::Started()
  */
 bool Kia_Trip_Counter::HasEnergyData()
 	{
-	return tot_discharge_start!=0 && tot_charge_start!=0;
+	return Started() && tot_discharge_start!=0 && tot_charge_start!=0;
 	}
 /**
  * Returns true if the trip counter has charge data.
@@ -308,7 +308,9 @@ float Kia_Trip_Counter::GetDistance()
  */
 float Kia_Trip_Counter::GetEnergyUsed()
 	{
-	return GetEnergyConsumed() - GetEnergyRecuperated();
+	if( HasEnergyData())
+		return GetEnergyConsumed() - GetEnergyRecuperated();
+	return 0;
 	}
 
 float Kia_Trip_Counter::GetEnergyConsumed()

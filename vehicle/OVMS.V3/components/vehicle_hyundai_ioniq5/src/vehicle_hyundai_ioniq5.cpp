@@ -374,15 +374,20 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   // Guess if odo is in miles or kilometers
   float odo = StdMetrics.ms_v_pos_odometer->AsFloat(Kilometers);
+  float odox = m_v_p_odo_ext->AsFloat(Kilometers);
+
+  // Initialise
+  if (odox < odo) {
+    odox = odo;
+    m_v_p_odo_ext->SetValue(odo, Kilometers);
+  }
   if (std::abs(odo - std::floor(odo)) < 0.0001) {
     m_next_odo = odo + 1;
   } else {
     m_next_odo = odo + UnitConvert(Miles, Kilometers, static_cast<float>(1.0));
   }
-
-  // Initialise
-  if (m_v_p_odo_ext->AsFloat(Kilometers) < odo) {
-    m_v_p_odo_ext->SetValue(odo, Kilometers);
+  if (odox > m_next_odo ) {
+    m_next_odo = odox;
   }
 
   // Setting a minimum trip size of 2km since the granuality of trips is much improved.
@@ -656,8 +661,14 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
   bool isCharge = StdMetrics.ms_v_charge_inprogress->AsBool();
 
   float odoext = m_v_p_odo_ext->AsFloat(Kilometers);
-  if (odoext == 0)
-    odoext = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+  float odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+  if (odoext < odo)
+    odoext = odo;
+  else if (odoext > m_next_odo)
+    odoext = m_next_odo;
+
+  if (odo == 0) // Edge case
+    odoext = 0;
   if (isOn) {
     // Car is ON
     ESP_LOGI(TAG, "CAR IS ON");
@@ -1197,8 +1208,9 @@ void OvmsHyundaiIoniqEv::HandleCharging()
     float limit_range = StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
     float ideal_range = StdMetrics.ms_v_bat_range_ideal->AsFloat(450, Kilometers);
     float odoext = m_v_p_odo_ext->AsFloat(Kilometers);
-    if (odoext == 0)
-      odoext = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+    float odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+    if (odoext < odo)
+      odoext = odo;
     kia_park_trip_counter.Update(
       odoext,
       StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
@@ -1324,8 +1336,9 @@ void OvmsHyundaiIoniqEv::HandleChargeStop()
 
   // Reset trip counter for this charge
   float odoext = m_v_p_odo_ext->AsFloat(Kilometers);
-  if (odoext == 0)
-    odoext = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+  float odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+  if (odoext < odo)
+    odoext = odo;
   kia_charge_trip_counter.Reset(
     odoext,
     StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),

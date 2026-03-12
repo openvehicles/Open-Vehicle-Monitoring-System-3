@@ -210,11 +210,11 @@ void OvmsHyundaiIoniqEv::IncomingCM_Full(uint16_t type, uint16_t pid, const std:
         // There is a km odo value, so use that.
         bool metric_changed = StdMetrics.ms_v_pos_odometer->SetValue(value, Kilometers);
         if ( metric_changed || ! m_v_p_odo_ext->IsDefined() ) {
-          if ( m_v_p_odo_ext->IsDefined() ) {
+          if (m_v_p_odo_ext->IsDefined() ) {
             // Calculate the ave difference between the extrapolated and actual Odo ticking over
             float odo = m_v_p_odo_ext->AsFloat(Kilometers);
             float diff;
-            if (m_extra_odo > 0)
+            if (m_reached_next_odo)
               diff = m_extra_odo;
             else
               diff = - (static_cast<float>(value) - odo);
@@ -295,26 +295,29 @@ void OvmsHyundaiIoniqEv::IncomingOther_Full(uint16_t type, uint16_t pid, const s
           if (m_distance_reftime > 0 && now > m_distance_reftime) {
             uint32_t ms_diff = now - m_distance_reftime;
             float km_extra = ((std::abs(m_last_speed) + value) / 2.0) * ms_diff / (1000 * 3600);
-            float odo;
-            if (m_v_p_odo_ext->IsDefined()) {
-              odo = m_v_p_odo_ext->AsFloat(Kilometers);
-            } else {
-              odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
-            }
-            float newodo = odo + km_extra;
-            if (newodo >= m_next_odo || m_extra_odo > 0) {
+            float odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+            if (m_next_odo > odo) {
+              float odox = 0;
+              if (m_v_p_odo_ext->IsDefined())
+                odox = m_v_p_odo_ext->AsFloat(Kilometers);
+              if (odox < odo)
+                odox = odo;
 
-              if (m_reached_next_odo)
-                m_extra_odo += km_extra;
-              else {
-                m_reached_next_odo = true;
-                m_extra_odo += newodo - m_next_odo;
+              float newodo = odox + km_extra;
+              if (newodo >= m_next_odo || m_extra_odo > 0) {
+
+                if (m_reached_next_odo)
+                  m_extra_odo += km_extra;
+                else {
+                  m_reached_next_odo = true;
+                  m_extra_odo += newodo - m_next_odo;
+                }
+
+                // Progress towards but don't go over.
+                newodo = (m_next_odo + odox) / 2;
               }
-
-              // Progress towards but don't go over.
-              newodo = (m_next_odo + odo) / 2;
+              m_v_p_odo_ext->SetValue(newodo, Kilometers);
             }
-            m_v_p_odo_ext->SetValue(newodo, Kilometers);
           }
           m_distance_reftime = now;
           m_last_speed = value;
