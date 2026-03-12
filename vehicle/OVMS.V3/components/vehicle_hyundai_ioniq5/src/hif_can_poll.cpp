@@ -855,9 +855,22 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(uint16_t type, uint16_t pid, const st
       // Byte 5 Entries
       if (get_uint_buff_be<1>(data, 5, lVal)) {
         // Vehicle is in "ignition" state (drivable)
-        StdMetrics.ms_v_env_on->SetValue((lVal & 0x60) > 0);
-        // Vehicle is fully awake (switched on by the user)
-        // ms_v_env_awake
+        bool ison = (lVal & 0x60) > 0;
+        StdMetrics.ms_v_env_on->SetValue(ison);
+
+        if (ison) {
+          // Vehicle is fully awake (switched on by the user)
+          m_off_ping = false;
+        } else {
+          if (m_v_door_lock_fr->AsBool() &&
+              m_v_door_lock_fl->AsBool() ) {
+            m_off_ping = false;
+          } else if (!m_off_ping) {
+            m_off_ping = true;
+            ESP_LOGD(TAG, "PollState->Ping for 120 (Pid response, doors unlocked)");
+            PollState_Ping(120);
+          }
+        }
 
         m_v_seat_belt_driver->SetValue(get_bit<1>(lVal));
         m_v_seat_belt_passenger->SetValue(get_bit<2>(lVal));
