@@ -139,15 +139,13 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 210, kPa);  // Dummy pressure for TPMS alert testing
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
-  mt_driver_door_locked          = MyMetrics.InitBool("xsq.bcm.door.driver.locked", SM_STALE_MID, false);
-  mt_car_secured                 = MyMetrics.InitBool("xsq.bcm.car.secured", SM_STALE_MID, false);
+  mt_driver_door_locked          = MyMetrics.InitBool("xsq.driver.door.locked", SM_STALE_MID, false);
   // 0x7EC EVC metrics
   // EVC 12V values: Index 0=dcdc_volt_req, 1=dcdc_volt, 2=dcdc_power, 3=usm_volt, 4=batt_volt_can, 5=batt_volt_req, 6=dcdc_amps, 7=dcdc_load
   mt_evc_dcdc                   = MyMetrics.InitVector<float>("xsq.evc.12v.dcdc", SM_STALE_MID, nullptr, Other);
   mt_evc_dcdc->SetElemValue(7, 0.0f);  // Pre-allocate 8 entries
   mt_evc_traceability           = MyMetrics.InitString("xsq.evc.traceability", SM_STALE_MAX, "");
   mt_evc_plug_detected          = MyMetrics.InitBool("xsq.evc.plug.detected", SM_STALE_MIN, false);
-  mt_evc_plug_status            = MyMetrics.InitString("xsq.evc.plug.status", SM_STALE_MIN, "");
   // 0x793 OBL charger metrics
   mt_obl_fastchg                = MyMetrics.InitBool("xsq.obl.fastchg", SM_STALE_MIN, false);
   mt_obl_main_volts             = MyMetrics.InitVector<float>("xsq.obl.volts", SM_STALE_HIGH, nullptr, Volts);

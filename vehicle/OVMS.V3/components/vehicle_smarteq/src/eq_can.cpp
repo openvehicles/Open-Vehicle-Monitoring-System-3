@@ -94,7 +94,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         case 199: msgtxt = "ENGINE RUNNING"; break;
         case 200: msgtxt = "AUTOSTART"; break;
         case 201: msgtxt = "ENGINE SYSTEM STOP"; break;
-        default: msgtxt = "Unknown code"; break;
+        default: msgtxt = "SLEEPING"; break;
       }
       if(msgtxt != mt_bcm_vehicle_state->AsString(""))
         mt_bcm_vehicle_state->SetValue(msgtxt);

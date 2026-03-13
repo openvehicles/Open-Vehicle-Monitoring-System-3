@@ -252,8 +252,6 @@ public:
     void PollReply_TDB(const char* data, uint16_t reply_len);
 
     void PollReply_BCM_VIN(const char* data, uint16_t reply_len);
-    void PollReply_BCM_VehicleState(const char* data, uint16_t reply_len);
-    void PollReply_BCM_CarSecured(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len);
     void PollReply_BCM_GenMode(const char* data, uint16_t reply_len);
@@ -262,7 +260,6 @@ public:
     void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
     void PollReply_EVC_PlugDetected(const char* data, uint16_t reply_len);
-    void PollReply_EVC_PlugStatus(const char* data, uint16_t reply_len);
     void PollReply_EVC_Traceability(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len);
@@ -375,7 +372,6 @@ public:
     OvmsMetricVector<float> *mt_evc_dcdc;                    //!< EVC 12V system values vector
     OvmsMetricString        *mt_evc_traceability;            //!< Frame Traceability: ITG/Factory/Serial
     OvmsMetricBool          *mt_evc_plug_detected;           //!< Charging plug detected by charger (0x339D)
-    OvmsMetricString        *mt_evc_plug_status;             //!< Plug connection status (0x33EA): 0=none, 2=connected, 4=+button, 6=2plugs, 7=unavail
 
     OvmsMetricVector<float> *mt_bms_voltages;                //!< Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
     OvmsMetricVector<int>   *mt_bms_contactor_cycles;        //!< Max/Total HV contactor cycles
@@ -419,7 +415,6 @@ public:
 
     OvmsMetricString        *mt_bcm_vehicle_state;      //!< vehicle state
     OvmsMetricBool          *mt_driver_door_locked;     //!< Driver door locked status
-    OvmsMetricBool          *mt_car_secured;            //!< Car secured status (alarm armed)
     
   protected:
     bool m_indicator;                       //!< activate indicator e.g. 7 times or whatever

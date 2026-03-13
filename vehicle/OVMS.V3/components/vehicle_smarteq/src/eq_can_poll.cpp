@@ -144,9 +144,6 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x339D: // Charging plug detected (B_PlugConnected_bcb_status_S)
           PollReply_EVC_PlugDetected(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x33EA: // Plug connection status (K_PlugConnected_bcb_status)
-          PollReply_EVC_PlugStatus(m_rxbuf.data(), m_rxbuf.size());
-          break;
         case 0x84: // Frame Traceability Information
           PollReply_EVC_Traceability(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -280,9 +277,6 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           break;
         case 0x79: // TPMS counters/status (missing transmitters)
           PollReply_BCM_TPMS_Status(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x404D: // rq_CAR_SECURED_S
-          PollReply_BCM_CarSecured(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x25: // Doorlock EEPROM
           PollReply_BCM_DoorlockEEPROM(m_rxbuf.data(), m_rxbuf.size());
@@ -672,14 +666,6 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_Status(const char* data, uint16_t re
     }
 }
 
-void OvmsVehicleSmartEQ::PollReply_BCM_CarSecured(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 40 4D <Byte>
-  // CAR_SECURE_S: true if alarm armed/car secured
-  REQUIRE_LEN(1);
-  bool secured = (CAN_BYTE(0) > 0);
-  mt_car_secured->SetValue(secured);
-}
-
 void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 62 32 0C <Byte> <Byte>
   REQUIRE_LEN(2);
@@ -783,23 +769,6 @@ void OvmsVehicleSmartEQ::PollReply_EVC_PlugDetected(const char* data, uint16_t r
   // 0 = No charging plug, 1 = Charging plug detected
   REQUIRE_LEN(1);
   mt_evc_plug_detected->SetValue(CAN_NIBL(0) > 0);
-}
-
-void OvmsVehicleSmartEQ::PollReply_EVC_PlugStatus(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 33 EA <Byte>
-  // 0=none, 2=connected, 4=+button, 6=2plugs, 7=unavailable
-  REQUIRE_LEN(1);
-  int code = CAN_NIBL(0);
-  std::string msgtxt = "";
-  switch(code) {
-    case 0: msgtxt = "none"; break;
-    case 2: msgtxt = "connected"; break;
-    case 4: msgtxt = "connected + button"; break;
-    case 6: msgtxt = "2 plugs"; break;
-    case 7: msgtxt = "unavailable"; break;
-    default: msgtxt = "Unknown code"; break;
-  }
-  mt_evc_plug_status->SetValue(msgtxt);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len) {
