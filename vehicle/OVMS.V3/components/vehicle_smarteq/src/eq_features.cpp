@@ -469,12 +469,16 @@ void OvmsVehicleSmartEQ::smartOn()
   m_climate_restart_ticker = 0;
   // reset idle ticker when vehicle turned on to prevent trigger every 60 sec.
   m_idle_ticker = 15 * 60;
+  m_poll_on_mod = true;
+  ObdModifyPoll();
 }
 
 void OvmsVehicleSmartEQ::smartOff()
 {
   // Reset gear
   StdMetrics.ms_v_env_gear->SetValue(0);
+  m_poll_on_mod = false;
+  ObdModifyPoll();
 }
 
 void OvmsVehicleSmartEQ::smartChargeStart()

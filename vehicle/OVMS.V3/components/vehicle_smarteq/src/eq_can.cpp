@@ -237,7 +237,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x673:  
       // TPMS pressure values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt
-      if (!m_enable_write)
+      if (!m_enable_write || m_basic_tpms)
       {
         REQ_DLC(6);
         // Read TPMS pressure values:
@@ -250,6 +250,16 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         }
       }
       break;
+    case 0x765:
+      {
+      REQ_DLC(2);
+      if (CAN_BYTE(0) == 0x25) // Door lock status
+        {
+        bool driver_locked = (CAN_BYTE(1) > 0);
+        mt_driver_door_locked->SetValue(driver_locked);
+        }
+      break;
+      }
     default:
       //ESP_LOGI(TAG, "PID:%x DATA: %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
       break;

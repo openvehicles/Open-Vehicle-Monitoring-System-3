@@ -701,7 +701,6 @@ void OvmsVehicleSmartEQ::PollReply_BCM_VehicleState(const char* data, uint16_t r
     default: msgtxt = "Unknown code"; break;
   }
   mt_bcm_vehicle_state->SetValue(msgtxt);
-  StdMetrics.ms_v_env_awake->SetValue(code > 0);
 }
 
 void OvmsVehicleSmartEQ::PollReply_BCM_DoorUnderhoodOpened(const char* data, uint16_t reply_len) {

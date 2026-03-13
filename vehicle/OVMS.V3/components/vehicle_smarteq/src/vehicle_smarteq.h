@@ -442,11 +442,18 @@ public:
     int m_cfg_preset_version;               //!< config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
     int m_suffsoc;                          //!< minimum SoC for charging
     int m_suffrange;                        //!< minimum range for charging
+    bool m_basic_tpms;                      //!< basic TPMS without temperature and low battery status
+    bool m_obdii_79b;                       //!< OBDII 79b mode enabled
+    bool m_obdii_743;                       //!< OBDII 743 mode enabled
+    bool m_obdii_745;                       //!< OBDII 745 mode enabled
+    bool m_obdii_7e4;                       //!< OBDII 7e4 mode enabled
+    bool m_obdii_7e4_dcdc;                  //!< OBDII 7e4 dcdc mode enabled
+    bool m_poll_on_mod;                     //!< flag to trigger poll state change actions
 
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll
-    int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.
-    int                 m_cfg_cell_interval_chg;    // … while charging, default 60 sec.
+    int                 m_cfg_cell_interval_drv;    // poll interval while driving, default 60 sec.
+    int                 m_cfg_cell_interval_chg;    // poll interval while while charging, default 60 sec.
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__

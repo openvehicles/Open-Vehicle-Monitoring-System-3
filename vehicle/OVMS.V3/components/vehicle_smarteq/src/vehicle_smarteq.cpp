@@ -75,8 +75,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_charge_finished = true;
   m_notifySOClimit = false;
   m_led_state = 4;
-  m_cfg_cell_interval_drv = 0;
-  m_cfg_cell_interval_chg = 0;
+  m_cfg_cell_interval_drv = 60;
+  m_cfg_cell_interval_chg = 60;
+  m_poll_on_mod = false;
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);               // 96 cells, 1 series string
@@ -275,6 +276,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   
   int cell_interval_drv   = 60;
   int cell_interval_chg   = 60;
+  bool basic_tpms         = false;
+  bool obdii_743          = true;
+  bool obdii_745          = true;
+  bool obdii_7e4          = true;  
+  bool obdii_79b          = true;
+  bool obdii_7e4_dcdc     = true;
   
   if (xsq_param) 
     {
@@ -331,6 +338,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_suffrange            = getInt("suffrange", 0);
     cell_interval_drv      = getInt("cell_interval_drv", 60);
     cell_interval_chg      = getInt("cell_interval_chg", 60);
+    basic_tpms             = getBool("basic_tpms", false);
+    obdii_79b              = getBool("obdii.79b", true);
+    obdii_743              = getBool("obdii.743", true);
+    obdii_745              = getBool("obdii.745", true);
+    obdii_7e4              = getBool("obdii.7e4", true);
+    obdii_7e4_dcdc         = getBool("obdii.7e4.dcdc", true);
     }
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
@@ -344,10 +357,23 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   
   bool do_modify_poll = (
     (cell_interval_drv != m_cfg_cell_interval_drv) ||
-    (cell_interval_chg != m_cfg_cell_interval_chg));
-
+    (cell_interval_chg != m_cfg_cell_interval_chg) ||
+    (basic_tpms != m_basic_tpms) ||
+    (obdii_79b != m_obdii_79b) ||
+    (obdii_743 != m_obdii_743) ||
+    (obdii_745 != m_obdii_745) ||
+    (obdii_7e4 != m_obdii_7e4) ||
+    (obdii_7e4_dcdc != m_obdii_7e4_dcdc)
+  );
+  
   m_cfg_cell_interval_drv = cell_interval_drv;
   m_cfg_cell_interval_chg = cell_interval_chg;
+  m_basic_tpms = basic_tpms;
+  m_obdii_79b = obdii_79b;
+  m_obdii_743 = obdii_743;
+  m_obdii_745 = obdii_745;
+  m_obdii_7e4 = obdii_7e4;
+  m_obdii_7e4_dcdc = obdii_7e4_dcdc;
 
   if (do_modify_poll) 
     {
@@ -360,40 +386,86 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 void OvmsVehicleSmartEQ::ObdModifyPoll() {
   PollSetPidList(m_can1, NULL);
   PollSetState(POLLSTATE_OFF);
-  PollSetThrottling(0);
-  PollSetResponseSeparationTime(20);
+  PollSetThrottling(10);
+  PollSetResponseSeparationTime(25);
 
   // modify Poller..
   m_poll_vector.clear();
   // Pre-allocate capacity to avoid reallocs during insert operations
   // obdii_polls + slow/fast_charger_polls + 2 cell polls + terminator = ~50 entries max
   m_poll_vector.reserve(50);
+
   // Add PIDs to poll list:
-  m_poll_vector.insert(m_poll_vector.end(), obdii_polls, endof_array(obdii_polls));
-  if (mt_obl_fastchg->AsBool()) {
-    m_poll_vector.insert(m_poll_vector.end(), fast_charger_polls, endof_array(fast_charger_polls));
-  } else {
-    m_poll_vector.insert(m_poll_vector.end(), slow_charger_polls, endof_array(slow_charger_polls));
-  }
-  OvmsPoller::poll_pid_t p1 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Voltage P1
-  p1.polltime[2] = m_cfg_cell_interval_drv;
-  p1.polltime[3] = m_cfg_cell_interval_chg;
-  m_poll_vector.push_back(p1);
   
-  OvmsPoller::poll_pid_t p2 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Voltage P2
-  p2.polltime[2] = m_cfg_cell_interval_drv;
-  p2.polltime[3] = m_cfg_cell_interval_chg;
-  m_poll_vector.push_back(p2);
+  if (m_obdii_79b)
+    {
+    m_poll_vector.insert(m_poll_vector.end(), obdii_79b_polls, endof_array(obdii_79b_polls));
 
-  OvmsPoller::poll_pid_t p3 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x10, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Resistance P1
-  p3.polltime[2] = m_cfg_cell_interval_drv;
-  p3.polltime[3] = m_cfg_cell_interval_chg;
-  m_poll_vector.push_back(p3);
+    OvmsPoller::poll_pid_t p1 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Voltage P1
+    p1.polltime[2] = m_cfg_cell_interval_drv;
+    p1.polltime[3] = m_cfg_cell_interval_chg;
+    m_poll_vector.push_back(p1);
+    
+    OvmsPoller::poll_pid_t p2 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Voltage P2
+    p2.polltime[2] = m_cfg_cell_interval_drv;
+    p2.polltime[3] = m_cfg_cell_interval_chg;
+    m_poll_vector.push_back(p2);
 
-  OvmsPoller::poll_pid_t p4 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x11, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Resistance P2
-  p4.polltime[2] = m_cfg_cell_interval_drv;
-  p4.polltime[3] = m_cfg_cell_interval_chg;
-  m_poll_vector.push_back(p4);
+    OvmsPoller::poll_pid_t p3 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x10, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Resistance P1
+    p3.polltime[2] = m_cfg_cell_interval_drv;
+    p3.polltime[3] = m_cfg_cell_interval_chg;
+    m_poll_vector.push_back(p3);
+    
+    OvmsPoller::poll_pid_t p4 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x11, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Resistance P2
+    p4.polltime[2] = m_cfg_cell_interval_drv;
+    p4.polltime[3] = m_cfg_cell_interval_chg;
+    m_poll_vector.push_back(p4);
+
+    OvmsPoller::poll_pid_t p5 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,0,0 }, 0, ISOTP_STD };  // Battery Temperatures
+    p5.polltime[2] = m_cfg_cell_interval_drv;
+    p5.polltime[3] = m_cfg_cell_interval_chg;
+    m_poll_vector.push_back(p5);
+    }
+  
+  if (m_obdii_743)
+    m_poll_vector.insert(m_poll_vector.end(), obdii_743_polls, endof_array(obdii_743_polls));
+
+  if (m_obdii_7e4)
+    m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_polls, endof_array(obdii_7e4_polls));
+  
+  if (m_obdii_7e4_dcdc)
+    {
+    if (m_poll_on_mod)  // poll if HVAC/VEH on to save resources
+      {
+      for (const auto& p6 : obdii_7e4_dcdc) 
+        {
+        OvmsPoller::poll_pid_t p = p6;
+        p.polltime[1] = 10;
+        p.polltime[2] = 10;
+        m_poll_vector.push_back(p);
+        }
+      }
+    else if (!m_poll_on_mod)
+      {
+      m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_dcdc, endof_array(obdii_7e4_dcdc));
+      }
+    }
+
+  if (!m_basic_tpms)
+    m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms, endof_array(obdii_745_tpms));
+
+  //if (m_obdii_745)
+    //m_poll_vector.insert(m_poll_vector.end(), obdii_745_polls, endof_array(obdii_745_polls));
+
+
+  if (mt_obl_fastchg->AsBool(false)) 
+    {
+    m_poll_vector.insert(m_poll_vector.end(), fast_charger_polls, endof_array(fast_charger_polls));
+    }
+  else 
+    {
+    m_poll_vector.insert(m_poll_vector.end(), slow_charger_polls, endof_array(slow_charger_polls));
+    }
 
   // Terminate poll list:
   m_poll_vector.push_back(POLL_LIST_END);

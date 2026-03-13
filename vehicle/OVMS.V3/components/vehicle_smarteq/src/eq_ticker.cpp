@@ -98,6 +98,16 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
       }
     }
+  if (!m_poll_on_mod && StdMetrics.ms_v_env_hvac->AsBool(false) && m_poll_state == POLLSTATE_ON)
+    {
+    m_poll_on_mod = true;
+    ObdModifyPoll();
+    }
+  else if (m_poll_on_mod && !StdMetrics.ms_v_env_hvac->AsBool(false))
+    {
+    m_poll_on_mod = false;
+    ObdModifyPoll();
+    }
 
   #ifdef CONFIG_OVMS_COMP_ADC
   if (m_enable_calcADCfactor && m_ADCfactor_recalc) 
