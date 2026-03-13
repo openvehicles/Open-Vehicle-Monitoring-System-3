@@ -281,9 +281,6 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x79: // TPMS counters/status (missing transmitters)
           PollReply_BCM_TPMS_Status(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x8003: // rq_VehicleState
-          PollReply_BCM_VehicleState(m_rxbuf.data(), m_rxbuf.size());
-          break;
         case 0x404D: // rq_CAR_SECURED_S
           PollReply_BCM_CarSecured(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -396,7 +393,6 @@ void OvmsVehicleSmartEQ::PollReply_BMS_SOCRecal(const char* data, uint16_t reply
   
   if (display_soc >= 0 && display_soc <= 100.0f) {
     mt_bms_soc_values->SetElemValue(4, display_soc);  // display SOC
-    //StdMetrics.ms_v_bat_soc->SetValue(display_soc);
     }
 }
 
@@ -480,7 +476,6 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t rep
   mt_bms_cap->SetElemValue(4, cap_useable);   // usable_capacity 
   mt_bms_mileage->SetValue(mileage_raw);      // total mileage stored in BMS
   StdMetrics.ms_v_bat_cac->SetValue(cap_useable);
-  //StdMetrics.ms_v_bat_soh->SetValue(soh);
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_ProductionData(const char* data, uint16_t reply_len) {
@@ -675,26 +670,6 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_Status(const char* data, uint16_t re
     {
     m_tpms_missing_tx[i] = static_cast<bool>((raw >> i) & 0x01);
     }
-}
-
-void OvmsVehicleSmartEQ::PollReply_BCM_VehicleState(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(1);
-  int code = CAN_BYTE(0);
-  std::string msgtxt = "";
-  switch(code) {
-    case 0: msgtxt = "SLEEPING"; break; 
-    case 1: msgtxt = "TECHNICAL WAKE UP"; break;
-    case 2: msgtxt = "CUT OFF PENDING"; break;
-    case 3: msgtxt = "BAT TEMPO LEVEL"; break;
-    case 4: msgtxt = "ACCESSORY LEVEL"; break;
-    case 5: msgtxt = "IGNITION LEVEL"; break;
-    case 6: msgtxt = "STARTING IN PROGRESS"; break;
-    case 7: msgtxt = "ENGINE RUNNING"; break;
-    case 8: msgtxt = "AUTOSTART"; break;
-    case 9: msgtxt = "ENGINE SYSTEM STOP"; break;
-    default: msgtxt = "Unknown code"; break;
-  }
-  mt_bcm_vehicle_state->SetValue(msgtxt);
 }
 
 void OvmsVehicleSmartEQ::PollReply_BCM_CarSecured(const char* data, uint16_t reply_len) {

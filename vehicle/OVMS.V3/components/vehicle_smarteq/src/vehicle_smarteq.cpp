@@ -439,8 +439,8 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
       for (const auto& p6 : obdii_7e4_modify) 
         {
         OvmsPoller::poll_pid_t p = p6;
-        p.polltime[1] = 10;
-        p.polltime[2] = 10;
+        p.polltime[1] = 13;
+        p.polltime[2] = 13;
         m_poll_vector.push_back(p);
         }
       }
