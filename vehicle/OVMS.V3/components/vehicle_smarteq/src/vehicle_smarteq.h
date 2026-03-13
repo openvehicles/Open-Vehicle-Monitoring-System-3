@@ -253,7 +253,6 @@ public:
 
     void PollReply_BCM_VIN(const char* data, uint16_t reply_len);
     void PollReply_BCM_VehicleState(const char* data, uint16_t reply_len);
-    void PollReply_BCM_DoorUnderhoodOpened(const char* data, uint16_t reply_len);
     void PollReply_BCM_CarSecured(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len);
@@ -419,7 +418,6 @@ public:
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
 
     OvmsMetricString        *mt_bcm_vehicle_state;      //!< vehicle state
-    OvmsMetricString        *mt_bcm_gen_mode;           //!< Generator mode text
     OvmsMetricBool          *mt_driver_door_locked;     //!< Driver door locked status
     OvmsMetricBool          *mt_car_secured;            //!< Car secured status (alarm armed)
     
@@ -447,7 +445,7 @@ public:
     bool m_obdii_743;                       //!< OBDII 743 mode enabled
     bool m_obdii_745;                       //!< OBDII 745 mode enabled
     bool m_obdii_7e4;                       //!< OBDII 7e4 mode enabled
-    bool m_obdii_7e4_dcdc;                  //!< OBDII 7e4 dcdc mode enabled
+    bool m_obdii_7e4_modify;                  //!< OBDII 7e4 dcdc mode enabled
     bool m_poll_on_mod;                     //!< flag to trigger poll state change actions
 
   protected:

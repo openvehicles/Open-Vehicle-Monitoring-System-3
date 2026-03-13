@@ -71,24 +71,22 @@ static const OvmsPoller::poll_pid_t obdii_745_tpms[] =
 
 static const OvmsPoller::poll_pid_t obdii_745_polls[] =
 {
-  //{ 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,30,30,30 }, 0, ISOTP_STD },      // Doorlock EEPROM
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8003, { 0,30,30,30 }, 0, ISOTP_STD }, // rq VehicleState
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x404D, { 0,30,30,30 }, 0, ISOTP_STD }, // rq CAR_SECURED_S
-  // { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x605e, { 0,10,10,10 }, 0, ISOTP_STD }, // rq UNDERHOOD_OPENED  
-  // { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8079, { 0,300,10,10 }, 0, ISOTP_STD }, // Generator mode
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,11,11,11 }, 0, ISOTP_STD },      // Doorlock EEPROM
+  //{ 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x404D, { 0,30,30,30 }, 0, ISOTP_STD }, // rq CAR_SECURED_S
+  //{ 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8003, { 0,30,30,30 }, 0, ISOTP_STD }, // rq VehicleState
 };
 
 static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
 {
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, { 0,0,60,10 }, 0, ISOTP_STD }, // rqHV_Energy
-  //{ 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, { 0,300,60,60 }, 0, ISOTP_STD }, // Cabin blower command
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, { 0,10,0,10 }, 0, ISOTP_STD }, // Charging plug detected (B_PlugConnected_bcb_status_S)
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x33EA, { 0,10,0,10 }, 0, ISOTP_STD }, // Plug connection status (K_PlugConnected_bcb_status)
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, { 0,3600,0,0 }, 0, ISOTP_STD }, // Frame Traceability Information
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, { 0,3600,0,0 }, 0, ISOTP_STD },     // Frame Traceability Information
 };
 
-static const OvmsPoller::poll_pid_t obdii_7e4_dcdc[] =
+static const OvmsPoller::poll_pid_t obdii_7e4_modify[] =
 {
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, { 0,0,0,10 }, 0, ISOTP_STD }, // rqHV_Energy
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, { 0,0,0,60 }, 0, ISOTP_STD }, // Cabin blower command
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, { 0,0,0,10 }, 0, ISOTP_STD }, // Charging plug detected (B_PlugConnected_bcb_status_S)
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x33EA, { 0,0,0,10 }, 0, ISOTP_STD }, // Plug connection status (K_PlugConnected_bcb_status)
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, { 0,0,0,10 }, 0, ISOTP_STD }, // rqDCDC_Load
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3022, { 0,0,0,10 }, 0, ISOTP_STD }, // DCDC activation request
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3023, { 0,0,0,60 }, 0, ISOTP_STD }, // 14V DCDC voltage request

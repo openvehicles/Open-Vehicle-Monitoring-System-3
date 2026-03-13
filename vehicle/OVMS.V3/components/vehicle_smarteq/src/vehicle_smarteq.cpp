@@ -139,7 +139,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 210, kPa);  // Dummy pressure for TPMS alert testing
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
-  mt_bcm_gen_mode                = MyMetrics.InitString("xsq.bcm.gen.mode", SM_STALE_MID, "UNKNOWN", Other);
   mt_driver_door_locked          = MyMetrics.InitBool("xsq.bcm.door.driver.locked", SM_STALE_MID, false);
   mt_car_secured                 = MyMetrics.InitBool("xsq.bcm.car.secured", SM_STALE_MID, false);
   // 0x7EC EVC metrics
@@ -281,7 +280,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   bool obdii_745          = true;
   bool obdii_7e4          = true;  
   bool obdii_79b          = true;
-  bool obdii_7e4_dcdc     = true;
+  bool obdii_7e4_modify     = true;
   
   if (xsq_param) 
     {
@@ -343,7 +342,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     obdii_743              = getBool("obdii.743", true);
     obdii_745              = getBool("obdii.745", true);
     obdii_7e4              = getBool("obdii.7e4", true);
-    obdii_7e4_dcdc         = getBool("obdii.7e4.dcdc", true);
+    obdii_7e4_modify       = getBool("obdii.7e4.mod", true);
     }
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
@@ -363,7 +362,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     (obdii_743 != m_obdii_743) ||
     (obdii_745 != m_obdii_745) ||
     (obdii_7e4 != m_obdii_7e4) ||
-    (obdii_7e4_dcdc != m_obdii_7e4_dcdc)
+    (obdii_7e4_modify != m_obdii_7e4_modify)
   );
   
   m_cfg_cell_interval_drv = cell_interval_drv;
@@ -373,7 +372,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_obdii_743 = obdii_743;
   m_obdii_745 = obdii_745;
   m_obdii_7e4 = obdii_7e4;
-  m_obdii_7e4_dcdc = obdii_7e4_dcdc;
+  m_obdii_7e4_modify = obdii_7e4_modify;
 
   if (do_modify_poll) 
     {
@@ -433,11 +432,11 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
   if (m_obdii_7e4)
     m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_polls, endof_array(obdii_7e4_polls));
   
-  if (m_obdii_7e4_dcdc)
+  if (m_obdii_7e4_modify)
     {
     if (m_poll_on_mod)  // poll if HVAC/VEH on to save resources
       {
-      for (const auto& p6 : obdii_7e4_dcdc) 
+      for (const auto& p6 : obdii_7e4_modify) 
         {
         OvmsPoller::poll_pid_t p = p6;
         p.polltime[1] = 10;
@@ -447,15 +446,15 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
       }
     else if (!m_poll_on_mod)
       {
-      m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_dcdc, endof_array(obdii_7e4_dcdc));
+      m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_modify, endof_array(obdii_7e4_modify));
       }
     }
 
   if (!m_basic_tpms)
     m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms, endof_array(obdii_745_tpms));
 
-  //if (m_obdii_745)
-    //m_poll_vector.insert(m_poll_vector.end(), obdii_745_polls, endof_array(obdii_745_polls));
+  if (m_obdii_745)
+    m_poll_vector.insert(m_poll_vector.end(), obdii_745_polls, endof_array(obdii_745_polls));
 
 
   if (mt_obl_fastchg->AsBool(false)) 

@@ -81,6 +81,23 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         m_candata_poll = false;
         m_candata_timer = -1;
         }
+      int code = CAN_BYTE(0);
+      std::string msgtxt = "";
+      switch(code) {
+        case 192: msgtxt = "SLEEPING"; break; 
+        case 193: msgtxt = "TECHNICAL WAKE UP"; break;
+        case 194: msgtxt = "CUT OFF PENDING"; break;
+        case 195: msgtxt = "BAT TEMPO LEVEL"; break;
+        case 196: msgtxt = "ACCESSORY LEVEL"; break;
+        case 197: msgtxt = "IGNITION LEVEL"; break;
+        case 198: msgtxt = "STARTING IN PROGRESS"; break;
+        case 199: msgtxt = "ENGINE RUNNING"; break;
+        case 200: msgtxt = "AUTOSTART"; break;
+        case 201: msgtxt = "ENGINE SYSTEM STOP"; break;
+        default: msgtxt = "Unknown code"; break;
+      }
+      if(msgtxt != mt_bcm_vehicle_state->AsString(""))
+        mt_bcm_vehicle_state->SetValue(msgtxt);
       break;
       }
     case 0x392:
@@ -250,16 +267,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         }
       }
       break;
-    case 0x765:
-      {
-      REQ_DLC(2);
-      if (CAN_BYTE(0) == 0x25) // Door lock status
-        {
-        bool driver_locked = (CAN_BYTE(1) > 0);
-        mt_driver_door_locked->SetValue(driver_locked);
-        }
-      break;
-      }
     default:
       //ESP_LOGI(TAG, "PID:%x DATA: %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
       break;

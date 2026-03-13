@@ -287,12 +287,6 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x404D: // rq_CAR_SECURED_S
           PollReply_BCM_CarSecured(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x605e: // rq_UNDERHOOD_OPENED
-          PollReply_BCM_DoorUnderhoodOpened(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x8079: // Generator mode
-          PollReply_BCM_GenMode(m_rxbuf.data(), m_rxbuf.size());
-          break;
         case 0x25: // Doorlock EEPROM
           PollReply_BCM_DoorlockEEPROM(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -703,47 +697,12 @@ void OvmsVehicleSmartEQ::PollReply_BCM_VehicleState(const char* data, uint16_t r
   mt_bcm_vehicle_state->SetValue(msgtxt);
 }
 
-void OvmsVehicleSmartEQ::PollReply_BCM_DoorUnderhoodOpened(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(1);
-  bool open = (CAN_BYTE(0) > 0);
-  StdMetrics.ms_v_door_hood->SetValue(open);
-}
-
 void OvmsVehicleSmartEQ::PollReply_BCM_CarSecured(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 62 40 4D <Byte>
   // CAR_SECURE_S: true if alarm armed/car secured
   REQUIRE_LEN(1);
   bool secured = (CAN_BYTE(0) > 0);
   mt_car_secured->SetValue(secured);
-}
-
-void OvmsVehicleSmartEQ::PollReply_BCM_GenMode(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 80 79 <Byte>
-  // Spec: firstbyte 4, lists 0-15
-  REQUIRE_LEN(1);
-  uint8_t mode = CAN_BYTE(0);
-  
-  const char* txt;
-  switch (mode) {
-    case 0:  txt = "LIMIT_REQ_BY_ENGINE"; break;
-    case 1:  txt = "NOMINAL_STRATEGY_MODE"; break;
-    case 2:  txt = "ESM_INTERMEDIATE_MODE"; break;
-    case 3:  txt = "BATTERY_PROTECTION"; break;
-    case 4:  txt = "ESM_DISCHARGE_MODE"; break;
-    case 5:  txt = "ESM_REGENERATION_MODE"; break;
-    case 6:  txt = "ESM_INHIBITED_BY_WIPER"; break;
-    case 7:  txt = "ESM_INHIBITED_BY_ACTUATOR"; break;
-    case 8:  txt = "MAX_VOLTAGE_BY_ENDUR"; break;
-    case 9:  txt = "MIN_VOLTAGE_BY_ECM"; break;
-    case 10: txt = "FLOATING_MODE"; break;
-    case 11: txt = "NOT_USED1"; break;
-    case 12: txt = "NOT_USED2"; break;
-    case 13: txt = "NOT_USED3"; break;
-    case 14: txt = "NOT_USED4"; break;
-    default: txt = "UNAVAILABLE"; break;
-  }
-  mt_bcm_gen_mode->SetValue(txt);
-  StdMetrics.ms_v_gen_state->SetValue(txt);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len) {
