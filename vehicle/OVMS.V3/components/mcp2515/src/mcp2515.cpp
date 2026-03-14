@@ -271,6 +271,10 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   WriteReg(REG_CANINTE, 0b11111111);
 
   // And record that we are powered on
+  if (GetPowerMode() != On)
+    {
+    ESP_LOGI(TAG, "%s: Started, SetPowerMode on", this->GetName());
+    }
   pcp::SetPowerMode(On);
 
   return ESP_OK;
@@ -815,12 +819,14 @@ void mcp2515::SetPowerMode(PowerMode powermode)
     case DeepSleep:
     case Off:
       {
+      // Make sure the event still gets called immediately
       pcp::SetPowerMode(powermode);
       ESP_LOGI(TAG, "%s: SetPowerMode off", this->GetName());
       Stop();
       }
       break;
     default:
+      pcp::SetPowerMode(powermode);
       break;
     }
   }

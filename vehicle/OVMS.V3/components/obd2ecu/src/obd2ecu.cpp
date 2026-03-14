@@ -143,37 +143,48 @@ float obd2pid::Execute()
     }
   }
 
-
 static void OBD2ECU_task(void *pvParameters)
   {
   obd2ecu *me = (obd2ecu*)pvParameters;
+  me->ProcessFrames();
+  }
 
-  me->m_can->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+void obd2ecu::ProcessFrames()
+  {
+  m_can->Start(CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
-  while (me->m_can->GetPowerMode() != On)
+  int retries = 0;
+  while (m_can->GetPowerMode() != On)
     {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    ESP_LOGD(TAG, "Retrying OBD2ECU CAN -> ON");
-    // Retries same mode/speed.
-    me->m_can->SetPowerMode(On);
+    if (retries < 60)
+      ++retries;
+    vTaskDelay(retries * 1000 / portTICK_PERIOD_MS);
+    if (m_can->GetPowerMode() != On)
+      {
+      ESP_LOGI(TAG, "Retrying turning Bus %s On", m_can->GetName() );
+      // Retries same mode/speed.
+      m_can->SetPowerMode(On);
+      }
     }
 
-  me->LoadMap();
+  LoadMap();
+
+  // Turned on - start it up.
+  NotifyStartup();
 
   CAN_frame_t frame;
-  while(1)
+  while (true)
     {
-    if (xQueueReceive(me->m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
+    if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
       // Only handle incoming frames on our CAN bus
-      if (frame.origin == me->m_can)
+      if (frame.origin == m_can)
         {
-        me->IncomingFrame(&frame);
+        IncomingFrame(&frame);
         }
       }
     }
   }
-
 obd2ecu::obd2ecu(const char* name, canbus* can)
   : pcp(name)
   {
@@ -186,7 +197,6 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
   xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, CORE(1));
 
   MyCan.RegisterCallback(GetName(), std::bind(&obd2ecu::ECURxCallback, this, _1, _2));
-  NotifyStartup();
   }
 
 obd2ecu::~obd2ecu()
@@ -221,8 +231,11 @@ void obd2ecu::NotifyStartup()
 
 void obd2ecu::NotifyShutdown()
   {
-  StandardMetrics.ms_m_obd2ecu_on->SetValue(false);
-  MyEvents.SignalEvent("obd2ecu.stop", NULL);
+  if (StandardMetrics.ms_m_obd2ecu_on->AsBool())
+    {
+    StandardMetrics.ms_m_obd2ecu_on->SetValue(false);
+    MyEvents.SignalEvent("obd2ecu.stop", NULL);
+    }
   }
 
 void obd2ecu::SetPowerMode(PowerMode powermode)
@@ -909,7 +922,7 @@ void obd2ecu::LoadMap()
     closedir(dir);
     }
   #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-         //
+
   OvmsMutexLock lock(&m_map_mutex);
   ClearMap();
   m_pidmap = new_pidmap;
