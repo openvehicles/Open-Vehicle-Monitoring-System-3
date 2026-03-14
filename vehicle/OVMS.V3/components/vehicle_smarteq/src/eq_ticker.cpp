@@ -103,7 +103,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     m_poll_on_mod = true;
     ObdModifyPoll();
     }
-  else if (m_poll_on_mod && !StdMetrics.ms_v_env_hvac->AsBool(false))
+  else if (m_poll_on_mod && !StdMetrics.ms_v_env_hvac->AsBool(false) && m_poll_state == POLLSTATE_OFF)
     {
     m_poll_on_mod = false;
     ObdModifyPoll();

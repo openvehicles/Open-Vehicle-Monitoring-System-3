@@ -531,12 +531,18 @@ void OvmsVehicleSmartEQ::smartChargePrepare()
 {
   if (m_charge_finished) ResetChargingValues();
   if (m_resettrip) ResetTripCounters();
+  m_poll_on_mod = true;
+  m_poll_on_charge = true;
+  ObdModifyPoll();
 }
 
 void OvmsVehicleSmartEQ::smartChargeFinish()
 {
   m_charge_finished = true;
   StdMetrics.ms_v_charge_power->SetValue(0);
+  m_poll_on_mod = false;
+  m_poll_on_charge = false;
+  ObdModifyPoll();
 }
 
 /**

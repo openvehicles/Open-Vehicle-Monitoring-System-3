@@ -78,6 +78,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_cfg_cell_interval_drv = 60;
   m_cfg_cell_interval_chg = 60;
   m_poll_on_mod = false;
+  m_poll_on_charge = false;
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);               // 96 cells, 1 series string
@@ -383,8 +384,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 void OvmsVehicleSmartEQ::ObdModifyPoll() {
   PollSetPidList(m_can1, NULL);
   PollSetState(POLLSTATE_OFF);
-  PollSetThrottling(10);
-  PollSetResponseSeparationTime(25);
+  PollSetThrottling(5);
+  PollSetResponseSeparationTime(20);
 
   // modify Poller..
   m_poll_vector.clear();
@@ -398,70 +399,43 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
     {
     m_poll_vector.insert(m_poll_vector.end(), obdii_79b_polls, endof_array(obdii_79b_polls));
 
-    OvmsPoller::poll_pid_t p1 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Voltage P1
-    p1.polltime[2] = m_cfg_cell_interval_drv;
-    p1.polltime[3] = m_cfg_cell_interval_chg;
-    m_poll_vector.push_back(p1);
-    
-    OvmsPoller::poll_pid_t p2 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Voltage P2
-    p2.polltime[2] = m_cfg_cell_interval_drv;
-    p2.polltime[3] = m_cfg_cell_interval_chg;
-    m_poll_vector.push_back(p2);
-
-    OvmsPoller::poll_pid_t p3 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x10, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Resistance P1
-    p3.polltime[2] = m_cfg_cell_interval_drv;
-    p3.polltime[3] = m_cfg_cell_interval_chg;
-    m_poll_vector.push_back(p3);
-    
-    OvmsPoller::poll_pid_t p4 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x11, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Resistance P2
-    p4.polltime[2] = m_cfg_cell_interval_drv;
-    p4.polltime[3] = m_cfg_cell_interval_chg;
-    m_poll_vector.push_back(p4);
-
-    OvmsPoller::poll_pid_t p5 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,300,0,0 }, 0, ISOTP_STD };  // Battery Temperatures
-    p5.polltime[2] = m_cfg_cell_interval_drv;
-    p5.polltime[3] = m_cfg_cell_interval_chg;
-    m_poll_vector.push_back(p5);
+    for (const auto& p79b : obdii_79b_modify) 
+      {
+      OvmsPoller::poll_pid_t p79b_mod = p79b;
+      p79b_mod.polltime[2] = m_cfg_cell_interval_drv;
+      p79b_mod.polltime[3] = m_cfg_cell_interval_chg;
+      m_poll_vector.push_back(p79b_mod);
+      }
     }
+
+  if (m_obdii_745)
+    m_poll_vector.insert(m_poll_vector.end(), obdii_745_polls, endof_array(obdii_745_polls));
   
-  if (m_obdii_743)
-    m_poll_vector.insert(m_poll_vector.end(), obdii_743_polls, endof_array(obdii_743_polls));
+  if (m_poll_on_mod)
+    {      
+    if (!m_basic_tpms)
+     m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms, endof_array(obdii_745_tpms));
+     
+    if (m_obdii_7e4_modify)
+      m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_modify, endof_array(obdii_7e4_modify));
+    }
 
   if (m_obdii_7e4)
     m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_polls, endof_array(obdii_7e4_polls));
   
-  if (m_obdii_7e4_modify)
-    {
-    if (m_poll_on_mod)  // poll if HVAC/VEH on to save resources
+  if (m_obdii_743)
+    m_poll_vector.insert(m_poll_vector.end(), obdii_743_polls, endof_array(obdii_743_polls));
+  
+  if (m_poll_on_charge)
+    { 
+    if (mt_obl_fastchg->AsBool(false)) 
       {
-      for (const auto& p6 : obdii_7e4_modify) 
-        {
-        OvmsPoller::poll_pid_t p = p6;
-        p.polltime[1] = 13;
-        p.polltime[2] = 13;
-        m_poll_vector.push_back(p);
-        }
+      m_poll_vector.insert(m_poll_vector.end(), fast_charger_polls, endof_array(fast_charger_polls));
       }
-    else if (!m_poll_on_mod)
+    else 
       {
-      m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_modify, endof_array(obdii_7e4_modify));
+      m_poll_vector.insert(m_poll_vector.end(), slow_charger_polls, endof_array(slow_charger_polls));
       }
-    }
-
-  if (!m_basic_tpms)
-    m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms, endof_array(obdii_745_tpms));
-
-  if (m_obdii_745)
-    m_poll_vector.insert(m_poll_vector.end(), obdii_745_polls, endof_array(obdii_745_polls));
-
-
-  if (mt_obl_fastchg->AsBool(false)) 
-    {
-    m_poll_vector.insert(m_poll_vector.end(), fast_charger_polls, endof_array(fast_charger_polls));
-    }
-  else 
-    {
-    m_poll_vector.insert(m_poll_vector.end(), slow_charger_polls, endof_array(slow_charger_polls));
     }
 
   // Terminate poll list:

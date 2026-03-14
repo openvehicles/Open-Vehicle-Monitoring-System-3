@@ -38,17 +38,55 @@
 static const OvmsPoller::poll_pid_t obdii_79b_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, { 0,300,10,4 }, 0, ISOTP_STD },   // Battery State
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, { 0,300,10,4 }, 0, ISOTP_STD },     // Battery State
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, { 0,600,600,600 }, 0, ISOTP_STD },  // HV Contactor Cycles
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x08, { 0,300,60,63 }, 0, ISOTP_STD },   // SOC
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,300,60,63 }, 0, ISOTP_STD },  // SOC Recalibration
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, { 0,300,60,63 }, 0, ISOTP_STD },  // Battery Health (SOH)
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x90, { 0,3600,0,0 }, 0, ISOTP_STD },   // BMS Production Number Supplier Read
-  // { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, { 0,300,300,60 }, 0, ISOTP_STD }, // Battery Voltages Part 1 (Cells 1-48)   -> ObdModifyPoll()
-  // { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, { 0,300,300,60 }, 0, ISOTP_STD }, // Battery Voltages Part 2 (Cells 49-96)  -> ObdModifyPoll()  
-  // { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x10, { 0,300,60,60 }, 0, ISOTP_STD },  // Cell Resistance P1      (Cells 1-48)   -> ObdModifyPoll()  
-  // { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x11, { 0,300,60,60 }, 0, ISOTP_STD },  // Cell Resistance P2      (Cells 49-96)  -> ObdModifyPoll()
-  // { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0,300,300,60 }, 0, ISOTP_STD }, // Battery Temperatures (27 sensors)      -> ObdModifyPoll()
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x08, { 0,300,60,60 }, 0, ISOTP_STD },    // SOC
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,300,60,60 }, 0, ISOTP_STD },    // SOC Recalibration
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, { 0,300,60,60 }, 0, ISOTP_STD },    // Battery Health (SOH)
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x90, { 0,3600,0,0 }, 0, ISOTP_STD },     // BMS Production Number Supplier Read
+};
+
+//   -> ObdModifyPoll() will add the following PIDs with modified intervals m_cfg_cell_interval_drv/m_cfg_cell_interval_chg
+static const OvmsPoller::poll_pid_t obdii_79b_modify[] = 
+{
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, { 0,600,60,60 }, 0, ISOTP_STD },  // Battery Voltages Part 1 (Cells 1-48) 
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, { 0,600,60,60 }, 0, ISOTP_STD },  // Battery Voltages Part 2 (Cells 49-96)  
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x10, { 0,600,60,60 }, 0, ISOTP_STD },  // Cell Resistance P1      (Cells 1-48)   
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x11, { 0,600,60,60 }, 0, ISOTP_STD },  // Cell Resistance P2      (Cells 49-96)
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0,600,60,60 }, 0, ISOTP_STD },  // Battery Temperatures (27 sensors)    
+};
+
+static const OvmsPoller::poll_pid_t obdii_745_polls[] =
+{
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, { 0,3600,0,0 }, 0, ISOTP_STD },      // req.VIN
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,11,11,11 }, 0, ISOTP_STD },      // Doorlock EEPROM
+};
+
+static const OvmsPoller::poll_pid_t obdii_745_tpms[] =
+{
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, { 0,0,61,0 }, 0, ISOTP_STD },        // TPMS input capture
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, { 0,0,61,0 }, 0, ISOTP_STD },        // TPMS counters/status (missing transmitters)
+};
+
+static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
+{
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, { 0,3600,0,0 }, 0, ISOTP_STD },       // Frame Traceability Information
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, { 0,16,0,16 }, 0, ISOTP_STD },   // Charging plug detected (B_PlugConnected_bcb_status_S)
+};
+
+//   -> ObdModifyPoll() will add the following PIDs when m_poll_on_mod is true, and remove them when m_poll_on_mod is false
+static const OvmsPoller::poll_pid_t obdii_7e4_modify[] =
+{
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, { 0,60,60,16 }, 0, ISOTP_STD }, // rqHV_Energy
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, { 0,14,14,14 }, 0, ISOTP_STD }, // Cabin blower command
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, { 0,14,14,14 }, 0, ISOTP_STD }, // rqDCDC_Load
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3022, { 0,14,14,14 }, 0, ISOTP_STD }, // DCDC activation request
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3023, { 0,14,14,14 }, 0, ISOTP_STD }, // 14V DCDC voltage request
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, { 0,14,14,14 }, 0, ISOTP_STD }, // 14V DCDC voltage measure
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, { 0,14,14,14 }, 0, ISOTP_STD }, // 14V DCDC current measure
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, { 0,14,14,14 }, 0, ISOTP_STD }, // rqDCDC_Power
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3301, { 0,14,14,14 }, 0, ISOTP_STD }, // USM 14V voltage (CAN)
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, { 0,14,14,14 }, 0, ISOTP_STD }, // Battery voltage 14V
 };
 
 static const OvmsPoller::poll_pid_t obdii_743_polls[] =
@@ -62,38 +100,7 @@ static const OvmsPoller::poll_pid_t obdii_743_polls[] =
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, { 0,3600,0,0 }, 0, ISOTP_STD }, // maintenance level
 };
 
-static const OvmsPoller::poll_pid_t obdii_745_tpms[] =
-{
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, { 0,0,60,0 }, 0, ISOTP_STD },        // TPMS input capture
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, { 0,0,60,0 }, 0, ISOTP_STD },        // TPMS counters/status (missing transmitters)
-};
-
-static const OvmsPoller::poll_pid_t obdii_745_polls[] =
-{
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, { 0,3600,0,0 }, 0, ISOTP_STD },      // req.VIN
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,11,11,11 }, 0, ISOTP_STD },      // Doorlock EEPROM
-};
-
-static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
-{
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, { 0,3600,0,0 }, 0, ISOTP_STD },       // Frame Traceability Information
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, { 0,16,0,16 }, 0, ISOTP_STD },   // Charging plug detected (B_PlugConnected_bcb_status_S)
-};
-
-static const OvmsPoller::poll_pid_t obdii_7e4_modify[] =
-{
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, { 0,0,0,16 }, 0, ISOTP_STD }, // rqHV_Energy
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, { 0,0,0,31 }, 0, ISOTP_STD }, // Cabin blower command
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, { 0,0,0,14 }, 0, ISOTP_STD }, // rqDCDC_Load
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3022, { 0,0,0,14 }, 0, ISOTP_STD }, // DCDC activation request
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3023, { 0,0,0,14 }, 0, ISOTP_STD }, // 14V DCDC voltage request
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, { 0,0,0,14 }, 0, ISOTP_STD }, // 14V DCDC voltage measure
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, { 0,0,0,14 }, 0, ISOTP_STD }, // 14V DCDC current measure
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, { 0,0,0,14 }, 0, ISOTP_STD }, // rqDCDC_Power
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3301, { 0,0,0,14 }, 0, ISOTP_STD }, // USM 14V voltage (CAN)
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, { 0,0,0,14 }, 0, ISOTP_STD }, // Battery voltage 14V
-};
-
+//   -> ObdModifyPoll() will add the slow_charger_polls/fast_charger_polls PIDs when m_poll_on_charge is true, and remove them when m_poll_on_charge is false
 static const OvmsPoller::poll_pid_t slow_charger_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }

@@ -442,6 +442,7 @@ public:
     bool m_obdii_7e4;                       //!< OBDII 7e4 mode enabled
     bool m_obdii_7e4_modify;                  //!< OBDII 7e4 dcdc mode enabled
     bool m_poll_on_mod;                     //!< flag to trigger poll state change actions
+    bool m_poll_on_charge;                   //!< flag to trigger poll state change actions
 
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll

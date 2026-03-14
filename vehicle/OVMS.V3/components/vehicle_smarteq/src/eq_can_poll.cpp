@@ -1017,7 +1017,7 @@ void OvmsVehicleSmartEQ::PollReply_obd_mt_km(const char* data, uint16_t reply_le
 void OvmsVehicleSmartEQ::PollReply_BCM_DoorlockEEPROM(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 61 25 <Byte> <Byte> <Byte> <Byte> ...
   // Service 0x21, PID 0x25
-  REQUIRE_LEN(4);
+  REQUIRE_LEN(1);
   
   // DRIVER_DOOR_LOCKED_S:
   bool driver_locked = (CAN_BYTE(0) > 0);
