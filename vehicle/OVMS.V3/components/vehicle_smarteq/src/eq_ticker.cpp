@@ -108,6 +108,13 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     m_poll_on_mod = false;
     ObdModifyPoll();
     }
+  else if (!m_poll_on_charge && StdMetrics.ms_v_charge_inprogress->AsBool(false) && m_poll_state == POLLSTATE_CHARGING)
+    {
+    m_poll_on_mod = true;
+    m_poll_on_charge = true;
+    ObdModifyPoll();
+    smartChargeStart();
+    }
 
   #ifdef CONFIG_OVMS_COMP_ADC
   if (m_enable_calcADCfactor && m_ADCfactor_recalc) 
