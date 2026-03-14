@@ -85,7 +85,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   std::string error, info, full_km, rebootnw;
   bool canwrite, led, resettrip, resettotal, bcvalue;
   bool charge12v, extstats, unlocked, tripnotify, opendoors;
-  bool obdii_79b, obdii_743, obdii_745, obdii_7e4, obdii_7e4_modify;
+  bool obdii_79b, obdii_743, obdii_745, obdii_745tpms, obdii_7e4, obdii_7e4_modify;
 
   if (c.method == "POST") {
     // process form submission:
@@ -106,6 +106,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     obdii_745 = (c.getvar("obdii_745") == "yes");
     obdii_7e4 = (c.getvar("obdii_7e4") == "yes");
     obdii_7e4_modify = (c.getvar("obdii_7e4_modify") == "yes");
+    obdii_745tpms = (c.getvar("obdii_745tpms") == "yes");
 
     // Basic numeric validation:
     auto validFloat = [&](const std::string& s, double minv, double maxv, const char* fname)->bool {
@@ -148,6 +149,11 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       setBool("obdii_745", obdii_745);
       setBool("obdii_7e4", obdii_7e4);
       setBool("obdii_7e4_modify", obdii_7e4_modify);
+      if(!obdii_745tpms) {
+        // If 745 TPMS polling enabled, disable basic TPMS (pressure only)
+        setBool("tpms.alert.enable", false);
+        setBool("tpms.temp", false);
+      }
 
       // Write all changes in one operation
       MyConfig.SetParamMap("xsq", map);
@@ -187,6 +193,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       obdii_745   = (m.count("obdii_745") ? (m.at("obdii_745") == "yes") : sq->m_obdii_745);
       obdii_7e4   = (m.count("obdii_7e4") ? (m.at("obdii_7e4") == "yes") : sq->m_obdii_7e4);
       obdii_7e4_modify = (m.count("obdii_7e4_modify") ? (m.at("obdii_7e4_modify") == "yes") : sq->m_obdii_7e4_modify);
+      obdii_745tpms = (m.count("obdii_745tpms") ? (m.at("obdii_745tpms") == "yes") : (!sq->m_basic_tpms));
       
       // Strings - need to convert to string
       if (m.count("rebootnw")) {
@@ -231,6 +238,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       obdii_745 = sq->m_obdii_745;
       obdii_7e4 = sq->m_obdii_7e4;
       obdii_7e4_modify = sq->m_obdii_7e4_modify;
+      obdii_745tpms = !sq->m_basic_tpms;
     }
 
     c.head(200);
@@ -279,6 +287,9 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Controls 743 polling, e.g. maintenance data</p>");
   c.input_checkbox("Enable 745 polling", "obdii_745", obdii_745,
     "<p>Controls 745 polling, e.g. VIN</p>");
+  c.input_checkbox("Enable 745 TPMS polling", "obdii_745tpms", obdii_745tpms,
+    "<p>Controls 745 TPMS polling, e.g. pressure/temperature/alert values</p>"
+    "<p>disabled activate basic TPMS functionality (only pressure values)</p>");
   c.input_checkbox("Enable 79b polling", "obdii_79b", obdii_79b,
     "<p>Controls 79b polling, e.g. battery state</p>");
   c.input_checkbox("Enable 7e4 polling", "obdii_7e4", obdii_7e4,
