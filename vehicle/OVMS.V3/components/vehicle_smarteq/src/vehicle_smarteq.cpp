@@ -274,7 +274,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   
   int cell_interval_drv   = 60;
   int cell_interval_chg   = 60;
-  bool basic_tpms         = false;
   bool obdii_743          = true;
   bool obdii_745          = true;
   bool obdii_7e4          = true;  
@@ -336,7 +335,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_suffrange            = getInt("suffrange", 0);
     cell_interval_drv      = getInt("cell_interval_drv", 60);
     cell_interval_chg      = getInt("cell_interval_chg", 60);
-    basic_tpms             = getBool("basic_tpms", false);
     obdii_79b              = getBool("obdii.79b", true);
     obdii_743              = getBool("obdii.743", true);
     obdii_745              = getBool("obdii.745", true);
@@ -353,6 +351,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     }
 #endif
   
+  bool basic_tpms = (!m_tpms_alert_enable && !m_tpms_temp_enable);  // basic TPMS mode if alert and temp disabled
+
   bool do_modify_poll = (
     (cell_interval_drv != m_cfg_cell_interval_drv) ||
     (cell_interval_chg != m_cfg_cell_interval_chg) ||
