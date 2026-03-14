@@ -126,8 +126,8 @@ static const OvmsPoller::poll_pid_t vehicle_ioniq_polls_second[] = {
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0103, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 2 - BMC Diag page 03
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0104, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 3 - BMC Diag page 04
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0105, { 300,   0,   0,  0}, 0, ISOTP_STD },   // Battery 4 - BMC Diag page 05 (Other - Battery Pack Temp)
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc03, { 150,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc04, { 150,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc03, {  30,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc04, {  30,   0,   0,  0}, 0, ISOTP_STD },  // IGMP Door status
   POLL_LIST_END
 };
 
@@ -278,6 +278,9 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_checklock_retry = 0;
   m_checklock_start = 0;
   m_checklock_notify = 0;
+  m_aux_is_charging = false;
+  m_aux_is_low = false;
+  m_off_ping = false;
 
   memset( kia_send_can.byte, 0, sizeof(kia_send_can.byte));
 
@@ -374,15 +377,20 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   // Guess if odo is in miles or kilometers
   float odo = StdMetrics.ms_v_pos_odometer->AsFloat(Kilometers);
+  float odox = m_v_p_odo_ext->AsFloat(Kilometers);
+
+  // Initialise
+  if (odox < odo) {
+    odox = odo;
+    m_v_p_odo_ext->SetValue(odo, Kilometers);
+  }
   if (std::abs(odo - std::floor(odo)) < 0.0001) {
     m_next_odo = odo + 1;
   } else {
     m_next_odo = odo + UnitConvert(Miles, Kilometers, static_cast<float>(1.0));
   }
-
-  // Initialise
-  if (m_v_p_odo_ext->AsFloat(Kilometers) < odo) {
-    m_v_p_odo_ext->SetValue(odo, Kilometers);
+  if (odox > m_next_odo ) {
+    m_next_odo = odox;
   }
 
   // Setting a minimum trip size of 2km since the granuality of trips is much improved.
@@ -446,6 +454,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 #endif
 
   MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsHyundaiIoniqEv::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "location.alert.flatbed.moved", std::bind(&OvmsHyundaiIoniqEv::FlatbedListener, this, _1, _2));
 
   MyConfig.RegisterParam("xiq", "Ioniq 5/EV6 specific settings.", true, true);
   ConfigChanged(NULL);
@@ -656,8 +665,14 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
   bool isCharge = StdMetrics.ms_v_charge_inprogress->AsBool();
 
   float odoext = m_v_p_odo_ext->AsFloat(Kilometers);
-  if (odoext == 0)
-    odoext = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+  float odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+  if (odoext < odo)
+    odoext = odo;
+  else if (odoext > m_next_odo)
+    odoext = m_next_odo;
+
+  if (odo == 0) // Edge case
+    odoext = 0;
   if (isOn) {
     // Car is ON
     ESP_LOGI(TAG, "CAR IS ON");
@@ -824,7 +839,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
     HandleChargeStop();
   }
 
-  if ( !(ticker & 1) && m_aux_battery_mon.state() == OvmsBatteryState::Charging) {
+  if ( !(ticker & 1) && Atomic_Get(m_aux_is_charging) ) {
     BatteryStateStillCharging();
   }
   if (IsPollState_Off() && StdMetrics.ms_v_door_chargeport->AsBool() && kia_ready_for_chargepollstate) {
@@ -854,14 +869,14 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   }
 
   bool wasPaused = hif_keep_awake > 0;
-  if (hif_keep_awake > 0) {
+  if (wasPaused) {
     --hif_keep_awake;
   }
 
   //**** AUX Battery drain prevention code ***
   bool isRunning = StdMetrics.ms_v_env_on->AsBool();
   if (StdMetrics.ms_v_bat_12v_voltage_alert->AsBool()) {
-    ESP_LOGV(TAG, "12V Battery Alert");
+    ESP_LOGV(TAG, "Aux Battery Alert");
     if (hif_keep_awake == 0) {
       ESP_LOGD(TAG, "PollState->Off (Aux Battery Alert)");
       PollState_Off();
@@ -996,6 +1011,22 @@ void OvmsHyundaiIoniqEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_
   ESP_LOGV(TAG, "Aux Battery: %s", monitor.to_string().c_str());
 #endif
   switch (new_state) {
+    case OvmsBatteryState::Charging:
+    case OvmsBatteryState::ChargingDip:
+    case OvmsBatteryState::ChargingBlip:
+      Atomic_Swap(m_aux_is_charging, true);
+      Atomic_Swap(m_aux_is_low, false);
+      break;
+    case OvmsBatteryState::Low:
+      Atomic_Swap(m_aux_is_charging, false);
+      Atomic_Swap(m_aux_is_low, true);
+      break;
+    default:
+      Atomic_Swap(m_aux_is_charging, false);
+      Atomic_Swap(m_aux_is_low, false);
+      break;
+  }
+  switch (new_state) {
     case OvmsBatteryState::Unknown:
       break;
     case OvmsBatteryState::Normal:
@@ -1009,31 +1040,31 @@ void OvmsHyundaiIoniqEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_
       ESP_LOGD(TAG, "Aux Battery state: Charging %g Dip %g",
           monitor.average_lastf(), monitor.diff_lastf());
       if ( IsPollState_Off()) {
-        ESP_LOGD(TAG, "PollState->Ping for 30 (Charge Dip)");
-        PollState_Ping(30);
+        ESP_LOGD(TAG, "PollState->Ping for 180 (Charge Dip)");
+        PollState_Ping(180);
       }
       break;
     case OvmsBatteryState::ChargingBlip:
       ESP_LOGD(TAG, "Aux Battery state: Charging %g Blip %g",
           monitor.average_lastf(), monitor.diff_lastf());
       if ( IsPollState_Off()) {
-        ESP_LOGD(TAG, "PollState->Ping for 30 (Charge Blip)");
-        PollState_Ping(30);
+        ESP_LOGD(TAG, "PollState->Ping for 180 (Charge Blip)");
+        PollState_Ping(180);
       }
       break;
     case OvmsBatteryState::Blip: {
       ESP_LOGD(TAG, "Aux Battery state: Blip %g", monitor.diff_lastf());
       if ( IsPollState_Off()) {
-        ESP_LOGD(TAG, "PollState->Ping for 30 (Blip)");
-        PollState_Ping(30);
+        ESP_LOGD(TAG, "PollState->Ping for 90 (Blip)");
+        PollState_Ping(90);
       }
     }
     break;
     case OvmsBatteryState::Dip: {
       ESP_LOGD(TAG, "Aux Battery state: Dip %g", monitor.diff_lastf());
       if ( IsPollState_Off()) {
-        ESP_LOGD(TAG, "PollState->Ping for 30 (Dip)");
-        PollState_Ping(30);
+        ESP_LOGD(TAG, "PollState->Ping for 90 (Dip)");
+        PollState_Ping(90);
       }
     }
     break;
@@ -1054,8 +1085,13 @@ void OvmsHyundaiIoniqEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_
 void OvmsHyundaiIoniqEv::BatteryStateStillCharging()
 {
   if (IsPollState_Off()) {
-    ESP_LOGD(TAG, "PollState->PingAux for 30 (Charging)");
-    PollState_PingAux(30);
+    if (!StdMetrics.ms_v_charge_inprogress->AsBool()) {
+      ESP_LOGD(TAG, "PollState->PingAux for 30 (Charging)");
+      PollState_PingAux(30);
+    } else {
+      ESP_LOGD(TAG, "PollState->Ping for 30 (Charging)");
+      PollState_Ping(30);
+    }
   }
 }
 
@@ -1156,6 +1192,17 @@ void OvmsHyundaiIoniqEv::EventListener(std::string event, void *data)
   XDISARM;
 }
 
+void OvmsHyundaiIoniqEv::FlatbedListener(std::string event, void *data)
+{
+  if (Atomic_Get(m_aux_is_low))
+    return;
+
+  // Make sure the car is really off.
+  if (IsPollState_Off()) {
+    ESP_LOGD(TAG, "PollState->Ping for 30 (Flatbed)");
+    PollState_Ping(30);
+  }
+}
 
 /**
  * Update metrics when charging
@@ -1197,8 +1244,9 @@ void OvmsHyundaiIoniqEv::HandleCharging()
     float limit_range = StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
     float ideal_range = StdMetrics.ms_v_bat_range_ideal->AsFloat(450, Kilometers);
     float odoext = m_v_p_odo_ext->AsFloat(Kilometers);
-    if (odoext == 0)
-      odoext = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+    float odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+    if (odoext < odo)
+      odoext = odo;
     kia_park_trip_counter.Update(
       odoext,
       StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
@@ -1324,8 +1372,9 @@ void OvmsHyundaiIoniqEv::HandleChargeStop()
 
   // Reset trip counter for this charge
   float odoext = m_v_p_odo_ext->AsFloat(Kilometers);
-  if (odoext == 0)
-    odoext = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+  float odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+  if (odoext < odo)
+    odoext = odo;
   kia_charge_trip_counter.Reset(
     odoext,
     StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),

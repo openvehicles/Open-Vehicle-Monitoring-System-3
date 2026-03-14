@@ -210,11 +210,11 @@ void OvmsHyundaiIoniqEv::IncomingCM_Full(uint16_t type, uint16_t pid, const std:
         // There is a km odo value, so use that.
         bool metric_changed = StdMetrics.ms_v_pos_odometer->SetValue(value, Kilometers);
         if ( metric_changed || ! m_v_p_odo_ext->IsDefined() ) {
-          if ( m_v_p_odo_ext->IsDefined() ) {
+          if (m_v_p_odo_ext->IsDefined() ) {
             // Calculate the ave difference between the extrapolated and actual Odo ticking over
             float odo = m_v_p_odo_ext->AsFloat(Kilometers);
             float diff;
-            if (m_extra_odo > 0)
+            if (m_reached_next_odo)
               diff = m_extra_odo;
             else
               diff = - (static_cast<float>(value) - odo);
@@ -295,26 +295,29 @@ void OvmsHyundaiIoniqEv::IncomingOther_Full(uint16_t type, uint16_t pid, const s
           if (m_distance_reftime > 0 && now > m_distance_reftime) {
             uint32_t ms_diff = now - m_distance_reftime;
             float km_extra = ((std::abs(m_last_speed) + value) / 2.0) * ms_diff / (1000 * 3600);
-            float odo;
-            if (m_v_p_odo_ext->IsDefined()) {
-              odo = m_v_p_odo_ext->AsFloat(Kilometers);
-            } else {
-              odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
-            }
-            float newodo = odo + km_extra;
-            if (newodo >= m_next_odo || m_extra_odo > 0) {
+            float odo = StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+            if (m_next_odo > odo) {
+              float odox = 0;
+              if (m_v_p_odo_ext->IsDefined())
+                odox = m_v_p_odo_ext->AsFloat(Kilometers);
+              if (odox < odo)
+                odox = odo;
 
-              if (m_reached_next_odo)
-                m_extra_odo += km_extra;
-              else {
-                m_reached_next_odo = true;
-                m_extra_odo += newodo - m_next_odo;
+              float newodo = odox + km_extra;
+              if (newodo >= m_next_odo || m_extra_odo > 0) {
+
+                if (m_reached_next_odo)
+                  m_extra_odo += km_extra;
+                else {
+                  m_reached_next_odo = true;
+                  m_extra_odo += newodo - m_next_odo;
+                }
+
+                // Progress towards but don't go over.
+                newodo = (m_next_odo + odox) / 2;
               }
-
-              // Progress towards but don't go over.
-              newodo = (m_next_odo + odo) / 2;
+              m_v_p_odo_ext->SetValue(newodo, Kilometers);
             }
-            m_v_p_odo_ext->SetValue(newodo, Kilometers);
           }
           m_distance_reftime = now;
           m_last_speed = value;
@@ -852,9 +855,22 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(uint16_t type, uint16_t pid, const st
       // Byte 5 Entries
       if (get_uint_buff_be<1>(data, 5, lVal)) {
         // Vehicle is in "ignition" state (drivable)
-        StdMetrics.ms_v_env_on->SetValue((lVal & 0x60) > 0);
-        // Vehicle is fully awake (switched on by the user)
-        // ms_v_env_awake
+        bool ison = (lVal & 0x60) > 0;
+        StdMetrics.ms_v_env_on->SetValue(ison);
+
+        if (ison) {
+          // Vehicle is fully awake (switched on by the user)
+          m_off_ping = false;
+        } else {
+          if (m_v_door_lock_fr->AsBool() &&
+              m_v_door_lock_fl->AsBool() ) {
+            m_off_ping = false;
+          } else if (!m_off_ping) {
+            m_off_ping = true;
+            ESP_LOGD(TAG, "PollState->Ping for 120 (Pid response, doors unlocked)");
+            PollState_Ping(120);
+          }
+        }
 
         m_v_seat_belt_driver->SetValue(get_bit<1>(lVal));
         m_v_seat_belt_passenger->SetValue(get_bit<2>(lVal));

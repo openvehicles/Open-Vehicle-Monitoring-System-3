@@ -336,6 +336,8 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     virtual void CalculateRangeSpeed();     // Derive momentary range gain/loss speed in kph
 
+  private:
+    // Only access through Ticker Thread.
     OvmsBatteryMon m_aux_battery_mon;
     bool m_aux_enabled;
 
