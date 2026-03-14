@@ -19,6 +19,14 @@ directory are executed. Event scripts are executed in alphanumerical order of th
 practice is to prefix script names with 2-3 digit numbers in steps of 10 or 100 (i.e. first script 
 named ``50-…``), so new scripts can easily be integrated at a specific place.
 
+.. note::
+  Commands executed from event scripts **block the event processing** while running. Blocking for
+  too long can cause issues for other event handlers and can trigger a watchdog reboot.
+
+  Beginning with main release 3.3.006 (edge 3.3.005-723), you can use the new ``run``
+  command to execute long running commands in a background task, with the command
+  output being sent as a notification. See ``run ?`` for details.
+
 Output of background scripts without console association (e.g. event scripts) will be sent to the 
 log with tag ``ovms-duk-util`` at "info" level.
 
@@ -741,6 +749,15 @@ OvmsCommand
         This is reset #0 since last power cycle
         Detected boot reason: PowerOn (1/14)
         Crash counters: 0 total, 0 early
+
+    .. note::
+      Commands executed via ``OvmsCommand.Exec()`` **block the Duktape process** while running. Blocking for
+      too long can cause issues for the general event processing and can trigger a watchdog reboot.
+
+      Beginning with main release 3.3.006 (edge 3.3.005-723), you can use the new ``run``
+      command to execute long running commands in a background task, with the command
+      output being sent as a notification. See ``run ?`` for details.
+
 
 - ``OvmsCommand.Register( function(cmd, argv){}, parent, command, description, param_description, minargs, maxargs)``
     The OvmsCommand “Register” functions registers a JS function as command on the cli.
