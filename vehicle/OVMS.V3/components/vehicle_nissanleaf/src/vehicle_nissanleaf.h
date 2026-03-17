@@ -131,10 +131,13 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     vehicle_command_t CommandLock(const char* pin) override;
     vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandWakeup() override;
+    vehicle_command_t CommandWakeupZE0();
+    vehicle_command_t CommandWakeupAZE0();
+    vehicle_command_t CommandWakeupAZE0_2();
     void RemoteCommandTimer();
     void CcDisableTimer();
     void MITMDisableTimer();
-    void CommandWakeupTCU(); // New wakeup command
+    
 
   // --------------------------------------------------------------------------
   // Webserver subsystem
