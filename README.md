@@ -42,7 +42,7 @@ provides data logging to SD card and to a server.
 
 - _Native Integration_
   - Chevrolet Volt / Opel Ampera
-  - Chevrolet Bolt EV / Opel Ampera-e
+  - [Chevrolet Bolt EV / Opel Ampera-e](https://docs.openvehicles.com/en/latest/components/vehicle_boltev/docs/index.html)
   - [BMW i3 / i3s](https://docs.openvehicles.com/en/latest/components/vehicle_bmwi3/docs/index.html)
   - [BYD Atto 3](https://docs.openvehicles.com/en/latest/components/vehicle_byd_atto3/docs/index.html)
   - [Energica motorbikes](https://docs.openvehicles.com/en/latest/components/vehicle_energica/docs/index.html)
