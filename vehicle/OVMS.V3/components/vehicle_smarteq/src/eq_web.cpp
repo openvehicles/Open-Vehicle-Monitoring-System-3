@@ -106,7 +106,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     obdii743 = (c.getvar("obdii743") == "yes");
     obdii745 = (c.getvar("obdii745") == "yes");
     obdii7e4 = (c.getvar("obdii7e4") == "yes");
-    obdii7e4_dcdc = (c.getvar("obdii7e4.dcdc") == "yes");
+    obdii7e4_dcdc = (c.getvar("obdii7e4_dcdc") == "yes");
     obdii745tpms = (c.getvar("obdii745tpms") == "yes");
 
     // Basic numeric validation:
@@ -151,11 +151,18 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       setBool("obdii.745", obdii745);
       setBool("obdii.7e4", obdii7e4);
       setBool("obdii.7e4.dcdc", obdii7e4_dcdc);
-      if(!obdii745tpms) {
+      if(obdii745tpms) 
+        {
         // If 745 TPMS polling enabled, disable basic TPMS (pressure only)
+        setBool("tpms.alert.enable", true);
+        setBool("tpms.temp", true);
+        }
+      else
+        {
+        // If 745 TPMS polling disabled, enable basic TPMS (pressure only) to keep some TPMS functionality
         setBool("tpms.alert.enable", false);
         setBool("tpms.temp", false);
-      }
+        }
 
       // Write all changes in one operation
       MyConfig.SetParamMap("xsq", map);
