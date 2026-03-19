@@ -546,15 +546,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "adc.samples",
     "obdii.79b.r",
     "obdii.79b.t",
-    "obdii.79b.v",    
+    "obdii.79b.v",
+    "obdii.7e4.mod",    
     "obdii_743",
     "obdii_745",
     "obdii_79b",
     "obdii_7e4",
-    "obdii_7e4_modify",
+    "obdii_7e4_modify"
   };
   
-  // Remove all deprecated keys from map
+  // Remove all deprecated keys from mapi
   int removed_count = 0;
   for (const char* key : deprecated_keys) {
     auto it = map_xsq.find(key);

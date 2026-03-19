@@ -276,9 +276,10 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   int cell_interval_chg   = 60;
   bool obdii_743          = true;
   bool obdii_745          = true;
-  bool obdii_7e4          = true;  
+  bool obdii_7e4          = true;
+  bool obdii_79b_cell     = true;
   bool obdii_79b          = true;
-  bool obdii_7e4_modify     = true;
+  bool obdii_7e4_dcdc     = true;
   
   if (xsq_param) 
     {
@@ -336,10 +337,11 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     cell_interval_drv      = getInt("cell_interval_drv", 60);
     cell_interval_chg      = getInt("cell_interval_chg", 60);
     obdii_79b              = getBool("obdii.79b", true);
+    obdii_79b_cell         = getBool("obdii.79b.cell", true);
     obdii_743              = getBool("obdii.743", true);
     obdii_745              = getBool("obdii.745", true);
     obdii_7e4              = getBool("obdii.7e4", true);
-    obdii_7e4_modify       = getBool("obdii.7e4.mod", true);
+    obdii_7e4_dcdc         = getBool("obdii.7e4.dcdc", true);
     }
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
@@ -358,20 +360,22 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     (cell_interval_chg != m_cfg_cell_interval_chg) ||
     (basic_tpms != m_basic_tpms) ||
     (obdii_79b != m_obdii_79b) ||
+    (obdii_79b_cell != m_obdii_79b_cell) ||
     (obdii_743 != m_obdii_743) ||
     (obdii_745 != m_obdii_745) ||
     (obdii_7e4 != m_obdii_7e4) ||
-    (obdii_7e4_modify != m_obdii_7e4_modify)
+    (obdii_7e4_dcdc != m_obdii_7e4_dcdc)
   );
   
   m_cfg_cell_interval_drv = cell_interval_drv;
   m_cfg_cell_interval_chg = cell_interval_chg;
   m_basic_tpms = basic_tpms;
   m_obdii_79b = obdii_79b;
+  m_obdii_79b_cell = obdii_79b_cell;
   m_obdii_743 = obdii_743;
   m_obdii_745 = obdii_745;
   m_obdii_7e4 = obdii_7e4;
-  m_obdii_7e4_modify = obdii_7e4_modify;
+  m_obdii_7e4_dcdc = obdii_7e4_dcdc;
 
   if (do_modify_poll) 
     {
@@ -395,35 +399,36 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
 
   // Add PIDs to poll list:
   
-  if (m_obdii_79b)
-    {
+  if (m_obdii_79b) // 79b non-cell PIDs
     m_poll_vector.insert(m_poll_vector.end(), obdii_79b_polls, endof_array(obdii_79b_polls));
 
-    for (const auto& p79b : obdii_79b_modify) 
-      {
-      OvmsPoller::poll_pid_t p79b_mod = p79b;
-      p79b_mod.polltime[2] = m_cfg_cell_interval_drv;
-      p79b_mod.polltime[3] = m_cfg_cell_interval_chg;
-      m_poll_vector.push_back(p79b_mod);
-      }
-    }
-
-  if (m_obdii_745)
+  if (m_obdii_745) // 745 PIDs Doorlock and VIN
     m_poll_vector.insert(m_poll_vector.end(), obdii_745_polls, endof_array(obdii_745_polls));
   
   if (m_poll_on_mod)
     {      
-    if (!m_basic_tpms)
-     m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms, endof_array(obdii_745_tpms));
+    if (!m_basic_tpms) // full TPMS mode with individual pressure/temp/alert status for each wheel
+     m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms_polls, endof_array(obdii_745_tpms_polls));
+    
+    if (m_obdii_79b_cell) // 79b PIDs cell V/R/T values with configurable intervals
+      {
+      for (const auto& p79bcell : obdii_79b_cell_vrt_polls) 
+        {
+        OvmsPoller::poll_pid_t p79bcell_mod = p79bcell;
+        p79bcell_mod.polltime[2] = m_cfg_cell_interval_drv;
+        p79bcell_mod.polltime[3] = m_cfg_cell_interval_chg;
+        m_poll_vector.push_back(p79bcell_mod);
+        }
+      }
      
-    if (m_obdii_7e4_modify)
-      m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_modify, endof_array(obdii_7e4_modify));
+    if (m_obdii_7e4_dcdc) // 7e4 PIDs DCDC 
+      m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_dcdc_polls, endof_array(obdii_7e4_dcdc_polls));
     }
 
-  if (m_obdii_7e4)
+  if (m_obdii_7e4) // 7e4 PIDs charging plug, 12V system, and misc
     m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_polls, endof_array(obdii_7e4_polls));
   
-  if (m_obdii_743)
+  if (m_obdii_743) // 743 PIDs Maintenance data, OBD trip counters
     m_poll_vector.insert(m_poll_vector.end(), obdii_743_polls, endof_array(obdii_743_polls));
   
   if (m_poll_on_charge)

@@ -85,7 +85,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   std::string error, info, full_km, rebootnw;
   bool canwrite, led, resettrip, resettotal, bcvalue;
   bool charge12v, extstats, unlocked, tripnotify, opendoors;
-  bool obdii_79b, obdii_743, obdii_745, obdii_745tpms, obdii_7e4, obdii_7e4_modify;
+  bool obdii79b, obdii79b_cell, obdii743, obdii745, obdii745tpms, obdii7e4, obdii7e4_dcdc;
 
   if (c.method == "POST") {
     // process form submission:
@@ -101,12 +101,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     extstats = (c.getvar("extstats") == "yes");
     tripnotify = (c.getvar("resetnotify") == "yes");
     opendoors = (c.getvar("opendoors") == "yes");
-    obdii_79b = (c.getvar("obdii_79b") == "yes");
-    obdii_743 = (c.getvar("obdii_743") == "yes");
-    obdii_745 = (c.getvar("obdii_745") == "yes");
-    obdii_7e4 = (c.getvar("obdii_7e4") == "yes");
-    obdii_7e4_modify = (c.getvar("obdii_7e4_modify") == "yes");
-    obdii_745tpms = (c.getvar("obdii_745tpms") == "yes");
+    obdii79b = (c.getvar("obdii79b") == "yes");
+    obdii79b_cell = (c.getvar("obdii79b.cell") == "yes");
+    obdii743 = (c.getvar("obdii743") == "yes");
+    obdii745 = (c.getvar("obdii745") == "yes");
+    obdii7e4 = (c.getvar("obdii7e4") == "yes");
+    obdii7e4_dcdc = (c.getvar("obdii7e4.dcdc") == "yes");
+    obdii745tpms = (c.getvar("obdii745tpms") == "yes");
 
     // Basic numeric validation:
     auto validFloat = [&](const std::string& s, double minv, double maxv, const char* fname)->bool {
@@ -144,12 +145,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       setBool("extended.stats", extstats);
       setBool("reset.notify", tripnotify);
       setBool("door.warning", opendoors);
-      setBool("obdii.79b", obdii_79b);
-      setBool("obdii.743", obdii_743);
-      setBool("obdii.745", obdii_745);
-      setBool("obdii.7e4", obdii_7e4);
-      setBool("obdii.7e4.mod", obdii_7e4_modify);
-      if(!obdii_745tpms) {
+      setBool("obdii.79b", obdii79b);
+      setBool("obdii.79b.cell", obdii79b_cell);
+      setBool("obdii.743", obdii743);
+      setBool("obdii.745", obdii745);
+      setBool("obdii.7e4", obdii7e4);
+      setBool("obdii.7e4.dcdc", obdii7e4_dcdc);
+      if(!obdii745tpms) {
         // If 745 TPMS polling enabled, disable basic TPMS (pressure only)
         setBool("tpms.alert.enable", false);
         setBool("tpms.temp", false);
@@ -188,12 +190,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       extstats    = (m.count("extended.stats") ? (m.at("extended.stats") == "yes") : sq->m_extendedStats);
       tripnotify  = (m.count("reset.notify") ? (m.at("reset.notify") == "yes") : sq->m_tripnotify);
       opendoors   = (m.count("door.warning") ? (m.at("door.warning") == "yes") : sq->m_enable_door_state);
-      obdii_79b   = (m.count("obdii.79b") ? (m.at("obdii.79b") == "yes") : sq->m_obdii_79b);
-      obdii_743   = (m.count("obdii.743") ? (m.at("obdii.743") == "yes") : sq->m_obdii_743);
-      obdii_745   = (m.count("obdii.745") ? (m.at("obdii.745") == "yes") : sq->m_obdii_745);
-      obdii_7e4   = (m.count("obdii.7e4") ? (m.at("obdii.7e4") == "yes") : sq->m_obdii_7e4);
-      obdii_7e4_modify = (m.count("obdii.7e4.mod") ? (m.at("obdii.7e4.mod") == "yes") : sq->m_obdii_7e4_modify);
-      obdii_745tpms = !sq->m_basic_tpms;
+      obdii79b   = (m.count("obdii.79b") ? (m.at("obdii.79b") == "yes") : sq->m_obdii_79b);
+      obdii79b_cell = (m.count("obdii.79b.cell") ? (m.at("obdii.79b.cell") == "yes") : sq->m_obdii_79b_cell);
+      obdii743   = (m.count("obdii.743") ? (m.at("obdii.743") == "yes") : sq->m_obdii_743);
+      obdii745   = (m.count("obdii.745") ? (m.at("obdii.745") == "yes") : sq->m_obdii_745);
+      obdii7e4   = (m.count("obdii.7e4") ? (m.at("obdii.7e4") == "yes") : sq->m_obdii_7e4);
+      obdii7e4_dcdc = (m.count("obdii.7e4.dcdc") ? (m.at("obdii.7e4.dcdc") == "yes") : sq->m_obdii_7e4_dcdc);
+      obdii745tpms = !sq->m_basic_tpms;
       
       // Strings - need to convert to string
       if (m.count("rebootnw")) {
@@ -233,12 +236,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       extstats = sq->m_extendedStats;
       tripnotify = sq->m_tripnotify;
       opendoors = sq->m_enable_door_state;
-      obdii_79b = sq->m_obdii_79b;
-      obdii_743 = sq->m_obdii_743;
-      obdii_745 = sq->m_obdii_745;
-      obdii_7e4 = sq->m_obdii_7e4;
-      obdii_7e4_modify = sq->m_obdii_7e4_modify;
-      obdii_745tpms = !sq->m_basic_tpms;
+      obdii79b = sq->m_obdii_79b;
+      obdii79b_cell = sq->m_obdii_79b_cell;
+      obdii743 = sq->m_obdii_743;
+      obdii745 = sq->m_obdii_745;
+      obdii7e4 = sq->m_obdii_7e4;
+      obdii7e4_dcdc = sq->m_obdii_7e4_dcdc;
+      obdii745tpms = !sq->m_basic_tpms;
     }
 
     c.head(200);
@@ -283,19 +287,21 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.fieldset_end();
 
   c.fieldset_start("OBDII Polling Control (requires CAN write enabled)");
-  c.input_checkbox("Enable 743 polling", "obdii_743", obdii_743,
+  c.input_checkbox("Enable 743 polling", "obdii743", obdii743,
     "<p>Controls 743 polling, e.g. maintenance data</p>");
-  c.input_checkbox("Enable 745 polling", "obdii_745", obdii_745,
+  c.input_checkbox("Enable 745 polling", "obdii745", obdii745,
     "<p>Controls 745 polling, e.g. VIN</p>");
-  c.input_checkbox("Enable 745 TPMS polling", "obdii_745tpms", obdii_745tpms,
+  c.input_checkbox("Enable 745 TPMS polling", "obdii745tpms", obdii745tpms,
     "<p>Controls 745 TPMS polling, e.g. pressure/temperature/alert values</p>"
     "<p>disabled activate basic TPMS functionality (only pressure values)</p>");
-  c.input_checkbox("Enable 79b polling", "obdii_79b", obdii_79b,
+  c.input_checkbox("Enable 79b polling", "obdii79b", obdii79b,
     "<p>Controls 79b polling, e.g. battery state</p>");
-  c.input_checkbox("Enable 7e4 polling", "obdii_7e4", obdii_7e4,
+  c.input_checkbox("Enable 79b cell polling", "obdii79b.cell", obdii79b_cell,
+    "<p>Controls 79b cell polling, e.g. individual cell voltages</p>");
+  c.input_checkbox("Enable 7e4 polling", "obdii7e4", obdii7e4,
     "<p>Controls 7e4 polling, e.g. charging plug plugged in</p>");
-  c.input_checkbox("Enable 7e4 modified polling", "obdii_7e4_modify", obdii_7e4_modify,
-    "<p>Controls 7e4 modified polling, e.g. DCDC values</p>");
+  c.input_checkbox("Enable 7e4 DCDC polling", "obdii7e4_dcdc", obdii7e4_dcdc,
+    "<p>Controls 7e4 DCDC polling</p>");
   c.fieldset_end();
 
   c.print("<hr>");

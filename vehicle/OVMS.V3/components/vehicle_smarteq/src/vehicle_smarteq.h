@@ -437,10 +437,11 @@ public:
     int m_suffrange;                        //!< minimum range for charging
     bool m_basic_tpms;                      //!< basic TPMS without temperature and low battery status
     bool m_obdii_79b;                       //!< OBDII 79b mode enabled
+    bool m_obdii_79b_cell;                  //!< OBDII 79b cell V/R/T polling enabled
     bool m_obdii_743;                       //!< OBDII 743 mode enabled
     bool m_obdii_745;                       //!< OBDII 745 mode enabled
     bool m_obdii_7e4;                       //!< OBDII 7e4 mode enabled
-    bool m_obdii_7e4_modify;                  //!< OBDII 7e4 dcdc mode enabled
+    bool m_obdii_7e4_dcdc;                  //!< OBDII 7e4 dcdc mode enabled
     bool m_poll_on_mod;                     //!< flag to trigger poll state change actions
     bool m_poll_on_charge;                   //!< flag to trigger poll state change actions
 
