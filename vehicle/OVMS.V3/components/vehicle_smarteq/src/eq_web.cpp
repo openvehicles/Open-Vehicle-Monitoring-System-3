@@ -144,11 +144,11 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       setBool("extended.stats", extstats);
       setBool("reset.notify", tripnotify);
       setBool("door.warning", opendoors);
-      setBool("obdii_79b", obdii_79b);
-      setBool("obdii_743", obdii_743);
-      setBool("obdii_745", obdii_745);
-      setBool("obdii_7e4", obdii_7e4);
-      setBool("obdii_7e4_modify", obdii_7e4_modify);
+      setBool("obdii.79b", obdii_79b);
+      setBool("obdii.743", obdii_743);
+      setBool("obdii.745", obdii_745);
+      setBool("obdii.7e4", obdii_7e4);
+      setBool("obdii.7e4.mod", obdii_7e4_modify);
       if(!obdii_745tpms) {
         // If 745 TPMS polling enabled, disable basic TPMS (pressure only)
         setBool("tpms.alert.enable", false);
@@ -188,12 +188,12 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       extstats    = (m.count("extended.stats") ? (m.at("extended.stats") == "yes") : sq->m_extendedStats);
       tripnotify  = (m.count("reset.notify") ? (m.at("reset.notify") == "yes") : sq->m_tripnotify);
       opendoors   = (m.count("door.warning") ? (m.at("door.warning") == "yes") : sq->m_enable_door_state);
-      obdii_79b   = (m.count("obdii_79b") ? (m.at("obdii_79b") == "yes") : sq->m_obdii_79b);
-      obdii_743   = (m.count("obdii_743") ? (m.at("obdii_743") == "yes") : sq->m_obdii_743);
-      obdii_745   = (m.count("obdii_745") ? (m.at("obdii_745") == "yes") : sq->m_obdii_745);
-      obdii_7e4   = (m.count("obdii_7e4") ? (m.at("obdii_7e4") == "yes") : sq->m_obdii_7e4);
-      obdii_7e4_modify = (m.count("obdii_7e4_modify") ? (m.at("obdii_7e4_modify") == "yes") : sq->m_obdii_7e4_modify);
-      obdii_745tpms = (m.count("obdii_745tpms") ? (m.at("obdii_745tpms") == "yes") : (!sq->m_basic_tpms));
+      obdii_79b   = (m.count("obdii.79b") ? (m.at("obdii.79b") == "yes") : sq->m_obdii_79b);
+      obdii_743   = (m.count("obdii.743") ? (m.at("obdii.743") == "yes") : sq->m_obdii_743);
+      obdii_745   = (m.count("obdii.745") ? (m.at("obdii.745") == "yes") : sq->m_obdii_745);
+      obdii_7e4   = (m.count("obdii.7e4") ? (m.at("obdii.7e4") == "yes") : sq->m_obdii_7e4);
+      obdii_7e4_modify = (m.count("obdii.7e4.mod") ? (m.at("obdii.7e4.mod") == "yes") : sq->m_obdii_7e4_modify);
+      obdii_745tpms = !sq->m_basic_tpms;
       
       // Strings - need to convert to string
       if (m.count("rebootnw")) {

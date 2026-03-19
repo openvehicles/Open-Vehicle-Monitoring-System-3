@@ -543,7 +543,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "lock.byte",
     "unlock.byte",
     "indicator",
-    "adc.samples"
+    "adc.samples",
+    "obdii.79b.r",
+    "obdii.79b.t",
+    "obdii.79b.v",    
+    "obdii_743",
+    "obdii_745",
+    "obdii_79b",
+    "obdii_7e4",
+    "obdii_7e4_modify",
   };
   
   // Remove all deprecated keys from map
