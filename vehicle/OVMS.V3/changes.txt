@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- New vehicle: Cadillac CT5
+    Initial support includes: VIN, fuel level (SOC), and run state.
+    The CT5 uses the GM Global B platform which requires authentication
+    so polling isn't currently possible. Instead we listen to CAN
+    bus #5 which is present on the audio amplifier connector X3 in
+    the trunk.
 - Command framework: add command to run commands in a background task, allowing the execution of long
     running commands via the server v2/v3 command channel or ssh without triggering the watchdog.
     Example: run ota flash http ; module reset
