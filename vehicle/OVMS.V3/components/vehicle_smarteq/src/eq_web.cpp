@@ -274,11 +274,11 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
   
   c.fieldset_start("Remote Control");
-  c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
-    "<p>Controls overall CAN write access, some functions depend on this.</p>");
-  c.input_checkbox("Enable CAN write when car on", "canwrite_caron", canwrite_caron,
-    "<p>Enable = CAN write only when car is on, Disable = CAN write independent of car state (not recommended, may cause issues if car is off)</p>"
-    "<p>Note: This setting is an alternative to Canwrite; either one of the two options or neither can be selected!</p>");
+  c.input_checkbox("Enable CAN write access", "canwrite", canwrite,
+    "<p>Controls overall CAN write access (poll), some functions depend on this.</p>");
+  c.input_checkbox("Enable CAN write access only when car is on", "canwrite_caron", canwrite_caron,
+    "<p>Enable = CAN write access, Disable = CAN write will be disabled when car is switched off</p>"
+    "<p>Note: This setting is an alternative to Canwrite access; either one of the two options or neither can be selected!</p>");
   c.fieldset_end();
   
   // trip reset or OBD activation

@@ -501,6 +501,14 @@ void OvmsVehicleSmartEQ::smartSleep()
 
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
+  // canwrite enable write access, only when car is on
+  if(m_enable_write_caron && !m_caron_write) 
+    {
+    m_enable_write = true;
+    m_caron_write = true;
+    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
   // Set charging metrics
   StdMetrics.ms_v_charge_pilot->SetValue(true);
   StdMetrics.ms_v_charge_mode->SetValue("standard");
@@ -549,6 +557,14 @@ void OvmsVehicleSmartEQ::smartChargePrepare()
 {
   if (m_charge_finished) ResetChargingValues();
   if (m_resettrip) ResetTripCounters();
+  // canwrite enable write access, only when car is on
+  if(m_enable_write_caron && !m_caron_write) 
+    {
+    m_enable_write = true;
+    m_caron_write = true;
+    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
   m_poll_on_mod = true;
   m_poll_on_charge = true;
   ObdModifyPoll();
