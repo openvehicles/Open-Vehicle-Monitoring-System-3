@@ -41,10 +41,13 @@ provides data logging to SD card and to a server.
 ## Vehicle Support
 
 - _Native Integration_
-  - Chevrolet Volt / Opel Ampera
-  - [Chevrolet Bolt EV / Opel Ampera-e](https://docs.openvehicles.com/en/latest/components/vehicle_boltev/docs/index.html)
   - [BMW i3 / i3s](https://docs.openvehicles.com/en/latest/components/vehicle_bmwi3/docs/index.html)
   - [BYD Atto 3](https://docs.openvehicles.com/en/latest/components/vehicle_byd_atto3/docs/index.html)
+  - [Cadillac 2nd gen CTS](https://docs.openvehicles.com/en/latest/components/vehicle_cadillac_c2_cts/docs/index.html)
+  - [Cadillac CT5](https://docs.openvehicles.com/en/latest/components/vehicle_cadillac_ct5/docs/index.html)
+  - [Chevrolet Bolt EV / Opel Ampera-e](https://docs.openvehicles.com/en/latest/components/vehicle_boltev/docs/index.html)
+  - [Chevrolet C6 Corvette](https://docs.openvehicles.com/en/latest/components/vehicle_chevrolet_c6_corvette/docs/index.html)
+  - Chevrolet Volt / Opel Ampera
   - [Energica motorbikes](https://docs.openvehicles.com/en/latest/components/vehicle_energica/docs/index.html)
   - [Fiat 500e](https://docs.openvehicles.com/en/latest/components/vehicle_fiat500/docs/index.html)
   - [Fiat e-Doblo](https://docs.openvehicles.com/en/latest/components/vehicle_fiatedoblo/docs/index.html)
