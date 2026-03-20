@@ -98,22 +98,26 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
       }
     }
-  if (!m_poll_on_mod && StdMetrics.ms_v_env_hvac->AsBool(false) && m_poll_state == POLLSTATE_ON)
+  // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
+  if (StdMetrics.ms_v_env_hvac->AsBool(false) && !m_poll_on_mod && m_poll_state == POLLSTATE_ON)
     {
     m_poll_on_mod = true;
     ObdModifyPoll();
     }
-  else if (m_poll_on_mod && !StdMetrics.ms_v_env_hvac->AsBool(false) && m_poll_state == POLLSTATE_OFF)
-    {
-    m_poll_on_mod = false;
-    ObdModifyPoll();
-    }
-  else if (!m_poll_on_charge && StdMetrics.ms_v_charge_inprogress->AsBool(false) && m_poll_state == POLLSTATE_CHARGING)
+  // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
+  if (StdMetrics.ms_v_charge_inprogress->AsBool(false) && !m_poll_on_charge && m_poll_state == POLLSTATE_CHARGING)
     {
     m_poll_on_mod = true;
     m_poll_on_charge = true;
     ObdModifyPoll();
     smartChargeStart();
+    } 
+  // if the car is sleeping, then modify polling to minimize bus load
+  if (m_poll_on_mod && m_poll_state == POLLSTATE_OFF)
+    {
+    m_poll_on_mod = false;
+    m_poll_on_charge = false;
+    ObdModifyPoll();
     }
 
   #ifdef CONFIG_OVMS_COMP_ADC

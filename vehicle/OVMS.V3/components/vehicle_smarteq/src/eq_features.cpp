@@ -477,8 +477,6 @@ void OvmsVehicleSmartEQ::smartOff()
 {
   // Reset gear
   StdMetrics.ms_v_env_gear->SetValue(0);
-  m_poll_on_mod = false;
-  ObdModifyPoll();
 }
 
 void OvmsVehicleSmartEQ::smartChargeStart()
@@ -540,7 +538,6 @@ void OvmsVehicleSmartEQ::smartChargeFinish()
 {
   m_charge_finished = true;
   StdMetrics.ms_v_charge_power->SetValue(0);
-  m_poll_on_mod = false;
   m_poll_on_charge = false;
   ObdModifyPoll();
 }

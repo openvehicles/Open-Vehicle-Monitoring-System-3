@@ -94,6 +94,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
           }
         }     
       res = Success;
+      m_poll_on_mod = true;
+      ObdModifyPoll();
       }
     else
       {
