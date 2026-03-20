@@ -599,6 +599,7 @@ void OvmsVehicleSmartEQ::NotifiedVehicleAwake()
 void OvmsVehicleSmartEQ::NotifiedVehicleAsleep()
 {  
   ESP_LOGI(TAG,"car is asleep");
+  smartSleep();
 }
 
 void OvmsVehicleSmartEQ::NotifiedVehicleChargeStart()

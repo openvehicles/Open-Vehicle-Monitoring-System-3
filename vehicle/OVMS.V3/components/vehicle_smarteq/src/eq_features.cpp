@@ -454,6 +454,14 @@ void OvmsVehicleSmartEQ::ModemRestart() {
 
 void OvmsVehicleSmartEQ::smartOn()
 {
+  // canwrite enable write access, only when car is on
+  if(m_enable_write_caron && !m_caron_write) 
+    {
+    m_enable_write = true;
+    m_caron_write = true;
+    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
   // Reset trip values
   if (!m_resettrip)
     ResetTripCounters();
@@ -477,6 +485,18 @@ void OvmsVehicleSmartEQ::smartOff()
 {
   // Reset gear
   StdMetrics.ms_v_env_gear->SetValue(0);
+}
+
+void OvmsVehicleSmartEQ::smartSleep()
+{
+  // disable canwrite when car goes to sleep (canwrite only when car is on)
+  if(m_enable_write_caron && m_caron_write) 
+    {
+    m_enable_write = false;
+    m_caron_write = false;
+    RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
 }
 
 void OvmsVehicleSmartEQ::smartChargeStart()

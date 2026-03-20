@@ -137,6 +137,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
     void smartOn();
     void smartOff();
+    void smartSleep();
     void smartChargeStart();
     void smartChargeStop();
     void smartChargePrepare();

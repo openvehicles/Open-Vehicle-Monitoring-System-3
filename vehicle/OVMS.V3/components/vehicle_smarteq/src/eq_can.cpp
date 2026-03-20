@@ -98,21 +98,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       }
       if(msgtxt != mt_bcm_vehicle_state->AsString(""))
         mt_bcm_vehicle_state->SetValue(msgtxt);
-      // canwrite enable write access, only when car is on
-      if(code >= 198 && m_enable_write_caron && !m_caron_write) 
-        {
-        m_enable_write = true;
-        m_caron_write = true;
-        RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-        vTaskDelay(200 / portTICK_PERIOD_MS);
-        }
-      else if(msgtxt == "SLEEPING" && m_enable_write_caron && m_caron_write) 
-        {
-        m_enable_write = false;
-        m_caron_write = false;
-        RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
-        vTaskDelay(200 / portTICK_PERIOD_MS);
-        }
       break;
       }
     case 0x392:
