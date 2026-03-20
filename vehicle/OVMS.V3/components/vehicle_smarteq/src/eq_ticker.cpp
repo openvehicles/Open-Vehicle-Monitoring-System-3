@@ -120,8 +120,8 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     ObdModifyPoll();
     }
   // check 12V charging state for powermgmt system
-  bool charge_12v = (StdMetrics.ms_v_bat_12v_voltage->AsFloat(0) > 13.1f);
-  if (charge_12v != StdMetrics.ms_v_env_charging12v->AsBool(false))
+  bool charge_12v = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f ? true : false;
+  if (charge_12v != StdMetrics.ms_v_env_charging12v->AsBool())
     {
     StdMetrics.ms_v_env_charging12v->SetValue(charge_12v);
     }
