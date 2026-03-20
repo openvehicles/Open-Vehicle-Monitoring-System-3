@@ -84,6 +84,13 @@ struct CmpStrOp
     return std::strcmp(a, b) < 0;
     }
   };
+struct CmpStrCaseOp
+  {
+  bool operator()(char const *a, char const *b) const
+    {
+    return strcasecmp(a, b) < 0;
+    }
+  };
 
 // Equality test for two std::map<K,V> with K,V both being BooleanTestible
 // (using std::pair operator==)

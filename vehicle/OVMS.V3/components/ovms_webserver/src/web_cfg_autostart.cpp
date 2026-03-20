@@ -212,8 +212,12 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 
   c.input_select_start("Vehicle type", "vehicle_type");
   c.input_select_option("&mdash;", "", vehicle_type.empty());
+  // sort vehicle options by name:
+  std::map<const char*, const char*, CmpStrCaseOp> vsort;
   for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
-    c.input_select_option(k->second.name, k->first, (vehicle_type == k->first));
+    vsort[k->second.name] = k->first;
+  for (auto &entry : vsort)
+    c.input_select_option(entry.first, entry.second, (vehicle_type == entry.second));
   c.input_select_end();
 
   c.input_select_start("Start OBD2ECU", "obd2ecu");
