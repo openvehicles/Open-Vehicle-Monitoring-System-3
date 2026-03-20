@@ -69,6 +69,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   // if write access is not enabled, then switch CAN bus to active mode for sending the command
   if (disable_write)
     {
+    m_caron_write = true;
     m_enable_write = true; // temporary enable write access for sending the command
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     vTaskDelay(200 / portTICK_PERIOD_MS);
@@ -122,6 +123,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
   if (disable_write)
     {
+    m_caron_write = false;
     m_enable_write = false; // switch back to listen-only mode if write access was originally disabled
     RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
     }

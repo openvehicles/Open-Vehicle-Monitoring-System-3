@@ -83,13 +83,14 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   auto lock = MyConfig.Lock();
 
   std::string error, info, full_km, rebootnw;
-  bool canwrite, led, resettrip, resettotal, bcvalue;
+  bool canwrite, canwrite_caron, led, resettrip, resettotal, bcvalue;
   bool charge12v, extstats, unlocked, tripnotify, opendoors;
   bool obdii79b, obdii79b_cell, obdii743, obdii745, obdii745_tpms, obdii7e4, obdii7e4_dcdc;
 
   if (c.method == "POST") {
     // process form submission:
     canwrite    = (c.getvar("canwrite") == "yes");
+    canwrite_caron = (c.getvar("canwrite_caron") == "yes");
     led         = (c.getvar("led") == "yes");
     rebootnw    = (c.getvar("rebootnw"));
     resettrip   = (c.getvar("resettrip") == "yes");
@@ -133,7 +134,18 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       };
       
       // Update all values in local map
+      if(canwrite != sq->m_enable_write) 
+         {
+         // If canwrite changed, reset canwrite_caron to avoid inconsistent state
+         canwrite_caron = false;
+         }
+      if(canwrite_caron != sq->m_enable_write_caron) 
+         {
+         // If canwrite_caron changed, reset canwrite to avoid inconsistent state
+         canwrite = false;
+         }
       setBool("canwrite", canwrite);
+      setBool("canwrite.caron", canwrite_caron);
       setBool("led", led);
       map["rebootnw"] = rebootnw;
       setBool("resettrip", resettrip);
@@ -188,6 +200,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       
       // Use sq-> instead of m_*
       canwrite    = (m.count("canwrite") ? (m.at("canwrite") == "yes") : sq->m_enable_write);
+      canwrite_caron = (m.count("canwrite.caron") ? (m.at("canwrite.caron") == "yes") : sq->m_enable_write_caron);
       led         = (m.count("led") ? (m.at("led") == "yes") : sq->m_enable_LED_state);
       resettrip   = (m.count("resettrip") ? (m.at("resettrip") == "yes") : sq->m_resettrip);
       resettotal  = (m.count("resettotal") ? (m.at("resettotal") == "yes") : sq->m_resettotal);
@@ -226,6 +239,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       char buf[16];
       
       canwrite = sq->m_enable_write;
+      canwrite_caron = sq->m_enable_write_caron;
       led = sq->m_enable_LED_state;
       
       snprintf(buf, sizeof(buf), "%d", sq->m_reboot_time);
@@ -262,6 +276,9 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.fieldset_start("Remote Control");
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
+  c.input_checkbox("Enable CAN write when car on", "canwrite_caron", canwrite_caron,
+    "<p>Enable = CAN write only when car is on, Disable = CAN write independent of car state (not recommended, may cause issues if car is off)</p>"
+    "<p>Note: This setting is an alternative to Canwrite; either one of the two options or neither can be selected!</p>");
   c.fieldset_end();
   
   // trip reset or OBD activation

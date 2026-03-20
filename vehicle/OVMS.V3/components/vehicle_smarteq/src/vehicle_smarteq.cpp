@@ -69,6 +69,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_gear = 0;
 
   m_enable_write = false;
+  m_enable_write_caron = false;
+  m_caron_write = false;
   m_candata_poll = false;
   m_candata_timer = -1;
 
@@ -224,7 +226,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   if (m_enable_write)
     PollSetState(POLLSTATE_ON);                                  // start polling to get the first data
 
-  if (m_enable_write && m_cfg_preset_version != PRESET_VERSION)  // preset version changed
+  if (m_cfg_preset_version != PRESET_VERSION)                    // preset version changed
     CommandPreset(0, NULL);                                      // set smart EQ config preset
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -311,6 +313,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     */
     
     // Read all config values from map
+    m_enable_write_caron   = getBool("canwrite.caron", false);
     m_enable_LED_state     = getBool("led", false);
     m_bcvalue              = getBool("bcvalue", false);
     m_enable_lock_state    = getBool("unlock.warning", true);
@@ -352,6 +355,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     MyPeripherals->m_max7317->Output(7, 1);
     }
 #endif
+  // disable caron write mode if normal write mode is enabled to avoid conflicts
+  if(m_enable_write_caron && m_enable_write) 
+    {
+    m_enable_write_caron = false;
+    MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
+    }
   
   bool basic_tpms = (!m_tpms_alert_enable && !m_tpms_temp_enable);  // basic TPMS mode if alert and temp disabled
 

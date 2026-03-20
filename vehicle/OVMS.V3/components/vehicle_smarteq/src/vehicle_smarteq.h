@@ -297,7 +297,9 @@ public:
     void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
     
   protected:
-    bool m_enable_write;                    // canwrite
+    bool m_enable_write;                    // canwrite enable write access
+    bool m_enable_write_caron;              // canwrite enable write access, only when car is on
+    bool m_caron_write;                     // canwrite caron write mode active
     bool m_enable_LED_state;                // Online LED State
     bool m_enable_lock_state;               // Lock State
     bool m_enable_door_state;               // Door Open State
