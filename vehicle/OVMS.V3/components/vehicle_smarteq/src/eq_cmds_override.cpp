@@ -36,15 +36,12 @@ static const char *TAG = "v-smarteq";
 
 // can can1 tx st 634 40 01 72 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
-  if(!m_enable_write)
-    {
-    ESP_LOGE(TAG, "CommandClimateControl failed / no write access");
-    m_climate_restart_ticker = 0;
-    m_climate_restart = false; 
-    return Fail;
-    }
+  
+  ESP_LOGI(TAG, "CommandClimateControl %s", enable ? "ON" : "OFF");
+   // remember if write access is disabled to switch back after sending the command
+  bool disable_write = !m_enable_write;
 
-  if(!enable) // HVAC off not implemented by vehicle
+  if(!enable) // HVAC OFF not implemented by vehicle
     {
     m_climate_restart_ticker = 0;
     m_climate_restart = false; 
@@ -69,7 +66,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     ESP_LOGI(TAG, "CommandClimateControl already on");
     return Success;
     }
-  ESP_LOGI(TAG, "CommandClimateControl %s", enable ? "ON" : "OFF");
+  // if write access is not enabled, then switch CAN bus to active mode for sending the command
+  if (disable_write)
+    {
+    m_enable_write = true; // temporary enable write access for sending the command
+    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
 
   OvmsVehicle::vehicle_command_t res;
 
@@ -94,8 +97,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
           }
         }     
       res = Success;
-      m_poll_on_mod = true;
-      ObdModifyPoll();
+      // if write access is enabled, then modify polling to get the DCDC data
+      if (!disable_write)
+        {
+        m_poll_on_mod = true;
+        ObdModifyPoll();
+        }
       }
     else
       {
@@ -111,6 +118,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   if (res == NotImplemented) 
     {
     res = OvmsVehicle::CommandClimateControl(enable);
+    }
+  // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
+  if (disable_write)
+    {
+    m_enable_write = false; // switch back to listen-only mode if write access was originally disabled
+    RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
     }
   return res;
 }
