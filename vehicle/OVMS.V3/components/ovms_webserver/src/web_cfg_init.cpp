@@ -1041,8 +1041,12 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
 
   c.input_select_start("Vehicle type", "vehicletype");
   c.input_select_option("&mdash;", "", vehicletype.empty());
+  // sort vehicle options by name:
+  std::map<const char*, const char*, CmpStrCaseOp> vsort;
   for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
-    c.input_select_option(k->second.name, k->first, (vehicletype == k->first));
+    vsort[k->second.name] = k->first;
+  for (auto &entry : vsort)
+    c.input_select_option(entry.first, entry.second, (vehicletype == entry.second));
   c.input_select_end();
 
   bool is_metric = units_distance != "miles";
