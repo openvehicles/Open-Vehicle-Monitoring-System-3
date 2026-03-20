@@ -604,6 +604,14 @@ config OVMS_VEHICLE_CADILLAC_C2_CTS
     help
         Enable to include support for Cadillac 2nd gen CTS vehicle.
 
+config OVMS_VEHICLE_CADILLAC_CT5
+    bool "Include support for Cadillac CT5 vehicle"
+    default n
+    depends on OVMS
+    depends on OVMS_COMP_POLLER
+    help
+        Enable to include support for Cadillac CT5 vehicle.
+
 config OVMS_VEHICLE_CHEVROLET_C6_CORVETTE
     bool "Include support for Chevrolet C6 Corvette vehicle"
     default n
