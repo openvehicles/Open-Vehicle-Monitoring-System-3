@@ -254,7 +254,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x673:  
       // TPMS pressure values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt
-      if (!m_enable_write || m_basic_tpms)
+      if ((!m_enable_write && !m_enable_write_caron) || m_basic_tpms)
       {
         REQ_DLC(6);
         // Read TPMS pressure values:

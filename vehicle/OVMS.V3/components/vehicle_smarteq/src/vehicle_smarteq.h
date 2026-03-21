@@ -141,7 +141,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void smartChargeStart();
     void smartChargeStop();
     void smartChargePrepare();
-    void smartChargeFinish();    
+    void smartChargeFinish();
+    void smartCANmode(bool activate, bool force=false);   
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -300,7 +301,7 @@ public:
   protected:
     bool m_enable_write;                    // canwrite enable write access
     bool m_enable_write_caron;              // canwrite enable write access, only when car is on
-    bool m_caron_write;                     // canwrite caron write mode active
+    bool m_can_active;                      // true if CAN bus is in active mode, false if in listen-only mode
     bool m_enable_LED_state;                // Online LED State
     bool m_enable_lock_state;               // Lock State
     bool m_enable_door_state;               // Door Open State

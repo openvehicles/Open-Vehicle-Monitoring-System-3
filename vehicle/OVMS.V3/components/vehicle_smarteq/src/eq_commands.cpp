@@ -36,7 +36,7 @@ static const char *TAG = "v-smarteq";
 
 // CommandCanVector(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/ CommandWakeup2 = false)
 OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t txid,uint32_t rxid, std::vector<std::string> hexbytes,bool reset,bool wakeup) {
-  if(!m_enable_write) 
+  if(!m_enable_write && !m_enable_write_caron)
     {
     ESP_LOGE(TAG, "CommandCanVector failed / no write access");
     return Fail;

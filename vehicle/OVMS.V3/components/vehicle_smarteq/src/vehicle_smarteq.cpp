@@ -70,7 +70,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   m_enable_write = false;
   m_enable_write_caron = false;
-  m_caron_write = false;
+  m_can_active = false;
   m_candata_poll = false;
   m_candata_timer = -1;
 
@@ -264,12 +264,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   bool stateWrite = m_enable_write;
   m_enable_write  = MyConfig.GetParamValueBool("xsq", "canwrite", false);
+  m_can_active = m_enable_write;
 
   // set CAN bus transceiver to active or listen-only depending on user selection
   if ( stateWrite != m_enable_write )
     {
-    CAN_mode_t mode = m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
-    RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
+    smartCANmode(m_enable_write);
     }
 
   // Use GetParamMap for efficient bulk reading

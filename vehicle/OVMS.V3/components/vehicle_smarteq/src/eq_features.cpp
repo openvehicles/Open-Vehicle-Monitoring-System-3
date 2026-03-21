@@ -455,12 +455,9 @@ void OvmsVehicleSmartEQ::ModemRestart() {
 void OvmsVehicleSmartEQ::smartOn()
 {
   // canwrite enable write access, only when car is on
-  if(m_enable_write_caron && !m_caron_write) 
+  if(m_enable_write_caron) 
     {
-    m_enable_write = true;
-    m_caron_write = true;
-    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-    vTaskDelay(200 / portTICK_PERIOD_MS);
+    smartCANmode(true);
     }
   // Reset trip values
   if (!m_resettrip)
@@ -490,24 +487,18 @@ void OvmsVehicleSmartEQ::smartOff()
 void OvmsVehicleSmartEQ::smartSleep()
 {
   // disable canwrite when car goes to sleep (canwrite only when car is on)
-  if(m_enable_write_caron && m_caron_write) 
+  if(m_enable_write_caron) 
     {
-    m_enable_write = false;
-    m_caron_write = false;
-    RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
-    vTaskDelay(200 / portTICK_PERIOD_MS);
+    smartCANmode(false);
     }
 }
 
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
   // canwrite enable write access, only when car is on
-  if(m_enable_write_caron && !m_caron_write) 
+  if(m_enable_write_caron) 
     {
-    m_enable_write = true;
-    m_caron_write = true;
-    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-    vTaskDelay(200 / portTICK_PERIOD_MS);
+    smartCANmode(true);
     }
   // Set charging metrics
   StdMetrics.ms_v_charge_pilot->SetValue(true);
@@ -558,12 +549,9 @@ void OvmsVehicleSmartEQ::smartChargePrepare()
   if (m_charge_finished) ResetChargingValues();
   if (m_resettrip) ResetTripCounters();
   // canwrite enable write access, only when car is on
-  if(m_enable_write_caron && !m_caron_write) 
+  if(m_enable_write_caron) 
     {
-    m_enable_write = true;
-    m_caron_write = true;
-    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-    vTaskDelay(200 / portTICK_PERIOD_MS);
+    smartCANmode(true);
     }
   m_poll_on_mod = true;
   m_poll_on_charge = true;
@@ -576,6 +564,33 @@ void OvmsVehicleSmartEQ::smartChargeFinish()
   StdMetrics.ms_v_charge_power->SetValue(0);
   m_poll_on_charge = false;
   ObdModifyPoll();
+}
+
+void OvmsVehicleSmartEQ::smartCANmode(bool activate, bool force /*=false*/)
+{
+  // if write access is not enabled, then switch CAN bus to active mode for sending the command
+  if (activate && !m_can_active)
+  { 
+    m_can1->SetPowerMode(Off);
+    m_can1->Stop();
+    m_can1->Start(CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    m_can1->SetPowerMode(On);
+    m_can_active = true;
+  }
+  // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
+  if (!activate)
+  {
+    m_can1->SetPowerMode(Off);
+    m_can1->Stop();
+    m_can1->Start(CAN_MODE_LISTEN, CAN_SPEED_500KBPS);    
+    m_can1->SetPowerMode(On);
+    m_can_active = false;
+  }
+  if(m_enable_write_caron || force)
+    {
+    m_enable_write = activate;
+    }
+  vTaskDelay(200 / portTICK_PERIOD_MS);
 }
 
 /**
