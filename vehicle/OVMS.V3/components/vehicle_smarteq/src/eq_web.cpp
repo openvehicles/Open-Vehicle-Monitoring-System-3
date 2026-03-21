@@ -321,7 +321,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable 79b polling", "obdii79b", obdii79b,
     "<p>e.g. HV battery state</p>");
   c.input_checkbox("Enable 79b cell polling", "obdii79b.cell", obdii79b_cell,
-    "<p>needed for BMS Cell Monitor, cell voltages/temperatures/resistances</p>");
+    "<p>needed for BMS Cell Monitor, HV cell voltages/temperatures/resistances</p>");
   c.input_checkbox("Enable 7e4 polling", "obdii7e4", obdii7e4,
     "<p>e.g. charging plug plugged in</p>");
   c.input_checkbox("Enable 7e4 DCDC polling", "obdii7e4_dcdc", obdii7e4_dcdc,
