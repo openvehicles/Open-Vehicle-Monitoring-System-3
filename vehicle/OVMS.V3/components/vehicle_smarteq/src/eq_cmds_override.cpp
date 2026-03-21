@@ -215,6 +215,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
 
   if(!mt_bus_awake->AsBool(false)) 
     {
+    smartCANmode(true);
     uint8_t data[4] = {0x40, 0x00, 0x00, 0x00};
     canbus *obd;
     obd = m_can1;
@@ -254,6 +255,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
 
   if(!mt_bus_awake->AsBool(false)) 
     {
+    smartCANmode(true);
     ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
     uint8_t data[8] = {0xc3, 0x11, 0x96, 0xef, 0x14, 0x10, 0x96, 0x85};
     canbus *obd;
