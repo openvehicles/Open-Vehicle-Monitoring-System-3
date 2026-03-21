@@ -388,16 +388,16 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
 }
 
 void OvmsVehicleSmartEQ::DoorLockState() {
-  bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs &&
-                          !StdMetrics.ms_v_env_on->AsBool() &&
-                          !StdMetrics.ms_v_env_locked->AsBool() &&
+  bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt(0) > m_park_timeout_secs &&
+                          !StdMetrics.ms_v_env_on->AsBool(false) &&
+                          !StdMetrics.ms_v_env_locked->AsBool(false) &&
                           !m_warning_unlocked);
   
   if (warning_unlocked) {
       m_warning_unlocked = true;
       ESP_LOGI(TAG, "Warning: Vehicle is unlocked and parked for more than 10 minutes");
       MyNotify.NotifyString("alert", "vehicle.unlocked", "The vehicle is unlocked and parked for more than 10 minutes.");
-  } else if (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10 && !warning_unlocked){
+  } else if (StdMetrics.ms_v_env_parktime->AsInt(0) > m_park_timeout_secs +10 && !warning_unlocked){
       m_warning_unlocked = true; // prevent warning if the vehicle is parked locked for more than 10 minutes
   }
 }
