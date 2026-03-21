@@ -36,7 +36,7 @@ static const char *TAG = "v-smarteq";
 
 // CommandCanVector(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/ CommandWakeup2 = false)
 OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t txid,uint32_t rxid, std::vector<std::string> hexbytes,bool reset,bool wakeup) {
-  if(!m_enable_write) 
+  if(!m_enable_write && !m_enable_write_caron)
     {
     ESP_LOGE(TAG, "CommandCanVector failed / no write access");
     return Fail;
@@ -46,6 +46,14 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     {
     ESP_LOGE(TAG, "DDT4all command rejected - previous command still processing (%d seconds remaining)",m_ddt4all_exec);
     return Fail;
+    }
+
+  // remember if write access is disabled to switch back after sending the command
+  bool disable_write = !m_can_active;
+  // if write access is not enabled, then switch CAN bus to active mode for sending the command
+  if (disable_write)
+    {
+    smartCANmode(true);
     }
 
   m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution
@@ -111,6 +119,12 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
       PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
     }
 
+    // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
+    if (disable_write)
+      {
+      smartCANmode(false);
+      }
+
     if (err == POLLSINGLE_TXFAILURE)
       {
       ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
@@ -132,6 +146,11 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     {
     m_ddt4all_exec = 5; // reduce cooldown on error
     MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during wakeup");
+    // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
+    if (disable_write)
+      {
+      smartCANmode(false);
+      }
     return res;
     }
 }
@@ -543,10 +562,19 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "lock.byte",
     "unlock.byte",
     "indicator",
-    "adc.samples"
+    "adc.samples",
+    "obdii.79b.r",
+    "obdii.79b.t",
+    "obdii.79b.v",
+    "obdii.7e4.mod",    
+    "obdii_743",
+    "obdii_745",
+    "obdii_79b",
+    "obdii_7e4",
+    "obdii_7e4_modify"
   };
   
-  // Remove all deprecated keys from map
+  // Remove all deprecated keys from mapi
   int removed_count = 0;
   for (const char* key : deprecated_keys) {
     auto it = map_xsq.find(key);

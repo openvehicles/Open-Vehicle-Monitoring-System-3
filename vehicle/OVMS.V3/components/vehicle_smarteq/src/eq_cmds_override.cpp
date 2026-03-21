@@ -36,15 +36,10 @@ static const char *TAG = "v-smarteq";
 
 // can can1 tx st 634 40 01 72 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
-  if(!m_enable_write)
-    {
-    ESP_LOGE(TAG, "CommandClimateControl failed / no write access");
-    m_climate_restart_ticker = 0;
-    m_climate_restart = false; 
-    return Fail;
-    }
+  
+  ESP_LOGI(TAG, "CommandClimateControl %s", enable ? "ON" : "OFF");
 
-  if(!enable) // HVAC off not implemented by vehicle
+  if(!enable) // HVAC OFF not implemented by vehicle
     {
     m_climate_restart_ticker = 0;
     m_climate_restart = false; 
@@ -69,7 +64,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     ESP_LOGI(TAG, "CommandClimateControl already on");
     return Success;
     }
-  ESP_LOGI(TAG, "CommandClimateControl %s", enable ? "ON" : "OFF");
+  
+  // remember if write access is disabled to switch back after sending the command
+  bool disable_write = !m_can_active;
+  
+  // if write access is not enabled, then switch CAN bus to active mode for sending the command
+  if (disable_write)
+    {
+    smartCANmode(true);
+    }
 
   OvmsVehicle::vehicle_command_t res;
 
@@ -94,6 +97,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
           }
         }     
       res = Success;
+      // if write access is enabled, then modify polling to get the DCDC data
+      if (!disable_write)
+        {
+        m_poll_on_mod = true;
+        ObdModifyPoll();
+        }
       }
     else
       {
@@ -109,6 +118,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   if (res == NotImplemented) 
     {
     res = OvmsVehicle::CommandClimateControl(enable);
+    }
+  // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
+  if (disable_write)
+    {
+    smartCANmode(false);
     }
   return res;
 }
@@ -189,7 +203,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
-  if(!m_enable_write) 
+  if(!m_enable_write && !m_enable_write_caron)
     {
     ESP_LOGE(TAG, "CommandWakeup failed: no write access!");
     return Fail;
@@ -201,6 +215,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
 
   if(!mt_bus_awake->AsBool(false)) 
     {
+    smartCANmode(true);
     uint8_t data[4] = {0x40, 0x00, 0x00, 0x00};
     canbus *obd;
     obd = m_can1;
@@ -228,7 +243,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
-  if(!m_enable_write) 
+  if(!m_enable_write && !m_enable_write_caron)
     {
     ESP_LOGE(TAG, "CommandWakeup2 failed: no write access!");
     return Fail;
@@ -240,6 +255,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
 
   if(!mt_bus_awake->AsBool(false)) 
     {
+    smartCANmode(true);
     ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
     uint8_t data[8] = {0xc3, 0x11, 0x96, 0xef, 0x14, 0x10, 0x96, 0x85};
     canbus *obd;
@@ -268,10 +284,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
 
 // lock: can can1 tx st 745 04 30 01 00 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) {
-  if(!m_enable_write) {
+  if(!m_enable_write && !m_enable_write_caron) 
+    {
     ESP_LOGE(TAG, "CommandLock failed / no write access");
     return Fail;
-  }
+    }
   ESP_LOGI(TAG, "CommandLock");  
 
   OvmsVehicle::vehicle_command_t res = Fail;
@@ -304,10 +321,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
 // unlock: can can1 tx st 745 04 30 01 00 01
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin) {
 
-  if(!m_enable_write) {
+  if(!m_enable_write && !m_enable_write_caron)
+    {
     ESP_LOGE(TAG, "CommandUnlock failed / no write access");
     return Fail;
-  }
+    }
   ESP_LOGI(TAG, "CommandUnlock");
 
   OvmsVehicle::vehicle_command_t res = Fail;
@@ -577,6 +595,7 @@ void OvmsVehicleSmartEQ::NotifiedVehicleOff()
 void OvmsVehicleSmartEQ::NotifiedVehicleAwake()
 {
   ESP_LOGI(TAG,"car is awake");
+  smartAwake();
 }
 
 void OvmsVehicleSmartEQ::NotifiedVehicleAsleep()

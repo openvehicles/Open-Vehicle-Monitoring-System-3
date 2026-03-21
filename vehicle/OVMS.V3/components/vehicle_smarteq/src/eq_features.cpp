@@ -388,16 +388,16 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
 }
 
 void OvmsVehicleSmartEQ::DoorLockState() {
-  bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs &&
-                          !StdMetrics.ms_v_env_on->AsBool() &&
-                          !StdMetrics.ms_v_env_locked->AsBool() &&
+  bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt(0) > m_park_timeout_secs &&
+                          !StdMetrics.ms_v_env_on->AsBool(false) &&
+                          !StdMetrics.ms_v_env_locked->AsBool(false) &&
                           !m_warning_unlocked);
   
   if (warning_unlocked) {
       m_warning_unlocked = true;
       ESP_LOGI(TAG, "Warning: Vehicle is unlocked and parked for more than 10 minutes");
       MyNotify.NotifyString("alert", "vehicle.unlocked", "The vehicle is unlocked and parked for more than 10 minutes.");
-  } else if (StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10 && !warning_unlocked){
+  } else if (StdMetrics.ms_v_env_parktime->AsInt(0) > m_park_timeout_secs +10 && !warning_unlocked){
       m_warning_unlocked = true; // prevent warning if the vehicle is parked locked for more than 10 minutes
   }
 }
@@ -454,6 +454,11 @@ void OvmsVehicleSmartEQ::ModemRestart() {
 
 void OvmsVehicleSmartEQ::smartOn()
 {
+  // canwrite enable write access, only when car is on
+  if(m_enable_write || m_enable_write_caron) 
+    {
+    smartCANmode(true);
+    }
   // Reset trip values
   if (!m_resettrip)
     ResetTripCounters();
@@ -469,6 +474,8 @@ void OvmsVehicleSmartEQ::smartOn()
   m_climate_restart_ticker = 0;
   // reset idle ticker when vehicle turned on to prevent trigger every 60 sec.
   m_idle_ticker = 15 * 60;
+  m_poll_on_mod = true;
+  ObdModifyPoll();
 }
 
 void OvmsVehicleSmartEQ::smartOff()
@@ -477,8 +484,31 @@ void OvmsVehicleSmartEQ::smartOff()
   StdMetrics.ms_v_env_gear->SetValue(0);
 }
 
+void OvmsVehicleSmartEQ::smartAwake()
+{
+  // enable active polling when car wakes up (canwrite only)
+  if(m_enable_write) 
+    {
+    smartCANmode(true);
+    }
+}
+
+void OvmsVehicleSmartEQ::smartSleep()
+{
+  // disable active polling when car goes to sleep
+  if(m_enable_write || m_enable_write_caron) 
+    {
+    smartCANmode(false);
+    }
+}
+
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
+  // canwrite enable write access, only when car is on
+  if(m_enable_write || m_enable_write_caron) 
+    {
+    smartCANmode(true);
+    }
   // Set charging metrics
   StdMetrics.ms_v_charge_pilot->SetValue(true);
   StdMetrics.ms_v_charge_mode->SetValue("standard");
@@ -527,12 +557,54 @@ void OvmsVehicleSmartEQ::smartChargePrepare()
 {
   if (m_charge_finished) ResetChargingValues();
   if (m_resettrip) ResetTripCounters();
+  // canwrite enable write access, only when car is on
+  if(m_enable_write || m_enable_write_caron) 
+    {
+    smartCANmode(true);
+    }
+  m_poll_on_mod = true;
+  m_poll_on_charge = true;
+  ObdModifyPoll();
 }
 
 void OvmsVehicleSmartEQ::smartChargeFinish()
 {
   m_charge_finished = true;
   StdMetrics.ms_v_charge_power->SetValue(0);
+  m_poll_on_charge = false;
+  ObdModifyPoll();
+}
+
+void OvmsVehicleSmartEQ::smartCANmode(bool activate)
+{
+  // force enable write access for sending the command, even when user has not enabled it (can be required for some vehicles to wake up the car)
+  bool force = !m_enable_write && !m_enable_write_caron ? true : false;
+  // if write access is not enabled, then switch CAN bus to active mode for sending the command
+  if (activate && !m_can_active)
+  { 
+    m_can1->SetPowerMode(Off);
+    m_can1->Stop();
+    m_can1->Start(CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    m_can1->SetPowerMode(On);
+    m_can_active = true;
+    ESP_LOGI(TAG, "CAN bus switched to active mode for write access");
+  }
+  // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
+  if (!activate && m_can_active)
+  {
+    m_can1->SetPowerMode(Off);
+    m_can1->Stop();
+    m_can1->Start(CAN_MODE_LISTEN, CAN_SPEED_500KBPS);    
+    m_can1->SetPowerMode(On);
+    m_can_active = false;
+    ESP_LOGI(TAG, "CAN bus switched to listen mode");
+  }
+  if(m_enable_write_caron || force)
+    {
+    m_enable_write = activate;
+    ESP_LOGI(TAG, "CAN bus write access %s, force %s", activate ? "enabled" : "disabled", force ? "enabled" : "disabled");
+    }
+  vTaskDelay(200 / portTICK_PERIOD_MS);
 }
 
 /**

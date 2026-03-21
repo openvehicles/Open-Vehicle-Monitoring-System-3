@@ -69,14 +69,18 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_gear = 0;
 
   m_enable_write = false;
+  m_enable_write_caron = false;
+  m_can_active = false;
   m_candata_poll = false;
   m_candata_timer = -1;
 
   m_charge_finished = true;
   m_notifySOClimit = false;
   m_led_state = 4;
-  m_cfg_cell_interval_drv = 0;
-  m_cfg_cell_interval_chg = 0;
+  m_cfg_cell_interval_drv = 60;
+  m_cfg_cell_interval_chg = 60;
+  m_poll_on_mod = false;
+  m_poll_on_charge = false;
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);               // 96 cells, 1 series string
@@ -138,16 +142,13 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 210, kPa);  // Dummy pressure for TPMS alert testing
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
-  mt_bcm_gen_mode                = MyMetrics.InitString("xsq.bcm.gen.mode", SM_STALE_MID, "UNKNOWN", Other);
-  mt_driver_door_locked          = MyMetrics.InitBool("xsq.bcm.door.driver.locked", SM_STALE_MID, false);
-  mt_car_secured                 = MyMetrics.InitBool("xsq.bcm.car.secured", SM_STALE_MID, false);
+  mt_driver_door_locked          = MyMetrics.InitBool("xsq.driver.door.locked", SM_STALE_MID, false);
   // 0x7EC EVC metrics
   // EVC 12V values: Index 0=dcdc_volt_req, 1=dcdc_volt, 2=dcdc_power, 3=usm_volt, 4=batt_volt_can, 5=batt_volt_req, 6=dcdc_amps, 7=dcdc_load
   mt_evc_dcdc                   = MyMetrics.InitVector<float>("xsq.evc.12v.dcdc", SM_STALE_MID, nullptr, Other);
   mt_evc_dcdc->SetElemValue(7, 0.0f);  // Pre-allocate 8 entries
   mt_evc_traceability           = MyMetrics.InitString("xsq.evc.traceability", SM_STALE_MAX, "");
   mt_evc_plug_detected          = MyMetrics.InitBool("xsq.evc.plug.detected", SM_STALE_MIN, false);
-  mt_evc_plug_status            = MyMetrics.InitString("xsq.evc.plug.status", SM_STALE_MIN, "");
   // 0x793 OBL charger metrics
   mt_obl_fastchg                = MyMetrics.InitBool("xsq.obl.fastchg", SM_STALE_MIN, false);
   mt_obl_main_volts             = MyMetrics.InitVector<float>("xsq.obl.volts", SM_STALE_HIGH, nullptr, Volts);
@@ -215,6 +216,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ConfigChanged(NULL);
   StdMetrics.ms_v_gen_current->SetValue(2);                    // activate gen metrics to app transfer
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);      // set 12V alert to false
+  StdMetrics.ms_v_env_charging12v->SetValue(false);            // set 12V charging state to false
+  StdMetrics.ms_v_env_aux12v->SetValue(false);
 
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f)           // reset at boot
     {
@@ -225,7 +228,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   if (m_enable_write)
     PollSetState(POLLSTATE_ON);                                  // start polling to get the first data
 
-  if (m_enable_write && m_cfg_preset_version != PRESET_VERSION)  // preset version changed
+  if (m_cfg_preset_version != PRESET_VERSION)                    // preset version changed
     CommandPreset(0, NULL);                                      // set smart EQ config preset
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -266,8 +269,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   // set CAN bus transceiver to active or listen-only depending on user selection
   if ( stateWrite != m_enable_write )
     {
-    CAN_mode_t mode = m_enable_write ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
-    RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
+    smartCANmode(m_enable_write);
     }
 
   // Use GetParamMap for efficient bulk reading
@@ -275,6 +277,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   
   int cell_interval_drv   = 60;
   int cell_interval_chg   = 60;
+  bool obdii_743          = true;
+  bool obdii_745          = true;
+  bool obdii_7e4          = true;
+  bool obdii_79b_cell     = true;
+  bool obdii_79b          = true;
+  bool obdii_7e4_dcdc     = true;
   
   if (xsq_param) 
     {
@@ -306,6 +314,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     */
     
     // Read all config values from map
+    m_enable_write_caron   = getBool("canwrite.caron", false);
     m_enable_LED_state     = getBool("led", false);
     m_bcvalue              = getBool("bcvalue", false);
     m_enable_lock_state    = getBool("unlock.warning", true);
@@ -331,6 +340,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_suffrange            = getInt("suffrange", 0);
     cell_interval_drv      = getInt("cell_interval_drv", 60);
     cell_interval_chg      = getInt("cell_interval_chg", 60);
+    obdii_79b              = getBool("obdii.79b", true);
+    obdii_79b_cell         = getBool("obdii.79b.cell", true);
+    obdii_743              = getBool("obdii.743", true);
+    obdii_745              = getBool("obdii.745", true);
+    obdii_7e4              = getBool("obdii.7e4", true);
+    obdii_7e4_dcdc         = getBool("obdii.7e4.dcdc", true);
     }
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
@@ -341,13 +356,36 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     MyPeripherals->m_max7317->Output(7, 1);
     }
 #endif
+  // disable caron write mode if normal write mode is enabled to avoid conflicts
+  if(m_enable_write_caron && m_enable_write) 
+    {
+    m_enable_write_caron = false;
+    MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
+    }
   
+  bool basic_tpms = (!m_tpms_alert_enable && !m_tpms_temp_enable);  // basic TPMS mode if alert and temp disabled
+
   bool do_modify_poll = (
     (cell_interval_drv != m_cfg_cell_interval_drv) ||
-    (cell_interval_chg != m_cfg_cell_interval_chg));
-
+    (cell_interval_chg != m_cfg_cell_interval_chg) ||
+    (basic_tpms != m_basic_tpms) ||
+    (obdii_79b != m_obdii_79b) ||
+    (obdii_79b_cell != m_obdii_79b_cell) ||
+    (obdii_743 != m_obdii_743) ||
+    (obdii_745 != m_obdii_745) ||
+    (obdii_7e4 != m_obdii_7e4) ||
+    (obdii_7e4_dcdc != m_obdii_7e4_dcdc)
+  );
+  
   m_cfg_cell_interval_drv = cell_interval_drv;
   m_cfg_cell_interval_chg = cell_interval_chg;
+  m_basic_tpms = basic_tpms;
+  m_obdii_79b = obdii_79b;
+  m_obdii_79b_cell = obdii_79b_cell;
+  m_obdii_743 = obdii_743;
+  m_obdii_745 = obdii_745;
+  m_obdii_7e4 = obdii_7e4;
+  m_obdii_7e4_dcdc = obdii_7e4_dcdc;
 
   if (do_modify_poll) 
     {
@@ -360,7 +398,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 void OvmsVehicleSmartEQ::ObdModifyPoll() {
   PollSetPidList(m_can1, NULL);
   PollSetState(POLLSTATE_OFF);
-  PollSetThrottling(0);
+  PollSetThrottling(5);
   PollSetResponseSeparationTime(20);
 
   // modify Poller..
@@ -368,32 +406,52 @@ void OvmsVehicleSmartEQ::ObdModifyPoll() {
   // Pre-allocate capacity to avoid reallocs during insert operations
   // obdii_polls + slow/fast_charger_polls + 2 cell polls + terminator = ~50 entries max
   m_poll_vector.reserve(50);
+
   // Add PIDs to poll list:
-  m_poll_vector.insert(m_poll_vector.end(), obdii_polls, endof_array(obdii_polls));
-  if (mt_obl_fastchg->AsBool()) {
-    m_poll_vector.insert(m_poll_vector.end(), fast_charger_polls, endof_array(fast_charger_polls));
-  } else {
-    m_poll_vector.insert(m_poll_vector.end(), slow_charger_polls, endof_array(slow_charger_polls));
-  }
-  OvmsPoller::poll_pid_t p1 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Voltage P1
-  p1.polltime[2] = m_cfg_cell_interval_drv;
-  p1.polltime[3] = m_cfg_cell_interval_chg;
-  m_poll_vector.push_back(p1);
   
-  OvmsPoller::poll_pid_t p2 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Voltage P2
-  p2.polltime[2] = m_cfg_cell_interval_drv;
-  p2.polltime[3] = m_cfg_cell_interval_chg;
-  m_poll_vector.push_back(p2);
+  if (m_obdii_79b) // 79b non-cell PIDs
+    m_poll_vector.insert(m_poll_vector.end(), obdii_79b_polls, endof_array(obdii_79b_polls));
 
-  OvmsPoller::poll_pid_t p3 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x10, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Resistance P1
-  p3.polltime[2] = m_cfg_cell_interval_drv;
-  p3.polltime[3] = m_cfg_cell_interval_chg;
-  m_poll_vector.push_back(p3);
+  if (m_obdii_745) // 745 PIDs Doorlock and VIN
+    m_poll_vector.insert(m_poll_vector.end(), obdii_745_polls, endof_array(obdii_745_polls));
+  
+  if (m_poll_on_mod)
+    {      
+    if (!m_basic_tpms) // full TPMS mode with individual pressure/temp/alert status for each wheel
+     m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms_polls, endof_array(obdii_745_tpms_polls));
+    
+    if (m_obdii_79b_cell) // 79b PIDs cell V/R/T values with configurable intervals
+      {
+      for (const auto& p79bcell : obdii_79b_cell_vrt_polls) 
+        {
+        OvmsPoller::poll_pid_t p79bcell_mod = p79bcell;
+        p79bcell_mod.polltime[2] = m_cfg_cell_interval_drv;
+        p79bcell_mod.polltime[3] = m_cfg_cell_interval_chg;
+        m_poll_vector.push_back(p79bcell_mod);
+        }
+      }
+     
+    if (m_obdii_7e4_dcdc) // 7e4 PIDs DCDC 
+      m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_dcdc_polls, endof_array(obdii_7e4_dcdc_polls));
+    }
 
-  OvmsPoller::poll_pid_t p4 = { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x11, {  0,300,0,0 }, 0, ISOTP_STD };  // Cell Resistance P2
-  p4.polltime[2] = m_cfg_cell_interval_drv;
-  p4.polltime[3] = m_cfg_cell_interval_chg;
-  m_poll_vector.push_back(p4);
+  if (m_obdii_7e4) // 7e4 PIDs charging plug, 12V system, and misc
+    m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_polls, endof_array(obdii_7e4_polls));
+  
+  if (m_obdii_743) // 743 PIDs Maintenance data, OBD trip counters
+    m_poll_vector.insert(m_poll_vector.end(), obdii_743_polls, endof_array(obdii_743_polls));
+  
+  if (m_poll_on_charge)
+    { 
+    if (mt_obl_fastchg->AsBool(false)) 
+      {
+      m_poll_vector.insert(m_poll_vector.end(), fast_charger_polls, endof_array(fast_charger_polls));
+      }
+    else 
+      {
+      m_poll_vector.insert(m_poll_vector.end(), slow_charger_polls, endof_array(slow_charger_polls));
+      }
+    }
 
   // Terminate poll list:
   m_poll_vector.push_back(POLL_LIST_END);
@@ -639,16 +697,24 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   else if (StdMetrics.ms_v_env_on->AsBool(false))
     desired_state = POLLSTATE_RUNNING;    //- car is on
   else if (mt_bus_awake->AsBool(false) || StdMetrics.ms_v_env_awake->AsBool(false))
-    desired_state = POLLSTATE_ON;         //- car is awake
+    {
+    desired_state = POLLSTATE_ON;         //- car is awake (but not on)
+    smartAwake();                         // switch to active mode OBDII polling immediately
+    }    
   else if (!StdMetrics.ms_v_env_awake->AsBool(false) && !mt_bus_awake->AsBool(false) && 
           (!StdMetrics.ms_v_charge_pilot->AsBool(false) || !StdMetrics.ms_v_charge_inprogress->AsBool(false)))
     desired_state = POLLSTATE_OFF;        //- car is asleep
 
-  if (desired_state != m_poll_state) {
+  if (desired_state != m_poll_state) 
+    {
     PollSetState(desired_state);
     ESP_LOGI(TAG, "Pollstate %s", state_names[desired_state]);
     mt_poll_state->SetValue(state_names[desired_state]);
-  }
+    if (desired_state == POLLSTATE_OFF)
+      {
+      smartSleep();                      // switch to liten mode OBDII polling immediately
+      }
+    }
 }
 
 void OvmsVehicleSmartEQ::CalculateEfficiency() {

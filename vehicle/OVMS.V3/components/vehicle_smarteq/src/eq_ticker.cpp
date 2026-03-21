@@ -98,6 +98,33 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
       }
     }
+  // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
+  if (StdMetrics.ms_v_env_hvac->AsBool(false) && !m_poll_on_mod && m_poll_state == POLLSTATE_ON)
+    {
+    m_poll_on_mod = true;
+    ObdModifyPoll();
+    }
+  // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
+  if (StdMetrics.ms_v_charge_inprogress->AsBool(false) && !m_poll_on_charge && m_poll_state == POLLSTATE_CHARGING)
+    {
+    m_poll_on_mod = true;
+    m_poll_on_charge = true;
+    ObdModifyPoll();
+    smartChargeStart();
+    } 
+  // if the car is sleeping, then modify polling to minimize bus load
+  if (m_poll_on_mod && m_poll_state == POLLSTATE_OFF)
+    {
+    m_poll_on_mod = false;
+    m_poll_on_charge = false;
+    ObdModifyPoll();
+    }
+  // check 12V charging state for powermgmt system
+  bool charge_12v = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f ? true : false;
+  if (charge_12v != StdMetrics.ms_v_env_charging12v->AsBool())
+    {
+    StdMetrics.ms_v_env_charging12v->SetValue(charge_12v);
+    }
 
   #ifdef CONFIG_OVMS_COMP_ADC
   if (m_enable_calcADCfactor && m_ADCfactor_recalc) 
