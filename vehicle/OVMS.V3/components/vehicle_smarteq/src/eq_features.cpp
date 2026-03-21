@@ -455,7 +455,7 @@ void OvmsVehicleSmartEQ::ModemRestart() {
 void OvmsVehicleSmartEQ::smartOn()
 {
   // canwrite enable write access, only when car is on
-  if(m_enable_write_caron) 
+  if(m_enable_write || m_enable_write_caron) 
     {
     smartCANmode(true);
     }
@@ -484,10 +484,19 @@ void OvmsVehicleSmartEQ::smartOff()
   StdMetrics.ms_v_env_gear->SetValue(0);
 }
 
+void OvmsVehicleSmartEQ::smartAwake()
+{
+  // enable active polling when car wakes up (canwrite only)
+  if(m_enable_write) 
+    {
+    smartCANmode(true);
+    }
+}
+
 void OvmsVehicleSmartEQ::smartSleep()
 {
-  // disable canwrite when car goes to sleep (canwrite only when car is on)
-  if(m_enable_write_caron) 
+  // disable active polling when car goes to sleep
+  if(m_enable_write || m_enable_write_caron) 
     {
     smartCANmode(false);
     }
@@ -496,7 +505,7 @@ void OvmsVehicleSmartEQ::smartSleep()
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
   // canwrite enable write access, only when car is on
-  if(m_enable_write_caron) 
+  if(m_enable_write || m_enable_write_caron) 
     {
     smartCANmode(true);
     }
@@ -549,7 +558,7 @@ void OvmsVehicleSmartEQ::smartChargePrepare()
   if (m_charge_finished) ResetChargingValues();
   if (m_resettrip) ResetTripCounters();
   // canwrite enable write access, only when car is on
-  if(m_enable_write_caron) 
+  if(m_enable_write || m_enable_write_caron) 
     {
     smartCANmode(true);
     }
@@ -566,8 +575,10 @@ void OvmsVehicleSmartEQ::smartChargeFinish()
   ObdModifyPoll();
 }
 
-void OvmsVehicleSmartEQ::smartCANmode(bool activate, bool force /*=false*/)
+void OvmsVehicleSmartEQ::smartCANmode(bool activate)
 {
+  // force enable write access for sending the command, even when user has not enabled it (can be required for some vehicles to wake up the car)
+  bool force = !m_enable_write && !m_enable_write_caron ? true : false;
   // if write access is not enabled, then switch CAN bus to active mode for sending the command
   if (activate && !m_can_active)
   { 
@@ -576,19 +587,22 @@ void OvmsVehicleSmartEQ::smartCANmode(bool activate, bool force /*=false*/)
     m_can1->Start(CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     m_can1->SetPowerMode(On);
     m_can_active = true;
+    ESP_LOGI(TAG, "CAN bus switched to active mode for write access");
   }
   // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
-  if (!activate)
+  if (!activate && m_can_active)
   {
     m_can1->SetPowerMode(Off);
     m_can1->Stop();
     m_can1->Start(CAN_MODE_LISTEN, CAN_SPEED_500KBPS);    
     m_can1->SetPowerMode(On);
     m_can_active = false;
+    ESP_LOGI(TAG, "CAN bus switched to listen mode");
   }
   if(m_enable_write_caron || force)
     {
     m_enable_write = activate;
+    ESP_LOGI(TAG, "CAN bus write access %s, force %s", activate ? "enabled" : "disabled", force ? "enabled" : "disabled");
     }
   vTaskDelay(200 / portTICK_PERIOD_MS);
 }

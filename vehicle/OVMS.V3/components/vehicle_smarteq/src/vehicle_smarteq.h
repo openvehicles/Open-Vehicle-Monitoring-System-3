@@ -137,12 +137,13 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
     void smartOn();
     void smartOff();
+    void smartAwake();
     void smartSleep();
     void smartChargeStart();
     void smartChargeStop();
     void smartChargePrepare();
     void smartChargeFinish();
-    void smartCANmode(bool activate, bool force=false);   
+    void smartCANmode(bool activate);   
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;

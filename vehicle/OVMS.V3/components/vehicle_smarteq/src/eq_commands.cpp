@@ -48,6 +48,14 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     return Fail;
     }
 
+  // remember if write access is disabled to switch back after sending the command
+  bool disable_write = !m_can_active;
+  // if write access is not enabled, then switch CAN bus to active mode for sending the command
+  if (disable_write)
+    {
+    smartCANmode(true);
+    }
+
   m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution
 
   ESP_LOGI(TAG, "CommandCanVector");
@@ -111,6 +119,12 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
       PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
     }
 
+    // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
+    if (disable_write)
+      {
+      smartCANmode(false);
+      }
+
     if (err == POLLSINGLE_TXFAILURE)
       {
       ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
@@ -132,6 +146,11 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     {
     m_ddt4all_exec = 5; // reduce cooldown on error
     MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during wakeup");
+    // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
+    if (disable_write)
+      {
+      smartCANmode(false);
+      }
     return res;
     }
 }

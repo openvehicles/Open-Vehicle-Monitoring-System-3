@@ -217,6 +217,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   StdMetrics.ms_v_gen_current->SetValue(2);                    // activate gen metrics to app transfer
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);      // set 12V alert to false
   StdMetrics.ms_v_env_charging12v->SetValue(false);            // set 12V charging state to false
+  StdMetrics.ms_v_env_aux12v->SetValue(false);
 
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f)           // reset at boot
     {
@@ -264,7 +265,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   bool stateWrite = m_enable_write;
   m_enable_write  = MyConfig.GetParamValueBool("xsq", "canwrite", false);
-  m_can_active = m_enable_write;
 
   // set CAN bus transceiver to active or listen-only depending on user selection
   if ( stateWrite != m_enable_write )
@@ -697,16 +697,24 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   else if (StdMetrics.ms_v_env_on->AsBool(false))
     desired_state = POLLSTATE_RUNNING;    //- car is on
   else if (mt_bus_awake->AsBool(false) || StdMetrics.ms_v_env_awake->AsBool(false))
-    desired_state = POLLSTATE_ON;         //- car is awake
+    {
+    desired_state = POLLSTATE_ON;         //- car is awake (but not on)
+    smartAwake();                         // switch to active mode OBDII polling immediately
+    }    
   else if (!StdMetrics.ms_v_env_awake->AsBool(false) && !mt_bus_awake->AsBool(false) && 
           (!StdMetrics.ms_v_charge_pilot->AsBool(false) || !StdMetrics.ms_v_charge_inprogress->AsBool(false)))
     desired_state = POLLSTATE_OFF;        //- car is asleep
 
-  if (desired_state != m_poll_state) {
+  if (desired_state != m_poll_state) 
+    {
     PollSetState(desired_state);
     ESP_LOGI(TAG, "Pollstate %s", state_names[desired_state]);
     mt_poll_state->SetValue(state_names[desired_state]);
-  }
+    if (desired_state == POLLSTATE_OFF)
+      {
+      smartSleep();                      // switch to liten mode OBDII polling immediately
+      }
+    }
 }
 
 void OvmsVehicleSmartEQ::CalculateEfficiency() {

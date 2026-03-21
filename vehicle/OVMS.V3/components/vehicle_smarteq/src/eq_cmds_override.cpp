@@ -67,10 +67,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   
   // remember if write access is disabled to switch back after sending the command
   bool disable_write = !m_can_active;
+  
   // if write access is not enabled, then switch CAN bus to active mode for sending the command
   if (disable_write)
     {
-    smartCANmode(true, true);
+    smartCANmode(true);
     }
 
   OvmsVehicle::vehicle_command_t res;
@@ -121,7 +122,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
   if (disable_write)
     {
-    smartCANmode(false, true);
+    smartCANmode(false);
     }
   return res;
 }
@@ -592,12 +593,12 @@ void OvmsVehicleSmartEQ::NotifiedVehicleOff()
 void OvmsVehicleSmartEQ::NotifiedVehicleAwake()
 {
   ESP_LOGI(TAG,"car is awake");
+  smartAwake();
 }
 
 void OvmsVehicleSmartEQ::NotifiedVehicleAsleep()
 {  
   ESP_LOGI(TAG,"car is asleep");
-  smartSleep();
 }
 
 void OvmsVehicleSmartEQ::NotifiedVehicleChargeStart()
