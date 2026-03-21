@@ -312,20 +312,20 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("OBDII Polling Control (requires CAN write enabled)");
   c.input_checkbox("Enable 743 polling", "obdii743", obdii743,
-    "<p>Controls 743 polling, e.g. maintenance data</p>");
+    "<p>e.g. maintenance data</p>");
   c.input_checkbox("Enable 745 polling", "obdii745", obdii745,
-    "<p>Controls 745 polling, e.g. VIN</p>");
+    "<p>e.g. VIN/Doorlock</p>");
   c.input_checkbox("Enable 745 TPMS polling", "obdii745_tpms", obdii745_tpms,
-    "<p>Controls 745 TPMS polling, e.g. pressure/temperature/alert values</p>"
+    "<p>TPMS values, pressure/temperature/alert values</p>"
     "<p>disabled activate basic TPMS functionality (only pressure values)</p>");
   c.input_checkbox("Enable 79b polling", "obdii79b", obdii79b,
-    "<p>Controls 79b polling, e.g. battery state</p>");
+    "<p>e.g. HV battery state</p>");
   c.input_checkbox("Enable 79b cell polling", "obdii79b.cell", obdii79b_cell,
-    "<p>Controls 79b cell polling, e.g. individual cell voltages</p>");
+    "<p>needed for BMS Cell Monitor, cell voltages/temperatures/resistances</p>");
   c.input_checkbox("Enable 7e4 polling", "obdii7e4", obdii7e4,
-    "<p>Controls 7e4 polling, e.g. charging plug plugged in</p>");
+    "<p>e.g. charging plug plugged in</p>");
   c.input_checkbox("Enable 7e4 DCDC polling", "obdii7e4_dcdc", obdii7e4_dcdc,
-    "<p>Controls 7e4 DCDC polling</p>");
+    "<p>DC-DC converter values</p>");
   c.fieldset_end();
 
   c.print("<hr>");
