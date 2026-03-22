@@ -593,7 +593,6 @@ void OvmsVehicleSmartEQ::smartCANmode(bool activate)
     vTaskDelay(200 / portTICK_PERIOD_MS);
     m_can1->Start(CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     m_can_active = true;
-    HandleOBDpolling();
     ESP_LOGI(TAG, "CAN bus switched to active mode for write access");
     }
   // if write access is not enabled, then switch back CAN bus to listen mode after sending the command
@@ -605,10 +604,10 @@ void OvmsVehicleSmartEQ::smartCANmode(bool activate)
     m_can_active = false;
     m_poll_on_mod = false;
     m_poll_on_charge = false;
-    HandleOBDpolling();
     ESP_LOGI(TAG, "CAN bus switched to listen mode");
     }
   vTaskDelay(200 / portTICK_PERIOD_MS);
+  HandleOBDpolling();
 }
 
 /**
