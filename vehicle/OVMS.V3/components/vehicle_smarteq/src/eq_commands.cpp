@@ -36,7 +36,7 @@ static const char *TAG = "v-smarteq";
 
 // CommandCanVector(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/ CommandWakeup2 = false)
 OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t txid,uint32_t rxid, std::vector<std::string> hexbytes,bool reset,bool wakeup) {
-  if(!m_enable_write) 
+  if(!m_enable_write && !m_enable_write_caron)
     {
     ESP_LOGE(TAG, "CommandCanVector failed / no write access");
     return Fail;
@@ -46,6 +46,12 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     {
     ESP_LOGE(TAG, "DDT4all command rejected - previous command still processing (%d seconds remaining)",m_ddt4all_exec);
     return Fail;
+    }
+
+  // if write access is not enabled, then switch CAN bus to active mode for sending the command
+  if (!m_can_active)
+    {
+    smartCANmode(true);
     }
 
   m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution
@@ -80,7 +86,7 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
   
   if (res == Success)
     {
-    PollSetState(POLLSTATE_ON);
+    PollSetState(POLLSTATE_AWAKE);
     vTaskDelay(2000 / portTICK_PERIOD_MS);
     if (!mt_bus_awake->AsBool(false)) 
       {
@@ -325,7 +331,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandCanWrite(const std::st
   writer->printf("  reset:   %s\n", reset ? "true" : "false");
   writer->printf("  wakeup:  %s\n", wakeup ? "true" : "false");
 
-  wakeup ? CommandWakeup() : CommandWakeup2();
   // Execute command
   OvmsVehicle::vehicle_command_t res = CommandCanVector(txid, rxid, hexbytes, reset, wakeup);
 
@@ -410,12 +415,6 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
     } 
   else if (argc == 0) 
     {
-    if (!smarteq->m_enable_write) 
-      {
-      writer->puts("Error: no write access");
-      return;
-      }
-
     if (!StdMetrics.ms_v_env_charging12v->AsBool(false)) 
       {
       writer->puts("Error: vehicle 12V DC-DC converter not active");
@@ -543,10 +542,19 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "lock.byte",
     "unlock.byte",
     "indicator",
-    "adc.samples"
+    "adc.samples",
+    "obdii.79b.r",
+    "obdii.79b.t",
+    "obdii.79b.v",
+    "obdii.7e4.mod",    
+    "obdii_743",
+    "obdii_745",
+    "obdii_79b",
+    "obdii_7e4",
+    "obdii_7e4_modify"
   };
   
-  // Remove all deprecated keys from map
+  // Remove all deprecated keys from mapi
   int removed_count = 0;
   for (const char* key : deprecated_keys) {
     auto it = map_xsq.find(key);

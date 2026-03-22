@@ -83,12 +83,14 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   auto lock = MyConfig.Lock();
 
   std::string error, info, full_km, rebootnw;
-  bool canwrite, led, resettrip, resettotal, bcvalue;
+  bool canwrite, canwrite_caron, led, resettrip, resettotal, bcvalue;
   bool charge12v, extstats, unlocked, tripnotify, opendoors;
+  bool obdii79b, obdii79b_cell, obdii743, obdii745, obdii745_tpms, obdii7e4, obdii7e4_dcdc;
 
   if (c.method == "POST") {
     // process form submission:
     canwrite    = (c.getvar("canwrite") == "yes");
+    canwrite_caron = (c.getvar("canwrite_caron") == "yes");
     led         = (c.getvar("led") == "yes");
     rebootnw    = (c.getvar("rebootnw"));
     resettrip   = (c.getvar("resettrip") == "yes");
@@ -100,6 +102,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     extstats = (c.getvar("extstats") == "yes");
     tripnotify = (c.getvar("resetnotify") == "yes");
     opendoors = (c.getvar("opendoors") == "yes");
+    obdii79b = (c.getvar("obdii79b") == "yes");
+    obdii79b_cell = (c.getvar("obdii79b.cell") == "yes");
+    obdii743 = (c.getvar("obdii743") == "yes");
+    obdii745 = (c.getvar("obdii745") == "yes");
+    obdii7e4 = (c.getvar("obdii7e4") == "yes");
+    obdii7e4_dcdc = (c.getvar("obdii7e4_dcdc") == "yes");
+    obdii745_tpms = (c.getvar("obdii745_tpms") == "yes");
 
     // Basic numeric validation:
     auto validFloat = [&](const std::string& s, double minv, double maxv, const char* fname)->bool {
@@ -125,7 +134,18 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       };
       
       // Update all values in local map
+      if(canwrite != sq->m_enable_write) 
+         {
+         // If canwrite changed, reset canwrite_caron to avoid inconsistent state
+         canwrite_caron = false;
+         }
+      if(canwrite_caron != sq->m_enable_write_caron) 
+         {
+         // If canwrite_caron changed, reset canwrite to avoid inconsistent state
+         canwrite = false;
+         }
       setBool("canwrite", canwrite);
+      setBool("canwrite.caron", canwrite_caron);
       setBool("led", led);
       map["rebootnw"] = rebootnw;
       setBool("resettrip", resettrip);
@@ -137,7 +157,25 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       setBool("extended.stats", extstats);
       setBool("reset.notify", tripnotify);
       setBool("door.warning", opendoors);
-      
+      setBool("obdii.79b", obdii79b);
+      setBool("obdii.79b.cell", obdii79b_cell);
+      setBool("obdii.743", obdii743);
+      setBool("obdii.745", obdii745);
+      setBool("obdii.7e4", obdii7e4);
+      setBool("obdii.7e4.dcdc", obdii7e4_dcdc);
+      if(obdii745_tpms) 
+        {
+        // If 745 TPMS polling enabled, disable basic TPMS (pressure only)
+        setBool("tpms.alert.enable", true);
+        setBool("tpms.temp", true);
+        }
+      else
+        {
+        // If 745 TPMS polling disabled, enable basic TPMS (pressure only) to keep some TPMS functionality
+        setBool("tpms.alert.enable", false);
+        setBool("tpms.temp", false);
+        }
+
       // Write all changes in one operation
       MyConfig.SetParamMap("xsq", map);
 
@@ -162,6 +200,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       
       // Use sq-> instead of m_*
       canwrite    = (m.count("canwrite") ? (m.at("canwrite") == "yes") : sq->m_enable_write);
+      canwrite_caron = (m.count("canwrite.caron") ? (m.at("canwrite.caron") == "yes") : sq->m_enable_write_caron);
       led         = (m.count("led") ? (m.at("led") == "yes") : sq->m_enable_LED_state);
       resettrip   = (m.count("resettrip") ? (m.at("resettrip") == "yes") : sq->m_resettrip);
       resettotal  = (m.count("resettotal") ? (m.at("resettotal") == "yes") : sq->m_resettotal);
@@ -171,6 +210,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       extstats    = (m.count("extended.stats") ? (m.at("extended.stats") == "yes") : sq->m_extendedStats);
       tripnotify  = (m.count("reset.notify") ? (m.at("reset.notify") == "yes") : sq->m_tripnotify);
       opendoors   = (m.count("door.warning") ? (m.at("door.warning") == "yes") : sq->m_enable_door_state);
+      obdii79b   = (m.count("obdii.79b") ? (m.at("obdii.79b") == "yes") : sq->m_obdii_79b);
+      obdii79b_cell = (m.count("obdii.79b.cell") ? (m.at("obdii.79b.cell") == "yes") : sq->m_obdii_79b_cell);
+      obdii743   = (m.count("obdii.743") ? (m.at("obdii.743") == "yes") : sq->m_obdii_743);
+      obdii745   = (m.count("obdii.745") ? (m.at("obdii.745") == "yes") : sq->m_obdii_745);
+      obdii7e4   = (m.count("obdii.7e4") ? (m.at("obdii.7e4") == "yes") : sq->m_obdii_7e4);
+      obdii7e4_dcdc = (m.count("obdii.7e4.dcdc") ? (m.at("obdii.7e4.dcdc") == "yes") : sq->m_obdii_7e4_dcdc);
+      obdii745_tpms = !sq->m_basic_tpms;
       
       // Strings - need to convert to string
       if (m.count("rebootnw")) {
@@ -193,6 +239,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       char buf[16];
       
       canwrite = sq->m_enable_write;
+      canwrite_caron = sq->m_enable_write_caron;
       led = sq->m_enable_LED_state;
       
       snprintf(buf, sizeof(buf), "%d", sq->m_reboot_time);
@@ -210,6 +257,13 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       extstats = sq->m_extendedStats;
       tripnotify = sq->m_tripnotify;
       opendoors = sq->m_enable_door_state;
+      obdii79b = sq->m_obdii_79b;
+      obdii79b_cell = sq->m_obdii_79b_cell;
+      obdii743 = sq->m_obdii_743;
+      obdii745 = sq->m_obdii_745;
+      obdii7e4 = sq->m_obdii_7e4;
+      obdii7e4_dcdc = sq->m_obdii_7e4_dcdc;
+      obdii745_tpms = !sq->m_basic_tpms;
     }
 
     c.head(200);
@@ -220,8 +274,11 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
   
   c.fieldset_start("Remote Control");
-  c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
-    "<p>Controls overall CAN write access, some functions depend on this.</p>");
+  c.input_checkbox("Enable CAN write access", "canwrite", canwrite,
+    "<p>Controls overall CAN write access (poll), some functions depend on this.</p>");
+  c.input_checkbox("Enable CAN write access only when car is on", "canwrite_caron", canwrite_caron,
+    "<p>Enable = CAN write access, Disable = CAN write will be disabled when car is switched off</p>"
+    "<p>Note: This setting is an alternative to Canwrite access; either one of the two options or neither can be selected!</p>");
   c.fieldset_end();
   
   // trip reset or OBD activation
@@ -251,6 +308,24 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       "<p>Enable = Show extended statistics incl. maintenance and trip data. Not recomment for iOS Open Vehicle App!</p>");  
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>Default 0 = off. Restart Network automatic when no v2Server connection.</p>");
+  c.fieldset_end();
+
+  c.fieldset_start("OBDII Polling Control (requires CAN write enabled)");
+  c.input_checkbox("Enable 743 polling", "obdii743", obdii743,
+    "<p>e.g. maintenance data</p>");
+  c.input_checkbox("Enable 745 polling", "obdii745", obdii745,
+    "<p>e.g. VIN/Doorlock</p>");
+  c.input_checkbox("Enable 745 TPMS polling", "obdii745_tpms", obdii745_tpms,
+    "<p>TPMS values, pressure/temperature/alert values</p>"
+    "<p>disabled activate basic TPMS functionality (only pressure values)</p>");
+  c.input_checkbox("Enable 79b polling", "obdii79b", obdii79b,
+    "<p>e.g. HV battery state</p>");
+  c.input_checkbox("Enable 79b cell polling", "obdii79b.cell", obdii79b_cell,
+    "<p>needed for BMS Cell Monitor, HV cell voltages/temperatures/resistances</p>");
+  c.input_checkbox("Enable 7e4 polling", "obdii7e4", obdii7e4,
+    "<p>e.g. charging plug plugged in</p>");
+  c.input_checkbox("Enable 7e4 DCDC polling", "obdii7e4_dcdc", obdii7e4_dcdc,
+    "<p>DC-DC converter values</p>");
   c.fieldset_end();
 
   c.print("<hr>");

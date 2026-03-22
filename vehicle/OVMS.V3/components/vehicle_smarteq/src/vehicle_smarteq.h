@@ -34,7 +34,7 @@
 #define __VEHICLE_SMARTEQ_H__
 
 #define VERSION "2.1.2"
-#define PRESET_VERSION 20260110 // Configuration preset version
+#define PRESET_VERSION 20260319 // Configuration preset version
 
 #include "ovms_log.h"
 
@@ -81,8 +81,8 @@
 enum poll_states
   {
   POLLSTATE_OFF,      //- car is off
-  POLLSTATE_ON,       //- car is on
-  POLLSTATE_RUNNING,  //- car is in drive/reverse
+  POLLSTATE_AWAKE,    //- car is awake but not driving or charging
+  POLLSTATE_ON,       //- car is on (driving)
   POLLSTATE_CHARGING  //- car is charging
   };
 
@@ -112,7 +112,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
     void HandlePollState();
     void OnlineState();
-    void ObdModifyPoll();
+    void HandleOBDpolling();
     void ResetChargingValues();
     void ResetTripCounters();
     void ResetTotalCounters();
@@ -137,10 +137,13 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
     void smartOn();
     void smartOff();
+    void smartAwake();
+    void smartSleep();
     void smartChargeStart();
     void smartChargeStop();
     void smartChargePrepare();
-    void smartChargeFinish();    
+    void smartChargeFinish();
+    void smartCANmode(bool activate);   
 
 public:
     vehicle_command_t CommandClimateControl(bool enable) override;
@@ -219,6 +222,10 @@ public:
 
   public:
     bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]
+    bool IsOff() { return m_poll_state == POLLSTATE_OFF; }
+    bool IsAwake() { return m_poll_state == POLLSTATE_AWAKE; }
+    bool IsOn() { return m_poll_state == POLLSTATE_ON; }
+    bool IsCharging() { return m_poll_state == POLLSTATE_CHARGING; }
 
   protected:
     void Ticker1(uint32_t ticker) override;
@@ -252,9 +259,6 @@ public:
     void PollReply_TDB(const char* data, uint16_t reply_len);
 
     void PollReply_BCM_VIN(const char* data, uint16_t reply_len);
-    void PollReply_BCM_VehicleState(const char* data, uint16_t reply_len);
-    void PollReply_BCM_DoorUnderhoodOpened(const char* data, uint16_t reply_len);
-    void PollReply_BCM_CarSecured(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len);
     void PollReply_BCM_GenMode(const char* data, uint16_t reply_len);
@@ -263,7 +267,6 @@ public:
     void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
     void PollReply_EVC_PlugDetected(const char* data, uint16_t reply_len);
-    void PollReply_EVC_PlugStatus(const char* data, uint16_t reply_len);
     void PollReply_EVC_Traceability(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len);
@@ -301,7 +304,9 @@ public:
     void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
     
   protected:
-    bool m_enable_write;                    // canwrite
+    bool m_enable_write;                    // canwrite enable write access
+    bool m_enable_write_caron;              // canwrite enable write access, only when car is on
+    bool m_can_active;                      // true if CAN bus is in active mode, false if in listen-only mode
     bool m_enable_LED_state;                // Online LED State
     bool m_enable_lock_state;               // Lock State
     bool m_enable_door_state;               // Door Open State
@@ -376,7 +381,6 @@ public:
     OvmsMetricVector<float> *mt_evc_dcdc;                    //!< EVC 12V system values vector
     OvmsMetricString        *mt_evc_traceability;            //!< Frame Traceability: ITG/Factory/Serial
     OvmsMetricBool          *mt_evc_plug_detected;           //!< Charging plug detected by charger (0x339D)
-    OvmsMetricString        *mt_evc_plug_status;             //!< Plug connection status (0x33EA): 0=none, 2=connected, 4=+button, 6=2plugs, 7=unavail
 
     OvmsMetricVector<float> *mt_bms_voltages;                //!< Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
     OvmsMetricVector<int>   *mt_bms_contactor_cycles;        //!< Max/Total HV contactor cycles
@@ -419,9 +423,7 @@ public:
     OvmsMetricFloat         *mt_dummy_pressure;         //!< Dummy pressure for TPMS
 
     OvmsMetricString        *mt_bcm_vehicle_state;      //!< vehicle state
-    OvmsMetricString        *mt_bcm_gen_mode;           //!< Generator mode text
     OvmsMetricBool          *mt_driver_door_locked;     //!< Driver door locked status
-    OvmsMetricBool          *mt_car_secured;            //!< Car secured status (alarm armed)
     
   protected:
     bool m_indicator;                       //!< activate indicator e.g. 7 times or whatever
@@ -442,11 +444,20 @@ public:
     int m_cfg_preset_version;               //!< config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
     int m_suffsoc;                          //!< minimum SoC for charging
     int m_suffrange;                        //!< minimum range for charging
+    bool m_basic_tpms;                      //!< basic TPMS without temperature and low battery status
+    bool m_obdii_79b;                       //!< OBDII 79b mode enabled
+    bool m_obdii_79b_cell;                  //!< OBDII 79b cell V/R/T polling enabled
+    bool m_obdii_743;                       //!< OBDII 743 mode enabled
+    bool m_obdii_745;                       //!< OBDII 745 mode enabled
+    bool m_obdii_7e4;                       //!< OBDII 7e4 mode enabled
+    bool m_obdii_7e4_dcdc;                  //!< OBDII 7e4 dcdc mode enabled
+    bool m_poll_on_mod;                     //!< flag to trigger poll state change actions
+    bool m_poll_on_charge;                   //!< flag to trigger poll state change actions
 
   protected:
     poll_vector_t       m_poll_vector;              // List of PIDs to poll
-    int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.
-    int                 m_cfg_cell_interval_chg;    // … while charging, default 60 sec.
+    int                 m_cfg_cell_interval_drv;    // poll interval while driving, default 60 sec.
+    int                 m_cfg_cell_interval_chg;    // poll interval while while charging, default 60 sec.
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__
