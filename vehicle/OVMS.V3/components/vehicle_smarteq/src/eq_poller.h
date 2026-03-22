@@ -31,8 +31,8 @@
  */
 
 // Pollstate 0 - POLLSTATE_OFF      - car is off
-// Pollstate 1 - POLLSTATE_AWAKE       - car is on
-// Pollstate 2 - POLLSTATE_ON  - car is driving
+// Pollstate 1 - POLLSTATE_AWAKE    - car is awake
+// Pollstate 2 - POLLSTATE_ON       - car is on (driving)
 // Pollstate 3 - POLLSTATE_CHARGING - car is charging
 
 static const OvmsPoller::poll_pid_t obdii_79b_polls[] =
@@ -64,8 +64,8 @@ static const OvmsPoller::poll_pid_t obdii_745_polls[] =
 
 static const OvmsPoller::poll_pid_t obdii_745_tpms_polls[] =
 {
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, { 0,0,61,0 }, 0, ISOTP_STD },        // TPMS input capture
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, { 0,0,61,0 }, 0, ISOTP_STD },        // TPMS counters/status (missing transmitters)
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, { 0,0,60,0 }, 0, ISOTP_STD },        // TPMS input capture
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, { 0,0,60,0 }, 0, ISOTP_STD },        // TPMS counters/status (missing transmitters)
 };
 
 static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
@@ -117,12 +117,12 @@ static const OvmsPoller::poll_pid_t fast_charger_polls[] =
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503A, { 0,0,0,4 }, 0, ISOTP_STD }, // rqJB2AC_Ph2_RMS_A
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503B, { 0,0,0,4 }, 0, ISOTP_STD }, // rqJB2AC_Ph3_RMS_A
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, { 0,0,0,4 }, 0, ISOTP_STD }, // rqJB2AC Mains active power consumed
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5049, { 0,0,0,61 }, 0, ISOTP_STD }, // rqJB2AC_Mains phase frequency
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5070, { 0,0,0,61 }, 0, ISOTP_STD }, // rqJB2AC_Max Current limitation
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, { 0,0,0,61 }, 0, ISOTP_STD }, // rqJB2AC_Ground Resistance
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5064, { 0,0,0,61 }, 0, ISOTP_STD }, // rqJB2AC_Leakage Diag
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5065, { 0,0,0,61 }, 0, ISOTP_STD }, // rqJB2AC_DC Current
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5066, { 0,0,0,61 }, 0, ISOTP_STD }, // rqJB2AC_HF10kHz Current
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5067, { 0,0,0,61 }, 0, ISOTP_STD }, // rqJB2AC_HF Current
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5068, { 0,0,0,61 }, 0, ISOTP_STD }, // rqJB2AC_LF Current
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5049, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_Mains phase frequency
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5070, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_Max Current limitation
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_Ground Resistance
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5064, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_Leakage Diag
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5065, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_DC Current
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5066, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_HF10kHz Current
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5067, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_HF Current
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5068, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_LF Current
 };
