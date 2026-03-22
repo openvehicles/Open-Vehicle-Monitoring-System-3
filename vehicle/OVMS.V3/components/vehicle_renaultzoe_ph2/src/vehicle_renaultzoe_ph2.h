@@ -1,8 +1,8 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          15th Apr 2022
+;    Module:        Renault Zoe Ph2 - Main vehicle integration
 ;
-;    (C) 2022       Carsten Schmiemann
+;    (C) 2022-2026  Carsten Schmiemann
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,20 @@
 
 #ifndef __VEHICLE_RENAULTZOE_PH2_H__
 #define __VEHICLE_RENAULTZOE_PH2_H__
+
+// Debug build configuration - comment out for production builds
+// Enables: xrz2 debug command, detailed logging, and debug metrics
+// !!WILL BE REMOVE IN THE NEXT PR SINCE WE HAVE NOW 6MB PARTITIONS!!
+#define RZ2_DEBUG_BUILD
+
+// Conditional debug logging - only enabled in debug builds
+#ifdef RZ2_DEBUG_BUILD
+  #define ESP_LOGV_RZ2(tag, format, ...) ESP_LOGV(tag, format, ##__VA_ARGS__)
+  #define ESP_LOGD_RZ2(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
+#else
+  #define ESP_LOGV_RZ2(tag, format, ...) ((void)0)
+  #define ESP_LOGD_RZ2(tag, format, ...) ((void)0)
+#endif
 
 #include <atomic>
 
@@ -68,7 +82,7 @@
 #define HEVC_A1_ID 0x437
 #define HEVC_R17_ID 0x480
 #define BCM_A11_ID 0x491
-#define HVAC_A2_ID 0x43E // scaling needs to be checked
+#define HVAC_A2_ID 0x43E
 #define BCM_A3_ID 0x46C
 #define HFM_A1_ID 0x46F
 #define USM_A2_ID 0x47C
@@ -103,26 +117,96 @@ public:
 public:
   OvmsVehicleRenaultZoePh2();
   ~OvmsVehicleRenaultZoePh2();
-
-  void CalculateEfficiency();
-
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-  static void WebCfgCommon(PageEntry_t &p, PageContext_t &c);
-#endif
-  // Define OVMS vehicle and zoe specific functions
   void ConfigChanged(OvmsConfigParam *param) override;
   void ZoeWakeUp();
   void ZoeShutdown();
-  void IncomingFrameCan1(CAN_frame_t *p_frame) override;
-  void SyncVCANtoMetrics();
   void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t *data, uint8_t length) override;
   void TxCallback(const CAN_frame_t* frame, bool success);
+  void Ticker1(uint32_t ticker) override;
+  void Ticker10(uint32_t ticker) override;
 
+  // === ENERGY & STATISTICS (rz2_metrics.cpp) ===
+  void CalculateEfficiency();
+  void ChargeStatistics();
+  int calcMinutesRemaining(float charge_voltage, float charge_current);
+  void EnergyStatisticsOVMS();
+  void EnergyStatisticsBMS();
+
+  // === PV CHARGING NOTIFICATION OVERRIDES ===
+  void NotifyChargeStart() override;
+  void NotifyChargeStopped() override;
+  void NotifyChargeDone() override;
+
+  // === V-CAN PROTOCOL HANDLING (rz2_vcan.cpp) ===
+  void IncomingFrameCan1(CAN_frame_t *p_frame) override;
+  void SyncVCANtoMetrics();
+
+  // === DCDC CONTROL (rz2_dcdc.cpp) ===
+  void SendDCDCMessage();
+  bool EnableDCDC(bool manual = true);
+  void DisableDCDC();
+  void CheckAutoRecharge();
+
+  // === COMING HOME LIGHTING (rz2_lighting.cpp) ===
+  void TriggerComingHomeLighting();
+
+  // === WEB INTERFACE (rz2_web.cpp) ===
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   void WebInit();
   void WebDeInit();
+  static void WebCfgCommon(PageEntry_t &p, PageContext_t &c);
 #endif
-  // Define Zoe integration state machine vars
+
+  // === ECU PID HANDLERS (rz2_pids_BCM.cpp, rz2_pids_EVC.cpp, rz2_pids_HVAC.cpp, rz2_pids_INV.cpp, rz2_pids_LBC.cpp, rz2_pids_UCM.cpp) ===
+  void IncomingINV(uint16_t type, uint16_t pid, const char *data, uint16_t len);
+  void IncomingEVC(uint16_t type, uint16_t pid, const char *data, uint16_t len);
+  void IncomingBCM(uint16_t type, uint16_t pid, const char *data, uint16_t len);
+  void IncomingLBC(uint16_t type, uint16_t pid, const char *data, uint16_t len);
+  void IncomingHVAC(uint16_t type, uint16_t pid, const char *data, uint16_t len);
+  void IncomingUCM(uint16_t type, uint16_t pid, const char *data, uint16_t len);
+
+  // === VEHICLE API COMMANDS (rz2_commands_vehicle.cpp) ===
+  vehicle_command_t CommandClimateControl(bool enable);
+  vehicle_command_t CommandWakeup();
+  vehicle_command_t CommandLock(const char *pin);
+  vehicle_command_t CommandUnlock(const char *pin);
+  vehicle_command_t CommandUnlockTrunk(const char *pin);
+  vehicle_command_t CommandHomelink(int button, int durationms = 1000);
+
+  // === SHELL COMMANDS (rz2_commands_shell.cpp) ===
+  static void CommandPollerStartIdle(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandPollerStop(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandPollerInhibit(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandPollerResume(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandLighting(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandUnlockTrunkShell(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandDcdcEnable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandDcdcDisable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+#ifdef RZ2_DEBUG_BUILD
+  static void CommandDebug(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+#endif
+
+  // === DDT DIAGNOSTIC COMMANDS (rz2_commands_ddt.cpp) ===
+  vehicle_command_t CommandDDT(uint32_t txid, uint32_t rxid, bool ext_frame, string request);
+
+  // DDT command verification helpers
+  int ReadECURegister(uint32_t txid, uint32_t rxid, uint16_t register_id, int timeout_ms, uint8_t *value, size_t value_len);
+  bool VerifyPTCState(bool enabled, int timeout_ms, uint8_t *failed_ptc_mask);
+  bool VerifyCompressorState(bool enabled, int timeout_ms, uint8_t *hot_loop_value, uint8_t *cold_loop_value);
+
+  // Internal PTC enable/disable functions for background use
+  bool EnablePTCInternal();
+  bool DisablePTCInternal();
+
+  static void CommandDdtHvacEnableCompressor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandDdtHvacDisableCompressor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandDdtHvacEnablePTC(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandDdtHvacDisablePTC(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandDdtClusterResetService(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandTpmsList(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+  static void CommandTpmsSet(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+
+  // === PUBLIC STATE VARIABLES ===
   bool CarIsCharging = false;
   bool CarPluggedIn = false;
   bool CarLastCharging = false;
@@ -132,6 +216,8 @@ public:
   float Bat_cell_capacity_Ah = 0.0;
   bool LongPreCond = false;
   int LongPreCondCounter = 0;
+  uint32_t LongPreCondLastTrigger = 0;
+  bool LongPreCondWaitingForHvacOff = false;
 
   // V-CAN metrics
   float vcan_dcdc_current = 0;
@@ -200,9 +286,30 @@ protected:
   bool m_dcdc_active = false;
   uint32_t m_dcdc_last_send_time = 0;
   uint32_t m_dcdc_start_time = 0;
+  bool m_dcdc_auto_started = false;              // Track if auto-recharge initiated this DCDC session
+  bool m_dcdc_current_detected = false;          // Track if charging current has been detected
+  bool m_auto_recharge_blocked = false;          // Temporarily block auto-recharge after failure
+  uint32_t m_auto_recharge_block_time = 0;       // Timestamp when auto-recharge was blocked
+
+  // Manual mode limits (only apply to manual mode)
+  int m_dcdc_soc_limit = 80;
+  int m_dcdc_time_limit = 0;
+
+  // After-ignition keep-alive
+  int m_dcdc_after_ignition_time = 0;
+  bool m_dcdc_after_ignition_active = false;
+  uint32_t m_dcdc_after_ignition_start_time = 0;
+  bool m_last_ignition_state = false;
+  bool m_dcdc_after_ignition_pending = false;     // Waiting for headlights to turn off
+  uint32_t m_dcdc_after_ignition_pending_start = 0;  // When we started waiting
+  bool m_last_hvac_state = false;
+  float m_last_soh_value = 0.0;  // Track last SOH for change detection
 
   // Coming home function settings
   bool m_coming_home_enabled = false;
+
+  // Alternative unlock command (for vehicles that don't respond to standard unlock)
+  bool m_alt_unlock_cmd = false;
   bool m_last_locked_state = false;
   bool m_last_headlight_state = false;
 
@@ -211,28 +318,29 @@ protected:
   uint32_t m_remote_climate_last_trigger_time = 0;  // Timestamp of last trigger to prevent multiple activations
   uint8_t m_remote_climate_last_button_state = 0;   // Last button state for edge detection
 
+  // Auto-enable PTC settings
+  bool m_auto_ptc_enabled = false;
+  float m_auto_ptc_temp_min = 9.5;
+  float m_auto_ptc_temp_max = 20.0;
+  uint32_t m_auto_ptc_last_enable_time = 0;  // Timestamp of last auto-enable to prevent repeated attempts
+  bool m_auto_ptc_currently_enabled = false;  // Track if auto-PTC enabled the heater
+
+  // PV Charging notification settings and state
+  bool m_pv_charge_notification_enabled = false;
+  bool m_pv_charge_session_active = false;
+  float m_pv_charge_kwh_total = 0.0;
+  int m_pv_charge_session_count = 0;
+  float m_pv_charge_soc_start = 0.0;
+  uint32_t m_pv_charge_plug_time = 0;
+  bool m_pv_charge_last_pilot = false;  // For edge detection on charge pilot
+
   // TX callback tracking for command verification
   std::atomic<uint32_t> m_tx_success_id;   // ID of last successfully transmitted frame
   std::atomic<bool> m_tx_success_flag;     // Flag indicating successful transmission
 
-  // Define poll response functions by ECU
-  void IncomingINV(uint16_t type, uint16_t pid, const char *data, uint16_t len);
-  void IncomingEVC(uint16_t type, uint16_t pid, const char *data, uint16_t len);
-  void IncomingBCM(uint16_t type, uint16_t pid, const char *data, uint16_t len);
-  void IncomingLBC(uint16_t type, uint16_t pid, const char *data, uint16_t len);
-  void IncomingHVAC(uint16_t type, uint16_t pid, const char *data, uint16_t len);
-  void IncomingUCM(uint16_t type, uint16_t pid, const char *data, uint16_t len);
-
-  // Define energy and time calculation as well as Ticker functions
-  int calcMinutesRemaining(float charge_voltage, float charge_current);
-  void ChargeStatistics();
-  void EnergyStatisticsOVMS();
-  void EnergyStatisticsBMS();
-  void Ticker10(uint32_t ticker) override; // Handle charge, energy statistics
-  void Ticker1(uint32_t ticker) override;  // Handle trip counter
-
-  // Define Renault ZOE Ph2 specific metrics
+  // === RENAULT ZOE PH2 SPECIFIC METRICS ===
   OvmsMetricBool *mt_bus_awake;                       // CAN bus awake status
+  OvmsMetricBool *mt_auto_ptc_state;                 // Persistent guessed PTC state
   OvmsMetricBool *mt_poller_inhibit;                  // Inhibit ISO-TP poller for vehicle maintenance
   OvmsMetricFloat *mt_pos_odometer_start;             // ODOmeter at trip start
   OvmsMetricFloat *mt_bat_used_start;                 // Used battery kWh at trip start
@@ -248,6 +356,15 @@ protected:
   OvmsMetricFloat *mt_inv_hv_current;                 // Inverter battery current sense, used for motor power calc
   OvmsMetricFloat *mt_mot_temp_stator1;               // Temp of motor stator 1
   OvmsMetricFloat *mt_mot_temp_stator2;               // Temp of motor stator 2
+  OvmsMetricFloat *mt_mot_temp_rotor_raw;             // Rotor copper temperature (raw estimation)
+  OvmsMetricFloat *mt_mot_temp_rotor;                 // Rotor copper temperature (estimated)
+  OvmsMetricFloat *mt_mot_current_stator_u;           // Stator current phase U
+  OvmsMetricFloat *mt_mot_current_stator_v;           // Stator current phase V
+  OvmsMetricFloat *mt_mot_current_stator_w;           // Stator current phase W
+  OvmsMetricFloat *mt_mot_current_rotor1;             // Rotor current sensor 1
+  OvmsMetricFloat *mt_mot_current_rotor2;             // Rotor current sensor 2
+  OvmsMetricFloat *mt_mot_rotor_resistance;           // Rotor reference resistance
+  OvmsMetricFloat *mt_mot_rotor_voltage;              // Rotor excitation voltage (calculated)
   OvmsMetricFloat *mt_hvac_compressor_speed;          // Compressor speed
   OvmsMetricFloat *mt_hvac_compressor_speed_req;      // Compressor speed request
   OvmsMetricFloat *mt_hvac_compressor_pressure;       // Compressor high-side pressure in BAR
@@ -263,41 +380,6 @@ protected:
   OvmsMetricFloat *mt_hvac_heating_ptc_req;           // Heating mode - request PTCs (0-5) (compensation of cond_temp to temp)
   OvmsMetricFloat *mt_12v_dcdc_load;                  // DC-DC converter load in percent
   OvmsMetricFloat *mt_bat_cons_aux;                   // Aux power consumption trip (Compressor consumption)
-
-public:
-  // Renault ZOE commands
-  vehicle_command_t CommandClimateControl(bool enable);
-  vehicle_command_t CommandWakeup();
-  vehicle_command_t CommandLock(const char *pin);
-  vehicle_command_t CommandUnlock(const char *pin);
-  vehicle_command_t CommandUnlockTrunk(const char *pin);
-  vehicle_command_t CommandHomelink(int button, int durationms = 1000);
-  vehicle_command_t CommandDDT(uint32_t txid, uint32_t rxid, bool ext_frame, string request);
-
-  // Shell commands:
-  static void CommandPollerStartIdle(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandPollerStop(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandLighting(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandUnlockTrunkShell(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandDebug(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandPollerInhibit(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandPollerResume(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandDdtHvacEnableCompressor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandDdtHvacDisableCompressor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandDdtClusterResetService(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandDdtHvacEnablePTC(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandDdtHvacDisablePTC(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandDcdcEnable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandDcdcDisable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-
-  // DCDC control functions
-  void SendDCDCMessage();
-  void EnableDCDC(bool manual = true);
-  void DisableDCDC();
-  void CheckAutoRecharge();
-
-  // Coming home function
-  void TriggerComingHomeLighting();
 
 private:
   // Define helper vars for 100km rolling consumption calculation
