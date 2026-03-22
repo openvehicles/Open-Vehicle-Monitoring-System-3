@@ -46,9 +46,6 @@ const char *OvmsVehicleNiuGTEVO::s_tag = "v-niu-gtevo";
 #define can_activity_threshold 15        // Threshold for detected can activity
 #define can_activity_timeout_delay 10000 // Time (ms) of inactivity (msgs/s lower than threshold)
 
-// Charger emulation frame modifier vars
-int charger_counter = 0x00;
-unsigned long charger_counter_timer = 0;
 
 class OvmsVehicleNiuGTEVOInit
 {
@@ -70,6 +67,9 @@ OvmsVehicleNiuGTEVO::OvmsVehicleNiuGTEVO()
 
   MyConfig.RegisterParam("xnevo", "NIU MQi GT EVO/100 configuration", true, true);
   ConfigChanged(NULL);
+
+  // Init charger emulation timer (200ms interval, repeating)
+  m_charger_emulation_timer = xTimerCreate("NIU charger emul", pdMS_TO_TICKS(200), pdTRUE, this, ChargerEmulationTimer);
 
   // Init GT EVO CAN connections
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -101,14 +101,9 @@ OvmsVehicleNiuGTEVO::OvmsVehicleNiuGTEVO()
 
   // Init commands / menu structure
   OvmsCommand *cmd_xnevo = MyCommandApp.RegisterCommand("xnevo", "NIU MQi GT EVO/100");
-  OvmsCommand *charger;
 
   cmd_xnevo->RegisterCommand("debug", "Debug output of rolling avg cons calc", CommandDebug);
   cmd_xnevo->RegisterCommand("trip", "Reset trip", CommandTripReset);
-
-  charger = cmd_xnevo->RegisterCommand("charger", "Enable or disable charger emulation");
-  charger->RegisterCommand("enable", "Enable charger emulation to use 3rd charger", CommandChargerEnable);
-  charger->RegisterCommand("disable", "Disable charger emulation to use 3rd charger", CommandChargerDisable);
 
   // CAN1 Hardware filter
   // Filtering is not neccessary, the max busload is about 600msg/s, but since OVMS support filters, we use it
@@ -137,6 +132,12 @@ OvmsVehicleNiuGTEVO::OvmsVehicleNiuGTEVO()
 OvmsVehicleNiuGTEVO::~OvmsVehicleNiuGTEVO()
 {
   ESP_LOGI(TAG, "Shutdown NIU MQi GT EVO/100 vehicle module");
+
+  if (m_charger_emulation_timer)
+  {
+    xTimerDelete(m_charger_emulation_timer, 0);
+    m_charger_emulation_timer = nullptr;
+  }
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebDeInit();
@@ -169,6 +170,8 @@ void OvmsVehicleNiuGTEVO::EvoShutdown()
 {
   mt_bus_awake->SetValue(false);
   chargerEmulation = false;
+  if (m_charger_emulation_timer && xTimerIsTimerActive(m_charger_emulation_timer))
+    xTimerStop(m_charger_emulation_timer, 0);
   StandardMetrics.ms_v_env_awake->SetValue(false);
   StandardMetrics.ms_v_pos_speed->SetValue(0);
   StandardMetrics.ms_v_bat_current->SetValue(0);
@@ -182,6 +185,32 @@ void OvmsVehicleNiuGTEVO::EvoShutdown()
   StandardMetrics.ms_v_charge_inprogress->SetValue(false);
   StandardMetrics.ms_v_charge_pilot->SetValue(false);
   StandardMetrics.ms_v_door_chargeport->SetValue(false);
+}
+
+// Charger emulation timer callback: sends all 5 charger CAN frames at ~5Hz when emulation is active
+void OvmsVehicleNiuGTEVO::ChargerEmulationTimer(TimerHandle_t timer)
+{
+  OvmsVehicleNiuGTEVO *self = (OvmsVehicleNiuGTEVO *)pvTimerGetTimerID(timer);
+  uint32_t currentTime = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+  self->chargerDetected = true;
+  self->charger_lastActivityTime = currentTime;
+
+  self->charger_f1[0] = self->charger_counter;
+  self->m_can1->WriteExtended(0x19f0140f, 8, self->charger_f1);
+  self->m_can1->WriteExtended(0x19f0150f, 8, self->charger_f2);
+  self->m_can1->WriteExtended(0x19f0160f, 8, self->charger_f3);
+  self->m_can1->WriteExtended(0x19f0170f, 8, self->charger_f4);
+  self->m_can1->WriteExtended(0x19f0180f, 8, self->charger_f5);
+
+  // Increment counter once per second
+  if (currentTime - self->charger_counter_timer >= 1000)
+  {
+    if (self->charger_counter == 0xFF)
+      self->charger_counter = 0x00;
+    self->charger_counter += 0x01;
+    self->charger_counter_timer = currentTime;
+  }
 }
 
 void OvmsVehicleNiuGTEVO::Ticker1(uint32_t ticker)
@@ -435,6 +464,8 @@ void OvmsVehicleNiuGTEVO::Ticker10(uint32_t ticker)
       if (chargerEmulation)
       {
         chargerEmulation = false;
+        if (m_charger_emulation_timer && xTimerIsTimerActive(m_charger_emulation_timer))
+          xTimerStop(m_charger_emulation_timer, 0);
       }
     }
   }
@@ -833,35 +864,6 @@ void OvmsVehicleNiuGTEVO::IncomingFrameCan1(CAN_frame_t *p_frame)
   { // FOC temperature frame
     can_foc_temperature = (float)(int16_t)(((uint16_t)data[1] << 8) | data[0]) * 0.01f;
     can_foc_motor_temperature = (float)(int16_t)(((uint16_t)data[3] << 8) | data[2]) * 0.01f;
-    break;
-  }
-
-  case 0x19f31b12:
-  { // VCU charging request frame, we answer with charger emulation frames to use a 3rd party (fast) charger
-    // The "CRC" is matched in about 1-3 seconds, so we dont need to reverse the full algorithm, just count :-)
-    if (chargerEmulation)
-    {
-      chargerDetected = true;
-      m_can1->WriteExtended(0x19f0140f, 8, charger_f1);
-      // Modify CAN charger frame 1
-      charger_f1[0] = charger_counter;
-
-      m_can1->WriteExtended(0x19f0150f, 8, charger_f2);
-      m_can1->WriteExtended(0x19f0160f, 8, charger_f3);
-      m_can1->WriteExtended(0x19f0170f, 8, charger_f4);
-      m_can1->WriteExtended(0x19f0180f, 8, charger_f5);
-
-      // CAN charger frame 1 modifier
-      if (currentTime - charger_counter_timer >= 1000)
-      {
-        if (charger_counter == 0xFF)
-        {
-          charger_counter = 0x00;
-        }
-        charger_counter += 0x01;
-        charger_counter_timer = currentTime;
-      }
-    }
     break;
   }
 

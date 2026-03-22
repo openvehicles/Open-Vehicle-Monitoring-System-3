@@ -81,60 +81,49 @@ void OvmsVehicleNiuGTEVO::CommandTripReset(int verbosity, OvmsWriter *writer, Ov
     writer->printf("Trip reset done.");
 }
 
-void OvmsVehicleNiuGTEVO::CommandChargerEnable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+OvmsVehicle::vehicle_command_t OvmsVehicleNiuGTEVO::CommandStartCharge()
 {
-    OvmsVehicleNiuGTEVO *xnevo = (OvmsVehicleNiuGTEVO *)MyVehicleFactory.ActiveVehicle();
+    if (StandardMetrics.ms_v_pos_speed->AsFloat(0) != 0)
+        return Fail;
 
-    if (StandardMetrics.ms_v_pos_speed->AsFloat(0) == 0)
+    // Real charger already connected — don't start emulation
+    if (chargerDetected && !chargerEmulation)
     {
-        if (!StandardMetrics.ms_v_env_aux12v->AsBool())
-        {
-            xnevo->CommandWakeup();
-        }
+        ESP_LOGI(TAG, "Real charger detected, skipping emulation");
+        return Success;
+    }
 
-        xnevo->chargerEmulation = true;
-        writer->printf("Charger emulation enabled");
-    }
-    else
-    {
-        writer->printf("Charger emulation prohibited");
-    }
+    if (!StandardMetrics.ms_v_env_aux12v->AsBool())
+        CommandWakeup();
+
+    chargerEmulation = true;
+    chargerDetected = true;
+    if (m_charger_emulation_timer)
+        xTimerStart(m_charger_emulation_timer, 0);
+
+    ESP_LOGI(TAG, "Charger emulation started");
+    return Success;
 }
 
-void OvmsVehicleNiuGTEVO::CommandChargerDisable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+OvmsVehicle::vehicle_command_t OvmsVehicleNiuGTEVO::CommandStopCharge()
 {
-    OvmsVehicleNiuGTEVO *xnevo = (OvmsVehicleNiuGTEVO *)MyVehicleFactory.ActiveVehicle();
-    xnevo->chargerEmulation = false;
-    writer->printf("Charger emulation disabled");
+    chargerEmulation = false;
+    if (m_charger_emulation_timer && xTimerIsTimerActive(m_charger_emulation_timer))
+        xTimerStop(m_charger_emulation_timer, 0);
+
+    ESP_LOGI(TAG, "Charger emulation stopped");
+    return Success;
 }
+
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNiuGTEVO::CommandHomelink(int button, int durationms)
 {
-    OvmsVehicleNiuGTEVO *xnevo = (OvmsVehicleNiuGTEVO *)MyVehicleFactory.ActiveVehicle();
     ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
 
-    OvmsVehicle::vehicle_command_t res;
     if (button == 0)
-    {
-        if (StandardMetrics.ms_v_pos_speed->AsFloat(0) == 0)
-        {
-            xnevo->chargerEmulation = true;
-            res = Success;
-        }
-        else
-        {
-            res = Fail;
-        }
-    }
+        return CommandStartCharge();
     else if (button == 1)
-    {
-        xnevo->chargerEmulation = false;
-        res = Success;
-    }
+        return CommandStopCharge();
     else
-    {
-        res = NotImplemented;
-    }
-
-    return res;
+        return NotImplemented;
 }
