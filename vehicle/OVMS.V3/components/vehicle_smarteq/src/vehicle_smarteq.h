@@ -223,9 +223,10 @@ public:
   public:
     bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]
     bool IsOff() { return m_poll_state == POLLSTATE_OFF; }
-    bool IsAwake() { return m_poll_state == POLLSTATE_AWAKE; }
-    bool IsOn() { return m_poll_state == POLLSTATE_ON; }
-    bool IsCharging() { return m_poll_state == POLLSTATE_CHARGING; }
+    bool IsAwake() { return (mt_bus_awake->AsBool(false) || StdMetrics.ms_v_env_awake->AsBool(false)); }
+    bool IsOn() { return StdMetrics.ms_v_env_on->AsBool(false); }
+    bool IsCharging() { return StdMetrics.ms_v_charge_inprogress->AsBool(false); }
+    bool IsHVACon() { return StdMetrics.ms_v_env_hvac->AsBool(false); }
 
   protected:
     void Ticker1(uint32_t ticker) override;

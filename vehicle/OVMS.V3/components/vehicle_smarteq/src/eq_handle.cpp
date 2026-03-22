@@ -52,20 +52,19 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   
   int desired_state = m_poll_state; // OvmsVehicle::m_poll_state
 
-  if (StdMetrics.ms_v_charge_pilot->AsBool(false) || StdMetrics.ms_v_charge_inprogress->AsBool(false))
+  if (IsCharging())
     {
     desired_state = POLLSTATE_CHARGING;   //- car is charging
     }
-  else if (StdMetrics.ms_v_env_on->AsBool(false))
+  else if (IsOn())
     {
     desired_state = POLLSTATE_ON;    //- car is on
     }
-  else if (mt_bus_awake->AsBool(false) || StdMetrics.ms_v_env_awake->AsBool(false))
+  else if (IsAwake())
     {
     desired_state = POLLSTATE_AWAKE;         //- car is awake (but not on)
     }    
-  else if (!StdMetrics.ms_v_env_awake->AsBool(false) && !mt_bus_awake->AsBool(false) && 
-          (!StdMetrics.ms_v_charge_pilot->AsBool(false) || !StdMetrics.ms_v_charge_inprogress->AsBool(false)))
+  else if (!IsAwake() && !IsCharging())
     {
     desired_state = POLLSTATE_OFF;        //- car is asleep
     }
@@ -173,7 +172,7 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
 void OvmsVehicleSmartEQ::HandleEnergy() {
   float power = StdMetrics.ms_v_bat_power->AsFloat(0.0f); // in kW
   // Are we driving?
-  if (power != 0.0f && IsOn())
+  if (power != 0.0f)
     {
     // Update energy used and recovered   
     float energy = fabs(power / 3600.0f);       // 1 second worth of energy in kwh's

@@ -97,14 +97,10 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       }
     }
   // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
-  if (StdMetrics.ms_v_env_hvac->AsBool(false) && !m_poll_on_mod && IsAwake())
+  if (!m_poll_on_mod && IsHVACon() && IsAwake() && m_enable_write_caron)
     {
-    mt_bus_awake->SetValue(true);
-    if(m_enable_write_caron) 
-      {
-      m_poll_on_mod = true;
-      smartCANmode(true);
-      }
+    m_poll_on_mod = true;
+    smartCANmode(true);
     }
   // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
   if (!m_poll_on_charge && IsCharging())
