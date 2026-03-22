@@ -171,7 +171,6 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
  */
 void OvmsVehicleSmartEQ::HandleEnergy() {
   float power = StdMetrics.ms_v_bat_power->AsFloat(0.0f); // in kW
-  // Are we driving?
   if (power != 0.0f)
     {
     // Update energy used and recovered   
