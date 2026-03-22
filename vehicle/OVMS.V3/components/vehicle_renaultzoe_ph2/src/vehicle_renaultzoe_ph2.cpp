@@ -1,8 +1,8 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          15th Mar 2025
+;    Module:        Renault Zoe Ph2 - Main vehicle integration
 ;
-;    (C) 2022       Carsten Schmiemann
+;    (C) 2022-2026  Carsten Schmiemann
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -67,6 +67,11 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   MyConfig.RegisterParam("xrz2", "Renault Zoe Ph2 configuration", true, true);
   ConfigChanged(NULL);
 
+  // Initialize ignition state tracking from current state
+  // This ensures after-ignition DCDC works even if system starts with ignition OFF
+  m_last_ignition_state = StandardMetrics.ms_v_env_on->AsBool();
+  ESP_LOGD(TAG, "Initial ignition state: %s", m_last_ignition_state ? "ON" : "OFF");
+
   // Init Zoe Ph2 CAN connections
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS); // OBD port or V-CAN direct connection
 
@@ -85,6 +90,7 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   mt_bat_used_start = MyMetrics.InitFloat("xrz2.b.used.start", SM_STALE_NONE, 0, kWh, true);
   // Bus awake indicator
   mt_bus_awake = MyMetrics.InitBool("xrz2.v.bus.awake", SM_STALE_NONE, false);
+  mt_auto_ptc_state = MyMetrics.InitBool("xrz2.h.ptc.state", SM_STALE_NONE, false, Other, true);
   // HVAC metrics, ideal for debugging AC or heat pump issues
   mt_hvac_compressor_discharge_temp = MyMetrics.InitFloat("xrz2.h.compressor.temp.discharge", SM_STALE_MID, 0, Celcius);
   mt_hvac_compressor_mode = MyMetrics.InitString("xrz2.h.compressor.mode", SM_STALE_MID, 0, Other);
@@ -110,9 +116,20 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   // Motor temperature sensors
   mt_mot_temp_stator1 = MyMetrics.InitFloat("xrz2.m.temp.stator1", SM_STALE_MIN, 0, Celcius);
   mt_mot_temp_stator2 = MyMetrics.InitFloat("xrz2.m.temp.stator2", SM_STALE_MIN, 0, Celcius);
+  mt_mot_temp_rotor_raw = MyMetrics.InitFloat("xrz2.m.temp.rotor.raw", SM_STALE_MIN, 0, Celcius);
+  mt_mot_temp_rotor = MyMetrics.InitFloat("xrz2.m.temp.rotor", SM_STALE_MIN, 0, Celcius);
+  mt_mot_current_stator_u = MyMetrics.InitFloat("xrz2.m.current.stator.u", SM_STALE_MIN, 0, Amps);
+  mt_mot_current_stator_v = MyMetrics.InitFloat("xrz2.m.current.stator.v", SM_STALE_MIN, 0, Amps);
+  mt_mot_current_stator_w = MyMetrics.InitFloat("xrz2.m.current.stator.w", SM_STALE_MIN, 0, Amps);
+  mt_mot_current_rotor1 = MyMetrics.InitFloat("xrz2.m.current.rotor1", SM_STALE_MIN, 0, Amps);
+  mt_mot_current_rotor2 = MyMetrics.InitFloat("xrz2.m.current.rotor2", SM_STALE_MIN, 0, Amps);
+  mt_mot_rotor_resistance = MyMetrics.InitFloat("xrz2.m.rotor.resistance", SM_STALE_MIN, 0);
+  mt_mot_rotor_voltage = MyMetrics.InitFloat("xrz2.m.rotor.voltage", SM_STALE_MIN, 0, Volts);
   // Poller and trip calculation metrics
   mt_poller_inhibit = MyMetrics.InitBool("xrz2.v.poller.inhibit", SM_STALE_NONE, false, Other, true);
   mt_pos_odometer_start = MyMetrics.InitFloat("xrz2.v.pos.odometer.start", SM_STALE_NONE, 0, Kilometers, true);
+
+  m_auto_ptc_currently_enabled = mt_auto_ptc_state->AsBool();
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 24);
@@ -146,8 +163,10 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   // Unlock trunk command
   cmd_xrz2->RegisterCommand("unlocktrunk", "Unlock trunk/tailgate", CommandUnlockTrunkShell);
 
-  // Debug output of custom functions
+#ifdef RZ2_DEBUG_BUILD
+  // Debug output of custom functions (only in debug builds)
   cmd_xrz2->RegisterCommand("debug", "Debug output of custom functions", CommandDebug);
+#endif
 
   // DDT reconfiguration of ECU commands
   ddt = cmd_xrz2->RegisterCommand("ddt", "Modify configuration of ECUs on V-CAN");
@@ -170,27 +189,27 @@ OvmsVehicleRenaultZoePh2::OvmsVehicleRenaultZoePh2()
   cluster_reset->RegisterCommand("service", "Reset service reminder", CommandDdtClusterResetService);
 
   // CAN1 Software filter - Poll response
-  MyPollers.AddFilter(1, 0x18daf1da, 0x18daf1df);
-  MyPollers.AddFilter(1, 0x763, 0x765);
-  MyPollers.AddFilter(1, 0x76D, 0x76D);
+  MyPollers.AddFilter(1, 0x18daf1da, 0x18daf1df);  // EVC (0x18daf1da), LBC (0x18daf1db), Motor Inverter (0x18daf1df)
+  MyPollers.AddFilter(1, 0x763, 0x765);            // METER_DDT_RESP_ID, HVAC_DDT_RESP_ID, BCM_DDT_RESP_ID
+  MyPollers.AddFilter(1, 0x76D, 0x76D);            // UPC/UCM diagnostic response
 
   // CAN1 Software filter - V-CAN PIDs
-  MyPollers.AddFilter(1, 0x0A4, 0x0A4);
-  MyPollers.AddFilter(1, 0x3C0, 0x3C3);
-  MyPollers.AddFilter(1, 0x418, 0x418);
-  MyPollers.AddFilter(1, 0x46F, 0x46F);
-  MyPollers.AddFilter(1, 0x437, 0x437);
-  MyPollers.AddFilter(1, 0x480, 0x480);
-  MyPollers.AddFilter(1, 0x491, 0x491);
-  MyPollers.AddFilter(1, 0x43E, 0x43E);
-  MyPollers.AddFilter(1, 0x46C, 0x46C);
-  MyPollers.AddFilter(1, 0x47C, 0x47F);
-  MyPollers.AddFilter(1, 0x5B9, 0x5BA);
-  MyPollers.AddFilter(1, 0x5C2, 0x5C5);
-  MyPollers.AddFilter(1, 0x625, 0x625);
-  MyPollers.AddFilter(1, 0x6C9, 0x6C9);
-  MyPollers.AddFilter(1, 0x6E9, 0x6E9);
-  MyPollers.AddFilter(1, 0x6F2, 0x6F2);
+  MyPollers.AddFilter(1, 0x0A4, 0x0A4);  // ATCU_A5_ID
+  MyPollers.AddFilter(1, 0x3C0, 0x3C3);  // ECM_A6_ID, HEVC_A2_ID
+  MyPollers.AddFilter(1, 0x418, 0x418);  // BCM_A4_ID
+  MyPollers.AddFilter(1, 0x46F, 0x46F);  // HFM_A1_ID
+  MyPollers.AddFilter(1, 0x437, 0x437);  // HEVC_A1_ID
+  MyPollers.AddFilter(1, 0x480, 0x480);  // HEVC_R17_ID
+  MyPollers.AddFilter(1, 0x491, 0x491);  // BCM_A11_ID
+  MyPollers.AddFilter(1, 0x43E, 0x43E);  // HVAC_A2_ID
+  MyPollers.AddFilter(1, 0x46C, 0x46C);  // BCM_A3_ID
+  MyPollers.AddFilter(1, 0x47C, 0x47F);  // USM_A2_ID, BCM_A7_ID, METER_A3_ID
+  MyPollers.AddFilter(1, 0x5B9, 0x5BA);  // METER_A5_ID, BCM_A2_ID
+  MyPollers.AddFilter(1, 0x5C2, 0x5C5);  // HVAC_R3_ID, HEVC_A101_ID
+  MyPollers.AddFilter(1, 0x625, 0x625);  // HEVC_A23_ID
+  MyPollers.AddFilter(1, 0x6C9, 0x6C9);  // HEVC_A22_ID
+  MyPollers.AddFilter(1, 0x6E9, 0x6E9);  // HEVC_R11_ID
+  MyPollers.AddFilter(1, 0x6F2, 0x6F2);  // HEVC_R12_ID
 
   // Initialize TX callback tracking
   m_tx_success_id.store(0);
@@ -229,11 +248,63 @@ void OvmsVehicleRenaultZoePh2::ConfigChanged(OvmsConfigParam *param)
   m_auto_12v_threshold = MyConfig.GetParamValueFloat("xrz2", "auto_12v_threshold", 12.4);
   m_coming_home_enabled = MyConfig.GetParamValueBool("xrz2", "coming_home_enabled", false);
   m_remote_climate_enabled = MyConfig.GetParamValueBool("xrz2", "remote_climate_enabled", false);
+  m_alt_unlock_cmd = MyConfig.GetParamValueBool("xrz2", "alt_unlock_cmd", false);
+
+  // Auto-enable PTC parameters
+  m_auto_ptc_enabled = MyConfig.GetParamValueBool("xrz2", "auto_ptc_enabled", false);
+  m_auto_ptc_temp_min = MyConfig.GetParamValueFloat("xrz2", "auto_ptc_temp_min", 9.5);
+  m_auto_ptc_temp_max = MyConfig.GetParamValueFloat("xrz2", "auto_ptc_temp_max", 20.0);
+
+  // PV Charging notification mode
+  m_pv_charge_notification_enabled = MyConfig.GetParamValueBool("xrz2", "pv_charge_notification", false);
+
+  // DCDC control parameters
+  m_dcdc_soc_limit = MyConfig.GetParamValueInt("xrz2", "dcdc_soc_limit", 50);
+  m_dcdc_time_limit = MyConfig.GetParamValueInt("xrz2", "dcdc_time_limit", 0);
+  m_dcdc_after_ignition_time = MyConfig.GetParamValueInt("xrz2", "dcdc_after_ignition_time", 0);
+
+  // Validate ranges
+  if (m_dcdc_soc_limit < 5) m_dcdc_soc_limit = 5;
+  if (m_dcdc_soc_limit > 100) m_dcdc_soc_limit = 100;
+  if (m_dcdc_time_limit < 0) m_dcdc_time_limit = 0;
+  if (m_dcdc_time_limit > 999) m_dcdc_time_limit = 999;
+  if (m_dcdc_after_ignition_time < 0) m_dcdc_after_ignition_time = 0;
+  if (m_dcdc_after_ignition_time > 60) m_dcdc_after_ignition_time = 60;
+
+  // Validate auto-PTC temperature ranges
+  if (m_auto_ptc_temp_min < -20.0) m_auto_ptc_temp_min = -20.0;
+  if (m_auto_ptc_temp_min > 30.0) m_auto_ptc_temp_min = 30.0;
+  if (m_auto_ptc_temp_max < -20.0) m_auto_ptc_temp_max = -20.0;
+  if (m_auto_ptc_temp_max > 30.0) m_auto_ptc_temp_max = 30.0;
+  if (m_auto_ptc_temp_max < m_auto_ptc_temp_min) m_auto_ptc_temp_max = m_auto_ptc_temp_min;
 
   ESP_LOGI(TAG, "Renault Zoe Ph2 reload configuration: Range ideal: %d, Battery capacity: %d, Use BMS as energy counter: %s, V-CAN connected: %s", m_range_ideal, m_battery_capacity, m_UseBMScalculation ? "yes" : "no", m_vcan_enabled ? "yes" : "no");
   ESP_LOGI(TAG, "12V auto-recharge: %s, Threshold: %.1fV", m_auto_12v_recharge_enabled ? "enabled" : "disabled", m_auto_12v_threshold);
+
+  char time_limit_buf[32];
+  if (m_dcdc_time_limit == 0) {
+    snprintf(time_limit_buf, sizeof(time_limit_buf), "infinite");
+  } else {
+    snprintf(time_limit_buf, sizeof(time_limit_buf), "%d min", m_dcdc_time_limit);
+  }
+  ESP_LOGI(TAG, "DCDC manual limits - SOC: %d%%, Time: %s", m_dcdc_soc_limit, time_limit_buf);
+
+  char after_ignition_buf[32];
+  if (m_dcdc_after_ignition_time > 0) {
+    snprintf(after_ignition_buf, sizeof(after_ignition_buf), "%d min", m_dcdc_after_ignition_time);
+  } else {
+    snprintf(after_ignition_buf, sizeof(after_ignition_buf), "disabled");
+  }
+  ESP_LOGI(TAG, "DCDC after-ignition keep-alive: %s", after_ignition_buf);
   ESP_LOGI(TAG, "Coming home function: %s", m_coming_home_enabled ? "enabled" : "disabled");
   ESP_LOGI(TAG, "Remote climate trigger: %s", m_remote_climate_enabled ? "enabled" : "disabled");
+  ESP_LOGI(TAG, "Alternative unlock command: %s", m_alt_unlock_cmd ? "enabled" : "disabled");
+  if (m_auto_ptc_enabled) {
+    ESP_LOGI(TAG, "Auto-enable PTC: enabled, temp range: %.1f°C - %.1f°C", m_auto_ptc_temp_min, m_auto_ptc_temp_max);
+  } else {
+    ESP_LOGI(TAG, "Auto-enable PTC: disabled");
+  }
+  ESP_LOGI(TAG, "PV/Solar charging mode: %s", m_pv_charge_notification_enabled ? "enabled" : "disabled");
 }
 
 // Poller lists for Renault Zoe Ph2
@@ -253,6 +324,14 @@ static const OvmsPoller::poll_pid_t zoe_ph2_polls_obd[] = {
     {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7010, {0, 10, 10, 10}, 0, ISOTP_EXTFRAME}, // Stator Temperature 2
     {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2004, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Battery voltage sense
     {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7049, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Current voltage sense
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7003, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Rotor current sensor 1
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7004, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Rotor current sensor 2
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7007, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Stator current phase U
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7008, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Stator current phase V
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7009, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Stator current phase W
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7038, {0, 10, 10, 10}, 0, ISOTP_EXTFRAME}, // Rotor temp raw
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7088, {0, 10, 10, 10}, 0, ISOTP_EXTFRAME}, // Rotor temp estimated
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7050, {0, 60, 60, 60}, 0, ISOTP_EXTFRAME}, // Rotor reference resistance
 
     // EVC-HCM-VCM
     {0x18dadaf1, 0x18daf1da, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, {0, 60, 10, 300}, 0, ISOTP_EXTFRAME},   // Odometer
@@ -445,6 +524,14 @@ static const OvmsPoller::poll_pid_t zoe_ph2_polls_vcan[] = {
     {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7010, {0, 10, 10, 10}, 0, ISOTP_EXTFRAME}, // Stator Temperature 2
     {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2004, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Battery voltage sense
     {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7049, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Current voltage sense
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7003, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Rotor current sensor 1
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7004, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Rotor current sensor 2
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7007, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Stator current phase U
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7008, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Stator current phase V
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7009, {0, 60, 3, 60}, 0, ISOTP_EXTFRAME},  // Stator current phase W
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7038, {0, 10, 10, 10}, 0, ISOTP_EXTFRAME}, // Rotor temp raw
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7088, {0, 10, 10, 10}, 0, ISOTP_EXTFRAME}, // Rotor temp estimated
+    {0x18dadff1, 0x18daf1df, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7050, {0, 60, 60, 60}, 0, ISOTP_EXTFRAME}, // Rotor reference resistance
 
     // EVC-HCM-VCM
     {0x18dadaf1, 0x18daf1da, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, {0, 60, 10, 300}, 0, ISOTP_EXTFRAME},   // Odometer
@@ -659,7 +746,7 @@ void OvmsVehicleRenaultZoePh2::Ticker1(uint32_t ticker)
         mt_bat_used_start->SetValue(StandardMetrics.ms_v_bat_energy_used_total->AsFloat());
         mt_bat_recd_start->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat());
       }
-      ESP_LOGD(TAG, "Trip start, reset counters");
+      ESP_LOGD_RZ2(TAG, "Trip start, reset counters");
     }
   }
   // Poller state machine mainly for OBD connection, because the port is silent, all metrics rely on polling
@@ -676,7 +763,7 @@ void OvmsVehicleRenaultZoePh2::Ticker1(uint32_t ticker)
 
     // Save headlight state for coming home function (before door opens and turns them off)
     m_last_headlight_state = vcan_light_lowbeam;
-    ESP_LOGD(TAG, "Ignition turned off, saved headlight state: %s", m_last_headlight_state ? "ON" : "OFF");
+    ESP_LOGD_RZ2(TAG, "Ignition turned off, saved headlight state: %s", m_last_headlight_state ? "ON" : "OFF");
 
     ESP_LOGI(TAG, "Pollstate switched to ON");
     POLLSTATE_ON;
@@ -748,7 +835,7 @@ void OvmsVehicleRenaultZoePh2::Ticker1(uint32_t ticker)
       if ((StandardMetrics.ms_v_bat_consumption->AsFloat(0, kWhP100K)) != 0)
       {
         StandardMetrics.ms_v_bat_range_est->SetValue(((StandardMetrics.ms_v_bat_capacity->AsFloat(0) / (StandardMetrics.ms_v_bat_consumption->AsFloat(1, kWhP100K))) * 100), Kilometers);
-        ESP_LOGD(TAG, "Avail bat capacity from BMS: %.1f kWh, Avg bat cons 200km: %.2f kWh/100km, range est calculated: %f km", StandardMetrics.ms_v_bat_capacity->AsFloat(), StandardMetrics.ms_v_bat_consumption->AsFloat(0, kWhP100K), StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers));
+        ESP_LOGD_RZ2(TAG, "Avail bat capacity from BMS: %.1f kWh, Avg bat cons 200km: %.2f kWh/100km, range est calculated: %f km", StandardMetrics.ms_v_bat_capacity->AsFloat(), StandardMetrics.ms_v_bat_consumption->AsFloat(0, kWhP100K), StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers));
       }
       else
       {
@@ -854,15 +941,312 @@ void OvmsVehicleRenaultZoePh2::Ticker1(uint32_t ticker)
     }
   }
 
+  // Respect HVAC blower state for both manual and automatic PTC activation:
+  // if the blower is off, force the PTC heaters off as well.
+  if (vcan_hvac_blower == 0)
+  {
+    if (m_auto_ptc_currently_enabled)
+    {
+      ESP_LOGI(TAG, "PTC disable: Cabin blower is off, disabling PTC heaters");
+      bool success = DisablePTCInternal();
+
+      if (success)
+      {
+        ESP_LOGI(TAG, "PTC disable: PTC heaters disabled successfully because blower is off");
+        m_auto_ptc_currently_enabled = false;
+        mt_auto_ptc_state->SetValue(false);
+      }
+      else
+      {
+        ESP_LOGW(TAG, "PTC disable: Failed to disable PTC heaters while blower is off");
+      }
+    }
+  }
+
+  // Auto-enable PTC based on outside temperature
+  if (m_auto_ptc_enabled &&
+      StandardMetrics.ms_v_env_on->AsBool() &&  // Ignition ON
+      vcan_hvac_blower > 0 &&                   // Blower ON
+      !StandardMetrics.ms_v_charge_inprogress->AsBool())  // Not charging
+  {
+    // Get outside temperature
+    float outside_temp = StandardMetrics.ms_v_env_temp->AsFloat(-999.0);
+    uint32_t currentTime = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+    if (outside_temp != -999.0 &&
+        outside_temp >= m_auto_ptc_temp_min &&
+        outside_temp <= m_auto_ptc_temp_max &&
+        !m_auto_ptc_currently_enabled)
+    {
+      // Debouncing: only try to enable PTCs once per 10 seconds
+      if ((currentTime - m_auto_ptc_last_enable_time) >= 10000)
+      {
+        if (!m_auto_ptc_currently_enabled)
+        {
+          ESP_LOGI(TAG, "Auto-enable PTC: Outside temp %.1f°C in range [%.1f - %.1f°C], enabling PTCs",
+                   outside_temp, m_auto_ptc_temp_min, m_auto_ptc_temp_max);
+
+          // Enable PTCs in background
+          bool success = EnablePTCInternal();
+
+          if (success)
+          {
+            ESP_LOGI(TAG, "Auto-enable PTC: PTCs enabled successfully (temp: %.1f°C)", outside_temp);
+            m_auto_ptc_currently_enabled = true;
+            mt_auto_ptc_state->SetValue(true);
+          }
+          else
+          {
+            ESP_LOGW(TAG, "Auto-enable PTC: Failed to enable PTCs");
+          }
+
+          // Update timestamp to prevent repeated attempts
+          m_auto_ptc_last_enable_time = currentTime;
+        }
+        else
+        {
+          ESP_LOGD_RZ2(TAG, "Auto-enable PTC: PTCs already active, skipping");
+        }
+      }
+    }
+  }
+
+  // After-ignition keep-alive detection and timeout
+  bool current_ignition_state = StandardMetrics.ms_v_env_on->AsBool();
+
+  // Detect ignition OFF transition (edge: ON -> OFF)
+  if (m_last_ignition_state && !current_ignition_state)
+  {
+    ESP_LOGI(TAG, "Ignition OFF transition detected");
+
+    // Auto-disable PTCs on ignition off (before after-ignition keep-alive)
+    // Note: Compressor is NOT auto-disabled (it's a config change, should persist)
+    if (m_auto_ptc_currently_enabled)
+    {
+      ESP_LOGI(TAG, "Auto-disable PTC: PTCs active, disabling on ignition OFF");
+      bool success = DisablePTCInternal();
+
+      if (success)
+      {
+        ESP_LOGI(TAG, "Auto-disable PTC: PTCs disabled successfully on ignition OFF");
+        m_auto_ptc_currently_enabled = false;
+        mt_auto_ptc_state->SetValue(false);
+      }
+      else
+      {
+        ESP_LOGW(TAG, "Auto-disable PTC: Failed to disable PTCs on ignition OFF");
+      }
+    }
+    else
+    {
+      ESP_LOGD_RZ2(TAG, "Auto-disable PTC: PTCs not active, skipping auto-disable");
+    }
+
+    // If after-ignition keep-alive is configured and enabled
+    if (m_dcdc_after_ignition_time > 0 && m_vcan_enabled)
+    {
+      ESP_LOGI(TAG, "DCDC: After-ignition config check - time=%dmin, vcan=%d, dcdc_active=%d, charging=%d, headlights=%d",
+               m_dcdc_after_ignition_time,
+               m_vcan_enabled,
+               m_dcdc_active,
+               StandardMetrics.ms_v_charge_inprogress->AsBool(),
+               vcan_light_lowbeam);
+
+      // Only activate if DCDC is not already running (manual/auto) and NOT charging
+      if (!m_dcdc_active && !StandardMetrics.ms_v_charge_inprogress->AsBool())
+      {
+        // Check if headlights are still on
+        if (vcan_light_lowbeam)
+        {
+          // Headlights are on, set pending flag instead of immediately starting keep-alive
+          ESP_LOGI(TAG, "DCDC: Headlights still on, waiting for them to turn off before starting keep-alive");
+          m_dcdc_after_ignition_pending = true;
+          m_dcdc_after_ignition_pending_start = xTaskGetTickCount() * portTICK_PERIOD_MS;
+        }
+        else
+        {
+          // No headlights, start keep-alive immediately
+          ESP_LOGI(TAG, "DCDC: Starting after-ignition keep-alive for %d minutes", m_dcdc_after_ignition_time);
+          m_dcdc_after_ignition_active = true;
+          m_dcdc_after_ignition_start_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+          // Enable DCDC in auto mode (not manual)
+          bool enable_result = EnableDCDC(false);
+          if (enable_result)
+          {
+            ESP_LOGI(TAG, "DCDC: After-ignition activation successful");
+          }
+          else
+          {
+            ESP_LOGW(TAG, "DCDC: After-ignition activation failed");
+            m_dcdc_after_ignition_active = false;  // Clear flag if activation failed
+          }
+        }
+      }
+      else
+      {
+        if (m_dcdc_active)
+        {
+          ESP_LOGI(TAG, "DCDC: Already active, skipping after-ignition keep-alive");
+        }
+        if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+        {
+          ESP_LOGI(TAG, "DCDC: Charging in progress, skipping after-ignition keep-alive");
+        }
+      }
+    }
+    else
+    {
+      if (m_dcdc_after_ignition_time == 0)
+      {
+        ESP_LOGD_RZ2(TAG, "DCDC: After-ignition disabled (time=0), not activating");
+      }
+      if (!m_vcan_enabled)
+      {
+        ESP_LOGD_RZ2(TAG, "DCDC: V-CAN not enabled, not activating after-ignition");
+      }
+    }
+  }
+
+  // Update last ignition state for next cycle
+  m_last_ignition_state = current_ignition_state;
+
+  // Handle pending after-ignition keep-alive (waiting for headlights to turn off)
+  if (m_dcdc_after_ignition_pending && !current_ignition_state)
+  {
+    uint32_t currentTime = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    uint32_t wait_time = currentTime - m_dcdc_after_ignition_pending_start;
+
+    // If headlights turned off, start keep-alive
+    if (!vcan_light_lowbeam)
+    {
+      ESP_LOGI(TAG, "DCDC: Headlights turned off, starting after-ignition keep-alive for %d minutes", m_dcdc_after_ignition_time);
+      m_dcdc_after_ignition_pending = false;
+      m_dcdc_after_ignition_active = true;
+      m_dcdc_after_ignition_start_time = currentTime;
+
+      // Enable DCDC in auto mode (not manual)
+      bool enable_result = EnableDCDC(false);
+      if (enable_result)
+      {
+        ESP_LOGI(TAG, "DCDC: After-ignition activation successful (after headlights off)");
+      }
+      else
+      {
+        ESP_LOGW(TAG, "DCDC: After-ignition activation failed (after headlights off)");
+        m_dcdc_after_ignition_active = false;
+      }
+    }
+    // Timeout after 60 seconds - DCDC likely already off
+    else if (wait_time > 60000)
+    {
+      ESP_LOGW(TAG, "DCDC: Headlight wait timeout (60s), cancelling after-ignition keep-alive");
+      m_dcdc_after_ignition_pending = false;
+    }
+  }
+
+  // Check after-ignition keep-alive timeout
+  if (m_dcdc_after_ignition_active)
+  {
+    uint32_t currentTime = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    uint32_t elapsed_time = currentTime - m_dcdc_after_ignition_start_time;
+    uint32_t timeout_ms = m_dcdc_after_ignition_time * 60 * 1000;
+
+    ESP_LOGD_RZ2(TAG, "DCDC: After-ignition timeout check - elapsed=%us/%us",
+             elapsed_time / 1000, timeout_ms / 1000);
+
+    if (elapsed_time >= timeout_ms)
+    {
+      ESP_LOGI(TAG, "DCDC: After-ignition keep-alive timeout (%d min), stopping", m_dcdc_after_ignition_time);
+      m_dcdc_after_ignition_active = false;
+      DisableDCDC();
+    }
+  }
+
   // Coming home function - monitor lock state changes
   bool current_locked_state = StandardMetrics.ms_v_env_locked->AsBool();
   if (current_locked_state && !m_last_locked_state)
   {
     // Car just got locked (transition from unlocked to locked)
-    ESP_LOGD(TAG, "Lock state changed: unlocked -> locked");
+    ESP_LOGD_RZ2(TAG, "Lock state changed: unlocked -> locked");
     TriggerComingHomeLighting();
   }
   m_last_locked_state = current_locked_state;
+
+  // PV Charging notification mode - track plug state changes using charge pilot
+  if (m_pv_charge_notification_enabled)
+  {
+    bool current_pilot = StandardMetrics.ms_v_charge_pilot->AsBool();
+
+    // Detect plug-in event (false -> true)
+    if (current_pilot && !m_pv_charge_last_pilot)
+    {
+      ESP_LOGI(TAG, "PV Charge: Cable plugged in, starting session tracking");
+      m_pv_charge_session_active = true;
+      m_pv_charge_kwh_total = 0.0;
+      m_pv_charge_session_count = 0;
+      m_pv_charge_soc_start = StandardMetrics.ms_v_bat_soc->AsFloat(0);
+      m_pv_charge_plug_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    }
+    // Detect unplug event (true -> false)
+    else if (!current_pilot && m_pv_charge_last_pilot)
+    {
+      ESP_LOGI(TAG, "PV Charge: Cable unplugged, ending session tracking");
+
+      // Only send summary if we actually had charge sessions
+      if (m_pv_charge_session_count > 0)
+      {
+        // Calculate duration
+        uint32_t current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+        uint32_t duration_ms = current_time - m_pv_charge_plug_time;
+        int duration_minutes = duration_ms / 60000;
+        int duration_hours = duration_minutes / 60;
+        duration_minutes = duration_minutes % 60;
+
+        // Get final SOC
+        float soc_end = StandardMetrics.ms_v_bat_soc->AsFloat(0);
+
+        // Format and send summary notification
+        char summary[256];
+        if (duration_hours > 0)
+        {
+          snprintf(summary, sizeof(summary),
+                   "PV Charge Summary: %.2f kWh total over %d session(s)\n"
+                   "SOC: %.0f%% -> %.0f%% (+%.0f%%)\n"
+                   "Duration: %dh %dm",
+                   m_pv_charge_kwh_total, m_pv_charge_session_count,
+                   m_pv_charge_soc_start, soc_end, soc_end - m_pv_charge_soc_start,
+                   duration_hours, duration_minutes);
+        }
+        else
+        {
+          snprintf(summary, sizeof(summary),
+                   "PV Charge Summary: %.2f kWh total over %d session(s)\n"
+                   "SOC: %.0f%% -> %.0f%% (+%.0f%%)\n"
+                   "Duration: %dm",
+                   m_pv_charge_kwh_total, m_pv_charge_session_count,
+                   m_pv_charge_soc_start, soc_end, soc_end - m_pv_charge_soc_start,
+                   duration_minutes);
+        }
+
+        ESP_LOGI(TAG, "PV Charge: Sending summary - %s", summary);
+        MyNotify.NotifyString("info", "charge.pv.summary", summary);
+
+        // Reset counters but keep m_pv_charge_session_active = true
+        // to suppress any delayed notifications after unplug
+        m_pv_charge_kwh_total = 0.0;
+        m_pv_charge_session_count = 0;
+      }
+      else
+      {
+        ESP_LOGD_RZ2(TAG, "PV Charge: No charge sessions occurred, skipping summary");
+      }
+      // Note: m_pv_charge_session_active stays true to suppress delayed notifications
+      // It will be reset on next plug-in event
+    }
+
+    m_pv_charge_last_pilot = current_pilot;
+  }
 }
 
 void OvmsVehicleRenaultZoePh2::Ticker10(uint32_t ticker)
@@ -883,16 +1267,24 @@ void OvmsVehicleRenaultZoePh2::Ticker10(uint32_t ticker)
     {
       EnergyStatisticsOVMS();
     }
-    // Update usable capacity from SoH value
-    if (m_battery_capacity == 52000)
+    // Update usable capacity from SoH value (only when SOH changes)
+    float current_soh = StandardMetrics.ms_v_bat_soh->AsFloat(100);
+    if (current_soh != m_last_soh_value)
     {
-      Bat_cell_capacity_Ah = 78.0 * 2 * (StandardMetrics.ms_v_bat_soh->AsFloat() / 100.0);
+      m_last_soh_value = current_soh;
+
+      if (m_battery_capacity == 52000)
+      {
+        Bat_cell_capacity_Ah = 78.0 * 2 * (current_soh / 100.0);
+      }
+      else if (m_battery_capacity == 41000)
+      {
+        Bat_cell_capacity_Ah = 65.6 * 2 * (current_soh / 100.0);
+      }
+
+      ESP_LOGD_RZ2(TAG, "SOH changed to %.2f%%, updated usable capacity to %.2f Ah",
+                   current_soh, Bat_cell_capacity_Ah);
     }
-    if (m_battery_capacity == 41000)
-    {
-      Bat_cell_capacity_Ah = 65.6 * 2 * (StandardMetrics.ms_v_bat_soh->AsFloat() / 100.0);
-    }
-    ESP_LOGD(TAG, "Update usable battery capacity from SoH: %.2f Ah", Bat_cell_capacity_Ah);
   }
 
   // Fix rare race condition, if Zoe is connected to disabled charging point (for example PV charging), OVMS can poll without NAK till 12V battery dies
@@ -917,767 +1309,46 @@ void OvmsVehicleRenaultZoePh2::Ticker10(uint32_t ticker)
   // Long PreConditioning retrigger logic, retrigger PreCond before DC-DC shutdown and HV bat contactors opens to reduce wear
   if (LongPreCond)
   {
-    if (LongPreCondCounter != 0 && !StandardMetrics.ms_v_env_hvac->AsBool())
+    bool hvac_on = StandardMetrics.ms_v_env_hvac->AsBool();
+
+    // Track HVAC state changes
+    if (hvac_on && LongPreCondWaitingForHvacOff)
     {
-      LongPreCondCounter--;
-      CommandClimateControl(true);
+      // HVAC successfully turned on, now wait for it to turn off
+      ESP_LOGD_RZ2(TAG, "LongPreCond: HVAC turned on, now monitoring for shutdown");
+      LongPreCondWaitingForHvacOff = false;
     }
-    // Disable and reset LongPreCond logic if counter reaches zero or Zoe unlocked
-    else if (LongPreCondCounter <= 0 || !StandardMetrics.ms_v_env_locked->AsBool())
+    else if (!hvac_on && !LongPreCondWaitingForHvacOff && LongPreCondCounter > 0)
     {
-      LongPreCond = false;
-      LongPreCondCounter = 0;
-    }
-  }
-}
+      // HVAC is off and we're not waiting for it to turn on, time to retrigger
+      // Add small debounce: only retrigger if HVAC has been off for at least 10 seconds
+      uint32_t current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+      uint32_t time_since_last_trigger = current_time - LongPreCondLastTrigger;
 
-// Average rolling consumption over last 100km, if we have a V-CAN connection we use consumption from Zoe
-void OvmsVehicleRenaultZoePh2::CalculateEfficiency()
-{
-  if (!m_vcan_enabled)
-  {
-    float speed = StdMetrics.ms_v_pos_speed->AsFloat();
-    float power = StdMetrics.ms_v_bat_power->AsFloat(0, Watts);
-    float distanceTraveled = speed / 3600.0f; // km/h to km/s
-
-    float consumption = 0;
-    if (speed >= 10)
-    {
-      consumption = power / speed; // Wh/km
-    }
-
-    // Only record valid entries
-    if (distanceTraveled > 0 && std::isfinite(consumption))
-    {
-      consumptionHistory.push_back(std::make_pair(distanceTraveled, consumption));
-      totalConsumption += consumption * distanceTraveled;
-      totalDistance += distanceTraveled;
-    }
-
-    // Trim excess distance from front of buffer when over 100 km
-    // Use 101.0 km as safe buffer to avoid edge hover
-    while (totalDistance > 101.0f && !consumptionHistory.empty())
-    {
-      auto oldest = consumptionHistory.front();
-      totalDistance -= oldest.first;
-      totalConsumption -= oldest.first * oldest.second;
-      consumptionHistory.pop_front();
-    }
-
-    // Ensure numbers stay clean
-    if (totalDistance < 0 || !std::isfinite(totalDistance))
-      totalDistance = 0;
-    if (totalConsumption < 0 || !std::isfinite(totalConsumption))
-      totalConsumption = 0;
-
-    // Calculate and set average
-    float avgConsumption = (totalDistance > 0) ? totalConsumption / totalDistance : 0;
-    StdMetrics.ms_v_bat_consumption->SetValue(TRUNCPREC(avgConsumption, 1));
-
-    // Logging
-    ESP_LOGD(TAG, "Average battery consumption: %.1f Wh/km (over %.1f km, buffer size: %zu)",
-             avgConsumption, totalDistance, consumptionHistory.size());
-
-    // Hard reset if buffer grows out of control
-    if (consumptionHistory.size() > 10000)
-    {
-      ESP_LOGW(TAG, "Consumption history too large (%.1f km stored, %zu entries) — resetting!",
-               totalDistance, consumptionHistory.size());
-      consumptionHistory.clear();
-      totalDistance = 0;
-      totalConsumption = 0;
-    }
-  }
-}
-
-// Handle Charge ernergy, charge time remaining and efficiency calucation
-void OvmsVehicleRenaultZoePh2::ChargeStatistics()
-{
-  float charge_current = fabs(StandardMetrics.ms_v_bat_current->AsFloat(0, Amps));
-  float charge_voltage = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
-  float battery_power = fabs(StandardMetrics.ms_v_bat_power->AsFloat(0, kW));
-  float charger_power = StandardMetrics.ms_v_charge_power->AsFloat(1, kW);
-  float ac_current = StandardMetrics.ms_v_charge_current->AsFloat(0, Amps);
-  string ac_phases = mt_main_phases->AsString();
-  int minsremaining = 0;
-
-  if (CarIsCharging != CarLastCharging)
-  {
-    if (CarIsCharging)
-    {
-      StandardMetrics.ms_v_charge_kwh->SetValue(0);
-      StandardMetrics.ms_v_charge_inprogress->SetValue(CarIsCharging);
-      if (m_UseBMScalculation)
+      if (time_since_last_trigger >= 10000 || LongPreCondLastTrigger == 0)
       {
-        mt_bat_chg_start->SetValue(StandardMetrics.ms_v_charge_kwh_grid_total->AsFloat());
-      }
-    }
-    else
-    {
-      StandardMetrics.ms_v_charge_inprogress->SetValue(CarIsCharging);
-    }
-  }
-  CarLastCharging = CarIsCharging;
-
-  if (!StandardMetrics.ms_v_charge_pilot->AsBool() || !StandardMetrics.ms_v_charge_inprogress->AsBool() || (charge_current <= 0.0))
-  {
-    return;
-  }
-
-  if (charge_voltage > 0 && charge_current > 0)
-  {
-    float power = charge_voltage * charge_current / 1000.0;
-    float energy = power / 3600.0 * 10.0;
-    float c_efficiency;
-
-    if (m_UseBMScalculation)
-    {
-      StandardMetrics.ms_v_charge_kwh->SetValue(StandardMetrics.ms_v_charge_kwh_grid_total->AsFloat() - mt_bat_chg_start->AsFloat());
-    }
-    else
-    {
-      StandardMetrics.ms_v_charge_kwh->SetValue(StandardMetrics.ms_v_charge_kwh->AsFloat() + energy);
-    }
-
-    // Calculate charge remaining time if we cannot get it from V-CAN
-    if (m_vcan_enabled)
-    {
-      if (vcan_hvBat_ChargeTimeRemaining < 2550) // If charging is not started we got 2555 value from V-CAN
-      {
-        StandardMetrics.ms_v_charge_duration_full->SetValue(vcan_hvBat_ChargeTimeRemaining, Minutes);
-        minsremaining = vcan_hvBat_ChargeTimeRemaining;
-      }
-    }
-    else
-    {
-      if (charge_voltage != 0 && charge_current != 0)
-      {
-        minsremaining = calcMinutesRemaining(charge_voltage, charge_current);
-        StandardMetrics.ms_v_charge_duration_full->SetValue(minsremaining, Minutes);
-      }
-    }
-
-    if (StandardMetrics.ms_v_charge_type->AsString() == "type2")
-    {
-      if (charger_power != 0)
-      {
-        c_efficiency = (battery_power / charger_power) * 100.0;
-        if (c_efficiency < 100.0)
-        {
-          StandardMetrics.ms_v_charge_efficiency->SetValue(c_efficiency);
-        }
-      }
-      ESP_LOGI(TAG, "Charge time remaining: %d mins, AC Charge at %.2f kW with %.1f amps, %s at %.1f efficiency, %.2f powerfactor", minsremaining, charger_power, ac_current, ac_phases.c_str(), StandardMetrics.ms_v_charge_efficiency->AsFloat(100), ACInputPowerFactor);
-    }
-    else if (StandardMetrics.ms_v_charge_type->AsString() == "ccs" || StandardMetrics.ms_v_charge_type->AsString() == "chademo")
-    {
-      StandardMetrics.ms_v_charge_power->SetValue(battery_power);
-      ESP_LOGI(TAG, "Charge time remaining: %d mins, DC Charge at %.2f kW", minsremaining, battery_power);
-    }
-  }
-}
-
-// Charge time remaining - helper function to get remaining charge time for ChargeStatistics
-int OvmsVehicleRenaultZoePh2::calcMinutesRemaining(float charge_voltage, float charge_current)
-{
-  float bat_soc = StandardMetrics.ms_v_bat_soc->AsFloat(100);
-  float real_capacity = m_battery_capacity * (StandardMetrics.ms_v_bat_soh->AsFloat(100) / 100);
-
-  float remaining_wh = real_capacity - (real_capacity * bat_soc / 100.0);
-  float remaining_hours = remaining_wh / (charge_current * charge_voltage);
-  float remaining_mins = remaining_hours * 60.0;
-
-  ESP_LOGD(TAG, "SOC: %f, BattCap:%d, Current: %f, Voltage: %f, RemainWH: %f, RemainHour: %f, RemainMin: %f", bat_soc, m_battery_capacity, charge_current, charge_voltage, remaining_wh, remaining_hours, remaining_mins);
-  return MIN(1440, (int)remaining_mins);
-}
-
-// Energy values calculation withing OVMS
-void OvmsVehicleRenaultZoePh2::EnergyStatisticsOVMS()
-{
-  float voltage = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
-  float current = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
-
-  float power = voltage * current / 1000.0;
-
-  if (power != 0.0 && StandardMetrics.ms_v_env_on->AsBool())
-  {
-    float energy = power / 3600.0 * 10.0;
-    if (energy > 0.0f)
-      StandardMetrics.ms_v_bat_energy_used->SetValue(StandardMetrics.ms_v_bat_energy_used->AsFloat() + energy);
-    else
-      StandardMetrics.ms_v_bat_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd->AsFloat() - energy);
-  }
-}
-
-// Energy values from BMS
-void OvmsVehicleRenaultZoePh2::EnergyStatisticsBMS()
-{
-  if (StandardMetrics.ms_v_bat_energy_used_total->AsFloat() != 0 && StandardMetrics.ms_v_bat_energy_recd_total->AsFloat() != 0)
-  {
-    StandardMetrics.ms_v_bat_energy_used->SetValue(StandardMetrics.ms_v_bat_energy_used_total->AsFloat() - mt_bat_used_start->AsFloat());
-    StandardMetrics.ms_v_bat_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat() - mt_bat_recd_start->AsFloat());
-  }
-}
-
-// Handles incoming CAN-frames on bus 1
-void OvmsVehicleRenaultZoePh2::IncomingFrameCan1(CAN_frame_t *p_frame)
-{
-  uint8_t *data = p_frame->data.u8;
-
-  if (!mt_poller_inhibit->AsBool())
-  // Inhibit poller if metric is set to true, for vehicle maintenance to not intefere with tester,
-  // Renault shops typically stop working on cars with CAN-bus attached 3rd party "accessories" and blame them for all malfunctions
-  {
-    if (m_vcan_enabled)
-    {
-      // V-CAN wakeup and sleep detection by counting frames. No rely on TCU required. V-CAN is heavily loaded, about 1600 msgs/s full on
-      vcan_message_counter++;
-    }
-    else
-    {
-      // OBD port wakeup and sleep detection, we need to rely on a TCU request
-      if (mt_bus_awake->AsBool() && data[0] == 0x83 && data[1] == 0xc0)
-      {
-        ESP_LOGI(TAG, "Zoe wants to sleep (ECU wake up request detected)");
-        ZoeShutdown();
-      }
-      else if (!mt_bus_awake->AsBool() && p_frame->MsgID == 0x18daf1db)
-      {
-        // Only start polling if TCU request to battery is incoming, ignore late poll replies if NAK message is received
-        // The TCU is requesting battery statistics data (mainly for rental batteries) but the software never changed, even if you buied the battery. The ISO-TP requests from
-        // TCU is falling through the OBD Port (seperate CAN line to Gateway), we use them to detect car wake up. The TCU must be installed and working if only OBD port is used.
-        ESP_LOGI(TAG, "TCU requested battery statistics, so Zoe is woken up.");
-        ZoeWakeUp();
-      }
-    }
-  }
-
-  // Use data from V-CAN to fill metrics
-  // --
-  // In DDT Database there is a CAN_MESSAGE_SET_C1A_Q4_2017_(...).XML file, there are most of the CAN IDs described floating on V-CAN
-  // I converted this file to a Database CAN file to analyze my dumps and real traffic on my Zoe with SavvyCAN, this speeds up finding and decoding of metrics on V-CAN a lot
-  // --
-  // The message decoding is written to temporary variables, because V-CAN is very busy and use Ticker1 to store them in OvmsMetrics (recommendation from dexterbg, thanks!)
-  // I remove found metrics from poller list, there is a "reduced" one for that
-  // --
-  // I choose the CAN IDs which has a refresh rate about 500ms to 1 sec to reduce load on the OVMS module, so not every metric is grabbed from the real source,
-  // for example the vehicle speed is derrived from VCU (ABS ECU) which has all four wheel speeds, but this message is refreshed at 100Hz, so I grab the
-  // vehicle speed send from the METER which is sending it every 500ms or 2Hz
-
-  switch (p_frame->MsgID)
-  {
-  case HVAC_R3_ID:
-  {
-    // --- Cabin setpoint & Blower setting ---
-    if (vcan_vehicle_ignition) // HVAC ECU is shutdown after 1 min after Iginition off and values will be zero, keep last setting
-    {
-      if (CAN_BYTE(0) == 0x08) // Low setting
-      {
-        vcan_hvac_cabin_setpoint = 14;
-      }
-      else if (CAN_BYTE(0) == 0x0A) // High setting
-      {
-        vcan_hvac_cabin_setpoint = 30;
+        ESP_LOGI(TAG, "LongPreCond: HVAC turned off, retriggering climate control (counter=%d)",
+                 LongPreCondCounter);
+        LongPreCondCounter--;
+        CommandClimateControl(true);
+        LongPreCondLastTrigger = current_time;
+        LongPreCondWaitingForHvacOff = true;  // Now waiting for HVAC to turn on
       }
       else
       {
-        vcan_hvac_cabin_setpoint = static_cast<float>(CAN_BYTE(0)) / 2.0f;
+        ESP_LOGD_RZ2(TAG, "LongPreCond: HVAC off but debounce active (time_since_last=%ums)",
+                     time_since_last_trigger);
       }
     }
 
-    vcan_hvac_blower = (CAN_BYTE(3) >> 4) & 0x0F; // Blower speed
-    vcan_hvac_blower = vcan_hvac_blower * 12.5;   // Map 1-8 to 0-100%
-    break;
-  }
-
-  case METER_A3_ID:
-  {
-    // --- ExternalTemperature ---
-    // strange scaling
-
-    // --- VehicleSpeedDisplayValue ---
-    if (CAN_BYTE(7) < 250)
+    // Disable and reset LongPreCond logic if counter reaches zero or Zoe unlocked
+    if (LongPreCondCounter <= 0 || !StandardMetrics.ms_v_env_locked->AsBool())
     {
-      vcan_vehicle_speed = CAN_BYTE(7);
+      LongPreCond = false;
+      LongPreCondCounter = 0;
+      LongPreCondLastTrigger = 0;
+      LongPreCondWaitingForHvacOff = false;
     }
-    break;
-  }
-
-  case USM_A2_ID:
-  {
-    // --- Ignition state, DC DC charge voltage, engineHoodState ---
-    vcan_vehicle_ignition = CAN_BIT(0, 5);
-    vcan_dcdc_voltage = (CAN_BYTE(1) * 0.06) + 6.0;
-
-    if (((CAN_BYTE(4) >> 6) & 0x03) == 1)
-    {
-      vcan_door_engineHood = true;
-    }
-    else
-    {
-      vcan_door_engineHood = false;
-    }
-    break;
-  }
-
-  case HEVC_A101_ID:
-  {
-    // --- Max charge power available from EVSE ---
-    uint16_t rawSpotPwr = (((uint16_t)CAN_BYTE(0) << 1) | (CAN_BYTE(1) >> 7)) & 0x01FF;
-    vcan_mains_available_chg_power = rawSpotPwr * 0.3;
-    break;
-  }
-
-  case BCM_A7_ID:
-  {
-    // --- Door and light states ---
-    if (((CAN_BYTE(2) >> 2) & 0x03) == 2)
-    {
-      vcan_door_trunk = true;
-    }
-    else
-    {
-      vcan_door_trunk = false;
-    }
-
-    if (((CAN_BYTE(3) >> 6) & 0x03) == 2)
-    {
-      vcan_door_fl = true;
-    }
-    else
-    {
-      vcan_door_fl = false;
-    }
-
-    if (((CAN_BYTE(3) >> 2) & 0x03) == 2)
-    {
-      vcan_door_fr = true;
-    }
-    else
-    {
-      vcan_door_fr = false;
-    }
-
-    if ((CAN_BYTE(3) & 0x03) == 2)
-    {
-      vcan_door_rl = true;
-    }
-    else
-    {
-      vcan_door_rl = false;
-    }
-
-    if (((CAN_BYTE(3) >> 4) & 0x03) == 2)
-    {
-      vcan_door_rr = true;
-    }
-    else
-    {
-      vcan_door_rr = false;
-    }
-
-    vcan_light_highbeam = CAN_BIT(6, 1);
-    vcan_light_lowbeam = CAN_BIT(6, 5);
-    break;
-  }
-
-  case HEVC_R17_ID:
-  {
-    // --- Available energy in battery ---
-    vcan_hvBat_available_energy = ((((uint16_t)(CAN_BYTE(3) & 0x1F) << 6) | (CAN_BYTE(4) >> 2)) & 0x07FF) * 0.05;
-    break;
-  }
-
-  case ATCU_A5_ID:
-  {
-    // --- Gear/direction; negative=reverse, 0=neutral, 1=forward ---
-    // N/P = neutral, R = Reverse, CVT = forward
-    uint8_t rawGear = (CAN_BYTE(2) >> 4) & 0x0F;
-    switch (rawGear)
-    {
-    case 9:
-      vcan_vehicle_gear = -1;
-      break;
-    case 10:
-      vcan_vehicle_gear = 0;
-      break;
-    case 11:
-      vcan_vehicle_gear = 1;
-      break;
-    }
-    break;
-  }
-
-  case HEVC_R11_ID:
-  {
-    // --- Consumption and trip information ---
-    uint16_t rawAuxCons = (((uint16_t)CAN_BYTE(0) << 4) | (CAN_BYTE(1) >> 4)) & 0x0FFF;
-    vcan_lastTrip_AuxCons = rawAuxCons * 0.1;
-
-    uint16_t rawAvgZEVCons = (((uint16_t)CAN_BYTE(3) << 2) | (CAN_BYTE(4) >> 6)) & 0x03FF;
-    vcan_lastTrip_AvgCons = rawAvgZEVCons * 0.1;
-
-    uint16_t rawAutonomyZEV = (((uint16_t)(CAN_BYTE(4) & 0x3F) << 4) | (CAN_BYTE(5) >> 4)) & 0x03FF;
-    vcan_hvBat_estimatedRange = rawAutonomyZEV * 1.0;
-    break;
-  }
-
-  case HEVC_R12_ID:
-  {
-    // --- Consumption and trip information ---
-    uint16_t rawTotalCons = (((uint16_t)CAN_BYTE(0) << 4) | (CAN_BYTE(1) >> 4)) & 0x0FFF;
-    vcan_lastTrip_Cons = rawTotalCons * 0.1;
-
-    uint16_t rawTotalRec = CAN_BYTE(2);
-    vcan_lastTrip_Recv = rawTotalRec * 0.1;
-    break;
-  }
-
-  case BCM_A3_ID:
-  {
-    // --- Lights and PTC informations ---
-    vcan_hvac_ptc_heater_active = (CAN_BYTE(3) >> 4) & 0x0F;
-    vcan_light_fogFront = CAN_BIT(4, 7);
-    vcan_light_brake = CAN_BIT(5, 6);
-    vcan_light_fogRear = CAN_BIT(7, 0);
-
-    break;
-  }
-
-  case HEVC_A22_ID:
-  {
-    // --- HV battery data ---
-    uint16_t rawHVVolt = (((uint16_t)(CAN_BYTE(4) & 0x1F) << 8) | CAN_BYTE(5)) & 0x1FFF;
-    vcan_hvBat_voltage = rawHVVolt * 0.1;
-
-    break;
-  }
-
-  case HEVC_A1_ID:
-  {
-    // --- Plug and charge state ---
-    uint8_t rawPlugState = (CAN_BYTE(0) >> 6) & 0x03;
-    if (rawPlugState == 1 || rawPlugState == 2)
-    {
-      vcan_vehicle_ChgPlugState = true;
-    }
-    else
-    {
-      vcan_vehicle_ChgPlugState = false;
-    }
-
-    vcan_vehicle_ChargeState = (CAN_BYTE(2) >> 4) & 0x07;
-    break;
-  }
-
-  case BCM_A2_ID:
-  {
-    // --- Tyre pressure ---
-    vcan_tyrePressure_FL = CAN_BYTE(0) * 30.0;
-    vcan_tyrePressure_FR = CAN_BYTE(1) * 30.0;
-    vcan_tyrePressure_RL = CAN_BYTE(2) * 30.0;
-    vcan_tyrePressure_RR = CAN_BYTE(3) * 30.0;
-    break;
-  }
-
-  case HVAC_A2_ID:
-  {
-    // --- Compressor mode and power cons ---
-    vcan_hvac_compressor_power = ((CAN_BYTE(1) >> 1) & 0x7F) * 50.0;
-    break;
-  }
-
-  case BCM_A4_ID:
-  {
-    // --- Zoe "outside" lock state aka locked by HFM
-    vcan_vehicle_LockState = CAN_BIT(2, 3);
-    break;
-  }
-
-  case ECM_A6_ID:
-  {
-    // --- DC/DC Current and load ---
-    vcan_dcdc_current = CAN_BYTE(2) * 1.0;
-    vcan_dcdc_load = ((CAN_BYTE(4) >> 1) & 0x7F) * 1.0;
-    break;
-  }
-
-  case BCM_A11_ID:
-  {
-    // --- TPMS alert states
-    vcan_tyreState_FR = (CAN_BYTE(2) >> 2) & 0x07;
-    vcan_tyreState_FL = (CAN_BYTE(2) >> 5) & 0x07;
-    vcan_tyreState_RR = (CAN_BYTE(3) >> 2) & 0x07;
-    vcan_tyreState_RL = (CAN_BYTE(3) >> 5) & 0x07;
-    break;
-  }
-
-  case HEVC_A2_ID:
-  {
-    // --- HV battery SoC and Charge time remaining ---
-    vcan_hvBat_SoC = (CAN_BYTE(3) & 0x7F) * 1.0;
-
-    uint16_t rawRemTime = (((uint16_t)CAN_BYTE(2) << 1) | ((CAN_BYTE(3) >> 7) & 0x01)) & 0x01FF;
-    vcan_hvBat_ChargeTimeRemaining = rawRemTime * 5.0;
-
-    break;
-  }
-
-  case HEVC_A23_ID:
-  {
-    // --- HV battery allowed max charging / recuperating power ---
-    uint16_t rawChargePwr = (((uint16_t)(CAN_BYTE(4) & 0x0F) << 8) | ((uint16_t)CAN_BYTE(5))) & 0x0FFF;
-    vcan_hvBat_max_chg_power = rawChargePwr * 0.1;
-    break;
-  }
-
-  case METER_A5_ID:
-  {
-    // --- Trip distance from METER ---
-    uint32_t rawTripDist = (((uint32_t)CAN_BYTE(4) << 9) | ((uint32_t)CAN_BYTE(5) << 1) | ((CAN_BYTE(6) >> 7) & 0x01)) & 0x1FFFF;
-    vcan_lastTrip_Distance = rawTripDist * 0.1;
-
-    // read trip distance unit, later for other country usage
-    // uint8_t rawTripUnit = (CAN_BYTE(3) >> 4) & 0x03;
-    // const char *unitStr = (rawTripUnit == 1) ? "mi" : "km";
-
-    break;
-  }
-
-  case HFM_A1_ID:
-  {
-    // --- HFM (Hand Free Module) commands for remote climate trigger ---
-    // Monitor for "Remote Lighting" button press (HFM_RKE_Request = 8) to trigger climate control
-    if (m_remote_climate_enabled && m_vcan_enabled)
-    {
-      uint8_t hfm_rke_request = (CAN_BYTE(3) >> 3) & 0x1F;
-
-      // Value 8 = "Short Press - Remote Lighting"
-      // Implement debouncing to prevent multiple triggers from single button press
-      if (hfm_rke_request == 8 && m_remote_climate_last_button_state != 8)
-      {
-        // Button state changed from not-pressed to pressed (edge detection)
-        uint32_t current_time = esp_log_timestamp();
-        uint32_t time_since_last_trigger = current_time - m_remote_climate_last_trigger_time;
-
-        // Require at least 30 seconds between triggers to prevent accidental repeated activations,
-        // this is the time the headlights stays on
-        if (time_since_last_trigger > 30000 || m_remote_climate_last_trigger_time == 0)
-        {
-          ESP_LOGI(TAG, "Remote lighting button pressed on key fob, triggering climate control");
-          CommandClimateControl(true);
-          m_remote_climate_last_trigger_time = current_time;
-        }
-        else
-        {
-          ESP_LOGD(TAG, "Remote lighting button pressed, but ignoring due to debounce (last trigger %dms ago)",
-                   time_since_last_trigger);
-        }
-      }
-
-      // Save current button state for next iteration
-      m_remote_climate_last_button_state = hfm_rke_request;
-    }
-    break;
-  }
-  }
-}
-
-// Sync VCAN datapoints to OVMS metrics, called by Ticker1, because VCAN refresh rate is too high
-void OvmsVehicleRenaultZoePh2::SyncVCANtoMetrics()
-{
-  // OVMS Standard and Zoe custom metrics
-  // HVAC (ClimBox ECU)
-  StandardMetrics.ms_v_env_cabinsetpoint->SetValue(vcan_hvac_cabin_setpoint, Celcius);
-  StandardMetrics.ms_v_env_cabinfan->SetValue(vcan_hvac_blower, Percentage);
-  mt_hvac_compressor_power->SetValue(vcan_hvac_compressor_power, Watts);
-  // BCM (Body control module under steering wheel)
-  StandardMetrics.ms_v_env_locked->SetValue(vcan_vehicle_LockState);
-  StandardMetrics.ms_v_door_fl->SetValue(vcan_door_fl);
-  StandardMetrics.ms_v_door_fr->SetValue(vcan_door_fr);
-  StandardMetrics.ms_v_door_rl->SetValue(vcan_door_rl);
-  StandardMetrics.ms_v_door_rr->SetValue(vcan_door_rr);
-  StandardMetrics.ms_v_door_trunk->SetValue(vcan_door_trunk);
-  StandardMetrics.ms_v_env_headlights->SetValue(vcan_light_lowbeam);
-  mt_hvac_heating_ptc_req->SetValue(vcan_hvac_ptc_heater_active); // Command comes from HVAC and BCM switches relays
-  // USM aka UPC (Switching box under Engine hood)
-  StandardMetrics.ms_v_env_on->SetValue(vcan_vehicle_ignition);
-  StandardMetrics.ms_v_env_awake->SetValue(vcan_vehicle_ignition);
-  StandardMetrics.ms_v_door_hood->SetValue(vcan_door_engineHood);
-  StandardMetrics.ms_v_charge_12v_voltage->SetValue(vcan_dcdc_voltage);
-  // METER (Instrument cluster aka TdB)
-  StandardMetrics.ms_v_pos_speed->SetValue(vcan_vehicle_speed, Kph);
-  StandardMetrics.ms_v_pos_trip->SetValue(vcan_lastTrip_Distance);
-  // HEVC, ECM (Electric vehicle controller)
-  StandardMetrics.ms_v_bat_12v_current->SetValue(vcan_dcdc_current, Amps);
-  StandardMetrics.ms_v_charge_12v_current->SetValue(vcan_dcdc_current, Amps);
-  StandardMetrics.ms_v_bat_capacity->SetValue(vcan_hvBat_available_energy, kWh);
-  StandardMetrics.ms_v_bat_energy_used->SetValue(vcan_lastTrip_Cons, kWh);
-  StandardMetrics.ms_v_bat_energy_recd->SetValue(vcan_lastTrip_Recv, kWh);
-  StandardMetrics.ms_v_bat_consumption->SetValue(vcan_lastTrip_AvgCons, kWhP100K);
-  StandardMetrics.ms_v_bat_voltage->SetValue(vcan_hvBat_voltage, Volts);
-  StandardMetrics.ms_v_charge_pilot->SetValue(vcan_vehicle_ChgPlugState);
-  mt_bat_max_charge_power->SetValue(vcan_hvBat_max_chg_power, kW);
-  mt_main_power_available->SetValue(vcan_mains_available_chg_power, kW);
-  mt_bat_cons_aux->SetValue(vcan_lastTrip_AuxCons, kWh);
-  // ATCU (Automatic shifter control ECU, Zoe didnt have that, these message comes from HEVC I think)
-  StandardMetrics.ms_v_env_gear->SetValue(vcan_vehicle_gear);
-
-  // Some metrics needs a bit logic to suppress invalid or out of range values at boot up
-  // --
-  // DCDC load will set to 100% if DCDC is switched off
-  if (vcan_dcdc_current != 0)
-  {
-    mt_12v_dcdc_load->SetValue(vcan_dcdc_load, Percentage);
-  }
-  else
-  {
-    mt_12v_dcdc_load->SetValue(0, Percentage);
-  }
-
-  // HV battery SoC, stay at 99% if charging is running, like dashboard and official app
-  if (vcan_hvBat_SoC == 100 && StandardMetrics.ms_v_charge_inprogress->AsBool())
-  {
-    StandardMetrics.ms_v_bat_soc->SetValue(99, Percentage);
-  }
-  else
-  {
-    // LBC boot up, suppress invalid values
-    if (vcan_hvBat_SoC > 0 && vcan_hvBat_SoC < 101)
-    {
-      StandardMetrics.ms_v_bat_soc->SetValue(vcan_hvBat_SoC, Percentage);
-    }
-  }
-
-  // HEVC boot up, suppress invalid values
-  if (vcan_hvBat_estimatedRange < 500 && vcan_hvBat_estimatedRange > 0)
-  {
-    StandardMetrics.ms_v_bat_range_est->SetValue(vcan_hvBat_estimatedRange, Kilometers);
-  }
-
-  // Tyre pressure, if over 7000 millibars, BCM values are stale
-  if (vcan_tyrePressure_FL < 7000)
-  {
-    StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, vcan_tyrePressure_FL * 0.001, Bar);
-  }
-  if (vcan_tyrePressure_FR < 7000)
-  {
-    StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, vcan_tyrePressure_FR * 0.001, Bar);
-  }
-  if (vcan_tyrePressure_RL < 7000)
-  {
-    StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, vcan_tyrePressure_RL * 0.001, Bar);
-  }
-  if (vcan_tyrePressure_RR < 7000)
-  {
-    StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, vcan_tyrePressure_RR * 0.001, Bar);
-  }
-
-  // Tyre state values to TPMS warning and alerts
-  if (vcan_tyreState_FL == 0)
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_FL, 0);
-  }
-  else if (vcan_tyrePressure_FL == 2)
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_FL, 1);
-  }
-  else
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_FL, 2);
-  }
-
-  if (vcan_tyreState_FR == 0)
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_FR, 0);
-  }
-  else if (vcan_tyrePressure_FR == 2)
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_FR, 1);
-  }
-  else
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_FR, 2);
-  }
-
-  if (vcan_tyreState_RL == 0)
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_RL, 0);
-  }
-  else if (vcan_tyrePressure_RL == 2)
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_RL, 1);
-  }
-  else
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_RL, 2);
-  }
-
-  if (vcan_tyreState_RR == 0)
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_RR, 0);
-  }
-  else if (vcan_tyrePressure_RR == 2)
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_RR, 1);
-  }
-  else
-  {
-    StandardMetrics.ms_v_tpms_alert->SetElemValue(MS_V_TPMS_IDX_RR, 2);
-  }
-
-  // Charge state machine from V-CAN
-  if (vcan_vehicle_ChargeState == 0)
-  {
-    StandardMetrics.ms_v_charge_state->SetValue("stopped");
-    StandardMetrics.ms_v_charge_substate->SetValue("stopped");
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-    StandardMetrics.ms_v_door_chargeport->SetValue(false);
-    StandardMetrics.ms_v_charge_climit->SetValue(0);
-  }
-  if (vcan_vehicle_ChargeState == 1)
-  {
-    StandardMetrics.ms_v_charge_state->SetValue("timerwait");
-    StandardMetrics.ms_v_charge_substate->SetValue("timerwait");
-  }
-  if (vcan_vehicle_ChargeState == 2)
-  {
-    StandardMetrics.ms_v_charge_state->SetValue("done");
-    StandardMetrics.ms_v_charge_substate->SetValue("stopped");
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-    StandardMetrics.ms_v_charge_power->SetValue(0);
-  }
-  if (vcan_vehicle_ChargeState == 3)
-  {
-    StandardMetrics.ms_v_charge_state->SetValue("charging");
-    StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-    StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-    StandardMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-  }
-  if (vcan_vehicle_ChargeState == 4)
-  {
-    StandardMetrics.ms_v_charge_state->SetValue("stopped");
-    StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-    StandardMetrics.ms_v_charge_power->SetValue(0);
-  }
-  if (vcan_vehicle_ChargeState == 5)
-  {
-    StandardMetrics.ms_v_charge_state->SetValue("stopped");
-    StandardMetrics.ms_v_charge_substate->SetValue("powerwait");
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-    StandardMetrics.ms_v_charge_power->SetValue(0);
-  }
-  if (vcan_vehicle_ChargeState == 6)
-  {
-    StandardMetrics.ms_v_door_chargeport->SetValue(true);
-  }
-  if (vcan_vehicle_ChargeState == 8)
-  {
-    StandardMetrics.ms_v_charge_state->SetValue("prepare");
-    StandardMetrics.ms_v_charge_substate->SetValue("powerwait");
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-    StandardMetrics.ms_v_charge_power->SetValue(0);
   }
 }
 
@@ -1698,7 +1369,7 @@ void OvmsVehicleRenaultZoePh2::IncomingPollReply(const OvmsPoller::poll_job_t &j
 {
   string &rxbuf = zoe_obd_rxbuf;
 
-  // ESP_LOGV(TAG, "pid: %04x length: %d m_poll_ml_remain: %d mlframe: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
+  // ESP_LOGV_RZ2(TAG, "pid: %04x length: %d m_poll_ml_remain: %d mlframe: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
 
   if (job.mlframe == 0)
   {
@@ -1739,155 +1410,52 @@ void OvmsVehicleRenaultZoePh2::IncomingPollReply(const OvmsPoller::poll_job_t &j
   }
 }
 
-// DCDC converter control functions for 12V battery recharging
-void OvmsVehicleRenaultZoePh2::SendDCDCMessage()
+// === PV CHARGING NOTIFICATION OVERRIDES ===
+// These methods override the base class to suppress individual charge notifications
+// when PV/solar charging mode is enabled. Instead, a summary is sent on cable unplug.
+
+void OvmsVehicleRenaultZoePh2::NotifyChargeStart()
 {
-  if (!m_vcan_enabled)
+  // If PV mode is active and cable is plugged in, suppress notification and track session
+  if (m_pv_charge_notification_enabled && m_pv_charge_session_active)
   {
-    ESP_LOGW(TAG, "Cannot send DCDC message, V-CAN not enabled");
+    m_pv_charge_session_count++;
+    ESP_LOGI(TAG, "PV Charge: Charge session #%d started, notification suppressed", m_pv_charge_session_count);
     return;
   }
 
-  // Send the DCDC enable message, we are faking driver door open to the HEVC
-  uint8_t dcdc_cmd[8] = {0x30, 0x06, 0x00, 0x03, 0x08, 0x74, 0x10, 0x20};
-
-  esp_err_t result = m_can1->WriteStandard(0x418, 8, dcdc_cmd);
-
-  if (result == ESP_OK || result == ESP_QUEUED)
-  {
-    ESP_LOGV(TAG, "DCDC message sent (result: %d)", result);
-  }
-  else
-  {
-    ESP_LOGD(TAG, "DCDC message send failed (result: %d), will retry in 1 second", result);
-  }
+  // Normal behavior: call base class
+  OvmsVehicle::NotifyChargeStart();
 }
 
-void OvmsVehicleRenaultZoePh2::EnableDCDC(bool manual)
+void OvmsVehicleRenaultZoePh2::NotifyChargeStopped()
 {
-  if (manual)
+  // If PV mode is active and cable is plugged in, suppress notification and accumulate kWh
+  if (m_pv_charge_notification_enabled && m_pv_charge_session_active)
   {
-    m_dcdc_manual_enabled = true;
-  }
-  m_dcdc_active = true;
-  m_dcdc_last_send_time = 0; // Force immediate send
-  m_dcdc_start_time = xTaskGetTickCount() * portTICK_PERIOD_MS; // Record start time
-  ESP_LOGI(TAG, "DCDC converter %s (will run for 30 minutes)", manual ? "manually enabled" : "auto-enabled");
-}
-
-void OvmsVehicleRenaultZoePh2::DisableDCDC()
-{
-  m_dcdc_manual_enabled = false;
-  m_dcdc_active = false;
-  m_dcdc_start_time = 0;
-  ESP_LOGI(TAG, "DCDC converter disabled");
-}
-
-void OvmsVehicleRenaultZoePh2::CheckAutoRecharge()
-{
-  uint32_t currentTime = xTaskGetTickCount() * portTICK_PERIOD_MS;
-  bool is_locked = StandardMetrics.ms_v_env_locked->AsBool();
-
-  // Check if DCDC is active and needs to be stopped
-  if (m_dcdc_active)
-  {
-    // Stop if car is unlocked (applies to both manual and automatic mode)
-    if (!is_locked)
-    {
-      ESP_LOGI(TAG, "Vehicle unlocked, stopping DCDC converter keepalive");
-      DisableDCDC();
-      return;
-    }
-
-    // Stop after 30 minutes (applies to both manual and automatic mode)
-    uint32_t elapsed_time = currentTime - m_dcdc_start_time;
-    if (elapsed_time >= (30 * 60 * 1000)) // 30 minutes in milliseconds
-    {
-      ESP_LOGI(TAG, "DCDC converter timeout (30 minutes), stopping");
-      DisableDCDC();
-      return;
-    }
-  }
-
-  // Only check for starting auto-recharge if enabled and not manually controlled
-  if (!m_auto_12v_recharge_enabled || !m_vcan_enabled || m_dcdc_manual_enabled)
-  {
+    float session_kwh = StandardMetrics.ms_v_charge_kwh->AsFloat(0);
+    m_pv_charge_kwh_total += session_kwh;
+    ESP_LOGI(TAG, "PV Charge: Charge stopped, session %.2f kWh added, total %.2f kWh, notification suppressed",
+             session_kwh, m_pv_charge_kwh_total);
     return;
   }
 
-  float voltage_12v = StandardMetrics.ms_v_bat_12v_voltage->AsFloat(0);
-
-  // If car is locked and voltage is below threshold, enable DCDC
-  if (is_locked && voltage_12v > 0 && voltage_12v < m_auto_12v_threshold && !m_dcdc_active)
-  {
-    ESP_LOGI(TAG, "12V voltage %.2fV below threshold %.2fV, enabling auto-recharge", voltage_12v, m_auto_12v_threshold);
-    EnableDCDC(false);
-  }
+  // Normal behavior: call base class
+  OvmsVehicle::NotifyChargeStopped();
 }
 
-// Coming home function - triggers lighting after locking if headlights were on
-void OvmsVehicleRenaultZoePh2::TriggerComingHomeLighting()
+void OvmsVehicleRenaultZoePh2::NotifyChargeDone()
 {
-  if (!m_vcan_enabled)
+  // If PV mode is active and cable is plugged in, suppress notification and accumulate kWh
+  if (m_pv_charge_notification_enabled && m_pv_charge_session_active)
   {
-    ESP_LOGD(TAG, "Coming home function skipped - V-CAN not enabled");
+    float session_kwh = StandardMetrics.ms_v_charge_kwh->AsFloat(0);
+    m_pv_charge_kwh_total += session_kwh;
+    ESP_LOGI(TAG, "PV Charge: Charge done, session %.2f kWh added, total %.2f kWh, notification suppressed",
+             session_kwh, m_pv_charge_kwh_total);
     return;
   }
 
-  if (!m_coming_home_enabled)
-  {
-    ESP_LOGD(TAG, "Coming home function skipped - not enabled");
-    return;
-  }
-
-  // Check if headlights (lowbeam) were on when ignition was turned off
-  // We use saved state because headlights turn off when driver door opens
-  if (m_last_headlight_state)
-  {
-    ESP_LOGI(TAG, "Coming home function activated - headlights were on when ignition turned off, triggering lighting");
-
-    uint8_t lighting_cmd[8] = {0xF4, 0xB7, 0xA8, 0x40, 0x24, 0x84, 0x07, 0x10};
-    int max_attempts = (!mt_bus_awake->AsBool()) ? 10 : 3;
-    bool tx_success = false;
-
-    // Send frames until we get actual transmission confirmation from TxCallback
-    for (int i = 0; i < max_attempts && !tx_success; i++)
-    {
-      // Clear success flag before sending
-      m_tx_success_flag.store(false);
-
-      // Send the frame
-      m_can1->WriteStandard(HFM_A1_ID, 8, lighting_cmd);
-
-      // Wait for transmission and callback
-      vTaskDelay(100 / portTICK_PERIOD_MS);
-
-      // Check if this specific frame was successfully transmitted
-      if (m_tx_success_flag.load() && m_tx_success_id.load() == HFM_A1_ID)
-      {
-        tx_success = true;
-        ESP_LOGI(TAG, "Coming home lighting command transmitted successfully on attempt %d", i + 1);
-      }
-      else
-      {
-        ESP_LOGW(TAG, "Coming home lighting command transmission failed (attempt %d/%d)", i + 1, max_attempts);
-      }
-    }
-
-    if (tx_success)
-    {
-      ESP_LOGI(TAG, "Coming home lighting completed - headlights should turn on for ~30 seconds");
-      // Reset the saved state after successful transmission
-      m_last_headlight_state = false;
-    }
-    else
-    {
-      ESP_LOGE(TAG, "Coming home lighting failed - no successful transmission after %d attempts", max_attempts);
-      // Keep the state so we can retry on next lock
-    }
-  }
-  else
-  {
-    ESP_LOGD(TAG, "Coming home function skipped - headlights were not on when ignition turned off");
-  }
+  // Normal behavior: call base class
+  OvmsVehicle::NotifyChargeDone();
 }

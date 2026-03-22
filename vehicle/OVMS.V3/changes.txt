@@ -135,30 +135,43 @@ Open Vehicle Monitor System v3 - Change log
     Add multiple CAN frame parsers for energy and charging metrics
     Add automatic 12V ADC factor recalculation history tracking
 - Renault Zoe Ph2:
-  New commands:
-    xrz2 preclimate schedule <day> <time>  -- Set precondition schedule for specific day
-    xrz2 preclimate list                   -- List all configured precondition schedules
-    xrz2 preclimate clear <day|all>        -- Clear precondition schedule
-  New config namespace:
-    [xrz2.preclimate]                     -- precondition schedules storage (day=time,time,...)
-    precondition scheduler features:
-      - Multiple times per day support (comma-separated: "07:30,17:45")
-      - Individual schedule per weekday
-      - Automatic trigger based on system time
-      - SOC requirement check (minimum 15%)
-      - Integration with existing climate control
-      - Web UI configuration page at /xrz2/preclimate
-    Remove waterpump lifetime left metric and waterpump reset command
-    Add manual PTC activation (heating while charging or defective compressor)
-    Add lighting command (same like key fob button)
-    Add coming home function 
-    Add remote precondition with key fob
-    Add simple precondition scheduler
-    Add dcdc manual activation
-    Add automatic dcdc activation if battery threshold reached
-    Add working trunk unlock command
-    Use TXCallback for checking successful transmissions
-    Use wake up messages when CAN is sleeping
+    - Added temperature-based PTC auto-enable feature
+      - Auto-enables PTCs when outside temperature in range (default 9.5-20°C)
+      - Configurable via Web UI or console commands
+    New config:
+      [xrz2] auto_ptc_enabled           -- [bool] enable auto-PTC based on temperature (default: no)
+      [xrz2] auto_ptc_temp_min          -- [float] minimum temperature for auto-enable (default: 9.5°C)
+      [xrz2] auto_ptc_temp_max          -- [float] maximum temperature for auto-enable (default: 20.0°C)
+    Restructured the entire codebase for improved readability
+    Removed the water pump lifetime metric and water pump reset command
+    Added custom metrics for motor/inverter state monitoring (rotor/stator currents and temperatures)
+    New metrics:
+      xrz2.m.temp.stator1               -- Stator temperature sensor 1 (°C)
+      xrz2.m.temp.stator2               -- Stator temperature sensor 2 (°C)
+      xrz2.m.temp.rotor.raw             -- Rotor temperature raw estimation (°C)
+      xrz2.m.temp.rotor                 -- Rotor temperature estimated (°C)
+      xrz2.m.current.stator.u           -- Stator phase U current, absolute value (Amps)
+      xrz2.m.current.stator.v           -- Stator phase V current, absolute value (Amps)
+      xrz2.m.current.stator.w           -- Stator phase W current, absolute value (Amps)
+      xrz2.m.current.rotor1             -- Rotor current sensor 1 (Amps)
+      xrz2.m.current.rotor2             -- Rotor current sensor 2 (Amps)
+      xrz2.m.rotor.resistance           -- Rotor reference resistance (Ohms)
+      xrz2.m.rotor.voltage              -- Rotor excitation voltage I×R calculated (Volts)
+    Added manual PTC activation for heating while charging or when the compressor is defective
+    Added a lighting command, similar to the key fob button
+    Added a coming-home function
+    Added remote preconditioning via the key fob
+    Added PV/Solar charging mode to suppress per-session charge start/stop notifications on PV-controlled wallboxes
+      Sends a single summary notification when the charge cable is unplugged, including the total kWh charged across all sessions
+    Added DC/DC activation and keep-alive via OVMS
+      Enables and keeps the HV system alive regardless of lock status or whether the Zoe was previously asleep
+      Automatically activates the DC/DC converter to recharge the 12 V battery when the voltage threshold is reached
+      Added configurable post-ignition DC/DC runtime (0–60 min) to reduce contactor wear during short stops or when preparing the Zoe for a trip
+      Added manual DC/DC activation with configurable SOC and time limits, ideal for powering 230 V inverters, for example while camping
+    Added a working trunk unlock command
+    Added TXCallback to verify successful message transmission
+    Added ECU feedback handling instead of sending messages blindly; currently implemented only for the coming-home function
+    Added wake-up messages for when the CAN bus is asleep
 - Wifi: added command to restart the Wifi network into the default (autostart) config,
     and added default for the AP SSID on the apclient mode.
   New/changed commands:

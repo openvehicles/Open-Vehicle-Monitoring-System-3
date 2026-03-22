@@ -65,6 +65,60 @@ void OvmsVehicleRenaultZoePh2::IncomingINV(uint16_t type, uint16_t pid, const ch
     StandardMetrics.ms_v_inv_power->SetValue(float(mt_inv_hv_current->AsFloat() * mt_inv_hv_voltage->AsFloat()) * 0.001);
     break;
   }
+  case 0x7003:
+  { // Rotor current sensor 1
+    mt_mot_current_rotor1->SetValue(float(CAN_UINT(0) * 0.0009765625), Amps);
+    // Recalculate rotor excitation voltage
+    if (mt_mot_rotor_resistance->IsDefined()) {
+      float current_avg = (mt_mot_current_rotor1->AsFloat() + mt_mot_current_rotor2->AsFloat()) / 2.0f;
+      mt_mot_rotor_voltage->SetValue(current_avg * mt_mot_rotor_resistance->AsFloat(), Volts);
+    }
+    break;
+  }
+  case 0x7004:
+  { // Rotor current sensor 2
+    mt_mot_current_rotor2->SetValue(float(CAN_UINT(0) * 0.0009765625), Amps);
+    // Recalculate rotor excitation voltage
+    if (mt_mot_rotor_resistance->IsDefined()) {
+      float current_avg = (mt_mot_current_rotor1->AsFloat() + mt_mot_current_rotor2->AsFloat()) / 2.0f;
+      mt_mot_rotor_voltage->SetValue(current_avg * mt_mot_rotor_resistance->AsFloat(), Volts);
+    }
+    break;
+  }
+  case 0x7007:
+  { // Stator current phase U
+    mt_mot_current_stator_u->SetValue(fabsf((CAN_UINT(0) * 0.03125f) - 500.0f), Amps);
+    break;
+  }
+  case 0x7008:
+  { // Stator current phase V
+    mt_mot_current_stator_v->SetValue(fabsf((CAN_UINT(0) * 0.03125f) - 500.0f), Amps);
+    break;
+  }
+  case 0x7009:
+  { // Stator current phase W
+    mt_mot_current_stator_w->SetValue(fabsf((CAN_UINT(0) * 0.03125f) - 500.0f), Amps);
+    break;
+  }
+  case 0x7038:
+  { // Rotor copper temperature raw estimation
+    mt_mot_temp_rotor_raw->SetValue(float((CAN_UINT(0) * 0.0078125) - 40), Celcius);
+    break;
+  }
+  case 0x7088:
+  { // Rotor copper temperature estimation
+    mt_mot_temp_rotor->SetValue(float((CAN_UINT(0) / 128.0) - 40), Celcius);
+    break;
+  }
+  case 0x7050:
+  { // Reference rotor resistance
+    float resistance = float(CAN_UINT(0) * 0.001953125);
+    mt_mot_rotor_resistance->SetValue(resistance);
+    // Calculate rotor excitation voltage: V = I × R (using average of both rotor current sensors)
+    float current_avg = (mt_mot_current_rotor1->AsFloat() + mt_mot_current_rotor2->AsFloat()) / 2.0f;
+    mt_mot_rotor_voltage->SetValue(current_avg * resistance, Volts);
+    break;
+  }
 
   default:
   {
