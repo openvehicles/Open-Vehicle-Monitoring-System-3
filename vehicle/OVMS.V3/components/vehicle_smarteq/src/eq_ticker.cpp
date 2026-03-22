@@ -40,14 +40,12 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
 
-  if(StdMetrics.ms_v_charge_pilot->AsBool(false) || StdMetrics.ms_v_charge_inprogress->AsBool(false)) 
+  if(IsCharging()) 
     HandleCharging();
   
-  if(StdMetrics.ms_v_env_on->AsBool(false) || StdMetrics.ms_v_env_hvac->AsBool(false))
-    HandleEnergy();
-  
-  if(StdMetrics.ms_v_env_on->AsBool(false))
+  if(IsOn())
     {
+    HandleEnergy();
     if(StdMetrics.ms_v_env_gear->AsInt(0) != m_gear)
       StdMetrics.ms_v_env_gear->SetValue(m_gear);
     }
@@ -64,7 +62,7 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
     m_warning_unlocked = false;
     }
 
-  if(StdMetrics.ms_v_env_on->AsBool(false))
+  if(IsOn())
     HandleTripcounter();
 
   if(m_enable_LED_state) 
@@ -72,13 +70,13 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   }
 
 void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {  
-  if(m_12v_charge && !StdMetrics.ms_v_env_on->AsBool()) 
+  if(m_12v_charge && !IsOn()) 
     Check12vState();
   if(m_enable_lock_state && !m_warning_unlocked && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
     DoorLockState();
   if(m_enable_door_state && !m_warning_dooropen && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
     DoorOpenState();
-  if(StdMetrics.ms_v_env_on->AsBool(false)) 
+  if(IsOn()) 
     setTPMSValue();   // update TPMS metrics
 
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
@@ -97,6 +95,24 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       ESP_LOGI(TAG, "DDT4ALL session timeout reached");
       MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
       }
+    }
+  // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
+  if (!m_poll_on_mod && IsHVACon() && IsAwake() && m_enable_write_caron)
+    {
+    m_poll_on_mod = true;
+    smartCANmode(true);
+    }
+  // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
+  if (!m_poll_on_charge && IsCharging())
+    {
+    mt_bus_awake->SetValue(true);
+    smartChargeStart();
+    }
+  // check 12V charging state for powermgmt system
+  bool charge_12v = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f ? true : false;
+  if (charge_12v != StdMetrics.ms_v_env_charging12v->AsBool())
+    {
+    StdMetrics.ms_v_env_charging12v->SetValue(charge_12v);
     }
 
   #ifdef CONFIG_OVMS_COMP_ADC

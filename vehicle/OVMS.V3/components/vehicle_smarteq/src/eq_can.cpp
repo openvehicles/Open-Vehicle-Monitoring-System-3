@@ -81,6 +81,23 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         m_candata_poll = false;
         m_candata_timer = -1;
         }
+      int code = CAN_BYTE(0);
+      std::string msgtxt = "";
+      switch(code) {
+        case 192: msgtxt = "SLEEPING"; break; 
+        case 193: msgtxt = "TECHNICAL WAKE UP"; break;
+        case 194: msgtxt = "CUT OFF PENDING"; break;
+        case 195: msgtxt = "BAT TEMPO LEVEL"; break;
+        case 196: msgtxt = "ACCESSORY LEVEL"; break;
+        case 197: msgtxt = "IGNITION LEVEL"; break;
+        case 198: msgtxt = "STARTING IN PROGRESS"; break;
+        case 199: msgtxt = "ENGINE RUNNING"; break;
+        case 200: msgtxt = "AUTOSTART"; break;
+        case 201: msgtxt = "ENGINE SYSTEM STOP"; break;
+        default: msgtxt = "SLEEPING"; break;
+      }
+      if(msgtxt != mt_bcm_vehicle_state->AsString(""))
+        mt_bcm_vehicle_state->SetValue(msgtxt);
       break;
       }
     case 0x392:
@@ -237,7 +254,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x673:  
       // TPMS pressure values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt
-      if (!m_enable_write)
+      if ((!m_enable_write && !m_enable_write_caron) || m_basic_tpms)
       {
         REQ_DLC(6);
         // Read TPMS pressure values:

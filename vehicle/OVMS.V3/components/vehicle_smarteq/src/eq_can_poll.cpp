@@ -144,9 +144,6 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x339D: // Charging plug detected (B_PlugConnected_bcb_status_S)
           PollReply_EVC_PlugDetected(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x33EA: // Plug connection status (K_PlugConnected_bcb_status)
-          PollReply_EVC_PlugStatus(m_rxbuf.data(), m_rxbuf.size());
-          break;
         case 0x84: // Frame Traceability Information
           PollReply_EVC_Traceability(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -281,18 +278,6 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x79: // TPMS counters/status (missing transmitters)
           PollReply_BCM_TPMS_Status(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x8003: // rq_VehicleState
-          PollReply_BCM_VehicleState(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x404D: // rq_CAR_SECURED_S
-          PollReply_BCM_CarSecured(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x605e: // rq_UNDERHOOD_OPENED
-          PollReply_BCM_DoorUnderhoodOpened(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x8079: // Generator mode
-          PollReply_BCM_GenMode(m_rxbuf.data(), m_rxbuf.size());
-          break;
         case 0x25: // Doorlock EEPROM
           PollReply_BCM_DoorlockEEPROM(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -312,7 +297,7 @@ void OvmsVehicleSmartEQ::IncomingPollError(const OvmsPoller::poll_job_t &job, in
         case 0x7303: // rqChargerAC
           if (code == 0x12) {
             mt_obl_fastchg->SetValue(true);
-            ObdModifyPoll();
+            HandleOBDpolling();
           }
           break;
       }
@@ -402,7 +387,6 @@ void OvmsVehicleSmartEQ::PollReply_BMS_SOCRecal(const char* data, uint16_t reply
   
   if (display_soc >= 0 && display_soc <= 100.0f) {
     mt_bms_soc_values->SetElemValue(4, display_soc);  // display SOC
-    //StdMetrics.ms_v_bat_soc->SetValue(display_soc);
     }
 }
 
@@ -486,7 +470,6 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t rep
   mt_bms_cap->SetElemValue(4, cap_useable);   // usable_capacity 
   mt_bms_mileage->SetValue(mileage_raw);      // total mileage stored in BMS
   StdMetrics.ms_v_bat_cac->SetValue(cap_useable);
-  //StdMetrics.ms_v_bat_soh->SetValue(soh);
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_ProductionData(const char* data, uint16_t reply_len) {
@@ -683,70 +666,6 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_Status(const char* data, uint16_t re
     }
 }
 
-void OvmsVehicleSmartEQ::PollReply_BCM_VehicleState(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(1);
-  int code = CAN_BYTE(0);
-  std::string msgtxt = "";
-  switch(code) {
-    case 0: msgtxt = "SLEEPING"; break; 
-    case 1: msgtxt = "TECHNICAL WAKE UP"; break;
-    case 2: msgtxt = "CUT OFF PENDING"; break;
-    case 3: msgtxt = "BAT TEMPO LEVEL"; break;
-    case 4: msgtxt = "ACCESSORY LEVEL"; break;
-    case 5: msgtxt = "IGNITION LEVEL"; break;
-    case 6: msgtxt = "STARTING IN PROGRESS"; break;
-    case 7: msgtxt = "ENGINE RUNNING"; break;
-    case 8: msgtxt = "AUTOSTART"; break;
-    case 9: msgtxt = "ENGINE SYSTEM STOP"; break;
-    default: msgtxt = "Unknown code"; break;
-  }
-  mt_bcm_vehicle_state->SetValue(msgtxt);
-  StdMetrics.ms_v_env_awake->SetValue(code > 0);
-}
-
-void OvmsVehicleSmartEQ::PollReply_BCM_DoorUnderhoodOpened(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(1);
-  bool open = (CAN_BYTE(0) > 0);
-  StdMetrics.ms_v_door_hood->SetValue(open);
-}
-
-void OvmsVehicleSmartEQ::PollReply_BCM_CarSecured(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 40 4D <Byte>
-  // CAR_SECURE_S: true if alarm armed/car secured
-  REQUIRE_LEN(1);
-  bool secured = (CAN_BYTE(0) > 0);
-  mt_car_secured->SetValue(secured);
-}
-
-void OvmsVehicleSmartEQ::PollReply_BCM_GenMode(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 80 79 <Byte>
-  // Spec: firstbyte 4, lists 0-15
-  REQUIRE_LEN(1);
-  uint8_t mode = CAN_BYTE(0);
-  
-  const char* txt;
-  switch (mode) {
-    case 0:  txt = "LIMIT_REQ_BY_ENGINE"; break;
-    case 1:  txt = "NOMINAL_STRATEGY_MODE"; break;
-    case 2:  txt = "ESM_INTERMEDIATE_MODE"; break;
-    case 3:  txt = "BATTERY_PROTECTION"; break;
-    case 4:  txt = "ESM_DISCHARGE_MODE"; break;
-    case 5:  txt = "ESM_REGENERATION_MODE"; break;
-    case 6:  txt = "ESM_INHIBITED_BY_WIPER"; break;
-    case 7:  txt = "ESM_INHIBITED_BY_ACTUATOR"; break;
-    case 8:  txt = "MAX_VOLTAGE_BY_ENDUR"; break;
-    case 9:  txt = "MIN_VOLTAGE_BY_ECM"; break;
-    case 10: txt = "FLOATING_MODE"; break;
-    case 11: txt = "NOT_USED1"; break;
-    case 12: txt = "NOT_USED2"; break;
-    case 13: txt = "NOT_USED3"; break;
-    case 14: txt = "NOT_USED4"; break;
-    default: txt = "UNAVAILABLE"; break;
-  }
-  mt_bcm_gen_mode->SetValue(txt);
-  StdMetrics.ms_v_gen_state->SetValue(txt);
-}
-
 void OvmsVehicleSmartEQ::PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 62 32 0C <Byte> <Byte>
   REQUIRE_LEN(2);
@@ -850,23 +769,6 @@ void OvmsVehicleSmartEQ::PollReply_EVC_PlugDetected(const char* data, uint16_t r
   // 0 = No charging plug, 1 = Charging plug detected
   REQUIRE_LEN(1);
   mt_evc_plug_detected->SetValue(CAN_NIBL(0) > 0);
-}
-
-void OvmsVehicleSmartEQ::PollReply_EVC_PlugStatus(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 33 EA <Byte>
-  // 0=none, 2=connected, 4=+button, 6=2plugs, 7=unavailable
-  REQUIRE_LEN(1);
-  int code = CAN_NIBL(0);
-  std::string msgtxt = "";
-  switch(code) {
-    case 0: msgtxt = "none"; break;
-    case 2: msgtxt = "connected"; break;
-    case 4: msgtxt = "connected + button"; break;
-    case 6: msgtxt = "2 plugs"; break;
-    case 7: msgtxt = "unavailable"; break;
-    default: msgtxt = "Unknown code"; break;
-  }
-  mt_evc_plug_status->SetValue(msgtxt);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len) {
@@ -1115,7 +1017,7 @@ void OvmsVehicleSmartEQ::PollReply_obd_mt_km(const char* data, uint16_t reply_le
 void OvmsVehicleSmartEQ::PollReply_BCM_DoorlockEEPROM(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 61 25 <Byte> <Byte> <Byte> <Byte> ...
   // Service 0x21, PID 0x25
-  REQUIRE_LEN(4);
+  REQUIRE_LEN(1);
   
   // DRIVER_DOOR_LOCKED_S:
   bool driver_locked = (CAN_BYTE(0) > 0);
