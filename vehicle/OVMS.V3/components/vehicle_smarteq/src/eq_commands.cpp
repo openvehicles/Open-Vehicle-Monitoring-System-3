@@ -296,7 +296,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandCanWrite(const std::st
   bool reset = false;
   if (parts.size() >= 4) {
     std::string reset_str = parts[3];
-    // Convert to lowercase for comparIsOnEQ
+    // Convert to lowercase for comparison
     for (auto& c : reset_str) c = tolower(c);
     reset = (reset_str == "true" || reset_str == "1" || reset_str == "yes");
   }
@@ -305,7 +305,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandCanWrite(const std::st
   bool wakeup = true;
   if (parts.size() >= 5) {
     std::string wakeup_str = parts[4];
-    // Convert to lowercase for comparIsOnEQ
+    // Convert to lowercase for comparison
     for (auto& c : wakeup_str) c = tolower(c);
     wakeup = (wakeup_str == "true" || wakeup_str == "1" || wakeup_str == "yes");
   }
