@@ -40,10 +40,10 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
 
-  if(IsCharging()) 
+  if(IsChargingEQ()) 
     HandleCharging();
   
-  if(IsOn())
+  if(IsOnEQ())
     {
     HandleEnergy();
     if(StdMetrics.ms_v_env_gear->AsInt(0) != m_gear)
@@ -62,7 +62,7 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
     m_warning_unlocked = false;
     }
 
-  if(IsOn())
+  if(IsOnEQ())
     HandleTripcounter();
 
   if(m_enable_LED_state) 
@@ -70,13 +70,13 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   }
 
 void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {  
-  if(m_12v_charge && !IsOn()) 
+  if(m_12v_charge && !IsOnEQ()) 
     Check12vState();
   if(m_enable_lock_state && !m_warning_unlocked && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
     DoorLockState();
   if(m_enable_door_state && !m_warning_dooropen && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
     DoorOpenState();
-  if(IsOn()) 
+  if(IsOnEQ()) 
     setTPMSValue();   // update TPMS metrics
 
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
@@ -97,13 +97,12 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       }
     }
   // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
-  if (!m_poll_on_mod && IsHVACon() && IsAwake() && m_enable_write_caron)
+  if (IsOnHVACEQ() && IsAwakeEQ() && m_enable_write_caron && !m_can_active)
     {
-    m_poll_on_mod = true;
     smartCANmode(true);
     }
   // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
-  if (!m_poll_on_charge && IsCharging())
+  if (!m_poll_on_charge && IsChargingEQ())
     {
     mt_bus_awake->SetValue(true);
     smartChargeStart();

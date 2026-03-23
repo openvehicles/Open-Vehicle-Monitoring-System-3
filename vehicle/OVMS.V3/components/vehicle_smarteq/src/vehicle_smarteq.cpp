@@ -78,7 +78,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_led_state = 4;
   m_cfg_cell_interval_drv = 60;
   m_cfg_cell_interval_chg = 60;
-  m_poll_on_mod = false;
   m_poll_on_charge = false;
 
   // BMS configuration:
