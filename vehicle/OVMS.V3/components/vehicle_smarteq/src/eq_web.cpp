@@ -106,9 +106,9 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     obdii79b_cell = (c.getvar("obdii79b.cell") == "yes");
     obdii743 = (c.getvar("obdii743") == "yes");
     obdii745 = (c.getvar("obdii745") == "yes");
+    obdii745_tpms = (c.getvar("obdii745_tpms") == "yes");
     obdii7e4 = (c.getvar("obdii7e4") == "yes");
     obdii7e4_dcdc = (c.getvar("obdii7e4_dcdc") == "yes");
-    obdii745_tpms = (c.getvar("obdii745_tpms") == "yes");
 
     // Basic numeric validation:
     auto validFloat = [&](const std::string& s, double minv, double maxv, const char* fname)->bool {
@@ -134,15 +134,10 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       };
       
       // Update all values in local map
-      if(canwrite != sq->m_enable_write) 
+      if(canwrite && canwrite_caron) 
          {
-         // If canwrite changed, reset canwrite_caron to avoid inconsistent state
+         // If canwrite/canwrite_caron changed, reset canwrite_caron to avoid inconsistent state
          canwrite_caron = false;
-         }
-      if(canwrite_caron != sq->m_enable_write_caron) 
-         {
-         // If canwrite_caron changed, reset canwrite to avoid inconsistent state
-         canwrite = false;
          }
       setBool("canwrite", canwrite);
       setBool("canwrite.caron", canwrite_caron);
@@ -163,18 +158,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       setBool("obdii.745", obdii745);
       setBool("obdii.7e4", obdii7e4);
       setBool("obdii.7e4.dcdc", obdii7e4_dcdc);
-      if(obdii745_tpms) 
-        {
-        // If 745 TPMS polling enabled, disable basic TPMS (pressure only)
-        setBool("tpms.alert.enable", true);
-        setBool("tpms.temp", true);
-        }
-      else
-        {
-        // If 745 TPMS polling disabled, enable basic TPMS (pressure only) to keep some TPMS functionality
-        setBool("tpms.alert.enable", false);
-        setBool("tpms.temp", false);
-        }
+      setBool("obdii.745.tpms", obdii745_tpms);
 
       // Write all changes in one operation
       MyConfig.SetParamMap("xsq", map);
@@ -214,9 +198,9 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       obdii79b_cell = (m.count("obdii.79b.cell") ? (m.at("obdii.79b.cell") == "yes") : sq->m_obdii_79b_cell);
       obdii743   = (m.count("obdii.743") ? (m.at("obdii.743") == "yes") : sq->m_obdii_743);
       obdii745   = (m.count("obdii.745") ? (m.at("obdii.745") == "yes") : sq->m_obdii_745);
+      obdii745_tpms = (m.count("obdii.745.tpms") ? (m.at("obdii.745.tpms") == "yes") : sq->m_obdii_745_tpms);
       obdii7e4   = (m.count("obdii.7e4") ? (m.at("obdii.7e4") == "yes") : sq->m_obdii_7e4);
       obdii7e4_dcdc = (m.count("obdii.7e4.dcdc") ? (m.at("obdii.7e4.dcdc") == "yes") : sq->m_obdii_7e4_dcdc);
-      obdii745_tpms = !sq->m_basic_tpms;
       
       // Strings - need to convert to string
       if (m.count("rebootnw")) {
@@ -261,9 +245,9 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       obdii79b_cell = sq->m_obdii_79b_cell;
       obdii743 = sq->m_obdii_743;
       obdii745 = sq->m_obdii_745;
+      obdii745_tpms = !sq->m_obdii_745_tpms;
       obdii7e4 = sq->m_obdii_7e4;
       obdii7e4_dcdc = sq->m_obdii_7e4_dcdc;
-      obdii745_tpms = !sq->m_basic_tpms;
     }
 
     c.head(200);
@@ -275,9 +259,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   
   c.fieldset_start("Remote Control");
   c.input_checkbox("Enable CAN write access", "canwrite", canwrite,
-    "<p>Controls overall CAN write access (poll), some functions depend on this.</p>");
-  c.input_checkbox("Enable CAN write access only when car is on", "canwrite_caron", canwrite_caron,
-    "<p>Enable = CAN write access, Disable = CAN write will be disabled when car is switched off</p>"
+    "<p>Controls overall CAN write access (e.g. OBDII polling), some functions depend on this.</p>");
+  c.input_checkbox("Enable CAN write access only when car is on/charging", "canwrite_caron", canwrite_caron,
     "<p>Note: This setting is an alternative to Canwrite access; either one of the two options or neither can be selected!</p>");
   c.fieldset_end();
   

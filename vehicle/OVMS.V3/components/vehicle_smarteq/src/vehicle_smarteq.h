@@ -34,7 +34,7 @@
 #define __VEHICLE_SMARTEQ_H__
 
 #define VERSION "2.1.2"
-#define PRESET_VERSION 20260319 // Configuration preset version
+#define PRESET_VERSION 20260326 // Configuration preset version
 
 #include "ovms_log.h"
 
@@ -445,7 +445,7 @@ public:
     int m_cfg_preset_version;               //!< config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
     int m_suffsoc;                          //!< minimum SoC for charging
     int m_suffrange;                        //!< minimum range for charging
-    bool m_basic_tpms;                      //!< basic TPMS without temperature and low battery status
+    bool m_obdii_745_tpms;                  //!< basic TPMS without temperature and low battery status
     bool m_obdii_79b;                       //!< OBDII 79b mode enabled
     bool m_obdii_79b_cell;                  //!< OBDII 79b cell V/R/T polling enabled
     bool m_obdii_743;                       //!< OBDII 743 mode enabled

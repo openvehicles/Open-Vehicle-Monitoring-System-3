@@ -491,6 +491,10 @@ void OvmsVehicleSmartEQ::smartAwake()
     {
     smartCANmode(true);
     }
+  else if (m_enable_write_caron && m_can_active)
+    {
+    smartCANmode(false);
+    }
 }
 
 void OvmsVehicleSmartEQ::smartSleep()
