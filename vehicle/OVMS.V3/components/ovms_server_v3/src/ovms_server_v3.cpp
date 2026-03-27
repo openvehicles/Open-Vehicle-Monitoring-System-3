@@ -35,6 +35,9 @@ static const char *TAG = "ovms-server-v3";
 #include <stdint.h>
 #include <vector>
 #include <algorithm>
+#include <errno.h>
+#include <stdio.h>
+#include <sys/stat.h>
 #include "ovms_server_v3.h"
 #include "buffered_shell.h"
 #include "ovms_command.h"
@@ -44,6 +47,9 @@ static const char *TAG = "ovms-server-v3";
 #include "id_filter.h"               // <- use IdFilter for pattern matching
 #if CONFIG_MG_ENABLE_SSL
   #include "ovms_tls.h"
+  #include "mbedtls/x509_crt.h"
+  #include "mbedtls/pk.h"
+  #include "mbedtls/error.h"
 #endif
 
 OvmsServerV3 *MyOvmsServerV3 = NULL;
@@ -96,12 +102,27 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           ESP_LOGI(TAG, "Connection successful");
           struct mg_send_mqtt_handshake_opts opts;
           memset(&opts, 0, sizeof(opts));
-          opts.user_name = MyOvmsServerV3->m_user.c_str();
-          opts.password = MyOvmsServerV3->m_password.c_str();
+          if (MyOvmsServerV3->m_user.empty())
+            {
+            // MQTT password must not be sent without username; omit both.
+            opts.user_name = NULL;
+            opts.password = NULL;
+            }
+          else
+            {
+            opts.user_name = MyOvmsServerV3->m_user.c_str();
+            opts.password = MyOvmsServerV3->m_password.empty() ? NULL : MyOvmsServerV3->m_password.c_str();
+            }
           opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
           opts.will_message = "no";
           opts.flags |= MG_MQTT_WILL_RETAIN;
-          opts.keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
+          uint16_t keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
+          if (MyOvmsServerV3->m_keepalive_clamp && keep_alive > 1200)
+            {
+            ESP_LOGW(TAG, "MQTT keepalive %u exceeds 1200; clamping (disable with keepalive.clamp=no)", (unsigned int) keep_alive);
+            keep_alive = 1200;
+            }
+          opts.keep_alive = keep_alive;
           mg_set_protocol_mqtt(nc);
           mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_clientid.c_str(), opts);
           }
@@ -237,6 +258,8 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_updatetime_sendall = 1200;
   m_updatetime_keepalive = 29*60;
   m_legacy_event_topic = true;
+  m_retain_depth_limit = true;
+  m_keepalive_clamp = true;
   m_notify_info_pending = false;
   m_notify_error_pending = false;
   m_notify_alert_pending = false;
@@ -458,8 +481,23 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
 
   std::string val = metric->AsString();
 
+  // When retain.depth.limit is enabled, topics with more than 7 slashes (>8 segments)
+  // are published without the RETAIN flag. This is required for AWS IoT Core, which
+  // rejects retained publishes on topics deeper than 8 segments. Disable this limit
+  // if your broker supports retained messages on topics of any depth.
+  int qos_flags;
+  if (m_retain_depth_limit)
+    {
+    int slash_count = (int)std::count(topic.begin(), topic.end(), '/');
+    qos_flags = MG_MQTT_QOS(0) | (slash_count <= 7 ? MG_MQTT_RETAIN : 0);
+    }
+  else
+    {
+    qos_flags = MG_MQTT_QOS(0) | MG_MQTT_RETAIN;
+    }
+
   mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
-    MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
+    qos_flags, val.c_str(), val.length());
   ESP_LOGV(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
 
@@ -907,6 +945,8 @@ void OvmsServerV3::Connect()
   m_password = MyConfig.GetParamValue("password", "server.v3");
   m_port = MyConfig.GetParamValue("server.v3", "port");
   m_tls = MyConfig.GetParamValueBool("server.v3","tls", false);
+  m_client_cert = MyConfig.GetParamValue("server.v3", "client.cert", "");
+  m_client_key = MyConfig.GetParamValue("server.v3", "client.key", "");
 
   m_clientid = MyConfig.GetParamValue("server.v3", "clientid");
   if (m_clientid.empty())
@@ -986,6 +1026,19 @@ void OvmsServerV3::Connect()
 #if CONFIG_MG_ENABLE_SSL
     opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     opts.ssl_server_name = m_server.c_str();
+    if (!m_client_cert.empty() && !m_client_key.empty())
+      {
+      static const char* cert_path = "/store/tls/serverv3_client.crt";
+      static const char* key_path  = "/store/tls/serverv3_client.key";
+      mkdir("/store/tls", 0777);
+      FILE* cf = fopen(cert_path, "wb");
+      if (cf) { fwrite(m_client_cert.c_str(), 1, m_client_cert.size(), cf); fclose(cf); }
+      FILE* kf = fopen(key_path, "wb");
+      if (kf) { fwrite(m_client_key.c_str(), 1, m_client_key.size(), kf); fclose(kf); }
+      opts.ssl_cert = cert_path;
+      opts.ssl_key  = key_path;
+      ESP_LOGI(TAG, "Using MQTT mTLS client certificate authentication");
+      }
 #else
     ESP_LOGE(TAG, "mg_connect(%s) failed: SSL support disabled", address.c_str());
     SetStatus("Error: Connection failed (SSL support disabled)", true, Undefined);
@@ -1187,6 +1240,8 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_updatetime_sendall = param->GetValueInt("updatetime.sendall", m_updatetime_sendall);
   m_updatetime_keepalive = param->GetValueInt("updatetime.keepalive", m_updatetime_keepalive);
   m_legacy_event_topic = param->GetValueBool("events.legacy_topic", true);
+  m_retain_depth_limit = param->GetValueBool("retain.depth.limit", m_retain_depth_limit);
+  m_keepalive_clamp = param->GetValueBool("keepalive.clamp", m_keepalive_clamp);
   m_updatetime_priority = param->GetValueBool("updatetime.priority", false);
   m_updatetime_immediately = param->GetValueBool("updatetime.immediately", false);
   m_max_per_call_sendall = param->GetValueInt("queue.sendall", m_max_per_call_sendall);
@@ -1506,6 +1561,10 @@ void ovmsv3_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
         break;
       }
     writer->printf("       %s\n",MyOvmsServerV3->m_status.c_str());
+    writer->printf("Retain depth limit: %s (config: server.v3 retain.depth.limit)\n",
+      MyOvmsServerV3->m_retain_depth_limit ? "enabled (max 8 topic segments, required for AWS IoT Core)" : "disabled");
+    writer->printf("Keepalive clamp:     %s (config: server.v3 keepalive.clamp)\n",
+      MyOvmsServerV3->m_keepalive_clamp ? "enabled (clamp keepalive to 1200s max, required for AWS IoT Core)" : "disabled");
     }
   }
 
@@ -1532,6 +1591,316 @@ void ovmsv3_update(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     MyOvmsServerV3->RequestUpdate(requested);
     writer->printf("Server V3 data update for %s metrics has been scheduled\n", requested);
     }
+  }
+
+static bool ovmsv3_startswith(const std::string& s, const char* prefix)
+  {
+  size_t plen = strlen(prefix);
+  return (s.size() >= plen && s.compare(0, plen, prefix) == 0);
+  }
+
+static bool ovmsv3_load_text_file(const char* path, std::string& data, std::string& err)
+  {
+  FILE* f = fopen(path, "rb");
+  if (!f)
+    {
+    err = strerror(errno);
+    return false;
+    }
+
+  data.clear();
+  char buf[1024];
+  size_t n;
+  while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+    {
+    data.append(buf, n);
+    }
+
+  if (ferror(f))
+    {
+    err = strerror(errno);
+    fclose(f);
+    return false;
+    }
+
+  fclose(f);
+  return true;
+  }
+
+static bool ovmsv3_validate_pem_headers(const std::string& cert, const std::string& key, std::string& err)
+  {
+  if (cert.empty() != key.empty())
+    {
+    err = "Both client certificate and private key must be set together";
+    return false;
+    }
+
+  if (cert.empty())
+    return true;
+
+  if (!ovmsv3_startswith(cert, "-----BEGIN CERTIFICATE-----"))
+    {
+    err = "Client certificate is not in PEM CERTIFICATE format";
+    return false;
+    }
+
+  if (!ovmsv3_startswith(key, "-----BEGIN PRIVATE KEY-----") &&
+      !ovmsv3_startswith(key, "-----BEGIN RSA PRIVATE KEY-----") &&
+      !ovmsv3_startswith(key, "-----BEGIN EC PRIVATE KEY-----"))
+    {
+    err = "Client private key is not in supported PEM PRIVATE KEY format";
+    return false;
+    }
+
+  return true;
+  }
+
+#if CONFIG_MG_ENABLE_SSL
+static std::string ovmsv3_mbedtls_error(int err)
+  {
+  char msg[128];
+  mbedtls_strerror(err, msg, sizeof(msg));
+  return std::string(msg);
+  }
+
+static bool ovmsv3_parse_client_cert(const std::string& cert, std::string& info, std::string& err)
+  {
+  mbedtls_x509_crt crt;
+  mbedtls_x509_crt_init(&crt);
+
+  int r = mbedtls_x509_crt_parse(&crt, (const unsigned char*) cert.c_str(), cert.length() + 1);
+  if (r != 0)
+    {
+    err = "Certificate parse failed: " + ovmsv3_mbedtls_error(r);
+    mbedtls_x509_crt_free(&crt);
+    return false;
+    }
+
+  char buf[2048];
+  if (mbedtls_x509_crt_info(buf, sizeof(buf)-1, "  ", &crt) > 0)
+    info = buf;
+  else
+    info = "  Certificate loaded but metadata could not be formatted\n";
+
+  mbedtls_x509_crt_free(&crt);
+  return true;
+  }
+
+static bool ovmsv3_validate_cert_key_pair(const std::string& cert, const std::string& key, std::string& err)
+  {
+  mbedtls_x509_crt crt;
+  mbedtls_pk_context pkey;
+  mbedtls_x509_crt_init(&crt);
+  mbedtls_pk_init(&pkey);
+
+  int r = mbedtls_x509_crt_parse(&crt, (const unsigned char*) cert.c_str(), cert.length() + 1);
+  if (r != 0)
+    {
+    err = "Certificate parse failed: " + ovmsv3_mbedtls_error(r);
+    mbedtls_pk_free(&pkey);
+    mbedtls_x509_crt_free(&crt);
+    return false;
+    }
+
+  r = mbedtls_pk_parse_key(&pkey, (const unsigned char*) key.c_str(), key.length() + 1, NULL, 0);
+  if (r != 0)
+    {
+    err = "Private key parse failed: " + ovmsv3_mbedtls_error(r);
+    mbedtls_pk_free(&pkey);
+    mbedtls_x509_crt_free(&crt);
+    return false;
+    }
+
+  r = mbedtls_pk_check_pair(&crt.pk, &pkey);
+  if (r != 0)
+    {
+    err = "Certificate/private key mismatch: " + ovmsv3_mbedtls_error(r);
+    mbedtls_pk_free(&pkey);
+    mbedtls_x509_crt_free(&crt);
+    return false;
+    }
+
+  mbedtls_pk_free(&pkey);
+  mbedtls_x509_crt_free(&crt);
+  return true;
+  }
+#endif // CONFIG_MG_ENABLE_SSL
+
+void ovmsv3_tlsclient_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string cert = MyConfig.GetParamValue("server.v3", "client.cert", "");
+  std::string key = MyConfig.GetParamValue("server.v3", "client.key", "");
+
+  writer->printf("Client certificate configured: %s\n", cert.empty() ? "no" : "yes");
+  writer->printf("Client private key configured: %s\n", key.empty() ? "no" : "yes");
+  writer->printf("Pair completeness: %s\n", (cert.empty() == key.empty()) ? "ok" : "incomplete");
+
+  std::string err;
+  if (!ovmsv3_validate_pem_headers(cert, key, err))
+    {
+    writer->printf("PEM validation: ERROR (%s)\n", err.c_str());
+    return;
+    }
+
+  if (cert.empty())
+    {
+    writer->puts("PEM validation: no client cert/key configured");
+    return;
+    }
+
+#if CONFIG_MG_ENABLE_SSL
+  if (ovmsv3_validate_cert_key_pair(cert, key, err))
+    writer->puts("Pair validation: OK");
+  else
+    writer->printf("Pair validation: ERROR (%s)\n", err.c_str());
+#else
+  writer->puts("Pair validation: unavailable (SSL support disabled)");
+#endif
+  }
+
+void ovmsv3_tlsclient_info(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string cert = MyConfig.GetParamValue("server.v3", "client.cert", "");
+  std::string key = MyConfig.GetParamValue("server.v3", "client.key", "");
+  std::string err;
+
+  writer->printf("Client certificate configured: %s\n", cert.empty() ? "no" : "yes");
+  writer->printf("Client private key configured: %s\n", key.empty() ? "no" : "yes");
+
+  if (cert.empty())
+    {
+    writer->puts("No client certificate configured");
+    return;
+    }
+
+  if (!ovmsv3_startswith(cert, "-----BEGIN CERTIFICATE-----"))
+    {
+    writer->puts("Certificate format is invalid (expected PEM CERTIFICATE)");
+    return;
+    }
+
+#if CONFIG_MG_ENABLE_SSL
+  std::string info;
+  if (!ovmsv3_parse_client_cert(cert, info, err))
+    {
+    writer->printf("Certificate metadata unavailable: %s\n", err.c_str());
+    return;
+    }
+
+  writer->puts("Certificate metadata:");
+  writer->puts(info.c_str());
+  writer->puts("Private key contents are intentionally hidden.");
+#else
+  writer->puts("Certificate metadata unavailable (SSL support disabled)");
+#endif
+  }
+
+void ovmsv3_tlsclient_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyConfig.DeleteInstance("server.v3", "client.cert");
+  MyConfig.DeleteInstance("server.v3", "client.key");
+  unlink("/store/tls/serverv3_client.crt");
+  unlink("/store/tls/serverv3_client.key");
+  writer->puts("Cleared server.v3 MQTT client certificate and private key");
+  writer->puts("Run 'server v3 tlsclient reload' to apply to active connection");
+  }
+
+void ovmsv3_tlsclient_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string cert = MyConfig.GetParamValue("server.v3", "client.cert", "");
+  std::string key = MyConfig.GetParamValue("server.v3", "client.key", "");
+  std::string err;
+
+  if (!ovmsv3_validate_pem_headers(cert, key, err))
+    {
+    writer->printf("Validation failed: %s\n", err.c_str());
+    return;
+    }
+
+  if (cert.empty())
+    {
+    writer->puts("No client cert/key configured");
+    return;
+    }
+
+#if CONFIG_MG_ENABLE_SSL
+  if (!ovmsv3_validate_cert_key_pair(cert, key, err))
+    {
+    writer->printf("Validation failed: %s\n", err.c_str());
+    return;
+    }
+
+  writer->puts("Validation successful: certificate and private key are valid and match");
+#else
+  writer->puts("Validation unavailable (SSL support disabled)");
+#endif
+  }
+
+void ovmsv3_tlsclient_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string cert = MyConfig.GetParamValue("server.v3", "client.cert", "");
+  std::string key = MyConfig.GetParamValue("server.v3", "client.key", "");
+  std::string err;
+
+  if (!ovmsv3_validate_pem_headers(cert, key, err))
+    {
+    writer->printf("Reload aborted: %s\n", err.c_str());
+    return;
+    }
+
+#if CONFIG_MG_ENABLE_SSL
+  if (!cert.empty() && !ovmsv3_validate_cert_key_pair(cert, key, err))
+    {
+    writer->printf("Reload aborted: %s\n", err.c_str());
+    return;
+    }
+#endif
+
+  if (MyOvmsServerV3 == NULL)
+    {
+    writer->puts("OVMS v3 server has not been started; settings will apply on next start");
+    return;
+    }
+
+  writer->puts("Reloading server v3 MQTT connection to apply tlsclient settings");
+  MyOvmsServerV3->Disconnect();
+  MyOvmsServerV3->Connect();
+  }
+
+void ovmsv3_tlsclient_import(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string cert, key, err;
+
+  if (!ovmsv3_load_text_file(argv[0], cert, err))
+    {
+    writer->printf("Error reading certificate file '%s': %s\n", argv[0], err.c_str());
+    return;
+    }
+
+  if (!ovmsv3_load_text_file(argv[1], key, err))
+    {
+    writer->printf("Error reading private key file '%s': %s\n", argv[1], err.c_str());
+    return;
+    }
+
+  if (!ovmsv3_validate_pem_headers(cert, key, err))
+    {
+    writer->printf("Import failed: %s\n", err.c_str());
+    return;
+    }
+
+#if CONFIG_MG_ENABLE_SSL
+  if (!ovmsv3_validate_cert_key_pair(cert, key, err))
+    {
+    writer->printf("Import failed: %s\n", err.c_str());
+    return;
+    }
+#endif
+
+  MyConfig.SetParamValue("server.v3", "client.cert", cert);
+  MyConfig.SetParamValue("server.v3", "client.key", key);
+  writer->puts("Imported server.v3 MQTT client certificate and private key");
+  writer->puts("Run 'server v3 tlsclient reload' to apply to active connection");
   }
 
 // Process metric request (payload: include patterns; use IdFilter)
@@ -1601,6 +1970,14 @@ OvmsServerV3Init::OvmsServerV3Init()
   cmd_update->RegisterCommand("all", "Transmit all metrics", ovmsv3_update);
   cmd_update->RegisterCommand("modified", "Transmit modified metrics only", ovmsv3_update);
   cmd_update->RegisterCommand("priority", "Transmit priority metrics only", ovmsv3_update);
+
+  OvmsCommand* cmd_tlsclient = cmd_v3->RegisterCommand("tlsclient", "Manage MQTT client certificate authentication", ovmsv3_tlsclient_status, "", 0, 0, false);
+  cmd_tlsclient->RegisterCommand("status", "Show MQTT client cert/key status", ovmsv3_tlsclient_status, "", 0, 0, false);
+  cmd_tlsclient->RegisterCommand("info", "Show MQTT client certificate metadata (private key redacted)", ovmsv3_tlsclient_info, "", 0, 0, false);
+  cmd_tlsclient->RegisterCommand("clear", "Clear MQTT client certificate and key", ovmsv3_tlsclient_clear, "", 0, 0, false);
+  cmd_tlsclient->RegisterCommand("reload", "Reload MQTT connection to apply tlsclient settings", ovmsv3_tlsclient_reload, "", 0, 0, false);
+  cmd_tlsclient->RegisterCommand("check", "Validate MQTT client certificate/key PEM and pair match", ovmsv3_tlsclient_check, "", 0, 0, false);
+  cmd_tlsclient->RegisterCommand("import", "Import MQTT client certificate and key from files", ovmsv3_tlsclient_import, "<cert_path> <key_path>", 2, 2, false);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
