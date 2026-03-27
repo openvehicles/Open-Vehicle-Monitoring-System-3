@@ -1,6 +1,34 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Server V3 (MQTT): AWS IoT Core compatibility fixes:
+    - mTLS client certificate authentication: the module now supports X.509 client
+      certificates for MQTT broker authentication (required by AWS IoT Core and other
+      brokers that use mutual TLS instead of username/password).
+      The client certificate and private key are stored in server.v3 config and managed
+      via the web UI (Config -> Server V3: "TLS client authentication" section) or CLI:
+        server v3 tlsclient import <cert_path> <key_path>  -- load PEM files from storage
+        server v3 tlsclient status                         -- show cert/key status
+        server v3 tlsclient info                           -- show certificate metadata
+        server v3 tlsclient check                          -- validate cert/key pair
+        server v3 tlsclient clear                          -- remove cert and key
+        server v3 tlsclient reload                         -- reconnect to apply changes
+    - Fixed MQTT CONNECT: empty username/password strings are now sent as absent (NULL)
+      rather than empty, matching broker expectations for certificate-only authentication.
+    - Keepalive clamping: new config param keepalive.clamp (bool, default yes):
+      When enabled, the MQTT keepalive is clamped to 1200 seconds at connect time.
+      AWS IoT Core rejects keepalive values above 1200 s with a disconnect; this guard
+      ensures compatibility. Disable for custom brokers that accept higher values.
+      Exposed in the web UI (Config -> Server V3: "Clamp keepalive to 1200s") and
+      shown in CLI output of 'server v3 status'.
+    - New config param retain.depth.limit (bool, default yes):
+      When enabled, metric topics with more than 8 path segments are published without the
+      MQTT RETAIN flag. AWS IoT Core silently rejects retained publishes on topics deeper
+      than 8 segments; this guard ensures all other metrics remain retained while deep topics
+      still reach live subscribers. Disable for brokers that support retained messages on
+      arbitrarily deep topics.
+      Exposed in the web UI (Config → Server V3: "Limit retain to 8-segment topics") and
+      shown in CLI output of 'server v3 status'.
 - New vehicle: Cadillac CT5
     Initial support includes: VIN, fuel level (SOC), and run state.
     The CT5 uses the GM Global B platform which requires authentication

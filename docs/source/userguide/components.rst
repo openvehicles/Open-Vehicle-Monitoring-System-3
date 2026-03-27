@@ -123,6 +123,55 @@ Send all ``v.b`` metrics except ``v.b.soc``::
   OVMS# config set server.v3 metrics.include v.b.*
   OVMS# config set server.v3 metrics.exclude v.b.soc
 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Keepalive and broker compatibility
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``updatetime.keepalive`` parameter (default: 1740 s) controls how often the
+module sends MQTT PINGREQ packets when the connection is otherwise idle.
+
+The ``keepalive.clamp`` parameter (default: ``yes``) caps the keepalive to 1200 seconds
+at connect time. **AWS IoT Core** enforces a maximum keepalive of 1200 seconds and
+disconnects clients that request a higher value. When clamping is enabled and the
+configured value exceeds 1200, OVMS logs a warning. Disable the clamp only if your
+broker accepts keepalive values above 1200 s::
+
+  OVMS# config set server.v3 keepalive.clamp no    # disable for custom brokers
+  OVMS# config set server.v3 keepalive.clamp yes   # re-enable (default)
+
+If you use AWS IoT Core, you can also simply set the keepalive to 1200 or below
+to avoid the warning::
+
+  OVMS# config set server.v3 updatetime.keepalive 1200
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Retained messages and topic depth limits
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+OVMS publishes metrics with the MQTT ``RETAIN`` flag so that clients connecting
+later immediately receive the last-known values. Some brokers restrict which
+topics can carry retained messages.
+
+**AWS IoT Core** hard-limits retained messages to topics with at most 8 path
+segments (e.g. ``ovms-user-VIN/metric/v/b/soc`` = 5 segments — fine;
+``ovms/user/VIN/metric/v/b/soc`` = 7 segments — fine; 9+ segments would
+cause the publish to be silently rejected by the broker). This limit is a fixed
+AWS service constraint and cannot be raised.
+
+The ``retain.depth.limit`` parameter (default: ``yes``) enables a guard that
+omits the ``RETAIN`` flag for any metric topic that would exceed 8 segments.
+Metrics on deep topics are still delivered to live subscribers; they simply
+won't be stored as retained messages on the broker. Disable this only if your
+broker supports retained publishes on topics of any depth::
+
+  OVMS# config set server.v3 retain.depth.limit no   # disable for custom brokers
+  OVMS# config set server.v3 retain.depth.limit yes  # re-enable (default)
+
+You can also toggle this option from the **Config → Server V3 (MQTT)** web UI
+page ("Limit retain to 8-segment topics" checkbox).
+
+The current setting is shown by ``server v3 status``.
+
 -------------------------------
 Upgrading from OVMS v1/v2 to v3
 -------------------------------
