@@ -11,26 +11,45 @@ The primary focus of this fork is `vehicle/OVMS.V3/components/vehicle_vwegolf/`.
 ## Build System
 
 The firmware uses ESP-IDF (Espressif IoT Development Framework) with a legacy Make wrapper.
+OVMS requires their own ESP-IDF fork pinned to v3.3 and a specific Xtensa toolchain binary.
+Use the scripts in `scripts/` rather than setting this up by hand.
 
-**Prerequisites:**
-- ESP-IDF (OVMS uses a custom fork): `https://github.com/openvehicles/esp-idf`
-- Xtensa ESP32 toolchain
-- Set `IDF_PATH` and add the toolchain to `PATH`
+### First-time toolchain setup
 
-**Build steps:**
+**Arch Linux packages (run once with sudo):**
 ```bash
-# Configure (choose a base sdkconfig)
-cp vehicle/OVMS.V3/support/sdkconfig.default.hw31 vehicle/OVMS.V3/sdkconfig
-
-# Build
-make -C vehicle/OVMS.V3 -j5
-
-# Flash
-make -C vehicle/OVMS.V3 flash
-
-# Monitor serial
-make -C vehicle/OVMS.V3 monitor
+sudo pacman -S --needed base-devel git python python-pip gperf dos2unix
 ```
+
+**Toolchain + ESP-IDF + Python venv (no root required):**
+```bash
+bash scripts/setup-toolchain.sh
+```
+
+This installs everything under `~/ovms-toolchain/`:
+- `xtensa-esp32-elf/` — Espressif toolchain binary (GCC 5.2.0)
+- `esp-idf/` — OVMS fork of ESP-IDF v3.3 (with submodules)
+- `venv/` — Python venv with ESP-IDF build dependencies
+
+**Activate for the current shell session:**
+```bash
+source <(bash scripts/setup-toolchain.sh --env)
+```
+
+To make this permanent, add the printed `export` lines and `source` line to `~/.zshrc`.
+
+### Building and deploying
+
+```bash
+# Build only
+bash scripts/build.sh
+
+# Build and serve for OTA flash (laptop must be on OVMS hotspot)
+bash scripts/build.sh --deploy
+```
+
+`build.sh` handles sdkconfig initialisation from `sdkconfig.default.hw31` if missing.
+The `--deploy` flag starts a Python HTTP server and prints the OTA command to run on the OVMS shell.
 
 Hardware variants: `sdkconfig.default.hw30`, `sdkconfig.default.hw31`, `sdkconfig.bluetooth.hw31`, `sdkconfig.lilygo_tc`. Production hardware is hw31.
 

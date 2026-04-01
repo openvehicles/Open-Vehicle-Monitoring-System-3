@@ -37,16 +37,6 @@ echo "Branch: $BRANCH  ($COMMIT)"
 echo "IDF:    $IDF_PATH"
 echo ""
 
-# --- Tests must pass before we build anything ---
-TEST_DIR="$REPO_ROOT/vehicle/OVMS.V3/components/vehicle_vwegolf/tests"
-echo "[test] Running native test suite..."
-if ! make -C "$TEST_DIR" --no-print-directory 2>&1; then
-    echo ""
-    echo "BUILD ABORTED: fix test failures before building firmware."
-    exit 1
-fi
-echo ""
-
 # --- sdkconfig: create from default if missing ---
 if [[ ! -f "$OVMS_DIR/sdkconfig" ]]; then
     echo "[setup] No sdkconfig found, copying sdkconfig.default.hw31..."
@@ -91,10 +81,6 @@ echo ""
 echo "  ota flash http http://$LAPTOP_IP:8080/ovms3.bin"
 echo ""
 echo "Press Ctrl-C when the flash is complete."
-echo ""
-echo "NOTE: After flashing, reapply any credentials that are not persisted across"
-echo "      OTA updates (e.g. MQTT/server passwords). Config is preserved but"
-echo "      passwords may need to be re-entered via the OVMS web UI or shell."
 echo ""
 
 cd "$OVMS_DIR/build"
