@@ -254,30 +254,55 @@ vehicle_command_t CommandClimateControl(bool enable) override;
 
 ## Iterative Development Workflow
 
-This is an embedded target — there is no native unit test runner. The workflow is: write a small change, build, flash to the device, verify on the car. Keep changes small enough that each one can be independently verified.
+The workflow for each fix or feature: write the change on a `fix/*` or `feat/*` branch, validate with the native test suite, build firmware, flash to the car (the-module), verify on the vehicle, then open a PR upstream. Keep each branch/PR to one thing.
+
+### First time on a new machine
+
+```bash
+# 1. System packages
+sudo pacman -S --needed base-devel git python python-pip gperf dos2unix
+
+# 2. Toolchain, ESP-IDF, Python venv
+bash scripts/setup-toolchain.sh
+
+# 3. Git hooks (test gate on fix/* and feat/* pushes)
+bash scripts/install-hooks.sh
+
+# 4. Activate toolchain for this shell session
+source <(bash scripts/setup-toolchain.sh --env)
+```
+
+Add the `source` line to `~/.zshrc` to activate permanently.
+
+### Git hooks
+
+`scripts/install-hooks.sh` installs a **pre-push hook** that blocks pushes on `fix/*` and `feat/*` branches unless all native tests pass. `investigation` and `master` push freely.
+
+Hooks live in `scripts/hooks/` (version-controlled) and are copied to `.git/hooks/` by the install script. Re-run the install script after cloning.
+
+To bypass in a genuine emergency: `git push --no-verify` (use sparingly — document why).
 
 ### Build and flash
 
 ```bash
-# Build
-make -C vehicle/OVMS.V3 -j5
+# Build firmware (runs tests first, then compiles)
+bash scripts/build.sh
+
+# Build and serve for OTA flash in one step
+bash scripts/build.sh --deploy
 ```
 
-Flash over WiFi — connect laptop to the OVMS hotspot, serve the binary with Python's built-in HTTP server, then flash from the OVMS shell:
+`build.sh` always runs the native test suite before compiling. If any test fails the build is aborted.
 
-```bash
-# On laptop (from the build output directory)
-python3 -m http.server 8080
-```
+For the OTA flash: connect laptop to the OVMS hotspot (`192.168.4.1`), run `build.sh --deploy`, then on the OVMS shell:
 
 ```
-# On OVMS shell
-ota flash http http://192.168.4.2:8080/ovms3.bin
+ota flash http http://<laptop-ip>:8080/ovms3.bin
 ```
 
-(`192.168.4.2` is typically the laptop's address on the OVMS hotspot — check with `ip addr` or `ifconfig`.)
+`build.sh --deploy` detects your `192.168.4.x` address and prints the exact command to paste.
 
-The OVMS shell is accessible via the built-in web terminal at `http://192.168.4.1` or SSH to `192.168.4.1`. All verification commands below run there.
+The OVMS shell is at `http://192.168.4.1` (web terminal) or SSH to `192.168.4.1`. All verification commands below run there.
 
 ### CAN frame capture and replay
 

@@ -37,6 +37,16 @@ echo "Branch: $BRANCH  ($COMMIT)"
 echo "IDF:    $IDF_PATH"
 echo ""
 
+# --- Tests must pass before we build anything ---
+TEST_DIR="$REPO_ROOT/vehicle/OVMS.V3/components/vehicle_vwegolf/tests"
+echo "[test] Running native test suite..."
+if ! make -C "$TEST_DIR" --no-print-directory 2>&1; then
+    echo ""
+    echo "BUILD ABORTED: fix test failures before building firmware."
+    exit 1
+fi
+echo ""
+
 # --- sdkconfig: create from default if missing ---
 if [[ ! -f "$OVMS_DIR/sdkconfig" ]]; then
     echo "[setup] No sdkconfig found, copying sdkconfig.default.hw31..."

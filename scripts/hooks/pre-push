@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# pre-push hook — run the native test suite before pushing fix/* or feat/* branches.
+#
+# Installed automatically by scripts/install-hooks.sh.
+# To bypass in an emergency: git push --no-verify  (use sparingly)
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+TEST_DIR="$REPO_ROOT/vehicle/OVMS.V3/components/vehicle_vwegolf/tests"
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Only gate fix/* and feat/* branches — investigation and master push freely.
+if [[ "$BRANCH" != fix/* && "$BRANCH" != feat/* ]]; then
+    exit 0
+fi
+
+echo "=== pre-push: running tests for branch '$BRANCH' ==="
+echo ""
+
+if ! make -C "$TEST_DIR" --no-print-directory 2>&1; then
+    echo ""
+    echo "PUSH BLOCKED: tests failed on branch '$BRANCH'."
+    echo "Fix the failures above, then push again."
+    echo "(To bypass in an emergency: git push --no-verify)"
+    exit 1
+fi
+
+echo ""
+echo "All tests passed — push allowed."
