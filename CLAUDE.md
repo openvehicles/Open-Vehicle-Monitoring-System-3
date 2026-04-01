@@ -233,6 +233,108 @@ vehicle_command_t CommandClimateControl(bool enable) override;
 - `components/vehicle_vweup/` — similar VW vehicle, useful reference implementation
 - `components/vehicle_hyundai_ioniqvfl/` — recommended by maintainer as a concise but complete reference showcasing most commonly used framework elements
 
+## Iterative Development Workflow
+
+This is an embedded target — there is no native unit test runner. The workflow is: write a small change, build, flash to the device, verify on the car. Keep changes small enough that each one can be independently verified.
+
+### Build and flash
+
+```bash
+# Build
+make -C vehicle/OVMS.V3 -j5
+
+# Flash directly over USB
+make -C vehicle/OVMS.V3 flash
+
+# Flash over WiFi (once the device is running): copy the built .bin to an HTTP
+# server (or SD card) and run from the OVMS shell:
+ota flash http http://<your-server>/ovms3.bin
+# or via SD card:
+ota flash vfs /sd/ovms3.bin
+```
+
+The OVMS shell is accessible via USB serial (`make monitor`), SSH, or the built-in web terminal. All verification commands below run there.
+
+### CAN frame capture and replay
+
+This is the core testing loop — capture real frames from the car once, then replay them repeatedly against new firmware builds at your desk without needing the car running.
+
+**Capture** (on the car, written to SD card):
+```
+can log start vfs crtd /sd/kcan-session.crtd can3
+# drive / charge / do the thing you want to test
+can log stop
+```
+
+**Replay** (at your desk, replays frames into the vehicle module as if they came from the bus):
+```
+can play start vfs crtd /sd/kcan-session.crtd
+can play status
+can play stop
+```
+
+After replay, check metrics:
+```
+metrics list
+metrics list ms_v_bat_soc
+```
+
+### Verbose logging
+
+To see every frame your module processes:
+```
+log level verbose v-vwegolf
+```
+
+Reset afterwards:
+```
+log level info v-vwegolf
+```
+
+### Injecting a single hand-crafted frame
+
+The OVMS shell has `can send` for sending a raw frame on a bus:
+```
+# can send <bus> <id> <data-hex>
+can send can3 131 7F
+```
+
+Use this to test a specific message ID decode path without a full log replay.
+
+### Verifying metrics after a change
+
+```
+metrics list ms_v_bat
+metrics list ms_v_env
+metrics list ms_v_pos
+```
+
+Values show their current data and whether they are stale (not updated recently).
+
+### Bit extraction utility
+
+Rather than manual byte shifting, use `canbitset` from `canutils.h` to extract signal values from CAN frames safely:
+
+```cpp
+#include "canutils.h"
+
+// Load the full 8-byte frame
+canbitset<uint64_t> canbits(p_frame->data.u8, 8);
+
+// Extract bits 12-23 (inclusive) as an unsigned value
+uint32_t val = canbits.get(12, 23);
+```
+
+This avoids shift/mask bugs and makes the bit positions self-documenting.
+
+### Branch strategy
+
+- **`master`** — tracks upstream, never commit directly here
+- **`investigation`** — documentation, notes, RE findings, CAN log captures
+- **`climate-control`** — implementation work, branched from `investigation` when ready
+
+Each testable change on a feature branch should be a single commit covering one decode or control path, so it can be reverted cleanly if it causes problems on the car.
+
 ## Maintainer Code Review Rules
 
 These rules come directly from maintainer (dexterbg) review of PR #1327 (initial e-Golf submission). Violating them will cause a PR to be sent back.
