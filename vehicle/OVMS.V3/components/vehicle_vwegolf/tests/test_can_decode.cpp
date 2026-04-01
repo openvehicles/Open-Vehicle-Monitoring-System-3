@@ -35,8 +35,8 @@ static bool near(float a, float b, float tol = 0.01f) {
     return std::fabs(a - b) < tol;
 }
 
-static int tests_run = 0;
-static int tests_passed = 0;
+int tests_run = 0;
+int tests_passed = 0;
 
 #define CHECK(cond, msg) do { \
     tests_run++; \
@@ -127,6 +127,8 @@ void test_vin_0x6B4() {
 // main
 // ---------------------------------------------------------------------------
 
+extern void test_crtd_replay();
+
 int main() {
     printf("=== vehicle_vwegolf CAN decode tests ===\n");
 
@@ -134,6 +136,7 @@ int main() {
     test_speed_0xFD();
     test_gear_0x187_park();
     test_vin_0x6B4();
+    test_crtd_replay();
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);
     return (tests_passed == tests_run) ? 0 : 1;
