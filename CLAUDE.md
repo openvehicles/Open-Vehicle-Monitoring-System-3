@@ -242,35 +242,60 @@ This is an embedded target — there is no native unit test runner. The workflow
 ```bash
 # Build
 make -C vehicle/OVMS.V3 -j5
-
-# Flash directly over USB
-make -C vehicle/OVMS.V3 flash
-
-# Flash over WiFi (once the device is running): copy the built .bin to an HTTP
-# server (or SD card) and run from the OVMS shell:
-ota flash http http://<your-server>/ovms3.bin
-# or via SD card:
-ota flash vfs /sd/ovms3.bin
 ```
 
-The OVMS shell is accessible via USB serial (`make monitor`), SSH, or the built-in web terminal. All verification commands below run there.
+Flash over WiFi — connect laptop to the OVMS hotspot, serve the binary with Python's built-in HTTP server, then flash from the OVMS shell:
+
+```bash
+# On laptop (from the build output directory)
+python3 -m http.server 8080
+```
+
+```
+# On OVMS shell
+ota flash http http://192.168.4.2:8080/ovms3.bin
+```
+
+(`192.168.4.2` is typically the laptop's address on the OVMS hotspot — check with `ip addr` or `ifconfig`.)
+
+The OVMS shell is accessible via the built-in web terminal at `http://192.168.4.1` or SSH to `192.168.4.1`. All verification commands below run there.
 
 ### CAN frame capture and replay
 
 This is the core testing loop — capture real frames from the car once while it is in a specific state (charging, driving, etc.), then replay them repeatedly against new firmware builds while the car is parked. This means you don't need to put the car in that state again each time you iterate on the decode logic.
 
-The workflow: capture → flash new firmware via OTA over WiFi → replay from SD card → check metrics → repeat.
+The workflow: capture → flash new firmware via OTA → replay → check metrics → repeat.
 
-**Capture** (written to SD card while the car is in the state you want to test):
+**Hardware setup:** The OVMS module runs its own WiFi hotspot. Connect the laptop to that hotspot to get direct access — the OVMS is the AP so there is no client isolation. The OVMS web UI and shell are at `192.168.4.1`.
+
+**Capture via TCP stream to laptop** (laptop connected to OVMS hotspot):
+
+On the laptop:
+```bash
+nc 192.168.4.1 3000 > kcan-capture.crtd
 ```
-can log start vfs crtd /sd/kcan-session.crtd can3
-# drive / charge / trigger the behaviour you want to decode
+
+On the OVMS shell (web UI terminal or SSH to 192.168.4.1):
+```
+can log start tcpserver transmit crtd 3000 can3
+```
+
+Drive or trigger the state you want to capture, then stop:
+```
 can log stop
 ```
+Ctrl-C the `nc` on the laptop. The `.crtd` file is now on the laptop.
 
-**Replay** (car parked, OVMS powered, connect via WiFi or SSH — replays frames into the vehicle module as if they came live from the bus):
+To capture only specific CAN IDs (keeps files small once you know what you're looking for):
 ```
-can play start vfs crtd /sd/kcan-session.crtd
+can log start tcpserver transmit crtd 3000 3:131
+```
+
+**Replay** (car parked, OVMS powered, laptop on OVMS hotspot):
+
+Copy the `.crtd` file to the OVMS via the web UI file browser or `scp`, then:
+```
+can play start vfs crtd /sd/kcan-capture.crtd
 can play status
 can play stop
 ```
