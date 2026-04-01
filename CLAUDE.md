@@ -11,45 +11,26 @@ The primary focus of this fork is `vehicle/OVMS.V3/components/vehicle_vwegolf/`.
 ## Build System
 
 The firmware uses ESP-IDF (Espressif IoT Development Framework) with a legacy Make wrapper.
-OVMS requires their own ESP-IDF fork pinned to v3.3 and a specific Xtensa toolchain binary.
-Use the scripts in `scripts/` rather than setting this up by hand.
 
-### First-time toolchain setup
+**Prerequisites:**
+- ESP-IDF (OVMS uses a custom fork): `https://github.com/openvehicles/esp-idf`
+- Xtensa ESP32 toolchain
+- Set `IDF_PATH` and add the toolchain to `PATH`
 
-**Arch Linux packages (run once with sudo):**
+**Build steps:**
 ```bash
-sudo pacman -S --needed base-devel git python python-pip gperf dos2unix
+# Configure (choose a base sdkconfig)
+cp vehicle/OVMS.V3/support/sdkconfig.default.hw31 vehicle/OVMS.V3/sdkconfig
+
+# Build
+make -C vehicle/OVMS.V3 -j5
+
+# Flash
+make -C vehicle/OVMS.V3 flash
+
+# Monitor serial
+make -C vehicle/OVMS.V3 monitor
 ```
-
-**Toolchain + ESP-IDF + Python venv (no root required):**
-```bash
-bash scripts/setup-toolchain.sh
-```
-
-This installs everything under `~/ovms-toolchain/`:
-- `xtensa-esp32-elf/` — Espressif toolchain binary (GCC 5.2.0)
-- `esp-idf/` — OVMS fork of ESP-IDF v3.3 (with submodules)
-- `venv/` — Python venv with ESP-IDF build dependencies
-
-**Activate for the current shell session:**
-```bash
-source <(bash scripts/setup-toolchain.sh --env)
-```
-
-To make this permanent, add the printed `export` lines and `source` line to `~/.zshrc`.
-
-### Building and deploying
-
-```bash
-# Build only
-bash scripts/build.sh
-
-# Build and serve for OTA flash (laptop must be on OVMS hotspot)
-bash scripts/build.sh --deploy
-```
-
-`build.sh` handles sdkconfig initialisation from `sdkconfig.default.hw31` if missing.
-The `--deploy` flag starts a Python HTTP server and prints the OTA command to run on the OVMS shell.
 
 Hardware variants: `sdkconfig.default.hw30`, `sdkconfig.default.hw31`, `sdkconfig.bluetooth.hw31`, `sdkconfig.lilygo_tc`. Production hardware is hw31.
 
@@ -252,160 +233,6 @@ vehicle_command_t CommandClimateControl(bool enable) override;
 - `components/vehicle_vweup/` — similar VW vehicle, useful reference implementation
 - `components/vehicle_hyundai_ioniqvfl/` — recommended by maintainer as a concise but complete reference showcasing most commonly used framework elements
 
-## Iterative Development Workflow
-
-The workflow for each fix or feature: write the change on a `fix/*` or `feat/*` branch, validate with the native test suite, build firmware, flash to the car (the-module), verify on the vehicle, then open a PR upstream. Keep each branch/PR to one thing.
-
-### First time on a new machine
-
-```bash
-# 1. System packages
-sudo pacman -S --needed base-devel git python python-pip gperf dos2unix
-
-# 2. Toolchain, ESP-IDF, Python venv
-bash scripts/setup-toolchain.sh
-
-# 3. Git hooks (test gate on fix/* and feat/* pushes)
-bash scripts/install-hooks.sh
-
-# 4. Activate toolchain for this shell session
-source <(bash scripts/setup-toolchain.sh --env)
-```
-
-Add the `source` line to `~/.zshrc` to activate permanently.
-
-### Git hooks
-
-`scripts/install-hooks.sh` installs a **pre-push hook** that blocks pushes on `fix/*` and `feat/*` branches unless all native tests pass. `investigation` and `master` push freely.
-
-Hooks live in `scripts/hooks/` (version-controlled) and are copied to `.git/hooks/` by the install script. Re-run the install script after cloning.
-
-To bypass in a genuine emergency: `git push --no-verify` (use sparingly — document why).
-
-### Build and flash
-
-```bash
-# Build firmware (runs tests first, then compiles)
-bash scripts/build.sh
-
-# Build and serve for OTA flash in one step
-bash scripts/build.sh --deploy
-```
-
-`build.sh` always runs the native test suite before compiling. If any test fails the build is aborted.
-
-For the OTA flash: connect laptop to the OVMS hotspot (`192.168.4.1`), run `build.sh --deploy`, then on the OVMS shell:
-
-```
-ota flash http http://<laptop-ip>:8080/ovms3.bin
-```
-
-`build.sh --deploy` detects your `192.168.4.x` address and prints the exact command to paste.
-
-The OVMS shell is at `http://192.168.4.1` (web terminal) or SSH to `192.168.4.1`. All verification commands below run there.
-
-### CAN frame capture and replay
-
-This is the core testing loop — capture real frames from the car once while it is in a specific state (charging, driving, etc.), then replay them repeatedly against new firmware builds while the car is parked. This means you don't need to put the car in that state again each time you iterate on the decode logic.
-
-The workflow: capture → flash new firmware via OTA → replay → check metrics → repeat.
-
-**Hardware setup:** The OVMS module runs its own WiFi hotspot. Connect the laptop to that hotspot to get direct access — the OVMS is the AP so there is no client isolation. The OVMS web UI and shell are at `192.168.4.1`.
-
-**Capture via TCP stream to laptop** (laptop connected to OVMS hotspot):
-
-On the laptop:
-```bash
-nc 192.168.4.1 3000 > kcan-capture.crtd
-```
-
-On the OVMS shell (web UI terminal or SSH to 192.168.4.1):
-```
-can log start tcpserver transmit crtd 3000 can3
-```
-
-Drive or trigger the state you want to capture, then stop:
-```
-can log stop
-```
-Ctrl-C the `nc` on the laptop. The `.crtd` file is now on the laptop.
-
-To capture only specific CAN IDs (keeps files small once you know what you're looking for):
-```
-can log start tcpserver transmit crtd 3000 3:131
-```
-
-**Replay** (car parked, OVMS powered, laptop on OVMS hotspot):
-
-Copy the `.crtd` file to the OVMS via the web UI file browser or `scp`, then:
-```
-can play start vfs crtd /sd/kcan-capture.crtd
-can play status
-can play stop
-```
-
-After replay, check metrics:
-```
-metrics list
-metrics list ms_v_bat_soc
-```
-
-### Verbose logging
-
-To see every frame your module processes:
-```
-log level verbose v-vwegolf
-```
-
-Reset afterwards:
-```
-log level info v-vwegolf
-```
-
-### Injecting a single hand-crafted frame
-
-The OVMS shell has `can send` for sending a raw frame on a bus:
-```
-# can send <bus> <id> <data-hex>
-can send can3 131 7F
-```
-
-Use this to test a specific message ID decode path without a full log replay.
-
-### Verifying metrics after a change
-
-```
-metrics list ms_v_bat
-metrics list ms_v_env
-metrics list ms_v_pos
-```
-
-Values show their current data and whether they are stale (not updated recently).
-
-### Bit extraction utility
-
-Rather than manual byte shifting, use `canbitset` from `canutils.h` to extract signal values from CAN frames safely:
-
-```cpp
-#include "canutils.h"
-
-// Load the full 8-byte frame
-canbitset<uint64_t> canbits(p_frame->data.u8, 8);
-
-// Extract bits 12-23 (inclusive) as an unsigned value
-uint32_t val = canbits.get(12, 23);
-```
-
-This avoids shift/mask bugs and makes the bit positions self-documenting.
-
-### Branch strategy
-
-- **`master`** — tracks upstream, never commit directly here
-- **`investigation`** — documentation, notes, RE findings, CAN log captures
-- **`climate-control`** — implementation work, branched from `investigation` when ready
-
-Each testable change on a feature branch should be a single commit covering one decode or control path, so it can be reverted cleanly if it causes problems on the car.
-
 ## Maintainer Code Review Rules
 
 These rules come directly from maintainer (dexterbg) review of PR #1327 (initial e-Golf submission). Violating them will cause a PR to be sent back.
@@ -443,5 +270,5 @@ These rules come directly from maintainer (dexterbg) review of PR #1327 (initial
 - The upstream OVMS project explicitly warns against unvalidated AI-generated code. All code added to this vehicle module must be carefully validated against real vehicle CAN data before submission upstream.
 - Pull requests to upstream should focus on a single issue/vehicle and not mix unrelated changes.
 - The VW e-Golf connects via the J533 gateway (diagnostic CAN connector), not directly to individual ECUs.
-- Climate control and other comfort functions use the proprietary **BAP** (*Bedien- und Anzeigeprotokoll*) protocol on KCAN, not ISO-TP/UDS. BAP cannot be handled by the standard OVMS poller — it requires direct CAN frame construction. See `vehicle_vwegolf/docs/vw-bap-protocol.md` for the protocol reference and `vehicle_vwegolf/docs/clima-control-bap.md` for the confirmed climate control command sequence and ECU response pattern.
+- Climate control and other comfort functions use the proprietary **BAP** (*Bedien- und Anzeigeprotokoll*) protocol on KCAN, not ISO-TP/UDS. BAP cannot be handled by the standard OVMS poller — it requires direct CAN frame construction. See `vehicle_vwegolf/docs/vw-bap-protocol.md` for the protocol reference.
 - **Key external RE resource**: https://github.com/thomasakarlsen/e-golf-comfort-can — reverse-engineering documentation specifically for e-Golf KCAN/BAP, covering climatisation, charge profiles, wake, horn/lights. This is the primary reference for implementing climate control and other remote features.
