@@ -50,12 +50,21 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  // FCAN — powertrain (read-only)
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN — comfort / clima
 
-    // 0x66E broadcasts 0xFE as a "no data yet" sentinel before the interior sensor
-    // is ready. That decodes to 77°C and would persist across reboots via the metric
-    // persistence feature. Clear it so the metric stays undefined until real data arrives.
-    // Note: this intentionally overrides the "no metric defaults in constructor" rule —
-    // the persisted value is garbage from the sentinel, not real data.
+    // 0x66E (InnenTemp) broadcasts 0xFE as a sentinel before valid data is available,
+    // which decodes to 77°C and persists across reboots. Clear it so it shows as
+    // undefined rather than a wrong value.
     StandardMetrics.ms_v_env_cabintemp->Clear();
+
+    OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg", "VW-eGolf framework");
+    cmd_vweg->RegisterCommand("offline", "OVMS please go offline", [this](...) {
+        m_is_control_active = false;
+        ESP_LOGI(TAG, "Heartbeat sending should be stopped");
+    });
+    cmd_vweg->RegisterCommand("fold_mirrors", "fold mirror toggle", [this](...) {
+        CommandMirrorFoldIn();
+        ESP_LOGI(TAG, "Test command fold_mirrors call executed");
+    });
+    ESP_LOGI(TAG, "Commands for testing purposes registerd");
 
     OvmsCommand* cmd_xvg = MyCommandApp.RegisterCommand("xvg", "VW e-Golf controls");
     cmd_xvg->RegisterCommand("offline", "Stop sending OCU keepalive (diagnostic)", [this](...) {
