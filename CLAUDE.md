@@ -257,16 +257,18 @@ The OVMS shell is accessible via USB serial (`make monitor`), SSH, or the built-
 
 ### CAN frame capture and replay
 
-This is the core testing loop — capture real frames from the car once, then replay them repeatedly against new firmware builds at your desk without needing the car running.
+This is the core testing loop — capture real frames from the car once while it is in a specific state (charging, driving, etc.), then replay them repeatedly against new firmware builds while the car is parked. This means you don't need to put the car in that state again each time you iterate on the decode logic.
 
-**Capture** (on the car, written to SD card):
+The workflow: capture → flash new firmware via OTA over WiFi → replay from SD card → check metrics → repeat.
+
+**Capture** (written to SD card while the car is in the state you want to test):
 ```
 can log start vfs crtd /sd/kcan-session.crtd can3
-# drive / charge / do the thing you want to test
+# drive / charge / trigger the behaviour you want to decode
 can log stop
 ```
 
-**Replay** (at your desk, replays frames into the vehicle module as if they came from the bus):
+**Replay** (car parked, OVMS powered, connect via WiFi or SSH — replays frames into the vehicle module as if they came live from the bus):
 ```
 can play start vfs crtd /sd/kcan-session.crtd
 can play status
