@@ -51,9 +51,11 @@ static int replay_crtd(OvmsVehicleVWeGolf* v, const char* path) {
         char ts[32], rtype[16];
         if (sscanf(line, "%31s %15s", ts, rtype) < 2) continue;
 
-        // Only handle standard and extended receive frames
-        bool is_11bit = (strcmp(rtype, "3R11") == 0);
-        bool is_29bit = (strcmp(rtype, "3R29") == 0);
+        // Only handle standard and extended receive frames.
+        // Bus number is the first character of the type field (1=can1, 2=can2, 3=can3).
+        int bus = rtype[0] - '0';
+        bool is_11bit = (rtype[1] == 'R' && rtype[2] == '1' && rtype[3] == '1');
+        bool is_29bit = (rtype[1] == 'R' && rtype[2] == '2' && rtype[3] == '9');
         if (!is_11bit && !is_29bit) continue;
 
         // Parse the rest of the line: <id_hex> <b0> <b1> ...
@@ -88,7 +90,15 @@ static int replay_crtd(OvmsVehicleVWeGolf* v, const char* path) {
         }
         frame.FIR.B.DLC = dlc;
 
-        v->IncomingFrameCan3(&frame);
+        if (bus == 2) {
+            // J533 gateway bridges KCAN onto FCAN (can2), so both handlers see it.
+            v->IncomingFrameCan2(&frame);
+            v->IncomingFrameCan3(&frame);
+        } else if (bus == 3) {
+            v->IncomingFrameCan3(&frame);
+        } else {
+            continue;
+        }
         dispatched++;
     }
 

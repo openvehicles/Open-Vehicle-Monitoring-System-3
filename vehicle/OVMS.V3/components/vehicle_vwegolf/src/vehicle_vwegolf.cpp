@@ -50,8 +50,13 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  // FCAN — powertrain (read-only)
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN — comfort / clima
 
-    OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg", "VW e-Golf controls");
-    cmd_vweg->RegisterCommand("offline", "Stop sending OCU keepalive", [this](...) {
+    // 0x66E (InnenTemp) broadcasts 0xFE as a sentinel before valid data is available,
+    // which decodes to 77°C and persists across reboots. Clear it so it shows as
+    // undefined rather than a wrong value.
+    StandardMetrics.ms_v_env_cabintemp->Clear();
+
+    OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg", "VW-eGolf framework");
+    cmd_vweg->RegisterCommand("offline", "OVMS please go offline", [this](...) {
         m_is_control_active = false;
         ESP_LOGI(TAG, "OCU keepalive stopped");
     });
@@ -574,11 +579,19 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x66E:  // InnenTemp: cabin interior temperature sensor.
         {
-            // 0xFE is the ECU's "not ready" sentinel (decodes to 77°C). Discard it.
-            if (d[4] == 0xFE) break;
-            tmp_f32 = ((float)d[4]) * 0.5F - 50.0F;
+            tmp_u8 = ((uint8_t)(d[4] & 0xff) << 0) |
+                     0;  // outerTemp Faktor 0.5 Offset -50, Minimum -50, Maximum 75 [°C] Initial 77
+            tmp_u8 = (uint8_t)tmp_u8;
+            if (tmp_u8 == 0xFE) break;  // ECU sentinel "no data yet" → 77°C, ignore
+            tmp_f32 = ((float)tmp_u8) * 0.5F - 50.0F;
             StandardMetrics.ms_v_env_cabintemp->SetValue(tmp_f32);
-            ESP_LOGV(TAG, "0x066E cabin_temp=%.1f°C", tmp_f32);
+
+            static uint8_t cnt3 = 0;
+            cnt3++;
+            if (cnt3 == 10) {
+                cnt3 = 0;
+                ESP_LOGI(TAG "-66E", "ms_v_env_cabintemp: %f", tmp_f32);
+            }
             break;
         }
         case 0x6B0:  // FS temperature sensor (windshield/front area). Not yet mapped to a metric.

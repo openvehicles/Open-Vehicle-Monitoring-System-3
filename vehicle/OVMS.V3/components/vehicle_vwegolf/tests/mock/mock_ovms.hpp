@@ -78,6 +78,7 @@ struct OvmsMetric {
     explicit OvmsMetric(const char* n) : name(n) {}
     void SetValue(T v)              { g_metrics.numbers[name] = static_cast<double>(v); }
     void SetValue(T v, int /*unit*/) { SetValue(v); }  // unit arg used by real metrics, ignored here
+    void Clear()                    { g_metrics.numbers.erase(name); }
     T    AsValue() const  { return static_cast<T>(g_metrics.numbers[name]); }
     float AsFloat() const { return static_cast<float>(g_metrics.numbers[name]); }
 };
