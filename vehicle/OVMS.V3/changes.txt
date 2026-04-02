@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Cadillac CT5: Switch to pid 0x063 and fix "is running" flip flops.
 - New vehicle: Cadillac CT5
     Initial support includes: VIN, fuel level (SOC), and run state.
     The CT5 uses the GM Global B platform which requires authentication
