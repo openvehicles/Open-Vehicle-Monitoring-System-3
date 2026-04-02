@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+# CAN log captures (large binary files, keep locally)
+*.crtd
+
 # Object files
 *.o
 *.ko
