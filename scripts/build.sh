@@ -92,6 +92,10 @@ echo "  ota flash http http://$LAPTOP_IP:8080/ovms3.bin"
 echo ""
 echo "Press Ctrl-C when the flash is complete."
 echo ""
+echo "NOTE: After flashing, reapply any credentials that are not persisted across"
+echo "      OTA updates (e.g. MQTT/server passwords). Config is preserved but"
+echo "      passwords may need to be re-entered via the OVMS web UI or shell."
+echo ""
 
 cd "$OVMS_DIR/build"
 python -m http.server 8080
