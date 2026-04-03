@@ -202,6 +202,57 @@ to live values, and `0x3B5`/`0x530` follow. Blower should activate within ~10 s.
 
 ---
 
+## KCAN Bus Wake-Up
+
+The KCAN bus enters a low-power sleep state when the car is parked. CAN transceivers
+wake on detection of dominant bits (any CAN frame). The first frames to appear after
+wake are Network Management (NM) frames from each node.
+
+### NM Frame Format (OSEK NM, observed on KCAN)
+
+| Field | Value |
+|---|---|
+| CAN ID | `0x1B000000 \| node_id` (29-bit extended) |
+| Payload byte 0 | node_id (echoes lower byte of CAN ID) |
+| Payload byte 1 | NM control (0x00 = no sleep request, 0x10 seen on some nodes) |
+| Payload bytes 2–7 | NM state data (varies by node) |
+
+Example observed after wake (`kcan-can3-clima_start2.crtd`):
+```
+3R29 1B00000E  0e 00 01 01 04 08 04 00   node 0x0E
+3R29 1B000067  67 10 01 01 04 00 00 00   node 0x67
+3R29 1B0000A9  a9 00 01 01 04 00 00 00   node 0xA9
+3R29 1B000046  46 00 01 01 04 00 00 00   node 0x46
+```
+
+Clima ECU (node 0x25) NM ID would be `0x1B000025`. Observing this frame in RX
+confirms the clima ECU is alive on the bus.
+
+### Wake Ping
+
+To wake the bus before sending a command sequence, send a short harmless frame.
+Even if it TX_Fails (no ACK — nodes still asleep), the dominant bits wake the
+transceivers. Subsequent frames ~150 ms later will succeed.
+
+Recommended wake ping — BAP Get on port 0x01 (2-byte read query, non-destructive):
+```
+can can3 tx extended 17332501 09 41
+```
+`09 41` = opcode=0 (Get), node=0x25, port=0x01. Safe to send; ECU may or may not reply.
+
+### Why the multi-frame start frame must not be used as a wake ping
+
+When the start frame TX_Fails, the continuation frame is delayed ~110 ms (bus waking).
+The ECU receives an orphan continuation without a valid preceding start and discards the
+partial BAP message. The trigger frame then fires with no parameters set → no HVAC.
+
+Correct sequence when bus state is unknown:
+1. Send wake ping (TX_Fail is fine — bus wakes from dominant bits)
+2. Wait 150–200 ms for RX traffic to confirm bus is live
+3. Send the 3-frame clima sequence (all frames will be ACK'd)
+
+---
+
 ## Capture Log for This Investigation
 
 | File | What it captured |
@@ -210,3 +261,4 @@ to live values, and `0x3B5`/`0x530` follow. Blower should activate within ~10 s.
 | `kcan-can3-clima_range.crtd` | Adjusting clima temp dial (ignition on, 20°C → LO → HI → off) |
 | `kcan-can3-clima_inject.crtd` | First injection attempt (failed — wrong node/port/no continuation) |
 | `clima-sequence.crtd` | Bus while clima actively running (pre-existing active state) |
+| `kcan-can3-clima_start2.crtd` | Start/stop injection attempt from sleeping bus — TX_Fail on start frame, confirmed wake behaviour |
