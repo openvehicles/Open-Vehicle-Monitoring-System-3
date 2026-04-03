@@ -234,37 +234,106 @@ schedule update or triggering a schedule sync.
 
 ---
 
-## Capture 4 — Command Frames (TODO)
+## Capture 4 — `kcan-can3-clima_on_off.crtd` (2026-04-03, completed)
 
-Goal: identify the BAP Set/SetGet frames that actually START clima and SET the
-temperature. These are the frames OVMS must replicate for remote climate control.
+**Conditions:** car parked, OVMS connected via J533 harness. Commands sent from OVMS
+shell and iOS app (OVMS Connect via TurboServ).
 
-**Problem:** passive KCAN capture does not show the dashboard's write commands.
-The infotainment → clima ECU SET path is either:
-  a) On a separate CAN segment (not KCAN bus 3), or
-  b) Using the TP 2.0 channel setup path (`0x17330301` style) before opening the data channel
+**Sequence performed:**
+1. `climatecontrol on` from OVMS shell
+2. Wait ~60s, then `climatecontrol off` from OVMS shell
+3. iOS toggle: AC OFF → ON
+4. Wait ~10s, iOS toggle: AC ON → OFF
+5. iOS toggle: rapid repeated presses (AC turns on, then spammed while running)
 
-**Approach options:**
+All commands confirmed working — clima started and stopped as expected each time.
 
-Option A — **Active injection test** (most direct):
-- With OVMS, send `SetGet` to node 0x25 port 0x16 with a temperature payload and
-  observe the Ack response on `17332510`. If the ECU Acks the write, the command works.
-  ```
-  # Command: SetGet to node 0x25, port 0x16, payload = 20°C / 10 min
-  # Payload: FF FF FF 14 0A FE 02 00
-  # CAN ID 17332501, BAP header: 0x19 0x96 (opcode=1, node=0x25, port=0x16)
-  can send can3 extended 17332501 0x91 0x08 0x19 0x96 0xFF 0xFF 0xFF 0x14
-  # (plus continuation frame for the remaining bytes)
-  ```
+---
 
-Option B — **Targeted capture during OVMS-initiated climate start**:
-- Capture KCAN while triggering climate start from the OVMS app/shell
-- The OVMS firmware's existing `CommandClimateControl` stub will be needed first
+## Findings from Capture 4
 
-**What to confirm:**
-- Does `SetGet` to node 0x25 port 0x16 with payload actually update the stored profile?
-- What triggers the clima to START from idle? Port 0x0D `[10]`? A different port?
-- Is the TP 2.0 channel already open (from wakeup) or must it be re-opened?
+### CommandClimateControl confirmed working
+
+The 3-frame BAP sequence to node 0x25 successfully starts and stops climatisation:
+
+```
+Frame 1: 80 08 29 59  [ctr]  06 00 01    (port 0x19 parameters, multi-frame start)
+Frame 2: C0  06 00 20 00                 (continuation)
+Frame 3: 29 58  00 [01|00]               (port 0x18 trigger: 01=start, 00=stop)
+```
+
+### ECU acknowledges each command on 0x17332510 (within ~1s)
+
+```
+80 0a 49 59  {ctr | 0x80}  04 46 00  [+ continuation]
+```
+
+Counter echoed with bit 7 set — use to match ACK to command.
+
+### ECU sends 5s status bursts on 0x17332501 (~16s after command)
+
+~4 cycles, then silent until next command:
+
+```
+19 42  /  19 41                           (keepalive polls, ports 0x02 and 0x01)
+90 04 19 59 {ctr} 00 00 04               (ch1, port 0x19, 4-byte status)
+80 04 19 5a {ctr} 02 00 04               (ch0, port 0x1a, 4-byte status)
+```
+
+### ECU full state dump on 0x17332510 (port 0x1a)
+
+Port 0x1a length and header byte differ by context:
+- 34 bytes (`90 22 ... c0`): idle state
+- 25 bytes (`90 19 ... c2`): clima running (bit 1 of header byte set)
+
+Not yet confirmed — needs a controlled before/after capture.
+
+See `docs/clima-control-bap.md` for full detail.
+
+---
+
+## Remaining TODO Captures
+
+### Capture 5 — Cabin temperature in remote mode (TODO)
+
+**Goal:** identify which CAN ID carries cabin temperature during remote clima operation
+(car parked, HVAC running via OVMS command, no ignition).
+
+In ignition-on mode cabin temp comes from `0x17330110` node 0x01 port 0x1B (confirmed,
+Capture 2). But that is the J533 gateway echoing the dash. When parked remotely, the
+source may be different — or it may still be the same frame.
+
+**Sequence to capture:**
+1. Start `climatecontrol on` from OVMS
+2. Once clima is running (blower audible), capture KCAN for 2-3 minutes
+3. Note actual cabin temp from a thermometer for ground truth
+
+**What to look for:**
+- Any frame with a value that warms from ambient toward setpoint over 5-10 min
+- Whether `0x17330110` port 0x1B is present and tracking temp when ignition is off
+
+### Capture 6 — Natural timer expiry (TODO)
+
+**Goal:** see what the ECU sends when the 10-minute clima timer expires on its own.
+
+**Sequence:** start clima, then wait for it to stop automatically.
+
+**What to look for:**
+- Does the port 0x1a header byte revert from `c2` to `c0`?
+- Does the ECU send a final stop notification on either CAN ID?
+- Do the status payloads (`00 00 04`, `02 00 04`) change?
+
+### Capture 7 — Port 0x19 temperature encoding (TODO)
+
+**Goal:** confirm how the target temperature is encoded in byte 6 of the port 0x19
+payload (currently hardcoded to `0x20` from thomasakarlsen default).
+
+**Method:** issue `climatecontrol on` with different `cc_temp` config values (18°C,
+22°C, 25°C) and check whether anything downstream changes — `0x17330110` setpoint,
+`0x5F5`, or ECU state dump. If the ECU echoes it back, that confirms the encoding.
+
+Current candidate: same formula as port 0x16 schedule (`byte = celsius + 35`),
+giving 20°C → `0x37`. The hardcoded `0x20` decodes as 32°C in that formula.
 
 ---
 
