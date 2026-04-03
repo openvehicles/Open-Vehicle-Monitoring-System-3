@@ -69,9 +69,9 @@ Overall support: `[███████████░░░░░░░░░]
 | `v.e.parktime` | ✓ | 9631 sec in snapshot — from 0x6B7 |
 | `v.e.drivetime` | ✓ | 0 sec in snapshot — framework-maintained |
 | `v.e.cabinsetpoint` | ✓ | 20°C in snapshot — from 0x594 |
-| `v.e.cabintemp` | ✗ | Sentinel 77°C suppressed (no longer shows wrong value) — real cabin temp not yet decoded; needs Capture 5 (parked remote) |
-| `v.e.temp` | ✗ | Same as cabintemp — ECU sentinel suppressed, real ambient/cabin temp source not yet identified in remote mode |
-| `v.e.hvac` | ~ | Set from `0x5EA` StandklimaRemoteModus (remote mode only) and from `0x17332510` port 0x18 ACK — not yet captured/confirmed in parked-remote capture |
+| `v.e.cabintemp` | ! | 77°C in master (sentinel value bug) — **fixed in investigation branch** |
+| `v.e.temp` | ! | 77°C in master (sentinel value bug) — **fixed in investigation branch** |
+| `v.e.hvac` | ✗ | Climate on/off — 0x66E byte[2] bit 1 identified in RE notes, not yet implemented |
 | `v.e.heating` | ✗ | Not decoded — derivable from 0x66E or BAP status |
 | `v.e.cooling` | ✗ | Not decoded |
 | `v.e.cabinfan` | ✗ | Fan level not decoded |
@@ -178,11 +178,10 @@ Counting ✓ and ~ as implemented, ! as implemented-but-buggy, ✗ as not implem
 
 ### High-value gaps (worth implementing)
 
-1. **`v.e.hvac`** — clima on/off state — implemented in climate-control branch (from `0x5EA` + `0x17332510` ACK); needs Capture 5 to confirm in parked-remote mode
-2. **`v.e.cabintemp` / `v.e.temp`** — real cabin/ambient temp in remote mode — needs Capture 5; sentinel suppressed but metric still empty
-3. **`v.e.heating` / `v.e.cooling`** — derives from hvac state + setpoint vs ambient
-4. **`v.c.state`** — charge state string (idle / charging / done) — frame 0x594 / 0x3D6 partially known
-5. **`v.c.limit.soc`** — min charge % — BAP profile 0x25 already reverse-engineered
-6. **`v.b.soh`** — state of health — probably accessible via UDS on BMS ECU
-7. **`v.t.pressure`** — TPMS — useful alert; frame not yet identified, needs capture
-8. **`v.c.timerstart`** — departure timer — schedule format partially known from kcan-can3-clima_schedule.md
+1. **`v.e.hvac`** — clima on/off state — 0x66E bit already identified in RE notes
+2. **`v.e.heating` / `v.e.cooling`** — derives from hvac state + setpoint vs ambient
+3. **`v.c.state`** — charge state string (idle / charging / done) — frame 0x594 / 0x3D6 partially known
+4. **`v.c.limit.soc`** — min charge % — BAP profile 0x25 already reverse-engineered
+5. **`v.b.soh`** — state of health — probably accessible via UDS on BMS ECU
+6. **`v.t.pressure`** — TPMS — useful alert; frame not yet identified, needs capture
+7. **`v.c.timerstart`** — departure timer — schedule format partially known from kcan-can3-clima_schedule.md
