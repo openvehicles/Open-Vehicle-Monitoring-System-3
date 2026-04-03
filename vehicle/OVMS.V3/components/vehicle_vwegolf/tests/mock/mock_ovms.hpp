@@ -222,6 +222,7 @@ struct OvmsVehicle {
 
     virtual vehicle_command_t CommandLock(const char*)   { return NotImplemented; }
     virtual vehicle_command_t CommandUnlock(const char*) { return NotImplemented; }
-    virtual vehicle_command_t CommandWakeup()            { return NotImplemented; }
+    virtual vehicle_command_t CommandWakeup()                 { return NotImplemented; }
+    virtual vehicle_command_t CommandClimateControl(bool)     { return NotImplemented; }
     virtual ~OvmsVehicle() = default;
 };

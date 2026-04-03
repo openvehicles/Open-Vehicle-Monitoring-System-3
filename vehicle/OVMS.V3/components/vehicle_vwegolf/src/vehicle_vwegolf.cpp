@@ -832,6 +832,60 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
     return Success;
 }
 
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool enable) {
+    ESP_LOGI(TAG, "Climate control: %s", enable ? "start" : "stop");
+
+    // If the car is sleeping, wake the bus first and let KCAN nodes come online.
+    // The wake frames will TX_Fail (no ACK from sleeping nodes) but the dominant bits
+    // on the bus are enough to wake the transceivers. Subsequent frames succeed once
+    // the error counter recovers (~200 ms at 500 kbps with heavy traffic).
+    if (!m_is_car_online) {
+        CommandWakeup();
+        vTaskDelay(pdMS_TO_TICKS(300));
+    }
+    m_is_control_active = true;
+
+    // Rolling counter — never zero, wraps 0xFF → 0x01
+    m_bap_counter = (m_bap_counter == 0xFF) ? 0x01 : (m_bap_counter + 1);
+
+    uint8_t data[8];
+
+    // Frame 1: BAP multi-frame start — port 0x19 parameters (8-byte payload)
+    // Header 29 59: opcode=2 (Status push), node=0x25, port=0x19
+    data[0] = 0x80;           // multi-frame start, channel 0
+    data[1] = 0x08;           // total payload length = 8 bytes
+    data[2] = 0x29;           // BAP header byte 0
+    data[3] = 0x59;           // BAP header byte 1 (node=0x25, port=0x19)
+    data[4] = m_bap_counter;  // payload byte 0: rolling counter
+    data[5] = 0x06;           // payload byte 1: duration (unit TBD — thomasakarlsen default)
+    data[6] = 0x00;           // payload byte 2: unknown
+    data[7] = 0x01;           // payload byte 3: unknown (mode/profile flag)
+    m_can3->WriteExtended(0x17332501, 8, data);
+
+    // Frame 2: BAP multi-frame continuation — remaining 4 payload bytes
+    // TODO: data[3] is the target temperature. Encoding not yet confirmed for port 0x19.
+    //       Port 0x16 schedule uses celsius+35 (20°C → 0x37); port 0x19 may differ.
+    //       thomasakarlsen default is 0x20. Replace with m_climate_control_temp once confirmed.
+    data[0] = 0xC0;  // continuation, channel 0
+    data[1] = 0x06;  // payload byte 4: unknown
+    data[2] = 0x00;  // payload byte 5: unknown
+    data[3] = 0x20;  // payload byte 6: temperature (TODO: confirm encoding, use m_climate_control_temp)
+    data[4] = 0x00;  // payload byte 7: unknown / padding
+    m_can3->WriteExtended(0x17332501, 5, data);
+
+    // Frame 3: BAP single-frame — port 0x18 start/stop trigger
+    // Header 29 58: opcode=2, node=0x25, port=0x18
+    data[0] = 0x29;                    // BAP header byte 0
+    data[1] = 0x58;                    // BAP header byte 1 (node=0x25, port=0x18)
+    data[2] = 0x00;                    // unknown
+    data[3] = enable ? 0x01 : 0x00;   // 0x01 = start, 0x00 = stop
+    m_can3->WriteExtended(0x17332501, 4, data);
+
+    ESP_LOGI(TAG, "Climate %s sequence sent (counter=0x%02x)", enable ? "start" : "stop",
+             m_bap_counter);
+    return Success;
+}
+
 void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
     uint8_t tmp_u8 = 0;
 
