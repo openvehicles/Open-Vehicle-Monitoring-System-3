@@ -41,14 +41,10 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
   {
     // Engine coolant temp
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30 }, 0, ISOTP_STD },
-    // Engine RPM
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0c, {  0, 10 }, 0, ISOTP_STD },
     // Speed
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0d, {  0, 10 }, 0, ISOTP_STD },
     // Engine air intake temp
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30 }, 0, ISOTP_STD },
-    // Fuel level
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x2f, {  0, 30 }, 0, ISOTP_STD },
     // Ambient temp
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30 }, 0, ISOTP_STD },
     // Engine oil temp
@@ -90,11 +86,11 @@ void OvmsVehicleCadillaccCT5::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
-    case 0x2D1:
+    case 0x063:
       /* Unknown pid tells us when the engine is running */
-      if (len == 8)
+      if (len == 6)
         {
-        isRunning = (d[2] != 0);
+        isRunning = (d[2] != 0 || d[3] != 0);
         if (StandardMetrics.ms_v_env_on->AsBool() != isRunning)
           {
           ESP_LOGI(TAG, "running: \"%s\"", isRunning ? "yes" : "no");
@@ -168,13 +164,6 @@ OvmsVehicleCadillaccCT5::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 #endif
 
 #ifdef notdef
-    case 0x0c:  // Engine RPM
-      // XXX we don't know how to convert rpm yet
-      StandardMetrics.ms_v_mot_rpm->SetValue(rpm);
-      break;
-#endif
-
-#ifdef notdef
     case 0x0f:  // Engine intake air temperature
       StandardMetrics.ms_v_inv_temp->SetValue(value1 - 0x28);
       break;
@@ -198,12 +187,6 @@ OvmsVehicleCadillaccCT5::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
       break;
 #endif
 
-#ifdef notdef
-    case 0x2f:  // Fuel Level
-      StandardMetrics.ms_v_bat_soc->SetValue((value1 * 100) >> 8);
-      break;
-#endif
-
     default:
       ESP_LOGI(TAG, "IncomingPollReply: pid %04x", job.pid);
       break;
@@ -222,6 +205,4 @@ OvmsVehicleCadillaccCT5Init::OvmsVehicleCadillaccCT5Init()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleCadillaccCT5>("CT5",
     "Cadillac CT5");
-  if (!StandardMetrics.ms_v_env_on->AsBool())
-      StandardMetrics.ms_v_env_on->SetValue(false);
   }
