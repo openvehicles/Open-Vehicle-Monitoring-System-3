@@ -111,6 +111,7 @@ OvmsWebServer::OvmsWebServer()
   // register standard administration pages:
   RegisterPage("/status", "Status", HandleStatus, PageMenu_Main, PageAuth_Cookie);
   RegisterPage("/shell", "Shell", HandleShell, PageMenu_Tools, PageAuth_Cookie);
+  RegisterPage("/metrics", "Metrics", HandleMetrics, PageMenu_Tools, PageAuth_Cookie);
   RegisterPage("/edit", "Editor", HandleEditor, PageMenu_Tools, PageAuth_Cookie);
 #ifdef WEBSRV_HAVE_SETUPWIZARD
   RegisterPage("/cfg/init", "Setup wizard", HandleCfgInit, PageMenu_None, PageAuth_Cookie);
