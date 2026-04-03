@@ -78,7 +78,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   m_led_state = 4;
   m_cfg_cell_interval_drv = 60;
   m_cfg_cell_interval_chg = 60;
-  m_poll_on_mod = false;
   m_poll_on_charge = false;
 
   // BMS configuration:
@@ -279,6 +278,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   int cell_interval_chg   = 60;
   bool obdii_743          = true;
   bool obdii_745          = true;
+  bool obdii_745_tpms     = true;
   bool obdii_7e4          = true;
   bool obdii_79b_cell     = true;
   bool obdii_79b          = true;
@@ -343,7 +343,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     obdii_79b              = getBool("obdii.79b", true);
     obdii_79b_cell         = getBool("obdii.79b.cell", true);
     obdii_743              = getBool("obdii.743", true);
-    obdii_745              = getBool("obdii.745", true);
+    obdii_745              = getBool("obdii.745", true);    
+    obdii_745_tpms         = getBool("obdii.745.tpms", true);
     obdii_7e4              = getBool("obdii.7e4", true);
     obdii_7e4_dcdc         = getBool("obdii.7e4.dcdc", true);
     }
@@ -362,28 +363,26 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_enable_write_caron = false;
     MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
     }
-  
-  bool basic_tpms = (!m_tpms_alert_enable && !m_tpms_temp_enable);  // basic TPMS mode if alert and temp disabled
 
   bool do_modify_poll = (
     (cell_interval_drv != m_cfg_cell_interval_drv) ||
     (cell_interval_chg != m_cfg_cell_interval_chg) ||
-    (basic_tpms != m_basic_tpms) ||
     (obdii_79b != m_obdii_79b) ||
     (obdii_79b_cell != m_obdii_79b_cell) ||
     (obdii_743 != m_obdii_743) ||
     (obdii_745 != m_obdii_745) ||
+    (obdii_745_tpms != m_obdii_745_tpms) ||
     (obdii_7e4 != m_obdii_7e4) ||
     (obdii_7e4_dcdc != m_obdii_7e4_dcdc)
   );
   
   m_cfg_cell_interval_drv = cell_interval_drv;
   m_cfg_cell_interval_chg = cell_interval_chg;
-  m_basic_tpms = basic_tpms;
   m_obdii_79b = obdii_79b;
   m_obdii_79b_cell = obdii_79b_cell;
   m_obdii_743 = obdii_743;
   m_obdii_745 = obdii_745;
+  m_obdii_745_tpms = obdii_745_tpms;
   m_obdii_7e4 = obdii_7e4;
   m_obdii_7e4_dcdc = obdii_7e4_dcdc;
 

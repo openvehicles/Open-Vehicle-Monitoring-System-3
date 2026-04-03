@@ -35,7 +35,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 {
   auto lock = MyConfig.Lock();
   std::string error;
-  std::string server, user, password, port, topic_prefix;
+  std::string server, clientid, user, password, port, topic_prefix;
   std::string updatetime_connected, updatetime_idle, updatetime_on;
   std::string updatetime_charging, updatetime_awake, updatetime_sendall, updatetime_keepalive;
   std::string metrics_priority, metrics_include, metrics_exclude, metrics_immediately, metrics_exclude_immediately;
@@ -47,6 +47,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     server = c.getvar("server");
     tls = (c.getvar("tls") == "yes");
     legacy_event_topic = (c.getvar("legacy_event_topic") == "yes");
+    clientid = c.getvar("clientid");
     user = c.getvar("user");
     password = c.getvar("password");
     port = c.getvar("port");
@@ -116,6 +117,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v3", "server", server);
       MyConfig.SetParamValueBool("server.v3", "tls", tls);
       MyConfig.SetParamValueBool("server.v3", "events.legacy_topic", legacy_event_topic);
+      MyConfig.SetParamValue("server.v3", "clientid", clientid);
       MyConfig.SetParamValue("server.v3", "user", user);
       if (password != "")
         MyConfig.SetParamValue("password", "server.v3", password);
@@ -155,6 +157,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     server = MyConfig.GetParamValue("server.v3", "server");
     tls = MyConfig.GetParamValueBool("server.v3", "tls", false);
     legacy_event_topic = MyConfig.GetParamValueBool("server.v3", "events.legacy_topic", true);
+    clientid = MyConfig.GetParamValue("server.v3", "clientid");
     user = MyConfig.GetParamValue("server.v3", "user");
     password = MyConfig.GetParamValue("password", "server.v3");
     port = MyConfig.GetParamValue("server.v3", "port");
@@ -199,6 +202,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     NULL, "autocomplete=\"section-serverv3 username\"");
   c.input_password("Password", "password", "", "Enter user password, empty = no change",
     NULL, "autocomplete=\"section-serverv3 current-password\"");
+  c.input_text("Client ID", "clientid", clientid.c_str(),
+    "optional, default: <vehicle id>");
   c.input_text("Topic Prefix", "topic_prefix", topic_prefix.c_str(),
     "optional, default: ovms/<username>/<vehicle id>/");
 

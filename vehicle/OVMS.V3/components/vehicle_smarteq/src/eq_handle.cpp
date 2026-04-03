@@ -44,7 +44,7 @@ void OvmsVehicleSmartEQ::HandlePollState() {
     if (m_poll_state != POLLSTATE_OFF) 
       {
       PollSetState(POLLSTATE_OFF);
-      ESP_LOGI(TAG, "Pollstate Off (write disabled)");
+      ESP_LOGD(TAG, "Pollstate Off (write disabled)");
       }
     mt_poll_state->SetValue(state_disabled);
     return;
@@ -52,19 +52,19 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   
   int desired_state = m_poll_state; // OvmsVehicle::m_poll_state
 
-  if (IsCharging())
+  if (IsChargingEQ())
     {
     desired_state = POLLSTATE_CHARGING;   //- car is charging
     }
-  else if (IsOn())
+  else if (IsOnEQ())
     {
     desired_state = POLLSTATE_ON;    //- car is on
     }
-  else if (IsAwake())
+  else if (IsAwakeEQ())
     {
     desired_state = POLLSTATE_AWAKE;         //- car is awake (but not on)
     }    
-  else if (!IsAwake() && !IsCharging())
+  else if (!IsAwakeEQ() && !IsChargingEQ())
     {
     desired_state = POLLSTATE_OFF;        //- car is asleep
     }
@@ -72,7 +72,7 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   if (desired_state != m_poll_state) 
     {
     PollSetState(desired_state);
-    ESP_LOGI(TAG, "Pollstate %s", state_names[desired_state]);
+    ESP_LOGD(TAG, "Pollstate %s", state_names[desired_state]);
     mt_poll_state->SetValue(state_names[desired_state]);
     if (desired_state == POLLSTATE_OFF)
       {
@@ -103,7 +103,7 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
   m_poll_vector.clear();
   if (!m_can_active)
     {
-    ESP_LOGI(TAG, "OBD polling disabled (CAN bus not active)");
+    ESP_LOGD(TAG, "HandleOBDpolling(): OBD polling disabled (CAN bus not active)");
     return;
     }
   // Pre-allocate capacity to avoid reallocs during insert operations
@@ -117,26 +117,23 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
 
   if (m_obdii_745) // 745 PIDs Doorlock and VIN
     m_poll_vector.insert(m_poll_vector.end(), obdii_745_polls, endof_array(obdii_745_polls));
+       
+  if (m_obdii_745_tpms) // full TPMS mode with individual pressure/temp/alert status for each wheel
+    m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms_polls, endof_array(obdii_745_tpms_polls));
   
-  if (m_poll_on_mod)
-    {      
-    if (!m_basic_tpms) // full TPMS mode with individual pressure/temp/alert status for each wheel
-     m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms_polls, endof_array(obdii_745_tpms_polls));
-    
-    if (m_obdii_79b_cell) // 79b PIDs cell V/R/T values with configurable intervals
+  if (m_obdii_79b_cell) // 79b PIDs cell V/R/T values with configurable intervals
+    {
+    for (const auto& p79bcell : obdii_79b_cell_vrt_polls) 
       {
-      for (const auto& p79bcell : obdii_79b_cell_vrt_polls) 
-        {
-        OvmsPoller::poll_pid_t p79bcell_mod = p79bcell;
-        p79bcell_mod.polltime[2] = m_cfg_cell_interval_drv;
-        p79bcell_mod.polltime[3] = m_cfg_cell_interval_chg;
-        m_poll_vector.push_back(p79bcell_mod);
-        }
+      OvmsPoller::poll_pid_t p79bcell_mod = p79bcell;
+      p79bcell_mod.polltime[2] = m_cfg_cell_interval_drv;
+      p79bcell_mod.polltime[3] = m_cfg_cell_interval_chg;
+      m_poll_vector.push_back(p79bcell_mod);
       }
-     
-    if (m_obdii_7e4_dcdc) // 7e4 PIDs DCDC 
-      m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_dcdc_polls, endof_array(obdii_7e4_dcdc_polls));
     }
+    
+  if (m_obdii_7e4_dcdc) // 7e4 PIDs DCDC 
+    m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_dcdc_polls, endof_array(obdii_7e4_dcdc_polls));
 
   if (m_obdii_7e4) // 7e4 PIDs charging plug, 12V system, and misc
     m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_polls, endof_array(obdii_7e4_polls));
@@ -160,7 +157,7 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
   m_poll_vector.push_back(POLL_LIST_END);
   // Release excess capacity to free unused heap memory
   m_poll_vector.shrink_to_fit();
-  ESP_LOGI(TAG, "Poll vector: size=%d cap=%d", m_poll_vector.size(), m_poll_vector.capacity());
+  ESP_LOGD(TAG, "HandleOBDpolling(): Poll vector: size=%d cap=%d", m_poll_vector.size(), m_poll_vector.capacity());
   PollSetPidList(m_can1, m_poll_vector.data());
 }
 
@@ -171,6 +168,7 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
  */
 void OvmsVehicleSmartEQ::HandleEnergy() {
   float power = StdMetrics.ms_v_bat_power->AsFloat(0.0f); // in kW
+  ESP_LOGD(TAG, "HandleEnergy(): power=%.2f kW", power);
   if (power != 0.0f)
     {
     // Update energy used and recovered   
@@ -202,19 +200,24 @@ void OvmsVehicleSmartEQ::HandleEnergy() {
 }
 
 void OvmsVehicleSmartEQ::HandleTripcounter(){
-  if (mt_pos_odometer_start->AsFloat(0) == 0 && StdMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0) {
+  ESP_LOGD(TAG, "HandleTripcounter()");
+  if (mt_pos_odometer_start->AsFloat(0) == 0 && StdMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0) 
+    {
     mt_pos_odometer_start->SetValue(StdMetrics.ms_v_pos_odometer->AsFloat());
-  }
-  if (IsOn() && StdMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0 && mt_pos_odometer_start->AsFloat(0) > 0.0) {
+    }
+  if (IsOnEQ() && StdMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0 && mt_pos_odometer_start->AsFloat(0) > 0.0) 
+    {
     StdMetrics.ms_v_pos_trip->SetValue(StdMetrics.ms_v_pos_odometer->AsFloat(0) - mt_pos_odometer_start->AsFloat(0));
-  }
+    }
 
-  if (mt_pos_odometer_start_total->AsFloat(0) == 0 && StdMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0) {
+  if (mt_pos_odometer_start_total->AsFloat(0) == 0 && StdMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0) 
+    {
     mt_pos_odometer_start_total->SetValue(StdMetrics.ms_v_pos_odometer->AsFloat());
-  }
-  if (IsOn() && StdMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0 && mt_pos_odometer_start_total->AsFloat(0) > 0.0) {
+    }
+  if (IsOnEQ() && StdMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0 && mt_pos_odometer_start_total->AsFloat(0) > 0.0) 
+    {
     mt_pos_odometer_trip_total->SetValue(StdMetrics.ms_v_pos_odometer->AsFloat(0) - mt_pos_odometer_start_total->AsFloat(0));
-  }
+    }
 }
 
 void OvmsVehicleSmartEQ::Handlev2Server(){
@@ -232,7 +235,8 @@ void OvmsVehicleSmartEQ::Handlev2Server(){
  * Update derived metrics when charging
  * Called once per 10 seconds from Ticker10
  */
-void OvmsVehicleSmartEQ::HandleCharging() {    
+void OvmsVehicleSmartEQ::HandleCharging() {
+  ESP_LOGD(TAG, "HandleCharging()");
   float act_soc         = StdMetrics.ms_v_bat_soc->AsFloat(0.0f);
   float limit_soc       = StdMetrics.ms_v_charge_limit_soc->AsFloat(0.0f);
   float limit_range     = StdMetrics.ms_v_charge_limit_range->AsFloat(0.0f);

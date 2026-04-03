@@ -58,7 +58,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     return Fail;
     }
 
-  if (IsHVACon()) 
+  if (IsOnHVACEQ()) 
     {
     MyNotify.NotifyString("info", "hvac.enabled", "Climate already on");
     ESP_LOGI(TAG, "CommandClimateControl already on");
@@ -94,7 +94,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
         {
         obd->WriteStandard(0x634, 4, data);
         vTaskDelay(200 / portTICK_PERIOD_MS);
-        if (IsHVACon()) 
+        if (IsOnHVACEQ()) 
           {
           ESP_LOGI(TAG, "Climate control started");
           break;

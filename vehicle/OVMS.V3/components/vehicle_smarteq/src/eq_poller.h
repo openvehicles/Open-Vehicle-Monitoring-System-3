@@ -76,7 +76,7 @@ static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, { 0,14,14,14 }, 0, ISOTP_STD }, // Cabin blower command
 };
 
-//   -> HandleOBDpolling() will add the following PIDs when m_poll_on_mod is true, and remove them when m_poll_on_mod is false
+//   -> HandleOBDpolling() will add the following PIDs
 static const OvmsPoller::poll_pid_t obdii_7e4_dcdc_polls[] =
 {
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, { 0,14,14,14 }, 0, ISOTP_STD }, // rqDCDC_Load

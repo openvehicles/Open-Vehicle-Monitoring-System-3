@@ -1,7 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-- Cadillac CT5: Switch to pid 0x063 and fix "is running" flip flops.
+- Server V3: the MQTT client ID to use can now be configured. While not normally necessary, changing the
+    client ID may be necessary to discard an existing MQTT server session when changing the username.
+  New configs:
+    [server.v3] clientid                  -- MQTT client ID, default: vehicle ID
 - New vehicle: Cadillac CT5
     Initial support includes: VIN, fuel level (SOC), and run state.
     The CT5 uses the GM Global B platform which requires authentication

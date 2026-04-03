@@ -551,7 +551,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "obdii_745",
     "obdii_79b",
     "obdii_7e4",
-    "obdii_7e4_modify"
+    "obdii_7e4_modify",
+    "basic_tpms"
   };
   
   // Remove all deprecated keys from map

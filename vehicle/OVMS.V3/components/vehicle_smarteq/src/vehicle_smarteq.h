@@ -34,7 +34,7 @@
 #define __VEHICLE_SMARTEQ_H__
 
 #define VERSION "2.1.2"
-#define PRESET_VERSION 20260319 // Configuration preset version
+#define PRESET_VERSION 20260326 // Configuration preset version
 
 #include "ovms_log.h"
 
@@ -222,11 +222,11 @@ public:
 
   public:
     bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]
-    bool IsOff() { return m_poll_state == POLLSTATE_OFF; }
-    bool IsAwake() { return (mt_bus_awake->AsBool(false) || StdMetrics.ms_v_env_awake->AsBool(false)); }
-    bool IsOn() { return StdMetrics.ms_v_env_on->AsBool(false); }
-    bool IsCharging() { return StdMetrics.ms_v_charge_inprogress->AsBool(false); }
-    bool IsHVACon() { return StdMetrics.ms_v_env_hvac->AsBool(false); }
+    bool IsOffEQ() { return m_poll_state == POLLSTATE_OFF; }
+    bool IsAwakeEQ() { return (mt_bus_awake->AsBool(false) || StdMetrics.ms_v_env_awake->AsBool(false)) == true; }
+    bool IsOnEQ() { return StdMetrics.ms_v_env_on->AsBool(false) == true; }
+    bool IsChargingEQ() { return StdMetrics.ms_v_charge_inprogress->AsBool(false) == true; }
+    bool IsOnHVACEQ() { return StdMetrics.ms_v_env_hvac->AsBool(false) == true; }
 
   protected:
     void Ticker1(uint32_t ticker) override;
@@ -445,14 +445,13 @@ public:
     int m_cfg_preset_version;               //!< config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
     int m_suffsoc;                          //!< minimum SoC for charging
     int m_suffrange;                        //!< minimum range for charging
-    bool m_basic_tpms;                      //!< basic TPMS without temperature and low battery status
+    bool m_obdii_745_tpms;                  //!< basic TPMS without temperature and low battery status
     bool m_obdii_79b;                       //!< OBDII 79b mode enabled
     bool m_obdii_79b_cell;                  //!< OBDII 79b cell V/R/T polling enabled
     bool m_obdii_743;                       //!< OBDII 743 mode enabled
     bool m_obdii_745;                       //!< OBDII 745 mode enabled
     bool m_obdii_7e4;                       //!< OBDII 7e4 mode enabled
     bool m_obdii_7e4_dcdc;                  //!< OBDII 7e4 dcdc mode enabled
-    bool m_poll_on_mod;                     //!< flag to trigger poll state change actions
     bool m_poll_on_charge;                   //!< flag to trigger poll state change actions
 
   protected:

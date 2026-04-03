@@ -86,6 +86,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
   public:
     std::string m_vehicleid;
     std::string m_server;
+    std::string m_clientid;
     std::string m_user;
     std::string m_password;
     std::string m_port;
