@@ -103,7 +103,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           opts.flags |= MG_MQTT_WILL_RETAIN;
           opts.keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
           mg_set_protocol_mqtt(nc);
-          mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_vehicleid.c_str(), opts);
+          mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_clientid.c_str(), opts);
           }
         else
           {
@@ -908,6 +908,12 @@ void OvmsServerV3::Connect()
   m_port = MyConfig.GetParamValue("server.v3", "port");
   m_tls = MyConfig.GetParamValueBool("server.v3","tls", false);
 
+  m_clientid = MyConfig.GetParamValue("server.v3", "clientid");
+  if (m_clientid.empty())
+    {
+    m_clientid = m_vehicleid;
+    }
+
   m_topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix", "");
   if(m_topic_prefix.empty())
     {
@@ -949,7 +955,7 @@ void OvmsServerV3::Connect()
 
   ESP_LOGI(TAG, "Connection is %s:%s %s/%s topic %s",
     m_server.c_str(), m_port.c_str(),
-    m_vehicleid.c_str(), m_user.c_str(),
+    m_clientid.c_str(), m_user.c_str(),
     m_topic_prefix.c_str());
 
   if (m_server.empty())
