@@ -14,12 +14,8 @@ Reference: https://github.com/thomasakarlsen/e-golf-comfort-can
 
 | Direction | CAN ID (extended, 29-bit) | Description |
 |---|---|---|
-| Controller → Clima ECU | `0x17332501` | Commands (our 3-frame sequences) |
-| Clima ECU → Controller | `0x17332501` | Periodic keepalive polls and 5s status bursts |
-| Clima ECU → bus | `0x17332510` | Command ACKs and full state broadcasts |
-
-`0x17332501` is **bidirectional**: OVMS writes to it and the clima ECU also sends on it
-(keepalives and 4-byte status frames). `0x17332510` carries larger broadcasts.
+| Controller → Clima ECU | `0x17332501` | Commands and periodic keepalives |
+| Clima ECU → bus | `0x17332510` | Status broadcasts and Acks |
 
 BAP node address of the clima ECU: **0x25** (decimal 37)
 
@@ -177,56 +173,6 @@ Errors:
 
 ---
 
-## Confirmed ECU Response Pattern
-
-From `kcan-can3-clima_on_off.crtd` (clima started and stopped via both OVMS shell and
-iOS app, all confirmed working).
-
-### Immediate ACK on 0x17332510 (within ~1s)
-
-```
-80 0a 49 59  {ectr} 04 46 00   [+ continuation frame with remaining bytes]
-```
-
-`49 59` = BAP: opcode=2 (Status), node=0x25, port=0x19. Multi-frame, length=10.
-`{ectr}` = our rolling counter | 0x80. Use this to confirm which command was ACKed.
-
-### Periodic status on 0x17332501 (~16s delay, then every 5s for ~20s)
-
-After the ACK, the ECU sends ~4 cycles at 5-second intervals, then goes quiet:
-
-```
-3R29 17332501  19 42                          (keepalive, port 0x02, node 0x25)
-3R29 17332501  19 41                          (keepalive, port 0x01, node 0x25)
-3R29 17332501  90 04 19 59 {ctr} 00 00 04    (ch1, port 0x19, 4-byte status)
-3R29 17332501  80 04 19 5a {ctr} 02 00 04    (ch0, port 0x1a, 4-byte status)
-```
-
-`{ctr}` is a 3-bit rolling counter cycling 0x28–0x2F. The ECU goes silent after the
-burst and only resumes when the next command is issued. Status payload bytes (`00 00 04`,
-`02 00 04`) are constant across start and stop in current captures — full decode pending
-a capture where the 10-minute timer expires.
-
-### Full state dump on 0x17332510 (alongside ACK)
-
-The ECU broadcasts a complete state on `0x17332510`:
-
-- **Port 0x19** (130 bytes, channel 0, `80 82 49 59 ...`): appears static across calls;
-  contains schedule data and component identification strings.
-- **Port 0x1a** (channel 1): length and a header byte change with clima state:
-  - 34 bytes (`90 22`), header byte `c0`: seen in idle/no-active state
-  - 25 bytes (`90 19`), header byte `c2`: seen when clima is running (bit 1 of header byte differs)
-
-The `c0` → `c2` transition (bit 1) is a candidate clima-active flag. Not yet confirmed —
-needs a controlled before/after capture.
-
-### Note on port 0x18 trigger frame
-
-One observed start command had Frame 3 transmitted as `29 58 00 00` (stop byte) due to
-a stale TX queue entry, yet clima started normally ~16s later. This suggests port 0x19
-parameters (Frame 1+2) may alone trigger climatisation, with port 0x18 Frame 3 playing
-a confirmatory or redundant role. The code still sends all 3 frames.
-
 ## Test Commands
 
 To test clima start (from OVMS shell):
@@ -245,59 +191,14 @@ can can3 tx extended 17332501 C0 06 00 20 00
 can can3 tx extended 17332501 29 58 00 00
 ```
 
+Expected ECU response on `17332510`:
+- Port 0x19 Ack (confirmed from schedule capture): `80 82 49 59 [counter] 04`
+  - `49 59` = opcode=4 (Ack), node=0x25, port=0x19
+  - Payload is 2 bytes: echoed counter + `0x04` status byte
+- Port 0x18 Ack: not yet observed (port 0x18 only activates in remote mode, not ignition-on)
+
 Observable bus effects: `0x3E9` transitions from `fe f8 df ff ...` (ECU idle/invalid)
 to live values, and `0x3B5`/`0x530` follow. Blower should activate within ~10 s.
-
----
-
-## KCAN Bus Wake-Up
-
-The KCAN bus enters a low-power sleep state when the car is parked. CAN transceivers
-wake on detection of dominant bits (any CAN frame). The first frames to appear after
-wake are Network Management (NM) frames from each node.
-
-### NM Frame Format (OSEK NM, observed on KCAN)
-
-| Field | Value |
-|---|---|
-| CAN ID | `0x1B000000 \| node_id` (29-bit extended) |
-| Payload byte 0 | node_id (echoes lower byte of CAN ID) |
-| Payload byte 1 | NM control (0x00 = no sleep request, 0x10 seen on some nodes) |
-| Payload bytes 2–7 | NM state data (varies by node) |
-
-Example observed after wake (`kcan-can3-clima_start2.crtd`):
-```
-3R29 1B00000E  0e 00 01 01 04 08 04 00   node 0x0E
-3R29 1B000067  67 10 01 01 04 00 00 00   node 0x67
-3R29 1B0000A9  a9 00 01 01 04 00 00 00   node 0xA9
-3R29 1B000046  46 00 01 01 04 00 00 00   node 0x46
-```
-
-Clima ECU (node 0x25) NM ID would be `0x1B000025`. Observing this frame in RX
-confirms the clima ECU is alive on the bus.
-
-### Wake Ping
-
-To wake the bus before sending a command sequence, send a short harmless frame.
-Even if it TX_Fails (no ACK — nodes still asleep), the dominant bits wake the
-transceivers. Subsequent frames ~150 ms later will succeed.
-
-Recommended wake ping — BAP Get on port 0x01 (2-byte read query, non-destructive):
-```
-can can3 tx extended 17332501 09 41
-```
-`09 41` = opcode=0 (Get), node=0x25, port=0x01. Safe to send; ECU may or may not reply.
-
-### Why the multi-frame start frame must not be used as a wake ping
-
-When the start frame TX_Fails, the continuation frame is delayed ~110 ms (bus waking).
-The ECU receives an orphan continuation without a valid preceding start and discards the
-partial BAP message. The trigger frame then fires with no parameters set → no HVAC.
-
-Correct sequence when bus state is unknown:
-1. Send wake ping (TX_Fail is fine — bus wakes from dominant bits)
-2. Wait 150–200 ms for RX traffic to confirm bus is live
-3. Send the 3-frame clima sequence (all frames will be ACK'd)
 
 ---
 
@@ -309,5 +210,3 @@ Correct sequence when bus state is unknown:
 | `kcan-can3-clima_range.crtd` | Adjusting clima temp dial (ignition on, 20°C → LO → HI → off) |
 | `kcan-can3-clima_inject.crtd` | First injection attempt (failed — wrong node/port/no continuation) |
 | `clima-sequence.crtd` | Bus while clima actively running (pre-existing active state) |
-| `kcan-can3-clima_start2.crtd` | Start/stop injection attempt from sleeping bus — TX_Fail on start frame, confirmed wake behaviour |
-| `kcan-can3-clima_on_off.crtd` | Confirmed working start/stop from OVMS shell and iOS app (TurboServ); ECU ACK and status burst pattern captured |
