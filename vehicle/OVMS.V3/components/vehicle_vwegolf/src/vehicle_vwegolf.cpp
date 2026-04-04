@@ -291,7 +291,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         case 0x05EA: {
             // Clima ECU status: cabin temperature as seen by the climate controller,
             // plus remote mode and operational status fields.
-            // These are logged for observability; not yet wired to metrics or state machine.
+            // TODO: once StandklimaRemoteModus values are confirmed from captures, set
+            //       ms_v_env_hvac here so the app reflects real ECU state rather than
+            //       only the last commanded state from CommandClimateControl.
             u16 = ((uint16_t)(d[6] & 0xFC) >> 2) | ((uint16_t)(d[7] & 0x0F) << 6);
             f = u16 * 0.1f - 40.0f;
             uint8_t remote_mode = ((d[3] & 0xC0) >> 6) | ((d[4] & 0x01) << 2);
@@ -595,6 +597,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[2] = 0x00;
     data[3] = enable ? 0x01 : 0x00;
     m_can3->WriteExtended(0x17332501, 4, data);
+
+    // Reflect the commanded state immediately so the app toggle stays in sync.
+    // The ECU will confirm via 0x17332510 ACK, but the app reads ms_v_env_hvac
+    // and needs a value before the ~1s ACK arrives. We update again from 0x05EA
+    // once that status decode is confirmed.
+    StandardMetrics.ms_v_env_hvac->SetValue(enable);
 
     ESP_LOGI(TAG, "Climate %s sequence sent (counter=0x%02x)", enable ? "start" : "stop",
              m_bap_counter);
