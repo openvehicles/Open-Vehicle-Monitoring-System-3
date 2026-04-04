@@ -8,6 +8,8 @@ This is a fork of the Open Vehicle Monitoring System v3 (OVMS3) focused on VW e-
 
 The primary focus of this fork is `vehicle/OVMS.V3/components/vehicle_vwegolf/`.
 
+**"The app"** always refers to OVMS Connect by CrashOverride2, available on the Apple App Store and Google Play. The vehicle list is published at https://github.com/CrashOverride2/OVMS-Connect-Vehicles; the app itself is closed source. All end-user-facing optimisation — metric naming, command behaviour, response timing — is made with this app as the target client.
+
 ## Build System
 
 The firmware uses ESP-IDF (Espressif IoT Development Framework) with a legacy Make wrapper.
