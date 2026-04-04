@@ -301,6 +301,48 @@ Correct sequence when bus state is unknown:
 
 ---
 
+## Implementation Bugs Found During Development
+
+### Bug 1: OCU heartbeat data overwrite (critical — caused clima to stop working)
+
+`SendOcuHeartbeat()` built the correct bit pattern for each pending action (horn, mirror
+fold, lock, etc.) into a local `data[]` array, then unconditionally re-zeroed the entire
+array before calling `WriteStandard`. The frame always transmitted all zeros; no one-shot
+action ever reached the bus.
+
+This is why clima "worked then stopped": it worked when tested via the raw shell commands
+(`can can3 tx extended ...`) but once routed through `CommandClimateControl` any
+subsequent state that depended on the heartbeat being correct (e.g. OCU presence
+acknowledged by the gateway) was broken.
+
+**Fix:** removed the re-initialization block at the bottom of `SendOcuHeartbeat`. The
+array is zero-initialized once at the top (`uint8_t data[8] = {};`); action bits are OR'd
+in as needed; the array is sent as-is.
+
+### Bug 2: Multi-frame start used as implicit wake stimulus
+
+When `CommandClimateControl` was called with the bus sleeping, it called `CommandWakeup`
+(which sends two NM-style extended frames) then waited 300 ms before sending the BAP
+sequence. If the NM frames TX_Failed (no ACK from sleeping nodes), the wait was sometimes
+not long enough: Frame 1 of the BAP sequence also TX_Failed, the ESP32 introduced a
+~110 ms bus-off recovery gap, and Frame 2 arrived at the ECU as an orphaned continuation.
+The ECU discarded the incomplete BAP message and Frame 3 fired with no parameters.
+
+**Fix:** `CommandClimateControl` now sends a harmless BAP Get on port 0x01 (`09 41`) as
+the wake stimulus before the command sequence. A Get can fail safely — it carries no
+multi-frame state. After 200 ms the BAP command sequence is sent when the bus is live.
+`CommandWakeup` is retained as a standalone full-system wake command.
+
+### Bug 3: 0x05EA StandklimaStatus_02 shift error
+
+The original decode of `StandklimaStatus_02` from 0x05EA used `(d[3] & 0x38) >> 6`.
+`0x38` masks bits 5:3; shifting right by 6 pushes all of them below bit 0 → result is
+always 0. The correct shift is `>> 3`. Fixed in the refactor. This field is only logged
+at verbose level for observability, so it had no functional impact, but the logged value
+was always wrong.
+
+---
+
 ## Capture Log for This Investigation
 
 | File | What it captured |

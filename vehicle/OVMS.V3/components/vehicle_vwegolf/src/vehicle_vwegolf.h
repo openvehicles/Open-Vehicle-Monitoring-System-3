@@ -44,12 +44,6 @@
 // and we suppress OCU keepalive transmission to avoid accumulating TX errors.
 #define VWEGOLF_BUS_TIMEOUT_SECS 10
 
-// Shorter threshold for the clima wake-before-send decision. KCAN NM runs at 200ms
-// intervals; 3 seconds of silence means the bus is going to sleep or already asleep,
-// even if m_bus_idle_ticks hasn't reached BUS_TIMEOUT yet. Used together with the
-// OEM OCU idle counter to avoid waking during the 0x5A7 conflict window.
-#define VWEGOLF_CLIMA_WAKE_SECS 3
-
 class OvmsVehicleVWeGolf : public OvmsVehicle {
  public:
     OvmsVehicleVWeGolf();
@@ -66,36 +60,21 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandWakeup() override;
     vehicle_command_t CommandClimateControl(bool enable) override;
-    void SendOcuHeartbeat();
-    void WakeKcanBus();
 
  protected:
     void Ticker1(uint32_t ticker) override;
     void Ticker10(uint32_t ticker) override;
 
  private:
-    // Seconds since the last genuine KCAN (can3) frame arrived. Reset to 0 only for
-    // frames with origin==m_can3; FCAN frames forwarded via IncomingFrameCan2 are excluded.
-    // Incremented each second in Ticker1. Bus is alive while < VWEGOLF_BUS_TIMEOUT_SECS.
+    // Seconds since the last KCAN frame arrived. Reset to 0 in IncomingFrameCan3,
+    // incremented each second in Ticker1. Bus is alive while this is < VWEGOLF_BUS_TIMEOUT_SECS.
     // Initialized to timeout so we treat the bus as offline at cold boot.
     uint8_t m_bus_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
 
-    // Seconds since the last non-zero 0x5A7 frame was received from the OEM OCU. When
-    // the car's ignition is on or was just turned off, the OEM OCU sends non-zero 0x5A7
-    // which conflicts with our all-zeros heartbeat (arbitration loss → bus-off). We must
-    // not send the full NM wake sequence while the OEM OCU is still active.
-    // Initialized to timeout so cold boot treats the OEM OCU as absent.
-    uint8_t m_oem_ocu_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
-
-    // OVMS must send the 0x5A7 OCU keepalive while it is an active node.
-    // VW OSEK NM requires keepalives at ~200ms intervals — Ticker1 alone (1Hz) is
-    // insufficient. We enforce a 180ms minimum interval via a FreeRTOS tick timestamp
-    // checked on every incoming KCAN frame, giving ~5Hz without storm risk when the
-    // bus gets a sudden traffic burst (e.g. from an NM wake).
-    // We only start sending after deliberately taking an action (wakeup or command)
+    // OVMS must send the 0x5A7 OCU keepalive every second while it is an active node.
+    // We only start sending it after deliberately taking an action (wakeup or command)
     // to avoid asserting an unexpected node presence when the car is idle.
     bool m_ocu_active = false;
-    uint32_t m_last_heartbeat_tick = 0;
 
     // Target temperature and battery-allow flag for clima; refreshed from config in Ticker10.
     uint8_t m_climate_temp = 21;
@@ -105,15 +84,22 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // its ACK so we can match responses to commands. Must never be zero; wraps 0xFF → 0x01.
     uint8_t m_bap_counter = 0;
 
-    bool m_mirror_fold_in_requested = false;
+    // Pending one-shot control actions. Set by the Command* methods, consumed and cleared
+    // in the next SendOcuHeartbeat() call.
+    bool m_mirror_fold_requested = false;
     bool m_horn_requested = false;
     bool m_indicators_requested = false;
-    bool m_panic_mode_requested = false;
+    bool m_panic_requested = false;
     bool m_unlock_requested = false;
     bool m_lock_requested = false;
+
+    // VIN assembly state. Frame 0x6B4 carries the 17-char VIN split across three frames
+    // identified by data[0]. We collect all three before committing to the metric.
     uint8_t m_vin_parts_received = 0;
     char m_vin_buf[18] = {};
-    uint8_t m_bap_counter = 0;
+
+    void SendOcuHeartbeat();
+    void SendBapWakePing();
 };
 
-#endif  // #ifndef __VEHICLE_VWEG_H__
+#endif  // __VEHICLE_VWEG_H__
