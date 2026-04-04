@@ -406,6 +406,31 @@ This avoids shift/mask bugs and makes the bit positions self-documenting.
 
 Each testable change on a feature branch should be a single commit covering one decode or control path, so it can be reverted cleanly if it causes problems on the car.
 
+### Upstream PR strategy
+
+The `climate-control` branch contains a large refactor that is **not** submitted as a single PR. The maintainer expects small, focused PRs — one feature or fix per PR. Do not propose a combined PR.
+
+Once the implementation is validated on the car, extract upstream PRs in this order (each depends on the previous being merged):
+
+1. **Decode-only baseline** — all `IncomingFrameCan3` and `IncomingFrameCan2` metric decodes, no control commands. Lowest risk, no bus writes.
+2. **CommandWakeup** — KCAN wake sequence only.
+3. **CommandClimateControl** — clima start/stop via BAP. Depends on wakeup PR.
+4. **OCU heartbeat + one-shot actions** — horn, indicators, panic, mirror fold.
+5. **CommandLock / CommandUnlock** — only after the auth byte pattern is confirmed from a capture.
+6. **User guide** (`docs/index.rst`) — required by the maintainer before any PR merges; covers hardware wiring, J533 adapter, all config params and commands.
+
+Each PR must:
+- Pass the native test suite
+- Reference the relevant `docs/` RE notes
+- Contain only English user-facing strings
+- Use a single log tag (`v-vwegolf`) throughout
+- Not set any metric to a default value in the constructor
+
+Open items that block specific PRs — tracked in `docs/refactor-notes.md`:
+- Temperature encoding for BAP port 0x19 (blocks clima PR)
+- Lock/unlock auth bytes (blocks lock PR)
+- GPS sign bits for southern/western hemispheres
+
 ## Maintainer Code Review Rules
 
 These rules come directly from maintainer (dexterbg) review of PR #1327 (initial e-Golf submission). Violating them will cause a PR to be sent back.
