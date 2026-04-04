@@ -825,12 +825,17 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
     // See https://docs.google.com/spreadsheets/d/1JyJnXh7DOvzTl0cbWZRpW9qB_OgEOM-w_XOiAY_a64o/edit#gid=1990128420
     isCharging = (m_b_bms_relay->AsBool(false) - m_b_bms_ignition->AsBool(false)) == 1;
   }
+  // fake charge port door TODO: Fix for Ioniq5
+  bool ischargeport = isCharging;
   // Still a flag we are missing for low-power charging.
   if (!isCharging && m_b_bms_availpower->AsInt() > 0) {
-    isCharging = true;
+    ischargeport = true;
+    if (StdMetrics.ms_v_charge_power->IsDefined() &&
+        StdMetrics.ms_v_charge_power->AsFloat() > 0) {
+      isCharging = true;
+    }
   }
-  // fake charge port door TODO: Fix for Ioniq5
-  StdMetrics.ms_v_door_chargeport->SetValue(isCharging);
+  StdMetrics.ms_v_door_chargeport->SetValue(ischargeport);
 
   if (isCharging) {
     HandleCharging();
