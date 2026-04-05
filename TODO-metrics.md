@@ -104,8 +104,8 @@ GPS position metrics below are populated by the OVMS GPS hardware (SIM7600), not
 | OVMS Metric | Status | Notes |
 |---|---|---|
 | `v.p.speed` | ✓ | 0 km/h in snapshot — from 0xFD |
-| `v.p.latitude` | ✓ | from 0x486 (verified against GPS) |
-| `v.p.longitude` | ✓ | from 0x486 (verified against GPS) |
+| `v.p.latitude` | ✓ | from 0x486; sentinel filter prevents invalid writes; sign bit at d[6] MSB (S=1) — inferred, needs S hemisphere confirm |
+| `v.p.longitude` | ✓ | from 0x486; sentinel filter prevents invalid writes; sign bit at d[7] bit0 (W=1) — inferred, needs W hemisphere confirm |
 | `v.p.odometer` | ✓ | confirmed in snapshot — from 0x6B7 |
 | `v.p.gpslock` | ✓ | yes — GPS hardware |
 | `v.p.altitude` | ✓ | GPS hardware |

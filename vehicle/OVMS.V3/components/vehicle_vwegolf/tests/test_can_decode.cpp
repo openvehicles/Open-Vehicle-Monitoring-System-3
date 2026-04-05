@@ -123,6 +123,72 @@ void test_vin_0x6B4() {
     delete v;
 }
 
+void test_gps_0x486() {
+    printf("\ntest_gps_0x486\n");
+
+    // Real frame from kcan-can3-clima_on_off.crtd, verified against hardware GPS.
+    // lat_raw = 0x0395cc6d → 60148845 * 1e-6 = 60.148845°N
+    // lon_raw = 0x00e7b586 → 15185286 * 1e-6 = 15.185286°E
+    // bit55 (d[6] MSB) = 0 → North, bit56 (d[7] bit0) = 0 → East
+    {
+        auto* v = make_vehicle();
+        auto f = make_frame(0x486, {0x6d, 0xcc, 0x95, 0x33, 0xac, 0x3d, 0x07, 0xd0});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_pos_latitude->AsFloat(),  60.148845f, 0.000001f),
+              "Latitude  60.148845°N from real capture");
+        CHECK(near(StandardMetrics.ms_v_pos_longitude->AsFloat(), 15.185286f, 0.000001f),
+              "Longitude 15.185286°E from real capture");
+        CHECK(StandardMetrics.ms_v_pos_gpslock->AsBool(), "gpslock true for valid frame");
+        delete v;
+    }
+
+    // Sentinel frame (all 0xFF except d[7]): lat=134°, lon=268° — both out of range.
+    // Metrics must NOT be overwritten; gpslock must be cleared.
+    {
+        auto* v = make_vehicle();
+        // Pre-seed a known good position so we can verify it is NOT overwritten.
+        StandardMetrics.ms_v_pos_latitude->SetValue(60.0f);
+        StandardMetrics.ms_v_pos_longitude->SetValue(15.0f);
+        auto f = make_frame(0x486, {0xfe, 0xff, 0xff, 0xf7, 0xff, 0xff, 0xff, 0x3d});
+        v->IncomingFrameCan3(&f);
+        CHECK(!StandardMetrics.ms_v_pos_gpslock->AsBool(),
+              "gpslock false for sentinel frame");
+        CHECK(near(StandardMetrics.ms_v_pos_latitude->AsFloat(),  60.0f, 0.001f),
+              "Latitude not overwritten by sentinel");
+        CHECK(near(StandardMetrics.ms_v_pos_longitude->AsFloat(), 15.0f, 0.001f),
+              "Longitude not overwritten by sentinel");
+        delete v;
+    }
+
+    // Southern hemisphere: same magnitude as N/E frame but d[6] bit7 set → lat negative.
+    {
+        auto* v = make_vehicle();
+        // d[6] = 0x07 | 0x80 = 0x87 sets the lat sign bit (Southern)
+        auto f = make_frame(0x486, {0x6d, 0xcc, 0x95, 0x33, 0xac, 0x3d, 0x87, 0xd0});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_pos_latitude->AsFloat(), -60.148845f, 0.000001f),
+              "Latitude -60.148845°S (sign bit d[6] MSB)");
+        CHECK(near(StandardMetrics.ms_v_pos_longitude->AsFloat(), 15.185286f, 0.000001f),
+              "Longitude unchanged (East) when only lat sign set");
+        CHECK(StandardMetrics.ms_v_pos_gpslock->AsBool(), "gpslock true for S hemisphere");
+        delete v;
+    }
+
+    // Western hemisphere: same magnitude but d[7] bit0 set → lon negative.
+    {
+        auto* v = make_vehicle();
+        // d[7] = 0xd0 | 0x01 = 0xd1 sets the lon sign bit (Western)
+        auto f = make_frame(0x486, {0x6d, 0xcc, 0x95, 0x33, 0xac, 0x3d, 0x07, 0xd1});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_pos_latitude->AsFloat(),  60.148845f, 0.000001f),
+              "Latitude unchanged (North) when only lon sign set");
+        CHECK(near(StandardMetrics.ms_v_pos_longitude->AsFloat(), -15.185286f, 0.000001f),
+              "Longitude -15.185286°W (sign bit d[7] bit0)");
+        CHECK(StandardMetrics.ms_v_pos_gpslock->AsBool(), "gpslock true for W hemisphere");
+        delete v;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
@@ -136,6 +202,7 @@ int main() {
     test_speed_0xFD();
     test_gear_0x187_park();
     test_vin_0x6B4();
+    test_gps_0x486();
     test_crtd_replay();
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);
