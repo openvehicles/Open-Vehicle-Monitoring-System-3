@@ -349,7 +349,7 @@ void OvmsVehicleFiatEDoblo::IncomingVINPoll(const OvmsPoller::poll_job_t &job, u
  */
 void OvmsVehicleFiatEDoblo::UpdatePower()
 {
-  StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) * StandardMetrics.ms_v_bat_current->AsFloat(0, Amps)) * -0.001, kW);
+  StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) * StandardMetrics.ms_v_bat_current->AsFloat(0, Amps)) * 0.001, kW);
 }
 
 /**
@@ -369,28 +369,13 @@ void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &jo
     break;
   case 0xd816:  // battery current
     {
-      int16_t cur = (int16_t)(((uint16_t)data[0] << 8) + data[1]);
-      ESP_LOGI(TAG, "received battery current: %f %d, %x %x %x %x", ((float)cur) / 10.0, (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3], data[0], data[1], data[2], data[3]);
+      float cur = (((uint32_t)data[1] << 16) + ((uint32_t)data[2] << 8) + (uint32_t)data[3]) / 64.0 - 1200.0;
+      ESP_LOGI(TAG, "received battery current: %f %d, %x %x %x %x", ((float)cur), (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3], data[0], data[1], data[2], data[3]);
 
-      StandardMetrics.ms_v_bat_current->SetValue((float)cur / 16.0);
-ww
+      StandardMetrics.ms_v_bat_current->SetValue((float)cur);
+      
       UpdatePower();
 
-      /*
-        uint32_t value = ((uint32_t)data[2] << 8) + data[3];
-        TODO: check how to convert into current (or power)
-        int32_t v;
-        float fin;
-        value &= 0x7ff;
-        value = value << 9;
-        v = (int32_t) value;
-      
-        fin = v / 64.0;
-        //see https://www.goingelectric.de/forum/viewtopic.php?p=1903069&sid=2cadc1e2d2a3312a436b2dfed52ce479#p1903069
-    
-        StandardMetrics.ms_v_bat_current->SetValue(fin);
-        ESP_LOGI(TAG, "received battery current: %d %d  %f  %d, %x %x %x %x", value, v, fin, (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3], data[0], data[1], data[2], data[3]);
-      */
       break;
     }
   case 0xd860:
