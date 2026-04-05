@@ -57,7 +57,7 @@ static const OvmsPoller::poll_pid_t vehicle_ftdo_polls[]
     { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd865, {  0,  30,   60, 999 }, 0, ISOTP_STD }, // kWh available
     { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd860, {  0, 600,   60, 999 }, 0, ISOTP_STD }, // SOH is (3 byte value - 65536) / 16
 
-    // geraten
+    // guessed:
     { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd410, {  0,  30,   60, 999 }, 0, ISOTP_STD }, // Motor Torque (Ist-Drehmoment) in 0.1 Nm
     
     // VCU Temperature details
