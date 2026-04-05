@@ -489,20 +489,6 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
 }
 
 // ---------------------------------------------------------------------------
-// BAP wake ping
-// ---------------------------------------------------------------------------
-
-void OvmsVehicleVWeGolf::SendBapWakePing() {
-    // A BAP Get on port 0x01 of the clima ECU (node 0x25) — a harmless read-only query.
-    // The primary purpose is to put dominant bits on the bus: CAN transceivers wake on
-    // dominant bits even when no node is ready to ACK, so this TX_Fail is expected and
-    // intentional. We use a Get rather than the multi-frame start command here because
-    // a TX_Failed start leaves an orphaned continuation frame later — the ECU discards
-    // the incomplete BAP message and the clima command is lost.
-    uint8_t data[2] = {0x09, 0x41};  // opcode=Get(0), node=0x25, port=0x01
-    m_can3->WriteExtended(0x17332501, 2, data);
-}
-
 // ---------------------------------------------------------------------------
 // Vehicle commands
 // ---------------------------------------------------------------------------
@@ -582,14 +568,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     ESP_LOGI(TAG, "Climate control: %s", enable ? "start" : "stop");
 
     if (m_bus_idle_ticks >= VWEGOLF_BUS_TIMEOUT_SECS) {
-        // The bus is sleeping. Send a harmless BAP ping to wake the KCAN transceivers.
-        // We must not use the multi-frame start frame as the wake stimulus: if Frame 1
-        // TX_Fails (no ACK from sleeping nodes), there is a ~110 ms gap before Frame 2
-        // arrives. The ECU sees Frame 2 as an orphaned continuation with no preceding
-        // start, discards it, and Frame 3 then fires without any parameters — no clima.
-        // A separate ping that is safe to lose solves this.
-        SendBapWakePing();
-        vTaskDelay(pdMS_TO_TICKS(200));  // let NM wake traffic settle before the BAP sequence
+        // The bus is sleeping. Use the NM wake sequence (same as CommandWakeup) to bring
+        // the bus and clima ECU up before sending the BAP command.
+        //
+        // Timing evidence from kcan-can3-clima_on_off.crtd (confirmed working sequence):
+        //   +0ms   NM Frame 1 (17330301) sent — bus flooded within 10ms
+        //   +153ms NM Frame 2 (1B000067) sent
+        //   +453ms Clima ECU (17332510) first broadcasts status — ECU is BAP-ready
+        //
+        // A 200ms wait was previously used after a BAP Get ping. That is too short:
+        // the clima ECU needs ~450ms from the first dominant bit before it is ready.
+        // Using the full NM sequence with a 500ms settle matches the confirmed timing.
+        //
+        // TX_Fail on Frame 1 is expected (nodes still asleep) — the physical dominant
+        // bits are sufficient to start the NM wake cascade.
+        CommandWakeup();
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
     m_ocu_active = true;
 

@@ -104,7 +104,6 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     char m_vin_buf[18] = {};
 
     void SendOcuHeartbeat();
-    void SendBapWakePing();
 };
 
 #endif  // __VEHICLE_VWEG_H__
