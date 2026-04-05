@@ -325,16 +325,15 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             break;
         }
         case 0x05EA: {
-            // Clima ECU status: cabin temperature as seen by the climate controller,
-            // plus remote mode and operational status fields.
-            // TODO: once StandklimaRemoteModus values are confirmed from captures, set
-            //       ms_v_env_hvac here so the app reflects real ECU state rather than
-            //       only the last commanded state from CommandClimateControl.
+            // Clima ECU status: cabin temperature, remote mode, and operational status.
+            // remote_mode == 3: clima active in remote pre-conditioning mode.
+            // Confirmed from kcan-can3-clima_on_off.crtd: idle=0, active=3.
             u16 = ((uint16_t)(d[6] & 0xFC) >> 2) | ((uint16_t)(d[7] & 0x0F) << 6);
             f = u16 * 0.1f - 40.0f;
             uint8_t remote_mode = ((d[3] & 0xC0) >> 6) | ((d[4] & 0x01) << 2);
             uint8_t status_02 = (d[3] & 0x38) >> 3;
             uint8_t status_03 = (d[0] & 0x0E) >> 1;
+            StandardMetrics.ms_v_env_hvac->SetValue(remote_mode == 3);
             ESP_LOGV(TAG, "0x05EA clima_cabin=%.1f°C remote_mode=%u status02=%u status03=%u", f,
                      remote_mode, status_02, status_03);
             break;

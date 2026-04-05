@@ -71,7 +71,7 @@ Overall support: `[████████████░░░░░░░░]
 | `v.e.cabinsetpoint` | ✓ | 20°C in snapshot — from 0x594 |
 | `v.e.cabintemp` | ✗ | Sentinel 77°C suppressed (no longer shows wrong value) — real cabin temp not yet decoded; needs Capture 5 (parked remote) |
 | `v.e.temp` | ✗ | Same as cabintemp — ECU sentinel suppressed, real ambient/cabin temp source not yet identified in remote mode |
-| `v.e.hvac` | ~ | Undefined until ECU ACK — optimistic pre-ACK set removed (caused toggle inversion on TX fail). Set from `0x17332510` ACK once clima start is confirmed working on car. |
+| `v.e.hvac` | ~ | Set from `0x05EA` remote_mode field: 3=active, 0=idle. Confirmed from kcan-can3-clima_on_off.crtd. Reflects real ECU state (not commanded state). |
 | `v.e.heating` | ✗ | Not decoded — derivable from 0x66E or BAP status |
 | `v.e.cooling` | ✗ | Not decoded |
 | `v.e.cabinfan` | ✗ | Fan level not decoded |
@@ -178,9 +178,8 @@ Counting ✓ and ~ as implemented, ! as implemented-but-buggy, ✗ as not implem
 
 ### High-value gaps (worth implementing)
 
-1. **`v.e.hvac`** — clima on/off state — needs clean sleeping-bus capture to confirm `0x17332510` ACK decode; optimistic set removed (was causing toggle inversion)
-2. **`v.c.current` / `v.c.power`** — OBC charge current — KCAN frame not yet identified; needs dedicated charging capture (see refactor-notes.md TODO)
-3. **`v.e.cabintemp` / `v.e.temp`** — real cabin/ambient temp in remote mode — sentinel suppressed but metric still empty; needs parked-remote capture
+1. **`v.c.current` / `v.c.power`** — OBC charge current — KCAN frame not yet identified; needs dedicated charging capture (see refactor-notes.md TODO)
+2. **`v.e.cabintemp` / `v.e.temp`** — real cabin/ambient temp in remote mode — sentinel suppressed but metric still empty; needs parked-remote capture
 4. **`v.e.heating` / `v.e.cooling`** — derives from hvac state + setpoint vs ambient
 5. **`v.c.limit.soc`** — min charge % — BAP profile 0x25 already reverse-engineered
 6. **`v.b.soh`** — state of health — probably accessible via UDS on BMS ECU
