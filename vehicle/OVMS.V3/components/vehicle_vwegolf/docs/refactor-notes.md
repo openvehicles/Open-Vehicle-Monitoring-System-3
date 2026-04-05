@@ -56,10 +56,96 @@ as the wake ping. A Get has no multi-frame state, so a TX_Fail loses nothing. Af
 **See also:** `clima-control-bap.md` § "Why the multi-frame start frame must not be
 used as a wake ping" for the full timing analysis.
 
-### 3. 0x05EA StandklimaStatus_02 shift error (cosmetic)
+### 3. All KCAN TX frames sent on wrong bus (critical)
+
+**Symptom:** Climate control, OCU keepalive, wake ping, and wakeup command had no
+effect on the car. Commands appeared to succeed in firmware but the car never responded.
+
+**Root cause:** Every TX call used `m_can2` (FCAN, powertrain bus). The clima ECU,
+OCU keepalive target, and all BAP frame recipients live on KCAN (can3). Frames sent
+on FCAN are not forwarded to KCAN by J533 — only the RX direction is bridged.
+
+**Evidence:** The working manual injection captures (`kcan-can3-clima_on_off.crtd`,
+`clima-start-test2.md`) show TX frames as `3T29 17332501` (can3 transmit). The
+baseline captures confirmed can3 = KCAN and can2 = FCAN.
+
+**Fix:** Changed all seven TX callsites from `m_can2` to `m_can3`:
+`SendOcuHeartbeat`, `SendBapWakePing`, `CommandWakeup` (×2), `CommandClimateControl` (×3).
+
+### 4. OCU keepalive too slow for VW OSEK NM (critical)
+
+**Symptom:** After flashing and pressing clima toggle, the car reacted briefly (relay
+click from the OCU heartbeat starting) but the clima ECU never entered remote mode and
+never ACKed any BAP command. `17332510` had zero frames in the capture.
+
+**Root cause:** `SendOcuHeartbeat()` was called only from `Ticker1` (1Hz). VW OSEK NM
+requires keepalives at ~200ms intervals (~5Hz). At 1Hz the network manager considers
+the OCU node absent, and the clima ECU ignores all commands.
+
+**Evidence:** Working capture (`kcan-can3-clima_on_off.crtd`) shows `3T11 5A7` TX
+frames at ~10Hz — consistent with the heartbeat being triggered by incoming frames.
+New build capture shows exactly 1.0s gaps between heartbeat frames and zero ECU
+response on `17332510`.
+
+**Fix:** Added `m_ocu_heartbeat_counter` incremented on every incoming KCAN frame.
+`SendOcuHeartbeat()` fires every 75 frames (~5Hz on the ~375fps active bus).
+`Ticker1` is retained as a low-activity fallback.
+
+### 5. SOC sentinel written to persistent metric (0x131)
+
+**Symptom:** After a cold boot the SOC metric shows 127.5% until the first real
+frame arrives and overwrites it. If OVMS reboots before the ECU sends a real value
+(e.g., the car goes back to sleep), the 127.5% value is persisted via metric
+persistence and survives the reboot.
+
+**Root cause:** The BMS broadcasts `d[3] = 0xFE` on 0x131 for roughly the first 90
+frames (~3 s) after wake, before it has a valid state of charge. The decoder did not
+filter this sentinel. `0xFE * 0.5 = 127.0%` was written unconditionally to
+`ms_v_bat_soc`.
+
+**Fix:** Added `if (d[3] == 0xFE) break;` before the decode, matching the pattern
+already used for 0x066E (cabin temperature). The metric stays undefined until the
+first real value arrives.
+
+**Confirmed from:** baseline captures `can2-*-233246.crtd` (93 sentinel frames out
+of 4,097 total) and `can3-*-235013.crtd` (5 sentinel frames out of 883 total).
+
+### 6. 0x05EA StandklimaStatus_02 shift error (cosmetic)
 
 `(d[3] & 0x38) >> 6` — masking bits 5:3 then shifting right 6 produces zero always.
 Should be `>> 3`. Fixed. Only affects a verbose-level log line; no functional impact.
+
+### 7. Optimistic `ms_v_env_hvac` set caused app toggle to invert on TX failure
+
+**Symptom:** pressing the clima start button appeared to do nothing. Pressing it a second
+time sent a STOP command instead of START, so clima never started.
+
+**Root cause:** `CommandClimateControl` called `ms_v_env_hvac->SetValue(enable)` before
+any ECU confirmation. If the TX failed silently (CAN bus error during wake-up burst,
+bus-off recovery), the metric was set to `true` anyway. The app then read HVAC as ON and
+sent `enable=false` on the next press.
+
+**Evidence:** `can3-*-004737.crtd` — bap_counter=0x01 (start) command was silently
+dropped after the wake ping's error interrupt. bap_counter=0x02 command was `29 58 00 00`
+(stop byte) because the app saw HVAC=true. The ECU never received a valid start command.
+
+**Fix:** Removed `ms_v_env_hvac->SetValue(enable)` from `CommandClimateControl`. The
+metric stays undefined until a real ECU ACK is decoded from `0x17332510`. Now repeated
+presses always send START until the ECU confirms.
+
+### 8. Charge state never set (`ms_v_charge_state` always "stopped")
+
+**Symptom:** OVMS Connect showed "stopped" during an active charging session.
+`v.c.current`, `v.c.power`, and `v.c.voltage` were all empty.
+
+**Root cause:** `CommandClimateControl` only set `ms_v_charge_inprogress` (boolean). The
+app reads `ms_v_charge_state` (string: "charging"/"stopped") and the separate charge-side
+metrics (`ms_v_charge_voltage` etc.). None of these were ever set; `NotifyChargeStart`
+and `NotifyChargeStop` were never called.
+
+**Fix:** In the 0x0594 decode, added: transition detection for NotifyChargeStart/Stop,
+`ms_v_charge_state` set to "charging"/"stopped", and `ms_v_charge_voltage` mirrored from
+`ms_v_bat_voltage` while charging (same HV bus during AC session).
 
 ---
 
@@ -119,7 +205,45 @@ action appears in exactly one 0x5A7 frame.
 
 ---
 
+## Operational constraint: 0x5A7 conflict window
+
+When the car's ignition is on or was just turned off (within the OSEK NM ring-down
+period, ~10–15s), the OEM OCU sends non-zero `0x5A7` frames. Our firmware also sends
+all-zeros `0x5A7`. The different data values cause arbitration loss → TX_Fail → can3
+bus-off → all KCAN TX fails for ~110ms per cycle.
+
+When the car is fully sleeping, the OEM OCU is off and our `0x5A7` transmits without
+conflict (confirmed from `kcan-can3-clima_on_off.crtd` which shows both `3T11 5A7` TX
+successes and `3R11 5A7` RX when the car is sleeping — both all-zeros, no conflict).
+
+**User guide must document:** "wait 15 seconds after turning off the car before using
+remote climate control." No code fix is needed; this is a protocol constraint.
+
+A future improvement could monitor incoming `0x5A7` bytes and suppress our heartbeat
+while non-zero data is seen. Not required for initial validation.
+
+---
+
 ## What is NOT yet done (before upstream PRs)
+
+### Charging current frame not yet identified
+
+`ms_v_charge_current` and `ms_v_charge_power` are never set. During a live AC charging
+session (328.5V confirmed from `ms_v_bat_voltage`), `v.c.current` showed empty and
+`v.c.power` showed empty.
+
+**Root cause:** 0x0191 carries motor/inverter current only (signed, zero while parked and
+charging). The OBC (on-board charger) charging current is on a different KCAN frame that
+has not yet been identified.
+
+**To resolve:** capture a dedicated charging session with `capture.sh`, filter for frames
+that are only active during charging (compare to a parked-not-charging baseline). Candidate
+frames to check: anything that only appears when ChargeInProgress bit in 0x0594 is set.
+Once the frame and signal encoding are confirmed:
+- Decode it in `IncomingFrameCan3`
+- Set `ms_v_charge_current->SetValue(amps)`
+- Set `ms_v_charge_power->SetValue(ms_v_charge_voltage * amps / 1000.0f)` in kW
+- Add the signal to `vwegolf.dbc`
 
 ### Temperature encoding for port 0x19 (Frame 2, byte index 6)
 

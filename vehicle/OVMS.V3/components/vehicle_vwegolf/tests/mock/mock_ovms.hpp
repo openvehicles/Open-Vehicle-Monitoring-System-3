@@ -154,6 +154,9 @@ struct StandardMetricsType {
     OvmsMetricString* ms_v_charge_type          = new OvmsMetricString("ms_v_charge_type");
     OvmsMetricBool*   ms_v_charge_timermode     = new OvmsMetricBool("ms_v_charge_timermode");
     OvmsMetricInt*    ms_v_charge_duration_full = new OvmsMetricInt("ms_v_charge_duration_full");
+    OvmsMetricFloat*  ms_v_charge_voltage       = new OvmsMetricFloat("ms_v_charge_voltage");
+    OvmsMetricFloat*  ms_v_charge_current       = new OvmsMetricFloat("ms_v_charge_current");
+    OvmsMetricFloat*  ms_v_charge_power         = new OvmsMetricFloat("ms_v_charge_power");
     // Identity
     OvmsMetricString* ms_v_vin                  = new OvmsMetricString("ms_v_vin");
     // Monotonic time
@@ -219,6 +222,8 @@ struct OvmsVehicle {
     virtual void Ticker1(uint32_t) {}
     virtual void Ticker10(uint32_t) {}
     bool PinCheck(const char* /*pin*/) { return true; }  // always pass in tests
+    void NotifyChargeStart() {}
+    void NotifyChargeStop()  {}
 
     virtual vehicle_command_t CommandLock(const char*)   { return NotImplemented; }
     virtual vehicle_command_t CommandUnlock(const char*) { return NotImplemented; }

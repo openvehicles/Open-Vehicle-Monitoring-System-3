@@ -71,10 +71,15 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // Initialized to timeout so we treat the bus as offline at cold boot.
     uint8_t m_bus_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
 
-    // OVMS must send the 0x5A7 OCU keepalive every second while it is an active node.
-    // We only start sending it after deliberately taking an action (wakeup or command)
+    // OVMS must send the 0x5A7 OCU keepalive while it is an active node.
+    // VW OSEK NM requires keepalives at ~200ms intervals — 1Hz via Ticker1 alone is
+    // insufficient; the clima ECU never enters remote mode. We send at ~5Hz by calling
+    // SendOcuHeartbeat() every 75 incoming frames in IncomingFrameCan3 (KCAN runs at
+    // ~375 fps when the car is awake). Ticker1 is retained as a low-activity fallback.
+    // We only start sending after deliberately taking an action (wakeup or command)
     // to avoid asserting an unexpected node presence when the car is idle.
     bool m_ocu_active = false;
+    uint16_t m_ocu_heartbeat_counter = 0;
 
     // Target temperature and battery-allow flag for clima; refreshed from config in Ticker10.
     uint8_t m_climate_temp = 21;

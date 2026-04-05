@@ -85,6 +85,13 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit() {
 // ---------------------------------------------------------------------------
 
 void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
+    // J533 bridges FCAN frames onto KCAN, so the bulk of traffic (SOC, speed,
+    // charging, clima, etc.) arrives on can3 via IncomingFrameCan3. The frames
+    // that reach IncomingFrameCan2 are FCAN-native (gear, VIN) plus occasional
+    // bridged frames during bus startup. Forward everything so KCAN decoders
+    // also fire for any frame that arrives here.
+    IncomingFrameCan3(p_frame);
+
     uint8_t* d = p_frame->data.u8;
 
     switch (p_frame->MsgID) {
@@ -154,6 +161,13 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
     // whether the bus is alive and whether OCU keepalive should be sent.
     m_bus_idle_ticks = 0;
 
+    // Send OCU keepalive at ~5Hz while active. VW OSEK NM requires keepalives at
+    // ~200ms intervals; Ticker1 alone (1Hz) is too slow for the ECU to stay in network.
+    if (m_ocu_active && ++m_ocu_heartbeat_counter >= 75) {
+        m_ocu_heartbeat_counter = 0;
+        SendOcuHeartbeat();
+    }
+
     uint8_t* d = p_frame->data.u8;
     float f;
     uint16_t u16;
@@ -170,6 +184,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x0131: {
             // State of charge. Single byte in d[3], factor 0.5 %.
+            // 0xFE is the ECU's "not ready" sentinel (decodes to 127.0%) — discard it
+            // to avoid persisting a nonsense value across reboots via metric persistence.
+            if (d[3] == 0xFE) break;
             f = d[3] * 0.5f;
             StandardMetrics.ms_v_bat_soc->SetValue(f);
             ESP_LOGV(TAG, "0x0131 soc=%.1f%%", f);
@@ -178,6 +195,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         case 0x0191: {
             // BMS current and voltage; power is derived.
             // Current: 12-bit, factor 1 A, offset -2047 A (raw=2047 → 0 A).
+            // NOTE: during AC charging this field reads 0A — 0x0191 appears to carry
+            // inverter/motor current only. Charging current comes from a different frame
+            // not yet identified. TODO: capture charging session and identify the frame.
             u16 = ((uint16_t)(d[1] & 0xF0) >> 4) | ((uint16_t)(d[2]) << 4);
             float current = u16 * 1.0f - 2047.0f;
             StandardMetrics.ms_v_bat_current->SetValue(current);
@@ -190,7 +210,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // Power is negated so charge shows negative and drive shows positive,
             // matching OVMS convention.
             StandardMetrics.ms_v_bat_power->SetValue(-(voltage * current) / 1000.0f);
-            ESP_LOGV(TAG, "0x0191 I=%.1fA V=%.2fV", current, voltage);
+            ESP_LOGV(TAG, "0x0191 raw=%02x%02x%02x%02x%02x I=%.1fA V=%.2fV",
+                     d[1], d[2], d[3], d[4], d[5], current, voltage);
             break;
         }
         case 0x02AF: {
@@ -248,7 +269,22 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             StandardMetrics.ms_v_charge_timermode->SetValue(((d[2] & 0x60) >> 5) == 0x01);
 
             // Charging in progress: bit 5 of d[3].
-            StandardMetrics.ms_v_charge_inprogress->SetValue((d[3] & 0x20) >> 5);
+            {
+                bool was_charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+                bool is_charging = (d[3] & 0x20) != 0;
+                StandardMetrics.ms_v_charge_inprogress->SetValue(is_charging);
+                StandardMetrics.ms_v_charge_state->SetValue(is_charging ? "charging" : "stopped");
+                // Mirror HV bus voltage to charge-side metric; they are the same physical
+                // bus during AC charging. Charge current is not yet decoded — see TODO below.
+                if (is_charging) {
+                    StandardMetrics.ms_v_charge_voltage->SetValue(
+                        StandardMetrics.ms_v_bat_voltage->AsFloat());
+                }
+                if (is_charging != was_charging) {
+                    if (is_charging) NotifyChargeStart();
+                    else NotifyChargeStop();
+                }
+            }
 
             // Charge type from bits [3:2] of d[5]: 0=none, 1=AC (Type 2), 2=DC (CCS).
             switch ((d[5] & 0x0C) >> 2) {
@@ -598,11 +634,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[3] = enable ? 0x01 : 0x00;
     m_can3->WriteExtended(0x17332501, 4, data);
 
-    // Reflect the commanded state immediately so the app toggle stays in sync.
-    // The ECU will confirm via 0x17332510 ACK, but the app reads ms_v_env_hvac
-    // and needs a value before the ~1s ACK arrives. We update again from 0x05EA
-    // once that status decode is confirmed.
-    StandardMetrics.ms_v_env_hvac->SetValue(enable);
+    // Do NOT set ms_v_env_hvac here. If TX fails silently (CAN error after wake ping,
+    // bus-off recovery, etc.) and we pre-set the metric, the app's next toggle press
+    // will send the opposite command. The metric is updated from the ECU's 0x17332510
+    // ACK once that decode is implemented, and from 0x05EA once confirmed.
 
     ESP_LOGI(TAG, "Climate %s sequence sent (counter=0x%02x)", enable ? "start" : "stop",
              m_bap_counter);

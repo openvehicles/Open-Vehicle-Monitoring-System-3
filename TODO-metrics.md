@@ -5,7 +5,7 @@ Investigation branch has the sentinel-value cabin temp fix applied on top.
 
 Legend: ✓ confirmed working · ~ working when active (parked snapshot doesn't exercise it) · ! bug · ? unknown/unverified · – not applicable
 
-Overall support: `[███████████░░░░░░░░░]` 47 / 85 (55%)
+Overall support: `[████████████░░░░░░░░]` 49 / 85 (58%)
 
 ---
 
@@ -46,10 +46,10 @@ Overall support: `[███████████░░░░░░░░░]
 | `v.c.type` | ✓ | type2 in snapshot — from 0x594 (connector type) |
 | `v.c.duration.full` | ✓ | 70 min in snapshot — from 0x594 |
 | `v.c.time` | ✓ | 0 sec (not charging, correct) |
-| `v.c.state` | ✗ | Empty — frame 0x594 / 0x3D6 referenced in code but charge state string not decoded |
-| `v.c.current` | ✗ | Not decoded — AC charge current not identified in KCAN |
-| `v.c.voltage` | ✗ | Not decoded — AC charge voltage not identified in KCAN |
-| `v.c.power` | ✗ | Not decoded |
+| `v.c.state` | ~ | "charging"/"stopped" — from 0x594 ChargeInProgress bit; transitions call NotifyChargeStart/Stop |
+| `v.c.current` | ✗ | OBC charge current frame not yet identified on KCAN; 0x191 is motor-only (zero while charging) |
+| `v.c.voltage` | ~ | Mirrored from `v.b.voltage` while charging (same HV bus during AC session) — from 0x594 transition |
+| `v.c.power` | ✗ | Not decoded — blocked on v.c.current |
 | `v.c.kwh` | ✗ | Not decoded |
 | `v.c.limit.soc` | ✗ | Minimum charge limit — readable/writable via BAP profile 0x25 (see BAP docs) |
 | `v.c.mode` | ✗ | Not decoded |
@@ -71,7 +71,7 @@ Overall support: `[███████████░░░░░░░░░]
 | `v.e.cabinsetpoint` | ✓ | 20°C in snapshot — from 0x594 |
 | `v.e.cabintemp` | ✗ | Sentinel 77°C suppressed (no longer shows wrong value) — real cabin temp not yet decoded; needs Capture 5 (parked remote) |
 | `v.e.temp` | ✗ | Same as cabintemp — ECU sentinel suppressed, real ambient/cabin temp source not yet identified in remote mode |
-| `v.e.hvac` | ~ | Set from `0x5EA` StandklimaRemoteModus (remote mode only) and from `0x17332510` port 0x18 ACK — not yet captured/confirmed in parked-remote capture |
+| `v.e.hvac` | ~ | Undefined until ECU ACK — optimistic pre-ACK set removed (caused toggle inversion on TX fail). Set from `0x17332510` ACK once clima start is confirmed working on car. |
 | `v.e.heating` | ✗ | Not decoded — derivable from 0x66E or BAP status |
 | `v.e.cooling` | ✗ | Not decoded |
 | `v.e.cabinfan` | ✗ | Fan level not decoded |
@@ -166,7 +166,7 @@ All `v.g.*` metrics are for V2G / grid export. The e-Golf does not support V2G. 
 | Category | Progress | Impl / Total |
 |---|---|---|
 | Battery & power   | `[████████████░░░░░░░░]` | 12 / 20 (60%) |
-| Charging          | `[███████░░░░░░░░░░░░░]` |  5 / 14 (36%) |
+| Charging          | `[██████████░░░░░░░░░░]` |  7 / 14 (50%) |
 | Environment       | `[██████████░░░░░░░░░░]` |  9 / 18 (50%) |
 | Doors & body      | `[█████████████████░░░]` |  6 /  7 (86%) |
 | Position          | `[█████████████████░░░]` | 13 / 15 (87%) |
@@ -178,10 +178,10 @@ Counting ✓ and ~ as implemented, ! as implemented-but-buggy, ✗ as not implem
 
 ### High-value gaps (worth implementing)
 
-1. **`v.e.hvac`** — clima on/off state — implemented in climate-control branch (from `0x5EA` + `0x17332510` ACK); needs Capture 5 to confirm in parked-remote mode
-2. **`v.e.cabintemp` / `v.e.temp`** — real cabin/ambient temp in remote mode — needs Capture 5; sentinel suppressed but metric still empty
-3. **`v.e.heating` / `v.e.cooling`** — derives from hvac state + setpoint vs ambient
-4. **`v.c.state`** — charge state string (idle / charging / done) — frame 0x594 / 0x3D6 partially known
+1. **`v.e.hvac`** — clima on/off state — needs clean sleeping-bus capture to confirm `0x17332510` ACK decode; optimistic set removed (was causing toggle inversion)
+2. **`v.c.current` / `v.c.power`** — OBC charge current — KCAN frame not yet identified; needs dedicated charging capture (see refactor-notes.md TODO)
+3. **`v.e.cabintemp` / `v.e.temp`** — real cabin/ambient temp in remote mode — sentinel suppressed but metric still empty; needs parked-remote capture
+4. **`v.e.heating` / `v.e.cooling`** — derives from hvac state + setpoint vs ambient
 5. **`v.c.limit.soc`** — min charge % — BAP profile 0x25 already reverse-engineered
 6. **`v.b.soh`** — state of health — probably accessible via UDS on BMS ECU
 7. **`v.t.pressure`** — TPMS — useful alert; frame not yet identified, needs capture
