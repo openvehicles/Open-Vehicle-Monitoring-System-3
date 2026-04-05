@@ -37,16 +37,17 @@ typedef union {
     struct { CAN_frame_format_t FF; uint8_t DLC; } B;
 } CAN_FIR_t;
 
+typedef int esp_err_t;
+static constexpr esp_err_t ESP_OK = 0;
+
 struct canbus {
     uint8_t m_busnumber = 0;
-    void WriteStandard(uint32_t /*id*/, uint8_t /*len*/, uint8_t* /*data*/) {}
-    void WriteExtended(uint32_t /*id*/, uint8_t /*len*/, uint8_t* /*data*/) {}
+    esp_err_t WriteStandard(uint32_t /*id*/, uint8_t /*len*/, uint8_t* /*data*/, int /*wait*/ = 0) { return 0; }
+    esp_err_t WriteExtended(uint32_t /*id*/, uint8_t /*len*/, uint8_t* /*data*/, int /*wait*/ = 0) { return 0; }
 };
 
 // 'Minutes' is used as a unit tag in some metric SetValue calls
 static constexpr int Minutes = 0;
-
-typedef int esp_err_t;
 
 struct CAN_frame_t {
     canbus*    origin   = nullptr;
@@ -223,7 +224,7 @@ struct OvmsVehicle {
     virtual void Ticker10(uint32_t) {}
     bool PinCheck(const char* /*pin*/) { return true; }  // always pass in tests
     void NotifyChargeStart() {}
-    void NotifyChargeStop()  {}
+    void NotifyChargeStopped() {}
 
     virtual vehicle_command_t CommandLock(const char*)   { return NotImplemented; }
     virtual vehicle_command_t CommandUnlock(const char*) { return NotImplemented; }

@@ -288,7 +288,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 }
                 if (is_charging != was_charging) {
                     if (is_charging) NotifyChargeStart();
-                    else NotifyChargeStop();
+                    else NotifyChargeStopped();
                 }
             }
 
@@ -489,7 +489,8 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
         ESP_LOGI(TAG, "0x5A7 action: panic");
     }
 
-    m_can3->WriteStandard(0x5A7, 8, data);
+    esp_err_t ok = m_can3->WriteStandard(0x5A7, 8, data);
+    if (ok != ESP_OK) ESP_LOGW(TAG, "0x5A7 heartbeat TX dropped (err=%d)", ok);
     ESP_LOGV(TAG, "0x5A7: %02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1], data[2],
              data[3], data[4], data[5], data[6], data[7]);
 }
@@ -607,10 +608,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[2] = 0x29;           // BAP opcode=2, node=0x25 [5:2]
     data[3] = 0x59;           // BAP node=0x25 [1:0], port=0x19
     data[4] = m_bap_counter;  // rolling counter; ACK will echo this | 0x80
-    data[5] = 0x06;           // duration (units not yet confirmed — thomasakarlsen default)
+    data[5] = 0x06;           // duration: 0x06 = 15 min (confirmed from capture: port 51 BCD
+                              // countdown, 30s per unit, 0x06 * 150s = 15 min). Use 0x04 for 10 min.
     data[6] = 0x00;           // unknown
     data[7] = 0x01;           // unknown (mode/profile flag)
-    m_can3->WriteExtended(0x17332501, 8, data);
+    esp_err_t ok1 = m_can3->WriteExtended(0x17332501, 8, data);
 
     // Frame 2: BAP multi-frame continuation — remaining 4 bytes of the port 0x19 payload.
     // Full 8-byte payload: [counter] 06 00 01  06 00 20 00
@@ -623,7 +625,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[2] = 0x00;  // unknown
     data[3] = 0x20;  // suspected target temperature (TODO: confirm and use m_climate_temp)
     data[4] = 0x00;  // padding / unknown
-    m_can3->WriteExtended(0x17332501, 5, data);
+    esp_err_t ok2 = m_can3->WriteExtended(0x17332501, 5, data);
 
     // Frame 3: BAP single-frame trigger → port 0x18 (immediate start/stop).
     // 0x29 0x58 = opcode=2, node=0x25, port=0x18. Payload byte 1 is the on/off flag.
@@ -631,7 +633,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[1] = 0x58;
     data[2] = 0x00;
     data[3] = enable ? 0x01 : 0x00;
-    m_can3->WriteExtended(0x17332501, 4, data);
+    esp_err_t ok3 = m_can3->WriteExtended(0x17332501, 4, data);
+    ESP_LOGI(TAG, "BAP clima %s: frame TX ok1=%d ok2=%d ok3=%d counter=0x%02X",
+             enable ? "start" : "stop", ok1, ok2, ok3, m_bap_counter);
 
     // Do NOT set ms_v_env_hvac here. If TX fails silently (CAN error after wake ping,
     // bus-off recovery, etc.) and we pre-set the metric, the app's next toggle press
