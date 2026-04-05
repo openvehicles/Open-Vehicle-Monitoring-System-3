@@ -630,15 +630,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     esp_err_t ok1 = m_can3->WriteExtended(0x17332501, 8, data, pdMS_TO_TICKS(20));
 
     // Frame 2: BAP multi-frame continuation — remaining 4 bytes of the port 0x19 payload.
-    // Full 8-byte payload: [counter] 06 00 01  06 00 20 00
-    // Byte index 6 (0x20) is suspected target temperature. Encoding not yet confirmed:
-    // port 0x16 schedule uses (celsius + 35); port 0x19 may differ. Use thomasakarlsen
-    // default (0x20) until captured with two distinct target temperatures.
-    // TODO: replace 0x20 with encoded m_climate_temp once encoding is confirmed.
+    // Full 8-byte payload: [counter] 06 00 01  06 00 <temp> 00
+    // Temperature encoding confirmed from ComfortCAN-Multiplex-Protokoll-220206 (dexterbg):
+    //   raw = (celsius - 10) * 10   e.g. 21°C → 0x6E, 22°C → 0x78, 15.5°C(LO) → 0x37
+    // Clamp to [15, 30]°C matching the car's valid clima range.
+    uint8_t temp_raw = (uint8_t)((m_climate_temp - 10) * 10);
     data[0] = 0xC0;  // multi-frame continuation, channel 0
     data[1] = 0x06;  // unknown
     data[2] = 0x00;  // unknown
-    data[3] = 0x20;  // suspected target temperature (TODO: confirm and use m_climate_temp)
+    data[3] = temp_raw;  // target temperature: (celsius - 10) * 10
     data[4] = 0x00;  // padding / unknown
     esp_err_t ok2 = m_can3->WriteExtended(0x17332501, 5, data, pdMS_TO_TICKS(20));
 
@@ -649,8 +649,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[2] = 0x00;
     data[3] = enable ? 0x01 : 0x00;
     esp_err_t ok3 = m_can3->WriteExtended(0x17332501, 4, data, pdMS_TO_TICKS(20));
-    ESP_LOGI(TAG, "BAP clima %s: frame TX ok1=%d ok2=%d ok3=%d counter=0x%02X",
-             enable ? "start" : "stop", ok1, ok2, ok3, m_bap_counter);
+    ESP_LOGI(TAG, "BAP clima %s: temp=%u°C(raw=0x%02X) ok1=%d ok2=%d ok3=%d counter=0x%02X",
+             enable ? "start" : "stop", m_climate_temp, temp_raw, ok1, ok2, ok3, m_bap_counter);
 
     // Do NOT set ms_v_env_hvac here. If TX fails silently (CAN error after wake ping,
     // bus-off recovery, etc.) and we pre-set the metric, the app's next toggle press
