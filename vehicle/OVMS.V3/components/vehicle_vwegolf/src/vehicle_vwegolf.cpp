@@ -332,14 +332,19 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x05EA: {
             // Clima ECU status: cabin temperature, remote mode, and operational status.
-            // remote_mode == 3: clima active in remote pre-conditioning mode.
-            // Confirmed from kcan-can3-clima_on_off.crtd: idle=0, active=3.
+            // remote_mode values observed from captures:
+            //   0 = idle (no remote session)
+            //   2 = clima running via remote (steady-state during the run)
+            //   3 = clima just activated via remote command (transient, first few seconds only)
+            // Earlier captures only saw 0 and 3; the 15-min full-cycle capture confirmed that
+            // remote_mode stays at 2 for the entire run after the initial activation.
+            // HVAC is on whenever remote_mode != 0.
             u16 = ((uint16_t)(d[6] & 0xFC) >> 2) | ((uint16_t)(d[7] & 0x0F) << 6);
             f = u16 * 0.1f - 40.0f;
             uint8_t remote_mode = ((d[3] & 0xC0) >> 6) | ((d[4] & 0x01) << 2);
             uint8_t status_02 = (d[3] & 0x38) >> 3;
             uint8_t status_03 = (d[0] & 0x0E) >> 1;
-            StandardMetrics.ms_v_env_hvac->SetValue(remote_mode == 3);
+            StandardMetrics.ms_v_env_hvac->SetValue(remote_mode != 0);
             ESP_LOGV(TAG, "0x05EA clima_cabin=%.1f°C remote_mode=%u status02=%u status03=%u", f,
                      remote_mode, status_02, status_03);
             break;
@@ -612,7 +617,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
                               // countdown, 30s per unit, 0x06 * 150s = 15 min). Use 0x04 for 10 min.
     data[6] = 0x00;           // unknown
     data[7] = 0x01;           // unknown (mode/profile flag)
-    esp_err_t ok1 = m_can3->WriteExtended(0x17332501, 8, data);
+    // Use a 20ms queue wait on all three frames. The TWAI TX queue can be briefly
+    // full from OCU heartbeat frames fired during the 500ms settle — with wait=0
+    // (default) the frames drop silently with no TX or TX_Fail event logged.
+    esp_err_t ok1 = m_can3->WriteExtended(0x17332501, 8, data, pdMS_TO_TICKS(20));
 
     // Frame 2: BAP multi-frame continuation — remaining 4 bytes of the port 0x19 payload.
     // Full 8-byte payload: [counter] 06 00 01  06 00 20 00
@@ -625,7 +633,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[2] = 0x00;  // unknown
     data[3] = 0x20;  // suspected target temperature (TODO: confirm and use m_climate_temp)
     data[4] = 0x00;  // padding / unknown
-    esp_err_t ok2 = m_can3->WriteExtended(0x17332501, 5, data);
+    esp_err_t ok2 = m_can3->WriteExtended(0x17332501, 5, data, pdMS_TO_TICKS(20));
 
     // Frame 3: BAP single-frame trigger → port 0x18 (immediate start/stop).
     // 0x29 0x58 = opcode=2, node=0x25, port=0x18. Payload byte 1 is the on/off flag.
@@ -633,7 +641,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[1] = 0x58;
     data[2] = 0x00;
     data[3] = enable ? 0x01 : 0x00;
-    esp_err_t ok3 = m_can3->WriteExtended(0x17332501, 4, data);
+    esp_err_t ok3 = m_can3->WriteExtended(0x17332501, 4, data, pdMS_TO_TICKS(20));
     ESP_LOGI(TAG, "BAP clima %s: frame TX ok1=%d ok2=%d ok3=%d counter=0x%02X",
              enable ? "start" : "stop", ok1, ok2, ok3, m_bap_counter);
 
