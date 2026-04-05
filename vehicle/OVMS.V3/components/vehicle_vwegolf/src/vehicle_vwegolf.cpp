@@ -225,23 +225,29 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             break;
         }
         case 0x0486: {
-            // GPS latitude and longitude. Both encoded as 23-bit unsigned integers,
-            // factor 1e-6 degrees. Both values are unsigned (positive only) — sign bits
-            // for southern/western hemispheres are not yet decoded.
-            // TODO: decode sign bits to support all hemispheres.
+            // GPS position. Latitude: bits 0-26 (27 bits), longitude: bits 27-54 (28 bits),
+            // factor 1e-6 degrees. Sign bits inferred from bit layout (55 bits used out of
+            // 64): bit 55 (d[6] MSB) = lat sign, bit 56 (d[7] bit 0) = lon sign.
+            // Confirmed consistent with known N/E location (Norway). Needs a S/W hemisphere
+            // capture to verify. Only write metrics when values are within valid range —
+            // prevents sentinel frames (all 0xFF → 134°/268°) from overwriting good position.
             u32 = (uint32_t)(d[0]) | ((uint32_t)(d[1]) << 8) | ((uint32_t)(d[2]) << 16) |
                   ((uint32_t)(d[3] & 0x07) << 24);
             float lat = u32 * 0.000001f;
-            StandardMetrics.ms_v_pos_latitude->SetValue(lat);
+            if ((d[6] >> 7) & 1) lat = -lat;  // Southern hemisphere
 
             u32 = ((uint32_t)(d[3] & 0xF8) >> 3) | ((uint32_t)(d[4]) << 5) |
                   ((uint32_t)(d[5]) << 13) | ((uint32_t)(d[6] & 0x7F) << 21);
             float lon = u32 * 0.000001f;
-            StandardMetrics.ms_v_pos_longitude->SetValue(lon);
+            if ((d[7] >> 0) & 1) lon = -lon;  // Western hemisphere
 
-            // GPS lock is assumed when both coordinates are within physically valid ranges.
-            StandardMetrics.ms_v_pos_gpslock->SetValue(lat < 91.0f && lon < 181.0f);
-            ESP_LOGV(TAG, "0x0486 lat=%.6f lon=%.6f", lat, lon);
+            bool valid = (lat > -91.0f && lat < 91.0f && lon > -181.0f && lon < 181.0f);
+            StandardMetrics.ms_v_pos_gpslock->SetValue(valid);
+            if (valid) {
+                StandardMetrics.ms_v_pos_latitude->SetValue(lat);
+                StandardMetrics.ms_v_pos_longitude->SetValue(lon);
+            }
+            ESP_LOGV(TAG, "0x0486 lat=%.6f lon=%.6f valid=%d", lat, lon, valid);
             break;
         }
         case 0x0583: {

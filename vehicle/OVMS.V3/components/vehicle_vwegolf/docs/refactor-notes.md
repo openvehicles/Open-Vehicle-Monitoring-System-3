@@ -268,11 +268,14 @@ that vehicle-specific authentication bytes are required alongside the action bit
 them the gateway likely ignores the command. Needs a capture of the OEM app locking
 the car to identify the auth pattern.
 
-### GPS sign bits not decoded
+### GPS sign bits — inferred, needs S/W hemisphere confirmation
 
-Latitude and longitude from 0x0486 are unsigned. Sign bits for southern/western
-hemispheres not yet identified. Not relevant for the-module's current location but should
-be fixed before upstream submission.
+Sign bits inferred from bit layout (55 bits used out of 64): bit 55 (`d[6]` MSB) =
+lat sign, bit 56 (`d[7]` bit 0) = lon sign. Both confirmed 0 for known N/E location
+(Norway). Firmware applies them; invalid frames filtered before writing metrics.
+
+**To confirm:** a capture from any Southern or Western hemisphere location. Until
+confirmed, the sign logic is best-effort and may be wrong for S/W.
 
 ### `CommandWakeup` second frame necessity unclear
 

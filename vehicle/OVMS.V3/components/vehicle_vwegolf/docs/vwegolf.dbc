@@ -40,8 +40,10 @@ BO_ 687 BMS_TripEnergy: 8 BMS
  SG_ EnergyUsed : 48|15@1+ (0.002778,0) [0|91] "Wh" OVMS
 
 BO_ 1158 GPS_Position: 8 Gateway
- SG_ Latitude : 0|27@1+ (1e-006,0) [0|134.2] "deg" OVMS
- SG_ Longitude : 27|28@1+ (1e-006,0) [0|268.4] "deg" OVMS
+ SG_ Latitude : 0|27@1+ (1e-006,0) [0|90] "deg" OVMS
+ SG_ LatSign : 55|1@1+ (1,0) [0|1] "" OVMS
+ SG_ Longitude : 27|28@1+ (1e-006,0) [0|180] "deg" OVMS
+ SG_ LonSign : 56|1@1+ (1,0) [0|1] "" OVMS
 
 BO_ 1411 ZV_02: 8 BCM
  SG_ Locked : 17|1@1+ (1,0) [0|1] "" OVMS
@@ -174,8 +176,10 @@ CM_ SG_ 305 SoC "Factor 0.5 %/LSB. Max valid raw = 0xFD (126.5%). Raw 0xFE is EC
 CM_ SG_ 401 BatCurrent "Unsigned raw with offset: raw 2047 = 0 A. Positive = discharge, negative = charge (OVMS convention: power sign is negated).";
 CM_ SG_ 687 EnergyRecd "Factor 10 Ws/LSB converted to Wh (divide by 3600). Regeneration energy recovered this trip.";
 CM_ SG_ 687 EnergyUsed "Factor 10 Ws/LSB converted to Wh (divide by 3600). Energy consumed this trip.";
-CM_ SG_ 1158 Latitude "Factor 1e-6 deg/LSB. Northern hemisphere only — southern sign bit not yet decoded.";
-CM_ SG_ 1158 Longitude "Factor 1e-6 deg/LSB. Eastern hemisphere only — western sign bit not yet decoded.";
+CM_ SG_ 1158 Latitude "Factor 1e-6 deg/LSB. Magnitude only (27 bits). Apply LatSign for hemisphere.";
+CM_ SG_ 1158 LatSign "0=North, 1=South. Bit 55 (d[6] MSB). Inferred from bit layout; confirmed 0 for known N/E location. Needs S/W capture to fully verify.";
+CM_ SG_ 1158 Longitude "Factor 1e-6 deg/LSB. Magnitude only (28 bits). Apply LonSign for hemisphere.";
+CM_ SG_ 1158 LonSign "0=East, 1=West. Bit 56 (d[7] bit 0). Inferred from bit layout; confirmed 0 for known N/E location. Needs S/W capture to fully verify.";
 CM_ SG_ 1411 Locked "1 = locked externally (ZV external lock signal).";
 CM_ SG_ 1428 ChargeTimerMode "Raw value 1 = timer active. Other values = timer inactive.";
 CM_ SG_ 1428 CabinSetpoint "Factor 0.5 degC/LSB, offset +15.5 degC. Range 15.5–31.5 degC.";
