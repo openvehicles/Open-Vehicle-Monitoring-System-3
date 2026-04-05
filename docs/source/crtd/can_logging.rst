@@ -30,7 +30,7 @@ Note: the board schematics refer to CAN0,1,2.  These correspond to CAN1,2,3 here
 
 CAN1 is the fastest bus, use this one if possible. The CAN logging tool is able to log all buses at the same time, to the same file or stream.
 
-Vehicle CAN bus(s) are usually accesable via the vehicle's OBD2 port. Most modern cars have multiple CAN busses. The OBD2 'standard' CAN will be available on OBD2 **pin 6: CAN-H** and **pin 14: CAN-L**. However, modern vehicles (especially EV's) often have other CAN buses available on non-standard OBD2 pins.
+Vehicle CAN bus(s) are usually accessible via the vehicle's OBD2 port. Most modern cars have multiple CAN busses. The OBD2 'standard' CAN will be available on OBD2 **pin 6: CAN-H** and **pin 14: CAN-L**. However, modern vehicles (especially EV's) often have other CAN buses available on non-standard OBD2 pins.
 
 A voltmeter (ideally oscilloscope) can be used to determine which OBD2 pins contain CAN data:
 
@@ -80,10 +80,6 @@ Start logging all CAN messages using CRTD log file format with:
 
 ``ovms# can log start vfs crtd /sd/can.crtd``
   
-or log specific CAN packets by applying a filter e.g 0x55b the Nissan LEAF SoC CAN message
-
-``ovms# can log start vfs crtd /sd/can.crtd 55b``
-  
 Other CAN log file formats are supported e.g ``crtd, cs11, gvret-a, gvret-b, lawicel, pcap, raw``.
   
 Check CAN logging satus with:
@@ -107,6 +103,30 @@ The log file can also be viewed in a browser with ``http://<ovms-ipaddress>/sd/c
 
 The logfiles can then be imported into a tool like SavvyCan for analysis.
 
+--------------------
+Capture Filter
+--------------------
+
+It's possible to filter which packets are captured. A filter term can be:
+ 
+=============== ========= ================
+Value           Example   Description
+=============== ========= ================
+<bus>           0         match any bus
+<bus>           2         match a specific bus (1-5)
+<id>            49b       match a specific PID
+<id>-           49b-      match a PID greater than
+<id>-<id>       2e2-382   match a range of PIDs
+<bus>:<id>      2:49b     match a specific PID on a specific bus
+<bus>:<id>-     2:49b-    match a PID greater than on a specific bus
+<bus>:<id>-<id> 2:2e2-382 match a range of PIDs on a specific bus
+=============== ========= ================
+
+.. The actual parsing happens in components/can/src/can.cpp
+
+Multiple filter terms may be specified, for example:
+
+``ovms# can log start vfs crtd /sd/can.crtd 034 03f 04b-04c``
 
 --------------------------
 Logging Events and Metrics
