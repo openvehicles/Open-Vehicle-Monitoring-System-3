@@ -23,6 +23,16 @@ The `test_crtd_replay` test looks for `candumps/kcan-capture.crtd` as its fixed
 input. New baseline captures have timestamped filenames and are used for manual
 analysis; rename or symlink to `kcan-capture.crtd` to use them in the replay test.
 
+## CCS DC fast charging — KCAN stays silent
+
+CCS fast charging bypasses the OBC entirely. The car manages DC charging via the CCS
+protocol (PLC on the charging cable) and keeps the KCAN bus sleeping throughout the
+session. No KCAN frames appear during a CCS session — only the OVMS 12V ADC reflects
+that something is happening (aux voltage rises as the DC/DC converter comes up).
+
+`v.c.charging`, `v.c.type`, `v.c.current`, and `v.c.state` do not update during CCS.
+Finding OBC charge current requires a **Type 2 AC** session (see Capture 8 in PROJECT.md).
+
 ## J533 gateway — bus topology (confirmed from baseline captures)
 
 The OVMS module connects to the car via the J533 gateway harness, which provides

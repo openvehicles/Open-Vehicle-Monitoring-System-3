@@ -24,6 +24,40 @@ Each PR must: pass native test suite · reference relevant `docs/` RE notes · E
 
 ## Open items
 
+### Startup sentinel filters missing (multiple frames)
+
+Confirmed from `tests/logs-capture2.md` — the first burst of frames after every wake-up
+contains invalid sentinel values that get written to persistent metrics:
+
+| Frame | Sentinel value | Symptom |
+|---|---|---|
+| `0x0191` | `I=2047.0A`, `V=1023.50V` | Garbage current/voltage on boot |
+| `0x059E` | `bat_temp=87.0°C` | 0xFF raw, max of decode range |
+| `0x05CA` | `bat_capacity=102.3 kWh` | Near max of decode range |
+| `0x05EA` | `clima_cabin=62.2°C` | Near max of decode range |
+| `0x06B5` | `solar_sensor=164.6°C`, `air_sensor=62.2°C` | Way over physical range |
+
+**Fix pattern:** same as existing SoC (0x131) and cabin temp (0x066E) filters — check for
+max/sentinel raw value before decoding and `break` early.
+
+### CCS charge type not detected
+
+During active CCS DC fast charging, bits [3:2] of `0x0594` d[5] = 0x00 (no connector type).
+`v.c.type` stays undefined. The CCS type indicator is elsewhere in the frame — d[3] and d[5]
+raw bytes are now logged at VERBOSE to identify it on the next CCS session.
+
+**Also noted:** `0x0594` default case previously wrote `"undefined"` string to the metric,
+overwriting any previously-set type on every idle frame. Fixed to `break` instead.
+
+**To resolve:** capture verbose log during active CCS charging and look for `d[3]=xx d[5]=xx`
+values that differ from the non-charging baseline (`d[3]=03 d[5]=00`).
+
+### Odometer reads 5936 km at startup (decode bug suspected)
+
+`tests/logs-capture2.md` shows `0x06B7 odo=5936 km` in the first wake-up burst vs known
+odometer of ~90650 km. Either a startup sentinel in this frame or a decode bug. Needs
+investigation against a known-good odometer reading captured mid-session (not first-burst).
+
 ### Temperature encoding for BAP port 0x19 (blocks clima PR)
 
 Frame 2 byte 6 is hardcoded to `0x20` (thomasakarlsen default). Port 0x16 (schedule) uses
@@ -101,9 +135,11 @@ notification; whether status payloads (`00 00 04`, `02 00 04`) change.
 
 See open item above. Needed to unblock the clima PR.
 
-### Capture 8 — Charging current
+### Capture 8 — Charging current (Type 2 AC only)
 
-See open item above. Dedicated AC charging session.
+See open item above. Must be **Type 2 AC** — CCS DC fast charging keeps KCAN completely
+silent (no frames visible to OVMS during the session). AC charging goes through the
+internal OBC which does appear on KCAN.
 
 ### Capture 9 — Lock / unlock auth bytes
 

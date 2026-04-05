@@ -292,16 +292,15 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 }
             }
 
-            // Charge type from bits [3:2] of d[5]: 0=none, 1=AC (Type 2), 2=DC (CCS).
+            // Charge type from bits [3:2] of d[5]: 1=AC (Type 2).
+            // NOTE: during CCS DC charging these bits read 0 — the CCS indicator is
+            // elsewhere in the frame. Log d[3] and d[5] raw to identify it.
+            // Do not set the metric in the default case — leave last known value intact.
             switch ((d[5] & 0x0C) >> 2) {
                 case 1:
                     StandardMetrics.ms_v_charge_type->SetValue("type2");
                     break;
-                case 2:
-                    StandardMetrics.ms_v_charge_type->SetValue("ccs");
-                    break;
                 default:
-                    StandardMetrics.ms_v_charge_type->SetValue("undefined");
                     break;
             }
 
@@ -309,10 +308,10 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             f = (d[7] & 0x1F) * 0.5f + 15.5f;
             StandardMetrics.ms_v_env_cabinsetpoint->SetValue(f);
 
-            ESP_LOGV(TAG, "0x0594 charging=%d timer=%d type=%s setpoint=%.1f°C",
+            ESP_LOGV(TAG, "0x0594 charging=%d timer=%d type=%s d[3]=%02x d[5]=%02x setpoint=%.1f°C",
                      StandardMetrics.ms_v_charge_inprogress->AsBool(),
                      StandardMetrics.ms_v_charge_timermode->AsBool(),
-                     StandardMetrics.ms_v_charge_type->AsString().c_str(), f);
+                     StandardMetrics.ms_v_charge_type->AsString().c_str(), d[3], d[5], f);
             break;
         }
         case 0x059E: {
@@ -345,6 +344,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             uint8_t status_02 = (d[3] & 0x38) >> 3;
             uint8_t status_03 = (d[0] & 0x0E) >> 1;
             StandardMetrics.ms_v_env_hvac->SetValue(remote_mode != 0);
+            StandardMetrics.ms_v_env_cabintemp->SetValue(f);
             ESP_LOGV(TAG, "0x05EA clima_cabin=%.1f°C remote_mode=%u status02=%u status03=%u", f,
                      remote_mode, status_02, status_03);
             break;
@@ -429,8 +429,15 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     if (m_bus_idle_ticks < 254) m_bus_idle_ticks++;
 
     bool bus_alive = m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS;
+    bool just_went_idle = (m_bus_idle_ticks == VWEGOLF_BUS_TIMEOUT_SECS);
     ESP_LOGV(TAG, "Ticker1: bus_idle=%u alive=%d ocu=%d", m_bus_idle_ticks, bus_alive,
              m_ocu_active);
+
+    // When the bus goes idle the clima ECU has stopped broadcasting 0x05EA.
+    // Clear hvac so the metric doesn't stay stuck on after a remote session ends.
+    if (just_went_idle) {
+        StandardMetrics.ms_v_env_hvac->SetValue(false);
+    }
 
     // Only send the OCU keepalive when we have deliberately joined the bus AND the bus
     // has active traffic. When the bus is sleeping there is nobody to ACK frames —

@@ -131,15 +131,19 @@ Workflow for each fix or feature: branch → test → build → OTA flash to the
 
 Core testing loop: capture real frames once while car is in a specific state, then replay repeatedly against new firmware builds without needing the car in that state again.
 
-**Capture** (laptop on OVMS hotspot):
+**Capture** (laptop on OVMS hotspot, SSH key for `ovms@192.168.4.1` required):
 ```bash
-nc 192.168.4.1 3000 > capture.crtd          # on laptop
+bash vehicle/OVMS.V3/components/vehicle_vwegolf/tests/capture.sh        # can3 (default)
+bash vehicle/OVMS.V3/components/vehicle_vwegolf/tests/capture.sh can2   # FCAN (rarely needed)
 ```
+The script queries firmware version via SSH, prompts for a one-line description, starts the log automatically, streams frames until Ctrl-C, stops the log, and writes both a `.crtd` and a companion `.md` in `tests/candumps/`.
+
+To filter specific CAN IDs (manually, if needed):
 ```
-can log start tcpserver transmit crtd 3000 can3   # on OVMS shell
-can log stop                                       # when done
+can log start tcpserver transmit crtd 3000 3:131
 ```
-Filter to specific IDs: `can log start tcpserver transmit crtd 3000 3:131`
+
+**Note:** CCS DC fast charging keeps KCAN completely silent — no frames visible to OVMS. AC Type 2 charging is required for any OBC-related captures.
 
 **Replay:**
 ```
