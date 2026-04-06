@@ -234,7 +234,8 @@ public:
     void Ticker60(uint32_t ticker) override;
     void PollerStateTicker(canbus *bus) override;
     void GetDashboardConfig(DashboardConfig& cfg);
-    virtual void CalculateEfficiency();  
+    virtual void CalculateEfficiency();
+    virtual void CalculateRangeSpeed(); 
     void NotifyVehicleIdling() override;
     void NotifiedVehicleOn() override;
     void NotifiedVehicleOff() override;
