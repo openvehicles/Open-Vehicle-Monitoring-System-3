@@ -19,9 +19,24 @@ bash tests/capture.sh can2   # capture can2 (FCAN, rarely needed)
 Requires the laptop to be on the OVMS WiFi hotspot (`192.168.4.1`) with an SSH
 key for `ovms@192.168.4.1`.
 
-The `test_crtd_replay` test looks for `candumps/kcan-capture.crtd` as its fixed
-input. New baseline captures have timestamped filenames and are used for manual
-analysis; rename or symlink to `kcan-capture.crtd` to use them in the replay test.
+Captures are named `{bus}-{version}-{timestamp}.crtd`, for example:
+
+```
+can3-3.3.005-778-g7404ab27_ota_1_edge-20260404-235013.crtd
+```
+
+An accompanying `.md` file is written alongside with firmware version, bus,
+duration, frame count, and a one-line sequence description.
+
+The `test_crtd_replay` test looks for `candumps/kcan-capture.crtd` as its
+baseline input. Symlink whichever capture you want to test against:
+
+```bash
+ln -sf can3-3.3.005-778-g7404ab27_ota_1_edge-20260404-235013.crtd candumps/kcan-capture.crtd
+```
+
+If no symlink is present the test falls back to the committed synthetic fixture
+`kcan-synthetic.crtd`, which is what CI uses.
 
 ## CCS DC fast charging — KCAN stays silent
 

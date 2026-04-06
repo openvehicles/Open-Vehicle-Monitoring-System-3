@@ -116,14 +116,25 @@ void test_crtd_replay() {
     g_metrics = MetricStore{};
     auto* v = new OvmsVehicleVWeGolf();
 
-    int n = replay_crtd(v, "candumps/kcan-capture.crtd");
+    // Prefer the real capture (not committed, developer only); fall back to the
+    // committed synthetic fixture so the test runs in CI without real car data.
+    const char* candidates[] = {
+        "candumps/kcan-capture.crtd",
+        "candumps/kcan-synthetic.crtd",
+    };
+    const char* used_path = nullptr;
+    int n = -1;
+    for (const char* p : candidates) {
+        n = replay_crtd(v, p);
+        if (n >= 0) { used_path = p; break; }
+    }
 
     if (n < 0) {
-        printf("  SKIP: candumps/kcan-capture.crtd not found\n");
+        printf("  SKIP: no CRTD fixture found\n");
         delete v;
         return;
     }
-    printf("  replayed %d frames\n", n);
+    printf("  replayed %d frames from %s\n", n, used_path);
 
     // --- Speed: capture taken while car was parked, expect 0 km/h ---
     float speed = StandardMetrics.ms_v_pos_speed->AsFloat();
