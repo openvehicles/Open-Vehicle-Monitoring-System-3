@@ -56,13 +56,16 @@ static const OvmsPoller::poll_pid_t vehicle_ftdo_polls[]
     // { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd810, {  0,  30,   1, 999 }, 0, ISOTP_STD }, // SOC, not used, using calibrated one
     { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd865, {  0,  30,   60, 999 }, 0, ISOTP_STD }, // kWh available
     { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd860, {  0, 600,   60, 999 }, 0, ISOTP_STD }, // SOH is (3 byte value - 65536) / 16
+
+    // guessed:
+    { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd410, {  0,  30,   60, 999 }, 0, ISOTP_STD }, // Motor Torque (Ist-Drehmoment) in 0.1 Nm
     
     // VCU Temperature details
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd434, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // Ambient temp
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8ef, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // Battery temp
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8cd, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // drive motor stator temperature?
-    { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8ce, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // DC-DC converter temperature or Drive motor coolant inlet temperature?
-    { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8e1, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // on-board charger temperature?
+    { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8ce, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // DC-DC converter temperature
+    { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8e1, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // on-board charger temperature
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8f9, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // Traction cicuit coolant temperature * 10
 
     // { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x01, {  0,  10, 1, 999 }, 0, ISOTP_STD }, // VIN length
@@ -158,6 +161,7 @@ void OvmsVehicleFiatEDoblo::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       int speed = ((((uint32_t)d[0] << 8) + d[1]) / 100.0);
       StandardMetrics.ms_v_pos_speed->SetValue(speed);
+      // d[2:3] could be distance in 10m?
       break;
     }
   case 0x3a8:
@@ -202,6 +206,12 @@ void OvmsVehicleFiatEDoblo::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       // steering wheel angle in bytes 0 and 1: negative: right, positive: left
       // angle = ((uint32_t)d[0] << 8) + d[1]) / 10.0);
+    }
+    break;
+  case 0x40d:
+  case 0x2ed:
+    {
+      // some kind of (trip)distance?
     }
     break;
   case 0x3ad:
@@ -335,6 +345,14 @@ void OvmsVehicleFiatEDoblo::IncomingVINPoll(const OvmsPoller::poll_job_t &job, u
 }
 
 /**
+ * Update battery power from current nd voltage
+ */
+void OvmsVehicleFiatEDoblo::UpdatePower()
+{
+  StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) * StandardMetrics.ms_v_bat_current->AsFloat(0, Amps)) * 0.001, kW);
+}
+
+/**
  * Handle incoming messages from Battery-poll
  *
  */
@@ -347,24 +365,17 @@ void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &jo
   switch (job.pid) {
   case 0xd815: // bat voltage
     StandardMetrics.ms_v_bat_voltage->SetValue((float)value2 / 16.0);
+    UpdatePower();
     break;
   case 0xd816:  // battery current
     {
-      /*
-        uint32_t value = ((uint32_t)data[2] << 8) + data[3];
-        TODO: check how to convert into current (or power)
-        int32_t v;
-        float fin;
-        value &= 0x7ff;
-        value = value << 9;
-        v = (int32_t) value;
+      float cur = (((uint32_t)data[1] << 16) + ((uint32_t)data[2] << 8) + (uint32_t)data[3]) / 64.0 - 1200.0;
+      ESP_LOGI(TAG, "received battery current: %f %d, %x %x %x %x", ((float)cur), (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3], data[0], data[1], data[2], data[3]);
+
+      StandardMetrics.ms_v_bat_current->SetValue((float)cur);
       
-        fin = v / 64.0;
-        //see https://www.goingelectric.de/forum/viewtopic.php?p=1903069&sid=2cadc1e2d2a3312a436b2dfed52ce479#p1903069
-    
-        StandardMetrics.ms_v_bat_current->SetValue(fin);
-        ESP_LOGI(TAG, "received battery current: %d %d  %f  %d, %x %x %x %x", value, v, fin, (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3], data[0], data[1], data[2], data[3]);
-      */
+      UpdatePower();
+
       break;
     }
   case 0xd860:
@@ -381,12 +392,11 @@ void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &jo
     StandardMetrics.ms_v_bat_pack_vmax->SetValue(value2 / 1000.0);      
     break;
 
-  case 0xd865: // kWh - maybe wrong conversion
-    kwh = (float)value2 / 50.0; //64.0;
-    ESP_LOGD(TAG, "received kWh: %f (maybe %f or %f)", kwh, (float)value2 / 50.0 , (float)value2 / 64.0);
+  case 0xd865: // kWh
+    kwh = (float)value2 / 64.0;
     StandardMetrics.ms_v_bat_capacity->SetValue(kwh);
     break;
-    
+
   default:
     ESP_LOGD(TAG, "unexpected battery poll reply on ID 0x%4x (pid = 0x%4x, len = %d)", job.moduleid_rec, job.pid, length);
     ESP_LOGD(TAG, "poll reply 0x%4x (pid = 0x%x, len = %d): 0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x", job.moduleid_rec, job.pid, length, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
@@ -405,8 +415,8 @@ void OvmsVehicleFiatEDoblo::IncomingVCUPoll(const OvmsPoller::poll_job_t &job, u
   case 0xd8ef:  // Battery temperature
     StandardMetrics.ms_v_bat_temp->SetValue((int8_t)data[0]);
     break;
-  case 0xd8e1:  // on-board charger temperature ??
-    StandardMetrics.ms_v_charge_temp->SetValue((int8_t)data[0]);
+  case 0xd8e1:  // on-board charger temperature
+    StandardMetrics.ms_v_charge_temp->SetValue((int8_t)data[1]);
     break;
   case 0xd402:  // speed
     //    StandardMetrics.ms_v_pos_speed->SetValue((uint8_t)data[0]);
@@ -414,6 +424,9 @@ void OvmsVehicleFiatEDoblo::IncomingVCUPoll(const OvmsPoller::poll_job_t &job, u
     break;
   case 0xd8cd:  // drive motor temp?
     StandardMetrics.ms_v_mot_temp->SetValue((((uint32_t)data[0] << 8) + (uint32_t)data[1]) / 2); // just a guess, TODO: check it!
+    break;
+  case 0xd8ce:  // DC-DC converter temp
+    StandardMetrics.ms_v_charge_12v_temp->SetValue((int8_t)data[1]);
     break;
     
   default:
@@ -459,8 +472,8 @@ void OvmsVehicleFiatEDoblo::GetDashboardConfig(DashboardConfig& cfg)
 
   // Power:
   dash_gauge_t power_dash(NULL,kW);
-  power_dash.SetMinMax(-50, 100);
-  power_dash.AddBand("violet", -50, 0);
+  power_dash.SetMinMax(-100, 100);
+  power_dash.AddBand("violet", -100, 0);
   power_dash.AddBand("green", 0, 50);
   power_dash.AddBand("yellow", 50, 80);
   power_dash.AddBand("red", 80, 100);
