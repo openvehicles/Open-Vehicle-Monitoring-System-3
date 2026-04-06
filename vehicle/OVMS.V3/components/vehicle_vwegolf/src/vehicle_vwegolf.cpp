@@ -41,7 +41,13 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // KCAN (CAN3) carries comfort, body, and clima frames via the J533 gateway.
     // FCAN (CAN2) is the powertrain bus (BMS, motor controller, VIN).
     // CAN1 (OBD) is diagnostic-only and inaccessible while the car is asleep.
-    RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // FCAN — powertrain
+    //
+    // FCAN is listen-only: we read gear and VIN but never transmit on this bus.
+    // Active mode would require the ESP32 CAN controller to ACK every received
+    // frame; its ACK timing on a bus already managed by native ECUs produces
+    // spurious ECC TX-direction errors (ecc != 0 → CAN_logerror every ~200 ms)
+    // even though rxerr/txerr stay at zero. Listen-only eliminates this entirely.
+    RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  // FCAN — powertrain (read-only)
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN — comfort / clima
 
     OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg", "VW e-Golf controls");
