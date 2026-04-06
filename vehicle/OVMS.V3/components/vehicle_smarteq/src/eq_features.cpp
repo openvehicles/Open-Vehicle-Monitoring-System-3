@@ -84,7 +84,7 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
       }
     
     // Handle alert conditions only if sensor is working and alerts are enabled
-    if (!pressure_valid || !alerts_enabled)
+    if (!pressure_valid || !alerts_enabled || (!m_enable_write_caron && !m_enable_write)) 
       {
       // Sensor not working or alerts disabled - clear all alerts
       _lowbatt = false;
