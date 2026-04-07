@@ -258,8 +258,8 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_updatetime_sendall = 1200;
   m_updatetime_keepalive = 29*60;
   m_legacy_event_topic = true;
-  m_retain_depth_limit = true;
-  m_keepalive_clamp = true;
+  m_retain_depth_limit = false;
+  m_keepalive_clamp = false;
   m_notify_info_pending = false;
   m_notify_error_pending = false;
   m_notify_alert_pending = false;

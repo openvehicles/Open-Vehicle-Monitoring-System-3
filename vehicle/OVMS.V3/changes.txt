@@ -15,13 +15,13 @@ Open Vehicle Monitor System v3 - Change log
         server v3 tlsclient reload                         -- reconnect to apply changes
     - Fixed MQTT CONNECT: empty username/password strings are now sent as absent (NULL)
       rather than empty, matching broker expectations for certificate-only authentication.
-    - Keepalive clamping: new config param keepalive.clamp (bool, default yes):
+    - Keepalive clamping: new config param keepalive.clamp (bool, default no):
       When enabled, the MQTT keepalive is clamped to 1200 seconds at connect time.
       AWS IoT Core rejects keepalive values above 1200 s with a disconnect; this guard
       ensures compatibility. Disable for custom brokers that accept higher values.
       Exposed in the web UI (Config -> Server V3: "Clamp keepalive to 1200s") and
       shown in CLI output of 'server v3 status'.
-    - New config param retain.depth.limit (bool, default yes):
+    - New config param retain.depth.limit (bool, default no):
       When enabled, metric topics with more than 8 path segments are published without the
       MQTT RETAIN flag. AWS IoT Core silently rejects retained publishes on topics deeper
       than 8 segments; this guard ensures all other metrics remain retained while deep topics

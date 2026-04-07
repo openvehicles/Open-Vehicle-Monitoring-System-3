@@ -209,8 +209,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_keepalive = MyConfig.GetParamValue("server.v3", "updatetime.keepalive", "1740");
     updatetime_priority = MyConfig.GetParamValueBool("server.v3", "updatetime.priority", false);
     updatetime_immediately = MyConfig.GetParamValueBool("server.v3", "updatetime.immediately", false);
-    retain_depth_limit = MyConfig.GetParamValueBool("server.v3", "retain.depth.limit", true);
-    keepalive_clamp = MyConfig.GetParamValueBool("server.v3", "keepalive.clamp", true);
+    retain_depth_limit = MyConfig.GetParamValueBool("server.v3", "retain.depth.limit", false);
+    keepalive_clamp = MyConfig.GetParamValueBool("server.v3", "keepalive.clamp", false);
     metrics_priority = MyConfig.GetParamValue("server.v3", "metrics.priority");
     metrics_include = MyConfig.GetParamValue("server.v3", "metrics.include");
     metrics_exclude = MyConfig.GetParamValue("server.v3", "metrics.exclude");
@@ -243,14 +243,13 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     " 8 segments (e.g. <code>ovms-user-VIN/metric/v/p/latitude</code>: 5 segments &mdash; fine;"
     " <code>ovms/user/VIN/metric/v/p/latitude</code>: 7 segments &mdash; fine;"
     " topics with 9+ segments would be silently dropped as retained on AWS)."
-    " Disable this only if your MQTT broker supports retained publishes on arbitrarily deep topics."
-    " Default: enabled.</p>");
+    " Enable this if your MQTT broker requires it (e.g. AWS IoT Core)."
+    " Default: disabled.</p>");
   c.input_checkbox("Clamp keepalive to 1200s", "keepalive_clamp", keepalive_clamp,
     "<p>When enabled, the MQTT keepalive is clamped to a maximum of 1200 seconds at connect time."
     " <strong>Required for AWS IoT Core</strong>, which rejects keepalive values above 1200 s with a disconnect."
-    " Disable this only if your MQTT broker accepts keepalive values above 1200 s"
-    " (e.g. a self-hosted broker with the default 1740 s setting)."
-    " Default: enabled.</p>");
+    " Enable this if your MQTT broker requires it (e.g. AWS IoT Core)."
+    " Default: disabled.</p>");
   c.input_text("Port", "port", port.c_str(), "optional, default: 1883 (no TLS) / 8883 (TLS)");
   c.input_text("Username", "user", user.c_str(), "Enter user login name",
     NULL, "autocomplete=\"section-serverv3 username\"");

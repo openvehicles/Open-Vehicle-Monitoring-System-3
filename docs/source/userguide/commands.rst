@@ -200,8 +200,8 @@ configuration::
   OVMS# server v3 status
   State: Connected
          Status: OVMS V3 MQTT login successful
-  Retain depth limit: enabled (max 8 topic segments, required for AWS IoT Core) (config: server.v3 retain.depth.limit)
-  Keepalive clamp:     enabled (clamp keepalive to 1200s max, required for AWS IoT Core) (config: server.v3 keepalive.clamp)
+  Retain depth limit: disabled (config: server.v3 retain.depth.limit)
+  Keepalive clamp:    disabled (config: server.v3 keepalive.clamp)
 
 The **Retain depth limit** line shows whether the 8-segment topic depth guard is
 active. See the :doc:`components` section for details on this setting.
