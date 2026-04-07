@@ -59,8 +59,7 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
 
     OvmsCommand* cmd_xvg = MyCommandApp.RegisterCommand("xvg", "VW e-Golf controls");
 
-    // Diagnostic: stop sending OCU keepalive. Useful when the OVMS is done with a
-    // remote session and should stop asserting node presence on KCAN.
+    // Diagnostic: manually stop OCU keepalive and leave the NM ring.
     cmd_xvg->RegisterCommand("offline", "Stop sending OCU keepalive (diagnostic)", [this](...) {
         m_ocu_active = false;
         ESP_LOGI(TAG, "OCU keepalive stopped");
@@ -90,11 +89,9 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit() {
 // ---------------------------------------------------------------------------
 
 void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
-    // J533 bridges FCAN frames onto KCAN, so the bulk of traffic (SOC, speed,
-    // charging, clima, etc.) arrives on can3 via IncomingFrameCan3. The frames
-    // that reach IncomingFrameCan2 are FCAN-native (gear, VIN) plus occasional
-    // bridged frames during bus startup. Forward everything so KCAN decoders
-    // also fire for any frame that arrives here.
+    // FCAN-native frames (gear, VIN) arrive here; everything else comes via can3.
+    // Forward to IncomingFrameCan3 so shared decoders fire regardless of which bus
+    // the frame arrived on.
     IncomingFrameCan3(p_frame);
 
     uint8_t* d = p_frame->data.u8;
@@ -222,8 +219,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             float voltage = u16 * 0.25f;
             StandardMetrics.ms_v_bat_voltage->SetValue(voltage);
 
-            // Power is negated so charge shows negative and drive shows positive,
-            // matching OVMS convention.
+            // Negated: OVMS convention is charge=negative, drive=positive.
             StandardMetrics.ms_v_bat_power->SetValue(-(voltage * current) / 1000.0f);
             ESP_LOGV(TAG, "0x0191 raw=%02x%02x%02x%02x%02x I=%.1fA V=%.2fV",
                      d[1], d[2], d[3], d[4], d[5], current, voltage);
@@ -295,8 +291,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 bool is_charging = (d[3] & 0x20) != 0;
                 StandardMetrics.ms_v_charge_inprogress->SetValue(is_charging);
                 StandardMetrics.ms_v_charge_state->SetValue(is_charging ? "charging" : "stopped");
-                // Mirror HV bus voltage to charge-side metric; they are the same physical
-                // bus during AC charging. Charge current is not yet decoded — see TODO below.
+                // Mirror HV bus voltage; charge current is not yet decoded.
                 if (is_charging) {
                     StandardMetrics.ms_v_charge_voltage->SetValue(
                         StandardMetrics.ms_v_bat_voltage->AsFloat());
@@ -358,14 +353,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             break;
         }
         case 0x05EA: {
-            // Clima ECU status: cabin temperature, remote mode, and operational status.
-            // remote_mode values observed from captures:
-            //   0 = idle (no remote session)
-            //   2 = clima running via remote (steady-state during the run)
-            //   3 = clima just activated via remote command (transient, first few seconds only)
-            // Earlier captures only saw 0 and 3; the 15-min full-cycle capture confirmed that
-            // remote_mode stays at 2 for the entire run after the initial activation.
-            // HVAC is on whenever remote_mode != 0.
+            // Clima ECU status: cabin temperature and remote_mode.
+            // remote_mode: 0=idle, 2=running (steady-state), 3=just activated (transient).
+            // HVAC on whenever remote_mode != 0.
             u16 = ((uint16_t)(d[6] & 0xFC) >> 2) | ((uint16_t)(d[7] & 0x0F) << 6);
             uint8_t remote_mode = ((d[3] & 0xC0) >> 6) | ((d[4] & 0x01) << 2);
             // d[3][5:3] and d[0][3:1] carry additional status nibbles seen in captures;
@@ -414,7 +404,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             break;
         }
         case 0x065A: {
-            // BCM_01: bonnet/hood open indicator (MHWIVSchalter, d[4] bit 0).
+            // BCM_01: hood open indicator (d[4] bit 0).
             StandardMetrics.ms_v_door_hood->SetValue(d[4] & 0x01);
             ESP_LOGV(TAG, "0x065A hood=%u", d[4] & 0x01);
             break;
@@ -484,23 +474,16 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     ESP_LOGV(TAG, "Ticker1: bus_idle=%u alive=%d ocu=%d", m_bus_idle_ticks, bus_alive,
              m_ocu_active);
 
-    // When the bus goes idle, clear transient state that cannot self-correct via CAN.
-    // Do NOT clear metrics here — they are owned by their respective frame decoders and
-    // will stale-expire naturally. Clearing charge_inprogress would falsely show "not
-    // charging" during CCS DC (KCAN silent while charging). Clearing ms_v_env_hvac would
-    // undo the optimistic update before 0x05EA confirms.
+    // On idle: clear OCU node presence so no further heartbeats queue on a dead bus.
+    // Do NOT clear metrics — they are owned by their decoders and stale-expire naturally.
+    // (Clearing charge_inprogress here would falsely show "not charging" during CCS DC,
+    // which keeps KCAN silent while actively charging.)
     if (just_went_idle) {
-        // Clear OCU node presence so no heartbeats are queued on the sleeping bus.
-        // Any heartbeat in-flight when the bus dies will be retried by the TWAI hardware
-        // until the next wake; clearing m_ocu_active prevents additional frames from
-        // piling into the TX queue and driving TEC up before the next CommandWakeup.
         m_ocu_active = false;
-        ESP_LOGI(TAG, "KCAN idle: cleared OCU node presence (m_ocu_active=false)");
+        ESP_LOGI(TAG, "KCAN idle: OCU node presence cleared");
     }
 
-    // Only send the OCU keepalive when we have deliberately joined the bus AND the bus
-    // has active traffic. When the bus is sleeping there is nobody to ACK frames —
-    // the ESP32 CAN controller accumulates TX errors that can corrupt the error counter.
+    // Guard: only heartbeat when we've joined the bus and the bus has live traffic.
     if (m_ocu_active && bus_alive) {
         SendOcuHeartbeat();
     }
@@ -569,7 +552,6 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
 }
 
 // ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
 // Vehicle commands
 // ---------------------------------------------------------------------------
 
@@ -582,21 +564,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
 
     ESP_LOGI(TAG, "Wakeup: asserting dominant bits on KCAN");
 
-    // Reset the KCAN controller before asserting dominant bits. When the bus has been
-    // idle, a stale heartbeat from a prior active session may be stuck in the TWAI
-    // hardware TX FIFO. The hardware will not drain that frame until it can sync to the
-    // bus, creating a deadlock: wake frame → SW queue → never reaches hardware → no
-    // dominant bits → KCAN stays dead. Reset clears the HW FIFO and lets the wake frame
-    // enter hardware directly. Stop/Start preserves mode and speed; RX gap is <5 ms
-    // and safe here because the bus is sleeping anyway.
+    // Reset the KCAN controller to clear any stuck frame from the TWAI HW TX FIFO.
+    // A stale heartbeat left from the prior session occupies the FIFO slot; on a sleeping
+    // bus it can never drain (no ACK), so the wake frame queues behind it and never
+    // produces dominant bits. Stop/Start preserves mode and speed.
     m_can3->Reset();
     vTaskDelay(pdMS_TO_TICKS(5));
 
-    // These extended frames put dominant bits on the bus to wake the KCAN transceivers.
-    // TX_Fail on the first frame is expected — nodes are still asleep and cannot ACK.
-    // Use a 50ms wait so the frame enters the hardware FIFO even if the SW queue briefly
-    // stacks up from concurrent IncomingFrameCan3 calls during the wake burst.
-    // Frame 1 triggers responses from 0x5F5 and nearby ECUs in captured traces.
+    // Extended frames to assert dominant bits and trigger the NM wake cascade.
+    // TX_Fail on Frame 1 is expected — nodes are still asleep and cannot ACK.
     uint8_t data[8] = {0x40, 0x00, 0x01, 0x1F, 0x00, 0x00, 0x00, 0x00};
     m_can3->WriteExtended(0x17330301, 8, data, pdMS_TO_TICKS(50));
     vTaskDelay(pdMS_TO_TICKS(50));
@@ -659,25 +635,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandPanic() {
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool enable) {
     ESP_LOGI(TAG, "Climate control: %s", enable ? "start" : "stop");
 
-    // Abort immediately if the KCAN controller is in bus-off. In bus-off the TWAI hardware
-    // cannot transmit at all and all Write calls overflow the TX queue silently. Bus-off
-    // typically results from accumulated TX errors during a previous session (e.g. heartbeats
-    // sent on a silent bus). The controller cannot self-recover without receiving recessive
-    // bits, which it won't get on a gated bus. Continuing would TX_Queue every BAP frame and
-    // leave m_ocu_active in an indeterminate state.
+    // Abort if bus-off: the TWAI HW cannot TX at all and all Write calls silently
+    // overflow the queue. CommandWakeup's Reset() should prevent this, but guard anyway.
     if (m_can3->GetErrorState() == CAN_errorstate_busoff) {
         ESP_LOGW(TAG, "Climate control: KCAN controller in bus-off — aborting");
         return Fail;
     }
 
-    // If KCAN is sleeping, join the NM ring before sending BAP. The clima ECU requires the
-    // sender to be a recognised NM participant — it rejects BAP commands from unknown nodes.
-    // CommandWakeup sends the 0x17330301 dominant-bit wake frame and the 0x1B000067 OSEK NM
-    // alive for node 0x67, then sets m_ocu_active = true. We wait 1 s for the NM-join flood
-    // (alive responses from all ECUs, ~300 ms burst) to subside before starting BAP.
-    //
-    // If the bus is already active, skip wakeup: the ECU already knows OVMS from prior
-    // heartbeats and BAP can be sent immediately. m_ocu_active is set after successful F3.
+    // Wake the bus if sleeping; wait 1 s for the NM-join flood (~300 ms burst) to settle
+    // before sending BAP. If already active, skip wakeup and send immediately.
     if (m_bus_idle_ticks >= VWEGOLF_BUS_TIMEOUT_SECS) {
         ESP_LOGI(TAG, "Climate control: KCAN idle — waking bus and joining NM ring");
         CommandWakeup();
@@ -723,9 +689,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
 
     // Frame 2: BAP multi-frame continuation — remaining 4 bytes of the port 0x19 payload.
     // Full 8-byte payload: [counter] 06 00 01  06 00 <temp> 00
-    // Temperature encoding confirmed from ComfortCAN-Multiplex-Protokoll-220206 (dexterbg):
+    // Temperature encoding (dexterbg ComfortCAN-Multiplex-Protokoll-220206):
     //   raw = (celsius - 10) * 10   e.g. 21°C → 0x6E, 22°C → 0x78, 15.5°C(LO) → 0x37
-    // Clamp to [15, 30]°C matching the car's valid clima range.
     uint8_t temp_raw = (uint8_t)((m_climate_temp - 10) * 10);
     data[0] = 0xC0;  // multi-frame continuation, channel 0
     data[1] = 0x06;  // unknown
@@ -741,9 +706,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     }
 
     // Frame 3: BAP single-frame trigger → port 0x18 (immediate start/stop).
-    // 0x29 0x58 = opcode=2, node=0x25, port=0x18. Payload byte 1 is the on/off flag.
-    // Never allow this frame into the software queue alone — it is a complete command
-    // that the ECU processes independently of the multi-frame context above.
+    // 0x29 0x58 = opcode=2, node=0x25, port=0x18. d[3] = 0x01 start / 0x00 stop.
     data[0] = 0x29;
     data[1] = 0x58;
     data[2] = 0x00;
@@ -761,14 +724,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     // ignores the command (e.g. low SoC, inhibit active), the metric self-corrects on the
     // next 0x05EA frame rather than staying permanently wrong.
     StandardMetrics.ms_v_env_hvac->SetValue(enable);
-    if (enable) {
-        // Join the NM ring only after a confirmed successful TX — heartbeating before
-        // TX success causes spam when the ignition comes on after a failed start attempt.
-        m_ocu_active = true;
-    } else {
-        // Leave the NM ring after a successful stop — no need to keep sending heartbeats
-        // when clima is not running. The car's own OCU node handles 0x5A7 independently.
-        m_ocu_active = false;
-    }
+    m_ocu_active = enable;  // stay in NM ring while clima runs; leave after stop
     return Success;
 }
