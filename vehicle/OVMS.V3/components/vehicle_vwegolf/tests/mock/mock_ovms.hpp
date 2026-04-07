@@ -25,6 +25,8 @@
 typedef uint32_t TickType_t;
 inline void vTaskDelay(TickType_t) {}
 inline TickType_t pdMS_TO_TICKS(uint32_t ms) { return ms; }
+inline TickType_t xTaskGetTickCount() { return 0; }
+static constexpr uint32_t portTICK_PERIOD_MS = 1;
 
 // ---------------------------------------------------------------------------
 // CAN types
@@ -32,18 +34,28 @@ inline TickType_t pdMS_TO_TICKS(uint32_t ms) { return ms; }
 typedef enum { CAN_frame_std, CAN_frame_ext } CAN_frame_format_t;
 typedef enum { CAN_MODE_LISTEN, CAN_MODE_ACTIVE, CAN_MODE_OFF } CAN_mode_t;
 typedef enum { CAN_SPEED_100KBPS = 100, CAN_SPEED_500KBPS = 500 } CAN_speed_t;
+typedef enum {
+    CAN_errorstate_none = 0,
+    CAN_errorstate_active,
+    CAN_errorstate_warning,
+    CAN_errorstate_passive,
+    CAN_errorstate_busoff,
+} CAN_errorstate_t;
 
 typedef union {
     struct { CAN_frame_format_t FF; uint8_t DLC; } B;
 } CAN_FIR_t;
 
 typedef int esp_err_t;
-static constexpr esp_err_t ESP_OK = 0;
+static constexpr esp_err_t ESP_OK   =  0;
+static constexpr esp_err_t ESP_FAIL = -1;
 
 struct canbus {
     uint8_t m_busnumber = 0;
     esp_err_t WriteStandard(uint32_t /*id*/, uint8_t /*len*/, uint8_t* /*data*/, int /*wait*/ = 0) { return 0; }
     esp_err_t WriteExtended(uint32_t /*id*/, uint8_t /*len*/, uint8_t* /*data*/, int /*wait*/ = 0) { return 0; }
+    CAN_errorstate_t GetErrorState() { return CAN_errorstate_none; }
+    esp_err_t Reset() { return ESP_OK; }
 };
 
 // 'Minutes' is used as a unit tag in some metric SetValue calls

@@ -1,5 +1,6 @@
 CXX      := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra -g \
+            -DVWEGOLF_NATIVE_TEST \
             -Imock \
             -I. \
             -I../src \

@@ -66,20 +66,21 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     void Ticker10(uint32_t ticker) override;
 
  private:
-    // Seconds since the last KCAN frame arrived. Reset to 0 in IncomingFrameCan3,
-    // incremented each second in Ticker1. Bus is alive while this is < VWEGOLF_BUS_TIMEOUT_SECS.
+    // Seconds since the last genuine KCAN (can3) frame arrived. Reset to 0 only for
+    // frames with origin==m_can3; FCAN frames forwarded via IncomingFrameCan2 are excluded.
+    // Incremented each second in Ticker1. Bus is alive while < VWEGOLF_BUS_TIMEOUT_SECS.
     // Initialized to timeout so we treat the bus as offline at cold boot.
     uint8_t m_bus_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
 
     // OVMS must send the 0x5A7 OCU keepalive while it is an active node.
-    // VW OSEK NM requires keepalives at ~200ms intervals — 1Hz via Ticker1 alone is
-    // insufficient; the clima ECU never enters remote mode. We send at ~5Hz by calling
-    // SendOcuHeartbeat() every 75 incoming frames in IncomingFrameCan3 (KCAN runs at
-    // ~375 fps when the car is awake). Ticker1 is retained as a low-activity fallback.
+    // VW OSEK NM requires keepalives at ~200ms intervals — Ticker1 alone (1Hz) is
+    // insufficient. We enforce a 180ms minimum interval via a FreeRTOS tick timestamp
+    // checked on every incoming KCAN frame, giving ~5Hz without storm risk when the
+    // bus gets a sudden traffic burst (e.g. from an NM wake).
     // We only start sending after deliberately taking an action (wakeup or command)
     // to avoid asserting an unexpected node presence when the car is idle.
     bool m_ocu_active = false;
-    uint16_t m_ocu_heartbeat_counter = 0;
+    uint32_t m_last_heartbeat_tick = 0;
 
     // Target temperature and battery-allow flag for clima; refreshed from config in Ticker10.
     uint8_t m_climate_temp = 21;
@@ -104,6 +105,11 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     char m_vin_buf[18] = {};
 
     void SendOcuHeartbeat();
+
+#ifdef VWEGOLF_NATIVE_TEST
+ public:
+    uint8_t test_bus_idle_ticks() const { return m_bus_idle_ticks; }
+#endif
 };
 
 #endif  // __VEHICLE_VWEG_H__
