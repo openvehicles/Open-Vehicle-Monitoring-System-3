@@ -190,6 +190,354 @@ void test_gps_0x486() {
 }
 
 // ---------------------------------------------------------------------------
+// 0x0191 — BMS current, voltage, power
+// ---------------------------------------------------------------------------
+
+void test_bms_0x191() {
+    printf("\ntest_bms_0x191\n");
+    auto* v = make_vehicle();
+
+    // current=10A: raw=2057=0x809 → d[1]&0xF0=0x90 (9<<4), d[2]=0x80 (2057>>4=128)
+    // voltage=400V: raw=1600=0x640 → d[3]=0x40, d[4]&0x0F=0x06
+    // power = -(400*10)/1000 = -4.0 kW (positive=drive, negative=charge convention)
+    auto f = make_frame(0x191, {0x00, 0x90, 0x80, 0x40, 0x06, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(near(StandardMetrics.ms_v_bat_current->AsFloat(),  10.0f), "BMS current 10A");
+    CHECK(near(StandardMetrics.ms_v_bat_voltage->AsFloat(), 400.0f), "BMS voltage 400V");
+    CHECK(near(StandardMetrics.ms_v_bat_power->AsFloat(),    -4.0f), "BMS power -4kW (charging convention)");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
+// 0x02AF — trip energy (regenerated and consumed)
+// ---------------------------------------------------------------------------
+
+void test_trip_energy_0x2AF() {
+    printf("\ntest_trip_energy_0x2AF\n");
+    auto* v = make_vehicle();
+
+    // recd raw=3600 (d[4]=0x10, d[5]=0x0E) → 3600*10/3600000 = 0.01 kWh
+    // used raw=7200 (d[6]=0x20, d[7]=0x1C) → 7200*10/3600000 = 0.02 kWh
+    auto f = make_frame(0x2AF, {0x00, 0x00, 0x00, 0x00, 0x10, 0x0E, 0x20, 0x1C});
+    v->IncomingFrameCan3(&f);
+    CHECK(near(StandardMetrics.ms_v_bat_energy_recd->AsFloat(), 0.01f, 1e-6f),
+          "Trip regen 0.01 kWh");
+    CHECK(near(StandardMetrics.ms_v_bat_energy_used->AsFloat(), 0.02f, 1e-6f),
+          "Trip used  0.02 kWh");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
+// 0x0583 — central locking and door open states
+// ---------------------------------------------------------------------------
+
+void test_locks_0x583() {
+    printf("\ntest_locks_0x583\n");
+
+    {
+        auto* v = make_vehicle();
+        // locked externally (d[2] bit1), all doors closed
+        auto f = make_frame(0x583, {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(StandardMetrics.ms_v_env_locked->AsBool(),   "Locked when d[2] bit1 set");
+        CHECK(!StandardMetrics.ms_v_door_fl->AsBool(),     "FL closed");
+        CHECK(!StandardMetrics.ms_v_door_fr->AsBool(),     "FR closed");
+        CHECK(!StandardMetrics.ms_v_door_rl->AsBool(),     "RL closed");
+        CHECK(!StandardMetrics.ms_v_door_rr->AsBool(),     "RR closed");
+        CHECK(!StandardMetrics.ms_v_door_trunk->AsBool(),  "Trunk closed");
+        delete v;
+    }
+
+    {
+        auto* v = make_vehicle();
+        // unlocked; FL open (bit0) and trunk open (bit4) → d[3]=0x11
+        auto f = make_frame(0x583, {0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(!StandardMetrics.ms_v_env_locked->AsBool(), "Unlocked when d[2] bit1 clear");
+        CHECK(StandardMetrics.ms_v_door_fl->AsBool(),     "FL open (bit0)");
+        CHECK(!StandardMetrics.ms_v_door_fr->AsBool(),    "FR closed");
+        CHECK(StandardMetrics.ms_v_door_trunk->AsBool(),  "Trunk open (bit4)");
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 0x0594 — HV charge management
+// ---------------------------------------------------------------------------
+
+void test_charge_0x594() {
+    printf("\ntest_charge_0x594\n");
+
+    {
+        auto* v = make_vehicle();
+        // duration_full=120min (raw=24): d[1]=0x80 (nibble=8), d[2]&0x1F=0x01 (hi=1)
+        // timer enabled: d[2]&0x60=0x20
+        // combined d[2] = 0x01 | 0x20 = 0x21
+        // is_charging: d[3]=0x20
+        // AC Type2: d[5]&0x0C=0x04 → charge_type=1
+        // setpoint 20°C: (d[7]&0x1F)*0.5+15.5=20 → d[7]=0x09
+        auto f = make_frame(0x594, {0x00, 0x80, 0x21, 0x20, 0x00, 0x04, 0x00, 0x09});
+        v->IncomingFrameCan3(&f);
+        CHECK(StandardMetrics.ms_v_charge_duration_full->AsValue() == 120,
+              "Charge duration 120 min");
+        CHECK(StandardMetrics.ms_v_charge_timermode->AsBool(),              "Charge timer enabled");
+        CHECK(StandardMetrics.ms_v_charge_inprogress->AsBool(),             "Charging in progress");
+        CHECK(StandardMetrics.ms_v_charge_state->AsValue() == "charging",   "State=charging");
+        CHECK(StandardMetrics.ms_v_charge_type->AsValue() == "type2",       "Type=type2 AC");
+        CHECK(StandardMetrics.ms_v_door_chargeport->AsBool(),               "Charge port open (AC type2)");
+        CHECK(near(StandardMetrics.ms_v_env_cabinsetpoint->AsFloat(), 20.0f), "Cabin setpoint 20°C");
+        delete v;
+    }
+
+    {
+        auto* v = make_vehicle();
+        // not charging, no cable, timer off, setpoint=15.5°C (raw=0)
+        auto f = make_frame(0x594, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(!StandardMetrics.ms_v_charge_inprogress->AsBool(),           "Not charging");
+        CHECK(StandardMetrics.ms_v_charge_state->AsValue() == "stopped",   "State=stopped");
+        CHECK(!StandardMetrics.ms_v_door_chargeport->AsBool(),             "Charge port closed");
+        CHECK(!StandardMetrics.ms_v_charge_timermode->AsBool(),            "Timer disabled");
+        CHECK(near(StandardMetrics.ms_v_env_cabinsetpoint->AsFloat(), 15.5f), "Cabin setpoint 15.5°C (raw=0)");
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 0x059E — BMS battery pack temperature
+// ---------------------------------------------------------------------------
+
+void test_bat_temp_0x59E() {
+    printf("\ntest_bat_temp_0x59E\n");
+    auto* v = make_vehicle();
+
+    // 25°C: d[2] = (25+40)/0.5 = 130 = 0x82
+    auto f = make_frame(0x59E, {0x00, 0x00, 0x82, 0x00, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(near(StandardMetrics.ms_v_bat_temp->AsFloat(), 25.0f), "Battery temp 25°C");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
+// 0x05CA — HV battery energy capacity (11-bit)
+// ---------------------------------------------------------------------------
+
+void test_bat_capacity_0x5CA() {
+    printf("\ntest_bat_capacity_0x5CA\n");
+    auto* v = make_vehicle();
+
+    // 35.0 kWh: raw=700=0x2BC → d[1]&0xF0=0xC0 (12<<4), d[2]&0x7F=0x2B (43)
+    // check: ((0xC0&0xF0)>>4)|((0x2B&0x7F)<<4) = 12|688 = 700; 700*50/1000 = 35.0
+    auto f = make_frame(0x5CA, {0x00, 0xC0, 0x2B, 0x00, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(near(StandardMetrics.ms_v_bat_capacity->AsFloat(), 35.0f), "Battery capacity 35.0 kWh");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
+// 0x05EA — Clima ECU status: cabin temp and HVAC state
+// ---------------------------------------------------------------------------
+
+void test_clima_status_0x5EA() {
+    printf("\ntest_clima_status_0x5EA\n");
+
+    {
+        auto* v = make_vehicle();
+        // cabin=20°C: raw=600=0x258 → d[6]&0xFC=0x60 (24<<2), d[7]&0x0F=0x09 (600>>6=9)
+        // hvac off: remote_mode=0 → d[3]=0x00, d[4]=0x00
+        auto f = make_frame(0x5EA, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x60, 0x09});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_env_cabintemp->AsFloat(), 20.0f), "Cabin temp 20°C");
+        CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(),                   "HVAC off (remote_mode=0)");
+        delete v;
+    }
+
+    {
+        auto* v = make_vehicle();
+        // cabin=20°C, hvac on: remote_mode=2 → d[3]&0xC0=0x80 (2<<6)
+        auto f = make_frame(0x5EA, {0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x60, 0x09});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_env_cabintemp->AsFloat(), 20.0f), "Cabin temp 20°C (hvac on)");
+        CHECK(StandardMetrics.ms_v_env_hvac->AsBool(),                    "HVAC on (remote_mode=2)");
+        delete v;
+    }
+
+    {
+        // Sentinel: u16=1022 (≥1020) must not overwrite cabin temp metric.
+        // d[6]=0xF8, d[7]=0x0F → ((0xF8&0xFC)>>2)|((0x0F&0x0F)<<6) = 62|960 = 1022
+        auto* v = make_vehicle();
+        StandardMetrics.ms_v_env_cabintemp->SetValue(99.0f);
+        auto f = make_frame(0x5EA, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x0F});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_env_cabintemp->AsFloat(), 99.0f),
+              "0x05EA sentinel u16>=1020: cabin temp not overwritten");
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 0x17332510 — BAP clima ACK (29-bit extended frame from clima ECU 0x25)
+// ---------------------------------------------------------------------------
+
+void test_bap_ack_0x17332510() {
+    printf("\ntest_bap_ack_0x17332510\n");
+
+    {
+        auto* v = make_vehicle();
+        // DLC=3, 49 58 01 → hvac on
+        auto f = make_frame(0x17332510, {0x49, 0x58, 0x01});
+        v->IncomingFrameCan3(&f);
+        CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "BAP ACK 49 58 01 → hvac on");
+        delete v;
+    }
+
+    {
+        auto* v = make_vehicle();
+        StandardMetrics.ms_v_env_hvac->SetValue(true);
+        // DLC=3, 49 58 00 → hvac off
+        auto f = make_frame(0x17332510, {0x49, 0x58, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "BAP ACK 49 58 00 → hvac off");
+        delete v;
+    }
+
+    {
+        auto* v = make_vehicle();
+        StandardMetrics.ms_v_env_hvac->SetValue(false);
+        // DLC=4: guard rejects — hvac must NOT flip
+        auto f = make_frame(0x17332510, {0x49, 0x58, 0x01, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "BAP ACK DLC=4: ignored (DLC guard)");
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 0x05F5 — range estimates (instrument cluster)
+// ---------------------------------------------------------------------------
+
+void test_range_0x5F5() {
+    printf("\ntest_range_0x5F5\n");
+    auto* v = make_vehicle();
+
+    // range_est=180 km:   d[3]&0xE0=0x80 (4<<5), d[4]=0x16 (22); (4)|(22<<3)=180
+    // range_ideal=200 km: d[0]=0xC8, d[1]&0x07=0;  200|(0<<8)=200
+    auto f = make_frame(0x5F5, {0xC8, 0x00, 0x00, 0x80, 0x16, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(near(StandardMetrics.ms_v_bat_range_est->AsFloat(),   180.0f), "Range est 180 km");
+    CHECK(near(StandardMetrics.ms_v_bat_range_ideal->AsFloat(), 200.0f), "Range ideal 200 km");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
+// 0x065A — bonnet/hood open indicator
+// ---------------------------------------------------------------------------
+
+void test_hood_0x65A() {
+    printf("\ntest_hood_0x65A\n");
+    auto* v = make_vehicle();
+
+    auto f = make_frame(0x65A, {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_door_hood->AsBool(), "Hood open (d[4] bit0 set)");
+
+    g_metrics = MetricStore{};
+    f = make_frame(0x65A, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(!StandardMetrics.ms_v_door_hood->AsBool(), "Hood closed (d[4] bit0 clear)");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
+// 0x066E — InnenTemp interior sensor (0xFE sentinel must be discarded)
+// ---------------------------------------------------------------------------
+
+void test_innentemp_0x66E() {
+    printf("\ntest_innentemp_0x66E\n");
+
+    {
+        auto* v = make_vehicle();
+        // 20°C: d[4] = (20+50)/0.5 = 140 = 0x8C
+        auto f = make_frame(0x66E, {0x00, 0x00, 0x00, 0x00, 0x8C, 0x00, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_env_cabintemp->AsFloat(), 20.0f),
+              "InnenTemp 20°C from 0x8C");
+        delete v;
+    }
+
+    {
+        // Sentinel 0xFE must not overwrite the metric
+        auto* v = make_vehicle();
+        StandardMetrics.ms_v_env_cabintemp->SetValue(99.0f);
+        auto f = make_frame(0x66E, {0x00, 0x00, 0x00, 0x00, 0xFE, 0x00, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_env_cabintemp->AsFloat(), 99.0f),
+              "InnenTemp 0xFE sentinel: metric not overwritten");
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 0x06B7 — odometer, park time, outside temperature
+// ---------------------------------------------------------------------------
+
+void test_odo_0x6B7() {
+    printf("\ntest_odo_0x6B7\n");
+    auto* v = make_vehicle();
+
+    // odo=12345 km (0x3039): d[0]=0x39, d[1]=0x30, d[2]&0x0F=0
+    // outside temp=15°C: d[7]=(15+50)/0.5=130=0x82
+    auto f = make_frame(0x6B7, {0x39, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x82});
+    v->IncomingFrameCan3(&f);
+    CHECK(near(StandardMetrics.ms_v_pos_odometer->AsFloat(), 12345.0f), "Odometer 12345 km");
+    CHECK(near(StandardMetrics.ms_v_env_temp->AsFloat(),       15.0f),  "Outside temp 15°C");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
+// Origin check: FCAN frames forwarded via IncomingFrameCan2 must NOT reset
+// the KCAN idle counter (m_bus_idle_ticks). Only origin==m_can3 frames count.
+// ---------------------------------------------------------------------------
+
+void test_origin_check() {
+    printf("\ntest_origin_check\n");
+
+    canbus kcan, fcan;
+
+    {
+        // KCAN frame (origin==m_can3) must reset idle counter to 0.
+        auto* v = make_vehicle();
+        v->m_can3 = &kcan;
+        auto f = make_frame(0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
+        f.origin = &kcan;
+        v->IncomingFrameCan3(&f);
+        CHECK(v->test_bus_idle_ticks() == 0,
+              "KCAN frame (origin==m_can3) resets idle counter to 0");
+        delete v;
+    }
+
+    {
+        // FCAN frame (origin!=m_can3) must NOT reset idle counter.
+        // This simulates IncomingFrameCan2 forwarding a powertrain frame.
+        auto* v = make_vehicle();
+        v->m_can3 = &kcan;
+        auto f = make_frame(0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
+        f.origin = &fcan;
+        v->IncomingFrameCan3(&f);
+        CHECK(v->test_bus_idle_ticks() == VWEGOLF_BUS_TIMEOUT_SECS,
+              "FCAN frame (origin!=m_can3) does not reset idle counter");
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
@@ -203,6 +551,19 @@ int main() {
     test_gear_0x187_park();
     test_vin_0x6B4();
     test_gps_0x486();
+    test_bms_0x191();
+    test_trip_energy_0x2AF();
+    test_locks_0x583();
+    test_charge_0x594();
+    test_bat_temp_0x59E();
+    test_bat_capacity_0x5CA();
+    test_clima_status_0x5EA();
+    test_bap_ack_0x17332510();
+    test_range_0x5F5();
+    test_hood_0x65A();
+    test_innentemp_0x66E();
+    test_odo_0x6B7();
+    test_origin_check();
     test_crtd_replay();
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);
