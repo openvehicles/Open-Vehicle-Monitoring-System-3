@@ -37,6 +37,10 @@ echo "Branch: $BRANCH  ($COMMIT)"
 echo "IDF:    $IDF_PATH"
 echo ""
 
+# Suppress "undefined variable 'GNUMAKEFLAGS'" noise from GNU Make 4.4+ — the ESP-IDF
+# legacy makefiles don't define this internal flag-propagation variable, so Make warns.
+export GNUMAKEFLAGS=
+
 # --- Tests must pass before we build anything ---
 TEST_DIR="$REPO_ROOT/vehicle/OVMS.V3/components/vehicle_vwegolf/tests"
 echo "[test] Running native test suite..."

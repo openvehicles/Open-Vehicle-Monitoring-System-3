@@ -33,6 +33,9 @@ bash scripts/install-hooks.sh
 # Activate toolchain (run each session, or add to ~/.zshrc)
 source <(bash scripts/setup-toolchain.sh --env)
 
+# Run native tests only (no toolchain needed, fast iteration)
+make -C vehicle/OVMS.V3/components/vehicle_vwegolf/tests
+
 # Build (runs tests first, aborts on failure)
 bash scripts/build.sh
 

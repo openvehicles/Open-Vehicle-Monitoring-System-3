@@ -8,15 +8,35 @@
 #   bus   CAN bus to capture (default: can3).
 #
 # Requires:
-#   - Laptop on the OVMS WiFi hotspot (192.168.4.1)
+#   - Laptop reachable to OVMS: either on the OVMS WiFi hotspot (192.168.4.1)
+#     or on an iPhone hotspot where OVMS connects (172.20.10.2)
 #   - nc (netcat)
-#   - SSH key for ovms@192.168.4.1 (used for version query and log start/stop)
+#   - SSH key for ovms@<host> (used for version query and log start/stop)
 
 set -euo pipefail
 
-OVMS="192.168.4.1"
 BUS="${1:-can3}"
 SSH_USER="ovms"
+
+# Auto-detect OVMS: try the AP address first, fall back to iPhone hotspot address.
+OVMS=""
+for candidate in "192.168.4.1" "172.20.10.2"; do
+    if ssh -o StrictHostKeyChecking=no \
+           -o ConnectTimeout=3 \
+           -o BatchMode=yes \
+           -o HostKeyAlgorithms=+ssh-rsa \
+           -o PubkeyAcceptedKeyTypes=+ssh-rsa \
+           "${SSH_USER}@${candidate}" "version" &>/dev/null; then
+        OVMS="$candidate"
+        break
+    fi
+done
+if [[ -z "$OVMS" ]]; then
+    echo "Could not reach OVMS at 192.168.4.1 or 172.20.10.2."
+    echo "Make sure the laptop is on the OVMS AP or iPhone hotspot."
+    exit 1
+fi
+echo "OVMS reachable at $OVMS"
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 OUTDIR="candumps"
@@ -44,8 +64,7 @@ VERSION=$(ssh_cmd "metrics list m.version" \
 VERSION="${VERSION:-unknown}"
 
 if [[ "$VERSION" == "unknown" ]]; then
-    echo "Warning: SSH to $OVMS failed — is the laptop on the OVMS hotspot?"
-    echo "         Continuing with 'unknown' in the filename."
+    echo "Warning: could not read firmware version — continuing with 'unknown' in filename."
 fi
 
 VERSION_SLUG=$(echo "$VERSION" | tr '/' '_' | tr ' ' '_' | sed 's/[^a-zA-Z0-9._-]/_/g')
