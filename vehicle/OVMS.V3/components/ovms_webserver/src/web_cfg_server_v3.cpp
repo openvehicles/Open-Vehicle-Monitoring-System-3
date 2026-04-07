@@ -22,7 +22,6 @@
 */
 
 #include "ovms_webserver.h"
-#include <algorithm>
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
@@ -54,10 +53,6 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     password = c.getvar("password");
     c.getvar("client_cert", client_cert);
     c.getvar("client_key", client_key);
-    // Browsers submit textarea content with \r\n line endings; strip \r so
-    // the stored PEM has clean \n-only line endings.
-    client_cert.erase(std::remove(client_cert.begin(), client_cert.end(), '\r'), client_cert.end());
-    client_key.erase(std::remove(client_key.begin(), client_key.end(), '\r'), client_key.end());
     port = c.getvar("port");
     topic_prefix = c.getvar("topic_prefix");
     updatetime_connected = c.getvar("updatetime_connected");
