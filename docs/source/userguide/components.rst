@@ -139,6 +139,18 @@ Example::
 
 These options can also be set from the **Config → Server V3 (MQTT)** web page.
 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TLS client authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+MQTT brokers that require client certificate authentication (mTLS) are supported.
+Paste PEM-encoded certificate and key into the **Config → Server V3 (MQTT)** web page,
+or use the CLI::
+
+  OVMS# server v3 tlsclient import /sd/client.crt /sd/client.key
+
+See :doc:`commands` for the full list of ``tlsclient`` commands.
+
 -------------------------------
 Upgrading from OVMS v1/v2 to v3
 -------------------------------
