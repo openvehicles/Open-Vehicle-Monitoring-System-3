@@ -446,8 +446,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // Odometer, parking time, and filtered outside temperature.
 
             // Odometer: 20-bit, factor 1 km.
-            u32 = (uint32_t)(d[0]) | ((uint32_t)(d[1]) << 8) | ((uint32_t)(d[2] & 0x0F) << 16);
-            StandardMetrics.ms_v_pos_odometer->SetValue(u32);
+            uint32_t odo = (uint32_t)(d[0]) | ((uint32_t)(d[1]) << 8) | ((uint32_t)(d[2] & 0x0F) << 16);
+            StandardMetrics.ms_v_pos_odometer->SetValue(odo);
 
             // Park time: bit-field across d[2:4]. Exact encoding not fully confirmed.
             u32 = ((uint32_t)(d[2] & 0xF0) << 4) | ((uint32_t)(d[3]) << 4) |
@@ -458,7 +458,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             f = d[7] * 0.5f - 50.0f;
             StandardMetrics.ms_v_env_temp->SetValue(f);
 
-            ESP_LOGV(TAG, "0x06B7 odo=%u km outside=%.1f°C", u32, f);
+            ESP_LOGV(TAG, "0x06B7 odo=%u km outside=%.1f°C", odo, f);
             break;
         }
         default:

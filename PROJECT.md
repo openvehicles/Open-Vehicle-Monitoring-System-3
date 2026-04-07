@@ -48,11 +48,11 @@ overwriting any previously-set type on every idle frame. Fixed to `break` instea
 **To resolve:** capture verbose log during active CCS charging and look for `d[3]=xx d[5]=xx`
 values that differ from the non-charging baseline (`d[3]=03 d[5]=00`).
 
-### Odometer reads 5936 km at startup (decode bug suspected)
+### ~~Odometer log bug~~ — fixed
 
-`tests/logs-capture2.md` shows `0x06B7 odo=5936 km` in the first wake-up burst vs known
-odometer of ~90650 km. Either a startup sentinel in this frame or a decode bug. Needs
-investigation against a known-good odometer reading captured mid-session (not first-burst).
+`0x06B7` reused `u32` for park time after setting the odometer metric, then printed `u32`
+(now park time) as `odo=5936 km` in the log. The metric itself was always set correctly.
+Fixed by using a dedicated `odo` variable; log now prints the right value.
 
 ### Temperature encoding for BAP port 0x19 (blocks clima PR)
 
