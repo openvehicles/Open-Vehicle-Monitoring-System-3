@@ -246,18 +246,11 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable legacy event topic", "legacy_event_topic", legacy_event_topic,
     "In addition to MQTT-style topics, also publish on <i>&lt;prefix&gt;</i>/event.");
   c.input_checkbox("Limit retain to 8-segment topics", "retain_depth_limit", retain_depth_limit,
-    "<p>When enabled, metrics on topics deeper than 8 path segments are published without the MQTT RETAIN flag."
-    " <strong>Required for AWS IoT Core</strong>, which hard-limits retained messages to topics with at most"
-    " 8 segments (e.g. <code>ovms-user-VIN/metric/v/p/latitude</code>: 5 segments &mdash; fine;"
-    " <code>ovms/user/VIN/metric/v/p/latitude</code>: 7 segments &mdash; fine;"
-    " topics with 9+ segments would be silently dropped as retained on AWS)."
-    " Enable this if your MQTT broker requires it (e.g. AWS IoT Core)."
-    " Default: disabled.</p>");
+    "<p>Omits the MQTT RETAIN flag on topics with more than 8 path segments."
+    " Required for AWS IoT Core. Default: disabled.</p>");
   c.input_checkbox("Clamp keepalive to 1200s", "keepalive_clamp", keepalive_clamp,
-    "<p>When enabled, the MQTT keepalive is clamped to a maximum of 1200 seconds at connect time."
-    " <strong>Required for AWS IoT Core</strong>, which rejects keepalive values above 1200 s with a disconnect."
-    " Enable this if your MQTT broker requires it (e.g. AWS IoT Core)."
-    " Default: disabled.</p>");
+    "<p>Limits the MQTT keepalive to 1200 seconds at connect time."
+    " Required for AWS IoT Core. Default: disabled.</p>");
   c.input_text("Port", "port", port.c_str(), "optional, default: 1883 (no TLS) / 8883 (TLS)");
   c.input_text("Username", "user", user.c_str(), "Enter user login name",
     NULL, "autocomplete=\"section-serverv3 username\"");
