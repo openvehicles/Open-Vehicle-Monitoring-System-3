@@ -141,6 +141,17 @@ internal OBC which does appear on KCAN.
 
 See open item above.
 
+### Capture 10 — Charge SoC limit
+
+**Goal:** identify the BAP frame used to read/write the charge SoC limit (`v.c.limit.soc`).
+
+**Sequence:** change the charge limit in the VW app (or car MMI) while OVMS monitors KCAN.
+Diff against idle baseline to isolate the frame carrying the new limit value.
+
+**What to look for:** a BAP frame on `0x17332501` or similar charge management CAN ID that
+changes when the SoC limit is adjusted. Cross-reference with thomasakarlsen/e-golf-comfort-can
+charge profile docs.
+
 ---
 
 ## Metrics support status
@@ -188,7 +199,7 @@ Overall: **49 / 85 (58%)**
 | `v.c.current` | ✗ | OBC frame not yet identified — Capture 8 |
 | `v.c.power` | ✗ | blocked on `v.c.current` |
 | `v.c.kwh` | ✗ | Not decoded |
-| `v.c.limit.soc` | ✗ | BAP profile 0x25 RE'd — implementable |
+| `v.c.limit.soc` | ✗ | BAP frame not yet captured — Capture 10 |
 | `v.c.mode` | ✗ | Not decoded |
 | `v.c.timerstart` | ✗ | Schedule format partially known — see clima-control-bap.md |
 | `v.d.cp` | ✗ | Charge port door — frame unknown |
@@ -263,6 +274,6 @@ Overall: **49 / 85 (58%)**
 1. `v.c.current` / `v.c.power` — OBC charge current — Capture 8
 2. `v.e.cabintemp` / `v.e.temp` — remote-mode cabin/ambient temp — Capture 5
 3. `v.e.heating` / `v.e.cooling` — derivable once cabintemp is known
-4. `v.c.limit.soc` — BAP profile 0x25 already RE'd, implementable now
+4. `v.c.limit.soc` — BAP frame not yet captured; needs Capture 10
 5. `v.b.soh` — state of health — probably accessible via UDS on BMS ECU
 6. `v.t.pressure` — TPMS alerts — frame not yet identified
