@@ -268,9 +268,6 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
           "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
           "placeholder=\"-----BEGIN CERTIFICATE-----&#13;&#10;...&#13;&#10;-----END CERTIFICATE-----\"\n"
           "rows=\"5\" id=\"input-client_cert\" name=\"client_cert\">%s</textarea>\n"
-        "<p class=\"help-block\">Leave both fields empty to use username/password only.</p>\n"
-        "<p class=\"help-block\">Current length: <span id=\"client-cert-len\">0</span> bytes"
-        " <span id=\"client-cert-short\" class=\"text-warning\" style=\"display:none;\">(looks short)</span></p>\n"
       "</div>\n"
     "</div>\n"
     , c.encode_html(client_cert).c_str());
@@ -282,9 +279,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
           "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
           "placeholder=\"-----BEGIN PRIVATE KEY-----&#13;&#10;...&#13;&#10;-----END PRIVATE KEY-----\"\n"
           "rows=\"5\" id=\"input-client_key\" name=\"client_key\">%s</textarea>\n"
-        "<p class=\"help-block\">Supports PKCS#8, RSA and EC PEM private keys.</p>\n"
-        "<p class=\"help-block\">Current length: <span id=\"client-key-len\">0</span> bytes"
-        " <span id=\"client-key-short\" class=\"text-warning\" style=\"display:none;\">(looks short)</span></p>\n"
+        "<p class=\"help-block\">Supports PKCS#8, RSA and EC PEM private keys."
+        " Leave both the certificate and key empty to authenticate with username/password only.</p>\n"
       "</div>\n"
     "</div>\n"
     , c.encode_html(client_key).c_str());
@@ -317,6 +313,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "})();\n"
     "</script>\n");
 
+  c.input_text("Client ID", "clientid", clientid.c_str(),
+    "optional, default: <vehicle id>");
   c.input_text("Topic Prefix", "topic_prefix", topic_prefix.c_str(),
     "optional, default: ovms/<username>/<vehicle id>/");
 
