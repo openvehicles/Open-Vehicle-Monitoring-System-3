@@ -582,11 +582,23 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
 
     ESP_LOGI(TAG, "Wakeup: asserting dominant bits on KCAN");
 
+    // Reset the KCAN controller before asserting dominant bits. When the bus has been
+    // idle, a stale heartbeat from a prior active session may be stuck in the TWAI
+    // hardware TX FIFO. The hardware will not drain that frame until it can sync to the
+    // bus, creating a deadlock: wake frame → SW queue → never reaches hardware → no
+    // dominant bits → KCAN stays dead. Reset clears the HW FIFO and lets the wake frame
+    // enter hardware directly. Stop/Start preserves mode and speed; RX gap is <5 ms
+    // and safe here because the bus is sleeping anyway.
+    m_can3->Reset();
+    vTaskDelay(pdMS_TO_TICKS(5));
+
     // These extended frames put dominant bits on the bus to wake the KCAN transceivers.
     // TX_Fail on the first frame is expected — nodes are still asleep and cannot ACK.
+    // Use a 50ms wait so the frame enters the hardware FIFO even if the SW queue briefly
+    // stacks up from concurrent IncomingFrameCan3 calls during the wake burst.
     // Frame 1 triggers responses from 0x5F5 and nearby ECUs in captured traces.
     uint8_t data[8] = {0x40, 0x00, 0x01, 0x1F, 0x00, 0x00, 0x00, 0x00};
-    m_can3->WriteExtended(0x17330301, 8, data);
+    m_can3->WriteExtended(0x17330301, 8, data, pdMS_TO_TICKS(50));
     vTaskDelay(pdMS_TO_TICKS(50));
 
     // Frame 2: OSEK NM presence frame for node 0x67, observed during wake in captures.
@@ -599,7 +611,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x00;
-    m_can3->WriteExtended(0x1B000067, 8, data);
+    m_can3->WriteExtended(0x1B000067, 8, data, pdMS_TO_TICKS(50));
     vTaskDelay(pdMS_TO_TICKS(100));
 
     m_ocu_active = true;
