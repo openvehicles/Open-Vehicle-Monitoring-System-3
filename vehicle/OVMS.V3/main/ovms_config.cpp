@@ -1303,10 +1303,7 @@ void OvmsConfigParam::LoadConfig()
         {
         *p = 0; // Null terminate the key
         p++;    // and point to the value
-        // Unescape CR back to newline (inverse of Persist escaping)
-        std::string val(p);
-        for (auto& ch : val) { if (ch == '\r') ch = '\n'; }
-        m_instances[std::string(buf)] = val;
+        m_instances[std::string(buf)] = std::string(p);
         // ESP_LOGI(TAG, "Loaded %s/%s=%s", m_name.c_str(), buf, p);
         }
       }
@@ -1458,10 +1455,7 @@ void OvmsConfigParam::RewriteConfig()
     // write instances:
     for (ConfigParamMap::iterator it=m_instances.begin(); it!=m_instances.end(); ++it)
       {
-      // Escape embedded newlines as CR so multi-line values (e.g. PEM certs) fit on one line
-      std::string escaped_val = it->second;
-      for (auto& ch : escaped_val) { if (ch == '\n') ch = '\r'; }
-      fprintf(f,"%s\t%s\n",it->first.c_str(),escaped_val.c_str());
+      fprintf(f,"%s\t%s\n",it->first.c_str(),it->second.c_str());
       }
     if (fclose(f))
       ESP_LOGE(TAG, "RewriteConfig: error writing '%s': %s", path.c_str(), strerror(errno));

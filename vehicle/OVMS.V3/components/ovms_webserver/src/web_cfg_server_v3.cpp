@@ -37,7 +37,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   auto lock = MyConfig.Lock();
   std::string error;
   std::string server, clientid, user, password, port, topic_prefix;
-  std::string client_cert, client_key;
+  extram::string client_cert, client_key;
   std::string updatetime_connected, updatetime_idle, updatetime_on;
   std::string updatetime_charging, updatetime_awake, updatetime_sendall, updatetime_keepalive;
   std::string metrics_priority, metrics_include, metrics_exclude, metrics_immediately, metrics_exclude_immediately;
@@ -46,20 +46,16 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 
   if (c.method == "POST") {
     // process form submission:
-    extram::string client_cert_raw, client_key_raw;
     server = c.getvar("server");
     tls = (c.getvar("tls") == "yes");
     legacy_event_topic = (c.getvar("legacy_event_topic") == "yes");
     clientid = c.getvar("clientid");
     user = c.getvar("user");
     password = c.getvar("password");
-    c.getvar("client_cert", client_cert_raw);
-    c.getvar("client_key", client_key_raw);
-    client_cert.assign(client_cert_raw.data(), client_cert_raw.size());
-    client_key.assign(client_key_raw.data(), client_key_raw.size());
+    c.getvar("client_cert", client_cert);
+    c.getvar("client_key", client_key);
     // Browsers submit textarea content with \r\n line endings; strip \r so
-    // the stored PEM has clean \n-only line endings and displays without
-    // extra blank lines when the page is re-loaded.
+    // the stored PEM has clean \n-only line endings.
     client_cert.erase(std::remove(client_cert.begin(), client_cert.end(), '\r'), client_cert.end());
     client_key.erase(std::remove(client_key.begin(), client_key.end(), '\r'), client_key.end());
     port = c.getvar("port");
@@ -168,14 +164,31 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v3", "queue.sendall", queue_sendall);
       MyConfig.SetParamValue("server.v3", "queue.modified", queue_modified);
       if (client_cert.empty()) {
-        MyConfig.DeleteInstance("server.v3", "client.cert");
-        MyConfig.DeleteInstance("server.v3", "client.key");
+        unlink("/store/tls/serverv3_client.crt");
+        unlink("/store/tls/serverv3_client.key");
       }
       else {
-        MyConfig.SetParamValue("server.v3", "client.cert", client_cert);
-        MyConfig.SetParamValue("server.v3", "client.key", client_key);
+        if (save_file("/store/tls/serverv3_client.crt", client_cert) != 0) {
+          error = "<li data-input=\"client_cert\">Error saving TLS certificate: ";
+          error += strerror(errno);
+          error += "</li>";
+          error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+          c.head(400);
+          c.alert("danger", error.c_str());
+          c.done();
+          return;
+        }
+        if (save_file("/store/tls/serverv3_client.key", client_key) != 0) {
+          error = "<li data-input=\"client_key\">Error saving TLS private key: ";
+          error += strerror(errno);
+          error += "</li>";
+          error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+          c.head(400);
+          c.alert("danger", error.c_str());
+          c.done();
+          return;
+        }
       }
-
       c.head(200);
       c.alert("success", "<p class=\"lead\">Server V3 (MQTT) connection configured.</p>");
       OutputHome(p, c);
@@ -196,8 +209,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     clientid = MyConfig.GetParamValue("server.v3", "clientid");
     user = MyConfig.GetParamValue("server.v3", "user");
     password = MyConfig.GetParamValue("password", "server.v3");
-    client_cert = MyConfig.GetParamValue("server.v3", "client.cert");
-    client_key = MyConfig.GetParamValue("server.v3", "client.key");
+    client_cert.clear();
+    client_key.clear();
+    load_file("/store/tls/serverv3_client.crt", client_cert);
+    load_file("/store/tls/serverv3_client.key", client_key);
     port = MyConfig.GetParamValue("server.v3", "port");
     topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix");
     updatetime_connected = MyConfig.GetParamValue("server.v3", "updatetime.connected");

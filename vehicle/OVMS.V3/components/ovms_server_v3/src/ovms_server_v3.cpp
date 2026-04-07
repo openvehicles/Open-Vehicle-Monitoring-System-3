@@ -35,10 +35,8 @@ static const char *TAG = "ovms-server-v3";
 #include <stdint.h>
 #include <vector>
 #include <algorithm>
-#include <errno.h>
-#include <stdio.h>
-#include <sys/stat.h>
 #include "ovms_server_v3.h"
+#include "ovms_utils.h"
 #include "buffered_shell.h"
 #include "ovms_command.h"
 #include "ovms_metrics.h"
@@ -945,8 +943,6 @@ void OvmsServerV3::Connect()
   m_password = MyConfig.GetParamValue("password", "server.v3");
   m_port = MyConfig.GetParamValue("server.v3", "port");
   m_tls = MyConfig.GetParamValueBool("server.v3","tls", false);
-  m_client_cert = MyConfig.GetParamValue("server.v3", "client.cert", "");
-  m_client_key = MyConfig.GetParamValue("server.v3", "client.key", "");
 
   m_clientid = MyConfig.GetParamValue("server.v3", "clientid");
   if (m_clientid.empty())
@@ -1026,17 +1022,10 @@ void OvmsServerV3::Connect()
 #if CONFIG_MG_ENABLE_SSL
     opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     opts.ssl_server_name = m_server.c_str();
-    if (!m_client_cert.empty() && !m_client_key.empty())
+    if (path_exists("/store/tls/serverv3_client.crt") && path_exists("/store/tls/serverv3_client.key"))
       {
-      static const char* cert_path = "/store/tls/serverv3_client.crt";
-      static const char* key_path  = "/store/tls/serverv3_client.key";
-      mkdir("/store/tls", 0777);
-      FILE* cf = fopen(cert_path, "wb");
-      if (cf) { fwrite(m_client_cert.c_str(), 1, m_client_cert.size(), cf); fclose(cf); }
-      FILE* kf = fopen(key_path, "wb");
-      if (kf) { fwrite(m_client_key.c_str(), 1, m_client_key.size(), kf); fclose(kf); }
-      opts.ssl_cert = cert_path;
-      opts.ssl_key  = key_path;
+      opts.ssl_cert = "/store/tls/serverv3_client.crt";
+      opts.ssl_key  = "/store/tls/serverv3_client.key";
       ESP_LOGI(TAG, "Using MQTT mTLS client certificate authentication");
       }
 #else
@@ -1593,41 +1582,7 @@ void ovmsv3_update(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   }
 
-static bool ovmsv3_startswith(const std::string& s, const char* prefix)
-  {
-  size_t plen = strlen(prefix);
-  return (s.size() >= plen && s.compare(0, plen, prefix) == 0);
-  }
-
-static bool ovmsv3_load_text_file(const char* path, std::string& data, std::string& err)
-  {
-  FILE* f = fopen(path, "rb");
-  if (!f)
-    {
-    err = strerror(errno);
-    return false;
-    }
-
-  data.clear();
-  char buf[1024];
-  size_t n;
-  while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
-    {
-    data.append(buf, n);
-    }
-
-  if (ferror(f))
-    {
-    err = strerror(errno);
-    fclose(f);
-    return false;
-    }
-
-  fclose(f);
-  return true;
-  }
-
-static bool ovmsv3_validate_pem_headers(const std::string& cert, const std::string& key, std::string& err)
+static bool ovmsv3_validate_pem_headers(const extram::string& cert, const extram::string& key, std::string& err)
   {
   if (cert.empty() != key.empty())
     {
@@ -1638,15 +1593,15 @@ static bool ovmsv3_validate_pem_headers(const std::string& cert, const std::stri
   if (cert.empty())
     return true;
 
-  if (!ovmsv3_startswith(cert, "-----BEGIN CERTIFICATE-----"))
+  if (!startsWith(cert, std::string("-----BEGIN CERTIFICATE-----")))
     {
     err = "Client certificate is not in PEM CERTIFICATE format";
     return false;
     }
 
-  if (!ovmsv3_startswith(key, "-----BEGIN PRIVATE KEY-----") &&
-      !ovmsv3_startswith(key, "-----BEGIN RSA PRIVATE KEY-----") &&
-      !ovmsv3_startswith(key, "-----BEGIN EC PRIVATE KEY-----"))
+  if (!startsWith(key, std::string("-----BEGIN PRIVATE KEY-----")) &&
+      !startsWith(key, std::string("-----BEGIN RSA PRIVATE KEY-----")) &&
+      !startsWith(key, std::string("-----BEGIN EC PRIVATE KEY-----")))
     {
     err = "Client private key is not in supported PEM PRIVATE KEY format";
     return false;
@@ -1663,7 +1618,7 @@ static std::string ovmsv3_mbedtls_error(int err)
   return std::string(msg);
   }
 
-static bool ovmsv3_parse_client_cert(const std::string& cert, std::string& info, std::string& err)
+static bool ovmsv3_parse_client_cert(const extram::string& cert, std::string& info, std::string& err)
   {
   mbedtls_x509_crt crt;
   mbedtls_x509_crt_init(&crt);
@@ -1686,7 +1641,7 @@ static bool ovmsv3_parse_client_cert(const std::string& cert, std::string& info,
   return true;
   }
 
-static bool ovmsv3_validate_cert_key_pair(const std::string& cert, const std::string& key, std::string& err)
+static bool ovmsv3_validate_cert_key_pair(const extram::string& cert, const extram::string& key, std::string& err)
   {
   mbedtls_x509_crt crt;
   mbedtls_pk_context pkey;
@@ -1728,23 +1683,27 @@ static bool ovmsv3_validate_cert_key_pair(const std::string& cert, const std::st
 
 void ovmsv3_tlsclient_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string cert = MyConfig.GetParamValue("server.v3", "client.cert", "");
-  std::string key = MyConfig.GetParamValue("server.v3", "client.key", "");
+  bool has_cert = path_exists("/store/tls/serverv3_client.crt");
+  bool has_key  = path_exists("/store/tls/serverv3_client.key");
 
-  writer->printf("Client certificate configured: %s\n", cert.empty() ? "no" : "yes");
-  writer->printf("Client private key configured: %s\n", key.empty() ? "no" : "yes");
-  writer->printf("Pair completeness: %s\n", (cert.empty() == key.empty()) ? "ok" : "incomplete");
+  writer->printf("Client certificate: %s\n", has_cert ? "/store/tls/serverv3_client.crt" : "not configured");
+  writer->printf("Client private key: %s\n", has_key  ? "/store/tls/serverv3_client.key" : "not configured");
+  writer->printf("Pair completeness: %s\n", (has_cert == has_key) ? "ok" : "incomplete");
 
-  std::string err;
-  if (!ovmsv3_validate_pem_headers(cert, key, err))
+  if (!has_cert && !has_key)
     {
-    writer->printf("PEM validation: ERROR (%s)\n", err.c_str());
+    writer->puts("No client cert/key configured");
     return;
     }
 
-  if (cert.empty())
+  extram::string cert, key;
+  std::string err;
+  if (has_cert) load_file("/store/tls/serverv3_client.crt", cert);
+  if (has_key)  load_file("/store/tls/serverv3_client.key",  key);
+
+  if (!ovmsv3_validate_pem_headers(cert, key, err))
     {
-    writer->puts("PEM validation: no client cert/key configured");
+    writer->printf("PEM validation: ERROR (%s)\n", err.c_str());
     return;
     }
 
@@ -1760,20 +1719,27 @@ void ovmsv3_tlsclient_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
 
 void ovmsv3_tlsclient_info(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string cert = MyConfig.GetParamValue("server.v3", "client.cert", "");
-  std::string key = MyConfig.GetParamValue("server.v3", "client.key", "");
+  extram::string cert;
   std::string err;
 
-  writer->printf("Client certificate configured: %s\n", cert.empty() ? "no" : "yes");
-  writer->printf("Client private key configured: %s\n", key.empty() ? "no" : "yes");
+  writer->printf("Client certificate: %s\n",
+    path_exists("/store/tls/serverv3_client.crt") ? "/store/tls/serverv3_client.crt" : "not configured");
+  writer->printf("Client private key: %s\n",
+    path_exists("/store/tls/serverv3_client.key") ? "/store/tls/serverv3_client.key" : "not configured");
 
-  if (cert.empty())
+  if (!path_exists("/store/tls/serverv3_client.crt"))
     {
     writer->puts("No client certificate configured");
     return;
     }
 
-  if (!ovmsv3_startswith(cert, "-----BEGIN CERTIFICATE-----"))
+  if (load_file("/store/tls/serverv3_client.crt", cert) != 0)
+    {
+    writer->puts("Error reading certificate file");
+    return;
+    }
+
+  if (!startsWith(cert, std::string("-----BEGIN CERTIFICATE-----")))
     {
     writer->puts("Certificate format is invalid (expected PEM CERTIFICATE)");
     return;
@@ -1797,29 +1763,29 @@ void ovmsv3_tlsclient_info(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 
 void ovmsv3_tlsclient_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  MyConfig.DeleteInstance("server.v3", "client.cert");
-  MyConfig.DeleteInstance("server.v3", "client.key");
   unlink("/store/tls/serverv3_client.crt");
   unlink("/store/tls/serverv3_client.key");
-  writer->puts("Cleared server.v3 MQTT client certificate and private key");
+  writer->puts("Cleared MQTT client certificate and private key");
   writer->puts("Run 'server v3 tlsclient reload' to apply to active connection");
   }
 
 void ovmsv3_tlsclient_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string cert = MyConfig.GetParamValue("server.v3", "client.cert", "");
-  std::string key = MyConfig.GetParamValue("server.v3", "client.key", "");
+  extram::string cert, key;
   std::string err;
+
+  if (!path_exists("/store/tls/serverv3_client.crt") && !path_exists("/store/tls/serverv3_client.key"))
+    {
+    writer->puts("No client cert/key configured");
+    return;
+    }
+
+  load_file("/store/tls/serverv3_client.crt", cert);
+  load_file("/store/tls/serverv3_client.key", key);
 
   if (!ovmsv3_validate_pem_headers(cert, key, err))
     {
     writer->printf("Validation failed: %s\n", err.c_str());
-    return;
-    }
-
-  if (cert.empty())
-    {
-    writer->puts("No client cert/key configured");
     return;
     }
 
@@ -1838,24 +1804,6 @@ void ovmsv3_tlsclient_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd,
 
 void ovmsv3_tlsclient_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string cert = MyConfig.GetParamValue("server.v3", "client.cert", "");
-  std::string key = MyConfig.GetParamValue("server.v3", "client.key", "");
-  std::string err;
-
-  if (!ovmsv3_validate_pem_headers(cert, key, err))
-    {
-    writer->printf("Reload aborted: %s\n", err.c_str());
-    return;
-    }
-
-#if CONFIG_MG_ENABLE_SSL
-  if (!cert.empty() && !ovmsv3_validate_cert_key_pair(cert, key, err))
-    {
-    writer->printf("Reload aborted: %s\n", err.c_str());
-    return;
-    }
-#endif
-
   if (MyOvmsServerV3 == NULL)
     {
     writer->puts("OVMS v3 server has not been started; settings will apply on next start");
@@ -1869,17 +1817,20 @@ void ovmsv3_tlsclient_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
 
 void ovmsv3_tlsclient_import(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string cert, key, err;
+  extram::string cert, key;
+  std::string err;
 
-  if (!ovmsv3_load_text_file(argv[0], cert, err))
+  int r = load_file(argv[0], cert);
+  if (r != 0)
     {
-    writer->printf("Error reading certificate file '%s': %s\n", argv[0], err.c_str());
+    writer->printf("Error reading certificate file '%s': %s\n", argv[0], strerror(r));
     return;
     }
 
-  if (!ovmsv3_load_text_file(argv[1], key, err))
+  r = load_file(argv[1], key);
+  if (r != 0)
     {
-    writer->printf("Error reading private key file '%s': %s\n", argv[1], err.c_str());
+    writer->printf("Error reading private key file '%s': %s\n", argv[1], strerror(r));
     return;
     }
 
@@ -1897,9 +1848,13 @@ void ovmsv3_tlsclient_import(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
     }
 #endif
 
-  MyConfig.SetParamValue("server.v3", "client.cert", cert);
-  MyConfig.SetParamValue("server.v3", "client.key", key);
-  writer->puts("Imported server.v3 MQTT client certificate and private key");
+  if (save_file("/store/tls/serverv3_client.crt", cert) != 0 ||
+      save_file("/store/tls/serverv3_client.key", key) != 0)
+    {
+    writer->printf("Import failed: error saving files: %s\n", strerror(errno));
+    return;
+    }
+  writer->puts("Imported MQTT client certificate and private key to /store/tls/");
   writer->puts("Run 'server v3 tlsclient reload' to apply to active connection");
   }
 
