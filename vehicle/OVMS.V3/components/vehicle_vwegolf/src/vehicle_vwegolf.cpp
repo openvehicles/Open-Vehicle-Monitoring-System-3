@@ -473,6 +473,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
 // ---------------------------------------------------------------------------
 
 void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
+    OvmsVehicle::Ticker1(ticker);
+
     // Count consecutive seconds of KCAN silence. IncomingFrameCan3 resets this to 0
     // whenever a frame arrives, so it measures how long since the last activity.
     if (m_bus_idle_ticks < 254) m_bus_idle_ticks++;
@@ -482,10 +484,18 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     ESP_LOGV(TAG, "Ticker1: bus_idle=%u alive=%d ocu=%d", m_bus_idle_ticks, bus_alive,
              m_ocu_active);
 
-    // When the bus goes idle the clima ECU has stopped broadcasting 0x05EA.
-    // Clear hvac so the metric doesn't stay stuck on after a remote session ends.
+    // When the bus goes idle, clear transient state that cannot self-correct via CAN.
+    // Do NOT clear metrics here — they are owned by their respective frame decoders and
+    // will stale-expire naturally. Clearing charge_inprogress would falsely show "not
+    // charging" during CCS DC (KCAN silent while charging). Clearing ms_v_env_hvac would
+    // undo the optimistic update before 0x05EA confirms.
     if (just_went_idle) {
-        StandardMetrics.ms_v_env_hvac->SetValue(false);
+        // Clear OCU node presence so no heartbeats are queued on the sleeping bus.
+        // Any heartbeat in-flight when the bus dies will be retried by the TWAI hardware
+        // until the next wake; clearing m_ocu_active prevents additional frames from
+        // piling into the TX queue and driving TEC up before the next CommandWakeup.
+        m_ocu_active = false;
+        ESP_LOGI(TAG, "KCAN idle: cleared OCU node presence (m_ocu_active=false)");
     }
 
     // Only send the OCU keepalive when we have deliberately joined the bus AND the bus
@@ -497,6 +507,8 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
 }
 
 void OvmsVehicleVWeGolf::Ticker10(uint32_t ticker) {
+    OvmsVehicle::Ticker10(ticker);
+
     // Re-read config periodically so changes take effect without a restart.
     m_climate_temp = (uint8_t)MyConfig.GetParamValueInt("xvg", "cc_temp", 21);
     m_climate_on_battery = MyConfig.GetParamValueBool("xvg", "cc_onbat", false);
