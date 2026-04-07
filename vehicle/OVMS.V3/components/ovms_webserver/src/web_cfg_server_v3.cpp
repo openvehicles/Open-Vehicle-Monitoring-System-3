@@ -204,8 +204,6 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     clientid = MyConfig.GetParamValue("server.v3", "clientid");
     user = MyConfig.GetParamValue("server.v3", "user");
     password = MyConfig.GetParamValue("password", "server.v3");
-    client_cert.clear();
-    client_key.clear();
     load_file("/store/tls/serverv3_client.crt", client_cert);
     load_file("/store/tls/serverv3_client.key", client_key);
     port = MyConfig.GetParamValue("server.v3", "port");
