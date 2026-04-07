@@ -137,34 +137,9 @@ Climate control on the e-Golf is managed by an ECU that communicates via BAP on 
 3. Construct and transmit correctly encoded BAP frames (use opcode `SetGet` or `Set`)
 4. Parse Status responses (opcode `Status`) to read back the current state
 
-Because BAP is not ISO-TP, it cannot be handled by the OVMS `PollSetPidList` / `IncomingPollReply` poller. It must be implemented by directly constructing CAN frames in `IncomingFrameCan3()` and sending via the CAN bus handle, or by a dedicated BAP encoder/decoder layer.
+Because BAP is not ISO-TP, it cannot be handled by the OVMS `PollSetPidList` / `IncomingPollReply` poller. It must be implemented by directly constructing CAN frames in `IncomingFrameCan3()` and sending via the CAN bus handle.
 
----
-
-## Implementing BAP TX in OVMS (C++ sketch)
-
-Single-frame transmission (payload ≤ 6 bytes):
-
-```cpp
-void SendBapFrame(canbus* bus, uint32_t can_id,
-                  uint8_t opcode, uint8_t node, uint8_t port,
-                  const uint8_t* payload, uint8_t payload_len) {
-    assert(payload_len <= 6);
-    CAN_frame_t frame = {};
-    frame.origin      = bus;
-    frame.FIR.B.FF    = CAN_frame_std;
-    frame.MsgID       = can_id;
-    frame.FIR.B.DLC   = 2 + payload_len;
-
-    frame.data.u8[0]  = ((opcode & 0x7) << 4) | ((node & 0x3F) >> 2);
-    frame.data.u8[1]  = ((node & 0x3) << 6)   |  (port & 0x3F);
-    memcpy(&frame.data.u8[2], payload, payload_len);
-
-    bus->Write(&frame);
-}
-```
-
-For multi-frame, replicate the start/continuation frame logic from `bap-tx.c`, adapted to the OVMS `CAN_frame_t` type.
+e-Golf specific CAN IDs, port map, and confirmed command sequences: see `clima-control-bap.md`.
 
 ---
 

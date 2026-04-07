@@ -120,9 +120,9 @@ Byte 1 of payload is the on/off flag: `0x01` = start, `0x00` = stop.
 
 ---
 
-## Port 0x19 Payload Encoding (partial — needs more captures)
+## Port 0x19 Payload Encoding
 
-8-byte payload: `[counter] 06 00 01 06 00 20 00`
+8-byte payload: `[counter] 06 00 01 06 00 [temp] 00`
 
 | Byte | Value | Known meaning |
 |---|---|---|
@@ -132,15 +132,14 @@ Byte 1 of payload is the on/off flag: `0x01` = start, `0x00` = stop.
 | 3 | `0x01` | Unknown — possibly mode/profile flag |
 | 4 | `0x06` | Unknown |
 | 5 | `0x00` | Unknown |
-| 6 | `0x20` | **Suspected temperature** (see below) |
+| 6 | encoded | Target temperature (see below) |
 | 7 | `0x00` | Unknown / padding |
 
-Temperature encoding (byte 6) is not yet confirmed. Candidate formulas:
-- Direct Celsius: `0x20` = 32°C
-- Offset encoding used by port 0x16 schedule: `temp = (byte - 35)` → -3°C (invalid)
-
-**TODO**: Capture two clima starts with different target temperatures to confirm encoding.
-The thomasakarlsen defaults (`06 00 01 06 00 20 00`) are usable until this is resolved.
+Temperature encoding (byte 6) — confirmed from dexterbg ComfortCAN-Multiplex-Protokoll-220206:
+```
+raw = (celsius - 10) * 10
+```
+Examples: 21°C → `0x6E`, 22°C → `0x78`, 20°C → `0x64`.
 
 ---
 
@@ -351,24 +350,7 @@ acknowledged by the gateway) was broken.
 array is zero-initialized once at the top (`uint8_t data[8] = {};`); action bits are OR'd
 in as needed; the array is sent as-is.
 
-### Bug 2: Multi-frame start used as implicit wake stimulus (superseded by Bug 4)
-
-When `CommandClimateControl` was called with the bus sleeping, it called `CommandWakeup`
-(which sends two NM-style extended frames) then waited 300 ms before sending the BAP
-sequence. If the NM frames TX_Failed (no ACK from sleeping nodes), the wait was sometimes
-not long enough: Frame 1 of the BAP sequence also TX_Failed, the ESP32 introduced a
-~110 ms bus-off recovery gap, and Frame 2 arrived at the ECU as an orphaned continuation.
-The ECU discarded the incomplete BAP message and Frame 3 fired with no parameters.
-
-**Fix at the time:** `CommandClimateControl` was changed to send a harmless BAP Get on
-port 0x01 (`09 41`) instead of calling `CommandWakeup`. A Get can fail safely. After
-200 ms the BAP sequence was sent when the bus was live.
-
-**Later superseded by Bug 4** — the `09 41` approach woke the transceivers but never
-joined the OSEK NM ring, so the clima ECU rejected BAP commands from deep sleep.
-`CommandWakeup` was reinstated with a longer 1 s settle delay. See Bug 4 below.
-
-### Bug 4: OVMS not joining OSEK NM ring before BAP (deep-sleep failures)
+### Bug 2: OVMS not joining OSEK NM ring before BAP (deep-sleep failures)
 
 After the Bug 2 fix, `CommandClimateControl` used `09 41` as the wake ping. This woke
 the CAN transceivers but did NOT send the `0x1B000067` NM alive frame, so the clima ECU
