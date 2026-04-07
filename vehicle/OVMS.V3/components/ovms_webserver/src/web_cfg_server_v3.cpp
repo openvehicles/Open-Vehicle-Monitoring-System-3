@@ -258,6 +258,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     NULL, "autocomplete=\"section-serverv3 current-password\"");
   c.input_text("Client ID", "clientid", clientid.c_str(),
     "optional, default: <vehicle id>");
+  c.input_text("Topic Prefix", "topic_prefix", topic_prefix.c_str(),
+    "optional, default: ovms/<username>/<vehicle id>/");
 
   c.fieldset_start("TLS client authentication (optional)");
   c.printf(
