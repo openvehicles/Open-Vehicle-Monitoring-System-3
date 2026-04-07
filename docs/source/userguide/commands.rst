@@ -191,40 +191,19 @@ More info on the general OVMS MQTT topic scheme can be found
 `on the developer mailing list <http://lists.openvehicles.com/pipermail/ovmsdev/2018-July/005297.html>`_.
 
 
-Connection status
-~~~~~~~~~~~~~~~~~
-
-The ``server v3 status`` command shows the current connection state and active
-configuration::
-
-  OVMS# server v3 status
-  State: Connected
-         Status: OVMS V3 MQTT login successful
-  Retain depth limit: disabled (config: server.v3 retain.depth.limit)
-  Keepalive clamp:    disabled (config: server.v3 keepalive.clamp)
-
-The **Retain depth limit** line shows whether the 8-segment topic depth guard is
-active. See the :doc:`components` section for details on this setting.
-
-
 TLS client certificate commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If your MQTT broker requires client certificate authentication (mTLS),
-you can manage the Server V3 client certificate and key with these commands:
+For MQTT brokers requiring client certificate authentication (mTLS), use::
 
-- ``server v3 tlsclient status``
-- ``server v3 tlsclient info``
-- ``server v3 tlsclient clear``
-- ``server v3 tlsclient reload``
-- ``server v3 tlsclient check``
-- ``server v3 tlsclient import <cert_path> <key_path>``
+  OVMS# server v3 tlsclient import <cert_path> <key_path>
+  OVMS# server v3 tlsclient status
+  OVMS# server v3 tlsclient check
+  OVMS# server v3 tlsclient reload
+  OVMS# server v3 tlsclient clear
 
-Notes:
-
-- ``info`` shows certificate metadata only; private key contents are never shown.
-- ``reload`` reconnects Server V3 so changed cert/key settings take effect.
-- ``import`` reads PEM files from module storage and stores them in ``server.v3`` config.
+Certificate and key files are stored under ``/store/tls/``. Use ``import`` to load PEM files,
+``check`` to validate the pair, and ``reload`` to apply changes to the active connection.
 
 
 ------------------
