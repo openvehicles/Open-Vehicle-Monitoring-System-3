@@ -48,6 +48,10 @@ These trusted certificate authorities are used by the various module in the OVMS
 establishing SSL/TLS connections (in order to verify the certificate of the server being
 connected to).
 
+.. note:: For MQTT brokers that require **client certificate authentication** (mTLS),
+  see the :doc:`Server V3 configuration <components>` section on TLS client authentication
+  and the ``server v3 tlsclient`` :doc:`commands <commands>`.
+
 
 ----------------------------------
 How to get the CA PEM for a Server
