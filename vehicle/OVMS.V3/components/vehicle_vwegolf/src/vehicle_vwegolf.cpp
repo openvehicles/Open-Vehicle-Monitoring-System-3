@@ -162,19 +162,29 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
 // ---------------------------------------------------------------------------
 
 void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
-    // Any frame on KCAN resets the idle counter. Ticker1 uses this to decide
-    // whether the bus is alive and whether OCU keepalive should be sent.
-    m_bus_idle_ticks = 0;
+    // Only genuine KCAN frames (origin==can3) reset the idle counter and trigger the
+    // OCU keepalive. IncomingFrameCan2 forwards FCAN frames here for shared decode, but
+    // those must not be treated as KCAN activity — during charging, FCAN is flooded with
+    // OBC data while KCAN is completely silent, and counting FCAN frames as KCAN-alive
+    // causes the heartbeat to hammer a silent bus until the TWAI controller hits bus-off.
+    if (p_frame->origin == m_can3) {
+        m_bus_idle_ticks = 0;
 
-    // Send OCU keepalive at ~5Hz while active. VW OSEK NM requires keepalives at
-    // ~200ms intervals; Ticker1 alone (1Hz) is too slow for the ECU to stay in network.
-    if (m_ocu_active && ++m_ocu_heartbeat_counter >= 75) {
-        m_ocu_heartbeat_counter = 0;
-        SendOcuHeartbeat();
+        // Send OCU keepalive at ~5Hz while active. VW OSEK NM requires keepalives at
+        // ~200ms intervals; Ticker1 alone (1Hz) is too slow for the ECU to stay in network.
+        // Rate-limited by wall-clock tick (180ms min) so a sudden bus traffic burst from an
+        // NM wake does not overflow the TX queue.
+        if (m_ocu_active) {
+            uint32_t now = xTaskGetTickCount();
+            if ((now - m_last_heartbeat_tick) * portTICK_PERIOD_MS >= 180) {
+                m_last_heartbeat_tick = now;
+                SendOcuHeartbeat();
+            }
+        }
     }
 
     uint8_t* d = p_frame->data.u8;
-    float f;
+    float f = 0.0f;
     uint16_t u16;
     uint32_t u32;
 
@@ -297,16 +307,29 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 }
             }
 
-            // Charge type from bits [3:2] of d[5]: 1=AC (Type 2).
-            // NOTE: during CCS DC charging these bits read 0 — the CCS indicator is
-            // elsewhere in the frame. Log d[3] and d[5] raw to identify it.
-            // Do not set the metric in the default case — leave last known value intact.
-            switch ((d[5] & 0x0C) >> 2) {
-                case 1:
-                    StandardMetrics.ms_v_charge_type->SetValue("type2");
-                    break;
-                default:
-                    break;
+            // Charge type from bits [3:2] of d[5]: 0=none, 1=AC Type2, 3=cable connected
+            // (charge not needed — e.g. 100% SOC). CCS DC keeps KCAN silent so case 2
+            // is not observable. Do not update in the default case — leave last value.
+            // Charge port open = cable physically present (ChargeType != 0).
+            // The framework's status display gates on ms_v_door_chargeport — without it,
+            // the "Not charging" fallback always shows regardless of charge_inprogress.
+            {
+                uint8_t charge_type = (d[5] & 0x0C) >> 2;
+                switch (charge_type) {
+                    case 0:
+                        StandardMetrics.ms_v_door_chargeport->SetValue(false);
+                        break;
+                    case 1:
+                        StandardMetrics.ms_v_charge_type->SetValue("type2");
+                        StandardMetrics.ms_v_door_chargeport->SetValue(true);
+                        break;
+                    case 3:
+                        // Cable connected, charge complete or not needed.
+                        StandardMetrics.ms_v_door_chargeport->SetValue(true);
+                        break;
+                    default:
+                        break;
+                }
             }
 
             // Cabin temperature setpoint: 5-bit, factor 0.5°C, offset +15.5°C.
@@ -344,14 +367,35 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // remote_mode stays at 2 for the entire run after the initial activation.
             // HVAC is on whenever remote_mode != 0.
             u16 = ((uint16_t)(d[6] & 0xFC) >> 2) | ((uint16_t)(d[7] & 0x0F) << 6);
-            f = u16 * 0.1f - 40.0f;
             uint8_t remote_mode = ((d[3] & 0xC0) >> 6) | ((d[4] & 0x01) << 2);
-            uint8_t status_02 = (d[3] & 0x38) >> 3;
-            uint8_t status_03 = (d[0] & 0x0E) >> 1;
+            // d[3][5:3] and d[0][3:1] carry additional status nibbles seen in captures;
+            // meaning not yet confirmed — decode when RE is complete.
             StandardMetrics.ms_v_env_hvac->SetValue(remote_mode != 0);
-            StandardMetrics.ms_v_env_cabintemp->SetValue(f);
-            ESP_LOGV(TAG, "0x05EA clima_cabin=%.1f°C remote_mode=%u status02=%u status03=%u", f,
-                     remote_mode, status_02, status_03);
+            // Raw value ≥ 1020 decodes to ≥ 62.0°C — the ECU broadcasts 0x3FE or 0x3FF
+            // as "not available" when sleeping or uninitialized. Discard; valid cabin
+            // temperature is well below this range.
+            if (u16 < 1020) {
+                f = u16 * 0.1f - 40.0f;
+                StandardMetrics.ms_v_env_cabintemp->SetValue(f);
+            }
+            ESP_LOGV(TAG, "0x05EA clima_cabin=%.1f°C remote_mode=%u", f, remote_mode);
+            break;
+        }
+        case 0x17332510: {
+            // BAP status/ACK from clima ECU (node 0x25), extended 29-bit frame.
+            // Pattern `49 58 XX` (DLC=3): ECU pushes its port 0x18 (start/stop trigger) state.
+            // opcode=4 (0x49 bits[6:4]), node=0x25, port=0x18 (0x58 & 0x3F).
+            // XX=0x01 = clima running; XX=0x00 = clima stopped.
+            // This is the authoritative real-time source for ms_v_env_hvac:
+            //   - Start: arrives ~4–5 s after command (ECU waits for blower to spin up)
+            //   - Stop:  arrives ~0.3 s after command
+            // 0x05EA remote_mode remains as a secondary/fallback path (e.g. after OVMS reboot
+            // while clima is already running).
+            if (p_frame->FIR.B.DLC == 3 && d[0] == 0x49 && d[1] == 0x58) {
+                bool hvac_on = (d[2] == 0x01);
+                StandardMetrics.ms_v_env_hvac->SetValue(hvac_on);
+                ESP_LOGI(TAG, "0x17332510 BAP port 0x18: hvac=%s", hvac_on ? "on" : "off");
+            }
             break;
         }
         case 0x05F5: {
@@ -591,29 +635,40 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandPanic() {
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool enable) {
     ESP_LOGI(TAG, "Climate control: %s", enable ? "start" : "stop");
 
-    if (m_bus_idle_ticks >= VWEGOLF_BUS_TIMEOUT_SECS) {
-        // The bus is sleeping. Use the NM wake sequence (same as CommandWakeup) to bring
-        // the bus and clima ECU up before sending the BAP command.
-        //
-        // Timing evidence from kcan-can3-clima_on_off.crtd (confirmed working sequence):
-        //   +0ms   NM Frame 1 (17330301) sent — bus flooded within 10ms
-        //   +153ms NM Frame 2 (1B000067) sent
-        //   +453ms Clima ECU (17332510) first broadcasts status — ECU is BAP-ready
-        //
-        // A 200ms wait was previously used after a BAP Get ping. That is too short:
-        // the clima ECU needs ~450ms from the first dominant bit before it is ready.
-        // Using the full NM sequence with a 500ms settle matches the confirmed timing.
-        //
-        // TX_Fail on Frame 1 is expected (nodes still asleep) — the physical dominant
-        // bits are sufficient to start the NM wake cascade.
-        CommandWakeup();
-        vTaskDelay(pdMS_TO_TICKS(500));
+    // Abort immediately if the KCAN controller is in bus-off. In bus-off the TWAI hardware
+    // cannot transmit at all and all Write calls overflow the TX queue silently. Bus-off
+    // typically results from accumulated TX errors during a previous session (e.g. heartbeats
+    // sent on a silent bus). The controller cannot self-recover without receiving recessive
+    // bits, which it won't get on a gated bus. Continuing would TX_Queue every BAP frame and
+    // leave m_ocu_active in an indeterminate state.
+    if (m_can3->GetErrorState() == CAN_errorstate_busoff) {
+        ESP_LOGW(TAG, "Climate control: KCAN controller in bus-off — aborting");
+        return Fail;
     }
-    m_ocu_active = true;
+
+    // If KCAN is sleeping, join the NM ring before sending BAP. The clima ECU requires the
+    // sender to be a recognised NM participant — it rejects BAP commands from unknown nodes.
+    // CommandWakeup sends the 0x17330301 dominant-bit wake frame and the 0x1B000067 OSEK NM
+    // alive for node 0x67, then sets m_ocu_active = true. We wait 1 s for the NM-join flood
+    // (alive responses from all ECUs, ~300 ms burst) to subside before starting BAP.
+    //
+    // If the bus is already active, skip wakeup: the ECU already knows OVMS from prior
+    // heartbeats and BAP can be sent immediately. m_ocu_active is set after successful F3.
+    if (m_bus_idle_ticks >= VWEGOLF_BUS_TIMEOUT_SECS) {
+        ESP_LOGI(TAG, "Climate control: KCAN idle — waking bus and joining NM ring");
+        CommandWakeup();
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 
     // Rolling counter: included in the command and echoed back (| 0x80) in the ECU's ACK,
     // so we can match the ACK to this specific command invocation.
     m_bap_counter = (m_bap_counter == 0xFF) ? 0x01 : m_bap_counter + 1;
+
+    // Suppress the OCU heartbeat for the duration of the 3-frame sequence. When the bus
+    // wakes from the ping, IncomingFrameCan3 fires and the heartbeat rate-limit check can
+    // pass (>180ms since last TX). A heartbeat queuing between Frame 1 and Frame 2 blocks
+    // the continuation frame and the ECU discards the incomplete multi-frame message.
+    m_last_heartbeat_tick = xTaskGetTickCount();
 
     uint8_t data[8];
 
@@ -629,10 +684,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
                               // countdown, 30s per unit, 0x06 * 150s = 15 min). Use 0x04 for 10 min.
     data[6] = 0x00;           // unknown
     data[7] = 0x01;           // unknown (mode/profile flag)
-    // Use a 20ms queue wait on all three frames. The TWAI TX queue can be briefly
-    // full from OCU heartbeat frames fired during the 500ms settle — with wait=0
-    // (default) the frames drop silently with no TX or TX_Fail event logged.
-    esp_err_t ok1 = m_can3->WriteExtended(0x17332501, 8, data, pdMS_TO_TICKS(20));
+    // Accept both ESP_OK (frame in TWAI HW FIFO, physical TX imminent) and ESP_QUEUED
+    // (frame placed in the OVMS FreeRTOS SW queue behind a concurrently-transmitting frame).
+    // The SW queue is FIFO — if Frame 1 is queued, Frames 2 and 3 will follow it in order,
+    // so the ECU always sees a complete multi-frame sequence. Only bail on ESP_FAIL, which
+    // means the SW queue itself overflowed (bus stuck or configuration error).
+    esp_err_t ok1 = m_can3->WriteExtended(0x17332501, 8, data, pdMS_TO_TICKS(200));
+    if (ok1 == ESP_FAIL) {
+        ESP_LOGW(TAG, "BAP clima %s frame 1 TX queue overflow (ok=%d) counter=0x%02X",
+                 enable ? "start" : "stop", ok1, m_bap_counter);
+        m_ocu_active = false;
+        return Fail;
+    }
 
     // Frame 2: BAP multi-frame continuation — remaining 4 bytes of the port 0x19 payload.
     // Full 8-byte payload: [counter] 06 00 01  06 00 <temp> 00
@@ -645,24 +708,43 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[2] = 0x00;  // unknown
     data[3] = temp_raw;  // target temperature: (celsius - 10) * 10
     data[4] = 0x00;  // padding / unknown
-    esp_err_t ok2 = m_can3->WriteExtended(0x17332501, 5, data, pdMS_TO_TICKS(20));
+    esp_err_t ok2 = m_can3->WriteExtended(0x17332501, 5, data, pdMS_TO_TICKS(200));
+    if (ok2 == ESP_FAIL) {
+        ESP_LOGW(TAG, "BAP clima %s frame 2 TX queue overflow (ok=%d) counter=0x%02X",
+                 enable ? "start" : "stop", ok2, m_bap_counter);
+        m_ocu_active = false;
+        return Fail;
+    }
 
     // Frame 3: BAP single-frame trigger → port 0x18 (immediate start/stop).
     // 0x29 0x58 = opcode=2, node=0x25, port=0x18. Payload byte 1 is the on/off flag.
+    // Never allow this frame into the software queue alone — it is a complete command
+    // that the ECU processes independently of the multi-frame context above.
     data[0] = 0x29;
     data[1] = 0x58;
     data[2] = 0x00;
     data[3] = enable ? 0x01 : 0x00;
-    esp_err_t ok3 = m_can3->WriteExtended(0x17332501, 4, data, pdMS_TO_TICKS(20));
-    ESP_LOGI(TAG, "BAP clima %s: temp=%u°C(raw=0x%02X) ok1=%d ok2=%d ok3=%d counter=0x%02X",
-             enable ? "start" : "stop", m_climate_temp, temp_raw, ok1, ok2, ok3, m_bap_counter);
-
-    // Do NOT set ms_v_env_hvac here. If TX fails silently (CAN error after wake ping,
-    // bus-off recovery, etc.) and we pre-set the metric, the app's next toggle press
-    // will send the opposite command. The metric is updated from the ECU's 0x17332510
-    // ACK once that decode is implemented, and from 0x05EA once confirmed.
-
-    ESP_LOGI(TAG, "Climate %s sequence sent (counter=0x%02x)", enable ? "start" : "stop",
-             m_bap_counter);
+    esp_err_t ok3 = m_can3->WriteExtended(0x17332501, 4, data, pdMS_TO_TICKS(200));
+    if (ok3 == ESP_FAIL) {
+        ESP_LOGW(TAG, "BAP clima %s frame 3 TX queue overflow (ok=%d) counter=0x%02X",
+                 enable ? "start" : "stop", ok3, m_bap_counter);
+        m_ocu_active = false;
+        return Fail;
+    }
+    ESP_LOGI(TAG, "BAP clima %s sent: counter=0x%02X", enable ? "start" : "stop", m_bap_counter);
+    // Optimistic update: give the app immediate feedback that the command was transmitted.
+    // 0x05EA will overwrite this with ground truth once the ECU responds. If the ECU
+    // ignores the command (e.g. low SoC, inhibit active), the metric self-corrects on the
+    // next 0x05EA frame rather than staying permanently wrong.
+    StandardMetrics.ms_v_env_hvac->SetValue(enable);
+    if (enable) {
+        // Join the NM ring only after a confirmed successful TX — heartbeating before
+        // TX success causes spam when the ignition comes on after a failed start attempt.
+        m_ocu_active = true;
+    } else {
+        // Leave the NM ring after a successful stop — no need to keep sending heartbeats
+        // when clima is not running. The car's own OCU node handles 0x5A7 independently.
+        m_ocu_active = false;
+    }
     return Success;
 }
