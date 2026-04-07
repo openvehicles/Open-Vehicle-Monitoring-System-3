@@ -207,6 +207,18 @@ void test_bms_0x191() {
     CHECK(near(StandardMetrics.ms_v_bat_power->AsFloat(),    -4.0f), "BMS power -4kW (charging convention)");
 
     delete v;
+
+    {
+        // Sentinel: d[2]==0xFF (all-ones current field → ~2047A) must not overwrite metrics.
+        auto* vs = make_vehicle();
+        StandardMetrics.ms_v_bat_current->SetValue(10.0f);
+        StandardMetrics.ms_v_bat_voltage->SetValue(400.0f);
+        auto fs = make_frame(0x191, {0x00, 0xE0, 0xFF, 0xFE, 0x0F, 0x00, 0x00, 0x00});
+        vs->IncomingFrameCan3(&fs);
+        CHECK(near(StandardMetrics.ms_v_bat_current->AsFloat(),  10.0f), "0x0191 sentinel: current not overwritten");
+        CHECK(near(StandardMetrics.ms_v_bat_voltage->AsFloat(), 400.0f), "0x0191 sentinel: voltage not overwritten");
+        delete vs;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -319,6 +331,16 @@ void test_bat_temp_0x59E() {
     CHECK(near(StandardMetrics.ms_v_bat_temp->AsFloat(), 25.0f), "Battery temp 25°C");
 
     delete v;
+
+    {
+        // Sentinel: d[2]==0xFE (decodes to 87°C) must not overwrite the metric.
+        auto* vs = make_vehicle();
+        StandardMetrics.ms_v_bat_temp->SetValue(25.0f);
+        auto fs = make_frame(0x59E, {0x00, 0x00, 0xFE, 0x00, 0x00, 0x00, 0x00, 0x00});
+        vs->IncomingFrameCan3(&fs);
+        CHECK(near(StandardMetrics.ms_v_bat_temp->AsFloat(), 25.0f), "0x059E sentinel: bat_temp not overwritten");
+        delete vs;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -336,6 +358,16 @@ void test_bat_capacity_0x5CA() {
     CHECK(near(StandardMetrics.ms_v_bat_capacity->AsFloat(), 35.0f), "Battery capacity 35.0 kWh");
 
     delete v;
+
+    {
+        // Sentinel: d[2]==0xFF (near-max capacity field → ~102 kWh) must not overwrite.
+        auto* vs = make_vehicle();
+        StandardMetrics.ms_v_bat_capacity->SetValue(35.0f);
+        auto fs = make_frame(0x5CA, {0x00, 0xE0, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00});
+        vs->IncomingFrameCan3(&fs);
+        CHECK(near(StandardMetrics.ms_v_bat_capacity->AsFloat(), 35.0f), "0x05CA sentinel: capacity not overwritten");
+        delete vs;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -502,6 +534,33 @@ void test_odo_0x6B7() {
 }
 
 // ---------------------------------------------------------------------------
+// 0x06B5 — ambient temp: solar sensor and outside air (startup sentinel d[6]==0xFE)
+// ---------------------------------------------------------------------------
+
+void test_ambient_temp_0x6B5() {
+    printf("\ntest_ambient_temp_0x6B5\n");
+
+    {
+        // Normal frame: exercise decode path without crash.
+        // solar raw=2000: d[6]=0xD0, d[7]&0x07=0x07 → (0xD0|(0x07<<8))*0.1-40 = 160.0°C (high but valid field)
+        // air raw=300: d[2]=0x2C, d[3]&0x03=0x01 → (0x2C|(0x01<<8))*0.1-40 = -10.4°C
+        auto* v = make_vehicle();
+        auto f = make_frame(0x6B5, {0x00, 0x00, 0x2C, 0x01, 0x00, 0x00, 0xD0, 0x07});
+        v->IncomingFrameCan3(&f);  // logs only; no metric set yet — just verify no crash
+        delete v;
+    }
+
+    {
+        // Sentinel: d[6]==0xFE — must be silently dropped (no crash, no metric write).
+        auto* v = make_vehicle();
+        auto f = make_frame(0x6B5, {0x00, 0x00, 0xFE, 0x03, 0x00, 0x00, 0xFE, 0x07});
+        v->IncomingFrameCan3(&f);
+        // 0x06B5 does not yet set a standard metric; test exercises the sentinel path
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Origin check: FCAN frames forwarded via IncomingFrameCan2 must NOT reset
 // the KCAN idle counter (m_bus_idle_ticks). Only origin==m_can3 frames count.
 // ---------------------------------------------------------------------------
@@ -563,6 +622,7 @@ int main() {
     test_hood_0x65A();
     test_innentemp_0x66E();
     test_odo_0x6B7();
+    test_ambient_temp_0x6B5();
     test_origin_check();
     test_crtd_replay();
 

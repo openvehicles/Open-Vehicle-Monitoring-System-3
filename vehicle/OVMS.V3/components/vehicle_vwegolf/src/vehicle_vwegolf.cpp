@@ -206,6 +206,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x0191: {
             // BMS current and voltage; power is derived.
+            // d[2]==0xFF is the startup sentinel (all-ones current field → ~2047A, ~1023V).
+            if (d[2] == 0xFF) break;
             // Current: 12-bit, factor 1 A, offset -2047 A (raw=2047 → 0 A).
             // NOTE: during AC charging this field reads 0A — 0x0191 appears to carry
             // inverter/motor current only. Charging current comes from a different frame
@@ -339,6 +341,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x059E: {
             // BMS battery pack temperature. Factor 0.5°C, offset -40°C.
+            // d[2]==0xFE is the startup sentinel (decodes to 87°C).
+            if (d[2] == 0xFE) break;
             f = d[2] * 0.5f - 40.0f;
             StandardMetrics.ms_v_bat_temp->SetValue(f);
             ESP_LOGV(TAG, "0x059E bat_temp=%.1f°C", f);
@@ -346,6 +350,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x05CA: {
             // HV battery energy content. 11-bit, factor 50 Wh → kWh.
+            // d[2]==0xFF is the startup sentinel (near-max field → ~102 kWh; real battery ≤40 kWh).
+            if (d[2] == 0xFF) break;
             u16 = ((uint16_t)(d[1] & 0xF0) >> 4) | ((uint16_t)(d[2] & 0x7F) << 4);
             f = u16 * 50.0f / 1000.0f;
             StandardMetrics.ms_v_bat_capacity->SetValue(f);
@@ -428,6 +434,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x06B5: {
             // Ambient temperature from two sensors: solar sensor and outside air.
+            // d[6]==0xFE is the startup sentinel (both sensors report max-range garbage).
+            if (d[6] == 0xFE) break;
             f = ((uint16_t)(d[6]) | ((uint16_t)(d[7] & 0x07) << 8)) * 0.1f - 40.0f;
             ESP_LOGV(TAG, "0x06B5 solar_sensor=%.1f°C", f);
             f = ((uint16_t)(d[2]) | ((uint16_t)(d[3] & 0x03) << 8)) * 0.1f - 40.0f;

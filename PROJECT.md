@@ -24,21 +24,17 @@ Each PR must: pass native test suite · reference relevant `docs/` RE notes · E
 
 ## Open items
 
-### Startup sentinel filters missing (multiple frames)
+### ~~Startup sentinel filters missing~~ — fixed
 
-Confirmed from `tests/logs-capture2.md` — the first burst of frames after every wake-up
-contains invalid sentinel values that get written to persistent metrics:
+All startup sentinel filters implemented and tested:
 
-| Frame | Sentinel value | Symptom |
+| Frame | Sentinel check | Fixed |
 |---|---|---|
-| `0x0191` | `I=2047.0A`, `V=1023.50V` | Garbage current/voltage on boot |
-| `0x059E` | `bat_temp=87.0°C` | 0xFF raw, max of decode range |
-| `0x05CA` | `bat_capacity=102.3 kWh` | Near max of decode range |
-| `0x05EA` | `clima_cabin=62.2°C` | Near max of decode range |
-| `0x06B5` | `solar_sensor=164.6°C`, `air_sensor=62.2°C` | Way over physical range |
-
-**Fix pattern:** same as existing SoC (0x131) and cabin temp (0x066E) filters — check for
-max/sentinel raw value before decoding and `break` early.
+| `0x0191` | `d[2]==0xFF` → ~2047A / ~1023V | ✓ |
+| `0x059E` | `d[2]==0xFE` → 87°C bat temp | ✓ |
+| `0x05CA` | `d[2]==0xFF` → ~102 kWh capacity | ✓ |
+| `0x05EA` | `u16>=1020` → 62+°C cabin temp | ✓ (prior) |
+| `0x06B5` | `d[6]==0xFE` → max-range solar/air | ✓ |
 
 ### CCS charge type not detected
 
