@@ -223,7 +223,8 @@ static int split (microrl_t * pThis, int limit, char const ** tkn_arr)
 		while ((pThis->cmdline [ind] == '\0') && (ind < limit)) {
 			ind++;
 		}
-		if (!(ind < limit)) return i;
+		if (!(ind < limit))
+			return i;
 #ifdef _USE_QUOTING
 		if (pThis->cmdline [ind] == '\'' || pThis->cmdline [ind] == '"') {
 			if (iq >= _QUOTED_TOKEN_NMB) {
@@ -371,7 +372,7 @@ static void terminal_print_line (microrl_t * pThis, int pos, int reset)
 			*j = '\0';
 			pThis->print (pThis, str);
 			j = str;
-	}		
+	}
 	*j++ = '\033';   // delete all past end of text
 	*j++ = '[';
 	*j++ = 'K';
@@ -554,10 +555,14 @@ static int common_len (char ** arr)
 //*****************************************************************************
 static void microrl_get_complite (microrl_t * pThis)
 {
-	char const * tkn_arr[_COMMAND_TOKEN_NMB];
+	char const ** tkn_arr;
 	char ** compl_token;
 
 	if (pThis->get_completion == NULL) // callback was not set
+		return;
+
+	tkn_arr = malloc(_COMMAND_TOKEN_NMB * sizeof(*tkn_arr));
+	if (tkn_arr == NULL)
 		return;
 
 	int status = split (pThis, pThis->cursor, tkn_arr);
@@ -621,13 +626,20 @@ static void microrl_get_complite (microrl_t * pThis)
 		}
 		terminal_print_line (pThis, pos, 0);
 	}
+	free(tkn_arr);
 }
 #endif
 
 //*****************************************************************************
 void new_line_handler(microrl_t * pThis){
-	char const * tkn_arr [_COMMAND_TOKEN_NMB];
+	char const ** tkn_arr;
 	int status;
+
+	tkn_arr = malloc(_COMMAND_TOKEN_NMB * sizeof(*tkn_arr));
+	if (tkn_arr == NULL) {
+		pThis->error_print (pThis, "ERROR:malloc failed" ENDL);
+		return -1;
+	}
 
 	terminal_newline (pThis);
 #ifdef _USE_HISTORY
@@ -652,6 +664,7 @@ void new_line_handler(microrl_t * pThis){
 #ifdef _USE_HISTORY
 	pThis->ring_hist.cur = 0;
 #endif
+	free(tkn_arr);
 }
 
 //*****************************************************************************

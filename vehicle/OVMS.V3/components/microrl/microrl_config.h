@@ -21,7 +21,7 @@ typed in command line exceed this value, then prints message about it and
 command line not to be parced and 'execute' callback will not calls.
 Token is word separate by white space, for example 3 token line:
 "IRin> set mode test" */
-#define _COMMAND_TOKEN_NMB 16
+#define _COMMAND_TOKEN_NMB 128
 
 /*
 Define you prompt string here. You can use colors escape code, for highlight you prompt,
