@@ -8,10 +8,20 @@ BUGS and TODO:
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include "esp_heap_caps.h"
 #include "microrl.h"
 #ifdef _USE_LIBC_STDIO
 #include <stdio.h>
 #endif
+
+/* Prefer SPIRAM (https://esp32.com/viewtopic.php?t=33676) */
+#if CONFIG_SPIRAM
+#define MALLOC_CAP_SPIORINTERNAL MALLOC_CAP_SPIRAM
+#else
+#define MALLOC_CAP_SPIORINTERNAL MALLOC_CAP_INTERNAL
+#endif
+
+#define MALLOC2(s) heap_caps_malloc((s), MALLOC_CAP_SPIORINTERNAL)
 
 #define true  1
 #define false 0
@@ -561,13 +571,17 @@ static void microrl_get_complite (microrl_t * pThis)
 	if (pThis->get_completion == NULL) // callback was not set
 		return;
 
-	tkn_arr = malloc(_COMMAND_TOKEN_NMB * sizeof(*tkn_arr));
-	if (tkn_arr == NULL)
+	tkn_arr = MALLOC2(_COMMAND_TOKEN_NMB * sizeof(*tkn_arr));
+	if (tkn_arr == NULL) {
+		pThis->error_print (pThis, "ERROR:malloc failed" ENDL);
 		return;
+	}
 
 	int status = split (pThis, pThis->cursor, tkn_arr);
-	if (status < 0)
+	if (status < 0) {
+		free(tkn_arr);
 		return;
+	}
 	if (pThis->cmdline[pThis->cursor-1] == '\0')
 		tkn_arr[status++] = "";
 
@@ -635,10 +649,10 @@ void new_line_handler(microrl_t * pThis){
 	char const ** tkn_arr;
 	int status;
 
-	tkn_arr = malloc(_COMMAND_TOKEN_NMB * sizeof(*tkn_arr));
+	tkn_arr = MALLOC2(_COMMAND_TOKEN_NMB * sizeof(*tkn_arr));
 	if (tkn_arr == NULL) {
 		pThis->error_print (pThis, "ERROR:malloc failed" ENDL);
-		return -1;
+		return;
 	}
 
 	terminal_newline (pThis);
