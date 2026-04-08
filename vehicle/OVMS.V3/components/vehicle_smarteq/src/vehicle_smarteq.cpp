@@ -471,6 +471,27 @@ void OvmsVehicleSmartEQ::CalculateEfficiency() {
   }
 }
 
+/**
+ * CalculateRangeSpeed: derive momentary range gain/loss speed (km/h equivalent)
+ *
+ * Uses power-based calculation against the full battery energy (cap_full × HV_link / 1000)
+ * to avoid inflated values at low SOC (ms_v_bat_cac is the usable fraction, not full cap).
+ * Sign: negative = losing range (driving), positive = gaining range (charging).
+ */
+void OvmsVehicleSmartEQ::CalculateRangeSpeed()
+  {
+  float bat_power  = StdMetrics.ms_v_bat_power->AsFloat();      // kW (pos=discharge, neg=charge)
+  float cap_full   = mt_bms_cap->GetElemValue(0);               // Ah - full usable capacity
+  float v_link     = mt_bms_voltages->GetElemValue(3);          // V  - HV link voltage
+  float range_full = StdMetrics.ms_v_bat_range_full->AsFloat(); // km at 100% SOC
+
+  if (cap_full <= 0 || v_link <= 0 || range_full <= 0)
+    return;
+
+  float energy_kWh = (cap_full * v_link) / 1000.0f;
+  *StdMetrics.ms_v_bat_range_speed = TRUNCPREC(-bat_power / energy_kWh * range_full, 1);
+  }
+
 void OvmsVehicleSmartEQ::OnlineState() {
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (StdMetrics.ms_m_net_ip->AsBool()) {
