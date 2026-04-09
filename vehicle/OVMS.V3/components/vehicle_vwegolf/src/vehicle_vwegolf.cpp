@@ -295,14 +295,19 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 StdMetrics.ms_v_charge_timermode->SetValue(false);  // false if timer disabled
             }
 
-            tmp_u8 = ((uint8_t)(d[3] & 0x62) >> 5) |
-                     0;  // Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-            tmp_u8 = (uint8_t)tmp_u8;
-            if (tmp_u8 == 0x1) {
-                StdMetrics.ms_v_charge_inprogress->SetValue(true);  // True = currently charging
-            } else {
-                StdMetrics.ms_v_charge_inprogress->SetValue(
-                    false);  // false = currently not charging
+            {
+                bool was_charging = StdMetrics.ms_v_charge_inprogress->AsBool();
+                bool is_charging = (d[3] & 0x20) != 0;  // bit 5 of d[3]
+                StdMetrics.ms_v_charge_inprogress->SetValue(is_charging);
+                StdMetrics.ms_v_charge_state->SetValue(is_charging ? "charging" : "stopped");
+                if (is_charging) {
+                    StdMetrics.ms_v_charge_voltage->SetValue(
+                        StandardMetrics.ms_v_bat_voltage->AsFloat());
+                }
+                if (is_charging != was_charging) {
+                    if (is_charging) NotifyChargeStart();
+                    else NotifyChargeStopped();
+                }
             }
 
             tmp_u16 = ((uint16_t)(d[3] & 0xc0) >> 6) | ((uint16_t)(d[4] & 0x7f) << 2) |
@@ -340,19 +345,30 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             tmp_u8 = ((uint8_t)(d[5] & 0xc) >> 2) |
                      0;  // Faktor 1 Offset 0, Minimum 0, Maximum 3 [] Initial 0
             tmp_u8 = (uint8_t)tmp_u8;
+            // Charge port open = cable physically present (ChargeType != 0).
+            // The framework's status display gates on ms_v_door_chargeport — without it,
+            // the "Not charging" fallback always shows regardless of charge_inprogress.
             switch (tmp_u8) {
                 case 0x0: {
                     // No connector — do not overwrite last known type with "undefined".
                     // NOTE: CCS DC charging also reads 0 here; the CCS indicator is
                     // elsewhere in the frame and not yet identified.
+                    StdMetrics.ms_v_door_chargeport->SetValue(false);
                     break;
                 }
                 case 0x1: {
                     StdMetrics.ms_v_charge_type->SetValue("type2");
+                    StdMetrics.ms_v_door_chargeport->SetValue(true);
                     break;
                 }
                 case 0x2: {
                     StdMetrics.ms_v_charge_type->SetValue("ccs");
+                    StdMetrics.ms_v_door_chargeport->SetValue(true);
+                    break;
+                }
+                case 0x3: {
+                    // Cable connected, charge complete or not needed (e.g. 100% SoC).
+                    StdMetrics.ms_v_door_chargeport->SetValue(true);
                     break;
                 }
                 default:
