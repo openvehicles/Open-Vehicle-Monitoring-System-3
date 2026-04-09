@@ -194,24 +194,18 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                      StandardMetrics.ms_v_bat_voltage->AsFloat());
             break;
         }
-        // TODO: This is currently reading zero
-        case 0x2AF:  // Energy
+        case 0x2AF:  // Trip energy counters. 15-bit, factor 10 Ws → kWh.
         {
-            tmp_u16 =
-                ((uint16_t)(d[4] & 0xff) << 0) | ((uint16_t)(d[5] & 0x7f) << 8) |
-                0;  // BMS Rekuperation Faktor 10 Offset 0, Minimum 0, Maximum 327670 [Ws] Initial 0
-            tmp_u16 = (uint16_t)tmp_u16;
-            tmp_f32 = (((float)tmp_u16) * 10.0F) / 3600000.0F;
+            // Regen energy: d[4] + d[5] bits [6:0]. Max raw 32767 * 10 = 327670 Ws.
+            tmp_f32 = (float)(d[4] | ((uint16_t)(d[5] & 0x7f) << 8)) * 10.0F / 3600000.0F;
             StandardMetrics.ms_v_bat_energy_recd->SetValue(tmp_f32);
-            ESP_LOGV(TAG "-2AF", "ms_v_bat_energy_recd: %f", tmp_f32);
 
-            tmp_u16 =
-                ((uint16_t)(d[6] & 0xff) << 0) | ((uint16_t)(d[7] & 0x7f) << 8) |
-                0;  // BMS Verbrauch Faktor 10 Offset 0, Minimum 0, Maximum 327670 [Ws] Initial 0
-            tmp_u16 = (uint16_t)tmp_u16;
-            tmp_f32 = (((float)tmp_u16) * 10.0F) / 3600000.0F;
+            // Consumed energy: d[6] + d[7] bits [6:0].
+            tmp_f32 = (float)(d[6] | ((uint16_t)(d[7] & 0x7f) << 8)) * 10.0F / 3600000.0F;
             StandardMetrics.ms_v_bat_energy_used->SetValue(tmp_f32);
-            ESP_LOGV(TAG "-2AF", "ms_v_bat_energy_used: %f", tmp_f32);
+            ESP_LOGV(TAG, "0x02AF recd=%.4f used=%.4f kWh",
+                     StandardMetrics.ms_v_bat_energy_recd->AsFloat(),
+                     StandardMetrics.ms_v_bat_energy_used->AsFloat());
             break;
         }
         // case 0x3D6: //Ladezustand
