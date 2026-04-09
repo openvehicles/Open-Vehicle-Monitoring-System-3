@@ -452,62 +452,84 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   // Update xsq preset version
   map_xsq["cfg.preset.ver"] = STR(PRESET_VERSION);
 
-  // Set default 12V alert threshold if not defined
-  if (!MyConfig.IsDefined("vehicle", "12v.alert")) 
-    {
-    MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
-    }
+  // modem section - single map operation
+  bool need_stream = false;
+  {
+    auto m = MyConfig.GetParamMap("modem");
+    bool changed = false;
+    if (m.find("gps.parkpause") == m.end())
+      {
+      m["gps.parkpause"] = "600";
+      m["gps.parkreactivate"] = "50";
+      m["gps.parkreactlock"] = "5";
+      need_stream = true;
+      changed = true;
+      }
+    if (m.find("gps.parkreactawake") == m.end())
+      { m["gps.parkreactawake"] = "yes"; changed = true; }
+    if (m.find("net.type") == m.end())
+      { m["net.type"] = "4G"; changed = true; }
+    if (changed)
+      MyConfig.SetParamMap("modem", m);
+  }
 
-  if (!MyConfig.IsDefined("modem", "gps.parkpause")) 
-    {
-    MyConfig.SetParamValue("modem", "gps.parkpause", "600"); // default 10 min.
-    MyConfig.SetParamValue("modem", "gps.parkreactivate", "50"); // default 50 min.
-    MyConfig.SetParamValue("modem", "gps.parkreactlock", "5"); // default 5 min.
-    MyConfig.SetParamValue("vehicle", "stream", "10"); // set stream to 10 sec.
-    }
-  
-  if (!MyConfig.IsDefined("modem", "gps.parkreactawake")) 
-    {
-    MyConfig.SetParamValueBool("modem", "gps.parkreactawake", true);
-    }
+  // vehicle section - single map operation
+  {
+    auto m = MyConfig.GetParamMap("vehicle");
+    bool changed = false;
+    if (m.find("12v.alert") == m.end())
+      { m["12v.alert"] = "0.8"; changed = true; }
+    if (need_stream)
+      { m["stream"] = "10"; changed = true; }
+    // TPMS migration: read from already-loaded map_xsq
+    if (map_xsq.count("TPMS_FL"))
+      {
+      static const char* xk[] = {"TPMS_FL","TPMS_FR","TPMS_RL","TPMS_RR"};
+      static const char* vk[] = {"tpms.fl","tpms.fr","tpms.rl","tpms.rr"};
+      static const char* dd[] = {"0","1","2","3"};
+      for (int i = 0; i < 4; i++)
+        {
+        auto it = map_xsq.find(xk[i]);
+        m[vk[i]] = (it != map_xsq.end() && !it->second.empty()) ? it->second : dd[i];
+        }
+      changed = true;
+      }
+    if (changed)
+      MyConfig.SetParamMap("vehicle", m);
+  }
 
-  if (!MyConfig.IsDefined("modem", "net.type")) 
-    {
-    MyConfig.SetParamValue("modem", "net.type", "4G");
-    }
+  // network section - single map operation
+  {
+    auto m = MyConfig.GetParamMap("network");
+    bool changed = false;
+    if (m.find("wifi.ap2client.enable") == m.end())
+      { m["wifi.ap2client.enable"] = "yes"; changed = true; }
+    if (m.erase("type") > 0)
+      changed = true;
+    if (changed)
+      MyConfig.SetParamMap("network", m);
+  }
 
-  if (!MyConfig.IsDefined("network", "wifi.ap2client.enable")) 
-    {
-    MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
-    }
-
-  if (MyConfig.IsDefined("network", "type")) 
-    {
-    MyConfig.DeleteInstance("network", "type");
-    }
-
-  if (MyConfig.IsDefined("xsq", "TPMS_FL")) 
-    {
-    MyConfig.SetParamValueInt("vehicle", "tpms.fl", MyConfig.GetParamValueInt("xsq", "TPMS_FL", 0));
-    MyConfig.SetParamValueInt("vehicle", "tpms.fr", MyConfig.GetParamValueInt("xsq", "TPMS_FR", 1));
-    MyConfig.SetParamValueInt("vehicle", "tpms.rl", MyConfig.GetParamValueInt("xsq", "TPMS_RL", 2));
-    MyConfig.SetParamValueInt("vehicle", "tpms.rr", MyConfig.GetParamValueInt("xsq", "TPMS_RR", 3));
-    }
-
-  if (MyConfig.GetParamValue("ota", "server", "0") == "https://ovms.dimitrie.eu/firmware/ota" && 
-      MyConfig.GetParamValue("ota", "tag", "0") == "smarteq")
-    {
-    MyConfig.SetParamValue("ota", "server", "https://ovms.dexters-web.de/firmware/ota");
-    MyConfig.SetParamValue("ota", "tag", "edge");
-    }
+  // ota section - migrate old server
+  {
+    auto m = MyConfig.GetParamMap("ota");
+    auto srv = m.find("server");
+    auto tag = m.find("tag");
+    if (srv != m.end() && srv->second == "https://ovms.dimitrie.eu/firmware/ota" &&
+        tag != m.end() && tag->second == "smarteq")
+      {
+      srv->second = "https://ovms.dexters-web.de/firmware/ota";
+      tag->second = "edge";
+      MyConfig.SetParamMap("ota", m);
+      }
+  }
 
   // Remove deprecated preclimate section
   if (MyConfig.CachedParam("xsq.preclimate"))
     MyConfig.DeregisterParam("xsq.preclimate");
 
-  // Delete old config entries - reuse existing map_xsq
-  // List of deprecated keys to remove
-  const char* deprecated_keys[] = {
+  // Remove deprecated keys from xsq map
+  static const char* deprecated_keys[] = {
     "ios_tpms_fix",
     "restart.wakeup",
     "v2.check",
@@ -546,7 +568,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "obdii.79b.r",
     "obdii.79b.t",
     "obdii.79b.v",
-    "obdii.7e4.mod",    
+    "obdii.7e4.mod",
     "obdii_743",
     "obdii_745",
     "obdii_79b",
@@ -554,19 +576,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "obdii_7e4_modify",
     "basic_tpms"
   };
-  
-  // Remove all deprecated keys from map
+
   int removed_count = 0;
-  for (const char* key : deprecated_keys) {
-    auto it = map_xsq.find(key);
-    if (it != map_xsq.end()) 
-      {
-      map_xsq.erase(it);
+  for (const char* key : deprecated_keys)
+    {
+    if (map_xsq.erase(key) > 0)
       removed_count++;
-      }
     }
-  
-  // Write all changes in transactions (one per config section)
+
   MyConfig.SetParamMap("xsq", map_xsq);
 
   if (writer) 
@@ -594,33 +611,48 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   auto lock = MyConfig.Lock();
   
   // Clear all xsq config entries
-  ConfigParamMap empty_map;
-  MyConfig.SetParamMap("xsq", empty_map);
+  ConfigParamMap map_xsq;
+  MyConfig.SetParamMap("xsq", map_xsq);
 
-  MyConfig.SetParamValueBool("auto", "init", true);
-  MyConfig.SetParamValueBool("auto", "ota", false);
-  MyConfig.SetParamValueBool("auto", "modem", true);
-  MyConfig.SetParamValueBool("auto", "server.v2", true);
+  // auto section
+  auto map_auto = MyConfig.GetParamMap("auto");
+  map_auto["init"] = "yes";
+  map_auto["ota"] = "no";
+  map_auto["modem"] = "yes";
+  map_auto["server.v2"] = "yes";
+  MyConfig.SetParamMap("auto", map_auto);
 
-  MyConfig.SetParamValue("modem", "net.type", "4G");
-  MyConfig.SetParamValueBool("modem", "gps.parkreactawake", true);
-  MyConfig.SetParamValue("modem", "gps.parkpause", "600"); // default 10 min.
-  MyConfig.SetParamValue("modem", "gps.parkreactivate", "50"); // default 50 min.
-  MyConfig.SetParamValue("modem", "gps.parkreactlock", "5"); // default 5 min.
+  // modem section
+  auto map_modem = MyConfig.GetParamMap("modem");
+  map_modem["net.type"] = "4G";
+  map_modem["gps.parkreactawake"] = "yes";
+  map_modem["gps.parkpause"] = "600";
+  map_modem["gps.parkreactivate"] = "50";
+  map_modem["gps.parkreactlock"] = "5";
+  MyConfig.SetParamMap("modem", map_modem);
 
-  MyConfig.SetParamValue("vehicle", "stream", "10"); // set stream to 10 sec.
-  MyConfig.SetParamValueFloat("vehicle", "12v.alert", 0.8); // set default 12V alert threshold to 0.8V for Check12V System
-  
-  MyConfig.SetParamValue("ota", "server", "https://ovms.dexters-web.de/firmware/ota");
-  MyConfig.SetParamValue("ota", "tag", "main");
-  MyConfig.SetParamValue("ota", "http.mru", "https://ovms.dexters-web.de/firmware/ota/v3.3/edge/ovms3.bin");
-  
-  MyConfig.SetParamValueBool("network", "wifi.ap2client.enable", true);
-  MyConfig.DeleteInstance("network", "wifi.bad.reconnect");
-  MyConfig.DeleteInstance("network", "wifi.sq.good");
-  MyConfig.DeleteInstance("network", "wifi.sq.bad");
-  MyConfig.DeleteInstance("network", "modem.sq.good");
-  MyConfig.DeleteInstance("network", "modem.sq.bad");
+  // vehicle section
+  auto map_vehicle = MyConfig.GetParamMap("vehicle");
+  map_vehicle["stream"] = "10";
+  map_vehicle["12v.alert"] = "0.8";
+  MyConfig.SetParamMap("vehicle", map_vehicle);
+
+  // ota section
+  auto map_ota = MyConfig.GetParamMap("ota");
+  map_ota["server"] = "https://ovms.dexters-web.de/firmware/ota";
+  map_ota["tag"] = "main";
+  map_ota["http.mru"] = "https://ovms.dexters-web.de/firmware/ota/v3.3/edge/ovms3.bin";
+  MyConfig.SetParamMap("ota", map_ota);
+
+  // network section
+  auto map_net = MyConfig.GetParamMap("network");
+  map_net["wifi.ap2client.enable"] = "yes";
+  map_net.erase("wifi.bad.reconnect");
+  map_net.erase("wifi.sq.good");
+  map_net.erase("wifi.sq.bad");
+  map_net.erase("modem.sq.good");
+  map_net.erase("modem.sq.bad");
+  MyConfig.SetParamMap("network", map_net);
   
   if (writer) 
     {

@@ -1,0 +1,6 @@
+# Capture files contain real VINs and are not committed to the public repo.
+# See README.md in this directory for how to create your own.
+*
+!.gitignore
+!*.md
+!kcan-synthetic.crtd

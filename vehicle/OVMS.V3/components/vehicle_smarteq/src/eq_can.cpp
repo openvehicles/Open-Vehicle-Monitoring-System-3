@@ -226,7 +226,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       }
     case 0x656:
       {
-      REQ_DLC(6);
+      REQ_DLC(7);
       float _env_temp = (float) CAN_BYTE(6) - 40.0f;
       if (_env_temp > -40.0f && _env_temp < 85.0f)
         StdMetrics.ms_v_env_temp->SetValue(_env_temp);
