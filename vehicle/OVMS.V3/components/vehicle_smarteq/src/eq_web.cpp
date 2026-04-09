@@ -347,13 +347,13 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
     "<p>Show tire temperatures</p>");
   c.input_checkbox("TPMS Alert", "enable", enable,
     "<p>Low/high pressure alerts</p>");
-  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",-1, atof(front_pressure.c_str()), 220, 170, 350, 5,
+  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",-1, atof(front_pressure.c_str()), 225, 170, 350, 5,
     "<p>Target front pressure</p>");
-  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",-1, atof(rear_pressure.c_str()), 250, 170, 350, 5,
+  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",-1, atof(rear_pressure.c_str()), 255, 170, 350, 5,
     "<p>Target rear pressure</p>");
-  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",-1, atof(pressure_warning.c_str()), 25, 10, 60, 5,
+  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",-1, atof(pressure_warning.c_str()), 40, 10, 60, 5,
     "<p>Over/under pressure warning threshold</p>");
-  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",-1, atof(pressure_alert.c_str()), 45, 30, 120, 5,
+  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",-1, atof(pressure_alert.c_str()), 70, 30, 120, 5,
     "<p>Over/under pressure alert threshold</p>");
   {
     static const char* const pos_labels[] = {"Front Left Sensor","Front Right Sensor","Rear Left Sensor","Rear Right Sensor"};
