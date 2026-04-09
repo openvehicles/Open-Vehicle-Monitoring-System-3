@@ -361,6 +361,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         case 0x05EA: {
             // Clima ECU status: cabin temperature and remote_mode.
             // remote_mode: 0=idle, 2=running (steady-state), 3=just activated (transient).
+            // Value 1 observed in on-battery clima capture (car sleeping, no plug); meaning TBD —
+            // could be "requested/pending" before the ECU commits to running. Needs further RE.
             // HVAC on whenever remote_mode != 0.
             u16 = ((uint16_t)(d[6] & 0xFC) >> 2) | ((uint16_t)(d[7] & 0x0F) << 6);
             uint8_t remote_mode = ((d[3] & 0xC0) >> 6) | ((d[4] & 0x01) << 2);
