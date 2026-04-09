@@ -596,12 +596,11 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             StandardMetrics.ms_v_pos_odometer->SetValue(tmp_u32);  // working
             ESP_LOGV(TAG, "0x06B7 odo=%u km", tmp_u32);
 
+            // Park time: 17-bit field at bit offset 20, factor 1 s.
+            // d[2] bits [7:4] → result bits [3:0], d[3] → [11:4], d[4] bits [4:0] → [16:12].
             tmp_u32 =
-                ((uint32_t)(d[2] & 0xf0) << 4) | ((uint32_t)(d[3] & 0xff) << 4) |
-                ((uint32_t)(d[4] & 0x1f) << 12) |
-                0;  // odometer Faktor 1 Offset 0, Minimum 0, Maximum 1045873 [km] Initial 1045874
-            tmp_u32 = (uint32_t)tmp_u32;
-            // tmp_f32 = ((float)tmp_u32)*1.0F;
+                ((uint32_t)(d[2] & 0xf0) >> 4) | ((uint32_t)(d[3]) << 4) |
+                ((uint32_t)(d[4] & 0x1f) << 12);
             StandardMetrics.ms_v_env_parktime->SetValue(tmp_u32);
             ESP_LOGV(TAG, "0x06B7 parktime=%u", tmp_u32);
 
