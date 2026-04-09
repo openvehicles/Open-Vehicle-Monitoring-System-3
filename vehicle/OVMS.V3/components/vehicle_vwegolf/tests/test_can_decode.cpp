@@ -128,6 +128,7 @@ void test_vin_0x6B4() {
 // ---------------------------------------------------------------------------
 
 extern void test_crtd_replay();
+extern void test_clima_all();
 
 int main() {
     printf("=== vehicle_vwegolf CAN decode tests ===\n");
@@ -137,6 +138,7 @@ int main() {
     test_gear_0x187_park();
     test_vin_0x6B4();
     test_crtd_replay();
+    test_clima_all();
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);
     return (tests_passed == tests_run) ? 0 : 1;

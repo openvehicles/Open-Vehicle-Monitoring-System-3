@@ -50,18 +50,20 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  // FCAN — powertrain (read-only)
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN — comfort / clima
 
-    // 0x66E (InnenTemp) broadcasts 0xFE as a sentinel before valid data is available,
-    // which decodes to 77°C and persists across reboots. Clear it so it shows as
-    // undefined rather than a wrong value.
+    // 0x66E broadcasts 0xFE as a "no data yet" sentinel before the interior sensor
+    // is ready. That decodes to 77°C and would persist across reboots via the metric
+    // persistence feature. Clear it so the metric stays undefined until real data arrives.
+    // Note: this intentionally overrides the "no metric defaults in constructor" rule —
+    // the persisted value is garbage from the sentinel, not real data.
     StandardMetrics.ms_v_env_cabintemp->Clear();
 
-    OvmsCommand* cmd_vweg = MyCommandApp.RegisterCommand("xvg", "VW-eGolf framework");
-    cmd_vweg->RegisterCommand("offline", "OVMS please go offline", [this](...) {
-        m_is_control_active = false;
+    OvmsCommand* cmd_xvg = MyCommandApp.RegisterCommand("xvg", "VW e-Golf controls");
+    cmd_xvg->RegisterCommand("offline", "Stop sending OCU keepalive (diagnostic)", [this](...) {
+        m_ocu_active = false;
         ESP_LOGI(TAG, "OCU keepalive stopped");
     });
-    cmd_vweg->RegisterCommand("fold_mirrors", "Fold mirrors in",
-                              [this](...) { CommandMirrorFoldIn(); });
+    cmd_xvg->RegisterCommand("fold_mirrors", "Fold mirrors in",
+                             [this](...) { CommandMirrorFoldIn(); });
 }
 
 OvmsVehicleVWeGolf::~OvmsVehicleVWeGolf() {
@@ -143,20 +145,32 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
 }
 
 void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
-    m_last_message_received = 0;
-    uint8_t* d = p_frame->data.u8;
+    // Only genuine KCAN frames (origin==can3) reset the idle counter and trigger the
+    // OCU keepalive. IncomingFrameCan2 forwards FCAN frames here for shared decode, but
+    // those must not be treated as KCAN activity — during charging, FCAN is flooded with
+    // OBC data while KCAN is completely silent, and counting FCAN frames as KCAN-alive
+    // causes the heartbeat to hammer a silent bus until the TWAI controller hits bus-off.
+    if (p_frame->origin == m_can3) {
+        m_bus_idle_ticks = 0;
 
+        // Send OCU keepalive at ~5Hz while active. VW OSEK NM requires keepalives at
+        // ~200ms intervals; Ticker1 alone (1Hz) is too slow for the ECU to stay in network.
+        // Rate-limited by wall-clock tick (180ms min) so a sudden bus traffic burst from an
+        // NM wake does not overflow the TX queue.
+        if (m_ocu_active) {
+            uint32_t now = xTaskGetTickCount();
+            if ((now - m_last_heartbeat_tick) * portTICK_PERIOD_MS >= 180) {
+                m_last_heartbeat_tick = now;
+                SendOcuHeartbeat();
+            }
+        }
+    }
+
+    uint8_t* d = p_frame->data.u8;
     uint8_t tmp_u8 = 0;
     uint16_t tmp_u16 = 0;
     uint32_t tmp_u32 = 0;
-    // int8_t tmp_i8 = 0;
-    // int16_t tmp_i16 = 0;
-    // int32_t tmp_i32 = 0;
     float tmp_f32 = 0.0F;
-
-    // //TODO Debug only doesn't work ECU timeout
-    // vTaskDelay(pdMS_TO_TICKS(500)); //500ms wait.. hopefully my log isn't get messed up
-    // //TODO end doesn't work ECU timeout
 
     switch (p_frame->MsgID) {
         // TODO: Need to move to verify
@@ -192,8 +206,10 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             StandardMetrics.ms_v_bat_voltage->SetValue(tmp_f32);
 
             // Power: negative = charging, positive = driving.
-            tmp_f32 = -1.0F * (StandardMetrics.ms_v_bat_voltage->AsFloat() *
-                               StandardMetrics.ms_v_bat_current->AsFloat()) / 1000.0F;
+            tmp_f32 = -1.0F *
+                      (StandardMetrics.ms_v_bat_voltage->AsFloat() *
+                       StandardMetrics.ms_v_bat_current->AsFloat()) /
+                      1000.0F;
             StandardMetrics.ms_v_bat_power->SetValue(tmp_f32);
             ESP_LOGV(TAG, "0x0191 I=%.1fA V=%.2fV", StandardMetrics.ms_v_bat_current->AsFloat(),
                      StandardMetrics.ms_v_bat_voltage->AsFloat());
@@ -245,8 +261,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // Sign bits: bit 55 (d[6] MSB) = Southern hemisphere, bit 56 (d[7] bit 0) = Western.
             // Confirmed consistent with known N/E location. S/W hemisphere still needs a capture.
             // Sentinel frames (all 0xFF) decode to lat=134°/lon=268° — filter by range.
-            tmp_u32 = ((uint32_t)(d[0])) | ((uint32_t)(d[1]) << 8) |
-                      ((uint32_t)(d[2]) << 16) | ((uint32_t)(d[3] & 0x7) << 24);
+            tmp_u32 = ((uint32_t)(d[0])) | ((uint32_t)(d[1]) << 8) | ((uint32_t)(d[2]) << 16) |
+                      ((uint32_t)(d[3] & 0x7) << 24);
             float lat = ((float)tmp_u32) * 0.000001F;
             if ((d[6] >> 7) & 1) lat = -lat;  // Southern hemisphere
 
@@ -273,9 +289,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             StdMetrics.ms_v_door_rl->SetValue((d[3] & 0x4) >> 2);
             StdMetrics.ms_v_door_rr->SetValue((d[3] & 0x8) >> 3);
             StdMetrics.ms_v_door_trunk->SetValue((d[3] & 0x10) >> 4);
-            ESP_LOGV(TAG, "0x0583 locked=%u fl=%u fr=%u rl=%u rr=%u trunk=%u",
-                     (d[2] & 0x2) >> 1, d[3] & 0x1, (d[3] & 0x2) >> 1,
-                     (d[3] & 0x4) >> 2, (d[3] & 0x8) >> 3, (d[3] & 0x10) >> 4);
+            ESP_LOGV(TAG, "0x0583 locked=%u fl=%u fr=%u rl=%u rr=%u trunk=%u", (d[2] & 0x2) >> 1,
+                     d[3] & 0x1, (d[3] & 0x2) >> 1, (d[3] & 0x4) >> 2, (d[3] & 0x8) >> 3,
+                     (d[3] & 0x10) >> 4);
             break;
         }
         case 0x594:  // HV charge management
@@ -310,8 +326,10 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                         StandardMetrics.ms_v_bat_voltage->AsFloat());
                 }
                 if (is_charging != was_charging) {
-                    if (is_charging) NotifyChargeStart();
-                    else NotifyChargeStopped();
+                    if (is_charging)
+                        NotifyChargeStart();
+                    else
+                        NotifyChargeStopped();
                 }
             }
 
@@ -621,9 +639,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
 
             // Park time: 17-bit field at bit offset 20, factor 1 s.
             // d[2] bits [7:4] → result bits [3:0], d[3] → [11:4], d[4] bits [4:0] → [16:12].
-            tmp_u32 =
-                ((uint32_t)(d[2] & 0xf0) >> 4) | ((uint32_t)(d[3]) << 4) |
-                ((uint32_t)(d[4] & 0x1f) << 12);
+            tmp_u32 = ((uint32_t)(d[2] & 0xf0) >> 4) | ((uint32_t)(d[3]) << 4) |
+                      ((uint32_t)(d[4] & 0x1f) << 12);
             StandardMetrics.ms_v_env_parktime->SetValue(tmp_u32);
             ESP_LOGV(TAG, "0x06B7 parktime=%u", tmp_u32);
 
@@ -667,19 +684,22 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
 // 0x5B0 => TimeDate
 
 void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
-    // 10 seconds after last received message we assume that the car is sleeping
-    m_is_car_online = m_last_message_received < 10;
+    OvmsVehicle::Ticker1(ticker);
 
-    if (m_last_message_received < 254) m_last_message_received++;
-    ESP_LOGV(TAG, "0x5A7 last_msg=%u", m_last_message_received);
+    if (m_bus_idle_ticks < 254) m_bus_idle_ticks++;
 
-    if (m_is_control_active &&
-        m_is_car_online)  // after wakeup the other ECUs waiting for the car to be online before we
-                          // send some Heartbeat messages otherwise we have some serious txerrors
-                          // just before the car ist active
-    {
-        SendOcuHeartbeat();  // working
-        ESP_LOGV(TAG, "Heartbeat sending triggered");
+    bool bus_alive = m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS;
+    bool just_went_idle = (m_bus_idle_ticks == VWEGOLF_BUS_TIMEOUT_SECS);
+    ESP_LOGV(TAG, "Ticker1: bus_idle=%u alive=%d ocu=%d", m_bus_idle_ticks, bus_alive,
+             m_ocu_active);
+
+    if (just_went_idle) {
+        m_ocu_active = false;
+        ESP_LOGI(TAG, "KCAN idle: OCU node presence cleared");
+    }
+
+    if (m_ocu_active && bus_alive) {
+        SendOcuHeartbeat();
     }
 }
 
@@ -722,70 +742,46 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandPanic() {
 }
 
 void OvmsVehicleVWeGolf::Ticker10(uint32_t ticker) {
-    // working
-    m_climate_control_temp = MyConfig.GetParamValueInt("xvg", "cc_temp", 21);
-    m_climate_control_on_battery = (MyConfig.GetParamValueBool("xvg", "cc_onbat", false) ? 1 : 0);
-
-    ESP_LOGV(TAG,
-             "Trigger10 cc_temp: %u °C, cc_onbat: %u, control_mirror %u, control_horn: %u, "
-             "control_indicator: %u, control_panicMode: %u, control_unlock %u, control_lock %u",
-             m_climate_control_temp, m_climate_control_on_battery, m_mirror_fold_in_requested,
-             m_horn_requested, m_indicators_requested, m_panic_mode_requested, m_unlock_requested,
-             m_lock_requested);
+    OvmsVehicle::Ticker10(ticker);
+    m_climate_temp = (uint8_t)MyConfig.GetParamValueInt("xvg", "cc-temp", 21);
+    // cc-onbat and cc-minsoc are persistent ECU settings in the e-Manager (set via the MQB
+    // head unit).  The BAP write to push them to the clima ECU is pending RE work — the
+    // Carnet app that originally sent these is defunct, so no capture is available yet.
+    m_climate_on_battery = MyConfig.GetParamValueBool("xvg", "cc-onbat", false);
+    ESP_LOGV(TAG, "Ticker10: cc_temp=%u°C cc_onbat=%d", m_climate_temp, m_climate_on_battery);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
-    ESP_LOGV(TAG, "Wakeup triggered");
-
-    // Info: eGolf300 after sending only the heartbeat message ID:0x5A7 or the first message here
-    // ID:0x17330301 one ECU with ID:0x5F5 is answering on the bus perhaps ID:0x66E and ID:0x6B5 too
-    // Info: perhaps this could be used for another method to wakeup the car comf CAN perhaps
-    // changing the settings is possible without weaking up everything
-
-    if (!m_is_car_online) {
-        ESP_LOGI(TAG, "Car is sleeping we are trying to wake it up");
-        // Wake up the Bus //CLI: can can3 tx extended 0x17330301 0x40 0x00 0x01 0x1F 0x00 0x00 0x00
-        // 0x00
-        canbus* comfBus;
-        comfBus = m_can3;
-        uint8_t length = 8;
-        uint8_t data[length];
-        data[0] = 0x40;
-        data[1] = 0x00;
-        data[2] = 0x01;
-        data[3] = 0x1F;
-        data[4] = 0x00;
-        data[5] = 0x00;
-        data[6] = 0x00;
-        data[7] = 0x00;
-        comfBus->WriteExtended(0x17330301, length, data);
-        vTaskDelay(pdMS_TO_TICKS(50));
-        ESP_LOGV(TAG, "First message send ID: data 0->7");
-        ESP_LOGV(TAG,
-                 "First message send ID:0x17330301 data %02x %02x %02x %02x %02x %02x %02x %02x",
-                 data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-
-        vTaskDelay(pdMS_TO_TICKS(100));
-        length = 8;
-        data[0] = 0x67;  // source node identifier identity of the transmitter of the message
-        data[1] = 0x10;  // could be anything
-        data[2] = 0x41;  // 0-5 => State,  6 => eCall Car Wakeup
-        data[3] = 0x84;  // 0-8 => eCall Wakeup
-        data[4] = 0x14;
-        data[5] = 0x00;
-        data[6] = 0x00;
-        data[7] = 0x00;
-        comfBus->WriteExtended(0x1B000067, length, data);
-        vTaskDelay(pdMS_TO_TICKS(50));
-        ESP_LOGV(TAG, "second message send ID: data 0->7");
-        ESP_LOGV(TAG,
-                 "second message send ID:0x1B000067 data %02x %02x %02x %02x %02x %02x %02x %02x",
-                 data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-
-        m_is_control_active = true;
-    } else {
-        ESP_LOGI(TAG, "Wakeup not necessary car was online before");
+    if (m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS) {
+        ESP_LOGI(TAG, "Wakeup: KCAN already active");
+        return Success;
     }
+
+    ESP_LOGI(TAG, "Wakeup: asserting dominant bits on KCAN");
+
+    // Reset the KCAN controller to clear any stuck frame from the TWAI HW TX FIFO.
+    // A stale heartbeat left from the prior session occupies the FIFO slot; on a sleeping
+    // bus it can never drain (no ACK), so the wake frame queues behind it and never
+    // produces dominant bits. Stop/Start preserves mode and speed.
+    m_can3->Reset();
+    vTaskDelay(pdMS_TO_TICKS(5));
+
+    uint8_t data[8] = {0x40, 0x00, 0x01, 0x1F, 0x00, 0x00, 0x00, 0x00};
+    m_can3->WriteExtended(0x17330301, 8, data, pdMS_TO_TICKS(50));
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    data[0] = 0x67;
+    data[1] = 0x10;
+    data[2] = 0x41;
+    data[3] = 0x84;
+    data[4] = 0x14;
+    data[5] = 0x00;
+    data[6] = 0x00;
+    data[7] = 0x00;
+    m_can3->WriteExtended(0x1B000067, 8, data, pdMS_TO_TICKS(50));
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    m_ocu_active = true;
     return Success;
 }
 
@@ -806,7 +802,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
     data[6] = 0x00;
     data[7] = 0x00;
 
-    // Spiegelanklappen
+    // Mirror fold
     if (m_mirror_fold_in_requested) {
         tmp_u8 = 1;
         data[5] = (((uint8_t)tmp_u8) << 7) & 0x80;
@@ -814,7 +810,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
         ESP_LOGI(TAG, "Mirror fold in");
     }
 
-    // Hupen
+    // Horn
     if (m_horn_requested) {
         tmp_u8 = 1;
         data[6] = (((uint8_t)tmp_u8) >> 0) & 0x1;
@@ -840,7 +836,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
         ESP_LOGI(TAG, "DoorUnlock");
     }
 
-    // Warnblinken
+    // Hazard lights
     if (m_indicators_requested) {
         tmp_u8 = 1;
         data[6] = (((uint8_t)tmp_u8) << 3) & 0x8;
@@ -848,7 +844,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
         ESP_LOGI(TAG, "Hazard lights");
     }
 
-    // Panicalarm
+    // Panic alarm
     if (m_panic_mode_requested) {
         tmp_u8 = 1;
         data[6] = (((uint8_t)tmp_u8) << 4) & 0x10;
@@ -857,8 +853,84 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
     }
 
     comfBus->WriteStandard(0x5A7, length, data);
-    vTaskDelay(pdMS_TO_TICKS(50));
-    ESP_LOGV(TAG, "Heartbeat send ID: data 0->7");
-    ESP_LOGI(TAG, "FHeartbeat send ID:0x5A7 data %02x %02x %02x %02x %02x %02x %02x %02x", data[0],
-             data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+    ESP_LOGV(TAG, "Heartbeat 0x5A7: %02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1],
+             data[2], data[3], data[4], data[5], data[6], data[7]);
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool enable) {
+    ESP_LOGI(TAG, "Climate control: %s", enable ? "start" : "stop");
+
+    if (m_can3->GetErrorState() == CAN_errorstate_busoff) {
+        ESP_LOGW(TAG, "Climate control: KCAN controller in bus-off — aborting");
+        return Fail;
+    }
+
+    // Wake the bus if sleeping; wait 1 s for the NM-join flood to settle before sending BAP.
+    if (m_bus_idle_ticks >= VWEGOLF_BUS_TIMEOUT_SECS) {
+        ESP_LOGI(TAG, "Climate control: KCAN idle — waking bus");
+        CommandWakeup();
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+
+    // Rolling counter: echoed back (| 0x80) in the ECU's ACK to match the command.
+    m_bap_counter = (m_bap_counter == 0xFF) ? 0x01 : m_bap_counter + 1;
+
+    // Suppress heartbeat for the duration of the 3-frame BAP sequence; a heartbeat
+    // queuing between frames blocks the continuation and the ECU discards the message.
+    m_last_heartbeat_tick = xTaskGetTickCount();
+
+    uint8_t data[8];
+
+    // Frame 1: BAP multi-frame start → port 0x19 (clima parameters), 8-byte payload.
+    data[0] = 0x80;           // multi-frame start, channel 0
+    data[1] = 0x08;           // total payload length
+    data[2] = 0x29;           // BAP opcode=2, node=0x25 [5:2]
+    data[3] = 0x59;           // BAP node=0x25 [1:0], port=0x19
+    data[4] = m_bap_counter;  // rolling counter; ACK echoes this | 0x80
+    data[5] = 0x06;           // duration: 0x06 = 15 min (0x04 = 10 min)
+    data[6] = 0x00;
+    data[7] = 0x01;
+    esp_err_t ok1 = m_can3->WriteExtended(0x17332501, 8, data, pdMS_TO_TICKS(200));
+    if (ok1 == ESP_FAIL) {
+        ESP_LOGW(TAG, "BAP clima frame 1 TX queue overflow");
+        m_ocu_active = false;
+        return Fail;
+    }
+
+    // Frame 2: BAP continuation — remaining payload bytes including target temperature.
+    // Temperature encoding: raw = (celsius - 10) * 10  (e.g. 21°C → 0x6E)
+    uint8_t temp_raw = (uint8_t)((m_climate_temp - 10) * 10);
+    data[0] = 0xC0;  // multi-frame continuation, channel 0
+    data[1] = 0x06;
+    data[2] = 0x00;
+    data[3] = temp_raw;  // target temperature
+    data[4] = 0x00;
+    esp_err_t ok2 = m_can3->WriteExtended(0x17332501, 5, data, pdMS_TO_TICKS(200));
+    if (ok2 == ESP_FAIL) {
+        ESP_LOGW(TAG, "BAP clima frame 2 TX queue overflow");
+        m_ocu_active = false;
+        return Fail;
+    }
+
+    // Frame 3: BAP single-frame trigger → port 0x18 (immediate start/stop).
+    // d[3] = 0x01 start / 0x00 stop.
+    data[0] = 0x29;
+    data[1] = 0x58;
+    data[2] = 0x00;
+    data[3] = enable ? 0x01 : 0x00;
+    esp_err_t ok3 = m_can3->WriteExtended(0x17332501, 4, data, pdMS_TO_TICKS(200));
+    if (ok3 == ESP_FAIL) {
+        ESP_LOGW(TAG, "BAP clima frame 3 TX queue overflow");
+        m_ocu_active = false;
+        return Fail;
+    }
+
+    ESP_LOGI(TAG, "BAP clima %s sent: counter=0x%02X temp=%u°C", enable ? "start" : "stop",
+             m_bap_counter, m_climate_temp);
+
+    // Optimistic update: give the app immediate feedback. 0x05EA will overwrite this
+    // with ground truth once the ECU responds.
+    StandardMetrics.ms_v_env_hvac->SetValue(enable);
+    m_ocu_active = enable;  // stay in NM ring while clima runs; leave after stop
+    return Success;
 }
