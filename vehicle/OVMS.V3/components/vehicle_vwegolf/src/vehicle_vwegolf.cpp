@@ -579,9 +579,10 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             if (tmp_u16 >= 0x3FE) break;
             tmp_f32 = ((float)tmp_u16) * 0.1F - 40.0F;
 
-            // remote_mode: 0=idle, 2=running, 3=just activated. HVAC on when != 0.
+            // remote_mode field: unreliable when ignition off (Capture 5 — always 0 in
+            // remote clima, 0x5EA barely broadcasts). HVAC state driven from BAP port 0x12
+            // on 0x17332510 instead — works for both OVMS-triggered and schedule-triggered.
             tmp_u8 = ((uint8_t)(d[3] & 0xc0) >> 6) | ((uint8_t)(d[4] & 0x1) << 2);
-            StandardMetrics.ms_v_env_hvac->SetValue(tmp_u8 != 0);
             StandardMetrics.ms_v_env_cabintemp->SetValue(tmp_f32);
             ESP_LOGV(TAG, "0x05EA clima_cabin=%.1f°C remote_mode=%u", tmp_f32, tmp_u8);
             break;
@@ -674,6 +675,28 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // KL_Infotainment Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
             // Remotestart_KL15_Anf Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
             // Remotestart_Motor_Start Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+            break;
+        }
+        case 0x17332510:  // BAP clima ECU (node 0x25) → bus responses.
+        {
+            // Port 0x12 status broadcast: payload[0] = 0x05 active, 0x00 idle.
+            // Works for both OVMS-triggered and schedule-triggered clima (Captures 6, 12).
+            // Single-frame: d[0:1] = BAP header (opcode|node, node|port), d[2+] = payload.
+            //   49 52 XX → opcode=2(Status), node=0x25, port=0x12, payload[0]=XX
+            // Multi-frame start: d[0]=0x80/0x90, d[1]=len, d[2:3]=BAP header, d[4+]=payload.
+            //   80 07 49 52 XX → same, payload[0]=XX
+            // Check for port 0x12 (0x52 in second BAP header byte, low 6 bits = 0x12).
+            if (d[1] == 0x52 && (d[0] & 0xC0) == 0x40) {
+                // Single-frame: d[0]=0x49 (opcode=2, node bits), d[1]=0x52 (port 0x12)
+                tmp_u8 = d[2];
+                StandardMetrics.ms_v_env_hvac->SetValue(tmp_u8 != 0);
+                ESP_LOGV(TAG, "BAP port 0x12 single: hvac=%u (raw=0x%02X)", tmp_u8 != 0, tmp_u8);
+            } else if ((d[0] & 0xC0) == 0x80 && d[3] == 0x52) {
+                // Multi-frame start: d[2:3]=BAP header, d[4]=payload[0]
+                tmp_u8 = d[4];
+                StandardMetrics.ms_v_env_hvac->SetValue(tmp_u8 != 0);
+                ESP_LOGV(TAG, "BAP port 0x12 multi: hvac=%u (raw=0x%02X)", tmp_u8 != 0, tmp_u8);
+            }
             break;
         }
         default: {
