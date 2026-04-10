@@ -68,3 +68,10 @@ docs/build/
 .vscode/
 vehicle/OVMS.V3/components/ovms_webserver/assets/charts.js.gz
 *.gz
+CLAUDE.md
+PROJECT.md
+vehicle/OVMS.V3/components/vehicle_vwegolf/docs/clima-control-bap.md
+vehicle/OVMS.V3/components/vehicle_vwegolf/docs/vw-bap-protocol.md
+vehicle/OVMS.V3/components/vehicle_vwegolf/docs/refactor-notes.md
+PR-MESSAGE.md
+scripts/

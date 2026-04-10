@@ -8,35 +8,15 @@
 #   bus   CAN bus to capture (default: can3).
 #
 # Requires:
-#   - Laptop reachable to OVMS: either on the OVMS WiFi hotspot (192.168.4.1)
-#     or on an iPhone hotspot where OVMS connects (172.20.10.2)
+#   - Laptop on the OVMS WiFi hotspot (192.168.4.1)
 #   - nc (netcat)
-#   - SSH key for ovms@<host> (used for version query and log start/stop)
+#   - SSH key for ovms@192.168.4.1 (used for version query and log start/stop)
 
 set -euo pipefail
 
+OVMS="ovms.local"
 BUS="${1:-can3}"
 SSH_USER="ovms"
-
-# Auto-detect OVMS: try the AP address first, fall back to iPhone hotspot address.
-OVMS=""
-for candidate in "192.168.4.1" "172.20.10.2"; do
-    if ssh -o StrictHostKeyChecking=no \
-           -o ConnectTimeout=3 \
-           -o BatchMode=yes \
-           -o HostKeyAlgorithms=+ssh-rsa \
-           -o PubkeyAcceptedKeyTypes=+ssh-rsa \
-           "${SSH_USER}@${candidate}" "version" &>/dev/null; then
-        OVMS="$candidate"
-        break
-    fi
-done
-if [[ -z "$OVMS" ]]; then
-    echo "Could not reach OVMS at 192.168.4.1 or 172.20.10.2."
-    echo "Make sure the laptop is on the OVMS AP or iPhone hotspot."
-    exit 1
-fi
-echo "OVMS reachable at $OVMS"
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 OUTDIR="candumps"
@@ -45,26 +25,27 @@ OUTDIR="candumps"
 # 1. SSH helper (defined early — also used for version query).
 # ---------------------------------------------------------------------------
 ssh_cmd() {
-    # OVMS uses an RSA host key. Newer OpenSSH clients disable ssh-rsa by default
-    # (SHA-1 deprecation), so we re-enable it explicitly for this host.
-    ssh -o StrictHostKeyChecking=no \
-        -o ConnectTimeout=5 \
-        -o BatchMode=yes \
-        -o HostKeyAlgorithms=+ssh-rsa \
-        -o PubkeyAcceptedKeyTypes=+ssh-rsa \
-        "${SSH_USER}@${OVMS}" "$1" 2>/dev/null
+  # OVMS uses an RSA host key. Newer OpenSSH clients disable ssh-rsa by default
+  # (SHA-1 deprecation), so we re-enable it explicitly for this host.
+  ssh -o StrictHostKeyChecking=no \
+    -o ConnectTimeout=5 \
+    -o BatchMode=yes \
+    -o HostKeyAlgorithms=+ssh-rsa \
+    -o PubkeyAcceptedKeyTypes=+ssh-rsa \
+    "${SSH_USER}@${OVMS}" "$1" 2>/dev/null
 }
 
 # ---------------------------------------------------------------------------
 # 2. Fetch firmware version via SSH (same channel used for log control).
 # ---------------------------------------------------------------------------
 echo "Querying OVMS firmware version..."
-VERSION=$(ssh_cmd "metrics list m.version" \
-    | awk '{print $2}') || VERSION=""
+VERSION=$(ssh_cmd "metrics list m.version" |
+  awk '{print $2}') || VERSION=""
 VERSION="${VERSION:-unknown}"
 
 if [[ "$VERSION" == "unknown" ]]; then
-    echo "Warning: could not read firmware version — continuing with 'unknown' in filename."
+  echo "Warning: SSH to $OVMS failed — is the laptop on the OVMS hotspot?"
+  echo "         Continuing with 'unknown' in the filename."
 fi
 
 VERSION_SLUG=$(echo "$VERSION" | tr '/' '_' | tr ' ' '_' | sed 's/[^a-zA-Z0-9._-]/_/g')
@@ -98,13 +79,13 @@ STOP_CMD="can log stop"
 
 SSH_OK=false
 if ssh_cmd "$LOG_CMD"; then
-    SSH_OK=true
-    echo "Log started on OVMS ($BUS)."
+  SSH_OK=true
+  echo "Log started on OVMS ($BUS)."
 else
-    echo "SSH unavailable — start the log manually on the OVMS shell:"
-    echo "  $LOG_CMD"
-    echo ""
-    read -r -p "Press Enter when the log is running..."
+  echo "SSH unavailable — start the log manually on the OVMS shell:"
+  echo "  $LOG_CMD"
+  echo ""
+  read -r -p "Press Enter when the log is running..."
 fi
 
 echo ""
@@ -118,20 +99,20 @@ echo ""
 START_TIME=$(date +%s)
 
 cleanup() {
-    echo ""
+  echo ""
 
-    if $SSH_OK; then
-        ssh_cmd "$STOP_CMD" && echo "Log stopped on OVMS." || true
-    else
-        echo "Stop the log on the OVMS shell:"
-        echo "  $STOP_CMD"
-    fi
+  if $SSH_OK; then
+    ssh_cmd "$STOP_CMD" && echo "Log stopped on OVMS." || true
+  else
+    echo "Stop the log on the OVMS shell:"
+    echo "  $STOP_CMD"
+  fi
 
-    FRAMES=$(grep -c "^[0-9]" "$CRTD_FILE" 2>/dev/null || echo "0")
-    END_TIME=$(date +%s)
-    DURATION=$(( END_TIME - START_TIME ))
+  FRAMES=$(grep -c "^[0-9]" "$CRTD_FILE" 2>/dev/null || echo "0")
+  END_TIME=$(date +%s)
+  DURATION=$((END_TIME - START_TIME))
 
-    cat > "$MD_FILE" <<MDEOF
+  cat >"$MD_FILE" <<MDEOF
 # ${BASE}.crtd — Capture Notes
 
 ## Capture info
@@ -155,10 +136,10 @@ ${DESCRIPTION}
 <!-- Add analysis notes here -->
 MDEOF
 
-    echo ""
-    echo "Saved $CRTD_FILE ($FRAMES frames, ${DURATION}s)"
-    echo "      $MD_FILE"
-    exit 0
+  echo ""
+  echo "Saved $CRTD_FILE ($FRAMES frames, ${DURATION}s)"
+  echo "      $MD_FILE"
+  exit 0
 }
 
 trap cleanup INT TERM
@@ -166,7 +147,7 @@ trap cleanup INT TERM
 # ---------------------------------------------------------------------------
 # 6. Stream frames.
 # ---------------------------------------------------------------------------
-nc "$OVMS" 3000 > "$CRTD_FILE" || true
+nc "$OVMS" 3000 >"$CRTD_FILE" || true
 
 # nc exited cleanly (OVMS closed the connection) — run cleanup manually.
 trap - INT TERM

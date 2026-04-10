@@ -1,22 +1,24 @@
+Here's the compressed version:
+
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) in this repo.
 
 ## Project Overview
 
-Fork of Open Vehicle Monitoring System v3 (OVMS3) focused on VW e-Golf integration. OVMS3 is an ESP32-based vehicle telemetry and control system connecting to a vehicle's CAN bus via OBD2 and providing remote monitoring, diagnostics, and control.
+Fork of OVMS3 — VW e-Golf integration. ESP32 vehicle telemetry/control via CAN bus (OBD2). Remote monitoring, diagnostics, control.
 
 Primary focus: `vehicle/OVMS.V3/components/vehicle_vwegolf/`
 
-**"The app"** always refers to OVMS Connect by CrashOverride2 (Apple App Store / Google Play). All end-user-facing decisions — metric naming, command behaviour, response timing — target this app as the client. Vehicle list: https://github.com/CrashOverride2/OVMS-Connect-Vehicles
+**"The app"** = OVMS Connect by CrashOverride2 (App Store / Google Play). All user-facing decisions — metric naming, command behaviour, response timing — target this app. Vehicle list: https://github.com/CrashOverride2/OVMS-Connect-Vehicles
 
-**Key constraint:** The OBD port only carries Diagnostic CAN and only works when the car is on. All remote features (climate, wake, lock, charge) require KCAN access via the J533 gateway harness. The e-Golf connects via J533, not directly to individual ECUs.
+**Key constraint:** OBD port = Diagnostic CAN only, works when car on. Remote features (climate, wake, lock, charge) need KCAN via J533 gateway harness. e-Golf connects via J533, not direct to ECUs.
 
-**BAP:** Climate control and other comfort functions use the proprietary BAP (*Bedien- und Anzeigeprotokoll*) protocol on KCAN — not ISO-TP/UDS. BAP cannot be handled by the standard OVMS poller; it requires direct CAN frame construction. See `docs/vw-bap-protocol.md` and `docs/clima-control-bap.md`.
+**BAP:** Climate/comfort functions use proprietary BAP (*Bedien- und Anzeigeprotokoll*) on KCAN — not ISO-TP/UDS. Can't use standard OVMS poller; needs direct CAN frame construction. See `docs/vw-bap-protocol.md` and `docs/clima-control-bap.md`.
 
-**External RE resource:** https://github.com/thomasakarlsen/e-golf-comfort-can — primary reference for KCAN/BAP: climatisation, charge profiles, wake, horn/lights.
+**External RE resource:** https://github.com/thomasakarlsen/e-golf-comfort-can — primary KCAN/BAP reference: climatisation, charge profiles, wake, horn/lights.
 
-**AI-generated code warning:** The upstream OVMS project explicitly warns against unvalidated AI-generated code. All code must be validated against real vehicle CAN data before upstream submission.
+**AI-generated code warning:** Upstream OVMS warns against unvalidated AI code. All code must validate against real vehicle CAN data before upstream submission.
 
 ## Build & Deploy
 
@@ -43,9 +45,9 @@ bash scripts/build.sh
 bash scripts/build.sh --deploy
 ```
 
-`build.sh --deploy` starts a Python HTTP server and prints the OTA command to paste into the OVMS shell. Production hardware is hw31 (`sdkconfig.default.hw31`).
+`build.sh --deploy` starts Python HTTP server, prints OTA command for OVMS shell. Production hw = hw31 (`sdkconfig.default.hw31`).
 
-OVMS shell: `http://192.168.4.1` (web terminal) or SSH to `192.168.4.1`.
+OVMS shell: `http://192.168.4.1` (web terminal) or SSH `192.168.4.1`.
 
 OTA command (printed by build.sh):
 ```
@@ -54,7 +56,7 @@ ota flash http http://<laptop-ip>:8080/ovms3.bin
 
 ## Code Style
 
-Google style, 4-space indent, 100-column limit (`.clang-format` in component dir):
+Google style, 4-space indent, 100-col limit (`.clang-format` in component dir):
 ```bash
 clang-format -i vehicle/OVMS.V3/components/vehicle_vwegolf/src/*.cpp \
                 vehicle/OVMS.V3/components/vehicle_vwegolf/src/*.h
@@ -64,12 +66,12 @@ clang-format -i vehicle/OVMS.V3/components/vehicle_vwegolf/src/*.cpp \
 
 ### Component System
 
-All functionality lives in `vehicle/OVMS.V3/components/`. Enable `CONFIG_OVMS_VEHICLE_VWEGOLF` via `make menuconfig` or sdkconfig. Each component has `CMakeLists.txt`, `component.mk`, and `src/`.
+All functionality in `vehicle/OVMS.V3/components/`. Enable `CONFIG_OVMS_VEHICLE_VWEGOLF` via `make menuconfig` or sdkconfig. Each component has `CMakeLists.txt`, `component.mk`, `src/`.
 
 ### VW e-Golf Specifics
 
-- **CAN bus 2** (`m_can2`, FCAN): Powertrain CAN — gear position, BMS data, VIN
-- **CAN bus 3** (`m_can3`, KCAN): Convenience CAN — speed, SoC, charging, body control, climate
+- **CAN bus 2** (`m_can2`, FCAN): Powertrain — gear, BMS, VIN
+- **CAN bus 3** (`m_can3`, KCAN): Convenience — speed, SoC, charging, body, climate
 - **Custom CLI/config/metric prefix:** `xvg`
 
 Poll states:
@@ -78,21 +80,21 @@ Poll states:
 - `VWEGOLF_CHARGING` (2) — charging
 - `VWEGOLF_ON` (3) — drivable
 
-**Achievable via KCAN/BAP:** wake from sleep · start/stop climatisation · set clima temp and duration · set "allow clima on battery" flag · set minimum charge limit · read/write charge profiles · trigger horn and indicators.
+**Achievable via KCAN/BAP:** wake · start/stop climatisation · set clima temp/duration · set "allow clima on battery" · set min charge limit · read/write charge profiles · horn/indicators.
 
 ### Framework Quick Reference
 
 Key singletons: `StandardMetrics`, `MyEvents`, `MyCommandApp`, `MyConfig`, `MyVehicleFactory`, `MyMetrics`. Logging: `ESP_LOGI/V/W/E(TAG, ...)` with `#define TAG "v-vwegolf"`.
 
-Vehicle class inherits `OvmsVehicle`. Override `IncomingFrameCan1/2/3()` for passive frame decoding, `Ticker1()`/`Ticker10()` etc. for periodic tasks, `IncomingPollReply()` for active UDS/TP2.0 responses. Always call the parent implementation in ticker overrides.
+Vehicle class inherits `OvmsVehicle`. Override `IncomingFrameCan1/2/3()` for passive decode, `Ticker1()`/`Ticker10()` for periodic tasks, `IncomingPollReply()` for active UDS/TP2.0 responses. Always call parent in ticker overrides.
 
-**Bit extraction** — use `canbitset` from `canutils.h` rather than manual shifts:
+**Bit extraction** — use `canbitset` from `canutils.h`, not manual shifts:
 ```cpp
 canbitset<uint64_t> canbits(p_frame->data.u8, 8);
 uint32_t val = canbits.get(12, 23);  // bits 12-23 inclusive
 ```
 
-**Custom metrics** — register as class members, never set a default value in the constructor:
+**Custom metrics** — register as class members, never set default in constructor:
 ```cpp
 m_my_metric = MyMetrics.Find("xvg.custom");
 if (!m_my_metric)
@@ -112,41 +114,41 @@ if (!m_my_metric)
 
 ### Key Reference Files
 
-- `components/main/vehicle.h` — base vehicle class and all overridable hooks
+- `components/main/vehicle.h` — base vehicle class, all overridable hooks
 - `components/poller/src/vehicle_poller.h` — poll_pid_t, poll types, IncomingPollReply
-- `components/main/ovms_metrics.h` — metric types and StandardMetrics
+- `components/main/ovms_metrics.h` — metric types, StandardMetrics
 - `components/main/ovms_events.h` — event system
 - `components/main/ovms_command.h` — command framework
-- `components/main/ovms_config.h` — configuration system
-- `components/vehicle_vweup/` — similar VW vehicle, useful reference
-- `components/vehicle_hyundai_ioniqvfl/` — concise but complete reference recommended by maintainer
-- `components/vehicle_vwegolf/docs/vwegolf.dbc` — canonical CAN signal definitions: bit positions, scaling, confirmation status, BAP frame stubs. Update whenever a new signal is confirmed from a capture.
+- `components/main/ovms_config.h` — config system
+- `components/vehicle_vweup/` — similar VW vehicle, good reference
+- `components/vehicle_hyundai_ioniqvfl/` — concise complete reference (maintainer recommended)
+- `components/vehicle_vwegolf/docs/vwegolf.dbc` — canonical CAN signal defs: bit positions, scaling, confirmation status, BAP frame stubs. Update when new signal confirmed from capture.
 
 ## Development Workflow
 
-Workflow for each fix or feature: branch → test → build → OTA flash to the-module → verify on car → PR upstream. One thing per branch/PR.
+Each fix/feature: branch → test → build → OTA flash to the-module → verify on car → PR upstream. One thing per branch/PR.
 
 ### Git hooks
 
-`scripts/install-hooks.sh` installs a pre-push hook that blocks pushes on `fix/*` and `feat/*` unless all native tests pass. `investigation` and `master` push freely. Bypass only in genuine emergencies: `git push --no-verify`.
+`scripts/install-hooks.sh` installs pre-push hook blocking `fix/*` and `feat/*` unless native tests pass. `investigation` and `master` push freely. Bypass emergencies only: `git push --no-verify`.
 
 ### CAN capture and replay
 
-Core testing loop: capture real frames once while car is in a specific state, then replay repeatedly against new firmware builds without needing the car in that state again.
+Core loop: capture real frames once in specific state, replay against new builds without needing car in that state.
 
-**Capture** (laptop on OVMS hotspot, SSH key for `ovms@192.168.4.1` required):
+**Capture** (laptop on OVMS hotspot, SSH key for `ovms@192.168.4.1`):
 ```bash
 bash vehicle/OVMS.V3/components/vehicle_vwegolf/tests/capture.sh        # can3 (default)
 bash vehicle/OVMS.V3/components/vehicle_vwegolf/tests/capture.sh can2   # FCAN (rarely needed)
 ```
-The script queries firmware version via SSH, prompts for a one-line description, starts the log automatically, streams frames until Ctrl-C, stops the log, and writes both a `.crtd` and a companion `.md` in `tests/candumps/`.
+Script queries firmware version via SSH, prompts for description, starts log, streams frames til Ctrl-C, stops log, writes `.crtd` + companion `.md` in `tests/candumps/`.
 
-To filter specific CAN IDs (manually, if needed):
+Filter specific CAN IDs (manual):
 ```
 can log start tcpserver transmit crtd 3000 3:131
 ```
 
-**Note:** CCS DC fast charging keeps KCAN completely silent — no frames visible to OVMS. AC Type 2 charging is required for any OBC-related captures.
+**Note:** CCS DC fast charging = KCAN silent, no frames visible. AC Type 2 required for OBC captures.
 
 **Replay:**
 ```
@@ -174,30 +176,30 @@ metrics list ms_v_pos
 
 ### Branch strategy
 
-- **`master`** — tracks upstream, never commit directly
-- **`investigation`** — RE notes, captures, documentation only
+- **`master`** — tracks upstream, no direct commits
+- **`investigation`** — RE notes, captures, docs only
 - **`climate-control`** — implementation branch
 
-Each commit should cover one decode or control path so it can be reverted cleanly.
+Each commit = one decode or control path, cleanly revertible.
 
 ### Upstream PRs
 
-The `climate-control` branch is **not** submitted as a single PR. Extract small focused PRs in the order tracked in `PROJECT.md`. Each PR must: pass native tests · reference relevant `docs/` RE notes · English user-facing strings only · single log tag `v-vwegolf` · no metric defaults in constructor.
+`climate-control` not submitted as single PR. Extract small focused PRs per order in `PROJECT.md`. Each PR must: pass native tests · reference `docs/` RE notes · English strings only · single tag `v-vwegolf` · no metric defaults in constructor.
 
 ## Maintainer Code Review Rules
 
-From maintainer (dexterbg) review of PR #1327. Violating these causes a PR to be returned.
+From dexterbg review of PR #1327. Violating = PR returned.
 
-**Variables:** No static module-level variables for vehicle state — all state in class members.
+**Variables:** No static module-level vars for vehicle state — all state in class members.
 
-**Metrics:** Never set a metric to a default in the constructor — breaks persistent metric feature (values survive reboots; constructor writes silently discard them). Only set a metric when real data has been decoded.
+**Metrics:** Never set metric default in constructor — breaks persistent metrics (survive reboots; constructor writes silently discard). Only set when real data decoded.
 
-**Configuration:** Instance names all lowercase (case-sensitive). Name must be self-documenting. Every param must be documented in the user guide. Don't create unused params.
+**Configuration:** Instance names all lowercase (case-sensitive). Self-documenting names. Every param documented in user guide. No unused params.
 
-**Commands:** CLI namespace = config prefix (`xvg`). All command names lowercase. User-facing text in English only — no German in help strings, errors, or any user-visible text.
+**Commands:** CLI namespace = config prefix (`xvg`). All lowercase. English only — no German in help/errors/user-visible text.
 
-**Logging:** Single log tag per component (`v-vwegolf`). Tag names use dashes, not underscores.
+**Logging:** Single tag per component (`v-vwegolf`). Dashes, not underscores.
 
-**Unfinished code:** Stubs and placeholders are OK in a PR but must have a comment explaining the plan. No silent dead code.
+**Unfinished code:** Stubs/placeholders OK but must have comment with plan. No silent dead code.
 
-**User guide:** Every merged vehicle module needs a `docs/index.rst` page covering hardware wiring, J533 adapter, all config params and commands.
+**User guide:** Every merged vehicle module needs `docs/index.rst` covering hardware wiring, J533 adapter, all config params and commands.

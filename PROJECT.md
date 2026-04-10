@@ -1,24 +1,25 @@
 # VW e-Golf OVMS — Project Tracker
 
-Living document. Update as items are resolved or new ones are found.
-Signal definitions → `docs/vwegolf.dbc`. Protocol details → `docs/clima-control-bap.md`.
+Living doc. Update as resolved/found.
+Signal defs → `docs/vwegolf.dbc`. Protocol details → `docs/clima-control-bap.md`.
 
 ---
 
 ## Upstream PR queue
 
-Break the `climate-control` branch into small focused PRs in this order (each depends on the previous being merged):
+Break `climate-control` branch into small focused PRs, this order (each depends on prev merged):
 
 | # | PR | Status | Blocker |
 |---|---|---|---|
-| 1 | Decode-only baseline — all `IncomingFrameCan3`/`Can2` metric decodes, no bus writes | ready | — |
-| 2 | `CommandWakeup` — KCAN NM wake sequence | ready | PR 1 merged |
-| 3 | `CommandClimateControl` — clima start/stop via BAP | blocked | port 0x19 temp encoding (see below) |
-| 4 | OCU heartbeat one-shot actions — horn, indicators, panic, mirror fold | ready | PR 2 merged |
-| 5 | `CommandLock` / `CommandUnlock` | blocked | auth bytes not captured (see below) |
-| 6 | User guide (`docs/index.rst`) — required by maintainer before any PR merges | not started | — |
+| 1 | Decode-only baseline — all `IncomingFrameCan3`/`Can2` metric decodes, no bus writes | submitted (#1369) | under review |
+| 2 | Bugfixes — 0x594 charge state, 0x2AF overflow, 0x6B7 parktime | submitted (fix branch) | PR 1 merged |
+| 3 | `CommandWakeup` + OCU heartbeat — KCAN NM wake sequence, 5 Hz keepalive | ready | PR 1 merged |
+| 4 | `CommandClimateControl` — clima start/stop via BAP | testing on car | PR 3 merged |
+| 5 | OCU heartbeat one-shot actions — horn, indicators, panic, mirror fold | ready | PR 3 merged |
+| 6 | `CommandLock` / `CommandUnlock` | blocked | auth bytes not captured (see below) |
+| 7 | User guide (`docs/index.rst`) — required by maintainer for complete vehicle module | not started | — |
 
-Each PR must: pass native test suite · reference relevant `docs/` RE notes · English user-facing strings only · single log tag `v-vwegolf` · no metric defaults in constructor.
+Each PR must: pass native test suite · ref relevant `docs/` RE notes · English user-facing strings only · single log tag `v-vwegolf` · no metric defaults in constructor.
 
 ---
 
@@ -26,7 +27,7 @@ Each PR must: pass native test suite · reference relevant `docs/` RE notes · E
 
 ### ~~Startup sentinel filters missing~~ — fixed
 
-All startup sentinel filters implemented and tested:
+All startup sentinel filters implemented/tested:
 
 | Frame | Sentinel check | Fixed |
 |---|---|---|
@@ -38,127 +39,235 @@ All startup sentinel filters implemented and tested:
 
 ### CCS charge type not detected
 
-During active CCS DC fast charging, bits [3:2] of `0x0594` d[5] = 0x00 (no connector type).
-`v.c.type` stays undefined. The CCS type indicator is elsewhere in the frame — d[3] and d[5]
-raw bytes are now logged at VERBOSE to identify it on the next CCS session.
+During CCS DC fast charge, bits [3:2] of `0x0594` d[5] = 0x00 (no connector type).
+`v.c.type` stays undefined. CCS indicator elsewhere in frame — d[3] and d[5] raw bytes now logged VERBOSE to ID on next CCS session.
 
-**Also noted:** `0x0594` default case previously wrote `"undefined"` string to the metric,
-overwriting any previously-set type on every idle frame. Fixed to `break` instead.
+**Also noted:** `0x0594` default case previously wrote `"undefined"` to metric, overwriting prev-set type every idle frame. Fixed to `break`.
 
-**To resolve:** capture verbose log during active CCS charging and look for `d[3]=xx d[5]=xx`
-values that differ from the non-charging baseline (`d[3]=03 d[5]=00`).
+**Resolve:** capture verbose log during active CCS charging, look for `d[3]=xx d[5]=xx` values differing from non-charging baseline (`d[3]=03 d[5]=00`).
 
 ### ~~Odometer log bug~~ — fixed
 
-`0x06B7` reused `u32` for park time after setting the odometer metric, then printed `u32`
-(now park time) as `odo=5936 km` in the log. The metric itself was always set correctly.
-Fixed by using a dedicated `odo` variable; log now prints the right value.
+### ~~CommandWakeup NM alive frame~~ — confirmed required
 
-### Temperature encoding for BAP port 0x19 (blocks clima PR)
+`0x1B000067` NM alive frame required for clima from deep sleep. Without it, clima ECU rejects BAP commands from unrecognised node. Confirmed by regression capture: no `1B000067` → no BAP ACK on `17332510`. See `clima-control-bap.md` Bug 2.
 
-Frame 2 byte 6 is hardcoded to `0x20` (thomasakarlsen default). Port 0x16 (schedule) uses
-`byte = celsius + 35` (20°C → `0x37`). Port 0x19 may differ — `0x20` decodes as 32°C under
-that formula, which is wrong.
+### ~~Temperature encoding for BAP port 0x19~~ — confirmed (Capture 7)
 
-**To resolve:** two back-to-back `climatecontrol on` commands with different `xvg cc_temp`
-values (e.g. 18°C and 22°C). Diff Frame 2 byte 6 between captures. If the ECU echoes the
-setpoint in `0x17330110` port 0x1B, that confirms the encoding.
+Encoding: `raw = (celsius - 10) * 10`. Confirmed on wire: 18°C → 0x50, 22°C → 0x78.
+
+### Climate on battery / min SoC — BAP write pending RE
+
+`cc-onbat` and `cc-minsoc` = persistent ECU config in VW e-Manager (set via MQB head unit alongside target temp and schedule slots). Separate BAP writes to clima ECU, not part of 3-frame start/stop command. Carnet app (originally sent these) discontinued — no capture available. Head unit can still set manually.
+
+**Resolve:** change setting in head unit e-Manager while capturing KCAN. Diff against idle to ID BAP port and payload encoding.
 
 ### Lock / unlock auth bytes (blocks lock PR)
 
-`CommandLock` / `CommandUnlock` set the action bits in `0x5A7` but the gateway likely requires
-additional authentication bytes alongside the action bit. Without them the command is ignored.
+`CommandLock` / `CommandUnlock` set action bits in `0x5A7` but gateway likely requires additional auth bytes alongside action bit. Without them command ignored.
 
-**To resolve:** capture the OEM app or key fob locking the car while OVMS is in monitor mode.
-Diff the `0x5A7` frame against the idle keepalive to identify the auth pattern.
+**Resolve:** capture key fob locking car while OVMS in monitor mode. Diff `0x5A7` frame against idle keepalive to ID auth pattern.
 
 ### GPS sign bits — S/W hemisphere unconfirmed
 
-Sign bits inferred from bit layout: bit 55 (`d[6]` MSB) = lat sign, bit 56 (`d[7]` bit 0) = lon sign.
-Confirmed 0 for known N/E location (Norway). Firmware applies them; `vwegolf.dbc` marks them
-as inferred.
+Sign bits inferred from layout: bit 55 (`d[6]` MSB) = lat sign, bit 56 (`d[7]` bit 0) = lon sign. Confirmed 0 for known N/E location (Norway). Firmware applies them; `vwegolf.dbc` marks as inferred.
 
-**To resolve:** any capture from a Southern or Western hemisphere location.
-
-### `CommandWakeup` second frame necessity unclear
-
-The `0x1B000067` NM presence frame is sent as part of `CommandWakeup` but it is not confirmed
-whether it is actually required. A controlled test with only the first frame would clarify.
-
-### `m_climate_on_battery` flag not sent
-
-The "allow climatisation on battery" config (`xvg cc_on_battery`) is read but never included
-in the BAP command frames. The bit/byte in the port 0x19 payload is not yet identified.
-
-**To resolve:** capture a start command with the flag toggled. Diff against a standard start.
+**Resolve:** any capture from Southern or Western hemisphere location.
 
 ### Charging current frame not identified
 
-`ms_v_charge_current` and `ms_v_charge_power` are never set. `0x0191` is motor/inverter only
-(zero during charging). The OBC charge current lives on a different KCAN frame not yet found.
+`ms_v_charge_current` and `ms_v_charge_power` never set. `0x0191` is motor/inverter only (zero during charging). OBC charge current on different KCAN frame not yet found.
 
-**To resolve:** dedicated charging session capture. Filter for frames only active when the
-`ChargeInProgress` bit in `0x0594` is set. Candidates will be frames absent in parked-not-charging
-baseline. Once identified, decode in `IncomingFrameCan3`, set `ms_v_charge_current` and
-`ms_v_charge_power`, add signal to `vwegolf.dbc`.
+**Resolve:** dedicated charging session capture (Capture 8). Filter for frames only active when `ChargeInProgress` bit in `0x0594` set.
+
+### UDS diagnostic access via can1 — not working yet
+
+Can1 (OBD port CAN on J533 harness) receives traffic but no UDS responses (tested 2026-04-09 during active AC charging). Bus speed likely 1 Mbps (VW internal diagnostic CAN), though 500 kbps also received frames without errors — needs confirmation.
+
+Tested at 500 kbps:
+- Standard ISO-TP to BMS (7E5/7ED), motor (7E0/7E8), charger (744/7AE): timeout
+- VW TP2.0 (`-v` flag) to BMS: timeout
+- OBD2 broadcast (7DF): timeout
+- Gateway diagnostic session (200/200): timeout
+
+**Hypotheses:**
+1. Wrong bitrate — 1 Mbps may be required for UDS transmit
+2. J533 only routes UDS with ignition on (KL15 active), not during charging
+3. OBD port CAN on J533 requires different protocol/session setup
+
+**Resolve:** retry all UDS requests at 1 Mbps with ignition on and laptop for live debug (Capture 11). e-Up module uses ISOTP_STD on bus 1 with same ECU addresses — if those work with ignition on, gateway routing hypothesis confirmed.
+
+### Direct charge start/stop command — unknown
+
+VW e-Golf charging managed by OBC via e-Manager. Available controls:
+- **Min SoC**: car charges to this level when plugged in (no schedule needed)
+- **Schedule slots**: 3 departure-time profiles with max SoC and location
+- **Direct start/stop**: unknown if CAN command exists
+
+People built charge stop buttons on direct CAN interfaces but haven't published protocol. If no direct command exists, writing min SoC via BAP is charge control mechanism (set high to charge, set to current SoC to stop).
+
+**Resolve:** Capture 13 — charge start/stop investigation.
+
+---
+
+## Capture quick-reference — `feat/vwegolf-climate-control`
+
+| ID | Sequence to perform | Done |
+|---|---|---|
+| 5 | `climatecontrol on` → wait for blower → capture KCAN 2–3 min. Note cabin temp with thermometer. | ✓ 2026-04-10 |
+| 6 | `climatecontrol on` → do nothing → wait for 10-min auto-stop → capture entire session. | ✓ 2026-04-10 |
+| 7 | `climatecontrol on` at `xvg cc-temp 18` → stop → change to `xvg cc-temp 22` → `climatecontrol on` again. Compare Frame 2 byte 3. | ✓ 2026-04-10 |
+| 8 | Plug in Type 2 AC charger → capture KCAN during active charging. Filter for frames only present when `ChargeInProgress` in 0x594 is set. | partial (2 captures taken 2026-04-09) |
+| 12 | Set departure schedule 15 min ahead in head unit → capture KCAN from before schedule fires until clima stops. Compare against OVMS-triggered capture. | ✓ 2026-04-10 |
 
 ---
 
 ## Remaining captures needed
 
-### Capture 5 — Cabin temp in remote mode
+### ~~Capture 5 — Cabin temp in remote mode~~ — resolved: not available
 
-**Goal:** identify cabin temp source when car is parked and clima is running via OVMS with
-ignition off. In ignition-on mode it comes from `0x17330110` node 0x01 port 0x1B. May be
-the same frame remotely or may differ.
+Cabin temp **not broadcast** during remote clima (ignition off). All sources dead:
 
-**Sequence:** `climatecontrol on` → wait for blower → capture KCAN 2–3 min. Note actual
-cabin temp with a thermometer for ground truth.
+| Source | Result |
+|---|---|
+| `0x5EA` (clima ECU) | 2 frames in 304s, temp = sentinel (0x3FE), remote_mode = 0 |
+| `0x66E` (interior sensor) | 2 frames, d[4] = 0xFE (not ready) |
+| `0x17330110` port 0x1B | absent |
 
-**What to look for:** any frame with a value that warms from ambient toward setpoint over
-5–10 min; whether `0x17330110` port 0x1B is present and tracking when ignition is off.
+Bus extremely sparse in remote mode (~59 frames max for busiest ID over 304s). Sensor ECU sleeps with ignition off even though HVAC runs. `v.e.cabintemp` goes stale until ignition on. Ground truth: cabin rose 7→9°C per thermometer but no CAN frame reflected this.
 
-### Capture 6 — Natural timer expiry
+Capture file: `can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-223732.crtd`
 
-**Goal:** see what the ECU sends when the 10-minute clima timer expires on its own.
+### ~~Capture 6 — Natural timer expiry~~ — resolved
 
-**Sequence:** start clima, wait for auto-stop.
+Clima ran 15.2 min then auto-stopped. Stop indicators on `0x17332510`:
 
-**What to look for:** port 0x1a header byte reverting from `c2` to `c0`; final stop
-notification; whether status payloads (`00 00 04`, `02 00 04`) change.
+| Signal | Active | Stopped |
+|---|---|---|
+| Port 0x12 payload[0] | `0x05` | `0x00` |
+| Port 0x19 payload[2] | `0x46` | `0x40` (bits 2:1 cleared) |
+| Port 0x18 | `49 58 01` (ON) | no explicit OFF from ECU |
 
-### Capture 7 — Port 0x19 temperature encoding
+Port 0x12 broadcasts `05` for first ~3 min then goes silent. At stop: single `00` frame + big status dump (79-byte port 0x01). Port 0x1A goes `c0→c2` at stop (opposite of original prediction). Keepalives on `17332501` start ~16s after stop at ~6s intervals.
 
-See open item above. Needed to unblock the clima PR.
+**Bug found:** `v.e.hvac` never resets after stop — driven by `0x5EA` remote_mode which doesn't work in remote mode (Capture 5). Fix: decode port 0x12 on `0x17332510` for authoritative hvac state.
+
+Capture file: `can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-224459.crtd`
+
+### ~~Capture 7 — Port 0x19 temperature encoding confirmation~~ — resolved
+
+Encoding **confirmed on the wire**: `raw = (celsius - 10) * 10`.
+- 18°C → 0x50 ✓ (Frame 2 byte 3)
+- 22°C → 0x78 ✓ (Frame 2 byte 3)
+
+**Bug found:** second `climatecontrol on` sent 18°C despite `config set xvg cc-temp 22` 4s earlier. `m_climate_temp` only updates in Ticker10 (every 10s). Fix: read config directly in `CommandClimateControl`.
+
+Capture file: `can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-231401.crtd`
 
 ### Capture 8 — Charging current (Type 2 AC only)
 
-See open item above. Must be **Type 2 AC** — CCS DC fast charging keeps KCAN completely
-silent (no frames visible to OVMS during the session). AC charging goes through the
-internal OBC which does appear on KCAN.
+**Goal:** find KCAN frame carrying OBC charge current during AC charging.
+
+Must be **Type 2 AC** — CCS DC fast charging keeps KCAN completely silent. Filter for frames only present when `ChargeInProgress` in `0x0594` set.
 
 ### Capture 9 — Lock / unlock auth bytes
 
 See open item above.
 
-### Capture 10 — Charge SoC limit
+### Capture 10 — Charge SoC limit (min SoC)
 
-**Goal:** identify the BAP frame used to read/write the charge SoC limit (`v.c.limit.soc`).
+**Goal:** ID BAP frame for read/write charge SoC limit.
 
-**Sequence:** change the charge limit in the VW app (or car MMI) while OVMS monitors KCAN.
-Diff against idle baseline to isolate the frame carrying the new limit value.
+**Sequence:** change min SoC in head unit e-Manager while capturing KCAN. Diff against idle baseline.
 
-**What to look for:** a BAP frame on `0x17332501` or similar charge management CAN ID that
-changes when the SoC limit is adjusted. Cross-reference with thomasakarlsen/e-golf-comfort-can
-charge profile docs.
+**Look for:** BAP frame on `0x17332501` or similar changing when limit adjusted. Cross-ref thomasakarlsen/e-golf-comfort-can charge profile docs. Note: Carnet/We Connect defunct — must use head unit.
+
+### Capture 11 — Can1 (OBD port CAN) with ignition on
+
+**Goal:** determine if UDS diagnostic access works with ignition on.
+
+**Sequence:** laptop on OVMS hotspot, ignition on, `can can1 start active 500000`. Capture can1 traffic to ID present frames. Retry UDS requests:
+```
+obdii can1 request device 7e0 7e8 22f446    (ambient temp, ECU 01)
+obdii can1 request device 7e5 7ed 2274cb    (SoH/CAC, BMS ECU 8C)
+obdii can1 request device 744 7ae 221da9    (charger AC voltage, ECU C6)
+obdii can1 request device -v 7e5 7ed 2274cb (same with VW TP2.0)
+```
+
+**Look for:** any positive UDS response. If standard ISO-TP works, e-Up PID list (`vweup_obd.h`) usable almost directly. If only VW TP2.0 works, need `-v` flag and potentially different addressing.
+
+### ~~Capture 12 — Schedule-triggered clima start~~ — resolved
+
+Schedule-triggered clima uses different BAP signaling than OVMS-triggered:
+
+| Signal | OVMS-triggered (Cap 6) | Schedule-triggered (Cap 12) |
+|---|---|---|
+| Port 0x18 trigger (`49 58 01`) | yes | absent |
+| Port 0x19 ACK | yes | absent |
+| Port 0x1A burst at stop | 6 frames | 1 frame at startup only |
+| 17332501 keepalives after stop | 23 frames ~6s | 5 frames total |
+
+**Same across both modes** (universal stop detection):
+- Port 0x12 payload[0]: `05`=active, `00`=idle
+- Port 0x13: `04 04`=active, `04 00`=idle
+- Big port 0x01 status dump (79 bytes) at stop
+- 1s status cycle runs continuously
+- Clima duration: ~15 min both modes
+
+**Note:** CRTD frames prefixed `2R29` despite can3 capture — J533 gateway routing artifact. BAP data valid.
+
+**Bug confirmed:** `v.e.hvac` remains true after schedule-triggered stop too. Fix: drive hvac from port 0x12 on `0x17332510`.
+
+Capture file: `can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-233616.crtd`
+
+### Capture 13 — Charge start/stop command
+
+**Goal:** determine if direct CAN command exists to start/stop AC charging.
+
+**Sequence:** plug in car, capture KCAN. Change min SoC in head unit from 0% to 100% (should trigger charge start) and back (should stop). Look for command frames vs just SoC limit change. Also capture moment OBC naturally stops at target SoC to see "charge complete" sequence in reverse.
+
+---
+
+## Roadmap
+
+### Phase 1 — Climate control (in progress)
+
+- [x] BAP frame construction and wake sequence
+- [x] Native test coverage (36 clima tests)
+- [ ] Confirm on car (flash `feat/vwegolf-climate-control`, Captures 5-7, 12)
+- [ ] Submit upstream PR (after PR 1 merged)
+
+### Phase 2 — Charge control
+
+- [ ] ID charge start/stop mechanism (Capture 13)
+- [ ] ID OBC charge current frame (Capture 8)
+- [ ] ID min SoC BAP write (Capture 10)
+- [ ] Implement charge current decode
+- [ ] Implement charge control command
+
+### Phase 3 — UDS / battery health / ABRP
+
+- [ ] Get UDS working on can1 (Capture 11)
+- [ ] BMS SoH + CAC polling (e-Up PID 0x74CB on ECU 8C)
+- [ ] Cell voltage polling (e-Up PIDs 0x1E40–0x1EA5)
+- [ ] Cell temperature polling (e-Up PIDs 0x1EAE–0x1EBD)
+- [ ] Charger AC/DC voltage + current (e-Up PIDs on ECU C6)
+- [ ] ABRP integration (needs SoC, speed, position, bat temp, SoH — most already done)
+
+### Phase 4 — Polish
+
+- [ ] DTC monitoring (standard UDS service 0x19)
+- [ ] TPMS (frame not yet identified)
+- [ ] Lock/unlock (needs auth byte capture)
+- [ ] Complete user guide (`docs/index.rst`)
 
 ---
 
 ## Metrics support status
 
-Legend: ✓ confirmed · ~ active-only (parked snapshot can't exercise) · ✗ not decoded · ? unverified
+Legend: ✓ confirmed · ~ active-only · ✗ not decoded · ? unverified
 
-Overall: **49 / 85 (58%)**
+Overall: **51 / 85 (60%)**
 
 ### Battery & power (12 / 20)
 
@@ -177,32 +286,32 @@ Overall: **49 / 85 (58%)**
 | `v.b.12v.voltage` | ✓ | OVMS ADC |
 | `v.b.12v.voltage.ref` | ✓ | OVMS ADC |
 | `v.b.consumption` | ? | Shows 0 — likely framework default, not decoded |
-| `v.b.soh` | ✗ | May be available via UDS on BMS ECU (0x7E7/0x7EF) |
-| `v.b.cac` | ✗ | Not decoded |
+| `v.b.soh` | ✗ | Needs UDS on BMS ECU 8C — Phase 3 |
+| `v.b.cac` | ✗ | Needs UDS on BMS ECU 8C — Phase 3 |
 | `v.b.range.full` | ✗ | Could compute from capacity × range/kWh |
-| `v.b.c.voltage.*` | ✗ | Cell voltages — needs BMS UDS poll |
-| `v.b.c.temp.*` | ✗ | Cell temps — needs BMS UDS poll |
+| `v.b.c.voltage.*` | ✗ | Cell voltages — needs UDS Phase 3 |
+| `v.b.c.temp.*` | ✗ | Cell temps — needs UDS Phase 3 |
 | `v.b.p.voltage.*` | ✗ | Pack aggregates — not decoded |
 | `v.b.coulomb.*` | ✗ | Coulomb counters — not decoded |
 
-### Charging (7 / 14)
+### Charging (9 / 14)
 
 | Metric | Status | Source |
 |---|---|---|
 | `v.c.charging` | ✓ | 0x594 |
 | `v.c.timermode` | ✓ | 0x594 |
-| `v.c.type` | ✓ | 0x594 |
+| `v.c.type` | ✓ | 0x594 (AC Type 2 confirmed; CCS not detected) |
 | `v.c.duration.full` | ✓ | 0x594 |
 | `v.c.time` | ✓ | framework |
-| `v.c.state` | ~ | 0x594 ChargeInProgress transition |
-| `v.c.voltage` | ~ | mirrored from `v.b.voltage` during AC session |
+| `v.c.state` | ✓ | 0x594 charge state transitions |
+| `v.c.substate` | ✓ | 0x594 |
+| `v.c.voltage` | ✓ | mirrored from `v.b.voltage` during AC session |
+| `v.d.cp` | ✓ | 0x594 charge port door |
 | `v.c.current` | ✗ | OBC frame not yet identified — Capture 8 |
 | `v.c.power` | ✗ | blocked on `v.c.current` |
 | `v.c.kwh` | ✗ | Not decoded |
 | `v.c.limit.soc` | ✗ | BAP frame not yet captured — Capture 10 |
 | `v.c.mode` | ✗ | Not decoded |
-| `v.c.timerstart` | ✗ | Schedule format partially known — see clima-control-bap.md |
-| `v.d.cp` | ✗ | Charge port door — frame unknown |
 
 ### Environment & climate (9 / 18)
 
@@ -216,8 +325,8 @@ Overall: **49 / 85 (58%)**
 | `v.e.drivetime` | ✓ | framework |
 | `v.e.cabinsetpoint` | ✓ | 0x594 |
 | `v.e.hvac` | ~ | 0x05EA remote_mode field; 3=active, 0=idle |
-| `v.e.temp` | ✗ | ECU sentinel suppressed; remote-mode source unknown — Capture 5 |
-| `v.e.cabintemp` | ✗ | Same — Capture 5 |
+| `v.e.temp` | ✗ | Not broadcast in remote mode (Capture 5 confirmed) |
+| `v.e.cabintemp` | ~ | 0x5EA/0x66E ignition-on only; stale during remote clima (Capture 5) |
 | `v.e.heating` | ✗ | Derivable from hvac state + setpoint vs ambient |
 | `v.e.cooling` | ✗ | Not decoded |
 | `v.e.cabinfan` | ✗ | Not decoded |
@@ -227,7 +336,7 @@ Overall: **49 / 85 (58%)**
 | `v.e.regenbrake` | ✗ | Not decoded |
 | `v.e.throttle` | ✗ | Not decoded |
 
-### Doors & body (6 / 7)
+### Doors & body (7 / 7) — complete
 
 | Metric | Status | Source |
 |---|---|---|
@@ -237,7 +346,7 @@ Overall: **49 / 85 (58%)**
 | `v.d.rr` | ✓ | 0x583 |
 | `v.d.trunk` | ✓ | 0x65A |
 | `v.d.hood` | ✓ | 0x65A |
-| `v.d.cp` | ✗ | Charge port door — see Charging above |
+| `v.d.cp` | ✓ | 0x594 |
 
 ### Position (13 / 15)
 
@@ -261,19 +370,19 @@ Overall: **49 / 85 (58%)**
 
 ### Identity (2 / 2) — complete
 
-### Motor / inverter (0 / 5) — needs powertrain UDS polling
+### Motor / inverter (0 / 5) — needs UDS Phase 3
 
 ### TPMS (0 / 4) — frame not yet identified
 
-### Generator (v.g.*) — not applicable, e-Golf has no V2G
+### Generator (v.g.*) — N/A, e-Golf has no V2G
 
 ---
 
 ## High-value gaps (worth implementing next)
 
-1. `v.c.current` / `v.c.power` — OBC charge current — Capture 8
-2. `v.e.cabintemp` / `v.e.temp` — remote-mode cabin/ambient temp — Capture 5
-3. `v.e.heating` / `v.e.cooling` — derivable once cabintemp is known
-4. `v.c.limit.soc` — BAP frame not yet captured; needs Capture 10
-5. `v.b.soh` — state of health — probably accessible via UDS on BMS ECU
+1. **Charge start/stop** — direct command or min SoC write — Captures 10, 13
+2. `v.c.current` / `v.c.power` — OBC charge current — Capture 8
+3. UDS on can1 — unlocks SoH, cell data, ABRP — Capture 11
+4. ~~`v.e.cabintemp` / `v.e.temp` — remote-mode cabin/ambient temp~~ — not available (Capture 5)
+5. `v.b.soh` — state of health via UDS — Phase 3
 6. `v.t.pressure` — TPMS alerts — frame not yet identified
