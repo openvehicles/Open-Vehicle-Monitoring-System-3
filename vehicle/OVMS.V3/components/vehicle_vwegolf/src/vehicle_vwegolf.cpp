@@ -921,6 +921,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
 
     // Frame 2: BAP continuation — remaining payload bytes including target temperature.
     // Temperature encoding: raw = (celsius - 10) * 10  (e.g. 21°C → 0x6E)
+    // Read config directly — Ticker10 cache may be up to 10 s stale (Capture 7 bug).
+    m_climate_temp = (uint8_t)MyConfig.GetParamValueInt("xvg", "cc-temp", 21);
     uint8_t temp_raw = (uint8_t)((m_climate_temp - 10) * 10);
     data[0] = 0xC0;  // multi-frame continuation, channel 0
     data[1] = 0x06;
