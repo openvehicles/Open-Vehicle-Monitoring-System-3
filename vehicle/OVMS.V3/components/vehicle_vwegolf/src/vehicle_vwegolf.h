@@ -44,6 +44,12 @@
 // and we suppress OCU keepalive transmission to avoid accumulating TX errors.
 #define VWEGOLF_BUS_TIMEOUT_SECS 10
 
+// Shorter threshold for the clima wake-before-send decision. KCAN NM runs at 200ms
+// intervals; 3 seconds of silence means the bus is going to sleep or already asleep,
+// even if m_bus_idle_ticks hasn't reached BUS_TIMEOUT yet. Used together with the
+// OEM OCU idle counter to avoid waking during the 0x5A7 conflict window.
+#define VWEGOLF_CLIMA_WAKE_SECS 3
+
 class OvmsVehicleVWeGolf : public OvmsVehicle {
  public:
     OvmsVehicleVWeGolf();
@@ -61,6 +67,7 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     vehicle_command_t CommandWakeup() override;
     vehicle_command_t CommandClimateControl(bool enable) override;
     void SendOcuHeartbeat();
+    void WakeKcanBus();
 
  protected:
     void Ticker1(uint32_t ticker) override;
@@ -72,6 +79,13 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // Incremented each second in Ticker1. Bus is alive while < VWEGOLF_BUS_TIMEOUT_SECS.
     // Initialized to timeout so we treat the bus as offline at cold boot.
     uint8_t m_bus_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
+
+    // Seconds since the last non-zero 0x5A7 frame was received from the OEM OCU. When
+    // the car's ignition is on or was just turned off, the OEM OCU sends non-zero 0x5A7
+    // which conflicts with our all-zeros heartbeat (arbitration loss → bus-off). We must
+    // not send the full NM wake sequence while the OEM OCU is still active.
+    // Initialized to timeout so cold boot treats the OEM OCU as absent.
+    uint8_t m_oem_ocu_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
 
     // OVMS must send the 0x5A7 OCU keepalive while it is an active node.
     // VW OSEK NM requires keepalives at ~200ms intervals — Ticker1 alone (1Hz) is

@@ -278,6 +278,79 @@ void test_ticker1_bus_idle_timeout() {
 }
 
 // ---------------------------------------------------------------------------
+// Twilight wake: bus quiet 3+ s, OEM OCU gone — should still wake
+// ---------------------------------------------------------------------------
+
+void test_clima_wakes_in_twilight() {
+    printf("\ntest_clima_wakes_in_twilight\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    // Simulate bus activity (resets idle to 0, OEM OCU idle stays at default=timeout).
+    auto f = make_kcan_frame(v, 0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+
+    // Tick the bus idle counter to CLIMA_WAKE_SECS (3) — past the clima threshold but
+    // below BUS_TIMEOUT (10). This is the "twilight" zone from the failing capture.
+    for (int i = 0; i < VWEGOLF_CLIMA_WAKE_SECS; i++) {
+        call_ticker1(v, i);
+    }
+
+    kcan(v)->tx_log.clear();
+    auto result = v->CommandClimateControl(true);
+    CHECK(result == Success, "Clima succeeds in twilight");
+
+    bool has_wake = false;
+    bool has_nm = false;
+    for (auto& r : kcan(v)->tx_log) {
+        if (r.extended && r.id == 0x17330301) has_wake = true;
+        if (r.extended && r.id == 0x1B000067) has_nm = true;
+    }
+    CHECK(has_wake, "Wake frame sent in twilight (idle=3, below BUS_TIMEOUT=10)");
+    CHECK(has_nm, "NM alive sent in twilight");
+
+    delete v;
+}
+
+void test_clima_no_wake_when_oem_ocu_active() {
+    printf("\ntest_clima_no_wake_when_oem_ocu_active\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    // Non-zero OEM 0x5A7 is the last KCAN frame before the bus goes quiet.
+    // This resets both bus_idle and oem_ocu_idle to 0.
+    auto ocu = make_kcan_frame(v, 0x5A7, {0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00});
+    v->IncomingFrameCan3(&ocu);
+
+    // Tick twice → bus_idle = 2, oem_ocu_idle = 2. Both below CLIMA_WAKE_SECS (3).
+    // The OEM OCU was active just 2 seconds ago — not safe to wake yet.
+    call_ticker1(v, 0);
+    call_ticker1(v, 1);
+
+    kcan(v)->tx_log.clear();
+    v->CommandClimateControl(true);
+
+    bool has_wake = false;
+    for (auto& r : kcan(v)->tx_log) {
+        if (r.extended && r.id == 0x17330301) has_wake = true;
+    }
+    CHECK(!has_wake, "No wake when bus quiet only 2 s after OEM OCU 0x5A7");
+
+    // Now tick one more → bus_idle = 3, oem_ocu_idle = 3. Both meet threshold.
+    call_ticker1(v, 2);
+    kcan(v)->tx_log.clear();
+    v->CommandClimateControl(true);
+
+    has_wake = false;
+    for (auto& r : kcan(v)->tx_log) {
+        if (r.extended && r.id == 0x17330301) has_wake = true;
+    }
+    CHECK(has_wake, "Wake fires once 3 s have passed since OEM OCU 0x5A7");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
 // Entry point (called from test_can_decode.cpp main)
 // ---------------------------------------------------------------------------
 
@@ -289,6 +362,8 @@ void test_clima_all() {
     test_clima_stop_bap_trigger();
     test_clima_busoff_aborts();
     test_clima_wakes_sleeping_bus();
+    test_clima_wakes_in_twilight();
+    test_clima_no_wake_when_oem_ocu_active();
     test_clima_counter_increments();
     test_ticker1_bus_idle_timeout();
 }

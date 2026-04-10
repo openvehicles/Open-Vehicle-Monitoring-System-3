@@ -153,6 +153,17 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
     if (p_frame->origin == m_can3) {
         m_bus_idle_ticks = 0;
 
+        // Detect the OEM OCU by watching for non-zero 0x5A7 frames. Our heartbeat sends
+        // all-zeros; the OEM OCU sends non-zero data while the car is awake or in NM
+        // ring-down (~10–15s after ignition off). We must not send NM wake while the OEM
+        // OCU is active — the conflicting 0x5A7 data causes arbitration loss → bus-off.
+        if (p_frame->MsgID == 0x5A7) {
+            uint8_t* b = p_frame->data.u8;
+            if (b[0] | b[1] | b[2] | b[3] | b[4] | b[5] | b[6] | b[7]) {
+                m_oem_ocu_idle_ticks = 0;
+            }
+        }
+
         // Send OCU keepalive at ~5Hz while active. VW OSEK NM requires keepalives at
         // ~200ms intervals; Ticker1 alone (1Hz) is too slow for the ECU to stay in network.
         // Rate-limited by wall-clock tick (180ms min) so a sudden bus traffic burst from an
@@ -687,6 +698,7 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     OvmsVehicle::Ticker1(ticker);
 
     if (m_bus_idle_ticks < 254) m_bus_idle_ticks++;
+    if (m_oem_ocu_idle_ticks < 254) m_oem_ocu_idle_ticks++;
 
     bool bus_alive = m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS;
     bool just_went_idle = (m_bus_idle_ticks == VWEGOLF_BUS_TIMEOUT_SECS);
@@ -751,13 +763,8 @@ void OvmsVehicleVWeGolf::Ticker10(uint32_t ticker) {
     ESP_LOGV(TAG, "Ticker10: cc_temp=%u°C cc_onbat=%d", m_climate_temp, m_climate_on_battery);
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
-    if (m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS) {
-        ESP_LOGI(TAG, "Wakeup: KCAN already active");
-        return Success;
-    }
-
-    ESP_LOGI(TAG, "Wakeup: asserting dominant bits on KCAN");
+void OvmsVehicleVWeGolf::WakeKcanBus() {
+    ESP_LOGI(TAG, "WakeKcanBus: asserting dominant bits on KCAN");
 
     // Reset the KCAN controller to clear any stuck frame from the TWAI HW TX FIFO.
     // A stale heartbeat left from the prior session occupies the FIFO slot; on a sleeping
@@ -782,6 +789,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
     vTaskDelay(pdMS_TO_TICKS(100));
 
     m_ocu_active = true;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
+    if (m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS) {
+        ESP_LOGI(TAG, "Wakeup: KCAN already active");
+        return Success;
+    }
+    WakeKcanBus();
     return Success;
 }
 
@@ -865,10 +880,17 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
         return Fail;
     }
 
-    // Wake the bus if sleeping; wait 1 s for the NM-join flood to settle before sending BAP.
-    if (m_bus_idle_ticks >= VWEGOLF_BUS_TIMEOUT_SECS) {
-        ESP_LOGI(TAG, "Climate control: KCAN idle — waking bus");
-        CommandWakeup();
+    // Wake the bus if it has been quiet long enough that ECUs are likely sleeping.
+    // Two conditions must both be true:
+    //   1. No KCAN frame for >= CLIMA_WAKE_SECS (bus is going/gone to sleep).
+    //   2. No non-zero OEM 0x5A7 for >= CLIMA_WAKE_SECS (OEM OCU is off — safe to
+    //      send our heartbeat without causing an arbitration-loss → bus-off cycle).
+    // Wait 1 s after wake for the NM-join flood to settle before sending BAP.
+    if (m_bus_idle_ticks >= VWEGOLF_CLIMA_WAKE_SECS &&
+        m_oem_ocu_idle_ticks >= VWEGOLF_CLIMA_WAKE_SECS) {
+        ESP_LOGI(TAG, "Climate control: KCAN quiet %u s, OEM OCU quiet %u s — waking bus",
+                 m_bus_idle_ticks, m_oem_ocu_idle_ticks);
+        WakeKcanBus();
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
