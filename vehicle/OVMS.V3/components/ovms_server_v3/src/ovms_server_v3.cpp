@@ -1542,8 +1542,8 @@ void ovmsv3_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
         break;
       }
     writer->printf("       %s\n",MyOvmsServerV3->m_status.c_str());
-    writer->printf("Retain depth limit: %s (config: server.v3 retain.depth.limit)\n",
-      MyOvmsServerV3->m_retain_depth_limit ? "enabled (max 8 topic segments, required for AWS IoT Core)" : "disabled");
+    writer->printf("Retain depth limit: %s \n",
+      MyOvmsServerV3->m_retain_depth_limit ? "enabled" : "disabled");
     }
   }
 
