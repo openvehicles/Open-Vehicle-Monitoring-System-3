@@ -272,7 +272,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
           "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
           "placeholder=\"-----BEGIN PRIVATE KEY-----&#13;&#10;...&#13;&#10;-----END PRIVATE KEY-----\"\n"
           "rows=\"5\" id=\"input-client_key\" name=\"client_key\">%s</textarea>\n"
-        "<p class=\"help-block\">Supports PKCS#8, RSA and EC PEM private keys."
+        "<p class=\"help-block\">Supports PKCS#8, RSA and EC PEM private keys. <br/>"
         " Leave both the certificate and key empty to authenticate with username/password only.</p>\n"
       "</div>\n"
     "</div>\n"
@@ -285,6 +285,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   c.printf(
     "<div class=\"form-group\">\n"
       "<div class=\"col-sm-9 col-sm-offset-3\">\n"
+        "<b> MQTT keepalive </b><br>\n"
         "<p class=\"help-block\">AWS IoT Core requires the MQTT keepalive to be 1200 seconds or less."
         " Set the <em>Keepalive</em> interval below to 1200 or lower.</p>\n"
       "</div>\n"
