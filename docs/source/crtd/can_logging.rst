@@ -115,10 +115,10 @@ Value           Example   Description
 <bus>           0         match any bus
 <bus>           2         match a specific bus (1-5)
 <id>            49b       match a specific PID
-<id>-           49b-      match a PID greater than
+<id>-           49b-      match a PID greater than or equal to on any bus
 <id>-<id>       2e2-382   match a range of PIDs
 <bus>:<id>      2:49b     match a specific PID on a specific bus
-<bus>:<id>-     2:49b-    match a PID greater than on a specific bus
+<bus>:<id>-     2:49b-    match a PID greater than or equal to on a specific bus
 <bus>:<id>-<id> 2:2e2-382 match a range of PIDs on a specific bus
 =============== ========= ================
 

@@ -194,24 +194,18 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                      StandardMetrics.ms_v_bat_voltage->AsFloat());
             break;
         }
-        // TODO: This is currently reading zero
-        case 0x2AF:  // Energy
+        case 0x2AF:  // Trip energy counters. 15-bit, factor 10 Ws → kWh.
         {
-            tmp_u16 =
-                ((uint16_t)(d[4] & 0xff) << 0) | ((uint16_t)(d[5] & 0x7f) << 8) |
-                0;  // BMS Rekuperation Faktor 10 Offset 0, Minimum 0, Maximum 327670 [Ws] Initial 0
-            tmp_u16 = (uint16_t)tmp_u16;
-            tmp_f32 = (((float)tmp_u16) * 10.0F) / 3600000.0F;
+            // Regen energy: d[4] + d[5] bits [6:0]. Max raw 32767 * 10 = 327670 Ws.
+            tmp_f32 = (float)(d[4] | ((uint16_t)(d[5] & 0x7f) << 8)) * 10.0F / 3600000.0F;
             StandardMetrics.ms_v_bat_energy_recd->SetValue(tmp_f32);
-            ESP_LOGV(TAG "-2AF", "ms_v_bat_energy_recd: %f", tmp_f32);
 
-            tmp_u16 =
-                ((uint16_t)(d[6] & 0xff) << 0) | ((uint16_t)(d[7] & 0x7f) << 8) |
-                0;  // BMS Verbrauch Faktor 10 Offset 0, Minimum 0, Maximum 327670 [Ws] Initial 0
-            tmp_u16 = (uint16_t)tmp_u16;
-            tmp_f32 = (((float)tmp_u16) * 10.0F) / 3600000.0F;
+            // Consumed energy: d[6] + d[7] bits [6:0].
+            tmp_f32 = (float)(d[6] | ((uint16_t)(d[7] & 0x7f) << 8)) * 10.0F / 3600000.0F;
             StandardMetrics.ms_v_bat_energy_used->SetValue(tmp_f32);
-            ESP_LOGV(TAG "-2AF", "ms_v_bat_energy_used: %f", tmp_f32);
+            ESP_LOGV(TAG, "0x02AF recd=%.4f used=%.4f kWh",
+                     StandardMetrics.ms_v_bat_energy_recd->AsFloat(),
+                     StandardMetrics.ms_v_bat_energy_used->AsFloat());
             break;
         }
         // case 0x3D6: //Ladezustand
@@ -301,14 +295,19 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 StdMetrics.ms_v_charge_timermode->SetValue(false);  // false if timer disabled
             }
 
-            tmp_u8 = ((uint8_t)(d[3] & 0x62) >> 5) |
-                     0;  // Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-            tmp_u8 = (uint8_t)tmp_u8;
-            if (tmp_u8 == 0x1) {
-                StdMetrics.ms_v_charge_inprogress->SetValue(true);  // True = currently charging
-            } else {
-                StdMetrics.ms_v_charge_inprogress->SetValue(
-                    false);  // false = currently not charging
+            {
+                bool was_charging = StdMetrics.ms_v_charge_inprogress->AsBool();
+                bool is_charging = (d[3] & 0x20) != 0;  // bit 5 of d[3]
+                StdMetrics.ms_v_charge_inprogress->SetValue(is_charging);
+                StdMetrics.ms_v_charge_state->SetValue(is_charging ? "charging" : "stopped");
+                if (is_charging) {
+                    StdMetrics.ms_v_charge_voltage->SetValue(
+                        StandardMetrics.ms_v_bat_voltage->AsFloat());
+                }
+                if (is_charging != was_charging) {
+                    if (is_charging) NotifyChargeStart();
+                    else NotifyChargeStopped();
+                }
             }
 
             tmp_u16 = ((uint16_t)(d[3] & 0xc0) >> 6) | ((uint16_t)(d[4] & 0x7f) << 2) |
@@ -346,19 +345,30 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             tmp_u8 = ((uint8_t)(d[5] & 0xc) >> 2) |
                      0;  // Faktor 1 Offset 0, Minimum 0, Maximum 3 [] Initial 0
             tmp_u8 = (uint8_t)tmp_u8;
+            // Charge port open = cable physically present (ChargeType != 0).
+            // The framework's status display gates on ms_v_door_chargeport — without it,
+            // the "Not charging" fallback always shows regardless of charge_inprogress.
             switch (tmp_u8) {
                 case 0x0: {
                     // No connector — do not overwrite last known type with "undefined".
                     // NOTE: CCS DC charging also reads 0 here; the CCS indicator is
                     // elsewhere in the frame and not yet identified.
+                    StdMetrics.ms_v_door_chargeport->SetValue(false);
                     break;
                 }
                 case 0x1: {
                     StdMetrics.ms_v_charge_type->SetValue("type2");
+                    StdMetrics.ms_v_door_chargeport->SetValue(true);
                     break;
                 }
                 case 0x2: {
                     StdMetrics.ms_v_charge_type->SetValue("ccs");
+                    StdMetrics.ms_v_door_chargeport->SetValue(true);
+                    break;
+                }
+                case 0x3: {
+                    // Cable connected, charge complete or not needed (e.g. 100% SoC).
+                    StdMetrics.ms_v_door_chargeport->SetValue(true);
                     break;
                 }
                 default:
@@ -596,12 +606,11 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             StandardMetrics.ms_v_pos_odometer->SetValue(tmp_u32);  // working
             ESP_LOGV(TAG, "0x06B7 odo=%u km", tmp_u32);
 
+            // Park time: 17-bit field at bit offset 20, factor 1 s.
+            // d[2] bits [7:4] → result bits [3:0], d[3] → [11:4], d[4] bits [4:0] → [16:12].
             tmp_u32 =
-                ((uint32_t)(d[2] & 0xf0) << 4) | ((uint32_t)(d[3] & 0xff) << 4) |
-                ((uint32_t)(d[4] & 0x1f) << 12) |
-                0;  // odometer Faktor 1 Offset 0, Minimum 0, Maximum 1045873 [km] Initial 1045874
-            tmp_u32 = (uint32_t)tmp_u32;
-            // tmp_f32 = ((float)tmp_u32)*1.0F;
+                ((uint32_t)(d[2] & 0xf0) >> 4) | ((uint32_t)(d[3]) << 4) |
+                ((uint32_t)(d[4] & 0x1f) << 12);
             StandardMetrics.ms_v_env_parktime->SetValue(tmp_u32);
             ESP_LOGV(TAG, "0x06B7 parktime=%u", tmp_u32);
 
