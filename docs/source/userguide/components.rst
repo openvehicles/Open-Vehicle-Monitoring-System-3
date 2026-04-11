@@ -123,13 +123,13 @@ Send all ``v.b`` metrics except ``v.b.soc``::
   OVMS# config set server.v3 metrics.include v.b.*
   OVMS# config set server.v3 metrics.exclude v.b.soc
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Broker compatibility options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Some MQTT brokers impose limits that require additional configuration:
+Some brokers have additional requirements:
 
-- ``retain.depth.limit`` (default: ``no``) — omits the RETAIN flag on topics deeper than 8 path segments. Required for AWS IoT Core.
+- ``retain.depth.limit`` (default: ``no``) — omits the RETAIN flag on topics deeper than 8 path segments. Needed for AWS IoT Core, which silently drops retained publishes on topics deeper than 8 levels.
 
 Example::
 
@@ -142,12 +142,12 @@ Example::
 
 These options can also be set from the **Config → Server V3 (MQTT)** web page.
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 TLS client authentication
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-MQTT brokers that require client certificate authentication (mTLS) are supported.
-Paste PEM-encoded certificate and key into the **Config → Server V3 (MQTT)** web page,
+The module supports client certificate authentication (mTLS) for brokers that need it.
+Paste the PEM certificate and key into the **Config → Server V3 (MQTT)** web page,
 or use the CLI::
 
   OVMS# server v3 tlsclient import /sd/client.crt /sd/client.key
