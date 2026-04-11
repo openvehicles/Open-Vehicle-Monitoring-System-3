@@ -474,8 +474,7 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
 
   // When retain.depth.limit is enabled, topics with more than 7 slashes (>8 segments)
   // are published without the RETAIN flag. This is required for AWS IoT Core, which
-  // rejects retained publishes on topics deeper than 8 segments. Disable this limit
-  // if your broker supports retained messages on topics of any depth.
+  // rejects retained publishes on topics deeper than 8 segments.
   int qos_flags;
   if (m_retain_depth_limit)
     {
