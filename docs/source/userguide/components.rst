@@ -129,13 +129,16 @@ Broker compatibility options
 
 Some MQTT brokers impose limits that require additional configuration:
 
-- ``keepalive.clamp`` (default: ``no``) — caps the MQTT keepalive to 1200 s at connect time. Required for AWS IoT Core.
 - ``retain.depth.limit`` (default: ``no``) — omits the RETAIN flag on topics deeper than 8 path segments. Required for AWS IoT Core.
 
 Example::
 
-  OVMS# config set server.v3 keepalive.clamp yes
   OVMS# config set server.v3 retain.depth.limit yes
+
+.. note:: AWS IoT Core requires the MQTT keepalive to be 1200 seconds or less.
+  Set ``updatetime.keepalive`` accordingly::
+
+    OVMS# config set server.v3 updatetime.keepalive 1200
 
 These options can also be set from the **Config → Server V3 (MQTT)** web page.
 

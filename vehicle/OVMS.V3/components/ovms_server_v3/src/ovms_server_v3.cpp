@@ -114,13 +114,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
           opts.will_message = "no";
           opts.flags |= MG_MQTT_WILL_RETAIN;
-          uint16_t keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
-          if (MyOvmsServerV3->m_keepalive_clamp && keep_alive > 1200)
-            {
-            ESP_LOGW(TAG, "MQTT keepalive %u exceeds 1200; clamping (disable with keepalive.clamp=no)", (unsigned int) keep_alive);
-            keep_alive = 1200;
-            }
-          opts.keep_alive = keep_alive;
+          opts.keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
           mg_set_protocol_mqtt(nc);
           mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_clientid.c_str(), opts);
           }
@@ -257,7 +251,6 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_updatetime_keepalive = 29*60;
   m_legacy_event_topic = true;
   m_retain_depth_limit = false;
-  m_keepalive_clamp = false;
   m_notify_info_pending = false;
   m_notify_error_pending = false;
   m_notify_alert_pending = false;
@@ -1230,7 +1223,6 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_updatetime_keepalive = param->GetValueInt("updatetime.keepalive", m_updatetime_keepalive);
   m_legacy_event_topic = param->GetValueBool("events.legacy_topic", true);
   m_retain_depth_limit = param->GetValueBool("retain.depth.limit", m_retain_depth_limit);
-  m_keepalive_clamp = param->GetValueBool("keepalive.clamp", m_keepalive_clamp);
   m_updatetime_priority = param->GetValueBool("updatetime.priority", false);
   m_updatetime_immediately = param->GetValueBool("updatetime.immediately", false);
   m_max_per_call_sendall = param->GetValueInt("queue.sendall", m_max_per_call_sendall);
@@ -1552,8 +1544,6 @@ void ovmsv3_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     writer->printf("       %s\n",MyOvmsServerV3->m_status.c_str());
     writer->printf("Retain depth limit: %s (config: server.v3 retain.depth.limit)\n",
       MyOvmsServerV3->m_retain_depth_limit ? "enabled (max 8 topic segments, required for AWS IoT Core)" : "disabled");
-    writer->printf("Keepalive clamp:     %s (config: server.v3 keepalive.clamp)\n",
-      MyOvmsServerV3->m_keepalive_clamp ? "enabled (clamp keepalive to 1200s max, required for AWS IoT Core)" : "disabled");
     }
   }
 

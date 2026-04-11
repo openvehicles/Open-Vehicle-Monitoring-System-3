@@ -41,7 +41,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   std::string updatetime_charging, updatetime_awake, updatetime_sendall, updatetime_keepalive;
   std::string metrics_priority, metrics_include, metrics_exclude, metrics_immediately, metrics_exclude_immediately;
   std::string queue_sendall, queue_modified;
-  bool tls, legacy_event_topic, updatetime_priority, updatetime_immediately, retain_depth_limit, keepalive_clamp;
+  bool tls, legacy_event_topic, updatetime_priority, updatetime_immediately, retain_depth_limit;
 
   if (c.method == "POST") {
     // process form submission:
@@ -65,7 +65,6 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_priority = (c.getvar("updatetime_priority") == "yes");
     updatetime_immediately = (c.getvar("updatetime_immediately") == "yes");
     retain_depth_limit = (c.getvar("retain_depth_limit") == "yes");
-    keepalive_clamp = (c.getvar("keepalive_clamp") == "yes");
     metrics_priority = c.getvar("metrics_priority");
     metrics_include = c.getvar("metrics_include");
     metrics_exclude = c.getvar("metrics_exclude");
@@ -150,7 +149,6 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("server.v3", "updatetime.priority", updatetime_priority);
       MyConfig.SetParamValueBool("server.v3", "updatetime.immediately", updatetime_immediately);
       MyConfig.SetParamValueBool("server.v3", "retain.depth.limit", retain_depth_limit);
-      MyConfig.SetParamValueBool("server.v3", "keepalive.clamp", keepalive_clamp);
       MyConfig.SetParamValue("server.v3", "metrics.priority", metrics_priority);
       MyConfig.SetParamValue("server.v3", "metrics.include", metrics_include);
       MyConfig.SetParamValue("server.v3", "metrics.exclude", metrics_exclude);
@@ -218,7 +216,6 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_priority = MyConfig.GetParamValueBool("server.v3", "updatetime.priority", false);
     updatetime_immediately = MyConfig.GetParamValueBool("server.v3", "updatetime.immediately", false);
     retain_depth_limit = MyConfig.GetParamValueBool("server.v3", "retain.depth.limit", false);
-    keepalive_clamp = MyConfig.GetParamValueBool("server.v3", "keepalive.clamp", false);
     metrics_priority = MyConfig.GetParamValue("server.v3", "metrics.priority");
     metrics_include = MyConfig.GetParamValue("server.v3", "metrics.include");
     metrics_exclude = MyConfig.GetParamValue("server.v3", "metrics.exclude");
@@ -285,9 +282,13 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Limit retain to 8-segment topics", "retain_depth_limit", retain_depth_limit,
     "<p>Omits the MQTT RETAIN flag on topics with more than 8 path segments."
     " Required for AWS IoT Core. Default: disabled.</p>");
-  c.input_checkbox("Clamp keepalive to 1200s", "keepalive_clamp", keepalive_clamp,
-    "<p>Limits the MQTT keepalive to 1200 seconds at connect time."
-    " Required for AWS IoT Core. Default: disabled.</p>");
+  c.printf(
+    "<div class=\"form-group\">\n"
+      "<div class=\"col-sm-9 col-sm-offset-3\">\n"
+        "<p class=\"help-block\">AWS IoT Core requires the MQTT keepalive to be 1200 seconds or less."
+        " Set the <em>Keepalive</em> interval below to 1200 or lower.</p>\n"
+      "</div>\n"
+    "</div>\n");
   c.fieldset_end();
 
   c.printf(
