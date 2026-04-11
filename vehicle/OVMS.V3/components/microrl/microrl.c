@@ -15,13 +15,8 @@ BUGS and TODO:
 #endif
 
 /* Prefer SPIRAM (https://esp32.com/viewtopic.php?t=33676) */
-#if CONFIG_SPIRAM
-#define MALLOC_CAP_SPIORINTERNAL MALLOC_CAP_SPIRAM
-#else
-#define MALLOC_CAP_SPIORINTERNAL MALLOC_CAP_INTERNAL
-#endif
-
-#define MALLOC2(s) heap_caps_malloc((s), MALLOC_CAP_SPIORINTERNAL)
+#define MALLOC2(s) heap_caps_malloc_prefer((s), 1, \
+    MALLOC_CAP_SPIRAM, MALLOC_CAP_DEFAULT);
 
 #define true  1
 #define false 0
