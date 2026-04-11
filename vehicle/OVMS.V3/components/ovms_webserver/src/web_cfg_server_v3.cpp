@@ -245,12 +245,6 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "<p>Note: enable transport layer security (encryption) if your server supports it.</p>");
   c.input_checkbox("Enable legacy event topic", "legacy_event_topic", legacy_event_topic,
     "In addition to MQTT-style topics, also publish on <i>&lt;prefix&gt;</i>/event.");
-  c.input_checkbox("Limit retain to 8-segment topics", "retain_depth_limit", retain_depth_limit,
-    "<p>Omits the MQTT RETAIN flag on topics with more than 8 path segments."
-    " Required for AWS IoT Core. Default: disabled.</p>");
-  c.input_checkbox("Clamp keepalive to 1200s", "keepalive_clamp", keepalive_clamp,
-    "<p>Limits the MQTT keepalive to 1200 seconds at connect time."
-    " Required for AWS IoT Core. Default: disabled.</p>");
   c.input_text("Port", "port", port.c_str(), "optional, default: 1883 (no TLS) / 8883 (TLS)");
   c.input_text("Username", "user", user.c_str(), "Enter user login name",
     NULL, "autocomplete=\"section-serverv3 username\"");
@@ -287,6 +281,14 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "</div>\n"
     , c.encode_html(client_key).c_str());
   c.fieldset_end();
+  c.fieldset_start("AWS IoT Core (optional)");
+  c.input_checkbox("Limit retain to 8-segment topics", "retain_depth_limit", retain_depth_limit,
+    "<p>Omits the MQTT RETAIN flag on topics with more than 8 path segments."
+    " Required for AWS IoT Core. Default: disabled.</p>");
+  c.input_checkbox("Clamp keepalive to 1200s", "keepalive_clamp", keepalive_clamp,
+    "<p>Limits the MQTT keepalive to 1200 seconds at connect time."
+    " Required for AWS IoT Core. Default: disabled.</p>");
+  c.fieldset_end();
 
   c.printf(
     "<script>\n"
@@ -314,11 +316,6 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "  update();\n"
     "})();\n"
     "</script>\n");
-
-  c.input_text("Client ID", "clientid", clientid.c_str(),
-    "optional, default: <vehicle id>");
-  c.input_text("Topic Prefix", "topic_prefix", topic_prefix.c_str(),
-    "optional, default: ovms/<username>/<vehicle id>/");
 
   c.fieldset_start("Update intervals");
   c.input("number", "…idle", "updatetime_idle", updatetime_idle.c_str(), "default: 600", "default: 600, update interval when client not connected", "min=\"1\" max=\"1200\" step=\"1\"", "seconds");
