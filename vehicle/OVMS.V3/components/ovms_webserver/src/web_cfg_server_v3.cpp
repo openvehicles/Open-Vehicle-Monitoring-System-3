@@ -292,33 +292,6 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "</div>\n");
   c.fieldset_end();
 
-  c.printf(
-    "<script>\n"
-    "(function() {\n"
-    "  function byId(id) { return document.getElementById(id); }\n"
-    "  function byteLen(s) {\n"
-    "    if (window.TextEncoder) return (new TextEncoder().encode(s)).length;\n"
-    "    return unescape(encodeURIComponent(s)).length;\n"
-    "  }\n"
-    "  function showLen(inputId, lenId, warnId, minWarn) {\n"
-    "    var input = byId(inputId), lenEl = byId(lenId), warnEl = byId(warnId);\n"
-    "    if (!input || !lenEl || !warnEl) return;\n"
-    "    var n = byteLen(input.value || '');\n"
-    "    lenEl.textContent = String(n);\n"
-    "    warnEl.style.display = (n > 0 && n < minWarn) ? 'inline' : 'none';\n"
-    "  }\n"
-    "  function update() {\n"
-    "    showLen('input-client_cert', 'client-cert-len', 'client-cert-short', 256);\n"
-    "    showLen('input-client_key', 'client-key-len', 'client-key-short', 128);\n"
-    "  }\n"
-    "  var cert = byId('input-client_cert');\n"
-    "  var key = byId('input-client_key');\n"
-    "  if (cert) cert.addEventListener('input', update);\n"
-    "  if (key) key.addEventListener('input', update);\n"
-    "  update();\n"
-    "})();\n"
-    "</script>\n");
-
   c.fieldset_start("Update intervals");
   c.input("number", "…idle", "updatetime_idle", updatetime_idle.c_str(), "default: 600", "default: 600, update interval when client not connected", "min=\"1\" max=\"1200\" step=\"1\"", "seconds");
   c.input("number", "…on", "updatetime_on", updatetime_on.c_str(), "default: 5", "default: 5, update interval when Car is on", "min=\"1\" max=\"600\" step=\"1\"", "seconds");
