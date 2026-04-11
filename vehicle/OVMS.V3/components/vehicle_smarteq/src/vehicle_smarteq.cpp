@@ -262,8 +262,9 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   ESP_LOGI(TAG, "smart EQ reload configuration");
 
-  // Use GetParamMap for efficient bulk reading
-  OvmsConfigParam* xsq_param = MyConfig.CachedParam("xsq");
+  // Use OvmsConfigParam getters for efficient reading (OVMS standard API):
+  // Note: GetValueBool/Int/Float treat empty string as "not set" and return the default.
+  OvmsConfigParam* map = MyConfig.CachedParam("xsq");
   
   int cell_interval_drv   = 60;
   int cell_interval_chg   = 60;
@@ -276,46 +277,44 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   bool obdii_79b          = true;
   bool obdii_7e4_dcdc     = true;
   
-  if (xsq_param) 
+  if (map) 
     {
-    const auto& m = xsq_param->GetMap();
-    
-    m_enable_write         = cfgMapBool(m, "canwrite", false);
-    m_enable_write_caron   = cfgMapBool(m, "canwrite.caron", false);
-    m_enable_LED_state     = cfgMapBool(m, "led", false);
-    m_bcvalue              = cfgMapBool(m, "bcvalue", false);
-    m_enable_lock_state    = cfgMapBool(m, "unlock.warning", true);
-    m_enable_door_state    = cfgMapBool(m, "door.warning", true);
-    m_resettrip            = cfgMapBool(m, "resettrip", true);
-    m_resettotal           = cfgMapBool(m, "resettotal", false);
-    m_tripnotify           = cfgMapBool(m, "reset.notify", false);
-    m_tpms_alert_enable    = cfgMapBool(m, "tpms.alert.enable", true);
-    m_tpms_temp_enable     = cfgMapBool(m, "tpms.temp", true);
-    m_12v_charge           = cfgMapBool(m, "12v.charge", true);
-    m_enable_calcADCfactor = cfgMapBool(m, "calc.adcfactor", false);
-    m_indicator            = cfgMapBool(m, "indicator", false);
-    m_extendedStats        = cfgMapBool(m, "extended.stats", false);
-    obdii_79b              = cfgMapBool(m, "obdii.79b", true);
-    obdii_79b_cell         = cfgMapBool(m, "obdii.79b.cell", true);
-    obdii_743              = cfgMapBool(m, "obdii.743", true);
-    obdii_745              = cfgMapBool(m, "obdii.745", true);
-    obdii_745_tpms         = cfgMapBool(m, "obdii.745.tpms", true);
-    obdii_7e4              = cfgMapBool(m, "obdii.7e4", true);
-    obdii_7e4_dcdc         = cfgMapBool(m, "obdii.7e4.dcdc", true);
+    m_enable_write         = map->GetValueBool("canwrite", false);
+    m_enable_write_caron   = map->GetValueBool("canwrite.caron", false);
+    m_enable_LED_state     = map->GetValueBool("led", false);
+    m_bcvalue              = map->GetValueBool("bcvalue", false);
+    m_enable_lock_state    = map->GetValueBool("unlock.warning", true);
+    m_enable_door_state    = map->GetValueBool("door.warning", true);
+    m_resettrip            = map->GetValueBool("resettrip", true);
+    m_resettotal           = map->GetValueBool("resettotal", false);
+    m_tripnotify           = map->GetValueBool("reset.notify", false);
+    m_tpms_alert_enable    = map->GetValueBool("tpms.alert.enable", true);
+    m_tpms_temp_enable     = map->GetValueBool("tpms.temp", true);
+    m_12v_charge           = map->GetValueBool("12v.charge", true);
+    m_enable_calcADCfactor = map->GetValueBool("calc.adcfactor", false);
+    m_indicator            = map->GetValueBool("indicator", false);
+    m_extendedStats        = map->GetValueBool("extended.stats", false);
+    obdii_79b              = map->GetValueBool("obdii.79b", true);
+    obdii_79b_cell         = map->GetValueBool("obdii.79b.cell", true);
+    obdii_743              = map->GetValueBool("obdii.743", true);
+    obdii_745              = map->GetValueBool("obdii.745", true);
+    obdii_745_tpms         = map->GetValueBool("obdii.745.tpms", true);
+    obdii_7e4              = map->GetValueBool("obdii.7e4", true);
+    obdii_7e4_dcdc         = map->GetValueBool("obdii.7e4.dcdc", true);
 
-    m_reboot_time          = cfgMapInt(m, "rebootnw", 30);
-    m_park_timeout_secs    = cfgMapInt(m, "park.timeout", 600);
-    m_full_km              = cfgMapInt(m, "full.km", 126);
-    m_cfg_preset_version   = cfgMapInt(m, "cfg.preset.ver", 0);
-    m_suffsoc              = cfgMapInt(m, "suffsoc", 0);
-    m_suffrange            = cfgMapInt(m, "suffrange", 0);
-    cell_interval_drv      = cfgMapInt(m, "cell_interval_drv", 60);
-    cell_interval_chg      = cfgMapInt(m, "cell_interval_chg", 60);
+    m_reboot_time          = map->GetValueInt("rebootnw", 30);
+    m_park_timeout_secs    = map->GetValueInt("park.timeout", 600);
+    m_full_km              = map->GetValueInt("full.km", 126);
+    m_cfg_preset_version   = map->GetValueInt("cfg.preset.ver", 0);
+    m_suffsoc              = map->GetValueInt("suffsoc", 0);
+    m_suffrange            = map->GetValueInt("suffrange", 0);
+    cell_interval_drv      = map->GetValueInt("cell_interval_drv", 60);
+    cell_interval_chg      = map->GetValueInt("cell_interval_chg", 60);
     
-    m_front_pressure       = cfgMapFloat(m, "tpms.front.pressure", 225.0f);
-    m_rear_pressure        = cfgMapFloat(m, "tpms.rear.pressure", 255.0f);
-    m_pressure_warning     = cfgMapFloat(m, "tpms.value.warn", 40.0f);
-    m_pressure_alert       = cfgMapFloat(m, "tpms.value.alert", 70.0f);
+    m_front_pressure       = map->GetValueFloat("tpms.front.pressure", 225.0f);
+    m_rear_pressure        = map->GetValueFloat("tpms.rear.pressure", 255.0f);
+    m_pressure_warning     = map->GetValueFloat("tpms.value.warn", 40.0f);
+    m_pressure_alert       = map->GetValueFloat("tpms.value.alert", 70.0f);
     }
 
 #ifdef CONFIG_OVMS_COMP_MAX7317

@@ -75,21 +75,6 @@
 #define CAN_NIBH(b)     (data[b] >> 4)
 #define CAN_NIB(n)      (((n)&1) ? CAN_NIBL((n)>>1) : CAN_NIBH((n)>>1))
 
-// Config map helpers (shared by vehicle_smarteq.cpp and eq_web.cpp):
-static inline bool cfgMapBool(const ConfigParamMap& m, const char* key, bool def) {
-  auto it = m.find(key);
-  if (it == m.end()) return def;
-  return (it->second == "yes" || it->second == "true" || it->second == "1");
-}
-static inline int cfgMapInt(const ConfigParamMap& m, const char* key, int def) {
-  auto it = m.find(key);
-  return (it != m.end()) ? atoi(it->second.c_str()) : def;
-}
-static inline float cfgMapFloat(const ConfigParamMap& m, const char* key, float def) {
-  auto it = m.find(key);
-  return (it != m.end()) ? atof(it->second.c_str()) : def;
-}
-
 // Vehicle specific MSG protocol command IDs:
 #define CMD_SetChargeAlerts         204 // (suffsoc)
 

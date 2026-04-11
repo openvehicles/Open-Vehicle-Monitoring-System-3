@@ -39,19 +39,6 @@ using namespace std;
 
 #define _attr(text) (c.encode_html(text).c_str())
 
-static const ConfigParamMap empty_map;
-
-static std::string cfgIntStr(const ConfigParamMap& m, const char* key, int def) {
-  auto it = m.find(key);
-  if (it != m.end()) return it->second;
-  char b[16]; snprintf(b, sizeof(b), "%d", def); return b;
-}
-static std::string cfgFloatStr(const ConfigParamMap& m, const char* key, float def) {
-  auto it = m.find(key);
-  if (it != m.end()) return it->second;
-  char b[16]; snprintf(b, sizeof(b), "%.0f", def); return b;
-}
-
 /**
  * WebInit: register pages
  */
@@ -141,36 +128,32 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       auto map = MyConfig.GetParamMap("xsq");
       
       // Helper lambda to set bool values
-      auto setBool = [&map](const char* key, bool val) {
-        map[key] = val ? "yes" : "no";
-      };
-      
       // Update all values in local map
       if(canwrite && canwrite_caron) 
          {
          // If canwrite/canwrite_caron changed, reset canwrite_caron to avoid inconsistent state
          canwrite_caron = false;
          }
-      setBool("canwrite", canwrite);
-      setBool("canwrite.caron", canwrite_caron);
-      setBool("led", led);
+      map.SetValueBool("canwrite", canwrite);
+      map.SetValueBool("canwrite.caron", canwrite_caron);
+      map.SetValueBool("led", led);
       map["rebootnw"] = rebootnw;
-      setBool("resettrip", resettrip);
-      setBool("resettotal", resettotal);
-      setBool("bcvalue", bcvalue);
+      map.SetValueBool("resettrip", resettrip);
+      map.SetValueBool("resettotal", resettotal);
+      map.SetValueBool("bcvalue", bcvalue);
       map["full.km"] = full_km;
-      setBool("12v.charge", charge12v);
-      setBool("unlock.warning", unlocked);
-      setBool("extended.stats", extstats);
-      setBool("reset.notify", tripnotify);
-      setBool("door.warning", opendoors);
-      setBool("obdii.79b", obdii79b);
-      setBool("obdii.79b.cell", obdii79b_cell);
-      setBool("obdii.743", obdii743);
-      setBool("obdii.745", obdii745);
-      setBool("obdii.7e4", obdii7e4);
-      setBool("obdii.7e4.dcdc", obdii7e4_dcdc);
-      setBool("obdii.745.tpms", obdii745_tpms);
+      map.SetValueBool("12v.charge", charge12v);
+      map.SetValueBool("unlock.warning", unlocked);
+      map.SetValueBool("extended.stats", extstats);
+      map.SetValueBool("reset.notify", tripnotify);
+      map.SetValueBool("door.warning", opendoors);
+      map.SetValueBool("obdii.79b", obdii79b);
+      map.SetValueBool("obdii.79b.cell", obdii79b_cell);
+      map.SetValueBool("obdii.743", obdii743);
+      map.SetValueBool("obdii.745", obdii745);
+      map.SetValueBool("obdii.7e4", obdii7e4);
+      map.SetValueBool("obdii.7e4.dcdc", obdii7e4_dcdc);
+      map.SetValueBool("obdii.745.tpms", obdii745_tpms);
 
       // Write all changes in one operation
       MyConfig.SetParamMap("xsq", map);
@@ -187,31 +170,29 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     c.head(400);
     c.alert("danger", error.c_str());
   } else {
-    // read configuration using CachedParam with find() for single map lookup
-    OvmsConfigParam* param = MyConfig.CachedParam("xsq");
-    const ConfigParamMap& m = param ? param->GetMap() : empty_map;
-
-    canwrite       = cfgMapBool(m, "canwrite", sq->m_enable_write);
-    canwrite_caron = cfgMapBool(m, "canwrite.caron", sq->m_enable_write_caron);
-    led            = cfgMapBool(m, "led", sq->m_enable_LED_state);
-    resettrip      = cfgMapBool(m, "resettrip", sq->m_resettrip);
-    resettotal     = cfgMapBool(m, "resettotal", sq->m_resettotal);
-    bcvalue        = cfgMapBool(m, "bcvalue", sq->m_bcvalue);
-    charge12v      = cfgMapBool(m, "12v.charge", sq->m_12v_charge);
-    unlocked       = cfgMapBool(m, "unlock.warning", sq->m_enable_lock_state);
-    extstats       = cfgMapBool(m, "extended.stats", sq->m_extendedStats);
-    tripnotify     = cfgMapBool(m, "reset.notify", sq->m_tripnotify);
-    opendoors      = cfgMapBool(m, "door.warning", sq->m_enable_door_state);
-    obdii79b       = cfgMapBool(m, "obdii.79b", sq->m_obdii_79b);
-    obdii79b_cell  = cfgMapBool(m, "obdii.79b.cell", sq->m_obdii_79b_cell);
-    obdii743       = cfgMapBool(m, "obdii.743", sq->m_obdii_743);
-    obdii745       = cfgMapBool(m, "obdii.745", sq->m_obdii_745);
-    obdii745_tpms  = cfgMapBool(m, "obdii.745.tpms", sq->m_obdii_745_tpms);
-    obdii7e4       = cfgMapBool(m, "obdii.7e4", sq->m_obdii_7e4);
-    obdii7e4_dcdc  = cfgMapBool(m, "obdii.7e4.dcdc", sq->m_obdii_7e4_dcdc);
-    rebootnw       = cfgIntStr(m, "rebootnw", sq->m_reboot_time);
-    full_km        = cfgIntStr(m, "full.km", sq->m_full_km);
-
+    canwrite       = sq->m_enable_write;
+    canwrite_caron = sq->m_enable_write_caron;
+    led            = sq->m_enable_LED_state;
+    resettrip      = sq->m_resettrip;
+    resettotal     = sq->m_resettotal;
+    bcvalue        = sq->m_bcvalue;
+    charge12v      = sq->m_12v_charge;
+    unlocked       = sq->m_enable_lock_state;
+    extstats       = sq->m_extendedStats;
+    tripnotify     = sq->m_tripnotify;
+    opendoors      = sq->m_enable_door_state;
+    obdii79b       = sq->m_obdii_79b;
+    obdii79b_cell  = sq->m_obdii_79b_cell;
+    obdii743       = sq->m_obdii_743;
+    obdii745       = sq->m_obdii_745;
+    obdii745_tpms  = sq->m_obdii_745_tpms;
+    obdii7e4       = sq->m_obdii_7e4;
+    obdii7e4_dcdc  = sq->m_obdii_7e4_dcdc;
+    char def[16];
+    snprintf(def, sizeof(def), "%d", sq->m_reboot_time);
+    rebootnw       = def;
+    snprintf(def, sizeof(def), "%d", sq->m_full_km);
+    full_km        = def;
     c.head(200);
   }
 
@@ -343,20 +324,17 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
     c.head(400);
     c.alert("danger", error.c_str());
   } else {
-    // Read configuration using CachedParam with find() for single map lookup
-    OvmsConfigParam* param = MyConfig.CachedParam("xsq");
-    const ConfigParamMap& m = param ? param->GetMap() : empty_map;
-
-    tpms_temp        = cfgMapBool(m, "tpms.temp", sq->m_tpms_temp_enable);
-    enable           = cfgMapBool(m, "tpms.alert.enable", sq->m_tpms_alert_enable);
-    TPMS_FL          = cfgIntStr(m, "TPMS_FL", sq->m_tpms_index[0]);
-    TPMS_FR          = cfgIntStr(m, "TPMS_FR", sq->m_tpms_index[1]);
-    TPMS_RL          = cfgIntStr(m, "TPMS_RL", sq->m_tpms_index[2]);
-    TPMS_RR          = cfgIntStr(m, "TPMS_RR", sq->m_tpms_index[3]);
-    front_pressure   = cfgFloatStr(m, "tpms.front.pressure", sq->m_front_pressure);
-    rear_pressure    = cfgFloatStr(m, "tpms.rear.pressure", sq->m_rear_pressure);
-    pressure_warning = cfgFloatStr(m, "tpms.value.warn", sq->m_pressure_warning);
-    pressure_alert   = cfgFloatStr(m, "tpms.value.alert", sq->m_pressure_alert);
+    tpms_temp      = sq->m_tpms_temp_enable;
+    enable         = sq->m_tpms_alert_enable;
+    char def[16];
+    snprintf(def, sizeof(def), "%d", sq->m_tpms_index[0]);  TPMS_FL = def;
+    snprintf(def, sizeof(def), "%d", sq->m_tpms_index[1]);  TPMS_FR = def;
+    snprintf(def, sizeof(def), "%d", sq->m_tpms_index[2]);  TPMS_RL = def;
+    snprintf(def, sizeof(def), "%d", sq->m_tpms_index[3]);  TPMS_RR = def;
+    snprintf(def, sizeof(def), "%.0f", sq->m_front_pressure);   front_pressure = def;
+    snprintf(def, sizeof(def), "%.0f", sq->m_rear_pressure);    rear_pressure = def;
+    snprintf(def, sizeof(def), "%.0f", sq->m_pressure_warning); pressure_warning = def;
+    snprintf(def, sizeof(def), "%.0f", sq->m_pressure_alert);   pressure_alert = def;
   }
       
   c.head(200);
@@ -369,13 +347,13 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
     "<p>Show tire temperatures</p>");
   c.input_checkbox("TPMS Alert", "enable", enable,
     "<p>Low/high pressure alerts</p>");
-  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",-1, atof(front_pressure.c_str()), 220, 170, 350, 5,
+  c.input_slider("Front Tire Pressure", "front_pressure", 3, "kPa",-1, atof(front_pressure.c_str()), 225, 170, 350, 5,
     "<p>Target front pressure</p>");
-  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",-1, atof(rear_pressure.c_str()), 250, 170, 350, 5,
+  c.input_slider("Rear Tire Pressure", "rear_pressure", 3, "kPa",-1, atof(rear_pressure.c_str()), 255, 170, 350, 5,
     "<p>Target rear pressure</p>");
-  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",-1, atof(pressure_warning.c_str()), 25, 10, 60, 5,
+  c.input_slider("Pressure Warning", "pressure_warning", 3, "kPa",-1, atof(pressure_warning.c_str()), 40, 10, 60, 5,
     "<p>Over/under pressure warning threshold</p>");
-  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",-1, atof(pressure_alert.c_str()), 45, 30, 120, 5,
+  c.input_slider("Pressure Alert", "pressure_alert", 3, "kPa",-1, atof(pressure_alert.c_str()), 70, 30, 120, 5,
     "<p>Over/under pressure alert threshold</p>");
   {
     static const char* const pos_labels[] = {"Front Left Sensor","Front Right Sensor","Rear Left Sensor","Rear Right Sensor"};
