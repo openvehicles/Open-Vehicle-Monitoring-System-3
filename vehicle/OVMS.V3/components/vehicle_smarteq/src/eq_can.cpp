@@ -275,7 +275,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
             if (m_tpms_temp_enable)
               {
               // Dummy value to indicate valid temp reading, actual temp value is not available in this frame, but can be read via PollReply_TPMS_InputCapt when CAN write is enabled
-              m_tpms_temperature[i] = 1.1f;
+              m_tpms_temperature[i] = StdMetrics.ms_v_env_temp->AsFloat(1.1f);
               }
             // Prevent warnings when readings are valid if the data is not read via OBDII.
             m_tpms_lowbatt[i] = 0; 
