@@ -18,6 +18,24 @@ OVMS="ovms.local"
 BUS="${1:-can3}"
 SSH_USER="ovms"
 
+# The `can log start` command expects the bus filter as an integer
+# (1, 2, 3), not as "canN". Passing "can2" parses as an invalid hex
+# ID range and the filter is silently rejected, resulting in all
+# buses being logged. Translate here so the filename stays
+# human-readable ("can2-...") while the command gets "2".
+case "$BUS" in
+  can1|1) BUS_FILTER=1 ;;
+  can2|2) BUS_FILTER=2 ;;
+  can3|3) BUS_FILTER=3 ;;
+  *)
+    echo "Error: unknown bus '$BUS' — expected can1/can2/can3" >&2
+    exit 1
+    ;;
+esac
+# Normalise the filename prefix to canN regardless of how the user
+# spelled it on the command line.
+BUS="can${BUS_FILTER}"
+
 cd "$(dirname "${BASH_SOURCE[0]}")"
 OUTDIR="candumps"
 
@@ -74,7 +92,7 @@ MD_FILE="$OUTDIR/${BASE}.md"
 # ---------------------------------------------------------------------------
 # 4. Try to start the log via SSH; fall back to manual instructions.
 # ---------------------------------------------------------------------------
-LOG_CMD="can log start tcpserver transmit crtd :3000 $BUS"
+LOG_CMD="can log start tcpserver transmit crtd :3000 $BUS_FILTER"
 STOP_CMD="can log stop"
 
 SSH_OK=false
