@@ -260,10 +260,11 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       REQ_DLC(1);
       StdMetrics.ms_v_env_on->SetValue((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
       break;
-    case 0x673:  
+    case 0x673:
+      {
       // TPMS pressure values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt
       if ((!m_enable_write && !m_enable_write_caron) || !m_obdii_745_tpms)
-      {
+        {
         REQ_DLC(6);
         // Read TPMS pressure values:
         for (int i = 0; i < 4; i++) 
@@ -274,12 +275,16 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
             if (m_tpms_temp_enable)
               {
               // Dummy value to indicate valid temp reading, actual temp value is not available in this frame, but can be read via PollReply_TPMS_InputCapt when CAN write is enabled
-              m_tpms_temperature[i] = 1.1f;
+              m_tpms_temperature[i] = StdMetrics.ms_v_env_temp->AsFloat(1.1f);
               }
+            // Prevent warnings when readings are valid if the data is not read via OBDII.
+            m_tpms_lowbatt[i] = 0; 
+            m_tpms_missing_tx[i] = 0;
             }
+          }
         }
-      }
       break;
+      }
     default:
       //ESP_LOGI(TAG, "PID:%x DATA: %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
       break;
