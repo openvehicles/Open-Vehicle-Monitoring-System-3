@@ -88,7 +88,7 @@ OvmsCanLogUdpClientInit::OvmsCanLogUdpClientInit()
           "<host:port> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
-          1, 9);
+          1, _COMMAND_TOKEN_NMB);
         }
       }
     }
