@@ -351,6 +351,65 @@ void test_clima_no_wake_when_oem_ocu_active() {
 }
 
 // ---------------------------------------------------------------------------
+// BAP Ack decode on 0x17332510 (clima ECU → bus), port 0x12
+// ---------------------------------------------------------------------------
+
+void test_bap_port12_single_frame_active() {
+    printf("\ntest_bap_port12_single_frame_active\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    // Single-frame Ack: [opcode=4 | node=0x25 | port=0x12] payload[0]=0x05 (active)
+    auto f = make_kcan_frame(v, 0x17332510, {0x49, 0x52, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "hvac=true on single-frame active");
+
+    delete v;
+}
+
+void test_bap_port12_single_frame_idle() {
+    printf("\ntest_bap_port12_single_frame_idle\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+    StandardMetrics.ms_v_env_hvac->SetValue(true);
+
+    auto f = make_kcan_frame(v, 0x17332510, {0x49, 0x52, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "hvac=false on single-frame idle");
+
+    delete v;
+}
+
+void test_bap_port12_multi_frame() {
+    printf("\ntest_bap_port12_multi_frame\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    // Multi-frame start: d[0]=0x80 (MF|ch=0|len hi=0), d[1]=0x07 (len lo), d[2:3]=BAP hdr.
+    auto f = make_kcan_frame(v, 0x17332510, {0x80, 0x07, 0x49, 0x52, 0x05, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "hvac=true on multi-frame active");
+
+    delete v;
+}
+
+void test_bap_port12_wrong_opcode_ignored() {
+    printf("\ntest_bap_port12_wrong_opcode_ignored\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+    StandardMetrics.ms_v_env_hvac->SetValue(true);
+
+    // d[0]=0x59 → [MF=0 | opcode=5 (unused) | node hi=9]. Old 0xC0 mask would accept;
+    // new 0xF0 mask rejects. hvac must not change.
+    auto f = make_kcan_frame(v, 0x17332510, {0x59, 0x52, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(),
+          "hvac unchanged — opcode 5 rejected by tightened 0xF0 mask");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
 // Entry point (called from test_can_decode.cpp main)
 // ---------------------------------------------------------------------------
 
@@ -366,4 +425,8 @@ void test_clima_all() {
     test_clima_no_wake_when_oem_ocu_active();
     test_clima_counter_increments();
     test_ticker1_bus_idle_timeout();
+    test_bap_port12_single_frame_active();
+    test_bap_port12_single_frame_idle();
+    test_bap_port12_multi_frame();
+    test_bap_port12_wrong_opcode_ignored();
 }

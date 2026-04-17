@@ -460,6 +460,42 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         default:
             break;
+        }
+        case 0x17332510:  // BAP clima ECU (node 0x25) → bus responses.
+        {
+            // Port 0x12 Ack broadcast: payload[0] = 0x05 clima active, 0x00 idle.
+            // ECU sends this for both OVMS-triggered and schedule-triggered clima
+            // (Captures 6, 12). BAP opcode layout per docs/vw-bap-protocol.md:
+            //   byte 0: [MF(1) | opcode(3) | node[5:2](4)]
+            //   byte 1: [node[1:0](2) | port(6)]
+            // opcode=4 (Ack), node=0x25, port=0x12 → first BAP header byte = 0x49, second = 0x52.
+            //
+            // Single-frame: d[0:1] = BAP header, d[2+] = payload.
+            //   49 52 XX → opcode=4, node=0x25, port=0x12, payload[0]=XX
+            // Multi-frame start: d[0]=0x80/0x90 (MF|ch|len hi), d[1]=len lo, d[2:3]=BAP header.
+            //   80 07 49 52 XX → same, payload[0] at d[4]
+            //
+            // Match opcode=4 + port=0x12 specifically — mask 0xF0 pins single-frame bit and
+            // all three opcode bits; 0xC0 (the old mask) accepted opcodes 4..7.
+            if ((d[0] & 0xF0) == 0x40 && d[1] == 0x52) {
+                tmp_u8 = d[2];
+                StandardMetrics.ms_v_env_hvac->SetValue(tmp_u8 != 0);
+                ESP_LOGV(TAG, "BAP port 0x12 single: hvac=%u (raw=0x%02X)", tmp_u8 != 0, tmp_u8);
+            } else if ((d[0] & 0xC0) == 0x80 && (d[2] & 0xF0) == 0x40 && d[3] == 0x52) {
+                tmp_u8 = d[4];
+                StandardMetrics.ms_v_env_hvac->SetValue(tmp_u8 != 0);
+                ESP_LOGV(TAG, "BAP port 0x12 multi: hvac=%u (raw=0x%02X)", tmp_u8 != 0, tmp_u8);
+            }
+            break;
+        }
+        default: {
+            // only for debug log ALL Incoming frames As i didn't know what frames are coming in
+            // after wakeup had to log all only all unknown ESP_LOGI(TAG, "T26: timestamp: %.24i
+            // 3R29 %12x %02x %02x %02x %02x %02x %02x %02x %02x",
+            // StandardMetrics.ms_m_monotonic->AsInt(), p_frame->MsgID, d[0], d[1], d[2], d[3],
+            // d[4], d[5], d[6], d[7]);
+            break;
+        }
     }
 }
 
