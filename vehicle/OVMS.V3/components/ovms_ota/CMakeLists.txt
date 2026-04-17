@@ -2,7 +2,7 @@ set(srcs)
 set(include_dirs)
 
 if (CONFIG_OVMS_COMP_OTA)
-  list(APPEND srcs "src/ovms_ota.cpp")
+  list(APPEND srcs "src/ovms_ota.cpp" "src/ovms_partitions.cpp")
   list(APPEND include_dirs "src")
 endif ()
 

@@ -697,6 +697,10 @@ void ota_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   writer->puts("OTA copy complete");
   }
 
+//
+// List the partition table
+//
+
 void ota_partition_table_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
@@ -708,7 +712,11 @@ void ota_partition_table_list(int verbosity, OvmsWriter* writer, OvmsCommand* cm
   ovms_partition_table_list(writer);
   }
 
-void ota_perform_partition_table_upgrade(OvmsWriter* writer)
+//
+// Handle upgrading the store (partition table from v3-30 to v3-34)
+//
+
+void ota_perform_partition_table_upgrade_store(OvmsWriter* writer)
   {
   OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
   if (!m_lock.IsLocked())
@@ -717,10 +725,185 @@ void ota_perform_partition_table_upgrade(OvmsWriter* writer)
     return;
     }
   
-  ovms_partition_table_upgrade(writer);
+  ovms_partition_table_upgrade_store(writer);
   }
 
-bool ota_partition_table_upgrade_yesno(OvmsWriter* writer, void* ctx, char ch)
+bool ota_partition_table_upgrade_store_yesno(OvmsWriter* writer, void* ctx, char ch)
+  {
+  writer->printf("%c\n",ch);
+
+  if (ch != 'y')
+    {
+    writer->puts("Store upgrade aborted");
+    return false;
+    }
+
+  ota_perform_partition_table_upgrade_store(writer);
+
+  return false;
+  }
+
+void ota_partition_table_upgrade_store(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (ovms_partition_table_get_type() != OVMS_FlashPartition_30)
+    {
+    writer->puts("Error: Cannot upgrade partition tables not in factory (factory, ota1, ota2, 1MB store) format");
+    return;
+    }
+  
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
+    ota_perform_partition_table_upgrade_store(writer);
+    }
+  else
+    {
+    writer->printf("Upgrade store partition to new format (y/n): ");
+    writer->RegisterInsertCallback(ota_partition_table_upgrade_store_yesno, NULL);
+    }
+  }
+
+//
+// Handle downgrading the store (partition table from v3-34 to v3-30)
+//
+
+void ota_perform_partition_table_downgrade_store(OvmsWriter* writer)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot downgrade partition table");
+    return;
+    }
+  
+  ovms_partition_table_downgrade_store(writer);
+  }
+
+bool ota_partition_table_downgrade_store_yesno(OvmsWriter* writer, void* ctx, char ch)
+  {
+  writer->printf("%c\n",ch);
+
+  if (ch != 'y')
+    {
+    writer->puts("Store downgrade aborted");
+    return false;
+    }
+
+  ota_perform_partition_table_downgrade_store(writer);
+
+  return false;
+  }
+
+void ota_partition_table_downgrade_store(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (ovms_partition_table_get_type() != OVMS_FlashPartition_34)
+    {
+    writer->puts("Error: Cannot downgrade partition tables not in extended store (factory, ota1, ota2, dual store) format");
+    return;
+    }
+  
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
+    ota_perform_partition_table_downgrade_store(writer);
+    }
+  else
+    {
+    writer->printf("Downgrade store partition to old format (y/n): ");
+    writer->RegisterInsertCallback(ota_partition_table_downgrade_store_yesno, NULL);
+    }
+  }
+
+//
+// OTA store2 mount and unmount commands
+//
+
+void ota_partition_table_mount_store2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  ovms_partition_table_mount_store2(writer);
+  }
+
+void ota_partition_table_unmount_store2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  ovms_partition_table_unmount_store2(writer);
+  }
+
+void ota_perform_partition_table_migrate_store(OvmsWriter* writer)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot migrate store");
+    return;
+    }
+  
+  ovms_partition_table_migrate_store(writer);
+  }
+
+bool ota_partition_table_migrate_store_yesno(OvmsWriter* writer, void* ctx, char ch)
+  {
+  writer->printf("%c\n",ch);
+
+  if (ch != 'y')
+    {
+    writer->puts("Store migration aborted");
+    return false;
+    }
+
+  ota_perform_partition_table_migrate_store(writer);
+
+  return false;
+  }
+
+void ota_partition_table_migrate_store(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (ovms_partition_table_get_type() != OVMS_FlashPartition_34)
+    {
+    writer->puts("Error: Cannot migrate store not in extended store (factory, ota1, ota2, dual store) format");
+    return;
+    }
+  
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
+    ota_perform_partition_table_migrate_store(writer);
+    }
+  else
+    {
+    writer->printf("Migrate store to new partition (y/n): ");
+    writer->RegisterInsertCallback(ota_partition_table_migrate_store_yesno, NULL);
+    }
+  }
+
+//
+// Handle upgrading the partition table (from v3-34 to v3-35)
+//
+
+bool ota_perform_partition_table_upgrade_factory(OvmsWriter* writer)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot upgrade partition table");
+    return false;
+    }
+
+  return ovms_partition_table_upgrade_factory(writer);
+  }
+
+bool ota_partition_table_upgrade_factory_yesno(OvmsWriter* writer, void* ctx, char ch)
   {
   writer->printf("%c\n",ch);
 
@@ -730,16 +913,16 @@ bool ota_partition_table_upgrade_yesno(OvmsWriter* writer, void* ctx, char ch)
     return false;
     }
 
-  ota_perform_partition_table_upgrade(writer);
+  ota_perform_partition_table_upgrade_factory(writer);
 
   return false;
   }
 
-void ota_partition_table_upgrade(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ota_partition_table_upgrade_factory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (ovms_partition_table_get_type() != OVMS_FlashPartition_f12)
+  if (ovms_partition_table_get_type() != OVMS_FlashPartition_34)
     {
-    writer->puts("Error: Cannot upgrade partition tables not in original v3 (factory, ota1, ota2) format");
+    writer->puts("Error: Cannot upgrade partition tables not in upgraded store (factory, ota1, ota2, dual store) format");
     return;
     }
 
@@ -764,12 +947,12 @@ void ota_partition_table_upgrade(int verbosity, OvmsWriter* writer, OvmsCommand*
       cmd->PutUsage(writer);
       return;
       }
-    ota_perform_partition_table_upgrade(writer);
+    ota_perform_partition_table_upgrade_factory(writer);
     }
   else
     {
     writer->printf("Upgrade partition table to new format (y/n): ");
-    writer->RegisterInsertCallback(ota_partition_table_upgrade_yesno, NULL);
+    writer->RegisterInsertCallback(ota_partition_table_upgrade_factory_yesno, NULL);
     }
   }
 
@@ -958,8 +1141,19 @@ OvmsOTA::OvmsOTA()
 
   OvmsCommand* cmd_otapartition = cmd_ota->RegisterCommand("partitions","OTA partitions");
   cmd_otapartition->RegisterCommand("list","Show partition table",ota_partition_table_list);
-  if (ovms_partition_table_get_type() != OVMS_FlashPartition_12)
-    cmd_otapartition->RegisterCommand("upgrade","Upgrade partition table",ota_partition_table_upgrade,"[-noconfirm]",0,1);
+
+  OvmsCommand* cmd_otapartitionupgrade = cmd_otapartition->RegisterCommand("upgrade","OTA upgrade partitions");
+  cmd_otapartitionupgrade->RegisterCommand("factory","Upgrade factory partition table to dual OTA",
+    ota_partition_table_upgrade_factory,"[-noconfirm]",0,1);
+
+  OvmsCommand* cmd_otapartitionstore = cmd_otapartition->RegisterCommand("store","OTA store partition manipulation");
+  cmd_otapartitionstore->RegisterCommand("upgrade","Upgrade and extend store partition",
+    ota_partition_table_upgrade_store,"[-noconfirm]",0,1);
+  cmd_otapartitionstore->RegisterCommand("downgrade","Downgrade store partition",
+    ota_partition_table_downgrade_store,"[-noconfirm]",0,1);
+  cmd_otapartitionstore->RegisterCommand("mount","Mount store2",ota_partition_table_mount_store2);
+  cmd_otapartitionstore->RegisterCommand("unmount","Unmount store2",ota_partition_table_unmount_store2);
+  cmd_otapartitionstore->RegisterCommand("migrate","Migrate store to new partition",ota_partition_table_migrate_store,"[-noconfirm]",0,1);
   }
 
 OvmsOTA::~OvmsOTA()

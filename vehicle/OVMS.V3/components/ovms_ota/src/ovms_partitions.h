@@ -71,8 +71,9 @@ typedef struct __attribute__((packed))   // Partition table record (32 bytes)
 typedef enum
   {
   OVMS_FlashPartition_Unknown,    // Unknown partition format (or not yet discovered)
-  OVMS_FlashPartition_f12,        // Original v3 partition format (factory, ota1, ota2)
-  OVMS_FlashPartition_12,         // New partition format (ota1, ota2, no factory)
+  OVMS_FlashPartition_30,         // Original v3 partition format (factory, ota1, ota2, 1MB store)
+  OVMS_FlashPartition_34,         // Original v3 partition format (factory, ota1, ota2, dual store)
+  OVMS_FlashPartition_35,         // New partition format (ota1, ota2, no factory, maximized store)
   } ovms_flashpartition_t;
 
 extern const char* ovms_partition_type_name(esp_partition_type_t type);
@@ -87,6 +88,16 @@ extern std::string ovms_partition_table_get_type_string(ovms_flashpartition_t ty
 extern bool ovms_partition_table_has_factory(void);
 
 extern bool ovms_partition_table_list(OvmsWriter* writer);
-extern bool ovms_partition_table_upgrade(OvmsWriter* writer);
+
+extern bool ovms_partition_table_upgrade_store(OvmsWriter* writer);
+extern bool ovms_partition_table_downgrade_store(OvmsWriter* writer);
+extern bool ovms_partition_table_mount_store2(OvmsWriter* writer);
+extern bool ovms_partition_table_unmount_store2(OvmsWriter* writer);
+extern bool ovms_partition_table_copy_store(OvmsWriter* writer);
+extern bool ovms_partition_table_migrate_store(OvmsWriter* writer);
+extern bool ovms_partition_table_upgrade_factory(OvmsWriter* writer);
+
+extern bool ovms_partition_table_rewrite(ovms_esp_partition_t* table, OvmsWriter* writer=NULL);
+extern void ovms_partition_table_void_entry(ovms_esp_partition_t* entry);
 
 #endif //#ifndef __OVMS_PARTITIONS_H__

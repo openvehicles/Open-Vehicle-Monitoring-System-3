@@ -37,14 +37,6 @@
 #include "ovms_mutex.h"
 #include "ovms_partitions.h"
 
-  // Flash partition version
-typedef enum
-  {
-  OTA_FlashPartition_Unknown,    // Unknown partition format (or not yet discovered)
-  OTA_FlashPartition_f12,        // Original v3 partition format (factory, ota1, ota2)
-  OTA_FlashPartition_12,         // New partition format (ota1, ota2, no factory)
-  } ota_flashpartition_t;
-
 struct ota_info
   {
   std::string hardware_info;
