@@ -1,23 +1,5 @@
-# can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-224459.crtd — Capture Notes
+# can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-224459.crtd
 
-## Capture info
-
-| Field | Value |
-|---|---|
-| Firmware | `3.3.005-800-gc60d79ed-dirty/ota_0/edge` |
-| Bus | can3 |
-| Captured | 20260410-224459 |
-| Duration | ~975s |
-| Frames | 612566 |
-
-## Sequence
-
-capture 6
-
----
-
-## Notes
-
-<!-- Add analysis notes here -->
-
-hvac never reset to false after hvac stopped, clima ran for 15 minutes, end temp was 12 degreed on plastic panel in roof.
+612,566 frames — **Capture 6** (clima 15-min natural expiry). Cabin reached 12°C.
+v.e.hvac not reset after clima stopped — bug confirmed and fixed (drive from BAP port 0x12,
+not 0x5EA remote_mode). All findings in `vwegolf.dbc` and PROJECT.md.

@@ -52,9 +52,10 @@ WDT task = **OVMS Events** (not CanRx) — events task starved, TWDT fired. CanR
 
 **Suspected causes:**
 
-1. **Power supply — AWG 23 harness.** Thin wires drop voltage on WiFi TX peaks (capture start/stop add network bursts). Brownouts → task WDT if core locks mid-instruction. Test: measure OVMS supply at `can log start`; retry with engine running (alternator → 14 V) vs ignition off.
-2. **Long event handler blocking.** Cap 16 log: `Duktape: event handling for 'ticker.10' took 2460 ms` from ABRP JS plugin — events task starves if handler runs long. Look for other slow handlers, move off events task.
-3. **Upstream `canlog_tcpserver` start/stop race.** Start/stop correlated with crashes; check accept/close races. Worth upstream report once root cause pinned.
+1. **can2 FCAN interrupt storm — top suspect.** Cap `can3-20260405-091701`: remote clima active → can2 840k interrupts in 977s (~860/s), `errflags=0x22401c02` repeating, `txpkt=0` (OVMS not TX). J533 wakes FCAN during clima. MCP2515 floods. CAN ISR starves events task → TWDT. Reproduces under normal clima use.
+2. **Power supply — AWG 23 harness.** WiFi TX peaks → voltage drop → brownout → WDT. Test with engine running (14V).
+3. **Slow event handler.** Cap 16: `ticker.10 took 2460 ms` (ABRP plugin). Events task starves.
+4. **`canlog_tcpserver` start/stop race.** Crashes correlated with log start/stop.
 
 **Next steps (before captures):**
 

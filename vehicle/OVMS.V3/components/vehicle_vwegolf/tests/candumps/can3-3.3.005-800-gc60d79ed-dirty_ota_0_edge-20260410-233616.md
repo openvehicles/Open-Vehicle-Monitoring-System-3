@@ -1,23 +1,6 @@
-# can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-233616.crtd — Capture Notes
+# can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-233616.crtd
 
-## Capture info
-
-| Field | Value |
-|---|---|
-| Firmware | `3.3.005-800-gc60d79ed-dirty/ota_0/edge` |
-| Bus | can3 |
-| Captured | 20260410-233616 |
-| Duration | ~1189s |
-| Frames | 829149 |
-
-## Sequence
-
-capture 12
-
----
-
-## Notes
-
-<!-- Add analysis notes here -->
-settings in e-manager, 20 degrees, depart 2350, clima on batt, max charge current
-v.e.hvac remain true after clima stopps at 2355, capture ends around 2356 
+829,149 frames — **Capture 12** (schedule-triggered clima, departure 23:50).
+Schedule-triggered clima uses same BAP port 0x12 stop detection as manual.
+v.e.hvac not reset after scheduled stop — same bug as Capture 6, same fix applied.
+All findings in `vwegolf.dbc` and PROJECT.md.
