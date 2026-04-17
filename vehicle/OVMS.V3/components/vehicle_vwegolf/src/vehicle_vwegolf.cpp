@@ -642,6 +642,115 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandPanic() {
     return Success;
 }
 
+void OvmsVehicleVWeGolf::WakeKcanBus() {
+    ESP_LOGI(TAG, "WakeKcanBus: asserting dominant bits on KCAN");
+
+    // Reset the KCAN controller to clear any stuck frame from the TWAI HW TX FIFO.
+    // A stale heartbeat left from the prior session occupies the FIFO slot; on a sleeping
+    // bus it can never drain (no ACK), so the wake frame queues behind it and never
+    // produces dominant bits. Stop/Start preserves mode and speed.
+    m_can3->Reset();
+    vTaskDelay(pdMS_TO_TICKS(5));
+
+    uint8_t data[8] = {0x40, 0x00, 0x01, 0x1F, 0x00, 0x00, 0x00, 0x00};
+    m_can3->WriteExtended(0x17330301, 8, data, pdMS_TO_TICKS(50));
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    data[0] = 0x67;
+    data[1] = 0x10;
+    data[2] = 0x41;
+    data[3] = 0x84;
+    data[4] = 0x14;
+    data[5] = 0x00;
+    data[6] = 0x00;
+    data[7] = 0x00;
+    m_can3->WriteExtended(0x1B000067, 8, data, pdMS_TO_TICKS(50));
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    m_ocu_active = true;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
+    if (m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS) {
+        ESP_LOGI(TAG, "Wakeup: KCAN already active");
+        return Success;
+    }
+    WakeKcanBus();
+    return Success;
+}
+
+void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
+    uint8_t tmp_u8 = 0;
+
+    canbus* comfBus;
+    comfBus = m_can3;
+    uint8_t length = 8;
+    uint8_t data[length];
+    length = 8;
+    data[0] = 0x00;
+    data[1] = 0x00;
+    data[2] = 0x00;
+    data[3] = 0x00;
+    data[4] = 0x00;
+    data[5] = 0x00;
+    data[6] = 0x00;
+    data[7] = 0x00;
+
+    // Mirror fold
+    if (m_mirror_fold_in_requested) {
+        tmp_u8 = 1;
+        data[5] = (((uint8_t)tmp_u8) << 7) & 0x80;
+        m_mirror_fold_in_requested = false;
+        ESP_LOGI(TAG, "Mirror fold in");
+    }
+
+    // Horn
+    if (m_horn_requested) {
+        tmp_u8 = 1;
+        data[6] = (((uint8_t)tmp_u8) >> 0) & 0x1;
+        m_horn_requested = false;
+        ESP_LOGI(TAG, "Horn");
+    }
+
+    // Door Lock //TODO there must be some vehicle specific identification send together with this
+    // signal so not working OOB
+    if (m_lock_requested >= 1) {
+        tmp_u8 = 1;
+        data[6] = (((uint8_t)tmp_u8) << 1) & 0x2;
+        m_lock_requested = false;
+        ESP_LOGI(TAG, "DoorLock");
+    }
+
+    // Door Unlock //TODO there must be some vehicle specific identification send together with this
+    // signal so not working OOB
+    if (m_unlock_requested) {
+        tmp_u8 = 1;
+        data[6] = (((uint8_t)tmp_u8) << 2) & 0x4;
+        m_unlock_requested = false;
+        ESP_LOGI(TAG, "DoorUnlock");
+    }
+
+    // Hazard lights
+    if (m_indicators_requested) {
+        tmp_u8 = 1;
+        data[6] = (((uint8_t)tmp_u8) << 3) & 0x8;
+        m_indicators_requested = false;
+        ESP_LOGI(TAG, "Hazard lights");
+    }
+
+    // Panic alarm
+    if (m_panic_mode_requested) {
+        tmp_u8 = 1;
+        data[6] = (((uint8_t)tmp_u8) << 4) & 0x10;
+        m_panic_mode_requested = false;
+        ESP_LOGI(TAG, "PanicAlarm!");
+    }
+
+    comfBus->WriteStandard(0x5A7, length, data);
+    ESP_LOGV(TAG, "Heartbeat 0x5A7: %02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1],
+             data[2], data[3], data[4], data[5], data[6], data[7]);
+}
+
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool enable) {
     ESP_LOGI(TAG, "Climate control: %s", enable ? "start" : "stop");
 
@@ -697,11 +806,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
         return Fail;
     }
 
-    // Frame 2: BAP multi-frame continuation — remaining 4 bytes of the port 0x19 payload.
-    // Full 8-byte payload: [counter] 06 00 01  06 00 <temp> 00
-    // Temperature encoding (dexterbg ComfortCAN-Multiplex-Protokoll-220206):
-    //   raw = (celsius - 10) * 10   e.g. 21°C → 0x6E, 22°C → 0x78, 15.5°C(LO) → 0x37
-    uint8_t temp_raw = (uint8_t)((m_climate_temp - 10) * 10);
+    // Frame 2: BAP continuation — remaining payload bytes including target temperature.
+    // Temperature encoding: raw = (celsius - 10) * 10  (e.g. 21°C → 0x6E)
+    uint8_t climate_temp = (uint8_t)MyConfig.GetParamValueInt("xvg", "cc-temp", 21);
+    uint8_t temp_raw = (uint8_t)((climate_temp - 10) * 10);
     data[0] = 0xC0;  // multi-frame continuation, channel 0
     data[1] = 0x06;  // unknown
     data[2] = 0x00;  // unknown
@@ -728,11 +836,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
         m_ocu_active = false;
         return Fail;
     }
-    ESP_LOGI(TAG, "BAP clima %s sent: counter=0x%02X", enable ? "start" : "stop", m_bap_counter);
-    // Optimistic update: give the app immediate feedback that the command was transmitted.
-    // 0x05EA will overwrite this with ground truth once the ECU responds. If the ECU
-    // ignores the command (e.g. low SoC, inhibit active), the metric self-corrects on the
-    // next 0x05EA frame rather than staying permanently wrong.
+
+    ESP_LOGI(TAG, "BAP clima %s sent: counter=0x%02X temp=%u°C", enable ? "start" : "stop",
+             m_bap_counter, climate_temp);
+
+    // Optimistic update: give the app immediate feedback. 0x05EA will overwrite this
+    // with ground truth once the ECU responds.
     StandardMetrics.ms_v_env_hvac->SetValue(enable);
     m_ocu_active = enable;  // stay in NM ring while clima runs; leave after stop
     return Success;

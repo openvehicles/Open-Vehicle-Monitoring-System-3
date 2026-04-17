@@ -63,7 +63,6 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
 
  protected:
     void Ticker1(uint32_t ticker) override;
-    void Ticker10(uint32_t ticker) override;
 
  private:
     // Seconds since the last genuine KCAN (can3) frame arrived. Reset to 0 only for
@@ -81,10 +80,6 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // to avoid asserting an unexpected node presence when the car is idle.
     bool m_ocu_active = false;
     uint32_t m_last_heartbeat_tick = 0;
-
-    // Target temperature and battery-allow flag for clima; refreshed from config in Ticker10.
-    uint8_t m_climate_temp = 21;
-    bool m_climate_on_battery = false;
 
     // Rolling BAP counter included in each command frame. The ECU echoes it (| 0x80) in
     // its ACK so we can match responses to commands. Must never be zero; wraps 0xFF → 0x01.
