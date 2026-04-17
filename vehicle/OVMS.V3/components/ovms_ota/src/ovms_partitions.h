@@ -35,7 +35,7 @@
 #include <esp_partition.h>
 #include "ovms_command.h"
 
-#define PARTITION_TABLE_SIZE 0x0C00   // Maximum size of the partition table in flash (32 bytes per partition record)
+#define PARTITION_TABLE_SIZE 0x0C00   // Maximum size of the partition table (32 bytes per partition record x 96 partitions)
 #define PARTITION_TABLE_BLOCK_SIZE  0x1000   // Size allocated for the partition table in flash
 #define PARTITION_TABLE_RECORD_SIZE 32       // Size of the partition table record (32 bytes)
 #define PARTITION_ENTRY_MAGIC 0x50aa
@@ -72,7 +72,7 @@ typedef enum
   {
   OVMS_FlashPartition_Unknown,    // Unknown partition format (or not yet discovered)
   OVMS_FlashPartition_30,         // Original v3 partition format (factory, ota1, ota2, 1MB store)
-  OVMS_FlashPartition_34,         // Original v3 partition format (factory, ota1, ota2, dual store)
+  OVMS_FlashPartition_34,         // Transitory in-upgrade partition format (factory, ota1, ota2, dual store)
   OVMS_FlashPartition_35,         // New partition format (ota1, ota2, no factory, maximized store)
   } ovms_flashpartition_t;
 

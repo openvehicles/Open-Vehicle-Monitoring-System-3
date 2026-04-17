@@ -377,8 +377,17 @@ bool ovms_partition_table_upgrade_store(OvmsWriter* writer)
     OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
     writer->puts("Added new store2 partition to partition table");
 
+    // Erase the region to ensure a clean start with auto reformatting on mount
+    writer->printf("Erasing store2 data (%" PRId32 " bytes)...\n", p->data.entry.size);
+    if (spi_flash_erase_range(p->data.entry.address, p->data.entry.size) != ESP_OK)
+      {
+      writer->puts("Warning: erasing store2 data failed, may need manual erase/reflash if formatting fails");
+      // This is only an issue if store2 is also corrupted and doesn't trigger a reformat
+      // on the following mount attempt -- in this case the user will need to reflash via USB
+      }
+
     // Then we need to add the MD5 checksum record
-    p++;
+    p++; // safe to assume we have one of the max 96 partition slots left to use
     ovms_partition_table_void_entry(p);
     p->magic_id = PARTITION_MD5_MAGIC;
     OVMS_MD5_Final(p->data.md5.digest, &md5_ctx);
@@ -411,6 +420,11 @@ bool ovms_partition_table_downgrade_store(OvmsWriter* writer)
     return false;
     }
 
+  if (ovms_store2_mounted)
+    {
+    ovms_partition_table_unmount_store2(writer);
+    }
+
   size_t offset = ovms_partition_table_find();
   if (offset == 0)
     {
@@ -430,8 +444,7 @@ bool ovms_partition_table_downgrade_store(OvmsWriter* writer)
   OVMS_MD5_Init(&md5_ctx);
   for (; p->magic_id == PARTITION_ENTRY_MAGIC; p++)
     {
-    if (p->magic_id == PARTITION_ENTRY_MAGIC &&
-        p->data.entry.type == ESP_PARTITION_TYPE_DATA && 
+    if (p->data.entry.type == ESP_PARTITION_TYPE_DATA && 
         p->data.entry.subtype == ESP_PARTITION_SUBTYPE_DATA_FAT &&
         p->data.entry.address == 0xe10000 &&
         p->data.entry.size == 0x1f0000)
@@ -439,6 +452,7 @@ bool ovms_partition_table_downgrade_store(OvmsWriter* writer)
       // We have found the store2 partition
       writer->puts("Removing store2 partition from partition table");
       memset((void*)p, 0, sizeof(ovms_esp_partition_t));
+      // safe to assume this is our last partition, so we can assign this slot to the terminating MD5 checksum:
       p->magic_id = PARTITION_MD5_MAGIC;
       OVMS_MD5_Final(p->data.md5.digest, &md5_ctx);
       p++; ovms_partition_table_void_entry(p); // Clear the following redundant MD5 checksum record
@@ -446,6 +460,7 @@ bool ovms_partition_table_downgrade_store(OvmsWriter* writer)
         {
         writer->puts("Store partition downgraded successfully - reboot required");
         partition_table_type = OVMS_FlashPartition_30;
+        ovms_partition_table_free(table);
         return true;
         }
       }
@@ -596,7 +611,7 @@ static bool copy_store_ensure_dir(const std::string& dst, OvmsWriter* writer, un
 
 // Copy a single file from the source to the destination
 static void copy_store_one_file(OvmsWriter* writer, const std::string& src, const std::string& dst,
-  uint8_t* buf, size_t buf_size, unsigned& files_copied, unsigned& errors)
+  off_t expected_size, uint8_t* buf, size_t buf_size, unsigned& files_copied, unsigned& errors)
   {
   struct stat st_src;
   if (stat(src.c_str(), &st_src) != 0)
@@ -615,12 +630,19 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
   struct stat st_dst;
   if (stat(dst.c_str(), &st_dst) == 0)
     {
-    if (S_ISREG(st_dst.st_mode)) return;
-    writer->printf("Error: destination exists but is not a file: %s\n", dst.c_str());
-    errors++;
-    return;
+    if (!S_ISREG(st_dst.st_mode))
+      {
+      writer->printf("Error: destination exists but is not a file: %s\n", dst.c_str());
+      errors++;
+      return;
+      }
+    else if (st_dst.st_size == expected_size)
+      {
+      // skip, file already copied (Note: won't detect same size changes)
+      return;
+      }
     }
-  if (errno != ENOENT)
+  else if (errno != ENOENT)
     {
     writer->printf("Error: stat %s: %s\n", dst.c_str(), strerror(errno));
     errors++;
@@ -647,6 +669,7 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
   writer->printf("Copy file: %s -> %s\n", src.c_str(), dst.c_str());
 
   bool io_ok = true;
+  off_t copied_size = 0;
   for (;;)
     {
     ssize_t nr = read(fd_in, buf, buf_size);
@@ -676,6 +699,7 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
       off += (size_t)nw;
       }
     if (!io_ok) break;
+    copied_size += nr;
     }
 
   if (close(fd_in) != 0)
@@ -693,6 +717,13 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
   if (close(fd_out) != 0)
     {
     writer->printf("Error: close (write) %s: %s\n", dst.c_str(), strerror(errno));
+    io_ok = false;
+    }
+
+  if (io_ok && copied_size != expected_size)
+    {
+    writer->printf("Error: size mismatch on %s: %ld bytes copied, %ld expected (/store corrupted)\n",
+      src.c_str(), copied_size, expected_size);
     io_ok = false;
     }
 
@@ -837,7 +868,7 @@ bool ovms_partition_table_copy_store(OvmsWriter* writer)
         }
       else if (S_ISREG(st_ent.st_mode))
         {
-        copy_store_one_file(writer, child_src, child_dst, buf, kBufSize, files_copied, errors);
+        copy_store_one_file(writer, child_src, child_dst, st_ent.st_size, buf, kBufSize, files_copied, errors);
         }
       else
         {
@@ -854,6 +885,7 @@ bool ovms_partition_table_copy_store(OvmsWriter* writer)
     }
 
   free(buf);
+
   writer->printf("Copy finished: %u files copied, %u errors\n", files_copied, errors);
   return (errors == 0);
   }
@@ -923,77 +955,74 @@ bool ovms_partition_table_upgrade_factory(OvmsWriter* writer)
   OVMS_MD5_Init(&md5_ctx);
   for (; p->magic_id == PARTITION_ENTRY_MAGIC; p++)
     {
-    if (p->magic_id == PARTITION_ENTRY_MAGIC)
+    if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY)
       {
-      if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY)
+      // We have found the factory partition, so we need to change it to OTA 0
+      factory_offset = p->data.entry.address;
+      p->data.entry.subtype = ESP_PARTITION_SUBTYPE_APP_OTA_0;
+      p->data.entry.size = 0x700000;
+      memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
+      strncpy(p->data.entry.label, "ota_0", sizeof(p->data.entry.label));
+      OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
+      writer->printf("0x%08" PRIx32 " Converted factory partition to 6MB OTA 0\n", factory_offset);
+      }
+    else if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_OTA_0)
+      {
+      // We have found the OTA 0 partition, so we need to change it to OTA 1
+      ota1_offset = factory_offset + 0x700000; // safe to assume we found the factory_offset here
+      p->data.entry.subtype = ESP_PARTITION_SUBTYPE_APP_OTA_1;
+      p->data.entry.address = ota1_offset;
+      p->data.entry.size = 0x700000;
+      memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
+      strncpy(p->data.entry.label, "ota_1", sizeof(p->data.entry.label));
+      OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
+      writer->printf("0x%08" PRIx32 " Converted OTA 0 partition to 6MB OTA 1\n", ota1_offset);
+      }
+    else if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_OTA_1)
+      {
+      // We have found the old OTA 1 partition, so now have
+      // p[0] -> OTA_1
+      // p[1] -> old store
+      // p[2] -> new store
+      // p[3] -> MD5 checksum
+      // We need to set this as the new store, the one after as the checksum, and then clear the two following that
+      memcpy((void*)p, (void*)&p[2], sizeof(ovms_esp_partition_t));
+      memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
+      strncpy(p->data.entry.label, "store", sizeof(p->data.entry.label));
+      OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
+      writer->printf("0x%08" PRIx32 " Moved %s/%s partition up two positions\n",
+        p->data.entry.address,
+        ovms_partition_type_name((esp_partition_type_t)p->data.entry.type),
+        ovms_partition_subtype_name((esp_partition_type_t)p->data.entry.type, (esp_partition_subtype_t)p->data.entry.subtype));
+      p++; // now @ old store, make this the new MD5 checksum slot:
+      ovms_partition_table_void_entry(p);
+      p->magic_id = PARTITION_MD5_MAGIC;
+      OVMS_MD5_Final(p->data.md5.digest, &md5_ctx);
+      writer->puts("           Recalculated MD5 checksum");
+      ovms_partition_table_void_entry(&p[1]); // void previous new store
+      ovms_partition_table_void_entry(&p[2]); // void previous MD5 checksum
+      if (ovms_partition_table_rewrite(table, writer))
         {
-        // We have found the factory partition, so we need to change it to OTA 0
-        factory_offset = p->data.entry.address;
-        p->data.entry.subtype = ESP_PARTITION_SUBTYPE_APP_OTA_0;
-        p->data.entry.size = 0x700000;
-        memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
-        strncpy(p->data.entry.label, "ota_0", sizeof(p->data.entry.label));
-        OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
-        writer->printf("0x%08" PRIx32 " Converted factory partition to 6MB OTA 0\n", factory_offset);
-        }
-      else if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_OTA_0)
-        {
-        // We have found the OTA 0 partition, so we need to change it to OTA 1
-        ota1_offset = factory_offset + 0x700000;
-        p->data.entry.subtype = ESP_PARTITION_SUBTYPE_APP_OTA_1;
-        p->data.entry.address = ota1_offset;
-        p->data.entry.size = 0x700000;
-        memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
-        strncpy(p->data.entry.label, "ota_1", sizeof(p->data.entry.label));
-        OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
-        writer->printf("0x%08" PRIx32 " Converted OTA 0 partition to 6MB OTA 1\n", ota1_offset);
-        }
-      else if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_OTA_1)
-        {
-        // We have found the old OTA 1 partition, so now have
-        // p[0] -> OTA_1
-        // p[1] -> old store
-        // p[2] -> new store
-        // p[3] -> MD5 checksum
-        // We need to set this as the new store, the one after as the checksum, and then clear the two following that
-        memcpy((void*)p, (void*)&p[2], sizeof(ovms_esp_partition_t));
-        memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
-        strncpy(p->data.entry.label, "store", sizeof(p->data.entry.label));    
-        OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
-        writer->printf("0x%08" PRIx32 " Moved %s/%s partition up two positions\n",
-          p->data.entry.address,
-          ovms_partition_type_name((esp_partition_type_t)p->data.entry.type),
-          ovms_partition_subtype_name((esp_partition_type_t)p->data.entry.type, (esp_partition_subtype_t)p->data.entry.subtype));
-        p++;
-        ovms_partition_table_void_entry(p);
-        p->magic_id = PARTITION_MD5_MAGIC;
-        OVMS_MD5_Final(p->data.md5.digest, &md5_ctx);
-        writer->puts("           Recalculated MD5 checksum");
-        ovms_partition_table_void_entry(&p[1]);
-        ovms_partition_table_void_entry(&p[2]);
-        if (ovms_partition_table_rewrite(table, writer))
-          {
-          writer->puts("Partition table upgraded successfully - reboot required");
-          partition_table_type = OVMS_FlashPartition_35;
-          ovms_partition_table_free(table);
-          return true;
-          }
-        else
-          {
-          ovms_partition_table_free(table);
-          writer->puts("Error: Failed to upgrade partition table");
-          return false;
-          }
+        writer->puts("Partition table upgraded successfully - reboot required");
+        partition_table_type = OVMS_FlashPartition_35;
+        ovms_partition_table_free(table);
+        return true;
         }
       else
         {
-        // Just update the MD5 checksum
-        OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
-        writer->printf("0x%08" PRIx32 " Skipping over %s/%s partition\n",
-          p->data.entry.address,
-          ovms_partition_type_name((esp_partition_type_t)p->data.entry.type),
-          ovms_partition_subtype_name((esp_partition_type_t)p->data.entry.type, (esp_partition_subtype_t)p->data.entry.subtype));
+        ovms_partition_table_free(table);
+        writer->puts("Error: Failed to upgrade partition table");
+        return false;
         }
+      }
+    else
+      {
+      // Just update the MD5 checksum
+      OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
+      writer->printf("0x%08" PRIx32 " Skipping over %s/%s partition\n",
+        p->data.entry.address,
+        ovms_partition_type_name((esp_partition_type_t)p->data.entry.type),
+        ovms_partition_subtype_name((esp_partition_type_t)p->data.entry.type, (esp_partition_subtype_t)p->data.entry.subtype));
       }
     }
 
