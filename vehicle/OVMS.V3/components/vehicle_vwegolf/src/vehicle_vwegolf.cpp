@@ -843,6 +843,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     // Optimistic update: give the app immediate feedback. 0x05EA will overwrite this
     // with ground truth once the ECU responds.
     StandardMetrics.ms_v_env_hvac->SetValue(enable);
-    m_ocu_active = enable;  // stay in NM ring while clima runs; leave after stop
+
+    // Stay in the NM ring after both start and stop. On stop the ECU broadcasts a
+    // 0x05→0x00 status transition on BAP port 0x12 a few hundred ms later; dropping
+    // out immediately would miss the ACK. Natural bus-idle timeout in Ticker1 clears
+    // m_ocu_active once KCAN goes quiet.
+    m_ocu_active = true;
     return Success;
 }
