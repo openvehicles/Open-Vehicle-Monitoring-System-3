@@ -85,9 +85,13 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // its ACK so we can match responses to commands. Must never be zero; wraps 0xFF → 0x01.
     uint8_t m_bap_counter = 0;
 
-    // Pending one-shot control actions. Set by the Command* methods, consumed and cleared
-    // in the next SendOcuHeartbeat() call.
-    bool m_mirror_fold_requested = false;
+    // Set while a multi-frame BAP command burst is in flight (CommandClimateControl).
+    // SendOcuHeartbeat skips if set — a 0x5A7 queued between BAP frames blocks the
+    // continuation and the ECU discards the message. The 180 ms throttle isn't enough
+    // when the 3×WriteExtended calls can take up to 600 ms worst-case.
+    bool m_bap_burst_active = false;
+
+    bool m_mirror_fold_in_requested = false;
     bool m_horn_requested = false;
     bool m_indicators_requested = false;
     bool m_panic_requested = false;

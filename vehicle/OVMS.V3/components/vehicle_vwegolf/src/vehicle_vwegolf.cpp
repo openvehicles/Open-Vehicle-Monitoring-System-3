@@ -675,11 +675,17 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
 }
 
 void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
+    // Hard gate: a BAP multi-frame burst is in flight on KCAN. A 0x5A7 queued between
+    // the start/continuation/trigger frames blocks the continuation and the ECU drops
+    // the message. Worst-case burst is 3×200 ms = 600 ms, well past the 180 ms throttle.
+    if (m_bap_burst_active) {
+        return;
+    }
+
     // Self-throttle: minimum 180 ms between sends regardless of caller (Ticker1,
     // incoming-frame hook, or any future call site). Guards against TX queue overflow
     // during NM wake bursts and ensures Ticker1 can't double-fire on top of the
-    // incoming-frame path. CommandClimateControl bumps this tick to suppress heartbeats
-    // while a multi-frame BAP burst is in flight.
+    // incoming-frame path.
     uint32_t now = xTaskGetTickCount();
     if ((now - m_last_heartbeat_tick) * portTICK_PERIOD_MS < 180) {
         return;
@@ -767,11 +773,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     // so we can match the ACK to this specific command invocation.
     m_bap_counter = (m_bap_counter == 0xFF) ? 0x01 : m_bap_counter + 1;
 
-    // Suppress the OCU heartbeat for the duration of the 3-frame sequence. When the bus
-    // wakes from the ping, IncomingFrameCan3 fires and the heartbeat rate-limit check can
-    // pass (>180ms since last TX). A heartbeat queuing between Frame 1 and Frame 2 blocks
-    // the continuation frame and the ECU discards the incomplete multi-frame message.
-    m_last_heartbeat_tick = xTaskGetTickCount();
+    // Suppress heartbeats for the full 3-frame burst. Set before frame 1, cleared on
+    // every exit path below — a 0x5A7 between frames blocks the continuation.
+    m_bap_burst_active = true;
 
     uint8_t data[8];
 
@@ -794,8 +798,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     // means the SW queue itself overflowed (bus stuck or configuration error).
     esp_err_t ok1 = m_can3->WriteExtended(0x17332501, 8, data, pdMS_TO_TICKS(200));
     if (ok1 == ESP_FAIL) {
-        ESP_LOGW(TAG, "BAP clima %s frame 1 TX queue overflow (ok=%d) counter=0x%02X",
-                 enable ? "start" : "stop", ok1, m_bap_counter);
+        ESP_LOGW(TAG, "BAP clima frame 1 TX queue overflow");
+        m_bap_burst_active = false;
         m_ocu_active = false;
         return Fail;
     }
@@ -811,8 +815,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[4] = 0x00;  // padding / unknown
     esp_err_t ok2 = m_can3->WriteExtended(0x17332501, 5, data, pdMS_TO_TICKS(200));
     if (ok2 == ESP_FAIL) {
-        ESP_LOGW(TAG, "BAP clima %s frame 2 TX queue overflow (ok=%d) counter=0x%02X",
-                 enable ? "start" : "stop", ok2, m_bap_counter);
+        ESP_LOGW(TAG, "BAP clima frame 2 TX queue overflow");
+        m_bap_burst_active = false;
         m_ocu_active = false;
         return Fail;
     }
@@ -825,11 +829,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     data[3] = enable ? 0x01 : 0x00;
     esp_err_t ok3 = m_can3->WriteExtended(0x17332501, 4, data, pdMS_TO_TICKS(200));
     if (ok3 == ESP_FAIL) {
-        ESP_LOGW(TAG, "BAP clima %s frame 3 TX queue overflow (ok=%d) counter=0x%02X",
-                 enable ? "start" : "stop", ok3, m_bap_counter);
+        ESP_LOGW(TAG, "BAP clima frame 3 TX queue overflow");
+        m_bap_burst_active = false;
         m_ocu_active = false;
         return Fail;
     }
+
+    m_bap_burst_active = false;
 
     ESP_LOGI(TAG, "BAP clima %s sent: counter=0x%02X temp=%u°C", enable ? "start" : "stop",
              m_bap_counter, climate_temp);
