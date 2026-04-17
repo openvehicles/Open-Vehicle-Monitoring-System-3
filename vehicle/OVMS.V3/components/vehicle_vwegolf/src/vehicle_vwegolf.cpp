@@ -688,19 +688,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
 
     uint8_t tmp_u8 = 0;
 
-    canbus* comfBus;
-    comfBus = m_can3;
-    uint8_t length = 8;
-    uint8_t data[length];
-    length = 8;
-    data[0] = 0x00;
-    data[1] = 0x00;
-    data[2] = 0x00;
-    data[3] = 0x00;
-    data[4] = 0x00;
-    data[5] = 0x00;
-    data[6] = 0x00;
-    data[7] = 0x00;
+    uint8_t data[8] = {0};
 
     // Mirror fold
     if (m_mirror_fold_in_requested) {
@@ -752,7 +740,7 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
         ESP_LOGI(TAG, "PanicAlarm!");
     }
 
-    comfBus->WriteStandard(0x5A7, length, data);
+    m_can3->WriteStandard(0x5A7, 8, data);
     ESP_LOGV(TAG, "Heartbeat 0x5A7: %02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1],
              data[2], data[3], data[4], data[5], data[6], data[7]);
 }
