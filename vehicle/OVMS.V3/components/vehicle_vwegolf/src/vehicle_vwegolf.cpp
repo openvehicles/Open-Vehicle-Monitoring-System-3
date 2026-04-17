@@ -169,14 +169,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
 
         // Send OCU keepalive at ~5Hz while active. VW OSEK NM requires keepalives at
         // ~200ms intervals; Ticker1 alone (1Hz) is too slow for the ECU to stay in network.
-        // Rate-limited by wall-clock tick (180ms min) so a sudden bus traffic burst from an
-        // NM wake does not overflow the TX queue.
+        // SendOcuHeartbeat self-throttles (180ms min) against TX queue overflow on bus bursts.
         if (m_ocu_active) {
-            uint32_t now = xTaskGetTickCount();
-            if ((now - m_last_heartbeat_tick) * portTICK_PERIOD_MS >= 180) {
-                m_last_heartbeat_tick = now;
-                SendOcuHeartbeat();
-            }
+            SendOcuHeartbeat();
         }
     }
 
@@ -680,6 +675,17 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
 }
 
 void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
+    // Self-throttle: minimum 180 ms between sends regardless of caller (Ticker1,
+    // incoming-frame hook, or any future call site). Guards against TX queue overflow
+    // during NM wake bursts and ensures Ticker1 can't double-fire on top of the
+    // incoming-frame path. CommandClimateControl bumps this tick to suppress heartbeats
+    // while a multi-frame BAP burst is in flight.
+    uint32_t now = xTaskGetTickCount();
+    if ((now - m_last_heartbeat_tick) * portTICK_PERIOD_MS < 180) {
+        return;
+    }
+    m_last_heartbeat_tick = now;
+
     uint8_t tmp_u8 = 0;
 
     canbus* comfBus;
