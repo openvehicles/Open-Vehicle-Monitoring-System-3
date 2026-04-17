@@ -1,43 +1,32 @@
-# Climate Control via BAP — Reverse Engineering Notes
-
-## Overview
-
-Pre-conditioning on the e-Golf is controlled via BAP messages on KCAN (CAN bus 3).
-This is entirely separate from the ISO-TP diagnostic path and cannot be handled by the
-standard OVMS poller.
+# Climate Control via BAP — RE Notes
 
 Reference: https://github.com/thomasakarlsen/e-golf-comfort-can
 
----
-
 ## CAN IDs
 
-| Direction | CAN ID (extended, 29-bit) | Description |
+| Direction | CAN ID (29-bit) | Description |
 |---|---|---|
-| Controller → Clima ECU | `0x17332501` | Commands (our 3-frame sequences) |
-| Clima ECU → Controller | `0x17332501` | Periodic keepalive polls and 5s status bursts |
-| Clima ECU → bus | `0x17332510` | Command ACKs and full state broadcasts |
+| OVMS → Clima ECU | `0x17332501` | Commands |
+| Clima ECU → bus | `0x17332501` | Keepalive polls, 5s status bursts |
+| Clima ECU → bus | `0x17332510` | Command ACKs, full state broadcasts |
 
-`0x17332501` is **bidirectional**: OVMS writes to it and the clima ECU also sends on it
-(keepalives and 4-byte status frames). `0x17332510` carries larger broadcasts.
-
-BAP node address of the clima ECU: **0x25** (decimal 37)
+BAP node address of clima ECU: **0x25**
 
 ---
 
-## BAP Message Encoding (recap)
+## BAP Frame Encoding
 
-Single-frame (DLC ≤ 8, payload ≤ 6 bytes):
+Single-frame (payload ≤ 6 bytes):
 ```
 Byte 0:  [0 | opcode(3) | node[5:2](4)]
 Byte 1:  [node[1:0](2) | port(6)]
 Byte 2+: payload
 ```
 
-Multi-frame start (len > 4 bytes of payload):
+Multi-frame start:
 ```
-Byte 0:  [1 | 0 | channel(2) | 0(4)]   — channel is always 0 in practice
-Byte 1:  total payload length (8-bit in this implementation)
+Byte 0:  [1 | 0 | channel(2) | 0(4)]
+Byte 1:  total payload length (8-bit)
 Byte 2:  [0 | opcode(3) | node[5:2](4)]
 Byte 3:  [node[1:0](2) | port(6)]
 Byte 4+: first 4 bytes of payload
@@ -49,344 +38,143 @@ Byte 0:  [1 | 1 | channel(2) | 0(4)]   — 0xC0 for channel 0
 Byte 1+: next 7 bytes of payload
 ```
 
-Note: the BAP spec documents a 12-bit length field, but this implementation uses the
-lower 8 bits only (byte 1 alone). Bits 3:0 of byte 0 are observed to be 0 in all
-captured frames.
-
 ---
 
-## Observed Port Map (node 0x25)
+## Port Map (node 0x25)
 
-| Port | Direction | Description |
+| Port | Dir | Description |
 |---|---|---|
-| 0x01 | → ECU | Status poll (empty SetGet, 2-byte frame) |
-| 0x02 | → ECU | Status poll (empty SetGet, 2-byte frame) |
-| 0x12 | ← ECU | Status broadcast (7 bytes, periodic ~1 s) |
-| 0x14 | ← ECU | Schedule slot 0 settings (8 bytes) |
-| 0x15 | ← ECU | Schedule slot 1 settings (8 bytes) |
-| 0x16 | ← ECU / ↔ | Schedule slot 2 settings (8 bytes); Ack confirms writes |
-| 0x18 | → ECU | Immediate start/stop trigger (2-byte payload) |
-| 0x19 | → ECU | Immediate clima parameters (8-byte payload) |
-| 0x1A | ← ECU | Schedule slot Ack / status (observed in schedule captures) |
+| 0x01 | → ECU | Status poll (empty SetGet, 2-byte) |
+| 0x02 | → ECU | Status poll (empty SetGet, 2-byte) |
+| 0x12 | ← ECU | Status broadcast (7 bytes, ~1 s) · payload[0]: `05`=active `00`=idle |
+| 0x13 | ← ECU | Status · `04 04`=active `04 00`=idle |
+| 0x14 | ← ECU | Schedule slot 0 (8 bytes) |
+| 0x15 | ← ECU | Schedule slot 1 (8 bytes) |
+| 0x16 | ← / ↔ | Schedule slot 2 (8 bytes); Ack confirms writes |
+| 0x18 | → ECU | Start/stop trigger (2-byte payload) |
+| 0x19 | → ECU | Clima parameters (8-byte payload) |
+| 0x1A | ← ECU | Schedule slot Ack / status |
+
+**Authoritative stop detection:** port 0x12 payload[0] `05`→`00` (works for both OVMS-triggered and schedule-triggered stops). Do NOT rely on `0x5EA` remote_mode — stale in remote mode.
 
 ---
 
-## Periodic Keepalive Frames (head unit → ECU, opcode=1 SetGet)
+## Climate Start/Stop — 3-Frame Sequence
 
-The car's head unit sends these every ~80 s when schedules are configured:
+Must send all 3 frames in order on `0x17332501`.
 
-```
-17332501  90 04 19 59  [counter] 00 00 04    (port 0x19, len=4)
-17332501  80 04 19 5A  [counter] 02 00 04    (port 0x1A, len=4)
-```
-
-`[counter]` is a rolling byte, observed starting around 0x2A, incrementing each cycle.
-These carry schedule sync data, NOT start commands.
-
----
-
-## Climate Start/Stop Sequence
-
-Confirmed from thomasakarlsen's capture (cross-referenced with our KCAN traces).
-**Three frames must be sent in order:**
-
-### Frame 1 — Parameters (multi-frame to port 0x19)
-
+### Frame 1 — Parameters (multi-frame, port 0x19)
 ```
 DLC=8: 80 08 29 59  [counter]  06 00 01
 ```
+`29 59` = opcode=2, node=0x25, port=0x19. `[counter]` = rolling byte, increment each call.
 
-`29 59` = BAP: opcode=2 (Status push), node=0x25, port=0x19
-`[counter]` = any rolling byte value; increment between calls.
-
-### Frame 2 — Continuation (4 remaining payload bytes)
-
+### Frame 2 — Continuation
 ```
-DLC=5: C0  06 00 20 00
+DLC=5: C0  06 00 [temp] 00
 ```
+Full 8-byte port 0x19 payload: `[counter] 06 00 01 06 00 [temp] 00`
 
-`C0` = multi-frame continuation, channel 0.
-Full 8-byte port 0x19 payload: `[counter] 06 00 01 06 00 20 00`
-
-### Frame 3 — Trigger (single-frame to port 0x18)
-
+### Frame 3 — Trigger (port 0x18)
 ```
 DLC=4: 29 58  00 01     (START)
 DLC=4: 29 58  00 00     (STOP)
 ```
 
-`29 58` = BAP: opcode=2, node=0x25, port=0x18.
-Byte 1 of payload is the on/off flag: `0x01` = start, `0x00` = stop.
-
 ---
 
 ## Port 0x19 Payload Encoding
 
-8-byte payload: `[counter] 06 00 01 06 00 [temp] 00`
+`[counter] 06 00 01 06 00 [temp] 00`
 
-| Byte | Value | Known meaning |
-|---|---|---|
-| 0 | rolling | Counter, increments with each call |
-| 1 | `0x06` | Unknown — possibly duration (units TBD) |
-| 2 | `0x00` | Unknown |
-| 3 | `0x01` | Unknown — possibly mode/profile flag |
-| 4 | `0x06` | Unknown |
-| 5 | `0x00` | Unknown |
-| 6 | encoded | Target temperature (see below) |
-| 7 | `0x00` | Unknown / padding |
+Temperature byte 6: `raw = (celsius - 10) * 10`
+- 18°C → `0x50`, 20°C → `0x64`, 21°C → `0x6E`, 22°C → `0x78`
 
-Temperature encoding (byte 6) — confirmed from dexterbg ComfortCAN-Multiplex-Protokoll-220206:
-```
-raw = (celsius - 10) * 10
-```
-Examples: 21°C → `0x6E`, 22°C → `0x78`, 20°C → `0x64`.
+Bytes 1–5 unknown; `06 00 01 06 00` constant in all captures.
 
 ---
 
-## Schedule Slot Encoding (port 0x14–0x16 status)
+## Schedule Slot Encoding (port 0x14–0x16)
 
-8-byte payload from ECU status broadcasts on `17332510`:
+8-byte ECU status: `ff ff ff [hour] [temp_byte] fe [slot_id] 00`
 
-```
-ff ff ff  [hour]  [temp_or_min]  fe  [slot_id]  00
-```
-
-From confirmed captures (schedule capture, temp=20°C, departure=17:00, slot=2):
-- Byte 3: `0x11` = 17 = departure hour (direct decimal)
-- Byte 4: `0x37` = 55, formula `temp = byte - 35` → 20°C ✓
-- Byte 6: `0x02` = schedule slot ID (0–2)
-
-Temperature encoding for schedule writes: **`byte = celsius + 35`**
-- 16°C → `0x33`, 20°C → `0x37`, 22°C → `0x39`, 30°C → `0x41`
+- Byte 3: departure hour (direct decimal, e.g. `0x11` = 17:00)
+- Byte 4: `celsius + 35` (e.g. 20°C → `0x37`)
+- Byte 6: slot ID (0–2)
 
 ---
 
-## Why the First Injection Failed
+## KCAN Bus Wake-Up
 
-The initial injection attempt used:
+### NM Alive Frame (CRITICAL — required from deep sleep)
+
+Clima ECU rejects BAP from nodes not in OSEK NM ring. Send before any BAP command when bus was sleeping:
+
 ```
-can can3 tx extended 17332501  91 08  19 96  FF FF FF 14
+CAN ID:  0x1B000067  (29-bit extended)
+DLC:     8
+Data:    67 10 41 84 14 00 00 00
 ```
 
-Errors:
-1. **Wrong node**: BAP header encoded node=0x26; correct is 0x25 (one bit error in second BAP header byte: `0x96` vs `0x59`)
-2. **Wrong port**: encoded port=0x16; start command uses port 0x19
-3. **Missing continuation**: payload length byte said 8 bytes but only 4 were delivered — ECU was waiting for the continuation frame
-4. **Missing Frame 3**: the port 0x18 start trigger (`29 58 00 01`) was never sent
+- `0x67` = OVMS KCAN NM node ID
+- Byte 1 = `0x10` = NM alive with ring participation bit
+- Wait ≥ 1 s for ring to settle before sending BAP
+
+Implemented in `CommandWakeup()`, called by `CommandClimateControl()` when `m_bus_idle_ticks >= VWEGOLF_BUS_TIMEOUT_SECS`.
+
+### Full Wake Sequence (bus sleeping)
+
+1. Send `0x17330301` (dominant-bit wake, TX_Fail expected — wakes transceivers)
+2. Send `0x1B000067` NM alive (joins ring)
+3. Wait 1 s
+4. Send 3-frame clima sequence
+
+**Warning:** do not use the start frame as wake ping — if TX_Fail, continuation arrives orphaned (~110 ms later), ECU discards partial BAP message, clima doesn't start.
+
+### Wake Ping (bus already active)
+```
+can send can3 17332501 09 41
+```
+Sufficient only when KCAN already live (e.g. just after ignition-off). Not for deep sleep.
 
 ---
 
-## Confirmed ECU Response Pattern
+## Test Commands (OVMS shell)
 
-From `kcan-can3-clima_on_off.crtd` (clima started and stopped via both OVMS shell and
-iOS app, all confirmed working).
-
-### Immediate ACK on 0x17332510 (within ~1s)
-
-```
-80 0a 49 59  {ectr} 04 46 00   [+ continuation frame with remaining bytes]
-```
-
-`49 59` = BAP: opcode=2 (Status), node=0x25, port=0x19. Multi-frame, length=10.
-`{ectr}` = our rolling counter | 0x80. Use this to confirm which command was ACKed.
-
-### Periodic status on 0x17332501 (~16s delay, then every 5s for ~20s)
-
-After the ACK, the ECU sends ~4 cycles at 5-second intervals, then goes quiet:
-
-```
-3R29 17332501  19 42                          (keepalive, port 0x02, node 0x25)
-3R29 17332501  19 41                          (keepalive, port 0x01, node 0x25)
-3R29 17332501  90 04 19 59 {ctr} 00 00 04    (ch1, port 0x19, 4-byte status)
-3R29 17332501  80 04 19 5a {ctr} 02 00 04    (ch0, port 0x1a, 4-byte status)
-```
-
-`{ctr}` is a 3-bit rolling counter cycling 0x28–0x2F. The ECU goes silent after the
-burst and only resumes when the next command is issued. Status payload bytes (`00 00 04`,
-`02 00 04`) are constant across start and stop in current captures — full decode pending
-a capture where the 10-minute timer expires.
-
-### Full state dump on 0x17332510 (alongside ACK)
-
-The ECU broadcasts a complete state on `0x17332510`:
-
-- **Port 0x19** (130 bytes, channel 0, `80 82 49 59 ...`): appears static across calls;
-  contains schedule data and component identification strings.
-- **Port 0x1a** (channel 1): length and a header byte change with clima state:
-  - 34 bytes (`90 22`), header byte `c0`: seen in idle/no-active state
-  - 25 bytes (`90 19`), header byte `c2`: seen when clima is running (bit 1 of header byte differs)
-
-The `c0` → `c2` transition (bit 1) is a candidate clima-active flag. Not yet confirmed —
-needs a controlled before/after capture.
-
-### Note on port 0x18 trigger frame
-
-One observed start command had Frame 3 transmitted as `29 58 00 00` (stop byte) due to
-a stale TX queue entry, yet clima started normally ~16s later. This suggests port 0x19
-parameters (Frame 1+2) may alone trigger climatisation, with port 0x18 Frame 3 playing
-a confirmatory or redundant role. The code still sends all 3 frames.
-
-## Test Commands
-
-To test clima start (from OVMS shell):
-
+Start:
 ```
 can can3 tx extended 17332501 80 08 29 59 01 06 00 01
 can can3 tx extended 17332501 C0 06 00 20 00
 can can3 tx extended 17332501 29 58 00 01
 ```
 
-To stop:
-
+Stop:
 ```
 can can3 tx extended 17332501 80 08 29 59 02 06 00 01
 can can3 tx extended 17332501 C0 06 00 20 00
 can can3 tx extended 17332501 29 58 00 00
 ```
 
-Observable bus effects: `0x3E9` transitions from `fe f8 df ff ...` (ECU idle/invalid)
-to live values, and `0x3B5`/`0x530` follow. Blower should activate within ~10 s.
+Bus effects: `0x3E9` transitions from sentinel to live values; `0x3B5`/`0x530` follow. Blower activates within ~10 s.
 
 ---
 
-## KCAN Bus Wake-Up
+## ECU ACK Pattern (0x17332510)
 
-The KCAN bus enters a low-power sleep state when the car is parked. CAN transceivers
-wake on detection of dominant bits (any CAN frame). The first frames to appear after
-wake are Network Management (NM) frames from each node.
-
-### NM Frame Format (OSEK NM, observed on KCAN)
-
-| Field | Value |
-|---|---|
-| CAN ID | `0x1B000000 \| node_id` (29-bit extended) |
-| Payload byte 0 | node_id (echoes lower byte of CAN ID) |
-| Payload byte 1 | NM control (0x00 = no sleep request, 0x10 seen on some nodes) |
-| Payload bytes 2–7 | NM state data (varies by node) |
-
-Example observed after wake (`kcan-can3-clima_start2.crtd`):
+Immediate ACK (~1 s after command):
 ```
-3R29 1B00000E  0e 00 01 01 04 08 04 00   node 0x0E
-3R29 1B000067  67 10 01 01 04 00 00 00   node 0x67
-3R29 1B0000A9  a9 00 01 01 04 00 00 00   node 0xA9
-3R29 1B000046  46 00 01 01 04 00 00 00   node 0x46
+80 0a 49 59  {ectr} 04 46 00   [+ continuation]
 ```
+`{ectr}` = our counter | 0x80. Confirms which command was ACKed.
 
-Clima ECU (node 0x25) NM ID would be `0x1B000025`. Observing this frame in RX
-confirms the clima ECU is alive on the bus.
-
-### OVMS Node Identity Broadcast (CRITICAL — required before BAP from deep sleep)
-
-**The clima ECU will reject BAP commands from nodes that have not announced themselves
-in the OSEK NM ring.** This was the root cause of remote clima failing from deep sleep
-while working immediately after ignition-off (when OVMS was already a known ring member).
-
-OVMS must send its NM alive frame before issuing any BAP command on a freshly-woken bus:
-
-```
-CAN ID:  0x1B000067  (29-bit extended — 0x1B000000 | node_id)
-DLC:     8
-Data:    67 10 41 84 14 00 00 00
-```
-
-- `0x67` (103 decimal) is OVMS's assigned KCAN NM node ID.
-- Byte 0 = node ID (echoes low byte of CAN ID, same pattern as all KCAN NM nodes).
-- Byte 1 = `0x10` = NM alive with ring participation bit set.
-- Bytes 2–4: `41 84 14` — NM configuration bytes (observed constant from captures).
-- Bytes 5–7: `00 00 00` — unused.
-
-After this frame is sent all active ECUs respond with their own `1B0000XX` alive frames
-(~300 ms burst). Wait ≥ 1 s before sending BAP to let the ring settle.
-
-This is implemented in `CommandWakeup()` and called automatically by
-`CommandClimateControl()` when `m_bus_idle_ticks >= VWEGOLF_BUS_TIMEOUT_SECS`.
-
-Do not confuse with the `0x5A7` OCU heartbeat — that is an application-level presence
-frame, not the OSEK NM alive. Both are needed: NM alive to join the ring, `0x5A7` to
-maintain OCU presence while clima is running.
-
-### Wake Ping (bus-active case only)
-
-When KCAN is already active (car just parked, bus still live), a short harmless frame
-is sufficient to prime the TX queue. Even if it TX_Fails the dominant bits confirm the
-bus is live:
-
-```
-can send can3 17332501 09 41
-```
-`09 41` = BAP Get on port 0x01, node 0x25. Non-destructive; ECU may or may not reply.
-
-This is NOT sufficient when waking from deep sleep — use the NM alive sequence above.
-
-### Why the multi-frame start frame must not be used as a wake ping
-
-When the start frame TX_Fails, the continuation frame is delayed ~110 ms (bus waking).
-The ECU receives an orphan continuation without a valid preceding start and discards the
-partial BAP message. The trigger frame then fires with no parameters set → no HVAC.
-
-Correct sequence when bus is sleeping:
-1. Send `0x17330301` dominant-bit wake frame (wakes transceivers, TX_Fail expected)
-2. Send `0x1B000067` NM alive (joins ring, triggers ECU alive responses)
-3. Wait 1 s for NM flood to subside and ring to stabilise
-4. Send the 3-frame clima sequence
+After ACK: ECU sends ~4 keepalive cycles on `17332501` at 5 s intervals (~16 s delay), then silent until next command.
 
 ---
 
-## Implementation Bugs Found During Development
+## Bugs Found
 
-### Bug 1: OCU heartbeat data overwrite (critical — caused clima to stop working)
+**Bug 1 — OCU heartbeat data overwrite (critical):** `SendOcuHeartbeat()` zero-re-initialized `data[]` after building action bits → always transmitted zeros → no one-shot action reached bus. Fix: removed the re-init block. Array zero-initialized once at top; action bits OR'd in; sent as-is.
 
-`SendOcuHeartbeat()` built the correct bit pattern for each pending action (horn, mirror
-fold, lock, etc.) into a local `data[]` array, then unconditionally re-zeroed the entire
-array before calling `WriteStandard`. The frame always transmitted all zeros; no one-shot
-action ever reached the bus.
+**Bug 2 — OVMS not joining NM ring (deep-sleep failures):** `CommandClimateControl` used `09 41` wake ping only — no `0x1B000067` NM alive. Clima ECU booted cold from deep sleep and rejected BAP from unknown node. Warm case worked because OVMS was already an NM ring member. Fix: `CommandClimateControl` calls `CommandWakeup()` which sends NM alive + 1 s wait.
 
-This is why clima "worked then stopped": it worked when tested via the raw shell commands
-(`can can3 tx extended ...`) but once routed through `CommandClimateControl` any
-subsequent state that depended on the heartbeat being correct (e.g. OCU presence
-acknowledged by the gateway) was broken.
-
-**Fix:** removed the re-initialization block at the bottom of `SendOcuHeartbeat`. The
-array is zero-initialized once at the top (`uint8_t data[8] = {};`); action bits are OR'd
-in as needed; the array is sent as-is.
-
-### Bug 2: OVMS not joining OSEK NM ring before BAP (deep-sleep failures)
-
-After the Bug 2 fix, `CommandClimateControl` used `09 41` as the wake ping. This woke
-the CAN transceivers but did NOT send the `0x1B000067` NM alive frame, so the clima ECU
-never saw OVMS as a member of the NM ring. From deep sleep, the ECU booted cold and
-rejected BAP commands from the unrecognised node. The failure was invisible in the warm
-case (just after ignition-off) because OVMS had been an established ring member since
-ignition-on.
-
-Evidence from `kcan-can3-clima_on_off.crtd`: the old firmware sent `1B000067` at
-t=165.751, heartbeats started at t=176, and BAP commands worked from t=231 onward.
-In the failing regression capture (`…-155252.crtd`): no `1B000067`, no BAP ACK
-(`17332510`), `ClimaRunning` stayed 0.
-
-**Fix:** `CommandClimateControl` now calls `CommandWakeup()` when
-`m_bus_idle_ticks >= VWEGOLF_BUS_TIMEOUT_SECS`. `CommandWakeup` sends `0x17330301`
-(dominant wake bits) then `0x1B000067` (NM alive for node 0x67) and sets
-`m_ocu_active = true`. `CommandClimateControl` then waits 1 s for the NM ring to
-stabilise before sending the 3-frame BAP sequence.
-
-### Bug 3: 0x05EA StandklimaStatus_02 shift error
-
-The original decode of `StandklimaStatus_02` from 0x05EA used `(d[3] & 0x38) >> 6`.
-`0x38` masks bits 5:3; shifting right by 6 pushes all of them below bit 0 → result is
-always 0. The correct shift is `>> 3`. Fixed in the refactor. This field is only logged
-at verbose level for observability, so it had no functional impact, but the logged value
-was always wrong.
-
----
-
-## Capture Log for This Investigation
-
-| File | What it captured |
-|---|---|
-| `kcan-can3-clima_schedule.crtd` | Setting a schedule (departure 17:00, 20°C, slot 2) |
-| `kcan-can3-clima_range.crtd` | Adjusting clima temp dial (ignition on, 20°C → LO → HI → off) |
-| `kcan-can3-clima_inject.crtd` | First injection attempt (failed — wrong node/port/no continuation) |
-| `clima-sequence.crtd` | Bus while clima actively running (pre-existing active state) |
-| `kcan-can3-clima_start2.crtd` | Start/stop injection attempt from sleeping bus — TX_Fail on start frame, confirmed wake behaviour |
-| `kcan-can3-clima_on_off.crtd` | Confirmed working start/stop from OVMS shell and iOS app (TurboServ); ECU ACK and status burst pattern captured |
+**Bug 3 — 0x05EA StandklimaStatus_02 shift error:** `(d[3] & 0x38) >> 6` should be `>> 3`. Always produced 0. Verbose-log only, no functional impact.

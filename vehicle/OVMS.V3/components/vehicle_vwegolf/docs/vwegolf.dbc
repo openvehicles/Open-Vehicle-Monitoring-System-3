@@ -128,6 +128,39 @@ BO_ 1716 VIN_Broadcast: 8 Gateway
  SG_ VIN_FrameIndex : 0|8@1+ (1,0) [0|2] "" OVMS
 
 // ---------------------------------------------------------------------------
+// FCAN decode candidates and partially decoded frames.
+// Originally observed in can2-3.3.005-800-gc60d79ed-dirty_ota_1_edge-20260412-175611
+// (CCS charging, ignition off). Per-frame comments record progress as stimulation
+// captures land. As of Capture 17 (D + B short drive): 0x0B2 fully decoded as
+// wheel speeds; 0x057 byte 3 and 0x0B4 bytes 3/6 partially decoded.
+// ---------------------------------------------------------------------------
+
+BO_ 87 Unknown_057: 4 Vector__XXX
+ SG_ MotorTorqueRequest : 24|8@1+ (1,0) [0|255] "" OVMS
+BO_ 134 Unknown_086: 8 Vector__XXX
+BO_ 167 Unknown_0A7: 8 Vector__XXX
+BO_ 168 Unknown_0A8: 8 Vector__XXX
+BO_ 178 WheelSpeeds_0B2: 8 ESP
+ SG_ WheelSpeedFL : 0|16@1+ (0.0078125,0) [0|511.99] "km/h" OVMS
+ SG_ WheelSpeedFR : 16|16@1+ (0.0078125,0) [0|511.99] "km/h" OVMS
+ SG_ WheelSpeedRL : 32|16@1+ (0.0078125,0) [0|511.99] "km/h" OVMS
+ SG_ WheelSpeedRR : 48|16@1+ (0.0078125,0) [0|511.99] "km/h" OVMS
+BO_ 179 Unknown_0B3: 8 Vector__XXX
+BO_ 180 Unknown_0B4: 8 Vector__XXX
+ SG_ MotorState_b2 : 16|8@1+ (1,0) [0|255] "" OVMS
+ SG_ MotorTorqueA : 24|16@1+ (1,0) [0|65535] "" OVMS
+ SG_ MotorTorqueB : 48|16@1+ (1,0) [0|65535] "" OVMS
+BO_ 263 Unknown_107: 8 Vector__XXX
+BO_ 288 Unknown_120: 8 Vector__XXX
+BO_ 289 Unknown_121: 8 Vector__XXX
+BO_ 869 BrakePedal_365: 8 Vector__XXX
+ SG_ BrakeActive : 32|1@1+ (1,0) [0|1] "" OVMS
+BO_ 958 PedalStatus_3BE: 8 Vector__XXX
+ SG_ BrakeSwitchA : 28|1@1+ (1,0) [0|1] "" OVMS
+ SG_ BrakeSwitchB : 30|1@1+ (1,0) [0|1] "" OVMS
+ SG_ ThrottleActive : 40|1@1+ (1,0) [0|1] "" OVMS
+
+// ---------------------------------------------------------------------------
 // OSEK NM frames on KCAN (29-bit extended IDs: 0x1B000000 | node_id)
 // Each active KCAN node broadcasts its alive frame at ~1 Hz.
 // Format: byte[0] = node_id (mirrors low byte of CAN ID), byte[1] = NM control
@@ -185,6 +218,28 @@ BO_ 2536711425 BAP_ClimaCmd: 8 OVMS
 BO_ 2536711440 BAP_ClimaStatus: 8 ClimaECU
  SG_ BAP_FrameType : 0|8@1+ (1,0) [0|255] "" OVMS
 
+// 0x1A5554A8 (extended) — OBC live-telemetry. Multiplexed by byte 0.
+// Capture 14 (Type2 AC charge session, 20260413-121648) confirmed:
+//   - Mux A (b0 upper nibble 0x6): `6X c9 aa 9c 83 b6 ed 0e` — static
+//     payload across the session, header/identifier (not live telemetry).
+//   - Mux B (b0 upper nibble 0x5): `5X 5d 00 80 <b4> c2 dc 69` — b4
+//     increments +1 per second during active charging (Capture 14 observed
+//     0x9e..0xb8 monotonic; prior capture saw 164..174 linear). Consistent
+//     with a charge totalizer — exact unit (Wh? Ws×10? minutes?) still TBD,
+//     needs a longer session with known energy delivery to calibrate.
+//   - b0 bit 2 toggles every frame within each mux (rolling alive bit).
+//   - Alive at ~2 Hz during charge; sleep sentinel `03 fe ff ff e7 ff ff ff`
+//     when bus up and no charge; one-shot zeros frame during teardown.
+//   - Active window brackets 0x594 charge-on: leads it by ~1.5 s, lingers
+//     ~5 s into the `b1=c0` post-charge hold.
+//   - Other Mux B bytes (b1, b2, b3, b5, b6, b7) were static this session —
+//     candidate for instantaneous current/voltage/power but needs a higher
+//     power session to confirm.
+BO_ 2589283496 OBC_Telemetry_1A5554A8: 8 Vector__XXX
+ SG_ MuxSelector M : 4|4@1+ (1,0) [0|15] "" OVMS
+ SG_ AliveBit : 2|1@1+ (1,0) [0|1] "" OVMS
+ SG_ ChargeTotalizer m5 : 32|8@1+ (1,0) [0|255] "" OVMS
+
 // ---------------------------------------------------------------------------
 // Comments (CM_)
 // ---------------------------------------------------------------------------
@@ -225,8 +280,36 @@ CM_ BO_ 2600468517 "KCAN RX from clima ECU (extended 29-bit ID 0x1B000025). OSEK
 CM_ BO_ 2536702721 "KCAN TX by OVMS (extended 29-bit ID 0x17330301). Dominant-bit wake frame sent as first frame in CommandWakeup(). TX_Fail expected when bus sleeping — dominant bits wake transceivers regardless. Response on 0x17330E10 when bus is live. Full BAP decode pending.";
 CM_ BO_ 391 "FCAN. Gear selector position. Confirmed from captures.";
 CM_ BO_ 1716 "FCAN. VIN broadcast across three frames (frame index 0/1/2 in byte 0). Assembled in firmware from all three before committing.";
+CM_ BO_ 87 "FCAN. DLC 4. Bytes 0/1 are a rolling counter. Byte 3 confirmed as accelerator-driven motor torque request from Capture 17 (D + B drive). Identical ramp in D and B captures (so not regen-related). Max ~0x26 at peak accel. Byte 2 also motion-correlated, role unclear. 1889 frames / 67 s (~28 Hz) in 20260412-175611 charging idle.";
+CM_ SG_ 87 MotorTorqueRequest "Byte 3. Accelerator pedal / motor torque request. 0 at rest, ramps with throttle, plateaus during cruise, 0 again on lift-off (regardless of brake or regen). Confirmed Capture 17 (D + B drive). Max observed 0x26.";
+CM_ BO_ 134 "FCAN decode candidate. 913 frames / 67 s (~14 Hz) in 20260412-175611.";
+CM_ BO_ 167 "FCAN decode candidate. 1744 frames / 67 s (~26 Hz) in 20260412-175611. 0xA7/0xA8 pair — likely related (BMS status block?).";
+CM_ BO_ 168 "FCAN decode candidate. 1719 frames / 67 s (~26 Hz) in 20260412-175611. Pair with 0xA7.";
+CM_ BO_ 178 "FCAN. Four 16-bit LE wheel speeds at byte offsets 0/1, 2/3, 4/5, 6/7. Scale 1/128 km/h per bit (0.0078125). All-zeros while stationary. Confirmed Capture 17: cruise plateau lands at 30.05 km/h matching 30 kph driver target; all four wheels track within ±0.2 km/h. FCAN counterpart of KCAN ESP_Speed (0xFD). Either bus can source ms_v_pos_speed.";
+CM_ SG_ 178 WheelSpeedFL "Front-left wheel speed. Scale 1/128 km/h per bit. Wheel position assignment (FL/FR/RL/RR) is by convention — exact mapping to physical wheels not yet confirmed. Capture 17.";
+CM_ SG_ 178 WheelSpeedFR "Front-right wheel speed. See WheelSpeedFL note on position mapping.";
+CM_ SG_ 178 WheelSpeedRL "Rear-left wheel speed. See WheelSpeedFL note on position mapping.";
+CM_ SG_ 178 WheelSpeedRR "Rear-right wheel speed. See WheelSpeedFL note on position mapping.";
+CM_ BO_ 179 "FCAN decode candidate. 1712 frames / 67 s (~26 Hz) in 20260412-175611.";
+CM_ BO_ 180 "FCAN. Motor / inverter state frame. Bytes 0/1 are an unrelated rolling counter, present even at rest. Byte 5 always 0. Active bytes are b2, (b3,b4) as 16-bit LE pair, and (b6,b7) as 16-bit LE pair — fire during forward propulsion AND during regen. D-pedal-stop capture (17a) holds these at 0 because the powertrain is idling against held brake; B-mode captures (17b, 17c) light them up during all motion. Cap 17c (varied B drive 0-75 km/h) overturned the earlier Cap 17b hypothesis that b3 was a regen-active flag — it is the low byte of MotorTorqueA, which varies smoothly across drive and regen phases. Exact units, sign convention, and which pair is torque vs power vs current still TBD; needs UDS ground truth or another targeted capture.";
+CM_ SG_ 180 MotorState_b2 "Byte 2. Small motion-correlated counter (0-25 observed). Wakes from 0 during motion, climbs slowly during regen, idles low during steady forward cruise, returns to 0 at standstill. Could be regen demand level / brake pedal request percent / inverter status counter — not yet identified. Independent from MotorTorqueA/B (can be non-zero with both at 0). Capture 17c.";
+CM_ SG_ 180 MotorTorqueA "Bytes 3/4 as 16-bit LE pair. Continuous motor torque-like quantity active during both forward propulsion and regen. Cap 17c observations: steady ~53 during forward cruise at 56 km/h; ramps smoothly 53→600 during a 75→62 km/h regen brake; 642-653 during a brief cruise pulse on flat. Smooth ramp at regen release. Sign convention and units (Nm? %? raw torque counts?) not yet known — appears unsigned with regen events landing in the same numeric range as drive events. Promoted from earlier 'RegenStateFlag' single-byte hypothesis after Cap 17c showed b3 is the low byte of a pair, not a flag.";
+CM_ SG_ 180 MotorTorqueB "Bytes 6/7 as 16-bit LE pair. Second motor quantity at a much larger numeric scale than MotorTorqueA. Cap 17c observations: 0 during steady forward cruise (MotorTorqueA=53 alone); ramps 848→5776 during the 75→62 km/h regen brake; 224-1216 during the cruise pulse. Decays to 0 smoothly at regen release. Likely torque-derived (power? current? requested vs actual?) but identity vs MotorTorqueA not yet resolved. Promoted from earlier 'RegenTorque' single-byte hypothesis after Cap 17c showed b6 is the low byte of a pair.";
+CM_ BO_ 263 "FCAN decode candidate. 873 frames / 67 s (~13 Hz) in 20260412-175611.";
+CM_ BO_ 288 "FCAN decode candidate. 879 frames / 67 s (~13 Hz) in 20260412-175611.";
+CM_ BO_ 289 "FCAN decode candidate. 848 frames / 67 s (~13 Hz) in 20260412-175611.";
+CM_ BO_ 869 "FCAN. Bimodal frame observed in pedal stimulation capture 20260412-184855 (Capture 16). Byte 4 takes value 0x82 most of the time, 0x83 during brake application. 11 activations clustered in 13.7-25.4 s window. Hypothesis: brake torque/pressure request. Needs re-confirm with timestamped stimulation.";
+CM_ BO_ 958 "FCAN. Multi-bit status frame with two distinct event windows in Capture 16 (20260412-184855). Stable = `00 00 e7 04 c0 a0 0c 00`. Byte 3 bits 4/6 set (0x54/0x44) co-fire with 0x365 brake activations and extend ~6 s past brake release — likely brake pedal switch / brake-light bits. Byte 5 bit 0 (a0→a1) fires in a later window 33.7-43.7 s — likely throttle pedal active. Needs re-confirm with timestamped stimulation.";
+CM_ SG_ 869 BrakeActive "Byte 4 bit 0. 0 = idle, 1 = brake applied. Hypothesis from Capture 16 temporal cluster; not yet confirmed with timestamped stimulation.";
+CM_ SG_ 958 BrakeSwitchA "Byte 3 bit 2 of `04/44/54` pattern — bit 4. Hypothesis: brake pedal switch. Co-fires with 0x365. Capture 16.";
+CM_ SG_ 958 BrakeSwitchB "Byte 3 bit 6 of `04/44/54` pattern. Always co-occurs with bit 4 here. May be redundant switch or ABS-related. Capture 16.";
+CM_ SG_ 958 ThrottleActive "Byte 5 bit 0. 0 = idle, 1 = accelerator pressed. Capture 16.";
 CM_ BO_ 2536711425 "KCAN TX by OVMS (extended 29-bit ID 0x17332501). BAP command channel to clima ECU (node 0x25). Multi-frame BAP — not a conventional signal message. See clima-control-bap.md.";
 CM_ BO_ 2536711440 "KCAN RX from clima ECU (extended 29-bit ID 0x17332510). BAP status/ACK channel. Primary ms_v_env_hvac source via port 0x12 (0x05=active, 0x00=idle). ECU echoes command counter | 0x80 to confirm receipt. Works for OVMS-triggered and schedule-triggered clima. Confirmed Captures 6, 7, 12. See clima-control-bap.md.";
+CM_ BO_ 2589283496 "KCAN RX (extended 29-bit ID 0x1A5554A8). OBC live-telemetry, multiplexed by byte 0 upper nibble (0x5=telemetry mux, 0x6=static header). b0 bit 2 is a 0.5 Hz rolling alive bit inside each mux. Alive at ~2 Hz during charge, idle sentinel 03 FE FF FF E7 FF FF FF when bus up with no charge. Mux B byte 4 is a 1 Hz charge totalizer (unit TBD). Active window brackets 0x594 ChargeManagement with small lead/lag. Confirmed Capture 14 (AC Type 2, 20260413-121648). Needs longer session for b1/b2/b3/b5/b6/b7 decode.";
+CM_ SG_ 2589283496 MuxSelector "Upper nibble of byte 0. 0x5 = telemetry mux (b4 carries charge totalizer). 0x6 = static header payload. Other values not observed.";
+CM_ SG_ 2589283496 AliveBit "Byte 0 bit 2. Toggles every frame within each mux — rolling alive / sequence counter.";
+CM_ SG_ 2589283496 ChargeTotalizer "Mux B byte 4. Increments +1 per second while 0x594 ChargeInProgress is true. Capture 14 observed 0x9e..0xb8 linear. Unit not yet calibrated (Wh? Ws×10? minutes? deciAh?).";
 
 CM_ SG_ 949 ClimaRunning "Bit 7 of byte[0]. 1=clima running remotely. Confirmed Captures 1 and 2.";
 CM_ SG_ 1516 ClimaStatus "Raw byte at byte[5]. Observed: 0x04=clima idle, 0x07=clima active. Intermediate values not yet decoded.";

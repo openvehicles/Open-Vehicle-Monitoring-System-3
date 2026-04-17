@@ -52,6 +52,55 @@ on can2 and forwards everything to `IncomingFrameCan3` as a fallback.
 The CRTD bus number encodes the physical OVMS bus: `busnumber = m_busnumber + '1'`,
 so `2R11` = can2, `3R11` = can3.
 
+## Pre-fix bus-filter audit (files whose name lies about bus contents)
+
+Before commit `9fdbf8b7`, `tests/capture.sh` passed the bus filter to `can log start`
+as a string (`"can2"`) instead of an integer, so the filter was silently dropped
+and the log captured every active bus. As a result, several older `.crtd` files
+have a `can2-*` or `can3-*` prefix that does **not** match what's actually inside.
+Files listed here must be loaded with the multi-bus-aware `crtd.py` and an
+explicit `bus=N` filter — see `tests/analysis/crtd.py` `load()` / `load_multi()`.
+
+**Mislabeled single-bus files** — the name is wrong, but the contents are pure.
+Load with `load(path)` and trust the auto-picked bus; the prefix in the name lies:
+
+| Name prefix | Actual bus | File |
+|---|---|---|
+| can2 | 3 | `can2-3.3.005-778-g7404ab27_ota_1_edge-20260404-233246.crtd` |
+| can2 | 3 | `can2-3.3.005-800-gc60d79ed-dirty_ota_1_edge-20260412-182723.crtd` |
+| can2 | 3 | `can2-3.3.005-802-gc4a679ec-dirty_ota_1_edge-20260407-093156.crtd` |
+| can3 | 2 | `can3-3.3.005-792-gea41f218-dirty_ota_1_edge-20260405-005724.crtd` |
+| can3 | 2 | `can3-3.3.005-798-g8242a608-dirty_ota_1_edge-20260409-221040.crtd` |
+| can3 | 2 | `can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-233616.crtd` |
+| can3 | 2 | `can3-3.3.005-817-gecdd91a1-dirty_ota_0_edge-20260407-101513.crtd` |
+| can3 | 2 | `can3-3.3.005-817-gecdd91a1-dirty_ota_0_edge-20260407-132857.crtd` |
+| can3 | 2 | `can3-3.3.005-817-gecdd91a1-dirty_ota_1_edge-20260407-134245.crtd` |
+| can3 | 2 | `can3-3.3.005-817-gecdd91a1-dirty_ota_1_edge-20260407-144841.crtd` |
+| can3 | 2 | `can3-3.3.005-817-gecdd91a1-dirty_ota_1_edge-20260407-214739.crtd` |
+
+**Multi-bus files** — actually contain frames from two buses. `load(path)` will
+refuse with a `ValueError` listing the buses present; pass `bus=N` explicitly or
+use `load_multi(path)`:
+
+| Buses | File |
+|---|---|
+| 2+3 | `can3-3.3.005-778-g7404ab27_ota_1_edge-20260404-235013.crtd` |
+| 2+3 | `can3-3.3.005-797-g4afb8c2c-dirty_ota_0_edge-20260405-091701.crtd` |
+| 2+3 | `can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-223732.crtd` |
+| 2+3 | `can3-3.3.005-800-gc60d79ed-dirty_ota_0_edge-20260410-224459.crtd` |
+| 2+3 | `can3-3.3.005-817-gecdd91a1-dirty_ota_0_edge-20260407-151019.crtd` |
+| 2+3 | `can3-3.3.005-817-gecdd91a1-dirty_ota_0_edge-20260407-220545.crtd` |
+| 2+3 | `can3-3.3.005-830-g2393b7b5-dirty_ota_0_edge-20260408-151419.crtd` |
+| 2+3 | `can3-3.3.005-830-g2393b7b5-dirty_ota_1_edge-20260408-115558.crtd` |
+
+The two `kcan-*` test fixtures (`kcan-can3-clima_on_off.crtd`, `kcan-synthetic.crtd`)
+are also technically multi-bus but are test inputs referenced by path in the C++
+test suite — do **not** rename them, and load them with an explicit `bus=3` filter.
+
+Files not listed here are clean single-bus captures that match their name prefix.
+The audit was regenerated 2026-04-12 by `tests/analysis/scratch/apr7_charge_audit.py`.
+Post-`9fdbf8b7` captures don't need this table — the bus filter works correctly now.
+
 ## Running the replay test
 
 ```
