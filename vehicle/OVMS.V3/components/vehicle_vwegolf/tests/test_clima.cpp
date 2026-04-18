@@ -20,6 +20,11 @@ static canbus* kcan(OvmsVehicleVWeGolf* v) {
     return v->m_can3;
 }
 
+// Advance the mock tick counter by ms milliseconds (portTICK_PERIOD_MS=1 in mock).
+static void advance_ms(uint32_t ms) {
+    g_tick_count += ms;
+}
+
 // Ticker1/Ticker10 are protected in OvmsVehicleVWeGolf. Call via base-class pointer
 // (public virtual in the mock OvmsVehicle) to dispatch correctly.
 static void call_ticker1(OvmsVehicleVWeGolf* v, uint32_t tick) {
@@ -187,25 +192,65 @@ void test_clima_busoff_aborts() {
 void test_clima_wakes_sleeping_bus() {
     printf("\ntest_clima_wakes_sleeping_bus\n");
     g_metrics = MetricStore{};
+    g_tick_count = 0;
     auto* v = new OvmsVehicleVWeGolf();
 
-    // Bus starts idle (no frames received). CommandClimateControl should wake first.
+    // Bus starts idle. CommandClimateControl should kick WakeKcanBus and defer BAP.
     auto result = v->CommandClimateControl(true);
     CHECK(result == Success, "Clima start succeeds from idle bus");
 
     auto& log = kcan(v)->tx_log;
-    // Should have wake frames (0x17330301, 0x1B000067) then BAP sequence.
     bool has_wake = false;
     bool has_nm = false;
-    bool has_bap = false;
+    bool has_bap_immediate = false;
     for (auto& r : log) {
         if (r.extended && r.id == 0x17330301) has_wake = true;
         if (r.extended && r.id == 0x1B000067) has_nm = true;
-        if (r.extended && r.id == 0x17332501) has_bap = true;
+        if (r.extended && r.id == 0x17332501) has_bap_immediate = true;
     }
-    CHECK(has_wake, "Wake frame 0x17330301 sent before BAP");
-    CHECK(has_nm, "NM alive 0x1B000067 sent before BAP");
-    CHECK(has_bap, "BAP frames sent after wake");
+    CHECK(has_wake, "Wake frame 0x17330301 sent");
+    CHECK(has_nm, "NM alive 0x1B000067 sent");
+    CHECK(!has_bap_immediate, "BAP not sent immediately — deferred to Ticker1");
+
+    delete v;
+}
+
+void test_clima_deferred_burst_fires() {
+    printf("\ntest_clima_deferred_burst_fires\n");
+    g_metrics = MetricStore{};
+    g_tick_count = 0;
+    auto* v = new OvmsVehicleVWeGolf();
+
+    // Idle bus → CommandClimateControl defers burst, returns Success immediately.
+    auto result = v->CommandClimateControl(true);
+    CHECK(result == Success, "Returns Success with deferred burst");
+
+    // Simulate KCAN activity after wake (ECUs responding to NM wake).
+    // This resets m_bus_idle_ticks so Ticker1 sees bus_alive=true.
+    auto f = make_kcan_frame(v, 0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+
+    // Settle time not yet elapsed — no BAP.
+    kcan(v)->tx_log.clear();
+    call_ticker1(v, 1);
+    bool has_bap_early = false;
+    for (auto& r : kcan(v)->tx_log) {
+        if (r.extended && r.id == 0x17332501) has_bap_early = true;
+    }
+    CHECK(!has_bap_early, "BAP not sent before settle window");
+
+    // Advance tick past VWEGOLF_CLIMA_SETTLE_MS (1000 ms).
+    advance_ms(VWEGOLF_CLIMA_SETTLE_MS);
+    kcan(v)->tx_log.clear();
+    call_ticker1(v, 2);
+
+    size_t bap_count = 0;
+    for (auto& r : kcan(v)->tx_log) {
+        if (r.extended && r.id == 0x17332501) bap_count++;
+    }
+    CHECK(bap_count == 3, "3 BAP frames fired after settle");
+
+    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "HVAC metric true after deferred start");
 
     delete v;
 }
@@ -421,6 +466,7 @@ void test_clima_all() {
     test_clima_stop_bap_trigger();
     test_clima_busoff_aborts();
     test_clima_wakes_sleeping_bus();
+    test_clima_deferred_burst_fires();
     test_clima_wakes_in_twilight();
     test_clima_no_wake_when_oem_ocu_active();
     test_clima_counter_increments();

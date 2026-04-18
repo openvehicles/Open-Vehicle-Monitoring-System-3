@@ -25,7 +25,8 @@
 typedef uint32_t TickType_t;
 inline void vTaskDelay(TickType_t) {}
 inline TickType_t pdMS_TO_TICKS(uint32_t ms) { return ms; }
-inline TickType_t xTaskGetTickCount() { return 0; }
+extern uint32_t g_tick_count;
+inline TickType_t xTaskGetTickCount() { return g_tick_count; }
 static constexpr uint32_t portTICK_PERIOD_MS = 1;
 
 // ---------------------------------------------------------------------------

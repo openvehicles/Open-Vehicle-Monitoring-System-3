@@ -528,6 +528,27 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     if (m_ocu_active && bus_alive) {
         SendOcuHeartbeat();
     }
+
+    // Fire deferred clima BAP burst once the wake-settle window has elapsed.
+    // CommandClimateControl returns immediately after WakeKcanBus so the dispatch task
+    // isn't blocked for 1 s; we pick up here on the next Ticker1 once the NM-join flood
+    // has subsided. Bus must still be alive — otherwise wake didn't take and the burst
+    // would just queue against a dead controller.
+    if (m_clima_pending) {
+        uint32_t now = xTaskGetTickCount();
+        uint32_t elapsed_ms = (now - m_clima_pending_tick) * portTICK_PERIOD_MS;
+        if (!bus_alive) {
+            ESP_LOGW(TAG, "Deferred clima: bus went idle before settle — aborting");
+            m_clima_pending = false;
+            StandardMetrics.ms_v_env_hvac->SetValue(!m_clima_pending_enable);
+        } else if (elapsed_ms >= VWEGOLF_CLIMA_SETTLE_MS) {
+            bool enable = m_clima_pending_enable;
+            m_clima_pending = false;
+            if (SendClimaBapBurst(enable) != Success) {
+                StandardMetrics.ms_v_env_hvac->SetValue(!enable);
+            }
+        }
+    }
 }
 
 void OvmsVehicleVWeGolf::Ticker10(uint32_t ticker) {
@@ -787,26 +808,8 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
              data[2], data[3], data[4], data[5], data[6], data[7]);
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool enable) {
-    ESP_LOGI(TAG, "Climate control: %s", enable ? "start" : "stop");
-
-    // Abort if bus-off: the TWAI HW cannot TX at all and all Write calls silently
-    // overflow the queue. CommandWakeup's Reset() should prevent this, but guard anyway.
-    if (m_can3->GetErrorState() == CAN_errorstate_busoff) {
-        ESP_LOGW(TAG, "Climate control: KCAN controller in bus-off — aborting");
-        return Fail;
-    }
-
-    // Wake the bus if sleeping; wait 1 s for the NM-join flood (~300 ms burst) to settle
-    // before sending BAP. If already active, skip wakeup and send immediately.
-    if (m_bus_idle_ticks >= VWEGOLF_BUS_TIMEOUT_SECS) {
-        ESP_LOGI(TAG, "Climate control: KCAN idle — waking bus and joining NM ring");
-        CommandWakeup();
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-
-    // Rolling counter: included in the command and echoed back (| 0x80) in the ECU's ACK,
-    // so we can match the ACK to this specific command invocation.
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::SendClimaBapBurst(bool enable) {
+    // Rolling counter: echoed back (| 0x80) in the ECU's ACK to match the command.
     m_bap_counter = (m_bap_counter == 0xFF) ? 0x01 : m_bap_counter + 1;
 
     // Suppress heartbeats for the full 3-frame burst. Set before frame 1, cleared on
@@ -886,4 +889,33 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     // m_ocu_active once KCAN goes quiet.
     m_ocu_active = true;
     return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool enable) {
+    ESP_LOGI(TAG, "Climate control: %s", enable ? "start" : "stop");
+
+    if (m_can3->GetErrorState() == CAN_errorstate_busoff) {
+        ESP_LOGW(TAG, "Climate control: KCAN controller in bus-off — aborting");
+        return Fail;
+    }
+
+    // Wake the bus if it has been quiet long enough that ECUs are likely sleeping.
+    // Two conditions must both be true:
+    //   1. No KCAN frame for >= CLIMA_WAKE_SECS (bus is going/gone to sleep).
+    //   2. No non-zero OEM 0x5A7 for >= CLIMA_WAKE_SECS (OEM OCU is off — safe to
+    //      send our heartbeat without causing an arbitration-loss → bus-off cycle).
+    // Defer the BAP burst to Ticker1 so the dispatch task isn't blocked for 1 s while
+    // the NM-join flood subsides. Ticker1 fires once VWEGOLF_CLIMA_SETTLE_MS elapses.
+    if (m_bus_idle_ticks >= VWEGOLF_CLIMA_WAKE_SECS &&
+        m_oem_ocu_idle_ticks >= VWEGOLF_CLIMA_WAKE_SECS) {
+        ESP_LOGI(TAG, "Climate control: KCAN quiet %u s, OEM OCU quiet %u s — waking bus",
+                 m_bus_idle_ticks, m_oem_ocu_idle_ticks);
+        WakeKcanBus();
+        m_clima_pending = true;
+        m_clima_pending_enable = enable;
+        m_clima_pending_tick = xTaskGetTickCount();
+        return Success;
+    }
+
+    return SendClimaBapBurst(enable);
 }

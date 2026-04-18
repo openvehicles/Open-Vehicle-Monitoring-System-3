@@ -44,6 +44,17 @@
 // and we suppress OCU keepalive transmission to avoid accumulating TX errors.
 #define VWEGOLF_BUS_TIMEOUT_SECS 10
 
+// Shorter threshold for the clima wake-before-send decision. KCAN NM runs at 200ms
+// intervals; 3 seconds of silence means the bus is going to sleep or already asleep,
+// even if m_bus_idle_ticks hasn't reached BUS_TIMEOUT yet. Used together with the
+// OEM OCU idle counter to avoid waking during the 0x5A7 conflict window.
+#define VWEGOLF_CLIMA_WAKE_SECS 3
+
+// Settle delay between WakeKcanBus and the BAP burst. The NM-join flood needs time to
+// subside before the clima ECU will accept the multi-frame command. Applied from
+// Ticker1 (non-blocking) when CommandClimateControl had to wake the bus.
+#define VWEGOLF_CLIMA_SETTLE_MS 1000
+
 class OvmsVehicleVWeGolf : public OvmsVehicle {
  public:
     OvmsVehicleVWeGolf();
@@ -60,6 +71,9 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandWakeup() override;
     vehicle_command_t CommandClimateControl(bool enable) override;
+    void SendOcuHeartbeat();
+    void WakeKcanBus();
+    vehicle_command_t SendClimaBapBurst(bool enable);
 
  protected:
     void Ticker1(uint32_t ticker) override;
@@ -90,6 +104,14 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // continuation and the ECU discards the message. The 180 ms throttle isn't enough
     // when the 3×WriteExtended calls can take up to 600 ms worst-case.
     bool m_bap_burst_active = false;
+
+    // Deferred clima burst. When CommandClimateControl has to wake the bus, it kicks
+    // WakeKcanBus, records the tick, and returns Success immediately so the command
+    // dispatch task isn't blocked for the 1 s NM-join settle. Ticker1 fires the 3-frame
+    // BAP burst once VWEGOLF_CLIMA_SETTLE_MS has elapsed.
+    bool m_clima_pending = false;
+    bool m_clima_pending_enable = false;
+    uint32_t m_clima_pending_tick = 0;
 
     bool m_mirror_fold_in_requested = false;
     bool m_horn_requested = false;
