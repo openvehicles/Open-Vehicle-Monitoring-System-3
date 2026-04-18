@@ -139,6 +139,8 @@ Others built charge stop buttons on CAN but unpublished protocol. If no direct c
 | 14 | can3 | OBC 29-bit frames during AC charging — focus on `0x1A5554A8` b4/all bytes vs `0x594` state | pending |
 | 17d | can2 | Sustained regen coast-down — disambiguate torque vs power for `0x0B4` (b3,b4) | pending |
 | 17e | can2 | WOT accel — confirm MotorTorqueB on forward load, check sign byte | pending |
+| 18 | can3 | Clima verify — deferred path: car locked ≥30 s, clima start (check wake frames + ~1 s gap before BAP), run 10 s, stop (check NM linger + ACK counter matching) | pending |
+| 19 | can3 | Clima verify — direct path: unlock + open door (bus awake), clima start (immediate BAP, no wake frames), run 10 s, stop | pending |
 
 ---
 
