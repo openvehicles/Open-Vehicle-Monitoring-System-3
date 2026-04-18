@@ -45,9 +45,6 @@ static const char *TAG = "ovms-server-v3";
 #include "id_filter.h"               // <- use IdFilter for pattern matching
 #if CONFIG_MG_ENABLE_SSL
   #include "ovms_tls.h"
-  #include "mbedtls/x509_crt.h"
-  #include "mbedtls/pk.h"
-  #include "mbedtls/error.h"
 #endif
 
 OvmsServerV3 *MyOvmsServerV3 = NULL;
