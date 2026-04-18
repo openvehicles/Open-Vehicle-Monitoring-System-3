@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Server V3 (MQTT): AWS IoT Core compatibility fixes:
+    - mTLS client certificate authentication for MQTT brokers that require it
+      (e.g. AWS IoT Core). Configured via web UI (Config → Server V3).
+    - Fixed MQTT CONNECT to omit empty username/password for certificate-only auth.
+    - New option "retain.depth.limit": disables RETAIN on deep topics (>8 segments)
+      for brokers like AWS IoT Core that reject them.
 - Server V3: the MQTT client ID to use can now be configured. While not normally necessary, changing the
     client ID may be necessary to discard an existing MQTT server session when changing the username.
   New configs:

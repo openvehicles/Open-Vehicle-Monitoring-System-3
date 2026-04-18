@@ -36,6 +36,7 @@ static const char *TAG = "ovms-server-v3";
 #include <vector>
 #include <algorithm>
 #include "ovms_server_v3.h"
+#include "ovms_utils.h"
 #include "buffered_shell.h"
 #include "ovms_command.h"
 #include "ovms_metrics.h"
@@ -96,8 +97,9 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           ESP_LOGI(TAG, "Connection successful");
           struct mg_send_mqtt_handshake_opts opts;
           memset(&opts, 0, sizeof(opts));
-          opts.user_name = MyOvmsServerV3->m_user.c_str();
-          opts.password = MyOvmsServerV3->m_password.c_str();
+          //If no user/password is set avoid sending an empty string
+          opts.user_name = MyOvmsServerV3->m_user.empty() ? NULL : MyOvmsServerV3->m_user.c_str();
+          opts.password = MyOvmsServerV3->m_password.empty() ? NULL : MyOvmsServerV3->m_password.c_str();
           opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
           opts.will_message = "no";
           opts.flags |= MG_MQTT_WILL_RETAIN;
@@ -237,6 +239,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_updatetime_sendall = 1200;
   m_updatetime_keepalive = 29*60;
   m_legacy_event_topic = true;
+  m_retain_depth_limit = false;
   m_notify_info_pending = false;
   m_notify_error_pending = false;
   m_notify_alert_pending = false;
@@ -458,8 +461,22 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
 
   std::string val = metric->AsString();
 
+  // When retain.depth.limit is enabled, topics with more than 7 slashes (>8 segments)
+  // are published without the RETAIN flag. This is required for AWS IoT Core, which
+  // rejects retained publishes on topics deeper than 8 segments.
+  int qos_flags;
+  if (m_retain_depth_limit)
+    {
+    int slash_count = (int)std::count(topic.begin(), topic.end(), '/');
+    qos_flags = MG_MQTT_QOS(0) | (slash_count <= 7 ? MG_MQTT_RETAIN : 0);
+    }
+  else
+    {
+    qos_flags = MG_MQTT_QOS(0) | MG_MQTT_RETAIN;
+    }
+
   mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
-    MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
+    qos_flags, val.c_str(), val.length());
   ESP_LOGV(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
 
@@ -986,6 +1003,12 @@ void OvmsServerV3::Connect()
 #if CONFIG_MG_ENABLE_SSL
     opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     opts.ssl_server_name = m_server.c_str();
+    if (path_exists("/store/tls/serverv3_client.crt") && path_exists("/store/tls/serverv3_client.key"))
+      {
+      opts.ssl_cert = "/store/tls/serverv3_client.crt";
+      opts.ssl_key  = "/store/tls/serverv3_client.key";
+      ESP_LOGI(TAG, "Using MQTT mTLS client certificate authentication");
+      }
 #else
     ESP_LOGE(TAG, "mg_connect(%s) failed: SSL support disabled", address.c_str());
     SetStatus("Error: Connection failed (SSL support disabled)", true, Undefined);
@@ -1187,6 +1210,7 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_updatetime_sendall = param->GetValueInt("updatetime.sendall", m_updatetime_sendall);
   m_updatetime_keepalive = param->GetValueInt("updatetime.keepalive", m_updatetime_keepalive);
   m_legacy_event_topic = param->GetValueBool("events.legacy_topic", true);
+  m_retain_depth_limit = param->GetValueBool("retain.depth.limit", m_retain_depth_limit);
   m_updatetime_priority = param->GetValueBool("updatetime.priority", false);
   m_updatetime_immediately = param->GetValueBool("updatetime.immediately", false);
   m_max_per_call_sendall = param->GetValueInt("queue.sendall", m_max_per_call_sendall);
@@ -1506,6 +1530,8 @@ void ovmsv3_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
         break;
       }
     writer->printf("       %s\n",MyOvmsServerV3->m_status.c_str());
+    writer->printf("Retain depth limit: %s \n",
+      MyOvmsServerV3->m_retain_depth_limit ? "enabled" : "disabled");
     }
   }
 
