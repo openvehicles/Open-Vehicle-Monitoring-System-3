@@ -100,17 +100,9 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           ESP_LOGI(TAG, "Connection successful");
           struct mg_send_mqtt_handshake_opts opts;
           memset(&opts, 0, sizeof(opts));
-          if (MyOvmsServerV3->m_user.empty())
-            {
-            // MQTT password must not be sent without username; omit both.
-            opts.user_name = NULL;
-            opts.password = NULL;
-            }
-          else
-            {
-            opts.user_name = MyOvmsServerV3->m_user.c_str();
-            opts.password = MyOvmsServerV3->m_password.empty() ? NULL : MyOvmsServerV3->m_password.c_str();
-            }
+          //If no user/password is set avoid sending an empty string
+          opts.user_name = MyOvmsServerV3->m_user.empty() ? NULL : MyOvmsServerV3->m_user.c_str();
+          opts.password = MyOvmsServerV3->m_password.empty() ? NULL : MyOvmsServerV3->m_password.c_str();
           opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
           opts.will_message = "no";
           opts.flags |= MG_MQTT_WILL_RETAIN;
@@ -1670,183 +1662,6 @@ static bool ovmsv3_validate_cert_key_pair(const extram::string& cert, const extr
   }
 #endif // CONFIG_MG_ENABLE_SSL
 
-void ovmsv3_tlsclient_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  bool has_cert = path_exists("/store/tls/serverv3_client.crt");
-  bool has_key  = path_exists("/store/tls/serverv3_client.key");
-
-  writer->printf("Client certificate: %s\n", has_cert ? "/store/tls/serverv3_client.crt" : "not configured");
-  writer->printf("Client private key: %s\n", has_key  ? "/store/tls/serverv3_client.key" : "not configured");
-  writer->printf("Pair completeness: %s\n", (has_cert == has_key) ? "ok" : "incomplete");
-
-  if (!has_cert && !has_key)
-    {
-    writer->puts("No client cert/key configured");
-    return;
-    }
-
-  extram::string cert, key;
-  std::string err;
-  if (has_cert) load_file("/store/tls/serverv3_client.crt", cert);
-  if (has_key)  load_file("/store/tls/serverv3_client.key",  key);
-
-  if (!ovmsv3_validate_pem_headers(cert, key, err))
-    {
-    writer->printf("PEM validation: ERROR (%s)\n", err.c_str());
-    return;
-    }
-
-#if CONFIG_MG_ENABLE_SSL
-  if (ovmsv3_validate_cert_key_pair(cert, key, err))
-    writer->puts("Pair validation: OK");
-  else
-    writer->printf("Pair validation: ERROR (%s)\n", err.c_str());
-#else
-  writer->puts("Pair validation: unavailable (SSL support disabled)");
-#endif
-  }
-
-void ovmsv3_tlsclient_info(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  extram::string cert;
-  std::string err;
-
-  writer->printf("Client certificate: %s\n",
-    path_exists("/store/tls/serverv3_client.crt") ? "/store/tls/serverv3_client.crt" : "not configured");
-  writer->printf("Client private key: %s\n",
-    path_exists("/store/tls/serverv3_client.key") ? "/store/tls/serverv3_client.key" : "not configured");
-
-  if (!path_exists("/store/tls/serverv3_client.crt"))
-    {
-    writer->puts("No client certificate configured");
-    return;
-    }
-
-  if (load_file("/store/tls/serverv3_client.crt", cert) != 0)
-    {
-    writer->puts("Error reading certificate file");
-    return;
-    }
-
-  if (!startsWith(cert, std::string("-----BEGIN CERTIFICATE-----")))
-    {
-    writer->puts("Certificate format is invalid (expected PEM CERTIFICATE)");
-    return;
-    }
-
-#if CONFIG_MG_ENABLE_SSL
-  std::string info;
-  if (!ovmsv3_parse_client_cert(cert, info, err))
-    {
-    writer->printf("Certificate metadata unavailable: %s\n", err.c_str());
-    return;
-    }
-
-  writer->puts("Certificate metadata:");
-  writer->puts(info.c_str());
-  writer->puts("Private key contents are intentionally hidden.");
-#else
-  writer->puts("Certificate metadata unavailable (SSL support disabled)");
-#endif
-  }
-
-void ovmsv3_tlsclient_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  unlink("/store/tls/serverv3_client.crt");
-  unlink("/store/tls/serverv3_client.key");
-  writer->puts("Cleared MQTT client certificate and private key");
-  writer->puts("Run 'server v3 tlsclient reload' to apply to active connection");
-  }
-
-void ovmsv3_tlsclient_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  extram::string cert, key;
-  std::string err;
-
-  if (!path_exists("/store/tls/serverv3_client.crt") && !path_exists("/store/tls/serverv3_client.key"))
-    {
-    writer->puts("No client cert/key configured");
-    return;
-    }
-
-  load_file("/store/tls/serverv3_client.crt", cert);
-  load_file("/store/tls/serverv3_client.key", key);
-
-  if (!ovmsv3_validate_pem_headers(cert, key, err))
-    {
-    writer->printf("Validation failed: %s\n", err.c_str());
-    return;
-    }
-
-#if CONFIG_MG_ENABLE_SSL
-  if (!ovmsv3_validate_cert_key_pair(cert, key, err))
-    {
-    writer->printf("Validation failed: %s\n", err.c_str());
-    return;
-    }
-
-  writer->puts("Validation successful: certificate and private key are valid and match");
-#else
-  writer->puts("Validation unavailable (SSL support disabled)");
-#endif
-  }
-
-void ovmsv3_tlsclient_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyOvmsServerV3 == NULL)
-    {
-    writer->puts("OVMS v3 server has not been started; settings will apply on next start");
-    return;
-    }
-
-  writer->puts("Reloading server v3 MQTT connection to apply tlsclient settings");
-  MyOvmsServerV3->Disconnect();
-  MyOvmsServerV3->Connect();
-  }
-
-void ovmsv3_tlsclient_import(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  extram::string cert, key;
-  std::string err;
-
-  int r = load_file(argv[0], cert);
-  if (r != 0)
-    {
-    writer->printf("Error reading certificate file '%s': %s\n", argv[0], strerror(r));
-    return;
-    }
-
-  r = load_file(argv[1], key);
-  if (r != 0)
-    {
-    writer->printf("Error reading private key file '%s': %s\n", argv[1], strerror(r));
-    return;
-    }
-
-  if (!ovmsv3_validate_pem_headers(cert, key, err))
-    {
-    writer->printf("Import failed: %s\n", err.c_str());
-    return;
-    }
-
-#if CONFIG_MG_ENABLE_SSL
-  if (!ovmsv3_validate_cert_key_pair(cert, key, err))
-    {
-    writer->printf("Import failed: %s\n", err.c_str());
-    return;
-    }
-#endif
-
-  if (save_file("/store/tls/serverv3_client.crt", cert) != 0 ||
-      save_file("/store/tls/serverv3_client.key", key) != 0)
-    {
-    writer->printf("Import failed: error saving files: %s\n", strerror(errno));
-    return;
-    }
-  writer->puts("Imported MQTT client certificate and private key to /store/tls/");
-  writer->puts("Run 'server v3 tlsclient reload' to apply to active connection");
-  }
-
 // Process metric request (payload: include patterns; use IdFilter)
 void OvmsServerV3::ProcessClientMetricRequest(const std::string& clientid, const std::string& payload)
 {
@@ -1914,14 +1729,6 @@ OvmsServerV3Init::OvmsServerV3Init()
   cmd_update->RegisterCommand("all", "Transmit all metrics", ovmsv3_update);
   cmd_update->RegisterCommand("modified", "Transmit modified metrics only", ovmsv3_update);
   cmd_update->RegisterCommand("priority", "Transmit priority metrics only", ovmsv3_update);
-
-  OvmsCommand* cmd_tlsclient = cmd_v3->RegisterCommand("tlsclient", "Manage MQTT client certificate authentication", ovmsv3_tlsclient_status, "", 0, 0, false);
-  cmd_tlsclient->RegisterCommand("status", "Show MQTT client cert/key status", ovmsv3_tlsclient_status, "", 0, 0, false);
-  cmd_tlsclient->RegisterCommand("info", "Show MQTT client certificate metadata (private key redacted)", ovmsv3_tlsclient_info, "", 0, 0, false);
-  cmd_tlsclient->RegisterCommand("clear", "Clear MQTT client certificate and key", ovmsv3_tlsclient_clear, "", 0, 0, false);
-  cmd_tlsclient->RegisterCommand("reload", "Reload MQTT connection to apply tlsclient settings", ovmsv3_tlsclient_reload, "", 0, 0, false);
-  cmd_tlsclient->RegisterCommand("check", "Validate MQTT client certificate/key PEM and pair match", ovmsv3_tlsclient_check, "", 0, 0, false);
-  cmd_tlsclient->RegisterCommand("import", "Import MQTT client certificate and key from files", ovmsv3_tlsclient_import, "<cert_path> <key_path>", 2, 2, false);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
