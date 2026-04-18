@@ -49,8 +49,7 @@ establishing SSL/TLS connections (in order to verify the certificate of the serv
 connected to).
 
 .. note:: For MQTT brokers that require **client certificate authentication** (mTLS),
-  see the :doc:`Server V3 configuration <components>` section on TLS client authentication
-  and the ``server v3 tlsclient`` :doc:`commands <commands>`.
+  see the :doc:`Server V3 configuration <components>` section on TLS client authentication.
 
 
 ----------------------------------
