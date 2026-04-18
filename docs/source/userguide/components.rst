@@ -147,12 +147,7 @@ TLS client authentication
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The module supports client certificate authentication (mTLS) for brokers that need it.
-Paste the PEM certificate and key into the **Config → Server V3 (MQTT)** web page,
-or use the CLI::
-
-  OVMS# server v3 tlsclient import /sd/client.crt /sd/client.key
-
-See :doc:`commands` for the full list of ``tlsclient`` commands.
+Paste the PEM certificate and key into the **Config → Server V3 (MQTT)** web page.
 
 -------------------------------
 Upgrading from OVMS v1/v2 to v3

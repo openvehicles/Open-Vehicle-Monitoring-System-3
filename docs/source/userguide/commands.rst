@@ -191,22 +191,6 @@ More info on the general OVMS MQTT topic scheme can be found
 `on the developer mailing list <http://lists.openvehicles.com/pipermail/ovmsdev/2018-July/005297.html>`_.
 
 
-TLS client certificate commands
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If the broker needs a client certificate (mTLS)::
-
-  OVMS# server v3 tlsclient import <cert_path> <key_path>
-  OVMS# server v3 tlsclient status
-  OVMS# server v3 tlsclient info
-  OVMS# server v3 tlsclient check
-  OVMS# server v3 tlsclient reload
-  OVMS# server v3 tlsclient clear
-
-Files are stored under ``/store/tls/``. Use ``check`` to validate the cert/key pair,
-``reload`` to reconnect and apply changes.
-
-
 ------------------
 Custom Server APIs
 ------------------
