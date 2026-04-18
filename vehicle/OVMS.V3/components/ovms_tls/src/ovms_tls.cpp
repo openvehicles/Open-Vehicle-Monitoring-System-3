@@ -168,10 +168,6 @@ void OvmsTLS::Reload()
   extern const unsigned char isrg_x1_end[] asm("_binary_isrg_x1_crt_end");
   m_trustlist["ISRG X1 CA"] = new OvmsTrustedCert(isrg_x1, isrg_x1_end - isrg_x1);
 
-  extern const unsigned char amazon_root_ca1[] asm("_binary_amazon_root_ca1_crt_start");
-  extern const unsigned char amazon_root_ca1_end[] asm("_binary_amazon_root_ca1_crt_end");
-  m_trustlist["Amazon Root CA 1"] = new OvmsTrustedCert(amazon_root_ca1, amazon_root_ca1_end - amazon_root_ca1);
-
   // Add trusted certs on disk (/store/trustedca)
   DIR *dir;
   struct dirent *dp;
