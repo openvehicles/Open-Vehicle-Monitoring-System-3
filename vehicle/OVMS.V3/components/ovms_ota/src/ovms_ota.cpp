@@ -191,6 +191,14 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   writer->printf("Source image is %ld bytes in size\n",ds.st_size);
 
+  if (ds.st_size > target->size)
+    {
+    writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+    if (target->size < 0x700000)
+      writer->puts("Consider upgrading your partitioning scheme to v3-35.");
+    return;
+    }
+
   FILE* f = fopen(argv[0], "r");
   if (f == NULL)
     {
@@ -325,13 +333,21 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   size_t expected = http.BodySize();
-  if (expected < 32)
+  if (expected < 1024) // empty / HTML error page?
     {
     writer->printf("Error: Expected download file size (%d) is invalid\n",expected);
     return;
     }
 
   writer->printf("Expected file size is %d\n",expected);
+
+  if (expected > target->size)
+    {
+    writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+    if (target->size < 0x700000)
+      writer->puts("Consider upgrading your partitioning scheme to v3-35.");
+    return;
+    }
 
   MyOTA.SetFlashStatus("OTA Flash HTTP: Preparing flash partition...");
   writer->puts(MyOTA.GetFlashStatus());
@@ -1018,6 +1034,16 @@ bool OvmsOTA::AutoFlashSD()
     }
   ESP_LOGW(TAG, "AutoFlashSD Source image is %d bytes in size",(int)ds.st_size);
 
+  if (ds.st_size > target->size)
+    {
+    ESP_LOGE(TAG, "Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+    if (target->size < 0x700000)
+      {
+      ESP_LOGE(TAG, "Consider upgrading your partitioning scheme to v3-35.");
+      }
+    return false;
+    }
+
   SetFlashStatus("OTA Auto Flash SD: Preparing flash partition...",0,true);
   esp_ota_handle_t otah;
   esp_err_t err = esp_ota_begin(target, ds.st_size, &otah);
@@ -1422,10 +1448,20 @@ bool OvmsOTA::AutoFlash(bool force)
     }
 
   size_t expected = http.BodySize();
-  if (expected < 32)
+  if (expected < 1024) // empty / HTML error page?
     {
     ESP_LOGE(TAG, "AutoFlash: Expected download file size (%d) is invalid", expected);
     m_lastcheckday = -1; // Allow to try again within the same day
+    return false;
+    }
+
+  if (expected > target->size)
+    {
+    ESP_LOGE(TAG, "Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+    if (target->size < 0x700000)
+      {
+      ESP_LOGE(TAG, "Consider upgrading your partitioning scheme to v3-35.");
+      }
     return false;
     }
 
