@@ -1065,6 +1065,42 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         }
 
+      // --------- Patch ZE1 : detect CHAdeMO charging via battery voltage/current ---------
+      if (cfg_ze1)
+        {
+        bool car_on = StandardMetrics.ms_v_env_on->AsBool();
+
+        // DC fast charge active if: car off + battery voltage plausible + strong inbound current
+        if (!car_on && battery_voltage > 200.0f && battery_current < -25.0f)
+          {
+          // CHAdeMO detected
+          if (StandardMetrics.ms_v_charge_state->AsString() != "charging"
+              || StandardMetrics.ms_v_charge_type->AsString() != "chademo")
+            {
+            vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
+            }
+          // Pilot ON (cable connected, station OK)
+          StandardMetrics.ms_v_charge_pilot->SetValue(true);
+          // Keep charge metrics up-to-date
+          StandardMetrics.ms_v_charge_voltage->SetValue(battery_voltage);
+          StandardMetrics.ms_v_charge_current->SetValue(-battery_current);
+          StandardMetrics.ms_v_charge_power  ->SetValue(-battery_power);
+          if (battery_voltage > 0)
+            StandardMetrics.ms_v_charge_climit->SetValue(
+              m_battery_chargerate_max->AsFloat() * 1000.0f / battery_voltage);
+          }
+        else if (!car_on
+                 && StandardMetrics.ms_v_charge_inprogress->AsBool()
+                 && StandardMetrics.ms_v_charge_type->AsString() == "chademo"
+                 && battery_current > -5.0f)
+          {
+          // End of CHAdeMO charging
+          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
+          }
+        }
+      // --------- End patch ZE1 ---------
+
     }
       break;
     case 0x1dc:
