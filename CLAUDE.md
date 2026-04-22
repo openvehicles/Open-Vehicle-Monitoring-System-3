@@ -1,75 +1,81 @@
 # CLAUDE.md
 
-Guidance for Claude Code in this repo. Build/framework/capture details → `docs/dev-guide.md`.
+Build/framework/capture → `docs/dev-guide.md`.
 
-## Project Overview
+## Project
 
-Fork of OVMS3 — VW e-Golf integration. ESP32 vehicle telemetry/control via CAN bus. Remote monitoring, diagnostics, control.
+OVMS3 fork, VW e-Golf. ESP32 telemetry/ctrl via CAN. Focus: `vehicle/OVMS.V3/components/vehicle_vwegolf/`.
 
-Primary focus: `vehicle/OVMS.V3/components/vehicle_vwegolf/`
+**App** = OVMS Connect by CrashOverride2 (iOS/Android). Metric names, cmd behavior, timing → target this app.
 
-**"The app"** = OVMS Connect by CrashOverride2 (App Store / Google Play). All user-facing decisions — metric naming, command behaviour, response timing — target this app.
+**OBD port** = Diag CAN, ign-on only. Remote (clima/wake/lock/charge) needs KCAN via J533 harness. e-Golf via J533, not direct ECU.
 
-**Key constraint:** OBD port = Diagnostic CAN only, works when car on. Remote features (climate, wake, lock, charge) need KCAN via J533 gateway harness. e-Golf connects via J533, not direct to ECUs.
+**BAP** = VW *Bedien-/Anzeigeprotokoll*. KCAN, not ISO-TP/UDS. No std poller — direct frame build. Refs: `vehicle/OVMS.V3/components/vehicle_vwegolf/docs/vw-bap-protocol.md`, `…/docs/clima-control-bap.md`.
 
-**BAP:** Climate/comfort functions use proprietary BAP (*Bedien- und Anzeigeprotokoll*) on KCAN — not ISO-TP/UDS. Can't use standard OVMS poller; needs direct CAN frame construction. See `docs/vw-bap-protocol.md` and `docs/clima-control-bap.md`.
+**Ext RE:** https://github.com/thomasakarlsen/e-golf-comfort-can — primary KCAN/BAP ref.
 
-**External RE resource:** https://github.com/thomasakarlsen/e-golf-comfort-can — primary KCAN/BAP reference.
+**AI warn:** upstream rejects unvalidated AI code. Validate vs real CAN before upstream PR.
 
-**AI-generated code warning:** Upstream OVMS warns against unvalidated AI code. All code must validate against real vehicle CAN data before upstream submission.
+## e-Golf bus map
 
-## VW e-Golf Specifics
+- CAN2 (`m_can2`, FCAN): powertrain — gear, BMS, VIN
+- CAN3 (`m_can3`, KCAN): convenience — speed, SoC, charge, body, clima
+- Prefix: `xvg` (CLI/cfg/metrics)
+- KCAN/BAP capable: wake · clima start/stop · temp/dur · min charge · profiles · horn/indicator
 
-- **CAN bus 2** (`m_can2`, FCAN): Powertrain — gear, BMS, VIN
-- **CAN bus 3** (`m_can3`, KCAN): Convenience — speed, SoC, charging, body, climate
-- **Prefix:** `xvg` (CLI, config, custom metrics)
-- **Achievable via KCAN/BAP:** wake · clima start/stop · temp/duration · min charge limit · charge profiles · horn/indicators
+## Frame decode docs
 
-## Code Style
+**Single source:** `vehicle/OVMS.V3/components/vehicle_vwegolf/docs/vwegolf.dbc`. All signal definitions (CAN ID, bit pos, scaling, units, sender/receiver, comments). Other docs (PROJECT.md, captures.tsv, per-cap .md, BAP refs) reference signal names — DO NOT restate decode details. Re-statement = drift = bugs.
 
-Google style, 4-space indent, 100-col limit (`.clang-format` in component dir):
+When a capture confirms a new signal: add to `vwegolf.dbc`, point cap notes at it.
+
+## CRTD captures — NEVER read whole
+
+`.crtd` files = 10k–60k+ lines each. Reading whole = context burn for nothing.
+
+**Use:** `vehicle/OVMS.V3/components/vehicle_vwegolf/tests/analysis/crtd.py` (in `.venv`).
+
+API: `load(path, bus=N)` → `Capture` · `load_multi(path)` for mixed-bus · `iter_frames`/`iter_crtd` streaming · `trajectory_*`/`byte_stats`/`hexdump_window` for analysis · `gear_timeline`/`gear_windows` for FCAN drive caps. See `README.md` for mislabeled-bus list (use `bus=N` explicit).
+
+Pattern: write throwaway script in `tests/analysis/scratch/`, run via `.venv`, read script output — not the raw frames.
+
+## Style
+
+Google, 4sp, 100col. `.clang-format` in component dir.
 ```bash
-clang-format -i vehicle/OVMS.V3/components/vehicle_vwegolf/src/*.cpp \
-                vehicle/OVMS.V3/components/vehicle_vwegolf/src/*.h
+clang-format -i vehicle/OVMS.V3/components/vehicle_vwegolf/src/*.{cpp,h}
 ```
 
-## Naming Conventions
+## Naming
 
-| Element | Pattern | Example |
+| Element | Pattern | Ex |
 |---|---|---|
-| Vehicle ID | 2+ chars uppercase | `VWEG` |
-| Log tag | `v-` + lowercase, dashes | `v-vwegolf` |
-| Config/metric prefix | `x` + 2+ chars lowercase | `xvg` |
-| CLI namespace | same as prefix | `xvg` |
-| Config instance names | all lowercase | `cc-temp` |
-| CLI subcommands | all lowercase | `xvg climate` |
+| Vehicle ID | 2+ UPPER | `VWEG` |
+| Log tag | `v-` lower-dash | `v-vwegolf` |
+| Cfg/metric prefix | `x` + 2+ lower | `xvg` |
+| CLI ns | = prefix | `xvg` |
+| Cfg instance | all lower | `cc-temp` |
+| CLI subcmd | all lower | `xvg climate` |
 
-## Development Workflow
+## Workflow
 
-Each fix/feature: branch → test → build → OTA flash to the-module → verify on car → PR upstream. One thing per branch/PR.
+Per fix/feat: branch → test → build → OTA flash to-the-module → verify on car → upstream PR. One thing/branch.
 
-- **`master`** — tracks upstream, no direct commits
-- **`investigation`** — RE notes, captures, docs only
-- **`climate-control`** — implementation branch
+- `master` — tracks upstream, no direct commits
+- `vwegolf` — active dev branch
 
-Git hooks: `fix/*` and `feat/*` blocked on push unless native tests pass. Bypass: `git push --no-verify` (emergencies only).
+Hooks: `fix/*`/`feat/*` push blocked unless native tests pass. Bypass `--no-verify` emergencies only.
 
-Upstream PRs: extract small focused PRs per order in `PROJECT.md`. Each PR: pass native tests · ref `docs/` RE notes · English strings · single tag `v-vwegolf` · no metric defaults in constructor.
+Upstream PRs: small focused per `PROJECT.md` order. Each: pass native tests · ref RE notes in `…/vehicle_vwegolf/docs/` · EN strings · single tag `v-vwegolf` · NO metric defaults in ctor.
 
-## Maintainer Code Review Rules
+## Maintainer review (dexterbg PR #1327)
 
-From dexterbg review of PR #1327. Violating = PR returned.
+Violation = PR returned.
 
-**Variables:** No static module-level vars for vehicle state — all state in class members.
-
-**Metrics:** Never set metric default in constructor — breaks persistent metrics. Only set when real data decoded.
-
-**Configuration:** Instance names all lowercase (case-sensitive). Self-documenting names. Every param documented in user guide. No unused params.
-
-**Commands:** CLI namespace = config prefix (`xvg`). All lowercase. English only — no German in user-visible text.
-
-**Logging:** Single tag per component (`v-vwegolf`). Dashes, not underscores.
-
-**Unfinished code:** Stubs/placeholders OK but must have comment with plan. No silent dead code.
-
-**User guide:** Every merged vehicle module needs `docs/index.rst` covering hardware wiring, J533 adapter, all config params and commands.
+- **State:** no static module-lvl vars — all in class members
+- **Metrics:** never set default in ctor (breaks persistent metrics). Set only on real decode
+- **Cfg:** instance names all lower (case-sens), self-doc, every param in user guide, no unused
+- **Cmds:** CLI ns = cfg prefix (`xvg`), all lower, EN only — no German user-visible
+- **Log:** single tag `v-vwegolf`, dashes not underscores
+- **Stubs:** OK if commented w/ plan. No silent dead code
+- **User guide:** every merged module → `docs/index.rst` w/ HW wiring, J533, all params/cmds

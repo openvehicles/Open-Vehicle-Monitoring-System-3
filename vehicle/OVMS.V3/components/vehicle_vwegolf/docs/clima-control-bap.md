@@ -12,31 +12,7 @@ Reference: https://github.com/thomasakarlsen/e-golf-comfort-can
 
 BAP node address of clima ECU: **0x25**
 
----
-
-## BAP Frame Encoding
-
-Single-frame (payload ≤ 6 bytes):
-```
-Byte 0:  [0 | opcode(3) | node[5:2](4)]
-Byte 1:  [node[1:0](2) | port(6)]
-Byte 2+: payload
-```
-
-Multi-frame start:
-```
-Byte 0:  [1 | 0 | channel(2) | 0(4)]
-Byte 1:  total payload length (8-bit)
-Byte 2:  [0 | opcode(3) | node[5:2](4)]
-Byte 3:  [node[1:0](2) | port(6)]
-Byte 4+: first 4 bytes of payload
-```
-
-Multi-frame continuation:
-```
-Byte 0:  [1 | 1 | channel(2) | 0(4)]   — 0xC0 for channel 0
-Byte 1+: next 7 bytes of payload
-```
+BAP frame encoding (single/multi-start/multi-cont), opcodes, validity rules → `vw-bap-protocol.md`.
 
 ---
 
@@ -168,13 +144,3 @@ Immediate ACK (~1 s after command):
 `{ectr}` = our counter | 0x80. Confirms which command was ACKed.
 
 After ACK: ECU sends ~4 keepalive cycles on `17332501` at 5 s intervals (~16 s delay), then silent until next command.
-
----
-
-## Bugs Found
-
-**Bug 1 — OCU heartbeat data overwrite (critical):** `SendOcuHeartbeat()` zero-re-initialized `data[]` after building action bits → always transmitted zeros → no one-shot action reached bus. Fix: removed the re-init block. Array zero-initialized once at top; action bits OR'd in; sent as-is.
-
-**Bug 2 — OVMS not joining NM ring (deep-sleep failures):** `CommandClimateControl` used `09 41` wake ping only — no `0x1B000067` NM alive. Clima ECU booted cold from deep sleep and rejected BAP from unknown node. Warm case worked because OVMS was already an NM ring member. Fix: `CommandClimateControl` calls `CommandWakeup()` which sends NM alive + 1 s wait.
-
-**Bug 3 — 0x05EA StandklimaStatus_02 shift error:** `(d[3] & 0x38) >> 6` should be `>> 3`. Always produced 0. Verbose-log only, no functional impact.
