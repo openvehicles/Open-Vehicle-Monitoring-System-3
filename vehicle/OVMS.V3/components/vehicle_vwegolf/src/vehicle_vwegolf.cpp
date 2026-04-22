@@ -89,11 +89,6 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit() {
 // ---------------------------------------------------------------------------
 
 void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
-    // FCAN-native frames (gear, VIN) arrive here; everything else comes via can3.
-    // Forward to IncomingFrameCan3 so shared decoders fire regardless of which bus
-    // the frame arrived on.
-    IncomingFrameCan3(p_frame);
-
     uint8_t* d = p_frame->data.u8;
 
     switch (p_frame->MsgID) {
@@ -176,6 +171,14 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
     }
 
     uint8_t* d = p_frame->data.u8;
+
+    // Track OEM OCU activity: any non-zero 0x5A7 means the car's OCU is still active.
+    // Reset idle counter so we don't try to wake while it's conflicting with our heartbeat.
+    if (p_frame->MsgID == 0x5A7) {
+        if (d[0] | d[1] | d[2] | d[3] | d[4] | d[5] | d[6] | d[7]) {
+            m_oem_ocu_idle_ticks = 0;
+        }
+    }
     float f = 0.0f;
     uint16_t u16;
     uint32_t u32;
@@ -355,15 +358,12 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x05EA: {
             // Clima ECU status: cabin temperature and remote_mode.
-            // remote_mode: 0=idle, 2=running (steady-state), 3=just activated (transient).
-            // Value 1 observed in on-battery clima capture (car sleeping, no plug); meaning TBD —
-            // could be "requested/pending" before the ECU commits to running. Needs further RE.
-            // HVAC on whenever remote_mode != 0.
+            // remote_mode: 2=running (steady-state), 3=just activated (transient).
+            // Value 1 observed while car sleeping on 0x05EA — treat as off until RE confirms,
+            // else the metric pins true from idle broadcasts.
             u16 = ((uint16_t)(d[6] & 0xFC) >> 2) | ((uint16_t)(d[7] & 0x0F) << 6);
             uint8_t remote_mode = ((d[3] & 0xC0) >> 6) | ((d[4] & 0x01) << 2);
-            // d[3][5:3] and d[0][3:1] carry additional status nibbles seen in captures;
-            // meaning not yet confirmed — decode when RE is complete.
-            StandardMetrics.ms_v_env_hvac->SetValue(remote_mode != 0);
+            StandardMetrics.ms_v_env_hvac->SetValue(remote_mode == 2 || remote_mode == 3);
             // Raw value ≥ 1020 decodes to ≥ 62.0°C — the ECU broadcasts 0x3FE or 0x3FF
             // as "not available" when sleeping or uninitialized. Discard; valid cabin
             // temperature is well below this range.
@@ -388,6 +388,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 bool hvac_on = (d[2] == 0x01);
                 StandardMetrics.ms_v_env_hvac->SetValue(hvac_on);
                 ESP_LOGI(TAG, "0x17332510 BAP port 0x18: hvac=%s", hvac_on ? "on" : "off");
+                // Arm grace: transaction is done, keep the ring warm briefly then stand down.
+                m_ocu_grace_secs = 0;
             }
             break;
         }
@@ -460,42 +462,6 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         default:
             break;
-        }
-        case 0x17332510:  // BAP clima ECU (node 0x25) → bus responses.
-        {
-            // Port 0x12 Ack broadcast: payload[0] = 0x05 clima active, 0x00 idle.
-            // ECU sends this for both OVMS-triggered and schedule-triggered clima
-            // (Captures 6, 12). BAP opcode layout per docs/vw-bap-protocol.md:
-            //   byte 0: [MF(1) | opcode(3) | node[5:2](4)]
-            //   byte 1: [node[1:0](2) | port(6)]
-            // opcode=4 (Ack), node=0x25, port=0x12 → first BAP header byte = 0x49, second = 0x52.
-            //
-            // Single-frame: d[0:1] = BAP header, d[2+] = payload.
-            //   49 52 XX → opcode=4, node=0x25, port=0x12, payload[0]=XX
-            // Multi-frame start: d[0]=0x80/0x90 (MF|ch|len hi), d[1]=len lo, d[2:3]=BAP header.
-            //   80 07 49 52 XX → same, payload[0] at d[4]
-            //
-            // Match opcode=4 + port=0x12 specifically — mask 0xF0 pins single-frame bit and
-            // all three opcode bits; 0xC0 (the old mask) accepted opcodes 4..7.
-            if ((d[0] & 0xF0) == 0x40 && d[1] == 0x52) {
-                tmp_u8 = d[2];
-                StandardMetrics.ms_v_env_hvac->SetValue(tmp_u8 != 0);
-                ESP_LOGV(TAG, "BAP port 0x12 single: hvac=%u (raw=0x%02X)", tmp_u8 != 0, tmp_u8);
-            } else if ((d[0] & 0xC0) == 0x80 && (d[2] & 0xF0) == 0x40 && d[3] == 0x52) {
-                tmp_u8 = d[4];
-                StandardMetrics.ms_v_env_hvac->SetValue(tmp_u8 != 0);
-                ESP_LOGV(TAG, "BAP port 0x12 multi: hvac=%u (raw=0x%02X)", tmp_u8 != 0, tmp_u8);
-            }
-            break;
-        }
-        default: {
-            // only for debug log ALL Incoming frames As i didn't know what frames are coming in
-            // after wakeup had to log all only all unknown ESP_LOGI(TAG, "T26: timestamp: %.24i
-            // 3R29 %12x %02x %02x %02x %02x %02x %02x %02x %02x",
-            // StandardMetrics.ms_m_monotonic->AsInt(), p_frame->MsgID, d[0], d[1], d[2], d[3],
-            // d[4], d[5], d[6], d[7]);
-            break;
-        }
     }
 }
 
@@ -509,23 +475,42 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     // Count consecutive seconds of KCAN silence. IncomingFrameCan3 resets this to 0
     // whenever a frame arrives, so it measures how long since the last activity.
     if (m_bus_idle_ticks < 254) m_bus_idle_ticks++;
+    if (m_oem_ocu_idle_ticks < 254) m_oem_ocu_idle_ticks++;
 
     bool bus_alive = m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS;
     bool just_went_idle = (m_bus_idle_ticks == VWEGOLF_BUS_TIMEOUT_SECS);
     ESP_LOGV(TAG, "Ticker1: bus_idle=%u alive=%d ocu=%d", m_bus_idle_ticks, bus_alive,
              m_ocu_active);
 
-    // On idle: clear OCU node presence so no further heartbeats queue on a dead bus.
-    // Do NOT clear metrics — they are owned by their decoders and stale-expire naturally.
-    // (Clearing charge_inprogress here would falsely show "not charging" during CCS DC,
-    // which keeps KCAN silent while actively charging.)
-    if (just_went_idle) {
+    // Clear OCU node presence on either condition:
+    //   1. Bus went idle (no frames for VWEGOLF_BUS_TIMEOUT_SECS) — no one to hear us.
+    //   2. OEM OCU is present — it owns 0x5A7, our TX would collide on arbitration.
+    // Without (2), m_ocu_active stays set across an entire drive cycle whenever the
+    // bus never idles, and the next RX frame triggers a heartbeat that collides with
+    // the OEM OCU every time. Do NOT clear metrics — decoders own them; stale-expire
+    // handles freshness. (Clearing charge_inprogress here would falsely show "not
+    // charging" during CCS DC, which keeps KCAN silent while actively charging.)
+    bool oem_ocu_present = m_oem_ocu_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS;
+
+    if (m_ocu_active) {
+        if (m_ocu_session_secs < 255) m_ocu_session_secs++;
+        if (m_ocu_grace_secs < 255) m_ocu_grace_secs++;
+    }
+    bool grace_expired = m_ocu_grace_secs < 255 && m_ocu_grace_secs >= VWEGOLF_OCU_ACK_GRACE_SECS;
+    bool cap_expired = m_ocu_session_secs >= VWEGOLF_OCU_SESSION_CAP_SECS;
+
+    if (m_ocu_active && (just_went_idle || oem_ocu_present || grace_expired || cap_expired)) {
         m_ocu_active = false;
-        ESP_LOGI(TAG, "KCAN idle: OCU node presence cleared");
+        const char* reason = just_went_idle    ? "KCAN idle"
+                             : oem_ocu_present ? "OEM OCU active"
+                             : grace_expired   ? "ACK grace expired"
+                                               : "session cap";
+        ESP_LOGI(TAG, "OCU presence cleared: %s", reason);
     }
 
     // Guard: only heartbeat when we've joined the bus and the bus has live traffic.
     if (m_ocu_active && bus_alive) {
+        SendNmAlive();
         SendOcuHeartbeat();
     }
 
@@ -551,110 +536,9 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     }
 }
 
-void OvmsVehicleVWeGolf::Ticker10(uint32_t ticker) {
-    OvmsVehicle::Ticker10(ticker);
-
-    // Re-read config periodically so changes take effect without a restart.
-    m_climate_temp = (uint8_t)MyConfig.GetParamValueInt("xvg", "cc_temp", 21);
-    m_climate_on_battery = MyConfig.GetParamValueBool("xvg", "cc_onbat", false);
-    ESP_LOGV(TAG, "Ticker10: cc_temp=%u°C cc_onbat=%d", m_climate_temp, m_climate_on_battery);
-}
-
-// ---------------------------------------------------------------------------
-// OCU keepalive
-// ---------------------------------------------------------------------------
-
-void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
-    // 0x5A7 is the OCU (On-board Control Unit) presence frame. The gateway and comfort
-    // ECUs expect this every second from any active controller node on KCAN. OVMS must
-    // keep sending it for as long as it wants to remain an active bus participant.
-    //
-    // One-shot actions (horn, lock, mirror fold etc.) are encoded into this frame on the
-    // tick they are requested, then the flags are cleared so subsequent ticks send idle.
-    uint8_t data[8] = {};  // idle state: all bytes zero
-
-    if (m_mirror_fold_requested) {
-        data[5] |= (1 << 7);  // d[5] bit 7: mirror fold toggle
-        m_mirror_fold_requested = false;
-        ESP_LOGI(TAG, "0x5A7 action: mirror fold");
-    }
-    if (m_horn_requested) {
-        data[6] |= (1 << 0);  // d[6] bit 0: horn
-        m_horn_requested = false;
-        ESP_LOGI(TAG, "0x5A7 action: horn");
-    }
-    if (m_lock_requested) {
-        // TODO: lock may require vehicle-specific authentication bytes alongside
-        //       this bit — not yet confirmed from captures.
-        data[6] |= (1 << 1);  // d[6] bit 1: lock
-        m_lock_requested = false;
-        ESP_LOGI(TAG, "0x5A7 action: lock");
-    }
-    if (m_unlock_requested) {
-        // TODO: unlock likely has the same authentication requirement as lock.
-        data[6] |= (1 << 2);  // d[6] bit 2: unlock
-        m_unlock_requested = false;
-        ESP_LOGI(TAG, "0x5A7 action: unlock");
-    }
-    if (m_indicators_requested) {
-        data[6] |= (1 << 3);  // d[6] bit 3: hazard lights flash
-        m_indicators_requested = false;
-        ESP_LOGI(TAG, "0x5A7 action: indicators");
-    }
-    if (m_panic_requested) {
-        data[6] |= (1 << 4);  // d[6] bit 4: panic alarm
-        m_panic_requested = false;
-        ESP_LOGI(TAG, "0x5A7 action: panic");
-    }
-
-    esp_err_t ok = m_can3->WriteStandard(0x5A7, 8, data);
-    if (ok != ESP_OK) ESP_LOGW(TAG, "0x5A7 heartbeat TX dropped (err=%d)", ok);
-    ESP_LOGV(TAG, "0x5A7: %02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1], data[2],
-             data[3], data[4], data[5], data[6], data[7]);
-}
-
 // ---------------------------------------------------------------------------
 // Vehicle commands
 // ---------------------------------------------------------------------------
-
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
-    if (m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS) {
-        // Bus already has live traffic — no wake-up needed.
-        ESP_LOGI(TAG, "Wakeup: KCAN already active");
-        return Success;
-    }
-
-    ESP_LOGI(TAG, "Wakeup: asserting dominant bits on KCAN");
-
-    // Reset the KCAN controller to clear any stuck frame from the TWAI HW TX FIFO.
-    // A stale heartbeat left from the prior session occupies the FIFO slot; on a sleeping
-    // bus it can never drain (no ACK), so the wake frame queues behind it and never
-    // produces dominant bits. Stop/Start preserves mode and speed.
-    m_can3->Reset();
-    vTaskDelay(pdMS_TO_TICKS(5));
-
-    // Extended frames to assert dominant bits and trigger the NM wake cascade.
-    // TX_Fail on Frame 1 is expected — nodes are still asleep and cannot ACK.
-    uint8_t data[8] = {0x40, 0x00, 0x01, 0x1F, 0x00, 0x00, 0x00, 0x00};
-    m_can3->WriteExtended(0x17330301, 8, data, pdMS_TO_TICKS(50));
-    vTaskDelay(pdMS_TO_TICKS(50));
-
-    // Frame 2: OSEK NM presence frame for node 0x67, observed during wake in captures.
-    // TODO: determine whether this second frame is strictly necessary.
-    data[0] = 0x67;
-    data[1] = 0x10;
-    data[2] = 0x41;
-    data[3] = 0x84;
-    data[4] = 0x14;
-    data[5] = 0x00;
-    data[6] = 0x00;
-    data[7] = 0x00;
-    m_can3->WriteExtended(0x1B000067, 8, data, pdMS_TO_TICKS(50));
-    vTaskDelay(pdMS_TO_TICKS(100));
-
-    m_ocu_active = true;
-    return Success;
-}
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandLock(const char* pin) {
     if (!PinCheck(pin)) {
@@ -675,7 +559,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandUnlock(const char* pin
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandMirrorFoldIn() {
-    m_mirror_fold_requested = true;
+    m_mirror_fold_in_requested = true;
     return Success;
 }
 
@@ -720,6 +604,8 @@ void OvmsVehicleVWeGolf::WakeKcanBus() {
     vTaskDelay(pdMS_TO_TICKS(100));
 
     m_ocu_active = true;
+    m_ocu_session_secs = 0;
+    m_ocu_grace_secs = 255;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandWakeup() {
@@ -736,6 +622,13 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
     // the start/continuation/trigger frames blocks the continuation and the ECU drops
     // the message. Worst-case burst is 3×200 ms = 600 ms, well past the 180 ms throttle.
     if (m_bap_burst_active) {
+        return;
+    }
+
+    // Hard gate: OEM OCU owns 0x5A7. If it's alive, our TX collides on arbitration
+    // every frame (identical ID) — TEC climbs on no-ACK until bus-off. Stand down
+    // until the OEM OCU has been silent for >= VWEGOLF_BUS_TIMEOUT_SECS.
+    if (m_oem_ocu_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS) {
         return;
     }
 
@@ -796,16 +689,28 @@ void OvmsVehicleVWeGolf::SendOcuHeartbeat() {
     }
 
     // Panic alarm
-    if (m_panic_mode_requested) {
+    if (m_panic_requested) {
         tmp_u8 = 1;
         data[6] = (((uint8_t)tmp_u8) << 4) & 0x10;
-        m_panic_mode_requested = false;
+        m_panic_requested = false;
         ESP_LOGI(TAG, "PanicAlarm!");
     }
 
     m_can3->WriteStandard(0x5A7, 8, data);
     ESP_LOGV(TAG, "Heartbeat 0x5A7: %02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1],
              data[2], data[3], data[4], data[5], data[6], data[7]);
+}
+
+void OvmsVehicleVWeGolf::SendNmAlive() {
+    // Ring drops silent nodes after a few cadences; a one-shot alive on wake survives
+    // long enough for warm-bus commands but not a cold BAP burst. OEM 0x67 cadence
+    // ~1.3 s (kcan-can3-clima_schedule.crtd) — Ticker1's 1 Hz tick matches.
+    // Burst gate: a 0x1B frame between BAP frames blocks the continuation.
+    if (m_bap_burst_active) {
+        return;
+    }
+    uint8_t data[8] = {0x67, 0x10, 0x41, 0x84, 0x14, 0x00, 0x00, 0x00};
+    m_can3->WriteExtended(0x1B000067, 8, data);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::SendClimaBapBurst(bool enable) {

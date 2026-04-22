@@ -75,3 +75,9 @@ vehicle/OVMS.V3/components/vehicle_vwegolf/docs/vw-bap-protocol.md
 vehicle/OVMS.V3/components/vehicle_vwegolf/docs/refactor-notes.md
 PR-MESSAGE.md
 scripts/
+
+# Tool configs / caches
+.agents/
+.claude/
+skills-lock.json
+__pycache__/

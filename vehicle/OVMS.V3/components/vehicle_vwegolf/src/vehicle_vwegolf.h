@@ -55,6 +55,12 @@
 // Ticker1 (non-blocking) when CommandClimateControl had to wake the bus.
 #define VWEGOLF_CLIMA_SETTLE_MS 1000
 
+// Session length limits after WakeKcanBus. OCU keepalive + NM alive stop when the
+// ring quiesces post-ACK (grace) or if no ACK arrives (hard cap). Without these,
+// we talk alone on a sleeping ring, every TX fails ACK, TEC storms for minutes.
+#define VWEGOLF_OCU_ACK_GRACE_SECS 5
+#define VWEGOLF_OCU_SESSION_CAP_SECS 30
+
 class OvmsVehicleVWeGolf : public OvmsVehicle {
  public:
     OvmsVehicleVWeGolf();
@@ -72,6 +78,7 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     vehicle_command_t CommandWakeup() override;
     vehicle_command_t CommandClimateControl(bool enable) override;
     void SendOcuHeartbeat();
+    void SendNmAlive();
     void WakeKcanBus();
     vehicle_command_t SendClimaBapBurst(bool enable);
 
@@ -85,6 +92,12 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // Initialized to timeout so we treat the bus as offline at cold boot.
     uint8_t m_bus_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
 
+    // Seconds since the last non-zero 0x5A7 from the OEM OCU. While the car is on or
+    // just turned off, the OEM OCU sends non-zero 0x5A7 frames that conflict with our
+    // all-zeros heartbeat (arbitration loss → bus-off). Must not wake while this is < CLIMA_WAKE_SECS.
+    // Initialized to timeout so cold boot treats the OEM OCU as absent.
+    uint8_t m_oem_ocu_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
+
     // OVMS must send the 0x5A7 OCU keepalive while it is an active node.
     // VW OSEK NM requires keepalives at ~200ms intervals — Ticker1 alone (1Hz) is
     // insufficient. We enforce a 180ms minimum interval via a FreeRTOS tick timestamp
@@ -94,6 +107,13 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // to avoid asserting an unexpected node presence when the car is idle.
     bool m_ocu_active = false;
     uint32_t m_last_heartbeat_tick = 0;
+
+    // Session bounds (seconds, incremented in Ticker1 while m_ocu_active).
+    // Without a bounded session, NM alive + heartbeat keep firing after the ring
+    // quiesces; every TX fails ACK, TEC storms for minutes. See cap 20260422-173035.
+    // Session cap ends it if no ACK arrives; grace ends it shortly after an ACK.
+    uint8_t m_ocu_session_secs = 0;
+    uint8_t m_ocu_grace_secs = 255;  // 255 = no ACK seen yet
 
     // Rolling BAP counter included in each command frame. The ECU echoes it (| 0x80) in
     // its ACK so we can match responses to commands. Must never be zero; wraps 0xFF → 0x01.
@@ -124,8 +144,6 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // identified by data[0]. We collect all three before committing to the metric.
     uint8_t m_vin_parts_received = 0;
     char m_vin_buf[18] = {};
-
-    void SendOcuHeartbeat();
 
 #ifdef VWEGOLF_NATIVE_TEST
  public:
