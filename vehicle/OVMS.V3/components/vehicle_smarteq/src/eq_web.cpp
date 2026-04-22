@@ -416,7 +416,7 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
       c.alert(alert_type.c_str(), info.c_str());
 
       // Refresh values from config/metrics to show latest state after command execution
-      calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", calcADCfactor);
+    calcADCfactor = sq->m_enable_calcADCfactor;
       adc_factor  = MyConfig.GetParamValue("system.adc", "factor12v", adc_factor.empty() ? "195.7" : adc_factor);
       if (sq->mt_evc_dcdc && sq->mt_evc_dcdc->GetElemValue(1) > 10.0f) {
         char buf[16];
@@ -450,7 +450,7 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
     }
   } else {
     // read configuration:
-    calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", false);
+    calcADCfactor = sq->m_enable_calcADCfactor;
     adc_factor  = MyConfig.GetParamValue("system.adc", "factor12v", "195.7");
     if (sq->mt_evc_dcdc && sq->mt_evc_dcdc->GetElemValue(1) > 10.0f) {
         char buf[16];
@@ -487,15 +487,15 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
   // ADC settings
   c.fieldset_start("ADC Settings");
   c.input_checkbox("Auto-recalculate ADC factor", "calcADCfactor", calcADCfactor,
-      "<p>Recalculate ADC factor once per HV charge via CAN 12V measurement</p>");
+      "<p>Recalculate ADC factor once per 12V charge by DC/DC with CAN 12V measurement value</p>");
   if (!adc_history.empty()) {
     c.input_text("ADC factor history", "adc_history", adc_history.c_str(), "no history",
       "<p>Last 5 values, most recent last</p>");
   }
-  c.input_slider("ADC factor", "adc_factor", 5, "", -1, atof(adc_factor.c_str()), 195.7, 160, 230, 0.01,
+  c.input_slider("ADC factor", "adc_factor", 5, "", -1, atof(adc_factor.c_str()), 195.7, 160, 230, 0.1,
     "<p>12V ADC calibration factor (default 195.7)</p>");
   c.input_slider("12V measured", "onboard_12v", 3, "V",-1, atof(onboard_12v.c_str()), 12.60, 11.00, 15.00, 0.01,
-    "<p>Measured 12V for calibration (preset from CAN)</p>");
+    "<p>Your measured 12V for calibration calculation</p>");
   c.printf("<input type=\"hidden\" name=\"onboard_12v_submit\" id=\"onboard_12v_submit\" value=\"%s\">\n",
            _attr(onboard_12v.c_str()));
   c.input_button("default", "ADC calculation", "action", "calc");
