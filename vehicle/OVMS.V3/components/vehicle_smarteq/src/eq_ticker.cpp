@@ -44,11 +44,9 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     HandleCharging();
   
   if(IsOnEQ())
-    {
     HandleEnergy();
-    if(StdMetrics.ms_v_env_gear->AsInt(0) != m_gear)
-      StdMetrics.ms_v_env_gear->SetValue(m_gear);
-    }
+    
+  smartCAN2Metrics();
   }
 
 void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker) 
@@ -76,7 +74,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     DoorLockState();
   if(m_enable_door_state && !m_warning_dooropen && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
     DoorOpenState();
-  if(IsOnEQ()) 
+  if(IsOnEQ())
     setTPMSValue();   // update TPMS metrics
 
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)

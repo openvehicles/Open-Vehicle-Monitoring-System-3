@@ -36,7 +36,7 @@ static const char *TAG = "v-smarteq";
 
 // CommandCanVector(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/ CommandWakeup2 = false)
 OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t txid,uint32_t rxid, std::vector<std::string> hexbytes,bool reset,bool wakeup) {
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandCanVector failed / no write access");
     return Fail;
@@ -184,7 +184,7 @@ void OvmsVehicleSmartEQ::xsq_canwrite(int verbosity, OvmsWriter* writer, OvmsCom
   if (!smarteq)
     return;
   
-  if(!smarteq->m_ddt4all || !smarteq->m_enable_write) {
+  if(!smarteq->m_ddt4all || !smarteq->IsCANwrite()) {
     ESP_LOGE(TAG, "DDT4all failed / no Canbus write access or DDT4all not enabled");
     writer->puts("DDT4all failed / no Canbus write access or DDT4all not enabled");
     return;
@@ -574,7 +574,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "obdii_79b",
     "obdii_7e4",
     "obdii_7e4_modify",
-    "basic_tpms"
+    "basic_tpms",
+    "calc.adcfactor.samples"
   };
 
   int removed_count = 0;

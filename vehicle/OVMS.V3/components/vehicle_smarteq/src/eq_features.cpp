@@ -380,6 +380,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
       mt_adc_factor_history->SetElemValues(0, n, hist);
     mt_adc_factor->SetValue(adc_factor_new);
     MyConfig.SetParamValueFloat("system.adc", "factor12v", adc_factor_new);
+    MyConfig.SetParamValueBool("xsq", "calc.adcfactor", false);
     if (writer) writer->printf("New ADC factor stored: %.3f (prev %.3f, history size %u)\n", adc_factor_new, adc_factor_prev, (unsigned)n);
   #else
     ESP_LOGD(TAG, "ADC support not enabled");
@@ -470,7 +471,7 @@ void OvmsVehicleSmartEQ::smartOn()
   // reset idle ticker when vehicle turned on to prevent trigger every 60 sec.
   m_idle_ticker = 15 * 60;
   // canwrite enable write access, only when car is on
-  if(m_enable_write || m_enable_write_caron) 
+  if(IsCANwrite()) 
     {
     smartCANmode(true);
     }
@@ -517,11 +518,11 @@ void OvmsVehicleSmartEQ::smartChargeStart()
   // trigger ADC factor recalculation when HV charging started
   if(m_enable_calcADCfactor && !m_ADCfactor_recalc) 
     {
-    m_ADCfactor_recalc_timer = 4;   // wait at least 4 min. before recalculation
+    m_ADCfactor_recalc_timer = 2;   // wait at least 2 min. before recalculation
     m_ADCfactor_recalc = true;      // recalculate ADC factor when HV charging
     }
   // canwrite enable write access, only when car is on
-  if(m_enable_write || m_enable_write_caron) 
+  if(IsCANwrite()) 
     {
     m_poll_on_charge = true;
     smartCANmode(true);
@@ -553,7 +554,7 @@ void OvmsVehicleSmartEQ::smartChargeStop()
     StdMetrics.ms_v_charge_substate->SetValue("onrequest");
   }
   // stop recalculation when HV charging stopped
-  m_ADCfactor_recalc_timer = 0;
+  m_ADCfactor_recalc_timer = 2;
   m_ADCfactor_recalc = false;
   ESP_LOGD(TAG, "smartChargeStop()");
 }
@@ -563,7 +564,7 @@ void OvmsVehicleSmartEQ::smartChargePrepare()
   if (m_charge_finished) ResetChargingValues();
   if (m_resettrip) ResetTripCounters();
   // canwrite enable write access, only when car is on
-  if(m_enable_write || m_enable_write_caron) 
+  if(IsCANwrite()) 
     {
     m_poll_on_charge = true;
     smartCANmode(true);
@@ -581,7 +582,7 @@ void OvmsVehicleSmartEQ::smartChargeFinish()
 
 void OvmsVehicleSmartEQ::smartCANmode(bool activate)
 {
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     m_can1->Stop();
     vTaskDelay(200 / portTICK_PERIOD_MS);
