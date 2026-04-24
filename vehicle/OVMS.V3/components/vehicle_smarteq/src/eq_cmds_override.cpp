@@ -65,7 +65,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     return Success;
     }
   // force enable write access for sending the command, even when user has not enabled it (can be required for some vehicles to wake up the car)
-  bool force = !m_enable_write && !m_enable_write_caron ? true : false;
+  bool force = !IsCANwrite() ? true : false;
   if(force)
     {
     m_enable_write_caron = true;
@@ -201,7 +201,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandWakeup failed: no write access!");
     return Fail;
@@ -245,7 +245,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandWakeup2 failed: no write access!");
     return Fail;
@@ -289,7 +289,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
 
 // lock: can can1 tx st 745 04 30 01 00 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) {
-  if(!m_enable_write && !m_enable_write_caron) 
+  if(!IsCANwrite()) 
     {
     ESP_LOGE(TAG, "CommandLock failed / no write access");
     return Fail;
@@ -326,7 +326,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
 // unlock: can can1 tx st 745 04 30 01 00 01
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin) {
 
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandUnlock failed / no write access");
     return Fail;
