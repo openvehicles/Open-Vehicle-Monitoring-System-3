@@ -73,6 +73,25 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
     StdMetrics.ms_v_env_charging12v->SetValue(charge_12v);    
     m_ADCfactor_recalc_timer = 2;
     m_ADCfactor_recalc = charge_12v;
+    }  
+  // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
+  if (IsOnHVACEQ() && IsAwakeEQ() && m_enable_write_caron && !m_can_active)
+    {
+    smartCANmode(true);
+    }
+  // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
+  if (IsChargingEQ() && !m_poll_on_charge)
+    {
+    mt_bus_awake->SetValue(true);
+    smartChargeStart();
+    }
+
+  // switch CAN bus to active/listen mode
+  // start polling to get the first data
+  if(can_init)
+    {      
+    can_init = false;
+    CommandWakeup();
     }
   }
 
@@ -102,17 +121,6 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       ESP_LOGI(TAG, "DDT4ALL session timeout reached");
       MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
       }
-    }
-  // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
-  if (IsOnHVACEQ() && IsAwakeEQ() && m_enable_write_caron && !m_can_active)
-    {
-    smartCANmode(true);
-    }
-  // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
-  if (!m_poll_on_charge && IsChargingEQ())
-    {
-    mt_bus_awake->SetValue(true);
-    smartChargeStart();
     }
 
   #ifdef CONFIG_OVMS_COMP_ADC

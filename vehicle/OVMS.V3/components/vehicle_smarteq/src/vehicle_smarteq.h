@@ -224,10 +224,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- Inline state helpers ---
     bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]
     bool IsOffEQ() { return m_poll_state == POLLSTATE_OFF; }
-    bool IsAwakeEQ() { return (mt_bus_awake->AsBool(false) || StdMetrics.ms_v_env_awake->AsBool(false)) == true; }
-    bool IsOnEQ() { return StdMetrics.ms_v_env_on->AsBool(false) == true; }
-    bool IsChargingEQ() { return StdMetrics.ms_v_charge_inprogress->AsBool(false) == true; }
-    bool IsOnHVACEQ() { return StdMetrics.ms_v_env_hvac->AsBool(false) == true; }
+    bool IsAwakeEQ() { return mt_bus_awake->AsBool(false) || StdMetrics.ms_v_env_awake->AsBool(false); }
+    bool IsOnEQ() { return StdMetrics.ms_v_env_on->AsBool(false); }
+    bool IsChargingEQ() { return StdMetrics.ms_v_charge_inprogress->AsBool(false); }
+    bool IsOnHVACEQ() { return StdMetrics.ms_v_env_hvac->AsBool(false); }
     bool IsCANwrite() { return m_enable_write || m_enable_write_caron; }
 
   // =========================================================================
@@ -313,7 +313,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);
 
     // --- Poll reply handlers: OBD ---
-    void PollReply_obd_trip(const char* data, uint16_t reply_len);
     void PollReply_obd_time(const char* data, uint16_t reply_len);
     void PollReply_obd_start_trip(const char* data, uint16_t reply_len);
     void PollReply_obd_start_time(const char* data, uint16_t reply_len);
@@ -501,12 +500,13 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // activated only after reboot
     bool m_check12vadc = true;
 
-    // --- Timer / counter variables ---
-    int m_candata_timer = -1;
+    // --- ADC variables ---
+    bool m_ADCfactor_recalc = false;      // request recalculation of ADC factor
     int m_ADCfactor_recalc_timer = 2;     // countdown timer for ADC factor recalculation
 
     // --- CAN frame intermediate variables (synced to StdMetrics by smartCAN2Metrics in Ticker1) ---
     int can_gear = 0;                     // <0 = reverse, 0 = park/neutral, >0 = drive -- logic by vehicle.cpp events
+    bool can_init = true;                 // initial CAN data received flag, to set default values for some metrics on first run
     bool can_awake = false;
     bool can_locked = false;
     bool can_hvac = false;
@@ -537,8 +537,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
     // --- CAN data state ---
     bool m_candata_poll = false;
-    bool m_charge_finished = true;
-    bool m_ADCfactor_recalc = false;      // request recalculation of ADC factor
+    bool m_charge_finished = true;    
+    int m_candata_timer = -1;    
 
     // --- TPMS internal arrays ---
     bool m_tpms_lowbatt[4] = {};          // 0=ok, 1=low

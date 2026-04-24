@@ -72,13 +72,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       REQ_DLC(7);
       can_awake = (CAN_BYTE(0) > 0xc0);
       can_locked = (CAN_BYTE(6) == 0x96) || (mt_driver_door_locked->AsBool(false) && !DoorOpen());
-      if (can_awake && !mt_bus_awake->AsBool())
-        {
-        ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
-        mt_bus_awake->SetValue(true);
-        m_candata_poll = false;
-        m_candata_timer = -1;
-        }
       int code = CAN_BYTE(0);
       std::string msgtxt = "";
       switch(code) {
@@ -306,5 +299,12 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   StdMetrics.ms_v_bat_soh->SetValue(can_soh);
   StdMetrics.ms_v_bat_health->SetValue(can_bat_health);
   StdMetrics.ms_v_charge_inprogress->SetValue(can_charge_inprogress);
-  StdMetrics.ms_v_env_on->SetValue(can_env_on);
+  StdMetrics.ms_v_env_on->SetValue(can_env_on);  
+  if (can_awake && !mt_bus_awake->AsBool(false))
+    {
+    ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
+    mt_bus_awake->SetValue(true);
+    m_candata_poll = false;
+    m_candata_timer = -1;
+    }
 }
