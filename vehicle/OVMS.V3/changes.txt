@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Autostart: added init option "minimal" to boot with just basic networking as configured; this is
+    now the first fallback in case of repeated early crashes, aiming at keeping the module reachable
+    in case of a bug in a higher level module / configuration. Auto init will be disabled only if
+    early crashes continue in minimal mode.
+  Config extension:
+    [auto] init                           -- "no" / "yes" / "minimal" (default "yes")
 - Server V3: the MQTT client ID to use can now be configured. While not normally necessary, changing the
     client ID may be necessary to discard an existing MQTT server session when changing the username.
   New configs:

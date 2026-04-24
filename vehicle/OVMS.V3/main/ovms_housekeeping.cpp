@@ -38,6 +38,7 @@ static const char *TAG = "housekeeping";
 #include <esp_ota_ops.h>
 #include <esp_heap_caps.h>
 #include "ovms.h"
+#include "ovms_utils.h"
 #include "ovms_housekeeping.h"
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
@@ -66,7 +67,8 @@ static const char *TAG = "housekeeping";
                                                 // 120 seconds to take modem model auto detection into account
                                                 // (late driver installation esp. after unscheduled reboot)
                                                 // (Note: resolution = 10 seconds)
-#define AUTO_INIT_INHIBIT_CRASHCOUNT    5
+#define AUTO_INIT_MINIMAL_CRASHCOUNT    5       // force minimal init mode after this many early crashes
+#define AUTO_INIT_DISABLE_CRASHCOUNT    10      // disable component init after this many early crashes
 
 static int tick = 0;
 #ifdef CONFIG_OVMS_COMP_ADC
@@ -183,6 +185,34 @@ Housekeeping::~Housekeeping()
   {
   }
 
+initlevel_t Housekeeping::GetInitLevelConfig()
+  {
+  initlevel_t level;
+  std::string auto_init = MyConfig.GetParamValue("auto", "init", "yes");
+  if (auto_init == "minimal")
+    {
+    level = INIT_Minimal;
+    }
+  else // bool (yes/no):
+    {
+    level = strtobool(auto_init) ? INIT_Full : INIT_Off;
+    }
+  return level;
+  }
+
+static const char* initlevel_names[] =
+  {
+  "Unknown",
+  "Off",
+  "Minimal",
+  "Full",
+  };
+
+const char* Housekeeping::GetInitLevelName()
+  {
+  return initlevel_names[m_initlevel];
+  }
+
 void Housekeeping::Init(std::string event, void* data)
   {
   ESP_LOGI(TAG, "Executing on CPU core %d",xPortGetCoreID());
@@ -191,6 +221,9 @@ void Housekeeping::Init(std::string event, void* data)
   tick = 0;
   m_timer1 = xTimerCreate("Housekeep ticker",1000 / portTICK_PERIOD_MS,pdTRUE,this,HousekeepingTicker1);
   xTimerStart(m_timer1, 0);
+
+  // Read init level:
+  m_initlevel = GetInitLevelConfig();
 
   ESP_LOGI(TAG, "Starting PERIPHERALS...");
   MyPeripherals = new Peripherals();
@@ -204,68 +237,109 @@ void Housekeeping::Init(std::string event, void* data)
 #endif // #ifdef CONFIG_OVMS_COMP_EXT12V
 
   // component auto init:
-  if (!MyConfig.GetParamValueBool("auto", "init", true))
+  if (m_initlevel == INIT_Off)
     {
     ESP_LOGW(TAG, "Auto init disabled (enable: config set auto init yes)");
     }
-  else if (MyBoot.GetEarlyCrashCount() >= AUTO_INIT_INHIBIT_CRASHCOUNT)
+  else if (MyBoot.GetEarlyCrashCount() >= AUTO_INIT_DISABLE_CRASHCOUNT)
     {
-    ESP_LOGE(TAG, "Auto init inhibited: too many early crashes (%d)", MyBoot.GetEarlyCrashCount());
+    ESP_LOGE(TAG, "Auto init disabled: too many early crashes (%d)", MyBoot.GetEarlyCrashCount());
+    m_initlevel = INIT_Off;
     }
-  else
+  else if (m_initlevel == INIT_Full && MyBoot.GetEarlyCrashCount() >= AUTO_INIT_MINIMAL_CRASHCOUNT)
     {
+    ESP_LOGE(TAG, "Auto init forced minimal due to %d early crashes", MyBoot.GetEarlyCrashCount());
+    m_initlevel = INIT_Minimal;
+    }
+
 #ifdef CONFIG_OVMS_COMP_MAX7317
+  if (m_initlevel == INIT_Full)
+    {
+    // Note: this only inits the optional port monitoring, the MAX7317 is available without
     ESP_LOGI(TAG, "Auto init max7317 (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyPeripherals->m_max7317->AutoInit();
+    }
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
 #ifdef CONFIG_OVMS_COMP_EXT12V
+  if (m_initlevel == INIT_Full)
+    {
     ESP_LOGI(TAG, "Auto init ext12v (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyPeripherals->m_ext12v->AutoInit();
+    }
 #endif // CONFIG_OVMS_COMP_EXT12V
 
-  ESP_LOGI(TAG, "Auto init dbc (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
-  MyDBC.AutoInit();
+  if (m_initlevel == INIT_Full)
+    {
+    ESP_LOGI(TAG, "Auto init dbc (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
+    MyDBC.AutoInit();
+    }
 
 #ifdef CONFIG_OVMS_COMP_WIFI
+  if (m_initlevel >= INIT_Minimal)
+    {
     ESP_LOGI(TAG, "Auto init wifi (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyPeripherals->m_esp32wifi->AutoInit();
+    }
 #endif // CONFIG_OVMS_COMP_WIFI
 
 #ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (m_initlevel >= INIT_Minimal)
+    {
     ESP_LOGI(TAG, "Auto init modem (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyPeripherals->m_cellular_modem->AutoInit();
+    }
 #endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
 
 #ifdef CONFIG_OVMS_COMP_POLLER
+  if (m_initlevel == INIT_Full)
+    {
     ESP_LOGI(TAG, "Auto init Pollers (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyPollers.AutoInit();
+    }
 #endif
 
+  if (m_initlevel == INIT_Full)
+    {
     ESP_LOGI(TAG, "Auto init vehicle (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyVehicleFactory.AutoInit();
+    }
 
 #ifdef CONFIG_OVMS_COMP_OBD2ECU
+  if (m_initlevel == INIT_Full)
+    {
     ESP_LOGI(TAG, "Auto init obd2ecu (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     obd2ecuInit.AutoInit();
+    }
 #endif // CONFIG_OVMS_COMP_OBD2ECU
 
 #ifdef CONFIG_OVMS_COMP_SERVER
 #ifdef CONFIG_OVMS_COMP_SERVER_V2
+  if (m_initlevel == INIT_Full)
+    {
     ESP_LOGI(TAG, "Auto init server v2 (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyOvmsServerV2Init.AutoInit();
+    }
 #endif // CONFIG_OVMS_COMP_SERVER_V2
 #ifdef CONFIG_OVMS_COMP_SERVER_V3
+  if (m_initlevel == INIT_Full)
+    {
     ESP_LOGI(TAG, "Auto init server v3 (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyOvmsServerV3Init.AutoInit();
+    }
 #endif // CONFIG_OVMS_COMP_SERVER_V3
 #endif // CONFIG_OVMS_COMP_SERVER
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (m_initlevel == INIT_Full)
+    {
     ESP_LOGI(TAG, "Auto init javascript (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyDuktape.AutoInitDuktape();
+    }
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
+  if (m_initlevel != INIT_Off)
+    {
     ESP_LOGI(TAG, "Auto init done (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     }
 

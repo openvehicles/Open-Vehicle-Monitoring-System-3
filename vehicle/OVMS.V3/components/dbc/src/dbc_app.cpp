@@ -320,7 +320,7 @@ void dbc_autoload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 
 void dbc_sdmounted(std::string event, void* data)
   {
-  if (MyConfig.GetParamValueBool("auto", "dbc", false))
+  if (MyDBC.m_autoload)
     MyDBC.LoadAutoExtras(true);
   }
 
@@ -955,5 +955,12 @@ dbcfile* dbc::SelectedFile()
 void dbc::AutoInit()
   {
   if (MyConfig.GetParamValueBool("auto", "dbc", false))
+    {
     LoadDirectory("/store/dbc", true);
+    m_autoload = true;
+    }
+  else
+    {
+    m_autoload = false;
+    }
   }
