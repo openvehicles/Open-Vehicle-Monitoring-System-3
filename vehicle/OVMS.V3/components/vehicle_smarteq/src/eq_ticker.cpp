@@ -85,14 +85,6 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
     mt_bus_awake->SetValue(true);
     smartChargeStart();
     }
-
-  // switch CAN bus to active/listen mode
-  // start polling to get the first data
-  if(can_init)
-    {      
-    can_init = false;
-    CommandWakeup();
-    }
   }
 
 void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {  
@@ -109,6 +101,16 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     if(m_reboot_time > 0) 
       Handlev2Server();
   #endif
+
+  // start polling to get the first data
+  if(can_init)
+    {      
+    can_init = false;
+    mt_bus_awake->SetValue(true);
+    m_candata_poll = false;
+    m_candata_timer = -1;
+    smartCANmode(true);
+    }
 
   // DDT4ALL session timeout on 5 minutes
   if (m_ddt4all) 
