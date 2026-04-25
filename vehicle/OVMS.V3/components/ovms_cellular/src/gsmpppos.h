@@ -69,10 +69,10 @@ class GsmPPPOS : public InternalRamAllocated
     int          m_channel;
     ppp_pcb*     m_ppp;
     struct netif m_ppp_netif;
-    bool         m_connected;
+    volatile bool m_connected;   // volatile: written by LwIP tiT task (core 1), read by modem task (core 0)
     int          m_connectcount;
     int          m_lasterrcode;
-    bool         m_shutdown;  // Flag to prevent data processing during shutdown
+    volatile bool m_shutdown;    // volatile: same cross-core synchronization requirement
   };
 
 #endif //#ifndef __GSM_PPPOS__

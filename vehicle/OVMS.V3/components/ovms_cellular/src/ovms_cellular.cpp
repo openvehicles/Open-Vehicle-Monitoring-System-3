@@ -1191,9 +1191,24 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     int creg;
     network_registration_t nreg = Unknown;
     if (qp != string::npos)
-      creg = atoi(line.substr(qp+1,1).c_str());
+      {
+      // Distinguish query response (+CEREG: <n>,<stat>,...) from
+      // URC (+CEREG: <stat>,<lac>,...) by checking the second field:
+      // In query responses, <stat> is a single digit 0-8.
+      // In URCs with location info, <lac> is a hex value (e.g. "3E9").
+      int first = atoi(line.substr(8, qp-8).c_str());
+      std::string second_str = line.substr(qp+1);
+      size_t qp2 = second_str.find(',');
+      if (qp2 != string::npos) second_str = second_str.substr(0, qp2);
+      int second = atoi(second_str.c_str());
+      if (first >= 0 && first <= 2 && second >= 0 && second <= 8
+          && second_str.length() <= 1)
+        creg = second;  // Query response: first field is <n>, second is <stat>
+      else
+        creg = first;   // URC: first field is <stat>
+      }
     else
-      creg = atoi(line.substr(7,1).c_str());
+      creg = atoi(line.substr(8,1).c_str());
     switch (creg)
       {
       case 0: case 4: nreg = NotRegistered; break;
