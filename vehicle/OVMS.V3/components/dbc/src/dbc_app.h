@@ -77,6 +77,7 @@ class dbc
     OvmsMutex m_mutex;
     dbcLoadedFiles_t m_dbclist;
     dbcfile* m_selected;
+    bool m_autoload = false;
   };
 
 extern dbc MyDBC;

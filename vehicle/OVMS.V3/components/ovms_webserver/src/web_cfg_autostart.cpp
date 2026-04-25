@@ -33,7 +33,8 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 {
   auto lock = MyConfig.Lock();
   std::string error, warn;
-  bool init, ext12v, modem, server_v2, server_v3;
+  std::string init;
+  bool ext12v, modem, server_v2, server_v3;
   #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     bool scripting;
   #endif
@@ -46,7 +47,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 
   if (c.method == "POST") {
     // process form submission:
-    init = (c.getvar("init") == "yes");
+    init = c.getvar("init");
     dbc = (c.getvar("dbc") == "yes");
     ext12v = (c.getvar("ext12v") == "yes");
     #ifdef CONFIG_OVMS_COMP_MAX7317
@@ -96,7 +97,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // success:
-      MyConfig.SetParamValueBool("auto", "init", init);
+      MyConfig.SetParamValue("auto", "init", init);
       MyConfig.SetParamValueBool("auto", "dbc", dbc);
       MyConfig.SetParamValueBool("auto", "ext12v", ext12v);
       #ifdef CONFIG_OVMS_COMP_MAX7317
@@ -136,7 +137,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    init = MyConfig.GetParamValueBool("auto", "init", true);
+    init = MyConfig.GetParamValue("auto", "init", "yes");
     dbc = MyConfig.GetParamValueBool("auto", "dbc", false);
     ext12v = MyConfig.GetParamValueBool("auto", "ext12v", false);
     #ifdef CONFIG_OVMS_COMP_MAX7317
@@ -164,27 +165,16 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Auto start configuration");
   c.form_start(p.uri);
 
-  c.input_checkbox("Enable auto start", "init", init,
-    "<p>Note: if a crash occurs within 10 seconds after powering the module, autostart will be temporarily"
-    " disabled. You may need to use the USB shell to access the module and fix the config.</p>");
+  c.input_select_start("Auto init level", "init");
+  c.input_select_option("Full (as configured below)", "yes", (init == "yes"));
+  c.input_select_option("Minimal (just basic networking as configured)", "minimal", (init == "minimal"));
+  c.input_select_option("Disabled (only USB access)", "no", (init == "no"));
+  c.input_select_end(
+    "<p>Note: on successive early crashes after powering on, the level will be reduced to 'minimal',"
+    " then 'disabled'. You may need to use the USB shell to access the module and fix the config.</p>");
 
-  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    c.input_checkbox("Enable Javascript engine (Duktape)", "scripting", scripting,
-      "<p>Enable execution of Javascript on the module (plugins, commands, event handlers).</p>");
-  #endif
-
-  c.input_checkbox("Autoload DBC files", "dbc", dbc,
-    "<p>Enable to autoload DBC files (for reverse engineering).</p>");
-
-  #ifdef CONFIG_OVMS_COMP_MAX7317
-    c.input_checkbox("Start EGPIO monitor", "egpio", egpio,
-      "<p>Enable to monitor EGPIO input ports and generate metrics and events from changes.</p>");
-    c.input_text("EGPIO ports", "egpio_ports", egpio_ports.c_str(), "Ports to monitor",
-      "<p>Enter list of port numbers (0…9) to monitor, separated by spaces.</p>");
-  #endif //CONFIG_OVMS_COMP_MAX7317
-
-  c.input_checkbox("Power on external 12V", "ext12v", ext12v,
-    "<p>Enable to provide 12V to external devices connected to the module (i.e. ECU displays).</p>");
+  // Networking:
+  c.fieldset_start("Networking");
 
   c.input_select_start("Wifi mode", "wifi_mode");
   c.input_select_option("Access point", "ap", (wifi_mode == "ap"));
@@ -208,7 +198,13 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     c.input_select_option(kv.first.c_str(), kv.first.c_str(), (kv.first == wifi_ssid_client));
   c.input_select_end();
 
+  c.print("<hr>");
   c.input_checkbox("Start modem", "modem", modem);
+
+  c.fieldset_end();
+
+  // Vehicle:
+  c.fieldset_start("Vehicle");
 
   c.input_select_start("Vehicle type", "vehicle_type");
   c.input_select_option("&mdash;", "", vehicle_type.empty());
@@ -220,6 +216,38 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     c.input_select_option(entry.first, entry.second, (vehicle_type == entry.second));
   c.input_select_end();
 
+  c.input_checkbox("Autoload DBC files", "dbc", dbc,
+    "<p>Enable to autoload DBC files (for reverse engineering).</p>");
+
+  c.fieldset_end();
+
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  // Scripting:
+  c.fieldset_start("Scripting");
+    c.input_checkbox("Enable Javascript engine (Duktape)", "scripting", scripting,
+      "<p>Enable execution of Javascript on the module (plugins, commands, event handlers).</p>");
+  c.fieldset_end();
+  #endif
+
+  // Connections:
+  c.fieldset_start("Connections");
+  c.input_checkbox("Start server V2", "server_v2", server_v2);
+  c.input_checkbox("Start server V3", "server_v3", server_v3);
+  c.fieldset_end();
+
+  // Peripherals:
+  c.fieldset_start("Peripherals");
+
+  #ifdef CONFIG_OVMS_COMP_MAX7317
+    c.input_checkbox("Start EGPIO monitor", "egpio", egpio,
+      "<p>Enable to monitor EGPIO input ports and generate metrics and events from changes.</p>");
+    c.input_text("EGPIO ports", "egpio_ports", egpio_ports.c_str(), "Ports to monitor",
+      "<p>Enter list of port numbers (0…9) to monitor, separated by spaces.</p>");
+  #endif //CONFIG_OVMS_COMP_MAX7317
+
+  c.input_checkbox("Power on external 12V", "ext12v", ext12v,
+    "<p>Enable to provide 12V to external devices connected to the module (i.e. ECU displays).</p>");
+
   c.input_select_start("Start OBD2ECU", "obd2ecu");
   c.input_select_option("&mdash;", "", obd2ecu.empty());
   c.input_select_option("can1", "can1", obd2ecu == "can1");
@@ -229,10 +257,10 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.input_select_end(
     "<p>OBD2ECU translates OVMS to OBD2 metrics, i.e. to drive standard ECU displays</p>");
 
-  c.input_checkbox("Start server V2", "server_v2", server_v2);
-  c.input_checkbox("Start server V3", "server_v3", server_v3);
+  c.fieldset_end();
 
   c.print(
+    "<hr>"
     "<div class=\"form-group\">"
       "<div class=\"col-sm-offset-3 col-sm-9\">"
         "<button type=\"submit\" class=\"btn btn-default\" name=\"action\" value=\"save\">Save</button> "

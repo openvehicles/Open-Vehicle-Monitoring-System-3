@@ -53,6 +53,7 @@ static const char *TAG = "boot";
 
 #include "ovms.h"
 #include "ovms_boot.h"
+#include "ovms_housekeeping.h"
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
@@ -165,6 +166,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   writer->printf("  Detected boot reason: %s (%d/%d)\n",MyBoot.GetBootReasonName(),boot_data.bootreason_cpu0,boot_data.bootreason_cpu1);
   writer->printf("  Reset reason: %s (%d)\n",MyBoot.GetResetReasonName(),MyBoot.GetResetReason());
   writer->printf("  Crash counters: %d total, %d early\n",MyBoot.GetCrashCount(),MyBoot.GetEarlyCrashCount());
+  writer->printf("  Auto init level: %s\n",MyHousekeeping->GetInitLevelName());
 
   if (MyBoot.m_shutdown_timer>0)
     {

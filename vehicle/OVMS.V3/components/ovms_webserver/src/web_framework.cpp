@@ -27,6 +27,7 @@
 */
 
 #include "ovms_webserver.h"
+#include "ovms_housekeeping.h"
 #include "buffered_shell.h"
 
 /**
@@ -492,6 +493,7 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
 
   if (vehicle != "") {
     std::string vehiclename = MyVehicleFactory.ActiveVehicleShortName();
+    if (vehiclename.empty()) vehiclename = "Vehicle";
     menu +=
       "<li class=\"dropdown\" id=\"menu-vehicle\">"
         "<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">"
@@ -572,12 +574,13 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
     , tools.c_str());
 
   if (vehicle != "") {
-    const char* vehiclename = MyVehicleFactory.ActiveVehicleName();
+    std::string vehiclename = MyVehicleFactory.ActiveVehicleName();
+    if (vehiclename.empty()) vehiclename = "Vehicle";
     mg_printf_http_chunk(c.nc,
       "<fieldset class=\"menu\" id=\"fieldset-menu-vehicle\"><legend>%s</legend>"
       "<ul class=\"list-inline\">%s</ul>"
       "</fieldset>"
-      , vehiclename, vehicle.c_str());
+      , vehiclename.c_str(), vehicle.c_str());
   }
 
   c.printf(
@@ -589,8 +592,8 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
   c.panel_end();
 
   // check auto init, show warning if disabled:
-  if (!MyConfig.GetParamValueBool("auto", "init", true)) {
-    c.alert("warning", "<p><strong>Warning:</strong> auto start disabled. Check auto start configuration.</p>");
+  if (MyHousekeeping->GetInitLevel() != INIT_Full) {
+    c.alert("warning", "<p><strong>Warning:</strong> auto start reduced or disabled. Check auto start configuration.</p>");
   }
 }
 

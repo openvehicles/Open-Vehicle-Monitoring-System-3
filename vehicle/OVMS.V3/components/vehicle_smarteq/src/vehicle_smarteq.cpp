@@ -54,32 +54,6 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ESP_LOGI(TAG, "Start smart EQ vehicle module");
 
-  m_12v_ticker = 0;
-  m_ddt4all = false;
-  m_ddt4all_ticker = 0;
-  m_ddt4all_exec = 0;
-  m_warning_unlocked = false;
-  m_warning_dooropen = false;
-  m_modem_restart = false;
-  m_modem_ticker = 0;
-  m_ADCfactor_recalc = false;
-  m_ADCfactor_recalc_timer = 0;
-  m_adc_samples = 5;
-  m_gear = 0;
-
-  m_enable_write = false;
-  m_enable_write_caron = false;
-  m_can_active = false;
-  m_candata_poll = false;
-  m_candata_timer = -1;
-
-  m_charge_finished = true;
-  m_notifySOClimit = false;
-  m_led_state = 4;
-  m_cfg_cell_interval_drv = 60;
-  m_cfg_cell_interval_chg = 60;
-  m_poll_on_charge = false;
-
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);               // 96 cells, 1 series string
   BmsSetCellArrangementTemperature(27, 1);           // 27 temp sensors, 1 series string
@@ -277,10 +251,10 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   bool obdii_79b          = true;
   bool obdii_7e4_dcdc     = true;
   
-  if (map) 
+  if (map)
     {
     m_enable_write         = map->GetValueBool("canwrite", false);
-    m_enable_write_caron   = map->GetValueBool("canwrite.caron", false);
+    m_enable_write_caron   = map->GetValueBool("canwrite.caron", true);
     m_enable_LED_state     = map->GetValueBool("led", false);
     m_bcvalue              = map->GetValueBool("bcvalue", false);
     m_enable_lock_state    = map->GetValueBool("unlock.warning", true);
