@@ -72,13 +72,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       REQ_DLC(7);
       can_awake = (CAN_BYTE(0) > 0xc0);
       can_locked = (CAN_BYTE(6) == 0x96) || (mt_driver_door_locked->AsBool(false) && !DoorOpen());
-      if (can_awake && !mt_bus_awake->AsBool())
-        {
-        ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
-        mt_bus_awake->SetValue(true);
-        m_candata_poll = false;
-        m_candata_timer = -1;
-        }
       int code = CAN_BYTE(0);
       std::string msgtxt = "";
       switch(code) {
@@ -279,32 +272,53 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 // Sync CAN datapoints to OVMS metrics, called by Ticker1, because CAN refresh rate is too high
 void OvmsVehicleSmartEQ::smartCAN2Metrics()
 {  
-  StdMetrics.ms_v_env_gear->SetValue(can_gear);
-  StdMetrics.ms_v_env_locked->SetValue(can_locked);
+  StdMetrics.ms_v_env_on->SetValue(can_env_on);
   StdMetrics.ms_v_env_awake->SetValue(can_awake);
   StdMetrics.ms_v_env_hvac->SetValue(can_hvac);
-  StdMetrics.ms_v_env_cabintemp->SetValue(can_cabintemp);
-  StdMetrics.ms_v_bat_temp->SetValue(can_bat_temp);
-  StdMetrics.ms_v_bat_voltage->SetValue(can_bat_voltage);
-  StdMetrics.ms_v_charge_climit->SetValue(can_charge_climit);
+
   StdMetrics.ms_v_env_handbrake->SetValue(can_handbrake);
-  StdMetrics.ms_v_pos_speed->SetValue(can_speed);
-  StdMetrics.ms_v_pos_odometer->SetValue(can_odometer);
-  StdMetrics.ms_v_env_headlights->SetValue(can_headlights);
+  StdMetrics.ms_v_env_locked->SetValue(can_locked);
+
   StdMetrics.ms_v_door_fl->SetValue(can_door_fl);
   StdMetrics.ms_v_door_fr->SetValue(can_door_fr);
   StdMetrics.ms_v_door_rl->SetValue(can_door_rl);
   StdMetrics.ms_v_door_rr->SetValue(can_door_rr);
   StdMetrics.ms_v_door_trunk->SetValue(can_door_trunk);
-  StdMetrics.ms_v_bat_consumption->SetValue(can_bat_consumption);
-  StdMetrics.ms_v_gen_kwh_grid_total->SetValue(can_kwh_grid_total);
-  StdMetrics.ms_v_bat_soc->SetValue(can_soc);
   StdMetrics.ms_v_door_chargeport->SetValue(can_chargeport);
-  StdMetrics.ms_v_bat_range_est->SetValue(can_range_est);
-  StdMetrics.ms_v_bat_range_full->SetValue(can_range_full);
-  StdMetrics.ms_v_bat_range_ideal->SetValue(can_range_ideal);
-  StdMetrics.ms_v_bat_soh->SetValue(can_soh);
-  StdMetrics.ms_v_bat_health->SetValue(can_bat_health);
+
+  StdMetrics.ms_v_bat_temp->SetValue(can_bat_temp);
+  StdMetrics.ms_v_bat_voltage->SetValue(can_bat_voltage);
+
+  StdMetrics.ms_v_charge_climit->SetValue(can_charge_climit);
   StdMetrics.ms_v_charge_inprogress->SetValue(can_charge_inprogress);
-  StdMetrics.ms_v_env_on->SetValue(can_env_on);
+
+  StdMetrics.ms_v_gen_kwh_grid_total->SetValue(can_kwh_grid_total);
+
+  if(can_hvac || can_env_on)
+    StdMetrics.ms_v_env_cabintemp->SetValue(can_cabintemp);
+  if (mt_bus_awake->AsBool(false))
+    {    
+    StdMetrics.ms_v_env_headlights->SetValue(can_headlights);
+    StdMetrics.ms_v_env_gear->SetValue(can_gear);
+
+    StdMetrics.ms_v_bat_consumption->SetValue(can_bat_consumption);
+    StdMetrics.ms_v_bat_soc->SetValue(can_soc);
+    StdMetrics.ms_v_bat_range_est->SetValue(can_range_est);
+    StdMetrics.ms_v_bat_range_full->SetValue(can_range_full);
+    StdMetrics.ms_v_bat_range_ideal->SetValue(can_range_ideal);
+    StdMetrics.ms_v_bat_soh->SetValue(can_soh);
+    StdMetrics.ms_v_bat_health->SetValue(can_bat_health);
+    }
+  if(can_env_on)
+    {
+    StdMetrics.ms_v_pos_speed->SetValue(can_speed);
+    StdMetrics.ms_v_pos_odometer->SetValue(can_odometer);
+    }
+  if (can_awake && !mt_bus_awake->AsBool(false))
+    {
+    ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
+    mt_bus_awake->SetValue(true);
+    m_candata_poll = false;
+    m_candata_timer = -1;
+    }
 }
