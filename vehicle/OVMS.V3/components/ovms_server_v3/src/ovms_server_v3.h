@@ -114,6 +114,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     int m_max_per_call_modified;
     bool m_updatetime_priority;
     bool m_legacy_event_topic;
+    bool m_retain_depth_limit;
     bool m_updatetime_immediately;
     std::atomic<bool> m_have_immediately;
     bool m_connection_available;
