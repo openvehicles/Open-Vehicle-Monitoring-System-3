@@ -237,6 +237,7 @@ int CalcRemainingChargeMins(float chargewatts, float availwatts, bool adjustTemp
  * Constructor for Ioniq 5 EV
  */
 OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
+  : m_crit_check_avg(1100, 3) // So it doesn't spring up to block if the voltage is 15 when booting.
 {
   XARM("OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv");
 
@@ -678,7 +679,6 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
     ESP_LOGI(TAG, "CAR IS ON");
     ESP_LOGD(TAG, "PollState->Running (on)");
     PollState_Running();
-    StdMetrics.ms_v_env_charging12v->SetValue( true );
     kia_ready_for_chargepollstate = true;
 
     kia_park_trip_counter.Reset(
@@ -705,7 +705,6 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
     kia_secs_with_no_client = 0;
     StdMetrics.ms_v_pos_speed->SetValue( 0 );
     StdMetrics.ms_v_pos_trip->SetValue( kia_park_trip_counter.GetDistance() );
-    StdMetrics.ms_v_env_charging12v->SetValue( false );
     kia_ready_for_chargepollstate = true;
     iq_range_calc->tripEnded(kia_park_trip_counter.GetDistance(), kia_park_trip_counter.GetEnergyUsed());
     SaveStatus();
@@ -1015,22 +1014,24 @@ void OvmsHyundaiIoniqEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_
 #ifdef OVMS_DEBUG_BATTERYMON
   ESP_LOGV(TAG, "Aux Battery: %s", monitor.to_string().c_str());
 #endif
+  bool new_is_charging = false;
   switch (new_state) {
     case OvmsBatteryState::Charging:
     case OvmsBatteryState::ChargingDip:
     case OvmsBatteryState::ChargingBlip:
-      Atomic_Swap(m_aux_is_charging, true);
+      new_is_charging = true;
       Atomic_Swap(m_aux_is_low, false);
       break;
     case OvmsBatteryState::Low:
-      Atomic_Swap(m_aux_is_charging, false);
       Atomic_Swap(m_aux_is_low, true);
       break;
     default:
-      Atomic_Swap(m_aux_is_charging, false);
       Atomic_Swap(m_aux_is_low, false);
       break;
   }
+  Atomic_Swap(m_aux_is_charging, new_is_charging);
+  StdMetrics.ms_v_env_charging12v->SetValue(new_is_charging);
+
   switch (new_state) {
     case OvmsBatteryState::Unknown:
       break;
@@ -1042,19 +1043,35 @@ void OvmsHyundaiIoniqEv::NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_
       ESP_LOGD(TAG, "Aux Battery state: Charging %g" , monitor.average_lastf());
       break;
     case OvmsBatteryState::ChargingDip:
-      ESP_LOGD(TAG, "Aux Battery state: Charging %g Dip %g",
-          monitor.average_lastf(), monitor.diff_lastf());
-      if ( IsPollState_Off()) {
-        ESP_LOGD(TAG, "PollState->Ping for 180 (Charge Dip)");
-        PollState_Ping(180);
+
+      if (m_crit_check_avg.get() > AUX_CRIT_THRESH) {
+        // Detected continuous charging - disables the poll on Dip.
+        ESP_LOGW(TAG, "Aux Battery state: Charging %g Dip %g - Ignored (Crit %g)!",
+            monitor.average_lastf(), monitor.diff_lastf(), m_crit_check_avg.get()/100.0 );
+      }
+      else {
+
+        ESP_LOGD(TAG, "Aux Battery state: Charging %g Dip %g",
+            monitor.average_lastf(), monitor.diff_lastf());
+        if ( IsPollState_Off()) {
+          ESP_LOGD(TAG, "PollState->Ping for 180 (Charge Dip)");
+          PollState_Ping(180);
+        }
       }
       break;
     case OvmsBatteryState::ChargingBlip:
-      ESP_LOGD(TAG, "Aux Battery state: Charging %g Blip %g",
-          monitor.average_lastf(), monitor.diff_lastf());
-      if ( IsPollState_Off()) {
-        ESP_LOGD(TAG, "PollState->Ping for 180 (Charge Blip)");
-        PollState_Ping(180);
+      if (m_crit_check_avg.get() > AUX_CRIT_THRESH) {
+        // Detected continuous charging - disables the poll on Charging Blip.
+        ESP_LOGW(TAG, "Aux Battery state: Charging %g Blip %g - Ignored (Crit %g)!",
+            monitor.average_lastf(), monitor.diff_lastf(), m_crit_check_avg.get()/100.0 );
+      }
+      else {
+        ESP_LOGD(TAG, "Aux Battery state: Charging %g Blip %g",
+            monitor.average_lastf(), monitor.diff_lastf());
+        if ( IsPollState_Off()) {
+          ESP_LOGD(TAG, "PollState->Ping for 180 (Charge Blip)");
+          PollState_Ping(180);
+        }
       }
       break;
     case OvmsBatteryState::Blip: {
@@ -1105,6 +1122,8 @@ void OvmsHyundaiIoniqEv::BatteryStateStillCharging()
  */
 void OvmsHyundaiIoniqEv::Ticker10(uint32_t ticker)
 {
+  m_crit_check_avg.add(int(StdMetrics.ms_v_bat_12v_voltage->AsFloat()*100));
+
   if (m_vin[0] == 0 && IsPollState_Running() && (m_vin_retry < 10)) {
     ESP_LOGI(TAG, "Checking for VIN.");
     if (PollRequestVIN()) {
@@ -1235,7 +1254,6 @@ void OvmsHyundaiIoniqEv::HandleCharging()
     StdMetrics.ms_v_charge_kwh->SetValue( 0, kWh );  // kWh charged
     kia_cum_charge_start = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh); // Battery charge base point
     StdMetrics.ms_v_charge_inprogress->SetValue( true );
-    StdMetrics.ms_v_env_charging12v->SetValue( true);
 
     BmsResetCellStats();
 
@@ -1365,7 +1383,6 @@ void OvmsHyundaiIoniqEv::HandleChargeStop()
 
   kia_cum_charge_start = 0;
   StdMetrics.ms_v_charge_inprogress->SetValue( false );
-  StdMetrics.ms_v_env_charging12v->SetValue( false );
   StdMetrics.ms_v_charge_pilot->SetValue(false);
   kn_charge_bits.ChargingCCS = false;
   kn_charge_bits.ChargingType2 = false;
