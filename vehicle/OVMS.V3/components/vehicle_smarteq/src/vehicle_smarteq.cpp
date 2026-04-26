@@ -161,6 +161,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
   RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
 
+  // register config container for smart EQ module, with callback to ConfigChanged() on changes
+  MyConfig.RegisterParam("xsq", "smartEQ", true, true); 
+  ConfigChanged(NULL);
+
   // init commands:
   cmd_xsq = MyCommandApp.RegisterCommand("xsq","smartEQ 453 Gen.4");
   cmd_xsq->RegisterCommand("mtdata", "Maintenance data", xsq_maintenance);
@@ -183,14 +187,11 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_show->RegisterCommand("counter", "Show vehicle trip counter", xsq_trip_counters);
   cmd_show->RegisterCommand("total", "Show vehicle trip total", xsq_trip_total);
 
-  MyConfig.RegisterParam("xsq", "smartEQ", true, true);
-
-  ConfigChanged(NULL);
   StdMetrics.ms_v_gen_current->SetValue(2);                    // activate gen metrics to app transfer
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);      // set 12V alert to false
   StdMetrics.ms_v_env_charging12v->SetValue(false);            // set 12V charging state to false
   StdMetrics.ms_v_env_aux12v->SetValue(false);
-  StdMetrics.ms_v_env_hvac->SetValue(false);
+  StdMetrics.ms_v_env_hvac->SetValue(false);  
 
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f)           // reset at boot
     {
@@ -198,11 +199,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     ResetTripCounters();
     }
 
-  if (m_enable_write)
-    PollSetState(POLLSTATE_AWAKE);                                  // start polling to get the first data
-
-  if (m_cfg_preset_version != PRESET_VERSION)                    // preset version changed
-    CommandPreset(0, NULL);                                      // set smart EQ config preset
+  if (m_cfg_preset_version != PRESET_VERSION)                  // preset version changed
+    CommandPreset(0, NULL);                                    // set smart EQ config preset  
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
