@@ -86,9 +86,11 @@ extern void ovms_partition_table_free(ovms_esp_partition_t* table);
 extern ovms_flashpartition_t ovms_partition_table_get_type(void);
 extern std::string ovms_partition_table_get_type_string(ovms_flashpartition_t type);
 extern bool ovms_partition_table_has_factory(void);
+extern bool ovms_partition_table_isuptodate(void);
 
 extern bool ovms_partition_table_list(OvmsWriter* writer);
 
+extern bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer);
 extern bool ovms_partition_table_upgrade_store(OvmsWriter* writer);
 extern bool ovms_partition_table_downgrade_store(OvmsWriter* writer);
 extern bool ovms_partition_table_mount_store2(OvmsWriter* writer);
@@ -96,8 +98,11 @@ extern bool ovms_partition_table_unmount_store2(OvmsWriter* writer);
 extern bool ovms_partition_table_copy_store(OvmsWriter* writer);
 extern bool ovms_partition_table_migrate_store(OvmsWriter* writer);
 extern bool ovms_partition_table_upgrade_factory(OvmsWriter* writer);
+extern bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer);
 
 extern bool ovms_partition_table_rewrite(ovms_esp_partition_t* table, OvmsWriter* writer=NULL);
 extern void ovms_partition_table_void_entry(ovms_esp_partition_t* entry);
+
+extern bool ovms_partition_copy(const esp_partition_t *from, const esp_partition_t *to, OvmsWriter* writer);
 
 #endif //#ifndef __OVMS_PARTITIONS_H__

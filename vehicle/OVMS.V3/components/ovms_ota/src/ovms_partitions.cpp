@@ -40,6 +40,7 @@
 #include "ovms_malloc.h"
 #include "crypt_md5.h"
 #include "ovms_peripherals.h"
+#include "ovms_ota.h"
 #include <list>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -256,6 +257,12 @@ bool ovms_partition_table_has_factory(void)
     return true;
   return false;
   }
+
+bool ovms_partition_table_isuptodate(void)
+  {
+  ovms_flashpartition_t type = ovms_partition_table_get_type();
+  return (type == OVMS_FlashPartition_35);
+}
 
 const char* ovms_partition_size_str(uint32_t size)
   {
@@ -1031,6 +1038,90 @@ bool ovms_partition_table_upgrade_factory(OvmsWriter* writer)
   return false;
   }
 
+bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
+  {
+  ovms_flashpartition_t type = ovms_partition_table_get_type();
+
+  switch (type)
+    {
+    case OVMS_FlashPartition_Unknown:
+      {
+      writer->puts("Error: Unknown partition table type");
+      return false;
+      }
+    case OVMS_FlashPartition_30:
+      {
+      const esp_partition_t *rp = esp_ota_get_running_partition();
+      const esp_partition_t *bp = esp_ota_get_boot_partition();
+      const esp_partition_t *fp = esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_FACTORY, NULL);
+      if (fp == NULL)
+        {
+        writer->puts("v3-30 Error: Failed to find factory partition");
+        return false;
+        }
+      if (strcmp(rp->label, "factory") != 0 || strcmp(bp->label, "factory") != 0)
+        {
+        writer->puts("v3-30 We need to copy the currently running partition to factory, and then reboot");
+        if (ovms_partition_copy(rp, fp, writer))
+          {
+          esp_err_t err = esp_ota_set_boot_partition(fp);
+          if (err != ESP_OK)
+            {
+            writer->puts("v3-30 Error: Failed to set boot partition");
+            return false;
+            }
+          writer->puts("v3-30 Factory boot partition is ready and set to boot. Reboot is now required");
+          return true;
+          }
+        else
+          {
+          writer->puts("v3-30 Error: Failed to copy currently running partition to factory");
+          return false;
+          }
+        }
+      else
+        {
+        writer->puts("v3-30 The currently running partition is factory, so we can upgrade the partition table, and then reboot");
+        if (ovms_partition_table_upgrade_store(writer))
+          {
+          writer->puts("v3-30 Partition table store upgraded successfully, reboot is now required");
+          return true;
+          }
+        else
+          {
+          writer->puts("v3-30 Error: Failed to upgrade partition store table");
+          return false;
+          }
+        return false;
+        }
+      }
+    case OVMS_FlashPartition_34:
+      {
+      writer->puts("v3-34 We need to upgrade the store partition to the new format, and then reboot");
+      if (!ovms_partition_table_migrate_store(writer))
+        {
+        writer->puts("v3-34 Store migration failed");
+        return false;
+        }
+      if (!ovms_partition_table_upgrade_factory(writer))
+        {
+        writer->puts("v3-34 Error: Failed to upgrade factory partition table");
+        return false;
+        }
+      writer->puts("v3-34 Store migrated successfully, factory partition table upgraded successfully, reboot is now required");
+      return true;
+      }
+    case OVMS_FlashPartition_35:
+      {
+      writer->puts("v3-35 Partition table is already up to date");
+      return true;
+      }
+    }
+
+  writer->puts("Error: Unknown partition table type");
+  return false;
+  }
+
 bool ovms_partition_table_rewrite(ovms_esp_partition_t* table, OvmsWriter* writer)
   {
   size_t offset = ovms_partition_table_find();
@@ -1062,4 +1153,112 @@ bool ovms_partition_table_rewrite(ovms_esp_partition_t* table, OvmsWriter* write
 void ovms_partition_table_void_entry(ovms_esp_partition_t* entry)
   {
   memset((void*)entry, 0xff, sizeof(ovms_esp_partition_t));
+  }
+
+bool ovms_partition_copy(const esp_partition_t *from, const esp_partition_t *to, OvmsWriter* writer)
+  {
+  char *buf = (char *)InternalRamMalloc(SPI_FLASH_SEC_SIZE);
+  if (buf == NULL)
+    {
+    writer->puts("Error: Failed to allocate buffer in internal RAM");
+    return false;
+    }
+  
+  if (to->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY)
+    {
+    // Writing to a factory partition cannot be done using OTA operators,
+    // so we need to use the regular flash write functions.
+    MyOTA.SetFlashStatus("OTA Factory Copy: Preparing flash partition...");
+    esp_err_t err = esp_partition_erase_range(to, 0, to->size);
+    if (err != ESP_OK)
+      {
+      MyOTA.ClearFlashStatus();
+      writer->printf("Error: ESP32 error #%d starting factory OTA erase operation\n",err);
+      free(buf);
+      return false;
+      }
+    MyOTA.SetFlashStatus("OTA Factory Copy: Copying flash image...");
+    size_t offset = 0;
+    while (offset < to->size)
+      {
+      size_t todo = to->size - offset;
+      if (todo > SPI_FLASH_SEC_SIZE) todo=SPI_FLASH_SEC_SIZE;
+      esp_err_t err = esp_partition_read(from, offset, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d reading source at offset %d",err,offset);
+        free(buf);
+        return false;
+        }
+      err = esp_partition_write(to, offset, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d writing factory destination at offset %d",err,offset);
+        free(buf);
+        return false;
+        }
+      offset += todo;
+      if (offset % (SPI_FLASH_SEC_SIZE*64) == 0)
+        {
+        writer->printf("OTA Factory Copy: %d%% progress (%d bytes)\n",(offset*100)/to->size,offset);
+        }
+      MyOTA.SetFlashPerc((offset*100)/to->size);
+      }
+    MyOTA.SetFlashStatus("OTA Factory Copy: Finalising copy...");
+    }
+  else
+    {
+    // Writing to OTA partitions (whether the source is OTA or factory) can
+    // be done using regular OTA operators.
+    MyOTA.SetFlashStatus("OTA Copy: Preparing flash partition...");
+    esp_ota_handle_t otah;
+    esp_err_t err = esp_ota_begin(to, OTA_SIZE_UNKNOWN, &otah);
+    if (err != ESP_OK)
+      {
+      MyOTA.ClearFlashStatus();
+      writer->printf("Error: ESP32 error #%d starting OTA operation\n",err);
+      free(buf);
+      return false;
+      }
+    MyOTA.SetFlashStatus("OTA Copy: Copying flash image...");
+    size_t offset = 0;
+    while (offset < to->size)
+      {
+      size_t todo = to->size - offset;
+      if (todo > SPI_FLASH_SEC_SIZE) todo=SPI_FLASH_SEC_SIZE;
+      esp_err_t err = esp_partition_read(from, offset, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d reading source at offset %d",err,offset);
+        esp_ota_end(otah);
+        free(buf);
+        return false;
+        }
+      err = esp_ota_write(otah, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d writing destination at offset %d",err,offset);
+        esp_ota_end(otah);
+        free(buf);
+        return false;
+        }
+      offset += todo;
+      if (offset % (SPI_FLASH_SEC_SIZE*64) == 0)
+        {
+        writer->printf("OTA Copy: %d%% progress (%d bytes)\n",(offset*100)/to->size,offset);
+        }
+      MyOTA.SetFlashPerc((offset*100)/to->size);
+      }
+    MyOTA.SetFlashStatus("OTA Copy: Finalising copy...");
+    esp_ota_end(otah);
+    }
+
+  MyOTA.ClearFlashStatus();
+  free(buf);
+  writer->puts("OTA copy complete");
+  return true;
   }
