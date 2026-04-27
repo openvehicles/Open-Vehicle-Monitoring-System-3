@@ -154,6 +154,11 @@ esp_err_t sdcard::mount()
     ESP_LOGE(TAG, "mount failed: already mounted");
     return ESP_FAIL;
     }
+  else if (MyBoot.GetBootReason() == BR_PartitionUpdate)
+    {
+    ESP_LOGE(TAG, "mount failed: partition update detected");
+    return ESP_FAIL;
+    }
 
   m_host.max_freq_khz = MyConfig.GetParamValueInt("sdcard", "maxfreq.khz", 16000);
   esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sd", &m_host, &m_slot, &m_mount, &m_card);
