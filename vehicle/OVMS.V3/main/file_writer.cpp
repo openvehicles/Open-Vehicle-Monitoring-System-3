@@ -29,6 +29,9 @@
 ; THE SOFTWARE.
 */
 
+#include "ovms_log.h"
+static const char *TAG = "file-writer";
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -49,6 +52,7 @@ int FileWriter::puts(const char* s)
   if (file != NULL)
     {
     fputs(s, file);
+    fputc('\n', file);
     CloseAppendFile(file);
     }
   return 0;
@@ -83,6 +87,15 @@ ssize_t FileWriter::write(const void *buf, size_t nbyte)
     CloseAppendFile(file);
     }
   return nbyte;
+  }
+
+void FileWriter::NotifyVfsMigration(const std::string& src, const std::string& dst)
+  {
+  if (m_path == src)
+    {
+    ESP_LOGI(TAG, "Migrating to write to %s", dst.c_str());
+    m_path = dst;
+    }
   }
 
 FILE* FileWriter::OpenAppendFile()

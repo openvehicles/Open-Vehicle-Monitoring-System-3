@@ -51,6 +51,9 @@ class FileWriter : public OvmsWriter
     void Log(LogBuffers* message) {}
     virtual bool IsInteractive() { return false; }
 
+  public:
+    virtual void NotifyVfsMigration(const std::string& src, const std::string& dst);
+
   private:
     std::string m_path;
 
