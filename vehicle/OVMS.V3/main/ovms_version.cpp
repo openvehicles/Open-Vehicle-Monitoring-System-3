@@ -46,7 +46,7 @@ static const char *TAG = "version";
 #include "metrics_standard.h"
 #include "ovms_events.h"
 #include "ovms_peripherals.h"
-
+#include "ovms_partitions.h"
 
 std::string GetOVMSPartitionVersion(esp_partition_subtype_t t)
   {
@@ -161,18 +161,25 @@ std::string GetOVMSBuild()
 
 std::string GetOVMSProduct()
   {
+  std::string product;
+
   #ifdef CONFIG_OVMS_HW_BASE_3_0
-  return std::string("v3.0");
+  product = std::string("v3.0");
   #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
 
   #ifdef CONFIG_OVMS_HW_BASE_3_1
   esp_chip_info_t chip;
   esp_chip_info(&chip);
   if (chip.revision < 3)
-    { return std::string("v3.1"); }
+    { product = std::string("v3.1"); }
   else
-    { return std::string("v3.3"); }
+    { product = std::string("v3.3"); }
   #endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+
+  if (ovms_partition_table_get_type() == OVMS_FlashPartition_35)
+    { product.append("-5"); }
+
+  return product;
   }
 
 std::string GetOVMSHardware()
@@ -206,6 +213,8 @@ void Version(std::string event, void* data)
   std::string metric = GetOVMSVersion();
   metric.append(" (build ");
   metric.append(GetOVMSBuild());
+  metric.append(", product ");
+  metric.append(GetOVMSProduct());
   metric.append(")");
   StandardMetrics.ms_m_version->SetValue(metric.c_str());
 

@@ -98,6 +98,7 @@ static const char* const bootreason_name[] = {
     "FirmwareUpdate",
     "EarlyCrash",
     "Crash",
+    "PartitionUpdate",
 };
 #define NUM_BOOTREASONS (sizeof(bootreason_name) / sizeof(char *))
 
@@ -391,6 +392,14 @@ Boot::Boot()
       ESP_LOGI(TAG, "Firmware update reset");
       m_resetreason = ESP_RST_SW;
       }
+    else if (boot_data.partition_update)
+      {
+      boot_data.crash_count_total = 0;
+      boot_data.crash_count_early = 0;
+      m_bootreason = BR_PartitionUpdate;
+      ESP_LOGI(TAG, "Partition update reset");
+      m_resetreason = ESP_RST_SW;
+      }
     else if (!boot_data.stable_reached)
       {
       boot_data.crash_count_total++;
@@ -424,6 +433,7 @@ Boot::Boot()
   // reset flags:
   boot_data.soft_reset = false;
   boot_data.firmware_update = false;
+  boot_data.partition_update = false;
   boot_data.stable_reached = false;
   boot_data.stack_overflow = false;
   boot_data.heap_corruption = false;
@@ -492,6 +502,13 @@ void Boot::SetFirmwareUpdate()
   {
   boot_data.soft_reset = false;
   boot_data.firmware_update = true;
+  boot_data.crc = boot_data.calc_crc();
+  }
+
+void Boot::SetPartitionUpdate()
+  {
+  boot_data.soft_reset = false;
+  boot_data.partition_update = true;
   boot_data.crc = boot_data.calc_crc();
   }
 

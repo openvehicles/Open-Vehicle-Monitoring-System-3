@@ -47,6 +47,7 @@ typedef enum
     BR_FirmwareUpdate,              // Firmware update reset
     BR_EarlyCrash,                  // crash during boot/init phase
     BR_Crash,                       // crash after reaching stable state
+    BR_PartitionUpdate,             // Partition update reset
   } bootreason_t;
 
 #if (ESP_IDF_VERSION_MAJOR < 4) || CONFIG_IDF_TARGET_ARCH_XTENSA
@@ -93,6 +94,7 @@ typedef struct
   int wakeup_interval;              // Wakeup interval in seconds for 12V restoration check
   bool soft_reset;                  // true = user requested reset ("module reset")
   bool firmware_update;             // true = firmware update restart
+  bool partition_update;            // true = partition update restart
   bool stable_reached;              // true = system has reached stable state (see housekeeping)
   unsigned int crash_count_early;   // Number of times system has crashed before reaching stable state
   unsigned int crash_count_total;   // Total number of times system has crashed since power on
@@ -132,6 +134,7 @@ class Boot
   public:
     void SetSoftReset();
     void SetFirmwareUpdate();
+    void SetPartitionUpdate();
     void SetMin12VLevel(float min_12v_level);
     float GetMin12VLevel() { return boot_data.min_12v_level; }
     void Restart(bool hard=false);

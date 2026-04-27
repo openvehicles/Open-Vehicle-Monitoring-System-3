@@ -38,6 +38,7 @@
 #include <string.h>
 #include "ovms_partitions.h"
 #include "ovms_malloc.h"
+#include "ovms_boot.h"
 #include "crypt_md5.h"
 #include "ovms_peripherals.h"
 #include "ovms_ota.h"
@@ -742,6 +743,10 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
     return;
     }
 
+  // Notify the writer that the file has been migrated
+  writer->NotifyVfsMigration(src, dst);
+
+  // All done
   files_copied++;
   }
 
@@ -1049,6 +1054,7 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
       writer->puts("Error: Unknown partition table type");
       return false;
       }
+      break;
     case OVMS_FlashPartition_30:
       {
       const esp_partition_t *rp = esp_ota_get_running_partition();
@@ -1071,6 +1077,8 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
             return false;
             }
           writer->puts("v3-30 Factory boot partition is ready and set to boot. Reboot is now required");
+          MyBoot.Restart();
+          MyBoot.SetPartitionUpdate();
           return true;
           }
         else
@@ -1085,6 +1093,8 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
         if (ovms_partition_table_upgrade_store(writer))
           {
           writer->puts("v3-30 Partition table store upgraded successfully, reboot is now required");
+          MyBoot.Restart();
+          MyBoot.SetPartitionUpdate();
           return true;
           }
         else
@@ -1095,6 +1105,7 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
         return false;
         }
       }
+      break;
     case OVMS_FlashPartition_34:
       {
       writer->puts("v3-34 We need to upgrade the store partition to the new format, and then reboot");
@@ -1109,13 +1120,17 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
         return false;
         }
       writer->puts("v3-34 Store migrated successfully, factory partition table upgraded successfully, reboot is now required");
+      MyBoot.Restart();
+      MyBoot.SetSoftReset();  // Note that we don't set PartitionUpdate here, as we are done with the partition update
       return true;
       }
+      break;
     case OVMS_FlashPartition_35:
       {
       writer->puts("v3-35 Partition table is already up to date");
       return true;
       }
+      break;
     }
 
   writer->puts("Error: Unknown partition table type");

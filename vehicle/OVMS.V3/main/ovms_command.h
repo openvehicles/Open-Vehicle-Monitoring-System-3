@@ -81,6 +81,10 @@ class OvmsWriter
     virtual void ProcessChar(char c) {}
 
   public:
+    // Used to notify the writer of a migration of a file within the VFS
+    virtual void NotifyVfsMigration(const std::string& src, const std::string& dst) {}
+
+  public:
     bool IsSecure();
     virtual void SetSecure(bool secure=true);
     bool IsMonitoring() { return m_monitoring; }
