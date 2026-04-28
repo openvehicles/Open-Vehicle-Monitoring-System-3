@@ -71,6 +71,7 @@ class OvmsOTA
   public:
     void LaunchAutoFlash(ota_flashcfg_t cfg=OTA_FlashCfg_Default);
     bool AutoFlash(bool force=false);
+    void SystemStart(std::string event, void* data);
     void Ticker600(std::string event, void* data);
 
   public:

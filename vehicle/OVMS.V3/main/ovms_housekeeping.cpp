@@ -51,7 +51,6 @@ static const char *TAG = "housekeeping";
 #include "ovms_module.h"
 #include "ovms_boot.h"
 #include "ovms_partitions.h"
-#include "file_writer.h"
 #include "vehicle.h"
 #include "dbc_app.h"
 #ifdef CONFIG_OVMS_COMP_SERVER_V2
@@ -353,18 +352,9 @@ void Housekeeping::Init(std::string event, void* data)
   ESP_LOGI(TAG, "Starting USB console...");
   ConsoleAsync::Instance();
 
+  Metrics(event,data);
+
   MyEvents.SignalEvent("system.start",NULL);
-
-  Metrics(event,data); // Causes the metrics to be produced
-
-  if ((MyBoot.GetBootReason() == BR_PartitionUpdate) && (! ovms_partition_table_isuptodate()))
-    {
-    ESP_LOGI(TAG, "Partition update detected, but partition table is not up to date");
-    ESP_LOGI(TAG, "Continuing to upgrade the partition table");
-
-    FileWriter writer("/store/partition-update.log");
-    ovms_partition_table_upgrade_autocont(&writer);
-    }
   }
 
 #ifdef CONFIG_OVMS_COMP_ADC

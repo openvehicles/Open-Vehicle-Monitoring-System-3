@@ -59,6 +59,7 @@ static const char *TAG = "ota";
 #include "ovms_netmanager.h"
 #include "ovms_version.h"
 #include "ovms_vfs.h"
+#include "file_writer.h"
 #include "crypt_md5.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
@@ -1067,6 +1068,7 @@ OvmsOTA::OvmsOTA()
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
   using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"system.start", std::bind(&OvmsOTA::SystemStart, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.600", std::bind(&OvmsOTA::Ticker600, this, _1, _2));
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
@@ -1205,8 +1207,40 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
     }
   }
 
+void OvmsOTA::SystemStart(std::string event, void* data)
+  {
+  if (MyBoot.GetBootReason() == BR_PartitionUpdate)
+    {
+    bool success;
+    ESP_LOGI(TAG, "Checking for partition update...");
+    if (!ovms_partition_table_isuptodate())
+      {
+      ESP_LOGI(TAG, "Partition table is not up to date, continuing to upgrade the partition table");
+      FileWriter writer("/store/partition-update.log");
+      success = ota_perform_partition_table_upgrade_autocont(&writer);
+      }
+    else
+      {
+      success = true;
+      }
+    // If ota_perform_partition_table_upgrade_autocont() didn't request a reboot by itself, the update
+    // either was unnecessary or failed terminally. In any case we need to reboot now so the user
+    // can access the module:
+    if (!MyBoot.IsShuttingDown())
+      {
+      if (success)
+        ESP_LOGI(TAG, "Partition update finished, rebooting into standard mode");
+      else
+        ESP_LOGW(TAG, "Aborting partition update, rebooting into standard mode");
+      MyBoot.Restart();
+      }
+    }
+  }
+
 void OvmsOTA::Ticker600(std::string event, void* data)
   {
+  if (MyBoot.GetBootReason() == BR_PartitionUpdate)
+    return;
   if (MyConfig.GetParamValueBool("auto", "ota", true) == false)
     return;
 
