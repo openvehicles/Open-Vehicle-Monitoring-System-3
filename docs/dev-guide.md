@@ -82,16 +82,18 @@ if (!m_my_metric)
 
 Core loop: capture real frames once in specific state, replay against new builds without needing car.
 
-**Capture** (laptop on OVMS hotspot, SSH key for `ovms@192.168.4.1`):
+**Capture** (SD card in module, laptop on OVMS hotspot, SSH key for `ovms@ovms.local`):
 ```bash
 bash vehicle/OVMS.V3/components/vehicle_vwegolf/tests/capture.sh        # can3 (default)
 bash vehicle/OVMS.V3/components/vehicle_vwegolf/tests/capture.sh can2   # FCAN (rarely needed)
 ```
-Script queries firmware version via SSH, prompts for description, starts log, streams frames til Ctrl-C, stops log, writes `.crtd` + companion `.md` in `tests/candumps/`.
+Script connects via SSH (one handshake), checks SD mounted, prompts for description, starts `can log start vfs crtd /sd/...` on the module, waits for Ctrl-C, stops log, SCPs the file from SD, writes `.crtd` + companion `.md` in `tests/candumps/`.
 
-Filter specific CAN IDs (manual):
+Requires SD card in module (`/sd`). No persistent SSH session during capture — avoids ESP32 heap exhaustion/watchdog resets.
+
+Filter specific CAN IDs (manual, SD):
 ```
-can log start tcpserver transmit crtd 3000 3:131
+can log start vfs crtd /sd/capture.crtd 3:131
 ```
 
 **Note:** CCS DC fast charging = KCAN silent. AC Type 2 required for OBC captures.

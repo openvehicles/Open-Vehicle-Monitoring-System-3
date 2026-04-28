@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# capture.sh — Capture CAN frames from the OVMS, named after the running firmware.
+# capture.sh — Capture CAN frames from the OVMS to SD card, retrieve on Ctrl-C.
 #
 # Usage (from anywhere in the repo, or directly from tests/):
 #   bash capture.sh [--with-metrics] [--duration SECONDS] [bus]
@@ -15,14 +15,15 @@
 # Requires:
 #   - Laptop on the OVMS WiFi hotspot, with `ovms.local` resolving to the module
 #     (typically via /etc/hosts or mDNS)
-#   - nc (netcat)
-#   - SSH key for ovms@ovms.local (used for version query and log start/stop)
-#   - timeout(1) from coreutils (only when --duration is used)
+#   - SSH key for ovms@ovms.local
+#   - SD card mounted in OVMS module (/sd)
+#   - scp (openssh-client)
 
 set -euo pipefail
 
 OVMS="ovms.local"
 SSH_USER="ovms"
+SD_DIR="/sd"
 
 WITH_METRICS=false
 DURATION=""
@@ -51,11 +52,6 @@ fi
 
 BUS="${BUS_ARG:-can3}"
 
-# The `can log start` command expects the bus filter as an integer
-# (1, 2, 3), not as "canN". Passing "can2" parses as an invalid hex
-# ID range and the filter is silently rejected, resulting in all
-# buses being logged. Translate here so the filename stays
-# human-readable ("can2-...") while the command gets "2".
 case "$BUS" in
   can1|1) BUS_FILTER=1 ;;
   can2|2) BUS_FILTER=2 ;;
@@ -65,8 +61,6 @@ case "$BUS" in
     exit 1
     ;;
 esac
-# Normalise the filename prefix to canN regardless of how the user
-# spelled it on the command line.
 BUS="can${BUS_FILTER}"
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -74,18 +68,11 @@ OUTDIR="candumps"
 mkdir -p "$OUTDIR"
 
 # ---------------------------------------------------------------------------
-# 1. SSH helper (defined early — also used for version query).
+# 1. SSH helper.
 # ---------------------------------------------------------------------------
-# We multiplex repeated SSH calls over a persistent master socket so the OVMS
-# (which runs an embedded SSH server with multi-second handshakes) is only
-# contacted with one full handshake per capture session. The master is opened
-# explicitly with -M -N -f so we know exactly when it is alive, instead of
-# relying on ControlMaster=auto and hoping the first call backgrounds in time.
 SSH_CTL_SOCK="/tmp/ovms-capture-${USER:-unknown}-$$"
 SSH_DEBUG="${SSH_DEBUG:-false}"
 
-# Common SSH options. OVMS uses an RSA host key — newer OpenSSH clients
-# disable ssh-rsa by default (SHA-1 deprecation), so we re-enable it.
 ssh_base_opts=(
   -o StrictHostKeyChecking=no
   -o ConnectTimeout=5
@@ -96,16 +83,6 @@ ssh_base_opts=(
 )
 
 ssh_open_master() {
-  # -M = master mode, -N = no remote command, -f = fork to background after
-  # auth. Returns once the socket is ready. ControlPersist lets the daemon
-  # outlive the foreground bash if anything kills us before cleanup.
-  #
-  # ServerAliveInterval keeps the transport alive across long user pauses
-  # (e.g. typing the capture description). The OVMS embedded sshd drops idle
-  # connections well before ControlPersist expires; without keepalives the
-  # master socket looks alive locally but the TCP connection is dead, and
-  # the next ssh_cmd silently falls back to a fresh handshake — which on
-  # this hardware can take minutes.
   ssh "${ssh_base_opts[@]}" \
     -o ControlMaster=yes \
     -o ControlPersist=10m \
@@ -138,8 +115,7 @@ ssh_close_master() {
 }
 
 # ---------------------------------------------------------------------------
-# 2. Open SSH master and fetch firmware version (one handshake reused for all
-#    subsequent calls — the OVMS embedded SSH server is slow per-connection).
+# 2. Open SSH master and fetch firmware version.
 # ---------------------------------------------------------------------------
 echo "Connecting to OVMS (one-time SSH handshake)..."
 if ssh_open_master; then
@@ -157,7 +133,17 @@ fi
 VERSION_SLUG=$(echo "$VERSION" | tr '/' '_' | tr ' ' '_' | sed 's/[^a-zA-Z0-9._-]/_/g')
 
 # ---------------------------------------------------------------------------
-# 2. Ask for a description of the sequence about to be performed.
+# 2b. Verify SD card is mounted.
+# ---------------------------------------------------------------------------
+if ssh_master_alive && ! ssh_cmd "ls ${SD_DIR}" >/dev/null; then
+  echo "Error: SD card not mounted at ${SD_DIR} on OVMS." >&2
+  echo "       Insert card and retry." >&2
+  ssh_close_master
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# 3. Ask for a description of the sequence about to be performed.
 # ---------------------------------------------------------------------------
 echo ""
 echo "Firmware : $VERSION"
@@ -170,33 +156,31 @@ read -r -p "> " DESCRIPTION
 echo ""
 
 # ---------------------------------------------------------------------------
-# 3. Build filenames.
+# 4. Build filenames.
 # ---------------------------------------------------------------------------
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BASE="${BUS}-${VERSION_SLUG}-${TIMESTAMP}"
 CRTD_FILE="$OUTDIR/${BASE}.crtd"
 MD_FILE="$OUTDIR/${BASE}.md"
 METRICS_FILE="$OUTDIR/${BASE}.metrics.tsv"
+SD_CRTD="${SD_DIR}/${BASE}.crtd"
 
 # ---------------------------------------------------------------------------
-# 4. Try to start the log via SSH; fall back to manual instructions.
+# 5. Start the log on SD card via SSH.
 # ---------------------------------------------------------------------------
-LOG_CMD="can log start tcpserver transmit crtd :3000 $BUS_FILTER"
+LOG_CMD="can log start vfs crtd ${SD_CRTD} ${BUS_FILTER}"
 STATUS_CMD="can log status"
 STOP_CMD="can log stop"
 
 SSH_OK=false
-echo "Starting log on OVMS ($BUS)..."
-# If the master died during the description prompt (keepalives should
-# prevent this, but OVMS sshd has been known to be aggressive), reopen it
-# now so the log-start call stays on the fast path.
+echo "Starting log on OVMS ($BUS → SD card)..."
 if ! ssh_master_alive; then
   echo "  (SSH master dropped — reopening)"
   ssh_open_master || true
 fi
 if ssh_cmd "$LOG_CMD"; then
   SSH_OK=true
-  echo "Log started on OVMS ($BUS)."
+  echo "Log started: ${SD_CRTD}"
 else
   echo "SSH unavailable — start the log manually on the OVMS shell:"
   echo "  $LOG_CMD"
@@ -205,7 +189,7 @@ else
 fi
 
 echo ""
-echo "Output : $CRTD_FILE"
+echo "Output : $CRTD_FILE (retrieved from SD on stop)"
 if $WITH_METRICS; then
   echo "Metrics: $METRICS_FILE (every ${METRICS_INTERVAL}s via SSH)"
 fi
@@ -217,15 +201,11 @@ fi
 echo ""
 
 # ---------------------------------------------------------------------------
-# 5. On Ctrl-C / auto-stop: stop the log, write the markdown, print summary.
+# 6. On Ctrl-C / auto-stop: stop log, retrieve file from SD, write markdown.
 # ---------------------------------------------------------------------------
 START_TIME=$(date +%s)
 METRICS_PID=""
 
-# Background metrics sampler. Polls v.b.* and v.c.* on a fixed interval and
-# writes one row per metric per tick to METRICS_FILE. Timestamps are seconds
-# relative to START_TIME so the sidecar lines up with crtd relative time
-# (close enough — the two anchors differ by SSH start-up latency only).
 start_metrics_sampler() {
   if ! $SSH_OK; then
     echo "Skipping metrics sampler: SSH unavailable."
@@ -262,29 +242,24 @@ start_metrics_sampler() {
 }
 
 cleanup() {
-  # Re-arm the trap as a no-op so a second Ctrl-C cannot re-enter cleanup.
   trap '' INT TERM
 
   echo ""
 
-  for pid in "${TIMER_PID:-}" "${NC_PID:-}" "${METRICS_PID:-}"; do
+  for pid in "${TIMER_PID:-}" "${SLEEP_PID:-}" "${METRICS_PID:-}"; do
     if [[ -n "$pid" ]]; then
       kill "$pid" 2>/dev/null || true
       wait "$pid" 2>/dev/null || true
     fi
   done
 
-  # Snapshot the logger's own counters BEFORE stopping it — GetStats() reports
-  # m_msgcount (things that passed the filter, i.e. our bus + events) and
-  # m_filtercount (frames on other buses). The delta between these and the
-  # number of raw CAN frames landed in the file is the single best "did we
-  # capture the right bus" signal. See below for the wrong-bus heuristic.
+  # Get logger stats BEFORE stopping.
   STATUS_LINE=""
   LOGGER_MESSAGES=""
   LOGGER_FILTERED=""
   LOGGER_DROPPED=""
   if $SSH_OK; then
-    STATUS_LINE=$(ssh_cmd "$STATUS_CMD" 2>/dev/null | grep -E '^#[0-9]+:' | head -1 || true)
+    STATUS_LINE=$(ssh_cmd "$STATUS_CMD" | grep -E '^#[0-9]+:' | head -1 || true)
     if [[ -n "$STATUS_LINE" ]]; then
       LOGGER_MESSAGES=$(echo "$STATUS_LINE" | grep -oE 'Messages:[0-9]+' | head -1 | cut -d: -f2)
       LOGGER_FILTERED=$(echo "$STATUS_LINE" | grep -oE 'Filtered:[0-9]+' | head -1 | cut -d: -f2)
@@ -296,19 +271,34 @@ cleanup() {
     echo "  $STOP_CMD"
   fi
 
+  # Retrieve CRTD from SD card.
+  echo "Retrieving ${SD_CRTD}..."
+  scp_opts=(
+    -o StrictHostKeyChecking=no
+    -o HostKeyAlgorithms=+ssh-rsa
+    -o PubkeyAcceptedKeyTypes=+ssh-rsa
+    -o ControlPath="$SSH_CTL_SOCK"
+    -o BatchMode=yes
+  )
+  SCP_OK=false
+  if scp -q "${scp_opts[@]}" "${SSH_USER}@${OVMS}:${SD_CRTD}" "$CRTD_FILE" 2>/dev/null; then
+    SCP_OK=true
+    echo "Retrieved: $CRTD_FILE"
+  else
+    echo "SCP failed — retrieve manually:"
+    echo "  scp ${SSH_USER}@${OVMS}:${SD_CRTD} $CRTD_FILE"
+  fi
+
   ssh_close_master
 
-  # grep -c always prints a count (even 0) AND exits 1 on no matches, so
-  # `|| echo 0` would double-up. Use `|| true` to discard the failure status.
-  FRAMES=$(grep -c "^[0-9]" "$CRTD_FILE" 2>/dev/null || true)
-  FRAMES="${FRAMES:-0}"
-  # "Raw" frames = CAN data lines only (R11/R29/T11/T29), excluding the CXX
-  # header, CVR version, and CEV/CMT event/metric lines that share the same
-  # leading-digit prefix. This is what actually counts as bus data; the
-  # event-only captures that caused so much confusion have RAW_FRAMES=0
-  # while FRAMES still shows ~15.
-  RAW_FRAMES=$(grep -cE ' [0-9](R11|R29|T11|T29) ' "$CRTD_FILE" 2>/dev/null || true)
-  RAW_FRAMES="${RAW_FRAMES:-0}"
+  FRAMES=0
+  RAW_FRAMES=0
+  if $SCP_OK; then
+    FRAMES=$(grep -c "^[0-9]" "$CRTD_FILE" 2>/dev/null || true)
+    FRAMES="${FRAMES:-0}"
+    RAW_FRAMES=$(grep -cE ' [0-9](R11|R29|T11|T29) ' "$CRTD_FILE" 2>/dev/null || true)
+    RAW_FRAMES="${RAW_FRAMES:-0}"
+  fi
   END_TIME=$(date +%s)
   ELAPSED=$((END_TIME - START_TIME))
 
@@ -351,17 +341,16 @@ ${DESCRIPTION}
 MDEOF
 
   echo ""
-  echo "Saved $CRTD_FILE (${RAW_FRAMES} raw frames, ${ELAPSED}s)"
-  echo "      $MD_FILE"
+  if $SCP_OK; then
+    echo "Saved $CRTD_FILE (${RAW_FRAMES} raw frames, ${ELAPSED}s)"
+    echo "      $MD_FILE"
+  else
+    echo "Saved $MD_FILE"
+  fi
   if $WITH_METRICS && [[ -f "$METRICS_FILE" ]]; then
     echo "      $METRICS_FILE"
   fi
 
-  # Wrong-bus heuristic: if the logger saw lots of traffic but almost all of
-  # it was rejected by the bus filter, we captured on a silent bus while the
-  # action was happening elsewhere. This is exactly the failure mode that
-  # produced capture 20260413-181702: Messages:14 Filtered:154620 on can3
-  # while can2 had the full charging session.
   if [[ -n "$LOGGER_FILTERED" && "$LOGGER_FILTERED" -gt 1000 && "$RAW_FRAMES" -lt 100 ]]; then
     echo ""
     echo "WARNING: wrong bus likely."
@@ -385,24 +374,21 @@ if $WITH_METRICS; then
 fi
 
 # ---------------------------------------------------------------------------
-# 6. Stream frames. Run nc in the background and `wait` on it so the INT/TERM
-#    trap fires instantly on Ctrl-C (bash interrupts `wait` immediately on
-#    trapped signals, but defers signals delivered while a foreground command
-#    is running until it returns). When --duration is set, a sleep-timer runs
-#    in a second background process and SIGTERMs nc when its timer expires.
+# 7. Wait. Background sleep so Ctrl-C trap fires immediately.
+#    --duration kills the sleep after N seconds, triggering cleanup.
 # ---------------------------------------------------------------------------
-NC_PID=""
+SLEEP_PID=""
 TIMER_PID=""
 
-nc "$OVMS" 3000 >"$CRTD_FILE" &
-NC_PID=$!
+sleep 86400 &
+SLEEP_PID=$!
 
 if [[ -n "$DURATION" ]]; then
-  ( sleep "$DURATION"; kill "$NC_PID" 2>/dev/null || true ) &
+  ( sleep "$DURATION"; kill "$SLEEP_PID" 2>/dev/null || true ) &
   TIMER_PID=$!
 fi
 
-wait "$NC_PID" 2>/dev/null || true
-NC_PID=""
+wait "$SLEEP_PID" 2>/dev/null || true
+SLEEP_PID=""
 
 cleanup

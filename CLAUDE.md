@@ -29,6 +29,21 @@ OVMS3 fork, VW e-Golf. ESP32 telemetry/ctrl via CAN. Focus: `vehicle/OVMS.V3/com
 
 When a capture confirms a new signal: add to `vwegolf.dbc`, point cap notes at it.
 
+## Knowledge graph
+
+Graph lives in `vehicle/OVMS.V3/components/vehicle_vwegolf/graphify-out/`. 281 nodes, 442 edges.
+
+**Read graph before reading source.** Architecture/structure/relationship questions → graph first.
+
+1. `graphify-out/GRAPH_REPORT.md` — god nodes, community map, surprises. Read this.
+2. Deeper: load `graphify-out/graph.json` via networkx, BFS/DFS from matching nodes.
+
+God nodes: `IncomingFrameCan3()` · `main()` · `make_vehicle()` · `make_frame()` · `test_clima_all()`.
+
+Communities: C0=CRTD utils · C1=CAN decode tests · C2=clima/wake suite · C3=vehicle core · C6=BAP docs · C7=clima bugs · C8=J533 wiring · C18=OBC charge telemetry.
+
+Files changed → `/graphify --update` (incremental, cached).
+
 ## CRTD captures — NEVER read whole
 
 `.crtd` files = 10k–60k+ lines each. Reading whole = context burn for nothing.

@@ -4,13 +4,13 @@ id	bus	status	notes
 5	can3	done	cabin temp not broadcast remote (ign-off ECU sleep); v.e.cabintemp stale during remote clima
 6	can3	done	natural stop port 0x12 05->00; v.e.hvac drive from port 0x12 not 0x5EA remote_mode
 7	can3	done	BAP port 0x19 raw=(celsius-10)*10; bug: read cfg in CommandClimateControl not Ticker10 cache
-8	can3	partial	OBC charge current AC — 2 caps 20260409 (raw, no analysis); cand 0x1A5554A8 b4
+8	can3	pending	AC charge energy meter — 0x1A5554A8 MuxB b4 unit TBD; ground truth sessions: 20260427-173425 (845 s, 1.49 kWh, 6.2 kW, no raw), 20260427-200534 (1056 s, 2.17 kWh, 7.4 kW, no raw); 0x191 BMS_PowerBus confirmed live on CAN2; BLOCKED: raw-frame logging not running on either session — fix `can log start` before next attempt
 9	can3	pending	lock/unlock auth bytes — fob diff vs 0x5A7 idle (blocks lock PR)
 10	can3	pending	min SoC BAP frame — change in head unit e-Manager, diff vs idle
 11	can1	pending	UDS ign-on retry @ 500k+1M for all ECU addrs (ISO-TP std + VW TP2.0 + 7DF + 200/200)
 12	can3	done	schedule-trig clima: different BAP signaling, same port 0x12 stop detect
 13	can3	pending	charge start/stop — min SoC 0%<->100%, diff vs idle
-14	can3	done	Type 2 AC charge cycle — 0 charge-only 11-bit IDs; OBC in 29-bit ext; primary 0x1A5554A8 b4 = 1Hz energy increment; needs ext-ID frame hook to decode
+14	can3	merged→8	folded into cap 8; frame structure confirmed in can3-…-20260413-121648.md
 15	can2	done	gear: 0x187 authoritative; 0x0B3 = drive-armed latch; 0x0B4 b3/4 torque cand (D/B only)
 16	can2	done	pedal: 0x365 b4b0 brake pressure; 0x3BE b3 brake sw; 0x3BE b5b0 throttle; DBC stubs added, re-confirm needed
 17	can2	done	drive: 0x0B2 wheel spd (1/128 km/h/bit, 4xLE16); 0x0B4 b3:4/b6:7 LE16 motor torque pairs; 0x057 b3 torque req
