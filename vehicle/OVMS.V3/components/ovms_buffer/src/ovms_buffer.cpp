@@ -189,6 +189,13 @@ std::string OvmsBuffer::ReadLine()
   return std::string((char*)result,hl);
   }
 
+std::string OvmsBuffer::ReadAll()
+  {
+  std::string result(m_used, 0);
+  Pop(m_used, (uint8_t*)result.data());
+  return result;
+  }
+
 ssize_t OvmsBuffer::PollSocket(int sock, long timeoutms)
   {
   fd_set fds;

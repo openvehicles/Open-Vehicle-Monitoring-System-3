@@ -1216,7 +1216,7 @@ void OvmsOTA::SystemStart(std::string event, void* data)
     if (!ovms_partition_table_isuptodate())
       {
       ESP_LOGI(TAG, "Partition table is not up to date, continuing to upgrade the partition table");
-      FileWriter writer("/store/partition-update.log");
+      FileWriter writer("/store/partition-update.log", true);
       success = ota_perform_partition_table_upgrade_autocont(&writer);
       }
     else

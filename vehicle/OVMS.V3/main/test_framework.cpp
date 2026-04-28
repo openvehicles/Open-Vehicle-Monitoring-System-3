@@ -46,6 +46,7 @@ static const char *TAG = "test";
 #include "ovms_config.h"
 #include "ovms_module.h"
 #include "can.h"
+#include "file_writer.h"
 #if ESP_IDF_VERSION_MAJOR < 4
 #include "strverscmp.h"
 #endif
@@ -454,6 +455,16 @@ void test_command(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   MyCommandApp.Display(writer);
   }
 
+void test_filewriter(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  FileWriter fw(argv[0], true);
+  fw.puts("Writing 10 lines...");
+  for (int i=1; i<=10; i++)
+    fw.printf("Line %d\n", i);
+  fw.puts("Done.");
+  writer->printf("Done, check log and vfs cat %s\n", argv[0]);
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -485,4 +496,5 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("string", "Test std::string memory corruption", test_string, "<loopcnt> <mode>\n"
     "mode: 1=m.AsJSON, 2=m.AsString, 3=m.name, 4=const cfg string, 5=const local cstr, 6=const local string", 2, 2);
   cmd_test->RegisterCommand("commands", "List command tree", test_command);
+  cmd_test->RegisterCommand("filewriter", "Test file writer", test_filewriter, "<path>", 1, 1);
   }

@@ -32,6 +32,7 @@
 #define __file_writer_h__
 
 #include "ovms_command.h"
+#include "ovms_buffer.h"
 
 class LogBuffers;
 class OvmsCommandMap;
@@ -39,7 +40,7 @@ class OvmsCommandMap;
 class FileWriter : public OvmsWriter
   {
   public:
-    FileWriter(std::string path);
+    FileWriter(std::string path, bool log_writes = false);
     ~FileWriter();
 
   public:
@@ -55,7 +56,11 @@ class FileWriter : public OvmsWriter
     virtual void NotifyVfsMigration(const std::string& src, const std::string& dst);
 
   private:
+    void logwrite(const char* buf, size_t nbyte);
+
+  private:
     std::string m_path;
+    OvmsBuffer* m_log = NULL;
 
   private:
     FILE* OpenAppendFile();

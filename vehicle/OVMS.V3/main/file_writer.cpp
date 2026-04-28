@@ -37,13 +37,27 @@ static const char *TAG = "file-writer";
 #include <string.h>
 #include "file_writer.h"
 
-FileWriter::FileWriter(std::string path)
+FileWriter::FileWriter(std::string path, bool log_writes /*= false*/)
   {
   m_path = path;
+  if (log_writes)
+    {
+    m_log = new OvmsBuffer(1024);
+    }
   }
 
 FileWriter::~FileWriter()
   {
+  if (m_log)
+    {
+    // log unfinished buffer line:
+    if (m_log->UsedSpace())
+      {
+      std::string line = m_log->ReadAll();
+      ESP_LOGI(TAG, "%s: %s", m_path.c_str(), line.c_str());
+      }
+    delete m_log;
+    }
   }
 
 int FileWriter::puts(const char* s)
@@ -54,6 +68,11 @@ int FileWriter::puts(const char* s)
     fputs(s, file);
     fputc('\n', file);
     CloseAppendFile(file);
+    }
+  if (m_log)
+    {
+    logwrite(s, strlen(s));
+    logwrite("\n", 1);
     }
   return 0;
   }
@@ -73,6 +92,10 @@ int FileWriter::printf(const char* fmt, ...)
       fwrite(buffer, ret, 1, file);
       CloseAppendFile(file);
       }
+    if (m_log)
+      {
+      logwrite(buffer, ret);
+      }
     }
   return ret;
   }
@@ -85,6 +108,10 @@ ssize_t FileWriter::write(const void *buf, size_t nbyte)
     {
     fwrite(buf, nbyte, 1, file);
     CloseAppendFile(file);
+    }
+  if (m_log)
+    {
+    logwrite((const char*)buf, nbyte);
     }
   return nbyte;
   }
@@ -106,4 +133,31 @@ FILE* FileWriter::OpenAppendFile()
 void FileWriter::CloseAppendFile(FILE* file)
   {
   if (file != NULL) fclose(file);
+  }
+
+void FileWriter::logwrite(const char* buf, size_t nbyte)
+  {
+  if (!m_log->Push((uint8_t*)buf, nbyte))
+    {
+    // insufficient free space, purge buffer:
+    if (m_log->UsedSpace())
+      {
+      std::string line = m_log->ReadAll();
+      ESP_LOGI(TAG, "%s: %s", m_path.c_str(), line.c_str());
+      }
+    // retry, if still insufficient space log directly:
+    if (!m_log->Push((uint8_t*)buf, nbyte))
+      {
+      std::string line(buf, nbyte);
+      ESP_LOGI(TAG, "%s: %s", m_path.c_str(), line.c_str());
+      return;
+      }
+    }
+
+  // log buffered lines:
+  while (m_log->HasLine() >= 0)
+    {
+    std::string line = m_log->ReadLine();
+    ESP_LOGI(TAG, "%s: %s", m_path.c_str(), line.c_str());
+    }
   }
