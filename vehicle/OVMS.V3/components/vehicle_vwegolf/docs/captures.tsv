@@ -21,7 +21,10 @@ id	bus	status	notes
 19	can3	done	clima verify direct path: unlock+door (bus awake), start (immediate BAP, no wake), 10s, stop — 20260422 (in same set as cap 18)
 20	all	partial	CCS DC charge mid-session — `…-132333` (533 s of 1426 s, truncated by module reset); 0x594 broadcasts on KCAN during DC (CType=2 confirmed first 1.9 s, then bit layout shifts); 0x131 SoC pinned during DC (real 49→92 %, bus byte[3] decodes 74.5→89.0 %); 0x191 silent (0 frames); 0x1A5554A8 DC-only mux IDs 0x3,0x4,0x7,0x8,0xD,0xE,0xF observed but only 2-9 frames each (~0.2 Hz vs AC 2 Hz) — NEEDS untruncated capture
 21	can2	done	driving validation — `…-143106` (Hälla→E18→R66→OKQ8, 9 m 37 s in B-mode); 0x131 SoC tracks fine on FCAN drive (99.0→95.0 % monotonic); 0x191 decode validated (peak −105.5 kW / +22.5 kW regen, integral −1.706 kWh); 0x2AF DBC decode WRONG (b4-b7 static zero; b2-b3 LE 16-bit cumulative ~mWh hyp, 26 wraps + 58496 ≈ 1762 Wh vs 1706 Wh integral, ~3 % match); 0x6B4 VIN assembly confirmed; gross SoC includes ~7 pp top buffer vs displayed
+22	can2	done	OBC 0x569 confirmed: d[4]=AC V 1V/bit (248V/0xf8); d[5]=AC A 1A/bit (9A); d[1]b6=charging-active; 2232W sustained; full AC session (Type 1 J1772 cable) — 20260429 (from PR #2 / @PMKA, JDM e-Golf)
+23	can2	done	OBC 0x569 steady-state: 248V/9A throughout; companion to cap 22 (mid-session only) — 20260429 (from PR #2 / @PMKA)
+24	can2	done	OBC 0x569 stop: 9A->8A->0A ramp-down; d[1]b6 clears on charge stop; 248V remains (cable still plugged) — 20260429 (from PR #2 / @PMKA)
 
 # FCAN decode baseline: can2-3.3.005-800-gc60d79ed-dirty_ota_1_edge-20260412-175611.crtd (CCS idle, 26127 frames)
 # Per-cap MD format: 5–10s pre/post idle, log stimulus + timestamps
-# Audit scripts: tests/analysis/scratch/apr7_*.py
+# Audit scripts: tests/analysis/scratch/apr7_*.py; obc_569_analysis.py (caps 22-24)

@@ -318,6 +318,83 @@ void test_charge_0x594() {
 }
 
 // ---------------------------------------------------------------------------
+// 0x0569 — OBC AC inlet: line voltage and charge current
+// ---------------------------------------------------------------------------
+
+void test_ac_inlet_0x569() {
+    printf("\ntest_ac_inlet_0x569\n");
+
+    {
+        // Charging: charge_inprogress set by 0x0594, then 0x569 with d[4]=0xf8 (248V), d[5]=0x09 (9A)
+        auto* v = make_vehicle();
+        auto f594 = make_frame(0x594, {0x00, 0x80, 0x21, 0x20, 0x00, 0x04, 0x00, 0x09});
+        v->IncomingFrameCan3(&f594);
+        auto f = make_frame(0x569, {0x00, 0x40, 0x01, 0x02, 0xf8, 0x09, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_charge_voltage->AsFloat(), 248.0f), "AC voltage 248V");
+        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 9.0f),   "AC current 9A");
+        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 248.0f * 9.0f / 1000.0f), "AC power 2.232kW");
+        delete v;
+    }
+
+    {
+        // Idle (cable still plugged in): charge_inprogress false, d[4]=0xf8 (248V), d[5]=0x00 (0A)
+        auto* v = make_vehicle();
+        auto f = make_frame(0x569, {0x00, 0x00, 0x01, 0x02, 0xf8, 0x00, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_charge_voltage->AsFloat(), 248.0f), "AC voltage 248V when idle");
+        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f),   "AC current 0A when idle");
+        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 0.0f),     "AC power 0kW when idle");
+        delete v;
+    }
+
+    {
+        // Driving: charging-active flag clear (d[1]=0x00) but d[5] non-zero.
+        // Current and power must be zeroed; voltage may still be stale but is not touched.
+        auto* v = make_vehicle();
+        auto f = make_frame(0x569, {0x00, 0x00, 0x01, 0x02, 0xf8, 0x08, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f), "AC current 0A when flag clear (driving)");
+        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(),   0.0f), "AC power 0kW when flag clear (driving)");
+        delete v;
+    }
+
+    {
+        // Driving with OBC flag set (d[1]=0x40): observed on real car — the OBC flag
+        // alone is not a reliable gate. charge_inprogress from 0x0594 is the authority.
+        // 0x0594 not seen → charge_inprogress defaults false → current must be 0.
+        auto* v = make_vehicle();
+        auto f = make_frame(0x569, {0x00, 0x40, 0x01, 0x02, 0xf8, 0x08, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f), "AC current 0A: OBC flag set but not charging (driving)");
+        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(),   0.0f), "AC power 0kW: OBC flag set but not charging (driving)");
+        delete v;
+    }
+
+    {
+        // Transition: charge session ends. 0x0594 clears charge_inprogress, then
+        // 0x569 fires with d[1]=0x40 and non-zero d[5] → current/power must be 0.
+        auto* v = make_vehicle();
+        // First: set up charging state via 0x0594 (d[3]=0x20 → is_charging)
+        auto f594_on = make_frame(0x594, {0x00, 0x80, 0x21, 0x20, 0x00, 0x04, 0x00, 0x09});
+        v->IncomingFrameCan3(&f594_on);
+        // Charging 0x569 during charge session
+        auto f569_chg = make_frame(0x569, {0x00, 0x40, 0x01, 0x02, 0xf8, 0x09, 0x00, 0x00});
+        v->IncomingFrameCan3(&f569_chg);
+        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 9.0f), "AC current 9A during charge session");
+        // Now 0x0594 clears charge_inprogress (d[3]=0x00)
+        auto f594_off = make_frame(0x594, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+        v->IncomingFrameCan3(&f594_off);
+        // 0x569 still arrives with d[1]=0x40, d[5]=0x08 (OBC winding down)
+        auto f569_end = make_frame(0x569, {0x00, 0x40, 0x01, 0x02, 0xf8, 0x08, 0x00, 0x00});
+        v->IncomingFrameCan3(&f569_end);
+        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f), "AC current cleared after charge session ends");
+        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(),   0.0f), "AC power cleared after charge session ends");
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // 0x059E — BMS battery pack temperature
 // ---------------------------------------------------------------------------
 
@@ -658,6 +735,7 @@ int main() {
     test_trip_energy_0x2AF();
     test_locks_0x583();
     test_charge_0x594();
+    test_ac_inlet_0x569();
     test_bat_temp_0x59E();
     test_bat_capacity_0x5CA();
     test_clima_status_0x5EA();

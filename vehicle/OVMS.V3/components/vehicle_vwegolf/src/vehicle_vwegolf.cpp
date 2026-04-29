@@ -313,6 +313,30 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                      (d[3] & 0x10) >> 4);
             break;
         }
+        case 0x0569: {
+            // OBC AC inlet status: line voltage and charge current.
+            // d[4]: AC line voltage, factor 1 V/bit (0xf8 = 248 V observed in NZ).
+            //       Present whenever cable is plugged in (EVSE line voltage on cable).
+            // d[5]: AC charge current, factor 1 A/bit; 0x00 when OBC is idle.
+            // d[1] bit 6 (0x40): OBC-side flag, but observed to be set during driving
+            //       too (EVSE handshake residual or OBC state machine). Use
+            //       charge_inprogress from 0x0594 as the authoritative gate so that
+            //       current/power are only exposed during a real charge session.
+            // Note: voltage/current scaling unconfirmed from a single location; factor
+            // 1 V/bit and 1 A/bit are consistent with observed values (248 V, 9 A) and
+            // the measured DC battery power (~1.6 kW) with expected OBC losses.
+            f = (float)d[4];
+            if (f > 0.0f)
+                StandardMetrics.ms_v_charge_voltage->SetValue(f);
+            f = StandardMetrics.ms_v_charge_inprogress->AsBool() ? (float)d[5] : 0.0f;
+            StandardMetrics.ms_v_charge_current->SetValue(f);
+            StandardMetrics.ms_v_charge_power->SetValue(
+                StandardMetrics.ms_v_charge_voltage->AsFloat() * f / 1000.0f);
+            ESP_LOGV(TAG, "0x0569 ac_voltage=%.0fV ac_current=%.0fA ac_power=%.3fkW",
+                     StandardMetrics.ms_v_charge_voltage->AsFloat(), f,
+                     StandardMetrics.ms_v_charge_power->AsFloat());
+            break;
+        }
         case 0x0594: {
             // HV charge management: AC/DC type, timer, plug, cabin setpoint.
 
@@ -329,11 +353,6 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 bool is_charging = (d[3] & 0x20) != 0;
                 StandardMetrics.ms_v_charge_inprogress->SetValue(is_charging);
                 StandardMetrics.ms_v_charge_state->SetValue(is_charging ? "charging" : "stopped");
-                // Mirror HV bus voltage; charge current is not yet decoded.
-                if (is_charging) {
-                    StandardMetrics.ms_v_charge_voltage->SetValue(
-                        StandardMetrics.ms_v_bat_voltage->AsFloat());
-                }
                 if (is_charging != was_charging) {
                     if (is_charging) NotifyChargeStart();
                     else NotifyChargeStopped();
