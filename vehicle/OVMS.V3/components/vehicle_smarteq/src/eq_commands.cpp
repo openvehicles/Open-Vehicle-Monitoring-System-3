@@ -88,7 +88,7 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     {
     PollSetState(POLLSTATE_AWAKE);
     vTaskDelay(2000 / portTICK_PERIOD_MS);
-    if (!mt_bus_awake->AsBool(false)) 
+    if (!IsAwakeEQ()) 
       {
       ESP_LOGE(TAG, "vehicle not awake");
       m_ddt4all_exec = 5; // reduce cooldown on error
