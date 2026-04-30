@@ -48,6 +48,7 @@
 #undef byte
 #include "ovms_netmanager.h"
 #include "ovms_config.h"
+#include "ovms_ota.h"
 #include <wolfssl/wolfcrypt/memory.h>
 #include <wolfssl/wolfcrypt/sha256.h>
 #include <wolfssl/wolfcrypt/coding.h>
@@ -205,8 +206,15 @@ void OvmsSSH::NetManInit(std::string event, void* data)
   std::string skey = MyConfig.GetParamValueBinary("ssh.server", "key", std::string());
   if (skey.empty())
     {
-    ESP_LOGI(tag, "Generating SSH Server key, wait before attempting access.");
-    new RSAKeyGenerator();
+    if (ovms_partition_table_get_type() == OVMS_FlashPartition_34)
+      {
+      ESP_LOGW(tag, "Partition update in progress, SSH server key generation inhibited");
+      }
+    else
+      {
+      ESP_LOGI(tag, "Generating SSH Server key, wait before attempting access.");
+      new RSAKeyGenerator();
+      }
     }
   else
     {
