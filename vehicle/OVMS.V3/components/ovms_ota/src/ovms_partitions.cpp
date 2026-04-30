@@ -1090,7 +1090,9 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
             writer->puts("v3-30 Error: Failed to set boot partition");
             return false;
             }
-          writer->puts("v3-30 Factory boot partition is ready and set to boot. Reboot is now required");
+          writer->puts("v3-30 Factory boot partition is ready and set to boot. Rebooting now...");
+          writer->puts("v3-30 !! Do not power off the module while the upgrade is running !!");
+          vTaskDelay(2000/portTICK_PERIOD_MS);
           MyBoot.Restart();
           MyBoot.SetPartitionUpdate();
           return true;
@@ -1106,7 +1108,9 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
         writer->puts("v3-30 The currently running partition is factory, so we can upgrade the partition table, and then reboot");
         if (ovms_partition_table_upgrade_store(writer))
           {
-          writer->puts("v3-30 Partition table store upgraded successfully, reboot is now required");
+          writer->puts("v3-30 Partition table store upgraded successfully, rebooting now...");
+          writer->puts("v3-30 !! Do not power off the module while the upgrade is running !!");
+          vTaskDelay(2000/portTICK_PERIOD_MS);
           MyBoot.Restart();
           MyBoot.SetPartitionUpdate();
           return true;
@@ -1122,6 +1126,16 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
       break;
     case OVMS_FlashPartition_34:
       {
+      if (MyBoot.GetBootReason() != BR_PartitionUpdate)
+        {
+        // restarted by user request (after a failed migration)
+        writer->puts("v3-34 We need to upgrade the store partition to the new format, rebooting now...");
+        writer->puts("v3-34 !! Do not power off the module while the upgrade is running !!");
+        vTaskDelay(2000/portTICK_PERIOD_MS);
+        MyBoot.Restart();
+        MyBoot.SetPartitionUpdate();
+        return true;
+        }
       writer->puts("v3-34 We need to upgrade the store partition to the new format, and then reboot");
       if (!ovms_partition_table_migrate_store(writer))
         {
@@ -1133,7 +1147,8 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
         writer->puts("v3-34 Error: Failed to upgrade factory partition table");
         return false;
         }
-      writer->puts("v3-34 Store migrated successfully, factory partition table upgraded successfully, reboot is now required");
+      writer->puts("v3-34 Store migrated successfully, factory partition table upgraded successfully, rebooting now...");
+      vTaskDelay(2000/portTICK_PERIOD_MS);
       MyBoot.Restart();
       MyBoot.SetSoftReset();  // Note that we don't set PartitionUpdate here, as we are done with the partition update
       return true;
