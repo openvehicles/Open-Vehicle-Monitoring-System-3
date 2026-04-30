@@ -913,6 +913,20 @@ bool ovms_partition_table_migrate_store(OvmsWriter* writer)
   // Try to mount the store2 partition if it is not already mounted
   if (!ovms_store2_mounted)
     {
+    // Erase store2 prior to mount to ensure a clean start with auto reformatting on mount
+    const esp_partition_t* p = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "store2");
+    if (!p)
+      {
+      writer->puts("Error: Migration failed - could not find store2 partition");
+      return false;
+      }
+    writer->printf("Erasing store2 data (%" PRId32 " bytes)...\n", p->size);
+    if (esp_partition_erase_range(p, 0, p->size) != ESP_OK)
+      {
+      writer->puts("Error: Migration failed - could not erase store2 data");
+      return false;
+      }
+
     if (! ovms_partition_table_mount_store2(writer))
       {
       writer->puts("Error: Migration failed - could not mount /store2");

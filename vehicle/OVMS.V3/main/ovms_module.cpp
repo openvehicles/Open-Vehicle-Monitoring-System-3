@@ -53,6 +53,7 @@ static const char *TAG = "module";
 #include "ovms_boot.h"
 #include "ovms_mutex.h"
 #include "ovms_notify.h"
+#include "ovms_ota.h"
 #include "string_writer.h"
 #include "buffered_shell.h"
 
@@ -1429,12 +1430,22 @@ static void module_perform_factoryreset(OvmsWriter* writer)
     return;
     }
 
+  // If we're running on the intermediate (dual store) partition scheme, the factory reset
+  //  is an attempt to fix store migration issues, so request update autocontinuation:
+  bool req_partition_update = (ovms_partition_table_get_type() == OVMS_FlashPartition_34);
   if (writer)
-    writer->puts("Factory reset of configuration store complete and reboot now...");
+    {
+    writer->printf("Factory reset of configuration store complete, rebooting now %s...\n",
+      req_partition_update ? "into partition update mode" : "");
+    }
   else
-    ESP_LOGW(TAG, "Factory reset of configuration store complete and reboot now...");
+    {
+    ESP_LOGW(TAG, "Factory reset of configuration store complete, rebooting now %s...",
+      req_partition_update ? "into partition update mode" : "");
+    }
   vTaskDelay(1000/portTICK_PERIOD_MS);
   MyBoot.Restart();
+  if (req_partition_update) MyBoot.SetPartitionUpdate();
   }
 
 bool module_factory_reset_yesno(OvmsWriter* writer, void* ctx, char ch)
