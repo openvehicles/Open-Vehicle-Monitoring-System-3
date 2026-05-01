@@ -1443,10 +1443,25 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x54f:
       /* Climate control's measurement of temperature inside the car.
-       * Appears to be in Fahrenheit. Unsure why the check for 20?
-       * mjk: seeems like off by 6 celcius on 2013 models, so added cabintempoffset that can be set in GUI.
+       * AZE0 (2013-2017): Fahrenheit, may be off by ~6°C requiring xnl.cabintempoffset.
+       * ZE1 (2018+): half-degree Celsius with 40°C bias, same encoding as ambient temp
+       * on 0x54C byte 6 (which OVMS already parses correctly). Reverse-engineered Apr 2026
+       * by samr037 by comparing ZE1 captures at known cabin temps:
+       *   d[0]=0x72(114) -> 17°C   (matches today's ~18°C cabin)
+       *   d[0]=0x8C(140) -> 30°C   (matches Jul 2024 summer cabin)
+       *   d[0]=0x50(80)  -> 0°C    (sentinel/HVAC off — skipped)
+       * After this patch, xnl.cabintempoffset is unnecessary on ZE1.
        */
-      if (d[0] != 20)
+      if (cfg_ze1)
+        {
+        if (d[0] != 0x50 && d[0] != 20)  // skip sentinels
+          {
+          float cabin_c = d[0] / 2.0f - 40.0f;
+          if (cabin_c > -30.0f && cabin_c < 60.0f)
+            StandardMetrics.ms_v_env_cabintemp->SetValue(cabin_c);
+          }
+        }
+      else if (d[0] != 20)
         {
         StandardMetrics.ms_v_env_cabintemp->SetValue((5.0 / 9.0 * (d[0] - 32)) + MyConfig.GetParamValueFloat("xnl", "cabintempoffset", DEFAULT_CABINTEMP_OFFSET));
         // StandardMetrics.ms_v_env_cabintemp->SetValue(d[0] / 2.0 - 14);
@@ -1475,6 +1490,27 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x59e:
       {
+      // ZE1 (40/62 kWh): byte 7 = dashboard SOC (multiplier 0.5).
+      // Reverse-engineered Apr 2026 by samr037 by comparing two CAN captures
+      // taken on a 2018 ZE1 40kWh at known dashboard SOCs:
+      //   real ~59% / dash ~55%  -> byte 7 = 0x6E (110/2 = 55%)
+      //   real ~95% / dash 100%  -> byte 7 = 0xC8 (200/2 = 100%)
+      //   real ~81% / dash  86%  -> byte 7 = 0xAC (172/2 = 86%)
+      // This message previously had no parser for ZE1; xnl.v.b.soc.instrument
+      // was always 0 (Issue #323 long-standing gap).
+      if (cfg_ze1)
+        {
+        float instr_soc = d[7] / 2.0f;
+        if (instr_soc > 0.0f && instr_soc <= 100.0f)
+          {
+          m_soc_instrument->SetValue(instr_soc);
+          // If user opted out of newcar SOC, use dashboard SOC as the main metric:
+          if (!MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
+            {
+            StandardMetrics.ms_v_bat_soc->SetValue(instr_soc);
+            }
+          }
+        }
       switch(m_battery_type->AsInt(BATTERY_TYPE_2_24kWh))
         {
         case BATTERY_TYPE_1_24kWh:
