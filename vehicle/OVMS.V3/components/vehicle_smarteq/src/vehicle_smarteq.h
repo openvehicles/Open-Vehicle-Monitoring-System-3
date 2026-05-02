@@ -508,7 +508,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     int can_gear = 0;                     // <0 = reverse, 0 = park/neutral, >0 = drive -- logic by vehicle.cpp events
     bool can_init = true;                 // initial CAN data received flag, to set default values for some metrics on first run
     bool can_awake = false;
-    bool can_locked = false;
+    bool can_locked = true;
     bool can_hvac = false;
     bool can_handbrake = false;
     bool can_headlights = false;

@@ -272,6 +272,13 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 // Sync CAN datapoints to OVMS metrics, called by Ticker1, because CAN refresh rate is too high
 void OvmsVehicleSmartEQ::smartCAN2Metrics()
 {  
+  if (can_awake && !IsAwakeEQ())
+    {
+    ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
+    mt_bus_awake->SetValue(true);
+    m_candata_poll = false;
+    m_candata_timer = -1;
+    }  
   StdMetrics.ms_v_env_on->SetValue(can_env_on);
   StdMetrics.ms_v_env_awake->SetValue(can_awake);
   StdMetrics.ms_v_env_hvac->SetValue(can_hvac);
@@ -296,7 +303,8 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
 
   if(can_hvac || can_env_on)
     StdMetrics.ms_v_env_cabintemp->SetValue(can_cabintemp);
-  if (mt_bus_awake->AsBool(false))
+
+  if (IsAwakeEQ())
     {    
     StdMetrics.ms_v_env_headlights->SetValue(can_headlights);
     StdMetrics.ms_v_env_gear->SetValue(can_gear);
@@ -308,17 +316,7 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
     StdMetrics.ms_v_bat_range_ideal->SetValue(can_range_ideal);
     StdMetrics.ms_v_bat_soh->SetValue(can_soh);
     StdMetrics.ms_v_bat_health->SetValue(can_bat_health);
-    }
-  if(can_env_on)
-    {
     StdMetrics.ms_v_pos_speed->SetValue(can_speed);
     StdMetrics.ms_v_pos_odometer->SetValue(can_odometer);
-    }
-  if (can_awake && !mt_bus_awake->AsBool(false))
-    {
-    ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
-    mt_bus_awake->SetValue(true);
-    m_candata_poll = false;
-    m_candata_timer = -1;
     }
 }

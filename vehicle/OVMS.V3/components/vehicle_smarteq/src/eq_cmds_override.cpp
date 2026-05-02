@@ -216,7 +216,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
 
   OvmsVehicle::vehicle_command_t res = Fail;
 
-  if(!mt_bus_awake->AsBool(false)) 
+  if(!IsAwakeEQ()) 
     {
     uint8_t data[4] = {0x40, 0x00, 0x00, 0x00};
     canbus *obd;
@@ -226,7 +226,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
       {
       obd->WriteStandard(0x634, 4, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
-      if (mt_bus_awake->AsBool(false)) 
+      if (IsAwakeEQ()) 
         {
         res = Success;
         break;
@@ -259,7 +259,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
 
   OvmsVehicle::vehicle_command_t res = Fail;
 
-  if(!mt_bus_awake->AsBool(false)) 
+  if(!IsAwakeEQ()) 
     {
     ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
     uint8_t data[8] = {0xc3, 0x11, 0x96, 0xef, 0x14, 0x10, 0x96, 0x85};
@@ -269,7 +269,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
       {
       obd->WriteStandard(0x350, 8, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
-      if (mt_bus_awake->AsBool(false)) 
+      if (IsAwakeEQ()) 
         {
         res = Success;
         break;
