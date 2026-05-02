@@ -66,15 +66,19 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
             return (static_cast<uint32_t>(sid >> 3) << 24) |
                    (static_cast<uint32_t>(sid & 0x7) << 21);
         };
+        // MCP2515 has 2 RX buffers: RXB0 uses mask[0] + filter[0..1] (2 slots);
+        // RXB1 uses mask[1] + filter[2..5] (4 slots). We need 5 unique IDs total;
+        // filter[5] duplicates filter[4] (0x6B4) so the unused slot does not
+        // accidentally accept id 0 with the all-don't-care default.
         mcp2515_filter_config_t f = {};
         f.mask[0].u32   = mcp_sid(0x7FF);
-        f.filter[0].u32 = mcp_sid(0x131);   // SoC (BMS)
-        f.filter[1].u32 = mcp_sid(0x187);   // gear selector
         f.mask[1].u32   = mcp_sid(0x7FF);
-        f.filter[2].u32 = mcp_sid(0x191);   // BMS current/voltage
-        f.filter[3].u32 = mcp_sid(0x2AF);   // trip energy
-        f.filter[4].u32 = mcp_sid(0x6B4);   // VIN
-        f.filter[5].u32 = mcp_sid(0x6B4);   // (duplicate — only 5 IDs needed)
+        f.filter[0].u32 = mcp_sid(0x131);   // SoC (BMS)              -> RXB0
+        f.filter[1].u32 = mcp_sid(0x187);   // gear selector          -> RXB0
+        f.filter[2].u32 = mcp_sid(0x191);   // BMS current/voltage    -> RXB1
+        f.filter[3].u32 = mcp_sid(0x2AF);   // trip energy            -> RXB1
+        f.filter[4].u32 = mcp_sid(0x6B4);   // VIN                    -> RXB1
+        f.filter[5].u32 = mcp_sid(0x6B4);   // (duplicate of filter[4] to fill unused slot)
         if (static_cast<mcp2515*>(m_can2)->SetAcceptanceFilter(f) != ESP_OK)
             ESP_LOGE(TAG, "FCAN acceptance filter setup failed — all frames will reach ISR");
     }
@@ -229,16 +233,13 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
 // ---------------------------------------------------------------------------
 
 void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
-    // Only genuine KCAN frames reset the idle counter and trigger the OCU keepalive.
-    if (p_frame->origin == m_can3) {
-        m_bus_idle_ticks = 0;
+    m_bus_idle_ticks = 0;
 
-        // Send OCU keepalive at ~5Hz while active. VW OSEK NM requires keepalives at
-        // ~200ms intervals; Ticker1 alone (1Hz) is too slow for the ECU to stay in network.
-        // SendOcuHeartbeat self-throttles (180ms min) against TX queue overflow on bus bursts.
-        if (m_ocu_active) {
-            SendOcuHeartbeat();
-        }
+    // Send OCU keepalive at ~5Hz while active. VW OSEK NM requires keepalives at
+    // ~200ms intervals; Ticker1 alone (1Hz) is too slow for the ECU to stay in network.
+    // SendOcuHeartbeat self-throttles (180ms min) against TX queue overflow on bus bursts.
+    if (m_ocu_active) {
+        SendOcuHeartbeat();
     }
 
     uint8_t* d = p_frame->data.u8;

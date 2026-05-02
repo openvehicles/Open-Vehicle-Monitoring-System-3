@@ -561,39 +561,24 @@ void test_ambient_temp_0x6B5() {
 }
 
 // ---------------------------------------------------------------------------
-// Origin check: FCAN frames forwarded via IncomingFrameCan2 must NOT reset
-// the KCAN idle counter (m_bus_idle_ticks). Only origin==m_can3 frames count.
+// IncomingFrameCan3 resets the KCAN idle counter on every call.
+// (CAN2→CAN3 forwarding has been removed; the framework only dispatches
+// genuine can3 frames here, so no origin guard is needed.)
 // ---------------------------------------------------------------------------
 
-void test_origin_check() {
-    printf("\ntest_origin_check\n");
+void test_kcan_resets_idle_counter() {
+    printf("\ntest_kcan_resets_idle_counter\n");
 
-    canbus kcan, fcan;
+    canbus kcan;
 
-    {
-        // KCAN frame (origin==m_can3) must reset idle counter to 0.
-        auto* v = make_vehicle();
-        v->m_can3 = &kcan;
-        auto f = make_frame(0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
-        f.origin = &kcan;
-        v->IncomingFrameCan3(&f);
-        CHECK(v->test_bus_idle_ticks() == 0,
-              "KCAN frame (origin==m_can3) resets idle counter to 0");
-        delete v;
-    }
-
-    {
-        // FCAN frame (origin!=m_can3) must NOT reset idle counter.
-        // This simulates IncomingFrameCan2 forwarding a powertrain frame.
-        auto* v = make_vehicle();
-        v->m_can3 = &kcan;
-        auto f = make_frame(0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
-        f.origin = &fcan;
-        v->IncomingFrameCan3(&f);
-        CHECK(v->test_bus_idle_ticks() == VWEGOLF_BUS_TIMEOUT_SECS,
-              "FCAN frame (origin!=m_can3) does not reset idle counter");
-        delete v;
-    }
+    auto* v = make_vehicle();
+    v->m_can3 = &kcan;
+    auto f = make_frame(0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
+    f.origin = &kcan;
+    v->IncomingFrameCan3(&f);
+    CHECK(v->test_bus_idle_ticks() == 0,
+          "IncomingFrameCan3 resets idle counter to 0");
+    delete v;
 }
 
 // ---------------------------------------------------------------------------
@@ -681,7 +666,7 @@ int main() {
     test_innentemp_0x66E();
     test_odo_0x6B7();
     test_ambient_temp_0x6B5();
-    test_origin_check();
+    test_kcan_resets_idle_counter();
     test_fcan_filter_encoding();
     test_crtd_replay();
 

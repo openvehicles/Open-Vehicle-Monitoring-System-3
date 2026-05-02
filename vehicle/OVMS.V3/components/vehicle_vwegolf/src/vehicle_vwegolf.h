@@ -98,9 +98,8 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     void Ticker1(uint32_t ticker) override;
 
  private:
-    // Seconds since the last genuine KCAN (can3) frame arrived. Reset to 0 only for
-    // frames with origin==m_can3; FCAN frames forwarded via IncomingFrameCan2 are excluded.
-    // Incremented each second in Ticker1. Bus is alive while < VWEGOLF_BUS_TIMEOUT_SECS.
+    // Seconds since the last KCAN (can3) frame arrived. Reset to 0 in IncomingFrameCan3,
+    // incremented each second in Ticker1. Bus is alive while < VWEGOLF_BUS_TIMEOUT_SECS.
     // Initialized to timeout so we treat the bus as offline at cold boot.
     uint8_t m_bus_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
 
