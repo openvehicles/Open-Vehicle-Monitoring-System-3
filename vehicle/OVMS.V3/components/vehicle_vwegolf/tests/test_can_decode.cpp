@@ -54,13 +54,13 @@ void test_soc_0x131() {
 
     // SoC: byte 3 * 0.5. byte3 = 0xC8 (200 dec) → 200 * 0.5 = 100%
     auto f = make_frame(0x131, {0x00, 0x00, 0x00, 0xC8, 0x00, 0x00, 0x00, 0x00});
-    v->IncomingFrameCan3(&f);
+    v->IncomingFrameCan2(&f);
     CHECK(near(StandardMetrics.ms_v_bat_soc->AsFloat(), 100.0f), "SoC 100% from 0xC8");
 
     g_metrics = MetricStore{};
     // byte3 = 0x64 (100 dec) → 100 * 0.5 = 50%
     f = make_frame(0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
-    v->IncomingFrameCan3(&f);
+    v->IncomingFrameCan2(&f);
     CHECK(near(StandardMetrics.ms_v_bat_soc->AsFloat(), 50.0f), "SoC 50% from 0x64");
 
     delete v;
@@ -201,7 +201,7 @@ void test_bms_0x191() {
     // voltage=400V: raw=1600=0x640 → d[3]=0x40, d[4]&0x0F=0x06
     // power = -(400*10)/1000 = -4.0 kW (positive=drive, negative=charge convention)
     auto f = make_frame(0x191, {0x00, 0x90, 0x80, 0x40, 0x06, 0x00, 0x00, 0x00});
-    v->IncomingFrameCan3(&f);
+    v->IncomingFrameCan2(&f);
     CHECK(near(StandardMetrics.ms_v_bat_current->AsFloat(),  10.0f), "BMS current 10A");
     CHECK(near(StandardMetrics.ms_v_bat_voltage->AsFloat(), 400.0f), "BMS voltage 400V");
     CHECK(near(StandardMetrics.ms_v_bat_power->AsFloat(),    -4.0f), "BMS power -4kW (charging convention)");
@@ -214,7 +214,7 @@ void test_bms_0x191() {
         StandardMetrics.ms_v_bat_current->SetValue(10.0f);
         StandardMetrics.ms_v_bat_voltage->SetValue(400.0f);
         auto fs = make_frame(0x191, {0x00, 0xE0, 0xFF, 0xFE, 0x0F, 0x00, 0x00, 0x00});
-        vs->IncomingFrameCan3(&fs);
+        vs->IncomingFrameCan2(&fs);
         CHECK(near(StandardMetrics.ms_v_bat_current->AsFloat(),  10.0f), "0x0191 sentinel: current not overwritten");
         CHECK(near(StandardMetrics.ms_v_bat_voltage->AsFloat(), 400.0f), "0x0191 sentinel: voltage not overwritten");
         delete vs;
@@ -232,7 +232,7 @@ void test_trip_energy_0x2AF() {
     // recd raw=3600 (d[4]=0x10, d[5]=0x0E) → 3600*10/3600000 = 0.01 kWh
     // used raw=7200 (d[6]=0x20, d[7]=0x1C) → 7200*10/3600000 = 0.02 kWh
     auto f = make_frame(0x2AF, {0x00, 0x00, 0x00, 0x00, 0x10, 0x0E, 0x20, 0x1C});
-    v->IncomingFrameCan3(&f);
+    v->IncomingFrameCan2(&f);
     CHECK(near(StandardMetrics.ms_v_bat_energy_recd->AsFloat(), 0.01f, 1e-6f),
           "Trip regen 0.01 kWh");
     CHECK(near(StandardMetrics.ms_v_bat_energy_used->AsFloat(), 0.02f, 1e-6f),
@@ -597,6 +597,64 @@ void test_origin_check() {
 }
 
 // ---------------------------------------------------------------------------
+// FCAN acceptance filter encoding
+//
+// SetAcceptanceFilter sends bytes u8[3..0] as MCP2515 registers SIDH, SIDL,
+// EID8, EID0.  The lambdas in the constructor must produce the exact u32 that
+// maps each CAN ID to the correct register bytes.  A wrong encoding (e.g. the
+// original .b.sid approach) would silently program all-zero filters and let
+// every frame through — which caused the ISR storm we fixed.
+// ---------------------------------------------------------------------------
+
+void test_fcan_filter_encoding() {
+    printf("\ntest_fcan_filter_encoding\n");
+
+    // Replicate mcp_sid lambda: u32 = (SID>>3)<<24 | (SID&7)<<21
+    auto mcp_sid = [](uint16_t sid) -> uint32_t {
+        return (static_cast<uint32_t>(sid >> 3) << 24) |
+               (static_cast<uint32_t>(sid & 0x7) << 21);
+    };
+
+    // Replicate mcp_eid lambda: packs 29-bit extended ID with EXIDE=1
+    auto mcp_eid = [](uint32_t ext_id) -> uint32_t {
+        uint32_t sid  = (ext_id >> 18) & 0x7FF;
+        uint32_t eid  =  ext_id & 0x3FFFF;
+        uint8_t  sidh = static_cast<uint8_t>(sid >> 3);
+        uint8_t  sidl = static_cast<uint8_t>(((sid & 0x7) << 5) | (1 << 3) | ((eid >> 16) & 0x3));
+        uint8_t  eid8 = static_cast<uint8_t>( eid >> 8);
+        uint8_t  eid0 = static_cast<uint8_t>( eid);
+        return (static_cast<uint32_t>(sidh) << 24) | (static_cast<uint32_t>(sidl) << 16) |
+               (static_cast<uint32_t>(eid8) <<  8) |  static_cast<uint32_t>(eid0);
+    };
+
+    // Standard frame: SID=0x131 → SIDH=0x26 SIDL=0x20
+    // SIDH = 0x131>>3 = 0x26, SIDL = (0x131&7)<<5 = 0x20
+    CHECK(mcp_sid(0x131) == 0x26200000, "mcp_sid(0x131) == 0x26200000");
+    CHECK(mcp_sid(0x187) == 0x30E00000, "mcp_sid(0x187) == 0x30E00000");
+    CHECK(mcp_sid(0x191) == 0x32200000, "mcp_sid(0x191) == 0x32200000");
+    CHECK(mcp_sid(0x2AF) == 0x55E00000, "mcp_sid(0x2AF) == 0x55E00000");
+    CHECK(mcp_sid(0x6B4) == 0xD6800000, "mcp_sid(0x6B4) == 0xD6800000");
+    CHECK(mcp_sid(0x7FF) == 0xFFE00000, "mcp_sid(0x7FF) == 0xFFE00000 (exact-match mask)");
+
+    // Extended frame: 0x1A5554A8 → SID=0x695 EID=0x154A8 EXIDE=1
+    // SIDH=0xD2 SIDL=0xA9 EID8=0x54 EID0=0xA8
+    CHECK(mcp_eid(0x1A5554A8) == 0xD2A954A8, "mcp_eid(0x1A5554A8) == 0xD2A954A8");
+
+    // Round-trip: decode the u32 back to the original extended ID
+    uint32_t u32  = mcp_eid(0x1A5554A8);
+    uint32_t sidh = (u32 >> 24) & 0xFF;
+    uint32_t sidl = (u32 >> 16) & 0xFF;
+    uint32_t eid8 = (u32 >>  8) & 0xFF;
+    uint32_t eid0 =  u32        & 0xFF;
+    uint32_t exide = (sidl >> 3) & 0x1;
+    uint32_t sid_rt = (sidh << 3) | (sidl >> 5);
+    uint32_t eid_rt = ((sidl & 0x3) << 16) | (eid8 << 8) | eid0;
+    uint32_t ext_rt = (sid_rt << 18) | eid_rt;
+    CHECK(exide  == 1,           "mcp_eid round-trip: EXIDE=1");
+    CHECK(ext_rt == 0x1A5554A8, "mcp_eid round-trip: decoded ID == 0x1A5554A8");
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
@@ -624,6 +682,7 @@ int main() {
     test_odo_0x6B7();
     test_ambient_temp_0x6B5();
     test_origin_check();
+    test_fcan_filter_encoding();
     test_crtd_replay();
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);

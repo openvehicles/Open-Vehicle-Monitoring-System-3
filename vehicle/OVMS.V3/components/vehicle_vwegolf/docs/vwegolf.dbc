@@ -28,17 +28,6 @@ BU_: OVMS BMS ESP Gateway BCM ChargeCtrl ClimaECU Instruments AmbientSensor Gear
 BO_ 253 ESP_Speed: 8 ESP
  SG_ Speed : 32|16@1+ (0.01,0) [0|655.35] "km/h" OVMS
 
-BO_ 305 BMS_SoC: 8 BMS
- SG_ SoC : 24|8@1+ (0.5,0) [0|127.5] "%" OVMS
-
-BO_ 401 BMS_PowerBus: 8 BMS
- SG_ BatCurrent : 12|12@1+ (1,-2047) [-2047|2048] "A" OVMS
- SG_ BatVoltage : 24|12@1+ (0.25,0) [0|1023.75] "V" OVMS
-
-BO_ 687 BMS_TripEnergy: 8 BMS
- SG_ EnergyRecd : 32|15@1+ (0.002778,0) [0|91] "Wh" OVMS
- SG_ EnergyUsed : 48|15@1+ (0.002778,0) [0|91] "Wh" OVMS
-
 BO_ 1158 GPS_Position: 8 Gateway
  SG_ Latitude : 0|27@1+ (1e-006,0) [0|90] "deg" OVMS
  SG_ LatSign : 55|1@1+ (1,0) [0|1] "" OVMS
@@ -116,8 +105,19 @@ BO_ 1447 OCU_Keepalive: 8 OVMS
 
 // ---------------------------------------------------------------------------
 // FCAN (500 kbps) — powertrain bus, accessible via J533 harness
-// OVMS: CAN bus 2 (m_can2).  Sparse but carries gear selector and VIN.
+// OVMS: CAN bus 2 (m_can2).  BMS (SoC, HV bus, trip energy), gear selector, VIN.
 // ---------------------------------------------------------------------------
+
+BO_ 305 BMS_SoC: 8 BMS
+ SG_ SoC : 24|8@1+ (0.5,0) [0|127.5] "%" OVMS
+
+BO_ 401 BMS_PowerBus: 8 BMS
+ SG_ BatCurrent : 12|12@1+ (1,-2047) [-2047|2048] "A" OVMS
+ SG_ BatVoltage : 24|12@1+ (0.25,0) [0|1023.75] "V" OVMS
+
+BO_ 687 BMS_TripEnergy: 8 BMS
+ SG_ EnergyRecd : 32|15@1+ (0.002778,0) [0|91] "Wh" OVMS
+ SG_ EnergyUsed : 48|15@1+ (0.002778,0) [0|91] "Wh" OVMS
 
 BO_ 391 GearSelector: 8 GearModule
  SG_ GearPosition : 16|4@1+ (1,0) [0|15] "" OVMS
@@ -259,9 +259,9 @@ CM_ BO_ 949 "KCAN. Secondary clima running indicator from clima ECU. Byte[0] bit
 CM_ BO_ 1516 "KCAN. Secondary clima status byte from clima ECU. Observed 0x04=idle, 0x07=active. Full decode not confirmed.";
 CM_ BO_ 2536702224 "KCAN (extended 29-bit ID 0x17330110). J533 gateway BAP status broadcast, node 0x01. Port 0x1B carries real-time driver-zone setpoint; port 0x21 mirrors it for passenger zone. Encoding: raw = (celsius - 10) * 10, LE uint16. Confirmed Captures 2, 7 (18C=0x50, 22C=0x78). Multi-frame BAP — see clima-control-bap.md.";
 CM_ BO_ 253 "KCAN. Vehicle speed from ESP. Confirmed from captures.";
-CM_ BO_ 305 "KCAN. State of charge from BMS. Confirmed. 0xFE is a startup sentinel (127.0%) — discard.";
-CM_ BO_ 401 "KCAN. HV bus current and voltage from BMS. Confirmed from captures.";
-CM_ BO_ 687 "KCAN. Trip energy counters from BMS. Encoding inferred; physical plausibility confirmed.";
+CM_ BO_ 305 "FCAN. State of charge from BMS. Confirmed. 0xFE is a startup sentinel (127.0%) — discard.";
+CM_ BO_ 401 "FCAN. HV bus current and voltage from BMS. Confirmed from captures.";
+CM_ BO_ 687 "FCAN. Trip energy counters from BMS. Encoding inferred; physical plausibility confirmed.";
 CM_ BO_ 1158 "KCAN. GPS position. Encoding inferred from RE. Sign bits for S/W hemisphere not yet decoded — positive values only.";
 CM_ BO_ 1411 "KCAN. ZV_02 central locking and door open status. Confirmed from captures.";
 CM_ BO_ 1428 "KCAN. HV charge management: duration, timer, plug type, charge state, chargeport, cabin setpoint. ChargeType/ChargePort share same bits — ChargePort derived from non-zero ChargeType. Confirmed from AC Type 2 charge cycle (20260407-131402) and 100% SOC idle (20260407-141135). CCS DC keeps KCAN silent so ChargeType=2 never observed on this frame.";

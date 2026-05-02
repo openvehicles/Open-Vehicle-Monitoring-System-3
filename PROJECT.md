@@ -54,14 +54,16 @@ WDT = Events task (not CanRx). Events starved → TWDT. CanRx ran on abort.
 1. **can2 FCAN ISR storm — top.** Cap `can3-20260405-091701`: clima active → can2 840k intr/977s (~860/s), `errflags=0x22401c02`, `txpkt=0`. J533 wakes FCAN during clima → MCP2515 floods → CAN ISR starves events → TWDT. Reproduces under normal clima.
 2. **Power — AWG23 harness.** WiFi TX peak → V drop → brownout → WDT. Test engine-running (14 V).
 3. **Slow handler.** Cap 16: `ticker.10 took 2460 ms` (ABRP). Events starves.
-4. **`canlog_tcpserver` start/stop race.** Crashes correlate w/ log start/stop.
+4. ~~**`canlog_tcpserver` start/stop race.**~~ **Resolved.** Switched to SD card logging (`can log start vfs crtd /sd/…`) — TCP server no longer used, race eliminated.
 
 **Next:**
 
+- **[TODO] Fix ISR storm (blocks Cap 8).** Cap `can3-20260428-095821`: module crashed at ~24s during AC charge — same FCAN ISR storm. Cap 8 OBC energy counter (0x1A5554A8) needs longer stable capture to resolve unit. Investigate MCP2515 interrupt rate, throttle or mask FCAN during logging.
 - Reproduce w/ `log monitor on` + 2nd SSH — live panic BT, not just `module check` summary.
 - Decode BT: `xtensa-esp32-elf-addr2line -e build/ovms3.elf 0x4008dd2e 0x4008dfc9 0x4010cbac 0x4008418e`
 - Measure supply at OVMS connector during `can log start` (DMM/scope). Below ESP32 brownout (~2.43 V at 3.3 V rail / ~4 V on USB-12V step-down) → rewire thicker.
 - If power OK: `log level verbose events` around suspect handlers.
+- **New tool (upstream 2026-04-17):** autostart minimal crash recovery mode — boots into safe state after repeated TWDT. Useful for capturing BT on real crashes without manually catching reboot window.
 
 ### CCS charge type not detected
 

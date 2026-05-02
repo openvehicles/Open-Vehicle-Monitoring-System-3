@@ -27,6 +27,7 @@
 */
 
 #include "vehicle_vwegolf.h"
+#include "mcp2515.h"
 
 #undef TAG
 #define TAG "v-vwegolf"
@@ -51,6 +52,32 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // even though rxerr/txerr stay at zero. Listen-only eliminates this entirely.
     RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  // FCAN — powertrain (read-only)
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN — comfort / clima
+
+    // During charging the OBC floods FCAN at ~860 frames/s which overflows the MCP2515
+    // RX buffers causing a continuous ISR storm that starves the Events task → TWDT.
+    // Hardware acceptance filter passes only the 5 FCAN IDs we decode; everything else
+    // is dropped in hardware before reaching the RX buffers.
+    //
+    // .u32 encoding: SetAcceptanceFilter sends bytes u8[3..0] in order as MCP2515
+    // registers SIDH, SIDL, EID8, EID0.  .b.sid stores the SID in bits [10:0] (LSB),
+    // which lands in EID8/EID0 — wrong.  Use u32 = (SID>>3)<<24 | (SID&7)<<21 instead.
+    {
+        auto mcp_sid = [](uint16_t sid) -> uint32_t {
+            return (static_cast<uint32_t>(sid >> 3) << 24) |
+                   (static_cast<uint32_t>(sid & 0x7) << 21);
+        };
+        mcp2515_filter_config_t f = {};
+        f.mask[0].u32   = mcp_sid(0x7FF);
+        f.filter[0].u32 = mcp_sid(0x131);   // SoC (BMS)
+        f.filter[1].u32 = mcp_sid(0x187);   // gear selector
+        f.mask[1].u32   = mcp_sid(0x7FF);
+        f.filter[2].u32 = mcp_sid(0x191);   // BMS current/voltage
+        f.filter[3].u32 = mcp_sid(0x2AF);   // trip energy
+        f.filter[4].u32 = mcp_sid(0x6B4);   // VIN
+        f.filter[5].u32 = mcp_sid(0x6B4);   // (duplicate — only 5 IDs needed)
+        if (static_cast<mcp2515*>(m_can2)->SetAcceptanceFilter(f) != ESP_OK)
+            ESP_LOGE(TAG, "FCAN acceptance filter setup failed — all frames will reach ISR");
+    }
 
     // 0x66E broadcasts 0xFE as a "no data yet" sentinel before the interior sensor
     // is ready. That decodes to 77°C and would persist across reboots via the metric
@@ -85,13 +112,57 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit() {
 }
 
 // ---------------------------------------------------------------------------
-// FCAN (CAN2) — powertrain bus: gear selector, VIN
+// FCAN (CAN2) — powertrain bus: BMS, gear selector, VIN
 // ---------------------------------------------------------------------------
 
 void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
     uint8_t* d = p_frame->data.u8;
+    float f;
+    uint16_t u16;
 
     switch (p_frame->MsgID) {
+        case 0x0131: {
+            // State of charge. Single byte in d[3], factor 0.5 %.
+            // 0xFE is the ECU's "not ready" sentinel (decodes to 127.0%) — discard it.
+            if (d[3] == 0xFE) break;
+            f = d[3] * 0.5f;
+            StandardMetrics.ms_v_bat_soc->SetValue(f);
+            ESP_LOGV(TAG, "0x0131 soc=%.1f%%", f);
+            break;
+        }
+        case 0x0191: {
+            // BMS current and voltage; power is derived.
+            // d[2]==0xFF is the startup sentinel (all-ones current field → ~2047A, ~1023V).
+            if (d[2] == 0xFF) break;
+            // Current: 12-bit, factor 1 A, offset -2047 A (raw=2047 → 0 A).
+            // NOTE: during AC charging this field reads 0A — 0x0191 appears to carry
+            // inverter/motor current only. Charging current comes from a different frame
+            // not yet identified. TODO: capture charging session and identify the frame.
+            u16 = ((uint16_t)(d[1] & 0xF0) >> 4) | ((uint16_t)(d[2]) << 4);
+            float current = u16 * 1.0f - 2047.0f;
+            StandardMetrics.ms_v_bat_current->SetValue(current);
+
+            // Voltage: 12-bit, factor 0.25 V.
+            u16 = (uint16_t)(d[3]) | ((uint16_t)(d[4] & 0x0F) << 8);
+            float voltage = u16 * 0.25f;
+            StandardMetrics.ms_v_bat_voltage->SetValue(voltage);
+
+            // Negated: OVMS convention is charge=negative, drive=positive.
+            StandardMetrics.ms_v_bat_power->SetValue(-(voltage * current) / 1000.0f);
+            ESP_LOGV(TAG, "0x0191 raw=%02x%02x%02x%02x%02x I=%.1fA V=%.2fV",
+                     d[1], d[2], d[3], d[4], d[5], current, voltage);
+            break;
+        }
+        case 0x02AF: {
+            // Trip energy: regeneration recovered and total consumed.
+            // Both are 15-bit, factor 10 Ws; convert to kWh.
+            u16 = (uint16_t)(d[4]) | ((uint16_t)(d[5] & 0x7F) << 8);
+            StandardMetrics.ms_v_bat_energy_recd->SetValue(u16 * 10.0f / 3600000.0f);
+
+            u16 = (uint16_t)(d[6]) | ((uint16_t)(d[7] & 0x7F) << 8);
+            StandardMetrics.ms_v_bat_energy_used->SetValue(u16 * 10.0f / 3600000.0f);
+            break;
+        }
         case 0x187: {
             // Gear selector position. Nibble at d[2][3:0]: 2=P, 3=R, 4=N, 5=D, 6=B.
             // OVMS convention: negative=reverse, 0=neutral/park, positive=forward.
@@ -144,9 +215,6 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
             break;
         }
     }
-    // J533 bridges KCAN traffic onto CAN2; forward every frame so the KCAN
-    // decoder in IncomingFrameCan3 can process it regardless of which bus it arrives on.
-    IncomingFrameCan3(p_frame);
 }
 
 // ---------------------------------------------------------------------------
@@ -154,11 +222,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
 // ---------------------------------------------------------------------------
 
 void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
-    // Only genuine KCAN frames (origin==can3) reset the idle counter and trigger the
-    // OCU keepalive. IncomingFrameCan2 forwards FCAN frames here for shared decode, but
-    // those must not be treated as KCAN activity — during charging, FCAN is flooded with
-    // OBC data while KCAN is completely silent, and counting FCAN frames as KCAN-alive
-    // causes the heartbeat to hammer a silent bus until the TWAI controller hits bus-off.
+    // Only genuine KCAN frames reset the idle counter and trigger the OCU keepalive.
     if (p_frame->origin == m_can3) {
         m_bus_idle_ticks = 0;
 
@@ -190,49 +254,6 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             f = ((uint16_t)(d[4]) | ((uint16_t)(d[5]) << 8)) * 0.01f;
             StandardMetrics.ms_v_pos_speed->SetValue(f);
             ESP_LOGV(TAG, "0x00FD speed=%.2f km/h", f);
-            break;
-        }
-        case 0x0131: {
-            // State of charge. Single byte in d[3], factor 0.5 %.
-            // 0xFE is the ECU's "not ready" sentinel (decodes to 127.0%) — discard it
-            // to avoid persisting a nonsense value across reboots via metric persistence.
-            if (d[3] == 0xFE) break;
-            f = d[3] * 0.5f;
-            StandardMetrics.ms_v_bat_soc->SetValue(f);
-            ESP_LOGV(TAG, "0x0131 soc=%.1f%%", f);
-            break;
-        }
-        case 0x0191: {
-            // BMS current and voltage; power is derived.
-            // d[2]==0xFF is the startup sentinel (all-ones current field → ~2047A, ~1023V).
-            if (d[2] == 0xFF) break;
-            // Current: 12-bit, factor 1 A, offset -2047 A (raw=2047 → 0 A).
-            // NOTE: during AC charging this field reads 0A — 0x0191 appears to carry
-            // inverter/motor current only. Charging current comes from a different frame
-            // not yet identified. TODO: capture charging session and identify the frame.
-            u16 = ((uint16_t)(d[1] & 0xF0) >> 4) | ((uint16_t)(d[2]) << 4);
-            float current = u16 * 1.0f - 2047.0f;
-            StandardMetrics.ms_v_bat_current->SetValue(current);
-
-            // Voltage: 12-bit, factor 0.25 V.
-            u16 = (uint16_t)(d[3]) | ((uint16_t)(d[4] & 0x0F) << 8);
-            float voltage = u16 * 0.25f;
-            StandardMetrics.ms_v_bat_voltage->SetValue(voltage);
-
-            // Negated: OVMS convention is charge=negative, drive=positive.
-            StandardMetrics.ms_v_bat_power->SetValue(-(voltage * current) / 1000.0f);
-            ESP_LOGV(TAG, "0x0191 raw=%02x%02x%02x%02x%02x I=%.1fA V=%.2fV",
-                     d[1], d[2], d[3], d[4], d[5], current, voltage);
-            break;
-        }
-        case 0x02AF: {
-            // Trip energy: regeneration recovered and total consumed.
-            // Both are 15-bit, factor 10 Ws; convert to kWh.
-            u16 = (uint16_t)(d[4]) | ((uint16_t)(d[5] & 0x7F) << 8);
-            StandardMetrics.ms_v_bat_energy_recd->SetValue(u16 * 10.0f / 3600000.0f);
-
-            u16 = (uint16_t)(d[6]) | ((uint16_t)(d[7] & 0x7F) << 8);
-            StandardMetrics.ms_v_bat_energy_used->SetValue(u16 * 10.0f / 3600000.0f);
             break;
         }
         case 0x0486: {
