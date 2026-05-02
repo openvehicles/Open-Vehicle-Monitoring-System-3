@@ -6,16 +6,23 @@ on:
   pull_request:
     branches: [master]
 
+# Lock GITHUB_TOKEN to read-only. A compromised action cannot push, create
+# releases, or modify the repo. Artifact upload uses an internal Actions
+# service token unaffected by this setting.
+permissions:
+  contents: read
+
 jobs:
   # ── Native unit tests ──────────────────────────────────────────────────────
   # Fast: just g++, no toolchain needed. Fails early before the slow build job.
   test:
     name: Native tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Run native tests
         run: make -C vehicle/OVMS.V3/components/vehicle_vwegolf/tests
@@ -23,13 +30,14 @@ jobs:
   # ── Firmware build ─────────────────────────────────────────────────────────
   build:
     name: Firmware build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: test
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Install system dependencies
         run: sudo apt-get install -y gperf dos2unix
