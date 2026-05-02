@@ -13,7 +13,7 @@ jobs:
     name: Native tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           submodules: recursive
 
@@ -27,7 +27,7 @@ jobs:
     needs: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           submodules: recursive
 
@@ -36,7 +36,7 @@ jobs:
 
       - name: Cache toolchain
         id: cache-toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
         with:
           path: ~/ovms-toolchain
           key: ovms-toolchain-${{ hashFiles('scripts/setup-toolchain.sh') }}
@@ -63,7 +63,7 @@ jobs:
           make -C vehicle/OVMS.V3 -j$(nproc)
 
       - name: Upload firmware artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: ovms3-${{ github.ref_name }}-${{ github.sha }}
           path: vehicle/OVMS.V3/build/ovms3.bin
