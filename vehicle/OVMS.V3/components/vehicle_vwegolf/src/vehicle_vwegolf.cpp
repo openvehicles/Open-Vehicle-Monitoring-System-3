@@ -94,9 +94,16 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
 
     cmd_xvg->RegisterCommand("fold_mirrors", "Fold mirrors in",
                              [this](...) { CommandMirrorFoldIn(); });
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    WebInit();
+#endif
 }
 
 OvmsVehicleVWeGolf::~OvmsVehicleVWeGolf() {
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    WebDeInit();
+#endif
     MyCommandApp.UnregisterCommand("xvg");
     ESP_LOGI(TAG, "Stop vehicle module: VW e-Golf");
 }

@@ -33,6 +33,13 @@
 #include "ovms_metrics.h"
 #include "vehicle.h"
 
+// Forward declarations — full definitions are in ovms_webserver.h, included only
+// in vwegolf_web.cpp to avoid pulling webserver transitive deps into this header.
+struct PageEntry;
+struct PageContext;
+typedef struct PageEntry PageEntry_t;
+typedef struct PageContext PageContext_t;
+
 // Poll states — index matches the timing array in poll_pid_t entries.
 #define VWEGOLF_OFF 0       // All systems sleeping
 #define VWEGOLF_AWAKE 1     // Base systems online
@@ -65,6 +72,11 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
  public:
     OvmsVehicleVWeGolf();
     ~OvmsVehicleVWeGolf();
+
+    void WebInit();
+    void WebDeInit();
+    static void WebCfgSettings(PageEntry_t& p, PageContext_t& c);
+    static void WebDispMetrics(PageEntry_t& p, PageContext_t& c);
 
     void IncomingFrameCan2(CAN_frame_t* p_frame) override;
     void IncomingFrameCan3(CAN_frame_t* p_frame) override;

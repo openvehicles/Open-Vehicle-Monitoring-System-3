@@ -3,6 +3,9 @@ set(include_dirs)
 
 if (CONFIG_OVMS_VEHICLE_VWEGOLF)
   list(APPEND srcs "src/vehicle_vwegolf.cpp")
+  if (CONFIG_OVMS_COMP_WEBSERVER)
+    list(APPEND srcs "src/vwegolf_web.cpp")
+  endif ()
   list(APPEND include_dirs "src")
 endif ()
 
