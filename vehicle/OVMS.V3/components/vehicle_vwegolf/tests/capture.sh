@@ -58,15 +58,15 @@ fi
 BUS="${BUS_ARG:-can3}"
 
 case "$BUS" in
-can1 | 1) BUS_FILTER=1 ;;
-can2 | 2) BUS_FILTER=2 ;;
-can3 | 3) BUS_FILTER=3 ;;
+can1 | 1) BUS_FILTER=1; BUS="can1" ;;
+can2 | 2) BUS_FILTER=2; BUS="can2" ;;
+can3 | 3) BUS_FILTER=3; BUS="can3" ;;
+all | both) BUS_FILTER=""; BUS="all" ;;
 *)
-  echo "Error: unknown bus '$BUS' — expected can1/can2/can3" >&2
+  echo "Error: unknown bus '$BUS' — expected can1/can2/can3/all" >&2
   exit 1
   ;;
 esac
-BUS="can${BUS_FILTER}"
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 OUTDIR="candumps"
@@ -145,7 +145,7 @@ CRTD_FILE="$OUTDIR/${BASE}.crtd"
 MD_FILE="$OUTDIR/${BASE}.md"
 SD_CRTD="${SD_DIR}/${BASE}.crtd"
 
-LOG_CMD="can log start vfs crtd ${SD_CRTD} ${BUS_FILTER}"
+LOG_CMD="can log start vfs crtd ${SD_CRTD}${BUS_FILTER:+ ${BUS_FILTER}}"
 STATUS_CMD="can log status"
 STOP_CMD="can log stop"
 

@@ -171,7 +171,7 @@ BO_ 958 PedalStatus_3BE: 8 Vector__XXX
 
 // 0x1B000067 (extended) — OVMS OSEK NM alive (node 0x67 = OVMS).
 // Sent by CommandWakeup() before BAP commands when KCAN was sleeping.
-// Data: 67 10 41 84 14 00 00 00  (confirmed from kcan-can3-clima_on_off.crtd)
+// Data: 67 10 41 84 14 00 00 00  (confirmed from kcan-can3-clima_control.crtd)
 BO_ 2600468583 NM_OVMS_Alive: 8 OVMS
  SG_ NM_NodeId : 0|8@1+ (1,0) [0|255] "" Vector__XXX
  SG_ NM_Control : 8|8@1+ (1,0) [0|255] "" Vector__XXX
@@ -184,7 +184,7 @@ BO_ 2600468517 NM_ClimaECU_Alive: 8 ClimaECU
 
 // 0x17330301 (extended) — dominant-bit wake frame sent by CommandWakeup().
 // TX_Fail is expected (nodes sleeping, no ACK). Dominant bits wake transceivers.
-// Data: 40 00 01 1F 00 00 00 00  (confirmed from kcan-can3-clima_on_off.crtd)
+// Data: 40 00 01 1F 00 00 00 00  (confirmed from kcan-can3-clima_control.crtd)
 // Response on 0x17330E10 when bus is live. Full BAP decode pending.
 BO_ 2536702721 WakeFrame_17330301: 8 OVMS
  SG_ WF_Byte0 : 0|8@1+ (1,0) [0|255] "" Vector__XXX
@@ -275,7 +275,7 @@ CM_ BO_ 1712 "KCAN. Windshield/front area temperature sensor. Logged but not yet
 CM_ BO_ 1717 "KCAN. Dual ambient temperature sensors: outside air and solar. Encoding inferred.";
 CM_ BO_ 1719 "KCAN. Odometer, park time, and filtered outside temperature. Odometer and outside temp confirmed. Park time encoding not fully confirmed — bit layout inferred from firmware.";
 CM_ BO_ 1447 "KCAN TX by OVMS. OCU OSEK NM keepalive. All-zeros = idle. Action bits are one-shot: set for one transmission then cleared. Lock/unlock bits require additional auth bytes not yet captured.";
-CM_ BO_ 2600468583 "KCAN TX by OVMS (extended 29-bit ID 0x1B000067). OSEK NM alive for OVMS node 0x67. Must be sent before BAP commands on a freshly-woken bus — clima ECU rejects BAP from nodes absent from the NM ring. Confirmed from kcan-can3-clima_on_off.crtd. Sent by CommandWakeup().";
+CM_ BO_ 2600468583 "KCAN TX by OVMS (extended 29-bit ID 0x1B000067). OSEK NM alive for OVMS node 0x67. Must be sent before BAP commands on a freshly-woken bus — clima ECU rejects BAP from nodes absent from the NM ring. Confirmed from kcan-can3-clima_control.crtd. Sent by CommandWakeup().";
 CM_ BO_ 2600468517 "KCAN RX from clima ECU (extended 29-bit ID 0x1B000025). OSEK NM alive for clima ECU node 0x25. Receiving this frame confirms the clima ECU is alive and joinable after bus wake.";
 CM_ BO_ 2536702721 "KCAN TX by OVMS (extended 29-bit ID 0x17330301). Dominant-bit wake frame sent as first frame in CommandWakeup(). TX_Fail expected when bus sleeping — dominant bits wake transceivers regardless. Response on 0x17330E10 when bus is live. Full BAP decode pending.";
 CM_ BO_ 391 "FCAN. Gear selector position. Confirmed from captures.";
