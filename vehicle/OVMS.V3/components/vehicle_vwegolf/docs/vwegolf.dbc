@@ -87,6 +87,13 @@ BO_ 1717 AmbientTemp: 8 AmbientSensor
  SG_ AirTemp : 16|10@1+ (0.1,-40) [-40|62.3] "degC" OVMS
  SG_ SolarTemp : 48|11@1+ (0.1,-40) [-40|164.7] "degC" OVMS
 
+BO_ 1718 DateTime: 6 Gateway
+ SG_ Year : 8|8@1+ (1,0) [0|99] "" OVMS
+ SG_ Day : 16|8@1+ (1,0) [1|31] "" OVMS
+ SG_ Hour : 24|8@1+ (1,0) [0|23] "" OVMS
+ SG_ Minute : 32|8@1+ (1,0) [0|59] "" OVMS
+ SG_ Second : 40|8@1+ (1,0) [0|59] "" OVMS
+
 BO_ 1719 OdoTempPark: 8 Gateway
  SG_ Odometer : 0|20@1+ (1,0) [0|1048575] "km" OVMS
  SG_ ParkTime : 20|17@1+ (1,0) [0|131071] "s" OVMS
@@ -273,6 +280,7 @@ CM_ BO_ 1626 "KCAN. BCM_01 bonnet/hood open indicator. Confirmed from captures."
 CM_ BO_ 1646 "KCAN. Interior cabin temperature sensor (InnenTemp). Confirmed. 0xFE is startup sentinel — discard. Byte[2] bit 1 also carries primary clima running flag.";
 CM_ BO_ 1712 "KCAN. Windshield/front area temperature sensor. Logged but not yet mapped to a standard metric.";
 CM_ BO_ 1717 "KCAN. Dual ambient temperature sensors: outside air and solar. Encoding inferred.";
+CM_ BO_ 1718 "KCAN. Gateway date/time broadcast at 1 Hz. Year = last 2 digits of year (26 = 2026). Day = day-of-month. Hour/Minute/Second = wall-clock time. d[0]=0x4B static across captures — possibly encodes month (both confirmed captures are April); needs capture in a different month to confirm. Confirmed from cap14 (20260413) and cap8 (20260428): day and hour/min/sec match file timestamps.";
 CM_ BO_ 1719 "KCAN. Odometer, park time, and filtered outside temperature. Odometer and outside temp confirmed. Park time encoding not fully confirmed — bit layout inferred from firmware.";
 CM_ BO_ 1447 "KCAN TX by OVMS. OCU OSEK NM keepalive. All-zeros = idle. Action bits are one-shot: set for one transmission then cleared. Lock/unlock bits require additional auth bytes not yet captured.";
 CM_ BO_ 2600468583 "KCAN TX by OVMS (extended 29-bit ID 0x1B000067). OSEK NM alive for OVMS node 0x67. Must be sent before BAP commands on a freshly-woken bus — clima ECU rejects BAP from nodes absent from the NM ring. Confirmed from kcan-can3-clima_control.crtd. Sent by CommandWakeup().";

@@ -86,13 +86,31 @@ counter + signature pair, not charge data:
 Earlier "looks charge-correlated" read was a sampling artifact (3 widely-spaced
 samples happened to land on different phases of the counter). Rule out.
 
+### Frame decodes confirmed by cross-capture analysis (2026-05-03)
+
+**0x6B6 (1718) = Gateway date/time broadcast** — confirmed by comparing
+cap14 (20260413) and cap8 (20260428). DLC 6, 1 Hz.
+- d[1]=26=year, d[2]=day-of-month, d[3]=hour, d[4]=minute, d[5]=second.
+- d[0]=0x4B static across both captures (both April — may encode month,
+  needs a non-April capture to confirm).
+- Added to vwegolf.dbc as BO_ 1718 DateTime.
+
+**0x6B7 (1719) = OdoTempPark** (already in DBC). d[2] upper-nibble +
+d[3] = ParkTime seconds counter incrementing by 1/s — confirmed.
+
 ### Other candidates, not yet characterised
 
 Flagged during the pre/mid/post sweep (see scratch/ for the sweep script)
 but not yet decoded:
 
 - `0x5EB` b5 `0x83↔0xc3` — correlated to charge window.
-- `0x663` b4–b6 change across charge phases.
+- `0x663` b5 — slowly rises from ~143 pre-charge to ~179 during charge
+  and ~199 post-charge. cap8 starts at 163. Factor 0.5 → 71.5%→99.5%
+  suggests SoC (plausible: different days, different starting SoC).
+  Not confirmed — needs simultaneous 0x131 SoC trace for calibration.
+- `0x663` b6 — zero pre-charge, 26–42 during/post-charge in both caps.
+  cap14=42 peak, cap8=26 at charge start (different power levels?).
+  Could be AC current (A) — needs a calibrated multi-power capture.
 - `0x485` b7 flips to `0x3f` post-charge — end-of-charge flag candidate.
 - `0x584`, `0x569`, `0x556` — transitions at charge start.
 - `0x12DD546F`, `0x12DD5472` — new BAP app-layer frames, not yet in dbc
