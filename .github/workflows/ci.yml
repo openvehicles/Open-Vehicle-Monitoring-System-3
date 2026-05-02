@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [vwegolf, master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  # ── Native unit tests ──────────────────────────────────────────────────────
+  # Fast: just g++, no toolchain needed. Fails early before the slow build job.
+  test:
+    name: Native tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run native tests
+        run: make -C vehicle/OVMS.V3/components/vehicle_vwegolf/tests
+
+  # ── Firmware build ─────────────────────────────────────────────────────────
+  build:
+    name: Firmware build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y gperf dos2unix
+
+      - name: Cache toolchain
+        id: cache-toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/ovms-toolchain
+          key: ovms-toolchain-${{ hashFiles('scripts/setup-toolchain.sh') }}
+          restore-keys: ovms-toolchain-
+
+      - name: Setup toolchain
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: bash scripts/setup-toolchain.sh
+
+      - name: Install Python deps into cached venv
+        run: |
+          source ~/ovms-toolchain/venv/bin/activate
+          pip install -r ~/ovms-toolchain/esp-idf/requirements.txt
+
+      - name: Build firmware
+        run: |
+          export IDF_PATH=~/ovms-toolchain/esp-idf
+          export PATH=~/ovms-toolchain/xtensa-esp32-elf/bin:$PATH
+          source ~/ovms-toolchain/venv/bin/activate
+          export GNUMAKEFLAGS=
+          if [[ ! -f vehicle/OVMS.V3/sdkconfig ]]; then
+            cp vehicle/OVMS.V3/support/sdkconfig.default.hw31 vehicle/OVMS.V3/sdkconfig
+          fi
+          make -C vehicle/OVMS.V3 -j$(nproc)
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ovms3-${{ github.ref_name }}-${{ github.sha }}
+          path: vehicle/OVMS.V3/build/ovms3.bin
+          retention-days: 30
