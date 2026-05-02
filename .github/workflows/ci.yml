@@ -57,7 +57,7 @@ jobs:
       - name: Install Python deps into cached venv
         run: |
           source ~/ovms-toolchain/venv/bin/activate
-          pip install -r ~/ovms-toolchain/esp-idf/requirements.txt
+          pip install setuptools -r ~/ovms-toolchain/esp-idf/requirements.txt
 
       - name: Build firmware
         run: |
