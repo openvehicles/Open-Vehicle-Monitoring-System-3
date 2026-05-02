@@ -40,7 +40,7 @@ jobs:
           persist-credentials: false
 
       - name: Install system dependencies
-        run: sudo apt-get install -y gperf dos2unix
+        run: sudo apt-get install -y gperf dos2unix python3-setuptools
 
       - name: Cache toolchain
         id: cache-toolchain
