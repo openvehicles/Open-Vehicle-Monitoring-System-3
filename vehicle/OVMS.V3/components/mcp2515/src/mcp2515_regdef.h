@@ -115,6 +115,7 @@
 #define REG_TXB1CTRL            0x40
 #define REG_TXB2CTRL            0x50
 #define REG_RXB0CTRL            0x60
+#define REG_RXB1CTRL            0x70
 
 #define MCP2515_TIMEOUT         100           // Timeout for register verification, in milliseconds
 

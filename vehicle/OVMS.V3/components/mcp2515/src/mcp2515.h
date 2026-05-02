@@ -110,6 +110,8 @@ class mcp2515 : public canbus
     int m_intpin;
     uint8_t m_last_errflag = 0;
     uint8_t m_canctrl_mode;
+    bool m_filter_set = false;
+    mcp2515_filter_config_t m_filter_cfg = {};
     OvmsMutex m_write_mutex;
     OvmsCommand* m_cmd_canx;
   };
