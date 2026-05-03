@@ -1232,6 +1232,7 @@ void OvmsOTA::SystemStart(std::string event, void* data)
         ESP_LOGI(TAG, "Partition update finished, rebooting into standard mode");
       else
         ESP_LOGW(TAG, "Aborting partition update, rebooting into standard mode");
+      vTaskDelay(2000/portTICK_PERIOD_MS);
       MyBoot.Restart();
       }
     }
