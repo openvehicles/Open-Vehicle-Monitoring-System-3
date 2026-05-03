@@ -46,7 +46,8 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   if(IsOnEQ())
     HandleEnergy();
     
-  smartCAN2Metrics();
+  if(m_candata_poll)  
+    smartCAN2Metrics();
   }
 
 void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker) 

@@ -237,6 +237,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x668:
       REQ_DLC(1);
       can_env_on = (CAN_BYTE(0) & 0x40) > 0; // Drive Ready
+      StdMetrics.ms_v_env_on->SetValue(can_env_on);
       break;
     case 0x673:
       {
@@ -282,7 +283,6 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   StdMetrics.ms_v_env_on->SetValue(can_env_on);
   StdMetrics.ms_v_env_awake->SetValue(can_awake);
   StdMetrics.ms_v_env_hvac->SetValue(can_hvac);
-
   StdMetrics.ms_v_env_handbrake->SetValue(can_handbrake);
   StdMetrics.ms_v_env_locked->SetValue(can_locked);
 
