@@ -1437,11 +1437,15 @@ static void module_perform_factoryreset(OvmsWriter* writer)
     {
     writer->printf("Factory reset of configuration store complete, rebooting now %s...\n",
       req_partition_update ? "into partition update mode" : "");
+    if (req_partition_update)
+      writer->puts("!! Do not power off the module while the upgrade is running !!");
     }
   else
     {
     ESP_LOGW(TAG, "Factory reset of configuration store complete, rebooting now %s...",
       req_partition_update ? "into partition update mode" : "");
+    if (req_partition_update)
+      ESP_LOGW(TAG, "!! Do not power off the module while the upgrade is running !!");
     }
   vTaskDelay(1000/portTICK_PERIOD_MS);
   MyBoot.Restart();
