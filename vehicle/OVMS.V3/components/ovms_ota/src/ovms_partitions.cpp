@@ -1079,6 +1079,17 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
         writer->puts("v3-30 Error: Failed to find factory partition");
         return false;
         }
+      if (MyBoot.GetBootReason() != BR_PartitionUpdate)
+        {
+        // started by user request, reboot into partition update mode first to perform the upgrade
+        // with a clean minimal system (minimize risks from running components)
+        writer->puts("v3-30 Partition upgrade started, rebooting now into partition update mode...");
+        writer->puts("v3-30 !! Do not power off the module while the upgrade is running !!");
+        vTaskDelay(2000/portTICK_PERIOD_MS);
+        MyBoot.Restart();
+        MyBoot.SetPartitionUpdate();
+        return true;
+        }
       if (strcmp(rp->label, "factory") != 0 || strcmp(bp->label, "factory") != 0)
         {
         writer->puts("v3-30 We need to copy the currently running partition to factory, and then reboot");
