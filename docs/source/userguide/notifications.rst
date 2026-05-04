@@ -145,6 +145,8 @@ alert   modem.wrongpincode          Wrong pin code
 info    modem.received.sms          Show/forward received SMS metadata & text
 info    modem.received.ussd         Show/forward received USSD text
 info    ota.update                  New firmware available/downloaded/installed
+info    ota.partitiontype           Outdated flash partitioning scheme detected
+alert   ota.partitiontype           Outdated partitioning scheme inhibits OTA update
 info    pushover                    Connection failure / message delivery response
 stream  retools.list.update         RE toolkit CAN frame list update
 stream  retools.status              RE toolkit general status update
