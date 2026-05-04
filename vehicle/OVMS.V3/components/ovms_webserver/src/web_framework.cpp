@@ -28,6 +28,9 @@
 
 #include "ovms_webserver.h"
 #include "ovms_housekeeping.h"
+#include "ovms_ota.h"
+#include "ovms_version.h"
+#include "strverscmp.h"
 #include "buffered_shell.h"
 
 /**
@@ -611,8 +614,22 @@ void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
   std::string moduleid = MyConfig.GetParamValue("vehicle", "id", "OVMS");
   std::string info = "<p class=\"lead\">Welcome to the " + moduleid + " web console.</p>";
 
+  // check partition type, display warning if outdated:
+  std::string version = GetOVMSVersion();
+  std::string notifyversion = MyConfig.GetParamValue("ota", "parttype.notifyversion", "3.3.006");
+  std::string warn_parttype;
+  if (!ovms_partition_table_isuptodate() && strverscmp(version.c_str(), notifyversion.c_str()) >= 0)
+    {
+    warn_parttype =
+      "<p class=\"lead\">The module is running an outdated flash partitioning scheme.</p>"
+      "<p>OTA updates will soon stop working due to its 4MB firmware size limit.</p>"
+      "<p>Upgrading is recommended to leverage the limit to 7MB.</p>"
+      "<p><a class=\"btn btn-default\" target=\"#main\" href=\"/cfg/partitioning\">Open Partitioning Tool</a></p>";
+    }
+
   c.head(200);
   c.alert("info", info.c_str());
+  if (!warn_parttype.empty()) c.alert("warning", warn_parttype.c_str());
   PAGE_HOOK("body.pre");
   OutputHome(p, c);
   PAGE_HOOK("body.post");
