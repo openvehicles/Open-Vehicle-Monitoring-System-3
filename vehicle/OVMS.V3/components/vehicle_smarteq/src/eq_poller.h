@@ -87,6 +87,8 @@ static const OvmsPoller::poll_pid_t obdii_7e4_dcdc_polls[] =
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, { 0,14,14,14 }, 0, ISOTP_STD }, // rqDCDC_Power
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3301, { 0,14,14,14 }, 0, ISOTP_STD }, // USM 14V voltage (CAN)
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, { 0,14,14,14 }, 0, ISOTP_STD }, // Battery voltage 14V
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2003, { 0,60,5,60 }, 0, ISOTP_STD },  // Vehicle Speed
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 0,60,5,60 }, 0, ISOTP_STD },  // Total vehicle distance
 };
 
 static const OvmsPoller::poll_pid_t obdii_743_polls[] =

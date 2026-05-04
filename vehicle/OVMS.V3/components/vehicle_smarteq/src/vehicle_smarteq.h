@@ -275,49 +275,21 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- Poll reply handlers: BCM ---
     void PollReply_BCM_VIN(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len);
-    void PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len);
-    void PollReply_BCM_GenMode(const char* data, uint16_t reply_len);
-    void PollReply_BCM_DoorlockEEPROM(const char* data, uint16_t reply_len);
 
     // --- Poll reply handlers: EVC ---
-    void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
-    void PollReply_EVC_PlugDetected(const char* data, uint16_t reply_len);
     void PollReply_EVC_Traceability(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
-    void PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Volt(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len);
-    void PollReply_EVC_USM14VVoltage(const char* data, uint16_t reply_len);
-    void PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len);
-    void PollReply_EVC_14VBatteryVoltageReq(const char* data, uint16_t reply_len);
-    void PollReply_EVC_CabinBlower(const char* data, uint16_t reply_len);
 
     // --- Poll reply handlers: OBL ---
     void PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Ph2_RMS_A(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Ph3_RMS_A(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Ph12_RMS_V(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Ph23_RMS_V(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_GroundResistance(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_DCCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_HF10kHz(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len);
-    void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);
 
     // --- Poll reply handlers: OBD ---
-    void PollReply_obd_time(const char* data, uint16_t reply_len);
-    void PollReply_obd_start_trip(const char* data, uint16_t reply_len);
-    void PollReply_obd_start_time(const char* data, uint16_t reply_len);
     void PollReply_obd_mt_day(const char* data, uint16_t reply_len);
-    void PollReply_obd_mt_km(const char* data, uint16_t reply_len);
     void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
 
     // --- Constants ---

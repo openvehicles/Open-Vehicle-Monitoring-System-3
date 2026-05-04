@@ -105,17 +105,14 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       {
       REQ_DLC(5);
       uint8_t raw_temp = (c >> 13) & 0x7Fu;
-      float _temp = (float)raw_temp - 40.0f;
-      
+      float _temp = (float)raw_temp - 40.0f;      
       // Ignore invalid sensor reading (0x7F = 127 → 87°C after offset)
       if (raw_temp != 0x7F) 
         {
         can_bat_temp = _temp;
-        }
-      
+        }      
       can_bat_voltage = (float)((CAN_UINT(3) >> 5) & 0x3FF) / 2.0f;
-      can_charge_climit = (c >> 20) & 0x3Fu;
-        
+      can_charge_climit = (c >> 20) & 0x3Fu;        
       break;
       }
     case 0x4F8:
@@ -124,10 +121,18 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       //can_awake = (CAN_BYTE(0) & 0x40) > 0; // Ignition on
       break;
     case 0x5D7: // Speed, ODO
-      REQ_DLC(6);
-      can_speed = (float) CAN_UINT(0) / 100.0f;
-      can_odometer = (float) (CAN_UINT32(2)>>4) / 100.0f;
+      {
+      if (!IsCANwrite())
+        {
+        REQ_DLC(2);
+        uint16_t raw_speed = CAN_UINT(0);
+        uint32_t raw_odometer = (CAN_UINT32(2) >> 4);
+        // Apply scaling 
+        can_speed = (float) raw_speed / 100.0f;
+        can_odometer = (float) raw_odometer / 100.0f;
+        }
       break;
+      }
     case 0x5DE:
       REQ_DLC(8);
       can_headlights = (CAN_BYTE(0) & 0x04) > 0;
@@ -295,8 +300,10 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   StdMetrics.ms_v_bat_soh->SetValue(can_soh);
   StdMetrics.ms_v_bat_health->SetValue(can_bat_health);
   
-  StdMetrics.ms_v_pos_speed->SetValue(can_speed);
-  StdMetrics.ms_v_pos_odometer->SetValue(can_odometer);
+  if(can_speed > 1.0f)
+    StdMetrics.ms_v_pos_speed->SetValue(can_speed);
+  if(can_odometer > 1.0f)
+    StdMetrics.ms_v_pos_odometer->SetValue(can_odometer);
 
   StdMetrics.ms_v_charge_climit->SetValue(can_charge_climit);
   StdMetrics.ms_v_charge_inprogress->SetValue(can_charge_inprogress);
