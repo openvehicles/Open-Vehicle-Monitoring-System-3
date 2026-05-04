@@ -124,12 +124,11 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       {
       if (!IsCANwrite())
         {
-        REQ_DLC(2);
-        uint16_t raw_speed = CAN_UINT(0);
-        uint32_t raw_odometer = (CAN_UINT32(2) >> 4);
+        REQ_DLC(6);
         // Apply scaling 
-        can_speed = (float) raw_speed / 100.0f;
-        can_odometer = (float) raw_odometer / 100.0f;
+        can_speed = (float)CAN_UINT(0) / 100.0f;
+        can_odometer = (float)(CAN_UINT32(2)>>4) / 100.0f;
+        can_odometer_trip = (float)(CAN_UINT(4)>>4) / 100.0f;
         }
       break;
       }
@@ -311,7 +310,8 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   StdMetrics.ms_v_gen_kwh_grid_total->SetValue(can_kwh_grid_total);
 
   // xsq metrics:
-  mt_pos_odometer_trip->SetValue(can_odometer);
+  if(can_trip_distance > 0.1f)
+   mt_pos_odometer_trip->SetValue(can_odometer_trip);
   mt_worst_consumption->SetValue(can_worst_consumption);
   mt_best_consumption->SetValue(can_best_consumption);
   mt_bcb_power_mains->SetValue(can_bcb_power_mains);

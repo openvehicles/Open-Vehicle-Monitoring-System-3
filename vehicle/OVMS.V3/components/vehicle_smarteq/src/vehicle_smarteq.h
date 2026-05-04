@@ -500,6 +500,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     float can_charge_climit = 0.0f;
     float can_speed = 0.0f;
     float can_odometer = 0.0f;
+    float can_odometer_trip = 0.0f;
     float can_soc = 0.0f;
     float can_range_est = 0.0f;
     float can_range_full = 0.0f;
