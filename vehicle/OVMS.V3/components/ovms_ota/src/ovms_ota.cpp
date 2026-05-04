@@ -196,7 +196,10 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     {
     writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
     if (target->size < 0x700000)
+      {
       writer->puts("Consider upgrading your partitioning scheme to v3-35.");
+      MyOTA.SendPartitionTypeAlert(true);
+      }
     return;
     }
 
@@ -346,7 +349,10 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     {
     writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
     if (target->size < 0x700000)
+      {
       writer->puts("Consider upgrading your partitioning scheme to v3-35.");
+      MyOTA.SendPartitionTypeAlert(true);
+      }
     return;
     }
 
@@ -988,6 +994,7 @@ bool OvmsOTA::AutoFlashSD()
     if (target->size < 0x700000)
       {
       ESP_LOGE(TAG, "Consider upgrading your partitioning scheme to v3-35.");
+      MyOTA.SendPartitionTypeAlert(true);
       }
     return false;
     }
@@ -1069,6 +1076,8 @@ OvmsOTA::OvmsOTA()
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.start", std::bind(&OvmsOTA::SystemStart, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"app.connected", std::bind(&OvmsOTA::UserConnected, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"server.web.socket.opened", std::bind(&OvmsOTA::UserConnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.600", std::bind(&OvmsOTA::Ticker600, this, _1, _2));
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
@@ -1236,6 +1245,49 @@ void OvmsOTA::SystemStart(std::string event, void* data)
       MyBoot.Restart();
       }
     }
+  else
+    {
+    // Check partition type on regular boot:
+    CheckNotifyPartitionType();
+    }
+  }
+
+void OvmsOTA::UserConnected(std::string event, void* data)
+  {
+  // Handle case of a setup without a default server connection:
+  //  check partition type again when the user connects via V2/V3/Web
+  CheckNotifyPartitionType();
+  }
+
+void OvmsOTA::CheckNotifyPartitionType()
+  {
+  // Send partition type notification once after upgrading to 3.3.006:
+  std::string version = GetOVMSVersion();
+  std::string notifyversion = MyConfig.GetParamValue("ota", "parttype.notifyversion", "3.3.006");
+  if (!ovms_partition_table_isuptodate()
+      && strverscmp(version.c_str(), notifyversion.c_str()) >= 0
+      && !MyConfig.GetParamValueBool("ota", "parttype.notified"))
+    {
+    if (SendPartitionTypeAlert(false))
+      {
+      ESP_LOGI(TAG, "Partition type notification sent");
+      MyConfig.SetParamValueBool("ota", "parttype.notified", true);
+      }
+    else
+      {
+      ESP_LOGW(TAG, "Partition type notification not sent, no channel available yet");
+      }
+    }
+  }
+
+uint32_t OvmsOTA::SendPartitionTypeAlert(bool alert)
+  {
+  return MyNotify.NotifyStringf(alert ? "alert" : "info", "ota.partitiontype",
+    "The module is running an outdated flash partitioning scheme.\n"
+    "OTA updates %s working due to its 4MB firmware size limit.\n"
+    "Upgrading is recommended to leverage the limit to 7MB.\n"
+    "To upgrade, open the web UI, menu Config -> Partitioning.\n",
+    alert ? "have now stopped" : "will soon stop");
   }
 
 void OvmsOTA::Ticker600(std::string event, void* data)
@@ -1448,6 +1500,7 @@ bool OvmsOTA::AutoFlash(bool force)
     if (target->size < 0x700000)
       {
       ESP_LOGE(TAG, "Consider upgrading your partitioning scheme to v3-35.");
+      MyOTA.SendPartitionTypeAlert(true);
       }
     return false;
     }
