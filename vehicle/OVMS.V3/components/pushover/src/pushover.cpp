@@ -126,13 +126,33 @@ Pushover::~Pushover()
 
 bool Pushover::NotificationFilter(OvmsNotifyType* type, const char* subtype)
   {
-  if (strcmp(type->m_name, "info") == 0 ||
-      strcmp(type->m_name, "error") == 0 ||
-      strcmp(type->m_name, "alert") == 0 ||
-      strcmp(type->m_name, "data") == 0)
-    return true;
-  else
+  if (strcmp(type->m_name, "info") != 0 &&
+      strcmp(type->m_name, "error") != 0 &&
+      strcmp(type->m_name, "alert") != 0 &&
+      strcmp(type->m_name, "data") != 0)
     return false;
+
+  // The Pushover component generally registers as a reader, but needs to discard messages
+  //  when not enabled or not connected. Signal acceptance to notification framework:
+  if (!MyConfig.GetParamValueBool("pushover","enable") || !MyNetManager.m_connected_any)
+    return false;
+
+  // try to find configuration for specific type/subtype
+  ConfigParamMap pmap = MyConfig.GetParamMap("pushover");
+  std::string nfy = "np.";
+  nfy.append(type->m_name);
+  nfy.append("/");
+  nfy.append(subtype);
+  if (pmap[nfy] == "")
+    {
+    // try more general type
+    nfy = "np.";
+    nfy.append(type->m_name);
+    if (pmap[nfy] == "")
+      return false;
+    }
+
+  return true;
   }
 
 
