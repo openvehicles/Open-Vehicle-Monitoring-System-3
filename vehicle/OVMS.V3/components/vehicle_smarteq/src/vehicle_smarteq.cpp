@@ -199,6 +199,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     ResetTripCounters();
     }
 
+  if (IsCANwrite())
+    PollSetState(POLLSTATE_ON);                                // start polling to get the first data
+
   if (m_cfg_preset_version != PRESET_VERSION)                  // preset version changed
     CommandPreset(0, NULL);                                    // set smart EQ config preset  
 
@@ -253,6 +256,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     {
     m_enable_write         = map->GetValueBool("canwrite", false);
     m_enable_write_caron   = map->GetValueBool("canwrite.caron", true);
+    m_enable_write_sleep   = map->GetValueBool("canwrite.sleep", false);
     m_enable_LED_state     = map->GetValueBool("led", false);
     m_bcvalue              = map->GetValueBool("bcvalue", false);
     m_enable_lock_state    = map->GetValueBool("unlock.warning", true);

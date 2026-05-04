@@ -430,6 +430,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- Config-driven member variables ---
     bool m_enable_write = false;            // canwrite enable write access
     bool m_enable_write_caron = false;      // canwrite enable write access, only when car is on
+    bool m_enable_write_sleep = false;      // canwrite disable write access, only when car is asleep
     bool m_can_active = false;              // true if CAN bus is in active mode, false if in listen-only mode
     bool m_enable_LED_state;                // Online LED State
     bool m_enable_lock_state;               // Lock State
@@ -506,6 +507,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
     // --- CAN frame intermediate variables (synced to StdMetrics by smartCAN2Metrics in Ticker1) ---
     int can_gear = 0;                     // <0 = reverse, 0 = park/neutral, >0 = drive -- logic by vehicle.cpp events
+    int can_duration_full = 0;            // duration until full in minutes
     bool can_init = true;                 // initial CAN data received flag, to set default values for some metrics on first run
     bool can_awake = false;
     bool can_locked = true;
@@ -526,13 +528,22 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     float can_charge_climit = 0.0f;
     float can_speed = 0.0f;
     float can_odometer = 0.0f;
-    float can_bat_consumption = 0.0f;
     float can_soc = 0.0f;
     float can_range_est = 0.0f;
     float can_range_full = 0.0f;
     float can_range_ideal = 0.0f;
     float can_soh = 0.0f;
     float can_kwh_grid_total = 0.0f;
+    float can_worst_consumption = 0.0f;
+    float can_best_consumption = 0.0f;
+    float can_bcb_power_mains = 0.0f;
+    float can_consumption_mission = 0.0f;
+    float can_recovery_mission = 0.0f;
+    float can_aux_consumption = 0.0f;
+    float can_rest_consumption = 0.0f;
+    float can_trip_distance = 0.0f;
+    float can_trip_energy = 0.0f;
+    float can_avg_speed = 0.0f;
     const char* can_bat_health = "";
 
     // --- CAN data state ---

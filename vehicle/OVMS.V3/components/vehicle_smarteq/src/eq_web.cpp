@@ -82,7 +82,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   auto lock = MyConfig.Lock();
 
   std::string error, full_km, rebootnw;
-  bool canwrite, canwrite_caron, led, resettrip, resettotal, bcvalue;
+  bool canwrite, canwrite_caron, canwrite_sleep, led, resettrip, resettotal, bcvalue;
   bool charge12v, extstats, unlocked, tripnotify, opendoors;
   bool obdii79b, obdii79b_cell, obdii743, obdii745, obdii745_tpms, obdii7e4, obdii7e4_dcdc;
 
@@ -90,6 +90,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     // process form submission:
     canwrite    = (c.getvar("canwrite") == "yes");
     canwrite_caron = (c.getvar("canwrite_caron") == "yes");
+    canwrite_sleep = (c.getvar("canwrite_sleep") == "yes");
     led         = (c.getvar("led") == "yes");
     rebootnw    = (c.getvar("rebootnw"));
     resettrip   = (c.getvar("resettrip") == "yes");
@@ -136,6 +137,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
          }
       map.SetValueBool("canwrite", canwrite);
       map.SetValueBool("canwrite.caron", canwrite_caron);
+      map.SetValueBool("canwrite.sleep", canwrite_sleep);
       map.SetValueBool("led", led);
       map["rebootnw"] = rebootnw;
       map.SetValueBool("resettrip", resettrip);
@@ -172,6 +174,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   } else {
     canwrite       = sq->m_enable_write;
     canwrite_caron = sq->m_enable_write_caron;
+    canwrite_sleep = sq->m_enable_write_sleep;
     led            = sq->m_enable_LED_state;
     resettrip      = sq->m_resettrip;
     resettotal     = sq->m_resettotal;
@@ -205,6 +208,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Controls CAN write access (OBDII polling etc.)</p>");
   c.input_checkbox("Enable CAN write only when car on/charging", "canwrite_caron", canwrite_caron,
     "<p>Alternative to Canwrite; select one or neither!</p>");
+  c.input_checkbox("Disable CAN write during sleep", "canwrite_sleep", canwrite_sleep,
+    "<p>Switch CAN Bus to listen Mode when car is sleeping</p>");
   c.fieldset_end();
   
   // trip reset or OBD activation

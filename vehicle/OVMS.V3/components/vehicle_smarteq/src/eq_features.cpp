@@ -501,7 +501,7 @@ void OvmsVehicleSmartEQ::smartAwake()
 void OvmsVehicleSmartEQ::smartSleep()
 {
   // disable active polling when car goes to sleep
-  if(m_enable_write_caron && m_can_active)
+  if((m_enable_write_caron && m_can_active) || m_enable_write_sleep)
     smartCANmode(false);
   ESP_LOGD(TAG, "smartSleep()");
 }

@@ -72,7 +72,7 @@ static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
 {
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, { 0,3600,0,0 }, 0, ISOTP_STD },      // Frame Traceability Information
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, { 0,16,0,16 }, 0, ISOTP_STD },  // Charging plug detected (B_PlugConnected_bcb_status_S)  
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320c, { 0,60,60,16 }, 0, ISOTP_STD }, // rqHV_Energy
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320C, { 0,60,60,16 }, 0, ISOTP_STD }, // rqHV_Energy
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, { 0,14,14,14 }, 0, ISOTP_STD }, // Cabin blower command
 };
 
@@ -91,7 +91,7 @@ static const OvmsPoller::poll_pid_t obdii_7e4_dcdc_polls[] =
 
 static const OvmsPoller::poll_pid_t obdii_743_polls[] =
 {
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200c, { 0,600,600,600 }, 0, ISOTP_STD }, // extern temp byte 2+3
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200C, { 0,600,600,600 }, 0, ISOTP_STD }, // extern temp byte 2+3
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, { 0,600,60,0 }, 0, ISOTP_STD }, // OBD start Trip Distance km 
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, { 0,600,60,0 }, 0, ISOTP_STD }, // OBD Trip time s
   { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, { 0,600,60,0 }, 0, ISOTP_STD }, // OBD start Trip time s

@@ -243,7 +243,7 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 
     case 0x763:
       switch (job.pid) {
-        case 0x200c: // temperature sensor values
+        case 0x200C: // temperature sensor values
           PollReply_TDB(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x2104: // obd Trip time s
@@ -470,6 +470,8 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t rep
   mt_bms_cap->SetElemValue(4, cap_useable);   // usable_capacity 
   mt_bms_mileage->SetValue(mileage_raw);      // total mileage stored in BMS
   StdMetrics.ms_v_bat_cac->SetValue(cap_useable);
+  if(can_odometer < 1.0f && mileage_raw > 1.0f)
+    can_odometer = mileage_raw;
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_ProductionData(const char* data, uint16_t reply_len) {
