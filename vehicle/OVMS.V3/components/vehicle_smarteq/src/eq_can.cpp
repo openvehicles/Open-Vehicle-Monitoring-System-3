@@ -122,14 +122,11 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
     case 0x5D7: // Speed, ODO
       {
-      if (!IsCANwrite())
-        {
-        REQ_DLC(6);
-        // Apply scaling 
-        can_speed = (float)CAN_UINT(0) / 100.0f;
-        can_odometer = (float)(CAN_UINT32(2)>>4) / 100.0f;
-        can_odometer_trip = (float)(CAN_UINT(4)>>4) / 100.0f;
-        }
+      REQ_DLC(6);
+      // Apply scaling 
+      can_speed = (float)CAN_UINT(0) / 100.0f;
+      can_odometer = (float)(CAN_UINT32(2)>>4) / 100.0f;
+      can_odometer_trip = (float)(CAN_UINT(4)>>4) / 100.0f;
       break;
       }
     case 0x5DE:
@@ -266,12 +263,11 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 // Sync CAN datapoints to OVMS metrics, called by Ticker1, because CAN refresh rate is too high
 void OvmsVehicleSmartEQ::smartCAN2Metrics()
 {  
-  if (can_awake && !IsAwakeEQ())
+  if (can_awake || can_charge_inprogress || can_env_on)
     {
-    ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
     mt_bus_awake->SetValue(true);
-    m_candata_poll = false;
-    m_candata_timer = -1;
+    m_candata_poll = true;
+    m_candata_timer = SQ_CANDATA_TIMEOUT;
     }  
   StdMetrics.ms_v_env_on->SetValue(can_env_on);
   StdMetrics.ms_v_env_awake->SetValue(can_awake);
@@ -299,10 +295,8 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   StdMetrics.ms_v_bat_soh->SetValue(can_soh);
   StdMetrics.ms_v_bat_health->SetValue(can_bat_health);
   
-  if(can_speed > 1.0f)
-    StdMetrics.ms_v_pos_speed->SetValue(can_speed);
-  if(can_odometer > 1.0f)
-    StdMetrics.ms_v_pos_odometer->SetValue(can_odometer);
+  StdMetrics.ms_v_pos_speed->SetValue(can_speed);
+  StdMetrics.ms_v_pos_odometer->SetValue(can_odometer);
 
   StdMetrics.ms_v_charge_climit->SetValue(can_charge_climit);
   StdMetrics.ms_v_charge_inprogress->SetValue(can_charge_inprogress);
@@ -310,8 +304,7 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   StdMetrics.ms_v_gen_kwh_grid_total->SetValue(can_kwh_grid_total);
 
   // xsq metrics:
-  if(can_trip_distance > 0.1f)
-   mt_pos_odometer_trip->SetValue(can_odometer_trip);
+  mt_pos_odometer_trip->SetValue(can_odometer_trip);
   mt_worst_consumption->SetValue(can_worst_consumption);
   mt_best_consumption->SetValue(can_best_consumption);
   mt_bcb_power_mains->SetValue(can_bcb_power_mains);
