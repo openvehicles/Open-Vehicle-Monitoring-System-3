@@ -40,7 +40,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
     
-  if(IsAwakeEQ())
+  if(IsAwakeEQ() || IsAwakeByCanEQ())
     smartCAN2Metrics();
 
   if(IsChargingEQ()) 

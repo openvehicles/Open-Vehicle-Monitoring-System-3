@@ -71,6 +71,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       {
       REQ_DLC(7);
       can_awake = (CAN_BYTE(0) > 0xC0);
+      can_env_on = (CAN_BYTE(0) > 0xC4);
       can_locked = (CAN_BYTE(6) == 0x96) || (mt_driver_door_locked->AsBool(false) && !DoorOpen());
       int code = CAN_BYTE(0);
       std::string msgtxt = "";
@@ -224,11 +225,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       can_charge_inprogress = (CAN_BYTE(5) & 0x20) != 0;
       break;
       }
-    case 0x668:
-      REQ_DLC(1);
-      can_env_on = (CAN_BYTE(0) & 0x40) > 0; // Drive Ready
-      StdMetrics.ms_v_env_on->SetValue(can_env_on);
-      break;
     case 0x673:
       {
       // TPMS pressure values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt
@@ -263,7 +259,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 // Sync CAN datapoints to OVMS metrics, called by Ticker1, because CAN refresh rate is too high
 void OvmsVehicleSmartEQ::smartCAN2Metrics()
 {  
-  if (can_awake || can_charge_inprogress || can_env_on)
+  if (IsAwakeByCanEQ())
     {
     mt_bus_awake->SetValue(true);
     m_candata_poll = true;

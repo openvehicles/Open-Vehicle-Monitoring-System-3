@@ -224,7 +224,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- Inline state helpers ---
     bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]
     bool IsOffEQ() { return m_poll_state == POLLSTATE_OFF; }
-    bool IsAwakeEQ() { return mt_bus_awake->AsBool(false) || can_awake || can_charge_inprogress || can_env_on; }
+    bool IsAwakeByCanEQ() { return can_awake || can_charge_inprogress || can_env_on || can_hvac; }
+    bool IsAwakeEQ() { return mt_bus_awake->AsBool(false) || IsAwakeByCanEQ(); }
     bool IsOnEQ() { return can_env_on; }
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
