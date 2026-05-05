@@ -39,14 +39,15 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   {
   if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
+    
+  if(IsAwakeEQ() || IsAwakeByCanEQ())
+    smartCAN2Metrics();
 
   if(IsChargingEQ()) 
     HandleCharging();
   
   if(IsOnEQ())
     HandleEnergy();
-    
-  smartCAN2Metrics();
   }
 
 void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker) 
@@ -107,8 +108,6 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     {      
     can_init = false;
     mt_bus_awake->SetValue(true);
-    m_candata_poll = false;
-    m_candata_timer = -1;
     smartCANmode(true);
     }
 
@@ -174,10 +173,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
  */
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) 
   {
-  bool car_online = StdMetrics.ms_v_env_awake->AsBool(false);  
-  bool car_bus = mt_bus_awake->AsBool(false);
-
-  if (car_online != car_bus && !m_candata_poll) 
+  if (IsAwakeEQ() && !m_candata_poll) 
     {
     m_candata_poll = true;
     m_candata_timer = SQ_CANDATA_TIMEOUT;
@@ -193,6 +189,6 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
     }
   
   // - base system is awake if we've got a fresh lv_pwrstate:
-  StdMetrics.ms_v_env_aux12v->SetValue(car_online);   
+  StdMetrics.ms_v_env_aux12v->SetValue(can_awake);   
   HandlePollState();
   }
