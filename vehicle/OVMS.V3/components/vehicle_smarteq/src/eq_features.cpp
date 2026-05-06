@@ -201,7 +201,6 @@ void OvmsVehicleSmartEQ::ResetChargingValues() {
   m_charge_finished = false;
   m_notifySOClimit = false;
   StdMetrics.ms_v_charge_kwh->SetValue(0); // charged Energy
-  //StdMetrics.ms_v_charge_kwh_grid->SetValue(0);
 }
 
 void OvmsVehicleSmartEQ::ResetTripCounters() {
@@ -508,6 +507,8 @@ void OvmsVehicleSmartEQ::smartSleep()
 
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
+  if (m_charge_finished) ResetChargingValues();
+  if (m_resettrip) ResetTripCounters();
   // Set charging metrics
   StdMetrics.ms_v_charge_pilot->SetValue(true);
   StdMetrics.ms_v_charge_mode->SetValue("standard");
@@ -562,8 +563,6 @@ void OvmsVehicleSmartEQ::smartChargeStop()
 
 void OvmsVehicleSmartEQ::smartChargePrepare()
 {
-  if (m_charge_finished) ResetChargingValues();
-  if (m_resettrip) ResetTripCounters();
   // canwrite enable write access, only when car is on
   if(IsCANwrite()) 
     {
@@ -576,8 +575,8 @@ void OvmsVehicleSmartEQ::smartChargePrepare()
 void OvmsVehicleSmartEQ::smartChargeFinish()
 {
   m_charge_finished = true;
-  StdMetrics.ms_v_charge_power->SetValue(0);
   m_poll_on_charge = false;
+  StdMetrics.ms_v_charge_power->SetValue(0);
   ESP_LOGD(TAG, "smartChargeFinish()");
 }
 
