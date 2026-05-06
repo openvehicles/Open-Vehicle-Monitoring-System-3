@@ -563,12 +563,6 @@ void OvmsVehicleSmartEQ::smartChargeStop()
 
 void OvmsVehicleSmartEQ::smartChargePrepare()
 {
-  // canwrite enable write access, only when car is on
-  if(IsCANwrite()) 
-    {
-    m_poll_on_charge = true;
-    smartCANmode(true);
-    }
   ESP_LOGD(TAG, "smartChargePrepare()");
 }
 
