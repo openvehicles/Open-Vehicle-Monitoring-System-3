@@ -391,6 +391,7 @@ void OvmsVehicleSmartEQ::DoorLockState() {
   bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt(0) > m_park_timeout_secs &&
                           !IsOnEQ() &&
                           !StdMetrics.ms_v_env_locked->AsBool(false) &&
+                          !m_cmd_locked &&
                           !m_warning_unlocked);
   
   if (warning_unlocked) {

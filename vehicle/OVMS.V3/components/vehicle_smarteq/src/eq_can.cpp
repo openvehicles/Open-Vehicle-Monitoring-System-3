@@ -72,7 +72,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       REQ_DLC(7);
       can_awake = (CAN_BYTE(0) > 0xC0);
       can_env_on = (CAN_BYTE(0) > 0xC4);
-      can_locked = (CAN_BYTE(6) == 0x96) || (mt_driver_door_locked->AsBool(false) && !DoorOpen());
+      can_locked = (CAN_BYTE(6) == 0x96);
       int code = CAN_BYTE(0);
       std::string msgtxt = "";
       switch(code) {
@@ -264,12 +264,20 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
     mt_bus_awake->SetValue(true);
     m_candata_poll = true;
     m_candata_timer = SQ_CANDATA_TIMEOUT;
-    }  
+    }
+  if (m_cmd_locked && !can_locked)
+    {
+    // prevent desync of command lock and actual lock status    
+    StdMetrics.ms_v_env_locked->SetValue(true);
+    }
+  else
+    {
+    StdMetrics.ms_v_env_locked->SetValue(can_locked);
+    }
   StdMetrics.ms_v_env_on->SetValue(can_env_on);
   StdMetrics.ms_v_env_awake->SetValue(can_awake);
   StdMetrics.ms_v_env_hvac->SetValue(can_hvac);
   StdMetrics.ms_v_env_handbrake->SetValue(can_handbrake);
-  StdMetrics.ms_v_env_locked->SetValue(can_locked);
   StdMetrics.ms_v_env_headlights->SetValue(can_headlights);
   StdMetrics.ms_v_env_gear->SetValue(can_gear);
   StdMetrics.ms_v_env_cabintemp->SetValue(can_cabintemp);
@@ -309,7 +317,8 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   mt_energy_aux->SetValue(can_aux_consumption);
   mt_obd_duration->SetValue(can_duration_full, Minutes);
   mt_reset_consumption->SetValue(can_rest_consumption);
-  mt_reset_distance->SetValue(can_trip_distance);
+  mt_reset_distance->SetValue(can_trip_distance);  
+  mt_driver_door_locked->SetValue(m_cmd_locked);
   if(can_trip_energy < 3000.0f) // prevent unrealistic values based on faulty readings
     mt_reset_energy->SetValue(can_trip_energy);
   mt_reset_speed->SetValue(can_avg_speed);
