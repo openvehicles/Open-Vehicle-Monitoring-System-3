@@ -293,6 +293,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len);
     void PollReply_EVC_14VBatteryVoltageReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_CabinBlower(const char* data, uint16_t reply_len);
+    void PollReply_EVC_VehSpeed(const char* data, uint16_t reply_len);
+    void PollReply_EVC_Odometer(const char* data, uint16_t reply_len);
 
     // --- Poll reply handlers: OBL ---
     void PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len);

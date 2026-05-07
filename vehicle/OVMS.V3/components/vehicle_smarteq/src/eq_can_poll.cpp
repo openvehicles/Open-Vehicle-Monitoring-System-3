@@ -141,6 +141,12 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x2005: // Battery voltage 14V
           PollReply_EVC_14VBatteryVoltage(m_rxbuf.data(), m_rxbuf.size());
           break;
+        case 0x2003: // Vehicle Speed
+          PollReply_EVC_VehSpeed(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x2006: // Odometer (Total Vehicle Distance)
+          PollReply_EVC_Odometer(m_rxbuf.data(), m_rxbuf.size());
+          break;
         case 0x339D: // Charging plug detected (B_PlugConnected_bcb_status_S)
           PollReply_EVC_PlugDetected(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -761,7 +767,21 @@ void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltageReq(const char* data, ui
   REQUIRE_LEN(1);
   uint8_t raw = CAN_BYTE(0);
   float value = 12.0f + raw * 0.05f;
-  mt_evc_dcdc->SetElemValue(5, value);  // batt_volt_req
+  can_speed = value;
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_VehSpeed(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 20 03  <Byte> <Byte>
+  REQUIRE_LEN(2);
+  uint16_t raw = CAN_UINT(0);
+  float value = raw * 0.01f;
+  can_speed = value;
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_Odometer(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 20 06  <Byte>
+  REQUIRE_LEN(3);
+  can_odometer = (float)CAN_UINT24(0);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_PlugDetected(const char* data, uint16_t reply_len) {
