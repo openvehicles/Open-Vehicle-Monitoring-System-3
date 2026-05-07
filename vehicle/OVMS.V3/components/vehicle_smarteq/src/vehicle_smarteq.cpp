@@ -114,7 +114,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 210, kPa);  // Dummy pressure for TPMS alert testing
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
-  mt_driver_door_locked          = MyMetrics.InitBool("xsq.driver.door.locked", SM_STALE_MID, false);
+  mt_driver_door_locked          = MyMetrics.InitBool("xsq.driver.door.locked", SM_STALE_MIN, false);
   // 0x7EC EVC metrics
   // EVC 12V values: Index 0=dcdc_volt_req, 1=dcdc_volt, 2=dcdc_power, 3=usm_volt, 4=batt_volt_can, 5=batt_volt_req, 6=dcdc_amps, 7=dcdc_load
   mt_evc_dcdc                   = MyMetrics.InitVector<float>("xsq.evc.12v.dcdc", SM_STALE_MID, nullptr, Other);

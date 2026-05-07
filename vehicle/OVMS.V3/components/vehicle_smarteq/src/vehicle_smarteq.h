@@ -276,21 +276,42 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- Poll reply handlers: BCM ---
     void PollReply_BCM_VIN(const char* data, uint16_t reply_len);
     void PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t reply_len);
+    void PollReply_BCM_TPMS_Status(const char* data, uint16_t reply_len);
+    void PollReply_BCM_DoorlockEEPROM(const char* data, uint16_t reply_len);
 
     // --- Poll reply handlers: EVC ---
+    void PollReply_EVC_DCDC_ActReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_HV_Energy(const char* data, uint16_t reply_len);
+    void PollReply_EVC_PlugDetected(const char* data, uint16_t reply_len);
     void PollReply_EVC_Traceability(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Load(const char* data, uint16_t reply_len);
+    void PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Volt(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Amps(const char* data, uint16_t reply_len);
     void PollReply_EVC_DCDC_Power(const char* data, uint16_t reply_len);
+    void PollReply_EVC_USM14VVoltage(const char* data, uint16_t reply_len);
+    void PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len);
+    void PollReply_EVC_14VBatteryVoltageReq(const char* data, uint16_t reply_len);
+    void PollReply_EVC_CabinBlower(const char* data, uint16_t reply_len);
+    void PollReply_EVC_VehSpeed(const char* data, uint16_t reply_len);
+    void PollReply_EVC_Odometer(const char* data, uint16_t reply_len);
 
     // --- Poll reply handlers: OBL ---
     void PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Ph_RMS_A(const char* data, uint16_t reply_len, int idx);
+    void PollReply_OBL_JB2AC_Ph_RMS_V(const char* data, uint16_t reply_len, int idx);
+    void PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len);
     void PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len);
+    void PollReply_OBL_JB2AC_Current_GR(const char* data, uint16_t reply_len, int idx);
+    void PollReply_OBL_JB2AC_Current(const char* data, uint16_t reply_len, int idx);
 
     // --- Poll reply handlers: OBD ---
+    void PollReply_obd_time(const char* data, uint16_t reply_len);
+    void PollReply_obd_start_trip(const char* data, uint16_t reply_len);
+    void PollReply_obd_start_time(const char* data, uint16_t reply_len);
     void PollReply_obd_mt_day(const char* data, uint16_t reply_len);
+    void PollReply_obd_mt_km(const char* data, uint16_t reply_len);
     void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
 
     // --- Constants ---
@@ -444,6 +465,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_modem_restart = false;           // modem restart enabled
     bool m_notifySOClimit = false;          // notify SOClimit reached one time
     bool m_poll_on_charge = false;          // flag to trigger poll state change actions
+    bool m_cmd_locked = false;
     int m_adc_samples = 5;                  // number of samples for ADC factor calculation
     int m_ddt4all_ticker = 0;               // DDT4ALL active ticker
     int m_ddt4all_exec = 0;                 // DDT4ALL ticker for next execution

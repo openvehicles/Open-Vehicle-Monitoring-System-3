@@ -48,6 +48,11 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   
   if(IsOnEQ())
     HandleEnergy();
+  
+  if (m_cmd_locked && DoorOpen()) 
+    {
+    m_cmd_locked = false; // reset command lock when car is opened
+    }
   }
 
 void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker) 

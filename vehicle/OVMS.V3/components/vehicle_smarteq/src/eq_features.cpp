@@ -201,7 +201,6 @@ void OvmsVehicleSmartEQ::ResetChargingValues() {
   m_charge_finished = false;
   m_notifySOClimit = false;
   StdMetrics.ms_v_charge_kwh->SetValue(0); // charged Energy
-  //StdMetrics.ms_v_charge_kwh_grid->SetValue(0);
 }
 
 void OvmsVehicleSmartEQ::ResetTripCounters() {
@@ -392,6 +391,7 @@ void OvmsVehicleSmartEQ::DoorLockState() {
   bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt(0) > m_park_timeout_secs &&
                           !IsOnEQ() &&
                           !StdMetrics.ms_v_env_locked->AsBool(false) &&
+                          !m_cmd_locked &&
                           !m_warning_unlocked);
   
   if (warning_unlocked) {
@@ -508,6 +508,8 @@ void OvmsVehicleSmartEQ::smartSleep()
 
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
+  if (m_charge_finished) ResetChargingValues();
+  if (m_resettrip) ResetTripCounters();
   // Set charging metrics
   StdMetrics.ms_v_charge_pilot->SetValue(true);
   StdMetrics.ms_v_charge_mode->SetValue("standard");
@@ -562,22 +564,14 @@ void OvmsVehicleSmartEQ::smartChargeStop()
 
 void OvmsVehicleSmartEQ::smartChargePrepare()
 {
-  if (m_charge_finished) ResetChargingValues();
-  if (m_resettrip) ResetTripCounters();
-  // canwrite enable write access, only when car is on
-  if(IsCANwrite()) 
-    {
-    m_poll_on_charge = true;
-    smartCANmode(true);
-    }
   ESP_LOGD(TAG, "smartChargePrepare()");
 }
 
 void OvmsVehicleSmartEQ::smartChargeFinish()
 {
   m_charge_finished = true;
-  StdMetrics.ms_v_charge_power->SetValue(0);
   m_poll_on_charge = false;
+  StdMetrics.ms_v_charge_power->SetValue(0);
   ESP_LOGD(TAG, "smartChargeFinish()");
 }
 

@@ -314,7 +314,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
     if (DoorOpen())
         MyNotify.NotifyString("alert", "door.lock", "Vehicle locked, but one or more doors are open!");
     else
-        MyNotify.NotifyString("info", "door.lock", "Vehicle locked");
+        MyNotify.NotifyString("info", "door.lock", "Vehicle locked!");
+        // set m_cmd_locked to true to indicate that lock command was sent, but since the car does not show as locked immediately, 
+        // we cannot set the metric to true yet, but we can use this flag to show a notification if the car is not showing as locked after a certain time, 
+        //or to set the metric to true when the car eventually shows as locked after a delay
+        m_cmd_locked = true; 
     }
   else
     {
@@ -347,7 +351,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin
   if(res == Success) 
     {
     ESP_LOGI(TAG, "Unlock successful");
-    StdMetrics.ms_v_env_locked->SetValue(false);
+    m_cmd_locked = false; 
     MyNotify.NotifyString("info", "door.unlock", "Vehicle unlocked");
     }
   else
