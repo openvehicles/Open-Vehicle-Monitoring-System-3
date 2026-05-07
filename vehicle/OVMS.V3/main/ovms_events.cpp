@@ -302,6 +302,12 @@ void OvmsEvents::EventTask()
     }
   }
 
+bool OvmsEvents::IsEventsTask()
+  {
+  // Return TRUE if the currently running task is the OVMS Events task
+  return (xTaskGetCurrentTaskHandle() == m_taskid);
+  }
+
 void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
   {
   // Log everything but the ticker & clock signals

@@ -82,7 +82,8 @@ class OvmsWriter
 
   public:
     // Used to notify the writer of a migration of a file within the VFS
-    virtual void NotifyVfsMigration(const std::string& src, const std::string& dst) {}
+    virtual const std::string GetPath() { return std::string(""); }
+    virtual void SetPath(const std::string& path) {}
 
   public:
     bool IsSecure();

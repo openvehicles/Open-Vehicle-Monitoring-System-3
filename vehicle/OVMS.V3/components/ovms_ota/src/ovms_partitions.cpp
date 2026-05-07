@@ -42,6 +42,8 @@
 #include "crypt_md5.h"
 #include "ovms_peripherals.h"
 #include "ovms_ota.h"
+#include "ovms_events.h"
+#include <esp_task_wdt.h>
 #include <list>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -621,6 +623,14 @@ static bool copy_store_ensure_dir(const std::string& dst, OvmsWriter* writer, un
 static void copy_store_one_file(OvmsWriter* writer, const std::string& src, const std::string& dst,
   off_t expected_size, uint8_t* buf, size_t buf_size, unsigned& files_copied, unsigned& errors)
   {
+  // In case of copying the writer file, every write after open() gets lost, and we need
+  // to adjust the expected size:
+  int loglen = writer->printf("Copy file: %s -> %s\n", src.c_str(), dst.c_str());
+  if (src == writer->GetPath())
+    {
+    expected_size += loglen;
+    }
+
   struct stat st_src;
   if (stat(src.c_str(), &st_src) != 0)
     {
@@ -673,8 +683,6 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
     close(fd_in);
     return;
     }
-
-  writer->printf("Copy file: %s -> %s\n", src.c_str(), dst.c_str());
 
   bool io_ok = true;
   off_t copied_size = 0;
@@ -743,9 +751,6 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
     return;
     }
 
-  // Notify the writer that the file has been migrated
-  writer->NotifyVfsMigration(src, dst);
-
   // All done
   files_copied++;
   }
@@ -799,6 +804,7 @@ bool ovms_partition_table_copy_store(OvmsWriter* writer)
   std::list<std::string> dir_todo;
   dir_todo.push_back(kCopyStoreFrom);
 
+  bool found_writer_file = false;
   while (!dir_todo.empty())
     {
     const std::string dir_src = dir_todo.front();
@@ -857,6 +863,15 @@ bool ovms_partition_table_copy_store(OvmsWriter* writer)
         return false;
         }
 
+      if (child_src == writer->GetPath())
+        {
+        // to avoid losing the log part covering a store corruption error, we need to keep the
+        // writer output file on /store until all other files have been copied successfully:
+        writer->printf("Postponing log output file %s\n", child_src.c_str());
+        found_writer_file = true;
+        continue;
+        }
+
       struct stat st_ent;
       if (stat(child_src.c_str(), &st_ent) != 0)
         {
@@ -893,6 +908,37 @@ bool ovms_partition_table_copy_store(OvmsWriter* writer)
       {
       writer->printf("Error: closedir %s: %s\n", dir_src.c_str(), strerror(errno));
       errors++;
+      }
+
+    // if we're running from the system.start event, we occasionally need to feed the watchdog:
+    if (MyEvents.IsEventsTask())
+      {
+      esp_task_wdt_reset();
+      }
+    }
+
+  // finally copy the writer file if found in copy scope:
+  if (errors == 0 && found_writer_file)
+    {
+    std::string child_src = writer->GetPath();
+    std::string child_dst;
+    struct stat st_ent;
+    if (stat(child_src.c_str(), &st_ent) != 0)
+      {
+      writer->printf("Error: stat %s: %s\n", child_src.c_str(), strerror(errno));
+      errors++;
+      }
+    if (errors == 0 && !copy_store_map_dst(child_src, child_dst, writer))
+      {
+      errors++;
+      }
+    if (errors == 0)
+      {
+      copy_store_one_file(writer, child_src, child_dst, st_ent.st_size, buf, kBufSize, files_copied, errors);
+      }
+    if (errors == 0)
+      {
+      writer->SetPath(child_dst);
       }
     }
 
@@ -1148,13 +1194,16 @@ bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
         return true;
         }
       writer->puts("v3-34 We need to upgrade the store partition to the new format, and then reboot");
+      std::string logpath_oldstore = writer->GetPath();
       if (!ovms_partition_table_migrate_store(writer))
         {
+        writer->SetPath(logpath_oldstore);
         writer->puts("v3-34 Store migration failed");
         return false;
         }
       if (!ovms_partition_table_upgrade_factory(writer))
         {
+        writer->SetPath(logpath_oldstore);
         writer->puts("v3-34 Error: Failed to upgrade factory partition table");
         return false;
         }

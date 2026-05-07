@@ -141,6 +141,7 @@ class OvmsEvents
 
   public:
     void EventTask();
+    bool IsEventsTask();
     void FreeQueueSignalEvent(event_queue_t* msg);
 #if ESP_IDF_VERSION_MAJOR >= 4
     static void ReceiveSystemEvent(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);

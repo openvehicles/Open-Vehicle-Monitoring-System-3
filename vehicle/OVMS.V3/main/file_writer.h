@@ -53,7 +53,8 @@ class FileWriter : public OvmsWriter
     virtual bool IsInteractive() { return false; }
 
   public:
-    virtual void NotifyVfsMigration(const std::string& src, const std::string& dst);
+    virtual const std::string GetPath();
+    virtual void SetPath(const std::string& path);
 
   private:
     void logwrite(const char* buf, size_t nbyte);

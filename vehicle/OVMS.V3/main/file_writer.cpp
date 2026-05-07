@@ -116,12 +116,17 @@ ssize_t FileWriter::write(const void *buf, size_t nbyte)
   return nbyte;
   }
 
-void FileWriter::NotifyVfsMigration(const std::string& src, const std::string& dst)
+const std::string FileWriter::GetPath()
   {
-  if (m_path == src)
+  return m_path;
+  }
+
+void FileWriter::SetPath(const std::string& path)
+  {
+  if (m_path != path)
     {
-    ESP_LOGI(TAG, "Migrating to write to %s", dst.c_str());
-    m_path = dst;
+    ESP_LOGI(TAG, "Changing path to %s", path.c_str());
+    m_path = path;
     }
   }
 
