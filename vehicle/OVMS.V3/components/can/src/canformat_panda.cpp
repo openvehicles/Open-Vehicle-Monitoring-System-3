@@ -69,6 +69,11 @@ std::string canformat_panda::get(CAN_log_message_t* message)
     case CAN_LogFrame_TX:
       packet.w1 = (uint32_t)message->frame.MsgID <<21;
       packet.w2 = (message->frame.FIR.B.DLC & 0x0f) | (message->origin->m_busnumber << 4);
+      if (message->frame.FIR.B.DLC > 8)
+        {
+        ESP_LOGW(TAG, "DLC too long: %d", message->frame.FIR.B.DLC);
+        return std::string("");
+        }
       memcpy(&packet.data, message->frame.data.u8, 8);
       return std::string((char*)&packet,sizeof(packet));
 
