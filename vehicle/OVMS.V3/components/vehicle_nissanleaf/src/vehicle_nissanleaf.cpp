@@ -2653,6 +2653,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandHomelink(int button
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandClimateControl(bool climatecontrolon)
   {
   ESP_LOGI(TAG, "CommandClimateControl");
+  if (!climatecontrolon)
+    {
+    m_climate_restart = false;
+    m_climate_restart_ticker = 0;
+    }
   return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
   }
 
