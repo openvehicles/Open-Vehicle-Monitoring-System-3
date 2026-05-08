@@ -2655,6 +2655,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandClimateControl(bool
   ESP_LOGI(TAG, "CommandClimateControl");
   if (!climatecontrolon)
     {
+    // stops the scheduled climate restart
     m_climate_restart = false;
     m_climate_restart_ticker = 0;
     }
