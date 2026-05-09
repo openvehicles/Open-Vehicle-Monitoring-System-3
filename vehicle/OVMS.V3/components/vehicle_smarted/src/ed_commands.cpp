@@ -409,6 +409,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(bool enable) {
+  if (!enable)
+    { // stops the scheduled climate restart
+    m_climate_restart = false;
+    m_climate_restart_ticker = 0;
+    }
   time_t rawtime;
   time ( &rawtime );
   rawtime += m_preclima_time*60; // add 15 minutes
