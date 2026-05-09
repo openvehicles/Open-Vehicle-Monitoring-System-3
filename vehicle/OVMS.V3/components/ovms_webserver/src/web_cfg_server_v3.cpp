@@ -36,11 +36,12 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   auto lock = MyConfig.Lock();
   std::string error;
   std::string server, clientid, user, password, port, topic_prefix;
+  extram::string client_cert, client_key;
   std::string updatetime_connected, updatetime_idle, updatetime_on;
   std::string updatetime_charging, updatetime_awake, updatetime_sendall, updatetime_keepalive;
   std::string metrics_priority, metrics_include, metrics_exclude, metrics_immediately, metrics_exclude_immediately;
   std::string queue_sendall, queue_modified;
-  bool tls, legacy_event_topic, updatetime_priority, updatetime_immediately;
+  bool tls, legacy_event_topic, updatetime_priority, updatetime_immediately, retain_depth_limit;
 
   if (c.method == "POST") {
     // process form submission:
@@ -50,6 +51,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     clientid = c.getvar("clientid");
     user = c.getvar("user");
     password = c.getvar("password");
+    c.getvar("client_cert", client_cert);
+    c.getvar("client_key", client_key);
     port = c.getvar("port");
     topic_prefix = c.getvar("topic_prefix");
     updatetime_connected = c.getvar("updatetime_connected");
@@ -61,6 +64,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_keepalive = c.getvar("updatetime_keepalive");
     updatetime_priority = (c.getvar("updatetime_priority") == "yes");
     updatetime_immediately = (c.getvar("updatetime_immediately") == "yes");
+    retain_depth_limit = (c.getvar("retain_depth_limit") == "yes");
     metrics_priority = c.getvar("metrics_priority");
     metrics_include = c.getvar("metrics_include");
     metrics_exclude = c.getvar("metrics_exclude");
@@ -111,6 +115,18 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"updatetime_keepalive\">Keepalive interval must be at least 60 seconds</li>";
       }
     }
+    if (!client_cert.empty() && !startsWith(client_cert, "-----BEGIN CERTIFICATE-----")) {
+      error += "<li data-input=\"client_cert\">Client certificate must be in PEM CERTIFICATE format</li>";
+    }
+    if (!client_key.empty() &&
+        !startsWith(client_key, "-----BEGIN PRIVATE KEY-----") &&
+        !startsWith(client_key, "-----BEGIN RSA PRIVATE KEY-----") &&
+        !startsWith(client_key, "-----BEGIN EC PRIVATE KEY-----")) {
+      error += "<li data-input=\"client_key\">Client private key must be in PEM PRIVATE KEY format</li>";
+    }
+    if (client_cert.empty() != client_key.empty()) {
+      error += "<li data-input=\"client_cert,client_key\">Both client certificate and private key must be given</li>";
+    }
 
     if (error == "") {
       // success:
@@ -132,6 +148,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v3", "updatetime.keepalive", updatetime_keepalive);
       MyConfig.SetParamValueBool("server.v3", "updatetime.priority", updatetime_priority);
       MyConfig.SetParamValueBool("server.v3", "updatetime.immediately", updatetime_immediately);
+      MyConfig.SetParamValueBool("server.v3", "retain.depth.limit", retain_depth_limit);
       MyConfig.SetParamValue("server.v3", "metrics.priority", metrics_priority);
       MyConfig.SetParamValue("server.v3", "metrics.include", metrics_include);
       MyConfig.SetParamValue("server.v3", "metrics.exclude", metrics_exclude);
@@ -139,7 +156,32 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v3", "metrics.exclude.immediately", metrics_exclude_immediately);
       MyConfig.SetParamValue("server.v3", "queue.sendall", queue_sendall);
       MyConfig.SetParamValue("server.v3", "queue.modified", queue_modified);
-
+      if (client_cert.empty()) {
+        unlink("/store/tls/serverv3_client.crt");
+        unlink("/store/tls/serverv3_client.key");
+      }
+      else {
+        if (save_file("/store/tls/serverv3_client.crt", client_cert) != 0) {
+          error = "<li data-input=\"client_cert\">Error saving TLS certificate: ";
+          error += strerror(errno);
+          error += "</li>";
+          error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+          c.head(400);
+          c.alert("danger", error.c_str());
+          c.done();
+          return;
+        }
+        if (save_file("/store/tls/serverv3_client.key", client_key) != 0) {
+          error = "<li data-input=\"client_key\">Error saving TLS private key: ";
+          error += strerror(errno);
+          error += "</li>";
+          error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+          c.head(400);
+          c.alert("danger", error.c_str());
+          c.done();
+          return;
+        }
+      }
       c.head(200);
       c.alert("success", "<p class=\"lead\">Server V3 (MQTT) connection configured.</p>");
       OutputHome(p, c);
@@ -160,6 +202,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     clientid = MyConfig.GetParamValue("server.v3", "clientid");
     user = MyConfig.GetParamValue("server.v3", "user");
     password = MyConfig.GetParamValue("password", "server.v3");
+    load_file("/store/tls/serverv3_client.crt", client_cert);
+    load_file("/store/tls/serverv3_client.key", client_key);
     port = MyConfig.GetParamValue("server.v3", "port");
     topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix");
     updatetime_connected = MyConfig.GetParamValue("server.v3", "updatetime.connected");
@@ -171,6 +215,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_keepalive = MyConfig.GetParamValue("server.v3", "updatetime.keepalive", "1740");
     updatetime_priority = MyConfig.GetParamValueBool("server.v3", "updatetime.priority", false);
     updatetime_immediately = MyConfig.GetParamValueBool("server.v3", "updatetime.immediately", false);
+    retain_depth_limit = MyConfig.GetParamValueBool("server.v3", "retain.depth.limit", false);
     metrics_priority = MyConfig.GetParamValue("server.v3", "metrics.priority");
     metrics_include = MyConfig.GetParamValue("server.v3", "metrics.include");
     metrics_exclude = MyConfig.GetParamValue("server.v3", "metrics.exclude");
@@ -206,6 +251,46 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "optional, default: <vehicle id>");
   c.input_text("Topic Prefix", "topic_prefix", topic_prefix.c_str(),
     "optional, default: ovms/<username>/<vehicle id>/");
+
+  c.fieldset_start("TLS client authentication (optional)");
+  c.printf(
+    "<div class=\"form-group\">\n"
+      "<label class=\"control-label col-sm-3\" for=\"input-content\">Client certificate:</label>\n"
+      "<div class=\"col-sm-9\">\n"
+        "<textarea class=\"form-control font-monospace\" style=\"font-size:80%%;white-space:pre;\"\n"
+          "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
+          "placeholder=\"-----BEGIN CERTIFICATE-----&#13;&#10;...&#13;&#10;-----END CERTIFICATE-----\"\n"
+          "rows=\"5\" id=\"input-client_cert\" name=\"client_cert\">%s</textarea>\n"
+      "</div>\n"
+    "</div>\n"
+    , c.encode_html(client_cert).c_str());
+  c.printf(
+    "<div class=\"form-group\">\n"
+      "<label class=\"control-label col-sm-3\" for=\"input-content\">Client private key:</label>\n"
+      "<div class=\"col-sm-9\">\n"
+        "<textarea class=\"form-control font-monospace\" style=\"font-size:80%%;white-space:pre;\"\n"
+          "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
+          "placeholder=\"-----BEGIN PRIVATE KEY-----&#13;&#10;...&#13;&#10;-----END PRIVATE KEY-----\"\n"
+          "rows=\"5\" id=\"input-client_key\" name=\"client_key\">%s</textarea>\n"
+        "<p class=\"help-block\">Supports PKCS#8, RSA and EC PEM private keys. <br/>"
+        " Leave both the certificate and key empty to authenticate with username/password only.</p>\n"
+      "</div>\n"
+    "</div>\n"
+    , c.encode_html(client_key).c_str());
+  c.fieldset_end();
+  c.fieldset_start("AWS IoT Core (optional)");
+  c.input_checkbox("Limit retain to 8-segment topics", "retain_depth_limit", retain_depth_limit,
+    "<p>Omits the MQTT RETAIN flag on topics with more than 8 path segments."
+    " Required for AWS IoT Core. Default: disabled.</p>");
+  c.printf(
+    "<div class=\"form-group\">\n"
+      "<div class=\"col-sm-9 col-sm-offset-3\">\n"
+        "<b> MQTT keepalive </b><br>\n"
+        "<p class=\"help-block\">AWS IoT Core requires the MQTT keepalive to be 1200 seconds or less."
+        " Set the <em>Keepalive</em> interval below to 1200 or lower.</p>\n"
+      "</div>\n"
+    "</div>\n");
+  c.fieldset_end();
 
   c.fieldset_start("Update intervals");
   c.input("number", "…idle", "updatetime_idle", updatetime_idle.c_str(), "default: 600", "default: 600, update interval when client not connected", "min=\"1\" max=\"1200\" step=\"1\"", "seconds");
