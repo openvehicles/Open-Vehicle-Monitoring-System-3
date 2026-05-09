@@ -370,6 +370,7 @@ config OVMS_VEHICLE_NONE
 config OVMS_VEHICLE_MAXT90
     bool "Maxus T90 EV (MT90)"
     default y
+    depends on OVMS_VEHICLE_OBDII
     help
       Enable to include support for Maxus T90 EV.
 
