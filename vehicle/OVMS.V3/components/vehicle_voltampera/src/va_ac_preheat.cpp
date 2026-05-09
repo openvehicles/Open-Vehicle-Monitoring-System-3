@@ -478,7 +478,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandClimateControl(bool
   {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   ESP_LOGW(TAG,"<------ REMOTE CLIMATE CONTROL: %d (Preheat Status: %s) ------>", enable, PreheatStatus() );
-
+  if (!enable)
+    { // stops the scheduled climate restart
+    m_climate_restart = false;
+    m_climate_restart_ticker = 0;
+    }
   if ( ((mt_preheat_status->AsInt()!=VA_PREHEAT_STARTED) && (enable)) || 
        ((mt_preheat_status->AsInt()!=VA_PREHEAT_STOPPED) && (!enable) )  )
     {

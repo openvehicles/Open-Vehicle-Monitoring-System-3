@@ -1433,7 +1433,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandCooldown(bool cooldownon)
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool enable)
-  {
+  { 
+  if (!enable)
+    {
+    // stops the scheduled climate restart
+    m_climate_restart = false;
+    m_climate_restart_ticker = 0;
+    }
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   if (MyDuktape.DukTapeAvailable())
     {

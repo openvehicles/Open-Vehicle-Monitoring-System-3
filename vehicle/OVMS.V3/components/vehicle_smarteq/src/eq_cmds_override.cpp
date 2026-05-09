@@ -41,9 +41,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
 
   if(!enable) // HVAC OFF not implemented by vehicle
     {
-    m_climate_restart_ticker = 0;
-    m_climate_restart = false; 
-    return NotImplemented;
+    if (m_climate_restart) 
+      { // stops the scheduled climate restart
+      MyNotify.NotifyString("info", "climatecontrol.schedule", "Climate control restarting stopped!");
+      m_climate_restart_ticker = 0;
+      m_climate_restart = false; 
+      return Success;
+      }
+    else 
+      {
+      MyNotify.NotifyString("error", "climatecontrol.schedule", "Climate control stop not possible, EQ doesnt support it");
+      return NotImplemented;
+      }
     }
 
   if (StandardMetrics.ms_v_bat_soc->AsInt(0) < 31)
