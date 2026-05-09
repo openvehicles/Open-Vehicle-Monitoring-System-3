@@ -82,11 +82,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandClimateControl(bool
       m_climate_restart_ticker = 0;
       m_climate_restart = false;
       }
-    else
-      {  // There is a equvivalent command to stop pre-conditioning but HVAC wont stop, so probably not coded in the ECUs
-      ESP_LOGW(TAG, "Stop CommandClimateControl not possible, Zoe doesnt support it");
-      MyNotify.NotifyString("error", "climate.control", "Stop CommandClimateControl not possible, Zoe doesnt support it");
-      }
     res = NotImplemented;
   }
   // fallback to default implementation?
