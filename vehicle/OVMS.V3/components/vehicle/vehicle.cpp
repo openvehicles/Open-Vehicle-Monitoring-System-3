@@ -897,6 +897,12 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     StandardMetrics.ms_v_env_parktime->SetValue(0);
     m_last_drivetime = StandardMetrics.ms_v_env_drivetime->AsInt() + 1;
     StandardMetrics.ms_v_env_drivetime->SetValue(m_last_drivetime);
+    if (m_climate_restart))
+      { // Vehicle turned on - cancel scheduled climate restart
+      m_climate_restart = false;
+      m_climate_restart_ticker = 0;
+      ESP_LOGD(TAG,"Cancelling scheduled climate restart due to vehicle on");
+      }
     }
   else
     {
@@ -1011,14 +1017,6 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     // Check if global scheduled precondition are enabled
     if(MyConfig.GetParamValueBool("vehicle", "climate.precondition", false)) 
       CheckPreconditionSchedule();
-
-    if (m_climate_restart && StdMetrics.ms_v_env_on->AsBool(false))
-      {
-      // Vehicle turned on - cancel scheduled climate restart
-      m_climate_restart = false;
-      m_climate_restart_ticker = 0;
-      ESP_LOGI(TAG,"Cancelling scheduled climate restart due to vehicle on");
-      }
 
     if (m_climate_restart_ticker > 0 && --m_climate_restart_ticker == 0)
       { 
