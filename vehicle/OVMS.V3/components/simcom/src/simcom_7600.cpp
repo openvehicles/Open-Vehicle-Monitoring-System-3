@@ -219,7 +219,7 @@ modem::modem_state1_t simcom7600::State1Ticker1(modem::modem_state1_t curstate)
     switch (m_modem->m_state1_ticker)
       {
       case 10:
-        m_modem->tx("AT+CPIN?;+CREG=1;+CGREG=1;+CEREG=1;+CTZU=1;+CTZR=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0;S0=0\r\n");
+        m_modem->tx("AT+CPIN?;+CREG=1;+CGREG=1;+CEREG=2;+CTZU=1;+CTZR=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0;S0=0\r\n");
         break;
       case 12:
         m_modem->tx("AT+CGMR;+CICCID\r\n");
