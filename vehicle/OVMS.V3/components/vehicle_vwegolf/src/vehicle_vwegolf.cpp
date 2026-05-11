@@ -264,6 +264,15 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             ESP_LOGV(TAG, "0x00FD speed=%.2f km/h", f);
             break;
         }
+        case 0x0131: {
+            // KCAN-bridged BMS state of charge (J533 forwards 0x131 from FCAN).
+            // d[3] x 0.5 %; 0xFE is the BMS "not ready" sentinel.
+            if (d[3] == 0xFE) break;
+            f = d[3] * 0.5f;
+            StandardMetrics.ms_v_bat_soc->SetValue(f);
+            ESP_LOGV(TAG, "0x0131 soc=%.1f%%", f);
+            break;
+        }
         case 0x0486: {
             // GPS position. Latitude: bits 0-26 (27 bits), longitude: bits 27-54 (28 bits),
             // factor 1e-6 degrees. Sign bits inferred from bit layout (55 bits used out of

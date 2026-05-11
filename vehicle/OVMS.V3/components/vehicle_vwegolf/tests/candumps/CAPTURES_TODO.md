@@ -9,7 +9,7 @@ the experiments can be repeated with current firmware.
 
 ---
 
-## Cap A — KCAN parked / driving census  *(not yet done with clean firmware)*
+## Cap A — KCAN parked / driving census  *(FCAN drive side closed 20260503; KCAN bridge still open)*
 
 **Was:** `can3-3.3.005-778-g7404ab27_ota_1_edge-20260404-235013.crtd`
 **Status:** BUG (buses [2,3] mixed)
@@ -20,9 +20,8 @@ bug. April-12 FCAN driving captures (Captures 17a/b/c) confirm 0x131 is genuine 
 
 **Redo goal:**
 - Clean KCAN capture: car parked + ignition on, then short drive.
-- Confirm whether 0x131 (BMS_SoC) appears on KCAN (bus 3) during driving (J533 bridge).
-- Also needed: clean FCAN driving capture with current filtered firmware to confirm
-  0x131 reaches IncomingFrameCan2 at runtime (no pre-filter driving cap exists yet).
+- ~~Confirm whether 0x131 (BMS_SoC) appears on KCAN (bus 3) during driving (J533 bridge)~~ — still open; today's drive cap (`…-143106`) only contained bus-2 records.
+- ~~Clean FCAN driving capture with current filtered firmware to confirm 0x131 reaches IncomingFrameCan2 at runtime~~ — **DONE 20260503** (`all-…-143106`, 5 IDs incl. 0x131 at 49.8 Hz, monotonic SoC 99.0→95.0 % over a 9 m 37 s drive). Filter validated on FCAN drive path.
 
 ---
 

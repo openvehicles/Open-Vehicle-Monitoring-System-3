@@ -71,7 +71,9 @@ CCS DC FC: `0x0594` d[5] bits[3:2] = 0x00 (no connector). `v.c.type` undefined. 
 
 **Also:** `0x0594` default case wrote `"undefined"` every idle frame, overwriting prev type. Fixed → `break`.
 
-**Resolve:** verbose log during CCS, find `d[3]=xx d[5]=xx` ≠ baseline (`d[3]=03 d[5]=00`).
+**Update 20260503 (cap `…-132333`, CCS DC):** `0x0594` DOES broadcast on KCAN during CCS DC (1068 frames @ 2 Hz). Refutes pre-2026 "KCAN silent" note. ChargeType=2 (DC_CCS) observed for first ~1.9 s only — payload then locks to `d[3]=0x63 d[5]=0xec` and stays for the rest of the 533 s session. With current 42|2 ChargeType decode that reads `3 = CableConnected_NotCharging` while a 33.55 kW charge is ongoing → **DC bit layout differs from AC**. d[3] bit 6 set throughout DC charge → strong DC-active flag candidate.
+
+**Resolve:** single-bus KCAN, full CCS DC session. Re-decode 0x594 d[3]/d[5] specifically for DC.
 
 ### Climate on-bat / min-SoC — BAP write pending RE
 
@@ -95,7 +97,13 @@ Inferred: bit 55 (`d[6]` MSB) = lat, bit 56 (`d[7]` bit 0) = lon. Confirmed 0 = 
 
 `ms_v_charge_current`/`_power` never set. `0x0191` = motor/inverter only (zero charging). OBC current frame TBD.
 
-**Resolve:** Cap 8. Filter frames active only when `ChargeInProgress` in `0x0594` set.
+**Update 20260503 (caps `…-132333` CCS DC, `…-143106` drive):** `0x0191` confirmed silent during CCS DC (0 frames in 533 s). Drive validates 0x0191 decode (peak −105.5 kW, 343-361 V). `0x1A5554A8` OBC telemetry is the prime candidate for DC current/voltage:
+- AC sees only mux 0x5 (totalizer), 0x6 (header). DC sees **new mux IDs 0x3, 0x4, 0x7, 0x8, 0xD, 0xE, 0xF** (DC-only).
+- Each new mux has its own `b1, b2, b3, b6, b7` skeleton with `b4` varying — likely DC current/voltage/power per mux.
+- Mux 0x5 b4 totalizer is **wall-clock seconds** (+1/s on both AC and DC), not energy. Confirmed.
+- `0x31E` (FCAN, 20 Hz, undecoded) bytes 0/1 form a varying 16-bit LE pair — secondary HV current/voltage candidate.
+
+**Resolve:** single-bus KCAN, full CCS DC session, no truncation (this morning's was clipped at 67 % by module reset). Per-mux byte-level decode of 0x1A5554A8.
 
 ### UDS via can1 — not working
 
@@ -113,6 +121,34 @@ Can1 (OBD on J533) RX traffic but no UDS resp (tested 2026-04-09 AC charging). B
 3. OBD CAN on J533 needs different proto/session
 
 **Resolve:** retry UDS @ 1 Mbps, ign-on, laptop live debug (Cap 11). e-Up uses ISOTP_STD bus 1 same ECU addrs — works ign-on → confirms gateway routing.
+
+### SoC pin during CCS DC
+
+**New 20260503 (cap `…-132333` CCS DC vs `…-143106` drive):** `ms_v_bat_soc` confirmed **pinned during CCS DC sessions** (user observation), but tracks fine during drive (99.0 % → 95.0 % over 607 s, monotonic). 0x131 byte[3] decode is therefore correct on FCAN-driving but broken on DC. During DC capture, byte[3] does vary (74.5 % → 89.0 %) yet doesn't match real SoC (~58 % → ~74 % over the same window) — so either DBC scale/offset wrong on DC, byte[3] is a different quantity under DC, or the all-bus merge collapses two distinct 0x131 frames.
+
+Note: bus carries **gross SoC incl. top buffer** (drive cap starts 99.0 % bus-raw vs 92 % displayed) — structural offset, document in user guide.
+
+**Resolve:** single-bus FCAN, full CCS DC session. Compare 0x131 byte[3] trajectory against known-real SoC.
+
+### 0x2AF BMS_TripEnergy decode wrong
+
+**New 20260503 (cap `…-143106` drive):** existing DBC said `EnergyRecd b4-b5 + EnergyUsed b6-b7 @ 10 Ws/LSB`. Reality on this car: bytes 0/1/4/5/6/7 static zero across whole 607 s drive, only **bytes 2-3 carry signal** (16-bit LE, range 0..65 504, resets to 0 on key-on, climbs during draw, dips during regen, near-zero on park).
+
+Hypothesis: **cumulative net energy in mWh, mod 65 536**. Trip-total cross-check vs 0x191 power integral: 26 wraps × 65 536 + 58 496 (pre-park) = 1762 Wh vs 1706 Wh integral. **~3 % match.**
+
+DBC updated (`BO_ 687 NetEnergy: 16|16@1+ "mWh"`) with hypothesis flagged.
+
+**Resolve:** single-bus FCAN drive + parallel 0x191 sampling at full rate. Confirm mWh scale and signed-wrap behaviour before relying on it for `ms_v_bat_energy_used`/`_recd`.
+
+### "all-bus" capture mode unstable
+
+**New 20260503:** same firmware build (`dc583be4a-dirty`), two captures, two completely different shapes:
+- `…-132333` (CCS DC): 190 IDs tagged bus 3, all KCAN+FCAN traffic merged under tag 3.
+- `…-143106` (drive): 5 IDs tagged bus 2 only, no KCAN at all.
+
+Mode is not actually all-bus. `bus=2` shows mcp2515-like filter-slot count of unique IDs; `bus=3` doesn't preserve frame origin (bus tag flattened). Both modes useful sometimes, but unpredictable for analysis.
+
+**Resolve:** investigate `vfs` logger / capture mode logic. For per-bus decode work, fall back to single-bus capture explicitly.
 
 ### Charge start/stop — unknown
 
