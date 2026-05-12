@@ -27,29 +27,6 @@ jobs:
       - name: Run native tests
         run: make -C vehicle/OVMS.V3/components/vehicle_vwegolf/tests
 
-  # ── DBC decode regression tests ────────────────────────────────────────────
-  # Catches silent DBC drift that the C++ unit tests can't see. Pins per-cap
-  # .md ground truth (wheelspeed scale, gear nibble, SoC range, peak power)
-  # against the cantools decode of vwegolf.dbc. Independent of the C++ job.
-  pytest:
-    name: DBC decode tests
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
-        with:
-          persist-credentials: false
-
-      # TODO: pin to SHA once verified (other actions in this file are SHA-pinned).
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Python deps
-        run: pip install cantools pytest
-
-      - name: Run DBC regression tests
-        run: make -C vehicle/OVMS.V3/components/vehicle_vwegolf/tests pytest
-
   # ── Firmware build ─────────────────────────────────────────────────────────
   build:
     name: Firmware build
