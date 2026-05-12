@@ -8,10 +8,24 @@ Python tooling for ad-hoc decode work against `.crtd` files in
 
 ```
 analysis/
-├── README.md       — this file
-├── crtd.py         — parser + helpers (no deps beyond stdlib)
-└── scratch/        — gitignored. Local one-shot exploration scripts.
-    └── .gitignore  — excludes everything in scratch/ except itself
+├── README.md            — this file
+├── crtd.py              — parser + DBC decode helpers
+├── bus_provenance.py    — per-ID bus map (detect routing-bug mislabels)
+├── test_dbc_decode.py   — pytest regression suite: DBC ↔ ground-truth .md
+└── scratch/             — gitignored. Local one-shot exploration scripts.
+    └── .gitignore       — excludes everything in scratch/ except itself
+```
+
+## Dependencies
+
+- Python ≥ 3.10 (`Capture.decode` uses `str | None` union syntax).
+- [`cantools`](https://github.com/cantools/cantools) — DBC parsing/decode.
+- [`pytest`](https://docs.pytest.org/) — regression suite runner.
+
+Install into the project `.venv`:
+
+```bash
+.venv/bin/pip install cantools pytest
 ```
 
 Drop new exploratory scripts in `scratch/`. They survive across sessions
@@ -35,7 +49,7 @@ from crtd import load, byte_stats, trajectory_le16, gear_timeline, gear_windows
 ## Quick start
 
 ```python
-from crtd import load, load_multi, byte_stats, trajectory_le16, gear_timeline, gear_windows, GEAR_NAMES
+from crtd import load, load_multi, load_dbc, byte_stats, trajectory_le16, gear_timeline, gear_windows, GEAR_NAMES
 
 # Single-bus file: auto-picks the bus
 cap = load("../candumps/can2-…-201238.crtd")
@@ -61,7 +75,60 @@ for i, s in enumerate(byte_stats(cap.by_id["0B4"])):
 # Trajectory of a 16-bit LE pair (e.g. wheel speed)
 for t, raw in trajectory_le16(cap.by_id["0B2"], 0)[::20]:
     print(f"  {t:5.1f}s  {raw*0.0078125:6.2f} km/h")
+
+# DBC-driven decode — auto-finds docs/vwegolf.dbc as the source of truth
+dbc = load_dbc()
+for t, kmh in cap.decode(dbc, "0B2", "WheelSpeedFL")[::20]:
+    print(f"  {t:5.1f}s  FL={kmh:6.2f} km/h")
+
+# Whole-message decode: pass signal=None
+for t, signals in cap.decode(dbc, "0B2")[::100]:
+    print(f"  {t:5.1f}s  {signals}")
 ```
+
+## DBC decode helpers
+
+`crtd.py` integrates [`cantools`](https://github.com/cantools/cantools) so
+analysis scripts can pull signal values directly from `docs/vwegolf.dbc`
+instead of hand-coding bit layouts in every script. The DBC is then the
+*actual* single source of truth — every consumer follows when it changes.
+
+| Symbol | Purpose |
+|---|---|
+| `load_dbc(path=None)` | Load a DBC (defaults to `docs/vwegolf.dbc`). Loads with `strict=False` so the intentional `ChargeType`/`ChargePort` bit overlap is permitted. |
+| `default_dbc_path()` | Absolute path of the bundled DBC, useful for scripts. |
+| `Capture.decode(dbc, frame_id, signal=None)` | Decode every matching frame. `frame_id` accepts hex string (`"0B2"`, `"0x131"`, `"1A5554A8"`) or int. Returns `[(t, value), ...]` if `signal=` is set, else `[(t, {sig: val, ...}), ...]`. Short / mal-decoded frames are silently skipped. |
+| `decode_choices=False` | Bypass DBC `VAL_` tables, return raw integers for enum signals (`GearPosition: 6` instead of `'B_mode'`). |
+
+## Regression test suite
+
+`test_dbc_decode.py` pins each per-capture `.md` ground-truth claim
+(wheel-speed scale, gear nibble, SoC range, peak motor power, …) as a
+pytest assertion against the bundled DBC. A DBC edit that silently
+breaks a previously-confirmed signal fails here with the capture name
+and signal already in the message.
+
+Run from the component root with the project venv active:
+
+```bash
+source .venv/bin/activate
+make -C vehicle/OVMS.V3/components/vehicle_vwegolf/tests pytest
+```
+
+Or without venv activation:
+
+```bash
+PYTEST=$PWD/.venv/bin/pytest make -C vehicle/OVMS.V3/components/vehicle_vwegolf/tests pytest
+```
+
+The native C++ suite (`make test`) is unchanged — pytest is a separate
+target so the hook that gates `fix/*`/`feat/*` pushes on the C++ tests
+still works without requiring cantools+pytest on every developer's
+machine.
+
+When you add a new ground-truth `.md` assertion that should be guarded,
+add a test in `test_dbc_decode.py` and cite the `.md` section in the
+docstring so future readers can find the source of evidence.
 
 ## API summary
 
@@ -81,6 +148,8 @@ for t, raw in trajectory_le16(cap.by_id["0B2"], 0)[::20]:
 | `gear_timeline(cap)` / `gear_windows(timeline)` | e-Golf gear decode helpers |
 | `GEAR_NAMES` | `{2:"P", 3:"R", 4:"N", 5:"D", 6:"B"}` |
 | `in_window(t, windows)` | Test if a timestamp falls in any `(s,e)` slice |
+| `load_dbc(path=None)` / `default_dbc_path()` | Load `docs/vwegolf.dbc` via cantools |
+| `Capture.decode(dbc, frame_id, signal=None)` | Decode-via-DBC; see "DBC decode helpers" below |
 
 ## Conventions
 
@@ -101,3 +170,12 @@ Considered. Skipped: the CRTD file never enters the LLM context window
 (Python parses it locally), so token cost is identical to SQLite. The
 real win is short reusable analysis scripts, which is what `crtd.py`
 delivers without a conversion step.
+
+## Why cantools + DBC over hand-rolled byte arithmetic?
+
+Same single-source-of-truth argument: every scratch script that
+re-implements bit/byte extraction is a drift hazard. Bugs we have hit
+because of this — `0x2AF BMS_TripEnergy` was decoded against the wrong
+byte offsets in firmware for months before a capture exposed it. Wiring
+the DBC into every decode path means a fix in `vwegolf.dbc` propagates
+to every consumer, and the regression test suite catches silent breaks.

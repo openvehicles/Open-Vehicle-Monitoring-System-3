@@ -10,6 +10,13 @@ Quick start:
     for t, b in cap.by_id["0B2"]:
         print(t, le16(b, 0))
 
+DBC decode (uses cantools + docs/vwegolf.dbc as ground truth):
+    from crtd import load, load_dbc
+    cap = load("tests/candumps/can2-…-201238.crtd")
+    dbc = load_dbc()                                # auto-finds docs/vwegolf.dbc
+    for t, kmh in cap.decode(dbc, "0B2", "WheelSpeedFL"):
+        print(t, kmh)
+
 CRTD line format:
     <unix_ts> <N>R<W> <hex_id> <b0> <b1> ... <bN>
         N = bus number (1, 2, 3)
@@ -22,9 +29,10 @@ Both 11-bit and 29-bit data frames are parsed. Error records are skipped.
 
 from __future__ import annotations
 
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Iterable, Iterator
+from typing import Any, Iterable, Iterator
 
 
 # ---------------------------------------------------------------------------
@@ -58,6 +66,32 @@ class Capture:
             if recs and recs[-1][0] > last:
                 last = recs[-1][0]
         return last
+
+    def decode(self, dbc, frame_id, signal: str | None = None,
+               decode_choices: bool = True) -> list[tuple[float, Any]]:
+        """Decode every frame matching `frame_id` using `dbc`.
+
+        `frame_id` accepts hex string ("0B2", "0x131", "1A5554A8") or int.
+        Returns `[(t, value), ...]` if `signal` is given, else `[(t, {sig: val, ...}), ...]`.
+        Frames shorter than the DBC message length, or that raise during
+        decode (sentinels, malformed), are silently skipped — same policy as
+        the rest of this module.
+
+        `decode_choices=False` returns raw numeric values for VAL_ enum signals.
+        """
+        hex_id, int_id = _normalize_frame_id(frame_id)
+        msg = dbc.get_message_by_frame_id(int_id)
+        out: list[tuple[float, Any]] = []
+        for t, b in self.by_id.get(hex_id, []):
+            if len(b) < msg.length:
+                continue
+            try:
+                d = msg.decode(bytes(b[:msg.length]),
+                               decode_choices=decode_choices)
+            except Exception:
+                continue
+            out.append((t, d if signal is None else d[signal]))
+        return out
 
 
 def iter_frames(path: str) -> Iterator[tuple[float, int, str, list[int]]]:
@@ -314,3 +348,60 @@ def gear_windows(timeline: list[tuple[float, int]]
 
 def in_window(t: float, windows: list[tuple[float, float]]) -> bool:
     return any(s <= t <= e for s, e in windows)
+
+
+# ---------------------------------------------------------------------------
+# DBC integration (cantools)
+# ---------------------------------------------------------------------------
+#
+# vwegolf.dbc is the single source of truth for frame layouts. Decoding via
+# cantools instead of hand-rolled byte arithmetic means analysis scripts and
+# regression tests can't drift from the DBC — change the DBC, every consumer
+# follows. Loaded with strict=False because ChargeManagement intentionally
+# overlaps ChargePort/ChargeType (same bits, different VAL_ tables).
+# ---------------------------------------------------------------------------
+
+_DEFAULT_DBC = os.path.normpath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "..", "..", "docs", "vwegolf.dbc"))
+
+
+def default_dbc_path() -> str:
+    """Absolute path to the project's `docs/vwegolf.dbc`."""
+    return _DEFAULT_DBC
+
+
+def load_dbc(path: str | None = None):
+    """Load a DBC via cantools. Defaults to `docs/vwegolf.dbc`.
+
+    Raises `ImportError` with a hint if cantools isn't installed.
+    Uses `strict=False` to allow intentional signal overlap (see module note).
+    """
+    try:
+        import cantools  # noqa: F401  (import for the side effect of a clean error)
+        from cantools.database import load_file
+    except ImportError as e:
+        raise ImportError(
+            "cantools is required for DBC decode. Install in .venv: "
+            "`.venv/bin/pip install cantools`"
+        ) from e
+    return load_file(path or _DEFAULT_DBC, strict=False)
+
+
+def _normalize_frame_id(fid) -> tuple[str, int]:
+    """Accept hex str ('0B2', '0x131', '1A5554A8') or int. Returns (hex, int).
+
+    Hex string matches the CRTD on-disk format used as `Capture.by_id` keys:
+    3 hex chars zero-padded for 11-bit IDs (<= 0x7FF), 8 chars for extended.
+    For extended IDs pass the raw 29-bit value — do NOT set bit 31; cantools
+    resolves extended vs standard via message metadata.
+    """
+    if isinstance(fid, int):
+        i = fid
+    else:
+        s = fid.strip().lower()
+        if s.startswith("0x"):
+            s = s[2:]
+        i = int(s, 16)
+    hex_id = f"{i:03X}" if i <= 0x7FF else f"{i:08X}"
+    return hex_id, i

@@ -17,7 +17,15 @@ test: $(SRC)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 	./$@
 
+# DBC-decode regression suite. Asserts the cantools decode of vwegolf.dbc
+# matches the per-capture .md ground-truth claims. Requires the project venv
+# (.venv) with cantools+pytest installed — see analysis/README.md.
+# Activate .venv first or pass PYTEST=/path/to/.venv/bin/pytest.
+PYTEST ?= pytest
+pytest:
+	cd analysis && $(PYTEST) -q
+
 clean:
 	rm -f test
 
-.PHONY: all test clean
+.PHONY: all test pytest clean

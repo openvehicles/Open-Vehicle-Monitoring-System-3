@@ -44,9 +44,19 @@ Key entry points: `IncomingFrameCan3()` · `IncomingFrameCan2()` · `make_vehicl
 
 **Use:** `vehicle/OVMS.V3/components/vehicle_vwegolf/tests/analysis/crtd.py` (in `.venv`).
 
-API: `load(path, bus=N)` → `Capture` · `load_multi(path)` for mixed-bus · `iter_frames`/`iter_crtd` streaming · `trajectory_*`/`byte_stats`/`hexdump_window` for analysis · `gear_timeline`/`gear_windows` for FCAN drive caps. See `README.md` for mislabeled-bus list (use `bus=N` explicit).
+API: `load(path, bus=N)` → `Capture` · `load_multi(path)` mixed-bus · `iter_frames`/`iter_crtd` stream · `trajectory_*`/`byte_stats`/`hexdump_window` · `gear_timeline`/`gear_windows` FCAN drive. README = mislabeled-bus list (`bus=N` explicit).
 
-Pattern: write throwaway script in `tests/analysis/scratch/`, run via `.venv`, read script output — not the raw frames.
+**DBC decode:** `load_dbc()` → cantools DB · `cap.decode(dbc, fid, sig=None)` → `[(t,val),…]`. `fid`=hex str/int. `sig=None` → dict all sigs. Short/sentinel frames silently skipped. Hex key fmt: 3-char `<=0x7FF`, 8-char ext. DBC loaded `strict=False` (ChargeType/Port overlap intentional).
+
+Pattern: throwaway script `tests/analysis/scratch/`, `.venv`, read output not frames.
+
+## DBC regression test
+
+`tests/analysis/test_dbc_decode.py` = pytest pinning per-cap `.md` ground truth (wheelspeed scale, gear nibble, SoC range, peak power) vs `vwegolf.dbc`. Silent DBC break → red test.
+
+Run: `make -C vehicle/OVMS.V3/components/vehicle_vwegolf/tests pytest` (need `.venv` w/ cantools+pytest). Separate from C++ `make test` — C++ stays the push-gate, pytest is dev-only until cantools mandatory.
+
+New cap-confirmed signal → add to `vwegolf.dbc` AND add assertion to `test_dbc_decode.py` citing `.md` section in docstring.
 
 ## Style
 
