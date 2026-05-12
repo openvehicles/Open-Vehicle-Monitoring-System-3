@@ -103,7 +103,14 @@ Inferred: bit 55 (`d[6]` MSB) = lat, bit 56 (`d[7]` bit 0) = lon. Confirmed 0 = 
 - Mux 0x5 b4 totalizer is **wall-clock seconds** (+1/s on both AC and DC), not energy. Confirmed.
 - `0x31E` (FCAN, 20 Hz, undecoded) bytes 0/1 form a varying 16-bit LE pair — secondary HV current/voltage candidate.
 
-**Resolve:** single-bus KCAN, full CCS DC session, no truncation (this morning's was clipped at 67 % by module reset). Per-mux byte-level decode of 0x1A5554A8.
+**Update 20260513 (PR #2, cherry-pick eea0a259b, @PMKA JDM e-Golf caps 22-24):** AC side resolved. `0x0569 OBC_AcInlet` (FCAN, bridged KCAN) decodes `v.c.voltage` (d[4], 1 V/bit) + `v.c.current` (d[5], 1 A/bit, gated on 0x594 charge_inprogress) + derives `v.c.power`. JDM Type 1 J1772 scaling = EU Type 2 scaling (independently confirmed in `all-dc583be4a-…-132333`, 1143 frames 0x569 on KCAN3, 248V/9A payload match). DC side still open — `0x569` not seen during CCS DC.
+
+**Resolve (DC):** single-bus KCAN, full CCS DC session, no truncation. Per-mux byte-level decode of 0x1A5554A8.
+
+**Follow-ups from PR #2:**
+- DBC `CM_ SG_ 1385 AcChargeActive` — add note that d[1] bit 6 fires during driving too; gate authority is `0x594` charge_inprogress (wisdom currently only in the cpp comment).
+- `tests/analysis/test_dbc_decode.py` — pin `OBC_AcInlet` signals against caps 22/23/24 (cap 22 ≥8 A peak, cap 23 stable 248V/9A, cap 24 transitions 9→8→0).
+- **Open UX call** — `v.c.voltage` set unconditionally when d[4]>0, so OVMS Connect shows 248V whenever cable plugged in (even zero current). Technically EVSE CP voltage; possibly reads as ghost charging. Pinged @PMKA in PR #2 close thread for his rationale before changing.
 
 ### UDS via can1 — not working
 
@@ -212,7 +219,7 @@ Per-capture detail → `vehicle/OVMS.V3/components/vehicle_vwegolf/tests/candump
 
 **Battery (12/20):** soc✓(0x131) temp✓(0x59E) cap✓(0x5CA) range.est/ideal✓(0x5F5) energy.recd/used✓(0x2AF) current/voltage/power~(0x191) 12v.voltage/ref✓(ADC) — ✗ soh/cac(UDS P3) range.full c.voltage c.temp p.voltage coulomb
 
-**Charging (9/14):** charging/timermode/type/duration.full/time/state/substate/voltage✓(0x594) cp✓ — ✗ current(cand:0x1A5554A8 Cap14) power(blocked) kwh(cand:0x1A5554A8 b4) limit.soc(Cap10) mode
+**Charging (11/14):** charging/timermode/type/duration.full/time/state/substate✓(0x594) cp✓ voltage~(0x569 AC only — PR #2 removed the 0x594 HV-bus mirror, so DC reads stale; revisit when DC frame decoded) current~(0x569 AC, gated on 0x594 charge_inprogress) power~(0x569 AC derived) — ✗ DC voltage/current(cand:0x1A5554A8 Cap14) kwh(cand:0x1A5554A8 b4) limit.soc(Cap10) mode
 
 **Environment (11/18):** on✓ locked✓(0x583) gear/drivemode✓(0x187) parktime✓(0x6B7) drivetime✓ cabinsetpoint✓(0x594) hvac~(0x5EA) cabintemp~(0x5EA/0x66E ign-on only) regenbrake~(0x0B4 b3:4/b6:7 partial) throttle~(0x057 b3 partial) — ✗ temp(not broadcast remote) heating cooling cabinfan handbrake headlights footbrake
 
