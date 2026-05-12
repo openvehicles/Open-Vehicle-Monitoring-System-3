@@ -60,7 +60,7 @@ Pattern: throwaway script `tests/analysis/scratch/`, `.venv`, read output not fr
 
 `tests/analysis/test_dbc_decode.py` = pytest pinning per-cap `.md` ground truth (wheelspeed scale, gear nibble, SoC range, peak power) vs `vwegolf.dbc`. Silent DBC break → red test.
 
-Run: `make -C vehicle/OVMS.V3/components/vehicle_vwegolf/tests pytest` (need `.venv` w/ cantools+pytest). Separate from C++ `make test` — C++ stays the push-gate, pytest is dev-only until cantools mandatory.
+Run: `make -C vehicle/OVMS.V3/components/vehicle_vwegolf/tests pytest` (need `.venv` w/ cantools+pytest). Runs in CI alongside C++ `make test` — both gate push to `vwegolf`/`master` and PRs to `master`.
 
 New cap-confirmed signal → add to `vwegolf.dbc` AND add assertion to `test_dbc_decode.py` citing `.md` section in docstring.
 
