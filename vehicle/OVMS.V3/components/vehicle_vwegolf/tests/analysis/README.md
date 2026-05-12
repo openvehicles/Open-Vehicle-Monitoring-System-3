@@ -84,6 +84,30 @@ for t, kmh in cap.decode(dbc, "0B2", "WheelSpeedFL")[::20]:
 # Whole-message decode: pass signal=None
 for t, signals in cap.decode(dbc, "0B2")[::100]:
     print(f"  {t:5.1f}s  {signals}")
+
+# Find when the gear changed and trace the sequence
+from crtd import transitions
+for t, prev, curr in transitions(cap.by_id["187"], 2, mask=0x0F):
+    print(f"  {t:6.2f}s  gear {prev} -> {curr}")
+
+# Was this ID actually live? Or did the ECU stop talking?
+from crtd import frame_rate
+fr = frame_rate(cap.by_id["191"])
+print(f"0x191: {fr.count}f over {fr.span_s:.1f}s, "
+      f"{fr.mean_hz:.1f} Hz, {len(fr.long_gaps)} suspicious gaps")
+
+# What changed when we sent a command at t=42.0?
+from crtd import diff_window
+for e in diff_window(cap, t_event=42.0, pre=2.0, post=2.0)[:10]:
+    tag = "EMERGED" if e.emerged else "VANISHED" if e.vanished \
+        else f"changed b{e.changed_bytes}"
+    print(f"  0x{e.hex_id}: {tag}")
+
+# Multiplexed frame (0x1A5554A8 mux selector = b0 upper nibble)
+from crtd import mux_split
+muxes = mux_split(cap.by_id["1A5554A8"], off=0, mask=0xF0, shift=4)
+for mux, recs in sorted(muxes.items()):
+    print(f"  mux=0x{mux:X}: {len(recs)} frames")
 ```
 
 ## DBC decode helpers
@@ -143,6 +167,10 @@ docstring so future readers can find the source of evidence.
 | `trajectory_byte(records, off)` | List of `(t, byte_value)` |
 | `trajectory_le16` / `trajectory_be16` | Same for 16-bit pairs |
 | `byte_stats(records, dlc=8)` | Per-byte `ByteStat(min, max, unique)` |
+| `transitions(records, off, mask=0xFF, shift=0)` | `[(t, prev, curr)]` whenever `(b[off] & mask) >> shift` changes. Building block for stimulus hunts. |
+| `frame_rate(records, long_gap_ratio=5.0)` | `FrameRate(count, span_s, mean_hz, median_gap_s, max_gap_s, long_gaps)`. Catches stale-rebroadcast / bus-sleep hazards. |
+| `diff_window(cap, t_event, pre, post, dlc=8, ids=None)` | Per-ID `byte_stats(pre)` vs `byte_stats(post)`. Returns `DiffEntry`s ranked: emerged/vanished first, then most-changed-bytes. |
+| `mux_split(records, off=0, mask=0xFF, shift=0)` | Group records by `(b[off] & mask) >> shift`. Standing case: 0x1A5554A8 OBC mux at `(off=0, mask=0xF0, shift=4)`. |
 | `downsample(seq, n=25)` | Even-stride sample for compact dumps |
 | `hexdump_window(records, dlc, n)` | Pretty multi-row dump |
 | `gear_timeline(cap)` / `gear_windows(timeline)` | e-Golf gear decode helpers |

@@ -293,6 +293,188 @@ def byte_stats(records: Iterable[tuple[float, list[int]]],
 
 
 # ---------------------------------------------------------------------------
+# Edge / transition detection
+# ---------------------------------------------------------------------------
+#
+# Used everywhere in `scratch/` for "find timestamps where byte X changed",
+# either to pin a stimulus (`port 0x12 0x05 → 0x00`) or to feed into
+# correlation / diff helpers. mask= and shift= let you isolate a nibble or
+# a single bit without copying the records first.
+# ---------------------------------------------------------------------------
+
+def transitions(records: Iterable[tuple[float, list[int]]],
+                off: int,
+                mask: int = 0xFF,
+                shift: int = 0) -> list[tuple[float, int, int]]:
+    """Return `[(t, prev, curr), ...]` whenever `(b[off] & mask) >> shift` changes.
+
+    Only emits on change. The first frame seeds the prior value silently;
+    if you also want it in the output, prepend manually. Short frames
+    (`len(b) <= off`) are skipped. Stable use cases:
+
+        transitions(cap.by_id["12"], 0)                 # port byte 0
+        transitions(cap.by_id["0B4"], 3, 0x0F)          # low nibble
+        transitions(cap.by_id["1A5554A8"], 0, 0xF0, 4)  # mux selector
+    """
+    out: list[tuple[float, int, int]] = []
+    prev: int | None = None
+    for t, b in records:
+        if len(b) <= off:
+            continue
+        v = (b[off] & mask) >> shift
+        if prev is not None and v != prev:
+            out.append((t, prev, v))
+        prev = v
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Frame liveness / rate
+# ---------------------------------------------------------------------------
+#
+# Catches "is this ID actually live in this window?" without rolling the
+# arithmetic per script. `0x191 silent during CCS DC` (Capture 20) and
+# stale-rebroadcast hazards both show up here as long gaps relative to
+# the expected period.
+# ---------------------------------------------------------------------------
+
+@dataclass
+class FrameRate:
+    count: int
+    span_s: float          # time from first frame to last
+    mean_hz: float
+    median_gap_s: float
+    max_gap_s: float
+    long_gaps: list[tuple[float, float, float]] = field(default_factory=list)
+    # (gap_start_t, gap_end_t, gap_duration_s) for gaps > threshold * median
+
+
+def frame_rate(records: list[tuple[float, list[int]]],
+               long_gap_ratio: float = 5.0) -> FrameRate:
+    """Compute rate stats for one ID's records.
+
+    `long_gap_ratio`: gaps wider than `ratio * median_gap` are flagged as
+    suspicious (bus dropout, ECU sleep, rebroadcast pause).
+    """
+    n = len(records)
+    if n == 0:
+        return FrameRate(0, 0.0, 0.0, 0.0, 0.0)
+    if n == 1:
+        return FrameRate(1, 0.0, 0.0, 0.0, 0.0)
+    times = [t for t, _ in records]
+    span = times[-1] - times[0]
+    gaps = [times[i] - times[i - 1] for i in range(1, n)]
+    sg = sorted(gaps)
+    median = sg[len(sg) // 2]
+    long: list[tuple[float, float, float]] = []
+    if median > 0:
+        threshold = long_gap_ratio * median
+        for i, g in enumerate(gaps):
+            if g > threshold:
+                long.append((times[i], times[i + 1], g))
+    return FrameRate(
+        count=n,
+        span_s=span,
+        mean_hz=(n - 1) / span if span > 0 else 0.0,
+        median_gap_s=median,
+        max_gap_s=max(gaps),
+        long_gaps=long,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Stimulus diff — what changed across an event boundary
+# ---------------------------------------------------------------------------
+#
+# Replaces the pattern in apr7_*/cap_*/ack_check_recent: take an event
+# time (BAP send, port toggle, gear shift), slice the capture into pre/post
+# windows, compute byte_stats on each side per ID, list which IDs/bytes
+# changed character. Output is ranked by "interestingness" (newly-emerged
+# IDs first, then IDs with the most-changed-bytes).
+# ---------------------------------------------------------------------------
+
+@dataclass
+class DiffEntry:
+    hex_id: str
+    pre: list[ByteStat]
+    post: list[ByteStat]
+    changed_bytes: list[int]   # indices where (min, max, unique) differ
+    emerged: bool              # True if zero frames in pre, >0 in post
+    vanished: bool             # True if >0 frames in pre, zero in post
+
+
+def diff_window(cap: Capture,
+                t_event: float,
+                pre: float = 2.0,
+                post: float = 2.0,
+                dlc: int = 8,
+                ids: Iterable[str] | None = None) -> list[DiffEntry]:
+    """Per-ID byte_stats comparison across an event boundary.
+
+    Returns a list of `DiffEntry` ranked: emerged > vanished > most-changed.
+    Window is `[t_event - pre, t_event)` vs `[t_event, t_event + post]`.
+    Pass `ids=` to restrict (e.g. only KCAN port frames); else all IDs.
+    """
+    t_pre0, t_post1 = t_event - pre, t_event + post
+    target_ids = set(ids) if ids is not None else set(cap.by_id.keys())
+    entries: list[DiffEntry] = []
+    for cid in sorted(target_ids):
+        recs = cap.by_id.get(cid, [])
+        pre_recs = [(t, b) for t, b in recs if t_pre0 <= t < t_event]
+        post_recs = [(t, b) for t, b in recs if t_event <= t <= t_post1]
+        if not pre_recs and not post_recs:
+            continue
+        pre_stats = byte_stats(pre_recs, dlc=dlc)
+        post_stats = byte_stats(post_recs, dlc=dlc)
+        changed: list[int] = []
+        for i in range(dlc):
+            ps, qs = pre_stats[i], post_stats[i]
+            if (ps.min, ps.max, ps.unique) != (qs.min, qs.max, qs.unique):
+                changed.append(i)
+        emerged = not pre_recs and bool(post_recs)
+        vanished = bool(pre_recs) and not post_recs
+        if not (changed or emerged or vanished):
+            continue
+        entries.append(DiffEntry(cid, pre_stats, post_stats,
+                                 changed, emerged, vanished))
+    # Rank: emerged/vanished first, then most-changed-bytes desc.
+    entries.sort(key=lambda e: (
+        not (e.emerged or e.vanished),
+        -len(e.changed_bytes),
+        e.hex_id,
+    ))
+    return entries
+
+
+# ---------------------------------------------------------------------------
+# Multiplexed frames
+# ---------------------------------------------------------------------------
+#
+# 0x1A5554A8 OBC telemetry is the standing case (b0 upper nibble selects
+# mux: 0x5 = telemetry, 0x6 = static header). Generic helper because every
+# multiplexed VW frame follows the same pattern.
+# ---------------------------------------------------------------------------
+
+def mux_split(records: list[tuple[float, list[int]]],
+              off: int = 0,
+              mask: int = 0xFF,
+              shift: int = 0) -> dict[int, list[tuple[float, list[int]]]]:
+    """Group `records` by `(b[off] & mask) >> shift`. Skips short frames.
+
+    For 0x1A5554A8 the mux selector is byte-0 upper nibble:
+
+        mux_split(cap.by_id["1A5554A8"], off=0, mask=0xF0, shift=4)
+        → {0x5: [...telemetry frames...], 0x6: [...static header frames...]}
+    """
+    out: dict[int, list[tuple[float, list[int]]]] = defaultdict(list)
+    for t, b in records:
+        if len(b) <= off:
+            continue
+        out[(b[off] & mask) >> shift].append((t, b))
+    return dict(out)
+
+
+# ---------------------------------------------------------------------------
 # Sampling / display
 # ---------------------------------------------------------------------------
 

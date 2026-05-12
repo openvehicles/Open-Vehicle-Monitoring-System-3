@@ -19,7 +19,10 @@ from statistics import mean
 
 import pytest
 
-from crtd import load, load_dbc
+from crtd import (
+    load, load_dbc,
+    transitions, frame_rate, diff_window, mux_split,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CANDUMPS = os.path.normpath(os.path.join(HERE, "..", "candumps"))
@@ -33,6 +36,11 @@ CAP_DRIVE_30KMH = os.path.join(
 CAP_DRIVE_LONG = os.path.join(
     CANDUMPS,
     "all-dc583be4a-dirty_ota_0_edge-20260503-143106.crtd")
+
+# Cap 14 — AC Type-2 charge session on KCAN. 0x1A5554A8 OBC telemetry.
+CAP_AC_CHARGE = os.path.join(
+    CANDUMPS,
+    "can3-3.3.005-800-gc60d79ed-dirty_ota_1_edge-20260413-121648.crtd")
 
 
 @pytest.fixture(scope="module")
@@ -48,6 +56,11 @@ def cap_30kmh():
 @pytest.fixture(scope="module")
 def cap_long():
     return load(CAP_DRIVE_LONG, bus=2)
+
+
+@pytest.fixture(scope="module")
+def cap_charge():
+    return load(CAP_AC_CHARGE)
 
 
 # ---------------------------------------------------------------------------
@@ -189,3 +202,86 @@ def test_battery_peak_power(dbc, cap_long):
     peak_regen = max(powers)  # most positive
     assert -115 <= peak_draw <= -95, f"peak draw {peak_draw:.1f} kW off"
     assert 15 <= peak_regen <= 30, f"peak regen {peak_regen:.1f} kW off"
+
+
+# ---------------------------------------------------------------------------
+# transitions() — verify gear-shift edge detection on cap 21.
+# Ground truth: 143106.md "Sequence" → P→R→N→D→B at t≈5.8 s, then
+# B→N→R→P at t≈583 s.
+# ---------------------------------------------------------------------------
+
+def test_transitions_gear_sequence(cap_long):
+    """0x187 b2 low-nibble transitions trace the .md-documented shift sequence."""
+    edges = transitions(cap_long.by_id["187"], 2, mask=0x0F)
+    # Drop sentinel/glitch frames where gear nibble briefly reads 0.
+    real = [(t, p, c) for t, p, c in edges if p in {2, 3, 4, 5, 6}
+                                            and c in {2, 3, 4, 5, 6}]
+    # Two clusters: start (~5.8 s) and end (~583 s).
+    start = [(p, c) for t, p, c in real if t < 30]
+    end = [(p, c) for t, p, c in real if t > 500]
+    assert start == [(2, 3), (3, 4), (4, 5), (5, 6)], \
+        f"start sequence {start} != P->R->N->D->B"
+    assert end == [(6, 4), (4, 3), (3, 2)], \
+        f"end sequence {end} != B->N->R->P"
+
+
+# ---------------------------------------------------------------------------
+# frame_rate() — verify expected broadcast cadence on FCAN.
+# Ground truth: empirical observation across many captures; pinned so a
+# bus-config or filter regression that throttles a high-rate ID will fail
+# here instead of being missed.
+# ---------------------------------------------------------------------------
+
+def test_frame_rate_soc_high_cadence(cap_long):
+    """0x131 BMS_SoC broadcasts at ~50 Hz on FCAN (median gap ~20 ms)."""
+    fr = frame_rate(cap_long.by_id["131"])
+    assert 40 <= fr.mean_hz <= 60, f"SoC mean_hz {fr.mean_hz:.1f} off"
+    assert fr.median_gap_s < 0.030, f"SoC median gap {fr.median_gap_s*1000:.1f} ms"
+
+
+def test_frame_rate_powerbus_cadence(cap_long):
+    """0x191 BMS_PowerBus broadcasts at ~10 Hz on FCAN."""
+    fr = frame_rate(cap_long.by_id["191"])
+    assert 8 <= fr.mean_hz <= 12, f"PowerBus mean_hz {fr.mean_hz:.1f} off"
+
+
+# ---------------------------------------------------------------------------
+# mux_split() — verify multiplex routing on 0x1A5554A8 OBC telemetry.
+# Ground truth: vwegolf.dbc CM_ on 0x1A5554A8 and cap14
+# `121648.md`:
+#   Mux 0x5 = telemetry, b4 monotonically +1/s during charge (0x9e..0xb8).
+#   Mux 0x6 = static header, payload `6X c9 aa 9c 83 b6 ed 0e` (b4=0x83).
+# ---------------------------------------------------------------------------
+
+def test_mux_split_obc_telemetry(cap_charge):
+    """Mux 0x5 b4 totalizer is monotonic; mux 0x6 b4 is static 0x83."""
+    obc = cap_charge.by_id["1A5554A8"]
+    muxes = mux_split(obc, off=0, mask=0xF0, shift=4)
+    assert {0x5, 0x6} <= set(muxes), f"missing muxes; saw {sorted(muxes)}"
+
+    telemetry_b4 = [b[4] for _, b in muxes[0x5]]
+    assert telemetry_b4 == sorted(telemetry_b4), \
+        "mux 5 b4 not monotonic — totalizer hypothesis broken"
+    assert telemetry_b4[-1] - telemetry_b4[0] >= 10, \
+        f"mux 5 b4 barely moved: {telemetry_b4[0]:#x}..{telemetry_b4[-1]:#x}"
+
+    header_b4 = {b[4] for _, b in muxes[0x6]}
+    assert header_b4 == {0x83}, f"mux 6 b4 not static 0x83: {header_b4}"
+
+
+# ---------------------------------------------------------------------------
+# diff_window() — verify stimulus diff flags the actually-changed ID.
+# Ground truth: 143106.md gear timeline → D→B transition at t≈6.33 s.
+# Across that boundary, 0x187 GearSelector must be flagged because the
+# gear nibble (the byte we transitioned on) is exactly what changed.
+# ---------------------------------------------------------------------------
+
+def test_diff_window_flags_gear_transition(cap_long):
+    """diff_window around the D→B shift must report 0x187 as changed."""
+    entries = diff_window(cap_long, t_event=6.33, pre=2.0, post=2.0)
+    by_id = {e.hex_id: e for e in entries}
+    assert "187" in by_id, "0x187 not flagged across gear D->B transition"
+    e = by_id["187"]
+    # Byte 2 (gear nibble) must be among the flagged bytes.
+    assert 2 in e.changed_bytes, \
+        f"0x187 changed_bytes {e.changed_bytes} excludes b2 (gear nibble)"

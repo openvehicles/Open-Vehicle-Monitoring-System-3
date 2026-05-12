@@ -46,6 +46,12 @@ Key entry points: `IncomingFrameCan3()` · `IncomingFrameCan2()` · `make_vehicl
 
 API: `load(path, bus=N)` → `Capture` · `load_multi(path)` mixed-bus · `iter_frames`/`iter_crtd` stream · `trajectory_*`/`byte_stats`/`hexdump_window` · `gear_timeline`/`gear_windows` FCAN drive. README = mislabeled-bus list (`bus=N` explicit).
 
+**Stimulus hunt helpers:**
+- `transitions(records, off, mask=0xFF, shift=0)` → `[(t,prev,curr)]` on change. Bit/nibble/byte edges.
+- `frame_rate(records)` → `FrameRate(count, span_s, mean_hz, median_gap_s, max_gap_s, long_gaps)`. Catch stale-rebroadcast / bus-sleep.
+- `diff_window(cap, t_event, pre, post, ids=None)` → ranked `DiffEntry`s. Replaces apr7_*/cap_*/ack_check_recent boilerplate.
+- `mux_split(records, off=0, mask=0xFF, shift=0)` → `{mux: records}`. 0x1A5554A8: `mask=0xF0, shift=4`.
+
 **DBC decode:** `load_dbc()` → cantools DB · `cap.decode(dbc, fid, sig=None)` → `[(t,val),…]`. `fid`=hex str/int. `sig=None` → dict all sigs. Short/sentinel frames silently skipped. Hex key fmt: 3-char `<=0x7FF`, 8-char ext. DBC loaded `strict=False` (ChargeType/Port overlap intentional).
 
 Pattern: throwaway script `tests/analysis/scratch/`, `.venv`, read output not frames.
