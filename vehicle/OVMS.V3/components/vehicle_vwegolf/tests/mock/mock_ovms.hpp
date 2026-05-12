@@ -82,7 +82,15 @@ struct CAN_frame_t {
 struct MetricStore {
     std::map<std::string, double>      numbers;
     std::map<std::string, std::string> strings;
-    void reset() { numbers.clear(); strings.clear(); }
+    // Per-metric SetValue call count. Used by the replay test to catch
+    // "set once at boot, never updated again" regressions like the stuck
+    // range_est bug — a static-value check passes but the metric isn't live.
+    std::map<std::string, int>         writes;
+    void reset() { numbers.clear(); strings.clear(); writes.clear(); }
+    int  write_count(const std::string& n) const {
+        auto it = writes.find(n);
+        return it == writes.end() ? 0 : it->second;
+    }
 };
 extern MetricStore g_metrics;
 
@@ -90,7 +98,10 @@ template<typename T>
 struct OvmsMetric {
     std::string name;
     explicit OvmsMetric(const char* n) : name(n) {}
-    void SetValue(T v)              { g_metrics.numbers[name] = static_cast<double>(v); }
+    void SetValue(T v)              {
+        g_metrics.numbers[name] = static_cast<double>(v);
+        g_metrics.writes[name]++;
+    }
     void SetValue(T v, int /*unit*/) { SetValue(v); }  // unit arg used by real metrics, ignored here
     void Clear()                    { g_metrics.numbers.erase(name); }
     T    AsValue() const  { return static_cast<T>(g_metrics.numbers[name]); }
@@ -101,8 +112,14 @@ template<>
 struct OvmsMetric<std::string> {
     std::string name;
     explicit OvmsMetric(const char* n) : name(n) {}
-    void        SetValue(const std::string& v) { g_metrics.strings[name] = v; }
-    void        SetValue(const char* v)        { g_metrics.strings[name] = v ? v : ""; }
+    void        SetValue(const std::string& v) {
+        g_metrics.strings[name] = v;
+        g_metrics.writes[name]++;
+    }
+    void        SetValue(const char* v)        {
+        g_metrics.strings[name] = v ? v : "";
+        g_metrics.writes[name]++;
+    }
     std::string AsValue()  const {
         auto it = g_metrics.strings.find(name);
         return it != g_metrics.strings.end() ? it->second : "";
@@ -114,7 +131,10 @@ template<>
 struct OvmsMetric<bool> {
     std::string name;
     explicit OvmsMetric(const char* n) : name(n) {}
-    void SetValue(bool v) { g_metrics.numbers[name] = v ? 1.0 : 0.0; }
+    void SetValue(bool v) {
+        g_metrics.numbers[name] = v ? 1.0 : 0.0;
+        g_metrics.writes[name]++;
+    }
     bool AsValue() const  { return g_metrics.numbers[name] != 0.0; }
     bool AsBool()  const  { return AsValue(); }
 };

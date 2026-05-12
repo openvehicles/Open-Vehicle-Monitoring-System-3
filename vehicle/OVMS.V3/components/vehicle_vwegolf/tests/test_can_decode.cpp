@@ -644,6 +644,7 @@ void test_fcan_filter_encoding() {
 // ---------------------------------------------------------------------------
 
 extern void test_crtd_replay();
+extern void test_crtd_replay_kcan();
 
 int main() {
     printf("=== vehicle_vwegolf CAN decode tests ===\n");
@@ -669,6 +670,7 @@ int main() {
     test_kcan_resets_idle_counter();
     test_fcan_filter_encoding();
     test_crtd_replay();
+    test_crtd_replay_kcan();
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);
     return (tests_passed == tests_run) ? 0 : 1;

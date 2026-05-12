@@ -25,6 +25,21 @@ extern int tests_passed;
     else       { printf("  FAIL: %s\n", msg); } \
 } while(0)
 
+// Catches "set once, never updates" regressions — the stuck-range_est class.
+// A pure value check passes when a metric was written once at boot from a
+// persistent store, even if the decoder never ran again. Asserting a write
+// floor against the frame count exposes the gap.
+#define CHECK_WRITES_AT_LEAST(name, n, msg) do { \
+    tests_run++; \
+    int w = g_metrics.write_count(name); \
+    if (w >= (n)) { \
+        tests_passed++; \
+        printf("  PASS: %s (writes=%d, expected >=%d)\n", msg, w, (n)); \
+    } else { \
+        printf("  FAIL: %s (writes=%d, expected >=%d)\n", msg, w, (n)); \
+    } \
+} while(0)
+
 static bool near_f(float a, float b, float tol = 0.1f) {
     return std::fabs(a - b) < tol;
 }
@@ -90,16 +105,13 @@ static int replay_crtd(OvmsVehicleVWeGolf* v, const char* path) {
         }
         frame.FIR.B.DLC = dlc;
 
-        if (bus == 2) {
-            // All frames (FCAN and bridged KCAN) arrive on can2. IncomingFrameCan2
-            // forwards every frame to IncomingFrameCan3 internally, so calling
-            // IncomingFrameCan2 is sufficient.
-            v->IncomingFrameCan2(&frame);
-        } else if (bus == 3) {
-            v->IncomingFrameCan3(&frame);
-        } else {
-            continue;
-        }
+        // Dispatch by the CRTD bus tag. Captures pre-dating the bus-filter
+        // fix could mis-tag KCAN frames as bus 2; those captures are now
+        // purged (commit 0b9fd9211). New captures tag each bus correctly,
+        // so IncomingFrameCanN matches the physical bus the firmware sees.
+        if (bus == 2)      v->IncomingFrameCan2(&frame);
+        else if (bus == 3) v->IncomingFrameCan3(&frame);
+        else               continue;
         dispatched++;
     }
 
@@ -112,11 +124,17 @@ static int replay_crtd(OvmsVehicleVWeGolf* v, const char* path) {
 // ---------------------------------------------------------------------------
 
 void test_crtd_replay() {
-    printf("\ntest_crtd_replay (real KCAN capture)\n");
+    printf("\ntest_crtd_replay (FCAN-tagged capture, exercises IncomingFrameCan2)\n");
 
     g_metrics = MetricStore{};
     auto* v = new OvmsVehicleVWeGolf();
 
+    // kcan-capture.crtd dates from before commit 9fdbf8b7 fixed the
+    // bus-filter bug, so every frame is bus-tagged 2 regardless of physical
+    // origin. The replay dispatches it through IncomingFrameCan2, which
+    // exercises only the FCAN-side decoders. KCAN-routed metrics (range,
+    // speed, charging, doors, cabin temp) are covered by the second
+    // replay below against a properly-tagged bus-3 capture.
     int n = replay_crtd(v, "candumps/kcan-capture.crtd");
 
     if (n < 0) {
@@ -126,12 +144,8 @@ void test_crtd_replay() {
     }
     printf("  replayed %d frames\n", n);
 
-    // --- Speed: capture taken while car was parked, expect 0 km/h ---
-    float speed = StandardMetrics.ms_v_pos_speed->AsFloat();
-    CHECK(near_f(speed, 0.0f, 1.0f), "Speed ~0 km/h (car parked during capture)");
-
-    // --- SoC: kcan-capture.crtd has d[3]=0x79 → 60.5%. The 0xFE sentinel is
-    //     filtered in the decoder, so the metric should hold the real value. ---
+    // --- SoC: 0x131 d[3]=0x79 → 60.5%. Decoded in IncomingFrameCan2
+    //     (line 135 — added in commit fc4de583b alongside the can3 decoder).
     float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
     CHECK(near_f(soc, 60.5f, 1.0f), "SoC ~60.5% (d[3]=0x79 from kcan-capture)");
 
@@ -139,8 +153,78 @@ void test_crtd_replay() {
     int gear = StandardMetrics.ms_v_env_gear->AsValue();
     CHECK(gear == 0, "Gear = 0 (Park)");
 
-    // VIN (0x6B4) is decoded in IncomingFrameCan2 (FCAN), not IncomingFrameCan3.
-    // This CRTD capture is KCAN-only so VIN is not exercised here; see test_vin_0x6B4().
+    // --- Write floors for FCAN-side decoders. Asserting the metric was
+    //     written at least ~80 % of the frames-in-capture catches the
+    //     "set once at boot, decoder never fires again" class of bug.
+    //     A pure value check passes when a persistent metric is restored
+    //     to its last-known value at boot — the stuck-range_est class.
+    //
+    //     Frame counts in kcan-capture.crtd (via tests/analysis):
+    //       0x131 BMS_SoC      2155 frames (sentinels filtered)
+    //       0x187 GearSelector  456 frames
+    CHECK_WRITES_AT_LEAST("ms_v_bat_soc", 1800,
+                          "SoC decoded ~every 0x131 frame");
+    CHECK_WRITES_AT_LEAST("ms_v_env_gear", 400,
+                          "Gear decoded ~every 0x187 frame");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
+// Second replay — a properly-tagged bus-3 KCAN capture. Exercises
+// IncomingFrameCan3 and the KCAN-side decoders. Catches the stuck-update
+// class of bug (range_est, speed, charging frames, cabin temp, doors)
+// that the FCAN-tagged replay can't reach.
+// ---------------------------------------------------------------------------
+
+void test_crtd_replay_kcan() {
+    printf("\ntest_crtd_replay_kcan (bus-3 tagged, exercises IncomingFrameCan3)\n");
+
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    // 20260428-095821: 23.5 s clean KCAN capture, 182 IDs, every frame
+    // tagged bus 3. Spans bus-up, frames flow into IncomingFrameCan3.
+    int n = replay_crtd(v, "candumps/can3-1aec82f33_ota_0_edge-20260428-095821.crtd");
+
+    if (n < 0) {
+        printf("  SKIP: can3-1aec82f33_ota_0_edge-20260428-095821.crtd not found\n");
+        delete v;
+        return;
+    }
+    printf("  replayed %d frames\n", n);
+
+    // --- Plausibility on a couple of KCAN-sourced metrics. Range_est is
+    //     the specific bug class this test exists to surface ---
+    float range_est = StandardMetrics.ms_v_bat_range_est->AsFloat();
+    CHECK(range_est > 0.0f && range_est < 500.0f,
+          "range_est plausible (0..500 km)");
+
+    float speed = StandardMetrics.ms_v_pos_speed->AsFloat();
+    CHECK(speed >= 0.0f && speed < 250.0f,
+          "speed plausible (0..250 km/h)");
+
+    // --- Write floors for KCAN-side decoders. Frame counts in the
+    //     capture (via tests/analysis):
+    //       0x0FD ESP_Speed         823 frames
+    //       0x131 BMS_SoC          1173 frames (also FCAN, decoded in both)
+    //       0x187 GearSelector      235 frames (also FCAN — same)
+    //       0x5F5 Instruments_Range  24 frames
+    //       0x594 ChargeManagement   47 frames
+    //       0x66E InnenTemp          14 frames (filter 0xFE sentinel ok)
+    //       0x6B7 AmbientTemp        24 frames
+    //       0x65A BCM_01             23 frames
+    //
+    //     Floors are ~80 % of frame count to allow for sentinel filtering.
+    CHECK_WRITES_AT_LEAST("ms_v_pos_speed", 650,
+                          "Speed decoded ~every 0x0FD frame");
+    CHECK_WRITES_AT_LEAST("ms_v_bat_range_est", 20,
+                          "range_est decoded ~every 0x5F5 frame "
+                          "(the stuck-at-boot regression class)");
+    CHECK_WRITES_AT_LEAST("ms_v_door_hood", 20,
+                          "hood door decoded ~every 0x65A frame");
+    CHECK_WRITES_AT_LEAST("ms_v_env_temp", 20,
+                          "outside temp decoded ~every 0x6B7 frame");
 
     delete v;
 }
