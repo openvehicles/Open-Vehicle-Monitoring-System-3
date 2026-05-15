@@ -263,10 +263,22 @@ xvu.b.cap.kwh.range                      32.8947kWh               Usable energy 
 xvu.b.energy.range                       18.5kWh                  Current energy used by MFD range estimation
 xvu.b.c.soh                              88.8,91.3,91.3,90.4…     Array: SOH [%] of each HV battery cell
 xvu.b.hist.soh.mod.<NN>                  100,97.1,97.5,…          Array: SOH [%] history of each battery module (NN=01…14/17)
+xvu.b.time.charged.ac                    984.24Hour               Total time charged AC [Hours]
+xvu.b.time.charged.dc                    41.76Hour                Total time charged DC [Hours]
+xvu.b.time.parked                        1801.51Day               Total time parked [Days]
+xvu.b.time.parked.cold                   0.25Day                  Total time parked below  0 °C [Days]
+xvu.b.time.parked.empty                  0Day                     Total time parked below 10% SOC [Days]
+xvu.b.time.parked.full                   53.34Day                 Total time parked above 90% SOC [Days]
+xvu.b.time.parked.hot                    1.21Day                  Total time parked above 30 °C [Days]
+xvu.b.time.parked.state                  0,…,17.54,245.33,…Day    Park times matrix: 6 SOC x 8 temperature ranges
+xvu.b.time.total                         2010.67Day               Total battery age [Days]
 ======================================== ======================== ============================================
 
 Note on cell module history: the e-Up records an overall SOH level of each module
 once every 3 months, up to a maximum time of 10 years.
+
+Note on parked states: the SOC and temperature ranges used are assumptions based on observations and
+may be wrong. If you have more data or info on the counters (BMS history 01 & 19), please contact us.
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

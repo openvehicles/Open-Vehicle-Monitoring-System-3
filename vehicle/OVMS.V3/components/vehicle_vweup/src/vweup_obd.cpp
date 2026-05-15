@@ -77,6 +77,8 @@ const OvmsPoller::poll_pid_t vweup_polls[] = {
   //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST18,           {  0, 20, 20, 20}, 1, ISOTP_STD}, // not yet implemented
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOH_CAC,          {  0,600,600,600}, 1, ISOTP_STD},
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOH_HIST,         {  0,600,600,600}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST01,           {  0,600,600,600}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST19,           {  0,600,600,600}, 1, ISOTP_STD},
 
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  0, 10,  0}, 1, ISOTP_STD},
 
@@ -203,6 +205,17 @@ void OvmsVehicleVWeUp::OBDInit()
 
     // Battery cell SOH from ECU 8C PID 74 CB
     m_bat_cell_soh = new OvmsMetricVector<float>("xvu.b.c.soh", SM_STALE_HIGH, Percentage);
+
+    // Battery state time statistics:
+    m_bat_time_total = MyMetrics.InitFloat("xvu.b.time.total", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked = MyMetrics.InitFloat("xvu.b.time.parked", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked_full = MyMetrics.InitFloat("xvu.b.time.parked.full", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked_empty = MyMetrics.InitFloat("xvu.b.time.parked.empty", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked_hot = MyMetrics.InitFloat("xvu.b.time.parked.hot", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked_cold = MyMetrics.InitFloat("xvu.b.time.parked.cold", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked_state = MyMetrics.InitVector<float>("xvu.b.time.parked.state", SM_STALE_MAX, 0, Days);
+    m_bat_time_charged_ac = MyMetrics.InitFloat("xvu.b.time.charged.ac", SM_STALE_MAX, 0, Hours);
+    m_bat_time_charged_dc = MyMetrics.InitFloat("xvu.b.time.charged.dc", SM_STALE_MAX, 0, Hours);
 
     // Battery energy according to MFD range estimation:
     m_bat_energy_range  = MyMetrics.InitFloat("xvu.b.energy.range", SM_STALE_MAX, 0, kWh);
@@ -1066,6 +1079,63 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
           }
           VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOH_HIST: histsize=%d; read %d values for %d modules = %d months", histsize, valcnt, cmods, valcnt/cmods*3);
         }
+      }
+      break;
+
+    case VWUP_BAT_MGMT_HIST01:
+      // Info source: http://obd-amigos.linuxtech.net/files/amigos_PIDs.pm
+      if (PollReply.FromUint8("VWUP_BAT_MGMT_HIST01", value, 2) && value == 48) {
+        // collect data:
+        std::vector<float> ttm_state(48);
+        float ttm = 0, ttm_full = 0, ttm_empty = 0, ttm_hot = 0, ttm_cold = 0;
+        for (int i = 0; i < 48; i++) {
+          if (PollReply.FromUint32("VWUP_BAT_MGMT_HIST01", value, 3 + i*4)) {
+            value /= 86400;
+            ttm_state[i] = TRUNCPREC(value, 2);
+            ttm += value;
+            if (i % 6 == 0)         ttm_empty += value;
+            else if (i % 6 == 5)    ttm_full  += value;
+            if (i / 6 <= 2)         ttm_cold  += value;
+            else if (i / 6 >= 5)    ttm_hot   += value;
+          }
+        }
+
+        // update metrics:
+        VALUE_LOG(TAG, "VWUP_BAT_MGMT_HIST01: parked=%.2fd; full=%.2fd; empty=%.2fd; hot=%.2fd; cold=%.2fd",
+                  ttm, ttm_full, ttm_empty, ttm_hot, ttm_cold);
+        m_bat_time_parked->SetValue(TRUNCPREC(ttm, 2));
+        m_bat_time_parked_full->SetValue(TRUNCPREC(ttm_full, 2));
+        m_bat_time_parked_empty->SetValue(TRUNCPREC(ttm_empty, 2));
+        m_bat_time_parked_hot->SetValue(TRUNCPREC(ttm_hot, 2));
+        m_bat_time_parked_cold->SetValue(TRUNCPREC(ttm_cold, 2));
+        m_bat_time_parked_state->SetValue(ttm_state);
+      }
+      break;
+
+    case VWUP_BAT_MGMT_HIST19:
+      // Info source: http://obd-amigos.linuxtech.net/files/amigos_PIDs.pm
+      if (PollReply.FromUint8("VWUP_BAT_MGMT_HIST19", value, 0) && value == 7) {
+        // collect data:
+        float ttm = 0, ttm_charged_ac = 0, ttm_charged_dc = 0;
+        if (PollReply.FromUint32("VWUP_BAT_MGMT_HIST19", value, 1)) {
+          ttm = value;
+        }
+        if (PollReply.FromUint32("VWUP_BAT_MGMT_HIST19", value, 13)) {
+          ttm_charged_ac = value;
+        }
+        if (PollReply.FromUint32("VWUP_BAT_MGMT_HIST19", value, 17)) {
+          ttm_charged_dc = value;
+        }
+        
+        // update metrics:
+        ttm /= 8640;
+        ttm_charged_ac /= 360;
+        ttm_charged_dc /= 360;
+        VALUE_LOG(TAG, "VWUP_BAT_MGMT_HIST19: age=%.2fd; charged_ac=%.2fh, charged_dc=%.2fh",
+                  ttm, ttm_charged_ac, ttm_charged_dc);
+        m_bat_time_total->SetValue(TRUNCPREC(ttm, 2));
+        m_bat_time_charged_ac->SetValue(TRUNCPREC(ttm_charged_ac, 2));
+        m_bat_time_charged_dc->SetValue(TRUNCPREC(ttm_charged_dc, 2));
       }
       break;
 

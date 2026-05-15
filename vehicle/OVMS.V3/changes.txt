@@ -1,6 +1,19 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- VW e-Up: extended battery health / aging info (with web UI integration): total battery age,
+    charge time counters AC/DC and parked battery state times (by SOC & temperature ranges)
+    (inspired by OBD Amigos)
+  New metrics:
+    xvu.b.time.charged.ac                 -- Total time charged AC [Hours]
+    xvu.b.time.charged.dc                 -- Total time charged DC [Hours]
+    xvu.b.time.parked                     -- Total time parked [Days]
+    xvu.b.time.parked.cold                -- Total time parked below  0 °C [Days]
+    xvu.b.time.parked.empty               -- Total time parked below 10% SOC [Days]
+    xvu.b.time.parked.full                -- Total time parked above 90% SOC [Days]
+    xvu.b.time.parked.hot                 -- Total time parked above 30 °C [Days]
+    xvu.b.time.parked.state               -- Park times matrix: 6 SOC x 8 temperature ranges
+    xvu.b.time.total                      -- Total battery age [Days]
 - Server V3 (MQTT): AWS IoT Core compatibility fixes:
     - mTLS client certificate authentication for MQTT brokers that require it
       (e.g. AWS IoT Core). Configured via web UI (Config → Server V3).

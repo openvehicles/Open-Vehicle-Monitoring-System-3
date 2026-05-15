@@ -129,6 +129,23 @@ bool PollReplyHelper::FromUint24(const std::string &info, float &value, uint16_t
   return true;
 }
 
+bool PollReplyHelper::FromUint32(const std::string &info, float &value, uint16_t bytesToSkip /*= 0*/)
+{
+  if (Store.size() < (4 + bytesToSkip)) {
+    ESP_LOGE(TAG, "%s: Data length=%d is too short for FromUint32(skippedBytes=%u)",
+      info.c_str(), Store.size(), bytesToSkip);
+    value = NAN;
+    return false;
+  }
+
+  value = static_cast<float>((uint32_t)(
+            (Store[0 + bytesToSkip] << 24) +
+            (Store[1 + bytesToSkip] << 16) +
+            (Store[2 + bytesToSkip] << 8) +
+            ((uint16_t)Store[3 + bytesToSkip])));
+  return true;
+}
+
 bool PollReplyHelper::FromInt32(const std::string &info, float &value, uint16_t bytesToSkip /*= 0*/)
 {
   if (Store.size() < (4 + bytesToSkip)) {
