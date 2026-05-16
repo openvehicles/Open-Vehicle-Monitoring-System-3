@@ -117,12 +117,15 @@ Note: if you were running an OTA partition before, you also need to switch back 
 partition as shown above.
 
 
+.. _full-reflash-via-usb:
+
 --------------------
 Full Reflash via USB
 --------------------
 
-If you accidentally did an ``erase_flash`` or erased the wrong region, you will need to 
-do a full reflash of your module (including the boot loader and partitioning scheme).
+If you accidentally did an ``erase_flash``, erased the wrong region, or if something went wrong when
+performing the 3.3.006 OTA :doc:`partitioning upgrade <partitioning>` (7MB firmware image size support),
+you will need to do a full reflash of your module (including the boot loader and partitioning scheme).
 
 The need for a full reflash will typically show by the USB output of the module boot being
 just something like::
@@ -132,9 +135,9 @@ just something like::
   ets_main.c 371
   ets Jun  8 2016 00:22:57
 
-To do a full reflash, download the three .bin files from the release you want to flash, e.g. from
+To do a full reflash, download the three ``.bin`` files from the release you want to flash, e.g. from
 
-  https://ovms.dexters-web.de/firmware/ota/v3.2/edge/
+  https://ovms.dexters-web.de/firmware/ota/v3.3-5/edge/
 
 Then issue::
 
