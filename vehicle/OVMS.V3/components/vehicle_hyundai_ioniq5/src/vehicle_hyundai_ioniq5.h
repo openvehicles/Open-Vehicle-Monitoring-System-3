@@ -172,6 +172,11 @@ protected:
   int m_checklock_retry, m_checklock_start, m_checklock_notify;
   bool m_aux_is_charging, m_aux_is_low;
 
+  // Detecting of continuous charging of AUX battery.
+  // Tries to not rock the boat by turning on the ICU unnecessarily.
+  const uint16_t AUX_CRIT_THRESH = 1440; // 14.4v
+  average_asym_util_t<uint32_t, 128, 32>  m_crit_check_avg;
+
   void HandleCharging();
   void HandleChargeStop();
 
