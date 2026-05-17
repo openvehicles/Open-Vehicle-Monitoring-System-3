@@ -27,6 +27,11 @@ Upgrade Tool
 The upgrade can be done **online** on the running module; release 3.3.006 includes an easy to use upgrade tool
 that can be run from the **shell** or the module's **web UI**.
 
+The upgrade process takes care of all necessary steps, including rebooting into maintenance mode, copying the 
+running firmware image, changing the partition table and copying the configuration store. The process needs to 
+perform multiple reboots and normally takes around 5 minutes, but can take up to 10 minutes depending on the 
+configuration.
+
 
 ~~~~~~
 Web UI
@@ -112,13 +117,6 @@ This partition layout supported **firmware images up to 4MB in size**. This limi
 **release 3.3.006**, making 3.3.006 the last release to fit in the old partitioning scheme. To continue being 
 able to install new firmware updates after 3.3.006, the partitioning scheme needs to be changed.
 
-When first booting into 3.3.006 or when trying to install an OTA update that doesn't fit, the module will send a 
-**notification** about the necessary partitioning upgrade. The web UI's entry page also displays a warning when 
-an outdated partitioning scheme is detected.
-
-The partitioning can be changed **online** by the running module itself, the module doesn't need to be unmounted
-unless the online upgrade process fails -- see below for details.
-
 
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Leveraging the 4MB Limit
@@ -135,14 +133,10 @@ The **new partition layout** designed to accomodate **updates after 3.3.006** re
 partition and distributes the space gained evenly onto the ``ota`` partitions. Unused reserved space of the 4MB 
 partitioning is also added to the ``ota`` and the ``store`` partitions to maximize flash memory usage.
 
+.. image:: partitioning_change.png
+
 This results in **two** ``ota`` firmware partitions supporting **image sizes up to 7MB** and a ``store`` partition
 supporting **user configuration data up to 1,984 KB** in size.
-
-The upgrade process takes care of all necessary steps, including rebooting into maintenance mode, copying the 
-running firmware image, changing the partition table and copying the configuration store. The process needs to 
-perform multiple reboots and normally takes around 5 minutes, but can take up to 10 minutes depending on the 
-configuration. The web UI tries to estimate the maximum time needed, the actual process normally will finish
-earlier than estimated.
 
 
 ~~~~~~~~~~~~~~~~~~~
