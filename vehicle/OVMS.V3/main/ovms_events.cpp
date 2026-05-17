@@ -657,7 +657,7 @@ void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_done_fn
 
   msg.type = EVENT_signal;
   msg.body.signal.event = (char*)ExternalRamMalloc(event.size()+1);
-  strcpy(msg.body.signal.event, event.c_str());
+  memcpy(msg.body.signal.event, event.c_str(), event.size()+1);
   msg.body.signal.data = data;
   msg.body.signal.donefn = callback;
 
@@ -687,7 +687,7 @@ void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_phase_f
 
   msg.type = EVENT_phasedsignal;
   msg.body.phasedsignal.event = (char*)ExternalRamMalloc(event.size()+1);
-  strcpy(msg.body.phasedsignal.event, event.c_str());
+  memcpy(msg.body.phasedsignal.event, event.c_str(), event.size()+1);
   msg.body.phasedsignal.data = data;
   msg.body.phasedsignal.phasefn = callback;
   msg.body.phasedsignal.phasedata = phasedata;
@@ -717,7 +717,7 @@ void OvmsEvents::SignalEvent(std::string event, void* data, OvmsSemaphore& semap
 
   msg.type = EVENT_signal;
   msg.body.signal.event = (char*)ExternalRamMalloc(event.size()+1);
-  strcpy(msg.body.signal.event, event.c_str());
+  memcpy(msg.body.signal.event, event.c_str(), event.size()+1);
   msg.body.signal.data = data;
   msg.body.signal.donesemaphore = &semaphore;
 
