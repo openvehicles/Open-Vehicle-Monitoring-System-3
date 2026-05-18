@@ -41,9 +41,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
 
   if(!enable) // HVAC OFF not implemented by vehicle
     {
-    m_climate_restart_ticker = 0;
-    m_climate_restart = false; 
-    return NotImplemented;
+    if (m_climate_restart) 
+      { // stops the scheduled climate restart
+      MyNotify.NotifyString("info", "climatecontrol.schedule", "Climate control restarting stopped!");
+      m_climate_restart_ticker = 0;
+      m_climate_restart = false; 
+      return Success;
+      }
+    else 
+      {
+      MyNotify.NotifyString("error", "climatecontrol.schedule", "Climate control stop not possible, EQ doesnt support it");
+      return NotImplemented;
+      }
     }
 
   if (StandardMetrics.ms_v_bat_soc->AsInt(0) < 31)
@@ -65,7 +74,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     return Success;
     }
   // force enable write access for sending the command, even when user has not enabled it (can be required for some vehicles to wake up the car)
-  bool force = !m_enable_write && !m_enable_write_caron ? true : false;
+  bool force = !IsCANwrite() ? true : false;
   if(force)
     {
     m_enable_write_caron = true;
@@ -201,7 +210,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandWakeup failed: no write access!");
     return Fail;
@@ -216,7 +225,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
 
   OvmsVehicle::vehicle_command_t res = Fail;
 
-  if(!mt_bus_awake->AsBool(false)) 
+  if(!IsAwakeEQ()) 
     {
     uint8_t data[4] = {0x40, 0x00, 0x00, 0x00};
     canbus *obd;
@@ -226,7 +235,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
       {
       obd->WriteStandard(0x634, 4, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
-      if (mt_bus_awake->AsBool(false)) 
+      if (IsAwakeEQ()) 
         {
         res = Success;
         break;
@@ -245,7 +254,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandWakeup2 failed: no write access!");
     return Fail;
@@ -259,7 +268,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
 
   OvmsVehicle::vehicle_command_t res = Fail;
 
-  if(!mt_bus_awake->AsBool(false)) 
+  if(!IsAwakeEQ()) 
     {
     ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
     uint8_t data[8] = {0xc3, 0x11, 0x96, 0xef, 0x14, 0x10, 0x96, 0x85};
@@ -269,7 +278,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
       {
       obd->WriteStandard(0x350, 8, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
-      if (mt_bus_awake->AsBool(false)) 
+      if (IsAwakeEQ()) 
         {
         res = Success;
         break;
@@ -289,7 +298,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
 
 // lock: can can1 tx st 745 04 30 01 00 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) {
-  if(!m_enable_write && !m_enable_write_caron) 
+  if(!IsCANwrite()) 
     {
     ESP_LOGE(TAG, "CommandLock failed / no write access");
     return Fail;
@@ -314,7 +323,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
     if (DoorOpen())
         MyNotify.NotifyString("alert", "door.lock", "Vehicle locked, but one or more doors are open!");
     else
-        MyNotify.NotifyString("info", "door.lock", "Vehicle locked");
+        MyNotify.NotifyString("info", "door.lock", "Vehicle locked!");
+        // set m_cmd_locked to true to indicate that lock command was sent, but since the car does not show as locked immediately, 
+        // we cannot set the metric to true yet, but we can use this flag to show a notification if the car is not showing as locked after a certain time, 
+        //or to set the metric to true when the car eventually shows as locked after a delay
+        m_cmd_locked = true; 
     }
   else
     {
@@ -326,7 +339,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
 // unlock: can can1 tx st 745 04 30 01 00 01
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin) {
 
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandUnlock failed / no write access");
     return Fail;
@@ -347,7 +360,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin
   if(res == Success) 
     {
     ESP_LOGI(TAG, "Unlock successful");
-    StdMetrics.ms_v_env_locked->SetValue(false);
+    m_cmd_locked = false; 
     MyNotify.NotifyString("info", "door.unlock", "Vehicle unlocked");
     }
   else

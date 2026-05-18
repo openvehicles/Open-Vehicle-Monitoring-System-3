@@ -141,6 +141,12 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x2005: // Battery voltage 14V
           PollReply_EVC_14VBatteryVoltage(m_rxbuf.data(), m_rxbuf.size());
           break;
+        case 0x2003: // Vehicle Speed
+          PollReply_EVC_VehSpeed(m_rxbuf.data(), m_rxbuf.size());
+          break;
+        case 0x2006: // Odometer (Total Vehicle Distance)
+          PollReply_EVC_Odometer(m_rxbuf.data(), m_rxbuf.size());
+          break;
         case 0x339D: // Charging plug detected (B_PlugConnected_bcb_status_S)
           PollReply_EVC_PlugDetected(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -194,46 +200,46 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           PollReply_OBL_ChargerAC(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x503F: // rqJB2AC_Ph12_RMS_V
-          PollReply_OBL_JB2AC_Ph12_RMS_V(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_V(m_rxbuf.data(), m_rxbuf.size(), 0);
           break;
         case 0x5041: // rqJB2AC_Ph23_RMS_V
-          PollReply_OBL_JB2AC_Ph23_RMS_V(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_V(m_rxbuf.data(), m_rxbuf.size(), 1);
           break;
         case 0x5042: // rqJB2AC_Ph31_RMS_V
-          PollReply_OBL_JB2AC_Ph31_RMS_V(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_V(m_rxbuf.data(), m_rxbuf.size(), 2);
           break;
         case 0x2001: // rqJB2AC_Ph1_RMS_A
-          PollReply_OBL_JB2AC_Ph1_RMS_A(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_A(m_rxbuf.data(), m_rxbuf.size(), 0);
           break;
         case 0x503A: // rqJB2AC_Ph2_RMS_A
-          PollReply_OBL_JB2AC_Ph2_RMS_A(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_A(m_rxbuf.data(), m_rxbuf.size(), 1);
           break;
         case 0x503B: // rqJB2AC_Ph3_RMS_A
-          PollReply_OBL_JB2AC_Ph3_RMS_A(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_A(m_rxbuf.data(), m_rxbuf.size(), 2);
           break;
         case 0x504A: // Mains active power consumed (W)
           PollReply_OBL_JB2AC_Power(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x5062: // Mains ground resistance (Ohm)
-          PollReply_OBL_JB2AC_GroundResistance(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Current_GR(m_rxbuf.data(), m_rxbuf.size(), 1);
           break;
         case 0x5064: // leakage current diagnostics
           PollReply_OBL_JB2AC_LeakageDiag(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x5065: // Leakage DC current saved indicator after failure (mA)
-          PollReply_OBL_JB2AC_DCCurrent(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Current(m_rxbuf.data(), m_rxbuf.size(), 3);
           break;
         case 0x5066: // Leakage HF 10kHz current saved indicator after failure (mA)
-          PollReply_OBL_JB2AC_HF10kHz(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Current(m_rxbuf.data(), m_rxbuf.size(), 4);
           break;
-        case 0x5067: // Leakage HF current saved indicator after failure (mA) 
-          PollReply_OBL_JB2AC_HFCurrent(m_rxbuf.data(), m_rxbuf.size());
+        case 0x5067: // Leakage HF current saved indicator after failure (mA)
+          PollReply_OBL_JB2AC_Current(m_rxbuf.data(), m_rxbuf.size(), 5);
           break;
         case 0x5068: // Leakage LF current saved indicator after failure (mA)
-          PollReply_OBL_JB2AC_LFCurrent(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Current(m_rxbuf.data(), m_rxbuf.size(), 6);
           break;
         case 0x5070: // max AC current limitation configuration (A)
-          PollReply_OBL_JB2AC_MaxCurrent(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Current_GR(m_rxbuf.data(), m_rxbuf.size(), 2);
           break;
         case 0x5049: // Mains phase frequency
           PollReply_OBL_JB2AC_PhaseFreq(m_rxbuf.data(), m_rxbuf.size());
@@ -243,7 +249,7 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 
     case 0x763:
       switch (job.pid) {
-        case 0x200c: // temperature sensor values
+        case 0x200C: // temperature sensor values
           PollReply_TDB(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x2104: // obd Trip time s
@@ -761,7 +767,21 @@ void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltageReq(const char* data, ui
   REQUIRE_LEN(1);
   uint8_t raw = CAN_BYTE(0);
   float value = 12.0f + raw * 0.05f;
-  mt_evc_dcdc->SetElemValue(5, value);  // batt_volt_req
+  can_speed = value;
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_VehSpeed(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 20 03  <Byte> <Byte>
+  REQUIRE_LEN(2);
+  uint16_t raw = CAN_UINT(0);
+  float value = raw * 0.01f;
+  can_speed = value;
+}
+
+void OvmsVehicleSmartEQ::PollReply_EVC_Odometer(const char* data, uint16_t reply_len) {
+  // POSITIVE RESPONSE FORMAT: 62 20 06  <Byte>
+  REQUIRE_LEN(3);
+  can_odometer = (float)CAN_UINT24(0);
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_PlugDetected(const char* data, uint16_t reply_len) {
@@ -847,39 +867,19 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t re
   UpdateChargeMetrics();
 }
 
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len) {
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_A(const char* data, uint16_t reply_len, int idx) {
   REQUIRE_LEN(2);
   float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
-  mt_obl_main_amps->SetElemValue(0, value);
+  mt_obl_main_amps->SetElemValue(idx, value);
+  if (idx == 2)
+    UpdateChargeMetrics();
 }
 
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph2_RMS_A(const char* data, uint16_t reply_len) {
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_V(const char* data, uint16_t reply_len, int idx) {
   REQUIRE_LEN(2);
-  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
-  mt_obl_main_amps->SetElemValue(1, value);
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph3_RMS_A(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
-  mt_obl_main_amps->SetElemValue(2, value);
-  UpdateChargeMetrics();
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph12_RMS_V(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  mt_obl_main_volts->SetElemValue(0, CAN_UINT(0) / 2.0);
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph23_RMS_V(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  mt_obl_main_volts->SetElemValue(1, CAN_UINT(0) / 2.0);
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  mt_obl_main_volts->SetElemValue(2, CAN_UINT(0) / 2.0);
-  UpdateChargeMetrics();
+  mt_obl_main_volts->SetElemValue(idx, CAN_UINT(0) / 2.0);
+  if (idx == 2)
+    UpdateChargeMetrics();
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len) {
@@ -904,48 +904,28 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint1
   mt_obl_main_leakage_diag->SetValue(msgtxt);
 }
 
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_DCCurrent(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_misc->SetElemValue(3, (float)raw / 1000.0f);  // dc_current (mA)
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HF10kHz(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_misc->SetElemValue(4, (float)raw / 1000.0f);  // hf10kHz_current (mA)
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_misc->SetElemValue(5, (float)raw / 1000.0f);  // hf_current (mA)
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_misc->SetElemValue(6, (float)raw / 1000.0f);  // lf_current (mA)
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_GroundResistance(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  mt_obl_misc->SetElemValue(1, (float) CAN_UINT(0));  // ground_resistance
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(1);
-  mt_obl_misc->SetElemValue(2, (float) CAN_BYTE(0));  // max_current
-}
-
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 50 49 <Byte> <Byte>
+  // freq, ground_resistance, max_current, dc_current (mA), hf10kHz_current (mA), hf_current (mA), lf_current (mA) depending on idx
   // Spec: offset 10.0, step 0.0078125, bytescount 2
   REQUIRE_LEN(2);
   uint16_t raw = CAN_UINT(0);
   float freq = 10.0f + (raw * 0.0078125f);
   if (freq > 40.0f) // plausibility check
     mt_obl_misc->SetElemValue(0, freq);  // freq
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Current_GR(const char* data, uint16_t reply_len, int idx) {
+  // freq, ground_resistance, max_current, dc_current (mA), hf10kHz_current (mA), hf_current (mA), lf_current (mA) depending on idx
+  REQUIRE_LEN(1);
+  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
+  mt_obl_misc->SetElemValue(idx, (float)raw / 1000.0f);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Current(const char* data, uint16_t reply_len, int idx) {
+  // freq, ground_resistance, max_current, dc_current (mA), hf10kHz_current (mA), hf_current (mA), lf_current (mA) depending on idx
+  REQUIRE_LEN(2);
+  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
+  mt_obl_misc->SetElemValue(idx, (float)raw / 1000.0f);
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_time(const char* data, uint16_t reply_len) {
@@ -1021,7 +1001,7 @@ void OvmsVehicleSmartEQ::PollReply_BCM_DoorlockEEPROM(const char* data, uint16_t
   
   // DRIVER_DOOR_LOCKED_S:
   bool driver_locked = (CAN_BYTE(0) > 0);
-  mt_driver_door_locked->SetValue(driver_locked);
+  m_cmd_locked = driver_locked;  // store for command use
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_mt_level(const char* data, uint16_t reply_len) {

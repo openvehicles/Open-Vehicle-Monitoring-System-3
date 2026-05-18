@@ -87,7 +87,10 @@ protected:
   {
     PollSetState(3);
   }
-    
+
+private:
+  void UpdatePower();
+  
 protected:
   uint32_t m_lastCanFrameTime = 0;
   uint32_t m_last305FrameTime = 0;

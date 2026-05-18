@@ -124,19 +124,19 @@ OvmsCanLogUdpServerInit::OvmsCanLogUdpServerInit()
           "<port> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
-          1, 9);
+          1, _COMMAND_TOKEN_NMB);
         MyCanFormatFactory.RegisterCommandSet(simulate, "Start CAN logging as UDP server (simulate mode)",
           can_log_udpserver_start,
           "<port> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
-          1, 9);
+          1, _COMMAND_TOKEN_NMB);
         MyCanFormatFactory.RegisterCommandSet(transmit, "Start CAN logging as UDP server (transmit mode)",
           can_log_udpserver_start,
           "<port> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
-          1, 9);
+          1, _COMMAND_TOKEN_NMB);
         }
       }
     }

@@ -84,7 +84,7 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
       }
     
     // Handle alert conditions only if sensor is working and alerts are enabled
-    if (!pressure_valid || !alerts_enabled)
+    if (!pressure_valid || !alerts_enabled) 
       {
       // Sensor not working or alerts disabled - clear all alerts
       _lowbatt = false;
@@ -201,7 +201,6 @@ void OvmsVehicleSmartEQ::ResetChargingValues() {
   m_charge_finished = false;
   m_notifySOClimit = false;
   StdMetrics.ms_v_charge_kwh->SetValue(0); // charged Energy
-  //StdMetrics.ms_v_charge_kwh_grid->SetValue(0);
 }
 
 void OvmsVehicleSmartEQ::ResetTripCounters() {
@@ -380,6 +379,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
       mt_adc_factor_history->SetElemValues(0, n, hist);
     mt_adc_factor->SetValue(adc_factor_new);
     MyConfig.SetParamValueFloat("system.adc", "factor12v", adc_factor_new);
+    MyConfig.SetParamValueBool("xsq", "calc.adcfactor", false);
     if (writer) writer->printf("New ADC factor stored: %.3f (prev %.3f, history size %u)\n", adc_factor_new, adc_factor_prev, (unsigned)n);
   #else
     ESP_LOGD(TAG, "ADC support not enabled");
@@ -391,6 +391,7 @@ void OvmsVehicleSmartEQ::DoorLockState() {
   bool warning_unlocked = (StdMetrics.ms_v_env_parktime->AsInt(0) > m_park_timeout_secs &&
                           !IsOnEQ() &&
                           !StdMetrics.ms_v_env_locked->AsBool(false) &&
+                          !m_cmd_locked &&
                           !m_warning_unlocked);
   
   if (warning_unlocked) {
@@ -470,7 +471,7 @@ void OvmsVehicleSmartEQ::smartOn()
   // reset idle ticker when vehicle turned on to prevent trigger every 60 sec.
   m_idle_ticker = 15 * 60;
   // canwrite enable write access, only when car is on
-  if(m_enable_write || m_enable_write_caron) 
+  if(IsCANwrite()) 
     {
     smartCANmode(true);
     }
@@ -500,12 +501,15 @@ void OvmsVehicleSmartEQ::smartAwake()
 void OvmsVehicleSmartEQ::smartSleep()
 {
   // disable active polling when car goes to sleep
-  smartCANmode(false);
+  if((m_enable_write_caron && m_can_active) || m_enable_write_sleep)
+    smartCANmode(false);
   ESP_LOGD(TAG, "smartSleep()");
 }
 
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
+  if (m_charge_finished) ResetChargingValues();
+  if (m_resettrip) ResetTripCounters();
   // Set charging metrics
   StdMetrics.ms_v_charge_pilot->SetValue(true);
   StdMetrics.ms_v_charge_mode->SetValue("standard");
@@ -517,11 +521,11 @@ void OvmsVehicleSmartEQ::smartChargeStart()
   // trigger ADC factor recalculation when HV charging started
   if(m_enable_calcADCfactor && !m_ADCfactor_recalc) 
     {
-    m_ADCfactor_recalc_timer = 4;   // wait at least 4 min. before recalculation
+    m_ADCfactor_recalc_timer = 2;   // wait at least 2 min. before recalculation
     m_ADCfactor_recalc = true;      // recalculate ADC factor when HV charging
     }
   // canwrite enable write access, only when car is on
-  if(m_enable_write || m_enable_write_caron) 
+  if(IsCANwrite()) 
     {
     m_poll_on_charge = true;
     smartCANmode(true);
@@ -553,35 +557,27 @@ void OvmsVehicleSmartEQ::smartChargeStop()
     StdMetrics.ms_v_charge_substate->SetValue("onrequest");
   }
   // stop recalculation when HV charging stopped
-  m_ADCfactor_recalc_timer = 0;
+  m_ADCfactor_recalc_timer = 2;
   m_ADCfactor_recalc = false;
   ESP_LOGD(TAG, "smartChargeStop()");
 }
 
 void OvmsVehicleSmartEQ::smartChargePrepare()
 {
-  if (m_charge_finished) ResetChargingValues();
-  if (m_resettrip) ResetTripCounters();
-  // canwrite enable write access, only when car is on
-  if(m_enable_write || m_enable_write_caron) 
-    {
-    m_poll_on_charge = true;
-    smartCANmode(true);
-    }
   ESP_LOGD(TAG, "smartChargePrepare()");
 }
 
 void OvmsVehicleSmartEQ::smartChargeFinish()
 {
   m_charge_finished = true;
-  StdMetrics.ms_v_charge_power->SetValue(0);
   m_poll_on_charge = false;
+  StdMetrics.ms_v_charge_power->SetValue(0);
   ESP_LOGD(TAG, "smartChargeFinish()");
 }
 
 void OvmsVehicleSmartEQ::smartCANmode(bool activate)
 {
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     m_can1->Stop();
     vTaskDelay(200 / portTICK_PERIOD_MS);

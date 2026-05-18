@@ -17,7 +17,7 @@ Hardware                    OVMS v3
 Vehicle Cable               Works with a Generic OBD2 OVMS Cable
 GSM Antenna                 Works with any OVMS v3 supported antenna
 GPS Antenna                 Works with any OVMS v3 supported antenna
-SOC Display                 Yes
+SOC Display                 Yes (incl. battery capacity)
 Range Display               tba
 GPS Location                Yes (from GPS module)
 Speed Display               tba
@@ -30,5 +30,5 @@ Charge Control              tba
 Cabin Pre-heat/cool Control tba
 Lock/Unlock Vehicle         tba
 Valet Mode Control          ??
-Others                      12V battery, SoH, HV Battery voltage, odometer, front+read doors and trunk open status, footbrake (only pressed yes/no status), handbrake, VIN
+Others                      12V battery, SoH, HV Battery voltage, odometer, front+read doors and trunk open status, footbrake (only pressed yes/no status), handbrake, VIN, battery current (+power), onboard charger temp, DC-DC temperature
 =========================== ==============

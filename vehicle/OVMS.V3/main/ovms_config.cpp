@@ -523,16 +523,20 @@ esp_err_t OvmsConfig::mount()
 
   auto lock = Lock();
 
-  memset(&m_store_fat,0,sizeof(esp_vfs_fat_sdmmc_mount_config_t));
+  memset(&m_store_fat,0,sizeof(m_store_fat));
   m_store_fat.format_if_mount_failed = true;
   m_store_fat.max_files = 5;
 
 #if ESP_IDF_VERSION_MAJOR >= 5
-  esp_vfs_fat_spiflash_mount_rw_wl("/store", "store", &m_store_fat, &m_store_wlh);
+  m_mounted = (esp_vfs_fat_spiflash_mount_rw_wl("/store", "store", &m_store_fat, &m_store_wlh) == ESP_OK);
 #else
-  esp_vfs_fat_spiflash_mount("/store", "store", &m_store_fat, &m_store_wlh);
+  m_mounted = (esp_vfs_fat_spiflash_mount("/store", "store", &m_store_fat, &m_store_wlh) == ESP_OK);
 #endif
-  m_mounted = true;
+
+  if (m_mounted)
+    {
+    ESP_LOGI(TAG, "Mounted /store");
+    }
 
   struct stat ds;
   if (stat(OVMS_CONFIGPATH, &ds) != 0)

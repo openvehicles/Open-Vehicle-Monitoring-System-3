@@ -41,14 +41,7 @@ void OvmsVehicleSmartEQ::xsq_trip_start(int verbosity, OvmsWriter* writer, OvmsC
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripStart(int verbosity, OvmsWriter* writer) {
-    metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
-    writer->puts("Trip start values:");
-    writer->printf("  distance: %s\n", (char*) mt_start_distance->AsUnitString("-", rangeUnit, 1).c_str());
-    writer->printf("  time: %s\n", (char*) mt_start_time->AsUnitString("-", Native, 1).c_str());
-    writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-    writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
-    writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
-    return Success;
+    return CommandTripCounters(verbosity, writer, "Trip start values:");
 }
 void OvmsVehicleSmartEQ::NotifyTripStart() {
   StringWriter buf(200);
@@ -64,14 +57,7 @@ void OvmsVehicleSmartEQ::xsq_trip_reset(int verbosity, OvmsWriter* writer, OvmsC
   smarteq->CommandTripReset(verbosity, writer);
 }
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripReset(int verbosity, OvmsWriter* writer) {
-    metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
-    writer->puts("Trip reset values:");
-    writer->printf("  distance: %s\n", (char*) mt_start_distance->AsUnitString("-", rangeUnit, 1).c_str());
-    writer->printf("  time: %s\n", (char*) mt_start_time->AsUnitString("-", Native, 1).c_str());
-    writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-    writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
-    writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
-    return Success;
+    return CommandTripCounters(verbosity, writer, "Trip reset values:");
 }
 void OvmsVehicleSmartEQ::NotifyTripReset() {
   StringWriter buf(200);
@@ -86,9 +72,9 @@ void OvmsVehicleSmartEQ::xsq_trip_counters(int verbosity, OvmsWriter* writer, Ov
 	
     smarteq->CommandTripCounters(verbosity, writer);
 }
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripCounters(int verbosity, OvmsWriter* writer) {
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripCounters(int verbosity, OvmsWriter* writer, const char* title) {
     metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
-    writer->puts("Trip counter values:");
+    writer->puts(title);
     writer->printf("  distance: %s\n", (char*) StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str());
 	  writer->printf("  Energy used: %s\n", (char*) StdMetrics.ms_v_bat_energy_used->AsUnitString("-", Native, 3).c_str());
 	  writer->printf("  Energy recd: %s\n", (char*) StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", Native, 3).c_str());
@@ -176,8 +162,7 @@ void OvmsVehicleSmartEQ::NotifySOClimit() {
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::Command12Vcharge(int verbosity, OvmsWriter* writer) {
-  writer->puts("12V charge on:");
- 
+  writer->puts("12V charge on:"); 
   writer->printf("  12V: %s\n", (char*) StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Native, 1).c_str());
   writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
   writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());

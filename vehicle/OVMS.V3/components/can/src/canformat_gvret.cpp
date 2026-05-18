@@ -105,6 +105,11 @@ std::string canformat_gvret_ascii::get(CAN_log_message_t* message)
     (message->frame.FIR.B.FF == CAN_frame_std) ? "S" : "X",
     busnumber,
     message->frame.FIR.B.DLC);
+    if (message->frame.FIR.B.DLC > 8)
+      {
+      ESP_LOGW(TAG, "DLC too long: %d", message->frame.FIR.B.DLC);
+      return std::string("");
+      }
     for (int k=0; k<message->frame.FIR.B.DLC; k++)
       sprintf(buf+strlen(buf)," %02x", message->frame.data.u8[k]);
 

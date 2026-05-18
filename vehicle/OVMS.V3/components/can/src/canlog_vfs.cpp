@@ -82,7 +82,7 @@ OvmsCanLogVFSInit::OvmsCanLogVFSInit()
           "<path> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
-          1, 9, true, vfs_file_validate);
+          1, _COMMAND_TOKEN_NMB, true, vfs_file_validate);
         }
       }
     }

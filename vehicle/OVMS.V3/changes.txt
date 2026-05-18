@@ -1,6 +1,34 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+
+2026-05-17 MB   3.3.006  OTA release
+- VW e-Up: extended battery health / aging info (with web UI integration): total battery age,
+    charge time counters AC/DC and parked battery state times (by SOC & temperature ranges)
+    (inspired by OBD Amigos)
+  New metrics:
+    xvu.b.time.charged.ac                 -- Total time charged AC [Hours]
+    xvu.b.time.charged.dc                 -- Total time charged DC [Hours]
+    xvu.b.time.parked                     -- Total time parked [Days]
+    xvu.b.time.parked.cold                -- Total time parked below  0 °C [Days]
+    xvu.b.time.parked.empty               -- Total time parked below 10% SOC [Days]
+    xvu.b.time.parked.full                -- Total time parked above 90% SOC [Days]
+    xvu.b.time.parked.hot                 -- Total time parked above 30 °C [Days]
+    xvu.b.time.parked.state               -- Park times matrix: 6 SOC x 8 temperature ranges
+    xvu.b.time.total                      -- Total battery age [Days]
+- Server V3 (MQTT): AWS IoT Core compatibility fixes:
+    - mTLS client certificate authentication for MQTT brokers that require it
+      (e.g. AWS IoT Core). Configured via web UI (Config → Server V3).
+    - Fixed MQTT CONNECT to omit empty username/password for certificate-only auth.
+    - New option "retain.depth.limit": disables RETAIN on deep topics (>8 segments)
+      for brokers like AWS IoT Core that reject them.
+- Autostart: added init option "minimal" to boot with just basic networking as configured; this is
+    now the first fallback in case of repeated early crashes, aiming at keeping the module reachable
+    in case of a bug in a higher level module / configuration. Auto init will be disabled only if
+    early crashes continue in minimal mode.
+  Config extension:
+    [auto] init                           -- "no" / "yes" / "minimal" (default "yes")
 - Server V3: the MQTT client ID to use can now be configured. While not normally necessary, changing the
     client ID may be necessary to discard an existing MQTT server session when changing the username.
   New configs:

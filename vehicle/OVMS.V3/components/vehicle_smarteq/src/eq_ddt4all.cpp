@@ -63,7 +63,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     return Success;
   }
 
-  if((!m_ddt4all || !m_enable_write) && number > 9) {
+  if((!m_ddt4all || !IsCANwrite()) && number > 9) {
     ESP_LOGE(TAG, "DDT4all failed / no Canbus write access or DDT4all not enabled");
     writer->printf("DDT4all failed / no Canbus write access or DDT4all not enabled");
     return Fail;

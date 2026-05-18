@@ -109,6 +109,9 @@ typedef enum : uint8_t
   dbm           = 80,   // Signal Quality (in dBm)
   sq            = 81,   // Signal Quality (in SQ units)
 
+  Days          = 82,
+  Months        = 83,
+  Years         = 84,
   DateUnix      = 85,
   DateUTC       = 86,
   DateLocal     = 87,

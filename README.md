@@ -220,6 +220,7 @@ inspection then turns out to be complete nonsense.
 Examples:
 - [AI not understanding STL containers or OVMS event processing](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/pull/1294)
 - [AI not understanding code coverage and suggesting model change to fix view issue](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/pull/1296)
+- [AI not understanding string buffer allocation](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/pull/1402)
 
 
 **A note on pull requests:**

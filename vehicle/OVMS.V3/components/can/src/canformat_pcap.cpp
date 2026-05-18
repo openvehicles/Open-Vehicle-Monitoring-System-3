@@ -73,8 +73,13 @@ std::string canformat_pcap::get(CAN_log_message_t* message)
   if (message->frame.FIR.B.FF == CAN_frame_ext) idfl |= CANFORMAT_PCAP_FL_EXT;
   if (message->frame.FIR.B.RTR == CAN_RTR) idfl |= CANFORMAT_PCAP_FL_RTR;
   m.phdr.idflags = htobe32(idfl);
-  m.phdr.len = message->frame.FIR.B.DLC;
 
+  if (message->frame.FIR.B.DLC > 8)
+    {
+    ESP_LOGW(TAG, "DLC too long: %d", message->frame.FIR.B.DLC);
+    return std::string("");
+    }
+  m.phdr.len = message->frame.FIR.B.DLC;
   memcpy(m.data, message->frame.data.u8, message->frame.FIR.B.DLC);
 
   return std::string((const char*)&m, sizeof(m));

@@ -39,7 +39,7 @@ void OvmsVehicleSmartEQ::HandlePollState() {
 
   static const char* state_names[] = {"Off", "Awake", "Running", "Charging"};
   static const char* state_disabled = "Pollstate Off (write disabled)";
-  if (!m_enable_write && !m_enable_write_caron) 
+  if (!IsCANwrite()) 
     {
     if (m_poll_state != POLLSTATE_OFF) 
       {
@@ -55,16 +55,18 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   if (IsChargingEQ())
     {
     desired_state = POLLSTATE_CHARGING;   //- car is charging
+    mt_bus_awake->SetValue(true);
     }
   else if (IsOnEQ())
     {
     desired_state = POLLSTATE_ON;    //- car is on
+    mt_bus_awake->SetValue(true);
     }
   else if (IsAwakeEQ())
     {
     desired_state = POLLSTATE_AWAKE;         //- car is awake (but not on)
     }    
-  else if (!IsAwakeEQ() && !IsChargingEQ())
+  else if (!IsAwakeEQ())
     {
     desired_state = POLLSTATE_OFF;        //- car is asleep
     }

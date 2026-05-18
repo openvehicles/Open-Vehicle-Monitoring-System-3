@@ -35,7 +35,7 @@
 #include <esp_partition.h>
 #include "ovms_command.h"
 
-#define PARTITION_TABLE_SIZE 0x0C00   // Maximum size of the partition table in flash (32 bytes per partition record)
+#define PARTITION_TABLE_SIZE 0x0C00   // Maximum size of the partition table (32 bytes per partition record x 96 partitions)
 #define PARTITION_TABLE_BLOCK_SIZE  0x1000   // Size allocated for the partition table in flash
 #define PARTITION_TABLE_RECORD_SIZE 32       // Size of the partition table record (32 bytes)
 #define PARTITION_ENTRY_MAGIC 0x50aa
@@ -71,8 +71,9 @@ typedef struct __attribute__((packed))   // Partition table record (32 bytes)
 typedef enum
   {
   OVMS_FlashPartition_Unknown,    // Unknown partition format (or not yet discovered)
-  OVMS_FlashPartition_f12,        // Original v3 partition format (factory, ota1, ota2)
-  OVMS_FlashPartition_12,         // New partition format (ota1, ota2, no factory)
+  OVMS_FlashPartition_30,         // Original v3 partition format (factory, ota1, ota2, 1MB store)
+  OVMS_FlashPartition_34,         // Transitory in-upgrade partition format (factory, ota1, ota2, dual store)
+  OVMS_FlashPartition_35,         // New partition format (ota1, ota2, no factory, maximized store)
   } ovms_flashpartition_t;
 
 extern const char* ovms_partition_type_name(esp_partition_type_t type);
@@ -85,8 +86,23 @@ extern void ovms_partition_table_free(ovms_esp_partition_t* table);
 extern ovms_flashpartition_t ovms_partition_table_get_type(void);
 extern std::string ovms_partition_table_get_type_string(ovms_flashpartition_t type);
 extern bool ovms_partition_table_has_factory(void);
+extern bool ovms_partition_table_isuptodate(void);
 
 extern bool ovms_partition_table_list(OvmsWriter* writer);
-extern bool ovms_partition_table_upgrade(OvmsWriter* writer);
+
+extern bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer);
+extern bool ovms_partition_table_upgrade_store(OvmsWriter* writer);
+extern bool ovms_partition_table_downgrade_store(OvmsWriter* writer);
+extern bool ovms_partition_table_mount_store2(OvmsWriter* writer);
+extern bool ovms_partition_table_unmount_store2(OvmsWriter* writer);
+extern bool ovms_partition_table_copy_store(OvmsWriter* writer);
+extern bool ovms_partition_table_migrate_store(OvmsWriter* writer);
+extern bool ovms_partition_table_upgrade_factory(OvmsWriter* writer);
+extern bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer);
+
+extern bool ovms_partition_table_rewrite(ovms_esp_partition_t* table, OvmsWriter* writer=NULL);
+extern void ovms_partition_table_void_entry(ovms_esp_partition_t* entry);
+
+extern bool ovms_partition_copy(const esp_partition_t *from, const esp_partition_t *to, OvmsWriter* writer);
 
 #endif //#ifndef __OVMS_PARTITIONS_H__

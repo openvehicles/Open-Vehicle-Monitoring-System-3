@@ -90,19 +90,19 @@ OvmsCanLogTcpClientInit::OvmsCanLogTcpClientInit()
           "<host:port> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
-          1, 9);
+          1, _COMMAND_TOKEN_NMB);
         MyCanFormatFactory.RegisterCommandSet(simulate, "Start CAN logging as TCP client (simulate mode)",
           can_log_tcpclient_start,
           "<host:port> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
-          1, 9);
+          1, _COMMAND_TOKEN_NMB);
         MyCanFormatFactory.RegisterCommandSet(transmit, "Start CAN logging as TCP client (transmit mode)",
           can_log_tcpclient_start,
           "<host:port> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
-          1, 9);
+          1, _COMMAND_TOKEN_NMB);
         }
       }
     }

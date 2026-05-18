@@ -54,32 +54,6 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ESP_LOGI(TAG, "Start smart EQ vehicle module");
 
-  m_12v_ticker = 0;
-  m_ddt4all = false;
-  m_ddt4all_ticker = 0;
-  m_ddt4all_exec = 0;
-  m_warning_unlocked = false;
-  m_warning_dooropen = false;
-  m_modem_restart = false;
-  m_modem_ticker = 0;
-  m_ADCfactor_recalc = false;
-  m_ADCfactor_recalc_timer = 0;
-  m_adc_samples = 5;
-  m_gear = 0;
-
-  m_enable_write = false;
-  m_enable_write_caron = false;
-  m_can_active = false;
-  m_candata_poll = false;
-  m_candata_timer = -1;
-
-  m_charge_finished = true;
-  m_notifySOClimit = false;
-  m_led_state = 4;
-  m_cfg_cell_interval_drv = 60;
-  m_cfg_cell_interval_chg = 60;
-  m_poll_on_charge = false;
-
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);               // 96 cells, 1 series string
   BmsSetCellArrangementTemperature(27, 1);           // 27 temp sensors, 1 series string
@@ -140,7 +114,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 210, kPa);  // Dummy pressure for TPMS alert testing
   // 0x765 BCM metrics
   mt_bcm_vehicle_state           = MyMetrics.InitString("xsq.bcm.state", SM_STALE_MIN, "UNKNOWN", Other);
-  mt_driver_door_locked          = MyMetrics.InitBool("xsq.driver.door.locked", SM_STALE_MID, false);
+  mt_driver_door_locked          = MyMetrics.InitBool("xsq.driver.door.locked", SM_STALE_MIN, false);
   // 0x7EC EVC metrics
   // EVC 12V values: Index 0=dcdc_volt_req, 1=dcdc_volt, 2=dcdc_power, 3=usm_volt, 4=batt_volt_can, 5=batt_volt_req, 6=dcdc_amps, 7=dcdc_load
   mt_evc_dcdc                   = MyMetrics.InitVector<float>("xsq.evc.12v.dcdc", SM_STALE_MID, nullptr, Other);
@@ -187,6 +161,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
   RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
 
+  // register config container for smart EQ module, with callback to ConfigChanged() on changes
+  MyConfig.RegisterParam("xsq", "smartEQ", true, true); 
+  ConfigChanged(NULL);
+
   // init commands:
   cmd_xsq = MyCommandApp.RegisterCommand("xsq","smartEQ 453 Gen.4");
   cmd_xsq->RegisterCommand("mtdata", "Maintenance data", xsq_maintenance);
@@ -209,14 +187,11 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_show->RegisterCommand("counter", "Show vehicle trip counter", xsq_trip_counters);
   cmd_show->RegisterCommand("total", "Show vehicle trip total", xsq_trip_total);
 
-  MyConfig.RegisterParam("xsq", "smartEQ", true, true);
-
-  ConfigChanged(NULL);
   StdMetrics.ms_v_gen_current->SetValue(2);                    // activate gen metrics to app transfer
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);      // set 12V alert to false
   StdMetrics.ms_v_env_charging12v->SetValue(false);            // set 12V charging state to false
   StdMetrics.ms_v_env_aux12v->SetValue(false);
-  StdMetrics.ms_v_env_hvac->SetValue(false);
+  StdMetrics.ms_v_env_hvac->SetValue(false);  
 
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f)           // reset at boot
     {
@@ -224,11 +199,11 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     ResetTripCounters();
     }
 
-  if (m_enable_write)
-    PollSetState(POLLSTATE_AWAKE);                                  // start polling to get the first data
+  if (IsCANwrite())
+    PollSetState(POLLSTATE_ON);                                // start polling to get the first data
 
-  if (m_cfg_preset_version != PRESET_VERSION)                    // preset version changed
-    CommandPreset(0, NULL);                                      // set smart EQ config preset
+  if (m_cfg_preset_version != PRESET_VERSION)                  // preset version changed
+    CommandPreset(0, NULL);                                    // set smart EQ config preset  
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
@@ -262,20 +237,13 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   ESP_LOGI(TAG, "smart EQ reload configuration");
 
-  bool stateWrite = m_enable_write;
-  m_enable_write  = MyConfig.GetParamValueBool("xsq", "canwrite", false);
-
-  // set CAN bus transceiver to active or listen-only depending on user selection
-  if ( stateWrite != m_enable_write )
-    {
-    smartCANmode(m_enable_write);
-    }
-
-  // Use GetParamMap for efficient bulk reading
-  OvmsConfigParam* xsq_param = MyConfig.CachedParam("xsq");
+  // Use OvmsConfigParam getters for efficient reading (OVMS standard API):
+  // Note: GetValueBool/Int/Float treat empty string as "not set" and return the default.
+  OvmsConfigParam* map = MyConfig.CachedParam("xsq");
   
   int cell_interval_drv   = 60;
   int cell_interval_chg   = 60;
+  bool stateWrite         = m_enable_write;
   bool obdii_743          = true;
   bool obdii_745          = true;
   bool obdii_745_tpms     = true;
@@ -284,69 +252,45 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   bool obdii_79b          = true;
   bool obdii_7e4_dcdc     = true;
   
-  if (xsq_param) 
+  if (map)
     {
-    const auto& xsqcfg = xsq_param->GetMap();
-    
-    // Helper lambdas
-    auto getBool = [&xsqcfg](const char* key, bool def) -> bool {
-      auto it = xsqcfg.find(key);
-      if (it == xsqcfg.end()) return def;
-      const std::string& val = it->second;
-      return (val == "yes" || val == "true" || val == "1");
-    };
-    
-    auto getInt = [&xsqcfg](const char* key, int def) -> int {
-      auto it = xsqcfg.find(key);
-      return (it != xsqcfg.end()) ? atoi(it->second.c_str()) : def;
-    };
-    
-    auto getFloat = [&xsqcfg](const char* key, float def) -> float {
-      auto it = xsqcfg.find(key);
-      return (it != xsqcfg.end()) ? atof(it->second.c_str()) : def;
-    };
+    m_enable_write         = map->GetValueBool("canwrite", false);
+    m_enable_write_caron   = map->GetValueBool("canwrite.caron", true);
+    m_enable_write_sleep   = map->GetValueBool("canwrite.sleep", false);
+    m_enable_LED_state     = map->GetValueBool("led", false);
+    m_bcvalue              = map->GetValueBool("bcvalue", false);
+    m_enable_lock_state    = map->GetValueBool("unlock.warning", true);
+    m_enable_door_state    = map->GetValueBool("door.warning", true);
+    m_resettrip            = map->GetValueBool("resettrip", true);
+    m_resettotal           = map->GetValueBool("resettotal", false);
+    m_tripnotify           = map->GetValueBool("reset.notify", false);
+    m_tpms_alert_enable    = map->GetValueBool("tpms.alert.enable", true);
+    m_tpms_temp_enable     = map->GetValueBool("tpms.temp", true);
+    m_12v_charge           = map->GetValueBool("12v.charge", true);
+    m_enable_calcADCfactor = map->GetValueBool("calc.adcfactor", false);
+    m_indicator            = map->GetValueBool("indicator", false);
+    m_extendedStats        = map->GetValueBool("extended.stats", false);
+    obdii_79b              = map->GetValueBool("obdii.79b", true);
+    obdii_79b_cell         = map->GetValueBool("obdii.79b.cell", true);
+    obdii_743              = map->GetValueBool("obdii.743", true);
+    obdii_745              = map->GetValueBool("obdii.745", true);
+    obdii_745_tpms         = map->GetValueBool("obdii.745.tpms", true);
+    obdii_7e4              = map->GetValueBool("obdii.7e4", true);
+    obdii_7e4_dcdc         = map->GetValueBool("obdii.7e4.dcdc", true);
 
-    /*  // not used currently
-    auto getString = [&xsqcfg](const char* key, const char* def) -> std::string {
-      auto it = xsqcfg.find(key);
-      return (it != xsqcfg.end()) ? it->second : def;
-    };
-    */
+    m_reboot_time          = map->GetValueInt("rebootnw", 30);
+    m_park_timeout_secs    = map->GetValueInt("park.timeout", 600);
+    m_full_km              = map->GetValueInt("full.km", 126);
+    m_cfg_preset_version   = map->GetValueInt("cfg.preset.ver", 0);
+    m_suffsoc              = map->GetValueInt("suffsoc", 0);
+    m_suffrange            = map->GetValueInt("suffrange", 0);
+    cell_interval_drv      = map->GetValueInt("cell_interval_drv", 60);
+    cell_interval_chg      = map->GetValueInt("cell_interval_chg", 60);
     
-    // Read all config values from map
-    m_enable_write_caron   = getBool("canwrite.caron", false);
-    m_enable_LED_state     = getBool("led", false);
-    m_bcvalue              = getBool("bcvalue", false);
-    m_enable_lock_state    = getBool("unlock.warning", true);
-    m_enable_door_state    = getBool("door.warning", true);
-    m_reboot_time          = getInt("rebootnw", 30);
-    m_resettrip            = getBool("resettrip", true);
-    m_resettotal           = getBool("resettotal", false);
-    m_tripnotify           = getBool("reset.notify", false);
-    m_front_pressure       = getFloat("tpms.front.pressure", 225.0f);
-    m_rear_pressure        = getFloat("tpms.rear.pressure", 255.0f);
-    m_pressure_warning     = getFloat("tpms.value.warn", 40.0f);
-    m_pressure_alert       = getFloat("tpms.value.alert", 70.0f);
-    m_tpms_alert_enable    = getBool("tpms.alert.enable", true);
-    m_tpms_temp_enable     = getBool("tpms.temp", true);
-    m_12v_charge           = getBool("12v.charge", true);
-    m_enable_calcADCfactor = getBool("calc.adcfactor", false);
-    m_indicator            = getBool("indicator", false);
-    m_extendedStats        = getBool("extended.stats", false);
-    m_park_timeout_secs    = getInt("park.timeout", 600);
-    m_full_km              = getInt("full.km", 126);
-    m_cfg_preset_version   = getInt("cfg.preset.ver", 0);
-    m_suffsoc              = getInt("suffsoc", 0);
-    m_suffrange            = getInt("suffrange", 0);
-    cell_interval_drv      = getInt("cell_interval_drv", 60);
-    cell_interval_chg      = getInt("cell_interval_chg", 60);
-    obdii_79b              = getBool("obdii.79b", true);
-    obdii_79b_cell         = getBool("obdii.79b.cell", true);
-    obdii_743              = getBool("obdii.743", true);
-    obdii_745              = getBool("obdii.745", true);    
-    obdii_745_tpms         = getBool("obdii.745.tpms", true);
-    obdii_7e4              = getBool("obdii.7e4", true);
-    obdii_7e4_dcdc         = getBool("obdii.7e4.dcdc", true);
+    m_front_pressure       = map->GetValueFloat("tpms.front.pressure", 225.0f);
+    m_rear_pressure        = map->GetValueFloat("tpms.rear.pressure", 255.0f);
+    m_pressure_warning     = map->GetValueFloat("tpms.value.warn", 40.0f);
+    m_pressure_alert       = map->GetValueFloat("tpms.value.alert", 70.0f);
     }
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
@@ -357,6 +301,12 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     MyPeripherals->m_max7317->Output(7, 1);
     }
 #endif
+
+  // set CAN bus transceiver to active or listen-only depending on user selection
+  if ( stateWrite != m_enable_write )
+    {
+    smartCANmode(m_enable_write);
+    }
   // disable caron write mode if normal write mode is enabled to avoid conflicts
   if(m_enable_write_caron && m_enable_write) 
     {
@@ -495,6 +445,27 @@ void OvmsVehicleSmartEQ::CalculateEfficiency() {
       StdMetrics.ms_v_charge_kwh_grid_total->SetValue(_trip_total_km);
   }
 }
+
+/**
+ * CalculateRangeSpeed: derive momentary range gain/loss speed (km/h equivalent)
+ *
+ * Uses power-based calculation against the full battery energy (cap_full × HV_link / 1000)
+ * to avoid inflated values at low SOC (ms_v_bat_cac is the usable fraction, not full cap).
+ * Sign: negative = losing range (driving), positive = gaining range (charging).
+ */
+void OvmsVehicleSmartEQ::CalculateRangeSpeed()
+  {
+  float bat_power  = StdMetrics.ms_v_bat_power->AsFloat();      // kW (pos=discharge, neg=charge)
+  float cap_full   = mt_bms_cap->GetElemValue(0);               // Ah - full usable capacity
+  float v_link     = mt_bms_voltages->GetElemValue(3);          // V  - HV link voltage
+  float range_full = StdMetrics.ms_v_bat_range_full->AsFloat(); // km at 100% SOC
+
+  if (cap_full <= 0 || v_link <= 0 || range_full <= 0)
+    return;
+
+  float energy_kWh = (cap_full * v_link) / 1000.0f;
+  *StdMetrics.ms_v_bat_range_speed = TRUNCPREC(-bat_power / energy_kWh * range_full, 1);
+  }
 
 void OvmsVehicleSmartEQ::OnlineState() {
 #ifdef CONFIG_OVMS_COMP_MAX7317

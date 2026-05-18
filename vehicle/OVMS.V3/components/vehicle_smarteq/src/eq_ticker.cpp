@@ -39,15 +39,19 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   {
   if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
+    
+  if(IsAwakeEQ() || IsAwakeByCanEQ())
+    smartCAN2Metrics();
 
   if(IsChargingEQ()) 
     HandleCharging();
   
   if(IsOnEQ())
-    {
     HandleEnergy();
-    if(StdMetrics.ms_v_env_gear->AsInt(0) != m_gear)
-      StdMetrics.ms_v_env_gear->SetValue(m_gear);
+  
+  if (m_cmd_locked && DoorOpen()) 
+    {
+    m_cmd_locked = false; // reset command lock when car is opened
     }
   }
 
@@ -67,6 +71,26 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
 
   if(m_enable_LED_state) 
     OnlineState();
+
+  // check 12V charging state for powermgmt system
+  bool charge_12v = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f ? true : false;
+  if (charge_12v != StdMetrics.ms_v_env_charging12v->AsBool(false))
+    {
+    StdMetrics.ms_v_env_charging12v->SetValue(charge_12v);    
+    m_ADCfactor_recalc_timer = 2;
+    m_ADCfactor_recalc = charge_12v;
+    }  
+  // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
+  if (IsOnHVACEQ() && IsAwakeEQ() && m_enable_write_caron && !m_can_active)
+    {
+    smartCANmode(true);
+    }
+  // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
+  if (IsChargingEQ() && !m_poll_on_charge)
+    {
+    mt_bus_awake->SetValue(true);
+    smartChargeStart();
+    }
   }
 
 void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {  
@@ -76,13 +100,21 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     DoorLockState();
   if(m_enable_door_state && !m_warning_dooropen && StdMetrics.ms_v_env_parktime->AsInt() > m_park_timeout_secs +10) 
     DoorOpenState();
-  if(IsOnEQ()) 
+  if(IsOnEQ())
     setTPMSValue();   // update TPMS metrics
 
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
     if(m_reboot_time > 0) 
       Handlev2Server();
   #endif
+
+  // start polling to get the first data
+  if(can_init)
+    {      
+    can_init = false;
+    mt_bus_awake->SetValue(true);
+    smartCANmode(true);
+    }
 
   // DDT4ALL session timeout on 5 minutes
   if (m_ddt4all) 
@@ -96,41 +128,44 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
       }
     }
-  // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
-  if (IsOnHVACEQ() && IsAwakeEQ() && m_enable_write_caron && !m_can_active)
-    {
-    smartCANmode(true);
-    }
-  // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
-  if (!m_poll_on_charge && IsChargingEQ())
-    {
-    mt_bus_awake->SetValue(true);
-    smartChargeStart();
-    }
-  // check 12V charging state for powermgmt system
-  bool charge_12v = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f ? true : false;
-  if (charge_12v != StdMetrics.ms_v_env_charging12v->AsBool())
-    {
-    StdMetrics.ms_v_env_charging12v->SetValue(charge_12v);
-    }
 
   #ifdef CONFIG_OVMS_COMP_ADC
-  if (m_enable_calcADCfactor && m_ADCfactor_recalc) 
+  if(IsOnEQ() || IsChargingEQ())
     {
-    if (--m_ADCfactor_recalc_timer == 0) 
+    // check for 12V voltage difference between CAN and ADC when the car is rebooted, to detect if ADC factor recalibration is needed
+    if(m_check12vadc)
       {
-      m_ADCfactor_recalc = false;
-      m_ADCfactor_recalc_timer = 4;
-      // calculate new ADC factor      
-      float can12V = mt_evc_dcdc->GetElemValue(1);   // DCDC voltage
-      if (StdMetrics.ms_v_env_charging12v->AsBool(false))
+      float can12V = mt_evc_dcdc->GetElemValue(1);
+      float adc12V = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
+      float diff = fabs(can12V - adc12V);
+      bool charging12v = StdMetrics.ms_v_env_charging12v->AsBool(false);
+      if (diff > 0.1f && !m_ADCfactor_recalc && charging12v)      
         {
-        ReCalcADCfactor(can12V, nullptr);  // nullptr = no Log-Output
-        ESP_LOGI(TAG, "Auto ADC recalibration started (%.2fV)", can12V);
-        } 
-      else 
+        ESP_LOGW(TAG, "12V voltage difference detected: CAN=%.2fV, ADC=%.2fV, diff=%.2fV", can12V, adc12V, diff);
+        m_ADCfactor_recalc_timer = 2;   // wait at least 2 min. before recalculation
+        m_enable_calcADCfactor = true;
+        m_ADCfactor_recalc = true;      // recalculate ADC factor when 12V voltage difference detected
+        }
+      m_check12vadc = false;
+      }
+    // if ADC factor recalculation is enabled, then check if it's time to recalculate the factor
+    if (m_enable_calcADCfactor && m_ADCfactor_recalc) 
+      {
+      if (--m_ADCfactor_recalc_timer == 0) 
         {
-        ESP_LOGW(TAG, "Error: Auto ADC recalibration, 12V voltage is not stable for ADC calibration! (%.2fV)", can12V);
+        m_ADCfactor_recalc = false;
+        m_ADCfactor_recalc_timer = 2;
+        // calculate new ADC factor      
+        float can12V = mt_evc_dcdc->GetElemValue(1);   // DCDC voltage
+        if (StdMetrics.ms_v_env_charging12v->AsBool(false))
+          {
+          ReCalcADCfactor(can12V, nullptr);  // nullptr = no Log-Output
+          ESP_LOGI(TAG, "Auto ADC recalibration started (%.2fV)", can12V);
+          } 
+        else 
+          {
+          ESP_LOGW(TAG, "Error: Auto ADC recalibration, 12V voltage is not stable for ADC calibration! (%.2fV)", can12V);
+          }
         }
       }
     }
@@ -143,10 +178,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
  */
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) 
   {
-  bool car_online = StdMetrics.ms_v_env_awake->AsBool(false);  
-  bool car_bus = mt_bus_awake->AsBool(false);
-
-  if (car_online != car_bus && !m_candata_poll) 
+  if (IsAwakeEQ() && !m_candata_poll) 
     {
     m_candata_poll = true;
     m_candata_timer = SQ_CANDATA_TIMEOUT;
@@ -162,6 +194,6 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
     }
   
   // - base system is awake if we've got a fresh lv_pwrstate:
-  StdMetrics.ms_v_env_aux12v->SetValue(car_online);   
+  StdMetrics.ms_v_env_aux12v->SetValue(can_awake);   
   HandlePollState();
   }
