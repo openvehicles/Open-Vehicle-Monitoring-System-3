@@ -14,6 +14,7 @@ User Guide
    logging
    configuration
    wifi
+   vpn
    vfs
    metrics
    ota
