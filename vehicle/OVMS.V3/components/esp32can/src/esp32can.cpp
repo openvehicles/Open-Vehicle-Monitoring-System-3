@@ -875,18 +875,22 @@ void esp32can::BusTicker10(std::string event, void* data)
 
 void esp32can::SetPowerMode(PowerMode powermode)
   {
-  pcp::SetPowerMode(powermode);
   switch (powermode)
     {
     case On:
-      if (m_mode != CAN_MODE_OFF) Start(m_mode,m_speed);
+      ESP_LOGI(TAG, "%s: SetPowerMode on", this->GetName());
+      // Start() will call base SetPowerMode(On) if it actually turns on.
+      Start(m_mode, m_speed);
       break;
     case Sleep:
     case DeepSleep:
     case Off:
+      // Make sure the event still gets called immediately
+      pcp::SetPowerMode(powermode);
       Stop();
       break;
     default:
+      pcp::SetPowerMode(powermode);
       break;
     };
   }
