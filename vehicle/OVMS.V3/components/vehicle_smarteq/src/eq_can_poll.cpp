@@ -342,14 +342,36 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
   mt_bms_contactor_cycles->SetElemValue(1, cycles_remain);
   mt_bms_contactor_cycles->SetElemValue(2, cycles);
-  if (m_lastcycles != 0 && cycles > 0 && cycles - m_lastcycles > 4) 
+
+  if (cycles != m_lastcycles) 
+    {
+    // Send data log XSQ-BMS-ContactorLog V1:
+    //  <cycles_max>,<m_lastcycles>,<cycles_now>
+    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,1,%d,%d,%d,%d",
+      86400 * 30, // hold time 30 days
+      cycles_max, m_lastcycles, cycles);
+    }
+    // Send alert?
+    // Note: excluding sending an alert on cycle count 0 for now, because possibly a false positive
+    //  caused by some secondary/CAN error/bug -- to be verified
+    int32_t cycles_diff = cycles - m_lastcycles;
+    if (cycles > 0 && cycles > m_lastcycles && cycles_diff > 10) 
+    {
+    MyNotify.NotifyStringf("alert", "bms.contactorjump",
+      "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
+      "Possible issue #1405 condition (BMS glitch), check ASAP!",
+      cycles_diff, cycles);
+    }
+
+  if (m_lastcycles != 0 && cycles > 0 && cycles_diff > 4) 
     {
     ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, remain: %d, counted more than expected!", m_lastcycles, cycles, cycles_remain);
-    smartCANmode(false);
     MyConfig.SetParamValueBool("xsq", "canwrite", false);
-    MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);    
+    MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
+    smartCANmode(false);
     NotifyHVCycles(true);
     }
+
   if(cycles > m_above_cycles)
     {
     ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, remain: %d!", m_above_cycles, m_lastcycles, cycles, cycles_remain);
