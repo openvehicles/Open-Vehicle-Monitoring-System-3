@@ -339,17 +339,18 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   int32_t cycles_remain = (int32_t)CAN_UINT32(0);
   int32_t cycles_max = (int32_t)CAN_UINT32(4);  
   int32_t cycles = cycles_max - cycles_remain;
+  float odometer = StdMetrics.ms_v_pos_odometer->AsFloat(0); // in km
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
   mt_bms_contactor_cycles->SetElemValue(1, cycles_remain);
   mt_bms_contactor_cycles->SetElemValue(2, cycles);
-
+  ESP_LOGI(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_remain, cycles);
   if (cycles != m_lastcycles) 
     {
-    // Send data log XSQ-BMS-ContactorLog V1:
-    //  <cycles_max>,<m_lastcycles>,<cycles_now>
-    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,1,%d,%d,%d,%d",
+    // Send data log XSQ-BMS-ContactorLog V2:
+    //  <odometer>,<cycles_remain>,<m_lastcycles>,<cycles_now>
+    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,2,%d,%0.1f,%d,%d,%d",
       86400 * 30, // hold time 30 days
-      cycles_max, m_lastcycles, cycles);
+      odometer, cycles_remain, m_lastcycles, cycles);
     }
     // Send alert?
     // Note: excluding sending an alert on cycle count 0 for now, because possibly a false positive
