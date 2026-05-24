@@ -338,6 +338,27 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   REQUIRE_LEN(8);
   int32_t cycles = (int32_t)CAN_UINT32(0);
   int32_t cycles_max = (int32_t)CAN_UINT32(4);
+  int32_t cycles_prev = mt_bms_contactor_cycles->GetElemValue(1);
+
+  if (cycles != cycles_prev) {
+    // Send data log XSQ-BMS-ContactorLog V1:
+    //  <cycles_max>,<cycles_prev>,<cycles_now>
+    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,1,%d,%d,%d,%d",
+      86400 * 30, // hold time 30 days
+      cycles_max, cycles_prev, cycles);
+
+    // Send alert?
+    // Note: excluding sending an alert on cycle count 0 for now, because possibly a false positive
+    //  caused by some secondary/CAN error/bug -- to be verified
+    int32_t cycles_diff = cycles_prev - cycles;
+    if (cycles > 0 && cycles_prev > cycles && cycles_diff > 100) {
+      MyNotify.NotifyStringf("alert", "bms.contactorjump",
+        "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
+        "Possible issue #1405 condition (BMS glitch), check ASAP!",
+        cycles_diff, cycles);
+    }
+  }
+
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
   mt_bms_contactor_cycles->SetElemValue(1, cycles);
   ESP_LOGI(TAG,"HV contactor cycles (%u / %u)", cycles_max, cycles);
