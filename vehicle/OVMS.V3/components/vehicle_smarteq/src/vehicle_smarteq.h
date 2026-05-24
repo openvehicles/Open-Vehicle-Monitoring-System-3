@@ -134,6 +134,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void NotifyMaintenance();
     void Notify12Vcharge();
     void NotifySOClimit();
+    void NotifyHVCycles(bool alert = false);
 
     // --- Door / Lock state ---
     bool DoorOpen();
@@ -187,6 +188,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     virtual vehicle_command_t CommandED4scan(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandSetDefault(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandHVCycles(int verbosity, OvmsWriter* writer, bool alert = false);
 
     // --- Web interface ---
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -208,6 +210,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     static void xsq_trip_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_maintenance(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_hvcycles(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_counters(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_total(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -545,7 +548,9 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- CAN data state ---
     bool m_candata_poll = false;
     bool m_charge_finished = true;    
-    int m_candata_timer = -1;    
+    int m_candata_timer = -1;
+    int32_t m_lastcycles = 0;
+    int32_t m_above_cycles = 50000;       // alert threshold for cycles counted
 
     // --- TPMS internal arrays ---
     bool m_tpms_lowbatt[4] = {};          // 0=ok, 1=low

@@ -62,7 +62,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   BmsSetCellDefaultThresholdsVoltage(0.040, 0.060);  // Warn: 40mV, Alert: 60mV
   BmsSetCellDefaultThresholdsTemperature(4.0, 5.5);  // Warn: 4,0°C, Alert: 5,5°C
 
-  mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, true);
+  mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, false);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MAX, "", Other);
   mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_MAX, 0, Other);
   mt_adc_factor_history         = MyMetrics.InitVector<float>("xsq.adc.factor.history", SM_STALE_MAX, nullptr, Other);
@@ -138,7 +138,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_voltages               = MyMetrics.InitVector<float>("xsq.bms.voltages", SM_STALE_MID, nullptr, Volts);
   mt_bms_voltages->SetElemValue(6, 0.0f);  // Pre-allocate: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor, [5]=cv_sum, [6]=12v_system
   mt_bms_contactor_cycles       = MyMetrics.InitVector<int>("xsq.bms.contactor.cycles", SM_STALE_HIGH, nullptr);
-  mt_bms_contactor_cycles->SetElemValue(1, 0);  // Pre-allocate Max/Total entries
+  mt_bms_contactor_cycles->SetElemValue(2, 0);  // Pre-allocate Max/Total entries
   mt_bms_soc_values             = MyMetrics.InitVector<float>("xsq.bms.soc.values", SM_STALE_MID, nullptr, Percentage);
   mt_bms_soc_values->SetElemValue(4, 0.0f);  // Pre-allocate: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
   mt_bms_soc_recal_state        = MyMetrics.InitString("xsq.bms.soc.recal.state", SM_STALE_MID, "");
@@ -168,6 +168,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // init commands:
   cmd_xsq = MyCommandApp.RegisterCommand("xsq","smartEQ 453 Gen.4");
   cmd_xsq->RegisterCommand("mtdata", "Maintenance data", xsq_maintenance);
+  cmd_xsq->RegisterCommand("hvcycles", "HV Contactor Cycles", xsq_hvcycles);
   cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
   cmd_xsq->RegisterCommand("canwrite", "Send CAN command", xsq_canwrite,"<txid,rxid,hexbytes[,reset,wakeup]>",1,1);
@@ -200,7 +201,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     }
 
   if (IsCANwrite())
-    PollSetState(POLLSTATE_ON);                                // start polling to get the first data
+    mt_bus_awake->SetValue(true);                              // start polling to get the first data
 
   if (m_cfg_preset_version != PRESET_VERSION)                  // preset version changed
     CommandPreset(0, NULL);                                    // set smart EQ config preset  
@@ -255,7 +256,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   if (map)
     {
     m_enable_write         = map->GetValueBool("canwrite", false);
-    m_enable_write_caron   = map->GetValueBool("canwrite.caron", true);
+    m_enable_write_caron   = map->GetValueBool("canwrite.caron", false);
     m_enable_write_sleep   = map->GetValueBool("canwrite.sleep", false);
     m_enable_LED_state     = map->GetValueBool("led", false);
     m_bcvalue              = map->GetValueBool("bcvalue", false);
@@ -312,6 +313,11 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     {
     m_enable_write_caron = false;
     MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
+    }
+  // start in listen-only mode if sleep write is enabled and bus is not awake
+  if (m_enable_write_sleep && !mt_bus_awake->AsBool(false))
+    {
+    smartCANmode(false);
     }
 
   bool do_modify_poll = (

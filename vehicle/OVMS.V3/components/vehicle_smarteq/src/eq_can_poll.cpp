@@ -336,10 +336,27 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t repl
 
 void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(8);
-  int32_t cycles = (int32_t)CAN_UINT32(0);
-  int32_t cycles_max = (int32_t)CAN_UINT32(4);
+  int32_t cycles_remain = (int32_t)CAN_UINT32(0);
+  int32_t cycles_max = (int32_t)CAN_UINT32(4);  
+  int32_t cycles = cycles_max - cycles_remain;
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
-  mt_bms_contactor_cycles->SetElemValue(1, cycles);
+  mt_bms_contactor_cycles->SetElemValue(1, cycles_remain);
+  mt_bms_contactor_cycles->SetElemValue(2, cycles);
+  if (m_lastcycles != 0 && cycles > 0 && cycles - m_lastcycles > 4) 
+    {
+    ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, remain: %d, counted more than expected!", m_lastcycles, cycles, cycles_remain);
+    smartCANmode(false);
+    MyConfig.SetParamValueBool("xsq", "canwrite", false);
+    MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);    
+    NotifyHVCycles(true);
+    }
+  if(cycles > m_above_cycles)
+    {
+    ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, remain: %d!", m_above_cycles, m_lastcycles, cycles, cycles_remain);
+    NotifyHVCycles(true);
+    m_above_cycles = m_above_cycles * 1.25; // next alert at 25% more cycles counted
+    }
+  m_lastcycles = cycles;
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len) {
