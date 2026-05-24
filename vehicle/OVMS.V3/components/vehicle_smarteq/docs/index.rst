@@ -81,6 +81,7 @@ xsq show start              Show OBD trip start data
 xsq show reset              Show OBD trip total data
 xsq show counter            Show vehicle trip counter
 xsq show total              Show vehicle trip total data
+xsq hvcycles                Show HV contactor cycle counts
 =========================== ==============
 
 -------------------------
@@ -137,7 +138,7 @@ xsq.obl.leakdiag                       OBL leakage diagnostic status
 xsq.bms.prod.data                      BMS production data formatted (serial, MM/YYYY)
 xsq.bms.temps                          BMS temperature sensors vector [°C]
 xsq.bms.voltages                       BMS voltage values vector: [0]=cell_min(V), [1]=cell_max(V), [2]=cell_mean(V), [3]=link_volt(V), [4]=pack_volt(V), [5]=ocv_volt(V), [6]=12v_system(V)
-xsq.bms.contactor.cycles               HV contactor maximum/available cycles
+xsq.bms.contactor.cycles               HV contactor cycles vector: [0]=max, [1]=remaining, [2]=counted
 xsq.bms.soc.values                     SOC values vector [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display [%]
 xsq.bms.soc.recal.state                SOC recalibration state
 xsq.bms.soh                            State of Health [%]

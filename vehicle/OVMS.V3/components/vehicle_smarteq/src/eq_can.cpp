@@ -70,8 +70,10 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x350:
       {
       REQ_DLC(7);
+      can_350_ticker = SQ_CANDATA_TIMEOUT;
       can_awake = (CAN_BYTE(0) > 0xC0);
       can_env_on = (CAN_BYTE(0) > 0xC4);
+      can_battery_on = (CAN_BYTE(0) > 0xC2);
       can_locked = (CAN_BYTE(6) == 0x96);
       int code = CAN_BYTE(0);
       std::string msgtxt = "";
@@ -322,6 +324,4 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   if(can_trip_energy < 3000.0f) // prevent unrealistic values based on faulty readings
     mt_reset_energy->SetValue(can_trip_energy);
   mt_reset_speed->SetValue(can_avg_speed);
-
-  can_awake = false; // dirty fix to prevent active polling when the CAN bus is already asleep. 
 }

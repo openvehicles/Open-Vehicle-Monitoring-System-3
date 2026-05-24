@@ -134,6 +134,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void NotifyMaintenance();
     void Notify12Vcharge();
     void NotifySOClimit();
+    void NotifyHVCycles(bool alert = false);
 
     // --- Door / Lock state ---
     bool DoorOpen();
@@ -187,6 +188,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     virtual vehicle_command_t CommandED4scan(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandPreset(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandSetDefault(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandHVCycles(int verbosity, OvmsWriter* writer, bool alert = false);
 
     // --- Web interface ---
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -208,6 +210,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     static void xsq_trip_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_maintenance(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_hvcycles(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_counters(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trip_total(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -318,7 +321,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
     #define MAX_POLL_DATA_LEN 126
     #define CELLCOUNT 96
-    #define SQ_CANDATA_TIMEOUT 10 // seconds until car goes to sleep without CAN activity
+    #define SQ_CANDATA_TIMEOUT 70 // seconds until car goes to sleep without CAN activity
 
     // --- Internal buffer ---
     std::string   m_rxbuf;
@@ -375,7 +378,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
     // --- Custom metrics: BMS ---
     OvmsMetricVector<float> *mt_bms_voltages;                // Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
-    OvmsMetricVector<int>   *mt_bms_contactor_cycles;        // Max/Total HV contactor cycles
+    OvmsMetricVector<int>   *mt_bms_contactor_cycles;        // Max/Total HV contactor cycles [0]=max, [1]=remaining, [2]=consumed, [3]=diff last/now remained cycles
     OvmsMetricVector<float> *mt_bms_soc_values;              // SOC values: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
     OvmsMetricString        *mt_bms_soc_recal_state;         // SOC Recalibration State
     OvmsMetricFloat         *mt_bms_soh;                     // State of Health (%)
@@ -503,8 +506,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- CAN frame intermediate variables (synced to StdMetrics by smartCAN2Metrics in Ticker1) ---
     int can_gear = 0;                     // <0 = reverse, 0 = park/neutral, >0 = drive -- logic by vehicle.cpp events
     int can_duration_full = 0;            // duration until full in minutes
+    int can_350_ticker = 0;               // ticker for 0x350 polling, will be reset to SQ_CANDATA_TIMEOUT when 0x350 is received, used to trigger actions on timeout e.g. go to sleep after no CAN activity for some time
     bool can_init = true;                 // initial CAN data received flag, to set default values for some metrics on first run
     bool can_awake = false;
+    bool can_battery_on = false;
     bool can_locked = true;
     bool can_hvac = false;
     bool can_handbrake = false;
@@ -545,7 +550,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- CAN data state ---
     bool m_candata_poll = false;
     bool m_charge_finished = true;    
-    int m_candata_timer = -1;    
+    int m_candata_timer = -1;
+    int32_t m_above_cycles = 50000;       // alert threshold for cycles counted
 
     // --- TPMS internal arrays ---
     bool m_tpms_lowbatt[4] = {};          // 0=ok, 1=low

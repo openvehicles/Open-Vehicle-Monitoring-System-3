@@ -39,7 +39,7 @@ static const OvmsPoller::poll_pid_t obdii_79b_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, { 0,300,10,4 }, 0, ISOTP_STD },     // Battery State
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, { 0,600,600,600 }, 0, ISOTP_STD },  // HV Contactor Cycles
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, { 0,10,10,10 }, 0, ISOTP_STD },     // HV Contactor Cycles
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x08, { 0,300,60,60 }, 0, ISOTP_STD },    // SOC
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,300,60,60 }, 0, ISOTP_STD },    // SOC Recalibration
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, { 0,300,60,60 }, 0, ISOTP_STD },    // Battery Health (SOH)
