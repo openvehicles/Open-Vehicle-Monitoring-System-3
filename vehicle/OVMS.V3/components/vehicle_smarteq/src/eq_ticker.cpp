@@ -205,6 +205,7 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
     }
   
   // - base system is awake if we've got a fresh lv_pwrstate:
-  StdMetrics.ms_v_env_aux12v->SetValue(can_battery_on);   
+  // use CAN 0x350 state for 12V aux state, because it seems to be more reliable than the 12V voltage for detecting if the car is in accessory mode or not, which is needed for the powermgmt system
+  StdMetrics.ms_v_env_aux12v->SetValue(can_battery_on); // can_awake
   HandlePollState();
   }
