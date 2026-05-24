@@ -318,7 +318,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
     #define MAX_POLL_DATA_LEN 126
     #define CELLCOUNT 96
-    #define SQ_CANDATA_TIMEOUT 70 // seconds until car goes to sleep without CAN activity
+    #define SQ_CANDATA_TIMEOUT 10 // seconds until car goes to sleep without CAN activity
 
     // --- Internal buffer ---
     std::string   m_rxbuf;
