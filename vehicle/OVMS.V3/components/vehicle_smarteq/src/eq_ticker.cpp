@@ -109,7 +109,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
   #endif
 
   // start polling to get the first data
-  if(can_init)
+  if(can_init && IsCANwrite())
     {      
     can_init = false;
     mt_bus_awake->SetValue(true);

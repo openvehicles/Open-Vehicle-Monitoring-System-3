@@ -159,7 +159,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_safety_mode_txt        = MyMetrics.InitString("xsq.bms.safety",SM_STALE_MID, "", Other);
 
   // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
-  RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
+  RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  
+  PollSetState(POLLSTATE_OFF);
 
   // register config container for smart EQ module, with callback to ConfigChanged() on changes
   MyConfig.RegisterParam("xsq", "smartEQ", true, true); 
@@ -199,9 +200,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     ResetTotalCounters();
     ResetTripCounters();
     }
-
-  if (IsCANwrite())
-    mt_bus_awake->SetValue(true);                              // start polling to get the first data
 
   if (m_cfg_preset_version != PRESET_VERSION)                  // preset version changed
     CommandPreset(0, NULL);                                    // set smart EQ config preset  
