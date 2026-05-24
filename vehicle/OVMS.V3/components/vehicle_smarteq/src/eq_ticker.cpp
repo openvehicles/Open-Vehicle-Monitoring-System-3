@@ -113,7 +113,6 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     {      
     can_init = false;
     mt_bus_awake->SetValue(true);
-    smartCANmode(true);
     }
 
   // DDT4ALL session timeout on 5 minutes
