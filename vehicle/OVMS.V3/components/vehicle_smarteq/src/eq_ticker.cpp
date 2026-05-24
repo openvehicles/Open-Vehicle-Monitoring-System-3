@@ -39,6 +39,18 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   {
   if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
+
+  if (can_350_ticker > 0)
+    {
+    if (--can_350_ticker == 0) 
+      {
+      ESP_LOGI(TAG, "CAN 0x350 timeout reached");
+      can_awake = false;
+      can_env_on = false;
+      can_battery_on = false;
+      mt_bcm_vehicle_state->SetValue("CAN 0x350 timeout reached");
+      }
+    }
     
   if(IsAwakeEQ() || IsAwakeByCanEQ())
     smartCAN2Metrics();
@@ -193,6 +205,6 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
     }
   
   // - base system is awake if we've got a fresh lv_pwrstate:
-  StdMetrics.ms_v_env_aux12v->SetValue(can_awake);   
+  StdMetrics.ms_v_env_aux12v->SetValue(can_battery_on);   
   HandlePollState();
   }

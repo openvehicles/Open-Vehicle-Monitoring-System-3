@@ -506,8 +506,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- CAN frame intermediate variables (synced to StdMetrics by smartCAN2Metrics in Ticker1) ---
     int can_gear = 0;                     // <0 = reverse, 0 = park/neutral, >0 = drive -- logic by vehicle.cpp events
     int can_duration_full = 0;            // duration until full in minutes
+    int can_350_ticker = 0;               // ticker for 0x350 polling, will be reset to SQ_CANDATA_TIMEOUT when 0x350 is received, used to trigger actions on timeout e.g. go to sleep after no CAN activity for some time
     bool can_init = true;                 // initial CAN data received flag, to set default values for some metrics on first run
     bool can_awake = false;
+    bool can_battery_on = false;
     bool can_locked = true;
     bool can_hvac = false;
     bool can_handbrake = false;
