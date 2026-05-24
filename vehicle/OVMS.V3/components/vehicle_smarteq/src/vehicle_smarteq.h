@@ -378,7 +378,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
     // --- Custom metrics: BMS ---
     OvmsMetricVector<float> *mt_bms_voltages;                // Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
-    OvmsMetricVector<int>   *mt_bms_contactor_cycles;        // Max/Total HV contactor cycles
+    OvmsMetricVector<int>   *mt_bms_contactor_cycles;        // Max/Total HV contactor cycles [0]=max, [1]=remaining, [2]=consumed, [3]=diff last/now remained cycles
     OvmsMetricVector<float> *mt_bms_soc_values;              // SOC values: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
     OvmsMetricString        *mt_bms_soc_recal_state;         // SOC Recalibration State
     OvmsMetricFloat         *mt_bms_soh;                     // State of Health (%)
@@ -549,7 +549,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_candata_poll = false;
     bool m_charge_finished = true;    
     int m_candata_timer = -1;
-    int32_t m_lastcycles = 0;
     int32_t m_above_cycles = 50000;       // alert threshold for cycles counted
 
     // --- TPMS internal arrays ---

@@ -337,49 +337,48 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t repl
 void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(8);
   int32_t cycles_remain = (int32_t)CAN_UINT32(0);
-  int32_t cycles_max = (int32_t)CAN_UINT32(4);  
-  int32_t cycles = cycles_max - cycles_remain;
+  int32_t cycles_max = (int32_t)CAN_UINT32(4);
+  int32_t cycles_prev = mt_bms_contactor_cycles->GetElemValue(1);
+  int32_t cycles_diff = cycles_prev - cycles_remain;
+  int32_t cycles_consumed = cycles_max - cycles_remain;
   float odometer = StdMetrics.ms_v_pos_odometer->AsFloat(0); // in km
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
   mt_bms_contactor_cycles->SetElemValue(1, cycles_remain);
-  mt_bms_contactor_cycles->SetElemValue(2, cycles);
-  ESP_LOGI(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_remain, cycles);
-  if (cycles != m_lastcycles) 
+  mt_bms_contactor_cycles->SetElemValue(2, cycles_consumed);
+  mt_bms_contactor_cycles->SetElemValue(3, cycles_diff);
+  ESP_LOGI(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_remain, cycles_diff);
+  if (cycles_remain != cycles_prev) 
     {
-    // Send data log XSQ-BMS-ContactorLog V2:
-    //  <odometer>,<cycles_remain>,<m_lastcycles>,<cycles_now>
-    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,2,%d,%0.1f,%d,%d,%d",
+    // Send data log XSQ-BMS-ContactorLog V1:
+    //  <cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer>
+    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,1,%d,%d,%d,%d,%d,%0.0f",
       86400 * 30, // hold time 30 days
-      odometer, cycles_remain, m_lastcycles, cycles);
-    }
+      cycles_max, cycles_prev, cycles_remain, cycles_diff, odometer);
+
     // Send alert?
     // Note: excluding sending an alert on cycle count 0 for now, because possibly a false positive
-    //  caused by some secondary/CAN error/bug -- to be verified
-    int32_t cycles_diff = cycles - m_lastcycles;
-    if (cycles > 0 && cycles > m_lastcycles && cycles_diff > 10) 
-    {
-    MyNotify.NotifyStringf("alert", "bms.contactorjump",
-      "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
-      "Possible issue #1405 condition (BMS glitch), check ASAP!",
-      cycles_diff, cycles);
+    //  caused by some secondary/CAN error/bug -- to be verified    
+    if (cycles_remain > 0 && cycles_prev > cycles_remain && cycles_diff > 100) 
+      {
+      MyNotify.NotifyStringf("alert", "bms.contactorjump",
+        "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
+        "Possible issue #1405 condition (BMS glitch), check ASAP!\n"
+        "CAN write is now disabled and switched to listen mode!\n",
+        cycles_diff, cycles_remain);
+      // In case of a large unexpected jump, disable CAN write to prevent possible damage to the contactor
+      ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, consumed: %d odo: %0.0f, counted more than expected!", cycles_prev, cycles_remain, cycles_consumed, odometer);
+      MyConfig.SetParamValueBool("xsq", "canwrite", false);
+      MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
+      smartCANmode(false);
+      }
     }
 
-  if (m_lastcycles != 0 && cycles > 0 && cycles_diff > 4) 
+  if(cycles_consumed > m_above_cycles)
     {
-    ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, remain: %d, counted more than expected!", m_lastcycles, cycles, cycles_remain);
-    MyConfig.SetParamValueBool("xsq", "canwrite", false);
-    MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
-    smartCANmode(false);
-    NotifyHVCycles(true);
-    }
-
-  if(cycles > m_above_cycles)
-    {
-    ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, remain: %d!", m_above_cycles, m_lastcycles, cycles, cycles_remain);
+    ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, consumed: %d odo: %0.0f!", m_above_cycles, cycles_prev, cycles_remain, cycles_consumed, odometer);
     NotifyHVCycles(true);
     m_above_cycles = m_above_cycles * 1.25; // next alert at 25% more cycles counted
     }
-  m_lastcycles = cycles;
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len) {

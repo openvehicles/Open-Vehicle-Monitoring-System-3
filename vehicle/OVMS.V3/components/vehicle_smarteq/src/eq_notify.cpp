@@ -82,7 +82,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripCounters(int verbo
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
     writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
-    writer->printf("  HV contactor cycles: %d \n", mt_bms_contactor_cycles->GetElemValue(2));
+    writer->printf("  HV contactor consumed cycles: %d \n", mt_bms_contactor_cycles->GetElemValue(2));
     return Success;
 }
 void OvmsVehicleSmartEQ::NotifyTripCounters() {
@@ -108,7 +108,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripTotal(int verbosit
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
     writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
-    writer->printf("  HV contactor cycles: %d \n", mt_bms_contactor_cycles->GetElemValue(2));
+    writer->printf("  HV contactor consumed cycles: %d \n", mt_bms_contactor_cycles->GetElemValue(2));
     return Success;
 }
 void OvmsVehicleSmartEQ::NotifyTotalCounters() {
@@ -137,7 +137,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandMaintenance(int verbos
     writer->printf("  days: %d\n", mt_obd_mt_day_usual->AsInt());
     writer->printf("  level: %s\n", mt_obd_mt_level->AsString().c_str());
     writer->printf("  km: %d\n", mt_obd_mt_km_usual->AsInt());    
-    writer->printf("  remaining HV contactor cycles: %d / %d (%d)\n", 
+    writer->printf("  remaining HV contactor cycles: %d of %d (%d consumed)\n", 
                    mt_bms_contactor_cycles->GetElemValue(1), 
                    mt_bms_contactor_cycles->GetElemValue(0),
                    mt_bms_contactor_cycles->GetElemValue(2));
@@ -170,7 +170,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::Command12Vcharge(int verbosit
   writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
   writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
   writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
-  writer->printf("  HV contactor cycles: %d \n", mt_bms_contactor_cycles->GetElemValue(2));
+  writer->printf("  HV contactor resumed cycles: %d \n", mt_bms_contactor_cycles->GetElemValue(2));
   return Success;
 }
 void OvmsVehicleSmartEQ::Notify12Vcharge() {
@@ -190,8 +190,7 @@ void OvmsVehicleSmartEQ::xsq_hvcycles(int verbosity, OvmsWriter* writer, OvmsCom
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHVCycles(int verbosity, OvmsWriter* writer, bool alert) {
   if (alert) 
     {
-    writer->puts("HV Contactor Cycle: More than four cycles within 10 seconds - more than expected:\n");
-    writer->puts("CAN write is now disabled and switched to listen mode!\n");
+    writer->puts("HV Contactor Cycle: more than expected cycles consumed:\n");
     }
   else 
     {
@@ -199,13 +198,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHVCycles(int verbosity
     }
   writer->printf("  Max Cycles:              %d\n", mt_bms_contactor_cycles->GetElemValue(0));
   writer->printf("  remaining Cycles:        %d\n", mt_bms_contactor_cycles->GetElemValue(1));
-  writer->printf("  counted Cycles:          %d\n", mt_bms_contactor_cycles->GetElemValue(2));
+  writer->printf("  Cycles consumed:         %d\n", mt_bms_contactor_cycles->GetElemValue(2));
+  writer->printf("  Cycles diff (last/now):  %d\n", mt_bms_contactor_cycles->GetElemValue(3));
   if (alert)
-    writer->puts("Please check the vehicle and contact support if this alert happens repeatedly!\n");
+    writer->puts("Please check the vehicle and contact support!\n");
   if (!alert)
     writer->puts("Note: If you see the counted cycles fast increasing, please check the vehicle and contact support if this happens repeatedly!\n");
   if (mt_bms_contactor_cycles->GetElemValue(2) > m_above_cycles)
-    writer->printf("Warning: The counted cycles are above %d which is more than expected for a healthy HV contactor - please check the vehicle and contact support if this happens repeatedly!\n", m_above_cycles);
+    writer->printf("Warning: The counted consumedcycles are above %d which is more than expected for a healthy HV contactor - please check the vehicle and contact support if this happens repeatedly!\n", m_above_cycles);
   return Success;
 }
 
@@ -239,8 +239,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->puts("\n--- HV Contactor Cycles (PID 0x02) ---");
   writer->printf("  Max Cycles:              %d\n", mt_bms_contactor_cycles->GetElemValue(0));
   writer->printf("  remaining Cycles:        %d\n", mt_bms_contactor_cycles->GetElemValue(1));
-  writer->printf("  counted Cycles:          %d\n", mt_bms_contactor_cycles->GetElemValue(2));
-  
+  writer->printf("  consumed Cycles:         %d\n", mt_bms_contactor_cycles->GetElemValue(2));
+  writer->printf("  Cycles diff (last/now):  %d\n", mt_bms_contactor_cycles->GetElemValue(3));
+
   writer->puts("\n--- SOC Kernel Data (PID 0x08) ---");
   writer->printf("  Open Circuit Voltage:    %.2f V\n", mt_bms_voltages->GetElemValue(5));
   writer->printf("  Real SOC (Min):          %.2f%%\n", mt_bms_soc_values->GetElemValue(2));
