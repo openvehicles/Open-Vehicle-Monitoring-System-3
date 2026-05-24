@@ -880,7 +880,7 @@ void esp32can::SetPowerMode(PowerMode powermode)
     case On:
       ESP_LOGI(TAG, "%s: SetPowerMode on", this->GetName());
       // Start() will call base SetPowerMode(On) if it actually turns on.
-      Start(m_mode, m_speed);
+      if (m_mode != CAN_MODE_OFF) Start(m_mode, m_speed);
       break;
     case Sleep:
     case DeepSleep:
