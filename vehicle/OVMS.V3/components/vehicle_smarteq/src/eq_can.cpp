@@ -322,6 +322,4 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   if(can_trip_energy < 3000.0f) // prevent unrealistic values based on faulty readings
     mt_reset_energy->SetValue(can_trip_energy);
   mt_reset_speed->SetValue(can_avg_speed);
-
-  can_awake = false; // dirty fix to prevent active polling when the CAN bus is already asleep. 
 }
