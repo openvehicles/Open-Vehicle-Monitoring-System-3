@@ -340,6 +340,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   int32_t cycles_max = (int32_t)CAN_UINT32(4);
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
   mt_bms_contactor_cycles->SetElemValue(1, cycles);
+  ESP_LOGI(TAG,"HV contactor cycles (%u / %u)", cycles_max, cycles);
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len) {
