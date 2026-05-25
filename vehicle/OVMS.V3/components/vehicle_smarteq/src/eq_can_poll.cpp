@@ -338,8 +338,8 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   REQUIRE_LEN(8);
   int32_t cycles_remain = (int32_t)CAN_UINT32(0);
   int32_t cycles_max = (int32_t)CAN_UINT32(4);
-  // use previous remain value if available, otherwise current remain +1 value, to calculate diff
-  int32_t cycles_prev = (int32_t)mt_bms_contactor_cycles->GetElemValue(1) > 0 ? (int32_t)mt_bms_contactor_cycles->GetElemValue(1) : cycles_remain + 1;
+  // use previous remain value if available, otherwise current remain value, to calculate diff
+  int32_t cycles_prev = (int32_t)mt_bms_contactor_cycles->GetElemValue(1) > 0 ? (int32_t)mt_bms_contactor_cycles->GetElemValue(1) : cycles_remain;
   int32_t cycles_diff = cycles_prev - cycles_remain;
   int32_t cycles_consumed = cycles_max - cycles_remain;
   float odometer = StdMetrics.ms_v_pos_odometer->AsFloat(0); // in km
