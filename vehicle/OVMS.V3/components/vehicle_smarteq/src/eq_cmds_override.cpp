@@ -37,6 +37,12 @@ static const char *TAG = "v-smarteq";
 // can can1 tx st 634 40 01 72 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
   
+  if(!IsCANwrite())
+    {
+    ESP_LOGE(TAG, "CommandClimateControl failed: no write access!");
+    return Fail;
+    }
+    
   ESP_LOGI(TAG, "CommandClimateControl %s", enable ? "ON" : "OFF");
 
   if(!enable) // HVAC OFF not implemented by vehicle
@@ -53,7 +59,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
       MyNotify.NotifyString("error", "climatecontrol.schedule", "Climate control stop not possible, EQ doesnt support it");
       return NotImplemented;
       }
-    }
+    }  
 
   if (StandardMetrics.ms_v_bat_soc->AsInt(0) < 31)
     {    
@@ -73,14 +79,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     ESP_LOGI(TAG, "CommandClimateControl already on");
     return Success;
     }
-  // force enable write access for sending the command, even when user has not enabled it (can be required for some vehicles to wake up the car)
-  bool force = !IsCANwrite() ? true : false;
-  if(force)
-    {
-    m_enable_write_caron = true;
-    ESP_LOGI(TAG, "forced CAN bus write access enabled for climate control command");
-    }
-
   // if write access is not enabled, then switch CAN bus to active mode for sending the command
   if (!m_can_active)
     {
@@ -119,12 +117,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   else
     {
     res = NotImplemented;
-    }
-  if(force)
-    {
-    m_enable_write_caron = false;
-    smartCANmode(false);
-    ESP_LOGI(TAG, "forced CAN bus write access disabled");
     }
   // fallback to default implementation?
   if (res == NotImplemented) 

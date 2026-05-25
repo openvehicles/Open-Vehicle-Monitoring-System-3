@@ -998,6 +998,31 @@ bool OvmsConfig::Backup(std::string path, std::string password, OvmsWriter* writ
   else
     ESP_LOGD(TAG, "Backup: creating '%s'...", path.c_str());
 
+  // Validate/create destination directory:
+  const char *patherror = NULL;
+  auto slashpos = path.rfind('/');
+  if (slashpos != 0 && slashpos != std::string::npos)
+    {
+    std::string pathdir = path.substr(0, slashpos);
+    if (mkpath(pathdir) != 0)
+      {
+      patherror = std::strerror(errno);
+      path = pathdir;
+      }
+    }
+  else
+    {
+    patherror = "Directory missing";
+    }
+  if (patherror)
+    {
+    if (writer)
+      writer->printf("Error: backup path '%s' is invalid: %s\n", path.c_str(), patherror);
+    else
+      ESP_LOGE(TAG, "Backup: path '%s' is invalid: %s", path.c_str(), patherror);
+    return false;
+    }
+
   // Lock config cache & file storage:
   auto lock = Lock(pdMS_TO_TICKS(5000));
   if (!lock || !m_store_mutex.Lock(pdMS_TO_TICKS(5000)))

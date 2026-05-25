@@ -123,6 +123,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
   // read status:
   MyOTA.GetStatus(info);
+  bool has_factory = ovms_partition_table_has_factory();
 
   c.panel_start("primary", "Firmware setup &amp; update");
 
@@ -147,7 +148,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   c.input_info("Running partition", info.partition_running.c_str());
   c.printf("<input type=\"hidden\" name=\"boot_old\" value=\"%s\">", _attr(info.partition_boot));
   c.input_select_start("Boot from", "boot");
-  if (ovms_partition_table_has_factory()) {
+  if (has_factory) {
     what = "Factory image";
     version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_FACTORY);
     if (version != "") {
@@ -302,10 +303,17 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       "</div>"
     "</div>");
 
-  c.panel_end(
-    "<p>The module can store up to three firmware images in a factory and two OTA partitions.</p>"
-    "<p>Flashing from web or file writes alternating to the OTA partitions, the factory partition remains unchanged.</p>"
-    "<p>You can flash the factory partition via USB, see developer manual for details.</p>");
+  if (has_factory) {
+    c.panel_end(
+      "<p>The module can store up to three firmware images in a factory and two OTA partitions.</p>"
+      "<p>Flashing from web or file writes alternating to the OTA partitions, the factory partition remains unchanged.</p>"
+      "<p>You can flash the factory partition via USB, see developer manual for details.</p>");
+  }
+  else {
+    c.panel_end(
+      "<p>The module can store up to two firmware images in a the two OTA partitions.</p>"
+      "<p>Flashing from web or file writes alternating to the OTA partitions.</p>");
+  }
 
   c.printf(
     "<div class=\"modal fade\" id=\"version-dialog\" role=\"dialog\" data-backdrop=\"static\" data-keyboard=\"false\">"
