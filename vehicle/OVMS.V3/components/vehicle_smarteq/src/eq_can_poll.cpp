@@ -342,7 +342,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   int32_t cycles_prev = (int32_t)mt_bms_contactor_cycles->GetElemValue(1) > 0 ? (int32_t)mt_bms_contactor_cycles->GetElemValue(1) : cycles_remain;
   int32_t cycles_diff = cycles_prev - cycles_remain;
   int32_t cycles_consumed = cycles_max - cycles_remain;
-  float odometer = StdMetrics.ms_v_pos_odometer->AsFloat(0); // in km
+  float odometer = can_odometer; // in km
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
   mt_bms_contactor_cycles->SetElemValue(1, cycles_remain);
   mt_bms_contactor_cycles->SetElemValue(2, cycles_consumed);
