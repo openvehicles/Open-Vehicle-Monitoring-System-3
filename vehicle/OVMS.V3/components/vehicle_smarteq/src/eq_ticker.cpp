@@ -43,6 +43,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   if (can_350_ticker > 0 &&--can_350_ticker == 0) 
     {
     ESP_LOGD(TAG, "CAN 0x350 timeout reached");
+    can_350_ticker = -1;
     can_awake = false;
     can_env_on = false;
     can_battery_on = false;
