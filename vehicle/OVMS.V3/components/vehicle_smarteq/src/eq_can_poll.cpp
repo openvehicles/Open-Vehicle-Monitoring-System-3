@@ -338,10 +338,11 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   REQUIRE_LEN(8);
   int32_t cycles_remain = (int32_t)CAN_UINT32(0);
   int32_t cycles_max = (int32_t)CAN_UINT32(4);
-  int32_t cycles_prev = mt_bms_contactor_cycles->GetElemValue(1);
+  // use previous remain value if available, otherwise current remain value, to calculate diff
+  int32_t cycles_prev = (int32_t)mt_bms_contactor_cycles->GetElemValue(1) > 0 ? (int32_t)mt_bms_contactor_cycles->GetElemValue(1) : cycles_remain;
   int32_t cycles_diff = cycles_prev - cycles_remain;
   int32_t cycles_consumed = cycles_max - cycles_remain;
-  float odometer = StdMetrics.ms_v_pos_odometer->AsFloat(0); // in km
+  float odometer = can_odometer; // in km
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
   mt_bms_contactor_cycles->SetElemValue(1, cycles_remain);
   mt_bms_contactor_cycles->SetElemValue(2, cycles_consumed);
@@ -358,7 +359,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
     // Send alert?
     // Note: excluding sending an alert on cycle count 0 for now, because possibly a false positive
     //  caused by some secondary/CAN error/bug -- to be verified    
-    if (cycles_remain > 0 && cycles_prev > cycles_remain && cycles_diff > 100) 
+    if (cycles_prev > cycles_remain && cycles_diff > 100) 
       {
       MyNotify.NotifyStringf("alert", "bms.contactorjump",
         "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
@@ -371,13 +372,13 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
       MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
       smartCANmode(false);
       }
-    }
-
-  if(cycles_consumed > m_above_cycles)
-    {
-    ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, consumed: %d odo: %0.0f!", m_above_cycles, cycles_prev, cycles_remain, cycles_consumed, odometer);
-    NotifyHVCycles(true);
-    m_above_cycles = m_above_cycles * 1.25; // next alert at 25% more cycles counted
+    // Alert if consumed cycles are above expected for a healthy contactor (e.g. above 50000 cycles consumed)
+    if(cycles_remain > 0 && cycles_consumed > m_above_cycles)
+      {
+      ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, consumed: %d odo: %0.0f!", m_above_cycles, cycles_prev, cycles_remain, cycles_consumed, odometer);
+      NotifyHVCycles(true);
+      m_above_cycles = m_above_cycles * 1.25; // next alert at 25% more cycles counted
+      }
     }
 }
 
