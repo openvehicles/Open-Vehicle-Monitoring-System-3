@@ -487,7 +487,6 @@ void OvmsVehicleSmartEQ::smartOff()
 void OvmsVehicleSmartEQ::smartAwake()
 {
   // enable active polling when car wakes up (canwrite only)
-  mt_bus_awake->SetValue(true);
   if(m_enable_write) 
     {
     smartCANmode(true);
@@ -517,7 +516,6 @@ void OvmsVehicleSmartEQ::smartChargeStart()
   StdMetrics.ms_v_charge_state->SetValue("charging");
   StdMetrics.ms_v_charge_substate->SetValue("onrequest");
   StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-  mt_bus_awake->SetValue(true);
   // trigger ADC factor recalculation when HV charging started
   if(m_enable_calcADCfactor && !m_ADCfactor_recalc) 
     {

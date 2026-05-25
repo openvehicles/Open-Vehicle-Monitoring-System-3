@@ -71,9 +71,9 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       {
       REQ_DLC(7);
       can_350_ticker = SQ_CANDATA_TIMEOUT;
-      can_awake = (CAN_BYTE(0) > 0xC0);
-      can_env_on = (CAN_BYTE(0) > 0xC4);
+      can_awake = (CAN_BYTE(0) > 0xC1);      
       can_battery_on = (CAN_BYTE(0) > 0xC2);
+      can_env_on = (CAN_BYTE(0) > 0xC4);
       can_locked = (CAN_BYTE(6) == 0x96);
       int code = CAN_BYTE(0);
       std::string msgtxt = "";
@@ -121,7 +121,6 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x4F8:
       REQ_DLC(3);
       can_handbrake = (CAN_BYTE(0) & 0x08) > 0;
-      //can_awake = (CAN_BYTE(0) & 0x40) > 0; // Ignition on
       break;
     case 0x5D7: // Speed, ODO
       {
@@ -260,13 +259,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 
 // Sync CAN datapoints to OVMS metrics, called by Ticker1, because CAN refresh rate is too high
 void OvmsVehicleSmartEQ::smartCAN2Metrics()
-{  
-  if (IsAwakeByCanEQ())
-    {
-    mt_bus_awake->SetValue(true);
-    m_candata_poll = true;
-    m_candata_timer = SQ_CANDATA_TIMEOUT;
-    }
+{
   if (m_cmd_locked && !can_locked)
     {
     // prevent desync of command lock and actual lock status    

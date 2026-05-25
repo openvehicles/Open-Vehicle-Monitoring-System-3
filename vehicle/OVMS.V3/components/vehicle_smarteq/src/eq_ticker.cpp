@@ -40,19 +40,15 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
 
-  if (can_350_ticker > 0)
+  if (can_350_ticker > 0 &&--can_350_ticker == 0) 
     {
-    if (--can_350_ticker == 0) 
-      {
-      ESP_LOGI(TAG, "CAN 0x350 timeout reached");
-      can_awake = false;
-      can_env_on = false;
-      can_battery_on = false;
-      mt_bcm_vehicle_state->SetValue("CAN 0x350 timeout reached");
-      }
+    ESP_LOGD(TAG, "CAN 0x350 timeout reached");
+    can_awake = false;
+    can_env_on = false;
+    can_battery_on = false;
     }
     
-  if(IsAwakeEQ() || IsAwakeByCanEQ())
+  if(IsAwakeEQ())
     smartCAN2Metrics();
 
   if(IsChargingEQ()) 
@@ -100,7 +96,6 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
   if (IsChargingEQ() && !m_poll_on_charge)
     {
-    mt_bus_awake->SetValue(true);
     smartChargeStart();
     }
   }
@@ -135,6 +130,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
 
   #ifdef CONFIG_OVMS_COMP_ADC
   if(IsOnEQ() || IsChargingEQ())
+     ReCalcADCfactor(StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f), nullptr);
     {
     // check for 12V voltage difference between CAN and ADC when the car is rebooted, to detect if ADC factor recalibration is needed
     if(m_check12vadc)
@@ -182,7 +178,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
  */
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) 
   {
-  if (IsAwakeEQ() && !m_candata_poll) 
+  if (IsAwakeEQ())
     {
     m_candata_poll = true;
     m_candata_timer = SQ_CANDATA_TIMEOUT;
@@ -192,13 +188,12 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
     {
     // Car has gone to sleep
     ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
-    mt_bus_awake->SetValue(false);
     m_candata_poll = false;
     m_candata_timer = -1;
     }
   
   // - base system is awake if we've got a fresh lv_pwrstate:
   // use CAN 0x350 state for 12V aux state, because it seems to be more reliable than the 12V voltage for detecting if the car is in accessory mode or not, which is needed for the powermgmt system
-  StdMetrics.ms_v_env_aux12v->SetValue(can_battery_on); // can_awake
+  StdMetrics.ms_v_env_aux12v->SetValue(IsHVonEQ());
   HandlePollState();
   }
