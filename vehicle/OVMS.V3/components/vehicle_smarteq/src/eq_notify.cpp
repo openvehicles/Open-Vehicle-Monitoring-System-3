@@ -203,9 +203,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHVCycles(int verbosity
   if (alert)
     writer->puts("Please check the vehicle and contact support!\n");
   if (!alert)
-    writer->puts("Note: If you see the counted cycles fast increasing, please check the vehicle and contact support if this happens repeatedly!\n");
+    writer->puts("Note: If you see the counted consumed cycles fast increasing, please check the vehicle and contact support if this happens repeatedly!\n");
   if (mt_bms_contactor_cycles->GetElemValue(2) > m_above_cycles)
-    writer->printf("Warning: The counted consumedcycles are above %d which is more than expected for a healthy HV contactor - please check the vehicle and contact support if this happens repeatedly!\n", m_above_cycles);
+    writer->printf("Warning: The counted consumed cycles are above %d which is more than expected for a healthy HV contactor - please check the vehicle and contact support if this happens repeatedly!\n", m_above_cycles);
   return Success;
 }
 
