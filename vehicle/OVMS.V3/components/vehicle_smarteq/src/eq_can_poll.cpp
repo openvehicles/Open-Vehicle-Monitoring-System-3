@@ -359,7 +359,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
     // Send alert?
     // Note: excluding sending an alert on cycle count 0 for now, because possibly a false positive
     //  caused by some secondary/CAN error/bug -- to be verified    
-    if (cycles_remain > 0 && cycles_prev > cycles_remain && cycles_diff > 100) 
+    if (cycles_prev > cycles_remain && cycles_diff > 100) 
       {
       MyNotify.NotifyStringf("alert", "bms.contactorjump",
         "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
