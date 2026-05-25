@@ -346,10 +346,10 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
   mt_bms_contactor_cycles->SetElemValue(1, cycles_remain);
   mt_bms_contactor_cycles->SetElemValue(2, cycles_consumed);
-  mt_bms_contactor_cycles->SetElemValue(3, cycles_diff);
-  ESP_LOGI(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_remain, cycles_diff);
+  mt_bms_contactor_cycles->SetElemValue(3, cycles_diff);  
   if (cycles_remain != cycles_prev) 
     {
+    ESP_LOGD(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_remain, cycles_diff);
     // Send data log XSQ-BMS-ContactorLog V1:
     //  <cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer>
     MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,1,%d,%d,%d,%d,%d,%0.0f",
