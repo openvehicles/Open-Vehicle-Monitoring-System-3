@@ -120,13 +120,6 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       Handlev2Server();
   #endif
 
-  // start polling to get the first data
-  if(can_init && IsCANwrite())
-    {      
-    can_init = false;
-    mt_bus_awake->SetValue(true);
-    }
-
   // DDT4ALL session timeout on 5 minutes
   if (m_ddt4all) 
     {
