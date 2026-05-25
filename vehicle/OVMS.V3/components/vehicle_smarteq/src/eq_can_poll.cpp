@@ -348,7 +348,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   mt_bms_contactor_cycles->SetElemValue(2, cycles_consumed);
   mt_bms_contactor_cycles->SetElemValue(3, cycles_diff);
   ESP_LOGI(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_remain, cycles_diff);
-  if (cycles_remain > 0 && cycles_remain != cycles_prev) 
+  if (cycles_remain != cycles_prev) 
     {
     // Send data log XSQ-BMS-ContactorLog V1:
     //  <cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer>
@@ -359,7 +359,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
     // Send alert?
     // Note: excluding sending an alert on cycle count 0 for now, because possibly a false positive
     //  caused by some secondary/CAN error/bug -- to be verified    
-    if (cycles_prev > cycles_remain && cycles_diff > 100) 
+    if (cycles_remain > 0 && cycles_prev > cycles_remain && cycles_diff > 100) 
       {
       MyNotify.NotifyStringf("alert", "bms.contactorjump",
         "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
@@ -373,7 +373,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
       smartCANmode(false);
       }
     // Alert if consumed cycles are above expected for a healthy contactor (e.g. above 50000 cycles consumed)
-    if(cycles_consumed > m_above_cycles)
+    if(cycles_remain > 0 && cycles_consumed > m_above_cycles)
       {
       ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, consumed: %d odo: %0.0f!", m_above_cycles, cycles_prev, cycles_remain, cycles_consumed, odometer);
       NotifyHVCycles(true);
