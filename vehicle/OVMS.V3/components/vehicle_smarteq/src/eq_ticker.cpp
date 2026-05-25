@@ -46,6 +46,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     can_awake = false;
     can_env_on = false;
     can_battery_on = false;
+    smartCAN2Metrics();
     }
     
   if(IsAwakeEQ())
