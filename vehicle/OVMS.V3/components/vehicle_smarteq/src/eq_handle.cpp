@@ -55,12 +55,10 @@ void OvmsVehicleSmartEQ::HandlePollState() {
   if (IsChargingEQ())
     {
     desired_state = POLLSTATE_CHARGING;   //- car is charging
-    mt_bus_awake->SetValue(true);
     }
   else if (IsOnEQ())
     {
     desired_state = POLLSTATE_ON;    //- car is on
-    mt_bus_awake->SetValue(true);
     }
   else if (IsAwakeEQ())
     {

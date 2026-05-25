@@ -233,7 +233,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
         break;
         }
       }
-    mt_bus_awake->SetValue(true);
     res = Success;
     ESP_LOGI(TAG, "Vehicle is now awake");
     } 
@@ -275,8 +274,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
         res = Success;
         break;
         }
-      }
-    mt_bus_awake->SetValue(true);    
+      }    
     res = Success;
     ESP_LOGI(TAG, "Vehicle is awake");
     } 
