@@ -159,7 +159,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_safety_mode_txt        = MyMetrics.InitString("xsq.bms.safety",SM_STALE_MID, "", Other);
 
   // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
-  RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  
+  RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
   PollSetState(POLLSTATE_OFF);
 
   // register config container for smart EQ module, with callback to ConfigChanged() on changes

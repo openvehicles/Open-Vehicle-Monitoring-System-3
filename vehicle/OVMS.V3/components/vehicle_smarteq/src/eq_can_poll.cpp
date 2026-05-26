@@ -337,45 +337,47 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t repl
 void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(8);
   int32_t cycles_remain = (int32_t)CAN_UINT32(0);
+  // use current remain value if no valid remain value in reply, to prevent false positive jump alert
+  int32_t cycles_now = cycles_remain > 0 ? cycles_remain : (int32_t)mt_bms_contactor_cycles->GetElemValue(1);
   int32_t cycles_max = (int32_t)CAN_UINT32(4);
   // use previous remain value if available, otherwise current remain value, to calculate diff
-  int32_t cycles_prev = (int32_t)mt_bms_contactor_cycles->GetElemValue(1) > 0 ? (int32_t)mt_bms_contactor_cycles->GetElemValue(1) : cycles_remain;
-  int32_t cycles_diff = cycles_prev - cycles_remain;
-  int32_t cycles_consumed = cycles_max - cycles_remain;
+  int32_t cycles_prev = (int32_t)mt_bms_contactor_cycles->GetElemValue(1) > 0 ? (int32_t)mt_bms_contactor_cycles->GetElemValue(1) : cycles_now;
+  int32_t cycles_diff = cycles_prev - cycles_now;
+  int32_t cycles_consumed = cycles_max - cycles_now;
   float odometer = can_odometer; // in km
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
-  mt_bms_contactor_cycles->SetElemValue(1, cycles_remain);
+  mt_bms_contactor_cycles->SetElemValue(1, cycles_now);
   mt_bms_contactor_cycles->SetElemValue(2, cycles_consumed);
-  mt_bms_contactor_cycles->SetElemValue(3, cycles_diff);  
-  if (cycles_remain != cycles_prev) 
+  mt_bms_contactor_cycles->SetElemValue(3, cycles_diff);
+  if (cycles_now != cycles_prev) 
     {
-    ESP_LOGD(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_remain, cycles_diff);
+    ESP_LOGD(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_now, cycles_diff);
     // Send data log XSQ-BMS-ContactorLog V1:
     //  <cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer>
     MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,1,%d,%d,%d,%d,%d,%0.0f",
       86400 * 30, // hold time 30 days
-      cycles_max, cycles_prev, cycles_remain, cycles_diff, odometer);
+      cycles_max, cycles_prev, cycles_now, cycles_diff, odometer);
 
     // Send alert?
     // Note: excluding sending an alert on cycle count 0 for now, because possibly a false positive
     //  caused by some secondary/CAN error/bug -- to be verified    
-    if (cycles_prev > cycles_remain && cycles_diff > 100) 
+    if (cycles_prev > cycles_now && cycles_diff > 100) 
       {
       MyNotify.NotifyStringf("alert", "bms.contactorjump",
         "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
         "Possible issue #1405 condition (BMS glitch), check ASAP!\n"
         "CAN write is now disabled and switched to listen mode!\n",
-        cycles_diff, cycles_remain);
+        cycles_diff, cycles_now);
       // In case of a large unexpected jump, disable CAN write to prevent possible damage to the contactor
-      ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, consumed: %d odo: %0.0f, counted more than expected!", cycles_prev, cycles_remain, cycles_consumed, odometer);
+      ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, consumed: %d odo: %0.0f, counted more than expected!", cycles_prev, cycles_now, cycles_consumed, odometer);
       MyConfig.SetParamValueBool("xsq", "canwrite", false);
       MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
       smartCANmode(false);
       }
     // Alert if consumed cycles are above expected for a healthy contactor (e.g. above 50000 cycles consumed)
-    if(cycles_remain > 0 && cycles_consumed > m_above_cycles)
+    if(cycles_now > 0 && cycles_consumed > m_above_cycles)
       {
-      ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, consumed: %d odo: %0.0f!", m_above_cycles, cycles_prev, cycles_remain, cycles_consumed, odometer);
+      ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, consumed: %d odo: %0.0f!", m_above_cycles, cycles_prev, cycles_now, cycles_consumed, odometer);
       NotifyHVCycles(true);
       m_above_cycles = m_above_cycles * 1.25; // next alert at 25% more cycles counted
       }

@@ -132,7 +132,6 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
 
   #ifdef CONFIG_OVMS_COMP_ADC
   if(IsOnEQ() || IsChargingEQ())
-     ReCalcADCfactor(StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f), nullptr);
     {
     // check for 12V voltage difference between CAN and ADC when the car is rebooted, to detect if ADC factor recalibration is needed
     if(m_check12vadc)

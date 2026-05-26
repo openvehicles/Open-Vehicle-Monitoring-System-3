@@ -100,7 +100,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
       for (int i = 0; i < 10; i++) 
         {
         obd->WriteStandard(0x634, 4, data);
-        vTaskDelay(200 / portTICK_PERIOD_MS);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
         if (IsOnHVACEQ()) 
           {
           ESP_LOGI(TAG, "Climate control started");
@@ -223,10 +223,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
     canbus *obd;
     obd = m_can1;
 
-    for (int i = 0; i < 15; i++) 
+    for (int i = 0; i < 10; i++) 
       {
       obd->WriteStandard(0x634, 4, data);
-      vTaskDelay(200 / portTICK_PERIOD_MS);
+      vTaskDelay(500 / portTICK_PERIOD_MS);
       if (IsAwakeEQ()) 
         {
         res = Success;
@@ -268,7 +268,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
     for (int i = 0; i < 10; i++) 
       {
       obd->WriteStandard(0x350, 8, data);
-      vTaskDelay(200 / portTICK_PERIOD_MS);
+      vTaskDelay(500 / portTICK_PERIOD_MS);
       if (IsAwakeEQ()) 
         {
         res = Success;
