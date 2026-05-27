@@ -372,7 +372,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
       ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, consumed: %d odo: %0.0f, counted more than expected!", cycles_prev, cycles_now, cycles_consumed, odometer);
       MyConfig.SetParamValueBool("xsq", "canwrite", false);
       MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
-      smartCANmode(false);
+      smartOBDpolling(false);
       }
     // Alert if consumed cycles are above expected for a healthy contactor (e.g. above 50000 cycles consumed)
     if(cycles_now > 0 && cycles_consumed > m_above_cycles)

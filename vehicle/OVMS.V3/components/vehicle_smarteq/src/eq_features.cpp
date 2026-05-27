@@ -473,7 +473,7 @@ void OvmsVehicleSmartEQ::smartOn()
   // canwrite enable write access, only when car is on
   if(IsCANwrite()) 
     {
-    smartCANmode(true);
+    smartOBDpolling(true);
     }
   ESP_LOGD(TAG, "smartOn()");
 }
@@ -489,11 +489,11 @@ void OvmsVehicleSmartEQ::smartAwake()
   // enable active polling when car wakes up (canwrite only)
   if(m_enable_write) 
     {
-    smartCANmode(true);
+    smartOBDpolling(true);
     }
   else if (m_enable_write_caron && m_can_active)
     {
-    smartCANmode(false);
+    smartOBDpolling(false);
     }
 }
 
@@ -501,7 +501,7 @@ void OvmsVehicleSmartEQ::smartSleep()
 {
   // disable active polling when car goes to sleep
   if((m_enable_write_caron && m_can_active) || m_enable_write_sleep)
-    smartCANmode(false);
+    smartOBDpolling(false);
   ESP_LOGD(TAG, "smartSleep()");
 }
 
@@ -531,7 +531,7 @@ void OvmsVehicleSmartEQ::smartChargeStart()
   // canwrite enable write access, only when car is on
   if(IsCANwrite() && !m_can_active) 
     {
-    smartCANmode(true);
+    smartOBDpolling(true);
     }
   ESP_LOGD(TAG, "smartChargeStart()");
 }
@@ -581,7 +581,7 @@ void OvmsVehicleSmartEQ::smartChargeFinish()
   ESP_LOGD(TAG, "smartChargeFinish()");
 }
 
-void OvmsVehicleSmartEQ::smartCANmode(bool activate)
+void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
 {
   if(!IsCANwrite())
     {
@@ -589,7 +589,7 @@ void OvmsVehicleSmartEQ::smartCANmode(bool activate)
     vTaskDelay(200 / portTICK_PERIOD_MS);
     m_can_active = false;
     m_poll_on_charge = false;
-    ESP_LOGD(TAG, "smartCANmode(): CAN bus polling list cleared (write access disabled)");
+    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared (write access disabled)");
     return;
     }
     
@@ -597,11 +597,11 @@ void OvmsVehicleSmartEQ::smartCANmode(bool activate)
   m_poll_on_charge = m_poll_state == POLLSTATE_CHARGING ? true : false;
   if (activate)
     {
-    ESP_LOGD(TAG, "smartCANmode(): CAN bus polling list will be updated");
+    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list will be updated");
     }
   if (!activate)
     {
-    ESP_LOGD(TAG, "smartCANmode(): CAN bus polling list cleared");
+    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared");
     }
   HandleOBDpolling();
 }

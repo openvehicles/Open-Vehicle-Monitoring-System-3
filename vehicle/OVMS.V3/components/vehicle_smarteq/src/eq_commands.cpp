@@ -51,7 +51,7 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
   // if write access is not enabled, then switch CAN bus to active mode for sending the command
   if (!m_can_active)
     {
-    smartCANmode(true);
+    smartOBDpolling(true);
     }
 
   m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution

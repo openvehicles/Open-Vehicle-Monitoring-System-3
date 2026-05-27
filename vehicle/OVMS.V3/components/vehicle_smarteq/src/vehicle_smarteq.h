@@ -154,7 +154,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void smartChargeStop();
     void smartChargePrepare();
     void smartChargeFinish();
-    void smartCANmode(bool activate);
+    void smartOBDpolling(bool activate);
     void smartCAN2Metrics();
 
     // --- Command overrides ---

@@ -82,7 +82,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
   // if write access is not enabled, then switch CAN bus to active mode for sending the command
   if (!m_can_active)
     {
-    smartCANmode(true);
+    smartOBDpolling(true);
     }
 
   OvmsVehicle::vehicle_command_t res = Fail;
@@ -201,7 +201,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
   // if write access is not enabled, then switch CAN bus to active mode for sending the command
   if (!m_can_active)
     {
-    smartCANmode(true);
+    smartOBDpolling(true);
     }
 
   ESP_LOGI(TAG, "Send Wakeup Command");
