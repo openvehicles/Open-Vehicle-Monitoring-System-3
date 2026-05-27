@@ -34,7 +34,7 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
-// CommandCanVector(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/ CommandWakeup2 = false)
+// CommandCanVector(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/false)
 OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t txid,uint32_t rxid, std::vector<std::string> hexbytes,bool reset,bool wakeup) {
   if(!IsCANwrite())
     {
@@ -82,12 +82,11 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
   mt_canbyte->SetValue(hexbytes[0].c_str());
 
   OvmsVehicle::vehicle_command_t res = Fail;
-  res = wakeup ? CommandWakeup() : CommandWakeup2();
+  res = wakeup ? CommandWakeup() : Success;
   
   if (res == Success)
     {
-    PollSetState(POLLSTATE_AWAKE);
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
     if (!IsAwakeEQ()) 
       {
       ESP_LOGE(TAG, "vehicle not awake");
@@ -346,13 +345,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandCanWrite(const std::st
 /**
  * writer for command line interface
  */
-void OvmsVehicleSmartEQ::xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
-  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
-  if (!smarteq)
-    return;
-
-  smarteq->CommandWakeup2();
-}
 
 void OvmsVehicleSmartEQ::xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
   OvmsVehicleSmartEQ* smarteq = GetInstance(writer);

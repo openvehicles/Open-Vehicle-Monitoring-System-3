@@ -585,30 +585,23 @@ void OvmsVehicleSmartEQ::smartCANmode(bool activate)
 {
   if(!IsCANwrite())
     {
-    m_can1->Stop();    
     PollSetPidList(m_can1, NULL);
     vTaskDelay(200 / portTICK_PERIOD_MS);
-    m_can1->Start(CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
     m_can_active = false;
     m_poll_on_charge = false;
-    ESP_LOGD(TAG, "smartCANmode(): CAN bus switched to listen mode");
+    ESP_LOGD(TAG, "smartCANmode(): CAN bus polling list cleared (write access disabled)");
     return;
     }
-  
-  // switch CAN bus to active/listen mode
-  m_can1->Stop();
-  vTaskDelay(200 / portTICK_PERIOD_MS);
-  CAN_mode_t mode = activate ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
-  m_can1->Start(mode, CAN_SPEED_500KBPS);
+    
   m_can_active = activate;
   m_poll_on_charge = m_poll_state == POLLSTATE_CHARGING ? true : false;
   if (activate)
     {
-    ESP_LOGD(TAG, "smartCANmode(): CAN bus switched to active mode for write access");
+    ESP_LOGD(TAG, "smartCANmode(): CAN bus polling list will be updated");
     }
   if (!activate)
     {
-    ESP_LOGD(TAG, "smartCANmode(): CAN bus switched to listen mode");
+    ESP_LOGD(TAG, "smartCANmode(): CAN bus polling list cleared");
     }
   HandleOBDpolling();
 }

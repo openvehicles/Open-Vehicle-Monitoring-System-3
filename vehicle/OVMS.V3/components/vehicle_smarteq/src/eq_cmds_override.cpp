@@ -85,33 +85,24 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     smartCANmode(true);
     }
 
-  OvmsVehicle::vehicle_command_t res;
+  OvmsVehicle::vehicle_command_t res = Fail;
 
-  if (enable) 
+  if (enable && !IsOnHVACEQ()) 
     {
     uint8_t data[4] = {0x40, 0x01, 0x00, 0x00};
     canbus *obd;
     obd = m_can1;
-
-    res = CommandWakeup();
-    if (res == Success) 
+    res = Fail;
+    for (int i = 0; i < 10; i++) 
       {
-      vTaskDelay(2000 / portTICK_PERIOD_MS);
-      for (int i = 0; i < 10; i++) 
+      obd->WriteStandard(0x634, 4, data);
+      vTaskDelay(500 / portTICK_PERIOD_MS);
+      if (IsOnHVACEQ())
         {
-        obd->WriteStandard(0x634, 4, data);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        if (IsOnHVACEQ()) 
-          {
-          ESP_LOGI(TAG, "Climate control started");
-          break;
-          }
-        }     
-      res = Success;
-      }
-    else
-      {
-      res = Fail;
+        ESP_LOGI(TAG, "Climate control started");
+        res = Success;
+        break;
+        }
       }
     }
   else
@@ -223,10 +214,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
     canbus *obd;
     obd = m_can1;
 
-    for (int i = 0; i < 10; i++) 
+    for (int i = 0; i < 15; i++) 
       {
       obd->WriteStandard(0x634, 4, data);
-      vTaskDelay(500 / portTICK_PERIOD_MS);
+      vTaskDelay(200 / portTICK_PERIOD_MS);
       if (IsAwakeEQ()) 
         {
         res = Success;
@@ -234,54 +225,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
         }
       }
     res = Success;
+    can_awake = true;
     ESP_LOGI(TAG, "Vehicle is now awake");
     } 
   else 
     {
     res = Success;
     ESP_LOGI(TAG, "Vehicle is awake");
-    }
-  return res;
-}
-
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
-  if(!IsCANwrite())
-    {
-    ESP_LOGE(TAG, "CommandWakeup2 failed: no write access!");
-    return Fail;
-    }
-  // if write access is not enabled, then switch CAN bus to active mode for sending the command
-  if (!m_can_active)
-    {
-    smartCANmode(true);
-    }
-  ESP_LOGI(TAG, "Send Wakeup Command 2");  
-
-  OvmsVehicle::vehicle_command_t res = Fail;
-
-  if(!IsAwakeEQ()) 
-    {
-    ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
-    uint8_t data[8] = {0xc3, 0x11, 0x96, 0xef, 0x14, 0x10, 0x96, 0x85};
-    canbus *obd;
-    obd = m_can1;
-    for (int i = 0; i < 10; i++) 
-      {
-      obd->WriteStandard(0x350, 8, data);
-      vTaskDelay(500 / portTICK_PERIOD_MS);
-      if (IsAwakeEQ()) 
-        {
-        res = Success;
-        break;
-        }
-      }    
-    res = Success;
-    ESP_LOGI(TAG, "Vehicle is awake");
-    } 
-  else 
-    {
-    ESP_LOGI(TAG, "Vehicle is awake");
-    res = Success;
     }
   return res;
 }
