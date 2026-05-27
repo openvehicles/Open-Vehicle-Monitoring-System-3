@@ -473,7 +473,7 @@ void OvmsVehicleSmartEQ::smartOn()
   // canwrite enable write access, only when car is on
   if(IsCANwrite()) 
     {
-    smartCANmode(true);
+    smartOBDpolling(true);
     }
   ESP_LOGD(TAG, "smartOn()");
 }
@@ -489,11 +489,11 @@ void OvmsVehicleSmartEQ::smartAwake()
   // enable active polling when car wakes up (canwrite only)
   if(m_enable_write) 
     {
-    smartCANmode(true);
+    smartOBDpolling(true);
     }
   else if (m_enable_write_caron && m_can_active)
     {
-    smartCANmode(false);
+    smartOBDpolling(false);
     }
 }
 
@@ -501,14 +501,20 @@ void OvmsVehicleSmartEQ::smartSleep()
 {
   // disable active polling when car goes to sleep
   if((m_enable_write_caron && m_can_active) || m_enable_write_sleep)
-    smartCANmode(false);
+    smartOBDpolling(false);
   ESP_LOGD(TAG, "smartSleep()");
 }
 
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
-  if (m_charge_finished) ResetChargingValues();
-  if (m_resettrip) ResetTripCounters();
+  if (m_charge_finished)
+    {
+    m_poll_on_charge = true;
+    ResetChargingValues();
+    if (m_resettrip)
+      ResetTripCounters();
+    }
+  
   // Set charging metrics
   StdMetrics.ms_v_charge_pilot->SetValue(true);
   StdMetrics.ms_v_charge_mode->SetValue("standard");
@@ -523,10 +529,9 @@ void OvmsVehicleSmartEQ::smartChargeStart()
     m_ADCfactor_recalc = true;      // recalculate ADC factor when HV charging
     }
   // canwrite enable write access, only when car is on
-  if(IsCANwrite()) 
+  if(IsCANwrite() && !m_can_active) 
     {
-    m_poll_on_charge = true;
-    smartCANmode(true);
+    smartOBDpolling(true);
     }
   ESP_LOGD(TAG, "smartChargeStart()");
 }
@@ -543,17 +548,20 @@ void OvmsVehicleSmartEQ::smartChargeStop()
   StdMetrics.ms_v_charge_current->SetValue(0);
   StdMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
 
-  if (StdMetrics.ms_v_bat_soc->AsInt() < 95) {
+  if (StdMetrics.ms_v_bat_soc->AsInt() < 95)
+    {
     // Assume the charge was interrupted
     ESP_LOGI(TAG,"charge session was interrupted");
     StdMetrics.ms_v_charge_state->SetValue("stopped");
     StdMetrics.ms_v_charge_substate->SetValue("interrupted");
-  } else {
+    }
+  else 
+    {
     // Assume the charge completed normally
     ESP_LOGI(TAG,"charge session completed");
     StdMetrics.ms_v_charge_state->SetValue("done");
     StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-  }
+    }
   // stop recalculation when HV charging stopped
   m_ADCfactor_recalc_timer = 2;
   m_ADCfactor_recalc = false;
@@ -573,34 +581,27 @@ void OvmsVehicleSmartEQ::smartChargeFinish()
   ESP_LOGD(TAG, "smartChargeFinish()");
 }
 
-void OvmsVehicleSmartEQ::smartCANmode(bool activate)
+void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
 {
   if(!IsCANwrite())
     {
-    m_can1->Stop();
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    m_can1->Start(CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
     PollSetPidList(m_can1, NULL);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
     m_can_active = false;
     m_poll_on_charge = false;
-    ESP_LOGD(TAG, "smartCANmode(): CAN bus switched to listen mode");
+    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared (write access disabled)");
     return;
     }
-  
-  // switch CAN bus to active/listen mode
-  m_can1->Stop();
-  vTaskDelay(200 / portTICK_PERIOD_MS);
-  CAN_mode_t mode = activate ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
-  RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
+    
   m_can_active = activate;
   m_poll_on_charge = m_poll_state == POLLSTATE_CHARGING ? true : false;
   if (activate)
     {
-    ESP_LOGD(TAG, "smartCANmode(): CAN bus switched to active mode for write access");
+    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list will be updated");
     }
   if (!activate)
     {
-    ESP_LOGD(TAG, "smartCANmode(): CAN bus switched to listen mode");
+    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared");
     }
   HandleOBDpolling();
 }

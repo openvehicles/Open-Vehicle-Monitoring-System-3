@@ -58,11 +58,11 @@ void OvmsVehicleSmartEQ::HandlePollState() {
     }
   else if (IsOnEQ())
     {
-    desired_state = POLLSTATE_ON;    //- car is on
+    desired_state = POLLSTATE_ON;         //- car is on
     }
   else if (IsAwakeEQ())
     {
-    desired_state = POLLSTATE_AWAKE;         //- car is awake (but not on)
+    desired_state = POLLSTATE_AWAKE;      //- car is awake (but not on)
     }    
   else if (!IsAwakeEQ())
     {

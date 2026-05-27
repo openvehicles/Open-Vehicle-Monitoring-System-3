@@ -154,7 +154,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void smartChargeStop();
     void smartChargePrepare();
     void smartChargeFinish();
-    void smartCANmode(bool activate);
+    void smartOBDpolling(bool activate);
     void smartCAN2Metrics();
 
     // --- Command overrides ---
@@ -171,7 +171,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
     // --- Custom vehicle commands ---
     vehicle_command_t CommandCanVector(uint32_t txid, uint32_t rxid, std::vector<std::string> hexbytes, bool reset=false, bool wakeup=false);
-    vehicle_command_t CommandWakeup2();
     vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
     vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
     virtual vehicle_command_t CommandTripStart(int verbosity, OvmsWriter* writer);
@@ -218,7 +217,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     static void xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_canwrite(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-    static void xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);

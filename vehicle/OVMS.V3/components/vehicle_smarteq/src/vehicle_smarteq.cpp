@@ -158,8 +158,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_fusi_mode_txt          = MyMetrics.InitString("xsq.bms.fusi",SM_STALE_MID, "", Other);
   mt_bms_safety_mode_txt        = MyMetrics.InitString("xsq.bms.safety",SM_STALE_MID, "", Other);
 
-  // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
-  RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  
+  // Start CAN bus in CAN_MODE_ACTIVE mode
+  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   PollSetState(POLLSTATE_OFF);
 
   // register config container for smart EQ module, with callback to ConfigChanged() on changes
@@ -174,7 +174,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
   cmd_xsq->RegisterCommand("canwrite", "Send CAN command", xsq_canwrite,"<txid,rxid,hexbytes[,reset,wakeup]>",1,1);
   cmd_xsq->RegisterCommand("calcadc", "Recalculate ADC factor (optional: 12V voltage override)", xsq_calc_adc, "[voltage]", 0, 1);
-  cmd_xsq->RegisterCommand("wakeup", "Wake up the car", xsq_wakeup);
   cmd_xsq->RegisterCommand("ed4scan", "ED4scan-like BMS Data", xsq_ed4scan);
   cmd_xsq->RegisterCommand("preset", "smart EQ config preset", xsq_preset);
   cmd_xsq->RegisterCommand("default", "smart EQ config set default", xsq_setdefault);
@@ -304,7 +303,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   // set CAN bus transceiver to active or listen-only depending on user selection
   if ( stateWrite != m_enable_write )
     {
-    smartCANmode(m_enable_write);
+    smartOBDpolling(m_enable_write);
     }
   // disable caron write mode if normal write mode is enabled to avoid conflicts
   if(m_enable_write_caron && m_enable_write) 
@@ -315,7 +314,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   // start in listen-only mode if sleep write is enabled and bus is not awake
   if (m_enable_write_sleep && !IsAwakeEQ())
     {
-    smartCANmode(false);
+    smartOBDpolling(false);
     }
 
   bool do_modify_poll = (

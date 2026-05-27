@@ -270,7 +270,7 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
     StdMetrics.ms_v_env_locked->SetValue(can_locked);
     }
   StdMetrics.ms_v_env_on->SetValue(can_env_on);
-  StdMetrics.ms_v_env_awake->SetValue(can_awake);
+  StdMetrics.ms_v_env_awake->SetValue(IsAwakeEQ());
   StdMetrics.ms_v_env_hvac->SetValue(can_hvac);
   StdMetrics.ms_v_env_handbrake->SetValue(can_handbrake);
   StdMetrics.ms_v_env_headlights->SetValue(can_headlights);
