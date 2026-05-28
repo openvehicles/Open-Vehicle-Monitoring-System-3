@@ -205,16 +205,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x658:
       {
       REQ_DLC(6);
-      uint32_t bat_serial = CAN_UINT32(0);
-      
-      // Store battery serial number (only if not already set or changed)
-      static uint32_t last_bat_serial = 0;
-      if (bat_serial != 0 && bat_serial != 0xFFFFFFFF && bat_serial != last_bat_serial) {
-        char serial_str[12];
-        snprintf(serial_str, sizeof(serial_str), "%08X", bat_serial);
-        mt_bat_serial->SetValue(serial_str);
-        last_bat_serial = bat_serial;
-      }
+      can_bat_serial = (uint32_t)CAN_UINT32(0);
       float _soh = (float)(CAN_BYTE(4) & 0x7Fu);
       if (_soh <= 100.0f) can_soh = _soh; // SOH
       can_bat_health =
@@ -317,4 +308,7 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   if(can_trip_energy < 3000.0f) // prevent unrealistic values based on faulty readings
     mt_reset_energy->SetValue(can_trip_energy);
   mt_reset_speed->SetValue(can_avg_speed);
+  char serial_str[16];
+  snprintf(serial_str, sizeof(serial_str), "%u", can_bat_serial);
+  mt_bat_serial->SetValue(serial_str);
 }
