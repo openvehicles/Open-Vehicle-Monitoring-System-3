@@ -4,7 +4,7 @@ Smart ED/EQ Gen.4 (453)
 
 Vehicle Type: **SQ**
 
-**WARNING: Potential HV battery damage on Smart 453 (Smart ED/EQ Gen.4)**
+**WARNING: Potential HV battery contactor cycle counter glitch on Smart 453 (Smart ED/EQ Gen.4)**
 
    Smart/Mercedes have documented that the use of third-party OBD devices
    on the Smart 453 (model variants 453.091/391/491) may impair the
@@ -18,7 +18,7 @@ Vehicle Type: **SQ**
    Smart 453 with OVMS installed https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/1405, although the community has not yet
    conclusively established whether OVMS specifically triggers this
    behaviour, or whether it is a more general response to permanently-
-   installed OBD devices. The recoverable fix is a BMS counter reset
+   installed OBD devices or just incidental behaviour. The recoverable fix is a BMS counter reset
    (performed by specialist workshops in Europe); full HV battery
    replacement is *not* required for this fault.
 
