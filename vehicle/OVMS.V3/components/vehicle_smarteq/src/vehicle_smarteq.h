@@ -347,7 +347,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricFloat         *mt_reset_speed;            // Average trip speed (km/h) reset
 
     // --- Custom metrics: 0x658 ---
-    OvmsMetricString        *mt_bat_serial;             // Battery serial number (hex string)
+    OvmsMetricString        *mt_bat_serial;             // Battery serial number (decimal)
 
     // --- Custom metrics: BMS production data (PID 0x90) ---
     OvmsMetricString        *mt_bms_prod_data;          // BMS production data formatted (serial, MM/YYYY)
@@ -505,6 +505,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     int can_gear = 0;                     // <0 = reverse, 0 = park/neutral, >0 = drive -- logic by vehicle.cpp events
     int can_duration_full = 0;            // duration until full in minutes
     int can_350_ticker = 0;               // ticker for 0x350 polling, will be reset to SQ_CANDATA_TIMEOUT when 0x350 is received, used to trigger actions on timeout e.g. go to sleep after no CAN activity for some time
+    uint32_t can_bat_serial = 0;          // battery serial number
     bool can_awake = false;
     bool can_battery_on = false;
     bool can_locked = true;
