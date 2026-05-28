@@ -76,8 +76,6 @@ Known Issues
   experienced this fault. Cause-effect is not conclusively established
   in the community, but installing OVMS on a Smart 453 carries the risk
   of HV battery warranty voidance per the manufacturer's stated position.
-  Affected vehicles can be recovered via BMS counter reset by a
-  specialist workshop.
 - Lock/Unlock: The Lock/Unlock function is not really implemented. You can only lock the car when it is open, car is not secured locked.
 - Valet Mode: Not implemented.
 - Charge Control: Not implemented.
