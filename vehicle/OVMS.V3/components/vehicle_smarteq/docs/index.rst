@@ -4,7 +4,37 @@ Smart ED/EQ Gen.4 (453)
 
 Vehicle Type: **SQ**
 
-The Smart ED/EQ Gen.4 will be documented here.
+**WARNING: Potential HV battery contactor cycle counter glitch on Smart 453 (Smart ED/EQ Gen.4)**
+
+   Smart/Mercedes have documented that the use of third-party OBD devices
+   on the Smart 453 (model variants 453.091/391/491) may impair the
+   contactor ageing counter of the high-voltage battery, causing the
+   counter to reset to "0" within a short period. When this occurs the
+   HV contactors will no longer engage and the vehicle will be
+   undriveable. Smart/Mercedes also state that this voids the warranty
+   and goodwill entitlement on the HV battery.
+
+   There is at least one reported case of this fault occurring on a
+   Smart 453 with OVMS installed https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/1405, although the community has not yet
+   conclusively established whether OVMS specifically triggers this
+   behaviour, or whether it is a more general response to permanently-
+   installed OBD devices or just incidental behaviour. The recoverable fix is a BMS counter reset
+   (performed by specialist workshops in Europe); full HV battery
+   replacement is *not* required for this fault.
+
+   Users of the Smart 453 should weigh this guidance carefully before
+   installing OVMS. If you choose to proceed, consider monitoring the
+   contactor cycle count via `xsq hvcycles` and disconnecting the
+   module if any unexpected change is observed.
+
+   References:
+
+   * `Smart EMOTION forum: BMS glitch for contactor switching cycles
+     <https://www.smart-emotion.de/forum/thread/4407-bms-glitch-for-contactor-switching-cycles/>`_
+   * `GitHub issue #1405
+     <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/1405>`_
+   * `Documented case and repair walkthrough (YouTube)
+     <https://www.youtube.com/watch?v=9ln-2q_ExEQ>`_
 
 ----------------
 Support Overview
@@ -39,6 +69,13 @@ DDT4all simple Support      Yes (a List of all possible commands at www.smart-EM
 -------------------------
 Known Issues
 -------------------------
+- *HV battery contactor cycle counter glitch (Smart 453):* see the
+  warning above. Smart/Mercedes' documentation identifies the use of
+  third-party OBD devices as a risk factor for premature reset of the
+  HV battery contactor ageing counter. At least one OVMS user has
+  experienced this fault. Cause-effect is not conclusively established
+  in the community, but installing OVMS on a Smart 453 carries the risk
+  of HV battery warranty voidance per the manufacturer's stated position.
 - Lock/Unlock: The Lock/Unlock function is not really implemented. You can only lock the car when it is open, car is not secured locked.
 - Valet Mode: Not implemented.
 - Charge Control: Not implemented.
