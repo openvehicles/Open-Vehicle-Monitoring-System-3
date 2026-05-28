@@ -353,10 +353,12 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
     {
     ESP_LOGD(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_now, cycles_diff);
     // Send data log XSQ-BMS-ContactorLog V1:
-    //  <cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer>
-    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,1,%d,%d,%d,%d,%d,%0.0f",
+    //  <cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer>,<bms_mileage>,<can_soc>,<can_soh>,<USM_12V>,<contactor_state>,<bms_prod_data>,<bat_serial>,<evc_traceability>
+    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,1,%d,%d,%d,%d,%d,%.0f,%.1f,%.1f,%.0f,%.2f,%s,%s,%s,%s",
       86400 * 30, // hold time 30 days
-      cycles_max, cycles_prev, cycles_now, cycles_diff, odometer);
+      cycles_max, cycles_prev, cycles_now, cycles_diff, odometer, 
+      mt_bms_mileage->AsFloat(), can_soc, can_soh, mt_evc_dcdc->GetElemValue(3), mt_bms_HVcontactStateTXT->AsString().c_str(),
+      mt_bms_prod_data->AsString().c_str(), mt_bat_serial->AsString().c_str(), mt_evc_traceability->AsString().c_str());
 
     // Send alert?
     // Note: excluding sending an alert on cycle count 0 for now, because possibly a false positive
