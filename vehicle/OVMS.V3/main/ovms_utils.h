@@ -62,6 +62,11 @@
 #define ROUNDPREC(fval,prec) (round((fval) * pow(10,(prec))) / pow(10,(prec)))
 #define CEILPREC(fval,prec)  (ceil((fval)  * pow(10,(prec))) / pow(10,(prec)))
 
+// Integer step rounding:
+#ifndef roundup
+#define roundup(n, step)  ((((n) + ((step) - 1)) / (step)) * (step))
+#endif
+
 // Standard array size (number of elements):
 #if __cplusplus < 201703L
   template <class T, std::size_t N>
