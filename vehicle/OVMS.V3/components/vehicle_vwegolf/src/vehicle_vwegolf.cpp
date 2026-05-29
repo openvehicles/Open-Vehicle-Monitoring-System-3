@@ -132,9 +132,6 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
             break;
         }
     }
-    // J533 bridges KCAN traffic onto CAN2; forward every frame so the KCAN
-    // decoder in IncomingFrameCan3 can process it regardless of which bus it arrives on.
-    IncomingFrameCan3(p_frame);
 }
 
 void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
