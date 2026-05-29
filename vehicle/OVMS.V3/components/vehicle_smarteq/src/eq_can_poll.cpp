@@ -345,8 +345,6 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   int32_t cycles_diff = cycles_prev - cycles_now;
   int32_t cycles_consumed = cycles_max - cycles_now;
   float odometer = can_odometer; // in km
-  static int cycles_prevent_alert = 1; // to prevent alert spam on repeated jumps
-  static int cycles_prevent_warning= 1;// to prevent warning spam on high cycle count
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
   mt_bms_contactor_cycles->SetElemValue(1, cycles_now);
   mt_bms_contactor_cycles->SetElemValue(2, cycles_consumed);
@@ -364,43 +362,41 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
       cycles_max, cycles_prev, cycles_now, cycles_diff, odometer, 
       mt_bms_mileage->AsFloat(), can_soc, can_soh, mt_evc_dcdc->GetElemValue(3), mt_bms_HVcontactStateTXT->AsString().c_str(),
         mp_encode(mt_bms_prod_data->AsString()).c_str(), mt_bat_serial->AsString().c_str(), mp_encode(mt_evc_traceability->AsString()).c_str());
+    // Send alert in case of a large unexpected jump
     if (cycles_prev > cycles_now && cycles_diff > 100) 
       {
-        if(cycles_prevent_alert > 0 && --cycles_prevent_alert == 0)
+      MyNotify.NotifyStringf("alert", "bms.contactorjump",
+        "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
+        "Possible issue #1405 condition (BMS glitch), check ASAP!\n"
+        "CAN write is now disabled and switched to listen mode!\n",
+        cycles_diff, cycles_now);
+      // …and disable CAN write to prevent possible damage to the contactor
+      ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, consumed: %d odo: %0.0f, counted more than expected!", cycles_prev, cycles_now, cycles_consumed, odometer);
+      if (IsCANwrite()) 
         {
-        cycles_prevent_alert = 30; // reset alert counter after alerting to prevent alert spam on repeated jumps 30 * 10 = 300 seconds
-        MyNotify.NotifyStringf("alert", "bms.contactorjump",
-          "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
-          "Possible issue #1405 condition (BMS glitch), check ASAP!\n"
-          "CAN write is now disabled and switched to listen mode!\n",
-          cycles_diff, cycles_now);
-        // In case of a large unexpected jump, disable CAN write to prevent possible damage to the contactor        
-        ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, consumed: %d odo: %0.0f, counted more than expected!", cycles_prev, cycles_now, cycles_consumed, odometer);
-        if (IsCANwrite()) 
-          {
-          smartOBDpolling(false);
-          MyConfig.SetParamValueBool("xsq", "canwrite", false);
-          MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
-          }
+        smartOBDpolling(false);
+        MyConfig.SetParamValueBool("xsq", "canwrite", false);
+        MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
         }
       }
     // Alert if consumed cycles are above expected for a healthy contactor (e.g. above 50000 cycles consumed)
     if(cycles_now > 0 && cycles_consumed > m_above_cycles)
       {
-      if(cycles_prevent_warning > 0 && --cycles_prevent_warning == 0)
-        {
-        cycles_prevent_warning = 6; // reset warning counter after warning to prevent warning spam on repeated high cycle count 5 * 10 = 50 seconds
-        ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, consumed: %d odo: %0.0f!", m_above_cycles, cycles_prev, cycles_now, cycles_consumed, odometer);
-        NotifyHVCycles(true);
-        }
-      m_above_cycles = m_above_cycles * 1.25; // next alert at 25% more cycles counted
+      ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, consumed: %d odo: %0.0f!", m_above_cycles, cycles_prev, cycles_now, cycles_consumed, odometer);
+      NotifyHVCycles(true);
+      
+      // Shorter alert intervals the less cycles are remaining:
+      if (cycles_now < 1000)
+        m_above_cycles = roundup(cycles_consumed, 100);
+      else if (cycles_now < 10000)
+        m_above_cycles = roundup(cycles_consumed, 1000);
+      else if (cycles_now < 50000)
+        m_above_cycles = roundup(cycles_consumed, 5000);
+      else
+        m_above_cycles = roundup(cycles_consumed, 10000);
+      MyConfig.SetParamValueInt("xsq", "bms.alert.above.cycles", m_above_cycles);
       }
     }
-    // Reset alert/warning counters if cycle count is zero or negative to allow future alerts/warnings
-    if (cycles_prevent_alert < -100) 
-      cycles_prevent_alert = 1;
-    if (cycles_prevent_warning < -10)
-      cycles_prevent_warning = 1;
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len) {

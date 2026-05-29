@@ -284,6 +284,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_suffrange            = map->GetValueInt("suffrange", 0);
     cell_interval_drv      = map->GetValueInt("cell_interval_drv", 60);
     cell_interval_chg      = map->GetValueInt("cell_interval_chg", 60);
+    m_above_cycles         = map->GetValueInt("bms.alert.above.cycles", 50000);
     
     m_front_pressure       = map->GetValueFloat("tpms.front.pressure", 225.0f);
     m_rear_pressure        = map->GetValueFloat("tpms.rear.pressure", 255.0f);
