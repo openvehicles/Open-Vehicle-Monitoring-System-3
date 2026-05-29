@@ -4,11 +4,13 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <functional>
 #include <map>
 #include <string>
+#include <vector>
 
 // ---------------------------------------------------------------------------
 // Logging
@@ -25,6 +27,9 @@
 typedef uint32_t TickType_t;
 inline void vTaskDelay(TickType_t) {}
 inline TickType_t pdMS_TO_TICKS(uint32_t ms) { return ms; }
+extern uint32_t g_tick_count;
+inline TickType_t xTaskGetTickCount() { return g_tick_count; }
+static constexpr uint32_t portTICK_PERIOD_MS = 1;
 
 // ---------------------------------------------------------------------------
 // CAN types
@@ -32,18 +37,56 @@ inline TickType_t pdMS_TO_TICKS(uint32_t ms) { return ms; }
 typedef enum { CAN_frame_std, CAN_frame_ext } CAN_frame_format_t;
 typedef enum { CAN_MODE_LISTEN, CAN_MODE_ACTIVE, CAN_MODE_OFF } CAN_mode_t;
 typedef enum { CAN_SPEED_100KBPS = 100, CAN_SPEED_500KBPS = 500 } CAN_speed_t;
+typedef enum {
+    CAN_errorstate_none = 0,
+    CAN_errorstate_active,
+    CAN_errorstate_warning,
+    CAN_errorstate_passive,
+    CAN_errorstate_busoff,
+} CAN_errorstate_t;
 
 typedef union {
     struct { CAN_frame_format_t FF; uint8_t DLC; } B;
 } CAN_FIR_t;
 
 typedef int esp_err_t;
-static constexpr esp_err_t ESP_OK = 0;
+static constexpr esp_err_t ESP_OK   =  0;
+static constexpr esp_err_t ESP_FAIL = -1;
+
+// One transmitted frame, recorded so the clima tests can assert exactly what the
+// module put on the bus. The real canbus discards frames after TX; the mock keeps
+// an ordered log (std vs ext, ID, DLC, payload).
+struct TxRecord {
+    bool     extended = false;
+    uint32_t id       = 0;
+    uint8_t  len      = 0;
+    uint8_t  data[8]  = {};
+};
 
 struct canbus {
-    uint8_t m_busnumber = 0;
-    esp_err_t WriteStandard(uint32_t /*id*/, uint8_t /*len*/, uint8_t* /*data*/, int /*wait*/ = 0) { return 0; }
-    esp_err_t WriteExtended(uint32_t /*id*/, uint8_t /*len*/, uint8_t* /*data*/, int /*wait*/ = 0) { return 0; }
+    uint8_t               m_busnumber = 0;
+    std::vector<TxRecord> tx_log;
+    CAN_errorstate_t      error_state = CAN_errorstate_none;
+
+    esp_err_t WriteStandard(uint32_t id, uint8_t len, uint8_t* data, int /*wait*/ = 0) {
+        return LogTx(false, id, len, data);
+    }
+    esp_err_t WriteExtended(uint32_t id, uint8_t len, uint8_t* data, int /*wait*/ = 0) {
+        return LogTx(true, id, len, data);
+    }
+    CAN_errorstate_t GetErrorState() { return error_state; }
+    esp_err_t Reset() { return ESP_OK; }
+
+ private:
+    esp_err_t LogTx(bool ext, uint32_t id, uint8_t len, uint8_t* data) {
+        TxRecord r;
+        r.extended = ext;
+        r.id       = id;
+        r.len      = len;
+        for (uint8_t i = 0; i < len && i < 8; i++) r.data[i] = data[i];
+        tx_log.push_back(r);
+        return ESP_OK;
+    }
 };
 
 // 'Minutes' is used as a unit tag in some metric SetValue calls
@@ -69,7 +112,15 @@ struct CAN_frame_t {
 struct MetricStore {
     std::map<std::string, double>      numbers;
     std::map<std::string, std::string> strings;
-    void reset() { numbers.clear(); strings.clear(); }
+    // Per-metric SetValue call count. Used by the replay test to catch
+    // "set once at boot, never updated again" regressions like the stuck
+    // range_est bug — a static-value check passes but the metric isn't live.
+    std::map<std::string, int>         writes;
+    void reset() { numbers.clear(); strings.clear(); writes.clear(); }
+    int  write_count(const std::string& n) const {
+        auto it = writes.find(n);
+        return it == writes.end() ? 0 : it->second;
+    }
 };
 extern MetricStore g_metrics;
 
@@ -77,7 +128,10 @@ template<typename T>
 struct OvmsMetric {
     std::string name;
     explicit OvmsMetric(const char* n) : name(n) {}
-    void SetValue(T v)              { g_metrics.numbers[name] = static_cast<double>(v); }
+    void SetValue(T v)              {
+        g_metrics.numbers[name] = static_cast<double>(v);
+        g_metrics.writes[name]++;
+    }
     void SetValue(T v, int /*unit*/) { SetValue(v); }  // unit arg used by real metrics, ignored here
     void Clear()                    { g_metrics.numbers.erase(name); }
     T    AsValue() const  { return static_cast<T>(g_metrics.numbers[name]); }
@@ -88,8 +142,14 @@ template<>
 struct OvmsMetric<std::string> {
     std::string name;
     explicit OvmsMetric(const char* n) : name(n) {}
-    void        SetValue(const std::string& v) { g_metrics.strings[name] = v; }
-    void        SetValue(const char* v)        { g_metrics.strings[name] = v ? v : ""; }
+    void        SetValue(const std::string& v) {
+        g_metrics.strings[name] = v;
+        g_metrics.writes[name]++;
+    }
+    void        SetValue(const char* v)        {
+        g_metrics.strings[name] = v ? v : "";
+        g_metrics.writes[name]++;
+    }
     std::string AsValue()  const {
         auto it = g_metrics.strings.find(name);
         return it != g_metrics.strings.end() ? it->second : "";
@@ -101,7 +161,10 @@ template<>
 struct OvmsMetric<bool> {
     std::string name;
     explicit OvmsMetric(const char* n) : name(n) {}
-    void SetValue(bool v) { g_metrics.numbers[name] = v ? 1.0 : 0.0; }
+    void SetValue(bool v) {
+        g_metrics.numbers[name] = v ? 1.0 : 0.0;
+        g_metrics.writes[name]++;
+    }
     bool AsValue() const  { return g_metrics.numbers[name] != 0.0; }
     bool AsBool()  const  { return AsValue(); }
 };
@@ -171,11 +234,24 @@ extern StandardMetricsType StandardMetrics;
 // Config
 // ---------------------------------------------------------------------------
 struct OvmsConfig {
+    // Backing store so tests can exercise config-driven paths (e.g. clima cc-temp).
+    // Real OvmsConfig persists per param+instance; here a flat "param/instance" map.
+    std::map<std::string, std::string> store;
+
     void RegisterParam(const char*, const char*, bool=true, bool=true) {}
-    std::string GetParamValue(const char*, const char*, const char* def="") const { return def; }
-    int  GetParamValueInt(const char*, const char*, int def=0) const { return def; }
+    std::string GetParamValue(const char* param, const char* instance,
+                              const char* def="") const {
+        auto it = store.find(std::string(param) + "/" + instance);
+        return it != store.end() ? it->second : def;
+    }
+    int GetParamValueInt(const char* param, const char* instance, int def=0) const {
+        auto it = store.find(std::string(param) + "/" + instance);
+        return it != store.end() ? atoi(it->second.c_str()) : def;
+    }
     bool GetParamValueBool(const char*, const char*, bool def=false) const { return def; }
-    void SetParamValue(const char*, const char*, const char*) {}
+    void SetParamValue(const char* param, const char* instance, const char* value) {
+        store[std::string(param) + "/" + instance] = value;
+    }
 };
 extern OvmsConfig MyConfig;
 
@@ -215,7 +291,17 @@ struct OvmsVehicle {
     canbus* m_can2 = nullptr;
     canbus* m_can3 = nullptr;
 
-    void RegisterCanBus(int /*bus*/, CAN_mode_t, CAN_speed_t) {}
+    // Allocate a real canbus per registered bus so the command/wake/heartbeat paths
+    // (which call m_canN->WriteStandard/WriteExtended/GetErrorState) have a live object
+    // and the clima tests can read its tx_log. Decode-only tests never touch the bus, but
+    // a null m_canN segfaults the moment any TX is attempted.
+    void RegisterCanBus(int bus, CAN_mode_t, CAN_speed_t) {
+        canbus** slot = (bus == 1) ? &m_can1 : (bus == 2) ? &m_can2 : &m_can3;
+        if (!*slot) {
+            *slot = new canbus();
+            (*slot)->m_busnumber = static_cast<uint8_t>(bus);
+        }
+    }
 
     virtual void IncomingFrameCan1(CAN_frame_t*) {}
     virtual void IncomingFrameCan2(CAN_frame_t*) {}
@@ -230,5 +316,5 @@ struct OvmsVehicle {
     virtual vehicle_command_t CommandUnlock(const char*) { return NotImplemented; }
     virtual vehicle_command_t CommandWakeup()                 { return NotImplemented; }
     virtual vehicle_command_t CommandClimateControl(bool)     { return NotImplemented; }
-    virtual ~OvmsVehicle() = default;
+    virtual ~OvmsVehicle() { delete m_can1; delete m_can2; delete m_can3; }
 };
