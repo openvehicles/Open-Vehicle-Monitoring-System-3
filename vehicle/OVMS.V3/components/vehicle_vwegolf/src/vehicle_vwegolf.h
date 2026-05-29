@@ -68,6 +68,25 @@ typedef struct PageContext PageContext_t;
 #define VWEGOLF_OCU_ACK_GRACE_SECS 5
 #define VWEGOLF_OCU_SESSION_CAP_SECS 30
 
+// ms_v_env_hvac is driven by 0x03B5 ClimaRunning (cabin actively conditioned). The blower
+// thermostat-cycles within a session (observed off-gaps up to ~14 s), so the metric holds
+// true for this many seconds after the last "running" evidence — bridges the cycling and
+// clears the metric when the car sleeps. A stop command clears it immediately (responsive
+// UX); this only governs autonomous/timer stops (≈hold-second linger, acceptable).
+#define VWEGOLF_HVAC_RUN_HOLD_SECS 20
+
+// Allowed range for the clima target temperature (xvg cc-temp), in °C. The web form
+// validates against these and the BAP burst clamps to them — both must agree, or a value
+// accepted in one path produces a garbage temperature byte in the other. Single source here.
+#define VWEGOLF_CLIMA_TEMP_MIN_C 16
+#define VWEGOLF_CLIMA_TEMP_MAX_C 28
+
+// After our own stop command we set hvac false at once but the blower keeps spinning down
+// for a moment (0x03B5 still reports running). Ignore that "running" for this long so the
+// stop stays responsive; if 0x03B5 still insists past the window the stop didn't take, so
+// we trust it and show running again.
+#define VWEGOLF_HVAC_STOP_SUPPRESS_SECS 10
+
 class OvmsVehicleVWeGolf : public OvmsVehicle {
  public:
     OvmsVehicleVWeGolf();
@@ -129,6 +148,14 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // Rolling BAP counter included in each command frame. The ECU echoes it (| 0x80) in
     // its ACK so we can match responses to commands. Must never be zero; wraps 0xFF → 0x01.
     uint8_t m_bap_counter = 0;
+
+    // hvac run-state tracking — source of truth is 0x03B5 ClimaRunning.
+    // m_clima_run_secs: seconds since the last "running" evidence; metric clears when it
+    //   exceeds VWEGOLF_HVAC_RUN_HOLD_SECS. m_hvac_stop_secs: seconds since our last stop
+    //   command; 0x03B5 'running' is ignored while below VWEGOLF_HVAC_STOP_SUPPRESS_SECS.
+    // 255 = "long ago / inactive". Both incremented in Ticker1.
+    uint8_t m_clima_run_secs = 255;
+    uint8_t m_hvac_stop_secs = 255;
 
     // Set while a multi-frame BAP command burst is in flight (CommandClimateControl).
     // SendOcuHeartbeat skips if set — a 0x5A7 queued between BAP frames blocks the

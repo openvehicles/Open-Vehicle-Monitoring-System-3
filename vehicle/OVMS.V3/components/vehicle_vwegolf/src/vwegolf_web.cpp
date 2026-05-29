@@ -139,8 +139,9 @@ void OvmsVehicleVWeGolf::WebCfgSettings(PageEntry_t& p, PageContext_t& c)
 
         if (!cc_temp.empty()) {
             int v = atoi(cc_temp.c_str());
-            if (v < 16 || v > 28)
-                error += "<li data-input=\"cc-temp\">Climate temperature must be 16–28 °C</li>";
+            if (v < VWEGOLF_CLIMA_TEMP_MIN_C || v > VWEGOLF_CLIMA_TEMP_MAX_C)
+                error += "<li data-input=\"cc-temp\">Climate temperature must be "
+                         "16–28 °C</li>";
         }
 
         if (error.empty()) {
@@ -165,7 +166,8 @@ void OvmsVehicleVWeGolf::WebCfgSettings(PageEntry_t& p, PageContext_t& c)
 
     c.fieldset_start("Climate control");
     c.input_slider("Target temperature", "cc-temp", 3, "°C", -1,
-                   atoi(cc_temp.c_str()), 21, 16, 28, 1,
+                   atoi(cc_temp.c_str()), 21,
+                   VWEGOLF_CLIMA_TEMP_MIN_C, VWEGOLF_CLIMA_TEMP_MAX_C, 1,
                    "<p>Default cabin temperature for climate pre-conditioning.</p>");
     c.fieldset_end();
 

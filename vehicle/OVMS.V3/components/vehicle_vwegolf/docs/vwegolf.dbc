@@ -223,9 +223,11 @@ BO_ 2536711425 BAP_ClimaCmd: 8 OVMS
 // 0x17332510 (extended) — ClimaECU → OVMS BAP status/ACK channel
 // ECU echoes our BAP counter (| 0x80) to confirm receipt, then broadcasts
 // periodic state on ports 0x19 and 0x1a.
-// Port 0x12: primary ms_v_env_hvac source. Payload[0] 0x05=active, 0x00=idle.
-// Works for both OVMS-triggered and e-Manager schedule-triggered clima.
-// Confirmed Captures 6 (timer expiry) and 12 (schedule clima). See clima-control-bap.md.
+// Port 0x18 (49 58 XX): transactional ACK, NOT a run-state. It emits a spurious 49 58 00
+// mid-session (capture all-168388a82-...-221008), so it does NOT drive ms_v_env_hvac — it
+// is used only to stand down the OCU ring once a command is acknowledged. ms_v_env_hvac is
+// driven by 0x3B5 ClimaRunning (+ command optimistic set + hold). The older "port 0x12
+// primary source" understanding (Captures 6/12) was superseded. See clima-control-bap.md.
 BO_ 2536711440 BAP_ClimaStatus: 8 ClimaECU
  SG_ BAP_FrameType : 0|8@1+ (1,0) [0|255] "" OVMS
 
@@ -266,7 +268,7 @@ CM_ BU_ Instruments "Instrument cluster — range estimates derived from BMS mod
 CM_ BU_ AmbientSensor "Ambient temperature sensor cluster (solar + outside air)";
 CM_ BU_ GearModule "Gear selector module (Waehlhebel)";
 
-CM_ BO_ 949 "KCAN. Secondary clima running indicator from clima ECU. Byte[0] bit 7. Confirmed Captures 1, 2, and firmware-driven start/stop (20260407-141135).";
+CM_ BO_ 949 "KCAN 0x3B5. PRIMARY ms_v_env_hvac run-state source. Byte[0] bit 7 = cabin actively conditioned (blower running), trigger-agnostic. High-rate (~8 Hz); tracks the blower duty cycle so it thermostat-cycles within a session — firmware applies a hold (VWEGOLF_HVAC_RUN_HOLD_SECS) to bridge the gaps and clear on sleep. Confirmed Captures 1, 2, firmware start/stop (20260407-141135), and all-168388a82-...-224827.";
 CM_ BO_ 1516 "KCAN. Secondary clima status byte from clima ECU. Observed 0x04=idle, 0x07=active. Full decode not confirmed.";
 CM_ BO_ 2536702224 "KCAN (extended 29-bit ID 0x17330110). J533 gateway BAP status broadcast, node 0x01. Port 0x1B carries real-time driver-zone setpoint; port 0x21 mirrors it for passenger zone. Encoding: raw = (celsius - 10) * 10, LE uint16. Confirmed Captures 2, 7 (18C=0x50, 22C=0x78). Multi-frame BAP — see clima-control-bap.md.";
 CM_ BO_ 253 "KCAN. Vehicle speed from ESP. Confirmed from captures.";
@@ -282,7 +284,7 @@ CM_ BO_ 1411 "KCAN. ZV_02 central locking and door open status. Confirmed from c
 CM_ BO_ 1428 "KCAN. HV charge management: duration, timer, plug type, charge state, chargeport, cabin setpoint. ChargeType/ChargePort share same bits — ChargePort derived from non-zero ChargeType. Confirmed from AC Type 2 charge cycle (20260407-131402) and 100% SOC idle (20260407-141135). CCS DC keeps KCAN silent so ChargeType=2 never observed on this frame.";
 CM_ BO_ 1438 "KCAN. HV battery pack temperature from BMS. Confirmed from captures.";
 CM_ BO_ 1482 "KCAN. HV battery usable energy content. Encoding inferred; values plausible.";
-CM_ BO_ 1514 "KCAN. Clima ECU broadcast status (StandklimaStatus_02). RemoteMode unreliable when ignition off — always 0 during remote clima (Capture 5). 0x5EA barely broadcasts in remote mode. HVAC state driven from BAP port 0x12 on 0x17332510 instead.";
+CM_ BO_ 1514 "KCAN 0x5EA. Clima ECU broadcast status (StandklimaStatus_02). ClimaRemoteMode here = 'ECU energized' (ignition/ACC or remote session), NOT cabin conditioning — do not use for ms_v_env_hvac (it pins/couples to ignition; capture all-168388a82-...-224827). Run-state is 0x3B5 ClimaRunning. ClimaCabinTemp here is log-only; cabin temp is owned by 0x066E InnenTemp.";
 CM_ BO_ 1525 "KCAN. Range estimates from instrument cluster. Confirmed from captures. Byte[1] also carries secondary clima idle flag (0x00=active, 0x01=idle). Confirmed Capture 1.";
 CM_ BO_ 1626 "KCAN. BCM_01 bonnet/hood open indicator. Confirmed from captures.";
 CM_ BO_ 1646 "KCAN. Interior cabin temperature sensor (InnenTemp). Confirmed. 0xFE is startup sentinel — discard. Byte[2] bit 1 also carries primary clima running flag.";
@@ -321,16 +323,16 @@ CM_ SG_ 958 BrakeSwitchA "Byte 3 bit 2 of `04/44/54` pattern — bit 4. Hypothes
 CM_ SG_ 958 BrakeSwitchB "Byte 3 bit 6 of `04/44/54` pattern. Always co-occurs with bit 4 here. May be redundant switch or ABS-related. Capture 16.";
 CM_ SG_ 958 ThrottleActive "Byte 5 bit 0. 0 = idle, 1 = accelerator pressed. Capture 16.";
 CM_ BO_ 2536711425 "KCAN TX by OVMS (extended 29-bit ID 0x17332501). BAP command channel to clima ECU (node 0x25). Multi-frame BAP — not a conventional signal message. See clima-control-bap.md.";
-CM_ BO_ 2536711440 "KCAN RX from clima ECU (extended 29-bit ID 0x17332510). BAP status/ACK channel. Primary ms_v_env_hvac source via port 0x12 (0x05=active, 0x00=idle). ECU echoes command counter | 0x80 to confirm receipt. Works for OVMS-triggered and schedule-triggered clima. Confirmed Captures 6, 7, 12. See clima-control-bap.md.";
+CM_ BO_ 2536711440 "KCAN RX from clima ECU (extended 29-bit ID 0x17332510). BAP status/ACK channel. Port 0x18 (49 58 XX) is a transactional ACK, NOT a run-state — it emits a spurious 49 58 00 mid-session (capture all-168388a82-...-221008) so it does NOT drive ms_v_env_hvac; used only to stand down the OCU ring once a command is acknowledged (ECU echoes command counter | 0x80). ms_v_env_hvac run-state is 0x3B5 ClimaRunning. The earlier 'port 0x12 primary source' (Captures 6/7/12) was superseded. See clima-control-bap.md.";
 CM_ BO_ 2589283496 "KCAN RX (extended 29-bit ID 0x1A5554A8). OBC live-telemetry, multiplexed by byte 0 upper nibble (0x5=telemetry mux, 0x6=static header). b0 bit 2 is a 0.5 Hz rolling alive bit inside each mux. Alive at ~2 Hz during charge, idle sentinel 03 FE FF FF E7 FF FF FF when bus up with no charge. Mux B byte 4 is a 1 Hz charge totalizer (unit TBD). Active window brackets 0x594 ChargeManagement with small lead/lag. Confirmed Capture 14 (AC Type 2, 20260413-121648). Needs longer session for b1/b2/b3/b5/b6/b7 decode.";
 CM_ SG_ 2589283496 MuxSelector "Upper nibble of byte 0. 0x5 = telemetry mux (b4 carries charge totalizer). 0x6 = static header payload. Other values not observed.";
 CM_ SG_ 2589283496 AliveBit "Byte 0 bit 2. Toggles every frame within each mux — rolling alive / sequence counter.";
 CM_ SG_ 2589283496 ChargeTotalizer "Mux B byte 4. Increments +1 per second while 0x594 ChargeInProgress is true. Capture 14 observed 0x9e..0xb8 linear. Unit not yet calibrated (Wh? Ws×10? minutes? deciAh?).";
 
-CM_ SG_ 949 ClimaRunning "Bit 7 of byte[0]. 1=clima running remotely. Confirmed Captures 1 and 2.";
+CM_ SG_ 949 ClimaRunning "Bit 7 of byte[0]. 1=cabin actively conditioned (blower running), any trigger. PRIMARY ms_v_env_hvac source (with hold). Confirmed Captures 1, 2, and all-168388a82-...-224827.";
 CM_ SG_ 1516 ClimaStatus "Raw byte at byte[5]. Observed: 0x04=clima idle, 0x07=clima active. Intermediate values not yet decoded.";
 CM_ SG_ 1525 ClimaIdle "Byte[1]. 0x00=clima active, 0x01=clima idle. Secondary indicator, confirmed Capture 1.";
-CM_ SG_ 1646 ClimaRunning "Bit 1 of byte[2]. 0x38 byte value=off, 0x3A=on. Primary remote clima running flag. Confirmed Captures 1 and 2.";
+CM_ SG_ 1646 ClimaRunning "Bit 1 of byte[2]. 0x38=off, 0x3A=on. NOT used — low-rate (~0.45 Hz) and unreliable: in capture all-168388a82-...-224827 it went off at t=43.8 and missed the later blower runs (t=58, 85) that 0x3B5 captured. Use 0x3B5 ClimaRunning (BO_ 949) for run-state. Confirmed Captures 1 and 2 only.";
 CM_ SG_ 1719 ParkTime "17-bit field in d[2][7:4]:d[3]:d[4][4:0]. Encoding not fully confirmed — inferred from firmware bit extraction. Value in seconds (plausible against known parked snapshot).";
 CM_ SG_ 305 SoC "Factor 0.5 %/LSB. Max valid raw = 0xFD (126.5%). Raw 0xFE is ECU startup sentinel — firmware discards it.";
 CM_ SG_ 401 BatCurrent "Unsigned raw with offset: raw 2047 = 0 A. Positive = discharge, negative = charge (OVMS convention: power sign is negated).";
@@ -343,7 +345,7 @@ CM_ SG_ 1411 Locked "1 = locked externally (ZV external lock signal).";
 CM_ SG_ 1428 ChargeTimerMode "Raw value 1 = timer active. Other values = timer inactive.";
 CM_ SG_ 1428 CabinSetpoint "Factor 0.5 degC/LSB, offset +15.5 degC. Range 15.5–31.5 degC.";
 CM_ SG_ 1514 ClimaCabinTemp "Climatronic ECU cabin sensor. Raw >= 1020 (>= 62.0 degC) is ECU 'not available' sentinel — firmware discards.";
-CM_ SG_ 1514 ClimaRemoteMode "StandklimaRemoteModus. Values: 0=idle, 2=running, 3=activating. Unreliable when ignition off — always reads 0 during remote clima (Capture 5). Do not use for ms_v_env_hvac.";
+CM_ SG_ 1514 ClimaRemoteMode "StandklimaRemoteModus. NOT used for ms_v_env_hvac — reflects 'clima ECU energized', not cabin conditioning: reads 1 whenever ignition/ACC (radio) is on OR a remote session keeps the ECU awake, and only drops to 0 when the ECU fully powers down. Capture all-168388a82-...-224827: pinned with ignition off, asserted by radio mode. Use 0x3B5 ClimaRunning for run-state instead. (Earlier 2=running/3=activating was a mis-RE.)";
 CM_ SG_ 1514 ClimaStatus02 "StandklimaStatus field 2. Exact value meanings not yet decoded.";
 CM_ SG_ 1514 ClimaStatus03 "StandklimaStatus field 3. Exact value meanings not yet decoded.";
 CM_ SG_ 1646 CabinTemp "Factor 0.5 degC/LSB, offset -50 degC. Raw 0xFE is startup sentinel (decodes to 77 degC) — firmware discards it.";
@@ -377,4 +379,4 @@ VAL_ 1447 Lock 0 "Idle" 1 "Lock_requested" ;
 VAL_ 1447 Unlock 0 "Idle" 1 "Unlock_requested" ;
 VAL_ 1447 Indicators 0 "Idle" 1 "Flash_requested" ;
 VAL_ 1447 Panic 0 "Idle" 1 "Panic_requested" ;
-VAL_ 1514 ClimaRemoteMode 0 "Idle" 2 "Running" 3 "Activating" ;
+VAL_ 1514 ClimaRemoteMode 0 "Deenergized" 1 "Energized" ;

@@ -284,6 +284,58 @@ void test_clima_counter_increments() {
     delete v;
 }
 
+// Helper: run a synchronous clima start with cc-temp set to raw_cfg, return the
+// temperature byte (BAP frame 2, data[3]). Bus is made active first so the burst
+// runs inline rather than deferring to Ticker1.
+static uint8_t clima_temp_byte_for(int raw_cfg) {
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%d", raw_cfg);
+    MyConfig.SetParamValue("xvg", "cc-temp", buf);
+
+    auto* v = new OvmsVehicleVWeGolf();
+    auto f = make_kcan_frame(v, 0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    kcan(v)->tx_log.clear();
+
+    v->CommandClimateControl(true);
+
+    uint8_t temp_byte = 0;
+    int ext = 0;
+    for (auto& r : kcan(v)->tx_log) {
+        if (r.extended && ++ext == 2) { temp_byte = r.data[3]; break; }
+    }
+    delete v;
+    return temp_byte;
+}
+
+// Regression for the cc-temp clamp (vehicle_vwegolf.cpp SendClimaBapBurst). cc-temp can be
+// set from the CLI, bypassing the web form's 16–28 validation; the burst must clamp before
+// the uint8_t byte calc or it sends a garbage temperature to the climate ECU.
+// Encoding: temp_byte = (clamped_celsius - 10) * 10.
+void test_clima_temp_clamped() {
+    printf("\ntest_clima_temp_clamped\n");
+
+    // In-range value passes through untouched (proves it clamps, not pins).
+    // 22°C → (22-10)*10 = 120 = 0x78.
+    CHECK(clima_temp_byte_for(22) == 0x78, "in-range 22C → 0x78 (passthrough)");
+
+    // Over-range high clamps to MAX (28°C) → (28-10)*10 = 180 = 0xB4,
+    // NOT the truncated garbage of (50-10)*10 = 400 → 0x90.
+    CHECK(clima_temp_byte_for(50) == 0xB4, "over-range 50C clamps to 28C → 0xB4");
+
+    // Below-range clamps to MIN (16°C) → (16-10)*10 = 60 = 0x3C,
+    // NOT (5-10)*10 = -50 → 0xCE as a wrapped uint8_t.
+    CHECK(clima_temp_byte_for(5) == 0x3C, "below-range 5C clamps to 16C → 0x3C");
+
+    // Boundaries map exactly to MIN/MAX bytes.
+    CHECK(clima_temp_byte_for(VWEGOLF_CLIMA_TEMP_MIN_C) == 0x3C, "min boundary 16C → 0x3C");
+    CHECK(clima_temp_byte_for(VWEGOLF_CLIMA_TEMP_MAX_C) == 0xB4, "max boundary 28C → 0xB4");
+
+    MyConfig.store.clear();
+}
+
 // ---------------------------------------------------------------------------
 // Ticker1 bus idle logic
 // ---------------------------------------------------------------------------
@@ -395,61 +447,64 @@ void test_clima_no_wake_when_oem_ocu_active() {
     delete v;
 }
 
+// NOTE: the 0x17332510 BAP-ACK *decode* (single-frame, port 0x18) is covered by
+// test_bap_ack_0x17332510 in test_can_decode.cpp. Earlier port-0x12 / multi-frame tests
+// here were removed when the decode was re-validated on-car to port 0x18 (commit 3180b08ef);
+// they asserted a superseded understanding the shipping code no longer implements.
+
 // ---------------------------------------------------------------------------
-// BAP Ack decode on 0x17332510 (clima ECU → bus), port 0x12
+// ms_v_env_hvac run-state: 0x03B5 ClimaRunning + hold + stop-suppression
 // ---------------------------------------------------------------------------
 
-void test_bap_port12_single_frame_active() {
-    printf("\ntest_bap_port12_single_frame_active\n");
+void test_hvac_hold_bridges_thermostat_cycle() {
+    printf("\ntest_hvac_hold_bridges_thermostat_cycle\n");
     g_metrics = MetricStore{};
     auto* v = new OvmsVehicleVWeGolf();
 
-    // Single-frame Ack: [opcode=4 | node=0x25 | port=0x12] payload[0]=0x05 (active)
-    auto f = make_kcan_frame(v, 0x17332510, {0x49, 0x52, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00});
-    v->IncomingFrameCan3(&f);
-    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "hvac=true on single-frame active");
+    auto running = make_kcan_frame(v, 0x3B5, {0x80, 0xFE, 0x00, 0x00});
+    v->IncomingFrameCan3(&running);
+    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "hvac true after ClimaRunning=1");
+
+    // Blower pauses (thermostat). Tick within the hold window — must stay true (no flicker).
+    for (int i = 0; i < VWEGOLF_HVAC_RUN_HOLD_SECS - 1; i++) call_ticker1(v, i);
+    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "hvac held true within hold window");
+
+    // Blower resumes before the window elapsed — refreshes the hold.
+    v->IncomingFrameCan3(&running);
+    for (int i = 0; i < VWEGOLF_HVAC_RUN_HOLD_SECS - 1; i++) call_ticker1(v, 100 + i);
+    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "hold refreshed by new running evidence");
+
+    // No further evidence — clears once the hold elapses (autonomous/timer stop).
+    for (int i = 0; i < 3; i++) call_ticker1(v, 300 + i);
+    CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "hvac clears after hold window with no evidence");
 
     delete v;
 }
 
-void test_bap_port12_single_frame_idle() {
-    printf("\ntest_bap_port12_single_frame_idle\n");
-    g_metrics = MetricStore{};
-    auto* v = new OvmsVehicleVWeGolf();
-    StandardMetrics.ms_v_env_hvac->SetValue(true);
-
-    auto f = make_kcan_frame(v, 0x17332510, {0x49, 0x52, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-    v->IncomingFrameCan3(&f);
-    CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "hvac=false on single-frame idle");
-
-    delete v;
-}
-
-void test_bap_port12_multi_frame() {
-    printf("\ntest_bap_port12_multi_frame\n");
+void test_hvac_stop_command_responsive() {
+    printf("\ntest_hvac_stop_command_responsive\n");
     g_metrics = MetricStore{};
     auto* v = new OvmsVehicleVWeGolf();
 
-    // Multi-frame start: d[0]=0x80 (MF|ch=0|len hi=0), d[1]=0x07 (len lo), d[2:3]=BAP hdr.
-    auto f = make_kcan_frame(v, 0x17332510, {0x80, 0x07, 0x49, 0x52, 0x05, 0x00, 0x00, 0x00});
-    v->IncomingFrameCan3(&f);
-    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "hvac=true on multi-frame active");
+    // Bus active so the stop runs synchronously; clima reported running.
+    auto active = make_kcan_frame(v, 0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&active);
+    auto running = make_kcan_frame(v, 0x3B5, {0x80, 0xFE, 0x00, 0x00});
+    v->IncomingFrameCan3(&running);
+    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "hvac true while running");
 
-    delete v;
-}
+    // Stop command → false immediately (no 20s linger).
+    v->CommandClimateControl(false);
+    CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "stop command clears hvac immediately");
 
-void test_bap_port12_wrong_opcode_ignored() {
-    printf("\ntest_bap_port12_wrong_opcode_ignored\n");
-    g_metrics = MetricStore{};
-    auto* v = new OvmsVehicleVWeGolf();
-    StandardMetrics.ms_v_env_hvac->SetValue(true);
+    // Blower spin-down still reports running, but within the suppress window → ignored.
+    v->IncomingFrameCan3(&running);
+    CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "spin-down ClimaRunning ignored after stop");
 
-    // d[0]=0x59 → [MF=0 | opcode=5 (unused) | node hi=9]. Old 0xC0 mask would accept;
-    // new 0xF0 mask rejects. hvac must not change.
-    auto f = make_kcan_frame(v, 0x17332510, {0x59, 0x52, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-    v->IncomingFrameCan3(&f);
-    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(),
-          "hvac unchanged — opcode 5 rejected by tightened 0xF0 mask");
+    // Past the suppress window, persistent running means the stop didn't take → trust it.
+    for (int i = 0; i < VWEGOLF_HVAC_STOP_SUPPRESS_SECS + 1; i++) call_ticker1(v, i);
+    v->IncomingFrameCan3(&running);
+    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "ClimaRunning trusted again past suppress window");
 
     delete v;
 }
@@ -470,9 +525,8 @@ void test_clima_all() {
     test_clima_wakes_in_twilight();
     test_clima_no_wake_when_oem_ocu_active();
     test_clima_counter_increments();
+    test_clima_temp_clamped();
     test_ticker1_bus_idle_timeout();
-    test_bap_port12_single_frame_active();
-    test_bap_port12_single_frame_idle();
-    test_bap_port12_multi_frame();
-    test_bap_port12_wrong_opcode_ignored();
+    test_hvac_hold_bridges_thermostat_cycle();
+    test_hvac_stop_command_responsive();
 }

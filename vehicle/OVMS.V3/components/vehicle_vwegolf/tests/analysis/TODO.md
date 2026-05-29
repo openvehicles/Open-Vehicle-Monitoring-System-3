@@ -5,6 +5,28 @@ sized for one focused branch.
 
 ## High value
 
+### Synthetic fixtures for `test_dbc_decode.py` (unblock CI gate)
+
+Today the pytest suite asserts against three real `.crtd` captures
+(`can2-…-201238`, `all-…-143106`, `can3-…-121648`) — all gitignored
+because they contain real VINs. CI can't run them (see reverted commit
+23d69a19 / 168388a82). Until synthetic fixtures exist, pytest stays
+dev-only and silent DBC drift can ship.
+
+Plan: extend the `kcan-synthetic.crtd` pattern (fictional Berlin
+e-Golf, no PII) with per-test fixtures covering the asserted signals
+— wheelspeed @ rest + 30 km/h plateau, gear D/B nibble transitions,
+SoC monotonic decrease, BMS current/voltage/peak-power envelope,
+mux split on 0x1A5554A8. Either hand-fabricated frame streams or
+a `write_crtd()` helper (see Low-value entry) fed by a fixture
+builder. Mark capture-dependent tests with `@pytest.mark.skipif`
+so the synthetic subset runs everywhere and the capture-backed
+subset still runs locally.
+
+Pin assertion: green pytest job in CI with no `.crtd` files
+present in the workspace. Re-enable the workflow snippet from
+the reverted commit once this lands.
+
 ### Correlation finder
 `correlate(cap, ref_id, off, window=0.2)` → IDs whose bytes also
 transition within ±window of `ref_id`'s transitions. Answers the

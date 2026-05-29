@@ -87,6 +87,8 @@ ssh_opts=(
 )
 
 ssh_cmd() {
+  # Surface ssh stderr by default — silent failures masked a wifi blip that
+  # left a logger running on the OVMS for 75 minutes (see git history).
   local rc=0
   if $SSH_DEBUG; then
     local t0 dt
@@ -95,7 +97,7 @@ ssh_cmd() {
     dt=$(awk -v a="$t0" -v b="$(date +%s.%N)" 'BEGIN{printf "%.2f", b-a}')
     echo "[ssh ${dt}s rc=$rc] $1" >&2
   else
-    ssh "${ssh_opts[@]}" "${SSH_USER}@${OVMS}" "$1" 2>/dev/null || rc=$?
+    ssh "${ssh_opts[@]}" "${SSH_USER}@${OVMS}" "$1" || rc=$?
   fi
   return $rc
 }
@@ -202,13 +204,25 @@ cleanup() {
       LOGGER_FILTERED=$(echo "$STATUS_LINE" | grep -oE 'Filtered:[0-9]+' | head -1 | cut -d: -f2)
       LOGGER_DROPPED=$(echo "$STATUS_LINE" | grep -oE 'Dropped:[0-9]+' | head -1 | cut -d: -f2)
     fi
-    ssh_cmd "$STOP_CMD" && echo "Log stopped on OVMS." || true
+    if ssh_cmd "$STOP_CMD"; then
+      echo "Log stopped on OVMS."
+    else
+      echo ""
+      echo "WARNING: failed to stop logger over SSH (network blip?)."
+      echo "         The logger is likely still running on the OVMS."
+      echo "         Stop it manually when the connection is back:"
+      echo "           $STOP_CMD"
+      echo ""
+    fi
   else
     echo "Stop the log on the OVMS shell:"
     echo "  $STOP_CMD"
   fi
 
-  # Retrieve CRTD from SD card.
+  # Retrieve CRTD from SD card. Verify the transfer actually produced bytes
+  # locally — scp may exit 0 even when the OVMS SSH server drops the
+  # connection mid-transfer (the destination file is left at zero bytes
+  # because scp opens with O_TRUNC before streaming).
   echo "Retrieving ${SD_CRTD}..."
   scp_opts=(
     -4
@@ -219,12 +233,21 @@ cleanup() {
     -o BatchMode=yes
   )
   SCP_OK=false
-  if scp -q "${scp_opts[@]}" "${SSH_USER}@${OVMS}:${SD_CRTD}" "$CRTD_FILE" 2>/dev/null; then
+  if scp "${scp_opts[@]}" "${SSH_USER}@${OVMS}:${SD_CRTD}" "$CRTD_FILE" && [[ -s "$CRTD_FILE" ]]; then
     SCP_OK=true
     echo "Retrieved: $CRTD_FILE"
   else
-    echo "SCP failed — retrieve manually:"
-    echo "  scp ${SSH_USER}@${OVMS}:${SD_CRTD} $CRTD_FILE"
+    echo ""
+    echo "SCP transfer failed or produced a 0-byte file."
+    echo "  Capture is still on the SD card as ${SD_CRTD}"
+    echo "  Retry directly:"
+    echo "    scp -O -o HostkeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa \\"
+    echo "        ${SSH_USER}@${OVMS}:${SD_CRTD} $CRTD_FILE"
+    echo "  Or use the OVMS web UI: http://${OVMS}/"
+    # Remove an empty stub so downstream analysis tools don't pick it up.
+    if [[ -f "$CRTD_FILE" && ! -s "$CRTD_FILE" ]]; then
+      rm -f "$CRTD_FILE"
+    fi
   fi
 
   FRAMES=0

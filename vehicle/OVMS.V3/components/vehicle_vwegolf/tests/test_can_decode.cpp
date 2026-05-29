@@ -454,36 +454,65 @@ void test_bat_capacity_0x5CA() {
 void test_clima_status_0x5EA() {
     printf("\ntest_clima_status_0x5EA\n");
 
+    // NOTE: 0x05EA drives NO metric. remote_mode tracks "clima ECU energized" (ignition/ACC
+    // or a remote session), not cabin conditioning — ms_v_env_hvac is owned by 0x03B5
+    // ClimaRunning. Cabin temp is owned by 0x066E. 0x05EA must leave both untouched.
     {
         auto* v = make_vehicle();
-        // cabin=20°C: raw=600=0x258 → d[6]&0xFC=0x60 (24<<2), d[7]&0x0F=0x09 (600>>6=9)
-        // hvac off: remote_mode=0 → d[3]=0x00, d[4]=0x00
-        auto f = make_frame(0x5EA, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x60, 0x09});
+        StandardMetrics.ms_v_env_hvac->SetValue(true);
+        // remote_mode=1 (d3 bit6) — energized, but not "conditioning"; must not change hvac
+        auto f = make_frame(0x5EA, {0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x60, 0x09});
         v->IncomingFrameCan3(&f);
-        CHECK(near(StandardMetrics.ms_v_env_cabintemp->AsFloat(), 20.0f), "Cabin temp 20°C");
-        CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(),                   "HVAC off (remote_mode=0)");
+        CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "0x05EA does not drive hvac (true unchanged)");
         delete v;
     }
 
     {
         auto* v = make_vehicle();
-        // cabin=20°C, hvac on: remote_mode=2 → d[3]&0xC0=0x80 (2<<6)
-        auto f = make_frame(0x5EA, {0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x60, 0x09});
+        StandardMetrics.ms_v_env_hvac->SetValue(false);
+        auto f = make_frame(0x5EA, {0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x60, 0x09});
         v->IncomingFrameCan3(&f);
-        CHECK(near(StandardMetrics.ms_v_env_cabintemp->AsFloat(), 20.0f), "Cabin temp 20°C (hvac on)");
-        CHECK(StandardMetrics.ms_v_env_hvac->AsBool(),                    "HVAC on (remote_mode=2)");
+        CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "0x05EA does not drive hvac (false unchanged)");
         delete v;
     }
 
     {
-        // Sentinel: u16=1022 (≥1020) must not overwrite cabin temp metric.
-        // d[6]=0xF8, d[7]=0x0F → ((0xF8&0xFC)>>2)|((0x0F&0x0F)<<6) = 62|960 = 1022
+        // 0x05EA does not own cabin temp: a valid-temperature frame (raw=600 → 20°C, well
+        // below the 1020 sentinel) must leave ms_v_env_cabintemp untouched. 0x066E owns it.
         auto* v = make_vehicle();
         StandardMetrics.ms_v_env_cabintemp->SetValue(99.0f);
-        auto f = make_frame(0x5EA, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x0F});
+        auto f = make_frame(0x5EA, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x60, 0x09});
         v->IncomingFrameCan3(&f);
         CHECK(near(StandardMetrics.ms_v_env_cabintemp->AsFloat(), 99.0f),
-              "0x05EA sentinel u16>=1020: cabin temp not overwritten");
+              "0x05EA does not write cabin temp (0x066E is canonical)");
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 0x03B5 — ClimaRunning bit (authoritative ms_v_env_hvac run-state)
+// ---------------------------------------------------------------------------
+
+void test_clima_running_0x3B5() {
+    printf("\ntest_clima_running_0x3B5\n");
+    {
+        auto* v = make_vehicle();
+        StandardMetrics.ms_v_env_hvac->SetValue(false);
+        // d[0] bit7 set = blower conditioning → hvac on
+        auto f = make_frame(0x3B5, {0x80, 0xFE, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "0x03B5 ClimaRunning=1 → hvac on");
+        delete v;
+    }
+    {
+        // bit clear must NOT instantly clear — the hold (Ticker1) governs the timeout so
+        // thermostat blower cycling doesn't flicker the metric.
+        auto* v = make_vehicle();
+        StandardMetrics.ms_v_env_hvac->SetValue(true);
+        auto f = make_frame(0x3B5, {0x00, 0xFE, 0x00, 0x00});
+        v->IncomingFrameCan3(&f);
+        CHECK(StandardMetrics.ms_v_env_hvac->AsBool(),
+              "0x03B5 ClimaRunning=0 does not instantly clear hvac (hold)");
         delete v;
     }
 }
@@ -495,32 +524,24 @@ void test_clima_status_0x5EA() {
 void test_bap_ack_0x17332510() {
     printf("\ntest_bap_ack_0x17332510\n");
 
+    // Port-0x18 ACK (49 58 XX) is transactional, not a run-state — it must NOT drive
+    // ms_v_env_hvac (0x03B5 ClimaRunning does); it only stands down the OCU ring.
     {
         auto* v = make_vehicle();
-        // DLC=3, 49 58 01 → hvac on
+        StandardMetrics.ms_v_env_hvac->SetValue(false);
         auto f = make_frame(0x17332510, {0x49, 0x58, 0x01});
         v->IncomingFrameCan3(&f);
-        CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "BAP ACK 49 58 01 → hvac on");
+        CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "BAP ACK 49 58 01 does not drive hvac");
         delete v;
     }
 
     {
         auto* v = make_vehicle();
         StandardMetrics.ms_v_env_hvac->SetValue(true);
-        // DLC=3, 49 58 00 → hvac off
+        // spurious mid-session 49 58 00 must not disturb hvac either
         auto f = make_frame(0x17332510, {0x49, 0x58, 0x00});
         v->IncomingFrameCan3(&f);
-        CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "BAP ACK 49 58 00 → hvac off");
-        delete v;
-    }
-
-    {
-        auto* v = make_vehicle();
-        StandardMetrics.ms_v_env_hvac->SetValue(false);
-        // DLC=4: guard rejects — hvac must NOT flip
-        auto f = make_frame(0x17332510, {0x49, 0x58, 0x01, 0x00});
-        v->IncomingFrameCan3(&f);
-        CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "BAP ACK DLC=4: ignored (DLC guard)");
+        CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "BAP ACK 49 58 00 does not drive hvac");
         delete v;
     }
 }
@@ -646,12 +667,11 @@ void test_ambient_temp_0x6B5() {
 void test_kcan_resets_idle_counter() {
     printf("\ntest_kcan_resets_idle_counter\n");
 
-    canbus kcan;
-
     auto* v = make_vehicle();
-    v->m_can3 = &kcan;
+    // Origin must match m_can3 for the KCAN idle-counter gate to accept the frame.
+    // RegisterCanBus (mock) allocates m_can3, so point the frame at that bus.
     auto f = make_frame(0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
-    f.origin = &kcan;
+    f.origin = v->m_can3;
     v->IncomingFrameCan3(&f);
     CHECK(v->test_bus_idle_ticks() == 0,
           "IncomingFrameCan3 resets idle counter to 0");
@@ -723,6 +743,10 @@ void test_fcan_filter_encoding() {
 extern void test_crtd_replay();
 extern void test_crtd_replay_kcan();
 
+// Climate/wake/heartbeat/bus-idle suite, defined in test_clima.cpp (shares the
+// tests_run/tests_passed counters via extern).
+void test_clima_all();
+
 int main() {
     printf("=== vehicle_vwegolf CAN decode tests ===\n");
 
@@ -739,6 +763,7 @@ int main() {
     test_bat_temp_0x59E();
     test_bat_capacity_0x5CA();
     test_clima_status_0x5EA();
+    test_clima_running_0x3B5();
     test_bap_ack_0x17332510();
     test_range_0x5F5();
     test_hood_0x65A();
@@ -749,6 +774,7 @@ int main() {
     test_fcan_filter_encoding();
     test_crtd_replay();
     test_crtd_replay_kcan();
+    test_clima_all();
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);
     return (tests_passed == tests_run) ? 0 : 1;

@@ -83,10 +83,10 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
             ESP_LOGE(TAG, "FCAN acceptance filter setup failed — all frames will reach ISR");
     }
 
-    // 0x66E broadcasts 0xFE as a "no data yet" sentinel before the interior sensor
-    // is ready. That decodes to 77°C and would persist across reboots via the metric
-    // persistence feature. Clear it so the metric stays undefined until real data arrives.
-    StandardMetrics.ms_v_env_cabintemp->Clear();
+    // NOTE: no metric writes in the constructor — that defeats metric persistence and is
+    // a maintainer-review blocker. The 0x66E 0xFE "no data yet" sentinel (decodes to 77°C)
+    // is rejected at the decode site (IncomingFrameCan3 case 0x066E) so it never reaches
+    // the metric in the first place; nothing bad gets persisted to clear at boot.
 
     OvmsCommand* cmd_xvg = MyCommandApp.RegisterCommand("xvg", "VW e-Golf controls");
 
@@ -135,6 +135,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
         case 0x0131: {
             // State of charge. Single byte in d[3], factor 0.5 %.
             // 0xFE is the ECU's "not ready" sentinel (decodes to 127.0%) — discard it.
+            // Decoded on BOTH buses on purpose: FCAN stops broadcasting 0x131 during CCS DC
+            // charge (SoC would pin), so IncomingFrameCan3 also decodes the J533-bridged
+            // copy. Same value/scaling → no flapping. Do not "dedupe" by removing either.
             if (d[3] == 0xFE) break;
             f = d[3] * 0.5f;
             StandardMetrics.ms_v_bat_soc->SetValue(f);
@@ -266,6 +269,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x0131: {
             // KCAN-bridged BMS state of charge (J533 forwards 0x131 from FCAN).
+            // Intentional twin of the IncomingFrameCan2 0x131 path — keeps SoC live during
+            // CCS DC charge when FCAN goes quiet. See that case for the full rationale.
             // d[3] x 0.5 %; 0xFE is the BMS "not ready" sentinel.
             if (d[3] == 0xFE) break;
             f = d[3] * 0.5f;
@@ -414,37 +419,52 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             break;
         }
         case 0x05EA: {
-            // Clima ECU status: cabin temperature and remote_mode.
-            // remote_mode: 2=running (steady-state), 3=just activated (transient).
-            // Value 1 observed while car sleeping on 0x05EA — treat as off until RE confirms,
-            // else the metric pins true from idle broadcasts.
+            // Clima ECU status broadcast. NOTE: neither field here drives a metric.
+            // remote_mode reflects "clima ECU energized" — true whenever ignition/ACC is on
+            // OR a remote session keeps the ECU awake — NOT cabin conditioning. Capture
+            // all-168388a82-…-224827 showed it pinned with ignition off and asserted by
+            // radio/ACC mode, so ms_v_env_hvac is driven from 0x03B5 ClimaRunning instead.
+            // Cabin temperature is owned by 0x066E (InnenTemp); the reading here uses
+            // different scaling. Both decoded for the log only.
+            // (Raw ≥ 1020 → ≥ 62°C is the ECU's cabin-temp "not available" sentinel.)
             u16 = ((uint16_t)(d[6] & 0xFC) >> 2) | ((uint16_t)(d[7] & 0x0F) << 6);
             uint8_t remote_mode = ((d[3] & 0xC0) >> 6) | ((d[4] & 0x01) << 2);
-            StandardMetrics.ms_v_env_hvac->SetValue(remote_mode == 2 || remote_mode == 3);
-            // Raw value ≥ 1020 decodes to ≥ 62.0°C — the ECU broadcasts 0x3FE or 0x3FF
-            // as "not available" when sleeping or uninitialized. Discard; valid cabin
-            // temperature is well below this range.
+            (void)remote_mode;  // log-only; ESP_LOGV compiles out in the native test build
             if (u16 < 1020) {
                 f = u16 * 0.1f - 40.0f;
-                StandardMetrics.ms_v_env_cabintemp->SetValue(f);
+                ESP_LOGV(TAG, "0x05EA clima_cabin=%.1f°C remote_mode=%u", f, remote_mode);
+            } else {
+                ESP_LOGV(TAG, "0x05EA clima_cabin=n/a remote_mode=%u", remote_mode);
             }
-            ESP_LOGV(TAG, "0x05EA clima_cabin=%.1f°C remote_mode=%u", f, remote_mode);
+            break;
+        }
+        case 0x03B5: {
+            // ClimaRunning: d[0] bit7 = blower actively conditioning the cabin (0x80=on).
+            // Authoritative ms_v_env_hvac run-state — reflects real conditioning regardless
+            // of trigger (remote, schedule, or driving), unlike 0x05EA remote_mode which only
+            // tracks ECU power. Capture all-168388a82-…-224827.
+            if (d[0] & 0x80) {
+                // Running evidence — refresh the hold timer. Suppress turning the metric back
+                // on during the spin-down right after our own stop command (a stop sets false
+                // immediately for responsive UX); if 0x03B5 still reports running past the
+                // suppress window, the stop didn't take, so trust it.
+                m_clima_run_secs = 0;
+                if (m_hvac_stop_secs >= VWEGOLF_HVAC_STOP_SUPPRESS_SECS) {
+                    StandardMetrics.ms_v_env_hvac->SetValue(true);
+                }
+            }
+            ESP_LOGV(TAG, "0x03B5 clima_running=%u", (d[0] >> 7) & 1);
             break;
         }
         case 0x17332510: {
             // BAP status/ACK from clima ECU (node 0x25), extended 29-bit frame.
-            // Pattern `49 58 XX` (DLC=3): ECU pushes its port 0x18 (start/stop trigger) state.
-            // opcode=4 (0x49 bits[6:4]), node=0x25, port=0x18 (0x58 & 0x3F).
-            // XX=0x01 = clima running; XX=0x00 = clima stopped.
-            // This is the authoritative real-time source for ms_v_env_hvac:
-            //   - Start: arrives ~4–5 s after command (ECU waits for blower to spin up)
-            //   - Stop:  arrives ~0.3 s after command
-            // 0x05EA remote_mode remains as a secondary/fallback path (e.g. after OVMS reboot
-            // while clima is already running).
+            // Pattern `49 58 XX` (DLC=3): port 0x18 (start/stop trigger) ACK. This is a
+            // transactional ACK, NOT a run-state — it emits a spurious 49 58 00 mid-session
+            // (capture all-168388a82-…-221008) — so it does NOT drive ms_v_env_hvac
+            // (0x03B5 ClimaRunning does). We use it only to stand down the OCU ring once the
+            // transaction has been acknowledged.
             if (p_frame->FIR.B.DLC == 3 && d[0] == 0x49 && d[1] == 0x58) {
-                bool hvac_on = (d[2] == 0x01);
-                StandardMetrics.ms_v_env_hvac->SetValue(hvac_on);
-                ESP_LOGI(TAG, "0x17332510 BAP port 0x18: hvac=%s", hvac_on ? "on" : "off");
+                ESP_LOGI(TAG, "0x17332510 BAP port 0x18 ACK: d2=0x%02X", d[2]);
                 // Arm grace: transaction is done, keep the ring warm briefly then stand down.
                 m_ocu_grace_secs = 0;
             }
@@ -533,6 +553,17 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     // whenever a frame arrives, so it measures how long since the last activity.
     if (m_bus_idle_ticks < 254) m_bus_idle_ticks++;
     if (m_oem_ocu_idle_ticks < 254) m_oem_ocu_idle_ticks++;
+    if (m_clima_run_secs < 255) m_clima_run_secs++;
+    if (m_hvac_stop_secs < 255) m_hvac_stop_secs++;
+
+    // ms_v_env_hvac (driven by 0x03B5 ClimaRunning + commands) clears once no "running"
+    // evidence has arrived for the hold window. Bridges blower thermostat cycling and clears
+    // the metric when the car sleeps. A stop command already set it false immediately, so this
+    // governs only autonomous/timer stops (≈hold-second linger).
+    if (m_clima_run_secs >= VWEGOLF_HVAC_RUN_HOLD_SECS &&
+        StandardMetrics.ms_v_env_hvac->AsBool()) {
+        StandardMetrics.ms_v_env_hvac->SetValue(false);
+    }
 
     bool bus_alive = m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS;
     bool just_went_idle = (m_bus_idle_ticks == VWEGOLF_BUS_TIMEOUT_SECS);
@@ -582,12 +613,20 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
         if (!bus_alive) {
             ESP_LOGW(TAG, "Deferred clima: bus went idle before settle — aborting");
             m_clima_pending = false;
+            // Burst never went out — reflect the opposite of the intended state and reset the
+            // hold timer so Ticker1 doesn't immediately override it.
             StandardMetrics.ms_v_env_hvac->SetValue(!m_clima_pending_enable);
+            m_clima_run_secs = m_clima_pending_enable ? 255 : 0;
         } else if (elapsed_ms >= VWEGOLF_CLIMA_SETTLE_MS) {
+            // Keep m_clima_pending set across the burst so a CommandClimateControl arriving
+            // mid-send retargets (see CommandClimateControl) instead of racing this burst.
+            // Clear only once it has returned.
             bool enable = m_clima_pending_enable;
+            vehicle_command_t result = SendClimaBapBurst(enable);
             m_clima_pending = false;
-            if (SendClimaBapBurst(enable) != Success) {
+            if (result != Success) {
                 StandardMetrics.ms_v_env_hvac->SetValue(!enable);
+                m_clima_run_secs = enable ? 255 : 0;
             }
         }
     }
@@ -807,7 +846,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::SendClimaBapBurst(bool enable
 
     // Frame 2: BAP continuation — remaining payload bytes including target temperature.
     // Temperature encoding: raw = (celsius - 10) * 10  (e.g. 21°C → 0x6E)
-    uint8_t climate_temp = (uint8_t)MyConfig.GetParamValueInt("xvg", "cc-temp", 21);
+    // Clamp here, not just in the web form: cc-temp can also be set from the CLI
+    // (config set xvg cc-temp ...), which bypasses the web validation. An out-of-range
+    // value would otherwise be cast to uint8_t and produce a nonsense temperature byte
+    // sent to the climate ECU. Keep this in int until after clamping.
+    int climate_temp = MyConfig.GetParamValueInt("xvg", "cc-temp", 21);
+    if (climate_temp < VWEGOLF_CLIMA_TEMP_MIN_C) climate_temp = VWEGOLF_CLIMA_TEMP_MIN_C;
+    if (climate_temp > VWEGOLF_CLIMA_TEMP_MAX_C) climate_temp = VWEGOLF_CLIMA_TEMP_MAX_C;
     uint8_t temp_raw = (uint8_t)((climate_temp - 10) * 10);
     data[0] = 0xC0;  // multi-frame continuation, channel 0
     data[1] = 0x06;  // unknown
@@ -841,9 +886,21 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::SendClimaBapBurst(bool enable
     ESP_LOGI(TAG, "BAP clima %s sent: counter=0x%02X temp=%u°C", enable ? "start" : "stop",
              m_bap_counter, climate_temp);
 
-    // Optimistic update: give the app immediate feedback. 0x05EA will overwrite this
-    // with ground truth once the ECU responds.
+    // Optimistic update for responsive UX — reflect the command immediately, then let
+    // 0x03B5 ClimaRunning confirm/sustain it.
+    //   start: set true and give the blower the full hold window to spin up; clear any
+    //          stop-suppression.
+    //   stop:  set false now; expire the hold so it can't keep the metric true, and start
+    //          the spin-down suppression so the blower's trailing 0x03B5=running doesn't
+    //          flick it back on (until the suppress window lapses — see case 0x03B5).
     StandardMetrics.ms_v_env_hvac->SetValue(enable);
+    if (enable) {
+        m_clima_run_secs = 0;
+        m_hvac_stop_secs = 255;
+    } else {
+        m_clima_run_secs = 255;
+        m_hvac_stop_secs = 0;
+    }
 
     // Stay in the NM ring after both start and stop. On stop the ECU broadcasts a
     // 0x05→0x00 status transition on BAP port 0x12 a few hundred ms later; dropping
@@ -859,6 +916,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     if (m_can3->GetErrorState() == CAN_errorstate_busoff) {
         ESP_LOGW(TAG, "Climate control: KCAN controller in bus-off — aborting");
         return Fail;
+    }
+
+    // A deferred burst from a previous command is still in flight (woken, waiting on the
+    // settle window, or mid-send — see m_clima_pending). Re-target it and return rather
+    // than starting a second burst: the bus is awake by now, so this command would take
+    // the warm-bus path below and race the pending Ticker1 burst, interleaving two BAP
+    // multi-frame sequences at the ECU. Ticker1 fires once with the latest intent.
+    if (m_clima_pending) {
+        m_clima_pending_enable = enable;
+        ESP_LOGI(TAG, "Climate control: deferred burst pending — retargeted to %s",
+                 enable ? "start" : "stop");
+        return Success;
     }
 
     // Wake the bus if it has been quiet long enough that ECUs are likely sleeping.
