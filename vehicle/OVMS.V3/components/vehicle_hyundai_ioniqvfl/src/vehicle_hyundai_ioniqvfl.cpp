@@ -55,6 +55,7 @@ static const char *TAG = "v-hyundaivfl";
 
 #define UDS_READ8             0x21
 #define UDS_READ16            0x22
+#define UDS_VIN               0x1a 
 
 // Vehicle states:
 #define STATE_OFF             0
@@ -73,6 +74,7 @@ static const OvmsPoller::poll_pid_t standard_polls[] =
   { 0x7e6, 0x7ee, UDS_READ8,    0x80, {   0,  60,  60, 120 }, 0, ISOTP_STD },  // Ambient temperature
   { 0x7c6, 0x7ce, UDS_READ16, 0xb002, {   0, 120,  30,   0 }, 0, ISOTP_STD },  // Odometer
   { 0x7a0, 0x7a8, UDS_READ16, 0xc00b, {   0,  60,  60,   0 }, 0, ISOTP_STD },  // TPMS
+  { 0x7e2, 0x7ea, UDS_VIN,      0x80, {   0,  15,  15,  15 }, 0, ISOTP_STD },  // VMCU VIN
   //                                    OFF  AWK  DRV  CHG
   POLL_LIST_END
 };
@@ -84,6 +86,8 @@ static const OvmsPoller::poll_pid_t standard_polls[] =
 OvmsVehicleHyundaiVFL::OvmsVehicleHyundaiVFL()
 {
   ESP_LOGI(TAG, "Hyundai Ioniq vFL vehicle module");
+
+  memset(m_vin, 0, sizeof(m_vin));
 
   // Init CAN:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -350,9 +354,11 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(const OvmsPoller::poll_job_t &job,
 
     case 0x80:
     {
-      // Read ambient temperature:
-      float temp = RXB_BYTE(12) * 0.5f - 40.0f;
-      StdMetrics.ms_v_env_temp->SetValue(temp);
+      // Read VIN
+      for (int k = 0; k < 17; k++) m_vin[k] = RXB_BYTE(k+14);
+      if (m_vin[0] !=0){
+        StandardMetrics.ms_v_vin->SetValue(m_vin);
+      }
       break;
     }
 
