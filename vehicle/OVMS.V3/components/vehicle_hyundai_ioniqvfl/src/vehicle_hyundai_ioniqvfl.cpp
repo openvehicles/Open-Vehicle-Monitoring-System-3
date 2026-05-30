@@ -74,11 +74,7 @@ static const OvmsPoller::poll_pid_t standard_polls[] =
   { 0x7e6, 0x7ee, UDS_READ8,    0x80, {   0,  60,  60, 120 }, 0, ISOTP_STD },  // Ambient temperature
   { 0x7c6, 0x7ce, UDS_READ16, 0xb002, {   0, 120,  30,   0 }, 0, ISOTP_STD },  // Odometer
   { 0x7a0, 0x7a8, UDS_READ16, 0xc00b, {   0,  60,  60,   0 }, 0, ISOTP_STD },  // TPMS
-  { 0x7e2, 0x7ea, UDS_READ8,    0x01, {   0,  15,  15,  15 }, 0, ISOTP_STD },  // VMCU
-  { 0x7e2, 0x7ea, UDS_READ8,    0x02, {   0,  15,  15,  15 }, 0, ISOTP_STD },  // VMCU
   { 0x7e2, 0x7ea, UDS_VIN,      0x80, {   0,  15,  15,  15 }, 0, ISOTP_STD },  // VMCU VIN
-  { 0x7e5, 0x7ed, UDS_READ8,    0x01, {   0,  15,  15,  1 }, 0, ISOTP_STD },  // LDC
-
   //                                    OFF  AWK  DRV  CHG
   POLL_LIST_END
 };
@@ -251,24 +247,11 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(const OvmsPoller::poll_job_t &job,
     return;
 
   // response complete:
-  ESP_LOGV(TAG, "IncomingPollReply: ModuleID: %02X  PID %02X: len=%d %s", job.moduleid_rec, job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+  ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", job.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
   switch (job.pid)
   {
     case 0x01:
     {
-      if(job.moduleid_rec == 0x7ea) {
-        // VMCU data (not used yet)
-        break;
-      }else if(job.moduleid_rec == 0x7ed) {
-        // LDC data (not used yet)
-        //ff ff f8 00 00 92 39 8d bb 57 92 02 e3 79 02 5f 00 bd 04 fb 43 10 20 00 c8 04 d4 00 d8 76 00 0e 00 09 01 f3 8d 7d 09 44 00 0a
-        //StdMetrics.ms_v_charge_12v_voltage->SetValue(RXB_BYTE(5) * 0.1f); //ldc 12v battery voltage
-        StdMetrics.ms_v_gen_voltage->SetValue(RXB_BYTE(5) * 0.1f); //ldc output voltage
-        StdMetrics.ms_v_charge_12v_current->SetValue(RXB_BYTE(11)); //ldc 12v battery current
-        StdMetrics.ms_v_charge_12v_temp->SetValue(RXB_BYTE(13) - 100.0f); //ldc 12v battery temperature
-        StdMetrics.ms_v_charge_current->SetValue(RXB_BYTE(33)); //ldc output current
-        break;
-      }else{
       // Read status & battery metrics:
       m_xhi_bat_soc_bms->SetValue(RXB_BYTE(4) * 0.5f);
 
@@ -319,24 +302,15 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(const OvmsPoller::poll_job_t &job,
       }
       break;
     }
-  }
+
     case 0x02:
     {
-      if(job.moduleid_rec == 0x7ea) {
-        StdMetrics.ms_v_charge_voltage->SetValue(RXB_BYTE(12) * 2.0f); //inverter input voltage
-        StdMetrics.ms_v_charge_12v_voltage->SetValue(RXB_BYTE(9) * 0.1f); //vmcu 12v battery voltage
-        StdMetrics.ms_v_inv_temp->SetValue(RXB_BYTE(14) - 40.0f); //inverter temperature
-        StdMetrics.ms_v_mot_temp->SetValue(RXB_BYTE(20) - 40.0f); //motor temperature
-        break;
-      }else{
-      
       // Read battery cell voltages 1-32:
       BmsRestartCellVoltages();
       for (int i = 0; i < 32; i++) {
         BmsSetCellVoltage(i, RXB_BYTE(4+i) * 0.02f);
       }
       break;
-    }
     }
     case 0x03:
     {
