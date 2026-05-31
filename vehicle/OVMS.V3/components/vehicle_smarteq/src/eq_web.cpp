@@ -205,14 +205,14 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   
   c.fieldset_start("Remote Control");
   c.input_checkbox("Enable CAN write access #1", "canwrite", canwrite,
-    "<p>Controls CAN write access all time (OBDII polling, start Preconditioning etc.)</p>");
+    "<p>CAN write access all time! (OBDII polling, start Preconditioning etc.)</p>");
   c.input_checkbox("Enable CAN write access #2", "canwrite_caron", canwrite_caron,
-    "<p>Write access when car: on/charging and starting Preconditioning or trickle 12V charging is allowed</p>"
+    "<p>CAN write access all time!</p>"
     "<p>Clears polling list when vehicle is in awake/sleep mode</p>"
+    "<p>This will stop polling (CAN access) when the vehicle is in awake/sleep mode</p>"
     "<p>Alternative to CAN write access #1; select one or neither!</p>");
-  c.input_checkbox("Disable CAN write during sleep", "canwrite_sleep", canwrite_sleep,
-    "<p>Clears polling list when vehicle is in sleep mode</p>"
-    "<p>This option affects to CAN write access #1</p>");
+  c.input_checkbox("Disable CAN polling during sleep", "canwrite_sleep", canwrite_sleep,
+    "<p>Clears polling list when vehicle is in sleep mode</p>");
   c.fieldset_end();
   
   // trip reset or OBD activation
