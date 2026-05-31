@@ -487,7 +487,7 @@ void OvmsVehicleSmartEQ::smartOff()
 void OvmsVehicleSmartEQ::smartAwake()
 {
   // enable active polling when car wakes up (canwrite only)
-  if(m_enable_write) 
+  if(m_enable_write && !m_can_active) 
     {
     smartOBDpolling(true);
     }
@@ -500,7 +500,7 @@ void OvmsVehicleSmartEQ::smartAwake()
 void OvmsVehicleSmartEQ::smartSleep()
 {
   // disable active polling when car goes to sleep
-  if((m_enable_write_caron && m_can_active) || m_enable_write_sleep)
+  if((m_enable_write_caron && m_can_active) || (m_enable_write_sleep && m_can_active))
     smartOBDpolling(false);
   ESP_LOGD(TAG, "smartSleep()");
 }

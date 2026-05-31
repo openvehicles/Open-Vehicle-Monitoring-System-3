@@ -118,7 +118,7 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
   if (m_obdii_745) // 745 PIDs Doorlock and VIN
     m_poll_vector.insert(m_poll_vector.end(), obdii_745_polls, endof_array(obdii_745_polls));
        
-  if (m_obdii_745_tpms) // full TPMS mode with individual pressure/temp/alert status for each wheel
+  if (m_obdii_745_tpms && IsOnEQ()) // full TPMS mode with individual pressure/temp/alert status for each wheel
     m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms_polls, endof_array(obdii_745_tpms_polls));
   
   if (m_obdii_79b_cell) // 79b PIDs cell V/R/T values with configurable intervals
@@ -141,7 +141,7 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
   if (m_obdii_743) // 743 PIDs Maintenance data, OBD trip counters
     m_poll_vector.insert(m_poll_vector.end(), obdii_743_polls, endof_array(obdii_743_polls));
   
-  if (m_poll_on_charge)
+  if (m_poll_on_charge && IsChargingEQ()) // additional PIDs to poll when charging, depending on fast/slow charger detected
     { 
     if (mt_obl_fastchg->AsBool(false)) 
       {
