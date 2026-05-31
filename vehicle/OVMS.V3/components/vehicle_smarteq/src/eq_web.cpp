@@ -209,7 +209,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable CAN write access #2", "canwrite_caron", canwrite_caron,
     "<p>CAN write access all time!</p>"
     "<p>Clears polling list when vehicle is in awake/sleep mode</p>"
-    "<p>This will stop polling (CAN access) when the vehicle is in awake/sleep mode</p>"
+    "<p>This will stop CAN polling when the vehicle is in awake/sleep mode</p>"
     "<p>Alternative to CAN write access #1; select one or neither!</p>");
   c.input_checkbox("Disable CAN polling during sleep", "canwrite_sleep", canwrite_sleep,
     "<p>Clears polling list when vehicle is in sleep mode</p>");
