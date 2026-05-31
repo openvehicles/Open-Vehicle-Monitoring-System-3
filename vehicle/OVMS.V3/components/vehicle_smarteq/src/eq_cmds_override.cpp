@@ -79,11 +79,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     ESP_LOGI(TAG, "CommandClimateControl already on");
     return Success;
     }
-  // if write access is not enabled, then switch CAN bus to active mode for sending the command
-  if (!m_can_active)
-    {
-    smartOBDpolling(true);
-    }
 
   OvmsVehicle::vehicle_command_t res = Fail;
 
@@ -93,16 +88,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     canbus *obd;
     obd = m_can1;
     res = Fail;
-    for (int i = 0; i < 10; i++) 
+    for (int i = 0; i < 15; i++) 
       {
-      obd->WriteStandard(0x634, 4, data);
-      vTaskDelay(500 / portTICK_PERIOD_MS);
       if (IsOnHVACEQ())
         {
         ESP_LOGI(TAG, "Climate control started");
         res = Success;
         break;
         }
+      obd->WriteStandard(0x634, 4, data);
+      vTaskDelay(200 / portTICK_PERIOD_MS);
       }
     }
   else
@@ -198,11 +193,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
     ESP_LOGE(TAG, "CommandWakeup failed: no write access!");
     return Fail;
     }
-  // if write access is not enabled, then switch CAN bus to active mode for sending the command
-  if (!m_can_active)
-    {
-    smartOBDpolling(true);
-    }
 
   ESP_LOGI(TAG, "Send Wakeup Command");
 
@@ -216,13 +206,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
 
     for (int i = 0; i < 15; i++) 
       {
-      obd->WriteStandard(0x634, 4, data);
-      vTaskDelay(200 / portTICK_PERIOD_MS);
       if (IsAwakeEQ()) 
         {
         res = Success;
         break;
-        }
+        }      
+      obd->WriteStandard(0x634, 4, data);
+      vTaskDelay(200 / portTICK_PERIOD_MS);
       }
     res = Success;
     can_awake = true;

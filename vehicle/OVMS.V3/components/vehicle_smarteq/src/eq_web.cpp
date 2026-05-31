@@ -204,12 +204,15 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
   
   c.fieldset_start("Remote Control");
-  c.input_checkbox("Enable CAN write access", "canwrite", canwrite,
-    "<p>Controls CAN write access (OBDII polling etc.)</p>");
-  c.input_checkbox("Enable CAN write only when car on/charging", "canwrite_caron", canwrite_caron,
-    "<p>Alternative to Canwrite; select one or neither!</p>");
-  c.input_checkbox("Disable CAN write during sleep", "canwrite_sleep", canwrite_sleep,
-    "<p>Switch CAN Bus to listen Mode when car is sleeping</p>");
+  c.input_checkbox("Enable CAN write access #1", "canwrite", canwrite,
+    "<p>CAN write access all time! (OBDII polling, start Preconditioning etc.)</p>");
+  c.input_checkbox("Enable CAN write access #2", "canwrite_caron", canwrite_caron,
+    "<p>CAN write access all time!</p>"
+    "<p>Clears polling list when vehicle is in awake/sleep mode</p>"
+    "<p>This will stop CAN polling when the vehicle is in awake/sleep mode</p>"
+    "<p>Alternative to CAN write access #1; select one or neither!</p>");
+  c.input_checkbox("Disable CAN polling during sleep", "canwrite_sleep", canwrite_sleep,
+    "<p>Clears polling list when vehicle is in sleep mode</p>");
   c.fieldset_end();
   
   // trip reset or OBD activation
@@ -223,14 +226,15 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("OBD kWh/100km value", "bcvalue", bcvalue,
     "<p>Show OBD kWh/100km</p>");
   c.input_slider("WLTP km", "full_km", 3, "km",-1, atof(full_km.c_str()), 126, 100, 180, 1,
-  "<p>Max range at full HV (126 WLTP, 155 NFEZ) for ideal range calc</p>");
+    "<p>Max range at full HV (126 WLTP, 155 NFEZ) for ideal range calc</p>");
   c.fieldset_end();
 
   c.fieldset_start("Diff Settings");
   c.input_checkbox("Online state LED", "led", led,
     "<p>RED=no inet, BLUE=inet, GREEN=v2 connected. EGPIO 7,8,9</p>");
-  c.input_checkbox("Enable 12V charging", "charge12v", charge12v,
-    "<p>Charge 12V on low-voltage alert</p>"); 
+  c.input_checkbox("Enable trickle 12V charging", "charge12v", charge12v,
+    "<p>Charge 12V battery on low-voltage alert</p>"
+    "<p>Trickle charging for the 12V battery is performed via pre-conditioning.</p>"); 
   c.input_checkbox("Door unlocked warning", "unlocked", unlocked,
     "<p>Warn if parked &gt;10min and unlocked</p>");
   c.input_checkbox("Door open warning", "opendoors", opendoors,
