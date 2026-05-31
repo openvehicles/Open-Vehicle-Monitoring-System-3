@@ -141,7 +141,7 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
   if (m_obdii_743) // 743 PIDs Maintenance data, OBD trip counters
     m_poll_vector.insert(m_poll_vector.end(), obdii_743_polls, endof_array(obdii_743_polls));
   
-  if (m_poll_on_charge && IsChargingEQ()) // additional PIDs to poll when charging, depending on fast/slow charger detected
+  if (m_poll_on_charge) // additional PIDs to poll when charging, depending on fast/slow charger detected
     { 
     if (mt_obl_fastchg->AsBool(false)) 
       {
