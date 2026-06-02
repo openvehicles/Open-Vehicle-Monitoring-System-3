@@ -390,9 +390,9 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
       writer->puts("Error: invalid number");
       return;
       }
-    if (val < 12.0 || val > 15.0) 
+    if (val < 11.0 || val > 16.0) 
       {
-      writer->puts("Error: voltage out of plausible range (12.0–15.0)");
+      writer->puts("Error: voltage out of plausible range (11.0–16.0)");
       return;
       }
     writer->printf("Recalculating ADC factor using override voltage %.2fV\n", val);
@@ -401,7 +401,7 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
     } 
   else if (argc == 0) 
     {
-    if (!StdMetrics.ms_v_env_charging12v->AsBool(false)) 
+    if (!smarteq->Is12VchargeEQ()) 
       {
       writer->puts("Error: vehicle 12V DC-DC converter not active");
       return;

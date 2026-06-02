@@ -235,7 +235,6 @@ void OvmsVehicleSmartEQ::ResetTotalCounters() {
 
 // check the 12V alert periodically and charge the 12V battery if needed
 void OvmsVehicleSmartEQ::Check12vState() {
-  OvmsVehicle::vehicle_command_t res = NotImplemented;
   static const float MIN_VOLTAGE = 10.0f;
   static const int ALERT_THRESHOLD_TICKS = 10;
   
@@ -261,19 +260,7 @@ void OvmsVehicleSmartEQ::Check12vState() {
       {
         m_12v_ticker = 0;
         ESP_LOGI(TAG, "Initiating climate control due to 12V alert");
-        res = CommandClimateControl(true);
-
-      if (res == Success)
-        {
-        m_climate_restart = true;
-        m_climate_restart_ticker = 12; // 15 minutes
-        ESP_LOGI(TAG, "activated 12V charging successfully");
-        Notify12Vcharge();
-        }
-      else 
-        {
-        ESP_LOGE(TAG, "Failed to activate 12V charging");
-        }
+        CommandClimateControlEQ(true,true,8,true); // Start climate control with restart and 10 minutes duration
       }
     } 
   else if (m_12v_ticker > 0) 
@@ -285,7 +272,7 @@ void OvmsVehicleSmartEQ::Check12vState() {
 
 void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
   #ifdef CONFIG_OVMS_COMP_ADC
-    if (can12V < 12.0f || can12V > 15.0f) 
+    if (can12V < 11.0f || can12V > 16.0f) 
       {
       ESP_LOGW(TAG, "Skip ADC factor recalculation (invalid 12V input %.2f)", can12V);
       if (writer) writer->printf("Skip ADC factor recalculation (invalid 12V input %.2f)\n", can12V);
@@ -300,7 +287,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
     // Collect samples
     for (int i = 0; i < m_adc_samples; i++) 
       {
-      vTaskDelay(2 / portTICK_PERIOD_MS);
+      vTaskDelay(5 / portTICK_PERIOD_MS);
       samples_adc[i] = adc1_get_raw(ADC1_CHANNEL_0);
       }
 
@@ -346,9 +333,9 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
     // Calculate average of USM voltage samples
     float V_batt = can12V;
 
-    float adc_factor_median = (V_batt > 12.0f) ? (median_raw / V_batt) : 0.0f;
-    float adc_factor_avg = (V_batt > 12.0f) ? (avg_raw / V_batt) : 0.0f;
-    float adc_factor_trimmed = (V_batt > 12.0f) ? (trimmed_avg / V_batt) : 0.0f;
+    float adc_factor_median = (V_batt > 11.0f) ? (median_raw / V_batt) : 0.0f;
+    float adc_factor_avg = (V_batt > 11.0f) ? (avg_raw / V_batt) : 0.0f;
+    float adc_factor_trimmed = (V_batt > 11.0f) ? (trimmed_avg / V_batt) : 0.0f;
 
     float adc_factor_new = adc_factor_median;
     float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc", "factor12v", 195.7f);

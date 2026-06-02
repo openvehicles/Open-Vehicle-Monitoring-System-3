@@ -34,8 +34,12 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
-// can can1 tx st 634 40 01 72 00
+// can can1 tx st 634 40 01 00 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
+  return CommandClimateControlEQ(enable, false, 0, false);
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool enable, bool restart, int minutes, bool trickle) {
   
   if(!IsCANwrite())
     {
@@ -61,12 +65,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
       }
     }  
 
-  if (StandardMetrics.ms_v_bat_soc->AsInt(0) < 31)
+  if (StdMetrics.ms_v_bat_soc->AsInt(can_soc) < 31)
     {    
     char msg[100];
-    snprintf(msg, sizeof(msg), "Scheduled precondition skipped: Battery SOC too low (%d%%)",
-             StandardMetrics.ms_v_bat_soc->AsInt(0));
-    ESP_LOGW(TAG, "%s", msg);
+    snprintf(msg, sizeof(msg), "Scheduled precondition skipped: HV SOC too low (%d%%)", StdMetrics.ms_v_bat_soc->AsInt(can_soc));
+    ESP_LOGI(TAG, "%s", msg);
     MyNotify.NotifyString("alert", "climatecontrol.schedule", msg);
     m_climate_restart_ticker = 0;
     m_climate_restart = false; 
@@ -80,111 +83,94 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     return Success;
     }
 
-  OvmsVehicle::vehicle_command_t res = Fail;
-
   if (enable && !IsOnHVACEQ()) 
     {
+    CommandWakeup();
     uint8_t data[4] = {0x40, 0x01, 0x00, 0x00};
     canbus *obd;
     obd = m_can1;
-    res = Fail;
     for (int i = 0; i < 15; i++) 
       {
       if (IsOnHVACEQ())
         {
-        ESP_LOGI(TAG, "Climate control started");
-        res = Success;
+        StdMetrics.ms_v_env_awake->SetValue(true);
+        ESP_LOGD(TAG, "Climate control is now on");
         break;
         }
       obd->WriteStandard(0x634, 4, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
       }
+
+    if (IsOnHVACEQ())
+      {
+      // if true, climate will be restarted after 5 minutes by Ticker1, if false, climate will not be restarted after 5 minutes
+      m_climate_restart = restart;
+      m_climate_restart_ticker = minutes;      
+      if (trickle) 
+        {
+        ESP_LOGI(TAG, "activated 12V trickle charging successfully");
+        Notify12Vcharge();
+        }
+      else
+        {
+        // add 2 minutes to display time if restart is true, because climate will be restarted after 5/10 minutes
+        int minutes_display = restart ? minutes + 2 : 5;
+        char msg[100];
+        snprintf(msg, sizeof(msg), "%d minutes precondition started, HV SOC is %d%%", minutes_display, StdMetrics.ms_v_bat_soc->AsInt(can_soc));
+        ESP_LOGI(TAG, "%s", msg);
+        MyNotify.NotifyString("info", "climatecontrol.schedule", msg);
+        }
+      return Success;
+      }
+    else
+      {
+      if (trickle) 
+        {
+        ESP_LOGI(TAG, "Failed to activate 12V trickle charging");
+        MyNotify.NotifyString("info", "12v.trickle.charge", "Failed to activate 12V trickle charging!");
+        }
+      else
+        {
+        ESP_LOGI(TAG, "Failed to activate precondition");
+        MyNotify.NotifyString("info", "climatecontrol.schedule","Failed to activate precondition!");
+        }
+      return Fail;
+      }
     }
   else
     {
-    res = NotImplemented;
+    // fallback to default implementation?
+    return OvmsVehicle::CommandClimateControl(enable);
     }
-  // fallback to default implementation?
-  if (res == NotImplemented) 
-    {
-    res = OvmsVehicle::CommandClimateControl(enable);
-    }
-  return res;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, int durationms) {
-  // This is needed to enable climate control via Homelink for the iOS app
+  // This is needed to enable climate control via Homelink
   ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
-  OvmsVehicle::vehicle_command_t res = NotImplemented;
 
   switch (button)
   {
     case 0:
     {
-      res = CommandClimateControl(true);
-
-      if (res == Success)
-        {
-          m_climate_restart = false;
-          m_climate_restart_ticker = 0; // 5 minutes default runtime, no ticker required
-          ESP_LOGI(TAG, "Precondition activated successfully");
-          MyNotify.NotifyString("info", "climatecontrol.schedule",
-                                "5 minutes precondition started");
-        }
-      else
-        {
-          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
-          MyNotify.NotifyString("error", "climatecontrol.schedule",
-                                "precondition failed to start");
-        }
-      break;
+      // 5 minutes default runtime, no ticker required
+      CommandClimateControlEQ(true,false,0,false);
+      return Success;
     }
     case 1:
     {
-      res = CommandClimateControl(true);
-
-      if (res == Success)
-        {
-          m_climate_restart = true;
-          m_climate_restart_ticker = 8; // 10 minutes
-          ESP_LOGI(TAG, "Precondition activated successfully");
-          MyNotify.NotifyString("info", "climatecontrol.schedule",
-                                "10 minutes precondition started");
-        }
-      else
-        {
-          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
-          MyNotify.NotifyString("error", "climatecontrol.schedule",
-                                "precondition failed to start");
-        }
-      break;
+      // 10 minutes runtime, will be restarted after 5 minutes by Ticker60, so total runtime will be 10 minutes
+      CommandClimateControlEQ(true,true,8,false);
+      return Success;
     }
     case 2:
     { 
-      res = CommandClimateControl(true);
-
-      if (res == Success)
-        {
-          m_climate_restart = true;
-          m_climate_restart_ticker = 12; // 15 minutes
-          ESP_LOGI(TAG, "Precondition activated successfully");
-          MyNotify.NotifyString("info", "climatecontrol.schedule",
-                                "15 minutes precondition started");
-        }
-      else
-        {
-          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
-          MyNotify.NotifyString("error", "climatecontrol.schedule",
-                                "precondition failed to start");
-        }
-      break;
+      // 15 minutes runtime, will be restarted after 5 and 10 minutes by Ticker60, so total runtime will be 15 minutes
+      CommandClimateControlEQ(true,true,13,false);
+      return Success;
     }
     default:
-      res = OvmsVehicle::CommandHomelink(button, durationms);
-      break;
+      return OvmsVehicle::CommandHomelink(button, durationms);
   }
-
-  return res;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
@@ -215,7 +201,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
       vTaskDelay(200 / portTICK_PERIOD_MS);
       }
     res = Success;
-    can_awake = true;
+    StdMetrics.ms_v_env_awake->SetValue(true);
     ESP_LOGI(TAG, "Vehicle is now awake");
     } 
   else 
