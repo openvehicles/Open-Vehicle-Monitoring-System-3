@@ -83,12 +83,11 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
     OnlineState();
 
   // check 12V charging state for powermgmt system
-  bool charge_12v = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f ? true : false;
-  if (charge_12v != StdMetrics.ms_v_env_charging12v->AsBool(false))
+  if (Is12VchargeEQ() != StdMetrics.ms_v_env_charging12v->AsBool(false))
     {
-    StdMetrics.ms_v_env_charging12v->SetValue(charge_12v);    
+    StdMetrics.ms_v_env_charging12v->SetValue(Is12VchargeEQ());    
     m_ADCfactor_recalc_timer = 2;
-    m_ADCfactor_recalc = charge_12v;
+    m_ADCfactor_recalc = Is12VchargeEQ();
     }  
   // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
   if (IsOnHVACEQ() && IsAwakeEQ() && m_enable_write_caron && !m_can_active)
@@ -99,6 +98,11 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   if (IsChargingEQ() && !m_poll_on_charge)
     {
     smartChargeStart();
+    }
+  if (IsAwakeEQ() != StdMetrics.ms_v_env_awake->AsBool(false))
+    {
+    // if car is not awake but metric is, then set metric to false to prevent desync
+    StdMetrics.ms_v_env_awake->SetValue(IsAwakeEQ());
     }
   }
 
@@ -185,7 +189,7 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
     m_candata_timer = SQ_CANDATA_TIMEOUT;
     }
   
-  if (m_candata_timer > 0 && --m_candata_timer == 0 && m_candata_poll) 
+  if ((!IsAwakeEQ()) || (m_candata_timer > 0 && --m_candata_timer == 0 && m_candata_poll))
     {
     // Car has gone to sleep
     ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");

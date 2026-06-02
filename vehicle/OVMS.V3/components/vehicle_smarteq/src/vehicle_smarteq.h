@@ -158,7 +158,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void smartCAN2Metrics();
 
     // --- Command overrides ---
-    vehicle_command_t CommandClimateControl(bool enable) override;
+    vehicle_command_t CommandClimateControl(bool enable) override; // Override to add support for preconditioning and 12V trickle charge -> CommandClimateControlEQ
     vehicle_command_t CommandHomelink(int button, int durationms=1000) override;
     vehicle_command_t CommandWakeup() override;
     vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer) override;
@@ -170,6 +170,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     vehicle_command_t CommandStopCharge() override;
 
     // --- Custom vehicle commands ---
+    
+    vehicle_command_t CommandClimateControlEQ(bool enable, bool restart = false, int minutes = 0, bool trickle = false);
     vehicle_command_t CommandCanVector(uint32_t txid, uint32_t rxid, std::vector<std::string> hexbytes, bool reset=false, bool wakeup=false);
     vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
     vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
@@ -231,6 +233,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
     bool IsCANwrite() { return m_enable_write || m_enable_write_caron; }
+    bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f || StdMetrics.ms_v_env_charging12v->AsBool(false); }
 
   // =========================================================================
   // protected
