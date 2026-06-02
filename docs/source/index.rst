@@ -2,6 +2,9 @@
 Open Vehicles Monitoring System
 ===============================
 
+.. warning::
+   **IMPORTANT:** If you're new to the OVMS, first read :doc:`Warnings & Notices <userguide/warnings>`!
+
 .. note::
   This online manual includes documentation for the **stable** release of the
   OVMS firmware (available as OTA version tag "main") and the **latest**

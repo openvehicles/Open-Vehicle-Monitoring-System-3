@@ -38,6 +38,26 @@ available for **Android** and **iOS**. It integrates into home/process automatio
 provides data logging to SD card and to a server.
 
 
+## Warning
+
+![Warning](docs/source/userguide/warning_sm.png)
+
+**USE AT OWN RISK!**
+
+The OVMS is a **HOBBYIST PROJECT**, not a commercial product. It was designed by enthusiasts for enthusiasts. 
+Becoming a user means becoming part of the **project community**, not becoming a customer. Most vehicle features 
+are based on **reverse engineering** rather than OEM documentation, so no compliance with any OEM requirements 
+can be guaranteed. **Installing the module may damage your vehicle and void your vehicle warranty**. 
+Installation and use of this module **requires some technical knowledge**, and if you don't have that we 
+recommend you contact other users in your area to ask for assistance.
+
+THE SYSTEM IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
+THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS, COPYRIGHT HOLDERS, SERVICE OR HARDWARE PROVIDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SYSTEM OR 
+THE USE OR OTHER DEALINGS IN THE SYSTEM.
+
+
 ## Vehicle Support
 
 - _Native Integration_
@@ -179,7 +199,7 @@ flexible base that the community can work on and extend.
 Everything is open, and APIs are public. Other car modules can talk to the server, and other Apps can show the 
 status and control the car. This is a foundation that others hopefully will interface to and and build upon.
 
-**If you'd like to contribute, please accept our code of conduct:**
+**If you'd like to contribute, accept our code of conduct:**
 
 - Introduce yourself on the developer mailing list
 - Be kind & polite
@@ -191,6 +211,7 @@ status and control the car. This is a foundation that others hopefully will inte
 - Write brief but descriptive commit comments
 - Add user level descriptions to the change history
 - Provide documentation in the user guide
+- Include manufacturer warnings and warranty exclusions that may apply upfront in the user guide
 - Use pull requests to submit your code for inclusion
 
 

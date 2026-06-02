@@ -195,7 +195,14 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<p>Default is <code>https://api.openvehicles.com/firmware/ota</code>.</p>",
     "list=\"server-list\"");
   c.input_text("Version tag", "tag", tag.c_str(), "Specify or select from list (clear to see all options)",
-    "<p>Default is <code>main</code> for standard releases. Use <code>eap</code> (early access program) for stable or <code>edge</code> for bleeding edge developer builds.</p>",
+    "<p>Default is <code>main</code> for standard user releases. Use <code>eap</code> (early access program) for "
+    "stable (beta test) developer builds, or <code>edge</code> for bleeding edge developer builds. "
+    "→<a target=\"_blank\" href=\"https://docs.openvehicles.com/en/latest/userguide/ota.html\">User Guide</a></p>"
+    "<div class=\"alert alert-warning\"><b class=\"text-danger\">⚠</b> "
+    "<b>Developer builds are meant for development and testing, not for regular daily use!</b> "
+    "Developer versions may contain potentially harmful bugs and experiments. When running a developer version, it’s required you "
+    "closely follow discussions on the newly developed features, help in testing them by providing feedback, and <b>closely watch "
+    "your device and vehicle for any unusual behaviour.</b></div>",
     "list=\"tag-list\"");
   c.input_info("Hardware version", hardware.c_str());
 
