@@ -39,8 +39,18 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   {
   if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
+
+  if (can_350_ticker > 0 &&--can_350_ticker == 0) 
+    {
+    ESP_LOGD(TAG, "CAN 0x350 timeout reached");
+    can_350_ticker = -1;
+    can_awake = false;
+    can_env_on = false;
+    can_battery_on = false;
+    smartCAN2Metrics();
+    }
     
-  if(IsAwakeEQ() || IsAwakeByCanEQ())
+  if(IsAwakeEQ())
     smartCAN2Metrics();
 
   if(IsChargingEQ()) 
@@ -73,23 +83,26 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
     OnlineState();
 
   // check 12V charging state for powermgmt system
-  bool charge_12v = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f ? true : false;
-  if (charge_12v != StdMetrics.ms_v_env_charging12v->AsBool(false))
+  if (Is12VchargeEQ() != StdMetrics.ms_v_env_charging12v->AsBool(false))
     {
-    StdMetrics.ms_v_env_charging12v->SetValue(charge_12v);    
+    StdMetrics.ms_v_env_charging12v->SetValue(Is12VchargeEQ());    
     m_ADCfactor_recalc_timer = 2;
-    m_ADCfactor_recalc = charge_12v;
+    m_ADCfactor_recalc = Is12VchargeEQ();
     }  
   // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
   if (IsOnHVACEQ() && IsAwakeEQ() && m_enable_write_caron && !m_can_active)
     {
-    smartCANmode(true);
+    smartOBDpolling(true);
     }
   // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
   if (IsChargingEQ() && !m_poll_on_charge)
     {
-    mt_bus_awake->SetValue(true);
     smartChargeStart();
+    }
+  if (IsAwakeEQ() != StdMetrics.ms_v_env_awake->AsBool(false))
+    {
+    // if car is not awake but metric is, then set metric to false to prevent desync
+    StdMetrics.ms_v_env_awake->SetValue(IsAwakeEQ());
     }
   }
 
@@ -108,14 +121,6 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
       Handlev2Server();
   #endif
 
-  // start polling to get the first data
-  if(can_init)
-    {      
-    can_init = false;
-    mt_bus_awake->SetValue(true);
-    smartCANmode(true);
-    }
-
   // DDT4ALL session timeout on 5 minutes
   if (m_ddt4all) 
     {
@@ -130,15 +135,16 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
     }
 
   #ifdef CONFIG_OVMS_COMP_ADC
-  if(IsOnEQ() || IsChargingEQ())
+  bool charging12v = StdMetrics.ms_v_env_charging12v->AsBool(false);
+  float can12V = mt_evc_dcdc->GetElemValue(1);   // DCDC voltage
+  if((IsOnEQ() || IsChargingEQ()) && (charging12v && can12V > 13.3f && can12V < 15.1f))
     {
     // check for 12V voltage difference between CAN and ADC when the car is rebooted, to detect if ADC factor recalibration is needed
     if(m_check12vadc)
       {
       float can12V = mt_evc_dcdc->GetElemValue(1);
       float adc12V = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
-      float diff = fabs(can12V - adc12V);
-      bool charging12v = StdMetrics.ms_v_env_charging12v->AsBool(false);
+      float diff = fabs(can12V - adc12V);      
       if (diff > 0.1f && !m_ADCfactor_recalc && charging12v)      
         {
         ESP_LOGW(TAG, "12V voltage difference detected: CAN=%.2fV, ADC=%.2fV, diff=%.2fV", can12V, adc12V, diff);
@@ -155,9 +161,8 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
         {
         m_ADCfactor_recalc = false;
         m_ADCfactor_recalc_timer = 2;
-        // calculate new ADC factor      
-        float can12V = mt_evc_dcdc->GetElemValue(1);   // DCDC voltage
-        if (StdMetrics.ms_v_env_charging12v->AsBool(false))
+        // calculate new ADC factor         
+        if (charging12v)
           {
           ReCalcADCfactor(can12V, nullptr);  // nullptr = no Log-Output
           ESP_LOGI(TAG, "Auto ADC recalibration started (%.2fV)", can12V);
@@ -178,22 +183,22 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) {
  */
 void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus) 
   {
-  if (IsAwakeEQ() && !m_candata_poll) 
+  if (IsAwakeEQ())
     {
     m_candata_poll = true;
     m_candata_timer = SQ_CANDATA_TIMEOUT;
     }
   
-  if (m_candata_timer > 0 && --m_candata_timer == 0 && m_candata_poll) 
+  if ((!IsAwakeEQ()) || (m_candata_timer > 0 && --m_candata_timer == 0 && m_candata_poll))
     {
     // Car has gone to sleep
     ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
-    mt_bus_awake->SetValue(false);
     m_candata_poll = false;
     m_candata_timer = -1;
     }
   
   // - base system is awake if we've got a fresh lv_pwrstate:
-  StdMetrics.ms_v_env_aux12v->SetValue(can_awake);   
+  // use CAN 0x350 state for 12V aux state, because it seems to be more reliable than the 12V voltage for detecting if the car is in accessory mode or not, which is needed for the powermgmt system
+  StdMetrics.ms_v_env_aux12v->SetValue(IsHVonEQ());
   HandlePollState();
   }

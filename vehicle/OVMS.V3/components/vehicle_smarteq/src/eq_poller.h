@@ -39,7 +39,7 @@ static const OvmsPoller::poll_pid_t obdii_79b_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, { 0,300,10,4 }, 0, ISOTP_STD },     // Battery State
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, { 0,600,600,600 }, 0, ISOTP_STD },  // HV Contactor Cycles
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, { 0,60,10,10 }, 0, ISOTP_STD },     // HV Contactor Cycles
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x08, { 0,300,60,60 }, 0, ISOTP_STD },    // SOC
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,300,60,60 }, 0, ISOTP_STD },    // SOC Recalibration
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, { 0,300,60,60 }, 0, ISOTP_STD },    // Battery Health (SOH)
@@ -59,7 +59,7 @@ static const OvmsPoller::poll_pid_t obdii_79b_cell_vrt_polls[] =
 static const OvmsPoller::poll_pid_t obdii_745_polls[] =
 {
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, { 0,3600,0,0 }, 0, ISOTP_STD },      // req.VIN
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,5,5,5 }, 0, ISOTP_STD },         // Doorlock EEPROM
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,8,8,8 }, 0, ISOTP_STD },         // Doorlock EEPROM
 };
 
 static const OvmsPoller::poll_pid_t obdii_745_tpms_polls[] =
@@ -73,20 +73,20 @@ static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, { 0,3600,0,0 }, 0, ISOTP_STD },      // Frame Traceability Information
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, { 0,16,0,16 }, 0, ISOTP_STD },  // Charging plug detected (B_PlugConnected_bcb_status_S)  
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320C, { 0,60,60,16 }, 0, ISOTP_STD }, // rqHV_Energy
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, { 0,14,14,14 }, 0, ISOTP_STD }, // Cabin blower command
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, { 0,60,60,60 }, 0, ISOTP_STD }, // Cabin blower command
 };
 
 //   -> HandleOBDpolling() will add the following PIDs
 static const OvmsPoller::poll_pid_t obdii_7e4_dcdc_polls[] =
 {
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, { 0,14,14,14 }, 0, ISOTP_STD }, // rqDCDC_Load
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3022, { 0,14,14,14 }, 0, ISOTP_STD }, // DCDC activation request
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3023, { 0,14,14,14 }, 0, ISOTP_STD }, // 14V DCDC voltage request
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, { 0,14,14,14 }, 0, ISOTP_STD }, // 14V DCDC voltage measure
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, { 0,14,14,14 }, 0, ISOTP_STD }, // 14V DCDC current measure
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, { 0,14,14,14 }, 0, ISOTP_STD }, // rqDCDC_Power
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3301, { 0,14,14,14 }, 0, ISOTP_STD }, // USM 14V voltage (CAN)
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, { 0,14,14,14 }, 0, ISOTP_STD }, // Battery voltage 14V
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3495, { 0,60,14,14 }, 0, ISOTP_STD }, // rqDCDC_Load
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3022, { 0,60,14,14 }, 0, ISOTP_STD }, // DCDC activation request
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3023, { 0,60,14,14 }, 0, ISOTP_STD }, // 14V DCDC voltage request
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, { 0,60,14,14 }, 0, ISOTP_STD }, // 14V DCDC voltage measure
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, { 0,60,14,14 }, 0, ISOTP_STD }, // 14V DCDC current measure
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, { 0,60,14,14 }, 0, ISOTP_STD }, // rqDCDC_Power
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3301, { 0,60,14,14 }, 0, ISOTP_STD }, // USM 14V voltage (CAN)
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, { 0,60,14,14 }, 0, ISOTP_STD }, // Battery voltage 14V
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2003, { 0,300,0,300 }, 0, ISOTP_STD },  // Vehicle Speed
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 0,300,0,300 }, 0, ISOTP_STD },  // Total vehicle distance
 };

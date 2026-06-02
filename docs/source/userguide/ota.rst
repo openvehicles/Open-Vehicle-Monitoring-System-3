@@ -4,6 +4,34 @@ Over The Air (OTA) Updates
 
 .. highlight:: none
 
+------------------
+OTA Build Versions
+------------------
+
+The official public OVMS servers are organized to provide three standard firmware builds:
+
+  - ``main`` -- main release for users (normally 1-2 updates per year)
+  - ``eap`` -- stable developer build for beta testers (updated potentially frequently in the weeks before the next main release)
+  - ``edge`` -- latest developer build (daily updates)
+
+.. warning::
+  **Developer builds are meant for development and testing, not for regular daily use!**
+  Developer versions may contain potentially harmful bugs and experiments. When running a developer version,
+  it's required you closely follow discussions on the newly developed features, help in testing them by
+  providing feedback, and **closely watch your device and vehicle for any unusual behaviour**.
+
+To change the build version for your next OTA update, set the "version tag" field in the web UI to
+the version tag code to be used, or set the configuration directly (``config set ota tag …``).
+
+To manually flash the latest firmware of a specific build version, either copy the firmware (``ovms3.bin``)
+URL from browsing the download area of the update server, or replace the respective URL part, e.g.
+``…/firmware/ota/v3.3-5/main/ovms3.bin`` → ``…/firmware/ota/v3.3-5/eap/ovms3.bin``.
+
+
+--------------
+OTA Partitions
+--------------
+
 OVMS v3 includes 16MB flash storage. **Up to release 3.3.005**, this was partitioned as::
 
   4MB for factory application image (factory)
@@ -26,6 +54,10 @@ the factory partition was dropped. See :doc:`partitioning` for details and the u
 That leaves two firmwares for Over The Air (OTA) updates. Updates will be installed in the currently inactive
 OTA partition, and will only be activated after a successful validation of their integrity. In this way,
 the currently running firmware is never modified and is always available as a failover backup.
+
+----------------------
+Selecting a Boot Image
+----------------------
 
 You can check the status of OTA with the ``ota status`` command::
 
@@ -58,6 +90,11 @@ If we wanted to boot from ``ota_0`` next, we can do this with ‘ota boot ota_0�
 If the bootloader fails to boot from the specified OTA firmware, it will failover and boot from the primary
 partition (factory / ota_0).
 
+
+-----------------
+Updating Manually
+-----------------
+
 We can flash firmware to OTA either from a file on VFS (normally ``/sd``), or over the Internet (via http).
 Let’s try a simple OTA update over HTTP::
 
@@ -88,3 +125,5 @@ Rebooting now (with ``module reset``) would boot from the newly downloaded ota_0
   …
   Running partition: ota_0
   Boot partition:    ota_0
+
+
