@@ -432,39 +432,39 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_enable_write_caron = false;      // canwrite enable write access, only when car is on
     bool m_enable_write_sleep = false;      // canwrite disable write access, only when car is asleep
     bool m_can_active = false;              // true if CAN bus is in active mode, false if in listen-only mode
-    bool m_enable_LED_state;                // Online LED State
-    bool m_enable_lock_state;               // Lock State
-    bool m_enable_door_state;               // Door Open State
-    bool m_tpms_temp_enable;                // TPMS Temperature Display enabled
-    bool m_resettrip;                       // Reset Trip Values when Charging/Driving
-    bool m_resettotal;                      // Reset kWh/100km Values when Driving
-    bool m_tripnotify;                      // Trip Reset Notification on/off
-    bool m_bcvalue;                         // use kWh/100km Value from mt_use_at_reset = true, Calculated = false
-    bool m_tpms_alert_enable;               // TPMS Alert enabled
-    bool m_12v_charge;                      // 12V charge on/off
-    bool m_12v_charge_state;                // 12V charge state
-    bool m_extendedStats;                   // extended stats for trip and maintenance data
-    bool m_enable_calcADCfactor;            // enable calculation of ADC factor
-    int m_reboot_ticker;
-    int m_reboot_time;                      // Restart Network time
-    int m_TPMS_FL;                          // TPMS Sensor Front Left
-    int m_TPMS_FR;                          // TPMS Sensor Front Right
-    int m_TPMS_RL;                          // TPMS Sensor Rear Left
-    int m_TPMS_RR;                          // TPMS Sensor Rear Right
-    int m_park_timeout_secs;                // parking timeout in seconds
-    int m_full_km;                          // full battery km value for SoC calculation
-    int m_cfg_preset_version;               // config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
-    int m_suffsoc;                          // minimum SoC for charging
-    int m_suffrange;                        // minimum range for charging
-    float m_front_pressure;                 // Front Tire Pressure
-    float m_rear_pressure;                  // Rear Tire Pressure
-    float m_pressure_warning;               // Pressure Warning
-    float m_pressure_alert;                 // Pressure Alert
-    std::string m_hl_canbyte;               // canbyte variable for unv
+    bool m_enable_LED_state = false;        // Online LED State
+    bool m_enable_lock_state = true;        // Lock State
+    bool m_enable_door_state = true;        // Door Open State
+    bool m_tpms_alert_enable = true;        // TPMS Alert enabled
+    bool m_tpms_temp_enable = false;        // TPMS Temperature Display enabled
+    bool m_resettrip = true;                // Reset Trip Values when true/false = Charging/Driving
+    bool m_resettotal = false;              // Reset kWh/100km Values when Driving
+    bool m_tripnotify = false;              // Trip Reset Notification on/off
+    bool m_bcvalue = false;                 // use kWh/100km Value from mt_use_at_reset = true, Calculated = false
+    bool m_12v_charge = true;               // 12V charge on/off
+    bool m_12v_charge_state = false;        // 12V charge state
+    bool m_extendedStats = false;           // extended stats for trip and maintenance data
+    bool m_enable_calcADCfactor = false;    // enable calculation of ADC factor
+    int m_reboot_ticker = 0;                // ticker for network restart
+    int m_reboot_time = 30;                 // Restart Network time
+    int m_TPMS_FL = 0;                      // TPMS Sensor Front Left
+    int m_TPMS_FR = 0;                      // TPMS Sensor Front Right
+    int m_TPMS_RL = 0;                      // TPMS Sensor Rear Left
+    int m_TPMS_RR = 0;                      // TPMS Sensor Rear Right
+    int m_park_timeout_secs = 600;          // parking timeout in seconds
+    int m_full_km = 126;                    // full battery km value for SoC calculation
+    int m_cfg_preset_version = 0;           // config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
+    int m_suffsoc = 0;                      // minimum SoC for charging
+    int m_suffrange = 0;                    // minimum range for charging
+    float m_front_pressure = 225.0f;        // Front Tire Pressure
+    float m_rear_pressure = 255.0f;         // Rear Tire Pressure
+    float m_pressure_warning = 40.0f;       // Pressure Warning
+    float m_pressure_alert = 70.0f;         // Pressure Alert
+    std::string m_hl_canbyte = "";          // canbyte variable for unv
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
 
     // --- Internal state variables ---
-    bool m_indicator;                       // activate indicator e.g. 7 times or whatever
+    bool m_indicator = false;               // activate indicator e.g. 7 times or whatever
     bool m_ddt4all = false;                 // DDT4ALL mode
     bool m_warning_unlocked = false;        // unlocked warning
     bool m_warning_dooropen = false;        // open doors warning
