@@ -90,7 +90,7 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
     m_ADCfactor_recalc = Is12VchargeEQ();
     }  
   // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
-  if (IsOnHVACEQ() && IsAwakeEQ() && m_enable_write_caron && !m_can_active)
+  if (IsOnHVACEQ() && IsAwakeEQ() && IsCANwrite() && !m_can_active)
     {
     smartOBDpolling(true);
     }

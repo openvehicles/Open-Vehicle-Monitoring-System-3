@@ -119,7 +119,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
         m_12v_trickle_charge_times.push_back((uint32_t)now);
         mt_12v_trickle_charge_count->SetValue((int)m_12v_trickle_charge_times.size());
 
-        if (m_12v_trickle_charge_times.size() == 3)
+        if (mt_12v_trickle_charge_count->AsInt(0) == 3)
           {
           ESP_LOGW(TAG, "12V trickle charging activated 3 times within 24h");
           MyNotify.NotifyString("alert", "xsq.12v.charge.alert",
