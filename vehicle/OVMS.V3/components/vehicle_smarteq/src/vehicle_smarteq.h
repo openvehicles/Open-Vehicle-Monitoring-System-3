@@ -233,7 +233,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
     bool IsCANwrite() { return m_enable_write || m_enable_write_caron; }
-    bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f || StdMetrics.ms_v_env_charging12v->AsBool(false); }
+    bool Is12VchargeEQ() { return mt_evc_dcdc->GetElemValue(1) > 13.2f && StdMetrics.ms_v_env_charging12v->AsBool(false); }
 
   // =========================================================================
   // protected
@@ -243,6 +243,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void Ticker1(uint32_t ticker) override;
     void Ticker10(uint32_t ticker) override;
     void Ticker60(uint32_t ticker) override;
+    void Ticker3600(uint32_t ticker) override;
     void PollerStateTicker(canbus *bus) override;
 
     // --- Dashboard / Calculations ---
@@ -376,6 +377,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricVector<float> *mt_evc_dcdc;                    // EVC 12V system values vector
     OvmsMetricString        *mt_evc_traceability;            // Frame Traceability: ITG/Factory/Serial
     OvmsMetricBool          *mt_evc_plug_detected;           // Charging plug detected by charger (0x339D)
+    OvmsMetricInt           *mt_12v_trickle_charge_count;    // Number of 12V trickle activations in the last 24h
 
     // --- Custom metrics: BMS ---
     OvmsMetricVector<float> *mt_bms_voltages;                // Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
@@ -499,6 +501,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // ADC factor calculation is needed based on 12V reading, only check when car is on or charging to avoid false recalculations based on 12V drop when car is off
     // activated only after reboot
     bool m_check12vadc = true;
+    std::deque<uint32_t> m_12v_trickle_charge_times; // activation timestamps for 12V trickle charge alarm within 24h
 
     // --- ADC variables ---
     bool m_ADCfactor_recalc = false;      // request recalculation of ADC factor

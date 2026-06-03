@@ -357,11 +357,14 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
     //  <cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer>
     //V2:
     //  ,<bms_mileage>,<can_soc>,<can_soh>,<USM_12V>,<contactor_state>,<bms_prod_data>,<bat_serial>,<evc_traceability>
-    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,2,%d,%d,%d,%d,%d,%.1f,%.0f,%.1f,%.0f,%.2f,%s,%s,%s,%s",
+    //V3:
+    //  ,<12V_trickle_charge_count within 24h>
+    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,3,%d,%d,%d,%d,%d,%.1f,%.0f,%.1f,%.0f,%.2f,%s,%s,%s,%s,%d",
       86400 * 30, // hold time 30 days
       cycles_max, cycles_prev, cycles_now, cycles_diff, odometer, 
       mt_bms_mileage->AsFloat(), can_soc, can_soh, mt_evc_dcdc->GetElemValue(3), mt_bms_HVcontactStateTXT->AsString().c_str(),
-        mp_encode(mt_bms_prod_data->AsString()).c_str(), mt_bat_serial->AsString().c_str(), mp_encode(mt_evc_traceability->AsString()).c_str());
+      mp_encode(mt_bms_prod_data->AsString()).c_str(), mt_bat_serial->AsString().c_str(), mp_encode(mt_evc_traceability->AsString()).c_str(),
+      mt_12v_trickle_charge_count->AsInt(0));
     // Send alert in case of a large unexpected jump
     if (cycles_prev > cycles_now && cycles_diff > 100) 
       {
