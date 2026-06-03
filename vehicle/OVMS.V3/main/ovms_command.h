@@ -56,6 +56,7 @@ class OvmsCommand;
 class OvmsCommandMap;
 class LogBuffers;
 typedef bool (*InsertCallback)(OvmsWriter* writer, void* userData, char);
+typedef void (*TerminationCallback)(OvmsWriter* writer, void* userData);
 
 class OvmsWriter
   {
@@ -81,6 +82,21 @@ class OvmsWriter
     virtual void ProcessChar(char c) {}
 
   public:
+    // Termination handler registry, parallel to the insert callback registry.
+    // An interactive command that has taken over the session input (by
+    // registering an insert callback) may also register a termination handler.
+    // A console invokes RunTerminationCallback() during teardown — before it
+    // frees any transport it owns — so the command can release resources or stop
+    // background tasks while this writer is still valid. At most one handler is
+    // active at a time (input is owned by a single interactive command). The
+    // handler must block until cleanup is complete (e.g. a follow-mode task must
+    // be joined) so the writer is safe to free once it returns.
+    void RegisterTerminationCallback(TerminationCallback cb, void* ctx);
+    void DeregisterTerminationCallback(TerminationCallback cb);
+    void RunTerminationCallback();
+    bool HasTerminationCallback(TerminationCallback cb) { return m_termination == cb; }
+
+  public:
     // Used to notify the writer of a migration of a file within the VFS
     virtual const std::string GetPath() { return std::string(""); }
     virtual void SetPath(const std::string& path) {}
@@ -98,6 +114,8 @@ class OvmsWriter
     InsertCallback m_insert;
     void* m_userData;
     bool m_monitoring;
+    TerminationCallback m_termination;   // active interactive-command teardown handler, or NULL
+    void* m_termData;
   };
 
 template <typename T>
@@ -326,8 +344,10 @@ class OvmsCommandTask : public TaskBase
     virtual OvmsCommandState_t Prepare();
     bool Run();
     static bool Terminator(OvmsWriter* writer, void* userdata, char ch);
+    static void TerminationHandler(OvmsWriter* writer, void* userdata);
     bool IsRunning() { return m_state == OCS_RunLoop; }
     bool IsTerminated() { return m_state == OCS_StopRequested; }
+    void RequestStop() { m_state = OCS_StopRequested; }
 
   protected:
     int verbosity;

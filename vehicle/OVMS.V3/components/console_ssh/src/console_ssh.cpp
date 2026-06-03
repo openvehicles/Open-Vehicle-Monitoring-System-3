@@ -340,6 +340,10 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
 
 ConsoleSSH::~ConsoleSSH()
   {
+  // Clean up any interactive command (e.g. a "vfs tail" follow-mode task) bound
+  // to this console before freeing the transport it writes to, otherwise it
+  // would dereference a freed writer/transport.
+  RunTerminationCallback();
   WOLFSSH* ssh = m_ssh;
   m_ssh = NULL;
   wolfSSH_free(ssh);

@@ -80,10 +80,48 @@ OvmsWriter::OvmsWriter()
   m_insert = NULL;
   m_userData = NULL;
   m_monitoring = false;
+  m_termination = NULL;
+  m_termData = NULL;
   }
 
 OvmsWriter::~OvmsWriter()
   {
+  // Backstop: clean up any interactive command still bound to this writer.
+  // Consoles that own a transport must call this earlier (before freeing that
+  // transport); here it only guards writers that did not.
+  RunTerminationCallback();
+  }
+
+void OvmsWriter::RegisterTerminationCallback(TerminationCallback cb, void* ctx)
+  {
+  m_termination = cb;
+  m_termData = ctx;
+  }
+
+void OvmsWriter::DeregisterTerminationCallback(TerminationCallback cb)
+  {
+  if (m_termination == cb)
+    {
+    m_termination = NULL;
+    m_termData = NULL;
+    }
+  }
+
+void OvmsWriter::RunTerminationCallback()
+  {
+  // Invoked during console/writer teardown. Gives the active interactive
+  // command (if any) a chance to release resources / stop background tasks
+  // while this writer is still valid; the handler blocks until that is done.
+  // Idempotent: a follow-mode task clears its own registration before this
+  // returns, and the explicit clear afterwards makes repeat calls (e.g. a
+  // console destructor followed by the ~OvmsWriter backstop) a no-op.
+  TerminationCallback cb = m_termination;
+  void* data = m_termData;
+  if (cb == NULL)
+    return;
+  cb(this, data);
+  m_termination = NULL;
+  m_termData = NULL;
   }
 
 void OvmsWriter::Exit()
@@ -683,6 +721,13 @@ typedef struct
   int tries;
   } PasswordContext;
 
+// Release the password prompt context if the session is closed while "enable"
+// is still waiting for input (the insert callback would otherwise leak it).
+void enableTerminate(OvmsWriter* writer, void* v)
+  {
+  delete (PasswordContext*)v;
+  }
+
 bool enableInsert(OvmsWriter* writer, void* v, char ch)
   {
   PasswordContext* pc = (PasswordContext*)v;
@@ -693,6 +738,7 @@ bool enableInsert(OvmsWriter* writer, void* v, char ch)
       {
       writer->SetSecure(true);
       writer->printf("\nSecure mode");
+      writer->DeregisterTerminationCallback(enableTerminate);
       delete pc;
       return false;
       }
@@ -700,6 +746,7 @@ bool enableInsert(OvmsWriter* writer, void* v, char ch)
       {
       writer->printf("\nError: %d incorrect password attempts", pc->tries);
       vTaskDelay(5000 / portTICK_PERIOD_MS);
+      writer->DeregisterTerminationCallback(enableTerminate);
       delete pc;
       return false;
       }
@@ -709,6 +756,7 @@ bool enableInsert(OvmsWriter* writer, void* v, char ch)
     }
   if (ch == 'C'-0100)
     {
+    writer->DeregisterTerminationCallback(enableTerminate);
     delete pc;
     return false;
     }
@@ -736,6 +784,7 @@ void enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
     pc->tries = 0;
     writer->printf("Password:");
     writer->RegisterInsertCallback(enableInsert, pc);
+    writer->RegisterTerminationCallback(enableTerminate, pc);
     }
   }
 
@@ -1744,8 +1793,13 @@ bool OvmsCommandTask::Run()
     case OCS_RunLoop:
       // start task:
       writer->RegisterInsertCallback(Terminator, (void*) this);
+      // Register the termination handler before Instantiate() so a console
+      // tearing down can never miss the task (it could otherwise start, finish
+      // and deregister itself before we registered it).
+      writer->RegisterTerminationCallback(TerminationHandler, (void*) this);
       if (!Instantiate())
         {
+        writer->DeregisterTerminationCallback(TerminationHandler);
         delete this;
         return false;
         }
@@ -1772,6 +1826,9 @@ OvmsCommandTask::~OvmsCommandTask()
   if (m_state == OCS_StopRequested)
     writer->puts("^C");
   writer->DeregisterInsertCallback(Terminator);
+  // Must be the last access to writer: it releases a console blocked in
+  // RunTerminationCallback(), which may then free the writer.
+  writer->DeregisterTerminationCallback(TerminationHandler);
   if (argv)
     {
     for (int i=0; i < argc; i++)
@@ -1785,6 +1842,21 @@ bool OvmsCommandTask::Terminator(OvmsWriter* writer, void* userdata, char ch)
   if (ch == 3) // Ctrl-C
     ((OvmsCommandTask*) userdata)->m_state = OCS_StopRequested;
   return true;
+  }
+
+void OvmsCommandTask::TerminationHandler(OvmsWriter* writer, void* userdata)
+  {
+  // Called on the console's teardown task when the session is closing while a
+  // follow-mode (OCS_RunLoop) task is still running. Ask it to stop, then wait
+  // until it has fully exited: ~OvmsCommandTask deregisters this handler as its
+  // last access to the writer, so once the registration is cleared the task can
+  // no longer dereference the writer. Cooperative stop+join (no vTaskDelete) so
+  // the task is never force-killed mid-write. This relies on no concurrent
+  // Ctrl-C termination, which holds on the connection-close path.
+  OvmsCommandTask* task = (OvmsCommandTask*) userdata;
+  task->RequestStop();
+  while (writer->HasTerminationCallback(TerminationHandler))
+    vTaskDelay(pdMS_TO_TICKS(20));
   }
 
 bool option_completer_t::check_param(char param, bool has_more)
