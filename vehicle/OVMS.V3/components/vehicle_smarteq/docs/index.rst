@@ -228,6 +228,7 @@ xsq.bms.interlock.hvplug               HV plug interlock status [bool]
 xsq.bms.interlock.service              Service interlock status [bool]
 xsq.bms.fusi                           FUSI mode text
 xsq.bms.safety                         Safety mode text
+xsq.12v.trickle.count                  12V trickle charge counted in 24h, reset to 0 after 24h. Alert if count == 3 in 24h [count]
 =========================== ==============
 
 -------------------------
