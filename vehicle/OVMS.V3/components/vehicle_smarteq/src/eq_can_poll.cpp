@@ -775,8 +775,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_ActReq(const char* data, uint16_t re
   // Spec: bitoffset 7, bitscount 1 (MSB of byte 0 in payload)
   REQUIRE_LEN(1);
   uint8_t raw = CAN_BYTE(0);
-  bool active = raw != 0;  // Bit 7
-  StdMetrics.ms_v_env_charging12v->SetValue(active);
+  can_charging12v = raw != 0;  // Bit 7  
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len) {

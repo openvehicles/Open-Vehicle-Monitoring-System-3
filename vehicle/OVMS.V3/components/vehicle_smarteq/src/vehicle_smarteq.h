@@ -233,7 +233,9 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
     bool IsCANwrite() { return m_enable_write || m_enable_write_caron; }
-    bool Is12VchargeEQ() { return mt_evc_dcdc->GetElemValue(1) > 13.2f && StdMetrics.ms_v_env_charging12v->AsBool(false); }
+    bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f || 
+                                  (m_can_active && mt_evc_dcdc->GetElemValue(1) > 13.1f ) || 
+                                  (m_can_active && can_charging12v); }
 
   // =========================================================================
   // protected
@@ -526,6 +528,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool can_chargeport = false;
     bool can_env_on = false;
     bool can_charge_inprogress = false;
+    bool can_charging12v = false;
     float can_cabintemp = 0.0f;
     float can_bat_temp = 0.0f;
     float can_bat_voltage = 0.0f;
