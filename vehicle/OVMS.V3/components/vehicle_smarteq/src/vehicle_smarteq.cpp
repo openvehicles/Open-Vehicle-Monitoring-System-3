@@ -253,44 +253,44 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   
   if (map)
     {
-    m_enable_write         = map->GetValueBool("canwrite", m_enable_write);
-    m_enable_write_caron   = map->GetValueBool("canwrite.caron", m_enable_write_caron);
-    m_enable_write_sleep   = map->GetValueBool("canwrite.sleep", m_enable_write_sleep);
-    m_enable_LED_state     = map->GetValueBool("led", m_enable_LED_state);
-    m_bcvalue              = map->GetValueBool("bcvalue", m_bcvalue);
-    m_enable_lock_state    = map->GetValueBool("unlock.warning", m_enable_lock_state);
-    m_enable_door_state    = map->GetValueBool("door.warning", m_enable_door_state);
-    m_resettrip            = map->GetValueBool("resettrip", m_resettrip);
-    m_resettotal           = map->GetValueBool("resettotal", m_resettotal);
-    m_tripnotify           = map->GetValueBool("reset.notify", m_tripnotify);
-    m_tpms_alert_enable    = map->GetValueBool("tpms.alert.enable", m_tpms_alert_enable);
-    m_tpms_temp_enable     = map->GetValueBool("tpms.temp", m_tpms_temp_enable);
-    m_12v_charge           = map->GetValueBool("12v.charge", m_12v_charge);
-    m_enable_calcADCfactor = map->GetValueBool("calc.adcfactor", m_enable_calcADCfactor);
-    m_indicator            = map->GetValueBool("indicator", m_indicator);
-    m_extendedStats        = map->GetValueBool("extended.stats", m_extendedStats);
-    obdii_79b              = map->GetValueBool("obdii.79b", m_obdii_79b);
-    obdii_79b_cell         = map->GetValueBool("obdii.79b.cell", m_obdii_79b_cell);
-    obdii_743              = map->GetValueBool("obdii.743", m_obdii_743);
-    obdii_745              = map->GetValueBool("obdii.745", m_obdii_745);
-    obdii_745_tpms         = map->GetValueBool("obdii.745.tpms", m_obdii_745_tpms);
-    obdii_7e4              = map->GetValueBool("obdii.7e4", m_obdii_7e4);
-    obdii_7e4_dcdc         = map->GetValueBool("obdii.7e4.dcdc", m_obdii_7e4_dcdc);
+    m_enable_write         = map->GetValueBool("canwrite", false);
+    m_enable_write_caron   = map->GetValueBool("canwrite.caron", false);
+    m_enable_write_sleep   = map->GetValueBool("canwrite.sleep", false);
+    m_enable_LED_state     = map->GetValueBool("led", false);
+    m_bcvalue              = map->GetValueBool("bcvalue", false);
+    m_enable_lock_state    = map->GetValueBool("unlock.warning", true);
+    m_enable_door_state    = map->GetValueBool("door.warning", true);
+    m_resettrip            = map->GetValueBool("resettrip", true);
+    m_resettotal           = map->GetValueBool("resettotal", false);
+    m_tripnotify           = map->GetValueBool("reset.notify", false);
+    m_tpms_alert_enable    = map->GetValueBool("tpms.alert.enable", true);
+    m_tpms_temp_enable     = map->GetValueBool("tpms.temp", true);
+    m_12v_charge           = map->GetValueBool("12v.charge", true);
+    m_enable_calcADCfactor = map->GetValueBool("calc.adcfactor", false);
+    m_indicator            = map->GetValueBool("indicator", false);
+    m_extendedStats        = map->GetValueBool("extended.stats", false);
+    obdii_79b              = map->GetValueBool("obdii.79b", true);
+    obdii_79b_cell         = map->GetValueBool("obdii.79b.cell", true);
+    obdii_743              = map->GetValueBool("obdii.743", true);
+    obdii_745              = map->GetValueBool("obdii.745", true);
+    obdii_745_tpms         = map->GetValueBool("obdii.745.tpms", true);
+    obdii_7e4              = map->GetValueBool("obdii.7e4", true);
+    obdii_7e4_dcdc         = map->GetValueBool("obdii.7e4.dcdc", true);
 
-    m_reboot_time          = map->GetValueInt("rebootnw", m_reboot_time);
-    m_park_timeout_secs    = map->GetValueInt("park.timeout", m_park_timeout_secs);
-    m_full_km              = map->GetValueInt("full.km", m_full_km);
-    m_cfg_preset_version   = map->GetValueInt("cfg.preset.ver", m_cfg_preset_version);
-    m_suffsoc              = map->GetValueInt("suffsoc", m_suffsoc);
-    m_suffrange            = map->GetValueInt("suffrange", m_suffrange);
-    cell_interval_drv      = map->GetValueInt("cell_interval_drv", cell_interval_drv);
-    cell_interval_chg      = map->GetValueInt("cell_interval_chg", cell_interval_chg);
-    m_above_cycles         = map->GetValueInt("bms.alert.above.cycles", m_above_cycles);
+    m_reboot_time          = map->GetValueInt("rebootnw", 30);
+    m_park_timeout_secs    = map->GetValueInt("park.timeout", 600);
+    m_full_km              = map->GetValueInt("full.km", 126);
+    m_cfg_preset_version   = map->GetValueInt("cfg.preset.ver", 0);
+    m_suffsoc              = map->GetValueInt("suffsoc", 0);
+    m_suffrange            = map->GetValueInt("suffrange", 0);
+    cell_interval_drv      = map->GetValueInt("cell_interval_drv", 60);
+    cell_interval_chg      = map->GetValueInt("cell_interval_chg", 60);
+    m_above_cycles         = map->GetValueInt("bms.alert.above.cycles", 50000);
     
-    m_front_pressure       = map->GetValueFloat("tpms.front.pressure", m_front_pressure);
-    m_rear_pressure        = map->GetValueFloat("tpms.rear.pressure", m_rear_pressure);
-    m_pressure_warning     = map->GetValueFloat("tpms.value.warn", m_pressure_warning);
-    m_pressure_alert       = map->GetValueFloat("tpms.value.alert", m_pressure_alert);
+    m_front_pressure       = map->GetValueFloat("tpms.front.pressure", 225.0f);
+    m_rear_pressure        = map->GetValueFloat("tpms.rear.pressure", 255.0f);
+    m_pressure_warning     = map->GetValueFloat("tpms.value.warn", 40.0f);
+    m_pressure_alert       = map->GetValueFloat("tpms.value.alert", 70.0f);
     }
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
