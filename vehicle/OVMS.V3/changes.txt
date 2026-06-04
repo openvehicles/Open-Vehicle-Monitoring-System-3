@@ -1,7 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-
+- smart EQ:
+    As soon as the 12V trickle charge begins, a timestamp is generated and stored in `m_12v_trickle_charge_times`.
+    The counted value is set in `xsq.12v.trickle.count`.
+    Within `Ticker3600`, a routine removes all timestamps older than 24 hours and updates `xsq.12v.trickle.count` by -1.
+    New metric:
+      xsq.12v.trickle.count             -- Count of 12V trickle-charge cycles in 24h
 
 2026-05-17 MB   3.3.006  OTA release
 - VW e-Up: extended battery health / aging info (with web UI integration): total battery age,
