@@ -1565,6 +1565,20 @@ bool OvmsMetric::SetValue(const dbcNumber& value, metric_unit_t units)
   {
   return false;
   }
+bool OvmsMetric::SetValueAt(size_t n, std::string value, metric_unit_t units)
+  {
+  // This is for non-vectors
+  if (n != 0)
+    return false;
+  return SetValue(value, units);
+  }
+bool OvmsMetric::SetValueAt(size_t n, const dbcNumber& value, metric_unit_t units)
+  {
+  // This is for non-vectors
+  if (n != 0)
+    return false;
+  return SetValue(value, units);
+  }
 
 void OvmsMetric::operator=(std::string value)
   {

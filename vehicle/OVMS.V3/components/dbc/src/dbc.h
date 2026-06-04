@@ -259,7 +259,6 @@ class dbcValueTableTable
     dbcValueTableTableEntry_t m_entrymap;
   };
 
-
 class dbcMetric
   {
   public:
@@ -268,6 +267,7 @@ class dbcMetric
     virtual void SetValue(const std::string &value) = 0;
     virtual metric_unit_t DefaultUnit() const = 0;
   };
+
 class dbcOvmsMetric : public dbcMetric
   {
   private:
@@ -277,6 +277,63 @@ class dbcOvmsMetric : public dbcMetric
     void SetValue(dbcNumber value, metric_unit_t unit) override;
     void SetValue(const std::string &value) override;
     metric_unit_t DefaultUnit() const override;
+  };
+class dbcOvmsMetricIndex : public dbcMetric
+  {
+  private:
+    OvmsMetric *m_metric;
+    int16_t m_index;
+  public:
+    dbcOvmsMetricIndex(OvmsMetric *metric, int16_t index);
+    void SetValue(dbcNumber value, metric_unit_t unit) override;
+    void SetValue(const std::string &value) override;
+    metric_unit_t DefaultUnit() const override;
+  };
+
+
+enum class OvmsMetricEventType : short {
+  Unknown,
+  Reset,
+  ResetWithValue,
+  Value,
+  SetNumber,
+  SetModuleSize
+};
+
+class OvmsMetricEvent
+  {
+  private:
+    int m_index;
+    OvmsMetricEventType m_type;
+    std::string m_string;
+    metric_unit_t m_unit;
+    dbcNumber m_value;
+
+  public:
+    OvmsMetricEvent(OvmsMetricEventType type, int index, const std::string &strval);
+    OvmsMetricEvent(OvmsMetricEventType type,int index, metric_unit_t unit, dbcNumber value);
+
+    bool HasString() const { return m_unit == UnitNotFound; }
+    const std::string &GetString() const { return m_string; }
+    bool GetValue(double &number) const;
+    bool GetValue(uint32_t &number) const;
+    metric_unit_t GetUnit() const { return HasString() ? Native : m_unit; }
+    OvmsMetricEventType GetType() const { return m_type;}
+    int GetIndex() const { return m_index; }
+  };
+
+class dbcEventMetric : public dbcMetric
+  {
+  private:
+    std::string m_event;
+    int m_index;
+    OvmsMetricEventType m_type;
+    metric_unit_t m_unit;
+  public:
+    dbcEventMetric(const std::string event, OvmsMetricEventType type, int index, metric_unit_t unit);
+    void SetValue(dbcNumber value, metric_unit_t unit) override;
+    void SetValue(const std::string &value) override;
+    metric_unit_t DefaultUnit() const override { return m_unit; }
   };
 
 typedef std::list<std::string> dbcReceiverList_t;

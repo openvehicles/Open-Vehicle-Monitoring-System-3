@@ -259,6 +259,10 @@ class OvmsVehicle : public InternalRamAllocated
     void VehicleConfigChanged(std::string event, void* data);
     void PollRunFinishedNotify(canbus* bus, void *data);
     void PollerStateTickerNotify(canbus* bus, void *data);
+
+    void EventDBCBmsMetricV(std::string event, void* data);
+    void EventDBCBmsMetricT(std::string event, void* data);
+
   protected:
     // Signal poller
     void PausePolling();
@@ -798,6 +802,22 @@ class OvmsVehicleFactory
     static duk_ret_t DukOvmsVehicleAuxMonEnable(duk_context *ctx);
     static duk_ret_t DukOvmsVehicleAuxMonDisable(duk_context *ctx);
     static duk_ret_t DukOvmsVehicleAuxMonStatus(duk_context *ctx);
+
+    // BMS
+    static duk_ret_t DukOvmsBmsVoltageSetCellArrangement(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageSetCellDefaultThresholds(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageSetCellLimits(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageSetCell(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageResetCells(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltagesRestartCell(duk_context *ctx);
+
+    static duk_ret_t DukOvmsBmsTemperatureSetCellArrangement(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureSetCellDefaultThresholds(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureSetCellLimits(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureSetCell(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureResetCells(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureRestartCells(duk_context *ctx);
+
 #endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 

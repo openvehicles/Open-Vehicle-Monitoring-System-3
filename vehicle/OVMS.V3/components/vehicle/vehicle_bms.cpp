@@ -44,6 +44,7 @@ static const char *TAG = "vehicle";
 #include <ovms_peripherals.h>
 #include <string_writer.h>
 #include "vehicle.h"
+#include <dbc.h>
 
 // Voltage stddev running average sample count:
 #define VSTDDEV_SMOOTHCNT         5
@@ -88,7 +89,18 @@ struct reading_entry_t
 bool OvmsVehicle::BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule /*=0*/)
   {
   bool res = false;
-  if (readingspermodule <= 0)
+
+  if (readings < 0)
+    {
+    // passing in < 0 will leave readings unchanged.
+    readings = m_bms_readings_v;
+    }
+
+  if (readings == 0)
+    {
+    readingspermodule = 0;
+    }
+  else if (readingspermodule <= 0)
     {
     // Passing in 0 will leave the readings per module unchanged.
     readingspermodule = m_bms_readingspermodule_v;
@@ -882,5 +894,97 @@ void OvmsVehicle::BmsTicker()
       StdMetrics.ms_v_bat_pack_tstddev->AsFloat(),
       StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat(),
       StdMetrics.ms_v_bat_cell_temp->AsString("", Native, 1).c_str());
+    }
+  }
+
+void OvmsVehicle::EventDBCBmsMetricV(std::string event, void* data)
+  {
+  OvmsMetricEvent *evt = static_cast<OvmsMetricEvent*>(data);
+
+  switch (evt->GetType())
+    {
+    case OvmsMetricEventType::Reset:
+      {
+      BmsResetCellVoltages(false);
+      break;
+      }
+    case OvmsMetricEventType::ResetWithValue:
+      BmsResetCellVoltages(false);
+      FALLTHROUGH;
+    case OvmsMetricEventType::Value:
+      {
+      double val;
+      if (evt->GetValue(val))
+        {
+        BmsSetCellVoltage(evt->GetIndex(), val);
+        }
+      break;
+      }
+    case OvmsMetricEventType::SetNumber:
+      {
+      uint32_t n;
+      if (evt->GetValue(n))
+        {
+        BmsCheckChangeCellArrangementVoltage(n, -1);
+        }
+      break;
+      }
+    case OvmsMetricEventType::SetModuleSize:
+      {
+      uint32_t n;
+      if (evt->GetValue(n))
+        {
+        BmsCheckChangeCellArrangementVoltage(-1, n);
+        }
+      break;
+      }
+    case OvmsMetricEventType::Unknown:
+      break;
+    }
+  }
+
+void OvmsVehicle::EventDBCBmsMetricT(std::string event, void* data)
+  {
+  OvmsMetricEvent *evt = static_cast<OvmsMetricEvent*>(data);
+
+  switch (evt->GetType())
+    {
+    case OvmsMetricEventType::Reset:
+      {
+      BmsResetCellTemperatures(false);
+      break;
+      }
+    case OvmsMetricEventType::ResetWithValue:
+      BmsResetCellTemperatures(false);
+      FALLTHROUGH;
+    case OvmsMetricEventType::Value:
+      {
+      double val;
+      if (evt->GetValue(val))
+        {
+        BmsSetCellTemperature(evt->GetIndex(), val);
+        }
+      break;
+      }
+    case OvmsMetricEventType::SetNumber:
+      {
+      uint32_t n;
+      if (evt->GetValue(n))
+        {
+        BmsCheckChangeCellArrangementTemperature(n, -1);
+        }
+      break;
+      }
+    case OvmsMetricEventType::SetModuleSize:
+      {
+      uint32_t n;
+      if (evt->GetValue(n))
+        {
+        BmsCheckChangeCellArrangementTemperature(-1, n);
+        }
+      break;
+      }
+    case OvmsMetricEventType::Unknown:
+      break;
     }
   }

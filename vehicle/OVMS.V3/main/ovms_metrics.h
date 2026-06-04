@@ -239,6 +239,11 @@ class OvmsMetric
 #endif
     virtual bool SetValue(std::string value, metric_unit_t units = Other);
     virtual bool SetValue(const dbcNumber& value, metric_unit_t units = Other);
+    /** Set a value at an index, used by DBC conversions.
+     * Supports n=0 by default.
+     */
+    virtual bool SetValueAt(size_t n, std::string value, metric_unit_t units = Other);
+    virtual bool SetValueAt(size_t n, const dbcNumber& value, metric_unit_t units = Other);
     virtual void operator=(std::string value);
     virtual bool CheckPersist();
     virtual void RefreshPersist();
@@ -457,6 +462,39 @@ class OvmsMetricBitset : public OvmsMetric
       }
     void operator=(std::string value) override { SetValue(value); }
 
+    bool SetValueAt(size_t n, std::string value, metric_unit_t units = Other) override
+      {
+      if (n < 0 || n >= N)
+        return false;
+      bool newval = strtobool(value);
+      bool modified;
+        {
+        OvmsMutexLock lock(&m_mutex);
+        modified = newval != m_value[n];
+        if (modified)
+          m_value[n] = newval;
+        }
+      SetModified(modified);
+      return modified;
+      }
+    bool SetValueAt(size_t n, const dbcNumber& value, metric_unit_t units = Other) override
+      {
+      if (n < 0 || n >= N)
+        return false;
+
+      bool newval = (value.GetSignedInteger() != 0);
+      bool modified;
+        {
+        OvmsMutexLock lock(&m_mutex);
+
+        modified = newval != m_value[n];
+        if (modified)
+          m_value[n] = newval;
+        }
+      SetModified(modified);
+      return modified;
+      }
+
     std::bitset<N> AsBitset(const std::bitset<N> defvalue = std::bitset<N>(0), metric_unit_t units = Other)
       {
       if (!IsDefined())
@@ -619,6 +657,26 @@ class OvmsMetricSet : public OvmsMetric
     std::set<ElemType> m_value;
   };
 
+// Overloaded conversion from a dbcNumber to an integer/float.
+// Add more if vectors use other types.
+inline void OvmsDBCNumberCvt(const dbcNumber &Value, long int &newValue)
+  {
+  newValue = Value.GetSignedInteger();
+  }
+
+inline void OvmsDBCNumberCvt(const dbcNumber &Value, int &newValue)
+  {
+  newValue = Value.GetSignedInteger();
+  }
+inline void OvmsDBCNumberCvt(const dbcNumber &Value, short &newValue)
+  {
+  newValue = Value.GetSignedInteger();
+  }
+
+inline void OvmsDBCNumberCvt(const dbcNumber &Value, float &newValue)
+  {
+  newValue = Value.GetDouble();
+  }
 
 /**
  * OvmsMetricVector<type>: metric wrapper for std::vector<type>
@@ -933,6 +991,20 @@ class OvmsMetricVector : public OvmsMetric
         }
       return modified;
       }
+    bool SetValueAt(size_t n, std::string value, metric_unit_t units = Other) override
+      {
+      ElemType elem;
+      std::istringstream ts(value);
+      ts >> elem;
+      return SetElemValue(n, elem, units);
+      }
+    bool SetValueAt(size_t n, const dbcNumber& value, metric_unit_t units = Other) override
+      {
+      ElemType elem;
+      OvmsDBCNumberCvt(value, elem);
+      return SetElemValue(n, elem, units);
+      }
+
     void operator=(std::vector<ElemType, Allocator> value) { SetValue(value); }
 
     void ClearValue()
@@ -993,7 +1065,7 @@ class OvmsMetricVector : public OvmsMetric
       return UnitConvert(m_units, units, val);
       }
 
-    void SetElemValue(size_t n, const ElemType nvalue, metric_unit_t units = Other)
+    bool SetElemValue(size_t n, const ElemType nvalue, metric_unit_t units = Other)
       {
       ElemType value;
       if (units != Other && units != m_units)
@@ -1020,6 +1092,7 @@ class OvmsMetricVector : public OvmsMetric
         m_mutex.Unlock();
         }
       SetModified(modified);
+      return modified;
       }
 
     void SetElemValues(size_t start, size_t cnt, const ElemType* values, metric_unit_t units = Other)
