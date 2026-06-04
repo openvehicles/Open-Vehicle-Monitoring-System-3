@@ -67,6 +67,16 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
 
 void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker) 
   {
+  // if awake state has changed, then update metric to prevent desync
+  if (IsAwakeEQ() != StdMetrics.ms_v_env_awake->AsBool(false))
+    {
+    StdMetrics.ms_v_env_awake->SetValue(IsAwakeEQ());
+    }
+  // if 12V charging state has changed, then update metric to prevent desync
+  if (Is12VchargeEQ() != StdMetrics.ms_v_env_charging12v->AsBool(false))
+    {
+    StdMetrics.ms_v_env_charging12v->SetValue(Is12VchargeEQ());
+    } 
   // reactivate door lock warning if the car is parked and unlocked
   if( m_enable_lock_state && 
         m_warning_unlocked &&
@@ -82,13 +92,6 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   if(m_enable_LED_state) 
     OnlineState();
 
-  // check 12V charging state for powermgmt system
-  if (Is12VchargeEQ() != StdMetrics.ms_v_env_charging12v->AsBool(false))
-    {
-    StdMetrics.ms_v_env_charging12v->SetValue(Is12VchargeEQ());    
-    m_ADCfactor_recalc_timer = 2;
-    m_ADCfactor_recalc = Is12VchargeEQ();
-    }  
   // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
   if (IsOnHVACEQ() && IsAwakeEQ() && IsCANwrite() && !m_can_active)
     {
@@ -98,11 +101,6 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   if (IsChargingEQ() && !m_poll_on_charge)
     {
     smartChargeStart();
-    }
-  if (IsAwakeEQ() != StdMetrics.ms_v_env_awake->AsBool(false))
-    {
-    // if car is not awake but metric is, then set metric to false to prevent desync
-    StdMetrics.ms_v_env_awake->SetValue(IsAwakeEQ());
     }
   } // Ticker 10
 
@@ -201,7 +199,7 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
     m_candata_timer = SQ_CANDATA_TIMEOUT;
     }
   
-  if ((!IsAwakeEQ()) || (m_candata_timer > 0 && --m_candata_timer == 0 && m_candata_poll))
+  if (m_candata_timer > 0 && --m_candata_timer == 0 && m_candata_poll)
     {
     // Car has gone to sleep
     ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
@@ -211,6 +209,6 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
   
   // - base system is awake if we've got a fresh lv_pwrstate:
   // use CAN 0x350 state for 12V aux state, because it seems to be more reliable than the 12V voltage for detecting if the car is in accessory mode or not, which is needed for the powermgmt system
-  StdMetrics.ms_v_env_aux12v->SetValue(IsHVonEQ());
+  StdMetrics.ms_v_env_aux12v->SetValue(Is12VchargeEQ());
   HandlePollState();
   }
