@@ -121,6 +121,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_evc_dcdc->SetElemValue(7, 0.0f);           // Pre-allocate 8 entries
   mt_evc_traceability           = MyMetrics.InitString("xsq.evc.traceability", SM_STALE_MAX, "");
   mt_evc_plug_detected          = MyMetrics.InitBool("xsq.evc.plug.detected", SM_STALE_MIN, false);
+  mt_12v_trickle_charge_count   = MyMetrics.InitInt("xsq.12v.trickle.count", SM_STALE_MAX, 0, Other);
   // 0x793 OBL charger metrics
   mt_obl_fastchg                = MyMetrics.InitBool("xsq.obl.fastchg", SM_STALE_MIN, false);
   mt_obl_main_volts             = MyMetrics.InitVector<float>("xsq.obl.volts", SM_STALE_HIGH, nullptr, Volts);

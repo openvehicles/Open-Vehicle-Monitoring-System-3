@@ -267,6 +267,7 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
   StdMetrics.ms_v_env_headlights->SetValue(can_headlights);
   StdMetrics.ms_v_env_gear->SetValue(can_gear);
   StdMetrics.ms_v_env_cabintemp->SetValue(can_cabintemp);
+  StdMetrics.ms_v_env_charging12v->SetValue(Is12VchargeEQ());
 
   StdMetrics.ms_v_door_fl->SetValue(can_door_fl);
   StdMetrics.ms_v_door_fr->SetValue(can_door_fr);

@@ -109,7 +109,31 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
       if (trickle) 
         {
         ESP_LOGI(TAG, "activated 12V trickle charging successfully");
-        Notify12Vcharge();
+        // Check the 12V ADC factors based on the 12V readings, as long as trickle charging is active.
+        m_check12vadc = true;
+
+        time_t now = time(NULL);
+        while (!m_12v_trickle_charge_times.empty() && (now - m_12v_trickle_charge_times.front()) > 24 * 3600)
+          m_12v_trickle_charge_times.pop_front();
+
+        m_12v_trickle_charge_times.push_back((uint32_t)now);
+        mt_12v_trickle_charge_count->SetValue((int)m_12v_trickle_charge_times.size());
+
+        if (mt_12v_trickle_charge_count->AsInt(0) == 3)
+          {
+          ESP_LOGW(TAG, "12V trickle charging activated 3 times within 24h");
+          MyNotify.NotifyString("alert", "xsq.12v.charge.alert",
+                            "12V trickle charging was activated 3 times within 24 hours.\n"
+                            "Check the 12V battery condition.\n"
+                            "If the alert appears frequently, consider replacing the 12V battery preventively."
+                            "The trickle charging will be deactivated now to next reboot to prevent further stress on the 12V battery!");
+          m_12v_charge = false; // deactivate trickle charging to prevent further stress on the 12V battery
+          }
+        else
+          {
+          ESP_LOGI(TAG, "12V trickle charging activation count within 24h: %u", (unsigned)m_12v_trickle_charge_times.size());          
+          Notify12Vcharge();
+          }
         }
       else
         {
@@ -128,6 +152,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
         {
         ESP_LOGI(TAG, "Failed to activate 12V trickle charging");
         MyNotify.NotifyString("info", "12v.trickle.charge", "Failed to activate 12V trickle charging!");
+
         }
       else
         {

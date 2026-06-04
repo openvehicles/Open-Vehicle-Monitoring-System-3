@@ -233,7 +233,9 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
     bool IsCANwrite() { return m_enable_write || m_enable_write_caron; }
-    bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f || StdMetrics.ms_v_env_charging12v->AsBool(false); }
+    bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) > 13.1f || 
+                                  (m_can_active && mt_evc_dcdc->GetElemValue(1) > 13.1f ) || 
+                                  (m_can_active && can_charging12v); }
 
   // =========================================================================
   // protected
@@ -243,6 +245,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void Ticker1(uint32_t ticker) override;
     void Ticker10(uint32_t ticker) override;
     void Ticker60(uint32_t ticker) override;
+    void Ticker3600(uint32_t ticker) override;
     void PollerStateTicker(canbus *bus) override;
 
     // --- Dashboard / Calculations ---
@@ -376,6 +379,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricVector<float> *mt_evc_dcdc;                    // EVC 12V system values vector
     OvmsMetricString        *mt_evc_traceability;            // Frame Traceability: ITG/Factory/Serial
     OvmsMetricBool          *mt_evc_plug_detected;           // Charging plug detected by charger (0x339D)
+    OvmsMetricInt           *mt_12v_trickle_charge_count;    // Number of 12V trickle activations in the last 24h
 
     // --- Custom metrics: BMS ---
     OvmsMetricVector<float> *mt_bms_voltages;                // Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
@@ -430,39 +434,39 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_enable_write_caron = false;      // canwrite enable write access, only when car is on
     bool m_enable_write_sleep = false;      // canwrite disable write access, only when car is asleep
     bool m_can_active = false;              // true if CAN bus is in active mode, false if in listen-only mode
-    bool m_enable_LED_state;                // Online LED State
-    bool m_enable_lock_state;               // Lock State
-    bool m_enable_door_state;               // Door Open State
-    bool m_tpms_temp_enable;                // TPMS Temperature Display enabled
-    bool m_resettrip;                       // Reset Trip Values when Charging/Driving
-    bool m_resettotal;                      // Reset kWh/100km Values when Driving
-    bool m_tripnotify;                      // Trip Reset Notification on/off
-    bool m_bcvalue;                         // use kWh/100km Value from mt_use_at_reset = true, Calculated = false
-    bool m_tpms_alert_enable;               // TPMS Alert enabled
-    bool m_12v_charge;                      // 12V charge on/off
-    bool m_12v_charge_state;                // 12V charge state
-    bool m_extendedStats;                   // extended stats for trip and maintenance data
-    bool m_enable_calcADCfactor;            // enable calculation of ADC factor
-    int m_reboot_ticker;
-    int m_reboot_time;                      // Restart Network time
-    int m_TPMS_FL;                          // TPMS Sensor Front Left
-    int m_TPMS_FR;                          // TPMS Sensor Front Right
-    int m_TPMS_RL;                          // TPMS Sensor Rear Left
-    int m_TPMS_RR;                          // TPMS Sensor Rear Right
-    int m_park_timeout_secs;                // parking timeout in seconds
-    int m_full_km;                          // full battery km value for SoC calculation
-    int m_cfg_preset_version;               // config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
-    int m_suffsoc;                          // minimum SoC for charging
-    int m_suffrange;                        // minimum range for charging
-    float m_front_pressure;                 // Front Tire Pressure
-    float m_rear_pressure;                  // Rear Tire Pressure
-    float m_pressure_warning;               // Pressure Warning
-    float m_pressure_alert;                 // Pressure Alert
-    std::string m_hl_canbyte;               // canbyte variable for unv
+    bool m_enable_LED_state = false;        // Online LED State
+    bool m_enable_lock_state = true;        // Lock State
+    bool m_enable_door_state = true;        // Door Open State
+    bool m_tpms_alert_enable = true;        // TPMS Alert enabled
+    bool m_tpms_temp_enable = false;        // TPMS Temperature Display enabled
+    bool m_resettrip = true;                // Reset Trip Values when true/false = Charging/Driving
+    bool m_resettotal = false;              // Reset kWh/100km Values when Driving
+    bool m_tripnotify = false;              // Trip Reset Notification on/off
+    bool m_bcvalue = false;                 // use kWh/100km Value from mt_use_at_reset = true, Calculated = false
+    bool m_12v_charge = true;               // 12V charge on/off
+    bool m_12v_charge_state = false;        // 12V charge state
+    bool m_extendedStats = false;           // extended stats for trip and maintenance data
+    bool m_enable_calcADCfactor = false;    // enable calculation of ADC factor
+    int m_reboot_ticker = 0;                // ticker for network restart
+    int m_reboot_time = 30;                 // Restart Network time
+    int m_TPMS_FL = 0;                      // TPMS Sensor Front Left
+    int m_TPMS_FR = 0;                      // TPMS Sensor Front Right
+    int m_TPMS_RL = 0;                      // TPMS Sensor Rear Left
+    int m_TPMS_RR = 0;                      // TPMS Sensor Rear Right
+    int m_park_timeout_secs = 600;          // parking timeout in seconds
+    int m_full_km = 126;                    // full battery km value for SoC calculation
+    int m_cfg_preset_version = 0;           // config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
+    int m_suffsoc = 0;                      // minimum SoC for charging
+    int m_suffrange = 0;                    // minimum range for charging
+    float m_front_pressure = 225.0f;        // Front Tire Pressure
+    float m_rear_pressure = 255.0f;         // Rear Tire Pressure
+    float m_pressure_warning = 40.0f;       // Pressure Warning
+    float m_pressure_alert = 70.0f;         // Pressure Alert
+    std::string m_hl_canbyte = "";          // canbyte variable for unv
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
 
     // --- Internal state variables ---
-    bool m_indicator;                       // activate indicator e.g. 7 times or whatever
+    bool m_indicator = false;               // activate indicator e.g. 7 times or whatever
     bool m_ddt4all = false;                 // DDT4ALL mode
     bool m_warning_unlocked = false;        // unlocked warning
     bool m_warning_dooropen = false;        // open doors warning
@@ -499,6 +503,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // ADC factor calculation is needed based on 12V reading, only check when car is on or charging to avoid false recalculations based on 12V drop when car is off
     // activated only after reboot
     bool m_check12vadc = true;
+    std::deque<uint32_t> m_12v_trickle_charge_times; // activation timestamps for 12V trickle charge alarm within 24h
 
     // --- ADC variables ---
     bool m_ADCfactor_recalc = false;      // request recalculation of ADC factor
@@ -523,6 +528,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool can_chargeport = false;
     bool can_env_on = false;
     bool can_charge_inprogress = false;
+    bool can_charging12v = false;
     float can_cabintemp = 0.0f;
     float can_bat_temp = 0.0f;
     float can_bat_voltage = 0.0f;
