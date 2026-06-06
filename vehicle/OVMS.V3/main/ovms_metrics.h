@@ -71,6 +71,10 @@ typedef enum : uint8_t
 
   Celcius       = 20,
   Fahrenheit    = 21,
+  // Temperature differences/ranges (stddev, deviation): scaled like the absolute
+  // units but WITHOUT the offset (see issue #917). Folded onto GrpTemp config.
+  CelciusDiff    = 22,
+  FahrenheitDiff = 23,
 
   kPa           = 30,
   Pa            = 31,
@@ -168,9 +172,12 @@ typedef enum : uint8_t
   // These are where a dimension group is split and allows
   // easily folding the 'short distances' back onto their equivalents.
   GrpDistanceShort = GrpDistance + GrpUnfold,
-  GrpAccelShort = GrpAccel + GrpUnfold
+  GrpAccelShort = GrpAccel + GrpUnfold,
+  // Temperature differences inherit the GrpTemp user preference (see issue #917),
+  // so this is folded onto GrpTemp and is not separately user-configurable.
+  GrpTempDiff = GrpTemp + GrpUnfold
   } metric_group_t;
-const metric_group_t MetricGroupLast = GrpAccelShort;
+const metric_group_t MetricGroupLast = GrpTempDiff;
 
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
 extern const char* OvmsMetricUnitName(metric_unit_t units);
