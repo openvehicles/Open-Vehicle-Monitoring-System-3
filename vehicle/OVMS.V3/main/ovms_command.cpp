@@ -124,6 +124,16 @@ void OvmsWriter::RunTerminationCallback()
   m_termData = NULL;
   }
 
+OvmsCommandTask* OvmsWriter::GetFollowModeTask()
+  {
+  // Returns the bound follow-mode command task iff the active termination
+  // handler is OvmsCommandTask's (i.e. a separate task is running), else NULL.
+  // A NULL m_termination (already cleared by an exiting task) safely yields NULL.
+  if (m_termination == OvmsCommandTask::TerminationHandler)
+    return (OvmsCommandTask*) m_termData;
+  return NULL;
+  }
+
 void OvmsWriter::Exit()
   {
   puts("This console cannot exit.");

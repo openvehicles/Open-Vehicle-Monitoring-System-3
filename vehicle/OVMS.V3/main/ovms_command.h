@@ -52,6 +52,7 @@
 #define COMMAND_RESULT_VERBOSE    65535
 
 class OvmsWriter;
+class OvmsCommandTask;
 class OvmsCommand;
 class OvmsCommandMap;
 class LogBuffers;
@@ -95,6 +96,7 @@ class OvmsWriter
     void DeregisterTerminationCallback(TerminationCallback cb);
     void RunTerminationCallback();
     bool HasTerminationCallback(TerminationCallback cb) { return m_termination == cb; }
+    OvmsCommandTask* GetFollowModeTask();   // bound follow-mode task, or NULL
 
   public:
     // Used to notify the writer of a migration of a file within the VFS
@@ -114,7 +116,7 @@ class OvmsWriter
     InsertCallback m_insert;
     void* m_userData;
     bool m_monitoring;
-    TerminationCallback m_termination;   // active interactive-command teardown handler, or NULL
+    volatile TerminationCallback m_termination;   // active interactive-command teardown handler, or NULL (read cross-task)
     void* m_termData;
   };
 
@@ -355,7 +357,7 @@ class OvmsCommandTask : public TaskBase
     OvmsCommand* cmd;
     int argc;
     char** argv;
-    OvmsCommandState_t m_state;
+    volatile OvmsCommandState_t m_state;
   };
 
 class OvmsCommandApp : public OvmsWriter
