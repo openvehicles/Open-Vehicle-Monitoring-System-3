@@ -148,12 +148,24 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Firmware setup &amp; update");
 
+  // Wrap the status rows in a form-horizontal so their labels are right-aligned
+  // and vertically aligned with their values, matching the tabbed sections below
+  // (Bootstrap only styles .control-label that way inside .form-horizontal):
+  c.print("<div class=\"form-horizontal\">");
   c.input_info("Firmware version", info.version_firmware.c_str());
   // The server version is filled in asynchronously (see updatecheck script below):
   output = "<span id=\"ota-server-version\" class=\"text-muted\">checking for updates&hellip;</span>";
   output.append(" <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\" id=\"ota-versioninfo-btn\" disabled>Version info</button>"
                 " <button type=\"button\" class=\"btn btn-default action-update-now\">Update now</button>");
-  c.input_info("…available", output.c_str());
+  // Emit the "…available" row directly (not via input_info) so its label can take
+  // extra top padding: this row's value has buttons (taller than text) that push
+  // the version number down to mid-row, so the label is dropped to line up with it.
+  c.print("<div class=\"form-group\">"
+            "<label class=\"control-label col-sm-3\" style=\"padding-top:12px\">…available:</label>"
+            "<div class=\"col-sm-9\"><div class=\"form-control-static\">");
+  c.print(output);
+  c.print("</div></div></div>");
+  c.print("</div>");
 
   c.print(
     "<ul class=\"nav nav-tabs\">"
@@ -286,7 +298,9 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   // Flash VFS:
   mru = MyConfig.GetParamValue("ota", "vfs.mru");
   c.input_info("Auto flash",
-    "<ol>"
+    // Left-align the list markers with the column's other text (drop the default
+    // ~40px <ol> indent) instead of indenting them off to the right:
+    "<ol style=\"padding-left:0; list-style-position:inside\">"
       "<li>Place the file <code>ovms3.bin</code> in the SD root directory.</li>"
       "<li>Insert the SD card, wait until the module reboots.</li>"
       "<li>Note: after processing the file will be renamed to <code>ovms3.done</code>.</li>"
