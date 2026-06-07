@@ -349,7 +349,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
       }
 
     if (writer) writer->printf("ADC recalculation: avg_raw=%.2f  V_batt=%.3f  factor=%.3f\n", avg_raw, V_batt, adc_factor_new);
-    if (adc_factor_new < 180.0f || adc_factor_new > 210.0f) 
+    if (adc_factor_new < 160.0f || adc_factor_new > 230.0f) 
       {
       if (writer) writer->printf("Reject ADC factor %.3f (out of bounds, keeping %.3f)\n", adc_factor_new, adc_factor_prev);
       return;

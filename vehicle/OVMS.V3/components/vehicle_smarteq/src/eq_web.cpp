@@ -427,13 +427,13 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
       // Refresh values from config/metrics to show latest state after command execution
     calcADCfactor = sq->m_enable_calcADCfactor;
       adc_factor  = MyConfig.GetParamValue("system.adc", "factor12v", adc_factor.empty() ? "195.7" : adc_factor);
-      if (sq->mt_evc_dcdc && sq->mt_evc_dcdc->GetElemValue(1) > 10.0f) {
+      if (sq->mt_evc_dcdc && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f) {
         char buf[16];
-        snprintf(buf, sizeof(buf), "%.3f", sq->mt_evc_dcdc->GetElemValue(1));  // DCDC voltage
+        snprintf(buf, sizeof(buf), "%.3f", StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f));  // DCDC voltage
         onboard_12v = buf;
       }
       if (onboard_12v.empty())
-        onboard_12v = "12.600";
+        onboard_12v = "12.500";
       if (sq->mt_adc_factor_history)
         adc_history = sq->mt_adc_factor_history->AsString();
     }
@@ -461,13 +461,13 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
     // read configuration:
     calcADCfactor = sq->m_enable_calcADCfactor;
     adc_factor  = MyConfig.GetParamValue("system.adc", "factor12v", "195.7");
-    if (sq->mt_evc_dcdc && sq->mt_evc_dcdc->GetElemValue(1) > 10.0f) {
+    if (sq->mt_evc_dcdc && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f) {
         char buf[16];
-        snprintf(buf, sizeof(buf), "%.3f", sq->mt_evc_dcdc->GetElemValue(1));  // DCDC voltage
+        snprintf(buf, sizeof(buf), "%.3f", StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f));  // DCDC voltage
         onboard_12v = buf;
       }
     if (onboard_12v.empty())
-      onboard_12v = "12.600";
+      onboard_12v = "12.500";
     if (sq->mt_adc_factor_history)
       adc_history = sq->mt_adc_factor_history->AsString();
     c.head(200);
@@ -479,7 +479,7 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
     if (adc_factor.empty())
       adc_factor = "195.7";
     if (onboard_12v.empty())
-      onboard_12v = "12.600";
+      onboard_12v = "12.500";
   }
 
   if (adc_history.empty() && sq->mt_adc_factor_history)
@@ -503,7 +503,7 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
   }
   c.input_slider("ADC factor", "adc_factor", 5, "", -1, atof(adc_factor.c_str()), 195.7, 160, 230, 0.1,
     "<p>12V ADC calibration factor (default 195.7)</p>");
-  c.input_slider("12V measured", "onboard_12v", 3, "V",-1, atof(onboard_12v.c_str()), 12.60, 11.00, 15.00, 0.01,
+  c.input_slider("12V measured", "onboard_12v", 3, "V",-1, atof(onboard_12v.c_str()), 12.50, 11.00, 15.00, 0.01,
     "<p>Your measured 12V for calibration calculation</p>");
   c.printf("<input type=\"hidden\" name=\"onboard_12v_submit\" id=\"onboard_12v_submit\" value=\"%s\">\n",
            _attr(onboard_12v.c_str()));

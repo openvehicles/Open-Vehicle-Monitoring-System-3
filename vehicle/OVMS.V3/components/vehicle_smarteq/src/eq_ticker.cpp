@@ -76,6 +76,8 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   if (Is12VchargeEQ() != StdMetrics.ms_v_env_charging12v->AsBool(false))
     {
     StdMetrics.ms_v_env_charging12v->SetValue(Is12VchargeEQ());
+    if (!Is12VchargeEQ())
+    StdMetrics.ms_v_charge_12v_voltage->SetValue(0.0f); // reset 12V voltage when not charging to prevent desync
     } 
   // reactivate door lock warning if the car is parked and unlocked
   if( m_enable_lock_state && 
@@ -136,11 +138,10 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
   #ifdef CONFIG_OVMS_COMP_ADC
   if((IsOnEQ() || IsChargingEQ()) || Is12VchargeEQ())
     {
-    float can12V = mt_evc_dcdc->GetElemValue(1);   // DCDC voltage
+    float can12V = StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f);   // DCDC voltage = mt_evc_dcdc->GetElemValue(1)
     // check for 12V voltage difference between CAN and ADC when the car is rebooted, to detect if ADC factor recalibration is needed
-    if(m_check12vadc)
+    if(m_check12vadc && can12V >= 13.1f)
       {
-      float can12V = mt_evc_dcdc->GetElemValue(1);
       float adc12V = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
       float diff = fabs(can12V - adc12V);      
       if (diff > 0.1f && !m_ADCfactor_recalc && Is12VchargeEQ())      
@@ -153,7 +154,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
       m_check12vadc = false;
       }
     // if ADC factor recalculation is enabled, then check if it's time to recalculate the factor
-    if (m_enable_calcADCfactor && m_ADCfactor_recalc) 
+    if (m_enable_calcADCfactor && m_ADCfactor_recalc && can12V >= 13.1f) 
       {
       if (--m_ADCfactor_recalc_timer == 0) 
         {
