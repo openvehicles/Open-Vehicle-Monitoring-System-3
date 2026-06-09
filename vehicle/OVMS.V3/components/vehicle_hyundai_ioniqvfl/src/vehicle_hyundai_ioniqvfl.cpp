@@ -74,7 +74,7 @@ static const OvmsPoller::poll_pid_t standard_polls[] =
   { 0x7e6, 0x7ee, UDS_READ8,    0x80, {   0,  60,  60, 120 }, 0, ISOTP_STD },  // Ambient temperature
   { 0x7c6, 0x7ce, UDS_READ16, 0xb002, {   0, 120,  30,   0 }, 0, ISOTP_STD },  // Odometer
   { 0x7a0, 0x7a8, UDS_READ16, 0xc00b, {   0,  60,  60,   0 }, 0, ISOTP_STD },  // TPMS
-  { 0x7e2, 0x7ea, UDS_VIN,      0x80, {   0, 120, 120,  60 }, 0, ISOTP_STD },  // VIN
+  { 0x7e2, 0x7ea, UDS_VIN,      0x80, {   0,3600,   0,   0 }, 0, ISOTP_STD },  // VIN
   //                                    OFF  AWK  DRV  CHG
   POLL_LIST_END
 };
@@ -356,6 +356,7 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(const OvmsPoller::poll_job_t &job,
       if(job.moduleid_rec == 0x7ea) {
         // Read VIN
         for (int k = 0; k < 17; k++) m_vin[k] = RXB_BYTE(k+14);
+        m_vin[17] = 0;
         if (m_vin[0] !=0){
           StandardMetrics.ms_v_vin->SetValue(m_vin);
         }
