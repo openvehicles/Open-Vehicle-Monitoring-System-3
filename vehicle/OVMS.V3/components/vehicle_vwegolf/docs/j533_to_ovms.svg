@@ -113,7 +113,7 @@
 <polygon fill="#000000" stroke="none" points="500,-321.25 500,-323.25 971,-323.25 971,-321.25 500,-321.25"/>
 <text xml:space="preserve" text-anchor="start" x="523" y="-304.25" font-family="sans-serif" font-size="14.00">J533:19:OBD CAN+</text>
 <text xml:space="preserve" text-anchor="start" x="671.75" y="-304.25" font-family="sans-serif" font-size="14.00"> &#160;&#160;&#160;&#160;ORANGE &#160;&#160;&#160;</text>
-<text xml:space="preserve" text-anchor="start" x="816" y="-304.25" font-family="sans-serif" font-size="14.00">OVMS_DB9:7:nc</text>
+<text xml:space="preserve" text-anchor="start" x="788.25" y="-304.25" font-family="sans-serif" font-size="14.00">OVMS_DB9:7:OBD CAN+</text>
 <polygon fill="#000000" stroke="none" points="500,-295.75 500,-297.75 971,-297.75 971,-295.75 500,-295.75"/>
 <polygon fill="#ff8000" stroke="none" points="500,-293.75 500,-295.75 971,-295.75 971,-293.75 500,-293.75"/>
 <polygon fill="#000000" stroke="none" points="500,-291.75 500,-293.75 971,-293.75 971,-291.75 500,-291.75"/>
@@ -218,7 +218,7 @@
 <polygon fill="none" stroke="black" points="1115,-318 1115,-345.5 1188,-345.5 1188,-318 1115,-318"/>
 <text xml:space="preserve" text-anchor="start" x="1147.38" y="-326.5" font-family="sans-serif" font-size="14.00">7</text>
 <polygon fill="none" stroke="black" points="1188,-318 1188,-345.5 1366,-345.5 1366,-318 1188,-318"/>
-<text xml:space="preserve" text-anchor="start" x="1269.12" y="-326.5" font-family="sans-serif" font-size="14.00">nc</text>
+<text xml:space="preserve" text-anchor="start" x="1241.38" y="-326.5" font-family="sans-serif" font-size="14.00">OBD CAN+</text>
 <polygon fill="none" stroke="black" points="1115,-290.5 1115,-318 1188,-318 1188,-290.5 1115,-290.5"/>
 <text xml:space="preserve" text-anchor="start" x="1147.38" y="-299" font-family="sans-serif" font-size="14.00">8</text>
 <polygon fill="none" stroke="black" points="1188,-290.5 1188,-318 1366,-318 1366,-290.5 1188,-290.5"/>
