@@ -36,8 +36,7 @@
 // UDS BMS poll addresses/DIDs — VW ECU 8C "hybrid battery management". Taken from
 // vehicle_vweup (vweup_obd.h, same VW EV platform family); MUST be validated on the
 // e-Golf before trusting values. Polled on can1 = OBD/diag CAN at the J533 (gateway
-// routes the request to the BMS on FCAN). See docs/j533_to_ovms.svg: OBD CAN+ must
-// be landed on DB9 pin 7 (can1-H) for this to work.
+// routes the request to the BMS on FCAN); wiring per docs/j533_to_ovms.svg.
 #define VWEGOLF_BMS_TX 0x7E5      // tester -> BMS request CAN ID
 #define VWEGOLF_BMS_RX 0x7ED      // BMS -> tester response CAN ID
 #define VWEGOLF_BMS_DID_U 0x1E3B  // measured pack voltage, uint16 / 4.0 V
@@ -88,8 +87,6 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
 
     // OBD/diag CAN at the J533 — tester bus, gateway routes UDS to target ECUs.
     // ACTIVE: we must transmit poll requests here (unlike listen-only FCAN).
-    // Harmless while the OBD CAN+ wire is not yet landed on DB9 pin 7: the bus
-    // just stays silent and polls time out.
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // diag CAN — UDS polling
 
     // UDS BMS polling (see vwegolf_polls above). Poll state is driven in Ticker1
