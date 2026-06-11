@@ -53,6 +53,22 @@ Basic Configuration
 After selecting the VW e-Golf vehicle module, data should start flowing in
 once the car is awake.
 
+======================= ======= ===========================================================
+Config (param ``xvg``)  Default Description
+======================= ======= ===========================================================
+``fcan-filter``         yes     MCP2515 hardware acceptance filter on FCAN (can2), passing
+                                only the decoded frame IDs. Keep enabled for normal use:
+                                during charging the OBC floods FCAN and an unfiltered bus
+                                overloads the module. Disable only temporarily for
+                                full-bus frame-discovery captures.
+======================= ======= ===========================================================
+
+The filter can be toggled at runtime (applies immediately and persists):
+
+- ``xvg fcanfilter on`` — enable (normal operation)
+- ``xvg fcanfilter off`` — disable for a full-bus capture
+- ``xvg fcanfilter status`` — show current state
+
 ----------------
 Support Overview
 ----------------

@@ -248,9 +248,16 @@ struct OvmsConfig {
         auto it = store.find(std::string(param) + "/" + instance);
         return it != store.end() ? atoi(it->second.c_str()) : def;
     }
-    bool GetParamValueBool(const char*, const char*, bool def=false) const { return def; }
+    bool GetParamValueBool(const char* param, const char* instance, bool def=false) const {
+        auto it = store.find(std::string(param) + "/" + instance);
+        if (it == store.end()) return def;
+        return it->second == "yes" || it->second == "true" || it->second == "1";
+    }
     void SetParamValue(const char* param, const char* instance, const char* value) {
         store[std::string(param) + "/" + instance] = value;
+    }
+    void SetParamValueBool(const char* param, const char* instance, bool value) {
+        store[std::string(param) + "/" + instance] = value ? "yes" : "no";
     }
 };
 extern OvmsConfig MyConfig;
@@ -258,7 +265,10 @@ extern OvmsConfig MyConfig;
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
-struct OvmsWriter {};
+struct OvmsWriter {
+    int puts(const char*) { return 0; }
+    int printf(const char*, ...) { return 0; }
+};
 struct OvmsCommand {
     OvmsCommand* RegisterCommand(const char*, const char*, ...) { return this; }
 };

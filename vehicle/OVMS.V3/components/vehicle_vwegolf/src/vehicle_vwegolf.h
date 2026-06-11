@@ -111,6 +111,7 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     void SendOcuHeartbeat();
     void SendNmAlive();
     void WakeKcanBus();
+    void SetFcanFilter(bool enable);
     vehicle_command_t SendClimaBapBurst(bool enable);
 
  protected:
@@ -124,8 +125,8 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
 
     // Seconds since the last non-zero 0x5A7 from the OEM OCU. While the car is on or
     // just turned off, the OEM OCU sends non-zero 0x5A7 frames that conflict with our
-    // all-zeros heartbeat (arbitration loss → bus-off). Must not wake while this is < CLIMA_WAKE_SECS.
-    // Initialized to timeout so cold boot treats the OEM OCU as absent.
+    // all-zeros heartbeat (arbitration loss → bus-off). Must not wake while this is <
+    // CLIMA_WAKE_SECS. Initialized to timeout so cold boot treats the OEM OCU as absent.
     uint8_t m_oem_ocu_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
 
     // OVMS must send the 0x5A7 OCU keepalive while it is an active node.

@@ -27,6 +27,7 @@
 */
 
 #include "vehicle_vwegolf.h"
+
 #include "mcp2515.h"
 
 #undef TAG
@@ -57,31 +58,9 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // RX buffers causing a continuous ISR storm that starves the Events task → TWDT.
     // Hardware acceptance filter passes only the 5 FCAN IDs we decode; everything else
     // is dropped in hardware before reaching the RX buffers.
-    //
-    // .u32 encoding: SetAcceptanceFilter sends bytes u8[3..0] in order as MCP2515
-    // registers SIDH, SIDL, EID8, EID0.  .b.sid stores the SID in bits [10:0] (LSB),
-    // which lands in EID8/EID0 — wrong.  Use u32 = (SID>>3)<<24 | (SID&7)<<21 instead.
-    {
-        auto mcp_sid = [](uint16_t sid) -> uint32_t {
-            return (static_cast<uint32_t>(sid >> 3) << 24) |
-                   (static_cast<uint32_t>(sid & 0x7) << 21);
-        };
-        // MCP2515 has 2 RX buffers: RXB0 uses mask[0] + filter[0..1] (2 slots);
-        // RXB1 uses mask[1] + filter[2..5] (4 slots). We need 5 unique IDs total;
-        // filter[5] duplicates filter[4] (0x6B4) so the unused slot does not
-        // accidentally accept id 0 with the all-don't-care default.
-        mcp2515_filter_config_t f = {};
-        f.mask[0].u32   = mcp_sid(0x7FF);
-        f.mask[1].u32   = mcp_sid(0x7FF);
-        f.filter[0].u32 = mcp_sid(0x131);   // SoC (BMS)              -> RXB0
-        f.filter[1].u32 = mcp_sid(0x187);   // gear selector          -> RXB0
-        f.filter[2].u32 = mcp_sid(0x191);   // BMS current/voltage    -> RXB1
-        f.filter[3].u32 = mcp_sid(0x2AF);   // trip energy            -> RXB1
-        f.filter[4].u32 = mcp_sid(0x6B4);   // VIN                    -> RXB1
-        f.filter[5].u32 = mcp_sid(0x6B4);   // (duplicate of filter[4] to fill unused slot)
-        if (static_cast<mcp2515*>(m_can2)->SetAcceptanceFilter(f) != ESP_OK)
-            ESP_LOGE(TAG, "FCAN acceptance filter setup failed — all frames will reach ISR");
-    }
+    // Disable (cfg "fcan-filter" no / "xvg fcanfilter off") only for frame discovery
+    // captures — running unfiltered during charging risks the TWDT storm above.
+    SetFcanFilter(MyConfig.GetParamValueBool("xvg", "fcan-filter", true));
 
     // NOTE: no metric writes in the constructor — that defeats metric persistence and is
     // a maintainer-review blocker. The 0x66E 0xFE "no data yet" sentinel (decodes to 77°C)
@@ -99,9 +78,74 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     cmd_xvg->RegisterCommand("fold_mirrors", "Fold mirrors in",
                              [this](...) { CommandMirrorFoldIn(); });
 
+    // FCAN hardware acceptance filter toggle. Persists via config "xvg fcan-filter"
+    // and applies to the MCP2515 immediately (no module reload needed).
+    OvmsCommand* cmd_filter =
+        cmd_xvg->RegisterCommand("fcanfilter", "FCAN hardware acceptance filter");
+    cmd_filter->RegisterCommand(
+        "on", "Enable filter (normal operation)",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int, const char* const*) {
+            MyConfig.SetParamValueBool("xvg", "fcan-filter", true);
+            SetFcanFilter(true);
+            writer->puts("FCAN filter enabled (5 decoded IDs only)");
+        });
+    cmd_filter->RegisterCommand(
+        "off", "Disable filter (full-bus capture; ISR storm risk while charging)",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int, const char* const*) {
+            MyConfig.SetParamValueBool("xvg", "fcan-filter", false);
+            SetFcanFilter(false);
+            writer->puts(
+                "FCAN filter disabled - all FCAN frames pass; "
+                "re-enable after capture to avoid ISR storm while charging");
+        });
+    cmd_filter->RegisterCommand(
+        "status", "Show filter state",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int, const char* const*) {
+            writer->printf("FCAN filter: %s\n",
+                           MyConfig.GetParamValueBool("xvg", "fcan-filter", true)
+                               ? "enabled (5 decoded IDs only)"
+                               : "disabled (all frames pass)");
+        });
+
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
 #endif
+}
+
+// Apply or clear the FCAN (can2) MCP2515 hardware acceptance filter.
+//
+// .u32 encoding: SetAcceptanceFilter sends bytes u8[3..0] in order as MCP2515
+// registers SIDH, SIDL, EID8, EID0.  .b.sid stores the SID in bits [10:0] (LSB),
+// which lands in EID8/EID0 — wrong.  Use u32 = (SID>>3)<<24 | (SID&7)<<21 instead.
+//
+// disable: an all-zero config means every mask bit is don't-care, so the MCP2515
+// accepts every frame (promiscuous) — used for frame-discovery captures.  The driver
+// stores the config and re-applies it on bus restart, so either state survives
+// `can can2 stop/start`.
+void OvmsVehicleVWeGolf::SetFcanFilter(bool enable) {
+    mcp2515_filter_config_t f = {};
+    if (enable) {
+        auto mcp_sid = [](uint16_t sid) -> uint32_t {
+            return (static_cast<uint32_t>(sid >> 3) << 24) |
+                   (static_cast<uint32_t>(sid & 0x7) << 21);
+        };
+        // MCP2515 has 2 RX buffers: RXB0 uses mask[0] + filter[0..1] (2 slots);
+        // RXB1 uses mask[1] + filter[2..5] (4 slots). We need 5 unique IDs total;
+        // filter[5] duplicates filter[4] (0x6B4) so the unused slot does not
+        // accidentally accept id 0 with the all-don't-care default.
+        f.mask[0].u32 = mcp_sid(0x7FF);
+        f.mask[1].u32 = mcp_sid(0x7FF);
+        f.filter[0].u32 = mcp_sid(0x131);  // SoC (BMS)              -> RXB0
+        f.filter[1].u32 = mcp_sid(0x187);  // gear selector          -> RXB0
+        f.filter[2].u32 = mcp_sid(0x191);  // BMS current/voltage    -> RXB1
+        f.filter[3].u32 = mcp_sid(0x2AF);  // trip energy            -> RXB1
+        f.filter[4].u32 = mcp_sid(0x6B4);  // VIN                    -> RXB1
+        f.filter[5].u32 = mcp_sid(0x6B4);  // (duplicate of filter[4] to fill unused slot)
+    }
+    if (static_cast<mcp2515*>(m_can2)->SetAcceptanceFilter(f) != ESP_OK)
+        ESP_LOGE(TAG, "FCAN acceptance filter %s failed", enable ? "enable" : "disable");
+    else
+        ESP_LOGI(TAG, "FCAN acceptance filter %s", enable ? "enabled" : "disabled");
 }
 
 OvmsVehicleVWeGolf::~OvmsVehicleVWeGolf() {
@@ -163,8 +207,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
 
             // Negated: OVMS convention is charge=negative, drive=positive.
             StandardMetrics.ms_v_bat_power->SetValue(-(voltage * current) / 1000.0f);
-            ESP_LOGV(TAG, "0x0191 raw=%02x%02x%02x%02x%02x I=%.1fA V=%.2fV",
-                     d[1], d[2], d[3], d[4], d[5], current, voltage);
+            ESP_LOGV(TAG, "0x0191 raw=%02x%02x%02x%02x%02x I=%.1fA V=%.2fV", d[1], d[2], d[3], d[4],
+                     d[5], current, voltage);
             break;
         }
         case 0x02AF: {
@@ -331,8 +375,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // 1 V/bit and 1 A/bit are consistent with observed values (248 V, 9 A) and
             // the measured DC battery power (~1.6 kW) with expected OBC losses.
             f = (float)d[4];
-            if (f > 0.0f)
-                StandardMetrics.ms_v_charge_voltage->SetValue(f);
+            if (f > 0.0f) StandardMetrics.ms_v_charge_voltage->SetValue(f);
             f = StandardMetrics.ms_v_charge_inprogress->AsBool() ? (float)d[5] : 0.0f;
             StandardMetrics.ms_v_charge_current->SetValue(f);
             StandardMetrics.ms_v_charge_power->SetValue(
@@ -359,8 +402,10 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 StandardMetrics.ms_v_charge_inprogress->SetValue(is_charging);
                 StandardMetrics.ms_v_charge_state->SetValue(is_charging ? "charging" : "stopped");
                 if (is_charging != was_charging) {
-                    if (is_charging) NotifyChargeStart();
-                    else NotifyChargeStopped();
+                    if (is_charging)
+                        NotifyChargeStart();
+                    else
+                        NotifyChargeStopped();
                 }
             }
 
@@ -522,7 +567,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // Odometer, parking time, and filtered outside temperature.
 
             // Odometer: 20-bit, factor 1 km.
-            uint32_t odo = (uint32_t)(d[0]) | ((uint32_t)(d[1]) << 8) | ((uint32_t)(d[2] & 0x0F) << 16);
+            uint32_t odo =
+                (uint32_t)(d[0]) | ((uint32_t)(d[1]) << 8) | ((uint32_t)(d[2] & 0x0F) << 16);
             StandardMetrics.ms_v_pos_odometer->SetValue(odo);
 
             // Park time: bit-field across d[2:4]. Exact encoding not fully confirmed.
@@ -560,8 +606,7 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     // evidence has arrived for the hold window. Bridges blower thermostat cycling and clears
     // the metric when the car sleeps. A stop command already set it false immediately, so this
     // governs only autonomous/timer stops (≈hold-second linger).
-    if (m_clima_run_secs >= VWEGOLF_HVAC_RUN_HOLD_SECS &&
-        StandardMetrics.ms_v_env_hvac->AsBool()) {
+    if (m_clima_run_secs >= VWEGOLF_HVAC_RUN_HOLD_SECS && StandardMetrics.ms_v_env_hvac->AsBool()) {
         StandardMetrics.ms_v_env_hvac->SetValue(false);
     }
 
@@ -828,9 +873,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::SendClimaBapBurst(bool enable
     data[3] = 0x59;           // BAP node=0x25 [1:0], port=0x19
     data[4] = m_bap_counter;  // rolling counter; ACK will echo this | 0x80
     data[5] = 0x06;           // duration: 0x06 = 15 min (confirmed from capture: port 51 BCD
-                              // countdown, 30s per unit, 0x06 * 150s = 15 min). Use 0x04 for 10 min.
-    data[6] = 0x00;           // unknown
-    data[7] = 0x01;           // unknown (mode/profile flag)
+                     // countdown, 30s per unit, 0x06 * 150s = 15 min). Use 0x04 for 10 min.
+    data[6] = 0x00;  // unknown
+    data[7] = 0x01;  // unknown (mode/profile flag)
     // Accept both ESP_OK (frame in TWAI HW FIFO, physical TX imminent) and ESP_QUEUED
     // (frame placed in the OVMS FreeRTOS SW queue behind a concurrently-transmitting frame).
     // The SW queue is FIFO — if Frame 1 is queued, Frames 2 and 3 will follow it in order,
@@ -854,11 +899,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::SendClimaBapBurst(bool enable
     if (climate_temp < VWEGOLF_CLIMA_TEMP_MIN_C) climate_temp = VWEGOLF_CLIMA_TEMP_MIN_C;
     if (climate_temp > VWEGOLF_CLIMA_TEMP_MAX_C) climate_temp = VWEGOLF_CLIMA_TEMP_MAX_C;
     uint8_t temp_raw = (uint8_t)((climate_temp - 10) * 10);
-    data[0] = 0xC0;  // multi-frame continuation, channel 0
-    data[1] = 0x06;  // unknown
-    data[2] = 0x00;  // unknown
+    data[0] = 0xC0;      // multi-frame continuation, channel 0
+    data[1] = 0x06;      // unknown
+    data[2] = 0x00;      // unknown
     data[3] = temp_raw;  // target temperature: (celsius - 10) * 10
-    data[4] = 0x00;  // padding / unknown
+    data[4] = 0x00;      // padding / unknown
     esp_err_t ok2 = m_can3->WriteExtended(0x17332501, 5, data, pdMS_TO_TICKS(200));
     if (ok2 == ESP_FAIL) {
         ESP_LOGW(TAG, "BAP clima frame 2 TX queue overflow");
