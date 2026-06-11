@@ -747,6 +747,9 @@ extern void test_crtd_replay_kcan();
 // tests_run/tests_passed counters via extern).
 void test_clima_all();
 
+// UDS BMS polling suite, defined in test_uds_poll.cpp (same counter sharing).
+void test_uds_poll_all();
+
 int main() {
     printf("=== vehicle_vwegolf CAN decode tests ===\n");
 
@@ -775,6 +778,7 @@ int main() {
     test_crtd_replay();
     test_crtd_replay_kcan();
     test_clima_all();
+    test_uds_poll_all();
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);
     return (tests_passed == tests_run) ? 0 : 1;

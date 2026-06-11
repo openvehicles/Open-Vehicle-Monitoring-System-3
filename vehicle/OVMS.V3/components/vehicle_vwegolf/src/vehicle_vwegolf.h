@@ -99,6 +99,8 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
 
     void IncomingFrameCan2(CAN_frame_t* p_frame) override;
     void IncomingFrameCan3(CAN_frame_t* p_frame) override;
+    void IncomingPollReply(const OvmsPoller::poll_job_t& job, uint8_t* data,
+                           uint8_t length) override;
 
     vehicle_command_t CommandHorn();
     vehicle_command_t CommandPanic();
@@ -118,10 +120,16 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     void Ticker1(uint32_t ticker) override;
 
  private:
+    void UpdatePollState();
+
     // Seconds since the last KCAN (can3) frame arrived. Reset to 0 in IncomingFrameCan3,
     // incremented each second in Ticker1. Bus is alive while < VWEGOLF_BUS_TIMEOUT_SECS.
     // Initialized to timeout so we treat the bus as offline at cold boot.
     uint8_t m_bus_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
+
+    // Same, for FCAN (can2) — reset in IncomingFrameCan2. FCAN alive = powertrain awake,
+    // which drives the VWEGOLF_ON poll state (see UpdatePollState).
+    uint8_t m_fcan_idle_ticks = VWEGOLF_BUS_TIMEOUT_SECS;
 
     // Seconds since the last non-zero 0x5A7 from the OEM OCU. While the car is on or
     // just turned off, the OEM OCU sends non-zero 0x5A7 frames that conflict with our

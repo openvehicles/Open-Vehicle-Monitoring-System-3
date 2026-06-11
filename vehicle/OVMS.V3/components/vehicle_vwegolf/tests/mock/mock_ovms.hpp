@@ -289,6 +289,46 @@ struct OvmsVehicleFactory {
 extern OvmsVehicleFactory MyVehicleFactory;
 
 // ---------------------------------------------------------------------------
+// Poller (subset of components/poller/src/vehicle_poller.h used by vwegolf)
+// ---------------------------------------------------------------------------
+#define VEHICLE_POLL_NSTATES 4
+#define VEHICLE_POLL_TYPE_READDATA 0x22
+#define ISOTP_STD 0
+
+class OvmsPoller {
+ public:
+    typedef struct {
+        uint32_t txmoduleid;
+        uint32_t rxmoduleid;
+        uint16_t type;
+        uint16_t pid;  // real header wraps this in a union with args/xargs — plain pid
+                       // keeps the same aggregate-init syntax for simple tables
+        uint16_t polltime[VEHICLE_POLL_NSTATES];
+        uint8_t pollbus;
+        uint8_t protocol;
+    } poll_pid_t;
+
+    typedef struct {
+        canbus* bus;
+        uint8_t bus_no;
+        uint32_t protocol;
+        uint16_t type;
+        uint16_t pid;
+        uint32_t moduleid_sent;
+        uint32_t moduleid_low;
+        uint32_t moduleid_high;
+        uint32_t moduleid_rec;
+        uint16_t mlframe;
+        uint16_t mloffset;
+        uint16_t mlremain;
+        poll_pid_t entry;
+        uint32_t ticker;
+    } poll_job_t;
+};
+
+#define POLL_LIST_END {0, 0, 0x00, 0x00, {0, 0, 0}, 0, 0}
+
+// ---------------------------------------------------------------------------
 // OvmsVehicle base class
 // ---------------------------------------------------------------------------
 enum vehicle_command_t { Success, Fail, NotImplemented };
@@ -320,6 +360,18 @@ struct OvmsVehicle {
     virtual void IncomingFrameCan3(CAN_frame_t*) {}
     virtual void Ticker1(uint32_t) {}
     virtual void Ticker10(uint32_t) {}
+
+    // Poller (real base manages poll scheduling; mock just records state so tests
+    // can assert transitions and call IncomingPollReply directly)
+    uint8_t m_poll_state = 0;
+    canbus* m_poll_bus = nullptr;
+    const OvmsPoller::poll_pid_t* m_poll_plist = nullptr;
+    void PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plist) {
+        m_poll_bus = bus;
+        m_poll_plist = plist;
+    }
+    void PollSetState(uint8_t state, canbus* = nullptr) { m_poll_state = state; }
+    virtual void IncomingPollReply(const OvmsPoller::poll_job_t&, uint8_t*, uint8_t) {}
     bool PinCheck(const char* /*pin*/) { return true; }  // always pass in tests
     void NotifyChargeStart() {}
     void NotifyChargeStopped() {}

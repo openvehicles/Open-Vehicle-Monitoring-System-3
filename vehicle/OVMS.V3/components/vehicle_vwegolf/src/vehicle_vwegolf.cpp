@@ -33,6 +33,38 @@
 #undef TAG
 #define TAG "v-vwegolf"
 
+// UDS BMS poll addresses/DIDs — VW ECU 8C "hybrid battery management". Taken from
+// vehicle_vweup (vweup_obd.h, same VW EV platform family); MUST be validated on the
+// e-Golf before trusting values. Polled on can1 = OBD/diag CAN at the J533 (gateway
+// routes the request to the BMS on FCAN). See docs/j533_to_ovms.svg: OBD CAN+ must
+// be landed on DB9 pin 7 (can1-H) for this to work.
+#define VWEGOLF_BMS_TX 0x7E5      // tester -> BMS request CAN ID
+#define VWEGOLF_BMS_RX 0x7ED      // BMS -> tester response CAN ID
+#define VWEGOLF_BMS_DID_U 0x1E3B  // measured pack voltage, uint16 / 4.0 V
+#define VWEGOLF_BMS_DID_I 0x1E3D  // measured pack current, (uint16 - 2044) / 4.0 A
+
+// Poll intervals in seconds per state {OFF, AWAKE, CHARGING, ON}. Diag CAN sleeps
+// with the car -> OFF/AWAKE are 0. CHARGING feeds the bat_* metrics (0x191 is silent
+// during DC and reads 0 A during AC). ON polls slowly and logs only — the on-car
+// validation path: compare log values against live 0x191 metrics while driving.
+// Voltage entry MUST precede current: the current handler derives power from the
+// voltage metric, so voltage has to be fresh within the same poll round.
+static const OvmsPoller::poll_pid_t vwegolf_polls[] = {{VWEGOLF_BMS_TX,
+                                                        VWEGOLF_BMS_RX,
+                                                        VEHICLE_POLL_TYPE_READDATA,
+                                                        VWEGOLF_BMS_DID_U,
+                                                        {0, 0, 3, 10},
+                                                        0,
+                                                        ISOTP_STD},
+                                                       {VWEGOLF_BMS_TX,
+                                                        VWEGOLF_BMS_RX,
+                                                        VEHICLE_POLL_TYPE_READDATA,
+                                                        VWEGOLF_BMS_DID_I,
+                                                        {0, 0, 3, 10},
+                                                        0,
+                                                        ISOTP_STD},
+                                                       POLL_LIST_END};
+
 // ---------------------------------------------------------------------------
 // Module registration
 // ---------------------------------------------------------------------------
@@ -53,6 +85,16 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // even though rxerr/txerr stay at zero. Listen-only eliminates this entirely.
     RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  // FCAN — powertrain (read-only)
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN — comfort / clima
+
+    // OBD/diag CAN at the J533 — tester bus, gateway routes UDS to target ECUs.
+    // ACTIVE: we must transmit poll requests here (unlike listen-only FCAN).
+    // Harmless while the OBD CAN+ wire is not yet landed on DB9 pin 7: the bus
+    // just stays silent and polls time out.
+    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // diag CAN — UDS polling
+
+    // UDS BMS polling (see vwegolf_polls above). Poll state is driven in Ticker1
+    // from charge_inprogress (0x594) and bus liveness; starts in OFF (state 0).
+    PollSetPidList(m_can1, vwegolf_polls);
 
     // During charging the OBC floods FCAN at ~860 frames/s which overflows the MCP2515
     // RX buffers causing a continuous ISR storm that starves the Events task → TWDT.
@@ -167,6 +209,65 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit() {
 }
 
 // ---------------------------------------------------------------------------
+// UDS BMS polling (can1 = OBD/diag CAN)
+// ---------------------------------------------------------------------------
+
+// Derive the poll state each second (called from Ticker1).
+// CHARGING: 0x594 charge gate (authoritative, KCAN). ON: FCAN alive = powertrain
+// awake (driving/ready — charging is caught first, so no overlap). AWAKE: only
+// KCAN alive. OFF: all buses silent — the diag CAN is asleep too, polls would
+// only accumulate TX errors.
+void OvmsVehicleVWeGolf::UpdatePollState() {
+    uint8_t want = VWEGOLF_OFF;
+    if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+        want = VWEGOLF_CHARGING;
+    else if (m_fcan_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS)
+        want = VWEGOLF_ON;
+    else if (m_bus_idle_ticks < VWEGOLF_BUS_TIMEOUT_SECS)
+        want = VWEGOLF_AWAKE;
+
+    if (want != m_poll_state) {
+        ESP_LOGI(TAG, "Poll state %u -> %u", m_poll_state, want);
+        PollSetState(want);
+    }
+}
+
+void OvmsVehicleVWeGolf::IncomingPollReply(const OvmsPoller::poll_job_t& job, uint8_t* data,
+                                           uint8_t length) {
+    // BMS measured pack voltage/current (UDS, ECU 8C). Scaling from vehicle_vweup —
+    // validate on car before trusting (see vwegolf_polls above).
+    // Metrics are written only while CHARGING: 0x191 owns bat_* when driving and is
+    // silent (DC) / 0 A (AC) during charge. ON state logs only, for on-car validation
+    // against live 0x191 values.
+    if (job.moduleid_rec != VWEGOLF_BMS_RX || length < 2) return;
+    const uint16_t raw = ((uint16_t)data[0] << 8) | data[1];
+
+    switch (job.pid) {
+        case VWEGOLF_BMS_DID_U: {
+            const float volts = raw / 4.0f;
+            ESP_LOGD(TAG, "UDS BMS U raw=%u -> %.2fV", raw, volts);
+            if (m_poll_state == VWEGOLF_CHARGING) StandardMetrics.ms_v_bat_voltage->SetValue(volts);
+            break;
+        }
+        case VWEGOLF_BMS_DID_I: {
+            // 2044 offset, 0.25 A/bit. ECU sign: negative = current out of the battery;
+            // OVMS wants discharge positive -> negate (same convention as the 0x191 path,
+            // so charge shows as negative current and negative power).
+            const float amps = ((float)raw - 2044.0f) / 4.0f * -1.0f;
+            ESP_LOGD(TAG, "UDS BMS I raw=%u -> %.2fA", raw, amps);
+            if (m_poll_state == VWEGOLF_CHARGING) {
+                StandardMetrics.ms_v_bat_current->SetValue(amps);
+                StandardMetrics.ms_v_bat_power->SetValue(
+                    StandardMetrics.ms_v_bat_voltage->AsFloat() * amps / 1000.0f);
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // FCAN (CAN2) — powertrain bus: BMS, gear selector, VIN
 // ---------------------------------------------------------------------------
 
@@ -174,6 +275,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
     uint8_t* d = p_frame->data.u8;
     float f;
     uint16_t u16;
+
+    // FCAN liveness counter for the poll-state machine (see UpdatePollState).
+    m_fcan_idle_ticks = 0;
 
     switch (p_frame->MsgID) {
         case 0x0131: {
@@ -598,9 +702,12 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     // Count consecutive seconds of KCAN silence. IncomingFrameCan3 resets this to 0
     // whenever a frame arrives, so it measures how long since the last activity.
     if (m_bus_idle_ticks < 254) m_bus_idle_ticks++;
+    if (m_fcan_idle_ticks < 254) m_fcan_idle_ticks++;
     if (m_oem_ocu_idle_ticks < 254) m_oem_ocu_idle_ticks++;
     if (m_clima_run_secs < 255) m_clima_run_secs++;
     if (m_hvac_stop_secs < 255) m_hvac_stop_secs++;
+
+    UpdatePollState();
 
     // ms_v_env_hvac (driven by 0x03B5 ClimaRunning + commands) clears once no "running"
     // evidence has arrived for the hold window. Bridges blower thermostat cycling and clears

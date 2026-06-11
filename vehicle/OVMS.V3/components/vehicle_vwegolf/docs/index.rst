@@ -19,6 +19,13 @@ majority of metric data.  FCAN carries the VIN and a small number of
 powertrain frames; the J533 also bridges KCAN traffic onto FCAN, so both
 buses are registered by the module.
 
+The OBD/diagnostic CAN pair is also present in the J533 connector (see the
+wiring diagram below) and maps to OVMS ``can1`` (DB9 pins 2/7).  It is used
+for UDS polling of the battery management ECU to obtain measured pack
+voltage/current during charge sessions, when the broadcast frames carry no
+usable current.  Both wires of the pair must be connected for this to work;
+without them the module still operates, but charge power metrics stay empty.
+
 The adapter extends the car harness — pins are connected straight through,
 with the CAN pairs run as twisted pair (e.g. from CAT6 cable).  The
 connector part number is VW 8E0972420 (buy both male and female).

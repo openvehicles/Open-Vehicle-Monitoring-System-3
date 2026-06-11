@@ -10,7 +10,8 @@ SRC := mock/mock_ovms.cpp \
        ../src/vehicle_vwegolf.cpp \
        test_can_decode.cpp \
        test_crtd_replay.cpp \
-       test_clima.cpp
+       test_clima.cpp \
+       test_uds_poll.cpp
 
 all: test
 
