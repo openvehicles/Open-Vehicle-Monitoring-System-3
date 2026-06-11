@@ -271,6 +271,10 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   WriteReg(REG_CANINTE, 0b11111111);
 
   // And record that we are powered on
+  if (GetPowerMode() != On)
+    {
+    ESP_LOGI(TAG, "%s: Started, SetPowerMode on", this->GetName());
+    }
   pcp::SetPowerMode(On);
 
   // Re-apply acceptance filter if one was configured — Start() resets RXMODE to 3
@@ -821,23 +825,27 @@ void mcp2515::TxCallback(CAN_frame_t* p_frame, bool success)
 
 void mcp2515::SetPowerMode(PowerMode powermode)
   {
-  pcp::SetPowerMode(powermode);
   switch (powermode)
     {
-    case  On:
-      ESP_LOGI(TAG, "%s: SetPowerMode on", this->GetName());
-      if (m_mode != CAN_MODE_OFF)
+    case On:
         {
-        Start(m_mode, m_speed);
+        ESP_LOGI(TAG, "%s: SetPowerMode on", this->GetName());
+        // Start() will call base SetPowerMode(On) if it actually turns on.
+        if (m_mode != CAN_MODE_OFF) Start(m_mode, m_speed);
         }
       break;
     case Sleep:
     case DeepSleep:
     case Off:
+      {
+      // Make sure the event still gets called immediately
+      pcp::SetPowerMode(powermode);
       ESP_LOGI(TAG, "%s: SetPowerMode off", this->GetName());
       Stop();
+      }
       break;
     default:
+      pcp::SetPowerMode(powermode);
       break;
     }
   }

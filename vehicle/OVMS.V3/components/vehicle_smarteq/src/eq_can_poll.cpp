@@ -336,10 +336,70 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t repl
 
 void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(8);
-  int32_t cycles = (int32_t)CAN_UINT32(0);
+  int32_t cycles_remain = (int32_t)CAN_UINT32(0);
+  // use current remain value if no valid remain value in reply, to prevent false positive jump alert
+  int32_t cycles_now = cycles_remain > 0 ? cycles_remain : (int32_t)mt_bms_contactor_cycles->GetElemValue(1);
   int32_t cycles_max = (int32_t)CAN_UINT32(4);
+  // use previous remain value if available, otherwise current remain value, to calculate diff
+  int32_t cycles_prev = (int32_t)mt_bms_contactor_cycles->GetElemValue(1) > 0 ? (int32_t)mt_bms_contactor_cycles->GetElemValue(1) : cycles_now;
+  int32_t cycles_diff = cycles_prev - cycles_now;
+  int32_t cycles_consumed = cycles_max - cycles_now;
+  float odometer = can_odometer; // in km
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
-  mt_bms_contactor_cycles->SetElemValue(1, cycles);
+  mt_bms_contactor_cycles->SetElemValue(1, cycles_now);
+  mt_bms_contactor_cycles->SetElemValue(2, cycles_consumed);
+  mt_bms_contactor_cycles->SetElemValue(3, cycles_diff);
+  if (cycles_now != cycles_prev) 
+    {
+    ESP_LOGD(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_now, cycles_diff);
+    // Send data log XSQ-BMS-ContactorLog 
+    //V1:
+    //  <cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer>
+    //V2:
+    //  ,<bms_mileage>,<can_soc>,<can_soh>,<USM_12V>,<contactor_state>,<bms_prod_data>,<bat_serial>,<evc_traceability>
+    //V3:
+    //  ,<12V_trickle_charge_count within 24h>
+    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,3,%d,%d,%d,%d,%d,%.1f,%.0f,%.1f,%.0f,%.2f,%s,%s,%s,%s,%d",
+      86400 * 30, // hold time 30 days
+      cycles_max, cycles_prev, cycles_now, cycles_diff, odometer, 
+      mt_bms_mileage->AsFloat(), can_soc, can_soh, mt_evc_dcdc->GetElemValue(3), mt_bms_HVcontactStateTXT->AsString().c_str(),
+      mp_encode(mt_bms_prod_data->AsString()).c_str(), mt_bat_serial->AsString().c_str(), mp_encode(mt_evc_traceability->AsString()).c_str(),
+      mt_12v_trickle_charge_count->AsInt(0));
+    // Send alert in case of a large unexpected jump
+    if (cycles_prev > cycles_now && cycles_diff > 100) 
+      {
+      MyNotify.NotifyStringf("alert", "bms.contactorjump",
+        "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
+        "Possible issue #1405 condition (BMS glitch), check ASAP!\n"
+        "CAN write is now disabled and switched to listen mode!\n",
+        cycles_diff, cycles_now);
+      // …and disable CAN write to prevent possible damage to the contactor
+      ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, consumed: %d odo: %0.0f, counted more than expected!", cycles_prev, cycles_now, cycles_consumed, odometer);
+      if (IsCANwrite()) 
+        {
+        smartOBDpolling(false);
+        MyConfig.SetParamValueBool("xsq", "canwrite", false);
+        MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
+        }
+      }
+    // Alert if consumed cycles are above expected for a healthy contactor (e.g. above 50000 cycles consumed)
+    if(cycles_now > 0 && cycles_consumed > m_above_cycles)
+      {
+      ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, consumed: %d odo: %0.0f!", m_above_cycles, cycles_prev, cycles_now, cycles_consumed, odometer);
+      NotifyHVCycles(true);
+      
+      // Shorter alert intervals the less cycles are remaining:
+      if (cycles_now < 1000)
+        m_above_cycles = roundup(cycles_consumed, 100);
+      else if (cycles_now < 10000)
+        m_above_cycles = roundup(cycles_consumed, 1000);
+      else if (cycles_now < 50000)
+        m_above_cycles = roundup(cycles_consumed, 5000);
+      else
+        m_above_cycles = roundup(cycles_consumed, 10000);
+      MyConfig.SetParamValueInt("xsq", "bms.alert.above.cycles", m_above_cycles);
+      }
+    }
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len) {
@@ -715,8 +775,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_ActReq(const char* data, uint16_t re
   // Spec: bitoffset 7, bitscount 1 (MSB of byte 0 in payload)
   REQUIRE_LEN(1);
   uint8_t raw = CAN_BYTE(0);
-  bool active = raw != 0;  // Bit 7
-  StdMetrics.ms_v_env_charging12v->SetValue(active);
+  can_charging12v = raw != 0;  // Bit 7  
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len) {

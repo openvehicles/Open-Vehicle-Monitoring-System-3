@@ -163,9 +163,9 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP,// 79
   {"dbm",      "dBm",      Native,     sq,          GrpSignal}, // 80
   {"sq",       "sq",       dbm,        Native,      GrpSignal}, // 81
-  UNIT_GAP,// 82
-  UNIT_GAP,// 83
-  UNIT_GAP,// 84
+  {"days",     "Day",      Native,     Native,      GrpDate}, // 82
+  {"months",   "Mon",      Native,     Native,      GrpDate}, // 83
+  {"years",    "Year",     Native,     Native,      GrpDate}, // 84
   {"unixepoch","epoch",    Native,     Native,      GrpDate}, // 85
   {"utcdate",  "",         Native,     Native,      GrpDate}, // 86
   {"localdate","",         Native,     Native,      GrpDate}, // 87

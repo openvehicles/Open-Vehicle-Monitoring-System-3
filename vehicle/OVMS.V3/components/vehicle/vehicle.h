@@ -174,8 +174,8 @@ private:
   static const uint8_t short_count = 2;
 
   static const int32_t entry_mult       =  1000;
-  static const int32_t blip_threshold   =   300; // cur is > 0.3v over average is 'Blip'
-  static const int32_t dip_threshold    =  -250; // cur is < 0.25v under average is 'Dip'
+  static const int32_t blip_threshold   =   250; // cur is > 0.25v over average is 'Blip'
+  static const int32_t dip_threshold    =  -170; // cur is < 0.17v under average is 'Dip'
   static const int32_t chdip_threshold  =   -90; // cur is < 0.09v under average while charging is 'ChargeDip'
   static const int32_t chblip_threshold =   100; // cur is > 0.1v over average while charing is  is 'ChargeBlip'
 

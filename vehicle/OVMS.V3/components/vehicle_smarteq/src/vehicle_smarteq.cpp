@@ -62,7 +62,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   BmsSetCellDefaultThresholdsVoltage(0.040, 0.060);  // Warn: 40mV, Alert: 60mV
   BmsSetCellDefaultThresholdsTemperature(4.0, 5.5);  // Warn: 4,0°C, Alert: 5,5°C
 
-  mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, true);
+  //mt_bus_awake                  = MyMetrics.InitBool("xsq.v.bus.awake", SM_STALE_MIN, false);
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MAX, "", Other);
   mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_MAX, 0, Other);
   mt_adc_factor_history         = MyMetrics.InitVector<float>("xsq.adc.factor.history", SM_STALE_MAX, nullptr, Other);
@@ -118,9 +118,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // 0x7EC EVC metrics
   // EVC 12V values: Index 0=dcdc_volt_req, 1=dcdc_volt, 2=dcdc_power, 3=usm_volt, 4=batt_volt_can, 5=batt_volt_req, 6=dcdc_amps, 7=dcdc_load
   mt_evc_dcdc                   = MyMetrics.InitVector<float>("xsq.evc.12v.dcdc", SM_STALE_MID, nullptr, Other);
-  mt_evc_dcdc->SetElemValue(7, 0.0f);  // Pre-allocate 8 entries
+  mt_evc_dcdc->SetElemValue(7, 0.0f);           // Pre-allocate 8 entries
   mt_evc_traceability           = MyMetrics.InitString("xsq.evc.traceability", SM_STALE_MAX, "");
   mt_evc_plug_detected          = MyMetrics.InitBool("xsq.evc.plug.detected", SM_STALE_MIN, false);
+  mt_12v_trickle_charge_count   = MyMetrics.InitInt("xsq.12v.trickle.count", SM_STALE_MAX, 0, Other);
   // 0x793 OBL charger metrics
   mt_obl_fastchg                = MyMetrics.InitBool("xsq.obl.fastchg", SM_STALE_MIN, false);
   mt_obl_main_volts             = MyMetrics.InitVector<float>("xsq.obl.volts", SM_STALE_HIGH, nullptr, Volts);
@@ -132,20 +133,20 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_CHGpower->SetElemValue(1, 0.0f);
     // OBL misc values: Index 0=freq, 1=ground_resistance, 2=max_current, 3=dc_current, 4=hf10kHz_current, 5=hf_current, 6=lf_current
   mt_obl_misc                   = MyMetrics.InitVector<float>("xsq.obl.misc", SM_STALE_MID, nullptr, Other);
-  mt_obl_misc->SetElemValue(6, 0.0f);  // Pre-allocate 7 entries
+  mt_obl_misc->SetElemValue(6, 0.0f);           // Pre-allocate 7 entries
   mt_obl_main_leakage_diag      = MyMetrics.InitString("xsq.obl.leakdiag", SM_STALE_MID, "", Other);
   // 0x7BB BMS metrics
   mt_bms_voltages               = MyMetrics.InitVector<float>("xsq.bms.voltages", SM_STALE_MID, nullptr, Volts);
-  mt_bms_voltages->SetElemValue(6, 0.0f);  // Pre-allocate: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor, [5]=cv_sum, [6]=12v_system
+  mt_bms_voltages->SetElemValue(6, 0.0f);       // Pre-allocate: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor, [5]=cv_sum, [6]=12v_system
   mt_bms_contactor_cycles       = MyMetrics.InitVector<int>("xsq.bms.contactor.cycles", SM_STALE_HIGH, nullptr);
-  mt_bms_contactor_cycles->SetElemValue(1, 0);  // Pre-allocate Max/Total entries
+  mt_bms_contactor_cycles->SetElemValue(3, 0);  // Pre-allocate Max/Total entries
   mt_bms_soc_values             = MyMetrics.InitVector<float>("xsq.bms.soc.values", SM_STALE_MID, nullptr, Percentage);
-  mt_bms_soc_values->SetElemValue(4, 0.0f);  // Pre-allocate: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
+  mt_bms_soc_values->SetElemValue(4, 0.0f);     // Pre-allocate: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
   mt_bms_soc_recal_state        = MyMetrics.InitString("xsq.bms.soc.recal.state", SM_STALE_MID, "");
   mt_bms_soh                    = MyMetrics.InitFloat("xsq.bms.soh", SM_STALE_MID, 0, Percentage);
   // BMS capacity values: Index 0=usable_max, 1=init, 2=estimate, 3=loss_pct
   mt_bms_cap                    = MyMetrics.InitVector<float>("xsq.bms.cap", SM_STALE_MID, nullptr, Other);
-  mt_bms_cap->SetElemValue(4, 0.0f);  // Pre-allocate 5 entries
+  mt_bms_cap->SetElemValue(4, 0.0f);            // Pre-allocate 5 entries
   mt_bms_mileage                = MyMetrics.InitInt("xsq.bms.mileage", SM_STALE_HIGH, 0, Kilometers);
   mt_bms_voltage_state          = MyMetrics.InitString("xsq.bms.voltage.state", SM_STALE_MID, "");
   mt_bms_cell_resistance        = MyMetrics.InitVector<float>("xsq.bms.cell.resistance", SM_STALE_HIGH, nullptr, Other);
@@ -158,8 +159,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_fusi_mode_txt          = MyMetrics.InitString("xsq.bms.fusi",SM_STALE_MID, "", Other);
   mt_bms_safety_mode_txt        = MyMetrics.InitString("xsq.bms.safety",SM_STALE_MID, "", Other);
 
-  // Start CAN bus in Listen-only mode - will be set according to m_enable_write in ConfigChanged()
-  RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
+  // Start CAN bus in CAN_MODE_ACTIVE mode
+  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  PollSetState(POLLSTATE_OFF);
 
   // register config container for smart EQ module, with callback to ConfigChanged() on changes
   MyConfig.RegisterParam("xsq", "smartEQ", true, true); 
@@ -168,11 +170,11 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // init commands:
   cmd_xsq = MyCommandApp.RegisterCommand("xsq","smartEQ 453 Gen.4");
   cmd_xsq->RegisterCommand("mtdata", "Maintenance data", xsq_maintenance);
+  cmd_xsq->RegisterCommand("hvcycles", "HV Contactor Cycles", xsq_hvcycles);
   cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
   cmd_xsq->RegisterCommand("canwrite", "Send CAN command", xsq_canwrite,"<txid,rxid,hexbytes[,reset,wakeup]>",1,1);
   cmd_xsq->RegisterCommand("calcadc", "Recalculate ADC factor (optional: 12V voltage override)", xsq_calc_adc, "[voltage]", 0, 1);
-  cmd_xsq->RegisterCommand("wakeup", "Wake up the car", xsq_wakeup);
   cmd_xsq->RegisterCommand("ed4scan", "ED4scan-like BMS Data", xsq_ed4scan);
   cmd_xsq->RegisterCommand("preset", "smart EQ config preset", xsq_preset);
   cmd_xsq->RegisterCommand("default", "smart EQ config set default", xsq_setdefault);
@@ -198,9 +200,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     ResetTotalCounters();
     ResetTripCounters();
     }
-
-  if (IsCANwrite())
-    PollSetState(POLLSTATE_ON);                                // start polling to get the first data
 
   if (m_cfg_preset_version != PRESET_VERSION)                  // preset version changed
     CommandPreset(0, NULL);                                    // set smart EQ config preset  
@@ -255,7 +254,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   if (map)
     {
     m_enable_write         = map->GetValueBool("canwrite", false);
-    m_enable_write_caron   = map->GetValueBool("canwrite.caron", true);
+    m_enable_write_caron   = map->GetValueBool("canwrite.caron", false);
     m_enable_write_sleep   = map->GetValueBool("canwrite.sleep", false);
     m_enable_LED_state     = map->GetValueBool("led", false);
     m_bcvalue              = map->GetValueBool("bcvalue", false);
@@ -286,6 +285,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_suffrange            = map->GetValueInt("suffrange", 0);
     cell_interval_drv      = map->GetValueInt("cell_interval_drv", 60);
     cell_interval_chg      = map->GetValueInt("cell_interval_chg", 60);
+    m_above_cycles         = map->GetValueInt("bms.alert.above.cycles", 50000);
     
     m_front_pressure       = map->GetValueFloat("tpms.front.pressure", 225.0f);
     m_rear_pressure        = map->GetValueFloat("tpms.rear.pressure", 255.0f);
@@ -305,13 +305,18 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   // set CAN bus transceiver to active or listen-only depending on user selection
   if ( stateWrite != m_enable_write )
     {
-    smartCANmode(m_enable_write);
+    smartOBDpolling(m_enable_write);
     }
   // disable caron write mode if normal write mode is enabled to avoid conflicts
   if(m_enable_write_caron && m_enable_write) 
     {
     m_enable_write_caron = false;
     MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
+    }
+  // start in listen-only mode if sleep write is enabled and bus is not awake
+  if (m_enable_write_sleep && !IsAwakeEQ())
+    {
+    smartOBDpolling(false);
     }
 
   bool do_modify_poll = (

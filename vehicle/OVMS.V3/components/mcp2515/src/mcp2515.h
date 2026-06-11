@@ -92,7 +92,7 @@ class mcp2515 : public canbus
     esp_err_t WriteFrame(const CAN_frame_t* p_frame);
 
   public:
-    void SetPowerMode(PowerMode powermode);
+    void SetPowerMode(PowerMode powermode) override;
     bool GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags) override;
     void SetTransceiverMode(CAN_mode_t mode);
 
