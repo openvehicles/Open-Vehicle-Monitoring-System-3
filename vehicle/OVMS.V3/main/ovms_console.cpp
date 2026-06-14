@@ -35,6 +35,7 @@
 #include "ovms_console.h"
 #include "ovms_version.h"
 #include "log_buffers.h"
+#include "esp_idf_version.h"
 
 //static const char *TAG = "Console";
 static char CRbuf[4] = { '\r', '\033', '[', 'K' };
@@ -165,6 +166,9 @@ void OvmsConsole::Service()
 
 void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
   {
+#if ESP_IDF_VERSION_MAJOR >= 4
+  static
+#endif
   Event event;
 
   if (!queue)
