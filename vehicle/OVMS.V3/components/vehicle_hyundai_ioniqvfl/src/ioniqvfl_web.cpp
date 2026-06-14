@@ -56,6 +56,7 @@ using namespace std;
  */
 void OvmsVehicleHyundaiVFL::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
+  auto lock = MyConfig.Lock();
   ConfigParamMap nmap = MyConfig.GetParamMap("xhi");
 
   if (c.method == "POST")

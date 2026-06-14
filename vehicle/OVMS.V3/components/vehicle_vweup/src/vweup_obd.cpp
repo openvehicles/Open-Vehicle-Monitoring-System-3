@@ -74,8 +74,11 @@ const OvmsPoller::poll_pid_t vweup_polls[] = {
   // Same tick & order important of above 2: VWUP_BAT_MGMT_CELL_MIN calculates the delta
 
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP,             {  0, 20, 20, 20}, 1, ISOTP_STD},
-  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST18,           {  0, 20, 20, 20}, 1, ISOTP_STD},
-  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOH_CAC,          {  0, 20, 20, 20}, 1, ISOTP_STD},
+  //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST18,           {  0, 20, 20, 20}, 1, ISOTP_STD}, // not yet implemented
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOH_CAC,          {  0,600,600,600}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOH_HIST,         {  0,600,600,600}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST01,           {  0,600,600,600}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_HIST19,           {  0,600,600,600}, 1, ISOTP_STD},
 
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  0, 10,  0}, 1, ISOTP_STD},
 
@@ -99,9 +102,9 @@ const OvmsPoller::poll_pid_t vweup_polls[] = {
   {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_LIMITS,       {  0, 12, 12, 12}, 1, ISOTP_STD},
   // Note: m_timermode_ticker needs to be the polling interval for VWUP_CHG_MGMT_SOC_LIMITS + 1
   //  (see response handler for VWUP_CHG_MGMT_HV_CHGMODE)
-  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_HEATER_I,              {  0, 20, 20, 20}, 1, ISOTP_STD},
   {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_SOCKET,                {  0,  5,  5,  5}, 1, ISOTP_STD},
-  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_SOCK_STATS,            {  0, 20, 20, 20}, 1, ISOTP_STD},
+  //{VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_HEATER_I,              {  0, 20, 20, 20}, 1, ISOTP_STD}, // not yet implemented
+  //{VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_SOCK_STATS,            {  0, 20, 20, 20}, 1, ISOTP_STD}, // not yet implemented
 
   {VWUP_BRK,      UDS_SESSION, VWUP_EXTDIAG_START,          {  0,  0,  0, 30}, 1, ISOTP_STD},
   {VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  0,  0, 30}, 1, ISOTP_STD},
@@ -200,6 +203,20 @@ void OvmsVehicleVWeUp::OBDInit()
     if (!(m_bat_soh_charge = (OvmsMetricFloat*)MyMetrics.Find("xvu.b.soh.charge")))
       m_bat_soh_charge = new OvmsMetricFloat("xvu.b.soh.charge", SM_STALE_MAX, Percentage, true);
 
+    // Battery cell SOH from ECU 8C PID 74 CB
+    m_bat_cell_soh = new OvmsMetricVector<float>("xvu.b.c.soh", SM_STALE_HIGH, Percentage);
+
+    // Battery state time statistics:
+    m_bat_time_total = MyMetrics.InitFloat("xvu.b.time.total", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked = MyMetrics.InitFloat("xvu.b.time.parked", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked_full = MyMetrics.InitFloat("xvu.b.time.parked.full", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked_empty = MyMetrics.InitFloat("xvu.b.time.parked.empty", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked_hot = MyMetrics.InitFloat("xvu.b.time.parked.hot", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked_cold = MyMetrics.InitFloat("xvu.b.time.parked.cold", SM_STALE_MAX, 0, Days);
+    m_bat_time_parked_state = MyMetrics.InitVector<float>("xvu.b.time.parked.state", SM_STALE_MAX, 0, Days);
+    m_bat_time_charged_ac = MyMetrics.InitFloat("xvu.b.time.charged.ac", SM_STALE_MAX, 0, Hours);
+    m_bat_time_charged_dc = MyMetrics.InitFloat("xvu.b.time.charged.dc", SM_STALE_MAX, 0, Hours);
+
     // Battery energy according to MFD range estimation:
     m_bat_energy_range  = MyMetrics.InitFloat("xvu.b.energy.range", SM_STALE_MAX, 0, kWh);
     m_bat_cap_kwh_range = MyMetrics.InitFloat("xvu.b.cap.kwh.range", SM_STALE_MAX, 0, kWh);
@@ -216,10 +233,46 @@ void OvmsVehicleVWeUp::OBDInit()
     m_smooth_cap_ah_norm .Init(15, m_bat_cap_ah_norm->AsFloat(),  m_bat_cap_ah_norm->AsFloat() != 0);
     m_smooth_cap_kwh_abs .Init(15, m_bat_cap_kwh_abs->AsFloat(),  m_bat_cap_kwh_abs->AsFloat() != 0);
     m_smooth_cap_kwh_norm.Init(15, m_bat_cap_kwh_norm->AsFloat(), m_bat_cap_kwh_norm->AsFloat() != 0);
+  }
 
+  // Init model year dependent cell module SOH history metrics:
+  int cmods = (vweup_modelyear > 2019) ? 14 : 17;
+  m_bat_cmod_hist.clear();
+  m_bat_cmod_hist.reserve(cmods);
+  char mname[30];
+  const char *sname;
+  for (int i = 0; i < 17; i++)
+  {
+    // query existing metric:
+    sprintf(mname, "xvu.b.hist.soh.mod.%02d", i+1);
+    OvmsMetricVector<float> *metric = (OvmsMetricVector<float>*) MyMetrics.Find(mname);
+
+    if (i >= cmods)
+    {
+      // no longer needed for the current model; delete:
+      if (metric) {
+        sname = metric->m_name;
+        MyMetrics.DeregisterMetric(metric);
+        free((void*)sname);
+      }
+    }
+    else
+    {
+      // create/store metric:
+      if (!metric) {
+        sname = strdup(mname); // safe, vehicle class is InternalRamAllocated
+        metric = new OvmsMetricVector<float>(sname, SM_STALE_HIGH, Percentage);
+      }
+      m_bat_cmod_hist[i] = metric;
+    }
+  }
+
+  if (m_obd_state == OBDS_Init)
+  {
     // Start can1:
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   }
+
 
   //
   // Init/reconfigure poller
@@ -520,10 +573,19 @@ void OvmsVehicleVWeUp::PollerStateTicker(canbus *bus)
 
       // Fetch VIN once:
       if (!StdMetrics.ms_v_vin->IsDefined()) {
-        std::string vin;
-        if (PollSingleRequest(m_can1, VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_VIN, vin) == 0) {
-          StdMetrics.ms_v_vin->SetValue(vin.substr(1));
-        }
+        // PollerStateTicker() is now called within the poller context, and the blocking PollSingleRequest()
+        // call is not allowed from within the poller context, so queue async request:
+        auto poll_entry = std::shared_ptr<OvmsPoller::OnceOffPoll>(
+          new OvmsPoller::OnceOffPoll(
+            [](uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid,
+                CAN_frame_format_t format, const std::string &data)
+            {
+              StdMetrics.ms_v_vin->SetValue(data.substr(1));
+            },
+            nullptr,
+            VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_VIN,
+            ISOTP_STD, 0, 3));
+        PollRequest(m_can1, "!xvu.vin", poll_entry);
       }
 
       // Start regular polling:
@@ -833,7 +895,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
             float soh_old = m_bat_soh_range->AsFloat();
             if (soh_new < soh_old)
               soh_new = (49 * soh_old + soh_new) / 50;
-            m_bat_soh_range->SetValue(soh_new);
+            m_bat_soh_range->SetValue(soh_new); // → MetricModified() → SetSOH()
             ESP_LOGD(TAG, "VWUP_MFD_RANGE_CAP: max=%.2fkWh => SOH=%.3f%%", m_bat_cap_range_hist[1], soh_new);
           }
         }
@@ -948,12 +1010,132 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
       break;
 
     case VWUP_BAT_MGMT_SOH_CAC:
-      if (PollReply.FromInt16("VWUP_BAT_MGMT_SOH_CAC", value)) {
-//        StdMetrics.ms_v_bat_cac->SetValue(value / 100.0f);
+      if (PollReply.FromUint16("VWUP_BAT_MGMT_SOH_CAC", value, 0)) {
         float cac = value / 100.0f;
         float soh = value / ((vweup_modelyear > 2019) ? 120.0f : 50.0f);
-        m_bat_soh_vw->SetValue(soh);
+        m_bat_soh_vw->SetValue(soh); // → MetricModified() → SetSOH()
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOH_CAC: %f => CAC=%f, SOH=%f", value, cac, m_bat_soh_vw->AsFloat());
+      }
+      if (PollReply.FromUint16("VWUP_BAT_MGMT_SOH_CAC", value, 2)) {
+        size_t cellcount = value;
+        std::vector<float> cellsoh(cellcount);
+        float soh100 = (vweup_modelyear > 2019) ? 240.0f : 125.0f;
+        int cmods = (vweup_modelyear > 2019) ? 14 : 17;
+        for (int i = 0; i < cellcount; i++) {
+          if (PollReply.FromUint8("VWUP_BAT_MGMT_SOH_CAC", value, 4 + i)) {
+            // map sensor layout to pack layout:
+            int ci = (i % cmods) * 6 + (i / cmods);
+            cellsoh[ci] = ROUNDPREC(value / soh100 * 100.0f, 1);
+          }
+        }
+        m_bat_cell_soh->SetValue(cellsoh);
+      }
+      break;
+
+    case VWUP_BAT_MGMT_SOH_HIST:
+      if (PollReply.FromUint8("VWUP_BAT_MGMT_SOH_HIST", ivalue, 0)) {
+        // Record structure:
+        //  Byte 0 = module count (14 or 17 depending on model)
+        //  Byte 1 = history bytes per module (normally 40, may possibly grow → adapt)
+        //  Bytes 2+3 = overall history size (= count x bytes, ie 560 or 680)
+        //  Bytes 4… = history data in <byte0> module blocks of <byte1> size
+        int cmods = (vweup_modelyear > 2019) ? 14 : 17;
+        if (ivalue != cmods) {
+          VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOH_HIST: SKIP: cell module count mismatch; expected=%d got=%d", cmods, ivalue);
+        }
+        else if (PollReply.FromUint8("VWUP_BAT_MGMT_SOH_HIST", ivalue, 1)) {
+          size_t histsize = ivalue;
+          std::vector<float> modsoh(histsize);
+          // Read module history: each byte represents a 3 month period, with
+          // 0xff = not yet filled byte. Initially, the first byte is identical
+          // to the nominal SOH. It isn't known yet if that persists or will be
+          // replaced once the history exceeds 10 years (39 x 3 months).
+          // To adapt to either way, we determine the first actual value index
+          // by testing if all bytes at index 0 are identical to the nominal SOH:
+          float soh100 = (vweup_modelyear > 2019) ? 240.0f : 125.0f;
+          int first_index = 1;
+          for (int i = 0; i < cmods; i++) {
+            if (PollReply.FromUint8("VWUP_BAT_MGMT_SOH_HIST", value, 4 + i*histsize)) {
+              if (value != soh100) {
+                first_index = 0;
+                break;
+              }
+            }
+          }
+          int valcnt = 0;
+          for (int i = 0; i < cmods; i++) {
+            modsoh.clear();
+            for (int j = first_index; j < histsize; j++) {
+              if (PollReply.FromUint8("VWUP_BAT_MGMT_SOH_HIST", value, 4 + i*histsize + j)) {
+                // stop at first 0xff placeholder byte:
+                if (value == 255.0f)
+                  break;
+                modsoh.resize(j-first_index+1, ROUNDPREC(value / soh100 * 100.0f, 1));
+                valcnt++;
+              }
+            }
+            // copy module history to metric:
+            m_bat_cmod_hist[i]->SetValue(modsoh);
+          }
+          VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOH_HIST: histsize=%d; read %d values for %d modules = %d months", histsize, valcnt, cmods, valcnt/cmods*3);
+        }
+      }
+      break;
+
+    case VWUP_BAT_MGMT_HIST01:
+      // Info source: http://obd-amigos.linuxtech.net/files/amigos_PIDs.pm
+      if (PollReply.FromUint8("VWUP_BAT_MGMT_HIST01", value, 2) && value == 48) {
+        // collect data:
+        std::vector<float> ttm_state(48);
+        float ttm = 0, ttm_full = 0, ttm_empty = 0, ttm_hot = 0, ttm_cold = 0;
+        for (int i = 0; i < 48; i++) {
+          if (PollReply.FromUint32("VWUP_BAT_MGMT_HIST01", value, 3 + i*4)) {
+            value /= 86400;
+            ttm_state[i] = TRUNCPREC(value, 2);
+            ttm += value;
+            if (i % 6 == 0)         ttm_empty += value;
+            else if (i % 6 == 5)    ttm_full  += value;
+            if (i / 6 <= 2)         ttm_cold  += value;
+            else if (i / 6 >= 5)    ttm_hot   += value;
+          }
+        }
+
+        // update metrics:
+        VALUE_LOG(TAG, "VWUP_BAT_MGMT_HIST01: parked=%.2fd; full=%.2fd; empty=%.2fd; hot=%.2fd; cold=%.2fd",
+                  ttm, ttm_full, ttm_empty, ttm_hot, ttm_cold);
+        m_bat_time_parked->SetValue(TRUNCPREC(ttm, 2));
+        m_bat_time_parked_full->SetValue(TRUNCPREC(ttm_full, 2));
+        m_bat_time_parked_empty->SetValue(TRUNCPREC(ttm_empty, 2));
+        m_bat_time_parked_hot->SetValue(TRUNCPREC(ttm_hot, 2));
+        m_bat_time_parked_cold->SetValue(TRUNCPREC(ttm_cold, 2));
+        m_bat_time_parked_state->SetValue(ttm_state);
+      }
+      break;
+
+    case VWUP_BAT_MGMT_HIST19:
+      // Info source: http://obd-amigos.linuxtech.net/files/amigos_PIDs.pm
+      if (PollReply.FromUint8("VWUP_BAT_MGMT_HIST19", value, 0) && value == 7) {
+        // collect data:
+        float ttm = 0, ttm_charged_ac = 0, ttm_charged_dc = 0;
+        if (PollReply.FromUint32("VWUP_BAT_MGMT_HIST19", value, 1)) {
+          ttm = value;
+        }
+        if (PollReply.FromUint32("VWUP_BAT_MGMT_HIST19", value, 13)) {
+          ttm_charged_ac = value;
+        }
+        if (PollReply.FromUint32("VWUP_BAT_MGMT_HIST19", value, 17)) {
+          ttm_charged_dc = value;
+        }
+        
+        // update metrics:
+        ttm /= 8640;
+        ttm_charged_ac /= 360;
+        ttm_charged_dc /= 360;
+        VALUE_LOG(TAG, "VWUP_BAT_MGMT_HIST19: age=%.2fd; charged_ac=%.2fh, charged_dc=%.2fh",
+                  ttm, ttm_charged_ac, ttm_charged_dc);
+        m_bat_time_total->SetValue(TRUNCPREC(ttm, 2));
+        m_bat_time_charged_ac->SetValue(TRUNCPREC(ttm_charged_ac, 2));
+        m_bat_time_charged_dc->SetValue(TRUNCPREC(ttm_charged_dc, 2));
       }
       break;
 
@@ -1330,12 +1512,14 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
       }
       break;
 
+#if 0
     case VWUP_BAT_MGMT_HIST18:
       // XXX OBD-Amigos: AC Ah: b21-b24, DC Ah: b29-b32, regen Ah: b5-b8, HV usage counter: U16(V2,V3), CCS usage counter: U16(V8,V9)
       break;
     case VWUP_CHG_HEATER_I:
       // XXX OBD-Amigos: V1/4
       break;
+#endif
     case VWUP_CHG_SOCKET: // XXX OBD-Amigos: b0: plugged, b1: locked, AC socket temp: U16(V3,V4)/10-55, DC socket temp: U16(V5,V6)/10-55
       if (PollReply.FromUint8("VWUP_CHG_SOCKET", ivalue)) {
         bool plugstate = ivalue & 0x01;
@@ -1353,9 +1537,11 @@ void OvmsVehicleVWeUp::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint
         }
       }
       break;
+#if 0
     case VWUP_CHG_SOCK_STATS:
       // XXX OBD-Amigos: insertions: U16(V1,V2), lockings: U16(V3,V4)
       break;
+#endif
 
     default:
       VALUE_LOG(TAG, "IncomingPollReply: ECU %" PRIX32 "/%" PRIX32 " unhandled PID %02X %04X: %s",
@@ -1521,6 +1707,6 @@ void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
     }
 
     // Update metrics:
-    m_bat_soh_charge->SetValue(soh);
+    m_bat_soh_charge->SetValue(soh); // → MetricModified() → SetSOH()
   }
 }

@@ -26,7 +26,9 @@ User Guide
    commands
    scripting
    factory
+   partitioning
    ecu
    egpio
    tpms
    kline
+   homeassistant

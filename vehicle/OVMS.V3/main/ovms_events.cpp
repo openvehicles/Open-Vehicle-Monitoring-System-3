@@ -51,9 +51,13 @@ static const char *TAG = "events";
 #include "ovms_ota.h"
 #endif
 
+#if CONFIG_OVMS_HW_EVENT_QUEUE_SIZE < 80
+#error "CONFIG ERROR: OVMS_HW_EVENT_QUEUE_SIZE needs to be >= 80"
+#endif
+
 OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
 
-typedef void (*event_signal_done_fn)(const char* event, void* data);
+static void CheckQueueOverflow(const char* from, char* event);
 
 bool EventMap::GetCompletion(OvmsWriter* writer, const char* token) const
   {
@@ -257,8 +261,20 @@ void OvmsEvents::EventTask()
         {
         case EVENT_none:
           break;
+        case EVENT_addhandler:
+          HandleQueueAddHandler(&msg);
+          break;
+        case EVENT_removehandlers:
+          HandleQueueRemoveHandlers(&msg);
+          break;
         case EVENT_signal:
           m_current_event = msg.body.signal.event;
+          HandleQueueSignalEvent(&msg);
+          esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
+          m_current_event.clear();
+          break;
+        case EVENT_phasedsignal:
+          m_current_event = msg.body.phasedsignal.event;
           HandleQueueSignalEvent(&msg);
           esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
           m_current_event.clear();
@@ -286,6 +302,12 @@ void OvmsEvents::EventTask()
     }
   }
 
+bool OvmsEvents::IsEventsTask()
+  {
+  // Return TRUE if the currently running task is the OVMS Events task
+  return (xTaskGetCurrentTaskHandle() == m_taskid);
+  }
+
 void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
   {
   // Log everything but the ticker & clock signals
@@ -297,38 +319,64 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
       ESP_LOGD(TAG, "Signal(%s)",m_current_event.c_str());
     }
 
-  auto k = m_map.find(m_current_event);
-  if (k != m_map.end())
+  if (msg->type == EVENT_phasedsignal)
     {
-    EventCallbackList* el = k->second;
-    if (el)
+    msg->body.phasedsignal.phasefn(msg->body.phasedsignal.event, msg->body.phasedsignal.data,
+      EVPH_PreCallbackLoop, &msg->body.phasedsignal.phasedata);
+    }
+
+  // Run callbacks:
+    {
+    OvmsRecMutexLock lock(&m_map_mutex);
+
+    // run callbacks registered specifically for the event:
+    auto k = m_map.find(m_current_event);
+    if (k != m_map.end())
       {
-      for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
+      EventCallbackList* el = k->second;
+      if (el)
         {
-        m_current_started = monotonictime;
-        m_current_callback = *itc;
-        m_current_callback->m_callback(m_current_event, msg->body.signal.data);
-        m_current_callback = NULL;
+        for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
+          {
+          m_current_started = monotonictime;
+          m_current_callback = *itc;
+          if (m_current_callback->m_callback)
+            {
+            m_current_callback->m_callback(m_current_event, msg->body.signal.data);
+            }
+          m_current_callback = NULL;
+          }
+        }
+      }
+
+    // run callbacks registered for any event:
+    k = m_map.find("*");
+    if (k != m_map.end())
+      {
+      EventCallbackList* el = k->second;
+      if (el)
+        {
+        for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
+          {
+          m_current_started = monotonictime;
+          m_current_callback = *itc;
+          if (m_current_callback->m_callback)
+            {
+            m_current_callback->m_callback(m_current_event, msg->body.signal.data);
+            }
+          m_current_callback = NULL;
+          }
         }
       }
     }
 
-  k = m_map.find("*");
-  if (k != m_map.end())
+  if (msg->type == EVENT_phasedsignal)
     {
-    EventCallbackList* el = k->second;
-    if (el)
-      {
-      for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
-        {
-        m_current_started = monotonictime;
-        m_current_callback = *itc;
-        m_current_callback->m_callback(m_current_event, msg->body.signal.data);
-        m_current_callback = NULL;
-        }
-      }
+    msg->body.phasedsignal.phasefn(msg->body.phasedsignal.event, msg->body.phasedsignal.data,
+      EVPH_PostCallbackLoop, &msg->body.phasedsignal.phasedata);
     }
 
+  // Run scripts:
   m_current_started = monotonictime;
   MyScripts.EventScript(m_current_event, msg->body.signal.data);
 
@@ -337,15 +385,53 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
 
 void OvmsEvents::FreeQueueSignalEvent(event_queue_t* msg)
   {
-  if (msg->body.signal.donefn != NULL)
+  if (msg->type == EVENT_phasedsignal)
     {
-    msg->body.signal.donefn(msg->body.signal.event, msg->body.signal.data);
+    msg->body.phasedsignal.phasefn(msg->body.phasedsignal.event, msg->body.phasedsignal.data,
+      EVPH_FreeData, &msg->body.phasedsignal.phasedata);
+    free(msg->body.phasedsignal.event);
     }
-  free(msg->body.signal.event);
+  else // msg->type == EVENT_signal
+    {
+    if (msg->body.signal.donesemaphore != NULL)
+      {
+      msg->body.signal.donesemaphore->Give();
+      }
+    if (msg->body.signal.donefn != NULL)
+      {
+      msg->body.signal.donefn(msg->body.signal.event, msg->body.signal.data);
+      }
+    free(msg->body.signal.event);
+    }
   }
+
 
 void OvmsEvents::RegisterEvent(std::string caller, std::string event, EventCallback callback)
   {
+  // To guarantee a newly registered handler will never be called for the current event
+  // if registered from within an event callback, adding the handler is always delegated
+  // to the EventTask:
+
+  event_queue_t msg = {};
+  msg.type = EVENT_addhandler;
+  msg.body.addhandler.event = strdup(event.c_str());
+  msg.body.addhandler.handler = new EventCallbackEntry(caller, callback);
+
+  if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+    {
+    CheckQueueOverflow("RegisterEvent", msg.body.addhandler.event);
+    free(msg.body.addhandler.event);
+    delete msg.body.addhandler.handler;
+    }
+  }
+
+void OvmsEvents::HandleQueueAddHandler(event_queue_t* msg)
+  {
+  // EventTask command EVENT_addhandler
+  std::string event = msg->body.addhandler.event;
+
+  OvmsRecMutexLock lock(&m_map_mutex);
+
   auto k = m_map.find(event);
   if (k == m_map.end())
     {
@@ -354,16 +440,69 @@ void OvmsEvents::RegisterEvent(std::string caller, std::string event, EventCallb
     }
   if (k == m_map.end())
     {
-    ESP_LOGE(TAG, "Problem registering event %s for caller %s",event.c_str(),caller.c_str());
-    return;
+    ESP_LOGE(TAG, "Problem registering event %s for caller %s", event.c_str(),
+      msg->body.addhandler.handler->m_caller.c_str());
+    free(msg->body.addhandler.event);
+    delete msg->body.addhandler.handler;
     }
-
-  EventCallbackList *el = k->second;
-  el->push_back(new EventCallbackEntry(caller,callback));
+  else
+    {
+    EventCallbackList *el = k->second;
+    el->push_back(msg->body.addhandler.handler);
+    free(msg->body.addhandler.event);
+    }
   }
+
 
 void OvmsEvents::DeregisterEvent(std::string caller)
   {
+  // We need to invalidate all registered handlers in a first pass, to allow this
+  // being called from within a callback (ie within HandleQueueSignalEvent).
+  // Actual deletion of the handlers is then delegated to the EventTask.
+
+  // !! Invalidation of handlers must only be done when running within the events context,
+  //    to avoid potential deadlocks with remote command calls implying a deregistration and
+  //    concurrently executing event handlers needing to lock Mongoose (like server v3):
+  if (xTaskGetCurrentTaskHandle() == m_taskid)
+    {
+    OvmsRecMutexLock lock(&m_map_mutex);
+    EventMap::iterator itm=m_map.begin();
+    while (itm!=m_map.end())
+      {
+      EventCallbackList* el = itm->second;
+      EventCallbackList::iterator itc=el->begin();
+      while (itc!=el->end())
+        {
+        EventCallbackEntry* ec = *itc;
+        if (ec->m_caller == caller)
+          {
+          ec->m_callback = nullptr;
+          }
+        ++itc;
+        }
+      ++itm;
+      }
+    }
+
+  // Schedule deletion:
+  event_queue_t msg = {};
+  msg.type = EVENT_removehandlers;
+  msg.body.removehandlers.caller = strdup(caller.c_str());
+
+  if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+    {
+    CheckQueueOverflow("DeregisterEvent", msg.body.removehandlers.caller);
+    free(msg.body.removehandlers.caller);
+    }
+  }
+
+void OvmsEvents::HandleQueueRemoveHandlers(event_queue_t* msg)
+  {
+  // EventTask command EVENT_removehandlers
+  std::string caller = msg->body.removehandlers.caller;
+
+  OvmsRecMutexLock lock(&m_map_mutex);
+
   EventMap::iterator itm=m_map.begin();
   while (itm!=m_map.end())
     {
@@ -392,6 +531,8 @@ void OvmsEvents::DeregisterEvent(std::string caller)
       ++itm;
       }
     }
+  
+  free(msg->body.removehandlers.caller);
   }
 
 static void CheckQueueOverflow(const char* from, char* event)
@@ -519,6 +660,66 @@ void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_done_fn
   strcpy(msg.body.signal.event, event.c_str());
   msg.body.signal.data = data;
   msg.body.signal.donefn = callback;
+
+  if (delay_ms == 0)
+    {
+    if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+      {
+      CheckQueueOverflow("SignalEvent", msg.body.signal.event);
+      FreeQueueSignalEvent(&msg);
+      }
+    }
+  else
+    {
+    if (ScheduleEvent(&msg, delay_ms) != true)
+      {
+      ESP_LOGE(TAG, "SignalEvent: no timer available, event '%s' dropped", msg.body.signal.event);
+      FreeQueueSignalEvent(&msg);
+      }
+    }
+  }
+
+void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_phase_fn callback,
+                             void* phasedata /*=NULL*/, uint32_t delay_ms /*=0*/)
+  {
+  event_queue_t msg;
+  memset(&msg, 0, sizeof(msg));
+
+  msg.type = EVENT_phasedsignal;
+  msg.body.phasedsignal.event = (char*)ExternalRamMalloc(event.size()+1);
+  strcpy(msg.body.phasedsignal.event, event.c_str());
+  msg.body.phasedsignal.data = data;
+  msg.body.phasedsignal.phasefn = callback;
+  msg.body.phasedsignal.phasedata = phasedata;
+
+  if (delay_ms == 0)
+    {
+    if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+      {
+      CheckQueueOverflow("SignalEvent", msg.body.phasedsignal.event);
+      FreeQueueSignalEvent(&msg);
+      }
+    }
+  else
+    {
+    if (ScheduleEvent(&msg, delay_ms) != true)
+      {
+      ESP_LOGE(TAG, "SignalEvent: no timer available, event '%s' dropped", msg.body.phasedsignal.event);
+      FreeQueueSignalEvent(&msg);
+      }
+    }
+  }
+
+void OvmsEvents::SignalEvent(std::string event, void* data, OvmsSemaphore& semaphore, uint32_t delay_ms /*=0*/)
+  {
+  event_queue_t msg;
+  memset(&msg, 0, sizeof(msg));
+
+  msg.type = EVENT_signal;
+  msg.body.signal.event = (char*)ExternalRamMalloc(event.size()+1);
+  strcpy(msg.body.signal.event, event.c_str());
+  msg.body.signal.data = data;
+  msg.body.signal.donesemaphore = &semaphore;
 
   if (delay_ms == 0)
     {

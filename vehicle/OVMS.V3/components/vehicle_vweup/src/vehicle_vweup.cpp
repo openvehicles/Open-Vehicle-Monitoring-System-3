@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.23.1"
+#define VERSION "0.28.1"
 
 #include <stdio.h>
 #include <string>
@@ -159,10 +159,112 @@ OvmsVehicleVWeUp::~OvmsVehicleVWeUp()
   WebDeInit();
 #endif
 
+  // clean up timers:
+  if (m_sendOcuHeartbeat) {
+    xTimerDelete(m_sendOcuHeartbeat, portMAX_DELAY);
+  }
+  if (profile0_timer) {
+    xTimerDelete(profile0_timer, portMAX_DELAY);
+  }
+
+  // clean up worker task & job queue:
+  if (m_jobtask) {
+    if (QueueJob({ VWUJ_EXIT }, pdMS_TO_TICKS(100))) {
+      // wait for clean shutdown:
+      while (m_jobtask) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+      }
+    }
+    else {
+      // force task shutdown:
+      vTaskDelete(m_jobtask);
+    }
+  }
+  if (m_jobqueue) {
+    vQueueDelete(m_jobqueue);
+  }
+
   // delete metrics:
   MyMetrics.DeregisterMetric(m_version);
   // TODO: delete all xvu metrics
 }
+
+
+/**
+ * StartJobTask: init job queue & start worker task
+ */
+bool OvmsVehicleVWeUp::StartJobTask()
+{
+  // create job queue:
+  m_jobqueue = xQueueCreate(20, sizeof(VWeUpJob));
+  if (!m_jobqueue) {
+    ESP_LOGE(TAG, "StartJobTask: fatal error: cannot create job queue");
+    return false;
+  }
+  
+  // create worker task:
+  xTaskCreatePinnedToCore(JobTaskEntry, "VWeUP Worker", 6*1024, (void*)this, 10, &m_jobtask, CORE(1));
+  if (!m_jobtask) {
+    ESP_LOGE(TAG, "StartJobTask: fatal error: cannot create worker task");
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * JobTask: worker task for queued jobs
+ */
+void OvmsVehicleVWeUp::JobTaskEntry(void *pvParameters)
+{
+  OvmsVehicleVWeUp *me = (OvmsVehicleVWeUp*)pvParameters;
+  me->JobTask();
+}
+void OvmsVehicleVWeUp::JobTask()
+{
+  ESP_LOGD(TAG, "JobTask: up & running");
+
+  VWeUpJob job;
+  bool running = true;
+  while (running) {
+    if (xQueueReceive(m_jobqueue, &job, portMAX_DELAY) == pdTRUE) {
+      switch (job.type) {
+        case VWUJ_EXIT:
+          running = false;
+          break;
+        case VWUJ_T26_EcuHeartBeat:
+          SendOcuHeartbeat();
+          break;
+        case VWUJ_T26_Profile0Retry:
+          Profile0RetryCallBack();
+          break;
+        default:
+          ESP_LOGW(TAG, "JobTask: received unknown job type %d (ignored)", job.type);
+          break;
+      }
+    }
+  }
+
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "JobTask: shut down, min stack free=%d bytes", minstackfree);
+  m_jobtask = NULL;
+  vTaskDelete(NULL);
+}
+
+/**
+ * QueueJob: utility: add a new job to the worker queue
+ */
+bool OvmsVehicleVWeUp::QueueJob(const VWeUpJob &job, int maxwait_ms /*=0*/)
+{
+  if (xQueueSend(m_jobqueue, &job, pdMS_TO_TICKS(maxwait_ms)) == pdTRUE) {
+    return true;
+  }
+  else {
+    ESP_LOGE(TAG, "QueueJob: dropped type %d job: queue overflow", job.type);
+    return false;
+  }
+}
+
 
 /*
 const char* OvmsVehicleVWeUp::VehicleShortName()
@@ -296,7 +398,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::ProcessMsgCommand(string& 
  */
 OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &result, int command, const char* args)
 {
-  if (command == CMD_SetChargeAlerts)
+  if (command == CMD_SetChargeAlerts && args && *args)
   {
     std::istringstream sentence(args);
     std::string token;
@@ -326,7 +428,7 @@ OvmsVehicleVWeUp::vehicle_command_t OvmsVehicleVWeUp::MsgCommandCA(std::string &
   return Success;
 }
   
-  void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
+void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 {
   if (param && param->GetName() != "xvu") {
     return;
@@ -565,10 +667,12 @@ void OvmsVehicleVWeUp::SetSOH(float soh_new)
 {
   float soh_fct    = soh_new / 100;
   float cap_ah     = soh_fct * ((vweup_modelyear > 2019) ? 120.0f :  50.0f);
+  float cap_kwh    = soh_fct * ((vweup_modelyear > 2019) ? 32.3f  :  16.4f);
   float range_full = soh_fct * ((vweup_modelyear > 2019) ? 260.0f : 160.0f);
   float soc_fct    = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
   StdMetrics.ms_v_bat_soh->SetValue(soh_new);
   StdMetrics.ms_v_bat_cac->SetValue(cap_ah);
+  StdMetrics.ms_v_bat_capacity->SetValue(cap_kwh);
   StdMetrics.ms_v_bat_range_full->SetValue(range_full);
   StdMetrics.ms_v_bat_range_ideal->SetValue(range_full * soc_fct);
 }

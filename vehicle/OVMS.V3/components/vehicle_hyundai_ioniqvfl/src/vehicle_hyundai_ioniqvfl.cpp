@@ -102,7 +102,7 @@ OvmsVehicleHyundaiVFL::OvmsVehicleHyundaiVFL()
   }
 
   // Init BMS:
-  BmsSetCellArrangementVoltage(96, 12);
+  BmsSetCellArrangementVoltage(96, 8);
   BmsSetCellArrangementTemperature(12, 1);
   BmsSetCellLimitsVoltage(2.0, 5.0);
   BmsSetCellLimitsTemperature(-39, 200);

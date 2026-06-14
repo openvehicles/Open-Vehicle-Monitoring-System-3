@@ -35,6 +35,7 @@
 #include <stdarg.h>
 #include <memory>
 #include <fstream>
+#include <istream>
 #include "ovms_utils.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
@@ -249,6 +250,24 @@ std::string stripesc(const char* s)
   }
 
 /**
+ * replace_substrings: replace all `from` substrings by `to` in `text`
+ */
+void replace_substrings(std::string &text, const std::string from, const std::string to)
+  {
+  if (from.length() > 0)
+    {
+    size_t pos = 0;
+    size_t len = from.length();
+    while ((pos = text.find(from, pos)) != std::string::npos)
+      {
+      text.replace(pos, len, to);
+      pos += to.length();
+      }
+    }
+  }
+
+
+/**
  * HexByte: Write a single byte as two hexadecimal characters
  * Returns new pointer to end of string (p + 2)
  */
@@ -368,6 +387,32 @@ std::string hexdecode(const std::string encval)
   return value;
   }
 
+/**
+ * hexdecode_u16: decode a hexadecimal encoded string of UTF-16 bytes
+ *  Returns empty string on error
+ */
+std::u16string hexdecode_u16(const std::string encval)
+  {
+  std::u16string value;
+  size_t len = encval.length();
+  if (len == 0)
+    return value;
+  if (encval.find_first_not_of("0123456789ABCDEFabcdef", 0) != std::string::npos || (len & 3))
+    return value;
+  value.reserve(len / 4);
+  char buf[5] = {0};
+  for (size_t i = 0; i < len; i += 4)
+    {
+    buf[0] = encval.at(i);
+    buf[1] = encval.at(i + 1);
+    buf[2] = encval.at(i + 2);
+    buf[3] = encval.at(i + 3);
+    char16_t c = strtoul(buf, NULL, 16);
+    value += c;
+    }
+  return value;
+  }
+
 
 /**
  * pwgen: simple password generator
@@ -435,6 +480,7 @@ int mkpath(std::string path, mode_t mode /*=0*/)
   size_t pre = 0, pos;
   std::string dir;
   int mdret;
+  struct stat st;
 
   if (!endsWith(path, '/'))
     {
@@ -448,8 +494,27 @@ int mkpath(std::string path, mode_t mode /*=0*/)
     pre = pos;
     if (dir.size() == 0)
       continue; // if leading / first time is 0 length
-    if ((mdret = mkdir(dir.c_str(), mode)) && errno != EEXIST)
-      return mdret;
+
+    if (stat(dir.c_str(), &st) == 0)
+      {
+      if (!S_ISDIR(st.st_mode))
+        {
+        // path exists but is no directory
+        errno = ENOTDIR;
+        return -1;
+        }
+      }
+    else if (errno != ENOENT)
+      {
+      // stat error
+      return -1;
+      }
+    else
+      {
+      // level doesn't exist yet, create:
+      if ((mdret = mkdir(dir.c_str(), mode)) && errno != EEXIST)
+        return mdret;
+      }
     }
 
   return 0;
@@ -607,13 +672,16 @@ double float2double(float f)
 
 /**
  * idtag: create object instance tag for registrations
+ * 
+ * Uses snprintf instead of std::ostringstream to reduce stack usage
+ * by ~200-450 bytes. This is critical for small-stack tasks like
+ * DuktapeVFSSave which register shutdown events.
  */
 std::string idtag(const char* tag, void* instance)
   {
-  std::ostringstream buf;
-  buf << tag << "-" << instance;
-  std::string res = buf.str();
-  return res;
+  char buf[48];
+  snprintf(buf, sizeof(buf), "%s-%p", tag, instance);
+  return std::string(buf);
   }
 
 /**
@@ -768,3 +836,73 @@ timer_util_t::~timer_util_t()
     m_cb(m_start, getTime());
     }
   }
+
+
+/**
+ * Simple CSV line parser
+ * Note: currently fixed to field separator ',', quoting '"', no line continuations
+ * Credits: https://stackoverflow.com/a/30338543
+ */
+
+enum class CSVState {
+  UnquotedField,
+  QuotedField,
+  QuotedQuote
+};
+
+std::vector<std::string> readCSVRow(const std::string &row) {
+  CSVState state = CSVState::UnquotedField;
+  std::vector<std::string> fields {""};
+  size_t i = 0; // index of the current field
+  for (char c : row) {
+    switch (state) {
+      case CSVState::UnquotedField:
+        switch (c) {
+          case ',': // end of field
+                    fields.push_back(""); i++;
+                    break;
+          case '"': state = CSVState::QuotedField;
+                    break;
+          default:  fields[i].push_back(c);
+                    break; }
+        break;
+      case CSVState::QuotedField:
+        switch (c) {
+          case '"': state = CSVState::QuotedQuote;
+                    break;
+          default:  fields[i].push_back(c);
+                    break; }
+        break;
+      case CSVState::QuotedQuote:
+        switch (c) {
+          case ',': // , after closing quote
+                    fields.push_back(""); i++;
+                    state = CSVState::UnquotedField;
+                    break;
+          case '"': // "" -> "
+                    fields[i].push_back('"');
+                    state = CSVState::QuotedField;
+                    break;
+          default:  // end of quote
+                    state = CSVState::UnquotedField;
+                    break; }
+        break;
+    }
+  }
+  return fields;
+}
+
+// Read CSV file, Excel dialect. Accept "quoted fields ""with quotes"""
+std::vector<std::vector<std::string>> readCSV(std::istream &in) {
+  std::vector<std::vector<std::string>> table;
+  std::string row;
+  while (!in.eof()) {
+    std::getline(in, row);
+    if (in.bad() || in.fail()) {
+      break;
+    }
+    auto fields = readCSVRow(row);
+    table.push_back(fields);
+  }
+  return table;
+}

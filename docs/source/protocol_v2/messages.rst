@@ -194,6 +194,7 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * Distance to next scheduled maintenance/service [km]
 * Time to next scheduled maintenance/service [seconds]
 * OVMS hardware version
+* Cellular connection mode and status [LTE,Online]
 
 --------------------------------
 Server firmware message 0x66 "f"
@@ -403,6 +404,10 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * Charger efficiency (%)
 * Battery current (A)
 * Battery ideal range gain/loss speed (mph/kph, gain=positive)
+* Energy sum for running charge (kWh)
+* Energy drawn from grid during running session (kWh)
+* Main battery usable capacity (kWh)
+* Date & time of last charge end (seconds)
 
 --------------------------------
 Car update time message 0x53 "T"
@@ -502,49 +507,13 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * rear-left wheel temperature (celcius)
 * Stale TPMS indicator (-1=none, 0=stale, >0 ok)
 
--------------------------
-Car TPMS message 0x59 "Y"
--------------------------
-
-This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the last known TPMS values of the vehicle.
-
-<data> is comma-separated list of:
-
-* number of defined wheel names
-* list of defined wheel names
-* number of defined pressures
-* list of defined pressures (kPa)
-* pressures validity indicator (-1=undefined, 0=stale, 1=valid)
-* number of defined temperatures
-* list of defined temperatures (Celcius)
-* temperatures validity indicator (-1=undefined, 0=stale, 1=valid)
-* number of defined health states
-* list of defined health states (Percent)
-* health states validity indicator (-1=undefined, 0=stale, 1=valid)
-* number of defined alert levels
-* list of defined alert levels (0=none, 1=warning, 2=alert)
-* alert levels validity indicator (-1=undefined, 0=stale, 1=valid)
-
-.. note:: Pressures are transported in kPa now instead of the former PSI.
-  To convert to PSI, multiply by 0.14503773773020923.
-
---------------------------------
-Peer connection message 0x5A "Z"
---------------------------------
-
-This message is sent <servertocar> or <servertoapp> to indicate the connection status of the peer (car for <servertoapp>, interactive apps for <servertocar>). It indicates how many peers are currently connected.
-
-It is suggested that the car should use this to immediately report on, and to increase the report frequency of, status - in the case that one or more interactive Apps are connected and watching the car.
-
-Batch client connections do not trigger any peer count change for the car, but they still receive the car peer status from the server.
-
-<data> is:
-
-* Number of peers connected, expressed as a decimal string
 
 ---------------------------------
-Car export power message 0x47 "G"
+Car export power message 0x58 "X"
 ---------------------------------
+
+.. note:: The message code has previously been "G". It's been changed to "X" for firmware release
+  3.3.005 to avoid conflict with the <apptoserver> group subscription message code.
 
 This message is sent <cartoserver> "C", or <servertoapp> "s" and transmits "v.g" metrics from the vehicle.
 
@@ -573,5 +542,55 @@ This message is sent <cartoserver> "C", or <servertoapp> "s" and transmits "v.g"
 * v.g.duration.range (in min)
 * v.g.duration.soc (in min)
 * v.g.temp (in deg C)
+* v.g.timestamp (in seconds)
 
 Refer https://docs.openvehicles.com/en/latest/userguide/metrics.html
+
+
+-------------------------
+Car TPMS message 0x59 "Y"
+-------------------------
+
+This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the last known TPMS values of the vehicle.
+
+<data> is comma-separated list of:
+
+* number of defined wheel names
+* list of defined wheel names
+* number of defined pressures
+* list of defined pressures (kPa)
+* pressures validity indicator (-1=undefined, 0=stale, 1=valid)
+* number of defined temperatures
+* list of defined temperatures (Celcius)
+* temperatures validity indicator (-1=undefined, 0=stale, 1=valid)
+* number of defined health states
+* list of defined health states (Percent)
+* health states validity indicator (-1=undefined, 0=stale, 1=valid)
+* number of defined alert levels
+* list of defined alert levels (0=none, 1=warning, 2=alert)
+* alert levels validity indicator (-1=undefined, 0=stale, 1=valid)
+* number of defined wheel sensor mappings
+* list of defined wheel sensor indices (0…<number_wheels-1>)
+* wheel sensor mapping validity indicator (-1=undefined/not used, 1=valid)
+
+.. note:: Pressures are transported in kPa now instead of the former PSI.
+  To convert to PSI, multiply by 0.14503773773020923.
+
+.. note:: The wheel sensor mapping feature has been introduced in version 3.3.006.
+  This is only used by vehicles lacking decodable sensor to wheel association.
+
+
+--------------------------------
+Peer connection message 0x5A "Z"
+--------------------------------
+
+This message is sent <servertocar> or <servertoapp> to indicate the connection status of the peer (car for <servertoapp>, interactive apps for <servertocar>). It indicates how many peers are currently connected.
+
+It is suggested that the car should use this to immediately report on, and to increase the report frequency of, status - in the case that one or more interactive Apps are connected and watching the car.
+
+Batch client connections do not trigger any peer count change for the car, but they still receive the car peer status from the server.
+
+<data> is:
+
+* Number of peers connected, expressed as a decimal string
+

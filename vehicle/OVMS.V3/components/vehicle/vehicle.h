@@ -102,6 +102,14 @@ struct DashboardConfig;
 // closes the channel (ECU ID 0 is an invalid destination):
 //   { 0x200,    0,     0,      0,  {…times…},    0 , VWTP_20 }
 
+// Define for Debug of battery monitor internal states.
+// Debug tool: Probably don't need it for production
+// #define OVMS_DEBUG_BATTERYMON
+
+#ifdef OVMS_DEBUG_BATTERYMON
+// Extra verbose debuuging of battery monitor.
+// #define OVMS_DEBUG_BATTERYMON_VERBOSE
+#endif
 
 // Standard MSG protocol commands:
 
@@ -151,6 +159,80 @@ inline bool operator<(OvmsStatus lhs, OvmsStatus rhs) {
   return static_cast<short>(lhs) < static_cast<short>(rhs);
 }
 
+enum class OvmsBatteryState { Unknown, Normal, Charging, ChargingDip, ChargingBlip, Blip, Dip, Low };
+
+// 12V/Aux Battery monitor: The aim is to detect 'dips' (voltage dipping down) and 'blips' (voltage 'blipping' up),
+// as well as 'charging' states and 'low voltage'.
+// This is used to wake up the 'Ping' cycle and do some polling to detect what's going on.  This prevents us from
+// keeping the power-hungry modules from being kept awake and draining the 12V battery (in 3h)
+struct OvmsBatteryMon {
+public:
+  static const int32_t def_charge_threshold = 14000; // over 14.0v is 'Charging'
+  static const int32_t def_low_threshold    = 11500; // Under 11.5v is 'Low'
+private:
+  static const uint8_t long_count = 8;
+  static const uint8_t short_count = 2;
+
+  static const int32_t entry_mult       =  1000;
+  static const int32_t blip_threshold   =   250; // cur is > 0.25v over average is 'Blip'
+  static const int32_t dip_threshold    =  -170; // cur is < 0.17v under average is 'Dip'
+  static const int32_t chdip_threshold  =   -90; // cur is < 0.09v under average while charging is 'ChargeDip'
+  static const int32_t chblip_threshold =   100; // cur is > 0.1v over average while charing is  is 'ChargeBlip'
+
+  average_util_t<int32_t,long_count>  m_long_avg;
+  average_util_t<int32_t,short_count>  m_short_avg;
+
+  mutable bool m_dirty;
+  mutable bool m_to_notify;
+
+  // Last calculated state
+  mutable OvmsBatteryState m_lastState;
+  mutable int32_t m_diff_last;
+
+  // Parameters
+  int32_t m_low_threshold;
+  int32_t m_charge_threshold;
+
+public:
+  OvmsBatteryMon();
+
+  OvmsBatteryState calc_state(int32_t &diff_last) const;
+  OvmsBatteryState calc_state() const
+    {
+    int32_t diff_ign;
+    return calc_state(diff_ign);
+    }
+
+  void set_thresholds(float low_thresh, float charge_thresh)
+    {
+    if (low_thresh > 0)
+      m_low_threshold = lroundf(entry_mult * low_thresh);
+    if (charge_thresh > 0)
+      m_charge_threshold = lroundf(entry_mult * charge_thresh);
+    m_dirty = true;
+    }
+
+  // Add a voltage to the smoothed averages
+  void add(float voltage);
+
+  // Calculate state and return true if changed
+  bool checkStateChange();
+
+  // Current State (update and return)
+  OvmsBatteryState state() const;
+
+  std::string to_string() const;
+
+  float average_lastf() const;
+  float diff_lastf() const;
+  float average_long() const;
+
+  float low_threshold() const;
+  float charge_threshold() const;
+
+  static const char *state_code(OvmsBatteryState state);
+};
+
 class OvmsVehicle : public InternalRamAllocated
   {
   friend class OvmsVehicleFactory;
@@ -190,6 +272,9 @@ class OvmsVehicle : public InternalRamAllocated
       }
     OvmsPoller::VehicleSignal *GetPollerSignal();
 
+    int PollSingleRequest(canbus*  bus, uint32_t txid, uint32_t rxid,
+                      uint8_t polltype, uint16_t pid, const std::string &payload, std::string& response,
+                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       std::string request, std::string& response,
                       int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
@@ -251,11 +336,29 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     virtual void CalculateRangeSpeed();     // Derive momentary range gain/loss speed in kph
 
+  private:
+    // Only access through Ticker Thread.
+    OvmsBatteryMon m_aux_battery_mon;
+    bool m_aux_enabled;
+
+    void Check12vState();
+  public:
+    void EnableAuxMonitor();
+    void EnableAuxMonitor(float low_thresh, float charge_thresh);
+    void DisableAuxMonitor() { m_aux_enabled = false; }
+
   protected:
     int m_last_drivetime;                   // duration of current/most recent drive [s]
     int m_last_parktime;                    // duration of current/most recent parking period [s]
     int m_last_chargetime;                  // duration of current/most recent charge [s]
     int m_last_gentime;                     // duration of current/most recent generator run [s]
+
+    // Scheduled schedulede state tracking
+    int m_precondition_last_triggered_day;    // Last day schedule was triggered (0-6, Sun-Sat, -1=never)
+    int m_precondition_last_triggered_hour;   // Last hour schedule was triggered (0-23, -1=never)
+    int m_precondition_last_triggered_min;    // Last minute schedule was triggered (0-59, -1=never)
+    bool m_climate_restart;                   // Climate duration restart
+    int m_climate_restart_ticker;             // Ticker to suppress repeated climate starts
 
     float m_drive_startsoc;                 // SOC at drive start (vehicle.on)
     float m_drive_startrange;               // Range estimation at drive start (vehicle.on)
@@ -310,6 +413,8 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifyVehicleOn();
     virtual void NotifyVehicleOff();
 
+    void NotifyVehicleAux12vState(OvmsBatteryState new_state, const OvmsBatteryMon &monitor);
+
   protected:
     virtual void NotifyGenState();
 
@@ -335,10 +440,18 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleChargePilotOff() {}
     virtual void NotifiedVehicleChargeTimermodeOn() {}
     virtual void NotifiedVehicleChargeTimermodeOff() {}
+    virtual void NotifiedVehicleGenStart() {}
+    virtual void NotifiedVehicleGenStop() {}
+    virtual void NotifiedVehicleGenPilotOn() {}
+    virtual void NotifiedVehicleGenPilotOff() {}
+    virtual void NotifiedVehicleGenTimermodeOn() {}
+    virtual void NotifiedVehicleGenTimermodeOff() {}
     virtual void NotifiedVehicleAux12vOn() {}
     virtual void NotifiedVehicleAux12vOff() {}
     virtual void NotifiedVehicleCharge12vStart() {}
     virtual void NotifiedVehicleCharge12vStop() {}
+    virtual void NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_state, const OvmsBatteryMon &monitor) {}
+
     virtual void NotifiedVehicleLocked() {}
     virtual void NotifiedVehicleUnlocked() {}
     virtual void NotifiedVehicleValetOn() {}
@@ -370,7 +483,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void Status(int verbosity, OvmsWriter* writer);
 
   protected:
-    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL);
+    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL, bool autoPoweroff = true);
     bool PinCheck(const char* pin);
 
   public:
@@ -419,11 +532,15 @@ class OvmsVehicle : public InternalRamAllocated
 #endif // #ifdef CONFIG_OVMS_COMP_TPMS
 
   public:
-    virtual std::vector<std::string> GetTpmsLayout();
+    virtual std::vector<std::string> GetTpmsLayout();       // override to customize TPMS wheel layout
+    virtual std::vector<std::string> GetTpmsLayoutNames();  // override to customize TPMS wheel layout
+    virtual bool UsesTpmsSensorMapping() { return false; }  // return true if using m_tpms_index[]
 
   protected:
     uint32_t m_tpms_lastcheck;              // monotonictime of last TPMS alert check
     std::vector<short> m_tpms_laststate;    // last TPMS alert state for change detection
+    std::vector<int> m_tpms_index;          // TPMS wheel sensor index mapping via config vehicle tpms.<wheelcode>
+                                            // (corresponding to GetTpmsLayout(), default FL=0,FR=1,RL=2,RR=3)
 
   protected:
     virtual void NotifyTpmsAlerts();
@@ -432,6 +549,9 @@ class OvmsVehicle : public InternalRamAllocated
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandStatTrip(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
+    
+    // Scheduled schedulede
+    virtual void CheckPreconditionSchedule();
 
   public:
     virtual bool SetFeature(int key, const char* value);
@@ -449,10 +569,10 @@ class OvmsVehicle : public InternalRamAllocated
       // Signals for vehicle.
 
       void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
-      void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
+      void IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code) override;
       void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success) override;
 
-      bool Ready() override;
+      bool Ready() const override;
     };
 #endif
 
@@ -464,7 +584,7 @@ class OvmsVehicle : public InternalRamAllocated
 
     // Polling Response
     virtual void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length);
-    virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code);
+    virtual void IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code);
     virtual void IncomingPollTxCallback(const OvmsPoller::poll_job_t &job, bool success);
 #endif
 
@@ -481,6 +601,8 @@ class OvmsVehicle : public InternalRamAllocated
     void VehicleTask();
     QueueHandle_t m_vqueue;
     TaskHandle_t  m_vtask;
+
+    bool m_autopoweroff[VEHICLE_MAXBUSSES];
 #endif
     void SendIncomingFrame(const CAN_frame_t *frame);
 
@@ -556,6 +678,10 @@ class OvmsVehicle : public InternalRamAllocated
     void StartingUp();
     void ShuttingDown();
     virtual bool IsShutdown();
+    std::string BatteryMonStat()
+    {
+      return m_aux_battery_mon.to_string();
+    }
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()
@@ -614,13 +740,27 @@ class OvmsVehicleFactory
     static void vehicle_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-    static void vehicle_climatecontrol(int verbosity, OvmsWriter* writer, bool on);
+
+    static void vehicle_climatecontrol(int verbosity, OvmsWriter* writer, bool on);    
     static void vehicle_climatecontrol_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_climatecontrol_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climate_schedule_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climate_schedule_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climate_schedule_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climate_schedule_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climate_schedule_enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climate_schedule_disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climate_schedule_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
     static void vehicle_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_valet(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_unvalet(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_aux_monitor(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_aux_monitor_enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_aux_monitor_disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
     static void vehicle_charge_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_charge_current(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_charge_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -628,6 +768,7 @@ class OvmsVehicleFactory
     static void vehicle_charge_cooldown(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_stat_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
     static void bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -654,6 +795,9 @@ class OvmsVehicleFactory
     static duk_ret_t DukOvmsVehicleStartCooldown(duk_context *ctx);
     static duk_ret_t DukOvmsVehicleStopCooldown(duk_context *ctx);
     static duk_ret_t DukOvmsVehicleObdRequest(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleAuxMonEnable(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleAuxMonDisable(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleAuxMonStatus(duk_context *ctx);
 #endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 

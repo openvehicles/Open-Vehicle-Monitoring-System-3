@@ -33,19 +33,19 @@
 
 #include <string>
 #include <map>
+#include <atomic>
 #include "ovms_server.h"
 #include "ovms_netmanager.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 #include "ovms_config.h"
-#include "ovms_mutex.h"
 #include "id_include_exclude_filter.h"
 
 typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 
-#define MQTT_CONN_NTOPICS 2
+#define MQTT_CONN_NTOPICS 4   // active, command, request/metric, request/config
 
-class OvmsServerV3 : public OvmsServer
+class OvmsServerV3 : public OvmsServer, MongooseClient
   {
   public:
     OvmsServerV3(const char* name);
@@ -64,8 +64,9 @@ class OvmsServerV3 : public OvmsServer
     void NetmanStop(std::string event, void* data);
     void Ticker1(std::string event, void* data);
     void Ticker60(std::string event, void* data);
-    void RequestUpdate(bool txall);
-
+    void RequestUpdate(const char* requested);
+    void ProcessClientMetricRequest(const std::string& clientid, const std::string& payload);
+    void ProcessClientConfigRequest(const std::string& clientid, const std::string& payload);
   public:
     enum State
       {
@@ -85,6 +86,7 @@ class OvmsServerV3 : public OvmsServer
   public:
     std::string m_vehicleid;
     std::string m_server;
+    std::string m_clientid;
     std::string m_user;
     std::string m_password;
     std::string m_port;
@@ -93,28 +95,37 @@ class OvmsServerV3 : public OvmsServer
     std::string m_will_topic;
     std::string m_conn_topic[MQTT_CONN_NTOPICS];
     struct mg_connection *m_mgconn;
-    OvmsMutex m_mgconn_mutex;
     int m_connretry;
     int m_connection_counter;
     bool m_sendall;
-    int m_msgid;
-    int m_lasttx;
-    int m_lasttx_sendall;
+    uint16_t m_msgid;
+    int64_t m_lasttx;
+    int64_t m_lasttx_sendall;
+    int64_t m_lasttx_priority;
     int m_peers;
-    int m_streaming;
     int m_updatetime_idle;
     int m_updatetime_connected;
     int m_updatetime_awake;
     int m_updatetime_on;
     int m_updatetime_charging;
     int m_updatetime_sendall;
-
+    int m_updatetime_keepalive;
+    int m_max_per_call_sendall;
+    int m_max_per_call_modified;
+    bool m_updatetime_priority;
+    bool m_legacy_event_topic;
+    bool m_retain_depth_limit;
+    bool m_updatetime_immediately;
+    std::atomic<bool> m_have_immediately;
     bool m_connection_available;
     bool m_notify_info_pending;
     bool m_notify_error_pending;
     bool m_notify_alert_pending;
     bool m_notify_data_pending;
-    int m_notify_data_waitcomp;
+    uint16_t m_notify_data_waitcomp;
+    int m_conn_stable_wait;
+    int m_conn_jitter_max;
+    int m_connect_jitter;
     OvmsNotifyType* m_notify_data_waittype;
     OvmsNotifyEntry* m_notify_data_waitentry;
     OvmsServerV3ClientMap m_clients;
@@ -123,18 +134,21 @@ class OvmsServerV3 : public OvmsServer
     virtual void SetPowerMode(PowerMode powermode);
     void Connect();
     void Disconnect();
+    uint16_t NextMsgId();
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
-    int TransmitNotificationInfo(OvmsNotifyEntry* entry);
-    int TransmitNotificationError(OvmsNotifyEntry* entry);
-    int TransmitNotificationAlert(OvmsNotifyEntry* entry);
-    int TransmitNotificationData(OvmsNotifyEntry* entry);
+    void TransmitPriorityMetrics();
+    void TransmitImmediateMetrics();
+    uint16_t TransmitNotificationInfo(OvmsNotifyEntry* entry);
+    uint16_t TransmitNotificationError(OvmsNotifyEntry* entry);
+    uint16_t TransmitNotificationAlert(OvmsNotifyEntry* entry);
+    uint16_t TransmitNotificationData(OvmsNotifyEntry* entry);
     void TransmitPendingNotificationsInfo();
     void TransmitPendingNotificationsError();
     void TransmitPendingNotificationsAlert();
     void TransmitPendingNotificationsData();
     void IncomingMsg(std::string topic, std::string payload);
-    void IncomingPubRec(int id);
+    void IncomingPubRec(uint16_t id);
     void IncomingEvent(std::string event, void* data);
     void RunCommand(std::string client, std::string id, std::string command);
     void AddClient(std::string id);
@@ -144,7 +158,9 @@ class OvmsServerV3 : public OvmsServer
   private:
     void TransmitMetric(OvmsMetric* metric);
 
-    IdIncludeExcludeFilter m_metrics_filter;
+    IdIncludeExcludeFilter m_metrics_filter;    // server.v3.include, server.v3.exclude
+    IdIncludeExcludeFilter m_metrics_priority;  // server.v3.priority
+    IdIncludeExcludeFilter m_metrics_immediately;  // server.v3.immediately
   };
 
 class OvmsServerV3Init
@@ -154,7 +170,7 @@ class OvmsServerV3Init
     void AutoInit();
 
   public:
-    void EventListener(std::string event, void* data);
+    void EventListenerInit(std::string event, void* data);
   };
 
 extern OvmsServerV3Init MyOvmsServerV3Init;

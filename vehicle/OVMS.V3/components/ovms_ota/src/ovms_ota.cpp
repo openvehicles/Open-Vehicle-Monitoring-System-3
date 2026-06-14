@@ -45,6 +45,7 @@ static const char *TAG = "ota";
 #include <spi_flash_mmap.h>
 #endif
 #include "ovms_ota.h"
+#include "ovms_partitions.h"
 #include "ovms_command.h"
 #include "ovms_boot.h"
 #include "ovms_config.h"
@@ -57,8 +58,9 @@ static const char *TAG = "ota";
 #include "ovms_boot.h"
 #include "ovms_netmanager.h"
 #include "ovms_version.h"
-#include "crypt_md5.h"
 #include "ovms_vfs.h"
+#include "file_writer.h"
+#include "crypt_md5.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
@@ -105,6 +107,8 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     len += writer->printf("Hardware:          %s\n", info.hardware_info.c_str());
   if (info.version_firmware != "")
     len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
+  len += writer->printf("Partition type:    %s\n", info.flashpartition_type_string.c_str());
+  len += writer->printf("Partition table:   0x%4.4x\n", info.flashpartition_table_address);
   if (info.partition_running != "")
     len += writer->printf("Running partition: %s\n", info.partition_running.c_str());
   if (info.partition_boot != "")
@@ -187,6 +191,17 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     return;
     }
   writer->printf("Source image is %ld bytes in size\n",ds.st_size);
+
+  if (ds.st_size > target->size)
+    {
+    writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+    if (target->size < 0x700000)
+      {
+      writer->puts("Consider upgrading your partitioning scheme to v3-35.");
+      MyOTA.SendPartitionTypeAlert(true);
+      }
+    return;
+    }
 
   FILE* f = fopen(argv[0], "r");
   if (f == NULL)
@@ -322,13 +337,24 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   size_t expected = http.BodySize();
-  if (expected < 32)
+  if (expected < 1024) // empty / HTML error page?
     {
     writer->printf("Error: Expected download file size (%d) is invalid\n",expected);
     return;
     }
 
   writer->printf("Expected file size is %d\n",expected);
+
+  if (expected > target->size)
+    {
+    writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+    if (target->size < 0x700000)
+      {
+      writer->puts("Consider upgrading your partitioning scheme to v3-35.");
+      MyOTA.SendPartitionTypeAlert(true);
+      }
+    return;
+    }
 
   MyOTA.SetFlashStatus("OTA Flash HTTP: Preparing flash partition...");
   writer->puts(MyOTA.GetFlashStatus());
@@ -346,15 +372,16 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   uint8_t rbuf[512];
   size_t filesize = 0;
   size_t sofar = 0;
+  ssize_t k;
   MyOTA.SetFlashStatus("OTA Flash HTTP: Downloading OTA image...");
-  while (int k = http.BodyRead(rbuf,512))
+  while ((k = http.BodyRead(rbuf,512)) > 0)
     {
     filesize += k;
     sofar += k;
     MyOTA.SetFlashPerc((filesize*100)/expected);
-    if (sofar > 100000)
+    if (sofar > 200000)
       {
-      writer->printf("Downloading... (%d bytes so far)\n",filesize);
+      writer->printf("Downloading... %d%% (%d bytes so far)\n",MyOTA.m_flashperc,filesize);
       sofar = 0;
       }
     if (filesize > target->size)
@@ -376,7 +403,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       }
     }
   http.Disconnect();
-  writer->printf("Download complete (at %d bytes)\n",filesize);
+  writer->printf("Download %s (at %d bytes)\n",(k<0) ? "failed" : "complete",filesize);
 
   if (filesize != expected)
     {
@@ -584,51 +611,319 @@ void ota_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
-  writer->printf("OTA copy %s (%08" PRIu32 ") -> %s (%08" PRIx32 ") size %" PRIu32 "\n",
+  writer->printf("OTA copy %s (%08" PRIu32 ") -> %s (%08" PRIx32 ") size %" PRIu32 " with block size %d\n",
     fn.c_str(), from_p->address,
-    tn.c_str(), to_p->address, to_p->size);
+    tn.c_str(), to_p->address, to_p->size, SPI_FLASH_SEC_SIZE);
 
-  MyOTA.SetFlashStatus("OTA Copy: Preparing flash partition...");
-  esp_ota_handle_t otah;
-  esp_err_t err = esp_ota_begin(to_p, OTA_SIZE_UNKNOWN, &otah);
-  if (err != ESP_OK)
+  ovms_partition_copy(from_p, to_p, writer);
+  }
+
+//
+// List the partition table
+//
+
+void ota_partition_table_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
     {
-    MyOTA.ClearFlashStatus();
-    writer->printf("Error: ESP32 error #%d starting OTA operation\n",err);
+    writer->puts("Error: Flash operation already in progress - cannot access partition table");
+    return;
+    }
+  ovms_partition_table_list(writer);
+  }
+
+//
+// Handle upgrading the store (partition table from v3-30 to v3-34)
+//
+
+void ota_perform_partition_table_upgrade_store(OvmsWriter* writer)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot upgrade partition table");
+    return;
+    }
+  
+  ovms_partition_table_upgrade_store(writer);
+  }
+
+bool ota_partition_table_upgrade_store_yesno(OvmsWriter* writer, void* ctx, char ch)
+  {
+  writer->printf("%c\n",ch);
+
+  if (ch != 'y')
+    {
+    writer->puts("Store upgrade aborted");
+    return false;
+    }
+
+  ota_perform_partition_table_upgrade_store(writer);
+
+  return false;
+  }
+
+void ota_partition_table_upgrade_store(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (ovms_partition_table_get_type() != OVMS_FlashPartition_30)
+    {
+    writer->puts("Error: Cannot upgrade partition tables not in factory (factory, ota1, ota2, 1MB store) format");
+    return;
+    }
+  
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
+    ota_perform_partition_table_upgrade_store(writer);
+    }
+  else
+    {
+    writer->printf("Upgrade store partition to new format (y/n): ");
+    writer->RegisterInsertCallback(ota_partition_table_upgrade_store_yesno, NULL);
+    }
+  }
+
+//
+// Handle downgrading the store (partition table from v3-34 to v3-30)
+//
+
+void ota_perform_partition_table_downgrade_store(OvmsWriter* writer)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot downgrade partition table");
+    return;
+    }
+  
+  ovms_partition_table_downgrade_store(writer);
+  }
+
+bool ota_partition_table_downgrade_store_yesno(OvmsWriter* writer, void* ctx, char ch)
+  {
+  writer->printf("%c\n",ch);
+
+  if (ch != 'y')
+    {
+    writer->puts("Store downgrade aborted");
+    return false;
+    }
+
+  ota_perform_partition_table_downgrade_store(writer);
+
+  return false;
+  }
+
+void ota_partition_table_downgrade_store(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (ovms_partition_table_get_type() != OVMS_FlashPartition_34)
+    {
+    writer->puts("Error: Cannot downgrade partition tables not in extended store (factory, ota1, ota2, dual store) format");
+    return;
+    }
+  
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
+    ota_perform_partition_table_downgrade_store(writer);
+    }
+  else
+    {
+    writer->printf("Downgrade store partition to old format (y/n): ");
+    writer->RegisterInsertCallback(ota_partition_table_downgrade_store_yesno, NULL);
+    }
+  }
+
+//
+// OTA store2 mount and unmount commands
+//
+
+void ota_partition_table_mount_store2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  ovms_partition_table_mount_store2(writer);
+  }
+
+void ota_partition_table_unmount_store2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  ovms_partition_table_unmount_store2(writer);
+  }
+
+void ota_perform_partition_table_migrate_store(OvmsWriter* writer)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot migrate store");
+    return;
+    }
+  
+  ovms_partition_table_migrate_store(writer);
+  }
+
+bool ota_partition_table_migrate_store_yesno(OvmsWriter* writer, void* ctx, char ch)
+  {
+  writer->printf("%c\n",ch);
+
+  if (ch != 'y')
+    {
+    writer->puts("Store migration aborted");
+    return false;
+    }
+
+  ota_perform_partition_table_migrate_store(writer);
+
+  return false;
+  }
+
+void ota_partition_table_migrate_store(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (ovms_partition_table_get_type() != OVMS_FlashPartition_34)
+    {
+    writer->puts("Error: Cannot migrate store not in extended store (factory, ota1, ota2, dual store) format");
+    return;
+    }
+  
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
+    ota_perform_partition_table_migrate_store(writer);
+    }
+  else
+    {
+    writer->printf("Migrate store to new partition (y/n): ");
+    writer->RegisterInsertCallback(ota_partition_table_migrate_store_yesno, NULL);
+    }
+  }
+
+//
+// Handle upgrading the partition table (from v3-34 to v3-35)
+//
+
+bool ota_perform_partition_table_upgrade_factory(OvmsWriter* writer)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot upgrade partition table");
+    return false;
+    }
+
+  return ovms_partition_table_upgrade_factory(writer);
+  }
+
+bool ota_partition_table_upgrade_factory_yesno(OvmsWriter* writer, void* ctx, char ch)
+  {
+  writer->printf("%c\n",ch);
+
+  if (ch != 'y')
+    {
+    writer->puts("Partition table upgrade aborted");
+    return false;
+    }
+
+  ota_perform_partition_table_upgrade_factory(writer);
+
+  return false;
+  }
+
+void ota_partition_table_upgrade_factory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (ovms_partition_table_get_type() != OVMS_FlashPartition_34)
+    {
+    writer->puts("Error: Cannot upgrade partition tables not in upgraded store (factory, ota1, ota2, dual store) format");
     return;
     }
 
-  MyOTA.SetFlashStatus("OTA Copy: Copying flash image...");
-  size_t offset = 0;
-  while (offset < to_p->size)
+  const esp_partition_t *p = esp_ota_get_running_partition();
+  if ((p != NULL)&&(strcmp(p->label,"factory")!=0))
     {
-    char buf[512];
-    size_t todo = to_p->size - offset;
-    if (todo > sizeof(buf)) todo=sizeof(buf);
-    esp_err_t err = esp_partition_read(from_p, offset, buf, todo);
-    if (err != ESP_OK)
+    writer->puts("Error: Cannot upgrade partition table if running partition is not factory");
+    return;
+    }
+  
+  p = esp_ota_get_boot_partition();
+  if ((p != NULL)&&(strcmp(p->label,"factory")!=0))
+    {
+    writer->puts("Error: Cannot upgrade partition table if boot partition is not factory");
+    return;
+    } 
+  
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-noconfirm") != 0)
       {
-      MyOTA.ClearFlashStatus();
-      writer->printf("Error: ESP32 error #%d reading source at offset %d",err,offset);
-      esp_ota_end(otah);
+      cmd->PutUsage(writer);
       return;
       }
-    err = esp_ota_write(otah, buf, todo);
-    if (err != ESP_OK)
-      {
-      MyOTA.ClearFlashStatus();
-      writer->printf("Error: ESP32 error #%d writing destinatio at offset %d",err,offset);
-      esp_ota_end(otah);
-      return;
-      }
-    offset += todo;
-    MyOTA.SetFlashPerc((offset*100)/to_p->size);
+    ota_perform_partition_table_upgrade_factory(writer);
+    }
+  else
+    {
+    writer->printf("Upgrade partition table to new format (y/n): ");
+    writer->RegisterInsertCallback(ota_partition_table_upgrade_factory_yesno, NULL);
+    }
+  }
+
+//
+// Handle automaticaly upgrading the partion table and store
+//
+
+bool ota_perform_partition_table_upgrade_autocont(OvmsWriter* writer)
+  {
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot upgrade partition table");
+    return false;
     }
 
-  MyOTA.SetFlashStatus("OTA Copy: Finalising copy...");
-  esp_ota_end(otah);
-  MyOTA.ClearFlashStatus();
-  writer->puts("OTA copy complete");
+  return ovms_partition_table_upgrade_autocont(writer);
+  }
+
+bool ota_partition_table_upgrade_autocont_yesno(OvmsWriter* writer, void* ctx, char ch)
+  {
+  writer->printf("%c\n",ch);
+
+  if (ch != 'y')
+    {
+    writer->puts("Partition table upgrade aborted");
+    return false;
+    }
+
+  ota_perform_partition_table_upgrade_autocont(writer);
+
+  return false;
+  }
+
+void ota_partition_table_upgrade_autocont(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
+    ota_perform_partition_table_upgrade_autocont(writer);
+    }
+  else
+    {
+    writer->printf("Upgrade partition table automatically (y/n): ");
+    writer->RegisterInsertCallback(ota_partition_table_upgrade_autocont_yesno, NULL);
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -692,6 +987,17 @@ bool OvmsOTA::AutoFlashSD()
     return false;
     }
   ESP_LOGW(TAG, "AutoFlashSD Source image is %d bytes in size",(int)ds.st_size);
+
+  if (ds.st_size > target->size)
+    {
+    ESP_LOGE(TAG, "Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+    if (target->size < 0x700000)
+      {
+      ESP_LOGE(TAG, "Consider upgrading your partitioning scheme to v3-35.");
+      MyOTA.SendPartitionTypeAlert(true);
+      }
+    return false;
+    }
 
   SetFlashStatus("OTA Auto Flash SD: Preparing flash partition...",0,true);
   esp_ota_handle_t otah;
@@ -769,6 +1075,9 @@ OvmsOTA::OvmsOTA()
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
   using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"system.start", std::bind(&OvmsOTA::SystemStart, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"app.connected", std::bind(&OvmsOTA::UserConnected, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"server.web.socket.opened", std::bind(&OvmsOTA::UserConnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.600", std::bind(&OvmsOTA::Ticker600, this, _1, _2));
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
@@ -787,25 +1096,53 @@ OvmsOTA::OvmsOTA()
   cmd_otaflash_auto->RegisterCommand("force","…force update (even if server version older)",ota_flash_auto);
 
   OvmsCommand* cmd_otaboot = cmd_ota->RegisterCommand("boot","OTA boot");
-  cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot);
+  if (ovms_partition_table_has_factory())
+    cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot);
   cmd_otaboot->RegisterCommand("ota_0","Boot from ota_0 image",ota_boot);
   cmd_otaboot->RegisterCommand("ota_1","Boot from ota_1 image",ota_boot);
 
   OvmsCommand* cmd_otaerase = cmd_ota->RegisterCommand("erase","OTA erase");
-  cmd_otaerase->RegisterCommand("factory","Erase factory image",ota_erase);
+  if (ovms_partition_table_has_factory())
+    cmd_otaerase->RegisterCommand("factory","Erase factory image",ota_erase);
   cmd_otaerase->RegisterCommand("ota_0","Erase ota_0 image",ota_erase);
   cmd_otaerase->RegisterCommand("ota_1","Erase ota_1 image",ota_erase);
 
   OvmsCommand* cmd_otacopy = cmd_ota->RegisterCommand("copy","OTA copy");
-  OvmsCommand* cmd_otacopyf = cmd_otacopy->RegisterCommand("factory","OTA copy factory <to>");
-  cmd_otacopyf->RegisterCommand("ota_0","Copy factory to ota_0 image",ota_copy);
-  cmd_otacopyf->RegisterCommand("ota_1","Copy factory to ota_1 image",ota_copy);
+  if (ovms_partition_table_has_factory())
+    {
+    OvmsCommand* cmd_otacopyf = cmd_otacopy->RegisterCommand("factory","OTA copy factory <to>");
+    cmd_otacopyf->RegisterCommand("ota_0","Copy factory to ota_0 image",ota_copy);
+    cmd_otacopyf->RegisterCommand("ota_1","Copy factory to ota_1 image",ota_copy);
+    }
   OvmsCommand* cmd_otacopy0 = cmd_otacopy->RegisterCommand("ota_0","OTA copy ota_0 <to>");
-  cmd_otacopy0->RegisterCommand("factory","Copy ota_0 to factory image",ota_copy);
+  if (ovms_partition_table_has_factory())
+    cmd_otacopy0->RegisterCommand("factory","Copy ota_0 to factory image",ota_copy);
   cmd_otacopy0->RegisterCommand("ota_1","Copy ota_0 to ota_1 image",ota_copy);
   OvmsCommand* cmd_otacopy1 = cmd_otacopy->RegisterCommand("ota_1","OTA copy ota_1 <to>");
-  cmd_otacopy1->RegisterCommand("factory","Copy ota_1 to factory image",ota_copy);
+  if (ovms_partition_table_has_factory())
+    cmd_otacopy1->RegisterCommand("factory","Copy ota_1 to factory image",ota_copy);
   cmd_otacopy1->RegisterCommand("ota_0","Copy ota_1 to ota_0 image",ota_copy);
+
+  OvmsCommand* cmd_otapartition = cmd_ota->RegisterCommand("partitions","OTA partitions");
+  cmd_otapartition->RegisterCommand("list","Show partition table",ota_partition_table_list);
+
+  if (!ovms_partition_table_isuptodate())
+    {
+    OvmsCommand* cmd_otapartitionupgrade = cmd_otapartition->RegisterCommand("upgrade","OTA upgrade partitions");
+    cmd_otapartitionupgrade->RegisterCommand("factory","Upgrade factory partition table to dual OTA",
+      ota_partition_table_upgrade_factory,"[-noconfirm]",0,1);
+    cmd_otapartitionupgrade->RegisterCommand("autocont","Upgrade partition table automatically",
+    ota_partition_table_upgrade_autocont,"[-noconfirm]",0,1);
+  
+    OvmsCommand* cmd_otapartitionstore = cmd_otapartition->RegisterCommand("store","OTA store partition manipulation");
+    cmd_otapartitionstore->RegisterCommand("upgrade","Upgrade and extend store partition",
+      ota_partition_table_upgrade_store,"[-noconfirm]",0,1);
+    cmd_otapartitionstore->RegisterCommand("downgrade","Downgrade store partition",
+      ota_partition_table_downgrade_store,"[-noconfirm]",0,1);
+    cmd_otapartitionstore->RegisterCommand("mount","Mount store2",ota_partition_table_mount_store2);
+    cmd_otapartitionstore->RegisterCommand("unmount","Unmount store2",ota_partition_table_unmount_store2);
+    cmd_otapartitionstore->RegisterCommand("migrate","Migrate store to new partition",ota_partition_table_migrate_store,"[-noconfirm]",0,1);
+    }
   }
 
 OvmsOTA::~OvmsOTA()
@@ -821,6 +1158,9 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
   info.partition_running = "";
   info.partition_boot = "";
   info.changelog_server = "";
+  info.flashpartition_type = ovms_partition_table_get_type();
+  info.flashpartition_type_string = ovms_partition_table_get_type_string(info.flashpartition_type);
+  info.flashpartition_table_address = ovms_partition_table_find();
 
   if (StdMetrics.ms_m_hardware)
     info.hardware_info = StdMetrics.ms_m_hardware->AsString();
@@ -851,7 +1191,8 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
         {
         info.version_server = http.BodyReadLine();
         char rbuf[512];
-        while (size_t k = http.BodyRead(rbuf,512))
+        ssize_t k;
+        while ((k = http.BodyRead(rbuf,512)) > 0)
           {
           info.changelog_server.append(rbuf,k);
           }
@@ -875,8 +1216,84 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
     }
   }
 
+void OvmsOTA::SystemStart(std::string event, void* data)
+  {
+  if (MyBoot.GetBootReason() == BR_PartitionUpdate)
+    {
+    bool success;
+    ESP_LOGI(TAG, "Checking for partition update...");
+    if (!ovms_partition_table_isuptodate())
+      {
+      ESP_LOGI(TAG, "Partition table is not up to date, continuing to upgrade the partition table");
+      FileWriter writer("/store/partition-update.log", true);
+      success = ota_perform_partition_table_upgrade_autocont(&writer);
+      }
+    else
+      {
+      success = true;
+      }
+    // If ota_perform_partition_table_upgrade_autocont() didn't request a reboot by itself, the update
+    // either was unnecessary or failed terminally. In any case we need to reboot now so the user
+    // can access the module:
+    if (!MyBoot.IsShuttingDown())
+      {
+      if (success)
+        ESP_LOGI(TAG, "Partition update finished, rebooting into standard mode");
+      else
+        ESP_LOGW(TAG, "Aborting partition update, rebooting into standard mode");
+      vTaskDelay(2000/portTICK_PERIOD_MS);
+      MyBoot.Restart();
+      }
+    }
+  else
+    {
+    // Check partition type on regular boot:
+    CheckNotifyPartitionType();
+    }
+  }
+
+void OvmsOTA::UserConnected(std::string event, void* data)
+  {
+  // Handle case of a setup without a default server connection:
+  //  check partition type again when the user connects via V2/V3/Web
+  CheckNotifyPartitionType();
+  }
+
+void OvmsOTA::CheckNotifyPartitionType()
+  {
+  // Send partition type notification once after upgrading to 3.3.006:
+  std::string version = GetOVMSVersion();
+  std::string notifyversion = MyConfig.GetParamValue("ota", "parttype.notifyversion", "3.3.006");
+  if (!ovms_partition_table_isuptodate()
+      && strverscmp(version.c_str(), notifyversion.c_str()) >= 0
+      && !MyConfig.GetParamValueBool("ota", "parttype.notified"))
+    {
+    if (SendPartitionTypeAlert(false))
+      {
+      ESP_LOGI(TAG, "Partition type notification sent");
+      MyConfig.SetParamValueBool("ota", "parttype.notified", true);
+      }
+    else
+      {
+      ESP_LOGW(TAG, "Partition type notification not sent, no channel available yet");
+      }
+    }
+  }
+
+uint32_t OvmsOTA::SendPartitionTypeAlert(bool alert)
+  {
+  return MyNotify.NotifyStringf(alert ? "alert" : "info", "ota.partitiontype",
+    "The module is running an outdated flash partitioning scheme.\n"
+    "OTA updates %s working due to its 4MB firmware size limit.\n"
+    "Upgrading is recommended to leverage the limit to 7MB.\n"
+    "To upgrade, open the web UI, menu Config -> Partitioning.\n",
+    alert ? "have now stopped" : "will soon stop");
+  }
+
 void OvmsOTA::Ticker600(std::string event, void* data)
   {
+  if (MyBoot.GetBootReason() == BR_PartitionUpdate)
+    return;
   if (MyConfig.GetParamValueBool("auto", "ota", true) == false)
     return;
 
@@ -908,6 +1325,8 @@ void OvmsOTA::SetFlashStatus(const char* status, int perc, bool dolog)
 
 void OvmsOTA::SetFlashPerc(int perc)
   {
+  if (m_flashperc/10 != perc/10)
+    { ESP_LOGI(TAG, "%s %d%%", m_flashstatus, perc); }
   m_flashperc = perc;
   }
 
@@ -1068,10 +1487,21 @@ bool OvmsOTA::AutoFlash(bool force)
     }
 
   size_t expected = http.BodySize();
-  if (expected < 32)
+  if (expected < 1024) // empty / HTML error page?
     {
     ESP_LOGE(TAG, "AutoFlash: Expected download file size (%d) is invalid", expected);
     m_lastcheckday = -1; // Allow to try again within the same day
+    return false;
+    }
+
+  if (expected > target->size)
+    {
+    ESP_LOGE(TAG, "Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+    if (target->size < 0x700000)
+      {
+      ESP_LOGE(TAG, "Consider upgrading your partitioning scheme to v3-35.");
+      MyOTA.SendPartitionTypeAlert(true);
+      }
     return false;
     }
 
@@ -1090,7 +1520,8 @@ bool OvmsOTA::AutoFlash(bool force)
   SetFlashStatus("OTA Auto Flash: Downloading OTA image...");
   uint8_t rbuf[512];
   size_t filesize = 0;
-  while (int k = http.BodyRead(rbuf,512))
+  ssize_t k;
+  while ((k = http.BodyRead(rbuf,512)) > 0)
     {
     filesize += k;
     SetFlashPerc((filesize*100)/expected);
@@ -1113,7 +1544,7 @@ bool OvmsOTA::AutoFlash(bool force)
       }
     }
   http.Disconnect();
-  ESP_LOGI(TAG, "AutoFlash:: Download complete (at %d bytes)", filesize);
+  ESP_LOGI(TAG, "AutoFlash:: Download %s (at %d bytes)", (k<0) ? "failed" : "complete", filesize);
 
   if (filesize != expected)
     {

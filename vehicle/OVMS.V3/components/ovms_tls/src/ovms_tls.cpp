@@ -152,6 +152,10 @@ void OvmsTLS::Reload()
   extern const unsigned char digicert_global_end[] asm("_binary_digicert_global_crt_end");
   m_trustlist["DigiCert Global Root CA"] = new OvmsTrustedCert(digicert_global, digicert_global_end - digicert_global);
 
+  extern const unsigned char digicert_g2[] asm("_binary_digicert_g2_crt_start");
+  extern const unsigned char digicert_g2_end[] asm("_binary_digicert_g2_crt_end");
+  m_trustlist["DigiCert Global Root G2"] = new OvmsTrustedCert(digicert_g2, digicert_g2_end - digicert_g2);
+
   extern const unsigned char starfield_class2[] asm("_binary_starfield_class2_crt_start");
   extern const unsigned char starfield_class2_end[] asm("_binary_starfield_class2_crt_end");
   m_trustlist["Starfield Class 2 CA"] = new OvmsTrustedCert(starfield_class2, starfield_class2_end - starfield_class2);
@@ -163,6 +167,10 @@ void OvmsTLS::Reload()
   extern const unsigned char isrg_x1[] asm("_binary_isrg_x1_crt_start");
   extern const unsigned char isrg_x1_end[] asm("_binary_isrg_x1_crt_end");
   m_trustlist["ISRG X1 CA"] = new OvmsTrustedCert(isrg_x1, isrg_x1_end - isrg_x1);
+
+  extern const unsigned char amazon_root_ca1[] asm("_binary_amazon_root_ca1_crt_start");
+  extern const unsigned char amazon_root_ca1_end[] asm("_binary_amazon_root_ca1_crt_end");
+  m_trustlist["Amazon Root CA 1"] = new OvmsTrustedCert(amazon_root_ca1, amazon_root_ca1_end - amazon_root_ca1);
 
   // Add trusted certs on disk (/store/trustedca)
   DIR *dir;

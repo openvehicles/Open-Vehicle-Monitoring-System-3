@@ -274,8 +274,24 @@ typedef struct
     {
     struct
       {
-      uint32_t CODE[4];						/**< \brief Acceptance Message ID */
-      uint32_t MASK[4];						/**< \brief Acceptance Mask */
+      union
+        {
+        uint32_t U;
+        struct
+          {
+          unsigned int ACR:8;						/**< \brief Acceptance Code */
+          unsigned int reserved_24:24;
+          } B;
+        } CODE[4];
+      union
+        {
+        uint32_t U;
+        struct
+          {
+          unsigned int AMR:8;						/**< \brief Acceptance Mask */
+          unsigned int reserved_24:24;
+          } B;
+        } MASK[4];
       uint32_t RESERVED2[5];
       } ACC;										/**< \brief Acceptance filtering */
     struct

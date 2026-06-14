@@ -64,7 +64,7 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
     OvmsMetricFloat* m_watt_hour_raw;
     OvmsMetricFloat* m_consump_raw;
     OvmsMetricFloat* m_consumprange_raw;
-    OvmsMetricFloat* m_poll_bmsstate;
+    OvmsMetricInt* m_poll_bmsstate;
 
   protected:
       std::string         m_rxbuf;

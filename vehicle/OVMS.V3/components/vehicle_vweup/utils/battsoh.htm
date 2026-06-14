@@ -1,0 +1,270 @@
+<!--
+  Web page plugin: battery health
+  Source for /xvu/battsoh → OvmsVehicleVWeUp::WebDispBattHealth()
+-->
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Battery Health</div>
+  <div class="panel-body">
+
+    <div class="receiver" id="receiver-battsoh">
+
+      <table class="table table-bordered table-condensed">
+        <tbody>
+          <tr>
+            <th>SOH</th>
+            <td>
+            <div class="metric number" data-prec="1" data-metric="xvu.b.soh.vw">
+              <span class="label">Official VW</span>
+              <span class="value">0.0</span>
+              <span class="unit">%</span>
+            </div>
+            <div class="metric number" data-prec="1" data-metric="xvu.b.soh.charge">
+              <span class="label">Charge capacity</span>
+              <span class="value">0.0</span>
+              <span class="unit">%</span>
+            </div>
+            <div class="metric number" data-prec="1" data-metric="xvu.b.soh.range">
+              <span class="label">Range estimation</span>
+              <span class="value">0.0</span>
+              <span class="unit">%</span>
+            </div>
+            </td>
+          </tr>
+          <tr>
+            <th>Ah</th>
+            <td>
+            <div class="metric number" data-prec="1" data-metric="v.b.cac">
+              <span class="label">Net capacity</span>
+              <span class="value">0.0</span>
+              <span class="unit">Ah</span>
+            </div>
+            <div class="metric number" data-prec="1" data-metric="v.b.coulomb.recd.total">
+              <span class="label">Charged total</span>
+              <span class="value">0.0</span>
+              <span class="unit">Ah</span>
+            </div>
+            <div class="metric number" data-prec="0" id="cycles-ah">
+              <span class="label">Charge cycles</span>
+              <span class="value">0.0</span>
+              <span class="unit"></span>
+            </div>
+            </td>
+          </tr>
+          <tr>
+            <th>kWh</th>
+            <td>
+            <div class="metric number" data-prec="1" data-metric="v.b.capacity">
+              <span class="label">Net capacity</span>
+              <span class="value">0.0</span>
+              <span class="unit">kWh</span>
+            </div>
+            <div class="metric number" data-prec="1" data-metric="v.b.energy.recd.total">
+              <span class="label">Charged total</span>
+              <span class="value">0.0</span>
+              <span class="unit">kWh</span>
+            </div>
+            <div class="metric number" data-prec="0" id="cycles-kwh">
+              <span class="label">Charge cycles</span>
+              <span class="value">0.0</span>
+              <span class="unit"></span>
+            </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Cell Level</h4>
+
+      <div class="metric chart" data-metric="xvu.b.c.soh,xvu.b.soh.vw" style="width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto">
+        <div class="chart-box barchart" id="cell-soh"/>
+      </div>
+
+      <h4>Cell Module History</h4>
+
+      <div class="metric chart" data-metric="xvu.b.hist.soh.mod.01,xvu.b.hist.soh.mod.02,xvu.b.hist.soh.mod.03,xvu.b.hist.soh.mod.04,xvu.b.hist.soh.mod.05,xvu.b.hist.soh.mod.06,xvu.b.hist.soh.mod.07,xvu.b.hist.soh.mod.08,xvu.b.hist.soh.mod.09,xvu.b.hist.soh.mod.10,xvu.b.hist.soh.mod.11,xvu.b.hist.soh.mod.12,xvu.b.hist.soh.mod.13,xvu.b.hist.soh.mod.14,xvu.b.hist.soh.mod.15,xvu.b.hist.soh.mod.16,xvu.b.hist.soh.mod.17" style="width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto">
+        <div class="chart-box linechart" id="cmod-hist"/>
+      </div>
+
+      <div>Hint: hover/long click on legend to highlight, click to toggle</div>
+
+    </div>
+
+  </div>
+</div>
+
+<style>
+.metric.number {
+  display: flex;
+  align-items: baseline;
+}
+.metric.number .label {
+  min-width: 10em;
+}
+.metric.number .label:after {
+  content: ':';
+}
+.metric.number .value {
+  min-width: 5em;
+}
+.plot-line-packsoh {
+  stroke: #0074ff;
+  stroke-width: 2px;
+}
+.highcharts-series.cmod-soh-min > .highcharts-graph {
+  stroke-width: 15px;
+  opacity: 0.6;
+}
+</style>
+
+<script>
+(function(){
+
+  /* Car model properties */
+  var car = { cap_gross_ah: 120.0, cap_gross_kwh: 36.8 };
+
+  /* Metrics derived displays */
+  $('#receiver-battsoh').on('msg:metrics', function(ev, upd) {
+    if (upd["v.b.coulomb.recd.total"]) {
+      $("#cycles-ah .value").text(Number(upd["v.b.coulomb.recd.total"] / car.cap_gross_ah).toFixed(1));
+    }
+    if (upd["v.b.energy.recd.total"]) {
+      $("#cycles-kwh .value").text(Number(upd["v.b.energy.recd.total"] / car.cap_gross_kwh).toFixed(1));
+    }
+  });
+
+  /* Init cell SOH chart */
+  $("#cell-soh").chart({
+    chart: {
+      type: 'column',
+      animation: { duration: 500, easing: 'easeOutExpo' },
+      zoomType: 'xy',
+      panning: true,
+      panKey: 'ctrl',
+    },
+    title: { text: null },
+    credits: { enabled: false },
+    tooltip: {
+      enabled: true,
+      shared: true,
+      headerFormat: 'Cell #{point.key}:<br/>',
+      pointFormat: '{series.name}: <b>{point.y}</b><br/>',
+      valueSuffix: " %"
+    },
+    legend: { enabled: true },
+    xAxis: {
+      categories: []
+    },
+    yAxis: [{
+      title: { text: null },
+      labels: { format: "{value:.0f}%" },
+      min: 75, max: 110,
+      minTickInterval: 0.1,
+      minorTickInterval: 'auto',
+    }],
+    series: [{
+      name: 'SOH', data: [50],
+      className: 'cell-soh',
+      animation: { duration: 0 },
+    }],
+    /* Update method: */
+    onUpdate: function(update) {
+      let m_packsoh = metrics["xvu.b.soh.vw"] || 100;
+      let m_cellsoh = metrics["xvu.b.c.soh"] || [];
+      // Create categories (cell numbers) & rounded values:
+      let cat = [], val0 = [];
+      for (let i = 0; i < m_cellsoh.length; i++) {
+        cat.push(i+1);
+        val0.push(Number((m_cellsoh[i]||0).toFixed(1)));
+      }
+      // Update chart:
+      this.xAxis[0].setCategories(cat);
+      this.yAxis[0].removePlotLine('plot-line-packsoh');
+      this.yAxis[0].addPlotLine({ id: 'plot-line-packsoh', className: 'plot-line-packsoh', value: m_packsoh, zIndex: 3 });
+      this.series[0].setData(val0);
+      let yext = this.yAxis[0].getExtremes();
+      let ymin = Math.max(0, Math.floor((yext.dataMin-10) / 5) * 5);
+      let ymax = Math.min(110, Math.ceil((yext.dataMax+1) / 5) * 5);
+      this.yAxis[0].update({ min: ymin, max: ymax });
+      this.yAxis[0].setExtremes(ymin, ymax);
+    },
+  });
+
+  /* Init cell module history chart */
+  $("#cmod-hist").chart({
+    chart: {
+      type: 'line',
+      animation: { duration: 500, easing: 'easeOutExpo' },
+      zoomType: 'xy',
+      panning: true,
+      panKey: 'ctrl',
+    },
+    title: { text: null },
+    credits: { enabled: false },
+    tooltip: {
+      enabled: true,
+      shared: true,
+      headerFormat: '<u>{point.key}</u>:<br/>',
+      pointFormat: '{series.name}: <b>{point.y}</b><br/>',
+      valueSuffix: " %"
+    },
+    legend: { enabled: true },
+    xAxis: {
+      categories: []
+    },
+    yAxis: [{
+      title: { text: null },
+      labels: { format: "{value:.0f}%" },
+      min: 75, max: 110,
+      minTickInterval: 0.1,
+      minorTickInterval: 'auto',
+    }],
+    series: [],
+
+    /* Update method: */
+    onUpdate: function(update) {
+      // Create module series & minimum:
+      let series = [], min = [];
+      for (let i = 1; i <= 17; i++) {
+        let modkey = Number(i).toString().padStart(2,'0');
+        let modhist = metrics["xvu.b.hist.soh.mod."+modkey] || [];
+        if (modhist.length > 0) {
+          series.push({
+            name: modkey, data: modhist,
+            className: 'cmod-soh', zIndex: i,
+            animation: { duration: 0 },
+          });
+          // prep min:
+          modhist.forEach((el,i) => { min[i] = Math.min(min[i]||200, el) });
+        }
+      }
+      // finish min:
+      if (series.length) {
+        series.unshift({
+          name: "Min", data: min,
+          className: 'cmod-soh-min', zIndex: 100,
+          animation: { duration: 0 },
+        });
+      }
+      
+      // Create categories (cell numbers) & rounded values:
+      let date = new Date();
+      let cat = [];
+      for (let i = min.length-1; i >= 0; i--) {
+        cat[i] = date.toISOString().substr(0,7);
+        date.setMonth(date.getMonth() - 3);
+      }
+
+      // Update chart:
+      this.xAxis[0].setCategories(cat);
+      this.update({ "series": series }, true, true);
+      let yext = this.yAxis[0].getExtremes();
+      let ymin = Math.max(0, Math.floor((yext.dataMin-10) / 5) * 5);
+      let ymax = Math.min(110, Math.ceil((yext.dataMax+1) / 5) * 5);
+      this.yAxis[0].update({ min: ymin, max: ymax });
+      this.yAxis[0].setExtremes(ymin, ymax);
+    },
+  });
+
+})();
+</script>

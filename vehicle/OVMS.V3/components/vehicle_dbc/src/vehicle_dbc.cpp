@@ -82,32 +82,6 @@ void OvmsVehicleDBC::IncomingFrameCan3(CAN_frame_t* p_frame)
 
 void OvmsVehicleDBC::IncomingFrame(canbus* bus, CAN_frame_t* frame)
   {
-  dbcfile* dbc = bus->GetDBC();
-  if (dbc==NULL) return;
-
-  dbcMessage* msg = dbc->m_messages.FindMessage(frame->FIR.B.FF, frame->MsgID);
-  if (msg)
-    {
-    dbcSignal* mux = msg->GetMultiplexorSignal();
-    uint32_t muxval;
-    if (mux)
-      {
-      dbcNumber r = mux->Decode(frame);
-      muxval = r.GetSignedInteger();
-      }
-    for (dbcSignal* sig : msg->m_signals)
-      {
-      OvmsMetric* m = sig->GetMetric();
-      if (m)
-        {
-        if ((mux==NULL)||(sig->GetMultiplexSwitchvalue() == muxval))
-          {
-          dbcNumber r = sig->Decode(frame);
-          m->SetValue(r);
-          }
-        }
-      }
-    }
   }
 
 OvmsVehiclePureDBC::OvmsVehiclePureDBC()

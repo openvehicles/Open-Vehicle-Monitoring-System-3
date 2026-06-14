@@ -51,7 +51,7 @@ class OvmsNetConnection
 
   public:
     virtual ssize_t Write(const void *buf, size_t nbyte);
-    virtual size_t Read(void *buf, size_t nbyte);
+    virtual ssize_t Read(void *buf, size_t nbyte);
 
   protected:
     int m_sock;

@@ -272,7 +272,7 @@ std::string re::GetKey(CAN_frame_t* frame)
         {
         // We have a multiplexed signal
         dbcSignal* s = m->GetMultiplexorSignal();
-        dbcNumber muxn = s->Decode(frame);
+        dbcNumber muxn = s->Decode(frame->data.u8, 8);
         uint32_t mux = muxn.GetUnsignedInteger();
         char b[8];
         sprintf(b,":%04" PRIx32,mux);
@@ -354,9 +354,20 @@ void re_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     if (argc>0)
       {
       filter = new canfilter();
+      bool has_valid = false;
       for (int k=0;k<argc;k++)
         {
-        filter->AddFilter(argv[k]);
+        if (filter->AddFilter(argv[k]))
+          has_valid = true;
+        else
+          {
+          writer->printf("Invalid Filter: '%s'\n", argv[k]);
+          }
+        }
+      if (!has_valid)
+        {
+        writer->puts("No valid filters, not started");
+        return;
         }
       }
     MyRE = new re("re", filter);
@@ -479,47 +490,17 @@ void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
       FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
       writer->printf("%-20s %10" PRId32 " %6" PRId32 " %s\n",
         it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
-      if (it->second->last.origin)
+      re_record_t *re_record = it->second;
+      if (re_record->last.origin)
         {
-        dbcfile* dbc = it->second->last.origin->GetDBC();
+        dbcfile* dbc = re_record->last.origin->GetDBC();
         if (dbc)
           {
           // We have a DBC attached.
-          dbcMessage* msg = dbc->m_messages.FindMessage(it->second->last.FIR.B.FF, it->second->last.MsgID);
-          if (msg)
-            {
-            // Let's look for signals...
-            dbcSignal* mux = msg->GetMultiplexorSignal();
-            uint32_t muxval;
-            if (mux)
-              {
-              dbcNumber r = mux->Decode(&it->second->last);
-              muxval = r.GetSignedInteger();
-              std::ostringstream ss;
-              ss << "  dbc/mux/";
-              ss << mux->GetName();
-              ss << ": ";
-              ss << r;
-              ss << " ";
-              ss << mux->GetUnit();
-              writer->puts(ss.str().c_str());
-              }
-            for (dbcSignal* sig : msg->m_signals)
-              {
-              if ((mux==NULL)||(sig->GetMultiplexSwitchvalue() == muxval))
-                {
-                dbcNumber r = sig->Decode(&it->second->last);
-                std::ostringstream ss;
-                ss << "  dbc/";
-                ss << sig->GetName();
-                ss << ": ";
-                ss << r;
-                ss << " ";
-                ss << sig->GetUnit();
-                writer->puts(ss.str().c_str());
-                }
-              }
-            }
+          dbc->DecodeSignal(
+              re_record->last.FIR.B.FF, re_record->last.MsgID,
+              re_record->last.data.u8, 8,
+              writer);
           }
         }
       }
@@ -815,7 +796,7 @@ REInit::REInit()
   cmd_re->RegisterCommand("start","Start RE tools",
     re_start,
     "[filter1] ... [filterN]\n"
-    "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
+    "Filter: <bus> | <id>[-[<id>]] | <bus>:<id>[-[<id>]]\n"
     "Example: 2:2a0-37f",
     0, 9);
   cmd_re->RegisterCommand("stop","Stop RE tools",re_stop);

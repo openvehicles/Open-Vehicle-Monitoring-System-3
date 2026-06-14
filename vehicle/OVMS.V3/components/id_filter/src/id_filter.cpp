@@ -37,14 +37,21 @@ IdFilter::IdFilter(const char* log_tag)
   {
   }
 
-void IdFilter::LoadFilters(const std::string &value)
+bool IdFilter::LoadFilters(const std::string &value)
   {
+  // Optimization: only perform lock & load for actual filter definition change:
+  std::size_t str_hash = std::hash<std::string>{}(value);
+  if (str_hash == m_entry_hash) return false; // unchanged
+
+  OvmsMutexLock lock(&m_mutex);
+
   // Empty all previously defined filters, for all operators
   for (int i=0; i<COUNT_OF_OPERATORS; i++)
     {
     m_entries[i].clear();
     }
   m_entry_count = 0;
+  m_entry_hash = str_hash;
 
   if (!value.empty())
     {
@@ -104,6 +111,8 @@ void IdFilter::LoadFilters(const std::string &value)
   //     ESP_LOGI(m_log_tag, "LoadFilters: (empty filter list)");
   //     }
   //   }
+
+    return true; // changed
     }
 
   size_t IdFilter::EntryCount() const
@@ -113,6 +122,8 @@ void IdFilter::LoadFilters(const std::string &value)
 
   bool IdFilter::CheckFilter(const std::string &value) const
     {
+    if (m_entry_count == 0) return false;
+    OvmsMutexLock lock(&m_mutex);
     for (int i=0; i<COUNT_OF_OPERATORS; i++)
         {
         for (std::vector<std::string>::const_iterator it=m_entries[i].begin(); it!=m_entries[i].end(); ++it)

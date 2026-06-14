@@ -80,6 +80,8 @@ ConsoleAsync::ConsoleAsync()
 
 ConsoleAsync::~ConsoleAsync()
   {
+  // Never called: the USB console does not exit, so we don't need to
+  //    Kill() the service and uninstall the UART driver here.
   }
 
 void ConsoleAsync::Service()
@@ -111,38 +113,11 @@ ssize_t ConsoleAsync::write(const void *buf, size_t nbyte)
   return n;
   }
 
-int ConsoleAsync::Log(const char* fmt, ...)
-  {
-  va_list args;
-  va_start(args, fmt);
-  size_t ret = ConsoleLogger(fmt, args);
-  va_end(args);
-  return ret;
-  }
-
 int ConsoleAsync::ConsoleLogger(const char* fmt, va_list args)
   {
   if (!m_instance)
     return ::vprintf(fmt, args);
   return MyCommandApp.Log(fmt, args);
-  }
-
-void ConsoleAsync::Log(char* message)
-  {
-  if (!m_ready)
-    {
-    free(message);
-    return;
-    }
-  Event event;
-  event.type = ALERT;
-  event.buffer = message;
-  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, 0);
-  if (ret != pdPASS)
-    {
-    free(message);
-    ++m_lost;
-    }
   }
 
 void ConsoleAsync::HandleDeviceEvent(void* pEvent)

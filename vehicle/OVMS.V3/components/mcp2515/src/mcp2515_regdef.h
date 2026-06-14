@@ -96,6 +96,9 @@
 #define STATUS_RX01IF           0b00000011    // Mask: any/all RXnIF
 
 // Register addresses
+#define REG_RXF0SIDH            0x00
+#define REG_RXF3SIDH            0x10
+#define REG_RXM0SIDH            0x20
 #define REG_CANSTAT             0x0E
 #define REG_CANCTRL             0x0F
 #define REG_BFPCTRL             0x0C

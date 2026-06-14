@@ -41,7 +41,7 @@ class IdIncludeExcludeFilter
      * 
      * See IdFilter::LoadFilter()
      */
-    void LoadFilters(const std::string &include_value, const std::string &exclude_value);
+    bool LoadFilters(const std::string &include_value, const std::string &exclude_value);
 
     /**
      * Check if a value matches the include/exclude filters.  A value will match if it matches the

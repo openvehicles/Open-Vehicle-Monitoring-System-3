@@ -80,7 +80,7 @@ class DuktapeVFSLoad : public DuktapeObject
     static duk_ret_t Create(duk_context *ctx);
 
   public:
-    duk_ret_t CallMethod(duk_context *ctx, const char* method, void* data=NULL);
+    duk_ret_t CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params=NULL) override;
 
   protected:
     static void LoadTask(void *param);
@@ -164,6 +164,8 @@ void DuktapeVFSLoad::LoadTask(void *param)
     me->Load();
     me->Unref();
     }
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "DuktapeVFSLoad done, min stack free=%u bytes", minstackfree);
   vTaskDelete(NULL);
   }
 
@@ -220,11 +222,11 @@ void DuktapeVFSLoad::Load()
     }
   }
 
-duk_ret_t DuktapeVFSLoad::CallMethod(duk_context *ctx, const char* method, void* data /*=NULL*/)
+duk_ret_t DuktapeVFSLoad::CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params /*=NULL*/)
   {
   if (!ctx)
     {
-    RequestCallback(method, data);
+    RequestCallback(method, params);
     return 0;
     }
   OvmsRecMutexLock lock(&m_mutex);
@@ -341,7 +343,7 @@ class DuktapeVFSSave : public DuktapeObject
     static duk_ret_t Create(duk_context *ctx);
 
   public:
-    duk_ret_t CallMethod(duk_context *ctx, const char* method, void* data=NULL);
+    duk_ret_t CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params = nullptr);
 
   protected:
     static void SaveTask(void *param);
@@ -434,7 +436,7 @@ DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
   Ref();
   Register(ctx);
   TaskHandle_t task = NULL;
-  if (xTaskCreatePinnedToCore(SaveTask, "DuktapeVFSSave", 5*512, this,
+  if (xTaskCreatePinnedToCore(SaveTask, "DuktapeVFSSave", 6*512, this,
       CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, &task, CORE(1)) != pdPASS)
     {
     Deregister(ctx);
@@ -471,6 +473,8 @@ void DuktapeVFSSave::SaveTask(void *param)
     if (shuttingdown) MyBoot.ShutdownReady(tag.c_str());
     }
 
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "DuktapeVFSSave done, min stack free=%u bytes", minstackfree);
   vTaskDelete(NULL);
   }
 
@@ -520,11 +524,11 @@ void DuktapeVFSSave::Save()
     }
   }
 
-duk_ret_t DuktapeVFSSave::CallMethod(duk_context *ctx, const char* method, void* data /*=NULL*/)
+duk_ret_t DuktapeVFSSave::CallMethod(duk_context *ctx, const char* method, DuktapeCallbackParameter* params /*=NULL*/)
   {
   if (!ctx)
     {
-    RequestCallback(method, data);
+    RequestCallback(method, params);
     return 0;
     }
   OvmsRecMutexLock lock(&m_mutex);

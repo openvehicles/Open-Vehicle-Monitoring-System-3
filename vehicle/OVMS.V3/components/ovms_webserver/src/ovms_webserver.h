@@ -33,11 +33,12 @@
 #define __WEBSERVER_H__
 
 #include <forward_list>
-#include <iterator>
 #include <vector>
-#include <memory>
 #include <utility>
 #include <map>
+#include <set>
+#include <string>
+#include <ostream>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
@@ -50,7 +51,9 @@
 #include "ovms_shell.h"
 #include "ovms_netmanager.h"
 #include "ovms_utils.h"
+
 #include "log_buffers.h"
+#include "vehicle.h"
 
 // The setup wizard currently is tailored to be used with a WiFi enabled module:
 #ifdef CONFIG_OVMS_COMP_WIFI
@@ -394,7 +397,7 @@ struct WebSocketTxTodo
 class WebSocketHandler : public MgHandler, public OvmsWriter
 {
   public:
-    WebSocketHandler(mg_connection* nc, size_t slot, size_t modifier, size_t reader);
+    WebSocketHandler(mg_connection* nc, size_t slot, size_t modifier, size_t reader, size_t txqueuesize);
     ~WebSocketHandler();
 
   public:
@@ -408,6 +411,7 @@ class WebSocketHandler : public MgHandler, public OvmsWriter
     void ProcessTxJob();
     int HandleEvent(int ev, void* p);
     void HandleIncomingMsg(std::string msg);
+    void LogStatus();
 
   public:
     void Subscribe(std::string topic);
@@ -427,10 +431,8 @@ class WebSocketHandler : public MgHandler, public OvmsWriter
     size_t                    m_modifier = 0;         // "our" metrics modifier
     size_t                    m_reader = 0;           // "our" notification reader id
     QueueHandle_t             m_jobqueue = NULL;
-    uint32_t                  m_jobqueue_overflow_status = 0;
-    uint32_t                  m_jobqueue_overflow_logged = 0;
     uint32_t                  m_jobqueue_overflow_dropcnt = 0;
-    uint32_t                  m_jobqueue_overflow_dropcntref = 0;
+    uint32_t                  m_jobqueue_overflow_logged = 0;
     WebSocketTxJob            m_job = {};
     int                       m_sent = 0;
     int                       m_ack = 0;
@@ -491,7 +493,7 @@ class HttpCommandStream : public OvmsShell, public MgHandler
  * Register custom page handlers through the RegisterPage() API.
  */
 
-class OvmsWebServer : public ExternalRamAllocated
+class OvmsWebServer : public ExternalRamAllocated, MongooseClient
 {
   public:
     OvmsWebServer();
@@ -553,11 +555,13 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleFile(PageEntry_t& p, PageContext_t& c);
     static void HandleShell(PageEntry_t& p, PageContext_t& c);
     static void HandleDashboard(PageEntry_t& p, PageContext_t& c);
+    static void HandleMetrics(PageEntry_t& p, PageContext_t& c);
     static void HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c);
     static void HandleEditor(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgPassword(PageEntry_t& p, PageContext_t& c);
-    static void HandleCfgVehicle(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgVehicle(PageEntry_t& p, PageContext_t& c);    
+    static void HandleCfgPreconditionSchedule(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgModem(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgServerV2(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgServerV3(PageEntry_t& p, PageContext_t& c);
@@ -573,6 +577,7 @@ class OvmsWebServer : public ExternalRamAllocated
       std::string& warn, std::string& error, int pass_minlen);
     static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgFirmware(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgPartitioning(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgLogging(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgLocations(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgBackup(PageEntry_t& p, PageContext_t& c);
@@ -610,11 +615,13 @@ class OvmsWebServer : public ExternalRamAllocated
     size_t                    m_client_cnt;                 // number of active WebSocket clients
     SemaphoreHandle_t         m_client_mutex;
     WebSocketSlots            m_client_slots;
+    size_t                    m_client_txqueuesize;         // size of WebSocketTxJob queue (config http.server ws.txqueuesize)
     QueueHandle_t             m_client_backlog;
     TimerHandle_t             m_update_ticker;
 
     int                       m_init_timeout;
     int                       m_shutdown_countdown;
+    uint32_t                  m_tick;
 };
 
 extern OvmsWebServer MyWebServer;

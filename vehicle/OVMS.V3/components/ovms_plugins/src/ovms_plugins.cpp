@@ -64,7 +64,7 @@ void repo_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
 void repo_install(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  MyPluginStore.RepoInstall(writer,std::string(argv[0]),std::string(argv[0]));
+  MyPluginStore.RepoInstall(writer,std::string(argv[0]),std::string(argv[1]));
   }
 
 static int repo_install_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
@@ -220,6 +220,7 @@ void OvmsPluginStore::RepoInstall(OvmsWriter* writer, std::string name, std::str
   if (r->UpdateRepo())
     {
     writer->printf("Installed repository: %s\n", name.c_str());
+    MyConfig.SetParamValue("plugin.repos",name.c_str(),path.c_str());
     }
   else
     {
@@ -238,6 +239,7 @@ void OvmsPluginStore::RepoRemove(OvmsWriter* writer, std::string name)
 
   delete search->second;
   m_repos.erase(search);
+  MyConfig.DeleteInstance("plugin.repos", name.c_str());
 
   writer->printf("Removed repository: %s\n", name.c_str());
   }
@@ -262,7 +264,7 @@ void OvmsPluginStore::PluginList(OvmsWriter* writer)
   for (auto it = m_plugins.begin(); it != m_plugins.end(); ++it)
     {
     OvmsPlugin *p = it->second;
-    printf("%-20.20s %-16.16s %-10.10s %s\n",
+    writer->printf("%-20.20s %-16.16s %-10.10s %s\n",
       p->m_name.c_str(),
       p->m_repo.c_str(),
       p->m_version.c_str(),
@@ -320,6 +322,7 @@ void OvmsPluginStore::PluginRemove(OvmsWriter* writer, std::string plugin)
 
 void OvmsPluginStore::PluginEnable(OvmsWriter* writer, std::string plugin)
   {
+  auto lock = MyConfig.Lock();
   if (MyConfig.IsDefined("plugin.disabled", plugin))
     {
     std::string version = MyConfig.GetParamValue("plugin.disabled", plugin);
@@ -335,6 +338,7 @@ void OvmsPluginStore::PluginEnable(OvmsWriter* writer, std::string plugin)
 
 void OvmsPluginStore::PluginDisable(OvmsWriter* writer, std::string plugin)
   {
+  auto lock = MyConfig.Lock();
   if (MyConfig.IsDefined("plugin.enabled", plugin))
     {
     std::string version = MyConfig.GetParamValue("plugin.enabled", plugin);
@@ -963,6 +967,8 @@ bool OvmsPlugin::Download()
 
 bool OvmsPlugin::Enable()
   {
+  auto lock = MyConfig.Lock();
+
   if (MyConfig.IsDefined("plugin.disabled", m_name))
     {
     MyConfig.DeleteInstance("plugin.disabled", m_name);
@@ -975,6 +981,8 @@ bool OvmsPlugin::Enable()
 
 bool OvmsPlugin::Disable()
   {
+  auto lock = MyConfig.Lock();
+
   if (MyConfig.IsDefined("plugin.enabled", m_name))
     {
     MyConfig.DeleteInstance("plugin.enabled", m_name);
@@ -987,6 +995,7 @@ bool OvmsPlugin::Disable()
 
 std::string OvmsPlugin::InstalledVersion()
   {
+  auto lock = MyConfig.Lock();
   std::string version;
   if (MyConfig.IsDefined("plugin.enabled", m_name))
     {

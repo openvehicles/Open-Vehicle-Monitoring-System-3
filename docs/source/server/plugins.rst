@@ -123,6 +123,17 @@ can obtain that key by:
 # Note the API key and project number (= GCM sender ID)
 
 --------
+PushEXPO
+--------
+
+This plugin supports the 'expo' notification type, for push notifications
+via the Expo ecosystem (both Apple IOS and Google Android devices). It requires
+no configuration, as the credentials are automatically provided by the
+apps registering for notifications. The advantage here is that the servers do
+not need to be registered, and the apps can receive notifications from any
+servers it uses (that the App provides the secret token to).
+
+--------
 PushMAIL
 --------
 

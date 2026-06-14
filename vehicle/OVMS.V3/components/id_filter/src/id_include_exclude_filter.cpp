@@ -33,13 +33,19 @@ IdIncludeExcludeFilter::IdIncludeExcludeFilter(const char *log_tag)
   {      
   }
 
-void IdIncludeExcludeFilter::LoadFilters(const std::string &include_value, const std::string &exclude_value)
+bool IdIncludeExcludeFilter::LoadFilters(const std::string &include_value, const std::string &exclude_value)
   {
-  m_include_filter.LoadFilters(include_value);
-  m_exclude_filter.LoadFilters(exclude_value);
+  bool changed =
+    m_include_filter.LoadFilters(include_value) |
+    m_exclude_filter.LoadFilters(exclude_value);
 
-  ESP_LOGI(m_log_tag, "%d include entries / %d exclude entries",
-           m_include_filter.EntryCount(), m_exclude_filter.EntryCount());
+  if (changed)
+    {
+    ESP_LOGI(m_log_tag, "%d include entries / %d exclude entries",
+             m_include_filter.EntryCount(), m_exclude_filter.EntryCount());
+    }
+
+  return changed;
   }
 
 bool IdIncludeExcludeFilter::CheckFilter(const std::string &value) const

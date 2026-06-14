@@ -34,8 +34,8 @@ static const char *TAG = "cellular-modem-auto";
 #include <string.h>
 
 #include "ovms_cellular.h"
-#include "ovms_peripherals.h"
 #include "ovms_config.h"
+#include "simcom_powering.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // The virtual modem driver.
@@ -60,7 +60,8 @@ autoInit::autoInit()
 modemdriver::modemdriver()
   {
   m_modem = MyPeripherals->m_cellular_modem;
-  m_powercyclefactor = 0;
+  m_pwridx = 0;
+  m_t_pwrcycle = 0;
   m_statuspoller_step = 0;
   }
 
@@ -89,36 +90,41 @@ void modemdriver::Restart()
 
 void modemdriver::PowerOff()
   {
+  int T_off = TimePwrOff;
+  ESP_LOGI(TAG, "Power Off - timing: %d ms",T_off);
   PowerSleep(false);
-#ifdef CONFIG_OVMS_COMP_MAX7317
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
-#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+  uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
+  uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
+
+  SimcomPowerOff(T_off);
   }
 
 void modemdriver::PowerCycle()
   {
-  unsigned int psd = 2000 * (++m_powercyclefactor);
-  m_powercyclefactor = m_powercyclefactor % 3;
-  ESP_LOGI(TAG, "Power Cycle %dms", psd);
+  // Check time since last Powercycle 
+  // State timeout usually occurs after 30s -> Powercycle triggered
+  // Frequent PowerCycles -> try different timing
+  int dt = (m_t_pwrcycle == 0) ? 0 : (time(NULL) - m_t_pwrcycle);
+  if (dt > 10 && dt < 60  ) m_pwridx = (m_pwridx+1) % NPwrTime;  // toggle between different time settings
+  m_t_pwrcycle = time(NULL);
 
+  ESP_LOGI(TAG, "Power Cycle");
   uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
-  uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
-#ifdef CONFIG_OVMS_COMP_MAX7317
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 1); // Modem EN/PWR line high
-  vTaskDelay(psd / portTICK_PERIOD_MS);
-  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
-#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+  uart_flush(m_modem->m_uartnum);       // Flush the ring buffer, to try to address MUX start issues
+
+  SimcomPowerCycle(m_pwridx);
   }
 
 void modemdriver::PowerSleep(bool onoff)
   {
-  #ifdef CONFIG_OVMS_COMP_MAX7317
     if (onoff)
-      MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 1);
+    {
+      setDTRLevel(1);
+    }
     else
-      MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 0);
-  #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+    {
+      setDTRLevel(0);
+    }
   }
 
 int modemdriver::GetMuxChannels()    { return 4; }
@@ -134,9 +140,14 @@ void modemdriver::StartupNMEA()
   //   2 = $..RMC -- UTC time & date
   //  64 = $..GNS -- Position & fix data
   if (m_modem->m_mux != NULL)
-    { m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=66;+CGPS=1,1\r\n"); }
+    {
+    OvmsMutexLock lock(&m_modem->m_cmd_mutex);
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=66;+CGPS=1,1\r\n");
+    }
   else
-    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
+    {
+    ESP_LOGE(TAG, "Attempt to transmit on non running mux");
+    }
   }
 
 void modemdriver::ShutdownNMEA()
@@ -144,13 +155,16 @@ void modemdriver::ShutdownNMEA()
   // Switch off GPS:
   if (m_modem->m_mux != NULL)
     {
+    OvmsMutexLock lock(&m_modem->m_cmd_mutex);
     // send single commands, as each can fail:
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=0\r\n");
     vTaskDelay(pdMS_TO_TICKS(100));
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
     }
   else
-    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
+    {
+    ESP_LOGE(TAG, "Attempt to transmit on non running mux");
+    }
   }
 
 void modemdriver::StatusPoller()
@@ -184,3 +198,45 @@ modem::modem_state1_t modemdriver::State1Ticker1(modem::modem_state1_t curstate)
     }
   return curstate;
   }
+
+std::string modemdriver::GetNetTypes()
+  {
+    return "auto";
+  }
+
+#define SET_NET_MODE(at) if(m_modem->m_mux != NULL) m_modem->muxtx(GetMuxChannelCMD(), at); else m_modem->tx(at);
+
+bool modemdriver::SetNetworkType(std::string new_net_type)
+  {
+  if (m_modem != NULL && (new_net_type != net_type || net_type == "undef") )
+    {
+    std::string net_avail=GetNetTypes();
+    net_type = new_net_type;
+    ESP_LOGI(TAG, "Set network mode to %s", net_type.c_str());
+    if (net_type == "auto" && net_avail.find("auto") < string::npos)
+      {
+      SET_NET_MODE("AT+CNMP=2\r\n");
+      }
+    else if (net_type == "2G" && net_avail.find("2G") < string::npos)
+      {
+      SET_NET_MODE("AT+CNMP=13\r\n");
+      }
+    else if (net_type == "3G" && net_avail.find("3G") < string::npos)
+      {
+      SET_NET_MODE("AT+CNMP=14\r\n");
+      }
+    else if (net_type == "4G" && net_avail.find("4G") < string::npos)
+      {
+      SET_NET_MODE("AT+CNMP=38\r\n");
+      }
+    else
+      {
+      ESP_LOGE(TAG, "Requested network type %s is invalid -> set to automatic mode", net_type.c_str());
+      SET_NET_MODE("AT+CNMP=2\r\n");  // no valid mode -> set to AUTO
+      net_type = "auto";
+      }
+    return true;
+    }
+    return false;
+  }
+

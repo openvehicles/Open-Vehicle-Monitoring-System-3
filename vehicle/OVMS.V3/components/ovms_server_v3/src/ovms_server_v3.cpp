@@ -33,13 +33,18 @@ static const char *TAG = "ovms-server-v3";
 
 #include <string.h>
 #include <stdint.h>
+#include <vector>
+#include <algorithm>
 #include "ovms_server_v3.h"
+#include "ovms_utils.h"
 #include "buffered_shell.h"
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "esp_system.h"              // <- for esp_random() (jitter)
+#include "id_filter.h"               // <- use IdFilter for pattern matching
 #if CONFIG_MG_ENABLE_SSL
-#include "ovms_tls.h"
+  #include "ovms_tls.h"
 #endif
 
 OvmsServerV3 *MyOvmsServerV3 = NULL;
@@ -67,6 +72,19 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
   struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;
   switch (ev)
     {
+    case MG_EV_POLL:
+      {
+      if (MyOvmsServerV3)
+        {
+        // Transmit metrics classified as 'immediately' if indicated by MetricModified():
+        bool have_immediately = MyOvmsServerV3->m_have_immediately.exchange(false);
+        if (have_immediately)
+          {
+          MyOvmsServerV3->TransmitImmediateMetrics();
+          }
+        }
+      }
+      break;
     case MG_EV_CONNECT:
       {
       int *success = (int*)p;
@@ -74,16 +92,26 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       if (*success == 0)
         {
         // Successful connection
-        ESP_LOGI(TAG, "Connection successful");
-        struct mg_send_mqtt_handshake_opts opts;
-        memset(&opts, 0, sizeof(opts));
-        opts.user_name = MyOvmsServerV3->m_user.c_str();
-        opts.password = MyOvmsServerV3->m_password.c_str();
-        opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
-        opts.will_message = "no";
-        opts.flags |= MG_MQTT_WILL_RETAIN;
-        mg_set_protocol_mqtt(nc);
-        mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_vehicleid.c_str(), opts);
+        if (MyOvmsServerV3)
+          {
+          ESP_LOGI(TAG, "Connection successful");
+          struct mg_send_mqtt_handshake_opts opts;
+          memset(&opts, 0, sizeof(opts));
+          //If no user/password is set avoid sending an empty string
+          opts.user_name = MyOvmsServerV3->m_user.empty() ? NULL : MyOvmsServerV3->m_user.c_str();
+          opts.password = MyOvmsServerV3->m_password.empty() ? NULL : MyOvmsServerV3->m_password.c_str();
+          opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
+          opts.will_message = "no";
+          opts.flags |= MG_MQTT_WILL_RETAIN;
+          opts.keep_alive = MyOvmsServerV3->m_updatetime_keepalive;
+          mg_set_protocol_mqtt(nc);
+          mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_clientid.c_str(), opts);
+          }
+        else
+          {
+          ESP_LOGI(TAG, "Canceling connection");
+          nc->flags |= MG_F_CLOSE_IMMEDIATELY;
+          }
         }
       else
         {
@@ -91,10 +119,11 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         ESP_LOGW(TAG, "Connection failed");
         if (MyOvmsServerV3)
           {
+          MyOvmsServerV3->m_mgconn = NULL;
           StandardMetrics.ms_s_v3_connected->SetValue(false);
           StandardMetrics.ms_s_v3_peers->SetValue(0);
           MyOvmsServerV3->SetStatus("Error: Connection failed", true, OvmsServerV3::WaitReconnect);
-          MyOvmsServerV3->m_connretry = 60;
+          MyOvmsServerV3->m_connretry = 30;
           MyOvmsServerV3->m_connection_counter = 0;
           }
         }
@@ -108,7 +137,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV3)
           {
           MyOvmsServerV3->Disconnect();
-          MyOvmsServerV3->m_connretry = 60;
+          MyOvmsServerV3->m_connretry = 30;
           MyOvmsServerV3->m_connection_counter = 0;
           }
         }
@@ -126,6 +155,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           MyOvmsServerV3->m_notify_data_waitentry = NULL;
           StandardMetrics.ms_s_v3_connected->SetValue(true);
           MyOvmsServerV3->SetStatus("OVMS V3 MQTT login successful", false, OvmsServerV3::Connected);
+          MyOvmsServerV3->m_connect_jitter = -1; // reset: allow new jitter selection in next network phase
           }
         }
       break;
@@ -160,7 +190,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       mg_mqtt_pubcomp(nc, msg->message_id);
       break;
     case MG_EV_MQTT_PUBREC:
-      ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBCOMP)");
+      ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBREC)");
       if (MyOvmsServerV3)
         {
         MyOvmsServerV3->IncomingPubRec(msg->message_id);
@@ -184,7 +214,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
   }
 
 OvmsServerV3::OvmsServerV3(const char* name)
-  : OvmsServer(name), m_metrics_filter(TAG)
+  : OvmsServer(name), m_metrics_filter(TAG), m_metrics_priority(TAG), m_metrics_immediately(TAG)
   {
   if (MyOvmsServerV3Modifier == 0)
     {
@@ -199,14 +229,17 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_sendall = false;
   m_lasttx = 0;
   m_lasttx_sendall = 0;
+  m_lasttx_priority = 0;
   m_peers = 0;
-  m_streaming = 0;
   m_updatetime_idle = 600;
-  m_updatetime_connected = 60;
-  m_updatetime_awake = m_updatetime_idle;
-  m_updatetime_on = m_updatetime_idle;
-  m_updatetime_charging = m_updatetime_idle;
-  m_updatetime_sendall = 0;
+  m_updatetime_connected = 10;
+  m_updatetime_on = 5;  
+  m_updatetime_awake = 60;
+  m_updatetime_charging = 10;
+  m_updatetime_sendall = 1200;
+  m_updatetime_keepalive = 29*60;
+  m_legacy_event_topic = true;
+  m_retain_depth_limit = false;
   m_notify_info_pending = false;
   m_notify_error_pending = false;
   m_notify_alert_pending = false;
@@ -215,6 +248,14 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_notify_data_waittype = NULL;
   m_notify_data_waitentry = NULL;
   m_connection_available = false;
+  m_conn_stable_wait = 10;          // seconds network must be stable before first connect
+  m_conn_jitter_max  = 5;           // max random extra seconds
+  m_connect_jitter   = -1;          // -1 = not yet chosen
+  m_updatetime_priority = false;
+  m_updatetime_immediately = false;
+  m_have_immediately = false;
+  m_max_per_call_sendall = 100;      // max messages to send per Ticker1 call in sendall mode, default 100
+  m_max_per_call_modified = 150;     // max messages to send per Ticker1 call in modified mode, default 150
 
   ESP_LOGI(TAG, "OVMS Server v3 running");
 
@@ -225,12 +266,12 @@ OvmsServerV3::OvmsServerV3(const char* name)
 
   if (MyOvmsServerV3Reader == 0)
     {
-    MyOvmsServerV3Reader = MyNotify.RegisterReader("ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2),
+    MyOvmsServerV3Reader = MyNotify.RegisterReader("ovmsv3", COMMAND_RESULT_VERBOSE, std::bind(OvmsServerV3ReaderCallback, _1, _2),
                                                    true, std::bind(OvmsServerV3ReaderFilterCallback, _1, _2));
     }
   else
     {
-    MyNotify.RegisterReader(MyOvmsServerV3Reader, "ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2),
+    MyNotify.RegisterReader(MyOvmsServerV3Reader, "ovmsv3", COMMAND_RESULT_VERBOSE, std::bind(OvmsServerV3ReaderCallback, _1, _2),
                             true, std::bind(OvmsServerV3ReaderFilterCallback, _1, _2));
     }
 
@@ -245,6 +286,19 @@ OvmsServerV3::OvmsServerV3(const char* name)
   MyEvents.RegisterEvent(TAG,"system.modem.received.ussd", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"location.alert.flatbed.moved", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"location.alert.valet.bounds",  std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"app.connected", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"app.disconnected", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.start", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.stop", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.charge.finished", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.awake", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.on", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.off", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.locked", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.unlocked", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"server.v3.connected", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
 
   // read config:
   ConfigChanged(NULL);
@@ -266,44 +320,139 @@ OvmsServerV3::~OvmsServerV3()
 
 void OvmsServerV3::TransmitAllMetrics()
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
-  if (!m_mgconn)
-    return;
+  static size_t s_next_index = 0;
 
-  OvmsMetric* metric = MyMetrics.m_first;
-  while (metric != NULL)
+  auto mglock = MongooseLock();
+  if (!m_mgconn)
     {
-    metric->ClearModified(MyOvmsServerV3Modifier);
-    if (!metric->AsString().empty())
+    s_next_index = 0;
+    return;
+    }  
+  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+  CountClients();
+
+  // Locate starting metric for current index:
+  OvmsMetric* m = MyMetrics.m_first;
+  size_t pos = 0;
+  while (m && pos < s_next_index)
+    {
+    m = m->m_next;
+    pos++;
+    }
+
+  // If metrics list shrank (index out of range), restart from beginning:
+  if (!m && s_next_index != 0)
+    {
+    s_next_index = 0;
+    m = MyMetrics.m_first;
+    pos = 0;
+    }
+
+  int sent = 0;
+  while (m)
+    {
+    OvmsMetric* cur = m;
+    m = m->m_next;
+
+    // Only count into budget if metric is included:
+    const std::string name(cur->m_name);
+    const bool included = m_metrics_filter.CheckFilter(name);
+
+    // Clear our modified slot for full-sync pass:
+    cur->ClearModified(MyOvmsServerV3Modifier);
+
+    if (included && cur->IsDefined())
       {
-      TransmitMetric(metric);
+      TransmitMetric(cur); // applies filter again internally, harmless
+      sent++;
       }
-    metric = metric->m_next;
+
+    s_next_index++;
+    // Dynamically recalculate m_max_per_call_sendall on each iteration
+    if (sent >= m_max_per_call_sendall)
+      break;
+    }
+
+  if (!m)
+    {
+    // Completed a full pass
+    s_next_index = 0;
+    }
+  else
+    {
+    // More remain; hint for rapid continuation (limited by caller behavior)
+    m_lasttx_sendall = 0;
     }
   }
 
 void OvmsServerV3::TransmitModifiedMetrics()
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
-  if (!m_mgconn)
-    return;
+  static size_t s_mod_next_index = 0;
 
-  OvmsMetric* metric = MyMetrics.m_first;
-  while (metric != NULL)
+  auto mglock = MongooseLock();
+  if (!m_mgconn)
     {
-    if (metric->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    s_mod_next_index = 0;
+    return;
+    }
+  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+  CountClients();
+
+  // Locate starting point:
+  OvmsMetric* m = MyMetrics.m_first;
+  size_t pos = 0;
+  while (m && pos < s_mod_next_index)
+    {
+    m = m->m_next;
+    pos++;
+    }
+
+  // List shrank? restart:
+  if (!m && s_mod_next_index != 0)
+    {
+    s_mod_next_index = 0;
+    m = MyMetrics.m_first;
+    pos = 0;
+    }
+
+  int sent = 0;
+  while (m)
+    {
+    OvmsMetric* cur = m;
+    m = m->m_next;
+    // Check & clear modification flag for our modifier slot.
+    if (cur->IsModifiedAndClear(MyOvmsServerV3Modifier) && cur->IsDefined())
       {
-      TransmitMetric(metric);
+      TransmitMetric(cur);
+      sent++;
       }
-    metric = metric->m_next;
+    // Advance scan position regardless of modification:
+    s_mod_next_index++;
+
+    // Dynamically recalculate m_max_per_call_modified on each iteration
+    if (sent >= m_max_per_call_modified)
+      break;
+    }
+
+  if (!m)
+    {
+    // Completed full pass; restart next call
+    s_mod_next_index = 0;
+    }
+  else
+    {
+    m_lasttx = 0;
     }
   }
 
 void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   {
   std::string metric_name(metric->m_name);
-
   if (!m_metrics_filter.CheckFilter(metric_name))
+    return;
+
+  auto mglock = MongooseLock();
+  if (!m_mgconn)
     return;
 
   std::string topic(m_topic_prefix);
@@ -312,58 +461,159 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
 
   std::string val = metric->AsString();
 
-  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
-    MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
-  ESP_LOGD(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
+  // When retain.depth.limit is enabled, topics with more than 7 slashes (>8 segments)
+  // are published without the RETAIN flag. This is required for AWS IoT Core, which
+  // rejects retained publishes on topics deeper than 8 segments.
+  int qos_flags;
+  if (m_retain_depth_limit)
+    {
+    int slash_count = (int)std::count(topic.begin(), topic.end(), '/');
+    qos_flags = MG_MQTT_QOS(0) | (slash_count <= 7 ? MG_MQTT_RETAIN : 0);
+    }
+  else
+    {
+    qos_flags = MG_MQTT_QOS(0) | MG_MQTT_RETAIN;
+    }
+
+  mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
+    qos_flags, val.c_str(), val.length());
+  ESP_LOGV(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
 
-int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
+void OvmsServerV3::TransmitPriorityMetrics()
   {
+    // Default priority metrics (GPS + time)
+    const char* s_priority_gps_metrics[] = {
+      "v.p.latitude",
+      "v.p.longitude",
+      "v.p.altitude",
+      "v.p.speed",
+      "v.p.gpsspeed",
+      "m.time.utc",
+    };
+
+    const size_t s_priority_gps_metrics_count =
+      sizeof(s_priority_gps_metrics) / sizeof(s_priority_gps_metrics[0]);
+
+    auto mglock = MongooseLock();
+    if (!m_mgconn) return;
+    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+    CountClients();
+
+    // Helper to collect what we've already handled to avoid duplicates:
+    std::vector<std::string> processed;
+    auto already_processed = [&](const std::string& name) {
+      return std::find(processed.begin(), processed.end(), name) != processed.end();
+    };
+    auto mark_processed = [&](const std::string& name) {
+      processed.push_back(name);
+    };
+
+    auto send_metric_by_name = [&](const std::string& name) {
+      if (name.empty() || already_processed(name)) return;
+      OvmsMetric* m = MyMetrics.Find(name.c_str());
+      if (!m) return;
+      if (m->IsModifiedAndClear(MyOvmsServerV3Modifier) && m->IsDefined())
+        TransmitMetric(m);
+      mark_processed(name);
+    };
+
+    // 1) Send defaults:
+    for (size_t i = 0; i < s_priority_gps_metrics_count; ++i)
+      send_metric_by_name(s_priority_gps_metrics[i]);
+
+    // 2) Add configurable extra priority metrics via IdFilter:
+    //    Param: server.v3 / metrics.priority
+
+    for (OvmsMetric* m = MyMetrics.m_first; m; m = m->m_next)
+      {
+      const std::string mname(m->m_name);
+      if (m_metrics_priority.CheckFilter(mname))
+        send_metric_by_name(mname);
+      }
+  }
+
+void OvmsServerV3::TransmitImmediateMetrics()
+  {
+  if (!m_updatetime_immediately) return;
+  if (!m_mgconn) return;
+  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+
+  for (OvmsMetric* m = MyMetrics.m_first; m; m = m->m_next)
+    {
+    if (m->IsDefined() &&
+        m->IsModified(MyOvmsServerV3Modifier) &&
+        m_metrics_immediately.CheckFilter(m->m_name))
+      {
+      m->ClearModified(MyOvmsServerV3Modifier);
+      TransmitMetric(m);
+      }
+    }
+  }
+
+uint16_t OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
+  {
+  auto mglock = MongooseLock(0);
+  if (!mglock || !m_mgconn)
+    return 0;
+
   std::string topic(m_topic_prefix);
   topic.append("notify/info/");
   topic.append(mqtt_topic(entry->m_subtype));
 
   const extram::string result = entry->GetValue();
 
-  int id = m_msgid++;
+  uint16_t id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(1), result.c_str(), result.length());
   ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
   return id;
   }
 
-int OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
+uint16_t OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
   {
+  auto mglock = MongooseLock(0);
+  if (!mglock || !m_mgconn)
+    return 0;
+
   std::string topic(m_topic_prefix);
   topic.append("notify/error/");
   topic.append(mqtt_topic(entry->m_subtype));
 
   const extram::string result = entry->GetValue();
 
-  int id = m_msgid++;
+  uint16_t id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(1), result.c_str(), result.length());
   ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
   return id;
   }
 
-int OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
+uint16_t OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
   {
+  auto mglock = MongooseLock(0);
+  if (!mglock || !m_mgconn)
+    return 0;
+
   std::string topic(m_topic_prefix);
   topic.append("notify/alert/");
   topic.append(mqtt_topic(entry->m_subtype));
 
   const extram::string result = entry->GetValue();
 
-  int id = m_msgid++;
+  uint16_t id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(1), result.c_str(), result.length());
   ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
   return id;
   }
 
-int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
+uint16_t OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
   {
+  auto mglock = MongooseLock(0);
+  if (!mglock || !m_mgconn)
+    return 0;
+
   char base[32];
   std::string topic(m_topic_prefix);
   topic.append("notify/data/");
@@ -382,10 +632,10 @@ int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
 
   const char* result = msg.c_str();
 
-  int id = m_msgid++;
+  uint16_t id = NextMsgId();
   mg_mqtt_publish(m_mgconn, topic.c_str(), id,
     MG_MQTT_QOS(2), result, strlen(result));
-  ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result);
+  ESP_LOGI(TAG,"Tx notify %s=%s msgid=%d",topic.c_str(),result,id);
   return id;
   }
 
@@ -407,8 +657,8 @@ void OvmsServerV3::TransmitPendingNotificationsInfo()
     return;
     }
 
-  TransmitNotificationInfo(e);
-  info->MarkRead(MyOvmsServerV3Reader, e);
+  if (TransmitNotificationInfo(e))
+    info->MarkRead(MyOvmsServerV3Reader, e);
   }
 
 void OvmsServerV3::TransmitPendingNotificationsError()
@@ -429,8 +679,8 @@ void OvmsServerV3::TransmitPendingNotificationsError()
     return;
     }
 
-  TransmitNotificationError(e);
-  error->MarkRead(MyOvmsServerV3Reader, e);
+  if (TransmitNotificationError(e))
+    error->MarkRead(MyOvmsServerV3Reader, e);
   }
 
 void OvmsServerV3::TransmitPendingNotificationsAlert()
@@ -451,8 +701,8 @@ void OvmsServerV3::TransmitPendingNotificationsAlert()
     return;
     }
 
-  TransmitNotificationAlert(e);
-  alert->MarkRead(MyOvmsServerV3Reader, e);
+  if (TransmitNotificationAlert(e))
+    alert->MarkRead(MyOvmsServerV3Reader, e);
   }
 
 void OvmsServerV3::TransmitPendingNotificationsData()
@@ -475,44 +725,65 @@ void OvmsServerV3::TransmitPendingNotificationsData()
     return;
     }
 
-  m_notify_data_waittype = data;
-  m_notify_data_waitentry = e;
-  m_notify_data_waitcomp = TransmitNotificationData(e);
-  m_notify_data_pending = false;
+  uint16_t txid = TransmitNotificationData(e);
+  if (txid)
+    {
+    // wait for ack:
+    m_notify_data_waittype = data;
+    m_notify_data_waitentry = e;
+    m_notify_data_waitcomp = txid;
+    m_notify_data_pending = false;
+    }
+  else
+    {
+    // retry:
+    m_notify_data_pending = true;
+    }
   }
 
 void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
   {
-  if (topic.compare(0,m_topic_prefix.length(),m_topic_prefix)==0)
+  if (topic.compare(0,m_topic_prefix.length(),m_topic_prefix)!=0)
+    return;
+
+  topic = topic.substr(m_topic_prefix.length());
+  if (topic.compare(0,7,"client/")!=0)
+    return;
+
+  topic = topic.substr(7);
+  size_t delim = topic.find('/');
+  if (delim == std::string::npos)
+    return;
+
+  std::string clientid = topic.substr(0,delim);
+  topic = topic.substr(delim+1);
+
+  if (topic == "active")
     {
-    topic = topic.substr(m_topic_prefix.length());
-    if (topic.compare(0,7,"client/")==0)
-      {
-      topic = topic.substr(7);
-      size_t delim = topic.find('/');
-      if (delim != string::npos)
-        {
-        std::string clientid = topic.substr(0,delim);
-        topic = topic.substr(delim+1);
-        if (topic == "active")
-          {
-          if ((payload.empty())||(payload == "0"))
-            RemoveClient(clientid);
-          else
-            AddClient(clientid);
-          }
-        else if (topic.compare(0,8,"command/") == 0)
-          {
-          topic = topic.substr(8);
-          RunCommand(clientid, topic, payload);
-          }
-        }
-      }
+    if ((payload.empty())||(payload=="0"))
+      RemoveClient(clientid);
+    else
+      AddClient(clientid);
+    }
+  else if (topic.compare(0,8,"command/")==0)
+    {
+    std::string id = topic.substr(8);
+    RunCommand(clientid, id, payload);
+    }
+  else if (topic.compare(0,8,"request/")==0)
+    {
+    std::string req = topic.substr(8);
+    if (req == "metric")
+      ProcessClientMetricRequest(clientid, payload);
+    else if (req == "config")
+      ProcessClientConfigRequest(clientid, payload);
     }
   }
 
-void OvmsServerV3::IncomingPubRec(int id)
+void OvmsServerV3::IncomingPubRec(uint16_t id)
   {
+  // Mongoose event handler, MongooseLock already set
+  ESP_LOGD(TAG,"IncomingPubRec msgid=%d", id);
   mg_mqtt_pubrel(m_mgconn, id);
   if ((id == m_notify_data_waitcomp)&&
       (m_notify_data_waittype != NULL)&&
@@ -529,24 +800,30 @@ void OvmsServerV3::IncomingPubRec(int id)
 
 void OvmsServerV3::IncomingEvent(std::string event, void* data)
   {
+  auto mglock = MongooseLock();
+
   // Publish the event, if we are connected...
-  if (m_mgconn == NULL) return;
+  if (!m_mgconn) return;
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
 
   std::string topic(m_topic_prefix);
 
-  // Legacy: publish event name on fixed topic
   topic.append("event");
-  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
-    MG_MQTT_QOS(0), event.c_str(), event.length());
+
+  // Legacy: publish event name on fixed topic
+  if (m_legacy_event_topic)
+    {
+    mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
+      MG_MQTT_QOS(0), event.c_str(), event.length());
+    }
 
   // Publish MQTT style event topic, payload reserved for event data serialization:
   topic.append("/");
   topic.append(mqtt_topic(event));
-  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+  mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
     MG_MQTT_QOS(0), "", 0);
 
-  ESP_LOGD(TAG,"Tx event %s",event.c_str());
+  ESP_LOGV(TAG,"Tx event %s",event.c_str());
   }
 
 void OvmsServerV3::RunCommand(std::string client, std::string id, std::string command)
@@ -560,12 +837,15 @@ void OvmsServerV3::RunCommand(std::string client, std::string id, std::string co
   std::string val; bs->Dump(val);
   delete bs;
 
+  auto mglock = MongooseLock();
+  if (!m_mgconn) return;
+
   std::string topic(m_topic_prefix);
   topic.append("client/");
   topic.append(client);
   topic.append("/response/");
   topic.append(id);
-  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+  mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
     MG_MQTT_QOS(1), val.c_str(), val.length());
   }
 
@@ -645,6 +925,12 @@ void OvmsServerV3::Connect()
   m_port = MyConfig.GetParamValue("server.v3", "port");
   m_tls = MyConfig.GetParamValueBool("server.v3","tls", false);
 
+  m_clientid = MyConfig.GetParamValue("server.v3", "clientid");
+  if (m_clientid.empty())
+    {
+    m_clientid = m_vehicleid;
+    }
+
   m_topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix", "");
   if(m_topic_prefix.empty())
     {
@@ -668,6 +954,13 @@ void OvmsServerV3::Connect()
   m_conn_topic[1] = std::string(m_topic_prefix);
   m_conn_topic[1].append("client/+/command/+");
 
+  // Request new Topics:
+  m_conn_topic[2] = std::string(m_topic_prefix);
+  m_conn_topic[2].append("client/+/request/metric");
+
+  m_conn_topic[3] = std::string(m_topic_prefix);
+  m_conn_topic[3].append("client/+/request/config");
+
   if (m_port.empty())
     {
     m_port = (m_tls)?"8883":"1883";
@@ -679,7 +972,7 @@ void OvmsServerV3::Connect()
 
   ESP_LOGI(TAG, "Connection is %s:%s %s/%s topic %s",
     m_server.c_str(), m_port.c_str(),
-    m_vehicleid.c_str(), m_user.c_str(),
+    m_clientid.c_str(), m_user.c_str(),
     m_topic_prefix.c_str());
 
   if (m_server.empty())
@@ -691,8 +984,16 @@ void OvmsServerV3::Connect()
     }
 
   SetStatus("Connecting...", false, Connecting);
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (!mgr)
+    {
+    SetStatus("Error: network manager not available", true, WaitReconnect);
+    m_connretry = 20; // Try again in 20 seconds...
+    m_connection_counter = 0;
+    return;
+    }
+
   struct mg_connect_opts opts;
   const char* err;
   memset(&opts, 0, sizeof(opts));
@@ -702,6 +1003,12 @@ void OvmsServerV3::Connect()
 #if CONFIG_MG_ENABLE_SSL
     opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     opts.ssl_server_name = m_server.c_str();
+    if (path_exists("/store/tls/serverv3_client.crt") && path_exists("/store/tls/serverv3_client.key"))
+      {
+      opts.ssl_cert = "/store/tls/serverv3_client.crt";
+      opts.ssl_key  = "/store/tls/serverv3_client.key";
+      ESP_LOGI(TAG, "Using MQTT mTLS client certificate authentication");
+      }
 #else
     ESP_LOGE(TAG, "mg_connect(%s) failed: SSL support disabled", address.c_str());
     SetStatus("Error: Connection failed (SSL support disabled)", true, Undefined);
@@ -720,7 +1027,7 @@ void OvmsServerV3::Connect()
 
 void OvmsServerV3::Disconnect()
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  auto mglock = MongooseLock();
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -730,6 +1037,13 @@ void OvmsServerV3::Disconnect()
   m_connretry = 0;
   StandardMetrics.ms_s_v3_connected->SetValue(false);
   StandardMetrics.ms_s_v3_peers->SetValue(0);
+  }
+
+uint16_t OvmsServerV3::NextMsgId()
+  {
+  // skip id 0:
+  if (m_msgid == 0) m_msgid = 1;
+  return m_msgid++;
   }
 
 void OvmsServerV3::SetStatus(const char* status, bool fault /*=false*/, State newstate /*=Undefined*/)
@@ -773,6 +1087,18 @@ void OvmsServerV3::SetStatus(const char* status, bool fault /*=false*/, State ne
 
 void OvmsServerV3::MetricModified(OvmsMetric* metric)
   {
+  if (metric == NULL) return;
+  if (!m_updatetime_immediately) return;
+  if (!m_mgconn) return;
+  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+
+  if (metric->IsDefined() &&
+      metric->IsModified(MyOvmsServerV3Modifier) &&
+      m_metrics_immediately.CheckFilter(metric->m_name))
+    {
+    m_have_immediately = true;
+    // TransmitMetric() done by OvmsServerV3MongooseCallback(MG_EV_POLL)
+    }
   }
 
 bool OvmsServerV3::NotificationFilter(OvmsNotifyType* type, const char* subtype)
@@ -792,22 +1118,25 @@ bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     {
     // Info notifications
     if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
-    TransmitNotificationInfo(entry);
-    return true; // Mark it as read, as we've managed to send it
+    uint16_t txid = TransmitNotificationInfo(entry);
+    if (!txid) m_notify_info_pending = true;
+    return (txid != 0);
     }
   else if (strcmp(type->m_name,"error")==0)
     {
     // Error notification
     if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
-    TransmitNotificationError(entry);
-    return true; // Mark it as read, as we've managed to send it
+    uint16_t txid = TransmitNotificationError(entry);
+    if (!txid) m_notify_error_pending = true;
+    return (txid != 0);
     }
   else if (strcmp(type->m_name,"alert")==0)
     {
     // Alert notifications
     if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
-    TransmitNotificationAlert(entry);
-    return true; // Mark it as read, as we've managed to send it
+    uint16_t txid = TransmitNotificationAlert(entry);
+    if (!txid) m_notify_alert_pending = true;
+    return (txid != 0);
     }
   else if (strcmp(type->m_name,"data")==0)
     {
@@ -822,9 +1151,40 @@ bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
 
 void OvmsServerV3::EventListener(std::string event, void* data)
   {
+  int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
   if (event == "config.changed" || event == "config.mounted")
     {
     ConfigChanged((OvmsConfigParam*) data);
+    }
+  if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds" ||
+      event == "vehicle.charge.start" || event == "vehicle.charge.stop" ||
+      event == "vehicle.charge.finished" || event == "vehicle.awake" ||
+      event == "vehicle.on" || event == "vehicle.off" ||           
+      event == "vehicle.locked" || event == "vehicle.unlocked" ||
+      event == "app.disconnected")
+    {
+    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+    m_lasttx_priority = now;
+    m_lasttx = now;
+    TransmitModifiedMetrics();
+    }
+  if (event == "app.connected" || event == "server.v3.connected")
+    {
+    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+    
+    if ( (now - m_lasttx_sendall) > 30 )
+      {
+      m_lasttx_sendall = now;
+      m_lasttx_priority = now;
+      m_lasttx = now;
+      TransmitAllMetrics();
+      }
+    else if ( (now - m_lasttx) > 20 )
+      {
+      m_lasttx_priority = now;
+      m_lasttx = now;
+      TransmitModifiedMetrics();
+      }
     }
   }
 
@@ -834,15 +1194,41 @@ void OvmsServerV3::EventListener(std::string event, void* data)
  */
 void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   {
-  m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
-  m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 60);
-  m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 600);
-  m_updatetime_awake = MyConfig.GetParamValueInt("server.v3", "updatetime.awake", m_updatetime_idle);
-  m_updatetime_on = MyConfig.GetParamValueInt("server.v3", "updatetime.on", m_updatetime_idle);
-  m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_idle);
-  m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", 0);
-  m_metrics_filter.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.include"),
-                               MyConfig.GetParamValue("server.v3", "metrics.exclude"));
+  // as we're also called from the constructor, ensure exclusive config access:
+  auto cfglock = MyConfig.Lock();
+
+  if (param == NULL)
+    param = MyConfig.CachedParam("server.v3");
+  else if (param->GetName() != "server.v3")
+    return;
+
+  m_updatetime_connected = param->GetValueInt("updatetime.connected", m_updatetime_connected);
+  m_updatetime_idle = param->GetValueInt("updatetime.idle", m_updatetime_idle);
+  m_updatetime_on = param->GetValueInt("updatetime.on", m_updatetime_on);
+  m_updatetime_awake = param->GetValueInt("updatetime.awake", m_updatetime_awake);
+  m_updatetime_charging = param->GetValueInt("updatetime.charging", m_updatetime_charging);
+  m_updatetime_sendall = param->GetValueInt("updatetime.sendall", m_updatetime_sendall);
+  m_updatetime_keepalive = param->GetValueInt("updatetime.keepalive", m_updatetime_keepalive);
+  m_legacy_event_topic = param->GetValueBool("events.legacy_topic", true);
+  m_retain_depth_limit = param->GetValueBool("retain.depth.limit", m_retain_depth_limit);
+  m_updatetime_priority = param->GetValueBool("updatetime.priority", false);
+  m_updatetime_immediately = param->GetValueBool("updatetime.immediately", false);
+  m_max_per_call_sendall = param->GetValueInt("queue.sendall", m_max_per_call_sendall);
+  if (m_max_per_call_sendall < 1) m_max_per_call_sendall = 1;
+  m_max_per_call_modified = param->GetValueInt("queue.modified", m_max_per_call_modified);
+  if (m_max_per_call_modified < 1) m_max_per_call_modified = 1;
+
+  m_metrics_filter.LoadFilters(param->GetValue("metrics.include"),
+                               param->GetValue("metrics.exclude"));
+  m_metrics_priority.LoadFilters(param->GetValue("metrics.priority"),
+                                 param->GetValue("metrics.exclude"));
+  m_metrics_immediately.LoadFilters(param->GetValue("metrics.include.immediately"),
+                                    param->GetValue("metrics.exclude.immediately"));
+  // New configurable timings:
+  m_conn_stable_wait = param->GetValueInt("conn.stable_wait", m_conn_stable_wait);
+  if (m_conn_stable_wait < 3) m_conn_stable_wait = 3;
+  m_conn_jitter_max  = param->GetValueInt("conn.jitter.max", m_conn_jitter_max);
+  if (m_conn_jitter_max < 0) m_conn_jitter_max = 0;
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)
@@ -892,43 +1278,112 @@ void OvmsServerV3::NetmanStop(std::string event, void* data)
 
 void OvmsServerV3::Ticker1(std::string event, void* data)
   {
-  m_connection_available = StdMetrics.ms_m_net_connected->AsBool() &&
-                              StdMetrics.ms_m_net_ip->AsBool() &&
-                              StdMetrics.ms_m_net_good_sq->AsBool();
-  if (!m_connection_available && m_mgconn)
+  bool net_connected = StdMetrics.ms_m_net_connected->AsBool();
+  bool net_ip        = StdMetrics.ms_m_net_ip->AsBool();
+  bool net_good_sq   = true;
+  if (StdMetrics.ms_m_net_good_sq->IsDefined())
+    net_good_sq = StdMetrics.ms_m_net_good_sq->AsBool();
+
+  m_connection_available = (net_connected && net_ip && net_good_sq);
+
+  // Reset jitter & counters when network lost
+  if (!m_connection_available)
     {
-    Disconnect();
-    m_connretry = 10;
-    }
-  
-  if (!m_connection_available) m_connection_counter = 0;
-  else if (m_connection_counter < 10) 
-    {
-    m_connection_counter++;
-    if (m_connretry == 0 && m_connection_counter == 10)
+    if (m_mgconn)
       {
-      if (m_mgconn) Disconnect(); // Disconnect first (timeout)
-      Connect();      // Kick off the connection
+      ESP_LOGW(TAG,"Network lost (connected=%d ip=%d gSQ=%d) → disconnect",
+               (int)net_connected,(int)net_ip,(int)net_good_sq);
+      Disconnect();
+      m_connretry = 10;
+      }
+    if (m_connection_counter != 0 || m_connect_jitter != -1)
+      ESP_LOGD(TAG,"Reset counters (counter=%d jitter=%d)", m_connection_counter, m_connect_jitter);
+    m_connection_counter = 0;
+    m_connect_jitter = -1;
+    }
+  else
+    {
+    // Choose jitter once when network first becomes stable
+    if (m_connection_counter == 0 && m_connect_jitter == -1)
+      {
+      m_connect_jitter = (m_conn_jitter_max > 0) ? (esp_random() % (m_conn_jitter_max+1)) : 0;
+      ESP_LOGI(TAG,"Pick jitter=%d (stable_wait=%d)", m_connect_jitter, m_conn_stable_wait);
+      }
+
+    if (m_connection_counter < (m_conn_stable_wait + m_connect_jitter))
+      {
+      m_connection_counter++;
+      }
+
+    // Attempt connect only when:
+    //  - no retry countdown active
+    //  - stable period + jitter reached
+    // Initial connect countdown
+    if (m_connretry == 0 &&
+        m_connection_counter >= (m_conn_stable_wait + m_connect_jitter) &&
+        !StandardMetrics.ms_s_v3_connected->AsBool() &&
+        m_mgconn == NULL)
+      {
+      ESP_LOGI(TAG,"Attempt connect: counter=%d need=%d jitter=%d",
+               m_connection_counter, m_conn_stable_wait + m_connect_jitter, m_connect_jitter);
+      Connect();
       return;
       }
-    } 
+    }
+    if (m_connretry == 0 &&
+        m_connection_counter >= (m_conn_stable_wait + m_connect_jitter) &&
+        !StandardMetrics.ms_s_v3_connected->AsBool() &&
+        m_mgconn == NULL)
+      {
+      ESP_LOGI(TAG,"Attempt connect: counter=%d need=%d jitter=%d",
+               m_connection_counter, m_conn_stable_wait + m_connect_jitter, m_connect_jitter);
+      Connect();
+      return;
+      }
+    
 
+  // Retry backoff countdown
   if (m_connretry > 0)
     {
     m_connretry--;
-    if (m_connretry == 0 && m_connection_counter == 10)
+    ESP_LOGD(TAG, "Retry countdown: %d (counter=%d jitter=%d stable_wait=%d)",
+             m_connretry, m_connection_counter, m_connect_jitter, m_conn_stable_wait);
+    if (m_connretry == 0 &&
+        m_connection_counter >= (m_conn_stable_wait + (m_connect_jitter<0?0:m_connect_jitter)))
       {
-      if (m_mgconn) Disconnect(); // Disconnect first (timeout)
-      Connect(); // Kick off the connection
+      if (m_mgconn) Disconnect();
+      ESP_LOGI(TAG, "Retry timer elapsed -> reconnect (counter=%d jitter=%d)",
+               m_connection_counter, m_connect_jitter);
+      // If desired, pick a new jitter value for retries:
+      if (m_conn_jitter_max > 0 && m_connect_jitter >= 0)
+        {
+        m_connect_jitter = esp_random() % (m_conn_jitter_max + 1);
+        ESP_LOGD(TAG, "Re-pick jitter for retry: %d", m_connect_jitter);
+        }
+      Connect();
       return;
       }
     }
 
   if (StandardMetrics.ms_s_v3_connected->AsBool())
-    {
-    int now = StandardMetrics.ms_m_monotonic->AsInt();
+    {      
+    bool carawake = StandardMetrics.ms_v_env_awake->AsBool();
+    bool caron = StandardMetrics.ms_v_env_on->AsBool();
+    bool carcharging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+    int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
+    int next = m_updatetime_idle;
+    if (caron)
+      next = m_updatetime_on;
+    else if (carcharging)
+      next = m_updatetime_charging;
+    else if (m_peers > 0)
+      next = m_updatetime_connected;
+    else if (carawake)
+      next = m_updatetime_awake;
+
     if (m_sendall)
       {
+      auto mglock = MongooseLock();
       ESP_LOGI(TAG, "Subscribe to MQTT topics");
       struct mg_mqtt_topic_expression topics[MQTT_CONN_NTOPICS];
       for (int k=0;k<MQTT_CONN_NTOPICS;k++)
@@ -936,59 +1391,57 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
         topics[k].topic = m_conn_topic[k].c_str();
         topics[k].qos = 1;
         }
-      mg_mqtt_subscribe(m_mgconn, topics, MQTT_CONN_NTOPICS, m_msgid++);
+      mg_mqtt_subscribe(m_mgconn, topics, MQTT_CONN_NTOPICS, NextMsgId());
 
       ESP_LOGI(TAG, "Transmit all metrics");
-      TransmitAllMetrics();
       m_lasttx_sendall = now;
+      m_lasttx_priority = now;
+      m_lasttx = now;
       m_sendall = false;
+      TransmitAllMetrics();
       }
 
-    if (m_notify_info_pending) TransmitPendingNotificationsInfo();
+    if (m_notify_info_pending)  TransmitPendingNotificationsInfo();
     if (m_notify_error_pending) TransmitPendingNotificationsError();
     if (m_notify_alert_pending) TransmitPendingNotificationsAlert();
-    if ((m_notify_data_pending)&&(m_notify_data_waitcomp==0))
+    if (m_notify_data_pending && m_notify_data_waitcomp==0)
       TransmitPendingNotificationsData();
-
-    bool caron = StandardMetrics.ms_v_env_on->AsBool();
-
-    // Next send time depends on the state of the car
-    int next = m_updatetime_idle;
-
-    // Use the lowest enabled update value
-    if (m_peers != 0 && m_updatetime_connected < next)
-      next = m_updatetime_connected;
-    if ((caron && m_streaming > 0) && m_streaming < next)
-      next = m_streaming;
-    if (caron && m_updatetime_on < next)
-      next = m_updatetime_on;
-    if (StandardMetrics.ms_v_charge_inprogress->AsBool() && m_updatetime_charging < next)
-      next = m_updatetime_charging;
-    if (StandardMetrics.ms_v_env_awake->AsBool() && m_updatetime_awake < next)
-      next = m_updatetime_awake;
-
-    if ((m_lasttx_sendall == 0) ||
-        (m_updatetime_sendall > 0 && now > (m_lasttx_sendall + m_updatetime_sendall)))
+      
+    if ((m_lasttx_sendall == 0) || (now > (m_lasttx_sendall + m_updatetime_sendall)))
       {
-      ESP_LOGI(TAG, "Transmit all metrics");
-      TransmitAllMetrics();
+      //ESP_LOGI(TAG, "Transmit all metrics");
       m_lasttx_sendall = now;
-      }
-    else if ((m_lasttx==0)||(now>(m_lasttx+next)))
-      {
-      TransmitModifiedMetrics();
+      m_lasttx_priority = now;
       m_lasttx = now;
+      TransmitAllMetrics();
+      }
+    else if ((m_lasttx_priority==0) || (m_updatetime_priority && carawake && (now > (m_lasttx_priority + m_updatetime_on))))
+      {
+      //ESP_LOGI(TAG, "Transmit priority metrics");
+      m_lasttx_priority = now;
+      TransmitPriorityMetrics();
+      }
+    else if ((m_lasttx==0) || (now > (m_lasttx + next)))
+      {
+      //ESP_LOGI(TAG, "Transmit modified metrics");
+      m_lasttx = now;
+      TransmitModifiedMetrics();
       }
     }
   }
 
-void OvmsServerV3::RequestUpdate(bool txall)
+void OvmsServerV3::RequestUpdate(const char* requested)
   {
-  if (txall)
+  if (requested == NULL) return;
+  if (strcmp(requested, "all") == 0)
     {
     m_lasttx_sendall = 0;
     }
-  else
+  else if (strcmp(requested, "priority") == 0)
+    {
+    m_lasttx_priority = 0;
+    }
+  else if (strcmp(requested, "modified") == 0)
     {
     m_lasttx = 0;
     }
@@ -1088,11 +1541,72 @@ void ovmsv3_update(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   else
     {
-    bool txall = (strcmp(cmd->GetName(), "all") == 0);
-    MyOvmsServerV3->RequestUpdate(txall);
-    writer->printf("Server V3 data update for %s metrics has been scheduled\n",
-      txall ? "all" : "modified");
+    const char* cname = cmd->GetName();
+    const char* requested = "modified";
+
+    if (strcmp(cname, "all") == 0)
+      {
+      requested = "all";
+      }
+    else if (strcmp(cname, "priority") == 0)
+      {
+      requested = "priority";
+      }
+
+    MyOvmsServerV3->RequestUpdate(requested);
+    writer->printf("Server V3 data update for %s metrics has been scheduled\n", requested);
     }
+  }
+
+// Process metric request (payload: include patterns; use IdFilter)
+void OvmsServerV3::ProcessClientMetricRequest(const std::string& clientid, const std::string& payload)
+{
+  if (payload.empty()) return;
+
+  // Build a temporary include-only filter from the payload (supports *, prefix*)
+  IdFilter reqfilter(TAG);
+  reqfilter.LoadFilters(payload); // include only
+
+  for (OvmsMetric* m = MyMetrics.m_first; m; m = m->m_next)
+  {
+  const std::string name(m->m_name);
+  if (!reqfilter.CheckFilter(name))
+    continue;
+  if (m->IsDefined())
+    TransmitMetric(m);
+  }
+}
+
+// Process config request (payload: param/instance)
+void OvmsServerV3::ProcessClientConfigRequest(const std::string& clientid, const std::string& payload)
+  {
+  if (payload.empty()) return;
+  std::string req = payload;
+  auto trim=[&](std::string& s){
+    size_t a=s.find_first_not_of(" \t\r\n");
+    size_t b=s.find_last_not_of(" \t\r\n");
+    if (a==std::string::npos){ s.clear(); return; }
+    s=s.substr(a,b-a+1);
+  };
+  trim(req);
+  size_t sep=req.find('/');
+  if (sep==std::string::npos) return;
+  std::string param=req.substr(0,sep);
+  std::string inst =req.substr(sep+1);
+  if (param.empty()||inst.empty()) return;
+
+  std::string value = MyConfig.GetParamValue(param.c_str(), inst.c_str());
+
+  auto mglock = MongooseLock();
+  if (!m_mgconn) return;
+
+  std::string topic(m_topic_prefix);
+  topic.append("client/").append(clientid).append("/config/");
+  topic.append(mqtt_topic(param)).append("/").append(mqtt_topic(inst));
+
+  mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
+                  MG_MQTT_QOS(0), value.c_str(), value.length());
+  ESP_LOGD(TAG,"Tx config %s=%s", topic.c_str(), value.c_str());
   }
 
 OvmsServerV3Init MyOvmsServerV3Init  __attribute__ ((init_priority (6200)));
@@ -1110,10 +1624,11 @@ OvmsServerV3Init::OvmsServerV3Init()
   OvmsCommand* cmd_update = cmd_v3->RegisterCommand("update", "Request OVMS V3 Server data update", ovmsv3_update);
   cmd_update->RegisterCommand("all", "Transmit all metrics", ovmsv3_update);
   cmd_update->RegisterCommand("modified", "Transmit modified metrics only", ovmsv3_update);
+  cmd_update->RegisterCommand("priority", "Transmit priority metrics only", ovmsv3_update);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "*", std::bind(&OvmsServerV3Init::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "*", std::bind(&OvmsServerV3Init::EventListenerInit, this, _1, _2));
 
   MyConfig.RegisterParam("server.v3", "V3 Server Configuration", true, true);
   // Our instances:
@@ -1130,10 +1645,11 @@ void OvmsServerV3Init::AutoInit()
   if (MyConfig.GetParamValueBool("auto", "server.v3", false))
     MyOvmsServerV3 = new OvmsServerV3("oscv3");
   }
-
-void OvmsServerV3Init::EventListener(std::string event, void* data)
+  
+void OvmsServerV3Init::EventListenerInit(std::string event, void* data)
   {
   if (event.compare(0,7,"ticker.") == 0) return; // Skip ticker.* events
+  if (event.compare(0,6,"clock.") == 0) return; // Skip clock.* events
   if (event.compare("system.event") == 0) return; // Skip event
   if (event.compare("system.wifi.scan.done") == 0) return; // Skip event
 
@@ -1142,3 +1658,4 @@ void OvmsServerV3Init::EventListener(std::string event, void* data)
     MyOvmsServerV3->IncomingEvent(event, data);
     }
   }
+  

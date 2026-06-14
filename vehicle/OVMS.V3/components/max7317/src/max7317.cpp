@@ -67,6 +67,11 @@ max7317::max7317(const char* name, spi* spibus, spi_host_device_t host, int cloc
   esp_err_t ret = spi_bus_add_device(host, &m_devcfg, &m_spi);
   assert(ret==ESP_OK);
 
+  // In case we're coming from a crash/reset, reset all ports to
+  // initial power-up status = input mode / high level:
+  uint8_t buf[4];
+  m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x0A, 1);
+
   m_monitor_task = NULL;
   m_monitor_timer = NULL;
   m_inputstate = ~0;

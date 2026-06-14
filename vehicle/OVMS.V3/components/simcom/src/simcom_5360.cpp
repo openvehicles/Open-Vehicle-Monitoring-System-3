@@ -56,6 +56,10 @@ simcom5360::~simcom5360()
   {
   }
 
+std::string simcom5360::GetNetTypes() {
+  return "auto 2G 3G";
+}
+
 const char* simcom5360::GetModel()
   {
   return model;
@@ -66,7 +70,7 @@ const char* simcom5360::GetName()
   return name;
   }
 
-void simcom5360::StatusPoller()
+  void simcom5360::StatusPoller()
   {
   if (m_modem->m_mux != NULL)
     {
@@ -137,7 +141,7 @@ modem::modem_state1_t simcom5360::State1Ticker1(modem::modem_state1_t curstate)
         m_modem->tx("AT+CPIN?;+CREG=1;+CTZU=1;+CTZR=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0;S0=0\r\n");
         break;
       case 12:
-        m_modem->tx("AT+CGMR;+ICCID\r\n");
+        m_modem->tx("AT+CGMR;+CICCID\r\n");
         break;
       case 16:
         m_modem->tx("AT+CMUXSRVPORT=3,1\r\n");

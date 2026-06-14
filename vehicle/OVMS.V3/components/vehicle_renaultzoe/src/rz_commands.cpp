@@ -76,9 +76,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandClimateControl(bool
     }
     res = Success;
   } else {
+    if (m_climate_restart) 
+      {  // stops the scheduled climate restart
+      MyNotify.NotifyString("info", "climatecontrol.schedule", "Climate control restarting stopped!");
+      m_climate_restart_ticker = 0;
+      m_climate_restart = false;
+      }
     res = NotImplemented;
   }
-
   // fallback to default implementation?
   if (res == NotImplemented) {
     res = OvmsVehicle::CommandClimateControl(climatecontrolon);

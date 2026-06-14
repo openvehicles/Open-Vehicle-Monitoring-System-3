@@ -121,6 +121,146 @@ void GsmNMEA::IncomingLine(const std::string line)
   std::istringstream sentence(line);
   std::string token;
 
+  if ( line.find("+CGNSSINFO:",0) == 0 )   // CGNSSINFO record
+    {
+    // check for +CGNSSINFO output record
+    // no fix yet: +CGNSSINFO: ,,,,,,,,
+    // GPS fix:    +CGNSSINFO: 3,15,,01,01,52.3973694,N,7.1607476,E,040125,091435.00,121.7,2.072,161.56,4.11,2.21,3.46,05
+    // Info
+    // 3,         : 3|2  3D fix|2D fix
+    // 15,,01,01  : number of used sats of 4 GPS sytems (documentation of 76XX states only 3 fields!)
+    // 52.3973694,: latitude  degree
+    // N,         : N|S
+    // 7.1607476, : longitude degree
+    // E,         : E|W
+    // 040125,    : date DDMMYY
+    // 091435.00, : UTC time hhmmss.ss 
+    // 121.7,     : altitude in meter
+    // 2.072,     : speed in knots
+    // 161.56,    : heading in degree
+    // 4.11,      : PDOP
+    // 2.21,      : HDOP
+    // 3.46,      : VDOP 
+    // 05 : not mentioned in the documentation. Checksum?
+    ESP_LOGV(TAG, "Incoming location data: %s", line.c_str());
+    if (!std::getline(sentence, token, ' ')) return;  // skip the CGNSSINFO header
+    if (!std::getline(sentence, token, ',')) return;
+    float lat=0, lon=0, alt=0, hdop=0, vdop=0, pdop=0;
+    char  ns='N', ew='E';
+    bool  gpslock = false, speedok=false, directionok=false;
+    int   satcnt=0;
+    char  date[7] = {0}, timestr[7] = {0};
+    float direction=0, speed=0;
+
+    if(line.length() > 25 )
+      { 
+      gpslock = (token == "2" || token == "3");
+
+      // Parse sentence:
+
+      // no of sats
+      if (std::getline(sentence, token, ','))
+        satcnt = atoi(token.c_str());
+        if (std::getline(sentence, token, ','))  satcnt += atoi(token.c_str());
+        if (std::getline(sentence, token, ','))  satcnt += atoi(token.c_str());
+        if (std::getline(sentence, token, ','))  satcnt += atoi(token.c_str());
+
+      if (std::getline(sentence, token, ','))
+        lat = atof(token.c_str());
+      if (std::getline(sentence, token, ','))
+        ns = token[0];
+      if (std::getline(sentence, token, ','))
+        lon = atof(token.c_str());
+      if (std::getline(sentence, token, ','))
+        ew = token[0];
+      if (std::getline(sentence, token, ','))
+        strncpy(date, token.c_str(), 6);
+      if (std::getline(sentence, token, ','))
+        strncpy(timestr, token.c_str(), 6);
+      if (std::getline(sentence, token, ','))
+        alt = atof(token.c_str());
+      if (std::getline(sentence, token, ','))
+        { 
+        speedok = !token.empty();
+        if (speedok) speed = atof(token.c_str()) * 1.852;
+        }
+      if (std::getline(sentence, token, ',')) 
+        {
+        directionok = !token.empty();
+        if (directionok) direction = atof(token.c_str());
+        }
+      if (std::getline(sentence, token, ','))
+        pdop = atof(token.c_str());
+      if (std::getline(sentence, token, ','))
+        hdop = atof(token.c_str());
+      if (std::getline(sentence, token, ','))
+        vdop = atof(token.c_str());
+      }
+    // Check:
+
+    if ( !ns || !ew || !gpslock || strlen(date) != 6 || strlen(timestr) !=6 )
+      return; // malformed/empty sentence
+
+    // Data set complete, store:
+
+    if (ns == 'S')
+      lat = -lat;
+    if (ew == 'W')
+      lon = -lon;
+
+    *StdMetrics.ms_v_pos_gpsmode = std::string(gpslock ? "AA" : "NN");
+    *StdMetrics.ms_v_pos_satcount = (int) satcnt;
+    *StdMetrics.ms_v_pos_gpshdop = (float) hdop;
+    
+    // Derive signal quality from lock status, satellite count and HDOP:
+    //  quality ~ satcnt / hdop
+    *StdMetrics.ms_v_pos_gpssq = (int) LIMIT_MAX(gpslock * LIMIT_MIN(satcnt-1,0) / LIMIT_MIN(hdop,0.1) * 10, 100);
+    // Quality raises by satellite count and drops by HDOP. HDOP 1.0 = perfect.
+    // The calculation is designed to get 50% as the threshold for a "good" signal.
+    // GPS needs at least 4 satellites in view to get a position, but that will need
+    // HDOP << 1 to be considered reliable. 6 satellites are on the edge to "good"
+    // (with HDOP=1). Samples:
+    //   4 satellites / HDOP 1.0 → SQ 30%
+    //   4 satellites / HDOP 0.6 → SQ 50%
+    //   6 satellites / HDOP 1.0 → SQ 50%
+    //   9 satellites / HDOP 1.0 → SQ 80%
+    //  10 satellites / HDOP 0.9 → SQ 100%
+    //  10 satellites / HDOP 1.8 → SQ 50%
+
+    *StdMetrics.ms_v_pos_latitude = (float) lat;
+    *StdMetrics.ms_v_pos_longitude = (float) lon;
+    *StdMetrics.ms_v_pos_altitude = (float) alt;
+    auto tm = utc_to_timestamp(date, timestr);
+    if ( abs(time(NULL)- tm - 1024*7*86400) < 60 ) tm += 1024*7*86400;  // check/correct for 10bit week rollover of older GPS devices
+    StdMetrics.ms_v_pos_gpstime->SetValue(tm);
+
+    // upodate gpslock last, so listeners will see updated lat/lon values:
+    if (gpslock != StdMetrics.ms_v_pos_gpslock->AsBool())
+      {
+      *StdMetrics.ms_v_pos_gpslock = (bool) gpslock;
+      if (gpslock)
+        MyEvents.SignalEvent("system.modem.gotgps", NULL);
+      else
+        MyEvents.SignalEvent("system.modem.lostgps", NULL);
+      }
+
+    if (m_gpstime_enabled)
+      {
+        MyTime.Set(TAG, 2, true, tm);
+      }
+
+    if (directionok)
+      *StdMetrics.ms_v_pos_direction = (float) direction;
+
+    if (speedok)
+      *StdMetrics.ms_v_pos_gpsspeed = speed;
+
+    ESP_LOGV(TAG, "CGNSSINFO: %s %s nsats %d lat %f lon %f hdop %f vdop %f pdop %f", date, timestr, satcnt, lat, lon, hdop, vdop, pdop);
+    
+    } // END "+CGNSSINFO" handler
+  
+else  // $GNS record
+ {
   if (!std::getline(sentence, token, ','))
     return;
   if (token.length() < 6 || token[0] != '$')
@@ -133,7 +273,7 @@ void GsmNMEA::IncomingLine(const std::string line)
 
   if (token.substr(3) == "GNS")
     {
-    ESP_LOGD(TAG, "Incoming GNS: %s", line.c_str());
+    ESP_LOGV(TAG, "Incoming GNS: %s", line.c_str());
     // NMEA sentence type "GNS": GNSS Position Fix Data (GPS/GLONASS/… combined position data)
     //  $..GNS,<Time>,<Latitude>,<NS>,<Longitude>,<EW>,<Mode>,<SatCnt>,<HDOP>,<Altitude>,<GeoidalSep>,<DiffAge>,<Chksum>
     // Example:
@@ -173,7 +313,8 @@ void GsmNMEA::IncomingLine(const std::string line)
       hdop = atof(token.c_str());
     if (std::getline(sentence, token, ','))
       alt = atof(token.c_str());
-
+    
+    
     // Check:
 
     if (!ns || !ew || !mode[0])
@@ -230,7 +371,7 @@ void GsmNMEA::IncomingLine(const std::string line)
 
   else if (token.substr(3) == "RMC")
     {
-    ESP_LOGD(TAG, "Incoming RMC: %s", line.c_str());
+    ESP_LOGV(TAG, "Incoming RMC: %s", line.c_str());
     // NMEA sentence type "RMC": Recommended Minimum Specific GNSS Data
     //  $..RMC,<Time>,<Status>,<Latitude>,<NS>,<Longitude>,<EW>,<SpeedKnots>,<Direction>,<Date>,<MagVar>,<MagVarEW>,<Mode>,<Chksum>
     // Example:
@@ -292,8 +433,9 @@ void GsmNMEA::IncomingLine(const std::string line)
 
     // END "RMC" handler
     }
-
   }
+
+}
 
 
 void GsmNMEA::Startup()
@@ -325,11 +467,10 @@ void GsmNMEA::Shutdown(bool hard)
   }
 
 
-GsmNMEA::GsmNMEA(GsmMux* mux, int channel_nmea, int channel_cmd)
+GsmNMEA::GsmNMEA(GsmMux* mux, int channel)
   {
   m_mux = mux;
-  m_channel_nmea = channel_nmea;
-  m_channel_cmd = channel_cmd;
+  m_channel = channel;
   m_connected = false;
   m_gpstime_enabled = false;
   }

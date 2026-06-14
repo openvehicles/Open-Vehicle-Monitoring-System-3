@@ -264,6 +264,11 @@ Return vehicle charge status:
 * ``charge_etr_range``
 * ``charge_etr_soc``
 * ``idealrange_max``
+* ``batt_current``
+* ``batt_range_speed``
+* ``charge_kwh_grid``
+* ``charge_kwh_grid_total``
+* ``batt_capacity``
 * ``cp_dooropen``
 * ``pilotpresent``
 * ``charging``

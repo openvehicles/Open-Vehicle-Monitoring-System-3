@@ -46,6 +46,8 @@ static const char *TAG = "ovms-server-v2";
 #include "esp_system.h"
 #include "ovms_utils.h"
 #include "ovms_boot.h"
+#include <iomanip>  // für std::fixed, std::setprecision
+#include <cmath>    // für std::isnan
 #if CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
 #endif
@@ -187,7 +189,10 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         // Successful connection
         ESP_LOGI(TAG, "Connection successful");
-        if (MyOvmsServerV2) MyOvmsServerV2->SendLogin(nc);
+        if (MyOvmsServerV2)
+          {
+          MyOvmsServerV2->SendLogin(nc);
+          }
         }
       else
         {
@@ -195,6 +200,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         ESP_LOGW(TAG, "Connection failed");
         if (MyOvmsServerV2)
           {
+          MyOvmsServerV2->m_mgconn = NULL;
           MyOvmsServerV2->SetStatus("Error: Connection failed", true, OvmsServerV2::WaitReconnect);
           MyOvmsServerV2->m_connretry = 60;
           }
@@ -205,30 +211,29 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
       ESP_LOGV(TAG, "OvmsServerV2MongooseCallback(MG_EV_CLOSE)");
       if (MyOvmsServerV2)
         {
+        // The only case of a scheduled disconnect is by "server v2 stop", in which case MyOvmsServerV2 is
+        // alread NULL, so this can only be an unexpected connection drop; check cause:
         if (MyOvmsServerV2->m_state == OvmsServerV2::Authenticating)
           {
           // Auth issue, user needs to fix config:
           MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", true, OvmsServerV2::WaitReconnect);
           MyOvmsServerV2->Reconnect(120);
           }
-        else if (MyOvmsServerV2->m_state == OvmsServerV2::Connecting ||
-                 MyOvmsServerV2->m_state == OvmsServerV2::Connected)
-          {
-          // Unscheduled connection drop:
-          MyOvmsServerV2->SetStatus("Connection lost, reconnecting", true, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->Reconnect(10);
-          }
         else
           {
-          // Scheduled disconnect:
-          MyOvmsServerV2->SetStatus("Disconnected", false, OvmsServerV2::Disconnected);
+          // Unscheduled connection drop from any other state:
+          MyOvmsServerV2->SetStatus("Connection lost, reconnecting", true, OvmsServerV2::WaitReconnect);
+          MyOvmsServerV2->Reconnect(10);
           }
         }
       break;
     case MG_EV_RECV:
       ESP_LOGV(TAG, "OvmsServerV2MongooseCallback(MG_EV_RECV)");
       if (MyOvmsServerV2)
-        mbuf_remove(&nc->recv_mbuf, MyOvmsServerV2->IncomingData((uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len));
+        {
+        size_t read = MyOvmsServerV2->IncomingData((uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len);
+        mbuf_remove(&nc->recv_mbuf, read);
+        }
       break;
     default:
       break;
@@ -237,7 +242,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
 
 void OvmsServerV2::ProcessServerMsg()
   {
-  m_lastrx_time = esp_log_timestamp();
+  m_lastrx_time = monotonictime;
   std::string line = m_buffer->ReadLine();
 
   if (line.compare(0,7,"MP-S 0 ") == 0)
@@ -320,6 +325,7 @@ void OvmsServerV2::ProcessServerMsg()
     m_pending_notify_data_last = 0;
     m_pending_notify_data_retransmit = 0;
     m_connretry = 0;
+    m_ping_ticker = 0;
 
     StandardMetrics.ms_s_v2_connected->SetValue(true);
     if (m_paranoid)
@@ -710,10 +716,18 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         *buffer << "AT+CUSD=1,\"" << sep+1 << "\",15\r\n";
         extram::string msg = buffer->str();
         buffer->str("");
-        if (MyPeripherals->m_cellular_modem->txcmd(msg.c_str(), msg.length()))
-          *buffer << "MP-0 c" << command << ",0";
-        else
+        if (!MyPeripherals->m_cellular_modem->m_cmd_mutex.Lock(0))
+          {
           *buffer << "MP-0 c" << command << ",1,Cannot send command";
+          }
+        else
+          {
+          if (MyPeripherals->m_cellular_modem->txcmd(msg.c_str(), msg.length()))
+            *buffer << "MP-0 c" << command << ",0";
+          else
+            *buffer << "MP-0 c" << command << ",1,Cannot send command";
+          MyPeripherals->m_cellular_modem->m_cmd_mutex.Unlock();
+          }
 #else // #ifdef CONFIG_OVMS_COMP_CELLULAR
         *buffer << "MP-0 c" << command << ",1,No modem";
 #endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
@@ -748,10 +762,11 @@ void OvmsServerV2::ProcessCommand(const char* payload)
   delete buffer;
   }
 
-bool OvmsServerV2::Transmit(const std::string& message)
+bool OvmsServerV2::Transmit(const std::string& message, TickType_t timeout /*=portMAX_DELAY*/)
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
-  if (!m_mgconn)
+  auto mglock = MongooseLock(timeout);
+
+  if (!mglock || !m_mgconn)
     return false;
 
   int len = message.length();
@@ -812,7 +827,7 @@ void OvmsServerV2::SetStatus(const char* status, bool fault, State newstate)
   else
     ESP_LOGI(TAG, "Status: %s", status);
   m_status = status;
-  if (newstate != Undefined)
+  if (newstate != Undefined && newstate != m_state)
     {
     m_state = newstate;
     switch (m_state)
@@ -882,8 +897,15 @@ void OvmsServerV2::Connect()
     }
 
   SetStatus("Connecting...", false, Connecting);
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (!mgr)
+    {
+    SetStatus("Error: network manager not available", true, WaitReconnect);
+    m_connretry = 20; // Try again in 20 seconds...
+    return;
+    }
+
   struct mg_connect_opts opts;
   const char* err;
   memset(&opts, 0, sizeof(opts));
@@ -911,7 +933,7 @@ void OvmsServerV2::Connect()
 
 void OvmsServerV2::Disconnect()
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  auto mglock = MongooseLock();
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -925,7 +947,7 @@ void OvmsServerV2::Disconnect()
 
 void OvmsServerV2::Reconnect(int connretry)
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  auto mglock = MongooseLock();
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -954,7 +976,7 @@ size_t OvmsServerV2::IncomingData(uint8_t* data, size_t len)
 
 void OvmsServerV2::SendLogin(struct mg_connection *nc)
   {
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  // Mongoose event handler, mongoose lock already set
 
   SetStatus("Logging in...", false, Authenticating);
 
@@ -1005,6 +1027,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_capacity->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_duration_full->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1019,7 +1042,10 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_charge_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_current->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_bat_range_speed->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_bat_range_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_kwh_grid->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_kwh_grid_total->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_timestamp->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1110,6 +1136,14 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << std::setprecision(1)
     << StandardMetrics.ms_v_bat_range_speed->AsFloat(0, units_speed)
+    << ","
+    << StandardMetrics.ms_v_charge_kwh_grid->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_charge_kwh_grid_total->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_bat_capacity->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_charge_timestamp->AsString("-1", Seconds, 0)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1144,7 +1178,8 @@ void OvmsServerV2::TransmitMsgGen(bool always)
     StandardMetrics.ms_v_gen_duration_empty->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_gen_temp->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_gen_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_timestamp->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1153,9 +1188,9 @@ void OvmsServerV2::TransmitMsgGen(bool always)
   buffer
     << std::fixed
     << std::setprecision(1)
-    << "MP-0 G"
+    << "MP-0 X"
     << StandardMetrics.ms_v_gen_inprogress->AsBool()
-    << ";"
+    << ","
     << StandardMetrics.ms_v_gen_pilot->AsBool()
     << ","
     << StandardMetrics.ms_v_gen_voltage->AsInt()
@@ -1197,8 +1232,10 @@ void OvmsServerV2::TransmitMsgGen(bool always)
     << StandardMetrics.ms_v_gen_duration_range->AsInt()
     << ","
     << StandardMetrics.ms_v_gen_duration_soc->AsInt()
-    << ";"
+    << ","
     << StandardMetrics.ms_v_gen_temp->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_timestamp->AsString("-1", Seconds, 0)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1297,61 +1334,128 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
 
   extram::ostringstream buffer;
 
-  // Transmit new "Y" message:
+  // Helper lambda for validity indicator: -1=undefined, 0=stale, 1=valid
+  auto get_validity = [](OvmsMetric* m) -> int {
+    if (!m || !m->IsDefined()) return -1;
+    if (m->IsStale()) return 0;
+    return 1;
+    };
 
-  int defstale_pressure =
-    StandardMetrics.ms_v_tpms_pressure->IsDefined()
-    ? (StandardMetrics.ms_v_tpms_pressure->IsStale() ? 0 : 1)
-    : -1;
-  int defstale_temp =
-    StandardMetrics.ms_v_tpms_temp->IsDefined()
-    ? (StandardMetrics.ms_v_tpms_temp->IsStale() ? 0 : 1)
-    : -1;
-  int defstale_health =
-    StandardMetrics.ms_v_tpms_health->IsDefined()
-    ? (StandardMetrics.ms_v_tpms_health->IsStale() ? 0 : 1)
-    : -1;
-  int defstale_alert =
-    StandardMetrics.ms_v_tpms_alert->IsDefined()
-    ? (StandardMetrics.ms_v_tpms_alert->IsStale() ? 0 : 1)
-    : -1;
-
+  // Get wheel layout
   std::vector<std::string> wheels;
+  bool uses_mapping = false;
   if (MyVehicleFactory.m_currentvehicle)
+    {
     wheels = MyVehicleFactory.m_currentvehicle->GetTpmsLayout();
+    uses_mapping = MyVehicleFactory.m_currentvehicle->UsesTpmsSensorMapping();
+    }
+  
+  int wheel_count = (int)wheels.size();
 
-  buffer
-    << "MP-0 Y"
-    << wheels.size();
-  for (auto wheel : wheels)
+  // Start Y message with wheel count and names
+  buffer << "MP-0 Y" << wheel_count;
+  for (auto& wheel : wheels)
     {
     buffer << "," << wheel;
     }
-  buffer
-    << ","
-    << StandardMetrics.ms_v_tpms_pressure->GetSize()
-    << (StandardMetrics.ms_v_tpms_pressure->GetSize() ? "," : "")
-    << StandardMetrics.ms_v_tpms_pressure->AsString("", kPa, 1)
-    << "," << defstale_pressure
-    << ","
-    << StandardMetrics.ms_v_tpms_temp->GetSize()
-    << (StandardMetrics.ms_v_tpms_temp->GetSize() ? "," : "")
-    << StandardMetrics.ms_v_tpms_temp->AsString("", Celcius, 1)
-    << "," << defstale_temp
-    << ","
-    << StandardMetrics.ms_v_tpms_health->GetSize()
-    << (StandardMetrics.ms_v_tpms_health->GetSize() ? "," : "")
-    << StandardMetrics.ms_v_tpms_health->AsString("", Percentage, 1)
-    << "," << defstale_health
-    << ","
-    << StandardMetrics.ms_v_tpms_alert->GetSize()
-    << (StandardMetrics.ms_v_tpms_alert->GetSize() ? "," : "")
-    << StandardMetrics.ms_v_tpms_alert->AsString("")
-    << "," << defstale_alert
-    ;
+
+  // Pressure section
+  int p_validity = get_validity(StandardMetrics.ms_v_tpms_pressure);
+  if (p_validity == -1)
+    {
+    buffer << ",0,-1";
+    }
+  else
+    {
+    auto pressure = StandardMetrics.ms_v_tpms_pressure->AsVector();
+    buffer << "," << pressure.size();
+    for (size_t i = 0; i < pressure.size(); i++)
+      {
+      if (!std::isnan(pressure[i]))
+        buffer << "," << std::fixed << std::setprecision(1) << pressure[i];
+      else
+        buffer << ",";
+      }
+    buffer << "," << p_validity;
+    }
+
+  // Temperature section
+  int t_validity = get_validity(StandardMetrics.ms_v_tpms_temp);
+  if (t_validity == -1)
+    {
+    buffer << ",0,-1";
+    }
+  else
+    {
+    auto temp = StandardMetrics.ms_v_tpms_temp->AsVector();
+    buffer << "," << temp.size();
+    for (size_t i = 0; i < temp.size(); i++)
+      {
+      if (!std::isnan(temp[i]))
+        buffer << "," << std::fixed << std::setprecision(1) << temp[i];
+      else
+        buffer << ",";
+      }
+    buffer << "," << t_validity;
+    }
+
+  // Health section
+  int h_validity = get_validity(StandardMetrics.ms_v_tpms_health);
+  if (h_validity == -1)
+    {
+    buffer << ",0,-1";
+    }
+  else
+    {
+    auto health = StandardMetrics.ms_v_tpms_health->AsVector();
+    buffer << "," << health.size();
+    for (size_t i = 0; i < health.size(); i++)
+      {
+      if (!std::isnan(health[i]))
+        buffer << "," << std::fixed << std::setprecision(1) << health[i];
+      else
+        buffer << ",";
+      }
+    buffer << "," << h_validity;
+    }
+
+  // Alert section
+  int a_validity = get_validity(StandardMetrics.ms_v_tpms_alert);
+  if (a_validity == -1)
+    {
+    buffer << ",0,-1";
+    }
+  else
+    {
+    auto alert = StandardMetrics.ms_v_tpms_alert->AsVector();
+    buffer << "," << alert.size();
+    for (size_t i = 0; i < alert.size(); i++)
+      {
+      buffer << "," << alert[i];
+      }
+    buffer << "," << a_validity;
+    }
+
+  // Mapping section
+  if (!uses_mapping || wheel_count == 0)
+    {
+    buffer << ",0,-1";
+    }
+  else
+    {
+    buffer << "," << wheel_count;
+    for (int i = 0; i < wheel_count; i++)
+      {
+      int map_idx = MyConfig.GetParamValueInt("vehicle", 
+                      std::string("tpms.") + str_tolower(wheels[i]), i);
+      buffer << "," << map_idx;
+      }
+    buffer << ",1";  // mapping is always valid if defined
+    }
+
   Transmit(buffer.str().c_str());
 
-  // Transmit legacy "W" message (fixed four tyres, only pressures & temperatures):
+  // Transmit legacy "W" message (fixed four tyres, only for iOS OVMS app 1.8.6 pressures & temperatures):
 
   bool stale =
     StandardMetrics.ms_v_tpms_pressure->IsStale() ||
@@ -1373,25 +1477,33 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   else
     { defstale = 1; }
 
+  auto temp = StandardMetrics.ms_v_tpms_temp->AsVector();
+  if (temp.size() < 4)
+    temp.resize(4);
+  bool ios_tpms_workaround = MyConfig.GetParamValueBool("server.v2", "workaround.ios_tpms_display", true);  // default enabled, effective only for iOS OVMS app 1.8.6
+  int temp_workaround = 1; // workaround value
+  // iOS TPMS display workaround: if no TPMS temperature data available, but pressure is there,
+  // send the temp_workaround values as TPMS temperature, so iOS OVMS app 1.8.6 can at least show pressures. 
+
   buffer.str("");
   buffer.clear();
   buffer
     << "MP-0 W"
     << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_FR, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_FR, "0")
+    << (temp[MS_V_TPMS_IDX_FR] > temp_workaround || !ios_tpms_workaround ? temp[MS_V_TPMS_IDX_FR] : temp_workaround)
     << ","
     << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_RR, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_RR, "0")
+    << (temp[MS_V_TPMS_IDX_RR] > temp_workaround || !ios_tpms_workaround ? temp[MS_V_TPMS_IDX_RR] : temp_workaround)
     << ","
     << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_FL, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_FL, "0")
+    << (temp[MS_V_TPMS_IDX_FL] > temp_workaround || !ios_tpms_workaround ? temp[MS_V_TPMS_IDX_FL] : temp_workaround)
     << ","
     << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_RL, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_RL, "0")
+    << (temp[MS_V_TPMS_IDX_RL] > temp_workaround || !ios_tpms_workaround ? temp[MS_V_TPMS_IDX_RL] : temp_workaround)
     << ","
     << defstale
     ;
@@ -1418,7 +1530,8 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_m_net_mdm_mode->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1445,6 +1558,8 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << StandardMetrics.ms_v_env_service_time->AsString("-1", Seconds, 0)
     << ","
     << mp_encode(StandardMetrics.ms_m_hardware->AsString(""))
+    << ","
+    << mp_encode(StandardMetrics.ms_m_net_mdm_mode->AsString(""))
     ;
 
   Transmit(buffer.str().c_str());
@@ -1814,6 +1929,7 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
       (metric == StandardMetrics.ms_v_charge_inprogress)||
       (metric == StandardMetrics.ms_v_env_cooling)||
       (metric == StandardMetrics.ms_v_bat_cac)||
+      (metric == StandardMetrics.ms_v_bat_capacity)||
       (metric == StandardMetrics.ms_v_bat_soh))
     {
     m_now_stat = true;
@@ -1891,7 +2007,9 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PI"
       << mp_encode(entry->GetValue());
-    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
+    bool txok = Transmit(buffer.str().c_str(), 0);
+    if (!txok) m_pending_notify_info = true;
+    return txok; // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"error")==0)
     {
@@ -1905,7 +2023,9 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PE"
       << entry->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
-    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
+    bool txok = Transmit(buffer.str().c_str(), 0);
+    if (!txok) m_pending_notify_error = true;
+    return txok; // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"alert")==0)
     {
@@ -1919,7 +2039,9 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PA"
       << mp_encode(entry->GetValue());
-    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
+    bool txok = Transmit(buffer.str().c_str(), 0);
+    if (!txok) m_pending_notify_alert = true;
+    return txok; // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"data")==0)
     {
@@ -2025,17 +2147,31 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
 
   if (StandardMetrics.ms_s_v2_connected->AsBool())
     {
+    uint32_t now = monotonictime;
+
     // check for issue #241 condition:
-    if (esp_log_timestamp() - m_lastrx_time > MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960) * 1000)
+    int rxtimeout = MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960);
+    if (rxtimeout != 0)
       {
-      ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
-      MyNetManager.RestartNetwork();
-      return;
+      if (rxtimeout < 120) rxtimeout = 120;
+      if (++m_ping_ticker >= rxtimeout - 60)
+        {
+        // send ping:
+        Transmit("MP-0 A");
+        m_ping_ticker = 0;
+        }
+      else if (now >= m_lastrx_time + rxtimeout)
+        {
+        ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
+        SetStatus("Restarting network", false, WaitNetwork);
+        Disconnect();
+        MyNetManager.RestartNetwork();
+        return;
+        }
       }
 
     // Periodic transmission of metrics
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
-    int now = StandardMetrics.ms_m_monotonic->AsInt();
     int next = (m_peers==0) ? m_updatetime_idle : m_updatetime_connected;
     if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
@@ -2150,12 +2286,12 @@ OvmsServerV2::OvmsServerV2(const char* name)
 
   if (MyOvmsServerV2Reader == 0)
     {
-    MyOvmsServerV2Reader = MyNotify.RegisterReader("ovmsv2", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2),
+    MyOvmsServerV2Reader = MyNotify.RegisterReader("ovmsv2", COMMAND_RESULT_VERBOSE, std::bind(OvmsServerV2ReaderCallback, _1, _2),
                                                    true, std::bind(OvmsServerV2ReaderFilterCallback, _1, _2));
     }
   else
     {
-    MyNotify.RegisterReader(MyOvmsServerV2Reader, "ovmsv2", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2),
+    MyNotify.RegisterReader(MyOvmsServerV2Reader, "ovmsv2", COMMAND_RESULT_VERBOSE, std::bind(OvmsServerV2ReaderCallback, _1, _2),
                             true, std::bind(OvmsServerV2ReaderFilterCallback, _1, _2));
     }
 

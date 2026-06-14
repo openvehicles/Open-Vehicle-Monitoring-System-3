@@ -104,6 +104,7 @@ const OvmsPoller::poll_pid_t mg4_obdii_polls[] =
 OvmsVehicleMg4::OvmsVehicleMg4()
 {
 	ESP_LOGI(TAG, "Starting MG4 variant");
+  auto lock = MyConfig.Lock();
 	
 	// Set manual polling on
 	MyConfig.SetParamValueInt("xmg", "polling.manual", 1);

@@ -474,6 +474,12 @@ function getPathURL(path) {
     return '';
 }
 
+// Use string as template (Mateusz Moska https://stackoverflow.com/a/41015840)
+String.prototype.interpolate = function(params) {
+  const keys = Object.keys(params||{});
+  const vals = Object.values(params||{});
+  return new Function(...keys, `return \`${this}\`;`)(...vals);
+}
 
 /**
  * Hexadecimal encoding & decoding
@@ -2355,7 +2361,8 @@ $(function(){
   // Metrics displays:
   $("body").on('msg:metrics', '.receiver', function(e, update) {
     $(this).find(".metric").each(function() {
-      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec"), scale = $el.data("scale"), useUser = $el.data("user");
+      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec"), scale = $el.data("scale"), useUser = $el.data("user"),
+        template = $el.data("template");
       if (!metric) return;
       // filter:
       var keys = metric.split(","), val;
@@ -2369,12 +2376,15 @@ $(function(){
       if (val == null) return;
 
       // process:
-      if ($el.hasClass("text")) {
+      if (template) {
+        let elt = $el.children(".value");
+        if (elt.length == 0) elt = $el;
+        elt.text(template.interpolate({ "update": update }));
+      } else if ($el.hasClass("text")) {
         var elt = $el.children(".value");
         if (elt) elt.text(val);
         elt = $el.children(".unit");
         if (elt) elt.text(val);
-
       } else if ($el.hasClass("number")) {
         var vf = val;
         if (scale != null)

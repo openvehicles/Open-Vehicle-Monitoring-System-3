@@ -197,20 +197,24 @@ private:
              float distance;            //km
        }TripConsumption;
 
-       TripConsumption trips[20];
-       int currentTripPointer = 0;
-       float minimumTrip = 1;
-       float weightOfCurrentTrip = 4;
-       float batteryCapacity = 64;
-       float defaultRange = 0;
+       TripConsumption m_trips[20];
+       int m_currentTrip;
+       float m_minimumTrip;
+       float m_weightOfCurrentTrip;
+       // each previous trip weight is then multiplied by this amount.
+       float m_previousTripDegrade; // 0.75
+       float m_batteryCapacity;
+       float m_defaultRange;
+
        bool storeToFile;
 
        void storeTrips();
        void restoreTrips();
        void clearTrips();
 
+       float calcEfficiency(const TripConsumption &trip);
 public:
-       RangeCalculator(float minimumTrip, float weightOfCurrentTrip, float defaultRange, float batteryCapacity);
+       RangeCalculator(float minimumTrip, float weightOfCurrentTrip, float defaultRange, float batteryCapacity, float prevDegrade);
        ~RangeCalculator();
        void updateCapacity(float capacity);
        void updateTrip(float distance, float consumption);

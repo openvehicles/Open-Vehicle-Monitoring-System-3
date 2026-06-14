@@ -3,8 +3,8 @@ set(include_dirs)
 set(priv_includedirs)
 
 if (CONFIG_OVMS_SC_GPL_MONGOOSE)
-  list(APPEND srcs "mongoose/mongoose.c")
-  list(APPEND include_dirs "include" "mongoose")
+  list(APPEND srcs "mongoose/mongoose.c" "src/mongoose_client.cpp")
+  list(APPEND include_dirs "include" "mongoose" "src")
 
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${srcs}" "mongoose/mongoose.h")
 

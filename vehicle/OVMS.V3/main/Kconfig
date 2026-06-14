@@ -34,12 +34,39 @@ config OVMS_HW_BASE_3_1
     help
         Select this: OVMS base production hardware v3.1
 
+
 endchoice # OVMS_HW_MODEL
+
+choice OVMS_HW_SELECT_GPIO_MAP
+    prompt "Choose GPIO Mapping "
+        default OVMS_HW_DEFAULT_GPIO_MAP
+        help
+                OVMS_HW_DEFAULT_GPIO_MAP                Default GPIO assignment of OVMS module
+                OVMS_HW_REMAP_GPIO                      Alternative GPIO mapping
+
+config OVMS_HW_DEFAULT_GPIO_MAP
+    bool "Default OVMS module GPIO Mapping"
+    help
+        Select this for the default OVMS module
+
+config OVMS_HW_REMAP_GPIO
+    bool "Enable alternative OVMS modules/GPIO Mapping"
+    help
+        Select this: Enable alternative mapping of ESP32 GPIOs
+
+endchoice # OVMS_HW_SELECT_GPIO_MAP
+
+config OVMS_GPIO_MAP_FILE
+    string "File with GPIO mapping: "
+    default NONE
+    depends on OVMS_HW_REMAP_GPIO
+    help
+        The GPIO mapping will be included in ovms_peripheral from the selected file 
 
 config OVMS_HW_SPIMEM_AGGRESSIVE
     bool "Aggressively use SPI RAM (rather than internal RAM)"
     default y
-    depends on OVMS && OVMS_HW_BASE_3_1
+    depends on OVMS && OVMS_HW_BASE_3_1 
     help
         Enable to aggressively allocate from SPI RAM (rather than internal RAM).
 
@@ -63,10 +90,14 @@ config OVMS_HW_ASYNC_QUEUE_SIZE
 
 config OVMS_HW_EVENT_QUEUE_SIZE
     int "EVENT queue size"
-    default 20
+    range 80 200
+    default 100
     depends on OVMS
     help
-        The size of the EVENT queue.
+        The size of the EVENT job queue. Att: this needs to be large enough to
+        allow all event registrations during boot and all deregistrations during
+        shutdown. If too small, the system will not be able to boot/reboot,
+        aborting with a "queue overflow" log entry.
 
 config OVMS_HW_NETMANAGER_QUEUE_SIZE
     int "NETMANAGER queue size"
@@ -119,7 +150,7 @@ config OVMS_HW_CELLULAR_MODEM_QUEUE_SIZE
 
 config OVMS_HW_CELLULAR_MODEM_STACK_SIZE
     int "Stack size for MODEM task"
-    default 4096
+    default 5632
     depends on OVMS && OVMS_COMP_CELLULAR
     help
         The stack size of the OVMS Console and dynamic command tasks.
@@ -336,6 +367,13 @@ config OVMS_VEHICLE_NONE
     help
         Enable to include support for base NONE vehicle stub.
 
+config OVMS_VEHICLE_MAXT90
+    bool "Maxus T90 EV (MT90)"
+    default y
+    depends on OVMS_VEHICLE_OBDII
+    help
+      Enable to include support for Maxus T90 EV.
+
 config OVMS_VEHICLE_OBDII
     bool "Include support for OBDII vehicles"
     default y
@@ -394,6 +432,13 @@ config OVMS_VEHICLE_NISSANLEAF
     help
         Enable to include support for Nissan Leaf vehicles.
 
+config OVMS_VEHICLE_NIU_GTEVO
+    bool "Include support for NIU MQi GT EVO/100"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for NIU MQi GT EVO/100 electric scooters.
+
 config OVMS_VEHICLE_RENAULTTWIZY
     bool "Include support for Renault Twizy vehicles"
     default y
@@ -412,15 +457,15 @@ config OVMS_VEHICLE_RENAULTZOE
     help
         Enable to include support for Renault Zoe vehicles.
 
-config OVMS_VEHICLE_RENAULTZOE_PH2_OBD
-    bool "Include support for Renault Zoe Phase2 vehicles (OBD port version)"
+config OVMS_VEHICLE_RENAULTZOE_PH2
+    bool "Include support for Renault Zoe Phase2 vehicles"
     default y
     depends on OVMS
     depends on OVMS_COMP_CANOPEN
     depends on OVMS_COMP_POLLER
     help
-        Enable to include support for Renault Zoe Phase 2 vehicles (OBD port version).
-        
+        Enable to include support for Renault Zoe Phase 2 vehicles.
+
 config OVMS_VEHICLE_MAXED3
     bool "Include support for Maxus eDeliver3 vehicle"
     default y
@@ -523,6 +568,13 @@ config OVMS_VEHICLE_FIAT500
     help
         Enable to include support for FIAT 500 vehicle.
 
+config OVMS_VEHICLE_FIATEDOBLO
+    bool "Include support for Fiat e-Doblo vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for FIAT e-Doblo vehicle.
+
 config OVMS_VEHICLE_VWEUP
     bool "Include support for VW e-up! vehicle"
     default y
@@ -530,6 +582,13 @@ config OVMS_VEHICLE_VWEUP
     depends on OVMS_COMP_POLLER
     help
         Enable to include support for vehicles VW e-up! (all model years), Seat Mii electric, and Skoda Citigo-e iV.
+
+config OVMS_VEHICLE_VWEGOLF
+    bool "Include support for VW e-Golf vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for VW e-Golf vehicle.
 
 config OVMS_VEHICLE_MERCEDESB250E
     bool "Include support for Mercedes-Benz B250E (W242) vehicle"
@@ -545,6 +604,14 @@ config OVMS_VEHICLE_CADILLAC_C2_CTS
     depends on OVMS_COMP_POLLER
     help
         Enable to include support for Cadillac 2nd gen CTS vehicle.
+
+config OVMS_VEHICLE_CADILLAC_CT5
+    bool "Include support for Cadillac CT5 vehicle"
+    default n
+    depends on OVMS
+    depends on OVMS_COMP_POLLER
+    help
+        Enable to include support for Cadillac CT5 vehicle.
 
 config OVMS_VEHICLE_CHEVROLET_C6_CORVETTE
     bool "Include support for Chevrolet C6 Corvette vehicle"
@@ -705,10 +772,12 @@ config OVMS_COMP_MCP2515
 
 config OVMS_COMP_EXTERNAL_SWCAN
     bool "Include support for external SWCAN module (swcan bus)"
-    default n
+    default y
     depends on OVMS
     help
-        Enable to include support for external SWCAN module. Replaces the second internal MCP2515 CAN controller
+        Enable to include support for external SWCAN module.
+        Replaces the second internal MCP2515 CAN controller if requested by a vehicle.
+        Currently Bolt and Volt/Ampera support this.
 
 config OVMS_COMP_ADC
     bool "Include support for ADC (reading 12V line voltage)"
@@ -811,7 +880,7 @@ config OVMS_COMP_CELLULAR
 config OVMS_COMP_CELLULAR_SIMCOM
     bool "Include support for SIMCOM cellular modems"
     default y
-    depends on OVMS && OVMS_COMP_MAX7317 && OVMS_COMP_CELLULAR
+    depends on OVMS && OVMS_COMP_CELLULAR && ( OVMS_COMP_MAX7317 || OVMS_HW_REMAP_GPIO )
     help
         Enable to include support for SIMCOM cellular modems
 

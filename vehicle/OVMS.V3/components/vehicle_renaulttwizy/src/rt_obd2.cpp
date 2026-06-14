@@ -140,7 +140,7 @@ void OvmsVehicleRenaultTwizy::ObdTicker1()
     new_state = 0;
   else if (twizy_flags.Charging)
     new_state = 2;
-  else if (twizy_flags.CarAwake)
+  else if (twizy_flags.SysAwake)
     new_state = 1;
   else
     new_state = 0;
@@ -217,7 +217,7 @@ void OvmsVehicleRenaultTwizy::IncomingPollReply(const OvmsPoller::poll_job_t &jo
 }
 
 
-void OvmsVehicleRenaultTwizy::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+void OvmsVehicleRenaultTwizy::IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code)
 {
   // single poll?
   if (!twizy_obd_rxwait.IsAvail()) {
@@ -468,36 +468,30 @@ void OvmsVehicleRenaultTwizy::shell_obd_cleardtc(int verbosity, OvmsWriter* writ
     writer->puts("ERROR: CAN bus write access disabled.");
     return;
   }
-  else if (!twizy->twizy_flags.CarAwake) {
+  else if (!twizy->twizy_flags.SysAwake) {
     writer->puts("ERROR: Car is offline.");
     return;
   }
 
-  twizy->ResetDTCStats();
-
-  CAN_frame_t txframe = {};
-  txframe.FIR.B.FF = CAN_frame_std;
-  txframe.FIR.B.DLC = 8;
-  txframe.MsgID = CLUSTER_TXID;
-
-  // StartDiagnosticSession.ExtendedDiagnostic:
-  //  - Request 10C0
-  //  - Response 50C0 (unchecked)
-  txframe.data.u8[0] = 0x02;
-  txframe.data.u8[1] = 0x10;
-  txframe.data.u8[2] = 0xC0;
-  txframe.Write(twizy->m_can1);
-
-  // ClearDiagnosticInformation.All:
+  // ClearDiagnosticInformation.All@CLUSTER:
   //  - Request 14FFFFFF
-  //  - Response 54 (unchecked)
-  txframe.data.u8[0] = 0x04;
-  txframe.data.u8[1] = 0x14;
-  txframe.data.u8[2] = 0xFF;
-  txframe.data.u8[3] = 0xFF;
-  txframe.data.u8[4] = 0xFF;
-  txframe.Write(twizy->m_can1);
+  //  - Response 54 (ISO-TP ACK, no payload)
+  uint16_t txid = CLUSTER_TXID, rxid = CLUSTER_RXID;
+  string request = "\x14\xFF\xFF\xFF";
+  string response;
+  
+  // execute request:
+  int err = twizy->ObdRequest(txid, rxid, request, response);
+  if (err == -1) {
+    writer->puts("ERROR: timeout waiting for response");
+    return;
+  } else if (err) {
+    writer->printf("ERROR: request failed with response error code %02X\n", err);
+    return;
+  }
 
+  // success:
+  twizy->ResetDTCStats();
   writer->puts("DTC store has been cleared.");
 }
 

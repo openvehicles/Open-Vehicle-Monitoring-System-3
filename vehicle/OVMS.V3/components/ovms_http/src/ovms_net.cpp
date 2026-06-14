@@ -72,7 +72,7 @@ ssize_t OvmsNetConnection::Write(const void *buf, size_t nbyte)
   return write(m_sock, buf, nbyte);
   }
 
-size_t OvmsNetConnection::Read(void *buf, size_t nbyte)
+ssize_t OvmsNetConnection::Read(void *buf, size_t nbyte)
   {
   return read(m_sock, buf, nbyte);
   }

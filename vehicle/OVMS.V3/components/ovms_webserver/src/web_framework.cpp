@@ -26,19 +26,12 @@
 ; THE SOFTWARE.
 */
 
-#include "ovms_log.h"
-//static const char *TAG = "webserver";
-
-#include <string.h>
-#include <stdio.h>
 #include "ovms_webserver.h"
-#include "ovms_config.h"
-#include "ovms_metrics.h"
 #include "ovms_housekeeping.h"
+#include "ovms_ota.h"
+#include "ovms_version.h"
+#include "strverscmp.h"
 #include "buffered_shell.h"
-#include "metrics_standard.h"
-#include "vehicle.h"
-
 
 /**
  * encode_html: HTML encode value
@@ -503,6 +496,7 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
 
   if (vehicle != "") {
     std::string vehiclename = MyVehicleFactory.ActiveVehicleShortName();
+    if (vehiclename.empty()) vehiclename = "Vehicle";
     menu +=
       "<li class=\"dropdown\" id=\"menu-vehicle\">"
         "<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">"
@@ -583,12 +577,13 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
     , tools.c_str());
 
   if (vehicle != "") {
-    const char* vehiclename = MyVehicleFactory.ActiveVehicleName();
+    std::string vehiclename = MyVehicleFactory.ActiveVehicleName();
+    if (vehiclename.empty()) vehiclename = "Vehicle";
     mg_printf_http_chunk(c.nc,
       "<fieldset class=\"menu\" id=\"fieldset-menu-vehicle\"><legend>%s</legend>"
       "<ul class=\"list-inline\">%s</ul>"
       "</fieldset>"
-      , vehiclename, vehicle.c_str());
+      , vehiclename.c_str(), vehicle.c_str());
   }
 
   c.printf(
@@ -600,8 +595,8 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
   c.panel_end();
 
   // check auto init, show warning if disabled:
-  if (!MyConfig.GetParamValueBool("auto", "init", true)) {
-    c.alert("warning", "<p><strong>Warning:</strong> auto start disabled. Check auto start configuration.</p>");
+  if (MyHousekeeping->GetInitLevel() != INIT_Full) {
+    c.alert("warning", "<p><strong>Warning:</strong> auto start reduced or disabled. Check auto start configuration.</p>");
   }
 }
 
@@ -619,8 +614,22 @@ void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
   std::string moduleid = MyConfig.GetParamValue("vehicle", "id", "OVMS");
   std::string info = "<p class=\"lead\">Welcome to the " + moduleid + " web console.</p>";
 
+  // check partition type, display warning if outdated:
+  std::string version = GetOVMSVersion();
+  std::string notifyversion = MyConfig.GetParamValue("ota", "parttype.notifyversion", "3.3.006");
+  std::string warn_parttype;
+  if (!ovms_partition_table_isuptodate() && strverscmp(version.c_str(), notifyversion.c_str()) >= 0)
+    {
+    warn_parttype =
+      "<p class=\"lead\">The module is running an outdated flash partitioning scheme.</p>"
+      "<p>OTA updates will soon stop working due to its 4MB firmware size limit.</p>"
+      "<p>Upgrading is recommended to leverage the limit to 7MB.</p>"
+      "<p><a class=\"btn btn-default\" target=\"#main\" href=\"/cfg/partitioning\">Open Partitioning Tool</a></p>";
+    }
+
   c.head(200);
   c.alert("info", info.c_str());
+  if (!warn_parttype.empty()) c.alert("warning", warn_parttype.c_str());
   PAGE_HOOK("body.pre");
   OutputHome(p, c);
   PAGE_HOOK("body.post");

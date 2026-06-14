@@ -85,6 +85,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   }
   
   
+  // Base system status:
+  twizy_flags.SysAwake = (twizy_status & CAN_STATUS_ONLINE) ? true : false;
+  
   // Ignition status:
   twizy_flags.CarON = (twizy_status & CAN_STATUS_GO) ? true : false;
   
@@ -431,6 +434,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   *StdMetrics.ms_v_bat_range_ideal = (float) twizy_range_ideal;
   *StdMetrics.ms_v_bat_range_est = (float) twizy_range_est;
   
+  *StdMetrics.ms_v_env_aux12v = (bool) twizy_flags.SysAwake;
   *StdMetrics.ms_v_env_awake = (bool) twizy_flags.CarAwake;
   *StdMetrics.ms_v_env_on = (bool) twizy_flags.CarON;
   

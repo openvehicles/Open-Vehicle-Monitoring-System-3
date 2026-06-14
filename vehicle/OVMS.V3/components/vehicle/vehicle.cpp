@@ -67,7 +67,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   m_currentvehicletype.clear();
 
   MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsVehicleFactory::EventSystemShuttingDown, this, _1, _2));
-
+  
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework", vehicle_status, "", 0, 0, false);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1,true,vehicle_validate);
   cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list);
@@ -78,10 +78,27 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   OvmsCommand* cmd_climate = MyCommandApp.RegisterCommand("climatecontrol","(De)Activate Climate Control");
   cmd_climate->RegisterCommand("on","Activate Climate Control",vehicle_climatecontrol_on);
   cmd_climate->RegisterCommand("off","Deactivate Climate Control",vehicle_climatecontrol_off);
+  // Add schedule subcommand
+  OvmsCommand* cmd_climate_schedule = cmd_climate->RegisterCommand("schedule", "Climate control schedules");
+  cmd_climate_schedule->RegisterCommand("set", "Set schedule for a day", vehicle_climate_schedule_set, "<day> <times>", 2, 2);
+  cmd_climate_schedule->RegisterCommand("list", "List all configured schedules", vehicle_climate_schedule_list);
+  cmd_climate_schedule->RegisterCommand("clear", "Clear schedule for day", vehicle_climate_schedule_clear, "<day|all>", 1, 1);
+  cmd_climate_schedule->RegisterCommand("copy", "Copy schedule from one day to others", vehicle_climate_schedule_copy, "<source-day> <target-days>", 2, 2);
+  cmd_climate_schedule->RegisterCommand("enable", "Enable scheduled precondition", vehicle_climate_schedule_enable);
+  cmd_climate_schedule->RegisterCommand("disable", "Disable scheduled precondition", vehicle_climate_schedule_disable);
+  cmd_climate_schedule->RegisterCommand("status", "Show schedule status", vehicle_climate_schedule_status);
+
   MyCommandApp.RegisterCommand("lock","Lock vehicle",vehicle_lock,"<pin>",1,1);
   MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1);
   MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1);
   MyCommandApp.RegisterCommand("unvalet","Deactivate valet mode",vehicle_unvalet,"<pin>",1,1);
+  OvmsCommand *cmd_aux = cmd_vehicle->RegisterCommand("aux", "Aux battery", vehicle_aux);
+  cmd_aux->RegisterCommand("status", "Aux Battery Status", vehicle_aux);
+  OvmsCommand *cmd_aux_mon = cmd_aux->RegisterCommand("monitor", "Aux Battery Monitor", vehicle_aux_monitor);
+  cmd_aux_mon->RegisterCommand("status", "Aux Battery Status", vehicle_aux_monitor);
+  cmd_aux_mon->RegisterCommand("enable", "Enable Aux Monitor", vehicle_aux_monitor_enable, "[<low-threshold> [<charging-threshold>]]", 0, 2);
+  cmd_aux_mon->RegisterCommand("disable", "Disable Aux Monitor", vehicle_aux_monitor_disable);
+
 
   OvmsCommand* cmd_charge = MyCommandApp.RegisterCommand("charge","Charging framework");
   OvmsCommand* cmd_chargemode = cmd_charge->RegisterCommand("mode","Set vehicle charge mode");
@@ -134,6 +151,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
       1, 2);
     }
 
+
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsVehicle");
   dto->RegisterDuktapeFunction(DukOvmsVehicleType, 0, "Type");
@@ -152,6 +170,13 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   dto->RegisterDuktapeFunction(DukOvmsVehicleStartCooldown, 0, "StartCooldown");
   dto->RegisterDuktapeFunction(DukOvmsVehicleStopCooldown, 0, "StopCooldown");
   dto->RegisterDuktapeFunction(DukOvmsVehicleObdRequest, 1, "ObdRequest");
+
+  DuktapeObjectRegistration* dto_aux= new DuktapeObjectRegistration("OvmsAuxMonitor");;
+  dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonEnable, DUK_VARARGS /*0..2*/, "Enable");
+  dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonDisable, 0, "Disable");
+  dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonStatus, 0, "Status");
+  dto->RegisterDuktapeObject(dto_aux, "AuxMon");
+
   MyDuktape.RegisterDuktapeObject(dto);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
@@ -305,6 +330,141 @@ const char* OvmsVehicleFactory::ActiveVehicleShortName()
   return m_currentvehicle ? m_currentvehicle->VehicleShortName() : "";
   }
 
+
+/**
+ * CheckPreconditionSchedule: Check and trigger scheduled precondition
+ * Called by vehicles that support precondition scheduling (typically via ticker.60 event)
+ * 
+ * This base implementation reads from the global "vehicle" config namespace.
+ * Vehicles can override this to add custom checks or behavior.
+ * 
+ * Schedule format in config: [vehicle] climate.schedule.<day> = HH:MM[/duration][,HH:MM[/duration],...]
+ * Examples:
+ *   climate.schedule.mon = 07:30
+ *   climate.schedule.mon = 07:30/10
+ *   climate.schedule.fri = 07:00/5,17:30/15
+ */
+void OvmsVehicle::CheckPreconditionSchedule()
+{
+  // Check if scheduled precondition is enabled
+  if (!MyConfig.GetParamValueBool("vehicle", "climate.precondition", false))
+  {
+    ESP_LOGW(TAG, "Precondition Schedule: Scheduled precondition is disabled");
+    return; // Feature disabled
+  }
+  
+  // Get current time
+  time_t rawtime;
+  struct tm* timeinfo;
+  time(&rawtime);
+  timeinfo = localtime(&rawtime);
+
+  if (timeinfo == NULL)
+  {
+    ESP_LOGW(TAG, "Precondition Schedule: Failed to get current time");
+    return;
+  }
+
+  int current_day = timeinfo->tm_wday;    // 0 = Sunday, 6 = Saturday
+  int current_hour = timeinfo->tm_hour;
+  int current_min = timeinfo->tm_min;
+
+  // Check if we already triggered at this exact time today
+  if (m_precondition_last_triggered_day == current_day &&
+      m_precondition_last_triggered_hour == current_hour &&
+      m_precondition_last_triggered_min == current_min)
+  {
+    return; // Already triggered at this time
+  }
+
+  // Day name mapping
+  const char* day_names[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+
+  // Get schedule for current day from config structure
+  std::string config_key = std::string("climate.schedule.") + day_names[current_day];
+  std::string schedule = MyConfig.GetParamValue("vehicle", config_key.c_str());
+
+  if (schedule.empty())
+    return;
+
+  // Parse schedule entries: time[/duration],time[/duration],...
+  size_t start = 0;
+  size_t end = schedule.find(',');
+
+  while (start != std::string::npos)
+  {
+    std::string entry = (end == std::string::npos) ?
+                        schedule.substr(start) :
+                        schedule.substr(start, end - start);
+
+    // Split by '/' for time/duration
+    size_t slash_pos = entry.find('/');
+    std::string time_part = (slash_pos != std::string::npos) ?
+                            entry.substr(0, slash_pos) : entry;
+    
+    // Parse time
+    size_t colon_pos = time_part.find(':');
+    if (colon_pos != std::string::npos && colon_pos > 0)
+    {
+      int hour = atoi(time_part.substr(0, colon_pos).c_str());
+      int min = atoi(time_part.substr(colon_pos + 1).c_str());
+
+      // Check if current time matches
+      if (hour == current_hour && min == current_min)
+      {
+        // Parse duration if present (default: 5 minutes)
+        int duration = 5;
+        if (slash_pos != std::string::npos)
+        {
+          duration = atoi(entry.substr(slash_pos + 1).c_str());
+          if (duration < 5 || duration > 30)
+          {
+            duration = 10; // Fallback to default
+          }
+        }
+
+        ESP_LOGI(TAG, "Scheduled precondition triggered for %s at %02d:%02d (duration: %d min)",
+                 day_names[current_day], current_hour, current_min, duration);
+
+        // Check prerequisites
+        if (StandardMetrics.ms_v_env_hvac->AsBool(false))
+        {
+          ESP_LOGI(TAG, "Climate control already active, skipping");
+          return;
+        }
+
+        vehicle_command_t result = CommandClimateControl(true);
+
+        if (result == Success)
+        {
+          m_climate_restart = true;
+          m_climate_restart_ticker = duration - 1; // Subtract 1 minute for ticker countdown
+          m_precondition_last_triggered_day = current_day;
+          m_precondition_last_triggered_hour = current_hour;
+          m_precondition_last_triggered_min = current_min;
+          ESP_LOGI(TAG, "Precondition activated successfully");
+          MyNotify.NotifyString("info", "climatecontrol.schedule",
+                                "Scheduled precondition started");
+        }
+        else
+        {
+          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", result);
+          MyNotify.NotifyString("error", "climatecontrol.schedule",
+                                "Scheduled precondition failed to start");
+        }
+        
+        return; // Only trigger once per minute
+      }
+    }
+
+    // Move to next entry
+    if (end == std::string::npos)
+      break;
+    start = end + 1;
+    end = schedule.find(',', start);
+  }
+}
+
 OvmsVehicle::OvmsVehicle()
   {
 
@@ -319,6 +479,13 @@ OvmsVehicle::OvmsVehicle()
   m_last_drivetime = 0;
   m_last_gentime = 0;
   m_last_parktime = 0;
+
+  // Initialize precondition schedule tracking
+  m_precondition_last_triggered_day = -1;
+  m_precondition_last_triggered_hour = -1;
+  m_precondition_last_triggered_min = -1;
+  m_climate_restart = false;
+  m_climate_restart_ticker = 0;
 
   m_drive_startsoc = StdMetrics.ms_v_bat_soc->AsFloat();
   m_drive_startrange = StdMetrics.ms_v_bat_range_est->AsFloat();
@@ -345,6 +512,7 @@ OvmsVehicle::OvmsVehicle()
 #ifdef CONFIG_OVMS_COMP_POLLER
   m_poll_state = 0;
   m_pollsignal = nullptr;
+  m_poll_bus_default = nullptr;
 
   // Poll parameters.
   PollSetThrottling(1);
@@ -440,6 +608,8 @@ OvmsVehicle::OvmsVehicle()
   xTaskCreatePinnedToCore(OvmsVehicleTask, "OVMS Vehicle Poll",
       CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_vtask, CORE(1));
   MyCan.RegisterListener(m_vqueue);
+  for (int idx = 0; idx < VEHICLE_MAXBUSSES; ++idx)
+    m_autopoweroff[idx] = false;
 #endif
   }
 
@@ -537,10 +707,13 @@ void OvmsVehicle::ShuttingDown()
   entry.MsgID = 0;
   xQueueSendToFront(m_vqueue, &entry, 0);
 
-  if (m_can1) m_can1->SetPowerMode(Off);
-  if (m_can2) m_can2->SetPowerMode(Off);
-  if (m_can3) m_can3->SetPowerMode(Off);
-  if (m_can4) m_can4->SetPowerMode(Off);
+  if (MyConfig.GetParamValueBool("vehicle", "can.autooff", true))
+    {
+    if (m_can1 && m_autopoweroff[0]) m_can1->SetPowerMode(Off);
+    if (m_can2 && m_autopoweroff[1]) m_can2->SetPowerMode(Off);
+    if (m_can3 && m_autopoweroff[2]) m_can3->SetPowerMode(Off);
+    if (m_can4 && m_autopoweroff[3]) m_can4->SetPowerMode(Off);
+    }
 
 #endif
   MyEvents.DeregisterEvent(TAG);
@@ -608,7 +781,7 @@ void OvmsVehicle::OvmsVehicleSignal::IncomingPollReply(const OvmsPoller::poll_jo
     m_parent->IncomingPollReply(job, data, length);
   }
 
-void OvmsVehicle::OvmsVehicleSignal::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+void OvmsVehicle::OvmsVehicleSignal::IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code)
   {
   if (Ready())
     m_parent->IncomingPollError(job, code);
@@ -620,7 +793,7 @@ void OvmsVehicle::OvmsVehicleSignal::IncomingPollTxCallback(const OvmsPoller::po
     m_parent->IncomingPollTxCallback(job, success);
   }
 
-bool OvmsVehicle::OvmsVehicleSignal::Ready()
+bool OvmsVehicle::OvmsVehicleSignal::Ready() const
   {
   return m_parent->m_ready;
   }
@@ -646,17 +819,20 @@ void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
   writer->printf("Vehicle module '%s' (code %s) loaded and running\n", VehicleShortName(), VehicleType());
   }
 
-void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile)
+void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile, bool autoPoweroff)
   {
   canbus *can;
 #ifdef CONFIG_OVMS_COMP_POLLER
-  can = MyPollers.RegisterCanBus(bus, mode, speed, dbcfile, true);
+  OvmsPollers::BusPoweroff unload = autoPoweroff ? OvmsPollers::BusPoweroff::Vehicle : OvmsPollers::BusPoweroff::None;
+  can = MyPollers.RegisterCanBus(bus, mode, speed, dbcfile, unload);
 #else
   {
     std::string busname = string_format("can%d", bus);
     can = (canbus*)MyPcpApp.FindDeviceByName(busname.c_str());
     can->SetPowerMode(On);
     can->Start(mode,speed,dbcfile);
+    if (bus <= VEHICLE_MAXBUSSES)
+      m_autopoweroff[bus-1] = autoPoweroff;
   }
 #endif
   switch (bus)
@@ -692,6 +868,9 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
 
   m_ticker++;
 
+  // Battery Monitor (evey 2 seconds).
+  if (m_aux_enabled && (m_ticker & 1) == 0)
+    Check12vState();
 
   Ticker1(m_ticker);
   if ((m_ticker % 10) == 0)
@@ -718,6 +897,12 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     StandardMetrics.ms_v_env_parktime->SetValue(0);
     m_last_drivetime = StandardMetrics.ms_v_env_drivetime->AsInt() + 1;
     StandardMetrics.ms_v_env_drivetime->SetValue(m_last_drivetime);
+    if (m_climate_restart)
+      { // Vehicle turned on - cancel scheduled climate restart
+      m_climate_restart = false;
+      m_climate_restart_ticker = 0;
+      ESP_LOGD(TAG,"Cancelling scheduled climate restart due to vehicle on");
+      }
     }
   else
     {
@@ -733,7 +918,10 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     }
   else
     {
-    StandardMetrics.ms_v_charge_time->SetValue(0);
+    if(!StandardMetrics.ms_v_door_chargeport->AsBool())
+      {
+      StandardMetrics.ms_v_charge_time->SetValue(0);
+      }
     }
 
   if (StandardMetrics.ms_v_gen_inprogress->AsBool())
@@ -772,14 +960,14 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       }
     }
 
-  if ((m_ticker % 60) == 0)
+  if ((m_ticker % 60) == 0) // every 60 seconds
     {
     // check 12V voltage:
     float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
     // …against the maximum of default and measured reference voltage, so alerts will also
     //  be triggered if the measured ref follows a degrading battery:
     float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
-    float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
+    float vref = std::max(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
     // Check for alert level:
     bool alert_on = StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool();
@@ -826,7 +1014,21 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
           }
         }
       }
-    }
+    // Check if global scheduled precondition are enabled
+    if(MyConfig.GetParamValueBool("vehicle", "climate.precondition", false)) 
+      CheckPreconditionSchedule();
+
+    if (m_climate_restart_ticker > 0 && --m_climate_restart_ticker == 0)
+      { 
+      m_climate_restart = false;
+      m_climate_restart_ticker = 0;
+      if (StdMetrics.ms_v_env_hvac->AsBool(false) && !StdMetrics.ms_v_env_on->AsBool(false))
+        {          
+        CommandClimateControl(false);
+        ESP_LOGI(TAG,"Stopping climate control as per schedule");
+        }
+      }
+    } // end every 60 seconds
 
   if (m_12v_shutdown_ticker > 0 && --m_12v_shutdown_ticker == 0)
     {
@@ -834,7 +1036,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     MyBoot.DeepSleep(wakeup_interval);
     }
 
-  if ((m_ticker % 10)==0)
+  if ((m_ticker % 10)==0) // every 10 seconds
     {
     // Check MINSOC
     int soc = (int) ceil(StandardMetrics.ms_v_bat_soc->AsFloat());
@@ -855,8 +1057,17 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
         m_minsoc_triggered = soc - 1;
       else
         m_minsoc_triggered = 0;
+      }  
+    // Handle scheduled climate restarts
+    if (m_climate_restart && 
+        m_climate_restart_ticker > 0 &&
+        !StdMetrics.ms_v_env_on->AsBool(false) && 
+        !StdMetrics.ms_v_env_hvac->AsBool(false) )
+      {
+      CommandClimateControl(true);
+      ESP_LOGI(TAG,"Restarting climate control as per schedule");
       }
-    }
+    } // end every 10 seconds
 
   // BMS ticker:
   BmsTicker();
@@ -916,6 +1127,49 @@ void OvmsVehicle::Ticker600(uint32_t ticker)
 
 void OvmsVehicle::Ticker3600(uint32_t ticker)
   {
+  }
+
+void OvmsVehicle::EnableAuxMonitor()
+  {
+  m_aux_enabled = true;
+  }
+
+void OvmsVehicle::EnableAuxMonitor(float low_thresh, float charge_thresh)
+  {
+  m_aux_battery_mon.set_thresholds(low_thresh, charge_thresh);
+  EnableAuxMonitor();
+  }
+
+void OvmsVehicle::Check12vState()
+  {
+  // Update the battery monitor
+  if (StdMetrics.ms_v_bat_12v_voltage->IsDefined())
+    {
+    m_aux_battery_mon.add(StdMetrics.ms_v_bat_12v_voltage->AsFloat());
+    if (m_aux_battery_mon.checkStateChange())
+      {
+      NotifyVehicleAux12vState(m_aux_battery_mon.state(), m_aux_battery_mon);
+      }
+    }
+#ifdef OVMS_DEBUG_BATTERYMON_VERBOSE
+    if (m_ticker % 30)
+      {
+      ESP_LOGV(TAG, "Aux Battery: %s", m_aux_battery_mon.to_string().c_str());
+      }
+#endif
+
+  }
+
+void OvmsVehicle::NotifyVehicleAux12vState(OvmsBatteryState new_state, const OvmsBatteryMon &monitor)
+  {
+  if (new_state != OvmsBatteryState::Unknown)
+    {
+    std::string event("vehicle.aux.12v.");
+    event += OvmsBatteryMon::state_code(new_state);
+    MyEvents.SignalEvent(event, nullptr);
+
+    NotifiedVehicleAux12vStateChanged(new_state, monitor);
+    }
   }
 
 void OvmsVehicle::NotifyChargeStart()
@@ -992,7 +1246,7 @@ void OvmsVehicle::Notify12vCritical()
   {
   float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
   float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
-  float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
+  float vref = std::max(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
   MyNotify.NotifyStringf("alert", "batt.12v.alert", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
   }
@@ -1001,7 +1255,7 @@ void OvmsVehicle::Notify12vRecovered()
   {
   float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
   float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
-  float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
+  float vref = std::max(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
   MyNotify.NotifyStringf("alert", "batt.12v.recovered", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
   }
@@ -1029,6 +1283,10 @@ void OvmsVehicle::NotifyVehicleIdling()
 std::vector<std::string> OvmsVehicle::GetTpmsLayout()
   {
   return { "FL", "FR", "RL", "RR" };
+  }
+std::vector<std::string> OvmsVehicle::GetTpmsLayoutNames()
+  {
+  return { "Front Left", "Front Right", "Rear Left", "Rear Right" };
   }
 
 void OvmsVehicle::NotifyTpmsAlerts()
@@ -1172,14 +1430,20 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandCooldown(bool cooldownon)
   return NotImplemented;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool climatecontrolon)
-  {
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool enable)
+  { 
+  if (!enable)
+    {
+    // stops the scheduled climate restart
+    m_climate_restart = false;
+    m_climate_restart_ticker = 0;
+    }
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   if (MyDuktape.DukTapeAvailable())
     {
     StringWriter dukcmd;
     dukcmd.printf("(!OvmsVehicle.ClimateControl.prototype)?-1:"
-      "OvmsVehicle.ClimateControl(%s)", climatecontrolon ? "true" : "false");
+      "OvmsVehicle.ClimateControl(%s)", enable ? "true" : "false");
     int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
     if (res >= 0) return res ? Success : Fail;
     }
@@ -1534,10 +1798,23 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     ;
   if (wh_per_km != 0)
     {
+    buf << "\nEnergy ";
+    if (consumUnit == KPkWh || consumUnit == MPkWh) 
+    {
+      buf << std::setprecision(2);
+    } 
+    else if (consumUnit == kWhP100K) 
+    {
+      buf << std::setprecision(1);
+    }
+    else
+    {
+      buf << std::setprecision(0);
+    }
     buf
-      << "\nEnergy "
       << UnitConvert(WattHoursPK, consumUnit, wh_per_km) << consumUnitLabel
       << ", "
+      << std::setprecision(0)
       << energy_recd_perc << "% recd"
       ;
     }
@@ -1607,6 +1884,82 @@ void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
     m_brakelight_basepwr = MyConfig.GetParamValueFloat("vehicle", "brakelight.basepwr", 0);
     m_brakelight_ignftbrk = MyConfig.GetParamValueBool("vehicle", "brakelight.ignftbrk", false);
     m_brakelight_start = 0;
+
+    // TPMS sensor mapping:
+    // Read new TPMS mapping from config
+    bool sensor_mapping = UsesTpmsSensorMapping();
+    std::vector<std::string> wheels = GetTpmsLayout();
+    int count = wheels.size();
+    std::vector<int> new_map(count);
+    bool changed = false;
+
+    if (m_tpms_index.size() < count)// initialize on first run
+      {
+      m_tpms_index.resize(count);
+      for (int i = 0; i < count; i++)
+        m_tpms_index[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(wheels[i]), i);
+      }
+    
+    for (int i = 0; i < count; i++)
+      {
+      new_map[i] = MyConfig.GetParamValueInt("vehicle", std::string("tpms.")+str_tolower(wheels[i]), i);
+      if (new_map[i] != m_tpms_index[i])
+        changed = true;
+      }
+    
+    // If mapping changed, rearrange the TPMS data
+    if (changed && sensor_mapping)
+      {
+      ESP_LOGI(TAG, "TPMS mapping changed, rearranging metrics");
+      
+      // Get current values using AsVector() - no parameters!
+      std::vector<float> old_pressure = StdMetrics.ms_v_tpms_pressure->AsVector();
+      std::vector<float> old_temp = StdMetrics.ms_v_tpms_temp->AsVector();
+      std::vector<short> old_alert = StdMetrics.ms_v_tpms_alert->AsVector();
+      std::vector<float> old_health = StdMetrics.ms_v_tpms_health->AsVector();
+      
+      // Create new arrays with remapped values
+      std::vector<float> new_pressure(count, 0.0f);
+      std::vector<float> new_temp(count, 0.0f);
+      std::vector<short> new_alert(count, 0);
+      std::vector<float> new_health(count, 0.0f);
+      
+      // Debug logging
+      ESP_LOGD(TAG, "TPMS remap: old_pressure.size=%d, count=%d", (int)old_pressure.size(), count);
+      for (int i = 0; i < count; i++)
+        ESP_LOGD(TAG, "  Wheel[%d]: old_sensor_idx=%d -> new_sensor_idx=%d", i, m_tpms_index[i], new_map[i]);
+      
+      // Remap: for each wheel position i, copy data from physical sensor new_map[i]
+      for (int i = 0; i < count; i++)
+        {
+        int sensor_idx = new_map[i];  // Which physical sensor is assigned to this wheel
+        
+        // Bounds check for ALL vectors to avoid crashes
+        bool pressure_valid = (sensor_idx >= 0 && sensor_idx < (int)old_pressure.size());
+        bool temp_valid = (sensor_idx >= 0 && sensor_idx < (int)old_temp.size());
+        bool alert_valid = (sensor_idx >= 0 && sensor_idx < (int)old_alert.size());
+        bool health_valid = (sensor_idx >= 0 && sensor_idx < (int)old_health.size());
+        
+        new_pressure[i] = pressure_valid ? old_pressure[sensor_idx] : 0.0f;
+        new_temp[i] = temp_valid ? old_temp[sensor_idx] : 0.0f;
+        new_alert[i] = alert_valid ? old_alert[sensor_idx] : 0;
+        new_health[i] = health_valid ? old_health[sensor_idx] : 0.0f;
+        }
+      
+      // Write remapped values back to metrics
+      if (StdMetrics.ms_v_tpms_pressure->IsDefined())
+        StdMetrics.ms_v_tpms_pressure->SetValue(new_pressure);
+      if (StdMetrics.ms_v_tpms_temp->IsDefined())
+        StdMetrics.ms_v_tpms_temp->SetValue(new_temp);
+      if (StdMetrics.ms_v_tpms_alert->IsDefined())
+        StdMetrics.ms_v_tpms_alert->SetValue(new_alert);
+      if (StdMetrics.ms_v_tpms_health->IsDefined())
+        StdMetrics.ms_v_tpms_health->SetValue(new_health);
+      
+      // Update m_tpms_index with new mapping
+      for (int i = 0; i < count; i++)
+        m_tpms_index[i] = new_map[i];
+      }
     }
 
   // read vehicle specific config:
@@ -1684,6 +2037,7 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     else
       {
+      StandardMetrics.ms_v_charge_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
       MyEvents.SignalEvent("vehicle.charge.stop",NULL);
       NotifiedVehicleChargeStop();
       }
@@ -1727,6 +2081,48 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       NotifiedVehicleChargeTimermodeOff();
       }
     }
+
+  else if (metric == StandardMetrics.ms_v_gen_inprogress)
+    {
+    if (StandardMetrics.ms_v_gen_inprogress->AsBool())
+      {
+      MyEvents.SignalEvent("vehicle.gen.start",NULL);
+      NotifiedVehicleGenStart();
+      }
+    else
+      {
+      StandardMetrics.ms_v_gen_timestamp->SetValue(StdMetrics.ms_m_timeutc->AsInt());
+      MyEvents.SignalEvent("vehicle.gen.stop",NULL);
+      NotifiedVehicleGenStop();
+      }
+    }
+  else if (metric == StandardMetrics.ms_v_gen_pilot)
+    {
+    if (StandardMetrics.ms_v_gen_pilot->AsBool())
+      {
+      MyEvents.SignalEvent("vehicle.gen.pilot.on",NULL);
+      NotifiedVehicleGenPilotOn();
+      }
+    else
+      {
+      MyEvents.SignalEvent("vehicle.gen.pilot.off",NULL);
+      NotifiedVehicleGenPilotOff();
+      }
+    }
+  else if (metric == StandardMetrics.ms_v_gen_timermode)
+    {
+    if (StandardMetrics.ms_v_gen_timermode->AsBool())
+      {
+      MyEvents.SignalEvent("vehicle.gen.timermode.on",NULL);
+      NotifiedVehicleGenTimermodeOn();
+      }
+    else
+      {
+      MyEvents.SignalEvent("vehicle.gen.timermode.off",NULL);
+      NotifiedVehicleGenTimermodeOff();
+      }
+    }
+
   else if (metric == StandardMetrics.ms_v_env_aux12v)
     {
     if (StandardMetrics.ms_v_env_aux12v->AsBool())
@@ -2130,7 +2526,7 @@ void OvmsVehicle::NotifyGridLog()
 
   std::ostringstream buf;
   buf
-    << "*-LOG-Grid,1," << storetime_days * 86400        // V1, increment on additions
+    << "*-LOG-Grid,2," << storetime_days * 86400        // V2, increment on additions
 
     << std::noboolalpha
     << "," << (StdMetrics.ms_v_pos_gpslock->AsBool() ? 1 : 0)
@@ -2195,6 +2591,10 @@ void OvmsVehicle::NotifyGridLog()
     << "," << StdMetrics.ms_v_bat_energy_recd_total->AsFloat()
     << "," << StdMetrics.ms_v_bat_coulomb_used_total->AsFloat()
     << "," << StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat()
+
+    // V2 additions:
+    << std::setprecision(1)
+    << "," << StdMetrics.ms_v_pos_odometer->AsFloat()
     ;
 
   MyNotify.NotifyString("data", "log.grid", buf.str().c_str());
@@ -2439,6 +2839,18 @@ void OvmsVehicle::PollSetState(uint8_t state, canbus* bus)
   }
 
 #ifdef CONFIG_OVMS_COMP_POLLER
+int OvmsVehicle::PollSingleRequest(canbus*  bus, uint32_t txid, uint32_t rxid,
+                  uint8_t polltype, uint16_t pid, const std::string &payload, std::string& response,
+                  int timeout_ms, uint8_t protocol)
+  {
+  if (!m_ready)
+    return POLLSINGLE_TXFAILURE;
+  auto poller = MyPollers.GetPoller(bus, true);
+  if (!poller)
+    return POLLSINGLE_TXFAILURE;
+  return poller->PollSingleRequest(txid, rxid, polltype, pid, payload, response, timeout_ms, protocol);
+  }
+
 int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                 std::string request, std::string& response,
                 int timeout_ms, uint8_t protocol)
@@ -2516,7 +2928,7 @@ void OvmsVehicle::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* 
  *  @param code
  *    NRC detail code
  */
-void OvmsVehicle::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+void OvmsVehicle::IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code)
   {
   }
 
@@ -2697,3 +3109,168 @@ void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
   cfg.gaugeset1 = str.str();
   }
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
+
+OvmsBatteryMon::OvmsBatteryMon()
+  :
+  m_dirty(false),
+  m_to_notify(false),
+  m_lastState(OvmsBatteryState::Unknown),
+  m_diff_last(0),
+  m_low_threshold(def_low_threshold),
+  m_charge_threshold(def_charge_threshold)
+  {
+  }
+
+void OvmsBatteryMon::add(float voltage)
+  {
+  long newVoltage = lroundf(voltage * entry_mult);
+  int32_t iVoltage = static_cast<int32_t>(newVoltage);
+
+  m_short_avg.add(iVoltage);
+  m_long_avg.add(iVoltage);
+#ifdef OVMS_DEBUG_BATTERYMON
+  ESP_LOGD(OvmsHyundaiIoniqEv::TAG,
+      "Aux Battery %d short=%d long=%d", iVoltage,
+      m_short_avg.get(), m_long_avg.get());
+#endif
+  m_dirty = true;
+  }
+
+bool OvmsBatteryMon::checkStateChange()
+  {
+  bool res = false;
+  if (m_dirty)
+    {
+    // Causes calculation and clearing dirty.
+    state();
+    }
+
+  if (m_to_notify)
+    {
+    m_to_notify = false;
+    res = true;
+    }
+  return res;
+  }
+
+OvmsBatteryState OvmsBatteryMon::state() const
+  {
+  if (m_dirty)
+    {
+    auto newState = calc_state(m_diff_last);
+    m_dirty = false;
+    if (newState != m_lastState)
+      {
+      m_to_notify = true;
+      m_lastState = newState;
+      }
+    }
+  return m_lastState;
+  }
+
+OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &diff_last) const
+  {
+  if (m_long_avg.isEmpty())
+    return OvmsBatteryState::Unknown;
+
+  int32_t average_long, average_short;
+  average_long = m_long_avg.get();
+  average_short = m_short_avg.get();
+  int32_t diff = (average_short - average_long);
+  diff_last = diff;
+
+  if (average_long < m_low_threshold)
+    return OvmsBatteryState::Low;
+
+  if (average_long > m_charge_threshold)
+    {
+    if (diff < chdip_threshold)
+      return OvmsBatteryState::ChargingDip;
+    if (diff > chblip_threshold)
+      return OvmsBatteryState::ChargingBlip;
+    return OvmsBatteryState::Charging;
+    }
+
+  if (diff > blip_threshold)
+    return OvmsBatteryState::Blip;
+  else if (diff < dip_threshold)
+    return OvmsBatteryState::Dip;
+
+  return OvmsBatteryState::Normal;
+  }
+
+float OvmsBatteryMon::average_lastf() const
+  {
+  return (float)(m_short_avg.get()) / entry_mult;
+  }
+
+float OvmsBatteryMon::average_long() const
+  {
+  return (float)(m_long_avg.get()) / entry_mult;
+  }
+
+float OvmsBatteryMon::diff_lastf() const
+  {
+  return (float)m_diff_last / entry_mult;
+  }
+
+float OvmsBatteryMon::low_threshold() const
+  {
+  return (float)m_low_threshold / entry_mult;
+  }
+float OvmsBatteryMon::charge_threshold() const
+  {
+  return (float)m_charge_threshold / entry_mult;
+  }
+
+const uint8_t OvmsBatteryMon::long_count;
+const uint8_t OvmsBatteryMon::short_count;
+
+std::string OvmsBatteryMon::to_string() const
+  {
+  std::stringstream ret;
+
+  // Update state.
+  auto cur_state = state();
+
+  int32_t average_long, average_short;
+  if (!m_long_avg.isEmpty())
+    {
+    average_long = m_long_avg.get();
+    average_short = m_short_avg.get();
+    float avg_long = (float(average_long) / entry_mult);
+    float avg_short = (float(average_short) / entry_mult);
+    float low_thresh = (float(m_low_threshold) / entry_mult);
+    float charge_thresh = (float(m_charge_threshold) / entry_mult);
+
+    ret.setf( std::ios::fixed, std::ios::floatfield);
+    ret.precision(2);
+    ret.width(0);
+    ret << " low thresh=" << low_thresh << endl
+        << " charge thresh=" << charge_thresh << endl;
+    ret << " " << int(long_count) << "s avg=" << avg_long << "v" << endl
+        << " " << int(short_count) << "s avg=" << avg_short << "v"  << endl
+        << " diff=" << float(avg_short - avg_long) << "v" << endl;
+    }
+  ret.width(0);
+
+  ret << " state=" << state_code(cur_state) << endl;
+
+  return ret.str();
+  }
+
+const char *OvmsBatteryMon::state_code(OvmsBatteryState state)
+  {
+  switch (state)
+    {
+    case OvmsBatteryState::Unknown:      return "unknown";
+    case OvmsBatteryState::Normal:       return "normal";
+    case OvmsBatteryState::Charging:     return "charging";
+    case OvmsBatteryState::ChargingDip:  return "charging.dip";
+    case OvmsBatteryState::ChargingBlip: return "charging.blip";
+    case OvmsBatteryState::Blip:         return "blip";
+    case OvmsBatteryState::Dip:          return "dip";
+    case OvmsBatteryState::Low:          return "low";
+    }
+  return "unknown";
+  }

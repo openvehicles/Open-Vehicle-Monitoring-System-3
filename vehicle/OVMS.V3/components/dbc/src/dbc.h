@@ -47,14 +47,24 @@ typedef std::function<void(void*, const char*)> dbcOutputCallback;
 typedef enum
   {
   DBC_MUX_NONE=0,
-  DBC_MUX_MULTIPLEXOR=1,
-  DBC_MUX_MULTIPLEXED=2
+  DBC_MUX_MULTIPLEXSRC=1,
+  DBC_MUX_MULTIPLEXED=2,
+  DBC_MUX_MULTIPLEXED_MULTIPLEXSRC=3
   } dbcMultiplex_t;
 
+struct dbcSwitchRange_t
+  {
+  uint32_t min_val, max_val;
+  };
+
+class dbcSignal;
 struct dbcMultiplexor_t
   {
+  dbcMultiplexor_t();
   dbcMultiplex_t multiplexed;
   uint32_t switchvalue;
+  std::list<dbcSwitchRange_t> switchvalues;
+  dbcSignal *source;
   };
 
 typedef enum
@@ -82,13 +92,13 @@ class dbcCommentTable
     void AddComment(std::string comment);
     void AddComment(const char* comment);
     void RemoveComment(std::string comment);
-    bool HasComment(std::string comment);
+    bool HasComment(std::string comment) const;
 
   public:
     void EmptyContent();
 
   public:
-    void WriteFile(dbcOutputCallback callback, void* param, std::string prefix);
+    void WriteFile(dbcOutputCallback callback, void* param, std::string prefix) const;
 
   public:
     dbcCommentList_t m_entrymap;
@@ -112,7 +122,7 @@ class dbcNewSymbolTable
     int GetCount();
 
   public:
-    void WriteFile(dbcOutputCallback callback, void* param);
+    void WriteFile(dbcOutputCallback callback, void* param) const;
 
   public:
     dbcNewSymbolList_t m_entrymap;
@@ -163,8 +173,8 @@ class dbcNodeTable
     void EmptyContent();
 
   public:
-    void WriteFile(dbcOutputCallback callback, void* param);
-    void WriteFileComments(dbcOutputCallback callback, void* param);
+    void WriteFile(dbcOutputCallback callback, void* param) const;
+    void WriteFileComments(dbcOutputCallback callback, void* param) const;
 
   public:
     dbcNodeEntry_t m_entrymap;
@@ -184,7 +194,7 @@ class dbcBitTiming
     void SetBaud(const uint32_t baudrate, const uint32_t btr1, const uint32_t btr2);
 
   public:
-    void WriteFile(dbcOutputCallback callback, void* param);
+    void WriteFile(dbcOutputCallback callback, void* param) const;
 
   protected:
     uint32_t m_baudrate;
@@ -205,18 +215,19 @@ class dbcValueTable
     void AddValue(uint32_t id, std::string value);
     void AddValue(uint32_t id, const char* value);
     void RemoveValue(uint32_t id);
-    bool HasValue(uint32_t id);
-    std::string GetValue(uint32_t id);
-    const std::string& GetName();
+    bool HasValue(uint32_t id) const;
+    std::string GetValue(uint32_t id) const;
+    const std::string& GetName() const;
     void SetName(const std::string& name);
     void SetName(const char* name);
-    int GetCount();
+    int GetCount() const;
+    bool IsEmpty() const;
 
   public:
     void EmptyContent();
 
   public:
-    void WriteFile(dbcOutputCallback callback, void* param, const char* prefix);
+    void WriteFile(dbcOutputCallback callback, void* param, const char* prefix) const;
 
   public:
     dbcValueTableEntry_t m_entrymap;
@@ -242,10 +253,30 @@ class dbcValueTableTable
     void EmptyContent();
 
   public:
-    void WriteFile(dbcOutputCallback callback, void* param);
+    void WriteFile(dbcOutputCallback callback, void* param) const;
 
   public:
     dbcValueTableTableEntry_t m_entrymap;
+  };
+
+
+class dbcMetric
+  {
+  public:
+    virtual ~dbcMetric() {};
+    virtual void SetValue(dbcNumber value, metric_unit_t metric) = 0;
+    virtual void SetValue(const std::string &value) = 0;
+    virtual metric_unit_t DefaultUnit() const = 0;
+  };
+class dbcOvmsMetric : public dbcMetric
+  {
+  private:
+    OvmsMetric *m_metric;
+  public:
+    dbcOvmsMetric(OvmsMetric *metric);
+    void SetValue(dbcNumber value, metric_unit_t unit) override;
+    void SetValue(const std::string &value) override;
+    metric_unit_t DefaultUnit() const override;
   };
 
 typedef std::list<std::string> dbcReceiverList_t;
@@ -266,27 +297,32 @@ class dbcSignal
     bool HasComment(std::string comment);
     void AddValue(uint32_t id, std::string value);
     void RemoveValue(uint32_t id);
-    bool HasValue(uint32_t id);
-    std::string GetValue(uint32_t id);
+    bool HasValues() const;
+    bool HasValue(uint32_t id) const;
+    std::string GetValue(uint32_t id) const;
 
   public:
-    const std::string& GetName();
+    const std::string& GetName() const;
     void SetName(const std::string& name);
     void SetName(const char* name);
-    bool IsMultiplexor();
-    bool IsMultiplexSwitch();
-    void SetMultiplexor();
-    uint32_t GetMultiplexSwitchvalue();
+    bool IsMainMultiplexSource() const;
+    bool IsMultiplexor() const;
+    bool IsMultiplexSwitch() const;
+    void SetMultiplexSource();
+    bool IsMultiplexSwitchvalue(uint32_t value) const;
     bool SetMultiplexed(const uint32_t switchvalue);
+    void SetMultiplexSource(dbcSignal* source);
+    dbcSignal* GetMultiplexSource() const { return m_mux.source;}
+    void AddMultiplexRange(const dbcSwitchRange_t &range);
     bool ClearMultiplexed();
-    int GetStartBit();
-    int GetSignalSize();
-    dbcByteOrder_t GetByteOrder();
-    dbcValueType_t GetValueType();
-    dbcNumber GetFactor();
-    dbcNumber GetOffset();
-    dbcNumber GetMinimum();
-    dbcNumber GetMaximum();
+    int GetStartBit() const;
+    int GetSignalSize() const;
+    dbcByteOrder_t GetByteOrder() const;
+    dbcValueType_t GetValueType() const;
+    dbcNumber GetFactor() const;
+    dbcNumber GetOffset() const;
+    dbcNumber GetMinimum() const;
+    dbcNumber GetMaximum() const;
     void SetStartSize(const int startbit, const int size);
     void SetByteOrder(const dbcByteOrder_t order);
     void SetValueType(const dbcValueType_t type);
@@ -294,22 +330,29 @@ class dbcSignal
     void SetFactorOffset(const double factor, const double offset);
     void SetMinMax(const dbcNumber minimum, const dbcNumber maximum);
     void SetMinMax(const double minimum, const double maximum);
-    const std::string& GetUnit();
+    const std::string& GetUnit() const;
     void SetUnit(const std::string& unit);
     void SetUnit(const char* unit);
+    metric_unit_t GetMetricUnit() const
+      {
+      return m_metric_unit;
+      }
 
   public:
     void Encode(dbcNumber* source, CAN_frame_t* msg);
-    dbcNumber Decode(CAN_frame_t* msg);
+
+    dbcNumber Decode(const uint8_t* msg, uint8_t size) const;
 
   public:
     void AssignMetric(OvmsMetric* metric);
-    OvmsMetric* GetMetric();
+    void AttachDbcMetric(dbcMetric* metric);
+    dbcMetric* GetMetric() const;
 
   public:
-    void WriteFile(dbcOutputCallback callback, void* param);
-    void WriteFileComments(dbcOutputCallback callback, void* param, std::string messageid);
-    void WriteFileValues(dbcOutputCallback callback, void* param, std::string messageid);
+    void WriteFile(dbcOutputCallback callback, void* param) const;
+    void WriteFileComments(dbcOutputCallback callback, void* param, std::string messageid) const;
+    void WriteFileValues(dbcOutputCallback callback, void* param, std::string messageid) const;
+    void WriteFileExtended(dbcOutputCallback callback, void* param, std::string messageid) const;
 
   public:
     dbcReceiverList_t m_receivers;
@@ -328,7 +371,9 @@ class dbcSignal
     dbcNumber m_minimum;
     dbcNumber m_maximum;
     std::string m_unit;
-    OvmsMetric* m_metric;
+    metric_unit_t m_metric_unit;
+
+    dbcMetric* m_metric;
   };
 
 typedef std::list<dbcSignal*> dbcSignalList_t;
@@ -344,41 +389,43 @@ class dbcMessage
     void RemoveSignal(dbcSignal* signal, bool free=false);
     void RemoveAllSignals(bool free=false);
     dbcSignal* FindSignal(std::string name);
-    void Count(int* signals, int* bits, int* covered);
+    void Count(int* signals, int* bits, int* covered) const;
+
+    void DecodeSignal(const uint8_t* msg, uint8_t size, bool assignMetrics = true, OvmsWriter* writer = nullptr) const;
 
   public:
     void AddComment(const std::string& comment);
     void AddComment(const char* comment);
     void RemoveComment(const std::string& comment);
-    bool HasComment(const std::string& comment);
-    uint32_t GetID();
-    CAN_frame_format_t GetFormat();
-    bool IsExtended();
-    bool IsStandard();
+    bool HasComment(const std::string& comment) const;
+    uint32_t GetID() const;
+    CAN_frame_format_t GetFormat() const;
+    bool IsExtended() const;
+    bool IsStandard() const;
     void SetID(const uint32_t id);
-    int GetSize();
+    int GetSize() const;
     void SetSize(const int size);
-    const std::string& GetName();
+    const std::string& GetName() const;
     void SetName(const std::string& name);
     void SetName(const char* name);
-    const std::string& GetTransmitterNode();
+    const std::string& GetTransmitterNode() const;
     void SetTransmitterNode(std::string node);
     void SetTransmitterNode(const char* node);
-    bool IsMultiplexor();
-    dbcSignal* GetMultiplexorSignal();
+    bool IsMultiplexor() const;
+    dbcSignal* GetMultiplexorSignal() const;
     void SetMultiplexorSignal(dbcSignal* signal);
 
   public:
-    void WriteFile(dbcOutputCallback callback, void* param);
-    void WriteFileComments(dbcOutputCallback callback, void* param);
-    void WriteFileValues(dbcOutputCallback callback, void* param);
+    void WriteFile(dbcOutputCallback callback, void* param) const;
+    void WriteFileComments(dbcOutputCallback callback, void* param) const;
+    void WriteFileValues(dbcOutputCallback callback, void* param) const;
+    void WriteFileExtended(dbcOutputCallback callback, void* param) const;
 
   public:
     dbcSignalList_t m_signals;
     dbcCommentTable m_comments;
 
   protected:
-    dbcSignal* m_multiplexor;
     uint32_t m_id;
     std::string m_name;
     int m_size;
@@ -395,18 +442,18 @@ class dbcMessageTable
   public:
     void AddMessage(uint32_t id, dbcMessage* message);
     void RemoveMessage(uint32_t id, bool free=false);
-    dbcMessage* FindMessage(uint32_t id);
-    dbcMessage* FindMessage(CAN_frame_format_t format, uint32_t id);
-    void Count(int* messages, int* signals, int* bits, int* covered);
+    dbcMessage* FindMessage(uint32_t id) const;
+    dbcMessage* FindMessage(CAN_frame_format_t format, uint32_t id) const;
+    void Count(int* messages, int* signals, int* bits, int* covered) const;
 
   public:
     void EmptyContent();
 
   public:
-    void WriteFile(dbcOutputCallback callback, void* param);
-    void WriteFileComments(dbcOutputCallback callback, void* param);
-    void WriteFileValues(dbcOutputCallback callback, void* param);
-    void WriteSummary(dbcOutputCallback callback, void* param);
+    void WriteFile(dbcOutputCallback callback, void* param) const;
+    void WriteFileComments(dbcOutputCallback callback, void* param) const;
+    void WriteFileValues(dbcOutputCallback callback, void* param) const;
+    void WriteSummary(dbcOutputCallback callback, void* param) const;
 
   public:
     dbcMessageEntry_t m_entrymap;
@@ -424,18 +471,19 @@ class dbcfile
   public:
     bool LoadFile(const char* name, const char* path, FILE *fd=NULL);
     bool LoadString(const char* name, const char* source, size_t length);
-    void WriteFile(dbcOutputCallback callback, void* param);
-    void WriteSummary(dbcOutputCallback callback, void* param);
-    std::string Status();
-    std::string GetName();
-    std::string GetPath();
-    std::string GetVersion();
+    void WriteFile(dbcOutputCallback callback, void* param) const;
+    void WriteSummary(dbcOutputCallback callback, void* param) const;
+    std::string Status() const;
+    std::string GetName() const;
+    std::string GetPath() const;
+    std::string GetVersion() const;
 
   public:
     void LockFile();
     void UnlockFile();
-    bool IsLocked();
+    bool IsLocked() const;
 
+    void DecodeSignal(CAN_frame_format_t format, uint32_t msg_id, const uint8_t* msg, uint8_t size, bool assignMetrics = true, OvmsWriter* writer = nullptr) const;
   public:
     std::string m_name;
     std::string m_path;

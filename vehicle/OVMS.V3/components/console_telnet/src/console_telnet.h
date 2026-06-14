@@ -35,7 +35,7 @@
 
 struct mg_connection;
 
-class OvmsTelnet
+class OvmsTelnet : public MongooseClient
   {
   public:
     OvmsTelnet();
@@ -49,7 +49,7 @@ class OvmsTelnet
     bool m_running;
   };
 
-class ConsoleTelnet : public OvmsConsole
+class ConsoleTelnet : public OvmsConsole, public MongooseClient
   {
   public:
     ConsoleTelnet(struct mg_connection* nc);

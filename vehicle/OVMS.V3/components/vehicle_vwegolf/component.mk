@@ -1,0 +1,5 @@
+ifdef CONFIG_OVMS_VEHICLE_VWEGOLF
+COMPONENT_ADD_INCLUDEDIRS:=src
+COMPONENT_SRCDIRS:=src
+COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
+endif

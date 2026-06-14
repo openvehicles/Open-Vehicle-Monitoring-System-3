@@ -220,6 +220,63 @@ void OvmsVehicleThinkCity::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_charge_climit->SetValue(((unsigned char) d[1]) * 0.2);
       break;
 
+      case 0x344: // TPMS
+        // TODO: Add Warnings and Alerts --- e.g. for sensor not responding (data is 0xFF)
+			  if (d[0]!=0xFF) // Front-left
+		    {
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_tpms_index[0], (float)d[0] * 0.3625, PSI);
+		    }
+		    if (d[1]!=0xFF) // Front-right
+		    {
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_tpms_index[1], (float)d[1] * 0.3625, PSI);
+		    }
+		    if (d[2]!=0xFF) // Rear-right
+		    {
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_tpms_index[3], (float)d[2] * 0.3625, PSI);
+		    }
+		    if (d[3]!=0xFF) // Rear-left
+		    {
+		        StandardMetrics.ms_v_tpms_pressure->SetElemValue(m_tpms_index[2], (float)d[3] * 0.3625, PSI);
+		    }
+		  break;
+    case 0x345: // TPMS Status Alerts and Warnings
+      {
+        std::vector<short> tpms_alert(4);
+        uint8_t tpms_warning;
+        
+        for (int j = 0; j < 4; j++)
+        {
+          tpms_warning = 0;
+          
+          if (j == m_tpms_index[0])  // Front-left tire
+            tpms_warning = (d[0] & 0x0E) >> 1;  // Extract LF warning bits
+          else if (j == m_tpms_index[1]) // Front-right tire
+            tpms_warning = (d[1] & 0xE0) >> 5;  // Extract RF warning bits
+          else if (j == m_tpms_index[3])  // Rear-right tire
+            tpms_warning = (d[1] & 0x0E) >> 1;  // Extract RR warning bits
+          else if (j == m_tpms_index[2])  //Rear-left tire
+            tpms_warning = (d[2] & 0xE0) >> 5;  // Extract LR warning bits
+          
+          if ((tpms_warning == 2) || (tpms_warning == 7)) // Very Low (Red) or missing sensor
+          {
+            tpms_alert[j] = 2; // "ALERT"
+          }
+          else if ((tpms_warning == 5) || (tpms_warning == 0)) // Fast deflation or Unknown State
+          {
+            tpms_alert[j] = 1; // "WARN"
+          }
+          else if (tpms_warning == 6) // Normal Tire Pressure
+          {
+            tpms_alert[j] = 0; // "OK"
+          }
+          else // Undefined States
+          {
+            tpms_alert[j] = 0; // Mark as undefined/unknown
+          }
+        }
+        StandardMetrics.ms_v_tpms_alert->SetValue(tpms_alert); // Use SetElemValues for vector
+      }
+      break;
     case 0x511:
       // Enerdel battery pack?
       // TODO: Enable battery pack cells monitoring

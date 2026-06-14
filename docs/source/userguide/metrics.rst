@@ -109,6 +109,7 @@ v.b.c.voltage.dev.max                    0.0096,-0.0104,…,0.0125V Cell maximum
 v.b.c.voltage.max                        4.135,4.125,…,4.14V      Cell maximum voltages
 v.b.c.voltage.min                        3.875,3.865,…,3.88V      Cell minimum voltages
 v.b.cac                                  90.7796Ah                Calculated battery pack capacity
+v.b.capacity                             12.82kwh                 Main battery usable capacity [kWh]
 v.b.consumption                          0Wh/km                   Main battery momentary consumption
 v.b.coulomb.recd                         47.5386Ah                Main battery coulomb recovered on trip/charge
 v.b.coulomb.recd.total                   947.5386Ah               Main battery coulomb recovered total (life time)
@@ -169,6 +170,7 @@ v.c.temp                                 16°C                     Charger tempe
 v.c.time                                 0Sec                     Duration of running charge
 v.c.timermode                                                     yes = timer enabled
 v.c.timerstart                                                    Time timer is due to start, seconds since midnight UTC
+v.c.timestamp                            2024-11-11 18:19:21 CET  Date & time of last charge end [DateLocal]
 v.c.type                                                          undefined, type1, type2, chademo, roadster, teslaus, supercharger, ccs
 v.c.voltage                              0V                       Momentary charger supply voltage
 v.d.cp                                   yes                      yes = Charge port open
@@ -228,6 +230,7 @@ v.g.temp                                 16°C                     Generator tem
 v.g.time                                 0Sec                     Duration of generator running
 v.g.timermode                            false                    True if generator timer enabled 
 v.g.timerstart                                                    Time generator is due to start 
+v.g.timestamp                            2024-11-11 18:19:21 CET  Date & time of last generation end [DateLocal]
 v.g.type                                                          Connection type (chademo, ccs, …)
 v.g.voltage                              0V                       Momentary generator output voltage
 v.i.temp                                                          Inverter temperature

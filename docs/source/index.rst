@@ -2,6 +2,9 @@
 Open Vehicles Monitoring System
 ===============================
 
+.. warning::
+   **IMPORTANT:** If you're new to the OVMS, read :doc:`Warnings & Notices <userguide/warnings>` first!
+
 .. note::
   This online manual includes documentation for the **stable** release of the
   OVMS firmware (available as OTA version tag "main") and the **latest**
@@ -32,6 +35,7 @@ Open Vehicles Monitoring System
    crtd/index
    components/ovms_webserver/docs/index
    components/ovms_script/docs/index
+   components/poller/docs/index
    components/canopen/docs/index
    server/index
    protocol_v2/index

@@ -106,12 +106,20 @@ void OvmsVehicleChevroletC6Corvette::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       break;
 
-#ifdef notdef
-    case 0x308:
-      /* Engine RPM */
-      // XXX we don't know how to convert rpm yet
-      // StandardMetrics.ms_v_mot_rpm->SetValue(rpm);
-#endif
+    case 0x390:
+      /* TPMS */
+      if (len == 6 && ((d[0] << 8) | d[1]) == 0x1111)
+        {
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL,
+            (float)d[2] * 4.0, kPa);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL,
+            (float)d[3] * 4.0, kPa);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR,
+            (float)d[4] * 4.0, kPa);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR,
+            (float)d[5] * 4.0, kPa);
+        }
+      break;
 
     case 0x670:
       /* First 8 of vin */
@@ -136,7 +144,6 @@ void OvmsVehicleChevroletC6Corvette::IncomingFrameCan1(CAN_frame_t* p_frame)
 void OvmsVehicleChevroletC6Corvette::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
   {
   int value1 = (int)data[0];
-  // int value2 = ((int)data[0] << 8) + (int)data[1];
 
   switch (job.pid)
     {
@@ -144,24 +151,28 @@ void OvmsVehicleChevroletC6Corvette::IncomingPollReply(const OvmsPoller::poll_jo
       StandardMetrics.ms_v_bat_temp->SetValue(value1 - 0x28);
       break;
 
-    case 0x0f:  // Engine intake air temperature
-      StandardMetrics.ms_v_inv_temp->SetValue(value1 - 0x28);
-      break;
-
-    case 0x5c:  // Engine oil temperature
-      StandardMetrics.ms_v_mot_temp->SetValue(value1 - 0x28);
-      break;
-
-    case 0x46:  // Ambient temperature
-      StandardMetrics.ms_v_env_temp->SetValue(value1 - 0x28);
+    case 0x0c:  // RPM
+      StandardMetrics.ms_v_mot_rpm->SetValue(((data[0] << 8) | data[1]) / 4);
       break;
 
     case 0x0d:  // Speed
       StandardMetrics.ms_v_pos_speed->SetValue(value1);
       break;
 
+    case 0x0f:  // Engine intake air temperature
+      StandardMetrics.ms_v_inv_temp->SetValue(value1 - 0x28);
+      break;
+
     case 0x2f:  // Fuel Level
       StandardMetrics.ms_v_bat_soc->SetValue((value1 * 100) >> 8);
+      break;
+
+    case 0x46:  // Ambient temperature
+      StandardMetrics.ms_v_env_temp->SetValue(value1 - 0x28);
+      break;
+
+    case 0x5c:  // Engine oil temperature
+      StandardMetrics.ms_v_mot_temp->SetValue(value1 - 0x28);
       break;
 
     default:

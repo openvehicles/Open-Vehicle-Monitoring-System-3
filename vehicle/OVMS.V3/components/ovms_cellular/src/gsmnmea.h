@@ -41,7 +41,7 @@
 class GsmNMEA : public InternalRamAllocated
   {
   public:
-    GsmNMEA(GsmMux* mux, int channel_nmea, int channel_cmd);
+    GsmNMEA(GsmMux* mux, int channel);
     ~GsmNMEA();
 
   public:
@@ -51,8 +51,7 @@ class GsmNMEA : public InternalRamAllocated
 
   public:
     GsmMux*       m_mux;
-    int           m_channel_nmea;
-    int           m_channel_cmd;
+    int           m_channel;
     bool          m_connected;
     bool          m_gpstime_enabled;
   };

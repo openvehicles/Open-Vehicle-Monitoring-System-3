@@ -127,8 +127,10 @@
 ;
 ;    0.6.3 read profile0 on boot
 ;
+;    0.6.4 fix reading of incomplete/faulty profile0
+;
 ;    (C) 2021       Chris van der Meijden
-;        2024       Urwa Khattak, sharkcow      
+;        2026       Urwa Khattak, sharkcow      
 ;
 ;    Big thanx to sharkcow, Dimitrie78, E-lmo, Dexter and 'der kleine Nik'.
 */
@@ -144,27 +146,11 @@ static const char *TAG = "v-vweup";
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
-void OvmsVehicleVWeUp::sendOcuHeartbeat(TimerHandle_t timer)
-{
-  // Workaround for FreeRTOS duplicate timer callback bug
-  // (see https://github.com/espressif/esp-idf/issues/8234)
-  static TickType_t last_tick = 0;
-  TickType_t tick = xTaskGetTickCount();
-  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
-  last_tick = tick;
-
-  OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
-  vweup->SendOcuHeartbeat();
-}
-
 void OvmsVehicleVWeUp::T26Init()
 {
   ESP_LOGI(TAG, "T26: Starting connection: T26A (Comfort CAN)");
   memset(m_vin, 0, sizeof(m_vin));
-
-  RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
   
-  MyConfig.RegisterParam("xvu", "VW e-Up", true, true);
   vin_part1 = false;
   vin_part2 = false;
   vin_part3 = false;
@@ -188,6 +174,7 @@ void OvmsVehicleVWeUp::T26Init()
   profile0_mode = 0;
   profile0_charge_current = 0;
   profile0_cc_temp = 0;
+  profile0_cc_onbat = false;
   profile0_charge_current_old = 0;
   profile0_cc_temp_old = 0;
   profile0_delay = 1500;
@@ -197,9 +184,18 @@ void OvmsVehicleVWeUp::T26Init()
   profile0_key = P0_KEY_NOP;
   profile0_val = 0;
   profile0_activate = false;
-  xWakeSemaphore = xSemaphoreCreateBinary();
-  xChargeSemaphore = xSemaphoreCreateBinary();
-  xCurrentSemaphore = xSemaphoreCreateBinary();
+
+  // create semaphores:
+  if (!xWakeSemaphore) {
+    xWakeSemaphore = xSemaphoreCreateBinary();
+  }
+  if (!xChargeSemaphore) {
+    xChargeSemaphore = xSemaphoreCreateBinary();
+  }
+  if (!xCurrentSemaphore) {
+    xCurrentSemaphore = xSemaphoreCreateBinary();
+  }
+
   ocu_response = false;
   fakestop = false;
   climit_max = (vweup_modelyear > 2019)? 32 : 16;
@@ -209,6 +205,7 @@ void OvmsVehicleVWeUp::T26Init()
   lever = 0x20; // assume position "P" on startup so climatecontrol works
   lever0_cnt = 0;
   p_problem = false;
+  chargestartstop = false;
 
   StdMetrics.ms_v_env_locked->SetValue(true);
   StdMetrics.ms_v_env_headlights->SetValue(false);
@@ -221,10 +218,22 @@ void OvmsVehicleVWeUp::T26Init()
     StdMetrics.ms_v_charge_mode->SetValue("standard");
   }
 
+  StartJobTask();
+
+  // create timers:
+  if (!m_sendOcuHeartbeat) {
+    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdTRUE, this, sendOcuHeartbeat);
+  }
+  if (!profile0_timer) {
+    profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(profile0_delay), pdFALSE, this, Profile0RetryTimer);
+  }
+
+  // fully initialized, start T26 CAN bus:
+  RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
+
   // update values from ECU:
   t26_init = true;
   profile0_state = PROFILE0_INIT;
-  profile0_timer = xTimerCreate("VW e-Up Profile0 Retry", pdMS_TO_TICKS(profile0_delay), pdFALSE, this, Profile0RetryTimer);
   xTimerStart(profile0_timer, 0);
 }
 
@@ -286,9 +295,7 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     ResetTripCounters();
     if (ocu_awake && m_sendOcuHeartbeat != NULL) {
       ESP_LOGD(TAG, "T26: stopping OCU heartbeat timer");
-      xTimerStop(m_sendOcuHeartbeat, pdMS_TO_TICKS(100));
-      xTimerDelete(m_sendOcuHeartbeat, pdMS_TO_TICKS(100));
-      m_sendOcuHeartbeat = NULL;
+      xTimerStop(m_sendOcuHeartbeat, 0);
     }
     ocu_awake = false;
     ocu_working = false;
@@ -563,9 +570,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
       if (d[1] == 0x31) {
         if (m_sendOcuHeartbeat != NULL) {
           ESP_LOGD(TAG, "T26: stopping OCU heartbeat timer");
-          xTimerStop(m_sendOcuHeartbeat, pdMS_TO_TICKS(100));
-          xTimerDelete(m_sendOcuHeartbeat, pdMS_TO_TICKS(100));
-          m_sendOcuHeartbeat = NULL;
+          xTimerStop(m_sendOcuHeartbeat, 0);
         }
         if (ocu_awake) { // We should go to sleep, no matter what
           ESP_LOGI(TAG, "T26: Comfort CAN calls for sleep");
@@ -711,7 +716,7 @@ void OvmsVehicleVWeUp::SendCommand(RemoteCommand command)
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
 {
-  ESP_LOGD(TAG, "T26: CommandWakeup called");
+  ESP_LOGD(TAG, "T26: CommandWakeup called in state %d (key %d, val %d, mode %d, current %d, temp %d, recv %d)", profile0_state, profile0_key, profile0_val, profile0_mode, profile0_charge_current, profile0_cc_temp, profile0_recv);
   if (HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: CommandWakeup failed: T26 not ready / no write access!");
     return Fail;
@@ -759,6 +764,7 @@ void OvmsVehicleVWeUp::WakeupT26Stage2()
   ESP_LOGD(TAG, "T26: WakeupT26Stage2 called");
   canbus *comfBus;
   comfBus = m_can3;
+
   if (!comfBus || HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: WakeupT26Stage2 failed: T26 not ready / no write access!");
     wakeup_success = false;
@@ -766,6 +772,7 @@ void OvmsVehicleVWeUp::WakeupT26Stage2()
       xSemaphoreGive(xWakeSemaphore);
     return;
   }
+
   ESP_LOGI(TAG, "T26: Waking Comfort CAN");
   if (!ocu_response && !StdMetrics.ms_v_env_on->AsBool()) {
     unsigned char data[8];
@@ -795,7 +802,15 @@ void OvmsVehicleVWeUp::WakeupT26Stage2()
     data[6] = 0x00;
     data[7] = 0x00;
     comfBus->WriteStandard(0x43D, length, data);
-    SendOcuHeartbeat();
+
+    // start sending OCU heartbeat:
+    if (xTimerStart(m_sendOcuHeartbeat, pdMS_TO_TICKS(100)) == pdFAIL) {
+      ESP_LOGE(TAG, "T26: WakeupT26Stage2: could not start OCU heartbeat, please retry wakeup");
+    } else {
+      // timer running, send first heartbeat:
+      SendOcuHeartbeat();
+    }
+
     ocu_working = true; // XXX put all of this in WakeupT26Stage3?
     ocu_awake = true;
     StdMetrics.ms_v_env_charging12v->SetValue(true);
@@ -836,6 +851,13 @@ void OvmsVehicleVWeUp::WakeupT26Stage3()
   ESP_LOGI(TAG, "T26: Vehicle has been woken");
 }
 
+
+void OvmsVehicleVWeUp::sendOcuHeartbeat(TimerHandle_t timer)
+{
+  OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
+  vweup->QueueJob({ VWUJ_T26_EcuHeartBeat });
+}
+
 void OvmsVehicleVWeUp::SendOcuHeartbeat()
 {
   ESP_LOGV(TAG, "OCU heartbeat called (cc: %d, fas_on: %d, fas_off: %d, p0: %d)", vweup_cc_on, fas_counter_on, fas_counter_off, profile0_state);
@@ -843,8 +865,11 @@ void OvmsVehicleVWeUp::SendOcuHeartbeat()
   comfBus = m_can3;
   uint8_t length = 8;
   unsigned char data[length];
+
   if (!comfBus || HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: SendOcuHeartbeat failed: T26 not ready / no write access!");
+    // stop our timer:
+    xTimerStop(m_sendOcuHeartbeat, 0);
     return;
   }
   else if (!vweup_cc_on) {
@@ -874,6 +899,7 @@ void OvmsVehicleVWeUp::SendOcuHeartbeat()
     if (fas_counter_on < 10)
       fas_counter_on++;
   }
+
   ESP_LOGV(TAG, "sending OCU heartbeat (cc: %d, fas_on: %d, fas_off: %d, p0: %d)", vweup_cc_on, fas_counter_on, fas_counter_off, profile0_state);
   data[0] = 0x00;
   data[1] = 0x00;
@@ -884,6 +910,7 @@ void OvmsVehicleVWeUp::SendOcuHeartbeat()
   data[6] = 0x00;
   data[7] = 0x00;
   comfBus->WriteStandard(0x5A9, length, data);
+
   if ((fas_counter_on > 0 && fas_counter_on < 10) || (fas_counter_off > 0 && fas_counter_off < 10)) {
     data[0] = 0x60;
     ESP_LOGV(TAG, "T26: OCU Heartbeat - 5A7 60");
@@ -894,8 +921,6 @@ void OvmsVehicleVWeUp::SendOcuHeartbeat()
   }
   data[1] = 0x16;
   comfBus->WriteStandard(0x5A7, length, data);
-  m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", pdMS_TO_TICKS(1000), pdFALSE, this, sendOcuHeartbeat);
-  xTimerStart(m_sendOcuHeartbeat, 0);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandLock(const char *pin)
@@ -931,22 +956,26 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStartCharge()
   ESP_LOGD(TAG, "T26: CommandStartCharge called");
   if (HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: CommandStartCharge failed: T26 not ready / no write access!");
+    chargestartstop = false;
     return Fail;
   }
   else if (StdMetrics.ms_v_charge_inprogress->AsBool()) {
     ESP_LOGE(TAG, "Vehicle is already charging!");
+    chargestartstop = false;
     return Fail;
   }
   else if (!StdMetrics.ms_v_door_chargeport->AsBool()) {
     ESP_LOGE(TAG, "T26: Vehicle is not plugged!");
     if (xChargeSemaphore != NULL)
       xSemaphoreGive(xChargeSemaphore);
+    chargestartstop = false;
     return Fail;
   }
   else if (p_problem) {
     ESP_LOGE(TAG, "T26: invalid selector lever value, can't start charge! Microswitch possibly defective?");
     MyNotify.NotifyStringf("alert", "Drive Mode Selector", "Invalid selector lever value, can't start charge! Microswitch possibly defective?");
     p_problem = false;
+    chargestartstop = false;
     return Fail;
   }
   fakestop = false; // reset possible workaround charge stop
@@ -960,13 +989,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStartCharge()
       charge_timeout = false;
       return Fail;
     }
-    else
+    else {
+      chargestartstop = false;
       return Success;
+    }
   }
   else
   {
     ESP_LOGE(TAG, "T26: timeout waiting for CommandStartCharge to finish!");
     xSemaphoreGive(xChargeSemaphore);
+    chargestartstop = false;
     return Fail;
   }
 }
@@ -976,15 +1008,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStopCharge()
   ESP_LOGD(TAG, "T26: CommandStopCharge called");
   if (HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: CommandStopCharge failed: T26 not ready / no write access!");
+    chargestartstop = false;
     return Fail;
   }
   else if (!StdMetrics.ms_v_charge_inprogress->AsBool()) {
     ESP_LOGE(TAG, "Vehicle is not charging!");
+    chargestartstop = false;
     return Fail;
   }
   else if (StdMetrics.ms_v_env_on->AsBool() && !chg_workaround) {
     ESP_LOGE(TAG, "Vehicle is on, can't stop charge without workaround!");
     MyNotify.NotifyStringf("alert", "Charge control", "Vehicle is on, can't stop charge without workaround!");
+    chargestartstop = false;
     return Fail;
   }
   xSemaphoreTake(xChargeSemaphore, 0);
@@ -993,12 +1028,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStopCharge()
   {
     ESP_LOGD(TAG, "T26: CommandStopCharge wait for success over");
     xSemaphoreGive(xChargeSemaphore);
+    chargestartstop = false;
     return Success;
   }
   else
   {
     ESP_LOGE(TAG, "T26: timeout waiting for CommandStopCharge to finish!");
     xSemaphoreGive(xChargeSemaphore);
+    chargestartstop = false;
     return Fail;
   }
 }
@@ -1044,16 +1081,31 @@ void OvmsVehicleVWeUp::RequestProfile0()
 
 void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
 {
-  ESP_LOGD(TAG, "T26: ReadProfile0 called in state %d (cntr: %d,%d,%d, key %d, val %d, mode %d, current %d, temp %d, recv %d)", profile0_state, profile0_cntr[0], profile0_cntr[1], profile0_cntr[2], profile0_key, profile0_val, profile0_mode, profile0_charge_current, profile0_cc_temp, profile0_recv);
-  for (uint8_t i = 0; i < 8; i++)
-  {
+  ESP_LOGD(TAG, "T26: ReadProfile0 called in state %d (cntr: %d,%d,%d, key %d, val %d, mode %d, current %d, temp %d, recv %d, idx %d/%d)",
+           profile0_state, profile0_cntr[0], profile0_cntr[1], profile0_cntr[2], profile0_key, profile0_val, profile0_mode,
+           profile0_charge_current, profile0_cc_temp, profile0_recv, profile0_idx, profile0_len);
+
+  // check index vs buffer space:
+  if (profile0_idx + 8 > profile0_len) {
+    ESP_LOGE(TAG, "T26: ReadProfile0: profile buffer overrun -> aborting profile processing");
+    xTimerStop(profile0_timer, 0);
+    profile0_recv = false;
+    profile0_state = PROFILE0_IDLE;
+    profile0_key = P0_KEY_NOP;
+    return;
+  }
+
+  // copy frame to buffer:
+  for (uint8_t i = 0; i < 8; i++) {
     profile0[profile0_idx+i] = data[i];
   }
   profile0_idx += 8;
+
   if (profile0_idx == 8) {
-      ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
-      int timer_stopped = xTimerStop(profile0_timer, pdMS_TO_TICKS(100));
-      ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
+    // first profile frame received
+    ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
+    int timer_stopped = xTimerStop(profile0_timer, 0);
+    ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
     if (profile0_state == PROFILE0_REQUEST) {
       profile0_cntr[1] = 0;
       profile0_state = PROFILE0_READ;
@@ -1069,15 +1121,16 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
   }
   else if (profile0_idx == profile0_len)
   {
+    // last profile frame received
     ESP_LOGD(TAG, "T26: ReadProfile0 complete");
     for (uint8_t i = 0; i < profile0_len; i+=8) 
       ESP_LOGD(TAG, "T26: Profile0: %02x %02x %02x %02x %02x %02x %02x %02x", profile0[i+0], profile0[i+1], profile0[i+2], profile0[i+3],profile0[i+4], profile0[i+5], profile0[i+6], profile0[i+7]);
-    if(profile0[28] != 0 && profile0[29] != 0)
+    ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
+    int timer_stopped = xTimerStop(profile0_timer, 0);
+    ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
+    profile0_recv = false;
+    if ( std::memcmp(profile0+34, "Option", 6) == 0 ) // (partial) check for fixed string "Optionen" to verify correct data
     {
-        ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
-        int timer_stopped = xTimerStop(profile0_timer, pdMS_TO_TICKS(100));
-        ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
-      profile0_recv = false;
       profile0_mode = profile0[11];
       profile0_charge_current = profile0[13];
       if (profile0_charge_current != 1) // don't communicate workaround fake stop current
@@ -1093,10 +1146,13 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
           profile0_state = PROFILE0_IDLE;
           ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
           if (t26_init) {
+            auto lock = MyConfig.Lock();
             profile0_charge_current_old = (profile0_charge_current < 4)? climit_max : profile0_charge_current;
             MyConfig.SetParamValueInt("xvu", "chg_climit", profile0_charge_current);
             profile0_cc_temp_old = profile0_cc_temp;
             MyConfig.SetParamValueInt("xvu", "cc_temp", profile0_cc_temp);
+            profile0_cc_onbat = profile0_mode & 4;
+            MyConfig.SetParamValueBool("xvu", "cc_onbat", profile0_cc_onbat);
             t26_init = false;
           }
           return;
@@ -1168,11 +1224,23 @@ void OvmsVehicleVWeUp::ReadProfile0(uint8_t *data)
     }
     else
     {
-      ESP_LOGD(TAG, "T26: ReadProfile0 invalid data!");
-      // empty profile, set state for existing timer to retry request
-      profile0_cntr[0] = 0;
-      profile0_state = PROFILE0_REQUEST;
-      ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
+      if (profile0_cntr[0] >= profile0_retries) {
+        ESP_LOGE(TAG, "T26: maximum retries for reading profile0 exceeded! Stopping request.");
+        MyNotify.NotifyString("alert", "Profile0", "Failed to read profile0!");
+        profile0_state = PROFILE0_IDLE;
+        ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
+        profile0_key = P0_KEY_NOP;
+        if (xCurrentSemaphore != NULL) {
+          ESP_LOGD(TAG, "releasing current semaphore...");
+          xSemaphoreGive(xCurrentSemaphore);
+        }
+      }
+      else {
+        ESP_LOGD(TAG, "T26: ReadProfile0 invalid data! Retrying... %d", profile0_cntr[0]);
+        profile0_state = PROFILE0_REQUEST;
+        ESP_LOGD(TAG, "T26: profile0 state change to %d", profile0_state);
+        xTimerStart(profile0_timer, 0);
+      }
     }
   }
 }
@@ -1249,22 +1317,14 @@ void OvmsVehicleVWeUp::WriteProfile0()
 
 void OvmsVehicleVWeUp::Profile0RetryTimer(TimerHandle_t timer)
 {
-  // Workaround for FreeRTOS duplicate timer callback bug
-  // (see https://github.com/espressif/esp-idf/issues/8234)
-  static TickType_t last_tick = 0;
-  TickType_t tick = xTaskGetTickCount();
-  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
-  last_tick = tick;
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
-  vweup->Profile0RetryCallBack();
+  vweup->QueueJob({ VWUJ_T26_Profile0Retry });
 }
 
 void OvmsVehicleVWeUp::Profile0RetryCallBack()
 {
   ESP_LOGD(TAG, "T26: Profile0RetryCallBack in state %d (cntr: %d,%d,%d, key %d, val %d, mode %d, current %d, temp %d, recv %d)", profile0_state, profile0_cntr[0], profile0_cntr[1], profile0_cntr[2], profile0_key, profile0_val, profile0_mode, profile0_charge_current, profile0_cc_temp, profile0_recv);
-  ESP_LOGD(TAG, "T26: Stopping profile0 timer...");
-  int timer_stopped = xTimerStop(profile0_timer, pdMS_TO_TICKS(100));
-  ESP_LOGD(TAG, "T26: Timer %s", timer_stopped? "stopped" : "failed to stop!");
+
   if (HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "T26: Profile0RetryCallBack failed: T26 not ready / no write access! (%d, %d, %d)", HasOBD(), IsT26Ready(), vweup_enable_write);
     return;
@@ -1273,12 +1333,13 @@ void OvmsVehicleVWeUp::Profile0RetryCallBack()
     ESP_LOGE(TAG, "T26: Profile0 max retries exceeded!");
     ESP_LOGD(TAG, "T26: voltage of 12V battery: %0.2f", StdMetrics.ms_v_bat_12v_voltage->AsFloat());
     if (profile0_key == P0_KEY_SWITCH) {
-      if (profile0_val == 1) {
+      if (chargestartstop) {
         if (!fakestop)
           charge_timeout = true;
         if (xChargeSemaphore != NULL)
           xSemaphoreGive(xChargeSemaphore);
         MyNotify.NotifyStringf("alert", "Charge control", "Failed to %s charge!", (profile0_activate)? "start" : "stop");
+        chargestartstop = false;
       }
       else
         MyNotify.NotifyStringf("alert", "Climatecontrol", "Failed to %s remote climate control!", (profile0_activate)? "start" : "stop");
@@ -1339,7 +1400,7 @@ void OvmsVehicleVWeUp::Profile0RetryCallBack()
       case PROFILE0_SWITCH:
         profile0_cntr[0]++;
         ESP_LOGD(TAG, "T26: Profile0 switch attempt %d...", profile0_cntr[0]);
-        if (profile0_val == 1){ // charge start/stop
+        if (chargestartstop) {
           ESP_LOGD(TAG, "T26: Profile0RetryCallBack to start/stop charge");
           if (profile0_activate == StdMetrics.ms_v_charge_inprogress->AsBool()) {
             ESP_LOGI(TAG, "T26: Profile0 charge successfully turned %s",(profile0_activate)? "ON" : "OFF");
@@ -1363,9 +1424,9 @@ void OvmsVehicleVWeUp::Profile0RetryCallBack()
             ActivateProfile0();
           }
         }
-        else if ((profile0_val && 2) || (profile0_val && 4)) { // climatecontrol on/off
+        else if (profile0_val & 2) { //|| (profile0_val & 4)) { // climatecontrol on/off
           ESP_LOGD(TAG, "T26: Profile0RetryCallBack to start/stop climate control");
-          if (profile0_cntr[0] == 5 && !MyConfig.GetParamValueBool("xvu", "cc_onbat"))
+          if (profile0_cntr[0] >= profile0_retries && !MyConfig.GetParamValueBool("xvu", "cc_onbat"))
             ESP_LOGW(TAG, "Climatecontrol on battery disabled, is the car plugged in?");
           if (profile0_activate == StdMetrics.ms_v_env_hvac->AsBool()) {
             ESP_LOGI(TAG, "T26: Profile0 climatecontrol successfully turned %s",(profile0_activate)? "ON" : "OFF");
@@ -1470,8 +1531,10 @@ void OvmsVehicleVWeUp::StartStopChargeT26(bool chargestart)
   if (chg_workaround)
     StartStopChargeT26Workaround(chargestart);
   profile0_key = P0_KEY_SWITCH;
-  profile0_val = 1;
+  profile0_val = MyConfig.GetParamValueBool("xvu", "cc_onbat")? 5 : 1;
+  if (chargestart && StdMetrics.ms_v_env_hvac->AsBool()) profile0_val += 2;
   profile0_activate = chargestart;
+  chargestartstop = true;
   ESP_LOGD(TAG, "T26: StartStopChargeT26 calling WakeupT26");
   WakeupT26();
 }
@@ -1516,6 +1579,11 @@ void OvmsVehicleVWeUp::CCTempSet(int temperature)
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandClimateControl(bool climatecontrolon)
 {
   ESP_LOGD(TAG, "T26: CommandClimateControl called");
+  if (!climatecontrolon)
+    { // stops the scheduled climate restart
+    m_climate_restart = false;
+    m_climate_restart_ticker = 0;
+    }
   if (HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
       ESP_LOGE(TAG, "T26: CommandClimateControl failed: T26 not ready / no write access!");
       MyNotify.NotifyString("alert", "Climatecontrol", "Climatecontrol failed: CAN bus not ready / no write access!");
@@ -1556,6 +1624,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandClimateControl(bool clim
   ESP_LOGI(TAG, "T26: CommandClimateControl turning %s", climatecontrolon ? "ON" : "OFF");
   profile0_key = P0_KEY_SWITCH;
   profile0_val = MyConfig.GetParamValueBool("xvu", "cc_onbat")? 6 : 2;
+  if (climatecontrolon && StdMetrics.ms_v_charge_inprogress->AsBool()) profile0_val += 1;
   profile0_activate = climatecontrolon;
   ESP_LOGD(TAG, "T26: CommandClimateControl calling WakeupT26");
   WakeupT26();
@@ -1613,7 +1682,7 @@ void OvmsVehicleVWeUp::CommandResetProfile0(int verbosity, OvmsWriter* writer, O
                                 0xd2, cc_temp, 0x00, unknown, 0x1e, 0x0a, 0x00, 0x00,
                                 0xd3, 0x08, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 
                                 0xd4, 0x65, 0x6e};
-  std::copy(profile0_default, profile0_default + 43, eup->profile0);
+  std::copy(profile0_default, profile0_default + sizeof(profile0_default), eup->profile0);
   eup->profile0_key = P0_KEY_NOP; // don't go through all the loops & checks, just wake & write
   ESP_LOGD(TAG, "T26: CommandResetProfile0 calling WakeupT26");
   eup->WakeupT26();

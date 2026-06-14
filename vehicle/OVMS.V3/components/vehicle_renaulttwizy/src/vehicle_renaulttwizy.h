@@ -100,7 +100,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void CanResponder(const CAN_frame_t* p_frame);
     void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
-    void IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code) override;
+    void IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code) override;
     void Ticker1(uint32_t ticker) override;
     void Ticker10(uint32_t ticker) override;
     void ConfigChanged(OvmsConfigParam* param) override;
@@ -160,7 +160,8 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
       
       // Status flags:
       
-      unsigned CarAwake:1;          // Twizy switched on
+      unsigned SysAwake:1;          // Twizy base system awake
+      unsigned CarAwake:1;          // Twizy fully awake (switched on by the user)
       unsigned CarON:1;             // Twizy in GO mode
       
       unsigned PilotSignal:1;       // Power cable connected
@@ -531,7 +532,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
 
   protected:
     string              twizy_obd_rxbuf;
-    uint16_t            twizy_obd_rxerr;
+    int32_t             twizy_obd_rxerr;
     OvmsMutex           twizy_obd_request;
     OvmsSemaphore       twizy_obd_rxwait;
 

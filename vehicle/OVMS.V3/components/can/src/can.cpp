@@ -45,9 +45,11 @@ static const char *TAG = "can";
 #include <ctype.h>
 #include <string.h>
 #include <iomanip>
+#include <cstdio>
 #include "ovms_config.h"
 #include "ovms_command.h"
 #include "metrics_standard.h"
+#include "vehicle_poller.h"
 
 #if defined(CONFIG_OVMS_COMP_ESP32CAN) || \
     defined(CONFIG_OVMS_COMP_MCP2515) || \
@@ -70,16 +72,6 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   int baud = atoi(argv[0]);
   esp_err_t res;
 
-  CAN_mode_t smode = CAN_MODE_LISTEN;
-  if (strcmp(mode, "active")==0) smode = CAN_MODE_ACTIVE;
-
-  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
-  if (sbus == NULL)
-    {
-    writer->puts("Error: Cannot find named CAN bus");
-    return;
-    }
-
   dbcfile *dbcfile = NULL;
   if (argc>1)
     {
@@ -95,36 +87,59 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
       }
     }
 
+  CAN_mode_t smode = CAN_MODE_LISTEN;
+  if (strcmp(mode, "active")==0) smode = CAN_MODE_ACTIVE;
+
+  CAN_speed_t cspeed = CAN_SPEED_33KBPS;
   switch (baud)
     {
     case 33333:
-      res = sbus->Start(smode,CAN_SPEED_33KBPS,dbcfile);
+      cspeed = CAN_SPEED_33KBPS;
       break;
     case 50000:
-      res = sbus->Start(smode,CAN_SPEED_50KBPS,dbcfile);
+      cspeed = CAN_SPEED_50KBPS;
       break;
     case 83333:
-      res = sbus->Start(smode,CAN_SPEED_83KBPS,dbcfile);
+      cspeed = CAN_SPEED_83KBPS;
       break;
     case 100000:
-      res = sbus->Start(smode,CAN_SPEED_100KBPS,dbcfile);
+      cspeed = CAN_SPEED_100KBPS;
       break;
     case 125000:
-      res = sbus->Start(smode,CAN_SPEED_125KBPS,dbcfile);
+      cspeed = CAN_SPEED_125KBPS;
       break;
     case 250000:
-      res = sbus->Start(smode,CAN_SPEED_250KBPS,dbcfile);
+      cspeed = CAN_SPEED_250KBPS;
       break;
     case 500000:
-      res = sbus->Start(smode,CAN_SPEED_500KBPS,dbcfile);
+      cspeed = CAN_SPEED_500KBPS;
       break;
     case 1000000:
-      res = sbus->Start(smode,CAN_SPEED_1000KBPS,dbcfile);
+      cspeed = CAN_SPEED_1000KBPS;
       break;
     default:
       writer->puts("Error: Unrecognised speed (33333, 50000, 83333, 100000, 125000, 250000, 500000, 1000000 are accepted)");
       return;
     }
+#ifdef CONFIG_OVMS_COMP_POLLER
+  canbus* sbus;
+  unsigned int busno;
+  if (std::sscanf(bus, "can%u", &busno) != 1)
+    {
+    writer->puts("Error: invalid can bus number");
+    return;
+    }
+  res = MyPollers.RegisterCanBus(busno, smode, cspeed, dbcfile, OvmsPollers::BusPoweroff::System, sbus, verbosity, writer);
+#else
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+  res = sbus->Start(smode,cspeed,dbcfile);
+#endif
+
   if (res == ESP_OK)
     writer->printf("Can bus %s started in mode %s at speed %dbps\n",
                  bus, mode, baud);
@@ -352,11 +367,18 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Rx pkt:    %20" PRId32 "\n",sbus->m_status.packets_rx);
   writer->printf("Rx ovrflw: %20d\n",sbus->m_status.rxbuf_overflow);
   writer->printf("Tx pkt:    %20" PRId32 "\n",sbus->m_status.packets_tx);
+  writer->printf("Tx queue:  %20" PRId32 "\n",uxQueueMessagesWaiting(sbus->m_txqueue));
   writer->printf("Tx delays: %20" PRId32 "\n",sbus->m_status.txbuf_delay);
   writer->printf("Tx ovrflw: %20d\n",sbus->m_status.txbuf_overflow);
   writer->printf("Tx fails:  %20" PRId32 "\n",sbus->m_status.tx_fails);
 
   writer->printf("\nErr flags: 0x%08" PRIx32 "\n",sbus->m_status.error_flags);
+  std::string efdesc;
+  if (sbus->GetErrorFlagsDesc(efdesc, sbus->m_status.error_flags))
+    {
+    replace_substrings(efdesc, "\n", "\n        ");
+    writer->printf("        %s\n", efdesc.c_str());
+    }
   writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
   writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
   writer->printf("Rx invalid:%20d\n",sbus->m_status.invalid_rx);
@@ -366,6 +388,40 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     writer->printf("Wdg Timer: %20" PRId32 " sec(s)\n",monotonictime-sbus->m_watchdog_timer);
     }
   writer->printf("Err Resets:%20d\n",sbus->m_status.error_resets);
+  }
+
+void can_explain_flags(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  uint32_t error_flags = 0;
+  if (argc == 0)
+    {
+    error_flags = sbus->m_status.error_flags;
+    }
+  else
+    {
+    const char *hex = argv[0];
+    if (hex[0] == '0' && hex[1] == 'x') hex += 2;
+    sscanf(hex, "%x", &error_flags);
+    }
+
+  std::string efdesc;
+  if (sbus->GetErrorFlagsDesc(efdesc, error_flags))
+    {
+    writer->printf("Bus error flags 0x%08" PRIx32 ":\n", error_flags);
+    writer->printf("%s\n", efdesc.empty() ? "No error indication" : efdesc.c_str());
+    }
+  else
+    {
+    writer->puts("ERROR: bus does not provide error flag decoding");
+    }
   }
 
 void can_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -469,50 +525,103 @@ void canfilter::ClearFilters()
   m_filters.clear();
   }
 
-void canfilter::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
+/** Add a filter to the list (what is allowed).
+ * @param bus The CAN bus 1-3  or 0 to match any.
+ * @param id_from The id to match from
+ * @param id_to The id to match to
+ */
+
+bool canfilter::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
   {
+  if (bus > CAN_MAXBUSES)
+    return false;
+  if (id_from > id_to)
+    return false;
+  // Backwards compatible. Used to be '1' (49) for bus 1 etc
+  if (bus >= (uint8_t)'0')
+    bus -= '0';
+  if (bus > CAN_MAXBUSES)
+    return false;
+
   CAN_filter_t* f = new CAN_filter_t;
   f->bus = bus;
   f->id_from = id_from;
   f->id_to = id_to;
   m_filters.push_back(f);
+  return true;
   }
-
-void canfilter::AddFilter(const char* filterstring)
+/** Add a filter string.
+ * The format is: <bus>[:<from>[-[<to>]]]
+ * Where <bus> is 0 to match any or 1 to CAN_MAXBUSES,
+ * and 'from' and 'to' are in hex.
+ * <bus>          Matches anything on that bus.
+ * <bus>:<value>  Matches 1 address on the specified bus.
+ * <bus>:<from>-  Matches adressses >= the specified value on that bus
+ * <bus>:<from>-<to>  Matches addresses  'from' <= adress <= 'to' on that bus
+ * <value>        Matches 1 address on any bus.
+ * <from>-        Matches adressses >= the specified value on any bus
+ * <from>-<to>    Matches addresses  'from' <= adress <= 'to' on any bus
+ */
+bool canfilter::AddFilter(const char* filterstring)
   {
-  char* fs = (char*)filterstring;
-  if (fs[1] == 0)
+  if (!*filterstring)
+    return false;
+  uint32_t bus, id_from, id_to;
+  char sep; // Consume '-' - but don't care exactly what it is.
+  int level;
+
+  switch (filterstring[1])
     {
-    AddFilter((uint8_t)fs[0]);
-    }
-  else
-    {
-    uint8_t bus = 0;
-    uint32_t id_from = 0;
-    uint32_t id_to = UINT32_MAX;
-    if (fs[1] == ':')
+    // first character is a bus
+    case '\0':
+    case ':':
+      level = sscanf(filterstring, "%" SCNu32 ":%" SCNx32 "%c%" SCNx32, &bus, &id_from, &sep, &id_to);
+      break;
+    // No bus
+    default:
       {
-      bus = fs[0];
-      fs += 2;
+      level = sscanf(filterstring, "%" SCNx32 "%c%" SCNx32,  &id_from, &sep, &id_to);
+      if (level == 0)
+        return false;
+      bus = 0;
+      ++level;
+      break;
       }
-    id_from = strtol(fs, &fs, 16);
-    if (*fs)
-      id_to = strtol(fs+1, NULL, 16); // id range
-    else
-      id_to = id_from; // single id
-    AddFilter(bus,id_from,id_to);
     }
+
+  switch (level)
+    {
+    case 1: // eg: 1
+      id_from = 0;
+      id_to = UINT32_MAX;
+      break;
+    case 2: // eg: 1:200 or 200
+      id_to = id_from;
+      break;
+    case 3: // eg: 1:200- or 200-
+      id_to = UINT32_MAX;
+      break;
+    case 4: // eg: 1:200-7E0 or 200-7E0
+      break;
+    default:
+      return false;
+    }
+  return AddFilter(bus, id_from, id_to);
   }
 
 bool canfilter::RemoveFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
   {
-  for (CAN_filter_t* filter : m_filters)
+  if (bus >= (uint8_t)'0')
+    bus -= '0';
+  for (CAN_filter_list_t::iterator it = m_filters.begin(); it != m_filters.end(); ++it)
     {
-    if ((filter->bus == bus)&&
-        (filter->id_from == id_from)&&
+    CAN_filter_t* filter = *it;
+    if ((filter->bus == bus) &&
+        (filter->id_from == id_from) &&
         (filter->id_to == id_to))
       {
       delete filter;
+      m_filters.erase(it);
       return true;
       }
     }
@@ -524,8 +633,9 @@ bool canfilter::IsFiltered(const CAN_frame_t* p_frame)
   if (m_filters.size() == 0) return true;
   if (! p_frame) return false;
 
-  char buskey = '0';
-  if (p_frame->origin) buskey = p_frame->origin->m_busnumber + '1';
+  uint8_t buskey = 0;
+  if (p_frame->origin)
+    buskey = (p_frame->origin->m_busnumber + 1);
 
   for (CAN_filter_t* filter : m_filters)
     {
@@ -542,7 +652,7 @@ bool canfilter::IsFiltered(canbus* bus)
   if (m_filters.size() == 0) return true;
   if (bus == NULL) return true;
 
-  char buskey = bus->GetName()[3];
+  uint8_t buskey = bus->m_busnumber+1;
 
   for (CAN_filter_t* filter : m_filters)
     {
@@ -558,12 +668,16 @@ std::string canfilter::Info()
 
   for (CAN_filter_t* filter : m_filters)
     {
-    if (filter->bus > 0) buf << std::setfill(' ') << std::dec << filter->bus << ':';
+    if (filter->bus > 0) buf << std::setfill(' ') << std::dec << char('0'+ filter->bus) << ':';
     buf << std::setfill('0') << std::setw(3) << std::hex;
     if (filter->id_from == filter->id_to)
-      { buf << filter->id_from << ' '; }
+      buf << filter->id_from << ' ';
+    else if (filter->id_to < UINT32_MAX)
+      buf << filter->id_from << '-' << filter->id_to << ' ';
+    else if (filter->id_to > 0)
+      buf << filter->id_from << "- ";
     else
-      { buf << filter->id_from << '-' << filter->id_to << ' '; }
+      buf << ' ';
     }
 
   return buf.str();
@@ -637,12 +751,12 @@ void canbus::LogStatus(CAN_log_type_t type)
       return;
     ESP_LOGE(TAG,
       "%s: intr=%" PRId32 " rxpkt=%" PRId32 " txpkt=%" PRId32 " errflags=%#" PRIx32 " rxerr=%d txerr=%d rxinval=%d"
-      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d",
+      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d txqueue=%" PRId32,
       m_name, m_status.interrupts, m_status.packets_rx, m_status.packets_tx,
       m_status.error_flags, m_status.errors_rx, m_status.errors_tx,
       m_status.invalid_rx, m_status.rxbuf_overflow, m_status.txbuf_overflow,
       m_status.txbuf_delay, m_status.tx_fails, m_status.watchdog_resets,
-      m_status.error_resets);
+      m_status.error_resets, uxQueueMessagesWaiting(m_txqueue));
     }
   if (MyCan.HasLogger())
     MyCan.LogStatus(this, type, &m_status);
@@ -700,15 +814,27 @@ const char* canbus::GetErrorStateName()
   return GetCanErrorStateName(GetErrorState());
   }
 
+/**
+ * GetErrorFlagsDesc: decode error flags into human readable text
+ *  (see overrides for bus specific implementations)
+ */
+bool canbus::GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags)
+  {
+  return false;
+  }
 
-uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv)
+uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv, OvmsWriter* writer)
   {
   if (filterc>0)
     {
     canfilter *filter = new canfilter();
     for (int k=0;k<filterc;k++)
       {
-      filter->AddFilter(filterv[k]);
+      if (!filter->AddFilter(filterv[k]))
+        {
+        if (writer)
+          writer->printf("Filter '%s' is invalid\n", filterv[k] );
+        }
       }
     logger->SetFilter(filter);
     }
@@ -878,6 +1004,61 @@ void can::CAN_rxtask(void *pvParameters)
     }
   }
 
+const char *valid_baud[] = {
+  "33333", "50000", "83333", "100000", "125000", "250000", "500000", "1000000"
+};
+
+static int can_start_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 1)
+    {
+    const size_t baud_count = sizeof(valid_baud) / sizeof(valid_baud[0]);
+    const char *token = argv[0];
+
+    if (complete)
+      {
+      bool match = false;
+      unsigned int index = 0;
+      writer->SetCompletion(index, nullptr);
+      int len = strlen(token);
+      for (int i = 0; i < baud_count; ++i)
+        {
+        const char *entry = valid_baud[i];
+        if (strncmp(entry, token, len) == 0)
+          {
+          writer->SetCompletion(index++, entry);
+          match = true;
+          }
+        }
+      return match ? 1 : -1;
+      }
+    else
+      {
+      for (int i = 0; i < baud_count; ++i)
+        {
+        if (strcmp(valid_baud[i], token))
+          return argc;
+        }
+      writer->printf("Error: Invalid baud %s\n", token);
+      return -1;
+      }
+    }
+  if (argc == 2)
+    {
+    return MyDBC.ExpandComplete(writer, argv[1], complete) ? argc : -1;
+    }
+  return -1;
+  }
+
+static int can_dbc_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 1)
+    {
+    return MyDBC.ExpandComplete(writer, argv[0], complete) ? argc : -1;
+    }
+  return -1;
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // can - the CAN system controller
 ////////////////////////////////////////////////////////////////////////
@@ -902,12 +1083,12 @@ can::can()
     static const char* name[4] = {"can1", "can2", "can3", "can4"};
     OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework");
     OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework");
-    cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2);
-    cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud> [<dbc>]", 1, 2);
+    cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2, true, can_start_validate);
+    cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud> [<dbc>]", 1, 2, true, can_start_validate);
     cmd_canx->RegisterCommand("stop","Stop CAN bus",can_stop);
     cmd_canx->RegisterCommand("reset","Reset CAN bus",can_reset);
     OvmsCommand* cmd_candbc = cmd_canx->RegisterCommand("dbc","CAN dbc framework");
-    cmd_candbc->RegisterCommand("attach","Attach a DBC file to a CAN bus",can_dbc_attach,"<dbc>", 1, 1);
+    cmd_candbc->RegisterCommand("attach","Attach a DBC file to a CAN bus",can_dbc_attach,"<dbc>", 1, 1, true, can_dbc_validate);
     cmd_candbc->RegisterCommand("detach","Detach the DBC file from a CAN bus",can_dbc_detach);
     OvmsCommand* cmd_cantx = cmd_canx->RegisterCommand("tx","CAN tx framework");
     cmd_cantx->RegisterCommand("standard","Transmit standard CAN frame",can_tx,"<id> <data...>", 1, 9);
@@ -920,6 +1101,9 @@ can::can()
     cmd_cantesttx->RegisterCommand("extended","Transmit test extended CAN frames",can_testtx,"<id> <count> <delayms>", 3, 3);
     cmd_canx->RegisterCommand("status","Show CAN status",can_status);
     cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus);
+    cmd_canx->RegisterCommand("explain","Explain CAN error flags", can_explain_flags, "[<errorflags>]\n"
+      "Produce a human readable decoding of the current or given error flags for the bus, if available.\n"
+      "Enter <errorflags> hexadecimal as shown in the status output, with/without '0x' prefix.\n", 0, 1);
     cmd_canx->RegisterCommand("viewregisters","view can controller registers",can_view_registers);
     cmd_canx->RegisterCommand("setregister","set can controller register",can_set_register,"<reg> <value>",2,2);
     }
@@ -963,7 +1147,24 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
   NotifyListeners(p_frame, false);
   }
 
-void can::RegisterListener(QueueHandle_t queue, bool txfeedback)
+/**
+ * RegisterListener: register an asynchronous CAN frame processor
+ * 
+ * This is the standard mechanism to hook into the CAN framework. All RX frames
+ * and all TX results for all CAN buses get copied to all listener queues as
+ * CAN_frame_t objects, to be processed asynchronously by application tasks.
+ * 
+ * Queue creation template:
+ *   my_rx_queue = xQueueCreate(CONFIG_OVMS_HW_CAN_RX_QUEUE_SIZE, sizeof(CAN_frame_t));
+ * 
+ * You're free to use whatever queue size is appropriate for your task, but be
+ * aware the system will silently drop queue overflows. The vehicle poller
+ * takes care of registering a queue and provides an additional filter API.
+ * 
+ * If you need to process incoming frames or TX results as fast as possible,
+ * register a synchronous CAN callback -- see below.
+ */
+void can::RegisterListener(QueueHandle_t queue, bool txfeedback /*=false*/)
   {
   m_listeners[queue] = txfeedback;
   }
@@ -984,12 +1185,50 @@ void can::NotifyListeners(const CAN_frame_t* frame, bool tx)
     }
   }
 
-void can::RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback)
+/**
+ * RegisterCallback: register a synchronous CAN frame processor
+ * 
+ * This is the mechanism to hook into the CAN framework if you need to process
+ * incoming frames / transmission results as fast as possible.
+ * 
+ * A standard application for a CAN callback is a CAN processor that needs to
+ * respond to certain incoming frames within a defined maximum time span,
+ * e.g. to override control messages on the bus.
+ * 
+ * Callbacks are executed within the CAN task context, before the frames get
+ * distributed to the listener queues (see above).
+ * 
+ * Callbacks need to be highly optimized, and must not block. Avoid writing
+ * to metrics (as they may have listeners), avoid any kind of network or
+ * file operations or complex calculations (floating point math), avoid
+ * ESP_LOG* logging (as that may block). You may raise events from a callback,
+ * and you may write to queues/semaphores non-blocking.
+ */
+void can::RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback /*=false*/)
   {
   if (txfeedback)
     m_txcallbacks.push_back(new CanFrameCallbackEntry(caller, callback));
   else
     m_rxcallbacks.push_back(new CanFrameCallbackEntry(caller, callback));
+  }
+
+/**
+ * RegisterCallbackFront: register a callback at the front of the callback list
+ * 
+ * Use this if you want to make sure your callback is the first to process
+ * incoming frames / transmission results (until more callbacks get added to
+ * the front).
+ * 
+ * Be aware the vehicle poller also registers a callback (at the end) when you
+ * call OvmsVehicle::RegisterCanBus(), so if you need to add a critical callback
+ * later on, use this API method to prioritize your callback.
+ */
+void can::RegisterCallbackFront(const char* caller, CanFrameCallback callback, bool txfeedback /*=false*/)
+  {
+  if (txfeedback)
+    m_txcallbacks.push_front(new CanFrameCallbackEntry(caller, callback));
+  else
+    m_rxcallbacks.push_front(new CanFrameCallbackEntry(caller, callback));
   }
 
 void can::DeregisterCallback(const char* caller)
@@ -1044,11 +1283,12 @@ canbus::canbus(const char* name)
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "ticker.10", std::bind(&canbus::BusTicker10, this, _1, _2));
+  MyEvents.RegisterEvent(m_name, "ticker.10", std::bind(&canbus::BusTicker10, this, _1, _2));
   }
 
 canbus::~canbus()
   {
+  MyEvents.DeregisterEvent(m_name);
   vQueueDelete(m_txqueue);
   }
 

@@ -27,7 +27,7 @@ $(COMPONENT_PATH)/include/mg_version.h: $(COMPONENT_PATH)/mongoose/mongoose.h
 					-e "s/@MG_VERSION_PATCH@/0/" \
 			> "$(COMPONENT_PATH)/include/mg_version.h"; \
 	}
-COMPONENT_ADD_INCLUDEDIRS := include mongoose
+COMPONENT_ADD_INCLUDEDIRS := include mongoose src
 CFLAGS += -DMG_ENABLE_LINES  # Only for Mongoose >= 7.0
 CFLAGS += -DMG_ENABLE_LWIP   # Only for Mongoose >= 7.0
 ifdef CONFIG_MG_SSL_IF_WOLFSSL
@@ -37,7 +37,7 @@ endif
 ifdef CONFIG_MG_SSL_IF_MBEDTLS
 CFLAGS += -DMG_ENABLE_MBEDTLS=1  # Only for Mongoose >= 7.0
 endif
-COMPONENT_SRCDIRS := mongoose
+COMPONENT_SRCDIRS := mongoose src
 COMPONENT_SUBMODULES := mongoose
 #COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
 endif

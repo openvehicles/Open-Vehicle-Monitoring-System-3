@@ -53,16 +53,25 @@ OvmsConsole::OvmsConsole()
   : OvmsShell(COMMAND_RESULT_VERBOSE)
   {
   m_ready = false;
+  m_queue = NULL;
   m_deferred = NULL;
   m_discarded = 0;
   m_state = AT_PROMPT;
   m_lost = m_acked = 0;
+  // Notes:
+  //  - The main event queue gets created by the console sub class differently depending on the device.
+  //  - The deferred event queue gets created & deleted as needed when log messages are received
+  //    while an OvmsWriter InsertCallback is active.
   }
 
 OvmsConsole::~OvmsConsole()
   {
+  // stop receiving log events:
   m_ready = false;
   MyCommandApp.DeregisterConsole(this);
+  // release buffered events & delete the queues if created:
+  DeleteEventQueue(&m_queue);
+  DeleteEventQueue(&m_deferred);
   }
 
 void OvmsConsole::Initialize(const char* console)
@@ -128,7 +137,7 @@ char** OvmsConsole::GetCompletions(int &common_len, bool &finished )
 
 void OvmsConsole::Log(LogBuffers* message)
   {
-  if (!m_ready)
+  if (!m_ready || !m_queue)
     {
     message->release();
     return;
@@ -160,6 +169,8 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
 
   if (!queue)
     queue = m_queue;
+  if (!queue)
+    return;
   for (;;)
     {
     // Waiting for UART RX event or async log message event
@@ -268,6 +279,25 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
       return;
       }
     }
+  }
+
+/**
+ * DeleteEventQueue: discard buffered events & delete the queue
+ */
+void OvmsConsole::DeleteEventQueue(QueueHandle_t* queuep)
+  {
+  if (!queuep || !*queuep) return;
+  QueueHandle_t queue = *queuep;
+  *queuep = NULL;
+  Event discard;
+  while (xQueueReceive(queue, (void*)&discard, 0))
+    {
+    if (discard.type == ALERT_MULTI)
+      discard.multi->release();
+    else if (discard.type == ALERT)
+      free(discard.buffer);
+    }
+  vQueueDelete(queue);
   }
 
 void OvmsConsole::finalise()

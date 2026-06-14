@@ -165,7 +165,7 @@ void OvmsPoller::PollerISOTPStart(bool fromTicker)
   m_poll.mlframe = 0;
   m_poll.mloffset = 0;
   m_poll.mlremain = 0;
-  m_poll_wait = 2;
+  SetPollWaiting(1000);
 
   m_poll.bus->Write(&txframe);
   }
@@ -180,7 +180,7 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   char *hexdump = NULL;
 
   // After locking the mutex, check again for poll expectance match:
-  if (!m_poll_wait || !m_polls.HasPollList() || frame->origin != m_poll.bus)
+  if (!GetPollWaiting() || !m_polls.HasPollList() || frame->origin != m_poll.bus)
     {
     ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPReceive[%03" PRIX32 "]: dropping expired poll response", m_poll.bus_no, msgid);
     return false;
@@ -227,18 +227,27 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       tp_len = fr_data[0] & 0x0f;
       tp_data = &fr_data[1];
       tp_datalen = tp_len;
+
+      m_poll.raw_data = tp_data;
+      m_poll.raw_data_len = tp_datalen;
       break;
     case ISOTP_FT_FIRST:
       tp_frameindex = 0;
       tp_len = (fr_data[0] & 0x0f) << 8 | fr_data[1];
       tp_data = &fr_data[2];
       tp_datalen = (tp_len > fr_maxlen-2) ? fr_maxlen-2 : tp_len;
+
+      m_poll.raw_data = tp_data;
+      m_poll.raw_data_len = tp_datalen;
       break;
     case ISOTP_FT_CONSECUTIVE:
       tp_frameindex = fr_data[0] & 0x0f;
       tp_len = m_poll.mlremain;
       tp_data = &fr_data[1];
       tp_datalen = (tp_len > fr_maxlen-1) ? fr_maxlen-1 : tp_len;
+
+      m_poll.raw_data = tp_data;
+      m_poll.raw_data_len = tp_datalen;
       break;
     case ISOTP_FT_FLOWCTRL:
       tp_fc_command  = fr_data[0] & 0x0f;
@@ -272,7 +281,7 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     if (tp_fc_command == 1)
       {
       // add some wait time:
-      m_poll_wait++;
+      AddPollWaiting(500);
       }
     else if (tp_fc_command == 2)
       {
@@ -350,7 +359,7 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
         }
 
       if (m_poll_tx_remain > 0)
-        m_poll_wait = 2;
+        SetPollWaiting(1000);
       }
 
     return true;
@@ -370,7 +379,7 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
               hexdump ? hexdump : "-");
       if (hexdump) free(hexdump);
       m_poll.moduleid_low = m_poll.moduleid_high = 0; // ignore further frames
-      m_poll_wait = 2; // give the bus time to let remaining frames pass
+      SetPollWaiting(1000); // give the bus time to let remaining frames pass
       return true;
       }
     }
@@ -436,7 +445,7 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       ESP_LOGD(TAG, "[%" PRIu8 "]PollerISOTPReceive[%03" PRIX32 "]: got OBD/UDS info %02X(%X) code=%02X (pending)",
                m_poll.bus_no, msgid, m_poll.type, m_poll.pid, error_code);
       // add some wait time:
-      m_poll_wait++;
+      AddPollWaiting(500);
       return true;
       }
     else
@@ -536,12 +545,12 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       }
 
     m_poll.mloffset += response_datalen; // next frame application payload offset
-    m_poll_wait = 2;
+    SetPollWaiting(1000);
     }
   else
     {
     // Request response complete:
-    m_poll_wait = 0;
+    ResetPollWaiting();
     }
 
   //  If there are no more packets and

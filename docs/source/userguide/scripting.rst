@@ -19,6 +19,14 @@ directory are executed. Event scripts are executed in alphanumerical order of th
 practice is to prefix script names with 2-3 digit numbers in steps of 10 or 100 (i.e. first script 
 named ``50-…``), so new scripts can easily be integrated at a specific place.
 
+.. note::
+  Commands executed from event scripts **block the event processing** while running. Blocking for
+  too long can cause issues for other event handlers and can trigger a watchdog reboot.
+
+  Beginning with main release 3.3.006 (edge 3.3.005-723), you can use the new ``run``
+  command to execute long running commands in a background task, with the command
+  output being sent as a notification. See ``run ?`` for details.
+
 Output of background scripts without console association (e.g. event scripts) will be sent to the 
 log with tag ``ovms-duk-util`` at "info" level.
 
@@ -742,6 +750,15 @@ OvmsCommand
         Detected boot reason: PowerOn (1/14)
         Crash counters: 0 total, 0 early
 
+    .. note::
+      Commands executed via ``OvmsCommand.Exec()`` **block the Duktape process** while running. Blocking for
+      too long can cause issues for the general event processing and can trigger a watchdog reboot.
+
+      Beginning with main release 3.3.006 (edge 3.3.005-723), you can use the new ``run``
+      command to execute long running commands in a background task, with the command
+      output being sent as a notification. See ``run ?`` for details.
+
+
 - ``OvmsCommand.Register( function(cmd, argv){}, parent, command, description, param_description, minargs, maxargs)``
     The OvmsCommand “Register” functions registers a JS function as command on the cli.
     A second call to RegisterCommand with the same will update the details of same command.
@@ -1023,6 +1040,27 @@ The OvmsVehicle object is the most comprehensive, and exposes several methods to
       else
         print(res.response_hex);
 
+- ``success = OvmsVehicle.AuxMon.Enable( [ LowThreshholdV [, ChargeThreshholdV] ] )``
+    Enable the 12v Auxiliary battery monitor. This will enable the ``vehicle.aux.12v.*`` events to fire.
+    Useful for preventing battery drain by only polling ECUs when necessary (on certain cars).
+- ``OvmsVehicle.AuxMon.Disable()``
+    Disable the 12v Auxiliary battery monitor.
+- ``Obj = OvmsVehicle.AuxMon.Status()``
+    Returns the status of the Auxiliary battery monitor.
+    A 'dip' is a temporary lowering of the voltage.
+    A 'blip' is a temporary raising of the voltage.
+    
+    .. code-block:: javascript
+      
+      {
+        "enabled": <boolean>,
+        "low_threshold": <float>,     // The voltage below which is considered low-voltage (status="low")
+        "charge_threshold": <float>,  // The voltage above which is considered charging (status="charging*")
+        "short_avg": <float>,         // The current 'short period' (2s) average.
+        "long_avg": <float>,          // The current 'long period' (8s) average.
+        "state": <string>,            // On of: normal, charging, charging.dip, charging.blip, blip, dip, low
+      }
+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 OvmsVehicle Command Plugins
@@ -1094,33 +1132,56 @@ options in the App, as well as by executing the ``homelink`` shell command.
 To load this plugin automatically on boot, add the code to ``ovmsmain.js``, either
 inline or by loading a lib module (see `Persistent JavaScript`_).
 
+OvmsDBC
+^^^^^^^
+
+The Ovms DBC object represents the DBC file management sub-system. It has the following methods:
+
+- ``loaded = OvmsDBC.Load(name, dbcfile)``: Loads the dbc file under the given name.
+- ``OvmsDBC.Unload(name)``: Unloads the dbc file.
+- ``obj = OvmsDBC.Get(name)``: Exports the dbc file as a string.
+
 OvmsPoller
 ^^^^^^^^^^
+
 The Ovms Poller object represents the poller sub-system. It contains the following methods:
 
+- ``isregistered = OvmsPoller.RegisterBus(bus, mode, speed [,dbcfile])``: Register the can bus
+
+  - ``bus``: The can bus number (``1`` or ``can1``)
+  - ``mode``: The bus mode ('listen' or 'active')
+  - ``speed``: The speed (baud) of the bus (33333, 50000, 83333, 100000, 125000, 250000, 500000 or 1000000).
+    This can be 0 if it is specifed in the dbcfile.
+  - ``dbcfile``: The name of the loaded dbcfile if required.
+
+- ``OvmsPoller.PowerDown(bus)``: Power down the specified bus.
 - ``ispaused = OvmsPoller.GetPaused()``: Return true if the poller is paused by the system/user.
 - ``ispaused = OvmsPoller.GetUserPaused()``: Return true if the poller is paused by the user.
 - ``OvmsPoller.Pause()``: Pause the poller (adds User poller pause)
 - ``OvmsPoller.Resume()``: Remove the User poller pause.
-
-- ``OvmsPoller.Trace({ poller: true, txrx: false})``: Enable traces for poller/txrx tasks.
-    Enabling trace still requires that 'Verbose' or 'Debug' levels (depending) for the
-    'vehicle-poll' debug tags are set.
-    The flag ``poller`` refers to the poller task itself (relatively safe) and ``txrx`` refers to the Can TX/RX task
-    (not safe, especially for some cars).
+- ``OvmsPoller.Trace({ poller: true, txrx: false })``: Enable traces for poller/txrx tasks.
+  Enabling trace still requires that 'Verbose' or 'Debug' levels (depending) for the
+  'vehicle-poll' debug tags are set.
+  The flag ``poller`` refers to the poller task itself (relatively safe) and ``txrx`` refers to the Can TX/RX task
+  (not safe, especially for some cars).
 - ``tracemodes = OvmsPoller.GetTraceStatus()``: Return the current trace mode for the respective 'tasks'. Eg
-    .. code-block:: javascript
-   { "poller": true, "txrx": false }
+
+  .. code-block:: javascript
+
+    { "poller": true, "txrx": false }
 
 The poller object also contains a ``Times`` property for the OBD Poll-Time tracing
 which contains the following methods:
+
 - ``isrunning = OvmsPoller.Times.GetStarted()``: Returns true if the time-tracing is enabled
 - ``OvmsPoller.Times.Start``: Starts the timer-tracing
 - ``OvmsPoller.Times.Stop``: Stops the timer-tracing
 - ``OvmsPoller.Times.Reset()``: Reset the timers (doesn't affect their current state).
 - ``OvmsPoller.Times.GetStatus()``: Gets the status of the various times. This returns an object
-    of this format:
-    .. code-block:: javascript
+  of this format:
+
+  .. code-block:: javascript
+
     return_value = {
       "started": true,
       "items": {
@@ -1179,6 +1240,122 @@ which contains the following methods:
       "tot_util_pm": 6.247,
       "tot_time_ms": 4.628
     };
+
+
+The ``Poll`` object is for the polling subsystem and has the following methods:
+
+- | ``OvmsPoller.Poll.Add( list_ident, bus, dbc_file, poll_list [, poll_offset])``
+  | Adds a poll list to the poller.
+
+  +-----------------+--------------------------------------------------------+
+  | ``list_ident``  | Unique name to identify this list of polls.            |
+  +-----------------+--------------------------------------------------------+
+  | ``bus``         | Name of bus (eg "can1")                                |
+  +-----------------+--------------------------------------------------------+
+  | ``dbc_file``    | * Set to true to use the default dbc file on the bus   |
+  |                 |   for decoding. (decode sections ignored)              |
+  |                 | * Set to a name to use the specifed dbc file.          |
+  +-----------------+--------------------------------------------------------+
+  | ``poll_list``   | Set to an object defined below:                        |
+  +-----------------+--------------------------------------------------------+
+  | ``poll_offset`` | (optional) Offset of 4 poll states. Default is [0..3]  |
+  |                 | but an offset of 4 would be states 4..7                |
+  +-----------------+--------------------------------------------------------+
+
+     .. code-block:: javascript
+
+       poll_list = [
+         {
+           "send": {
+              "txid": <int>,
+              "rxid": <int>,
+              "timeout": <int>,  // [Opt] in ms, default: 3000
+              "protocol": <int>|"Std"|"ExtAdr"|"ExtFrame"|"VWTP20", // [Opt] default: Std/0 (ISOTP_STD, see vehicle_common.h)
+              "pid": <int>,      // [Opt] PID (otherwise embedded in request for backwards compatibility)
+              "type": <int>,     // [Opt] type (defaults to READDATA type 0x22)
+              "request": <string>|<Uint8Array>,   // hex encoded string or binary byte array
+            },
+           "states": [ t0, t1, t2, t3 ], // Repeating poll states (offset by 'poll_offset' param) only 4 allowed.
+           "decode": { // [Not used if dbc_decode is true]
+             <metric.name>|<value_name> :
+               {
+               // [Opt] Section conditional on other flags.
+               "match": {
+                 "name": <value_name>, // The value to multiplex off.
+                 // A list of values/ranges to match the value of value_name specified.
+                 "values": [
+                    v1, | { "from": v1, "to": v2 }  // Either a single value or a range object.
+                 ]
+               },
+
+               "start": <offset>,  // [Opt] start in bytes
+               "len": <len>,  //[Opt] Length in bytes (default 1 byte)
+
+               // [Opt] Bit Start/Length within defined bytes (or whole entry if start not specified)
+               "bitstart": <offset>, // Adds to 'start'. (Defaults to 0 for little-endian, and 7 for big-endian)
+               "bitlen": <len>,   // overrides 'len' (effectively defaults to 8*len)
+
+               "factor": <mult>,      // [Opt] Multiple applied to value (default 1).
+               "offset": <offset>,    // [Opt] Offset in bytes (default 0).
+               "unit": <unit>,        // [Opt] Ovms Unit (ensures the final value is in the correct internal units).
+               "datatype": "int-be|uint-be|int-le|uint-le|flag",
+               "values":  // [Opt] Map of values to strings to set to the ovms unit
+                 {
+                 <n1>: <string1>,
+                 <n2>: <string2>
+                 }
+               }
+           }
+         }
+       ]
+
+- | ``OvmsPoller.Poll.Remove([busno,]list_ident)``
+  | Removes the poll list ``list_ident``.
+- | ``OvmsPoller.Poll.GetState([busno])``
+  | Gets the 'poll state' (for the bus)
+- | ``OvmsPoller.Poll.SetState([busno,] state)``
+  | Sets the 'poll state' (for the bus)
+- | ``OvmsPoller.Poll.SetTrace(bool)``
+  | Sets the trace mode for Duktape Polling configurations
+- | ``OvmsPoller.Poll.Request(request, callback_obj)``
+  | Performs a once-off asynchronous OBD request.
+
+  - ``request``: Description of the request
+
+  .. code-block:: javascript
+
+    {
+      "txid": <int>,
+      "rxid": <int>,
+      ["bus": <string>,]    // default: "can1"
+      ["timeout": <int>,]   // in ms, default: 3000
+      ["protocol": <int>,]  // default: 0 = ISOTP_STD, see vehicle_common.h
+      ["pid": <int>,]       // PID (otherwise embedded in request with type)
+      ["type": <int>,]      // Package type (defaults to READDATA type 0x22 if pid specified)
+      ["request": <string>|<Uint8Array>,]  // hex encoded string or binary byte array
+    }
+
+  - ``callback_obj``: Call-backs for success and failed calls.
+    The call-backs both accept a single object as a parameter.
+
+    .. code-block:: javascript
+
+     {
+       "success": function( success-object ) { },
+       "failed": function( failed-object ) { }
+     }
+
+    - ``success-object``: An object of the following format -
+
+    .. code-block:: javascript
+
+      { "type": <int>, "txid": <int>, "rxid": <int>, "pid": <int>, "data": <BufferObject> }
+
+    - ``failed-object``: An object of the following format -
+
+    .. code-block:: javascript
+
+      { "type": <int>, "txid": <int>, "rxid": <int>, "pid": <int>, "errorcode": <int> }
 
 --------------
 Test Utilities

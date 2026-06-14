@@ -267,6 +267,7 @@ void SevconClient::shell_cfg_set(int verbosity, OvmsWriter* writer, OvmsCommand*
   // execute:
   
   if (key > 0) {
+    auto lock = MyConfig.Lock();
     
     // store:
     if (!me->SetParamProfile(key, profile)) {
@@ -509,6 +510,7 @@ void SevconClient::shell_cfg_save(int verbosity, OvmsWriter* writer, OvmsCommand
     me->m_drivemode.unsaved = 0;
 
     // make destination new current:
+    auto lock = MyConfig.Lock();
     if (me->m_drivemode.profile_cfgmode == me->m_drivemode.profile_ws) {
       me->m_drivemode.profile_cfgmode = key;
       MyConfig.SetParamValueInt("xrt", "profile_cfgmode", me->m_drivemode.profile_cfgmode);

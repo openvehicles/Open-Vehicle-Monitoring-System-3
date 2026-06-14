@@ -41,15 +41,6 @@
 // Debug tool: Do NOT leave this defined in production.
 // #define DEBUG_FUNC_LEAVE
 
-// Define for Debug of battery monitor internal states.
-// Debug tool: Probably don't need it for production
-// #define OVMS_DEBUG_BATTERYMON
-
-#ifdef OVMS_DEBUG_BATTERYMON
-// Extra verbose debuuging of battery monitor.
-// #define OVMS_DEBUG_BATTERYMON_VERBOSE
-#endif
-
 // Define when canwrite is available
 // #define XIQ_CAN_WRITE
 
@@ -95,63 +86,6 @@ void CommandParkBreakService(int verbosity, OvmsWriter *writer, OvmsCommand *cmd
 //NOTIMPL void xiq_set_auto_door_unlock(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 //NOTIMPL void xiq_set_auto_door_lock(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 
-enum class OvmsBatteryState { Unknown, Normal, Charging, Blip, Dip, Low };
-
-// 12V/Aux Battery monitor: The aim is to detect 'dips' (voltage dipping down) and 'blips' (voltage 'blipping' up),
-// as well as 'charging' states and 'low voltage'.
-// This is used to wake up the 'Ping' cycle and do some polling to detect what's going on.  This prevents us from
-// keeping the power-hungry modules from being kept awake and draining the 12V battery (in 3h)
-struct OvmsBatteryMon {
-  static const uint16_t entry_count = 30;
-  static const int32_t entry_mult = 100.0;
-  static const int32_t charge_threshold = 1400; // over 14.0v is 'Charging'
-  static const int32_t low_threshold = 1150;    // Under 11.5 is 'Low'
-  static const int32_t smooth_threshold = 20;   // < 0.2v variation is 'Normal'
-  static const int32_t blip_threshold = 30;     // cur is > 0.3v over average is 'Blip'
-  static const int32_t dip_threshold = -25;     // cur is < 0.3v over average is 'Dip'
-  // Divides the entry_count history elements into 2 parts (as a fraction first_mult / first_divis )
-  static const uint16_t first_mult = 2;
-  static const uint16_t first_divis = 3;
-
-  int32_t m_voltages[entry_count]; // Voltages times entry_mult
-
-
-  // First  buffer entry and count
-  uint16_t m_first, m_count;
-  bool m_dirty;
-  bool m_to_notify;
-
-  // Last calculated state
-  OvmsBatteryState m_lastState;
-  int32_t m_average_last;
-  int32_t m_diff_last;
-
-  OvmsBatteryMon();
-
-  OvmsBatteryState calc_state(int32_t &ave_last, int32_t &diff_last);
-
-  // Add a voltage to the circular buffer.
-  void add(float voltage);
-  // Calculate average of first section (first_mult/first_divis) and last section (the rest)
-  bool calc_average( int32_t &average, int32_t &average_first, int32_t &average_last);
-
-  // Calculate state and return true if changed
-  bool checkStateChange();
-
-  // Current State
-  OvmsBatteryState state();
-  std::string to_string();
-  uint16_t count()
-  {
-    return m_count;
-  }
-  // Last supplied value.
-  int32_t last();
-  float lastf();
-  float average_lastf();
-  float diff_lastf();
-};
-
 typedef struct {
   int toPercent;
   float maxChargeWatts;
@@ -180,9 +114,12 @@ protected:
   void Ticker60(uint32_t ticker) override;
   void Ticker300(uint32_t ticker) override;
   void EventListener(std::string event, void *data);
+  void FlatbedListener(std::string event, void *data);
   void UpdatedAverageTemp(OvmsMetric* metric);
   void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
   void ConfigChanged(OvmsConfigParam *param) override;
+  void MetricModified(OvmsMetric* metric) override;
+
 #ifdef XIQ_CAN_WRITE
   bool Send_SJB_Command( uint8_t b1, uint8_t b2, uint8_t b3);
   bool Send_IGMP_Command( uint8_t b1, uint8_t b2, uint8_t b3);
@@ -204,6 +141,8 @@ protected:
     uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
     uint8_t b5, uint8_t b6, uint8_t mode );
 #endif
+
+  bool m_off_ping;
 
 public:
   bool SetFeature(int key, const char *value) override;
@@ -231,10 +170,20 @@ protected:
   bool  kn_emergency_message_sent;
 
   int m_checklock_retry, m_checklock_start, m_checklock_notify;
+  bool m_aux_is_charging, m_aux_is_low;
+
+  // Detecting of continuous charging of AUX battery.
+  // Tries to not rock the boat by turning on the ICU unnecessarily.
+  const uint16_t AUX_CRIT_THRESH = 1440; // 14.4v
+  average_asym_util_t<uint32_t, 128, 32>  m_crit_check_avg;
 
   void HandleCharging();
   void HandleChargeStop();
-  void Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data);
+
+  void NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_state, const OvmsBatteryMon &monitor) override;
+  void BatteryStateStillCharging();
+
+  void Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, CAN_frame_format_t format, const std::string &data);
   void Incoming_Fail(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, int errorcode);
 
   void IncomingVMCU_Full(uint16_t type, uint16_t pid, const std::string &data);
@@ -444,21 +393,37 @@ protected:
   // The last filled voltage cell.
   int32_t iq_last_voltage_cell;
 
-  OvmsBatteryMon hif_aux_battery_mon;
-
   OvmsMetricBool  *m_b_bms_relay;
   OvmsMetricBool  *m_b_bms_ignition;
   OvmsMetricInt   *m_b_bms_availpower;
   OvmsMetricFloat *m_v_bat_calc_cap;
 
-  OvmsMetricBool   *m_v_env_parklights;
-  OvmsMetricFloat   *m_v_charge_current_request;
+  OvmsMetricBool  *m_v_env_parklights;
+  OvmsMetricFloat *m_v_charge_current_request;
 
   OvmsMetricBool  *m_v_env_indicator_l;
   OvmsMetricBool  *m_v_env_indicator_r;
 
   /// Accumulated operating time
   OvmsMetricInt *m_v_accum_op_time;
+
+  /// Calculate more accurage odo.
+  OvmsMetricFloat *m_v_p_odo_ext;
+
+protected:
+
+  /// The next ODO reading in km.
+  float m_next_odo; // Km
+
+  /// Distance between the projected and actual distance.
+  float m_extra_odo; // Km
+
+  bool m_reached_next_odo;
+  /// ODO plus calculated extra distance used to calculate consumption.
+  float m_extra_diff_ave; // make-up differences.
+
+  uint8_t m_last_speed; // The last speed read (Kph)
+  uint32_t m_distance_reftime; // Time (ms) of last read.
 
   struct {
     unsigned char ChargingCCS : 1;
@@ -494,11 +459,6 @@ public:
 public:
   void RangeCalcReset();
   void RangeCalcStat(OvmsWriter *writer);
-public:
-  std::string BatteryMonStat()
-  {
-    return hif_aux_battery_mon.to_string();
-  }
 };
 
 #ifdef DEBUG_FUNC_LEAVE

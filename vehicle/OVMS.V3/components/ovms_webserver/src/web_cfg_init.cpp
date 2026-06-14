@@ -29,19 +29,11 @@
 #include "ovms_log.h"
 static const char *TAG = "webserver";
 
-#include <string.h>
-#include <stdio.h>
-#include <string>
 #include <sstream>
-#include <dirent.h>
 #include "ovms_webserver.h"
-#include "ovms_config.h"
-#include "ovms_metrics.h"
-#include "metrics_standard.h"
-#include "vehicle.h"
 #include "ovms_boot.h"
-#include "ovms_housekeeping.h"
 #include "ovms_peripherals.h"
+#include "metrics_standard.h"
 
 #ifdef CONFIG_OVMS_COMP_OTA
 #include "ovms_ota.h"
@@ -53,7 +45,6 @@ static const char *TAG = "webserver";
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
-
 
 #ifdef WEBSRV_HAVE_SETUPWIZARD
 
@@ -200,6 +191,7 @@ void OvmsWebServer::CfgInitTicker()
   else if (step == "restore") {
     // revert to factory default AP & password:
     ESP_LOGE(TAG, "CfgInitTicker: restoring default access, AP 'OVMS'/'OVMSinit'");
+    auto lock = MyConfig.Lock();
     MyConfig.DeleteInstance("password", "module");
     MyConfig.DeleteInstance("auto", "wifi.mode");
     MyConfig.DeleteInstance("auto", "wifi.ssid.ap");
@@ -225,6 +217,7 @@ void OvmsWebServer::CfgInitTicker()
     std::string cl_pass = MyConfig.GetParamValue("wifi.ssid", cl_ssid);
     if (cl_ssid.empty() || cl_pass.empty()) {
       ESP_LOGE(TAG, "CfgInitTicker: step 2: wifi client config invalid");
+      auto lock = MyConfig.Lock();
       MyConfig.DeleteInstance("auto", "wifi.mode");
       MyConfig.DeleteInstance("auto", "wifi.ssid.client");
       MyConfig.DeleteInstance("network", "dns");
@@ -241,6 +234,7 @@ void OvmsWebServer::CfgInitTicker()
     std::string ssid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
     if (!MyNetManager.m_connected_wifi || MyPeripherals->m_esp32wifi->GetSSID() != ssid) {
       ESP_LOGI(TAG, "CfgInitTicker: step 2: wifi connection to '%s' failed, reverting to AP mode", ssid.c_str());
+      auto lock = MyConfig.Lock();
       MyConfig.DeleteInstance("auto", "wifi.mode");
       MyConfig.DeleteInstance("auto", "wifi.ssid.client");
       MyConfig.DeleteInstance("network", "dns");
@@ -268,7 +262,7 @@ void OvmsWebServer::CfgInitTicker()
   else if (step == "4.test.start") {
     std::string vehicletype = MyConfig.GetParamValue("auto", "vehicle.type");
     std::string server = MyConfig.GetParamValue("server.v2", "server");
-    if (StdMetrics.ms_v_type->AsString() != vehicletype) {
+    if (vehicletype != MyVehicleFactory.ActiveVehicleType()) {
       // stage 1: configure vehicle type:
       ESP_LOGI(TAG, "CfgInitTicker: step 4: setting vehicle type '%s'", vehicletype.c_str());
       MyVehicleFactory.SetVehicle(vehicletype.c_str());
@@ -326,6 +320,7 @@ void OvmsWebServer::CfgInitTicker()
  */
 std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::string step)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string moduleid, newpass1, newpass2;
 
@@ -484,6 +479,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
  */
 std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::string step)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string ssid, pass, dns;
 
@@ -721,6 +717,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
 std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::string step)
 {
 #ifdef CONFIG_OVMS_COMP_OTA
+  auto lock = MyConfig.Lock();
   std::string error;
   std::string action;
   std::string server;
@@ -882,6 +879,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
  */
 std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::string step)
 {
+  auto lock = MyConfig.Lock();
   std::string error, info;
   std::string vehicletype, units_distance, units_temp, units_pressure;
   std::string server, vehicleid, password;
@@ -1043,8 +1041,12 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
 
   c.input_select_start("Vehicle type", "vehicletype");
   c.input_select_option("&mdash;", "", vehicletype.empty());
+  // sort vehicle options by name:
+  std::map<const char*, const char*, CmpStrCaseOp> vsort;
   for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
-    c.input_select_option(k->second.name, k->first, (vehicletype == k->first));
+    vsort[k->second.name] = k->first;
+  for (auto &entry : vsort)
+    c.input_select_option(entry.first, entry.second, (vehicletype == entry.second));
   c.input_select_end();
 
   bool is_metric = units_distance != "miles";
@@ -1108,6 +1110,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
  */
 std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::string step)
 {
+  auto lock = MyConfig.Lock();
   std::string error, info;
   bool modem = false, gps = false;
   std::string apn, apn_user, apn_pass;

@@ -30,7 +30,46 @@
 
 #ifndef __OVMS_MODULE_H__
 
+class OvmsWriter;
+
 extern void AddTaskToMap(TaskHandle_t task);
+
+/**
+ * module_check_heap_integrity: perform heap integrity check, output results to memory buffer (0-terminated)
+ * 
+ * Note: the buffer will only contain details if heapok == false.
+ * 
+ * @param buf           -- buffer address
+ * @param size          -- buffer capacity
+ * @return heapok       -- true = heap integrity valid
+ */
+extern bool module_check_heap_integrity(char* buf, size_t size);
+
+/**
+ * module_check_heap_integrity: perform heap integrity check, output results to OvmsWriter
+ * 
+ * Note: will additionally output a "heap OK" info if the heap is valid.
+ * 
+ * @param verbosity     -- channel capacity
+ * @param OvmsWriter    -- channel
+ * @return heapok       -- true = heap integrity valid
+ */
+extern bool module_check_heap_integrity(int verbosity, OvmsWriter* writer);
+
+/**
+ * module_check_heap_alert: check for and send one-off alert notification on heap corruption
+ * 
+ *    To enable the check every 5 minutes, set config "module" "debug.heap" to "yes".
+ * 
+ *    To add custom checks, call from your code, or register event scripts as needed.
+ *    Example: perform heap integrity check when the server V2 gets stopped:
+ *      vfs echo "module check alert" /store/events/server.v2.stopped/90-checkheap
+ * 
+ * @param verbosity     -- optional: channel capacity (default 0)
+ * @param OvmsWriter    -- optional: channel (default NULL)
+ * @return heapok       -- false = heap corrupted/full
+ */
+extern bool module_check_heap_alert(int verbosity=0, OvmsWriter* writer=NULL);
 
 #define __OVMS_MODULE_H__
 

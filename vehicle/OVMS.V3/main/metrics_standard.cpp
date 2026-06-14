@@ -82,6 +82,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_soc = new OvmsMetricFloat(MS_V_BAT_SOC, SM_STALE_HIGH, Percentage, true);
   ms_v_bat_soh = new OvmsMetricFloat(MS_V_BAT_SOH, SM_STALE_HIGH, Percentage, true);
   ms_v_bat_cac = new OvmsMetricFloat(MS_V_BAT_CAC, SM_STALE_HIGH, AmpHours, true);
+  ms_v_bat_capacity = new OvmsMetricFloat(MS_V_BAT_CAPACITY, SM_STALE_MID, kWh);
   ms_v_bat_health = new OvmsMetricString(MS_V_BAT_HEALTH, SM_STALE_HIGH);
   ms_v_bat_voltage = new OvmsMetricFloat(MS_V_BAT_VOLTAGE, SM_STALE_MID, Volts, true);
   ms_v_bat_current = new OvmsMetricFloat(MS_V_BAT_CURRENT, SM_STALE_MID, Amps);
@@ -162,6 +163,7 @@ MetricsStandard::MetricsStandard()
   ms_v_charge_duration_range = new OvmsMetricInt(MS_V_CHARGE_DURATION_RANGE, SM_STALE_MID, Minutes);
   ms_v_charge_duration_soc = new OvmsMetricInt(MS_V_CHARGE_DURATION_SOC, SM_STALE_MID, Minutes);
   ms_v_charge_temp = new OvmsMetricFloat(MS_V_CHARGE_TEMP, SM_STALE_MID, Celcius, true);
+  ms_v_charge_timestamp = new OvmsMetricInt64(MS_V_CHARGE_TIMESTAMP, SM_STALE_HIGH, DateLocal);
 
   ms_v_charge_12v_current = new OvmsMetricFloat(MS_V_CHARGE_12V_CURRENT, SM_STALE_MID, Amps);
   ms_v_charge_12v_power = new OvmsMetricFloat(MS_V_CHARGE_12V_POWER, SM_STALE_MID, Watts);
@@ -194,6 +196,7 @@ MetricsStandard::MetricsStandard()
   ms_v_gen_duration_range = new OvmsMetricInt(MS_V_GEN_DURATION_RANGE, SM_STALE_MID, Minutes);
   ms_v_gen_duration_soc = new OvmsMetricInt(MS_V_GEN_DURATION_SOC, SM_STALE_MID, Minutes);
   ms_v_gen_temp = new OvmsMetricFloat(MS_V_GEN_TEMP, SM_STALE_MID, Celcius, true);
+  ms_v_gen_timestamp = new OvmsMetricInt64(MS_V_GEN_TIMESTAMP, SM_STALE_MID, DateLocal);
 
   //
   // Motor inverter/controller metrics

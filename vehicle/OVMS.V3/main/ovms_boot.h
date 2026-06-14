@@ -47,6 +47,7 @@ typedef enum
     BR_FirmwareUpdate,              // Firmware update reset
     BR_EarlyCrash,                  // crash during boot/init phase
     BR_Crash,                       // crash after reaching stable state
+    BR_PartitionUpdate,             // Partition update reset
   } bootreason_t;
 
 #if (ESP_IDF_VERSION_MAJOR < 4) || CONFIG_IDF_TARGET_ARCH_XTENSA
@@ -93,6 +94,7 @@ typedef struct
   int wakeup_interval;              // Wakeup interval in seconds for 12V restoration check
   bool soft_reset;                  // true = user requested reset ("module reset")
   bool firmware_update;             // true = firmware update restart
+  bool partition_update;            // true = partition update restart
   bool stable_reached;              // true = system has reached stable state (see housekeeping)
   unsigned int crash_count_early;   // Number of times system has crashed before reaching stable state
   unsigned int crash_count_total;   // Total number of times system has crashed since power on
@@ -105,6 +107,7 @@ typedef struct
   bool stack_overflow;
   char stack_overflow_taskname[16];
   task_info_t curr_task[portNUM_PROCESSORS];
+  bool heap_corruption;
   } boot_data_t;
 
 extern boot_data_t boot_data;
@@ -125,10 +128,13 @@ class Boot
     unsigned int GetEarlyCrashCount() { return m_crash_count_early; }
     bool GetStable() { return boot_data.stable_reached; }
     void SetStable();
+    bool GetHeapCorruption() { return boot_data.heap_corruption; }
+    void SetHeapCorruption();
 
   public:
     void SetSoftReset();
     void SetFirmwareUpdate();
+    void SetPartitionUpdate();
     void SetMin12VLevel(float min_12v_level);
     float GetMin12VLevel() { return boot_data.min_12v_level; }
     void Restart(bool hard=false);
@@ -163,6 +169,7 @@ class Boot
     esp_reset_reason_t m_resetreason;
     unsigned int m_crash_count_early;
     bool m_stack_overflow;
+    bool m_heap_corruption;
   };
 
 extern Boot MyBoot;

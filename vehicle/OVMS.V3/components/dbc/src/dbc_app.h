@@ -35,6 +35,10 @@
 #include "ovms_command.h"
 #include "ovms_mutex.h"
 #include "ovms_utils.h"
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+#include "duk_config.h"
+#include "duktape.h"
+#endif
 
 typedef std::map<std::string, dbcfile*> dbcLoadedFiles_t;
 
@@ -52,11 +56,19 @@ class dbc
     void LoadAutoExtras(bool log=false);
     dbcfile* Find(const char* name);
 
+  protected:
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    static duk_ret_t DukOvmsDBCLoad(duk_context *ctx);
+    static duk_ret_t DukOvmsDBCUnload(duk_context *ctx);
+    static duk_ret_t DukOvmsDBCGet(duk_context *ctx);
+#endif
   public:
     bool SelectFile(dbcfile* select);
     bool SelectFile(const char* name);
     void DeselectFile();
     dbcfile* SelectedFile();
+
+    bool ExpandComplete(OvmsWriter* writer, const char *token, bool complete);
 
   public:
     void AutoInit();
@@ -65,6 +77,7 @@ class dbc
     OvmsMutex m_mutex;
     dbcLoadedFiles_t m_dbclist;
     dbcfile* m_selected;
+    bool m_autoload = false;
   };
 
 extern dbc MyDBC;

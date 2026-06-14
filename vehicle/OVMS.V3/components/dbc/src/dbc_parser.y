@@ -92,6 +92,7 @@ dbcfile* current_dbc = NULL;
 dbcValueTable* current_value_table = NULL;
 dbcMessage* current_message = NULL;
 dbcSignal* current_signal = NULL;
+std::list<dbcSwitchRange_t> current_range;
 %}
 
 %token T_COLON
@@ -105,10 +106,10 @@ dbcSignal* current_signal = NULL;
 %token T_PAR_OPEN
 %token T_PAR_CLOSE
 %token T_COMMA
-%token T_ID
-%token T_STRING_VAL
-%token T_INT_VAL
-%token T_DOUBLE_VAL
+%token <string> T_ID
+%token <string> T_STRING_VAL
+%token <number> T_INT_VAL
+%token <double_val> T_DOUBLE_VAL
 
 %token T_VERSION
 
@@ -155,9 +156,9 @@ dbcSignal* current_signal = NULL;
 %token T_SG_MUL_VAL
 %token T_DUMMY_NODE_VECTOR
 
-%type <string>                    T_ID T_STRING_VAL version_section signal_mux
-%type <number>                    T_INT_VAL signal_endian signal_sign signal_start signal_length
-%type <double_val>                T_DOUBLE_VAL double_val signal_scale signal_offset signal_min signal_max
+%type <string>                    version_section signal_mux
+%type <number>                    signal_endian signal_sign signal_start signal_length
+%type <double_val>                double_val signal_scale signal_offset signal_min signal_max
 %%
 
 dbc:
@@ -183,6 +184,7 @@ dbc_section:
   | message_section
   | signal_section
   | value_section
+  | multiplexed_signal_section
   | attribute_section
   | attribute_default_section
   | comment_section
@@ -358,10 +360,15 @@ signal_section:
       switch($3[0])
         {
         case 'M':
-          current_message->SetMultiplexorSignal(current_signal);
+          current_signal->SetMultiplexSource();
           break;
         case 'm':
-          current_signal->SetMultiplexed((uint32_t)strtoul($3+1, NULL, 10));
+          {
+            auto len = strlen($3);
+            if (len > 2 && $3[len-1] == 'M')
+              current_signal->SetMultiplexSource();
+            current_signal->SetMultiplexed((uint32_t)strtoul($3+1, NULL, 10));
+          }
           break;
         default:
           /* error: unknown mux type */
@@ -460,6 +467,76 @@ value_list:
     free($3);
     }
     ;
+
+mul_val_start:
+  T_SG_MUL_VAL
+    {
+    ESP_LOGD(TAG, "SG_MUL_VAL started");
+    current_range.clear();
+    }
+    ;
+
+/************************************************************************/
+/* multiplexed_signal_list (T_SG_MUL_VAL)                               */
+/************************************************************************/
+/* SG_MUL_VAL_ 2564485397 S62PID00_PIDsSupported_01_20 S62PID 0-0, 1-1; */
+multiplexed_signal_section:
+  mul_val_start T_INT_VAL T_ID T_ID mux_value_range_list T_SEMICOLON
+    {
+    ESP_LOGD(TAG, "SG_MUL_VAL parsed %" PRIu64 " %s %s", $2, $3, $4);
+    dbcMessage* m = current_dbc->m_messages.FindMessage((uint32_t)$2);
+    if (m == nullptr)
+      {
+      yyerror(current_dbc, "SG_MUL_VAL_ node not found");
+      free($3);
+      free($4);
+      YYABORT;
+      }
+    current_signal = m->FindSignal(std::string($3));
+    if (current_signal == nullptr)
+      {
+      yyerror(current_dbc, "SG_MUL_VAL_ signal not found");
+      free($3);
+      free($4);
+      YYABORT;
+      }
+    dbcSignal* src = m->FindSignal(std::string($4));
+    if (src == nullptr)
+      {
+      yyerror(current_dbc, "SG_MUL_VAL_ multiplex source signal not found");
+      free($3);
+      free($4);
+      YYABORT;
+      }
+    if (!current_signal->IsMultiplexSwitch())
+      {
+      yyerror(current_dbc, "SG_MUL_VAL_ setting multiplex source on non-multiplexed signal");
+      free($3);
+      free($4);
+      YYABORT;
+      }
+    current_signal->SetMultiplexSource(src);
+    for ( dbcSwitchRange_t range : current_range )
+      {
+      current_signal->AddMultiplexRange(range);
+      ESP_LOGD(TAG, "SG_MUL_VAL Range  %" PRIu32" - %" PRIu32, range.min_val, range.max_val);
+      }
+    free($3);
+    free($4);
+    }
+
+mux_value_range_list:
+    mux_value_range
+    | mux_value_range_list T_COMMA mux_value_range ;
+
+mux_value_range:
+  |  T_INT_VAL T_INT_VAL /* Is actually '-' T_INT_VAL (parser fix) */
+    {
+    dbcSwitchRange_t range;
+    range.min_val =  static_cast<uint32_t>($1);
+    range.max_val =  static_cast<uint32_t>(-$2);
+    current_range.push_back(range);
+    }
 
 /************************************************************************/
 /* attribute_section_list (BA_DEF_)                                     */

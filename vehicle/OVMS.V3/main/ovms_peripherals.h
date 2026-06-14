@@ -79,11 +79,16 @@
 #include "ext12v.h"
 #endif // #ifdef CONFIG_OVMS_COMP_EXT12V
 
+
 #define MODULE_GPIO_SW2           0       // SW2: firmware download / factory reset
+
+// ------------------------------- Default GPIO mapping ------------------------------------------
+#ifdef CONFIG_OVMS_HW_DEFAULT_GPIO_MAP
 
 #define VSPI_PIN_MISO             19
 #define VSPI_PIN_MOSI             23
 #define VSPI_PIN_CLK              18
+
 #define VSPI_PIN_MCP2515_1_CS     5
 #define VSPI_PIN_MAX7317_CS       21
 #define VSPI_PIN_MCP2515_2_CS     27
@@ -98,12 +103,13 @@
 #define ESP32CAN_PIN_TX           25
 #define ESP32CAN_PIN_RX           26
 
-#define MAX7317_MDM_EN            0
-#define MAX7317_SW_CTL            1
-#define MAX7317_CAN1_EN           2
-#define MAX7317_MDM_DTR           3
-#define MAX7317_EGPIO_1           2
-#define MAX7317_EGPIO_2           3
+#define MAX7317_MDM_EN            0     // Modem power switch (MODEM_EGPIO_PWR)
+#define MAX7317_SW_CTL            1     // EXT_12V power switch
+#define MAX7317_CAN1_EN           2     // = EGPIO_1, CAN1 (ESP32CAN) transceiver control
+#define MAX7317_MDM_DTR           3     // = EGPIO_2, Modem sleep control (MODEM_EGPIO_DTR)
+
+#define MAX7317_EGPIO_1           2     // = CAN1_EN
+#define MAX7317_EGPIO_2           3     // = MDM_DTR
 #define MAX7317_EGPIO_3           4
 #define MAX7317_EGPIO_4           5
 #define MAX7317_EGPIO_5           6
@@ -133,6 +139,13 @@
 
 #define MODEM_EGPIO_PWR           0
 #define MODEM_EGPIO_DTR           3
+
+#endif // CONFIG_HW_DEFAULT_GPIO_MAP
+
+// ------------------------------ Alternative GPIO mapping ------------------------------------------
+#ifdef CONFIG_OVMS_HW_REMAP_GPIO
+#include CONFIG_OVMS_GPIO_MAP_FILE
+#endif  // CONFIG_OVMS_HW_REMAP_GPIO
 
 class Peripherals : public InternalRamAllocated
   {

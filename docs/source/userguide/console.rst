@@ -48,7 +48,7 @@ Our recommendations for the USB console are as follows:
 
   * For OSX, the simplest is the built-in SCREEN utility. You run this as ``screen -L /dev/tty.SLAB_USBtoUART 115200`` But note that the device path may be different for you - check with ‘ls /dev/\*USB\*’. You can use ‘control-a control-\ y’ or ‘control-a k y’ (three key sequences) to exit the screen. The “-L” option tells screen to capture a log of your session into the file “screenlog.<n>”.
   * For Linux, the SCREEN utility is also simple to get. If it is not included with your distribution, you can simply *yum install screen*, or *apt-get install screen* (depending on your distribution). From there, the command is the same as for OSX. Alternatively, you can use minicom (which is included with many linux distributions).
-  * For Windows, a simple approach is to download the free PUTTY terminal emulator. This supports both direct ASYNC (over USB) connections, as well as SSH (network). You can download putty `using this link <https://www.putty.org/>`_.
+  * For Windows, a simple approach is to download the free PUTTY terminal emulator. This supports both direct ASYNC (over USB) connections, as well as SSH (network). You can download putty `using this link <https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html>`_.
   * For Android, there are `multiple USB serial Apps in the Play store <https://play.google.com/store/search?q=usb+serial+terminal&c=apps>`_. A good recommendation is `Serial USB Terminal by Kai Morich <https://play.google.com/store/apps/details?id=de.kai_morich.serial_usb_terminal>`_.
 
 5. Once you have established the connection, press ENTER to see the “OVMS>” prompt.
