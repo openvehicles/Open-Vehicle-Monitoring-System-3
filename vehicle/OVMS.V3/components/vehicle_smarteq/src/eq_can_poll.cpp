@@ -808,9 +808,11 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Power(const char* data, uint16_t rep
 void OvmsVehicleSmartEQ::PollReply_EVC_USM14VVoltage(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 62 33 01 <Byte>
   REQUIRE_LEN(1);
-  uint8_t raw = CAN_BYTE(0);
-  float value = 6.0f + raw * 0.06f;
-  mt_evc_dcdc->SetElemValue(3, value);  // usm_volt
+  uint8_t raw = CAN_BYTE(0);  
+  float value_2020 = (raw * 0.06f) + 6.0f;  // offset 6.0, step 0.06 Model >= 2020
+  float value_2019 = raw * 0.0625f;         // step 0.0625 (1/16) Model <= 2019
+  float value = value_2020 > 15.5f ? value_2019 : value_2020; // sanity check using year offset
+  mt_evc_dcdc->SetElemValue(3, value);      // usm_volt
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len) {
