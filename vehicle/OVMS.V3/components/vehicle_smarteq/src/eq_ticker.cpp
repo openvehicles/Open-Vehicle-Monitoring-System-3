@@ -75,9 +75,7 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   // if 12V charging state has changed, then update metric to prevent desync
   if (Is12VchargeEQ() != StdMetrics.ms_v_env_charging12v->AsBool(false))
     {
-    StdMetrics.ms_v_env_charging12v->SetValue(Is12VchargeEQ());
-    if (!Is12VchargeEQ())
-    StdMetrics.ms_v_charge_12v_voltage->SetValue(0.0f); // reset 12V voltage when not charging to prevent desync
+    StdMetrics.ms_v_env_charging12v->SetValue(Is12VchargeEQ());    
     } 
   // reactivate door lock warning if the car is parked and unlocked
   if( m_enable_lock_state && 
@@ -116,6 +114,8 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
     DoorOpenState();
   if(IsOnEQ())
     setTPMSValue();   // update TPMS metrics
+  if(!Is12VchargeEQ() && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) > 0.1f)
+    StdMetrics.ms_v_charge_12v_voltage->SetValue(0.0f); // reset 12V voltage when not charging to prevent desync
 
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
     if(m_reboot_time > 0) 
