@@ -504,7 +504,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // activated only after reboot
     bool m_check12vadc = true;
     std::deque<uint32_t> m_12v_trickle_charge_times;  // activation timestamps for 12V trickle charge alarm within 24h
-    std::deque<uint32_t> m_contactor_act_times;       // activation timestamps for contactor activation within 24h
+    std::deque<uint32_t> m_cchange_times;             // contactor changes timestamps for tracking within 1h
 
     // --- ADC variables ---
     bool m_ADCfactor_recalc = false;      // request recalculation of ADC factor
@@ -560,7 +560,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_charge_finished = true;    
     int m_candata_timer = -1;
     int32_t m_above_cycles = 50000;       // alert threshold for cycles counted
-    int m_contactor_1h_limit = 10;        // limit for contactor cycles per hour (for alerting)
+    int m_contactor_1h_limit = 10;        // limit for contactor cycles changes per hour (for alerting)
 
     // --- TPMS internal arrays ---
     bool m_tpms_lowbatt[4] = {};          // 0=ok, 1=low
