@@ -186,6 +186,14 @@ void OvmsVehicleSmartEQ::Ticker3600(uint32_t ticker)
       m_12v_trickle_charge_times.pop_front();
     mt_12v_trickle_charge_count->SetValue((int)m_12v_trickle_charge_times.size());
     }
+  if (mt_bms_contactor_cycles->GetElemValue(4) > 0)
+    {
+    // remove timestamps older than 1h
+    time_t now = time(NULL);
+    while (!m_contactor_act_times.empty() && (now - m_contactor_act_times.front()) > 1 * 3600)
+      m_contactor_act_times.pop_front();
+    mt_bms_contactor_cycles->SetElemValue(4, (int)m_contactor_act_times.size());
+    }
   } // Ticker 3600
 
 /**

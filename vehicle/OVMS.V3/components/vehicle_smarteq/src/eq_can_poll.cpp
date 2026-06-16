@@ -350,8 +350,15 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
   mt_bms_contactor_cycles->SetElemValue(2, cycles_consumed);
   mt_bms_contactor_cycles->SetElemValue(3, cycles_diff);
   if (cycles_now != cycles_prev) 
-    {
-    ESP_LOGD(TAG,"HV contactor cycles (%u / %u / %u)", cycles_max, cycles_now, cycles_diff);
+    {    
+    time_t now = time(NULL);
+    while (!m_contactor_act_times.empty() && (now - m_contactor_act_times.front()) > 1 * 3600)
+      m_contactor_act_times.pop_front();
+
+    m_contactor_act_times.push_back((uint32_t)now);
+    int contactor_act_count_1h = (int)m_contactor_act_times.size();
+    mt_bms_contactor_cycles->SetElemValue(4, contactor_act_count_1h);
+    ESP_LOGD(TAG,"HV contactor cycles (%u / %u / %u / %d)", cycles_max, cycles_now, cycles_diff,contactor_act_count_1h);
     // Send data log XSQ-BMS-ContactorLog 
     //V1:
     //  <cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer>
@@ -359,12 +366,14 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
     //  ,<bms_mileage>,<can_soc>,<can_soh>,<USM_12V>,<contactor_state>,<bms_prod_data>,<bat_serial>,<evc_traceability>
     //V3:
     //  ,<12V_trickle_charge_count within 24h>
-    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,3,%d,%d,%d,%d,%d,%.1f,%.0f,%.1f,%.0f,%.2f,%s,%s,%s,%s,%d",
+    //V4:
+    // ,<contactor_activation_count within 1h>
+    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,3,%d,%d,%d,%d,%d,%.1f,%.0f,%.1f,%.0f,%.2f,%s,%s,%s,%s,%d,%d",
       86400 * 30, // hold time 30 days
       cycles_max, cycles_prev, cycles_now, cycles_diff, odometer, 
       mt_bms_mileage->AsFloat(), can_soc, can_soh, mt_evc_dcdc->GetElemValue(3), mt_bms_HVcontactStateTXT->AsString().c_str(),
       mp_encode(mt_bms_prod_data->AsString()).c_str(), mt_bat_serial->AsString().c_str(), mp_encode(mt_evc_traceability->AsString()).c_str(),
-      mt_12v_trickle_charge_count->AsInt(0));
+      mt_12v_trickle_charge_count->AsInt(0), contactor_act_count_1h);
     // Send alert in case of a large unexpected jump
     if (cycles_prev > cycles_now && cycles_diff > 100) 
       {
@@ -398,6 +407,19 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
       else
         m_above_cycles = roundup(cycles_consumed, 10000);
       MyConfig.SetParamValueInt("xsq", "bms.alert.above.cycles", m_above_cycles);
+      }
+    if (contactor_act_count_1h > m_contactor_1h_limit)
+      {
+      ESP_LOGW(TAG, "Contactor activated %d times within 1h", contactor_act_count_1h);
+      char contactor_alert_msg[256];
+      snprintf(contactor_alert_msg, sizeof(contactor_alert_msg),
+        "The contactor was activated more than %d times within 1 hour.\n"
+        "Please check the contactor and related systems for possible issues.\n"
+        "The number of switching operations for the contactor is limited,\n"
+        "and excessive actuation can lead to total failure!\n"
+        "Contactor cycle remaining: %d\n",
+        m_contactor_1h_limit, cycles_now);
+      MyNotify.NotifyString("alert", "xsq.contactor.alert", contactor_alert_msg);
       }
     }
 }

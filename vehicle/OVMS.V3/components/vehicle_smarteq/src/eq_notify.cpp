@@ -200,6 +200,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHVCycles(int verbosity
   writer->printf("  remaining Cycles:        %d\n", mt_bms_contactor_cycles->GetElemValue(1));
   writer->printf("  Cycles consumed:         %d\n", mt_bms_contactor_cycles->GetElemValue(2));
   writer->printf("  Cycles diff (last/now):  %d\n", mt_bms_contactor_cycles->GetElemValue(3));
+  writer->printf("  last 1h Count:           %d\n", mt_bms_contactor_cycles->GetElemValue(4));
   if (alert)
     writer->puts("Please check the vehicle and contact support!\n");
   if (!alert)
@@ -241,6 +242,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  remaining Cycles:        %d\n", mt_bms_contactor_cycles->GetElemValue(1));
   writer->printf("  consumed Cycles:         %d\n", mt_bms_contactor_cycles->GetElemValue(2));
   writer->printf("  Cycles diff (last/now):  %d\n", mt_bms_contactor_cycles->GetElemValue(3));
+  writer->printf("  last 1h Count:           %d\n", mt_bms_contactor_cycles->GetElemValue(4));
 
   writer->puts("\n--- SOC Kernel Data (PID 0x08) ---");
   writer->printf("  Open Circuit Voltage:    %.2f V\n", mt_bms_voltages->GetElemValue(5));
