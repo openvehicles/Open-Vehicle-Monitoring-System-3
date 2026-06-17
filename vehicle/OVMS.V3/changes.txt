@@ -6,7 +6,12 @@ Open Vehicle Monitor System v3 - Change log
     The counted value is set in `xsq.12v.trickle.count`.
     Within `Ticker3600`, a routine removes all timestamps older than 24 hours and updates `xsq.12v.trickle.count` by -1.
     New metric:
-      xsq.12v.trickle.count             -- Count of 12V trickle-charge cycles in 24h
+      xsq.12v.trickle.count                  -- Count of 12V trickle-charge cycles in 24h
+    updated metric:
+      xsq.bms.contactor.cycles (vector int)  -- [0]=max, [1]=now, [2]=consumed, [3]=diff, [4]=1h_counted_changes
+    New config:
+      [xsq] bms.alert.above.cycles (int)     -- alert threshold for cycles counted; default 50000
+      [xsq] bms.contactor.1h.limit (int)     -- limit for contactor cycles changes per hour for alerting; default 8
 
 2026-05-17 MB   3.3.006  OTA release
 - VW e-Up: extended battery health / aging info (with web UI integration): total battery age,
