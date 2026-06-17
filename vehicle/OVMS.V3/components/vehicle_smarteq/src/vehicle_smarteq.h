@@ -560,7 +560,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_charge_finished = true;    
     int m_candata_timer = -1;
     int32_t m_above_cycles = 50000;       // alert threshold for cycles counted
-    int m_contactor_1h_limit = 10;        // limit for contactor cycles changes per hour (for alerting)
+    int m_contactor_1h_limit = 8;         // limit for contactor cycles changes per hour (for alerting)
 
     // --- TPMS internal arrays ---
     bool m_tpms_lowbatt[4] = {};          // 0=ok, 1=low

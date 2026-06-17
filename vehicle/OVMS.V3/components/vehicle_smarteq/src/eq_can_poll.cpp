@@ -409,12 +409,12 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
         m_above_cycles = roundup(cycles_consumed, 10000);
       MyConfig.SetParamValueInt("xsq", "bms.alert.above.cycles", m_above_cycles);
       }
-    // Alert if contactor has changes more than m_contactor_1h_limit times within last 1 hour:
-    if (ccc_1h > m_contactor_1h_limit)
+    // Alert if contactor has changes m_contactor_1h_limit times within last 1 hour:
+    if (ccc_1h >= m_contactor_1h_limit)
       {
-      ESP_LOGW(TAG, "Contactor has changed more than %d times within 1h", ccc_1h);
+      ESP_LOGW(TAG, "Contactor has changed %d times within 1h", ccc_1h);
       MyNotify.NotifyStringf("alert", "bms.contactor.alert",
-        "The contactor has changed more than %d times within 1 hour.\n"
+        "The contactor has changed %d times within 1 hour.\n"
         "Please check the contactor and related systems for possible issues.\n"
         "The number of switching operations for the contactor is limited,\n"
         "and excessive actuation can lead to total failure!\n"
