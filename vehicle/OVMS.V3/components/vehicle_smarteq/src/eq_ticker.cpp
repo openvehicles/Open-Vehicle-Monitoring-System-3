@@ -114,7 +114,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
     DoorOpenState();
   if(IsOnEQ())
     setTPMSValue();   // update TPMS metrics
-  if(!Is12VchargeEQ() && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) > 0.1f)
+  if(!Is12VchargeEQ() && (StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) > 0.1f))
     StdMetrics.ms_v_charge_12v_voltage->SetValue(0.0f); // reset 12V voltage when not charging to prevent desync
 
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
@@ -185,6 +185,14 @@ void OvmsVehicleSmartEQ::Ticker3600(uint32_t ticker)
     while (!m_12v_trickle_charge_times.empty() && (now - m_12v_trickle_charge_times.front()) > 24 * 3600)
       m_12v_trickle_charge_times.pop_front();
     mt_12v_trickle_charge_count->SetValue((int)m_12v_trickle_charge_times.size());
+    }
+  if (mt_bms_contactor_cycles->GetElemValue(4) > 0)
+    {
+    // remove timestamps older than 1h
+    time_t now = time(NULL);
+    while (!m_cchange_times.empty() && (now - m_cchange_times.front()) > 1 * 3600)
+      m_cchange_times.pop_front();
+    mt_bms_contactor_cycles->SetElemValue(4, (int)m_cchange_times.size());
     }
   } // Ticker 3600
 

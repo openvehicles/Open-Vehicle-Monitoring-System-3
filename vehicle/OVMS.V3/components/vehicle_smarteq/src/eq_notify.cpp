@@ -82,7 +82,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripCounters(int verbo
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
     writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
-    writer->printf("  HV contactor consumed cycles: %d \n", mt_bms_contactor_cycles->GetElemValue(2));
+    writer->printf("  HV contactor changes within 1h: %d \n", mt_bms_contactor_cycles->GetElemValue(4));
     return Success;
 }
 void OvmsVehicleSmartEQ::NotifyTripCounters() {
@@ -108,7 +108,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandTripTotal(int verbosit
     writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
     writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
-    writer->printf("  HV contactor consumed cycles: %d \n", mt_bms_contactor_cycles->GetElemValue(2));
+    writer->printf("  HV contactor changes within 1h: %d \n", mt_bms_contactor_cycles->GetElemValue(4));
     return Success;
 }
 void OvmsVehicleSmartEQ::NotifyTotalCounters() {
@@ -137,10 +137,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandMaintenance(int verbos
     writer->printf("  days: %d\n", mt_obd_mt_day_usual->AsInt());
     writer->printf("  level: %s\n", mt_obd_mt_level->AsString().c_str());
     writer->printf("  km: %d\n", mt_obd_mt_km_usual->AsInt());    
-    writer->printf("  remaining HV contactor cycles: %d of %d (%d consumed)\n", 
+    writer->printf("  remaining HV contactor cycles: %d of %d (%d consumed, %d changes within 1h)\n", 
                    mt_bms_contactor_cycles->GetElemValue(1), 
                    mt_bms_contactor_cycles->GetElemValue(0),
-                   mt_bms_contactor_cycles->GetElemValue(2));
+                   mt_bms_contactor_cycles->GetElemValue(2),
+                   mt_bms_contactor_cycles->GetElemValue(4));
     writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
     return Success;
 }
@@ -170,7 +171,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::Command12Vcharge(int verbosit
   writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
   writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
   writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
-  writer->printf("  HV contactor resumed cycles: %d \n", mt_bms_contactor_cycles->GetElemValue(2));
+  writer->printf("  HV contactor changes within 1h: %d \n", mt_bms_contactor_cycles->GetElemValue(4));
   return Success;
 }
 void OvmsVehicleSmartEQ::Notify12Vcharge() {
@@ -200,6 +201,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHVCycles(int verbosity
   writer->printf("  remaining Cycles:        %d\n", mt_bms_contactor_cycles->GetElemValue(1));
   writer->printf("  Cycles consumed:         %d\n", mt_bms_contactor_cycles->GetElemValue(2));
   writer->printf("  Cycles diff (last/now):  %d\n", mt_bms_contactor_cycles->GetElemValue(3));
+  writer->printf("  changes within 1h:       %d\n", mt_bms_contactor_cycles->GetElemValue(4));
   if (alert)
     writer->puts("Please check the vehicle and contact support!\n");
   if (!alert)
@@ -241,6 +243,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  remaining Cycles:        %d\n", mt_bms_contactor_cycles->GetElemValue(1));
   writer->printf("  consumed Cycles:         %d\n", mt_bms_contactor_cycles->GetElemValue(2));
   writer->printf("  Cycles diff (last/now):  %d\n", mt_bms_contactor_cycles->GetElemValue(3));
+  writer->printf("  changes within 1h:       %d\n", mt_bms_contactor_cycles->GetElemValue(4));
 
   writer->puts("\n--- SOC Kernel Data (PID 0x08) ---");
   writer->printf("  Open Circuit Voltage:    %.2f V\n", mt_bms_voltages->GetElemValue(5));
