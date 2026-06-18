@@ -80,8 +80,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_reset_speed                = MyMetrics.InitFloat("xsq.v.reset.speed", SM_STALE_MID, 0, Kph);
   // 0x658 metrics
   mt_bat_serial                 = MyMetrics.InitString("xsq.v.bat.serial", SM_STALE_MAX, "");
-    // BMS production data (PID 0x9000)
-  mt_bms_prod_data              = MyMetrics.InitString("xsq.bms.prod.data", SM_STALE_MAX, "");
   // 0x646 metrics
   mt_energy_used                = MyMetrics.InitFloat("xsq.v.energy.used", SM_STALE_MID, 0, kWh);
   mt_energy_recd                = MyMetrics.InitFloat("xsq.v.energy.recd", SM_STALE_MID, 0, kWh);
@@ -162,6 +160,15 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_interlock_service      = MyMetrics.InitBool("xsq.bms.interlock.service", SM_STALE_MID, false);
   mt_bms_fusi_mode_txt          = MyMetrics.InitString("xsq.bms.fusi",SM_STALE_MID, "", Other);
   mt_bms_safety_mode_txt        = MyMetrics.InitString("xsq.bms.safety",SM_STALE_MID, "", Other);
+  // BMS production data (PID 0x90)
+  mt_bms_prod_data              = MyMetrics.InitString("xsq.bms.prod.data", SM_STALE_MAX, "");
+  // BMS identification data (PID 0x80)
+  mt_bms_ident_data             = MyMetrics.InitString("xsq.bms.id.ident.data", SM_STALE_MAX, "",  Other);
+  mt_bms_part_no                = MyMetrics.InitString("xsq.bms.id.part.no", SM_STALE_MAX, "",  Other);
+  mt_bms_hw_version             = MyMetrics.InitString("xsq.bms.id.hw.version", SM_STALE_MAX, "",  Other);
+  mt_bms_sw_version             = MyMetrics.InitString("xsq.bms.id.sw.version", SM_STALE_MAX, "",  Other);
+  mt_bms_mfr_id                 = MyMetrics.InitInt("xsq.bms.id.mfr", SM_STALE_MAX, 0,   Other);
+  mt_bms_basic_parts            = MyMetrics.InitString("xsq.bms.id.basic.parts", SM_STALE_MAX, "",  Other);
 
   // Start CAN bus in CAN_MODE_ACTIVE mode
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
