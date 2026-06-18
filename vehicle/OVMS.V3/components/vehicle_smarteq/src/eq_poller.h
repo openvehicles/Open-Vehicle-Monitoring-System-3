@@ -43,7 +43,8 @@ static const OvmsPoller::poll_pid_t obdii_79b_polls[] =
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x08, { 0,60,60,60 }, 0, ISOTP_STD },    // SOC
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,60,60,60 }, 0, ISOTP_STD },    // SOC Recalibration
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, { 0,60,60,60 }, 0, ISOTP_STD },    // Battery Health (SOH)
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x90, { 0,3600,0,0 }, 0, ISOTP_STD },    // BMS Production Number Supplier Read
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, { 0,3600,3600,0 }, 0, ISOTP_STD },    // DataRead.Identification.RenaultR2
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x90, { 0,3600,3600,0 }, 0, ISOTP_STD },    // BMS Production Number Supplier Read
 };
 
 //   -> HandleOBDpolling() will add the following PIDs with modified intervals m_cfg_cell_interval_drv/m_cfg_cell_interval_chg
@@ -58,7 +59,7 @@ static const OvmsPoller::poll_pid_t obdii_79b_cell_vrt_polls[] =
 
 static const OvmsPoller::poll_pid_t obdii_745_polls[] =
 {
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, { 0,3600,0,0 }, 0, ISOTP_STD },      // req.VIN
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, { 0,3600,3600,0 }, 0, ISOTP_STD },   // req.VIN
   { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,8,8,8 }, 0, ISOTP_STD },         // Doorlock EEPROM
 };
 
@@ -70,7 +71,7 @@ static const OvmsPoller::poll_pid_t obdii_745_tpms_polls[] =
 
 static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
 {
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, { 0,3600,0,0 }, 0, ISOTP_STD },      // Frame Traceability Information
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, { 0,3600,3600,0 }, 0, ISOTP_STD },   // Frame Traceability Information
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, { 0,16,0,16 }, 0, ISOTP_STD },  // Charging plug detected (B_PlugConnected_bcb_status_S)  
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320C, { 0,60,60,16 }, 0, ISOTP_STD }, // rqHV_Energy
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, { 0,60,60,60 }, 0, ISOTP_STD }, // Cabin blower command
@@ -87,19 +88,19 @@ static const OvmsPoller::poll_pid_t obdii_7e4_dcdc_polls[] =
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3494, { 0,60,14,14 }, 0, ISOTP_STD }, // rqDCDC_Power
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3301, { 0,60,14,14 }, 0, ISOTP_STD }, // USM 14V voltage (CAN)
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, { 0,60,14,14 }, 0, ISOTP_STD }, // Battery voltage 14V
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2003, { 0,60,0,60 }, 0, ISOTP_STD },  // Vehicle Speed
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 0,60,0,60 }, 0, ISOTP_STD },  // Total vehicle distance
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2003, { 0,60,60,60 }, 0, ISOTP_STD }, // Vehicle Speed
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 0,60,60,60 }, 0, ISOTP_STD }, // Total vehicle distance
 };
 
 static const OvmsPoller::poll_pid_t obdii_743_polls[] =
 {
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200C, { 0,60,60,60 }, 0, ISOTP_STD }, // extern temp byte 2+3
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, { 0,60,60,0 }, 0, ISOTP_STD }, // OBD start Trip Distance km 
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, { 0,60,60,0 }, 0, ISOTP_STD }, // OBD Trip time s
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, { 0,60,60,0 }, 0, ISOTP_STD }, // OBD start Trip time s
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, { 0,3600,0,0 }, 0, ISOTP_STD }, // maintenance data days
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, { 0,3600,0,0 }, 0, ISOTP_STD }, // maintenance data usual km
-  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, { 0,3600,0,0 }, 0, ISOTP_STD }, // maintenance level
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200C, { 0,60,60,60 }, 0, ISOTP_STD },  // extern temp byte 2+3
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A0, { 0,60,60,0 }, 0, ISOTP_STD },   // OBD start Trip Distance km 
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2104, { 0,60,60,0 }, 0, ISOTP_STD },   // OBD Trip time s
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x01A2, { 0,60,60,0 }, 0, ISOTP_STD },   // OBD start Trip time s
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, { 0,3600,3600,0 }, 0, ISOTP_STD }, // maintenance data days
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, { 0,3600,3600,0 }, 0, ISOTP_STD }, // maintenance data usual km
+  { 0x743, 0x763, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0188, { 0,3600,3600,0 }, 0, ISOTP_STD }, // maintenance level
 };
 
 //   -> HandleOBDpolling() will add the slow_charger_polls/fast_charger_polls PIDs when m_poll_on_charge is true, and remove them when m_poll_on_charge is false
