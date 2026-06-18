@@ -276,6 +276,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void PollReply_BMS_CellResistance(const char* data, uint16_t reply_len, uint16_t start);
     void PollReply_BMS_BattHealth(const char* data, uint16_t reply_len);
     void PollReply_BMS_ProductionData(const char* data, uint16_t reply_len);
+    void PollReply_BMS_IdentificationData(const char* data, uint16_t reply_len);
 
     // --- Poll reply handlers: TDB ---
     void PollReply_TDB(const char* data, uint16_t reply_len);
@@ -357,6 +358,14 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
     // --- Custom metrics: BMS production data (PID 0x90) ---
     OvmsMetricString        *mt_bms_prod_data;          // BMS production data formatted (serial, MM/YYYY)
+
+    // --- Custom metrics: BMS Identification (PID 0x80) ---
+    OvmsMetricString        *mt_bms_ident_data;         // BMS Identification: PartNo|Supplier|DiagV|HW|SW|basicPart|Ed|Cal
+    OvmsMetricString        *mt_bms_part_no;            // BMS Part Number (PartNumber.LowerPart)
+    OvmsMetricString        *mt_bms_hw_version;         // BMS Hardware Version (HardwareNumber.LowerPart)
+    OvmsMetricString        *mt_bms_sw_version;         // BMS Software Version (SoftwareNumber hex)
+    OvmsMetricInt           *mt_bms_mfr_id;             // BMS Manufacturer Identification Code
+    OvmsMetricString        *mt_bms_basic_parts;        // BMS BasicPartList (PN/HW/Approval hex)
 
     // --- Custom metrics: 0x637 ---
     OvmsMetricFloat         *mt_energy_used;            // Energy used since mission start (kWh)
