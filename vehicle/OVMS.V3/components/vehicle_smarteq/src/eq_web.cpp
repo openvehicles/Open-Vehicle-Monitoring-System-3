@@ -81,7 +81,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   auto lock = MyConfig.Lock();
 
-  std::string error, full_km, rebootnw;
+  std::string error, full_km, rebootnw, contactor_1h_limit;
   bool canwrite, canwrite_caron, canwrite_sleep, led, resettrip, resettotal, bcvalue;
   bool charge12v, extstats, unlocked, tripnotify, opendoors;
   bool obdii79b, obdii79b_cell, obdii743, obdii745, obdii745_tpms, obdii7e4, obdii7e4_dcdc;
@@ -109,6 +109,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     obdii745_tpms = (c.getvar("obdii745_tpms") == "yes");
     obdii7e4 = (c.getvar("obdii7e4") == "yes");
     obdii7e4_dcdc = (c.getvar("obdii7e4_dcdc") == "yes");
+    contactor_1h_limit = c.getvar("contactor_1h_limit");
 
     // Basic numeric validation:
     auto validFloat = [&](const std::string& s, double minv, double maxv, const char* fname)->bool {
@@ -123,6 +124,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     };
     if(!validFloat(full_km, 50, 300, "WLTP km")) full_km = "126.0";
     if(!validFloat(rebootnw, 0, 1440, "Restart Network Time")) rebootnw = "0";
+    if(!validFloat(contactor_1h_limit, 1, 100, "Contactor 1h limit")) contactor_1h_limit = "8";
 
     if (error.empty()) {
       // Use GetParamMap() to get a COPY of the map
@@ -156,6 +158,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       map.SetValueBool("obdii.7e4", obdii7e4);
       map.SetValueBool("obdii.7e4.dcdc", obdii7e4_dcdc);
       map.SetValueBool("obdii.745.tpms", obdii745_tpms);
+      map["bms.contactor.1h.limit"] = contactor_1h_limit;
 
       // Write all changes in one operation
       MyConfig.SetParamMap("xsq", map);
@@ -196,6 +199,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     rebootnw       = def;
     snprintf(def, sizeof(def), "%d", sq->m_full_km);
     full_km        = def;
+    snprintf(def, sizeof(def), "%d", sq->m_contactor_1h_limit);
+    contactor_1h_limit = def;
     c.head(200);
   }
 
@@ -243,6 +248,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       "<p>Maintenance + trip data. Not recommended for iOS app!</p>");  
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>0=off. Auto-restart network on v2 disconnect</p>");
+  c.input_slider("Contactor 1h limit", "contactor_1h_limit", 3, "/h",-1, atof(contactor_1h_limit.c_str()), 8, 1, 100, 1,
+    "<p>Max contactor cycles per hour before alert (default: 8)</p>");
   c.fieldset_end();
 
   c.fieldset_start("OBDII Polling (requires CAN write)");
