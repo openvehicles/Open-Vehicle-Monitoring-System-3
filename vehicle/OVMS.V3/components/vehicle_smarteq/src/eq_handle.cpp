@@ -43,7 +43,7 @@ void OvmsVehicleSmartEQ::HandlePollState() {
     {
     if (m_poll_state != POLLSTATE_OFF) 
       {
-      PollSetState(POLLSTATE_OFF);
+      smartCoolDownPolling();
       ESP_LOGD(TAG, "Pollstate Off (write disabled)");
       }
     mt_poll_state->SetValue(state_disabled);
@@ -60,7 +60,7 @@ void OvmsVehicleSmartEQ::HandlePollState() {
     {
     desired_state = POLLSTATE_ON;         //- car is on
     }
-  else if (IsAwakeEQ())
+  else if (IsAwakeEQ() && !m_poll_cooldown)
     {
     desired_state = POLLSTATE_AWAKE;      //- car is awake (but not on)
     }    
@@ -95,9 +95,9 @@ void OvmsVehicleSmartEQ::HandlePollState() {
 
 void OvmsVehicleSmartEQ::HandleOBDpolling() {
   PollSetPidList(m_can1, NULL);
-  PollSetThrottling(5);
+  PollSetThrottling(2);
   PollSetResponseSeparationTime(20);
-  HandlePollState();
+  smartCoolDownPolling();
 
   // modify Poller..
   m_poll_vector.clear();
@@ -107,15 +107,15 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
     return;
     }
   // Pre-allocate capacity to avoid reallocs during insert operations
-  // obdii_polls + slow/fast_charger_polls + 2 cell polls + terminator = ~60 entries max
-  m_poll_vector.reserve(60);
+  // obdii_polls + slow/fast_charger_polls + 2 cell polls + terminator = ~50 entries max
+  m_poll_vector.reserve(50);
 
   // Add PIDs to poll list:
   
   if (m_obdii_79b) // 79b non-cell PIDs
     m_poll_vector.insert(m_poll_vector.end(), obdii_79b_polls, endof_array(obdii_79b_polls));
 
-  if (m_obdii_745) // 745 PIDs Doorlock and VIN
+  if (m_obdii_745) // 745 PIDs Driver Door lock
     m_poll_vector.insert(m_poll_vector.end(), obdii_745_polls, endof_array(obdii_745_polls));
        
   if (m_obdii_745_tpms && IsOnEQ()) // full TPMS mode with individual pressure/temp/alert status for each wheel
@@ -138,7 +138,7 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
   if (m_obdii_7e4) // 7e4 PIDs charging plug, 12V system, and misc
     m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_polls, endof_array(obdii_7e4_polls));
   
-  if (m_obdii_743) // 743 PIDs Maintenance data, OBD trip counters
+  if (m_obdii_743) // 743 PIDs OBD trip counters
     m_poll_vector.insert(m_poll_vector.end(), obdii_743_polls, endof_array(obdii_743_polls));
   
   if (m_poll_on_charge) // additional PIDs to poll when charging, depending on fast/slow charger detected

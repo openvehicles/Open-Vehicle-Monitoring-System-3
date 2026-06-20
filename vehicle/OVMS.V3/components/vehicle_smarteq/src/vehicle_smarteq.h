@@ -155,6 +155,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void smartChargePrepare();
     void smartChargeFinish();
     void smartOBDpolling(bool activate);
+    void smartOBDpollingSingle();
+    void smartCoolDownPolling(int delay_sec = 10);
     void smartCAN2Metrics();
 
     // --- Command overrides ---
@@ -301,8 +303,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len);
     void PollReply_EVC_14VBatteryVoltageReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_CabinBlower(const char* data, uint16_t reply_len);
-    void PollReply_EVC_VehSpeed(const char* data, uint16_t reply_len);
-    void PollReply_EVC_Odometer(const char* data, uint16_t reply_len);
 
     // --- Poll reply handlers: OBL ---
     void PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len);
@@ -473,6 +473,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     float m_pressure_alert = 70.0f;         // Pressure Alert
     std::string m_hl_canbyte = "";          // canbyte variable for unv
     std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
+    float m_ref12V = 12.6f;                 // reference 12V (12.6V)
+    float m_alert12V = 0.8f;                // alert threshold 12V (0.8V)
 
     // --- Internal state variables ---
     bool m_indicator = false;               // activate indicator e.g. 7 times or whatever
@@ -500,9 +502,12 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_obdii_7e4_dcdc;                  // OBDII 7e4 dcdc mode enabled
 
     // --- Poll timing / list ---
+    bool m_static_ids_read = false;         // flag to track if static IDs have been read at least once
     int m_cfg_cell_interval_drv = 60;       // poll interval while driving, default 60 sec.
     int m_cfg_cell_interval_chg = 60;       // poll interval while charging, default 60 sec.
     poll_vector_t m_poll_vector;            // List of PIDs to poll
+    bool m_poll_cooldown = true;            // flag to trigger cooldown timer for poll state change
+    int m_cooldown_ticker = 15;             // cooldown timer for poll state change
 
   // =========================================================================
   // private
