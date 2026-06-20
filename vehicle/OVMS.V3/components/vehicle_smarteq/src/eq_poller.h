@@ -42,7 +42,7 @@ static const OvmsPoller::poll_pid_t obdii_79b_polls[] =
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, { 0,10,10,10 }, 0, ISOTP_STD },    // HV Contactor Cycles
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x08, { 0,0,300,300 }, 0, ISOTP_STD },   // SOC
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,0,300,300 }, 0, ISOTP_STD },   // SOC Recalibration
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, { 0,0,3600,3600 }, 0, ISOTP_STD }, // Battery Health (SOH)
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, { 0,0,3600,0 }, 0, ISOTP_STD },    // Battery Health (SOH)
 };
 
 //   -> HandleOBDpolling() will add the following PIDs with modified intervals m_cfg_cell_interval_drv/m_cfg_cell_interval_chg
@@ -57,7 +57,7 @@ static const OvmsPoller::poll_pid_t obdii_79b_cell_vrt_polls[] =
 
 static const OvmsPoller::poll_pid_t obdii_745_polls[] =
 {
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, { 0,3600,3600,0 }, 0, ISOTP_STD },   // req.VIN
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, { 0,8,8,8 }, 0, ISOTP_STD },         // Doorlock EEPROM
 };
 
 static const OvmsPoller::poll_pid_t obdii_745_tpms_polls[] =
@@ -68,7 +68,7 @@ static const OvmsPoller::poll_pid_t obdii_745_tpms_polls[] =
 
 static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
 {
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, { 0,8,0,8 }, 0, ISOTP_STD },  // Charging plug detected (B_PlugConnected_bcb_status_S)  
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x339D, { 0,8,0,8 }, 0, ISOTP_STD },    // Charging plug detected (B_PlugConnected_bcb_status_S)  
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320C, { 0,60,60,16 }, 0, ISOTP_STD }, // rqHV_Energy
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x34CB, { 0,300,60,0 }, 0, ISOTP_STD }, // Cabin blower command
 };
@@ -101,7 +101,7 @@ static const OvmsPoller::poll_pid_t obdii_743_polls[] =
 static const OvmsPoller::poll_pid_t slow_charger_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7303, { 0,0,0,4 }, 0, ISOTP_STD }, // rqChargerAC
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7303, { 0,0,0,4 }, 0, ISOTP_STD },  // rqChargerAC
 };
 
 static const OvmsPoller::poll_pid_t fast_charger_polls[] =
@@ -122,4 +122,13 @@ static const OvmsPoller::poll_pid_t fast_charger_polls[] =
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5066, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_HF10kHz Current
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5067, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_HF Current
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5068, { 0,0,0,60 }, 0, ISOTP_STD }, // rqJB2AC_LF Current
+};
+//   -> HandleOBDpolling() will add the following PIDs once m_static_ids_read is false and IsOnEQ() is true
+static const OvmsPoller::poll_pid_t obdii_onetime_polls[] =
+{
+  // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, { 0,3600,3600,0 }, 0, ISOTP_STD },    // DataRead.Identification.RenaultR2
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x90, { 0,3600,3600,0 }, 0, ISOTP_STD },    // BMS Production Number Supplier Read
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, { 0,3600,3600,0 }, 0, ISOTP_STD },    // Frame Traceability Information
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, { 0,3600,3600,0 }, 0, ISOTP_STD },    // req.VIN
 };

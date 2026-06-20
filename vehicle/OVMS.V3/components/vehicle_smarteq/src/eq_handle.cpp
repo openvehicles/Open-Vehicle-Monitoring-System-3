@@ -45,8 +45,8 @@ void OvmsVehicleSmartEQ::HandlePollState() {
       {
       smartCoolDownPolling();
       ESP_LOGD(TAG, "Pollstate Off (write disabled)");
+      mt_poll_state->SetValue(state_disabled);
       }
-    mt_poll_state->SetValue(state_disabled);
     return;
     }
   
@@ -60,7 +60,7 @@ void OvmsVehicleSmartEQ::HandlePollState() {
     {
     desired_state = POLLSTATE_ON;         //- car is on
     }
-  else if (IsAwakeEQ() && !m_poll_cooldown)
+  else if (IsAwakeEQ())
     {
     desired_state = POLLSTATE_AWAKE;      //- car is awake (but not on)
     }    
@@ -70,13 +70,11 @@ void OvmsVehicleSmartEQ::HandlePollState() {
     }
 
   if (desired_state != m_poll_state) 
-    {
-    PollSetState(desired_state);
-    ESP_LOGD(TAG, "Pollstate %s", state_names[desired_state]);
-    mt_poll_state->SetValue(state_names[desired_state]);
+    {      
+    PollSetState(POLLSTATE_OFF);          // Reset to off while transitioning between states to avoid conflicts
     if (desired_state == POLLSTATE_OFF)
       {
-      smartSleep();                      // switch to liten mode OBDII polling immediately
+      smartSleep();                      // switch to listen mode OBDII polling immediately
       }
     else if (desired_state == POLLSTATE_AWAKE)
       {
@@ -90,14 +88,20 @@ void OvmsVehicleSmartEQ::HandlePollState() {
       {
       smartChargeStart();                 // switch to active mode OBDII polling immediately
       }
+    // smartCoolDownPolling() (called inside smart* functions) resets m_poll_state → POLLSTATE_OFF.
+    // Restore only the tracking variable here so HandlePollState() does not re-trigger on cooldown expiry.
+    // MyPollers stays at POLLSTATE_OFF (cooldown still active); PollerStateTicker re-activates it
+    // via PollSetState(m_poll_state) once the cooldown ticker reaches zero.
+    ESP_LOGD(TAG, "Pollstate %s", state_names[desired_state]);
+    m_poll_state = desired_state;
+    mt_poll_state->SetValue(state_names[desired_state]);
     }
 }
 
 void OvmsVehicleSmartEQ::HandleOBDpolling() {
-  PollSetPidList(m_can1, NULL);
-  PollSetThrottling(2);
+  PollSetPidList(m_can1, NULL);  // Stop active polls during list rebuild (sufficient – no smartCoolDownPolling needed here)
+  PollSetThrottling(3);
   PollSetResponseSeparationTime(20);
-  smartCoolDownPolling();
 
   // modify Poller..
   m_poll_vector.clear();
@@ -107,8 +111,8 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
     return;
     }
   // Pre-allocate capacity to avoid reallocs during insert operations
-  // obdii_polls + slow/fast_charger_polls + 2 cell polls + terminator = ~50 entries max
-  m_poll_vector.reserve(50);
+  // obdii_polls + slow/fast_charger_polls + 2 cell polls + terminator = ~60 entries max
+  m_poll_vector.reserve(60);
 
   // Add PIDs to poll list:
   
@@ -153,6 +157,10 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
       }
     }
 
+  // Skip one-time polls if static IDs are already known from this session
+  if (!m_static_ids_read)
+      m_poll_vector.insert(m_poll_vector.end(), obdii_onetime_polls, endof_array(obdii_onetime_polls));
+      
   // Terminate poll list:
   m_poll_vector.push_back(POLL_LIST_END);
   // Release excess capacity to free unused heap memory

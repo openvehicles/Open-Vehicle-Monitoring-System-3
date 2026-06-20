@@ -256,7 +256,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable 743 polling", "obdii743", obdii743,
     "<p>e.g. maintenance data</p>");
   c.input_checkbox("Enable 745 polling", "obdii745", obdii745,
-    "<p>e.g. VIN/Doorlock</p>");
+    "<p>e.g. Doorlock</p>");
   c.input_checkbox("Enable 745 TPMS polling", "obdii745_tpms", obdii745_tpms,
     "<p>Full TPMS (pressure/temp/alert). Off=basic (pressure only)</p>");
   c.input_checkbox("Enable 79b polling", "obdii79b", obdii79b,

@@ -461,8 +461,6 @@ void OvmsVehicleSmartEQ::smartOn()
   if(IsCANwrite()) 
     {
     smartCoolDownPolling(5);
-    if (!m_static_ids_read)
-      smartOBDpollingSingle();
     smartOBDpolling(true);
     }
   ESP_LOGD(TAG, "smartOn()");
@@ -490,17 +488,17 @@ void OvmsVehicleSmartEQ::smartAwake()
 }
 
 void OvmsVehicleSmartEQ::smartSleep()
-{
+{  
+  smartCoolDownPolling(20);
   // disable active polling when car goes to sleep
   if((m_enable_write_caron && m_can_active) || (m_enable_write_sleep && m_can_active))
     smartOBDpolling(false);
-  smartCoolDownPolling(20);
   ESP_LOGD(TAG, "smartSleep()");
 }
 
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
-  smartCoolDownPolling();
+  smartCoolDownPolling(20);
   if (m_charge_finished)
     {
     ResetChargingValues();
@@ -527,7 +525,7 @@ void OvmsVehicleSmartEQ::smartChargeStart()
 
 void OvmsVehicleSmartEQ::smartChargeStop()
 {
-  smartCoolDownPolling();
+  smartCoolDownPolling(20);
   StdMetrics.ms_v_charge_pilot->SetValue(false);
   StdMetrics.ms_v_charge_mode->SetValue("standard");
   StdMetrics.ms_v_charge_type->SetValue("type2");
@@ -577,11 +575,11 @@ void OvmsVehicleSmartEQ::smartCoolDownPolling(int delay_sec)
   m_poll_cooldown = true;
   m_cooldown_ticker = delay_sec;
   PollSetState(POLLSTATE_OFF);
+  mt_poll_state->SetValue("Off");
 }
 
 void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
 {
-  smartCoolDownPolling();
   if(!IsCANwrite())
     {
     PollSetPidList(m_can1, NULL);
@@ -601,35 +599,6 @@ void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
     ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared");
     }
   HandleOBDpolling();
-}
-// Perform single OBD polling for static IDs (VIN, BMS Ident, Frame Traceability) when CAN write access is available
-void OvmsVehicleSmartEQ::smartOBDpollingSingle()
-{
-  if (!m_static_ids_read && IsCANwrite()) {      
-      smartCoolDownPolling(15); // Short cooldown to allow single polling without interference
-      m_static_ids_read = true;
-      xTaskCreate([](void* ctx) {
-          auto* sq = static_cast<OvmsVehicleSmartEQ*>(ctx);
-          std::string response;
-          
-          // VIN
-          if (sq->PollSingleRequest(sq->m_can1, 0x745, 0x765,
-                  VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, response) == POLLSINGLE_OK)
-              sq->PollReply_BCM_VIN(response.data(), response.size());
-          
-          // BMS Identification
-          if (sq->PollSingleRequest(sq->m_can1, 0x79B, 0x7BB,
-                  VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, response) == POLLSINGLE_OK)
-              sq->PollReply_BMS_IdentificationData(response.data(), response.size());
-
-          // Frame Traceability
-          if (sq->PollSingleRequest(sq->m_can1, 0x7E4, 0x7EC,
-                  VEHICLE_POLL_TYPE_OBDIIGROUP, 0x84, response) == POLLSINGLE_OK)
-              sq->PollReply_EVC_Traceability(response.data(), response.size());
-
-          vTaskDelete(nullptr);
-      }, "xsq.staticpoll", 4096, this, 5, nullptr);
-  }
 }
 
 /**

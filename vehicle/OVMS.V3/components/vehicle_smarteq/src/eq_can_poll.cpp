@@ -387,6 +387,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
       ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, consumed: %d odo: %0.0f, counted more than expected!", cycles_prev, cycles_now, cycles_consumed, odometer);
       if (IsCANwrite()) 
         {
+        smartCoolDownPolling();
         smartOBDpolling(false);
         MyConfig.SetParamValueBool("xsq", "canwrite", false);
         MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);

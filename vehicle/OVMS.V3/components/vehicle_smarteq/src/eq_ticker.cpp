@@ -111,6 +111,7 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   if((!m_can_active && m_enable_write && IsAwakeEQ()) ||
      (!m_can_active && m_enable_write_caron && IsOnEQ()))
     {
+    smartCoolDownPolling();
     smartOBDpolling(true);
     }
   // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
@@ -193,7 +194,9 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
   } // Ticker 60
 
 void OvmsVehicleSmartEQ::Ticker3600(uint32_t ticker) 
-  { 
+  {
+  if (!m_static_ids_read && StdMetrics.ms_v_vin->IsDefined() && mt_bms_ident_data->IsDefined() && mt_evc_traceability->IsDefined())
+      m_static_ids_read = true;  // already have all static IDs, no need to re-poll
   if (mt_12v_trickle_charge_count->AsInt(0) > 0)
     {
     // remove timestamps older than 24h
@@ -237,13 +240,15 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
   StdMetrics.ms_v_env_aux12v->SetValue(Is12VchargeEQ());
   if(m_poll_cooldown && m_cooldown_ticker > 0 && --m_cooldown_ticker == 0) 
     {
-    ESP_LOGD(TAG, "Poll state cooldown ended, new poll state: %d", m_poll_state);
+    ESP_LOGD(TAG, "Poll state cooldown ended, resuming poll state: %d", m_poll_state);
     m_poll_cooldown = false;
     m_cooldown_ticker = -1;
-    HandlePollState();
+    PollSetState(m_poll_state);  // Re-activate MyPollers at the target state after cooldown pause
+    HandlePollState();           // Re-evaluate; no-op if state is already correct
     }
-  else if (!m_cooldown_ticker)
+  else if (!m_poll_cooldown)
     {
+    PollSetState(m_poll_state);
     HandlePollState();
     }
   }

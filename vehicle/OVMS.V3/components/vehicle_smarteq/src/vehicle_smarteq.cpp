@@ -321,6 +321,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   // set CAN bus transceiver to active or listen-only depending on user selection
   if ( stateWrite != m_enable_write )
     {
+    smartCoolDownPolling();
     smartOBDpolling(m_enable_write);
     }
   // disable caron write mode if normal write mode is enabled to avoid conflicts
@@ -332,6 +333,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   // start in listen-only mode if sleep write is enabled and bus is not awake
   if (m_enable_write_sleep && !IsAwakeEQ())
     {
+    smartCoolDownPolling();
     smartOBDpolling(false);
     }
 
@@ -359,6 +361,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
 
   if (do_modify_poll) 
     {
+    smartCoolDownPolling();
     HandleOBDpolling();
     }
   StdMetrics.ms_v_charge_limit_soc->SetValue((float) m_suffsoc, Percentage );
