@@ -460,6 +460,7 @@ void OvmsVehicleSmartEQ::smartOn()
   // canwrite enable write access, only when car is on
   if(IsCANwrite()) 
     {
+    smartCoolDownPolling(5);
     smartOBDpolling(true);
     }
   ESP_LOGD(TAG, "smartOn()");
@@ -469,10 +470,12 @@ void OvmsVehicleSmartEQ::smartOff()
 {
   // Reset gear
   StdMetrics.ms_v_env_gear->SetValue(0);
+  smartCoolDownPolling();
 }
 
 void OvmsVehicleSmartEQ::smartAwake()
 {
+  smartCoolDownPolling();
   // enable active polling when car wakes up (canwrite only)
   if(m_enable_write) 
     {
@@ -485,7 +488,8 @@ void OvmsVehicleSmartEQ::smartAwake()
 }
 
 void OvmsVehicleSmartEQ::smartSleep()
-{
+{  
+  smartCoolDownPolling(20);
   // disable active polling when car goes to sleep
   if((m_enable_write_caron && m_can_active) || (m_enable_write_sleep && m_can_active))
     smartOBDpolling(false);
@@ -494,6 +498,7 @@ void OvmsVehicleSmartEQ::smartSleep()
 
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
+  smartCoolDownPolling(20);
   if (m_charge_finished)
     {
     ResetChargingValues();
@@ -514,12 +519,13 @@ void OvmsVehicleSmartEQ::smartChargeStart()
     m_ADCfactor_recalc_timer = 2;   // wait at least 2 min. before recalculation
     m_ADCfactor_recalc = true;      // recalculate ADC factor when HV charging
     }
-  smartOBDpolling(true);
+  smartOBDpolling(true);  
   ESP_LOGD(TAG, "smartChargeStart()");
 }
 
 void OvmsVehicleSmartEQ::smartChargeStop()
 {
+  smartCoolDownPolling(20);
   StdMetrics.ms_v_charge_pilot->SetValue(false);
   StdMetrics.ms_v_charge_mode->SetValue("standard");
   StdMetrics.ms_v_charge_type->SetValue("type2");
@@ -561,6 +567,15 @@ void OvmsVehicleSmartEQ::smartChargeFinish()
   m_poll_on_charge = false;
   StdMetrics.ms_v_charge_power->SetValue(0);
   ESP_LOGD(TAG, "smartChargeFinish()");
+  smartAwake(); // polling cooldown and reload polling list
+}
+
+void OvmsVehicleSmartEQ::smartCoolDownPolling(int delay_sec)
+{
+  m_poll_cooldown = true;
+  m_cooldown_ticker = delay_sec;
+  PollSetState(POLLSTATE_OFF);
+  mt_poll_state->SetValue("Off");
 }
 
 void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
@@ -568,7 +583,6 @@ void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
   if(!IsCANwrite())
     {
     PollSetPidList(m_can1, NULL);
-    vTaskDelay(200 / portTICK_PERIOD_MS);
     m_can_active = false;
     m_poll_on_charge = false;
     ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared (write access disabled)");

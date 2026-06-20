@@ -245,6 +245,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  Cycles diff (last/now):  %d\n", mt_bms_contactor_cycles->GetElemValue(3));
   writer->printf("  changes within 1h:       %d\n", mt_bms_contactor_cycles->GetElemValue(4));
 
+  writer->puts("\n--- BMS Ident Data (PID 0x80) ---");
+  writer->printf("  Basic Part:              %s\n", mt_bms_basic_parts->AsString().c_str());
+  writer->printf("  Part Number:             %s\n", mt_bms_part_no->AsString().c_str());
+  writer->printf("  HW Version:              %s\n", mt_bms_hw_version->AsString().c_str());
+  writer->printf("  SW Version:              %s\n", mt_bms_sw_version->AsString().c_str());
+  writer->printf("  Manufacturer ID:         %s\n", mt_bms_mfr_id->AsString().c_str());
+
   writer->puts("\n--- SOC Kernel Data (PID 0x08) ---");
   writer->printf("  Open Circuit Voltage:    %.2f V\n", mt_bms_voltages->GetElemValue(5));
   writer->printf("  Real SOC (Min):          %.2f%%\n", mt_bms_soc_values->GetElemValue(2));

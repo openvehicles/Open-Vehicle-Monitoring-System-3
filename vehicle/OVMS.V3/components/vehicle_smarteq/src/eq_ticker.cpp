@@ -37,6 +37,23 @@ static const char *TAG = "v-smarteq";
 
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) 
   {
+  // when 12V voltage is critically low, then switch to sleep mode immediately
+  float volt = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
+  float vref = std::max(StdMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), m_ref12V);
+  if(volt > 0.0f && vref > 0.0f && vref-volt > m_alert12V)
+    {
+    if(m_poll_state != POLLSTATE_OFF)
+      {      
+      smartCoolDownPolling(60);
+      ESP_LOGI(TAG, "Pollstate Off (under voltage detected: %.2fV)", volt);
+      }
+    if(m_cooldown_ticker <= 10) 
+      {
+      m_poll_cooldown = true;
+      m_cooldown_ticker = 60;
+      } 
+    }
+
   if (m_ddt4all_exec >= 1)
     --m_ddt4all_exec;
 
@@ -49,7 +66,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     can_battery_on = false;
     smartCAN2Metrics();
     }
-    
+
   if(IsAwakeEQ())
     smartCAN2Metrics();
 
@@ -91,10 +108,10 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
 
   if(m_enable_LED_state) 
     OnlineState();
-
-  // if HVAC is on, then modify polling to get the DCDC data (reboot prevention)
-  if (IsOnHVACEQ() && IsAwakeEQ() && IsCANwrite() && !m_can_active)
+  if((!m_can_active && m_enable_write && IsAwakeEQ()) ||
+     (!m_can_active && m_enable_write_caron && IsOnEQ()))
     {
+    smartCoolDownPolling();
     smartOBDpolling(true);
     }
   // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
@@ -177,7 +194,9 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
   } // Ticker 60
 
 void OvmsVehicleSmartEQ::Ticker3600(uint32_t ticker) 
-  { 
+  {
+  if (!m_static_ids_read && StdMetrics.ms_v_vin->IsDefined() && mt_bms_ident_data->IsDefined() && mt_evc_traceability->IsDefined())
+      m_static_ids_read = true;  // already have all static IDs, no need to re-poll
   if (mt_12v_trickle_charge_count->AsInt(0) > 0)
     {
     // remove timestamps older than 24h
@@ -219,5 +238,17 @@ void OvmsVehicleSmartEQ::PollerStateTicker(canbus *bus)
   // - base system is awake if we've got a fresh lv_pwrstate:
   // use CAN 0x350 state for 12V aux state, because it seems to be more reliable than the 12V voltage for detecting if the car is in accessory mode or not, which is needed for the powermgmt system
   StdMetrics.ms_v_env_aux12v->SetValue(Is12VchargeEQ());
-  HandlePollState();
+  if(m_poll_cooldown && m_cooldown_ticker > 0 && --m_cooldown_ticker == 0) 
+    {
+    ESP_LOGD(TAG, "Poll state cooldown ended, resuming poll state: %d", m_poll_state);
+    m_poll_cooldown = false;
+    m_cooldown_ticker = -1;
+    PollSetState(m_poll_state);  // Re-activate MyPollers at the target state after cooldown pause
+    HandlePollState();           // Re-evaluate; no-op if state is already correct
+    }
+  else if (!m_poll_cooldown)
+    {
+    PollSetState(m_poll_state);
+    HandlePollState();
+    }
   }
