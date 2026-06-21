@@ -70,8 +70,13 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x350:
       {
       REQ_DLC(7);
-      can_350_ticker = SQ_CANDATA_TIMEOUT;
-      can_awake = (CAN_BYTE(0) > 0xC1);      
+      can_350_ticker = SQ_CANDATA_TIMEOUT;      
+      // if "TECHNICAL WAKE UP" and we were previously asleep, then start 10sec. cooldown polling to wait for car to fully wake up before we start polling for data
+      if ((CAN_BYTE(0) > 0xC0) && !can_awake) 
+        {
+        smartCoolDownPolling();
+        }
+      can_awake = (CAN_BYTE(0) > 0xC1);
       can_battery_on = (CAN_BYTE(0) > 0xC2);
       can_env_on = (CAN_BYTE(0) > 0xC4);
       can_locked = (CAN_BYTE(6) == 0x96);

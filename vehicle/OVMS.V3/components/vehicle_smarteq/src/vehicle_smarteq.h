@@ -34,7 +34,7 @@
 #define __VEHICLE_SMARTEQ_H__
 
 #define VERSION "2.1.2"
-#define PRESET_VERSION 20260420 // Configuration preset version
+#define PRESET_VERSION 20260621 // Configuration preset version
 
 #include "ovms_log.h"
 
@@ -123,10 +123,9 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool ExecuteCommand(const std::string& command);
     void setTPMSValue();
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
+    void smart12VHistory();
 
     // --- Notification methods ---
-    void NotifyClimate();
-    void NotifyClimateTimer();
     void NotifyTripReset();
     void NotifyTripStart();
     void NotifyTripCounters();
@@ -339,7 +338,9 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricBool          *mt_bus_awake;              // Can Bus active
     OvmsMetricString        *mt_canbyte;                // DDT4all canbyte
     OvmsMetricFloat         *mt_adc_factor;             // calculated ADC factor for 12V measurement
-    OvmsMetricVector<float> *mt_adc_factor_history;     // last 20 calculated ADC factors for 12V measurement
+    OvmsMetricVector<float> *mt_adc_factor_history;     // last 10 calculated ADC factors for 12V measurement
+    OvmsMetricString        *mt_12v_undervolt_history;  // last 10 12V undervolt measurements ("YYYY-MM-DDTHH:MM:SS=XX.XXV|...")
+    OvmsMetricVector<float> *mt_12v_undervolt_history_vec;  // last 10 12V undervolt measurements as vector for graphing
     OvmsMetricString        *mt_poll_state;             // Poller state
     OvmsMetricInt           *mt_ed4_values;             // ED4scan: number of cells to show
     OvmsMetricString        *mt_reset_time;             // Time since last reset (hh:mm)
@@ -471,9 +472,11 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     float m_pressure_warning = 40.0f;       // Pressure Warning
     float m_pressure_alert = 70.0f;         // Pressure Alert
     std::string m_hl_canbyte = "";          // canbyte variable for unv
-    std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
+    std::deque<float> m_adc_factor_history; // ring buffer (max 10) for ADC factors
+    std::deque<std::string> m_12v_undervolt_history; // ring buffer (max 10) for 12V undervolt history: "YYYY-MM-DDTHH:MM:SS=XX.XXV"
     float m_ref12V = 12.6f;                 // reference 12V (12.6V)
     float m_alert12V = 0.8f;                // alert threshold 12V (0.8V)
+    bool m_12v_alerted = false;             // 12V undervolt alert triggered
 
     // --- Internal state variables ---
     bool m_indicator = false;               // activate indicator e.g. 7 times or whatever
