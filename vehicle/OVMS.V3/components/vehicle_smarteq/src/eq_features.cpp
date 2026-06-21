@@ -424,7 +424,6 @@ void OvmsVehicleSmartEQ::WifiRestart() {
   #endif
 }
 
-
 void OvmsVehicleSmartEQ::ModemRestart() {
   #ifdef CONFIG_OVMS_COMP_CELLULAR
     m_modem_ticker = 0; // Reset modem ticker on restart
@@ -438,6 +437,52 @@ void OvmsVehicleSmartEQ::ModemRestart() {
   #else
     ESP_LOGE(TAG, "Cellular support not enabled");
   #endif
+}
+
+void OvmsVehicleSmartEQ::smart12VHistory()
+{
+  // On first call after reboot: restore previous entries from persistent vec metric
+  if (m_12v_undervolt_history.empty())
+    {
+    size_t vn = mt_12v_undervolt_history_vec->GetSize();
+    for (size_t i = 0; i < vn && i < 10; ++i)
+      {
+      float v = mt_12v_undervolt_history_vec->GetElemValue(i);
+      if (v > 0.0f)
+        {
+        char entry[16];
+        snprintf(entry, sizeof(entry), "reboot=%.2fV", v);
+        m_12v_undervolt_history.push_back(entry);
+        }
+      }
+    }
+  float volt = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
+  time_t ts = (time_t)StdMetrics.ms_m_timeutc->AsInt();
+  if (ts < 86400)  // UTC not yet synced (still at/near 1970-01-01)
+    {
+    ESP_LOGD(TAG, "smart12VHistory: UTC time not synced, skipping entry");
+    m_12v_alerted = false;
+    return;
+    }
+  struct tm t;
+  localtime_r(&ts, &t);
+  char buf[32];
+  strftime(buf, sizeof(buf)-8, "%Y-%m-%dT%H:%M:%S", &t);
+  snprintf(buf + 19, sizeof(buf) - 19, "=%.2fV", volt);
+  m_12v_undervolt_history.push_back(buf);
+  if (m_12v_undervolt_history.size() > 10)
+    m_12v_undervolt_history.pop_front();
+  std::string hist_str;
+  float hist_vec[10];
+  size_t n = m_12v_undervolt_history.size();
+  for (size_t i=0; i<n; ++i)
+    {
+    if (i > 0) hist_str += '|';
+    hist_str += m_12v_undervolt_history[i];
+    hist_vec[i] = atof(strchr(m_12v_undervolt_history[i].c_str(), '=') + 1);
+    }
+  mt_12v_undervolt_history->SetValue(hist_str);
+  mt_12v_undervolt_history_vec->SetElemValues(0, n, hist_vec);
 }
 
 void OvmsVehicleSmartEQ::smartOn()

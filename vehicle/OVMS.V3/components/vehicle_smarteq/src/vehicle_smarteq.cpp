@@ -67,6 +67,10 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_adc_factor_history         = MyMetrics.InitVector<float>("xsq.adc.factor.history", SM_STALE_MAX, nullptr, Other,true);
   if(mt_adc_factor_history->GetSize() < m_adc_samples)
     mt_adc_factor_history->SetElemValue(m_adc_samples -1, 0.0f);  // Pre-allocate x samples to avoid reallocs
+  mt_12v_undervolt_history      = MyMetrics.InitString("xsq.12v.undervolt.history", SM_STALE_MAX, "", Other);
+  mt_12v_undervolt_history_vec  = MyMetrics.InitVector<float>("xsq.12v.undervolt.history.vec", SM_STALE_MAX, nullptr, Other,true);
+  if(mt_12v_undervolt_history_vec->GetSize() < 10)
+    mt_12v_undervolt_history_vec->SetElemValue(10 -1, 0.0f);  // Pre-allocate x samples to avoid reallocs
   mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_MAX, "UNKNOWN", Other);  
   mt_ed4_values                 = MyMetrics.InitInt("xsq.ed4.values", SM_STALE_MAX, 10);
 
@@ -243,7 +247,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   if (param && param->GetName() == "vehicle")
     {
     setTPMSValue();   // update TPMS metrics
-    m_ref12V = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
+    m_ref12V = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6f);
     m_alert12V = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 0.8f);
     }
   if (param && param->GetName() != "xsq")

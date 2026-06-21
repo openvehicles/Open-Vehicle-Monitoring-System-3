@@ -234,6 +234,8 @@ xsq.bms.id.sw.version                  BMS Software Version (SoftwareNumber hex)
 xsq.bms.id.basic.parts                 BMS BasicPartList (PN/HW/Approval hex)
 xsq.bms.id.mfr                         BMS Manufacturer Identification Code
 xsq.12v.trickle.count                  12V trickle charge counted in 24h, reset to 0 after 24h. Alert if count == 3 in 24h [count] - persistent
+xsq.12v.undervolt.history              12V undervoltage history [<timestamp>=<12V>]
+xsq.12v.undervolt.history.vec          12V undervoltage history vector (<12V>) - persistent
 =========================== ==============
 
 -------------------------
