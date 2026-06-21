@@ -69,8 +69,6 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     mt_adc_factor_history->SetElemValue(m_adc_samples -1, 0.0f);  // Pre-allocate x samples to avoid reallocs
   mt_12v_undervolt_history      = MyMetrics.InitString("xsq.12v.undervolt.history", SM_STALE_MAX, "", Other);
   mt_12v_undervolt_history_vec  = MyMetrics.InitVector<float>("xsq.12v.undervolt.history.vec", SM_STALE_MAX, nullptr, Other,true);
-  if(mt_12v_undervolt_history_vec->GetSize() < 10)
-    mt_12v_undervolt_history_vec->SetElemValue(10 -1, 0.0f);  // Pre-allocate x samples to avoid reallocs
   mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_MAX, "UNKNOWN", Other);  
   mt_ed4_values                 = MyMetrics.InitInt("xsq.ed4.values", SM_STALE_MAX, 10);
 
