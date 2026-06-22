@@ -119,8 +119,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ResetTripCounters();
     void ResetTotalCounters();
     void Check12vState();
-    void DisablePlugin(const char* plugin);
-    bool ExecuteCommand(const std::string& command);
     void setTPMSValue();
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
     void smart12VHistory();
@@ -139,10 +137,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool DoorOpen();
     void DoorLockState();
     void DoorOpenState();
-
-    // --- Network ---
-    void WifiRestart();
-    void ModemRestart();
 
     // --- Vehicle state management ---
     void smartOn();
