@@ -63,10 +63,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   BmsSetCellDefaultThresholdsTemperature(4.0, 5.5);  // Warn: 4,0°C, Alert: 5,5°C
 
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MAX, "", Other);
-  mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_MAX, 0, Other,true);
+  mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_MAX, 0, Other);
+  mt_adc_factor->SetValue(MyConfig.GetParamValueFloat("system.adc", "factor12v", 0.0f));  
   mt_adc_factor_history         = MyMetrics.InitVector<float>("xsq.adc.factor.history", SM_STALE_MAX, nullptr, Other,true);
-  if(mt_adc_factor_history->GetSize() < m_adc_samples)
-    mt_adc_factor_history->SetElemValue(m_adc_samples -1, 0.0f);  // Pre-allocate x samples to avoid reallocs
   mt_12v_undervolt_history      = MyMetrics.InitString("xsq.12v.undervolt.history", SM_STALE_MAX, "", Other);
   mt_12v_undervolt_history_vec  = MyMetrics.InitVector<float>("xsq.12v.undervolt.history.vec", SM_STALE_MAX, nullptr, Other,true);
   mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_MAX, "UNKNOWN", Other);  
