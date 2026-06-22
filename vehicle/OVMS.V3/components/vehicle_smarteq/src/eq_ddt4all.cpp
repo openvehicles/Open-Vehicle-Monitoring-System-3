@@ -107,12 +107,17 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 4:
     {
       #ifdef CONFIG_OVMS_COMP_WIFI
-        if (MyPeripherals && MyPeripherals->m_esp32wifi) {
-            WifiRestart();
-            res = Success;
-        } else {
-            res = Fail;
-        }
+        if (MyPeripherals && MyPeripherals->m_esp32wifi) 
+          {
+          MyPeripherals->m_esp32wifi->Restart();
+          ESP_LOGI(TAG, "WiFi restart initiated");
+          res = Success;
+          }
+        else 
+          {
+          ESP_LOGE(TAG, "WiFi restart failed - WiFi not available");
+          res = Fail;
+          }
       #else
         ESP_LOGE(TAG, "WiFi support not enabled");
         res = NotImplemented;
@@ -122,12 +127,17 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 5:
     {
       #ifdef CONFIG_OVMS_COMP_CELLULAR
-        if (MyPeripherals && MyPeripherals->m_cellular_modem) {
-            ModemRestart();
-            res = Success;
-        } else {
-            res = Fail;
-        }
+        if (MyPeripherals && MyPeripherals->m_cellular_modem) 
+          {
+          MyPeripherals->m_cellular_modem->Restart();
+          ESP_LOGI(TAG, "Cellular modem restart initiated");
+          res = Success;
+          }
+        else
+          {
+          ESP_LOGE(TAG, "Cellular modem restart failed - modem not available");
+          res = Fail;
+          }
       #else
         ESP_LOGE(TAG, "Cellular support not enabled");
         res = NotImplemented;
