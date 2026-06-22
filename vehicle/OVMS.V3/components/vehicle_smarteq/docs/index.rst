@@ -179,7 +179,7 @@ xsq.v.reset.energy                     Trip energy consumption (reset) [kWh]
 xsq.v.reset.speed                      Average trip speed (reset) [km/h]
 xsq.v.start.time                       Time since start [hh:mm]
 xsq.v.start.distance                   Trip distance since start [km]
-xsq.adc.factor                         Current ADC factor for 12V calculation [float] - persistent
+xsq.adc.factor                         Current ADC factor for 12V calculation [float]
 xsq.adc.factor.history                 Last calculated ADC factors (ring buffer) - persistent
 xsq.poll.state                         Current poll state (OFF/ON/RUNNING/CHARGING)
 xsq.ed4.values                         ED4scan: number of cells to show

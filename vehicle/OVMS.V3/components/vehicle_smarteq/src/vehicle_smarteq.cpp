@@ -63,10 +63,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   BmsSetCellDefaultThresholdsTemperature(4.0, 5.5);  // Warn: 4,0°C, Alert: 5,5°C
 
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MAX, "", Other);
-  mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_MAX, 0, Other,true);
+  mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_MAX, 0, Other);
+  mt_adc_factor->SetValue(MyConfig.GetParamValueFloat("system.adc", "factor12v", 0.0f));  
   mt_adc_factor_history         = MyMetrics.InitVector<float>("xsq.adc.factor.history", SM_STALE_MAX, nullptr, Other,true);
-  if(mt_adc_factor_history->GetSize() < m_adc_samples)
-    mt_adc_factor_history->SetElemValue(m_adc_samples -1, 0.0f);  // Pre-allocate x samples to avoid reallocs
   mt_12v_undervolt_history      = MyMetrics.InitString("xsq.12v.undervolt.history", SM_STALE_MAX, "", Other);
   mt_12v_undervolt_history_vec  = MyMetrics.InitVector<float>("xsq.12v.undervolt.history.vec", SM_STALE_MAX, nullptr, Other,true);
   mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_MAX, "UNKNOWN", Other);  
@@ -495,42 +494,35 @@ void OvmsVehicleSmartEQ::CalculateRangeSpeed()
 
 void OvmsVehicleSmartEQ::OnlineState() {
 #ifdef CONFIG_OVMS_COMP_MAX7317
-  if (StdMetrics.ms_m_net_ip->AsBool()) {
-    // connected:
-    if (StdMetrics.ms_s_v2_connected->AsBool()) {
-      if (m_led_state != 1) {
-        MyPeripherals->m_max7317->Output(9, 1);
-        MyPeripherals->m_max7317->Output(8, 0);
-        MyPeripherals->m_max7317->Output(7, 1);
-        m_led_state = 1;
-        ESP_LOGI(TAG,"LED GREEN");
-      }
-    } else if (StdMetrics.ms_m_net_connected->AsBool()) {
-      if (m_led_state != 2) {
-        MyPeripherals->m_max7317->Output(9, 1);
-        MyPeripherals->m_max7317->Output(8, 1);
-        MyPeripherals->m_max7317->Output(7, 0);
-        m_led_state = 2;
-        ESP_LOGI(TAG,"LED BLUE");
-      }
-    } else {
-      if (m_led_state != 3) {
-        MyPeripherals->m_max7317->Output(9, 0);
-        MyPeripherals->m_max7317->Output(8, 1);
-        MyPeripherals->m_max7317->Output(7, 1);
-        m_led_state = 3;
-        ESP_LOGI(TAG,"LED RED");
-      }
-    }
-  }
-  else if (m_led_state != 0) {
-    // not connected:
-    MyPeripherals->m_max7317->Output(9, 1);
-    MyPeripherals->m_max7317->Output(8, 1);
-    MyPeripherals->m_max7317->Output(7, 1);
-    m_led_state = 0;
-    ESP_LOGI(TAG,"LED Off");
-  }
+  // Determine target LED state:
+  //   0=Off, 1=GREEN (V2 connected), 2=BLUE (net connected), 3=RED (IP but no server)
+  int new_state;
+  if (!StdMetrics.ms_m_net_ip->AsBool())
+    new_state = 0;
+  else if (StdMetrics.ms_s_v2_connected->AsBool())
+    new_state = 1;
+  else if (StdMetrics.ms_m_net_connected->AsBool())
+    new_state = 2;
+  else
+    new_state = 3;
+
+  if (new_state == m_led_state)
+    return;
+
+  // Pin levels {pin9, pin8, pin7} per state
+  static const uint8_t led_pins[4][3] = {
+    {1, 1, 1},  // 0: Off
+    {1, 0, 1},  // 1: GREEN
+    {1, 1, 0},  // 2: BLUE
+    {0, 1, 1},  // 3: RED
+  };
+  static const char* const led_names[] = {"Off", "GREEN", "BLUE", "RED"};
+
+  MyPeripherals->m_max7317->Output(9, led_pins[new_state][0]);
+  MyPeripherals->m_max7317->Output(8, led_pins[new_state][1]);
+  MyPeripherals->m_max7317->Output(7, led_pins[new_state][2]);
+  m_led_state = new_state;
+  ESP_LOGI(TAG, "LED %s", led_names[new_state]);
 #endif
 }
 
