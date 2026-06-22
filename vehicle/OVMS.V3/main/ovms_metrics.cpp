@@ -102,8 +102,8 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP, // 19
   {"celcius",  "°C",       Native,     Fahrenheit,  GrpTemp     }, // 20
   {"fahrenheit","°F",      Celcius,    Native,      GrpTemp     }, // 21
-  UNIT_GAP, // 22
-  UNIT_GAP, // 23
+  {"celciusdiff",   "°C",  Native,         FahrenheitDiff, GrpTempDiff }, // 22
+  {"fahrenheitdiff","°F",  CelciusDiff,    Native,         GrpTempDiff }, // 23
   UNIT_GAP, // 24
   UNIT_GAP, // 25
   UNIT_GAP, // 26
@@ -244,6 +244,12 @@ static const OvmsUnitGroupInfo group_info[int(MetricGroupLast)+1] =
   { "distanceshort","Height"                 }, // 2+32=34
   GROUP_GAP,
   { "accelshort",   "Acceleration (short)"   }, // 4+32=36
+  GROUP_GAP, // 37
+  GROUP_GAP, // 38
+  GROUP_GAP, // 39
+  // NULL label: temperature differences are not separately user-configurable;
+  // they inherit the GrpTemp preference (see issue #917).
+  { "tempdiff",     NULL                      }, // 8+32=40
 };
 
 static inline int mi_to_km(int mi)
@@ -3011,6 +3017,12 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
     case Fahrenheit:
       if (to == Celcius) return ((value-32)*5)/9;
       break;
+    case CelciusDiff:
+      if (to == FahrenheitDiff) return (value*9)/5;
+      break;
+    case FahrenheitDiff:
+      if (to == CelciusDiff) return (value*5)/9;
+      break;
     case kPa:
       switch (to)
         {
@@ -3353,6 +3365,12 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
     case Fahrenheit:
       if (to == Celcius) return ((value-32)*5)/9;
       break;
+    case CelciusDiff:
+      if (to == FahrenheitDiff) return (value*9)/5;
+      break;
+    case FahrenheitDiff:
+      if (to == CelciusDiff) return (value*5)/9;
+      break;
     case kPa:
       switch (to)
         {
@@ -3541,6 +3559,18 @@ void UnitConfigMap::InitialiseSlot(size_t modifier)
 
 metric_unit_t UnitConfigMap::GetUserUnit( metric_group_t group, metric_unit_t defaultUnit )
   {
+  // Temperature-difference metrics have no preference of their own: they follow
+  // the user's temperature setting, mapped to the matching difference unit so the
+  // value is scaled without the absolute offset (see issue #917).
+  if (group == GrpTempDiff)
+    {
+    switch (GetUserUnit(GrpTemp, defaultUnit))
+      {
+      case Fahrenheit: return FahrenheitDiff;
+      case Celcius:    return CelciusDiff;
+      default:         return defaultUnit;
+      }
+    }
   uint8_t groupint = static_cast<uint8_t>(group);
   if (groupint >= m_map.size())
     return defaultUnit;
