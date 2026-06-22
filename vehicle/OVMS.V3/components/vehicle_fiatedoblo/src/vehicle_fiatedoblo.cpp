@@ -44,7 +44,7 @@ static const OvmsPoller::poll_pid_t vehicle_ftdo_polls[]
     // Pollstate 2 - car is charging
     // Pollstate 3 - ping : car is off, not charging and something triggers a wake
     // OBD2 broadcast                                    Off   ON CHRG PING (cycle time in sec)
-    { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x02, {  0,  10, 15, 25 }, 0, ISOTP_STD }, // VIN
+    { 0x7df,    0, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x02, {  0,  10,  0,  0 }, 0, ISOTP_STD }, // VIN, only responds when ready/on
 
     // Battery details
     { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd815, {  0,  5,   1, 999 }, 0, ISOTP_STD }, // Battery voltage
@@ -67,9 +67,6 @@ static const OvmsPoller::poll_pid_t vehicle_ftdo_polls[]
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8ce, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // DC-DC converter temperature
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8e1, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // on-board charger temperature
     { 0x6a2, 0x682, VEHICLE_POLL_TYPE_READDATA, 0xd8f9, {  0,  30,   30,   0 }, 0, ISOTP_STD }, // Traction cicuit coolant temperature * 10
-
-    // { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x01, {  0,  10, 1, 999 }, 0, ISOTP_STD }, // VIN length
-    // { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE,   0x02, {  0,  10, 1, 999 }, 0, ISOTP_STD }, // VIN maybe like this or with other POLL type data received... or with poll below
 
     POLL_LIST_END
   };
@@ -95,6 +92,7 @@ void OvmsVehicleFiatEDoblo::Ticker60(uint32_t ticker)
     {
       StandardMetrics.ms_v_env_on->SetValue(false);
       StandardMetrics.ms_v_pos_speed->SetValue(0);
+      PollState_Charging();
     }
 }
 
@@ -322,10 +320,20 @@ void OvmsVehicleFiatEDoblo::IncomingPollReply(const OvmsPoller::poll_job_t &job,
 void OvmsVehicleFiatEDoblo::IncomingVINPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
   if(job.pid == 0x02) {
-    if(job.mlremain > 13) {
+    size_t skip = 0;
+    if(job.mloffset == 0 || (length > 0 && data[0] == 0x01)) {
       m_vin.clear();
+      // Mode 09 PID 02 normally starts with 0x01: one VIN data item follows.
+      if(length > 0 && data[0] == 0x01) {
+        skip = 1;
+      }
+      else if(length > 0) {
+        ESP_LOGW(TAG, "unexpected VIN data item count: %u", data[0]);
+      }
     }
-    m_vin.append((char*)data, length);
+    if(length > skip) {
+      m_vin.append((char*)data + skip, length - skip);
+    }
     if(job.mlremain == 0) {
       ESP_LOGV(TAG, "received VIN: %s", m_vin.c_str());
       StdMetrics.ms_v_vin->SetValue(m_vin);
