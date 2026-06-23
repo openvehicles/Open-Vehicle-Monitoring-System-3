@@ -21,8 +21,8 @@ SOC Display                 Yes (incl. battery capacity)
 Range Display               tba
 GPS Location                Yes (from GPS module)
 Speed Display               tba
-Temperature Display         tba
-BMS v+t Display             tba
+Temperature Display         Partial
+BMS v+t Display             Partial
 TPMS Display                tba
 Charge Status Display       tba
 Charge Interruption Alerts  tba
@@ -30,5 +30,5 @@ Charge Control              tba
 Cabin Pre-heat/cool Control tba
 Lock/Unlock Vehicle         tba
 Valet Mode Control          ??
-Others                      12V battery, SoH, HV Battery voltage, odometer, front+read doors and trunk open status, footbrake (only pressed yes/no status), handbrake, VIN, battery current (+power), onboard charger temp, DC-DC temperature
+Others                      12V battery, SoH, HV Battery voltage, odometer, front+read doors and trunk open status, footbrake (only pressed yes/no status), handbrake, VIN, battery current (+power), min/max/avg cell voltage, min/max/avg pack temperature, onboard charger temp, DC-DC temperature
 =========================== ==============
