@@ -40,7 +40,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   // when 12V voltage is critically low, then switch to sleep mode immediately
   float volt = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
   float bms12v = mt_bms_voltages->GetElemValue(6) + 0.3f;      // 12V BMS clamp 30 + 0.3V to compensate for the clamp voltage drop
-  float usm12v = mt_evc_dcdc->GetElemValue(3);            // 12V USM voltage
+  float usm12v = mt_evc_dcdc->GetElemValue(3);                 // 12V USM voltage
   if((volt > 6.0f && m_ref12V > 6.0f && m_ref12V-volt > m_alert12V) ||
      (m_can_active && bms12v > 6.0f && m_ref12V > 6.0f && m_ref12V-bms12v > m_alert12V) ||
      (m_can_active && usm12v > 6.0f && m_ref12V > 6.0f && m_ref12V-usm12v > m_alert12V))
@@ -59,8 +59,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     else if (!m_12v_alerted) // alert only once when undervoltage is detected, to prevent log flooding
       {
       m_12v_alerted = true;  
-      smart12VHistory();
-      ESP_LOGD(TAG, "12V undervoltage History updated:  %.2fV Module, %.2fV BMS, %.2fV USM (reference: %.2fV)", volt, bms12v, usm12v, m_ref12V);
+      smart12VHistory();     // log undervoltage event in history metric and send data log
       }
     }
   else if (m_12v_alerted)
