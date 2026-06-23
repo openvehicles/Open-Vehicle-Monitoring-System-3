@@ -101,7 +101,7 @@ static const OvmsPoller::poll_pid_t obdii_743_polls[] =
 static const OvmsPoller::poll_pid_t slow_charger_polls[] =
 {
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7303, { 0,0,0,4 }, 0, ISOTP_STD },  // rqChargerAC
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x7303, { 0,0,0,10 }, 0, ISOTP_STD },  // rqChargerAC
 };
 
 static const OvmsPoller::poll_pid_t fast_charger_polls[] =

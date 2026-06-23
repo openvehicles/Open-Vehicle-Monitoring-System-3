@@ -260,7 +260,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  Initial Capacity:        %.2f Ah\n", mt_bms_cap->GetElemValue(1));
   writer->printf("  Estimated Capacity:      %.2f Ah\n", mt_bms_cap->GetElemValue(2));
   writer->printf("  Voltage State:           %s\n", mt_bms_voltage_state->AsString().c_str());
-  writer->printf("  OCV 12V Voltage:         %.2f V\n", mt_bms_voltages->GetElemValue(7));
+  writer->printf("  Open Circuit 12V:        %.2f V\n", mt_bms_voltages->GetElemValue(7));
   
   writer->puts("\n--- SOC Recalibration (PID 0x25) ---");
   writer->printf("  Recalibration State:     %s\n", mt_bms_soc_recal_state->AsString().c_str());

@@ -210,7 +210,7 @@ xsq.obl.misc                           OBL miscellaneous data vector: [0]=freq(H
 xsq.obl.leakdiag                       OBL leakage diagnostic status
 xsq.bms.prod.data                      BMS production data formatted (serial, MM/YYYY)
 xsq.bms.temps                          BMS temperature sensors vector [°C]
-xsq.bms.voltages                       BMS voltage values vector: [0]=cell_min(V), [1]=cell_max(V), [2]=cell_mean(V), [3]=cell_sum(V), [4]=pack_volt(V), [5]=traction_link_volt(V), [6]=12v_bms_clamp30(V), [7]=ocv_12V(V)
+xsq.bms.voltages                       BMS voltage values vector: [0]=cell_min(V), [1]=cell_max(V), [2]=cell_mean(V), [3]=cell_sum(V), [4]=pack_volt(V), [5]=traction_link_volt(V), [6]=12v_bms_clamp30(V), [7]=Open Circuit 12V(V)
 xsq.bms.contactor.cycles               HV contactor cycles vector: [0]=max, [1]=now, [2]=consumed, [3]=diff, [4]=1h_count - persistent
 xsq.bms.soc.values                     SOC values vector [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display [%]
 xsq.bms.soc.recal.state                SOC recalibration state

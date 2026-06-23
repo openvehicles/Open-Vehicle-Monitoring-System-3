@@ -385,7 +385,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricInt           *mt_12v_trickle_charge_count;    // Number of 12V trickle activations in the last 24h
 
     // --- Custom metrics: BMS ---
-    OvmsMetricVector<float> *mt_bms_voltages;                // Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=cv_sum, [4]=contactor, [5]=traction link 12V, [6]=12v_bms_clamp30, [7]=ocv_12V
+    OvmsMetricVector<float> *mt_bms_voltages;                // Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=cv_sum, [4]=contactor, [5]=traction link 12V, [6]=12v_bms_clamp30, [7]=Open Circuit 12V
     OvmsMetricVector<int>   *mt_bms_contactor_cycles;        // [0]=max, [1]=now, [2]=consumed, [3]=diff, [4]=1h_count
     OvmsMetricVector<float> *mt_bms_soc_values;              // SOC values: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
     OvmsMetricString        *mt_bms_soc_recal_state;         // SOC Recalibration State
