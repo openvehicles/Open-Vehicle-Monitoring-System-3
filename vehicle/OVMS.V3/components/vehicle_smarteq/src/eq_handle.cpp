@@ -125,16 +125,8 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
   if (m_obdii_745_tpms && IsOnEQ()) // full TPMS mode with individual pressure/temp/alert status for each wheel
     m_poll_vector.insert(m_poll_vector.end(), obdii_745_tpms_polls, endof_array(obdii_745_tpms_polls));
   
-  if (m_obdii_79b_cell) // 79b PIDs cell V/R/T values with configurable intervals
-    {
-    for (const auto& p79bcell : obdii_79b_cell_vrt_polls) 
-      {
-      OvmsPoller::poll_pid_t p79bcell_mod = p79bcell;
-      p79bcell_mod.polltime[2] = m_cfg_cell_interval_drv;
-      p79bcell_mod.polltime[3] = m_cfg_cell_interval_chg;
-      m_poll_vector.push_back(p79bcell_mod);
-      }
-    }
+  if (m_obdii_79b_cell) // 79b PIDs cell V/R/T values
+    m_poll_vector.insert(m_poll_vector.end(), obdii_79b_cell_vrt_polls, endof_array(obdii_79b_cell_vrt_polls));
     
   if (m_obdii_7e4_dcdc) // 7e4 PIDs DCDC 
     m_poll_vector.insert(m_poll_vector.end(), obdii_7e4_dcdc_polls, endof_array(obdii_7e4_dcdc_polls));

@@ -121,9 +121,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   // EVC 12V values: Index 0=dcdc_volt_req, 1=dcdc_volt, 2=dcdc_power, 3=usm_volt, 4=batt_volt_can, 5=batt_volt_req, 6=dcdc_amps, 7=dcdc_load
   mt_evc_dcdc                   = MyMetrics.InitVector<float>("xsq.evc.12v.dcdc", SM_STALE_MID, nullptr, Other);
   mt_evc_dcdc->SetElemValue(7, 0.0f);           // Pre-allocate 8 entries
-  mt_evc_traceability           = MyMetrics.InitString("xsq.evc.traceability", SM_STALE_MAX, "");
+  mt_evc_traceability           = MyMetrics.InitString("xsq.evc.traceability", SM_STALE_NONE, "");
   mt_evc_plug_detected          = MyMetrics.InitBool("xsq.evc.plug.detected", SM_STALE_MIN, false);
-  mt_12v_trickle_charge_count   = MyMetrics.InitInt("xsq.12v.trickle.count", SM_STALE_MAX, 0, Other, true);
+  mt_12v_trickle_charge_count   = MyMetrics.InitInt("xsq.12v.trickle.count", SM_STALE_NONE, 0, Other, true);
   // 0x793 OBL charger metrics
   mt_obl_fastchg                = MyMetrics.InitBool("xsq.obl.fastchg", SM_STALE_MIN, false);
   mt_obl_main_volts             = MyMetrics.InitVector<float>("xsq.obl.volts", SM_STALE_HIGH, nullptr, Volts);
@@ -139,8 +139,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_obl_main_leakage_diag      = MyMetrics.InitString("xsq.obl.leakdiag", SM_STALE_MID, "", Other);
   // 0x7BB BMS metrics
   mt_bms_voltages               = MyMetrics.InitVector<float>("xsq.bms.voltages", SM_STALE_MID, nullptr, Volts);
-  mt_bms_voltages->SetElemValue(6, 0.0f);       // Pre-allocate: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor, [5]=cv_sum, [6]=12v_system
-  mt_bms_contactor_cycles       = MyMetrics.InitVector<int>("xsq.bms.contactor.cycles", SM_STALE_HIGH, nullptr, Other, true);
+  mt_bms_voltages->SetElemValue(8, 0.0f);       // Pre-allocate: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=cv_sum, [4]=contactor, [5]=traction link 12V, [6]=12v_bms_clamp30, [7]=ocv_12V
+  mt_bms_contactor_cycles       = MyMetrics.InitVector<int>("xsq.bms.contactor.cycles", SM_STALE_NONE, nullptr, Other, true);
   if(mt_bms_contactor_cycles->GetSize() < 5)
     mt_bms_contactor_cycles->SetElemValue(4, 0);  // Pre-allocate: [0]=max, [1]=now, [2]=consumed, [3]=diff, [4]=1h_count
   mt_bms_soc_values             = MyMetrics.InitVector<float>("xsq.bms.soc.values", SM_STALE_MID, nullptr, Percentage);
@@ -162,14 +162,14 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_fusi_mode_txt          = MyMetrics.InitString("xsq.bms.fusi",SM_STALE_MID, "", Other);
   mt_bms_safety_mode_txt        = MyMetrics.InitString("xsq.bms.safety",SM_STALE_MID, "", Other);
   // BMS production data (PID 0x90)
-  mt_bms_prod_data              = MyMetrics.InitString("xsq.bms.prod.data", SM_STALE_MAX, "");
+  mt_bms_prod_data              = MyMetrics.InitString("xsq.bms.prod.data", SM_STALE_NONE, "");
   // BMS identification data (PID 0x80)
-  mt_bms_ident_data             = MyMetrics.InitString("xsq.bms.id.ident.data", SM_STALE_MAX, "",  Other);
-  mt_bms_part_no                = MyMetrics.InitString("xsq.bms.id.part.no", SM_STALE_MAX, "",  Other);
-  mt_bms_hw_version             = MyMetrics.InitString("xsq.bms.id.hw.version", SM_STALE_MAX, "",  Other);
-  mt_bms_sw_version             = MyMetrics.InitString("xsq.bms.id.sw.version", SM_STALE_MAX, "",  Other);
-  mt_bms_mfr_id                 = MyMetrics.InitInt("xsq.bms.id.mfr", SM_STALE_MAX, 0,   Other);
-  mt_bms_basic_parts            = MyMetrics.InitString("xsq.bms.id.basic.parts", SM_STALE_MAX, "",  Other);
+  mt_bms_ident_data             = MyMetrics.InitString("xsq.bms.id.ident.data", SM_STALE_NONE, "",  Other);
+  mt_bms_part_no                = MyMetrics.InitString("xsq.bms.id.part.no", SM_STALE_NONE, "",  Other);
+  mt_bms_hw_version             = MyMetrics.InitString("xsq.bms.id.hw.version", SM_STALE_NONE, "",  Other);
+  mt_bms_sw_version             = MyMetrics.InitString("xsq.bms.id.sw.version", SM_STALE_NONE, "",  Other);
+  mt_bms_mfr_id                 = MyMetrics.InitInt("xsq.bms.id.mfr", SM_STALE_NONE, 0,   Other);
+  mt_bms_basic_parts            = MyMetrics.InitString("xsq.bms.id.basic.parts", SM_STALE_NONE, "",  Other);
 
   // Start CAN bus in CAN_MODE_ACTIVE mode
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -256,8 +256,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   // Note: GetValueBool/Int/Float treat empty string as "not set" and return the default.
   OvmsConfigParam* map = MyConfig.CachedParam("xsq");
   
-  int cell_interval_drv   = 60;
-  int cell_interval_chg   = 60;
   bool stateWrite         = m_enable_write;
   bool obdii_743          = true;
   bool obdii_745          = true;
@@ -299,8 +297,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_cfg_preset_version   = map->GetValueInt("cfg.preset.ver", 0);
     m_suffsoc              = map->GetValueInt("suffsoc", 0);
     m_suffrange            = map->GetValueInt("suffrange", 0);
-    cell_interval_drv      = map->GetValueInt("cell_interval_drv", 60);
-    cell_interval_chg      = map->GetValueInt("cell_interval_chg", 60);
     m_above_cycles         = map->GetValueInt("bms.alert.above.cycles", 50000);
     m_contactor_1h_limit   = map->GetValueInt("bms.contactor.1h.limit", 8);
     
@@ -339,8 +335,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     }
 
   bool do_modify_poll = (
-    (cell_interval_drv != m_cfg_cell_interval_drv) ||
-    (cell_interval_chg != m_cfg_cell_interval_chg) ||
     (obdii_79b != m_obdii_79b) ||
     (obdii_79b_cell != m_obdii_79b_cell) ||
     (obdii_743 != m_obdii_743) ||
@@ -349,9 +343,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     (obdii_7e4 != m_obdii_7e4) ||
     (obdii_7e4_dcdc != m_obdii_7e4_dcdc)
   );
-  
-  m_cfg_cell_interval_drv = cell_interval_drv;
-  m_cfg_cell_interval_chg = cell_interval_chg;
+
   m_obdii_79b = obdii_79b;
   m_obdii_79b_cell = obdii_79b_cell;
   m_obdii_743 = obdii_743;
@@ -482,7 +474,7 @@ void OvmsVehicleSmartEQ::CalculateRangeSpeed()
   {
   float bat_power  = StdMetrics.ms_v_bat_power->AsFloat();      // kW (pos=discharge, neg=charge)
   float cap_full   = mt_bms_cap->GetElemValue(0);               // Ah - full usable capacity
-  float v_link     = mt_bms_voltages->GetElemValue(3);          // V  - HV link voltage
+  float v_link     = mt_bms_voltages->GetElemValue(5);          // V  - HV link voltage
   float range_full = StdMetrics.ms_v_bat_range_full->AsFloat(); // km at 100% SOC
 
   if (cap_full <= 0 || v_link <= 0 || range_full <= 0)

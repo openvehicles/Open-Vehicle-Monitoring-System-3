@@ -253,7 +253,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  Manufacturer ID:         %s\n", mt_bms_mfr_id->AsString().c_str());
 
   writer->puts("\n--- SOC Kernel Data (PID 0x08) ---");
-  writer->printf("  Open Circuit Voltage:    %.2f V\n", mt_bms_voltages->GetElemValue(5));
   writer->printf("  Real SOC (Min):          %.2f%%\n", mt_bms_soc_values->GetElemValue(2));
   writer->printf("  Real SOC (Max):          %.2f%%\n", mt_bms_soc_values->GetElemValue(3));
   writer->printf("  Kernel SOC:              %.2f%%\n", mt_bms_soc_values->GetElemValue(0));
@@ -261,6 +260,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->printf("  Initial Capacity:        %.2f Ah\n", mt_bms_cap->GetElemValue(1));
   writer->printf("  Estimated Capacity:      %.2f Ah\n", mt_bms_cap->GetElemValue(2));
   writer->printf("  Voltage State:           %s\n", mt_bms_voltage_state->AsString().c_str());
+  writer->printf("  OCV 12V Voltage:         %.2f V\n", mt_bms_voltages->GetElemValue(7));
   
   writer->puts("\n--- SOC Recalibration (PID 0x25) ---");
   writer->printf("  Recalibration State:     %s\n", mt_bms_soc_recal_state->AsString().c_str());
@@ -270,13 +270,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandED4scan(int verbosity,
   writer->puts("\n--- Battery State (PID 0x07) ---");
   writer->printf("  Cell Voltage Min:        %.3f V\n", mt_bms_voltages->GetElemValue(0));
   writer->printf("  Cell Voltage Max:        %.3f V\n", mt_bms_voltages->GetElemValue(1));
-  writer->printf("  Cell Voltage Mean:       %.3f V\n", mt_bms_voltages->GetElemValue(2));
-  writer->printf("  Link Voltage:            %.2f V\n", mt_bms_voltages->GetElemValue(3));
+  writer->printf("  Cell Voltage Mean:       %.3f V\n", mt_bms_voltages->GetElemValue(2));  
+  writer->printf("  Cell Voltage sum:        %.2f V\n", mt_bms_voltages->GetElemValue(3));
   writer->printf("  Pack Voltage:            %.2f V\n", mt_bms_voltages->GetElemValue(4));
   writer->printf("  Pack Current:            %.2f A\n", StdMetrics.ms_v_bat_current->AsFloat());
   writer->printf("  Pack Power:              %.2f kW\n", StdMetrics.ms_v_bat_power->AsFloat());
   writer->printf("  Contactor State:         %s\n", mt_bms_HVcontactStateTXT->AsString().c_str());
   writer->printf("  Vehicle Mode:            %s\n", mt_bms_EVmode_txt->AsString().c_str());
+  writer->printf("  Traction Link Voltage:   %.2f V\n", mt_bms_voltages->GetElemValue(5));
   writer->printf("  BMS 12V Voltage:         %.2f V\n", mt_bms_voltages->GetElemValue(6));
 
   writer->puts("\n--- EVC Data (0x7EC) ---");

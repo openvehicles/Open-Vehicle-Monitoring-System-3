@@ -33,8 +33,14 @@
 #ifndef __VEHICLE_SMARTEQ_H__
 #define __VEHICLE_SMARTEQ_H__
 
-#define VERSION "2.1.2"
-#define PRESET_VERSION 20260621 // Configuration preset version
+
+// --- Constants ---
+#define VERSION "2.2.0"
+#define PRESET_VERSION 20260623 // Configuration preset version
+#define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
+#define MAX_POLL_DATA_LEN 126
+#define CELLCOUNT 96
+#define SQ_CANDATA_TIMEOUT 10   // seconds until car goes to sleep without CAN activity
 
 #include "ovms_log.h"
 
@@ -314,12 +320,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void PollReply_obd_mt_km(const char* data, uint16_t reply_len);
     void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
 
-    // --- Constants ---
-    #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
-    #define MAX_POLL_DATA_LEN 126
-    #define CELLCOUNT 96
-    #define SQ_CANDATA_TIMEOUT 10 // seconds until car goes to sleep without CAN activity
-
     // --- Internal buffer ---
     std::string   m_rxbuf;
 
@@ -385,7 +385,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricInt           *mt_12v_trickle_charge_count;    // Number of 12V trickle activations in the last 24h
 
     // --- Custom metrics: BMS ---
-    OvmsMetricVector<float> *mt_bms_voltages;                // Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
+    OvmsMetricVector<float> *mt_bms_voltages;                // Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=cv_sum, [4]=contactor, [5]=traction link 12V, [6]=12v_bms_clamp30, [7]=ocv_12V
     OvmsMetricVector<int>   *mt_bms_contactor_cycles;        // [0]=max, [1]=now, [2]=consumed, [3]=diff, [4]=1h_count
     OvmsMetricVector<float> *mt_bms_soc_values;              // SOC values: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
     OvmsMetricString        *mt_bms_soc_recal_state;         // SOC Recalibration State
@@ -499,8 +499,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
     // --- Poll timing / list ---
     bool m_static_ids_read = false;         // flag to track if static IDs have been read at least once
-    int m_cfg_cell_interval_drv = 60;       // poll interval while driving, default 60 sec.
-    int m_cfg_cell_interval_chg = 60;       // poll interval while charging, default 60 sec.
     poll_vector_t m_poll_vector;            // List of PIDs to poll
     bool m_poll_cooldown = true;            // flag to trigger cooldown timer for poll state change
     int m_cooldown_ticker = 15;             // cooldown timer for poll state change

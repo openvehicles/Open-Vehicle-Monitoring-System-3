@@ -562,7 +562,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "obdii_7e4",
     "obdii_7e4_modify",
     "basic_tpms",
-    "calc.adcfactor.samples"
+    "calc.adcfactor.samples",
+    "cell_interval_drv",
+    "cell_interval_chg",
   };
 
   int removed_count = 0;
