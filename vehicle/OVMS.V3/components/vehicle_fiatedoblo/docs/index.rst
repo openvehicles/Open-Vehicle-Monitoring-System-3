@@ -24,11 +24,11 @@ Speed Display               tba
 Temperature Display         tba
 BMS v+t Display             tba
 TPMS Display                tba
-Charge Status Display       tba
+Charge Status Display       Partial
 Charge Interruption Alerts  tba
 Charge Control              tba
 Cabin Pre-heat/cool Control tba
 Lock/Unlock Vehicle         tba
 Valet Mode Control          ??
-Others                      12V battery, SoH, HV Battery voltage, odometer, front+read doors and trunk open status, footbrake (only pressed yes/no status), handbrake, VIN, battery current (+power), onboard charger temp, DC-DC temperature
+Others                      12V battery, SoH, HV Battery voltage, odometer, front+read doors and trunk open status, footbrake (only pressed yes/no status), handbrake, VIN, battery current (+power), charge pilot, charging status, onboard charger temp, DC-DC temperature
 =========================== ==============
