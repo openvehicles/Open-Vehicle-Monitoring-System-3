@@ -51,6 +51,10 @@ static const OvmsPoller::poll_pid_t vehicle_ftdo_polls[]
     { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd816, {  0,  5,   1, 999 }, 0, ISOTP_STD }, // Battery current
     { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd86f, {  0,  30,   1, 999 }, 0, ISOTP_STD }, // min cell voltage (mV)
     { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd870, {  0,  30,   1, 999 }, 0, ISOTP_STD }, // max cell voltage (mV)
+    { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd43d, {  0,  30,   1, 999 }, 0, ISOTP_STD }, // avg cell voltage (mV)
+    { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd87d, {  0,  30,   1, 999 }, 0, ISOTP_STD }, // min battery pack temperature (°C + 40)
+    { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd817, {  0,  30,   1, 999 }, 0, ISOTP_STD }, // max battery pack temperature (°C + 40)
+    { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd877, {  0,  30,   1, 999 }, 0, ISOTP_STD }, // avg battery pack temperature (°C + 40)
     // { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd410, {  0,  30,   1, 999 }, 0, ISOTP_STD }, // SOC calibrated (/512 -> %) - not used, as the CAN frame 0x3a8 is also transmitting the value
     //                                                  0xd440 are single cell details, we don't care about them for now...
     // { 0x6b4, 0x694, VEHICLE_POLL_TYPE_READDATA,      0xd810, {  0,  30,   1, 999 }, 0, ISOTP_STD }, // SOC, not used, using calibrated one
@@ -358,12 +362,13 @@ void OvmsVehicleFiatEDoblo::UpdatePower()
  */
 void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
 {
-  int value2 = (int)((uint16_t)data[0] << 8) + data[1];
+  int value2;
   float kwh;
   float soh;
   
   switch (job.pid) {
   case 0xd815: // bat voltage
+    value2 = (int)((uint16_t)data[0] << 8) + data[1];
     StandardMetrics.ms_v_bat_voltage->SetValue((float)value2 / 16.0);
     UpdatePower();
     break;
@@ -385,14 +390,34 @@ void OvmsVehicleFiatEDoblo::IncomingBatteryPoll(const OvmsPoller::poll_job_t &jo
     break;
 
   case 0xd86f: // min cell voltage ok
+    value2 = (int)((uint16_t)data[0] << 8) + data[1];
     StandardMetrics.ms_v_bat_pack_vmin->SetValue(value2 / 1000.0);
     break;
     
   case 0xd870: // max cell voltage ok
+    value2 = (int)((uint16_t)data[0] << 8) + data[1];
     StandardMetrics.ms_v_bat_pack_vmax->SetValue(value2 / 1000.0);      
     break;
 
+  case 0xd43d: // average cell voltage
+    value2 = (int)((uint16_t)data[0] << 8) + data[1];
+    StandardMetrics.ms_v_bat_pack_vavg->SetValue(value2 / 1000.0);
+    break;
+
+  case 0xd87d: // min battery pack temperature
+    StandardMetrics.ms_v_bat_pack_tmin->SetValue((int)data[0] - 40);
+    break;
+
+  case 0xd817: // max battery pack temperature
+    StandardMetrics.ms_v_bat_pack_tmax->SetValue((int)data[0] - 40);
+    break;
+
+  case 0xd877: // average battery pack temperature
+    StandardMetrics.ms_v_bat_pack_tavg->SetValue((int)data[0] - 40);
+    break;
+
   case 0xd865: // kWh
+    value2 = (int)((uint16_t)data[0] << 8) + data[1];
     kwh = (float)value2 / 64.0;
     StandardMetrics.ms_v_bat_capacity->SetValue(kwh);
     break;
