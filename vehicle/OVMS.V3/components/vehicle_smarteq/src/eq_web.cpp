@@ -533,14 +533,12 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc, cell_interval_drv, cell_interval_chg;
+  std::string suffrange, suffsoc;
 
   if (c.method == "POST") {
     // process form submission:
     suffrange = c.getvar("suffrange");
     suffsoc   = c.getvar("suffsoc");
-    cell_interval_drv = c.getvar("cell_interval_drv");
-    cell_interval_chg = c.getvar("cell_interval_chg");
 
     // check:
     if (!suffrange.empty()) {
@@ -559,8 +557,6 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       auto map = MyConfig.GetParamMap("xsq");
       map["suffrange"] = suffrange;
       map["suffsoc"] = suffsoc;
-      map["cell_interval_drv"] = cell_interval_drv;
-      map["cell_interval_chg"] = cell_interval_chg;
       MyConfig.SetParamMap("xsq", map);
 
       c.head(200);
@@ -579,8 +575,6 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     suffrange = MyConfig.GetParamValue("xsq", "suffrange", "0");
     suffsoc   = MyConfig.GetParamValue("xsq", "suffsoc", "0");
-    cell_interval_drv = MyConfig.GetParamValue("xsq", "cell_interval_drv", "60");
-    cell_interval_chg = MyConfig.GetParamValue("xsq", "cell_interval_chg", "60");
 
     c.head(200);
   }
@@ -598,16 +592,6 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",-1, atof(suffsoc.c_str()), 80, 0, 100, 1,
     "<p>0=off. Notify/stop at this SOC</p>");
 
-  c.fieldset_end();
-  
-  c.fieldset_start("BMS Cell Monitoring");
-  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",-1, atof(cell_interval_drv.c_str()),
-    60, 0, 300, 1,
-    "<p>Default 60s, 0=off</p>");
-  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",-1, atof(cell_interval_chg.c_str()),
-    60, 0, 300, 1,
-    "<p>Default 60s, 0=off</p>");
-  
   c.fieldset_end();
 
   c.print("<hr>");

@@ -449,7 +449,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len)
     ocv = 0.0f;
   if(cap_loss < 0.0f || cap_loss > 100.0f)
     cap_loss = 0.0f;
-  mt_bms_voltages->SetElemValue(5, ocv);  // ocv_voltage
+  mt_bms_voltages->SetElemValue(7, ocv);  // ocv_voltage
   mt_bms_soc_values->SetElemValue(0, soc);                              // kernel SOC
   mt_bms_soc_values->SetElemValue(1, (real_soc_min + real_soc_max) / 2.0f);  // real SOC
   mt_bms_soc_values->SetElemValue(2, real_soc_min);                     // SOC min
@@ -692,11 +692,10 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
 
   mt_bms_voltages->SetElemValue(0, v_cell_min);   // cv_min
   mt_bms_voltages->SetElemValue(1, v_cell_max);   // cv_max
-  mt_bms_voltages->SetElemValue(2, (v_cell_min + v_cell_max) / 2.0f);  // cv_mean
-
-  mt_bms_voltages->SetElemValue(3, v_link);       // link
+  mt_bms_voltages->SetElemValue(2, (v_cell_min + v_cell_max) / 2.0f);  // cv_mean  
+  mt_bms_voltages->SetElemValue(3, cv_sum_raw);   // cv_sum (HV)
   mt_bms_voltages->SetElemValue(4, v_pack_term);  // contactor
-  mt_bms_voltages->SetElemValue(5, cv_sum_raw);   // cv_sum (HV)
+  mt_bms_voltages->SetElemValue(5, v_link);       // traction link 12V
 
   // P = V × I (in kW)
   float pack_power_kw = (v_pack_term * i_pack) / 1000.0f;
@@ -813,10 +812,12 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t
     {
     // Pressure: big-endian 16 bit *0.75 kPa
     uint16_t praw = CAN_UINT(8 + (i*2));
-    m_tpms_pressure[i] = (float)praw != 0xffff ? (float)praw * 0.75f : 0.0f;
+    if (praw != 0xffff)
+      m_tpms_pressure[i] = (float)praw * 0.75f;    // only valid values, 0xffff = invalid
     // Temperature: raw byte + offset -30.0
     uint16_t traw = (uint16_t)(uint8_t)CAN_BYTE(16 + i);
-    m_tpms_temperature[i] = traw != 0xffff ? (float)traw - 30.0f : 0.0f;
+    if (traw != 0xffff)
+      m_tpms_temperature[i] = (float)traw - 30.0f; // only valid values, 0xffff = invalid
     m_tpms_lowbatt[i] = static_cast<bool>((raw >> i) & 0x01);
     }
 }
