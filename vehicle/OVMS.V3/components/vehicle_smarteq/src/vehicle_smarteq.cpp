@@ -64,8 +64,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   mt_canbyte                    = MyMetrics.InitString("xsq.ddt4all.canbyte", SM_STALE_MAX, "", Other);
   mt_adc_factor                 = MyMetrics.InitFloat("xsq.adc.factor", SM_STALE_MAX, 0, Other);
-  mt_adc_factor->SetValue(MyConfig.GetParamValueFloat("system.adc", "factor12v", 0.0f));  
-  mt_adc_factor_history         = MyMetrics.InitVector<float>("xsq.adc.factor.history", SM_STALE_MAX, nullptr, Other,true);
+  mt_adc_factor->SetValue(MyConfig.GetParamValueFloat("system.adc", "factor12v", 0.0f));
+  mt_adc_factor_history         = MyMetrics.InitVector<float>("xsq.adc.factor.history", SM_STALE_MAX, nullptr, Other);
   mt_12v_undervolt_history      = MyMetrics.InitVector<float>("xsq.12v.undervolt.history", SM_STALE_MAX, nullptr, Other);
   mt_poll_state                 = MyMetrics.InitString("xsq.poll.state", SM_STALE_MAX, "UNKNOWN", Other);  
   mt_ed4_values                 = MyMetrics.InitInt("xsq.ed4.values", SM_STALE_MAX, 10);

@@ -180,7 +180,7 @@ xsq.v.reset.speed                      Average trip speed (reset) [km/h]
 xsq.v.start.time                       Time since start [hh:mm]
 xsq.v.start.distance                   Trip distance since start [km]
 xsq.adc.factor                         Current ADC factor for 12V calculation [float]
-xsq.adc.factor.history                 Last calculated ADC factors (ring buffer) - persistent
+xsq.adc.factor.history                 Last calculated ADC factors (ring buffer)
 xsq.poll.state                         Current poll state (OFF/ON/RUNNING/CHARGING)
 xsq.ed4.values                         ED4scan: number of cells to show
 xsq.ddt4all.canbyte                    DDT4all CAN response bytes [hex string]
@@ -234,8 +234,7 @@ xsq.bms.id.sw.version                  BMS Software Version (SoftwareNumber hex)
 xsq.bms.id.basic.parts                 BMS BasicPartList (PN/HW/Approval hex)
 xsq.bms.id.mfr                         BMS Manufacturer Identification Code
 xsq.12v.trickle.count                  12V trickle charge counted in 24h, reset to 0 after 24h. Alert if count == 3 in 24h [count] - persistent
-xsq.12v.undervolt.history              12V undervoltage history [<timestamp>=<12V>]
-xsq.12v.undervolt.history.vec          12V undervoltage history vector (<12V>) - persistent
+xsq.12v.undervolt.history              12V undervoltage history vector (<12V>)
 =========================== ==============
 
 -------------------------

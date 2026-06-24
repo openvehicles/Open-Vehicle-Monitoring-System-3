@@ -274,6 +274,9 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
       MyConfig.SetParamValueBool("xsq", "calc.adcfactor", false);
     }
     if (writer) writer->printf("New ADC factor stored: %.3f (prev %.3f, history size %u)\n", adc_factor_new, adc_factor_prev, (unsigned)n);
+    // Send data log XSQ-ADC-FactorLog
+    // V1: <new factor>,<prev factor>
+    MyNotify.NotifyStringf("data", "xsq.adc.log.factor", "XSQ-ADC-FactorLog,1,%d,%.3f,%.3f", 86400 * 30, adc_factor_new, adc_factor_prev);
   #else
     ESP_LOGD(TAG, "ADC support not enabled");
     if (writer) writer->puts("ADC support not enabled");
