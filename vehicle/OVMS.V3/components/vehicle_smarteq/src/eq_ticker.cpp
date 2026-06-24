@@ -39,12 +39,16 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   {
   // when 12V voltage is critically low, then switch to sleep mode immediately
   float volt = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
-  if(volt > 6.0f && m_ref12V > 0.0f && m_ref12V-volt > m_alert12V)
+  float bms12v = mt_bms_voltages->GetElemValue(6) + 0.3f;      // 12V BMS clamp 30 + 0.3V to compensate for the clamp voltage drop
+  float usm12v = mt_evc_dcdc->GetElemValue(3);                 // 12V USM voltage
+  if((volt > 6.0f && m_ref12V > 6.0f && m_ref12V-volt > m_alert12V) ||
+     (m_can_active && bms12v > 6.0f && m_ref12V > 6.0f && m_ref12V-bms12v > m_alert12V) ||
+     (m_can_active && usm12v > 6.0f && m_ref12V > 6.0f && m_ref12V-usm12v > m_alert12V))
     {
     if(m_poll_state != POLLSTATE_OFF) // if not already in sleep mode, then switch to sleep mode immediately
       {      
       smartCoolDownPolling(60);
-      ESP_LOGW(TAG, "12V undervoltage detected: %.2fV (reference: %.2fV)", volt, m_ref12V);
+      ESP_LOGW(TAG, "12V undervoltage detected:  %.2fV Module, %.2fV BMS, %.2fV USM (reference: %.2fV)", volt, bms12v, usm12v, m_ref12V);
       mt_poll_state->SetValue("Off (12V undervoltage)");
       }
     else if(m_cooldown_ticker <= 10) // if not already in cooldown, then restart 60sec. cooldown
@@ -55,13 +59,13 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     else if (!m_12v_alerted) // alert only once when undervoltage is detected, to prevent log flooding
       {
       m_12v_alerted = true;  
-      smart12VHistory();
-      ESP_LOGD(TAG, "12V undervoltage History updated: %.2fV)", volt);
+      smart12VHistory();     // log undervoltage event in history metric and send data log
       }
     }
   else if (m_12v_alerted)
     {
     m_12v_alerted = false; // reset alert flag when voltage is back to normal
+    ESP_LOGI(TAG, "12V undervoltage cleared:  %.2fV Module, %.2fV BMS, %.2fV USM (reference: %.2fV)", volt, bms12v, usm12v, m_ref12V);
     }
 
   if (m_ddt4all_exec >= 1)
@@ -185,6 +189,8 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
       {
       if (--m_ADCfactor_recalc_timer == 0) 
         {
+        m_check12vadc = false;            // disable further checks for 12V voltage difference
+        m_enable_calcADCfactor = false;   // disable further recalculation until next reboot        
         m_ADCfactor_recalc = false;
         m_ADCfactor_recalc_timer = 2;
         // calculate new ADC factor         
