@@ -49,7 +49,7 @@ static const OvmsPoller::poll_pid_t obdii_79b_polls[] =
 static const OvmsPoller::poll_pid_t obdii_79b_cell_vrt_polls[] = 
 {
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, { 0,0,302,102 }, 0, ISOTP_STD },   // Battery Voltages Part 1 (Cells 1-48) 
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, { 0,0,303,103 }, 0, ISOTP_STD },   // Battery Voltages Part 2 (Cells 49-96)  
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, { 0,0,303,102 }, 0, ISOTP_STD },   // Battery Voltages Part 2 (Cells 49-96)  
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x10, { 0,0,3601,601 }, 0, ISOTP_STD },  // Cell Resistance P1      (Cells 1-48)   
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x11, { 0,0,3603,603 }, 0, ISOTP_STD },  // Cell Resistance P2      (Cells 49-96)
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0,304,304,104 }, 0, ISOTP_STD }, // Battery Temperatures (27 sensors)    
