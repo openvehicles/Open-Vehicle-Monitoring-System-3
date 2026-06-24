@@ -66,6 +66,11 @@ OvmsConsole::OvmsConsole()
 
 OvmsConsole::~OvmsConsole()
   {
+  // Clean up any interactive command (e.g. a "vfs tail" follow-mode task) bound
+  // to this console before freeing its queues, so it can no longer dereference
+  // this writer. SSH/Telnet already do this before freeing their own transport;
+  // this covers consoles that don't (e.g. Bluetooth) and is a no-op once done.
+  RunTerminationCallback();
   // stop receiving log events:
   m_ready = false;
   MyCommandApp.DeregisterConsole(this);
