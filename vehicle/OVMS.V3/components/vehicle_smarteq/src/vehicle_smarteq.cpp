@@ -101,7 +101,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_pos_odometer_trip          = MyMetrics.InitFloat("xsq.odometer.trip", SM_STALE_MID, 0, Kilometers);
 
   mt_tpms_low_batt               = MyMetrics.InitVector<short> ("xsq.tpms.lowbatt", SM_STALE_MID, nullptr, Other);
-  mt_tpms_missing_tx             = MyMetrics.InitVector<short> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);
+  mt_tpms_missing_tx             = MyMetrics.InitVector<short> ("xsq.tpms.missing", SM_STALE_MID, nullptr, Other);  
+  mt_tpms_low_batt->SetElemValue(3, 0);
+  mt_tpms_missing_tx->SetElemValue(3, 0);
   // Pre-allocate TPMS vectors for 4 wheels to avoid heap fragmentation
   if(StdMetrics.ms_v_tpms_pressure->GetSize() < 4)
     {
@@ -109,8 +111,20 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
     StdMetrics.ms_v_tpms_pressure->SetElemValue(3, 0.0f);
     StdMetrics.ms_v_tpms_alert->SetElemValue(3, 0);
     }
-  mt_tpms_low_batt->SetElemValue(3, 0);
-  mt_tpms_missing_tx->SetElemValue(3, 0);
+  if(StdMetrics.ms_v_tpms_pressure->GetSize() == 4)
+    {
+    for(int i=0; i<4; i++)
+      {
+      m_tpms_pressure[i] = StdMetrics.ms_v_tpms_pressure->GetElemValue(i);
+      }
+    }
+  if(StdMetrics.ms_v_tpms_temp->GetSize() == 4)
+    {
+    for(int i=0; i<4; i++)
+      {
+      m_tpms_temperature[i] = StdMetrics.ms_v_tpms_temp->GetElemValue(i);
+      }
+    }
 
   mt_dummy_pressure              = MyMetrics.InitFloat("xsq.tpms.dummy", SM_STALE_NONE, 210, kPa);  // Dummy pressure for TPMS alert testing
   // 0x765 BCM metrics

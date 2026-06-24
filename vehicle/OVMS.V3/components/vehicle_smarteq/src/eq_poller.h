@@ -62,8 +62,8 @@ static const OvmsPoller::poll_pid_t obdii_745_polls[] =
 
 static const OvmsPoller::poll_pid_t obdii_745_tpms_polls[] =
 {
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, { 0,0,293,0 }, 0, ISOTP_STD },        // TPMS input capture
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, { 0,0,293,0 }, 0, ISOTP_STD },        // TPMS counters/status (missing transmitters)
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, { 0,0,152,0 }, 0, ISOTP_STD },        // TPMS input capture
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, { 0,0,154,0 }, 0, ISOTP_STD },        // TPMS counters/status (missing transmitters)
 };
 
 static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
