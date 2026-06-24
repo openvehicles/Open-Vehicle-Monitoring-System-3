@@ -189,6 +189,8 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
       {
       if (--m_ADCfactor_recalc_timer == 0) 
         {
+        m_check12vadc = false;            // disable further checks for 12V voltage difference
+        m_enable_calcADCfactor = false;   // disable further recalculation until next reboot        
         m_ADCfactor_recalc = false;
         m_ADCfactor_recalc_timer = 2;
         // calculate new ADC factor         

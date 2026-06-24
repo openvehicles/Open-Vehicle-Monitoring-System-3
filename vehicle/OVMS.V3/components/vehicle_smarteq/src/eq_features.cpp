@@ -392,7 +392,7 @@ void OvmsVehicleSmartEQ::smartSleep()
 
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
-  smartCoolDownPolling(20);
+  smartCoolDownPolling(15);
   if (m_charge_finished)
     {
     ResetChargingValues();
