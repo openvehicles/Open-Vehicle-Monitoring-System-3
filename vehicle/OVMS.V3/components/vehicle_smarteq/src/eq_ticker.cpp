@@ -62,7 +62,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
       smart12VHistory();     // log undervoltage event in history metric and send data log
       }
     }
-  else if (m_12v_alerted)
+  else if (m_12v_alerted && (volt > 6.0f  && m_ref12V-volt <= m_alert12V))
     {
     m_12v_alerted = false; // reset alert flag when voltage is back to normal
     ESP_LOGI(TAG, "12V undervoltage cleared:  %.2fV Module, %.2fV BMS, %.2fV USM (reference: %.2fV)", volt, bms12v, usm12v, m_ref12V);

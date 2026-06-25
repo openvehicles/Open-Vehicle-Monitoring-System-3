@@ -812,12 +812,14 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t
     {
     // Pressure: big-endian 16 bit *0.75 kPa
     uint16_t praw = CAN_UINT(8 + (i*2));
-    if (praw != 0xffff)
-      m_tpms_pressure[i] = (float)praw * 0.75f;    // only valid values, 0xffff = invalid
+    float pressure_kpa = (float)praw * 0.75f;
+    if (pressure_kpa >= 10.0f && pressure_kpa <= 500.0f)
+      m_tpms_pressure[i] = pressure_kpa;    // only valid values
     // Temperature: raw byte + offset -30.0
     uint16_t traw = (uint16_t)(uint8_t)CAN_BYTE(16 + i);
-    if (traw != 0xffff)
-      m_tpms_temperature[i] = (float)traw - 30.0f; // only valid values, 0xffff = invalid
+    float temp = (float)traw - 30.0f;
+    if (temp <= 100.0f)
+      m_tpms_temperature[i] = temp; // only valid values
     m_tpms_lowbatt[i] = static_cast<bool>((raw >> i) & 0x01);
     }
 }
