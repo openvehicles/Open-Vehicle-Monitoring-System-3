@@ -118,8 +118,10 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       if (raw_temp != 0x7F) 
         {
         can_bat_temp = _temp;
-        }      
-      can_bat_voltage = (float)((CAN_UINT(3) >> 5) & 0x3FF) / 2.0f;
+        }
+      float _volt = (float)((CAN_UINT(3) >> 5) & 0x3FF) / 2.0f;
+      can_bat_voltage = _volt < 450.0f ? _volt : 0.0f; // ignore invalid voltage reading > 450V
+      can_bat_voltage = 
       can_charge_climit = (c >> 20) & 0x3Fu;        
       break;
       }
@@ -130,8 +132,9 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x5D7: // Speed, ODO
       {
       REQ_DLC(6);
-      // Apply scaling 
-      can_speed = (float)CAN_UINT(0) / 100.0f;
+      // Apply scaling
+      float _speed = (float)CAN_UINT(0) / 100.0f;
+      can_speed = _speed < 200.0f ? _speed : 0.0f; // ignore invalid speed reading > 200km/h  
       can_odometer = (float)(CAN_UINT32(2)>>4) / 100.0f;
       can_odometer_trip = (float)(CAN_UINT(4)>>4) / 100.0f;
       break;
