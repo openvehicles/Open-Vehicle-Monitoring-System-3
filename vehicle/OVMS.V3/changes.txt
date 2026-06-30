@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Fiat e-Doblo: add CAN based charge pilot and active charging detection.
 - smart EQ:
     As soon as the 12V trickle charge begins, a timestamp is generated and stored in `m_12v_trickle_charge_times`.
     The counted value is set in `xsq.12v.trickle.count`.
