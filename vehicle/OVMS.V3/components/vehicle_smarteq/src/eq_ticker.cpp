@@ -41,7 +41,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   float volt   = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
   float bms12v = mt_bms_voltages->GetElemValue(6) + 0.3f;   // 12V BMS clamp 30 + 0.3V to compensate for the clamp voltage drop
   float usm12v = mt_evc_dcdc->GetElemValue(3);              // 12V USM voltage
-  bool  ref12V_valid = m_ref12V > 6.0f;                     // evaluate reference once per tick
+  bool  ref12V_valid = m_ref12V > 11.0f;                    // evaluate reference once per tick
 
   if (ref12V_valid && (
       (volt > 6.0f && m_ref12V - volt > m_alert12V) ||
@@ -59,21 +59,24 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
       m_poll_cooldown = true;
       m_cooldown_ticker = 60;
       }
-    else if (!m_12v_alerted)     // alert once per undervoltage event to prevent log flooding
+    if (!m_12v_alerted)           // alert once per undervoltage event to prevent log flooding
       {
       m_12v_alerted = true;
-      m_12v_alerted_ticker = 60; // 60 ticks debounce before alert can reset
+      m_12v_alerted_ticker = 150; // 150 ticks debounce before alert can reset
       ESP_LOGW(TAG, "12V undervoltage alert triggered:  %.2fV Module, %.2fV BMS, %.2fV USM (reference: %.2fV)", volt, bms12v, usm12v, m_ref12V);
-      smart12VHistory();         // log undervoltage event in history metric and send data log
+      smart12VHistory();          // log undervoltage event in history metric and send data log
       }
     }
-  else if (m_12v_alerted && volt > 6.0f && m_ref12V - volt <= m_alert12V &&
-           m_12v_alerted_ticker > 0 && --m_12v_alerted_ticker == 0)
+  else if (m_12v_alerted && ref12V_valid && 
+          volt > 6.0f && m_ref12V - volt <= m_alert12V)
     {
-    m_12v_alerted = false;
-    m_12v_alerted_ticker = -1;
-    ESP_LOGI(TAG, "12V undervoltage cleared:  %.2fV Module, %.2fV BMS, %.2fV USM (reference: %.2fV)", volt, bms12v, usm12v, m_ref12V);
-    smart12VHistory();          // log undervoltage event in history metric and send data log
+    if (m_12v_alerted_ticker > 0 && --m_12v_alerted_ticker == 0)
+      {
+      m_12v_alerted = false;
+      m_12v_alerted_ticker = -1;
+      ESP_LOGI(TAG, "12V undervoltage cleared:  %.2fV Module, %.2fV BMS, %.2fV USM (reference: %.2fV)", volt, bms12v, usm12v, m_ref12V);
+      smart12VHistory();          // log undervoltage event in history metric and send data log
+      }
     }
 
   if (m_ddt4all_exec >= 1)
