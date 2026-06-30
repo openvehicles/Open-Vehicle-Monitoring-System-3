@@ -470,6 +470,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     float m_ref12V = 12.6f;                 // reference 12V (12.6V)
     float m_alert12V = 0.8f;                // alert threshold 12V (0.8V)
     bool m_12v_alerted = false;             // 12V undervolt alert triggered
+    int m_12v_alerted_ticker = -1;          // cooldown ticker for 12V undervolt alert reset
 
     // --- Internal state variables ---
     bool m_indicator = false;               // activate indicator e.g. 7 times or whatever
