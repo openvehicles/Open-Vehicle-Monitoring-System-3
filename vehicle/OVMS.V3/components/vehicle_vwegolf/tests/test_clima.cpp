@@ -510,6 +510,272 @@ void test_hvac_stop_command_responsive() {
 }
 
 // ---------------------------------------------------------------------------
+// Camping mode: cabin-temperature thermostat (xvg camping)
+// ---------------------------------------------------------------------------
+
+// Count BAP clima frames (0x17332501) in a bus tx log.
+static size_t count_bap(canbus* bus) {
+    size_t n = 0;
+    for (auto& r : bus->tx_log)
+        if (r.extended && r.id == 0x17332501) n++;
+    return n;
+}
+
+// Warm the KCAN bus (resets idle) so CommandClimateControl takes the synchronous path.
+static void poke_kcan(OvmsVehicleVWeGolf* v) {
+    auto f = make_kcan_frame(v, 0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+}
+
+// Feed a 0x3B5 ClimaRunning frame: sets ms_v_env_hvac true and warms the bus, mirroring a
+// car that is actively conditioning. Refreshes the hvac hold so the metric stays true.
+static void feed_clima_running(OvmsVehicleVWeGolf* v) {
+    auto f = make_kcan_frame(v, 0x3B5, {0x80, 0xFE, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+}
+
+void test_camping_starts_clima_when_out_of_band() {
+    printf("\ntest_camping_starts_clima_when_out_of_band\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(80);        // above floor
+    StandardMetrics.ms_v_env_cabintemp->SetValue(32);  // hot, above default tmax 26
+    poke_kcan(v);                                       // warm bus → synchronous burst
+    kcan(v)->tx_log.clear();
+
+    v->StartCamping();
+    CHECK(v->test_camping_active(), "camping active after StartCamping");
+    CHECK(count_bap(kcan(v)) == 3, "out-of-band start fires 3 BAP frames immediately");
+    CHECK(StandardMetrics.ms_v_env_hvac->AsBool(), "hvac true after camping start");
+
+    delete v;
+}
+
+void test_camping_no_start_when_in_band() {
+    printf("\ntest_camping_no_start_when_in_band\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(80);
+    StandardMetrics.ms_v_env_cabintemp->SetValue(20);  // within [15,26]
+    poke_kcan(v);
+    kcan(v)->tx_log.clear();
+
+    v->StartCamping();
+    CHECK(count_bap(kcan(v)) == 0, "no clima burst when cabin already in band");
+
+    delete v;
+}
+
+void test_camping_stops_when_back_in_band() {
+    printf("\ntest_camping_stops_when_back_in_band\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    g_tick_count = 0;
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(80);
+    StandardMetrics.ms_v_env_cabintemp->SetValue(20);  // in band → no kick on start
+    v->StartCamping();
+    feed_clima_running(v);  // hvac true + warm bus (car conditioning)
+    kcan(v)->tx_log.clear();
+
+    // StartCamping primed change_secs at the dwell, so the first tick can transition.
+    call_ticker1(v, 1);
+    CHECK(count_bap(kcan(v)) == 3, "in-band while running fires stop burst");
+    CHECK(!StandardMetrics.ms_v_env_hvac->AsBool(), "hvac false after camping stop");
+
+    delete v;
+}
+
+void test_camping_antithrash_dwell() {
+    printf("\ntest_camping_antithrash_dwell\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    g_tick_count = 0;
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(80);
+    StandardMetrics.ms_v_env_cabintemp->SetValue(32);  // hot → start kicks, change_secs→0
+    poke_kcan(v);
+    v->StartCamping();
+    CHECK(count_bap(kcan(v)) == 3, "initial start burst");
+
+    // Cabin returns to band right away, but we're inside the dwell — no stop yet.
+    StandardMetrics.ms_v_env_cabintemp->SetValue(20);
+    kcan(v)->tx_log.clear();
+    for (int i = 0; i < VWEGOLF_CAMPING_MIN_CYCLE_SECS - 1; i++) {
+        feed_clima_running(v);  // keep hvac true + bus warm across the dwell
+        call_ticker1(v, i);
+    }
+    CHECK(count_bap(kcan(v)) == 0, "no transition within anti-short-cycle dwell");
+
+    // One more tick crosses the dwell → stop fires.
+    feed_clima_running(v);
+    call_ticker1(v, VWEGOLF_CAMPING_MIN_CYCLE_SECS);
+    CHECK(count_bap(kcan(v)) == 3, "stop fires once dwell elapses");
+
+    delete v;
+}
+
+void test_camping_stale_cabin_no_start() {
+    printf("\ntest_camping_stale_cabin_no_start\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    g_tick_count = 0;
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(80);
+    StandardMetrics.ms_v_env_cabintemp->SetValue(32);          // hot value...
+    g_metrics.stale["ms_v_env_cabintemp"] = true;             // ...but sensor is pinned/stale
+    poke_kcan(v);
+    kcan(v)->tx_log.clear();
+
+    v->StartCamping();
+    CHECK(count_bap(kcan(v)) == 0, "stale cabin temp → no start on StartCamping");
+    CHECK(v->test_camping_active(), "camping still active (waiting for live temp)");
+
+    poke_kcan(v);
+    call_ticker1(v, 1);
+    CHECK(count_bap(kcan(v)) == 0, "stale cabin temp → thermostat paused in Ticker (fail safe)");
+
+    delete v;
+}
+
+void test_camping_socfloor_stops() {
+    printf("\ntest_camping_socfloor_stops\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    g_tick_count = 0;
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(25);  // below default floor 30
+    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+    StandardMetrics.ms_v_env_cabintemp->SetValue(20);
+    v->StartCamping();
+    feed_clima_running(v);  // hvac true + warm bus so the exit stop sends synchronously
+    kcan(v)->tx_log.clear();
+
+    call_ticker1(v, 1);
+    CHECK(!v->test_camping_active(), "camping stops at SoC floor");
+    CHECK(count_bap(kcan(v)) == 3, "SoC floor exit commands clima off");
+
+    delete v;
+}
+
+void test_camping_socfloor_ignored_while_charging() {
+    printf("\ntest_camping_socfloor_ignored_while_charging\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    g_tick_count = 0;
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(25);              // below floor...
+    StandardMetrics.ms_v_charge_inprogress->SetValue(true);  // ...but plugged in & charging
+    StandardMetrics.ms_v_env_cabintemp->SetValue(20);        // in band, hvac idle → no thermostat
+    v->StartCamping();
+    poke_kcan(v);
+    kcan(v)->tx_log.clear();
+
+    call_ticker1(v, 1);
+    CHECK(v->test_camping_active(), "low SoC while charging does not stop camping");
+    CHECK(count_bap(kcan(v)) == 0, "no clima command while charging at low SoC");
+
+    delete v;
+}
+
+void test_camping_maxhours_backstop() {
+    printf("\ntest_camping_maxhours_backstop\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    g_tick_count = 0;
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(80);
+    StandardMetrics.ms_v_env_cabintemp->SetValue(20);
+    MyConfig.SetParamValue("xvg", "cc-camp-maxhours", "0");  // backstop trips immediately
+    v->StartCamping();
+    poke_kcan(v);
+    kcan(v)->tx_log.clear();
+
+    call_ticker1(v, 1);
+    CHECK(!v->test_camping_active(), "max-hours backstop stops camping");
+
+    MyConfig.store.clear();  // don't leak the 0 into later tests
+    delete v;
+}
+
+void test_camping_off_halts_thermostat() {
+    printf("\ntest_camping_off_halts_thermostat\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    g_tick_count = 0;
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(80);
+    StandardMetrics.ms_v_env_cabintemp->SetValue(32);  // hot — would start if active
+    poke_kcan(v);
+    v->StartCamping();
+    v->StopCamping("test");
+    CHECK(!v->test_camping_active(), "camping inactive after StopCamping");
+
+    poke_kcan(v);
+    kcan(v)->tx_log.clear();
+    call_ticker1(v, 1);
+    CHECK(count_bap(kcan(v)) == 0, "no thermostat activity after camping off");
+
+    delete v;
+}
+
+void test_camping_drive_exit() {
+    printf("\ntest_camping_drive_exit\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    g_tick_count = 0;
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(80);
+    StandardMetrics.ms_v_env_cabintemp->SetValue(20);  // in band
+    v->StartCamping();
+    CHECK(v->test_camping_active(), "camping active");
+
+    // Driver gets in and switches the car on — camping must yield to normal clima.
+    StandardMetrics.ms_v_env_on->SetValue(true);
+    poke_kcan(v);
+    call_ticker1(v, 1);
+    CHECK(!v->test_camping_active(), "camping stops when vehicle switched on");
+
+    delete v;
+}
+
+void test_camping_maxhours_counts() {
+    printf("\ntest_camping_maxhours_counts\n");
+    g_metrics = MetricStore{};
+    MyConfig.store.clear();
+    g_tick_count = 0;
+    auto* v = new OvmsVehicleVWeGolf();
+
+    StandardMetrics.ms_v_bat_soc->SetValue(80);
+    StandardMetrics.ms_v_env_cabintemp->SetValue(20);       // in band → no thermostat action
+    MyConfig.SetParamValue("xvg", "cc-camp-maxhours", "1");  // 1 h = 3600 s
+    v->StartCamping();
+
+    // One second short of the boundary — still active.
+    for (int i = 1; i <= 3599; i++) call_ticker1(v, i);
+    CHECK(v->test_camping_active(), "active at 3599 s (below 1 h boundary)");
+
+    // The 3600th tick reaches the boundary → stop.
+    call_ticker1(v, 3600);
+    CHECK(!v->test_camping_active(), "stops at 1 h max-hours boundary");
+
+    MyConfig.store.clear();  // don't leak the override into later tests
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
 // Entry point (called from test_can_decode.cpp main)
 // ---------------------------------------------------------------------------
 
@@ -529,4 +795,15 @@ void test_clima_all() {
     test_ticker1_bus_idle_timeout();
     test_hvac_hold_bridges_thermostat_cycle();
     test_hvac_stop_command_responsive();
+    test_camping_starts_clima_when_out_of_band();
+    test_camping_no_start_when_in_band();
+    test_camping_stops_when_back_in_band();
+    test_camping_antithrash_dwell();
+    test_camping_stale_cabin_no_start();
+    test_camping_socfloor_stops();
+    test_camping_socfloor_ignored_while_charging();
+    test_camping_maxhours_backstop();
+    test_camping_off_halts_thermostat();
+    test_camping_drive_exit();
+    test_camping_maxhours_counts();
 }

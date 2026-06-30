@@ -146,6 +146,47 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
                                : "disabled (all frames pass)");
         });
 
+    // Camping mode: overnight cabin-temperature thermostat. Holds cabin temp within
+    // [cc-camp-tmin, cc-camp-tmax] by tripping clima start/stop, guarded by a SoC floor
+    // and a max-run-hours backstop. Logic lives in StartCamping/StopCamping and Ticker1.
+    OvmsCommand* cmd_camping =
+        cmd_xvg->RegisterCommand("camping", "Overnight cabin climate thermostat");
+    cmd_camping->RegisterCommand(
+        "on", "Start camping mode (maintain cabin temperature band)",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int, const char* const*) {
+            StartCamping();
+            writer->printf("Camping mode on: hold %d-%d C, SoC floor %d%%, max %d h\n",
+                           MyConfig.GetParamValueInt("xvg", "cc-camp-tmin", 15),
+                           MyConfig.GetParamValueInt("xvg", "cc-camp-tmax", 26),
+                           MyConfig.GetParamValueInt("xvg", "cc-camp-socfloor", 30),
+                           MyConfig.GetParamValueInt("xvg", "cc-camp-maxhours", 8));
+        });
+    cmd_camping->RegisterCommand(
+        "off", "Stop camping mode",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int, const char* const*) {
+            StopCamping("cli");
+            writer->puts("Camping mode off");
+        });
+    cmd_camping->RegisterCommand(
+        "status", "Show camping mode state",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int, const char* const*) {
+            if (!m_camping_active) {
+                writer->puts("Camping mode: off");
+                return;
+            }
+            float cabin = StandardMetrics.ms_v_env_cabintemp->AsFloat();
+            bool stale = StandardMetrics.ms_v_env_cabintemp->IsStale();
+            writer->printf("Camping mode: on (%lu min)\n"
+                           "  cabin %.1f C%s, band %d-%d C\n"
+                           "  SoC %.0f%% (floor %d%%), hvac %s\n",
+                           (unsigned long)(m_camping_secs / 60), cabin, stale ? " STALE" : "",
+                           MyConfig.GetParamValueInt("xvg", "cc-camp-tmin", 15),
+                           MyConfig.GetParamValueInt("xvg", "cc-camp-tmax", 26),
+                           StandardMetrics.ms_v_bat_soc->AsFloat(),
+                           MyConfig.GetParamValueInt("xvg", "cc-camp-socfloor", 30),
+                           StandardMetrics.ms_v_env_hvac->AsBool() ? "running" : "idle");
+        });
+
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
 #endif
@@ -779,6 +820,63 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
             }
         }
     }
+
+    // Camping mode: cabin-temperature thermostat. Hold cabin temp within the configured
+    // band by tripping clima start/stop, bounded by a SoC floor and a max-run backstop.
+    // Placed after the deferred-burst fire above so a start we request here is serviced by
+    // that path on the next tick. See StartCamping/StopCamping.
+    if (m_camping_active) {
+        m_camping_secs++;
+        if (m_camping_change_secs < 0xFFFF) m_camping_change_secs++;
+
+        int soc_floor = MyConfig.GetParamValueInt("xvg", "cc-camp-socfloor", 30);
+        int max_hours = MyConfig.GetParamValueInt("xvg", "cc-camp-maxhours", 8);
+        if (max_hours < 0) max_hours = 0;  // guard the (uint32_t) cast below from a negative
+        float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+
+        // Auto-exit conditions (StopCamping commands clima off and leaves camping mode).
+        if (StandardMetrics.ms_v_env_on->AsBool()) {
+            StopCamping("vehicle on");
+        } else if (m_camping_secs >= (uint32_t)max_hours * 3600) {
+            StopCamping("max hours");
+        } else if (!StandardMetrics.ms_v_charge_inprogress->AsBool() &&
+                   !StandardMetrics.ms_v_bat_soc->IsStale() && soc <= soc_floor) {
+            // Skip the floor while plugged in — SoC is rising, no drain concern. Also skip
+            // while SoC is stale/unset (e.g. just-woken bus): SoC reads 0 before the first
+            // 0x131 refresh, which would otherwise false-trip the floor and prevent camping
+            // in exactly the parked scenario this targets. Same fail-safe stance as cabin temp.
+            StopCamping("SoC floor");
+        } else if (!m_clima_pending &&
+                   m_camping_change_secs >= VWEGOLF_CAMPING_MIN_CYCLE_SECS) {
+            // Thermostat: only act outside the anti-short-cycle dwell and when no BAP burst
+            // is already in flight.
+            int tmin = MyConfig.GetParamValueInt("xvg", "cc-camp-tmin", 15);
+            int tmax = MyConfig.GetParamValueInt("xvg", "cc-camp-tmax", 26);
+            float cabin = StandardMetrics.ms_v_env_cabintemp->AsFloat();
+            bool sane = !StandardMetrics.ms_v_env_cabintemp->IsStale() &&
+                        cabin > VWEGOLF_CABINTEMP_SANE_MIN_C &&
+                        cabin < VWEGOLF_CABINTEMP_SANE_MAX_C;
+            bool running = StandardMetrics.ms_v_env_hvac->AsBool();
+            if (tmin > tmax) {
+                // Misconfigured band (in-band unreachable) — don't trip clima every cycle.
+                ESP_LOGW(TAG, "Camping: invalid band tmin %d > tmax %d — thermostat paused",
+                         tmin, tmax);
+            } else if (!sane) {
+                // Fail safe: never run the climate blind. Hold current state.
+                ESP_LOGW(TAG, "Camping: cabin temp unavailable/stale — thermostat paused");
+            } else if (running && cabin >= tmin && cabin <= tmax) {
+                ESP_LOGI(TAG, "Camping: cabin %.1fC in band [%d,%d] — stopping clima", cabin,
+                         tmin, tmax);
+                CommandClimateControl(false);
+                m_camping_change_secs = 0;
+            } else if (!running && (cabin > tmax || cabin < tmin)) {
+                ESP_LOGI(TAG, "Camping: cabin %.1fC out of band [%d,%d] — starting clima",
+                         cabin, tmin, tmax);
+                CommandClimateControl(true);
+                m_camping_change_secs = 0;
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1098,4 +1196,36 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandClimateControl(bool en
     }
 
     return SendClimaBapBurst(enable);
+}
+
+// Camping mode: maintain cabin temperature inside [cc-camp-tmin, cc-camp-tmax] overnight by
+// tripping the clima start/stop from Ticker1, guarded by cc-camp-socfloor and cc-camp-maxhours.
+void OvmsVehicleVWeGolf::StartCamping() {
+    m_camping_active = true;
+    m_camping_secs = 0;
+    // Allow an immediate first transition (don't wait out the anti-short-cycle dwell).
+    m_camping_change_secs = VWEGOLF_CAMPING_MIN_CYCLE_SECS;
+    ESP_LOGI(TAG, "Camping mode started");
+
+    // Kick the thermostat now if the cabin is already outside the band, so the user gets an
+    // instant response instead of waiting for the next out-of-band Ticker1.
+    int tmin = MyConfig.GetParamValueInt("xvg", "cc-camp-tmin", 15);
+    int tmax = MyConfig.GetParamValueInt("xvg", "cc-camp-tmax", 26);
+    float cabin = StandardMetrics.ms_v_env_cabintemp->AsFloat();
+    bool sane = !StandardMetrics.ms_v_env_cabintemp->IsStale() &&
+                cabin > VWEGOLF_CABINTEMP_SANE_MIN_C && cabin < VWEGOLF_CABINTEMP_SANE_MAX_C;
+    if (sane && tmin <= tmax && !StandardMetrics.ms_v_env_hvac->AsBool() &&
+        (cabin > tmax || cabin < tmin)) {
+        CommandClimateControl(true);
+        m_camping_change_secs = 0;
+    }
+}
+
+void OvmsVehicleVWeGolf::StopCamping(const char* reason) {
+    if (!m_camping_active) return;
+    m_camping_active = false;
+    ESP_LOGI(TAG, "Camping mode stopped: %s", reason);
+    // Always command clima off on exit so an unattended session can't leave the car
+    // conditioning — matters most for the SoC-floor and max-hours auto-exits.
+    CommandClimateControl(false);
 }

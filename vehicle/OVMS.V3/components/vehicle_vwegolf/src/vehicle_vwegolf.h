@@ -87,6 +87,18 @@ typedef struct PageContext PageContext_t;
 // we trust it and show running again.
 #define VWEGOLF_HVAC_STOP_SUPPRESS_SECS 10
 
+// Camping mode (xvg camping): an OVMS-side thermostat that holds cabin temperature inside
+// [cc-camp-tmin, cc-camp-tmax] overnight by tripping the BAP clima start/stop. This is the
+// minimum dwell (seconds) between start↔stop transitions — stops the blower thrashing when
+// the cabin temp hovers on a band edge.
+#define VWEGOLF_CAMPING_MIN_CYCLE_SECS 120
+
+// Plausible cabin-temperature range for the camping thermostat. A reading outside this
+// (or a stale metric) means the cabin sensor can't be trusted, so the thermostat pauses
+// rather than run the climate blind (fail safe). Covers the known pinned-sensor case.
+#define VWEGOLF_CABINTEMP_SANE_MIN_C (-30)
+#define VWEGOLF_CABINTEMP_SANE_MAX_C 60
+
 class OvmsVehicleVWeGolf : public OvmsVehicle {
  public:
     OvmsVehicleVWeGolf();
@@ -115,6 +127,8 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     void WakeKcanBus();
     void SetFcanFilter(bool enable);
     vehicle_command_t SendClimaBapBurst(bool enable);
+    void StartCamping();
+    void StopCamping(const char* reason);
 
  protected:
     void Ticker1(uint32_t ticker) override;
@@ -180,6 +194,14 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     bool m_clima_pending_enable = false;
     uint32_t m_clima_pending_tick = 0;
 
+    // Camping mode: OVMS-side cabin-temperature thermostat (see xvg camping / StartCamping).
+    // While active, Ticker1 trips CommandClimateControl start/stop to keep cabin temp inside
+    // the configured band, bounded by a SoC floor and a max-run-hours backstop. All state in
+    // members (no module-level statics — maintainer-review rule).
+    bool m_camping_active = false;
+    uint32_t m_camping_secs = 0;         // total seconds active — vs cc-camp-maxhours backstop
+    uint16_t m_camping_change_secs = 0;  // seconds since last start/stop — anti-short-cycle
+
     bool m_mirror_fold_in_requested = false;
     bool m_horn_requested = false;
     bool m_indicators_requested = false;
@@ -195,6 +217,7 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
 #ifdef VWEGOLF_NATIVE_TEST
  public:
     uint8_t test_bus_idle_ticks() const { return m_bus_idle_ticks; }
+    bool test_camping_active() const { return m_camping_active; }
 #endif
 };
 

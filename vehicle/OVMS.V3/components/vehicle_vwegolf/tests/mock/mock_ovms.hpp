@@ -116,10 +116,19 @@ struct MetricStore {
     // "set once at boot, never updated again" regressions like the stuck
     // range_est bug — a static-value check passes but the metric isn't live.
     std::map<std::string, int>         writes;
-    void reset() { numbers.clear(); strings.clear(); writes.clear(); }
+    // Explicit staleness override per metric. Tests set this true to simulate a pinned /
+    // stale sensor (a value is present but no longer fresh). A fresh SetValue clears it.
+    // A metric never written is treated as stale (matches real OvmsMetric::IsStale at boot).
+    std::map<std::string, bool>        stale;
+    void reset() { numbers.clear(); strings.clear(); writes.clear(); stale.clear(); }
     int  write_count(const std::string& n) const {
         auto it = writes.find(n);
         return it == writes.end() ? 0 : it->second;
+    }
+    bool is_stale(const std::string& n) const {
+        auto it = stale.find(n);
+        if (it != stale.end()) return it->second;
+        return write_count(n) == 0;
     }
 };
 extern MetricStore g_metrics;
@@ -131,11 +140,13 @@ struct OvmsMetric {
     void SetValue(T v)              {
         g_metrics.numbers[name] = static_cast<double>(v);
         g_metrics.writes[name]++;
+        g_metrics.stale[name] = false;  // a fresh write is not stale
     }
     void SetValue(T v, int /*unit*/) { SetValue(v); }  // unit arg used by real metrics, ignored here
     void Clear()                    { g_metrics.numbers.erase(name); }
     T    AsValue() const  { return static_cast<T>(g_metrics.numbers[name]); }
     float AsFloat() const { return static_cast<float>(g_metrics.numbers[name]); }
+    bool IsStale() const  { return g_metrics.is_stale(name); }
 };
 
 template<>
