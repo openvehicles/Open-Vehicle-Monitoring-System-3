@@ -892,7 +892,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Volt(const char* data, uint16_t repl
   // POSITIVE RESPONSE FORMAT: 62 30 24 <Byte>
   REQUIRE_LEN(1);
   uint8_t raw = CAN_BYTE(0);
-  float value = 4.0f + raw * 0.1f;     // offset 4.0, step 0.1
+  float value = 4.0f + raw * 0.1f;      // offset 4.0, step 0.1
   mt_evc_dcdc->SetElemValue(1, value);  // dcdc_volt
   StdMetrics.ms_v_charge_12v_voltage->SetValue(value);
 }

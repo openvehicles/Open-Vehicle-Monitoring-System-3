@@ -405,9 +405,14 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
       {
       writer->puts("Error: vehicle 12V DC-DC converter not active");
       return;
+      }
+    if (smarteq->m_poll_cooldown) 
+      {
+      writer->puts("Error: vehicle 12V DC-DC polling not active");
+      return;
       } 
         
-    float can12V = StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f);   // DCDC voltage = mt_evc_dcdc->GetElemValue(1)
+    float can12V = (smarteq->mt_evc_dcdc->GetElemValue(1) + smarteq->mt_evc_dcdc->GetElemValue(3) + smarteq->mt_evc_dcdc->GetElemValue(4)) / 3;   // DCDC 12V
     if (can12V < 13.1f) 
       {
       writer->puts("Error: vehicle 12V is not charging, 12V voltage is not stable for ADC calibration!");
