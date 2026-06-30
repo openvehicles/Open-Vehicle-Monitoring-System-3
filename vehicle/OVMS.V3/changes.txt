@@ -14,6 +14,8 @@ Open Vehicle Monitor System v3 - Change log
       [xsq] bms.contactor.1h.limit (int)     -- limit for contactor cycles changes per hour for alerting; default 8
 
 2026-05-17 MB   3.3.006  OTA release
+- OTA/firmware: include tools to mitigate 4MB firmware size limit by upgrading the partitioning scheme;
+    for details see: https://docs.openvehicles.com/en/latest/userguide/partitioning.html
 - VW e-Up: extended battery health / aging info (with web UI integration): total battery age,
     charge time counters AC/DC and parked battery state times (by SOC & temperature ranges)
     (inspired by OBD Amigos)
