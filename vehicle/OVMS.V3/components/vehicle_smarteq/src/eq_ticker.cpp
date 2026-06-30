@@ -39,7 +39,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
   {
   // when 12V voltage is critically low, then switch to sleep mode immediately
   float volt   = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
-  float bms12v = mt_bms_voltages->GetElemValue(6);          // 12V BMS clamp 30
+  float bms12v = mt_bms_voltages->GetElemValue(6) + 0.25f;  // 12V BMS clamp 30 + 0.25V offset
   float voltcan = mt_evc_dcdc->GetElemValue(4);             // 12V voltage can
   bool  ref12V_valid = m_ref12V > 11.0f;                    // evaluate reference once per tick
 
@@ -180,7 +180,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
   #ifdef CONFIG_OVMS_COMP_ADC
   if(!m_poll_cooldown && ((IsOnEQ() || IsChargingEQ()) || Is12VchargeEQ()))
     {
-    float can12V = mt_bms_voltages->GetElemValue(6);   // BMS 12V clamp 30 voltage
+    float can12V = (mt_evc_dcdc->GetElemValue(1) + mt_evc_dcdc->GetElemValue(3) + mt_evc_dcdc->GetElemValue(4)) / 3;   // DCDC 12V
     // check for 12V voltage difference between CAN and ADC when the car is rebooted, to detect if ADC factor recalibration is needed
     if(m_check12vadc && can12V >= 13.1f)
       {
