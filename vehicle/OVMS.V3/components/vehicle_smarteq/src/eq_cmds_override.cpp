@@ -225,6 +225,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
       vTaskDelay(200 / portTICK_PERIOD_MS);
       }
     res = Success;
+    smartCoolDownPolling(20); // 20 seconds cooldown to allow the vehicle to wake up
     m_cmd_wakeup = true;
     ESP_LOGI(TAG, "Vehicle is now awake");
     } 
