@@ -213,6 +213,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
     uint8_t data[8] = {0xc3, 0x00, 0x00, 0x00, 0x14, 0x70, 0x96, 0x85};
     canbus *obd;
     obd = m_can1;
+    smartCoolDownPolling(30); // 30 seconds cooldown to allow the vehicle to wake up
 
     for (int i = 0; i < 5; i++) 
       {
@@ -225,7 +226,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
       vTaskDelay(200 / portTICK_PERIOD_MS);
       }
     res = Success;
-    smartCoolDownPolling(20); // 20 seconds cooldown to allow the vehicle to wake up
     m_cmd_wakeup = true;
     ESP_LOGI(TAG, "Vehicle is now awake");
     } 
