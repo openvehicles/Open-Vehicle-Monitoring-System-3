@@ -227,14 +227,14 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- Inline state helpers ---
     bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]
     bool IsOffEQ() { return m_poll_state == POLLSTATE_OFF; }
-    bool IsAwakeEQ() { return can_awake || can_charge_inprogress || can_env_on || can_hvac; }
+    bool IsAwakeEQ() { return can_awake || can_charge_inprogress || can_env_on || can_hvac || m_cmd_wakeup; }
     bool IsHVonEQ() { return can_battery_on && IsAwakeEQ(); }
     bool IsOnEQ() { return can_env_on; }
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
     bool IsCANwrite() { return m_enable_write || m_enable_write_caron; }
     bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) >= 13.1f || 
-                                  (StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f ) || 
+                                  (m_can_active && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f ) || 
                                   (m_can_active && can_charging12v); }
 
   // =========================================================================
@@ -449,6 +449,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_12v_charge_state = false;        // 12V charge state
     bool m_extendedStats = false;           // extended stats for trip and maintenance data
     bool m_enable_calcADCfactor = false;    // enable calculation of ADC factor
+    bool m_cmd_wakeup = false;              // wakeup command issued
     int m_reboot_ticker = 0;                // ticker for network restart
     int m_reboot_time = 30;                 // Restart Network time
     int m_TPMS_FL = 0;                      // TPMS Sensor Front Left
