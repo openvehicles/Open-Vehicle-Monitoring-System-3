@@ -79,28 +79,28 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 0:
     {
       // indicator 5x on
-      CommandCanVector(0x745, 0x765, {"30082002","30082002"}, false, true);
+      CommandCanVector(0x745, 0x765, {"30082002","30082002"}, false, false);
       res = Success;
       break;
     }
     case 1:
     {
       // open trunk
-      CommandCanVector(0x745, 0x765, {"300500","300500","300500","300500","300500"}, false, true);
+      CommandCanVector(0x745, 0x765, {"300500","300500","300500","300500","300500"}, false, false);
       res = Success;
       break;
     }
     case 2:
     {
       // AUTO_WIPE false
-      CommandCanVector(0x74d, 0x76d, {"2E033C00"}, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033C00"}, false, false);
       res = Success;
       break;
     }
     case 3:
     {
       // AUTO_WIPE true
-      CommandCanVector(0x74d, 0x76d, {"2E033C80"}, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033C80"}, false, false);
       res = Success;
       break;
     }
@@ -148,70 +148,70 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 6:
     {
       // BIPBIP_Lock false
-      CommandCanVector(0x745, 0x765, {"3B1400"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B1400"}, false, false);
       res = Success;
       break;
     }
     case 7:
     {
       // BIPBIP_Lock true
-      CommandCanVector(0x745, 0x765, {"3B1480"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B1480"}, false, false);
       res = Success;
       break;
     }
     case 8:
     {
       // REAR_WIPER_LINK false
-      CommandCanVector(0x745, 0x765, {"3B5800"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5800"}, false, false);
       res = Success;
       break;
     }
     case 9:
     {
       // REAR_WIPER_LINK true
-      CommandCanVector(0x745, 0x765, {"3B5880"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5880"}, false, false);
       res = Success;
       break;
     }
     case 10:
     {
       // RKE_Backdoor_open false
-      CommandCanVector(0x745, 0x765, {"3B7800"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7800"}, false, false);
       res = Success;
       break;
     }
     case 11:
     {
       // RKE_Backdoor_open true
-      CommandCanVector(0x745, 0x765, {"3B7880"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7880"}, false, false);
       res = Success;
       break;
     }
     case 12:
     {
       // Precond_by_key 00
-      CommandCanVector(0x745, 0x765, {"3B7700"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7700"}, false, false);
       res = Success;
       break;
     }
     case 13:
     {
       // Precond_by_key 03
-      CommandCanVector(0x745, 0x765, {"3B7703"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7703"}, false, false);
       res = Success;
       break;
     }
     case 14:
     {
       // ECOMODE_PRE_Restart false
-      CommandCanVector(0x745, 0x765, {"3B7600"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7600"}, false, false);
       res = Success;
       break;
     }
     case 15:
     {
       // ECOMODE_PRE_Restart true
-      CommandCanVector(0x745, 0x765, {"3B7680"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7680"}, false, false);
       res = Success;
       break;
     }
@@ -232,42 +232,42 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 18:
     {
       // ONLY_DRL_OFF_CF false
-      CommandCanVector(0x74d, 0x76d, {"2E045F00"}, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E045F00"}, false, false);
       res = Success;
       break;
     }
     case 19:
     {
       // ONLY_DRL_OFF_CF true
-      CommandCanVector(0x74d, 0x76d, {"2E045F80"}, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E045F80"}, false, false);
       res = Success;
       break;
     }
     case 20:
     {
       // Welcome_Goodbye_CF false
-      CommandCanVector(0x74d, 0x76d, {"2E033400"}, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033400"}, false, false);
       res = Success;
       break;
     }
     case 21:
     {
       // Welcome_Goodbye_CF true
-      CommandCanVector(0x74d, 0x76d, {"2E033480"}, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033480"}, false, false);
       res = Success;
       break;
     }    
     case 22:
     {      
       // Default variant, tailgate open true, Precond_by_key 00
-      CommandCanVector(0x745, 0x765, {"3B7880","3B7700"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7880","3B7700"}, false, false);
       res = Success;
       break;
     }
     case 23:
     {      
       // Default variant, tailgate open false, Precond_by_key 03
-      CommandCanVector(0x745, 0x765, {"3B7800","3B7703"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7800","3B7703"}, false, false);
       res = Success;
       break;
     }
@@ -303,28 +303,28 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 32:
     {
       // key reminder false
-      CommandCanVector(0x745, 0x765, {"3B5E00"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5E00"}, false, false);
       res = Success;
       break;
     }
     case 33:
     {
       // key reminder true
-      CommandCanVector(0x745, 0x765, {"3B5E80"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5E80"}, false, false);
       res = Success;
       break;
     }
     case 34:
     {
       // long tempo display false
-      CommandCanVector(0x745, 0x765, {"3B5700"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5700"}, false, false);
       res = Success;
       break;
     }
     case 35:
     {
       // long tempo display true
-      CommandCanVector(0x745, 0x765, {"3B5780"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5780"}, false, false);
       res = Success;
       break;
     }
@@ -387,28 +387,28 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 46:
     {
       // Auto Light false
-      CommandCanVector(0x745, 0x765, {"2E104200"}, false, true);
+      CommandCanVector(0x745, 0x765, {"2E104200"}, false, false);
       res = Success;
       break;
     }
     case 47:
     {
       // Auto Light true
-      CommandCanVector(0x745, 0x765, {"2E104201"}, false, true);
+      CommandCanVector(0x745, 0x765, {"2E104201"}, false, false);
       res = Success;
       break;
     }
     case 48:
     {
       // Light by EMM false
-      CommandCanVector(0x745, 0x765, {"3B4F00"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B4F00"}, false, false);
       res = Success;
       break;
     }
     case 49:
     {
       // Light by EMM true
-      CommandCanVector(0x745, 0x765, {"3B4F80"}, false, true);
+      CommandCanVector(0x745, 0x765, {"3B4F80"}, false, false);
       res = Success;
       break;
     }
@@ -572,7 +572,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 745:
     {
       std::string hexbytes = mt_canbyte->AsString();
-      CommandCanVector(0x745, 0x765, {hexbytes}, false, true);
+      CommandCanVector(0x745, 0x765, {hexbytes}, false, false);
       res = Success;
       break;
     }
