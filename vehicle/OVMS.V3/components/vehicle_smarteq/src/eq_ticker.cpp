@@ -89,6 +89,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     can_awake = false;
     can_env_on = false;
     can_battery_on = false;
+    m_cmd_wakeup = false;
     smartCAN2Metrics();
     }
 
@@ -109,6 +110,8 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
 
 void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker) 
   {
+  if (m_cmd_wakeup)
+    m_cmd_wakeup = false;   // reset wakeup command after ~10s
   // if awake state has changed, then update metric to prevent desync
   if (IsAwakeEQ() != StdMetrics.ms_v_env_awake->AsBool(false))
     {

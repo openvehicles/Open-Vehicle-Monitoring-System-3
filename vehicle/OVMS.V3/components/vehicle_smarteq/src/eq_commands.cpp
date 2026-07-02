@@ -77,11 +77,11 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
 
   OvmsVehicle::vehicle_command_t res = Fail;
   res = wakeup ? CommandWakeup() : Success;
-  
+
+  vTaskDelay(200 / portTICK_PERIOD_MS);
   if (res == Success)
     {
-    vTaskDelay(1500 / portTICK_PERIOD_MS);
-    if (!IsAwakeEQ()) 
+    if (wakeup && !can_awake) 
       {
       ESP_LOGE(TAG, "vehicle not awake");
       m_ddt4all_exec = 5; // reduce cooldown on error
