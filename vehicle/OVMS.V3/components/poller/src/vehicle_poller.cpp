@@ -2990,12 +2990,21 @@ duk_ret_t OvmsPollers::DukOvmsPollerPollAdd(duk_context *ctx)
         canbus* device;
         std::string request;
         int timeout;
+        uint32_t txid, rxid;
+        uint8_t protocol;
+        uint16_t type, pid;
 
         MyPollers.Duk_GetRequestFromObject(ctx, -1, busname, false,
           device,
-          poll.txmoduleid, poll.rxmoduleid, poll.protocol,
-          poll.type, poll.pid,
+          txid, rxid, protocol,
+          type, pid,
           request, timeout, error, errordesc);
+
+        poll.txmoduleid = txid;
+        poll.rxmoduleid = rxid;
+        poll.protocol = protocol;
+        poll.type = type;
+        poll.pid = pid;
 
         size_t rqsize = request.size();
         if ( rqsize == 0)

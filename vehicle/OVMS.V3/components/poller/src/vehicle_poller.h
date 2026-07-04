@@ -138,7 +138,7 @@ class OvmsPollLimiter {
 
 class OvmsPoller : public InternalRamAllocated {
   public:
-    typedef struct
+    typedef struct __attribute__ ((__packed__))
       {
       uint32_t txmoduleid;                      // transmission CAN ID (address), 0x7df = OBD2 broadcast
       uint32_t rxmoduleid;                      // expected response CAN ID or 0 for broadcasts
