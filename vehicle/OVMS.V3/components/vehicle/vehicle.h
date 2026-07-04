@@ -81,6 +81,14 @@ struct DashboardConfig;
 // 
 // See OvmsVehicle::PollSingleRequest() on how to send dynamic requests with additional arguments.
 // 
+// Since version 3.3.006 the poll cycle timing can be shifted by up to 255 seconds per state.
+// To define shifted poll intervals, use the new 'ts' union member in place of the interval
+// array. Example/template:
+//  { TXID, RXID, TYPE, PID, {.ts={ {…TIMES…}, {…SHIFTS…} }}, 0, ISOTP_STD }
+// Notes:
+// - shifts start over at the max_ticker cycle overrun reset (3600 seconds)
+// - shifts with cycle=0 translate to once per max_ticker cycle (at the shift offset)
+// 
 // VWTP_20: this protocol implements the VW (VAG) specific "TP 2.0", which establishes
 // OSI layer 5 communication channels to devices (ECU modules) via a CAN gateway.
 // On VWTP_20 poll entries, simply set the TXID to the gateway base ID (normally 0x200)
