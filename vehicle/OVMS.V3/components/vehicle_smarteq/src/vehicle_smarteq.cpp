@@ -218,7 +218,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   StdMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);      // set 12V alert to false
   StdMetrics.ms_v_env_charging12v->SetValue(false);            // set 12V charging state to false
   StdMetrics.ms_v_env_aux12v->SetValue(false);
-  StdMetrics.ms_v_env_hvac->SetValue(false);  
+  StdMetrics.ms_v_env_hvac->SetValue(false);
 
   if (mt_pos_odometer_trip_total->AsFloat(0) < 1.0f)           // reset at boot
     {
