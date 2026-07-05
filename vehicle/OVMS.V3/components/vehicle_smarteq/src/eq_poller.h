@@ -40,11 +40,11 @@ static const OvmsPoller::poll_pid_t obdii_79b_polls[] =
   // { tx, rx, type, pid, {OFF,AWAKE,ON,CHARGING}, bus, protocol }  <- old style, replaced by ts array below
   // { tx, rx, type, pid, {.ts={ {OFF,AWAKE,ON,CHARGING}, {<delayed_start>OFF,AWAKE,ON,CHARGING} }}, bus, protocol }  <- new style, allows different delay time before start polling for each pollstate
   // e.g. interval 60 with shift 10 is polled at n*60 + 10.
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {.ts={ { 0,300,30,30 }, { 0,8,8,8 } }}, 0, ISOTP_STD },     // Battery State
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {.ts={ { 0,300,300,60 }, { 0,10,10,10 } }}, 0, ISOTP_STD }, // HV Contactor Cycles
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x08, {.ts={ { 0,0,300,300 }, { 0,0,27,27 } }}, 0, ISOTP_STD },   // SOC
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, {.ts={ { 0,0,0,100 }, { 0,0,0,155 } }}, 0, ISOTP_STD },     // SOC Recalibration
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {.ts={ { 0,3600,3600,0 }, { 0,60,60,0 } }}, 0, ISOTP_STD }, // Battery Health (SOH)
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x07, {.ts={ { 0,300,30,30 }, { 0,8,8,8 } }}, 0, ISOTP_STD },         // Battery State
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {.ts={ { 0,300,300,60 }, { 0,10,10,10 } }}, 0, ISOTP_STD },     // HV Contactor Cycles
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x08, {.ts={ { 0,300,300,300 }, { 0,27,27,27 } }}, 0, ISOTP_STD },    // SOC more detailed
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, {.ts={ { 0,0,0,100 }, { 0,0,0,155 } }}, 0, ISOTP_STD },         // SOC Recalibration
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x61, {.ts={ { 0,3600,3600,0 }, { 0,60,60,0 } }}, 0, ISOTP_STD },     // Battery Health (SOH)
 };
 
 //   -> HandleOBDpolling() will add the following PIDs
@@ -61,14 +61,14 @@ static const OvmsPoller::poll_pid_t obdii_79b_cell_vrt_polls[] =
 static const OvmsPoller::poll_pid_t obdii_745_polls[] =
 {
   // { tx, rx, type, pid, {.ts={ {OFF,AWAKE,ON,CHARGING}, {<delayed_start>OFF,AWAKE,ON,CHARGING} }}, bus, protocol }
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, {.ts={ { 0,8,8,8 }, { 0,2,2,2 } }}, 0, ISOTP_STD },          // Doorlock EEPROM
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x25, {.ts={ { 0,8,8,8 }, { 0,2,2,2 } }}, 0, ISOTP_STD },             // Doorlock EEPROM
 };
 
 static const OvmsPoller::poll_pid_t obdii_745_tpms_polls[] =
 {
   // { tx, rx, type, pid, {.ts={ {OFF,AWAKE,ON,CHARGING}, {<delayed_start>OFF,AWAKE,ON,CHARGING} }}, bus, protocol }
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, {.ts={ { 0,0,150,0 }, { 0,0,34,0 } }}, 0, ISOTP_STD },        // TPMS input capture
-  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, {.ts={ { 0,0,150,0 }, { 0,0,35,0 } }}, 0, ISOTP_STD },        // TPMS counters/status (missing transmitters)
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x74, {.ts={ { 0,0,150,0 }, { 0,0,34,0 } }}, 0, ISOTP_STD },          // TPMS input capture
+  { 0x745, 0x765, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x79, {.ts={ { 0,0,150,0 }, { 0,0,35,0 } }}, 0, ISOTP_STD },          // TPMS counters/status (missing transmitters)
 };
 
 static const OvmsPoller::poll_pid_t obdii_7e4_polls[] =
