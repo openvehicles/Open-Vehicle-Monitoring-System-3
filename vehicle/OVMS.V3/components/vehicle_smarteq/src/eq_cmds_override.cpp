@@ -96,10 +96,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
         break;
         }
       obd->WriteStandard(0x634, 4, data);
-      vTaskDelay(200 / portTICK_PERIOD_MS);
+      vTaskDelay(500 / portTICK_PERIOD_MS);
       }
 
-    vTaskDelay(200 / portTICK_PERIOD_MS);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
     if (IsOnHVACEQ())
       {
       // if true, climate will be restarted after 5 minutes by Ticker1, if false, climate will not be restarted after 5 minutes
