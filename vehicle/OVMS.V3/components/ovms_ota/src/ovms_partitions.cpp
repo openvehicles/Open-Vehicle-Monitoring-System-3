@@ -38,8 +38,12 @@
 #include <string.h>
 #include "ovms_partitions.h"
 #include "ovms_malloc.h"
+#include "ovms_boot.h"
 #include "crypt_md5.h"
 #include "ovms_peripherals.h"
+#include "ovms_ota.h"
+#include "ovms_events.h"
+#include <esp_task_wdt.h>
 #include <list>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -257,6 +261,12 @@ bool ovms_partition_table_has_factory(void)
   return false;
   }
 
+bool ovms_partition_table_isuptodate(void)
+  {
+  ovms_flashpartition_t type = ovms_partition_table_get_type();
+  return (type == OVMS_FlashPartition_35);
+}
+
 const char* ovms_partition_size_str(uint32_t size)
   {
   static char buf[16];
@@ -377,8 +387,17 @@ bool ovms_partition_table_upgrade_store(OvmsWriter* writer)
     OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
     writer->puts("Added new store2 partition to partition table");
 
+    // Erase the region to ensure a clean start with auto reformatting on mount
+    writer->printf("Erasing store2 data (%" PRId32 " bytes)...\n", p->data.entry.size);
+    if (spi_flash_erase_range(p->data.entry.address, p->data.entry.size) != ESP_OK)
+      {
+      writer->puts("Warning: erasing store2 data failed, may need manual erase/reflash if formatting fails");
+      // This is only an issue if store2 is also corrupted and doesn't trigger a reformat
+      // on the following mount attempt -- in this case the user will need to reflash via USB
+      }
+
     // Then we need to add the MD5 checksum record
-    p++;
+    p++; // safe to assume we have one of the max 96 partition slots left to use
     ovms_partition_table_void_entry(p);
     p->magic_id = PARTITION_MD5_MAGIC;
     OVMS_MD5_Final(p->data.md5.digest, &md5_ctx);
@@ -411,6 +430,11 @@ bool ovms_partition_table_downgrade_store(OvmsWriter* writer)
     return false;
     }
 
+  if (ovms_store2_mounted)
+    {
+    ovms_partition_table_unmount_store2(writer);
+    }
+
   size_t offset = ovms_partition_table_find();
   if (offset == 0)
     {
@@ -430,8 +454,7 @@ bool ovms_partition_table_downgrade_store(OvmsWriter* writer)
   OVMS_MD5_Init(&md5_ctx);
   for (; p->magic_id == PARTITION_ENTRY_MAGIC; p++)
     {
-    if (p->magic_id == PARTITION_ENTRY_MAGIC &&
-        p->data.entry.type == ESP_PARTITION_TYPE_DATA && 
+    if (p->data.entry.type == ESP_PARTITION_TYPE_DATA && 
         p->data.entry.subtype == ESP_PARTITION_SUBTYPE_DATA_FAT &&
         p->data.entry.address == 0xe10000 &&
         p->data.entry.size == 0x1f0000)
@@ -439,6 +462,7 @@ bool ovms_partition_table_downgrade_store(OvmsWriter* writer)
       // We have found the store2 partition
       writer->puts("Removing store2 partition from partition table");
       memset((void*)p, 0, sizeof(ovms_esp_partition_t));
+      // safe to assume this is our last partition, so we can assign this slot to the terminating MD5 checksum:
       p->magic_id = PARTITION_MD5_MAGIC;
       OVMS_MD5_Final(p->data.md5.digest, &md5_ctx);
       p++; ovms_partition_table_void_entry(p); // Clear the following redundant MD5 checksum record
@@ -446,6 +470,7 @@ bool ovms_partition_table_downgrade_store(OvmsWriter* writer)
         {
         writer->puts("Store partition downgraded successfully - reboot required");
         partition_table_type = OVMS_FlashPartition_30;
+        ovms_partition_table_free(table);
         return true;
         }
       }
@@ -596,8 +621,16 @@ static bool copy_store_ensure_dir(const std::string& dst, OvmsWriter* writer, un
 
 // Copy a single file from the source to the destination
 static void copy_store_one_file(OvmsWriter* writer, const std::string& src, const std::string& dst,
-  uint8_t* buf, size_t buf_size, unsigned& files_copied, unsigned& errors)
+  off_t expected_size, uint8_t* buf, size_t buf_size, unsigned& files_copied, unsigned& errors)
   {
+  // In case of copying the writer file, every write after open() gets lost, and we need
+  // to adjust the expected size:
+  int loglen = writer->printf("Copy file: %s -> %s\n", src.c_str(), dst.c_str());
+  if (src == writer->GetPath())
+    {
+    expected_size += loglen;
+    }
+
   struct stat st_src;
   if (stat(src.c_str(), &st_src) != 0)
     {
@@ -615,12 +648,19 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
   struct stat st_dst;
   if (stat(dst.c_str(), &st_dst) == 0)
     {
-    if (S_ISREG(st_dst.st_mode)) return;
-    writer->printf("Error: destination exists but is not a file: %s\n", dst.c_str());
-    errors++;
-    return;
+    if (!S_ISREG(st_dst.st_mode))
+      {
+      writer->printf("Error: destination exists but is not a file: %s\n", dst.c_str());
+      errors++;
+      return;
+      }
+    else if (st_dst.st_size == expected_size)
+      {
+      // skip, file already copied (Note: won't detect same size changes)
+      return;
+      }
     }
-  if (errno != ENOENT)
+  else if (errno != ENOENT)
     {
     writer->printf("Error: stat %s: %s\n", dst.c_str(), strerror(errno));
     errors++;
@@ -644,9 +684,8 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
     return;
     }
 
-  writer->printf("Copy file: %s -> %s\n", src.c_str(), dst.c_str());
-
   bool io_ok = true;
+  off_t copied_size = 0;
   for (;;)
     {
     ssize_t nr = read(fd_in, buf, buf_size);
@@ -676,6 +715,7 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
       off += (size_t)nw;
       }
     if (!io_ok) break;
+    copied_size += nr;
     }
 
   if (close(fd_in) != 0)
@@ -696,6 +736,13 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
     io_ok = false;
     }
 
+  if (io_ok && copied_size != expected_size)
+    {
+    writer->printf("Error: size mismatch on %s: %ld bytes copied, %ld expected (/store corrupted)\n",
+      src.c_str(), copied_size, expected_size);
+    io_ok = false;
+    }
+
   if (!io_ok)
     {
     if (unlink(dst.c_str()) != 0 && errno != ENOENT)
@@ -704,6 +751,7 @@ static void copy_store_one_file(OvmsWriter* writer, const std::string& src, cons
     return;
     }
 
+  // All done
   files_copied++;
   }
 
@@ -756,6 +804,7 @@ bool ovms_partition_table_copy_store(OvmsWriter* writer)
   std::list<std::string> dir_todo;
   dir_todo.push_back(kCopyStoreFrom);
 
+  bool found_writer_file = false;
   while (!dir_todo.empty())
     {
     const std::string dir_src = dir_todo.front();
@@ -814,6 +863,15 @@ bool ovms_partition_table_copy_store(OvmsWriter* writer)
         return false;
         }
 
+      if (child_src == writer->GetPath())
+        {
+        // to avoid losing the log part covering a store corruption error, we need to keep the
+        // writer output file on /store until all other files have been copied successfully:
+        writer->printf("Postponing log output file %s\n", child_src.c_str());
+        found_writer_file = true;
+        continue;
+        }
+
       struct stat st_ent;
       if (stat(child_src.c_str(), &st_ent) != 0)
         {
@@ -837,7 +895,7 @@ bool ovms_partition_table_copy_store(OvmsWriter* writer)
         }
       else if (S_ISREG(st_ent.st_mode))
         {
-        copy_store_one_file(writer, child_src, child_dst, buf, kBufSize, files_copied, errors);
+        copy_store_one_file(writer, child_src, child_dst, st_ent.st_size, buf, kBufSize, files_copied, errors);
         }
       else
         {
@@ -851,9 +909,41 @@ bool ovms_partition_table_copy_store(OvmsWriter* writer)
       writer->printf("Error: closedir %s: %s\n", dir_src.c_str(), strerror(errno));
       errors++;
       }
+
+    // if we're running from the system.start event, we occasionally need to feed the watchdog:
+    if (MyEvents.IsEventsTask())
+      {
+      esp_task_wdt_reset();
+      }
+    }
+
+  // finally copy the writer file if found in copy scope:
+  if (errors == 0 && found_writer_file)
+    {
+    std::string child_src = writer->GetPath();
+    std::string child_dst;
+    struct stat st_ent;
+    if (stat(child_src.c_str(), &st_ent) != 0)
+      {
+      writer->printf("Error: stat %s: %s\n", child_src.c_str(), strerror(errno));
+      errors++;
+      }
+    if (errors == 0 && !copy_store_map_dst(child_src, child_dst, writer))
+      {
+      errors++;
+      }
+    if (errors == 0)
+      {
+      copy_store_one_file(writer, child_src, child_dst, st_ent.st_size, buf, kBufSize, files_copied, errors);
+      }
+    if (errors == 0)
+      {
+      writer->SetPath(child_dst);
+      }
     }
 
   free(buf);
+
   writer->printf("Copy finished: %u files copied, %u errors\n", files_copied, errors);
   return (errors == 0);
   }
@@ -869,6 +959,20 @@ bool ovms_partition_table_migrate_store(OvmsWriter* writer)
   // Try to mount the store2 partition if it is not already mounted
   if (!ovms_store2_mounted)
     {
+    // Erase store2 prior to mount to ensure a clean start with auto reformatting on mount
+    const esp_partition_t* p = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "store2");
+    if (!p)
+      {
+      writer->puts("Error: Migration failed - could not find store2 partition");
+      return false;
+      }
+    writer->printf("Erasing store2 data (%" PRId32 " bytes)...\n", p->size);
+    if (esp_partition_erase_range(p, 0, p->size) != ESP_OK)
+      {
+      writer->puts("Error: Migration failed - could not erase store2 data");
+      return false;
+      }
+
     if (! ovms_partition_table_mount_store2(writer))
       {
       writer->puts("Error: Migration failed - could not mount /store2");
@@ -923,82 +1027,202 @@ bool ovms_partition_table_upgrade_factory(OvmsWriter* writer)
   OVMS_MD5_Init(&md5_ctx);
   for (; p->magic_id == PARTITION_ENTRY_MAGIC; p++)
     {
-    if (p->magic_id == PARTITION_ENTRY_MAGIC)
+    if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY)
       {
-      if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY)
+      // We have found the factory partition, so we need to change it to OTA 0
+      factory_offset = p->data.entry.address;
+      p->data.entry.subtype = ESP_PARTITION_SUBTYPE_APP_OTA_0;
+      p->data.entry.size = 0x700000;
+      memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
+      strncpy(p->data.entry.label, "ota_0", sizeof(p->data.entry.label));
+      OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
+      writer->printf("0x%08" PRIx32 " Converted factory partition to 6MB OTA 0\n", factory_offset);
+      }
+    else if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_OTA_0)
+      {
+      // We have found the OTA 0 partition, so we need to change it to OTA 1
+      ota1_offset = factory_offset + 0x700000; // safe to assume we found the factory_offset here
+      p->data.entry.subtype = ESP_PARTITION_SUBTYPE_APP_OTA_1;
+      p->data.entry.address = ota1_offset;
+      p->data.entry.size = 0x700000;
+      memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
+      strncpy(p->data.entry.label, "ota_1", sizeof(p->data.entry.label));
+      OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
+      writer->printf("0x%08" PRIx32 " Converted OTA 0 partition to 6MB OTA 1\n", ota1_offset);
+      }
+    else if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_OTA_1)
+      {
+      // We have found the old OTA 1 partition, so now have
+      // p[0] -> OTA_1
+      // p[1] -> old store
+      // p[2] -> new store
+      // p[3] -> MD5 checksum
+      // We need to set this as the new store, the one after as the checksum, and then clear the two following that
+      memcpy((void*)p, (void*)&p[2], sizeof(ovms_esp_partition_t));
+      memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
+      strncpy(p->data.entry.label, "store", sizeof(p->data.entry.label));
+      OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
+      writer->printf("0x%08" PRIx32 " Moved %s/%s partition up two positions\n",
+        p->data.entry.address,
+        ovms_partition_type_name((esp_partition_type_t)p->data.entry.type),
+        ovms_partition_subtype_name((esp_partition_type_t)p->data.entry.type, (esp_partition_subtype_t)p->data.entry.subtype));
+      p++; // now @ old store, make this the new MD5 checksum slot:
+      ovms_partition_table_void_entry(p);
+      p->magic_id = PARTITION_MD5_MAGIC;
+      OVMS_MD5_Final(p->data.md5.digest, &md5_ctx);
+      writer->puts("           Recalculated MD5 checksum");
+      ovms_partition_table_void_entry(&p[1]); // void previous new store
+      ovms_partition_table_void_entry(&p[2]); // void previous MD5 checksum
+      if (ovms_partition_table_rewrite(table, writer))
         {
-        // We have found the factory partition, so we need to change it to OTA 0
-        factory_offset = p->data.entry.address;
-        p->data.entry.subtype = ESP_PARTITION_SUBTYPE_APP_OTA_0;
-        p->data.entry.size = 0x700000;
-        memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
-        strncpy(p->data.entry.label, "ota_0", sizeof(p->data.entry.label));
-        OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
-        writer->printf("0x%08" PRIx32 " Converted factory partition to 6MB OTA 0\n", factory_offset);
-        }
-      else if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_OTA_0)
-        {
-        // We have found the OTA 0 partition, so we need to change it to OTA 1
-        ota1_offset = factory_offset + 0x700000;
-        p->data.entry.subtype = ESP_PARTITION_SUBTYPE_APP_OTA_1;
-        p->data.entry.address = ota1_offset;
-        p->data.entry.size = 0x700000;
-        memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
-        strncpy(p->data.entry.label, "ota_1", sizeof(p->data.entry.label));
-        OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
-        writer->printf("0x%08" PRIx32 " Converted OTA 0 partition to 6MB OTA 1\n", ota1_offset);
-        }
-      else if (p->data.entry.type == ESP_PARTITION_TYPE_APP && p->data.entry.subtype == ESP_PARTITION_SUBTYPE_APP_OTA_1)
-        {
-        // We have found the old OTA 1 partition, so now have
-        // p[0] -> OTA_1
-        // p[1] -> old store
-        // p[2] -> new store
-        // p[3] -> MD5 checksum
-        // We need to set this as the new store, the one after as the checksum, and then clear the two following that
-        memcpy((void*)p, (void*)&p[2], sizeof(ovms_esp_partition_t));
-        memset((void*)p->data.entry.label, 0, sizeof(p->data.entry.label));
-        strncpy(p->data.entry.label, "store", sizeof(p->data.entry.label));    
-        OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
-        writer->printf("0x%08" PRIx32 " Moved %s/%s partition up two positions\n",
-          p->data.entry.address,
-          ovms_partition_type_name((esp_partition_type_t)p->data.entry.type),
-          ovms_partition_subtype_name((esp_partition_type_t)p->data.entry.type, (esp_partition_subtype_t)p->data.entry.subtype));
-        p++;
-        ovms_partition_table_void_entry(p);
-        p->magic_id = PARTITION_MD5_MAGIC;
-        OVMS_MD5_Final(p->data.md5.digest, &md5_ctx);
-        writer->puts("           Recalculated MD5 checksum");
-        ovms_partition_table_void_entry(&p[1]);
-        ovms_partition_table_void_entry(&p[2]);
-        if (ovms_partition_table_rewrite(table, writer))
-          {
-          writer->puts("Partition table upgraded successfully - reboot required");
-          partition_table_type = OVMS_FlashPartition_35;
-          ovms_partition_table_free(table);
-          return true;
-          }
-        else
-          {
-          ovms_partition_table_free(table);
-          writer->puts("Error: Failed to upgrade partition table");
-          return false;
-          }
+        writer->puts("Partition table upgraded successfully - reboot required");
+        partition_table_type = OVMS_FlashPartition_35;
+        ovms_partition_table_free(table);
+        return true;
         }
       else
         {
-        // Just update the MD5 checksum
-        OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
-        writer->printf("0x%08" PRIx32 " Skipping over %s/%s partition\n",
-          p->data.entry.address,
-          ovms_partition_type_name((esp_partition_type_t)p->data.entry.type),
-          ovms_partition_subtype_name((esp_partition_type_t)p->data.entry.type, (esp_partition_subtype_t)p->data.entry.subtype));
+        ovms_partition_table_free(table);
+        writer->puts("Error: Failed to upgrade partition table");
+        return false;
         }
+      }
+    else
+      {
+      // Just update the MD5 checksum
+      OVMS_MD5_Update(&md5_ctx, (const uint8_t*)p, sizeof(ovms_esp_partition_t));
+      writer->printf("0x%08" PRIx32 " Skipping over %s/%s partition\n",
+        p->data.entry.address,
+        ovms_partition_type_name((esp_partition_type_t)p->data.entry.type),
+        ovms_partition_subtype_name((esp_partition_type_t)p->data.entry.type, (esp_partition_subtype_t)p->data.entry.subtype));
       }
     }
 
   ovms_partition_table_free(table);
   writer->puts("Error: Failed to upgrade partition table");
+  return false;
+  }
+
+bool ovms_partition_table_upgrade_autocont(OvmsWriter* writer)
+  {
+  ovms_flashpartition_t type = ovms_partition_table_get_type();
+
+  switch (type)
+    {
+    case OVMS_FlashPartition_Unknown:
+      {
+      writer->puts("Error: Unknown partition table type");
+      return false;
+      }
+      break;
+    case OVMS_FlashPartition_30:
+      {
+      const esp_partition_t *rp = esp_ota_get_running_partition();
+      const esp_partition_t *bp = esp_ota_get_boot_partition();
+      const esp_partition_t *fp = esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_FACTORY, NULL);
+      if (fp == NULL)
+        {
+        writer->puts("v3-30 Error: Failed to find factory partition");
+        return false;
+        }
+      if (MyBoot.GetBootReason() != BR_PartitionUpdate)
+        {
+        // started by user request, reboot into partition update mode first to perform the upgrade
+        // with a clean minimal system (minimize risks from running components)
+        writer->puts("v3-30 Partition upgrade started, rebooting now into partition update mode...");
+        writer->puts("v3-30 !! Do not power off the module while the upgrade is running !!");
+        vTaskDelay(2000/portTICK_PERIOD_MS);
+        MyBoot.Restart();
+        MyBoot.SetPartitionUpdate();
+        return true;
+        }
+      if (strcmp(rp->label, "factory") != 0 || strcmp(bp->label, "factory") != 0)
+        {
+        writer->puts("v3-30 We need to copy the currently running partition to factory, and then reboot");
+        if (ovms_partition_copy(rp, fp, writer))
+          {
+          esp_err_t err = esp_ota_set_boot_partition(fp);
+          if (err != ESP_OK)
+            {
+            writer->puts("v3-30 Error: Failed to set boot partition");
+            return false;
+            }
+          writer->puts("v3-30 Factory boot partition is ready and set to boot. Rebooting now...");
+          writer->puts("v3-30 !! Do not power off the module while the upgrade is running !!");
+          vTaskDelay(2000/portTICK_PERIOD_MS);
+          MyBoot.Restart();
+          MyBoot.SetPartitionUpdate();
+          return true;
+          }
+        else
+          {
+          writer->puts("v3-30 Error: Failed to copy currently running partition to factory");
+          return false;
+          }
+        }
+      else
+        {
+        writer->puts("v3-30 The currently running partition is factory, so we can upgrade the partition table, and then reboot");
+        if (ovms_partition_table_upgrade_store(writer))
+          {
+          writer->puts("v3-30 Partition table store upgraded successfully, rebooting now...");
+          writer->puts("v3-30 !! Do not power off the module while the upgrade is running !!");
+          vTaskDelay(2000/portTICK_PERIOD_MS);
+          MyBoot.Restart();
+          MyBoot.SetPartitionUpdate();
+          return true;
+          }
+        else
+          {
+          writer->puts("v3-30 Error: Failed to upgrade partition store table");
+          return false;
+          }
+        return false;
+        }
+      }
+      break;
+    case OVMS_FlashPartition_34:
+      {
+      if (MyBoot.GetBootReason() != BR_PartitionUpdate)
+        {
+        // restarted by user request (after a failed migration)
+        writer->puts("v3-34 We need to upgrade the store partition to the new format, rebooting now...");
+        writer->puts("v3-34 !! Do not power off the module while the upgrade is running !!");
+        vTaskDelay(2000/portTICK_PERIOD_MS);
+        MyBoot.Restart();
+        MyBoot.SetPartitionUpdate();
+        return true;
+        }
+      writer->puts("v3-34 We need to upgrade the store partition to the new format, and then reboot");
+      std::string logpath_oldstore = writer->GetPath();
+      if (!ovms_partition_table_migrate_store(writer))
+        {
+        writer->SetPath(logpath_oldstore);
+        writer->puts("v3-34 Store migration failed");
+        return false;
+        }
+      if (!ovms_partition_table_upgrade_factory(writer))
+        {
+        writer->SetPath(logpath_oldstore);
+        writer->puts("v3-34 Error: Failed to upgrade factory partition table");
+        return false;
+        }
+      writer->puts("v3-34 Store migrated successfully, factory partition table upgraded successfully, rebooting now...");
+      vTaskDelay(2000/portTICK_PERIOD_MS);
+      MyBoot.Restart();
+      MyBoot.SetSoftReset();  // Note that we don't set PartitionUpdate here, as we are done with the partition update
+      return true;
+      }
+      break;
+    case OVMS_FlashPartition_35:
+      {
+      writer->puts("v3-35 Partition table is already up to date");
+      return true;
+      }
+      break;
+    }
+
+  writer->puts("Error: Unknown partition table type");
   return false;
   }
 
@@ -1033,4 +1257,112 @@ bool ovms_partition_table_rewrite(ovms_esp_partition_t* table, OvmsWriter* write
 void ovms_partition_table_void_entry(ovms_esp_partition_t* entry)
   {
   memset((void*)entry, 0xff, sizeof(ovms_esp_partition_t));
+  }
+
+bool ovms_partition_copy(const esp_partition_t *from, const esp_partition_t *to, OvmsWriter* writer)
+  {
+  char *buf = (char *)InternalRamMalloc(SPI_FLASH_SEC_SIZE);
+  if (buf == NULL)
+    {
+    writer->puts("Error: Failed to allocate buffer in internal RAM");
+    return false;
+    }
+  
+  if (to->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY)
+    {
+    // Writing to a factory partition cannot be done using OTA operators,
+    // so we need to use the regular flash write functions.
+    MyOTA.SetFlashStatus("OTA Factory Copy: Preparing flash partition...");
+    esp_err_t err = esp_partition_erase_range(to, 0, to->size);
+    if (err != ESP_OK)
+      {
+      MyOTA.ClearFlashStatus();
+      writer->printf("Error: ESP32 error #%d starting factory OTA erase operation\n",err);
+      free(buf);
+      return false;
+      }
+    MyOTA.SetFlashStatus("OTA Factory Copy: Copying flash image...");
+    size_t offset = 0;
+    while (offset < to->size)
+      {
+      size_t todo = to->size - offset;
+      if (todo > SPI_FLASH_SEC_SIZE) todo=SPI_FLASH_SEC_SIZE;
+      esp_err_t err = esp_partition_read(from, offset, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d reading source at offset %d",err,offset);
+        free(buf);
+        return false;
+        }
+      err = esp_partition_write(to, offset, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d writing factory destination at offset %d",err,offset);
+        free(buf);
+        return false;
+        }
+      offset += todo;
+      if (offset % (SPI_FLASH_SEC_SIZE*64) == 0)
+        {
+        writer->printf("OTA Factory Copy: %d%% progress (%d bytes)\n",(offset*100)/to->size,offset);
+        }
+      MyOTA.SetFlashPerc((offset*100)/to->size);
+      }
+    MyOTA.SetFlashStatus("OTA Factory Copy: Finalising copy...");
+    }
+  else
+    {
+    // Writing to OTA partitions (whether the source is OTA or factory) can
+    // be done using regular OTA operators.
+    MyOTA.SetFlashStatus("OTA Copy: Preparing flash partition...");
+    esp_ota_handle_t otah;
+    esp_err_t err = esp_ota_begin(to, OTA_SIZE_UNKNOWN, &otah);
+    if (err != ESP_OK)
+      {
+      MyOTA.ClearFlashStatus();
+      writer->printf("Error: ESP32 error #%d starting OTA operation\n",err);
+      free(buf);
+      return false;
+      }
+    MyOTA.SetFlashStatus("OTA Copy: Copying flash image...");
+    size_t offset = 0;
+    while (offset < to->size)
+      {
+      size_t todo = to->size - offset;
+      if (todo > SPI_FLASH_SEC_SIZE) todo=SPI_FLASH_SEC_SIZE;
+      esp_err_t err = esp_partition_read(from, offset, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d reading source at offset %d",err,offset);
+        esp_ota_end(otah);
+        free(buf);
+        return false;
+        }
+      err = esp_ota_write(otah, buf, todo);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d writing destination at offset %d",err,offset);
+        esp_ota_end(otah);
+        free(buf);
+        return false;
+        }
+      offset += todo;
+      if (offset % (SPI_FLASH_SEC_SIZE*64) == 0)
+        {
+        writer->printf("OTA Copy: %d%% progress (%d bytes)\n",(offset*100)/to->size,offset);
+        }
+      MyOTA.SetFlashPerc((offset*100)/to->size);
+      }
+    MyOTA.SetFlashStatus("OTA Copy: Finalising copy...");
+    esp_ota_end(otah);
+    }
+
+  MyOTA.ClearFlashStatus();
+  free(buf);
+  writer->puts("OTA copy complete");
+  return true;
   }

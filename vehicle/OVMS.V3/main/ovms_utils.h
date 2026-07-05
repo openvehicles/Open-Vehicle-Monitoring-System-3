@@ -62,6 +62,11 @@
 #define ROUNDPREC(fval,prec) (round((fval) * pow(10,(prec))) / pow(10,(prec)))
 #define CEILPREC(fval,prec)  (ceil((fval)  * pow(10,(prec))) / pow(10,(prec)))
 
+// Integer step rounding:
+#ifndef roundup
+#define roundup(n, step)  ((((n) + ((step) - 1)) / (step)) * (step))
+#endif
+
 // Standard array size (number of elements):
 #if __cplusplus < 201703L
   template <class T, std::size_t N>
@@ -925,5 +930,72 @@ class ovms_callback_register_t
         ave.reset();
         }
     };
+
+  /* Maintain a smoothed average using shifts for division.
+   * T should be an integer type
+   * N average period decreasing (needs to be a power of 2)
+   * M average period increasing (needs to be a power of 2)
+   */
+  template <typename T, unsigned N, unsigned M>
+  class average_asym_util_t
+    {
+    private:
+      static const uint8_t _BITSN = floorlog2(N);
+      static const T _RESTN = (N-1);
+
+      static const uint8_t _BITSM = floorlog2(M);
+      static const T _RESTM = (M-1);
+
+      static const uint8_t _BITS_FILL = (M < N) ? M : N;
+      T m_avg;
+      uint8_t m_n;
+    public:
+      average_asym_util_t() : m_avg(0), m_n(0)
+        {
+        static_assert(N == (1 << _BITSN), "N must be a power of 2");
+        static_assert(M == (1 << _BITSM), "M must be a power of 2");
+        }
+
+      average_asym_util_t(T initial, uint8_t n = 1 )
+        : m_avg(initial), m_n( (n > _BITS_FILL) ? _BITS_FILL : n)
+        {
+        static_assert(N == (1 << _BITSN), "N must be a power of 2");
+        static_assert(M == (1 << _BITSM), "M must be a power of 2");
+        }
+
+      void add(T val)
+        {
+        if (m_n == _BITS_FILL) {
+          // Optimise for templated values.
+          if (val >= m_avg)
+            m_avg = ((_RESTN * m_avg) + val) >> _BITSN;
+          else
+            m_avg = ((_RESTM * m_avg) + val) >> _BITSM;
+        }
+        else
+          {
+          // This is not quite as proper as m_n being the number of items,
+          // but it is better than not ramping up at all and it works out
+          // after a bit anyway.. and it's faster than using /.
+          if (m_n == 0)
+            m_avg = val; // Wear the cost of the if.
+          else // Simplify to 2 shifts
+            m_avg = (((m_avg << m_n) - m_avg) + val) >> m_n;
+          ++m_n;
+          }
+        }
+      T get() const { return m_avg; }
+      operator T() const { return m_avg; }
+      void reset()
+        {
+        m_n = 0;
+        m_avg = 0;
+        }
+      bool isEmpty() const
+        {
+        return m_n == 0;
+        }
+    };
+
 
 #endif // __OVMS_UTILS_H__

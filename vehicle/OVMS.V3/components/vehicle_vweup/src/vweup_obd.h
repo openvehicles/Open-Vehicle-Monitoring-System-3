@@ -163,6 +163,8 @@ using namespace std;
 #define VWUP_BAT_MGMT_HIST18            0x74CF    // "hist. data 18": total AC, CCS & regen Ah charged
 #define VWUP_BAT_MGMT_SOH_CAC           0x74CB    // Ah of HV battery and all cells
 #define VWUP_BAT_MGMT_SOH_HIST          0x74CC    // Ah history of each HV battery cell
+#define VWUP_BAT_MGMT_HIST01            0x74BE    // standing times full/empty
+#define VWUP_BAT_MGMT_HIST19            0x74D0    // total standing time, total AC/DC charging time
 
 #define VWUP_BRKSENS_TEMP               0x1024    // sensor temperature
 

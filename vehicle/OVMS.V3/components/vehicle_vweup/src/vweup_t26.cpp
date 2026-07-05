@@ -1579,6 +1579,11 @@ void OvmsVehicleVWeUp::CCTempSet(int temperature)
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandClimateControl(bool climatecontrolon)
 {
   ESP_LOGD(TAG, "T26: CommandClimateControl called");
+  if (!climatecontrolon)
+    { // stops the scheduled climate restart
+    m_climate_restart = false;
+    m_climate_restart_ticker = 0;
+    }
   if (HasNoT26() || !IsT26Ready() || !vweup_enable_write) {
       ESP_LOGE(TAG, "T26: CommandClimateControl failed: T26 not ready / no write access!");
       MyNotify.NotifyString("alert", "Climatecontrol", "Climatecontrol failed: CAN bus not ready / no write access!");

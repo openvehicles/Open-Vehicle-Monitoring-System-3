@@ -34,9 +34,9 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
-// CommandCanVector(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/ CommandWakeup2 = false)
+// CommandCanVector(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/false)
 OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t txid,uint32_t rxid, std::vector<std::string> hexbytes,bool reset,bool wakeup) {
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandCanVector failed / no write access");
     return Fail;
@@ -46,12 +46,6 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     {
     ESP_LOGE(TAG, "DDT4all command rejected - previous command still processing (%d seconds remaining)",m_ddt4all_exec);
     return Fail;
-    }
-
-  // if write access is not enabled, then switch CAN bus to active mode for sending the command
-  if (!m_can_active)
-    {
-    smartCANmode(true);
     }
 
   m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution
@@ -82,13 +76,12 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
   mt_canbyte->SetValue(hexbytes[0].c_str());
 
   OvmsVehicle::vehicle_command_t res = Fail;
-  res = wakeup ? CommandWakeup() : CommandWakeup2();
-  
+  res = wakeup ? CommandWakeup() : Success;
+
+  vTaskDelay(200 / portTICK_PERIOD_MS);
   if (res == Success)
     {
-    PollSetState(POLLSTATE_AWAKE);
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
-    if (!mt_bus_awake->AsBool(false)) 
+    if (wakeup && !can_awake) 
       {
       ESP_LOGE(TAG, "vehicle not awake");
       m_ddt4all_exec = 5; // reduce cooldown on error
@@ -184,7 +177,7 @@ void OvmsVehicleSmartEQ::xsq_canwrite(int verbosity, OvmsWriter* writer, OvmsCom
   if (!smarteq)
     return;
   
-  if(!smarteq->m_ddt4all || !smarteq->m_enable_write) {
+  if(!smarteq->m_ddt4all || !smarteq->IsCANwrite()) {
     ESP_LOGE(TAG, "DDT4all failed / no Canbus write access or DDT4all not enabled");
     writer->puts("DDT4all failed / no Canbus write access or DDT4all not enabled");
     return;
@@ -346,13 +339,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandCanWrite(const std::st
 /**
  * writer for command line interface
  */
-void OvmsVehicleSmartEQ::xsq_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
-  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
-  if (!smarteq)
-    return;
-
-  smarteq->CommandWakeup2();
-}
 
 void OvmsVehicleSmartEQ::xsq_tpms_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
   OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
@@ -404,9 +390,9 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
       writer->puts("Error: invalid number");
       return;
       }
-    if (val < 12.0 || val > 15.0) 
+    if (val < 11.0 || val > 16.0) 
       {
-      writer->puts("Error: voltage out of plausible range (12.0–15.0)");
+      writer->puts("Error: voltage out of plausible range (11.0–16.0)");
       return;
       }
     writer->printf("Recalculating ADC factor using override voltage %.2fV\n", val);
@@ -415,14 +401,19 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
     } 
   else if (argc == 0) 
     {
-    if (!StdMetrics.ms_v_env_charging12v->AsBool(false)) 
+    if (!smarteq->Is12VchargeEQ()) 
       {
       writer->puts("Error: vehicle 12V DC-DC converter not active");
       return;
+      }
+    if (smarteq->m_poll_cooldown) 
+      {
+      writer->puts("Error: vehicle 12V DC-DC polling not active");
+      return;
       } 
         
-    float can12V = smarteq->mt_evc_dcdc->GetElemValue(1);   // DCDC voltage
-    if (can12V <= 13.10f) 
+    float can12V = (smarteq->mt_evc_dcdc->GetElemValue(1) + smarteq->mt_evc_dcdc->GetElemValue(3) + smarteq->mt_evc_dcdc->GetElemValue(4)) / 3;   // DCDC 12V
+    if (can12V < 13.1f) 
       {
       writer->puts("Error: vehicle 12V is not charging, 12V voltage is not stable for ADC calibration!");
       return;
@@ -561,6 +552,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "TPMS_FR",
     "TPMS_RL",
     "TPMS_RR",
+    "tpms.value.warning",
     "lock.byte",
     "unlock.byte",
     "indicator",
@@ -574,7 +566,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "obdii_79b",
     "obdii_7e4",
     "obdii_7e4_modify",
-    "basic_tpms"
+    "basic_tpms",
+    "calc.adcfactor.samples",
+    "cell_interval_drv",
+    "cell_interval_chg",
   };
 
   int removed_count = 0;

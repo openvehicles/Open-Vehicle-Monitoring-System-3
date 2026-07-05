@@ -53,6 +53,7 @@ static const char *TAG = "boot";
 
 #include "ovms.h"
 #include "ovms_boot.h"
+#include "ovms_housekeeping.h"
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
@@ -97,6 +98,7 @@ static const char* const bootreason_name[] = {
     "FirmwareUpdate",
     "EarlyCrash",
     "Crash",
+    "PartitionUpdate",
 };
 #define NUM_BOOTREASONS (sizeof(bootreason_name) / sizeof(char *))
 
@@ -165,6 +167,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   writer->printf("  Detected boot reason: %s (%d/%d)\n",MyBoot.GetBootReasonName(),boot_data.bootreason_cpu0,boot_data.bootreason_cpu1);
   writer->printf("  Reset reason: %s (%d)\n",MyBoot.GetResetReasonName(),MyBoot.GetResetReason());
   writer->printf("  Crash counters: %d total, %d early\n",MyBoot.GetCrashCount(),MyBoot.GetEarlyCrashCount());
+  writer->printf("  Auto init level: %s\n",MyHousekeeping->GetInitLevelName());
 
   if (MyBoot.m_shutdown_timer>0)
     {
@@ -389,6 +392,14 @@ Boot::Boot()
       ESP_LOGI(TAG, "Firmware update reset");
       m_resetreason = ESP_RST_SW;
       }
+    else if (boot_data.partition_update)
+      {
+      boot_data.crash_count_total = 0;
+      boot_data.crash_count_early = 0;
+      m_bootreason = BR_PartitionUpdate;
+      ESP_LOGI(TAG, "Partition update reset");
+      m_resetreason = ESP_RST_SW;
+      }
     else if (!boot_data.stable_reached)
       {
       boot_data.crash_count_total++;
@@ -422,6 +433,7 @@ Boot::Boot()
   // reset flags:
   boot_data.soft_reset = false;
   boot_data.firmware_update = false;
+  boot_data.partition_update = false;
   boot_data.stable_reached = false;
   boot_data.stack_overflow = false;
   boot_data.heap_corruption = false;
@@ -490,6 +502,13 @@ void Boot::SetFirmwareUpdate()
   {
   boot_data.soft_reset = false;
   boot_data.firmware_update = true;
+  boot_data.crc = boot_data.calc_crc();
+  }
+
+void Boot::SetPartitionUpdate()
+  {
+  boot_data.soft_reset = false;
+  boot_data.partition_update = true;
   boot_data.crc = boot_data.calc_crc();
   }
 

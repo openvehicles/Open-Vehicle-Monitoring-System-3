@@ -123,6 +123,32 @@ Send all ``v.b`` metrics except ``v.b.soc``::
   OVMS# config set server.v3 metrics.include v.b.*
   OVMS# config set server.v3 metrics.exclude v.b.soc
 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Broker compatibility options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some brokers have additional requirements:
+
+- ``retain.depth.limit`` (default: ``no``) — omits the RETAIN flag on topics deeper than 8 path segments. Needed for AWS IoT Core, which silently drops retained publishes on topics deeper than 8 levels.
+
+Example::
+
+  OVMS# config set server.v3 retain.depth.limit yes
+
+.. note:: AWS IoT Core requires the MQTT keepalive to be 1200 seconds or less.
+  Set ``updatetime.keepalive`` accordingly::
+
+    OVMS# config set server.v3 updatetime.keepalive 1200
+
+These options can also be set from the **Config → Server V3 (MQTT)** web page.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^
+TLS client authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The module supports client certificate authentication (mTLS) for brokers that need it.
+Paste the PEM certificate and key into the **Config → Server V3 (MQTT)** web page.
+
 -------------------------------
 Upgrading from OVMS v1/v2 to v3
 -------------------------------

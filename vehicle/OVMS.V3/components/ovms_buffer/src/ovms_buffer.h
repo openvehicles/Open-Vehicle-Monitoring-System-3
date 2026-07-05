@@ -58,6 +58,7 @@ class OvmsBuffer
   public:
     int HasLine();
     std::string ReadLine();
+    std::string ReadAll();
 
   public:
     ssize_t PollSocket(int sock, long timeoutms);

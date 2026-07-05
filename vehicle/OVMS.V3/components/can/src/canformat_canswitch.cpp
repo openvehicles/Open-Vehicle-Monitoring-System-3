@@ -70,6 +70,11 @@ std::string canformat_cs11::get(CAN_log_message_t* message)
     case CAN_LogFrame_RX:
       if (message->frame.FIR.B.FF == CAN_frame_std)
         {
+        if (message->frame.FIR.B.DLC > 8)
+          {
+          ESP_LOGW(TAG, "DLC too long: %d", message->frame.FIR.B.DLC);
+          return std::string("");
+          }
         buf[0] = message->frame.FIR.B.DLC + 3;
         buf[1] = busnumber - '1';
         buf[2] = message->frame.MsgID & 0xff;

@@ -48,21 +48,21 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   uint64_t c = swap_uint64(p_frame->data.u64);
   
   switch (p_frame->MsgID) {
-    case 0x17e: //gear shift
+    case 0x17E: //gear shift
       {
       REQ_DLC(7);      // logic by vehicle.cpp events
       switch(CAN_BYTE(6)) {
         case 0x00: // Parking
-          m_gear = 0;
+          can_gear = 0;
           break;
         case 0x10: // Rear
-          m_gear = -1;
+          can_gear = -1;
           break;
         case 0x20: // Neutral
-          m_gear = 0;
+          can_gear = 0;
           break;
         case 0x70: // Drive
-          m_gear = 1;
+          can_gear = 1;
           break;
         }
       break;
@@ -70,17 +70,16 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x350:
       {
       REQ_DLC(7);
-      bool awake = (CAN_BYTE(0) > 0xc0);
-      bool locked = (CAN_BYTE(6) == 0x96) || (mt_driver_door_locked->AsBool(false) && !DoorOpen());
-      StdMetrics.ms_v_env_locked->SetValue(locked);
-      StdMetrics.ms_v_env_awake->SetValue(awake);
-      if (awake && !mt_bus_awake->AsBool())
+      can_350_ticker = SQ_CANDATA_TIMEOUT;      
+      // if "TECHNICAL WAKE UP" and we were previously asleep, then start 10sec. cooldown polling to wait for car to fully wake up before we start polling for data
+      if ((CAN_BYTE(0) > 0xC0) && !can_awake) 
         {
-        ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
-        mt_bus_awake->SetValue(true);
-        m_candata_poll = false;
-        m_candata_timer = -1;
+        smartCoolDownPolling();
         }
+      can_awake = (CAN_BYTE(0) > 0xC1);
+      can_battery_on = (CAN_BYTE(0) > 0xC2);
+      can_env_on = (CAN_BYTE(0) > 0xC4);
+      can_locked = (CAN_BYTE(6) == 0x96);
       int code = CAN_BYTE(0);
       std::string msgtxt = "";
       switch(code) {
@@ -95,7 +94,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         case 200: msgtxt = "AUTOSTART"; break;
         case 201: msgtxt = "ENGINE SYSTEM STOP"; break;
         default: msgtxt = "SLEEPING"; break;
-      }
+        }
       if(msgtxt != mt_bcm_vehicle_state->AsString(""))
         mt_bcm_vehicle_state->SetValue(msgtxt);
       break;
@@ -103,11 +102,10 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x392:
       {
       REQ_DLC(6);
-      bool hvac_on = (CAN_BYTE(1) & 0x40) > 0;
-      StdMetrics.ms_v_env_hvac->SetValue(hvac_on);
-      if (hvac_on)
+      can_hvac = (CAN_BYTE(1) & 0x40) > 0;
+      if (can_hvac || IsOnEQ())
         {
-        StdMetrics.ms_v_env_cabintemp->SetValue(CAN_BYTE(5) - 40.0f);
+        can_cabintemp = CAN_BYTE(5) - 40.0f;
         }      
       break;
       }
@@ -116,154 +114,119 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       REQ_DLC(5);
       uint8_t raw_temp = (c >> 13) & 0x7Fu;
       float _temp = (float)raw_temp - 40.0f;
-      
-      // Ignore invalid sensor reading (0x7F = 127 → 87°C after offset)
-      if (raw_temp != 0x7F) 
-        {
-        StdMetrics.ms_v_bat_temp->SetValue(_temp);
-        }
-      
-      StdMetrics.ms_v_bat_voltage->SetValue((float)((CAN_UINT(3) >> 5) & 0x3ff) / 2.0f);
-      StdMetrics.ms_v_charge_climit->SetValue((c >> 20) & 0x3Fu);
-        
+      if (_temp < 85.0f)
+        can_bat_temp = _temp;    // Ignore invalid sensor reading
+      float _volt = (float)((CAN_UINT(3) >> 5) & 0x3FF) / 2.0f;
+      if (_volt < 450.0f) 
+        can_bat_voltage = _volt; // ignore invalid voltage reading > 450V
+      can_charge_climit = (c >> 20) & 0x3Fu;        
       break;
       }
     case 0x4F8:
       REQ_DLC(3);
-      StdMetrics.ms_v_env_handbrake->SetValue((CAN_BYTE(0) & 0x08) > 0);
-      //StdMetrics.ms_v_env_awake->SetValue((CAN_BYTE(0) & 0x40) > 0); // Ignition on
+      can_handbrake = (CAN_BYTE(0) & 0x08) > 0;
       break;
     case 0x5D7: // Speed, ODO
+      {
       REQ_DLC(6);
-      StdMetrics.ms_v_pos_speed->SetValue((float) CAN_UINT(0) / 100.0f);
-      StdMetrics.ms_v_pos_odometer->SetValue((float) (CAN_UINT32(2)>>4) / 100.0f);
-      mt_pos_odometer_trip->SetValue((float) (CAN_UINT(4)>>4) / 100.0f);
+      // Apply scaling
+      float _speed = (float)CAN_UINT(0) / 100.0f;
+      if (_speed < 200.0f) 
+        can_speed = _speed;    // ignore invalid speed reading > 200km/h
+      can_odometer = (float)(CAN_UINT32(2)>>4) / 100.0f;
+      can_odometer_trip = (float)(CAN_UINT(4)>>4) / 100.0f;
       break;
-    case 0x5de:
+      }
+    case 0x5DE:
       REQ_DLC(8);
-      StdMetrics.ms_v_env_headlights->SetValue((CAN_BYTE(0) & 0x04) > 0);
-      StdMetrics.ms_v_door_fl->SetValue((CAN_BYTE(1) & 0x08) > 0);
-      StdMetrics.ms_v_door_fr->SetValue((CAN_BYTE(1) & 0x02) > 0);
-      StdMetrics.ms_v_door_rl->SetValue((CAN_BYTE(2) & 0x40) > 0);
-      StdMetrics.ms_v_door_rr->SetValue((CAN_BYTE(2) & 0x10) > 0);
-      StdMetrics.ms_v_door_trunk->SetValue((CAN_BYTE(7) & 0x10) > 0);
+      can_headlights = (CAN_BYTE(0) & 0x04) > 0;
+      can_door_fl = (CAN_BYTE(1) & 0x08) > 0;
+      can_door_fr = (CAN_BYTE(1) & 0x02) > 0;
+      can_door_rl = (CAN_BYTE(2) & 0x40) > 0;
+      can_door_rr = (CAN_BYTE(2) & 0x10) > 0;
+      can_door_trunk = (CAN_BYTE(7) & 0x10) > 0;
       break;
-    case 0x62d:
+    case 0x62D:
       REQ_DLC(3);
       {
       uint16_t raw_worst_cons = ((CAN_BYTE(0) << 2) | (CAN_BYTE(1) >> 6)) & 0x3FF;
-      float worst_consumption = (float)raw_worst_cons * 0.1f;
       uint16_t raw_best_cons = ((CAN_BYTE(1) & 0x3F) << 4) | (CAN_BYTE(2) >> 4);
-      float best_consumption = (float)raw_best_cons * 0.1f;
       uint16_t raw_bcb_power = ((CAN_BYTE(2) & 0x0F) << 5) | (CAN_BYTE(3) >> 3);
-      float bcb_power_mains = (float)raw_bcb_power * 100.0f;
-
-      mt_worst_consumption->SetValue(worst_consumption);
-      mt_best_consumption->SetValue(best_consumption);
-      mt_bcb_power_mains->SetValue(bcb_power_mains);
-      StdMetrics.ms_v_bat_consumption->SetValue(best_consumption * 10.0f); // convert to Wh/km
+      // Apply scaling 
+      can_worst_consumption = (float)raw_worst_cons * 0.1f;
+      can_best_consumption = (float)raw_best_cons * 0.1f;
+      can_bcb_power_mains = (float)raw_bcb_power * 100.0f;      
       break;
       }
     case 0x637:
       REQ_DLC(6);
       {
       uint16_t raw_consumption = ((CAN_BYTE(0) << 2) | (CAN_BYTE(1) >> 6)) & 0x3FF;
-      float consumption_mission = (float)raw_consumption / 10.0f;
       uint16_t raw_recovery = ((CAN_BYTE(1) & 0x3F) << 4) | (CAN_BYTE(2) >> 4);
-      float recovery_mission = (float)raw_recovery / 10.0f;
       uint16_t raw_aux = ((CAN_BYTE(2) & 0x0F) << 6) | (CAN_BYTE(3) >> 2);
-      float aux_consumption = (float)raw_aux / 10.0f;
-
-      mt_energy_used->SetValue(consumption_mission);
-      mt_energy_recd->SetValue(recovery_mission);
-      mt_energy_aux->SetValue(aux_consumption);
+      // Apply scaling 
+      can_consumption_mission = (float)raw_consumption / 10.0f;
+      can_recovery_mission = (float)raw_recovery / 10.0f;
+      can_aux_consumption = (float)raw_aux / 10.0f;
+      break;      
       }
     case 0x646:
       {
       REQ_DLC(7);
-      // Extract multi-byte values
-      uint16_t rest_consumption = (CAN_BYTE(1) * 0.1);
+      uint16_t rest_consumption = CAN_BYTE(1);
       uint32_t trip_distance = ((CAN_BYTE(2) << 9) | (CAN_BYTE(3) << 1) | (CAN_BYTE(4) >> 7)) & 0x1FFFF;
       uint16_t trip_energy = ((CAN_BYTE(4) & 0x7F) << 8) | CAN_BYTE(5);
       uint16_t avg_speed = (CAN_BYTE(6) << 4) | (CAN_BYTE(7) >> 4);
-      
-      // Apply scaling (all × 0.1)
-      mt_reset_consumption->SetValue((float)rest_consumption);
-      mt_reset_distance->SetValue((float)trip_distance * 0.1f);
-      if(trip_energy < 0x7FFF) 
-        mt_reset_energy->SetValue((float)trip_energy * 0.1f);
-      mt_reset_speed->SetValue((float)avg_speed * 0.1f);
-      if(m_bcvalue){
-        StdMetrics.ms_v_gen_kwh_grid_total->SetValue((float)rest_consumption); // not the best idea at the moment
-      } else {
-        StdMetrics.ms_v_gen_kwh_grid_total->SetValue(0.0f);
-      }
+      // Apply scaling
+      can_rest_consumption = (float)rest_consumption * 0.1f;
+      can_trip_distance = (float)trip_distance * 0.1f;
+      can_trip_energy = (float)trip_energy * 0.1f;
+      can_avg_speed = (float)avg_speed * 0.1f;      
+      can_kwh_grid_total = m_bcvalue ? (float)can_rest_consumption : 0.0f;
       break;
       }
     case 0x654:        // SOC / charge port status
       {
       REQ_DLC(4);
       float _soc = (float) CAN_BYTE(3);
-      if (_soc <= 100.0f) StdMetrics.ms_v_bat_soc->SetValue(_soc); // SOC
-      StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(0) & 0x20) != 0); // ChargingPlugConnected
-      int _duration_full = (((c >> 22) & 0x3ffu) < 0x3ff) ? (c >> 22) & 0x3ffu : 0;
-      mt_obd_duration->SetValue((int)(_duration_full), Minutes);
+      if (_soc <= 100.0f && _soc >= 0.1f) can_soc = _soc; // SOC
+      can_chargeport = (CAN_BYTE(0) & 0x20) != 0; // ChargingPlugConnected
+      can_duration_full = (((c >> 22) & 0x3FFu) < 0x3FF) ? (c >> 22) & 0x3FFu : 0;
       float _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy
-      float _bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(0) - 20.0;
+      float _bat_temp = can_bat_temp - 20.0;
       float _full_km = m_full_km;
       float _range_cac = _full_km + (_bat_temp); // temperature compensation +/- range
       if (_range_est != 1023.0f) 
         {
-        StdMetrics.ms_v_bat_range_est->SetValue(_range_est);
+        can_range_est = _range_est;
 
         if (_soc > 0.1f)  // prevent div/0
           {
-          StdMetrics.ms_v_bat_range_full->SetValue((_range_est / _soc) * 100.0f);
-          StdMetrics.ms_v_bat_range_ideal->SetValue((_range_cac * _soc) / 100.0f);
+          can_range_full = (_range_est / _soc) * 100.0f;
+          can_range_ideal = (_range_cac * _soc) / 100.0f;
           }
         }
-      break;
-      }
-    case 0x656:
-      {
-      REQ_DLC(7);
-      float _env_temp = (float) CAN_BYTE(6) - 40.0f;
-      if (_env_temp > -40.0f && _env_temp < 85.0f)
-        StdMetrics.ms_v_env_temp->SetValue(_env_temp);
       break;
       }
     case 0x658:
       {
       REQ_DLC(6);
-      uint32_t bat_serial = CAN_UINT32(0);
-      
-      // Store battery serial number (only if not already set or changed)
-      static uint32_t last_bat_serial = 0;
-      if (bat_serial != 0 && bat_serial != 0xFFFFFFFF && bat_serial != last_bat_serial) {
-        char serial_str[12];
-        snprintf(serial_str, sizeof(serial_str), "%08X", bat_serial);
-        mt_bat_serial->SetValue(serial_str);
-        last_bat_serial = bat_serial;
-      }
+      can_bat_serial = (uint32_t)CAN_UINT32(0);
       float _soh = (float)(CAN_BYTE(4) & 0x7Fu);
-      if (_soh <= 100.0f) StdMetrics.ms_v_bat_soh->SetValue(_soh); // SOH
-      StdMetrics.ms_v_bat_health->SetValue(
+      if (_soh <= 100.0f) can_soh = _soh; // SOH
+      can_bat_health =
         (_soh >= 95.0f) ? "excellent"
       : (_soh >= 85.0f) ? "good"
       : (_soh >= 75.0f) ? "average"
       : (_soh >= 65.0f) ? "poor"
-      : "consider replacement");
-      StdMetrics.ms_v_charge_inprogress->SetValue(CAN_BYTE(5) & 0x20);
+      : "consider replacement";
+      can_charge_inprogress = (CAN_BYTE(5) & 0x20) != 0;
       break;
       }
-    case 0x668:
-      REQ_DLC(1);
-      StdMetrics.ms_v_env_on->SetValue((CAN_BYTE(0) & 0x40) > 0); // Drive Ready
-      break;
     case 0x673:
       {
       // TPMS pressure values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt
-      if ((!m_enable_write && !m_enable_write_caron) || !m_obdii_745_tpms)
+      if (!IsCANwrite() || !m_obdii_745_tpms)
         {
         REQ_DLC(6);
         // Read TPMS pressure values:
@@ -275,7 +238,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
             if (m_tpms_temp_enable)
               {
               // Dummy value to indicate valid temp reading, actual temp value is not available in this frame, but can be read via PollReply_TPMS_InputCapt when CAN write is enabled
-              m_tpms_temperature[i] = StdMetrics.ms_v_env_temp->AsFloat(1.1f);
+              m_tpms_temperature[i] = StdMetrics.ms_v_env_temp->AsFloat(0.0f); // use ambient temp as dummy value for valid reading, since actual temp is not available in this frame
               }
             // Prevent warnings when readings are valid if the data is not read via OBDII.
             m_tpms_lowbatt[i] = 0; 
@@ -289,4 +252,70 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       //ESP_LOGI(TAG, "PID:%x DATA: %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
       break;
   }
+}
+
+// Sync CAN datapoints to OVMS metrics, called by Ticker1, because CAN refresh rate is too high
+void OvmsVehicleSmartEQ::smartCAN2Metrics()
+{
+  if (m_cmd_locked && !can_locked)
+    {
+    // prevent desync of command lock and actual lock status    
+    StdMetrics.ms_v_env_locked->SetValue(true);
+    }
+  else
+    {
+    StdMetrics.ms_v_env_locked->SetValue(can_locked);
+    }
+  StdMetrics.ms_v_env_on->SetValue(can_env_on);
+  StdMetrics.ms_v_env_awake->SetValue(IsAwakeEQ());
+  StdMetrics.ms_v_env_hvac->SetValue(can_hvac);
+  StdMetrics.ms_v_env_handbrake->SetValue(can_handbrake);
+  StdMetrics.ms_v_env_headlights->SetValue(can_headlights);
+  StdMetrics.ms_v_env_gear->SetValue(can_gear);
+  StdMetrics.ms_v_env_cabintemp->SetValue(can_cabintemp);
+  StdMetrics.ms_v_env_charging12v->SetValue(Is12VchargeEQ());
+
+  StdMetrics.ms_v_door_fl->SetValue(can_door_fl);
+  StdMetrics.ms_v_door_fr->SetValue(can_door_fr);
+  StdMetrics.ms_v_door_rl->SetValue(can_door_rl);
+  StdMetrics.ms_v_door_rr->SetValue(can_door_rr);
+  StdMetrics.ms_v_door_trunk->SetValue(can_door_trunk);
+  StdMetrics.ms_v_door_chargeport->SetValue(can_chargeport);
+
+  StdMetrics.ms_v_bat_temp->SetValue(can_bat_temp);
+  StdMetrics.ms_v_bat_voltage->SetValue(can_bat_voltage);
+  StdMetrics.ms_v_bat_consumption->SetValue(can_best_consumption * 10.0f); // convert to Wh/km
+  StdMetrics.ms_v_bat_soc->SetValue(can_soc);
+  StdMetrics.ms_v_bat_range_est->SetValue(can_range_est);
+  StdMetrics.ms_v_bat_range_full->SetValue(can_range_full);
+  StdMetrics.ms_v_bat_range_ideal->SetValue(can_range_ideal);
+  StdMetrics.ms_v_bat_soh->SetValue(can_soh);
+  StdMetrics.ms_v_bat_health->SetValue(can_bat_health);
+  
+  StdMetrics.ms_v_pos_speed->SetValue(can_speed);
+  StdMetrics.ms_v_pos_odometer->SetValue(can_odometer);
+
+  StdMetrics.ms_v_charge_climit->SetValue(can_charge_climit);
+  StdMetrics.ms_v_charge_inprogress->SetValue(can_charge_inprogress);
+
+  StdMetrics.ms_v_gen_kwh_grid_total->SetValue(can_kwh_grid_total);
+
+  // xsq metrics:
+  mt_pos_odometer_trip->SetValue(can_odometer_trip);
+  mt_worst_consumption->SetValue(can_worst_consumption);
+  mt_best_consumption->SetValue(can_best_consumption);
+  mt_bcb_power_mains->SetValue(can_bcb_power_mains);
+  mt_energy_used->SetValue(can_consumption_mission);
+  mt_energy_recd->SetValue(can_recovery_mission);
+  mt_energy_aux->SetValue(can_aux_consumption);
+  mt_obd_duration->SetValue(can_duration_full, Minutes);
+  mt_reset_consumption->SetValue(can_rest_consumption);
+  mt_reset_distance->SetValue(can_trip_distance);  
+  mt_driver_door_locked->SetValue(m_cmd_locked);
+  if(can_trip_energy < 3000.0f) // prevent unrealistic values based on faulty readings
+    mt_reset_energy->SetValue(can_trip_energy);
+  mt_reset_speed->SetValue(can_avg_speed);
+  char serial_str[16];
+  snprintf(serial_str, sizeof(serial_str), "%u", can_bat_serial);
+  mt_bat_serial->SetValue(serial_str);
 }

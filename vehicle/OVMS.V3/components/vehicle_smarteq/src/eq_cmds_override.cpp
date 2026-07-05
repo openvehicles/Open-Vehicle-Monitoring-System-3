@@ -34,24 +34,42 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
-// can can1 tx st 634 40 01 72 00
+// can can1 tx st 634 40 01 00 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool enable) {
+  return CommandClimateControlEQ(enable, false, 0, false);
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool enable, bool restart, int minutes, bool trickle) {
   
+  if(!IsCANwrite())
+    {
+    ESP_LOGE(TAG, "CommandClimateControl failed: no write access!");
+    return Fail;
+    }
+    
   ESP_LOGI(TAG, "CommandClimateControl %s", enable ? "ON" : "OFF");
 
   if(!enable) // HVAC OFF not implemented by vehicle
     {
-    m_climate_restart_ticker = 0;
-    m_climate_restart = false; 
-    return NotImplemented;
-    }
+    if (m_climate_restart) 
+      { // stops the scheduled climate restart
+      MyNotify.NotifyString("info", "climatecontrol.schedule", "Climate control restarting stopped!");
+      m_climate_restart_ticker = 0;
+      m_climate_restart = false; 
+      return Success;
+      }
+    else 
+      {
+      MyNotify.NotifyString("error", "climatecontrol.schedule", "Climate control stop not possible, EQ doesnt support it");
+      return NotImplemented;
+      }
+    }  
 
-  if (StandardMetrics.ms_v_bat_soc->AsInt(0) < 31)
+  if (StdMetrics.ms_v_bat_soc->AsInt(can_soc) < 31)
     {    
     char msg[100];
-    snprintf(msg, sizeof(msg), "Scheduled precondition skipped: Battery SOC too low (%d%%)",
-             StandardMetrics.ms_v_bat_soc->AsInt(0));
-    ESP_LOGW(TAG, "%s", msg);
+    snprintf(msg, sizeof(msg), "Scheduled precondition skipped: HV SOC too low (%d%%)", StdMetrics.ms_v_bat_soc->AsInt(can_soc));
+    ESP_LOGI(TAG, "%s", msg);
     MyNotify.NotifyString("alert", "climatecontrol.schedule", msg);
     m_climate_restart_ticker = 0;
     m_climate_restart = false; 
@@ -64,176 +82,151 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControl(bool en
     ESP_LOGI(TAG, "CommandClimateControl already on");
     return Success;
     }
-  // force enable write access for sending the command, even when user has not enabled it (can be required for some vehicles to wake up the car)
-  bool force = !m_enable_write && !m_enable_write_caron ? true : false;
-  if(force)
-    {
-    m_enable_write_caron = true;
-    ESP_LOGI(TAG, "forced CAN bus write access enabled for climate control command");
-    }
 
-  // if write access is not enabled, then switch CAN bus to active mode for sending the command
-  if (!m_can_active)
+  if (enable && !IsOnHVACEQ()) 
     {
-    smartCANmode(true);
-    }
-
-  OvmsVehicle::vehicle_command_t res;
-
-  if (enable) 
-    {
+    CommandWakeup();
     uint8_t data[4] = {0x40, 0x01, 0x00, 0x00};
     canbus *obd;
     obd = m_can1;
-
-    res = CommandWakeup();
-    if (res == Success) 
+    for (int i = 0; i < 15; i++) 
       {
-      vTaskDelay(2000 / portTICK_PERIOD_MS);
-      for (int i = 0; i < 10; i++) 
+      if (IsOnHVACEQ())
         {
-        obd->WriteStandard(0x634, 4, data);
-        vTaskDelay(200 / portTICK_PERIOD_MS);
-        if (IsOnHVACEQ()) 
+        ESP_LOGD(TAG, "Climate control is now on");
+        break;
+        }
+      obd->WriteStandard(0x634, 4, data);
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      }
+      
+    if (IsOnHVACEQ())
+      {
+      // if true, climate will be restarted after 5 minutes by Ticker1, if false, climate will not be restarted after 5 minutes
+      m_climate_restart = restart;
+      m_climate_restart_ticker = minutes;      
+      if (trickle) 
+        {
+        ESP_LOGI(TAG, "activated 12V trickle charging successfully");
+        // Check the 12V ADC factors based on the 12V readings, as long as trickle charging is active.
+        m_check12vadc = true;
+
+        time_t now = time(NULL);
+        while (!m_12v_trickle_charge_times.empty() && (now - m_12v_trickle_charge_times.front()) > 24 * 3600)
+          m_12v_trickle_charge_times.pop_front();
+
+        m_12v_trickle_charge_times.push_back((uint32_t)now);
+        mt_12v_trickle_charge_count->SetValue((int)m_12v_trickle_charge_times.size());
+
+        if (mt_12v_trickle_charge_count->AsInt(0) == 3)
           {
-          ESP_LOGI(TAG, "Climate control started");
-          break;
+          ESP_LOGW(TAG, "12V trickle charging activated 3 times within 24h");
+          MyNotify.NotifyString("alert", "xsq.12v.charge.alert",
+                            "12V trickle charging was activated 3 times within 24 hours.\n"
+                            "Check the 12V battery condition.\n"
+                            "If the alert appears frequently, consider replacing the 12V battery preventively."
+                            "The trickle charging will be deactivated now to next reboot to prevent further stress on the 12V battery!");
+          m_12v_charge = false; // deactivate trickle charging to prevent further stress on the 12V battery
           }
-        }     
-      res = Success;
+        else
+          {
+          ESP_LOGI(TAG, "12V trickle charging activation count within 24h: %u", (unsigned)m_12v_trickle_charge_times.size());          
+          Notify12Vcharge();
+          }
+        }
+      else
+        {
+        // add 2 minutes to display time if restart is true, because climate will be restarted after 5/10 minutes
+        int minutes_display = restart ? minutes + 2 : 5;
+        char msg[100];
+        snprintf(msg, sizeof(msg), "%d minutes precondition started, HV SOC is %d%%", minutes_display, StdMetrics.ms_v_bat_soc->AsInt(can_soc));
+        ESP_LOGI(TAG, "%s", msg);
+        MyNotify.NotifyString("info", "climatecontrol.schedule", msg);
+        }
+      return Success;
       }
     else
       {
-      res = Fail;
+      if (trickle) 
+        {
+        ESP_LOGI(TAG, "Failed to activate 12V trickle charging");
+        MyNotify.NotifyString("info", "12v.trickle.charge", "Failed to activate 12V trickle charging!");
+
+        }
+      else
+        {
+        ESP_LOGI(TAG, "Failed to activate precondition");
+        MyNotify.NotifyString("info", "climatecontrol.schedule","Failed to activate precondition!");
+        }
+      return Fail;
       }
     }
   else
     {
-    res = NotImplemented;
+    // fallback to default implementation?
+    return OvmsVehicle::CommandClimateControl(enable);
     }
-  if(force)
-    {
-    m_enable_write_caron = false;
-    smartCANmode(false);
-    ESP_LOGI(TAG, "forced CAN bus write access disabled");
-    }
-  // fallback to default implementation?
-  if (res == NotImplemented) 
-    {
-    res = OvmsVehicle::CommandClimateControl(enable);
-    }
-  return res;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, int durationms) {
-  // This is needed to enable climate control via Homelink for the iOS app
+  // This is needed to enable climate control via Homelink
   ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
-  OvmsVehicle::vehicle_command_t res = NotImplemented;
 
   switch (button)
   {
     case 0:
     {
-      res = CommandClimateControl(true);
-
-      if (res == Success)
-        {
-          m_climate_restart = false;
-          m_climate_restart_ticker = 0; // 5 minutes default runtime, no ticker required
-          ESP_LOGI(TAG, "Precondition activated successfully");
-          MyNotify.NotifyString("info", "climatecontrol.schedule",
-                                "5 minutes precondition started");
-        }
-      else
-        {
-          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
-          MyNotify.NotifyString("error", "climatecontrol.schedule",
-                                "precondition failed to start");
-        }
-      break;
+      // 5 minutes default runtime, no ticker required
+      CommandClimateControlEQ(true,false,0,false);
+      return Success;
     }
     case 1:
     {
-      res = CommandClimateControl(true);
-
-      if (res == Success)
-        {
-          m_climate_restart = true;
-          m_climate_restart_ticker = 8; // 10 minutes
-          ESP_LOGI(TAG, "Precondition activated successfully");
-          MyNotify.NotifyString("info", "climatecontrol.schedule",
-                                "10 minutes precondition started");
-        }
-      else
-        {
-          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
-          MyNotify.NotifyString("error", "climatecontrol.schedule",
-                                "precondition failed to start");
-        }
-      break;
+      // 10 minutes runtime, will be restarted after 5 minutes by Ticker60, so total runtime will be 10 minutes
+      CommandClimateControlEQ(true,true,8,false);
+      return Success;
     }
     case 2:
     { 
-      res = CommandClimateControl(true);
-
-      if (res == Success)
-        {
-          m_climate_restart = true;
-          m_climate_restart_ticker = 12; // 15 minutes
-          ESP_LOGI(TAG, "Precondition activated successfully");
-          MyNotify.NotifyString("info", "climatecontrol.schedule",
-                                "15 minutes precondition started");
-        }
-      else
-        {
-          ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", res);
-          MyNotify.NotifyString("error", "climatecontrol.schedule",
-                                "precondition failed to start");
-        }
-      break;
+      // 15 minutes runtime, will be restarted after 5 and 10 minutes by Ticker60, so total runtime will be 15 minutes
+      CommandClimateControlEQ(true,true,13,false);
+      return Success;
     }
     default:
-      res = OvmsVehicle::CommandHomelink(button, durationms);
-      break;
+      return OvmsVehicle::CommandHomelink(button, durationms);
   }
-
-  return res;
 }
-
+// this command is not implemented by the EQ, but we can use it to trigger a simulated wakeup
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandWakeup failed: no write access!");
     return Fail;
-    }
-  // if write access is not enabled, then switch CAN bus to active mode for sending the command
-  if (!m_can_active)
-    {
-    smartCANmode(true);
     }
 
   ESP_LOGI(TAG, "Send Wakeup Command");
 
   OvmsVehicle::vehicle_command_t res = Fail;
 
-  if(!mt_bus_awake->AsBool(false)) 
+  if(!IsAwakeEQ()) 
     {
-    uint8_t data[4] = {0x40, 0x00, 0x00, 0x00};
+    uint8_t data[8] = {0xc3, 0x00, 0x00, 0x00, 0x14, 0x70, 0x96, 0x85};
     canbus *obd;
     obd = m_can1;
+    smartCoolDownPolling(30); // 30 seconds cooldown to allow the vehicle to wake up
 
-    for (int i = 0; i < 15; i++) 
+    for (int i = 0; i < 5; i++) 
       {
-      obd->WriteStandard(0x634, 4, data);
-      vTaskDelay(200 / portTICK_PERIOD_MS);
-      if (mt_bus_awake->AsBool(false)) 
+      if (IsAwakeEQ()) 
         {
         res = Success;
         break;
-        }
+        }      
+      obd->WriteStandard(0x350, 8, data);
+      vTaskDelay(200 / portTICK_PERIOD_MS);
       }
-    mt_bus_awake->SetValue(true);
     res = Success;
+    m_cmd_wakeup = true;
     ESP_LOGI(TAG, "Vehicle is now awake");
     } 
   else 
@@ -244,52 +237,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
   return res;
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup2() {
-  if(!m_enable_write && !m_enable_write_caron)
-    {
-    ESP_LOGE(TAG, "CommandWakeup2 failed: no write access!");
-    return Fail;
-    }
-  // if write access is not enabled, then switch CAN bus to active mode for sending the command
-  if (!m_can_active)
-    {
-    smartCANmode(true);
-    }
-  ESP_LOGI(TAG, "Send Wakeup Command 2");  
-
-  OvmsVehicle::vehicle_command_t res = Fail;
-
-  if(!mt_bus_awake->AsBool(false)) 
-    {
-    ESP_LOGI(TAG, "Send Wakeup CommandWakeup2");
-    uint8_t data[8] = {0xc3, 0x11, 0x96, 0xef, 0x14, 0x10, 0x96, 0x85};
-    canbus *obd;
-    obd = m_can1;
-    for (int i = 0; i < 10; i++) 
-      {
-      obd->WriteStandard(0x350, 8, data);
-      vTaskDelay(200 / portTICK_PERIOD_MS);
-      if (mt_bus_awake->AsBool(false)) 
-        {
-        res = Success;
-        break;
-        }
-      }
-    mt_bus_awake->SetValue(true);    
-    res = Success;
-    ESP_LOGI(TAG, "Vehicle is awake");
-    } 
-  else 
-    {
-    ESP_LOGI(TAG, "Vehicle is awake");
-    res = Success;
-    }
-  return res;
-}
-
 // lock: can can1 tx st 745 04 30 01 00 00
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) {
-  if(!m_enable_write && !m_enable_write_caron) 
+  if(!IsCANwrite()) 
     {
     ESP_LOGE(TAG, "CommandLock failed / no write access");
     return Fail;
@@ -300,11 +250,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
 
   if(m_indicator) 
     {
-    res = CommandCanVector(0x745, 0x765, {"30010000","30010000","30010000","30010000","30010000","30082002"}, false, true);
+    res = CommandCanVector(0x745, 0x765, {"30010000","30010000","30010000","30010000","30010000","30082002"}, false, false);
     }
   else 
     {
-    res = CommandCanVector(0x745, 0x765, {"30010000","30010000","30010000","30010000","30010000"}, false, true);
+    res = CommandCanVector(0x745, 0x765, {"30010000","30010000","30010000","30010000","30010000"}, false, false);
     }
     
   if(res == Success)  
@@ -314,7 +264,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
     if (DoorOpen())
         MyNotify.NotifyString("alert", "door.lock", "Vehicle locked, but one or more doors are open!");
     else
-        MyNotify.NotifyString("info", "door.lock", "Vehicle locked");
+        MyNotify.NotifyString("info", "door.lock", "Vehicle locked!");
+        // set m_cmd_locked to true to indicate that lock command was sent, but since the car does not show as locked immediately, 
+        // we cannot set the metric to true yet, but we can use this flag to show a notification if the car is not showing as locked after a certain time, 
+        //or to set the metric to true when the car eventually shows as locked after a delay
+        m_cmd_locked = true; 
     }
   else
     {
@@ -326,7 +280,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) 
 // unlock: can can1 tx st 745 04 30 01 00 01
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin) {
 
-  if(!m_enable_write && !m_enable_write_caron)
+  if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandUnlock failed / no write access");
     return Fail;
@@ -337,17 +291,17 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin
 
   if(m_indicator) 
     {
-    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001","30082002"}, false, true);
+    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001","30082002"}, false, false);
     }
   else 
     {
-    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001"}, false, true);
+    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001"}, false, false);
     }
 
   if(res == Success) 
     {
     ESP_LOGI(TAG, "Unlock successful");
-    StdMetrics.ms_v_env_locked->SetValue(false);
+    m_cmd_locked = false; 
     MyNotify.NotifyString("info", "door.unlock", "Vehicle unlocked");
     }
   else

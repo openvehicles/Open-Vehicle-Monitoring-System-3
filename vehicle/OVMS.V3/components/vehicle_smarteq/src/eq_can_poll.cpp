@@ -182,6 +182,9 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x61: // Battery Health (SOH)
           PollReply_BMS_BattHealth(m_rxbuf.data(), m_rxbuf.size());
           break;
+        case 0x80: // DataRead.Identification.RenaultR2
+          PollReply_BMS_IdentificationData(m_rxbuf.data(), m_rxbuf.size());
+          break;
         case 0x90: // BMS Production Number Supplier Read
           PollReply_BMS_ProductionData(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -194,46 +197,46 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
           PollReply_OBL_ChargerAC(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x503F: // rqJB2AC_Ph12_RMS_V
-          PollReply_OBL_JB2AC_Ph12_RMS_V(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_V(m_rxbuf.data(), m_rxbuf.size(), 0);
           break;
         case 0x5041: // rqJB2AC_Ph23_RMS_V
-          PollReply_OBL_JB2AC_Ph23_RMS_V(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_V(m_rxbuf.data(), m_rxbuf.size(), 1);
           break;
         case 0x5042: // rqJB2AC_Ph31_RMS_V
-          PollReply_OBL_JB2AC_Ph31_RMS_V(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_V(m_rxbuf.data(), m_rxbuf.size(), 2);
           break;
         case 0x2001: // rqJB2AC_Ph1_RMS_A
-          PollReply_OBL_JB2AC_Ph1_RMS_A(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_A(m_rxbuf.data(), m_rxbuf.size(), 0);
           break;
         case 0x503A: // rqJB2AC_Ph2_RMS_A
-          PollReply_OBL_JB2AC_Ph2_RMS_A(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_A(m_rxbuf.data(), m_rxbuf.size(), 1);
           break;
         case 0x503B: // rqJB2AC_Ph3_RMS_A
-          PollReply_OBL_JB2AC_Ph3_RMS_A(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Ph_RMS_A(m_rxbuf.data(), m_rxbuf.size(), 2);
           break;
         case 0x504A: // Mains active power consumed (W)
           PollReply_OBL_JB2AC_Power(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x5062: // Mains ground resistance (Ohm)
-          PollReply_OBL_JB2AC_GroundResistance(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Current_GR(m_rxbuf.data(), m_rxbuf.size(), 1);
           break;
         case 0x5064: // leakage current diagnostics
           PollReply_OBL_JB2AC_LeakageDiag(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x5065: // Leakage DC current saved indicator after failure (mA)
-          PollReply_OBL_JB2AC_DCCurrent(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Current(m_rxbuf.data(), m_rxbuf.size(), 3);
           break;
         case 0x5066: // Leakage HF 10kHz current saved indicator after failure (mA)
-          PollReply_OBL_JB2AC_HF10kHz(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Current(m_rxbuf.data(), m_rxbuf.size(), 4);
           break;
-        case 0x5067: // Leakage HF current saved indicator after failure (mA) 
-          PollReply_OBL_JB2AC_HFCurrent(m_rxbuf.data(), m_rxbuf.size());
+        case 0x5067: // Leakage HF current saved indicator after failure (mA)
+          PollReply_OBL_JB2AC_Current(m_rxbuf.data(), m_rxbuf.size(), 5);
           break;
         case 0x5068: // Leakage LF current saved indicator after failure (mA)
-          PollReply_OBL_JB2AC_LFCurrent(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Current(m_rxbuf.data(), m_rxbuf.size(), 6);
           break;
         case 0x5070: // max AC current limitation configuration (A)
-          PollReply_OBL_JB2AC_MaxCurrent(m_rxbuf.data(), m_rxbuf.size());
+          PollReply_OBL_JB2AC_Current_GR(m_rxbuf.data(), m_rxbuf.size(), 2);
           break;
         case 0x5049: // Mains phase frequency
           PollReply_OBL_JB2AC_PhaseFreq(m_rxbuf.data(), m_rxbuf.size());
@@ -243,7 +246,7 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
 
     case 0x763:
       switch (job.pid) {
-        case 0x200c: // temperature sensor values
+        case 0x200C: // temperature sensor values
           PollReply_TDB(m_rxbuf.data(), m_rxbuf.size());
           break;
         case 0x2104: // obd Trip time s
@@ -330,10 +333,96 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* data, uint16_t repl
 
 void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(8);
-  int32_t cycles = (int32_t)CAN_UINT32(0);
+  int32_t cycles_remain = (int32_t)CAN_UINT32(0);
+  // use current remain value if no valid remain value in reply, to prevent false positive jump alert
+  int32_t cycles_now = cycles_remain > 0 ? cycles_remain : (int32_t)mt_bms_contactor_cycles->GetElemValue(1);
   int32_t cycles_max = (int32_t)CAN_UINT32(4);
+  // use previous remain value if available, otherwise current remain value, to calculate diff
+  int32_t cycles_prev = (int32_t)mt_bms_contactor_cycles->GetElemValue(1) > 0 ? (int32_t)mt_bms_contactor_cycles->GetElemValue(1) : cycles_now;
+  int32_t cycles_diff = cycles_prev - cycles_now;
+  int32_t cycles_consumed = cycles_max - cycles_now;
+  float odometer = can_odometer; // in km
   mt_bms_contactor_cycles->SetElemValue(0, cycles_max);
-  mt_bms_contactor_cycles->SetElemValue(1, cycles);
+  mt_bms_contactor_cycles->SetElemValue(1, cycles_now);
+  mt_bms_contactor_cycles->SetElemValue(2, cycles_consumed);
+  mt_bms_contactor_cycles->SetElemValue(3, cycles_diff);
+  if (cycles_now != cycles_prev) 
+    {
+    // Track contactor changes times for alerting on excessive actuation within 1h
+    time_t now = time(NULL);
+    while (!m_cchange_times.empty() && (now - m_cchange_times.front()) > 1 * 3600)
+      m_cchange_times.pop_front();
+
+    m_cchange_times.push_back((uint32_t)now);
+    int ccc_1h = (int)m_cchange_times.size(); // contactor cycle changes count within last 1 hour
+    mt_bms_contactor_cycles->SetElemValue(4, ccc_1h);
+    ESP_LOGD(TAG,"HV contactor cycles (%u / %u / %u / %d)", cycles_max, cycles_now, cycles_diff,ccc_1h);
+    // Send data log XSQ-BMS-ContactorLog 
+    //V1:
+    //  <cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer>
+    //V2:
+    //  ,<bms_mileage>,<can_soc>,<can_soh>,<USM_12V>,<contactor_state>,<bms_prod_data>,<bat_serial>,<evc_traceability>
+    //V3:
+    //  ,<tcc_12v_24h>
+    //V4:
+    // ,<cchanges_1h>
+    //V5:
+    // ,<bms_id_data>
+    MyNotify.NotifyStringf("data", "xsq.bms.log.contactor", "XSQ-BMS-ContactorLog,5,%d,%d,%d,%d,%d,%.1f,%.0f,%.1f,%.0f,%.2f,%s,%s,%s,%s,%d,%d,%s",
+      86400 * 30, // hold time 30 days
+      cycles_max, cycles_prev, cycles_now, cycles_diff, odometer, 
+      mt_bms_mileage->AsFloat(), can_soc, can_soh, mt_evc_dcdc->GetElemValue(3), mt_bms_HVcontactStateTXT->AsString().c_str(),
+      mp_encode(mt_bms_prod_data->AsString()).c_str(), mt_bat_serial->AsString().c_str(), mp_encode(mt_evc_traceability->AsString()).c_str(),
+      mt_12v_trickle_charge_count->AsInt(0), ccc_1h, mp_encode(mt_bms_ident_data->AsString()).c_str()
+      );
+    // Send alert in case of a large unexpected jump
+    if (cycles_prev > cycles_now && cycles_diff > 100) 
+      {
+      MyNotify.NotifyStringf("alert", "bms.contactorjump",
+        "ATT: HV contactor cycle count stepped down by %d counts (now at %d)\n"
+        "Possible issue #1405 condition (BMS glitch), check ASAP!\n"
+        "CAN write is now disabled and switched to listen mode!\n",
+        cycles_diff, cycles_now);
+      // …and disable CAN write to prevent possible damage to the contactor
+      ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, consumed: %d odo: %0.0f, counted more than expected!", cycles_prev, cycles_now, cycles_consumed, odometer);
+      if (IsCANwrite()) 
+        {
+        smartCoolDownPolling();
+        smartOBDpolling(false);
+        MyConfig.SetParamValueBool("xsq", "canwrite", false);
+        MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
+        }
+      }
+    // Alert if consumed cycles are above expected for a healthy contactor (e.g. above 50000 cycles consumed)
+    if(cycles_now > 0 && cycles_consumed > m_above_cycles)
+      {
+      ESP_LOGW(TAG, "HV contactor cycles counted > %d: last: %d, now: %d, consumed: %d odo: %0.0f!", m_above_cycles, cycles_prev, cycles_now, cycles_consumed, odometer);
+      NotifyHVCycles(true);
+      
+      // Shorter alert intervals the less cycles are remaining:
+      if (cycles_now < 1000)
+        m_above_cycles = roundup(cycles_consumed, 100);
+      else if (cycles_now < 10000)
+        m_above_cycles = roundup(cycles_consumed, 1000);
+      else if (cycles_now < 50000)
+        m_above_cycles = roundup(cycles_consumed, 5000);
+      else
+        m_above_cycles = roundup(cycles_consumed, 10000);
+      MyConfig.SetParamValueInt("xsq", "bms.alert.above.cycles", m_above_cycles);
+      }
+    // Alert if contactor has changes m_contactor_1h_limit times within last 1 hour:
+    if (ccc_1h >= m_contactor_1h_limit)
+      {
+      ESP_LOGW(TAG, "Contactor has changed %d times within 1h", ccc_1h);
+      MyNotify.NotifyStringf("alert", "bms.contactor.alert",
+        "The contactor has changed %d times within 1 hour.\n"
+        "Please check the contactor and related systems for possible issues.\n"
+        "The number of switching operations for the contactor is limited,\n"
+        "and excessive actuation can lead to total failure!\n"
+        "Contactor cycle remaining: %d\n",
+        m_contactor_1h_limit, cycles_now);
+      }
+    }
 }
 
 void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len) {
@@ -360,7 +449,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len)
     ocv = 0.0f;
   if(cap_loss < 0.0f || cap_loss > 100.0f)
     cap_loss = 0.0f;
-  mt_bms_voltages->SetElemValue(5, ocv);  // ocv_voltage
+  mt_bms_voltages->SetElemValue(7, ocv);  // ocv_voltage
   mt_bms_soc_values->SetElemValue(0, soc);                              // kernel SOC
   mt_bms_soc_values->SetElemValue(1, (real_soc_min + real_soc_max) / 2.0f);  // real SOC
   mt_bms_soc_values->SetElemValue(2, real_soc_min);                     // SOC min
@@ -472,6 +561,82 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattHealth(const char* data, uint16_t rep
   StdMetrics.ms_v_bat_cac->SetValue(cap_useable);
 }
 
+void OvmsVehicleSmartEQ::PollReply_BMS_IdentificationData(const char* data, uint16_t reply_len) {
+  // DataRead.Identification.RenaultR2 (PID 0x80), sentbytes "2180"
+  // Reply layout after stripping response header (61 80), all offsets 0-based:
+  // data[0..4]  : PartNumber.LowerPart          (5 bytes ASCII, DDT firstbyte 3-7)
+  // data[5]     : DiagnosticIdentificationCode  (1 byte,        DDT firstbyte 8)
+  // data[6..8]  : SupplierNumber.ITG            (3 bytes ASCII, DDT firstbyte 9-11, e.g. "DA1")
+  // data[9..13] : HardwareNumber.LowerPart      (5 bytes ASCII, DDT firstbyte 12-16)
+  // data[14..15]: SoftwareNumber                (2 bytes,       DDT firstbyte 17-18, e.g. 0x0470)
+  // data[16..17]: EditionNumber                 (2 bytes,       DDT firstbyte 19-20)
+  // data[18..19]: CalibrationNumber             (2 bytes,       DDT firstbyte 21-22)
+  // data[20]    : PartNumber.BasicPartList      (1 byte,        DDT firstbyte 23)
+  // data[21]    : HardwareNumber.BasicPartList  (1 byte,        DDT firstbyte 24)
+  // data[22]    : ApprovalNumber.BasicPartList  (1 byte,        DDT firstbyte 25)
+  // data[23]    : ManufacturerIdentificationCode(1 byte,        DDT firstbyte 26)
+  // minbytes: 26 (2 header + 24 payload) → REQUIRE_LEN(24)
+  REQUIRE_LEN(24);
+
+  // PartNumber.LowerPart: bytes 0-4 (5 bytes ASCII)
+  char part_no[6];
+  memcpy(part_no, &CAN_BYTE(0), 5);
+  part_no[5] = '\0';
+
+  // DiagnosticIdentificationCode: byte 5 (matches "diagversion" in autoidents)
+  uint8_t diag_version = (uint8_t)CAN_BYTE(5);
+
+  // SupplierNumber.ITG: bytes 6-8 (3 bytes ASCII, e.g. "DA1")
+  char supplier[4];
+  memcpy(supplier, &CAN_BYTE(6), 3);
+  supplier[3] = '\0';
+
+  // HardwareNumber.LowerPart: bytes 9-13 (5 bytes ASCII)
+  char hw_num[6];
+  memcpy(hw_num, &CAN_BYTE(9), 5);
+  hw_num[5] = '\0';
+
+  // SoftwareNumber: bytes 14-15 (2 bytes, displayed as 4-digit hex, e.g. 0x0470 → "0470")
+  uint16_t sw_num_raw = CAN_UINT(14);
+  char sw_version[5];
+  snprintf(sw_version, sizeof(sw_version), "%04X", sw_num_raw);
+
+  // EditionNumber: bytes 16-17 (2 bytes)
+  uint16_t edition = CAN_UINT(16);
+  char edition_str[5];
+  snprintf(edition_str, sizeof(edition_str), "%04X", edition);
+
+  // CalibrationNumber: bytes 18-19 (2 bytes)
+  uint16_t calibration = CAN_UINT(18);
+  char calibration_str[5];
+  snprintf(calibration_str, sizeof(calibration_str), "%04X", calibration);
+
+  // BasicPartList: bytes 20-22 (PartNumber / HardwareNumber / ApprovalNumber)
+  uint8_t bpl_part     = (uint8_t)CAN_BYTE(20);
+  uint8_t bpl_hw       = (uint8_t)CAN_BYTE(21);
+  uint8_t bpl_approval = (uint8_t)CAN_BYTE(22);
+  char basic_parts[10];
+  snprintf(basic_parts, sizeof(basic_parts), "%02X/%02X/%02X", bpl_part, bpl_hw, bpl_approval);
+
+  // ManufacturerIdentificationCode: byte 23 (1 byte)
+  uint8_t mfr_id = (uint8_t)CAN_BYTE(23);
+
+  // Build combined identification string for mt_bms_ident_data
+  char ident_str[48];
+  snprintf(ident_str, sizeof(ident_str), "%s|%s|%d|%s|%s|%s|%s|%s",
+           part_no, supplier, (int)diag_version, hw_num, sw_version, basic_parts, edition_str, calibration_str);
+
+  mt_bms_ident_data->SetValue(ident_str);
+  mt_bms_part_no->SetValue(part_no);
+  mt_bms_hw_version->SetValue(hw_num);
+  mt_bms_sw_version->SetValue(sw_version);
+  mt_bms_mfr_id->SetValue((int)mfr_id);
+  mt_bms_basic_parts->SetValue(basic_parts);
+
+  ESP_LOGD(TAG, "BMS Identification (PID 0x80): PartNo=%s, DiagVer=%u, Supplier=%s, HW=%s, SW=%s, Ed=%s, Cal=%s, BPL=%s, Mfr=%02X",
+           part_no, diag_version, supplier, hw_num, sw_version, edition_str, calibration_str, basic_parts, mfr_id);
+}
+
 void OvmsVehicleSmartEQ::PollReply_BMS_ProductionData(const char* data, uint16_t reply_len) {
   REQUIRE_LEN(8);
   uint8_t year = (uint8_t)CAN_BYTE(0);
@@ -527,15 +692,14 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
 
   mt_bms_voltages->SetElemValue(0, v_cell_min);   // cv_min
   mt_bms_voltages->SetElemValue(1, v_cell_max);   // cv_max
-  mt_bms_voltages->SetElemValue(2, (v_cell_min + v_cell_max) / 2.0f);  // cv_mean
-
-  mt_bms_voltages->SetElemValue(3, v_link);       // link
+  mt_bms_voltages->SetElemValue(2, (v_cell_min + v_cell_max) / 2.0f);  // cv_mean  
+  mt_bms_voltages->SetElemValue(3, cv_sum_raw);   // cv_sum (HV)
   mt_bms_voltages->SetElemValue(4, v_pack_term);  // contactor
-  mt_bms_voltages->SetElemValue(5, cv_sum_raw);   // cv_sum (HV)
+  mt_bms_voltages->SetElemValue(5, v_link);       // traction link 12V
 
   // P = V × I (in kW)
   float pack_power_kw = (v_pack_term * i_pack) / 1000.0f;
-  StdMetrics.ms_v_bat_voltage->SetValue(v_pack_term);
+  //StdMetrics.ms_v_bat_voltage->SetValue(v_pack_term);
   StdMetrics.ms_v_bat_current->SetValue(i_pack * -1.0f); // invert to charge(+)/discharge(-) convention
   StdMetrics.ms_v_bat_power->SetValue(pack_power_kw);
 
@@ -648,10 +812,14 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t
     {
     // Pressure: big-endian 16 bit *0.75 kPa
     uint16_t praw = CAN_UINT(8 + (i*2));
-    m_tpms_pressure[i] = (float)praw != 0xffff ? (float)praw * 0.75f : 0.0f;
+    float pressure_kpa = (float)praw * 0.75f;
+    if (pressure_kpa >= 10.0f && pressure_kpa <= 500.0f)
+      m_tpms_pressure[i] = pressure_kpa;    // only valid values
     // Temperature: raw byte + offset -30.0
     uint16_t traw = (uint16_t)(uint8_t)CAN_BYTE(16 + i);
-    m_tpms_temperature[i] = traw != 0xffff ? (float)traw - 30.0f : 0.0f;
+    float temp = (float)traw - 30.0f;
+    if (temp <= 100.0f)
+      m_tpms_temperature[i] = temp; // only valid values
     m_tpms_lowbatt[i] = static_cast<bool>((raw >> i) & 0x01);
     }
 }
@@ -709,8 +877,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_ActReq(const char* data, uint16_t re
   // Spec: bitoffset 7, bitscount 1 (MSB of byte 0 in payload)
   REQUIRE_LEN(1);
   uint8_t raw = CAN_BYTE(0);
-  bool active = raw != 0;  // Bit 7
-  StdMetrics.ms_v_env_charging12v->SetValue(active);
+  can_charging12v = raw != 0;  // Bit 7  
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_VoltReq(const char* data, uint16_t reply_len) {
@@ -725,7 +892,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Volt(const char* data, uint16_t repl
   // POSITIVE RESPONSE FORMAT: 62 30 24 <Byte>
   REQUIRE_LEN(1);
   uint8_t raw = CAN_BYTE(0);
-  float value = 4.0f + raw * 0.1f;     // offset 4.0, step 0.1
+  float value = 4.0f + raw * 0.1f;      // offset 4.0, step 0.1
   mt_evc_dcdc->SetElemValue(1, value);  // dcdc_volt
   StdMetrics.ms_v_charge_12v_voltage->SetValue(value);
 }
@@ -743,9 +910,11 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Power(const char* data, uint16_t rep
 void OvmsVehicleSmartEQ::PollReply_EVC_USM14VVoltage(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 62 33 01 <Byte>
   REQUIRE_LEN(1);
-  uint8_t raw = CAN_BYTE(0);
-  float value = 6.0f + raw * 0.06f;
-  mt_evc_dcdc->SetElemValue(3, value);  // usm_volt
+  uint8_t raw = CAN_BYTE(0);  
+  float value_2020 = (raw * 0.06f) + 6.0f;  // offset 6.0, step 0.06 Model >= 2020
+  float value_2019 = raw * 0.0625f;         // step 0.0625 (1/16) Model <= 2019
+  float value = value_2020 > 15.5f ? value_2019 : value_2020; // sanity check using year offset
+  mt_evc_dcdc->SetElemValue(3, value);      // usm_volt
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len) {
@@ -761,7 +930,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltageReq(const char* data, ui
   REQUIRE_LEN(1);
   uint8_t raw = CAN_BYTE(0);
   float value = 12.0f + raw * 0.05f;
-  mt_evc_dcdc->SetElemValue(5, value);  // batt_volt_req
+  mt_evc_dcdc->SetElemValue(5, value);  // dcdc_volt_req
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_PlugDetected(const char* data, uint16_t reply_len) {
@@ -847,39 +1016,19 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t re
   UpdateChargeMetrics();
 }
 
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph1_RMS_A(const char* data, uint16_t reply_len) {
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_A(const char* data, uint16_t reply_len, int idx) {
   REQUIRE_LEN(2);
   float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
-  mt_obl_main_amps->SetElemValue(0, value);
+  mt_obl_main_amps->SetElemValue(idx, value);
+  if (idx == 2)
+    UpdateChargeMetrics();
 }
 
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph2_RMS_A(const char* data, uint16_t reply_len) {
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_V(const char* data, uint16_t reply_len, int idx) {
   REQUIRE_LEN(2);
-  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
-  mt_obl_main_amps->SetElemValue(1, value);
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph3_RMS_A(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
-  mt_obl_main_amps->SetElemValue(2, value);
-  UpdateChargeMetrics();
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph12_RMS_V(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  mt_obl_main_volts->SetElemValue(0, CAN_UINT(0) / 2.0);
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph23_RMS_V(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  mt_obl_main_volts->SetElemValue(1, CAN_UINT(0) / 2.0);
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph31_RMS_V(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  mt_obl_main_volts->SetElemValue(2, CAN_UINT(0) / 2.0);
-  UpdateChargeMetrics();
+  mt_obl_main_volts->SetElemValue(idx, CAN_UINT(0) / 2.0);
+  if (idx == 2)
+    UpdateChargeMetrics();
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len) {
@@ -904,48 +1053,28 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint1
   mt_obl_main_leakage_diag->SetValue(msgtxt);
 }
 
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_DCCurrent(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_misc->SetElemValue(3, (float)raw / 1000.0f);  // dc_current (mA)
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HF10kHz(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_misc->SetElemValue(4, (float)raw / 1000.0f);  // hf10kHz_current (mA)
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_HFCurrent(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_misc->SetElemValue(5, (float)raw / 1000.0f);  // hf_current (mA)
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LFCurrent(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
-  mt_obl_misc->SetElemValue(6, (float)raw / 1000.0f);  // lf_current (mA)
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_GroundResistance(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(2);
-  mt_obl_misc->SetElemValue(1, (float) CAN_UINT(0));  // ground_resistance
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_MaxCurrent(const char* data, uint16_t reply_len) {
-  REQUIRE_LEN(1);
-  mt_obl_misc->SetElemValue(2, (float) CAN_BYTE(0));  // max_current
-}
-
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_PhaseFreq(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 50 49 <Byte> <Byte>
+  // freq, ground_resistance, max_current, dc_current (mA), hf10kHz_current (mA), hf_current (mA), lf_current (mA) depending on idx
   // Spec: offset 10.0, step 0.0078125, bytescount 2
   REQUIRE_LEN(2);
   uint16_t raw = CAN_UINT(0);
   float freq = 10.0f + (raw * 0.0078125f);
   if (freq > 40.0f) // plausibility check
     mt_obl_misc->SetElemValue(0, freq);  // freq
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Current_GR(const char* data, uint16_t reply_len, int idx) {
+  // freq, ground_resistance, max_current, dc_current (mA), hf10kHz_current (mA), hf_current (mA), lf_current (mA) depending on idx
+  REQUIRE_LEN(1);
+  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
+  mt_obl_misc->SetElemValue(idx, (float)raw / 1000.0f);
+}
+
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Current(const char* data, uint16_t reply_len, int idx) {
+  // freq, ground_resistance, max_current, dc_current (mA), hf10kHz_current (mA), hf_current (mA), lf_current (mA) depending on idx
+  REQUIRE_LEN(2);
+  int16_t raw = (int16_t)(CAN_UINT(0) - 32768);
+  mt_obl_misc->SetElemValue(idx, (float)raw / 1000.0f);
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_time(const char* data, uint16_t reply_len) {
@@ -1021,7 +1150,7 @@ void OvmsVehicleSmartEQ::PollReply_BCM_DoorlockEEPROM(const char* data, uint16_t
   
   // DRIVER_DOOR_LOCKED_S:
   bool driver_locked = (CAN_BYTE(0) > 0);
-  mt_driver_door_locked->SetValue(driver_locked);
+  m_cmd_locked = driver_locked;  // store for command use
 }
 
 void OvmsVehicleSmartEQ::PollReply_obd_mt_level(const char* data, uint16_t reply_len) {

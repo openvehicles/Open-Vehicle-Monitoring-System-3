@@ -81,6 +81,14 @@ struct DashboardConfig;
 // 
 // See OvmsVehicle::PollSingleRequest() on how to send dynamic requests with additional arguments.
 // 
+// Since version 3.3.006 the poll cycle timing can be shifted by up to 255 seconds per state.
+// To define shifted poll intervals, use the new 'ts' union member in place of the interval
+// array. Example/template:
+//  { TXID, RXID, TYPE, PID, {.ts={ {…TIMES…}, {…SHIFTS…} }}, 0, ISOTP_STD }
+// Notes:
+// - shifts start over at the max_ticker cycle overrun reset (3600 seconds)
+// - shifts with cycle=0 translate to once per max_ticker cycle (at the shift offset)
+// 
 // VWTP_20: this protocol implements the VW (VAG) specific "TP 2.0", which establishes
 // OSI layer 5 communication channels to devices (ECU modules) via a CAN gateway.
 // On VWTP_20 poll entries, simply set the TXID to the gateway base ID (normally 0x200)
@@ -174,8 +182,8 @@ private:
   static const uint8_t short_count = 2;
 
   static const int32_t entry_mult       =  1000;
-  static const int32_t blip_threshold   =   300; // cur is > 0.3v over average is 'Blip'
-  static const int32_t dip_threshold    =  -250; // cur is < 0.25v under average is 'Dip'
+  static const int32_t blip_threshold   =   250; // cur is > 0.25v over average is 'Blip'
+  static const int32_t dip_threshold    =  -170; // cur is < 0.17v under average is 'Dip'
   static const int32_t chdip_threshold  =   -90; // cur is < 0.09v under average while charging is 'ChargeDip'
   static const int32_t chblip_threshold =   100; // cur is > 0.1v over average while charing is  is 'ChargeBlip'
 

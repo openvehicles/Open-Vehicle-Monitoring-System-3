@@ -81,8 +81,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   auto lock = MyConfig.Lock();
 
-  std::string error, full_km, rebootnw;
-  bool canwrite, canwrite_caron, led, resettrip, resettotal, bcvalue;
+  std::string error, full_km, rebootnw, contactor_1h_limit;
+  bool canwrite, canwrite_caron, canwrite_sleep, led, resettrip, resettotal, bcvalue;
   bool charge12v, extstats, unlocked, tripnotify, opendoors;
   bool obdii79b, obdii79b_cell, obdii743, obdii745, obdii745_tpms, obdii7e4, obdii7e4_dcdc;
 
@@ -90,6 +90,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     // process form submission:
     canwrite    = (c.getvar("canwrite") == "yes");
     canwrite_caron = (c.getvar("canwrite_caron") == "yes");
+    canwrite_sleep = (c.getvar("canwrite_sleep") == "yes");
     led         = (c.getvar("led") == "yes");
     rebootnw    = (c.getvar("rebootnw"));
     resettrip   = (c.getvar("resettrip") == "yes");
@@ -108,6 +109,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     obdii745_tpms = (c.getvar("obdii745_tpms") == "yes");
     obdii7e4 = (c.getvar("obdii7e4") == "yes");
     obdii7e4_dcdc = (c.getvar("obdii7e4_dcdc") == "yes");
+    contactor_1h_limit = c.getvar("contactor_1h_limit");
 
     // Basic numeric validation:
     auto validFloat = [&](const std::string& s, double minv, double maxv, const char* fname)->bool {
@@ -122,6 +124,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     };
     if(!validFloat(full_km, 50, 300, "WLTP km")) full_km = "126.0";
     if(!validFloat(rebootnw, 0, 1440, "Restart Network Time")) rebootnw = "0";
+    if(!validFloat(contactor_1h_limit, 1, 100, "Contactor 1h limit")) contactor_1h_limit = "8";
 
     if (error.empty()) {
       // Use GetParamMap() to get a COPY of the map
@@ -136,6 +139,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
          }
       map.SetValueBool("canwrite", canwrite);
       map.SetValueBool("canwrite.caron", canwrite_caron);
+      map.SetValueBool("canwrite.sleep", canwrite_sleep);
       map.SetValueBool("led", led);
       map["rebootnw"] = rebootnw;
       map.SetValueBool("resettrip", resettrip);
@@ -154,6 +158,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       map.SetValueBool("obdii.7e4", obdii7e4);
       map.SetValueBool("obdii.7e4.dcdc", obdii7e4_dcdc);
       map.SetValueBool("obdii.745.tpms", obdii745_tpms);
+      map["bms.contactor.1h.limit"] = contactor_1h_limit;
 
       // Write all changes in one operation
       MyConfig.SetParamMap("xsq", map);
@@ -172,6 +177,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   } else {
     canwrite       = sq->m_enable_write;
     canwrite_caron = sq->m_enable_write_caron;
+    canwrite_sleep = sq->m_enable_write_sleep;
     led            = sq->m_enable_LED_state;
     resettrip      = sq->m_resettrip;
     resettotal     = sq->m_resettotal;
@@ -193,6 +199,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     rebootnw       = def;
     snprintf(def, sizeof(def), "%d", sq->m_full_km);
     full_km        = def;
+    snprintf(def, sizeof(def), "%d", sq->m_contactor_1h_limit);
+    contactor_1h_limit = def;
     c.head(200);
   }
 
@@ -201,10 +209,15 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
   
   c.fieldset_start("Remote Control");
-  c.input_checkbox("Enable CAN write access", "canwrite", canwrite,
-    "<p>Controls CAN write access (OBDII polling etc.)</p>");
-  c.input_checkbox("Enable CAN write only when car on/charging", "canwrite_caron", canwrite_caron,
-    "<p>Alternative to Canwrite; select one or neither!</p>");
+  c.input_checkbox("Enable CAN write access #1", "canwrite", canwrite,
+    "<p>CAN write access all time! (OBDII polling, start Preconditioning etc.)</p>");
+  c.input_checkbox("Enable CAN write access #2", "canwrite_caron", canwrite_caron,
+    "<p>CAN write access all time!</p>"
+    "<p>Clears polling list when vehicle is in awake/sleep mode</p>"
+    "<p>This will stop CAN polling when the vehicle is in awake/sleep mode</p>"
+    "<p>Alternative to CAN write access #1; select one or neither!</p>");
+  c.input_checkbox("Disable CAN polling during sleep", "canwrite_sleep", canwrite_sleep,
+    "<p>Clears polling list when vehicle is in sleep mode</p>");
   c.fieldset_end();
   
   // trip reset or OBD activation
@@ -218,14 +231,15 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("OBD kWh/100km value", "bcvalue", bcvalue,
     "<p>Show OBD kWh/100km</p>");
   c.input_slider("WLTP km", "full_km", 3, "km",-1, atof(full_km.c_str()), 126, 100, 180, 1,
-  "<p>Max range at full HV (126 WLTP, 155 NFEZ) for ideal range calc</p>");
+    "<p>Max range at full HV (126 WLTP, 155 NFEZ) for ideal range calc</p>");
   c.fieldset_end();
 
   c.fieldset_start("Diff Settings");
   c.input_checkbox("Online state LED", "led", led,
     "<p>RED=no inet, BLUE=inet, GREEN=v2 connected. EGPIO 7,8,9</p>");
-  c.input_checkbox("Enable 12V charging", "charge12v", charge12v,
-    "<p>Charge 12V on low-voltage alert</p>"); 
+  c.input_checkbox("Enable trickle 12V charging", "charge12v", charge12v,
+    "<p>Charge 12V battery on low-voltage alert</p>"
+    "<p>Trickle charging for the 12V battery is performed via pre-conditioning.</p>"); 
   c.input_checkbox("Door unlocked warning", "unlocked", unlocked,
     "<p>Warn if parked &gt;10min and unlocked</p>");
   c.input_checkbox("Door open warning", "opendoors", opendoors,
@@ -234,13 +248,15 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       "<p>Maintenance + trip data. Not recommended for iOS app!</p>");  
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 15, 0, 60, 1,
     "<p>0=off. Auto-restart network on v2 disconnect</p>");
+  c.input_slider("Contactor 1h limit", "contactor_1h_limit", 3, "/h",-1, atof(contactor_1h_limit.c_str()), 8, 1, 100, 1,
+    "<p>Max contactor cycles per hour before alert (default: 8)</p>");
   c.fieldset_end();
 
   c.fieldset_start("OBDII Polling (requires CAN write)");
   c.input_checkbox("Enable 743 polling", "obdii743", obdii743,
     "<p>e.g. maintenance data</p>");
   c.input_checkbox("Enable 745 polling", "obdii745", obdii745,
-    "<p>e.g. VIN/Doorlock</p>");
+    "<p>e.g. Doorlock</p>");
   c.input_checkbox("Enable 745 TPMS polling", "obdii745_tpms", obdii745_tpms,
     "<p>Full TPMS (pressure/temp/alert). Off=basic (pressure only)</p>");
   c.input_checkbox("Enable 79b polling", "obdii79b", obdii79b,
@@ -416,15 +432,15 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
       c.alert(alert_type.c_str(), info.c_str());
 
       // Refresh values from config/metrics to show latest state after command execution
-      calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", calcADCfactor);
+    calcADCfactor = sq->m_enable_calcADCfactor;
       adc_factor  = MyConfig.GetParamValue("system.adc", "factor12v", adc_factor.empty() ? "195.7" : adc_factor);
-      if (sq->mt_evc_dcdc && sq->mt_evc_dcdc->GetElemValue(1) > 10.0f) {
+      if (sq->mt_evc_dcdc && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f) {
         char buf[16];
-        snprintf(buf, sizeof(buf), "%.3f", sq->mt_evc_dcdc->GetElemValue(1));  // DCDC voltage
+        snprintf(buf, sizeof(buf), "%.3f", StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f));  // DCDC voltage
         onboard_12v = buf;
       }
       if (onboard_12v.empty())
-        onboard_12v = "12.600";
+        onboard_12v = "12.500";
       if (sq->mt_adc_factor_history)
         adc_history = sq->mt_adc_factor_history->AsString();
     }
@@ -450,15 +466,15 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
     }
   } else {
     // read configuration:
-    calcADCfactor = MyConfig.GetParamValueBool("xsq", "calc.adcfactor", false);
+    calcADCfactor = sq->m_enable_calcADCfactor;
     adc_factor  = MyConfig.GetParamValue("system.adc", "factor12v", "195.7");
-    if (sq->mt_evc_dcdc && sq->mt_evc_dcdc->GetElemValue(1) > 10.0f) {
+    if (sq->mt_evc_dcdc && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f) {
         char buf[16];
-        snprintf(buf, sizeof(buf), "%.3f", sq->mt_evc_dcdc->GetElemValue(1));  // DCDC voltage
+        snprintf(buf, sizeof(buf), "%.3f", StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f));  // DCDC voltage
         onboard_12v = buf;
       }
     if (onboard_12v.empty())
-      onboard_12v = "12.600";
+      onboard_12v = "12.500";
     if (sq->mt_adc_factor_history)
       adc_history = sq->mt_adc_factor_history->AsString();
     c.head(200);
@@ -470,7 +486,7 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
     if (adc_factor.empty())
       adc_factor = "195.7";
     if (onboard_12v.empty())
-      onboard_12v = "12.600";
+      onboard_12v = "12.500";
   }
 
   if (adc_history.empty() && sq->mt_adc_factor_history)
@@ -487,15 +503,15 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
   // ADC settings
   c.fieldset_start("ADC Settings");
   c.input_checkbox("Auto-recalculate ADC factor", "calcADCfactor", calcADCfactor,
-      "<p>Recalculate ADC factor once per HV charge via CAN 12V measurement</p>");
+      "<p>Recalculate ADC factor once per 12V charge by DC/DC with CAN 12V measurement value</p>");
   if (!adc_history.empty()) {
     c.input_text("ADC factor history", "adc_history", adc_history.c_str(), "no history",
       "<p>Last 5 values, most recent last</p>");
   }
-  c.input_slider("ADC factor", "adc_factor", 5, "", -1, atof(adc_factor.c_str()), 195.7, 160, 230, 0.01,
+  c.input_slider("ADC factor", "adc_factor", 5, "", -1, atof(adc_factor.c_str()), 195.7, 160, 230, 0.1,
     "<p>12V ADC calibration factor (default 195.7)</p>");
-  c.input_slider("12V measured", "onboard_12v", 3, "V",-1, atof(onboard_12v.c_str()), 12.60, 11.00, 15.00, 0.01,
-    "<p>Measured 12V for calibration (preset from CAN)</p>");
+  c.input_slider("12V measured", "onboard_12v", 3, "V",-1, atof(onboard_12v.c_str()), 12.50, 11.00, 15.00, 0.01,
+    "<p>Your measured 12V for calibration calculation</p>");
   c.printf("<input type=\"hidden\" name=\"onboard_12v_submit\" id=\"onboard_12v_submit\" value=\"%s\">\n",
            _attr(onboard_12v.c_str()));
   c.input_button("default", "ADC calculation", "action", "calc");
@@ -517,14 +533,12 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc, cell_interval_drv, cell_interval_chg;
+  std::string suffrange, suffsoc;
 
   if (c.method == "POST") {
     // process form submission:
     suffrange = c.getvar("suffrange");
     suffsoc   = c.getvar("suffsoc");
-    cell_interval_drv = c.getvar("cell_interval_drv");
-    cell_interval_chg = c.getvar("cell_interval_chg");
 
     // check:
     if (!suffrange.empty()) {
@@ -543,8 +557,6 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       auto map = MyConfig.GetParamMap("xsq");
       map["suffrange"] = suffrange;
       map["suffsoc"] = suffsoc;
-      map["cell_interval_drv"] = cell_interval_drv;
-      map["cell_interval_chg"] = cell_interval_chg;
       MyConfig.SetParamMap("xsq", map);
 
       c.head(200);
@@ -563,8 +575,6 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     suffrange = MyConfig.GetParamValue("xsq", "suffrange", "0");
     suffsoc   = MyConfig.GetParamValue("xsq", "suffsoc", "0");
-    cell_interval_drv = MyConfig.GetParamValue("xsq", "cell_interval_drv", "60");
-    cell_interval_chg = MyConfig.GetParamValue("xsq", "cell_interval_chg", "60");
 
     c.head(200);
   }
@@ -582,16 +592,6 @@ void OvmsVehicleSmartEQ::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",-1, atof(suffsoc.c_str()), 80, 0, 100, 1,
     "<p>0=off. Notify/stop at this SOC</p>");
 
-  c.fieldset_end();
-  
-  c.fieldset_start("BMS Cell Monitoring");
-  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",-1, atof(cell_interval_drv.c_str()),
-    60, 0, 300, 1,
-    "<p>Default 60s, 0=off</p>");
-  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",-1, atof(cell_interval_chg.c_str()),
-    60, 0, 300, 1,
-    "<p>Default 60s, 0=off</p>");
-  
   c.fieldset_end();
 
   c.print("<hr>");
