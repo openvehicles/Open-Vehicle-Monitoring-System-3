@@ -189,7 +189,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       {
       REQ_DLC(4);
       float _soc = (float) CAN_BYTE(3);
-      if (_soc <= 100.0f) can_soc = _soc; // SOC
+      if (_soc <= 100.0f && _soc >= 0.1f) can_soc = _soc; // SOC
       can_chargeport = (CAN_BYTE(0) & 0x20) != 0; // ChargingPlugConnected
       can_duration_full = (((c >> 22) & 0x3FFu) < 0x3FF) ? (c >> 22) & 0x3FFu : 0;
       float _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy

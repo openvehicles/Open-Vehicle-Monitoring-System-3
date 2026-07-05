@@ -546,7 +546,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     float can_speed = 0.0f;
     float can_odometer = 0.0f;
     float can_odometer_trip = 0.0f;
-    float can_soc = 0.0f;
+    float can_soc = StdMetrics.ms_v_bat_soc->AsFloat(0.0f);
     float can_range_est = 0.0f;
     float can_range_full = 0.0f;
     float can_range_ideal = 0.0f;
