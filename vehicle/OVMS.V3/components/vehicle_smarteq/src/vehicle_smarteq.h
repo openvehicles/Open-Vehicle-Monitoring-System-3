@@ -33,14 +33,14 @@
 #ifndef __VEHICLE_SMARTEQ_H__
 #define __VEHICLE_SMARTEQ_H__
 
-
 // --- Constants ---
 #define VERSION "2.2.0"
-#define PRESET_VERSION 20260623 // Configuration preset version
+#define PRESET_VERSION 20260706        // Configuration preset version
+#define PRESET_VERSION_12VREF 20260706 // Configuration preset version for 12V reference migration, defined separately to allow setting 12V reference migration
 #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
 #define MAX_POLL_DATA_LEN 126
 #define CELLCOUNT 96
-#define SQ_CANDATA_TIMEOUT 10   // seconds until car goes to sleep without CAN activity
+#define SQ_CANDATA_TIMEOUT 10          // seconds until car goes to sleep without CAN activity
 
 #include "ovms_log.h"
 
@@ -468,8 +468,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     std::string m_hl_canbyte = "";          // canbyte variable for unv
     std::deque<float> m_adc_factor_history;     // ring buffer (max 10) for ADC factors
     std::deque<float> m_12v_undervolt_history;  // ring buffer (max 10) for 12V undervoltage measurements
-    float m_ref12V = 12.6f;                 // reference 12V (12.6V)
-    float m_alert12V = 0.8f;                // alert threshold 12V (0.8V)
+    float m_ref12V = 12.5f;                 // reference 12V (12.5V)
+    float m_alert12V = 0.9f;                // alert threshold 12V (0.9V)
     bool m_12v_alerted = false;             // 12V undervolt alert triggered
     int m_12v_alerted_ticker = -1;          // cooldown ticker for 12V undervolt alert reset
 
