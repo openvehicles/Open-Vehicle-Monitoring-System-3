@@ -257,8 +257,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   if (param && param->GetName() == "vehicle")
     {
     setTPMSValue();   // update TPMS metrics
-    m_ref12V = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6f);
-    m_alert12V = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 0.8f);
+    m_ref12V = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.5f);
+    m_alert12V = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 0.9f);
     }
   if (param && param->GetName() != "xsq")
     return;
