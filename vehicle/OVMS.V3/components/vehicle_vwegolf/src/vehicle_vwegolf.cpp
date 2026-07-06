@@ -41,6 +41,11 @@
 #define VWEGOLF_BMS_RX 0x7ED      // BMS -> tester response CAN ID
 #define VWEGOLF_BMS_DID_U 0x1E3B  // measured pack voltage, uint16 / 4.0 V
 #define VWEGOLF_BMS_DID_I 0x1E3D  // measured pack current, (uint16 - 2044) / 4.0 A
+// SoH/CAC — same DID, TX/RX as vweup_obd.cpp VWUP_BAT_MGMT_SOH_CAC. vweup branches the
+// divisor on model year (>2019 vs older MQB platform); the e-Golf matches the older
+// platform, so we hardcode the "else" constants (CAC /100.0, SoH /50.0). Verbatim from
+// vweup, MUST be validated on the e-Golf before trusting values.
+#define VWEGOLF_BMS_DID_SOH_CAC 0x74CB  // uint16 @offset0: CAC = raw/100.0 Ah, SoH = raw/50.0 %
 
 // Poll intervals in seconds per state {OFF, AWAKE, CHARGING, ON}. Diag CAN sleeps
 // with the car -> OFF/AWAKE are 0. CHARGING feeds the bat_* metrics (0x191 is silent
@@ -60,6 +65,18 @@ static const OvmsPoller::poll_pid_t vwegolf_polls[] = {{VWEGOLF_BMS_TX,
                                                         VEHICLE_POLL_TYPE_READDATA,
                                                         VWEGOLF_BMS_DID_I,
                                                         {0, 0, 3, 10},
+                                                        0,
+                                                        ISOTP_STD},
+                                                       // SoH/CAC are slow-changing (capacity
+                                                       // fade, not an instantaneous reading) —
+                                                       // poll at a slow interval, and in AWAKE/
+                                                       // CHARGING/ON alike (unlike U/I above,
+                                                       // not gated to CHARGING-only downstream).
+                                                       {VWEGOLF_BMS_TX,
+                                                        VWEGOLF_BMS_RX,
+                                                        VEHICLE_POLL_TYPE_READDATA,
+                                                        VWEGOLF_BMS_DID_SOH_CAC,
+                                                        {0, 600, 600, 600},
                                                         0,
                                                         ISOTP_STD},
                                                        POLL_LIST_END};
@@ -298,6 +315,16 @@ void OvmsVehicleVWeGolf::IncomingPollReply(const OvmsPoller::poll_job_t& job, ui
                 StandardMetrics.ms_v_bat_power->SetValue(
                     StandardMetrics.ms_v_bat_voltage->AsFloat() * amps / 1000.0f);
             }
+            break;
+        }
+        case VWEGOLF_BMS_DID_SOH_CAC: {
+            // Battery SoH/CAC — verbatim scaling from vehicle_vweup (see define above).
+            // Slow-changing, not gated to CHARGING like U/I: written whenever polled.
+            const float cac = raw / 100.0f;
+            const float soh = raw / 50.0f;
+            ESP_LOGD(TAG, "UDS BMS SOH_CAC raw=%u -> SoH=%.1f%% CAC=%.1fAh", raw, soh, cac);
+            StandardMetrics.ms_v_bat_soh->SetValue(soh);
+            StandardMetrics.ms_v_bat_cac->SetValue(cac);
             break;
         }
         default:

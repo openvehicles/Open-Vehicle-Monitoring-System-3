@@ -198,6 +198,8 @@ struct StandardMetricsType {
     OvmsMetricFloat*  ms_v_bat_range_ideal      = new OvmsMetricFloat("ms_v_bat_range_ideal");
     OvmsMetricFloat*  ms_v_bat_energy_used      = new OvmsMetricFloat("ms_v_bat_energy_used");
     OvmsMetricFloat*  ms_v_bat_energy_recd      = new OvmsMetricFloat("ms_v_bat_energy_recd");
+    OvmsMetricFloat*  ms_v_bat_soh              = new OvmsMetricFloat("ms_v_bat_soh");
+    OvmsMetricFloat*  ms_v_bat_cac              = new OvmsMetricFloat("ms_v_bat_cac");
     // Position / speed
     OvmsMetricFloat*  ms_v_pos_speed            = new OvmsMetricFloat("ms_v_pos_speed");
     OvmsMetricFloat*  ms_v_pos_odometer         = new OvmsMetricFloat("ms_v_pos_odometer");
