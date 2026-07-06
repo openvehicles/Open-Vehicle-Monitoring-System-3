@@ -84,7 +84,7 @@ static const OvmsPoller::poll_pid_t obdii_7e4_dcdc_polls[] =
 {
   // { tx, rx, type, pid, {.ts={ {OFF,AWAKE,ON,CHARGING}, {<delayed_start>OFF,AWAKE,ON,CHARGING} }}, bus, protocol }
   // AWAKE short interval needed for trickle charging (HVAC on)
-  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3022, {.ts={ { 0,10,10,10 }, { 0,5,5,5 } }}, 0, ISOTP_STD },    // DCDC activation request
+  { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3022, {.ts={ { 0,10,10,10 }, { 0,5,5,9 } }}, 0, ISOTP_STD },    // DCDC activation request
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3023, {.ts={ { 0,30,30,30 }, { 0,19,19,19 } }}, 0, ISOTP_STD }, // 14V DCDC voltage request
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3024, {.ts={ { 0,20,20,20 }, { 0,8,8,14 } }}, 0, ISOTP_STD },   // 14V DCDC voltage measure
   { 0x7E4, 0x7EC, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3025, {.ts={ { 0,30,30,30 }, { 0,20,20,20 } }}, 0, ISOTP_STD }, // 14V DCDC current measure
@@ -122,7 +122,7 @@ static const OvmsPoller::poll_pid_t fast_charger_polls[] =
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2001, {.ts={ { 0,0,0,5 }, { 0,0,0,7 } }}, 0, ISOTP_STD },    // rqJB2AC_Ph1_RMS_A
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503A, {.ts={ { 0,0,0,5 }, { 0,0,0,7 } }}, 0, ISOTP_STD },    // rqJB2AC_Ph2_RMS_A
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x503B, {.ts={ { 0,0,0,5 }, { 0,0,0,7 } }}, 0, ISOTP_STD },    // rqJB2AC_Ph3_RMS_A
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, {.ts={ { 0,0,0,13 }, { 0,0,0,13 } }}, 0, ISOTP_STD },  // rqJB2AC Mains active power consumed
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, {.ts={ { 0,0,0,5 }, { 0,0,0,8 } }}, 0, ISOTP_STD },    // rqJB2AC Mains active power consumed
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5049, {.ts={ { 0,0,0,601 }, { 0,0,0,58 } }}, 0, ISOTP_STD }, // rqJB2AC_Mains phase frequency
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5070, {.ts={ { 0,0,0,601 }, { 0,0,0,59 } }}, 0, ISOTP_STD }, // rqJB2AC_Max Current limitation
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, {.ts={ { 0,0,0,601 }, { 0,0,0,61 } }}, 0, ISOTP_STD }, // rqJB2AC_Ground Resistance
