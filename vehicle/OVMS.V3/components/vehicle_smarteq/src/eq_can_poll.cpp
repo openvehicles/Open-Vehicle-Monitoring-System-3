@@ -1003,7 +1003,18 @@ void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t repl
   }
   UpdateChargeMetrics();
 }
-
+// #1 poll fast charger 3-phase
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_V(const char* data, uint16_t reply_len, int idx) {
+  REQUIRE_LEN(2);
+  mt_obl_main_volts->SetElemValue(idx, CAN_UINT(0) / 2.0);
+}
+//#2 poll fast charger 3-phase
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_A(const char* data, uint16_t reply_len, int idx) {
+  REQUIRE_LEN(2);
+  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
+  mt_obl_main_amps->SetElemValue(idx, value);
+}
+//#3 poll + charge metrics update #1, #2, #3
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 62 50 4A <Byte> <Byte>
   // Spec: offset -20000.0, bytescount 2, unit W
@@ -1014,21 +1025,6 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t re
   mt_obl_main_CHGpower->SetElemValue(0, power_kw);
   mt_obl_main_CHGpower->SetElemValue(1, 0);
   UpdateChargeMetrics();
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_A(const char* data, uint16_t reply_len, int idx) {
-  REQUIRE_LEN(2);
-  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
-  mt_obl_main_amps->SetElemValue(idx, value);
-  if (idx == 2)
-    UpdateChargeMetrics();
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_V(const char* data, uint16_t reply_len, int idx) {
-  REQUIRE_LEN(2);
-  mt_obl_main_volts->SetElemValue(idx, CAN_UINT(0) / 2.0);
-  if (idx == 2)
-    UpdateChargeMetrics();
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len) {
