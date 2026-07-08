@@ -8,6 +8,8 @@ Open Vehicle Monitor System v3 - Change log
     means we don't see the VIN frames but at least we're not crashing
     over and over.
 - Fiat eDoblo: added passive lock status from CAN 0x612.
+- VW e-Golf: populate v.e.awake and v.e.on, derived from the terminal (KL_15, 0x3C0)
+    and drivetrain-READY (0x391) frames.
 - VW e-Golf: added remote climate control (preconditioning) over KCAN BAP via the J533 connector.
     Start/stop from the app or the standard climatecontrol command. The car runs its stored
     climate profile: OVMS does not set the temperature, it follows the setpoint configured in
