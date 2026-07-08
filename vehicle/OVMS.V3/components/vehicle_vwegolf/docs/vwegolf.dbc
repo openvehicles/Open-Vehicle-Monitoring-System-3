@@ -18,7 +18,7 @@ NS_ :
 
 BS_:
 
-BU_: OVMS BMS ESP Gateway BCM ChargeCtrl ClimaECU Instruments AmbientSensor GearModule
+BU_: OVMS BMS ESP Gateway BCM ChargeCtrl ClimaECU Instruments AmbientSensor GearModule Powertrain
 
 // ---------------------------------------------------------------------------
 // KCAN (500 kbps) — convenience/comfort bus, accessible via J533 harness
@@ -137,6 +137,18 @@ BO_ 391 GearSelector: 8 GearModule
 // Not representable as a simple signal; assembled in firmware from all three.
 BO_ 1716 VIN_Broadcast: 8 Gateway
  SG_ VIN_FrameIndex : 0|8@1+ (1,0) [0|2] "" OVMS
+
+// Clamp/terminal status (0x3C0). d[2] carries the terminal bits: KL_S (accessory)
+// and KL_15 (ignition). KL_15 = car awake / switched on by the user -> ms_v_env_awake.
+BO_ 960 ClampStatus: 8 Gateway
+ SG_ KlS_Accessory : 16|1@1+ (1,0) [0|1] "" OVMS
+ SG_ Kl15_Ignition : 17|1@1+ (1,0) [0|1] "" OVMS
+
+// OBD_01 (0x391). d[7] bit 5 = OBD_Driving_Cycle: the drivetrain READY flag, set only
+// when the car is drivable. ms_v_env_on = KL_15 && READY. d[5] = accelerator pedal.
+BO_ 913 OBD_01: 8 Powertrain
+ SG_ OBD_Driving_Cycle : 61|1@1+ (1,0) [0|1] "" OVMS
+ SG_ OBD_Abs_Pedal_Pos : 40|8@1+ (0.392,0) [0|100] "%" OVMS
 
 // ---------------------------------------------------------------------------
 // FCAN decode candidates and partially decoded frames.
@@ -267,6 +279,7 @@ CM_ BU_ ClimaECU "Climatronic / Standklima ECU — remote pre-conditioning via B
 CM_ BU_ Instruments "Instrument cluster — range estimates derived from BMS model";
 CM_ BU_ AmbientSensor "Ambient temperature sensor cluster (solar + outside air)";
 CM_ BU_ GearModule "Gear selector module (Waehlhebel)";
+CM_ BU_ Powertrain "Powertrain / motor controller — terminal status and OBD readiness broadcasts";
 
 CM_ BO_ 949 "KCAN 0x3B5. PRIMARY ms_v_env_hvac run-state source. Byte[0] bit 7 = cabin actively conditioned (blower running), trigger-agnostic. High-rate (~8 Hz); tracks the blower duty cycle so it thermostat-cycles within a session — firmware applies a hold (VWEGOLF_HVAC_RUN_HOLD_SECS) to bridge the gaps and clear on sleep. Confirmed Captures 1, 2, firmware start/stop (20260407-141135), and all-168388a82-...-224827.";
 CM_ BO_ 1516 "KCAN. Secondary clima status byte from clima ECU. Observed 0x04=idle, 0x07=active. Full decode not confirmed.";
