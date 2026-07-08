@@ -202,6 +202,11 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     uint32_t m_camping_secs = 0;         // total seconds active — vs cc-camp-maxhours backstop
     uint16_t m_camping_change_secs = 0;  // seconds since last start/stop — anti-short-cycle
 
+    // Terminal/READY state (0x03C0 KL_15, 0x0391 OBD_Driving_Cycle) driving
+    // ms_v_env_awake / ms_v_env_on. Cleared by Ticker1 when KCAN goes idle. From PR #1453.
+    bool m_kl15_on = false;
+    bool m_drivetrain_ready = false;
+
     bool m_mirror_fold_in_requested = false;
     bool m_horn_requested = false;
     bool m_indicators_requested = false;

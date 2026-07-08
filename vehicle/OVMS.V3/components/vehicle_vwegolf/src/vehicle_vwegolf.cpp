@@ -193,15 +193,16 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
             }
             float cabin = StandardMetrics.ms_v_env_cabintemp->AsFloat();
             bool stale = StandardMetrics.ms_v_env_cabintemp->IsStale();
-            writer->printf("Camping mode: on (%lu min)\n"
-                           "  cabin %.1f C%s, band %d-%d C\n"
-                           "  SoC %.0f%% (floor %d%%), hvac %s\n",
-                           (unsigned long)(m_camping_secs / 60), cabin, stale ? " STALE" : "",
-                           MyConfig.GetParamValueInt("xvg", "cc-camp-tmin", 15),
-                           MyConfig.GetParamValueInt("xvg", "cc-camp-tmax", 26),
-                           StandardMetrics.ms_v_bat_soc->AsFloat(),
-                           MyConfig.GetParamValueInt("xvg", "cc-camp-socfloor", 30),
-                           StandardMetrics.ms_v_env_hvac->AsBool() ? "running" : "idle");
+            writer->printf(
+                "Camping mode: on (%lu min)\n"
+                "  cabin %.1f C%s, band %d-%d C\n"
+                "  SoC %.0f%% (floor %d%%), hvac %s\n",
+                (unsigned long)(m_camping_secs / 60), cabin, stale ? " STALE" : "",
+                MyConfig.GetParamValueInt("xvg", "cc-camp-tmin", 15),
+                MyConfig.GetParamValueInt("xvg", "cc-camp-tmax", 26),
+                StandardMetrics.ms_v_bat_soc->AsFloat(),
+                MyConfig.GetParamValueInt("xvg", "cc-camp-socfloor", 30),
+                StandardMetrics.ms_v_env_hvac->AsBool() ? "running" : "idle");
         });
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -752,6 +753,39 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             ESP_LOGV(TAG, "0x06B7 odo=%u km outside=%.1f°C", odo, f);
             break;
         }
+        case 0x0391:  // OBD_01: drivetrain READY status
+        {
+            // d[7] bit 5 is OBD_Driving_Cycle: it goes high only once the drivetrain is fully
+            // up and the car is ready to drive; it stays clear during charging, remote climate
+            // and while the ignition is merely on but not yet READY. The frame keeps
+            // broadcasting after the ignition goes off and the bit stays latched high for
+            // several seconds into the power-down, so it is combined with KL_15 for v.e.on
+            // rather than used on its own. if only ignition is turned on again this bit is cleared.
+            // (d[5] carries the accelerator pedal position, OBD_Abs_Pedal_Pos - not mapped.)
+            m_drivetrain_ready = (d[7] & 0x20) != 0;
+            StandardMetrics.ms_v_env_on->SetValue(m_kl15_on && m_drivetrain_ready);
+            ESP_LOGV(TAG, "0x0391 READY=%u", m_drivetrain_ready);
+            break;
+        }
+        case 0x03C0:  // clamp status received
+        {
+            // the following are from d[2]
+            // KL_S Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+            // KL_15 Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+            // KL_X Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+            // KL_50 Startanforderung Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+            // Remotestart Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+            // KL_Infotainment Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+            // Remotestart_KL15_Anf Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+            // Remotestart_Motor_Start Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+            // KL_15 (terminal 15 = ignition) means the car is awake and switched on by the
+            // user; drivable (v.e.on) additionally requires the drivetrain to report READY.
+            m_kl15_on = (d[2] & 0x02) != 0;
+            StandardMetrics.ms_v_env_awake->SetValue(m_kl15_on);
+            StandardMetrics.ms_v_env_on->SetValue(m_kl15_on && m_drivetrain_ready);
+            ESP_LOGV(TAG, "0x03C0 KL_15=%u KL_S=%u", m_kl15_on, d[2] & 0x01);
+            break;
+        }
         default:
             break;
     }
@@ -786,6 +820,17 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     bool just_went_idle = (m_bus_idle_ticks == VWEGOLF_BUS_TIMEOUT_SECS);
     ESP_LOGV(TAG, "Ticker1: bus_idle=%u alive=%d ocu=%d", m_bus_idle_ticks, bus_alive,
              m_ocu_active);
+
+    // KCAN gone silent → car is asleep: clear awake/on as a backstop in case the terminal
+    // frames (0x03C0/0x0391) stopped before signalling the off transition. Exception to the
+    // "decoders own metrics" rule below: asleep really does mean not-awake/not-on, and unlike
+    // charge_inprogress this holds during CCS DC too (car charging is not "on"). From PR #1453.
+    if (just_went_idle) {
+        m_kl15_on = false;
+        m_drivetrain_ready = false;
+        StandardMetrics.ms_v_env_awake->SetValue(false);
+        StandardMetrics.ms_v_env_on->SetValue(false);
+    }
 
     // Clear OCU node presence on either condition:
     //   1. Bus went idle (no frames for VWEGOLF_BUS_TIMEOUT_SECS) — no one to hear us.
@@ -873,8 +918,7 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
             // 0x131 refresh, which would otherwise false-trip the floor and prevent camping
             // in exactly the parked scenario this targets. Same fail-safe stance as cabin temp.
             StopCamping("SoC floor");
-        } else if (!m_clima_pending &&
-                   m_camping_change_secs >= VWEGOLF_CAMPING_MIN_CYCLE_SECS) {
+        } else if (!m_clima_pending && m_camping_change_secs >= VWEGOLF_CAMPING_MIN_CYCLE_SECS) {
             // Thermostat: only act outside the anti-short-cycle dwell and when no BAP burst
             // is already in flight.
             int tmin = MyConfig.GetParamValueInt("xvg", "cc-camp-tmin", 15);
@@ -886,19 +930,19 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
             bool running = StandardMetrics.ms_v_env_hvac->AsBool();
             if (tmin > tmax) {
                 // Misconfigured band (in-band unreachable) — don't trip clima every cycle.
-                ESP_LOGW(TAG, "Camping: invalid band tmin %d > tmax %d — thermostat paused",
-                         tmin, tmax);
+                ESP_LOGW(TAG, "Camping: invalid band tmin %d > tmax %d — thermostat paused", tmin,
+                         tmax);
             } else if (!sane) {
                 // Fail safe: never run the climate blind. Hold current state.
                 ESP_LOGW(TAG, "Camping: cabin temp unavailable/stale — thermostat paused");
             } else if (running && cabin >= tmin && cabin <= tmax) {
-                ESP_LOGI(TAG, "Camping: cabin %.1fC in band [%d,%d] — stopping clima", cabin,
-                         tmin, tmax);
+                ESP_LOGI(TAG, "Camping: cabin %.1fC in band [%d,%d] — stopping clima", cabin, tmin,
+                         tmax);
                 CommandClimateControl(false);
                 m_camping_change_secs = 0;
             } else if (!running && (cabin > tmax || cabin < tmin)) {
-                ESP_LOGI(TAG, "Camping: cabin %.1fC out of band [%d,%d] — starting clima",
-                         cabin, tmin, tmax);
+                ESP_LOGI(TAG, "Camping: cabin %.1fC out of band [%d,%d] — starting clima", cabin,
+                         tmin, tmax);
                 CommandClimateControl(true);
                 m_camping_change_secs = 0;
             }
