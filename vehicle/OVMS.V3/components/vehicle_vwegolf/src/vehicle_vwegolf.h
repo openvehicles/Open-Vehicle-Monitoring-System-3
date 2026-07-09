@@ -75,12 +75,6 @@ typedef struct PageContext PageContext_t;
 // UX); this only governs autonomous/timer stops (≈hold-second linger, acceptable).
 #define VWEGOLF_HVAC_RUN_HOLD_SECS 20
 
-// Allowed range for the clima target temperature (xvg cc-temp), in °C. The web form
-// validates against these and the BAP burst clamps to them — both must agree, or a value
-// accepted in one path produces a garbage temperature byte in the other. Single source here.
-#define VWEGOLF_CLIMA_TEMP_MIN_C 16
-#define VWEGOLF_CLIMA_TEMP_MAX_C 28
-
 // After our own stop command we set hvac false at once but the blower keeps spinning down
 // for a moment (0x03B5 still reports running). Ignore that "running" for this long so the
 // stop stays responsive; if 0x03B5 still insists past the window the stop didn't take, so
@@ -106,7 +100,6 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
 
     void WebInit();
     void WebDeInit();
-    static void WebCfgSettings(PageEntry_t& p, PageContext_t& c);
     static void WebDispMetrics(PageEntry_t& p, PageContext_t& c);
 
     void IncomingFrameCan2(CAN_frame_t* p_frame) override;

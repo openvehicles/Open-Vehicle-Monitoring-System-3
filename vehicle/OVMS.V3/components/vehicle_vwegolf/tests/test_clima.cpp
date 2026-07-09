@@ -128,11 +128,10 @@ void test_clima_start_bap_frames() {
         CHECK(bap[0].data[3] == 0x59, "BAP frame 1 byte 3 = 0x59 (node=0x25 lo, port=0x19)");
         CHECK(bap[0].data[4] == 0x01, "BAP frame 1 byte 4 = counter (first call = 0x01)");
 
-        // Frame 2: continuation with temperature
+        // Frame 2: continuation with the compact profile record
         CHECK(bap[1].id == 0x17332501, "BAP frame 2 ID = 0x17332501");
         CHECK(bap[1].data[0] == 0xC0, "BAP frame 2 byte 0 = 0xC0 (continuation)");
-        // Default temp = 21°C → (21-10)*10 = 110 = 0x6E
-        CHECK(bap[1].data[3] == 0x6E, "BAP frame 2 temp byte = 0x6E (21°C)");
+        CHECK(bap[1].data[3] == 0x20, "BAP frame 2 maxCurrent byte = 0x20 (32 A)");
 
         // Frame 3: single-frame trigger to port 0x18, start=0x01
         CHECK(bap[2].id == 0x17332501, "BAP frame 3 ID = 0x17332501");
@@ -284,15 +283,17 @@ void test_clima_counter_increments() {
     delete v;
 }
 
-// Helper: run a synchronous clima start with cc-temp set to raw_cfg, return the
-// temperature byte (BAP frame 2, data[3]). Bus is made active first so the burst
-// runs inline rather than deferring to Ticker1.
-static uint8_t clima_temp_byte_for(int raw_cfg) {
+// Regression pinning the exact BAP burst bytes (vehicle_vwegolf.cpp SendClimaBapBurst).
+// Frames 1+2 are a SetGet on ProfilesArray (0x19), RecordAddr-6 compact update of
+// profile 0: operation=0x06 (climate | climateWithoutExternalSupply), operation2=0x00,
+// maxCurrent=0x20 (32 A), targetChargeLevel=0x00. Field semantics per smartkar-cano-new
+// BAP_BATTERY_CONTROL.md / MIB2 firmware RE (PR #1430 review) — an earlier revision
+// wrongly encoded a temperature into the maxCurrent byte.
+void test_clima_burst_bytes() {
+    printf("\ntest_clima_burst_bytes\n");
+
     g_metrics = MetricStore{};
     MyConfig.store.clear();
-    char buf[16];
-    snprintf(buf, sizeof(buf), "%d", raw_cfg);
-    MyConfig.SetParamValue("xvg", "cc-temp", buf);
 
     auto* v = new OvmsVehicleVWeGolf();
     auto f = make_kcan_frame(v, 0x131, {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00});
@@ -301,38 +302,27 @@ static uint8_t clima_temp_byte_for(int raw_cfg) {
 
     v->CommandClimateControl(true);
 
-    uint8_t temp_byte = 0;
-    int ext = 0;
+    std::vector<std::vector<uint8_t>> ext;
     for (auto& r : kcan(v)->tx_log) {
-        if (r.extended && ++ext == 2) { temp_byte = r.data[3]; break; }
+        if (r.extended) ext.push_back(std::vector<uint8_t>(r.data, r.data + r.len));
+    }
+    CHECK(ext.size() == 3, "burst is 3 extended frames");
+    if (ext.size() == 3) {
+        // Frame 1: long start, SetGet LSG 0x25 func 0x19, array header
+        // [tid] [RecordAddr=6] [startIndex=0] [elementCount=1].
+        CHECK(ext[0].size() == 8, "frame 1 DLC 8");
+        CHECK(ext[0][0] == 0x80 && ext[0][1] == 0x08, "frame 1 long-start, len 8");
+        CHECK(ext[0][2] == 0x29 && ext[0][3] == 0x59, "frame 1 header SetGet 0x25/0x19");
+        CHECK(ext[0][5] == 0x06 && ext[0][6] == 0x00 && ext[0][7] == 0x01,
+              "frame 1 array header RecordAddr=6, start=0, count=1");
+        // Frame 2: compact record — no temperature field in this message.
+        std::vector<uint8_t> want2 = {0xC0, 0x06, 0x00, 0x20, 0x00};
+        CHECK(ext[1] == want2, "frame 2 compact record: op=0x06, maxCurrent=32A, target=0");
+        // Frame 3: trigger, profile 0 immediate start.
+        std::vector<uint8_t> want3 = {0x29, 0x58, 0x00, 0x01};
+        CHECK(ext[2] == want3, "frame 3 trigger start immediate");
     }
     delete v;
-    return temp_byte;
-}
-
-// Regression for the cc-temp clamp (vehicle_vwegolf.cpp SendClimaBapBurst). cc-temp can be
-// set from the CLI, bypassing the web form's 16–28 validation; the burst must clamp before
-// the uint8_t byte calc or it sends a garbage temperature to the climate ECU.
-// Encoding: temp_byte = (clamped_celsius - 10) * 10.
-void test_clima_temp_clamped() {
-    printf("\ntest_clima_temp_clamped\n");
-
-    // In-range value passes through untouched (proves it clamps, not pins).
-    // 22°C → (22-10)*10 = 120 = 0x78.
-    CHECK(clima_temp_byte_for(22) == 0x78, "in-range 22C → 0x78 (passthrough)");
-
-    // Over-range high clamps to MAX (28°C) → (28-10)*10 = 180 = 0xB4,
-    // NOT the truncated garbage of (50-10)*10 = 400 → 0x90.
-    CHECK(clima_temp_byte_for(50) == 0xB4, "over-range 50C clamps to 28C → 0xB4");
-
-    // Below-range clamps to MIN (16°C) → (16-10)*10 = 60 = 0x3C,
-    // NOT (5-10)*10 = -50 → 0xCE as a wrapped uint8_t.
-    CHECK(clima_temp_byte_for(5) == 0x3C, "below-range 5C clamps to 16C → 0x3C");
-
-    // Boundaries map exactly to MIN/MAX bytes.
-    CHECK(clima_temp_byte_for(VWEGOLF_CLIMA_TEMP_MIN_C) == 0x3C, "min boundary 16C → 0x3C");
-    CHECK(clima_temp_byte_for(VWEGOLF_CLIMA_TEMP_MAX_C) == 0xB4, "max boundary 28C → 0xB4");
-
     MyConfig.store.clear();
 }
 
@@ -791,7 +781,7 @@ void test_clima_all() {
     test_clima_wakes_in_twilight();
     test_clima_no_wake_when_oem_ocu_active();
     test_clima_counter_increments();
-    test_clima_temp_clamped();
+    test_clima_burst_bytes();
     test_ticker1_bus_idle_timeout();
     test_hvac_hold_bridges_thermostat_cycle();
     test_hvac_stop_command_responsive();
