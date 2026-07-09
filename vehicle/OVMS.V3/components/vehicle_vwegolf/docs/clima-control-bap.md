@@ -65,6 +65,11 @@ DLC=4: 29 58  00 00     (STOP)
 
 Temperature byte 6: `raw = (celsius - 10) * 10`
 - 18°C → `0x50`, 20°C → `0x64`, 21°C → `0x6E`, 22°C → `0x78`
+- Encoding confirmed on the `0x17330110` setpoint status broadcast (ports 0x1B/0x21,
+  dash-knob sweep, Captures 2/7): raw steps of 5 per 0.5°C, floor `0x3C` = 16.0°C,
+  `0xFF` = HI. NOT yet conclusively verified that the ECU honors an explicit temp in
+  this command byte (verify captures log RX only). thomasakarlsen's start trace uses
+  `0x20` here — below the 16.0°C floor, likely a "use stored setting" sentinel.
 
 Bytes 1–5 unknown; `06 00 01 06 00` constant in all captures.
 
