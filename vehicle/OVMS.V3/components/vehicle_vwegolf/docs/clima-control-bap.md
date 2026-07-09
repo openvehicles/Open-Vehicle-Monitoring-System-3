@@ -1,7 +1,7 @@
 # Climate Control via BAP Battery Control Channel — RE Notes
 
 References:
-- https://github.com/karlsen-technologies/smartkar-cano-new — `docs/canbus-reverse-engineering/BAP_PROTOCOL.md` and `BAP_BATTERY_CONTROL.md` (thomasakarlsen; supersedes e-golf-comfort-can for BAP)
+- https://github.com/karlsen-technologies/smartkar-cano-new/tree/2b191b8e9066d494125b3c0338787a347ec8d205/docs/canbus-reverse-engineering — `BAP_PROTOCOL.md` and `BAP_BATTERY_CONTROL.md` (thomasakarlsen; supersedes e-golf-comfort-can for BAP). Pinned to the commit we validated against (2026-07-09).
 - MIB2 firmware RE by SCjona (PR #1430 review thread) — message/field names below marked *(MIB2 FW)*
 - Local BAP framing notes: `vw-bap-protocol.md` (being aligned to standard terminology)
 
