@@ -6,8 +6,9 @@ configured broker and appends `epoch<TAB>retained<TAB>metric<TAB>value` rows
 until killed (SIGTERM/SIGINT). Retained rows (the broker snapshot delivered on
 subscribe) are flagged `1` so analysis can separate snapshot from live updates.
 
-GPS/location metrics are dropped by default — candumps/ is committed and the
-repo carries no PII. Pass --gps to keep them (local-only analysis).
+GPS/location metrics and the SIM ICCID are dropped by default — candumps/ is
+committed and the repo carries no PII. Pass --gps to keep GPS (local-only
+analysis); the ICCID is always dropped.
 
 Server facts (broker, user, topic, password source) live in mqtt_log.json next
 to this script — gitignored, this repo is public. Copy mqtt_log.json.example
@@ -30,7 +31,8 @@ import time
 import paho.mqtt.client as mqtt
 
 CONF_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mqtt_log.json")
-PII_SUBSTRINGS = ("/p/latitude", "/p/longitude", "/p/location")
+GPS_SUBSTRINGS = ("/p/latitude", "/p/longitude", "/p/location")
+ALWAYS_DROP_SUBSTRINGS = ("/mdm/iccid",)
 
 
 def get_password(conf: dict) -> str:
@@ -68,7 +70,9 @@ def main() -> int:
 
     def on_message(client, userdata, msg):
         metric = msg.topic[prefix_len:].replace("/", ".")
-        if not keep_gps and any(s in msg.topic for s in PII_SUBSTRINGS):
+        if any(s in msg.topic for s in ALWAYS_DROP_SUBSTRINGS):
+            return
+        if not keep_gps and any(s in msg.topic for s in GPS_SUBSTRINGS):
             return
         value = msg.payload.decode("utf-8", "replace").replace("\t", " ").replace("\n", " ")
         out.write(f"{time.time():.3f}\t{int(msg.retain)}\t{metric}\t{value}\n")
