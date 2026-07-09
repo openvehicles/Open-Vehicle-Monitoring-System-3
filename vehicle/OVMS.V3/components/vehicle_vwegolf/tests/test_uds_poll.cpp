@@ -147,6 +147,24 @@ void test_poll_reply_charging() {
           "current -40 A (charging) from raw 2204");
     CHECK(StandardMetrics.ms_v_bat_power->AsFloat() < 0.0f, "charging power negative");
 
+    // Charge metrics are pack-derived (0x0569 is not the OBC AC inlet). They use the
+    // positive-magnitude convention: charge voltage = pack voltage, current/power are the
+    // negated bat values.
+    CHECK(near(StandardMetrics.ms_v_charge_voltage->AsFloat(), 359.75f),
+          "charge voltage = pack voltage 359.75 V");
+    CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 40.0f),
+          "charge current +40 A (magnitude of charging current)");
+    CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 359.75f * 40.0f / 1000.0f),
+          "charge power = positive magnitude of pack power");
+
+    // Charge stop: 0x0594 clears charge_inprogress -> charge current/power zeroed
+    // (the UDS poll stops, so they must not freeze at the last sample).
+    feed_charging(v, false);
+    CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f),
+          "charge current zeroed on charge stop");
+    CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 0.0f),
+          "charge power zeroed on charge stop");
+
     delete v;
 }
 

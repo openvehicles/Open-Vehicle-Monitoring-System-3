@@ -302,7 +302,14 @@ void OvmsVehicleVWeGolf::IncomingPollReply(const OvmsPoller::poll_job_t& job, ui
         case VWEGOLF_BMS_DID_U: {
             const float volts = raw / 4.0f;
             ESP_LOGD(TAG, "UDS BMS U raw=%u -> %.2fV", raw, volts);
-            if (m_poll_state == VWEGOLF_CHARGING) StandardMetrics.ms_v_bat_voltage->SetValue(volts);
+            if (m_poll_state == VWEGOLF_CHARGING) {
+                StandardMetrics.ms_v_bat_voltage->SetValue(volts);
+                // Charge metrics are pack-side: 0x0569 is NOT the OBC AC inlet (see that
+                // case in IncomingFrameCan3), so charge voltage/current/power are derived
+                // from the BMS pack measurement, the only frame that tracks the real rate
+                // on both AC and DC. Folds in the small inlet->pack loss.
+                StandardMetrics.ms_v_charge_voltage->SetValue(volts);
+            }
             break;
         }
         case VWEGOLF_BMS_DID_I: {
@@ -313,8 +320,14 @@ void OvmsVehicleVWeGolf::IncomingPollReply(const OvmsPoller::poll_job_t& job, ui
             ESP_LOGD(TAG, "UDS BMS I raw=%u -> %.2fA", raw, amps);
             if (m_poll_state == VWEGOLF_CHARGING) {
                 StandardMetrics.ms_v_bat_current->SetValue(amps);
-                StandardMetrics.ms_v_bat_power->SetValue(
-                    StandardMetrics.ms_v_bat_voltage->AsFloat() * amps / 1000.0f);
+                const float bat_power =
+                    StandardMetrics.ms_v_bat_voltage->AsFloat() * amps / 1000.0f;
+                StandardMetrics.ms_v_bat_power->SetValue(bat_power);
+                // Charging: bat current/power are negative (into the pack). Charge metrics
+                // use the positive-magnitude convention, so negate. Pack-side source — see
+                // the DID_U case above and the 0x0569 note in IncomingFrameCan3.
+                StandardMetrics.ms_v_charge_current->SetValue(-amps);
+                StandardMetrics.ms_v_charge_power->SetValue(-bat_power);
             }
             break;
         }
@@ -367,7 +380,10 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
             // inverter/motor current only. Charging current comes from a different frame
             // not yet identified. TODO: capture charging session and identify the frame.
             u16 = ((uint16_t)(d[1] & 0xF0) >> 4) | ((uint16_t)(d[2]) << 4);
-            float current = u16 * 1.0f - 2047.0f;
+            // Negated: OVMS convention is discharge=positive (battery outputs current),
+            // charge=negative — same as the UDS DID_I path and the vweup reference. Raw
+            // field is charge-positive (raw>2047 while charging), so flip it here.
+            float current = -(u16 * 1.0f - 2047.0f);
             StandardMetrics.ms_v_bat_current->SetValue(current);
 
             // Voltage: 12-bit, factor 0.25 V.
@@ -375,8 +391,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
             float voltage = u16 * 0.25f;
             StandardMetrics.ms_v_bat_voltage->SetValue(voltage);
 
-            // Negated: OVMS convention is charge=negative, drive=positive.
-            StandardMetrics.ms_v_bat_power->SetValue(-(voltage * current) / 1000.0f);
+            // Current already carries the OVMS sign, so power follows directly:
+            // drive=positive, charge/regen=negative.
+            StandardMetrics.ms_v_bat_power->SetValue((voltage * current) / 1000.0f);
             ESP_LOGV(TAG, "0x0191 raw=%02x%02x%02x%02x%02x I=%.1fA V=%.2fV", d[1], d[2], d[3], d[4],
                      d[5], current, voltage);
             break;
@@ -533,26 +550,20 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             break;
         }
         case 0x0569: {
-            // OBC AC inlet status: line voltage and charge current.
-            // d[4]: AC line voltage, factor 1 V/bit (0xf8 = 248 V observed in NZ).
-            //       Present whenever cable is plugged in (EVSE line voltage on cable).
-            // d[5]: AC charge current, factor 1 A/bit; 0x00 when OBC is idle.
-            // d[1] bit 6 (0x40): OBC-side flag, but observed to be set during driving
-            //       too (EVSE handshake residual or OBC state machine). Use
-            //       charge_inprogress from 0x0594 as the authoritative gate so that
-            //       current/power are only exposed during a real charge session.
-            // Note: voltage/current scaling unconfirmed from a single location; factor
-            // 1 V/bit and 1 A/bit are consistent with observed values (248 V, 9 A) and
-            // the measured DC battery power (~1.6 kW) with expected OBC losses.
-            f = (float)d[4];
-            if (f > 0.0f) StandardMetrics.ms_v_charge_voltage->SetValue(f);
-            f = StandardMetrics.ms_v_charge_inprogress->AsBool() ? (float)d[5] : 0.0f;
-            StandardMetrics.ms_v_charge_current->SetValue(f);
-            StandardMetrics.ms_v_charge_power->SetValue(
-                StandardMetrics.ms_v_charge_voltage->AsFloat() * f / 1000.0f);
-            ESP_LOGV(TAG, "0x0569 ac_voltage=%.0fV ac_current=%.0fA ac_power=%.3fkW",
-                     StandardMetrics.ms_v_charge_voltage->AsFloat(), f,
-                     StandardMetrics.ms_v_charge_power->AsFloat());
+            // NOT the OBC AC inlet. Earlier read decoded d[4] as AC line voltage and d[5]
+            // as charge current, but capture review disproves it:
+            //   - d[4] is a constant 0xF8 in every state (parked+clima, idle, AC, and CCS
+            //     DC) — it is a status byte, not a voltage. "248 V" was a coincidental
+            //     match of 0xF8 to NZ mains.
+            //   - d[5] is an auxiliary/DC-DC-converter current: 0 A idle, ~9 A during
+            //     clima-while-parked, ~13 A through a 33 kW CCS DC session. d[4]*d[5] is
+            //     therefore a flat ~3.2 kW during a 33 kW charge — it does not track the
+            //     charge rate. (caps: all-dc583be4a-…-132333, all-168388a82, clima_control)
+            // Charge voltage/current/power now come from the BMS pack UDS poll instead
+            // (see the DID_U/DID_I handlers in IncomingPollReply). Decoded here as a
+            // diagnostic log only; no metric is driven from this frame.
+            ESP_LOGV(TAG, "0x0569 d[1]=%02x d[4]=%02x aux_current=%uA (not OBC AC inlet)", d[1],
+                     d[4], d[5]);
             break;
         }
         case 0x0594: {
@@ -572,10 +583,16 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 StandardMetrics.ms_v_charge_inprogress->SetValue(is_charging);
                 StandardMetrics.ms_v_charge_state->SetValue(is_charging ? "charging" : "stopped");
                 if (is_charging != was_charging) {
-                    if (is_charging)
+                    if (is_charging) {
                         NotifyChargeStart();
-                    else
+                    } else {
                         NotifyChargeStopped();
+                        // Charge metrics are fed from the BMS UDS poll, which stops once
+                        // the poll state leaves CHARGING — without this they would freeze
+                        // at the last sampled value. Zero them on charge end.
+                        StandardMetrics.ms_v_charge_current->SetValue(0);
+                        StandardMetrics.ms_v_charge_power->SetValue(0);
+                    }
                 }
             }
 

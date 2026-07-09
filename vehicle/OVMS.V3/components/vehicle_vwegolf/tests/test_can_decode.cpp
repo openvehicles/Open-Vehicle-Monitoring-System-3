@@ -197,12 +197,14 @@ void test_bms_0x191() {
     printf("\ntest_bms_0x191\n");
     auto* v = make_vehicle();
 
-    // current=10A: raw=2057=0x809 → d[1]&0xF0=0x90 (9<<4), d[2]=0x80 (2057>>4=128)
+    // raw current=2057=0x809 → d[1]&0xF0=0x90 (9<<4), d[2]=0x80 (2057>>4=128).
+    // Raw is charge-positive (raw-2047=+10A charging); OVMS convention is discharge-
+    // positive, so the metric must read -10A. Power = 400*-10/1000 = -4.0 kW
+    // (positive=drive, negative=charge convention — matches the UDS DID_I path).
     // voltage=400V: raw=1600=0x640 → d[3]=0x40, d[4]&0x0F=0x06
-    // power = -(400*10)/1000 = -4.0 kW (positive=drive, negative=charge convention)
     auto f = make_frame(0x191, {0x00, 0x90, 0x80, 0x40, 0x06, 0x00, 0x00, 0x00});
     v->IncomingFrameCan2(&f);
-    CHECK(near(StandardMetrics.ms_v_bat_current->AsFloat(),  10.0f), "BMS current 10A");
+    CHECK(near(StandardMetrics.ms_v_bat_current->AsFloat(), -10.0f), "BMS current -10A (charging)");
     CHECK(near(StandardMetrics.ms_v_bat_voltage->AsFloat(), 400.0f), "BMS voltage 400V");
     CHECK(near(StandardMetrics.ms_v_bat_power->AsFloat(),    -4.0f), "BMS power -4kW (charging convention)");
 
@@ -318,78 +320,45 @@ void test_charge_0x594() {
 }
 
 // ---------------------------------------------------------------------------
-// 0x0569 — OBC AC inlet: line voltage and charge current
+// 0x0569 — OBC aux/DC-DC status (NOT the AC charge inlet)
 // ---------------------------------------------------------------------------
+//
+// Capture review disproved the earlier "AC line voltage + charge current" read:
+// d[4] is constant 0xF8 in every state, d[5] is a DC-DC/aux current (~13 A through
+// a 33 kW CCS DC charge). The frame must drive NO charge metric — charge
+// voltage/current/power come from the BMS pack UDS poll (see test_uds_poll.cpp).
 
 void test_ac_inlet_0x569() {
     printf("\ntest_ac_inlet_0x569\n");
 
     {
-        // Charging: charge_inprogress set by 0x0594, then 0x569 with d[4]=0xf8 (248V), d[5]=0x09 (9A)
+        // Charging session active, then 0x569 arrives: charge metrics must NOT move.
         auto* v = make_vehicle();
+        // Seed sentinel values so any write by the 0x569 path would be detectable.
+        StandardMetrics.ms_v_charge_voltage->SetValue(123.0f);
+        StandardMetrics.ms_v_charge_current->SetValue(45.0f);
+        StandardMetrics.ms_v_charge_power->SetValue(5.5f);
         auto f594 = make_frame(0x594, {0x00, 0x80, 0x21, 0x20, 0x00, 0x04, 0x00, 0x09});
         v->IncomingFrameCan3(&f594);
         auto f = make_frame(0x569, {0x00, 0x40, 0x01, 0x02, 0xf8, 0x09, 0x00, 0x00});
         v->IncomingFrameCan3(&f);
-        CHECK(near(StandardMetrics.ms_v_charge_voltage->AsFloat(), 248.0f), "AC voltage 248V");
-        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 9.0f),   "AC current 9A");
-        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 248.0f * 9.0f / 1000.0f), "AC power 2.232kW");
+        CHECK(near(StandardMetrics.ms_v_charge_voltage->AsFloat(), 123.0f),
+              "0x569 does not touch charge voltage");
+        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 45.0f),
+              "0x569 does not touch charge current");
+        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 5.5f),
+              "0x569 does not touch charge power");
         delete v;
     }
 
     {
-        // Idle (cable still plugged in): charge_inprogress false, d[4]=0xf8 (248V), d[5]=0x00 (0A)
+        // Idle: same — no metric written from the bogus 248/aux bytes.
         auto* v = make_vehicle();
+        StandardMetrics.ms_v_charge_power->SetValue(7.7f);
         auto f = make_frame(0x569, {0x00, 0x00, 0x01, 0x02, 0xf8, 0x00, 0x00, 0x00});
         v->IncomingFrameCan3(&f);
-        CHECK(near(StandardMetrics.ms_v_charge_voltage->AsFloat(), 248.0f), "AC voltage 248V when idle");
-        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f),   "AC current 0A when idle");
-        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 0.0f),     "AC power 0kW when idle");
-        delete v;
-    }
-
-    {
-        // Driving: charging-active flag clear (d[1]=0x00) but d[5] non-zero.
-        // Current and power must be zeroed; voltage may still be stale but is not touched.
-        auto* v = make_vehicle();
-        auto f = make_frame(0x569, {0x00, 0x00, 0x01, 0x02, 0xf8, 0x08, 0x00, 0x00});
-        v->IncomingFrameCan3(&f);
-        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f), "AC current 0A when flag clear (driving)");
-        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(),   0.0f), "AC power 0kW when flag clear (driving)");
-        delete v;
-    }
-
-    {
-        // Driving with OBC flag set (d[1]=0x40): observed on real car — the OBC flag
-        // alone is not a reliable gate. charge_inprogress from 0x0594 is the authority.
-        // 0x0594 not seen → charge_inprogress defaults false → current must be 0.
-        auto* v = make_vehicle();
-        auto f = make_frame(0x569, {0x00, 0x40, 0x01, 0x02, 0xf8, 0x08, 0x00, 0x00});
-        v->IncomingFrameCan3(&f);
-        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f), "AC current 0A: OBC flag set but not charging (driving)");
-        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(),   0.0f), "AC power 0kW: OBC flag set but not charging (driving)");
-        delete v;
-    }
-
-    {
-        // Transition: charge session ends. 0x0594 clears charge_inprogress, then
-        // 0x569 fires with d[1]=0x40 and non-zero d[5] → current/power must be 0.
-        auto* v = make_vehicle();
-        // First: set up charging state via 0x0594 (d[3]=0x20 → is_charging)
-        auto f594_on = make_frame(0x594, {0x00, 0x80, 0x21, 0x20, 0x00, 0x04, 0x00, 0x09});
-        v->IncomingFrameCan3(&f594_on);
-        // Charging 0x569 during charge session
-        auto f569_chg = make_frame(0x569, {0x00, 0x40, 0x01, 0x02, 0xf8, 0x09, 0x00, 0x00});
-        v->IncomingFrameCan3(&f569_chg);
-        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 9.0f), "AC current 9A during charge session");
-        // Now 0x0594 clears charge_inprogress (d[3]=0x00)
-        auto f594_off = make_frame(0x594, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-        v->IncomingFrameCan3(&f594_off);
-        // 0x569 still arrives with d[1]=0x40, d[5]=0x08 (OBC winding down)
-        auto f569_end = make_frame(0x569, {0x00, 0x40, 0x01, 0x02, 0xf8, 0x08, 0x00, 0x00});
-        v->IncomingFrameCan3(&f569_end);
-        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f), "AC current cleared after charge session ends");
-        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(),   0.0f), "AC power cleared after charge session ends");
+        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 7.7f),
+              "0x569 idle does not touch charge power");
         delete v;
     }
 }

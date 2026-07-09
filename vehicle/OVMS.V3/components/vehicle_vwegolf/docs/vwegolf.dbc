@@ -34,10 +34,10 @@ BO_ 1158 GPS_Position: 8 Gateway
  SG_ Longitude : 27|28@1+ (1e-006,0) [0|180] "deg" OVMS
  SG_ LonSign : 56|1@1+ (1,0) [0|1] "" OVMS
 
-BO_ 1385 OBC_AcInlet: 8 OBC
- SG_ AcLineVoltage   : 32|8@1+ (1,0) [0|255] "V" OVMS
- SG_ AcChargeCurrent : 40|8@1+ (1,0) [0|255] "A" OVMS
- SG_ AcChargeActive  : 14|1@1+ (1,0) [0|1]   "" OVMS
+BO_ 1385 OBC_AuxStatus: 8 OBC
+ SG_ StatusByte4 : 32|8@1+ (1,0) [0|255] ""  Vector__XXX
+ SG_ AuxCurrent  : 40|8@1+ (1,0) [0|255] "A" Vector__XXX
+ SG_ AcChargeActive : 14|1@1+ (1,0) [0|1] "" Vector__XXX
 
 BO_ 1411 ZV_02: 8 BCM
  SG_ Locked : 17|1@1+ (1,0) [0|1] "" OVMS
@@ -289,10 +289,10 @@ CM_ BO_ 305 "FCAN. State of charge from BMS. Confirmed. 0xFE is a startup sentin
 CM_ BO_ 401 "FCAN. HV bus current and voltage from BMS. Confirmed from captures.";
 CM_ BO_ 687 "FCAN. Net trip energy counter. Originally hypothesised as separate EnergyRecd/EnergyUsed at b4/b5 + b6/b7 (pre-2026 RE notes); on this vehicle bytes 4-7 are static zero across an entire driving session (cap 20260503-143106) and bytes 2-3 carry a single 16-bit LE counter that resets to 0 on key-on, climbs during draw, decrements during regen, and wraps mod 65536. Hypothesis: mWh net cumulative — pre-park value 58496 + 26 wraparounds ≈ 1762 Wh vs 0x191 power-integral net consumption 1706 Wh (within ~3 %). Mid-trip 20 s-sampled dips consistent with rapid wraparound at high power (e.g. -100 kW = wrap every ~0.6 s). Needs single-bus FCAN drive + parallel power-integral capture to verify mWh scale and regen-sign behaviour.";
 CM_ BO_ 1158 "KCAN. GPS position. Encoding inferred from RE. Sign bits for S/W hemisphere not yet decoded — positive values only.";
-CM_ BO_ 1385 "FCAN. OBC AC inlet status. Broadcasts at ~2 Hz when AC cable connected. Confirmed Captures 20–22 (20260429). Captured on JDM e-Golf (Type 1 J1772 AC inlet under front badge, CHAdeMO DC in fuel filler). Frame format and scaling expected to be identical on EU Type 2 cars but not yet verified.";
-CM_ SG_ 1385 AcLineVoltage "Byte 4. EVSE line voltage on cable; 1 V/bit. Present when cable plugged even with OBC idle. 248 V (0xf8) observed NZ; 250 V (0xfa) transient at initial plug-in.";
-CM_ SG_ 1385 AcChargeCurrent "Byte 5. AC current drawn by OBC; 1 A/bit. 0 when idle; 8–9 A observed. Shows 1 A transient before AcChargeActive is set — gate on AcChargeActive before reporting.";
-CM_ SG_ 1385 AcChargeActive "Byte 1 bit 6. 1 = OBC actively drawing current. 0x40 set during sustained charging; d[1]=0xf0 also observed (early CP negotiation phase). Reliable idle/active guard.";
+CM_ BO_ 1385 "KCAN. OBC auxiliary/DC-DC status — NOT the AC charge inlet. Originally decoded as AC line voltage + charge current, but capture review disproved it: byte 4 is constant 0xF8 in every state (parked+clima, idle, AC, CCS DC) and byte 5 is a DC-DC/aux current (0 idle, ~9 A clima-while-parked, ~13 A through a 33 kW CCS DC session). byte4*byte5 is a flat ~3.2 kW during a 33 kW charge — does not track charge rate. Charge voltage/current/power are derived from the BMS pack UDS poll instead. No OVMS metric is driven from this frame. Caps: all-dc583be4a-…-132333 (CCS DC), all-168388a82 (idle), kcan-can3-clima_control (parked clima).";
+CM_ SG_ 1385 StatusByte4 "Byte 4. Constant 0xF8 across all observed states — status/flag byte, not a voltage. The earlier '248 V mains' reading was a coincidental match of 0xF8.";
+CM_ SG_ 1385 AuxCurrent "Byte 5. Auxiliary/DC-DC-converter current, 1 A/bit: 0 idle, ~9 A clima-while-parked, ~13 A during CCS DC charge. Tracks the 12 V/DC-DC load, not the HV charge current.";
+CM_ SG_ 1385 AcChargeActive "Byte 1 bit 6. 0x40 set during sustained charging; d[1]=0xf0 also observed (early CP negotiation). Not used as a metric gate — charge_inprogress (0x594) is authoritative.";
 CM_ BO_ 1411 "KCAN. ZV_02 central locking and door open status. Confirmed from captures.";
 CM_ BO_ 1428 "KCAN. HV charge management: duration, timer, plug type, charge state, chargeport, cabin setpoint. ChargeType/ChargePort share same bits — ChargePort derived from non-zero ChargeType. Confirmed from AC Type 2 charge cycle (20260407-131402) and 100% SOC idle (20260407-141135). CCS DC keeps KCAN silent so ChargeType=2 never observed on this frame.";
 CM_ BO_ 1438 "KCAN. HV battery pack temperature from BMS. Confirmed from captures.";
