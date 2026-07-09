@@ -964,18 +964,19 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::SendClimaBapBurst(bool enable
 
     uint8_t data[8];
 
-    // Frame 1: BAP multi-frame start → port 0x19 (clima parameters), 8-byte payload.
-    // 0x80 = multi-frame start, channel 0.  0x08 = total payload length.
-    // 0x29 0x59 = BAP header: opcode=2 (Status push), node=0x25, port=0x19.
-    data[0] = 0x80;
-    data[1] = 0x08;           // 8-byte payload follows across this frame + continuation
-    data[2] = 0x29;           // BAP opcode=2, node=0x25 [5:2]
-    data[3] = 0x59;           // BAP node=0x25 [1:0], port=0x19
-    data[4] = m_bap_counter;  // rolling counter; ACK will echo this | 0x80
-    data[5] = 0x06;           // duration: 0x06 = 15 min (confirmed from capture: port 51 BCD
-                     // countdown, 30s per unit, 0x06 * 150s = 15 min). Use 0x04 for 10 min.
-    data[6] = 0x00;  // unknown
-    data[7] = 0x01;  // unknown (mode/profile flag)
+    // Frames 1+2: SetGet on ProfilesArray (LSG 0x25 function 0x19) — compact
+    // (RecordAddr 6) partial update of profile 0: enable climate + climate-on-battery.
+    // Field semantics per smartkar-cano-new BAP_BATTERY_CONTROL.md and MIB2 firmware RE
+    // (PR #1430 review); see clima-control-bap.md.
+    data[0] = 0x80;           // long BAP message start, group 0
+    data[1] = 0x08;           // payload length: 4-byte array header + 4-byte compact record
+    data[2] = 0x29;           // BAP header: OpCode 0x02 SetGet, LSG 0x25 [5:2]
+    data[3] = 0x59;           // LSG 0x25 [1:0], function 0x19 ProfilesArray
+    data[4] = m_bap_counter;  // array header [ASG-ID:4|Transaction-ID:4]; FSG Status
+                              // response echoes it (observed as our value | 0x80)
+    data[5] = 0x06;           // array header: RecordAddr = 6 (compact record format)
+    data[6] = 0x00;           // array header: startIndex
+    data[7] = 0x01;           // array header: elementCount = 1
     // Accept both ESP_OK (frame in TWAI HW FIFO, physical TX imminent) and ESP_QUEUED
     // (frame placed in the OVMS FreeRTOS SW queue behind a concurrently-transmitting frame).
     // The SW queue is FIFO — if Frame 1 is queued, Frames 2 and 3 will follow it in order,
@@ -989,21 +990,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::SendClimaBapBurst(bool enable
         return Fail;
     }
 
-    // Frame 2: BAP continuation — remaining payload bytes including target temperature.
-    // Temperature encoding: raw = (celsius - 10) * 10  (e.g. 21°C → 0x6E)
-    // Clamp here, not just in the web form: cc-temp can also be set from the CLI
-    // (config set xvg cc-temp ...), which bypasses the web validation. An out-of-range
-    // value would otherwise be cast to uint8_t and produce a nonsense temperature byte
-    // sent to the climate ECU. Keep this in int until after clamping.
-    int climate_temp = MyConfig.GetParamValueInt("xvg", "cc-temp", 21);
-    if (climate_temp < VWEGOLF_CLIMA_TEMP_MIN_C) climate_temp = VWEGOLF_CLIMA_TEMP_MIN_C;
-    if (climate_temp > VWEGOLF_CLIMA_TEMP_MAX_C) climate_temp = VWEGOLF_CLIMA_TEMP_MAX_C;
-    uint8_t temp_raw = (uint8_t)((climate_temp - 10) * 10);
-    data[0] = 0xC0;      // multi-frame continuation, channel 0
-    data[1] = 0x06;      // unknown
-    data[2] = 0x00;      // unknown
-    data[3] = temp_raw;  // target temperature: (celsius - 10) * 10
-    data[4] = 0x00;      // padding / unknown
+    // Frame 2: continuation — the 4-byte compact profile record. No temperature here:
+    // the car climatizes to the setpoint stored in its global profile (infotainment).
+    // An explicit setpoint would need a RecordAddr-0 profile write, not yet implemented.
+    data[0] = 0xC0;  // long BAP continuation, group 0, index 0
+    data[1] = 0x06;  // operation: climate | climateWithoutExternalSupply
+    data[2] = 0x00;  // operation2: none
+    data[3] = 0x20;  // maxCurrent = 32 A (1 A/LSB)
+    data[4] = 0x00;  // targetChargeLevel = 0 (not charging)
     esp_err_t ok2 = m_can3->WriteExtended(0x17332501, 5, data, pdMS_TO_TICKS(200));
     if (ok2 == ESP_FAIL) {
         ESP_LOGW(TAG, "BAP clima frame 2 TX queue overflow");
@@ -1012,8 +1006,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::SendClimaBapBurst(bool enable
         return Fail;
     }
 
-    // Frame 3: BAP single-frame trigger → port 0x18 (immediate start/stop).
-    // 0x29 0x58 = opcode=2, node=0x25, port=0x18. d[3] = 0x01 start / 0x00 stop.
+    // Frame 3: short BAP trigger — SetGet on function 0x18 (ClimateOperationMode).
+    // Payload: profileId 0 (global), then start bitmask (bit0 = immediately) / 0x00 stop.
     data[0] = 0x29;
     data[1] = 0x58;
     data[2] = 0x00;
@@ -1028,8 +1022,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::SendClimaBapBurst(bool enable
 
     m_bap_burst_active = false;
 
-    ESP_LOGI(TAG, "BAP clima %s sent: counter=0x%02X temp=%u°C", enable ? "start" : "stop",
-             m_bap_counter, climate_temp);
+    ESP_LOGI(TAG, "BAP clima %s sent: tid=0x%02X", enable ? "start" : "stop", m_bap_counter);
 
     // Optimistic update for responsive UX — reflect the command immediately, then let
     // 0x03B5 ClimaRunning confirm/sustain it.

@@ -68,12 +68,6 @@
 // UX); this only governs autonomous/timer stops (≈hold-second linger, acceptable).
 #define VWEGOLF_HVAC_RUN_HOLD_SECS 20
 
-// Allowed range for the clima target temperature (config xvg cc-temp), in °C. The BAP
-// burst clamps the configured value to this range before encoding the temperature byte,
-// so an out-of-range config value can never reach the climate ECU as garbage.
-#define VWEGOLF_CLIMA_TEMP_MIN_C 16
-#define VWEGOLF_CLIMA_TEMP_MAX_C 28
-
 // After our own stop command we set hvac false at once but the blower keeps spinning down
 // for a moment (0x03B5 still reports running). Ignore that "running" for this long so the
 // stop stays responsive; if 0x03B5 still insists past the window the stop didn't take, so
