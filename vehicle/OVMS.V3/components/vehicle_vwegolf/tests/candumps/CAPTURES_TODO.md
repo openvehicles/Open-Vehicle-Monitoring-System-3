@@ -115,6 +115,22 @@ Redo only if BAP on/off frame details are needed that aren't in the clean captur
 
 ---
 
+## Cap H — Explicit temp in clima start command (PR #1430 promise)
+
+**Status:** OPEN — promised to maintainer (PR #1430 review, discussion_r3550192463)
+**Goal:** Verify ECU honors an explicit temperature in the port 0x19 command temp byte,
+not just the stored dash setpoint.
+
+**Sequence:** Car parked, dash setpoint at known value (e.g. 22°C = 0x78). Send
+`xvg climate start` with cc-temp set to a DIFFERENT value (e.g. 25°C = 0x96). Log KCAN.
+**Watch:** `0x17330110` port 0x1B/0x21 setpoint broadcast — does it move to 0x96 or
+stay at stored 0x78? Note: verify captures log RX only, own TX absent — judge by the
+broadcast echo, not the command frame. 20260422 caps were inconclusive (stuck at 0x78
+while log claimed temp=25 sent).
+**On result:** update caveat in `clima-control-bap.md` + reply on PR #1430.
+
+---
+
 ## Deleted empty / aborted sessions
 
 | File | Sequence | Note |
@@ -132,4 +148,5 @@ Redo only if BAP on/off frame details are needed that aren't in the clean captur
 | HIGH | A | KCAN driving, ign-on | can3 | Confirm SoC on KCAN during driving (J533 bridge) |
 | HIGH | A | FCAN driving, current fw | can2 | Confirm 0x131 reaches IncomingFrameCan2 with filter active |
 | MED | D | Clima full cycle | can3 | Clean census + cabin temp decode reference |
+| HIGH | H | Explicit temp in clima cmd | can3 | PR #1430 promise — does ECU honor command temp byte? |
 | LOW | G | BAP on/off | can3 | Only if kcan-can3-clima_control.crtd is insufficient |
