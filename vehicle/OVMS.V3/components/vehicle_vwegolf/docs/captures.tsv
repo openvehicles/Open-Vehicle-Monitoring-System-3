@@ -26,6 +26,7 @@ id	bus	status	notes
 24	can2	done	OBC 0x569 stop: 9A->8A->0A ramp-down; d[1]b6 clears on charge stop; 248V remains (cable still plugged) — 20260429 (from PR #2 / @PMKA)
 25	can2	done	canlog start while FCAN asleep: 22 lines, events only (charge start/stop 18:49-19:23), zero frames — filter blind-spot + bus-asleep evidence; `…-184752`
 26	can2	done	CCS handshake REJECTED @100% SoC, first unfiltered FCAN cap (xvg fcanfilter off): 95 IDs/123 s; handshake-only IDs 040,041,117,122,3D8,520,67C (t<9.1s); 0x131 0xFE sentinel burst t=22.5; 0x191 -1A/359.75V no flow; module survives ~1700fps (0.9% logger drops, no TWDT) — `…-195720`
+27	can2	pending	opendbc vw_mqb validation drive: unfiltered FCAN (xvg fcanfilter off), D-mode w/ reku paddle taps + steering + WOT — confirm LWI_01 dynamic scale/sign, Motor_20 pedal %, Motor_11/12 torque+rpm, 0x187 EV_Rekuperationsstufe
 
 # FCAN decode baseline: can2-3.3.005-800-gc60d79ed-dirty_ota_1_edge-20260412-175611.crtd (CCS idle, 26127 frames)
 # Per-cap MD format: 5–10s pre/post idle, log stimulus + timestamps

@@ -18,7 +18,7 @@ NS_ :
 
 BS_:
 
-BU_: OVMS BMS ESP Gateway BCM ChargeCtrl ClimaECU Instruments AmbientSensor GearModule Powertrain
+BU_: OVMS BMS ESP Gateway BCM ChargeCtrl ClimaECU Instruments AmbientSensor GearModule Powertrain Motor
 
 // ---------------------------------------------------------------------------
 // KCAN (500 kbps) — convenience/comfort bus, accessible via J533 harness
@@ -160,9 +160,12 @@ BO_ 913 OBD_01: 8 Powertrain
 
 BO_ 87 Unknown_057: 4 Vector__XXX
  SG_ MotorTorqueRequest : 24|8@1+ (1,0) [0|255] "" OVMS
-BO_ 134 Unknown_086: 8 Vector__XXX
-BO_ 167 Unknown_0A7: 8 Vector__XXX
-BO_ 168 Unknown_0A8: 8 Vector__XXX
+BO_ 134 LWI_01: 8 Gateway
+ SG_ SteeringAngleAbs : 16|13@1+ (0.1,0) [0|800] "deg" OVMS
+ SG_ SteeringAngleSign : 29|1@1+ (1,0) [0|1] "" OVMS
+ SG_ SteeringRotSpeed : 31|9@1+ (5,0) [0|2500] "deg/s" OVMS
+BO_ 167 Motor_11: 8 Motor
+BO_ 168 Motor_12: 8 Motor
 BO_ 178 WheelSpeeds_0B2: 8 ESP
  SG_ WheelSpeedFL : 0|16@1+ (0.0078125,0) [0|511.99] "km/h" OVMS
  SG_ WheelSpeedFR : 16|16@1+ (0.0078125,0) [0|511.99] "km/h" OVMS
@@ -173,9 +176,9 @@ BO_ 180 Unknown_0B4: 8 Vector__XXX
  SG_ MotorState_b2 : 16|8@1+ (1,0) [0|255] "" OVMS
  SG_ MotorTorqueA : 24|16@1+ (1,0) [0|65535] "" OVMS
  SG_ MotorTorqueB : 48|16@1+ (1,0) [0|65535] "" OVMS
-BO_ 263 Unknown_107: 8 Vector__XXX
-BO_ 288 Unknown_120: 8 Vector__XXX
-BO_ 289 Unknown_121: 8 Vector__XXX
+BO_ 263 Motor_04: 8 Motor
+BO_ 288 TSK_06: 8 Motor
+BO_ 289 Motor_20: 8 Motor
 BO_ 869 BrakePedal_365: 8 Vector__XXX
  SG_ BrakeActive : 32|1@1+ (1,0) [0|1] "" OVMS
 BO_ 958 PedalStatus_3BE: 8 Vector__XXX
@@ -289,7 +292,7 @@ CM_ BO_ 305 "FCAN. State of charge from BMS. Confirmed. 0xFE is a startup sentin
 CM_ BO_ 401 "FCAN. HV bus current and voltage from BMS. Confirmed from captures.";
 CM_ BO_ 687 "FCAN. Net trip energy counter. Originally hypothesised as separate EnergyRecd/EnergyUsed at b4/b5 + b6/b7 (pre-2026 RE notes); on this vehicle bytes 4-7 are static zero across an entire driving session (cap 20260503-143106) and bytes 2-3 carry a single 16-bit LE counter that resets to 0 on key-on, climbs during draw, decrements during regen, and wraps mod 65536. Hypothesis: mWh net cumulative — pre-park value 58496 + 26 wraparounds ≈ 1762 Wh vs 0x191 power-integral net consumption 1706 Wh (within ~3 %). Mid-trip 20 s-sampled dips consistent with rapid wraparound at high power (e.g. -100 kW = wrap every ~0.6 s). Needs single-bus FCAN drive + parallel power-integral capture to verify mWh scale and regen-sign behaviour.";
 CM_ BO_ 1158 "KCAN. GPS position. Encoding inferred from RE. Sign bits for S/W hemisphere not yet decoded — positive values only.";
-CM_ BO_ 1385 "KCAN. OBC auxiliary/DC-DC status — NOT the AC charge inlet. Originally decoded as AC line voltage + charge current, but capture review disproved it: byte 4 is constant 0xF8 in every state (parked+clima, idle, AC, CCS DC) and byte 5 is a DC-DC/aux current (0 idle, ~9 A clima-while-parked, ~13 A through a 33 kW CCS DC session). byte4*byte5 is a flat ~3.2 kW during a 33 kW charge — does not track charge rate. Charge voltage/current/power are derived from the BMS pack UDS poll instead. No OVMS metric is driven from this frame. Caps: all-dc583be4a-…-132333 (CCS DC), all-168388a82 (idle), kcan-can3-clima_control (parked clima).";
+CM_ BO_ 1385 "KCAN. OBC auxiliary/DC-DC status — NOT the AC charge inlet. Originally decoded as AC line voltage + charge current, but capture review disproved it: byte 4 is constant 0xF8 in every state (parked+clima, idle, AC, CCS DC) and byte 5 is a DC-DC/aux current (0 idle, ~9 A clima-while-parked, ~13 A through a 33 kW CCS DC session). byte4*byte5 is a flat ~3.2 kW during a 33 kW charge — does not track charge rate. Charge voltage/current/power are derived from the BMS pack UDS poll instead. No OVMS metric is driven from this frame. Caps: all-dc583be4a-…-132333 (CCS DC), all-168388a82 (idle), kcan-can3-clima_control (parked clima). opendbc vw_mqb.dbc names 0x569 HVEM_04 (HV-Energiemanagement, no signal defs) — independently supports the energy-management (not AC inlet) reading.";
 CM_ SG_ 1385 StatusByte4 "Byte 4. Constant 0xF8 across all observed states — status/flag byte, not a voltage. The earlier '248 V mains' reading was a coincidental match of 0xF8.";
 CM_ SG_ 1385 AuxCurrent "Byte 5. Auxiliary/DC-DC-converter current, 1 A/bit: 0 idle, ~9 A clima-while-parked, ~13 A during CCS DC charge. Tracks the 12 V/DC-DC load, not the HV charge current.";
 CM_ SG_ 1385 AcChargeActive "Byte 1 bit 6. 0x40 set during sustained charging; d[1]=0xf0 also observed (early CP negotiation). Not used as a metric gate — charge_inprogress (0x594) is authoritative.";
@@ -309,13 +312,14 @@ CM_ BO_ 1447 "KCAN TX by OVMS. OCU OSEK NM keepalive. All-zeros = idle. Action b
 CM_ BO_ 2600468583 "KCAN TX by OVMS (extended 29-bit ID 0x1B000067). OSEK NM alive for OVMS node 0x67. Must be sent before BAP commands on a freshly-woken bus — clima ECU rejects BAP from nodes absent from the NM ring. Confirmed from kcan-can3-clima_control.crtd. Sent by CommandWakeup().";
 CM_ BO_ 2600468517 "KCAN RX from clima ECU (extended 29-bit ID 0x1B000025). OSEK NM alive for clima ECU node 0x25. Receiving this frame confirms the clima ECU is alive and joinable after bus wake.";
 CM_ BO_ 2536702721 "KCAN TX by OVMS (extended 29-bit ID 0x17330301). Dominant-bit wake frame sent as first frame in CommandWakeup(). TX_Fail expected when bus sleeping — dominant bits wake transceivers regardless. Response on 0x17330E10 when bus is live. Full BAP decode pending.";
-CM_ BO_ 391 "FCAN. Gear selector position. Confirmed from captures.";
+CM_ BO_ 391 "FCAN. Gear selector position. Confirmed from captures. Corroborated by opendbc vw_mqb.dbc Motor_EV_01: MO_Waehlpos same bit position, identical enum (2=P 3=R 4=N 5=D 6=D/B). opendbc extras checked on drive cap 20260503-143106: MO_Drehzahl_VM (32|16) zero throughout — combustion-engine field, unused on BEV; EV_Rekuperationsstufe (12|3, 1-3 = D-mode reku paddle stages B1-B3) zero throughout all-B-mode drive — candidate, needs a D-mode drive with paddle taps; MO_HVEM_MaxLeistung (55|9 x50 W) reads 0/24000/25400 W — meaning unclear, unvalidated.";
 CM_ BO_ 1716 "FCAN. VIN broadcast across three frames (frame index 0/1/2 in byte 0). Assembled in firmware from all three before committing.";
 CM_ BO_ 87 "FCAN. DLC 4. Bytes 0/1 are a rolling counter. Byte 3 confirmed as accelerator-driven motor torque request from Capture 17 (D + B drive). Identical ramp in D and B captures (so not regen-related). Max ~0x26 at peak accel. Byte 2 also motion-correlated, role unclear. 1889 frames / 67 s (~28 Hz) in 20260412-175611 charging idle.";
 CM_ SG_ 87 MotorTorqueRequest "Byte 3. Accelerator pedal / motor torque request. 0 at rest, ramps with throttle, plateaus during cruise, 0 again on lift-off (regardless of brake or regen). Confirmed Capture 17 (D + B drive). Max observed 0x26.";
-CM_ BO_ 134 "FCAN decode candidate. 913 frames / 67 s (~14 Hz) in 20260412-175611.";
-CM_ BO_ 167 "FCAN decode candidate. 1744 frames / 67 s (~26 Hz) in 20260412-175611. 0xA7/0xA8 pair — likely related (BMS status block?).";
-CM_ BO_ 168 "FCAN decode candidate. 1719 frames / 67 s (~26 Hz) in 20260412-175611. Pair with 0xA7.";
+CM_ BO_ 134 "FCAN. Steering wheel angle sensor (Lenkwinkel). Name + layout from opendbc vw_mqb.dbc LWI_01. Stationary-consistent in 20260412-175611 (static 5.1 deg) and 20260611-195720 (10.1 deg with 0.1-deg jitter + rotation-speed blips on wheel touch). Dynamic scale/sign confirmation pending unfiltered drive capture.";
+CM_ SG_ 134 SteeringAngleAbs "Absolute steering angle, 0.1 deg/bit. Sign in SteeringAngleSign (opendbc: LWI_VZ_Lenkradwinkel). Direction convention unconfirmed.";
+CM_ BO_ 167 "FCAN. Motor torque report per opendbc vw_mqb.dbc Motor_11 (MO_Mom_Ist_Summe 22|10 offset -509 Nm etc). NOT BMS as previously guessed. Stationary caps show 513 = VW SNA sentinel; signals not added until validated on unfiltered drive capture. Pair with 0xA8.";
+CM_ BO_ 168 "FCAN. Motor torque limits + motor speed per opendbc vw_mqb.dbc Motor_12 (MO_Drehzahl_01 48|16 x0.25 rpm). Zero while stationary (consistent); signals pending unfiltered drive capture. Pair with 0xA7.";
 CM_ BO_ 178 "FCAN. Four 16-bit LE wheel speeds at byte offsets 0/1, 2/3, 4/5, 6/7. Scale 1/128 km/h per bit (0.0078125). All-zeros while stationary. Confirmed Capture 17: cruise plateau lands at 30.05 km/h matching 30 kph driver target; all four wheels track within ±0.2 km/h. FCAN counterpart of KCAN ESP_Speed (0xFD). Either bus can source ms_v_pos_speed.";
 CM_ SG_ 178 WheelSpeedFL "Front-left wheel speed. Scale 1/128 km/h per bit. Wheel position assignment (FL/FR/RL/RR) is by convention — exact mapping to physical wheels not yet confirmed. Capture 17.";
 CM_ SG_ 178 WheelSpeedFR "Front-right wheel speed. See WheelSpeedFL note on position mapping.";
@@ -326,9 +330,9 @@ CM_ BO_ 180 "FCAN. Motor / inverter state frame. Bytes 0/1 are an unrelated roll
 CM_ SG_ 180 MotorState_b2 "Byte 2. Small motion-correlated counter (0-25 observed). Wakes from 0 during motion, climbs slowly during regen, idles low during steady forward cruise, returns to 0 at standstill. Could be regen demand level / brake pedal request percent / inverter status counter — not yet identified. Independent from MotorTorqueA/B (can be non-zero with both at 0). Capture 17c.";
 CM_ SG_ 180 MotorTorqueA "Bytes 3/4 as 16-bit LE pair. Continuous motor torque-like quantity active during both forward propulsion and regen. Cap 17c observations: steady ~53 during forward cruise at 56 km/h; ramps smoothly 53→600 during a 75→62 km/h regen brake; 642-653 during a brief cruise pulse on flat. Smooth ramp at regen release. Sign convention and units (Nm? %? raw torque counts?) not yet known — appears unsigned with regen events landing in the same numeric range as drive events. Promoted from earlier 'RegenStateFlag' single-byte hypothesis after Cap 17c showed b3 is the low byte of a pair, not a flag.";
 CM_ SG_ 180 MotorTorqueB "Bytes 6/7 as 16-bit LE pair. Second motor quantity at a much larger numeric scale than MotorTorqueA. Cap 17c observations: 0 during steady forward cruise (MotorTorqueA=53 alone); ramps 848→5776 during the 75→62 km/h regen brake; 224-1216 during the cruise pulse. Decays to 0 smoothly at regen release. Likely torque-derived (power? current? requested vs actual?) but identity vs MotorTorqueA not yet resolved. Promoted from earlier 'RegenTorque' single-byte hypothesis after Cap 17c showed b6 is the low byte of a pair.";
-CM_ BO_ 263 "FCAN decode candidate. 873 frames / 67 s (~13 Hz) in 20260412-175611.";
-CM_ BO_ 288 "FCAN decode candidate. 879 frames / 67 s (~13 Hz) in 20260412-175611.";
-CM_ BO_ 289 "FCAN decode candidate. 848 frames / 67 s (~13 Hz) in 20260412-175611.";
+CM_ BO_ 263 "FCAN. Name from opendbc vw_mqb.dbc Motor_04 (display RPM, oil pressure, fuel flow — combustion-centric; BEV repurposing unknown). Layout unvalidated.";
+CM_ BO_ 288 "FCAN. Name from opendbc vw_mqb.dbc TSK_06 (cruise/ACC status, wheel brake torque). Layout unvalidated.";
+CM_ BO_ 289 "FCAN. Name from opendbc vw_mqb.dbc Motor_20 (MO_Fahrpedalrohwert_01 12|8 x0.4 = accel pedal raw %). Pedal field 0 throughout stationary caps (consistent); signals pending unfiltered drive capture.";
 CM_ BO_ 869 "FCAN. Bimodal frame observed in pedal stimulation capture 20260412-184855 (Capture 16). Byte 4 takes value 0x82 most of the time, 0x83 during brake application. 11 activations clustered in 13.7-25.4 s window. Hypothesis: brake torque/pressure request. Needs re-confirm with timestamped stimulation.";
 CM_ BO_ 958 "FCAN. Multi-bit status frame with two distinct event windows in Capture 16 (20260412-184855). Stable = `00 00 e7 04 c0 a0 0c 00`. Byte 3 bits 4/6 set (0x54/0x44) co-fire with 0x365 brake activations and extend ~6 s past brake release — likely brake pedal switch / brake-light bits. Byte 5 bit 0 (a0→a1) fires in a later window 33.7-43.7 s — likely throttle pedal active. Needs re-confirm with timestamped stimulation.";
 CM_ SG_ 869 BrakeActive "Byte 4 bit 0. 0 = idle, 1 = brake applied. Hypothesis from Capture 16 temporal cluster; not yet confirmed with timestamped stimulation.";

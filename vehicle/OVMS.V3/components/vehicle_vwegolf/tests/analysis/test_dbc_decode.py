@@ -285,3 +285,28 @@ def test_diff_window_flags_gear_transition(cap_long):
     # Byte 2 (gear nibble) must be among the flagged bytes.
     assert 2 in e.changed_bytes, \
         f"0x187 changed_bytes {e.changed_bytes} excludes b2 (gear nibble)"
+
+
+# ---------------------------------------------------------------------------
+# LWI_01 (0x086) — steering angle, layout from opendbc vw_mqb.dbc.
+# Ground truth: 175611.md "opendbc cross-check" — car parked/charging,
+# wheel untouched: SteeringAngleAbs constant 5.1 deg, rot speed 0.
+# ---------------------------------------------------------------------------
+
+CAP_CHARGE_IDLE = os.path.join(
+    CANDUMPS,
+    "can2-3.3.005-800-gc60d79ed-dirty_ota_1_edge-20260412-175611.crtd")
+
+
+@pytest.fixture(scope="module")
+def cap_idle():
+    return load(CAP_CHARGE_IDLE, bus=2)
+
+
+def test_lwi_steering_angle_static_when_parked(cap_idle, dbc):
+    """Parked cap: steering angle decodes to a single static 5.1 deg."""
+    vals = {v for _, v in cap_idle.decode(dbc, "086", "SteeringAngleAbs")}
+    assert len(vals) == 1, f"expected static angle, got {sorted(vals)}"
+    assert vals.pop() == pytest.approx(5.1), "expected 5.1 deg"
+    speeds = {v for _, v in cap_idle.decode(dbc, "086", "SteeringRotSpeed")}
+    assert speeds == {0}, f"rot speed should be 0 parked, got {speeds}"
