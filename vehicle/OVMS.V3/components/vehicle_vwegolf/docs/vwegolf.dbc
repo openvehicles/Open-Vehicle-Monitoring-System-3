@@ -58,8 +58,8 @@ BO_ 1428 ChargeManagement: 8 ChargeCtrl
 BO_ 1438 BMS_BatTemp: 8 BMS
  SG_ BatTemp : 16|8@1+ (0.5,-40) [-40|87.5] "degC" OVMS
 
-BO_ 1482 BMS_BatCapacity: 8 BMS
- SG_ BatCapacity : 12|11@1+ (0.05,0) [0|102.35] "kWh" OVMS
+BO_ 1482 BMS_BatEnergyRemaining: 8 BMS
+ SG_ BatEnergyRemaining : 12|11@1+ (0.05,0) [0|102.35] "kWh" OVMS
 
 BO_ 1514 ClimaECU_Status: 8 ClimaECU
  SG_ ClimaCabinTemp : 50|10@1+ (0.1,-40) [-40|62.3] "degC" OVMS
@@ -299,7 +299,7 @@ CM_ SG_ 1385 AcChargeActive "Byte 1 bit 6. 0x40 set during sustained charging; d
 CM_ BO_ 1411 "KCAN. ZV_02 central locking and door open status. Confirmed from captures.";
 CM_ BO_ 1428 "KCAN. HV charge management: duration, timer, plug type, charge state, chargeport, cabin setpoint. ChargeType/ChargePort share same bits — ChargePort derived from non-zero ChargeType. Confirmed from AC Type 2 charge cycle (20260407-131402) and 100% SOC idle (20260407-141135). CCS DC keeps KCAN silent so ChargeType=2 never observed on this frame.";
 CM_ BO_ 1438 "KCAN. HV battery pack temperature from BMS. Confirmed from captures.";
-CM_ BO_ 1482 "KCAN. HV battery usable energy content. Encoding inferred; values plausible.";
+CM_ BO_ 1482 "KCAN. HV battery REMAINING energy content (tracks SoC; 5 kWh observed at 18% SoC 2026-07-10). NOT pack capacity — earlier BatCapacity name was wrong. Encoding inferred; values plausible.";
 CM_ BO_ 1514 "KCAN 0x5EA. Clima ECU broadcast status (StandklimaStatus_02). ClimaRemoteMode here = 'ECU energized' (ignition/ACC or remote session), NOT cabin conditioning — do not use for ms_v_env_hvac (it pins/couples to ignition; capture all-168388a82-...-224827). Run-state is 0x3B5 ClimaRunning. ClimaCabinTemp here is log-only; cabin temp is owned by 0x066E InnenTemp.";
 CM_ BO_ 1525 "KCAN. Range estimates from instrument cluster. Confirmed from captures. Byte[1] also carries secondary clima idle flag (0x00=active, 0x01=idle). Confirmed Capture 1.";
 CM_ BO_ 1626 "KCAN. BCM_01 bonnet/hood open indicator. Confirmed from captures.";

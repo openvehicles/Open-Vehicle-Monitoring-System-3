@@ -41,11 +41,10 @@
 #define VWEGOLF_BMS_RX 0x7ED      // BMS -> tester response CAN ID
 #define VWEGOLF_BMS_DID_U 0x1E3B  // measured pack voltage, uint16 / 4.0 V
 #define VWEGOLF_BMS_DID_I 0x1E3D  // measured pack current, (uint16 - 2044) / 4.0 A
-// SoH/CAC — same DID, TX/RX as vweup_obd.cpp VWUP_BAT_MGMT_SOH_CAC. vweup branches the
-// divisor on model year (>2019 vs older MQB platform); the e-Golf matches the older
-// platform, so we hardcode the "else" constants (CAC /100.0, SoH /50.0). Verbatim from
-// vweup, MUST be validated on the e-Golf before trusting values.
-#define VWEGOLF_BMS_DID_SOH_CAC 0x74CB  // uint16 @offset0: CAC = raw/100.0 Ah, SoH = raw/50.0 %
+// SoH — same DID, TX/RX as vweup_obd.cpp VWUP_BAT_MGMT_SOH_CAC, but NOT vweup's scaling:
+// e-Golf raw runs 10x the pre-2020 vweup scale (on-car 2026-07-10: raw 43177, vweup /50
+// would give 863%). Divisor 500 is provisional; CAC scaling unknown, not decoded.
+#define VWEGOLF_BMS_DID_SOH_CAC 0x74CB  // uint16 @offset0: SoH = raw/500.0 %
 
 // Poll intervals in seconds per state {OFF, AWAKE, CHARGING, ON}. Diag CAN sleeps
 // with the car -> OFF/AWAKE are 0. CHARGING feeds the bat_* metrics (0x191 is silent
@@ -332,13 +331,15 @@ void OvmsVehicleVWeGolf::IncomingPollReply(const OvmsPoller::poll_job_t& job, ui
             break;
         }
         case VWEGOLF_BMS_DID_SOH_CAC: {
-            // Battery SoH/CAC — verbatim scaling from vehicle_vweup (see define above).
+            // Battery SoH — e-Golf raw is 10x the pre-2020 vweup scale (observed raw 43177
+            // vs vweup /50): divisor 500 gives 86.35% on this pack (101 Mm), plausible.
+            // Provisional until cross-checked against a diag readout. CAC not written:
+            // vweup's raw/100 gave 431.77 Ah here (nominal ~111 Ah) — scaling unknown,
+            // needs re-derivation from a capture before ms_v_bat_cac gets a value.
             // Slow-changing, not gated to CHARGING like U/I: written whenever polled.
-            const float cac = raw / 100.0f;
-            const float soh = raw / 50.0f;
-            ESP_LOGD(TAG, "UDS BMS SOH_CAC raw=%u -> SoH=%.1f%% CAC=%.1fAh", raw, soh, cac);
+            const float soh = raw / 500.0f;
+            ESP_LOGD(TAG, "UDS BMS SOH_CAC raw=%u -> SoH=%.2f%%", raw, soh);
             StandardMetrics.ms_v_bat_soh->SetValue(soh);
-            StandardMetrics.ms_v_bat_cac->SetValue(cac);
             break;
         }
         default:
@@ -641,13 +642,15 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             break;
         }
         case 0x05CA: {
-            // HV battery energy content. 11-bit, factor 50 Wh → kWh.
-            // d[2]==0xFF is the startup sentinel (near-max field → ~102 kWh; real battery ≤40 kWh).
+            // HV battery REMAINING energy content (tracks SoC: 5 kWh observed at 18%),
+            // not pack capacity — writing it to ms_v_bat_capacity was a bug (upstream
+            // still has it; fix rides the charging PR). Log-only until OVMS grows a
+            // remaining-energy home for it. 11-bit, factor 50 Wh → kWh.
+            // d[2]==0xFF is the startup sentinel (near-max field; real values ≤40 kWh).
             if (d[2] == 0xFF) break;
             u16 = ((uint16_t)(d[1] & 0xF0) >> 4) | ((uint16_t)(d[2] & 0x7F) << 4);
             f = u16 * 50.0f / 1000.0f;
-            StandardMetrics.ms_v_bat_capacity->SetValue(f);
-            ESP_LOGV(TAG, "0x05CA bat_capacity=%.1f kWh", f);
+            ESP_LOGV(TAG, "0x05CA bat energy remaining=%.1f kWh (log-only)", f);
             break;
         }
         case 0x05EA: {

@@ -390,30 +390,22 @@ void test_bat_temp_0x59E() {
 }
 
 // ---------------------------------------------------------------------------
-// 0x05CA — HV battery energy capacity (11-bit)
+// 0x05CA — HV battery REMAINING energy (11-bit). Log-only: it tracks SoC, so it
+// must never be written to ms_v_bat_capacity (that was a bug; upstream fix rides
+// the charging PR).
 // ---------------------------------------------------------------------------
 
 void test_bat_capacity_0x5CA() {
     printf("\ntest_bat_capacity_0x5CA\n");
     auto* v = make_vehicle();
 
-    // 35.0 kWh: raw=700=0x2BC → d[1]&0xF0=0xC0 (12<<4), d[2]&0x7F=0x2B (43)
-    // check: ((0xC0&0xF0)>>4)|((0x2B&0x7F)<<4) = 12|688 = 700; 700*50/1000 = 35.0
+    // Remaining-energy frame (raw=700 → 35.0 kWh) must NOT touch ms_v_bat_capacity.
+    StandardMetrics.ms_v_bat_capacity->SetValue(0.0f);
     auto f = make_frame(0x5CA, {0x00, 0xC0, 0x2B, 0x00, 0x00, 0x00, 0x00, 0x00});
     v->IncomingFrameCan3(&f);
-    CHECK(near(StandardMetrics.ms_v_bat_capacity->AsFloat(), 35.0f), "Battery capacity 35.0 kWh");
+    CHECK(near(StandardMetrics.ms_v_bat_capacity->AsFloat(), 0.0f), "0x05CA log-only: capacity untouched");
 
     delete v;
-
-    {
-        // Sentinel: d[2]==0xFF (near-max capacity field → ~102 kWh) must not overwrite.
-        auto* vs = make_vehicle();
-        StandardMetrics.ms_v_bat_capacity->SetValue(35.0f);
-        auto fs = make_frame(0x5CA, {0x00, 0xE0, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00});
-        vs->IncomingFrameCan3(&fs);
-        CHECK(near(StandardMetrics.ms_v_bat_capacity->AsFloat(), 35.0f), "0x05CA sentinel: capacity not overwritten");
-        delete vs;
-    }
 }
 
 // ---------------------------------------------------------------------------
