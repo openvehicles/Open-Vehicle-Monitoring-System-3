@@ -1,0 +1,7 @@
+{
+  "broker": "mqtt.example.com",
+  "port": 8883,
+  "user": "mqttuser",
+  "password_cmd": "pass show mqtt/ovms",
+  "topic": "ovms/<user>/<vehicleid>/metric/#"
+}

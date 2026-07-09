@@ -15,6 +15,14 @@
 #   - SSH key for ovms@<host>
 #   - SD card mounted in OVMS module (/sd)
 #   - scp (openssh-client)
+#
+# MQTT metrics sidecar (best-effort): logs firmware metrics from the OVMS MQTT
+# broker to <BASE>.metrics.tsv during the capture (analysis/mqtt_log.py).
+# Needs internet, analysis/mqtt_log.json (gitignored — copy the .example) and
+# the broker password (OVMS_MQTT_PW env or the config's password_cmd).
+# GPS metrics are dropped — candumps/ is committed, no PII.
+# Timing: samples arrive via the module's modem, expect 1-5 s transport delay;
+# good for stimulus-level correlation, not frame-level.
 
 set -euo pipefail
 
@@ -152,6 +160,22 @@ STATUS_CMD="can log status"
 STOP_CMD="can log stop"
 
 # ---------------------------------------------------------------------------
+# 5a. Start MQTT metrics sidecar (best-effort — capture proceeds without it).
+#     Logs firmware metric values from the broker so analysis can correlate
+#     frames against what OVMS believed. GPS metrics dropped (no PII in repo).
+# ---------------------------------------------------------------------------
+METRICS_FILE="$OUTDIR/${BASE}.metrics.tsv"
+METRICS_PID=""
+VENV_PY="$(git rev-parse --show-toplevel)/.venv/bin/python"
+if [[ -x "$VENV_PY" ]]; then
+  "$VENV_PY" analysis/mqtt_log.py "$METRICS_FILE" &
+  METRICS_PID=$!
+  echo "Metrics sidecar: $METRICS_FILE (pid $METRICS_PID)"
+else
+  echo "Warning: .venv python not found — skipping MQTT metrics sidecar."
+fi
+
+# ---------------------------------------------------------------------------
 # 5. Start the log on SD card.
 # ---------------------------------------------------------------------------
 SSH_OK=false
@@ -184,6 +208,20 @@ cleanup() {
   trap '' INT TERM
 
   echo ""
+
+  # Stop the metrics sidecar first so its last rows land before we report.
+  METRICS_SAMPLES=""
+  if [[ -n "$METRICS_PID" ]]; then
+    kill "$METRICS_PID" 2>/dev/null || true
+    wait "$METRICS_PID" 2>/dev/null || true
+    if [[ -s "$METRICS_FILE" ]]; then
+      METRICS_SAMPLES=$(wc -l <"$METRICS_FILE")
+      echo "Metrics sidecar stopped: ${METRICS_SAMPLES} samples."
+    else
+      rm -f "$METRICS_FILE"
+      echo "Metrics sidecar produced no samples (broker unreachable?)."
+    fi
+  fi
 
   for pid in "${TIMER_PID:-}" "${SLEEP_PID:-}"; do
     if [[ -n "$pid" ]]; then
@@ -265,6 +303,10 @@ cleanup() {
   if [[ -n "$LOGGER_MESSAGES" ]]; then
     STATS_LINE="| Logger stats | Messages:${LOGGER_MESSAGES} Dropped:${LOGGER_DROPPED} Filtered:${LOGGER_FILTERED} |"
   fi
+  METRICS_LINE=""
+  if [[ -n "$METRICS_SAMPLES" ]]; then
+    METRICS_LINE="| Metrics | ${BASE}.metrics.tsv (${METRICS_SAMPLES} samples) |"
+  fi
 
   cat >"$MD_FILE" <<MDEOF
 # ${BASE}.crtd — Capture Notes
@@ -279,6 +321,7 @@ cleanup() {
 | Duration | ~${ELAPSED}s |
 | Frames | ${RAW_FRAMES} raw (${FRAMES} lines incl. events) |
 ${STATS_LINE}
+${METRICS_LINE}
 
 ## Sequence
 
