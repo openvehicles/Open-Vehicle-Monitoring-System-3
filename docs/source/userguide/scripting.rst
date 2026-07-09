@@ -1276,6 +1276,7 @@ The ``Poll`` object is for the polling subsystem and has the following methods:
               "request": <string>|<Uint8Array>,   // hex encoded string or binary byte array
             },
            "states": [ t0, t1, t2, t3 ], // Repeating poll states (offset by 'poll_offset' param) only 4 allowed.
+           "shift": [ t0, t1, t2, t3 ], // Poll time shift per state in seconds.
            "decode": { // [Not used if dbc_decode is true]
              <metric.name>|<value_name> :
                {
