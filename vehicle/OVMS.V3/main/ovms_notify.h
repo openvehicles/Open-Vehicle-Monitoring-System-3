@@ -171,6 +171,14 @@ class OvmsNotify : public ExternalRamAllocated
     virtual ~OvmsNotify();
 
   public:
+    struct NotifyBucketState
+      {
+      float tokens = 0.0f;
+      uint32_t last_refill_ms = 0;
+      uint32_t dropped = 0;
+      uint32_t last_notice_ms = 0;
+      };
+
     size_t RegisterReader(const char* caller, int verbosity, OvmsNotifyCallback_t callback,
                           bool configfiltered=false, OvmsNotifyFilterCallback_t filtercallback=NULL);
     void RegisterReader(size_t reader, const char* caller, int verbosity, OvmsNotifyCallback_t callback,
@@ -188,17 +196,30 @@ class OvmsNotify : public ExternalRamAllocated
     uint32_t NotifyCommand(const char* type, const char* subtype, const char* cmd);
     uint32_t NotifyCommandf(const char* type, const char* subtype, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
     void NotifyErrorCode(uint32_t code, uint32_t data, bool raised, bool force=false);
+    bool IsUserFacingType(const char* type);
+    size_t GetQueueLimitForType(const char* type);
+    bool QueueLimitExceeded(const char* type, size_t current_entries);
+    bool ConsumeRateToken(const char* caller, const char* type, const char* subtype);
+    void MaybeEmitRateLimitNotice(const char* caller, const char* type, const char* subtype, uint32_t dropped_now);
+    float GetRateConfig(const std::string& key, float defval);
+    size_t GetSizeConfig(const std::string& key, size_t defval);
 
   public:
     OvmsNotifyCallbackMap_t m_readers;
     OvmsRecMutex m_mutex;
 
   protected:
+    void CollectReaders(OvmsNotifyType* type, const char* subtype, size_t size,
+      std::bitset<NOTIFY_MAX_READERS>& readers, uint32_t& dropped_by_rl, const char*& dropped_caller);
+
     size_t m_nextreader;
 
   public:
     OvmsNotifyTypeMap_t m_types;
     OvmsNotifyErrorCodeMap_t m_errorcodes;
+    std::map<std::string, NotifyBucketState> m_rl_buckets;
+    std::map<std::string, uint32_t> m_rl_notice_suppress;
+    bool m_internal_notice;
     int m_trace;
   };
 
