@@ -178,6 +178,23 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   dto->RegisterDuktapeObject(dto_aux, "AuxMon");
 
   MyDuktape.RegisterDuktapeObject(dto);
+
+  DuktapeObjectRegistration* dto_bms= new DuktapeObjectRegistration("OvmsBms");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellArrangement, 2, "VoltageSetCellArrangement");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellDefaultThresholds, DUK_VARARGS, "VoltageSetCellDefaultThresholds");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellLimits, 2, "VoltageSetCellLimits");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCell, 2, "VoltageSetCell");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageResetCells, DUK_VARARGS, "VoltageResetCells");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltagesRestartCells, 0, "VoltagesRestartCells");
+
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellArrangement, 2, "TemperatureSetCellArrangement");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellDefaultThresholds,  2, "TemperatureSetCellDefaultThresholds");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellLimits, 2, "TemperatureSetCellLimits");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCell, 2, "TemperatureSetCell");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureResetCells, DUK_VARARGS, "TemperatureResetCells");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureRestartCells, 0, "TemperatureRestartCells");
+  MyDuktape.RegisterDuktapeObject(dto_bms);
+
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
