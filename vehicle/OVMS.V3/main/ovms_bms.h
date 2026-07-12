@@ -175,6 +175,26 @@ class OvmsBmsMonitor : public InternalRamAllocated
     static void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    // BMS
+    static duk_ret_t DukOvmsBmsVoltageSetCellArrangement(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageSetCellDefaultThresholds(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageSetCellLimits(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageSetCell(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageResetCells(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltagesRestartCells(duk_context *ctx);
+
+    static duk_ret_t DukOvmsBmsTemperatureSetCellArrangement(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureSetCellDefaultThresholds(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureSetCellLimits(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureSetCell(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureResetCells(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureRestartCells(duk_context *ctx);
+  public:
+    void RegisterBmsDuktape();
+
+#endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
   };
 
 extern OvmsBmsMonitor MyBmsMonitor;

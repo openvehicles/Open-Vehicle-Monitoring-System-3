@@ -97,6 +97,9 @@ OvmsBmsMonitor::OvmsBmsMonitor()
   cmd_bms->RegisterCommand("alerts","Show BMS alerts",bms_alerts);
 
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsBmsMonitor::BmsTicker, this, _1, _2));
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  RegisterBmsDuktape();
+#endif
   }
 
 OvmsBmsMonitor::~OvmsBmsMonitor()
@@ -106,6 +109,27 @@ OvmsBmsMonitor::~OvmsBmsMonitor()
   ClearVoltages();
   ClearTemperatures();
   }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsBmsMonitor::RegisterBmsDuktape()
+{
+  DuktapeObjectRegistration* dto_bms= new DuktapeObjectRegistration("OvmsBms");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellArrangement, 2, "VoltageSetCellArrangement");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellDefaultThresholds, DUK_VARARGS, "VoltageSetCellDefaultThresholds");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellLimits, 2, "VoltageSetCellLimits");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCell, 2, "VoltageSetCell");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageResetCells, DUK_VARARGS, "VoltageResetCells");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltagesRestartCells, 0, "VoltagesRestartCells");
+
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellArrangement, 2, "TemperatureSetCellArrangement");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellDefaultThresholds,  2, "TemperatureSetCellDefaultThresholds");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellLimits, 2, "TemperatureSetCellLimits");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCell, 2, "TemperatureSetCell");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureResetCells, DUK_VARARGS, "TemperatureResetCells");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureRestartCells, 0, "TemperatureRestartCells");
+  MyDuktape.RegisterDuktapeObject(dto_bms);
+  }
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 void OvmsBmsMonitor::ClearVoltages()
   {
@@ -1059,3 +1083,136 @@ void OvmsBmsMonitor::bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* 
     }
   MyBmsMonitor.FormatBmsAlerts(verbosity, writer, true);
   }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsVoltageSetCellArrangement(duk_context *ctx)
+  {
+  // VoltageSetCellArrangement( readings, readingspermodule)
+  int readings = duk_to_int(ctx, 0);
+  int permodule = duk_to_int(ctx, -1);
+  MyBmsMonitor.SetCellArrangementVoltage(readings, permodule);
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsVoltageSetCellDefaultThresholds(duk_context *ctx)
+  {
+  // VoltageSetCellDefaultThresholds(warn, alert [, max_grad] [, max_std_dev])``
+  duk_idx_t numArgs = duk_get_top(ctx);
+  if (numArgs < 2)
+    return 0;
+  float warn = duk_to_number(ctx, 0);
+  float alert = duk_to_number(ctx, -1);
+  float maxgrad = -1;
+  float maxsddev = -1;
+  if (numArgs > 2)
+    {
+    maxgrad = duk_to_number(ctx, -2);
+    if (numArgs > 3)
+      maxsddev = duk_to_number(ctx, -3);
+    }
+
+  MyBmsMonitor.SetCellDefaultThresholdsVoltage(warn, alert, maxgrad, maxsddev);
+
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsVoltageSetCellLimits(duk_context *ctx)
+  {
+  float minv = duk_to_number(ctx, 0);
+  float maxv = duk_to_number(ctx, -1);
+
+  MyBmsMonitor.SetCellLimitsVoltage(minv, maxv);
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsVoltageSetCell(duk_context *ctx)
+  {
+  // VoltageSetCell(int index, float value)
+  float index = duk_to_int(ctx, 0);
+  float val = duk_to_number(ctx, -1);
+
+  MyBmsMonitor.SetCellVoltage(index, val);
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsVoltageResetCells(duk_context *ctx)
+  {
+  // VoltageResetCells( [full] )
+  //
+
+  duk_idx_t numArgs = duk_get_top(ctx);
+  bool full = false;
+
+  if (numArgs > 0)
+    full = duk_to_boolean(ctx, 0);
+
+  MyBmsMonitor.ResetCellVoltages(full);
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsVoltagesRestartCells(duk_context *ctx)
+  {
+  MyBmsMonitor.RestartCellVoltages();
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsTemperatureSetCellArrangement(duk_context *ctx)
+  {
+  // TemperatureSetCellArrangement( readings, readingspermodule)
+  int readings = duk_to_int(ctx, 0);
+  int permodule = duk_to_int(ctx, -1);
+  MyBmsMonitor.SetCellArrangementTemperature(readings, permodule);
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsTemperatureSetCellDefaultThresholds(duk_context *ctx)
+  {
+  // TemperatureSetCellDefaultThresholds(warn, alert)
+  float warn = duk_to_number(ctx, 0);
+  float alert = duk_to_number(ctx, -1);
+  MyBmsMonitor.SetCellDefaultThresholdsTemperature(warn, alert);
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsTemperatureSetCellLimits(duk_context *ctx)
+  {
+  // TemperatureSetCellLimits(min, max)
+  float minv = duk_to_number(ctx, 0);
+  float maxv = duk_to_number(ctx, -1);
+
+  MyBmsMonitor.SetCellLimitsTemperature(minv, maxv);
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsTemperatureSetCell(duk_context *ctx)
+  {
+  // TemperatureSetCell(index, value)
+  float index = duk_to_int(ctx, 0);
+  float val = duk_to_number(ctx, -1);
+
+  MyBmsMonitor.SetCellTemperature(index, val);
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsTemperatureResetCells(duk_context *ctx)
+  {
+  // TemperatureResetCells( [full] )
+
+  duk_idx_t numArgs = duk_get_top(ctx);
+  bool full = false;
+
+  if (numArgs > 0)
+    full = duk_to_boolean(ctx, 0);
+
+  MyBmsMonitor.ResetCellTemperatures(full);
+  return 0;
+  }
+
+duk_ret_t OvmsBmsMonitor::DukOvmsBmsTemperatureRestartCells(duk_context *ctx)
+  {
+  // TemperatureRestartCells()
+  MyBmsMonitor.RestartCellTemperatures();
+  return 0;
+  }
+
+#endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
