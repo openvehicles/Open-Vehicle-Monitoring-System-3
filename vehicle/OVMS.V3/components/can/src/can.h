@@ -60,6 +60,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #define CAN_MAXBUSES 5            // Limit of number of CAN buses supported
+#define CAN_RXSTALL_THRESHOLD 20  // Seconds of frozen RX counter before probing for a wedged RX path
 
 class canbus; // Forward definition
 
@@ -156,6 +157,7 @@ typedef struct
   uint16_t watchdog_resets;         // Watchdog reset counter
   uint16_t error_resets;            // Error resolving reset counter
   uint32_t error_time;              // monotonictime of last error state detection
+  uint16_t rxstall_resets;          // RX path wedge reset counter (hardware confirmed, sleep-safe)
   } CAN_status_t;
 
 // CAN error states
@@ -317,6 +319,13 @@ class canbus : public pcp, public InternalRamAllocated
     virtual bool AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesReceived);
     virtual void TxCallback(CAN_frame_t* frame, bool success);
 
+    // Driver-specific hardware confirmation of a wedged RX path: called by the
+    // stall watchdog (BusTicker10) only after our RX counter has been frozen
+    // for the check interval. Must be a live register readback (SPI etc.), not
+    // a state cache, and must return false whenever the bus is idle/asleep with
+    // no pending unserviced RX data. Default: no hardware confirmation available.
+    virtual bool CheckRxStalled() { return false; }
+
   protected:
     virtual esp_err_t QueueWrite(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     virtual void BusTicker10(std::string event, void* data);
@@ -338,6 +347,8 @@ class canbus : public pcp, public InternalRamAllocated
     uint32_t m_status_chksum;
     uint32_t m_watchdog_timer;
     uint32_t m_state;             // state bitset
+    uint32_t m_rxstall_checkpoint; // last m_status.packets_rx value observed by the stall watchdog
+    uint32_t m_rxstall_since;      // monotonictime the checkpoint last changed
     QueueHandle_t m_txqueue;
     int m_busnumber;
 

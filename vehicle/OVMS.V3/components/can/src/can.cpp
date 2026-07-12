@@ -388,6 +388,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     writer->printf("Wdg Timer: %20" PRId32 " sec(s)\n",monotonictime-sbus->m_watchdog_timer);
     }
   writer->printf("Err Resets:%20d\n",sbus->m_status.error_resets);
+  writer->printf("Wedge Rsts:%20d\n",sbus->m_status.rxstall_resets);
   }
 
 void can_explain_flags(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -773,7 +774,7 @@ bool canbus::StatusChanged()
   uint32_t chksum = m_status.errors_rx + m_status.errors_tx
     + m_status.invalid_rx + m_status.rxbuf_overflow + m_status.txbuf_overflow
     + m_status.error_flags + m_status.txbuf_delay + m_status.tx_fails
-    + m_status.watchdog_resets + m_status.error_resets;
+    + m_status.watchdog_resets + m_status.error_resets + m_status.rxstall_resets;
   if (chksum != m_status_chksum)
     {
     m_status_chksum = chksum;
@@ -1339,6 +1340,8 @@ void canbus::ClearStatus()
   memset(&m_status, 0, sizeof(m_status));
   m_status_chksum = 0;
   m_watchdog_timer = monotonictime;
+  m_rxstall_checkpoint = 0;
+  m_rxstall_since = monotonictime;
   }
 
 void canbus::AttachDBC(dbcfile *dbcfile)
@@ -1393,6 +1396,29 @@ void canbus::BusTicker10(std::string event, void* data)
     {
     // Vehicle is OFF, so just tickle the watchdog timer
     m_watchdog_timer = monotonictime;
+    }
+
+  // RX path wedge detection: independent from the inactivity watchdog above,
+  // which only runs while the vehicle is on and cannot tell a legitimately
+  // sleeping bus (e.g. KCAN with car off / CCS DC charging: zero traffic is
+  // normal) from a wedged one. Runs whenever the bus is started, regardless
+  // of vehicle-on state. A stall is declared ONLY when our RX counter has
+  // been frozen for the check interval AND the driver hardware-confirms
+  // (CheckRxStalled()) unserviced RX data is pending -- pure RX silence never
+  // triggers a reset on its own.
+  if (m_mode == CAN_MODE_ACTIVE || m_mode == CAN_MODE_LISTEN)
+    {
+    if (m_status.packets_rx != m_rxstall_checkpoint)
+      {
+      m_rxstall_checkpoint = m_status.packets_rx;
+      m_rxstall_since = monotonictime;
+      }
+    else if ((monotonictime - m_rxstall_since) >= CAN_RXSTALL_THRESHOLD && CheckRxStalled())
+      {
+      ESP_LOGE(TAG, "%s RX path wedged (hardware RX pending, not serviced) - resetting bus", m_name);
+      Reset();
+      m_status.rxstall_resets++;
+      }
     }
   }
 
