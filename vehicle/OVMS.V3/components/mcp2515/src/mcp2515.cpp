@@ -642,15 +642,18 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesR
   uint8_t errflag = p[1];
   uint8_t txb0ctrl = p[4];
 
+  // Invariant: whoever returns false (drain loop ends) with INT deasserted must
+  // re-arm the GPIO interrupt here -- there are two such exit points below (this
+  // early "nothing pending" return, and the final pin-level check at the bottom
+  // of the function), and both must re-arm. Re-enabling any earlier, while a flag
+  // we have not yet serviced could still be asserted, would let the ISR storm
+  // again immediately. Each mcp2515 instance owns a dedicated INT GPIO (see
+  // ovms_peripherals.cpp: can2/can3 use distinct VSPI_PIN_MCP2515_*_INT pins),
+  // so re-arming this pin can never re-enable while a sibling instance on a
+  // shared line is still asserting -- there is no shared line in this topology.
   if (intstat == 0)
     {
-    // All interrupts handled: CANINTF read back clear, so INT is high. Re-arm the
-    // level interrupt now that the source is drained -- re-enabling any earlier,
-    // while a flag we have not yet serviced could still be asserted, would let the
-    // ISR storm again immediately. Each mcp2515 instance owns a dedicated INT GPIO
-    // (see ovms_peripherals.cpp: can2/can3 use distinct VSPI_PIN_MCP2515_*_INT
-    // pins), so re-arming this pin can never re-enable while a sibling instance on
-    // a shared line is still asserting -- there is no shared line in this topology.
+    // All interrupts handled: CANINTF read back clear, so INT is already high.
     gpio_intr_enable((gpio_num_t)m_intpin);
     return false;
     }
@@ -850,8 +853,16 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesR
     LogStatus(log_status);
     }
 
-  // Read the interrupt pin status and if it's still active (low), require another interrupt handling iteration
-  return !gpio_get_level((gpio_num_t)m_intpin);
+  // Read the interrupt pin status and if it's still active (low), require another
+  // interrupt handling iteration. If it has gone high, this handled interrupt was
+  // the last pending source -- re-arm here too (see invariant comment above; this
+  // is the second, and only other, false-returning exit point of this function).
+  if (gpio_get_level((gpio_num_t)m_intpin))
+    {
+    gpio_intr_enable((gpio_num_t)m_intpin);
+    return false;
+    }
+  return true;
   }
 
 

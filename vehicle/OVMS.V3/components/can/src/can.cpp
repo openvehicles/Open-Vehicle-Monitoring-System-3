@@ -389,6 +389,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     }
   writer->printf("Err Resets:%20d\n",sbus->m_status.error_resets);
   writer->printf("Wedge Rsts:%20d\n",sbus->m_status.rxstall_resets);
+  writer->printf("Isr Ovrflw:%20d\n",sbus->m_status.isr_queue_overrun);
   }
 
 void can_explain_flags(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
