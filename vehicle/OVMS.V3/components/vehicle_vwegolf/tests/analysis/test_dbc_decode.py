@@ -310,3 +310,42 @@ def test_lwi_steering_angle_static_when_parked(cap_idle, dbc):
     assert vals.pop() == pytest.approx(5.1), "expected 5.1 deg"
     speeds = {v for _, v in cap_idle.decode(dbc, "086", "SteeringRotSpeed")}
     assert speeds == {0}, f"rot speed should be 0 parked, got {speeds}"
+
+
+# ---------------------------------------------------------------------------
+# 0x594 ChargeManagement — CCS DC charge (all-…-20260712-124542)
+# ---------------------------------------------------------------------------
+
+CAP_CCS_CHARGE = os.path.join(
+    CANDUMPS,
+    "all-3.3.006-269-gab4f52853_ota_0_edge-20260712-124542.crtd")
+
+
+@pytest.fixture(scope="module")
+def cap_ccs():
+    return load(CAP_CCS_CHARGE, bus=3)
+
+
+def test_chargetype_ccs_dc(cap_ccs, dbc):
+    """ChargeType=2 (DC_CCS) during CCS charge; see 20260712-124542.md Notes.
+
+    ChargeType/ChargePort overlap makes cantools raise DecodeError on every
+    0x594 frame, so cap.decode() returns empty — extract bits 42-43 raw
+    (byte 5, bits 2-3) per the vwegolf.dbc SG_ definition.
+    """
+    assert cap_ccs.decode(dbc, "594", "ChargeType") == [], \
+        "cantools 594 decode started working — switch this test to decode()"
+    ct = [(t, (d[5] >> 2) & 0x3) for t, d in cap_ccs.by_id["594"]]
+    charging = [v for t, v in ct if 214 <= t <= 278]
+    assert charging and set(charging) == {2}, \
+        f"expected ChargeType=2 throughout CCS window, got {set(charging)}"
+    assert ct[0][1] == 0 and ct[-1][1] == 0, "ChargeType should be 0 outside charge"
+
+
+def test_charging_bit_ccs_window(cap_ccs):
+    """0x594 d[3] bit5 (v.c.charging source) rises 206.6, falls 278.6 — exactly
+    two transitions; see 20260712-124542.md Sequence."""
+    ts = transitions(cap_ccs.by_id["594"], 3, mask=0x20)
+    assert len(ts) == 2, f"expected 2 transitions, got {len(ts)}"
+    assert ts[0][0] == pytest.approx(206.6, abs=0.5)
+    assert ts[1][0] == pytest.approx(278.6, abs=0.5)

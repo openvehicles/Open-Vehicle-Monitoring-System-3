@@ -31,3 +31,4 @@ id	bus	status	notes
 # FCAN decode baseline: can2-3.3.005-800-gc60d79ed-dirty_ota_1_edge-20260412-175611.crtd (CCS idle, 26127 frames)
 # Per-cap MD format: 5–10s pre/post idle, log stimulus + timestamps
 # Audit scripts: tests/analysis/scratch/apr7_*.py; obc_569_analysis.py (caps 22-24)
+28	all	done	flash-regression hunt w/ metrics sidecar: clima→drive→CCS 0.5kWh; NO awake/on/charging flap (all flips match frames); H2 not reproduced; ChargeType=2 DC_CCS first observed on 0x594; KCAN sleeps mid-CCS-charge; cantools 594 decode broken (bit overlap) — `…-124542`
