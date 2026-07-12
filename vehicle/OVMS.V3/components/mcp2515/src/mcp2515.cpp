@@ -466,6 +466,25 @@ esp_err_t mcp2515::ViewRegisters()
 
 
 /**
+ * CheckRxStalled: hardware confirmation of a wedged RX path
+ *
+ * Called by the framework's stall watchdog (canbus::BusTicker10) only after
+ * the RX packet counter has been frozen for the check interval. Reads
+ * CANINTF via SPI (slow path, not the hot ISR/drain path) and reports a wedge
+ * only if a RX buffer full flag is set and thus not currently being serviced
+ * by AsynchronousInterruptHandler(). Pure RX silence (RX0IF/RX1IF clear) is
+ * NOT a stall -- the bus may simply be asleep (e.g. KCAN with car off).
+ */
+bool mcp2515::CheckRxStalled()
+  {
+  uint8_t buf[16];
+  uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 1, 2, CMD_READ, REG_CANINTF);
+  uint8_t intstat = p[0];
+  return (intstat & (CANINTF_RX0IF | CANINTF_RX1IF)) != 0;
+  }
+
+
+/**
  * WriteFrame: deliver a frame to the hardware for transmission (driver internal)
  */
 esp_err_t mcp2515::WriteFrame(const CAN_frame_t* p_frame)

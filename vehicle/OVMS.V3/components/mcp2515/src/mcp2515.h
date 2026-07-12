@@ -95,6 +95,7 @@ class mcp2515 : public canbus
     void SetPowerMode(PowerMode powermode) override;
     bool GetErrorFlagsDesc(std::string &buffer, uint32_t error_flags) override;
     void SetTransceiverMode(CAN_mode_t mode);
+    bool CheckRxStalled() override;
 
   public:
     static void shell_setaccfilter(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
