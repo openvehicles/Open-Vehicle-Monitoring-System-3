@@ -135,7 +135,7 @@ void OvmsVehicleNiuGTEVO::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
  */
 void OvmsVehicleNiuGTEVO::WebInit()
 {
-  MyWebServer.RegisterPage("/xnevo/battmon", "BMS View", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  SetBMSWebmoduleEnabled(true);
   MyWebServer.RegisterPage("/xnevo/settings", "Setup", WebCfgCommon, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
@@ -144,7 +144,7 @@ void OvmsVehicleNiuGTEVO::WebInit()
  */
 void OvmsVehicleNiuGTEVO::WebDeInit()
 {
-  MyWebServer.DeregisterPage("/xnevo/battmon");
+  SetBMSWebmoduleEnabled(false);
   MyWebServer.DeregisterPage("/xnevo/settings");
 }
 

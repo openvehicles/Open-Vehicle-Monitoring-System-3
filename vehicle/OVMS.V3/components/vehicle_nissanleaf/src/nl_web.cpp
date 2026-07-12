@@ -53,7 +53,7 @@ void OvmsVehicleNissanLeaf::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xnl/features", "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xnl/battery",  "Battery config",   WebCfgBattery,                       PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/bms/cellmon",  "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  RegisterBMSPage();
 }
 
 /**
@@ -63,7 +63,7 @@ void OvmsVehicleNissanLeaf::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xnl/features");
   MyWebServer.DeregisterPage("/xnl/battery");
-  MyWebServer.DeregisterPage("/bms/cellmon");
+  DeregisterBMSPage();
 }
 
 /**
