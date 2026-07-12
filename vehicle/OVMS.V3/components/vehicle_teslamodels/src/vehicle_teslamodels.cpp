@@ -413,10 +413,6 @@ void OvmsVehicleTeslaModelS::Notify12vRecovered()
   { // Not supported on Model S
   }
 
-void OvmsVehicleTeslaModelS::NotifyBmsAlerts()
-  { // Not supported on Model S
-  }
-
 #ifdef CONFIG_OVMS_COMP_TPMS
 
 bool OvmsVehicleTeslaModelS::TPMSRead(std::vector<uint32_t> *tpms)

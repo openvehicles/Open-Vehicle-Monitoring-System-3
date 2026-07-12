@@ -456,11 +456,6 @@ void OvmsVehicleToyotaRav4Ev::Notify12vRecovered()
   { // Not supported on RAV4 EV
   }
 
-void OvmsVehicleToyotaRav4Ev::NotifyBmsAlerts()
-  { // Not supported on RAV4 EV
-  }
-
-
 class OvmsVehicleToyotaRav4EvInit
   {
   public: OvmsVehicleToyotaRav4EvInit();
