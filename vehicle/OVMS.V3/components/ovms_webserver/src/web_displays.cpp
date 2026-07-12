@@ -572,12 +572,13 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
  * HandleBmsCellMonitor: display cell voltages & temperatures
  * 
  * Note: this is not enabled by default, as some vehicles do not provide BMS data.
- * To enable, include this in the vehicle init:
- *   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+ * This will get enabled if BMS Voltage/Temperature Cells are set on MyBmsMonitor
+ * To enable explicitly:
+ *   MyBmsMonitor.SetWebmoduleEnabled(true);
  * You can change the URL path, title, menu association and authentication as you like.
- * For a clean shutdown, add
- *   MyWebServer.DeregisterPage("/bms/cellmon");
- * …in your vehicle cleanup.
+ * Although not strictly necessary,
+ *   MyBmsMonitor.SetWebmoduleEnabled(false);
+ * …in your vehicle cleanup will hide the page.
  */
 void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
 {

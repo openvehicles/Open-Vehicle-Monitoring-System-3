@@ -137,6 +137,18 @@ class OvmsBmsMonitor : public InternalRamAllocated
       {
       ClearVoltages();
       ClearTemperatures();
+      SetWebmoduleEnabled(false);
+      }
+    void SetWebmoduleEnabled(bool enabled);
+    void RegisterPage()
+      {
+      // Force it at the current position
+      SetWebmoduleEnabled(false);
+      SetWebmoduleEnabled(true);
+      }
+    void DeregisterPage()
+      {
+      SetWebmoduleEnabled(false);
       }
   public:
     enum class bms_status_t

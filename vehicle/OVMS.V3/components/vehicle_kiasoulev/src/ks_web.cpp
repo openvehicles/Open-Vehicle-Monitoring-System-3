@@ -53,7 +53,7 @@ using namespace std;
 void OvmsVehicleKiaSoulEv::WebInit()
 {
   // vehicle menu:
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyBmsMonitor.SetWebmoduleEnabled(true);
   MyWebServer.RegisterPage("/xks/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xks/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
 }

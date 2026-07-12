@@ -64,9 +64,8 @@ using namespace std;
 void OvmsVehicleMaxed3::WebInit()
 {
     // vehicle menu:
-    
+    MyBmsMonitor.SetWebmoduleEnabled(true);
     MyWebServer.RegisterPage("/xmg/battery",  "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
-    MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
 }
 /**

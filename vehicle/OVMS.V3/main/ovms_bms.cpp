@@ -102,6 +102,7 @@ OvmsBmsMonitor::OvmsBmsMonitor()
 OvmsBmsMonitor::~OvmsBmsMonitor()
   {
   MyEvents.DeregisterEvent(TAG);
+  SetWebmoduleEnabled(false);
   ClearVoltages();
   ClearTemperatures();
   }
@@ -142,6 +143,7 @@ void OvmsBmsMonitor::ClearVoltages()
 
 void OvmsBmsMonitor::SetCellArrangementVoltage(int readings, int readingspermodule)
   {
+  bool wasenabled = IsEnabled(bms_status_t::Both);
   ClearVoltages();
   m_bms_voltages = new float[readings];
   m_bms_vmins = new float[readings];
@@ -155,7 +157,10 @@ void OvmsBmsMonitor::SetCellArrangementVoltage(int readings, int readingspermodu
   ResetCellVoltages(true);
   if (readings > 0)
     m_autonotifications = true;
-  SetWebmoduleEnabled(IsEnabled(bms_status_t::Both));
+  bool isenabled = IsEnabled(bms_status_t::Both);
+  // Only set web-module status if transitioning from or to 'not Enabled' state
+  if (!isenabled || !wasenabled)
+    SetWebmoduleEnabled(isenabled);
   }
 
 // Internal entry for changing cell arrangements.
@@ -1011,6 +1016,20 @@ bool OvmsBmsMonitor::IsEnabled(bms_status_t statusmode)
     default:
       return (m_bms_readingspermodule_v > 0) || (m_bms_readingspermodule_t > 0);
     }
+  }
+
+void OvmsBmsMonitor::SetWebmoduleEnabled(bool enabled)
+  {
+  if (enabled == m_webmodule_enabled)
+    return;
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  if (enabled)
+    MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  else
+    MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
+  m_webmodule_enabled = enabled;
   }
 
 void OvmsBmsMonitor::bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)

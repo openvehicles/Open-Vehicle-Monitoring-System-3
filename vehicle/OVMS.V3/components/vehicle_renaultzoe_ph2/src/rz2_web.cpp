@@ -279,7 +279,7 @@ void OvmsVehicleRenaultZoePh2::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
  */
 void OvmsVehicleRenaultZoePh2::WebInit()
 {
-  MyWebServer.RegisterPage("/xrz2/battmon", "BMS View", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyBmsMonitor.SetWebmoduleEnabled(true);
   MyWebServer.RegisterPage("/xrz2/settings", "Setup", WebCfgCommon, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xrz2/preconditioning", "Preconditioning Schedule", OvmsWebServer::HandleCfgPreconditionSchedule, PageMenu_Vehicle, PageAuth_Cookie);
 }
@@ -289,7 +289,7 @@ void OvmsVehicleRenaultZoePh2::WebInit()
  */
 void OvmsVehicleRenaultZoePh2::WebDeInit()
 {
-  MyWebServer.DeregisterPage("/xrz2/battmon");
+  MyBmsMonitor.SetWebmoduleEnabled(false);
   MyWebServer.DeregisterPage("/xrz2/settings");
   MyWebServer.DeregisterPage("/xrz2/preconditioning");
 }

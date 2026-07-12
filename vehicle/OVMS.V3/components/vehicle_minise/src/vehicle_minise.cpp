@@ -335,8 +335,7 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // Add the BMS cell monitor to the web UI
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle,
-    PageAuth_Cookie);
+  MyBmsMonitor.SetWebmoduleEnabled(true);
 #endif
 }
 
@@ -346,7 +345,7 @@ OvmsVehicleMiniSE::~OvmsVehicleMiniSE()
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // Remove the BMS cell monitor to the web UI
-  MyWebServer.DeregisterPage("/bms/cellmon");
+  MyBmsMonitor.SetWebmoduleEnabled(false);
 #endif
 }
 
