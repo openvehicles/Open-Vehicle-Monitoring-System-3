@@ -158,6 +158,9 @@ typedef struct
   uint16_t error_resets;            // Error resolving reset counter
   uint32_t error_time;              // monotonictime of last error state detection
   uint16_t rxstall_resets;          // RX path wedge reset counter (hardware confirmed, sleep-safe)
+  uint16_t isr_queue_overrun;       // ISR->task service ping dropped (queue full); not a lost
+                                     // frame -- raw data stays latched in the HW RX buffer, the
+                                     // RX-stall watchdog is the backstop that re-arms the line
   } CAN_status_t;
 
 // CAN error states
