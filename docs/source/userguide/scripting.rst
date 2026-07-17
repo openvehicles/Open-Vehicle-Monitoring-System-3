@@ -19,6 +19,14 @@ directory are executed. Event scripts are executed in alphanumerical order of th
 practice is to prefix script names with 2-3 digit numbers in steps of 10 or 100 (i.e. first script 
 named ``50-…``), so new scripts can easily be integrated at a specific place.
 
+.. note::
+  Commands executed from event scripts **block the event processing** while running. Blocking for
+  too long can cause issues for other event handlers and can trigger a watchdog reboot.
+
+  Beginning with main release 3.3.006 (edge 3.3.005-723), you can use the new ``run``
+  command to execute long running commands in a background task, with the command
+  output being sent as a notification. See ``run ?`` for details.
+
 Output of background scripts without console association (e.g. event scripts) will be sent to the 
 log with tag ``ovms-duk-util`` at "info" level.
 
@@ -742,6 +750,15 @@ OvmsCommand
         Detected boot reason: PowerOn (1/14)
         Crash counters: 0 total, 0 early
 
+    .. note::
+      Commands executed via ``OvmsCommand.Exec()`` **block the Duktape process** while running. Blocking for
+      too long can cause issues for the general event processing and can trigger a watchdog reboot.
+
+      Beginning with main release 3.3.006 (edge 3.3.005-723), you can use the new ``run``
+      command to execute long running commands in a background task, with the command
+      output being sent as a notification. See ``run ?`` for details.
+
+
 - ``OvmsCommand.Register( function(cmd, argv){}, parent, command, description, param_description, minargs, maxargs)``
     The OvmsCommand “Register” functions registers a JS function as command on the cli.
     A second call to RegisterCommand with the same will update the details of same command.
@@ -1227,17 +1244,27 @@ which contains the following methods:
 
 The ``Poll`` object is for the polling subsystem and has the following methods:
 
-- ``OvmsPoller.Poll.Add( list_ident, bus, dbc_file, poll_list [, poll_offset])``: Adds a poll list to the poller.
+- | ``OvmsPoller.Poll.Add( list_ident, bus, dbc_file, poll_list [, poll_offset])``
+  | Adds a poll list to the poller.
 
-  - ``list_ident`` - unique name to identify this list of polls.
-  - ``bus`` - Name of bus (eg "can1")
-  - ``dbc_file`` - Set to true to use the default dbc file on the bus for decoding. (decode sections ignored)
-                   - Set to a name to use the specifed dbc file.
-  - ``poll_list`` - Set to an object as follows
+  +-----------------+--------------------------------------------------------+
+  | ``list_ident``  | Unique name to identify this list of polls.            |
+  +-----------------+--------------------------------------------------------+
+  | ``bus``         | Name of bus (eg "can1")                                |
+  +-----------------+--------------------------------------------------------+
+  | ``dbc_file``    | * Set to true to use the default dbc file on the bus   |
+  |                 |   for decoding. (decode sections ignored)              |
+  |                 | * Set to a name to use the specifed dbc file.          |
+  +-----------------+--------------------------------------------------------+
+  | ``poll_list``   | Set to an object defined below:                        |
+  +-----------------+--------------------------------------------------------+
+  | ``poll_offset`` | (optional) Offset of 4 poll states. Default is [0..3]  |
+  |                 | but an offset of 4 would be states 4..7                |
+  +-----------------+--------------------------------------------------------+
 
      .. code-block:: javascript
 
-       [
+       poll_list = [
          {
            "send": {
               "txid": <int>,
@@ -1249,6 +1276,7 @@ The ``Poll`` object is for the polling subsystem and has the following methods:
               "request": <string>|<Uint8Array>,   // hex encoded string or binary byte array
             },
            "states": [ t0, t1, t2, t3 ], // Repeating poll states (offset by 'poll_offset' param) only 4 allowed.
+           "shift": [ t0, t1, t2, t3 ], // Poll time shift per state in seconds.
            "decode": { // [Not used if dbc_decode is true]
              <metric.name>|<value_name> :
                {
@@ -1282,14 +1310,16 @@ The ``Poll`` object is for the polling subsystem and has the following methods:
          }
        ]
 
-  - ``poll_offset``: (optional) Offset of 4 poll states. Default is [0..3] but an offset of 4 would be states 4..7
-
-
-- ``OvmsPoller.Poll.Remove([busno,]list_ident)``: Removes the poll list ``list_ident``.
-- ``OvmsPoller.Poll.GetState([busno])``: Gets the 'poll state' (for the bus)
-- ``OvmsPoller.Poll.SetState([busno,] state)``: Sets the 'poll state' (for the bus)
-- ``OvmsPoller.Poll.Request(request, callback_obj)``: Performs a once-off asynchronous OBD request.
-- ``OvmsPoller.Poll.SetTrace(bool)``: Sets the trace mode for Duktape Polling configurations
+- | ``OvmsPoller.Poll.Remove([busno,]list_ident)``
+  | Removes the poll list ``list_ident``.
+- | ``OvmsPoller.Poll.GetState([busno])``
+  | Gets the 'poll state' (for the bus)
+- | ``OvmsPoller.Poll.SetState([busno,] state)``
+  | Sets the 'poll state' (for the bus)
+- | ``OvmsPoller.Poll.SetTrace(bool)``
+  | Sets the trace mode for Duktape Polling configurations
+- | ``OvmsPoller.Poll.Request(request, callback_obj)``
+  | Performs a once-off asynchronous OBD request.
 
   - ``request``: Description of the request
 

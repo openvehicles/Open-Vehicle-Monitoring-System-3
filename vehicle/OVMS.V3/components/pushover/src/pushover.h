@@ -32,10 +32,11 @@
 #include "ovms_config.h"
 #include "ovms_notify.h"
 #include "ovms_buffer.h"
+#include "mongoose_client.h"
 #include <string>
 
 
-class Pushover : public InternalRamAllocated
+class Pushover : public InternalRamAllocated, MongooseClient
   {
   public:
     Pushover();

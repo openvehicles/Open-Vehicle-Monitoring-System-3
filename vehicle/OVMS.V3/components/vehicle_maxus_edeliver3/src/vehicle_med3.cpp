@@ -46,6 +46,7 @@ static const char *TAG = "v-maxed3";
 #define STATE_ON              1     // Pollstate 1 - POLLSTATE_ON       - car is on
 #define STATE_RUNNING         2     // Pollstate 2 - POLLSTATE_RUNNING  - car is driving
 #define STATE_CHARGING        3     // Pollstate 3 - POLLSTATE_CHARGING - car is charging
+const char* poll_state_name[] = { "OFF", "ON", "RUNNING", "CHARGING" };
 
 // RX buffer access macros: b=byte#
 #define RXB_BYTE(b)           m_rxbuf[b]
@@ -154,7 +155,7 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
         m_consump_raw = MyMetrics.InitFloat("xmg.v.consump.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
         m_consumprange_raw = MyMetrics.InitFloat("xmg.v.consumprange.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
         m_watt_hour_raw = MyMetrics.InitFloat("xmg.v.watt.hour.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
-        m_poll_bmsstate = MyMetrics.InitFloat("xmg.bmsstate.poll", SM_STALE_HIGH); //temp to monitor bms state
+        m_poll_bmsstate = MyMetrics.InitInt("xmg.bmsstate.poll", SM_STALE_HIGH); //temp to monitor bms state
     
         // Register config params
         MyConfig.RegisterParam("xmg", "Maxus EV configuration", true, true);
@@ -302,6 +303,7 @@ void OvmsVehicleMaxed3::SetBmsStatus(uint8_t status)
     switch (status) {
 //        case StartingCharge:
         case Charging:
+            StdMetrics.ms_v_env_on->SetValue(false);
             StdMetrics.ms_v_charge_type->SetValue("type2");
             StdMetrics.ms_v_door_chargeport->SetValue(true);
             StdMetrics.ms_v_charge_pilot->SetValue(true);
@@ -310,10 +312,9 @@ void OvmsVehicleMaxed3::SetBmsStatus(uint8_t status)
             StdMetrics.ms_v_charge_state->SetValue("charging");
             StdMetrics.ms_v_charge_climit->SetValue(StdMetrics.ms_v_charge_current->AsFloat());
             StdMetrics.ms_v_charge_power->SetValue((StdMetrics.ms_v_charge_current->AsFloat() * StdMetrics.ms_v_charge_voltage->AsFloat()) / 1000);
-            PollSetState(STATE_CHARGING);
-            
             break;
         case CcsCharging:
+            StdMetrics.ms_v_env_on->SetValue(false);
             StdMetrics.ms_v_charge_type->SetValue("ccs");
             StdMetrics.ms_v_door_chargeport->SetValue(true);
             StdMetrics.ms_v_charge_pilot->SetValue(true);
@@ -324,7 +325,6 @@ void OvmsVehicleMaxed3::SetBmsStatus(uint8_t status)
             StdMetrics.ms_v_charge_power->SetValue(-StdMetrics.ms_v_bat_power->AsFloat());
             StdMetrics.ms_v_charge_climit->SetValue(-StdMetrics.ms_v_bat_current->AsFloat());
             StdMetrics.ms_v_charge_voltage->SetValue(StdMetrics.ms_v_bat_voltage->AsFloat());
-            PollSetState(STATE_CHARGING);
             break;
         case Running:
             StdMetrics.ms_v_env_on->SetValue(true);
@@ -332,9 +332,9 @@ void OvmsVehicleMaxed3::SetBmsStatus(uint8_t status)
             StdMetrics.ms_v_charge_inprogress->SetValue(false);
             StdMetrics.ms_v_door_chargeport->SetValue(false);
             StdMetrics.ms_v_charge_type->SetValue("");
-            PollSetState(STATE_RUNNING);
             break;
         default:
+            StdMetrics.ms_v_env_on->SetValue(false);
             StdMetrics.ms_v_charge_pilot->SetValue(false);
             StdMetrics.ms_v_charge_inprogress->SetValue(false);
             StdMetrics.ms_v_door_chargeport->SetValue(false);
@@ -425,25 +425,40 @@ void OvmsVehicleMaxed3::Ticker1(uint32_t ticker)
 
 void OvmsVehicleMaxed3::PollerStateTicker(canbus *bus)
 {
-    bool charging12v = StdMetrics.ms_v_env_charging12v->AsBool();
-    StdMetrics.ms_v_env_charging12v->SetValue(StdMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);
+    // Derive 12V system state from voltage level:
+    float bat_12v_voltage = StdMetrics.ms_v_bat_12v_voltage->AsFloat();
+    bool charging12v = (bat_12v_voltage >= 12.9);
+    StdMetrics.ms_v_env_charging12v->SetValue(charging12v);
+
     //StdMetrics.ms_v_charge_inprogress->SetValue(-StdMetrics.ms_v_bat_power->AsFloat() >=  1.000f);
-    m_poll_state_metric->SetValue(m_poll_state);
-    
-  // Determine new polling state:
- // int poll_state;
-        if (charging12v)
-        {
-          //  poll_state = STATE_ON;
-            PollSetState(STATE_ON);
-            StdMetrics.ms_v_env_awake->SetValue(true);
-        }
-        else
-        {
-         //   poll_state = STATE_OFF;
-            PollSetState(STATE_OFF);
-            StdMetrics.ms_v_env_awake->SetValue(false);
-        }
+
+    // Determine new polling state:
+    uint8_t new_pollstate;
+    if (StdMetrics.ms_v_charge_inprogress->AsBool() == true) {
+        new_pollstate = STATE_CHARGING;
+    }
+    else if (StdMetrics.ms_v_env_on->AsBool() == true) {
+        new_pollstate = STATE_RUNNING;
+    }
+    else if (charging12v) {
+        new_pollstate = STATE_ON;
+    }
+    else {
+        new_pollstate = STATE_OFF;
+    }
+
+    // Apply polling state change:
+    if (new_pollstate != m_poll_state)
+    {
+        ESP_LOGI(TAG, "PollerStateTicker: changing poll state %s->%s, BmsStatus=%d, 12VLevel=%.1f",
+            poll_state_name[m_poll_state], poll_state_name[new_pollstate],
+            m_poll_bmsstate->AsInt(), bat_12v_voltage);
+        PollSetState(new_pollstate);
+        m_poll_state_metric->SetValue(new_pollstate);
+    }
+
+    // Vehicle awake state follows 12V system state (for processEnergy()):
+    StdMetrics.ms_v_env_awake->SetValue(charging12v);
 }
 
 // Vehicle framework registration

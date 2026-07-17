@@ -126,6 +126,30 @@ typedef enum {
   UP_Driving,
 } use_phase_t;
 
+
+/**
+ * VW eUp worker task job definition
+ *   (currently only used for T26 connection)
+ */
+
+enum VWeUpJobType
+{
+  VWUJ_NOP = 0,
+  VWUJ_EXIT,                      // payload: -
+  VWUJ_T26_EcuHeartBeat,          // payload: -
+  VWUJ_T26_Profile0Retry,         // payload: -
+};
+
+struct VWeUpJob
+{
+  VWeUpJobType type;
+  // no jobs requiring payload defined yet
+};
+
+
+/**
+ * VW eUp vehicle class
+ */
 class OvmsVehicleVWeUp : public OvmsVehicle
 {
   // --------------------------------------------------------------------------
@@ -251,6 +275,19 @@ private:
   int m_timermode_ticker;
   bool m_timermode_new;
 
+
+public:
+  bool StartJobTask();
+  static void JobTaskEntry(void *pvParameters);
+  void JobTask();
+  bool QueueJob(const VWeUpJob &job, int maxwait_ms=0);
+
+public:
+  QueueHandle_t     m_jobqueue = NULL;
+private:
+  TaskHandle_t      m_jobtask = NULL;
+
+
   // --------------------------------------------------------------------------
   // Web UI Subsystem
   //  - implementation: vweup_web.(h,cpp)
@@ -299,9 +336,9 @@ public:
   void ReadProfile0(uint8_t *data);
   void WriteProfile0();
   void ActivateProfile0();
-  SemaphoreHandle_t xWakeSemaphore;
-  SemaphoreHandle_t xChargeSemaphore;
-  SemaphoreHandle_t xCurrentSemaphore;
+  SemaphoreHandle_t xWakeSemaphore = 0;
+  SemaphoreHandle_t xChargeSemaphore = 0;
+  SemaphoreHandle_t xCurrentSemaphore = 0;
 
 private:
   void SendCommand(RemoteCommand);
@@ -363,8 +400,8 @@ public:
   
 private:
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
-  TimerHandle_t m_sendOcuHeartbeat;
-  TimerHandle_t profile0_timer;
+  TimerHandle_t m_sendOcuHeartbeat = 0;
+  TimerHandle_t profile0_timer = 0;
 
 
   // --------------------------------------------------------------------------
@@ -446,6 +483,16 @@ protected:
   OvmsMetricFloat     *m_bat_soh_charge = 0;      // Battery SOH based on coulomb charge count [%]
   OvmsMetricVector<float> *m_bat_cell_soh;        // Battery cell SOH from ECU 8C PID 74 CB via OBD [%]
   std::vector<OvmsMetricVector<float>*> m_bat_cmod_hist; // Battery cell module SOH history from ECU 8C PID 74 CC via OBD [%]
+
+  OvmsMetricFloat     *m_bat_time_total = 0;        // Total battery age [Days]
+  OvmsMetricFloat     *m_bat_time_parked = 0;       // Total time parked [Days]
+  OvmsMetricFloat     *m_bat_time_parked_full = 0;  // Total time parked above 90% SOC [Days]
+  OvmsMetricFloat     *m_bat_time_parked_empty = 0; // Total time parked below 10% SOC [Days]
+  OvmsMetricFloat     *m_bat_time_parked_hot = 0;   // Total time parked above 30 °C [Days]
+  OvmsMetricFloat     *m_bat_time_parked_cold = 0;  // Total time parked below  0 °C [Days]
+  OvmsMetricVector<float> *m_bat_time_parked_state = 0; // Park times matrix: 6 SOC x 8 temperature ranges
+  OvmsMetricFloat     *m_bat_time_charged_ac = 0;   // Total time charged AC [Hours]
+  OvmsMetricFloat     *m_bat_time_charged_dc = 0;   // Total time charged DC [Hours]
 
   OvmsMetricFloat     *m_bat_energy_range;        // Battery energy available from MFD range estimation [kWh]
   OvmsMetricFloat     *m_bat_cap_kwh_range;       // Battery usable capacity derived from MFD range estimation [kWh]

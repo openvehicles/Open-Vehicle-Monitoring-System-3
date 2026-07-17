@@ -2,6 +2,41 @@
 Warnings and Notices
 ====================
 
+----------------
+General Warnings
+----------------
+
+.. image:: warning.png
+  :width: 100px
+  :align: left
+
+| **Warning!** **USE AT OWN RISK!**
+| OVMS is a **HOBBYIST PROJECT**, not a commercial product. It was designed by enthusiasts for enthusiasts. Becoming a user means becoming part of the **project community**, not becoming a customer. Most vehicle features are based on **reverse engineering** rather than manufacturer documentation, so no compliance with any manufacturer requirements can be guaranteed. **Installing the module may damage your vehicle and void your vehicle warranty**. Installation and use of this module **requires some technical knowledge**, and if you don't have that we recommend you contact other users in your area to ask for assistance.
+
+.. warning::
+  THE SYSTEM IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+  NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+  IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, SERVICE OR HARDWARE PROVIDERS BE LIABLE FOR ANY CLAIM,
+  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SYSTEM OR THE USE OR OTHER DEALINGS IN THE SYSTEM.
+
+
+.. image:: warning.png
+  :width: 100px
+  :align: left
+  
+| **Warning!**
+| The OVMS module is continuously powered by the car, even when the car is off.
+  While the OVMS module uses extremely low power, it does continuously draw power from the
+  car's battery, so it will contribute to 'vampire' power drains.
+
+Do not allow your car battery to reach 0% SOC, and if it does, plug in and charge the car
+immediately. **Failure to do this can result in unrecoverable failure of the car's battery.**
+
+The module can monitor the main and 12V battery and send alert notifications if the SOC or
+voltage drops below a healthy level.
+
+
 ---------------------------
 OVMS-33-7600G FCC Statement
 ---------------------------
@@ -103,33 +138,6 @@ Hereby, Open Vehicles Ltd declares that this OVMS-33-7600G product is in complia
 requirements and other relevant provisions of Directive 2014/53/EU. A copy of the Declaration
 of conformity can be found at www.openvehicles.com.
 
-----------------
-General Warnings
-----------------
-
-.. image:: warning.png
-  :width: 100px
-  :align: left
-
-| **Warning!**
-| OVMS is a hobbyist project, not a commercial product. It was designed by enthusiasts for enthusiasts. Installation and use of this module requires some technical knowledge, and if you don't have that we recommend you contact other users in your area to ask for assistance.
-
-.. image:: warning.png
-  :width: 100px
-  :align: left
-  
-| **Warning!**
-| The OVMS module is continuously powered by the car, even when the car is off.
-  While the OVMS module uses extremely low power, it does continuously draw power from the
-  car's battery, so it will contribute to 'vampire' power drains.
-
-Do not allow your car battery to reach 0% SOC, and if it does, plug in and charge the car
-immediately. **Failure to do this can result in unrecoverable failure of the car's battery.**
-
-The module can monitor the main and 12V battery and send alert notifications if the SOC or
-voltage drops below a healthy level.
-
-
 -------------------
 Average Power Usage
 -------------------
@@ -154,6 +162,11 @@ regular sleep periods (see command ``module sleep``).
 Beginning with firmware release 3.3.004, the 12V monitoring can be configured to enable
 deep sleep based on a low 12V voltage level. On most vehicles, this can be used to
 automatically shut down the module when parking and reboot when driving or charging.
+
+Beginning with firmware release 3.3.005, you can couple the GPS operation mode
+to the parking/driving state, and you can set the Wifi AP+client mode to switch
+back to client only mode if no stations connected to the AP for a given timeout
+(see Cellular & Wifi configurations).
 
 
 ~~~~~~~~~~~~~~~~~~

@@ -140,7 +140,7 @@ void OvmsVehicleRenaultTwizy::ObdTicker1()
     new_state = 0;
   else if (twizy_flags.Charging)
     new_state = 2;
-  else if (twizy_flags.CarAwake)
+  else if (twizy_flags.SysAwake)
     new_state = 1;
   else
     new_state = 0;
@@ -217,7 +217,7 @@ void OvmsVehicleRenaultTwizy::IncomingPollReply(const OvmsPoller::poll_job_t &jo
 }
 
 
-void OvmsVehicleRenaultTwizy::IncomingPollError(const OvmsPoller::poll_job_t &job, uint16_t code)
+void OvmsVehicleRenaultTwizy::IncomingPollError(const OvmsPoller::poll_job_t &job, int32_t code)
 {
   // single poll?
   if (!twizy_obd_rxwait.IsAvail()) {
@@ -468,7 +468,7 @@ void OvmsVehicleRenaultTwizy::shell_obd_cleardtc(int verbosity, OvmsWriter* writ
     writer->puts("ERROR: CAN bus write access disabled.");
     return;
   }
-  else if (!twizy->twizy_flags.CarAwake) {
+  else if (!twizy->twizy_flags.SysAwake) {
     writer->puts("ERROR: Car is offline.");
     return;
   }

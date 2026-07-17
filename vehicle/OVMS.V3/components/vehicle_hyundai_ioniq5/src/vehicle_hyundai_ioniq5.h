@@ -114,6 +114,7 @@ protected:
   void Ticker60(uint32_t ticker) override;
   void Ticker300(uint32_t ticker) override;
   void EventListener(std::string event, void *data);
+  void FlatbedListener(std::string event, void *data);
   void UpdatedAverageTemp(OvmsMetric* metric);
   void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
   void ConfigChanged(OvmsConfigParam *param) override;
@@ -141,6 +142,8 @@ protected:
     uint8_t b5, uint8_t b6, uint8_t mode );
 #endif
 
+  bool m_off_ping;
+
 public:
   bool SetFeature(int key, const char *value) override;
   const std::string GetFeature(int key) override;
@@ -167,6 +170,12 @@ protected:
   bool  kn_emergency_message_sent;
 
   int m_checklock_retry, m_checklock_start, m_checklock_notify;
+  bool m_aux_is_charging, m_aux_is_low;
+
+  // Detecting of continuous charging of AUX battery.
+  // Tries to not rock the boat by turning on the ICU unnecessarily.
+  const uint16_t AUX_CRIT_THRESH = 1440; // 14.4v
+  average_asym_util_t<uint32_t, 128, 32>  m_crit_check_avg;
 
   void HandleCharging();
   void HandleChargeStop();
@@ -389,14 +398,32 @@ protected:
   OvmsMetricInt   *m_b_bms_availpower;
   OvmsMetricFloat *m_v_bat_calc_cap;
 
-  OvmsMetricBool   *m_v_env_parklights;
-  OvmsMetricFloat   *m_v_charge_current_request;
+  OvmsMetricBool  *m_v_env_parklights;
+  OvmsMetricFloat *m_v_charge_current_request;
 
   OvmsMetricBool  *m_v_env_indicator_l;
   OvmsMetricBool  *m_v_env_indicator_r;
 
   /// Accumulated operating time
   OvmsMetricInt *m_v_accum_op_time;
+
+  /// Calculate more accurage odo.
+  OvmsMetricFloat *m_v_p_odo_ext;
+
+protected:
+
+  /// The next ODO reading in km.
+  float m_next_odo; // Km
+
+  /// Distance between the projected and actual distance.
+  float m_extra_odo; // Km
+
+  bool m_reached_next_odo;
+  /// ODO plus calculated extra distance used to calculate consumption.
+  float m_extra_diff_ave; // make-up differences.
+
+  uint8_t m_last_speed; // The last speed read (Kph)
+  uint32_t m_distance_reftime; // Time (ms) of last read.
 
   struct {
     unsigned char ChargingCCS : 1;

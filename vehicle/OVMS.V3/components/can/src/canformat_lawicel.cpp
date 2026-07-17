@@ -79,6 +79,12 @@ std::string canformat_lawicel::get(CAN_log_message_t* message)
     sprintf(buf,"T%08" PRIx32 "%01d",message->frame.MsgID, message->frame.FIR.B.DLC);
     }
 
+  if (message->frame.FIR.B.DLC > 8)
+    {
+    ESP_LOGW(TAG, "DLC too long: %d", message->frame.FIR.B.DLC);
+    return std::string("");
+    }
+
   for (int k=0; k<message->frame.FIR.B.DLC; k++)
     sprintf(buf+strlen(buf),"%02x", message->frame.data.u8[k]);
   sprintf(buf+strlen(buf),"%04lx", message->timestamp.tv_usec/1000);

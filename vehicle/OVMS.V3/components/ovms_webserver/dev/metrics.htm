@@ -55,6 +55,29 @@
         </div>
       </div>
 
+      <h4>Derived Values</h4>
+
+      <p>If the <code>metric</code> element has a <code>data-template</code> attribute, its content is
+        interpreted as a Javascript
+        <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals">
+        ES6 template string</a>. The interpolation result replaces the text content of either the element's
+        children with class <code>value</code>, or if none are present of the element itself.</p>
+
+      <p>This can be used to display values calculated or combined from multiple metrics, or apply
+        simple custom value formatting and code translations without the need to implement a custom
+        reception handler.</p>
+
+      <p>Example: derive 12V power as voltage &times; current:</p>
+
+      <div class="clearfix">
+        <div class="metric number" data-metric="v.b.12v.voltage,v.b.12v.current"
+          data-template="${(metrics['v.b.12v.voltage'] * (metrics['v.b.12v.current']||0.1)).toFixed(2)}">
+          <span class="label">12V Power:</span>
+          <span class="value">–</span>
+          <span class="unit">W</span>
+        </div>
+      </div>
+
       <h4>Progress Bar</h4>
 
       <p>Bootstrap <code>progress</code> bars can be used as lightweight graphical indicators.

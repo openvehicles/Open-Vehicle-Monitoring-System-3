@@ -343,6 +343,7 @@ void OvmsLocation::Render(std::string& buf)
 
 void location_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  auto lock = MyConfig.Lock();
   OvmsConfigParam* p = MyConfig.CachedParam(LOCATIONS_PARAM);
   if (p == NULL) return;
 
@@ -357,7 +358,7 @@ void location_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
 
   // List any entries in the location config that are not valid
-  for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
+  for (ConfigParamMap::iterator it=p->m_instances.begin(); it!=p->m_instances.end(); ++it)
     {
     const std::string& name = it->first;
     const std::string& value = it->second;
@@ -860,11 +861,12 @@ void OvmsLocations::UpdateParkPosition()
 
 void OvmsLocations::ReloadMap()
   {
+  auto lock = MyConfig.Lock();
   OvmsConfigParam* p = MyConfig.CachedParam(LOCATIONS_PARAM);
   if (p == NULL) return;
 
   // Forward search, updating existing locations
-  for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
+  for (ConfigParamMap::iterator it=p->m_instances.begin(); it!=p->m_instances.end(); ++it)
     {
     const std::string& name = it->first;
     const std::string& value = it->second;
@@ -894,8 +896,8 @@ void OvmsLocations::ReloadMap()
   // Reverse search, go through existing locations looking for those to delete
   for (LocationMap::iterator it=m_locations.begin(); it!=m_locations.end();)
     {
-    auto k = p->m_map.find(it->first);
-    if (k == p->m_map.end())
+    auto k = p->m_instances.find(it->first);
+    if (k == p->m_instances.end())
       {
       // Location no longer exists
       // ESP_LOGI(TAG, "Location %s is removed",it->first.c_str());

@@ -39,10 +39,11 @@ class swcan : public mcp2515
   {
 
   public:
-    swcan(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs=true);
+    swcan(const char* name, spi* spibus, spi_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs=true, bool leds=false);
     ~swcan();
 
   public:
+    static void Init();
     esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
     esp_err_t Stop();
     void SetPowerMode(PowerMode powermode);
@@ -60,6 +61,7 @@ class swcan : public mcp2515
 
     void DoSetTransceiverMode(bool mode0, bool mode1);
   	TransceiverMode m_tmode;
+    bool m_useLeds;
 
   };
 

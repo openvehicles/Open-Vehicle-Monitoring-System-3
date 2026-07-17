@@ -136,6 +136,7 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     uint32_t m_tester_present_timer;
     bool m_extended_wakeup;
     bool m_notify_metrics;
+    bool m_use_swcan_adapter;
 
     OvmsMetricInt * mt_preheat_status;
     OvmsMetricInt *  mt_preheat_timer;

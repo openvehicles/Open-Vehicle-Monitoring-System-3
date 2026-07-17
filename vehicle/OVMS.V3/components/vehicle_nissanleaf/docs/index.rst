@@ -137,7 +137,9 @@ Note: If you prefer not to unplug the Nissan TCU, all OVMS functions appart from
 2016-2017 LEAF models (ZE0-2)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Remote climate control will only work when plugged in and actively charging on LEAF 2016-2017 models.** This is because in 2016 Nissan moved the TCU from the EV CAN bus to the CAR CAN bus.
+To use OVMS to activate remote climate the Nissan TCU (Telematics Control Unit) module must be disconnected from the CAR-CAN bus.  If you remove the TCU completely the hands-free bluetooth microphone won't work.  To retain the hands-free microphone, follow the instructions `here <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_nissanleaf/docs/index.rst#disabling-the-tcu-for-remote-climate-control>`_.
+
+You can re-use the built in GPS and GSM antennas for OVMS using two Fakra Z male to SMA male plug adapters.  Use these adapters to connect the OVMS GPS to the blue Fakra connector on the car and connect the OVMS GSM to the pink Fakra connector on the car.
 
 Set the model year as follows and if necessary configure 30 kWh model:
 

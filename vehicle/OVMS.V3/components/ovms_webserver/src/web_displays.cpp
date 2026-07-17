@@ -26,26 +26,11 @@
 ; THE SOFTWARE.
 */
 
-#include "ovms_log.h"
-// static const char *TAG = "webserver";
-
-#include <string.h>
-#include <stdio.h>
-#include <string>
 #include <sstream>
-#include <iomanip>
-#include <dirent.h>
 #include "ovms_webserver.h"
-#include "ovms_config.h"
-#include "ovms_metrics.h"
-#include "metrics_standard.h"
-#include "vehicle.h"
-#include "ovms_housekeeping.h"
-#include "ovms_peripherals.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
-
 
 /**
  * HandleDashboard:
@@ -596,6 +581,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   float stemwidth_v = 0.5, stemwidth_t = 0.5;
   float
     volt_warn_def = BMS_DEFTHR_VWARN, volt_alert_def = BMS_DEFTHR_VALERT,
@@ -1261,6 +1247,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error, info;
   bool enable, ignftbrk;
   std::string smooth_acc, smooth_bat, port, level_on, level_off, basepwr;

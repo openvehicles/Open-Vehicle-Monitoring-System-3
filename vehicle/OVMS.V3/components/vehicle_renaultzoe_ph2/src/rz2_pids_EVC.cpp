@@ -326,25 +326,6 @@ void OvmsVehicleRenaultZoePh2::IncomingEVC(uint16_t type, uint16_t pid, const ch
     // ESP_LOGD(TAG, "2B8A EVC ms_v_charge_voltage: %f", (CAN_UINT(0) * 0.5));
     break;
   }
-  case 0x2B61:
-  {
-    // Waterpump lifetime left
-    // Definition from DDT editor
-    // "PR_ALTERUNGSZÄHL. WASSERPUMPE WÄHR. D. FAHRT","PR160","222B61","(1.0*100*(0.1*(signed(A)*16777216+B*65536+C*256+D)))/36000000","0","0","%","7E4"
-
-    int32_t A = (int8_t)CAN_BYTE(0);
-    uint8_t B = CAN_BYTE(1);
-    uint8_t C = CAN_BYTE(2);
-    uint8_t D = CAN_BYTE(3);
-
-    int32_t raw = (A * 16777216) + (B * 65536) + (C * 256) + D;
-    float percentage = 100 - ((0.1f * raw) / 36000000.0f);
-
-    mt_hevc_waterpump_lifetime_left->SetValue(percentage, Percentage);
-
-    // ESP_LOGD(TAG, "2B61 EVC Waterpump lifetime left: %.2f%%", percentage);
-    break;
-  }
 
   default:
   {

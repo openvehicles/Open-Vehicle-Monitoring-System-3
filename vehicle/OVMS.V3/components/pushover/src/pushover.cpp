@@ -126,13 +126,33 @@ Pushover::~Pushover()
 
 bool Pushover::NotificationFilter(OvmsNotifyType* type, const char* subtype)
   {
-  if (strcmp(type->m_name, "info") == 0 ||
-      strcmp(type->m_name, "error") == 0 ||
-      strcmp(type->m_name, "alert") == 0 ||
-      strcmp(type->m_name, "data") == 0)
-    return true;
-  else
+  if (strcmp(type->m_name, "info") != 0 &&
+      strcmp(type->m_name, "error") != 0 &&
+      strcmp(type->m_name, "alert") != 0 &&
+      strcmp(type->m_name, "data") != 0)
     return false;
+
+  // The Pushover component generally registers as a reader, but needs to discard messages
+  //  when not enabled or not connected. Signal acceptance to notification framework:
+  if (!MyConfig.GetParamValueBool("pushover","enable") || !MyNetManager.m_connected_any)
+    return false;
+
+  // try to find configuration for specific type/subtype
+  ConfigParamMap pmap = MyConfig.GetParamMap("pushover");
+  std::string nfy = "np.";
+  nfy.append(type->m_name);
+  nfy.append("/");
+  nfy.append(subtype);
+  if (pmap[nfy] == "")
+    {
+    // try more general type
+    nfy = "np.";
+    nfy.append(type->m_name);
+    if (pmap[nfy] == "")
+      return false;
+    }
+
+  return true;
   }
 
 
@@ -155,9 +175,7 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
     } 
   ESP_LOGD(TAG,"IncomingNotification: Handling notification (%s:%s:%s)",type->m_name,entry->GetSubType(),entry->GetValue().c_str());      
 
-  OvmsConfigParam* param = MyConfig.CachedParam("pushover");
-  ConfigParamMap pmap;
-  pmap = param->m_map;
+  ConfigParamMap pmap = MyConfig.GetParamMap("pushover");
 
   // try to find configuration for specific type/subtype
   nfy = "np.";
@@ -209,9 +227,7 @@ void Pushover::EventListener(std::string event, void* data)
     } 
   ESP_LOGD(TAG,"EventListener: Handling event (%s)",event.c_str());      
 
-  OvmsConfigParam* param = MyConfig.CachedParam("pushover");
-  ConfigParamMap pmap;
-  pmap = param->m_map;
+  ConfigParamMap pmap = MyConfig.GetParamMap("pushover");
 
   name = "ep.";
   name.append(event);
@@ -331,7 +347,9 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
   ESP_LOGI(TAG,"Sending message %s with priority %d", message.c_str(), priority);
 
   extram::ostringstream* post = new extram::ostringstream();
+  assert(post);
   extram::ostringstream* http = new extram::ostringstream();
+  assert(http);
 
   // construct body
   *post << "token=" << token 
@@ -356,12 +374,27 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
   if (!m_mgconn_mutex.Lock(MG_CONN_MUTEX_TIMEOUT))
     {
     ESP_LOGE(TAG,"Transmit pending (mg_conn_mutex timeout)! Not sending msg..");
+    delete http;
+    delete post;
     return false;
     }
 
   m_reply = "";
   sendReplyNotification = replyNotification;
+
+  // Note: as the pushover module has no retry feature (yet) and marks all incoming notifications as
+  //  read regardless of the actual transmission success, we try acquiring Mongoose for 250ms here;
+  //  can be reduced to 0 once a ticker retry mechanism has been implemented
+  auto mglock = MongooseLock(pdMS_TO_TICKS(250));
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (!mglock || !mgr)
+    {
+    ESP_LOGE(TAG, "Network manager is not available");
+    delete http;
+    delete post;
+    return false;
+    }
+
   struct mg_connect_opts opts;
   const char* err;
   memset(&opts, 0, sizeof(opts));
@@ -373,6 +406,8 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
     {
     m_mgconn_mutex.Unlock();
     ESP_LOGE(TAG, "mg_connect_opt(%s) failed: %s", _server.c_str(), err);
+    delete http;
+    delete post;
     return false;
     }
 

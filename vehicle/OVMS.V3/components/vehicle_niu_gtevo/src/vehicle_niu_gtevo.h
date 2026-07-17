@@ -71,6 +71,9 @@ public:
   void EvoShutdown();
   void IncomingFrameCan1(CAN_frame_t *p_frame) override;
   void SyncMetrics();
+  vehicle_command_t CommandStartCharge() override;
+  vehicle_command_t CommandStopCharge() override;
+  static void ChargerEmulationTimer(TimerHandle_t timer);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   void WebInit();
@@ -103,6 +106,9 @@ protected:
   uint32_t charger_lastActivityTime = 0;
   uint32_t batteryA_lastActivityTime = 0;
   uint32_t batteryB_lastActivityTime = 0;
+  TimerHandle_t m_charger_emulation_timer = nullptr;
+  uint32_t charger_counter_timer = 0;
+  int charger_counter = 0x00;
 
   // Define and init battery arrays
   float batteryA_voltage = 0, batteryA_current = 0, batteryA_power = 0, batteryA_soc = 0, batteryA_soc_cycles = 0;
@@ -164,8 +170,6 @@ public:
   // Shell commands:
   static void CommandDebug(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
   static void CommandTripReset(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandChargerEnable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
-  static void CommandChargerDisable(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 
 private:
   // Define helper vars for 25km rolling consumption calculation

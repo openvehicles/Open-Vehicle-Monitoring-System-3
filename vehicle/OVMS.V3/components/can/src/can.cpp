@@ -556,10 +556,10 @@ bool canfilter::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
  * and 'from' and 'to' are in hex.
  * <bus>          Matches anything on that bus.
  * <bus>:<value>  Matches 1 address on the specified bus.
- * <bus>:<from>-  Matches adressses greater than the specified value on that bus
+ * <bus>:<from>-  Matches adressses >= the specified value on that bus
  * <bus>:<from>-<to>  Matches addresses  'from' <= adress <= 'to' on that bus
  * <value>        Matches 1 address on any bus.
- * <from>-        Matches adressses greater than the specified value on any bus
+ * <from>-        Matches adressses >= the specified value on any bus
  * <from>-<to>    Matches addresses  'from' <= adress <= 'to' on any bus
  */
 bool canfilter::AddFilter(const char* filterstring)
@@ -1283,11 +1283,12 @@ canbus::canbus(const char* name)
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "ticker.10", std::bind(&canbus::BusTicker10, this, _1, _2));
+  MyEvents.RegisterEvent(m_name, "ticker.10", std::bind(&canbus::BusTicker10, this, _1, _2));
   }
 
 canbus::~canbus()
   {
+  MyEvents.DeregisterEvent(m_name);
   vQueueDelete(m_txqueue);
   }
 

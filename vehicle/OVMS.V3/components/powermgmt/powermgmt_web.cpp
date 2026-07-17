@@ -56,6 +56,7 @@ void powermgmt::WebCleanup()
  */
  void powermgmt::WebCfgPowerManagement(PageEntry_t& p, PageContext_t& c)
   {
+  auto lock = MyConfig.Lock();
   std::string error;
   bool enabled;
   std::string modemoff_delay, wifioff_delay, b12v_shutdown_delay;
@@ -160,6 +161,8 @@ void powermgmt::WebCleanup()
     " (deep sleep) when the 12V level gets too low, independent of the 12V alert state.</p>"
     "<p>See <a href=\"/cfg/cellular\" target=\"#main\">cellular configuration</a> (if modem installed)"
     " for automatic GPS pausing when parking.</p>"
+    "<p>See <a href=\"/cfg/wifi\" target=\"#main\">Wifi configuration</a>"
+    " for automatic access point (AP) mode switch-off when no stations are connected.</p>"
   );
   c.done();
   }

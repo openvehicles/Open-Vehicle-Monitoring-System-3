@@ -35,6 +35,7 @@
 #include "freertos/task.h"
 #include "ovms_events.h"
 #include "ovms_mutex.h"
+#include "ovms_partitions.h"
 
 struct ota_info
   {
@@ -45,6 +46,9 @@ struct ota_info
   std::string partition_running;
   std::string partition_boot;
   std::string changelog_server;
+  ovms_flashpartition_t flashpartition_type;
+  std::string flashpartition_type_string;
+  size_t flashpartition_table_address;
   };
 
 // Flash task mode configuration:
@@ -62,12 +66,16 @@ class OvmsOTA
     ~OvmsOTA();
 
   public:
-    static void GetStatus(ota_info& info, bool check_update=true);
+    void GetStatus(ota_info& info, bool check_update=true);
 
   public:
     void LaunchAutoFlash(ota_flashcfg_t cfg=OTA_FlashCfg_Default);
     bool AutoFlash(bool force=false);
+    void SystemStart(std::string event, void* data);
     void Ticker600(std::string event, void* data);
+    void UserConnected(std::string event, void* data);
+    void CheckNotifyPartitionType();
+    uint32_t SendPartitionTypeAlert(bool alert);
 
   public:
     bool IsFlashStatus();

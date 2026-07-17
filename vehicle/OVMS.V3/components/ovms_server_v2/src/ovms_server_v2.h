@@ -43,11 +43,10 @@
 #include "crypt_md5.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
-#include "ovms_mutex.h"
 
 #define OVMS_PROTOCOL_V2_TOKENSIZE 22
 
-class OvmsServerV2 : public OvmsServer
+class OvmsServerV2 : public OvmsServer, MongooseClient
   {
   public:
     OvmsServerV2(const char* name);
@@ -64,7 +63,7 @@ class OvmsServerV2 : public OvmsServer
   protected:
     void ProcessServerMsg();
     void ProcessCommand(const char* payload);
-    bool Transmit(const std::string& message);
+    bool Transmit(const std::string& message, TickType_t timeout=portMAX_DELAY);
 
   protected:
     void TransmitMsgStat(bool always = false);
@@ -115,7 +114,6 @@ class OvmsServerV2 : public OvmsServer
 
   public:
     struct mg_connection *m_mgconn;
-    OvmsMutex m_mgconn_mutex;
     int m_connretry;
     bool m_loggedin;
 
@@ -153,8 +151,9 @@ class OvmsServerV2 : public OvmsServer
     int m_updatetime_connected;
 
     uint32_t m_lastrx_time = 0;
-    int m_lasttx = 0;
-    int m_lasttx_stream = 0;
+    int m_ping_ticker = 0;
+    uint32_t m_lasttx = 0;
+    uint32_t m_lasttx_stream = 0;
     int m_peers = 0;
 
     bool m_pending_notify_info;

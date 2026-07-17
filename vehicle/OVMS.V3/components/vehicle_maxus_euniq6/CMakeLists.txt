@@ -2,7 +2,7 @@ set(srcs)
 set(include_dirs)
 
 if (CONFIG_OVMS_VEHICLE_MAXE6)
-  list(APPEND srcs "vehicle_me6.cpp")
+  list(APPEND srcs "src/vehicle_me6.cpp")
   list(APPEND include_dirs "src")
 endif ()
 

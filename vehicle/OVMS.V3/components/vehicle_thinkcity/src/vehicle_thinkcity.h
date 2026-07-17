@@ -70,6 +70,9 @@ class OvmsVehicleThinkCity : public OvmsVehicle
 
 #endif //CONFIG_OVMS_COMP_WEBSERVER
 
+  public:
+    bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]
+
   protected:
     void Ticker1(uint32_t ticker) override;
     void Ticker10(uint32_t ticker) override;

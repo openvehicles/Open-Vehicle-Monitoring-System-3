@@ -34,6 +34,7 @@ static const char *TAG = "gsm-ppp";
 #include <lwip/ip_addr.h>
 #include <lwip/netif.h>
 #include <lwip/dns.h>
+#include "ovms_cellular.h"
 #include "gsmpppos.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
@@ -45,6 +46,12 @@ static const char *TAG = "gsm-ppp";
 static u32_t GsmPPPOS_OutputCallback(ppp_pcb *pcb, u8_t *data, u32_t len, void *ctx)
   {
   GsmPPPOS* me = (GsmPPPOS*)ctx;
+
+  // This is called in LwIP (tiT task) context, i.e. on core #1 (cellular task on #0).
+  // A final PPP termination request may result from an LwIP mbox timeout, potentially
+  // concurrently to a running MUX shutdown, so lock & check MUX:
+  OvmsMutexLock lock(&me->m_modem->m_mux_mutex);
+  if (!me->m_mux) return 0;
 
   MyCommandApp.HexDump(TAG, "tx", (const char*)data, len);
   return me->m_mux->tx(me->m_channel, data, len);
@@ -167,14 +174,16 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
   ppp_connect(pcb, 30);
   }
 
-GsmPPPOS::GsmPPPOS(GsmMux* mux, int channel)
+GsmPPPOS::GsmPPPOS(modem* modem)
   {
-  m_mux = mux;
-  m_channel = channel;
+  m_modem = modem;
+  m_mux = NULL;
+  m_channel = -1;
   m_ppp = NULL;
   m_connected = false;
   m_connectcount = 0;
   m_lasterrcode = -1;
+  m_shutdown = true;
   }
 
 GsmPPPOS::~GsmPPPOS()
@@ -189,6 +198,7 @@ GsmPPPOS::~GsmPPPOS()
 
 void GsmPPPOS::IncomingData(uint8_t *data, size_t len)
   {
+  if (m_shutdown || m_ppp == NULL) return;  // Skip if shutting down
   MyCommandApp.HexDump(TAG, "rx", (const char*)data, len);
   pppos_input_tcpip(m_ppp, (u8_t*)data, (int)len);
   }
@@ -213,10 +223,16 @@ void GsmPPPOS::Initialise(GsmMux* mux, int channel)
   pppapi_set_default(m_ppp);
   }
 
+void GsmPPPOS::DeInitialise()
+  {
+  m_mux = NULL;
+  }
+
 void GsmPPPOS::Startup()
   {
-  if (m_ppp == NULL) return;
+  if (!m_mux || !m_ppp) return;
 
+  m_shutdown = false;  // Reset shutdown flag
   ppp_set_auth(m_ppp, PPPAUTHTYPE_PAP,
     MyConfig.GetParamValue("modem", "apn.user").c_str(),
     MyConfig.GetParamValue("modem", "apn.password").c_str());
@@ -237,14 +253,17 @@ void GsmPPPOS::Shutdown(bool hard)
       {
       ESP_LOGI(TAG, "Shutting down (soft)...");
       }
+    m_shutdown = true;  // Prevent new data from being processed
     m_connected = false;
     MyEvents.SignalEvent("system.modem.down",NULL);
+    vTaskDelay(pdMS_TO_TICKS(100));  // Allow pending data to drain
     pppapi_close(m_ppp, nocarrier);
     ESP_LOGI(TAG, "PPP is shutdown");
     }
   else
     {
     ESP_LOGI(TAG, "Shutdown (direct)");
+    m_shutdown = true;
     m_connected = false;
     }
   }

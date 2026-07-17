@@ -569,9 +569,16 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * number of defined alert levels
 * list of defined alert levels (0=none, 1=warning, 2=alert)
 * alert levels validity indicator (-1=undefined, 0=stale, 1=valid)
+* number of defined wheel sensor mappings
+* list of defined wheel sensor indices (0…<number_wheels-1>)
+* wheel sensor mapping validity indicator (-1=undefined/not used, 1=valid)
 
 .. note:: Pressures are transported in kPa now instead of the former PSI.
   To convert to PSI, multiply by 0.14503773773020923.
+
+.. note:: The wheel sensor mapping feature has been introduced in version 3.3.006.
+  This is only used by vehicles lacking decodable sensor to wheel association.
+
 
 --------------------------------
 Peer connection message 0x5A "Z"

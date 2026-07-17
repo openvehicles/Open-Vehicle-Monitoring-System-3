@@ -88,7 +88,7 @@ OvmsCanLogUdpClientInit::OvmsCanLogUdpClientInit()
           "<host:port> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
-          1, 9);
+          1, _COMMAND_TOKEN_NMB);
         }
       }
     }
@@ -132,6 +132,7 @@ bool canlog_udpclient::Open()
   {
   if (m_isopen) return true;
 
+  auto mglock = MongooseLock();
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   if (mgr != NULL)
     {

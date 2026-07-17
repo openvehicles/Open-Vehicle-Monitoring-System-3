@@ -627,7 +627,10 @@ void vfs_cp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   writer->puts("VFS copy complete");
   }
 
-void vfs_append(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+/**
+ * vfs_write: shell commands 'vfs echo' & 'vfs append'
+ */
+void vfs_write(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyConfig.ProtectedPath(argv[1]))
     {
@@ -635,7 +638,22 @@ void vfs_append(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     return;
     }
 
-  FILE* w = fopen(argv[1], "a");
+  bool append_mode = (strcmp(cmd->GetName(), "append") == 0);
+
+  // check & create path in write mode:
+  if (!append_mode)
+    {
+    std::string path = argv[1];
+    size_t n = path.rfind('/');
+    if (n != 0 && n != std::string::npos)
+      {
+      std::string dir = path.substr(0, n);
+      if (!path_exists(dir))
+        mkpath(dir);
+      }
+    }
+
+  FILE* w = fopen(argv[1], append_mode ? "a" : "w");
   if (w == NULL)
     {
     writer->puts("Error: VFS target file cannot be opened");
@@ -967,7 +985,7 @@ static int vfs_cp_mv_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   return -1;
   }
 
-static int vfs_append_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+static int vfs_write_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
   switch (argc)
     {
@@ -1005,7 +1023,8 @@ VfsInit::VfsInit()
   cmd_vfs->RegisterCommand("rm","VFS Delete a file",vfs_rm, "<file>", 1, 1, true, vfs_file_validate);
   cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2, true, vfs_cp_mv_validate);
   cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2, true, vfs_cp_mv_validate);
-  cmd_vfs->RegisterCommand("append","VFS Append a line to a file",vfs_append, "<quoted line> <file>", 2, 2, true, vfs_append_validate);
+  cmd_vfs->RegisterCommand("append","VFS Append a line to a file",vfs_write, "<quoted line> <file>", 2, 2, true, vfs_write_validate);
+  cmd_vfs->RegisterCommand("echo","VFS Echo a line to a file (file created/replaced)",vfs_write, "<quoted line> <file>", 2, 2, true, vfs_write_validate);
   cmd_vfs->RegisterCommand("tail","VFS output tail of a file",VfsTailCommand::Execute, "[-nrlines] <file>", 1, 2, true, vfs_tail_validate);
   cmd_vfs->RegisterCommand("df","VFS show disk usage", vfs_df, "", 0, 0);
   #ifdef CONFIG_OVMS_COMP_EDITOR

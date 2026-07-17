@@ -31,6 +31,7 @@
 #include <array>
 #include <vector>
 #include <cstddef>
+#include "ovms_mutex.h"
 
 class IdFilter
   {
@@ -49,8 +50,10 @@ class IdFilter
      * - An "endsWith" comparison - when starting with '*',
      * - Invalid (and skipped) if empty, or with a '*' in any other position than beginning or end,
      * - A "string equal" comparison for all other cases
+     * 
+     * @return  true = filters updated
      */
-    void LoadFilters(const std::string &value);
+    bool LoadFilters(const std::string &value);
 
     /**
      * Return the number of filter entries 
@@ -77,6 +80,8 @@ class IdFilter
 
     std::array<std::vector<std::string>, COUNT_OF_OPERATORS> m_entries;
     size_t                                                   m_entry_count{0};
+    size_t                                                   m_entry_hash{0};     // hash of filter definition string
+    mutable OvmsMutex                                        m_mutex;             // m_entries concurrency protection
   };
 
 #endif // __ID_FILTER_H

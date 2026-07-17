@@ -174,6 +174,8 @@ class modem : public pcp, public InternalRamAllocated
     GsmPPPOS*              m_ppp;
     GsmNMEA*               m_nmea;
 
+    OvmsMutex              m_mux_mutex;             // lock for MUX access
+
     bool                   m_gps_hot_start;
 
     bool                   m_gps_enabled;           // = config modem enable.gps

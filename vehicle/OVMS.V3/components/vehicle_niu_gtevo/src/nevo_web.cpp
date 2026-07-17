@@ -45,6 +45,7 @@ using namespace std;
 
 void OvmsVehicleNiuGTEVO::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
 {
+  auto lock = MyConfig.Lock();
   std::string error, rangeideal, soh_user, cap_user;
   
   if (c.method == "POST")
@@ -118,7 +119,7 @@ void OvmsVehicleNiuGTEVO::WebCfgCommon(PageEntry_t &p, PageContext_t &c)
 
   c.fieldset_start("User battery capacity");
 
-  c.input_slider("Battery capacity", "cap_user", 3, "%", -1, atoi(cap_user.c_str()), 26, 10, 200, 1,
+  c.input_slider("Battery capacity", "cap_user", 3, "Ah", -1, atoi(cap_user.c_str()), 26, 10, 200, 1,
                  "<p>Set the capacity of your battery. It is useful if you build a custom battery pack only. The original ones has 26Ah.</p>");
   c.fieldset_end();
 

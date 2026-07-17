@@ -103,11 +103,12 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void EventWifiScanDone(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
     void OutputStatus(int verbosity, OvmsWriter* writer);
+    void SupportSummary(OvmsWriter* writer);
     void ConfigChanged(std::string event, void *data);
 
   protected:
     bool m_poweredup;
-    OvmsMutex m_mutex;
+    OvmsRecMutex m_mutex;
     esp32wifi_mode_t m_mode;
     std::string m_sta_ssid;
     std::string m_sta_password;

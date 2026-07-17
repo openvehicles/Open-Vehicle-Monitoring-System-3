@@ -34,7 +34,7 @@
 #include "ovms_mutex.h"
 #include "ovms_netmanager.h"
 
-class OvmsMongooseWrapper
+class OvmsMongooseWrapper : public MongooseClient
   {
   public:
     OvmsMongooseWrapper();
@@ -42,9 +42,6 @@ class OvmsMongooseWrapper
 
   public:
     virtual void Mongoose(struct mg_connection *nc, int ev, void *ev_data);
-
-  protected:
-    OvmsMutex m_mgconn_mutex;
   };
 
 class OvmsNetTcpClient: public OvmsMongooseWrapper

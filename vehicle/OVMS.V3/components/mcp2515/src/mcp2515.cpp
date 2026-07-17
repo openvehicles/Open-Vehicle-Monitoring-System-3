@@ -109,8 +109,8 @@ if (m_spibus->m_initialized == false) {
 
   // Register mcp2515 specific commands:
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can", "CAN framework");
-  OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name, "CANx framework");
-  cmd_canx->RegisterCommand("setaccfilter", "Set MCP2515 acceptance filter", shell_setaccfilter,
+  m_cmd_canx = cmd_can->RegisterCommand(name, "CANx framework");
+  m_cmd_canx->RegisterCommand("setaccfilter", "Set MCP2515 acceptance filter", shell_setaccfilter,
     "<mask0> <filter0> <filter1> <mask1> <filter2> <filter3> <filter4> <filter5>\n"
     "Specify masks and filters as 32 bit hexadecimal values.\n"
     "All arguments default to 0 = no filter.\n"
@@ -121,6 +121,7 @@ if (m_spibus->m_initialized == false) {
 
 mcp2515::~mcp2515()
   {
+  m_cmd_canx->GetParent()->UnregisterCommand(m_cmd_canx->GetName());
   SetTransceiverMode(CAN_MODE_LISTEN);
   gpio_isr_handler_remove((gpio_num_t)m_intpin);
   spi_bus_remove_device(m_spi);
@@ -270,6 +271,10 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   WriteReg(REG_CANINTE, 0b11111111);
 
   // And record that we are powered on
+  if (GetPowerMode() != On)
+    {
+    ESP_LOGI(TAG, "%s: Started, SetPowerMode on", this->GetName());
+    }
   pcp::SetPowerMode(On);
 
   return ESP_OK;
@@ -801,23 +806,27 @@ void mcp2515::TxCallback(CAN_frame_t* p_frame, bool success)
 
 void mcp2515::SetPowerMode(PowerMode powermode)
   {
-  pcp::SetPowerMode(powermode);
   switch (powermode)
     {
-    case  On:
-      ESP_LOGI(TAG, "%s: SetPowerMode on", this->GetName());
-      if (m_mode != CAN_MODE_OFF)
+    case On:
         {
-        Start(m_mode, m_speed);
+        ESP_LOGI(TAG, "%s: SetPowerMode on", this->GetName());
+        // Start() will call base SetPowerMode(On) if it actually turns on.
+        if (m_mode != CAN_MODE_OFF) Start(m_mode, m_speed);
         }
       break;
     case Sleep:
     case DeepSleep:
     case Off:
+      {
+      // Make sure the event still gets called immediately
+      pcp::SetPowerMode(powermode);
       ESP_LOGI(TAG, "%s: SetPowerMode off", this->GetName());
       Stop();
+      }
       break;
     default:
+      pcp::SetPowerMode(powermode);
       break;
     }
   }

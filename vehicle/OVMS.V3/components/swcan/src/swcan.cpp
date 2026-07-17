@@ -40,27 +40,47 @@ static const char *TAG = "swcan";
 #define LED_BLINK_TIME 40 // ms
 #define ERROR_LED_BLINK_COUNT 25 // 10s
 
+void swcan::Init()
+{
+  ESP_LOGI(TAG, "Register external (MCP2515 + TH8056 DRIVER) as SWCAN can4");
 
-swcan::swcan(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs /*=true*/)
-  : mcp2515(name,spibus,host,clockspeed,cspin,intpin,hw_cs)
+  gpio_set_direction((gpio_num_t)VSPI_PIN_MCP2515_SWCAN_CS, GPIO_MODE_OUTPUT);
+  gpio_set_direction((gpio_num_t)VSPI_PIN_MCP2515_SWCAN_INT, GPIO_MODE_INPUT);
+  gpio_set_level((gpio_num_t)VSPI_PIN_MCP2515_SWCAN_CS, 1); // to prevent SPI crosstalk during initialization
+
+  if(MyPeripherals->m_mcp2515_2)
   {
-  m_status_led = new ovms_led("status led", MAX7317_SWCAN_STATUS_LED);
-  m_tx_led = new ovms_led("tx led", MAX7317_SWCAN_TX_LED);
-  m_rx_led = new ovms_led("rx led", MAX7317_SWCAN_RX_LED);
+    delete MyPeripherals->m_mcp2515_2;
+    MyPeripherals->m_mcp2515_2 = NULL;
+    ESP_LOGI(TAG, "can3: Shutdown.");
+  }
+  if(!MyPeripherals->m_mcp2515_swcan)
+    MyPeripherals->m_mcp2515_swcan = new swcan("can4", MyPeripherals->m_spibus, VSPI_HOST, 10000000, VSPI_PIN_MCP2515_SWCAN_CS, VSPI_PIN_MCP2515_SWCAN_INT);
+}
 
-  using std::placeholders::_1;
-  using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"system.start", std::bind(&swcan::SystemUp, this, _1, _2));  
-  MyEvents.RegisterEvent(TAG,"server.v2.connected", std::bind(&swcan::ServerConnected, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"server.v2.disconnected", std::bind(&swcan::ServerDisconnected, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"server.v2.waitreconnect", std::bind(&swcan::ServerDisconnected, this, _1, _2));  
-  MyEvents.RegisterEvent(TAG,"system.modem.poweredon", std::bind(&swcan::ModemEvent, this, _1, _2));  
-  MyEvents.RegisterEvent(TAG,"system.modem.muxstart", std::bind(&swcan::ModemEvent, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"system.modem.netwait", std::bind(&swcan::ModemEvent, this, _1, _2));  
-  MyEvents.RegisterEvent(TAG,"system.modem.netstart", std::bind(&swcan::ModemEvent, this, _1, _2));  
+swcan::swcan(const char* name, spi* spibus, spi_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs /*=true*/, bool leds  /*=false*/)
+  : mcp2515(name,spibus,host,clockspeed,cspin,intpin,hw_cs), m_useLeds(leds)
+  {
+    if(m_useLeds)
+      {
+      m_status_led = new ovms_led("status led", MAX7317_SWCAN_STATUS_LED);
+      m_tx_led = new ovms_led("tx led", MAX7317_SWCAN_TX_LED);
+      m_rx_led = new ovms_led("rx led", MAX7317_SWCAN_RX_LED);
+
+      using std::placeholders::_1;
+      using std::placeholders::_2;
+      MyEvents.RegisterEvent(TAG,"system.start", std::bind(&swcan::SystemUp, this, _1, _2));  
+      MyEvents.RegisterEvent(TAG,"server.v2.connected", std::bind(&swcan::ServerConnected, this, _1, _2));
+      MyEvents.RegisterEvent(TAG,"server.v2.disconnected", std::bind(&swcan::ServerDisconnected, this, _1, _2));
+      MyEvents.RegisterEvent(TAG,"server.v2.waitreconnect", std::bind(&swcan::ServerDisconnected, this, _1, _2));  
+      MyEvents.RegisterEvent(TAG,"system.modem.poweredon", std::bind(&swcan::ModemEvent, this, _1, _2));  
+      MyEvents.RegisterEvent(TAG,"system.modem.muxstart", std::bind(&swcan::ModemEvent, this, _1, _2));
+      MyEvents.RegisterEvent(TAG,"system.modem.netwait", std::bind(&swcan::ModemEvent, this, _1, _2));  
+      MyEvents.RegisterEvent(TAG,"system.modem.netstart", std::bind(&swcan::ModemEvent, this, _1, _2));  
+      }
   }
 
-swcan::~swcan()
+swcan::~swcan() 
   {
   MyEvents.DeregisterEvent(TAG);  
   }
@@ -112,12 +132,15 @@ void swcan::SystemUp(std::string event, void* data)
 
 bool swcan::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesReceived)
   {
-  bool res = mcp2515::AsynchronousInterruptHandler(frame, framesReceived);
-  if (*framesReceived > 0)
-    {
-    // frame was received -> blink led
-    m_rx_led->Blink(LED_BLINK_TIME);
-    }
+    bool res = mcp2515::AsynchronousInterruptHandler(frame, framesReceived);
+    if(m_useLeds)
+      {
+      if (*framesReceived > 0)
+        {
+        // frame was received -> blink led
+        m_rx_led->Blink(LED_BLINK_TIME);
+        }
+      }
     return res;
   }
 
@@ -125,11 +148,13 @@ bool swcan::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesRec
 void swcan::TxCallback(CAN_frame_t* frame, bool success)
   {
   mcp2515::TxCallback(frame,success);
-
-  m_tx_led->Blink(LED_BLINK_TIME);
-  if (!success)
+  if(m_useLeds)
     {
-    m_status_led->Blink(LED_BLINK_TIME, ERROR_LED_BLINK_COUNT);
+    m_tx_led->Blink(LED_BLINK_TIME);
+    if (!success)
+      {
+      m_status_led->Blink(LED_BLINK_TIME, ERROR_LED_BLINK_COUNT);
+      }
     }
   }
 
@@ -146,10 +171,13 @@ esp_err_t swcan::Stop()
   esp_err_t ret = mcp2515::Stop();
   SetTransceiverMode(tmode_sleep);
 
-  m_status_led->Set(false);
-  m_status_led->SetDefaultState(false);
-  m_tx_led->Set(false);
-  m_rx_led->Set(false);
+  if(m_useLeds)
+    {
+    m_status_led->Set(false);
+    m_status_led->SetDefaultState(false);
+    m_tx_led->Set(false);
+    m_rx_led->Set(false);
+    }
 
   return ret;
   }

@@ -480,6 +480,7 @@ int mkpath(std::string path, mode_t mode /*=0*/)
   size_t pre = 0, pos;
   std::string dir;
   int mdret;
+  struct stat st;
 
   if (!endsWith(path, '/'))
     {
@@ -493,8 +494,27 @@ int mkpath(std::string path, mode_t mode /*=0*/)
     pre = pos;
     if (dir.size() == 0)
       continue; // if leading / first time is 0 length
-    if ((mdret = mkdir(dir.c_str(), mode)) && errno != EEXIST)
-      return mdret;
+
+    if (stat(dir.c_str(), &st) == 0)
+      {
+      if (!S_ISDIR(st.st_mode))
+        {
+        // path exists but is no directory
+        errno = ENOTDIR;
+        return -1;
+        }
+      }
+    else if (errno != ENOENT)
+      {
+      // stat error
+      return -1;
+      }
+    else
+      {
+      // level doesn't exist yet, create:
+      if ((mdret = mkdir(dir.c_str(), mode)) && errno != EEXIST)
+        return mdret;
+      }
     }
 
   return 0;
@@ -652,13 +672,16 @@ double float2double(float f)
 
 /**
  * idtag: create object instance tag for registrations
+ * 
+ * Uses snprintf instead of std::ostringstream to reduce stack usage
+ * by ~200-450 bytes. This is critical for small-stack tasks like
+ * DuktapeVFSSave which register shutdown events.
  */
 std::string idtag(const char* tag, void* instance)
   {
-  std::ostringstream buf;
-  buf << tag << "-" << instance;
-  std::string res = buf.str();
-  return res;
+  char buf[48];
+  snprintf(buf, sizeof(buf), "%s-%p", tag, instance);
+  return std::string(buf);
   }
 
 /**

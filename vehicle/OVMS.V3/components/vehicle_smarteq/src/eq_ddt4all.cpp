@@ -63,7 +63,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     return Success;
   }
 
-  if((!m_ddt4all || !m_enable_write) && number > 9) {
+  if((!m_ddt4all || !IsCANwrite()) && number > 9) {
     ESP_LOGE(TAG, "DDT4all failed / no Canbus write access or DDT4all not enabled");
     writer->printf("DDT4all failed / no Canbus write access or DDT4all not enabled");
     return Fail;
@@ -79,44 +79,45 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 0:
     {
       // indicator 5x on
-      m_hl_canbyte = "30082002";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"30082002","30082002"}, false, true);
       res = Success;
       break;
     }
     case 1:
     {
       // open trunk
-      m_hl_canbyte = "300500";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"300500","300500","300500","300500","300500"}, false, true);
       res = Success;
       break;
     }
     case 2:
     {
       // AUTO_WIPE false
-      m_hl_canbyte = "2E033C00";
-      CommandCan(0x74d, 0x76d, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033C00"}, false, false);
       res = Success;
       break;
     }
     case 3:
     {
       // AUTO_WIPE true
-      m_hl_canbyte = "2E033C80";
-      CommandCan(0x74d, 0x76d, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033C80"}, false, false);
       res = Success;
       break;
     }
     case 4:
     {
       #ifdef CONFIG_OVMS_COMP_WIFI
-        if (MyPeripherals && MyPeripherals->m_esp32wifi) {
-            WifiRestart();
-            res = Success;
-        } else {
-            res = Fail;
-        }
+        if (MyPeripherals && MyPeripherals->m_esp32wifi) 
+          {
+          MyPeripherals->m_esp32wifi->Restart();
+          ESP_LOGI(TAG, "WiFi restart initiated");
+          res = Success;
+          }
+        else 
+          {
+          ESP_LOGE(TAG, "WiFi restart failed - WiFi not available");
+          res = Fail;
+          }
       #else
         ESP_LOGE(TAG, "WiFi support not enabled");
         res = NotImplemented;
@@ -126,160 +127,161 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 5:
     {
       #ifdef CONFIG_OVMS_COMP_CELLULAR
-        if (MyPeripherals && MyPeripherals->m_cellular_modem) {
-            ModemRestart();
-            res = Success;
-        } else {
-            res = Fail;
-        }
+        if (MyPeripherals && MyPeripherals->m_cellular_modem) 
+          {
+          MyPeripherals->m_cellular_modem->Restart();
+          ESP_LOGI(TAG, "Cellular modem restart initiated");
+          res = Success;
+          }
+        else
+          {
+          ESP_LOGE(TAG, "Cellular modem restart failed - modem not available");
+          res = Fail;
+          }
       #else
         ESP_LOGE(TAG, "Cellular support not enabled");
         res = NotImplemented;
       #endif
       break;
     }
-    // CommandCan(txid, rxid, enable, request)
+    // CommandCanVector(txid, rxid, hexbytes = {"30010000","30082002"}, reset CAN = true/false, CommandWakeup = true/ false)
     case 6:
     {
       // BIPBIP_Lock false
-      m_hl_canbyte = "3B1400";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B1400"}, false, false);
       res = Success;
       break;
     }
     case 7:
     {
       // BIPBIP_Lock true
-      m_hl_canbyte = "3B1480";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B1480"}, false, false);
       res = Success;
       break;
     }
     case 8:
     {
       // REAR_WIPER_LINK false
-      m_hl_canbyte = "3B5800";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5800"}, false, false);
       res = Success;
       break;
     }
     case 9:
     {
       // REAR_WIPER_LINK true
-      m_hl_canbyte = "3B5880";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5880"}, false, false);
       res = Success;
       break;
     }
     case 10:
     {
       // RKE_Backdoor_open false
-      m_hl_canbyte = "3B7800";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7800"}, false, false);
       res = Success;
       break;
     }
     case 11:
     {
       // RKE_Backdoor_open true
-      m_hl_canbyte = "3B7880";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7880"}, false, false);
       res = Success;
       break;
     }
     case 12:
     {
       // Precond_by_key 00
-      m_hl_canbyte = "3B7700";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7700"}, false, false);
       res = Success;
       break;
     }
     case 13:
     {
       // Precond_by_key 03
-      m_hl_canbyte = "3B7703";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7703"}, false, false);
       res = Success;
       break;
     }
     case 14:
     {
       // ECOMODE_PRE_Restart false
-      m_hl_canbyte = "3B7600";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7600"}, false, false);
       res = Success;
       break;
     }
     case 15:
     {
       // ECOMODE_PRE_Restart true
-      m_hl_canbyte = "3B7680";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B7680"}, false, false);
       res = Success;
       break;
     }
     case 16:
     {
       // Charging screen false
-      m_hl_canbyte = "2E013D00";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E013D00"}, true, false);
       res = Success;
       break;
     }
     case 17:
     {
       // Charging screen true
-      m_hl_canbyte = "2E013D01";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E013D01"}, true, false);
       res = Success;
       break;
     }
     case 18:
     {
       // ONLY_DRL_OFF_CF false
-      m_hl_canbyte = "2E045F00";
-      CommandCan(0x74d, 0x76d, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E045F00"}, false, false);
       res = Success;
       break;
     }
     case 19:
     {
       // ONLY_DRL_OFF_CF true
-      m_hl_canbyte = "2E045F80";
-      CommandCan(0x74d, 0x76d, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E045F80"}, false, false);
       res = Success;
       break;
     }
     case 20:
     {
       // Welcome_Goodbye_CF false
-      m_hl_canbyte = "2E033400";
-      CommandCan(0x74d, 0x76d, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033400"}, false, false);
       res = Success;
       break;
     }
     case 21:
     {
       // Welcome_Goodbye_CF true
-      m_hl_canbyte = "2E033480";
-      CommandCan(0x74d, 0x76d, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E033480"}, false, false);
+      res = Success;
+      break;
+    }    
+    case 22:
+    {      
+      // Default variant, tailgate open true, Precond_by_key 00
+      CommandCanVector(0x745, 0x765, {"3B7880","3B7700"}, false, false);
+      res = Success;
+      break;
+    }
+    case 23:
+    {      
+      // Default variant, tailgate open false, Precond_by_key 03
+      CommandCanVector(0x745, 0x765, {"3B7800","3B7703"}, false, false);
       res = Success;
       break;
     }
     case 26:
     {
       // AT_BeepInRPresent_CF false
-      m_hl_canbyte = "2E014900";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E014900"}, true, false);
       res = Success;
       break;
     }
     case 27:
     {
       // AT_BeepInRPresent_CF true
-      m_hl_canbyte = "2E014980";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E014980"}, true, false);
       res = Success;
       break;
     }
@@ -287,144 +289,126 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 28:
     {
       // EVStartupSoundInhibition_CF false
-      m_hl_canbyte = "2E013501";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E013501"}, true, false);
       res = Success;
       break;
     }
     case 29:
     {
       // EVStartupSoundInhibition_CF true
-      m_hl_canbyte = "2E013500";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E013500"}, true, false);
       res = Success;
       break;
     }
     case 32:
     {
       // key reminder false
-      m_hl_canbyte = "3B5E00";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5E00"}, false, false);
       res = Success;
       break;
     }
     case 33:
     {
       // key reminder true
-      m_hl_canbyte = "3B5E80";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5E80"}, false, false);
       res = Success;
       break;
     }
     case 34:
     {
       // long tempo display false
-      m_hl_canbyte = "3B5700";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5700"}, false, false);
       res = Success;
       break;
     }
     case 35:
     {
       // long tempo display true
-      m_hl_canbyte = "3B5780";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B5780"}, false, false);
       res = Success;
       break;
     }
     case 36:
     {
       // AmbientLightPresent_CF false
-      m_hl_canbyte = "2E018900";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E018900"}, true, false);
       res = Success;
       break;
     }
     case 37:
     {
       // AmbientLightPresent_CF true
-      m_hl_canbyte = "2E018901";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E018901"}, true, false);
       res = Success;
       break;
     }
     case 40:
     {
       // ClockDisplayed_CF not displayed
-      m_hl_canbyte = "2E012100";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E012100"}, true, false);
       res = Success;
       break;
     }
     case 41:
     {
       // ClockDisplayed_CF displayed managed
-      m_hl_canbyte = "2E012101";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E012101"}, true, false);
       res = Success;
       break;
     }
     case 42:
     {
       // ClockDisplayed_CF displayed not managed
-      m_hl_canbyte = "2E012102";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E012102"}, true, false);
       res = Success;
       break;
     }
     case 43:
     {
       // ClockDisplayed_CF not used (EQ Smart Connect)
-      m_hl_canbyte = "2E012103";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E012103"}, true, false);
       res = Success;
       break;
     }
     case 44:
     {
       // Auto Light false
-      m_hl_canbyte = "2E002300";
-      CommandCan(0x74d, 0x76d, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E002300"}, false, true);
       res = Success;
       break;
     }
     case 45:
     {
       // Auto Light true
-      m_hl_canbyte = "2E002380";
-      CommandCan(0x74d, 0x76d, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E002380"}, false, true);
       res = Success;
       break;
     }
     case 46:
     {
       // Auto Light false
-      m_hl_canbyte = "2E104200";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"2E104200"}, false, false);
       res = Success;
       break;
     }
     case 47:
     {
       // Auto Light true
-      m_hl_canbyte = "2E104201";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"2E104201"}, false, false);
       res = Success;
       break;
     }
     case 48:
     {
       // Light by EMM false
-      m_hl_canbyte = "3B4F00";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B4F00"}, false, false);
       res = Success;
       break;
     }
     case 49:
     {
       // Light by EMM true
-      m_hl_canbyte = "3B4F80";
-      CommandCan(0x745, 0x765, false, true);
+      CommandCanVector(0x745, 0x765, {"3B4F80"}, false, false);
       res = Success;
       break;
     }
@@ -432,8 +416,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     {
       // max AC current limitation configuration 20A only for slow charger!
       if (!mt_obl_fastchg->AsBool()) {
-        m_hl_canbyte = "2E614150";
-        CommandCan(0x719, 0x739, false, true);
+        CommandCanVector(0x719, 0x739, {"2E614150"}, false, true);
         res = Success;
       } else {
         res = Fail;
@@ -444,8 +427,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     {
       // max AC current limitation configuration 32A only for slow charger!
       if (!mt_obl_fastchg->AsBool()) {
-        m_hl_canbyte = "2E614180";
-        CommandCan(0x719, 0x739, false, true);
+        CommandCanVector(0x719, 0x739, {"2E614180"}, false, true);
         res = Success;
       } else {
         res = Fail;
@@ -455,64 +437,56 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 52:
     {
       // SBRLogic_CF Standard
-      m_hl_canbyte = "2E018500";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E018500"}, true, false);
       res = Success;
       break;
     }
     case 53:
     {
       // SBRLogic_CF US
-      m_hl_canbyte = "2E018501";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E018501"}, true, false);
       res = Success;
       break;
     }
     case 54:
     {
       // FrontSBRInhibition_CF false
-      m_hl_canbyte = "2E010900";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E010900"}, true, false);
       res = Success;
       break;
     }
     case 55:
     {
       // FrontSBRInhibition_CF true
-      m_hl_canbyte = "2E010901";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E010901"}, true, false);
       res = Success;
       break;
     }
     case 56:
     {
       // Speedmeter ring (Tacho) DayBacklightsPresent_CF false
-      m_hl_canbyte = "2E011800";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E011800"}, true, false);
       res = Success;
       break;
     }
     case 57:
     {
       // Speedmeter ring (Tacho) DayBacklightsPresent_CF true
-      m_hl_canbyte = "2E011801";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E011801"}, true, false);
       res = Success;
       break;
     }
     case 58:
     {
       // AdditionnalInstrumentPresent_CF false
-      m_hl_canbyte = "2E018001";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E018000"}, true, false);
       res = Success;
       break;
     }
     case 59:
     {
       // AdditionnalInstrumentPresent_CF true
-      m_hl_canbyte = "2E018001";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E018001"}, true, false);
       res = Success;
       break;
     }
@@ -520,16 +494,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 60:
     {
       // TPMSPresent_CF false
-      m_hl_canbyte = "2E010E00";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E010E00"}, true, false);
       res = Success;
       break;
     }
     case 61:
     {
       // TPMSPresent_CF true
-      m_hl_canbyte = "2E010E01";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E010E01"}, true, false);
       res = Success;
       break;
     }
@@ -537,84 +509,77 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 62:
     {
       // DRL + Tail false
-      m_hl_canbyte = "2E035300";
-      CommandCan(0x74d, 0x76d, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E035300"}, false, true);
       res = Success;
       break;
     }
     case 63:
     {
       // DRL + Tail true
-      m_hl_canbyte = "2E035301";
-      CommandCan(0x74d, 0x76d, false, true);
+      CommandCanVector(0x74d, 0x76d, {"2E035301"}, false, true);
       res = Success;
       break;
     }
     case 66:
     {
       // DigitalSpeedometerPresent_CF off
-      m_hl_canbyte = "2E013900";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E013900"}, true, false);
       res = Success;
       break;
     }
     case 67:
     {
       // DigitalSpeedometerPresent_CF in mph
-      m_hl_canbyte = "2E013901";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E013901"}, true, false);
       res = Success;
       break;
     }
     case 68:
     {
       // DigitalSpeedometerPresent_CF in km/h
-      m_hl_canbyte = "2E013902";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E013902"}, true, false);
       res = Success;
       break;
     }
     case 69:
     {
       // DigitalSpeedometerPresent_CF always km/h
-      m_hl_canbyte = "2E013903";
-      CommandCan(0x743, 0x763, true, false);
+      CommandCanVector(0x743, 0x763, {"2E013903"}, true, false);
       res = Success;
       break;
     }
     case 100:
     {
       // ClearDiagnosticInformation.All
-      m_hl_canbyte = "14FFFFFF";
-      CommandCan(0x745, 0x765, true, false);
+      CommandCanVector(0x745, 0x765, {"14FFFFFF"}, true, false);
       res = Success;
       break;
     }
     case 719:
     {
-      m_hl_canbyte = mt_canbyte->AsString();
-      CommandCan(0x719, 0x739, false, true);
+      std::string hexbytes = mt_canbyte->AsString();
+      CommandCanVector(0x719, 0x739, {hexbytes}, false, true);
       res = Success;
       break;
     }
     case 743:
     {
-      m_hl_canbyte = mt_canbyte->AsString();
-      CommandCan(0x743, 0x763, true, false);
+      std::string hexbytes = mt_canbyte->AsString();
+      CommandCanVector(0x743, 0x763, {hexbytes}, true, false);
       res = Success;
       break;
     }
     case 745:
     {
-      m_hl_canbyte = mt_canbyte->AsString();
-      CommandCan(0x745, 0x765, false, true);
+      std::string hexbytes = mt_canbyte->AsString();
+      CommandCanVector(0x745, 0x765, {hexbytes}, false, false);
       res = Success;
       break;
     }
     case 746: // 746 is used for the 74d
     {
-      m_hl_canbyte = mt_canbyte->AsString();
-      CommandCan(0x74d, 0x76d, false, true);
+      std::string hexbytes = mt_canbyte->AsString();
+      CommandCanVector(0x74d, 0x76d, {hexbytes}, false, true);
       res = Success;
       break;
     }
@@ -649,108 +614,112 @@ void OvmsVehicleSmartEQ::xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCom
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4List(int verbosity, OvmsWriter* writer) {
   writer->puts("DDT4all Command list:");
-  writer->printf("--unlocked Car and key ignition on!\n");
-  writer->printf("--use: xsq ddt4all <number>\n");
-  writer->printf("--not all Commands works with all smart 453 (GAS/ED/EQ)\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  Clear Diagnostic Information: 100\n");
-  writer->printf("  activate DDT4all Commands for 5 minutes: 999\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  indicator 5x on: 0\n");
-  writer->printf("  open tailgate (unlocked Car): 1\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  AUTO WIPE true: 3\n");
-  writer->printf("  AUTO WIPE false: 2\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  Wifi restart: 4\n");
-  writer->printf("  Modem restart: 5\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("--OEM Alarm needed!\n");
-  writer->printf("  BIPBIP Lock true: 7\n");
-  writer->printf("  BIPBIP Lock false: 6\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  REAR WIPER LINK R true: 9\n");
-  writer->printf("  REAR WIPER LINK R false: 8\n");
-  writer->printf("  -------------------------------\n");  
-  writer->printf("--swapped the tailgate open Button to Pre-Climate\n");
-  writer->printf("  Precond by key 3: 13\n");
-  writer->printf("  Precond by no: 12\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("--Deactivate tailgate open for Pre-Climate on key 3,\n");
-  writer->printf("--but this has no effect for convertible rooftop opening!\n");
-  writer->printf("--Convertible driver should pull the fuse for the roof opening\n");
-  writer->printf("  tailgate open key 3 true: 11\n");
-  writer->printf("  tailgate open key 3 false: 10\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  ECOMODE PRE Restart true: 15\n");
-  writer->printf("  ECOMODE PRE Restart false: 14\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("--Show Charging screen when Car is locked\n");
-  writer->printf("  Charging screen true: 17\n");
-  writer->printf("  Charging screen false: 16\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  only DRL off true: 19\n");
-  writer->printf("  only DRL off false: 18\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  Welcome/Goodbye true: 21\n");
-  writer->printf("  Welcome/Goodbye false: 20\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  Beep in Gear R true: 27\n");
-  writer->printf("  Beep in Gear R false: 26\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  EV Startup Sound true: 29\n");
-  writer->printf("  EV Startup Sound false: 28\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  key reminder true: 33\n");
-  writer->printf("  key reminder false: 32\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  long tempo display true: 35\n");
-  writer->printf("  long tempo display false: 34\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  Ambient light true: 37\n");
-  writer->printf("  Ambient light false: 36\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("--MMI displayed Clock sync with Radio\n");
-  writer->printf("  Clock not displayed: 40\n");
-  writer->printf("  Clock displayed managed: 41\n");
-  writer->printf("  Clock displayed not managed: 42\n");
-  writer->printf("  Clock not used: 43\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("--if the light sensor and steering column have been retrofitted,\n");
-  writer->printf("--set Auto Light 1, 2 and EMM true\n");
-  writer->printf("  Auto light 1 true: 45\n");
-  writer->printf("  Auto light 1 false: 44\n");
-  writer->printf("  Auto light 2 true: 47\n");
-  writer->printf("  Auto light 2 false: 46\n");
-  writer->printf("  Light by EMM true: 49\n");
-  writer->printf("  Light by EMM false: 48\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("--not for 22kW Charger!\n");
-  writer->printf("  max AC current limit 20A: 50\n");
-  writer->printf("  max AC current limit 32A: 51\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  SBR Logic US: 52\n");
-  writer->printf("  SBR Logic Standard: 53\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  Front SBR true: 55\n");
-  writer->printf("  Front SBR false: 54\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  Speedometer Day Backlights true: 57\n");
-  writer->printf("  Speedometer Day Backlights false: 56\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("--only makes sense with petrol engines\n");
-  writer->printf("  Additionnal Instrument true: 59\n");
-  writer->printf("  Additionnal Instrument false: 58\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  TPMS Present true: 61\n");
-  writer->printf("  TPMS Present false: 60\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  DRL + Tail true: 63\n");
-  writer->printf("  DRL + Tail false: 62\n");
-  writer->printf("  -------------------------------\n");
-  writer->printf("  Digital Speedometer off: 66\n");
-  writer->printf("  Digital Speedometer in mph: 67\n");
-  writer->printf("  Digital Speedometer in km/h: 68\n");
-  writer->printf("  Digital Speedometer always km/h: 69\n");
+  writer->puts("--unlocked Car and key ignition on!");
+  writer->puts("--use: xsq ddt4all <number>");
+  writer->puts("--not all Commands works with all smart 453 (GAS/ED/EQ)");
+  writer->puts("  -------------------------------");
+  writer->puts("  Clear Diagnostic Information: 100");
+  writer->puts("  activate DDT4all Commands for 5 minutes: 999");
+  writer->puts("  -------------------------------");
+  writer->puts("  indicator 5x on: 0");
+  writer->puts("  open tailgate (unlocked Car): 1");
+  writer->puts("  -------------------------------");
+  writer->puts("  AUTO WIPE true: 3");
+  writer->puts("  AUTO WIPE false: 2");
+  writer->puts("  -------------------------------");
+  writer->puts("  Wifi restart: 4");
+  writer->puts("  Modem restart: 5");
+  writer->puts("  -------------------------------");
+  writer->puts("--OEM Alarm needed!");
+  writer->puts("  BIPBIP Lock true: 7");
+  writer->puts("  BIPBIP Lock false: 6");
+  writer->puts("  -------------------------------");
+  writer->puts("  REAR WIPER LINK R true: 9");
+  writer->puts("  REAR WIPER LINK R false: 8");
+  writer->puts("  -------------------------------");
+  writer->puts("--swapped the tailgate open Button to Pre-Climate");
+  writer->puts("  Precond by key 3: 13");
+  writer->puts("  Precond by no: 12");
+  writer->puts("  -------------------------------");
+  writer->puts("--Deactivate tailgate open for Pre-Climate on key 3,");
+  writer->puts("--but this has no effect for convertible rooftop opening!");
+  writer->puts("--Convertible driver should pull the fuse for the roof opening");
+  writer->puts("  tailgate open key 3 true: 11");
+  writer->puts("  tailgate open key 3 false: 10");
+  writer->puts("  -------------------------------");
+  writer->puts("--tailgate key 3 and Pre-Climate, all in one step");
+  writer->puts("  tailgate open true, Precond false: 22");
+  writer->puts("  tailgate open false, Precond true: 23");
+  writer->puts("  -------------------------------");
+  writer->puts("  ECOMODE PRE Restart true: 15");
+  writer->puts("  ECOMODE PRE Restart false: 14");
+  writer->puts("  -------------------------------");
+  writer->puts("--Show Charging screen when Car is locked");
+  writer->puts("  Charging screen true: 17");
+  writer->puts("  Charging screen false: 16");
+  writer->puts("  -------------------------------");
+  writer->puts("  only DRL off true: 19");
+  writer->puts("  only DRL off false: 18");
+  writer->puts("  -------------------------------");
+  writer->puts("  Welcome/Goodbye true: 21");
+  writer->puts("  Welcome/Goodbye false: 20");
+  writer->puts("  -------------------------------");
+  writer->puts("  Beep in Gear R true: 27");
+  writer->puts("  Beep in Gear R false: 26");
+  writer->puts("  -------------------------------");
+  writer->puts("  EV Startup Sound true: 29");
+  writer->puts("  EV Startup Sound false: 28");
+  writer->puts("  -------------------------------");
+  writer->puts("  key reminder true: 33");
+  writer->puts("  key reminder false: 32");
+  writer->puts("  -------------------------------");
+  writer->puts("  long tempo display true: 35");
+  writer->puts("  long tempo display false: 34");
+  writer->puts("  -------------------------------");
+  writer->puts("  Ambient light true: 37");
+  writer->puts("  Ambient light false: 36");
+  writer->puts("  -------------------------------");
+  writer->puts("--MMI displayed Clock sync with Radio");
+  writer->puts("  Clock not displayed: 40");
+  writer->puts("  Clock displayed managed: 41");
+  writer->puts("  Clock displayed not managed: 42");
+  writer->puts("  Clock not used: 43");
+  writer->puts("  -------------------------------");
+  writer->puts("--if the light sensor and steering column have been retrofitted,");
+  writer->puts("--set Auto Light 1, 2 and EMM true");
+  writer->puts("  Auto light 1 true: 45");
+  writer->puts("  Auto light 1 false: 44");
+  writer->puts("  Auto light 2 true: 47");
+  writer->puts("  Auto light 2 false: 46");
+  writer->puts("  Light by EMM true: 49");
+  writer->puts("  Light by EMM false: 48");
+  writer->puts("  -------------------------------");
+  writer->puts("--not for 22kW Charger!");
+  writer->puts("  max AC current limit 20A: 50");
+  writer->puts("  max AC current limit 32A: 51");
+  writer->puts("  -------------------------------");
+  writer->puts("  SBR Logic US: 52");
+  writer->puts("  SBR Logic Standard: 53");
+  writer->puts("  -------------------------------");
+  writer->puts("  Front SBR true: 55");
+  writer->puts("  Front SBR false: 54");
+  writer->puts("  -------------------------------");
+  writer->puts("  Speedometer Day Backlights true: 57");
+  writer->puts("  Speedometer Day Backlights false: 56");
+  writer->puts("  -------------------------------");
+  writer->puts("--only makes sense with petrol engines");
+  writer->puts("  Additionnal Instrument true: 59");
+  writer->puts("  Additionnal Instrument false: 58");
+  writer->puts("  -------------------------------");
+  writer->puts("  TPMS Present true: 61");
+  writer->puts("  TPMS Present false: 60");
+  writer->puts("  -------------------------------");
+  writer->puts("  DRL + Tail true: 63");
+  writer->puts("  DRL + Tail false: 62");
+  writer->puts("  -------------------------------");
+  writer->puts("  Digital Speedometer off: 66");
+  writer->puts("  Digital Speedometer in mph: 67");
+  writer->puts("  Digital Speedometer in km/h: 68");
+  writer->puts("  Digital Speedometer always km/h: 69");
   return Success;
 }

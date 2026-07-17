@@ -62,17 +62,25 @@ OvmsNetManager MyNetManager __attribute__ ((init_priority (8999)));
 
 void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  struct netif *ni;
-  for (ni = netif_list; ni; ni = ni->next)
+  std::vector<struct netif> netiflist;
+  int netifdefault;
+
+  if (MyNetManager.GetNetifList(netiflist, netifdefault) != ESP_OK)
     {
-    if (ni->name[0]=='l' && ni->name[1]=='o')
+    writer->puts("ERROR: cannot get netif list!");
+    return;
+    }
+
+  for (auto ni : netiflist)
+    {
+    if (ni.name[0]=='l' && ni.name[1]=='o')
       continue;
     writer->printf("Interface#%d: %c%c%d (ifup=%d linkup=%d)\n",
-      ni->num,ni->name[0],ni->name[1],ni->num,
-      ((ni->flags & NETIF_FLAG_UP) != 0),
-      ((ni->flags & NETIF_FLAG_LINK_UP) != 0));
+      ni.num,ni.name[0],ni.name[1],ni.num,
+      ((ni.flags & NETIF_FLAG_UP) != 0),
+      ((ni.flags & NETIF_FLAG_LINK_UP) != 0));
     writer->printf("  IPv4: " IPSTR "/" IPSTR " gateway " IPSTR "\n",
-      IP2STR(&ni->ip_addr.u_addr.ip4), IP2STR(&ni->netmask.u_addr.ip4), IP2STR(&ni->gw.u_addr.ip4));
+      IP2STR(&ni.ip_addr.u_addr.ip4), IP2STR(&ni.netmask.u_addr.ip4), IP2STR(&ni.gw.u_addr.ip4));
     writer->puts("");
     }
 
@@ -95,13 +103,14 @@ void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   else
     writer->puts("");
 
-  if (netif_default)
+  if (netifdefault >= 0)
     {
+    struct netif& ni = netiflist[netifdefault];
     writer->printf("\nDefault Interface: %c%c%d (" IPSTR "/" IPSTR " gateway " IPSTR ")\n",
-      netif_default->name[0], netif_default->name[1], netif_default->num,
-      IP2STR(&netif_default->ip_addr.u_addr.ip4),
-      IP2STR(&netif_default->netmask.u_addr.ip4),
-      IP2STR(&netif_default->gw.u_addr.ip4));
+      ni.name[0], ni.name[1], ni.num,
+      IP2STR(&ni.ip_addr.u_addr.ip4),
+      IP2STR(&ni.netmask.u_addr.ip4),
+      IP2STR(&ni.gw.u_addr.ip4));
     }
   else
     {
@@ -352,8 +361,10 @@ OvmsNetManager::OvmsNetManager()
   m_wifi_good = false;
   m_wifi_ap = false;
   m_network_any = false;
+  m_cfg_dnslist = "";
   m_cfg_wifi_sq_good = -87;
   m_cfg_wifi_sq_bad = -89;
+  m_cfg_wifi_bad_reconnect = false;
 
   for (int i=0; i<DNS_MAX_SERVERS; i++)
     {
@@ -366,9 +377,12 @@ OvmsNetManager::OvmsNetManager()
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   m_mongoose_task = 0;
   m_mongoose_running = false;
+  m_mongoose_starting = false;
   m_mongoose_stopping = false;
   m_jobqueue = xQueueCreate(CONFIG_OVMS_HW_NETMANAGER_QUEUE_SIZE, sizeof(netman_job_t*));
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+  m_restart_network = false;
 
   // Register our commands
   OvmsCommand* cmd_network = MyCommandApp.RegisterCommand("network","NETWORK framework",network_status, "", 0, 0, false);
@@ -428,15 +442,27 @@ OvmsNetManager::~OvmsNetManager()
 
 void OvmsNetManager::RestartNetwork()
   {
-#ifdef CONFIG_OVMS_COMP_WIFI
-  if (MyPeripherals && MyPeripherals->m_esp32wifi)
-    MyPeripherals->m_esp32wifi->Restart();
-#endif // #ifdef CONFIG_OVMS_COMP_WIFI
+  if (MongooseRunning() && !IsNetManagerTask())
+    {
+    // signal task to do the restart:
+    ESP_LOGD(TAG, "Requesting network restart");
+    m_restart_network = true;
+    }
+  else
+    {
+    // perform restart:
+    ESP_LOGI(TAG, "Performing network restart");
+    m_restart_network = false;
+    #ifdef CONFIG_OVMS_COMP_WIFI
+      if (MyPeripherals && MyPeripherals->m_esp32wifi)
+        MyPeripherals->m_esp32wifi->Restart();
+    #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
-#ifdef CONFIG_OVMS_COMP_CELLULAR
-  if (MyPeripherals && MyPeripherals->m_cellular_modem)
-    MyPeripherals->m_cellular_modem->Restart();
-#endif // CONFIG_OVMS_COMP_CELLULAR
+    #ifdef CONFIG_OVMS_COMP_CELLULAR
+      if (MyPeripherals && MyPeripherals->m_cellular_modem)
+        MyPeripherals->m_cellular_modem->Restart();
+    #endif // CONFIG_OVMS_COMP_CELLULAR
+    }
   }
 
 #ifdef CONFIG_OVMS_COMP_WIFI
@@ -582,8 +608,7 @@ void OvmsNetManager::WifiStaBad(std::string event, void* data)
     WifiDisconnect();
     // If enabled, start reconnecting immediately (for fast transition to next best
     //  AP instead of trying to reassociate to current AP):
-    if (MyPeripherals && MyPeripherals->m_esp32wifi &&
-        MyConfig.GetParamValueBool("network", "wifi.bad.reconnect") == true)
+    if (MyPeripherals && MyPeripherals->m_esp32wifi && m_cfg_wifi_bad_reconnect)
       {
       MyPeripherals->m_esp32wifi->Reconnect(NULL);
       }
@@ -658,6 +683,13 @@ void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
 
 void OvmsNetManager::Ticker1(std::string event, void *data)
   {
+  // Mongoose startup requested?
+  if (m_mongoose_starting)
+    {
+    StartMongooseTask();
+    }
+
+  // Check for reboot due to continuously lacking network connectivity:
   if (m_cfg_reboot_no_connection)
     {
     if (m_connected_any && !m_has_ip && StdMetrics.ms_m_net_good_sq->AsBool())
@@ -747,9 +779,11 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
   if (!param || param->GetName() == "network")
     {
     // Network config has been changed, apply:
+    m_cfg_dnslist = MyConfig.GetParamValue("network", "dns");
     m_cfg_reboot_no_connection = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
     m_cfg_wifi_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     m_cfg_wifi_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad",  -89);
+    m_cfg_wifi_bad_reconnect = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect");
     if (m_cfg_wifi_sq_good < m_cfg_wifi_sq_bad)
       {
       float x = m_cfg_wifi_sq_good;
@@ -783,7 +817,7 @@ void OvmsNetManager::SaveDNSServer(ip_addr_t* dnsstore)
 void OvmsNetManager::SetDNSServer(ip_addr_t* dnsstore)
   {
   // Read DNS configuration:
-  std::string servers = MyConfig.GetParamValue("network", "dns");
+  std::string servers = m_cfg_dnslist;
   if (!servers.empty())
     {
     int spos = 0;
@@ -911,6 +945,8 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
     return;
     }
 
+  // Walk through list of network interfaces:
+  // (this is safe, as we're in the LwIP context)
   for (struct netif *pri = netif_list; pri != NULL; pri=pri->next)
     {
     if ((pri->name[0]==search[0])&&
@@ -946,20 +982,22 @@ static void MongooseRawTask(void *pvParameters)
 
 void OvmsNetManager::MongooseTask()
   {
-  int pri, lastpri = CONFIG_OVMS_NETMAN_TASK_PRIORITY;
+  int pri, basepri = CONFIG_OVMS_NETMAN_TASK_PRIORITY;
 
   // Initialise the mongoose manager
   ESP_LOGD(TAG, "MongooseTask starting");
   mg_mgr_init(&m_mongoose_mgr, NULL);
+
+  m_mongoose_starting = false;
+  m_mongoose_running = true;
   MyEvents.SignalEvent("network.mgr.init",NULL);
 
-  m_mongoose_running = true;
-
   // Main event loop
-  while (!m_mongoose_stopping)
+  uint32_t busystart = esp_log_timestamp();
+  while (!m_mongoose_stopping && !m_restart_network)
     {
     // poll interfaces:
-    if (mg_mgr_poll(&m_mongoose_mgr, 250) == 0)
+    if (mg_mgr_poll(&m_mongoose_mgr, 100) == 0)
       {
       ESP_LOGD(TAG, "MongooseTask: no interfaces available => exit");
       break;
@@ -968,12 +1006,26 @@ void OvmsNetManager::MongooseTask()
     // check for netmanager control jobs:
     ProcessJobs();
 
-    // Detect broken mutex priority inheritance:
-    // (may be removed if solved by esp-idf commit 22d636b7b0d6006e06b5b3cfddfbf6e2cf69b4b8)
-    if ((pri = uxTaskPriorityGet(NULL)) != lastpri)
+    // Detect & fix broken mutex priority inheritance:
+    // (not solved by esp-idf commit 22d636b7b0d6006e06b5b3cfddfbf6e2cf69b4b8)
+    if ((pri = uxTaskPriorityGet(NULL)) != basepri)
       {
-      ESP_LOGD(TAG, "MongooseTask: priority changed from %d to %d", lastpri, pri);
-      lastpri = pri;
+      ESP_LOGD(TAG, "MongooseTask: priority changed from %d to %d, reverting", basepri, pri);
+      // revert to avoid blocking lower priority tasks:
+      vTaskPrioritySet(NULL, basepri);
+      }
+    
+    // avoid busy looping from continuous network activity:
+    // mg_mgr_poll() returns immediately if sockets were ready, so force a 10 ms yield per second
+    uint32_t now = esp_log_timestamp();
+    if (now >= busystart + 1000)
+      {
+      vTaskDelay(pdMS_TO_TICKS(10));
+      busystart = now;
+      }
+    else
+      {
+      vTaskDelay(0);
       }
     }
 
@@ -981,47 +1033,65 @@ void OvmsNetManager::MongooseTask()
 
   // Shutdown cleanly
   ESP_LOGD(TAG, "MongooseTask stopping");
-  MyEvents.SignalEvent("network.mgr.stop",NULL);
+  DiscardJobs();
+
+  // Signal network clients to close & cleanup; to avoid race conditions from concurrent
+  // mg_mgr_free() execution, wait for all event listeners to have finished:
+    {
+    OvmsSemaphore eventdone;
+    MyEvents.SignalEvent("network.mgr.stop", NULL, eventdone);
+    eventdone.Take();
+    }
+
+  // Cleanup mongoose:
   mg_mgr_free(&m_mongoose_mgr);
+  memset(&m_mongoose_mgr, 0, sizeof(m_mongoose_mgr)); // clear stale pointers
+
+  if (m_restart_network)
+    {
+    RestartNetwork();
+    }
+
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "MongooseTask done, min stack free=%u", minstackfree);
   m_mongoose_task = NULL;
   vTaskDelete(NULL);
   }
 
 struct mg_mgr* OvmsNetManager::GetMongooseMgr()
   {
-  return &m_mongoose_mgr;
+  return MongooseRunning() ? &m_mongoose_mgr : NULL;
   }
 
 bool OvmsNetManager::MongooseRunning()
   {
-  return m_mongoose_running && !m_mongoose_stopping;
+  return m_mongoose_running && !m_mongoose_stopping && !m_restart_network;
   }
 
 void OvmsNetManager::StartMongooseTask()
   {
-  if (m_network_any && (!m_mongoose_task || m_mongoose_stopping))
+  if (m_network_any && (!m_mongoose_task || m_mongoose_stopping || m_restart_network))
     {
-    // wait for previous task to finish shutting down:
-    int wait_time = 0;
-    while (m_mongoose_stopping && m_mongoose_task)
+    // check for previous task still shutting down:
+    if ((m_mongoose_stopping || m_restart_network) && m_mongoose_task)
       {
-      if (wait_time % 1000 == 0)
-        ESP_LOGD(TAG, "StartMongooseTask: waiting for task shutdown");
-      vTaskDelay(pdMS_TO_TICKS(50));
-      wait_time += 50;
-      if (wait_time >= 5000)
-        {
-        // we're stuck, no other way to solve than rebooting:
-        ESP_LOGE(TAG, "StartMongooseTask: timeout on task shutdown -- reboot");
-        MyBoot.Restart();
-        return;
-        }
+      ESP_LOGD(TAG, "StartMongooseTask: waiting for task shutdown");
+      // retry on next ticker.1
+      m_mongoose_starting = true;
+      return;
       }
-    // start new task:
+    // start new task now:
+    m_mongoose_starting = false;
     m_mongoose_stopping = false;
+    m_restart_network = false;
     xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan",10*1024, (void*)this,
                             CONFIG_OVMS_NETMAN_TASK_PRIORITY, &m_mongoose_task, CORE(1));
     AddTaskToMap(m_mongoose_task);
+    }
+  else
+    {
+    // no network or task already running: cancel start request
+    m_mongoose_starting = false;
     }
   }
 
@@ -1030,6 +1100,7 @@ void OvmsNetManager::StopMongooseTask()
   if (!m_network_any && m_mongoose_running)
     {
     ESP_LOGD(TAG, "StopMongooseTask: requesting task shutdown");
+    m_mongoose_starting = false;
     m_mongoose_stopping = true;
     }
   }
@@ -1059,6 +1130,16 @@ void OvmsNetManager::ProcessJobs()
     if (job->caller)
       xTaskNotifyGive(job->caller);
     ESP_LOGD(TAG, "MongooseTask: done cmd %d from %p", job->cmd, job->caller);
+    }
+  }
+
+void OvmsNetManager::DiscardJobs()
+  {
+  netman_job_t* job;
+  while (xQueueReceive(m_jobqueue, &job, 0) == pdTRUE)
+    {
+    ESP_LOGD(TAG, "MongooseTask: discard cmd %d from %p", job->cmd, job->caller);
+    if (job->caller) xTaskNotifyGive(job->caller);
     }
   }
 
@@ -1104,6 +1185,7 @@ int OvmsNetManager::ListConnections(int verbosity, OvmsWriter* writer)
   {
   if (!MongooseRunning())
     return 0;
+  auto mglock = MongooseLock();
   mg_connection *c;
   int cnt = 0;
   char local[48], remote[48];
@@ -1124,6 +1206,7 @@ int OvmsNetManager::CloseConnection(uint32_t id)
   {
   if (!MongooseRunning())
     return 0;
+  auto mglock = MongooseLock();
   mg_connection *c;
   int cnt = 0;
   for (c = mg_next(&m_mongoose_mgr, NULL); c; c = mg_next(&m_mongoose_mgr, c))
@@ -1143,8 +1226,8 @@ int OvmsNetManager::CleanupConnections()
   {
   if (!MongooseRunning())
     return 0;
+  auto mglock = MongooseLock();
 
-  struct netif *ni;
   mg_connection *c;
 #if ESP_IDF_VERSION_MAJOR >= 5
   wifi_sta_mac_ip_list_t ap_ip_list;
@@ -1177,6 +1260,16 @@ int OvmsNetManager::CleanupConnections()
     }
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
+  // get snapshot of LwIP network interface list:
+  std::vector<struct netif> netiflist;
+  int netifdefault;
+  if (GetNetifList(netiflist, netifdefault) != ESP_OK)
+    {
+    ESP_LOGW(TAG, "CleanupConnections: can't get LwIP netif list");
+    return 0;
+    }
+
+  // walk through Mongoose connections:
   for (c = mg_next(&m_mongoose_mgr, NULL); c; c = mg_next(&m_mongoose_mgr, c))
     {
     if (c->flags & MG_F_LISTENING)
@@ -1194,10 +1287,14 @@ int OvmsNetManager::CleanupConnections()
       continue;
 
     // find interface:
-    for (ni = netif_list; ni; ni = ni->next)
+    struct netif *ni = NULL;
+    for (auto candidate : netiflist)
       {
-      if (sa.sin.sin_addr.s_addr == ip4_addr_get_u32(netif_ip4_addr(ni)))
+      if (sa.sin.sin_addr.s_addr == ip4_addr_get_u32(netif_ip4_addr(&candidate)))
+        {
+        ni = &candidate;
         break;
+        }
       }
 
     if (ni)
@@ -1244,12 +1341,56 @@ int OvmsNetManager::CleanupConnections()
   return cnt;
   }
 
+/**
+ * OvmsNetManager::GetNetifList: get a snapshot (copy) of the LwIP internal network interface list;
+ *    this is done via a callback within the LwIP context, to avoid concurrent access
+ *    to the LwIP managed netif_list & netif_default.
+ * 
+ * @param &netiflist      -- ref to vector of netif, will be cleared & filled
+ * @param &netifdefault   -- ref to int, will be set to index of default interface in netiflist or -1 if none
+ * @result                -- ESP_OK or ESP_FAIL
+ */
+esp_err_t OvmsNetManager::GetNetifList(std::vector<struct netif>& netiflist, int& netifdefault)
+  {
+  OvmsSemaphore donesem;
+
+  struct cb_context
+    {
+    std::vector<struct netif>* netiflist;
+    int* netifdefault;
+    OvmsSemaphore* donesem;
+    } context = { &netiflist, &netifdefault, &donesem };
+
+  auto get_netiflist_cb = [](void* data)
+    {
+    cb_context* ctx = (cb_context*)data;
+    for (struct netif* ni = netif_list; ni; ni = ni->next)
+      {
+      if (ni == netif_default) *ctx->netifdefault = ctx->netiflist->size();
+      ctx->netiflist->push_back(*ni);
+      }
+    ctx->donesem->Give();
+    };
+
+  netiflist.clear();
+  netiflist.reserve(4); // lo, st, pp, ap
+  netifdefault = -1;
+
+  if (tcpip_callback_with_block(get_netiflist_cb, &context, 1) == ERR_OK)
+    {
+    donesem.Take();
+    return ESP_OK;
+    }
+  else
+    {
+    return ESP_FAIL;
+    }
+  }
+
 bool OvmsNetManager::IsNetManagerTask()
   {
   // Return TRUE if the currently running task is the Net Manager task
-  extern void *pxCurrentTCB[portNUM_PROCESSORS];
-
-  return (m_mongoose_task == pxCurrentTCB[xPortGetCoreID()]);
+  return (m_mongoose_task == xTaskGetCurrentTaskHandle());
   }
 
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

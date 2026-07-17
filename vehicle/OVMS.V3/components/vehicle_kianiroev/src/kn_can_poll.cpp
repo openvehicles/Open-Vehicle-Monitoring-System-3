@@ -192,13 +192,56 @@ void OvmsVehicleKiaNiroEv::Incoming_Full(uint16_t type, uint32_t module_sent, ui
 /**
  * Handle incoming messages from cluster.
  */
-void OvmsVehicleKiaNiroEv::IncomingFull_CM(uint16_t type, uint16_t pid, const std::string &data)
-{
-	//	ESP_LOGI(TAG, "CM PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, mlframe, data[0], data[1], data[2], data[3],
-	//			data[4], data[5], data[6]);
-	//	ESP_LOGI(TAG, "---");
-	int32_t value;
+void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
+	{
+//	ESP_LOGD(TAG, "CM PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, mlframe, data[0], data[1], data[2], data[3],
+//			data[4], data[5], data[6]);
+//	ESP_LOGI(TAG, "---");
 	switch (pid)
+		{
+		case 0xa020:
+			if (IsKona())
+				{
+				if (mlframe == 0)
+					{
+					uint32_t odometer = CAN_UINT32(0);
+					if (odometer >= 1) 
+						{
+						StdMetrics.ms_v_pos_odometer->SetValue(odometer, GetConsoleUnits() );
+						}
+					}
+				}
+		break;
+		case 0xb002:
+			if (IsKona())
+				{
+				if (mlframe == 1)
+					{
+					odo=CAN_BYTE(6)<<16;
+					}
+				if (mlframe == 2)
+					{
+					odo+=CAN_UINT(0);
+					if (odo >= 1)
+						{
+						StdMetrics.ms_v_pos_odometer->SetValue(odo, GetConsoleUnits());
+						}
+					}
+				}
+			else
+				{
+				if (mlframe == 1)
+					{
+					odo = CAN_UINT24(3);
+					if (odo >= 1)
+						{
+						StdMetrics.ms_v_pos_odometer->SetValue(odo, GetConsoleUnits());
+						}
+					}
+				}
+			break;
+		}
+	}
 	{
 	case 0xb002:
 		if (get_buff_int_be<3>(data, 6, value))

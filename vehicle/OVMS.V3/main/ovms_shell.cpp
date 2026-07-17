@@ -42,10 +42,10 @@ void NoPrint(microrl_t* rl, const char * str)
   {
   }
 
-int Execute (microrl_t* rl, int argc, const char * const * argv )
+int ExecuteCallback (microrl_t* rl, int argc, const char * const * argv )
   {
   OvmsShell* shell = (OvmsShell*)rl->userdata;
-  MyCommandApp.Execute(shell->m_verbosity, shell, argc, argv);
+  shell->Execute(argc, argv);
   return 0;
   }
 
@@ -57,7 +57,7 @@ void OvmsShell::Initialize(bool print)
   if (IsSecure())
       m_rl.prompt_str = secure_prompt;
   m_rl.userdata = (void*)this;
-  microrl_set_execute_callback(&m_rl, Execute);
+  microrl_set_execute_callback(&m_rl, ExecuteCallback);
   }
 
 void OvmsShell::ProcessChar(char c)
@@ -91,4 +91,9 @@ void OvmsShell::SetSecure(bool secure)
   {
   OvmsWriter::SetSecure(secure);
   m_rl.prompt_str = secure ? secure_prompt : _PROMPT_DEFAULT;
+  }
+
+void OvmsShell::Execute(int argc, const char * const * argv)
+  {
+  MyCommandApp.Execute(m_verbosity, this, argc, argv);
   }

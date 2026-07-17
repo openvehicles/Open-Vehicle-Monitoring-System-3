@@ -56,16 +56,16 @@ class OvmsConsole : public OvmsShell
     typedef enum
       {
       RECV = 0x10000,
-      ALERT,
-      ALERT_MULTI
+      ALERT,                // String alert (single C-string to single console) [DEPRECATED,UNUSED]
+      ALERT_MULTI,          // LogBuffers style alert (multiple C-strings to multiple consoles)
       } event_type_t;
 
     typedef struct
       {
-      event_type_t type;  // Our extended event type enum
+      event_type_t type;    // Our extended event type enum
       union
         {
-        char* buffer;       // Pointer to ALERT buffer
+        char* buffer;       // Pointer to ALERT buffer [DEPRECATED,UNUSED]
         LogBuffers* multi;  // Pointer to ALERT_MULTI message
         ssize_t size;       // Buffer size for RECV
         struct mbuf* mbuf;  // Buffer pointer for RECV with Mongoose
@@ -88,6 +88,7 @@ class OvmsConsole : public OvmsShell
 
   protected:
     void Service();
+    void DeleteEventQueue(QueueHandle_t* queuep);
     void finalise();
 
   protected:
@@ -99,9 +100,9 @@ class OvmsConsole : public OvmsShell
     int m_common;
     char m_space[COMPLETION_MAX_TOKENS+2][TOKEN_MAX_LENGTH];
     bool m_final;
-    QueueHandle_t m_queue;
-    QueueHandle_t m_deferred;
-    int m_discarded;
+    QueueHandle_t m_queue;      // Queue for console specific device events & log messages
+    QueueHandle_t m_deferred;   // Temporary queue for log messages received while InsertCallback active
+    int m_discarded;            // Number of overflows on the deferred queue
     DisplayState m_state;
     unsigned int m_lost;        // Log messages lost due to full queue
     unsigned int m_acked;       // Log messages acknowledged as lost

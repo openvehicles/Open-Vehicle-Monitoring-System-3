@@ -34,13 +34,14 @@
 #include "freertos/task.h"
 #include "ovms_console.h"
 #include "task_base.h"
+#include "mongoose_client.h"
 
 #define BUFFER_SIZE 512
 
 class ConsoleSSH;
 struct mg_connection;
 
-class OvmsSSH
+class OvmsSSH : public MongooseClient
   {
   public:
     OvmsSSH();
@@ -58,7 +59,7 @@ class OvmsSSH
     bool m_keyed;
   };
 
-class ConsoleSSH : public OvmsConsole
+class ConsoleSSH : public OvmsConsole, public MongooseClient
   {
   public:
     ConsoleSSH(OvmsSSH* server, struct mg_connection* nc);

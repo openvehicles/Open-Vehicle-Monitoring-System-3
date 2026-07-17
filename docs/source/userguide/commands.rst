@@ -62,6 +62,17 @@ All remote APIs require login / API key authentication, so commands are in "enab
 mode by default, i.e. all commands can be executed directly without a prior "enable"
 command step as needed to unlock the USB console.
 
+.. note::
+  Commands executed via V2/V3 server or via SSH **block the network process** while
+  running. Blocking the network for too long can cause timeouts and can trigger
+  a watchdog reboot.
+
+  Beginning with main release 3.3.006 (edge 3.3.005-723), you can use the new ``run``
+  command to execute long running commands in a background task, with the command
+  output being sent as a notification. See ``run ?`` for details, usage example::
+
+    OVMS# run ota flash http ; module reset
+
 
 ------------------
 Module HTTP Server

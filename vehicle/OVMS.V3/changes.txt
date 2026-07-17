@@ -1,6 +1,226 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- smart EQ:
+    As soon as the 12V trickle charge begins, a timestamp is generated and stored in `m_12v_trickle_charge_times`.
+    The counted value is set in `xsq.12v.trickle.count`.
+    Within `Ticker3600`, a routine removes all timestamps older than 24 hours and updates `xsq.12v.trickle.count` by -1.
+    New metric:
+      xsq.12v.trickle.count                  -- Count of 12V trickle-charge cycles in 24h
+    updated metric:
+      xsq.bms.contactor.cycles (vector int)  -- [0]=max, [1]=now, [2]=consumed, [3]=diff, [4]=1h_counted_changes
+    New config:
+      [xsq] bms.alert.above.cycles (int)     -- alert threshold for cycles counted; default 50000
+      [xsq] bms.contactor.1h.limit (int)     -- limit for contactor cycles changes per hour for alerting; default 8
+
+2026-05-17 MB   3.3.006  OTA release
+- OTA/firmware: include tools to mitigate 4MB firmware size limit by upgrading the partitioning scheme;
+    for details see: https://docs.openvehicles.com/en/latest/userguide/partitioning.html
+- VW e-Up: extended battery health / aging info (with web UI integration): total battery age,
+    charge time counters AC/DC and parked battery state times (by SOC & temperature ranges)
+    (inspired by OBD Amigos)
+  New metrics:
+    xvu.b.time.charged.ac                 -- Total time charged AC [Hours]
+    xvu.b.time.charged.dc                 -- Total time charged DC [Hours]
+    xvu.b.time.parked                     -- Total time parked [Days]
+    xvu.b.time.parked.cold                -- Total time parked below  0 °C [Days]
+    xvu.b.time.parked.empty               -- Total time parked below 10% SOC [Days]
+    xvu.b.time.parked.full                -- Total time parked above 90% SOC [Days]
+    xvu.b.time.parked.hot                 -- Total time parked above 30 °C [Days]
+    xvu.b.time.parked.state               -- Park times matrix: 6 SOC x 8 temperature ranges
+    xvu.b.time.total                      -- Total battery age [Days]
+- Server V3 (MQTT): AWS IoT Core compatibility fixes:
+    - mTLS client certificate authentication for MQTT brokers that require it
+      (e.g. AWS IoT Core). Configured via web UI (Config → Server V3).
+    - Fixed MQTT CONNECT to omit empty username/password for certificate-only auth.
+    - New option "retain.depth.limit": disables RETAIN on deep topics (>8 segments)
+      for brokers like AWS IoT Core that reject them.
+- Autostart: added init option "minimal" to boot with just basic networking as configured; this is
+    now the first fallback in case of repeated early crashes, aiming at keeping the module reachable
+    in case of a bug in a higher level module / configuration. Auto init will be disabled only if
+    early crashes continue in minimal mode.
+  Config extension:
+    [auto] init                           -- "no" / "yes" / "minimal" (default "yes")
+- Server V3: the MQTT client ID to use can now be configured. While not normally necessary, changing the
+    client ID may be necessary to discard an existing MQTT server session when changing the username.
+  New configs:
+    [server.v3] clientid                  -- MQTT client ID, default: vehicle ID
+- New vehicle: Cadillac CT5
+    Initial support includes: VIN, fuel level (SOC), and run state.
+    The CT5 uses the GM Global B platform which requires authentication
+    so polling isn't currently possible. Instead we listen to CAN
+    bus #5 which is present on the audio amplifier connector X3 in
+    the trunk.
+- Command framework: add command to run commands in a background task, allowing the execution of long
+    running commands via the server v2/v3 command channel or ssh without triggering the watchdog.
+    Example: run ota flash http ; module reset
+    Commands will be interpreted just as in a regular shell/console, so can be abbreviated etc.
+    Note: using this is not strictly necessary for the builtin web shell & HTTP REST API, as the web
+      framework already uses an individual task for each command execution, but it's still possible.
+  New command:
+    run [-n<i|o|s>] [-S<stacksize>] [-P<priority>] <command…> [; <command…>]
+      Run command(s) in background task (log tag: 'bgshell'), send output via notification.
+      Use a single ';' to separate multiple commands.
+      Notification default mode (type) is 'info' (-ni), -ns = 'stream', -no = off.
+      Notification subtype scheme: 'cmd.full.command.name'
+      Default task stacksize is 6144, default task priority is 5.
+- chevrolet_c6_corvette: Add TPMS support.
+- swcan: module included in the default build configuration. SWCAN bus must be initialized manually 
+	from the car module. During initialization, CAN3 will be deinitialized and CAN4 used for SWCAN. 
+	Configuration "use_swcan_adapter" has been added to Voltampera and Boltev vehicles.
+- New vehicle: Volkswagen e-Golf via J533 connector
+    Initial support added for: Odometer, SoC, Est. Range, Charge Status, PRNDL State, VIN
+    https://docs.openvehicles.com/en/latest/components/vehicle_vwegolf/docs/index.html
+- Module: added heap integrity check + alert command for usage in e.g. custom event scripts,
+    enables adding checks on specific system events and/or with higher frequency.
+    Example: perform heap integrity check when the server V2 gets stopped:
+      vfs echo "module check alert" /store/events/server.v2.stopped/90-checkheap
+  Command extension:
+    module check alert                    -- Check for and send one-off alert on heap corruption
+- VFS: added echo command to write a line to a file
+  New commands:
+    vfs echo <line> <file>                -- Write <line> to <file>, creating/replacing the file
+- smart EQ:
+  New commands:
+    xsq ed4scan                           -- Output ED4scan-like BMS diagnostic data
+                                             (battery health, SOC kernel data, cell resistance,
+                                             contactor cycles, temperatures, voltages)
+- Module: add heap tracing tools -- NOTE: heap tracing will for now not be enabled by default on user builds.
+    This is meant to be used by developers to track down heap corruptions. If you encounter many
+    random crashes, ask your maintainer to provide a debug build to you with heap tracing enabled,
+    and let her/him guide you through the usage, or grant him/her remote access to your module.
+    See: https://docs.espressif.com/projects/esp-idf/en/v3.3/api-reference/system/heap_debug.html
+  New commands:
+    module trace start [num_records]    -- init & start heap tracing, num_records defaults to 500
+    module trace stop                   -- stop heap tracing & cleanup memory
+    module trace pause                  -- pause heap tracing for inspection
+    module trace resume                 -- resume heap tracing
+    module trace status                 -- show current status
+    module trace dump                   -- dump allocations & frees recorded
+- Module: added heap integrity alert, added task ownership to heap check report, added task handles to
+    task log, added debug options to web UI (Config → Notifications)
+  New config:
+    [module] debug.heap.alert           -- [bool] perform heap check every 5 minutes, send alert on
+                                            corruption (default: no)
+  New event:
+    system.heap.corrupted               -- Heap corruption detected
+  New notification:
+    [alert] debug.heap.corruption       -- Heap corruption details
+  Command extension:
+    test heapcorruption <restore|keep>  -- default: 'restore', use 'keep' to test heap alert
+  History record extension:
+    "*-OVM-DebugTasks" v2: per task record extended by <handle>
+- Module framework: enable remote use of the system's heap corruption test, i.e. command "module check"
+    can now be used within any shell or command channel, not just the USB console.
+  New command(s):
+    test heapcorruption -- test for heap integrity checker
+- Workaround for iOS Open Vehicle App 1.8.6
+    Workaround for legacy iOS App, hiding zero/negative temperatures to keep other TPMS data visible.
+    This workaround only manipulates the TPMS temperature metric in message W.
+- New vehicle: FIAT eDoblo via OBD-II port
+    Initial support added for:
+      VIN, SoC, SoH
+      Door status
+      Odometer
+      HV, LV battery voltage
+      temperatures
+- TPMS framework: added sensor mapping commands for wheel rotation/swap scenarios
+    New commands:
+      tpms map status   -- show current TPMS sensor-to-wheel mapping with details
+      tpms map get      -- machine-readable output like message Y without header MP-0 Y
+      tpms map set      -- remap sensors using wheel position names (e.g., fl=rr fr=fl rl=fr rr=rl)
+      tpms map reset    -- reset mapping to default (e.g. FL=0, FR=1, RL=2, RR=3)
+    Config: [vehicle] tpms.xx (sensor index per wheel position, layout by GetTpmsLayout())
+    Note: requires vehicle to implement UsesTpmsSensorMapping() returning true
+- New vehicle: Maxus T90 EV (MT90) via OBD-II port
+    Initial support added for:
+      VIN, SOC, SOH & READY state
+      AC plug / pilot detection
+      Lock status
+      Odometer
+      Temperature metrics
+- Renault Twizy: support added for standard metric "v.e.aux12v" (base system awake),
+    OBD polling (DTC checks) enabled already with base system awake
+    (= DTC available in STOP conditions)
+- VW e-Up: enable framework climate preconditioning scheduler web UI
+    (Note: climate control only available with T26 connection)
+- Vehicle framework: Scheduled precondition control with duration support
+    Centralized implementation for all vehicles with per-vehicle override capability.
+    Supports multiple time slots per day with individual duration settings (5-30 minutes).
+    Global enable/disable switch with config persistence.
+    copy function to duplicate schedules across multiple days.
+  New commands:
+    climatecontrol schedule set <day> <times>  -- Set schedule for a day, times format: HH:MM[/duration][,HH:MM[/duration],...]
+                                                     Examples: "07:30", "07:30/10", "07:00/5,17:30/15"
+                                                     Duration in minutes
+    climatecontrol schedule list               -- List all configured schedules with next scheduled event
+    climatecontrol schedule clear <day|all>    -- Clear schedule for specific day or all days
+    climatecontrol schedule copy <source-day> <target-days>
+                                               -- Copy schedule from one day to others
+                                                     Examples: "mon tue-fri", "fri sat,sun"
+                                                     Supports range syntax (tue-fri) and comma-separated lists
+    climatecontrol schedule enable             -- Enable scheduled precondition (global switch)
+    climatecontrol schedule disable            -- Disable scheduled precondition (global switch)
+    climatecontrol schedule status             -- Show schedule status and configured times
+  New config:
+    [vehicle] climate.schedule.<day>           -- Schedule for day (mon/tue/wed/thu/fri/sat/sun)
+                                                  Format: HH:MM[/duration][,HH:MM[/duration],...]
+    [vehicle] climate.precondition             -- Enable/disable scheduled precondition (bool, default false)
+  precondition scheduler features: (ported from ZOE PH2)
+    - Multiple times per day support (comma-separated: "07:30/5,17:45/10")
+    - Individual schedule per weekday
+    - Automatic trigger based on system time
+    - Integration with existing climate control
+    - Web UI configuration page at /cfg/preconditionschedule
+    - Automatic restart mechanism for extended runtime (configurable HVAC duration)
+    - Duplicate prevention (same time won't trigger twice)
+    - Copy function for quick weekly schedule setup
+- smart EQ:
+    Add multiple CAN frame parsers for energy and charging metrics
+    Add automatic 12V ADC factor recalculation history tracking
+- Renault Zoe Ph2:
+    - Added temperature-based PTC auto-enable feature
+      - Auto-enables PTCs when outside temperature in range (default 9.5-20°C)
+      - Configurable via Web UI or console commands
+    New config:
+      [xrz2] auto_ptc_enabled           -- [bool] enable auto-PTC based on temperature (default: no)
+      [xrz2] auto_ptc_temp_min          -- [float] minimum temperature for auto-enable (default: 9.5°C)
+      [xrz2] auto_ptc_temp_max          -- [float] maximum temperature for auto-enable (default: 20.0°C)
+    Restructured the entire codebase for improved readability
+    Removed the water pump lifetime metric and water pump reset command
+    Added custom metrics for motor/inverter state monitoring (rotor/stator currents and temperatures)
+    New metrics:
+      xrz2.m.temp.stator1               -- Stator temperature sensor 1 (°C)
+      xrz2.m.temp.stator2               -- Stator temperature sensor 2 (°C)
+      xrz2.m.temp.rotor.raw             -- Rotor temperature raw estimation (°C)
+      xrz2.m.temp.rotor                 -- Rotor temperature estimated (°C)
+      xrz2.m.current.stator.u           -- Stator phase U current, absolute value (Amps)
+      xrz2.m.current.stator.v           -- Stator phase V current, absolute value (Amps)
+      xrz2.m.current.stator.w           -- Stator phase W current, absolute value (Amps)
+      xrz2.m.current.rotor1             -- Rotor current sensor 1 (Amps)
+      xrz2.m.current.rotor2             -- Rotor current sensor 2 (Amps)
+      xrz2.m.rotor.resistance           -- Rotor reference resistance (Ohms)
+      xrz2.m.rotor.voltage              -- Rotor excitation voltage I×R calculated (Volts)
+    Added manual PTC activation for heating while charging or when the compressor is defective
+    Added a lighting command, similar to the key fob button
+    Added a coming-home function
+    Added remote preconditioning via the key fob
+    Added PV/Solar charging mode to suppress per-session charge start/stop notifications on PV-controlled wallboxes
+      Sends a single summary notification when the charge cable is unplugged, including the total kWh charged across all sessions
+    Added DC/DC activation and keep-alive via OVMS
+      Enables and keeps the HV system alive regardless of lock status or whether the Zoe was previously asleep
+      Automatically activates the DC/DC converter to recharge the 12 V battery when the voltage threshold is reached
+      Added configurable post-ignition DC/DC runtime (0–60 min) to reduce contactor wear during short stops or when preparing the Zoe for a trip
+      Added manual DC/DC activation with configurable SOC and time limits, ideal for powering 230 V inverters, for example while camping
+    Added a working trunk unlock command
+    Added TXCallback to verify successful message transmission
+    Added ECU feedback handling instead of sending messages blindly; currently implemented only for the coming-home function
+    Added wake-up messages for when the CAN bus is asleep
+- Wifi: added command to restart the Wifi network into the default (autostart) config,
+    and added default for the AP SSID on the apclient mode.
+  New/changed commands:
+    wifi restart                        -- Restart Wifi network into autostart config
+    wifi mode apclient                  -- Parameter <apssid> is now optional, defaults to autostart config
 - Cellular: added option to restrict the modem network type to 2G/3G/4G. Restricting
     the network type may help in case of frequent network losses / reconnects.
   New config:
@@ -10,6 +230,7 @@ Open Vehicle Monitor System v3 - Change log
     Automatic 12V ADC factor recalculation using CAN 12V voltage.
     New config:
     [xsq] calc.adcfactor (bool)             -- activate sutomatic ADC factor recalculation (default false)
+    [xsq] adc.samples (int)                 -- default 4
 - Cellular: GPS auto pause on parking reactivate when Car awakes. This reduces time to first GPS fix.
   New config:    
     [modem] gps.parkreactawake (bool)   -- GPS is switched on for the gps.parkreactlock (minutes) time when the GPS parking pause is active and the car wakes up (default: no)
@@ -76,7 +297,7 @@ Open Vehicle Monitor System v3 - Change log
     [modem] gps.parkreactivate (minutes)   -- park time in minutes for auto reactivate for GPS lock (gps.parkreactlock), 0 = disabled
     [modem] gps.parkreactlock  (minutes)   -- GPS lock for 5 minutes until automatic shutdown during parking time (default 5 minutes)
 
-2024-03-23 MB   3.3.005  OTA release
+2025-07-18 MB   3.3.005  OTA release
 - Cellular: GPS auto pause on parking option added (power saving).
   New config:
     [modem] gps.parkpause     -- park time in seconds for auto pause, 0 = disabled (default)

@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "1.13.5"
+#define VERSION "1.14.1"
 
 #include <stdio.h>
 #include <string>
@@ -308,6 +308,7 @@ bool OvmsVehicleRenaultTwizy::SetFeature(int key, const char *value)
       return true;
     case 15:
     {
+      auto lock = MyConfig.Lock();
       int bits = atoi(value);
       MyConfig.SetParamValueBool("xrt", "canwrite",  (bits& 1)!=0);
       MyConfig.SetParamValueBool("xrt", "autoreset", (bits& 2)==0);
@@ -526,6 +527,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRe
     case CMD_UnLock:
       res = m_sevcon->CfgUnlock();
       if (res == COR_OK) {
+        auto lock = MyConfig.Lock();
         SetCarLocked(false, 0);
         MyConfig.DeleteInstance("xrt", "lock_on");
         // if in valet mode, allow 1 more km:

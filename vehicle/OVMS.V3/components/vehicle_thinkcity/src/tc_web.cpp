@@ -63,6 +63,7 @@ void OvmsVehicleThinkCity::WebInit()
  */
 void OvmsVehicleThinkCity::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
+  auto lock = MyConfig.Lock();
   std::string error;
   bool canwrite, remote_charge_port;
 
@@ -124,6 +125,7 @@ void OvmsVehicleThinkCity::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 void OvmsVehicleThinkCity::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
     /*
+  auto lock = MyConfig.Lock();
   std::string error;
   //	  cap_act_kwh			Battery capacity in wH (Default: 270000)
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)

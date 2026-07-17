@@ -66,7 +66,7 @@ OvmsCanLogMonitorInit::OvmsCanLogMonitorInit()
           "[filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-[<id>]] | <bus>:<id>[-[<id>]]\n"
           "Example: 2:2a0-37f",
-          0, 9);
+          0, _COMMAND_TOKEN_NMB);
         }
       }
     }

@@ -124,6 +124,7 @@ void modem::Task()
   uint8_t data[128];
 
   // Init UART:
+  ESP_LOGD(TAG, "UART init");
   uart_config_t uart_config =
     {
     .baud_rate = m_baud,
@@ -278,7 +279,11 @@ void modem::Task()
   uart_wait_tx_done(m_uartnum, portMAX_DELAY);
   uart_flush(m_uartnum);
   uart_driver_delete(m_uartnum);
+
   if (MyBoot.IsShuttingDown()) MyBoot.ShutdownReady(TAG);
+
+  uint32_t minstackfree = uxTaskGetStackHighWaterMark(NULL);
+  ESP_LOGD(TAG, "UART task done, min stack free=%u", minstackfree);
   vTaskDelete(NULL);
   }
 
@@ -405,7 +410,11 @@ void modem::Restart()
   {
   if (m_driver == NULL)
     {
-    ESP_LOGW(TAG, "Cannot restart, as modem driver is not loaded");
+    ESP_LOGI(TAG, "Restart");
+    if (MyConfig.GetParamValueBool("auto", "modem", false))
+      SendSetState1((GetState1() != PoweredOff) ? PowerOffOn : PoweringOn);
+    else
+      SendSetState1(PoweringOff);
     }
   else
     { m_driver->Restart(); }
@@ -453,6 +462,7 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
     }
 
   writer->printf("  Model: %s\n",m_model.c_str());
+  writer->printf("  Revision: %s\n",StandardMetrics.ms_m_net_mdm_model->AsString().c_str());
 
   if (m_powermode != Off)
     {
@@ -1567,6 +1577,7 @@ void modem::StopNMEA()
 
 void modem::StartMux()
   {
+  OvmsMutexLock lock(&m_mux_mutex);
   if (m_mux == NULL)
     {
     ESP_LOGV(TAG, "Starting MUX");
@@ -1577,9 +1588,20 @@ void modem::StartMux()
 
 void modem::StopMux()
   {
+  OvmsMutexLock lock(&m_mux_mutex);
   if (m_mux != NULL)
     {
     ESP_LOGV(TAG, "Stopping MUX");
+    // shut down MUX users:
+    StopNMEA();
+    StopPPP();
+    if (m_ppp)
+      {
+      // as the PPP driver is now kept running, make sure it doesn't hold
+      // a dangling reference to the deleted MUX driver:
+      m_ppp->DeInitialise();
+      }
+    // shut down & delete MUX driver:
     m_mux->Shutdown();
     delete m_mux;
     m_mux = NULL;
@@ -1591,7 +1613,7 @@ void modem::StartPPP()
   if (m_ppp == NULL)
     {
     ESP_LOGV(TAG, "Launching PPP");
-    m_ppp = new GsmPPPOS(m_mux, m_mux_channel_DATA);
+    m_ppp = new GsmPPPOS(this);
     }
   ESP_LOGV(TAG, "Starting PPP");
   m_ppp->Initialise(m_mux, m_mux_channel_DATA);
@@ -1600,7 +1622,7 @@ void modem::StartPPP()
 
 void modem::StopPPP()
   {
-  if (m_ppp != NULL)
+  if (m_ppp != NULL && !m_ppp->m_shutdown)
     {
     ESP_LOGV(TAG, "Stopping PPP");
     m_ppp->Shutdown(true);

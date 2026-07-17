@@ -9,7 +9,7 @@
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
 ;    (C) 2019       Marko Juhanne
-;    (C) 2021       Alexander Kiiyashko
+;    (C) 2021       Alexander Kiiashko
 ;    (C) 2022       Alexander von Gluck IV
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -104,6 +104,7 @@ OvmsVehicleBoltEV::OvmsVehicleBoltEV()
     m_controlled_lights = 0;
     m_startPolling_timer = 0;
     m_pPollingList = NULL;
+    m_use_swcan_adapter = false;
 
     BmsSetCellArrangementVoltage(96, 16);
     BmsSetCellArrangementTemperature(6, 1);
@@ -161,16 +162,24 @@ OvmsVehicleBoltEV::OvmsVehicleBoltEV()
 
     PollSetPidList(m_can1, m_pPollingList);
     PollSetState(0);
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-    ESP_LOGI(TAG, "Bolt vehicle module: Register SWCAN using external CAN module");
-    RegisterCanBus(4, CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);
+
+  if(!m_use_swcan_adapter)
+  {
+    ESP_LOGI(TAG, "Register 2nd MCP2515 as SWCAN can3");
+    RegisterCanBus(3, CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);  // single wire can
+    p_swcan = m_can3;
+  }
+  else
+  {
+    // External SWCAN module with MCP2515
+    #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    ESP_LOGI(TAG, "Register external SWCAN on can4");
+    swcan::Init();
+    RegisterCanBus(4, CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);  // single wire can
     p_swcan = m_can4;
     p_swcan_if = (swcan*)MyPcpApp.FindDeviceByName("can4");
-#else
-    ESP_LOGI(TAG, "Bolt vehicle module: Register 2nd MCP2515 as SWCAN");
-    RegisterCanBus(3,CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);  // single wire can
-    p_swcan = m_can3;
-#endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    #endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+  }
 
     // register tx callback
     using std::placeholders::_1;
@@ -213,6 +222,7 @@ void OvmsVehicleBoltEV::ConfigChanged(OvmsConfigParam* param)
     m_range_rated_km = MyConfig.GetParamValueInt("xcb", "range.km", 0);
     m_extended_wakeup = MyConfig.GetParamValueBool("xcb", "extended_wakeup", false);
     m_notify_metrics = MyConfig.GetParamValueBool("xcb", "notify_va_metrics", false);
+    m_use_swcan_adapter = MyConfig.GetParamValueBool("xcb", "use_swcan_adapter", false);
 }
 
 void OvmsVehicleBoltEV::Status(int verbosity, OvmsWriter* writer)
@@ -919,6 +929,8 @@ void OvmsVehicleBoltEV::NotifiedVehicleAwake()
 void OvmsVehicleBoltEV::CommandWakeupComplete( const CAN_frame_t* p_frame, bool success )
 {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    if(!m_use_swcan_adapter)
+        return;
     ESP_LOGI(TAG,"CommandWakeupComplete. Success: %d", success);
     // Return from high voltage wakeup mode after wakeup CAN messages have been sent
 
@@ -936,6 +948,8 @@ void OvmsVehicleBoltEV::CommandWakeupComplete( const CAN_frame_t* p_frame, bool 
 OvmsVehicle::vehicle_command_t OvmsVehicleBoltEV::CommandWakeup()
 {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    if(!m_use_swcan_adapter)
+        return NotImplemented;
     CAN_frame_t txframe;
 
     p_swcan_if->SetTransceiverMode(tmode_highvoltagewakeup);
@@ -1011,6 +1025,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleBoltEV::CommandWakeup()
 OvmsVehicle::vehicle_command_t OvmsVehicleBoltEV::CommandLock(const char* pin)
 {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    if(!m_use_swcan_adapter)
+        return NotImplemented;
     CommandWakeup();
 
     CAN_frame_t txframe;
@@ -1041,6 +1057,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleBoltEV::CommandLock(const char* pin)
 OvmsVehicle::vehicle_command_t OvmsVehicleBoltEV::CommandUnlock(const char* pin)
 {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    if(!m_use_swcan_adapter)
+        return NotImplemented;
     CommandWakeup();
 
     CAN_frame_t txframe;

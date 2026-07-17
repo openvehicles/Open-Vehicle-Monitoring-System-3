@@ -52,8 +52,7 @@ extern "C"
 #include "ovms_semaphore.h"
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-#define MG_LOCALS 1
-#include "mongoose.h"
+#include "mongoose_client.h"
 
 typedef enum
   {
@@ -96,6 +95,9 @@ typedef struct
   } ping_callback_args_t;
 
 class OvmsNetManager
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  : public MongooseClient
+#endif
   {
   public:
     OvmsNetManager();
@@ -126,6 +128,7 @@ class OvmsNetManager
 
   public:
     void DoSafePrioritiseAndIndicate();
+    esp_err_t GetNetifList(std::vector<struct netif>& netiflist, int& netifdefault);
 
   protected:
     void PrioritiseAndIndicate();
@@ -153,9 +156,11 @@ class OvmsNetManager
     char m_previous_name[2];
 
   protected:
-    bool m_cfg_reboot_no_connection;
+    std::string m_cfg_dnslist;              // config network dns            [iplist] default ""
+    bool m_cfg_reboot_no_connection;        // config network reboot.no.ip   [bool] default false
     float m_cfg_wifi_sq_good;               // config network wifi.sq.good   [dBm] default -87
     float m_cfg_wifi_sq_bad;                // config network wifi.sq.bad    [dBm] default -89
+    bool m_cfg_wifi_bad_reconnect;          // config network wifi.bad.reconnect [bool] default false
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   protected:
@@ -166,7 +171,9 @@ class OvmsNetManager
     TaskHandle_t m_mongoose_task;
     struct mg_mgr m_mongoose_mgr;
     bool m_mongoose_running;                // true = Mongoose task is fully operational
+    bool m_mongoose_starting;               // true = Mongoose task startup requested
     bool m_mongoose_stopping;               // true = Mongoose task shutdown requested
+    bool m_restart_network;                 // true = Mongoose task shall restart network
     QueueHandle_t m_jobqueue;
     OvmsSemaphore m_tcpip_callback_done;    // block until tcpip callback done (see PrioritiseAndIndicate)
 
@@ -176,6 +183,7 @@ class OvmsNetManager
     struct mg_mgr* GetMongooseMgr();
     bool MongooseRunning();
     void ProcessJobs();
+    void DiscardJobs();
     bool ExecuteJob(netman_job_t* job, TickType_t timeout=portMAX_DELAY);
     void ScheduleCleanup();
     int ListConnections(int verbosity, OvmsWriter* writer);

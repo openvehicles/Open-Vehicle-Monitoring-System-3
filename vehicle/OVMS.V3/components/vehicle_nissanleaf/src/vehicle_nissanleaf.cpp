@@ -1065,6 +1065,42 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         }
 
+      // --------- Patch ZE1 : detect CHAdeMO charging via battery voltage/current ---------
+      if (cfg_ze1)
+        {
+        bool car_on = StandardMetrics.ms_v_env_on->AsBool();
+
+        // DC fast charge active if: car off + battery voltage plausible + strong inbound current
+        if (!car_on && battery_voltage > 200.0f && battery_current < -25.0f)
+          {
+          // CHAdeMO detected
+          if (StandardMetrics.ms_v_charge_state->AsString() != "charging"
+              || StandardMetrics.ms_v_charge_type->AsString() != "chademo")
+            {
+            vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
+            }
+          // Pilot ON (cable connected, station OK)
+          StandardMetrics.ms_v_charge_pilot->SetValue(true);
+          // Keep charge metrics up-to-date
+          StandardMetrics.ms_v_charge_voltage->SetValue(battery_voltage);
+          StandardMetrics.ms_v_charge_current->SetValue(-battery_current);
+          StandardMetrics.ms_v_charge_power  ->SetValue(-battery_power);
+          if (battery_voltage > 0)
+            StandardMetrics.ms_v_charge_climit->SetValue(
+              m_battery_chargerate_max->AsFloat() * 1000.0f / battery_voltage);
+          }
+        else if (!car_on
+                 && StandardMetrics.ms_v_charge_inprogress->AsBool()
+                 && StandardMetrics.ms_v_charge_type->AsString() == "chademo"
+                 && battery_current > -5.0f)
+          {
+          // End of CHAdeMO charging
+          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
+          }
+        }
+      // --------- End patch ZE1 ---------
+
     }
       break;
     case 0x1dc:
@@ -1407,10 +1443,25 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x54f:
       /* Climate control's measurement of temperature inside the car.
-       * Appears to be in Fahrenheit. Unsure why the check for 20?
-       * mjk: seeems like off by 6 celcius on 2013 models, so added cabintempoffset that can be set in GUI.
+       * AZE0 (2013-2017): Fahrenheit, may be off by ~6°C requiring xnl.cabintempoffset.
+       * ZE1 (2018+): half-degree Celsius with 40°C bias, same encoding as ambient temp
+       * on 0x54C byte 6 (which OVMS already parses correctly). Reverse-engineered Apr 2026
+       * by samr037 by comparing ZE1 captures at known cabin temps:
+       *   d[0]=0x72(114) -> 17°C   (matches today's ~18°C cabin)
+       *   d[0]=0x8C(140) -> 30°C   (matches Jul 2024 summer cabin)
+       *   d[0]=0x50(80)  -> 0°C    (sentinel/HVAC off — skipped)
+       * After this patch, xnl.cabintempoffset is unnecessary on ZE1.
        */
-      if (d[0] != 20)
+      if (cfg_ze1)
+        {
+        if (d[0] != 0x50 && d[0] != 20)  // skip sentinels
+          {
+          float cabin_c = d[0] / 2.0f - 40.0f;
+          if (cabin_c > -30.0f && cabin_c < 60.0f)
+            StandardMetrics.ms_v_env_cabintemp->SetValue(cabin_c);
+          }
+        }
+      else if (d[0] != 20)
         {
         StandardMetrics.ms_v_env_cabintemp->SetValue((5.0 / 9.0 * (d[0] - 32)) + MyConfig.GetParamValueFloat("xnl", "cabintempoffset", DEFAULT_CABINTEMP_OFFSET));
         // StandardMetrics.ms_v_env_cabintemp->SetValue(d[0] / 2.0 - 14);
@@ -1439,6 +1490,27 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x59e:
       {
+      // ZE1 (40/62 kWh): byte 7 = dashboard SOC (multiplier 0.5).
+      // Reverse-engineered Apr 2026 by samr037 by comparing two CAN captures
+      // taken on a 2018 ZE1 40kWh at known dashboard SOCs:
+      //   real ~59% / dash ~55%  -> byte 7 = 0x6E (110/2 = 55%)
+      //   real ~95% / dash 100%  -> byte 7 = 0xC8 (200/2 = 100%)
+      //   real ~81% / dash  86%  -> byte 7 = 0xAC (172/2 = 86%)
+      // This message previously had no parser for ZE1; xnl.v.b.soc.instrument
+      // was always 0 (Issue #323 long-standing gap).
+      if (cfg_ze1)
+        {
+        float instr_soc = d[7] / 2.0f;
+        if (instr_soc > 0.0f && instr_soc <= 100.0f)
+          {
+          m_soc_instrument->SetValue(instr_soc);
+          // If user opted out of newcar SOC, use dashboard SOC as the main metric:
+          if (!MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
+            {
+            StandardMetrics.ms_v_bat_soc->SetValue(instr_soc);
+            }
+          }
+        }
       switch(m_battery_type->AsInt(BATTERY_TYPE_2_24kWh))
         {
         case BATTERY_TYPE_1_24kWh:
@@ -1852,22 +1924,17 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
 
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2016)
     {
-    ESP_LOGV(TAG, "Possible new TCU on CAR Bus");
+    ESP_LOGV(TAG, "Model year => 2016, sending command on CAR Bus");
     length = 4;
     tcuBus = m_can2;
     }
   else
     {
-    ESP_LOGV(TAG, "Possible old TCU on EV Bus");
+    ESP_LOGV(TAG, "Model year < 2016, sending command on EV Bus");
     length = 1;
     tcuBus = m_can1;
     }
 
-  if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2012) {
-     CommandWakeup();
-  } else if (MyConfig.GetParamValueBool("xnl", "command.wakeup", true)) {
-     CommandWakeupTCU();
-  }
   switch (command)
     {
     case ENABLE_CLIMATE_CONTROL:
@@ -2481,63 +2548,84 @@ void OvmsVehicleNissanLeaf::UpdateTripCounters()
 // Wake up the car & send Climate Control or Remote Charge message to VCU,
 // replaces Nissan's CARWINGS and TCU module, see
 // http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=416
-//
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
+{
+  if (!cfg_enable_write) return Fail; // Disable commands unless canwrite is true
+
+  int model_year = MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR);
+
+  if (model_year <= 2012) {
+    return CommandWakeupZE0();
+  }
+
+  if (model_year <= 2015) {
+    return CommandWakeupAZE0();
+  }
+
+  return CommandWakeupAZE0_2();
+}
+
 // On Generation 1 Cars, TCU pin 11's "EV system activation request signal" is
 // driven to 12V to wake up the VCU. This function drives the configured pin high to
 // activate the "EV system activation request signal". Without a circuit
 // connecting the configured pin to the activation signal wire, remote climate control will
 // only work during charging and for obvious reasons remote charging won't
 // work at all.
-//
-// On Generation 2 Cars, a CAN bus message is sent to wake up the VCU. This
-// function sends that message even to Generation 1 cars which doesn't seem to
-// cause any problems.
-// TODO (UPDATE for GEN1: It automatically prompts to starts charging
-// TODO every time there is no command issued after it like turning on A/C)
-OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
-  {
-  // Shotgun approach to waking up the vehicle. Send all kinds of wakeup messages
-  if (!cfg_enable_write) return Fail; // Disable commands unless canwrite is true
-  ESP_LOGI(TAG, "Sending Wakeup Frame");
-  /*
-  unsigned char data = 0;
-  m_can1->WriteStandard(0x679, 1, &data); //Wakes up the modules by spoofing VCM startup message
-  m_can1->WriteStandard(0x679, 1, &data); //Tops up the 12V battery if connected to EVSE
-  m_can1->WriteStandard(0x5C0, 8, &data); //Wakes up the VCM (by spoofing empty battery request heating)
-  */
-  uint8_t d8[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-  uint8_t d1[1] = {0x00};
-  m_can1->WriteStandard(0x679, 1, d1); //Wakes up the modules by spoofing VCM startup message
-  m_can1->WriteStandard(0x5C0, 8, d8); //Wakes up the VCM (by spoofing empty battery request heating)
-
-  return Success;
+// Optionally send the Carwings wakeup frame.
+// https://docs.google.com/spreadsheets/d/1EHa4R85BttuY4JZ-EnssH4YZddpsDVu6rUFm0P7ouwg/edit?gid=0#gid=0
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeupZE0()
+{
+  if (MyConfig.GetParamValueBool("xnl", "command.wakeup", true)) {
+    ESP_LOGI(TAG, "Sending CarWings TCU->VCU Wakeup Frame");
+    unsigned char data = 0;
+    m_can1->WriteStandard(0x68c, 1, &data); //Wakes up VCM By sending a wakeup message
   }
 
-// Wakeup VCM using command which allegedly is used by TCU (https://docs.google.com/spreadsheets/d/1EHa4R85BttuY4JZ-EnssH4YZddpsDVu6rUFm0P7ouwg/edit?gid=0#gid=0)
-void OvmsVehicleNissanLeaf::CommandWakeupTCU()
-  {
-  if (!cfg_enable_write) return; // Disable commands unless canwrite is true
-  ESP_LOGI(TAG, "Sending CarWings TCU->VCU Wakeup Frame");
-  unsigned char data = 0;
-  m_can1->WriteStandard(0x68c, 1, &data); //Wakes up VCM By sending a wakeup message
+  // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
+  MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 1);
+  ESP_LOGI(TAG, "ZE0 EV SYSTEM ACTIVATION REQUEST ON");
+
+  return Success;
+}
+
+// On Generation 2 Cars, a pair of canbus messages are sent.
+// I suspect that some combination of the ZE0 and AZE0_2 TCU wakeup frames
+// would work better here but I don't have a car to test, so leaving alone.
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeupAZE0()
+{
+    // Shotgun approach to waking up the vehicle. Send all kinds of wakeup messages
+    ESP_LOGI(TAG, "Sending AZE0 Wakeup Frames");
+
+    uint8_t d8[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    uint8_t d1[1] = {0x00};
+    m_can1->WriteStandard(0x679, 1, d1); //Wakes up the modules by spoofing VCM startup message
+    m_can1->WriteStandard(0x5C0, 8, d8); //Wakes up the VCM (by spoofing empty battery request heating)
+
+    return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeupAZE0_2()
+{
+  ESP_LOGI(TAG, "Sending AZE0_2 TCU wakeup frames");
+  uint8_t d1[1] = {0x00};
+  m_can2->WriteStandard(0x68c, 1, d1);
+
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+
+  uint8_t d4[4] = {0x46, 0x08, 0x00, 0x00};
+  m_can2->WriteStandard(0x56e, 4, d4);
+
+  ESP_LOGV(TAG, "Sending AZE0_2 TCU wakeup frames done");
+  return Success;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)
-  {
+{
   if (!cfg_enable_write) return Fail; //disable commands unless canwrite is true
   ESP_LOGI(TAG, "RemoteCommandHandler");
-  // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
-  if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
-  {
-    if (MyConfig.GetParamValueBool("xnl", "command.wakeup", true)) {
-       CommandWakeupTCU();
-    }
-    MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 1);
-    ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST ON");
-  } else {
-    // Use wakeup only for newer cars.
-    CommandWakeup();
-  }
+  
+  CommandWakeup();
+
   // The GEN 2 Nissan TCU module sends the command repeatedly, so we start
   // m_remoteCommandTimer (which calls RemoteCommandTimer()) to do this
   // EV SYSTEM ACTIVATION REQUEST is released in the timer too
@@ -2546,7 +2634,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(Remot
   xTimerStart(m_remoteCommandTimer, 0);
 
   return Success;
-  }
+}
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandHomelink(int button, int durationms)
   {
@@ -2565,6 +2653,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandHomelink(int button
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandClimateControl(bool climatecontrolon)
   {
   ESP_LOGI(TAG, "CommandClimateControl");
+  if (!climatecontrolon)
+    { // stops the scheduled climate restart
+    m_climate_restart = false;
+    m_climate_restart_ticker = 0;
+    }
   return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
   }
 
@@ -2629,6 +2722,7 @@ OvmsVehicleNissanLeaf::vehicle_command_t OvmsVehicleNissanLeaf::MsgCommandCA(std
 {
   if (command == CMD_SetChargeAlerts)
   {
+    auto lock = MyConfig.Lock();
     std::istringstream sentence(args);
     std::string token;
 
