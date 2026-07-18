@@ -172,12 +172,6 @@ void OvmsVehicleFiatEDoblo::IncomingFrameCan1(CAN_frame_t* p_frame)
       if(d[1] != 0x06)
         {
           
-          if(newSoC > StandardMetrics.ms_v_bat_soc->AsFloat())
-            {
-              PollState_Charging(); // until we find the signal with the charging status we use the indication of increasing SoC, even though it might be wrong during recuperation
-              StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-              ESP_LOGD(TAG, "charging started SoC: %f (0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x)", newSoC, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);            
-            }
           if(newSoC < 1)
             {
               ESP_LOGW(TAG, "received small SoC: %f (0x%2x 0x%2x 0x%2x 0x%2x  0x%2x 0x%2x 0x%2x 0x%2x)", newSoC, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
@@ -230,15 +224,12 @@ void OvmsVehicleFiatEDoblo::IncomingFrameCan1(CAN_frame_t* p_frame)
     break;
   case 0x4a2:
     {
-      // not fully correct, as bit 6 in byte 1 reflects the connection status (0x40 for unplugged, 0x00 for type2 connected, but maybe close enough)
-      if(d[1] & 0x40)
-        {
-          StandardMetrics.ms_v_door_chargeport->SetValue(false);
-        }
-      else
-        {
-          StandardMetrics.ms_v_door_chargeport->SetValue(true);
-        }                                                         
+      // Observed on e-Berlingo: byte 1 == 0x00 while the EVSE pilot is available,
+      // 0x80 with no pilot / wallbox stopped, 0x40 transiently while unplugging.
+      bool pilot = ((d[1] & 0xc0) == 0x00);
+      StandardMetrics.ms_v_charge_pilot->SetValue(pilot);
+      if (!pilot)
+        StandardMetrics.ms_v_charge_inprogress->SetValue(false);
     }
     break;
   case 0x412:
@@ -259,7 +250,6 @@ void OvmsVehicleFiatEDoblo::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_env_footbrake->SetValue(((d[0] & 0x20) > 0) ? 100.0 : 0.0); // we have in this bit only a binary footbrake status, no details.
 
       /* TODO:
-         StandardMetrics.ms_v_charge_pilot->SetValue(d[1] & 0x08);
          StandardMetrics.ms_v_env_locked->SetValue(d[2] & 0x08);
          StandardMetrics.ms_v_env_valet->SetValue(d[2] & 0x10);
          StandardMetrics.ms_v_env_headlights->SetValue(d[2] & 0x20);
@@ -274,7 +264,17 @@ void OvmsVehicleFiatEDoblo::IncomingFrameCan1(CAN_frame_t* p_frame)
     break;
   case 0x5c3:
     {
-      // Byte 2 could be related to the charge current in bits 0011 1100
+      // Active AC charging has been observed with byte 0 == 0xd4/0xd5 while pilot is present.
+      // Stopped / idle states have byte 0 == 0x00.
+      if ((d[0] == 0xd4 || d[0] == 0xd5) && StandardMetrics.ms_v_charge_pilot->AsBool())
+        {
+          PollState_Charging();
+          StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+        }
+      else if (d[0] == 0x00)
+        {
+          StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+        }
       break;
     }
   }
