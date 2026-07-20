@@ -30,6 +30,7 @@
 
 #ifdef CONFIG_OVMS_COMP_OTA
 #include "ovms_ota.h"
+#include "ovms_utils.h"
 
 /**
  * HandleCfgFirmware: OTA firmware update & boot setup (URL /cfg/firmware)
@@ -46,6 +47,24 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   std::string version;
   const char *what;
   char buf[132];
+
+  // Background update-check (AJAX): the slow part of this page is the OTA
+  // "available version" lookup, which makes a blocking HTTP request to the
+  // update server. The page is rendered without it (GetStatus check_update=false)
+  // and the browser fetches the result here asynchronously. Returns JSON:
+  //   { "version": "<server version>", "update": <bool>, "changelog": "<text>" }
+  if (c.getvar("action") == "updatecheck") {
+    MyOTA.GetStatus(info, true);    // performs the blocking server version check
+    c.head(200,
+      "Content-Type: application/json; charset=utf-8\r\n"
+      "Cache-Control: no-cache");
+    c.printf("{\"version\":\"%s\",\"update\":%s,\"changelog\":\"%s\"}",
+      json_encode(info.version_server).c_str(),
+      info.update_available ? "true" : "false",
+      json_encode(info.changelog_server).c_str());
+    c.done();
+    return;
+  }
 
   if (c.method == "POST") {
     // process form submission:
@@ -122,16 +141,31 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   }
 
   // read status:
-  MyOTA.GetStatus(info);
+  // Skip the server "available version" check here (it does a blocking HTTP
+  // request); the page fetches it in the background via ?action=updatecheck.
+  MyOTA.GetStatus(info, false);
   bool has_factory = ovms_partition_table_has_factory();
 
   c.panel_start("primary", "Firmware setup &amp; update");
 
+  // Wrap the status rows in a form-horizontal so their labels are right-aligned
+  // and vertically aligned with their values, matching the tabbed sections below
+  // (Bootstrap only styles .control-label that way inside .form-horizontal):
+  c.print("<div class=\"form-horizontal\">");
   c.input_info("Firmware version", info.version_firmware.c_str());
-  output = info.version_server;
-  output.append(" <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\">Version info</button>"
+  // The server version is filled in asynchronously (see updatecheck script below):
+  output = "<span id=\"ota-server-version\" class=\"text-muted\">checking for updates&hellip;</span>";
+  output.append(" <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\" id=\"ota-versioninfo-btn\" disabled>Version info</button>"
                 " <button type=\"button\" class=\"btn btn-default action-update-now\">Update now</button>");
-  c.input_info("…available", output.c_str());
+  // Emit the "…available" row directly (not via input_info) so its label can take
+  // extra top padding: this row's value has buttons (taller than text) that push
+  // the version number down to mid-row, so the label is dropped to line up with it.
+  c.print("<div class=\"form-group\">"
+            "<label class=\"control-label col-sm-3\" style=\"padding-top:12px\">…available:</label>"
+            "<div class=\"col-sm-9\"><div class=\"form-control-static\">");
+  c.print(output);
+  c.print("</div></div></div>");
+  c.print("</div>");
 
   c.print(
     "<ul class=\"nav nav-tabs\">"
@@ -264,7 +298,9 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   // Flash VFS:
   mru = MyConfig.GetParamValue("ota", "vfs.mru");
   c.input_info("Auto flash",
-    "<ol>"
+    // Left-align the list markers with the column's other text (drop the default
+    // ~40px <ol> indent) instead of indenting them off to the right:
+    "<ol style=\"padding-left:0; list-style-position:inside\">"
       "<li>Place the file <code>ovms3.bin</code> in the SD root directory.</li>"
       "<li>Insert the SD card, wait until the module reboots.</li>"
       "<li>Note: after processing the file will be renamed to <code>ovms3.done</code>.</li>"
@@ -322,25 +358,24 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       "<p>Flashing from web or file writes alternating to the OTA partitions.</p>");
   }
 
-  c.printf(
+  // Title & changelog are filled in asynchronously by the updatecheck script:
+  c.print(
     "<div class=\"modal fade\" id=\"version-dialog\" role=\"dialog\" data-backdrop=\"static\" data-keyboard=\"false\">"
       "<div class=\"modal-dialog modal-lg\">"
         "<div class=\"modal-content\">"
           "<div class=\"modal-header\">"
             "<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>"
-            "<h4 class=\"modal-title\">Version info %s</h4>"
+            "<h4 class=\"modal-title\">Version info <span id=\"ota-version-title\"></span></h4>"
           "</div>"
           "<div class=\"modal-body\">"
-            "<pre>%s</pre>"
+            "<pre id=\"ota-changelog\">Loading&hellip;</pre>"
           "</div>"
           "<div class=\"modal-footer\">"
             "<button type=\"button\" class=\"btn btn-default\" data-dismiss=\"modal\">Close</button>"
           "</div>"
         "</div>"
       "</div>"
-    "</div>"
-    , _html(info.version_server)
-    , _html(info.changelog_server));
+    "</div>");
 
   c.print(
     "<div class=\"modal fade\" id=\"flash-dialog\" role=\"dialog\" data-backdrop=\"static\" data-keyboard=\"false\">"
@@ -377,6 +412,24 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "if (on) $(sel).addClass(\"loading\");"
         "else $(sel).removeClass(\"loading\");"
       "}"
+      // Fetch the server's available version in the background so the page itself
+      // loads instantly (the check is a blocking HTTP request to the OTA server):
+      "$.ajax({ url: \"" + p.uri + "?action=updatecheck\", dataType: \"json\", timeout: 90000 })"
+        ".done(function(d){"
+          "var v = (d.version || \"\").trim();"
+          "var s = $(\"#ota-server-version\").removeClass(\"text-muted\");"
+          "if (!v) { s.addClass(\"text-warning\").text(\"no response from update server\");"
+            "$(\"#ota-changelog\").text(\"No response from the update server.\"); return; }"
+          "s.text(v);"
+          "if (d.update) s.addClass(\"text-success\").append(\" \\u2014 update available\");"
+          "$(\"#ota-version-title\").text(v);"
+          "$(\"#ota-changelog\").text((d.changelog || \"\").trim() || \"(no changelog provided)\");"
+          "$(\"#ota-versioninfo-btn\").prop(\"disabled\", false);"
+        "})"
+        ".fail(function(){"
+          "$(\"#ota-server-version\").removeClass(\"text-muted\").addClass(\"text-warning\").text(\"update check failed\");"
+          "$(\"#ota-changelog\").text(\"Update check failed (no network, or the update server is unreachable).\");"
+        "});"
       "$(\".action-update-now\").on(\"click\", function(ev){"
         "var server = $(\"input[name=server]\").val() || \"https://api.openvehicles.com/firmware/ota\";"
         "var tag = $(\"input[name=tag]\").val() || \"main\";"
