@@ -1,7 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-
+- OTA/firmware: added config to store update source
+    New config:
+      [ota] tag.update                  -- updated from SD/Web/auto, stored VFS = SD, manual = Web, <ota tag> = auto update
 
 2026-07-18 MB   3.3.006  OTA release
 - smart EQ:
