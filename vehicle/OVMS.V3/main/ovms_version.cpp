@@ -129,7 +129,7 @@ std::string GetOVMSVersion()
   {
   std::string searchversion(OVMS_VERSION_PREFIX OVMS_VERSION OVMS_VERSION_POSTFIX);
   std::string version(OVMS_VERSION);
-  std::string tag = MyConfig.GetParamValue("ota","tag");
+  std::string tag = MyConfig.GetParamValue("ota","tag.update");
 
   const esp_partition_t *p = esp_ota_get_running_partition();
   if (p != NULL)

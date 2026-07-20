@@ -266,11 +266,13 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->printf("OTA flash was successful\n  Flashed %ld bytes from %s\n  Next boot will be from '%s'\n",
                  ds.st_size,argv[0],target->label);
   MyConfig.SetParamValue("ota", "vfs.mru", argv[0]);
+  MyConfig.SetParamValue("ota", "tag.update", "vfs");
   }
 
 void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string url;
+  std::string tag;
   const esp_partition_t *running = esp_ota_get_running_partition();
   const esp_partition_t *target = esp_ota_get_next_update_partition(running);
 
@@ -305,7 +307,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   if (argc == 0)
     {
     // Automatically build the URL based on firmware
-    std::string tag = MyConfig.GetParamValue("ota","tag");
+    tag = MyConfig.GetParamValue("ota","tag");
 
     url = MyConfig.GetParamValue("ota","server");
     if (url.empty())
@@ -436,6 +438,16 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
                  http.BodySize(),url.c_str(),target->label);
   MyConfig.SetParamValue("ota", "http.mru", url);
+  if (argc == 0)
+    {
+    if (tag.empty())
+      tag = CONFIG_OVMS_VERSION_TAG;
+    MyConfig.SetParamValue("ota", "tag.update", tag.c_str());
+    }
+  else
+    {
+    MyConfig.SetParamValue("ota", "tag.update", "manual");
+    }
   }
 
 void ota_flash_auto(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -1576,6 +1588,7 @@ bool OvmsOTA::AutoFlash(bool force)
   ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", http.BodySize(), url.c_str());
   MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
   MyConfig.SetParamValue("ota", "http.mru", url);
+  MyConfig.SetParamValue("ota", "tag.update", tag.c_str());
 
   return true;
   }

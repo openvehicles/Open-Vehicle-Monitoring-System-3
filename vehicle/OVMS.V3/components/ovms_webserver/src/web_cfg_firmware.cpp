@@ -42,8 +42,9 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   ota_info info;
   bool auto_enable, auto_allow_modem;
   std::string auto_hour, server, tag, hardware;
-  std::string output;
-  std::string version;
+  std::string output, output_fw;
+  std::string version, httpmru, vfsmru, tag_update;
+
   const char *what;
   char buf[132];
 
@@ -121,17 +122,33 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     c.head(200);
   }
 
-  // read status:
+  // read status:  
+  tag_update = MyConfig.GetParamValue("ota", "tag.update");
+  httpmru = MyConfig.GetParamValue("ota", "http.mru","");
+  vfsmru = MyConfig.GetParamValue("ota", "vfs.mru","");
+
   MyOTA.GetStatus(info);
   bool has_factory = ovms_partition_table_has_factory();
-
+  output_fw = info.version_firmware;
   c.panel_start("primary", "Firmware setup &amp; update");
+  c.print("<div class=\"form-horizontal\">");
+  if (tag_update == "vfs" && vfsmru != "") 
+    {
+    output_fw.append("<br>installed from SD card:<br>");
+    output_fw.append(vfsmru.c_str());
+    }
+  else if (tag_update != "" && httpmru != "") 
+    {
+    output_fw.append("<br>installed from web:<br>");
+    output_fw.append(httpmru.c_str());
+    }
+  c.input_info("Firmware version", output_fw.c_str());
 
-  c.input_info("Firmware version", info.version_firmware.c_str());
   output = info.version_server;
-  output.append(" <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\">Version info</button>"
-                " <button type=\"button\" class=\"btn btn-default action-update-now\">Update now</button>");
+  output.append("<br><br> <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\">Version info</button>"
+                "<button type=\"button\" class=\"btn btn-default action-update-now\" style=\"margin-left:15px\">Update now</button>");
   c.input_info("…available", output.c_str());
+  c.print("</div>");
 
   c.print(
     "<ul class=\"nav nav-tabs\">"
@@ -141,7 +158,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "</ul>"
     "<div class=\"tab-content\">"
       "<div id=\"tab-setup\" class=\"tab-pane fade in active section-setup\">");
-
   c.form_start(p.uri);
 
   // Boot partition:
