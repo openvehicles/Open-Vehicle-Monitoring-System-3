@@ -526,7 +526,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
         tag != m.end() && tag->second == "smarteq")
       {
       srv->second = "https://ovms.dexters-web.de/firmware/ota";
-      tag->second = "edge";
+      tag->second = "main";
       MyConfig.SetParamMap("ota", m);
       }
   }
@@ -628,7 +628,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   // auto section
   auto map_auto = MyConfig.GetParamMap("auto");
   map_auto["init"] = "yes";
-  map_auto["ota"] = "no";
+  map_auto["ota"] = "yes";
   map_auto["modem"] = "yes";
   map_auto["server.v2"] = "yes";
   MyConfig.SetParamMap("auto", map_auto);
@@ -653,7 +653,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   auto map_ota = MyConfig.GetParamMap("ota");
   map_ota["server"] = "https://ovms.dexters-web.de/firmware/ota";
   map_ota["tag"] = "main";
-  map_ota["http.mru"] = "https://ovms.dexters-web.de/firmware/ota/v3.3/edge/ovms3.bin";
+  map_ota["http.mru"] = "https://ovms.dexters-web.de/firmware/ota/v3.3-5/edge/ovms3.bin";
   MyConfig.SetParamMap("ota", map_ota);
 
   // network section
@@ -668,8 +668,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   
   if (writer) 
     {
-    writer->puts("SmartEQ config reset to defaults");
-    ESP_LOGI(TAG, "SmartEQ config reset to defaults");
+    writer->puts("smartEQ config reset to defaults");
+    ESP_LOGI(TAG, "smartEQ config reset to defaults");
     }
   
   return Success;
