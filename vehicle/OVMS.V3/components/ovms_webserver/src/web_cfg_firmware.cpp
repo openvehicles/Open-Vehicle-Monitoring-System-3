@@ -143,11 +143,19 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
   // read status:
   // Skip the server "available version" check here (it does a blocking HTTP
-  // request); the page fetches it in the background via ?action=updatecheck.
+  // request); the page fetches it in the background via ?action=updatecheck.    
+  tag_update = MyConfig.GetParamValue("ota", "tag.update");
+  httpmru = MyConfig.GetParamValue("ota", "http.mru","");
+  vfsmru = MyConfig.GetParamValue("ota", "vfs.mru","");
+
   MyOTA.GetStatus(info, false);
   bool has_factory = ovms_partition_table_has_factory();
   output_fw = info.version_firmware;
   c.panel_start("primary", "Firmware setup &amp; update");
+
+  // Wrap the status rows in a form-horizontal so their labels are right-aligned
+  // and vertically aligned with their values, matching the tabbed sections below
+  // (Bootstrap only styles .control-label that way inside .form-horizontal):
   c.print("<div class=\"form-horizontal\">");
   if (tag_update == "vfs" && vfsmru != "") 
     {
@@ -161,11 +169,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     }
   c.input_info("Firmware version", output_fw.c_str());
 
-  // Wrap the status rows in a form-horizontal so their labels are right-aligned
-  // and vertically aligned with their values, matching the tabbed sections below
-  // (Bootstrap only styles .control-label that way inside .form-horizontal):
-  c.print("<div class=\"form-horizontal\">");
-  c.input_info("Firmware version", info.version_firmware.c_str());
   // The server version is filled in asynchronously (see updatecheck script below):
   output = "<span id=\"ota-server-version\" class=\"text-muted\">checking for updates&hellip;</span>";
   output.append(" <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\" id=\"ota-versioninfo-btn\" disabled>Version info</button>"
@@ -188,6 +191,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "</ul>"
     "<div class=\"tab-content\">"
       "<div id=\"tab-setup\" class=\"tab-pane fade in active section-setup\">");
+
   c.form_start(p.uri);
 
   // Boot partition:
