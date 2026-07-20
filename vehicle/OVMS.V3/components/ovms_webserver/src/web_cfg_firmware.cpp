@@ -43,8 +43,9 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   ota_info info;
   bool auto_enable, auto_allow_modem;
   std::string auto_hour, server, tag, hardware;
-  std::string output;
-  std::string version;
+  std::string output, output_fw;
+  std::string version, httpmru, vfsmru, tag_update;
+
   const char *what;
   char buf[132];
 
@@ -142,21 +143,36 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
   // read status:
   // Skip the server "available version" check here (it does a blocking HTTP
-  // request); the page fetches it in the background via ?action=updatecheck.
+  // request); the page fetches it in the background via ?action=updatecheck.    
+  tag_update = MyConfig.GetParamValue("ota", "tag.update");
+  httpmru = MyConfig.GetParamValue("ota", "http.mru","");
+  vfsmru = MyConfig.GetParamValue("ota", "vfs.mru","");
+
   MyOTA.GetStatus(info, false);
   bool has_factory = ovms_partition_table_has_factory();
-
+  output_fw = info.version_firmware;
   c.panel_start("primary", "Firmware setup &amp; update");
 
   // Wrap the status rows in a form-horizontal so their labels are right-aligned
   // and vertically aligned with their values, matching the tabbed sections below
   // (Bootstrap only styles .control-label that way inside .form-horizontal):
   c.print("<div class=\"form-horizontal\">");
-  c.input_info("Firmware version", info.version_firmware.c_str());
+  if (tag_update == "vfs" && vfsmru != "") 
+    {
+    output_fw.append("<br>installed from SD card:<br>");
+    output_fw.append(vfsmru.c_str());
+    }
+  else if (tag_update != "" && httpmru != "") 
+    {
+    output_fw.append("<br>installed from web:<br>");
+    output_fw.append(httpmru.c_str());
+    }
+  c.input_info("Firmware version", output_fw.c_str());
+
   // The server version is filled in asynchronously (see updatecheck script below):
   output = "<span id=\"ota-server-version\" class=\"text-muted\">checking for updates&hellip;</span>";
-  output.append(" <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\" id=\"ota-versioninfo-btn\" disabled>Version info</button>"
-                " <button type=\"button\" class=\"btn btn-default action-update-now\">Update now</button>");
+  output.append("<br><br>  <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\" id=\"ota-versioninfo-btn\" disabled>Version info</button>"
+                " <button type=\"button\" class=\"btn btn-default action-update-now\" style=\"margin-left:15px\">Update now</button>");
   // Emit the "…available" row directly (not via input_info) so its label can take
   // extra top padding: this row's value has buttons (taller than text) that push
   // the version number down to mid-row, so the label is dropped to line up with it.
