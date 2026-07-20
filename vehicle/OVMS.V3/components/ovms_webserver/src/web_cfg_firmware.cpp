@@ -171,8 +171,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
   // The server version is filled in asynchronously (see updatecheck script below):
   output = "<span id=\"ota-server-version\" class=\"text-muted\">checking for updates&hellip;</span>";
-  output.append(" <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\" id=\"ota-versioninfo-btn\" disabled>Version info</button>"
-                " <button type=\"button\" class=\"btn btn-default action-update-now\">Update now</button>");
+  output.append("<br><br>  <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\" id=\"ota-versioninfo-btn\" disabled>Version info</button>"
+                " <button type=\"button\" class=\"btn btn-default action-update-now\" style=\"margin-left:15px\">Update now</button>");
   // Emit the "…available" row directly (not via input_info) so its label can take
   // extra top padding: this row's value has buttons (taller than text) that push
   // the version number down to mid-row, so the label is dropped to line up with it.
