@@ -179,7 +179,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<p>Strongly recommended: if enabled, the module will perform automatic firmware updates within the hour of day specified.</p>");
   c.input("number", "Auto update hour of day", "auto_hour", auto_hour.c_str(), "0-23, default: 2", NULL, "min=\"0\" max=\"23\" step=\"1\"");
   c.input_checkbox("…allow via modem", "auto_allow_modem", auto_allow_modem,
-    "<p>Automatic updates are normally only done if a wifi connection is available at the time. Before allowing updates via modem, be aware a single firmware image has a size of around 3 MB, which may lead to additional costs on your data plan.</p>");
+    "<p>Automatic updates are normally only done if a wifi connection is available at the time. Before allowing updates via modem, be aware a single firmware image has a size of 4-5 MB, which may lead to additional costs on your data plan.</p>");
   c.print(
     "<datalist id=\"server-list\">"
       "<option value=\"https://api.openvehicles.com/firmware/ota\">"
