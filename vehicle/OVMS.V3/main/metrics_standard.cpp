@@ -122,8 +122,8 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_pack_tmin = new OvmsMetricFloat(MS_V_BAT_PACK_TMIN, SM_STALE_HIGH, Celcius);
   ms_v_bat_pack_tmax = new OvmsMetricFloat(MS_V_BAT_PACK_TMAX, SM_STALE_HIGH, Celcius);
   ms_v_bat_pack_tavg = new OvmsMetricFloat(MS_V_BAT_PACK_TAVG, SM_STALE_HIGH, Celcius);
-  ms_v_bat_pack_tstddev = new OvmsMetricFloat(MS_V_BAT_PACK_TSTDDEV, SM_STALE_HIGH, Celcius);
-  ms_v_bat_pack_tstddev_max = new OvmsMetricFloat(MS_V_BAT_PACK_TSTDDEVMAX, SM_STALE_HIGH, Celcius);
+  ms_v_bat_pack_tstddev = new OvmsMetricFloat(MS_V_BAT_PACK_TSTDDEV, SM_STALE_HIGH, CelciusDiff);
+  ms_v_bat_pack_tstddev_max = new OvmsMetricFloat(MS_V_BAT_PACK_TSTDDEVMAX, SM_STALE_HIGH, CelciusDiff);
 
   ms_v_bat_cell_voltage = new OvmsMetricVector<float>(MS_V_BAT_CELL_VOLTAGE, SM_STALE_HIGH, Volts);
   ms_v_bat_cell_vmin = new OvmsMetricVector<float>(MS_V_BAT_CELL_VMIN, SM_STALE_HIGH, Volts);
@@ -134,7 +134,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_cell_temp = new OvmsMetricVector<float>(MS_V_BAT_CELL_TEMP, SM_STALE_HIGH, Celcius);
   ms_v_bat_cell_tmin = new OvmsMetricVector<float>(MS_V_BAT_CELL_TMIN, SM_STALE_HIGH, Celcius);
   ms_v_bat_cell_tmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_TMAX, SM_STALE_HIGH, Celcius);
-  ms_v_bat_cell_tdevmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_TDEVMAX, SM_STALE_HIGH, Celcius);
+  ms_v_bat_cell_tdevmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_TDEVMAX, SM_STALE_HIGH, CelciusDiff);
   ms_v_bat_cell_talert = new OvmsMetricVector<short>(MS_V_BAT_CELL_TALERT, SM_STALE_HIGH, Other);
 
   //
