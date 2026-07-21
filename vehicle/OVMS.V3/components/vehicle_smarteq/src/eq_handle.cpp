@@ -167,14 +167,14 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
  * Called once per second from Ticker1
  */
 void OvmsVehicleSmartEQ::HandleEnergy() {
-  float power = StdMetrics.ms_v_bat_power->AsFloat(0.0f); // in kW
+  float power = StdMetrics.ms_v_bat_power->AsFloat(0.0f); // kW - charge(-)/discharge(+) HV battery power
   ESP_LOGD(TAG, "HandleEnergy(): power=%.2f kW", power);
   if (power != 0.0f)
     {
     // Update energy used and recovered   
     float energy = fabs(power / 3600.0f);       // 1 second worth of energy in kwh's
     float current_Ah = fabs(StdMetrics.ms_v_bat_current->AsFloat(0.0f) / 3600.0f);   // 1 second worth of current in Ah
-    if (power < 0.0f)
+    if (power > 0.0f)
       {
       float energy_used = StdMetrics.ms_v_bat_energy_used->AsFloat(0.0f) + energy;
       float energy_used_total = StdMetrics.ms_v_bat_energy_used_total->AsFloat(0.0f) + energy;
@@ -185,7 +185,7 @@ void OvmsVehicleSmartEQ::HandleEnergy() {
       StdMetrics.ms_v_bat_coulomb_used->SetValue(coulomb_used);
       StdMetrics.ms_v_bat_coulomb_used_total->SetValue(coulomb_used_total);
       }
-    else if (power > 0.0f)
+    else if (power < 0.0f)
       {
       float energy_recd = StdMetrics.ms_v_bat_energy_recd->AsFloat(0.0f) + energy;
       float energy_recd_total = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(0.0f) + energy;
