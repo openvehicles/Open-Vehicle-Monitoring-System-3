@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Fiat eDoblo: added passive lock status from CAN 0x612.
 
 
 2026-07-18 MB   3.3.006  OTA release
