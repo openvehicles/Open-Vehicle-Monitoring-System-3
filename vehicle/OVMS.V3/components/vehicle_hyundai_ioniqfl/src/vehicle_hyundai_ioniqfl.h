@@ -26,8 +26,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_KIANIROEV_H__
-#define __VEHICLE_KIANIROEV_H__
+#ifndef __VEHICLE_HYUNDAI_IONIQFL_H__
+#define __VEHICLE_HYUNDAI_IONIQFL_H__
 
 #include "../../vehicle_kiasoulev/src/kia_common.h"
 #include "vehicle.h"
@@ -52,29 +52,29 @@ typedef union {
   unsigned char value;
 } KnShiftBits;
 
-void xkn_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void CommandOpenTrunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_set_head_light_delay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_set_one_touch_turn_signal(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_set_auto_door_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xkn_set_auto_door_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_set_head_light_delay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_set_one_touch_turn_signal(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_set_auto_door_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void ifl_set_auto_door_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
-class OvmsVehicleKiaNiroEv : public KiaVehicle
+class OvmsVehicleIoniqFL : public KiaVehicle
   {
   public:
-		OvmsVehicleKiaNiroEv();
-    ~OvmsVehicleKiaNiroEv();
+		OvmsVehicleIoniqFL();
+    ~OvmsVehicleIoniqFL();
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame) override;
@@ -140,7 +140,7 @@ class OvmsVehicleKiaNiroEv : public KiaVehicle
     void IncomingCM(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
     void RequestNotify(unsigned int which);
     void DoNotify();
-    void vehicle_kianiroev_car_on(bool isOn);
+    void vehicle_ioniq_car_on(bool isOn);
     void UpdateMaxRangeAndSOH(void);
     uint16_t calcMinutesRemaining(float target);
     bool SetDoorLock(bool open, const char* password);
@@ -223,4 +223,4 @@ class OvmsVehicleKiaNiroEv : public KiaVehicle
 //#define SEND_ResetResult            (1<< 7)  // text alert: RESET OK/FAIL
 //#define SEND_ChargeState            (1<< 8)  // text alert: STAT command
 
-#endif //#ifndef __VEHICLE_KIANIROEV_H__
+#endif //#ifndef __VEHICLE_IONIQFL_H__

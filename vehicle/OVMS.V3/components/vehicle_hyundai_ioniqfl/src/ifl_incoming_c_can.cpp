@@ -22,14 +22,14 @@
  ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  ; THE SOFTWARE.
  */
-#include "vehicle_kianiroev.h"
+#include "vehicle_hyundai_ioniqfl.h"
 
 //static const char *TAG = "v-kianiroev";
 
 /**
  * Handles incoming CAN-frames on bus 1, the C-bus
  */
-void OvmsVehicleKiaNiroEv::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleIoniqFL::IncomingFrameCan1(CAN_frame_t* p_frame)
 	{
 
 	uint8_t *d = p_frame->data.u8;

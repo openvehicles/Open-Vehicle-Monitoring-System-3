@@ -36,7 +36,7 @@
 #include "ovms_notify.h"
 #include "ovms_webserver.h"
 
-#include "vehicle_kianiroev.h"
+#include "vehicle_hyundai_ioniqfl.h"
 #include "../../vehicle_kiasoulev/src/kia_common.h"
 
 using namespace std;
@@ -48,7 +48,7 @@ using namespace std;
 /**
  * WebInit: register pages
  */
-void OvmsVehicleKiaNiroEv::WebInit()
+void OvmsVehicleIoniqFL::WebInit()
 {
   // vehicle menu:
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
@@ -61,7 +61,7 @@ void OvmsVehicleKiaNiroEv::WebInit()
 /**
  * WebCfgFeatures: configure general parameters (URL /xkn/config)
  */
-void OvmsVehicleKiaNiroEv::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
+void OvmsVehicleIoniqFL::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   auto lock = MyConfig.Lock();
   std::string error;
@@ -82,7 +82,7 @@ void OvmsVehicleKiaNiroEv::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xkn", "leftDrive", leftDrive);
 
       c.head(200);
-      c.alert("success", "<p class=\"lead\">Kia Niro / Hyundai Kona EV feature configuration saved.</p>");
+      c.alert("success", "<p class=\"lead\">Ioniq EV feature configuration saved.</p>");
       MyWebServer.OutputHome(p, c);
       c.done();
       return;
@@ -104,7 +104,7 @@ void OvmsVehicleKiaNiroEv::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
 
-  c.panel_start("primary", "Kia Niro / Hyundai Kona EV feature configuration");
+  c.panel_start("primary", "Hyundai Ioniq EV feature configuration");
   c.form_start(p.uri);
 
   c.fieldset_start("General");
@@ -132,7 +132,7 @@ void OvmsVehicleKiaNiroEv::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 /**
  * WebCfgBattery: configure battery parameters (URL /xkn/battery)
  */
-void OvmsVehicleKiaNiroEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
+void OvmsVehicleIoniqFL::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
   auto lock = MyConfig.Lock();
   std::string error;
@@ -202,7 +202,7 @@ void OvmsVehicleKiaNiroEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
 
-  c.panel_start("primary", "Kia Niro / Hyundai Kona EV battery setup");
+  c.panel_start("primary", "Ioniq EV battery setup");
   c.form_start(p.uri);
 
   c.fieldset_start("Battery properties");
@@ -238,7 +238,7 @@ void OvmsVehicleKiaNiroEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 /**
  * GetDashboardConfig: Kia Niro specific dashboard setup
  */
-void OvmsVehicleKiaNiroEv::GetDashboardConfig(DashboardConfig& cfg)
+void OvmsVehicleIoniqFL::GetDashboardConfig(DashboardConfig& cfg)
 {
   // Speed:
   dash_gauge_t speed_dash(NULL,Kph);

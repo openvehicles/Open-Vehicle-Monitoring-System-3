@@ -58,7 +58,7 @@
 ; THE SOFTWARE.
 */
 
-#include "vehicle_kianiroev.h"
+#include "vehicle_hyundai_ioniqfl.h"
 
 #include "ovms_log.h"
 
@@ -73,12 +73,12 @@
 
 #define VERSION "0.1.6"
 
-static const char *TAG = "v-kianiroev";
+static const char *TAG = "v-Ioniq-fl";
 
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
-static const OvmsPoller::poll_pid_t vehicle_kianiroev_polls[] =
+static const OvmsPoller::poll_pid_t vehicle_ioniq_polls[] =
   {
   		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_1A, 				0x80, 			{       0,  120,	 120 }, 0, ISOTP_STD },  // VMCU - VIN
 
@@ -120,10 +120,10 @@ static const OvmsPoller::poll_pid_t vehicle_kianiroev_polls[] =
 
 // Charging profile
 // Based mostly on this graph: https://support.fastned.nl/hc/en-gb/articles/360007699174-Charging-with-a-Kia-e-Niro
-charging_profile niro_charge_steps[] = {
+charging_profile ioniq_charge_steps[] = {
 			 //from%, to%, Chargespeed in Wh
-       {  0, 10,	34000 },
-       { 10, 40, 78000 },
+       {  0, 10, 44000 },
+       { 10, 40, 44000 },
        { 40, 55, 70000 },
        { 55, 73, 58000 },
        { 73, 78, 38000 },
@@ -134,11 +134,11 @@ charging_profile niro_charge_steps[] = {
 };
 
 /**
- * Constructor for Kia Niro EV
+ * Constructor
  */
-OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
+OvmsVehicleIoniqFL::OvmsVehicleIoniqFL()
   {
-  ESP_LOGI(TAG, "Kia Niro / Hyundai Kona EV v1.0 vehicle module");
+  ESP_LOGI(TAG, "Ioniq EV v1.0 vehicle module");
 
   StopTesterPresentMessages();
 
@@ -261,11 +261,11 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 
   // init commands:
   cmd_xkn = MyCommandApp.RegisterCommand("xkn","Kia Niro / Hyundai Kona EV");
-  cmd_xkn->RegisterCommand("trip","Show trip info since last parked", xkn_trip_since_parked);
-  cmd_xkn->RegisterCommand("tripch","Show trip info since last charge", xkn_trip_since_charge);
-  cmd_xkn->RegisterCommand("tpms","Tire pressure monitor", xkn_tpms);
-  cmd_xkn->RegisterCommand("aux","Aux battery", xkn_aux);
-  cmd_xkn->RegisterCommand("vin","VIN information", xkn_vin);
+  cmd_xkn->RegisterCommand("trip","Show trip info since last parked", ifl_trip_since_parked);
+  cmd_xkn->RegisterCommand("tripch","Show trip info since last charge", ifl_trip_since_charge);
+  cmd_xkn->RegisterCommand("tpms","Tire pressure monitor", ifl_tpms);
+  cmd_xkn->RegisterCommand("aux","Aux battery", ifl_aux);
+  cmd_xkn->RegisterCommand("vin","VIN information", ifl_vin);
 
   cmd_xkn->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pin>",1,1);
 
@@ -283,9 +283,9 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsVehicleKiaNiroEv::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsVehicleIoniqFL::EventListener, this, _1, _2));
 
-  MyConfig.RegisterParam("xkn", "Kia Niro / Hyundai Kona EV specific settings.", true, true);
+  MyConfig.RegisterParam("xkn", "Ioniq EV specific settings.", true, true);
   ConfigChanged(NULL);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -299,7 +299,7 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 
   POLLSTATE_RUNNING;
   kia_secs_with_no_client=0;
-  PollSetPidList(m_can1,vehicle_kianiroev_polls);
+  PollSetPidList(m_can1,vehicle_ioniq_polls);
 
   kn_range_calc = new RangeCalculator(1, 4, 455, 64, 1);
   }
@@ -307,9 +307,9 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 /**
  * Destructor
  */
-OvmsVehicleKiaNiroEv::~OvmsVehicleKiaNiroEv()
+OvmsVehicleIoniqFL::~OvmsVehicleIoniqFL()
   {
-  ESP_LOGI(TAG, "Shutdown Kia Niro / Hyundai Kona EV vehicle module");
+  ESP_LOGI(TAG, "Shutdown Ioniq EV vehicle module");
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/bms/cellmon");
 #endif
@@ -318,9 +318,9 @@ OvmsVehicleKiaNiroEv::~OvmsVehicleKiaNiroEv()
 /**
  * ConfigChanged: reload single/all configuration variables
  */
-void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
+void OvmsVehicleIoniqFL::ConfigChanged(OvmsConfigParam* param)
 	{
-  ESP_LOGD(TAG, "Kia Niro / Hyundai Kona EV reload configuration");
+  ESP_LOGD(TAG, "Ioniq EV reload configuration");
 
   // Instances:
   // xkn
@@ -346,7 +346,7 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
  * or off. Centralized so we can more easily make on and off mirror
  * images.
  */
-void OvmsVehicleKiaNiroEv::vehicle_kianiroev_car_on(bool isOn)
+void OvmsVehicleIoniqFL::vehicle_ioniq_car_on(bool isOn)
   {
 	kn_shift_bits.CarOn=isOn;
 	StdMetrics.ms_v_env_awake->SetValue(isOn);
@@ -378,7 +378,7 @@ void OvmsVehicleKiaNiroEv::vehicle_kianiroev_car_on(bool isOn)
 /**
  * Ticker1: Called every second
  */
-void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
+void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
 	{
 	ESP_LOGD(TAG,"Pollstate: %d ",m_poll_state);
 
@@ -389,7 +389,7 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 
 	if(kn_shift_bits.CarOn!=StdMetrics.ms_v_env_on->AsBool())
 		{
-		vehicle_kianiroev_car_on(StdMetrics.ms_v_env_on->AsBool());
+		vehicle_ioniq_car_on(StdMetrics.ms_v_env_on->AsBool());
 		}
 
 	UpdateMaxRangeAndSOH();
@@ -584,19 +584,19 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 /**
  * Ticker10: Called every ten seconds
  */
-void OvmsVehicleKiaNiroEv::Ticker10(uint32_t ticker)
+void OvmsVehicleIoniqFL::Ticker10(uint32_t ticker)
 	{
 	}
 
 /**
  * Ticker300: Called every five minutes
  */
-void OvmsVehicleKiaNiroEv::Ticker300(uint32_t ticker)
+void OvmsVehicleIoniqFL::Ticker300(uint32_t ticker)
 	{
 	Save12VHistory();
 	}
 
-void OvmsVehicleKiaNiroEv::EventListener(std::string event, void* data)
+void OvmsVehicleIoniqFL::EventListener(std::string event, void* data)
   {
   if (event == "app.connected")
     {
@@ -616,7 +616,7 @@ void OvmsVehicleKiaNiroEv::EventListener(std::string event, void* data)
 /**
  * Update metrics when charging
  */
-void OvmsVehicleKiaNiroEv::HandleCharging()
+void OvmsVehicleIoniqFL::HandleCharging()
 	{
 	if (!StdMetrics.ms_v_charge_inprogress->AsBool() )
   		{
@@ -681,9 +681,9 @@ void OvmsVehicleKiaNiroEv::HandleCharging()
 			chargeTarget_range = MIN(chargeTarget_range, 80);
 			}
 
-  		StdMetrics.ms_v_charge_duration_full->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_full, kn_battery_capacity, niro_charge_steps), Minutes);
-  		StdMetrics.ms_v_charge_duration_soc->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_soc, kn_battery_capacity, niro_charge_steps), Minutes);
-  		StdMetrics.ms_v_charge_duration_range->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_range, kn_battery_capacity, niro_charge_steps), Minutes);
+  		StdMetrics.ms_v_charge_duration_full->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_full, kn_battery_capacity, ioniq_charge_steps), Minutes);
+  		StdMetrics.ms_v_charge_duration_soc->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_soc, kn_battery_capacity, ioniq_charge_steps), Minutes);
+  		StdMetrics.ms_v_charge_duration_range->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_range, kn_battery_capacity, ioniq_charge_steps), Minutes);
     }
   else
     {
@@ -706,7 +706,7 @@ void OvmsVehicleKiaNiroEv::HandleCharging()
 /**
  * Update metrics when charging stops
  */
-void OvmsVehicleKiaNiroEv::HandleChargeStop()
+void OvmsVehicleIoniqFL::HandleChargeStop()
 	{
   ESP_LOGI(TAG, "Charging done...");
 
@@ -744,7 +744,7 @@ void OvmsVehicleKiaNiroEv::HandleChargeStop()
 /**
  *  Sets the charge metrics
  */
-void OvmsVehicleKiaNiroEv::SetChargeMetrics(float voltage, float current, float climit, bool ccs)
+void OvmsVehicleIoniqFL::SetChargeMetrics(float voltage, float current, float climit, bool ccs)
 	{
 	StdMetrics.ms_v_charge_voltage->SetValue( voltage, Volts );
 	StdMetrics.ms_v_charge_current->SetValue( current, Amps );
@@ -765,7 +765,7 @@ void OvmsVehicleKiaNiroEv::SetChargeMetrics(float voltage, float current, float 
  * Calculates minutes remaining before target is reached. Based on current charge speed.
  * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
  */
-uint16_t OvmsVehicleKiaNiroEv::calcMinutesRemaining(float target)
+uint16_t OvmsVehicleIoniqFL::calcMinutesRemaining(float target)
   		{
 	  return MIN( 1440, (uint16_t) (((target - (kn_battery_capacity * BAT_SOC) / 100.0)*60.0) /
               (CHARGE_VOLTAGE * CHARGE_CURRENT)));
@@ -775,7 +775,7 @@ uint16_t OvmsVehicleKiaNiroEv::calcMinutesRemaining(float target)
  * Updates the maximum real world range at current temperature.
  * Also updates the State of Health
  */
-void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
+void OvmsVehicleIoniqFL::UpdateMaxRangeAndSOH(void)
 	{
 	//Update State of Health using following assumption: 10% buffer
 	StdMetrics.ms_v_bat_cac->SetValue( (kn_battery_capacity * BAT_SOH * BAT_SOC/10000.0) / 400, AmpHours);
@@ -807,7 +807,7 @@ void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 /**
  * Open or lock the doors
  */
-bool OvmsVehicleKiaNiroEv::SetDoorLock(bool open, const char* password)
+bool OvmsVehicleIoniqFL::SetDoorLock(bool open, const char* password)
 	{
 	bool result=false;
 
@@ -828,7 +828,7 @@ bool OvmsVehicleKiaNiroEv::SetDoorLock(bool open, const char* password)
  * Open trunk door
  * 770 04 2F BC 09 03
  */
-bool OvmsVehicleKiaNiroEv::OpenTrunk(const char* password)
+bool OvmsVehicleIoniqFL::OpenTrunk(const char* password)
 	{
   if( kn_shift_bits.Park )
   		{
@@ -846,7 +846,7 @@ bool OvmsVehicleKiaNiroEv::OpenTrunk(const char* password)
 /**
  * Turn on and off left indicator light
  */
-bool OvmsVehicleKiaNiroEv::LeftIndicator(bool on)
+bool OvmsVehicleIoniqFL::LeftIndicator(bool on)
 	{
   if( kn_shift_bits.Park )
   		{
@@ -859,7 +859,7 @@ bool OvmsVehicleKiaNiroEv::LeftIndicator(bool on)
 /**
  * Turn on and off right indicator light
  */
-bool OvmsVehicleKiaNiroEv::RightIndicator(bool on)
+bool OvmsVehicleIoniqFL::RightIndicator(bool on)
 	{
   if( kn_shift_bits.Park )
   		{
@@ -874,7 +874,7 @@ bool OvmsVehicleKiaNiroEv::RightIndicator(bool on)
  * Needs to send tester present or something... Turns of immediately.
  * 770 04 2f bc 0c 0[3:0]
  */
-bool OvmsVehicleKiaNiroEv::RearDefogger(bool on)
+bool OvmsVehicleIoniqFL::RearDefogger(bool on)
 	{
   if( kn_shift_bits.Park )
   		{
@@ -889,7 +889,7 @@ bool OvmsVehicleKiaNiroEv::RearDefogger(bool on)
  *
  * 7a0 04 2f b0 5[b:c] 03
  */
-bool OvmsVehicleKiaNiroEv::FoldMirrors(bool on)
+bool OvmsVehicleIoniqFL::FoldMirrors(bool on)
 	{
   if( kn_shift_bits.Park )
   		{
@@ -902,7 +902,7 @@ bool OvmsVehicleKiaNiroEv::FoldMirrors(bool on)
 /**
  * ACC - relay
  */
-bool OvmsVehicleKiaNiroEv::ACCRelay(bool on, const char* password)
+bool OvmsVehicleIoniqFL::ACCRelay(bool on, const char* password)
 	{
 	if(PinCheck((char*)password))
 		{
@@ -918,7 +918,7 @@ bool OvmsVehicleKiaNiroEv::ACCRelay(bool on, const char* password)
 /**
  * IGN1 - relay
  */
-bool OvmsVehicleKiaNiroEv::IGN1Relay(bool on, const char* password)
+bool OvmsVehicleIoniqFL::IGN1Relay(bool on, const char* password)
 	{
 	if(PinCheck((char*)password))
 		{
@@ -934,7 +934,7 @@ bool OvmsVehicleKiaNiroEv::IGN1Relay(bool on, const char* password)
 /**
  * IGN2 - relay
  */
-bool OvmsVehicleKiaNiroEv::IGN2Relay(bool on, const char* password)
+bool OvmsVehicleIoniqFL::IGN2Relay(bool on, const char* password)
 	{
 	if(PinCheck((char*)password))
 		{
@@ -950,7 +950,7 @@ bool OvmsVehicleKiaNiroEv::IGN2Relay(bool on, const char* password)
 /**
  * Start - relay
  */
-bool OvmsVehicleKiaNiroEv::StartRelay(bool on, const char* password)
+bool OvmsVehicleIoniqFL::StartRelay(bool on, const char* password)
 	{
 	if(PinCheck((char*)password))
 		{
@@ -966,12 +966,12 @@ bool OvmsVehicleKiaNiroEv::StartRelay(bool on, const char* password)
 /**
  * RequestNotify: send notifications / alerts / data updates
  */
-void OvmsVehicleKiaNiroEv::RequestNotify(unsigned int which)
+void OvmsVehicleIoniqFL::RequestNotify(unsigned int which)
 	{
   kn_notifications |= which;
 	}
 
-void OvmsVehicleKiaNiroEv::DoNotify()
+void OvmsVehicleIoniqFL::DoNotify()
 	{
   unsigned int which = kn_notifications;
 
@@ -994,7 +994,7 @@ void OvmsVehicleKiaNiroEv::DoNotify()
  * SetFeature: V2 compatibility config wrapper
  *  Note: V2 only supported integer values, V3 values may be text
  */
-bool OvmsVehicleKiaNiroEv::SetFeature(int key, const char *value)
+bool OvmsVehicleIoniqFL::SetFeature(int key, const char *value)
 {
   switch (key)
   {
@@ -1023,7 +1023,7 @@ bool OvmsVehicleKiaNiroEv::SetFeature(int key, const char *value)
  * GetFeature: V2 compatibility config wrapper
  *  Note: V2 only supported integer values, V3 values may be text
  */
-const std::string OvmsVehicleKiaNiroEv::GetFeature(int key)
+const std::string OvmsVehicleIoniqFL::GetFeature(int key)
 {
   switch (key)
   {
@@ -1048,14 +1048,14 @@ const std::string OvmsVehicleKiaNiroEv::GetFeature(int key)
 }
 
 
-class OvmsVehicleKiaNiroEvInit
+class OvmsVehicleIoniqFLInit
   {
-  public: OvmsVehicleKiaNiroEvInit();
-  } MyOvmsVehicleKiaNiroEvInit  __attribute__ ((init_priority (9000)));
+  public: OvmsVehicleIoniqFLInit();
+  } MyOvmsVehicleIoniqFLInit  __attribute__ ((init_priority (9000)));
 
-OvmsVehicleKiaNiroEvInit::OvmsVehicleKiaNiroEvInit()
+OvmsVehicleIoniqFLInit::OvmsVehicleIoniqFLInit()
   {
-  ESP_LOGI(TAG, "Registering Vehicle: Kia Niro / Hyundai Kona EV (9000)");
+  ESP_LOGI(TAG, "Registering Vehicle Ioniq FL");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaNiroEv>("KN","Kia Niro / Hyundai Kona EV");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleIoniqFL>("IFL","Hyundai Ioniq EV 38Kwh");
   }

@@ -22,14 +22,14 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#include "vehicle_kianiroev.h"
+#include "vehicle_hyundai_ioniqfl.h"
 
-OvmsVehicle::vehicle_command_t OvmsVehicleKiaNiroEv::CommandLock(const char* pin)
+OvmsVehicle::vehicle_command_t OvmsVehicleIoniqFL::CommandLock(const char* pin)
   {
   return SetDoorLock(false,pin) ? Success:Fail;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleKiaNiroEv::CommandUnlock(const char* pin)
+OvmsVehicle::vehicle_command_t OvmsVehicleIoniqFL::CommandUnlock(const char* pin)
   {
   return SetDoorLock(true,pin) ? Success:Fail;
   }
@@ -37,18 +37,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleKiaNiroEv::CommandUnlock(const char* p
 /**
  * Command to enable IGN1
  */
-void xkn_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
   car->IGN1Relay( strcmp(argv[0],"on")==0, argv[1] );
 	}
 
 /**
  * Command to enable IGN2
  */
-void xkn_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  //OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  //OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
   //car->IGN2Relay( strcmp(argv[0],"on")==0, argv[1] );
 	}
 
@@ -56,61 +56,61 @@ void xkn_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 /**
  * Command to enable ACC relay
  */
-void xkn_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
   car->ACCRelay( strcmp(argv[0],"on")==0, argv[1] );
 	}
 
 /**
  * Command to enable start relay
  */
-void xkn_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
   car->StartRelay( strcmp(argv[0],"on")==0, argv[1] );
 	}
 
-void xkn_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  //OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  //OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
 	//car->Send_SJB_Command(strtol(argv[0],NULL,16), strtol(argv[1],NULL,16), strtol(argv[2],NULL,16));
 	}
 
-void xkn_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  //OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  //OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
 	//car->Send_BCM_Command(strtol(argv[0],NULL,16), strtol(argv[1],NULL,16), strtol(argv[2],NULL,16));
 	}
 
-void xkn_set_head_light_delay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_set_head_light_delay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  //OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  //OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
 	//car->SetHeadLightDelay(strcmp(argv[0],"on")==0);
 	}
 
-void xkn_set_one_touch_turn_signal(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_set_one_touch_turn_signal(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  //OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  //OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
 	//car->SetOneThouchTurnSignal(strtol(argv[0],NULL,10));
 	}
 
-void xkn_set_auto_door_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_set_auto_door_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  //OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  //OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
   //car->SetAutoDoorUnlock(strtol(argv[0],NULL,10));
 	}
 
-void xkn_set_auto_door_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_set_auto_door_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  //OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  //OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
 	//car->SetAutoDoorLock(strtol(argv[0],NULL,10));
 	}
 
 /**
  * Print out the aux battery voltage.
  */
-void xkn_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
 	if (MyVehicleFactory.m_currentvehicle==NULL)
 		{
@@ -126,7 +126,7 @@ void xkn_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		writer->printf("Aux battery voltage %s\n", auxBatt.c_str());
 		}
 
-	OvmsVehicleKiaNiroEv* niro = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+	OvmsVehicleIoniqFL* niro = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
 
 	if (niro->m_b_aux_soc->IsDefined())
 		{
@@ -139,7 +139,7 @@ void xkn_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 /**
  * Print out the VIN information.
  */
-void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyVehicleFactory.m_currentvehicle==NULL)
     {
@@ -147,7 +147,7 @@ void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     return;
     }
 
-  OvmsVehicleKiaNiroEv* soul = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  OvmsVehicleIoniqFL* soul = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
 
 	writer->printf("VIN\n");
 	writer->printf("Vin: %s \n", soul->m_vin);
@@ -355,7 +355,7 @@ void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 /**
  * Print out information of the tpms.
  */
-void xkn_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
 	if (MyVehicleFactory.m_currentvehicle==NULL)
 		{
@@ -363,7 +363,7 @@ void xkn_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 		return;
 		}
 
-	OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+	OvmsVehicleIoniqFL* car = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
 
 	writer->printf("TPMS\n");
 	// Front left
@@ -400,7 +400,7 @@ void xkn_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 /**
  * Print out information of the current trip.
  */
-void xkn_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
 	if (MyVehicleFactory.m_currentvehicle==NULL)
 		{
@@ -463,7 +463,7 @@ void xkn_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 /**
  * Print out information of the current trip.
  */
-void xkn_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ifl_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
 	if (MyVehicleFactory.m_currentvehicle==NULL)
 		{
@@ -473,7 +473,7 @@ void xkn_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 
 	metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
 
-	OvmsVehicleKiaNiroEv* niro = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+	OvmsVehicleIoniqFL* niro = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
 
 	writer->printf("TRIP SINCE CHARGE\n");
 

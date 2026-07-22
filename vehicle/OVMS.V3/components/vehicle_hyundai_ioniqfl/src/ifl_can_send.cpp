@@ -22,16 +22,16 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#include "vehicle_kianiroev.h"
+#include "vehicle_hyundai_ioniqfl.h"
 #include "kia_common.h"
 
-static const char *TAG = "v-kianiroev";
+static const char *TAG = "v-Ioniq-fl";
 
 /**
  * Send a can message and wait for the response before continuing.
  * Time out after approx 0.5 second.
  */
-bool OvmsVehicleKiaNiroEv::SendCanMessage_sync(uint16_t id, uint8_t count,
+bool OvmsVehicleIoniqFL::SendCanMessage_sync(uint16_t id, uint8_t count,
 		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 		uint8_t b5, uint8_t b6)
 	{
@@ -71,7 +71,7 @@ bool OvmsVehicleKiaNiroEv::SendCanMessage_sync(uint16_t id, uint8_t count,
 	return false;
  }
 
-void OvmsVehicleKiaNiroEv::SendCanMessage(uint16_t id, uint8_t count,
+void OvmsVehicleIoniqFL::SendCanMessage(uint16_t id, uint8_t count,
 		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 		uint8_t b5, uint8_t b6)
 	{
@@ -85,7 +85,7 @@ void OvmsVehicleKiaNiroEv::SendCanMessage(uint16_t id, uint8_t count,
 /**
  * Sends same message three times
  */
-void OvmsVehicleKiaNiroEv::SendCanMessageTriple(uint16_t id, uint8_t count,
+void OvmsVehicleIoniqFL::SendCanMessageTriple(uint16_t id, uint8_t count,
 		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 		uint8_t b5, uint8_t b6)
 	{
@@ -103,7 +103,7 @@ void OvmsVehicleKiaNiroEv::SendCanMessageTriple(uint16_t id, uint8_t count,
 /**
  *  Turns on/off head light delay
  */
-void OvmsVehicleKiaNiroEv::SetHeadLightDelay(bool on)
+void OvmsVehicleIoniqFL::SetHeadLightDelay(bool on)
 	{
 //	if(kia_enable_write)
 //		SendCanMessageTriple(0x014, 0,0, on ? 0x08:0x04 ,0,0,0,0,0);
@@ -117,7 +117,7 @@ void OvmsVehicleKiaNiroEv::SetHeadLightDelay(bool on)
  * 3 = 7 blink
  *
  */
-void OvmsVehicleKiaNiroEv::	SetOneThouchTurnSignal(uint8_t value)
+void OvmsVehicleIoniqFL::	SetOneThouchTurnSignal(uint8_t value)
 	{
 //	if(kia_enable_write)
 //		SendCanMessageTriple(0x014, (value+1)<<5 ,0,0,0,0,0,0,0);
@@ -130,7 +130,7 @@ void OvmsVehicleKiaNiroEv::	SetOneThouchTurnSignal(uint8_t value)
  * 3 = On shift to P
  * 4 = Driver door unlock
  */
-void OvmsVehicleKiaNiroEv::	SetAutoDoorUnlock(uint8_t value)
+void OvmsVehicleIoniqFL::	SetAutoDoorUnlock(uint8_t value)
 	{
 //	if(kia_enable_write)
 //		SendCanMessageTriple(0x014, 0,value,0,0,0,0,0,0);
@@ -142,7 +142,7 @@ void OvmsVehicleKiaNiroEv::	SetAutoDoorUnlock(uint8_t value)
  * 1 = Enable on speed
  * 2 = Enable on Shift
  */
-void OvmsVehicleKiaNiroEv::SetAutoDoorLock(uint8_t value)
+void OvmsVehicleIoniqFL::SetAutoDoorLock(uint8_t value)
 	{
 //	if(kia_enable_write)
 //		SendCanMessageTriple(0x014, 0,(value+1)<<5,0,0,0,0,0,0);
@@ -151,7 +151,7 @@ void OvmsVehicleKiaNiroEv::SetAutoDoorLock(uint8_t value)
 /**
  * Send tester present messages for all ECUs
  */
-void OvmsVehicleKiaNiroEv::SendTesterPresentMessages()
+void OvmsVehicleIoniqFL::SendTesterPresentMessages()
 	{
 	if( !kn_shift_bits.Park ){
 		StopTesterPresentMessages();
@@ -177,7 +177,7 @@ void OvmsVehicleKiaNiroEv::SendTesterPresentMessages()
 /**
  * Stop all tester present massages for all ECUs
  */
-void OvmsVehicleKiaNiroEv::StopTesterPresentMessages()
+void OvmsVehicleIoniqFL::StopTesterPresentMessages()
 	{
 	igmp_tester_present_seconds = 0;
 	bcm_tester_present_seconds = 0;
@@ -188,7 +188,7 @@ void OvmsVehicleKiaNiroEv::StopTesterPresentMessages()
 /**
  * Send a can message to ECU to notify that tester is present
  */
-void OvmsVehicleKiaNiroEv::SendTesterPresent(uint16_t id, uint8_t length)
+void OvmsVehicleIoniqFL::SendTesterPresent(uint16_t id, uint8_t length)
 	{
 	if(kia_enable_write)
 		SendCanMessage(id, length,UDS_SID_TESTER_PRESENT, 0,0,0,0,0,0);
@@ -197,7 +197,7 @@ void OvmsVehicleKiaNiroEv::SendTesterPresent(uint16_t id, uint8_t length)
 /**
  * Send a can message to set ECU in a specific session mode
  */
-bool OvmsVehicleKiaNiroEv::SetSessionMode(uint16_t id, uint8_t mode)
+bool OvmsVehicleIoniqFL::SetSessionMode(uint16_t id, uint8_t mode)
 	{
 	return SendCanMessage_sync(id, 2,VEHICLE_POLL_TYPE_OBDIISESSION, mode,0,0,0,0,0);
 	}
@@ -205,7 +205,7 @@ bool OvmsVehicleKiaNiroEv::SetSessionMode(uint16_t id, uint8_t mode)
 /**
  * Put the car in proper session mode and then send the command
  */
-bool OvmsVehicleKiaNiroEv::SendCommandInSessionMode(uint16_t id, uint8_t count, uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t mode )
+bool OvmsVehicleIoniqFL::SendCommandInSessionMode(uint16_t id, uint8_t count, uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t mode )
 	{
 	if(!kia_enable_write) return false;
 
@@ -227,7 +227,7 @@ bool OvmsVehicleKiaNiroEv::SendCommandInSessionMode(uint16_t id, uint8_t count, 
  * Send command to IGMP
  * 770 04 2F [b1] [b2] [b3]
  */
-bool OvmsVehicleKiaNiroEv::Send_IGMP_Command( uint8_t b1, uint8_t b2, uint8_t b3)
+bool OvmsVehicleIoniqFL::Send_IGMP_Command( uint8_t b1, uint8_t b2, uint8_t b3)
 	{
 	return SendCommandInSessionMode(INTEGRATED_GATEWAY, 4,UDS_SID_IOCTRL_BY_ID, b1, b2, b3, 0,0,0, UDS_EXTENDED_DIAGNOSTIC_SESSION );
 	}
@@ -236,7 +236,7 @@ bool OvmsVehicleKiaNiroEv::Send_IGMP_Command( uint8_t b1, uint8_t b2, uint8_t b3
  * Send command to Body Control Module
  * 7a0 04 2F [b1] [b2] [b3]
  */
-bool OvmsVehicleKiaNiroEv::Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3)
+bool OvmsVehicleIoniqFL::Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3)
 	{
 	return SendCommandInSessionMode(BODY_CONTROL_MODULE, 4,UDS_SID_IOCTRL_BY_ID, b1, b2, b3, 0,0,0, UDS_EXTENDED_DIAGNOSTIC_SESSION );
 	}
@@ -245,7 +245,7 @@ bool OvmsVehicleKiaNiroEv::Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3)
  * Send command to Smart Key Unit
  * 7a5 [b1] 2F [b2] [b3] [b4] [b5] [b6] [b7]
  */
-bool OvmsVehicleKiaNiroEv::Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7)
+bool OvmsVehicleIoniqFL::Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7)
 	{
 	return SendCommandInSessionMode(SMART_KEY_UNIT, b1,UDS_SID_IOCTRL_BY_ID, b2, b3, b4, b5, b6, b7, UDS_EXTENDED_DIAGNOSTIC_SESSION);
 	}
@@ -254,7 +254,7 @@ bool OvmsVehicleKiaNiroEv::Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3,
  * Send command to ABS & EBP Module
  * 7d5 03 30 [b1] [b2]
  */
-bool OvmsVehicleKiaNiroEv::Send_EBP_Command( uint8_t b1, uint8_t b2, uint8_t mode)
+bool OvmsVehicleIoniqFL::Send_EBP_Command( uint8_t b1, uint8_t b2, uint8_t mode)
 	{
 	return SendCommandInSessionMode(ABS_EBP_UNIT, 3,UDS_SID_IOCTRL_BY_LOC_ID, b1, b2, 0,0,0,0, mode );
 	}
