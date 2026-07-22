@@ -32,6 +32,7 @@
 
 #include "libtelnet.h"
 #include "ovms_console.h"
+#include "mongoose_client.h"
 
 struct mg_connection;
 
