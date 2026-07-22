@@ -157,7 +157,6 @@ typedef struct
   uint16_t watchdog_resets;         // Watchdog reset counter
   uint16_t error_resets;            // Error resolving reset counter
   uint32_t error_time;              // monotonictime of last error state detection
-  uint16_t rxstall_resets;          // RX path wedge reset counter (hardware confirmed, sleep-safe)
   } CAN_status_t;
 
 // CAN error states

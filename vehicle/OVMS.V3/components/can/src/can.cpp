@@ -388,7 +388,6 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     writer->printf("Wdg Timer: %20" PRId32 " sec(s)\n",monotonictime-sbus->m_watchdog_timer);
     }
   writer->printf("Err Resets:%20d\n",sbus->m_status.error_resets);
-  writer->printf("Wedge Rsts:%20d\n",sbus->m_status.rxstall_resets);
   }
 
 void can_explain_flags(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -774,7 +773,7 @@ bool canbus::StatusChanged()
   uint32_t chksum = m_status.errors_rx + m_status.errors_tx
     + m_status.invalid_rx + m_status.rxbuf_overflow + m_status.txbuf_overflow
     + m_status.error_flags + m_status.txbuf_delay + m_status.tx_fails
-    + m_status.watchdog_resets + m_status.error_resets + m_status.rxstall_resets;
+    + m_status.watchdog_resets + m_status.error_resets;
   if (chksum != m_status_chksum)
     {
     m_status_chksum = chksum;
@@ -1417,7 +1416,7 @@ void canbus::BusTicker10(std::string event, void* data)
       {
       ESP_LOGE(TAG, "%s RX path wedged (hardware RX pending, not serviced) - resetting bus", m_name);
       Reset();
-      m_status.rxstall_resets++;
+      m_status.watchdog_resets++;
       }
     }
   }
