@@ -468,8 +468,24 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   {
     auto m = MyConfig.GetParamMap("vehicle");
     bool changed = false;
-    if (m.find("12v.alert") == m.end())
-      { m["12v.alert"] = "0.8"; changed = true; }
+    auto it_ref = m.find("12v.ref");    
+    auto it_alert = m.find("12v.alert");
+    if (PRESET_VERSION == PRESET_VERSION_12VREF) 
+    {
+      m["12v.ref"] = "12.5";
+      m["12v.alert"] = "0.9";
+      changed = true;
+    }
+    if (it_ref == m.end())
+      {
+      m["12v.ref"] = "12.5";
+      changed = true;
+      }
+    if (it_alert == m.end())
+      {
+      m["12v.alert"] = "0.9";
+      changed = true;
+      }
     if (need_stream)
       { m["stream"] = "10"; changed = true; }
     // TPMS migration: read from already-loaded map_xsq
@@ -629,7 +645,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   // vehicle section
   auto map_vehicle = MyConfig.GetParamMap("vehicle");
   map_vehicle["stream"] = "10";
-  map_vehicle["12v.alert"] = "0.8";
+  map_vehicle["12v.ref"] = "12.5";
+  map_vehicle["12v.alert"] = "0.9";
   MyConfig.SetParamMap("vehicle", map_vehicle);
 
   // ota section

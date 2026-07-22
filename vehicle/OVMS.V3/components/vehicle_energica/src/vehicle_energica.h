@@ -78,6 +78,8 @@ protected:
 
 	// Custom metrics
 	OvmsMetricFloat* m_v_cell_balance;
+	OvmsMetricInt*   m_v_cell_id_min;   // low (weak) cell group number
+	OvmsMetricInt*   m_v_cell_id_max;   // high cell group number
 
 	kWhMeasure charge_session;
 	timestamp last_charge_notif{0};

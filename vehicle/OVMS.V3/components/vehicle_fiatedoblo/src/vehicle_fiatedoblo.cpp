@@ -277,6 +277,14 @@ void OvmsVehicleFiatEDoblo::IncomingFrameCan1(CAN_frame_t* p_frame)
       // Byte 2 could be related to the charge current in bits 0011 1100
       break;
     }
+  case 0x612:
+    {
+      // Citroën e-Berlingo / Stellantis EMP2: byte 1 bit 1 indicates unlocked.
+      // Observed locked:   00 20 01 00 07 fe 00 10
+      // Observed unlocked: 00 22 01 00 07 fe 00 10
+      StandardMetrics.ms_v_env_locked->SetValue((d[1] & 0x02) == 0);
+      break;
+    }
   }
 }
 

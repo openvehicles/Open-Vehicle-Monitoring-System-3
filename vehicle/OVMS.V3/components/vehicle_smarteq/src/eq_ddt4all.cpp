@@ -79,14 +79,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 0:
     {
       // indicator 5x on
-      CommandCanVector(0x745, 0x765, {"30082002","30082002"}, false, false);
+      CommandCanVector(0x745, 0x765, {"30082002","30082002"}, false, true);
       res = Success;
       break;
     }
     case 1:
     {
       // open trunk
-      CommandCanVector(0x745, 0x765, {"300500","300500","300500","300500","300500"}, false, false);
+      CommandCanVector(0x745, 0x765, {"300500","300500","300500","300500","300500"}, false, true);
       res = Success;
       break;
     }

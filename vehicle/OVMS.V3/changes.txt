@@ -1,6 +1,16 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- vehicle_cadillac_ct5:
+    Set the acceptance filter to allow 0x063 (v.on) and 0x5E4 (v.b.soc).
+    The high frame rate of this vehicle (> 1600/sec) causes watchdog
+    resets when the engine is running. Setting the acceptance filter
+    means we don't see the VIN frames but at least we're not crashing
+    over and over.
+- Fiat eDoblo: added passive lock status from CAN 0x612.
+
+
+2026-07-18 MB   3.3.006  OTA release
 - smart EQ:
     As soon as the 12V trickle charge begins, a timestamp is generated and stored in `m_12v_trickle_charge_times`.
     The counted value is set in `xsq.12v.trickle.count`.
@@ -12,16 +22,6 @@ Open Vehicle Monitor System v3 - Change log
     New config:
       [xsq] bms.alert.above.cycles (int)     -- alert threshold for cycles counted; default 50000
       [xsq] bms.contactor.1h.limit (int)     -- limit for contactor cycles changes per hour for alerting; default 8
-- vehicle_cadillac_ct5:
-    Set the acceptance filter to allow 0x063 (v.on) and 0x5E4
-    (v.b.soc).
-
-    The high frame rate of this vehicle (> 1600/sec) causes watchdog
-    resets when the engine is running. Setting the acceptance filter
-    means we don't see the VIN frames but at least we're not crashing
-    over and over.
-
-2026-05-17 MB   3.3.006  OTA release
 - OTA/firmware: include tools to mitigate 4MB firmware size limit by upgrading the partitioning scheme;
     for details see: https://docs.openvehicles.com/en/latest/userguide/partitioning.html
 - VW e-Up: extended battery health / aging info (with web UI integration): total battery age,
