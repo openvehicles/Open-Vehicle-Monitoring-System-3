@@ -229,8 +229,11 @@ void ConsoleTelnet::TelnetHandler(telnet_event_t *event)
   switch (event->type)
     {
     case TELNET_EV_SEND:
+      {
+      auto mglock = MongooseLock();
       mg_send(m_connection, event->data.buffer, event->data.size);
       break;
+      }
 
     case TELNET_EV_DATA:
       {
