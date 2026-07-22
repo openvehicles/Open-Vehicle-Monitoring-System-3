@@ -33,8 +33,14 @@
 #ifndef __VEHICLE_SMARTEQ_H__
 #define __VEHICLE_SMARTEQ_H__
 
-#define VERSION "2.1.2"
-#define PRESET_VERSION 20260420 // Configuration preset version
+// --- Constants ---
+#define VERSION "2.2.0"
+#define PRESET_VERSION 20260706        // Configuration preset version
+#define PRESET_VERSION_12VREF 20260706 // Configuration preset version for 12V reference migration, defined separately to allow setting 12V reference migration
+#define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
+#define MAX_POLL_DATA_LEN 126
+#define CELLCOUNT 96
+#define SQ_CANDATA_TIMEOUT 10          // seconds until car goes to sleep without CAN activity
 
 #include "ovms_log.h"
 
@@ -119,14 +125,11 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ResetTripCounters();
     void ResetTotalCounters();
     void Check12vState();
-    void DisablePlugin(const char* plugin);
-    bool ExecuteCommand(const std::string& command);
     void setTPMSValue();
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
+    void smart12VHistory();
 
     // --- Notification methods ---
-    void NotifyClimate();
-    void NotifyClimateTimer();
     void NotifyTripReset();
     void NotifyTripStart();
     void NotifyTripCounters();
@@ -141,10 +144,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void DoorLockState();
     void DoorOpenState();
 
-    // --- Network ---
-    void WifiRestart();
-    void ModemRestart();
-
     // --- Vehicle state management ---
     void smartOn();
     void smartOff();
@@ -155,6 +154,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void smartChargePrepare();
     void smartChargeFinish();
     void smartOBDpolling(bool activate);
+    void smartCoolDownPolling(int delay_sec = 10);
     void smartCAN2Metrics();
 
     // --- Command overrides ---
@@ -227,14 +227,14 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- Inline state helpers ---
     bool UsesTpmsSensorMapping() override { return true; } // using m_tpms_index[]
     bool IsOffEQ() { return m_poll_state == POLLSTATE_OFF; }
-    bool IsAwakeEQ() { return can_awake || can_charge_inprogress || can_env_on || can_hvac; }
+    bool IsAwakeEQ() { return can_awake || can_charge_inprogress || can_env_on || can_hvac || m_cmd_wakeup; }
     bool IsHVonEQ() { return can_battery_on && IsAwakeEQ(); }
     bool IsOnEQ() { return can_env_on; }
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
     bool IsCANwrite() { return m_enable_write || m_enable_write_caron; }
     bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) >= 13.1f || 
-                                  (StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f ) || 
+                                  (m_can_active && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f ) || 
                                   (m_can_active && can_charging12v); }
 
   // =========================================================================
@@ -301,8 +301,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void PollReply_EVC_14VBatteryVoltage(const char* data, uint16_t reply_len);
     void PollReply_EVC_14VBatteryVoltageReq(const char* data, uint16_t reply_len);
     void PollReply_EVC_CabinBlower(const char* data, uint16_t reply_len);
-    void PollReply_EVC_VehSpeed(const char* data, uint16_t reply_len);
-    void PollReply_EVC_Odometer(const char* data, uint16_t reply_len);
 
     // --- Poll reply handlers: OBL ---
     void PollReply_OBL_ChargerAC(const char* data, uint16_t reply_len);
@@ -322,12 +320,6 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void PollReply_obd_mt_km(const char* data, uint16_t reply_len);
     void PollReply_obd_mt_level(const char* data, uint16_t reply_len);
 
-    // --- Constants ---
-    #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
-    #define MAX_POLL_DATA_LEN 126
-    #define CELLCOUNT 96
-    #define SQ_CANDATA_TIMEOUT 10 // seconds until car goes to sleep without CAN activity
-
     // --- Internal buffer ---
     std::string   m_rxbuf;
 
@@ -340,7 +332,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricBool          *mt_bus_awake;              // Can Bus active
     OvmsMetricString        *mt_canbyte;                // DDT4all canbyte
     OvmsMetricFloat         *mt_adc_factor;             // calculated ADC factor for 12V measurement
-    OvmsMetricVector<float> *mt_adc_factor_history;     // last 20 calculated ADC factors for 12V measurement
+    OvmsMetricVector<float> *mt_adc_factor_history;     // last 10 calculated ADC factors for 12V measurement
+    OvmsMetricVector<float> *mt_12v_undervolt_history;  // last 10 12V undervolt measurements as vector for graphing
     OvmsMetricString        *mt_poll_state;             // Poller state
     OvmsMetricInt           *mt_ed4_values;             // ED4scan: number of cells to show
     OvmsMetricString        *mt_reset_time;             // Time since last reset (hh:mm)
@@ -391,7 +384,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     OvmsMetricInt           *mt_12v_trickle_charge_count;    // Number of 12V trickle activations in the last 24h
 
     // --- Custom metrics: BMS ---
-    OvmsMetricVector<float> *mt_bms_voltages;                // Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=link, [4]=contactor
+    OvmsMetricVector<float> *mt_bms_voltages;                // Voltages: [0]=cv_min, [1]=cv_max, [2]=cv_mean, [3]=cv_sum, [4]=contactor, [5]=traction link 12V, [6]=12v_bms_clamp30, [7]=Open Circuit 12V
     OvmsMetricVector<int>   *mt_bms_contactor_cycles;        // [0]=max, [1]=now, [2]=consumed, [3]=diff, [4]=1h_count
     OvmsMetricVector<float> *mt_bms_soc_values;              // SOC values: [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display
     OvmsMetricString        *mt_bms_soc_recal_state;         // SOC Recalibration State
@@ -456,6 +449,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_12v_charge_state = false;        // 12V charge state
     bool m_extendedStats = false;           // extended stats for trip and maintenance data
     bool m_enable_calcADCfactor = false;    // enable calculation of ADC factor
+    bool m_cmd_wakeup = false;              // wakeup command issued
     int m_reboot_ticker = 0;                // ticker for network restart
     int m_reboot_time = 30;                 // Restart Network time
     int m_TPMS_FL = 0;                      // TPMS Sensor Front Left
@@ -472,7 +466,12 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     float m_pressure_warning = 40.0f;       // Pressure Warning
     float m_pressure_alert = 70.0f;         // Pressure Alert
     std::string m_hl_canbyte = "";          // canbyte variable for unv
-    std::deque<float> m_adc_factor_history; // ring buffer (max 20) for ADC factors
+    std::deque<float> m_adc_factor_history;     // ring buffer (max 10) for ADC factors
+    std::deque<float> m_12v_undervolt_history;  // ring buffer (max 10) for 12V undervoltage measurements
+    float m_ref12V = 12.5f;                 // reference 12V (12.5V)
+    float m_alert12V = 0.9f;                // alert threshold 12V (0.9V)
+    bool m_12v_alerted = false;             // 12V undervolt alert triggered
+    int m_12v_alerted_ticker = -1;          // cooldown ticker for 12V undervolt alert reset
 
     // --- Internal state variables ---
     bool m_indicator = false;               // activate indicator e.g. 7 times or whatever
@@ -500,9 +499,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_obdii_7e4_dcdc;                  // OBDII 7e4 dcdc mode enabled
 
     // --- Poll timing / list ---
-    int m_cfg_cell_interval_drv = 60;       // poll interval while driving, default 60 sec.
-    int m_cfg_cell_interval_chg = 60;       // poll interval while charging, default 60 sec.
+    bool m_static_ids_read = false;         // flag to track if static IDs have been read at least once
     poll_vector_t m_poll_vector;            // List of PIDs to poll
+    bool m_poll_cooldown = true;            // flag to trigger cooldown timer for poll state change
+    int m_cooldown_ticker = 15;             // cooldown timer for poll state change
 
   // =========================================================================
   // private
@@ -546,7 +546,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     float can_speed = 0.0f;
     float can_odometer = 0.0f;
     float can_odometer_trip = 0.0f;
-    float can_soc = 0.0f;
+    float can_soc = StdMetrics.ms_v_bat_soc->AsFloat(0.0f);
     float can_range_est = 0.0f;
     float can_range_full = 0.0f;
     float can_range_ideal = 0.0f;

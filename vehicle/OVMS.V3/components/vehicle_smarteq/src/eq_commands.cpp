@@ -77,11 +77,11 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
 
   OvmsVehicle::vehicle_command_t res = Fail;
   res = wakeup ? CommandWakeup() : Success;
-  
+
+  vTaskDelay(200 / portTICK_PERIOD_MS);
   if (res == Success)
     {
-    vTaskDelay(1500 / portTICK_PERIOD_MS);
-    if (!IsAwakeEQ()) 
+    if (wakeup && !can_awake) 
       {
       ESP_LOGE(TAG, "vehicle not awake");
       m_ddt4all_exec = 5; // reduce cooldown on error
@@ -405,9 +405,14 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
       {
       writer->puts("Error: vehicle 12V DC-DC converter not active");
       return;
+      }
+    if (smarteq->m_poll_cooldown) 
+      {
+      writer->puts("Error: vehicle 12V DC-DC polling not active");
+      return;
       } 
         
-    float can12V = StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f);   // DCDC voltage = mt_evc_dcdc->GetElemValue(1)
+    float can12V = (smarteq->mt_evc_dcdc->GetElemValue(1) + smarteq->mt_evc_dcdc->GetElemValue(3) + smarteq->mt_evc_dcdc->GetElemValue(4)) / 3;   // DCDC 12V
     if (can12V < 13.1f) 
       {
       writer->puts("Error: vehicle 12V is not charging, 12V voltage is not stable for ADC calibration!");
@@ -463,8 +468,24 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   {
     auto m = MyConfig.GetParamMap("vehicle");
     bool changed = false;
-    if (m.find("12v.alert") == m.end())
-      { m["12v.alert"] = "0.8"; changed = true; }
+    auto it_ref = m.find("12v.ref");    
+    auto it_alert = m.find("12v.alert");
+    if (PRESET_VERSION == PRESET_VERSION_12VREF) 
+    {
+      m["12v.ref"] = "12.5";
+      m["12v.alert"] = "0.9";
+      changed = true;
+    }
+    if (it_ref == m.end())
+      {
+      m["12v.ref"] = "12.5";
+      changed = true;
+      }
+    if (it_alert == m.end())
+      {
+      m["12v.alert"] = "0.9";
+      changed = true;
+      }
     if (need_stream)
       { m["stream"] = "10"; changed = true; }
     // TPMS migration: read from already-loaded map_xsq
@@ -547,6 +568,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "TPMS_FR",
     "TPMS_RL",
     "TPMS_RR",
+    "tpms.value.warning",
     "lock.byte",
     "unlock.byte",
     "indicator",
@@ -561,7 +583,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     "obdii_7e4",
     "obdii_7e4_modify",
     "basic_tpms",
-    "calc.adcfactor.samples"
+    "calc.adcfactor.samples",
+    "cell_interval_drv",
+    "cell_interval_chg",
   };
 
   int removed_count = 0;
@@ -621,7 +645,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   // vehicle section
   auto map_vehicle = MyConfig.GetParamMap("vehicle");
   map_vehicle["stream"] = "10";
-  map_vehicle["12v.alert"] = "0.8";
+  map_vehicle["12v.ref"] = "12.5";
+  map_vehicle["12v.alert"] = "0.9";
   MyConfig.SetParamMap("vehicle", map_vehicle);
 
   // ota section

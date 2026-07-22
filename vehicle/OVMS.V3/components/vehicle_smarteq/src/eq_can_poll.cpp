@@ -141,12 +141,6 @@ void OvmsVehicleSmartEQ::IncomingPollReply(const OvmsPoller::poll_job_t &job, ui
         case 0x2005: // Battery voltage 14V
           PollReply_EVC_14VBatteryVoltage(m_rxbuf.data(), m_rxbuf.size());
           break;
-        case 0x2003: // Vehicle Speed
-          PollReply_EVC_VehSpeed(m_rxbuf.data(), m_rxbuf.size());
-          break;
-        case 0x2006: // Odometer (Total Vehicle Distance)
-          PollReply_EVC_Odometer(m_rxbuf.data(), m_rxbuf.size());
-          break;
         case 0x339D: // Charging plug detected (B_PlugConnected_bcb_status_S)
           PollReply_EVC_PlugDetected(m_rxbuf.data(), m_rxbuf.size());
           break;
@@ -393,6 +387,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
       ESP_LOGW(TAG, "HV contactor cycles alert: last: %d, now: %d, consumed: %d odo: %0.0f, counted more than expected!", cycles_prev, cycles_now, cycles_consumed, odometer);
       if (IsCANwrite()) 
         {
+        smartCoolDownPolling();
         smartOBDpolling(false);
         MyConfig.SetParamValueBool("xsq", "canwrite", false);
         MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
@@ -454,7 +449,7 @@ void OvmsVehicleSmartEQ::PollReply_BMS_SOC(const char* data, uint16_t reply_len)
     ocv = 0.0f;
   if(cap_loss < 0.0f || cap_loss > 100.0f)
     cap_loss = 0.0f;
-  mt_bms_voltages->SetElemValue(5, ocv);  // ocv_voltage
+  mt_bms_voltages->SetElemValue(7, ocv);  // ocv_voltage
   mt_bms_soc_values->SetElemValue(0, soc);                              // kernel SOC
   mt_bms_soc_values->SetElemValue(1, (real_soc_min + real_soc_max) / 2.0f);  // real SOC
   mt_bms_soc_values->SetElemValue(2, real_soc_min);                     // SOC min
@@ -697,15 +692,14 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
 
   mt_bms_voltages->SetElemValue(0, v_cell_min);   // cv_min
   mt_bms_voltages->SetElemValue(1, v_cell_max);   // cv_max
-  mt_bms_voltages->SetElemValue(2, (v_cell_min + v_cell_max) / 2.0f);  // cv_mean
-
-  mt_bms_voltages->SetElemValue(3, v_link);       // link
+  mt_bms_voltages->SetElemValue(2, (v_cell_min + v_cell_max) / 2.0f);  // cv_mean  
+  mt_bms_voltages->SetElemValue(3, cv_sum_raw);   // cv_sum (HV)
   mt_bms_voltages->SetElemValue(4, v_pack_term);  // contactor
-  mt_bms_voltages->SetElemValue(5, cv_sum_raw);   // cv_sum (HV)
+  mt_bms_voltages->SetElemValue(5, v_link);       // traction link 12V
 
   // P = V × I (in kW)
   float pack_power_kw = (v_pack_term * i_pack) / 1000.0f;
-  StdMetrics.ms_v_bat_voltage->SetValue(v_pack_term);
+  //StdMetrics.ms_v_bat_voltage->SetValue(v_pack_term);
   StdMetrics.ms_v_bat_current->SetValue(i_pack * -1.0f); // invert to charge(+)/discharge(-) convention
   StdMetrics.ms_v_bat_power->SetValue(pack_power_kw);
 
@@ -818,10 +812,14 @@ void OvmsVehicleSmartEQ::PollReply_BCM_TPMS_InputCapt(const char* data, uint16_t
     {
     // Pressure: big-endian 16 bit *0.75 kPa
     uint16_t praw = CAN_UINT(8 + (i*2));
-    m_tpms_pressure[i] = (float)praw != 0xffff ? (float)praw * 0.75f : 0.0f;
+    float pressure_kpa = (float)praw * 0.75f;
+    if (pressure_kpa >= 10.0f && pressure_kpa <= 500.0f)
+      m_tpms_pressure[i] = pressure_kpa;    // only valid values
     // Temperature: raw byte + offset -30.0
     uint16_t traw = (uint16_t)(uint8_t)CAN_BYTE(16 + i);
-    m_tpms_temperature[i] = traw != 0xffff ? (float)traw - 30.0f : 0.0f;
+    float temp = (float)traw - 30.0f;
+    if (temp <= 100.0f)
+      m_tpms_temperature[i] = temp; // only valid values
     m_tpms_lowbatt[i] = static_cast<bool>((raw >> i) & 0x01);
     }
 }
@@ -894,7 +892,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_DCDC_Volt(const char* data, uint16_t repl
   // POSITIVE RESPONSE FORMAT: 62 30 24 <Byte>
   REQUIRE_LEN(1);
   uint8_t raw = CAN_BYTE(0);
-  float value = 4.0f + raw * 0.1f;     // offset 4.0, step 0.1
+  float value = 4.0f + raw * 0.1f;      // offset 4.0, step 0.1
   mt_evc_dcdc->SetElemValue(1, value);  // dcdc_volt
   StdMetrics.ms_v_charge_12v_voltage->SetValue(value);
 }
@@ -932,21 +930,7 @@ void OvmsVehicleSmartEQ::PollReply_EVC_14VBatteryVoltageReq(const char* data, ui
   REQUIRE_LEN(1);
   uint8_t raw = CAN_BYTE(0);
   float value = 12.0f + raw * 0.05f;
-  can_speed = value;
-}
-
-void OvmsVehicleSmartEQ::PollReply_EVC_VehSpeed(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 20 03  <Byte> <Byte>
-  REQUIRE_LEN(2);
-  uint16_t raw = CAN_UINT(0);
-  float value = raw * 0.01f;
-  can_speed = value;
-}
-
-void OvmsVehicleSmartEQ::PollReply_EVC_Odometer(const char* data, uint16_t reply_len) {
-  // POSITIVE RESPONSE FORMAT: 62 20 06  <Byte>
-  REQUIRE_LEN(3);
-  can_odometer = (float)CAN_UINT24(0);
+  mt_evc_dcdc->SetElemValue(5, value);  // dcdc_volt_req
 }
 
 void OvmsVehicleSmartEQ::PollReply_EVC_PlugDetected(const char* data, uint16_t reply_len) {
@@ -1019,7 +1003,18 @@ void OvmsVehicleSmartEQ::PollReply_OBL_ChargerAC(const char* data, uint16_t repl
   }
   UpdateChargeMetrics();
 }
-
+// #1 poll fast charger 3-phase
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_V(const char* data, uint16_t reply_len, int idx) {
+  REQUIRE_LEN(2);
+  mt_obl_main_volts->SetElemValue(idx, CAN_UINT(0) / 2.0);
+}
+//#2 poll fast charger 3-phase
+void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_A(const char* data, uint16_t reply_len, int idx) {
+  REQUIRE_LEN(2);
+  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
+  mt_obl_main_amps->SetElemValue(idx, value);
+}
+//#3 poll + charge metrics update #1, #2, #3
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t reply_len) {
   // POSITIVE RESPONSE FORMAT: 62 50 4A <Byte> <Byte>
   // Spec: offset -20000.0, bytescount 2, unit W
@@ -1030,21 +1025,6 @@ void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Power(const char* data, uint16_t re
   mt_obl_main_CHGpower->SetElemValue(0, power_kw);
   mt_obl_main_CHGpower->SetElemValue(1, 0);
   UpdateChargeMetrics();
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_A(const char* data, uint16_t reply_len, int idx) {
-  REQUIRE_LEN(2);
-  float value = ((CAN_UINT(0) * 0.625) - 2000) / 10.0;
-  mt_obl_main_amps->SetElemValue(idx, value);
-  if (idx == 2)
-    UpdateChargeMetrics();
-}
-
-void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_Ph_RMS_V(const char* data, uint16_t reply_len, int idx) {
-  REQUIRE_LEN(2);
-  mt_obl_main_volts->SetElemValue(idx, CAN_UINT(0) / 2.0);
-  if (idx == 2)
-    UpdateChargeMetrics();
 }
 
 void OvmsVehicleSmartEQ::PollReply_OBL_JB2AC_LeakageDiag(const char* data, uint16_t reply_len) {

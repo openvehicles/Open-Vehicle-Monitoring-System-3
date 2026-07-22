@@ -70,8 +70,13 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x350:
       {
       REQ_DLC(7);
-      can_350_ticker = SQ_CANDATA_TIMEOUT;
-      can_awake = (CAN_BYTE(0) > 0xC1);      
+      can_350_ticker = SQ_CANDATA_TIMEOUT;      
+      // if "TECHNICAL WAKE UP" and we were previously asleep, then start 10sec. cooldown polling to wait for car to fully wake up before we start polling for data
+      if ((CAN_BYTE(0) > 0xC0) && !can_awake) 
+        {
+        smartCoolDownPolling();
+        }
+      can_awake = (CAN_BYTE(0) > 0xC1);
       can_battery_on = (CAN_BYTE(0) > 0xC2);
       can_env_on = (CAN_BYTE(0) > 0xC4);
       can_locked = (CAN_BYTE(6) == 0x96);
@@ -108,13 +113,12 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       {
       REQ_DLC(5);
       uint8_t raw_temp = (c >> 13) & 0x7Fu;
-      float _temp = (float)raw_temp - 40.0f;      
-      // Ignore invalid sensor reading (0x7F = 127 → 87°C after offset)
-      if (raw_temp != 0x7F) 
-        {
-        can_bat_temp = _temp;
-        }      
-      can_bat_voltage = (float)((CAN_UINT(3) >> 5) & 0x3FF) / 2.0f;
+      float _temp = (float)raw_temp - 40.0f;
+      if (_temp < 85.0f)
+        can_bat_temp = _temp;    // Ignore invalid sensor reading
+      float _volt = (float)((CAN_UINT(3) >> 5) & 0x3FF) / 2.0f;
+      if (_volt < 450.0f) 
+        can_bat_voltage = _volt; // ignore invalid voltage reading > 450V
       can_charge_climit = (c >> 20) & 0x3Fu;        
       break;
       }
@@ -125,8 +129,10 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x5D7: // Speed, ODO
       {
       REQ_DLC(6);
-      // Apply scaling 
-      can_speed = (float)CAN_UINT(0) / 100.0f;
+      // Apply scaling
+      float _speed = (float)CAN_UINT(0) / 100.0f;
+      if (_speed < 200.0f) 
+        can_speed = _speed;    // ignore invalid speed reading > 200km/h
       can_odometer = (float)(CAN_UINT32(2)>>4) / 100.0f;
       can_odometer_trip = (float)(CAN_UINT(4)>>4) / 100.0f;
       break;
@@ -183,7 +189,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       {
       REQ_DLC(4);
       float _soc = (float) CAN_BYTE(3);
-      if (_soc <= 100.0f) can_soc = _soc; // SOC
+      if (_soc <= 100.0f && _soc >= 0.1f) can_soc = _soc; // SOC
       can_chargeport = (CAN_BYTE(0) & 0x20) != 0; // ChargingPlugConnected
       can_duration_full = (((c >> 22) & 0x3FFu) < 0x3FF) ? (c >> 22) & 0x3FFu : 0;
       float _range_est = ((c >> 12) & 0x3FFu); // VehicleAutonomy

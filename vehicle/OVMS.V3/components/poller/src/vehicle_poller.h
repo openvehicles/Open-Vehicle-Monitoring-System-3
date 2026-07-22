@@ -138,7 +138,7 @@ class OvmsPollLimiter {
 
 class OvmsPoller : public InternalRamAllocated {
   public:
-    typedef struct
+    typedef struct __attribute__ ((__packed__))
       {
       uint32_t txmoduleid;                      // transmission CAN ID (address), 0x7df = OBD2 broadcast
       uint32_t rxmoduleid;                      // expected response CAN ID or 0 for broadcasts
@@ -160,7 +160,18 @@ class OvmsPoller : public InternalRamAllocated {
           const uint8_t* data;                  // pointer to payload data (single/multi frame request)
           } xargs;
         };
-      uint16_t polltime[VEHICLE_POLL_NSTATES];  // poll intervals in seconds for used poll states
+      union
+        {
+        uint16_t polltime[VEHICLE_POLL_NSTATES];  // poll intervals in seconds for used poll states
+        struct
+          {
+          uint16_t cycle[VEHICLE_POLL_NSTATES];   // poll intervals in seconds for used poll states
+          uint8_t  shift[VEHICLE_POLL_NSTATES];   // shift poll times by seconds for used poll states
+                                                  // Notes:
+                                                  // - shifts start over at max_ticker cycle reset (3600 seconds)
+                                                  // - shifts with cycle=0 translate to once per max_ticker cycle
+          } ts;
+        };
       uint8_t  pollbus;                         // 0 = default CAN bus from PollSetPidList(), 1…4 = specific
       uint8_t  protocol;                        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME / VWTP_20
       } poll_pid_t;
