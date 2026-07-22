@@ -83,6 +83,7 @@ class OvmsVehicleIoniqFL : public KiaVehicle
     void Ticker300(uint32_t ticker) override;
     void EventListener(std::string event, void* data);
     void IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length) override;
+    void Incoming_Full(uint16_t type, uint32_t module_sent, uint32_t module_rec, uint16_t pid, const std::string &data);
     void ConfigChanged(OvmsConfigParam* param) override;
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
@@ -123,26 +124,36 @@ class OvmsVehicleIoniqFL : public KiaVehicle
     bool IsKona();
     bool IsLHD();
     metric_unit_t GetConsoleUnits();
+    bool PollRequestVIN();
 
     bool  kn_emergency_message_sent;
+
+    int m_checklock_retry, m_checklock_start, m_checklock_notify;
+    bool m_aux_is_charging, m_aux_is_low;
+
+    // Detecting of continuous charging of AUX battery.
+    // Tries to not rock the boat by turning on the ICU unnecessarily.
+    const uint16_t AUX_CRIT_THRESH = 1440; // 14.4v
+    average_asym_util_t<uint32_t, 128, 32>  m_crit_check_avg;
 
   protected:
     void HandleCharging();
     void HandleChargeStop();
-    void IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
-    void IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
-    void IncomingMCU(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
-    void IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
-    void IncomingBCM(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
-    void IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
-    void IncomingAirCon(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
-    void IncomingAbsEsp(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
-    void IncomingCM(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
+    void IncomingFull_OBC(uint16_t type, uint16_t pid, const std::string &data);
+    void IncomingFull_VMCU(uint16_t type, uint16_t pid, const std::string &data);
+    void IncomingFull_MCU(uint16_t type, uint16_t pid, const std::string &data);
+    void IncomingFull_BMC(uint16_t type, uint16_t pid, const std::string &data);
+    void IncomingFull_BCM(uint16_t type, uint16_t pid, const std::string &data);
+    void IncomingFull_IGMP(uint16_t type, uint16_t pid, const std::string &data);
+    void IncomingFull_AirCon(uint16_t type, uint16_t pid, const std::string &data);
+    void IncomingFull_AbsEsp(uint16_t type, uint16_t pid, const std::string &data);
+    void IncomingFull_CM(uint16_t type, uint16_t pid, const std::string &data);
     void RequestNotify(unsigned int which);
     void DoNotify();
     void vehicle_ioniq_car_on(bool isOn);
     void UpdateMaxRangeAndSOH(void);
     uint16_t calcMinutesRemaining(float target);
+    void NotifiedVehicleAux12vStateChanged(OvmsBatteryState new_state, const OvmsBatteryMon &monitor) override;
     bool SetDoorLock(bool open, const char* password);
     bool LeftIndicator(bool);
     bool RightIndicator(bool);
@@ -154,12 +165,24 @@ class OvmsVehicleIoniqFL : public KiaVehicle
     void StopTesterPresentMessages();
 
     OvmsCommand *cmd_xkn;
+    int m_vin_retry;
 
 		#define CFG_DEFAULT_MAXRANGE 440
     int kn_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
 
 		#define CGF_DEFAULT_BATTERY_CAPACITY 64000
     float kn_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY; //TODO Detect battery capacity from VIN or number of batterycells
+
+    #define CHARGE_REGEN_TOT  StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh)
+    #define CHARGE_USED_TOT   StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh)
+    #define COULOMB_REGEN_TOT  StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
+    #define COULOMB_USED_TOT   StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh)
+    #define ISCHARGING   StdMetrics.ms_v_charge_inprogress->AsBool()
+
+    #define ISPOLLING_OFF (m_poll_state == 0)
+    #define ISPOLLING_RUNNING (m_poll_state == 1)
+    #define ISPOLLING_CHARGING (m_poll_state == 2)
+    #define ISPOLLING_PING (m_poll_state == 3)
 
     unsigned int kn_notifications = 0;
 
@@ -190,6 +213,42 @@ class OvmsVehicleIoniqFL : public KiaVehicle
     } kn_charge_bits;
 
     RangeCalculator *kn_range_calc;
+
+    int16_t xkn_keep_awake;
+    inline int PollGetState()
+  {
+    return m_poll_state;
+  }
+  inline void PollState_Off()
+  {
+    PollSetState(0);
+  }
+  inline bool IsPollState_Off()
+  {
+    return m_poll_state == 0;
+  }
+
+  inline void PollState_Running()
+  {
+    PollSetState(1);
+  }
+    inline void PollState_Ping() { PollSetState(3); }
+    inline void PollState_Ping(uint32_t ticks)
+    {
+      if (xkn_keep_awake < ticks) {
+        xkn_keep_awake = ticks;
+      }
+
+      PollSetState(3);
+    }
+
+    inline void PollState_PingCap(uint32_t ticks)
+    {
+      if (xkn_keep_awake > ticks) {
+        xkn_keep_awake = ticks;
+      }
+    }
+
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
