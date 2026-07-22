@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- vehicle_cadillac_ct5:
+    Set the acceptance filter to allow 0x063 (v.on) and 0x5E4 (v.b.soc).
+    The high frame rate of this vehicle (> 1600/sec) causes watchdog
+    resets when the engine is running. Setting the acceptance filter
+    means we don't see the VIN frames but at least we're not crashing
+    over and over.
 - Fiat eDoblo: added passive lock status from CAN 0x612.
 
 
