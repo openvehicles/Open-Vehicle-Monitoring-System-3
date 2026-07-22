@@ -845,8 +845,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
 
   if ( !(ticker & 1) && Atomic_Get(m_aux_is_charging) ) {
     BatteryStateStillCharging();
-  }
-  
+  } 
   if (IsPollState_Off() && StdMetrics.ms_v_door_chargeport->AsBool() && kia_ready_for_chargepollstate) {
     //Set pollstate charging if car is off and chargeport is open.
     ESP_LOGI(TAG, "CHARGEDOOR OPEN. READY FOR CHARGING.");
