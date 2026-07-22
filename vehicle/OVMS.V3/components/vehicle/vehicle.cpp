@@ -32,6 +32,8 @@
 static const char *TAG = "vehicle";
 // static const char *TAGRX = "vehicle-rx";
 static const char *CHECK_SHUTDOWN_TAG = "vehicle-shutdown";
+// static const char *BMS_VOLTAGE_EVENT = "vehicle-bms-v"
+// static const char *BMS_TEMPERATURE_EVENT = "vehicle-bms-t"
 
 #include <stdio.h>
 #include <algorithm>
@@ -67,7 +69,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   m_currentvehicletype.clear();
 
   MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsVehicleFactory::EventSystemShuttingDown, this, _1, _2));
-  
+
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework", vehicle_status, "", 0, 0, false);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1,true,vehicle_validate);
   cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list);
@@ -171,11 +173,27 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   dto->RegisterDuktapeFunction(DukOvmsVehicleStopCooldown, 0, "StopCooldown");
   dto->RegisterDuktapeFunction(DukOvmsVehicleObdRequest, 1, "ObdRequest");
 
-  DuktapeObjectRegistration* dto_aux= new DuktapeObjectRegistration("OvmsAuxMonitor");;
+  DuktapeObjectRegistration* dto_aux= new DuktapeObjectRegistration("OvmsAuxMonitor");
   dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonEnable, DUK_VARARGS /*0..2*/, "Enable");
   dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonDisable, 0, "Disable");
   dto_aux->RegisterDuktapeFunction(DukOvmsVehicleAuxMonStatus, 0, "Status");
   dto->RegisterDuktapeObject(dto_aux, "AuxMon");
+
+  DuktapeObjectRegistration* dto_bms= new DuktapeObjectRegistration("OvmsBms");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellArrangement, 2, "VoltageSetCellArrangement");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellDefaultThresholds, DUK_VARARGS, "VoltageSetCellDefaultThresholds");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellLimits, 2, "VoltageSetCellLimits");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCell, 2, "VoltageSetCell");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageResetCells, DUK_VARARGS, "VoltageResetCells");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltagesRestartCell, 0, "VoltagesRestartCell");
+
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellArrangement, 2, "TemperatureSetCellArrangement");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellDefaultThresholds,  2, "TemperatureSetCellDefaultThresholds");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellLimits, 2, "TemperatureSetCellLimits");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCell, 2, "TemperatureSetCell");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureResetCells, DUK_VARARGS, "TemperatureResetCells");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureRestartCells, 0, "TemperatureRestartCells");
+  dto->RegisterDuktapeObject(dto_bms, "BMS");
 
   MyDuktape.RegisterDuktapeObject(dto);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
@@ -595,7 +613,11 @@ OvmsVehicle::OvmsVehicle()
 
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
+
   VehicleConfigChanged("config.mounted", NULL);
+
+  MyEvents.RegisterEvent(TAG, "bms.v", std::bind(&OvmsVehicle::EventDBCBmsMetricV, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "bms.t", std::bind(&OvmsVehicle::EventDBCBmsMetricT, this, _1, _2));
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
 

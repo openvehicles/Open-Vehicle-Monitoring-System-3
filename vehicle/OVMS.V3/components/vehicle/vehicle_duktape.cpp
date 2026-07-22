@@ -536,4 +536,167 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleAuxMonStatus(duk_context *ctx)
   dc.PutProp(obj_idx, "state");
   return 1;
   }
+
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsVoltageSetCellArrangement(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  // VoltageSetCellArrangement( readings, readingspermodule)
+  int readings = duk_to_int(ctx, 0);
+  int permodule = duk_to_int(ctx, -1);
+  mycar->BmsSetCellArrangementVoltage(readings, permodule);
+  return 0;
+  }
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsVoltageSetCellDefaultThresholds(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  // VoltageSetCellDefaultThresholds(warn, alert [, max_grad] [, max_std_dev])``
+  duk_idx_t numArgs = duk_get_top(ctx);
+  if (numArgs < 2)
+    return 0;
+  float warn = duk_to_number(ctx, 0);
+  float alert = duk_to_number(ctx, -1);
+  float maxgrad = -1;
+  float maxsddev = -1;
+  if (numArgs > 2)
+    {
+    maxgrad = duk_to_number(ctx, -2);
+    if (numArgs > 3)
+      maxsddev = duk_to_number(ctx, -3);
+    }
+
+  mycar->BmsSetCellDefaultThresholdsVoltage(warn, alert, maxgrad, maxsddev);
+
+  return 0;
+  }
+
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsVoltageSetCellLimits(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  float minv = duk_to_number(ctx, 0);
+  float maxv = duk_to_number(ctx, -1);
+
+  mycar->BmsSetCellLimitsVoltage(minv, maxv);
+  return 0;
+  }
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsVoltageSetCell(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  // VoltageSetCell(int index, float value)
+  float index = duk_to_int(ctx, 0);
+  float val = duk_to_number(ctx, -1);
+
+  mycar->BmsSetCellVoltage(index, val);
+  return 0;
+  }
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsVoltageResetCells(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  // VoltageResetCells( [full] )
+  //
+
+  duk_idx_t numArgs = duk_get_top(ctx);
+  bool full = false;
+
+  if (numArgs > 0)
+    full = duk_to_boolean(ctx, 0);
+
+  mycar->BmsResetCellVoltages(full);
+  return 0;
+  }
+
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsVoltagesRestartCell(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  mycar->BmsRestartCellVoltages();
+  return 0;
+  }
+
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsTemperatureSetCellArrangement(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  // TemperatureSetCellArrangement( readings, readingspermodule)
+  int readings = duk_to_int(ctx, 0);
+  int permodule = duk_to_int(ctx, -1);
+  mycar->BmsSetCellArrangementTemperature(readings, permodule);
+  return 0;
+  }
+
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsTemperatureSetCellDefaultThresholds(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  // TemperatureSetCellDefaultThresholds(warn, alert)
+  float warn = duk_to_number(ctx, 0);
+  float alert = duk_to_number(ctx, -1);
+  mycar->BmsSetCellDefaultThresholdsTemperature(warn, alert);
+  return 0;
+  }
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsTemperatureSetCellLimits(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  // TemperatureSetCellLimits(min, max)
+  float minv = duk_to_number(ctx, 0);
+  float maxv = duk_to_number(ctx, -1);
+
+  mycar->BmsSetCellLimitsTemperature(minv, maxv);
+  return 0;
+  }
+
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsTemperatureSetCell(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  // TemperatureSetCell(index, value)
+  float index = duk_to_int(ctx, 0);
+  float val = duk_to_number(ctx, -1);
+
+  mycar->BmsSetCellTemperature(index, val);
+  return 0;
+  }
+
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsTemperatureResetCells(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  // TemperatureResetCells( [full] )
+
+  duk_idx_t numArgs = duk_get_top(ctx);
+  bool full = false;
+
+  if (numArgs > 0)
+    full = duk_to_boolean(ctx, 0);
+
+  mycar->BmsResetCellTemperatures(full);
+  return 0;
+  }
+
+duk_ret_t OvmsVehicleFactory::DukOvmsBmsTemperatureRestartCells(duk_context *ctx)
+  {
+  OvmsVehicle *mycar = MyVehicleFactory.ActiveVehicle();
+  if (mycar == nullptr)
+    return 0;
+  // TemperatureRestartCells()
+  mycar->BmsRestartCellTemperatures();
+  return 0;
+  }
+
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
