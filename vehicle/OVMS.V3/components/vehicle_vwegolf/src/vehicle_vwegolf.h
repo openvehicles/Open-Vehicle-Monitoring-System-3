@@ -99,6 +99,11 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     void Ticker1(uint32_t ticker) override;
 
  private:
+    // Awake / drivable state, derived from the terminal (0x3C0 KL_15) and READY
+    // (0x391) frames in IncomingFrameCan3.
+    bool m_kl15_on = false;
+    bool m_drivetrain_ready = false;
+
     // Seconds since the last KCAN (can3) frame arrived. Reset to 0 in IncomingFrameCan3,
     // incremented each second in Ticker1. Bus is alive while < VWEGOLF_BUS_TIMEOUT_SECS.
     // Initialized to timeout so we treat the bus as offline at cold boot.

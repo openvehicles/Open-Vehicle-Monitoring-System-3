@@ -620,10 +620,14 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
 
             // Park time: 17-bit field at bit offset 20, factor 1 s.
             // d[2] bits [7:4] → result bits [3:0], d[3] → [11:4], d[4] bits [4:0] → [16:12].
+            // The field saturates at its 17-bit max (0x1FFFF ≈ 36.5 h); ignore that
+            // clamped value so v.e.parktime falls back to OVMS's native (uncapped) counter.
             tmp_u32 = ((uint32_t)(d[2] & 0xf0) >> 4) | ((uint32_t)(d[3]) << 4) |
                       ((uint32_t)(d[4] & 0x1f) << 12);
-            StandardMetrics.ms_v_env_parktime->SetValue(tmp_u32);
-            ESP_LOGV(TAG, "0x06B7 parktime=%u", tmp_u32);
+            if (tmp_u32 != 0x1FFFF) {
+                StandardMetrics.ms_v_env_parktime->SetValue(tmp_u32);
+                ESP_LOGV(TAG, "0x06B7 parktime=%u", tmp_u32);
+            }
 
             tmp_u8 = ((uint8_t)(d[7] & 0xff) << 0) |
                      0;  // outerTemp Faktor 0.5 Offset -50, Minimum -50, Maximum 75 [°C] Initial 77
@@ -631,6 +635,20 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             tmp_f32 = ((float)tmp_u8) * 0.5F - 50.0F;
             StandardMetrics.ms_v_env_temp->SetValue(tmp_f32);  // working
             ESP_LOGV(TAG, "0x06B7 outside=%.1f°C", tmp_f32);
+            break;
+        }
+        case 0x391:  // OBD_01: drivetrain READY status
+        {
+            // d[7] bit 5 is OBD_Driving_Cycle: it goes high only once the drivetrain is fully
+            // up and the car is ready to drive; it stays clear during charging, remote climate
+            // and while the ignition is merely on but not yet READY. The frame keeps
+            // broadcasting after the ignition goes off and the bit stays latched high for
+            // several seconds into the power-down, so it is combined with KL_15 for v.e.on
+            // rather than used on its own. if only ignition is turned on again this bit is cleared.
+            // (d[5] carries the accelerator pedal position, OBD_Abs_Pedal_Pos - not mapped.)
+            m_drivetrain_ready = (d[7] & 0x20) != 0;
+            StandardMetrics.ms_v_env_on->SetValue(m_kl15_on && m_drivetrain_ready);
+            ESP_LOGV(TAG, "0x391 READY=%u", m_drivetrain_ready);
             break;
         }
         case 0x3C0:  // clamp status received
@@ -644,6 +662,12 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // KL_Infotainment Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
             // Remotestart_KL15_Anf Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
             // Remotestart_Motor_Start Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
+            // KL_15 (terminal 15 = ignition) means the car is awake and switched on by the
+            // user; drivable (v.e.on) additionally requires the drivetrain to report READY.
+            m_kl15_on = (d[2] & 0x02) != 0;
+            StandardMetrics.ms_v_env_awake->SetValue(m_kl15_on);
+            StandardMetrics.ms_v_env_on->SetValue(m_kl15_on && m_drivetrain_ready);
+            ESP_LOGV(TAG, "0x3C0 KL_15=%u KL_S=%u", m_kl15_on, d[2] & 0x01);
             break;
         }
         case 0x3B5: {
@@ -714,6 +738,15 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
     bool just_went_idle = (m_bus_idle_ticks == VWEGOLF_BUS_TIMEOUT_SECS);
     ESP_LOGV(TAG, "Ticker1: bus_idle=%u alive=%d ocu=%d", m_bus_idle_ticks, bus_alive,
              m_ocu_active);
+
+    // When the bus goes silent the car is asleep: clear the awake / drivable state as a
+    // backstop in case the terminal frames stopped before signalling the off transition.
+    if (!bus_alive) {
+        m_kl15_on = false;
+        m_drivetrain_ready = false;
+        StandardMetrics.ms_v_env_awake->SetValue(false);
+        StandardMetrics.ms_v_env_on->SetValue(false);
+    }
 
     // Clear OCU node presence on either condition:
     //   1. Bus went idle (no frames for VWEGOLF_BUS_TIMEOUT_SECS) — no one to hear us.
