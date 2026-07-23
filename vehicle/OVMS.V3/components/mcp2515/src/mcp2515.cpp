@@ -46,6 +46,31 @@ static IRAM_ATTR void MCP2515_isr(void *pvParameters)
 
   me->m_status.interrupts++;
 
+  // INT is a level signal: the MCP2515 holds it low for as long as any unmasked
+  // CANINTF flag is set, so with GPIO_INTR_LOW_LEVEL configured (see constructor)
+  // this ISR would be re-entered continuously -- an interrupt storm -- for as long
+  // as the line stays low, i.e. until AsynchronousInterruptHandler() has drained
+  // CANINTF over SPI. Mask this pin's interrupt now, before queuing the service
+  // request, so it cannot re-enter while unserviced. Direct register write, not
+  // gpio_intr_disable(): OVMS installs the GPIO ISR service with
+  // ESP_INTR_FLAG_IRAM (main/ovms_peripherals.cpp), so this handler runs in an
+  // IRAM context and may execute while the flash cache is disabled.
+  // gpio_intr_disable() (components/driver/gpio.c) is not IRAM_ATTR in
+  // ESP-IDF v3.3.4 (only gpio_intr_service is) and must not be called from
+  // here -- the direct single-register write below is also cheaper on this
+  // hot ISR path. Re-arming happens in AsynchronousInterruptHandler() once
+  // CANINTF reads back clear.
+  //
+  // Note: gpio_intr_disable() also does gpio_intr_status_clr() (write-1-to-
+  // clear the GPIO status latch) right after int_ena=0; we deliberately skip
+  // that clear here. It's safe: every re-arm path goes through
+  // gpio_intr_enable(), which itself calls gpio_intr_status_clr() BEFORE
+  // setting int_ena (verified in gpio.c), so any stale latch is cleared
+  // exactly at re-enable -- the only moment it matters. Clearing it here at
+  // mask time would be redundant, and pointless while INT is still held low,
+  // since the level-triggered condition would immediately re-latch it.
+  GPIO.pin[me->m_intpin].int_ena = 0;
+
   // we don't know the IRQ source and querying by SPI is too slow for an ISR,
   // so we let AsynchronousInterruptHandler() figure out what to do.
   CAN_queue_msg_t msg = {};
@@ -53,7 +78,20 @@ static IRAM_ATTR void MCP2515_isr(void *pvParameters)
   msg.body.bus = me;
 
   //send callback request to main CAN processor task
-  xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
+  if (xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken) != pdTRUE)
+    {
+    // Queue full: the service request was dropped, so nothing will call
+    // AsynchronousInterruptHandler() -> re-arm this bus's GPIO interrupt this time.
+    // This is NOT a lost frame -- the interrupt line is already masked above, so
+    // the raw frame(s) stay safely latched in the MCP2515's own hardware RX
+    // buffers (read over SPI, untouched by this failure) rather than being
+    // dropped. Nothing is silently discarded: count it, and rely on the RX-stall
+    // watchdog (canbus::BusTicker10 / CheckRxStalled(), which polls CANINTF
+    // directly over SPI, independent of GPIO interrupt state) as the backstop --
+    // it will see the still-pending RX flag and call Reset(), whose Start()
+    // unconditionally re-enables this GPIO interrupt as a safety net.
+    me->m_status.isr_queue_overrun++;
+    }
 
   // Yield to minimize latency if we have woken up a higher priority task:
   if (task_woken == pdTRUE)
@@ -98,7 +136,13 @@ if (m_spibus->m_initialized == false) {
   esp_err_t ret = spi_bus_add_device(host,  &m_devcfg, &m_spi);
   assert(ret==ESP_OK);
 
-  gpio_set_intr_type((gpio_num_t)m_intpin, GPIO_INTR_NEGEDGE);
+  // INT is a level signal (held low while any unmasked CANINTF flag is set), not an
+  // edge -- GPIO_INTR_NEGEDGE would miss the interrupt entirely if it is ever dropped
+  // (e.g. ISR->task queue full), permanently wedging the RX path since no further edge
+  // would ever arrive. GPIO_INTR_LOW_LEVEL instead keeps re-asserting for as long as
+  // the source is unserviced; see MCP2515_isr() and AsynchronousInterruptHandler() for
+  // the mask/re-arm handshake that keeps this from storming.
+  gpio_set_intr_type((gpio_num_t)m_intpin, GPIO_INTR_LOW_LEVEL);
   gpio_isr_handler_add((gpio_num_t)m_intpin, MCP2515_isr, (void*)this);
 
   // Initialise in powered down mode
@@ -269,6 +313,13 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
 
   // CANINTE (interrupt enable), all interrupts
   WriteReg(REG_CANINTE, 0b11111111);
+
+  // Safety net: unconditionally re-arm the GPIO level interrupt on every (re)start.
+  // Normally it is re-armed by AsynchronousInterruptHandler() once drained; this
+  // covers the rare case where that path never ran (e.g. ISR->task queue was full
+  // and the service ping got dropped) by restoring a known-good state whenever the
+  // bus is (re)started, including the RX-stall watchdog's Reset()->Start() path.
+  gpio_intr_enable((gpio_num_t)m_intpin);
 
   // And record that we are powered on
   if (GetPowerMode() != On)
@@ -586,9 +637,19 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesR
   uint8_t errflag = p[1];
   uint8_t txb0ctrl = p[4];
 
+  // Invariant: whoever returns false (drain loop ends) with INT deasserted must
+  // re-arm the GPIO interrupt here -- there are two such exit points below (this
+  // early "nothing pending" return, and the final pin-level check at the bottom
+  // of the function), and both must re-arm. Re-enabling any earlier, while a flag
+  // we have not yet serviced could still be asserted, would let the ISR storm
+  // again immediately. Each mcp2515 instance owns a dedicated INT GPIO (see
+  // ovms_peripherals.cpp: can2/can3 use distinct VSPI_PIN_MCP2515_*_INT pins),
+  // so re-arming this pin can never re-enable while a sibling instance on a
+  // shared line is still asserting -- there is no shared line in this topology.
   if (intstat == 0)
     {
-    // all interrupts handled
+    // All interrupts handled: CANINTF read back clear, so INT is already high.
+    gpio_intr_enable((gpio_num_t)m_intpin);
     return false;
     }
 
@@ -787,8 +848,16 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesR
     LogStatus(log_status);
     }
 
-  // Read the interrupt pin status and if it's still active (low), require another interrupt handling iteration
-  return !gpio_get_level((gpio_num_t)m_intpin);
+  // Read the interrupt pin status and if it's still active (low), require another
+  // interrupt handling iteration. If it has gone high, this handled interrupt was
+  // the last pending source -- re-arm here too (see invariant comment above; this
+  // is the second, and only other, false-returning exit point of this function).
+  if (gpio_get_level((gpio_num_t)m_intpin))
+    {
+    gpio_intr_enable((gpio_num_t)m_intpin);
+    return false;
+    }
+  return true;
   }
 
 
