@@ -36,7 +36,7 @@
 
 struct mg_connection;
 
-class OvmsTelnet : public MongooseClient
+class OvmsTelnet : public MongooseClient, public ConsoleReaper
   {
   public:
     OvmsTelnet();

@@ -96,6 +96,8 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
 
     case MG_EV_POLL:
       {
+      // Reap consoles whose follow task has exited (deferred by MG_EV_CLOSE).
+      ReapConsoles();
       //ESP_EARLY_LOGV(tag, "Event MG_EV_ACCEPT conn %p, data %p", nc, p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       if (child)
@@ -144,8 +146,9 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
       {
       ESP_EARLY_LOGV(tag, "Event MG_EV_CLOSE conn %p, data %p", nc, p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
-      if (child)
-        delete child;
+      if (child && !CloseConsole(child))
+        delete child;   // no follow task: synchronous termination + free
+      nc->user_data = NULL;
       }
       break;
 
@@ -331,7 +334,7 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   wolfSSH_SetIORecv(m_server->ctx(), ::RecvCallback);
   wolfSSH_SetIOSend(m_server->ctx(), ::SendCallback);
   wolfSSH_SetIOReadCtx(m_ssh, this);
-  wolfSSH_SetIOWriteCtx(m_ssh, m_connection);
+  wolfSSH_SetIOWriteCtx(m_ssh, this);
   wolfSSH_SetUserAuthCtx(m_ssh, this);
   /* Use the session object for its own highwater callback ctx */
   wolfSSH_SetHighwaterCtx(m_ssh, (void*)m_ssh);
@@ -340,6 +343,10 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
 
 ConsoleSSH::~ConsoleSSH()
   {
+  // Clean up any interactive command (e.g. a "vfs tail" follow-mode task) bound
+  // to this console before freeing the transport it writes to, otherwise it
+  // would dereference a freed writer/transport.
+  RunTerminationCallback();
   WOLFSSH* ssh = m_ssh;
   m_ssh = NULL;
   wolfSSH_free(ssh);
@@ -959,7 +966,10 @@ int ConsoleSSH::printf(const char* fmt, ...)
 
 ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
   {
-  if (!m_ssh || (m_connection->flags & MG_F_SEND_AND_CLOSE))
+  // m_closing is checked first on purpose: once the connection is closing the
+  // mongoose nc (m_connection) may already be freed, so short-circuit before
+  // dereferencing it. Same reason SendCallback bails on IsClosing() first.
+  if (m_closing || !m_ssh || (m_connection->flags & MG_F_SEND_AND_CLOSE))
     return 0;
 
   int ret = 0;
@@ -1068,11 +1078,12 @@ int ConsoleSSH::RecvCallback(char* buf, uint32_t size)
 
 int SendCallback(WOLFSSH* ssh, void* data, word32 size, void* ctx)
   {
-  mg_connection* nc = (mg_connection*) ctx;
-  if (!nc) return 0;
-  ConsoleSSH* console = (ConsoleSSH*) nc->user_data;
+  ConsoleSSH* console = (ConsoleSSH*) ctx;
   if (!console) return 0;
   auto mglock = console->MongooseLock();
+  if (console->IsClosing())            // connection closing: don't touch the (freed) nc
+    return WS_CBIO_ERR_WANT_WRITE;
+  mg_connection* nc = console->GetConnection();
   nc->flags |= MG_F_SEND_IMMEDIATELY;
   size_t ret = mg_send(nc, (char*)data, size);
   if (ret == 0)
