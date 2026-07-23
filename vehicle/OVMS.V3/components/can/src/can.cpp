@@ -364,6 +364,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("DBC:       %s\n",(sbus->GetDBC())?sbus->GetDBC()->GetName().c_str():"none");
 
   writer->printf("\nInterrupts:%20" PRId32 "\n",sbus->m_status.interrupts);
+  writer->printf("Isr Ovrflw:%20d\n",sbus->m_status.isr_queue_overrun);
   writer->printf("Rx pkt:    %20" PRId32 "\n",sbus->m_status.packets_rx);
   writer->printf("Rx ovrflw: %20d\n",sbus->m_status.rxbuf_overflow);
   writer->printf("Tx pkt:    %20" PRId32 "\n",sbus->m_status.packets_tx);
@@ -751,12 +752,12 @@ void canbus::LogStatus(CAN_log_type_t type)
       return;
     ESP_LOGE(TAG,
       "%s: intr=%" PRId32 " rxpkt=%" PRId32 " txpkt=%" PRId32 " errflags=%#" PRIx32 " rxerr=%d txerr=%d rxinval=%d"
-      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d txqueue=%" PRId32,
+      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d isrovr=%d txqueue=%" PRId32,
       m_name, m_status.interrupts, m_status.packets_rx, m_status.packets_tx,
       m_status.error_flags, m_status.errors_rx, m_status.errors_tx,
       m_status.invalid_rx, m_status.rxbuf_overflow, m_status.txbuf_overflow,
       m_status.txbuf_delay, m_status.tx_fails, m_status.watchdog_resets,
-      m_status.error_resets, uxQueueMessagesWaiting(m_txqueue));
+      m_status.error_resets, m_status.isr_queue_overrun, uxQueueMessagesWaiting(m_txqueue));
     }
   if (MyCan.HasLogger())
     MyCan.LogStatus(this, type, &m_status);
@@ -773,7 +774,7 @@ bool canbus::StatusChanged()
   uint32_t chksum = m_status.errors_rx + m_status.errors_tx
     + m_status.invalid_rx + m_status.rxbuf_overflow + m_status.txbuf_overflow
     + m_status.error_flags + m_status.txbuf_delay + m_status.tx_fails
-    + m_status.watchdog_resets + m_status.error_resets;
+    + m_status.watchdog_resets + m_status.error_resets + m_status.isr_queue_overrun;
   if (chksum != m_status_chksum)
     {
     m_status_chksum = chksum;
