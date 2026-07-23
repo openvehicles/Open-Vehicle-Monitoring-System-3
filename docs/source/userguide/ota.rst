@@ -55,6 +55,16 @@ That leaves two firmwares for Over The Air (OTA) updates. Updates will be instal
 OTA partition, and will only be activated after a successful validation of their integrity. In this way,
 the currently running firmware is never modified and is always available as a failover backup.
 
+.. note::
+  Trying to flash a firmware image too big for the target OTA partition (i.e. larger than 4MB = 4194304 bytes) 
+  with release 3.3.005 or earlier aborts with: ``Error: ESP32 error #260 when starting OTA operation``
+  (error code #260 = invalid size).
+  
+  To proceed in that case, first flash the latest 3.3.006 release available in the ``v3.3`` directory and 
+  perform the partitioning upgrade (see :doc:`partitioning`). After performing the upgrade, continue with 
+  flashing the version desired.
+
+
 ----------------------
 Selecting a Boot Image
 ----------------------

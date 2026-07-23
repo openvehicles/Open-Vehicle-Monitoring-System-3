@@ -93,14 +93,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
       {
       if (IsOnHVACEQ())
         {
-        StdMetrics.ms_v_env_awake->SetValue(true);
         ESP_LOGD(TAG, "Climate control is now on");
         break;
         }
       obd->WriteStandard(0x634, 4, data);
-      vTaskDelay(200 / portTICK_PERIOD_MS);
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
       }
-
+      
     if (IsOnHVACEQ())
       {
       // if true, climate will be restarted after 5 minutes by Ticker1, if false, climate will not be restarted after 5 minutes
@@ -109,7 +108,31 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
       if (trickle) 
         {
         ESP_LOGI(TAG, "activated 12V trickle charging successfully");
-        Notify12Vcharge();
+        // Check the 12V ADC factors based on the 12V readings, as long as trickle charging is active.
+        m_check12vadc = true;
+
+        time_t now = time(NULL);
+        while (!m_12v_trickle_charge_times.empty() && (now - m_12v_trickle_charge_times.front()) > 24 * 3600)
+          m_12v_trickle_charge_times.pop_front();
+
+        m_12v_trickle_charge_times.push_back((uint32_t)now);
+        mt_12v_trickle_charge_count->SetValue((int)m_12v_trickle_charge_times.size());
+
+        if (mt_12v_trickle_charge_count->AsInt(0) == 3)
+          {
+          ESP_LOGW(TAG, "12V trickle charging activated 3 times within 24h");
+          MyNotify.NotifyString("alert", "xsq.12v.charge.alert",
+                            "12V trickle charging was activated 3 times within 24 hours.\n"
+                            "Check the 12V battery condition.\n"
+                            "If the alert appears frequently, consider replacing the 12V battery preventively."
+                            "The trickle charging will be deactivated now to next reboot to prevent further stress on the 12V battery!");
+          m_12v_charge = false; // deactivate trickle charging to prevent further stress on the 12V battery
+          }
+        else
+          {
+          ESP_LOGI(TAG, "12V trickle charging activation count within 24h: %u", (unsigned)m_12v_trickle_charge_times.size());          
+          Notify12Vcharge();
+          }
         }
       else
         {
@@ -128,6 +151,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
         {
         ESP_LOGI(TAG, "Failed to activate 12V trickle charging");
         MyNotify.NotifyString("info", "12v.trickle.charge", "Failed to activate 12V trickle charging!");
+
         }
       else
         {
@@ -172,7 +196,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
       return OvmsVehicle::CommandHomelink(button, durationms);
   }
 }
-
+// this command is not implemented by the EQ, but we can use it to trigger a simulated wakeup
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
   if(!IsCANwrite())
     {
@@ -186,22 +210,23 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
 
   if(!IsAwakeEQ()) 
     {
-    uint8_t data[4] = {0x40, 0x00, 0x00, 0x00};
+    uint8_t data[8] = {0xc3, 0x00, 0x00, 0x00, 0x14, 0x70, 0x96, 0x85};
     canbus *obd;
     obd = m_can1;
+    smartCoolDownPolling(30); // 30 seconds cooldown to allow the vehicle to wake up
 
-    for (int i = 0; i < 15; i++) 
+    for (int i = 0; i < 5; i++) 
       {
       if (IsAwakeEQ()) 
         {
         res = Success;
         break;
         }      
-      obd->WriteStandard(0x634, 4, data);
+      obd->WriteStandard(0x350, 8, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
       }
     res = Success;
-    StdMetrics.ms_v_env_awake->SetValue(true);
+    m_cmd_wakeup = true;
     ESP_LOGI(TAG, "Vehicle is now awake");
     } 
   else 
@@ -266,11 +291,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin
 
   if(m_indicator) 
     {
-    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001","30082002"}, false, true);
+    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001","30082002"}, false, false);
     }
   else 
     {
-    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001"}, false, true);
+    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001"}, false, false);
     }
 
   if(res == Success) 

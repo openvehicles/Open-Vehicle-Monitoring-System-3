@@ -38,163 +38,86 @@ static const char *TAG = "v-smarteq";
 
 // Set TPMS pressure, temperature and alert values
 void OvmsVehicleSmartEQ::setTPMSValue() {
-  
   std::vector<string> tpms_layout = OvmsVehicle::GetTpmsLayout();
   int count = (int)tpms_layout.size();
   std::vector<float> tpms_pressure(count, 0.0f);
   std::vector<float> tpms_temp(count, 0.0f);
   std::vector<short> tpms_alert(count, 0);
 
-  float _threshold_front = m_front_pressure;
-  float _threshold_rear = m_rear_pressure;
-  float _threshold_warn = m_pressure_warning;
-  float _threshold_alert = m_pressure_alert;
-
-  // Pressure validation limits
   static const float PRESSURE_MIN = 10.0f;   // Below this = sensor not working
   static const float PRESSURE_MAX = 500.0f;  // Above this = invalid reading
   static const float TEMP_MIN = -40.0f;
   static const float TEMP_MAX = 90.0f;
 
-  for (int i=0; i < count; i++) 
+  for (int i = 0; i < count; i++)
     {
-    int indexcar = m_tpms_index[i];
-    float _pressure = m_tpms_pressure[indexcar];
-    float _temp = m_tpms_temperature[indexcar];
-    bool _lowbatt = m_tpms_lowbatt[indexcar];
-    bool _missing_tx = m_tpms_missing_tx[indexcar];
-    
-    short _alert = 0;
-    bool _flag = false;
+    int   indexcar      = m_tpms_index[i];
+    float pressure      = m_tpms_pressure[indexcar];
+    float temp          = m_tpms_temperature[indexcar];
+    bool  lowbatt       = m_tpms_lowbatt[indexcar];
+    bool  missing_tx    = m_tpms_missing_tx[indexcar];
+    bool  pressure_valid = (pressure >= PRESSURE_MIN && pressure < PRESSURE_MAX);
 
-    // Validate pressure value and check if sensor is active
-    bool pressure_valid = (_pressure >= PRESSURE_MIN && _pressure < PRESSURE_MAX);
-    bool alerts_enabled = m_tpms_alert_enable;
-    
     if (pressure_valid)
+      tpms_pressure[i] = pressure;
+
+    if (m_tpms_temp_enable && temp >= TEMP_MIN && temp < TEMP_MAX)
+      tpms_temp[i] = temp;
+
+    if (pressure_valid && m_tpms_alert_enable)
       {
-      tpms_pressure[i] = _pressure;
-      _flag = true;
+      // Sensor working and alerts enabled: update states and compute alert level
+      mt_tpms_low_batt->SetElemValue(i, lowbatt);
+      mt_tpms_missing_tx->SetElemValue(i, missing_tx);
+
+      float ref_pressure  = (i < (count / 2)) ? m_front_pressure : m_rear_pressure;
+      float abs_deviation = std::abs(pressure - ref_pressure);
+      short alert         = 0;
+
+      if (lowbatt)
+        {
+        alert = 1;
+        MyNotify.NotifyStringf("alert", "tpms.lowbatt",
+                               "TPMS low battery on wheel %s",
+                               tpms_layout[i].c_str());
+        }
+      else if (missing_tx)
+        {
+        alert = 2;
+        MyNotify.NotifyStringf("alert", "tpms.missing_tx",
+                               "TPMS missing transmission on wheel %s",
+                               tpms_layout[i].c_str());
+        }
+      else if (abs_deviation > m_pressure_alert)
+        {
+        alert = 2;
+        MyNotify.NotifyStringf("alert", "tpms.alert",
+                               "TPMS pressure alert on wheel %s: %.1f kPa (ref: %.1f kPa)",
+                               tpms_layout[i].c_str(), pressure, ref_pressure);
+        }
+      else if (abs_deviation > m_pressure_warning)
+        {
+        alert = 1;
+        MyNotify.NotifyStringf("alert", "tpms.warning",
+                               "TPMS pressure warning on wheel %s: %.1f kPa (ref: %.1f kPa)",
+                               tpms_layout[i].c_str(), pressure, ref_pressure);
+        }
+      tpms_alert[i] = alert;
       }
-    
-    // Validate and set temperature
-    if (m_tpms_temp_enable && _temp >= TEMP_MIN && _temp < TEMP_MAX) 
+    else
       {
-      tpms_temp[i] = _temp;
-      }
-    
-    // Handle alert conditions only if sensor is working and alerts are enabled
-    if (!pressure_valid || !alerts_enabled) 
-      {
-      // Sensor not working or alerts disabled - clear all alerts
-      _lowbatt = false;
-      _missing_tx = false;
-      tpms_alert[i] = 0;
-      _flag = false;
-      
-      // Clear stored alert states
+      // Sensor not working or alerts disabled: clear stored alert states
       mt_tpms_low_batt->SetElemValue(i, 0);
       mt_tpms_missing_tx->SetElemValue(i, 0);
-      }
-    else
-      {
-      // Sensor working and alerts enabled - update alert states
-      mt_tpms_low_batt->SetElemValue(i, _lowbatt);
-      mt_tpms_missing_tx->SetElemValue(i, _missing_tx);
-      }
-    
-    // Calculate pressure deviation alerts
-    if (alerts_enabled && _flag)
-      {
-      // Get reference pressure based on front/rear position
-      float reference_pressure = (i < (count / 2)) ? _threshold_front : _threshold_rear;
-      
-      // Calculate deviation from reference pressure      
-      float deviation = _pressure - reference_pressure;
-      float abs_deviation = std::abs(deviation);
-      
-      // Priority: low battery > missing transmission > pressure deviation
-      if (_lowbatt) 
-        {
-        _alert = 1;
-        MyNotify.NotifyStringf("alert", "tpms.lowbatt", 
-                               "TPMS low battery on wheel %s", 
-                               tpms_layout[i].c_str());
-        }
-      else if (_missing_tx) 
-        {
-        _alert = 2;
-        MyNotify.NotifyStringf("alert", "tpms.missing_tx", 
-                               "TPMS missing transmission on wheel %s", 
-                               tpms_layout[i].c_str());
-        }
-      else if (abs_deviation > _threshold_alert) 
-        {
-        _alert = 2;
-        MyNotify.NotifyStringf("alert", "tpms.alert", 
-                               "TPMS pressure alert on wheel %s: %.1f kPa (ref: %.1f kPa)", 
-                               tpms_layout[i].c_str(), _pressure, reference_pressure);
-        }
-      else if (abs_deviation > _threshold_warn) 
-        {
-        _alert = 1;
-        MyNotify.NotifyStringf("alert", "tpms.warning", 
-                               "TPMS pressure warning on wheel %s: %.1f kPa (ref: %.1f kPa)", 
-                               tpms_layout[i].c_str(), _pressure, reference_pressure);
-        }
-      
-      tpms_alert[i] = _alert;
-      }
-    else
-      {
-      tpms_alert[i] = 0;
+      // tpms_alert[i] remains 0 (initialized above)
       }
     } // end for loop
-    
-  // Set the metrics  
+
   StdMetrics.ms_v_tpms_pressure->SetValue(tpms_pressure);
-  
   if (m_tpms_temp_enable)
-    {
     StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp);
-    }
-    
   if (m_tpms_alert_enable)
-    {
     StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
-    }
-}
-
-void OvmsVehicleSmartEQ::DisablePlugin(const char* plugin) {
-  #ifdef CONFIG_OVMS_COMP_PLUGINS
-      if (!ExecuteCommand("plugin disable " + std::string(plugin))) {
-          ESP_LOGE(TAG, "Failed to disable plugin: %s", plugin);
-          return;
-      }
-      if (!ExecuteCommand("vfs rm /store/plugins/" + std::string(plugin) + "/*.*")) {
-          ESP_LOGE(TAG, "Failed to remove plugin files: %s", plugin);
-          return;
-      }
-  #else
-      ESP_LOGW(TAG, "Plugin system not enabled");
-  #endif
-}
-
-bool OvmsVehicleSmartEQ::ExecuteCommand(const std::string& command) {
-  if (command.empty()) {
-    ESP_LOGE(TAG,"ExecuteCommand: empty command");
-    return Fail;
-  }
-
-  std::string result = BufferedShell::ExecuteCommand(command, true);
-  bool success = !result.empty();  // Consider command successful if output is not empty
-  
-  if (!success) {
-      ESP_LOGE(TAG, "Failed to execute command: %s", command.c_str());
-      return Fail;
-  }
-
-  return Success;
 }
 
 void OvmsVehicleSmartEQ::ResetChargingValues() {
@@ -239,15 +162,14 @@ void OvmsVehicleSmartEQ::Check12vState() {
   static const int ALERT_THRESHOLD_TICKS = 10;
   
   float mref = StdMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
-  float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
   bool alert_on = StdMetrics.ms_v_bat_12v_voltage_alert->AsBool();
   float volt = StdMetrics.ms_v_bat_12v_voltage->AsFloat();
   
   // Validate and update reference voltage
-  if (mref > dref) 
+  if (mref > m_ref12V) 
     {
-    ESP_LOGI(TAG, "Adjusting 12V reference voltage from %.1fV to %.1fV", mref, dref);
-    StdMetrics.ms_v_bat_12v_voltage_ref->SetValue(dref);
+    ESP_LOGI(TAG, "Adjusting 12V reference voltage from %.1fV to %.1fV", mref, m_ref12V);
+    StdMetrics.ms_v_bat_12v_voltage_ref->SetValue(m_ref12V);
     }
   
   // Handle alert conditions
@@ -272,102 +194,89 @@ void OvmsVehicleSmartEQ::Check12vState() {
 
 void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
   #ifdef CONFIG_OVMS_COMP_ADC
-    if (can12V < 11.0f || can12V > 16.0f) 
+    if (can12V < 11.0f || can12V > 16.0f)
       {
       ESP_LOGW(TAG, "Skip ADC factor recalculation (invalid 12V input %.2f)", can12V);
       if (writer) writer->printf("Skip ADC factor recalculation (invalid 12V input %.2f)\n", can12V);
       return;
       }
-      
+
     // Configure ADC
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
     uint16_t samples_adc[m_adc_samples];
-    
-    // Collect samples
-    for (int i = 0; i < m_adc_samples; i++) 
+
+    // Collect samples and accumulate sum in one pass (sort doesn't affect sum)
+    uint32_t summid = 0;
+    for (int i = 0; i < m_adc_samples; i++)
       {
       vTaskDelay(5 / portTICK_PERIOD_MS);
       samples_adc[i] = adc1_get_raw(ADC1_CHANNEL_0);
+      summid += samples_adc[i];
       }
 
-    // Bubble sort for median calculation
-    for (int i = 0; i < m_adc_samples - 1; i++) 
+    // Bubble sort (needed for median)
+    for (int i = 0; i < m_adc_samples - 1; i++)
       {
-      for (int j = 0; j < m_adc_samples - i - 1; j++) 
+      for (int j = 0; j < m_adc_samples - i - 1; j++)
         {
-        if (samples_adc[j] > samples_adc[j + 1]) 
+        if (samples_adc[j] > samples_adc[j + 1])
           {
-          uint16_t temp = samples_adc[j];
+          uint16_t tmp   = samples_adc[j];
           samples_adc[j] = samples_adc[j + 1];
-          samples_adc[j + 1] = temp;
+          samples_adc[j + 1] = tmp;
           }
         }
       }
 
-    // Calculate median
-    float median_raw;
-    if (m_adc_samples % 2 == 0) 
-      {
-      median_raw = (samples_adc[(m_adc_samples / 2) - 1] + samples_adc[m_adc_samples / 2]) / 2.0f;
-      } 
-      else 
-      {
-      median_raw = samples_adc[m_adc_samples / 2];
-      }
+    // Median (used as the new factor; can12V >= 11.0f is guaranteed above)
+    float median_raw = (m_adc_samples % 2 == 0)
+      ? (samples_adc[(m_adc_samples / 2) - 1] + samples_adc[m_adc_samples / 2]) / 2.0f
+      : samples_adc[m_adc_samples / 2];
 
-    // Calculate average of ADC samples
-    uint32_t summid = 0;
-    for (int i = 0; i < m_adc_samples; i++) 
-      {
-      summid += samples_adc[i];
-      }
-    float avg_raw = summid / (float)m_adc_samples;    
-
-    // After collecting samples, don't sort, instead:
-    uint16_t min_val = samples_adc[0];          // Smallest value (after sorting)
-    uint16_t max_val = samples_adc[m_adc_samples - 1];  // Largest value (after sorting)
-    // Trimmed Mean: Remove Min + Max
-    float trimmed_avg = (summid - min_val - max_val) / (float)(m_adc_samples - 2);
-    
-    // Calculate average of USM voltage samples
-    float V_batt = can12V;
-
-    float adc_factor_median = (V_batt > 11.0f) ? (median_raw / V_batt) : 0.0f;
-    float adc_factor_avg = (V_batt > 11.0f) ? (avg_raw / V_batt) : 0.0f;
-    float adc_factor_trimmed = (V_batt > 11.0f) ? (trimmed_avg / V_batt) : 0.0f;
-
-    float adc_factor_new = adc_factor_median;
+    float adc_factor_new  = median_raw / can12V;
     float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc", "factor12v", 195.7f);
 
-    if (writer) 
+    // Diagnostic output (only computed when a writer is attached)
+    if (writer)
       {
+      uint16_t min_val  = samples_adc[0];
+      uint16_t max_val  = samples_adc[m_adc_samples - 1];
+      float avg_raw     = summid / (float)m_adc_samples;
+      float trimmed_avg = (summid - min_val - max_val) / (float)(m_adc_samples - 2);
       writer->printf("ADC samples (sorted): min=%u max=%u median=%.2f avg=%.2f trimmed=%.2f\n",
                       min_val, max_val, median_raw, avg_raw, trimmed_avg);
       writer->printf("     factor_median=%.3f factor_avg=%.3f factor_trimmed=%.3f\n",
-                      adc_factor_median, adc_factor_avg, adc_factor_trimmed);
+                      adc_factor_new, avg_raw / can12V, trimmed_avg / can12V);
+      writer->printf("ADC recalculation: avg_raw=%.2f  V_batt=%.3f  factor=%.3f\n",
+                      avg_raw, can12V, adc_factor_new);
       }
 
-    if (writer) writer->printf("ADC recalculation: avg_raw=%.2f  V_batt=%.3f  factor=%.3f\n", avg_raw, V_batt, adc_factor_new);
-    if (adc_factor_new < 180.0f || adc_factor_new > 210.0f) 
+    if (adc_factor_new < 160.0f || adc_factor_new > 230.0f)
       {
       if (writer) writer->printf("Reject ADC factor %.3f (out of bounds, keeping %.3f)\n", adc_factor_new, adc_factor_prev);
       return;
-      }    
-    
+      }
+
     m_adc_factor_history.push_back(adc_factor_prev);
     if (m_adc_factor_history.size() > 10)
       m_adc_factor_history.pop_front();
     float hist[10];
     size_t n = m_adc_factor_history.size();
-    for (size_t i=0; i<n; ++i)
+    for (size_t i = 0; i < n; ++i)
       hist[i] = m_adc_factor_history[i];
     if (n > 0)
       mt_adc_factor_history->SetElemValues(0, n, hist);
     mt_adc_factor->SetValue(adc_factor_new);
-    MyConfig.SetParamValueFloat("system.adc", "factor12v", adc_factor_new);
-    MyConfig.SetParamValueBool("xsq", "calc.adcfactor", false);
+    {
+      auto lock = MyConfig.Lock();  // single flash write for both keys
+      MyConfig.SetParamValueFloat("system.adc", "factor12v", adc_factor_new);
+      MyConfig.SetParamValueBool("xsq", "calc.adcfactor", false);
+    }
     if (writer) writer->printf("New ADC factor stored: %.3f (prev %.3f, history size %u)\n", adc_factor_new, adc_factor_prev, (unsigned)n);
+    // Send data log XSQ-ADC-FactorLog
+    // V1: <new factor>,<prev factor>
+    MyNotify.NotifyStringf("data", "xsq.adc.log.factor", "XSQ-ADC-FactorLog,1,%d,%.3f,%.3f", 86400 * 30, adc_factor_new, adc_factor_prev);
   #else
     ESP_LOGD(TAG, "ADC support not enabled");
     if (writer) writer->puts("ADC support not enabled");
@@ -401,7 +310,6 @@ bool OvmsVehicleSmartEQ::DoorOpen() {
 
 void OvmsVehicleSmartEQ::DoorOpenState() {
   bool open_doors = !m_warning_dooropen && DoorOpen();
-
   if (open_doors) {
       m_warning_dooropen = true;
       ESP_LOGI(TAG, "Warning: Vehicle has open doors");
@@ -411,33 +319,23 @@ void OvmsVehicleSmartEQ::DoorOpenState() {
   }
 }
 
-void OvmsVehicleSmartEQ::WifiRestart() {
-  #ifdef CONFIG_OVMS_COMP_WIFI
-    if (MyPeripherals && MyPeripherals->m_esp32wifi) {
-        MyPeripherals->m_esp32wifi->Restart();
-        ESP_LOGI(TAG, "WiFi restart initiated");
-    } else {
-        ESP_LOGE(TAG, "WiFi restart failed - WiFi not available");
-    }
-  #else
-    ESP_LOGE(TAG, "WiFi support not enabled");
-  #endif
-}
-
-
-void OvmsVehicleSmartEQ::ModemRestart() {
-  #ifdef CONFIG_OVMS_COMP_CELLULAR
-    m_modem_ticker = 0; // Reset modem ticker on restart
-
-    if (MyPeripherals && MyPeripherals->m_cellular_modem) {
-        MyPeripherals->m_cellular_modem->Restart();
-        ESP_LOGI(TAG, "Cellular modem restart initiated");
-    } else {
-        ESP_LOGE(TAG, "Cellular modem restart failed - modem not available");
-    }
-  #else
-    ESP_LOGE(TAG, "Cellular support not enabled");
-  #endif
+void OvmsVehicleSmartEQ::smart12VHistory()
+{
+  float volt  = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
+  float bms12v = mt_bms_voltages->GetElemValue(6);  // 12V BMS clamp 30
+  float usm12v = mt_evc_dcdc->GetElemValue(3);      // 12V USM voltage
+  m_12v_undervolt_history.push_back(volt);
+  if (m_12v_undervolt_history.size() > 10)
+    m_12v_undervolt_history.pop_front();
+  float hist[10];
+  size_t n = m_12v_undervolt_history.size();
+  for (size_t i = 0; i < n; ++i)
+    hist[i] = m_12v_undervolt_history[i];
+  if (n > 0)
+    mt_12v_undervolt_history->SetElemValues(0, n, hist);
+  // Send data log XSQ-12V-undervoltagelog
+  // V1: <12Vvoltage>,<USM12V>,<BMS12V>
+  MyNotify.NotifyStringf("data", "xsq.12v.log.undervoltage", "XSQ-12V-undervoltagelog,1,%d,%.2f,%.2f,%.2f", 86400 * 30, volt, usm12v, bms12v);
 }
 
 void OvmsVehicleSmartEQ::smartOn()
@@ -460,6 +358,7 @@ void OvmsVehicleSmartEQ::smartOn()
   // canwrite enable write access, only when car is on
   if(IsCANwrite()) 
     {
+    smartCoolDownPolling(5);
     smartOBDpolling(true);
     }
   ESP_LOGD(TAG, "smartOn()");
@@ -469,23 +368,22 @@ void OvmsVehicleSmartEQ::smartOff()
 {
   // Reset gear
   StdMetrics.ms_v_env_gear->SetValue(0);
+  smartCoolDownPolling();
 }
 
 void OvmsVehicleSmartEQ::smartAwake()
 {
+  smartCoolDownPolling();
   // enable active polling when car wakes up (canwrite only)
-  if(m_enable_write) 
-    {
+  if(m_enable_write)
     smartOBDpolling(true);
-    }
   else if (m_enable_write_caron && m_can_active)
-    {
-    smartOBDpolling(false);
-    }
+    smartOBDpolling(false); // only enable when car is on and CAN write access #2 is enabled
 }
 
 void OvmsVehicleSmartEQ::smartSleep()
-{
+{  
+  smartCoolDownPolling(20);
   // disable active polling when car goes to sleep
   if((m_enable_write_caron && m_can_active) || (m_enable_write_sleep && m_can_active))
     smartOBDpolling(false);
@@ -494,6 +392,7 @@ void OvmsVehicleSmartEQ::smartSleep()
 
 void OvmsVehicleSmartEQ::smartChargeStart()
 {
+  smartCoolDownPolling(15);
   if (m_charge_finished)
     {
     ResetChargingValues();
@@ -514,12 +413,13 @@ void OvmsVehicleSmartEQ::smartChargeStart()
     m_ADCfactor_recalc_timer = 2;   // wait at least 2 min. before recalculation
     m_ADCfactor_recalc = true;      // recalculate ADC factor when HV charging
     }
-  smartOBDpolling(true);
+  smartOBDpolling(true);  
   ESP_LOGD(TAG, "smartChargeStart()");
 }
 
 void OvmsVehicleSmartEQ::smartChargeStop()
 {
+  smartCoolDownPolling(20);
   StdMetrics.ms_v_charge_pilot->SetValue(false);
   StdMetrics.ms_v_charge_mode->SetValue("standard");
   StdMetrics.ms_v_charge_type->SetValue("type2");
@@ -561,6 +461,15 @@ void OvmsVehicleSmartEQ::smartChargeFinish()
   m_poll_on_charge = false;
   StdMetrics.ms_v_charge_power->SetValue(0);
   ESP_LOGD(TAG, "smartChargeFinish()");
+  smartAwake(); // polling cooldown and reload polling list
+}
+
+void OvmsVehicleSmartEQ::smartCoolDownPolling(int delay_sec)
+{
+  m_poll_cooldown = true;
+  m_cooldown_ticker = delay_sec;
+  PollSetState(POLLSTATE_OFF);
+  mt_poll_state->SetValue("Off");
 }
 
 void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
@@ -568,7 +477,6 @@ void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
   if(!IsCANwrite())
     {
     PollSetPidList(m_can1, NULL);
-    vTaskDelay(200 / portTICK_PERIOD_MS);
     m_can_active = false;
     m_poll_on_charge = false;
     ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared (write access disabled)");
@@ -577,13 +485,9 @@ void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
     
   m_can_active = activate;
   if (activate)
-    {
     ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list will be updated");
-    }
   else
-    {
     ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared");
-    }
   HandleOBDpolling();
 }
 

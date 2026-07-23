@@ -2883,7 +2883,8 @@ void DukTapePoller::UnregisterPoller(canbus* bus,const std::string & name)
  *         type: <int>,     // [Opt] type (defaults to READDATA type 0x22)
  *         request: <string>|<Uint8Array>,   // hex encoded string or binary byte array
  *       },
- *      states: [ t1, t2, t3, t4], // Repeating poll states.
+ *      states: [ t1, t2, t3, t4 ], // Repeating poll states (poll intervals in seconds).
+ *      shift: [ t1, t2, t3, t4 ], // Poll time shifts in seconds.
  *      decode: [ // Not used if dbc is specified.
  *        <metric.name>|<value_name> :
  *          {
@@ -2990,12 +2991,21 @@ duk_ret_t OvmsPollers::DukOvmsPollerPollAdd(duk_context *ctx)
         canbus* device;
         std::string request;
         int timeout;
+        uint32_t txid, rxid;
+        uint8_t protocol;
+        uint16_t type, pid;
 
         MyPollers.Duk_GetRequestFromObject(ctx, -1, busname, false,
           device,
-          poll.txmoduleid, poll.rxmoduleid, poll.protocol,
-          poll.type, poll.pid,
+          txid, rxid, protocol,
+          type, pid,
           request, timeout, error, errordesc);
+
+        poll.txmoduleid = txid;
+        poll.rxmoduleid = rxid;
+        poll.protocol = protocol;
+        poll.type = type;
+        poll.pid = pid;
 
         size_t rqsize = request.size();
         if ( rqsize == 0)
@@ -3043,6 +3053,24 @@ duk_ret_t OvmsPollers::DukOvmsPollerPollAdd(duk_context *ctx)
               }
             duk_pop(ctx);
             // -- {poll_item} {states_list}
+            }
+          }
+        // shift: [ t1, t2, t3, t4 ], // Poll time shift per state in seconds.
+        if (duk_get_prop_string(ctx, -1, "shift") )
+          // -- {poll_item} {shift_list}
+          {
+          int state_count = duk_get_length(ctx, -1);
+          if (state_count > VEHICLE_POLL_NSTATES)
+            state_count = VEHICLE_POLL_NSTATES;
+          for (duk_idx_t stateidx = 0; stateidx < state_count ; ++stateidx)
+            {
+            if (duk_get_prop_index(ctx, -1, stateidx))
+              // -- {poll_item} {shift_list} {shift_item}
+              {
+              poll.ts.shift[stateidx] = duk_to_int(ctx, -1);
+              }
+            duk_pop(ctx);
+            // -- {poll_item} {shift_list}
             }
           }
         polls.push_back(poll);
@@ -4242,7 +4270,11 @@ OvmsPoller::OvmsNextPollResult OvmsPoller::StandardPollSeries::NextPollEntry(pol
     if (mybus == bus)
       {
       uint16_t polltime = m_poll_plcur->polltime[pollstate];
-      if (( polltime > 0) && ((pollticker % polltime) == 0))
+      uint8_t pollshift = m_poll_plcur->ts.shift[pollstate];
+      // Note: poll shifts reset at max_ticker (3600 seconds) cycle reset
+      if ( ((polltime > 0) && (pollticker >= pollshift) && (((pollticker - pollshift) % polltime) == 0))
+        // Treat shifts with interval 0 as quasi single shot (poll once per max_ticker cycle):
+        || ((polltime == 0) && (pollshift > 0) && (pollticker == pollshift)) )
         {
         entry = *m_poll_plcur;
         IFTRACE(Poller) ESP_LOGD(TAG, "Found Poll Entry for Standard Poll");

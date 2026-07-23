@@ -1,9 +1,10 @@
 // test_crtd_replay.cpp — Feed a real CRTD capture through the decode pipeline.
 //
-// Reads candumps/kcan-capture.crtd (relative to the tests/ directory), builds
-// CAN_frame_t objects from each data line, and dispatches them to the vehicle
-// module exactly as the OVMS runtime would.  After the replay we check that
-// the metrics contain plausible values derived from the real capture.
+// Replays the committed synthetic KCAN fixture (candumps/kcan-synthetic.crtd,
+// relative to the tests/ directory) by default, building CAN_frame_t objects from
+// each data line and dispatching them to the vehicle module exactly as the OVMS
+// runtime would.  After the replay we check that the metrics hold the expected
+// values. Set VWEGOLF_CRTD=<path> to replay a real capture during local dev.
 
 #include "mock/mock_ovms.hpp"
 #include "../src/vehicle_vwegolf.h"
@@ -116,10 +117,13 @@ void test_crtd_replay() {
     g_metrics = MetricStore{};
     auto* v = new OvmsVehicleVWeGolf();
 
-    // Prefer the real capture (not committed, developer only); fall back to the
-    // committed synthetic fixture so the test runs in CI without real car data.
+    // Deterministic by default: the push-gate hook and CI replay the committed
+    // synthetic fixture, never a developer-local capture. Set VWEGOLF_CRTD=<path>
+    // to replay a real capture during local development (falls back to the
+    // synthetic fixture if the path can't be read).
+    const char* env_path = getenv("VWEGOLF_CRTD");
     const char* candidates[] = {
-        "candumps/kcan-capture.crtd",
+        env_path ? env_path : "candumps/kcan-synthetic.crtd",
         "candumps/kcan-synthetic.crtd",
     };
     const char* used_path = nullptr;

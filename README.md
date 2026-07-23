@@ -109,6 +109,7 @@ THE USE OR OTHER DEALINGS IN THE SYSTEM.
 ## Links
 
 - _User Resources_
+  - [History of Changes](https://raw.githubusercontent.com/openvehicles/Open-Vehicle-Monitoring-System-3/refs/heads/master/vehicle/OVMS.V3/changes.txt) affecting user level features & interfaces
   - _User and Developer Guides: (hint: version selection in left menu at the bottom)_
     - [Stable release (OTA version "main")](https://docs.openvehicles.com/en/stable/)
     - [Latest nightly build (OTA version "edge")](https://docs.openvehicles.com/en/latest/)

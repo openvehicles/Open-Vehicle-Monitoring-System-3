@@ -165,7 +165,6 @@ Vehicle metrics:
 =========================== ==============
 Metric                      description
 =========================== ==============
-xsq.v.bus.awake                        CAN bus awake status [bool]
 xsq.v.bat.serial                       Battery serial number (hex string)
 xsq.v.energy.used                      Energy used since mission start [kWh]
 xsq.v.energy.recd                      Energy recovered since mission start [kWh]
@@ -180,7 +179,7 @@ xsq.v.reset.energy                     Trip energy consumption (reset) [kWh]
 xsq.v.reset.speed                      Average trip speed (reset) [km/h]
 xsq.v.start.time                       Time since start [hh:mm]
 xsq.v.start.distance                   Trip distance since start [km]
-xsq.adc.factor                         Current ADC factor for 12V calculation
+xsq.adc.factor                         Current ADC factor for 12V calculation [float]
 xsq.adc.factor.history                 Last calculated ADC factors (ring buffer)
 xsq.poll.state                         Current poll state (OFF/ON/RUNNING/CHARGING)
 xsq.ed4.values                         ED4scan: number of cells to show
@@ -211,8 +210,8 @@ xsq.obl.misc                           OBL miscellaneous data vector: [0]=freq(H
 xsq.obl.leakdiag                       OBL leakage diagnostic status
 xsq.bms.prod.data                      BMS production data formatted (serial, MM/YYYY)
 xsq.bms.temps                          BMS temperature sensors vector [°C]
-xsq.bms.voltages                       BMS voltage values vector: [0]=cell_min(V), [1]=cell_max(V), [2]=cell_mean(V), [3]=link_volt(V), [4]=pack_volt(V), [5]=ocv_volt(V), [6]=12v_system(V)
-xsq.bms.contactor.cycles               HV contactor cycles vector: [0]=max, [1]=remaining, [2]=counted
+xsq.bms.voltages                       BMS voltage values vector: [0]=cell_min(V), [1]=cell_max(V), [2]=cell_mean(V), [3]=cell_sum(V), [4]=pack_volt(V), [5]=traction_link_volt(V), [6]=12v_bms_clamp30(V), [7]=Open Circuit 12V(V)
+xsq.bms.contactor.cycles               HV contactor cycles vector: [0]=max, [1]=now, [2]=consumed, [3]=diff, [4]=1h_count - persistent
 xsq.bms.soc.values                     SOC values vector [0]=kernel, [1]=real, [2]=min, [3]=max, [4]=display [%]
 xsq.bms.soc.recal.state                SOC recalibration state
 xsq.bms.soh                            State of Health [%]
@@ -228,6 +227,14 @@ xsq.bms.interlock.hvplug               HV plug interlock status [bool]
 xsq.bms.interlock.service              Service interlock status [bool]
 xsq.bms.fusi                           FUSI mode text
 xsq.bms.safety                         Safety mode text
+xsq.bms.id.ident.data                  BMS Identification: PartNo|Supplier|DiagV|HW|SW|basicPart|Ed|Cal
+xsq.bms.id.part.no                     BMS Part Number (PartNumber.LowerPart)
+xsq.bms.id.hw.version                  BMS Hardware Version (HardwareNumber.LowerPart)
+xsq.bms.id.sw.version                  BMS Software Version (SoftwareNumber hex)
+xsq.bms.id.basic.parts                 BMS BasicPartList (PN/HW/Approval hex)
+xsq.bms.id.mfr                         BMS Manufacturer Identification Code
+xsq.12v.trickle.count                  12V trickle charge counted in 24h, reset to 0 after 24h. Alert if count == 3 in 24h [count] - persistent
+xsq.12v.undervolt.history              12V undervoltage history vector (<12V>)
 =========================== ==============
 
 -------------------------
