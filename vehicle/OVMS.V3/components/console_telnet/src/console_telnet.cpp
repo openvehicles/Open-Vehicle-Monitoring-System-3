@@ -75,6 +75,8 @@ void OvmsTelnet::EventHandler(struct mg_connection *nc, int ev, void *p)
 
     case MG_EV_POLL:
       {
+      // Reap consoles whose follow task has exited (deferred by MG_EV_CLOSE).
+      ReapConsoles();
       ConsoleTelnet* child = (ConsoleTelnet*)nc->user_data;
       if (child)
         child->Poll(0);
@@ -92,8 +94,9 @@ void OvmsTelnet::EventHandler(struct mg_connection *nc, int ev, void *p)
     case MG_EV_CLOSE:
       {
       ConsoleTelnet* child = (ConsoleTelnet*)nc->user_data;
-      if (child)
-        delete child;
+      if (child && !CloseConsole(child))
+        delete child;   // no follow task: synchronous termination + free (unchanged)
+      nc->user_data = NULL;
       }
       break;
 
@@ -235,7 +238,10 @@ void ConsoleTelnet::TelnetHandler(telnet_event_t *event)
     case TELNET_EV_SEND:
       {
       auto mglock = MongooseLock();
-      mg_send(m_connection, event->data.buffer, event->data.size);
+      // Under the lock, re-check closing: once the connection is closing the
+      // mongoose nc (m_connection) may already be freed, so don't touch it.
+      if (!IsClosing())
+        mg_send(m_connection, event->data.buffer, event->data.size);
       break;
       }
 
@@ -290,7 +296,10 @@ int ConsoleTelnet::printf(const char* fmt, ...)
 
 ssize_t ConsoleTelnet::write(const void *buf, size_t nbyte)
   {
-  if (!m_telnet || (m_connection->flags & MG_F_SEND_AND_CLOSE))
+  // m_closing is checked first on purpose: once the connection is closing the
+  // mongoose nc (m_connection) may already be freed, so short-circuit before
+  // dereferencing it. Same reason TelnetHandler bails on IsClosing() first.
+  if (m_closing || !m_telnet || (m_connection->flags & MG_F_SEND_AND_CLOSE))
     return 0;
   telnet_send_text(m_telnet, (const char*)buf, nbyte);
   return nbyte;

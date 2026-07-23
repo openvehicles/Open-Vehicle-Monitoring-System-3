@@ -42,7 +42,7 @@
 class ConsoleSSH;
 struct mg_connection;
 
-class OvmsSSH : public MongooseClient
+class OvmsSSH : public MongooseClient, public ConsoleReaper
   {
   public:
     OvmsSSH();
@@ -58,7 +58,6 @@ class OvmsSSH : public MongooseClient
   protected:
     WOLFSSH_CTX* m_ctx;
     bool m_keyed;
-    std::list<ConsoleSSH*> m_reaping;   // consoles awaiting follow-task exit before delete
   };
 
 class ConsoleSSH : public OvmsConsole, public MongooseClient
@@ -82,8 +81,6 @@ class ConsoleSSH : public OvmsConsole, public MongooseClient
     ssize_t write(const void *buf, size_t nbyte);
     int RecvCallback(char* buf, uint32_t size);
     bool IsDraining() { return m_drain > 0; }
-    void SetClosing() { m_closing = true; }
-    bool IsClosing() { return m_closing; }
     mg_connection* GetConnection() { return m_connection; }
 
   private:
@@ -111,7 +108,6 @@ class ConsoleSSH : public OvmsConsole, public MongooseClient
     int m_index;                // Index into m_buffer of data remaining to send
     int m_size;                 // Size of data remaining to send
     int m_drain;                // Bytes discarded waiting for socket to drain
-    volatile bool m_closing;    // true once the connection is closing; read cross-task
     bool m_sent;
     bool m_rekey;
     bool m_needDir;

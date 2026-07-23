@@ -53,6 +53,7 @@ OvmsConsole::OvmsConsole()
   : OvmsShell(COMMAND_RESULT_VERBOSE)
   {
   m_ready = false;
+  m_closing = false;
   m_queue = NULL;
   m_deferred = NULL;
   m_discarded = 0;
@@ -77,6 +78,32 @@ OvmsConsole::~OvmsConsole()
   // release buffered events & delete the queues if created:
   DeleteEventQueue(&m_queue);
   DeleteEventQueue(&m_deferred);
+  }
+
+bool ConsoleReaper::CloseConsole(OvmsConsole* child)
+  {
+  OvmsCommandTask* ft = child->GetFollowModeTask();
+  if (!ft)
+    return false;   // no follow task: caller does synchronous termination + free
+  // Follow task still running: we cannot join it here (we hold the Mongoose
+  // lock its write() needs). Mark closing so its in-flight write bails, ask it
+  // to stop, and defer delete until it has left the write path.
+  child->SetClosing();
+  ft->RequestStop();
+  m_reaping.push_back(child);
+  return true;
+  }
+
+void ConsoleReaper::ReapConsoles()
+  {
+  for (auto it = m_reaping.begin(); it != m_reaping.end(); )
+    {
+    OvmsConsole* child = *it;
+    if (child->GetFollowModeTask() == NULL)
+      { delete child; it = m_reaping.erase(it); }
+    else
+      ++it;
+    }
   }
 
 void OvmsConsole::Initialize(const char* console)
