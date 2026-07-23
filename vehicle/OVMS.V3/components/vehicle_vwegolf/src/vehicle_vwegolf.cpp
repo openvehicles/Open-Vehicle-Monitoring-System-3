@@ -620,10 +620,14 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
 
             // Park time: 17-bit field at bit offset 20, factor 1 s.
             // d[2] bits [7:4] → result bits [3:0], d[3] → [11:4], d[4] bits [4:0] → [16:12].
+            // The field saturates at its 17-bit max (0x1FFFF ≈ 36.5 h); ignore that
+            // clamped value so v.e.parktime falls back to OVMS's native (uncapped) counter.
             tmp_u32 = ((uint32_t)(d[2] & 0xf0) >> 4) | ((uint32_t)(d[3]) << 4) |
                       ((uint32_t)(d[4] & 0x1f) << 12);
-            StandardMetrics.ms_v_env_parktime->SetValue(tmp_u32);
-            ESP_LOGV(TAG, "0x06B7 parktime=%u", tmp_u32);
+            if (tmp_u32 != 0x1FFFF) {
+                StandardMetrics.ms_v_env_parktime->SetValue(tmp_u32);
+                ESP_LOGV(TAG, "0x06B7 parktime=%u", tmp_u32);
+            }
 
             tmp_u8 = ((uint8_t)(d[7] & 0xff) << 0) |
                      0;  // outerTemp Faktor 0.5 Offset -50, Minimum -50, Maximum 75 [°C] Initial 77

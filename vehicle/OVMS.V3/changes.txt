@@ -14,6 +14,9 @@ Open Vehicle Monitor System v3 - Change log
     Start/stop from the app or the standard climatecontrol command. The car runs its stored
     climate profile: OVMS does not set the temperature, it follows the setpoint configured in
     the MIB. Requires the KCAN (J533) wiring described in the user guide.
+- VW e-Golf: v.e.parktime no longer clamped — the 0x6B7 CAN park-time field is 17-bit
+    (saturates at ~36.5 h), so the saturated max is ignored and OVMS's native (uncapped)
+    park-time counter is used instead.
 
 
 2026-07-18 MB   3.3.006  OTA release
