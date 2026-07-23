@@ -115,7 +115,7 @@ OvmsVehicleHyundaiVFL::OvmsVehicleHyundaiVFL()
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // Init web UI:
   MyWebServer.RegisterPage("/xhi/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xhi/battmon", "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyBmsMonitor.RegisterPage();
 #endif
 
   // Init polling:
@@ -137,7 +137,7 @@ OvmsVehicleHyundaiVFL::~OvmsVehicleHyundaiVFL()
   ESP_LOGI(TAG, "Shutdown Hyundai Ioniq vFL vehicle module");
   PollSetPidList(m_can1, NULL);
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.DeregisterPage("/xhi/battmon");
+  MyBmsMonitor.DeregisterPage();
   MyWebServer.DeregisterPage("/xhi/features");
 #endif
   MyMetrics.DeregisterMetric(m_xhi_charge_state);

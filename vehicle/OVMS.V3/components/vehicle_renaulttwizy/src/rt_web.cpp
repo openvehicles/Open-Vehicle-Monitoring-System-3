@@ -58,7 +58,7 @@ void OvmsVehicleRenaultTwizy::WebInit()
   MyWebServer.RegisterPage("/xrt/profed", "Profile Editor", WebProfileEditor, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xrt/dmconfig", "Drivemode Config", WebDrivemodeConfig, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xrt/battery", "Battery Config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xrt/battmon", "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyBmsMonitor.RegisterPage();
   MyWebServer.RegisterPage("/xrt/scmon", "Sevcon Monitor", WebSevconMon, PageMenu_Vehicle, PageAuth_Cookie);
 
   // main menu:
@@ -80,7 +80,7 @@ void OvmsVehicleRenaultTwizy::WebShutdown()
   MyWebServer.DeregisterPage("/xrt/profed");
   MyWebServer.DeregisterPage("/xrt/dmconfig");
   MyWebServer.DeregisterPage("/xrt/battery");
-  MyWebServer.DeregisterPage("/xrt/battmon");
+  MyBmsMonitor.DeregisterPage();
   MyWebServer.DeregisterPage("/xrt/scmon");
 
   // main menu:

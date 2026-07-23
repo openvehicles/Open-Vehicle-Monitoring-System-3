@@ -885,7 +885,7 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
 
   int pack = 0; // currently fixed, TODO for addon packs: determine pack index for cell
   int volt_alert, temp_alert;
-  int cmod = cell / m_bms_readingspermodule_v;
+  int cmod = cell / BmsReadingsPerModuleVoltages();
   std::bitset<16> bms_balancing = m_bms_balancing->AsBitset();
 
   if (twizy_batt[pack].volt_alerts.test(cell))

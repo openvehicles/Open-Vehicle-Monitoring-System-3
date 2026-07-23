@@ -91,19 +91,16 @@ OvmsVehicleToyotaRav4Ev::OvmsVehicleToyotaRav4Ev()
   BmsSetCellArrangementTemperature(32, 2);
   BmsSetCellLimitsVoltage(1,4.9);
   BmsSetCellLimitsTemperature(-90,90);
+  MyBmsMonitor.SetAutoNotifications(false);
 
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-#endif
+  MyBmsMonitor.SetWebmoduleEnabled(true);
   }
 
 OvmsVehicleToyotaRav4Ev::~OvmsVehicleToyotaRav4Ev()
   {
   ESP_LOGI(TAG, "Shutdown Toyota RAV4 EV vehicle module");
   MyCommandApp.UnregisterCommand("xr4");
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.DeregisterPage("/bms/cellmon");
-#endif
+  MyBmsMonitor.SetWebmoduleEnabled(false);
   }
 
 void OvmsVehicleToyotaRav4Ev::Ticker1(uint32_t ticker)
@@ -455,11 +452,6 @@ void OvmsVehicleToyotaRav4Ev::Notify12vCritical()
 void OvmsVehicleToyotaRav4Ev::Notify12vRecovered()
   { // Not supported on RAV4 EV
   }
-
-void OvmsVehicleToyotaRav4Ev::NotifyBmsAlerts()
-  { // Not supported on RAV4 EV
-  }
-
 
 class OvmsVehicleToyotaRav4EvInit
   {

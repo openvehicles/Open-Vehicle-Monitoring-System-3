@@ -53,7 +53,6 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
     void Ticker1(uint32_t ticker) override;
     void Notify12vCritical() override;
     void Notify12vRecovered() override;
-    void NotifyBmsAlerts() override;
 
 #ifdef CONFIG_OVMS_COMP_TPMS
   public:

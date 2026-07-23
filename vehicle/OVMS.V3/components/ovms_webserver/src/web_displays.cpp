@@ -572,12 +572,13 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
  * HandleBmsCellMonitor: display cell voltages & temperatures
  * 
  * Note: this is not enabled by default, as some vehicles do not provide BMS data.
- * To enable, include this in the vehicle init:
- *   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+ * This will get enabled if BMS Voltage/Temperature Cells are set on MyBmsMonitor
+ * To enable explicitly:
+ *   MyBmsMonitor.SetWebmoduleEnabled(true);
  * You can change the URL path, title, menu association and authentication as you like.
- * For a clean shutdown, add
- *   MyWebServer.DeregisterPage("/bms/cellmon");
- * …in your vehicle cleanup.
+ * Although not strictly necessary,
+ *   MyBmsMonitor.SetWebmoduleEnabled(false);
+ * …in your vehicle cleanup will hide the page.
  */
 void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
 {
@@ -594,19 +595,16 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
   bool alerts_enabled = true;
 
   // get vehicle BMS configuration:
-  OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
-  if (vehicle) {
-    int readings_v = vehicle->BmsGetCellArangementVoltage();
-    if (readings_v) {
-      stemwidth_v   = 0.1 + 20.0 / readings_v;  // 14 → 1.5 … 96 → 0.3
-    }
-    int readings_t = vehicle->BmsGetCellArangementTemperature();
-    if (readings_t) {
-      stemwidth_t   = 0.1 + 10.0 / readings_t;  //  7 → 1.5 … 96 → 0.4
-    }
-    vehicle->BmsGetCellDefaultThresholdsVoltage(&volt_warn_def, &volt_alert_def, &volt_maxgrad_def, &volt_maxsddev_def);
-    vehicle->BmsGetCellDefaultThresholdsTemperature(&temp_warn_def, &temp_alert_def);
+  int readings_v = MyBmsMonitor.GetCellArangementVoltage();
+  if (readings_v) {
+    stemwidth_v   = 0.1 + 20.0 / readings_v;  // 14 → 1.5 … 96 → 0.3
   }
+  int readings_t = MyBmsMonitor.GetCellArangementTemperature();
+  if (readings_t) {
+    stemwidth_t   = 0.1 + 10.0 / readings_t;  //  7 → 1.5 … 96 → 0.4
+  }
+  MyBmsMonitor.GetCellDefaultThresholdsVoltage(&volt_warn_def, &volt_alert_def, &volt_maxgrad_def, &volt_maxsddev_def);
+  MyBmsMonitor.GetCellDefaultThresholdsTemperature(&temp_warn_def, &temp_alert_def);
 
   if (c.method == "POST") {
     // process form submission:
@@ -648,10 +646,10 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("vehicle", "bms.dev.temp.alert", "");
 
     MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", c.getvar("alerts_enabled") == "yes");
-    
-    if (c.getvar("action") == "save-reset" && vehicle)
-      vehicle->BmsResetCellStats();
-    
+
+    if (c.getvar("action") == "save-reset")
+      MyBmsMonitor.ResetCellStats();
+
     c.head(200);
     c.alert("success", "<p>Saved.</p>");
     c.print("<script>after(2, function(){ $('.modal').modal('hide'); });</script>");

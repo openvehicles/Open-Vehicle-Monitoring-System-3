@@ -71,10 +71,6 @@ void OvmsVehicleTeslaModel3::Notify12vRecovered()
   { // Not supported on Model 3
   }
 
-void OvmsVehicleTeslaModel3::NotifyBmsAlerts()
-  { // Not supported on Model 3
-  }
-
 class OvmsVehicleTeslaModel3Init
   {
   public: OvmsVehicleTeslaModel3Init();

@@ -200,7 +200,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   BmsSetCellLimitsTemperature(-30, 60);
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
-    MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+    MyBmsMonitor.SetWebmoduleEnabled(true);
     MyWebServer.RegisterPage("/cfg/brakelight", "Brake Light control", OvmsWebServer::HandleCfgBrakelight, PageMenu_Vehicle, PageAuth_Cookie);
     WebInit();
   #endif
@@ -223,7 +223,7 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   ESP_LOGI(TAG, "Stop Mitsubishi  vehicle module");
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
-    MyWebServer.DeregisterPage("/bms/cellmon");
+    MyBmsMonitor.SetWebmoduleEnabled(false);
     MyWebServer.DeregisterPage("/cfg/brakelight");
   #endif
   MyCommandApp.UnregisterCommand("xmi");
