@@ -30,7 +30,6 @@
 #ifndef __CONSOLE_SSH_H__
 #define __CONSOLE_SSH_H__
 
-#include <list>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "ovms_console.h"

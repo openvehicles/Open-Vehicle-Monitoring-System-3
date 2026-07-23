@@ -92,19 +92,33 @@ OvmsWriter::~OvmsWriter()
   RunTerminationCallback();
   }
 
+// Guards the termination registration against a follow-mode task that
+// self-exits (and frees itself) concurrently with a teardown check-and-stop
+// (see StopFollowModeTask). File-scope on purpose: the spinlock must not live
+// inside OvmsWriter, because releasing it after the sentinel clear would touch
+// the writer again — the sentinel store must be the task's last writer access.
+static portMUX_TYPE termination_mux = portMUX_INITIALIZER_UNLOCKED;
+
 void OvmsWriter::RegisterTerminationCallback(TerminationCallback cb, void* ctx)
   {
-  m_termination = cb;
+  // Context first, sentinel last: a reader testing m_termination must find
+  // m_termData already valid.
   m_termData = ctx;
+  m_termination = cb;
   }
 
 void OvmsWriter::DeregisterTerminationCallback(TerminationCallback cb)
   {
+  // The critical section pairs with StopFollowModeTask(). Context is cleared
+  // first, sentinel last: pollers (HasTerminationCallback, HasFollowModeTask)
+  // read the sentinel unlocked and treat NULL as "all writer accesses done".
+  portENTER_CRITICAL(&termination_mux);
   if (m_termination == cb)
     {
-    m_termination = NULL;
     m_termData = NULL;
+    m_termination = NULL;
     }
+  portEXIT_CRITICAL(&termination_mux);
   }
 
 void OvmsWriter::RunTerminationCallback()
@@ -120,18 +134,35 @@ void OvmsWriter::RunTerminationCallback()
   if (cb == NULL)
     return;
   cb(this, data);
-  m_termination = NULL;
   m_termData = NULL;
+  m_termination = NULL;
   }
 
-OvmsCommandTask* OvmsWriter::GetFollowModeTask()
+bool OvmsWriter::HasFollowModeTask()
   {
-  // Returns the bound follow-mode command task iff the active termination
-  // handler is OvmsCommandTask's (i.e. a separate task is running), else NULL.
-  // A NULL m_termination (already cleared by an exiting task) safely yields NULL.
+  // True iff the active termination handler is OvmsCommandTask's, i.e. a
+  // follow-mode task is still running (it clears the registration as its last
+  // writer access before freeing itself). Sentinel test only — callers must
+  // not dereference the task; use StopFollowModeTask() for that.
+  return (m_termination == OvmsCommandTask::TerminationHandler);
+  }
+
+bool OvmsWriter::StopFollowModeTask()
+  {
+  // Atomically check for a bound follow-mode task and request it to stop.
+  // The task may self-exit (e.g. "vfs tail" losing its file) and free itself
+  // at any time, so the registration test and the stop request must be one
+  // unit: while the registration is held under the mux the task cannot have
+  // entered its deregistration yet, hence cannot have freed itself.
+  bool stopped = false;
+  portENTER_CRITICAL(&termination_mux);
   if (m_termination == OvmsCommandTask::TerminationHandler)
-    return (OvmsCommandTask*) m_termData;
-  return NULL;
+    {
+    ((OvmsCommandTask*) m_termData)->RequestStop();
+    stopped = true;
+    }
+  portEXIT_CRITICAL(&termination_mux);
+  return stopped;
   }
 
 void OvmsWriter::Exit()
@@ -1861,10 +1892,11 @@ void OvmsCommandTask::TerminationHandler(OvmsWriter* writer, void* userdata)
   // until it has fully exited: ~OvmsCommandTask deregisters this handler as its
   // last access to the writer, so once the registration is cleared the task can
   // no longer dereference the writer. Cooperative stop+join (no vTaskDelete) so
-  // the task is never force-killed mid-write. This relies on no concurrent
-  // Ctrl-C termination, which holds on the connection-close path.
-  OvmsCommandTask* task = (OvmsCommandTask*) userdata;
-  task->RequestStop();
+  // the task is never force-killed mid-write. userdata is deliberately not
+  // dereferenced — the task may have self-exited and freed itself since the
+  // handler was looked up; StopFollowModeTask() revalidates atomically.
+  if (!writer->StopFollowModeTask())
+    return;
   while (writer->HasTerminationCallback(TerminationHandler))
     vTaskDelay(pdMS_TO_TICKS(20));
   }

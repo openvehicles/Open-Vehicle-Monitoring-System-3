@@ -95,7 +95,7 @@ void OvmsTelnet::EventHandler(struct mg_connection *nc, int ev, void *p)
       {
       ConsoleTelnet* child = (ConsoleTelnet*)nc->user_data;
       if (child && !CloseConsole(child))
-        delete child;   // no follow task: synchronous termination + free (unchanged)
+        delete child;   // no follow task: synchronous termination + free
       nc->user_data = NULL;
       }
       break;

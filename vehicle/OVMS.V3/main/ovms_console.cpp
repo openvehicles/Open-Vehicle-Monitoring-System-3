@@ -82,14 +82,17 @@ OvmsConsole::~OvmsConsole()
 
 bool ConsoleReaper::CloseConsole(OvmsConsole* child)
   {
-  OvmsCommandTask* ft = child->GetFollowModeTask();
-  if (!ft)
+  // Atomic check-and-stop: the follow task may self-exit (e.g. "tail: file
+  // lost") and free itself at any time, so testing for it and signalling it
+  // must be one unit. Setting m_closing after the stop request is safe: any
+  // write the task starts in between blocks on the Mongoose lock we hold here,
+  // and re-checks IsClosing() under that lock before touching the connection.
+  if (!child->StopFollowModeTask())
     return false;   // no follow task: caller does synchronous termination + free
   // Follow task still running: we cannot join it here (we hold the Mongoose
-  // lock its write() needs). Mark closing so its in-flight write bails, ask it
-  // to stop, and defer delete until it has left the write path.
+  // lock its write() needs). Mark closing so its in-flight write bails, and
+  // defer delete until it has left the write path.
   child->SetClosing();
-  ft->RequestStop();
   m_reaping.push_back(child);
   return true;
   }
@@ -99,7 +102,7 @@ void ConsoleReaper::ReapConsoles()
   for (auto it = m_reaping.begin(); it != m_reaping.end(); )
     {
     OvmsConsole* child = *it;
-    if (child->GetFollowModeTask() == NULL)
+    if (!child->HasFollowModeTask())
       { delete child; it = m_reaping.erase(it); }
     else
       ++it;

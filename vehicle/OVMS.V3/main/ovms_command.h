@@ -96,7 +96,8 @@ class OvmsWriter
     void DeregisterTerminationCallback(TerminationCallback cb);
     void RunTerminationCallback();
     bool HasTerminationCallback(TerminationCallback cb) { return m_termination == cb; }
-    OvmsCommandTask* GetFollowModeTask();   // bound follow-mode task, or NULL
+    bool HasFollowModeTask();    // a follow-mode command task is still bound (sentinel test only)
+    bool StopFollowModeTask();   // atomically request a bound follow-mode task to stop; false if none
 
   public:
     // Used to notify the writer of a migration of a file within the VFS
@@ -116,8 +117,12 @@ class OvmsWriter
     InsertCallback m_insert;
     void* m_userData;
     bool m_monitoring;
-    volatile TerminationCallback m_termination;   // active interactive-command teardown handler, or NULL (read cross-task)
-    void* m_termData;
+    // Both volatile (read/written cross-task); m_termination is the sentinel:
+    // it is set last and cleared last, so whenever it is non-NULL, m_termData
+    // is valid. Teardown-vs-self-exit races are resolved by termination_mux
+    // in ovms_command.cpp.
+    volatile TerminationCallback m_termination;   // active interactive-command teardown handler, or NULL
+    void* volatile m_termData;
   };
 
 template <typename T>
