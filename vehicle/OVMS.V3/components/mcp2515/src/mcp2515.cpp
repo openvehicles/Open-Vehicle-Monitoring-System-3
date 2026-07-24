@@ -146,6 +146,11 @@ if (m_spibus->m_initialized == false) {
   uint8_t pbuf[16];
   uint8_t canstat = 0;
   bool detected = false;
+
+  // Reset first so the config-mode probe starts from the same state as Start().
+  m_spibus->spi_cmd(m_spi, pbuf, 0, 1, CMD_RESET);
+  vTaskDelay(pdMS_TO_TICKS(50));
+
   for (int attempt = 0; attempt < 2; attempt++)
     {
     uint8_t *preg = m_spibus->spi_cmd(m_spi, pbuf, 1, 2, CMD_READ, REG_CANSTAT);
