@@ -184,7 +184,8 @@ if (m_spibus->m_initialized == false) {
   m_canctrl_mode = CANCTRL_MODE_CONFIG; // MCP2515 mode after reset
   m_powermode = Off; // Stop an event being raised
   SetPowerMode(Off);
-  SetTransceiverMode(CAN_MODE_LISTEN);
+  if (m_hw_present)
+    SetTransceiverMode(CAN_MODE_LISTEN);
 
   // Register mcp2515 specific commands:
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can", "CAN framework");
