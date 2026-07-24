@@ -357,19 +357,22 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   // CANINTE (interrupt enable), all interrupts
   WriteReg(REG_CANINTE, 0b11111111);
 
-  // Safety net: unconditionally re-arm the GPIO level interrupt on every (re)start.
-  // Normally it is re-armed by AsynchronousInterruptHandler() once drained; this
-  // covers the rare case where that path never ran (e.g. ISR->task queue was full
-  // and the service ping got dropped) by restoring a known-good state whenever the
-  // bus is (re)started, including the RX-stall watchdog's Reset()->Start() path.
-  gpio_intr_enable((gpio_num_t)m_intpin);
-
   // And record that we are powered on
   if (GetPowerMode() != On)
     {
     ESP_LOGI(TAG, "%s: Started, SetPowerMode on", this->GetName());
     }
   pcp::SetPowerMode(On);
+
+  // Safety net: unconditionally re-arm the GPIO level interrupt on every (re)start.
+  // Normally it is re-armed by AsynchronousInterruptHandler() once drained; this
+  // covers the rare case where that path never ran (e.g. ISR->task queue was full
+  // and the service ping got dropped) by restoring a known-good state whenever the
+  // bus is (re)started, including the RX-stall watchdog's Reset()->Start() path.
+  // Must stay after the power publish above: Start() is the only re-arm
+  // path — the handler's guard only masks, never re-arms — so arming first
+  // here loses the race on every Start(), causing the indefinite re-wedge loop.
+  gpio_intr_enable((gpio_num_t)m_intpin);
 
   return ESP_OK;
   }
