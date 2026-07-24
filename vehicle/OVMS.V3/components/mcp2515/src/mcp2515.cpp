@@ -136,11 +136,6 @@ if (m_spibus->m_initialized == false) {
   esp_err_t ret = spi_bus_add_device(host,  &m_devcfg, &m_spi);
   assert(ret==ESP_OK);
 
-  // Stabilize INT input before probing the chip state (USB-only power can leave
-  // the line floating for a short moment on some boards).
-  gpio_pullup_en((gpio_num_t)m_intpin);
-  vTaskDelay(pdMS_TO_TICKS(2));
-
   // Probe controller presence: retry once before declaring the controller absent.
   {
   uint8_t pbuf[16];
@@ -162,7 +157,7 @@ if (m_spibus->m_initialized == false) {
       }
     if (attempt == 0)
       {
-      vTaskDelay(pdMS_TO_TICKS(5));
+      vTaskDelay(pdMS_TO_TICKS(10));
       }
     }
   if (!detected)
@@ -189,6 +184,7 @@ if (m_spibus->m_initialized == false) {
   m_canctrl_mode = CANCTRL_MODE_CONFIG; // MCP2515 mode after reset
   m_powermode = Off; // Stop an event being raised
   SetPowerMode(Off);
+  SetTransceiverMode(CAN_MODE_LISTEN);
 
   // Register mcp2515 specific commands:
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can", "CAN framework");
