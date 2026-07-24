@@ -142,25 +142,30 @@ if (m_spibus->m_initialized == false) {
   // would ever arrive. GPIO_INTR_LOW_LEVEL instead keeps re-asserting for as long as
   // the source is unserviced; see MCP2515_isr() and AsynchronousInterruptHandler() for
   // the mask/re-arm handshake that keeps this from storming.
-  gpio_set_intr_type((gpio_num_t)m_intpin, GPIO_INTR_LOW_LEVEL);
-  gpio_isr_handler_add((gpio_num_t)m_intpin, MCP2515_isr, (void*)this);
+  gpio_pullup_en((gpio_num_t)m_intpin);
+  vTaskDelay(10 / portTICK_PERIOD_MS); // let the pullup settle before reading the pin
+  if (gpio_get_level((gpio_num_t)m_intpin) != 0)
+    {
+    gpio_set_intr_type((gpio_num_t)m_intpin, GPIO_INTR_LOW_LEVEL);
+    gpio_isr_handler_add((gpio_num_t)m_intpin, MCP2515_isr, (void*)this);
 
-  // Initialise in powered down mode
-  m_canctrl_mode = CANCTRL_MODE_CONFIG; // MCP2515 mode after reset
-  m_powermode = Off; // Stop an event being raised
-  SetPowerMode(Off);
-  SetTransceiverMode(CAN_MODE_LISTEN);
+    // Initialise in powered down mode
+    m_canctrl_mode = CANCTRL_MODE_CONFIG; // MCP2515 mode after reset
+    m_powermode = Off; // Stop an event being raised
+    SetPowerMode(Off);
+    SetTransceiverMode(CAN_MODE_LISTEN);
 
-  // Register mcp2515 specific commands:
-  OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can", "CAN framework");
-  m_cmd_canx = cmd_can->RegisterCommand(name, "CANx framework");
-  m_cmd_canx->RegisterCommand("setaccfilter", "Set MCP2515 acceptance filter", shell_setaccfilter,
-    "<mask0> <filter0> <filter1> <mask1> <filter2> <filter3> <filter4> <filter5>\n"
-    "Specify masks and filters as 32 bit hexadecimal values.\n"
-    "All arguments default to 0 = no filter.\n"
-    "To disable all filters, call without arguments.\n"
-    "Bit layout: see MCP2515 specification, section 4.5 Acceptance Filter.",
-    0, 8);
+    // Register mcp2515 specific commands:
+    OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can", "CAN framework");
+    m_cmd_canx = cmd_can->RegisterCommand(name, "CANx framework");
+    m_cmd_canx->RegisterCommand("setaccfilter", "Set MCP2515 acceptance filter", shell_setaccfilter,
+      "<mask0> <filter0> <filter1> <mask1> <filter2> <filter3> <filter4> <filter5>\n"
+      "Specify masks and filters as 32 bit hexadecimal values.\n"
+      "All arguments default to 0 = no filter.\n"
+      "To disable all filters, call without arguments.\n"
+      "Bit layout: see MCP2515 specification, section 4.5 Acceptance Filter.",
+      0, 8);
+    }
   }
 
 mcp2515::~mcp2515()
