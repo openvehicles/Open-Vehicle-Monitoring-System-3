@@ -136,14 +136,34 @@ if (m_spibus->m_initialized == false) {
   esp_err_t ret = spi_bus_add_device(host,  &m_devcfg, &m_spi);
   assert(ret==ESP_OK);
 
-  // Probe controller presence once: on a healthy MCP2515, REQOP reset state is CONFIG mode.
+  // Stabilize INT input before probing the chip state (USB-only power can leave
+  // the line floating for a short moment on some boards).
+  gpio_pullup_en((gpio_num_t)m_intpin);
+  vTaskDelay(pdMS_TO_TICKS(2));
+
+  // Probe controller presence: retry once before declaring the controller absent.
   {
   uint8_t pbuf[16];
-  uint8_t *preg = m_spibus->spi_cmd(m_spi, pbuf, 1, 2, CMD_READ, REG_CANSTAT);
-  if ((preg[0] & CANCTRL_MODE) != CANCTRL_MODE_CONFIG)
+  uint8_t canstat = 0;
+  bool detected = false;
+  for (int attempt = 0; attempt < 2; attempt++)
+    {
+    uint8_t *preg = m_spibus->spi_cmd(m_spi, pbuf, 1, 2, CMD_READ, REG_CANSTAT);
+    canstat = preg[0];
+    if ((canstat & CANCTRL_MODE) == CANCTRL_MODE_CONFIG)
+      {
+      detected = true;
+      break;
+      }
+    if (attempt == 0)
+      {
+      vTaskDelay(pdMS_TO_TICKS(5));
+      }
+    }
+  if (!detected)
     {
     m_hw_present = false;
-    ESP_LOGE(TAG, "%s: MCP2515 not detected (CANSTAT=0x%02x), disabling this bus", this->GetName(), preg[0]);
+    ESP_LOGE(TAG, "%s: MCP2515 not detected after retry (CANSTAT=0x%02x), disabling this bus", this->GetName(), canstat);
     }
   }
 
