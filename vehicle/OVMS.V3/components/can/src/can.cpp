@@ -979,11 +979,24 @@ void can::CAN_rxtask(void *pvParameters)
         case CAN_asyncinterrupthandler:
           {
           bool loop;
-          // Loop until all interrupts are handled
+          uint32_t loops = 0;
+          static const uint32_t MAX_ASYNC_INTERRUPT_LOOPS = 512;
+          // Drain pending async interrupts, but never spin forever on a stuck line/device.
           do {
             uint32_t receivedFrames;
             loop = msg.body.bus->AsynchronousInterruptHandler(&msg.body.frame, &receivedFrames);
-            } while (loop);
+            if ((++loops & 0x3f) == 0)
+              {
+              taskYIELD();
+              }
+            } while (loop && loops < MAX_ASYNC_INTERRUPT_LOOPS);
+
+          if (loop)
+            {
+            ESP_LOGE(TAG, "%s async interrupt handling did not quiesce after %u loops, forcing bus reset",
+              msg.body.bus->GetName(), (unsigned)MAX_ASYNC_INTERRUPT_LOOPS);
+            msg.body.bus->Reset();
+            }
           break;
           }
         case CAN_txcallback:

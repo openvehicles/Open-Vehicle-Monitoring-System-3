@@ -109,6 +109,7 @@ class mcp2515 : public canbus
     spi_device_interface_config_t m_devcfg;
     int m_clockspeed;
     int m_cspin;
+    bool m_hw_present = true;
     uint8_t m_last_errflag = 0;
     uint8_t m_canctrl_mode;
     OvmsMutex m_write_mutex;
