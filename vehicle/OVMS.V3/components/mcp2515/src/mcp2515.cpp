@@ -140,7 +140,6 @@ if (m_spibus->m_initialized == false) {
   {
   uint8_t pbuf[16];
   uint8_t canstat = 0;
-  bool detected = false;
 
   // Reset first so the config-mode probe starts from the same state as Start().
   m_spibus->spi_cmd(m_spi, pbuf, 0, 1, CMD_RESET);
@@ -152,7 +151,7 @@ if (m_spibus->m_initialized == false) {
     canstat = preg[0];
     if ((canstat & CANCTRL_MODE) == CANCTRL_MODE_CONFIG)
       {
-      detected = true;
+      m_hw_present = true;
       break;
       }
     if (attempt == 0)
@@ -160,9 +159,8 @@ if (m_spibus->m_initialized == false) {
       vTaskDelay(pdMS_TO_TICKS(10));
       }
     }
-  if (!detected)
+  if (!m_hw_present)
     {
-    m_hw_present = false;
     ESP_LOGE(TAG, "%s: MCP2515 not detected after retry (CANSTAT=0x%02x), disabling this bus", this->GetName(), canstat);
     }
   }
