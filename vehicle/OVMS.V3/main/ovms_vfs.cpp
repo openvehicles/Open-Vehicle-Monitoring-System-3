@@ -434,17 +434,17 @@ void vfs_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
-  OVMS_MD5_CTX* md5 = new OVMS_MD5_CTX;
-  OVMS_MD5_Init(md5);
+  OVMS_MD5_CTX md5;
+  OVMS_MD5_Init(&md5);
   int filesize = 0;
   uint8_t *buf = new uint8_t[512];
   while(size_t n = fread(buf, sizeof(char), 512, f))
     {
     filesize += n;
-    OVMS_MD5_Update(md5, buf, n);
+    OVMS_MD5_Update(&md5, buf, n);
     }
   uint8_t* rmd5 = new uint8_t[16];
-  OVMS_MD5_Final(rmd5, md5);
+  OVMS_MD5_Final(rmd5, &md5);
 
   char dchecksum[33];
   sprintf(dchecksum,"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
