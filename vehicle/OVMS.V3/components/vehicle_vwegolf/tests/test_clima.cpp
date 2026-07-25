@@ -283,7 +283,7 @@ void test_clima_counter_increments() {
     delete v;
 }
 
-// Regression pinning the exact BAP burst bytes (vehicle_vwegolf.cpp SendClimaBapBurst).
+// Regression pinning the exact BAP burst bytes (vwegolf_tx.cpp SendClimaBapBurst).
 // Frames 1+2 are a SetGet on ProfilesArray (0x19), RecordAddr-6 compact update of
 // profile 0: operation=0x06 (climate | climateWithoutExternalSupply), operation2=0x00,
 // maxCurrent=0x20 (32 A), targetChargeLevel=0x00. Field semantics per smartkar-cano-new
