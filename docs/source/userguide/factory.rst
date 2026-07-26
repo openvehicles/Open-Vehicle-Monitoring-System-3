@@ -66,18 +66,60 @@ Method 4: USB
 ^^^^^^^^^^^^^
 
 If you don’t have console access and don’t have an SD card, you can perform a factory reset from a 
-PC via USB using the ``esptool.py`` tool from the Espressif ESP-IDF toolkit (see below for 
-installation).
+PC via USB using the **ESP Tool** from the Espressif ESP-IDF toolkit. There are two variants of the 
+tool available, the newer one being the browser based ``esptool-js`` (Javascript, no installation necessary), 
+the older one being ``esptool.py`` (Python, installation necessary).
 
-The command arguments **differ depending on the partitioning scheme** in place:
+
+~~~~~~~~~~~~~~~~
+Browser ESP Tool
+~~~~~~~~~~~~~~~~
+
+The browser based ESP tool doesn't need any installation, just a current version of any web browser that 
+supports the WebSerial API: https://espressif.github.io/esptool-js/
+
+**Do not use "Erase Flash"!** This erases the complete flash memory, so you'll need to do a full reflash 
+if accidentally using this option!
+
+Instead, prepare an all-zero dummy file to program, use e.g. https://tembrica.com/en/dummy-file-generator 
+to create one.
 
 **a) Old 4MB partitioning (OTA type v3-30 / pre-3.3.006):**
+
+- Create a dummy file of 1024 KB
+- Connect the module, click "Connect", select your USB port
+- Set the flash address to ``0xC10000`` and select the 1024 KB dummy file
+- Click "Program"
+
+**b) New 7MB partitioning (OTA type v3-35):**
+
+- Create a dummy file of 1984 KB
+- Connect the module, click "Connect", select your USB port
+- Set the flash address to ``0xE10000`` and select the 1984 KB dummy file
+- Click "Program"
+
+After the flash process has finished, click "Disconnect".
+
+
+~~~~~~~~~~~~~~~
+Python ESP Tool
+~~~~~~~~~~~~~~~
+
+See `Installing esptool.py`_ on how to install the tool.
+
+The ``esptool.py`` command arguments **differ depending on the partitioning scheme** in place:
+
+**a) Old 4MB partitioning (OTA type v3-30 / pre-3.3.006):**
+
+.. code::
 
   esptool.py \
     --chip esp32 --port /dev/tty.SLAB_USBtoUART --baud 921600 \
     erase_region 0xC10000 0x100000
 
 **b) New 7MB partitioning (OTA type v3-35):**
+
+.. code::
 
   esptool.py \
     --chip esp32 --port /dev/tty.SLAB_USBtoUART --baud 921600 \
@@ -119,9 +161,15 @@ to the factory firmware with this command::
   Boot from factory at 0x00010000 (size 0x00400000)
 
 
-**Without console access** (lost module password), you can use the ``esptool.py`` from the Espressif ESP-IDF 
+**Without console access** (lost module password), you can use the browser ESP Tool at 
+https://espressif.github.io/esptool-js/ or the Python based ``esptool.py`` from the Espressif ESP-IDF 
 toolkit to reset the boot partition to the first firmware partition present. This will be ``factory``
-on a ``v3-30`` partitioned module, and ``ota_0`` on a ``v3-35`` partitioned module::
+on a ``v3-30`` partitioned module, and ``ota_0`` on a ``v3-35`` partitioned module:
+
+If your browser supports the web based ESP Tool, flash a dummy all-zero file of 8 KB to address ``0xd000``. 
+Use e.g. https://tembrica.com/en/dummy-file-generator to create the file.
+
+If using the Python ESP Tool::
 
   esptool.py \
     --chip esp32 --port /dev/tty.SLAB_USBtoUART --baud 921600 \
@@ -131,9 +179,50 @@ on a ``v3-30`` partitioned module, and ``ota_0`` on a ``v3-35`` partitioned modu
 Linux system or ``COMx`` on Windows.
 
 
+
+
 ----------------------
 Flash Firmware via USB
 ----------------------
+
+Flashing via USB is done using the **ESP Tool** from the Espressif ESP-IDF toolkit. There are two variants of the 
+tool available, the newer one being the browser based ``esptool-js`` (Javascript, no installation necessary), 
+the older one being ``esptool.py`` (Python, installation necessary).
+
+
+^^^^^^^^^^^^^^^^
+Browser ESP Tool
+^^^^^^^^^^^^^^^^
+
+The browser based ESP tool doesn't need any installation, just a current version of any web browser that 
+supports the WebSerial API: https://espressif.github.io/esptool-js/
+
+- Download the firmware file ``ovms3.bin`` you want to flash
+- Connect the module, click "Connect", select your USB port
+- Set the flash address to e.g. ``0x10000`` (see below) and select the ``ovms3.bin`` file
+- Click "Program"
+- After the flash process has finished, click "Disconnect"
+
+**On the flash address**: ``0x10000`` is the **primary** firmware partition (i.e. ``factory`` on a ``v3-30`` 
+module, ``ota_0`` on a ``v3-35`` module, as explained above). To flash into the current boot partition, select 
+the address from the following table accordingly.
+
+**OTA partition flash addresses:**
+
+============ =========== =============
+Partitioning Destination Flash address
+============ =========== =============
+New (v3-35)  ota_0       0x10000
+New (v3-35)  ota_1       0x710000
+Old (v3-30)  factory     0x10000
+Old (v3-30)  ota_0       0x410000
+Old (v3-30)  ota_1       0x810000
+============ =========== =============
+
+
+^^^^^^^^^^^^^^^
+Python ESP Tool
+^^^^^^^^^^^^^^^
 
 ``esptool.py`` can also be used to flash a new firmware. Download the firmware file ``ovms3.bin`` you want
 to flash, then issue::
@@ -147,6 +236,8 @@ to flash, then issue::
 This flashes into the **primary** firmware partition (i.e. ``factory`` on a ``v3-30`` module, ``ota_0`` on a
 ``v3-35`` module, as explained above). So if you were booting from another partition before, you also need
 to switch the boot partition back to the primary firmware partition as shown above.
+
+For other destination partitions, see table above.
 
 
 .. _full-reflash-via-usb:
@@ -171,7 +262,7 @@ To do a full reflash, download the three ``.bin`` files from the release you wan
 
   https://ovms.dexters-web.de/firmware/ota/v3.3-5/edge/
 
-Then issue::
+**Using the Python tool**::
 
   esptool.py \
     --chip esp32 --port /dev/tty.SLAB_USBtoUART --baud 921600 \
@@ -181,7 +272,14 @@ Then issue::
 
 …replacing the port and file paths accordingly for your system.
 
-If this fails, open a support ticket on https://www.openvehicles.com and attach a log of the
+**Using the browser ESP tool**:
+
+- See above for the basic operation steps
+- Before programming, use the button "Add File" twice to get three file inputs
+- Set the flash addresses and files accordingly to: 0x1000 → bootloader.bin, 0x10000 → ovms3.bin, 0x8000 → partitions.bin
+- Proceed with "Program"
+
+**If the full reflash fails**, open a support ticket on https://www.openvehicles.com and attach a log of the 
 boot process, or install the developer environment and do a ``make flash``.
 
 
