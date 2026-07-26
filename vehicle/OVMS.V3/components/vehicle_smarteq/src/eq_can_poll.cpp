@@ -700,8 +700,8 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattState(const char* data, uint16_t repl
   // P = V × I (in kW)
   float pack_power_kw = (v_pack_term * i_pack) / 1000.0f;
   //StdMetrics.ms_v_bat_voltage->SetValue(v_pack_term);
-  StdMetrics.ms_v_bat_current->SetValue(i_pack * -1.0f); // invert to charge(+)/discharge(-) convention
-  StdMetrics.ms_v_bat_power->SetValue(pack_power_kw);
+  StdMetrics.ms_v_bat_current->SetValue(i_pack * -1.0f);      // invert to discharge(+)/charge(-) convention
+  StdMetrics.ms_v_bat_power->SetValue(pack_power_kw * -1.0f); // invert to discharge(+)/charge(-) convention
 
   int contactor_code = CAN_BYTE(12);
   const char* contactor_txt;

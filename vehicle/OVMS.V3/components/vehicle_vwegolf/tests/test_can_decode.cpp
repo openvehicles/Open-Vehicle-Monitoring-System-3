@@ -264,6 +264,7 @@ void test_sentinel_filters() {
 // ---------------------------------------------------------------------------
 
 extern void test_crtd_replay();
+extern void test_clima_all();
 
 int main() {
     printf("=== vehicle_vwegolf CAN decode tests ===\n");
@@ -275,6 +276,7 @@ int main() {
     test_gps_0x486();
     test_sentinel_filters();
     test_crtd_replay();
+    test_clima_all();
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);
     return (tests_passed == tests_run) ? 0 : 1;

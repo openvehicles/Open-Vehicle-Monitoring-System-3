@@ -122,7 +122,7 @@ THE USE OR OTHER DEALINGS IN THE SYSTEM.
     - [Medlock & Sons (North America)](https://medlockandsons.com/product/ovms-v3/)
     - [OpenEnergyMonitor (UK/Europe)](https://shop.openenergymonitor.com/ovms/)
   - _Customized Versions_
-    - [Optimized compact casing not only for Smart ED/EQ (Germany/Europe)](https://www.smart-emotion.de/shop/product/75-ovms-independent-app/)
+    - [Optimized compact casing not only for Smart ED/EQ (Germany/Europe)](https://www.smart-emotion.de/shop/product/75-ovms-independent-app/) -- **Att**: this version only supports the first two CAN buses, CAN3 and SWCAN are not supported!
 - _Servers_
   - [Asia-Pacific](https://www.openvehicles.com/)
   - [Germany/Europe](https://dexters-web.de/)

@@ -960,7 +960,9 @@ units.convertMetricToUserUnits = function (value, name) {
     cnvfn = convertUnitFunction(unit_entry.native, unit_entry.code);
     this.metrics[name].user_fn = cnvfn;
   }
-  return cnvfn(value);
+  // Vector metrics (e.g. v.b.c.temp) arrive as arrays; the scalar conversion
+  // functions return NaN for an array, so convert element-wise (issue #1426).
+  return Array.isArray(value) ? value.map(function (v) { return cnvfn(v); }) : cnvfn(value);
 }
 units.userUnitLabelFromMetric = function (name) {
     var unit_entry = this.metrics[name];

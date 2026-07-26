@@ -32,10 +32,11 @@
 
 #include "libtelnet.h"
 #include "ovms_console.h"
+#include "mongoose_client.h"
 
 struct mg_connection;
 
-class OvmsTelnet : public MongooseClient
+class OvmsTelnet : public MongooseClient, public ConsoleReaper
   {
   public:
     OvmsTelnet();

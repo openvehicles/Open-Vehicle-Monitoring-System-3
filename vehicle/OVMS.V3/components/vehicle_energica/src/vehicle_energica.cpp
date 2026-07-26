@@ -96,6 +96,8 @@ OvmsVehicleEnergica::OvmsVehicleEnergica()
 
 	// Custom metrics
 	m_v_cell_balance = MyMetrics.InitFloat("xnr.v.b.c.balance", SM_STALE_MIN, 0, Volts);
+	m_v_cell_id_min  = MyMetrics.InitInt("xnr.v.b.c.id.min", SM_STALE_MIN, 0);
+	m_v_cell_id_max  = MyMetrics.InitInt("xnr.v.b.c.id.max", SM_STALE_MIN, 0);
 }
 
 OvmsVehicleEnergica::~OvmsVehicleEnergica()
@@ -232,9 +234,8 @@ void OvmsVehicleEnergica::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 			*m_v_cell_balance = (vmax - vmin) * 0.001f;
 
-			// TODO: Test this
-			// *StandardMetrics.ms_v_bat_cell_vmin->SetElemValue(val->min_cell_num(), vmin, Volts);
-			// *StandardMetrics.ms_v_bat_cell_vmax->SetElemValue(val->max_cell_num(), vmax, Volts);
+			*m_v_cell_id_min = val->min_cell_num();
+			*m_v_cell_id_max = val->max_cell_num();
 			break;
 		}
 

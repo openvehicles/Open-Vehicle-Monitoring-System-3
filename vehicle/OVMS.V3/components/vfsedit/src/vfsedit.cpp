@@ -38,6 +38,15 @@ size_t vfs_edit_write(struct editor_state* E, const char *buf, size_t nbyte)
   return writer->write(buf,nbyte);
   }
 
+// Release the editor state if the session is closed while the editor is still
+// open (the insert callback would otherwise leak the buffer it allocated).
+void vfs_edit_terminate(OvmsWriter* writer, void* ctx)
+  {
+  struct editor_state* ed = (struct editor_state*)ctx;
+  editor_free(ed);
+  free(ed);
+  }
+
 bool vfs_edit_insert(OvmsWriter* writer, void* ctx, char ch)
   {
   struct editor_state* ed = (struct editor_state*)ctx;
@@ -47,6 +56,7 @@ bool vfs_edit_insert(OvmsWriter* writer, void* ctx, char ch)
     {
     editor_free(ed);
     free(ed);
+    writer->DeregisterTerminationCallback(vfs_edit_terminate);
     return false;
     }
   else
@@ -68,4 +78,5 @@ void vfs_edit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   editor_open(ed,argv[0]);
 
   writer->RegisterInsertCallback(vfs_edit_insert, ed);
+  writer->RegisterTerminationCallback(vfs_edit_terminate, ed);
   }

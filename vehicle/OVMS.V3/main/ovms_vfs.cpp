@@ -753,7 +753,11 @@ class VfsTailCommand : public OvmsCommandTask
           }
         lseek(fd, fpos, SEEK_SET);
         while ((len = read(fd, buf, sizeof buf)) > 0)
+          {
           writer->write(buf, len);
+          if (m_state != OCS_RunLoop)   // stop/close requested: exit promptly
+            break;
+          }
         fpos = lseek(fd, 0, SEEK_CUR);
         close(fd);
         fd = -1;

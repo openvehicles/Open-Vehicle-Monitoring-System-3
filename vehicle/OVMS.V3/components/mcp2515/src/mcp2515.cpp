@@ -46,6 +46,31 @@ static IRAM_ATTR void MCP2515_isr(void *pvParameters)
 
   me->m_status.interrupts++;
 
+  // INT is a level signal: the MCP2515 holds it low for as long as any unmasked
+  // CANINTF flag is set, so with GPIO_INTR_LOW_LEVEL configured (see constructor)
+  // this ISR would be re-entered continuously -- an interrupt storm -- for as long
+  // as the line stays low, i.e. until AsynchronousInterruptHandler() has drained
+  // CANINTF over SPI. Mask this pin's interrupt now, before queuing the service
+  // request, so it cannot re-enter while unserviced. Direct register write, not
+  // gpio_intr_disable(): OVMS installs the GPIO ISR service with
+  // ESP_INTR_FLAG_IRAM (main/ovms_peripherals.cpp), so this handler runs in an
+  // IRAM context and may execute while the flash cache is disabled.
+  // gpio_intr_disable() (components/driver/gpio.c) is not IRAM_ATTR in
+  // ESP-IDF v3.3.4 (only gpio_intr_service is) and must not be called from
+  // here -- the direct single-register write below is also cheaper on this
+  // hot ISR path. Re-arming happens in AsynchronousInterruptHandler() once
+  // CANINTF reads back clear.
+  //
+  // Note: gpio_intr_disable() also does gpio_intr_status_clr() (write-1-to-
+  // clear the GPIO status latch) right after int_ena=0; we deliberately skip
+  // that clear here. It's safe: every re-arm path goes through
+  // gpio_intr_enable(), which itself calls gpio_intr_status_clr() BEFORE
+  // setting int_ena (verified in gpio.c), so any stale latch is cleared
+  // exactly at re-enable -- the only moment it matters. Clearing it here at
+  // mask time would be redundant, and pointless while INT is still held low,
+  // since the level-triggered condition would immediately re-latch it.
+  GPIO.pin[me->m_intpin].int_ena = 0;
+
   // we don't know the IRQ source and querying by SPI is too slow for an ISR,
   // so we let AsynchronousInterruptHandler() figure out what to do.
   CAN_queue_msg_t msg = {};
@@ -53,7 +78,20 @@ static IRAM_ATTR void MCP2515_isr(void *pvParameters)
   msg.body.bus = me;
 
   //send callback request to main CAN processor task
-  xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
+  if (xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken) != pdTRUE)
+    {
+    // Queue full: the service request was dropped, so nothing will call
+    // AsynchronousInterruptHandler() -> re-arm this bus's GPIO interrupt this time.
+    // This is NOT a lost frame -- the interrupt line is already masked above, so
+    // the raw frame(s) stay safely latched in the MCP2515's own hardware RX
+    // buffers (read over SPI, untouched by this failure) rather than being
+    // dropped. Nothing is silently discarded: count it, and rely on the RX-stall
+    // watchdog (canbus::BusTicker10 / CheckRxStalled(), which polls CANINTF
+    // directly over SPI, independent of GPIO interrupt state) as the backstop --
+    // it will see the still-pending RX flag and call Reset(), whose Start()
+    // unconditionally re-enables this GPIO interrupt as a safety net.
+    me->m_status.isr_queue_overrun++;
+    }
 
   // Yield to minimize latency if we have woken up a higher priority task:
   if (task_woken == pdTRUE)
@@ -98,14 +136,54 @@ if (m_spibus->m_initialized == false) {
   esp_err_t ret = spi_bus_add_device(host,  &m_devcfg, &m_spi);
   assert(ret==ESP_OK);
 
-  gpio_set_intr_type((gpio_num_t)m_intpin, GPIO_INTR_NEGEDGE);
-  gpio_isr_handler_add((gpio_num_t)m_intpin, MCP2515_isr, (void*)this);
+  // Probe controller presence: retry once before declaring the controller absent.
+  {
+  uint8_t pbuf[16];
+  uint8_t canstat = 0;
+
+  // Reset first so the config-mode probe starts from the same state as Start().
+  m_spibus->spi_cmd(m_spi, pbuf, 0, 1, CMD_RESET);
+  vTaskDelay(pdMS_TO_TICKS(50));
+
+  for (int attempt = 0; attempt < 2; attempt++)
+    {
+    uint8_t *preg = m_spibus->spi_cmd(m_spi, pbuf, 1, 2, CMD_READ, REG_CANSTAT);
+    canstat = preg[0];
+    if ((canstat & CANCTRL_MODE) == CANCTRL_MODE_CONFIG)
+      {
+      m_hw_present = true;
+      break;
+      }
+    if (attempt == 0)
+      {
+      vTaskDelay(pdMS_TO_TICKS(10));
+      }
+    }
+  if (!m_hw_present)
+    {
+    ESP_LOGE(TAG, "%s: MCP2515 not detected after retry (CANSTAT=0x%02x), disabling this bus", this->GetName(), canstat);
+    }
+  }
+
+  if (m_hw_present)
+    {
+    // INT is a level signal (held low while any unmasked CANINTF flag is set), not an
+    // edge -- GPIO_INTR_NEGEDGE would miss the interrupt entirely if it is ever dropped
+    // (e.g. ISR->task queue full), permanently wedging the RX path since no further edge
+    // would ever arrive. GPIO_INTR_LOW_LEVEL instead keeps re-asserting for as long as
+    // the source is unserviced; see MCP2515_isr() and AsynchronousInterruptHandler() for
+    // the mask/re-arm handshake that keeps this from storming.
+    gpio_set_intr_type((gpio_num_t)m_intpin, GPIO_INTR_LOW_LEVEL);
+    gpio_isr_handler_add((gpio_num_t)m_intpin, MCP2515_isr, (void*)this);
+    }
+  gpio_intr_disable((gpio_num_t)m_intpin);
 
   // Initialise in powered down mode
   m_canctrl_mode = CANCTRL_MODE_CONFIG; // MCP2515 mode after reset
   m_powermode = Off; // Stop an event being raised
   SetPowerMode(Off);
-  SetTransceiverMode(CAN_MODE_LISTEN);
+  if (m_hw_present)
+    SetTransceiverMode(CAN_MODE_LISTEN);
 
   // Register mcp2515 specific commands:
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can", "CAN framework");
@@ -122,8 +200,11 @@ if (m_spibus->m_initialized == false) {
 mcp2515::~mcp2515()
   {
   m_cmd_canx->GetParent()->UnregisterCommand(m_cmd_canx->GetName());
-  SetTransceiverMode(CAN_MODE_LISTEN);
-  gpio_isr_handler_remove((gpio_num_t)m_intpin);
+  if (m_hw_present)
+    {
+    SetTransceiverMode(CAN_MODE_LISTEN);
+    gpio_isr_handler_remove((gpio_num_t)m_intpin);
+    }
   spi_bus_remove_device(m_spi);
   }
 
@@ -169,6 +250,12 @@ esp_err_t mcp2515::WriteRegAndVerify( uint8_t reg, uint8_t value, uint8_t read_b
 
 esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
+  if (!m_hw_present)
+    {
+    ESP_LOGW(TAG, "%s: Start requested but MCP2515 is unavailable", this->GetName());
+    return ESP_FAIL;
+    }
+
   // Restarting an already started bus (e.g. for mode change)?
   if (m_mode != CAN_MODE_OFF)
     {
@@ -277,6 +364,16 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
     }
   pcp::SetPowerMode(On);
 
+  // Safety net: unconditionally re-arm the GPIO level interrupt on every (re)start.
+  // Normally it is re-armed by AsynchronousInterruptHandler() once drained; this
+  // covers the rare case where that path never ran (e.g. ISR->task queue was full
+  // and the service ping got dropped) by restoring a known-good state whenever the
+  // bus is (re)started, including the RX-stall watchdog's Reset()->Start() path.
+  // Must stay after the power publish above: Start() is the only re-arm
+  // path — the handler's guard only masks, never re-arms — so arming first
+  // here loses the race on every Start(), causing the indefinite re-wedge loop.
+  gpio_intr_enable((gpio_num_t)m_intpin);
+
   return ESP_OK;
   }
 
@@ -315,7 +412,26 @@ esp_err_t mcp2515::ChangeMode( uint8_t mode )
 
 esp_err_t mcp2515::Stop()
   {
+  if (!m_hw_present)
+    {
+    gpio_intr_disable((gpio_num_t)m_intpin);
+    pcp::SetPowerMode(Off);
+    m_mode = CAN_MODE_OFF;
+    return ESP_OK;
+    }
+
+  // If already off, keep IRQ masked and skip all SPI transactions.
+  if (m_mode == CAN_MODE_OFF)
+    {
+    gpio_intr_disable((gpio_num_t)m_intpin);
+    pcp::SetPowerMode(Off);
+    return ESP_OK;
+    }
+
   canbus::Stop();
+
+  // Keep IRQ masked while stopped/unpowered; Start() re-enables after init.
+  gpio_intr_disable((gpio_num_t)m_intpin);
 
   uint8_t buf[16];
 
@@ -466,6 +582,30 @@ esp_err_t mcp2515::ViewRegisters()
 
 
 /**
+ * CheckRxStalled: hardware confirmation of a wedged RX path
+ *
+ * Called by the framework's stall watchdog (canbus::BusTicker10) only after
+ * the RX packet counter has been frozen for the check interval. Reads
+ * CANINTF via SPI (slow path, not the hot ISR/drain path) and reports a wedge
+ * only if a RX buffer full flag is set and thus not currently being serviced
+ * by AsynchronousInterruptHandler(). Pure RX silence (RX0IF/RX1IF clear) is
+ * NOT a stall -- the bus may simply be asleep (e.g. KCAN with car off).
+ */
+bool mcp2515::CheckRxStalled()
+  {
+  if (!m_hw_present)
+    {
+    return false;
+    }
+
+  uint8_t buf[16];
+  uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 1, 2, CMD_READ, REG_CANINTF);
+  uint8_t intstat = p[0];
+  return (intstat & (CANINTF_RX0IF | CANINTF_RX1IF)) != 0;
+  }
+
+
+/**
  * WriteFrame: deliver a frame to the hardware for transmission (driver internal)
  */
 esp_err_t mcp2515::WriteFrame(const CAN_frame_t* p_frame)
@@ -561,15 +701,42 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesR
   *framesReceived = 0;
   CAN_log_type_t log_status = CAN_LogNone;
 
+  if (!m_hw_present)
+    {
+    gpio_intr_disable((gpio_num_t)m_intpin);
+    return false;
+    }
+
+  // Spurious queued service requests can still exist while bus power is off.
+  // Never re-arm or service IRQs unless the bus is actually started and powered.
+  if (m_mode == CAN_MODE_OFF || GetPowerMode() != On)
+    {
+    gpio_intr_disable((gpio_num_t)m_intpin);
+    return false;
+    }
+
   // read interrupts (CANINTF 0x2c), errors (EFLG 0x2d) and transmission status (TXB0CTRL 0x30):
   uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 5, 2, CMD_READ, REG_CANINTF);
   uint8_t intstat = p[0];
   uint8_t errflag = p[1];
   uint8_t txb0ctrl = p[4];
 
+  // Invariant: whoever returns false (drain loop ends) with INT deasserted must
+  // re-arm the GPIO interrupt here -- there are two such exit points below (this
+  // early "nothing pending" return, and the final pin-level check at the bottom
+  // of the function), and both must re-arm. Re-enabling any earlier, while a flag
+  // we have not yet serviced could still be asserted, would let the ISR storm
+  // again immediately. Each mcp2515 instance owns a dedicated INT GPIO (see
+  // ovms_peripherals.cpp: can2/can3 use distinct VSPI_PIN_MCP2515_*_INT pins),
+  // so re-arming this pin can never re-enable while a sibling instance on a
+  // shared line is still asserting -- there is no shared line in this topology.
   if (intstat == 0)
     {
-    // all interrupts handled
+    // All interrupts handled: CANINTF read back clear, so INT is already high.
+    if (m_mode != CAN_MODE_OFF && GetPowerMode() == On)
+      {
+      gpio_intr_enable((gpio_num_t)m_intpin);
+      }
     return false;
     }
 
@@ -768,8 +935,19 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesR
     LogStatus(log_status);
     }
 
-  // Read the interrupt pin status and if it's still active (low), require another interrupt handling iteration
-  return !gpio_get_level((gpio_num_t)m_intpin);
+  // Read the interrupt pin status and if it's still active (low), require another
+  // interrupt handling iteration. If it has gone high, this handled interrupt was
+  // the last pending source -- re-arm here too (see invariant comment above; this
+  // is the second, and only other, false-returning exit point of this function).
+  if (gpio_get_level((gpio_num_t)m_intpin))
+    {
+    if (m_mode != CAN_MODE_OFF && GetPowerMode() == On)
+      {
+      gpio_intr_enable((gpio_num_t)m_intpin);
+      }
+    return false;
+    }
+  return true;
   }
 
 
@@ -811,6 +989,12 @@ void mcp2515::SetPowerMode(PowerMode powermode)
     case On:
         {
         ESP_LOGI(TAG, "%s: SetPowerMode on", this->GetName());
+        if (!m_hw_present)
+          {
+          pcp::SetPowerMode(Off);
+          ESP_LOGW(TAG, "%s: keeping power mode off, MCP2515 unavailable", this->GetName());
+          break;
+          }
         // Start() will call base SetPowerMode(On) if it actually turns on.
         if (m_mode != CAN_MODE_OFF) Start(m_mode, m_speed);
         }
@@ -822,7 +1006,14 @@ void mcp2515::SetPowerMode(PowerMode powermode)
       // Make sure the event still gets called immediately
       pcp::SetPowerMode(powermode);
       ESP_LOGI(TAG, "%s: SetPowerMode off", this->GetName());
-      Stop();
+      if (m_mode != CAN_MODE_OFF)
+        {
+        Stop();
+        }
+      else
+        {
+        gpio_intr_disable((gpio_num_t)m_intpin);
+        }
       }
       break;
     default:
@@ -833,6 +1024,11 @@ void mcp2515::SetPowerMode(PowerMode powermode)
 
 void mcp2515::SetTransceiverMode(CAN_mode_t mode)
   {
+  if (!m_hw_present)
+    {
+    return;
+    }
+
   if ( mode == CAN_MODE_ACTIVE ) 
     {
       // BFPCTRL RXnBF PIN CONTROL AND STATUS - enable TX driver of SN65 - rd/wr mode

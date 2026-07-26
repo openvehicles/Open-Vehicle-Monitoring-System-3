@@ -485,7 +485,7 @@ void OvmsVehicleSmartEQ::CalculateEfficiency() {
  */
 void OvmsVehicleSmartEQ::CalculateRangeSpeed()
   {
-  float bat_power  = StdMetrics.ms_v_bat_power->AsFloat();      // kW (pos=discharge, neg=charge)
+  float bat_power  = StdMetrics.ms_v_bat_power->AsFloat();      // kW - charge(-)/discharge(+) HV battery power
   float cap_full   = mt_bms_cap->GetElemValue(0);               // Ah - full usable capacity
   float v_link     = mt_bms_voltages->GetElemValue(5);          // V  - HV link voltage
   float range_full = StdMetrics.ms_v_bat_range_full->AsFloat(); // km at 100% SOC

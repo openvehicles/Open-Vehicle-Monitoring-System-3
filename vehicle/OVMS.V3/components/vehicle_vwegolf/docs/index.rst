@@ -66,7 +66,7 @@ GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or compatibl
 GPS Antenna                 1020200 Universal GPS Antenna (or compatible)
 SOC Display                 Yes
 Range Display               Yes
-Cabin Pre-heat/cool Control No
+Cabin Pre-heat/cool Control **Yes**
 GPS Location                Yes (decoded from KCAN frame 0x486)
 Speed Display               Yes
 Temperature Display         Yes (see list of metrics below)

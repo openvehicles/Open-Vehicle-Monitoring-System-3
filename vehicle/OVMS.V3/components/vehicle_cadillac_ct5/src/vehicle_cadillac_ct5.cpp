@@ -29,6 +29,7 @@
 */
 
 #include "ovms_log.h"
+#include "ovms_peripherals.h"
 static const char *TAG = "v-cadillacct5";
 
 #include <stdio.h>
@@ -36,34 +37,20 @@ static const char *TAG = "v-cadillacct5";
 
 OvmsVehicleCadillaccCT5* MyCadillaccCT5 = NULL;
 
-#ifdef notdef
-static const OvmsPoller::poll_pid_t obdii_polls[] =
-  {
-    // Engine coolant temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30 }, 0, ISOTP_STD },
-    // Speed
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0d, {  0, 10 }, 0, ISOTP_STD },
-    // Engine air intake temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30 }, 0, ISOTP_STD },
-    // Ambient temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30 }, 0, ISOTP_STD },
-    // Engine oil temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30 }, 0, ISOTP_STD },
-    POLL_LIST_END
-  };
-#endif
-
 OvmsVehicleCadillaccCT5::OvmsVehicleCadillaccCT5()
   {
   ESP_LOGI(TAG, "Cadillac CT5 vehicle module");
   memset(m_vin, 0, sizeof(m_vin));
-#ifdef notdef
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  PollSetPidList(m_can1, obdii_polls);
-  PollSetState(0);
-#else
   RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
-#endif
+
+  /* Set acceptance filter to allow 0x063 (v.on) and 0x5E4 (v.b.soc) */
+  esp32can_filter_config_t can1_hwflt = {
+    .code = {.u32 = (0x063U << (5 + 16)) | 0x5E4U << 5},
+    .mask = {.u32 = (0x7FFU << (5 + 16)) | 0x7FFU << 5},
+    .single_filter = true,
+  };
+  MyPeripherals->m_esp32can->SetAcceptanceFilter(can1_hwflt);
+
   MyCadillaccCT5 = this;
   }
 
@@ -96,9 +83,6 @@ void OvmsVehicleCadillaccCT5::IncomingFrameCan1(CAN_frame_t* p_frame)
           ESP_LOGI(TAG, "running: \"%s\"", isRunning ? "yes" : "no");
           StdMetrics.ms_v_env_on->SetValue(isRunning);
           StdMetrics.ms_v_env_charging12v->SetValue(isRunning);
-#ifdef notdef
-          PollSetState(isRunning ? 1 : 0);
-#endif
           }
         }
       break;
@@ -113,10 +97,10 @@ void OvmsVehicleCadillaccCT5::IncomingFrameCan1(CAN_frame_t* p_frame)
         memcpy(m_vin + 1 + 8, d, i);
         /* Publish once we have the whole VIN */
         if (m_vin[0] != '\0')
-	  {
+          {
           StandardMetrics.ms_v_vin->SetValue(m_vin);
-	  ESP_LOGI(TAG, "VIN: %s (pid %04x)", m_vin, p_frame->MsgID);
-	  }
+          ESP_LOGI(TAG, "VIN: %s (pid %04x)", m_vin, p_frame->MsgID);
+          }
         }
       break;
 
@@ -137,9 +121,9 @@ void OvmsVehicleCadillaccCT5::IncomingFrameCan1(CAN_frame_t* p_frame)
         memcpy(m_vin + 1, d, i);
         /* Publish once we have the whole VIN */
         if (m_vin[1 + 8] != '\0')
-	  {
+          {
           StandardMetrics.ms_v_vin->SetValue(m_vin);
-	  ESP_LOGI(TAG, "VIN: %s (pid %04x)", m_vin, p_frame->MsgID);
+          ESP_LOGI(TAG, "VIN: %s (pid %04x)", m_vin, p_frame->MsgID);
 	  }
         }
       break;
@@ -148,51 +132,6 @@ void OvmsVehicleCadillaccCT5::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     }
   }
-
-#ifdef notdef
-void
-OvmsVehicleCadillaccCT5::IncomingPollReply(const OvmsPoller::poll_job_t &job, uint8_t* data, uint8_t length)
-  {
-  // int value1 = (int)data[0];
-
-  switch (job.pid)
-    {
-#ifdef notdef
-    case 0x05:  // Engine coolant temperature
-      StandardMetrics.ms_v_bat_temp->SetValue(value1 - 0x28);
-      break;
-#endif
-
-#ifdef notdef
-    case 0x0f:  // Engine intake air temperature
-      StandardMetrics.ms_v_inv_temp->SetValue(value1 - 0x28);
-      break;
-#endif
-
-#ifdef notdef
-    case 0x5c:  // Engine oil temperature
-      StandardMetrics.ms_v_mot_temp->SetValue(value1 - 0x28);
-      break;
-#endif
-
-#ifdef notdef
-    case 0x46:  // Ambient temperature
-      StandardMetrics.ms_v_env_temp->SetValue(value1 - 0x28);
-      break;
-#endif
-
-#ifdef notdef
-    case 0x0d:  // Speed
-      StandardMetrics.ms_v_pos_speed->SetValue(value1);
-      break;
-#endif
-
-    default:
-      ESP_LOGI(TAG, "IncomingPollReply: pid %04x", job.pid);
-      break;
-    }
-  }
-#endif
 
 class OvmsVehicleCadillaccCT5Init
   {

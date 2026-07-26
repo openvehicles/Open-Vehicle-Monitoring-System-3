@@ -364,6 +364,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("DBC:       %s\n",(sbus->GetDBC())?sbus->GetDBC()->GetName().c_str():"none");
 
   writer->printf("\nInterrupts:%20" PRId32 "\n",sbus->m_status.interrupts);
+  writer->printf("Isr Ovrflw:%20d\n",sbus->m_status.isr_queue_overrun);
   writer->printf("Rx pkt:    %20" PRId32 "\n",sbus->m_status.packets_rx);
   writer->printf("Rx ovrflw: %20d\n",sbus->m_status.rxbuf_overflow);
   writer->printf("Tx pkt:    %20" PRId32 "\n",sbus->m_status.packets_tx);
@@ -751,12 +752,12 @@ void canbus::LogStatus(CAN_log_type_t type)
       return;
     ESP_LOGE(TAG,
       "%s: intr=%" PRId32 " rxpkt=%" PRId32 " txpkt=%" PRId32 " errflags=%#" PRIx32 " rxerr=%d txerr=%d rxinval=%d"
-      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d txqueue=%" PRId32,
+      " rxovr=%d txovr=%d txdelay=%" PRId32 " txfail=%" PRId32 " wdgreset=%d errreset=%d isrovr=%d txqueue=%" PRId32,
       m_name, m_status.interrupts, m_status.packets_rx, m_status.packets_tx,
       m_status.error_flags, m_status.errors_rx, m_status.errors_tx,
       m_status.invalid_rx, m_status.rxbuf_overflow, m_status.txbuf_overflow,
       m_status.txbuf_delay, m_status.tx_fails, m_status.watchdog_resets,
-      m_status.error_resets, uxQueueMessagesWaiting(m_txqueue));
+      m_status.error_resets, m_status.isr_queue_overrun, uxQueueMessagesWaiting(m_txqueue));
     }
   if (MyCan.HasLogger())
     MyCan.LogStatus(this, type, &m_status);
@@ -773,7 +774,7 @@ bool canbus::StatusChanged()
   uint32_t chksum = m_status.errors_rx + m_status.errors_tx
     + m_status.invalid_rx + m_status.rxbuf_overflow + m_status.txbuf_overflow
     + m_status.error_flags + m_status.txbuf_delay + m_status.tx_fails
-    + m_status.watchdog_resets + m_status.error_resets;
+    + m_status.watchdog_resets + m_status.error_resets + m_status.isr_queue_overrun;
   if (chksum != m_status_chksum)
     {
     m_status_chksum = chksum;
@@ -978,11 +979,24 @@ void can::CAN_rxtask(void *pvParameters)
         case CAN_asyncinterrupthandler:
           {
           bool loop;
-          // Loop until all interrupts are handled
+          uint32_t loops = 0;
+          static const uint32_t MAX_ASYNC_INTERRUPT_LOOPS = 512;
+          // Drain pending async interrupts, but never spin forever on a stuck line/device.
           do {
             uint32_t receivedFrames;
             loop = msg.body.bus->AsynchronousInterruptHandler(&msg.body.frame, &receivedFrames);
-            } while (loop);
+            if ((++loops & 0x3f) == 0)
+              {
+              taskYIELD();
+              }
+            } while (loop && loops < MAX_ASYNC_INTERRUPT_LOOPS);
+
+          if (loop)
+            {
+            ESP_LOGE(TAG, "%s async interrupt handling did not quiesce after %u loops, forcing bus reset",
+              msg.body.bus->GetName(), (unsigned)MAX_ASYNC_INTERRUPT_LOOPS);
+            msg.body.bus->Reset();
+            }
           break;
           }
         case CAN_txcallback:
@@ -1339,6 +1353,8 @@ void canbus::ClearStatus()
   memset(&m_status, 0, sizeof(m_status));
   m_status_chksum = 0;
   m_watchdog_timer = monotonictime;
+  m_rxstall_checkpoint = 0;
+  m_rxstall_since = monotonictime;
   }
 
 void canbus::AttachDBC(dbcfile *dbcfile)
@@ -1393,6 +1409,29 @@ void canbus::BusTicker10(std::string event, void* data)
     {
     // Vehicle is OFF, so just tickle the watchdog timer
     m_watchdog_timer = monotonictime;
+    }
+
+  // RX path wedge detection: independent from the inactivity watchdog above,
+  // which only runs while the vehicle is on and cannot tell a legitimately
+  // sleeping bus (e.g. KCAN with car off / CCS DC charging: zero traffic is
+  // normal) from a wedged one. Runs whenever the bus is started, regardless
+  // of vehicle-on state. A stall is declared ONLY when our RX counter has
+  // been frozen for the check interval AND the driver hardware-confirms
+  // (CheckRxStalled()) unserviced RX data is pending -- pure RX silence never
+  // triggers a reset on its own.
+  if (m_mode == CAN_MODE_ACTIVE || m_mode == CAN_MODE_LISTEN)
+    {
+    if (m_status.packets_rx != m_rxstall_checkpoint)
+      {
+      m_rxstall_checkpoint = m_status.packets_rx;
+      m_rxstall_since = monotonictime;
+      }
+    else if ((monotonictime - m_rxstall_since) >= CAN_RXSTALL_THRESHOLD && CheckRxStalled())
+      {
+      ESP_LOGE(TAG, "%s RX path wedged (hardware RX pending, not serviced) - resetting bus", m_name);
+      Reset();
+      m_status.watchdog_resets++;
+      }
     }
   }
 
