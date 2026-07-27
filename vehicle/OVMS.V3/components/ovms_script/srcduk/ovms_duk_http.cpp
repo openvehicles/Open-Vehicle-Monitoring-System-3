@@ -102,7 +102,7 @@ class DuktapeHTTPRequest : public DuktapeObject, MongooseClient
     static duk_ret_t Create(duk_context *ctx);
 
   protected:
-    bool StartRequest(duk_context *ctx=NULL);
+    bool StartRequest();
 
   public:
     static void MongooseCallbackEntry(struct mg_connection *nc, int ev, void *ev_data);
@@ -215,27 +215,42 @@ DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
     }
 
   // start initial request:
-  if (StartRequest(ctx))
+  if (StartRequest())
     {
     // running, prevent deletion & GC:
     Ref();
     Register(ctx);
     ESP_LOGD(TAG, "DuktapeHTTPRequest: started '%s'", m_url.c_str());
     }
+  else
+    {
+    // m_error has been set by StartRequest()
+    CallMethod(ctx, "fail");
+    }
   }
 
-bool DuktapeHTTPRequest::StartRequest(duk_context *ctx /*=NULL*/)
+bool DuktapeHTTPRequest::StartRequest()
   {
   // create connection:
   m_mgconn = NULL;
-  auto mglock = MongooseLock();
+  
+  // try to get Mongoose lock:
+  // ESP_LOGD(TAG, "DuktapeHTTPRequest::StartRequest: MongooseLock request…");
+  auto mglock = MongooseLock(pdMS_TO_TICKS(3000));
+  if (!mglock)
+    {
+    ESP_LOGE(TAG, "DuktapeHTTPRequest: network manager busy");
+    m_error = "Network manager busy";
+    return false;
+    }
+  // ESP_LOGD(TAG, "DuktapeHTTPRequest::StartRequest: MongooseLock aquired");
+
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   if (!mgr)
     {
     mglock.Unlock();
     ESP_LOGE(TAG, "DuktapeHTTPRequest: network manager not available");
     m_error = "Network manager not available";
-    CallMethod(ctx, "fail");
     return false;
     }
 
@@ -252,20 +267,19 @@ bool DuktapeHTTPRequest::StartRequest(duk_context *ctx /*=NULL*/)
       mglock.Unlock();
       m_error = "SSL support disabled";
       ESP_LOGD(TAG, "DuktapeHTTPRequest: connect to '%s' failed: %s", m_url.c_str(), m_error.c_str());
-      CallMethod(ctx, "fail");
       return false;
     #endif
     }
 
   m_mgconn = mg_connect_http_opt(mgr, MongooseCallbackEntry, opts,
     m_url.c_str(), m_headers.c_str(), m_ispost ? m_post.c_str() : NULL);
+  // ESP_LOGD(TAG, "DuktapeHTTPRequest::StartRequest: con=%p", m_mgconn);
 
   if (!m_mgconn)
     {
     mglock.Unlock();
     ESP_LOGD(TAG, "DuktapeHTTPRequest: connect to '%s' failed: %s", m_url.c_str(), err);
     m_error = (err && *err) ? err : "unknown";
-    CallMethod(ctx, "fail");
     return false;
     }
 
@@ -302,8 +316,43 @@ void DuktapeHTTPRequest::MongooseCallbackEntry(struct mg_connection *nc, int ev,
 
 void DuktapeHTTPRequest::MongooseCallback(struct mg_connection *nc, int ev, void *ev_data)
   {
+  // DEADLOCK PREVENTION:
+  //  
+  //  Both Mongoose and Duktape use the DuktapeHTTPRequest object, with different lock order:
+  //    - the Mongoose callback holds the Mongoose lock, and needs to acquire the object lock
+  //    - a DuktapeObject method callback holds the object lock, but may need to also acquire
+  //      the Mongoose lock in case a followup HTTP request is initiated by the callback
+  //    - the Mongoose callback may race against the Duktape callback if the Mongoose processing
+  //      for the object's connection hasn't finished yet (Mongoose events still pending)
+  //  
+  //  The lock order cannot be harmonized:
+  //    - the running Mongoose callback must not unlock Mongoose
+  //    - the running DuktapeObject callback must not unlock the DuktapeObject
+  //  
+  //  To avoid the deadlock situation, the Mongoose callback must take care to only lock the
+  //  DuktapeObject if necessary, and to only start a callback request on the object when the
+  //  Mongoose processing for the object's connection has finished (terminal state), and/or the
+  //  callback for the connection has been detached, so no lock contention can occur.
+
+  // filter events to be processed before DuktapeObject lock acquisition:
+  switch (ev)
+    {
+    case MG_EV_CONNECT:
+    case MG_EV_HTTP_REPLY:
+    case MG_EV_TIMER:
+    case MG_EV_CLOSE:
+      break;
+    default:
+      return;
+    }
+
+  // acquire DuktapeObject lock:
+  // ESP_LOGD(TAG, "DuktapeHTTPRequest::MongooseCallback con=%p ev=%d: object lock request…", nc, ev);
   OvmsRecMutexLock lock(&m_mutex);
+  // ESP_LOGD(TAG, "DuktapeHTTPRequest::MongooseCallback con=%p ev=%d: object lock acquired", nc, ev);
   if (nc != m_mgconn) return; // ignore events of previous connections
+
+  // process event:
   switch (ev)
     {
     case MG_EV_CONNECT:
@@ -319,7 +368,7 @@ void DuktapeHTTPRequest::MongooseCallback(struct mg_connection *nc, int ev, void
         else
         #endif
           m_error = (errdesc && *errdesc) ? errdesc : "unknown";
-        RequestCallback("fail");
+        // "fail" callback issued by terminal MG_EV_CLOSE event
         nc->flags |= MG_F_CLOSE_IMMEDIATELY;
         }
       }
@@ -348,28 +397,38 @@ void DuktapeHTTPRequest::MongooseCallback(struct mg_connection *nc, int ev, void
         if (location.empty())
           {
           m_error = "redirect without location";
-          RequestCallback("fail");
+          // "fail" callback issued by terminal MG_EV_CLOSE event
           }
         else if (++m_redirectcnt > 5)
           {
           m_error = "too many redirects";
-          RequestCallback("fail");
+          // "fail" callback issued by terminal MG_EV_CLOSE event
           }
         else
           {
           ESP_LOGD(TAG, "DuktapeHTTPRequest: redirect code=%d to '%s'", m_response_status, location.c_str());
+          // disable (detach) further callback processing for the old connection:
+          nc->user_data = NULL;
+          // start new request:
           m_url = location;
           m_response_status = 0;
           m_response_statusmsg.clear();
           m_response_body.clear();
           m_response_headers.clear();
-          if (!StartRequest(NULL))
+          if (!StartRequest())
+            {
+            ESP_LOGD(TAG, "DuktapeHTTPRequest: redirect code=%d to '%s' failed: %s",
+              m_response_status, location.c_str(), m_error.c_str());
+            // terminal state (no MG_EV_CLOSE following), so…
             RequestCallback("fail");
+            Unref();
+            }
           }
         }
       else
         {
-        RequestCallback("done");
+        m_error = "";
+        // "done" callback issued by terminal MG_EV_CLOSE event
         }
       // in any case, this connection is done:
       nc->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -380,7 +439,7 @@ void DuktapeHTTPRequest::MongooseCallback(struct mg_connection *nc, int ev, void
       {
       ESP_LOGD(TAG, "DuktapeHTTPRequest: MG_EV_TIMER");
       m_error = "timeout";
-      RequestCallback("fail");
+      // "fail" callback issued by terminal MG_EV_CLOSE event
       nc->flags |= MG_F_CLOSE_IMMEDIATELY;
       }
       break;
@@ -391,15 +450,15 @@ void DuktapeHTTPRequest::MongooseCallback(struct mg_connection *nc, int ev, void
         {
         ESP_LOGD(TAG, "DuktapeHTTPRequest: MG_EV_CLOSE: abort");
         m_error = "abort";
-        RequestCallback("fail");
         }
       else
         {
         ESP_LOGD(TAG, "DuktapeHTTPRequest: MG_EV_CLOSE status=%d", m_response_status);
         }
-      // Mongoose part done:
+      // terminal state, Mongoose part done:
       nc->user_data = NULL;
       m_mgconn = NULL;
+      RequestCallback(m_error.empty() ? "done" : "fail");
       Unref();
       }
       break;
@@ -416,7 +475,9 @@ duk_ret_t DuktapeHTTPRequest::CallMethod(duk_context *ctx, const char* method, D
     RequestCallback(method, params);
     return 0;
     }
+  // ESP_LOGD(TAG, "DuktapeHTTPRequest::CallMethod '%s': object lock request…", method);
   OvmsRecMutexLock lock(&m_mutex);
+  // ESP_LOGD(TAG, "DuktapeHTTPRequest::CallMethod '%s': object lock acquired", method);
   if (!IsCoupled()) return 0;
 
   duk_require_stack(ctx, 7);
