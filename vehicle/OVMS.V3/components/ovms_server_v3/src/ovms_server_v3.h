@@ -129,6 +129,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     OvmsNotifyType* m_notify_data_waittype;
     OvmsNotifyEntry* m_notify_data_waitentry;
     OvmsServerV3ClientMap m_clients;
+    QueueHandle_t m_eventqueue;
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
@@ -139,6 +140,8 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     void TransmitModifiedMetrics();
     void TransmitPriorityMetrics();
     void TransmitImmediateMetrics();
+    void TransmitEvents();
+    void ClearEventQueue();
     uint16_t TransmitNotificationInfo(OvmsNotifyEntry* entry);
     uint16_t TransmitNotificationError(OvmsNotifyEntry* entry);
     uint16_t TransmitNotificationAlert(OvmsNotifyEntry* entry);
