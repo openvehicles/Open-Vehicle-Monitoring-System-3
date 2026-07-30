@@ -82,6 +82,11 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           {
           MyOvmsServerV3->TransmitImmediateMetrics();
           }
+        // Transmit queued events:
+        if (uxQueueMessagesWaiting(MyOvmsServerV3->m_eventqueue))
+          {
+          MyOvmsServerV3->TransmitEvents();
+          }
         }
       }
       break;
@@ -256,6 +261,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_have_immediately = false;
   m_max_per_call_sendall = 100;      // max messages to send per Ticker1 call in sendall mode, default 100
   m_max_per_call_modified = 150;     // max messages to send per Ticker1 call in modified mode, default 150
+  m_eventqueue = xQueueCreate(CONFIG_OVMS_HW_EVENT_QUEUE_SIZE, sizeof(const char*));
 
   ESP_LOGI(TAG, "OVMS Server v3 running");
 
@@ -800,31 +806,64 @@ void OvmsServerV3::IncomingPubRec(uint16_t id)
 
 void OvmsServerV3::IncomingEvent(std::string event, void* data)
   {
-  auto mglock = MongooseLock();
-
-  // Publish the event, if we are connected...
   if (!m_mgconn) return;
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
 
-  std::string topic(m_topic_prefix);
-
-  topic.append("event");
-
-  // Legacy: publish event name on fixed topic
-  if (m_legacy_event_topic)
+  // Queue the event for the next TransmitEvents() run (MG_EV_POLL):
+  const char* msg = strdup(event.c_str());
+  assert(msg != NULL); // abort on out of memory
+  if (xQueueSend(m_eventqueue, &msg, 0) != pdPASS)
     {
-    mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
-      MG_MQTT_QOS(0), event.c_str(), event.length());
+    ESP_LOGW(TAG, "IncomingEvent: event '%s' lost, queue full", msg);
+    free((void*)msg);
     }
-
-  // Publish MQTT style event topic, payload reserved for event data serialization:
-  topic.append("/");
-  topic.append(mqtt_topic(event));
-  mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
-    MG_MQTT_QOS(0), "", 0);
-
-  ESP_LOGV(TAG,"Tx event %s",event.c_str());
   }
+
+void OvmsServerV3::TransmitEvents()
+  {
+  const char* msg;
+  std::string topic, event;
+
+  // Mongoose lock not needed here for now, as this is only called from MG_EV_POLL
+  //auto mglock = MongooseLock();
+
+  bool connected = (m_mgconn && StandardMetrics.ms_s_v3_connected->AsBool());
+
+  while (xQueueReceive(m_eventqueue, &msg, 0) == pdTRUE)
+    {
+    event.assign(msg);
+    free((void*)msg);
+    if (!connected) continue;
+
+    topic = m_topic_prefix;
+    topic.append("event");
+
+    // Legacy: publish event name on fixed topic
+    if (m_legacy_event_topic)
+      {
+      mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
+        MG_MQTT_QOS(0), event.c_str(), event.length());
+      }
+
+    // Publish MQTT style event topic, payload reserved for event data serialization:
+    topic.append("/");
+    topic.append(mqtt_topic(event));
+    mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
+      MG_MQTT_QOS(0), "", 0);
+
+    ESP_LOGV(TAG,"Tx event %s",event.c_str());
+    }
+  }
+
+void OvmsServerV3::ClearEventQueue()
+  {
+  const char* msg;
+  while (xQueueReceive(m_eventqueue, &msg, 0) == pdTRUE)
+    {
+    free((void*)msg);
+    }
+  }
+
 
 void OvmsServerV3::RunCommand(std::string client, std::string id, std::string command)
   {
@@ -994,6 +1033,8 @@ void OvmsServerV3::Connect()
     return;
     }
 
+  ClearEventQueue(); // clear outdated events potentially received during disconnect
+
   struct mg_connect_opts opts;
   const char* err;
   memset(&opts, 0, sizeof(opts));
@@ -1032,6 +1073,7 @@ void OvmsServerV3::Disconnect()
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
     m_mgconn = NULL;
+    ClearEventQueue();
     SetStatus("Disconnected from OVMS Server V3", false, Disconnected);
     }
   m_connretry = 0;
