@@ -145,10 +145,10 @@ bool OvmsRecMutex::Lock(TickType_t timeout)
 
 void OvmsRecMutex::Unlock()
   {
-  if (m_count > 0)
+  if (xSemaphoreGetMutexHolder(m_mutex) == xTaskGetCurrentTaskHandle())
     {
-    xSemaphoreGiveRecursive(m_mutex);
     m_count--;
+    xSemaphoreGiveRecursive(m_mutex);
     }
   }
 
