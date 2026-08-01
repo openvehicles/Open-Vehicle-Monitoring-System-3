@@ -725,6 +725,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(const uint8_t *reply_data, uint16_
 
   float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
   float soh = ah / newCarAh * 100;
+  ESP_LOGD(TAG, "PollReply_Battery SOH: %.2f", soh);
   m_soh_new_car->SetValue(soh);
   if (cfg_soh_newcar)
     {
@@ -845,7 +846,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_SOH(const uint8_t *reply_data, uint16_
 
     uint16_t uint_soh = (reply_data[2] << 8) | reply_data[3];
     float soh = uint_soh / 100.0f;
-    ESP_LOGD(TAG, "BMS SOH: %.2f", soh);
+    ESP_LOGD(TAG, "PollReply_BMS_SOH SOH: %.2f", soh);
     m_soh_instrument->SetValue(soh);
     if (!cfg_soh_newcar)
       {
@@ -1549,15 +1550,20 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         }
 
+
       // ZE0 SOH
-      if (m_battery_type->AsInt(0) == BATTERY_TYPE_1_24kWh) {
-        uint8_t soh = (d[4] >> 1 & 0xF7);
-        m_soh_instrument->SetValue(soh);
-        if (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
-        {
-          StandardMetrics.ms_v_bat_soh->SetValue(soh);
+      if (!cfg_ze1) {
+        if (m_battery_type->AsInt(0) == BATTERY_TYPE_1_24kWh) {
+          uint8_t soh = (d[4] >> 1 & 0xF7);
+          m_soh_instrument->SetValue(soh);
+          ESP_LOGD(TAG, "IncomingFrameCan1 SOH: %d", soh);
+          if (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+          {
+            StandardMetrics.ms_v_bat_soh->SetValue(soh);
+          }
         }
       }
+
 
 
       uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
@@ -1841,6 +1847,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
           if (soh != 0)
             {
             m_soh_instrument->SetValue(soh);
+            ESP_LOGD(TAG, "IncomingFrameCan2 SOH: %d", soh);
             // we use this unless the user has opted otherwise
             if (!cfg_soh_newcar)
               {
