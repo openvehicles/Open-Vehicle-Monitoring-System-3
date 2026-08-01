@@ -31,6 +31,9 @@
 #ifdef CONFIG_OVMS_COMP_OTA
 #include "ovms_ota.h"
 #include "ovms_utils.h"
+#include "esp_log.h"
+
+static const char *TAG = "webserver-ota";
 
 /**
  * HandleCfgFirmware: OTA firmware update & boot setup (URL /cfg/firmware)
@@ -305,8 +308,32 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       "<li>Insert the SD card, wait until the module reboots.</li>"
       "<li>Note: after processing the file will be renamed to <code>ovms3.done</code>.</li>"
     "</ol>");
-  c.input_info("Upload",
-    "Not yet implemented. Please copy your update file to an SD card and enter the path below.");
+  // Upload & flash directly (streamed to the OTA partition, no SD card needed).
+  // Mirrors the "File path" control below: an input-group for the file picker
+  // plus a standard offset button row (as input_button() emits) for the action.
+  c.print(
+    "<div class=\"form-group\">\n"
+      "<label class=\"control-label col-sm-3\" for=\"input-flash_upload_name\">Upload &amp; flash:</label>\n"
+      "<div class=\"col-sm-9\">\n"
+        "<div class=\"input-group\">\n"
+          "<input type=\"text\" class=\"form-control\" id=\"input-flash_upload_name\" placeholder=\"No file selected\" readonly>\n"
+          "<div class=\"input-group-btn\">\n"
+            "<button type=\"button\" class=\"btn btn-default\" id=\"fw-choose-btn\">Browse&hellip;</button>\n"
+          "</div>\n"
+        "</div>\n"
+        "<input type=\"file\" id=\"input-flash_upload\" accept=\".bin\" style=\"display: none\">\n"
+        "<span class=\"help-block\">\n"
+          "<p>Select a firmware <code>ovms3.bin</code> from this device and flash it directly to the "
+          "module &ndash; no SD card needed. Do not interrupt the upload.</p>\n"
+        "</span>\n"
+      "</div>\n"
+    "</div>\n"
+    "<div class=\"form-group\">\n"
+      "<div class=\"col-sm-offset-3 col-sm-9\">\n"
+        "<button type=\"button\" class=\"btn btn-default\" id=\"fw-upload-btn\">Upload &amp; flash now</button>\n"
+      "</div>\n"
+    "</div>\n"
+    "<hr>");
 
   c.printf(
     "<div class=\"form-group\">\n"
@@ -386,6 +413,10 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
             "<h4 class=\"modal-title\">Flashing…</h4>"
           "</div>"
           "<div class=\"modal-body\">"
+            "<div id=\"upload-progress\" class=\"progress\" style=\"display:none\">"
+              "<div id=\"upload-progress-bar\" class=\"progress-bar\" role=\"progressbar\" "
+                "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width:0%\">0%</div>"
+            "</div>"
             "<pre id=\"output\"></pre>"
           "</div>"
           "<div class=\"modal-footer\">"
@@ -430,6 +461,39 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
           "$(\"#ota-server-version\").removeClass(\"text-muted\").addClass(\"text-warning\").text(\"update check failed\");"
           "$(\"#ota-changelog\").text(\"Update check failed (no network, or the update server is unreachable).\");"
         "});"
+      // Upload progress bar control: a pct sets the bar width; mode 'indeterminate'
+      // shows an animated striped full bar (used while the module finalises the
+      // flash, when no byte count is meaningful); call fwbar(null) to hide it.
+      "function fwbar(o){"
+        "var box = $(\"#upload-progress\"), bar = $(\"#upload-progress-bar\");"
+        "if (!o) { box.hide(); return; }"
+        "box.show();"
+        "bar.removeClass(\"progress-bar-striped active progress-bar-success progress-bar-danger\");"
+        "if (o.klass) bar.addClass(o.klass);"
+        "if (o.mode == \"indeterminate\") {"
+          "bar.addClass(\"progress-bar-striped active\").css(\"width\",\"100%\").attr(\"aria-valuenow\",100);"
+        "} else {"
+          "var p = Math.max(0, Math.min(100, o.pct || 0));"
+          "bar.css(\"width\", p+\"%\").attr(\"aria-valuenow\", p);"
+        "}"
+        "bar.text(o.text || \"\");"
+      "}"
+      // --- shared flash-dialog helpers (used by every flash method) --------
+      // Reset the dialog's reboot button to its idle (secondary) style.
+      "function flashReset(){"
+        "$(\".action-reboot\").removeClass(\"btn-primary\").addClass(\"btn-default\");"
+      "}"
+      // Finalise the dialog: colour the bar; on success highlight Reboot.
+      "function flashFinish(ok){"
+        "setloading(\"#flash-dialog\", false);"
+        "if (ok) {"
+          "fwbar({ pct: 100, text: \"Done\", klass: \"progress-bar-success\" });"
+          "$(\"#output\").append(\"\\nReboot to activate the new firmware.\");"
+          "$(\".action-reboot\").removeClass(\"btn-default\").addClass(\"btn-primary\");"
+        "} else {"
+          "fwbar({ pct: 100, text: \"Failed\", klass: \"progress-bar-danger\" });"
+        "}"
+      "}"
       "$(\".action-update-now\").on(\"click\", function(ev){"
         "var server = $(\"input[name=server]\").val() || \"https://api.openvehicles.com/firmware/ota\";"
         "var tag = $(\"input[name=tag]\").val() || \"main\";"
@@ -477,8 +541,224 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "$(\"#flash-dialog\").removeClass(\"fade\").modal(\"hide\");"
         "loaduri(\"#main\", \"get\", \"/cfg/firmware\");"
       "});"
+      // Browse: the native file input is hidden; the styled button and the
+      // read-only name field both open it, and its name is shown on selection.
+      "$(\"#fw-choose-btn, #input-flash_upload_name\").on(\"click\", function(){"
+        "$(\"#input-flash_upload\").click();"
+      "});"
+      "$(\"#input-flash_upload\").on(\"change\", function(){"
+        "$(\"#input-flash_upload_name\").val(this.files && this.files.length ? this.files[0].name : \"\");"
+      "});"
+      // Upload & flash: stream the selected file to /api/firmware/upload (the
+      // session cookie authorizes the request); show progress in the flash dialog.
+      "$(\"#fw-upload-btn\").on(\"click\", function(ev){"
+        "ev.stopPropagation();"
+        "var input = document.getElementById(\"input-flash_upload\");"
+        "if (!input.files || !input.files.length) {"
+          "confirmdialog(\"Upload firmware\", \"Please select a firmware file first.\", [\"Close\"]);"
+          "return false;"
+        "}"
+        "var file = input.files[0];"
+        "var fd = new FormData();"
+        "fd.append(\"file\", file, file.name);"
+        "flashReset();"
+        "$(\"#output\").text(\"Uploading firmware (do not interrupt)…\\n\");"
+        "fwbar({ pct: 0, text: \"0%\" });"
+        "setloading(\"#flash-dialog\", true);"
+        "$(\"#flash-dialog\").modal(\"show\");"
+        "var xhr = new XMLHttpRequest();"
+        // Pass the size so the module erases only what's needed (faster start) and
+        // can reject an oversized image up front:
+        "xhr.open(\"POST\", \"/api/firmware/upload?size=\" + file.size, true);"
+        "xhr.upload.onprogress = function(e){"
+          // No length => can't show a percentage; show an animated 'working' bar:
+          "if (!e.lengthComputable) { fwbar({ mode: \"indeterminate\", text: \"Uploading…\" }); return; }"
+          "var pct = Math.round((e.loaded / e.total) * 100);"
+          "if (pct >= 100) fwbar({ mode: \"indeterminate\", text: \"Finalising… (writing to flash)\" });"
+          "else fwbar({ pct: pct, text: pct + \"%\" });"
+        "};"
+        // Body fully sent; the module is still writing the last of it to flash:
+        "xhr.upload.onload = function(){"
+          "fwbar({ mode: \"indeterminate\", text: \"Finalising… (writing to flash)\" });"
+        "};"
+        "xhr.onload = function(){"
+          "if (xhr.status == 200) {"
+            "$(\"#output\").text(xhr.responseText);"
+            "flashFinish(true);"
+          "} else {"
+            "$(\"#output\").text(\"Error \" + xhr.status + \": \" + xhr.responseText);"
+            "flashFinish(false);"
+          "}"
+        "};"
+        "xhr.onerror = function(){"
+          "$(\"#output\").text(\"Error: upload failed (connection lost).\");"
+          "flashFinish(false);"
+        "};"
+        "xhr.send(fd);"
+        "return false;"
+      "});"
     "</script>");
 
   c.done();
+}
+
+
+/**
+ * AuthorizeMultipart: re-check cookie/apikey auth for a multipart request.
+ *
+ * Multipart uploads are delivered as MG_EV_HTTP_MULTIPART_* events and never
+ * pass through FindPage()/PageEntry::Serve(), so the standard auth check does
+ * not run for them. We mirror PageEntry::Serve here: open if no module password
+ * is set, else require a valid session cookie or a matching ?apikey= parameter.
+ */
+bool OvmsWebServer::AuthorizeMultipart(http_message *hm)
+{
+  // No module password configured => web access is open:
+  if (MyConfig.GetParamValue("password", "module").empty())
+    return true;
+  // Valid session cookie?
+  if (GetSession(hm) != NULL)
+    return true;
+  // Or an apikey (= admin password) passed as a query parameter:
+  char buf[64];
+  if (mg_get_http_var(&hm->query_string, "apikey", buf, sizeof(buf)) > 0 &&
+      CheckLogin("admin", buf))
+    return true;
+  return false;
+}
+
+
+/**
+ * HttpFirmwareUpload: streamed multipart firmware upload -> OTA partition
+ */
+
+HttpFirmwareUpload::HttpFirmwareUpload(mg_connection* nc, size_t expected_size)
+  : MgHandler(nc)
+{
+  m_expected = expected_size;
+}
+
+HttpFirmwareUpload::~HttpFirmwareUpload()
+{
+  // Safety net: if the connection died mid-stream, discard the flash session:
+  if (m_flashing)
+    MyOTA.StreamFlashAbort();
+}
+
+void HttpFirmwareUpload::Respond(int code, const std::string& text)
+{
+  if (m_responded || !m_nc)
+    return;
+  m_responded = true;
+  mg_send_head(m_nc, code, (int64_t) text.size(), "Content-Type: text/plain; charset=utf-8");
+  mg_send(m_nc, text.data(), (int) text.size());
+  m_nc->flags |= MG_F_SEND_AND_CLOSE;
+}
+
+int HttpFirmwareUpload::HandleEvent(int ev, void* p)
+{
+  switch (ev)
+  {
+    case MG_EV_HTTP_PART_BEGIN:
+    {
+      struct mg_http_multipart_part* mp = (struct mg_http_multipart_part*) p;
+      // Only act on the first part carrying a filename (the image); ignore any
+      // other form fields, and any further parts once we're busy/done:
+      if (m_flashing || m_ok || m_responded)
+        break;
+      if (mp->file_name == NULL || mp->file_name[0] == 0)
+        break;
+      std::string err;
+      if (MyOTA.StreamFlashBegin(m_expected, err) != ESP_OK) {
+        ESP_LOGW(TAG, "Firmware upload: cannot start flash: %s", err.c_str());
+        Respond(409, "Error: " + err + "\n");
+      }
+      else {
+        m_flashing = true;
+        m_size = 0;
+        ESP_LOGI(TAG, "Firmware upload: receiving '%s'", mp->file_name);
+      }
+      break;
+    }
+
+    case MG_EV_HTTP_PART_DATA:
+    {
+      struct mg_http_multipart_part* mp = (struct mg_http_multipart_part*) p;
+      if (!m_flashing)
+        break;
+      std::string err;
+      if (MyOTA.StreamFlashWrite(mp->data.p, mp->data.len, err) != ESP_OK) {
+        // StreamFlashWrite() has already aborted & unlocked the session:
+        m_flashing = false;
+        ESP_LOGE(TAG, "Firmware upload: flash write failed: %s", err.c_str());
+        Respond(500, "Error: " + err + "\n");
+      }
+      else {
+        m_size += mp->data.len;
+      }
+      break;
+    }
+
+    case MG_EV_HTTP_PART_END:
+    {
+      struct mg_http_multipart_part* mp = (struct mg_http_multipart_part*) p;
+      if (!m_flashing)
+        break;
+      if (mp->status < 0) {
+        // Part was not properly terminated (connection lost): discard.
+        MyOTA.StreamFlashAbort();
+        m_flashing = false;
+        ESP_LOGW(TAG, "Firmware upload: aborted (incomplete part)");
+        Respond(400, "Error: upload aborted\n");
+      }
+      else {
+        std::string err;
+        const char* target = MyOTA.m_stream_target ? MyOTA.m_stream_target->label : "?";
+        if (MyOTA.StreamFlashFinish(err) != ESP_OK) {
+          m_flashing = false;
+          ESP_LOGE(TAG, "Firmware upload: finalise failed: %s", err.c_str());
+          Respond(500, "Error: " + err + "\n");
+        }
+        else {
+          m_flashing = false;
+          m_ok = true;
+          m_target = target;
+          ESP_LOGI(TAG, "Firmware upload: flashed %u bytes, next boot from '%s'",
+                   (unsigned) m_size, m_target.c_str());
+        }
+      }
+      break;
+    }
+
+    case MG_EV_HTTP_MULTIPART_REQUEST_END:
+    {
+      if (!m_responded) {
+        if (m_ok) {
+          char buf[160];
+          snprintf(buf, sizeof(buf),
+            "OTA flash was successful\n  Flashed %u bytes\n  Next boot will be from '%s'\n",
+            (unsigned) m_size, m_target.c_str());
+          Respond(200, buf);
+        }
+        else {
+          Respond(400, "Error: no firmware file received\n");
+        }
+      }
+      break;
+    }
+
+    case MG_EV_CLOSE:
+    {
+      if (m_flashing) {
+        MyOTA.StreamFlashAbort();
+        m_flashing = false;
+      }
+      break;
+    }
+
+    default:
+      break;
+  }
+  return ev;
 }
 #endif

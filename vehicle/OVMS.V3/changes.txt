@@ -17,6 +17,13 @@ Open Vehicle Monitor System v3 - Change log
 - VW e-Golf: v.e.parktime no longer clamped — the 0x6B7 CAN park-time field is 17-bit
     (saturates at ~36.5 h), so the saturated max is ignored and OVMS's native (uncapped)
     park-time counter is used instead.
+- OTA: Web UI firmware upload — the firmware setup page "Flash from file" tab can now upload a
+    firmware image directly from the browser and flash it to the inactive OTA partition, with no
+    SD card needed. The upload is streamed to flash (not buffered in RAM); the SD-card path flow
+    is unchanged. New endpoint: POST /api/firmware/upload (cookie/apikey authorized). A progress
+    bar tracks the upload, switching to a "finalising" indicator while the module writes the last
+    of the image to flash. The image size is sent (?size=) so only the needed flash is erased
+    (faster start) and an oversized image is rejected up front.
 
 
 2026-07-18 MB   3.3.006  OTA release
