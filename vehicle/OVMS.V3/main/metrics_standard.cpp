@@ -60,11 +60,11 @@ MetricsStandard::MetricsStandard()
   ms_m_net_mdm_model = new OvmsMetricString(MS_N_MDM_MODEL, SM_STALE_MAX);
   ms_m_net_mdm_mode = new OvmsMetricString(MS_N_MDM_MODE, SM_STALE_MAX);
 
-#ifdef CONFIG_OVMS_COMP_MAX7317
+#if defined(CONFIG_OVMS_COMP_MAX7317) || defined(CONFIG_OVMS_COMP_ESP32EGPIO)
   ms_m_egpio_input = new OvmsMetricBitset<10,0>(MS_M_EGPIO_INPUT, SM_STALE_MAX);
   ms_m_egpio_output = new OvmsMetricBitset<10,0>(MS_M_EGPIO_OUTPUT, SM_STALE_MAX);
   ms_m_egpio_monitor = new OvmsMetricBitset<10,0>(MS_M_EGPIO_MONITOR, SM_STALE_MAX);
-#endif //CONFIG_OVMS_COMP_MAX7317
+#endif //CONFIG_OVMS_COMP_MAX7317 || CONFIG_OVMS_COMP_ESP32EGPIO
   ms_m_obd2ecu_on = new OvmsMetricBool(MS_M_OBD2ECU_ON, SM_STALE_MID);
 
   ms_s_v2_connected = new OvmsMetricBool(MS_S_V2_CONNECTED);
