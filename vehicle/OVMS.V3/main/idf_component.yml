@@ -1,4 +1,14 @@
+## IDF Component Manager Manifest File
 dependencies:
-  espressif/mdns: "^1.0.8"
-  idf:
-    version: ">=5.0.0"
+
+  # mdns is only available for idf_version >= 5
+  espressif/mdns:
+    version: "^1.0.9"
+    rules:
+      - if: "idf_version >=5"
+
+  ## Required IDF version
+#  idf:
+#    version: ">=5.0.0"
+#    rules:
+#      - if: "idf_version >=5"
