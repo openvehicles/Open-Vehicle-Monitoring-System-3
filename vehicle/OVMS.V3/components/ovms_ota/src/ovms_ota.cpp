@@ -1069,6 +1069,11 @@ OvmsOTA::OvmsOTA()
   m_lastcheckday = -1;
   m_flashstatus = NULL;
   m_flashperc = 0;
+  m_stream_active = false;
+  m_stream_handle = 0;
+  m_stream_target = NULL;
+  m_stream_expected = 0;
+  m_stream_done = 0;
 
   MyConfig.RegisterParam("ota", "OTA setup and status", true, true);
 
@@ -1344,6 +1349,150 @@ const char* OvmsOTA::GetFlashStatus()
 int OvmsOTA::GetFlashPerc()
   {
   return m_flashperc;
+  }
+
+////////////////////////////////////////////////////////////////////////////////
+// Streaming OTA flash writer
+//
+// Shared core used by ota_flash_vfs() and the web upload handler. The three
+// phases must be called in sequence on a single flash session:
+//   StreamFlashBegin()  - select target partition, lock m_flashing, esp_ota_begin
+//   StreamFlashWrite()  - feed image data (any chunk size), repeated
+//   StreamFlashFinish() - esp_ota_end + set boot partition, unlock
+// StreamFlashAbort() may be called instead of Finish to discard an in-progress
+// session (e.g. a dropped upload). A failing Write/Finish aborts and unlocks the
+// session internally, so the caller must not call Finish/Abort again afterwards.
+// Pass expected_size=0 when the image size is unknown up front (in that case the
+// whole target partition is erased and no progress percentage is reported).
+
+esp_err_t OvmsOTA::StreamFlashBegin(size_t expected_size, std::string& errmsg)
+  {
+  if (!m_flashing.Lock(0))
+    {
+    errmsg = "Flash operation already in progress - cannot flash again";
+    return ESP_ERR_INVALID_STATE;
+    }
+
+  const esp_partition_t *running = esp_ota_get_running_partition();
+  const esp_partition_t *target = esp_ota_get_next_update_partition(running);
+
+  if (running == NULL)
+    {
+    errmsg = "Current running image cannot be determined - aborting";
+    m_flashing.Unlock();
+    return ESP_ERR_INVALID_STATE;
+    }
+  if (target == NULL)
+    {
+    errmsg = "Target partition cannot be determined - aborting";
+    m_flashing.Unlock();
+    return ESP_ERR_INVALID_STATE;
+    }
+  if (running == target)
+    {
+    errmsg = "Cannot flash to running image partition";
+    m_flashing.Unlock();
+    return ESP_ERR_INVALID_STATE;
+    }
+  if (expected_size > 0 && expected_size > target->size)
+    {
+    char buf[128];
+    snprintf(buf, sizeof(buf), "target partition too small (%u bytes capacity) - aborting", target->size);
+    errmsg = buf;
+    if (target->size < 0x700000)
+      SendPartitionTypeAlert(true);
+    m_flashing.Unlock();
+    return ESP_ERR_INVALID_SIZE;
+    }
+
+  SetFlashStatus("OTA Stream Flash: Preparing flash partition...");
+  esp_ota_handle_t otah;
+  esp_err_t err = esp_ota_begin(target, (expected_size > 0) ? expected_size : OTA_SIZE_UNKNOWN, &otah);
+  if (err != ESP_OK)
+    {
+    char buf[96];
+    snprintf(buf, sizeof(buf), "ESP32 error #%d when starting OTA operation", err);
+    errmsg = buf;
+    ClearFlashStatus();
+    m_flashing.Unlock();
+    return err;
+    }
+
+  m_stream_handle = otah;
+  m_stream_target = target;
+  m_stream_expected = expected_size;
+  m_stream_done = 0;
+  m_stream_active = true;
+  SetFlashStatus("OTA Stream Flash: Flashing image partition...");
+  return ESP_OK;
+  }
+
+esp_err_t OvmsOTA::StreamFlashWrite(const void* buf, size_t len, std::string& errmsg)
+  {
+  if (!m_stream_active)
+    {
+    errmsg = "No flash session active";
+    return ESP_ERR_INVALID_STATE;
+    }
+  esp_err_t err = esp_ota_write(m_stream_handle, buf, len);
+  if (err != ESP_OK)
+    {
+    char ebuf[96];
+    snprintf(ebuf, sizeof(ebuf), "ESP32 error #%d when writing to flash - state is inconsistent", err);
+    errmsg = ebuf;
+    StreamFlashAbort();
+    return err;
+    }
+  m_stream_done += len;
+  if (m_stream_expected > 0)
+    SetFlashPerc((m_stream_done * 100) / m_stream_expected);
+  return ESP_OK;
+  }
+
+esp_err_t OvmsOTA::StreamFlashFinish(std::string& errmsg)
+  {
+  if (!m_stream_active)
+    {
+    errmsg = "No flash session active";
+    return ESP_ERR_INVALID_STATE;
+    }
+
+  SetFlashStatus("OTA Stream Flash: Finalising flash write");
+  esp_err_t err = esp_ota_end(m_stream_handle);
+  if (err != ESP_OK)
+    {
+    char ebuf[96];
+    snprintf(ebuf, sizeof(ebuf), "ESP32 error #%d finalising OTA operation - state is inconsistent", err);
+    errmsg = ebuf;
+    m_stream_active = false;
+    ClearFlashStatus();
+    m_flashing.Unlock();
+    return err;
+    }
+
+  SetFlashStatus("OTA Stream Flash: Setting boot partition...");
+  err = esp_ota_set_boot_partition(m_stream_target);
+  m_stream_active = false;
+  ClearFlashStatus();
+  m_flashing.Unlock();
+  if (err != ESP_OK)
+    {
+    char ebuf[96];
+    snprintf(ebuf, sizeof(ebuf), "ESP32 error #%d setting boot partition - check before rebooting", err);
+    errmsg = ebuf;
+    return err;
+    }
+  return ESP_OK;
+  }
+
+void OvmsOTA::StreamFlashAbort()
+  {
+  if (!m_stream_active)
+    return;
+  esp_ota_end(m_stream_handle);
+  m_stream_active = false;
+  ClearFlashStatus();
+  m_flashing.Unlock();
   }
 
 static void OTAFlashTask(void *pvParameters)

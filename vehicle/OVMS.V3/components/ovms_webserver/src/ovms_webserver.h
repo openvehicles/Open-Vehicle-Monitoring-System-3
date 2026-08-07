@@ -486,6 +486,39 @@ class HttpCommandStream : public OvmsShell, public MgHandler
 };
 
 
+#ifdef CONFIG_OVMS_COMP_OTA
+/**
+ * HttpFirmwareUpload: receive a streamed multipart firmware upload and flash it
+ *  directly into the inactive OTA partition (no SD card needed).
+ *
+ * Created by EventHandler() on an authorized MG_EV_HTTP_MULTIPART_REQUEST for the
+ *  upload endpoint; it then consumes the MG_EV_HTTP_PART_* events, feeding the
+ *  image to MyOTA.StreamFlash*(). The firmware part is the first part carrying a
+ *  filename; other form fields are ignored.
+ */
+class HttpFirmwareUpload : public MgHandler
+{
+  public:
+    HttpFirmwareUpload(mg_connection* nc, size_t expected_size = 0);
+    ~HttpFirmwareUpload();
+
+  public:
+    int HandleEvent(int ev, void* p);
+
+  protected:
+    void Respond(int code, const std::string& text);
+
+  protected:
+    bool                      m_flashing = false;     // a StreamFlash session is open
+    bool                      m_responded = false;    // HTTP response already sent
+    bool                      m_ok = false;           // image received & flashed
+    size_t                    m_expected = 0;         // image size from ?size= (0 = unknown)
+    size_t                    m_size = 0;             // bytes received for the image
+    std::string               m_target;               // target partition label (on success)
+};
+#endif // CONFIG_OVMS_COMP_OTA
+
+
 
 /**
  * OvmsWebServer: main web framework (static instance: MyWebServer)
@@ -531,6 +564,11 @@ class OvmsWebServer : public ExternalRamAllocated, MongooseClient
     user_session* GetSession(http_message *hm);
     void CheckSessions(void);
     static bool CheckLogin(std::string username, std::string password);
+#ifdef CONFIG_OVMS_COMP_OTA
+    // Authorize a multipart request (e.g. firmware upload). Multipart requests
+    // bypass PageEntry::Serve, so the cookie/apikey auth is re-checked here.
+    bool AuthorizeMultipart(http_message *hm);
+#endif
 
   public:
     WebSocketHandler* CreateWebSocketHandler(mg_connection* nc);

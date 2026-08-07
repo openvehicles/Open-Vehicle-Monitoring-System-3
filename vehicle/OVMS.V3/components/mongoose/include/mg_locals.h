@@ -42,6 +42,12 @@
 #define MG_ENABLE_HTTP 1
 #define MG_ENABLE_THREADSAFE_CONN_MBUFS 0 // superseded by MongooseClient API level lock
 
+// Stream multipart request bodies as MG_EV_HTTP_PART_* events instead of
+// buffering the whole request in RAM. Defined here (not in component CFLAGS) so
+// it is seen identically by the mongoose library and by consumers that handle
+// the events (web firmware upload). Used by HttpFirmwareUpload (web_cfg_firmware).
+#define MG_ENABLE_HTTP_STREAMING_MULTIPART 1
+
 // Note: broadcast support not working reliably yet, do not enable for production!
 // #define MG_ENABLE_BROADCAST 1
 // #define MG_CTL_MSG_MESSAGE_SIZE 64    // Note: default is 8K, we only need this to trigger MG_EV_POLL

@@ -33,6 +33,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <esp_ota_ops.h>
 #include "ovms_events.h"
 #include "ovms_mutex.h"
 #include "ovms_partitions.h"
@@ -86,12 +87,28 @@ class OvmsOTA
     int GetFlashPerc();
 
   public:
+    // Streaming OTA flash writer (shared by ota_flash_vfs() and the web upload
+    // handler). Call Begin -> Write* -> Finish in sequence; Abort discards an
+    // in-progress session. A failing Write/Finish aborts & unlocks internally.
+    // Pass expected_size=0 when the image size is unknown up front.
+    esp_err_t StreamFlashBegin(size_t expected_size, std::string& errmsg);
+    esp_err_t StreamFlashWrite(const void* buf, size_t len, std::string& errmsg);
+    esp_err_t StreamFlashFinish(std::string& errmsg);
+    void StreamFlashAbort();
+    bool StreamFlashActive() { return m_stream_active; }
+
+  public:
     OvmsMutex m_flashing;
     const char *m_flashstatus;
     int m_flashperc;
     TaskHandle_t m_autotask;
     int m_lastcheckday;
     std::string m_lastnotifyversion;
+    bool m_stream_active;
+    esp_ota_handle_t m_stream_handle;
+    const esp_partition_t* m_stream_target;
+    size_t m_stream_expected;
+    size_t m_stream_done;
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   protected:

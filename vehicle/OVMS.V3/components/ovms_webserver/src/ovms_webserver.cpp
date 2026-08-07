@@ -594,6 +594,38 @@ void OvmsWebServer::EventHandler(mg_connection *nc, int ev, void *p)
       }
       break;
 
+#if MG_ENABLE_HTTP_STREAMING_MULTIPART && defined(CONFIG_OVMS_COMP_OTA)
+    case MG_EV_HTTP_MULTIPART_REQUEST:      // start of a streamed multipart upload
+      {
+        // No handler attached yet: dispatch by URI & re-check auth here, because
+        // multipart requests never pass through FindPage()/PageEntry::Serve().
+        struct http_message *hm = (struct http_message *) p;
+        std::string uri(hm->uri.p, hm->uri.len);
+        if (uri == "/api/firmware/upload") {
+          if (!MyWebServer.AuthorizeMultipart(hm)) {
+            ESP_LOGW(TAG, "Firmware upload: unauthorized");
+            mg_http_send_error(nc, 401, "Unauthorized");
+            nc->flags |= MG_F_SEND_AND_CLOSE;
+          }
+          else {
+            // The client passes the image size as ?size=<bytes> so the OTA layer
+            // erases only what's needed (faster start) instead of the whole partition:
+            size_t size = 0;
+            char sizebuf[24];
+            if (mg_get_http_var(&hm->query_string, "size", sizebuf, sizeof(sizebuf)) > 0)
+              size = (size_t) strtoul(sizebuf, NULL, 10);
+            ESP_LOGI(TAG, "Firmware upload: authorized, receiving image (size=%u)", (unsigned) size);
+            new HttpFirmwareUpload(nc, size);   // attaches itself to nc->user_data
+          }
+        }
+        else {
+          mg_http_send_error(nc, 404, "Not found");
+          nc->flags |= MG_F_SEND_AND_CLOSE;
+        }
+      }
+      break;
+#endif // MG_ENABLE_HTTP_STREAMING_MULTIPART && defined(CONFIG_OVMS_COMP_OTA)
+
     case MG_EV_CLOSE:                       // connection has been closed
       {
         if (handler) {
