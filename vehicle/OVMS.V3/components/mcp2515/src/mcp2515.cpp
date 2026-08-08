@@ -279,8 +279,8 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   WriteReg(REG_CANCTRL, CANCTRL_MODE_CONFIG | CANCTRL_ABAT | CANCTRL_OSM);
   m_canctrl_mode = CANCTRL_MODE_CONFIG;
 
-// Rx Buffer 0 control: use acceptance filters, rollover disabled
-WriteRegAndVerify(REG_RXB0CTRL, 0b00000100, 0b01101101);
+  // Rx Buffer 0 control: use acceptance filters, enable RXB0->RXB1 rollover
+  WriteRegAndVerify(REG_RXB0CTRL, 0b00000110, 0b01101101);
 
   SetTransceiverMode(mode);
 
