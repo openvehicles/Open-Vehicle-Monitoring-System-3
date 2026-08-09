@@ -157,6 +157,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void GetDashboardConfig(DashboardConfig& cfg);
 
   private:
+    void SetCan2Mcp2515Filter(canbus* bus, bool enable);
     void CommandInit(); // initialise shell commands specific to Leaf
     void vehicle_nissanleaf_car_on(bool isOn);
     void vehicle_nissanleaf_charger_status(ChargerStatus status);
