@@ -84,6 +84,20 @@ Charge Interruption Alerts  Yes
 
 .. [5] For ZE1 models, a separate 8-wire CAN tap cable and DB9 connector are required. The standard OBD-II to DB9 cable supplied with OVMS cannot be used, as it only has 6 wires. Additionally, the OBD-II port itself cannot be used because the vehicle’s CAN gateway module powers down when the ignition is off, isolating the port from the rest of the vehicle. Instead, you need to build an adapter cable to tap into the CAN buses going to the CAN gateway module located behind the instrument cluster. See the :ref:`2018+ models (ZE1)` for more details.
 
+----------------
+CAN Bus Mapping
+----------------
+
+The Leaf module uses two of the three available OVMS v3 CAN buses.
+
+=========================== ============== ======================================== =================================================================
+OVMS bus                    Leaf bus       Controller                               Function
+=========================== ============== ======================================== =================================================================
+CAN1 (DB9 pins 2 / 7)       EV-CAN         ESP32 internal TWAI/CAN controller       BMS/LBC, motor/inverter, A/C module, pre-2016 TCU/remote commands, wakeup frames
+CAN2 (DB9 pins 4 / 5)       CAR-CAN        MCP2515 #1                               Charger/PDM, VIN, charge counters, lock/unlock, 2016+ TCU/remote commands
+CAN3 (DB9 pins 6 / 8)       IT-CAN         MCP2515 #2                               Instrument cluster / internal bus — not used by the Leaf module
+=========================== ============== ======================================== =================================================================
+
 ----------------------
 Remote Climate Control
 ----------------------
@@ -93,9 +107,9 @@ Remote Climate Control
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 OVMS remote climate support will 'just work' on e-Nv200 Visia/Acenta which don't have a Nissan satnav headunit.
-For Tekna models which are fitted with a Nissan satnav headunit, the Nissan TCU must be unplugged. The TCU is located just below the head unit, remove the trim around the cental head unit to access. 
+For Tekna models which are fitted with a Nissan satnav headunit, follow the instructions below for a 2013-2016 LEAF to unplug the TCU
 
-IMPORTANT: for remote climate to work on the e-NV200, the model year in OVMS should be set to 2015 for model year 2014-2017 and then 2016 for model year 2018+ . CAN writing also needs to be enabled. If remote climate doens't work try a differant model year setting. 
+IMPORTANT: for remote climate to work on the e-NV200, the model year in OVMS should be set to 2015 regardless of the the actual model year of the vehicle. CAN writing also needs to be enabled.
 
 The model year can be set in the web interface or via the command:
 
