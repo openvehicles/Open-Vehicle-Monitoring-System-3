@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- VW e-Golf: set v.e.drivemode from the Charisma / Fahrprofilauswahl active profile
+    (KCAN 0x386): Normal/Eco/Eco+ -> 1/2/3 (matching the e-Up module), replacing the
+    incorrect B-gear-derived value.
 - vehicle_cadillac_ct5:
     Set the acceptance filter to allow 0x063 (v.on) and 0x5E4 (v.b.soc).
     The high frame rate of this vehicle (> 1600/sec) causes watchdog
