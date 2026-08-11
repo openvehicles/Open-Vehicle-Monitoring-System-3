@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- OTA/firmware: added config to store update source
+    New config:
+      [ota] tag.update                  -- updated from SD/Web/auto, stored VFS = SD, manual = Web, <ota tag> = auto update
 - vehicle_cadillac_ct5:
     Set the acceptance filter to allow 0x063 (v.on) and 0x5E4 (v.b.soc).
     The high frame rate of this vehicle (> 1600/sec) causes watchdog
