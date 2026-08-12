@@ -46,7 +46,7 @@ static const char *TAG = "v-smarteq";
 void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
   uint8_t *data = p_frame->data.u8;
   uint64_t c = swap_uint64(p_frame->data.u64);
-  
+  m_can_msg_received = true;
   switch (p_frame->MsgID) {
     case 0x17E: //gear shift
       {
@@ -223,6 +223,15 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       can_charge_inprogress = (CAN_BYTE(5) & 0x20) != 0;
       break;
       }
+    case 0x668:
+      // Car on/off state used if CAN write disabled, otherwise utilize 0x350 polling
+      if (!IsCANwrite() )
+        {
+        REQ_DLC(1);
+        can_env_on = (CAN_BYTE(0) & 0x40) > 0;
+        }
+      break;
+
     case 0x673:
       {
       // TPMS pressure values only used, when CAN write is disabled, otherwise utilize PollReply_TPMS_InputCapt
@@ -249,6 +258,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
       break;
       }
     default:
+      m_can_msg_received = false;
       //ESP_LOGI(TAG, "PID:%x DATA: %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
       break;
   }
@@ -257,6 +267,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
 // Sync CAN datapoints to OVMS metrics, called by Ticker1, because CAN refresh rate is too high
 void OvmsVehicleSmartEQ::smartCAN2Metrics()
 {
+  m_can_msg_received = false; 
   if (m_cmd_locked && !can_locked)
     {
     // prevent desync of command lock and actual lock status    
@@ -267,6 +278,7 @@ void OvmsVehicleSmartEQ::smartCAN2Metrics()
     StdMetrics.ms_v_env_locked->SetValue(can_locked);
     }
   StdMetrics.ms_v_env_on->SetValue(can_env_on);
+  CheckCANAccess();  // car on/off state might have changed - check, if CAN write access has to be changed 
   StdMetrics.ms_v_env_awake->SetValue(IsAwakeEQ());
   StdMetrics.ms_v_env_hvac->SetValue(can_hvac);
   StdMetrics.ms_v_env_handbrake->SetValue(can_handbrake);

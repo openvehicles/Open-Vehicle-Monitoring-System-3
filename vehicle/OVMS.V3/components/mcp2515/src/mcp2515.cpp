@@ -1033,11 +1033,13 @@ void mcp2515::SetTransceiverMode(CAN_mode_t mode)
     {
       // BFPCTRL RXnBF PIN CONTROL AND STATUS - enable TX driver of SN65 - rd/wr mode
       WriteRegAndVerify(REG_BFPCTRL, 0b00001100);
+      ESP_LOGV(TAG,"CAN Transceiver set to active mode");
     } 
   else
     {
       // BFPCTRL RXnBF PIN CONTROL AND STATUS - disable TX driver of SN65 - listen only mode
       WriteRegAndVerify(REG_BFPCTRL, 0b00111100);
+      ESP_LOGV(TAG,"CAN Transceiver set to listen only mode");
     }
   }
 

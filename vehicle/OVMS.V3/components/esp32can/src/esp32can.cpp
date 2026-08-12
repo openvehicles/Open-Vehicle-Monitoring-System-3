@@ -613,7 +613,10 @@ esp_err_t esp32can::Stop()
 void esp32can::SetTransceiverMode(CAN_mode_t mode)
   {
   int rs_state = (mode == CAN_MODE_ACTIVE) ? 0 : 1;
-  
+
+  if ( rs_state == 0 ) ESP_LOGV(TAG,"CAN Transceiver set to active mode");
+  else ESP_LOGV(TAG,"CAN Transceiver set to listen only mode");
+
 #ifdef CONFIG_OVMS_COMP_MAX7317
   // Enable TX driver of matching SN65 transceiver
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, rs_state);

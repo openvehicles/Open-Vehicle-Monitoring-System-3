@@ -184,8 +184,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_mfr_id                 = MyMetrics.InitInt("xsq.bms.id.mfr", SM_STALE_NONE, 0,   Other);
   mt_bms_basic_parts            = MyMetrics.InitString("xsq.bms.id.basic.parts", SM_STALE_NONE, "",  Other);
 
-  // Start CAN bus in CAN_MODE_ACTIVE mode
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  // Initial state of CAN bus is Listen-only mode - will be set according to CAN write mode in ConfigChanged()
+  RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);   // Inititial state of CAN transceiver: LISTEN-ONLY 
+  m_can_last_acc_state = false;
   PollSetState(POLLSTATE_OFF);
 
   // register config container for smart EQ module, with callback to ConfigChanged() on changes
@@ -269,7 +270,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   // Note: GetValueBool/Int/Float treat empty string as "not set" and return the default.
   OvmsConfigParam* map = MyConfig.CachedParam("xsq");
   
-  bool stateWrite         = m_enable_write;
   bool obdii_743          = true;
   bool obdii_745          = true;
   bool obdii_745_tpms     = true;
@@ -282,6 +282,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     {
     m_enable_write         = map->GetValueBool("canwrite", false);
     m_enable_write_caron   = map->GetValueBool("canwrite.caron", false);
+    m_enable_write_caroff  = map->GetValueBool("canwrite.caroff", false);
     m_enable_write_sleep   = map->GetValueBool("canwrite.sleep", false);
     m_enable_LED_state     = map->GetValueBool("led", false);
     m_bcvalue              = map->GetValueBool("bcvalue", false);
@@ -328,12 +329,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     }
 #endif
 
-  // set CAN bus transceiver to active or listen-only depending on user selection
-  if ( stateWrite != m_enable_write )
-    {
-    smartCoolDownPolling();
-    smartOBDpolling(m_enable_write);
-    }
+  CheckCANAccess(); 
+
   // disable caron write mode if normal write mode is enabled to avoid conflicts
   if(m_enable_write_caron && m_enable_write) 
     {
@@ -372,6 +369,20 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     }
   StdMetrics.ms_v_charge_limit_soc->SetValue((float) m_suffsoc, Percentage );
   StdMetrics.ms_v_charge_limit_range->SetValue((float) m_suffrange, Kilometers );
+}
+
+void OvmsVehicleSmartEQ::CheckCANAccess() {
+  if ( m_can_last_acc_state != IsCANwrite() )
+    {
+    smartCoolDownPolling();
+    if ( IsCANwrite() ) ESP_LOGI(TAG,"CAN write state enabled ");
+    else ESP_LOGI(TAG,"CAN write state disabled ");
+    // set CAN bus transceiver to active or listen-only state, depending on user selection
+    CAN_mode_t mode = IsCANwrite() ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
+    RegisterCanBus(1, mode, CAN_SPEED_500KBPS);   // set CAN transceiver via GPIO to ACTIVE or LISTEN-only mode 
+    smartOBDpolling(IsCANwrite());
+    m_can_last_acc_state = IsCANwrite();
+    }
 }
 
 uint64_t OvmsVehicleSmartEQ::swap_uint64(uint64_t val) {
