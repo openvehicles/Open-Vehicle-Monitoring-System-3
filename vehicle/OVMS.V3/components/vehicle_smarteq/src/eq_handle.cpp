@@ -167,6 +167,9 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
  * Called once per second from Ticker1
  */
 void OvmsVehicleSmartEQ::HandleEnergy() {
+  if(IsChargingEQ()) 
+    return; // Skip energy handling while charging (handled in HandleCharging)
+
   float power = StdMetrics.ms_v_bat_power->AsFloat(0.0f); // kW - charge(-)/discharge(+) HV battery power
   ESP_LOGD(TAG, "HandleEnergy(): power=%.2f kW", power);
   if (power != 0.0f)
