@@ -207,9 +207,11 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // Startup sentinel: d[2]=0xFF decodes to I=2047 A and V=1023.5 V. Discard it.
             if (d[2] == 0xFF) break;
 
-            // Current: 12-bit, factor 1 A, offset -2047 A.
+            // Current: 12-bit, factor 1 A. The raw field is charge-positive; negate to
+            // the OVMS convention (ms_v_bat_current is output=positive, i.e. discharge
+            // positive / charge negative): I = 2047 - raw.
             tmp_u16 = ((uint16_t)(d[1] & 0xf0) >> 4) | ((uint16_t)(d[2]) << 4);
-            tmp_f32 = ((float)tmp_u16) * 1.0F - 2047.0F;
+            tmp_f32 = 2047.0F - (float)tmp_u16;
             StandardMetrics.ms_v_bat_current->SetValue(tmp_f32);
 
             // Voltage: 12-bit, factor 0.25 V.
@@ -217,9 +219,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             tmp_f32 = ((float)tmp_u16) * 0.25F;
             StandardMetrics.ms_v_bat_voltage->SetValue(tmp_f32);
 
-            // Power: negative = charging, positive = driving.
-            tmp_f32 = -1.0F *
-                      (StandardMetrics.ms_v_bat_voltage->AsFloat() *
+            // Power = V * I, following the output=positive current sign above
+            // (ms_v_bat_power is output=positive: positive = driving, negative = charging).
+            tmp_f32 = (StandardMetrics.ms_v_bat_voltage->AsFloat() *
                        StandardMetrics.ms_v_bat_current->AsFloat()) /
                       1000.0F;
             StandardMetrics.ms_v_bat_power->SetValue(tmp_f32);

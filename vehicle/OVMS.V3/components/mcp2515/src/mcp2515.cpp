@@ -279,9 +279,22 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   WriteReg(REG_CANCTRL, CANCTRL_MODE_CONFIG | CANCTRL_ABAT | CANCTRL_OSM);
   m_canctrl_mode = CANCTRL_MODE_CONFIG;
 
-  // Rx Buffer 0 control (receive all and enable buffer 1 rollover)
-  WriteRegAndVerify(REG_RXB0CTRL, 0b01100100, 0b01101101);
+  // Filter logic is such that if enabled mask and filters 0, 1 are
+  // applied to RX buffer 0, and mask 1 and filters 2-5 are applied to RX buffer 0.
+  // If a packet matches Filters 0, 1 then it is placed in RX buffer 0,
+  // otherwise if it matches Filters 2-5 then it is placed in RX buffer 1.
+  //
+  // If RX Buffer 0 is full and if roll over is enabled then the packet
+  // will be placed in RX Buffer 1 regardless of if it matched the Filters 2-5.
+  //
+  // At start we enable roll over and set all filters to accept all.  If a filter
+  // is set later then we update the registers to check the new filters.
 
+  // Disable filter checking and enable buffer 1 rollover
+  WriteRegAndVerify(REG_RXB0CTRL, 0b01100100, 0b01100100);
+  WriteRegAndVerify(REG_RXB1CTRL, 0b01100000, 0b01100000);
+
+ 
   SetTransceiverMode(mode);
 
   // Bus speed
@@ -483,6 +496,22 @@ esp_err_t mcp2515::SetAcceptanceFilter(const mcp2515_filter_config_t& cfg)
     {
     return ESP_FAIL;
     }
+
+  bool filters_cleared = (cfg.mask[0].u32 == 0 && cfg.mask[1].u32 == 0 &&
+                    cfg.filter[0].u32 == 0 && cfg.filter[1].u32 == 0 &&
+                    cfg.filter[2].u32 == 0 && cfg.filter[3].u32 == 0 &&
+                    cfg.filter[4].u32 == 0 && cfg.filter[5].u32 == 0);
+                    
+  if (filters_cleared) {
+    // Disable filter checking as all filters are cleared (revert to default behaviour)
+    WriteRegAndVerify(REG_RXB0CTRL, 0b01100100, 0b01100100);
+    WriteRegAndVerify(REG_RXB1CTRL, 0b01100000, 0b01100000);
+  } else
+  {
+    // Enable filter checking as filters have been defined.
+    WriteRegAndVerify(REG_RXB0CTRL, 0b00000100, 0b01100100);
+    WriteRegAndVerify(REG_RXB1CTRL, 0b00000000, 0b01100000);
+  }
 
   // Write filters 0-2:
   m_spibus->spi_cmd(m_spi, buf, 0, 14, CMD_WRITE, REG_RXF0SIDH,
