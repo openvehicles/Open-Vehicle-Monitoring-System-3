@@ -140,6 +140,11 @@ BO_ 913 OBD_01: 8 Powertrain
  SG_ OBD_Driving_Cycle : 61|1@1+ (1,0) [0|1] "" OVMS
  SG_ OBD_Abs_Pedal_Pos : 40|8@1+ (0.392,0) [0|100] "%" OVMS
 
+// 0x386. Charisma / Fahrprofilauswahl active drive profile (Normal/Eco/Eco+).
+// d[5]: 2=Normal, 5=Eco, 8=Eco+ (CharismaProfiles enum); 0=inactive (car not drivable).
+BO_ 902 DriveProfile: 8 Gateway
+ SG_ ActiveProfile : 40|8@1+ (1,0) [0|255] "" OVMS
+
 // ---------------------------------------------------------------------------
 // BAP extended frames on KCAN (29-bit IDs, node 0x25 = clima ECU)
 // These are multi-frame BAP messages, not conventional CAN signals.
@@ -241,6 +246,7 @@ VAL_ 1516 ClimaStatus 4 "Idle" 7 "Active" ;
 VAL_ 1525 ClimaIdle 0 "Active" 1 "Idle" ;
 VAL_ 1646 ClimaRunning 0 "Off" 1 "On" ;
 VAL_ 391 GearPosition 2 "Park" 3 "Reverse" 4 "Neutral" 5 "Drive" 6 "B_mode" ;
+VAL_ 902 ActiveProfile 0 "Inactive" 2 "Normal" 5 "Eco" 8 "Eco_plus" ;
 VAL_ 1428 ChargeType 0 "None" 1 "AC_Type2" 2 "DC_CCS" ;
 VAL_ 1428 ChargeTimerMode 0 "Inactive" 1 "Active" 2 "Unknown_2" 3 "Unknown_3" ;
 VAL_ 1428 ChargeInProgress 0 "Idle" 1 "Charging" ;
