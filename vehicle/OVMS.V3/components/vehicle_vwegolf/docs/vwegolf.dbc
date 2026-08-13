@@ -119,6 +119,9 @@ BO_ 1447 OCU_Keepalive: 8 OVMS
 
 BO_ 391 GearSelector: 8 GearModule
  SG_ GearPosition : 16|4@1+ (1,0) [0|15] "" OVMS
+ SG_ RecupLevel : 12|2@1+ (1,0) [0|3] "" OVMS
+ SG_ RecupSailing : 14|1@1+ (1,0) [0|1] "" OVMS
+ SG_ SystemActive : 15|1@1+ (1,0) [0|1] "" OVMS
 
 // VIN is spread across three sequential frames (frame index 0, 1, 2 in d[0]).
 // Not representable as a simple signal; assembled in firmware from all three.

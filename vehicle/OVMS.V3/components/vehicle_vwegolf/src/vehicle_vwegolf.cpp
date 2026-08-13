@@ -38,6 +38,10 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // init configs:
     MyConfig.RegisterParam("xvg", "VW e-Golf", true, true);
 
+    // Regenerative-braking strength (numeric, cheap to transmit). Decoded from the
+    // gear-selector frame 0x187 in IncomingFrameCan2. -1 until first seen in D/B.
+    m_recup_level = MyMetrics.InitInt("xvg.v.recup", SM_STALE_MIN, -1);
+
     // KCAN (CAN3) carries comfort, body, and clima frames via the J533 gateway.
     // FCAN (CAN2) is the powertrain bus (BMS, motor controller, VIN).
     // CAN1 (OBD) is diagnostic-only and inaccessible while the car is asleep.
@@ -98,6 +102,27 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
                 // B mode
                 StandardMetrics.ms_v_env_gear->SetValue(1);
             }
+
+            // Regenerative-braking (recuperation) strength. The e-Golf has five
+            // regen levels: D0 (coast, no regen), D1, D2, D3, and B (max). D0..D3
+            // are selected with the paddles while in gear D; B is its own gear.
+            // Exposed as a 0..4 strength (least->most) on xvg.v.recup.
+            //
+            // State is in this frame's d[1] high nibble; the top bit is always set
+            // in operation, so mask it off (rc = low 3 bits). In gear D:
+            //   0 = D0 coast (just shifted into D, no stage selected)
+            //   1 = D1, 2 = D2, 3 = D3  (paddle regen stages)
+            //   5 = D0 with recuperation switched off by the driver (also coast)
+            // In gear B rc reads 0, but the gear itself means max regen.
+            const uint8_t rc = (p_frame->data.u8[1] >> 4) & 0x7;
+            int recup = -1;                                 // N/A unless in D or B
+            if (gear_nibble == 6) {
+                recup = 4;                                  // B — max regen
+            } else if (gear_nibble == 5) {
+                recup = (rc >= 1 && rc <= 3) ? rc : 0;      // D1/D2/D3, else D0 (coast)
+            }
+            m_recup_level->SetValue(recup);
+            ESP_LOGV(TAG, "0x187 gear=%u rc=%u recup=%d", gear_nibble, rc, recup);
             break;
         }
         case 0x6B4: {
@@ -180,9 +205,11 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // Startup sentinel: d[2]=0xFF decodes to I=2047 A and V=1023.5 V. Discard it.
             if (d[2] == 0xFF) break;
 
-            // Current: 12-bit, factor 1 A, offset -2047 A.
+            // Current: 12-bit, factor 1 A. The raw field is charge-positive; negate to
+            // the OVMS convention (ms_v_bat_current is output=positive, i.e. discharge
+            // positive / charge negative): I = 2047 - raw.
             tmp_u16 = ((uint16_t)(d[1] & 0xf0) >> 4) | ((uint16_t)(d[2]) << 4);
-            tmp_f32 = ((float)tmp_u16) * 1.0F - 2047.0F;
+            tmp_f32 = 2047.0F - (float)tmp_u16;
             StandardMetrics.ms_v_bat_current->SetValue(tmp_f32);
 
             // Voltage: 12-bit, factor 0.25 V.
@@ -190,9 +217,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             tmp_f32 = ((float)tmp_u16) * 0.25F;
             StandardMetrics.ms_v_bat_voltage->SetValue(tmp_f32);
 
-            // Power: negative = charging, positive = driving.
-            tmp_f32 = -1.0F *
-                      (StandardMetrics.ms_v_bat_voltage->AsFloat() *
+            // Power = V * I, following the output=positive current sign above
+            // (ms_v_bat_power is output=positive: positive = driving, negative = charging).
+            tmp_f32 = (StandardMetrics.ms_v_bat_voltage->AsFloat() *
                        StandardMetrics.ms_v_bat_current->AsFloat()) /
                       1000.0F;
             StandardMetrics.ms_v_bat_power->SetValue(tmp_f32);
@@ -768,6 +795,10 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
         m_drivetrain_ready = false;
         StandardMetrics.ms_v_env_awake->SetValue(false);
         StandardMetrics.ms_v_env_on->SetValue(false);
+        // Regen level (xvg.v.recup) is a driving concept — clear it to N/A once the
+        // car is off/asleep so it doesn't linger on the last D/B value (the gear
+        // frame 0x187 stops broadcasting when the car sleeps).
+        m_recup_level->SetValue(-1);
     }
 
     // Clear OCU node presence on either condition:

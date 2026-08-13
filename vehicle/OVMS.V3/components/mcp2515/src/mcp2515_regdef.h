@@ -114,7 +114,28 @@
 #define REG_TXB0CTRL            0x30
 #define REG_TXB1CTRL            0x40
 #define REG_TXB2CTRL            0x50
+  // RXB0CTRL is the control register for RX buffer 0
+  // REG_RXB0CTRL bitmask:
+  // Bit 7 - (RO) Unimplemented, always reads as dominant (0)
+  // Bit 6 - (RW) RXM1: Receive Buffer Operating Mode bit 1
+  // Bit 5 - (RW) RXM0: Receive Buffer Operating Mode bit 0
+  // Bit 4 - (RO) Unimplemented, reads as 0
+  // Bit 3 - (RO) RXRTR: Received Remote Transfer Request bit
+  // Bit 2 - (RW) BUKT: Rollover Enable bit
+  // Bit 1 - (RO) Read only copy of BUKT
+  // Bit 0 - (RO) FILHIT0: Filter Hit bit
 #define REG_RXB0CTRL            0x60
+  // RXB1CTRL is the control register for RX buffer 1
+  // REG_RXB1CTRL bitmask:
+  // Bit 7 - (RO) Unimplemented, always reads as dominant (0)
+  // Bit 6 - (RW) RXM1: Receive Buffer Operating Mode bit 1
+  // Bit 5 - (RW) RXM0: Receive Buffer Operating Mode bit 0
+  // Bit 4 - (RO) Unimplemented, reads as 0
+  // Bit 3 - (RO) RXRTR: Received Remote Transfer Request bit
+  // Bit 2 - (RO) FILHIT2: Filter Hit bit 2
+  // Bit 1 - (RO) FILHIT1: Filter Hit bit 1
+  // Bit 0 - (RO) FILHIT0: Filter Hit bit 0
+#define REG_RXB1CTRL            0x70
 
 #define MCP2515_TIMEOUT         100           // Timeout for register verification, in milliseconds
 
