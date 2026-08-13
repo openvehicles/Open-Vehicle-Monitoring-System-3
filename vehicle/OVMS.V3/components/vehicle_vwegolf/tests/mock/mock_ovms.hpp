@@ -232,6 +232,19 @@ extern StandardMetricsType StandardMetrics;
 #define StdMetrics StandardMetrics
 
 // ---------------------------------------------------------------------------
+// Metric registry (subset) — InitInt creates a standalone custom metric.
+// ---------------------------------------------------------------------------
+static constexpr int SM_STALE_MIN = 60;
+struct OvmsMetrics {
+    OvmsMetricInt* InitInt(const char* name, int /*autostale*/ = 0, int value = 0) {
+        auto* m = new OvmsMetricInt(name);
+        m->SetValue(value);
+        return m;
+    }
+};
+extern OvmsMetrics MyMetrics;
+
+// ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 struct OvmsConfig {
