@@ -169,6 +169,10 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // identified by data[0]. We collect all three before committing to the metric.
     uint8_t m_vin_parts_received = 0;
     char m_vin_buf[18] = {};
+    // Regenerative-braking strength, decoded from 0x187 (see IncomingFrameCan2).
+    // The e-Golf's five regen levels as a 0..4 scale (least->most): D0 (coast) = 0,
+    // D1 = 1, D2 = 2, D3 = 3, B = 4. -1 = N/A (not in gear D or B).
+    OvmsMetricInt* m_recup_level = nullptr;
 
 #ifdef VWEGOLF_NATIVE_TEST
  public:
