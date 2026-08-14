@@ -1815,20 +1815,18 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
-/* These have been removed to simplify the CAN filter.      
-    case 0x180:
+    case 0x180: // Filtered out by CAN RX filter on ZE1
       if (d[5] != 0xff)
         {
         StandardMetrics.ms_v_env_throttle->SetValue(d[5] / 2.00);
         }
       break;
-    case 0x292:
+    case 0x292: // Filtered out by CAN RX filter on ZE1
       if (d[6] != 0xff)
         {
         StandardMetrics.ms_v_env_footbrake->SetValue(d[6] / 1.39);
         }
       break;
-*/
     case 0x355:
      // The odometer value on the bus is always in units appropriate
      // for the car's intended market and is unaffected by the dash
@@ -1843,7 +1841,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         }
       ESP_LOGV(TAG, "IncomingFrameCan2 odometer units: %s", m_odometer_units == Miles ? "Miles" : "Kilometers");
       break;
-    case 0x385: // Returns 0,0,0,0 on ZE1
+    case 0x385: 
       if (d[2]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, d[2] / 4.0, PSI);
       if (d[3]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, d[3] / 4.0, PSI);
       if (d[4]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, d[4] / 4.0, PSI);
