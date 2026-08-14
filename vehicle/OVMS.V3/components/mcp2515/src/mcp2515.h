@@ -90,6 +90,7 @@ class mcp2515 : public canbus
 
   protected:
     esp_err_t WriteFrame(const CAN_frame_t* p_frame);
+    esp_err_t EnableRXFilter(bool enable);
 
   public:
     void SetPowerMode(PowerMode powermode) override;
