@@ -25,10 +25,33 @@ Open Vehicle Monitor System v3 - Change log
 - Fiat eDoblo: added passive lock status from CAN 0x612.
 - VW e-Golf: populate v.e.awake and v.e.on, derived from the terminal (KL_15, 0x3C0)
     and drivetrain-READY (0x391) frames.
-- VW e-Golf: added remote climate control (preconditioning) over KCAN BAP via the J533 connector.
-    Start/stop from the app or the standard climatecontrol command. The car runs its stored
-    climate profile: OVMS does not set the temperature, it follows the setpoint configured in
-    the MIB. Requires the KCAN (J533) wiring described in the user guide.
+- VW e-Golf: remote cabin climate control (pre-conditioning) over the KCAN comfort bus using
+    the VW BAP application protocol (bundled bap-lib) to the Battery Control unit (LSG 0x25).
+    Start/stop from the app or the standard climatecontrol command; the car runs its stored
+    global pre-conditioning profile. OVMS reads the stored global profile back and rewrites it
+    with the operation set to climate and the "Climatise on battery power" option enabled (so
+    pre-conditioning works unplugged; an allow-flag, not a force — the car still uses wall power
+    when plugged, and a charge command clears it so climate re-asserts it), every other field
+    (incl. temperature) preserved, then triggers — so the result follows the setpoint configured
+    in the car. The
+    comfort/EV cluster is woken with a CAN-NM message from a spare node id rather than
+    impersonating the factory OCU, avoiding the duplicate-node collision with the car's real
+    OCU; the command is retried until the Battery Control unit confirms it and the result is
+    reported on v.e.hvac.
+    Requires the KCAN (J533) wiring described in the user guide. Implemented in a self-contained
+    vehicle_vwegolf_bat_ctrl.cpp module (BatteryControl: climate + charge).
+- VW e-Golf: remote charge control over the same Battery Control channel (LSG 0x25), sharing the
+    climate command path (one command in flight at a time). The "charge current" command sets the
+    charge-current limit as a persistent edit of the stored global profile (snapped to the car's
+    allowed steps 5/10/13/32 A); it changes only that field and sends no start trigger. All charge
+    control acts on the global ("Optionen") immediate-charge profile only — a departure timer uses
+    its own per-timer profile, so an OVMS-set current does not apply to a timer-scheduled charge. The
+    "charge start" / "charge stop" commands arm the global profile for charging and fire the
+    immediate OperationMode trigger. The stop is op-specific (it arms the pure-charge op first, so
+    "charge stop" is blocked while climate is running — stop climate first, as the charge arm would
+    otherwise kill climate). The immediate charge start/stop trigger has no factory reference on this
+    platform (the car's own UI only edits departure timers); it is validated on a 2020 e-Golf and
+    gated (no profile read/arm -> no trigger).
 - VW e-Golf: v.e.parktime no longer clamped — the 0x6B7 CAN park-time field is 17-bit
     (saturates at ~36.5 h), so the saturated max is ignored and OVMS's native (uncapped)
     park-time counter is used instead.

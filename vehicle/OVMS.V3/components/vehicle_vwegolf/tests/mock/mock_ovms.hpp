@@ -9,6 +9,7 @@
 #include <cstring>
 #include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -50,8 +51,9 @@ typedef union {
 } CAN_FIR_t;
 
 typedef int esp_err_t;
-static constexpr esp_err_t ESP_OK   =  0;
-static constexpr esp_err_t ESP_FAIL = -1;
+static constexpr esp_err_t ESP_OK     =  0;
+static constexpr esp_err_t ESP_FAIL   = -1;
+static constexpr esp_err_t ESP_QUEUED =  1;  // frame queued for later TX (matches can.h)
 
 // One transmitted frame, recorded so the clima tests can assert exactly what the
 // module put on the bus. The real canbus discards frames after TX; the mock keeps
@@ -67,6 +69,9 @@ struct canbus {
     uint8_t               m_busnumber = 0;
     std::vector<TxRecord> tx_log;
     CAN_errorstate_t      error_state = CAN_errorstate_none;
+    // When set, WriteStandard/WriteExtended still log the frame but return ESP_FAIL, so
+    // tests can exercise the TX-failure path (climate handshake bail / tx_fail notify).
+    bool                  fail_tx = false;
 
     esp_err_t WriteStandard(uint32_t id, uint8_t len, uint8_t* data, int /*wait*/ = 0) {
         return LogTx(false, id, len, data);
@@ -85,12 +90,28 @@ struct canbus {
         r.len      = len;
         for (uint8_t i = 0; i < len && i < 8; i++) r.data[i] = data[i];
         tx_log.push_back(r);
-        return ESP_OK;
+        return fail_tx ? ESP_FAIL : ESP_OK;
     }
 };
 
-// 'Minutes' is used as a unit tag in some metric SetValue calls
+// Minimal user-notification stub (real OVMS: MyNotify.NotifyString). Records the last
+// notification so the climate tests can assert the failure notification fires.
+struct OvmsNotify {
+    int         count = 0;
+    std::string last_type, last_subtype, last_value;
+    void NotifyString(const char* type, const char* subtype, const char* value) {
+        count++;
+        last_type    = type ? type : "";
+        last_subtype = subtype ? subtype : "";
+        last_value   = value ? value : "";
+    }
+};
+extern OvmsNotify MyNotify;
+
+// Unit tags used in some metric SetValue calls (real code passes metric_unit_t; ignored here)
 static constexpr int Minutes = 0;
+static constexpr int Amps    = 0;
+static constexpr int Celcius = 0;  // OVMS spells it 'Celcius'
 
 struct CAN_frame_t {
     canbus*    origin   = nullptr;
@@ -218,6 +239,7 @@ struct StandardMetricsType {
     OvmsMetricString* ms_v_charge_substate      = new OvmsMetricString("ms_v_charge_substate");
     OvmsMetricString* ms_v_charge_type          = new OvmsMetricString("ms_v_charge_type");
     OvmsMetricBool*   ms_v_charge_timermode     = new OvmsMetricBool("ms_v_charge_timermode");
+    OvmsMetricFloat*  ms_v_charge_climit        = new OvmsMetricFloat("ms_v_charge_climit");
     OvmsMetricInt*    ms_v_charge_duration_full = new OvmsMetricInt("ms_v_charge_duration_full");
     OvmsMetricFloat*  ms_v_charge_voltage       = new OvmsMetricFloat("ms_v_charge_voltage");
     OvmsMetricFloat*  ms_v_charge_current       = new OvmsMetricFloat("ms_v_charge_current");
@@ -237,9 +259,14 @@ extern StandardMetricsType StandardMetrics;
 static constexpr int SM_STALE_MIN = 60;
 struct OvmsMetrics {
     OvmsMetricInt* InitInt(const char* name, int /*autostale*/ = 0, int value = 0) {
-        auto* m = new OvmsMetricInt(name);
-        m->SetValue(value);
-        return m;
+        // Real OVMS metrics are singletons by name owned by the framework for the process
+        // lifetime; mirror that so repeated registrations return the same object and the harness
+        // owns every allocation (no per-vehicle leak — the registry frees them at exit).
+        static std::map<std::string, std::unique_ptr<OvmsMetricInt>> registry;
+        auto& slot = registry[name];
+        if (!slot) slot.reset(new OvmsMetricInt(name));
+        slot->SetValue(value);
+        return slot.get();
     }
 };
 extern OvmsMetrics MyMetrics;
@@ -330,5 +357,8 @@ struct OvmsVehicle {
     virtual vehicle_command_t CommandUnlock(const char*) { return NotImplemented; }
     virtual vehicle_command_t CommandWakeup()                 { return NotImplemented; }
     virtual vehicle_command_t CommandClimateControl(bool)     { return NotImplemented; }
+    virtual vehicle_command_t CommandSetChargeCurrent(uint16_t){ return NotImplemented; }
+    virtual vehicle_command_t CommandStartCharge()            { return NotImplemented; }
+    virtual vehicle_command_t CommandStopCharge()             { return NotImplemented; }
     virtual ~OvmsVehicle() { delete m_can1; delete m_can2; delete m_can3; }
 };
