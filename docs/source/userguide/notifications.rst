@@ -150,6 +150,8 @@ alert   ota.partitiontype           Outdated partitioning scheme inhibits OTA up
 info    pushover                    Connection failure / message delivery response
 stream  retools.list.update         RE toolkit CAN frame list update
 stream  retools.status              RE toolkit general status update
+alert   server.v2.auth.failure      Incorrect server V2 login credentials
+alert   server.v3.auth.failure      Incorrect server V3 login credentials
 info    valet.disabled              Valet mode disabled
 info    valet.enabled               Valet mode enabled
 alert   valet.hood                  Vehicle hood opened while in valet mode

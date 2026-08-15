@@ -1,6 +1,14 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Server V2 & V3: suspend periodic reconnect attempts on authentication failures (incorrect credentials)
+    to avoid blocking of shared public IP addresses (mobile network proxies/gateways). A new reconnect
+    attempt is triggered by changing the configuration. Changing the server configuration now also
+    automatically triggers a reconnect, and the web UI assists in tracking config change results by
+    showing the respective status and start/stop buttons after a change.
+  New notifications (+ implied events):
+    - [alert] server.v2.auth.failure         -- Incorrect server V2 login credentials
+    - [alert] server.v3.auth.failure         -- Incorrect server V3 login credentials
 - VW e-Golf: set v.e.drivemode from the Charisma / Fahrprofilauswahl active profile
     (KCAN 0x386): Normal/Eco/Eco+ -> 1/2/3 (matching the e-Up module), replacing the
     incorrect B-gear-derived value.

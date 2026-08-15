@@ -184,7 +184,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
     case MG_EV_CONNECT:
       {
       int *success = (int*)p;
-      ESP_LOGV(TAG, "OvmsServerV2MongooseCallback(MG_EV_CONNECT=%d)",*success);
+      ESP_LOGD(TAG, "OvmsServerV2MongooseCallback(MG_EV_CONNECT=%d)",*success);
       if (*success == 0)
         {
         // Successful connection
@@ -208,20 +208,23 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
       }
       break;
     case MG_EV_CLOSE:
-      ESP_LOGV(TAG, "OvmsServerV2MongooseCallback(MG_EV_CLOSE)");
+      ESP_LOGD(TAG, "OvmsServerV2MongooseCallback(MG_EV_CLOSE)");
       if (MyOvmsServerV2)
         {
         // The only case of a scheduled disconnect is by "server v2 stop", in which case MyOvmsServerV2 is
         // alread NULL, so this can only be an unexpected connection drop; check cause:
         if (MyOvmsServerV2->m_state == OvmsServerV2::Authenticating)
           {
-          // Auth issue, user needs to fix config:
-          MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", true, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->Reconnect(120);
+          // Auth issue, user needs to fix config, suspend reconnect to avoid IP blocking:
+          MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", true, OvmsServerV2::Disconnected);
+          MyOvmsServerV2->Reconnect(-1);
+          MyNotify.NotifyString("alert", "server.v2.auth.failure",
+            "Incorrect server V2 login credentials\n"
+            "V2 server connection suspended, verify configuration");
           }
-        else
+        else if (MyOvmsServerV2->m_state != OvmsServerV2::WaitReconnect)
           {
-          // Unscheduled connection drop from any other state:
+          // Unscheduled connection drop from any other state, not already waiting to reconnect:
           MyOvmsServerV2->SetStatus("Connection lost, reconnecting", true, OvmsServerV2::WaitReconnect);
           MyOvmsServerV2->Reconnect(10);
           }
@@ -261,8 +264,7 @@ void OvmsServerV2::ProcessServerMsg()
     if (m_token == token)
       {
       SetStatus("Error: Detected token replay attack/collision", true, WaitReconnect);
-      Reconnect(60);
-      m_connretry = 60; // Try again in 60 seconds...
+      Reconnect(60); // Try again in 60 seconds...
       return;
       }
     uint8_t sdigest[OVMS_MD5_SIZE];
@@ -1984,6 +1986,11 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
 
 bool OvmsServerV2::NotificationFilter(OvmsNotifyType* type, const char* subtype)
   {
+  // Filter our own auth failure notifications (queued entries would be sent after fixing the credentials):
+  if (subtype && strcmp(subtype, "server.v2.auth.failure") == 0)
+    return false;
+
+  // Accept these notifications types:
   if (strcmp(type->m_name, "info") == 0 ||
       strcmp(type->m_name, "error") == 0 ||
       strcmp(type->m_name, "alert") == 0 ||
@@ -2081,15 +2088,53 @@ void OvmsServerV2::EventListener(std::string event, void* data)
  */
 void OvmsServerV2::ConfigChanged(OvmsConfigParam* param)
   {
+  auto cfglock = MyConfig.Lock();
+
+  // Read new configuration:
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
   m_updatetime_connected = MyConfig.GetParamValueInt("server.v2", "updatetime.connected", 60);
   m_updatetime_idle = MyConfig.GetParamValueInt("server.v2", "updatetime.idle", 600);
+
+  if (!param) return;
+
+  // Check for changes that need a reconnect:
+  bool do_reconnect = false;
+  if (param->GetName() == "server.v2")
+    {
+    if (param->GetValue("server") != m_server ||
+        param->GetValue("port") != m_port ||
+        param->GetValueBool("tls") != m_tls ||
+        param->GetValueBool("paranoid") != m_paranoid)
+      {
+      do_reconnect = true;
+      }
+    }
+  else if (param->GetName() == "vehicle")
+    {
+    if (param->GetValue("id") != m_vehicleid)
+      {
+      do_reconnect = true;
+      }
+    }
+  else if (param->GetName() == "password")
+    {
+    if (param->GetValue("server.v2") != m_password)
+      {
+      do_reconnect = true;
+      }
+    }
+
+  if (do_reconnect && (m_mgconn || m_connretry < 0))
+    {
+    Reconnect(2);
+    SetStatus("Server/credentials changed, reconnecting...", false, WaitReconnect);
+    }
   }
 
 void OvmsServerV2::NetUp(std::string event, void* data)
   {
   // workaround for wifi AP mode startup (manager up before interface)
-  if ( (m_mgconn == NULL) && MyNetManager.MongooseRunning() )
+  if ((m_mgconn == NULL) && MyNetManager.MongooseRunning() && (m_connretry >= 0))
     {
     SetStatus("Network is up, so attempt network connection", false, ConnectWait);
     m_connretry = 2;
@@ -2102,13 +2147,16 @@ void OvmsServerV2::NetDown(std::string event, void* data)
 
 void OvmsServerV2::NetReconfigured(std::string event, void* data)
   {
-  SetStatus("Network was reconfigured: disconnect and reconnect", false, ConnectWait);
-  Reconnect(3);
+  if (m_connretry >= 0)
+    {
+    SetStatus("Network was reconfigured: disconnect and reconnect", false, ConnectWait);
+    Reconnect(3);
+    }
   }
 
 void OvmsServerV2::NetmanInit(std::string event, void* data)
   {
-  if ((m_mgconn == NULL)&&(MyNetManager.m_connected_any))
+  if ((m_mgconn == NULL) && (MyNetManager.m_connected_any) && (m_connretry >= 0))
     {
     SetStatus("Network is up, so attempt network connection", false, ConnectWait);
     m_connretry = 2;
@@ -2139,7 +2187,7 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
       }
     }
 
-  if ((!MyNetManager.m_connected_any) && (m_state != WaitNetwork))
+  if ((!MyNetManager.m_connected_any) && (m_state != WaitNetwork) && (m_connretry >= 0))
     {
     m_connretry = 0;
     SetStatus("Server is ready to start", false, WaitNetwork);
@@ -2356,6 +2404,10 @@ void ovmsv2_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     {
     writer->puts("Launching OVMS Server V2 connection (oscv2)");
     MyOvmsServerV2 = new OvmsServerV2("oscv2");
+    }
+  else
+    {
+    writer->puts("OVMS v2 server has already been started");
     }
   }
 

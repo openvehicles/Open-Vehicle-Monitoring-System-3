@@ -88,7 +88,14 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v2", "updatetime.idle", updatetime_idle);
       MyConfig.SetParamValueBool("server.v2", "workaround.ios_tpms_display", ios_tpms_workaround);
 
-      std::string info = "<p class=\"lead\">Server V2 (MP) connection configured.</p>"
+      std::string info =
+        "<p class=\"lead\">Server V2 (MP) connection configured.</p>"
+        "<pre class=\"monitor\" id=\"cfg-server-v2-status\" data-updcmd=\"server v2 status\" data-updcnt=\"1\" data-events=\"server.v2\"></pre>"
+        "<ul class=\"list-inline\">"
+          "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-cmd=\"server v2 start\">Start</button></li>"
+          "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-cmd=\"server v2 stop\">Stop</button></li>"
+          "<li><a class=\"btn btn-default btn-sm\" href=\"/cfg/server/v2\" target=\"#main\">Edit</a></li>"
+        "</ul>"
         "<script>$(\"title\").data(\"moduleid\", \"" + c.encode_html(vehicleid) + "\");</script>";
 
       c.head(200);

@@ -183,7 +183,15 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
         }
       }
       c.head(200);
-      c.alert("success", "<p class=\"lead\">Server V3 (MQTT) connection configured.</p>");
+      c.alert("success",
+        "<p class=\"lead\">Server V3 (MQTT) connection configured.</p>"
+        "<pre class=\"monitor\" id=\"cfg-server-v3-status\" data-updcmd=\"server v3 status\" data-updcnt=\"1\" data-events=\"server.v3\"></pre>"
+        "<ul class=\"list-inline\">"
+          "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-cmd=\"server v3 start\">Start</button></li>"
+          "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-cmd=\"server v3 stop\">Stop</button></li>"
+          "<li><a class=\"btn btn-default btn-sm\" href=\"/cfg/server/v3\" target=\"#main\">Edit</a></li>"
+        "</ul>"
+      );
       OutputHome(p, c);
       c.done();
       return;
