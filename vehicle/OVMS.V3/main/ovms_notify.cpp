@@ -49,11 +49,70 @@ using namespace std;
 
 OvmsNotify       MyNotify       __attribute__ ((init_priority (1820)));
 
+#define NOTIFY_RL_NOTICE_COOLDOWN_MS 60000
+
 // Tracing:
 //  level 0 = no tracing (logging)
 //  level 1 = trace standard (text & data) notifications
 //  level 2 = also trace stream notifications
 #define DO_TRACE(type) (MyNotify.m_trace == 2 || (MyNotify.m_trace == 1 && strcmp((type), "stream") != 0))
+
+namespace
+  {
+  struct NotifyRateLimitConfig
+    {
+    float rate;
+    float burst;
+    };
+
+  static NotifyRateLimitConfig GetNotifyRateLimitConfig(const char* type, const std::string& caller, const std::string& subtype)
+    {
+    NotifyRateLimitConfig cfg;
+    float default_rate = 0.1f;
+    float default_burst = 3.0f;
+
+    if (strcmp(type, "alert") == 0)
+      {
+      default_rate = 0.2f;
+      default_burst = 5.0f;
+      }
+    else if (strcmp(type, "error") == 0)
+      {
+      default_rate = 0.5f;
+      default_burst = 10.0f;
+      }
+
+    std::string default_base = std::string("rl.default.") + type;
+    cfg.rate = MyNotify.GetRateConfig(default_base + ".rate", default_rate);
+    cfg.burst = MyNotify.GetRateConfig(default_base + ".burst", default_burst);
+
+    std::string base = std::string("rl.channel.") + caller + "." + type;
+    cfg.rate = MyNotify.GetRateConfig(base + ".rate", cfg.rate);
+    cfg.burst = MyNotify.GetRateConfig(base + ".burst", cfg.burst);
+
+    std::string subbase = base + ".subtype." + subtype;
+    cfg.rate = MyNotify.GetRateConfig(subbase + ".rate", cfg.rate);
+    cfg.burst = MyNotify.GetRateConfig(subbase + ".burst", cfg.burst);
+
+    if (cfg.rate <= 0.0f)
+      cfg.rate = 0.001f;
+    if (cfg.burst < 1.0f)
+      cfg.burst = 1.0f;
+
+    return cfg;
+    }
+
+  static size_t GetNotifyQueueLimit(const char* type)
+    {
+    if (strcmp(type, "info") == 0)
+      return MyNotify.GetSizeConfig("rl.queue.info.max_entries", 200);
+    if (strcmp(type, "alert") == 0)
+      return MyNotify.GetSizeConfig("rl.queue.alert.max_entries", 200);
+    if (strcmp(type, "error") == 0)
+      return MyNotify.GetSizeConfig("rl.queue.error.max_entries", 300);
+    return 0;
+    }
+  }
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -80,6 +139,17 @@ void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
     writer->printf("  %s(%d): verbosity=%d\n", mc->m_caller, mc->m_reader, mc->m_verbosity);
+    }
+
+  writer->printf("Rate limiter buckets: %d\n", MyNotify.m_rl_buckets.size());
+  writer->printf("Queue limits: info=%d alert=%d error=%d\n",
+    MyNotify.GetQueueLimitForType("info"),
+    MyNotify.GetQueueLimitForType("alert"),
+    MyNotify.GetQueueLimitForType("error"));
+  for (auto it=MyNotify.m_rl_buckets.begin(); it!=MyNotify.m_rl_buckets.end(); ++it)
+    {
+    writer->printf("  %s: tokens=%.2f dropped=%" PRIu32 "\n",
+      it->first.c_str(), it->second.tokens, it->second.dropped);
     }
 
   if (MyNotify.m_types.size() > 0)
@@ -282,6 +352,15 @@ OvmsNotifyType::~OvmsNotifyType()
 uint32_t OvmsNotifyType::QueueEntry(OvmsNotifyEntry* entry)
   {
   OvmsRecMutexLock lock(&m_mutex);
+
+  if (MyNotify.QueueLimitExceeded(m_name, m_entries.size()))
+    {
+    ESP_LOGW(TAG, "Drop notification due to queue limit: type=%s", m_name);
+    MyNotify.MaybeEmitRateLimitNotice("queue", m_name, "queue_overflow", 1);
+    delete entry;
+    return 0;
+    }
+
   uint32_t id = m_nextid++;
 
   entry->m_id = id;
@@ -439,6 +518,7 @@ OvmsNotify::OvmsNotify()
   ESP_LOGI(TAG, "Initialising NOTIFICATIONS (1820)");
 
   m_nextreader = 1;
+  m_internal_notice = false;
 
 #ifdef CONFIG_OVMS_DEV_DEBUGNOTIFICATIONS
   m_trace = 1;
@@ -575,6 +655,118 @@ void OvmsNotify::RegisterType(const char* type)
     }
   }
 
+bool OvmsNotify::IsUserFacingType(const char* type)
+  {
+  return (strcmp(type, "info") == 0 || strcmp(type, "alert") == 0 || strcmp(type, "error") == 0);
+  }
+
+float OvmsNotify::GetRateConfig(const std::string& key, float defval)
+  {
+  std::string raw = MyConfig.GetParamValue("notify", key);
+  if (raw.empty())
+    return defval;
+  return atof(raw.c_str());
+  }
+
+size_t OvmsNotify::GetSizeConfig(const std::string& key, size_t defval)
+  {
+  std::string raw = MyConfig.GetParamValue("notify", key);
+  if (raw.empty())
+    return defval;
+  int val = atoi(raw.c_str());
+  if (val < 1)
+    return 1;
+  return val;
+  }
+
+size_t OvmsNotify::GetQueueLimitForType(const char* type)
+  {
+  return GetNotifyQueueLimit(type);
+  }
+
+bool OvmsNotify::QueueLimitExceeded(const char* type, size_t current_entries)
+  {
+  return !m_internal_notice && IsUserFacingType(type) && current_entries >= GetQueueLimitForType(type);
+  }
+
+bool OvmsNotify::ConsumeRateToken(const char* caller, const char* type, const char* subtype)
+  {
+  if (m_internal_notice || !IsUserFacingType(type))
+    return true;
+
+  std::string caller_key = caller ? caller : "unknown";
+  std::string subtype_key = subtype ? subtype : "none";
+  NotifyRateLimitConfig cfg = GetNotifyRateLimitConfig(type, caller_key, subtype_key);
+
+  std::string bucket_key = caller_key + "|" + type + "|" + subtype_key;
+  NotifyBucketState& bs = m_rl_buckets[bucket_key];
+  uint32_t now_ms = esp_log_timestamp();
+
+  if (bs.last_refill_ms == 0)
+    {
+    bs.last_refill_ms = now_ms;
+    bs.tokens = cfg.burst;
+    }
+  else
+    {
+    float elapsed_s = (float)(now_ms - bs.last_refill_ms) / 1000.0f;
+    bs.last_refill_ms = now_ms;
+    bs.tokens += elapsed_s * cfg.rate;
+    if (bs.tokens > cfg.burst)
+      bs.tokens = cfg.burst;
+    }
+
+  if (bs.tokens >= 1.0f)
+    {
+    bs.tokens -= 1.0f;
+    return true;
+    }
+
+  bs.dropped++;
+  return false;
+  }
+
+void OvmsNotify::MaybeEmitRateLimitNotice(const char* caller, const char* type, const char* subtype, uint32_t dropped_now)
+  {
+  if (m_internal_notice || dropped_now == 0)
+    return;
+
+  std::string caller_key = caller ? caller : "unknown";
+  std::string subtype_key = subtype ? subtype : "none";
+  std::string notice_key = caller_key + "|" + type + "|" + subtype_key;
+  uint32_t now_ms = esp_log_timestamp();
+  uint32_t& last_ms = m_rl_notice_suppress[notice_key];
+
+  if (last_ms && (now_ms - last_ms) < NOTIFY_RL_NOTICE_COOLDOWN_MS)
+    return;
+
+  m_rl_notice_suppress[notice_key] = now_ms;
+  m_internal_notice = true;
+  NotifyStringf("alert", "notify.rate_limit",
+    "Notification flood control active: dropped %" PRIu32 " message(s) for channel=%s type=%s subtype=%s",
+    dropped_now, caller_key.c_str(), type, subtype_key.c_str());
+  m_internal_notice = false;
+  }
+
+void OvmsNotify::CollectReaders(OvmsNotifyType* type, const char* subtype, size_t size,
+  std::bitset<NOTIFY_MAX_READERS>& readers, uint32_t& dropped_by_rl, const char*& dropped_caller)
+  {
+  for (OvmsNotifyCallbackMap_t::iterator itc = m_readers.begin(); itc != m_readers.end(); ++itc)
+    {
+    OvmsNotifyCallbackEntry* mc = itc->second;
+    if (!mc->Accepts(type, subtype, size))
+      continue;
+    if (ConsumeRateToken(mc->m_caller, type->m_name, subtype))
+      readers.set(mc->m_reader);
+    else
+      {
+      ++dropped_by_rl;
+      if (dropped_by_rl == 1)
+        dropped_caller = mc->m_caller;
+      }
+    }
+  }
+
 uint32_t OvmsNotify::NotifyString(const char* type, const char* subtype, const char* value)
   {
   OvmsRecMutexLock lock(&m_mutex);
@@ -590,13 +782,14 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* subtype, const c
 
   // determine all currently active readers accepting the message:
   std::bitset<NOTIFY_MAX_READERS> readers;
+  uint32_t dropped_by_rl = 0;
+  const char* dropped_caller = "mixed";
   size_t size = strlen(value);
-  for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
-    {
-    OvmsNotifyCallbackEntry* mc = itc->second;
-    if (mc->Accepts(mt, subtype, size))
-      readers.set(mc->m_reader);
-    }
+  CollectReaders(mt, subtype, size, readers, dropped_by_rl, dropped_caller);
+
+  if (dropped_by_rl)
+    MaybeEmitRateLimitNotice(dropped_caller, type, subtype, dropped_by_rl);
+
   if (readers.count() == 0)
     {
     ESP_LOGD(TAG, "Abort: no readers for type '%s' subtype '%s' size %d", type, subtype, size);
@@ -632,15 +825,20 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
   // get verbosity levels needed by readers accepting the message:
   std::map<int, OvmsNotifyEntryCommand*> verbosity_msgs;
   std::bitset<NOTIFY_MAX_READERS> readers;
+  uint32_t dropped_by_rl = 0;
+  const char* dropped_caller = "mixed";
+  CollectReaders(mt, subtype, 0, readers, dropped_by_rl, dropped_caller);
+
   for (auto itc=m_readers.begin(); itc!=m_readers.end(); itc++)
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
-    if (mc->Accepts(mt, subtype))
-      {
+    if (readers.test(mc->m_reader))
       verbosity_msgs[mc->m_verbosity] = NULL;
-      readers.set(mc->m_reader); // cache acceptance
-      }
     }
+
+  if (dropped_by_rl)
+    MaybeEmitRateLimitNotice(dropped_caller, type, subtype, dropped_by_rl);
+
   if (verbosity_msgs.size() == 0)
     {
     if (DO_TRACE(type))
