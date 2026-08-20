@@ -43,16 +43,18 @@ static const char *TAG = "v-voltampera";
 #define VA_PREHEAT_ERROR			5
 #define VA_PREHEAT_RELINQUISH	6 // Used only when preheating is activated via key fob while BCM overriding is on-going
 
+// One entry per VA_PREHEAT_* value up to VA_PREHEAT_RELINQUISH: PreheatModeChange indexes
+// this with its argument before the switch, so a missing entry reads out of bounds.
 const char* const va_preheat_status_strings[] = {
 	"Stopped",
 	"Starting",
 	"Switch on",
 	"Started",
 	"Stopping",
-	"Error" };
+	"Error",
+	"Relinquished" };
 
 #define VA_PREHEAT_TIMEOUT 					15 //seconds
-#define VA_PREHEAT_MAX_TIME_DEFAULT 20 // minutes
 #define VA_PREHEAT_MAX_RETRIES 			3
 #define VA_PREHEAT_LIGHTS_ACTIVE (va_light_t)(Park) 
 #define VA_PREHEAT_LIGHTS_STARTSTOP (va_light_t)(Driver_front_signal | Passenger_front_signal | Left_rear_signal | Right_rear_signal )
@@ -69,7 +71,6 @@ const char * OvmsVehicleVoltAmpera::PreheatStatus()
 
 void OvmsVehicleVoltAmpera::ClimateControlInit()
  	{
-	// New VA specific metrics
 	mt_preheat_status       = MyMetrics.InitInt("xva.v.ac.preheat", SM_STALE_MIN, VA_PREHEAT_STOPPED);
 	mt_preheat_timer        = MyMetrics.InitInt("xva.v.ac.preheat_timer", SM_STALE_MIN, 0);
 	mt_ac_active            = MyMetrics.InitBool("xva.v.ac.active", SM_STALE_MIN, 0);
@@ -80,7 +81,7 @@ void OvmsVehicleVoltAmpera::ClimateControlInit()
 
 void OvmsVehicleVoltAmpera::ClimateControlPrintStatus(int verbosity, OvmsWriter* writer)
 	{
-  writer->printf("Preheat status: %s - Cabin temperature %2.1f\n", PreheatStatus(), StandardMetrics.ms_v_env_cabintemp->AsFloat());
+  writer->printf("Climate:  %s - Cabin temperature %2.1f\n", PreheatStatus(), StandardMetrics.ms_v_env_cabintemp->AsFloat());
 	}
 
 void OvmsVehicleVoltAmpera::ClimateControlIncomingSWCAN(CAN_frame_t* p_frame)
@@ -88,7 +89,6 @@ void OvmsVehicleVoltAmpera::ClimateControlIncomingSWCAN(CAN_frame_t* p_frame)
 	uint8_t *d = p_frame->data.u8;
 	bool unexpected_data = false;
 
-	// Process the incoming message
 	switch (p_frame->MsgID)
 		{
 
@@ -121,7 +121,6 @@ void OvmsVehicleVoltAmpera::ClimateControlIncomingSWCAN(CAN_frame_t* p_frame)
 		      ESP_LOGI(TAG,"Fob key press: UNLOCK");
 		      if (m_preheat_commander==OVMS)
 		        {
-		        // Turn off preheating
 		      	ESP_LOGI(TAG,"<--- Turn off preheating due to fob unlock cmd ---->");
 		        PreheatModeChange(VA_PREHEAT_STOPPING);
 		        }
@@ -167,7 +166,8 @@ void OvmsVehicleVoltAmpera::ClimateControlIncomingSWCAN(CAN_frame_t* p_frame)
     case 0x10734099: 
       {
       uint8_t mode = (d[0] >> 4) & 3;
-      // this flag is active when AC is turned on from dashboard, or when preheat is initiated via fob or via Onstar (but NOT when overriding BCM)
+      // Follows the A/C whoever turned it on. An earlier note claimed it stays clear when
+      // OVMS overrides the BCM; unverified on Gen2.
       if (mode==1)
         {
         mt_ac_active->SetValue(false);
@@ -244,7 +244,6 @@ void OvmsVehicleVoltAmpera::ClimateControlIncomingSWCAN(CAN_frame_t* p_frame)
       else if ( (d[0]>>1) & 1)  
         // Remote start request
         {
-        // Preheat switched on most likely via key fob
         ESP_LOGI(TAG,"Preheating initiated by BCM (via key fob?)");
         m_preheat_commander = Fob;
         PreheatModeChange(VA_PREHEAT_STARTING);
@@ -262,7 +261,6 @@ void OvmsVehicleVoltAmpera::ClimateControlIncomingSWCAN(CAN_frame_t* p_frame)
 	}
 
 
-// Take care of handling state changes and event signaling. 
 void OvmsVehicleVoltAmpera::PreheatModeChange( uint8_t preheat_status )
 	{
 	CAN_frame_t txframe;
@@ -363,7 +361,6 @@ void OvmsVehicleVoltAmpera::PreheatModeChange( uint8_t preheat_status )
   }
 
 
-// AC status changed
 void OvmsVehicleVoltAmpera::AirConStatusUpdated( bool ac_enabled )
   {
   ESP_LOGD(TAG,"AirConStatusUpdated: ac_enabled %d, preheat_status: %s", ac_enabled, PreheatStatus());
@@ -415,7 +412,6 @@ void OvmsVehicleVoltAmpera::PreheatWatchdog()
       {
       if (m_preheat_modechange_timer > VA_PREHEAT_TIMEOUT)
         {
-        // For some reason preheating did not (re)start.. 
         m_preheat_retry_counter++;
         if (m_preheat_retry_counter < VA_PREHEAT_MAX_RETRIES)
         	{
@@ -476,6 +472,7 @@ void OvmsVehicleVoltAmpera::PreheatWatchdog()
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandClimateControl(bool enable)
   {
+  SetCmdPending(enable ? "climate on" : "climate off", StandardMetrics.ms_v_env_hvac);
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   ESP_LOGW(TAG,"<------ REMOTE CLIMATE CONTROL: %d (Preheat Status: %s) ------>", enable, PreheatStatus() );
   if (!enable)
