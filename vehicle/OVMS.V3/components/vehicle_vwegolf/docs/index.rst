@@ -66,7 +66,7 @@ GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or compatibl
 GPS Antenna                 1020200 Universal GPS Antenna (or compatible)
 SOC Display                 Yes
 Range Display               Yes
-Cabin Pre-heat/cool Control **Yes**
+Cabin Pre-heat/cool Control Yes
 GPS Location                Yes (decoded from KCAN frame 0x486)
 Speed Display               Yes
 Temperature Display         Yes (see list of metrics below)
@@ -74,8 +74,36 @@ BMS v+t Display             No
 TPMS Display                No
 Charge Status Display       Yes
 Charge Interruption Alerts  No
-Charge Control              No
+Charge Control              Charge-current limit, start/stop (see below)
 Lock/Unlock Vehicle         No
 Valet Mode Control          No
 Others
 =========================== ==============
+
+---------------------
+Cabin Climate Control
+---------------------
+
+* Temperature setpoint is set in the car's infotainment system (e-Manager)
+* Climatise on battery power is force-enabled
+* OVMS may show the car as charging/plugged-in even if it is not charging/plugged-in
+
+--------------
+Charge Control
+--------------
+
+Charge control only applies to the default settings in the car, not the user defined charge locations/departure timers.
+
+This means:
+
+* Current limit does not apply by default if you have departure timers enabled because the car will not use the default settings.
+* The moment you use the charge control feature the car will switch to the default charge profile, charging it to 100% SoC
+* You cannot switch back to your departure timer via OVMS, press the delayed charging button on the charge port
+
+Furthermore to make it compatible with climate control:
+
+* When climate control is started while charging you have to turn off climate control first before you can stop charging
+* Enabling climate control while plugged in will cause the car to start charging again
+* To avoid climate preconditioning from starting when using the charge start command while unplugged the flag "climatise on battery" is cleared
+
+Charge current limit only supports a few set values: 5A, 10A, 13A or 32A (= Max)

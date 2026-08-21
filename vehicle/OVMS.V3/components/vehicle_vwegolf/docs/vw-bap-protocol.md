@@ -3,7 +3,7 @@
 BAP = *Bedien- und Anzeigeprotokoll*. Request/response application protocol on raw CAN — property get/set and function calls between control units. Not ISO-TP/UDS — cannot use the OVMS poller. Not broadcast-style CAN: a channel connects client(s) to one server.
 
 RE sources:
-- https://github.com/karlsen-technologies/smartkar-cano-new/tree/2b191b8e9066d494125b3c0338787a347ec8d205/docs/canbus-reverse-engineering — `BAP_PROTOCOL.md` (primary; opcode table and array format below). Pinned to the commit we validated against; check upstream for refinements before trusting the pin as current.
+- https://github.com/karlsen-technologies/smartkar-cano-new/tree/2b191b8e9066d494125b3c0338787a347ec8d205/docs/canbus-reverse-engineering — `BAP_PROTOCOL.md` (primary; opcode table and array format below). Pinned to a validated commit; check upstream for refinements before treating the pin as current.
 - https://github.com/norly/revag-bap (earlier; its opcode table is inconsistent with observed e-Golf traffic — superseded)
 
 ## Concepts
@@ -68,4 +68,4 @@ opcode ≤ 7 · lsg ≤ 63 · function ≤ 63
 short message: payload ≤ 6
 ```
 
-e-Golf Battery Control channel (LSG 0x25: climate/charge functions, profiles, commands) → `clima-control-bap.md`.
+e-Golf Battery Control channel (LSG 0x25: climate/charge functions, profiles, commands) → `bat-ctrl-bap.md`.

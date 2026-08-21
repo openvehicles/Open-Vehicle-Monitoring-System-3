@@ -148,20 +148,20 @@ BO_ 902 DriveProfile: 8 Gateway
 // ---------------------------------------------------------------------------
 // BAP extended frames on KCAN (29-bit IDs, node 0x25 = clima ECU)
 // These are multi-frame BAP messages, not conventional CAN signals.
-// See docs/vw-bap-protocol.md and docs/clima-control-bap.md for protocol details.
+// See docs/vw-bap-protocol.md and docs/bat-ctrl-bap.md for protocol details.
 // CAN ID in DBC = raw_id | 0x80000000 to flag as extended frame.
 // ---------------------------------------------------------------------------
 
 // 0x17330110 (extended) — J533 Gateway → bus BAP status broadcast, node 0x01.
 // Port 0x1B (driver zone) and port 0x21 (passenger zone) carry the real-time clima setpoint
 // as a LE uint16: raw = (setpoint_C - 10.0) * 10. Confirmed Capture 2 (kcan-can3-clima_range).
-// Multi-frame BAP — not a conventional signal. See clima-control-bap.md.
+// Multi-frame BAP — not a conventional signal. See bat-ctrl-bap.md.
 BO_ 2536702224 BAP_GatewayStatus: 8 Gateway
  SG_ BAP_FrameType : 0|8@1+ (1,0) [0|255] "" OVMS
 
 // 0x17332501 (extended) — OVMS → ClimaECU BAP command channel
 // Carries: BAP Get wake ping (2 bytes), and the 3-frame start/stop sequence.
-// See clima-control-bap.md for complete frame content documentation.
+// See bat-ctrl-bap.md for complete frame content documentation.
 BO_ 2536711425 BAP_ClimaCmd: 8 OVMS
  SG_ BAP_FrameType : 0|8@1+ (1,0) [0|255] "" ClimaECU
 
@@ -189,7 +189,7 @@ CM_ BU_ Powertrain "Powertrain / motor controller — terminal status and OBD re
 
 CM_ BO_ 949 "KCAN. Secondary clima running indicator from clima ECU. Byte[0] bit 7. Confirmed Captures 1 and 2.";
 CM_ BO_ 1516 "KCAN. Secondary clima status byte from clima ECU. Observed 0x04=idle, 0x07=active. Full decode not confirmed.";
-CM_ BO_ 2536702224 "KCAN (extended 29-bit ID 0x17330110). J533 gateway BAP status broadcast, node 0x01. Port 0x1B carries real-time driver-zone setpoint; port 0x21 mirrors it for passenger zone. Encoding: raw = (setpoint_C - 10.0) * 10, LE uint16. Confirmed Capture 2. Multi-frame BAP — see clima-control-bap.md.";
+CM_ BO_ 2536702224 "KCAN (extended 29-bit ID 0x17330110). J533 gateway BAP status broadcast, node 0x01. Port 0x1B carries real-time driver-zone setpoint; port 0x21 mirrors it for passenger zone. Encoding: raw = (setpoint_C - 10.0) * 10, LE uint16. Confirmed Capture 2. Multi-frame BAP — see bat-ctrl-bap.md.";
 CM_ BO_ 253 "KCAN. Vehicle speed from ESP. Confirmed from captures.";
 CM_ BO_ 305 "KCAN. State of charge from BMS. Confirmed. 0xFE is a startup sentinel (127.0%) — discard.";
 CM_ BO_ 401 "KCAN. HV bus current and voltage from BMS. Confirmed from captures.";
@@ -209,8 +209,8 @@ CM_ BO_ 1719 "KCAN. Odometer, park time, and filtered outside temperature. Odome
 CM_ BO_ 1447 "KCAN TX by OVMS. OCU OSEK NM keepalive. All-zeros = idle. Action bits are one-shot: set for one transmission then cleared. Lock/unlock bits require additional auth bytes not yet captured.";
 CM_ BO_ 391 "FCAN. Gear selector position. Confirmed from captures.";
 CM_ BO_ 1716 "FCAN. VIN broadcast across three frames (frame index 0/1/2 in byte 0). Assembled in firmware from all three before committing.";
-CM_ BO_ 2536711425 "KCAN TX by OVMS (extended 29-bit ID 0x17332501). BAP command channel to clima ECU (node 0x25). Multi-frame BAP — not a conventional signal message. See clima-control-bap.md.";
-CM_ BO_ 2536711440 "KCAN RX from clima ECU (extended 29-bit ID 0x17332510). BAP status and ACK channel. ECU echoes command counter | 0x80 to confirm receipt. See clima-control-bap.md.";
+CM_ BO_ 2536711425 "KCAN TX by OVMS (extended 29-bit ID 0x17332501). BAP command channel to clima ECU (node 0x25). Multi-frame BAP — not a conventional signal message. See bat-ctrl-bap.md.";
+CM_ BO_ 2536711440 "KCAN RX from clima ECU (extended 29-bit ID 0x17332510). BAP status and ACK channel. ECU echoes command counter | 0x80 to confirm receipt. See bat-ctrl-bap.md.";
 
 CM_ SG_ 949 ClimaRunning "Bit 7 of byte[0]. 1=clima running remotely. Confirmed Captures 1 and 2.";
 CM_ SG_ 1516 ClimaStatus "Raw byte at byte[5]. Observed: 0x04=clima idle, 0x07=clima active. Intermediate values not yet decoded.";

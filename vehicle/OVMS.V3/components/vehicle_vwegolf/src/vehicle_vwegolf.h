@@ -32,6 +32,7 @@
 #include "ovms_log.h"
 #include "ovms_metrics.h"
 #include "vehicle.h"
+#include "vehicle_vwegolf_bat_ctrl.h"  // BatteryControl: remote climate + charge (self-contained)
 
 // Poll states — index matches the timing array in poll_pid_t entries.
 #define VWEGOLF_OFF 0       // All systems sleeping
@@ -44,35 +45,11 @@
 // and we suppress OCU keepalive transmission to avoid accumulating TX errors.
 #define VWEGOLF_BUS_TIMEOUT_SECS 10
 
-// Shorter threshold for the clima wake-before-send decision. KCAN NM runs at 200ms
-// intervals; 3 seconds of silence means the bus is going to sleep or already asleep,
-// even if m_bus_idle_ticks hasn't reached BUS_TIMEOUT yet. Used together with the
-// OEM OCU idle counter to avoid waking during the 0x5A7 conflict window.
-#define VWEGOLF_CLIMA_WAKE_SECS 3
-
-// Settle delay between WakeKcanBus and the BAP burst. The NM-join flood needs time to
-// subside before the clima ECU will accept the multi-frame command. Applied from
-// Ticker1 (non-blocking) when CommandClimateControl had to wake the bus.
-#define VWEGOLF_CLIMA_SETTLE_MS 1000
-
 // Session length limits after WakeKcanBus. OCU keepalive + NM alive stop when the
 // ring quiesces post-ACK (grace) or if no ACK arrives (hard cap). Without these,
 // we talk alone on a sleeping ring, every TX fails ACK, TEC storms for minutes.
 #define VWEGOLF_OCU_ACK_GRACE_SECS 5
 #define VWEGOLF_OCU_SESSION_CAP_SECS 30
-
-// ms_v_env_hvac is driven by 0x03B5 ClimaRunning (cabin actively conditioned). The blower
-// thermostat-cycles within a session (observed off-gaps up to ~14 s), so the metric holds
-// true for this many seconds after the last "running" evidence — bridges the cycling and
-// clears the metric when the car sleeps. A stop command clears it immediately (responsive
-// UX); this only governs autonomous/timer stops (≈hold-second linger, acceptable).
-#define VWEGOLF_HVAC_RUN_HOLD_SECS 20
-
-// After our own stop command we set hvac false at once but the blower keeps spinning down
-// for a moment (0x03B5 still reports running). Ignore that "running" for this long so the
-// stop stays responsive; if 0x03B5 still insists past the window the stop didn't take, so
-// we trust it and show running again.
-#define VWEGOLF_HVAC_STOP_SUPPRESS_SECS 10
 
 class OvmsVehicleVWeGolf : public OvmsVehicle {
  public:
@@ -90,10 +67,13 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandWakeup() override;
     vehicle_command_t CommandClimateControl(bool enable) override;
+    // Charge control — shares the BatteryControl (LSG 0x25) command path with climate.
+    vehicle_command_t CommandSetChargeCurrent(uint16_t limit) override;  // persistent maxCurrent edit
+    vehicle_command_t CommandStartCharge() override;  // immediate charge start (on-car validated)
+    vehicle_command_t CommandStopCharge() override;   // immediate charge stop (op-specific; blocked while climate on)
     void SendOcuHeartbeat();
     void SendNmAlive();
     void WakeKcanBus();
-    vehicle_command_t SendClimaBapBurst(bool enable);
 
  protected:
     void Ticker1(uint32_t ticker) override;
@@ -132,31 +112,12 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     uint8_t m_ocu_session_secs = 0;
     uint8_t m_ocu_grace_secs = 255;  // 255 = no ACK seen yet
 
-    // Rolling BAP counter included in each command frame. The ECU echoes it (| 0x80) in
-    // its ACK so we can match responses to commands. Must never be zero; wraps 0xFF → 0x01.
-    uint8_t m_bap_counter = 0;
-
-    // hvac run-state tracking — source of truth is 0x03B5 ClimaRunning.
-    // m_clima_run_secs: seconds since the last "running" evidence; metric clears when it
-    //   exceeds VWEGOLF_HVAC_RUN_HOLD_SECS. m_hvac_stop_secs: seconds since our last stop
-    //   command; 0x03B5 'running' is ignored while below VWEGOLF_HVAC_STOP_SUPPRESS_SECS.
-    // 255 = "long ago / inactive". Both incremented in Ticker1.
-    uint8_t m_clima_run_secs = 255;
-    uint8_t m_hvac_stop_secs = 255;
-
-    // Set while a multi-frame BAP command burst is in flight (CommandClimateControl).
-    // SendOcuHeartbeat skips if set — a 0x5A7 queued between BAP frames blocks the
-    // continuation and the ECU discards the message. The 180 ms throttle isn't enough
-    // when the 3×WriteExtended calls can take up to 600 ms worst-case.
-    bool m_bap_burst_active = false;
-
-    // Deferred clima burst. When CommandClimateControl has to wake the bus, it kicks
-    // WakeKcanBus, records the tick, and returns Success immediately so the command
-    // dispatch task isn't blocked for the 1 s NM-join settle. Ticker1 fires the 3-frame
-    // BAP burst once VWEGOLF_CLIMA_SETTLE_MS has elapsed.
-    bool m_clima_pending = false;
-    bool m_clima_pending_enable = false;
-    uint32_t m_clima_pending_tick = 0;
+    // BatteryControl (LSG 0x25) controller: remote climate AND charge, which share one BAP
+    // command path (handshake -> GET profile 0 -> RMW-arm -> trigger). Self-contained (see
+    // vehicle_vwegolf_bat_ctrl.h): owns its own spare-node NM wake, independent of the OCU 0x5A7
+    // heartbeat above. Ticker1 forwards it a tick; IncomingFrameCan3 forwards it the BCU status
+    // (0x17332510) and clima ECU status (0x5EA) frames.
+    VWeGolfBatteryControl m_batctrl;
 
     bool m_mirror_fold_in_requested = false;
     bool m_horn_requested = false;
@@ -177,6 +138,7 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
 #ifdef VWEGOLF_NATIVE_TEST
  public:
     uint8_t test_bus_idle_ticks() const { return m_bus_idle_ticks; }
+    VWeGolfBatteryControl& test_batctrl() { return m_batctrl; }
 #endif
 };
 
