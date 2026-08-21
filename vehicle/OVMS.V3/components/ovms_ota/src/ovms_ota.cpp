@@ -251,8 +251,6 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     return;
     }
 
-  fclose(f);
-
   MyOTA.SetFlashStatus("OTA Flash VFS: Setting boot partition...");
   writer->puts(MyOTA.GetFlashStatus());
   err = esp_ota_set_boot_partition(target);
