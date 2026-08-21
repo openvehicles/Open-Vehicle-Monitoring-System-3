@@ -241,8 +241,8 @@ void OvmsVehicleVoltAmpera::WebControls(PageEntry_t& p, PageContext_t& c)
     "<div class=\"va-row\"><div class=\"va-name\">Doors"
       "<div><span class=\"va-chip\" id=\"ch-lock\">?</span></div></div>"
       "<div class=\"va-acts\">"
-        "<button type=\"button\" class=\"btn btn-default\" id=\"b-lock\" data-cmd=\"lock 0000\">Lock</button>"
-        "<button type=\"button\" class=\"btn btn-default\" id=\"b-unlock\" data-cmd=\"unlock 0000\">Unlock</button>"
+        "<button type=\"button\" class=\"btn btn-default\" id=\"b-lock\">Lock</button>"
+        "<button type=\"button\" class=\"btn btn-default\" id=\"b-unlock\">Unlock</button>"
       "</div></div>"
 
     "<div class=\"va-row\"><div class=\"va-name\">Climate"
@@ -255,8 +255,8 @@ void OvmsVehicleVoltAmpera::WebControls(PageEntry_t& p, PageContext_t& c)
     "<div class=\"va-row\"><div class=\"va-name\">Windows"
       "<div><span class=\"va-chip\" id=\"ch-win\">?</span><span class=\"va-sub\" id=\"sub-win\"></span></div></div>"
       "<div class=\"va-acts\">"
-        "<button type=\"button\" class=\"btn btn-default\" id=\"b-win-down\" data-cmd=\"xva windows down\">Down</button>"
-        "<button type=\"button\" class=\"btn btn-default\" id=\"b-win-up\" data-cmd=\"xva windows up\">Up</button>"
+        "<button type=\"button\" class=\"btn btn-default\" id=\"b-win-down\">Down</button>"
+        "<button type=\"button\" class=\"btn btn-default\" id=\"b-win-up\">Up</button>"
       "</div></div>"
 
     "<div class=\"va-row\"><div class=\"va-name\">Charging"
@@ -277,7 +277,7 @@ void OvmsVehicleVoltAmpera::WebControls(PageEntry_t& p, PageContext_t& c)
       "<div><span class=\"va-chip\" id=\"ch-eng\">?</span></div></div>"
       "<div class=\"va-acts\">"
         "<button type=\"button\" class=\"btn btn-default\" id=\"b-eng-on\">On</button>"
-        "<button type=\"button\" class=\"btn btn-default\" id=\"b-eng-off\" data-cmd=\"xva engine off\">Off</button>"
+        "<button type=\"button\" class=\"btn btn-default\" id=\"b-eng-off\">Off</button>"
         "<button type=\"button\" class=\"btn btn-default\" id=\"b-eng-rel\" data-cmd=\"xva engine auto\">Auto</button>"
       "</div></div>"
 
@@ -308,19 +308,29 @@ void OvmsVehicleVoltAmpera::WebControls(PageEntry_t& p, PageContext_t& c)
   c.print(
     "<script>"
     "function vacmd(cmd){ loadcmd(cmd, \"#cmdres\"); }"
+    "var vapin_cache = null;"
+    "function vapin(cmd){"
+      "if (vapin_cache === null) vapin_cache = prompt(\"Vehicle PIN\");"
+      "if (!vapin_cache) { vapin_cache = null; return; }"
+      "vacmd(cmd + \" \" + vapin_cache); }"
 
     "$(\"#va-ctl\").on(\"click\", \"button[data-cmd]\", function(){ vacmd($(this).data(\"cmd\")); });"
 
-    // These four carry no data-cmd on purpose: they confirm first.
+    // No data-cmd on these: they need a PIN, a confirmation, or both.
+    "$(\"#b-lock\").on(\"click\", function(){ vapin(\"lock\"); });"
+    "$(\"#b-unlock\").on(\"click\", function(){ vapin(\"unlock\"); });"
+    "$(\"#b-win-down\").on(\"click\", function(){ vapin(\"xva windows down\"); });"
+    "$(\"#b-win-up\").on(\"click\", function(){ vapin(\"xva windows up\"); });"
+    "$(\"#b-eng-off\").on(\"click\", function(){ vapin(\"xva engine off\"); });"
     "$(\"#b-eng-on\").on(\"click\", function(){"
       "if (confirm(\"Force the internal combustion engine ON? Make sure the car is not in an enclosed space.\"))"
-      " vacmd(\"xva engine on\"); });"
+      " vapin(\"xva engine on\"); });"
     "$(\"#b-horn\").on(\"click\", function(){"
       "if (confirm(\"Sound the horn?\")) vacmd(\"xva horn\"); });"
     "$(\"#b-locate\").on(\"click\", function(){"
       "if (confirm(\"Horn and lights together?\")) vacmd(\"xva locate\"); });"
     "$(\"#b-trunk\").on(\"click\", function(){"
-      "if (confirm(\"Release the trunk? It cannot be closed again remotely.\")) vacmd(\"xva trunk\"); });"
+      "if (confirm(\"Release the trunk? It cannot be closed again remotely.\")) vapin(\"xva trunk\"); });"
 
     // Emphasis, not gating: both buttons stay clickable in every state.
     "function lead(a,b){"

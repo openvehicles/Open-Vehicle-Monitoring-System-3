@@ -124,11 +124,11 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
       VA_ENG_FORCE_OFF,
       } va_engine_mode_t;
 
-    vehicle_command_t CommandEngine(va_engine_mode_t mode);
-    vehicle_command_t CommandTrunk();
+    vehicle_command_t CommandEngine(va_engine_mode_t mode, const char* pin = NULL);
+    vehicle_command_t CommandTrunk(const char* pin);
     // OnStar telematics alerts on 0x1024E097. horn = EnhSrvAudAlRq, lights = EnhSrvVisAlRq.
     vehicle_command_t CommandTelematicsAlert(bool horn, bool lights);
-    vehicle_command_t CommandWindows(bool up);
+    vehicle_command_t CommandWindows(bool up, const char* pin);
 
     static OvmsVehicleVoltAmpera* GetActiveVehicle(OvmsWriter* writer);
     static void shell_engine(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);

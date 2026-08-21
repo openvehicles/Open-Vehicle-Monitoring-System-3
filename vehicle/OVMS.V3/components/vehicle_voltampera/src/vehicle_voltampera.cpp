@@ -285,11 +285,11 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   // so they live under "xva". All are gated on config xva/control.enabled.
   cmd_xva = MyCommandApp.RegisterCommand("xva", "Volt/Ampera controls");
   OvmsCommand* cmd_engine = cmd_xva->RegisterCommand("engine", "Internal combustion engine control");
-  cmd_engine->RegisterCommand("on", "Force the engine on (held by keep-alive)", shell_engine);
-  cmd_engine->RegisterCommand("off", "Force the engine off (refused at or below 16% SOC)", shell_engine);
+  cmd_engine->RegisterCommand("on", "Force the engine on (held by keep-alive)", shell_engine, "<pin>", 1, 1);
+  cmd_engine->RegisterCommand("off", "Force the engine off (refused at or below 16% SOC)", shell_engine, "<pin>", 1, 1);
   cmd_engine->RegisterCommand("auto", "Release the override, HPCM back in control", shell_engine);
   cmd_engine->RegisterCommand("release", "Alias for 'auto'", shell_engine);
-  cmd_xva->RegisterCommand("trunk", "Release the trunk/hatch", shell_trunk);
+  cmd_xva->RegisterCommand("trunk", "Release the trunk/hatch", shell_trunk, "<pin>", 1, 1);
   cmd_xva->RegisterCommand("horn", "Sound the horn", shell_alert);
   cmd_xva->RegisterCommand("flash", "Flash the exterior lights", shell_alert);
   cmd_xva->RegisterCommand("locate", "Horn and lights together (OnStar vehicle locate)", shell_alert);
@@ -298,8 +298,8 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   cmd_cl->RegisterCommand("override", "Charge to full this time (resets on leaving)", shell_chargelimit);
   cmd_cl->RegisterCommand("resume", "Cancel the override, re-arm the limit", shell_chargelimit);
   OvmsCommand* cmd_win = cmd_xva->RegisterCommand("windows", "Window control");
-  cmd_win->RegisterCommand("up", "Close all windows", shell_windows);
-  cmd_win->RegisterCommand("down", "Open all windows", shell_windows);
+  cmd_win->RegisterCommand("up", "Close all windows", shell_windows, "<pin>", 1, 1);
+  cmd_win->RegisterCommand("down", "Open all windows", shell_windows, "<pin>", 1, 1);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // powertrain bus
   //RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // chassis bus 
@@ -2369,8 +2369,19 @@ void OvmsVehicleVoltAmpera::EngineTicker()
     }
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandEngine(va_engine_mode_t mode)
+OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandEngine(va_engine_mode_t mode, const char* pin)
   {
+  // Forcing the engine either way changes how the car behaves under someone who may be
+  // driving it, so both need the PIN. Releasing does not: a forced state that cannot be
+  // released is worse than one that could be set, and EngineTicker reverts through here
+  // when the car powers down. The control.enabled gate below is skipped for AUTO for the
+  // same reason.
+  if (mode != VA_ENG_AUTO && !PinCheck(pin))
+    {
+    ESP_LOGE(TAG, "Engine control: PIN check failed");
+    return Fail;
+    }
+
   // Note the gate deliberately does NOT cover the AUTO/release path below. Releasing an
   // override must always be possible: EngineTicker's power-loss check reverts through here,
   // and if the owner disables controls while an override is held, refusing the release would
@@ -2438,8 +2449,15 @@ void OvmsVehicleVoltAmpera::SetCmdPending(const char* what, OvmsMetric* watch)
   m_pending_secs = VA_CMD_PENDING_SECS;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandTrunk()
+OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandTrunk(const char* pin)
   {
+  // Opens the car.
+  if (!PinCheck(pin))
+    {
+    ESP_LOGE(TAG, "Trunk release: PIN check failed");
+    return Fail;
+    }
+
   if (!m_control_enabled)
     {
     ESP_LOGE(TAG, "Vehicle controls are disabled (set xva/control.enabled)");
@@ -2466,8 +2484,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandTrunk()
 // start needed, unlike the engine). "07 AE 3B FF 01 01 01 01" returns 02 EE 3B and all four
 // windows travel FULLY open; the close frame shuts them FULLY. One frame is enough, with no
 // keep-alive, unlike the engine override.
-OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandWindows(bool up)
+OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandWindows(bool up, const char* pin)
   {
+  // Opens the car, and closing glass on someone is its own hazard.
+  if (!PinCheck(pin))
+    {
+    ESP_LOGE(TAG, "Window control: PIN check failed");
+    return Fail;
+    }
+
   if (!m_control_enabled)
     {
     ESP_LOGE(TAG, "Vehicle controls are disabled (set xva/control.enabled)");
@@ -2579,7 +2604,7 @@ void OvmsVehicleVoltAmpera::shell_engine(int verbosity, OvmsWriter* writer, Ovms
   va_engine_mode_t mode = (strcmp(what, "on") == 0)  ? VA_ENG_FORCE_ON
                         : (strcmp(what, "off") == 0) ? VA_ENG_FORCE_OFF
                                                      : VA_ENG_AUTO;
-  vehicle_command_t r = v->CommandEngine(mode);
+  vehicle_command_t r = v->CommandEngine(mode, (argc > 0) ? argv[0] : NULL);
   if (r != Success)
     {
     writer->puts(va_cmdresult(r));
@@ -2599,7 +2624,7 @@ void OvmsVehicleVoltAmpera::shell_trunk(int verbosity, OvmsWriter* writer, OvmsC
   {
   OvmsVehicleVoltAmpera* v = GetActiveVehicle(writer);
   if (v == NULL) return;
-  writer->puts(va_cmdresult(v->CommandTrunk()));
+  writer->puts(va_cmdresult(v->CommandTrunk(argv[0])));
   }
 
 void OvmsVehicleVoltAmpera::shell_chargelimit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -2730,7 +2755,7 @@ void OvmsVehicleVoltAmpera::shell_windows(int verbosity, OvmsWriter* writer, Ovm
   {
   OvmsVehicleVoltAmpera* v = GetActiveVehicle(writer);
   if (v == NULL) return;
-  writer->puts(va_cmdresult(v->CommandWindows(strcmp(cmd->GetName(), "up") == 0)));
+  writer->puts(va_cmdresult(v->CommandWindows(strcmp(cmd->GetName(), "up") == 0, argv[0])));
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandStopCharge()
@@ -3279,6 +3304,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandWakeup()
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLock(const char* pin)
   {
+  if (!PinCheck(pin))
+    {
+    ESP_LOGE(TAG, "Lock: PIN check failed");
+    return Fail;
+    }
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   if(!m_use_swcan_adapter)
     return NotImplemented;
@@ -3312,6 +3342,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLock(const char* pi
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandUnlock(const char* pin)
   {
+  if (!PinCheck(pin))
+    {
+    ESP_LOGE(TAG, "Unlock: PIN check failed");
+    return Fail;
+    }
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   if(!m_use_swcan_adapter)
     return NotImplemented;

@@ -135,6 +135,20 @@ The engine, trunk, window, horn and lights commands are off by default::
 
   config set xva control.enabled yes
 
+Anything that opens the car or changes how it behaves while somebody may be driving it also
+takes the vehicle PIN, set under Config > Vehicle: lock, unlock, the window commands, the trunk
+release, and forcing the engine on or off. ``PinCheck()`` refuses when no PIN is configured, so
+these do nothing until one is. Releasing the engine override with ``xva engine auto`` does not
+take a PIN, because a forced state that cannot be released is worse than one that could be set.
+
+::
+
+  xva windows down <pin>
+  xva engine on <pin>
+  xva trunk <pin>
+
+The Controls page asks for the PIN once and reuses it for the rest of the page.
+
 ^^^^^^
 Engine
 ^^^^^^
