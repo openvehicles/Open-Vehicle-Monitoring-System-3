@@ -78,6 +78,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword, uint8_t* stabssid=NULL);
     void StopStation();
     void StartConnect();
+    void StaWatchdog();
     void Reconnect(OvmsWriter* writer);
     wifi_active_scan_time_t GetScanTime();
     void Scan(OvmsWriter* writer, bool json=false);
@@ -134,7 +135,10 @@ class esp32wifi : public pcp, public InternalRamAllocated
     wifi_config_t m_wifi_ap_cfg;
     wifi_config_t m_wifi_sta_cfg;
     bool m_sta_connected;
-    uint32_t m_sta_reconnect;
+    uint32_t m_sta_reconnect;                    //!< monotonictime to start the next connect attempt (0 = none)
+    uint32_t m_sta_scan_pending;                 //!< monotonictime scan result deadline (0 = no scan in flight)
+    uint32_t m_sta_connect_pending;              //!< monotonictime association deadline (0 = not associating)
+    uint8_t m_sta_stuck_count;                   //!< consecutive scan/association timeouts
     wifi_ap_record_t m_sta_ap_info;
     int m_sta_rssi;                              // smoothed RSSI [dBm/10]
     float m_good_dbm;
