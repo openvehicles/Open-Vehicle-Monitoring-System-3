@@ -43,6 +43,12 @@ static const char *TAG = "netmanager";
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <lwip/icmp.h>
+#include <lwip/inet_chksum.h>
+#include <lwip/ip.h>
 #include "metrics_standard.h"
 #include "ovms_peripherals.h"
 #include "ovms_netmanager.h"
@@ -50,9 +56,6 @@ static const char *TAG = "netmanager";
 #include "ovms_config.h"
 #include "ovms_module.h"
 #include "ovms_boot.h"
-#ifdef CONFIG_OVMS_DEV_NETMANAGER_PING
-#include "ping/ping_sock.h"
-#endif // CONFIG_OVMS_DEV_NETMANAGER_PING
 
 #ifndef CONFIG_OVMS_NETMAN_TASK_PRIORITY
 #define CONFIG_OVMS_NETMAN_TASK_PRIORITY 5
@@ -125,148 +128,260 @@ void network_restart(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   MyNetManager.RestartNetwork();
   }
 
-#ifdef CONFIG_OVMS_DEV_NETMANAGER_PING
-
-static void test_on_ping_success(esp_ping_handle_t hdl, void *args)
+// Resolve an interface name like "st1" or "pp2" to its struct netif*.
+// Returns nullptr if not found.
+static struct netif* resolve_iface(const char* name)
   {
-  ping_callback_args_t* ping_callback_args = static_cast<ping_callback_args_t*>(args);
-  OvmsWriter* writer = ping_callback_args->writer;
-  uint8_t ttl;
-  uint16_t seqno;
-  uint32_t elapsed_time, recv_len;
-  ip_addr_t target_addr;
-  esp_ping_get_profile(hdl, ESP_PING_PROF_SEQNO, &seqno, sizeof(seqno));
-  esp_ping_get_profile(hdl, ESP_PING_PROF_TTL, &ttl, sizeof(ttl));
-  esp_ping_get_profile(hdl, ESP_PING_PROF_IPADDR, &target_addr, sizeof(target_addr));
-  esp_ping_get_profile(hdl, ESP_PING_PROF_SIZE, &recv_len, sizeof(recv_len));
-  esp_ping_get_profile(hdl, ESP_PING_PROF_TIMEGAP, &elapsed_time, sizeof(elapsed_time));
-  writer->printf("%" PRIu32 " bytes from %s: icmp_seq=%" PRIu16 " ttl=%" PRIi8 " time=%" PRIu32 " ms\n",
-         recv_len, ipaddr_ntoa((ip_addr_t*)&target_addr), (seqno - 1), ttl, elapsed_time);
-  }
-
-static void test_on_ping_timeout(esp_ping_handle_t hdl, void *args)
-  {
-  ping_callback_args_t* ping_callback_args = static_cast<ping_callback_args_t*>(args);
-  OvmsWriter* writer = ping_callback_args->writer;
-  uint16_t seqno;
-  ip_addr_t target_addr;
-  esp_ping_get_profile(hdl, ESP_PING_PROF_SEQNO, &seqno, sizeof(seqno));
-  esp_ping_get_profile(hdl, ESP_PING_PROF_IPADDR, &target_addr, sizeof(target_addr));
-  writer->printf("From %s icmp_seq=%" PRIu16 " timeout\n", ipaddr_ntoa((ip_addr_t*)&target_addr), (seqno - 1));
-  }
-
-static void test_on_ping_end(esp_ping_handle_t hdl, void *args)
-  {
-  ping_callback_args_t* ping_callback_args = static_cast<ping_callback_args_t*>(args);
-  OvmsWriter* writer = ping_callback_args->writer;
-  OvmsSemaphore* pingdone = ping_callback_args->semaphore;
-  ip_addr_t target_addr;
-  uint32_t transmitted;
-  uint32_t received;
-  uint32_t total_time_ms;
-
-  esp_ping_get_profile(hdl, ESP_PING_PROF_REQUEST, &transmitted, sizeof(transmitted));
-  esp_ping_get_profile(hdl, ESP_PING_PROF_REPLY, &received, sizeof(received));
-  esp_ping_get_profile(hdl, ESP_PING_PROF_IPADDR, &target_addr, sizeof(target_addr));
-  esp_ping_get_profile(hdl, ESP_PING_PROF_DURATION, &total_time_ms, sizeof(total_time_ms));
-  uint32_t loss = (uint32_t)((1 - ((float)received) / transmitted) * 100);
-  if (IP_IS_V4(&target_addr))
+  for (struct netif* n = netif_list; n != nullptr; n = n->next)
     {
-    printf("\n--- %s ping statistics ---\n", inet_ntoa(*ip_2_ip4(&target_addr)));
+    char nname[8];
+    snprintf(nname, sizeof(nname), "%c%c%u", n->name[0], n->name[1], n->num);
+    if (strcmp(nname, name) == 0) return n;
     }
-  else
-    {
-    printf("\n--- %s ping statistics ---\n", inet6_ntoa(*ip_2_ip6(&target_addr)));
-    }
-  writer->printf("%" PRIu32 " packets transmitted, %" PRIu32 " received, %" PRIu32 "%% packet loss, time %" PRIu32 "ms\n",
-         transmitted, received, loss, total_time_ms);
-  if (received > 0)
-    {
-    writer->printf("round-trip avg = %1.2f ms\n", (total_time_ms * 1.0) / received);
-    }
-
-  pingdone->Give();
-  // delete the ping sessions, so that we clean up all resources and can create a new ping session
-  // we don't have to call delete function in the callback, instead we can call delete function from other tasks
-  esp_ping_delete_session(hdl);
+  return nullptr;
   }
 
 void network_ping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  // parse hostname / IP address
-  struct sockaddr_in6 sock_addr6;
-  ip_addr_t target_addr;
-  memset(&target_addr, 0, sizeof(target_addr));
+  const char* host = nullptr;
+  const char* iface_name = nullptr;
+  int count = 4;
+  int payload_size = 32;
+  const int timeout_ms = 2000;
+  const int interval_ms = 1000;
 
-  if (inet_pton(AF_INET6, argv[0], &sock_addr6.sin6_addr) == 1)
+  for (int i = 0; i < argc; i++)
     {
-    /* convert ip6 string to ip6 address */
-    ipaddr_aton(argv[0], &target_addr);
+    if (strcmp(argv[i], "-I") == 0 && i + 1 < argc) { iface_name = argv[++i]; }
+    else if (strcmp(argv[i], "-c") == 0 && i + 1 < argc)
+      {
+      count = atoi(argv[++i]);
+      if (count < 1) count = 1;
+      if (count > 100) count = 100;
+      }
+    else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+      {
+      payload_size = atoi(argv[++i]);
+      if (payload_size < 0) payload_size = 0;
+      if (payload_size > 1400) payload_size = 1400;
+      }
+    else if (host == nullptr) { host = argv[i]; }
+    }
+
+  if (!host)
+    {
+    writer->puts("ERROR: missing target host");
+    return;
+    }
+
+  struct addrinfo hint;
+  memset(&hint, 0, sizeof(hint));
+  hint.ai_family = AF_INET;
+  struct addrinfo* res = nullptr;
+  if (getaddrinfo(host, nullptr, &hint, &res) != 0 || !res)
+    {
+    writer->printf("ERROR: cannot resolve %s\n", host);
+    return;
+    }
+  struct sockaddr_in target = *(struct sockaddr_in*)res->ai_addr;
+  freeaddrinfo(res);
+  char target_str[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &target.sin_addr, target_str, sizeof(target_str));
+
+  struct sockaddr_in src;
+  memset(&src, 0, sizeof(src));
+  src.sin_family = AF_INET;
+  bool bind_src = false;
+  if (iface_name)
+    {
+    struct netif* nif = resolve_iface(iface_name);
+    if (!nif)
+      {
+      writer->printf("ERROR: interface %s not found\n", iface_name);
+      return;
+      }
+    if (ip4_addr_isany_val(*ip_2_ip4(&nif->ip_addr)))
+      {
+      writer->printf("ERROR: interface %s has no IPv4 address\n", iface_name);
+      return;
+      }
+    src.sin_addr.s_addr = ip_2_ip4(&nif->ip_addr)->addr;
+    bind_src = true;
+    }
+
+  int s = socket(AF_INET, SOCK_RAW, IP_PROTO_ICMP);
+  if (s < 0)
+    {
+    writer->printf("ERROR: socket() failed: %s\n", strerror(errno));
+    return;
+    }
+  if (bind_src && bind(s, (struct sockaddr*)&src, sizeof(src)) != 0)
+    {
+    writer->printf("ERROR: bind() failed: %s\n", strerror(errno));
+    close(s);
+    return;
+    }
+
+  struct timeval tv;
+  tv.tv_sec = timeout_ms / 1000;
+  tv.tv_usec = (timeout_ms % 1000) * 1000;
+  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+  uint16_t ident = (uint16_t)(esp_random() & 0xffff);
+
+  if (bind_src)
+    {
+    char src_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &src.sin_addr, src_str, sizeof(src_str));
+    writer->printf("PING %s (%s) from %s: %d data bytes\n", host, target_str, src_str, payload_size);
     }
   else
     {
-    struct addrinfo hint;
-    struct addrinfo *res = NULL;
-    memset(&hint, 0, sizeof(hint));
-    /* convert ip4 string or hostname to ip4 or ip6 address */
-    if (getaddrinfo(argv[0], NULL, &hint, &res) != 0)
+    writer->printf("PING %s (%s): %d data bytes\n", host, target_str, payload_size);
+    }
+
+  size_t pkt_len = sizeof(struct icmp_echo_hdr) + payload_size;
+  uint8_t* pkt = (uint8_t*)malloc(pkt_len);
+  if (!pkt)
+    {
+    writer->puts("ERROR: out of memory");
+    close(s);
+    return;
+    }
+
+  int sent = 0, received = 0;
+  uint32_t rtt_min = UINT32_MAX, rtt_max = 0, rtt_sum = 0;
+
+  for (int seq = 0; seq < count; seq++)
+    {
+    memset(pkt, 0, pkt_len);
+    struct icmp_echo_hdr* hdr = (struct icmp_echo_hdr*)pkt;
+    ICMPH_TYPE_SET(hdr, ICMP_ECHO);
+    ICMPH_CODE_SET(hdr, 0);
+    hdr->id = htons(ident);
+    hdr->seqno = htons(seq);
+    for (int i = 0; i < payload_size; i++)
+      pkt[sizeof(struct icmp_echo_hdr) + i] = (uint8_t)(i & 0xff);
+    hdr->chksum = 0;
+    hdr->chksum = inet_chksum(pkt, pkt_len);
+
+    struct timeval t_send;
+    gettimeofday(&t_send, nullptr);
+
+    int n = sendto(s, pkt, pkt_len, 0, (struct sockaddr*)&target, sizeof(target));
+    if (n < 0)
       {
-      writer->printf("ERROR: unknown host %s\n", argv[0]);
-      return;
-      }
-    if (res->ai_family == AF_INET)
-      {
-      struct in_addr addr4 = ((struct sockaddr_in *) (res->ai_addr))->sin_addr;
-      inet_addr_to_ip4addr(ip_2_ip4(&target_addr), &addr4);
+      writer->printf("seq=%d sendto failed: %s\n", seq, strerror(errno));
       }
     else
       {
-      struct in6_addr addr6 = ((struct sockaddr_in6 *) (res->ai_addr))->sin6_addr;
-      inet6_addr_to_ip6addr(ip_2_ip6(&target_addr), &addr6);
+      sent++;
+      uint8_t recvbuf[1500];
+      bool got_reply = false;
+      uint32_t rtt_ms = 0;
+      uint8_t recv_ttl = 0;
+      while (true)
+        {
+        struct sockaddr_in from;
+        memset(&from, 0, sizeof(from));
+        socklen_t flen = sizeof(from);
+        int r = recvfrom(s, recvbuf, sizeof(recvbuf), 0, (struct sockaddr*)&from, &flen);
+        if (r <= 0) break;
+        if (r < (int)(sizeof(struct ip_hdr) + sizeof(struct icmp_echo_hdr))) continue;
+        struct ip_hdr* iphdr = (struct ip_hdr*)recvbuf;
+        size_t iph_len = IPH_HL(iphdr) * 4;
+        if (r < (int)(iph_len + sizeof(struct icmp_echo_hdr))) continue;
+        struct icmp_echo_hdr* reply = (struct icmp_echo_hdr*)(recvbuf + iph_len);
+        if (ICMPH_TYPE(reply) != ICMP_ER) continue;
+        if (ntohs(reply->id) != ident) continue;
+        if (ntohs(reply->seqno) != seq) continue;
+        struct timeval t_recv;
+        gettimeofday(&t_recv, nullptr);
+        rtt_ms = (uint32_t)((t_recv.tv_sec - t_send.tv_sec) * 1000
+                            + (t_recv.tv_usec - t_send.tv_usec) / 1000);
+        recv_ttl = IPH_TTL(iphdr);
+        got_reply = true;
+        break;
+        }
+      if (got_reply)
+        {
+        received++;
+        if (rtt_ms < rtt_min) rtt_min = rtt_ms;
+        if (rtt_ms > rtt_max) rtt_max = rtt_ms;
+        rtt_sum += rtt_ms;
+        writer->printf("%d bytes from %s: icmp_seq=%d ttl=%u time=%u ms\n",
+          payload_size, target_str, seq, (unsigned)recv_ttl, (unsigned)rtt_ms);
+        }
+      else
+        {
+        writer->printf("Request timeout for icmp_seq %d\n", seq);
+        }
       }
-    freeaddrinfo(res);
+
+    if (seq < count - 1)
+      vTaskDelay(pdMS_TO_TICKS(interval_ms));
     }
 
-  esp_ping_config_t ping_config = ESP_PING_DEFAULT_CONFIG();
+  free(pkt);
+  close(s);
 
-  ping_config.target_addr = target_addr; // target IP address
-  ping_config.count = 4;
-
-  // This semaphore is used to "wait" on the `ping_end` callback
-  OvmsSemaphore pingdone;
-
-  // This set of arguments are passed to callbacks.
-  ping_callback_args_t args = {
-    .writer = writer,
-    .semaphore = &pingdone
-  };
-
-  /* set callback functions */
-  esp_ping_callbacks_t cbs = {
-      .cb_args = &args,
-      .on_ping_success = test_on_ping_success,
-      .on_ping_timeout = test_on_ping_timeout,
-      .on_ping_end = test_on_ping_end
-  };
-
-  esp_ping_handle_t ping;
-
-  ESP_ERROR_CHECK(esp_ping_new_session(&ping_config, &cbs, &ping));
-
-  writer->printf("PING %s (%s): %" PRIu32 " data bytes\n", argv[0],
-      ipaddr_ntoa(&target_addr), ping_config.data_size);
-
-  esp_ping_start(ping);
-
-  // We now wait for completion of the ping session (4 pings) - during this
-  // wait the output is suspended and no prompt is printed.
-  // The semaphore will be signaled by the `on_ping_end` callback, after which we can
-  // return from this function (which will then print the prompt)
-  pingdone.Take();
-
+  writer->printf("\n--- %s ping statistics ---\n", target_str);
+  uint32_t loss = (sent > 0) ? (uint32_t)((1.0 - (double)received / sent) * 100) : 0;
+  writer->printf("%d packets transmitted, %d received, %u%% packet loss\n",
+    sent, received, (unsigned)loss);
+  if (received > 0)
+    {
+    writer->printf("rtt min/avg/max = %u/%u/%u ms\n",
+      (unsigned)rtt_min, (unsigned)(rtt_sum / received), (unsigned)rtt_max);
+    }
   }
 
-#endif // CONFIG_OVMS_DEV_NETMANAGER_PING
+void network_dns(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (argc < 1)
+    {
+    writer->puts("ERROR: missing hostname");
+    return;
+    }
+  const char* host = argv[0];
+
+  struct addrinfo hint;
+  memset(&hint, 0, sizeof(hint));
+  hint.ai_family = AF_UNSPEC;
+  struct addrinfo* res = nullptr;
+  int rc = getaddrinfo(host, nullptr, &hint, &res);
+  if (rc != 0)
+    {
+    writer->printf("ERROR: %s: lookup failed (%d)\n", host, rc);
+    return;
+    }
+
+  writer->printf("DNS lookup: %s\n", host);
+  int found = 0;
+  for (struct addrinfo* p = res; p != nullptr; p = p->ai_next)
+    {
+    char addrstr[INET6_ADDRSTRLEN];
+    void* addr = nullptr;
+    const char* fam = "?";
+    if (p->ai_family == AF_INET)
+      {
+      addr = &((struct sockaddr_in*)p->ai_addr)->sin_addr;
+      fam = "A";
+      }
+    else if (p->ai_family == AF_INET6)
+      {
+      addr = &((struct sockaddr_in6*)p->ai_addr)->sin6_addr;
+      fam = "AAAA";
+      }
+    else continue;
+    inet_ntop(p->ai_family, addr, addrstr, sizeof(addrstr));
+    writer->printf("  %s\t%s\n", fam, addrstr);
+    found++;
+    }
+  freeaddrinfo(res);
+  if (found == 0)
+    writer->puts("(no addresses returned)");
+  }
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
@@ -388,9 +503,12 @@ OvmsNetManager::OvmsNetManager()
   OvmsCommand* cmd_network = MyCommandApp.RegisterCommand("network","NETWORK framework",network_status, "", 0, 0, false);
   cmd_network->RegisterCommand("status","Show network status",network_status, "", 0, 0, false);
   cmd_network->RegisterCommand("restart","Restart network",network_restart, "", 0, 0, false);
-#ifdef CONFIG_OVMS_DEV_NETMANAGER_PING
-  cmd_network->RegisterCommand("ping", "Ping (ICMP) a hostname/IP address", network_ping, "<host or ip address>", 1, 1, false);
-#endif // CONFIG_OVMS_DEV_NETMANAGER_PING
+  cmd_network->RegisterCommand("ping", "Ping (ICMP) a hostname/IP address", network_ping,
+    "<host> [-I iface] [-c count] [-s size]\n"
+    "  -I iface : source interface name (e.g. st1, pp2)\n"
+    "  -c count : number of pings (1-100, default 4)\n"
+    "  -s size  : payload bytes (0-1400, default 32)", 1, 7, false);
+  cmd_network->RegisterCommand("dns", "DNS lookup of a hostname", network_dns, "<hostname>", 1, 1, false);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   cmd_network->RegisterCommand("list", "List network connections", network_connections);
   cmd_network->RegisterCommand("close", "Close network connection(s)", network_connections, "<id>\nUse ID from connection list / 0 to close all", 1, 1);
