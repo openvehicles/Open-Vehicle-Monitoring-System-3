@@ -62,6 +62,11 @@ Open Vehicle Monitor System v3 - Change log
     bar tracks the upload, switching to a "finalising" indicator while the module writes the last
     of the image to flash. The image size is sent (?size=) so only the needed flash is erased
     (faster start) and an oversized image is rejected up front.
+- OTA: Unified the firmware setup page's flash methods (Update now, Flash from web, Flash from
+    file/SD, and the browser upload) onto one shared progress dialog: each now shows the same
+    progress bar (driven from the flash command's output for the http/SD methods), a consistent
+    success/failure state, and highlights the "Reboot now" action when a flash completes. The
+    primary action in each method is styled accordingly.
 
 
 2026-07-18 MB   3.3.006  OTA release
