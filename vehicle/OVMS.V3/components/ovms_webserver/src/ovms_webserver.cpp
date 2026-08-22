@@ -871,58 +871,6 @@ int HttpDataSender::HandleEvent(int ev, void* p)
 
 
 /**
- * HttpStringSender: chunked transfer of a memory region (needs to be const during xfer)
- */
-HttpStringSender::HttpStringSender(mg_connection* nc, std::string* msg, bool keepalive /*=true*/)
-  : MgHandler(nc)
-{
-  m_msg = msg;
-  m_sent = 0;
-  m_keepalive = keepalive;
-  ESP_EARLY_LOGV(TAG, "HttpStringSender[%p]: init msg=%p, %d bytes", nc, m_msg, m_msg->size());
-}
-
-HttpStringSender::~HttpStringSender()
-{
-  if (m_sent < m_msg->size()) {
-    ESP_EARLY_LOGV(TAG, "HttpStringSender[%p]: abort msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
-  }
-  delete m_msg;
-}
-
-int HttpStringSender::HandleEvent(int ev, void* p)
-{
-  switch (ev)
-  {
-    case MG_EV_SEND:          // last transmission has finished
-    {
-      if (m_sent < m_msg->size()) {
-        // send next chunk:
-        size_t len = MIN(m_msg->size() - m_sent, XFER_CHUNK_SIZE);
-        mg_send_http_chunk(m_nc, (const char*) m_msg->data() + m_sent, len);
-        m_sent += len;
-        ESP_EARLY_LOGV(TAG, "HttpStringSender[%p] msg=%p sent %d/%d", m_nc, m_msg, m_sent, m_msg->size());
-      }
-      else {
-        // done:
-        if (!m_keepalive)
-          m_nc->flags |= MG_F_SEND_AND_CLOSE;
-        mg_send_http_chunk(m_nc, "", 0);
-        ESP_EARLY_LOGV(TAG, "HttpStringSender[%p]: done msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
-        delete this;
-      }
-    }
-    break;
-
-    default:
-      break;
-  }
-
-  return ev;
-}
-
-
-/**
  * CheckLogin: check username & password
  *
  * We use "admin" as a fixed username for now to be able to extend users later on
