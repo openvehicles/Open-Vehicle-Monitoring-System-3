@@ -45,6 +45,7 @@ static const char *TAG = "v-nissanleaf";
 #endif
 #include "ovms_command.h"
 #include "ovms_config.h"
+#include "mcp2515.h"
 
 #define MAX_POLL_DATA_LEN         329
 #define BMS_TXID                  0x79B
@@ -71,10 +72,10 @@ enum poll_states
 
 static const OvmsPoller::poll_pid_t obdii_polls_ze1[] =
   {
-    // BUS 2
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 3600, 0, 0 }, 2, ISOTP_STD },           // VIN [19] Never changes
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 0, 0, 3600 }, 2, ISOTP_STD },   // QC [2] Only changes when charging. Do not update when car is active to reduce traffic.
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 0, 0, 3600 }, 2, ISOTP_STD }, // L0/L1/L2 [2] Only changes when charging. Do not update when car is active to reduce traffic.
+    // BUS 2                                                                         Off,   On, Run, Charge 
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID,            {  0, 3600,   0,      0 }, 2, ISOTP_STD }, // VIN [19] Never changes
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID,    {  0,    0,   0,   3600 }, 2, ISOTP_STD }, // QC [2] Only changes when charging. Do not update when car is active to reduce traffic.
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID,  {  0,    0,   0,   3600 }, 2, ISOTP_STD }, // L0/L1/L2 [2] Only changes when charging. Do not update when car is active to reduce traffic.
     // BUS 1
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 60, 60 }, 1, ISOTP_STD },   // bat [39/41]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 60, 60 }, 1, ISOTP_STD },   // battery voltages [196]
@@ -290,6 +291,52 @@ OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
 #endif
   }
 
+/// @brief Set the MCP2515 hardware receive filter for CAN2
+/// This is used to filter out unwanted CAN messages on the CAR bus (CAN2) to reduce CPU load and improve performance.
+/// The filter is set to accept only the CAN IDs that are used by the Nissan Leaf ZE1.
+/// Accepted packets are:
+/// - 0x355 and 0x385 (shared mask with bits 7,6,4 don't-care)
+/// - 0x5a9 and 0x5b9 (shared mask with bits 7,6,4 don't-care)
+/// - 0x421, 0x5c5, 0x60d, 0x79a
+/// @param bus The CAN bus to configure (expected to be an MCP2515).
+/// @param enable true to apply the Leaf ZE1 filter, false to clear it (accept all).
+void OvmsVehicleNissanLeaf::SetCan2Mcp2515Filter(canbus* bus, bool enable)
+  {
+  mcp2515* sbus = (mcp2515*)bus;
+  if (sbus == NULL)
+    {
+    ESP_LOGW(TAG, "can2 is not available; hardware receive filter not set");
+    return;
+    }
+
+  mcp2515_filter_config_t cfg = {};
+  if (enable)
+    {
+    // Mask 0 / filters 0-1: shared mask with bits 7,6,4 don't-care.
+    cfg.mask[0].b.sid = 0x72F;
+    cfg.filter[0].b.sid = 0x355;  // covers 0x355 and 0x385
+    cfg.filter[1].b.sid = 0x5a9;  // covers 0x5a9 and 0x5b9
+
+    // Mask 1 / filters 2-5: exact 11-bit ID match.
+    cfg.mask[1].b.sid = 0x7FF;
+    cfg.filter[2].b.sid = 0x421;
+    cfg.filter[3].b.sid = 0x5c5;
+    cfg.filter[4].b.sid = 0x60d;
+    cfg.filter[5].b.sid = 0x79a;
+    }
+
+  esp_err_t res = sbus->SetAcceptanceFilter(cfg);
+  if (res == ESP_OK)
+    {
+    ESP_LOGI(TAG, "can2 MCP2515 hardware receive filter %s", enable ? "set" : "cleared");
+    }
+  else
+    {
+    ESP_LOGE(TAG, "can2 MCP2515 hardware receive filter %s failed", enable ? "set" : "cleared");
+    }
+  }
+
+
 void OvmsVehicleNissanLeaf::CommandInit()
   {
   cmd_xnl = MyCommandApp.RegisterCommand("xnl","Nissan Leaf framework");
@@ -308,6 +355,7 @@ void OvmsVehicleNissanLeaf::CommandInit()
     "Example: 79B 7BB 2101", 3, 3);
   cmd_can2->RegisterCommand("broadcast", "Send OBD2 request as broadcast", shell_obd_request, "<request>", 1, 1);
   }
+
 
 void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   {
@@ -339,6 +387,9 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   if (!cfg_enable_write) PollSetState(POLLSTATE_OFF);
 
   cfg_ze1 = MyConfig.GetParamValueBool("xnl", "ze1", false);
+
+  // Apply or clear the CAN2 MCP2515 hardware filter when configuration is updated.
+  SetCan2Mcp2515Filter(m_can2, cfg_ze1);
   }
 
 
@@ -1764,38 +1815,44 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
-    case 0x180:
+    case 0x180: // Filtered out by CAN RX filter on ZE1
       if (d[5] != 0xff)
         {
         StandardMetrics.ms_v_env_throttle->SetValue(d[5] / 2.00);
         }
       break;
-    case 0x292:
+    case 0x292: // Filtered out by CAN RX filter on ZE1
       if (d[6] != 0xff)
         {
         StandardMetrics.ms_v_env_footbrake->SetValue(d[6] / 1.39);
         }
       break;
-   case 0x355:
+    case 0x355:
      // The odometer value on the bus is always in units appropriate
      // for the car's intended market and is unaffected by the dash
      // display preference (in d[4] bit 5).
-     if ((d[6]>>5) & 1)
-       {
-         m_odometer_units = Miles;
-       }
-     else
-       {
-         m_odometer_units = Kilometers;
-       }
-     break;
-    case 0x385:
+      if ((d[6]>>5) & 1)
+        {
+        m_odometer_units = Miles;
+        }
+      else
+        {
+        m_odometer_units = Kilometers;
+        }
+      ESP_LOGV(TAG, "IncomingFrameCan2 odometer units: %s", m_odometer_units == Miles ? "Miles" : "Kilometers");
+      break;
+    case 0x385: 
       if (d[2]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, d[2] / 4.0, PSI);
       if (d[3]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, d[3] / 4.0, PSI);
       if (d[4]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, d[4] / 4.0, PSI);
       if (d[5]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, d[5] / 4.0, PSI);
+      ESP_LOGV(TAG, "IncomingFrameCan2 TPMS: FL=%f FR=%f RR=%f RL=%f",
+               StandardMetrics.ms_v_tpms_pressure->GetElemValue(MS_V_TPMS_IDX_FL, PSI),
+               StandardMetrics.ms_v_tpms_pressure->GetElemValue(MS_V_TPMS_IDX_FR, PSI),
+               StandardMetrics.ms_v_tpms_pressure->GetElemValue(MS_V_TPMS_IDX_RR, PSI),
+               StandardMetrics.ms_v_tpms_pressure->GetElemValue(MS_V_TPMS_IDX_RL, PSI));
       break;
-    case 0x421:
+    case 0x421:  
       switch ( (d[0] >> 3) & 7 )
         {
         case 0: // Parking
@@ -1818,14 +1875,16 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
           if (cfg_enable_write) PollSetState(POLLSTATE_RUNNING);
           break;
         }
+      ESP_LOGV(TAG, "IncomingFrameCan2 Gear: %d", StandardMetrics.ms_v_env_gear->AsInt());
       break;
-    case 0x5a9:
+    case 0x5a9:  
       {
       uint16_t nl_range = d[1] << 4 | d[2] >> 4;
       if (nl_range != 0xfff)
         {
-        m_range_instrument->SetValue(nl_range / 5, Kilometers);
+        m_range_instrument->SetValue(nl_range / 5, Kilometers); // incorrect on a ZE1 (409 returned when dispay shows 129 km)
         }
+      ESP_LOGV(TAG, "IncomingFrameCan2 Range: %f km", m_range_instrument->AsFloat());
       break;
       }
     case 0x5b9:
@@ -1837,6 +1896,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
       uint16_t minutes = ((d[1] & 0x07) | d[2]);
       m_charge_minutes_3kW_remaining->SetValue(minutes);
       }
+      ESP_LOGV(TAG, "IncomingFrameCan2 Charge bars: %d, 3kW minutes: %d", m_remaining_chargebars->AsInt(), m_charge_minutes_3kW_remaining->AsInt());
       break;
     case 0x5b3:
       {
@@ -1864,6 +1924,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         {
         StandardMetrics.ms_v_pos_odometer->SetValue(d[1] << 16 | d[2] << 8 | d[3], m_odometer_units);
         }
+      ESP_LOGV(TAG, "IncomingFrameCan2 Odometer: %f %s", StandardMetrics.ms_v_pos_odometer->AsFloat(m_odometer_units), m_odometer_units == Miles ? "mi" : "km");
       break;
     case 0x60d:
       StandardMetrics.ms_v_door_trunk->SetValue(d[0] & 0x80);
@@ -1909,7 +1970,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
             }
           break;
         }
-
+      ESP_LOGV(TAG, "IncomingFrameCan2 Start button: %d, Locked: %d, Headlights: %d", (d[1]>>1) & 3, StandardMetrics.ms_v_env_locked->AsBool(), StandardMetrics.ms_v_env_headlights->AsBool());
       break;
     }
   }
