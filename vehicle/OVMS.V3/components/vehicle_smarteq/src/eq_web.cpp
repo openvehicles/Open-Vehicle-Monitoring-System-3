@@ -82,14 +82,15 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   auto lock = MyConfig.Lock();
 
   std::string error, full_km, rebootnw, contactor_1h_limit;
-  bool canwrite, canwrite_caron, canwrite_sleep, led, resettrip, resettotal, bcvalue;
+  bool canwrite, canwrite_caron, canwrite_caroff, canwrite_sleep, led, resettrip, resettotal, bcvalue;
   bool charge12v, extstats, unlocked, tripnotify, opendoors;
   bool obdii79b, obdii79b_cell, obdii743, obdii745, obdii745_tpms, obdii7e4, obdii7e4_dcdc;
 
   if (c.method == "POST") {
     // process form submission:
-    canwrite    = (c.getvar("canwrite") == "yes");
-    canwrite_caron = (c.getvar("canwrite_caron") == "yes");
+    canwrite    = (c.getvar("canwrite_mode") == "ON");
+    canwrite_caron = (c.getvar("canwrite_mode") == "CARON");
+    canwrite_caroff = (c.getvar("canwrite_mode") == "CAROFF");
     canwrite_sleep = (c.getvar("canwrite_sleep") == "yes");
     led         = (c.getvar("led") == "yes");
     rebootnw    = (c.getvar("rebootnw"));
@@ -139,6 +140,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
          }
       map.SetValueBool("canwrite", canwrite);
       map.SetValueBool("canwrite.caron", canwrite_caron);
+      map.SetValueBool("canwrite.caroff", canwrite_caroff);
       map.SetValueBool("canwrite.sleep", canwrite_sleep);
       map.SetValueBool("led", led);
       map["rebootnw"] = rebootnw;
@@ -177,6 +179,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   } else {
     canwrite       = sq->m_enable_write;
     canwrite_caron = sq->m_enable_write_caron;
+    canwrite_caroff = sq->m_enable_write_caroff;
     canwrite_sleep = sq->m_enable_write_sleep;
     led            = sq->m_enable_LED_state;
     resettrip      = sq->m_resettrip;
@@ -209,17 +212,23 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
   
   c.fieldset_start("Remote Control");
-  c.input_checkbox("Enable CAN write access #1", "canwrite", canwrite,
-    "<p>CAN write access all time! (OBDII polling, start Preconditioning etc.)</p>");
-  c.input_checkbox("Enable CAN write access #2", "canwrite_caron", canwrite_caron,
-    "<p>CAN write access all time!</p>"
-    "<p>Clears polling list when vehicle is in awake/sleep mode</p>"
-    "<p>This will stop CAN polling when the vehicle is in awake/sleep mode</p>"
-    "<p>Alternative to CAN write access #1; select one or neither!</p>");
-  c.input_checkbox("Disable CAN polling during sleep", "canwrite_sleep", canwrite_sleep,
+
+  std::string canwrite_mode = "OFF";
+  if( canwrite ) canwrite_mode = "ON";
+  else if ( canwrite_caron ) canwrite_mode = "CARON";
+  else if ( canwrite_caroff ) canwrite_mode = "CAROFF";
+  c.input_radiobtn_start("CAN Bus Write Access", "canwrite_mode");
+    c.input_radiobtn_option("canwrite_mode", "Off", "OFF", canwrite_mode == "OFF");
+    c.input_radiobtn_option("canwrite_mode", "On", "ON", canwrite_mode == "ON");
+    c.input_radiobtn_option("canwrite_mode", "Car Off", "CAROFF", canwrite_mode == "CAROFF");
+    c.input_radiobtn_option("canwrite_mode", "Car On", "CARON", canwrite_mode == "CARON");
+  c.input_radiobtn_end(
+    "<p>Enable write access to CAN bus.<br> Off - no access (Listen only)<br>On - allow full access<br> Car Off  - only when car is off (parked)<br> Car On - Only when car is on</p>");
+
+    c.input_checkbox("Disable CAN polling during sleep", "canwrite_sleep", canwrite_sleep,
     "<p>Clears polling list when vehicle is in sleep mode</p>");
   c.fieldset_end();
-  
+
   // trip reset or OBD activation
   c.fieldset_start("Trip calculated or OBD kWh/100km");
   c.input_checkbox("Reset Trip when Charging", "resettrip", resettrip,

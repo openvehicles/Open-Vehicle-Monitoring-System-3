@@ -203,6 +203,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
     // --- Config / Features ---
     void ConfigChanged(OvmsConfigParam* param) override;
+    void CheckCANAccess();
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
     uint64_t swap_uint64(uint64_t val);
@@ -232,7 +233,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool IsOnEQ() { return can_env_on; }
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
-    bool IsCANwrite() { return m_enable_write || m_enable_write_caron; }
+    bool IsCANwrite() { return m_enable_write || ( m_enable_write_caroff && !IsOnEQ() ) || ( m_enable_write_caron && IsOnEQ() ); }
     bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) >= 13.1f || 
                                   (m_can_active && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f ) || 
                                   (m_can_active && can_charging12v); }
@@ -434,6 +435,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- Config-driven member variables ---
     bool m_enable_write = false;            // canwrite enable write access
     bool m_enable_write_caron = false;      // canwrite enable write access, only when car is on
+    bool m_enable_write_caroff = false;      // canwrite enable only while the car is parked
     bool m_enable_write_sleep = false;      // canwrite disable write access, only when car is asleep
     bool m_can_active = false;              // true if CAN bus is in active mode, false if in listen-only mode
     bool m_enable_LED_state = false;        // Online LED State
@@ -488,6 +490,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     int m_led_state = 4;                    // Online LED State: 0=off, 1=red, 2=green, 3=blue, 4=default (configurable)
     int m_12v_ticker = 0;                   // ticker for 12V charge state check
     int m_modem_ticker = 0;                 // ticker for modem restart
+    bool m_can_last_acc_state = false;      // remember the last access state of the CAN bus 
 
     // --- OBDII polling flags ---
     bool m_obdii_745_tpms;                  // basic TPMS without temperature and low battery status
@@ -570,6 +573,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     int m_candata_timer = -1;
     int32_t m_above_cycles = 50000;       // alert threshold for cycles counted
     int m_contactor_1h_limit = 8;         // limit for contactor cycles changes per hour (for alerting)
+    bool m_can_msg_received  = false;    // true after a received message
 
     // --- TPMS internal arrays ---
     bool m_tpms_lowbatt[4] = {};          // 0=ok, 1=low

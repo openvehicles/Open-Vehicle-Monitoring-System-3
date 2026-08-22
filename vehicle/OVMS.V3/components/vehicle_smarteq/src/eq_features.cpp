@@ -375,7 +375,7 @@ void OvmsVehicleSmartEQ::smartAwake()
 {
   smartCoolDownPolling();
   // enable active polling when car wakes up (canwrite only)
-  if(m_enable_write)
+  if(m_enable_write || m_enable_write_caroff)
     smartOBDpolling(true);
   else if (m_enable_write_caron && m_can_active)
     smartOBDpolling(false); // only enable when car is on and CAN write access #2 is enabled

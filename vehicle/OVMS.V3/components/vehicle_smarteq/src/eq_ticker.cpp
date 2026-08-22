@@ -93,7 +93,7 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
     smartCAN2Metrics();
     }
 
-  if(IsAwakeEQ())
+  if(IsAwakeEQ() || m_can_msg_received)
     smartCAN2Metrics();
 
   if(IsChargingEQ()) 
