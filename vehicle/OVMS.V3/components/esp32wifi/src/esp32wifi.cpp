@@ -52,6 +52,13 @@ static const char *TAG = "esp32wifi";
 #include <dhcpserver/dhcpserver.h>
 #endif
 
+// STA connect state machine timing [seconds]:
+#define WIFI_RECONNECT_INTERVAL   10    // retry interval after a failed/fruitless attempt
+#define WIFI_RECONNECT_DELAY       2    // retry delay after losing an established link
+#define WIFI_SCAN_TIMEOUT         30    // max time to wait for a scan result
+#define WIFI_CONNECT_TIMEOUT      20    // max time to wait for an association to complete
+#define WIFI_STUCK_LIMIT           3    // consecutive timeouts before restarting the driver
+
 const char* const esp32wifi_mode_names[] = {
   "Modem is off",
   "Client mode",
@@ -415,6 +422,9 @@ esp32wifi::esp32wifi(const char* name)
   m_powermode = Off;
   m_poweredup = false;
   m_sta_reconnect = 0;
+  m_sta_scan_pending = 0;
+  m_sta_connect_pending = 0;
+  m_sta_stuck_count = 0;
   m_sta_connected = false;
   m_sta_rssi = -1270;
   m_good_signal = false;
@@ -603,6 +613,9 @@ void esp32wifi::PowerDown()
 void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t* bssid)
   {
   m_sta_reconnect = 0;
+  m_sta_scan_pending = 0;
+  m_sta_connect_pending = 0;
+  m_sta_stuck_count = 0;
 
   // mode reconfiguration?
   if (m_mode == ESP32WIFI_MODE_AP || m_mode == ESP32WIFI_MODE_APCLIENT || m_sta_connected)
@@ -654,6 +667,9 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
 void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
   {
   m_sta_reconnect = 0;
+  m_sta_scan_pending = 0;
+  m_sta_connect_pending = 0;
+  m_sta_stuck_count = 0;
 
   // mode reconfiguration?
   if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
@@ -704,6 +720,9 @@ void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
 void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword, uint8_t* stabssid)
   {
   m_sta_reconnect = 0;
+  m_sta_scan_pending = 0;
+  m_sta_connect_pending = 0;
+  m_sta_stuck_count = 0;
 
   // mode reconfiguration?
   if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_AP || m_sta_connected)
@@ -788,6 +807,13 @@ void esp32wifi::Reconnect(OvmsWriter* writer)
     ESP_LOGE(TAG, "Reconnect: starting Wifi client reconnect");
   if (!m_sta_connected)
     {
+    // Abort an association attempt in progress, else the driver would refuse the
+    // scan and could get stuck in the connecting state:
+    if (m_sta_connect_pending)
+      {
+      m_sta_connect_pending = 0;
+      esp_wifi_disconnect();
+      }
     m_sta_reconnect = monotonictime + 1;
     }
   else
@@ -820,6 +846,9 @@ void esp32wifi::StopStation()
     }
 
   m_sta_reconnect = 0;
+  m_sta_scan_pending = 0;
+  m_sta_connect_pending = 0;
+  m_sta_stuck_count = 0;
   m_sta_connected = false;
 
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
@@ -911,8 +940,12 @@ void esp32wifi::Scan(OvmsWriter* writer, bool json)
 
   m_mode = ESP32WIFI_MODE_SCAN;
   esp_wifi_scan_stop();
-  if (m_sta_reconnect)
-    m_sta_reconnect = monotonictime + 10;
+  // This aborts a connect scan in progress; its result won't reach the connect
+  // state machine (scan.done is ignored in SCAN mode), so drop the pending state
+  // and re-arm the retry timer, else the client would never retry:
+  if (m_sta_scan_pending || m_sta_reconnect)
+    m_sta_reconnect = monotonictime + WIFI_RECONNECT_INTERVAL;
+  m_sta_scan_pending = 0;
 
   if (!json)
     writer->puts("Scanning for WIFI Access Points...");
@@ -1138,6 +1171,9 @@ void esp32wifi::EventWifiStaConnected(std::string event, void* data)
 
   m_sta_connected = true;
   m_previous_reason = 0;
+  m_sta_connect_pending = 0;
+  m_sta_reconnect = 0;
+  m_sta_stuck_count = 0;
   UpdateNetMetrics();
 
   ESP_LOGI(TAG, "STA connected with SSID: %.*s, BSSID: " MACSTR ", Channel: %u, Auth: %s",
@@ -1164,8 +1200,19 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
     m_previous_reason = disconn.reason;
     }
 
+  bool was_connected = m_sta_connected;
   m_sta_connected = false;
+  m_sta_connect_pending = 0;
   memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
+
+  // Schedule the next attempt: the driver does not retry by itself. Retry quickly
+  // after losing an established link (fast transition to the next best AP), on the
+  // regular interval after a failed association.
+  if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
+    {
+    m_sta_reconnect = monotonictime +
+      (was_connected ? WIFI_RECONNECT_DELAY : WIFI_RECONNECT_INTERVAL);
+    }
 
   UpdateNetMetrics();
   }
@@ -1314,6 +1361,9 @@ void esp32wifi::EventTimer1(std::string event, void* data)
       }
     }
 
+  // recover from a stalled scan or association:
+  StaWatchdog();
+
   // reconnect?
   if ((m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
       && !m_sta_connected && m_sta_reconnect && monotonictime >= m_sta_reconnect)
@@ -1330,6 +1380,25 @@ void esp32wifi::StartConnect()
   // do a scan and connect explicitly to the AP with the strongest signal.
 
   OvmsRecMutexLock exclusive(&m_mutex);
+
+  // Never start a scan while the driver is associating: esp_wifi_scan_stop() /
+  // esp_wifi_scan_start() are rejected in that state ("STA is connecting, scan are
+  // not allowed!") and can leave the driver wedged in the connecting state, from
+  // which it emits no disconnect event and so never recovers on its own.
+  // StaWatchdog() picks up an association that doesn't complete in time.
+  if (m_sta_connect_pending)
+    {
+    ESP_LOGD(TAG, "StartConnect: association in progress, not scanning");
+    return;
+    }
+
+  // A scan of ours is still running; wait for its result (or the watchdog).
+  if (m_sta_scan_pending)
+    {
+    ESP_LOGD(TAG, "StartConnect: scan in progress, not restarting it");
+    return;
+    }
+
   esp_wifi_scan_stop();
 
   wifi_scan_config_t scanConf;
@@ -1342,12 +1411,67 @@ void esp32wifi::StartConnect()
   scanConf.scan_time.active = GetScanTime();
   esp_err_t res = esp_wifi_scan_start(&scanConf, false);
   if (res != ESP_OK)
+    {
+    // A wedged driver refuses every scan, so this counts towards the stuck check
+    // handled by StaWatchdog():
     ESP_LOGE(TAG, "StartConnect: error 0x%x starting scan", res);
+    m_sta_stuck_count++;
+    m_sta_reconnect = monotonictime + WIFI_RECONNECT_INTERVAL;
+    }
   else
+    {
     ESP_LOGV(TAG, "StartConnect: scan started");
+    // The scan result drives the next step, so disarm the retry timer and let the
+    // watchdog handle a scan that never delivers a result:
+    m_sta_scan_pending = monotonictime + WIFI_SCAN_TIMEOUT;
+    m_sta_reconnect = 0;
+    }
+  }
 
-  // next regular scan in 10 seconds:
-  m_sta_reconnect = monotonictime + 10;
+/**
+ * StaWatchdog: recover from a stalled scan or association.
+ *
+ * The esp-idf Wifi driver can get stuck in the "connecting" state without ever
+ * emitting a disconnect event (e.g. when an association to a weak AP is disturbed).
+ * Every subsequent scan is then refused and the station stays down until it is
+ * restarted. This detects that and escalates: abort the attempt, and if that does
+ * not help within WIFI_STUCK_LIMIT attempts, restart the Wifi driver.
+ */
+void esp32wifi::StaWatchdog()
+  {
+  if (m_mode != ESP32WIFI_MODE_CLIENT && m_mode != ESP32WIFI_MODE_APCLIENT)
+    return;
+
+  if (m_sta_connect_pending && monotonictime >= m_sta_connect_pending)
+    {
+    m_sta_connect_pending = 0;
+    m_sta_stuck_count++;
+    ESP_LOGW(TAG, "StaWatchdog: association to '%s' timed out, aborting",
+      m_wifi_sta_cfg.sta.ssid);
+    // Clear the driver's connecting state so scans are allowed again:
+    esp_wifi_disconnect();
+    m_sta_reconnect = monotonictime + WIFI_RECONNECT_DELAY;
+    }
+
+  if (m_sta_scan_pending && monotonictime >= m_sta_scan_pending)
+    {
+    m_sta_scan_pending = 0;
+    m_sta_stuck_count++;
+    ESP_LOGW(TAG, "StaWatchdog: scan timed out, aborting");
+    esp_wifi_scan_stop();
+    m_sta_reconnect = monotonictime + WIFI_RECONNECT_DELAY;
+    }
+
+  // Repeated timeouts / refused scans mean the driver is stuck in a state it does
+  // not report and cannot leave by itself; a driver restart is the only way out
+  // (this is what the "wifi restart" command does manually):
+  if (m_sta_stuck_count >= WIFI_STUCK_LIMIT)
+    {
+    m_sta_stuck_count = 0;
+    ESP_LOGE(TAG, "StaWatchdog: Wifi driver stuck after %d attempts, restarting it",
+      WIFI_STUCK_LIMIT);
+    Restart();
+    }
   }
 
 void esp32wifi::EventWifiScanDone(std::string event, void* data)
@@ -1358,6 +1482,14 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
   std::string ssid, password;
 
   if (m_mode == ESP32WIFI_MODE_SCAN) return; // Let scan routine handle it
+
+  // Our scan has ended; a delivered scan result proves the driver is alive, so
+  // clear the stuck count. Default to retrying on the regular interval, unless we
+  // start an association below:
+  m_sta_scan_pending = 0;
+  m_sta_stuck_count = 0;
+  if (!m_sta_connected && (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT))
+    m_sta_reconnect = monotonictime + WIFI_RECONNECT_INTERVAL;
 
   res = esp_wifi_scan_get_ap_num(&apCount);
   if (res != ESP_OK)
@@ -1381,6 +1513,7 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
   if (res != ESP_OK)
     {
     ESP_LOGE(TAG, "EventWifiScanDone: can't get AP records, error=0x%x", res);
+    free(list);
     return;
     }
 
@@ -1454,6 +1587,10 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
             }
           else
             {
+            // Association started: block further scans until it completes or the
+            // watchdog aborts it.
+            m_sta_connect_pending = monotonictime + WIFI_CONNECT_TIMEOUT;
+            m_sta_reconnect = 0;
             std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
             if (!ipconfig.empty())
               SetSTAWifiIP();
