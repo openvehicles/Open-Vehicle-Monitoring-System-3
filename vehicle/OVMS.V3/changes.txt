@@ -1,6 +1,31 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- New vehicle: Toyota e-TNGA platform, supporting the Subaru Solterra (SUBSOL) and the
+    Toyota bZ4X (TOYBZ4X) via the OBD-II port. The two vehicles are thin wrappers over a shared
+    platform module which carries the CAN polling, the charging state machine and the BMS
+    handling, so support is identical on both; only the Solterra has been confirmed on hardware.
+    Support includes:
+      VIN, SOC (displayed and BMS), speed, odometer, gear and drive mode
+      Per-cell BMS voltages and temperatures, with the pack arrangement derived from the
+        battery replies at runtime so the 96-cell and the 2025/26 refresh packs both work
+      Battery capacity and state of health (v.b.cac / v.b.soh / v.b.capacity)
+      AC and DC charging: state, type, power, station and vehicle limits, charge port state
+      Charge session reports written to disk as HTML plus a per-sample CSV
+      TPMS pressures and temperatures via the gateway relay
+      12V auxiliary battery voltage, current, temperature and capacity from the EV ECU
+      Cabin and ambient temperature, HVAC power and per-trip cabin energy
+      Throttle, brake and park brake position
+    Charge control, climate control and lock/unlock are not supported.
+  New configs:
+    - [xte] tpms.pressure.warn / .alert    -- Tyre pressure warning and alert thresholds (kPa)
+    - [xte] tpms.temp.warn / .alert        -- Tyre temperature warning and alert thresholds (C)
+    - [xte] bat.nominal.ah                 -- Pack nominal capacity in Ah, the denominator for
+                                              v.b.soh (default 0 = derive from the detected
+                                              pack, established for the 96-cell pack only)
+    - [xte] bat.nominal.volt               -- Pack nominal voltage in V, used to convert the
+                                              capacity to kWh for v.b.capacity (default 0 =
+                                              derive from the detected pack)
 - Server V3 (MQTT): added an optional liveness check that can be enabled in the web UI. When
     enabled, the MQTT client sends a ping probe after a configured idle period and reconnects if the
     broker remains silent beyond the timeout window. The check is off by default and can be toggled

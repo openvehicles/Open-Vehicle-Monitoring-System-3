@@ -700,6 +700,24 @@ config OVMS_VEHICLE_ZOMBIE_VCU
     help
         Enable to include support for EVBMW Zombieverter VCU.
 
+config OVMS_VEHICLE_TOYOTA_BZ4X
+    bool "Include support for Toyota bZ4X vehicles"
+    default y
+    depends on OVMS
+    depends on OVMS_COMP_POLLER
+    help
+        Enable to include support for Toyota bZ4X vehicles.
+        Built on the shared Toyota e-TNGA platform module.
+
+config OVMS_VEHICLE_SUBARU_SOLTERRA
+    bool "Include support for Subaru Solterra vehicles"
+    default y
+    depends on OVMS
+    depends on OVMS_COMP_POLLER
+    help
+        Enable to include support for Subaru Solterra vehicles.
+        Built on the shared Toyota e-TNGA platform module.
+
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for ISOTP Poller RX task"
     default 6144
