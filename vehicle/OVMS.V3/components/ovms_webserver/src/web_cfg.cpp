@@ -1188,7 +1188,19 @@ void OvmsWebServer::HandleFile(PageEntry_t& p, PageContext_t& c)
   } else {
     c.head(200);
     if (c.method == "GET") {
-      c.print(content);
+      // Stream the file instead of appending the whole body to the connection buffer.
+      // The editor will open any readable path on /store or /sd, so the body is
+      // arbitrarily large; printing it whole holds the loaded copy and the mbuf copy
+      // alive at the same time, and the mbuf cannot drain while the handler runs.
+      // Ownership of the body passes to the sender, which frees it and itself once the
+      // transfer completes and emits the terminating chunk - so this path deliberately
+      // does not fall through to c.done().
+      // An empty body (a directory path, which loads nothing) is handled correctly:
+      // the sender sends the terminating chunk on its first event and retires.
+      extram::string* body = new extram::string();
+      body->swap(content);
+      new HttpExtRamStringSender(c.nc, body);
+      return;
     }
   }
 
