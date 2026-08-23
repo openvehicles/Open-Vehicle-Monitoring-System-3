@@ -132,8 +132,22 @@ kill climate** — so OVMS blocks charge-stop while `ms_v_env_hvac` is set (the 
 stop climate first). Climate-stop is unaffected and always allowed.
 
 **Skip-write optimization.** For climate/charge, if profile 0 already holds the target op the arm
-writes nothing (the ~5-frame RA0 write is a no-op) and only the trigger is sent. SET_CURRENT always
-writes (applying the current is the command, and it confirms on the write echo).
+writes nothing (the ~5-frame RA0 write is a no-op) and only the trigger is sent. SET_CURRENT and
+SET_TEMP always write (applying the value is the command, and they confirm on the write echo).
+
+**Set target temperature** — edits the `temperature` field of profile 0 (byte 12,
+`raw = °C×10 − 100`), snapped to the car's half-degree steps between 15.5 and 30.0 °C.
+Like SET_CURRENT it is a pure settings edit: only that byte moves, the operation byte is left exactly
+as read, so it can neither start nor stop anything, and there is **no trigger**. Confirmed on the
+FSG's SET echo `49 59 bx`, which also updates `v.e.cabinsetpoint`.
+
+Unlike the charge current, a **running** conditioning session picks the new setpoint up by itself —
+no re-fire needed. Measured on a 2016 e-Golf at 28 °C ambient, polling `v.e.cabintemp` every
+20 s: with a 30 °C target and a 35 °C cabin it drifted at −0.19 °C/min; about 40 s
+after writing 16.0 °C the rate went to −2.2 °C/min. The reverse holds as well — cooling
+at −1.3 °C/min, write 30.0 °C, and it turns around to +0.29 °C/min within the same
+~40 s. So the BCU re-reads the profile while it runs, and only the charge current needs the start
+re-fired.
 
 **Errors are terminal.** A BAP `ERROR` (opcode 7) on the OperationMode func — e.g. the BCU refusing
 to charge while unplugged — aborts the command immediately: no re-fire, and a later `49 58` echo

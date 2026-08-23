@@ -91,6 +91,10 @@ class VWeGolfBatteryControl {
                                            // car's own UI only edits timers. Gated no-arm->no-trigger like
                                            // climate. STOP is op-specific: OFF arms the pure-charge op
                                            // first, so it's blocked while climate is on.)
+    // Set the pre-conditioning target temperature (persistent settings edit via
+    // the same RA0 read-modify-write). Takes the raw profile encoding
+    // (degC * 10 - 100) so it fits the uint8_t command parameter.
+    bool SetClimateTempRaw(uint8_t raw);
     bool SetChargeCurrent(uint16_t amps);  // set the charge-current limit (persistent settings edit via
                                            // profile-0 RMW, NO trigger). Amps are snapped to the car's
                                            // allowed steps {5,10,13,32} and hard-capped at 0x20 (see .cpp).
@@ -119,10 +123,14 @@ class VWeGolfBatteryControl {
         BC_CLIMATE = 0,   // arm PO_CLIMATE  -> trigger start/stop; confirm 49 58 -> ms_v_env_hvac
         BC_CHARGE,        // arm PO_CHARGING -> trigger start/stop; confirm 49 58 (charge state via 0x594)
         BC_SET_CURRENT,   // RMW maxCurrent only, NO trigger (settings edit); confirm on the write echo
+        BC_SET_TEMP,      // RMW temperature only, NO trigger (settings edit); confirm on the write echo
     };
 
     // Shared entry: reset command state, select the op, kick the wake. enable = on/off for
     // climate/charge (ignored/true for set-current); param = clamped amps for BC_SET_CURRENT.
+    // Write-only settings edits: change one stored field, confirm on the write
+    // echo, never fire the immediate trigger.
+    bool IsSettingsEdit() const { return m_op == BC_SET_CURRENT || m_op == BC_SET_TEMP; }
     bool Begin(BcOp op, bool enable, uint16_t param);
 
     // Command progress. The BCU's replies advance it; Ticker1 only holds the wake + backstops.
