@@ -174,7 +174,10 @@ class Peripherals : public InternalRamAllocated
 #endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
 
 #ifdef CONFIG_OVMS_COMP_ADC
-    esp32adc* m_esp32adc;
+    // Initialised here, not just in the constructor: the constructor publishes
+    // MyPeripherals before it creates its members, so anything running during
+    // that window sees this pointer.
+    esp32adc* m_esp32adc = nullptr;
 #endif // #ifdef CONFIG_OVMS_COMP_ADC
 
 #ifdef CONFIG_OVMS_COMP_MCP2515
