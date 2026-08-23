@@ -137,7 +137,8 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   if(m_enable_LED_state) 
     OnlineState();
   if((!m_can_active && m_enable_write && IsAwakeEQ()) ||
-     (!m_can_active && m_enable_write_caron && IsOnEQ()))
+     (!m_can_active && m_enable_write_caron && IsOnEQ())||
+     (!m_can_active && m_enable_write_caroff && !IsOnEQ()))
     {
     smartCoolDownPolling();
     smartOBDpolling(true);

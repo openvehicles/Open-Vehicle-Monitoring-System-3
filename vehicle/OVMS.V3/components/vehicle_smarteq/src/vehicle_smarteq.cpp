@@ -184,8 +184,8 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   mt_bms_mfr_id                 = MyMetrics.InitInt("xsq.bms.id.mfr", SM_STALE_NONE, 0,   Other);
   mt_bms_basic_parts            = MyMetrics.InitString("xsq.bms.id.basic.parts", SM_STALE_NONE, "",  Other);
 
-  // Start CAN bus in CAN_MODE_ACTIVE mode
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  // Start CAN bus in CAN_MODE_LISTEN mode
+  RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);
   PollSetState(POLLSTATE_OFF);
 
   // register config container for smart EQ module, with callback to ConfigChanged() on changes
@@ -282,6 +282,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     {
     m_enable_write         = map->GetValueBool("canwrite", false);
     m_enable_write_caron   = map->GetValueBool("canwrite.caron", false);
+    m_enable_write_caroff  = map->GetValueBool("canwrite.caroff", false);
     m_enable_write_sleep   = map->GetValueBool("canwrite.sleep", false);
     m_enable_LED_state     = map->GetValueBool("led", false);
     m_bcvalue              = map->GetValueBool("bcvalue", false);
@@ -334,14 +335,18 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     smartCoolDownPolling();
     smartOBDpolling(m_enable_write);
     }
-  // disable caron write mode if normal write mode is enabled to avoid conflicts
-  if(m_enable_write_caron && m_enable_write) 
+  // disable caron/off write modes if at least two write modes are enabled
+  if ((m_enable_write && (m_enable_write_caron || m_enable_write_caroff)) ||
+      (m_enable_write_caron && m_enable_write_caroff))
     {
     m_enable_write_caron = false;
+    m_enable_write_caroff = false;
     MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
+    MyConfig.SetParamValueBool("xsq", "canwrite.caroff", false);
     }
-  // start in listen-only mode if sleep write is enabled and bus is not awake
-  if (m_enable_write_sleep && !IsAwakeEQ())
+  // start in listen-only mode if sleep-write is enabled while car is asleep,
+  // or if car-off write mode is enabled while car is on
+  if ((m_enable_write_sleep && !IsAwakeEQ()) || (m_enable_write_caroff && IsOnEQ()))
     {
     smartCoolDownPolling();
     smartOBDpolling(false);
