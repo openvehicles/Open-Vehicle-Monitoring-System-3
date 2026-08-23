@@ -1735,7 +1735,20 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
 
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
+  bool requested = m_now_capabilities;
   m_now_capabilities = false;
+
+  // Quick exit if not explicitly requested (mirrors the other TransmitMsg*)
+  if ((!always) && (!requested)) return;
+
+  OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
+  if (vehicle == NULL) return;
+  if (!vehicle->SupportsClimateControl()) return;
+
+  // Protocol v2 message 0x56 "V": comma separated capability list,
+  // C<cmd> = vehicle supports command <cmd>.
+  // 26 = Remote Climate Control -> app shows its climate button.
+  Transmit("MP-0 VC26");
   }
 
 void OvmsServerV2::TransmitMsgGroup(bool always)

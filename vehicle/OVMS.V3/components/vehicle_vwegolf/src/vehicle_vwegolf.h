@@ -67,6 +67,7 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     vehicle_command_t CommandUnlock(const char* pin) override;
     vehicle_command_t CommandWakeup() override;
     vehicle_command_t CommandClimateControl(bool enable) override;
+    bool SupportsClimateControl() override { return true; }
     // Charge control — shares the BatteryControl (LSG 0x25) command path with climate.
     vehicle_command_t CommandSetChargeCurrent(uint16_t limit) override;  // persistent maxCurrent edit
     vehicle_command_t CommandStartCharge() override;  // immediate charge start (on-car validated)
