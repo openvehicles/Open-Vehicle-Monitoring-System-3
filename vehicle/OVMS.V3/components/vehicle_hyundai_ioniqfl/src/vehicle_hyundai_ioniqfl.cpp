@@ -1,43 +1,14 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          21th January 2019
+;    Date:          17th July 2026
 ;
-;    Changes:
-;    0.0.1  Initial stub
-;			- Ported from Kia Soul. Totally untested.
-;
-;    0.1.0  First version on par with Soul
-;			- First "complete" version.
-;
-;		 0.1.1 06-apr-2019 - Geir Øyvind Vælidalo
-;			- Minor changes after proper real life testing
-;			- VIN is working
-;			- Removed more of the polling when car is off in order to prevent AUX battery drain
-;
-;		 0.1.2 10-apr-2019 - Geir Øyvind Vælidalo
-;			- Fixed TPMS reading
-;			- Fixed xks aux
-;			- Estimated range show WLTP in lack of the actual displayed range
-;			- Door lock works even after ECU goes to sleep.
-;
-;		 0.1.3 12-apr-2019 - Geir Øyvind Vælidalo
-;			- Fixed OBC temp reading
-;			- Removed a couple of pollings when car is off, in order to save AUX battery
-;			- Added range calculator for estimated range instead of WLTP. It now uses 20 last trips as a basis.
-;
-;		 0.1.4 13-apr-2019 - Geir Øyvind Vælidalo
-;			- Added SaveStatus so that the SOC is as correct as possible even after a (unwanted) reboot while car is off.
-;
-;		 0.1.5 18-apr-2019 - Geir Øyvind Vælidalo
-;			- Changed poll frequencies to minimize the strain on the CAN-write function.
-;
-;		 0.1.6 20-apr-2019 - Geir Øyvind Vælidalo
-;			- AUX Battery monitor..
-;
+; 	    		---Kia Module---
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
 ;    (C) 2019       Geir Øyvind Vælidalo <geir@validalo.net>
+;				---Ioniq Module--
+; 	 (C) 2026		Alexander Crew 
 ;;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -197,7 +168,7 @@ OvmsVehicleIoniqFL::OvmsVehicleIoniqFL()
 
   kia_ready_for_chargepollstate = true;
   kia_secs_with_no_client = 0;
-  xkn_keep_awake = 0;
+  ifl_keep_awake = 0;
 
   memset( kia_send_can.byte, 0, sizeof(kia_send_can.byte));
 
@@ -215,67 +186,67 @@ OvmsVehicleIoniqFL::OvmsVehicleIoniqFL()
   MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", false);
 
   // init metrics:
-  m_version = MyMetrics.InitString("xkn.version", 0, VERSION " " __DATE__ " " __TIME__);
-  m_b_cell_volt_max = MyMetrics.InitFloat("xkn.b.cell.volt.max", 10, 0, Volts);
-  m_b_cell_volt_min = MyMetrics.InitFloat("xkn.b.cell.volt.min", 10, 0, Volts);
-  m_b_cell_volt_max_no = MyMetrics.InitInt("xkn.b.cell.volt.max.no", 10, 0);
-  m_b_cell_volt_min_no = MyMetrics.InitInt("xkn.b.cell.volt.min.no", 10, 0);
-  m_b_cell_det_min = MyMetrics.InitFloat("xkn.b.cell.det.min", 0, 0, Percentage);
-  m_b_cell_det_max_no = MyMetrics.InitInt("xkn.b.cell.det.max.no", 10, 0);
-  m_b_cell_det_min_no = MyMetrics.InitInt("xkn.b.cell.det.min.no", 10, 0);
-  m_c_power = MyMetrics.InitFloat("xkn.c.power", 10, 0, kW);
-  m_c_speed = MyMetrics.InitFloat("xkn.c.speed", 10, 0, Kph);
-  m_b_min_temperature = MyMetrics.InitInt("xkn.b.min.temp", 10, 0, Celcius);
-  m_b_max_temperature = MyMetrics.InitInt("xkn.b.max.temp", 10, 0, Celcius);
-  m_b_inlet_temperature = MyMetrics.InitInt("xkn.b.inlet.temp", 10, 0, Celcius);
-  m_b_heat_1_temperature = MyMetrics.InitInt("xkn.b.heat1.temp", 10, 0, Celcius);
-  m_b_bms_soc = MyMetrics.InitFloat("xkn.b.bms.soc", 10, 0, Percentage);
-  m_b_aux_soc = MyMetrics.InitInt("xkn.b.aux.soc", 0, 0, Percentage);
+  m_version = MyMetrics.InitString("ifl.version", 0, VERSION " " __DATE__ " " __TIME__);
+  m_b_cell_volt_max = MyMetrics.InitFloat("ifl.b.cell.volt.max", 10, 0, Volts);
+  m_b_cell_volt_min = MyMetrics.InitFloat("ifl.b.cell.volt.min", 10, 0, Volts);
+  m_b_cell_volt_max_no = MyMetrics.InitInt("ifl.b.cell.volt.max.no", 10, 0);
+  m_b_cell_volt_min_no = MyMetrics.InitInt("ifl.b.cell.volt.min.no", 10, 0);
+  m_b_cell_det_min = MyMetrics.InitFloat("ifl.b.cell.det.min", 0, 0, Percentage);
+  m_b_cell_det_max_no = MyMetrics.InitInt("ifl.b.cell.det.max.no", 10, 0);
+  m_b_cell_det_min_no = MyMetrics.InitInt("ifl.b.cell.det.min.no", 10, 0);
+  m_c_power = MyMetrics.InitFloat("ifl.c.power", 10, 0, kW);
+  m_c_speed = MyMetrics.InitFloat("ifl.c.speed", 10, 0, Kph);
+  m_b_min_temperature = MyMetrics.InitInt("ifl.b.min.temp", 10, 0, Celcius);
+  m_b_max_temperature = MyMetrics.InitInt("ifl.b.max.temp", 10, 0, Celcius);
+  m_b_inlet_temperature = MyMetrics.InitInt("ifl.b.inlet.temp", 10, 0, Celcius);
+  m_b_heat_1_temperature = MyMetrics.InitInt("ifl.b.heat1.temp", 10, 0, Celcius);
+  m_b_bms_soc = MyMetrics.InitFloat("ifl.b.bms.soc", 10, 0, Percentage);
+  m_b_aux_soc = MyMetrics.InitInt("ifl.b.aux.soc", 0, 0, Percentage);
 
-  m_b_bms_relay = MyMetrics.InitBool("xkn.b.bms.relay", 30, false, Other);
-  m_b_bms_ignition = MyMetrics.InitBool("xkn.b.bms.ignition", 30, false, Other);
+  m_b_bms_relay = MyMetrics.InitBool("ifl.b.bms.relay", 30, false, Other);
+  m_b_bms_ignition = MyMetrics.InitBool("ifl.b.bms.ignition", 30, false, Other);
 
-  m_ldc_out_voltage = MyMetrics.InitFloat("xkn.ldc.out.volt", 10, 12, Volts);
-  m_ldc_in_voltage = MyMetrics.InitFloat("xkn.ldc.in.volt", 10, 12, Volts);
-  m_ldc_out_current = MyMetrics.InitFloat("xkn.ldc.out.amps", 10, 0, Amps);
-  m_ldc_temperature = MyMetrics.InitFloat("xkn.ldc.temp", 10, 0, Celcius);
+  m_ldc_out_voltage = MyMetrics.InitFloat("ifl.ldc.out.volt", 10, 12, Volts);
+  m_ldc_in_voltage = MyMetrics.InitFloat("ifl.ldc.in.volt", 10, 12, Volts);
+  m_ldc_out_current = MyMetrics.InitFloat("ifl.ldc.out.amps", 10, 0, Amps);
+  m_ldc_temperature = MyMetrics.InitFloat("ifl.ldc.temp", 10, 0, Celcius);
 
-  m_obc_pilot_duty = MyMetrics.InitFloat("xkn.obc.pilot.duty", 10, 0, Percentage);
+  m_obc_pilot_duty = MyMetrics.InitFloat("ifl.obc.pilot.duty", 10, 0, Percentage);
 
-  m_obc_timer_enabled = MyMetrics.InitBool("xkn.obc.timer.enabled", 10, 0);
+  m_obc_timer_enabled = MyMetrics.InitBool("ifl.obc.timer.enabled", 10, 0);
 
-  m_v_env_lowbeam = MyMetrics.InitBool("xkn.e.lowbeam", 10, 0);
-  m_v_env_highbeam = MyMetrics.InitBool("xkn.e.highbeam", 10, 0);
+  m_v_env_lowbeam = MyMetrics.InitBool("ifl.e.lowbeam", 10, 0);
+  m_v_env_highbeam = MyMetrics.InitBool("ifl.e.highbeam", 10, 0);
 
-  m_v_preheat_timer1_enabled = MyMetrics.InitBool("xkn.e.preheat.timer1.enabled", 10, 0);
-  m_v_preheat_timer2_enabled = MyMetrics.InitBool("xkn.e.preheat.timer2.enabled", 10, 0);
-  m_v_preheating = MyMetrics.InitBool("xkn.e.preheating", 10, 0);
+  m_v_preheat_timer1_enabled = MyMetrics.InitBool("ifl.e.preheat.timer1.enabled", 10, 0);
+  m_v_preheat_timer2_enabled = MyMetrics.InitBool("ifl.e.preheat.timer2.enabled", 10, 0);
+  m_v_preheating = MyMetrics.InitBool("ifl.e.preheating", 10, 0);
 
-  m_v_heated_handle = MyMetrics.InitBool("xkn.e.heated.steering", 10, 0);
-  m_v_rear_defogger = MyMetrics.InitBool("xkn.e.rear.defogger", 10, 0);
+  m_v_heated_handle = MyMetrics.InitBool("ifl.e.heated.steering", 10, 0);
+  m_v_rear_defogger = MyMetrics.InitBool("ifl.e.rear.defogger", 10, 0);
 
-  m_v_traction_control = MyMetrics.InitBool("xkn.v.traction.control", 10, 0);
+  m_v_traction_control = MyMetrics.InitBool("ifl.v.traction.control", 10, 0);
 
-  ms_v_pos_trip = MyMetrics.InitFloat("xkn.e.trip", 10, 0, Kilometers);
-  ms_v_trip_energy_used = MyMetrics.InitFloat("xkn.e.trip.energy.used", 10, 0, kWh);
-  ms_v_trip_energy_recd = MyMetrics.InitFloat("xkn.e.trip.energy.recuperated", 10, 0, kWh);
+  ms_v_pos_trip = MyMetrics.InitFloat("ifl.e.trip", 10, 0, Kilometers);
+  ms_v_trip_energy_used = MyMetrics.InitFloat("ifl.e.trip.energy.used", 10, 0, kWh);
+  ms_v_trip_energy_recd = MyMetrics.InitFloat("ifl.e.trip.energy.recuperated", 10, 0, kWh);
 
-  m_v_seat_belt_driver = MyMetrics.InitBool("xkn.v.seat.belt.driver", 10, 0);
-  m_v_seat_belt_passenger = MyMetrics.InitBool("xkn.v.seat.belt.passenger", 10, 0);
-  m_v_seat_belt_back_right = MyMetrics.InitBool("xkn.v.seat.belt.back.right", 10, 0);
-  m_v_seat_belt_back_middle = MyMetrics.InitBool("xkn.v.seat.belt.back.middle", 10, 0);
-  m_v_seat_belt_back_left = MyMetrics.InitBool("xkn.v.seat.belt.back.left", 10, 0);
+  m_v_seat_belt_driver = MyMetrics.InitBool("ifl.v.seat.belt.driver", 10, 0);
+  m_v_seat_belt_passenger = MyMetrics.InitBool("ifl.v.seat.belt.passenger", 10, 0);
+  m_v_seat_belt_back_right = MyMetrics.InitBool("ifl.v.seat.belt.back.right", 10, 0);
+  m_v_seat_belt_back_middle = MyMetrics.InitBool("ifl.v.seat.belt.back.middle", 10, 0);
+  m_v_seat_belt_back_left = MyMetrics.InitBool("ifl.v.seat.belt.back.left", 10, 0);
 
-  m_v_emergency_lights = MyMetrics.InitBool("xkn.v.emergency.lights", 10, 0);
+  m_v_emergency_lights = MyMetrics.InitBool("ifl.v.emergency.lights", 10, 0);
 
-  m_v_power_usage = MyMetrics.InitFloat("xkn.v.power.usage", 10, 0, kW);
+  m_v_power_usage = MyMetrics.InitFloat("ifl.v.power.usage", 10, 0, kW);
 
-  m_v_trip_consumption = MyMetrics.InitFloat("xkn.v.trip.consumption", 10, 0, kWhP100K);
+  m_v_trip_consumption = MyMetrics.InitFloat("ifl.v.trip.consumption", 10, 0, kWhP100K);
 
-  m_v_door_lock_fl = MyMetrics.InitBool("xkn.v.door.lock.front.left", 10, 0);
-  m_v_door_lock_fr = MyMetrics.InitBool("xkn.v.door.lock.front.right", 10, 0);
-  m_v_door_lock_rl = MyMetrics.InitBool("xkn.v.door.lock.rear.left", 10, 0);
-  m_v_door_lock_rr = MyMetrics.InitBool("xkn.v.door.lock.rear.right", 10, 0);
+  m_v_door_lock_fl = MyMetrics.InitBool("ifl.v.door.lock.front.left", 10, 0);
+  m_v_door_lock_fr = MyMetrics.InitBool("ifl.v.door.lock.front.right", 10, 0);
+  m_v_door_lock_rl = MyMetrics.InitBool("ifl.v.door.lock.rear.left", 10, 0);
+  m_v_door_lock_rr = MyMetrics.InitBool("ifl.v.door.lock.rear.right", 10, 0);
 
   m_b_cell_det_min->SetValue(0);
 
@@ -286,14 +257,14 @@ OvmsVehicleIoniqFL::OvmsVehicleIoniqFL()
   kn_shift_bits.CarOn = false;
 
   // init commands:
-  cmd_xkn = MyCommandApp.RegisterCommand("xkn","Kia Niro / Hyundai Kona EV");
-  cmd_xkn->RegisterCommand("trip","Show trip info since last parked", ifl_trip_since_parked);
-  cmd_xkn->RegisterCommand("tripch","Show trip info since last charge", ifl_trip_since_charge);
-  cmd_xkn->RegisterCommand("tpms","Tire pressure monitor", ifl_tpms);
-  cmd_xkn->RegisterCommand("aux","Aux battery", ifl_aux);
-  cmd_xkn->RegisterCommand("vin","VIN information", ifl_vin);
+  cmd_ifl = MyCommandApp.RegisterCommand("ifl","Kia Niro / Hyundai Kona EV");
+  cmd_ifl->RegisterCommand("trip","Show trip info since last parked", ifl_trip_since_parked);
+  cmd_ifl->RegisterCommand("tripch","Show trip info since last charge", ifl_trip_since_charge);
+  cmd_ifl->RegisterCommand("tpms","Tire pressure monitor", ifl_tpms);
+  cmd_ifl->RegisterCommand("aux","Aux battery", ifl_aux);
+  cmd_ifl->RegisterCommand("vin","VIN information", ifl_vin);
 
-  cmd_xkn->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pin>",1,1);
+  cmd_ifl->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pin>",1,1);
 
   {
     auto lock = MyConfig.Lock();
@@ -311,7 +282,7 @@ OvmsVehicleIoniqFL::OvmsVehicleIoniqFL()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsVehicleIoniqFL::EventListener, this, _1, _2));
 
-  MyConfig.RegisterParam("xkn", "Ioniq EV specific settings.", true, true);
+  MyConfig.RegisterParam("ifl", "Ioniq EV specific settings.", true, true);
   ConfigChanged(NULL);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -354,22 +325,22 @@ void OvmsVehicleIoniqFL::ConfigChanged(OvmsConfigParam* param)
   ESP_LOGD(TAG, "Ioniq EV reload configuration");
 
   // Instances:
-  // xkn
+  // ifl
   //	  cap_act_kwh			Battery capacity in wH (Default: 640000)
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
   //  canwrite					Enable commands
-  kn_battery_capacity = (float)MyConfig.GetParamValueInt("xkn", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
+  kn_battery_capacity = (float)MyConfig.GetParamValueInt("ifl", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
 
-  kn_maxrange = MyConfig.GetParamValueInt("xkn", "maxrange", CFG_DEFAULT_MAXRANGE);
+  kn_maxrange = MyConfig.GetParamValueInt("ifl", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (kn_maxrange <= 0)
     kn_maxrange = CFG_DEFAULT_MAXRANGE;
 
-  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xkn", "suffsoc");
-  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xkn", "suffrange");
+  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("ifl", "suffsoc");
+  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("ifl", "suffrange");
 
-  kia_enable_write = MyConfig.GetParamValueBool("xkn", "canwrite", false);
+  kia_enable_write = MyConfig.GetParamValueBool("ifl", "canwrite", false);
 }
 
 /**
@@ -570,9 +541,9 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
 			}
 		}
 
-		bool wasPaused = (xkn_keep_awake > 0);
-		if (xkn_keep_awake > 0) 
-			--xkn_keep_awake;
+		bool wasPaused = (ifl_keep_awake > 0);
+		if (ifl_keep_awake > 0) 
+			--ifl_keep_awake;
 
 		// *** AUX Battery drain prevention code ***
 		/* #ifndef __GNUC__
@@ -582,7 +553,7 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
 		bool isLocked = StdMetrics.ms_v_env_locked->AsBool();
 		if(StdMetrics.ms_v_bat_12v_voltage_alert->AsBool()) {
 			ESP_LOGV(TAG,"12 Battery Alert");
-			if (xkn_keep_awake == 0) {
+			if (ifl_keep_awake == 0) {
 				ESP_LOGD(TAG, "Setting PollState to Off");
 				POLLSTATE_OFF
 			}
@@ -612,13 +583,13 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
 								ESP_LOGD(TAG, "Setting PollState to Ping(120)");
 								PollState_Ping(120);
 							}
-							else if (xkn_keep_awake == 0) {
+							else if (ifl_keep_awake == 0) {
               					ESP_LOGI(TAG, "NO CLIENTS. Turning off polling.");
 								ESP_LOGD(TAG, "Setting PollState to Off");
 								POLLSTATE_OFF
 							}
 							else if (!ISPOLLING_PING) {
-              					ESP_LOGI(TAG, "NO CLIENTS.Polling state Ping, for %d more seconds.", xkn_keep_awake);
+              					ESP_LOGI(TAG, "NO CLIENTS.Polling state Ping, for %d more seconds.", ifl_keep_awake);
 								PollState_Ping();
 							}
 						}
@@ -642,7 +613,7 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
         			//If client ckonnects while poll state is off
 					//Update the state to relevent state
 
-					xkn_keep_awake = 0;
+					ifl_keep_awake = 0;
 					kia_secs_with_no_client = 0;
 					ESP_LOGI(TAG,"Client Connected, Turning on polling");
 					if (isRunning) {
@@ -658,7 +629,7 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
 			}
 		}
 
-		if(!isRunning && !isCharging && wasPaused && (xkn_keep_awake == 0)) {
+		if(!isRunning && !isCharging && wasPaused && (ifl_keep_awake == 0)) {
 			ESP_LOGD(TAG,"Timed Out");
 			if (ISPOLLING_OFF) {
 				ESP_LOGD(TAG,"Setting Polling to Off");
@@ -1219,18 +1190,18 @@ bool OvmsVehicleIoniqFL::SetFeature(int key, const char *value)
   switch (key)
   {
     case 10:
-      MyConfig.SetParamValue("xkn", "suffsoc", value);
+      MyConfig.SetParamValue("ifl", "suffsoc", value);
       return true;
     case 11:
-      MyConfig.SetParamValue("xkn", "suffrange", value);
+      MyConfig.SetParamValue("ifl", "suffrange", value);
       return true;
     case 12:
-      MyConfig.SetParamValue("xkn", "maxrange", value);
+      MyConfig.SetParamValue("ifl", "maxrange", value);
       return true;
     case 15:
     {
       int bits = atoi(value);
-      MyConfig.SetParamValueBool("xkn", "canwrite",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("ifl", "canwrite",  (bits& 1)!=0);
       return true;
     }
     default:
@@ -1249,15 +1220,15 @@ const std::string OvmsVehicleIoniqFL::GetFeature(int key)
   {
     case 0:
     case 10:
-      return MyConfig.GetParamValue("xkn", "suffsoc", STR(0));
+      return MyConfig.GetParamValue("ifl", "suffsoc", STR(0));
     case 11:
-      return MyConfig.GetParamValue("xkn", "suffrange", STR(0));
+      return MyConfig.GetParamValue("ifl", "suffrange", STR(0));
     case 12:
-      return MyConfig.GetParamValue("xkn", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
+      return MyConfig.GetParamValue("ifl", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     case 15:
     {
       int bits =
-        ( MyConfig.GetParamValueBool("xkn", "canwrite",  false) ?  1 : 0);
+        ( MyConfig.GetParamValueBool("ifl", "canwrite",  false) ?  1 : 0);
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);

@@ -30,12 +30,6 @@ Lock/Unlock Vehicle         Yes
 Valet Mode Control          Not currently supported
 =========================== ==============
 
--------------
-Configuration
--------------
-
-TODO. Configuration is quite similar to the Kia Soul, so please check that out. Please use the Web based configuration!
-
 ---------------
 Estimated Range
 ---------------

@@ -1,11 +1,14 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          22th October 2017
+;    Date:          17th July 2026
 ;
 ;    Changes:
-;    1.0  Initial stub
+;    1.0  Initial Fork of Kona/Kia module 
 ;
+; 	    		---Kia Module---
 ;    (C) 2018        Geir Øyvind Vælidalo <geir@validalo.net>
+; 	    		---Ioniq Module---
+;    (C) 2026		Alexander Crew 
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -164,7 +167,7 @@ class OvmsVehicleIoniqFL : public KiaVehicle
     void SendTesterPresentMessages();
     void StopTesterPresentMessages();
 
-    OvmsCommand *cmd_xkn;
+    OvmsCommand *cmd_ifl;
     int m_vin_retry;
 
 		#define CFG_DEFAULT_MAXRANGE 440
@@ -214,7 +217,7 @@ class OvmsVehicleIoniqFL : public KiaVehicle
 
     RangeCalculator *kn_range_calc;
 
-    int16_t xkn_keep_awake;
+    int16_t ifl_keep_awake;
     inline int PollGetState()
   {
     return m_poll_state;
@@ -235,8 +238,8 @@ class OvmsVehicleIoniqFL : public KiaVehicle
     inline void PollState_Ping() { PollSetState(3); }
     inline void PollState_Ping(uint32_t ticks)
     {
-      if (xkn_keep_awake < ticks) {
-        xkn_keep_awake = ticks;
+      if (ifl_keep_awake < ticks) {
+        ifl_keep_awake = ticks;
       }
 
       PollSetState(3);
@@ -244,8 +247,8 @@ class OvmsVehicleIoniqFL : public KiaVehicle
 
     inline void PollState_PingCap(uint32_t ticks)
     {
-      if (xkn_keep_awake > ticks) {
-        xkn_keep_awake = ticks;
+      if (ifl_keep_awake > ticks) {
+        ifl_keep_awake = ticks;
       }
     }
 

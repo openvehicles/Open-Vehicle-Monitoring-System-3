@@ -1,8 +1,11 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          21th January 2019
+;    Date:          17th July 2026
 ;
+;			---Kia Module--
 ;    (C) 2019       Geir Øyvind Vælidalo <geir@validalo.net>
+;			---Ioniq Module--
+; 	 (C) 2026		Alexander Crew 
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +27,7 @@
 */
 #include "vehicle_hyundai_ioniqfl.h"
 
-static const char *TAG = "v-Ioniq-fl";
+static const char *TAG = "v-ioniqfl";
 
 /**
  * Incoming poll reply messages
@@ -580,12 +583,16 @@ void OvmsVehicleIoniqFL::IncomingFull_BMC(uint16_t type, uint16_t pid, const std
 			}
 			
 			if (get_uint_buff_be<2>(data, 57, value))
-				ESP_LOGD(TAG, "Surge Resistor: %f",(float) value);
+				ESP_LOGD(TAG, "pSurge Resistor: %f",(float) value);
 		break;
 
 	case 0x0102:
 		BmsRestartCellVoltages();
+
+		// Lack of Break Intentional, reseting Cell measurements
+		__attribute__ ((fallthrough));
 	case 0x0103:
+	// ff ff ff 00 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 c7 01 00 00 00 00 00 05 02
 	case 0x0104:
 		int8_t count;
 		int8_t offset;
@@ -854,7 +861,7 @@ bool OvmsVehicleIoniqFL::IsKona()
  */
 metric_unit_t OvmsVehicleIoniqFL::GetConsoleUnits()
 {
-	return MyConfig.GetParamValueBool("xkn", "consoleKilometers", true) ? Kilometers : Miles;
+	return MyConfig.GetParamValueBool("ifl", "consoleKilometers", true) ? Kilometers : Miles;
 }
 
 /**
@@ -864,5 +871,5 @@ metric_unit_t OvmsVehicleIoniqFL::GetConsoleUnits()
  */
 bool OvmsVehicleIoniqFL::IsLHD()
 {
-	return MyConfig.GetParamValueBool("xkn", "leftDrive", true);
+	return MyConfig.GetParamValueBool("ifl", "leftDrive", true);
 }
