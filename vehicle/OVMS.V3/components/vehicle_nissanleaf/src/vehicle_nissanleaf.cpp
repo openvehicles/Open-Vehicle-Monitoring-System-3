@@ -293,13 +293,9 @@ OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
 
 /// @brief Set the MCP2515 hardware receive filter for CAN2
 /// This is used to filter out unwanted CAN messages on the CAR bus (CAN2) to reduce CPU load and improve performance.
-/// The filter is set to accept only the CAN IDs that are used by the Nissan Leaf ZE1.
-/// Accepted packets are:
-/// - 0x355 and 0x385 (shared mask with bits 7,6,4 don't-care)
-/// - 0x5a9 and 0x5b9 (shared mask with bits 7,6,4 don't-care)
-/// - 0x421, 0x5c5, 0x60d, 0x79a
+/// The filter is set according to the configured Nissan Leaf variant (ZE1 or AZE0/pre-ZE1).
 /// @param bus The CAN bus to configure (expected to be an MCP2515).
-/// @param enable true to apply the Leaf ZE1 filter, false to clear it (accept all).
+/// @param enable true to apply the Leaf filter, false to clear it (accept all).
 void OvmsVehicleNissanLeaf::SetCan2Mcp2515Filter(canbus* bus, bool enable)
   {
   mcp2515* sbus = (mcp2515*)bus;
@@ -312,27 +308,60 @@ void OvmsVehicleNissanLeaf::SetCan2Mcp2515Filter(canbus* bus, bool enable)
   mcp2515_filter_config_t cfg = {};
   if (enable)
     {
-    // Mask 0 / filters 0-1: shared mask with bits 7,6,4 don't-care.
-    cfg.mask[0].b.sid = 0x72F;
-    cfg.filter[0].b.sid = 0x355;  // covers 0x355 and 0x385
-    cfg.filter[1].b.sid = 0x5a9;  // covers 0x5a9 and 0x5b9
+    if (cfg_ze1)
+      {
+      // ZE1 (2018+) Leaf.
+      // Mask 0 / filters 0-1: shared mask with bits 7,6,4 don't-care.
+      cfg.mask[0].b.sid = 0x72F;
+      cfg.filter[0].b.sid = 0x355;  // covers 0x355 and 0x385
+      cfg.filter[1].b.sid = 0x5a9;  // covers 0x5a9 and 0x5b9
 
-    // Mask 1 / filters 2-5: exact 11-bit ID match.
-    cfg.mask[1].b.sid = 0x7FF;
-    cfg.filter[2].b.sid = 0x421;
-    cfg.filter[3].b.sid = 0x5c5;
-    cfg.filter[4].b.sid = 0x60d;
-    cfg.filter[5].b.sid = 0x79a;
+      // Mask 1 / filters 2-5: exact 11-bit ID match.
+      cfg.mask[1].b.sid = 0x7FF;
+      cfg.filter[2].b.sid = 0x421;
+      cfg.filter[3].b.sid = 0x5c5;
+      cfg.filter[4].b.sid = 0x60d;
+      cfg.filter[5].b.sid = 0x79a;
+      }
+    else
+      {
+      // AZE0 / pre-ZE1 Leaf.
+      // The throttle (0x180) and footbrake (0x292) frames are intentionally
+      // excluded all other CAN2 IDs handled by the AZE0 firmware are kept.
+      // The MCP2515 has only 6 filters / 2 masks, so 0x5a9 / 0x5b3 / 0x5b9
+      // share one filter and 0x5c5 / 0x79a use wider masks than ideal.  This
+      // accepts some additional 0x5xx / 0x7xx traffic but is the only way to
+      // admit every non-optional AZE0 frame with the available hardware.
+      //
+      // Mask 0 / filters 0-1: shared mask with bits 7,6,4 don't-care.
+      cfg.mask[0].b.sid = 0x72F;
+      cfg.filter[0].b.sid = 0x355;  // covers 0x355 (odometer units) and 0x385 (TPMS)
+      cfg.filter[1].b.sid = 0x60d;  // vehicle state (doors, locks, lights, start button)
+
+      // Mask 1 / filters 2-5: shared mask with bits 4,3,2,1 don't-care.
+      cfg.mask[1].b.sid = 0x7E1;
+      cfg.filter[2].b.sid = 0x5a1;  // covers 0x5a9 (range), 0x5b3 (instrument SOH), 0x5b9 (charge bars)
+      cfg.filter[3].b.sid = 0x421;  // gear selector
+      cfg.filter[4].b.sid = 0x5c1;  // covers 0x5c5 (parking brake / odometer)
+      cfg.filter[5].b.sid = 0x780;  // covers 0x79a (charger ISOTP response ID, CHARGER_RXID)
+      }
+    }
+    else
+    {
+    // Clear the filter (accept all).
+    cfg = {};
     }
 
   esp_err_t res = sbus->SetAcceptanceFilter(cfg);
   if (res == ESP_OK)
     {
-    ESP_LOGI(TAG, "can2 MCP2515 hardware receive filter %s", enable ? "set" : "cleared");
+    ESP_LOGI(TAG, "can2 MCP2515 hardware receive filter %s (%s)",
+             enable ? "set" : "cleared", cfg_ze1 ? "ZE1" : "AZE0");
     }
   else
     {
-    ESP_LOGE(TAG, "can2 MCP2515 hardware receive filter %s failed", enable ? "set" : "cleared");
+    ESP_LOGE(TAG, "can2 MCP2515 hardware receive filter %s (%s) failed",
+             enable ? "set" : "cleared", cfg_ze1 ? "ZE1" : "AZE0");
     }
   }
 
@@ -388,8 +417,8 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
 
   cfg_ze1 = MyConfig.GetParamValueBool("xnl", "ze1", false);
 
-  // Apply or clear the CAN2 MCP2515 hardware filter when configuration is updated.
-  SetCan2Mcp2515Filter(m_can2, cfg_ze1);
+  // Apply the CAN2 MCP2515 hardware filter for the configured Leaf variant.
+  SetCan2Mcp2515Filter(m_can2, true);
   }
 
 
@@ -1815,6 +1844,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
+    /* These are no longer received due to the hardware filter
+    Leaving the code here for reference.  This could be removed 
+    once we are confident that we've address all issues arrising
+    from the removal.  For example the foot barke forms part of the
+    logic to determine the state of the car.
+     
     case 0x180: // Filtered out by CAN RX filter on ZE1
       if (d[5] != 0xff)
         {
@@ -1827,6 +1862,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_env_footbrake->SetValue(d[6] / 1.39);
         }
       break;
+    */
     case 0x355:
      // The odometer value on the bus is always in units appropriate
      // for the car's intended market and is unaffected by the dash
