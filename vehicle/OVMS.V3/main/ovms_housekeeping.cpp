@@ -85,6 +85,13 @@ void HousekeepingUpdate12V()
     return;
   if (MyPeripherals == NULL)
     return;
+  // MyPeripherals is published by Peripherals::Peripherals() as its first
+  // statement, so a non-NULL pointer does not mean the peripherals exist yet.
+  // Creating them takes ~150 ms, and this runs on a 1 s timer that can fall
+  // inside that window -- reading through m_esp32adc then panics
+  // (LoadProhibited in esp32adc::read).
+  if (MyPeripherals->m_esp32adc == NULL)
+    return;
 
   // smooth out ADC errors & noise:
   aux_avg_v.add(MyPeripherals->m_esp32adc->read());
