@@ -79,7 +79,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void StopStation();
     void StartConnect();
     void Reconnect(OvmsWriter* writer);
-    wifi_active_scan_time_t GetScanTime();
+    int GetScanTime(wifi_active_scan_time_t& active);
     void Scan(OvmsWriter* writer, bool json=false);
     esp32wifi_mode_t GetMode();
     std::string GetSSID();
