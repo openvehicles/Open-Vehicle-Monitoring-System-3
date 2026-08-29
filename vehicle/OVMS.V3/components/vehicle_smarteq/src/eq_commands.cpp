@@ -473,7 +473,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     if (PRESET_VERSION == PRESET_VERSION_12VREF) 
     {
       m["12v.ref"] = "12.5";
-      m["12v.alert"] = "0.9";
+      m["12v.alert"] = "0.75";
       changed = true;
     }
     if (it_ref == m.end())
@@ -483,7 +483,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
       }
     if (it_alert == m.end())
       {
-      m["12v.alert"] = "0.9";
+      m["12v.alert"] = "0.75";
       changed = true;
       }
     if (need_stream)
@@ -646,7 +646,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   auto map_vehicle = MyConfig.GetParamMap("vehicle");
   map_vehicle["stream"] = "10";
   map_vehicle["12v.ref"] = "12.5";
-  map_vehicle["12v.alert"] = "0.9";
+  map_vehicle["12v.alert"] = "0.75";
   MyConfig.SetParamMap("vehicle", map_vehicle);
 
   // ota section

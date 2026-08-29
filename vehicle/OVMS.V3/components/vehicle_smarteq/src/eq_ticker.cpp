@@ -136,12 +136,9 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
 
   if(m_enable_LED_state) 
     OnlineState();
-  if((!m_can_active && m_enable_write && IsAwakeEQ()) ||
-     (!m_can_active && m_enable_write_caron && IsOnEQ()))
-    {
-    smartCoolDownPolling();
-    smartOBDpolling(true);
-    }
+
+  smartOBDpolling(IsCANwrite());  // check, if the CAN access state has to be switched
+
   // if charging is in progress, then modify polling to get the DCDC/Charging data (reboot prevention)
   if (IsChargingEQ() && !m_poll_on_charge)
     {

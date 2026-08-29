@@ -35,8 +35,8 @@
 
 // --- Constants ---
 #define VERSION "2.2.0"
-#define PRESET_VERSION 20260720        // Configuration preset version
-#define PRESET_VERSION_12VREF 20260706 // Configuration preset version for 12V reference migration, defined separately to allow setting 12V reference migration
+#define PRESET_VERSION 20260823        // Configuration preset version
+#define PRESET_VERSION_12VREF 20260823 // Configuration preset version for 12V reference migration, defined separately to allow setting 12V reference migration
 #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
 #define MAX_POLL_DATA_LEN 126
 #define CELLCOUNT 96
@@ -154,6 +154,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void smartChargePrepare();
     void smartChargeFinish();
     void smartOBDpolling(bool activate);
+    void smartCANbusAccess(bool activate);
     void smartCoolDownPolling(int delay_sec = 10);
     void smartCAN2Metrics();
 
@@ -232,7 +233,11 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool IsOnEQ() { return can_env_on; }
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
-    bool IsCANwrite() { return m_enable_write || m_enable_write_caron; }
+    bool IsCANwrite() { return ( (!m_enable_write_sleep || IsAwakeEQ()) && 
+                                 ( m_enable_write || 
+                                  (m_enable_write_caron && IsOnEQ()) || 
+                                  (m_enable_write_caroff && !IsOnEQ()) ) 
+                                ); }
     bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) >= 13.1f || 
                                   (m_can_active && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f ) || 
                                   (m_can_active && can_charging12v); }
@@ -434,6 +439,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     // --- Config-driven member variables ---
     bool m_enable_write = false;            // canwrite enable write access
     bool m_enable_write_caron = false;      // canwrite enable write access, only when car is on
+    bool m_enable_write_caroff = false;     // canwrite enable write access, only when car is off
     bool m_enable_write_sleep = false;      // canwrite disable write access, only when car is asleep
     bool m_can_active = false;              // true if CAN bus is in active mode, false if in listen-only mode
     bool m_enable_LED_state = false;        // Online LED State
@@ -482,6 +488,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_notifySOClimit = false;          // notify SOClimit reached one time
     bool m_poll_on_charge = false;          // flag to trigger poll state change actions
     bool m_cmd_locked = false;
+    bool m_can_last_acc_state = false;      // last active/listen state from CAN bus
     int m_adc_samples = 5;                  // number of samples for ADC factor calculation
     int m_ddt4all_ticker = 0;               // DDT4ALL active ticker
     int m_ddt4all_exec = 0;                 // DDT4ALL ticker for next execution

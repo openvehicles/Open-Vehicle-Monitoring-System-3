@@ -356,10 +356,15 @@ void OvmsVehicleSmartEQ::smartOn()
   // reset idle ticker when vehicle turned on to prevent trigger every 60 sec.
   m_idle_ticker = 15 * 60;
   // canwrite enable write access, only when car is on
-  if(IsCANwrite()) 
+  if(IsCANwrite() && IsOnEQ())
     {
     smartCoolDownPolling(5);
     smartOBDpolling(true);
+    }
+  else
+    {
+    smartCoolDownPolling(5);
+    smartOBDpolling(false);
     }
   ESP_LOGD(TAG, "smartOn()");
 }
@@ -375,9 +380,9 @@ void OvmsVehicleSmartEQ::smartAwake()
 {
   smartCoolDownPolling();
   // enable active polling when car wakes up (canwrite only)
-  if(m_enable_write)
+  if(IsCANwrite())
     smartOBDpolling(true);
-  else if (m_enable_write_caron && m_can_active)
+  else 
     smartOBDpolling(false); // only enable when car is on and CAN write access #2 is enabled
 }
 
@@ -385,7 +390,7 @@ void OvmsVehicleSmartEQ::smartSleep()
 {  
   smartCoolDownPolling(20);
   // disable active polling when car goes to sleep
-  if((m_enable_write_caron && m_can_active) || (m_enable_write_sleep && m_can_active))
+  if( m_enable_write_sleep )
     smartOBDpolling(false);
   ESP_LOGD(TAG, "smartSleep()");
 }
@@ -474,21 +479,35 @@ void OvmsVehicleSmartEQ::smartCoolDownPolling(int delay_sec)
 
 void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
 {
-  if(!IsCANwrite())
+  if ( m_can_active != activate ) smartCoolDownPolling(); // cool down polling before switching the state 
+  m_can_active = IsCANwrite() && activate;
+  if(!m_can_active)
     {
     PollSetPidList(m_can1, NULL);
-    m_can_active = false;
     m_poll_on_charge = false;
     ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared (write access disabled)");
-    return;
     }
-    
-  m_can_active = activate;
-  if (activate)
+  else {
     ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list will be updated");
-  else
-    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared");
+  }    
+  smartCANbusAccess(m_can_active);
   HandleOBDpolling();
+}
+
+void OvmsVehicleSmartEQ::smartCANbusAccess(bool activate) 
+{
+  if ( m_can_last_acc_state != activate )
+    {
+    smartCoolDownPolling();
+    if ( activate ) 
+      ESP_LOGI(TAG,"CAN write state: ACTIVE ");
+    else 
+      ESP_LOGI(TAG,"CAN write state: LISTEN-ONLY ");
+    // set CAN bus transceiver to active or listen-only state
+    CAN_mode_t mode = activate ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
+    RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
+    m_can_last_acc_state = activate;
+    }
 }
 
 /**

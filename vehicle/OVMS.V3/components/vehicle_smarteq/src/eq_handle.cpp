@@ -102,7 +102,6 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
   PollSetPidList(m_can1, NULL);  // Stop active polls during list rebuild (sufficient – no smartCoolDownPolling needed here)
   PollSetThrottling(3);
   PollSetResponseSeparationTime(20);
-
   // modify Poller..
   m_poll_vector.clear();
   if (!m_can_active)
