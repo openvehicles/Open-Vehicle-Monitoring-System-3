@@ -153,7 +153,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void smartChargeStop();
     void smartChargePrepare();
     void smartChargeFinish();
-    void smartOBDpolling(bool activate);
+    void smartOBDpolling(bool activate = true);
     void smartCANbusAccess(bool activate);
     void smartCoolDownPolling(int delay_sec = 10);
     void smartCAN2Metrics();

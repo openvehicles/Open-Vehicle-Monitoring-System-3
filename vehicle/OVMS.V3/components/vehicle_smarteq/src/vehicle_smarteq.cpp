@@ -269,7 +269,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   // Note: GetValueBool/Int/Float treat empty string as "not set" and return the default.
   OvmsConfigParam* map = MyConfig.CachedParam("xsq");
   
-  bool stateWrite         = IsCANwrite();
   bool obdii_743          = true;
   bool obdii_745          = true;
   bool obdii_745_tpms     = true;
@@ -329,12 +328,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     }
 #endif
 
-  // set CAN bus transceiver to active or listen-only depending on user selection
-  if ( stateWrite != IsCANwrite() )
-    {
-    smartCoolDownPolling();
-    smartOBDpolling(IsCANwrite());
-    }
   // disable caron/off write modes if at least two write modes are enabled
   if ((m_enable_write && (m_enable_write_caron || m_enable_write_caroff)) ||
       (m_enable_write_caron && m_enable_write_caroff))
@@ -344,13 +337,9 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
     MyConfig.SetParamValueBool("xsq", "canwrite.caroff", false);
     }
-  // start in listen-only mode if sleep-write is enabled while car is asleep,
-  // or if car-off write mode is enabled while car is on
-  if ( !IsCANwrite() )
-    {
-    smartCoolDownPolling();
-    smartOBDpolling(false);
-    }
+
+  // Set the state of the CAN access and polling, according to the user selection
+  smartOBDpolling();
 
   bool do_modify_poll = (
     (obdii_79b != m_obdii_79b) ||

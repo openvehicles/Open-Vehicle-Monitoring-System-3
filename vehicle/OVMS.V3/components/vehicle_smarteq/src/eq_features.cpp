@@ -356,16 +356,9 @@ void OvmsVehicleSmartEQ::smartOn()
   // reset idle ticker when vehicle turned on to prevent trigger every 60 sec.
   m_idle_ticker = 15 * 60;
   // canwrite enable write access, only when car is on
-  if(IsCANwrite() && IsOnEQ())
-    {
-    smartCoolDownPolling(5);
-    smartOBDpolling(true);
-    }
-  else
-    {
-    smartCoolDownPolling(5);
-    smartOBDpolling(false);
-    }
+
+  smartCoolDownPolling(5);
+  smartOBDpolling();
   ESP_LOGD(TAG, "smartOn()");
 }
 
@@ -374,24 +367,21 @@ void OvmsVehicleSmartEQ::smartOff()
   // Reset gear
   StdMetrics.ms_v_env_gear->SetValue(0);
   smartCoolDownPolling();
+  smartOBDpolling();
 }
 
 void OvmsVehicleSmartEQ::smartAwake()
 {
   smartCoolDownPolling();
   // enable active polling when car wakes up (canwrite only)
-  if(IsCANwrite())
-    smartOBDpolling(true);
-  else 
-    smartOBDpolling(false); // only enable when car is on and CAN write access #2 is enabled
+  smartOBDpolling();
 }
 
 void OvmsVehicleSmartEQ::smartSleep()
 {  
   smartCoolDownPolling(20);
   // disable active polling when car goes to sleep
-  if( m_enable_write_sleep )
-    smartOBDpolling(false);
+  smartOBDpolling();
   ESP_LOGD(TAG, "smartSleep()");
 }
 
@@ -418,7 +408,7 @@ void OvmsVehicleSmartEQ::smartChargeStart()
     m_ADCfactor_recalc_timer = 2;   // wait at least 2 min. before recalculation
     m_ADCfactor_recalc = true;      // recalculate ADC factor when HV charging
     }
-  smartOBDpolling(true);  
+  smartOBDpolling();  
   ESP_LOGD(TAG, "smartChargeStart()");
 }
 
@@ -479,9 +469,9 @@ void OvmsVehicleSmartEQ::smartCoolDownPolling(int delay_sec)
 
 void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
 {
-  if ( m_can_active != activate ) smartCoolDownPolling(); // cool down polling before switching the state 
-  m_can_active = IsCANwrite() && activate;
-  if(!m_can_active)
+  bool setCANactive = IsCANwrite() && activate;
+  if ( m_can_active != setCANactive ) smartCoolDownPolling(); // cool down polling before switching the state 
+  if(!setCANactive)
     {
     PollSetPidList(m_can1, NULL);
     m_poll_on_charge = false;
@@ -490,6 +480,7 @@ void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
   else {
     ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list will be updated");
   }    
+  m_can_active = setCANactive;
   smartCANbusAccess(m_can_active);
   HandleOBDpolling();
 }
@@ -498,11 +489,10 @@ void OvmsVehicleSmartEQ::smartCANbusAccess(bool activate)
 {
   if ( m_can_last_acc_state != activate )
     {
-    smartCoolDownPolling();
     if ( activate ) 
-      ESP_LOGI(TAG,"CAN write state: ACTIVE ");
+      ESP_LOGI(TAG,"CAN access state: ACTIVE ");
     else 
-      ESP_LOGI(TAG,"CAN write state: LISTEN-ONLY ");
+      ESP_LOGI(TAG,"CAN access state: LISTEN-ONLY ");
     // set CAN bus transceiver to active or listen-only state
     CAN_mode_t mode = activate ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
     RegisterCanBus(1, mode, CAN_SPEED_500KBPS);
