@@ -1,5 +1,15 @@
+/* user_settings.h
+ *
+ * Part of this file Copyright (C) wolfSSL Inc. (GPL2+)
+ * See: https://github.com/wolfSSL/wolfssl/blob/master/IDE/Espressif/ESP-IDF/user_settings.h
+ */
+
+// Beginning of file : specific to OVMSv3
+// --------------------------------------
 
 // For compatibility of WolfSSH with ESP-IDF
+
+#include "esp_idf_version.h"
 
 #define BUILDING_WOLFSSH
 #define WOLFSSH_LWIP
@@ -11,7 +21,6 @@
 
 // For compatibility of WolfSSL with ESP-IDF
 
-//#define DEBUG_WOLFSSL
 #define WOLFSSL_ESPIDF
 #define WOLFSSL_ESPWROOM32
 // The above two imply:
@@ -25,6 +34,7 @@
 //    #define ECC_TIMING_RESISTANT
 //    #define WC_RSA_BLINDING
 //    #define WOLFSSL_ESP32WROOM32_CRYPT
+
 #define BUILDING_WOLFSSL
 #define HAVE_VISIBILITY 1
 #define NO_DEV_RANDOM
@@ -43,8 +53,8 @@
 
 // Inclusion and exclusion of WolfSSL features, may be adjusted
 
-#define OPENSSL_EXTRA
-#define OPENSSL_ALL
+// #define OPENSSL_EXTRA // -> compile error ssl.c:18011:22: error: size of array 'sha_test' is negative
+// #define OPENSSL_ALL // -> compile error ssl.c:18011:22: error: size of array 'sha_test' is negative
 #define WC_NO_HARDEN
 #define HAVE_EX_DATA
 #define NO_DES3
@@ -59,17 +69,13 @@
 #define ECC_SHAMIR
 #define ECC_TIMING_RESISTANT
 #define HAVE_WC_ECC_SET_RNG
-#define HAVE_AESGCM
 //#define HAVE_CHACHA
 #define HAVE_DH
-#define HAVE_ECC
 #define HAVE_EXTENDED_MASTER
 #define HAVE_HASHDRBG
 #define HAVE_ONE_TIME_AUTH
 //#define HAVE_POLY1305
-#define HAVE_SUPPORTED_CURVES
 #define HAVE_THREAD_LS
-#define HAVE_TLS_EXTENSIONS
 #define TFM_ECC256
 #define TFM_TIMING_RESISTANT
 #define WC_NO_ASYNC_THREADING
@@ -82,3 +88,12 @@
 #define WOLFSSL_CERT_EXT
 #define NO_WOLFSSL_STUB
 #define WOLFSSL_OLD_PRIME_CHECK
+
+#define HAVE_TLS_EXTENSIONS
+#define HAVE_SUPPORTED_CURVES
+
+#define HAVE_AESGCM
+#define HAVE_ECC
+
+/* debug options */
+/* #define DEBUG_WOLFSSL */
