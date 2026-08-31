@@ -65,3 +65,8 @@ docs/build/
 .vscode/
 vehicle/OVMS.V3/components/ovms_webserver/assets/charts.js.gz
 *.gz
+vehicle/OVMS.V3/sdkconfig.defaults
+
+# Funny, but the component manager seems to always run during builds,
+# thus overwriting this file. No reason to manage it ourselves...
+vehicle/OVMS.V3/dependencies.lock

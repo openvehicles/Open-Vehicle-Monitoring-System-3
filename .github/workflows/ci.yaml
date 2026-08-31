@@ -1,0 +1,56 @@
+---
+name: 'CI'
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+  pull_request:
+    paths:
+      - 'docs/**'
+
+jobs:
+  documentation:
+    runs-on: 'ubuntu-22.04'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3
+          cache: 'pip'
+          cache-dependency-path: 'docs/source/requirements.txt'
+
+      - name: Upgrade pip
+        run: |
+          sudo apt update
+          sudo apt install -y graphviz
+          python -m pip install --upgrade pip setuptools
+
+      - name: Cache doc dependencies
+        id: sphinx
+        uses: actions/cache@v4
+        with:
+          path: |
+            docs/build
+          key: sphinx-docs-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('docs/source/conf.py','docs/source/Makefile') }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade -r docs/source/requirements.txt sphinx sphinx_rtd_theme
+
+      - name: Render the documentation
+        run: |
+          cd docs
+          make SPHINXOPTS=-W html
+
+      - name: 'Archive build output artifacts'
+        uses: 'actions/upload-artifact@v4'
+        with:
+          name: 'documentation'
+          path: |
+            docs/build/html
+          if-no-files-found: error
