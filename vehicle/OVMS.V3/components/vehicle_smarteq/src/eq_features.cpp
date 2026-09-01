@@ -48,6 +48,8 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
   static const float PRESSURE_MAX = 500.0f;  // Above this = invalid reading
   static const float TEMP_MIN = -40.0f;
   static const float TEMP_MAX = 90.0f;
+  static const uint32_t TPMS_ALERT_INTERVAL = 24u * 3600u;
+  const uint32_t now = StdMetrics.ms_m_timeutc->AsInt();
 
   for (int i = 0; i < count; i++)
     {
@@ -73,34 +75,54 @@ void OvmsVehicleSmartEQ::setTPMSValue() {
       float ref_pressure  = (i < (count / 2)) ? m_front_pressure : m_rear_pressure;
       float abs_deviation = std::abs(pressure - ref_pressure);
       short alert         = 0;
+      bool notify_allowed = (m_tpms_last_notify_time[i] == 0) ||
+                            ((now - m_tpms_last_notify_time[i]) >= TPMS_ALERT_INTERVAL);
+      bool notify_alert_allowed = (m_tpms_last_alert_time[i] == 0) ||
+                            ((now - m_tpms_last_alert_time[i]) >= TPMS_ALERT_INTERVAL);
 
       if (lowbatt)
         {
         alert = 1;
-        MyNotify.NotifyStringf("alert", "tpms.lowbatt",
-                               "TPMS low battery on wheel %s",
-                               tpms_layout[i].c_str());
+        if (notify_allowed)
+          {
+          MyNotify.NotifyStringf("alert", "tpms.lowbatt",
+                                 "TPMS low battery on wheel %s",
+                                 tpms_layout[i].c_str());
+          m_tpms_last_notify_time[i] = now;
+          }
         }
       else if (missing_tx)
         {
         alert = 2;
-        MyNotify.NotifyStringf("alert", "tpms.missing_tx",
-                               "TPMS missing transmission on wheel %s",
-                               tpms_layout[i].c_str());
+        if (notify_allowed)
+          {
+          MyNotify.NotifyStringf("alert", "tpms.missing_tx",
+                                 "TPMS missing transmission on wheel %s",
+                                 tpms_layout[i].c_str());
+          m_tpms_last_notify_time[i] = now;
+          }
         }
       else if (abs_deviation > m_pressure_alert)
         {
         alert = 2;
-        MyNotify.NotifyStringf("alert", "tpms.alert",
-                               "TPMS pressure alert on wheel %s: %.1f kPa (ref: %.1f kPa)",
-                               tpms_layout[i].c_str(), pressure, ref_pressure);
+        if (notify_alert_allowed)
+          {
+          MyNotify.NotifyStringf("alert", "tpms.alert",
+                                 "TPMS pressure alert on wheel %s: %.1f kPa (ref: %.1f kPa)",
+                                 tpms_layout[i].c_str(), pressure, ref_pressure);
+          m_tpms_last_alert_time[i] = now;
+          }
         }
       else if (abs_deviation > m_pressure_warning)
         {
         alert = 1;
-        MyNotify.NotifyStringf("alert", "tpms.warning",
-                               "TPMS pressure warning on wheel %s: %.1f kPa (ref: %.1f kPa)",
-                               tpms_layout[i].c_str(), pressure, ref_pressure);
+        if (notify_allowed)
+          {
+          MyNotify.NotifyStringf("alert", "tpms.warning",
+                                 "TPMS pressure warning on wheel %s: %.1f kPa (ref: %.1f kPa)",
+                                 tpms_layout[i].c_str(), pressure, ref_pressure);
+          m_tpms_last_notify_time[i] = now;
+          }
         }
       tpms_alert[i] = alert;
       }

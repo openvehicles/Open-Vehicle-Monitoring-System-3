@@ -583,6 +583,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_tpms_missing_tx[4] = {};       // 0=ok, 1=missing
     float m_tpms_pressure[4] = {};        // kPa
     float m_tpms_temperature[4] = {};     // °C
+    uint32_t m_tpms_last_notify_time[4] = {};  // last TPMS notification time per wheel (24h throttle)
+    uint32_t m_tpms_last_alert_time[4] = {};   // last TPMS alert notification time per wheel (24h throttle)
 };
 
 #endif //#ifndef __VEHICLE_SMARTEQ_H__
