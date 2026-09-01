@@ -99,7 +99,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
       obd->WriteStandard(0x634, 4, data);
       vTaskDelay(1000 / portTICK_PERIOD_MS);
       }
-      
+    
+    char msg[100];
     if (IsOnHVACEQ())
       {
       // if true, climate will be restarted after 5 minutes by Ticker1, if false, climate will not be restarted after 5 minutes
@@ -138,7 +139,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
         {
         // add 2 minutes to display time if restart is true, because climate will be restarted after 5/10 minutes
         int minutes_display = restart ? minutes + 2 : 5;
-        char msg[100];
         snprintf(msg, sizeof(msg), "%d minutes precondition started, HV SOC is %d%%", minutes_display, StdMetrics.ms_v_bat_soc->AsInt(can_soc));
         ESP_LOGI(TAG, "%s", msg);
         MyNotify.NotifyString("info", "climatecontrol.schedule", msg);
@@ -149,14 +149,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
       {
       if (trickle) 
         {
-        ESP_LOGI(TAG, "Failed to activate 12V trickle charging");
-        MyNotify.NotifyString("info", "12v.trickle.charge", "Failed to activate 12V trickle charging!");
-
+        snprintf(msg, sizeof(msg), "Failed to activate 12V trickle charging! 12V is %.2f, HV SOC is %d%%", StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f), StdMetrics.ms_v_bat_soc->AsInt(can_soc));
+        ESP_LOGI(TAG, "%s", msg);
+        MyNotify.NotifyString("info", "12v.trickle.charge", msg);
         }
       else
         {
-        ESP_LOGI(TAG, "Failed to activate precondition");
-        MyNotify.NotifyString("info", "climatecontrol.schedule","Failed to activate precondition!");
+        snprintf(msg, sizeof(msg), "Failed to activate precondition! 12V is %.2f, HV SOC is %d%%", StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f), StdMetrics.ms_v_bat_soc->AsInt(can_soc));
+        ESP_LOGI(TAG, "%s", msg);
+        MyNotify.NotifyString("info", "climatecontrol.schedule",msg);
         }
       return Fail;
       }
