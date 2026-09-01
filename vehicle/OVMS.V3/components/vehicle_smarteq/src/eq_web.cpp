@@ -399,6 +399,13 @@ void OvmsVehicleSmartEQ::WebCfgTPMS(PageEntry_t& p, PageContext_t& c) {
         c.input_select_option(opt_labels[i], opt_vals[i], *tpms_vals[s] == opt_vals[i]);
       c.input_select_end();
     }
+  c.print("<p><strong>Note:</strong></p>"
+    "<p>Smart TPMS sensors do not always stay in one fixed wheel position.</p>"
+    "<p>They may be front/rear, left/right, or diagonally swapped depending on the vehicle and sensor ID.</p>"
+    "<p>Please check the assignment and correct it if needed.</p>"
+    "<p>After changing the TPMS sensor positions, please drive the vehicle for a few minutes to allow the system to update and reflect the new configuration.</p>"
+    "<p>Ensure that the sensors are correctly assigned to their respective wheel positions to avoid any confusion or incorrect readings.</p>"
+    "<p>Remember to check the tire pressures regularly and maintain them within the recommended range for optimal performance and safety.</p>");
   }
   c.fieldset_end();
 
