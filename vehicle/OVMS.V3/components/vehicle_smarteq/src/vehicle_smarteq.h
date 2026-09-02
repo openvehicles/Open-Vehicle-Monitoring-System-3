@@ -475,7 +475,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     std::deque<float> m_adc_factor_history;     // ring buffer (max 10) for ADC factors
     std::deque<float> m_12v_undervolt_history;  // ring buffer (max 10) for 12V undervoltage measurements
     float m_ref12V = 12.5f;                 // reference 12V (12.5V)
-    float m_alert12V = 0.9f;                // alert threshold 12V (0.9V)
+    float m_alert12V = 0.75f;                // alert threshold 12V (0.75V)
     bool m_12v_alerted = false;             // 12V undervolt alert triggered
     int m_12v_alerted_ticker = -1;          // cooldown ticker for 12V undervolt alert reset
 
