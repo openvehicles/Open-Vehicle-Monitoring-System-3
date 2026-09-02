@@ -204,6 +204,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
     ESP_LOGE(TAG, "CommandWakeup failed: no write access!");
     return Fail;
     }
+  if (!m_can_last_acc_state) 
+    {
+    smartCANbusAccess(true); // enable CAN write access to send wakeup command
+    }  
 
   ESP_LOGI(TAG, "Send Wakeup Command");
 

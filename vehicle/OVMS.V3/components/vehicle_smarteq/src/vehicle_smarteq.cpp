@@ -282,7 +282,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_enable_write         = map->GetValueBool("canwrite", false);
     m_enable_write_caron   = map->GetValueBool("canwrite.caron", false);
     m_enable_write_caroff  = map->GetValueBool("canwrite.caroff", false);
-    m_enable_write_sleep   = map->GetValueBool("canwrite.sleep", false);
+    m_disable_write_sleep  = map->GetValueBool("canwrite.sleep", false);
     m_enable_LED_state     = map->GetValueBool("led", false);
     m_bcvalue              = map->GetValueBool("bcvalue", false);
     m_enable_lock_state    = map->GetValueBool("unlock.warning", true);

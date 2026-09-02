@@ -233,11 +233,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool IsOnEQ() { return can_env_on; }
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
-    bool IsCANwrite() { return ( (!m_enable_write_sleep || IsAwakeEQ()) && 
-                                 ( m_enable_write || 
-                                  (m_enable_write_caron && IsOnEQ()) || 
-                                  (m_enable_write_caroff && !IsOnEQ()) ) 
-                                ); }
+    bool IsCANwrite() { return ( m_enable_write || m_enable_write_caron || m_enable_write_caroff ); }
+    bool canCANbusActive() { return ((m_enable_write) ||
+                                     (m_enable_write_caron && (IsOnEQ() || IsChargingEQ())) || 
+                                     (m_enable_write_caroff && !IsOnEQ()) ); }
     bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) >= 13.1f || 
                                   (m_can_active && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f ) || 
                                   (m_can_active && can_charging12v); }
@@ -440,7 +439,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_enable_write = false;            // canwrite enable write access
     bool m_enable_write_caron = false;      // canwrite enable write access, only when car is on
     bool m_enable_write_caroff = false;     // canwrite enable write access, only when car is off
-    bool m_enable_write_sleep = false;      // canwrite disable write access, only when car is asleep
+    bool m_disable_write_sleep = false;     // canwrite disable write access, only when car is asleep
     bool m_can_active = false;              // true if CAN bus is in active mode, false if in listen-only mode
     bool m_enable_LED_state = false;        // Online LED State
     bool m_enable_lock_state = true;        // Lock State

@@ -395,7 +395,7 @@ void OvmsVehicleSmartEQ::smartOff()
 void OvmsVehicleSmartEQ::smartAwake()
 {
   smartCoolDownPolling();
-  // enable active polling when car wakes up (canwrite only)
+  // enable active polling when car wakes up
   smartOBDpolling();
 }
 
@@ -403,7 +403,8 @@ void OvmsVehicleSmartEQ::smartSleep()
 {  
   smartCoolDownPolling(20);
   // disable active polling when car goes to sleep
-  smartOBDpolling();
+  if(m_can_active && m_disable_write_sleep)
+    smartOBDpolling(!m_disable_write_sleep);
   ESP_LOGD(TAG, "smartSleep()");
 }
 
@@ -491,20 +492,28 @@ void OvmsVehicleSmartEQ::smartCoolDownPolling(int delay_sec)
 
 void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
 {
-  bool setCANactive = IsCANwrite() && activate;
-  if ( m_can_active != setCANactive ) smartCoolDownPolling(); // cool down polling before switching the state 
-  if(!setCANactive)
+  bool setCANactive = canCANbusActive() && activate;
+  if ( m_can_active != setCANactive )
     {
-    PollSetPidList(m_can1, NULL);
-    m_poll_on_charge = false;
-    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared (write access disabled)");
-    }
-  else {
-    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list will be updated");
-  }    
-  m_can_active = setCANactive;
-  smartCANbusAccess(m_can_active);
-  HandleOBDpolling();
+    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus access state changed from %s to %s",
+             m_can_active ? "ACTIVE" : "LISTEN-ONLY",
+             setCANactive ? "ACTIVE" : "LISTEN-ONLY");
+    // cool down polling before switching the state
+    smartCoolDownPolling();
+    if(!setCANactive)
+      {
+      PollSetPidList(m_can1, NULL);
+      m_poll_on_charge = false;
+      ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared (write access disabled)");
+      }
+    else 
+      {
+      ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list will be updated");
+      }    
+    m_can_active = setCANactive;
+    HandleOBDpolling();
+    }  
+  smartCANbusAccess(setCANactive);
 }
 
 void OvmsVehicleSmartEQ::smartCANbusAccess(bool activate) 

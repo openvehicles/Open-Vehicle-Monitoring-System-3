@@ -82,9 +82,9 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   auto lock = MyConfig.Lock();
 
   std::string error, full_km, rebootnw, contactor_1h_limit;
-  bool canwrite, canwrite_caron, canwrite_caroff, canwrite_sleep, led, resettrip, resettotal, bcvalue;
   float ref12V, alert12V;
   std::string charge12v_threshold;
+  bool canwrite, canwrite_caron, canwrite_caroff, disable_canwrite, led, resettrip, resettotal, bcvalue;
   bool charge12v, extstats, unlocked, tripnotify, opendoors;
   bool obdii79b, obdii79b_cell, obdii743, obdii745, obdii745_tpms, obdii7e4, obdii7e4_dcdc;
 
@@ -93,7 +93,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     canwrite    = (c.getvar("canwrite_mode") == "ON");
     canwrite_caron = (c.getvar("canwrite_mode") == "CARON");
     canwrite_caroff = (c.getvar("canwrite_mode") == "CAROFF");
-    canwrite_sleep = (c.getvar("canwrite_sleep") == "yes");
+    disable_canwrite = (c.getvar("disable_canwrite") == "yes");
     led         = (c.getvar("led") == "yes");
     rebootnw    = (c.getvar("rebootnw"));
     resettrip   = (c.getvar("resettrip") == "yes");
@@ -146,7 +146,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       map.SetValueBool("canwrite", canwrite);
       map.SetValueBool("canwrite.caron", canwrite_caron);
       map.SetValueBool("canwrite.caroff", canwrite_caroff);
-      map.SetValueBool("canwrite.sleep", canwrite_sleep);
+      map.SetValueBool("canwrite.sleep", disable_canwrite);
       map.SetValueBool("led", led);
       map["rebootnw"] = rebootnw;
       map.SetValueBool("resettrip", resettrip);
@@ -186,7 +186,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     canwrite       = sq->m_enable_write;
     canwrite_caron = sq->m_enable_write_caron;
     canwrite_caroff = sq->m_enable_write_caroff;
-    canwrite_sleep = sq->m_enable_write_sleep;
+    disable_canwrite = sq->m_disable_write_sleep;
     led            = sq->m_enable_LED_state;
     resettrip      = sq->m_resettrip;
     resettotal     = sq->m_resettotal;
@@ -242,7 +242,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     " Polling is disabled, when the vehicle is in awake/sleep mode</p></dd>"
     "</dl>");
 
-    c.input_checkbox("Disable CAN polling during sleep", "canwrite_sleep", canwrite_sleep,
+    c.input_checkbox("Disable CAN polling during sleep", "disable_canwrite", disable_canwrite,
     "<p>Clears polling list when vehicle is in sleep mode</p>");
   c.fieldset_end();
 
