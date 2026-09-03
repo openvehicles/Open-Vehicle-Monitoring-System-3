@@ -69,6 +69,11 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
     {
     case PPPERR_NONE:
       {
+      if ( ip_addr_isany(&pppif->ip_addr) || ip_addr_isany(&pppif->gw))
+        {  
+        ESP_LOGI(TAG, "StatusCallBack: Invalid IPV4 address or Gateway address received - ignored");
+        return;
+        }
       ESP_LOGI(TAG, "status_cb: Connected");
 #if PPP_IPV4_SUPPORT
       ESP_LOGI(TAG, "   our_ipaddr  = %s", ipaddr_ntoa(&pppif->ip_addr));
