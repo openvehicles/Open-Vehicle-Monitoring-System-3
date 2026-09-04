@@ -233,11 +233,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool IsOnEQ() { return can_env_on; }
     bool IsChargingEQ() { return can_charge_inprogress; }
     bool IsOnHVACEQ() { return can_hvac; }
-    bool IsCANwrite() { return ( (!m_enable_write_sleep || IsAwakeEQ()) && 
-                                 ( m_enable_write || 
-                                  (m_enable_write_caron && IsOnEQ()) || 
-                                  (m_enable_write_caroff && !IsOnEQ()) ) 
-                                ); }
+    bool IsCANwrite() { return ( m_enable_write || m_enable_write_caron || m_enable_write_caroff ); }
+    bool canCANbusActive() { return ((m_enable_write) ||
+                                     (m_enable_write_caron && (IsOnEQ() || IsChargingEQ())) || 
+                                     (m_enable_write_caroff && !IsOnEQ()) ); }
     bool Is12VchargeEQ() { return StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f) >= 13.1f || 
                                   (m_can_active && StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) >= 13.1f ) || 
                                   (m_can_active && can_charging12v); }
@@ -440,7 +439,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_enable_write = false;            // canwrite enable write access
     bool m_enable_write_caron = false;      // canwrite enable write access, only when car is on
     bool m_enable_write_caroff = false;     // canwrite enable write access, only when car is off
-    bool m_enable_write_sleep = false;      // canwrite disable write access, only when car is asleep
+    bool m_disable_write_sleep = false;     // canwrite disable write access, only when car is asleep
     bool m_can_active = false;              // true if CAN bus is in active mode, false if in listen-only mode
     bool m_enable_LED_state = false;        // Online LED State
     bool m_enable_lock_state = true;        // Lock State
@@ -475,7 +474,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     std::deque<float> m_adc_factor_history;     // ring buffer (max 10) for ADC factors
     std::deque<float> m_12v_undervolt_history;  // ring buffer (max 10) for 12V undervoltage measurements
     float m_ref12V = 12.5f;                 // reference 12V (12.5V)
-    float m_alert12V = 0.9f;                // alert threshold 12V (0.9V)
+    float m_alert12V = 0.75f;                // alert threshold 12V (0.75V)
     bool m_12v_alerted = false;             // 12V undervolt alert triggered
     int m_12v_alerted_ticker = -1;          // cooldown ticker for 12V undervolt alert reset
 
@@ -583,6 +582,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_tpms_missing_tx[4] = {};       // 0=ok, 1=missing
     float m_tpms_pressure[4] = {};        // kPa
     float m_tpms_temperature[4] = {};     // °C
+    uint32_t m_tpms_last_notify_time[4] = {};  // last TPMS notification time per wheel (24h throttle)
+    uint32_t m_tpms_last_alert_time[4] = {};   // last TPMS alert notification time per wheel (24h throttle)
 };
 
 #endif //#ifndef __VEHICLE_SMARTEQ_H__

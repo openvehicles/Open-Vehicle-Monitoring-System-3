@@ -258,7 +258,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     {
     setTPMSValue();   // update TPMS metrics
     m_ref12V = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.5f);
-    m_alert12V = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 0.9f);
+    m_alert12V = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 0.75f);
     }
   if (param && param->GetName() != "xsq")
     return;
@@ -282,7 +282,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_enable_write         = map->GetValueBool("canwrite", false);
     m_enable_write_caron   = map->GetValueBool("canwrite.caron", false);
     m_enable_write_caroff  = map->GetValueBool("canwrite.caroff", false);
-    m_enable_write_sleep   = map->GetValueBool("canwrite.sleep", false);
+    m_disable_write_sleep  = map->GetValueBool("canwrite.sleep", false);
     m_enable_LED_state     = map->GetValueBool("led", false);
     m_bcvalue              = map->GetValueBool("bcvalue", false);
     m_enable_lock_state    = map->GetValueBool("unlock.warning", true);

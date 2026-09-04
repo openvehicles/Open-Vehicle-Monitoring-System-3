@@ -77,6 +77,11 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
 
   OvmsVehicle::vehicle_command_t res = Fail;
   res = wakeup ? CommandWakeup() : Success;
+  
+  if (!m_can_last_acc_state) 
+    {
+    smartCANbusAccess(true); // enable CAN write access to send wakeup command
+    }  
 
   vTaskDelay(200 / portTICK_PERIOD_MS);
   if (res == Success)
@@ -442,6 +447,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
 
   // Update xsq preset version
   map_xsq["cfg.preset.ver"] = STR(PRESET_VERSION);
+  if (map_xsq.find("charge12v.threshold") == map_xsq.end())
+    map_xsq["charge12v.threshold"] = "11.75";
 
   // modem section - single map operation
   bool need_stream = false;

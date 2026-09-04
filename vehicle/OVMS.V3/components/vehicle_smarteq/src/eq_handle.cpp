@@ -39,7 +39,7 @@ void OvmsVehicleSmartEQ::HandlePollState() {
 
   static const char* state_names[] = {"Off", "Awake", "Running", "Charging"};
   static const char* state_disabled = "Pollstate Off (write disabled)";
-  if (!IsCANwrite()) 
+  if (!canCANbusActive()) 
     {
     if (m_poll_state != POLLSTATE_OFF) 
       {
