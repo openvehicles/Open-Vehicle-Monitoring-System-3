@@ -33,6 +33,7 @@
 
 #include <string>
 #include <map>
+#include <deque>
 #include <atomic>
 #include "ovms_server.h"
 #include "ovms_netmanager.h"
@@ -117,6 +118,8 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     bool m_retain_depth_limit;
     bool m_updatetime_immediately;
     std::atomic<bool> m_have_immediately;
+    int64_t m_last_buffered_gps;
+    std::deque<std::pair<std::string, std::string>> m_buffered_metrics;
     bool m_connection_available;
     bool m_notify_info_pending;
     bool m_notify_error_pending;
@@ -140,6 +143,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     void TransmitModifiedMetrics();
     void TransmitPriorityMetrics();
     void TransmitImmediateMetrics();
+    void FlushBufferedGpsMetrics();
     void TransmitEvents();
     void ClearEventQueue();
     uint16_t TransmitNotificationInfo(OvmsNotifyEntry* entry);
@@ -160,6 +164,8 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
 
   private:
     void TransmitMetric(OvmsMetric* metric);
+    bool PublishMetricValue(const std::string& name, const std::string& val);
+    void BufferGpsMetrics();
 
     IdIncludeExcludeFilter m_metrics_filter;    // server.v3.include, server.v3.exclude
     IdIncludeExcludeFilter m_metrics_priority;  // server.v3.priority

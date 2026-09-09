@@ -176,6 +176,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           StandardMetrics.ms_s_v3_connected->SetValue(true);
           MyOvmsServerV3->SetStatus("OVMS V3 MQTT login successful", false, OvmsServerV3::Connected);
           MyOvmsServerV3->m_connect_jitter = -1; // reset: allow new jitter selection in next network phase
+          MyOvmsServerV3->FlushBufferedGpsMetrics();
           }
         }
       break;
@@ -275,6 +276,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_updatetime_priority = false;
   m_updatetime_immediately = false;
   m_have_immediately = false;
+  m_last_buffered_gps = 0;
   m_max_per_call_sendall = 100;      // max messages to send per Ticker1 call in sendall mode, default 100
   m_max_per_call_modified = 150;     // max messages to send per Ticker1 call in modified mode, default 150
   m_eventqueue = xQueueCreate(CONFIG_OVMS_HW_EVENT_QUEUE_SIZE, sizeof(const char*));
@@ -473,15 +475,19 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   if (!m_metrics_filter.CheckFilter(metric_name))
     return;
 
+  std::string val = metric->AsString();
+  PublishMetricValue(metric_name, val);
+  }
+
+bool OvmsServerV3::PublishMetricValue(const std::string& name, const std::string& val)
+  {
   auto mglock = MongooseLock();
   if (!m_mgconn)
-    return;
+    return false;
 
   std::string topic(m_topic_prefix);
   topic.append("metric/");
-  topic.append(mqtt_topic(metric_name));
-
-  std::string val = metric->AsString();
+  topic.append(mqtt_topic(name));
 
   // When retain.depth.limit is enabled, topics with more than 7 slashes (>8 segments)
   // are published without the RETAIN flag. This is required for AWS IoT Core, which
@@ -500,6 +506,51 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(),
     qos_flags, val.c_str(), val.length());
   ESP_LOGV(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
+  return true;
+  }
+
+void OvmsServerV3::BufferGpsMetrics()
+  {
+  static const char* s_gps_metrics[] = {
+    "v.p.latitude",
+    "v.p.longitude",
+    "v.p.altitude",
+    "v.p.speed",
+    "v.p.gpsspeed",
+    "m.time.utc"
+    };
+
+  const size_t s_gps_metrics_count = sizeof(s_gps_metrics) / sizeof(s_gps_metrics[0]);
+
+  for (size_t i = 0; i < s_gps_metrics_count; ++i)
+    {
+    OvmsMetric* metric = MyMetrics.Find(s_gps_metrics[i]);
+    if (!metric || !metric->IsDefined())
+      continue;
+
+    const std::string value = metric->AsString();
+    if (!m_buffered_metrics.empty() &&
+        m_buffered_metrics.back().first == s_gps_metrics[i] &&
+        m_buffered_metrics.back().second == value)
+      {
+      continue;
+      }
+
+    m_buffered_metrics.push_back(std::make_pair(std::string(s_gps_metrics[i]), value));
+    if (m_buffered_metrics.size() > 120)
+      m_buffered_metrics.pop_front();
+    }
+  }
+
+void OvmsServerV3::FlushBufferedGpsMetrics()
+  {
+  while (!m_buffered_metrics.empty())
+    {
+    std::pair<std::string, std::string> item = m_buffered_metrics.front();
+    if (!PublishMetricValue(item.first, item.second))
+      return;
+    m_buffered_metrics.pop_front();
+    }
   }
 
 void OvmsServerV3::TransmitPriorityMetrics()
@@ -1450,21 +1501,35 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       }
     }
 
+  bool carawake = StandardMetrics.ms_v_env_awake->AsBool();
+  bool caron = StandardMetrics.ms_v_env_on->AsBool();
+  bool carcharging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+  int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
+  int next = m_updatetime_idle;
+  if (caron)
+    next = m_updatetime_on;
+  else if (carcharging)
+    next = m_updatetime_charging;
+  else if (m_peers > 0)
+    next = m_updatetime_connected;
+  else if (carawake)
+    next = m_updatetime_awake;
+
+  if (!StandardMetrics.ms_s_v3_connected->AsBool())
+    {
+    if ((carawake || caron) && (m_last_buffered_gps == 0 || now >= (m_last_buffered_gps + next)))
+      {
+      BufferGpsMetrics();
+      m_last_buffered_gps = now;
+      }
+    }
+  else
+    {
+    m_last_buffered_gps = 0;
+    }
+
   if (StandardMetrics.ms_s_v3_connected->AsBool())
     {      
-    bool carawake = StandardMetrics.ms_v_env_awake->AsBool();
-    bool caron = StandardMetrics.ms_v_env_on->AsBool();
-    bool carcharging = StandardMetrics.ms_v_charge_inprogress->AsBool();
-    int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
-    int next = m_updatetime_idle;
-    if (caron)
-      next = m_updatetime_on;
-    else if (carcharging)
-      next = m_updatetime_charging;
-    else if (m_peers > 0)
-      next = m_updatetime_connected;
-    else if (carawake)
-      next = m_updatetime_awake;
 
     if (m_sendall)
       {
