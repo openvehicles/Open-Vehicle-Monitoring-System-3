@@ -181,9 +181,11 @@ class modem : public pcp, public InternalRamAllocated
     bool                   m_gps_enabled;           // = config modem enable.gps
     gps_usermode_t         m_gps_usermode;          // manual GPS control status
     int                    m_gps_parkpause;         // = config modem gps.parkpause (seconds, 0=off)
+    int                    m_gps_holiday;           // = config modem gps.parkholiday (days, 0=off), parking days threshold to consider as holiday
     int                    m_gps_stopticker;        // Park pause countdown
     int                    m_gps_startticker;       // Re-activation countdown
     int                    m_gps_reactivate;        // = config modem gps.parkreactivate (minutes, 0=off)
+    int                    m_gps_holiday_multi;     // = config modem gps.parkholiday.multi (factor, default 3), multiplier for holiday mode
     int                    m_gps_reactlock;         // = config modem gps.reactlock (minutes, default 5)
     bool                   m_gps_awake_start;       // start GPS when vehicle awakes
     OvmsMutex              m_gps_mutex;             // lock for start/stop NMEA
