@@ -279,7 +279,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       "<p>Example: 12V reference voltage = 12.5V, 12V alert threshold = 0.75V, then the trickle charge threshold = 12.5V - 0.75V = 11.75V</p>"
       "<p>Note: The <b>12V reference voltage</b> and the <b>12V alert threshold</b> can be configured in the <a href=\"/#/cfg/vehicle\">vehicle configuration - 12V Monitor</a>.</p>"
       "<p>This threshold sets the <b>12V alert threshold</b>.</p>");
-  c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 15, 0, 60, 1,
+  c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 30, 0, 60, 1,
     "<p>0=off. Auto-restart network on v2 disconnect</p>");
   c.input_slider("Contactor 1h limit", "contactor_1h_limit", 3, "/h",-1, atof(contactor_1h_limit.c_str()), 8, 1, 100, 1,
     "<p>Max contactor cycles per hour before alert (default: 8)</p>");

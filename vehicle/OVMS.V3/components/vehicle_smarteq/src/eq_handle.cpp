@@ -222,15 +222,22 @@ void OvmsVehicleSmartEQ::HandleTripcounter(){
     }
 }
 
-void OvmsVehicleSmartEQ::Handlev2Server(){
-  // Handle v2Server connection
-  if (StdMetrics.ms_s_v2_connected->AsBool()) {
-    m_reboot_ticker = m_reboot_time; // set reboot ticker
-  }
-  else if (m_reboot_ticker > 0 && --m_reboot_ticker == 0) {
+void OvmsVehicleSmartEQ::HandleServerCon(){
+  // Handle Server connection
+  bool modem_off = (MyPeripherals && MyPeripherals->m_cellular_modem &&
+                    MyPeripherals->m_cellular_modem->GetPowerMode() == Off);
+
+  if (modem_off || StdMetrics.ms_s_v2_connected->AsBool() || StdMetrics.ms_s_v3_connected->AsBool()) 
+    {
+    m_reboot_ticker = m_reboot_time; // reset reboot ticker when server connection is detected or cellular is off by power management/user
+    ESP_LOGD(TAG, "Server connection detected, reboot ticker reset to %d", m_reboot_time);
+    }
+  else if (m_reboot_ticker > 0 && --m_reboot_ticker == 0) 
+    {
     MyNetManager.RestartNetwork();
     m_reboot_ticker = m_reboot_time;
-  }
+    ESP_LOGD(TAG, "Server connection lost for %d seconds, restarting network", m_reboot_time);
+    }
 }
 
 /**

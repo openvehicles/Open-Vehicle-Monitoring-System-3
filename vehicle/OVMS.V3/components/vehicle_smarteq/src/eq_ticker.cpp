@@ -180,8 +180,8 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
     StdMetrics.ms_v_charge_12v_voltage->SetValue(0.0f); // reset 12V voltage when not charging to prevent desync
 
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
-    if(m_reboot_time > 0) 
-      Handlev2Server();
+    if((MyOvmsServerV2 || MyOvmsServerV3) && m_reboot_time > 0)
+      HandleServerCon();
   #endif
 
   // DDT4ALL session timeout on 5 minutes

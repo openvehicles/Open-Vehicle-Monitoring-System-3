@@ -177,5 +177,6 @@ class OvmsServerV3Init
   };
 
 extern OvmsServerV3Init MyOvmsServerV3Init;
+extern OvmsServerV3 *MyOvmsServerV3;
 
 #endif //#ifndef __OVMS_SERVER_V3_H__
