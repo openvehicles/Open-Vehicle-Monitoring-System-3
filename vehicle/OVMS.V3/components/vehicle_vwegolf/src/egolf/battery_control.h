@@ -54,6 +54,11 @@ constexpr uint8_t  kSubsystemCommand = 0x01;  // [WIRE] BCU command/ASG-side low
 constexpr uint32_t kCanIdCommand = bap::mqbCanId(kLsg, kSubsystemCommand);
 constexpr uint32_t kCanIdStatus  = bap::mqbCanId(kLsg, bap::kSubsystemFsg);
 
+// NB the factory MIB writes departure timers on the LSG-0x25 **bus-0** id 0x17332500, but that id is
+// FCAN-local — the J533 gateway does NOT bridge it to KCAN, so an OVMS (KCAN-side) write there never
+// reaches the BCU. OVMS sends timers on kCanIdCommand (0x17332501) like every other command; the low
+// byte of the command id is the SENDER'S bus, not a different function. [WIRE: confirmed on-car]
+
 // LSG 0x25 function ids (the 6-bit `func` in the element header).
 enum Func : uint8_t {
   FUNC_BAP_GETALL      = 0x01,  // [WIRE] BAP channel-open "GetAll" (GET "19 41" -> status "49 41");
@@ -227,6 +232,36 @@ inline size_t encodeTimerState(uint8_t* out, size_t cap, uint8_t enabledMask) {
 inline bool timerEnabled(uint8_t stateByte, uint8_t slot /*1..4*/) {
   return (slot >= 1 && slot <= 4) && (stateByte & (1u << (slot - 1))) != 0;
 }
+
+// Send a departure-timer record write: a PLAIN element "29 5<slot+3>" (slot 1..4 -> func 0x14..0x17)
+// directly followed by the 8-byte record — NO array-write wrapper (unlike profile writes). [WIRE]
+// The sink targets the BCU command id (kCanIdCommand / 0x17332501 from OVMS — see note above). Refused
+// if slot is out of range or the record won't encode. On the wire this rides the long-message transport
+// ("80 08 29 5x .." + "c0 ..").
+template <typename Sink>
+bap::SendResult sendTimerWrite(Sink&& sink, uint8_t slot, const Timer& t) {
+  if (slot < 1 || slot > 4) return bap::SendResult{bap::SendResult::Refused, 0};
+  uint8_t rec[8];
+  if (encodeTimer(rec, sizeof(rec), t) != 8) return bap::SendResult{bap::SendResult::Refused, 0};
+  return bap::sendElement(sink, bap::OP_SET_GET, kLsg, funcForTimerSlot(slot), rec, 8);
+}
+
+// Send a TimerState write: "29 53 <mask> 00" (enable bitmap, bit i = slot i+1). [WIRE] Enabling one
+// slot without disturbing the others is a read-modify-write on this mask (read the current mask from a
+// STATUS/HEARTBEAT x9 53 first). The sink targets the BCU command id (kCanIdCommand from OVMS).
+template <typename Sink>
+bap::SendResult sendTimerState(Sink&& sink, uint8_t enabledMask) {
+  uint8_t body[2];
+  encodeTimerState(body, sizeof(body), enabledMask);
+  return bap::sendElement(sink, bap::OP_SET_GET, kLsg, FUNC_TIMER_STATE, body, 2);
+}
+
+// NB the timer read-back is NOT a bare GET: a bare "19 5x" is silently dropped by the BCU (as with
+// the func-0x19 profile GET), and the factory MIB never GETs timers at all — it rides the BCU's
+// periodic HEARTBEAT broadcast (39 5x / 39 53) plus write echoes (STATUS 49 5x / 49 53). The module's
+// read path collects those broadcasts and additionally issues the "80"-SEGMENTED get-all form
+// ("80 04 19 <0x40|func> <asgTxn> 00 00 04", built raw in VWeGolfBatteryControl::SendTimerReads) in
+// case the BCU has a func-0x1x GET handler. No bare-GET helper is provided (it would just be dropped).
 
 // PowerProvider night-rate window (func 0x1A, RecordAddr 2). The RA2 record body
 // (after the array header, which carries `pos`) is 4 bytes: nr = "night rate".
