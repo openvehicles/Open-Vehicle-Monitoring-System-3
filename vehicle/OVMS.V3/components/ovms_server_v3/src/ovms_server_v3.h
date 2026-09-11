@@ -119,6 +119,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     bool m_updatetime_immediately;
     std::atomic<bool> m_have_immediately;
     int64_t m_last_buffered_gps;
+    int64_t m_last_buffered_charge;
     std::deque<std::pair<std::string, std::string>> m_buffered_metrics;
     bool m_connection_available;
     bool m_notify_info_pending;
@@ -144,6 +145,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     void TransmitPriorityMetrics();
     void TransmitImmediateMetrics();
     void FlushBufferedGpsMetrics();
+    void BufferChargeMetrics();
     void TransmitEvents();
     void ClearEventQueue();
     uint16_t TransmitNotificationInfo(OvmsNotifyEntry* entry);
@@ -183,5 +185,6 @@ class OvmsServerV3Init
   };
 
 extern OvmsServerV3Init MyOvmsServerV3Init;
+extern OvmsServerV3 *MyOvmsServerV3;
 
 #endif //#ifndef __OVMS_SERVER_V3_H__

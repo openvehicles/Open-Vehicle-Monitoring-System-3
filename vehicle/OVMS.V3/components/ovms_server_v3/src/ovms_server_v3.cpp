@@ -277,6 +277,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_updatetime_immediately = false;
   m_have_immediately = false;
   m_last_buffered_gps = 0;
+  m_last_buffered_charge = 0;
   m_max_per_call_sendall = 100;      // max messages to send per Ticker1 call in sendall mode, default 100
   m_max_per_call_modified = 150;     // max messages to send per Ticker1 call in modified mode, default 150
   m_eventqueue = xQueueCreate(CONFIG_OVMS_HW_EVENT_QUEUE_SIZE, sizeof(const char*));
@@ -537,6 +538,31 @@ void OvmsServerV3::BufferGpsMetrics()
       }
 
     m_buffered_metrics.push_back(std::make_pair(std::string(s_gps_metrics[i]), value));
+    if (m_buffered_metrics.size() > 120)
+      m_buffered_metrics.pop_front();
+    }
+  }
+
+void OvmsServerV3::BufferChargeMetrics()
+  {
+  for (OvmsMetric* metric = MyMetrics.m_first; metric; metric = metric->m_next)
+    {
+    const std::string name(metric->m_name);
+    if (name.compare(0, 4, "v.c.") != 0)
+      continue;
+
+    if (!metric->IsDefined())
+      continue;
+
+    const std::string value = metric->AsString();
+    if (!m_buffered_metrics.empty() &&
+        m_buffered_metrics.back().first == name &&
+        m_buffered_metrics.back().second == value)
+      {
+      continue;
+      }
+
+    m_buffered_metrics.push_back(std::make_pair(name, value));
     if (m_buffered_metrics.size() > 120)
       m_buffered_metrics.pop_front();
     }
@@ -1522,10 +1548,17 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       BufferGpsMetrics();
       m_last_buffered_gps = now;
       }
+
+    if (carcharging && (m_last_buffered_charge == 0 || now >= (m_last_buffered_charge + next)))
+      {
+      BufferChargeMetrics();
+      m_last_buffered_charge = now;
+      }
     }
   else
     {
     m_last_buffered_gps = 0;
+    m_last_buffered_charge = 0;
     }
 
   if (StandardMetrics.ms_s_v3_connected->AsBool())
