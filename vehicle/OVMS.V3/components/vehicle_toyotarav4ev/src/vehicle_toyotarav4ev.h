@@ -71,7 +71,6 @@ class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
     void Ticker60(uint32_t ticker) override;
     void Notify12vCritical() override;
     void Notify12vRecovered() override;
-    void NotifyBmsAlerts() override;
 
 /*
 #ifdef CONFIG_OVMS_COMP_TPMS

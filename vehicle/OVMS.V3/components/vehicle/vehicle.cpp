@@ -114,13 +114,6 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   OvmsCommand* cmd_stat = MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat);
   cmd_stat->RegisterCommand("trip","Show trip status",vehicle_stat_trip);
 
-  OvmsCommand* cmd_bms = MyCommandApp.RegisterCommand("bms","BMS framework", bms_status, "", 0, 0, false);
-  cmd_bms->RegisterCommand("status","Show BMS status",bms_status);
-  cmd_bms->RegisterCommand("temp","Show BMS temperature status",bms_status);
-  cmd_bms->RegisterCommand("volt","Show BMS voltage status",bms_status);
-  cmd_bms->RegisterCommand("reset","Reset BMS statistics",bms_reset);
-  cmd_bms->RegisterCommand("alerts","Show BMS alerts",bms_alerts);
-
   OvmsCommand* cmd_obdii = MyCommandApp.RegisterCommand("obdii", "OBDII framework");
   for (int k=1; k <= 4; k++)
     {
@@ -522,47 +515,8 @@ OvmsVehicle::OvmsVehicle()
   PollSetChannelKeepalive(60);
 #endif
 
-  m_bms_voltages = NULL;
-  m_bms_vmins = NULL;
-  m_bms_vmaxs = NULL;
-  m_bms_vdevmaxs = NULL;
-  m_bms_valerts = NULL;
-  m_bms_valerts_new = 0;
-  m_bms_vstddev_cnt = 0;
-  m_bms_vstddev_avg = 0;
-  m_bms_has_voltages = false;
-
-  m_bms_temperatures = NULL;
-  m_bms_tmins = NULL;
-  m_bms_tmaxs = NULL;
-  m_bms_tdevmaxs = NULL;
-  m_bms_talerts = NULL;
-  m_bms_talerts_new = 0;
-  m_bms_has_temperatures = false;
-
-  m_bms_bitset_v.clear();
-  m_bms_bitset_t.clear();
-  m_bms_bitset_cv = 0;
-  m_bms_bitset_ct = 0;
-  m_bms_readings_v = 0;
-  m_bms_readingspermodule_v = 0;
-  m_bms_readings_t = 0;
-  m_bms_readingspermodule_t = 0;
-
-  m_bms_limit_tmin = -1000;
-  m_bms_limit_tmax = 1000;
-  m_bms_limit_vmin = -1000;
-  m_bms_limit_vmax = 1000;
-
-  m_bms_defthr_vmaxgrad   = BMS_DEFTHR_VMAXGRAD;
-  m_bms_defthr_vmaxsddev  = BMS_DEFTHR_VMAXSDDEV;
-  m_bms_defthr_vwarn      = BMS_DEFTHR_VWARN;
-  m_bms_defthr_valert     = BMS_DEFTHR_VALERT;
-  m_bms_defthr_twarn      = BMS_DEFTHR_TWARN;
-  m_bms_defthr_talert     = BMS_DEFTHR_TALERT;
-
-  m_bms_vlog_last = 0;
-  m_bms_tlog_last = 0;
+  // Clear Bms Monitoring detail.
+  MyBmsMonitor.Clear();
 
   m_minsoc = 0;
   m_minsoc_triggered = 0;
@@ -615,6 +569,7 @@ OvmsVehicle::OvmsVehicle()
 
 OvmsVehicle::~OvmsVehicle()
   {
+  MyBmsMonitor.Clear();
 #ifndef CONFIG_OVMS_COMP_POLLER
   auto vtask = Atomic_GetAndNull(m_vtask);
   if (vtask)
@@ -624,57 +579,6 @@ OvmsVehicle::~OvmsVehicle()
   m_vqueue = nullptr;
 #endif
 
-  if (m_bms_voltages != NULL)
-    {
-    delete [] m_bms_voltages;
-    m_bms_voltages = NULL;
-    }
-  if (m_bms_vmins != NULL)
-    {
-    delete [] m_bms_vmins;
-    m_bms_vmins = NULL;
-    }
-  if (m_bms_vmaxs != NULL)
-    {
-    delete [] m_bms_vmaxs;
-    m_bms_vmaxs = NULL;
-    }
-  if (m_bms_vdevmaxs != NULL)
-    {
-    delete [] m_bms_vdevmaxs;
-    m_bms_vdevmaxs = NULL;
-    }
-  if (m_bms_valerts != NULL)
-    {
-    delete [] m_bms_valerts;
-    m_bms_valerts = NULL;
-    }
-
-  if (m_bms_temperatures != NULL)
-    {
-    delete [] m_bms_temperatures;
-    m_bms_temperatures = NULL;
-    }
-  if (m_bms_tmins != NULL)
-    {
-    delete [] m_bms_tmins;
-    m_bms_tmins = NULL;
-    }
-  if (m_bms_tmaxs != NULL)
-    {
-    delete [] m_bms_tmaxs;
-    m_bms_tmaxs = NULL;
-    }
-  if (m_bms_tdevmaxs != NULL)
-    {
-    delete [] m_bms_tdevmaxs;
-    m_bms_tdevmaxs = NULL;
-    }
-  if (m_bms_talerts != NULL)
-    {
-    delete [] m_bms_talerts;
-    m_bms_talerts = NULL;
-    }
   }
 
 void OvmsVehicle::StartingUp()
@@ -1068,9 +972,6 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       ESP_LOGI(TAG,"Restarting climate control as per schedule");
       }
     } // end every 10 seconds
-
-  // BMS ticker:
-  BmsTicker();
 
   // TPMS alerts:
   if (StdMetrics.ms_v_tpms_alert->LastModified() > m_tpms_lastcheck)

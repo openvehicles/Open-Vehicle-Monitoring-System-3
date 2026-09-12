@@ -890,38 +890,6 @@ void OvmsVehicleFactory::vehicle_stat_trip(int verbosity, OvmsWriter* writer, Ov
     }
   }
 
-void OvmsVehicleFactory::bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle != NULL)
-    {
-      OvmsVehicle::vehicle_bms_status_t statusmode = OvmsVehicle::vehicle_bms_status_t::Both;
-      const char* smode = cmd->GetName();
-      if (strcmp(smode,"volt")==0)
-        statusmode = OvmsVehicle::vehicle_bms_status_t::Voltage;
-      else if (strcmp(smode,"temp")==0)
-        statusmode = OvmsVehicle::vehicle_bms_status_t::Temperature;
-
-      MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, writer, statusmode);
-    }
-  else
-    {
-    writer->puts("No vehicle module selected");
-    }
-  }
-
-void OvmsVehicleFactory::bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle != NULL)
-    {
-    MyVehicleFactory.m_currentvehicle->BmsResetCellStats();
-    writer->puts("BMS cell statistics have been reset.");
-    }
-  else
-    {
-    writer->puts("No vehicle module selected");
-    }
-  }
-
 void OvmsVehicleFactory::vehicle_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->printf("AUX BATTERY\n");
@@ -1012,19 +980,6 @@ void OvmsVehicleFactory::vehicle_aux_monitor_disable(int verbosity, OvmsWriter* 
   mycar->DisableAuxMonitor();
   writer->puts("Disabled");
   }
-
-void OvmsVehicleFactory::bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle != NULL)
-    {
-    MyVehicleFactory.m_currentvehicle->FormatBmsAlerts(verbosity, writer, true);
-    }
-  else
-    {
-    writer->puts("No vehicle module selected");
-    }
-  }
-
 
 void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {

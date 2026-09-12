@@ -1012,6 +1012,24 @@ The OvmsVehicle object is the most comprehensive, and exposes several methods to
 - ``result = OvmsVehicle.ObdRequest(arguments)``
     Perform OBD/UDS request (synchronous)
 
+- ``OvmsBMS.VoltageSetCellArrangement( readings, readingspermodule)``
+    Set the Voltage Cell Arrangement
+
+- ``OvmsBMS.VoltageSetCellDefaultThresholds(warn, alert [, max_grad] [, max_std_dev])``
+- ``OvmsBMS.VoltageSetCellLimits(float min, float max)``
+- ``OvmsBMS.VoltageSetCell(int index, float value)``
+- ``OvmsBMS.VoltageResetCells( [full] )``
+- ``OvmsBMS.VoltagesRestartCells()``
+
+- ``OvmsBMS.TemperatureSetCellArrangement( readings, readingspermodule)``
+    Set the Temperature Cell Arrangement
+
+- ``OvmsBms.TemperatureSetCellDefaultThresholds(warn, alert)``
+- ``OvmsBms.TemperatureSetCellLimits(min, max)``
+- ``OvmsBms.TemperatureSetCell(index, value)``
+- ``OvmsBms.TemperatureResetCells([full])``
+- ``OvmsBms.TemperatureRestartCells()``
+
     Pass the request parameters using the ``arguments`` object:
 
     - ``txid``: the CAN ID to send the request to (or 0x7df for broadcast)

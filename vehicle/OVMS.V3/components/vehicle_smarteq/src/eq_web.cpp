@@ -50,7 +50,7 @@ void OvmsVehicleSmartEQ::WebInit()
   MyWebServer.RegisterPage("/xsq/tpms", "TPMS Config", WebCfgTPMS, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/adc", "ADC Calc", WebCfgADC, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xsq/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyBmsMonitor.SetWebmoduleEnabled(true);
 }
 
 /**
@@ -63,7 +63,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
   MyWebServer.DeregisterPage("/xsq/tpms");
   MyWebServer.DeregisterPage("/xsq/adc");
   MyWebServer.DeregisterPage("/xsq/battery");
-  MyWebServer.DeregisterPage("/xsq/cellmon");
+  MyBmsMonitor.SetWebmoduleEnabled(false);
 }
 
 /**

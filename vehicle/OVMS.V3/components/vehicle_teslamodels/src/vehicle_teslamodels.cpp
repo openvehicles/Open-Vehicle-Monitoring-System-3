@@ -62,9 +62,10 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
   BmsSetCellArrangementTemperature(32, 2);
   BmsSetCellLimitsVoltage(1,4.9);
   BmsSetCellLimitsTemperature(-90,90);
+  MyBmsMonitor.SetAutoNotifications(false);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyBmsMonitor.SetWebmoduleEnabled(true);
 #endif
   }
 
@@ -73,7 +74,7 @@ OvmsVehicleTeslaModelS::~OvmsVehicleTeslaModelS()
   ESP_LOGI(TAG, "Shutdown Tesla Model S vehicle module");
   MyCommandApp.UnregisterCommand("xts");
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.DeregisterPage("/bms/cellmon");
+  MyBmsMonitor.SetWebmoduleEnabled(false);
 #endif
   }
 
@@ -410,10 +411,6 @@ void OvmsVehicleTeslaModelS::Notify12vCritical()
   }
 
 void OvmsVehicleTeslaModelS::Notify12vRecovered()
-  { // Not supported on Model S
-  }
-
-void OvmsVehicleTeslaModelS::NotifyBmsAlerts()
   { // Not supported on Model S
   }
 
