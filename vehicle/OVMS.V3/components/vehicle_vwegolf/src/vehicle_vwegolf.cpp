@@ -376,23 +376,27 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 bool was_charging = StdMetrics.ms_v_charge_inprogress->AsBool();
                 bool is_charging = (d[3] & 0x20) != 0;  // bit 5 of d[3]
                 StdMetrics.ms_v_charge_inprogress->SetValue(is_charging);
-                StdMetrics.ms_v_charge_state->SetValue(is_charging ? "charging" : "stopped");
                 if (is_charging) {
+                    StdMetrics.ms_v_charge_state->SetValue("charging");
                     StdMetrics.ms_v_charge_voltage->SetValue(
                         StandardMetrics.ms_v_bat_voltage->AsFloat());
-                } else {
-                    // Charge not running: 0x191 only mirrors the pack current/power into the charge
-                    // metrics while charging, so zero them here or the app keeps showing the last
-                    // charge value after a stop.
+                } else if (was_charging) {
+                    // Only flag "stopped" on a genuine charging->not-charging transition, NOT on
+                    // every idle frame. Writing "stopped" unconditionally means the first idle
+                    // 0x594 after any OVMS (re)start changes ms_v_charge_state from "" to
+                    // "stopped", which the vehicle framework reports as a charge-stop — a spurious
+                    // "Not charging" alert every time the parked/unplugged car is powered off.
+                    // Leaving charge_state untouched when never charging avoids it; CommandStat
+                    // still renders "Not charging" for an empty/plug-less state.
+                    StdMetrics.ms_v_charge_state->SetValue("stopped");
+                    // Charge ended: 0x191 stops mirroring the pack current into the charge
+                    // metrics, so zero them here or the app keeps showing the last charge value.
                     StdMetrics.ms_v_charge_current->SetValue(0);
                     StdMetrics.ms_v_charge_power->SetValue(0);
                 }
-                if (is_charging != was_charging) {
-                    if (is_charging)
-                        NotifyChargeStart();
-                    else
-                        NotifyChargeStopped();
-                }
+                // The charge start/stop push notifications are emitted by the vehicle framework
+                // off the ms_v_charge_state transitions above (OvmsVehicle::NotifyChargeState);
+                // calling NotifyChargeStart()/NotifyChargeStopped() here too would double-notify.
             }
 
             tmp_u16 = ((uint16_t)(d[3] & 0xc0) >> 6) | ((uint16_t)(d[4] & 0x7f) << 2) |
