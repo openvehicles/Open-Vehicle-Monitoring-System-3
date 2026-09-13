@@ -309,6 +309,42 @@ void test_charge_current_0x191() {
 }
 
 // ---------------------------------------------------------------------------
+// Spurious "Not charging" alert on power-off (charge_state must not flip ""->"stopped")
+// ---------------------------------------------------------------------------
+void test_charge_state_no_spurious_stop() {
+    printf("\ntest_charge_state_no_spurious_stop\n");
+
+    // Fresh boot: charge_state is "" and charging was never in progress. An idle 0x594
+    // (not charging, d[3]=0x03) must NOT write charge_state -> "stopped": that ""->"stopped"
+    // change makes the vehicle framework fire a spurious "Not charging" alert every power cycle.
+    {
+        auto* v = make_vehicle();
+        auto idle = make_frame(0x594, {0x00, 0x00, 0x20, 0x03, 0x00, 0x00, 0x10, 0x0D});
+        v->IncomingFrameCan3(&idle);
+        CHECK(!StandardMetrics.ms_v_charge_inprogress->AsBool(), "idle 0x594 -> not charging");
+        CHECK(StandardMetrics.ms_v_charge_state->AsString().empty(),
+              "charge_state stays empty when never charging (no spurious 'stopped')");
+        CHECK(g_metrics.writes["ms_v_charge_state"] == 0,
+              "charge_state not written on an idle-from-boot frame");
+        delete v;
+    }
+
+    // A real charge session still transitions charge_state charging -> stopped.
+    {
+        auto* v = make_vehicle();
+        auto on = make_frame(0x594, {0x00, 0xF0, 0x21, 0xA3, 0x06, 0x34, 0x30, 0x0D});
+        v->IncomingFrameCan3(&on);
+        CHECK(StandardMetrics.ms_v_charge_state->AsString() == "charging",
+              "charging -> charge_state 'charging'");
+        auto off = make_frame(0x594, {0x00, 0x00, 0x20, 0x03, 0x00, 0x00, 0x10, 0x0D});
+        v->IncomingFrameCan3(&off);
+        CHECK(StandardMetrics.ms_v_charge_state->AsString() == "stopped",
+              "charging->stop -> charge_state 'stopped' (genuine transition)");
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
@@ -325,6 +361,7 @@ int main() {
     test_gps_0x486();
     test_sentinel_filters();
     test_charge_current_0x191();
+    test_charge_state_no_spurious_stop();
     test_crtd_replay();
     test_bat_ctrl_all();
 
