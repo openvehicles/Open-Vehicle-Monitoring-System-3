@@ -21,6 +21,10 @@ Open Vehicle Monitor System v3 - Change log
     D2=2, D3=3, B=4; -1 = N/A), decoded from the gear-selector frame 0x187.
 - VW e-Golf: correct v.b.current / v.b.power sign to the OVMS output=positive convention
     (discharge positive, charge negative).
+- VW e-Golf: report charge current and power (v.c.current / v.c.power) while charging. The
+    comfort bus carries no AC charger-side telemetry, so these mirror the DC pack-side 0x191
+    measurement (sign-flipped to the charge convention) and are zeroed when charging stops.
+    The app's charge screen previously showed 0 A.
 - vehicle_cadillac_ct5:
     Set the acceptance filter to allow 0x063 (v.on) and 0x5E4 (v.b.soc).
     The high frame rate of this vehicle (> 1600/sec) causes watchdog

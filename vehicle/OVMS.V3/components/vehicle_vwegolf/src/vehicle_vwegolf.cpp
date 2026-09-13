@@ -227,6 +227,22 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                        StandardMetrics.ms_v_bat_current->AsFloat()) /
                       1000.0F;
             StandardMetrics.ms_v_bat_power->SetValue(tmp_f32);
+
+            // Report the DC pack-side current/power as the charge current/power. The comfort
+            // bus carries no AC charger-side telemetry — a scan of all ~214 KCAN ids during a
+            // full charge found no AC line voltage, AC current, or charger-input power frame;
+            // the only live charge measurement is the DC pack side here (0x5AC byte 3 mirrors it
+            // as integer amps). ms_v_charge_voltage is likewise the pack voltage (set in 0x594).
+            // Sign flips to the charge convention: ms_v_charge_current / ms_v_charge_power are
+            // positive while charging, whereas ms_v_bat_current / ms_v_bat_power are output-
+            // positive (negative while charging). Without this the app's charge screen shows 0 A.
+            // The charging flag is driven by 0x594; when it clears we zero these there.
+            if (StandardMetrics.ms_v_charge_inprogress->AsBool()) {
+                StandardMetrics.ms_v_charge_current->SetValue(
+                    -StandardMetrics.ms_v_bat_current->AsFloat());
+                StandardMetrics.ms_v_charge_power->SetValue(
+                    -StandardMetrics.ms_v_bat_power->AsFloat());
+            }
             ESP_LOGV(TAG, "0x0191 I=%.1fA V=%.2fV", StandardMetrics.ms_v_bat_current->AsFloat(),
                      StandardMetrics.ms_v_bat_voltage->AsFloat());
             break;
@@ -364,6 +380,12 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 if (is_charging) {
                     StdMetrics.ms_v_charge_voltage->SetValue(
                         StandardMetrics.ms_v_bat_voltage->AsFloat());
+                } else {
+                    // Charge not running: 0x191 only mirrors the pack current/power into the charge
+                    // metrics while charging, so zero them here or the app keeps showing the last
+                    // charge value after a stop.
+                    StdMetrics.ms_v_charge_current->SetValue(0);
+                    StdMetrics.ms_v_charge_power->SetValue(0);
                 }
                 if (is_charging != was_charging) {
                     if (is_charging)

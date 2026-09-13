@@ -260,6 +260,55 @@ void test_sentinel_filters() {
 }
 
 // ---------------------------------------------------------------------------
+// Charge current / power mirroring (0x191 while charging, gated by 0x594)
+// ---------------------------------------------------------------------------
+void test_charge_current_0x191() {
+    printf("\ntest_charge_current_0x191\n");
+
+    // Real on-car capture bytes (mid-charge): 0x191 d1=0x30 d2=0x81 d3=0x00 d4=0x05
+    // decode -> I = 2047 - ((0x30&0xf0)>>4 | (0x81<<4)) = 2047 - 2067 = -20 A (charge),
+    //           V = (0x00 | (0x05&0xf)<<8) * 0.25 = 1280 * 0.25 = 320.0 V,
+    //           P = 320 * -20 / 1000 = -6.4 kW. Charge side flips the sign: +20 A / +6.4 kW.
+    auto charge_frame = make_frame(0x191, {0x00, 0x30, 0x81, 0x00, 0x05, 0x00, 0x00, 0x00});
+
+    // Not charging yet: 0x191 must NOT touch the charge metrics.
+    {
+        auto* v = make_vehicle();
+        v->IncomingFrameCan3(&charge_frame);
+        CHECK(near(StandardMetrics.ms_v_bat_current->AsFloat(), -20.0f), "0x191 bat_current -20 A");
+        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f),
+              "charge_current stays 0 A when not charging");
+        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 0.0f),
+              "charge_power stays 0 kW when not charging");
+        delete v;
+    }
+
+    // Charging (0x594 d[3] bit5 set) then 0x191: charge current/power mirror the pack, sign flipped.
+    {
+        auto* v = make_vehicle();
+        // Real steady-charge 0x594 capture: d[3]=0xA3, bit5 set = charging.
+        auto on = make_frame(0x594, {0x00, 0xF0, 0x21, 0xA3, 0x06, 0x34, 0x30, 0x0D});
+        v->IncomingFrameCan3(&on);
+        CHECK(StandardMetrics.ms_v_charge_inprogress->AsBool(), "0x594 sets charge in progress");
+        v->IncomingFrameCan3(&charge_frame);
+        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 20.0f),
+              "charge_current +20 A while charging");
+        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 6.4f),
+              "charge_power +6.4 kW while charging");
+
+        // Charge ends: 0x594 with bit5 clear (d[3]=0x03) zeroes the charge metrics.
+        auto off = make_frame(0x594, {0x00, 0x00, 0x20, 0x03, 0x00, 0x00, 0x10, 0x0D});
+        v->IncomingFrameCan3(&off);
+        CHECK(!StandardMetrics.ms_v_charge_inprogress->AsBool(), "0x594 clears charge in progress");
+        CHECK(near(StandardMetrics.ms_v_charge_current->AsFloat(), 0.0f),
+              "charge_current zeroed on charge stop");
+        CHECK(near(StandardMetrics.ms_v_charge_power->AsFloat(), 0.0f),
+              "charge_power zeroed on charge stop");
+        delete v;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
@@ -275,6 +324,7 @@ int main() {
     test_vin_0x6B4();
     test_gps_0x486();
     test_sentinel_filters();
+    test_charge_current_0x191();
     test_crtd_replay();
     test_bat_ctrl_all();
 
