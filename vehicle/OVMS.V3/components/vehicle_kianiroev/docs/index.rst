@@ -4,8 +4,7 @@ Kia e-Niro / Hyundai Kona / Hyundai Ioniq FL
 
 Vehicle Type: **KN**
 
-The Kia e-Niro shares the same platform with the Hyundai Kona and Hyundai Ioniq FL
-(Hyundai Ioniq Electric 38 kWh).
+The Kia e-Niro shares the same platform with the Hyundai Kona, Hyundai Ioniq (FL) and Kia Soul EV (2020-2024).
 
 Kia e-Niro and Hyundai Kona are the same vehicle in terms of battery specs.
 

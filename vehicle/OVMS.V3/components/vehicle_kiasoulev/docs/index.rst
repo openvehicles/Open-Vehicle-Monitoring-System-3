@@ -1,10 +1,10 @@
-===========
-Kia Soul EV
-===========
+===============
+Kia Soul EV Old
+===============
 
 Vehicle Type: **KS**
 
-The Kia Soul EV vehicle support will be documented here.
+Kia Soul EV (2015-2019). For newer models, refer to the Kia E-Niro EV documentation: https://docs.openvehicles.com/en/latest/components/vehicle_kianiroev/docs/index.html
 
 ----------------
 Support Overview
