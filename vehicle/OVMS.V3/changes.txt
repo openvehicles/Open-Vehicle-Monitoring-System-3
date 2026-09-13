@@ -1,6 +1,11 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Cellular: added Web UI settings for GPS parking holiday handling.
+    New configs:
+      [modem] gps.parkholiday (days, defaul 3)            -- parking threshold after which GPS re-activation uses the holiday multiplier
+      [modem] gps.parkholiday.multi (factor, default 5)   -- multiplier applied to the GPS re-activation delay after the holiday threshold is reached
+    The GPS re-activation delay now multiplies by the configured holiday factor once the parked time exceeds the configured holiday threshold.
 - Server V2 & V3: suspend periodic reconnect attempts on authentication failures (incorrect credentials)
     to avoid blocking of shared public IP addresses (mobile network proxies/gateways). A new reconnect
     attempt is triggered by changing the configuration. Changing the server configuration now also

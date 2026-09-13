@@ -1686,7 +1686,13 @@ void modem::Ticker(std::string event, void* data)
         m_gps_reactivate > 0 &&
         m_gps_startticker == 0 && m_gps_stopticker == 0)
       {
-      m_gps_startticker = m_gps_reactivate * 60; // convert minutes to seconds
+      int gps_reactivate_delay = m_gps_reactivate * 60;
+      if (m_gps_holiday > 0 && m_gps_holiday_multi > 0 &&
+          StdMetrics.ms_v_env_parktime->AsInt() >= (m_gps_holiday * 86400))
+        {
+        gps_reactivate_delay *= m_gps_holiday_multi;
+        }
+      m_gps_startticker = gps_reactivate_delay;
       }
   }
 
@@ -1722,10 +1728,16 @@ void modem::EventListener(std::string event, void* data)
     {
     if (m_gps_enabled && m_gps_usermode == GUM_DEFAULT && m_gps_parkpause > 0 && StdMetrics.ms_v_env_on->AsBool() == false)
       {
-      m_gps_startticker = m_gps_reactivate * 60;  // convert minutes to seconds
-      m_gps_stopticker = StdMetrics.ms_v_env_parktime->AsInt() + m_gps_reactivate * 60; // ensure we don't stop again before reactivation
-      ESP_LOGI(TAG, "GPS stopped by GPS pause system, restarting in %d minutes", m_gps_reactivate);
-      }    
+      int gps_reactivate_delay = m_gps_reactivate * 60;
+      if (m_gps_holiday > 0 && m_gps_holiday_multi > 0 &&
+          StdMetrics.ms_v_env_parktime->AsInt() >= (m_gps_holiday * 86400))
+        {
+        gps_reactivate_delay *= m_gps_holiday_multi;
+        }
+      m_gps_startticker = gps_reactivate_delay;
+      m_gps_stopticker = StdMetrics.ms_v_env_parktime->AsInt() + gps_reactivate_delay;
+      ESP_LOGI(TAG, "GPS stopped by GPS pause system, restarting in %d minutes", gps_reactivate_delay / 60);
+      }
     }
   else if (event == "system.modem.gotgps")
     {
@@ -1768,6 +1780,8 @@ void modem::ConfigChanged(std::string event, void* data)
     int gps_parkpause = MyConfig.GetParamValueInt("modem", "gps.parkpause", 0);
     int gps_reactivate = MyConfig.GetParamValueInt("modem", "gps.parkreactivate", 0);
     int gps_reactlock = MyConfig.GetParamValueInt("modem", "gps.parkreactlock", 5);
+    int gps_holiday = MyConfig.GetParamValueInt("modem", "gps.parkholiday", 3);
+    int gps_holiday_multi = MyConfig.GetParamValueInt("modem", "gps.parkholiday.multi", 5);
     if (m_driver)
       {
       m_driver->SetNetworkType(MyConfig.GetParamValue("modem", "net.type", "auto")); 
@@ -1779,12 +1793,16 @@ void modem::ConfigChanged(std::string event, void* data)
       m_gps_parkpause = gps_parkpause;
       m_gps_reactivate = gps_reactivate;
       m_gps_reactlock = gps_reactlock;
+      m_gps_holiday = gps_holiday;
+      m_gps_holiday_multi = gps_holiday_multi;
       m_gps_awake_start = gps_reactawake;
       }
     else if (enable_gps != m_gps_enabled ||
             gps_parkpause != m_gps_parkpause || 
             gps_reactivate != m_gps_reactivate ||
             gps_reactlock != m_gps_reactlock ||
+            gps_holiday != m_gps_holiday ||
+            gps_holiday_multi != m_gps_holiday_multi ||
             gps_reactawake != m_gps_awake_start)
       {
       // User changed GPS configuration; translate to status change:
@@ -1794,6 +1812,8 @@ void modem::ConfigChanged(std::string event, void* data)
       m_gps_parkpause = gps_parkpause;
       m_gps_reactivate = gps_reactivate;
       m_gps_reactlock = gps_reactlock;
+      m_gps_holiday = gps_holiday;
+      m_gps_holiday_multi = gps_holiday_multi;
       if (!m_nmea && GPS_SHALL_START())
         StartNMEA();
       else if (m_nmea && GPS_SHALL_STOP())
@@ -1804,8 +1824,15 @@ void modem::ConfigChanged(std::string event, void* data)
         m_gps_stopticker = m_gps_parkpause - StdMetrics.ms_v_env_parktime->AsInt();
       else
         m_gps_stopticker = m_gps_parkpause;
-        m_gps_startticker = m_gps_reactivate * 60;
-      }      
+
+      int gps_reactivate_delay = m_gps_reactivate * 60;
+      if (m_gps_holiday > 0 && m_gps_holiday_multi > 0 &&
+          StdMetrics.ms_v_env_parktime->AsInt() >= (m_gps_holiday * 86400))
+        {
+        gps_reactivate_delay *= m_gps_holiday_multi;
+        }
+      m_gps_startticker = gps_reactivate_delay;
+      }
     }
 
   if (event == "config.mounted" || !param || param->GetName() == "network")

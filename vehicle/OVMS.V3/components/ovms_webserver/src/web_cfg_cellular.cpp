@@ -38,7 +38,7 @@ static const char *TAG = "webserver";
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
   auto lock = MyConfig.Lock();
-  std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause, gps_parkreactivate, gps_parkreactlock, vehicle_stream, model, modem_net_type, modem_net_types_avail;
+  std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause, gps_parkreactivate, gps_parkreactlock, gps_parkholiday, gps_parkholiday_multi, vehicle_stream, model, modem_net_type, modem_net_types_avail;
   bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode, gps_parkreactawake;
   float cfg_sq_good, cfg_sq_bad;
 
@@ -55,7 +55,9 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     enable_gpstime = (c.getvar("enable_gpstime") == "yes");
     gps_parkpause = c.getvar("gps_parkpause");
     gps_parkreactivate = c.getvar("gps_parkreactivate");
-    gps_parkreactlock = c.getvar("gps_parkreactlock");    
+    gps_parkreactlock = c.getvar("gps_parkreactlock");
+    gps_parkholiday = c.getvar("gps_parkholiday");
+    gps_parkholiday_multi = c.getvar("gps_parkholiday_multi");
     gps_parkreactawake = (c.getvar("gps_awake_start") == "yes");
     vehicle_stream = c.getvar("vehicle_stream");
     cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
@@ -86,6 +88,8 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("modem", "gps.parkpause", gps_parkpause);
       MyConfig.SetParamValue("modem", "gps.parkreactivate", gps_parkreactivate);
       MyConfig.SetParamValue("modem", "gps.parkreactlock", gps_parkreactlock);
+      MyConfig.SetParamValue("modem", "gps.parkholiday", gps_parkholiday);
+      MyConfig.SetParamValue("modem", "gps.parkholiday.multi", gps_parkholiday_multi);
       MyConfig.SetParamValueBool("modem", "gps.parkreactawake", gps_parkreactawake);
       if (vehicle_stream == "0")
         MyConfig.DeleteInstance("vehicle", "stream");
@@ -132,6 +136,8 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   gps_parkpause = MyConfig.GetParamValue("modem", "gps.parkpause","0");
   gps_parkreactivate = MyConfig.GetParamValue("modem", "gps.parkreactivate","0");
   gps_parkreactlock = MyConfig.GetParamValue("modem", "gps.parkreactlock","5");
+  gps_parkholiday = MyConfig.GetParamValue("modem", "gps.parkholiday","3");
+  gps_parkholiday_multi = MyConfig.GetParamValue("modem", "gps.parkholiday.multi","5");
   gps_parkreactawake = MyConfig.GetParamValueBool("modem", "gps.parkreactawake", false);
   vehicle_stream = MyConfig.GetParamValue("vehicle", "stream","0");
   cfg_sq_good = MyConfig.GetParamValueFloat("network", "modem.sq.good", -93);
@@ -221,7 +227,13 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     "min=\"0\" step=\"5\"", "Minutes");
   c.input("number", "GPS lock time", "gps_parkreactlock", gps_parkreactlock.c_str(), "Default: 5",
     "<p>by default, GPS lock for 5 minutes until automatic shutdown during parking time</p>",
-    "min=\"5\" step=\"1\"", "Minutes");  
+    "min=\"5\" step=\"1\"", "Minutes");
+  c.input("number", "GPS holiday days", "gps_parkholiday", gps_parkholiday.c_str(), "Default: 3",
+    "<p>After parking longer than this many days, the GPS re-activation delay is multiplied by the holiday multiplier.</p>",
+    "min=\"0\" step=\"1\"", "Days");
+  c.input("number", "GPS holiday multiplier", "gps_parkholiday_multi", gps_parkholiday_multi.c_str(), "Default: 5",
+    "<p>Multiplier applied to the GPS re-activation time after the holiday threshold has been reached.</p>",
+    "min=\"1\" step=\"1\"", "x");
   c.input_checkbox("Start GPS when Car awakes", "gps_awake_start", gps_parkreactawake,
     "<p>GPS is switched on for the GPS lock time when the GPS parking pause is active and the car wakes up.</p>"
     "<p>This reduces time to first GPS fix, but increases power consumption when Car is awake.</p>");
