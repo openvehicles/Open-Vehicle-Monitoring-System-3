@@ -172,20 +172,34 @@ MQTT organizes data transmissions in channels called "topics". You can configure
 common topic prefix in the V3 server configuration. Command exection via MQTT
 then follows this scheme:
 
-  - Send command request to topic: ``<prefix>/client/<client_id>/command/<command_id>``
-  - Receive response on topic: ``<prefix>/client/<client_id>/response/<command_id>``
+  - Send command request to topic: ``<prefix>/client/<app_id>/command/<req_id>``
+  - Receive response on topic: ``<prefix>/client/<app_id>/response/<req_id>``
 
-This API expects shell commands. To execute Javascript, pass the expression to
-the ``script eval`` command as shown above.
+The ``<prefix>/client/#`` topics are standard MQTT channels, so you can set up MQTT listeners 
+subscribed to these topics to follow and process command execution and results where needed.
 
-Use arbitrary unique client IDs (e.g. some UUID) and command IDs (e.g. command counter)
-to identify your client connection and command request, if sending multiple commands
-in series over the same connection. The response will use the same IDs as the request.
+The response reflects the request IDs. You can use arbitrary application and request IDs within the 
+MQTT topic rules. Hint: use globally unique counters or UUIDs to identify results when sending commands 
+from different clients sharing the same application ID.
 
-A standard perl client for command execution via MQTT is included in the OVMS main
-repository:
+This API expects shell commands. To execute Javascript, pass the expression to the ``script eval`` 
+command as shown above.
+
+A standard perl client for command execution via MQTT is included in the OVMS main repository:
 
   - https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/tree/master/client
+
+Usage template for the standard ``mosquitto_rr`` request-response shell tool provided by the 
+Mosquitto clients package::
+
+  > mosquitto_rr -h '<server>' -p 8883 -u '<username>' -P '<userpassword>' \
+      -t 'ovms/<username>/<vehicleid>/client/rr/command/stat \
+      -e 'ovms/<username>/<vehicleid>/client/rr/response/stat' \
+      -m 'stat'
+
+The application ID here is ``rr`` and the request ID is ``stat``, replace these when using in your 
+scripts as needed. Add ``-F %j`` to get a JSON encoded response, see 
+`mosquitto_rr man page <https://www.mosquitto.org/man/mosquitto_rr-1.html>`_ for more options.
 
 More info on the general OVMS MQTT topic scheme can be found
 `on the developer mailing list <http://lists.openvehicles.com/pipermail/ovmsdev/2018-July/005297.html>`_.
@@ -215,24 +229,32 @@ Europe (dexters-web.de)
 
 Public OVMS server provided and maintained by `Michael Balzer <dexter@dexters-web.de>`_.
 
-This server supports extended REST APIs for command execution and CSV download.
+The server hosts both a V2 (MP) OVMS server and a V3 (MQTT) server, both can be used simultaneously 
+by all vehicles registered on the server.
 
-The extended REST API for command execution needs your vehicle ID, the vehicle
-password (both as entered in the module's V2 server configuration), and of
-course the command to execute:
+This server supports extended HTTP REST APIs for command execution and CSV download. Command execution 
+can be done via a V2 or V3 connection.
 
-  - ``https://dexters-web.de/api/ovms/cmd?fn.vehicleid=…&fn.carpass=…&fn.cmd=…``
+'''''''''''''''''''''''''''''''''''
+Command Execution via V2 Connection
+'''''''''''''''''''''''''''''''''''
 
-HTTP method may be ``GET`` or ``POST``. Don't forget to URI encode all arguments.
+The extended HTTP REST API for **command execution via a module's V2 connection** needs your vehicle ID, 
+the vehicle password (both as entered in the module's V2 server configuration), and of course the command 
+to execute. URL scheme::
+
+  https://dexters-web.de/api/ovms/cmd?fn.vehicleid=…&fn.carpass=…&fn.cmd=…
+
+HTTP method may be ``GET`` or ``POST``. Don't forget to URI encode all arguments. 
 This can be done easily when using `curl <https://curl.se/>`_ to access the API::
 
-  > curl 'https://dexters-web.de/api/ovms/cmd' \
+  curl 'https://dexters-web.de/api/ovms/cmd' \
     --data-urlencode 'fn.vehicleid=MYCAR123' \
     --data-urlencode 'fn.carpass=mysecret' \
     --data-urlencode 'fn.cmd=charge start'
 
-This API is the backend for the server's OVMS web shell, so it supports the extended
-command syntax pattern as described there:
+This API is the backend for the server's OVMS web shell, so it supports the extended command syntax pattern 
+as described there:
 
   - V2 MP command syntax: ``#<code>[,<parameters>][/<recordcount>]``;
     example: ``#3/32`` will query the 32 V2 parameter slots
@@ -243,6 +265,34 @@ command syntax pattern as described there:
 
 Any other command is expected to be a shell command. To execute Javascript, pass
 the expression to the ``script eval`` command as shown above.
+
+'''''''''''''''''''''''''''''''''''
+Command Execution via V3 Connection
+'''''''''''''''''''''''''''''''''''
+
+The extended HTTP REST API for **command execution via a module's V3 connection** has the same base 
+signature as the V2 scheme, except for the path::
+
+  https://dexters-web.de/api/ovms/cmd_v3?fn.vehicleid=…&fn.carpass=…&fn.cmd=…
+
+This API call additionally supports these optional parameters:
+
+  - ``fn.appid`` -- optional custom application ID, default is "servershell"
+  - ``fn.reqid`` -- optional custom request ID, default is first command word
+
+Both IDs will be sanitized, only characters ``.``, ``-``, letters and digits are allowed.
+
+curl example::
+
+  curl 'https://dexters-web.de/api/ovms/cmd_v3' \
+    --data-urlencode 'fn.vehicleid=MYCAR123' \
+    --data-urlencode 'fn.carpass=mysecret' \
+    --data-urlencode 'fn.appid=chgctl' \
+    --data-urlencode 'fn.reqid=start' \
+    --data-urlencode 'fn.cmd=charge start'
+
+**Note:** this command API only supports V3 shell (text) commands, V2/MP or direct USSD commands are 
+not supported. Modem commands can be sent using the V3 ``cellular cmd`` command.
 
 
 ------------------
