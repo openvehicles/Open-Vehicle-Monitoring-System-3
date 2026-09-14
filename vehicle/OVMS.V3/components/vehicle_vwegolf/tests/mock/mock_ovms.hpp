@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <functional>
@@ -157,6 +158,7 @@ struct OvmsMetric {
     void Clear()                    { g_metrics.numbers.erase(name); }
     T    AsValue() const  { return static_cast<T>(g_metrics.numbers[name]); }
     float AsFloat() const { return static_cast<float>(g_metrics.numbers[name]); }
+    int  AsInt() const    { return static_cast<int>(g_metrics.numbers[name]); }
 };
 
 template<>
@@ -299,7 +301,19 @@ extern OvmsConfig MyConfig;
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
-struct OvmsWriter {};
+struct OvmsWriter {
+    // The real writer prints to the console the command was issued from. The
+    // tests only need the calls to compile and to be harmless, so they go to
+    // stdout.
+    int puts(const char* s) { return std::puts(s); }
+    int printf(const char* fmt, ...) {
+        va_list ap;
+        va_start(ap, fmt);
+        int n = std::vprintf(fmt, ap);
+        va_end(ap);
+        return n;
+    }
+};
 struct OvmsCommand {
     OvmsCommand* RegisterCommand(const char*, const char*, ...) { return this; }
 };

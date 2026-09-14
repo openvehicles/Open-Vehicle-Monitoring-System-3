@@ -27,6 +27,7 @@
 */
 
 // #include <stdio.h>
+#include <cmath>  // lroundf, for the cctemp command
 #include "vehicle_vwegolf.h"
 
 #undef TAG
@@ -65,6 +66,36 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     });
     cmd_vweg->RegisterCommand("fold_mirrors", "Fold mirrors in",
                               [this](...) { CommandMirrorFoldIn(); });
+    cmd_vweg->RegisterCommand(
+        "cctemp", "Set the pre-conditioning target temperature",
+        [this](int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
+               const char* const* argv) {
+            if (argc < 1) { writer->puts("Usage: xvg cctemp <15.5..30.0>"); return; }
+            // Snap to the half-degree steps the car uses.
+            int deci = 5 * (int)lroundf((float)atof(argv[0]) * 2.0F);
+            if (deci < 155 || deci > 300) {
+                writer->printf("Out of range: %s C. The car accepts 15.5 to 30.0 C.\n", argv[0]);
+                return;
+            }
+            if (!m_batctrl.SetClimateTempRaw(bap::egolf::tempToRawDeci(deci))) {
+                writer->puts("Could not start the write -- is the car reachable?");
+                return;
+            }
+            writer->printf("Setting target temperature to %.1f C.\n", deci / 10.0F);
+        },
+        "<degrees C, 15.5..30.0 in 0.5 steps>", 1, 1);
+    cmd_vweg->RegisterCommand(
+        "ccstatus", "Climate settings as one machine-readable line",
+        [this](int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
+               const char* const* argv) {
+            // From the standard metrics, not from the profile: the module fetches
+            // the profile per command and does not keep it, the metrics persist.
+            // A target temperature below 10 C is not encodable, so 0 means
+            // "never read" rather than a real value.
+            float t = StandardMetrics.ms_v_env_cabinsetpoint->AsFloat();
+            writer->printf("cctemp=%.1f current=%d valid=%d\n", t,
+                           StandardMetrics.ms_v_charge_climit->AsInt(), t > 0 ? 1 : 0);
+        });
 }
 
 OvmsVehicleVWeGolf::~OvmsVehicleVWeGolf() {

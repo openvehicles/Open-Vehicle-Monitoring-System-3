@@ -53,6 +53,12 @@ bool VWeGolfBatteryControl::Charge(bool enable) {
     return Begin(BC_CHARGE, enable, 0);
 }
 
+bool VWeGolfBatteryControl::SetClimateTempRaw(uint8_t raw) {
+    // Pure settings edit: no trigger, no op change. The car keeps running whatever
+    // it was doing; only the stored target temperature changes.
+    return Begin(BC_SET_TEMP, /*enable=*/true, raw);
+}
+
 bool VWeGolfBatteryControl::SetChargeCurrent(uint16_t amps) {
     // Snap to an allowed BCU step {5,10,13,32} — the car turns any out-of-set value into 10 A (it
     // echoes the requested value but charges at 10 A), so snapping to the nearest valid step is what
@@ -64,6 +70,9 @@ bool VWeGolfBatteryControl::SetChargeCurrent(uint16_t amps) {
 bool VWeGolfBatteryControl::Begin(BcOp op, bool enable, uint16_t param) {
     if (op == BC_SET_CURRENT)
         ESP_LOGI(TAG, "BatteryControl SetChargeCurrent -> %u A", (unsigned)param);
+    else if (op == BC_SET_TEMP)
+        ESP_LOGI(TAG, "BatteryControl SetClimateTemp -> %.1f C",
+                 bap::egolf::rawToTemp((uint8_t)param));
     else
         ESP_LOGI(TAG, "BatteryControl %s %s", op == BC_CHARGE ? "Charge" : "Climate",
                  enable ? "ON" : "OFF");
@@ -132,7 +141,7 @@ void VWeGolfBatteryControl::Ticker1(bool bus_alive) {
                         // the write echo in CP_ARM_WAIT when it must auto-apply (re-fire the start for
                         // a running charge), else CP_CONFIRM; climate/charge trigger immediately on a
                         // skipped arm, else wait for the echo in CP_ARM_WAIT.
-                        if (m_op == BC_SET_CURRENT)   m_phase = m_apply ? CP_ARM_WAIT : CP_CONFIRM;
+                        if (IsSettingsEdit())         m_phase = m_apply ? CP_ARM_WAIT : CP_CONFIRM;
                         else if (m_arm_skipped)     { SendTrigger(m_enable); m_phase = CP_CONFIRM; }
                         else                          m_phase = CP_ARM_WAIT;
                     }
@@ -152,7 +161,7 @@ void VWeGolfBatteryControl::Ticker1(bool bus_alive) {
                 // write echo -> re-write. Everything else (climate/charge, or SET_CURRENT auto-apply
                 // past its re-trigger) is waiting on the 49 58 -> re-fire the trigger. Never re-arm a
                 // climate/charge start (that resets the BCU's spin-up).
-                if (m_op == BC_SET_CURRENT && !m_apply) SendArm();
+                if (IsSettingsEdit() && !m_apply) SendArm();
                 else SendTrigger(m_enable);
                 break;
             default:  // CP_WAKE: keep NM-waking until the BCU is heard; CP_DONE: nothing
@@ -174,10 +183,11 @@ void VWeGolfBatteryControl::Ticker1(bool bus_alive) {
         // distinguished cause so a remote user knows what happened.
         const char* what = m_op == BC_CHARGE       ? "Charge"
                          : m_op == BC_SET_CURRENT  ? "SetChargeCurrent"
+                         : m_op == BC_SET_TEMP     ? "SetClimateTemp"
                                                    : "Climate";
         if (m_confirmed) {
             ESP_LOGI(TAG, "%s %s confirmed — releasing NM, cluster self-sustains", what,
-                     m_op == BC_SET_CURRENT ? "" : (m_enable ? "ON" : "OFF"));
+                     IsSettingsEdit() ? "" : (m_enable ? "ON" : "OFF"));
         } else {
             char reason[96];
             // Every command (ON, OFF, SET_CURRENT) reads profile 0 first to arm the matching op, so a
@@ -323,6 +333,19 @@ void VWeGolfBatteryControl::IncomingBapStatus(const CAN_frame_t* p_frame) {
         if (lead & 0x80) {
             // SET_CURRENT: the write landed -> reflect the applied limit (the read-back left it
             // untouched, so there's no jump-back).
+            if (m_op == BC_SET_TEMP) {
+                // Erst jetzt steht fest, dass die neue Temperatur im Fahrzeug ist.
+                StandardMetrics.ms_v_env_cabinsetpoint->SetValue(
+                    bap::egolf::rawToTemp((uint8_t)m_param), Celcius);
+                if (m_phase == CP_CONFIRM) {  // der Schreibvorgang IST der ganze Befehl
+                    m_confirmed = true;
+                    m_phase = CP_DONE;
+                    if (m_wake_hold > 2) m_wake_hold = 2;
+                    ESP_LOGI(TAG, "SetClimateTemp %.1f C written -- BCU echoed 49 59 %02x",
+                             bap::egolf::rawToTemp((uint8_t)m_param), lead);
+                    return;
+                }
+            }
             if (m_op == BC_SET_CURRENT) {
                 StandardMetrics.ms_v_charge_climit->SetValue((float)m_param, Amps);
                 if (m_apply && m_phase == CP_ARM_WAIT) {
@@ -379,11 +402,13 @@ void VWeGolfBatteryControl::IncomingBapStatus(const CAN_frame_t* p_frame) {
                     // old value (a natural rollback) — see the SET_CURRENT confirm + failure handling.
                     if (m_op != BC_SET_CURRENT)
                         StandardMetrics.ms_v_charge_climit->SetValue((float)m_profile0.maxCurrent, Amps);
-                    if (m_profile0.temperatureRaw != 0xFF)  // 0xFF = unset/padding
+                    // Bei BC_SET_TEMP nicht den gerade zu ersetzenden Wert anzeigen --
+                    // die Metrik wuerde sichtbar auf alt springen und dann auf neu.
+                    if (m_op != BC_SET_TEMP && m_profile0.temperatureRaw != 0xFF)  // 0xFF = unset/padding
                         StandardMetrics.ms_v_env_cabinsetpoint->SetValue(
                             bap::egolf::rawToTemp(m_profile0.temperatureRaw), Celcius);
                     if (!SendArm()) break;  // arm TX failed; the CP_PROFILE backstop re-arms
-                    if (m_op == BC_SET_CURRENT) {
+                    if (IsSettingsEdit()) {
                         // Idle: confirm on the write echo (0xbX), no trigger. Auto-apply (charging):
                         // wait for the echo, then re-fire the start (handled in CP_ARM_WAIT).
                         m_phase = m_apply ? CP_ARM_WAIT : CP_CONFIRM;
@@ -516,6 +541,11 @@ bool VWeGolfBatteryControl::SendArm() {
             p.operation = (uint8_t)((p.operation | bap::egolf::PO_CHARGING)
                                     & ~(bap::egolf::PO_CLIMATE | bap::egolf::PO_ALLOW_BATTERY));
             break;
+        case BC_SET_TEMP:
+            // Only the temperature; the op byte stays as the car has it, so this
+            // cannot start or stop anything.
+            p.temperatureRaw = m_param;
+            break;
         case BC_SET_CURRENT:
             p.maxCurrent = m_param;
             // Auto-apply (a charge is running): also set the op to charge so the re-fired start
@@ -535,7 +565,7 @@ bool VWeGolfBatteryControl::SendArm() {
     // already holds, so the ~5-frame RA0 write is a no-op — skip it and let the trigger run the
     // already-correct op. (SET_CURRENT always writes — applying the current IS the command, and it
     // confirms on the write echo. A write still happens if the hard cap changed maxCurrent, i.e. p differs.)
-    if (m_op != BC_SET_CURRENT &&
+    if (!IsSettingsEdit() &&
         p.operation == m_profile0.operation && p.maxCurrent == m_profile0.maxCurrent) {
         m_arm_skipped = true;  // no write -> no "49 59 bx" echo coming -> caller triggers immediately
         ESP_LOGI(TAG, "%s arm: profile 0 already op 0x%02x — no write needed",
@@ -554,6 +584,9 @@ bool VWeGolfBatteryControl::SendArm() {
     if (m_op == BC_SET_CURRENT)
         ESP_LOGI(TAG, "SetChargeCurrent arm: profile 0 maxCurrent 0x%02x -> 0x%02x (%u frames)",
                  m_profile0.maxCurrent, p.maxCurrent, r.framesSent);
+    else if (m_op == BC_SET_TEMP)
+        ESP_LOGI(TAG, "SetClimateTemp arm: profile 0 temperature 0x%02x -> 0x%02x (%u frames)",
+                 m_profile0.temperatureRaw, p.temperatureRaw, r.framesSent);
     else
         ESP_LOGI(TAG, "%s arm: profile 0 op 0x%02x -> 0x%02x written (%u frames)",
                  m_op == BC_CHARGE ? "Charge" : "Climate", m_profile0.operation, p.operation,
