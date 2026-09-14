@@ -55,14 +55,13 @@ access to two CAN buses:
 
 | CRTD tag | OVMS bus | Physical bus | Role |
 |---|---|---|---|
-| `2R11` / `2R29` | can2 | FCAN (powertrain) | sparse — ECU-level frames, some bridged KCAN at startup |
-| `3R11` / `3R29` | can3 | KCAN (convenience) | dominant — all real metric data lives here |
+| `3R11` / `3R29` | can3 | KCAN (convenience) | the only bus the module taps — all metric data lives here |
 
-**Bridging direction:** J533 bridges FCAN frames (gear 0x187, VIN 0x6B4, etc.)
-onto KCAN. The bulk of metric traffic — including SOC (0x131), speed (0x0FD),
-charging, clima, etc. — arrives on can3 (`3R11`). The `IncomingFrameCan3` handler
-is the primary decode path. `IncomingFrameCan2` handles the few frames that arrive
-on can2 and forwards everything to `IncomingFrameCan3` as a fallback.
+**Bridging direction:** the J533 gateway rebroadcasts the powertrain/HV frames
+(gear 0x187, VIN 0x6B4, SoC 0x131, pack I/V 0x191, speed 0x0FD, etc.) onto KCAN,
+so a single KCAN tap sees everything — confirmed in drive captures (every decoded
+id, including 0x187 and 0x6B4, appears on `3R11`). `IncomingFrameCan3` is the sole
+decode path; FCAN (can2) is not registered.
 
 The CRTD bus number encodes the physical OVMS bus: `busnumber = m_busnumber + '1'`,
 so `2R11` = can2, `3R11` = can3.

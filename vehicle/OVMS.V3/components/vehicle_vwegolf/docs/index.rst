@@ -14,10 +14,11 @@ Adapter
 -------
 
 The adapter connects to the J533 gateway harness connector, giving access to
-the Comfort CAN (KCAN) and Powertrain CAN (FCAN) buses.  KCAN carries the
-majority of metric data.  FCAN carries the VIN and a small number of
-powertrain frames; the J533 also bridges KCAN traffic onto FCAN, so both
-buses are registered by the module.
+the Comfort CAN (KCAN) and Powertrain CAN (FCAN) buses.  Everything the module
+reads arrives on KCAN: the J533 gateway rebroadcasts the powertrain/HV frames
+(VIN, gear selector, SoC, pack current/voltage, speed) onto KCAN, so a single
+KCAN tap sees them all.  The module therefore registers KCAN only; FCAN is
+present on the adapter but not used.
 
 The adapter extends the car harness — pins are connected straight through,
 with the CAN pairs run as twisted pair (e.g. from CAT6 cable).  The
