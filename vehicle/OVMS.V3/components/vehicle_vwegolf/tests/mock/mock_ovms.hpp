@@ -357,6 +357,8 @@ struct OvmsVehicle {
     virtual vehicle_command_t CommandUnlock(const char*) { return NotImplemented; }
     virtual vehicle_command_t CommandWakeup()                 { return NotImplemented; }
     virtual vehicle_command_t CommandClimateControl(bool)     { return NotImplemented; }
+    // Mirrors the base class: vehicles opt in to advertising V2 capability C26.
+    virtual bool SupportsClimateControl()                     { return false; }
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t){ return NotImplemented; }
     virtual vehicle_command_t CommandStartCharge()            { return NotImplemented; }
     virtual vehicle_command_t CommandStopCharge()             { return NotImplemented; }
