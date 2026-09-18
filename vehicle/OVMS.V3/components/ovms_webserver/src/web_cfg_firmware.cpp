@@ -269,7 +269,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     else if (netif_default->name[0] == 'p' && netif_default->name[1] == 'p') {
       c.alert("warning",
         "<p class=\"lead\"><strong>Using cellular modem connection for internet.</strong></p>"
-        "<p>Downloads from public servers will currently be done via cellular network. Be aware update files are &gt;2 MB, "
+        "<p>Downloads from public servers will currently be done via cellular network. Be aware update files are &gt;4 MB, "
         "which may exceed your data plan and need some time depending on your link speed.</p>"
         "<p>You can also flash locally from a wifi network IP address.</p>");
     }
