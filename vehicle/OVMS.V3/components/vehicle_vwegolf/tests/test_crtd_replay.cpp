@@ -91,11 +91,9 @@ static int replay_crtd(OvmsVehicleVWeGolf* v, const char* path) {
         }
         frame.FIR.B.DLC = dlc;
 
-        if (bus == 2) {
-            // J533 bridges KCAN onto CAN2; IncomingFrameCan2 handles the FCAN-specific
-            // IDs (0x187, 0x6B4) then forwards everything to IncomingFrameCan3.
-            v->IncomingFrameCan2(&frame);
-        } else if (bus == 3) {
+        if (bus == 3) {
+            // KCAN is the only bus the module taps: everything it reads (incl. gear 0x187 and
+            // VIN 0x6B4) is gatewayed onto KCAN, so IncomingFrameCan3 decodes all of it.
             v->IncomingFrameCan3(&frame);
         } else {
             continue;
@@ -153,8 +151,8 @@ void test_crtd_replay() {
     int gear = StandardMetrics.ms_v_env_gear->AsValue();
     CHECK(gear == 0, "Gear = 0 (Park)");
 
-    // VIN (0x6B4) is decoded in IncomingFrameCan2 (FCAN), not IncomingFrameCan3.
-    // This CRTD capture is KCAN-only so VIN is not exercised here; see test_vin_0x6B4().
+    // VIN (0x6B4) is decoded in IncomingFrameCan3 (KCAN). The synthetic fixture has no VIN
+    // frames, so VIN is not exercised here; see test_vin_0x6B4() for that path.
 
     delete v;
 }
