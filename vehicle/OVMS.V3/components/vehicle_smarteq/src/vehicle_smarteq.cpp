@@ -34,6 +34,8 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
+size_t OvmsVehicleSmartEQ::m_modifier = 0;
+
 OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 {
   OvmsVehicleSmartEQ* smarteq = (OvmsVehicleSmartEQ*) MyVehicleFactory.ActiveVehicle();
@@ -52,6 +54,11 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
  */
 
 OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
+  if (m_modifier == 0) {
+    m_modifier = MyMetrics.RegisterModifier();
+    ESP_LOGD(TAG, "registered metric modifier is #%d", m_modifier);
+  }
+
   ESP_LOGI(TAG, "Start smart EQ vehicle module");
 
   // BMS configuration:

@@ -164,6 +164,8 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
     {
     smartChargeStart();
     }
+  if (!StdMetrics.ms_v_pos_latitude->IsStale() && (StdMetrics.ms_v_pos_gpslock->AsBool(false) || IsOnEQ()))
+    SendGPSLog();
   } // Ticker 10
 
 void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) 

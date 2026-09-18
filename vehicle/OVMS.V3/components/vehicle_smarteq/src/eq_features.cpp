@@ -531,6 +531,47 @@ void OvmsVehicleSmartEQ::smartCANbusAccess(bool activate)
     }
 }
 
+void OvmsVehicleSmartEQ::SendGPSLog()
+{
+  bool modified =
+    StdMetrics.ms_v_pos_odometer->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_latitude->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_longitude->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_altitude->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_direction->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_gpsspeed->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_speed->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_power->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_energy_used->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_current->IsModifiedAndClear(m_modifier);
+
+  if (!modified)
+    return;
+
+  std::ostringstream buf;
+  buf
+    << "SQ-GPS-Log,"
+    << (long)(StdMetrics.ms_v_pos_odometer->AsFloat(0.0f, Kilometers) * 10.0f)
+    << ",86400"
+    << std::fixed << std::setprecision(6)
+    << "," << StdMetrics.ms_v_pos_latitude->AsFloat(0.0f)
+    << "," << StdMetrics.ms_v_pos_longitude->AsFloat(0.0f)
+    << std::setprecision(0)
+    << "," << StdMetrics.ms_v_pos_altitude->AsFloat(0.0f)
+    << "," << StdMetrics.ms_v_pos_direction->AsFloat(0.0f)
+    << "," << StdMetrics.ms_v_pos_speed->AsFloat(0.0f)
+    << "," << (int)StdMetrics.ms_v_pos_gpslock->AsBool(false)
+    << "," << StdMetrics.ms_v_pos_latitude->Age()
+    << "," << StdMetrics.ms_m_net_sq->AsInt(0)
+    << "," << StdMetrics.ms_v_bat_power->AsFloat(0.0f)
+    << "," << StdMetrics.ms_v_bat_energy_used->AsFloat(0.0f)
+    << "," << StdMetrics.ms_v_bat_energy_recd->AsFloat(0.0f)
+    << "," << StdMetrics.ms_v_bat_current->AsFloat(0.0f);
+
+  MyNotify.NotifyString("data", "xsq.gps.log", buf.str().c_str());
+}
+
 /**
  * SetFeature: V2 compatibility config wrapper
  *  Note: V2 only supported integer values, V3 values may be text

@@ -140,6 +140,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void Notify12Vcharge();
     void NotifySOClimit();
     void NotifyHVCycles(bool alert = false);
+    void SendGPSLog();
 
     // --- Door / Lock state ---
     bool DoorOpen();
@@ -516,6 +517,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
   // private
   // =========================================================================
   private:
+    static size_t m_modifier;
     static OvmsVehicleSmartEQ* GetInstance(OvmsWriter* writer=NULL);
     // ADC factor calculation is needed based on 12V reading, only check when car is on or charging to avoid false recalculations based on 12V drop when car is off
     // activated only after reboot
