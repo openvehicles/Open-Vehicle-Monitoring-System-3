@@ -25,6 +25,13 @@ Open Vehicle Monitor System v3 - Change log
     comfort bus carries no AC charger-side telemetry, so these mirror the DC pack-side 0x191
     measurement (sign-flipped to the charge convention) and are zeroed when charging stops.
     The app's charge screen previously showed 0 A.
+- VW e-Golf: add charge-profile and departure-timer management over the Battery Control channel
+    (LSG 0x25). "xvg charge profile list" lists the stored charge profiles (charge locations);
+    "xvg charge profile set" edits one profile's fields (profile 0 = charge current / min SoC /
+    target temperature; charge locations 1-3 = charge/climate flags, charge current, target SoC)
+    via a read-modify-write that preserves every other stored field, with maxCurrent hard-capped.
+    "xvg charge timer list/set/enable/disable/clear" manage the recurring departure timers, each
+    bound to a charge profile. See the built-in command help for the arguments of each.
 - vehicle_cadillac_ct5:
     Set the acceptance filter to allow 0x063 (v.on) and 0x5E4 (v.b.soc).
     The high frame rate of this vehicle (> 1600/sec) causes watchdog

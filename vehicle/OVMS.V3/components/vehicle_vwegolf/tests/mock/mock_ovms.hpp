@@ -299,7 +299,10 @@ extern OvmsConfig MyConfig;
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
-struct OvmsWriter {};
+struct OvmsWriter {
+    int printf(const char*, ...) { return 0; }
+    int puts(const char*) { return 0; }
+};
 struct OvmsCommand {
     OvmsCommand* RegisterCommand(const char*, const char*, ...) { return this; }
 };

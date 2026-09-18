@@ -26,7 +26,9 @@
 ; THE SOFTWARE.
 */
 
-// #include <stdio.h>
+#include <cstdio>   // snprintf / sscanf — format the profile/timer list rows, parse HH:MM
+#include <cstdlib>  // atoi — parse timer slot / profile args
+#include <cstring>  // strchr / strlen — tokenize the weekday list
 #include "vehicle_vwegolf.h"
 
 #undef TAG
@@ -61,6 +63,58 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     });
     cmd_vweg->RegisterCommand("fold_mirrors", "Fold mirrors in",
                               [this](...) { CommandMirrorFoldIn(); });
+
+    // Charge-profile / departure-timer management. `xvg charge profile list` dumps the car's charge
+    // profiles ("charge locations"); `xvg charge timer ...` lists and sets the 4 departure timers.
+    OvmsCommand* cmd_charge  = cmd_vweg->RegisterCommand("charge", "Charge profile / timer management");
+    OvmsCommand* cmd_profile = cmd_charge->RegisterCommand("profile", "Charge profiles (charge locations)");
+    cmd_profile->RegisterCommand(
+        "list", "List the vehicle's charge profiles",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int, const char* const*) {
+            CommandListProfiles(writer);
+        });
+    // `set` writes selected fields of ONE profile (read-modify-write, no charge/climate trigger). The
+    // valid fields differ per profile: profile 0 "Optionen" = current / minsoc / temp; charge locations
+    // 1-3 = flags / current / soc. min 3 args (profile + one field/value); max 7 (profile + 3 pairs).
+    cmd_profile->RegisterCommand(
+        "set", "Set fields of a charge profile",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
+            CommandSetProfile(writer, argc, argv);
+        },
+        "<profile 0-3> <field value>...  (0: current/minsoc/temp; 1-3: flags/current/soc)", 3, 7);
+
+    // Departure timers (recurring). list = read-only; set/enable/disable/clear write to the car
+    // (on 0x17332501, like climate/charge). A timer binds to a charge profile by index -> its target SoC.
+    OvmsCommand* cmd_timer = cmd_charge->RegisterCommand("timer", "Departure timers");
+    cmd_timer->RegisterCommand(
+        "list", "List the vehicle's departure timers",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int, const char* const*) {
+            CommandListTimers(writer);
+        });
+    cmd_timer->RegisterCommand(
+        "set", "Set a recurring departure timer",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
+            CommandSetTimer(writer, argc, argv);
+        },
+        "<slot 1-3> <HH:MM> <days> <profile 0-3>", 4, 5);
+    cmd_timer->RegisterCommand(
+        "enable", "Enable a departure timer",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
+            CommandTimerEnable(writer, argc, argv, true);
+        },
+        "<slot 1-3>", 1, 1);
+    cmd_timer->RegisterCommand(
+        "disable", "Disable a departure timer",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
+            CommandTimerEnable(writer, argc, argv, false);
+        },
+        "<slot 1-3>", 1, 1);
+    cmd_timer->RegisterCommand(
+        "clear", "Clear (blank + disable) a departure timer",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
+            CommandClearTimer(writer, argc, argv);
+        },
+        "<slot 1-3>", 1, 1);
 }
 
 OvmsVehicleVWeGolf::~OvmsVehicleVWeGolf() {
@@ -1016,4 +1070,368 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandStopCharge() {
     // Op-specific stop (see VWeGolfBatteryControl::Charge): OFF arms the pure-charge op first, so it
     // is refused while climate is on (that arm would kill climate — stop climate first).
     return m_batctrl.Charge(false) ? Success : Fail;
+}
+
+bool OvmsVehicleVWeGolf::PollBatCtrlResult(OvmsWriter* writer) {
+    // Block the command task (bounded) while the BatteryControl controller wakes the BCU and completes.
+    // Poll a fixed number of iterations (independent of tick advancement, so it always terminates); the
+    // controller declares failure at its wake-window cap, so wait a little past it.
+    const int poll_ms = 250;
+    const int max_iters = ((VWEGOLF_BATCTRL_WAKE_SECS + 2) * 1000) / poll_ms;
+    VWeGolfBatteryControl::ListState st = VWeGolfBatteryControl::LIST_PENDING;
+    for (int i = 0; i < max_iters; i++) {
+        st = m_batctrl.ListStatus();
+        if (st == VWeGolfBatteryControl::LIST_READY || st == VWeGolfBatteryControl::LIST_FAILED)
+            break;
+        vTaskDelay(pdMS_TO_TICKS(poll_ms));
+    }
+    if (st == VWeGolfBatteryControl::LIST_READY) return true;
+    writer->puts(st == VWeGolfBatteryControl::LIST_FAILED
+                     ? "The vehicle did not respond (no data / not confirmed)."
+                     : "Timed out waiting for the vehicle.");
+    return false;
+}
+
+void OvmsVehicleVWeGolf::CommandListProfiles(OvmsWriter* writer) {
+    // Kick a read-only profile fetch and block (bounded) for the result. The controller wakes the
+    // BCU, handshakes, GETs the profile array, and publishes it — NO profile is written.
+    if (!m_batctrl.ListProfiles()) {
+        writer->puts("Charge-profile read unavailable — another command is in progress. Try again.");
+        return;
+    }
+    writer->puts("Reading charge profiles from the vehicle (waking it if asleep)...");
+    if (!PollBatCtrlResult(writer)) return;
+
+    // Profiles are a variable-length array — read up to kMaxProfiles (the reassembler's practical cap).
+    bap::egolf::Profile profs[VWeGolfBatteryControl::kMaxProfiles];
+    uint8_t n = m_batctrl.GetProfiles(profs, VWeGolfBatteryControl::kMaxProfiles);
+    writer->printf("Charge profiles (%u):\n", (unsigned)n);
+    writer->printf("  #  %-16s  Op    Flags       MaxA  MinSoC  TgtSoC  Temp\n", "Name");
+    for (uint8_t i = 0; i < n; i++) {
+        const bap::egolf::Profile& p = profs[i];
+        // Operation flags — the WIRE-confirmed bits: charge / climate / climatise-on-battery.
+        char flags[16];
+        snprintf(flags, sizeof(flags), "%s%s%s",
+                 (p.operation & bap::egolf::PO_CHARGING)      ? "chg " : "",
+                 (p.operation & bap::egolf::PO_CLIMATE)       ? "cli " : "",
+                 (p.operation & bap::egolf::PO_ALLOW_BATTERY) ? "bat"  : "");
+        if (flags[0] == '\0') { flags[0] = '-'; flags[1] = '\0'; }
+
+        // A 0 byte = "not set for this profile". minChargeLevel (MinSoC) is meaningful on the global
+        // profile 0; targetChargeLevel (TgtSoC) on the charge locations 1-3 — the raw bytes reproduce
+        // that split, so both columns are shown and the inapplicable one reads '-'.
+        char maxc[8], minc[8], tgtc[8], temp[10];
+        if (p.maxCurrent)        snprintf(maxc, sizeof(maxc), "%uA",  p.maxCurrent);        else snprintf(maxc, sizeof(maxc), "-");
+        if (p.minChargeLevel)    snprintf(minc, sizeof(minc), "%u%%", p.minChargeLevel);    else snprintf(minc, sizeof(minc), "-");
+        if (p.targetChargeLevel) snprintf(tgtc, sizeof(tgtc), "%u%%", p.targetChargeLevel); else snprintf(tgtc, sizeof(tgtc), "-");
+        // Temperature is valid only in the car's setpoint range (raw 0x37..0xC8 = 15.5..30.0 C).
+        if (p.temperatureRaw >= 0x37 && p.temperatureRaw <= 0xC8)
+            snprintf(temp, sizeof(temp), "%.1fC", bap::egolf::rawToTemp(p.temperatureRaw));
+        else snprintf(temp, sizeof(temp), "-");
+
+        writer->printf("  %u  %-16s  0x%02x  %-10s  %-4s  %-6s  %-6s  %s\n",
+                       (unsigned)p.position, p.name[0] ? p.name : "(unnamed)", p.operation, flags,
+                       maxc, minc, tgtc, temp);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Departure-timer CLI (xvg charge timer ...)
+// ---------------------------------------------------------------------------
+
+// Case-insensitive whole-string compare (small, avoids depending on strcasecmp availability).
+static bool vwe_ciequal(const char* a, const char* b) {
+    for (;; a++, b++) {
+        char ca = *a, cb = *b;
+        if (ca >= 'A' && ca <= 'Z') ca += 32;
+        if (cb >= 'A' && cb <= 'Z') cb += 32;
+        if (ca != cb) return false;
+        if (ca == '\0') return true;
+    }
+}
+
+// Weekday token ("mon".."sun", any case, >=3 letters) -> its egolf::Weekday bit, or 0.
+static uint8_t vwe_day_bit(const char* t) {
+    static const struct { const char* n; uint8_t b; } days[] = {
+        {"mon", bap::egolf::WD_MON}, {"tue", bap::egolf::WD_TUE}, {"wed", bap::egolf::WD_WED},
+        {"thu", bap::egolf::WD_THU}, {"fri", bap::egolf::WD_FRI}, {"sat", bap::egolf::WD_SAT},
+        {"sun", bap::egolf::WD_SUN},
+    };
+    for (auto& d : days) {
+        bool m = true;
+        for (int i = 0; i < 3; i++) {
+            char c = t[i]; if (c >= 'A' && c <= 'Z') c += 32;
+            if (c != d.n[i]) { m = false; break; }
+        }
+        if (m) return d.b;
+    }
+    return 0;
+}
+
+// Parse a recurring-days spec into a weekday mask (bit0 one-shot stays clear). Accepts keywords
+// (daily / mon-fri / weekends) or a comma list (mon,tue,fri). Returns false if no day was recognized.
+static bool vwe_parse_weekdays(const char* s, uint8_t& mask) {
+    mask = 0;
+    static const struct { const char* kw; uint8_t m; } kws[] = {
+        {"daily", 0xFE}, {"all", 0xFE}, {"everyday", 0xFE},
+        {"weekdays", 0x3E}, {"mon-fri", 0x3E}, {"mo-fr", 0x3E},
+        {"weekends", 0xC0}, {"weekend", 0xC0},
+    };
+    for (auto& k : kws) if (vwe_ciequal(s, k.kw)) { mask = k.m; return true; }
+    char buf[64];
+    size_t j = 0;
+    for (size_t i = 0; s[i] && j + 1 < sizeof(buf); i++) buf[j++] = s[i];
+    buf[j] = '\0';
+    for (char* tok = buf; tok && *tok;) {
+        char* comma = strchr(tok, ',');
+        if (comma) *comma = '\0';
+        mask |= vwe_day_bit(tok);
+        tok = comma ? comma + 1 : nullptr;
+    }
+    return mask != 0;
+}
+
+// Weekday mask -> human string (into out). One-shot shows "once"; recurring shows daily / Mon-Fri /
+// Sat,Sun / an explicit day list.
+static void vwe_weekdays_str(uint8_t mask, char* out, size_t cap) {
+    if (mask & bap::egolf::WD_ONESHOT) { snprintf(out, cap, "once"); return; }
+    uint8_t days = mask & 0xFE;
+    if (days == 0xFE) { snprintf(out, cap, "daily");   return; }
+    if (days == 0x3E) { snprintf(out, cap, "Mon-Fri"); return; }
+    if (days == 0xC0) { snprintf(out, cap, "Sat,Sun"); return; }
+    static const char* names[7] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    size_t len = 0; out[0] = '\0';
+    for (int i = 0; i < 7 && len + 5 < cap; i++)
+        if (days & (1u << (i + 1))) len += snprintf(out + len, cap - len, "%s%s", len ? "," : "", names[i]);
+    if (len == 0) snprintf(out, cap, "(none)");
+}
+
+// Parse "HH:MM" (24h). Returns false if malformed or out of range.
+static bool vwe_parse_hhmm(const char* s, uint8_t& h, uint8_t& m) {
+    int hh = -1, mm = -1;
+    if (sscanf(s, "%d:%d", &hh, &mm) != 2) return false;
+    if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return false;
+    h = (uint8_t)hh; m = (uint8_t)mm; return true;
+}
+
+// Parse a Celsius temperature ("21" or "21.5") into deci-degrees (tenths). Returns false if malformed
+// or outside the car's setpoint range 15.5-30.0 C. Runs on the command task (FP is fine there).
+static bool vwe_parse_temp_deci(const char* s, int& deci) {
+    float c = 0;
+    if (sscanf(s, "%f", &c) != 1) return false;
+    int d = (int)(c * 10.0f + 0.5f);         // round to the nearest 0.1 C
+    if (d < 155 || d > 300) return false;    // 15.5..30.0 C (the BCU setpoint range)
+    deci = d;
+    return true;
+}
+
+// Parse a charge-location flags value ("charge" | "climate" | "both", or a list like "charge,climate")
+// into PO_CHARGING / PO_CLIMATE bits. Returns false if nothing recognized.
+static bool vwe_parse_op_flags(const char* s, uint8_t& op) {
+    op = 0;
+    if (vwe_ciequal(s, "both")) { op = bap::egolf::PO_CHARGING | bap::egolf::PO_CLIMATE; return true; }
+    char buf[48];
+    size_t j = 0;
+    for (size_t i = 0; s[i] && j + 1 < sizeof(buf); i++) buf[j++] = s[i];
+    buf[j] = '\0';
+    for (char* tok = buf; tok && *tok;) {
+        char* comma = strchr(tok, ',');
+        if (comma) *comma = '\0';
+        if (vwe_ciequal(tok, "charge") || vwe_ciequal(tok, "chg")) op |= bap::egolf::PO_CHARGING;
+        else if (vwe_ciequal(tok, "climate") || vwe_ciequal(tok, "cli")) op |= bap::egolf::PO_CLIMATE;
+        else return false;  // an unrecognized token invalidates the whole value
+        tok = comma ? comma + 1 : nullptr;
+    }
+    return op != 0;
+}
+
+void OvmsVehicleVWeGolf::CommandSetProfile(OvmsWriter* writer, int argc, const char* const* argv) {
+    // xvg charge profile set <profile 0-3> <field value>...   (read-modify-write, no charge/climate trigger)
+    // The valid fields differ per profile (see the per-profile guards below): profile 0 "Optionen" =
+    // current / minsoc / temp; charge locations 1-3 = flags / current / soc.
+    if (argc < 3 || (argc - 1) % 2 != 0) {
+        writer->puts("Usage: xvg charge profile set <profile 0-3> <field value>...");
+        writer->puts("  profile 0 (Optionen):     current <A> | minsoc <%> | temp <C>");
+        writer->puts("  profiles 1-3 (locations): flags <charge|climate|both> | current <A> | soc <%>");
+        writer->puts("  e.g. 'set 1 soc 80 current 13'   'set 0 minsoc 20 temp 21.0'   'set 2 flags both'");
+        return;
+    }
+    int pos = atoi(argv[0]);
+    if (pos < 0 || pos > 3) { writer->puts("Profile must be 0-3 (see 'xvg charge profile list')."); return; }
+    const bool isGlobal = (pos == 0);
+
+    VWeGolfBatteryControl::ProfileEdit edit;
+    using PE = VWeGolfBatteryControl::ProfileEdit;
+    for (int i = 1; i + 1 < argc; i += 2) {
+        const char* f = argv[i];
+        const char* v = argv[i + 1];
+        if (vwe_ciequal(f, "current") || vwe_ciequal(f, "cur") || vwe_ciequal(f, "amps")) {
+            int a = atoi(v);
+            if (a <= 0) { writer->puts("current: expected a positive amp value."); return; }
+            uint8_t snapped = bap::egolf::clampMaxCurrent((uint16_t)a);  // snap to 5/10/13/32, cap 0x20
+            edit.maxCurrent = snapped;
+            edit.fields |= PE::F_CURRENT;
+            if ((int)snapped != a)
+                writer->printf("Note: current %dA snapped to %uA (allowed: 5/10/13/32).\n", a, snapped);
+        } else if (vwe_ciequal(f, "minsoc") || vwe_ciequal(f, "min")) {
+            if (!isGlobal) { writer->puts("minsoc applies only to profile 0 (Optionen)."); return; }
+            int s = atoi(v);
+            if (s < 0 || s > 100) { writer->puts("minsoc: 0-100 (%)."); return; }
+            edit.minChargeLevel = (uint8_t)s;
+            edit.fields |= PE::F_MINSOC;
+        } else if (vwe_ciequal(f, "soc") || vwe_ciequal(f, "target") || vwe_ciequal(f, "tgtsoc")) {
+            if (isGlobal) {
+                writer->puts("soc (target) applies only to charge locations 1-3; profile 0 uses minsoc.");
+                return;
+            }
+            int s = atoi(v);
+            if (s < 0 || s > 100) { writer->puts("soc: 0-100 (%)."); return; }
+            edit.targetChargeLevel = (uint8_t)s;
+            edit.fields |= PE::F_TGTSOC;
+        } else if (vwe_ciequal(f, "temp") || vwe_ciequal(f, "temperature")) {
+            if (!isGlobal) { writer->puts("temp applies only to profile 0 (Optionen)."); return; }
+            int deci;
+            if (!vwe_parse_temp_deci(v, deci)) { writer->puts("temp: 15.5-30.0 (Celsius, 0.5 steps)."); return; }
+            edit.temperatureRaw = bap::egolf::tempToRawDeci(deci);
+            edit.fields |= PE::F_TEMP;
+        } else if (vwe_ciequal(f, "flags") || vwe_ciequal(f, "op") || vwe_ciequal(f, "mode")) {
+            if (isGlobal) {
+                writer->puts("flags apply only to charge locations 1-3 "
+                             "(profile 0's operation is managed by climate/charge control).");
+                return;
+            }
+            uint8_t op;
+            if (!vwe_parse_op_flags(v, op)) {
+                writer->puts("flags: charge | climate | both (or a list like charge,climate).");
+                return;
+            }
+            edit.operation = op;
+            edit.fields |= PE::F_OP;
+        } else {
+            writer->printf("Unknown field '%s'.\n", f);
+            writer->puts(isGlobal ? "Profile 0 fields: current, minsoc, temp."
+                                  : "Location fields: flags, current, soc.");
+            return;
+        }
+    }
+    if (edit.fields == 0) { writer->puts("No fields to set."); return; }
+
+    if (!m_batctrl.SetProfile((uint8_t)pos, edit)) {
+        writer->puts("Profile write unavailable — another command is in progress. Try again.");
+        return;
+    }
+    writer->printf("Writing profile %d (waking vehicle)...\n", pos);
+    if (!PollBatCtrlResult(writer)) return;
+    writer->printf("Profile %d updated.\n", pos);
+}
+
+void OvmsVehicleVWeGolf::CommandListTimers(OvmsWriter* writer) {
+    if (!m_batctrl.ListTimers()) {
+        writer->puts("Timer read unavailable — another command is in progress. Try again.");
+        return;
+    }
+    writer->puts("Reading departure timers from the vehicle (waking it if asleep)...");
+    if (!PollBatCtrlResult(writer)) return;
+
+    bap::egolf::Timer timers[VWeGolfBatteryControl::kNumTimers];
+    bool seen[VWeGolfBatteryControl::kNumTimers];
+    uint8_t mask = 0;
+    uint8_t n = m_batctrl.GetTimers(timers, VWeGolfBatteryControl::kNumTimers, mask, seen);
+    // If the enable mask never broadcast this read, its value is the reset default (0) — show "?" for
+    // the En column rather than a misleading "off".
+    bool mask_seen = m_batctrl.TimerMaskSeen();
+
+    writer->puts("Departure timers:");
+    writer->printf("  #  En   Time   Days                Profile\n");
+    for (uint8_t i = 0; i < n; i++) {
+        const char* en = !mask_seen ? "?" : ((mask & (1u << i)) ? "on" : "off");
+        if (!seen[i]) {  // enable state may be known, but this slot broadcast no record
+            writer->printf("  %u  %-3s  (no record read)\n", i + 1, en);
+            continue;
+        }
+        const bap::egolf::Timer& t = timers[i];
+        char days[28];
+        vwe_weekdays_str(t.weekdays, days, sizeof(days));
+        if (t.oneShot() && t.hasDate()) {  // one-shot carries a fire date -> append it
+            size_t l = strlen(days);
+            snprintf(days + l, sizeof(days) - l, " %02u.%02u.20%02u", t.day, t.month, t.year);
+        }
+        writer->printf("  %u  %-3s  %02u:%02u  %-18s  %u\n", i + 1, en, t.hour, t.minute, days, t.refId);
+    }
+    writer->puts("Profile = the bound charge location (see 'xvg charge profile list'); it supplies the");
+    writer->puts("target SoC / current / temperature the timer charges or climatises to.");
+}
+
+void OvmsVehicleVWeGolf::CommandSetTimer(OvmsWriter* writer, int argc, const char* const* argv) {
+    // xvg charge timer set <slot 1-3> <HH:MM> <days> <profile 0-3>  (recurring only)
+    if (argc < 4) {
+        writer->puts("Usage: xvg charge timer set <slot 1-3> <HH:MM> <days> <profile 0-3>");
+        writer->puts("  days:    daily | mon-fri | weekends | a list e.g. mon,tue,fri");
+        writer->puts("  profile: a charge location from 'xvg charge profile list' — it sets the target");
+        writer->puts("           SoC/current/temp. NB profile 0 (Optionen) has no SoC target = 100%.");
+        return;
+    }
+    int slot = atoi(argv[0]);
+    if (slot < 1 || slot > VWeGolfBatteryControl::kNumTimers) { writer->puts("Slot must be 1-3."); return; }
+    uint8_t h, m;
+    if (!vwe_parse_hhmm(argv[1], h, m)) { writer->puts("Time must be HH:MM (24-hour)."); return; }
+    uint8_t days;
+    if (!vwe_parse_weekdays(argv[2], days)) {
+        writer->puts("Days must be: daily, mon-fri, weekends, or a list like mon,tue,fri.");
+        return;
+    }
+    // Profile (refId) is REQUIRED — a timer has NO SoC target of its own; it inherits target SoC /
+    // current / temperature from the bound charge location. Defaulting to profile 0 would silently
+    // mean charge-to-100%, so make the user choose. Accepts "<n>" or "profile <n>".
+    const char* p = argv[3];
+    if (vwe_ciequal(p, "profile")) {
+        if (argc < 5) { writer->puts("Missing profile number after 'profile'."); return; }
+        p = argv[4];
+    }
+    int r = atoi(p);
+    if (r < 0 || r > 3) { writer->puts("Profile must be 0-3 (see 'xvg charge profile list')."); return; }
+    uint8_t refId = (uint8_t)r;
+
+    bap::egolf::Timer t;  // recurring: date bytes stay 0xFF (no fixed date); the car fires by weekday
+    t.hour = h; t.minute = m; t.weekdays = days; t.refId = refId;
+    if (!m_batctrl.SetTimer((uint8_t)slot, t)) {
+        writer->puts("Timer write unavailable — another command is in progress. Try again.");
+        return;
+    }
+    char dbuf[28];
+    vwe_weekdays_str(days, dbuf, sizeof(dbuf));
+    writer->printf("Writing timer %d: %02u:%02u %s, profile %u (waking vehicle)...\n",
+                   slot, h, m, dbuf, refId);
+    if (!PollBatCtrlResult(writer)) return;
+    writer->printf("Timer %d set and enabled.\n", slot);
+}
+
+void OvmsVehicleVWeGolf::CommandTimerEnable(OvmsWriter* writer, int argc, const char* const* argv,
+                                            bool enable) {
+    if (argc < 1) {
+        writer->printf("Usage: xvg charge timer %s <slot 1-3>\n", enable ? "enable" : "disable");
+        return;
+    }
+    int slot = atoi(argv[0]);
+    if (slot < 1 || slot > VWeGolfBatteryControl::kNumTimers) { writer->puts("Slot must be 1-3."); return; }
+    if (!m_batctrl.EnableTimer((uint8_t)slot, enable)) {
+        writer->puts("Timer change unavailable — another command is in progress. Try again.");
+        return;
+    }
+    writer->printf("%s timer %d (waking vehicle)...\n", enable ? "Enabling" : "Disabling", slot);
+    if (!PollBatCtrlResult(writer)) return;
+    writer->printf("Timer %d %s.\n", slot, enable ? "enabled" : "disabled");
+}
+
+void OvmsVehicleVWeGolf::CommandClearTimer(OvmsWriter* writer, int argc, const char* const* argv) {
+    if (argc < 1) { writer->puts("Usage: xvg charge timer clear <slot 1-3>"); return; }
+    int slot = atoi(argv[0]);
+    if (slot < 1 || slot > VWeGolfBatteryControl::kNumTimers) { writer->puts("Slot must be 1-3."); return; }
+    if (!m_batctrl.ClearTimer((uint8_t)slot)) {
+        writer->puts("Timer clear unavailable — another command is in progress. Try again.");
+        return;
+    }
+    writer->printf("Clearing timer %d (waking vehicle)...\n", slot);
+    if (!PollBatCtrlResult(writer)) return;
+    writer->printf("Timer %d cleared (disabled).\n", slot);
 }

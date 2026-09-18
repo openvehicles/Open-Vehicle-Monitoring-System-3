@@ -134,6 +134,23 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // D1 = 1, D2 = 2, D3 = 3, B = 4. -1 = N/A (not in gear D or B).
     OvmsMetricInt* m_recup_level = nullptr;
 
+    // `xvg charge profile list` handler: fetch the car's charge profiles (charge locations) via the
+    // BatteryControl controller and print them to the writer. Blocks (bounded) while the BCU is woken
+    // and answers. Read-only — it never writes a profile.
+    void CommandListProfiles(OvmsWriter* writer);
+    // `xvg charge profile set` handler: RMW selected fields of one profile (profile 0 = current/minsoc/
+    // temp; charge locations 1-3 = flags/current/soc). Blocks (bounded) for the controller's result.
+    void CommandSetProfile(OvmsWriter* writer, int argc, const char* const* argv);
+
+    // `xvg charge timer ...` handlers. list = read-only; set/enable/disable/clear write to the car
+    // (recurring timers only). Each blocks (bounded) for the BatteryControl controller's result.
+    void CommandListTimers(OvmsWriter* writer);
+    void CommandSetTimer(OvmsWriter* writer, int argc, const char* const* argv);
+    void CommandTimerEnable(OvmsWriter* writer, int argc, const char* const* argv, bool enable);
+    void CommandClearTimer(OvmsWriter* writer, int argc, const char* const* argv);
+    // Block (bounded) polling the BatteryControl CLI result; true = LIST_READY, else prints the reason.
+    bool PollBatCtrlResult(OvmsWriter* writer);
+
 #ifdef VWEGOLF_NATIVE_TEST
  public:
     uint8_t test_bus_idle_ticks() const { return m_bus_idle_ticks; }
