@@ -404,7 +404,7 @@ void OvmsVehicleSmartEQ::smartSleep()
   smartCoolDownPolling(20);
   // disable active polling when car goes to sleep
   if(m_can_active && m_disable_write_sleep)
-    smartOBDpolling(!m_disable_write_sleep);
+    smartOBDpolling(false);
   ESP_LOGD(TAG, "smartSleep()");
 }
 

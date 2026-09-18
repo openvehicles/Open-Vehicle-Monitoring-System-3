@@ -226,7 +226,7 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x673:
       {
       // TPMS pressure values only used, when CAN bus is in LISTEN mode, otherwise utilize PollReply_TPMS_InputCapt
-      if (!canCANbusActive() || !m_obdii_745_tpms)
+      if (IsOnEQ() && (!canCANbusActive() || !m_obdii_745_tpms))
         {
         REQ_DLC(6);
         // Read TPMS pressure values:
