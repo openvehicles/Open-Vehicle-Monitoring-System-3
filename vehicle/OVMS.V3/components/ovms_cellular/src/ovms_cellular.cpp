@@ -121,6 +121,7 @@ static void MODEM_task(void *pvParameters)
 void modem::Task()
   {
   modem_or_uart_event_t event;
+  uart_event_type_t last_err_type = UART_EVENT_MAX;
   uint8_t data[128];
 
   // Init UART:
@@ -167,7 +168,12 @@ void modem::Task()
               int len = uart_read_bytes(m_uartnum, (uint8_t*)data, buffered_size, 100 / portTICK_RATE_MS);
 
               if (!m_buffer.Push(data,len))
-                { m_err_driver_buffer_full++; }
+                {
+                m_err_driver_buffer_full++;
+                if (last_err_type != event.uart.type || m_err_driver_buffer_full % 16 == 0)
+                  ESP_LOGW(TAG, "UART driver buffer overflow [cnt=%u]", m_err_driver_buffer_full);
+                last_err_type = event.uart.type;
+                }
 
               if (m_state1 == Development)
                 { DevelopmentHexDump("rx", (const char*)data, len); }
@@ -175,7 +181,8 @@ void modem::Task()
               uart_get_buffered_data_len(m_uartnum, &buffered_size);
 
               modem_state1_t newstate = State1Activity();
-              if ((newstate != m_state1)&&(newstate != None)) SetState1(newstate);
+              if ((newstate != m_state1)&&(newstate != None))
+                { SetState1(newstate); }
               }
             }
             break;
@@ -183,13 +190,17 @@ void modem::Task()
           case UART_FIFO_OVF:
             uart_flush(m_uartnum);
             m_err_uart_fifo_ovf++;
-            ESP_LOGW(TAG, "UART hw fifo overflow");
+            if (last_err_type != event.uart.type || m_err_uart_fifo_ovf % 16 == 0)
+              ESP_LOGW(TAG, "UART hw fifo overflow [cnt=%u]", m_err_uart_fifo_ovf);
+            last_err_type = event.uart.type;
             break;
 
           case UART_BUFFER_FULL:
             uart_flush(m_uartnum);
             m_err_uart_buffer_full++;
-            ESP_LOGW(TAG, "UART ring buffer full");
+            if (last_err_type != event.uart.type || m_err_uart_buffer_full % 16 == 0)
+              ESP_LOGW(TAG, "UART ring buffer full [cnt=%u]", m_err_uart_buffer_full);
+            last_err_type = event.uart.type;
             break;
 
           case UART_BREAK:
@@ -197,13 +208,17 @@ void modem::Task()
             break;
 
           case UART_PARITY_ERR:
-            ESP_LOGW(TAG, "UART parity check error");
             m_err_uart_parity++;
+            if (last_err_type != event.uart.type || m_err_uart_parity % 16 == 0)
+              ESP_LOGW(TAG, "UART parity check error [cnt=%u]", m_err_uart_parity);
+            last_err_type = event.uart.type;
             break;
 
           case UART_FRAME_ERR:
-            ESP_LOGW(TAG, "UART frame error");
             m_err_uart_frame++;
+            if (last_err_type != event.uart.type || m_err_uart_frame % 16 == 0)
+              ESP_LOGW(TAG, "UART frame error [cnt=%u]", m_err_uart_frame);
+            last_err_type = event.uart.type;
             break;
 
           case UART_PATTERN_DET:
@@ -484,11 +499,11 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
       m_state1_userdata);
     writer->printf(
       "  UART:\n"
-      "    FIFO overflows: %d\n"
-      "    Buffer overflows: %d\n"
-      "    Parity errors: %d\n"
-      "    Frame errors: %d\n"
-      "    Driver Buffer overflows: %d\n"
+      "    FIFO overflows: %u\n"
+      "    Buffer overflows: %u\n"
+      "    Parity errors: %u\n"
+      "    Frame errors: %u\n"
+      "    Driver Buffer overflows: %u\n"
       , m_err_uart_fifo_ovf
       , m_err_uart_buffer_full
       , m_err_uart_parity
