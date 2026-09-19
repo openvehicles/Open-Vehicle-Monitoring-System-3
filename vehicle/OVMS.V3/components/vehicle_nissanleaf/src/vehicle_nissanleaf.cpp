@@ -139,12 +139,22 @@ enum battery_type
 
 enum charge_duration_index
   {
-  CHARGE_DURATION_FULL_L2,
-  CHARGE_DURATION_FULL_L1,
-  CHARGE_DURATION_FULL_L0,
-  CHARGE_DURATION_RANGE_L2,
-  CHARGE_DURATION_RANGE_L1,
-  CHARGE_DURATION_RANGE_L0,
+  CHARGE_DURATION_25_L3 = 1,
+  CHARGE_DURATION_50_L3 = 2,
+  CHARGE_DURATION_80_L3 = 3,
+  CHARGE_DURATION_100_L3 = 4,
+  CHARGE_DURATION_25_L2 = 5,
+  CHARGE_DURATION_50_L2 = 6,
+  CHARGE_DURATION_80_L2 = 7,
+  CHARGE_DURATION_100_L2 = 8,
+  CHARGE_DURATION_25_L1_220 = 9,
+  CHARGE_DURATION_50_L1_220 = 10,
+  CHARGE_DURATION_80_L1_220 = 11,
+  CHARGE_DURATION_100_L1_220 = 12,
+  CHARGE_DURATION_25_L1_110 = 13,
+  CHARGE_DURATION_50_L1_110 = 14,
+  CHARGE_DURATION_80_L1_110 = 15,
+  CHARGE_DURATION_100_L1_110 = 16
   };
 
 OvmsVehicleNissanLeaf* OvmsVehicleNissanLeaf::GetInstance(OvmsWriter* writer /*=NULL*/)
@@ -184,7 +194,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_battery_heaterpresent = MyMetrics.InitBool("xnl.v.b.heaterpresent", SM_STALE_HIGH, false);
   m_battery_heatrequested = MyMetrics.InitBool("xnl.v.b.heatrequested", SM_STALE_HIGH, false);
   m_battery_heatergranted = MyMetrics.InitBool("xnl.v.b.heatergranted", SM_STALE_HIGH, false);
-  m_charge_duration = MyMetrics.InitVector<int>("xnl.v.c.duration", SM_STALE_HIGH, 0, Minutes);
+  m_charge_duration = MyMetrics.InitVector<int>("xnl.v.c.duration", SM_STALE_HIGH, 0, Minutes); //Array of predicted charge durations
   // note vector strings are not handled by ovms_metrics.h and cause web errors loading ev.data in ovms.js
   // this will need to be resolved before reinstating metrics
   // m_charge_duration_label = new OvmsMetricVector<string>("xnl.v.c.duration.label");
@@ -194,7 +204,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L2, "range.l2");
   // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L1, "range.l1");
   // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L0, "range.l0");
-  m_charge_minutes_3kW_remaining = MyMetrics.InitInt("xnl.v.c.chargeminutes3kW", SM_STALE_HIGH, 0);
+  m_charge_minutes_3kW_remaining = MyMetrics.InitInt("xnl.v.c.chargeminutes3kW", SM_STALE_HIGH, 0); //Estimated 3kW charge time remaining - NOTE: This is a redundant measure as it can be read from m_charge_duration
   m_quick_charge = MyMetrics.InitInt("xnl.v.c.quick", SM_STALE_HIGH, 0);
   m_remaining_chargebars = MyMetrics.InitInt("xnl.v.c.chargebars", SM_STALE_HIGH, 0);
   m_capacitybars = MyMetrics.InitInt("xnl.v.b.capacitybars", SM_STALE_HIGH, 0);
@@ -1720,10 +1730,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_remaining_chargebars->SetValue(bars);
         }
 
-      
-
-
-
       // This indicates if the value in nl_gids is the remaining battery charge or the
       // total capacity.  If 1 then the values in the packet are the total capacity,
       // if 0 then the values in the packet are the remaining charge.
@@ -1810,6 +1816,29 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
          * ZE1 variants will return all vallues from 1 to 17.
          */
 
+        /*
+        These are the values returned by ZE1 chargers.  Time is in minutes.
+        I (9521299) v-nissanleaf: Battery Type: 2, MX: 1, Value: 0      <-- 50kW charge 25%
+        I (9521409) v-nissanleaf: Battery Type: 2, MX: 2, Value: 6      <-- 50%
+        I (9521509) v-nissanleaf: Battery Type: 2, MX: 3, Value: 28     <-- 80%
+        I (9521609) v-nissanleaf: Battery Type: 2, MX: 4, Value: 83     <-- 100%
+        I (9521709) v-nissanleaf: Battery Type: 2, MX: 5, Value: 0      <-- 6kW charge 25%
+        I (9521809) v-nissanleaf: Battery Type: 2, MX: 6, Value: 41     <-- 50%
+        I (9521909) v-nissanleaf: Battery Type: 2, MX: 7, Value: 159    <-- 80%
+        I (9522009) v-nissanleaf: Battery Type: 2, MX: 8, Value: 299    <-- 100%
+        I (9522109) v-nissanleaf: Battery Type: 2, MX: 9, Value: 0      <-- 3kW (220v) charge 25%
+        I (9522209) v-nissanleaf: Battery Type: 2, MX: 10, Value: 98    <-- 50%
+        I (9522309) v-nissanleaf: Battery Type: 2, MX: 11, Value: 394   <-- 80%
+        I (9522409) v-nissanleaf: Battery Type: 2, MX: 12, Value: 670   <-- 100%
+        I (9522509) v-nissanleaf: Battery Type: 2, MX: 13, Value: 0     <-- 3kW (110v) charge 25%
+        I (9522609) v-nissanleaf: Battery Type: 2, MX: 14, Value: 228   <-- 50%
+        I (9522709) v-nissanleaf: Battery Type: 2, MX: 15, Value: 908   <-- 80%
+        I (9522809) v-nissanleaf: Battery Type: 2, MX: 16, Value: 1505  <-- 100%
+        */
+        
+
+        // ESP_LOGI(TAG, "Battery Type: %d, MX: %d, Value: %d", m_battery_type->AsInt(BATTERY_TYPE_UNKNOWN), mx, val);
+
         if (m_battery_type->AsInt(BATTERY_TYPE_UNKNOWN) == BATTERY_TYPE_UNKNOWN)
         {
           if (cfg_ze1 || mx == 21 ) { m_battery_type->SetValue(BATTERY_TYPE_2); }
@@ -1818,27 +1847,32 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         else
         {
           int cd = -1;
-          switch (mx)
+          if (mx == 0)
           {
-          case  0: m_quick_charge->SetValue(val); break;
-          case  5: cd = CHARGE_DURATION_FULL_L2;  break;
-          case  8: cd = CHARGE_DURATION_FULL_L1;  break;
-          case  9: cd = CHARGE_DURATION_FULL_L1;  break;
-          case 10: cd = CHARGE_DURATION_RANGE_L1; break;
-          case 11: cd = CHARGE_DURATION_FULL_L0;  break;
-          case 17: cd = CHARGE_DURATION_FULL_L0;  break;
-          case 18: // meaning of mx 18 differs by battery version
-            if (m_battery_type->AsInt(BATTERY_TYPE_UNKNOWN) == BATTERY_TYPE_1)
+            m_quick_charge->SetValue(val);
+          } else if (m_battery_type->AsInt(BATTERY_TYPE_UNKNOWN) == BATTERY_TYPE_1)
+          {
+            switch(mx)
             {
-              cd = CHARGE_DURATION_RANGE_L0;
+              case 9: cd = CHARGE_DURATION_100_L1_220; break;
+              case 17: cd = CHARGE_DURATION_100_L1_110  break;
+              case 10 : cd = CHARGE_DURATION_80_L1_220; break;
+              case 18: cd = CHARGE_DURATION_80_L1_110; break;
             }
-            else
+          } else if (!cfg_ze1) 
+          {
+            switch(mx)
             {
-              cd = CHARGE_DURATION_RANGE_L2;
+              case 5: cd = CHARGE_DURATION_100_L2;  break;
+              case 8: cd = CHARGE_DURATION_100_L1_220;  break;
+              case 11: cd = CHARGE_DURATION_100_L1_110;  break;
+              case 18: cd = CHARGE_DURATION_80_L2; break;
+              case 21: cd = CHARGE_DURATION_80_L1_220; break;
+              case 24: cd = CHARGE_DURATION_80_L1_110; break;
             }
-            break;
-          case 21: cd = CHARGE_DURATION_RANGE_L1; break;
-          case 24: cd = CHARGE_DURATION_RANGE_L0; break;
+          } else
+          {
+            m_charge_duration->SetElemValue(cd,val)
           }
           if (cd != -1) m_charge_duration->SetElemValue(cd, val/2);
         }
@@ -1869,10 +1903,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           {
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           }
-		else
-		  {
-		  StandardMetrics.ms_v_charge_pilot->SetValue(false);
-		  }
+        else
+          {
+          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          }
         }
 
       switch (d[4])
