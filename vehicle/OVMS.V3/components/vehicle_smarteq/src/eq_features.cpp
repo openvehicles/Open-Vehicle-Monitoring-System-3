@@ -515,8 +515,6 @@ void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
 
 void OvmsVehicleSmartEQ::smartCANbusAccess(bool activate) 
 {
-  if (!canCANbusActive())
-    activate = false;
   if ( m_can_last_acc_state != activate )
     {
     ESP_LOGD(TAG, "smartCANbusAccess(): CAN bus access state changed from %s to %s",
