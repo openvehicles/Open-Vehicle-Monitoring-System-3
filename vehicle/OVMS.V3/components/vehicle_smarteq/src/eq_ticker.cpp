@@ -137,7 +137,7 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   if(m_enable_LED_state) 
     OnlineState();
   
-  if(!m_can_active && canCANbusActive())
+  if((!m_can_active || !m_can_last_acc_state) && canCANbusActive())
     {
     // start polling when conditions are met and the car is not already in polling mode
     smartCoolDownPolling();

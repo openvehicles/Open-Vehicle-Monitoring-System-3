@@ -403,7 +403,7 @@ void OvmsVehicleSmartEQ::smartSleep()
 {  
   smartCoolDownPolling(20);
   // disable active polling when car goes to sleep
-  if(m_can_active && m_disable_write_sleep)
+  if(m_disable_write_sleep)
     smartOBDpolling(false);
   ESP_LOGD(TAG, "smartSleep()");
 }
@@ -491,39 +491,37 @@ void OvmsVehicleSmartEQ::smartCoolDownPolling(int delay_sec)
 }
 
 void OvmsVehicleSmartEQ::smartOBDpolling(bool activate)
-{
-  bool setCANactive = canCANbusActive() && activate;
-  if ( m_can_active != setCANactive )
+{  
+  if (!canCANbusActive())
+    activate = false;
+  if ( m_can_active != activate )
     {
-    ESP_LOGD(TAG, "smartOBDpolling(): CAN bus access state changed from %s to %s",
-             m_can_active ? "ACTIVE" : "LISTEN-ONLY",
-             setCANactive ? "ACTIVE" : "LISTEN-ONLY");
     // cool down polling before switching the state
     smartCoolDownPolling();
-    if(!setCANactive)
+    if(!activate)
       {
-      PollSetPidList(m_can1, NULL);
       m_poll_on_charge = false;
-      ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared (write access disabled)");
+      ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list cleared");
       }
     else 
       {
       ESP_LOGD(TAG, "smartOBDpolling(): CAN bus polling list will be updated");
       }    
-    m_can_active = setCANactive;
-    HandleOBDpolling();
-    }  
-  smartCANbusAccess(setCANactive);
+    m_can_active = activate;
+    }
+  smartCANbusAccess(activate);
+  HandleOBDpolling();
 }
 
 void OvmsVehicleSmartEQ::smartCANbusAccess(bool activate) 
 {
+  if (!canCANbusActive())
+    activate = false;
   if ( m_can_last_acc_state != activate )
     {
-    if ( activate ) 
-      ESP_LOGI(TAG,"CAN access state: ACTIVE ");
-    else 
-      ESP_LOGI(TAG,"CAN access state: LISTEN-ONLY ");
+    ESP_LOGD(TAG, "smartCANbusAccess(): CAN bus access state changed from %s to %s",
+             m_can_active ? "ACTIVE" : "LISTEN-ONLY",
+             activate ? "ACTIVE" : "LISTEN-ONLY");
     // set CAN bus transceiver to active or listen-only state
     CAN_mode_t mode = activate ? CAN_MODE_ACTIVE : CAN_MODE_LISTEN;
     RegisterCanBus(1, mode, CAN_SPEED_500KBPS);

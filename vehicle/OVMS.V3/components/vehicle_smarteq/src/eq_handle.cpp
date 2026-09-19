@@ -104,7 +104,7 @@ void OvmsVehicleSmartEQ::HandleOBDpolling() {
   PollSetResponseSeparationTime(20);
   // modify Poller..
   m_poll_vector.clear();
-  if (!m_can_active)
+  if (!m_can_active || !canCANbusActive())
     {
     ESP_LOGD(TAG, "HandleOBDpolling(): OBD polling disabled (CAN bus not active)");
     return;
