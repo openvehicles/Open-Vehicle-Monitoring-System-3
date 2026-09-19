@@ -155,11 +155,11 @@ class modem : public pcp, public InternalRamAllocated
     bool                   m_pincode_required;
 
     uart_port_t            m_uartnum;
-    int                    m_err_uart_fifo_ovf;
-    int                    m_err_uart_buffer_full;
-    int                    m_err_uart_parity;
-    int                    m_err_uart_frame;
-    int                    m_err_driver_buffer_full;
+    unsigned int           m_err_uart_fifo_ovf;
+    unsigned int           m_err_uart_buffer_full;
+    unsigned int           m_err_uart_parity;
+    unsigned int           m_err_uart_frame;
+    unsigned int           m_err_driver_buffer_full;
 
     modemdriver*           m_driver;
     std::string            m_model;

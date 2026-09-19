@@ -34,6 +34,12 @@
 #undef TAG
 #define TAG "v-vwegolf"
 
+// BC_TIMER_LIST: seconds to collect the BCU's periodic timer-table broadcast before publishing. The
+// records arrive as a HEARTBEAT burst (one slot/sec) that REPEATS only every ~11-13 s (measured), so
+// the window must span more than one broadcast period — 5 s missed the burst entirely (mask seen, no
+// records). Early-completion (all slots + mask) still finishes a lucky wake in a few seconds.
+static constexpr uint8_t kTimerCollectSecs = 15;
+
 // ---------------------------------------------------------------------------
 // Command entry
 // ---------------------------------------------------------------------------
@@ -61,9 +67,110 @@ bool VWeGolfBatteryControl::SetChargeCurrent(uint16_t amps) {
     return Begin(BC_SET_CURRENT, /*enable=*/true, bap::egolf::clampMaxCurrent(amps));
 }
 
+bool VWeGolfBatteryControl::ListProfiles() {
+    // Read-only profile-array fetch (BC_LIST): wake -> handshake -> GET -> capture ALL profiles, then
+    // stop. No arm, no trigger, no profile write of any kind. Refused while another BatteryControl
+    // command is in flight (one at a time; see BcOp) so it can't stomp an active climate/charge run.
+    if (m_phase != CP_IDLE) {
+        ESP_LOGW(TAG, "ListProfiles refused: a BatteryControl command is already in flight");
+        return false;
+    }
+    return Begin(BC_LIST, /*enable=*/false, 0);
+}
+
+uint8_t VWeGolfBatteryControl::GetProfiles(bap::egolf::Profile* out, uint8_t maxOut) const {
+    uint8_t n = m_profile_count < maxOut ? m_profile_count : maxOut;
+    for (uint8_t i = 0; i < n; i++) out[i] = m_profiles[i];
+    return n;
+}
+
+bool VWeGolfBatteryControl::SetProfile(uint8_t pos, const ProfileEdit& edit) {
+    // RMW one profile: wake -> handshake -> GET the array -> overwrite ONLY the flagged fields of the
+    // profile at `pos`, keeping every other byte + the name -> write it back. NO trigger (settings edit).
+    if (edit.fields == 0) return false;                 // nothing to write
+    if (pos >= kMaxProfiles) return false;              // absurd position (CLI already bounds 0..3)
+    if (m_phase != CP_IDLE) {
+        ESP_LOGW(TAG, "SetProfile refused: a BatteryControl command is already in flight");
+        return false;
+    }
+    m_prof_set_pos = pos;
+    m_prof_edit    = edit;
+    return Begin(BC_PROFILE_SET, /*enable=*/false, 0);
+}
+
+// ---------------------------------------------------------------------------
+// Departure timers — command entry points
+// ---------------------------------------------------------------------------
+
+bool VWeGolfBatteryControl::ListTimers() {
+    if (m_phase != CP_IDLE) {
+        ESP_LOGW(TAG, "ListTimers refused: a BatteryControl command is already in flight");
+        return false;
+    }
+    return Begin(BC_TIMER_LIST, /*enable=*/false, 0);
+}
+
+bool VWeGolfBatteryControl::SetTimer(uint8_t slot, const bap::egolf::Timer& t) {
+    if (slot < 1 || slot > kNumTimers) return false;
+    if (m_phase != CP_IDLE) {
+        ESP_LOGW(TAG, "SetTimer refused: a BatteryControl command is already in flight");
+        return false;
+    }
+    m_timer_slot         = slot;
+    m_timer_write        = t;
+    m_timer_write_record = true;   // write the record...
+    m_timer_enable       = true;   // ...and enable the slot
+    return Begin(BC_TIMER_SET, /*enable=*/true, 0);
+}
+
+bool VWeGolfBatteryControl::EnableTimer(uint8_t slot, bool enable) {
+    if (slot < 1 || slot > kNumTimers) return false;
+    if (m_phase != CP_IDLE) {
+        ESP_LOGW(TAG, "EnableTimer refused: a BatteryControl command is already in flight");
+        return false;
+    }
+    m_timer_slot         = slot;
+    m_timer_write_record = false;  // mask-only RMW, no record write
+    m_timer_enable       = enable;
+    return Begin(BC_TIMER_ENABLE, enable, 0);
+}
+
+bool VWeGolfBatteryControl::ClearTimer(uint8_t slot) {
+    if (slot < 1 || slot > kNumTimers) return false;
+    if (m_phase != CP_IDLE) {
+        ESP_LOGW(TAG, "ClearTimer refused: a BatteryControl command is already in flight");
+        return false;
+    }
+    m_timer_slot         = slot;
+    m_timer_write        = bap::egolf::Timer();  // inert recurring record (no weekdays -> never fires)
+    m_timer_write_record = true;
+    m_timer_enable       = false;                // and disable the slot
+    return Begin(BC_TIMER_SET, /*enable=*/false, 0);
+}
+
+uint8_t VWeGolfBatteryControl::GetTimers(bap::egolf::Timer* out, uint8_t maxOut,
+                                         uint8_t& enabledMask, bool* seen) const {
+    uint8_t n = kNumTimers < maxOut ? kNumTimers : maxOut;
+    for (uint8_t i = 0; i < n; i++) {
+        out[i] = m_timers[i];
+        if (seen) seen[i] = m_timer_seen[i];
+    }
+    enabledMask = m_timer_mask;
+    return n;
+}
+
 bool VWeGolfBatteryControl::Begin(BcOp op, bool enable, uint16_t param) {
     if (op == BC_SET_CURRENT)
         ESP_LOGI(TAG, "BatteryControl SetChargeCurrent -> %u A", (unsigned)param);
+    else if (op == BC_PROFILE_SET)
+        ESP_LOGI(TAG, "BatteryControl SetProfile pos %u (fields 0x%02x)", m_prof_set_pos,
+                 m_prof_edit.fields);
+    else if (op == BC_TIMER_LIST)
+        ESP_LOGI(TAG, "BatteryControl ListTimers");
+    else if (op == BC_TIMER_SET)
+        ESP_LOGI(TAG, "BatteryControl SetTimer slot %u", m_timer_slot);
+    else if (op == BC_TIMER_ENABLE)
+        ESP_LOGI(TAG, "BatteryControl %s timer %u", enable ? "Enable" : "Disable", m_timer_slot);
     else
         ESP_LOGI(TAG, "BatteryControl %s %s", op == BC_CHARGE ? "Charge" : "Climate",
                  enable ? "ON" : "OFF");
@@ -85,6 +192,14 @@ bool VWeGolfBatteryControl::Begin(BcOp op, bool enable, uint16_t param) {
     m_have_profile0 = false;
     m_arm_skipped   = false;
     m_bcu_seen      = false;
+    m_list_state    = isCliOp() ? LIST_PENDING : LIST_NONE;  // CLI read/write ops publish PENDING to poll
+    m_profile_count = 0;
+    // Timer collection state (the pending write fields m_timer_slot/write/enable are set by the caller
+    // BEFORE Begin and must NOT be reset here).
+    // The timer cache (m_timers / m_timer_mask / m_timer_seen) PERSISTS across commands and sleep — it
+    // is filled continuously by UpdateTimerCache from ambient broadcasts. Only reset command progress.
+    m_timer_target_mask = 0;
+    m_collect_secs = 0;
     m_phase         = CP_WAKE;
     m_phase_secs    = 0;
     m_wake_hold     = VWEGOLF_BATCTRL_WAKE_SECS;
@@ -123,7 +238,19 @@ void VWeGolfBatteryControl::Ticker1(bool bus_alive) {
                 SendHandshake();  // ack lost — re-open the channel; do NOT GET until it's acked
                 break;
             case CP_PROFILE:
+                if (isTimerOp()) {
+                    // Re-prompt the timer GETs; the periodic HEARTBEAT broadcast is the real source, so
+                    // this is only a nudge. BC_TIMER_LIST finalizes on the collection window (below);
+                    // SET/ENABLE advance in HandleTimerStatus once the enable mask is heard.
+                    SendTimerReads();
+                    break;
+                }
                 if (m_have_profile0) {
+                    if (m_op == BC_PROFILE_SET) {
+                        // Base captured but the field write's TX failed — re-send it; confirm on the echo.
+                        if (SendProfileSetWrite()) m_phase = CP_CONFIRM;
+                        break;
+                    }
                     // Profile was read but the arm TX failed earlier — retry the arm. Advance the
                     // same way the reply path does: SET_CURRENT / skipped-arm -> CP_CONFIRM (with a
                     // trigger if skipped); a real write -> CP_ARM_WAIT (trigger on the write echo).
@@ -148,11 +275,16 @@ void VWeGolfBatteryControl::Ticker1(bool bus_alive) {
                 SendArm();  // arm-write echo lost — re-send the write; its echo releases the trigger
                 break;
             case CP_CONFIRM:
-                // Re-fire the LAST step whose echo was lost. Write-only SET_CURRENT is waiting on its
-                // write echo -> re-write. Everything else (climate/charge, or SET_CURRENT auto-apply
-                // past its re-trigger) is waiting on the 49 58 -> re-fire the trigger. Never re-arm a
-                // climate/charge start (that resets the BCU's spin-up).
-                if (m_op == BC_SET_CURRENT && !m_apply) SendArm();
+                // Re-fire the LAST step whose echo was lost. Timer set/enable is waiting on the
+                // TimerState mask echo -> re-send the record (SET) + mask. Write-only SET_CURRENT is
+                // waiting on its write echo -> re-write. Everything else (climate/charge, or SET_CURRENT
+                // auto-apply past its re-trigger) is waiting on the 49 58 -> re-fire the trigger. Never
+                // re-arm a climate/charge start (that resets the BCU's spin-up).
+                if (isTimerOp()) {
+                    if (m_timer_write_record) SendTimerRecord();
+                    SendTimerMask(m_timer_target_mask);
+                } else if (m_op == BC_PROFILE_SET) SendProfileSetWrite();  // re-send the field write
+                else if (m_op == BC_SET_CURRENT && !m_apply) SendArm();
                 else SendTrigger(m_enable);
                 break;
             default:  // CP_WAKE: keep NM-waking until the BCU is heard; CP_DONE: nothing
@@ -167,6 +299,22 @@ void VWeGolfBatteryControl::Ticker1(bool bus_alive) {
     (void)m_phase_secs;
 #endif
 
+    // BC_TIMER_LIST collection window: the BCU dribbles the timer records + mask over a few seconds
+    // after the wake. Once the window elapses, publish whatever arrived (a never-programmed slot may
+    // not broadcast, so we don't wait for all four). If nothing arrived, stay PENDING and let the
+    // wake-window terminal outcome mark it FAILED.
+    if (m_op == BC_TIMER_LIST && m_phase == CP_PROFILE && ++m_collect_secs >= kTimerCollectSecs) {
+        bool any_seen = m_timer_mask_seen;
+        for (uint8_t i = 0; i < kNumTimers; i++) if (m_timer_seen[i]) any_seen = true;
+        if (any_seen) {
+            m_confirmed  = true;
+            m_list_state = LIST_READY;
+            m_phase      = CP_DONE;
+            if (m_wake_hold > 1) m_wake_hold = 1;
+            ESP_LOGI(TAG, "timer list read: mask 0x%x (collection window)", m_timer_mask);
+        }
+    }
+
     if (m_wake_hold > 0) m_wake_hold--;
     if (m_wake_hold == 0) {
         // Terminal outcome (fires once): release the NM. Success needs no separate notification
@@ -174,10 +322,20 @@ void VWeGolfBatteryControl::Ticker1(bool bus_alive) {
         // distinguished cause so a remote user knows what happened.
         const char* what = m_op == BC_CHARGE       ? "Charge"
                          : m_op == BC_SET_CURRENT  ? "SetChargeCurrent"
+                         : m_op == BC_LIST         ? "ListProfiles"
+                         : m_op == BC_PROFILE_SET  ? "SetProfile"
+                         : m_op == BC_TIMER_LIST   ? "ListTimers"
+                         : m_op == BC_TIMER_SET    ? "SetTimer"
+                         : m_op == BC_TIMER_ENABLE ? "TimerEnable"
                                                    : "Climate";
         if (m_confirmed) {
             ESP_LOGI(TAG, "%s %s confirmed — releasing NM, cluster self-sustains", what,
-                     m_op == BC_SET_CURRENT ? "" : (m_enable ? "ON" : "OFF"));
+                     (isCliOp() || m_op == BC_SET_CURRENT) ? "" : (m_enable ? "ON" : "OFF"));
+        } else if (isCliOp()) {
+            // Console read/write op: the CLI command reports the failure to its own writer, so don't
+            // push a user notification (climate/charge notify because they're remote fire-and-forget).
+            m_list_state = LIST_FAILED;
+            ESP_LOGW(TAG, "%s FAILED — releasing NM (no response / not confirmed)", what);
         } else {
             char reason[96];
             // Every command (ON, OFF, SET_CURRENT) reads profile 0 first to arm the matching op, so a
@@ -223,6 +381,14 @@ void VWeGolfBatteryControl::IncomingBapStatus(const CAN_frame_t* p_frame) {
     }
     m_tx_fail = false;  // the BCU is answering, so the transmit path is healthy
 
+    // Always keep the persistent timer cache current from ambient status/broadcast — even with no
+    // command in flight — so a later set/list acts on it immediately instead of waiting for a fresh
+    // broadcast. Timer funcs only (0x13 TimerState / 0x14..0x17 slots).
+    if ((el.opcode == bap::OP_STATUS || el.opcode == bap::OP_HEARTBEAT) &&
+        (el.func == bap::egolf::FUNC_TIMER_STATE || bap::egolf::timerSlotForFunc(el.func) != 0)) {
+        UpdateTimerCache(el);
+    }
+
     // The OperationMode echo "49 58 <flag>" is the immediate-operation on/off state — reflect it on
     // EVERY such frame, in any phase (including the very first frame, which also opens the handshake
     // below). It maps to HVAC ONLY for a climate command: the SAME echo also confirms a CHARGE
@@ -263,9 +429,26 @@ void VWeGolfBatteryControl::IncomingBapStatus(const CAN_frame_t* p_frame) {
     // before the stop trigger, just like ON arms it before the start.
     if (m_phase == CP_HANDSHAKE && el.opcode == bap::OP_STATUS &&
         (el.func == bap::egolf::FUNC_BAP_GETALL || el.func == bap::egolf::FUNC_BAP_CONFIG)) {
-        SendProfileGet();  // read profile 0 -> arm the matching op -> (echo-gated) trigger start/stop
+        if (isTimerOp()) SendTimerReads();  // best-effort nudge (BCU has no timer GET handler; the
+                                            // persistent cache from the broadcast is the real source)
+        else             SendProfileGet();  // read profile 0 -> arm the matching op -> trigger
         m_phase = CP_PROFILE;
         m_phase_secs = 0;
+        m_collect_secs = 0;
+        // Act on the persistent cache right away (no ~13 s broadcast wait): finish a list if the cache
+        // is already complete, or issue the set/enable write if the enable mask is already cached. If
+        // the cache is still empty (never heard a broadcast), these are no-ops and we wait as before.
+        if (m_op == BC_TIMER_LIST)                                    TimerListMaybeComplete();
+        else if (m_op == BC_TIMER_SET || m_op == BC_TIMER_ENABLE)     TimerWriteMaybeStart();
+        return;
+    }
+
+    // Departure-timer read-back: TimerState mask (func 0x13) + per-slot records (func 0x14..0x17), as
+    // a write echo (STATUS 49 5x) or the BCU's periodic table broadcast (HEARTBEAT 39 5x). Drives the
+    // in-flight timer command (collect for list; RMW-write + confirm for set/enable). Placed before the
+    // profile-array block; timer funcs never match FUNC_PROFILES_ARRAY (0x19) so the two never overlap.
+    if (isTimerOp() && (el.opcode == bap::OP_STATUS || el.opcode == bap::OP_HEARTBEAT)) {
+        HandleTimerStatus(el);
         return;
     }
 
@@ -321,6 +504,18 @@ void VWeGolfBatteryControl::IncomingBapStatus(const CAN_frame_t* p_frame) {
         // The module's SET reply (arm/write echo — bit7 set, 0xbX). This is the BCU ACKING that the
         // profile-0 write actually LANDED; only now is it safe to act on the newly-written op.
         if (lead & 0x80) {
+            // BC_PROFILE_SET: the profile-field write landed -> the edit is committed. No trigger; the
+            // write IS the whole command, so confirm here (mirrors the idle SET_CURRENT write echo).
+            if (m_op == BC_PROFILE_SET) {
+                if (m_phase == CP_CONFIRM) {
+                    m_confirmed  = true;
+                    m_list_state = LIST_READY;
+                    m_phase      = CP_DONE;
+                    if (m_wake_hold > 2) m_wake_hold = 2;
+                    ESP_LOGI(TAG, "SetProfile %u written — BCU echoed 49 59 %02x", m_prof_set_pos, lead);
+                }
+                return;
+            }
             // SET_CURRENT: the write landed -> reflect the applied limit (the read-back left it
             // untouched, so there's no jump-back).
             if (m_op == BC_SET_CURRENT) {
@@ -355,11 +550,63 @@ void VWeGolfBatteryControl::IncomingBapStatus(const CAN_frame_t* p_frame) {
             return;  // stray / duplicate SET echo
         }
 
-        // GET reply (0x3X) in the read phase: read back profile 0 and arm it.
+        // GET reply (0x3X) in the read phase: decode the profile array.
         if (m_phase == CP_PROFILE && !m_have_profile0 && el.bodyLen >= 6) {
-            bap::egolf::Profile profs[4];
+            bap::egolf::Profile profs[kMaxProfiles];
             bap::egolf::ArrayResult ares;
-            size_t n = bap::egolf::decodeProfileArray(el.body, el.bodyLen, profs, 4, &ares);
+            size_t n = bap::egolf::decodeProfileArray(el.body, el.bodyLen, profs, kMaxProfiles, &ares);
+
+            // BC_LIST: read-only dump — capture ALL decoded profiles and finish. No arm, no trigger,
+            // no profile write of any kind. This is the safe read path `xvg charge profile list` uses;
+            // it's also the on-car instrument for confirming the per-profile target-SoC decode.
+            if (m_op == BC_LIST) {
+                if (n == 0) return;  // nothing usable yet; the CP_PROFILE backstop re-issues the GET
+                for (size_t i = 0; i < n; i++) m_profiles[i] = profs[i];
+                m_profile_count = (uint8_t)n;       // store the count BEFORE publishing readiness
+                m_have_profile0 = true;             // read done — ignore a duplicate / late reply
+                m_confirmed     = true;             // terminal outcome = success (no failure notify)
+                m_list_state    = LIST_READY;       // publish LAST: the command task reads this first
+                m_phase         = CP_DONE;
+                if (m_wake_hold > 2) m_wake_hold = 2;  // release the NM bridge soon
+                ESP_LOGI(TAG, "profile list read: %u profile(s)%s", (unsigned)n,
+                         ares.truncated ? " (more present, list truncated)" : "");
+                return;
+            }
+
+            // BC_PROFILE_SET: find the target profile in the array, apply the edit, write it back. NO
+            // trigger — a settings edit; confirm on the write echo (0xbX), like the idle SET_CURRENT.
+            if (m_op == BC_PROFILE_SET) {
+                for (size_t i = 0; !ares.malformed && i < n; i++) {
+                    if (profs[i].position != m_prof_set_pos) continue;
+                    m_prof_base = profs[i];
+                    if (m_prof_base.nameTruncated) {
+                        // Can't safely RMW: the read-back name overflowed kProfileMaxName, so re-encoding
+                        // would write a SHORTER name and corrupt the record. Abort (fail fast, no write).
+                        ESP_LOGW(TAG, "SetProfile: profile %u name too long to safely edit — aborting",
+                                 m_prof_set_pos);
+                        m_phase = CP_DONE;
+                        if (m_wake_hold > 1) m_wake_hold = 1;  // terminal FAILED next tick (CLI op)
+                        return;
+                    }
+                    m_have_profile0 = true;  // base captured; a lost write echo is re-sent by the backstop
+                    if (SendProfileSetWrite()) {
+                        m_phase      = CP_CONFIRM;  // await the write echo (0xbX)
+                        m_phase_secs = 0;
+                    }  // else TX failed: stay CP_PROFILE (m_have_profile0 set) -> backstop re-writes
+                    return;
+                }
+                // Loop finished without finding the target: not present in a fully-decoded (or malformed)
+                // array -> fail fast rather than waiting out the whole wake window. A truncated read
+                // (target maybe beyond maxOut — impossible for pos 0..3) falls to the backstop re-GET.
+                if (ares.complete || ares.malformed) {
+                    ESP_LOGW(TAG, "SetProfile: profile %u not found in the vehicle's array",
+                             m_prof_set_pos);
+                    m_phase = CP_DONE;
+                    if (m_wake_hold > 1) m_wake_hold = 1;
+                }
+                return;
+            }
+
             for (size_t i = 0; !ares.malformed && i < n; i++) {
                 if (profs[i].position == 0) {  // the global / immediate profile
                     m_profile0 = profs[i];
@@ -406,6 +653,81 @@ void VWeGolfBatteryControl::IncomingBapStatus(const CAN_frame_t* p_frame) {
     }
 }
 
+void VWeGolfBatteryControl::UpdateTimerCache(const bap::Element& el) {
+    // Store a read-back into the PERSISTENT cache: the TimerState enable mask (func 0x13) or a per-slot
+    // 8-byte record (func 0x14..0x17). Called for EVERY such frame on 0x17332510 (STATUS write-echo or
+    // HEARTBEAT broadcast), whether or not a command is in flight — so set/list can use it immediately.
+    if (el.func == bap::egolf::FUNC_TIMER_STATE) {
+        if (el.bodyLen < 1 || el.body == nullptr) return;
+        m_timer_mask = (uint8_t)(el.body[0] & 0x0F);
+        m_timer_mask_seen = true;
+    } else {
+        uint8_t slot = bap::egolf::timerSlotForFunc(el.func);
+        if (slot < 1 || slot > kNumTimers) return;  // not a timer element (e.g. a stray 49 42)
+        if (el.bodyLen >= 8 && el.body != nullptr) {
+            bap::egolf::Timer t;
+            if (bap::egolf::decodeTimer(el.body, el.bodyLen, t)) {
+                m_timers[slot - 1] = t;
+                m_timer_seen[slot - 1] = true;
+            }
+        }
+    }
+}
+
+void VWeGolfBatteryControl::TimerListMaybeComplete() {
+    // Publish the list the instant the cache holds the mask + every slot (usually already true from
+    // ambient traffic, so the list is immediate). An incomplete cache falls through to the collection
+    // window in Ticker1, which publishes whatever is cached (an unprogrammed slot may never broadcast).
+    if (m_op != BC_TIMER_LIST || m_phase != CP_PROFILE) return;
+    bool all = m_timer_mask_seen;
+    for (uint8_t i = 0; i < kNumTimers; i++) if (!m_timer_seen[i]) all = false;
+    if (!all) return;
+    m_confirmed  = true;
+    m_list_state = LIST_READY;
+    m_phase      = CP_DONE;
+    if (m_wake_hold > 1) m_wake_hold = 1;
+    ESP_LOGI(TAG, "timer list ready from cache: mask 0x%x, all %u slots", m_timer_mask, kNumTimers);
+}
+
+bool VWeGolfBatteryControl::TimerWriteMaybeStart() {
+    // Issue the RMW write as soon as the enable mask is CACHED (no ~13 s broadcast wait) — the record
+    // (SET only) then the new mask; confirm on the 49 53 echo. Both gated on the mask being known, so a
+    // never-cached mask leaves NO partial state (we just wait for the first broadcast).
+    if ((m_op != BC_TIMER_SET && m_op != BC_TIMER_ENABLE) || m_phase != CP_PROFILE) return false;
+    if (!m_timer_mask_seen) return false;  // mask not cached yet -> wait for a broadcast to populate it
+    const uint8_t bit = (uint8_t)(1u << (m_timer_slot - 1));
+    if (m_timer_write_record) SendTimerRecord();  // 29 5x on 0x17332501 (full record)
+    m_timer_target_mask = m_timer_enable ? (uint8_t)(m_timer_mask | bit)
+                                         : (uint8_t)(m_timer_mask & (uint8_t)~bit);
+    SendTimerMask(m_timer_target_mask);           // 29 53 on 0x17332501 (enable-mask RMW)
+    m_phase = CP_CONFIRM;
+    m_phase_secs = 0;
+    return true;
+}
+
+void VWeGolfBatteryControl::HandleTimerStatus(const bap::Element& el) {
+    // The persistent cache was already updated (UpdateTimerCache, top of IncomingBapStatus). Drive the
+    // in-flight command off it: finish a list, issue a pending write, or confirm one.
+    if (m_op == BC_TIMER_LIST) { TimerListMaybeComplete(); return; }
+
+    // SET / ENABLE: fire the write as soon as the enable mask is cached (no-op until then).
+    if (m_phase == CP_PROFILE) { TimerWriteMaybeStart(); return; }
+
+    // Confirm ONLY on a STATUS echo (49 53) of the enable mask matching what we wrote — NOT on a
+    // periodic HEARTBEAT (39 53) broadcast, which would falsely confirm when the target equals the
+    // pre-existing mask (e.g. re-setting an already-enabled slot) even though the BCU dropped our write.
+    if (m_phase == CP_CONFIRM && el.opcode == bap::OP_STATUS &&
+        el.func == bap::egolf::FUNC_TIMER_STATE && m_timer_mask == m_timer_target_mask) {
+        m_confirmed  = true;
+        m_list_state = LIST_READY;
+        m_phase      = CP_DONE;
+        if (m_wake_hold > 2) m_wake_hold = 2;
+        ESP_LOGI(TAG, "timer slot %u %s confirmed (mask echo -> 0x%x)", m_timer_slot,
+                 m_timer_write_record ? "set" : (m_timer_enable ? "enabled" : "disabled"),
+                 m_timer_mask);
+    }
+}
+
 void VWeGolfBatteryControl::IncomingClimaEcuStatus(const CAN_frame_t* p_frame) {
     // Clima ECU status 0x5EA. HVAC on = climate is actively conditioning: d[3] bit 3 (0x08).
     // NOTE: d[3] bits 6-7 mark a remote-climate *session* but read the same (=2) whether merely
@@ -434,12 +756,13 @@ void VWeGolfBatteryControl::SendNmWake() {
 }
 
 bool VWeGolfBatteryControl::TxFrame(const uint8_t* frame, uint8_t dlc) {
-    // One BAP frame onto the BCU command id (0x17332501). ESP_OK = frame in a HW TX buffer;
-    // ESP_QUEUED = accepted into the driver's SW TX queue (HW buffers busy — routine while the
-    // controller is error-passive right after the NM wake). Both mean the frame WILL transmit in
-    // order, so both are success; only ESP_FAIL (SW queue overflow / controller off / bus-off) is
-    // a real failure. No inter-frame delay: sends are driven from the RX path, so the few frames of
-    // a step are queued for the driver to drain rather than blocking the CAN RX task.
+    // One BAP frame onto the LSG-0x25 command id 0x17332501 (kCanIdCommand) — the comfort/"bus-4" id our
+    // KCAN node uses for ALL commands (climate, charge, profiles, timers); the J533 gateway bridges it to
+    // the FCAN bus where the BCU lives. ESP_OK = frame in a HW TX buffer; ESP_QUEUED = accepted into the
+    // driver's SW TX queue (HW buffers busy — routine while the controller is error-passive right after
+    // the NM wake). Both mean the frame WILL transmit in order, so both are success; only ESP_FAIL (SW
+    // queue overflow / controller off / bus-off) is a real failure. No inter-frame delay: sends are driven
+    // from the RX path, so a step's few frames are queued for the driver to drain, not blocking CAN RX.
     esp_err_t r = m_bus->WriteExtended(bap::egolf::kCanIdCommand, dlc, const_cast<uint8_t*>(frame));
     return r == ESP_OK || r == ESP_QUEUED;
 }
@@ -524,6 +847,16 @@ bool VWeGolfBatteryControl::SendArm() {
                 p.operation = (uint8_t)((p.operation | bap::egolf::PO_CHARGING)
                                         & ~(bap::egolf::PO_CLIMATE | bap::egolf::PO_ALLOW_BATTERY));
             break;
+        case BC_LIST:
+        case BC_PROFILE_SET:
+        case BC_TIMER_LIST:
+        case BC_TIMER_SET:
+        case BC_TIMER_ENABLE:
+            // SendArm() is never reached for these (the list handler returns before arming; BC_PROFILE_SET
+            // has its own SendProfileSetWrite(); timer ops never call it). Leave the profile untouched so
+            // the skip-write path below emits nothing even if this were ever reached — these ops must
+            // never arm/trigger profile 0.
+            break;
     }
     // ⚠ HARD SAFETY CLAMP (see kMaxCurrentHardLimit): NEVER write a maxCurrent above 0x20 — a higher
     // value bricks the car's charging until a factory reset. This is the single chokepoint EVERY
@@ -575,5 +908,93 @@ bool VWeGolfBatteryControl::SendTrigger(bool on) {
     ESP_LOGI(TAG, "%s %s BAP trigger sent to 0x%08x (%u frames)",
              m_op == BC_CHARGE ? "Charge" : "Climate", on ? "START" : "STOP",
              (unsigned)bap::egolf::kCanIdCommand, r.framesSent);
+    return true;
+}
+
+bool VWeGolfBatteryControl::SendProfileSetWrite() {
+    // BC_PROFILE_SET RMW: take the record the BCU handed back (m_prof_base) and overwrite ONLY the
+    // fields flagged in m_prof_edit, leaving every other byte — the [RE] middle fields AND the name —
+    // exactly as read, so nothing else is clobbered. Emits "29 59 <3x-txn> 00 <pos> 01 <full RA0
+    // record>" (asgId 3 = OVMS; recordAddr 0; startIndex = the target position; count 1) — the same
+    // full-record array-write the factory MIB uses, just aimed at an arbitrary profile position.
+    bap::egolf::Profile p = m_prof_base;
+    const ProfileEdit& e = m_prof_edit;
+    if (e.fields & ProfileEdit::F_CURRENT) p.maxCurrent        = e.maxCurrent;
+    if (e.fields & ProfileEdit::F_MINSOC)  p.minChargeLevel    = e.minChargeLevel;
+    if (e.fields & ProfileEdit::F_TGTSOC)  p.targetChargeLevel = e.targetChargeLevel;
+    if (e.fields & ProfileEdit::F_TEMP)    p.temperatureRaw    = e.temperatureRaw;
+    if (e.fields & ProfileEdit::F_OP)
+        // Set ONLY the charge/climate bits from the request; preserve every other operation bit the
+        // profile already carries (e.g. PO_ALLOW_BATTERY / operation2) — RMW, don't clobber.
+        p.operation = (uint8_t)((p.operation & ~(bap::egolf::PO_CHARGING | bap::egolf::PO_CLIMATE)) |
+                                (e.operation & (bap::egolf::PO_CHARGING | bap::egolf::PO_CLIMATE)));
+    // ⚠ HARD SAFETY CLAMP (see kMaxCurrentHardLimit): NEVER write a maxCurrent above 0x20 — a higher
+    // value bricks the car's charging until a factory reset. Guards both an F_CURRENT value and a
+    // preserved/garbled read-back byte, exactly like SendArm().
+    if (p.maxCurrent > bap::egolf::kMaxCurrentHardLimit)
+        p.maxCurrent = bap::egolf::kMaxCurrentHardLimit;
+
+    auto sink = [this](const uint8_t* f, uint8_t d) -> bool { return TxFrame(f, d); };
+    bap::SendResult r = bap::egolf::sendProfileWrite(sink, m_txn, bap::egolf::kAsgIdOvms,
+                                                     /*recordAddr=*/0, /*startIndex=*/m_prof_set_pos, p);
+    if (!r.ok()) {
+        m_tx_fail = true;
+        ESP_LOGW(TAG, "SetProfile %u write TX FAILED (status %d)", m_prof_set_pos, (int)r.status);
+        return false;
+    }
+    ESP_LOGI(TAG, "SetProfile %u: op 0x%02x cur 0x%02x minSoC %u tgtSoC %u temp 0x%02x written (%u frames)",
+             m_prof_set_pos, p.operation, p.maxCurrent, p.minChargeLevel, p.targetChargeLevel,
+             p.temperatureRaw, r.framesSent);
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// Departure-timer TX (handshake + GET + record + enable-mask writes, all on kCanIdCommand / 0x17332501)
+// ---------------------------------------------------------------------------
+
+bool VWeGolfBatteryControl::SendTimerReads() {
+    // Actively GET the timer table + enable mask using the SAME "80"-SEGMENTED get-all framing that
+    // works for the func-0x19 profile GET: "80 04 19 <0x40|func> <asgTxn> 00 00 04" (header byte1 =
+    // 0x40|func → 0x53 for TimerState, 0x54/55/56 for slots 1-3). A BARE "19 5x" GET is silently
+    // dropped by the BCU (confirmed for func 0x19), so bare GETs never elicited the timer records —
+    // the MIB never GETs timers at all, it rides the periodic broadcast. We do both: this active GET
+    // (in case the BCU has a func-0x1x GET handler) AND collect the HEARTBEAT broadcast (39 5x / 39 53),
+    // which arrives in a burst only every ~11-13 s. Sent on kCanIdCommand (0x17332501) like every other
+    // command — the gatewayed channel that reaches the BCU from our KCAN node.
+    auto get = [this](uint8_t func) {
+        uint8_t asgTxn = bap::egolf::asgTxnByte(bap::egolf::kAsgIdOvms, m_txn.next());
+        uint8_t frame[8] = {0x80, 0x04, 0x19, (uint8_t)(0x40 | func), asgTxn, 0x00, 0x00, 0x04};
+        TxFrame(frame, sizeof(frame));  // kCanIdCommand (0x17332501) — our bus's gatewayed channel
+    };
+    get(bap::egolf::FUNC_TIMER_STATE);
+    for (uint8_t slot = 1; slot <= kNumTimers; slot++) get(bap::egolf::funcForTimerSlot(slot));
+    return true;
+}
+
+bool VWeGolfBatteryControl::SendTimerRecord() {
+    // Timer records are written on kCanIdCommand (0x17332501) — our KCAN node's channel, which the J533
+    // gateway BRIDGES to the FCAN bus where the BCU lives. (The MIB writes on 0x17332500, but that id is
+    // FCAN-local and NOT bridged, so a 0x17332500 write from KCAN never reaches the BCU — on-car finding.)
+    auto sink = [this](const uint8_t* f, uint8_t d) -> bool { return TxFrame(f, d); };
+    bap::SendResult r = bap::egolf::sendTimerWrite(sink, m_timer_slot, m_timer_write);
+    if (!r.ok()) {
+        m_tx_fail = true;
+        ESP_LOGW(TAG, "timer slot %u record write TX failed (status %d)", m_timer_slot, (int)r.status);
+        return false;
+    }
+    ESP_LOGI(TAG, "timer slot %u record written on 0x%08x (%u frames)", m_timer_slot,
+             (unsigned)bap::egolf::kCanIdCommand, r.framesSent);
+    return true;
+}
+
+bool VWeGolfBatteryControl::SendTimerMask(uint8_t mask) {
+    auto sink = [this](const uint8_t* f, uint8_t d) -> bool { return TxFrame(f, d); };
+    bap::SendResult r = bap::egolf::sendTimerState(sink, mask);
+    if (!r.ok()) {
+        m_tx_fail = true;
+        ESP_LOGW(TAG, "TimerState write TX failed (mask 0x%x, status %d)", mask, (int)r.status);
+        return false;
+    }
+    ESP_LOGI(TAG, "TimerState mask -> 0x%x written on 0x%08x", mask, (unsigned)bap::egolf::kCanIdCommand);
     return true;
 }

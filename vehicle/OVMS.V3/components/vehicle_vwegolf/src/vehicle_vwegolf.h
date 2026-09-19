@@ -56,7 +56,6 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     OvmsVehicleVWeGolf();
     ~OvmsVehicleVWeGolf();
 
-    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
     void IncomingFrameCan3(CAN_frame_t* p_frame) override;
 
     vehicle_command_t CommandHorn();
@@ -130,10 +129,27 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // identified by data[0]. We collect all three before committing to the metric.
     uint8_t m_vin_parts_received = 0;
     char m_vin_buf[18] = {};
-    // Regenerative-braking strength, decoded from 0x187 (see IncomingFrameCan2).
+    // Regenerative-braking strength, decoded from 0x187 (see IncomingFrameCan3).
     // The e-Golf's five regen levels as a 0..4 scale (least->most): D0 (coast) = 0,
     // D1 = 1, D2 = 2, D3 = 3, B = 4. -1 = N/A (not in gear D or B).
     OvmsMetricInt* m_recup_level = nullptr;
+
+    // `xvg charge profile list` handler: fetch the car's charge profiles (charge locations) via the
+    // BatteryControl controller and print them to the writer. Blocks (bounded) while the BCU is woken
+    // and answers. Read-only — it never writes a profile.
+    void CommandListProfiles(OvmsWriter* writer);
+    // `xvg charge profile set` handler: RMW selected fields of one profile (profile 0 = current/minsoc/
+    // temp; charge locations 1-3 = flags/current/soc). Blocks (bounded) for the controller's result.
+    void CommandSetProfile(OvmsWriter* writer, int argc, const char* const* argv);
+
+    // `xvg charge timer ...` handlers. list = read-only; set/enable/disable/clear write to the car
+    // (recurring timers only). Each blocks (bounded) for the BatteryControl controller's result.
+    void CommandListTimers(OvmsWriter* writer);
+    void CommandSetTimer(OvmsWriter* writer, int argc, const char* const* argv);
+    void CommandTimerEnable(OvmsWriter* writer, int argc, const char* const* argv, bool enable);
+    void CommandClearTimer(OvmsWriter* writer, int argc, const char* const* argv);
+    // Block (bounded) polling the BatteryControl CLI result; true = LIST_READY, else prints the reason.
+    bool PollBatCtrlResult(OvmsWriter* writer);
 
 #ifdef VWEGOLF_NATIVE_TEST
  public:

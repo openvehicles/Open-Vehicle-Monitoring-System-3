@@ -26,7 +26,9 @@
 ; THE SOFTWARE.
 */
 
-// #include <stdio.h>
+#include <cstdio>   // snprintf / sscanf — format the profile/timer list rows, parse HH:MM
+#include <cstdlib>  // atoi — parse timer slot / profile args
+#include <cstring>  // strchr / strlen — tokenize the weekday list
 #include "vehicle_vwegolf.h"
 
 #undef TAG
@@ -39,20 +41,16 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     MyConfig.RegisterParam("xvg", "VW e-Golf", true, true);
 
     // Regenerative-braking strength (numeric, cheap to transmit). Decoded from the
-    // gear-selector frame 0x187 in IncomingFrameCan2. -1 until first seen in D/B.
+    // gear-selector frame 0x187 in IncomingFrameCan3. -1 until first seen in D/B.
     m_recup_level = MyMetrics.InitInt("xvg.v.recup", SM_STALE_MIN, -1);
 
-    // KCAN (CAN3) carries comfort, body, and clima frames via the J533 gateway.
-    // FCAN (CAN2) is the powertrain bus (BMS, motor controller, VIN).
-    // CAN1 (OBD) is diagnostic-only and inaccessible while the car is asleep.
-    //
-    // FCAN is listen-only: we read gear and VIN but never transmit on this bus.
-    // Active mode would require the ESP32 CAN controller to ACK every received
-    // frame; its ACK timing on a bus already managed by native ECUs produces
-    // spurious ECC TX-direction errors (ecc != 0 → CAN_logerror every ~200 ms)
-    // even though rxerr/txerr stay at zero. Listen-only eliminates this entirely.
-    RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  // FCAN — powertrain (read-only)
-    RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN — comfort / clima
+    // The J533 gateway rebroadcasts the powertrain/HV frames the module reads — gear (0x187),
+    // VIN (0x6B4), SoC, pack current/voltage, speed — onto KCAN (CAN3) with the comfort/clima traffic,
+    // so a single KCAN tap sees everything (confirmed in drive captures: gear and VIN both appear on
+    // KCAN). FCAN (CAN2) therefore carries nothing KCAN doesn't; tapping it only adds a second MCP2515's
+    // RX/ISR load, so leave it unregistered. CAN1 (OBD) is diagnostic-only and inaccessible while asleep.
+    //RegisterCanBus(2, CAN_MODE_LISTEN, CAN_SPEED_500KBPS);  // FCAN — not tapped (all read ids are on KCAN)
+    RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);  // KCAN — comfort / clima (everything we read)
 
     // The climate controller drives the BCU over the KCAN (comfort) bus.
     m_batctrl.SetBus(m_can3);
@@ -65,6 +63,58 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     });
     cmd_vweg->RegisterCommand("fold_mirrors", "Fold mirrors in",
                               [this](...) { CommandMirrorFoldIn(); });
+
+    // Charge-profile / departure-timer management. `xvg charge profile list` dumps the car's charge
+    // profiles ("charge locations"); `xvg charge timer ...` lists and sets the 4 departure timers.
+    OvmsCommand* cmd_charge  = cmd_vweg->RegisterCommand("charge", "Charge profile / timer management");
+    OvmsCommand* cmd_profile = cmd_charge->RegisterCommand("profile", "Charge profiles (charge locations)");
+    cmd_profile->RegisterCommand(
+        "list", "List the vehicle's charge profiles",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int, const char* const*) {
+            CommandListProfiles(writer);
+        });
+    // `set` writes selected fields of ONE profile (read-modify-write, no charge/climate trigger). The
+    // valid fields differ per profile: profile 0 "Optionen" = current / minsoc / temp; charge locations
+    // 1-3 = flags / current / soc. min 3 args (profile + one field/value); max 7 (profile + 3 pairs).
+    cmd_profile->RegisterCommand(
+        "set", "Set fields of a charge profile",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
+            CommandSetProfile(writer, argc, argv);
+        },
+        "<profile 0-3> <field value>...  (0: current/minsoc/temp; 1-3: flags/current/soc)", 3, 7);
+
+    // Departure timers (recurring). list = read-only; set/enable/disable/clear write to the car
+    // (on 0x17332501, like climate/charge). A timer binds to a charge profile by index -> its target SoC.
+    OvmsCommand* cmd_timer = cmd_charge->RegisterCommand("timer", "Departure timers");
+    cmd_timer->RegisterCommand(
+        "list", "List the vehicle's departure timers",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int, const char* const*) {
+            CommandListTimers(writer);
+        });
+    cmd_timer->RegisterCommand(
+        "set", "Set a recurring departure timer",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
+            CommandSetTimer(writer, argc, argv);
+        },
+        "<slot 1-3> <HH:MM> <days> <profile 0-3>", 4, 5);
+    cmd_timer->RegisterCommand(
+        "enable", "Enable a departure timer",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
+            CommandTimerEnable(writer, argc, argv, true);
+        },
+        "<slot 1-3>", 1, 1);
+    cmd_timer->RegisterCommand(
+        "disable", "Disable a departure timer",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
+            CommandTimerEnable(writer, argc, argv, false);
+        },
+        "<slot 1-3>", 1, 1);
+    cmd_timer->RegisterCommand(
+        "clear", "Clear (blank + disable) a departure timer",
+        [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
+            CommandClearTimer(writer, argc, argv);
+        },
+        "<slot 1-3>", 1, 1);
 }
 
 OvmsVehicleVWeGolf::~OvmsVehicleVWeGolf() {
@@ -82,14 +132,47 @@ OvmsVehicleVWeGolfInit::OvmsVehicleVWeGolfInit() {
     MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeGolf>("VWEG", "VW e-Golf");
 }
 
-void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
+void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
+    m_bus_idle_ticks = 0;
+
+    // Send OCU keepalive at ~5Hz while active. VW OSEK NM requires keepalives at
+    // ~200ms intervals; Ticker1 alone (1Hz) is too slow for the ECU to stay in network.
+    // SendOcuHeartbeat self-throttles (180ms min) against TX queue overflow on bus bursts.
+    if (m_ocu_active) {
+        SendOcuHeartbeat();
+    }
+
+    uint8_t* d = p_frame->data.u8;
+
+    uint8_t tmp_u8 = 0;
+    uint16_t tmp_u16 = 0;
+    uint32_t tmp_u32 = 0;
+    float tmp_f32 = 0.0F;
+
     switch (p_frame->MsgID) {
-        case 0x187: {
-            const uint8_t gear_nibble = p_frame->data.u8[2] & 0x0F;
-            ESP_LOGV(TAG, "0x187 gear nibble=%d", gear_nibble);
+        // TODO: Need to move to verify
+        case 0xFD:  // Vehicle speed from ESP module. 16-bit LE in d[4:5], factor 0.01 km/h.
+        {
+            tmp_u16 = ((uint16_t)(d[4]) >> 0) | ((uint16_t)(d[5]) << 8);
+            tmp_f32 = ((float)tmp_u16) * 0.01F;
+            StandardMetrics.ms_v_pos_speed->SetValue(tmp_f32);
+            // ESP_LOGV(TAG, "0x00FD speed=%.2f km/h", tmp_f32);
+            break;
+        }
+        case 0x131:  // State of charge. d[3] * 0.5%. 0xFE = "not ready" sentinel (127%).
+        {
+            if (d[3] == 0xFE) break;
+            tmp_f32 = ((float)d[3]) * 0.5F;
+            StandardMetrics.ms_v_bat_soc->SetValue(tmp_f32);
+            // ESP_LOGV(TAG, "0x0131 soc=%.1f%%", tmp_f32);
+            break;
+        }
+        case 0x187: {  // Gear selector (PRNDL) + regen-brake stage.
+            const uint8_t gear_nibble = d[2] & 0x0F;
+            // ESP_LOGV(TAG, "0x187 gear nibble=%d", gear_nibble);
             // Drive mode (Normal/Eco/Eco+) is NOT derived here — B is a gear/regen
             // selection, not a Charisma drive profile. ms_v_env_drivemode is set from
-            // the Charisma active profile in frame 0x386 (IncomingFrameCan3).
+            // the Charisma active profile in frame 0x386 (below).
             if (gear_nibble == 2) {
                 // Park
                 StandardMetrics.ms_v_env_gear->SetValue(0);
@@ -118,7 +201,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
             //   1 = D1, 2 = D2, 3 = D3  (paddle regen stages)
             //   5 = D0 with recuperation switched off by the driver (also coast)
             // In gear B rc reads 0, but the gear itself means max regen.
-            const uint8_t rc = (p_frame->data.u8[1] >> 4) & 0x7;
+            const uint8_t rc = (d[1] >> 4) & 0x7;
             int recup = -1;                                 // N/A unless in D or B
             if (gear_nibble == 6) {
                 recup = 4;                                  // B — max regen
@@ -126,82 +209,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan2(CAN_frame_t* p_frame) {
                 recup = (rc >= 1 && rc <= 3) ? rc : 0;      // D1/D2/D3, else D0 (coast)
             }
             m_recup_level->SetValue(recup);
-            ESP_LOGV(TAG, "0x187 gear=%u rc=%u recup=%d", gear_nibble, rc, recup);
-            break;
-        }
-        case 0x6B4: {
-            // This message contains the VIN in 3 parts, with the first byte identifying the frame.
-            // We only set the VIN after all three parts have been received. Once the VIN has been
-            // set, we ignore future VIN frames.
-            uint8_t frame_idx = p_frame->data.u8[0];
-            ESP_LOGV(TAG, "0x6B4 frame_idx=%d parts=0x%02x", frame_idx, m_vin_parts_received);
-            if (m_vin_parts_received == 0x07) {
-                // We've already received three VIN frames and set the VIN in the metrics.
-                break;
-            } else if (frame_idx == 0) {
-                m_vin_buf[0] = p_frame->data.u8[5];
-                m_vin_buf[1] = p_frame->data.u8[6];
-                m_vin_buf[2] = p_frame->data.u8[7];
-                m_vin_parts_received |= 0x01;
-            } else if (frame_idx == 1) {
-                memcpy(&m_vin_buf[3], &p_frame->data.u8[1], 7);
-                m_vin_parts_received |= 0x02;
-            } else if (frame_idx == 2) {
-                memcpy(&m_vin_buf[10], &p_frame->data.u8[1], 7);
-                m_vin_parts_received |= 0x04;
-            }
-
-            if (m_vin_parts_received == 0x07) {
-                // Set the VIN now that we've received all three parts.
-                m_vin_buf[17] = '\0';
-                StandardMetrics.ms_v_vin->SetValue(m_vin_buf);
-            }
-            break;
-        }
-    }
-}
-
-void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
-    m_bus_idle_ticks = 0;
-
-    // Send OCU keepalive at ~5Hz while active. VW OSEK NM requires keepalives at
-    // ~200ms intervals; Ticker1 alone (1Hz) is too slow for the ECU to stay in network.
-    // SendOcuHeartbeat self-throttles (180ms min) against TX queue overflow on bus bursts.
-    if (m_ocu_active) {
-        SendOcuHeartbeat();
-    }
-
-    uint8_t* d = p_frame->data.u8;
-
-    // Track OEM OCU activity: any non-zero 0x5A7 means the car's OCU is still active.
-    // Reset the idle counter so we don't wake while it would conflict with our heartbeat.
-    if (p_frame->MsgID == 0x5A7) {
-        if (d[0] | d[1] | d[2] | d[3] | d[4] | d[5] | d[6] | d[7]) {
-            m_oem_ocu_idle_ticks = 0;
-        }
-    }
-
-    uint8_t tmp_u8 = 0;
-    uint16_t tmp_u16 = 0;
-    uint32_t tmp_u32 = 0;
-    float tmp_f32 = 0.0F;
-
-    switch (p_frame->MsgID) {
-        // TODO: Need to move to verify
-        case 0xFD:  // Vehicle speed from ESP module. 16-bit LE in d[4:5], factor 0.01 km/h.
-        {
-            tmp_u16 = ((uint16_t)(d[4]) >> 0) | ((uint16_t)(d[5]) << 8);
-            tmp_f32 = ((float)tmp_u16) * 0.01F;
-            StandardMetrics.ms_v_pos_speed->SetValue(tmp_f32);
-            ESP_LOGV(TAG, "0x00FD speed=%.2f km/h", tmp_f32);
-            break;
-        }
-        case 0x131:  // State of charge. d[3] * 0.5%. 0xFE = "not ready" sentinel (127%).
-        {
-            if (d[3] == 0xFE) break;
-            tmp_f32 = ((float)d[3]) * 0.5F;
-            StandardMetrics.ms_v_bat_soc->SetValue(tmp_f32);
-            ESP_LOGV(TAG, "0x0131 soc=%.1f%%", tmp_f32);
+            // ESP_LOGV(TAG, "0x187 gear=%u rc=%u recup=%d", gear_nibble, rc, recup);
             break;
         }
         case 0x191:  // BMS current, voltage, power.
@@ -243,8 +251,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 StandardMetrics.ms_v_charge_power->SetValue(
                     -StandardMetrics.ms_v_bat_power->AsFloat());
             }
-            ESP_LOGV(TAG, "0x0191 I=%.1fA V=%.2fV", StandardMetrics.ms_v_bat_current->AsFloat(),
-                     StandardMetrics.ms_v_bat_voltage->AsFloat());
+            // ESP_LOGV(TAG, "0x0191 I=%.1fA V=%.2fV", StandardMetrics.ms_v_bat_current->AsFloat(),
+                     // StandardMetrics.ms_v_bat_voltage->AsFloat());
             break;
         }
         case 0x2AF:  // Trip energy counters. 15-bit, factor 10 Ws → kWh.
@@ -256,9 +264,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // Consumed energy: d[6] + d[7] bits [6:0].
             tmp_f32 = (float)(d[6] | ((uint16_t)(d[7] & 0x7f) << 8)) * 10.0F / 3600000.0F;
             StandardMetrics.ms_v_bat_energy_used->SetValue(tmp_f32);
-            ESP_LOGV(TAG, "0x02AF recd=%.4f used=%.4f kWh",
-                     StandardMetrics.ms_v_bat_energy_recd->AsFloat(),
-                     StandardMetrics.ms_v_bat_energy_used->AsFloat());
+            // ESP_LOGV(TAG, "0x02AF recd=%.4f used=%.4f kWh",
+                     // StandardMetrics.ms_v_bat_energy_recd->AsFloat(),
+                     // StandardMetrics.ms_v_bat_energy_used->AsFloat());
             break;
         }
         // case 0x3D6: //Ladezustand
@@ -309,7 +317,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                 StandardMetrics.ms_v_pos_latitude->SetValue(lat);
                 StandardMetrics.ms_v_pos_longitude->SetValue(lon);
             }
-            ESP_LOGV(TAG, "0x0486 lat=%.6f lon=%.6f valid=%d", lat, lon, valid);
+            // ESP_LOGV(TAG, "0x0486 lat=%.6f lon=%.6f valid=%d", lat, lon, valid);
             break;
         }
         case 0x386:  // Drive mode (Charisma / Fahrprofilauswahl active profile).
@@ -333,7 +341,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                     // the last known drive mode.
                     break;
             }
-            ESP_LOGV(TAG, "0x0386 drivemode raw=0x%02x", d[5]);
+            // ESP_LOGV(TAG, "0x0386 drivemode raw=0x%02x", d[5]);
             break;
         }
         case 0x583:  // ZV_02: central locking and door open states.
@@ -345,9 +353,9 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             StdMetrics.ms_v_door_rl->SetValue((d[3] & 0x4) >> 2);
             StdMetrics.ms_v_door_rr->SetValue((d[3] & 0x8) >> 3);
             StdMetrics.ms_v_door_trunk->SetValue((d[3] & 0x10) >> 4);
-            ESP_LOGV(TAG, "0x0583 locked=%u fl=%u fr=%u rl=%u rr=%u trunk=%u", (d[2] & 0x2) >> 1,
-                     d[3] & 0x1, (d[3] & 0x2) >> 1, (d[3] & 0x4) >> 2, (d[3] & 0x8) >> 3,
-                     (d[3] & 0x10) >> 4);
+            // ESP_LOGV(TAG, "0x0583 locked=%u fl=%u fr=%u rl=%u rr=%u trunk=%u", (d[2] & 0x2) >> 1,
+                     // d[3] & 0x1, (d[3] & 0x2) >> 1, (d[3] & 0x4) >> 2, (d[3] & 0x8) >> 3,
+                     // (d[3] & 0x10) >> 4);
             break;
         }
         case 0x594:  // HV charge management
@@ -598,11 +606,11 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             //   //
             // }
 
-            ESP_LOGV(TAG, "0x0594 charging=%d timer=%d type=%s setpoint=%.1f°C",
-                     StdMetrics.ms_v_charge_inprogress->AsBool(),
-                     StdMetrics.ms_v_charge_timermode->AsBool(),
-                     StdMetrics.ms_v_charge_type->AsString().c_str(),
-                     StdMetrics.ms_v_env_cabinsetpoint->AsFloat());
+            // ESP_LOGV(TAG, "0x0594 charging=%d timer=%d type=%s setpoint=%.1f°C",
+                     // StdMetrics.ms_v_charge_inprogress->AsBool(),
+                     // StdMetrics.ms_v_charge_timermode->AsBool(),
+                     // StdMetrics.ms_v_charge_type->AsString().c_str(),
+                     // StdMetrics.ms_v_env_cabinsetpoint->AsFloat());
 
             break;
         }
@@ -612,7 +620,14 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             if (d[2] >= 0xFE) break;
             tmp_f32 = ((float)d[2]) * 0.5F - 40.0F;
             StandardMetrics.ms_v_bat_temp->SetValue(tmp_f32);
-            ESP_LOGV(TAG, "0x059E bat_temp=%.1f°C", tmp_f32);
+            // ESP_LOGV(TAG, "0x059E bat_temp=%.1f°C", tmp_f32);
+            break;
+        }
+        case 0x5A7:
+        {
+            // OEM OCU heartbeat: any non-zero payload means the car's OCU is still active.
+            // Reset the idle counter so we don't wake while our heartbeat would collide with it.
+            if (d[0] | d[1] | d[2] | d[3] | d[4] | d[5] | d[6] | d[7]) m_oem_ocu_idle_ticks = 0;
             break;
         }
         case 0x5CA:  // HV battery energy content. 11-bit, factor 50 Wh → kWh.
@@ -623,7 +638,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             tmp_u16 = ((uint16_t)(d[1] & 0xf0) >> 4) | ((uint16_t)(d[2] & 0x7f) << 4);
             tmp_f32 = ((float)tmp_u16) * 50.0F / 1000.0F;
             StandardMetrics.ms_v_bat_capacity->SetValue(tmp_f32);
-            ESP_LOGV(TAG, "0x05CA bat_capacity=%.1f kWh", tmp_f32);
+            // ESP_LOGV(TAG, "0x05CA bat_capacity=%.1f kWh", tmp_f32);
             break;
         }
         case 0x5EA:  // Clima ECU status: cabin temperature and HVAC conditioning bit.
@@ -639,7 +654,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             if (tmp_u16 >= 0x3FE) break;
             tmp_f32 = ((float)tmp_u16) * 0.1F - 40.0F;
             StandardMetrics.ms_v_env_cabintemp->SetValue(tmp_f32);
-            ESP_LOGV(TAG, "0x05EA clima_cabin=%.1f°C d3=%02x", tmp_f32, d[3]);
+            // ESP_LOGV(TAG, "0x05EA clima_cabin=%.1f°C d3=%02x", tmp_f32, d[3]);
             break;
         }
         case 0x5F5:  // Range estimates from the instrument cluster.
@@ -651,15 +666,15 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // Ideal range (BMS model, typically lower than estimated): 11-bit, factor 1 km.
             tmp_u16 = ((uint16_t)(d[0])) | ((uint16_t)(d[1] & 0x7) << 8);
             StdMetrics.ms_v_bat_range_ideal->SetValue((float)tmp_u16);
-            ESP_LOGV(TAG, "0x05F5 range_est=%u range_ideal=%u km",
-                     StandardMetrics.ms_v_bat_range_est->AsInt(),
-                     StdMetrics.ms_v_bat_range_ideal->AsInt());
+            // ESP_LOGV(TAG, "0x05F5 range_est=%u range_ideal=%u km",
+                     // StandardMetrics.ms_v_bat_range_est->AsInt(),
+                     // StdMetrics.ms_v_bat_range_ideal->AsInt());
             break;
         }
         case 0x65A:  // BCM_01: bonnet/hood open indicator (MHWIVSchalter, d[4] bit 0).
         {
             StdMetrics.ms_v_door_hood->SetValue(d[4] & 0x1);
-            ESP_LOGV(TAG, "0x065A hood=%u", d[4] & 0x1);
+            // ESP_LOGV(TAG, "0x065A hood=%u", d[4] & 0x1);
             break;
         }
         case 0x66E:  // InnenTemp: cabin interior temperature sensor.
@@ -668,23 +683,54 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             if (d[4] == 0xFE) break;
             tmp_f32 = ((float)d[4]) * 0.5F - 50.0F;
             StandardMetrics.ms_v_env_cabintemp->SetValue(tmp_f32);
-            ESP_LOGV(TAG, "0x066E cabin_temp=%.1f°C", tmp_f32);
+            // ESP_LOGV(TAG, "0x066E cabin_temp=%.1f°C", tmp_f32);
             break;
         }
-        case 0x6B0:  // FS temperature sensor (windshield/front area). Not yet mapped to a metric.
-        {
-            tmp_f32 = ((float)d[4]) * 0.5F - 40.0F;
-            ESP_LOGV(TAG, "0x06B0 fs_temp=%.1f°C", tmp_f32);
+        // 0x6B0 / 0x6B5 decode temperature sensors not yet mapped to a metric — no-op handlers, left
+        // commented out (decode intact) until someone wires them to a metric:
+        // case 0x6B0:  // FS temperature sensor (windshield/front area).
+        // {
+        //     tmp_f32 = ((float)d[4]) * 0.5F - 40.0F;
+        //     ESP_LOGV(TAG, "0x06B0 fs_temp=%.1f°C", tmp_f32);
+        //     break;
+        // }
+        case 0x6B4: {
+            // This message contains the VIN in 3 parts, with the first byte identifying the frame.
+            // We only set the VIN after all three parts have been received. Once the VIN has been
+            // set, we ignore future VIN frames.
+            uint8_t frame_idx = d[0];
+            // ESP_LOGV(TAG, "0x6B4 frame_idx=%d parts=0x%02x", frame_idx, m_vin_parts_received);
+            if (m_vin_parts_received == 0x07) {
+                // We've already received three VIN frames and set the VIN in the metrics.
+                break;
+            } else if (frame_idx == 0) {
+                m_vin_buf[0] = d[5];
+                m_vin_buf[1] = d[6];
+                m_vin_buf[2] = d[7];
+                m_vin_parts_received |= 0x01;
+            } else if (frame_idx == 1) {
+                memcpy(&m_vin_buf[3], &d[1], 7);
+                m_vin_parts_received |= 0x02;
+            } else if (frame_idx == 2) {
+                memcpy(&m_vin_buf[10], &d[1], 7);
+                m_vin_parts_received |= 0x04;
+            }
+
+            if (m_vin_parts_received == 0x07) {
+                // Set the VIN now that we've received all three parts.
+                m_vin_buf[17] = '\0';
+                StandardMetrics.ms_v_vin->SetValue(m_vin_buf);
+            }
             break;
         }
-        case 0x6B5:  // Ambient temperature: solar sensor and outside air.
-        {
-            tmp_u16 = ((uint16_t)(d[6])) | ((uint16_t)(d[7] & 0x7) << 8);
-            ESP_LOGV(TAG, "0x06B5 solar_sensor=%.1f°C", ((float)tmp_u16) * 0.1F - 40.0F);
-            tmp_u16 = ((uint16_t)(d[2])) | ((uint16_t)(d[3] & 0x3) << 8);
-            ESP_LOGV(TAG, "0x06B5 air_sensor=%.1f°C", ((float)tmp_u16) * 0.1F - 40.0F);
-            break;
-        }
+        // case 0x6B5:  // Ambient temperature: solar sensor and outside air.
+        // {
+        //     tmp_u16 = ((uint16_t)(d[6])) | ((uint16_t)(d[7] & 0x7) << 8);
+        //     ESP_LOGV(TAG, "0x06B5 solar_sensor=%.1f°C", ((float)tmp_u16) * 0.1F - 40.0F);
+        //     tmp_u16 = ((uint16_t)(d[2])) | ((uint16_t)(d[3] & 0x3) << 8);
+        //     ESP_LOGV(TAG, "0x06B5 air_sensor=%.1f°C", ((float)tmp_u16) * 0.1F - 40.0F);
+        //     break;
+        // }
         case 0x6B7:  // AussenTemp gefiltert Kilometerstand
         {
             tmp_u32 =
@@ -694,7 +740,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             tmp_u32 = (uint32_t)tmp_u32;
             // tmp_f32 = ((float)tmp_u32)*1.0F;
             StandardMetrics.ms_v_pos_odometer->SetValue(tmp_u32);  // working
-            ESP_LOGV(TAG, "0x06B7 odo=%u km", tmp_u32);
+            // ESP_LOGV(TAG, "0x06B7 odo=%u km", tmp_u32);
 
             // Park time: 17-bit field at bit offset 20, factor 1 s.
             // d[2] bits [7:4] → result bits [3:0], d[3] → [11:4], d[4] bits [4:0] → [16:12].
@@ -704,7 +750,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                       ((uint32_t)(d[4] & 0x1f) << 12);
             if (tmp_u32 != 0x1FFFF) {
                 StandardMetrics.ms_v_env_parktime->SetValue(tmp_u32);
-                ESP_LOGV(TAG, "0x06B7 parktime=%u", tmp_u32);
+                // ESP_LOGV(TAG, "0x06B7 parktime=%u", tmp_u32);
             }
 
             tmp_u8 = ((uint8_t)(d[7] & 0xff) << 0) |
@@ -712,7 +758,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             tmp_u8 = (uint8_t)tmp_u8;
             tmp_f32 = ((float)tmp_u8) * 0.5F - 50.0F;
             StandardMetrics.ms_v_env_temp->SetValue(tmp_f32);  // working
-            ESP_LOGV(TAG, "0x06B7 outside=%.1f°C", tmp_f32);
+            // ESP_LOGV(TAG, "0x06B7 outside=%.1f°C", tmp_f32);
             break;
         }
         case 0x391:  // OBD_01: drivetrain READY status
@@ -726,7 +772,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             // (d[5] carries the accelerator pedal position, OBD_Abs_Pedal_Pos - not mapped.)
             m_drivetrain_ready = (d[7] & 0x20) != 0;
             StandardMetrics.ms_v_env_on->SetValue(m_kl15_on && m_drivetrain_ready);
-            ESP_LOGV(TAG, "0x391 READY=%u", m_drivetrain_ready);
+            // ESP_LOGV(TAG, "0x391 READY=%u", m_drivetrain_ready);
             break;
         }
         case 0x3C0:  // clamp status received
@@ -745,7 +791,7 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             m_kl15_on = (d[2] & 0x02) != 0;
             StandardMetrics.ms_v_env_awake->SetValue(m_kl15_on);
             StandardMetrics.ms_v_env_on->SetValue(m_kl15_on && m_drivetrain_ready);
-            ESP_LOGV(TAG, "0x3C0 KL_15=%u KL_S=%u", m_kl15_on, d[2] & 0x01);
+            // ESP_LOGV(TAG, "0x3C0 KL_15=%u KL_S=%u", m_kl15_on, d[2] & 0x01);
             break;
         }
         case 0x17332510: {
@@ -1024,4 +1070,368 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeGolf::CommandStopCharge() {
     // Op-specific stop (see VWeGolfBatteryControl::Charge): OFF arms the pure-charge op first, so it
     // is refused while climate is on (that arm would kill climate — stop climate first).
     return m_batctrl.Charge(false) ? Success : Fail;
+}
+
+bool OvmsVehicleVWeGolf::PollBatCtrlResult(OvmsWriter* writer) {
+    // Block the command task (bounded) while the BatteryControl controller wakes the BCU and completes.
+    // Poll a fixed number of iterations (independent of tick advancement, so it always terminates); the
+    // controller declares failure at its wake-window cap, so wait a little past it.
+    const int poll_ms = 250;
+    const int max_iters = ((VWEGOLF_BATCTRL_WAKE_SECS + 2) * 1000) / poll_ms;
+    VWeGolfBatteryControl::ListState st = VWeGolfBatteryControl::LIST_PENDING;
+    for (int i = 0; i < max_iters; i++) {
+        st = m_batctrl.ListStatus();
+        if (st == VWeGolfBatteryControl::LIST_READY || st == VWeGolfBatteryControl::LIST_FAILED)
+            break;
+        vTaskDelay(pdMS_TO_TICKS(poll_ms));
+    }
+    if (st == VWeGolfBatteryControl::LIST_READY) return true;
+    writer->puts(st == VWeGolfBatteryControl::LIST_FAILED
+                     ? "The vehicle did not respond (no data / not confirmed)."
+                     : "Timed out waiting for the vehicle.");
+    return false;
+}
+
+void OvmsVehicleVWeGolf::CommandListProfiles(OvmsWriter* writer) {
+    // Kick a read-only profile fetch and block (bounded) for the result. The controller wakes the
+    // BCU, handshakes, GETs the profile array, and publishes it — NO profile is written.
+    if (!m_batctrl.ListProfiles()) {
+        writer->puts("Charge-profile read unavailable — another command is in progress. Try again.");
+        return;
+    }
+    writer->puts("Reading charge profiles from the vehicle (waking it if asleep)...");
+    if (!PollBatCtrlResult(writer)) return;
+
+    // Profiles are a variable-length array — read up to kMaxProfiles (the reassembler's practical cap).
+    bap::egolf::Profile profs[VWeGolfBatteryControl::kMaxProfiles];
+    uint8_t n = m_batctrl.GetProfiles(profs, VWeGolfBatteryControl::kMaxProfiles);
+    writer->printf("Charge profiles (%u):\n", (unsigned)n);
+    writer->printf("  #  %-16s  Op    Flags       MaxA  MinSoC  TgtSoC  Temp\n", "Name");
+    for (uint8_t i = 0; i < n; i++) {
+        const bap::egolf::Profile& p = profs[i];
+        // Operation flags — the WIRE-confirmed bits: charge / climate / climatise-on-battery.
+        char flags[16];
+        snprintf(flags, sizeof(flags), "%s%s%s",
+                 (p.operation & bap::egolf::PO_CHARGING)      ? "chg " : "",
+                 (p.operation & bap::egolf::PO_CLIMATE)       ? "cli " : "",
+                 (p.operation & bap::egolf::PO_ALLOW_BATTERY) ? "bat"  : "");
+        if (flags[0] == '\0') { flags[0] = '-'; flags[1] = '\0'; }
+
+        // A 0 byte = "not set for this profile". minChargeLevel (MinSoC) is meaningful on the global
+        // profile 0; targetChargeLevel (TgtSoC) on the charge locations 1-3 — the raw bytes reproduce
+        // that split, so both columns are shown and the inapplicable one reads '-'.
+        char maxc[8], minc[8], tgtc[8], temp[10];
+        if (p.maxCurrent)        snprintf(maxc, sizeof(maxc), "%uA",  p.maxCurrent);        else snprintf(maxc, sizeof(maxc), "-");
+        if (p.minChargeLevel)    snprintf(minc, sizeof(minc), "%u%%", p.minChargeLevel);    else snprintf(minc, sizeof(minc), "-");
+        if (p.targetChargeLevel) snprintf(tgtc, sizeof(tgtc), "%u%%", p.targetChargeLevel); else snprintf(tgtc, sizeof(tgtc), "-");
+        // Temperature is valid only in the car's setpoint range (raw 0x37..0xC8 = 15.5..30.0 C).
+        if (p.temperatureRaw >= 0x37 && p.temperatureRaw <= 0xC8)
+            snprintf(temp, sizeof(temp), "%.1fC", bap::egolf::rawToTemp(p.temperatureRaw));
+        else snprintf(temp, sizeof(temp), "-");
+
+        writer->printf("  %u  %-16s  0x%02x  %-10s  %-4s  %-6s  %-6s  %s\n",
+                       (unsigned)p.position, p.name[0] ? p.name : "(unnamed)", p.operation, flags,
+                       maxc, minc, tgtc, temp);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Departure-timer CLI (xvg charge timer ...)
+// ---------------------------------------------------------------------------
+
+// Case-insensitive whole-string compare (small, avoids depending on strcasecmp availability).
+static bool vwe_ciequal(const char* a, const char* b) {
+    for (;; a++, b++) {
+        char ca = *a, cb = *b;
+        if (ca >= 'A' && ca <= 'Z') ca += 32;
+        if (cb >= 'A' && cb <= 'Z') cb += 32;
+        if (ca != cb) return false;
+        if (ca == '\0') return true;
+    }
+}
+
+// Weekday token ("mon".."sun", any case, >=3 letters) -> its egolf::Weekday bit, or 0.
+static uint8_t vwe_day_bit(const char* t) {
+    static const struct { const char* n; uint8_t b; } days[] = {
+        {"mon", bap::egolf::WD_MON}, {"tue", bap::egolf::WD_TUE}, {"wed", bap::egolf::WD_WED},
+        {"thu", bap::egolf::WD_THU}, {"fri", bap::egolf::WD_FRI}, {"sat", bap::egolf::WD_SAT},
+        {"sun", bap::egolf::WD_SUN},
+    };
+    for (auto& d : days) {
+        bool m = true;
+        for (int i = 0; i < 3; i++) {
+            char c = t[i]; if (c >= 'A' && c <= 'Z') c += 32;
+            if (c != d.n[i]) { m = false; break; }
+        }
+        if (m) return d.b;
+    }
+    return 0;
+}
+
+// Parse a recurring-days spec into a weekday mask (bit0 one-shot stays clear). Accepts keywords
+// (daily / mon-fri / weekends) or a comma list (mon,tue,fri). Returns false if no day was recognized.
+static bool vwe_parse_weekdays(const char* s, uint8_t& mask) {
+    mask = 0;
+    static const struct { const char* kw; uint8_t m; } kws[] = {
+        {"daily", 0xFE}, {"all", 0xFE}, {"everyday", 0xFE},
+        {"weekdays", 0x3E}, {"mon-fri", 0x3E}, {"mo-fr", 0x3E},
+        {"weekends", 0xC0}, {"weekend", 0xC0},
+    };
+    for (auto& k : kws) if (vwe_ciequal(s, k.kw)) { mask = k.m; return true; }
+    char buf[64];
+    size_t j = 0;
+    for (size_t i = 0; s[i] && j + 1 < sizeof(buf); i++) buf[j++] = s[i];
+    buf[j] = '\0';
+    for (char* tok = buf; tok && *tok;) {
+        char* comma = strchr(tok, ',');
+        if (comma) *comma = '\0';
+        mask |= vwe_day_bit(tok);
+        tok = comma ? comma + 1 : nullptr;
+    }
+    return mask != 0;
+}
+
+// Weekday mask -> human string (into out). One-shot shows "once"; recurring shows daily / Mon-Fri /
+// Sat,Sun / an explicit day list.
+static void vwe_weekdays_str(uint8_t mask, char* out, size_t cap) {
+    if (mask & bap::egolf::WD_ONESHOT) { snprintf(out, cap, "once"); return; }
+    uint8_t days = mask & 0xFE;
+    if (days == 0xFE) { snprintf(out, cap, "daily");   return; }
+    if (days == 0x3E) { snprintf(out, cap, "Mon-Fri"); return; }
+    if (days == 0xC0) { snprintf(out, cap, "Sat,Sun"); return; }
+    static const char* names[7] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    size_t len = 0; out[0] = '\0';
+    for (int i = 0; i < 7 && len + 5 < cap; i++)
+        if (days & (1u << (i + 1))) len += snprintf(out + len, cap - len, "%s%s", len ? "," : "", names[i]);
+    if (len == 0) snprintf(out, cap, "(none)");
+}
+
+// Parse "HH:MM" (24h). Returns false if malformed or out of range.
+static bool vwe_parse_hhmm(const char* s, uint8_t& h, uint8_t& m) {
+    int hh = -1, mm = -1;
+    if (sscanf(s, "%d:%d", &hh, &mm) != 2) return false;
+    if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return false;
+    h = (uint8_t)hh; m = (uint8_t)mm; return true;
+}
+
+// Parse a Celsius temperature ("21" or "21.5") into deci-degrees (tenths). Returns false if malformed
+// or outside the car's setpoint range 15.5-30.0 C. Runs on the command task (FP is fine there).
+static bool vwe_parse_temp_deci(const char* s, int& deci) {
+    float c = 0;
+    if (sscanf(s, "%f", &c) != 1) return false;
+    int d = (int)(c * 10.0f + 0.5f);         // round to the nearest 0.1 C
+    if (d < 155 || d > 300) return false;    // 15.5..30.0 C (the BCU setpoint range)
+    deci = d;
+    return true;
+}
+
+// Parse a charge-location flags value ("charge" | "climate" | "both", or a list like "charge,climate")
+// into PO_CHARGING / PO_CLIMATE bits. Returns false if nothing recognized.
+static bool vwe_parse_op_flags(const char* s, uint8_t& op) {
+    op = 0;
+    if (vwe_ciequal(s, "both")) { op = bap::egolf::PO_CHARGING | bap::egolf::PO_CLIMATE; return true; }
+    char buf[48];
+    size_t j = 0;
+    for (size_t i = 0; s[i] && j + 1 < sizeof(buf); i++) buf[j++] = s[i];
+    buf[j] = '\0';
+    for (char* tok = buf; tok && *tok;) {
+        char* comma = strchr(tok, ',');
+        if (comma) *comma = '\0';
+        if (vwe_ciequal(tok, "charge") || vwe_ciequal(tok, "chg")) op |= bap::egolf::PO_CHARGING;
+        else if (vwe_ciequal(tok, "climate") || vwe_ciequal(tok, "cli")) op |= bap::egolf::PO_CLIMATE;
+        else return false;  // an unrecognized token invalidates the whole value
+        tok = comma ? comma + 1 : nullptr;
+    }
+    return op != 0;
+}
+
+void OvmsVehicleVWeGolf::CommandSetProfile(OvmsWriter* writer, int argc, const char* const* argv) {
+    // xvg charge profile set <profile 0-3> <field value>...   (read-modify-write, no charge/climate trigger)
+    // The valid fields differ per profile (see the per-profile guards below): profile 0 "Optionen" =
+    // current / minsoc / temp; charge locations 1-3 = flags / current / soc.
+    if (argc < 3 || (argc - 1) % 2 != 0) {
+        writer->puts("Usage: xvg charge profile set <profile 0-3> <field value>...");
+        writer->puts("  profile 0 (Optionen):     current <A> | minsoc <%> | temp <C>");
+        writer->puts("  profiles 1-3 (locations): flags <charge|climate|both> | current <A> | soc <%>");
+        writer->puts("  e.g. 'set 1 soc 80 current 13'   'set 0 minsoc 20 temp 21.0'   'set 2 flags both'");
+        return;
+    }
+    int pos = atoi(argv[0]);
+    if (pos < 0 || pos > 3) { writer->puts("Profile must be 0-3 (see 'xvg charge profile list')."); return; }
+    const bool isGlobal = (pos == 0);
+
+    VWeGolfBatteryControl::ProfileEdit edit;
+    using PE = VWeGolfBatteryControl::ProfileEdit;
+    for (int i = 1; i + 1 < argc; i += 2) {
+        const char* f = argv[i];
+        const char* v = argv[i + 1];
+        if (vwe_ciequal(f, "current") || vwe_ciequal(f, "cur") || vwe_ciequal(f, "amps")) {
+            int a = atoi(v);
+            if (a <= 0) { writer->puts("current: expected a positive amp value."); return; }
+            uint8_t snapped = bap::egolf::clampMaxCurrent((uint16_t)a);  // snap to 5/10/13/32, cap 0x20
+            edit.maxCurrent = snapped;
+            edit.fields |= PE::F_CURRENT;
+            if ((int)snapped != a)
+                writer->printf("Note: current %dA snapped to %uA (allowed: 5/10/13/32).\n", a, snapped);
+        } else if (vwe_ciequal(f, "minsoc") || vwe_ciequal(f, "min")) {
+            if (!isGlobal) { writer->puts("minsoc applies only to profile 0 (Optionen)."); return; }
+            int s = atoi(v);
+            if (s < 0 || s > 100) { writer->puts("minsoc: 0-100 (%)."); return; }
+            edit.minChargeLevel = (uint8_t)s;
+            edit.fields |= PE::F_MINSOC;
+        } else if (vwe_ciequal(f, "soc") || vwe_ciequal(f, "target") || vwe_ciequal(f, "tgtsoc")) {
+            if (isGlobal) {
+                writer->puts("soc (target) applies only to charge locations 1-3; profile 0 uses minsoc.");
+                return;
+            }
+            int s = atoi(v);
+            if (s < 0 || s > 100) { writer->puts("soc: 0-100 (%)."); return; }
+            edit.targetChargeLevel = (uint8_t)s;
+            edit.fields |= PE::F_TGTSOC;
+        } else if (vwe_ciequal(f, "temp") || vwe_ciequal(f, "temperature")) {
+            if (!isGlobal) { writer->puts("temp applies only to profile 0 (Optionen)."); return; }
+            int deci;
+            if (!vwe_parse_temp_deci(v, deci)) { writer->puts("temp: 15.5-30.0 (Celsius, 0.5 steps)."); return; }
+            edit.temperatureRaw = bap::egolf::tempToRawDeci(deci);
+            edit.fields |= PE::F_TEMP;
+        } else if (vwe_ciequal(f, "flags") || vwe_ciequal(f, "op") || vwe_ciequal(f, "mode")) {
+            if (isGlobal) {
+                writer->puts("flags apply only to charge locations 1-3 "
+                             "(profile 0's operation is managed by climate/charge control).");
+                return;
+            }
+            uint8_t op;
+            if (!vwe_parse_op_flags(v, op)) {
+                writer->puts("flags: charge | climate | both (or a list like charge,climate).");
+                return;
+            }
+            edit.operation = op;
+            edit.fields |= PE::F_OP;
+        } else {
+            writer->printf("Unknown field '%s'.\n", f);
+            writer->puts(isGlobal ? "Profile 0 fields: current, minsoc, temp."
+                                  : "Location fields: flags, current, soc.");
+            return;
+        }
+    }
+    if (edit.fields == 0) { writer->puts("No fields to set."); return; }
+
+    if (!m_batctrl.SetProfile((uint8_t)pos, edit)) {
+        writer->puts("Profile write unavailable — another command is in progress. Try again.");
+        return;
+    }
+    writer->printf("Writing profile %d (waking vehicle)...\n", pos);
+    if (!PollBatCtrlResult(writer)) return;
+    writer->printf("Profile %d updated.\n", pos);
+}
+
+void OvmsVehicleVWeGolf::CommandListTimers(OvmsWriter* writer) {
+    if (!m_batctrl.ListTimers()) {
+        writer->puts("Timer read unavailable — another command is in progress. Try again.");
+        return;
+    }
+    writer->puts("Reading departure timers from the vehicle (waking it if asleep)...");
+    if (!PollBatCtrlResult(writer)) return;
+
+    bap::egolf::Timer timers[VWeGolfBatteryControl::kNumTimers];
+    bool seen[VWeGolfBatteryControl::kNumTimers];
+    uint8_t mask = 0;
+    uint8_t n = m_batctrl.GetTimers(timers, VWeGolfBatteryControl::kNumTimers, mask, seen);
+    // If the enable mask never broadcast this read, its value is the reset default (0) — show "?" for
+    // the En column rather than a misleading "off".
+    bool mask_seen = m_batctrl.TimerMaskSeen();
+
+    writer->puts("Departure timers:");
+    writer->printf("  #  En   Time   Days                Profile\n");
+    for (uint8_t i = 0; i < n; i++) {
+        const char* en = !mask_seen ? "?" : ((mask & (1u << i)) ? "on" : "off");
+        if (!seen[i]) {  // enable state may be known, but this slot broadcast no record
+            writer->printf("  %u  %-3s  (no record read)\n", i + 1, en);
+            continue;
+        }
+        const bap::egolf::Timer& t = timers[i];
+        char days[28];
+        vwe_weekdays_str(t.weekdays, days, sizeof(days));
+        if (t.oneShot() && t.hasDate()) {  // one-shot carries a fire date -> append it
+            size_t l = strlen(days);
+            snprintf(days + l, sizeof(days) - l, " %02u.%02u.20%02u", t.day, t.month, t.year);
+        }
+        writer->printf("  %u  %-3s  %02u:%02u  %-18s  %u\n", i + 1, en, t.hour, t.minute, days, t.refId);
+    }
+    writer->puts("Profile = the bound charge location (see 'xvg charge profile list'); it supplies the");
+    writer->puts("target SoC / current / temperature the timer charges or climatises to.");
+}
+
+void OvmsVehicleVWeGolf::CommandSetTimer(OvmsWriter* writer, int argc, const char* const* argv) {
+    // xvg charge timer set <slot 1-3> <HH:MM> <days> <profile 0-3>  (recurring only)
+    if (argc < 4) {
+        writer->puts("Usage: xvg charge timer set <slot 1-3> <HH:MM> <days> <profile 0-3>");
+        writer->puts("  days:    daily | mon-fri | weekends | a list e.g. mon,tue,fri");
+        writer->puts("  profile: a charge location from 'xvg charge profile list' — it sets the target");
+        writer->puts("           SoC/current/temp. NB profile 0 (Optionen) has no SoC target = 100%.");
+        return;
+    }
+    int slot = atoi(argv[0]);
+    if (slot < 1 || slot > VWeGolfBatteryControl::kNumTimers) { writer->puts("Slot must be 1-3."); return; }
+    uint8_t h, m;
+    if (!vwe_parse_hhmm(argv[1], h, m)) { writer->puts("Time must be HH:MM (24-hour)."); return; }
+    uint8_t days;
+    if (!vwe_parse_weekdays(argv[2], days)) {
+        writer->puts("Days must be: daily, mon-fri, weekends, or a list like mon,tue,fri.");
+        return;
+    }
+    // Profile (refId) is REQUIRED — a timer has NO SoC target of its own; it inherits target SoC /
+    // current / temperature from the bound charge location. Defaulting to profile 0 would silently
+    // mean charge-to-100%, so make the user choose. Accepts "<n>" or "profile <n>".
+    const char* p = argv[3];
+    if (vwe_ciequal(p, "profile")) {
+        if (argc < 5) { writer->puts("Missing profile number after 'profile'."); return; }
+        p = argv[4];
+    }
+    int r = atoi(p);
+    if (r < 0 || r > 3) { writer->puts("Profile must be 0-3 (see 'xvg charge profile list')."); return; }
+    uint8_t refId = (uint8_t)r;
+
+    bap::egolf::Timer t;  // recurring: date bytes stay 0xFF (no fixed date); the car fires by weekday
+    t.hour = h; t.minute = m; t.weekdays = days; t.refId = refId;
+    if (!m_batctrl.SetTimer((uint8_t)slot, t)) {
+        writer->puts("Timer write unavailable — another command is in progress. Try again.");
+        return;
+    }
+    char dbuf[28];
+    vwe_weekdays_str(days, dbuf, sizeof(dbuf));
+    writer->printf("Writing timer %d: %02u:%02u %s, profile %u (waking vehicle)...\n",
+                   slot, h, m, dbuf, refId);
+    if (!PollBatCtrlResult(writer)) return;
+    writer->printf("Timer %d set and enabled.\n", slot);
+}
+
+void OvmsVehicleVWeGolf::CommandTimerEnable(OvmsWriter* writer, int argc, const char* const* argv,
+                                            bool enable) {
+    if (argc < 1) {
+        writer->printf("Usage: xvg charge timer %s <slot 1-3>\n", enable ? "enable" : "disable");
+        return;
+    }
+    int slot = atoi(argv[0]);
+    if (slot < 1 || slot > VWeGolfBatteryControl::kNumTimers) { writer->puts("Slot must be 1-3."); return; }
+    if (!m_batctrl.EnableTimer((uint8_t)slot, enable)) {
+        writer->puts("Timer change unavailable — another command is in progress. Try again.");
+        return;
+    }
+    writer->printf("%s timer %d (waking vehicle)...\n", enable ? "Enabling" : "Disabling", slot);
+    if (!PollBatCtrlResult(writer)) return;
+    writer->printf("Timer %d %s.\n", slot, enable ? "enabled" : "disabled");
+}
+
+void OvmsVehicleVWeGolf::CommandClearTimer(OvmsWriter* writer, int argc, const char* const* argv) {
+    if (argc < 1) { writer->puts("Usage: xvg charge timer clear <slot 1-3>"); return; }
+    int slot = atoi(argv[0]);
+    if (slot < 1 || slot > VWeGolfBatteryControl::kNumTimers) { writer->puts("Slot must be 1-3."); return; }
+    if (!m_batctrl.ClearTimer((uint8_t)slot)) {
+        writer->puts("Timer clear unavailable — another command is in progress. Try again.");
+        return;
+    }
+    writer->printf("Clearing timer %d (waking vehicle)...\n", slot);
+    if (!PollBatCtrlResult(writer)) return;
+    writer->printf("Timer %d cleared (disabled).\n", slot);
 }

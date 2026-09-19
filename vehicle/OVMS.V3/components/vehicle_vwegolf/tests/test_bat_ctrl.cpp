@@ -877,6 +877,457 @@ void test_empty_profile_array_no_crash() {
 }
 
 // ---------------------------------------------------------------------------
+// Read-only profile list (xvg charge profile list): captures ALL profiles, writes nothing
+// ---------------------------------------------------------------------------
+
+// Append one full RA0 profile record (position + 20 fixed bytes + length-prefixed name) to a
+// profile-array STATUS body, mirroring make_profile0_array's layout for a single element.
+static void append_profile_record(std::vector<uint8_t>& b, uint8_t pos, uint8_t op,
+                                   uint8_t maxCurrent, uint8_t minSoc, uint8_t tgtSoc,
+                                   uint8_t tempRaw, const char* name) {
+    b.push_back(pos);                                        // element position (PosTransmit)
+    b.push_back(op); b.push_back(0x00); b.push_back(maxCurrent); b.push_back(minSoc);
+    b.push_back(0xff); b.push_back(0xff);                    // [4:5] minRange
+    b.push_back(tgtSoc); b.push_back(0xff);                  // [6] targetChargeLevel, [7] duration
+    b.push_back(0xff); b.push_back(0xff);                    // [8:9] targetChargeRange
+    b.push_back(0xff); b.push_back(0x01);                    // [10] unitRange, [11] rangeCalcSetup
+    b.push_back(tempRaw); b.push_back(0x00);                 // [12] temperature, [13] unit
+    b.push_back(0x1e); b.push_back(0x1e); b.push_back(0x0f); // [14] lead, [15] holdPlug, [16] holdBatt
+    b.push_back(0x00); b.push_back(0x00);                    // [17:18] providerDataId
+    uint8_t nl = 0; while (name[nl]) nl++;
+    b.push_back(nl);                                         // [19] nameLength
+    for (uint8_t i = 0; i < nl; i++) b.push_back((uint8_t)name[i]);
+}
+
+// A full profile-array STATUS body with `count` profiles at positions 0..count-1: the global
+// "Optionen" (pos 0) carries a MinSoC and NO target; the charge locations (1-3) carry a target SoC.
+static std::vector<uint8_t> make_profiles_array(uint8_t count, uint8_t lead = 0x31) {
+    std::vector<uint8_t> b = { lead, count, 0x40, 0x00, count };  // arrayId/total/flags(PosTx,RA0)/start/count
+    if (count > 0) append_profile_record(b, 0, 0x06, 0x20, 0x50, 0x00, 0x78, "Optionen"); // MinSoC 80%, 22.0C
+    if (count > 1) append_profile_record(b, 1, 0x01, 0x0d, 0x00, 0x50, 0xff, "Zuhause");  // TgtSoC 80%, 13A
+    if (count > 2) append_profile_record(b, 2, 0x06, 0x20, 0x00, 0x64, 0x6e, "Klima");    // TgtSoC 100%, 21.0C
+    if (count > 3) append_profile_record(b, 3, 0x00, 0x00, 0x00, 0x00, 0xff, "");         // empty slot
+    return b;
+}
+
+void test_list_profiles_readonly() {
+    printf("\ntest_list_profiles_readonly\n");
+    g_metrics = MetricStore{};
+    MyNotify = OvmsNotify{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    CHECK(v->test_batctrl().ListProfiles(), "ListProfiles() accepted (no command in flight)");
+    CHECK(v->test_batctrl().ListStatus() == VWeGolfBatteryControl::LIST_PENDING,
+          "list state PENDING while the read is in flight");
+    advance_to_profile_phase(v);   // wake -> handshake -> ack -> GET issued
+    kcan(v)->tx_log.clear();
+
+    // The BCU returns all four profiles. The read-only path must capture every one and STOP.
+    inject_bap_status(v, bap::egolf::FUNC_PROFILES_ARRAY, make_profiles_array(4));
+
+    CHECK(v->test_batctrl().ListStatus() == VWeGolfBatteryControl::LIST_READY,
+          "list state READY after the profile array arrives");
+    CHECK(arm_write_body(kcan(v)).empty(), "read-only: NO profile write (arm) emitted");
+    CHECK(!sent_trigger(kcan(v)), "read-only: NO OperationMode trigger emitted");
+
+    bap::egolf::Profile got[4];
+    uint8_t n = v->test_batctrl().GetProfiles(got, 4);
+    CHECK(n == 4, "all 4 profiles captured");
+    if (n == 4) {
+        CHECK(got[0].position == 0 && strcmp(got[0].name, "Optionen") == 0, "profile 0 = 'Optionen'");
+        CHECK(got[0].minChargeLevel == 0x50 && got[0].targetChargeLevel == 0x00,
+              "profile 0 carries MinSoC (80%) and NO target SoC");
+        CHECK(got[1].position == 1 && strcmp(got[1].name, "Zuhause") == 0, "profile 1 = 'Zuhause'");
+        CHECK(got[1].targetChargeLevel == 0x50 && got[1].maxCurrent == 0x0d,
+              "charge location 1 carries a target SoC (80%) at 13 A");
+        CHECK(got[2].targetChargeLevel == 0x64, "charge location 2 target SoC = 100%");
+        CHECK(got[3].position == 3 && got[3].nameLen == 0, "profile 3 = empty slot");
+    }
+
+    // No user notification for a read-only diagnostic (unlike a climate/charge failure).
+    CHECK(MyNotify.last_value.empty(), "list read pushes no user notification");
+
+    delete v;
+}
+
+// A second ListProfiles() is refused while one is already in flight (one command at a time).
+void test_list_profiles_refused_when_busy() {
+    printf("\ntest_list_profiles_refused_when_busy\n");
+    g_metrics = MetricStore{};
+    MyNotify = OvmsNotify{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    CHECK(v->CommandClimateControl(true) == Success, "climate command starts");
+    CHECK(!v->test_batctrl().ListProfiles(), "ListProfiles refused while a command is in flight");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
+// Profile field write (xvg charge profile set): RMW one profile, no trigger
+// ---------------------------------------------------------------------------
+
+using PE = VWeGolfBatteryControl::ProfileEdit;
+
+// A charge location (pos 1..3) RMW: change ONLY the flagged fields (target SoC + current), keep the
+// operation, the name, and every other byte, target the right array position, and emit NO trigger.
+void test_set_profile_location_soc_current() {
+    printf("\ntest_set_profile_location_soc_current\n");
+    g_metrics = MetricStore{};
+    MyNotify = OvmsNotify{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    PE e;
+    e.fields = PE::F_TGTSOC | PE::F_CURRENT;
+    e.targetChargeLevel = 90;   // 0x5a
+    e.maxCurrent = 10;          // 0x0a
+    CHECK(v->test_batctrl().SetProfile(1, e), "SetProfile(1) accepted");
+    CHECK(v->test_batctrl().ListStatus() == VWeGolfBatteryControl::LIST_PENDING, "PENDING while in flight");
+    advance_to_profile_phase(v);
+    kcan(v)->tx_log.clear();
+
+    // BCU returns the full array; profile 1 ("Zuhause", op 0x01, maxC 0x0d, tgtSoC 0x50).
+    inject_bap_status(v, bap::egolf::FUNC_PROFILES_ARRAY, make_profiles_array(4));
+
+    auto w = arm_write_body(kcan(v));
+    CHECK(w.size() >= 4 + 20, "a full RA0 record is written back");
+    if (w.size() >= 4 + 20) {
+        CHECK(w[2] == 1, "startIndex targets profile position 1");
+        CHECK(w[3] == 1, "count = 1 (single-record write)");
+        const uint8_t* rec = w.data() + 4;
+        CHECK(rec[6] == 0x5a, "targetChargeLevel 0x50 -> 0x5a (90%)");
+        CHECK(rec[2] == 0x0a, "maxCurrent 0x0d -> 0x0a (10 A)");
+        CHECK(rec[0] == 0x01, "operation UNCHANGED (F_OP not set)");
+        CHECK(rec[19] == 7 && memcmp(rec + 20, "Zuhause", 7) == 0, "name 'Zuhause' preserved verbatim");
+    }
+    CHECK(!sent_trigger(kcan(v)), "profile set emits NO OperationMode trigger");
+
+    // Confirmed on the BCU's SET echo (0xb1, bit7), like the idle SetChargeCurrent write.
+    inject_bap_status(v, bap::egolf::FUNC_PROFILES_ARRAY, {0xb1, 0x00, 0x00, 0x01});
+    CHECK(v->test_batctrl().ListStatus() == VWeGolfBatteryControl::LIST_READY,
+          "profile set confirmed on the write echo");
+    for (int i = 0; i <= VWEGOLF_BATCTRL_WAKE_SECS + 1; i++) call_ticker1(v, i);
+    CHECK(MyNotify.count == 0, "CLI op: reports via ListStatus, pushes no user notification");
+
+    delete v;
+}
+
+// The global "Optionen" profile (pos 0) RMW: minSoC + target temp change; operation, maxCurrent, and
+// the name are all preserved.
+void test_set_profile_global_minsoc_temp() {
+    printf("\ntest_set_profile_global_minsoc_temp\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    PE e;
+    e.fields = PE::F_MINSOC | PE::F_TEMP;
+    e.minChargeLevel = 20;                                   // 0x14
+    e.temperatureRaw = bap::egolf::tempToRawDeci(210);       // 21.0 C -> 0x6e
+    CHECK(v->test_batctrl().SetProfile(0, e), "SetProfile(0) accepted");
+    advance_to_profile_phase(v);
+    kcan(v)->tx_log.clear();
+
+    inject_bap_status(v, bap::egolf::FUNC_PROFILES_ARRAY, make_profiles_array(4));
+    auto w = arm_write_body(kcan(v));
+    CHECK(w.size() >= 4 + 20, "a full RA0 record is written back");
+    if (w.size() >= 4 + 20) {
+        CHECK(w[2] == 0, "startIndex targets profile position 0 (global)");
+        const uint8_t* rec = w.data() + 4;
+        CHECK(rec[3] == 0x14, "minChargeLevel 0x50 -> 0x14 (20%)");
+        CHECK(rec[12] == 0x6e, "temperature 0x78 -> 0x6e (21.0 C)");
+        CHECK(rec[0] == 0x06, "operation preserved (climate control owns profile 0's op, not 'set')");
+        CHECK(rec[2] == 0x20, "maxCurrent preserved (not in the edit)");
+        CHECK(rec[19] == 8 && memcmp(rec + 20, "Optionen", 8) == 0, "name 'Optionen' preserved");
+    }
+    CHECK(!sent_trigger(kcan(v)), "profile set emits NO trigger");
+
+    delete v;
+}
+
+// Setting the flags (charge/climate) on a location is a bit-RMW: set only the requested charge/climate
+// bits, PRESERVE every other operation bit (e.g. PO_ALLOW_BATTERY) the profile already carries.
+void test_set_profile_flags_preserve_other_bits() {
+    printf("\ntest_set_profile_flags_preserve_other_bits\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    PE e;
+    e.fields = PE::F_OP;
+    e.operation = bap::egolf::PO_CLIMATE;   // "flags climate": climate only (clears charge)
+    CHECK(v->test_batctrl().SetProfile(1, e), "SetProfile(1, flags) accepted");
+    advance_to_profile_phase(v);
+    kcan(v)->tx_log.clear();
+
+    // Profile 1 read back as op 0x05 = charge (0x01) + climatise-on-battery (0x04).
+    std::vector<uint8_t> body = {0x31, 0x01, 0x40, 0x00, 0x01};
+    append_profile_record(body, 1, 0x05, 0x0d, 0x00, 0x50, 0xff, "Zuhause");
+    inject_bap_status(v, bap::egolf::FUNC_PROFILES_ARRAY, body);
+
+    auto w = arm_write_body(kcan(v));
+    CHECK(w.size() >= 4 + 20, "record written");
+    if (w.size() >= 4 + 20)
+        // (0x05 & ~0x03) | (0x02 & 0x03) = 0x04 | 0x02 = 0x06: charge cleared, climate set,
+        // PO_ALLOW_BATTERY (0x04) preserved.
+        CHECK(w[4 + 0] == 0x06, "op 0x05 -> 0x06: climate set, charge cleared, allow-battery preserved");
+
+    delete v;
+}
+
+// SAFETY chokepoint: a profile-set write must hard-cap maxCurrent at 0x20 even when the read-back byte
+// is garbled above the limit and the edit does NOT touch current (a value >0x20 bricks charging).
+void test_set_profile_hard_caps_current() {
+    printf("\ntest_set_profile_hard_caps_current\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    PE e;
+    e.fields = PE::F_MINSOC;   // edit minSoC only — current is NOT in the edit
+    e.minChargeLevel = 30;
+    CHECK(v->test_batctrl().SetProfile(0, e), "SetProfile(0) accepted");
+    advance_to_profile_phase(v);
+    kcan(v)->tx_log.clear();
+
+    // Profile 0 read back with a garbled maxCurrent 0xFF.
+    inject_bap_status(v, bap::egolf::FUNC_PROFILES_ARRAY, make_profile0_array(0x06, 0x31, 0xFF));
+    auto w = arm_write_body(kcan(v));
+    CHECK(w.size() >= 4 + 20, "record written");
+    if (w.size() >= 4 + 20)
+        CHECK(w[4 + 2] == 0x20, "maxCurrent 0xFF read-back HARD-CAPPED to 0x20 in the write");
+
+    delete v;
+}
+
+// A profile whose stored name is too long to model (nameTruncated) can't be safely RMW'd — re-encoding
+// would write a shorter name and corrupt the record. The set must ABORT with no write, then report FAILED.
+void test_set_profile_truncated_name_aborts() {
+    printf("\ntest_set_profile_truncated_name_aborts\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    PE e;
+    e.fields = PE::F_TGTSOC;
+    e.targetChargeLevel = 80;
+    CHECK(v->test_batctrl().SetProfile(1, e), "SetProfile(1) accepted");
+    advance_to_profile_phase(v);
+    kcan(v)->tx_log.clear();
+
+    // Profile 1 with a 30-char name (> kProfileMaxName 24) -> decodes nameTruncated.
+    std::vector<uint8_t> body = {0x31, 0x01, 0x40, 0x00, 0x01};
+    append_profile_record(body, 1, 0x01, 0x0d, 0x00, 0x50, 0xff, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    inject_bap_status(v, bap::egolf::FUNC_PROFILES_ARRAY, body);
+
+    CHECK(arm_write_body(kcan(v)).empty(), "truncated-name profile: NO write emitted (unsafe RMW aborted)");
+    for (int i = 0; i <= VWEGOLF_BATCTRL_WAKE_SECS + 1; i++) call_ticker1(v, i);
+    CHECK(v->test_batctrl().ListStatus() == VWeGolfBatteryControl::LIST_FAILED,
+          "unsafe-to-edit profile reports FAILED, not a silent corruption");
+
+    delete v;
+}
+
+// Guard rails: an empty edit is rejected, and a set is refused while another command is in flight.
+void test_set_profile_guards() {
+    printf("\ntest_set_profile_guards\n");
+    g_metrics = MetricStore{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    PE empty;  // fields == 0
+    CHECK(!v->test_batctrl().SetProfile(1, empty), "empty edit (no fields) refused");
+
+    PE e; e.fields = PE::F_TGTSOC; e.targetChargeLevel = 80;
+    CHECK(v->CommandClimateControl(true) == Success, "climate command starts");
+    CHECK(!v->test_batctrl().SetProfile(1, e), "SetProfile refused while a command is in flight");
+
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
+// Departure timers (xvg charge timer ...): read-back decode + write framing on 0x17332500
+// ---------------------------------------------------------------------------
+
+static const uint32_t BAP_TIMER_ID = 0x17332500;  // the MIB's FCAN-local id — we must NOT transmit here
+
+// An 8-byte timer record [year mon day hr min weekdays refId pad]. Recurring => date bytes 0xFF.
+static std::vector<uint8_t> timer_rec(uint8_t hr, uint8_t min, uint8_t weekdays, uint8_t refId) {
+    return {0xff, 0xff, 0xff, hr, min, weekdays, refId, 0x00};
+}
+
+// Reassemble a timer RECORD element (SET_GET, func 0x14..0x17) written on 0x17332500; func_out = its
+// func. Empty if none.
+static std::vector<uint8_t> timer_record_body(canbus* bus, uint8_t& func_out) {
+    bap::AssemblerT<256, 4> asmb;
+    for (auto& r : bus->tx_log) {
+        if (!r.extended || r.id != BAP_CMD_ID) continue;
+        bap::Element el;
+        if (asmb.feed(r.data, r.len, el) && el.opcode == bap::OP_SET_GET &&
+            el.lsg == bap::egolf::kLsg && bap::egolf::timerSlotForFunc(el.func) >= 1) {
+            func_out = el.func;
+            return std::vector<uint8_t>(el.body, el.body + el.bodyLen);
+        }
+    }
+    return {};
+}
+
+// The last TimerState mask (29 53) written on 0x17332500, or -1 if none.
+static int timer_mask_written(canbus* bus) {
+    bap::AssemblerT<256, 4> asmb;
+    int mask = -1;
+    for (auto& r : bus->tx_log) {
+        if (!r.extended || r.id != BAP_CMD_ID) continue;
+        bap::Element el;
+        if (asmb.feed(r.data, r.len, el) && el.opcode == bap::OP_SET_GET &&
+            el.lsg == bap::egolf::kLsg && el.func == bap::egolf::FUNC_TIMER_STATE && el.bodyLen >= 1)
+            mask = el.body[0];
+    }
+    return mask;
+}
+
+void test_timer_list_readonly() {
+    printf("\ntest_timer_list_readonly\n");
+    g_metrics = MetricStore{};
+    MyNotify = OvmsNotify{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    CHECK(v->test_batctrl().ListTimers(), "ListTimers() accepted");
+    advance_to_profile_phase(v);   // wake -> handshake -> ack -> timer GET prompts
+    kcan(v)->tx_log.clear();
+
+    // The BCU broadcasts the 3 records + the enable mask (inject as STATUS 49 5x / 49 53). Mask last so
+    // the "all slots + mask" early-finish fires on the last frame. (A slot-4 broadcast is ignored — the
+    // e-Golf has 3 slots; injecting FUNC_TIMER_4 must NOT be stored.)
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_1, timer_rec(0x07, 0x00, 0x3e, 0x01));  // 07:00 Mon-Fri p1
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_2, timer_rec(0x0a, 0x00, 0x40, 0x02));  // 10:00 Sat    p2
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_4, timer_rec(0x06, 0x00, 0x02, 0x03));  // slot 4: IGNORED
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_3, timer_rec(0x10, 0x1e, 0xfe, 0x00));  // 16:30 daily  p0
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_STATE, {0x05, 0x00});                   // slots 1+3 enabled
+
+    CHECK(v->test_batctrl().ListStatus() == VWeGolfBatteryControl::LIST_READY,
+          "timer list READY once mask + all 3 records are in");
+    uint8_t f = 0;
+    CHECK(timer_record_body(kcan(v), f).empty(), "read-only: NO timer record write emitted");
+    CHECK(timer_mask_written(kcan(v)) == -1, "read-only: NO TimerState write emitted");
+
+    bap::egolf::Timer got[4];
+    bool seen[4] = {};
+    uint8_t mask = 0;
+    uint8_t n = v->test_batctrl().GetTimers(got, 4, mask, seen);
+    CHECK(n == 3, "3 timer slots returned (e-Golf has 3, not 4)");
+    CHECK(mask == 0x05, "enable mask = 0x05 (slots 1+3)");
+    CHECK(!seen[3], "slot-4 broadcast was ignored (only 3 slots)");
+    if (n == 3) {
+        CHECK(seen[0] && got[0].hour == 7 && got[0].weekdays == 0x3e && got[0].refId == 1,
+              "slot 1 = 07:00 Mon-Fri, profile 1");
+        CHECK(got[2].hour == 16 && got[2].minute == 30 && got[2].weekdays == 0xfe && got[2].refId == 0,
+              "slot 3 = 16:30 daily, profile 0");
+    }
+    CHECK(MyNotify.last_value.empty(), "timer list pushes no user notification");
+    delete v;
+}
+
+void test_timer_set_writes_record_and_mask() {
+    printf("\ntest_timer_set_writes_record_and_mask\n");
+    g_metrics = MetricStore{};
+    MyNotify = OvmsNotify{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    bap::egolf::Timer t;
+    t.hour = 7; t.minute = 0; t.weekdays = 0x3e; t.refId = 1;  // 07:00 Mon-Fri, profile 1 (recurring)
+    CHECK(v->test_batctrl().SetTimer(2, t), "SetTimer(slot 2) accepted");
+    advance_to_profile_phase(v);
+
+    // ALL timer traffic goes on kCanIdCommand (0x17332501) — our KCAN node's channel, which the gateway
+    // bridges to the FCAN bus where the BCU lives. The MIB's 0x17332500 is FCAN-local and NOT bridged,
+    // so a write there from KCAN never reaches the BCU (confirmed on-car).
+    bool hs_cmd = false;
+    for (auto& f : ext_frames(kcan(v), BAP_CMD_ID)) if (f.len >= 2 && f.data[0] == 0x19 && f.data[1] == 0x42) hs_cmd = true;
+    CHECK(hs_cmd, "timer handshake goes on 0x17332501 (our bus's gatewayed channel)");
+    CHECK(ext_frames(kcan(v), BAP_TIMER_ID).empty(), "NO timer traffic on the FCAN-local 0x17332500");
+
+    kcan(v)->tx_log.clear();
+
+    // The write is gated on reading the current enable mask. Inject it (mask 0 = nothing enabled).
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_STATE, {0x00, 0x00});
+
+    uint8_t func = 0;
+    auto rec = timer_record_body(kcan(v), func);
+    CHECK(rec.size() == 8, "a full 8-byte timer record was written");
+    CHECK(func == bap::egolf::FUNC_TIMER_2, "slot 2 -> func 0x15 (header '29 55'), slot in the func");
+    if (rec.size() == 8) {
+        CHECK(rec[0] == 0xff && rec[1] == 0xff && rec[2] == 0xff, "recurring: date bytes 0xFF");
+        CHECK(rec[3] == 0x07 && rec[4] == 0x00, "07:00 -> hour 0x07, minute 0x00");
+        CHECK(rec[5] == 0x3e, "weekdays = Mon-Fri (0x3e)");
+        CHECK(rec[6] == 0x01, "refId = profile 1");
+        CHECK(rec[7] == 0x00, "trailing pad 0x00");
+    }
+    CHECK(timer_mask_written(kcan(v)) == 0x02, "enable mask RMW: 0x00 | slot-2 bit = 0x02");
+
+    // BCU echoes the new mask -> confirmed.
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_STATE, {0x02, 0x00});
+    CHECK(v->test_batctrl().ListStatus() == VWeGolfBatteryControl::LIST_READY,
+          "SetTimer confirmed once the mask echo reflects the write");
+    delete v;
+}
+
+void test_timer_enable_disable_rmw() {
+    printf("\ntest_timer_enable_disable_rmw\n");
+    g_metrics = MetricStore{};
+    MyNotify = OvmsNotify{};
+
+    // Enable slot 3 with slot 1 already on: mask 0x01 -> 0x05, NO record write.
+    auto* v = new OvmsVehicleVWeGolf();
+    CHECK(v->test_batctrl().EnableTimer(3, true), "EnableTimer(3, on) accepted");
+    advance_to_profile_phase(v);
+    kcan(v)->tx_log.clear();
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_STATE, {0x01, 0x00});
+    uint8_t f = 0;
+    CHECK(timer_record_body(kcan(v), f).empty(), "enable: NO timer record write (mask-only RMW)");
+    CHECK(timer_mask_written(kcan(v)) == 0x05, "enable RMW: 0x01 | slot-3 bit = 0x05");
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_STATE, {0x05, 0x00});
+    CHECK(v->test_batctrl().ListStatus() == VWeGolfBatteryControl::LIST_READY, "enable confirmed");
+    delete v;
+
+    // Disable slot 2 with slots 1+2+3 on: mask 0x07 -> 0x05.
+    v = new OvmsVehicleVWeGolf();
+    CHECK(v->test_batctrl().EnableTimer(2, false), "EnableTimer(2, off) accepted");
+    advance_to_profile_phase(v);
+    kcan(v)->tx_log.clear();
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_STATE, {0x07, 0x00});
+    CHECK(timer_mask_written(kcan(v)) == 0x05, "disable RMW: 0x07 & ~slot-2 bit = 0x05");
+    delete v;
+}
+
+// The persistent cache: an ambient TimerState broadcast BEFORE any command lets a later SET write
+// immediately at the handshake ack, with no in-command mask-broadcast wait (the ~13 s -> ~instant win).
+void test_timer_set_uses_cache() {
+    printf("\ntest_timer_set_uses_cache\n");
+    g_metrics = MetricStore{};
+    MyNotify = OvmsNotify{};
+    auto* v = new OvmsVehicleVWeGolf();
+
+    // Ambient broadcast (no command in flight) populates the cache: mask 0x01 (slot 1 enabled).
+    auto sts = make_kcan_frame(v, BAP_STS_ID, {0x49, 0x58, 0x00});  // first BCU frame (opens the asm)
+    v->IncomingFrameCan3(&sts);
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_STATE, {0x01, 0x00});
+    CHECK(v->test_batctrl().TimerMaskSeen(), "ambient broadcast populated the persistent mask cache");
+
+    // SET slot 2 -> the write must fire from the cache at the handshake ack (no mask injected here).
+    bap::egolf::Timer t;
+    t.hour = 7; t.minute = 0; t.weekdays = 0x3e; t.refId = 1;
+    CHECK(v->test_batctrl().SetTimer(2, t), "SetTimer accepted");
+    advance_to_profile_phase(v);  // wake -> handshake -> ack; write should fire HERE from the cache
+
+    uint8_t func = 0;
+    auto rec = timer_record_body(kcan(v), func);
+    CHECK(rec.size() == 8 && func == bap::egolf::FUNC_TIMER_2,
+          "record written immediately from cache at the handshake ack (no broadcast wait)");
+    CHECK(timer_mask_written(kcan(v)) == 0x03, "mask RMW from cache: 0x01 | slot-2 bit = 0x03");
+
+    // BCU echoes the new mask -> confirmed.
+    inject_bap_status(v, bap::egolf::FUNC_TIMER_STATE, {0x03, 0x00});
+    CHECK(v->test_batctrl().ListStatus() == VWeGolfBatteryControl::LIST_READY, "SetTimer confirmed");
+    delete v;
+}
+
+// ---------------------------------------------------------------------------
 
 void test_bat_ctrl_all() {
     test_climate_command_kicks_nm_wake();
@@ -905,4 +1356,19 @@ void test_bat_ctrl_all() {
     test_arm_skips_write_when_op_matches();
     test_error_aborts_no_retry_no_confirm();
     test_profile_read_populates_metrics();
+    // read-only profile list (xvg charge profile list)
+    test_list_profiles_readonly();
+    test_list_profiles_refused_when_busy();
+    // profile field write (xvg charge profile set)
+    test_set_profile_location_soc_current();
+    test_set_profile_global_minsoc_temp();
+    test_set_profile_flags_preserve_other_bits();
+    test_set_profile_hard_caps_current();
+    test_set_profile_truncated_name_aborts();
+    test_set_profile_guards();
+    // departure timers (xvg charge timer ...)
+    test_timer_list_readonly();
+    test_timer_set_writes_record_and_mask();
+    test_timer_enable_disable_rmw();
+    test_timer_set_uses_cache();
 }

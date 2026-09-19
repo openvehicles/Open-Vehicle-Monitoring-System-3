@@ -113,8 +113,9 @@ BO_ 1447 OCU_Keepalive: 8 OVMS
  SG_ Panic : 52|1@1+ (1,0) [0|1] "" Vector__XXX
 
 // ---------------------------------------------------------------------------
-// FCAN (500 kbps) — powertrain bus, accessible via J533 harness
-// OVMS: CAN bus 2 (m_can2).  Sparse but carries gear selector and VIN.
+// Powertrain-origin frames (gear selector, VIN). These originate on the FCAN
+// (500 kbps) powertrain bus but the J533 gateway rebroadcasts them onto KCAN,
+// so OVMS reads them on CAN bus 3 (m_can3) — it does not tap FCAN directly.
 // ---------------------------------------------------------------------------
 
 BO_ 391 GearSelector: 8 GearModule
@@ -207,8 +208,8 @@ CM_ BO_ 1712 "KCAN. Windshield/front area temperature sensor. Logged but not yet
 CM_ BO_ 1717 "KCAN. Dual ambient temperature sensors: outside air and solar. Encoding inferred.";
 CM_ BO_ 1719 "KCAN. Odometer, park time, and filtered outside temperature. Odometer and outside temp confirmed. Park time encoding not fully confirmed — bit layout inferred from firmware.";
 CM_ BO_ 1447 "KCAN TX by OVMS. OCU OSEK NM keepalive. All-zeros = idle. Action bits are one-shot: set for one transmission then cleared. Lock/unlock bits require additional auth bytes not yet captured.";
-CM_ BO_ 391 "FCAN. Gear selector position. Confirmed from captures.";
-CM_ BO_ 1716 "FCAN. VIN broadcast across three frames (frame index 0/1/2 in byte 0). Assembled in firmware from all three before committing.";
+CM_ BO_ 391 "Powertrain-origin, gatewayed onto KCAN — OVMS reads it on KCAN (bus 3), confirmed from captures. Gear selector position.";
+CM_ BO_ 1716 "Powertrain-origin, gatewayed onto KCAN — OVMS reads it on KCAN (bus 3), confirmed from captures. VIN broadcast across three frames (frame index 0/1/2 in byte 0). Assembled in firmware from all three before committing.";
 CM_ BO_ 2536711425 "KCAN TX by OVMS (extended 29-bit ID 0x17332501). BAP command channel to clima ECU (node 0x25). Multi-frame BAP — not a conventional signal message. See bat-ctrl-bap.md.";
 CM_ BO_ 2536711440 "KCAN RX from clima ECU (extended 29-bit ID 0x17332510). BAP status and ACK channel. ECU echoes command counter | 0x80 to confirm receipt. See bat-ctrl-bap.md.";
 
