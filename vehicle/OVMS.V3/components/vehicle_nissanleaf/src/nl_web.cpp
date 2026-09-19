@@ -168,7 +168,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   c.input_radio_start("SOC Display", "socnewcar");
   c.input_radio_option("socnewcar", "from dashboard display",   "no",  socnewcar == false);
-  c.input_radio_option("socnewcar", "relative to fixed value:", "yes", socnewcar == true);
+  c.input_radio_option("socnewcar", "relative to fixed value (required for AZE0):", "yes", socnewcar == true);
   c.input_radio_end("");
   c.input("number", NULL, "maxgids", maxgids.c_str(), "Default: " STR(GEN_1_NEW_CAR_GIDS),
       "<p>Enter the maximum GIDS value when fully charged. Default values are " STR(GEN_1_NEW_CAR_GIDS) " (24kWh) or " STR(GEN_1_30_NEW_CAR_GIDS) " (30kWh) or " STR(GEN_2_40_NEW_CAR_GIDS) " (40kWh) or " STR(GEN_2_62_NEW_CAR_GIDS) " (62kWh)</p>",
@@ -176,13 +176,13 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   c.input_radio_start("SOH Display", "sohnewcar");
   c.input_radio_option("sohnewcar", "from dashboard display",   "no",  sohnewcar == false);
-  c.input_radio_option("sohnewcar", "relative to fixed value:", "yes", sohnewcar == true);
+  c.input_radio_option("sohnewcar", "relative to fixed value (required for AZE0):", "yes", sohnewcar == true);
   c.input_radio_end("");
   c.input("number", NULL, "newcarah", newcarah.c_str(), "Default: " STR(GEN_1_NEW_CAR_AH),
       "<p>This is the usable capacity of your battery when new. Default values are " STR(GEN_1_NEW_CAR_AH) " (24kWh) or " STR(GEN_1_30_NEW_CAR_AH) " (30kWh) or " STR(GEN_2_40_NEW_CAR_AH) " (40kWh) or " STR(GEN_2_62_NEW_CAR_AH) " (62kWh)</p>",
       "min=\"1\" step=\"1\"", "Ah");
   c.input("number", "Cabin Temperature Offset", "cabintempoffset", cabintempoffset.c_str(), "Default: " STR(DEFAULT_CABINTEMP_OFFSET),
-      "<p>This allows an offset adjustment to the cabin temperature sensor readings in Celcius.</p>",
+      "<p>This allows an offset adjustment to the cabin temperature sensor readings in Celcius.  Unnecessary on ZE1 models.</p>",
       "step=\"0.1\"", "");
   c.input("number", "Speed Divisor", "speeddivisor", speeddivisor.c_str(), "Default: " STR(DEFAULT_SPEED_DIVISOR),
       "<p>This allows the speed readings to be adjusted (which also affects the trip odometer), e.g. if wheel diameter has changed. This can be estimated by comparing trip odometer to GPS track distance.</p>"
