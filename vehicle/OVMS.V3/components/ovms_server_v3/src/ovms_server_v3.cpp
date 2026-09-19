@@ -592,7 +592,7 @@ void OvmsServerV3::TransmitImmediateMetrics()
 
 uint16_t OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock(0);
+  auto mglock = MongooseLock(1);
   if (!mglock || !m_mgconn)
     return 0;
 
@@ -611,7 +611,7 @@ uint16_t OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
 
 uint16_t OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock(0);
+  auto mglock = MongooseLock(1);
   if (!mglock || !m_mgconn)
     return 0;
 
@@ -630,7 +630,7 @@ uint16_t OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
 
 uint16_t OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock(0);
+  auto mglock = MongooseLock(1);
   if (!mglock || !m_mgconn)
     return 0;
 
@@ -649,7 +649,7 @@ uint16_t OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
 
 uint16_t OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock(0);
+  auto mglock = MongooseLock(1);
   if (!mglock || !m_mgconn)
     return 0;
 
