@@ -1272,8 +1272,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
 
       float max_charge_power = ( (d[2] & 0x01) << 8 | d[3]) * 100; // in W
-      float ac_voltage = ( ((d[5] & 0x07) << 8 | ( d[6] & 0xFC)) >> 2) * 2; // in V
-      //ac_voltage = ac_voltage + 70; //Offset with 70V (why?)
+      float ac_voltage = (((d[5] & 0x07) << 8 | ( d[6] & 0xFC)) >> 2) * 0.5f + 70.0f;
 
       if (ac_state) {
          StandardMetrics.ms_v_charge_voltage->SetValue(ac_voltage);
