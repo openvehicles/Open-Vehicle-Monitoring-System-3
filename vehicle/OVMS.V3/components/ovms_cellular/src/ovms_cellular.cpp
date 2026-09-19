@@ -2165,6 +2165,53 @@ void cellular_sendsms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     }
   }
 
+void cellular_sendussd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  PowerMode pm = MyModem ? MyModem->GetPowerMode() : Off;
+  if (pm != On && pm != Devel)
+    {
+    writer->puts("ERROR: MODEM not powered on!");
+    return;
+    }
+  else
+    {
+    OvmsMutexLock lock(&MyModem->m_cmd_mutex, 3000);
+    if (!lock.IsLocked())
+      {
+      writer->puts("ERROR: MODEM command channel in use, please retry");
+      return;
+      }
+
+    MyModem->m_cmd_output.clear();
+    MyModem->m_cmd_running = true;
+
+    // Request USSD transmission:
+    std::string msg = "AT+CUSD=1,\"";
+    msg.append(argv[0]);
+    msg.append("\",15\r\n");
+
+    if (!MyModem->txcmd(msg.c_str(), msg.length()))
+      {
+      writer->puts("ERROR: MODEM command channel not available!");
+      MyModem->m_cmd_running = false;
+      MyModem->m_cmd_output.clear();
+      return;
+      }
+
+    // Wait for command to finish:
+    bool done = MyModem->m_cmd_done.Take(pdMS_TO_TICKS(7000));
+
+    MyModem->m_cmd_running = false;
+
+    msg = MyModem->m_cmd_output;
+    writer->write(msg.c_str(), msg.size());
+
+    if (!done) writer->puts("[TIMEOUT]");
+
+    MyModem->m_cmd_output.clear();
+    }
+  }
+
 void cellular_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyModem->SupportSummary(writer, (strcmp(cmd->GetName(), "debug") == 0));
@@ -2292,6 +2339,11 @@ CellularModemInit::CellularModemInit()
   cmd_cellular->RegisterCommand("sendsms","Send SMS message",cellular_sendsms, "<receiver> <text> [<text>…]\n"
     "<receiver> needs to be given in international format with leading '+'\n"
     "Multiple <text> will be sent as multiple lines.", 2, INT_MAX);
+  cmd_cellular->RegisterCommand("sendussd","Send USSD code",cellular_sendussd, "<code>\n"
+    "USSD support depends on the provider. Common <code> examples:\n"
+    " *100# or *101# = query account balance\n"
+    " *135# = query phone number\n"
+    "If a response is received, it will be forwarded as a text notification (subtype \"modem.received.ussd\").", 1, 1);
   cmd_cellular->RegisterCommand("drivers","Show supported CELLULAR MODEM drivers",cellular_drivers, "", 0, 0);
   OvmsCommand* cmd_status = cmd_cellular->RegisterCommand("status","Show CELLULAR MODEM status",cellular_status, "[debug]", 0, 0, false);
   cmd_status->RegisterCommand("debug","Show extended CELLULAR MODEM status",cellular_status, "", 0, 0, false);

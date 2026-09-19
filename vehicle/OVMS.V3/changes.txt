@@ -1,6 +1,13 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Cellular: added shell command for USSD code transmission to simplify USSD requests via V3/MQTT.
+    If a response is received, it will be forwarded as a text notification (subtype modem.received.ussd,
+    see https://docs.openvehicles.com/en/latest/userguide/notifications.html#standard-notifications)
+    Note: USSD support and codes depend on the network provider. Commonly supported are *100# or *101#
+    to query the balance and *135# to query the phone number.
+  New command:
+    cellular sendussd <code>
 - Cellular: added Web UI settings for GPS parking holiday handling.
     New configs:
       [modem] gps.parkholiday (days, defaul 3)            -- parking threshold after which GPS re-activation uses the holiday multiplier
