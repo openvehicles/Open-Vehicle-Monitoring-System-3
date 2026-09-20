@@ -547,7 +547,7 @@ void OvmsVehicleSmartEQ::SendGPSLog()
 
   std::ostringstream buf;
   buf
-    << "SQ-GPS-Log,"
+    << "XSQ-GPS-Log,"
     << (long)(StdMetrics.ms_v_pos_odometer->AsFloat(0.0f, Kilometers) * 10.0f)
     << ",86400"
     << std::fixed << std::setprecision(6)

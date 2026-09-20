@@ -304,13 +304,13 @@ GPS history log
 -------------------------
 
 When the smart EQ user enables the optional GPS history log in the vehicle web settings,
-``SendGPSLog()`` emits a notify record of type ``SQ-GPS-Log``. This log is only generated
+``SendGPSLog()`` emits a notify record of type ``XSQ-GPS-Log``. This log is only generated
 when the vehicle is on, GPS lock is valid, and the relevant values changed since the last send.
 The record format is:
 
 ::
 
-   SQ-GPS-Log,<odometer_0.1km>,86400,<latitude>,<longitude>,<altitude_m>,<heading_deg>,<speed_kmh>,<gpslock>,<latitude_age_s>,<network_quality>,<bat_power_kw>,<bat_energy_used_kwh>,<bat_energy_recd_kwh>,<bat_current_a>
+   XSQ-GPS-Log,<odometer_0.1km>,86400,<latitude>,<longitude>,<altitude_m>,<heading_deg>,<speed_kmh>,<gpslock>,<latitude_age_s>,<network_quality>,<bat_power_kw>,<bat_energy_used_kwh>,<bat_energy_recd_kwh>,<bat_current_a>
 
 The data fields are:
 
