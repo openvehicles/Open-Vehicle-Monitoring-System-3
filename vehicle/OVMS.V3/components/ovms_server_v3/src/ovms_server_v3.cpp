@@ -165,6 +165,10 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         if (MyOvmsServerV3)
           {
+          const int64_t now = monotonictime;
+          MyOvmsServerV3->m_last_rx = now;
+          MyOvmsServerV3->m_connected_since = now;
+          MyOvmsServerV3->m_probe_sent = false;
           MyOvmsServerV3->m_sendall = true;
           MyOvmsServerV3->m_notify_info_pending = true;
           MyOvmsServerV3->m_notify_error_pending = true;
@@ -189,6 +193,8 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
              msg->topic.p, (int) msg->payload.len, msg->payload.p);
       if (MyOvmsServerV3)
         {
+        MyOvmsServerV3->m_last_rx = monotonictime;
+        MyOvmsServerV3->m_probe_sent = false;
         MyOvmsServerV3->IncomingMsg(std::string(msg->topic.p,msg->topic.len),
                                     std::string(msg->payload.p,msg->payload.len));
         }
@@ -218,6 +224,13 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       break;
     case MG_EV_MQTT_PUBCOMP:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBCOMP)");
+      break;
+    case MG_EV_RECV:
+      if (MyOvmsServerV3)
+        {
+        MyOvmsServerV3->m_last_rx = monotonictime;
+        MyOvmsServerV3->m_probe_sent = false;
+        }
       break;
     case MG_EV_CLOSE:
       ESP_LOGD(TAG, "OvmsServerV3MongooseCallback(MG_EV_CLOSE)");
@@ -251,6 +264,9 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_lasttx = 0;
   m_lasttx_sendall = 0;
   m_lasttx_priority = 0;
+  m_last_rx = 0;
+  m_connected_since = 0;
+  m_probe_sent = false;
   m_peers = 0;
   m_updatetime_idle = 600;
   m_updatetime_connected = 10;
@@ -259,6 +275,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_updatetime_charging = 10;
   m_updatetime_sendall = 1200;
   m_updatetime_keepalive = 29*60;
+  m_updatetime_probe = 60;
   m_legacy_event_topic = true;
   m_retain_depth_limit = false;
   m_notify_info_pending = false;
@@ -575,7 +592,7 @@ void OvmsServerV3::TransmitImmediateMetrics()
 
 uint16_t OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock(0);
+  auto mglock = MongooseLock(1);
   if (!mglock || !m_mgconn)
     return 0;
 
@@ -594,7 +611,7 @@ uint16_t OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
 
 uint16_t OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock(0);
+  auto mglock = MongooseLock(1);
   if (!mglock || !m_mgconn)
     return 0;
 
@@ -613,7 +630,7 @@ uint16_t OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
 
 uint16_t OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock(0);
+  auto mglock = MongooseLock(1);
   if (!mglock || !m_mgconn)
     return 0;
 
@@ -632,7 +649,7 @@ uint16_t OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
 
 uint16_t OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
   {
-  auto mglock = MongooseLock(0);
+  auto mglock = MongooseLock(1);
   if (!mglock || !m_mgconn)
     return 0;
 
@@ -1093,6 +1110,9 @@ void OvmsServerV3::Disconnect()
     SetStatus("Disconnected from OVMS Server V3", false, Disconnected);
     }
   if (m_connretry > 0) m_connretry = 0;
+  m_last_rx = 0;
+  m_connected_since = 0;
+  m_probe_sent = false;
   StandardMetrics.ms_s_v3_connected->SetValue(false);
   StandardMetrics.ms_s_v3_peers->SetValue(0);
   }
@@ -1274,6 +1294,8 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
     m_updatetime_charging = param->GetValueInt("updatetime.charging", m_updatetime_charging);
     m_updatetime_sendall = param->GetValueInt("updatetime.sendall", m_updatetime_sendall);
     m_updatetime_keepalive = param->GetValueInt("updatetime.keepalive", m_updatetime_keepalive);
+    m_updatetime_probe = param->GetValueInt("updatetime.probe", m_updatetime_probe);
+    if (m_updatetime_probe < 10) m_updatetime_probe = 10;
     m_legacy_event_topic = param->GetValueBool("events.legacy_topic", true);
     m_retain_depth_limit = param->GetValueBool("retain.depth.limit", m_retain_depth_limit);
     m_updatetime_priority = param->GetValueBool("updatetime.priority", false);
@@ -1372,6 +1394,43 @@ void OvmsServerV3::NetmanStop(std::string event, void* data)
     }
   }
 
+void OvmsServerV3::LivenessCheck()
+  {
+  if (!m_mgconn || !StandardMetrics.ms_s_v3_connected->AsBool())
+    return;
+
+  int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
+  if (m_last_rx == 0)
+    {
+    m_last_rx = now;
+    return;
+    }
+
+  const int64_t silence = now - m_last_rx;
+  if (silence < m_updatetime_probe)
+    {
+    m_probe_sent = false;
+    return;
+    }
+
+  if (!m_probe_sent)
+    {
+    ESP_LOGW(TAG, "No inbound MQTT traffic for %llds, sending ping", (long long)silence);
+    mg_mqtt_ping(m_mgconn);
+    m_probe_sent = true;
+    return;
+    }
+
+  if (silence >= (m_updatetime_probe + 30))
+    {
+    ESP_LOGE(TAG, "MQTT liveness timeout after %llds with no inbound traffic, reconnecting",
+             (long long)silence);
+    Disconnect();
+    m_connretry = 30;
+    m_connection_counter = 0;
+    }
+  }
+
 void OvmsServerV3::Ticker1(std::string event, void* data)
   {
   bool net_connected = StdMetrics.ms_m_net_connected->AsBool();
@@ -1451,7 +1510,8 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     }
 
   if (StandardMetrics.ms_s_v3_connected->AsBool())
-    {      
+    {
+    LivenessCheck();
     bool carawake = StandardMetrics.ms_v_env_awake->AsBool();
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
     bool carcharging = StandardMetrics.ms_v_charge_inprogress->AsBool();
@@ -1617,6 +1677,16 @@ void ovmsv3_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       default:
         writer->puts("State: undetermined");
         break;
+      }
+    if (MyOvmsServerV3->m_connected_since > 0)
+      {
+      writer->printf("       Connected since: %llds ago\n",
+                     (long long)(monotonictime - MyOvmsServerV3->m_connected_since));
+      }
+    if (MyOvmsServerV3->m_last_rx > 0)
+      {
+      writer->printf("       Last RX: %llds ago\n",
+                     (long long)(monotonictime - MyOvmsServerV3->m_last_rx));
       }
     writer->printf("       %s\n",MyOvmsServerV3->m_status.c_str());
     }
