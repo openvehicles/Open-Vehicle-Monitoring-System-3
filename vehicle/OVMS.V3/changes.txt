@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- smart EQ: added an opt-in GPS history log for driving position/vehicle data. 
+  This feature is disabled by default and must be explicitly enabled by the user from the vehicle web UI, 
+  so personal location data is not logged unless the user intentionally enables it.
+  For OVMS Connect App, this option improves tracking and fills in the waypoints if the connection to the PyOVMS V3 server has been interrupted.
 - Cellular: added shell command for USSD code transmission to simplify USSD requests via V3/MQTT.
     If a response is received, it will be forwarded as a text notification (subtype modem.received.ussd,
     see https://docs.openvehicles.com/en/latest/userguide/notifications.html#standard-notifications)
