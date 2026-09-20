@@ -1,36 +1,36 @@
 =======================
-Smart ED/EQ Gen.4 (453)
+smart ED/EQ Gen.4 (453)
 =======================
 
 Vehicle Type: **SQ**
 
 .. warning::
-  **Potential HV battery contactor cycle counter glitch on Smart 453 (Smart ED/EQ Gen.4)**
+  **Potential HV battery contactor cycle counter glitch on smart 453 (smart ED/EQ Gen.4)**
   
-  Smart/Mercedes have documented that the use of third-party OBD devices
-  on the Smart 453 (model variants 453.091/391/491) may impair the
+  smart/Mercedes have documented that the use of third-party OBD devices
+  on the smart 453 (model variants 453.091/391/491) may impair the
   contactor ageing counter of the high-voltage battery, causing the
   counter to reset to "0" within a short period. When this occurs the
   HV contactors will no longer engage and the vehicle will be
-  undriveable. Smart/Mercedes also state that this voids the warranty
+  undriveable. smart/Mercedes also state that this voids the warranty
   and goodwill entitlement on the HV battery.
 
   There is `at least one reported case <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/1405>`_
-  of this fault occurring on a Smart 453 with OVMS installed, although the community has not yet
+  of this fault occurring on a smart 453 with OVMS installed, although the community has not yet
   conclusively established whether OVMS specifically triggers this
   behaviour, or whether it is a more general response to permanently-installed
   OBD devices or just incidental behaviour. The recoverable fix is a BMS counter reset
   (performed by specialist workshops in Europe); full HV battery
   replacement is *not* required for this fault.
 
-  Users of the Smart 453 should weigh this guidance carefully before
+  Users of the smart 453 should weigh this guidance carefully before
   installing OVMS. If you choose to proceed, consider monitoring the
   contactor cycle count via ``xsq hvcycles`` and disconnecting the
   module if any unexpected change is observed.
 
   References:
 
-  * `Smart EMOTION forum: BMS glitch for contactor switching cycles
+  * `smart EMOTION forum: BMS glitch for contactor switching cycles
     <https://www.smart-emotion.de/forum/thread/4407-bms-glitch-for-contactor-switching-cycles/>`_
   * `GitHub issue #1405
     <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/1405>`_
@@ -38,7 +38,7 @@ Vehicle Type: **SQ**
     <https://www.youtube.com/watch?v=9ln-2q_ExEQ>`_
 
 
-The Smart BMS counts down remaining contactor cycles from 200,000 down to zero. When zero is reached,
+The smart BMS counts down remaining contactor cycles from 200,000 down to zero. When zero is reached,
 the BMS shuts down HV battery access permanently and asks for replacement. Normal usage results
 in single contactor counts per HV battery activation (i.e. driving, charging, preconditioning,
 12V maintenance charges), amounting to just a couple of counts per day depending on the actual
@@ -67,7 +67,7 @@ a V2 server in table ``XSQ-BMS-ContactorLog``. If only using V3/MQTT, please con
 up a V2 connection as well, to collect the data. Another option is to run an MQTT recorder
 saving all contactor log messages received.
 
-**When encountering the issue**: please send your contactor log along with the alerts to the Smart
+**When encountering the issue**: please send your contactor log along with the alerts to the smart
 maintainer(s) for analysis. Please include all info on other devices plugged in or installed, even
 dumb devices connected to the 12V system. If enough cases can be collected, there may be a chance
 to narrow down potential triggers.
@@ -81,6 +81,7 @@ Support Overview
 Function                    Support Status
 =========================== ==============
 Hardware                    OVMS v3 (or later)
+
 Vehicle Cable               OBD-II to DB9 Data Cable for OVMS (1441200 right, or 1139300 left)
 GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna)
@@ -106,12 +107,12 @@ DDT4all simple Support      Yes (a List of all possible commands at www.smart-EM
 -------------------------
 Known Issues
 -------------------------
-- *HV battery contactor cycle counter glitch (Smart 453):* see the
-  warning above. Smart/Mercedes' documentation identifies the use of
+- *HV battery contactor cycle counter glitch (smart 453):* see the
+  warning above. smart/Mercedes' documentation identifies the use of
   third-party OBD devices as a risk factor for premature reset of the
   HV battery contactor ageing counter. At least one OVMS user has
   experienced this fault. Cause-effect is not conclusively established
-  in the community, but installing OVMS on a Smart 453 carries the risk
+  in the community, but installing OVMS on a smart 453 carries the risk
   of HV battery warranty voidance per the manufacturer's stated position.
 - Lock/Unlock: The Lock/Unlock function is not really implemented. You can only lock the car when it is open, car is not secured locked.
 - Valet Mode: Not implemented.
@@ -296,3 +297,37 @@ The ``xsq canwrite`` command allows sending custom CAN commands directly to the 
       reset:   false
       wakeup:  true
     Command executed successfully
+
+
+-------------------------
+GPS history log
+-------------------------
+
+When the smart EQ user enables the optional GPS history log in the vehicle web settings,
+``SendGPSLog()`` emits a notify record of type ``SQ-GPS-Log``. This log is only generated
+when the vehicle is on, GPS lock is valid, and the relevant values changed since the last send.
+The record format is:
+
+::
+
+   SQ-GPS-Log,<odometer_0.1km>,86400,<latitude>,<longitude>,<altitude_m>,<heading_deg>,<speed_kmh>,<gpslock>,<latitude_age_s>,<network_quality>,<bat_power_kw>,<bat_energy_used_kwh>,<bat_energy_recd_kwh>,<bat_current_a>
+
+The data fields are:
+
+* ``odometer_0.1km``: current odometer value in tenths of a kilometer
+* ``86400``: retention/validity period in seconds for the V2 history record
+* ``latitude`` / ``longitude``: GPS position in decimal degrees, precision 6
+* ``altitude_m``: altitude in meters
+* ``heading_deg``: vehicle heading in degrees
+* ``speed_kmh``: vehicle speed in km/h
+* ``gpslock``: boolean GPS lock indicator (1 = locked, 0 = not locked)
+* ``latitude_age_s``: age of the last valid latitude data in seconds
+* ``network_quality``: current network signal quality / modem quality indicator
+* ``bat_power_kw``: battery power in kW
+* ``bat_energy_used_kwh``: energy used since trip start in kWh
+* ``bat_energy_recd_kwh``: recovered energy since trip start in kWh
+* ``bat_current_a``: battery current in amperes
+
+This record contains location data and vehicle power/energy data, so it is considered
+privacy-sensitive. For that reason the feature is disabled by default and must be
+explicitly enabled by the user in the smart EQ web UI.

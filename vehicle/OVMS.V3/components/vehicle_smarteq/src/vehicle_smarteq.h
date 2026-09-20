@@ -140,6 +140,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void Notify12Vcharge();
     void NotifySOClimit();
     void NotifyHVCycles(bool alert = false);
+    void SendGPSLog();
 
     // --- Door / Lock state ---
     bool DoorOpen();
@@ -456,6 +457,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_12v_charge_state = false;        // 12V charge state
     bool m_extendedStats = false;           // extended stats for trip and maintenance data
     bool m_enable_calcADCfactor = false;    // enable calculation of ADC factor
+    bool m_gps_log_enable = false;          // enable GPS history log (V2 L message), opt-in only
     bool m_cmd_wakeup = false;              // wakeup command issued
     int m_reboot_ticker = 0;                // ticker for network restart
     int m_reboot_time = 30;                 // Restart Network time (minutes), when Server connection is lost
@@ -516,6 +518,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
   // private
   // =========================================================================
   private:
+    static size_t m_modifier;
     static OvmsVehicleSmartEQ* GetInstance(OvmsWriter* writer=NULL);
     // ADC factor calculation is needed based on 12V reading, only check when car is on or charging to avoid false recalculations based on 12V drop when car is off
     // activated only after reboot

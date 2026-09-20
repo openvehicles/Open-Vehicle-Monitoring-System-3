@@ -34,6 +34,8 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
+size_t OvmsVehicleSmartEQ::m_modifier = 0;
+
 OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
 {
   OvmsVehicleSmartEQ* smarteq = (OvmsVehicleSmartEQ*) MyVehicleFactory.ActiveVehicle();
@@ -52,6 +54,11 @@ OvmsVehicleSmartEQ* OvmsVehicleSmartEQ::GetInstance(OvmsWriter* writer)
  */
 
 OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
+  if (m_modifier == 0) {
+    m_modifier = MyMetrics.RegisterModifier();
+    ESP_LOGD(TAG, "registered metric modifier is #%d", m_modifier);
+  }
+
   ESP_LOGI(TAG, "Start smart EQ vehicle module");
 
   // BMS configuration:
@@ -294,6 +301,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_tpms_temp_enable     = map->GetValueBool("tpms.temp", true);
     m_12v_charge           = map->GetValueBool("12v.charge", true);
     m_enable_calcADCfactor = map->GetValueBool("calc.adcfactor", false);
+    m_gps_log_enable       = map->GetValueBool("gps.log", false);
     m_indicator            = map->GetValueBool("indicator", false);
     m_extendedStats        = map->GetValueBool("extended.stats", false);
     obdii_79b              = map->GetValueBool("obdii.79b", true);
