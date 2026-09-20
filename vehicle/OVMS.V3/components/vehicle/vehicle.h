@@ -527,6 +527,9 @@ class OvmsVehicle : public InternalRamAllocated
     virtual vehicle_command_t CommandCooldown(bool cooldownon);
     virtual vehicle_command_t CommandWakeup();
     virtual vehicle_command_t CommandClimateControl(bool enable);
+    // Whether CommandClimateControl() is actually implemented by this
+    // vehicle. Used to advertise V2 capability C26 to the app.
+    virtual bool SupportsClimateControl() { return false; }
     virtual vehicle_command_t CommandLock(const char* pin);
     virtual vehicle_command_t CommandUnlock(const char* pin);
     virtual vehicle_command_t CommandActivateValet(const char* pin);
