@@ -148,6 +148,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   // request); the page fetches it in the background via ?action=updatecheck.
   MyOTA.GetStatus(info, false);
   bool has_factory = ovms_partition_table_has_factory();
+  std::string ota_server = MyConfig.GetParamValue("ota", "server", "api.openvehicles.com/firmware/ota");
 
   c.panel_start("primary", "Firmware setup &amp; update");
 
@@ -258,22 +259,9 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       "</div>"
       "<div id=\"tab-flash-http\" class=\"tab-pane fade section-flash\">");
 
-  // warn about modem / AP connection:
-  if (netif_default) {
-    if (netif_default->name[0] == 'a' && netif_default->name[1] == 'p') {
-      c.alert("warning",
-        "<p class=\"lead\"><strong>No internet access.</strong></p>"
-        "<p>The module is running in wifi AP mode without cellular modem, so flashing from a public server is currently not possible.</p>"
-        "<p>You can still flash from an AP network local IP address (<code>192.168.4.x</code>).</p>");
-    }
-    else if (netif_default->name[0] == 'p' && netif_default->name[1] == 'p') {
-      c.alert("warning",
-        "<p class=\"lead\"><strong>Using cellular modem connection for internet.</strong></p>"
-        "<p>Downloads from public servers will currently be done via cellular network. Be aware update files are &gt;4 MB, "
-        "which may exceed your data plan and need some time depending on your link speed.</p>"
-        "<p>You can also flash locally from a wifi network IP address.</p>");
-    }
-  }
+  // warn about modem / no internet connection (filled in & kept up to date
+  // from m.net.type by the netCheck script below):
+  c.print("<div class=\"receiver\" id=\"flash-net-alert\"></div>");
 
   c.form_start(p.uri);
 
@@ -533,12 +521,45 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
           "flashFinish(false);"
         "});"
       "}"
+      // --- network state check for downloads (m.net.type) ------------------
+      // Checked on click, so a network change after page load is taken into
+      // account. Downloads from the module's own wifi AP network (192.168.4.x)
+      // need neither internet access nor the modem, so they are always allowed.
+      "var netmsg = {"
+        "modem: \"<p class=\\\"lead\\\"><strong>Using cellular modem connection for internet.</strong></p>"
+          "<p>Downloads from public servers will currently be done via cellular network. Be aware update files are &gt;4 MB, "
+          "which may exceed your data plan and need some time depending on your link speed.</p>"
+          "<p>You can also flash locally from a wifi network IP address.</p>\","
+        "none: \"<p class=\\\"lead\\\"><strong>No internet access.</strong></p>"
+          "<p>The module has neither a wifi nor a cellular internet connection, so flashing from a public server is currently not possible.</p>"
+          "<p>You can still flash from an AP network local IP address (<code>192.168.4.x</code>).</p>\""
+      "};"
+      "function isLocalAP(url){"
+        "return /^([a-z]+:\\/\\/)?192\\.168\\.4\\.\\d+([:\\/]|$)/i.test(url.trim());"
+      "}"
+      "function netCheck(url, proceed){"
+        "var type = metrics[\"m.net.type\"];"
+        "if (isLocalAP(url) || (type != \"modem\" && type != \"none\")) {"
+          "proceed();"
+        "} else if (type == \"modem\") {"
+          "confirmdialog(\"Download via cellular?\", netmsg.modem, [\"Cancel\", \"Continue\"], function(ok){"
+            "if (ok) proceed();"
+          "});"
+        "} else {"
+          "confirmdialog(\"Download not possible\", netmsg.none, [\"Close\"]);"
+        "}"
+      "}"
+      "$(\"#flash-net-alert\").on(\"msg:metrics\", function(e, update){"
+        "if (update && !(\"m.net.type\" in update)) return;"
+        "var msg = netmsg[metrics[\"m.net.type\"]];"
+        "$(this).html(msg ? \"<div class=\\\"alert alert-warning\\\">\" + msg + \"</div>\" : \"\");"
+      "}).trigger(\"msg:metrics\");"
       "$(\".action-update-now\").on(\"click\", function(ev){"
         "var server = $(\"input[name=server]\").val() || \"https://api.openvehicles.com/firmware/ota\";"
         "var tag = $(\"input[name=tag]\").val() || \"main\";"
         "var hardware = \"" + hardware + "\";"
         "var url = server.replace(/\\/$/, \"\") + \"/\" + hardware + \"/\" + tag + \"/ovms3.bin\";"
-        "runFlashCmd(\"ota flash http \" + url);"
+        "netCheck(url, function(){ runFlashCmd(\"ota flash http \" + url); });"
         "ev.stopPropagation();"
         "return false;"
       "});"
@@ -546,7 +567,9 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "var action = $(this).attr(\"value\");"
         "if (!action) return;"
         "if (action == \"flash-http\") {"
-          "runFlashCmd(\"ota flash http \" + $(\"input[name=flash_http]\").val());"
+          // An empty URL makes 'ota flash http' download from the saved update server:
+          "var url = $(\"input[name=flash_http]\").val();"
+          "netCheck(url || \"" + json_encode(ota_server) + "\", function(){ runFlashCmd(\"ota flash http \" + url); });"
         "}"
         "else if (action == \"flash-vfs\") {"
           "runFlashCmd(\"ota flash vfs \" + $(\"input[name=flash_vfs]\").val());"
