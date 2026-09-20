@@ -1669,7 +1669,6 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_env_cabintemp->IsModifiedAndClear(MyOvmsServerV2Modifier);
     StandardMetrics.ms_v_env_cabintemp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_climate_ctrl->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
