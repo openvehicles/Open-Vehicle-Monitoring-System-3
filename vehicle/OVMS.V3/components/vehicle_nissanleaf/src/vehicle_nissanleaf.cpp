@@ -1854,7 +1854,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             switch(mx)
             {
               case 9: cd = CHARGE_DURATION_100_L1_220; break;
-              case 17: cd = CHARGE_DURATION_100_L1_110  break;
+              case 17: cd = CHARGE_DURATION_100_L1_110; break;
               case 10 : cd = CHARGE_DURATION_80_L1_220; break;
               case 18: cd = CHARGE_DURATION_80_L1_110; break;
             }
@@ -1871,7 +1871,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             }
           } else
           {
-            m_charge_duration->SetElemValue(cd,val)
+            m_charge_duration->SetElemValue(cd,val);
           }
           if (cd != -1) m_charge_duration->SetElemValue(cd, val/2);
         }
