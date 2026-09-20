@@ -50,8 +50,6 @@ class OvmsVehicleTeslaModel3: public OvmsVehicle
   protected:
     void Notify12vCritical() override;
     void Notify12vRecovered() override;
-    void NotifyBmsAlerts() override;
-
   protected:
     char m_vin[18];
     char m_type[5];

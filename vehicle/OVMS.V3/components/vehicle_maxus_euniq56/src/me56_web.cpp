@@ -56,7 +56,7 @@ void OvmsVehicleMaxe56::WebInit()
     // vehicle menu:
     
     // MyWebServer.RegisterPage("/xme/battery",  "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
-    MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+    MyBmsMonitor.SetWebmoduleEnabled(true);
     MyWebServer.RegisterPage("/bms/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
 }
 /**
@@ -64,7 +64,7 @@ void OvmsVehicleMaxe56::WebInit()
  */
 void OvmsVehicleMaxe56::WebDeInit()
 {
-  MyWebServer.DeregisterPage("/bms/cellmon");
+  MyBmsMonitor.DeregisterPage();
   MyWebServer.DeregisterPage("/bms/metrics_charger");
   // MyWebServer.DeregisterPage("/xme/battery");
 }

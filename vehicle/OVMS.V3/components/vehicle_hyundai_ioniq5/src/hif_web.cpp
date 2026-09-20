@@ -56,13 +56,19 @@ void OvmsHyundaiIoniqEv::WebInit()
 {
   XARM("OvmsHyundaiIoniqEv::WebInit");
   // vehicle menu:
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyBmsMonitor.RegisterPage();
   MyWebServer.RegisterPage("/xkn/Auxbattery", "Aux battery monitor", WebAuxBattery, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xkn/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xkn/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
   XDISARM;
 }
-
+void OvmsHyundaiIoniqEv::WebUninit()
+{
+  MyBmsMonitor.DeregisterPage();
+  MyWebServer.DeregisterPage("/xkn/Auxbattery");
+  MyWebServer.DeregisterPage("/xkn/features");
+  MyWebServer.DeregisterPage("/xkn/battery");
+}
 
 /**
  * WebCfgFeatures: configure general parameters (URL /xkn/config)

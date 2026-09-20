@@ -62,8 +62,10 @@ void OvmsVehicleVWeUp::WebInit()
   if (HasOBD()) {
     // only useful with OBD metrics:
     MyWebServer.RegisterPage("/xvu/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
-    MyWebServer.RegisterPage("/xvu/battmon", "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+    MyBmsMonitor.RegisterPage();
     MyWebServer.RegisterPage("/xvu/battsoh", "Battery Health", WebDispBattHealth, PageMenu_Vehicle, PageAuth_Cookie);
+  } else {
+    MyBmsMonitor.DeregisterPage();
   }
 }
 
@@ -76,7 +78,7 @@ void OvmsVehicleVWeUp::WebDeInit()
   MyWebServer.DeregisterPage("/xvu/climate");
   MyWebServer.DeregisterPage("/xvu/climate_schedule");
   MyWebServer.DeregisterPage("/xvu/metrics_charger");
-  MyWebServer.DeregisterPage("/xvu/battmon");
+  MyBmsMonitor.DeregisterPage();
   MyWebServer.DeregisterPage("/xvu/battsoh");
 }
 
