@@ -542,7 +542,8 @@ class OvmsVehicle : public InternalRamAllocated
   public:
     virtual std::vector<std::string> GetTpmsLayout();       // override to customize TPMS wheel layout
     virtual std::vector<std::string> GetTpmsLayoutNames();  // override to customize TPMS wheel layout
-    virtual bool UsesTpmsSensorMapping() { return false; }  // return true if using m_tpms_index[]
+    virtual bool UsesTpmsSensorMapping() { return false; }  // return true if using m_tpms_index[]    
+    virtual bool HasClimateControl();                       // indicate if vehicle has climate control
 
   protected:
     uint32_t m_tpms_lastcheck;              // monotonictime of last TPMS alert check

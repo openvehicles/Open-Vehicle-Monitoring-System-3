@@ -1670,6 +1670,8 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
 
     StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_cabintemp->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_env_cabintemp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_climate_ctrl->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1728,6 +1730,8 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     << StandardMetrics.ms_v_bat_12v_current->AsString("0")
     << ","
     << StandardMetrics.ms_v_env_cabintemp->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_env_climate_ctrl->AsString("0");
     ;
 
   Transmit(buffer.str().c_str());

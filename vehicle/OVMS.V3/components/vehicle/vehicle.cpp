@@ -261,6 +261,7 @@ void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent, bool wa
       }
 
     m_currentvehicletype.clear();
+    StandardMetrics.ms_v_env_climate_ctrl->SetValue(false);
     if (clearName)
       StandardMetrics.ms_v_type->SetValue("");
     if (sendEvent)
@@ -292,11 +293,15 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
 
     m_currentvehicle->StartingUp();
 
+    // Check if CommandClimateControl is implemented in active vehicle
+    StandardMetrics.ms_v_env_climate_ctrl->SetValue(m_currentvehicle->HasClimateControl());
+
     MyEvents.SignalEvent("vehicle.type.set", (void*)new_type.c_str(), new_type.size()+1);
     }
   else
     {
     StandardMetrics.ms_v_type->SetValue("");
+    StandardMetrics.ms_v_env_climate_ctrl->SetValue(false);
     }
   }
 
@@ -465,8 +470,13 @@ void OvmsVehicle::CheckPreconditionSchedule()
   }
 }
 
+// Cache base class vtable pointer during base constructor execution
+static void* s_ovmsvehicle_vtable = nullptr;
+
 OvmsVehicle::OvmsVehicle()
   {
+  if (!s_ovmsvehicle_vtable)
+    s_ovmsvehicle_vtable = *(void**)this;
 
   m_is_shutdown = false;
 
@@ -1449,6 +1459,42 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool enable)
     }
 #endif
   return NotImplemented;
+  }
+
+/**
+ * HasClimateControl: check if the active vehicle implements CommandClimateControl.
+ * Uses the Itanium C++ ABI pointer-to-member representation to compare the vtable entry
+ * of this instance with the base OvmsVehicle implementation without executing the command.
+ */
+bool OvmsVehicle::HasClimateControl()
+  {
+  if (!s_ovmsvehicle_vtable)
+    return false;
+
+  // In the Itanium C++ ABI (used by GCC / Clang on Xtensa / ESP32),
+  // a pointer to a virtual member function stores (vtable_byte_offset + 1) in the first word.
+  struct MemFnPtr { uintptr_t ptr; ptrdiff_t adj; };
+  MemFnPtr mfp;
+  auto fn = &OvmsVehicle::CommandClimateControl;
+  memcpy(&mfp, &fn, sizeof(mfp));
+
+  size_t offset = mfp.ptr - 1;
+  void* base_fn = *(void**)((char*)s_ovmsvehicle_vtable + offset);
+  void* derived_fn = *(void**)((char*)(*(void**)this) + offset);
+
+  if (derived_fn != base_fn)
+    return true;
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    int res = MyDuktape.DuktapeEvalIntResult("(!OvmsVehicle.ClimateControl.prototype)?0:1");
+    if (res > 0)
+      return true;
+    }
+#endif
+
+  return false;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandWakeup()

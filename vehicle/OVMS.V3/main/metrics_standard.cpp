@@ -253,6 +253,7 @@ MetricsStandard::MetricsStandard()
   ms_v_env_cabinsetpoint = new OvmsMetricFloat(MS_V_ENV_CABINSETPOINT, SM_STALE_MID, Celcius);
   ms_v_env_cabinintake = new OvmsMetricString(MS_V_ENV_CABININTAKE, SM_STALE_MID);
   ms_v_env_cabinvent = new OvmsMetricString(MS_V_ENV_CABINVENT, SM_STALE_MID);
+  ms_v_env_climate_ctrl = new OvmsMetricBool(MS_V_ENV_CLIMATE_CTRL, SM_STALE_MID, Other);
 
   ms_v_env_service_range = new OvmsMetricInt(MS_V_ENV_SERV_RANGE, SM_STALE_MID, Kilometers);
   ms_v_env_service_time = new OvmsMetricInt64(MS_V_ENV_SERV_TIME, SM_STALE_MID, DateLocal);
