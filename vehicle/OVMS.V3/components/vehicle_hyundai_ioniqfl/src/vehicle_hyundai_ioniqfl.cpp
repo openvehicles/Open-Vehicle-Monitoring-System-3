@@ -700,7 +700,8 @@ void OvmsVehicleIoniqFL::HandleCharging()
 	  {
 		  ESP_LOGI(TAG, "Charging starting");
 		  // ******* Charging started: **********
-		  StdMetrics.ms_v_charge_duration_full->SetValue(1440, Minutes); // Lets assume 24H to full.
+		  float SOCwh = (stdMetrics.ms_v_bat_soc * kn_battery_capacity) - kn_battery_capacity
+		  StdMetrics.ms_v_charge_duration_full->SetValue(SOCwh / m_c_power, Hours); // Lets assume 24H to full.
 		  if (StdMetrics.ms_v_charge_timermode->AsBool())
 		  {
 			  SET_CHARGE_STATE("charging", "scheduledstart");
