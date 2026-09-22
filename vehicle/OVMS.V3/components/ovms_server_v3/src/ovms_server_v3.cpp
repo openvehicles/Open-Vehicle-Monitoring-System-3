@@ -1415,7 +1415,7 @@ void OvmsServerV3::LivenessCheck()
 
   if (!m_probe_sent)
     {
-    ESP_LOGW(TAG, "No inbound MQTT traffic for %llds, sending ping", (long long)silence);
+    ESP_LOGV(TAG, "No inbound MQTT traffic for %llds, sending ping", (long long)silence);
     mg_mqtt_ping(m_mgconn);
     m_probe_sent = true;
     return;
