@@ -276,6 +276,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_updatetime_sendall = 1200;
   m_updatetime_keepalive = 29*60;
   m_updatetime_probe = 60;
+  m_liveness_enabled = false;
   m_legacy_event_topic = true;
   m_retain_depth_limit = false;
   m_notify_info_pending = false;
@@ -1296,6 +1297,7 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
     m_updatetime_keepalive = param->GetValueInt("updatetime.keepalive", m_updatetime_keepalive);
     m_updatetime_probe = param->GetValueInt("updatetime.probe", m_updatetime_probe);
     if (m_updatetime_probe < 10) m_updatetime_probe = 10;
+    m_liveness_enabled = param->GetValueBool("liveness.enabled", m_liveness_enabled);
     m_legacy_event_topic = param->GetValueBool("events.legacy_topic", true);
     m_retain_depth_limit = param->GetValueBool("retain.depth.limit", m_retain_depth_limit);
     m_updatetime_priority = param->GetValueBool("updatetime.priority", false);
@@ -1396,7 +1398,7 @@ void OvmsServerV3::NetmanStop(std::string event, void* data)
 
 void OvmsServerV3::LivenessCheck()
   {
-  if (!m_mgconn || !StandardMetrics.ms_s_v3_connected->AsBool())
+  if (!m_liveness_enabled || !m_mgconn || !StandardMetrics.ms_s_v3_connected->AsBool())
     return;
 
   int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
@@ -1511,7 +1513,8 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
 
   if (StandardMetrics.ms_s_v3_connected->AsBool())
     {
-    LivenessCheck();
+    if (m_liveness_enabled)
+      LivenessCheck();
     bool carawake = StandardMetrics.ms_v_env_awake->AsBool();
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
     bool carcharging = StandardMetrics.ms_v_charge_inprogress->AsBool();

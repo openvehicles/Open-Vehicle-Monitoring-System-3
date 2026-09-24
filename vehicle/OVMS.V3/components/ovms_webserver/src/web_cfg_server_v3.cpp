@@ -38,10 +38,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   std::string server, clientid, user, password, port, topic_prefix;
   extram::string client_cert, client_key;
   std::string updatetime_connected, updatetime_idle, updatetime_on;
-  std::string updatetime_charging, updatetime_awake, updatetime_sendall, updatetime_keepalive;
+  std::string updatetime_charging, updatetime_awake, updatetime_sendall, updatetime_keepalive, updatetime_probe;
   std::string metrics_priority, metrics_include, metrics_exclude, metrics_immediately, metrics_exclude_immediately;
   std::string queue_sendall, queue_modified;
-  bool tls, legacy_event_topic, updatetime_priority, updatetime_immediately, retain_depth_limit;
+  bool tls, legacy_event_topic, liveness_enabled, updatetime_priority, updatetime_immediately, retain_depth_limit;
 
   if (c.method == "POST") {
     // process form submission:
@@ -62,6 +62,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_awake = c.getvar("updatetime_awake");
     updatetime_sendall = c.getvar("updatetime_sendall");
     updatetime_keepalive = c.getvar("updatetime_keepalive");
+    updatetime_probe = c.getvar("updatetime_probe");
+    liveness_enabled = (c.getvar("liveness_enabled") == "yes");
     updatetime_priority = (c.getvar("updatetime_priority") == "yes");
     updatetime_immediately = (c.getvar("updatetime_immediately") == "yes");
     retain_depth_limit = (c.getvar("retain_depth_limit") == "yes");
@@ -115,6 +117,11 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"updatetime_keepalive\">Keepalive interval must be at least 60 seconds</li>";
       }
     }
+    if (updatetime_probe != "") {
+      if (atoi(updatetime_probe.c_str()) < 10) {
+        error += "<li data-input=\"updatetime_probe\">Liveness probe interval must be at least 10 seconds</li>";
+      }
+    }
     if (!client_cert.empty() && !startsWith(client_cert, "-----BEGIN CERTIFICATE-----")) {
       error += "<li data-input=\"client_cert\">Client certificate must be in PEM CERTIFICATE format</li>";
     }
@@ -133,6 +140,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v3", "server", server);
       MyConfig.SetParamValueBool("server.v3", "tls", tls);
       MyConfig.SetParamValueBool("server.v3", "events.legacy_topic", legacy_event_topic);
+      MyConfig.SetParamValueBool("server.v3", "liveness.enabled", liveness_enabled);
       MyConfig.SetParamValue("server.v3", "clientid", clientid);
       MyConfig.SetParamValue("server.v3", "user", user);
       if (password != "")
@@ -146,6 +154,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v3", "updatetime.awake", updatetime_awake);
       MyConfig.SetParamValue("server.v3", "updatetime.sendall", updatetime_sendall);
       MyConfig.SetParamValue("server.v3", "updatetime.keepalive", updatetime_keepalive);
+      MyConfig.SetParamValue("server.v3", "updatetime.probe", updatetime_probe);
       MyConfig.SetParamValueBool("server.v3", "updatetime.priority", updatetime_priority);
       MyConfig.SetParamValueBool("server.v3", "updatetime.immediately", updatetime_immediately);
       MyConfig.SetParamValueBool("server.v3", "retain.depth.limit", retain_depth_limit);
@@ -207,6 +216,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     server = MyConfig.GetParamValue("server.v3", "server");
     tls = MyConfig.GetParamValueBool("server.v3", "tls", false);
     legacy_event_topic = MyConfig.GetParamValueBool("server.v3", "events.legacy_topic", true);
+    liveness_enabled = MyConfig.GetParamValueBool("server.v3", "liveness.enabled", false);
     clientid = MyConfig.GetParamValue("server.v3", "clientid");
     user = MyConfig.GetParamValue("server.v3", "user");
     password = MyConfig.GetParamValue("password", "server.v3");
@@ -221,6 +231,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     updatetime_awake = MyConfig.GetParamValue("server.v3", "updatetime.awake");
     updatetime_sendall = MyConfig.GetParamValue("server.v3", "updatetime.sendall");
     updatetime_keepalive = MyConfig.GetParamValue("server.v3", "updatetime.keepalive", "1740");
+    updatetime_probe = MyConfig.GetParamValue("server.v3", "updatetime.probe", "60");
     updatetime_priority = MyConfig.GetParamValueBool("server.v3", "updatetime.priority", false);
     updatetime_immediately = MyConfig.GetParamValueBool("server.v3", "updatetime.immediately", false);
     retain_depth_limit = MyConfig.GetParamValueBool("server.v3", "retain.depth.limit", false);
@@ -301,6 +312,9 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   c.fieldset_end();
 
   c.fieldset_start("Update intervals");
+  c.input_checkbox("Enable MQTT liveness check", "liveness_enabled", liveness_enabled,
+    "Send MQTT ping probes when no inbound traffic is seen for the configured probe interval and reconnect if the broker stays silent.");
+  c.input("number", "…probe", "updatetime_probe", updatetime_probe.c_str(), "default: 60", "default: 60, probe interval before sending MQTT ping and reconnecting on silence", "min=\"10\" max=\"3600\" step=\"1\"", "seconds");
   c.input("number", "…idle", "updatetime_idle", updatetime_idle.c_str(), "default: 600", "default: 600, update interval when client not connected", "min=\"1\" max=\"1200\" step=\"1\"", "seconds");
   c.input("number", "…on", "updatetime_on", updatetime_on.c_str(), "default: 5", "default: 5, update interval when Car is on", "min=\"1\" max=\"600\" step=\"1\"", "seconds");
   c.input("number", "…charging", "updatetime_charging", updatetime_charging.c_str(), "default: 10", "default: 10, update interval when Car is charging", "min=\"1\" max=\"600\" step=\"1\"", "seconds");

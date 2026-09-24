@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Server V3 (MQTT): added an optional liveness check that can be enabled in the web UI. When
+    enabled, the MQTT client sends a ping probe after a configured idle period and reconnects if the
+    broker remains silent beyond the timeout window. The check is off by default and can be toggled
+    from Config → Server V3.
+    [server.v3] liveness.enabled (bool, default false)
+    [server.v3] updatetime.probe (int, default: 60)
 - smart EQ: added an opt-in GPS history log for driving position/vehicle data. 
   This feature is disabled by default and must be explicitly enabled by the user from the vehicle web UI, 
   so personal location data is not logged unless the user intentionally enables it.
@@ -94,7 +100,6 @@ Open Vehicle Monitor System v3 - Change log
     progress bar (driven from the flash command's output for the http/SD methods), a consistent
     success/failure state, and highlights the "Reboot now" action when a flash completes. The
     primary action in each method is styled accordingly.
-
 
 2026-07-18 MB   3.3.006  OTA release
 - smart EQ:
