@@ -23,6 +23,12 @@ The file API enables web clients to read and write files at arbitrary VFS locati
 
 On writing, missing directories along the path will be created automatically.
 
+.. warning::
+  This API does not currently impose a hard limit on the **file/content size**, but that may change
+  in the future. It is meant for small files, i.e. content that easily fits into available RAM
+  (and multiple copies are needed for a ``POST``). Using this API for files larger than 256 KB
+  should be avoided.
+
 
 -------------
 Usage Example
