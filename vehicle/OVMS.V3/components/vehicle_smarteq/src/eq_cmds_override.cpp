@@ -44,6 +44,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
   if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandClimateControl failed: no write access!");
+    MyNotify.NotifyString("alert", "canwrite.noaccess", "Command failed: no CAN write access!");
     return Fail;
     }
     
@@ -201,7 +202,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
   if(!IsCANwrite())
     {
-    ESP_LOGE(TAG, "CommandWakeup failed: no write access!");
+    ESP_LOGE(TAG, "CommandWakeup failed: no write access!");    
+    MyNotify.NotifyString("alert", "canwrite.noaccess", "Command failed: no CAN write access!");
     return Fail;
     }
   if (!m_can_last_acc_state) 
@@ -246,7 +248,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandLock(const char* pin) {
   if(!IsCANwrite()) 
     {
-    ESP_LOGE(TAG, "CommandLock failed / no write access");
+    ESP_LOGE(TAG, "CommandLock failed / no write access");    
+    MyNotify.NotifyString("alert", "canwrite.noaccess", "Command failed: no CAN write access!");
     return Fail;
     }
   ESP_LOGI(TAG, "CommandLock");  
@@ -288,6 +291,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin
   if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandUnlock failed / no write access");
+    MyNotify.NotifyString("alert", "canwrite.noaccess", "Command failed: no CAN write access!");
     return Fail;
     }
   ESP_LOGI(TAG, "CommandUnlock");

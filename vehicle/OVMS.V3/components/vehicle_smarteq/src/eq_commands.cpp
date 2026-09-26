@@ -39,12 +39,16 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
   if(!IsCANwrite())
     {
     ESP_LOGE(TAG, "CommandCanVector failed / no write access");
+    MyNotify.NotifyString("alert", "canwrite.noaccess", "Command failed: no CAN write access!");
     return Fail;
     }
 
   if(m_ddt4all_exec > 1) 
     {
-    ESP_LOGE(TAG, "DDT4all command rejected - previous command still processing (%d seconds remaining)",m_ddt4all_exec);
+    char msg[100];
+    snprintf(msg, sizeof(msg), "DDT4all command rejected - previous command still processing (%d seconds remaining)",m_ddt4all_exec);
+    ESP_LOGE(TAG, "%s", msg);
+    MyNotify.NotifyString("info", "ddt4all.noaccess", msg);
     return Fail;
     }
 
