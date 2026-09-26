@@ -154,7 +154,8 @@ enum charge_duration_index
   CHARGE_DURATION_25_L1_110 = 13,
   CHARGE_DURATION_50_L1_110 = 14,
   CHARGE_DURATION_80_L1_110 = 15,
-  CHARGE_DURATION_100_L1_110 = 16
+  CHARGE_DURATION_100_L1_110 = 16,
+  CHARGE_DURATION_COUNT  // One past the last valid index
   };
 
 OvmsVehicleNissanLeaf* OvmsVehicleNissanLeaf::GetInstance(OvmsWriter* writer /*=NULL*/)
@@ -1849,7 +1850,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           if (mx == 0)
           {
             m_quick_charge->SetValue(val);
-          } else if (m_battery_type->AsInt(BATTERY_TYPE_UNKNOWN) == BATTERY_TYPE_1)
+          } else if (m_battery_type->AsInt(BATTERY_TYPE_UNKNOWN) == BATTERY_TYPE_1) // Early ZE0
           {
             switch(mx)
             {
@@ -1858,7 +1859,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
               case 10 : cd = CHARGE_DURATION_80_L1_220; break;
               case 18: cd = CHARGE_DURATION_80_L1_110; break;
             }
-          } else if (!cfg_ze1) 
+          } else if (!cfg_ze1) // Late model ZE0 and AZE0
           {
             switch(mx)
             {
@@ -1869,11 +1870,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
               case 21: cd = CHARGE_DURATION_80_L1_220; break;
               case 24: cd = CHARGE_DURATION_80_L1_110; break;
             }
-          } else
+          } else if (mx >= 1 && mx < CHARGE_DURATION_COUNT )  // ZE1 
           {
-            m_charge_duration->SetElemValue(cd,val);
+            cd = mx;
           }
-          if (cd != -1) m_charge_duration->SetElemValue(cd, val/2);
+          if (cd >=1 && cd<CHARGE_DURATION_COUNT ) m_charge_duration->SetElemValue(cd, val);
         }
       }
       }
