@@ -92,9 +92,11 @@ THE USE OR OTHER DEALINGS IN THE SYSTEM.
   - [Renault Zoe Phase 2](https://docs.openvehicles.com/en/latest/components/vehicle_renaultzoe_ph2/docs/index.html)
   - [Smart ED Gen.3](https://docs.openvehicles.com/en/latest/components/vehicle_smarted/docs/index.html)
   - [Smart ED/EQ Gen.4 (453)](https://docs.openvehicles.com/en/latest/components/vehicle_smarteq/docs/index.html)
+  - [Subaru Solterra](https://docs.openvehicles.com/en/latest/components/vehicle_subaru_solterra/docs/index.html)
   - [Tesla Model S](https://docs.openvehicles.com/en/latest/components/vehicle_teslamodels/docs/index.html)
   - [Tesla Roadster](https://docs.openvehicles.com/en/latest/components/vehicle_teslaroadster/docs/index.html)
   - Think City
+  - [Toyota bZ4X](https://docs.openvehicles.com/en/latest/components/vehicle_toyota_bz4x/docs/index.html)
   - [Toyota RAV4 EV](https://docs.openvehicles.com/en/latest/components/vehicle_toyotarav4ev/docs/index.html)
   - [VW e-Golf](https://docs.openvehicles.com/en/latest/components/vehicle_vwegolf/docs/index.html)
   - [VW e-Up / Skoda Citigo / Seat Mii](https://docs.openvehicles.com/en/latest/components/vehicle_vweup/docs/index.html)
