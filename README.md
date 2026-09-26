@@ -104,6 +104,7 @@ THE USE OR OTHER DEALINGS IN THE SYSTEM.
   - [DBC File Based](https://docs.openvehicles.com/en/latest/components/vehicle_dbc/docs/index.html)
   - [GPS Tracking](https://docs.openvehicles.com/en/latest/components/vehicle_track/docs/index.html)
   - [OBD-II Standard](https://docs.openvehicles.com/en/latest/components/vehicle_obdii/docs/index.html)
+  - [Toyota e-TNGA platform](https://docs.openvehicles.com/en/latest/components/vehicle_toyota_etnga/docs/index.html)
   - Zeva BMS
   - [ZombieVerter VCU](https://docs.openvehicles.com/en/latest/components/vehicle_zombie_vcu/docs/index.html)
 
