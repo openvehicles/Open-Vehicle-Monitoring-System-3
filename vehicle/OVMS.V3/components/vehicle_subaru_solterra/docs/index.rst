@@ -27,6 +27,4 @@ The Solterra adds no behavioural overrides on top of the e-TNGA platform — the
 a registration wrapper, and its whole support baseline is the platform's.
 
 The Solterra is the platform's reference vehicle: e-TNGA is developed against one, and it is the
-only e-TNGA vehicle whose behaviour has been confirmed on real hardware. Which platform
-behaviours that covers, and which remain inferred, is recorded in the validation status table on
-the :doc:`e-TNGA platform page </components/vehicle_toyota_etnga/docs/index>`.
+only e-TNGA vehicle whose behaviour has been confirmed on real hardware.
