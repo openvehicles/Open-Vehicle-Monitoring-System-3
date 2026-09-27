@@ -362,7 +362,6 @@ void OvmsVehicleIoniqFL::IncomingFull_VMCU(uint16_t type, uint16_t pid, const st
 	case 0x02:
 		if (get_uint_buff_be<2>(data,15,value)){
 			StdMetrics.ms_v_charge_12v_current->SetValue((float)value/100,Amps);
-			m_ldc_out_current->SetValue(value,Amps);
 		}
 		
 		if (get_uint_buff_be<2>(data, 23, value))

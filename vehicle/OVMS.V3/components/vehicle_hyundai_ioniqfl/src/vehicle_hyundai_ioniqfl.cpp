@@ -133,7 +133,7 @@ charging_profile ioniq_charge_steps[] = {
 OvmsVehicleIoniqFL::OvmsVehicleIoniqFL()
   : m_crit_check_avg(1100, 3) // So it doesn't spring up to block if the voltage is 15 when booting.
   {
-  ESP_LOGI(TAG, "Ioniq EV v1.0 vehicle module");
+  ESP_LOGI(TAG, "Ioniq FL v1.0 vehicle module");
 
   StopTesterPresentMessages();
 
@@ -181,9 +181,6 @@ OvmsVehicleIoniqFL::OvmsVehicleIoniqFL()
   BmsSetCellLimitsTemperature(-35,90);
   BmsSetCellDefaultThresholdsVoltage(0.1, 0.2);
   BmsSetCellDefaultThresholdsTemperature(4.0, 8.0);
-
-  //Disable BMS alerts by default
-  MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", false);
 
   // init metrics:
   m_version = MyMetrics.InitString("ifl.version", 0, VERSION " " __DATE__ " " __TIME__);
@@ -272,6 +269,9 @@ OvmsVehicleIoniqFL::OvmsVehicleIoniqFL()
     MyConfig.SetParamValueBool("modem","enable.gpstime", true);
     MyConfig.SetParamValueBool("modem","enable.net", true);
     MyConfig.SetParamValueBool("modem","enable.sms", true);
+	
+	//Disable BMS alerts by default
+	MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", false);
   }
 
   // Require GPS.
@@ -506,6 +506,11 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
 			isCharging = (m_b_bms_relay->AsBool(false) - m_b_bms_ignition->AsBool(false)) == 1;
 		}
 
+		if (!isCharging && StdMetrics.ms_v_bat_power->AsFloat() < 0)
+		{
+			isCharging = true;
+		}
+
 		if (isCharging && StdMetrics.ms_v_door_chargeport->AsBool() && kia_obc_ac_current != 0)
 		{
 			HandleCharging();
@@ -558,7 +563,6 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
 				POLLSTATE_OFF
 			}
 		} else {
-			// If no clients are connected for 60 seconds, we'll turn off polling.
 			uint32_t clients = 0;
 			if (StdMetrics.ms_s_v2_connected->AsBool())
 			{
@@ -571,9 +575,11 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
 			}
 			ESP_LOGD(TAG,"Clients: %d", clients);
 			
+			// If no clients are connected for 60 seconds, we'll turn off polling.
 			if (clients == 0){
 				if(!isRunning && !isCharging){
 					kia_secs_with_no_client++;
+					ESP_LOGD(TAG,"Client has been disconnected for %d",kia_secs_with_no_client);
 					if (kia_secs_with_no_client > 60)
 						if (!ISPOLLING_OFF) {
 							
@@ -592,7 +598,7 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
               					ESP_LOGI(TAG, "NO CLIENTS.Polling state Ping, for %d more seconds.", ifl_keep_awake);
 								PollState_Ping();
 							}
-						}
+					}
 				}
 			} else {
 				if (!isRunning && !isCharging) {
@@ -607,6 +613,8 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
 							PollState_Ping(300);
 						}
 					} else if (isLocked && ISPOLLING_PING) {
+						ESP_LOGI(TAG, "CLIENT CONNECTED. Locked, Capping Ping");
+						ESP_LOGD(TAG, "Setting PollState to Ping(60) (Capped)");
           				PollState_PingCap(60);
 					}
 				} else if (ISPOLLING_OFF || ISPOLLING_PING) {
@@ -734,13 +742,16 @@ void OvmsVehicleIoniqFL::HandleCharging()
 	  }
 
 	  // Check if we have what is needed to calculate remaining minutes
-	  if (CHARGE_VOLTAGE > 0 && CHARGE_CURRENT > 0)
+	  if (CHARGE_VOLTAGE > 0 && StdMetrics.ms_v_bat_power->AsFloat() < 0)
 	  {
 		  // Calculate remaining charge time
 		  float chargeTarget_full = 100;
 		  float chargeTarget_soc = 100;
 		  float chargeTarget_range = 100;
-
+		  
+		  // Calculate Charge Current based on Battery Current
+		  StdMetrics.ms_v_charge_current->SetValue(-(StdMetrics.ms_v_bat_power->AsFloat(0,Watts) / CHARGE_VOLTAGE), Amps);
+		  
 		  if (LIMIT_SOC > 0) // If SOC limit is set, lets calculate target battery capacity
 		  {
 			  chargeTarget_soc = LIMIT_SOC * 100;
