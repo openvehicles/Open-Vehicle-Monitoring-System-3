@@ -256,7 +256,7 @@ void OvmsVehicleIoniqFL::IncomingFull_AbsEsp(uint16_t type, uint16_t pid, const 
 		if (get_uint_buff_be<1>(data, 18, value))
 		{
 			//	m_v_emergency_lights->SetValue((CAN_BYTE(2)>>6) & 1);
-			m_v_emergency_lights->SetValue(get_bit<6>(value));
+			m_v_emergency_lights->SetValue(get_bit<6>(value)); // TCS
 		}
 		if (get_uint_buff_be<1>(data, 19, value))
 		{

@@ -631,8 +631,8 @@ void OvmsVehicleIoniqFL::Ticker1(uint32_t ticker)
 
 		if(!isRunning && !isCharging && wasPaused && (ifl_keep_awake == 0)) {
 			ESP_LOGD(TAG,"Timed Out");
-			if (ISPOLLING_OFF) {
-				ESP_LOGD(TAG,"Setting Polling to Off");
+			if (!ISPOLLING_OFF) {
+				ESP_LOGD(TAG,"Setting Polling to Off (Time out)");
 				POLLSTATE_OFF
 			}
 		}
