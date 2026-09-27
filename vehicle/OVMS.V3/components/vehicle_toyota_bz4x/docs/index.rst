@@ -30,7 +30,6 @@ registration wrapper, and its whole support baseline is the platform's.
 
 .. note::
 
-   **No e-TNGA behaviour has been confirmed on bZ4X hardware.**  Every status in the validation
-   table on the :doc:`e-TNGA platform page </components/vehicle_toyota_etnga/docs/index>` was
-   established on a Subaru Solterra, so on a bZ4X even the entries marked vehicle-validated
-   should be read as unvalidated until someone confirms them on a car.
+   **e-TNGA support has not yet been confirmed on bZ4X hardware.**  It was developed and tested
+   on a Subaru Solterra, which shares the platform, so the bZ4X is expected to behave the same,
+   but this still needs to be confirmed on a car.  Reports from bZ4X owners are welcome.
