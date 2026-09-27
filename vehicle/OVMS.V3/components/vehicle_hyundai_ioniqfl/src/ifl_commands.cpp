@@ -112,27 +112,27 @@ void ifl_set_auto_door_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd,
  */
 void ifl_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-	if (MyVehicleFactory.m_currentvehicle==NULL)
-		{
+	if (MyVehicleFactory.ActiveVehicle() == NULL)
+	{
 		writer->puts("Error: No vehicle module selected");
 		return;
-		}
+	}
 
 
 	writer->printf("AUX BATTERY\n");
 	if (StdMetrics.ms_v_bat_12v_voltage->IsDefined())
-		{
+	{
 		const std::string& auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2);
 		writer->printf("Aux battery voltage %s\n", auxBatt.c_str());
-		}
+	}
 
 	OvmsVehicleIoniqFL* niro = (OvmsVehicleIoniqFL*) MyVehicleFactory.ActiveVehicle();
 
 	if (niro->m_b_aux_soc->IsDefined())
-		{
+	{
 		const std::string& auxSOC = niro->m_b_aux_soc->AsUnitString("-", Percentage, 1);
 		writer->printf("Aux battery SOC %s\n", auxSOC.c_str());
-		}
+	}
 
 	}
 
