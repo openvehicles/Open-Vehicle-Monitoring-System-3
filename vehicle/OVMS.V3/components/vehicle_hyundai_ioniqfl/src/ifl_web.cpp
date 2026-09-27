@@ -52,14 +52,14 @@ void OvmsVehicleIoniqFL::WebInit()
 {
   // vehicle menu:
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xkn/Auxbattery", "Aux battery monitor", WebAuxBattery, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xkn/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xkn/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/ifl/Auxbattery", "Aux battery monitor", WebAuxBattery, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/ifl/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/ifl/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 
 /**
- * WebCfgFeatures: configure general parameters (URL /xkn/config)
+ * WebCfgFeatures: configure general parameters (URL /ifl/config)
  */
 void OvmsVehicleIoniqFL::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
@@ -77,9 +77,9 @@ void OvmsVehicleIoniqFL::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // store:
-      MyConfig.SetParamValueBool("xkn", "canwrite", canwrite);
-      MyConfig.SetParamValueBool("xkn", "consoleKilometers", consoleKilometers);
-      MyConfig.SetParamValueBool("xkn", "leftDrive", leftDrive);
+      MyConfig.SetParamValueBool("ifl", "canwrite", canwrite);
+      MyConfig.SetParamValueBool("ifl", "consoleKilometers", consoleKilometers);
+      MyConfig.SetParamValueBool("ifl", "leftDrive", leftDrive);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Ioniq EV feature configuration saved.</p>");
@@ -95,9 +95,9 @@ void OvmsVehicleIoniqFL::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    canwrite = MyConfig.GetParamValueBool("xkn", "canwrite", false);
-    consoleKilometers = MyConfig.GetParamValueBool("xkn", "consoleKilometers", true);
-    leftDrive = MyConfig.GetParamValueBool("xkn", "leftDrive", true);
+    canwrite = MyConfig.GetParamValueBool("ifl", "canwrite", false);
+    consoleKilometers = MyConfig.GetParamValueBool("ifl", "consoleKilometers", true);
+    leftDrive = MyConfig.GetParamValueBool("ifl", "leftDrive", true);
 
     c.head(200);
   }
@@ -130,7 +130,7 @@ void OvmsVehicleIoniqFL::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
 
 /**
- * WebCfgBattery: configure battery parameters (URL /xkn/battery)
+ * WebCfgBattery: configure battery parameters (URL /ifl/battery)
  */
 void OvmsVehicleIoniqFL::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
@@ -173,10 +173,10 @@ void OvmsVehicleIoniqFL::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // store:
-      MyConfig.SetParamValue("xkn", "cap_act_kwh", cap_act_kwh);
-      MyConfig.SetParamValue("xkn", "maxrange", maxrange);
-      MyConfig.SetParamValue("xkn", "suffrange", suffrange);
-      MyConfig.SetParamValue("xkn", "suffsoc", suffsoc);
+      MyConfig.SetParamValue("ifl", "cap_act_kwh", cap_act_kwh);
+      MyConfig.SetParamValue("ifl", "maxrange", maxrange);
+      MyConfig.SetParamValue("ifl", "suffrange", suffrange);
+      MyConfig.SetParamValue("ifl", "suffsoc", suffsoc);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Kia Niro battery setup saved.</p>");
@@ -192,10 +192,10 @@ void OvmsVehicleIoniqFL::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    cap_act_kwh = MyConfig.GetParamValue("xkn", "cap_act_kwh", STR(CGF_DEFAULT_BATTERY_CAPACITY));
-    maxrange = MyConfig.GetParamValue("xkn", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
-    suffrange = MyConfig.GetParamValue("xkn", "suffrange", "0");
-    suffsoc = MyConfig.GetParamValue("xkn", "suffsoc", "0");
+    cap_act_kwh = MyConfig.GetParamValue("ifl", "cap_act_kwh", STR(CGF_DEFAULT_BATTERY_CAPACITY));
+    maxrange = MyConfig.GetParamValue("ifl", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
+    suffrange = MyConfig.GetParamValue("ifl", "suffrange", "0");
+    suffsoc = MyConfig.GetParamValue("ifl", "suffsoc", "0");
 
     c.head(200);
   }
