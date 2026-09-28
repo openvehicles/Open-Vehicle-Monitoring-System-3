@@ -35,3 +35,15 @@
 #define MODEM_EGPIO_DTR           MODEM_GPIO_DTR
 #define VSPI_PIN_MCP2515_2_INT    -1    // dummy definition to avoid compiler error
 #define VSPI_PIN_MCP2515_2_CS     -1
+
+// ESP32 EGPIO pin mapping (index = EGPIO port number, value = GPIO pin number)
+#define ESP32EGPIO_PIN_0          -1    // unused
+#define ESP32EGPIO_PIN_1          -1    // unused
+#define ESP32EGPIO_PIN_2          -1    // unused
+#define ESP32EGPIO_PIN_3          -1    // unused
+#define ESP32EGPIO_PIN_4          -1    // unused
+#define ESP32EGPIO_PIN_5          -1    // unused
+#define ESP32EGPIO_PIN_6          -1    // unused
+#define ESP32EGPIO_PIN_7          -1    // unused
+#define ESP32EGPIO_PIN_8          -1    // unused
+#define ESP32EGPIO_PIN_9          -1    // unused
