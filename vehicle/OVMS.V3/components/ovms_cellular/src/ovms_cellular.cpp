@@ -326,6 +326,8 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_line_buffer.clear();
   m_netreg = Unknown;
   for (size_t k=0; k<CELLULAR_NETREG_COUNT; k++) { m_netreg_d[k] = Unknown; }
+  m_netreg_retry_ticks = 0;
+  m_net_type_auto_override = false;
   m_provider = "";
   m_sq = 99; // Unknown
   m_good_signal = false;
@@ -923,6 +925,31 @@ modem::modem_state1_t modem::State1Ticker1()
     if (driverstate != m_state1) return driverstate;
     }
 
+  if (m_netreg == DeniedRegistration || m_netreg == NotRegistered)
+    {
+    if (m_netreg_retry_ticks > 0)
+      {
+      m_netreg_retry_ticks--;
+      }
+    else
+      {
+      ESP_LOGW(TAG, "Network registration denied; trigger automatic network reselection");
+      m_netreg_retry_ticks = 30; // retry every 30 seconds while still denied
+      if (m_mux != NULL)
+        {
+        muxtx(m_mux_channel_CMD, "AT+COPS=0\r\n");
+        }
+      else
+        {
+        tx("AT+COPS=0\r\n");
+        }
+      }
+    }
+  else
+    {
+    m_netreg_retry_ticks = 0;
+    }
+
   switch (m_state1)
     {
     case None:
@@ -951,7 +978,7 @@ modem::modem_state1_t modem::State1Ticker1()
       switch (m_state1_ticker)
         {
         case 8:
-          if (m_driver) m_driver->SetNetworkType(MyConfig.GetParamValue("modem", "net.type","auto"));
+          UpdateNetworkType();
           break;
         case 10:
           tx("AT+CPIN?;+CREG=1;+CTZU=1;+CTZR=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0;S0=0\r\n");
@@ -1799,7 +1826,7 @@ void modem::ConfigChanged(std::string event, void* data)
     int gps_holiday_multi = MyConfig.GetParamValueInt("modem", "gps.parkholiday.multi", 5);
     if (m_driver)
       {
-      m_driver->SetNetworkType(MyConfig.GetParamValue("modem", "net.type", "auto")); 
+      UpdateNetworkType();
       }
     if (event == "config.mounted")
       {
@@ -1937,8 +1964,30 @@ void modem::SetNetworkRegistration(network_regtype_t regtype, network_registrati
       const char *v = ModemNetRegName(m_netreg);
       ESP_LOGI(TAG, "Network Registration status: %s", v);
       StdMetrics.ms_m_net_mdm_netreg->SetValue(v);
+      UpdateNetworkType();
+
+      if (m_netreg == DeniedRegistration || m_netreg == NotRegistered)
+        {
+        m_netreg_retry_ticks = 10; // first retry after a short delay
+        }
+      else
+        {
+        m_netreg_retry_ticks = 0;
+        }
       }
     }
+  }
+
+void modem::UpdateNetworkType()
+  {
+  std::string configured_type = MyConfig.GetParamValue("modem", "net.type", "auto");
+  if (m_netreg == NotRegistered && configured_type != "auto")
+    m_net_type_auto_override = true;
+  else if (m_net_type_auto_override && m_netreg >= Registered)
+    m_net_type_auto_override = false;
+
+  if (m_driver)
+    m_driver->SetNetworkType(m_net_type_auto_override ? "auto" : configured_type);
   }
 
 void modem::SetProvider(std::string provider)
@@ -1975,6 +2024,7 @@ void modem::ClearNetMetrics()
   {
   m_netreg = Unknown;
   for (size_t k=0; k<CELLULAR_NETREG_COUNT; k++) { m_netreg_d[k] = Unknown; }
+  m_netreg_retry_ticks = 0;
   StdMetrics.ms_m_net_mdm_netreg->Clear();
 
   m_provider = "";
