@@ -52,25 +52,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
 
   if(!enable) // HVAC OFF not implemented by vehicle
     {
-    if (m_climate_restart) 
-      { // stops the scheduled climate restart
-      MyNotify.NotifyString("info", "climatecontrol.schedule", "Climate control restarting stopped!");
-      m_climate_restart_ticker = 0;
-      m_climate_restart = false;
-      m_climate_trickle = false;
-      return Success;
-      }
-    else 
-      {
-      MyNotify.NotifyString("error", "climatecontrol.schedule", "Climate control stop not possible, EQ doesnt support it");
-      return NotImplemented;
-      }
+    // stops the scheduled climate restart
+    MyNotify.NotifyString("info", "climatecontrol.schedule", "Pre-conditioning restart aborted! Immediate stopping is not possible.");
+    m_climate_restart_ticker = 0;
+    m_climate_restart = false;
+    m_climate_trickle = false;
+    return Success;
     }  
 
   if (StdMetrics.ms_v_bat_soc->AsInt(can_soc) < 31)
     {    
     char msg[100];
-    snprintf(msg, sizeof(msg), "Scheduled precondition skipped: HV SOC too low (%d%%)", StdMetrics.ms_v_bat_soc->AsInt(can_soc));
+    snprintf(msg, sizeof(msg), "Scheduled Pre-conditioning skipped: HV SOC too low (%d%%)", StdMetrics.ms_v_bat_soc->AsInt(can_soc));
     ESP_LOGI(TAG, "%s", msg);
     MyNotify.NotifyString("alert", "climatecontrol.schedule", msg);
     m_climate_restart_ticker = 0;
@@ -81,7 +74,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
 
   if (IsOnHVACEQ()) 
     {
-    MyNotify.NotifyString("info", "hvac.enabled", "Climate already on");
+    MyNotify.NotifyString("info", "hvac.enabled", "Pre-conditioning already on");
     ESP_LOGI(TAG, "CommandClimateControl already on");
     return Success;
     }
@@ -96,7 +89,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
       {
       if (IsOnHVACEQ())
         {
-        ESP_LOGD(TAG, "Climate control is now on");
+        ESP_LOGD(TAG, "Pre-conditioning is now on");
         break;
         }
       obd->WriteStandard(0x634, 4, data);
@@ -106,13 +99,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
     char msg[100];
     if (IsOnHVACEQ())
       {
+      m_climate_restart_ticker = minutes;
       // if true, climate will be restarted after 5 minutes by Ticker1, if false, climate will not be restarted after 5 minutes
-      m_climate_restart = restart;
-      m_climate_restart_ticker = minutes;      
-      m_climate_trickle = trickle;
+      m_climate_restart = m_climate_restart_ticker > 5 ? true : false;
       if (trickle) 
         {
-        m_climate_trickle = m_climate_restart_ticker > 5 ? true : false; // reset trickle flag if less than 5 minutes
+        // reset trickle flag if less than 5 minutes;
+        m_climate_trickle = m_climate_restart_ticker > 5 ? true : false;
         ESP_LOGI(TAG, "activated 12V trickle charging successfully");
         // Check the 12V ADC factors based on the 12V readings, as long as trickle charging is active.
         m_check12vadc = true;
@@ -143,7 +136,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
         {
         // add 2 minutes to display time if restart is true, because climate will be restarted after 5/10 minutes
         int minutes_display = restart ? minutes + 2 : 5;
-        snprintf(msg, sizeof(msg), "%d minutes precondition started, HV SOC is %d%%", minutes_display, StdMetrics.ms_v_bat_soc->AsInt(can_soc));
+        snprintf(msg, sizeof(msg), "%d minutes Pre-conditioning started, HV SOC is %d%%", minutes_display, StdMetrics.ms_v_bat_soc->AsInt(can_soc));
         ESP_LOGI(TAG, "%s", msg);
         MyNotify.NotifyString("info", "climatecontrol.schedule", msg);
         }
@@ -159,7 +152,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
         }
       else
         {
-        snprintf(msg, sizeof(msg), "Failed to activate precondition! 12V is %.2f, HV SOC is %d%%", StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f), StdMetrics.ms_v_bat_soc->AsInt(can_soc));
+        snprintf(msg, sizeof(msg), "Failed to activate Pre-conditioning! 12V is %.2f, HV SOC is %d%%", StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f), StdMetrics.ms_v_bat_soc->AsInt(can_soc));
         ESP_LOGI(TAG, "%s", msg);
         MyNotify.NotifyString("info", "climatecontrol.schedule",msg);
         }
@@ -182,20 +175,17 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandHomelink(int button, i
     case 0:
     {
       // 5 minutes default runtime, no ticker required
-      CommandClimateControlEQ(true,false,0,false);
-      return Success;
+      return CommandClimateControlEQ(true,false,0,false);
     }
     case 1:
     {
       // 10 minutes runtime, will be restarted after 5 minutes by Ticker60, so total runtime will be 10 minutes
-      CommandClimateControlEQ(true,true,8,false);
-      return Success;
+      return CommandClimateControlEQ(true,true,8,false);
     }
     case 2:
     { 
       // 15 minutes runtime, will be restarted after 5 and 10 minutes by Ticker60, so total runtime will be 15 minutes
-      CommandClimateControlEQ(true,true,13,false);
-      return Success;
+      return CommandClimateControlEQ(true,true,13,false);
     }
     default:
       return OvmsVehicle::CommandHomelink(button, durationms);

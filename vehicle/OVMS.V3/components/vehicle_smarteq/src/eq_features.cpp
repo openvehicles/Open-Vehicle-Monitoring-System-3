@@ -203,12 +203,12 @@ void OvmsVehicleSmartEQ::Check12vState() {
     if (m_12v_ticker > ALERT_THRESHOLD_TICKS) 
       {
         m_12v_ticker = 0;
-        ESP_LOGI(TAG, "Initiating climate control due to 12V alert");
+        ESP_LOGI(TAG, "Initiating Pre-conditioning due to 12V alert");        
+        // Start scheduled Pre-conditioning immediately by setting variables
         m_climate_restart_ticker = TRICKLE_CHARGE_TICKER;
         m_climate_restart = true;
         m_climate_trickle = true;
         m_trickle_voltage = volt;   // Store the voltage at the time of trickle charging activation for notification purposes
-        CommandClimateControlEQ(true,m_climate_restart,m_climate_restart_ticker,m_climate_trickle); // Start climate control with restart and TRICKLE_CHARGE_TICKER minutes duration
       }
     } 
   else if (m_12v_ticker > 0) 
