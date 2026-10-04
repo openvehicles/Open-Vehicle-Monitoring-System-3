@@ -41,6 +41,7 @@
 #define MAX_POLL_DATA_LEN 126
 #define CELLCOUNT 96
 #define SQ_CANDATA_TIMEOUT 10          // seconds until car goes to sleep without CAN activity
+#define TRICKLE_CHARGE_TICKER 8        // set m_climate_restart_ticker for 12V trickle charge (minutes)
 
 #include "ovms_log.h"
 
@@ -492,6 +493,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_poll_on_charge = false;          // flag to trigger poll state change actions
     bool m_cmd_locked = false;
     bool m_can_last_acc_state = false;      // last active/listen state from CAN bus
+    bool m_climate_trickle = false;         // flag to indicate if trickle charge is active
+    float m_trickle_voltage = 0.0f;         // 12V voltage before trickle charge is activated
     int m_adc_samples = 5;                  // number of samples for ADC factor calculation
     int m_ddt4all_ticker = 0;               // DDT4ALL active ticker
     int m_ddt4all_exec = 0;                 // DDT4ALL ticker for next execution
