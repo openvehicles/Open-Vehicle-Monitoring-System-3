@@ -35,6 +35,10 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
   std::string error;
   std::string vehicle_minsoc, vehicle_stream;
   std::string log_trip_storetime, log_trip_minlength, log_grid_storetime;
+  std::string rl_default_info_rate, rl_default_info_burst;
+  std::string rl_default_alert_rate, rl_default_alert_burst;
+  std::string rl_default_error_rate, rl_default_error_burst;
+  std::string rl_queue_info_max_entries, rl_queue_alert_max_entries, rl_queue_error_max_entries;
   bool report_trip_enable;
   bool debug_tasks, debug_heap_alert;
   std::string report_trip_minlength;
@@ -46,6 +50,15 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     log_trip_storetime = c.getvar("log_trip_storetime");
     log_trip_minlength = c.getvar("log_trip_minlength");
     log_grid_storetime = c.getvar("log_grid_storetime");
+    rl_default_info_rate = c.getvar("rl_default_info_rate");
+    rl_default_info_burst = c.getvar("rl_default_info_burst");
+    rl_default_alert_rate = c.getvar("rl_default_alert_rate");
+    rl_default_alert_burst = c.getvar("rl_default_alert_burst");
+    rl_default_error_rate = c.getvar("rl_default_error_rate");
+    rl_default_error_burst = c.getvar("rl_default_error_burst");
+    rl_queue_info_max_entries = c.getvar("rl_queue_info_max_entries");
+    rl_queue_alert_max_entries = c.getvar("rl_queue_alert_max_entries");
+    rl_queue_error_max_entries = c.getvar("rl_queue_error_max_entries");
     report_trip_enable = (c.getvar("report_trip_enable") == "yes");
     report_trip_minlength = c.getvar("report_trip_minlength");
     debug_tasks = (c.getvar("debug_tasks") == "yes");
@@ -84,6 +97,62 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
       }
     }
 
+    if (rl_default_info_rate != "") {
+      float v = atof(rl_default_info_rate.c_str());
+      if (v <= 0 || v > 100) {
+        error += "<li data-input=\"rl_default_info_rate\">Info rate must be in range 0.001…100.0 msg/s</li>";
+      }
+    }
+    if (rl_default_info_burst != "") {
+      float v = atof(rl_default_info_burst.c_str());
+      if (v < 1 || v > 1000) {
+        error += "<li data-input=\"rl_default_info_burst\">Info burst must be in range 1…1000</li>";
+      }
+    }
+    if (rl_default_alert_rate != "") {
+      float v = atof(rl_default_alert_rate.c_str());
+      if (v <= 0 || v > 100) {
+        error += "<li data-input=\"rl_default_alert_rate\">Alert rate must be in range 0.001…100.0 msg/s</li>";
+      }
+    }
+    if (rl_default_alert_burst != "") {
+      float v = atof(rl_default_alert_burst.c_str());
+      if (v < 1 || v > 1000) {
+        error += "<li data-input=\"rl_default_alert_burst\">Alert burst must be in range 1…1000</li>";
+      }
+    }
+    if (rl_default_error_rate != "") {
+      float v = atof(rl_default_error_rate.c_str());
+      if (v <= 0 || v > 100) {
+        error += "<li data-input=\"rl_default_error_rate\">Error rate must be in range 0.001…100.0 msg/s</li>";
+      }
+    }
+    if (rl_default_error_burst != "") {
+      float v = atof(rl_default_error_burst.c_str());
+      if (v < 1 || v > 1000) {
+        error += "<li data-input=\"rl_default_error_burst\">Error burst must be in range 1…1000</li>";
+      }
+    }
+
+    if (rl_queue_info_max_entries != "") {
+      int v = atoi(rl_queue_info_max_entries.c_str());
+      if (v < 1 || v > 50000) {
+        error += "<li data-input=\"rl_queue_info_max_entries\">Info queue limit must be in range 1…50000</li>";
+      }
+    }
+    if (rl_queue_alert_max_entries != "") {
+      int v = atoi(rl_queue_alert_max_entries.c_str());
+      if (v < 1 || v > 50000) {
+        error += "<li data-input=\"rl_queue_alert_max_entries\">Alert queue limit must be in range 1…50000</li>";
+      }
+    }
+    if (rl_queue_error_max_entries != "") {
+      int v = atoi(rl_queue_error_max_entries.c_str());
+      if (v < 1 || v > 50000) {
+        error += "<li data-input=\"rl_queue_error_max_entries\">Error queue limit must be in range 1…50000</li>";
+      }
+    }
+
     if (error == "") {
       // success:
       if (vehicle_minsoc == "0")
@@ -114,6 +183,46 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
       else
         MyConfig.SetParamValue("notify", "report.trip.minlength", report_trip_minlength);
 
+      if (rl_default_info_rate == "")
+        MyConfig.DeleteInstance("notify", "rl.default.info.rate");
+      else
+        MyConfig.SetParamValue("notify", "rl.default.info.rate", rl_default_info_rate);
+      if (rl_default_info_burst == "")
+        MyConfig.DeleteInstance("notify", "rl.default.info.burst");
+      else
+        MyConfig.SetParamValue("notify", "rl.default.info.burst", rl_default_info_burst);
+
+      if (rl_default_alert_rate == "")
+        MyConfig.DeleteInstance("notify", "rl.default.alert.rate");
+      else
+        MyConfig.SetParamValue("notify", "rl.default.alert.rate", rl_default_alert_rate);
+      if (rl_default_alert_burst == "")
+        MyConfig.DeleteInstance("notify", "rl.default.alert.burst");
+      else
+        MyConfig.SetParamValue("notify", "rl.default.alert.burst", rl_default_alert_burst);
+
+      if (rl_default_error_rate == "")
+        MyConfig.DeleteInstance("notify", "rl.default.error.rate");
+      else
+        MyConfig.SetParamValue("notify", "rl.default.error.rate", rl_default_error_rate);
+      if (rl_default_error_burst == "")
+        MyConfig.DeleteInstance("notify", "rl.default.error.burst");
+      else
+        MyConfig.SetParamValue("notify", "rl.default.error.burst", rl_default_error_burst);
+
+      if (rl_queue_info_max_entries == "")
+        MyConfig.DeleteInstance("notify", "rl.queue.info.max_entries");
+      else
+        MyConfig.SetParamValue("notify", "rl.queue.info.max_entries", rl_queue_info_max_entries);
+      if (rl_queue_alert_max_entries == "")
+        MyConfig.DeleteInstance("notify", "rl.queue.alert.max_entries");
+      else
+        MyConfig.SetParamValue("notify", "rl.queue.alert.max_entries", rl_queue_alert_max_entries);
+      if (rl_queue_error_max_entries == "")
+        MyConfig.DeleteInstance("notify", "rl.queue.error.max_entries");
+      else
+        MyConfig.SetParamValue("notify", "rl.queue.error.max_entries", rl_queue_error_max_entries);
+
       MyConfig.SetParamValueBool("module", "debug.tasks", debug_tasks);
       MyConfig.SetParamValueBool("module", "debug.heap.alert", debug_heap_alert);
 
@@ -137,6 +246,15 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     log_trip_storetime = MyConfig.GetParamValue("notify", "log.trip.storetime");
     log_trip_minlength = MyConfig.GetParamValue("notify", "log.trip.minlength");
     log_grid_storetime = MyConfig.GetParamValue("notify", "log.grid.storetime");
+    rl_default_info_rate = MyConfig.GetParamValue("notify", "rl.default.info.rate");
+    rl_default_info_burst = MyConfig.GetParamValue("notify", "rl.default.info.burst");
+    rl_default_alert_rate = MyConfig.GetParamValue("notify", "rl.default.alert.rate");
+    rl_default_alert_burst = MyConfig.GetParamValue("notify", "rl.default.alert.burst");
+    rl_default_error_rate = MyConfig.GetParamValue("notify", "rl.default.error.rate");
+    rl_default_error_burst = MyConfig.GetParamValue("notify", "rl.default.error.burst");
+    rl_queue_info_max_entries = MyConfig.GetParamValue("notify", "rl.queue.info.max_entries");
+    rl_queue_alert_max_entries = MyConfig.GetParamValue("notify", "rl.queue.alert.max_entries");
+    rl_queue_error_max_entries = MyConfig.GetParamValue("notify", "rl.queue.error.max_entries");
     report_trip_enable = MyConfig.GetParamValueBool("notify", "report.trip.enable");
     report_trip_minlength = MyConfig.GetParamValue("notify", "report.trip.minlength");
     debug_tasks = MyConfig.GetParamValueBool("module", "debug.tasks");
@@ -192,6 +310,59 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     "https://docs.openvehicles.com/en/latest/userguide/notifications.html#grid-history-log"
     "\">user manual</a> for details.</p>",
     "min=\"0\" max=\"365\" step=\"1\"", "days");
+
+  c.fieldset_end();
+
+  c.fieldset_start("Notification Flood Protection");
+
+  c.input("number", "Default info rate", "rl_default_info_rate", rl_default_info_rate.c_str(), "Default: 0.1",
+    "<p>Allowed message rate for <code>info</code> notifications (messages per second).</p>"
+    "<p>e.g. 0.1 = 1 message every 10 seconds, 1 = 1 message per second, 10 = 10 messages per second.</p>",
+    "min=\"0.001\" max=\"100\" step=\"0.001\"", "msg/s");
+  c.input("number", "Default info burst", "rl_default_info_burst", rl_default_info_burst.c_str(), "Default: 3",
+    "<p>Token bucket burst size for <code>info</code>. This is the maximum number of messages that can pass immediately "
+    "during a short spike before throttling starts.</p>"
+    "<p>Functional example: with rate = 0.1 msg/s and burst = 3, up to 3 info messages can be sent right away. "
+    "After that, the bucket refills by 1 token every 10 seconds, so the next message is allowed after about 10 seconds.</p>",
+    "min=\"1\" max=\"1000\" step=\"1\"");
+
+  c.input("number", "Default alert rate", "rl_default_alert_rate", rl_default_alert_rate.c_str(), "Default: 0.2",
+    "<p>Allowed message rate for <code>alert</code> notifications.</p>"
+    "<p>e.g. 0.1 = 1 message every 10 seconds, 1 = 1 message per second, 10 = 10 messages per second.</p>",
+    "min=\"0.001\" max=\"100\" step=\"0.001\"", "msg/s");
+  c.input("number", "Default alert burst", "rl_default_alert_burst", rl_default_alert_burst.c_str(), "Default: 5",
+    "<p>Token bucket burst size for <code>alert</code>. This is the maximum number of messages that can pass immediately "
+    "during a short spike before throttling starts.</p>"
+    "<p>Functional example: with rate = 0.2 msg/s and burst = 5, up to 5 alert messages can be sent right away. "
+    "After that, the bucket refills by 1 token every 5 seconds.</p>",
+    "min=\"1\" max=\"1000\" step=\"1\"");
+
+  c.input("number", "Default error rate", "rl_default_error_rate", rl_default_error_rate.c_str(), "Default: 0.5",
+    "<p>Allowed message rate for <code>error</code> notifications.</p>"
+    "<p>e.g. 0.1 = 1 message every 10 seconds, 1 = 1 message per second, 10 = 10 messages per second.</p>",
+    "min=\"0.001\" max=\"100\" step=\"0.001\"", "msg/s");
+  c.input("number", "Default error burst", "rl_default_error_burst", rl_default_error_burst.c_str(), "Default: 10",
+    "<p>Token bucket burst size for <code>error</code>. This is the maximum number of messages that can pass immediately "
+    "during a short spike before throttling starts.</p>"
+    "<p>Functional example: with rate = 0.5 msg/s and burst = 10, up to 10 error messages can be sent right away. "
+    "After that, the bucket refills by 1 token every 2 seconds.</p>",
+    "min=\"1\" max=\"1000\" step=\"1\"");
+
+  c.input("number", "Info queue limit", "rl_queue_info_max_entries", rl_queue_info_max_entries.c_str(), "Default: 200",
+    "<p>Maximum queued <code>info</code> notifications before new messages are dropped.</p>",
+    "min=\"1\" max=\"50000\" step=\"1\"", "entries");
+  c.input("number", "Alert queue limit", "rl_queue_alert_max_entries", rl_queue_alert_max_entries.c_str(), "Default: 200",
+    "<p>Maximum queued <code>alert</code> notifications before new messages are dropped.</p>",
+    "min=\"1\" max=\"50000\" step=\"1\"", "entries");
+  c.input("number", "Error queue limit", "rl_queue_error_max_entries", rl_queue_error_max_entries.c_str(), "Default: 300",
+    "<p>Maximum queued <code>error</code> notifications before new messages are dropped.</p>",
+    "min=\"1\" max=\"50000\" step=\"1\"", "entries");
+
+  c.input_info("Advanced overrides",
+    "Use notify keys like <code>rl.channel.&lt;caller&gt;.&lt;type&gt;.rate</code> and "
+    "<code>rl.channel.&lt;caller&gt;.&lt;type&gt;.subtype.&lt;subtype&gt;.rate</code> for channel/subtype specific limits. "
+    "Example: set <code>config set notify rl.channel.ovmsv3.alert.rate=0.5</code> to allow up to 1 alert every 2 seconds on ovmsv3, "
+    "and set <code>config set notify rl.channel.ovmsv3.alert.subtype.vehicle.idle.rate=0.1</code> to further limit that subtype to 1 every 10 seconds.");
 
   c.fieldset_end();
 
