@@ -36,7 +36,7 @@ OvmsVehicleMaxt90::OvmsVehicleMaxt90()
 
     // SOC
     { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE002,
-      { 0, 10, 10 }, 0, ISOTP_STD },
+      { 10, 10, 10 }, 0, ISOTP_STD },
 
     // SOH
     { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xE003,
