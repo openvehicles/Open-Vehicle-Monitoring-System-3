@@ -202,7 +202,7 @@ scripts as needed. Add ``-F %j`` to get a JSON encoded response, see
 `mosquitto_rr man page <https://www.mosquitto.org/man/mosquitto_rr-1.html>`_ for more options.
 
 More info on the general OVMS MQTT topic scheme can be found
-`on the developer mailing list <http://lists.openvehicles.com/pipermail/ovmsdev/2018-July/005297.html>`_.
+`on the developer mailing list <https://lists.openvehicles.com/archives/list/ovmsdev@lists.openvehicles.com/thread/UV2RUUDUU56DGLGJQFJDJW2RH3YK3ZL2/>`_.
 
 
 ------------------

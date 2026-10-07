@@ -131,7 +131,8 @@ THE USE OR OTHER DEALINGS IN THE SYSTEM.
   - [Germany/Europe](https://dexters-web.de/)
 - _Developers_
   - [Developer Guide](https://docs.google.com/document/d/1q5M9Lb5jzQhJzPMnkMKwy4Es5YK12ACQejX_NWEixr0)
-  - [Developer Mailing List & Archive](http://lists.openvehicles.com/mailman/listinfo/ovmsdev)
+  - [Developer Mailing List](https://lists.openvehicles.com/mailman3/lists/ovmsdev.lists.openvehicles.com/)
+      & [Archive](https://lists.openvehicles.com/archives/list/ovmsdev@lists.openvehicles.com/)
   - [Server Source](https://github.com/openvehicles/Open-Vehicle-Server)
   - [Android App Source](https://github.com/openvehicles/Open-Vehicle-Android)
   - [iOS App Source](https://github.com/openvehicles/Open-Vehicle-iOS)
