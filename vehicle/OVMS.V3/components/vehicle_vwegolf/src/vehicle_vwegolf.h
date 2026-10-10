@@ -134,6 +134,9 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // D1 = 1, D2 = 2, D3 = 3, B = 4. -1 = N/A (not in gear D or B).
     OvmsMetricInt* m_recup_level = nullptr;
 
+    // Heated front windshield
+    OvmsMetricBool* m_env_heated_front_window = nullptr;
+
     // `xvg charge profile list` handler: fetch the car's charge profiles (charge locations) via the
     // BatteryControl controller and print them to the writer. Blocks (bounded) while the BCU is woken
     // and answers. Read-only — it never writes a profile.

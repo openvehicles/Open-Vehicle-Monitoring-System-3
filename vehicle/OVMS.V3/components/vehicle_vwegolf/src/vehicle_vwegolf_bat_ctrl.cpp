@@ -928,6 +928,16 @@ bool VWeGolfBatteryControl::SendProfileSetWrite() {
         // profile already carries (e.g. PO_ALLOW_BATTERY / operation2) — RMW, don't clobber.
         p.operation = (uint8_t)((p.operation & ~(bap::egolf::PO_CHARGING | bap::egolf::PO_CLIMATE)) |
                                 (e.operation & (bap::egolf::PO_CHARGING | bap::egolf::PO_CLIMATE)));
+
+    // [Added: Apply front window heater flag to operation2 (only overwriting the specific bit)]
+    if (e.fields & ProfileEdit::F_FRONT_WINDOW) {
+        if (e.heatedFrontWindow) {
+            p.operation2 |= bap::egolf::PO2_WINDOW_HEATER_FRONT;
+        } else {
+            p.operation2 &= (uint8_t)~bap::egolf::PO2_WINDOW_HEATER_FRONT;
+        }
+    }
+    
     // ⚠ HARD SAFETY CLAMP (see kMaxCurrentHardLimit): NEVER write a maxCurrent above 0x20 — a higher
     // value bricks the car's charging until a factory reset. Guards both an F_CURRENT value and a
     // preserved/garbled read-back byte, exactly like SendArm().

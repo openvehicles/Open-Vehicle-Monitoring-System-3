@@ -122,6 +122,7 @@ class VWeGolfBatteryControl {
             F_TGTSOC  = 0x04,  // targetChargeLevel % (charge locations only)
             F_TEMP    = 0x08,  // temperatureRaw     (profile 0 "Optionen" only)
             F_OP      = 0x10,  // operation charge/climate bits (charge locations only)
+            F_FRONT_WINDOW = 0x20, // operation2 heated front window bit (profile 0 only)
         };
         uint8_t fields = 0;               // OR of Field bits actually being written
         uint8_t maxCurrent = 0;
@@ -129,6 +130,7 @@ class VWeGolfBatteryControl {
         uint8_t targetChargeLevel = 0;
         uint8_t temperatureRaw = 0;
         uint8_t operation = 0;            // desired PO_CHARGING/PO_CLIMATE bits (with F_OP)
+        bool heatedFrontWindow = false;   // desired heated front window state (with F_FRONT_WINDOW)
     };
 
     // Write one or more fields of charge profile `pos` (0 = global "Optionen", 1.. = charge locations)
