@@ -101,7 +101,7 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     int timeout_ms = 200;
     int err = 0;
 
-    request = hexdecode("10C0");
+    request = hexdecode("10C0"); // StartDiagnosticSession
     PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
     
     vTaskDelay(200 / portTICK_PERIOD_MS);
@@ -112,12 +112,17 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
       vTaskDelay(200 / portTICK_PERIOD_MS);
       }
 
-    if (reset) {
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    request = hexdecode("1081");  // StartDefaultSession
+    PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+    if (reset) 
+      {
       vTaskDelay(500 / portTICK_PERIOD_MS);
       m_ddt4all_exec = 30; // 30 seconds delay for next DDT4ALL command execution
       request = hexdecode("1103");  // key on/off
       PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
-    }
+      }
 
     if (err == POLLSINGLE_TXFAILURE)
       {

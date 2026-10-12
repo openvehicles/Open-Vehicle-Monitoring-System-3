@@ -167,10 +167,9 @@ void OvmsVehicleSmartEQ::NotifySOClimit() {
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::Command12Vcharge(int verbosity, OvmsWriter* writer) {
   writer->puts("12V trickle charge on:"); 
-  writer->printf("  12V: %s\n", (char*) StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Native, 1).c_str());
+  writer->printf("  12V: %.2f V\n", m_trickle_voltage);
   writer->printf("  SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
-  writer->printf("  CAP: %s\n", (char*) StdMetrics.ms_v_bat_capacity->AsUnitString("-", Native, 1).c_str());
-  writer->printf("  SOH: %s %s\n", StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0).c_str(), StdMetrics.ms_v_bat_health->AsUnitString("-", ToUser, 0).c_str());
+  writer->printf("  trickle charges in 24h: %d\n", mt_12v_trickle_charge_count->AsInt(0) > 3 ? mt_12v_trickle_charge_count->AsInt(0) / 3 : 1);
   writer->printf("  HV contactor changes within 1h: %d \n", mt_bms_contactor_cycles->GetElemValue(4));
   return Success;
 }

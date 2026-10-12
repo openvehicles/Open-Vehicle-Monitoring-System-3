@@ -100,7 +100,7 @@ Cabin Pre-heat/cool Control Yes (only 5/10/15 Minutes Pre-heat/cool and timebase
 Lock/Unlock Vehicle         No (not really Implementet, only when the car is open, you can close it. But the lock indicator shows unlocked!)
 Valet Mode Control          No
 Maintenance Reminders       Yes
-12V Battery Monitoring      Yes (if 12V alert raised, the car starts the 12V charging process for 15 Minutes. (homelink 3))
+12V Battery Monitoring      Yes (trickle charging 12V battery)
 DDT4all simple Support      Yes (a List of all possible commands at www.smart-EMOTION.de)
 =========================== ==============
 
@@ -134,6 +134,16 @@ Only 5 Minutes preconditioning are implementet by Vehicle
 ::
 
    For Timebased Pre-heat/cool you can use the Android App or Web UI.
+
+
+------------------------------
+Trickle charging 12V battery:
+------------------------------
+
+If a 12V warning is triggered, the vehicle initiates a ten-minute trickle-charging process for the 12V battery by activating the Preconditioning system.
+If the 12V warning occurs three times within 24 hours, the trickle charge is deactivated to avoid further strain on the 12V battery.
+SoC > 30% needed!
+
 
 -------------------------
 Vehicle shell commands:

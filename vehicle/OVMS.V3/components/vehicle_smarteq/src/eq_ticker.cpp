@@ -211,7 +211,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
       if (diff > 0.1f && !m_ADCfactor_recalc && Is12VchargeEQ())      
         {
         ESP_LOGW(TAG, "12V voltage difference detected: CAN=%.2fV, ADC=%.2fV, diff=%.2fV", can12V, adc12V, diff);
-        m_ADCfactor_recalc_timer = 2;   // wait at least 2 min. before recalculation
+        m_ADCfactor_recalc_timer = 3;   // wait at least 2 min. before recalculation
         m_enable_calcADCfactor = true;
         m_ADCfactor_recalc = true;      // recalculate ADC factor when 12V voltage difference detected
         }
@@ -225,7 +225,7 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
         m_check12vadc = false;            // disable further checks for 12V voltage difference
         m_enable_calcADCfactor = false;   // disable further recalculation until next reboot        
         m_ADCfactor_recalc = false;
-        m_ADCfactor_recalc_timer = 2;
+        m_ADCfactor_recalc_timer = 3;
         // calculate new ADC factor         
         if (Is12VchargeEQ())
           {
