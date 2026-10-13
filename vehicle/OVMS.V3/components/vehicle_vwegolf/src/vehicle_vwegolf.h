@@ -142,7 +142,7 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // and answers. Read-only — it never writes a profile.
     void CommandListProfiles(OvmsWriter* writer);
     // `xvg charge profile set` handler: RMW selected fields of one profile (profile 0 = current/minsoc/
-    // temp; charge locations 1-3 = flags/current/soc). Blocks (bounded) for the controller's result.
+    // temp/frontwindow; charge locations 1-3 = flags/current/soc). Blocks (bounded) for the controller's result.
     void CommandSetProfile(OvmsWriter* writer, int argc, const char* const* argv);
 
     // `xvg charge timer ...` handlers. list = read-only; set/enable/disable/clear write to the car
