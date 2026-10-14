@@ -49,7 +49,7 @@ void OvmsVehicleSmartEQ::WebInit()
   MyWebServer.RegisterPage("/xsq/climateschedule", "Climate Schedule", OvmsWebServer::HandleCfgPreconditionSchedule, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/tpms", "TPMS Config", WebCfgTPMS, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/adc", "ADC Calc", WebCfgADC, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xsq/trickle", "Trickle Charge", WebCfgTrickle, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xsq/trickle", "12V trickle charge", WebCfgTrickle, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
@@ -226,8 +226,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     c.input_radiobtn_option("canwrite_mode", "Car On", "CARON", canwrite_mode == "CARON");
   c.input_radiobtn_end(
     "<dl>"
-    "<dt>Off</dt><dd><p>CAN write is never allowed. The module is only listening to the meesages on the CAN bus</p></dd>"
-    "<dt>On</dt><dd><p>CAN write is allowed at all times (OBDII polling, start Preconditioning etc.)</p></dd>"
+    "<dt>Off</dt><dd><p>CAN write is never allowed. The module is only listening to the messages on the CAN bus</p></dd>"
+    "<dt>On</dt><dd><p>CAN write is allowed at all times (OBDII polling, start preconditioning etc.)</p></dd>"
     "<dt>Car Off</dt><dd><p>CAN write access only when car is <strong>OFF</strong>. Clears polling list when vehicle is switched on."
     " This will stop CAN polling when the vehicle is on and moving</p></dd>"
     "<dt>Car On</dt><dd><p>CAN write access only, when the car is <strong>ON</strong>."
@@ -236,7 +236,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
     c.input_checkbox("Disable CAN polling during sleep", "disable_canwrite", disable_canwrite,
     "<p>Clears polling list when vehicle is in sleep mode</p>");
-  c.fieldset_end();
+  c.fieldset_end(); 
 
   // trip reset or OBD activation
   c.fieldset_start("Trip calculated or OBD kWh/100km");
@@ -774,14 +774,14 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
 
   c.input_slider("Trickle charge duration", "trickle_time", 3, "min", -1, atof(trickle_time_str.c_str()), 10, 5, 30, 5,
     "<p>Duration of preconditioning during 12V trickle charging (default: 10 min, range: 5…30 min in 5 min steps).</p>"
-    "<p>Note: Pre-conditioning has a fixed runtime of 5 minutes, and it restarts depending on the set time!</p>" 
+    "<p>Note: Preconditioning has a fixed runtime of 5 minutes, and it restarts depending on the set time!</p>" 
     "<p>This means the power contactors are switched every time it restarts!</p>");
 
   c.input_slider("12V Reference Voltage", "ref12V", 3, "V", -1, atof(ref12V_str.c_str()), 12.50, 12.00, 13.00, 0.05,
     "<p>Reference voltage of the 12V battery (default: 12.50V). Sets <code>[vehicle] 12v.ref</code>.</p>");
 
   c.input_slider("Start 12V trickle charge at", "charge12v_threshold", 3, "V", -1, atof(charge12v_threshold.c_str()), 11.75, 11.25, 12.25, 0.05,
-    "<p>Voltage threshold to initiate trickle charging (default: 11.75V).</p>"
+    "<p>Voltage threshold to initiate 12V trickle charging (default: 11.75V).</p>"
     "<p>Sets <code>[vehicle] 12v.alert</code> to <i>Reference Voltage &minus; Start Threshold</i>.</p>");
 
   c.fieldset_end();
@@ -789,7 +789,7 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
   // Manual Actions
   c.fieldset_start("Manual Actions");
   c.input_button("warning", "Reset 24h Counter", "action", "reset_counter");
-  c.input_button("info", "Start Trickle Charge Now", "action", "start_trickle");
+  c.input_button("info", "Start 12V trickle charge Now", "action", "start_trickle");
   c.fieldset_end();
 
   c.print("<hr>");
