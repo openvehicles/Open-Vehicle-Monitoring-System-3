@@ -200,14 +200,16 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ConfigChanged(NULL);
 
   // init commands:
-  cmd_xsq = MyCommandApp.RegisterCommand("xsq","smartEQ 453 Gen.4");
-  cmd_xsq->RegisterCommand("mtdata", "Maintenance data", xsq_maintenance);
-  cmd_xsq->RegisterCommand("hvcycles", "HV Contactor Cycles", xsq_hvcycles);
+  cmd_xsq = MyCommandApp.RegisterCommand("xsq","smartEQ 453 Gen.4");  
+  cmd_xsq->RegisterCommand("climate", "Start pre-conditioning / climate control", xsq_climate, "[minutes]", 0, 1);
+  cmd_xsq->RegisterCommand("trickle", "Start 12V trickle charging (pre-conditioning)", xsq_trickle, "[minutes]", 0, 1);
   cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
   cmd_xsq->RegisterCommand("canwrite", "Send CAN command", xsq_canwrite,"<txid,rxid,hexbytes[,reset,wakeup]>",1,1);
   cmd_xsq->RegisterCommand("calcadc", "Recalculate ADC factor (optional: 12V voltage override)", xsq_calc_adc, "[voltage]", 0, 1);
-  cmd_xsq->RegisterCommand("ed4scan", "ED4scan-like BMS Data", xsq_ed4scan);
+  cmd_xsq->RegisterCommand("ed4scan", "ED4scan-like BMS Data", xsq_ed4scan);  
+  cmd_xsq->RegisterCommand("mtdata", "Maintenance data", xsq_maintenance);
+  cmd_xsq->RegisterCommand("hvcycles", "HV Contactor Cycles", xsq_hvcycles);
   cmd_xsq->RegisterCommand("preset", "smart EQ config preset", xsq_preset);
   cmd_xsq->RegisterCommand("default", "smart EQ config set default", xsq_setdefault);
 
@@ -319,7 +321,8 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_suffsoc              = map->GetValueInt("suffsoc", 0);
     m_suffrange            = map->GetValueInt("suffrange", 0);
     m_above_cycles         = map->GetValueInt("bms.alert.above.cycles", 50000);
-    m_contactor_1h_limit   = map->GetValueInt("bms.contactor.1h.limit", 8);
+    m_contactor_1h_limit   = map->GetValueInt("bms.contactor.1h.limit", 8);    
+    m_12v_trickle_time     = map->GetValueInt("12v.trickle.time", 10);
     
     m_front_pressure       = map->GetValueFloat("tpms.front.pressure", 225.0f);
     m_rear_pressure        = map->GetValueFloat("tpms.rear.pressure", 255.0f);
@@ -366,6 +369,10 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_obdii_745_tpms = obdii_745_tpms;
   m_obdii_7e4 = obdii_7e4;
   m_obdii_7e4_dcdc = obdii_7e4_dcdc;
+
+  m_12v_trickle_time = ((m_12v_trickle_time + 2) / 5) * 5; // round to nearest 5/10/.. minutes
+  if (m_12v_trickle_time < 5) m_12v_trickle_time = 5;
+  if (m_12v_trickle_time > 30) m_12v_trickle_time = 30;
 
   if (do_modify_poll) 
     {

@@ -442,6 +442,96 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
   #endif
 }
 
+void OvmsVehicleSmartEQ::xsq_trickle(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+
+  int minutes = smarteq->m_12v_trickle_time;
+  if (argc == 1) {
+    char* endp = nullptr;
+    long val = strtol(argv[0], &endp, 10);
+    if (endp == argv[0] || *endp != 0) {
+      writer->puts("Error: invalid number");
+      return;
+    }
+    if (val < 5 || val > 30) {
+      writer->puts("Error: minutes out of range (5-30)");
+      return;
+    }
+    minutes = (int)val;
+    minutes = ((minutes + 2) / 5) * 5; // round to nearest 5
+    if (minutes < 5) minutes = 5;
+    if (minutes > 30) minutes = 30;
+  }
+
+  if (!smarteq->IsCANwrite()) {
+    writer->puts("Error: failed to start trickle charge! CAN write access is disabled.");
+    return;
+  }
+  if (StdMetrics.ms_v_bat_soc->AsInt(0) < 31) {
+    writer->printf("Error: failed to start trickle charge! HV battery SOC is too low (%d%% <= 30%%).\n", StdMetrics.ms_v_bat_soc->AsInt(0));
+    return;
+  }
+  if (smarteq->IsOnHVACEQ()) {
+    writer->puts("Pre-conditioning / Trickle charge is already active.");
+    return;
+  }
+
+  vehicle_command_t res = smarteq->CommandClimateControlEQ(true, false, minutes, true);
+  if (res == Success) {
+    writer->printf("12V trickle charge started successfully for %d minutes via preconditioning!\n", minutes);
+  } else {
+    writer->puts("Error: failed to start 12V trickle charge.");
+  }
+}
+
+void OvmsVehicleSmartEQ::xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+
+  int minutes = 5;
+  if (argc == 1) {
+    char* endp = nullptr;
+    long val = strtol(argv[0], &endp, 10);
+    if (endp == argv[0] || *endp != 0) {
+      writer->puts("Error: invalid number");
+      return;
+    }
+    if (val < 5 || val > 30) {
+      writer->puts("Error: minutes out of range (5-30)");
+      return;
+    }
+    minutes = (int)val;
+    minutes = ((minutes + 2) / 5) * 5; // round to nearest 5
+    if (minutes < 5) minutes = 5;
+    if (minutes > 30) minutes = 30;
+  }
+
+  if (!smarteq->IsCANwrite()) {
+    writer->puts("Error: failed to start pre-conditioning! CAN write access is disabled.");
+    return;
+  }
+  if (StdMetrics.ms_v_bat_soc->AsInt(0) < 31) {
+    writer->printf("Error: failed to start pre-conditioning! HV battery SOC is too low (%d%% <= 30%%).\n", StdMetrics.ms_v_bat_soc->AsInt(0));
+    return;
+  }
+  if (smarteq->IsOnHVACEQ()) {
+    writer->puts("Pre-conditioning is already active.");
+    return;
+  }
+
+  // Pass minutes - if minutes > 5, configure auto-restart (minutes for CommandClimateControlEQ sets m_climate_restart_ticker)
+  bool restart = minutes > 6;
+  vehicle_command_t res = smarteq->CommandClimateControlEQ(true, restart, minutes, false);
+  if (res == Success) {
+    writer->printf("Pre-conditioning started successfully for %d minutes!\n", minutes);
+  } else {
+    writer->puts("Error: failed to start pre-conditioning.");
+  }
+}
+
 void OvmsVehicleSmartEQ::xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
   OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
   if (!smarteq)

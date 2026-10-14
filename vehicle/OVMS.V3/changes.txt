@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- smart EQ: Added a trickle charge configuration Website
+  New command:
+    xsq climate <minutes>         -- start pre-conditioning for xx minutes
+    xsq trickle <minutes>         -- start trickle 12V charge for xx minutes
+  New configs:
+  - [xsq] 12v.trickle.time (int, default 10)  -- trickle time in minutes
 - New vehicle: Toyota e-TNGA platform, supporting the Subaru Solterra (SUBSOL) and the
     Toyota bZ4X (TOYBZ4X) via the OBD-II port. The two vehicles are thin wrappers over a shared
     platform module which carries the CAN polling, the charging state machine and the BMS
