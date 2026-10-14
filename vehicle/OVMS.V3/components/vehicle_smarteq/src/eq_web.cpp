@@ -765,7 +765,10 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
   // Configuration
   c.fieldset_start("Configuration");
 
-  c.input_checkbox("Enable trickle 12V charging", "charge12v", charge12v,
+  c.input_radiobtn_start("Enable trickle 12V charging", "charge12v");
+    c.input_radiobtn_option("charge12v", "Off", "no", !charge12v);
+    c.input_radiobtn_option("charge12v", "On", "yes", charge12v);
+  c.input_radiobtn_end(
     "<p>When 12V undervoltage is detected for more than 10 minutes while parked, preconditioning is activated for the configured duration to charge the 12V battery from the HV battery.</p>"
     "<p>Safety limit: If triggered 3 times within 24 hours, trickle charging is paused to prevent deep discharge / battery damage.</p>");
 
