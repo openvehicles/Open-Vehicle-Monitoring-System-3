@@ -44,7 +44,7 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // gear-selector frame 0x187 in IncomingFrameCan3. -1 until first seen in D/B.
     m_recup_level = MyMetrics.InitInt("xvg.v.recup", SM_STALE_MIN, -1);
 
-    // Front windscreen heating status (0x594 byte 7 bit 7).
+    // Front windscreen heating active during remote pre-conditioning (0x594 byte 7 bit 7).
     m_env_heated_front_window = MyMetrics.InitBool("xvg.v.env.heated_front_window", SM_STALE_MIN, false);
 
     // The J533 gateway rebroadcasts the powertrain/HV frames the module reads — gear (0x187),
@@ -598,7 +598,8 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             //   //
             // }
 
-            // Front window heating active (bit 7).
+            // Front window heating active during remote pre-conditioning (bit 7). Follows the profile 0
+            // operation2 heater bit while climate runs; not set by the dashboard heater button.
             tmp_u8 = ((uint8_t)(d[7] & 0x80) >> 7);
             m_env_heated_front_window->SetValue(tmp_u8 == 0x1);
 
