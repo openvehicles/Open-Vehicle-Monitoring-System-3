@@ -777,11 +777,11 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
     "<p>Note: Preconditioning has a fixed runtime of 5 minutes, and it restarts depending on the set time!</p>" 
     "<p>This means the power contactors are switched every time it restarts!</p>");
 
-  c.input_slider("12V Reference Voltage", "ref12V", 3, "V", -1, atof(ref12V_str.c_str()), 12.50, 12.00, 13.00, 0.05,
+  c.input_slider("12V Reference Voltage", "ref12V", 3, "V", -1, atof(ref12V_str.c_str()), 12.50, 12.20, 12.80, 0.05,
     "<p>Reference voltage of the 12V battery (default: 12.50V). Sets <code>[vehicle] 12v.ref</code>.</p>");
 
-  c.input_slider("Start 12V trickle charge at", "charge12v_threshold", 3, "V", -1, atof(charge12v_threshold.c_str()), 11.75, 11.25, 12.25, 0.05,
-    "<p>Voltage threshold to initiate 12V trickle charging (default: 11.75V).</p>"
+  c.input_slider("Start 12V trickle charge at", "charge12v_threshold", 3, "V", -1, atof(charge12v_threshold.c_str()), 11.70, 11.25, 12.25, 0.05,
+    "<p>Voltage threshold to initiate 12V trickle charging (default: 11.70V).</p>"
     "<p>Sets <code>[vehicle] 12v.alert</code> to <i>Reference Voltage &minus; Start Threshold</i>.</p>");
 
   c.fieldset_end();
