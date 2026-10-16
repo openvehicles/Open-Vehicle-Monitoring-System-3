@@ -100,6 +100,44 @@ void test_gear_0x187_park() {
     delete v;
 }
 
+// 12V charging (v.e.charging12v): 0x187 d[1] bit 7 = HV system active (Motor_EV_01 HV_Bordnetz_aktiv).
+// Evaluated in Ticker1, OR'ed with charge-in-progress and HVAC; cleared when KCAN goes idle.
+void test_charging12v() {
+    printf("\ntest_charging12v\n");
+    auto* v = make_vehicle();
+    auto tick = [v]() { static_cast<OvmsVehicle*>(v)->Ticker1(1); };
+
+    auto f = make_frame(0x187, {0x00, 0x80, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00});  // HV active, Park
+    v->IncomingFrameCan3(&f);
+    tick();
+    CHECK(StandardMetrics.ms_v_env_charging12v->AsBool(), "0x187 HV-active bit -> charging12v true");
+    CHECK(StandardMetrics.ms_v_env_gear->AsValue() == 0, "gear decode unaffected (Park)");
+
+    f = make_frame(0x187, {0x00, 0x00, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00});      // HV inactive
+    v->IncomingFrameCan3(&f);
+    tick();
+    CHECK(!StandardMetrics.ms_v_env_charging12v->AsBool(), "HV-active bit clear -> charging12v false");
+
+    StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+    tick();
+    CHECK(StandardMetrics.ms_v_env_charging12v->AsBool(), "HV charging -> charging12v true");
+    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+
+    StandardMetrics.ms_v_env_hvac->SetValue(true);
+    tick();
+    CHECK(StandardMetrics.ms_v_env_charging12v->AsBool(), "remote climate running -> charging12v true");
+    StandardMetrics.ms_v_env_hvac->SetValue(false);
+
+    f = make_frame(0x187, {0x00, 0x80, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00});      // HV active again
+    v->IncomingFrameCan3(&f);
+    tick();
+    CHECK(StandardMetrics.ms_v_env_charging12v->AsBool(), "HV active again -> true");
+    for (int i = 0; i < VWEGOLF_BUS_TIMEOUT_SECS + 1; i++) tick();                // KCAN goes silent
+    CHECK(!StandardMetrics.ms_v_env_charging12v->AsBool(), "KCAN idle -> charging12v false");
+
+    delete v;
+}
+
 void test_vin_0x6B4() {
     printf("\ntest_vin_0x6B4\n");
     auto* v = make_vehicle();
@@ -357,6 +395,7 @@ int main() {
     test_soc_0x131();
     test_speed_0xFD();
     test_gear_0x187_park();
+    test_charging12v();
     test_vin_0x6B4();
     test_gps_0x486();
     test_sentinel_filters();

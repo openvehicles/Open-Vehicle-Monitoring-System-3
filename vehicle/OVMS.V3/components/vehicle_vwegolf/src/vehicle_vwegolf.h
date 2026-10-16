@@ -82,6 +82,9 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // (0x391) frames in IncomingFrameCan3.
     bool m_kl15_on = false;
     bool m_drivetrain_ready = false;
+    // HV electrical system active (0x187 d[1] bit 7 = opendbc Motor_EV_01 HV_Bordnetz_aktiv). While the
+    // HV system is up the DC-DC converter supplies the 12V network -> drives v.e.charging12v.
+    bool m_hv_active = false;
 
     // Seconds since the last KCAN (can3) frame arrived. Reset to 0 in IncomingFrameCan3,
     // incremented each second in Ticker1. Bus is alive while < VWEGOLF_BUS_TIMEOUT_SECS.

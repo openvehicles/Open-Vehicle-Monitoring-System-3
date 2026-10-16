@@ -202,6 +202,12 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             //   5 = D0 with recuperation switched off by the driver (also coast)
             // In gear B rc reads 0, but the gear itself means max regen.
             const uint8_t rc = (d[1] >> 4) & 0x7;
+
+            // d[1] bit 7 (frame bit 15) = HV electrical system active. opendbc vw_mqb.dbc names this
+            // frame Motor_EV_01 (sent by the BEV motor ECU) and the bit HV_Bordnetz_aktiv; it matches
+            // the "top bit always set in operation" observed here. The DC-DC converter runs whenever
+            // the HV system is up, so Ticker1 uses this for v.e.charging12v.
+            m_hv_active = (d[1] & 0x80) != 0;
             int recup = -1;                                 // N/A unless in D or B
             if (gear_nibble == 6) {
                 recup = 4;                                  // B — max regen
@@ -840,7 +846,18 @@ void OvmsVehicleVWeGolf::Ticker1(uint32_t ticker) {
         // car is off/asleep so it doesn't linger on the last D/B value (the gear
         // frame 0x187 stops broadcasting when the car sleeps).
         m_recup_level->SetValue(-1);
+        m_hv_active = false;  // 0x187 stopped: HV system / DC-DC is down
     }
+
+    // 12V charging status (v.e.charging12v). The e-Golf has no alternator: the 12V battery is charged
+    // only by the DC-DC converter, which runs while the HV system is up. Sources, OR'ed:
+    //   - 0x187 HV-system-active bit (driving / READY, and whenever the motor ECU broadcasts it)
+    //   - HV charging in progress (CCS DC keeps KCAN silent, so 0x187 can be absent while charging)
+    //   - remote climate running (needs the HV system; the blower runs off the 12V side)
+    // Needed by OVMS Power Management, which otherwise sees "never charging" and powers the modem off.
+    StandardMetrics.ms_v_env_charging12v->SetValue(
+        m_hv_active || StandardMetrics.ms_v_charge_inprogress->AsBool() ||
+        StandardMetrics.ms_v_env_hvac->AsBool());
 
     // Clear OCU node presence on either condition:
     //   1. Bus went idle (no frames for VWEGOLF_BUS_TIMEOUT_SECS) — no one to hear us.

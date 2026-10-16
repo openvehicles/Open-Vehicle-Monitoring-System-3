@@ -56,6 +56,9 @@ Open Vehicle Monitor System v3 - Change log
   New notifications (+ implied events):
     - [alert] server.v2.auth.failure         -- Incorrect server V2 login credentials
     - [alert] server.v3.auth.failure         -- Incorrect server V3 login credentials
+- VW e-Golf: set v.e.charging12v (12V battery charging) while the HV system is active (KCAN
+    0x187 HV_Bordnetz_aktiv), HV charging is in progress or remote climate is running. The DC-DC
+    converter is the only 12V charge source; Power Management relies on this metric.
 - VW e-Golf: set v.e.drivemode from the Charisma / Fahrprofilauswahl active profile
     (KCAN 0x386): Normal/Eco/Eco+ -> 1/2/3 (matching the e-Up module), replacing the
     incorrect B-gear-derived value.
