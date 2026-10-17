@@ -48,6 +48,9 @@
 // the events (web firmware upload). Used by HttpFirmwareUpload (web_cfg_firmware).
 #define MG_ENABLE_HTTP_STREAMING_MULTIPART 1
 
+// Max HTTP request header size (default 1024 resets requests with large cookies)
+#define MG_MAX_HTTP_REQUEST_SIZE 8192
+
 // Note: broadcast support not working reliably yet, do not enable for production!
 // #define MG_ENABLE_BROADCAST 1
 // #define MG_CTL_MSG_MESSAGE_SIZE 64    // Note: default is 8K, we only need this to trigger MG_EV_POLL
