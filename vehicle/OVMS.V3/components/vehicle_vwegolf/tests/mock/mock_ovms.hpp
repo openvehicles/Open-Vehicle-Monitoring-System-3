@@ -268,6 +268,14 @@ struct OvmsMetrics {
         slot->SetValue(value);
         return slot.get();
     }
+    // InitBool mirrors InitInt for boolean custom metrics (e.g. xvg.v.env.heated_front_window).
+    OvmsMetricBool* InitBool(const char* name, int /*autostale*/ = 0, bool value = false) {
+        static std::map<std::string, std::unique_ptr<OvmsMetricBool>> registry;
+        auto& slot = registry[name];
+        if (!slot) slot.reset(new OvmsMetricBool(name));
+        slot->SetValue(value);
+        return slot.get();
+    }
 };
 extern OvmsMetrics MyMetrics;
 

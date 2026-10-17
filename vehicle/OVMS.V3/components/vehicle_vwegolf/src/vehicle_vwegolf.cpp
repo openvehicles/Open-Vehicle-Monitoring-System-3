@@ -44,6 +44,9 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // gear-selector frame 0x187 in IncomingFrameCan3. -1 until first seen in D/B.
     m_recup_level = MyMetrics.InitInt("xvg.v.recup", SM_STALE_MIN, -1);
 
+    // Front windscreen heating active during remote pre-conditioning (0x594 byte 7 bit 7).
+    m_env_heated_front_window = MyMetrics.InitBool("xvg.v.env.heated_front_window", SM_STALE_MIN, false);
+
     // The J533 gateway rebroadcasts the powertrain/HV frames the module reads — gear (0x187),
     // VIN (0x6B4), SoC, pack current/voltage, speed — onto KCAN (CAN3) with the comfort/clima traffic,
     // so a single KCAN tap sees everything (confirmed in drive captures: gear and VIN both appear on
@@ -74,14 +77,15 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
             CommandListProfiles(writer);
         });
     // `set` writes selected fields of ONE profile (read-modify-write, no charge/climate trigger). The
-    // valid fields differ per profile: profile 0 "Optionen" = current / minsoc / temp; charge locations
-    // 1-3 = flags / current / soc. min 3 args (profile + one field/value); max 7 (profile + 3 pairs).
+    // valid fields differ per profile: profile 0 "Optionen" = current / minsoc / temp / frontwindow;
+    // charge locations 1-3 = flags / current / soc. min 3 args (profile + one field/value); max 9
+    // (profile + 4 pairs).
     cmd_profile->RegisterCommand(
         "set", "Set fields of a charge profile",
         [this](int, OvmsWriter* writer, OvmsCommand*, int argc, const char* const* argv) {
             CommandSetProfile(writer, argc, argv);
         },
-        "<profile 0-3> <field value>...  (0: current/minsoc/temp; 1-3: flags/current/soc)", 3, 7);
+        "<profile 0-3> <field value>...  (0: current/minsoc/temp/frontwindow; 1-3: flags/current/soc)", 3, 9);
 
     // Departure timers (recurring). list = read-only; set/enable/disable/clear write to the car
     // (on 0x17332501, like climate/charge). A timer binds to a charge profile by index -> its target SoC.
@@ -594,17 +598,10 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             //   //
             // }
 
-            tmp_u8 = ((uint8_t)(d[7] & 0x80) >> 7) |
-                     0;                /// Faktor 1 Offset 0, Minimum 0, Maximum 1 [] Initial 0
-            tmp_u8 = (uint8_t)tmp_u8;  // 0x0 no front window heating 0x1 front window heating
-            // if(tmp_u8 == 0x1)
-            // {
-            //   //
-            // }
-            // else
-            // {
-            //   //
-            // }
+            // Front window heating active during remote pre-conditioning (bit 7). Follows the profile 0
+            // operation2 heater bit while climate runs; not set by the dashboard heater button.
+            tmp_u8 = ((uint8_t)(d[7] & 0x80) >> 7);
+            m_env_heated_front_window->SetValue(tmp_u8 == 0x1);
 
             // ESP_LOGV(TAG, "0x0594 charging=%d timer=%d type=%s setpoint=%.1f°C",
                      // StdMetrics.ms_v_charge_inprogress->AsBool(),
@@ -1106,15 +1103,18 @@ void OvmsVehicleVWeGolf::CommandListProfiles(OvmsWriter* writer) {
     bap::egolf::Profile profs[VWeGolfBatteryControl::kMaxProfiles];
     uint8_t n = m_batctrl.GetProfiles(profs, VWeGolfBatteryControl::kMaxProfiles);
     writer->printf("Charge profiles (%u):\n", (unsigned)n);
-    writer->printf("  #  %-16s  Op    Flags       MaxA  MinSoC  TgtSoC  Temp\n", "Name");
+    // Flags column is wide enough for "chg cli bat fw".
+    writer->printf("  #  %-16s  Op    %-14s  MaxA  MinSoC  TgtSoC  Temp\n", "Name", "Flags");
     for (uint8_t i = 0; i < n; i++) {
         const bap::egolf::Profile& p = profs[i];
-        // Operation flags — the WIRE-confirmed bits: charge / climate / climatise-on-battery.
-        char flags[16];
-        snprintf(flags, sizeof(flags), "%s%s%s",
+        // Operation flags — the WIRE-confirmed bits: charge / climate / climatise-on-battery, plus the
+        // operation2 front window heater bit (fw).
+        char flags[24];
+        snprintf(flags, sizeof(flags), "%s%s%s%s",
                  (p.operation & bap::egolf::PO_CHARGING)      ? "chg " : "",
                  (p.operation & bap::egolf::PO_CLIMATE)       ? "cli " : "",
-                 (p.operation & bap::egolf::PO_ALLOW_BATTERY) ? "bat"  : "");
+                 (p.operation & bap::egolf::PO_ALLOW_BATTERY) ? "bat " : "",
+                 (p.operation2 & bap::egolf::PO2_WINDOW_HEATER_FRONT) ? "fw" : "");
         if (flags[0] == '\0') { flags[0] = '-'; flags[1] = '\0'; }
 
         // A 0 byte = "not set for this profile". minChargeLevel (MinSoC) is meaningful on the global
@@ -1129,7 +1129,7 @@ void OvmsVehicleVWeGolf::CommandListProfiles(OvmsWriter* writer) {
             snprintf(temp, sizeof(temp), "%.1fC", bap::egolf::rawToTemp(p.temperatureRaw));
         else snprintf(temp, sizeof(temp), "-");
 
-        writer->printf("  %u  %-16s  0x%02x  %-10s  %-4s  %-6s  %-6s  %s\n",
+        writer->printf("  %u  %-16s  0x%02x  %-14s  %-4s  %-6s  %-6s  %s\n",
                        (unsigned)p.position, p.name[0] ? p.name : "(unnamed)", p.operation, flags,
                        maxc, minc, tgtc, temp);
     }
@@ -1248,12 +1248,12 @@ static bool vwe_parse_op_flags(const char* s, uint8_t& op) {
 void OvmsVehicleVWeGolf::CommandSetProfile(OvmsWriter* writer, int argc, const char* const* argv) {
     // xvg charge profile set <profile 0-3> <field value>...   (read-modify-write, no charge/climate trigger)
     // The valid fields differ per profile (see the per-profile guards below): profile 0 "Optionen" =
-    // current / minsoc / temp; charge locations 1-3 = flags / current / soc.
+    // current / minsoc / temp / frontwindow; charge locations 1-3 = flags / current / soc.
     if (argc < 3 || (argc - 1) % 2 != 0) {
         writer->puts("Usage: xvg charge profile set <profile 0-3> <field value>...");
-        writer->puts("  profile 0 (Optionen):     current <A> | minsoc <%> | temp <C>");
+        writer->puts("  profile 0 (Optionen):     current <A> | minsoc <%> | temp <C> | frontwindow|fw <on|off>");
         writer->puts("  profiles 1-3 (locations): flags <charge|climate|both> | current <A> | soc <%>");
-        writer->puts("  e.g. 'set 1 soc 80 current 13'   'set 0 minsoc 20 temp 21.0'   'set 2 flags both'");
+        writer->puts("  e.g. 'set 1 soc 80 current 13'   'set 0 minsoc 20 temp 21.0'   'set 2 flags both'   'set 0 fw on'");
         return;
     }
     int pos = atoi(argv[0]);
@@ -1307,9 +1307,17 @@ void OvmsVehicleVWeGolf::CommandSetProfile(OvmsWriter* writer, int argc, const c
             }
             edit.operation = op;
             edit.fields |= PE::F_OP;
+        } else if (vwe_ciequal(f, "frontwindow") || vwe_ciequal(f, "fw")) {
+            if (!isGlobal) { writer->puts("frontwindow applies only to profile 0 (Optionen)."); return; }
+            if (vwe_ciequal(v, "on") || vwe_ciequal(v, "1") || vwe_ciequal(v, "true"))
+                edit.heatedFrontWindow = true;
+            else if (vwe_ciequal(v, "off") || vwe_ciequal(v, "0") || vwe_ciequal(v, "false"))
+                edit.heatedFrontWindow = false;
+            else { writer->puts("frontwindow: on | off."); return; }
+            edit.fields |= PE::F_FRONT_WINDOW;
         } else {
             writer->printf("Unknown field '%s'.\n", f);
-            writer->puts(isGlobal ? "Profile 0 fields: current, minsoc, temp."
+            writer->puts(isGlobal ? "Profile 0 fields: current, minsoc, temp, frontwindow."
                                   : "Location fields: flags, current, soc.");
             return;
         }

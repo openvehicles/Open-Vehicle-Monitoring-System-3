@@ -74,6 +74,17 @@ Open Vehicle Monitor System v3 - Change log
     via a read-modify-write that preserves every other stored field, with maxCurrent hard-capped.
     "xvg charge timer list/set/enable/disable/clear" manage the recurring departure timers, each
     bound to a charge profile. See the built-in command help for the arguments of each.
+- VW e-Golf: front windscreen heating for remote cabin pre-conditioning. "xvg charge profile set 0
+    frontwindow on|off" (alias "fw") sets or clears the front window heater option of the global
+    profile 0 ("Optionen"), which climate control runs; the setting is stored in the car and stays
+    until changed, and can also be changed while climate is running. "xvg charge profile list"
+    shows the option as "fw". The car's infotainment has no equivalent setting. The windscreen is
+    only heated when the outside temperature is below 4 C (HVAC module 08 adaptation "IDE07303-Rem.start
+    funct.:activ.temper. of windshield defrost.heat.", default 4 C).
+  New metric:
+    - xvg.v.env.heated_front_window    -- Front windscreen heating active during remote
+                                          pre-conditioning (bool, KCAN 0x594); does not
+                                          reflect the dashboard heater button
 - vehicle_cadillac_ct5:
     Set the acceptance filter to allow 0x063 (v.on) and 0x5E4 (v.b.soc).
     The high frame rate of this vehicle (> 1600/sec) causes watchdog

@@ -928,6 +928,16 @@ bool VWeGolfBatteryControl::SendProfileSetWrite() {
         // profile already carries (e.g. PO_ALLOW_BATTERY / operation2) — RMW, don't clobber.
         p.operation = (uint8_t)((p.operation & ~(bap::egolf::PO_CHARGING | bap::egolf::PO_CLIMATE)) |
                                 (e.operation & (bap::egolf::PO_CHARGING | bap::egolf::PO_CLIMATE)));
+
+    // Set/clear ONLY the front window heater bit of operation2; keep its other bits (RMW).
+    if (e.fields & ProfileEdit::F_FRONT_WINDOW) {
+        if (e.heatedFrontWindow) {
+            p.operation2 |= bap::egolf::PO2_WINDOW_HEATER_FRONT;
+        } else {
+            p.operation2 &= (uint8_t)~bap::egolf::PO2_WINDOW_HEATER_FRONT;
+        }
+    }
+
     // ⚠ HARD SAFETY CLAMP (see kMaxCurrentHardLimit): NEVER write a maxCurrent above 0x20 — a higher
     // value bricks the car's charging until a factory reset. Guards both an F_CURRENT value and a
     // preserved/garbled read-back byte, exactly like SendArm().
@@ -942,8 +952,8 @@ bool VWeGolfBatteryControl::SendProfileSetWrite() {
         ESP_LOGW(TAG, "SetProfile %u write TX FAILED (status %d)", m_prof_set_pos, (int)r.status);
         return false;
     }
-    ESP_LOGI(TAG, "SetProfile %u: op 0x%02x cur 0x%02x minSoC %u tgtSoC %u temp 0x%02x written (%u frames)",
-             m_prof_set_pos, p.operation, p.maxCurrent, p.minChargeLevel, p.targetChargeLevel,
+    ESP_LOGI(TAG, "SetProfile %u: op 0x%02x op2 0x%02x cur 0x%02x minSoC %u tgtSoC %u temp 0x%02x written (%u frames)",
+             m_prof_set_pos, p.operation, p.operation2, p.maxCurrent, p.minChargeLevel, p.targetChargeLevel,
              p.temperatureRaw, r.framesSent);
     return true;
 }
