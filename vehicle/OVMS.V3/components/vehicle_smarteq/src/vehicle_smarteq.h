@@ -35,13 +35,12 @@
 
 // --- Constants ---
 #define VERSION "2.2.0"
-#define PRESET_VERSION 20260823        // Configuration preset version
-#define PRESET_VERSION_12VREF 20260823 // Configuration preset version for 12V reference migration, defined separately to allow setting 12V reference migration
+#define PRESET_VERSION 20261014        // Configuration preset version
+#define PRESET_VERSION_12VREF 20261014 // Configuration preset version for 12V reference migration, defined separately to allow setting 12V reference migration
 #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
 #define MAX_POLL_DATA_LEN 126
 #define CELLCOUNT 96
 #define SQ_CANDATA_TIMEOUT 10          // seconds until car goes to sleep without CAN activity
-#define TRICKLE_CHARGE_TICKER 8        // set m_climate_restart_ticker for 12V trickle charge (minutes)
 
 #include "ovms_log.h"
 
@@ -203,6 +202,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgTPMS(PageEntry_t& p, PageContext_t& c);
     static void WebCfgADC(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgTrickle(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
 #endif
 
@@ -224,6 +224,9 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     static void xsq_ddt4list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_canwrite(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_trickle(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_climate_common(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool trickle);
     static void xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -471,6 +474,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     int m_cfg_preset_version = 0;           // config preset version set in CommandPreset by defined PRESET_VERSION in top of this file
     int m_suffsoc = 0;                      // minimum SoC for charging
     int m_suffrange = 0;                    // minimum range for charging
+    int m_12v_trickle_time = 10;            // 12V trickle charge time in minutes, Pre-conditioning (5 mins per run) is used to trickle 12V (default 10 minutes, max 30 minutes) set m_climate_restart_ticker
     float m_front_pressure = 225.0f;        // Front Tire Pressure
     float m_rear_pressure = 255.0f;         // Rear Tire Pressure
     float m_pressure_warning = 40.0f;       // Pressure Warning

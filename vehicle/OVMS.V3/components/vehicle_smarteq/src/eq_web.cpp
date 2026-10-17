@@ -49,6 +49,7 @@ void OvmsVehicleSmartEQ::WebInit()
   MyWebServer.RegisterPage("/xsq/climateschedule", "Climate Schedule", OvmsWebServer::HandleCfgPreconditionSchedule, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/tpms", "TPMS Config", WebCfgTPMS, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/adc", "ADC Calc", WebCfgADC, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xsq/trickle", "12V trickle charge", WebCfgTrickle, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
@@ -62,6 +63,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
   MyWebServer.DeregisterPage("/xsq/climateschedule");
   MyWebServer.DeregisterPage("/xsq/tpms");
   MyWebServer.DeregisterPage("/xsq/adc");
+  MyWebServer.DeregisterPage("/xsq/trickle");
   MyWebServer.DeregisterPage("/xsq/battery");
   MyWebServer.DeregisterPage("/xsq/cellmon");
 }
@@ -82,10 +84,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   auto lock = MyConfig.Lock();
 
   std::string error, full_km, rebootnw, contactor_1h_limit;
-  float ref12V, alert12V;
-  std::string charge12v_threshold;
   bool canwrite, canwrite_caron, canwrite_caroff, disable_canwrite, led, resettrip, resettotal, bcvalue;
-  bool charge12v, extstats, unlocked, tripnotify, opendoors, gpslog;
+  bool extstats, unlocked, tripnotify, opendoors, gpslog;
   bool obdii79b, obdii79b_cell, obdii743, obdii745, obdii745_tpms, obdii7e4, obdii7e4_dcdc;
 
   if (c.method == "POST") {
@@ -100,8 +100,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     resettotal  = (c.getvar("resettotal") == "yes");
     bcvalue     = (c.getvar("bcvalue") == "yes");
     full_km  =  (c.getvar("full_km"));
-    charge12v = (c.getvar("charge12v") == "yes");
-    charge12v_threshold = c.getvar("charge12v_threshold");
     unlocked = (c.getvar("unlocked") == "yes");
     extstats = (c.getvar("extstats") == "yes");
     tripnotify = (c.getvar("resetnotify") == "yes");
@@ -115,7 +113,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     obdii7e4 = (c.getvar("obdii7e4") == "yes");
     obdii7e4_dcdc = (c.getvar("obdii7e4_dcdc") == "yes");
     contactor_1h_limit = c.getvar("contactor_1h_limit");
-    ref12V = sq->m_ref12V;
 
     // Basic numeric validation:
     auto validFloat = [&](const std::string& s, double minv, double maxv, const char* fname)->bool {
@@ -130,7 +127,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     };
     if(!validFloat(full_km, 50, 300, "WLTP km")) full_km = "126.0";
     if(!validFloat(rebootnw, 0, 1440, "Restart Network Time")) rebootnw = "0";
-    if(!validFloat(charge12v_threshold, 11.50, 12.00, "12V trickle charge threshold")) charge12v_threshold = "11.75";
     if(!validFloat(contactor_1h_limit, 1, 100, "Contactor 1h limit")) contactor_1h_limit = "8";
 
     if (error.empty()) {
@@ -154,7 +150,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       map.SetValueBool("resettotal", resettotal);
       map.SetValueBool("bcvalue", bcvalue);
       map["full.km"] = full_km;
-      map.SetValueBool("12v.charge", charge12v);
       map.SetValueBool("unlock.warning", unlocked);
       map.SetValueBool("extended.stats", extstats);
       map.SetValueBool("reset.notify", tripnotify);
@@ -171,7 +166,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
       // Write all changes in one operation
       MyConfig.SetParamMap("xsq", map);
-      MyConfig.SetParamValueFloat("vehicle", "12v.alert", (ref12V - atof(charge12v_threshold.c_str())));
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Success!</p>");
@@ -193,7 +187,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     resettrip      = sq->m_resettrip;
     resettotal     = sq->m_resettotal;
     bcvalue        = sq->m_bcvalue;
-    charge12v      = sq->m_12v_charge;
     unlocked       = sq->m_enable_lock_state;
     extstats       = sq->m_extendedStats;
     tripnotify     = sq->m_tripnotify;
@@ -206,15 +199,11 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     obdii745_tpms  = sq->m_obdii_745_tpms;
     obdii7e4       = sq->m_obdii_7e4;
     obdii7e4_dcdc  = sq->m_obdii_7e4_dcdc;
-    ref12V         = sq->m_ref12V;
-    alert12V       = sq->m_alert12V;
     char def[16];
     snprintf(def, sizeof(def), "%d", sq->m_reboot_time);
     rebootnw       = def;
     snprintf(def, sizeof(def), "%d", sq->m_full_km);
     full_km        = def;
-    snprintf(def, sizeof(def), "%.2f", (ref12V - alert12V));
-    charge12v_threshold = def;
     snprintf(def, sizeof(def), "%d", sq->m_contactor_1h_limit);
     contactor_1h_limit = def;
     c.head(200);
@@ -237,8 +226,8 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     c.input_radiobtn_option("canwrite_mode", "Car On", "CARON", canwrite_mode == "CARON");
   c.input_radiobtn_end(
     "<dl>"
-    "<dt>Off</dt><dd><p>CAN write is never allowed. The module is only listening to the meesages on the CAN bus</p></dd>"
-    "<dt>On</dt><dd><p>CAN write is allowed at all times (OBDII polling, start Preconditioning etc.)</p></dd>"
+    "<dt>Off</dt><dd><p>CAN write is never allowed. The module is only listening to the messages on the CAN bus</p></dd>"
+    "<dt>On</dt><dd><p>CAN write is allowed at all times (OBDII polling, start preconditioning etc.)</p></dd>"
     "<dt>Car Off</dt><dd><p>CAN write access only when car is <strong>OFF</strong>. Clears polling list when vehicle is switched on."
     " This will stop CAN polling when the vehicle is on and moving</p></dd>"
     "<dt>Car On</dt><dd><p>CAN write access only, when the car is <strong>ON</strong>."
@@ -247,7 +236,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
     c.input_checkbox("Disable CAN polling during sleep", "disable_canwrite", disable_canwrite,
     "<p>Clears polling list when vehicle is in sleep mode</p>");
-  c.fieldset_end();
+  c.fieldset_end(); 
 
   // trip reset or OBD activation
   c.fieldset_start("Trip calculated or OBD kWh/100km");
@@ -275,16 +264,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Warn if parked &gt;10min and doors open</p>");
   c.input_checkbox("Extended statistics", "extstats", extstats,
       "<p>Maintenance + trip data. Not recommended for iOS app!</p>");
-  c.input_checkbox("Enable trickle 12V charging", "charge12v", charge12v,
-    "<p>Charge 12V battery on low-voltage alert</p>"
-    "<p>Trickle charging for the 12V battery is performed via pre-conditioning.</p>");
-  c.input_slider("Start 12V trickle charge at", "charge12v_threshold", 3, "V",-1, atof(charge12v_threshold.c_str()), 11.75, 11.25, 12.25,0.05,
-      "<p>At this voltage, preconditioning is activated for 15 minutes and the 12V battery is charged.</p>"
-      "<p>Default: 11.75V</p>"
-      "<p>This threshold is calculated as the <b>12V reference voltage</b> minus the <b>12V alert threshold</b>.</p>"
-      "<p>Example: 12V reference voltage = 12.5V, 12V alert threshold = 0.75V, then the trickle charge threshold = 12.5V - 0.75V = 11.75V</p>"
-      "<p>Note: The <b>12V reference voltage</b> and the <b>12V alert threshold</b> can be configured in the <a href=\"/#/cfg/vehicle\">vehicle configuration - 12V Monitor</a>.</p>"
-      "<p>This threshold sets the <b>12V alert threshold</b>.</p>");
   c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(rebootnw.c_str()), 30, 0, 60, 1,
     "<p>0=off. Auto-restart network on v2 disconnect</p>");
   c.input_slider("Contactor 1h limit", "contactor_1h_limit", 3, "/h",-1, atof(contactor_1h_limit.c_str()), 8, 1, 100, 1,
@@ -567,6 +546,257 @@ void OvmsVehicleSmartEQ::WebCfgADC(PageEntry_t& p, PageContext_t& c) {
     c.input_button("default", "Save");
     c.form_end();
     c.panel_end();
+  c.done();
+}
+
+/**
+ * WebCfgTrickle: configure 12V trickle charging (URL /xsq/trickle)
+ */
+void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
+  OvmsVehicleSmartEQ* sq = (OvmsVehicleSmartEQ*)MyVehicleFactory.ActiveVehicle();
+  if (!sq) {
+    c.head(400);
+    c.alert("danger", "Error: smartEQ vehicle not available");
+    c.done();
+    return;
+  }
+
+  auto lock = MyConfig.Lock();
+
+  std::string error;
+  std::string charge12v_threshold, ref12V_str, trickle_time_str;
+  bool charge12v;
+  float ref12V, alert12V;
+  int trickle_time;
+
+  bool is_reset_counter = (c.method == "POST" && c.getvar("action") == "reset_counter");
+  bool is_start_trickle = (c.method == "POST" && c.getvar("action") == "start_trickle");
+
+  if (is_reset_counter) {
+    sq->m_12v_trickle_charge_times.clear();
+    sq->mt_12v_trickle_charge_count->SetValue(0);
+    bool cfg_charge = MyConfig.GetParamValueBool("xsq", "12v.charge", true);
+    sq->m_12v_charge = cfg_charge;
+    c.head(200);
+    c.alert("success", "<p class=\"lead\">24h trickle charge counter reset to 0.</p>");
+  }
+  else if (is_start_trickle) {
+    if (!sq->IsCANwrite()) {
+      c.head(400);
+      c.alert("danger", "<p class=\"lead\">Failed to start trickle charge!</p><p>CAN write access is disabled. Enable CAN write in <a href=\"/xsq/features\">Features</a>.</p>");
+    }
+    else if (StdMetrics.ms_v_bat_soc->AsInt(0) < 31) {
+      char buf[128];
+      snprintf(buf, sizeof(buf), "<p class=\"lead\">Failed to start trickle charge!</p><p>HV battery SOC is too low (%d%% &le; 31%%).</p>", StdMetrics.ms_v_bat_soc->AsInt(0));
+      c.head(400);
+      c.alert("danger", buf);
+    }
+    else if (sq->IsOnHVACEQ()) {
+      c.head(200);
+      c.alert("info", "<p class=\"lead\">Pre-conditioning / Trickle charge is already active.</p>");
+    }
+    else {
+      vehicle_command_t res = sq->CommandClimateControlEQ(true, false, sq->m_12v_trickle_time, true);
+      if (res == Success) {
+        c.head(200);
+        c.alert("success", "<p class=\"lead\">12V trickle charge started successfully via preconditioning!</p>");
+      } else {
+        c.head(400);
+        c.alert("danger", "<p class=\"lead\">Failed to start 12V trickle charge.</p>");
+      }
+    }
+  }
+  else if (c.method == "POST") {
+    // Process form submission
+    charge12v           = (c.getvar("charge12v") == "yes");
+    charge12v_threshold = c.getvar("charge12v_threshold");
+    ref12V_str          = c.getvar("ref12V");
+    trickle_time_str    = c.getvar("trickle_time");
+
+    auto validFloat = [&](const std::string& s, double minv, double maxv, const char* fname)->bool {
+      if (s.empty()) return false;
+      char* end = nullptr;
+      double v = strtod(s.c_str(), &end);
+      if (end == s.c_str() || *end != '\0' || v < minv || v > maxv) {
+        error += std::string("<li>Invalid ") + fname + "</li>";
+        return false;
+      }
+      return true;
+    };
+
+    if (!validFloat(charge12v_threshold, 11.25, 12.25, "12V trickle charge threshold")) charge12v_threshold = "11.75";
+    if (!validFloat(ref12V_str, 12.00, 13.50, "12V reference voltage")) ref12V_str = "12.50";
+    if (!validFloat(trickle_time_str, 5, 30, "Trickle charge duration")) trickle_time_str = "10";
+
+    trickle_time = atoi(trickle_time_str.c_str());
+    trickle_time = ((trickle_time + 2) / 5) * 5;  // round to nearest 5/10/.. minutes
+    if (trickle_time < 5) trickle_time = 5;
+    if (trickle_time > 30) trickle_time = 30;
+
+    if (error.empty()) {
+      auto map = MyConfig.GetParamMap("xsq");
+      map.SetValueBool("12v.charge", charge12v);
+      char tbuf[16];
+      snprintf(tbuf, sizeof(tbuf), "%d", trickle_time);
+      map["12v.trickle.time"] = tbuf;
+      sq->m_12v_charge = charge12v;
+      sq->m_12v_trickle_time = trickle_time;
+      MyConfig.SetParamMap("xsq", map);
+
+      float new_ref = atof(ref12V_str.c_str());
+      float new_thresh = atof(charge12v_threshold.c_str());
+      float new_alert = new_ref - new_thresh;
+      if (new_alert < 0.1f) new_alert = 0.1f;
+
+      MyConfig.SetParamValueFloat("vehicle", "12v.ref", new_ref);
+      MyConfig.SetParamValueFloat("vehicle", "12v.alert", new_alert);
+      sq->m_ref12V = new_ref;
+      sq->m_alert12V = new_alert;
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">12V trickle charge settings saved.</p>");
+      MyWebServer.OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    c.head(200);
+  }
+
+  // Load current values
+  charge12v    = sq->m_12v_charge;
+  ref12V       = sq->m_ref12V;
+  alert12V     = sq->m_alert12V;
+  trickle_time = sq->m_12v_trickle_time;
+
+  char def[16];
+  snprintf(def, sizeof(def), "%.2f", ref12V);
+  ref12V_str = def;
+  snprintf(def, sizeof(def), "%.2f", (ref12V - alert12V));
+  charge12v_threshold = def;
+  snprintf(def, sizeof(def), "%d", trickle_time);
+  trickle_time_str = def;
+
+  c.panel_start("primary", "smart EQ 12V Trickle Charge");
+  c.form_start(p.uri);
+
+  // Status & Monitoring
+  c.fieldset_start("Status & Monitoring");
+
+  float cur_12v = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
+  bool alert_active = StdMetrics.ms_v_bat_12v_voltage_alert->AsBool(false);
+  bool trickle_active = (sq->m_climate_trickle || sq->Is12VchargeEQ());
+  int count_24h = sq->mt_12v_trickle_charge_count ? sq->mt_12v_trickle_charge_count->AsInt(0) : 0;
+  int hv_soc = StdMetrics.ms_v_bat_soc->AsInt(0);
+  int contactor_1h = sq->mt_bms_contactor_cycles ? sq->mt_bms_contactor_cycles->GetElemValue(4) : 0;
+
+  char status_buf[256];
+  snprintf(status_buf, sizeof(status_buf), "%.2f V", cur_12v);
+  c.input_info("12V Battery Voltage", status_buf);
+
+  snprintf(status_buf, sizeof(status_buf), "%s",
+    alert_active ? "<span class=\"label label-danger\">Alert (Low Voltage)</span>" : "<span class=\"label label-success\">Normal</span>");
+  c.input_info("12V Alert State", status_buf);
+
+  snprintf(status_buf, sizeof(status_buf), "%s",
+    trickle_active ? "<span class=\"label label-info\">Active</span>" : "<span class=\"label label-default\">Inactive</span>");
+  c.input_info("Trickle Charge State", status_buf);
+
+  if (count_24h >= 3) {
+    snprintf(status_buf, sizeof(status_buf), "<span class=\"label label-danger\">%d / 3</span> &nbsp; <span class=\"text-danger\">Locked out (deactivated to protect 12V battery)</span>", count_24h);
+  } else {
+    snprintf(status_buf, sizeof(status_buf), "%d / 3 activations in last 24h", count_24h);
+  }
+  c.input_info("24h Activation Count", status_buf);
+
+  if (!sq->m_12v_trickle_charge_times.empty()) {
+    std::string times_str;
+    for (size_t i = 0; i < sq->m_12v_trickle_charge_times.size(); i++) {
+      time_t t = sq->m_12v_trickle_charge_times[i];
+      struct tm tm_buf;
+      localtime_r(&t, &tm_buf);
+      char tbuf[32];
+      strftime(tbuf, sizeof(tbuf), "%Y-%m-%d %H:%M:%S", &tm_buf);
+      if (i > 0) times_str += "<br>";
+      times_str += tbuf;
+    }
+    c.input_info("Activation Timestamps", times_str.c_str());
+  }
+
+  if (sq->m_trickle_voltage > 0.0f) {
+    snprintf(status_buf, sizeof(status_buf), "%.2f V", sq->m_trickle_voltage);
+    c.input_info("Last Activation Voltage", status_buf);
+  }
+
+  if (sq->mt_12v_undervolt_history && sq->mt_12v_undervolt_history->GetSize() > 0) {
+    std::string hist_str;
+    for (int i = 0; i < sq->mt_12v_undervolt_history->GetSize(); i++) {
+      float v = sq->mt_12v_undervolt_history->GetElemValue(i);
+      if (v > 0.0f) {
+        char vbuf[16];
+        snprintf(vbuf, sizeof(vbuf), "%.2f V", v);
+        if (!hist_str.empty()) hist_str += ", ";
+        hist_str += vbuf;
+      }
+    }
+    if (!hist_str.empty()) {
+      c.input_info("Undervoltage History", hist_str.c_str());
+    }
+  }
+
+  snprintf(status_buf, sizeof(status_buf), "%d%% %s",
+    hv_soc, hv_soc > 30 ? "<span class=\"label label-success\">OK (&gt; 30%)</span>" : "<span class=\"label label-warning\">Too low (&le; 30%)</span>");
+  c.input_info("HV Battery SOC", status_buf);
+
+  snprintf(status_buf, sizeof(status_buf), "%d / h", contactor_1h);
+  c.input_info("HV Contactor Cycles (1h)", status_buf);
+
+  snprintf(status_buf, sizeof(status_buf), "%s",
+    sq->IsCANwrite() ? "<span class=\"label label-success\">Enabled</span>" : "<span class=\"label label-warning\">Disabled (CAN write required)</span>");
+  c.input_info("CAN Write Mode", status_buf);
+
+  c.fieldset_end();
+
+  // Configuration
+  c.fieldset_start("Configuration");
+
+  c.input_radiobtn_start("Enable trickle 12V charging", "charge12v");
+    c.input_radiobtn_option("charge12v", "Off", "no", !charge12v);
+    c.input_radiobtn_option("charge12v", "On", "yes", charge12v);
+  c.input_radiobtn_end(
+    "<p>When 12V undervoltage is detected for more than 10 minutes while parked, preconditioning is activated for the configured duration to charge the 12V battery from the HV battery.</p>"
+    "<p>Safety limit: If triggered 3 times within 24 hours, trickle charging is paused to prevent deep discharge / battery damage.</p>");
+
+  c.input_slider("Trickle charge duration", "trickle_time", 3, "min", -1, atof(trickle_time_str.c_str()), 10, 5, 30, 5,
+    "<p>Duration of preconditioning during 12V trickle charging (default: 10 min, range: 5…30 min in 5 min steps).</p>"
+    "<p>Note: Preconditioning has a fixed runtime of 5 minutes, and it restarts depending on the set time!</p>" 
+    "<p>This means the power contactors are switched every time it restarts!</p>");
+
+  c.input_slider("12V Reference Voltage", "ref12V", 3, "V", -1, atof(ref12V_str.c_str()), 12.50, 12.20, 12.80, 0.05,
+    "<p>Reference voltage of the 12V battery (default: 12.50V). Sets <code>[vehicle] 12v.ref</code>.</p>");
+
+  c.input_slider("Start 12V trickle charge at", "charge12v_threshold", 3, "V", -1, atof(charge12v_threshold.c_str()), 11.70, 11.25, 12.25, 0.05,
+    "<p>Voltage threshold to initiate 12V trickle charging (default: 11.70V).</p>"
+    "<p>Sets <code>[vehicle] 12v.alert</code> to <i>Reference Voltage &minus; Start Threshold</i>.</p>");
+
+  c.fieldset_end();
+
+  // Manual Actions
+  c.fieldset_start("Manual Actions");
+  c.input_button("warning", "Reset 24h Counter", "action", "reset_counter");
+  c.input_button("info", "Start 12V trickle charge Now", "action", "start_trickle");
+  c.fieldset_end();
+
+  c.print("<hr>");
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+
   c.done();
 }
 

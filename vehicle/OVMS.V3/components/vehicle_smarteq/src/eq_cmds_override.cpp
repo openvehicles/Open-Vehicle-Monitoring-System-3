@@ -101,15 +101,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
       {
       m_climate_restart_ticker = minutes;
       // if true, climate will be restarted after 5 minutes by Ticker1, if false, climate will not be restarted after 5 minutes
-      m_climate_restart = m_climate_restart_ticker > 5 ? true : false;
+      m_climate_restart = m_climate_restart_ticker > 6 ? true : false;
       if (trickle) 
         {
         // reset trickle flag if less than 5 minutes;
-        m_climate_trickle = m_climate_restart_ticker > 5 ? true : false;
+        m_climate_trickle = m_climate_restart_ticker > 6 ? true : false;
         ESP_LOGI(TAG, "activated 12V trickle charging successfully");
         // Check the 12V ADC factors based on the 12V readings, as long as trickle charging is active.
         m_check12vadc = true;
-        if(m_climate_restart_ticker > TRICKLE_CHARGE_TICKER - 2)
+        if(m_climate_restart_ticker > m_12v_trickle_time - 2)
           {
           time_t now = time(NULL);
           while (!m_12v_trickle_charge_times.empty() && (now - m_12v_trickle_charge_times.front()) > 24 * 3600)
@@ -134,8 +134,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
         }
       else
         {
-        // add 2 minutes to display time if restart is true, because climate will be restarted after 5/10 minutes
-        int minutes_display = restart ? minutes + 2 : 5;
+        // minutes to display time if restart is true, because climate will be restarted after 5/10/.. minutes
+        int minutes_display = m_climate_restart ? minutes : 5;
         snprintf(msg, sizeof(msg), "%d minutes Pre-conditioning started, HV SOC is %d%%", minutes_display, StdMetrics.ms_v_bat_soc->AsInt(can_soc));
         ESP_LOGI(TAG, "%s", msg);
         MyNotify.NotifyString("info", "climatecontrol.schedule", msg);
@@ -296,11 +296,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandUnlock(const char* pin
 
   if(m_indicator) 
     {
-    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001","30082002"}, false, false);
+    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001","30082002"}, false, true);
     }
   else 
     {
-    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001"}, false, false);
+    res = CommandCanVector(0x745, 0x765, {"30010001","30010001","30010001","30010001","30010001"}, false, true);
     }
 
   if(res == Success) 

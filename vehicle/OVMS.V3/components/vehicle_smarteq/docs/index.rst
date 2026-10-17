@@ -130,6 +130,7 @@ Only 5 Minutes preconditioning are implementet by Vehicle
  - **homelink 1** = 5 Minutes
  - **homelink 2** = 10 Minutes, auto restart after 5 Minutes
  - **homelink 3** = 15 Minutes, auto restart after 5 and 10 Minutes
+ - **xsq climate [minutes]** = 5, 10 up to 30 Minutes, auto restart preconditioning after every 5 Minutes
 
 ::
 
@@ -140,10 +141,33 @@ Only 5 Minutes preconditioning are implementet by Vehicle
 Trickle charging 12V battery:
 ------------------------------
 
-If a 12V warning is triggered, the vehicle initiates a ten-minute trickle-charging process for the 12V battery by activating the Preconditioning system.
-If the 12V warning occurs three times within 24 hours, the trickle charge is deactivated to avoid further strain on the 12V battery.
-SoC > 30% needed!
+If a 12V undervoltage warning is triggered while the vehicle is parked, OVMS initiates a trickle-charging process for the 12V battery by activating the Preconditioning system for the configured duration (default: 10 minutes, configurable from 5 to 30 minutes in 5-minute steps).
 
+Key requirements:
+
+- **HV SoC > 30%** is required to allow preconditioning.
+- **CAN bus write access** must be enabled (e.g. Mode "On" or "Car Off").
+
+**Safety Lockout:**
+
+If the 12V warning occurs three times within 24 hours, trickle charging is automatically deactivated until reset or until 24 hours have passed, preventing repeated stress and deep discharge cycles on a failing 12V battery.
+
+**Web UI Configuration & Status (Vehicle → Trickle Charge / ``/xsq/trickle``):**
+
+The dedicated web page provides monitoring, settings, and manual controls:
+
+- **Status & Monitoring:** Displays live 12V battery voltage, alert state, trickle charging status (Active/Inactive), 24h cycle counter (with lockout warning), activation timestamps within 24h, voltage at last activation, 12V undervoltage measurement history, HV battery SoC, contactor cycle changes within 1h, and CAN write mode.
+- **Configuration:**
+  - *Enable trickle 12V charging* (``[xsq] 12v.charge``, default: yes).
+  - *Trickle charge duration* (``[xsq] 12v.trickle.time``, 5–30 min in 5 min steps, default: 10 min).
+  - *12V Reference Voltage* (``[vehicle] 12v.ref``, 12.00–13.00 V, default: 12.50 V).
+  - *Start 12V trickle charge at* (calculated as ``[vehicle] 12v.ref`` − ``[vehicle] 12v.alert``, default: 11.75 V).
+- **Manual Actions:**
+  - **Reset 24h Counter:** Clears the 24-hour activation count and unlocks trickle charging if deactivated by the safety limit.
+  - **Start Trickle Charge Now:** Immediately initiates a preconditioning cycle to recharge the 12V battery.
+
+ Shell command:
+  - **xsq trickle [minutes]** = 5, 10 up to 30 Minutes, auto restart preconditioning after every 5 Minutes
 
 -------------------------
 Vehicle shell commands:
@@ -166,7 +190,8 @@ xsq show start              Show OBD trip start data
 xsq show reset              Show OBD trip total data
 xsq show counter            Show vehicle trip counter
 xsq show total              Show vehicle trip total data
-xsq hvcycles                Show HV contactor cycle counts
+xsq trickle [minutes]       Start 12V trickle charging (optional minutes: 5-30)
+xsq climate [minutes]       Start pre-conditioning / climate control (optional minutes: 5-30)
 =========================== ==============
 
 -------------------------

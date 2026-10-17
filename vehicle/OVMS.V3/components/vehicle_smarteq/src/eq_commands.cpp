@@ -442,6 +442,66 @@ void OvmsVehicleSmartEQ::xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCom
   #endif
 }
 
+void OvmsVehicleSmartEQ::xsq_climate_common(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool trickle) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+
+  int default_minutes = trickle ? smarteq->m_12v_trickle_time : 5;
+  int minutes = default_minutes;
+  if (argc == 1) {
+    char* endp = nullptr;
+    long val = strtol(argv[0], &endp, 10);
+    if (endp == argv[0] || *endp != 0) {
+      writer->puts("Error: invalid number");
+      return;
+    }
+    if (val < 5 || val > 30) {
+      writer->puts("Error: minutes out of range (5-30)");
+      return;
+    }
+    minutes = (int)val;
+    minutes = ((minutes + 2) / 5) * 5; // round to nearest 5
+    if (minutes < 5) minutes = 5;
+    if (minutes > 30) minutes = 30;
+  }
+
+  const char* action_name = trickle ? "12V trickle charge" : "pre-conditioning";
+
+  if (!smarteq->IsCANwrite()) {
+    writer->printf("Error: failed to start %s! CAN write access is disabled.\n", action_name);
+    return;
+  }
+  if (StdMetrics.ms_v_bat_soc->AsInt(0) < 31) {
+    writer->printf("Error: failed to start %s! HV battery SOC is too low (%d%% <= 30%%).\n", action_name, StdMetrics.ms_v_bat_soc->AsInt(0));
+    return;
+  }
+  if (smarteq->IsOnHVACEQ()) {
+    writer->printf("%s is already active.\n", trickle ? "Pre-conditioning / Trickle charge" : "Pre-conditioning");
+    return;
+  }
+
+  bool restart = !trickle && (minutes > 6);
+  vehicle_command_t res = smarteq->CommandClimateControlEQ(true, restart, minutes, trickle);
+  if (res == Success) {
+    if (trickle) {
+      writer->printf("12V trickle charge started successfully for %d minutes via preconditioning!\n", minutes);
+    } else {
+      writer->printf("Pre-conditioning started successfully for %d minutes!\n", minutes);
+    }
+  } else {
+    writer->printf("Error: failed to start %s.\n", action_name);
+  }
+}
+
+void OvmsVehicleSmartEQ::xsq_trickle(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  xsq_climate_common(verbosity, writer, cmd, argc, argv, true);
+}
+
+void OvmsVehicleSmartEQ::xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  xsq_climate_common(verbosity, writer, cmd, argc, argv, false);
+}
+
 void OvmsVehicleSmartEQ::xsq_preset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
   OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
   if (!smarteq)
@@ -467,7 +527,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     if (m.find("gps.parkpause") == m.end())
       {
       m["gps.parkpause"] = "600";
-      m["gps.parkreactivate"] = "50";
+      m["gps.parkreactivate"] = "100";
       m["gps.parkreactlock"] = "5";
       need_stream = true;
       changed = true;
@@ -489,7 +549,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     if (PRESET_VERSION == PRESET_VERSION_12VREF) 
     {
       m["12v.ref"] = "12.5";
-      m["12v.alert"] = "0.75";
+      m["12v.alert"] = "0.8";
       changed = true;
     }
     if (it_ref == m.end())
@@ -499,7 +559,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
       }
     if (it_alert == m.end())
       {
-      m["12v.alert"] = "0.75";
+      m["12v.alert"] = "0.8";
       changed = true;
       }
     if (need_stream)
@@ -654,7 +714,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   map_modem["net.type"] = "4G";
   map_modem["gps.parkreactawake"] = "yes";
   map_modem["gps.parkpause"] = "600";
-  map_modem["gps.parkreactivate"] = "50";
+  map_modem["gps.parkreactivate"] = "100";
   map_modem["gps.parkreactlock"] = "5";
   MyConfig.SetParamMap("modem", map_modem);
 
@@ -662,7 +722,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   auto map_vehicle = MyConfig.GetParamMap("vehicle");
   map_vehicle["stream"] = "10";
   map_vehicle["12v.ref"] = "12.5";
-  map_vehicle["12v.alert"] = "0.75";
+  map_vehicle["12v.alert"] = "0.8";
   MyConfig.SetParamMap("vehicle", map_vehicle);
 
   // ota section
