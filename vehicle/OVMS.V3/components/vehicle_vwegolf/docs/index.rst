@@ -78,8 +78,18 @@ Charge Interruption Alerts  No
 Charge Control              Charge-current limit, start/stop (see below)
 Lock/Unlock Vehicle         No
 Valet Mode Control          No
+12V Charging Status         Yes (``v.e.charging12v``, see below)
 Others
 =========================== ==============
+
+-------------------
+12V Charging Status
+-------------------
+
+* ``v.e.charging12v`` is set while the DC-DC converter charges the 12V battery. The e-Golf has no alternator, so
+  this is whenever the HV system is up: the HV-system-active bit of KCAN frame 0x187 (bit 15, ``HV_Bordnetz_aktiv``
+  of ``Motor_EV_01`` in opendbc), HV charging in progress, or remote climate running. It clears when KCAN goes silent
+* OVMS Power Management (``power`` config) relies on this metric to tell whether the 12V battery is being charged
 
 ---------------------
 Cabin Climate Control
