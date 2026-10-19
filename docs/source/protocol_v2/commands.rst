@@ -97,19 +97,25 @@ Command parameters are unused and ignored by the car.
 
 Response parameters are unused, and will merely indicate the success or not of the result. Shortly after sending the response, the module will issue a charge alert.
 
------------------------
-7 - Execute SMS command
------------------------
+-------------------------
+7 - Execute shell command
+-------------------------
 
 Command parameter is:
 
-* SMS command with parameters
+* Shell (V2: "SMS") command with parameters
 
-Response is the output of the SMS command that would otherwise have been sent as the reply SMS, with LF characters converted to CR.
+Response is the output of the shell command that would otherwise have been sent as the reply / printed on 
+the console, with LF and CR-LF line breaks converted to CR.
 
-The caller id is set to the registered phone number. Return code 1 is used for all errors, i.e. authorization failure, command failure and unknown/unhandled commands.
+**On V2 modules**, the caller id is set to the registered phone number. Return code 1 is used for all errors, 
+i.e. authorization failure, command failure and unknown/unhandled commands. SMS commands with multiple replies 
+are not supported, only the last reply will be returned.
 
-Note: SMS commands with multiple replies are not yet supported, only the last reply will be returned.
+**V3 version note**: up to firmware version ``3.3.006``, all commas ``,`` in the command response were 
+changed into ``;``. Beginning with ``3.3.007``, this behaviour is disabled by default, if some of your
+clients still need this, enable by ``config set server.v2 workaround.legacy_field_enc yes``.
+
 
 --------------------
 10 - Set Charge Mode

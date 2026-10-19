@@ -41,7 +41,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   std::string server, vehicleid, password, port;
   std::string updatetime_connected, updatetime_idle;
   bool tls;
-  bool ios_tpms_workaround;
+  bool ios_tpms_workaround, legacy_field_enc;
 
   if (c.method == "POST") {
     // process form submission:
@@ -53,6 +53,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     updatetime_connected = c.getvar("updatetime_connected");
     updatetime_idle = c.getvar("updatetime_idle");
     ios_tpms_workaround = (c.getvar("ios_tpms_workaround") == "yes");
+    legacy_field_enc = (c.getvar("legacy_field_enc") == "yes");
 
     // validate:
     if (port != "") {
@@ -87,6 +88,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v2", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v2", "updatetime.idle", updatetime_idle);
       MyConfig.SetParamValueBool("server.v2", "workaround.ios_tpms_display", ios_tpms_workaround);
+      MyConfig.SetParamValueBool("server.v2", "workaround.legacy_field_enc", legacy_field_enc);
 
       std::string info =
         "<p class=\"lead\">Server V2 (MP) connection configured.</p>"
@@ -120,6 +122,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     updatetime_connected = MyConfig.GetParamValue("server.v2", "updatetime.connected");
     updatetime_idle = MyConfig.GetParamValue("server.v2", "updatetime.idle");
     ios_tpms_workaround = MyConfig.GetParamValueBool("server.v2", "workaround.ios_tpms_display", true);  // default enabled, effective only for iOS OVMS app 1.8.6
+    legacy_field_enc = MyConfig.GetParamValueBool("server.v2", "workaround.legacy_field_enc", false);
 
     // generate form:
     c.head(200);
@@ -154,6 +157,9 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("iOS TPMS display fix", "ios_tpms_workaround", ios_tpms_workaround,
     "<p>Workaround for legacy iOS App, hiding zero/negative temperatures to keep other TPMS data visible.</p>"
     "<p>With the fix enabled, use command <code>tpms</code> to show actual temperatures at/below zero.</p>");
+  c.input_checkbox("Legacy field encoding", "legacy_field_enc", legacy_field_enc,
+    "<p>Workaround for legacy V2/MP Apps/clients cutting off command responses and text notifications"
+    " at the first comma.</p><p>If enabled, all commas in these payloads are changed into semicolons.</p>");
   c.fieldset_end();
 
   c.hr();

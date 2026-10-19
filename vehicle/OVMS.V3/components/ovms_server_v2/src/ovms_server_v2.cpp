@@ -542,7 +542,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       extram::string val; bs->Dump(val);
       delete bs;
       *buffer << "MP-0 c7,0,";
-      *buffer << mp_encode(val);
+      *buffer << mp_encode(val, m_legacy_field_enc);
       break;
       }
     case 10: // Set Charge Mode
@@ -1760,7 +1760,7 @@ void OvmsServerV2::TransmitNotifyInfo()
     extram::ostringstream buffer;
     buffer
       << "MP-0 PI"
-      << mp_encode(e->GetValue());
+      << mp_encode(e->GetValue(), m_legacy_field_enc);
     if (Transmit(buffer.str().c_str()))
       {
       info->MarkRead(MyOvmsServerV2Reader, e);
@@ -1820,7 +1820,7 @@ void OvmsServerV2::TransmitNotifyAlert()
     extram::ostringstream buffer;
     buffer
       << "MP-0 PA"
-      << mp_encode(e->GetValue());
+      << mp_encode(e->GetValue(), m_legacy_field_enc);
     if (Transmit(buffer.str().c_str()))
       {
       alert->MarkRead(MyOvmsServerV2Reader, e);
@@ -2013,7 +2013,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     extram::ostringstream buffer;
     buffer
       << "MP-0 PI"
-      << mp_encode(entry->GetValue());
+      << mp_encode(entry->GetValue(), m_legacy_field_enc);
     bool txok = Transmit(buffer.str().c_str(), 0);
     if (!txok) m_pending_notify_info = true;
     return txok; // Mark it as read if we've managed to send it
@@ -2045,7 +2045,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     extram::ostringstream buffer;
     buffer
       << "MP-0 PA"
-      << mp_encode(entry->GetValue());
+      << mp_encode(entry->GetValue(), m_legacy_field_enc);
     bool txok = Transmit(buffer.str().c_str(), 0);
     if (!txok) m_pending_notify_alert = true;
     return txok; // Mark it as read if we've managed to send it
@@ -2069,7 +2069,7 @@ void OvmsServerV2::EventListener(std::string event, void* data)
     {
     // forward USSD response to server:
     std::string buf = "MP-0 c41,0,";
-    buf.append(mp_encode(std::string((char*) data)));
+    buf.append(mp_encode(std::string((char*) data), m_legacy_field_enc));
     Transmit(buf);
     }
   else if (event == "config.changed" || event == "config.mounted")
@@ -2094,6 +2094,7 @@ void OvmsServerV2::ConfigChanged(OvmsConfigParam* param)
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
   m_updatetime_connected = MyConfig.GetParamValueInt("server.v2", "updatetime.connected", 60);
   m_updatetime_idle = MyConfig.GetParamValueInt("server.v2", "updatetime.idle", 600);
+  m_legacy_field_enc = MyConfig.GetParamValueBool("server.v2", "workaround.legacy_field_enc", false);
 
   if (!param) return;
 
@@ -2307,6 +2308,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_streaming = 0;
   m_updatetime_idle = 600;
   m_updatetime_connected = 60;
+  m_legacy_field_enc = false;
   m_lasttx = 0;
   m_lasttx_stream = 0;
   m_peers = 0;

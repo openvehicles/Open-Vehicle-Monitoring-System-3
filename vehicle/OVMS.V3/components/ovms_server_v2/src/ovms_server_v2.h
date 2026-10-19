@@ -149,6 +149,7 @@ class OvmsServerV2 : public OvmsServer, MongooseClient
     int m_streaming;
     int m_updatetime_idle;
     int m_updatetime_connected;
+    bool m_legacy_field_enc;
 
     uint32_t m_lastrx_time = 0;
     int m_ping_ticker = 0;

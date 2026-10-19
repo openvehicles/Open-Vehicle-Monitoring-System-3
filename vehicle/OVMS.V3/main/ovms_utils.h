@@ -138,10 +138,10 @@ int chargemode_key(const std::string code);
  * mp_encode: encode string for MP transport;
  *  - replace '\r\n' by '\r'
  *  - replace '\n' by '\r'
- *  - replace ',' by ';'
+ *  - replace ',' by ';' if @field == true (default)
  */
-std::string mp_encode(const std::string text);
-extram::string mp_encode(const extram::string text);
+std::string mp_encode(const std::string text, bool field=true);
+extram::string mp_encode(const extram::string text, bool field=true);
 
 /**
  * stripcr:
