@@ -44,10 +44,20 @@
 #define POWERMGMT_MODEMOFF_WIFI_DELAY     0  // minutes (0 = disabled)
 #define POWERMGMT_WIFIOFF_DELAY           24 // hours
 #define POWERMGMT_12V_SHUTDOWN_DELAY      30 // minutes
-#define POWERMGMT_POWERSAVING_DAYS        4  // days
+#define POWERMGMT_POWERSAVING_DAYS        4  // days exceeding which periodic power saving is activated
+#define POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS 9 // days (0 = unlimited), days exceeding + deep sleep days = 13 days default
 #define POWERMGMT_POWERSAVING_INTERVAL    6  // hours
 #define POWERMGMT_POWERSAVING_DURATION    15 // minutes
 #define POWERMGMT_POWERSAVING_TARGET      "both" // modem & wifi
+
+// power consumption estimates (mA) for each component in active state
+#define POWERMGMT_EST_BASE                28.0f // base system
+#define POWERMGMT_EST_WIFI_AP             25.0f // wifi AP
+#define POWERMGMT_EST_WIFI_CLIENT         2.0f  // wifi client
+#define POWERMGMT_EST_MODEM               8.0f  // modem
+#define POWERMGMT_EST_MODEM_SLEEP         5.0f  // modem in sleep mode (active GPS antenna attached)
+#define POWERMGMT_EST_GPS                 23.0f // gps
+  
 
 struct powermgmt_consumption_t
   {
@@ -77,7 +87,7 @@ class powermgmt
     void CommandConfig(int verbosity, OvmsWriter* writer);
     void CommandPowerOff(int verbosity, OvmsWriter* writer, const char* target);
     void CommandPowerOn(int verbosity, OvmsWriter* writer, const char* target);
-    void CommandPowerSaving(int verbosity, OvmsWriter* writer, const char* action, const char* target = nullptr);
+    void CommandPowerSaving(int verbosity, OvmsWriter* writer, const char* action, const char* target = nullptr, const char* days_str = nullptr);
     void EventVehicleOn(std::string event, void* data);
     unsigned int GetNotChargingTimer() const { return m_notcharging_timer; }
     unsigned int GetModemOffWifiTimer() const { return m_modemoff_wifi_timer; }
@@ -102,10 +112,12 @@ class powermgmt
     unsigned int m_12v_shutdown_delay;
     bool m_powersaving_enabled;
     unsigned int m_powersaving_days;
+    unsigned int m_powersaving_deepsleep_days;
     std::string m_powersaving_target;
     unsigned int m_powersaving_interval;
     unsigned int m_powersaving_duration;
     bool m_powersaving_active;
+    bool m_powersaving_deepsleep_fallback;
     unsigned int m_powersaving_cycle_timer;
     bool m_powersaving_awake_phase;
 

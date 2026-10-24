@@ -61,7 +61,9 @@ static void pmgmt_poweron(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
 
 static void pmgmt_powersaving(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  MyPowerMgmt.CommandPowerSaving(verbosity, writer, cmd->GetName());
+  const char* target = (argc > 0) ? argv[0] : nullptr;
+  const char* days = (argc > 1) ? argv[1] : nullptr;
+  MyPowerMgmt.CommandPowerSaving(verbosity, writer, cmd->GetName(), target, days);
   }
 
 static void pmgmt_powersaving_ctrl(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -86,8 +88,25 @@ static void pmgmt_powersaving_set(int verbosity, OvmsWriter* writer, OvmsCommand
   std::string t(target);
   if (t == "modem" || t == "wifi" || t == "both" || t == "deepsleep")
     {
-    MyConfig.SetParamValue("power", "powersaving.target", t);
-    writer->printf("Periodic power saving target set to: %s\n", t.c_str());
+    if (t == "deepsleep" && argc > 0)
+      {
+      char* endptr = nullptr;
+      long days = strtol(argv[0], &endptr, 10);
+      if (endptr == argv[0] || *endptr != '\0' || days < 0)
+        {
+        writer->puts("Error: Invalid days value. Must be >= 0 (0 = unlimited).");
+        return;
+        }
+      auto lock = MyConfig.Lock();
+      MyConfig.SetParamValue("power", "powersaving.target", t);
+      MyConfig.SetParamValueInt("power", "powersaving.deepsleep_days", (int)days);
+      writer->printf("Periodic power saving target set to: %s (max %ld days)\n", t.c_str(), days);
+      }
+    else
+      {
+      MyConfig.SetParamValue("power", "powersaving.target", t);
+      writer->printf("Periodic power saving target set to: %s\n", t.c_str());
+      }
     }
   else
     {
@@ -113,10 +132,12 @@ powermgmt::powermgmt()
   m_modem_wifi_fallback = false;
   m_powersaving_enabled = false;
   m_powersaving_days = POWERMGMT_POWERSAVING_DAYS;
+  m_powersaving_deepsleep_days = POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS;
   m_powersaving_target = POWERMGMT_POWERSAVING_TARGET;
   m_powersaving_interval = POWERMGMT_POWERSAVING_INTERVAL;
   m_powersaving_duration = POWERMGMT_POWERSAVING_DURATION;
   m_powersaving_active = false;
+  m_powersaving_deepsleep_fallback = false;
   m_powersaving_cycle_timer = 0;
   m_powersaving_awake_phase = false;
   m_charging = false;
@@ -142,11 +163,13 @@ powermgmt::powermgmt()
   cmd_poweron->RegisterCommand("both", "Power on both cellular modem and WiFi and reset delay timers", pmgmt_poweron, "", 0, 0, true);
   OvmsCommand* cmd_powersaving = cmd_pmgmt->RegisterCommand("powersaving", "Configure or toggle periodic power saving mode");
   cmd_powersaving->RegisterCommand("status", "Show periodic power saving status", pmgmt_powersaving, "", 0, 0, false);
+  cmd_powersaving->RegisterCommand("on", "Activate periodic power saving immediately", pmgmt_powersaving, "[<modem|wifi|both|deepsleep> [<days>]]", 0, 2, true);
+  cmd_powersaving->RegisterCommand("off", "Deactivate periodic power saving immediately", pmgmt_powersaving, "", 0, 0, true);
   OvmsCommand* cmd_powersaving_set = cmd_powersaving->RegisterCommand("set", "Set periodic power saving target");
   cmd_powersaving_set->RegisterCommand("modem", "Set target to cellular modem", pmgmt_powersaving_set, "", 0, 0, true);
   cmd_powersaving_set->RegisterCommand("wifi", "Set target to WiFi", pmgmt_powersaving_set, "", 0, 0, true);
   cmd_powersaving_set->RegisterCommand("both", "Set target to both modem and WiFi", pmgmt_powersaving_set, "", 0, 0, true);
-  cmd_powersaving_set->RegisterCommand("deepsleep", "Set target to deep sleep", pmgmt_powersaving_set, "", 0, 0, true);
+  cmd_powersaving_set->RegisterCommand("deepsleep", "Set target to deep sleep (optional: max days)", pmgmt_powersaving_set, "[<days>]", 0, 1, true);
   OvmsCommand* cmd_powersaving_ctrl = cmd_powersaving->RegisterCommand("ctrl", "Enable or disable periodic power saving mode");
   cmd_powersaving_ctrl->RegisterCommand("on", "Enable periodic power saving", pmgmt_powersaving_ctrl, "", 0, 0, true);
   cmd_powersaving_ctrl->RegisterCommand("off", "Disable periodic power saving", pmgmt_powersaving_ctrl, "", 0, 0, true);
@@ -178,28 +201,43 @@ void powermgmt::ConfigChanged(std::string event, void* data)
     m_12v_shutdown_delay = MyConfig.GetParamValueInt("power", "12v_shutdown_delay", POWERMGMT_12V_SHUTDOWN_DELAY);
     m_powersaving_enabled = MyConfig.GetParamValueBool("power", "powersaving.enabled", false);
     m_powersaving_days = MyConfig.GetParamValueInt("power", "powersaving.days", POWERMGMT_POWERSAVING_DAYS);
+    m_powersaving_deepsleep_days = MyConfig.GetParamValueInt("power", "powersaving.deepsleep_days", POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS);
     m_powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", POWERMGMT_POWERSAVING_TARGET);
     m_powersaving_interval = MyConfig.GetParamValueInt("power", "powersaving.interval", POWERMGMT_POWERSAVING_INTERVAL);
     m_powersaving_duration = MyConfig.GetParamValueInt("power", "powersaving.duration", POWERMGMT_POWERSAVING_DURATION);
 
     // Restore timers from parktime after reboot if feature enabled
     int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
-    if (m_enabled && StandardMetrics.ms_v_env_parktime->AsInt(0) > 1)
+    if (m_enabled && park_secs > 1)
       m_notcharging_timer = park_secs;
-    if (m_powersaving_enabled && StandardMetrics.ms_v_env_parktime->AsInt(0) > 1)
+    if (m_powersaving_enabled && park_secs > 1)
+      {
       m_powersaving_timer = park_secs;
+      if (m_powersaving_target == "deepsleep" && m_powersaving_deepsleep_days > 0 &&
+          m_powersaving_timer >= (m_powersaving_days + m_powersaving_deepsleep_days) * 24 * 60 * 60)
+        {
+        m_powersaving_deepsleep_fallback = true;
+        m_powersaving_target = "both";
+        }
+      else
+        {
+        m_powersaving_deepsleep_fallback = false;
+        }
+      }
     }
   }
 
 void powermgmt::EventVehicleOn(std::string event, void* data)
   {
-  if (m_powersaving_active || m_powersaving_timer > 0)
+  if (m_powersaving_active || m_powersaving_timer > 0 || m_powersaving_deepsleep_fallback)
     {
     ESP_LOGI(TAG, "Vehicle ON event received, resetting power saving timer and mode.");
     m_powersaving_active = false;
+    m_powersaving_deepsleep_fallback = false;
     m_powersaving_timer = 0;
     m_powersaving_cycle_timer = 0;
     m_powersaving_awake_phase = false;
+    m_powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", POWERMGMT_POWERSAVING_TARGET);
     }
   }
 
@@ -209,7 +247,7 @@ void powermgmt::GetEstimatedConsumption(powermgmt_consumption_t& out)
   // https://docs.openvehicles.com/en/latest/userguide/warnings.html
   out = {};
 
-  out.base_ma = 28.0f; // Base System
+  out.base_ma = POWERMGMT_EST_BASE; // Base System
 
   if (MyPeripherals)
     {
@@ -218,9 +256,9 @@ void powermgmt::GetEstimatedConsumption(powermgmt_consumption_t& out)
       {
       esp32wifi_mode_t wmode = MyPeripherals->m_esp32wifi->GetMode();
       if (wmode == ESP32WIFI_MODE_AP || wmode == ESP32WIFI_MODE_APCLIENT)
-        out.wifi_ma = 25.0f; // Wifi AP Mode
+        out.wifi_ma = POWERMGMT_EST_WIFI_AP; // Wifi AP Mode
       else if (wmode != ESP32WIFI_MODE_OFF)
-        out.wifi_ma = 2.0f;  // Wifi Client
+        out.wifi_ma = POWERMGMT_EST_WIFI_CLIENT;  // Wifi Client
       }
 #endif
 #ifdef CONFIG_OVMS_COMP_CELLULAR
@@ -229,13 +267,13 @@ void powermgmt::GetEstimatedConsumption(powermgmt_consumption_t& out)
       PowerMode mpm = MyPeripherals->m_cellular_modem->GetPowerMode();
       if (mpm == On)
         {
-        out.modem_ma = 8.0f; // Modem
+        out.modem_ma = POWERMGMT_EST_MODEM; // Modem
         if (MyPeripherals->m_cellular_modem->m_nmea != NULL)
-          out.gps_ma = 23.0f; // GPS
+          out.gps_ma = POWERMGMT_EST_GPS; // GPS
         }
       else if (mpm == Sleep)
         {
-        out.modem_ma = 5.0f;
+        out.modem_ma = POWERMGMT_EST_MODEM_SLEEP; // Modem in Sleep mode
         }
       }
 #endif
@@ -346,6 +384,12 @@ void powermgmt::CommandConfig(int verbosity, OvmsWriter* writer)
   writer->printf("  WiFi off delay:                     %u hours (0 = disabled)\n", m_wifioff_delay);
 #endif
   writer->printf("  12V alert shutdown delay:           %u minutes (0 = disabled)\n", m_12v_shutdown_delay);
+  writer->printf("  Periodic power saving enabled:      %s\n", m_powersaving_enabled ? "yes" : "no");
+  writer->printf("  Periodic power saving days:         %u days\n", m_powersaving_days);
+  writer->printf("  Periodic power saving target:       %s\n", m_powersaving_target.c_str());
+  writer->printf("  Periodic deep sleep limit:          %u days (0 = unlimited)\n", m_powersaving_deepsleep_days);
+  writer->printf("  Periodic power saving interval:     %u hours\n", m_powersaving_interval);
+  writer->printf("  Periodic power saving duration:     %u minutes\n", m_powersaving_duration);
   }
 
 void powermgmt::PowerOffWifi()
@@ -357,7 +401,7 @@ void powermgmt::PowerOffWifi()
       {
       ESP_LOGW(TAG, "Powering off wifi");
       MyEvents.SignalEvent("powermgmt.wifi.off", NULL);
-      vTaskDelay(1500 / portTICK_PERIOD_MS); // make sure all notifications are transmitted before powering down WiFi
+      vTaskDelay(2000 / portTICK_PERIOD_MS); // make sure all notifications are transmitted before powering down WiFi
       MyPeripherals->m_esp32wifi->SetPowerMode(Off);
       }
     m_wifi_off = true;
@@ -374,7 +418,7 @@ void powermgmt::PowerOffModem(bool wifi_triggered)
       {
       ESP_LOGW(TAG, "Powering off cellular modem%s", wifi_triggered ? " (WiFi connected)" : "");
       MyEvents.SignalEvent("powermgmt.modem.off", NULL);
-      vTaskDelay(1500 / portTICK_PERIOD_MS); // make sure all notifications are transmitted before powering down modem
+      vTaskDelay(2000 / portTICK_PERIOD_MS); // make sure all notifications are transmitted before powering down modem
       MyPeripherals->m_cellular_modem->SetPowerMode(Off);
       }
     m_modem_off = true;
@@ -450,7 +494,9 @@ void powermgmt::CommandPowerOn(int verbosity, OvmsWriter* writer, const char* ta
   m_modemoff_wifi_timer = 0;
   m_powersaving_timer = 0;
   m_powersaving_active = false;
+  m_powersaving_deepsleep_fallback = false;
   m_powersaving_awake_phase = false;
+  m_powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", POWERMGMT_POWERSAVING_TARGET);
 
   if (do_modem)
     {
@@ -473,8 +519,9 @@ void powermgmt::CommandPowerOn(int verbosity, OvmsWriter* writer, const char* ta
     }
   }
 
-void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char* action, const char* target)
+void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char* action, const char* target, const char* days_str)
   {
+  auto lock = MyConfig.Lock();
   if (strcmp(action, "on") == 0)
     {
     if (target && *target)
@@ -482,9 +529,29 @@ void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char
       std::string t(target);
       if (t == "modem" || t == "wifi" || t == "both" || t == "deepsleep")
         {
+        if (days_str && *days_str)
+          {
+          if (t != "deepsleep")
+            {
+            writer->puts("Error: <days> parameter is only valid with target 'deepsleep'.");
+            return;
+            }
+          char* endptr = nullptr;
+          long days = strtol(days_str, &endptr, 10);
+          if (endptr == days_str || *endptr != '\0' || days < 0)
+            {
+            writer->puts("Error: Invalid days value. Must be >= 0 (0 = unlimited).");
+            return;
+            }
+          m_powersaving_deepsleep_days = (unsigned int)days;
+          MyConfig.SetParamValueInt("power", "powersaving.deepsleep_days", m_powersaving_deepsleep_days);
+          }
         m_powersaving_target = t;
         MyConfig.SetParamValue("power", "powersaving.target", m_powersaving_target);
-        writer->printf("Periodic power saving target set to: %s\n", m_powersaving_target.c_str());
+        if (t == "deepsleep" && days_str && *days_str)
+          writer->printf("Periodic power saving target set to: %s (max %u days)\n", m_powersaving_target.c_str(), m_powersaving_deepsleep_days);
+        else
+          writer->printf("Periodic power saving target set to: %s\n", m_powersaving_target.c_str());
         }
       else
         {
@@ -494,6 +561,7 @@ void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char
       }
 
     m_powersaving_active = true;
+    m_powersaving_deepsleep_fallback = false;
     m_powersaving_timer = m_powersaving_days * 24 * 60 * 60;
     m_powersaving_cycle_timer = 0;
     m_powersaving_awake_phase = false;
@@ -503,18 +571,22 @@ void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char
   else if (strcmp(action, "off") == 0)
     {
     m_powersaving_active = false;
+    m_powersaving_deepsleep_fallback = false;
     m_powersaving_timer = 0;
     m_powersaving_awake_phase = false;
+    m_powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", POWERMGMT_POWERSAVING_TARGET);
     MyConfig.SetParamValueBool("power", "powersaving.enabled", false);
     writer->puts("Periodic power saving mode deactivated.");
     }
   else
     {
+    std::string active_target = m_powersaving_deepsleep_fallback ? "both (fallback from deepsleep)" : m_powersaving_target;
     writer->printf("Periodic Power Saving Status:\n");
     writer->printf("  Enabled in config: %s\n", m_powersaving_enabled ? "yes" : "no");
     writer->printf("  Currently active:  %s\n", m_powersaving_active ? "yes" : "no");
-    writer->printf("  Target component:  %s\n", m_powersaving_target.c_str());
+    writer->printf("  Target component:  %s\n", active_target.c_str());
     writer->printf("  Days threshold:    %u\n", m_powersaving_days);
+    writer->printf("  Deep sleep limit:  %u days (0 = unlimited)\n", m_powersaving_deepsleep_days);
     writer->printf("  Interval:          %u hours\n", m_powersaving_interval);
     writer->printf("  Duration:          %u minutes\n", m_powersaving_duration);
     writer->printf("  Timer progress:    %u / %u seconds\n", m_powersaving_timer, m_powersaving_days * 24 * 60 * 60);
@@ -547,18 +619,39 @@ void powermgmt::Ticker1(std::string event, void* data)
       m_powersaving_timer++;
       if (m_powersaving_timer >= m_powersaving_days * 24 * 60 * 60)
         {
-        ESP_LOGW(TAG, "Power saving inactivity threshold of %u days reached, entering periodic power saving mode.", m_powersaving_days);
-        m_powersaving_active = true;
-        m_powersaving_cycle_timer = 0;
-        m_powersaving_awake_phase = false;
         MyNotify.NotifyStringf("info", "powermgmt.powersaving.active",
           "Periodic power saving mode activated after %u days of inactivity (target: %s).",
           m_powersaving_days, m_powersaving_target.c_str());
+        ESP_LOGI(TAG, "Power saving inactivity threshold of %u days reached, entering periodic power saving mode.", m_powersaving_days);
+        vTaskDelay(2000 / portTICK_PERIOD_MS); // make sure all notifications are transmitted before entering power saving mode
+        m_powersaving_active = true;
+        m_powersaving_cycle_timer = 0;
+        m_powersaving_awake_phase = false;
+        if (m_powersaving_target == "deepsleep" && m_powersaving_deepsleep_days > 0 &&
+            m_powersaving_timer >= (m_powersaving_days + m_powersaving_deepsleep_days) * 24 * 60 * 60)
+          {
+          m_powersaving_deepsleep_fallback = true;
+          m_powersaving_target = "both";
+          }
         }
       }
     }
   else
     {
+    m_powersaving_timer++;
+    if (m_powersaving_target == "deepsleep" && m_powersaving_deepsleep_days > 0 &&
+        m_powersaving_timer >= (m_powersaving_days + m_powersaving_deepsleep_days) * 24 * 60 * 60)
+      {
+      MyNotify.NotifyStringf("info", "powermgmt.powersaving.fallback",
+        "Deep sleep limit of %u days reached, continuing periodic power saving with target 'both' until vehicle ON.",
+        m_powersaving_deepsleep_days);
+      vTaskDelay(2000 / portTICK_PERIOD_MS);
+      ESP_LOGI(TAG, "Deep sleep limit of %u days reached, switching power saving target to 'both' until vehicle ON.",
+        m_powersaving_deepsleep_days);
+      m_powersaving_deepsleep_fallback = true;
+      m_powersaving_target = "both";      
+      }
+
     // Duty-cycle execution
     m_powersaving_cycle_timer++;
     unsigned int interval_secs = m_powersaving_interval * 60 * 60;
@@ -572,9 +665,13 @@ void powermgmt::Ticker1(std::string event, void* data)
         if (m_powersaving_target == "deepsleep")
           {
           unsigned int sleep_secs = m_powersaving_duration * 60;
+          int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
+          if ((unsigned int)park_secs < m_powersaving_timer)
+            park_secs = m_powersaving_timer;
+          StandardMetrics.ms_v_env_parktime->SetValue(park_secs + (int)sleep_secs);
           char buf[32];
           snprintf(buf, sizeof(buf), "%u", sleep_secs);
-          ESP_LOGW(TAG, "Power saving duty-cycle: entering deep sleep for %u seconds", sleep_secs);
+          ESP_LOGI(TAG, "Power saving duty-cycle: entering deep sleep for %u seconds", sleep_secs);
           MyBoot.DeepSleep(sleep_secs);
           }
         else

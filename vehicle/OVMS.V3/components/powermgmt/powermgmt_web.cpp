@@ -65,7 +65,7 @@ void powermgmt::WebCleanup()
   bool modem_wifi_fallback = false;
   bool powersaving_enabled = false;
   std::string modemoff_delay, modemoff_wifi_delay, wifioff_delay, b12v_shutdown_delay;
-  std::string powersaving_days, powersaving_target, powersaving_interval, powersaving_duration;
+  std::string powersaving_days, powersaving_deepsleep_days, powersaving_target, powersaving_interval, powersaving_duration;
 
   if (c.method == "POST")
     {
@@ -82,6 +82,7 @@ void powermgmt::WebCleanup()
     b12v_shutdown_delay = c.getvar("12v_shutdown_delay");
     powersaving_enabled = (c.getvar("powersaving_enabled") == "yes");
     powersaving_days = c.getvar("powersaving_days");
+    powersaving_deepsleep_days = c.getvar("powersaving_deepsleep_days");
     powersaving_target = c.getvar("powersaving_target");
     powersaving_interval = c.getvar("powersaving_interval");
     powersaving_duration = c.getvar("powersaving_duration");
@@ -103,6 +104,9 @@ void powermgmt::WebCleanup()
 
       if (powersaving_days.find_first_not_of("0123456789") != std::string::npos)
         error += "<li data-input=\"user_key\">Invalid powersaving days!</li>";
+
+      if (powersaving_deepsleep_days.find_first_not_of("0123456789") != std::string::npos)
+        error += "<li data-input=\"user_key\">Invalid deep sleep limit days!</li>";
 
       if (powersaving_interval.find_first_not_of("0123456789") != std::string::npos)
         error += "<li data-input=\"user_key\">Invalid powersaving interval!</li>";
@@ -127,6 +131,7 @@ void powermgmt::WebCleanup()
       MyConfig.SetParamValue("power", "12v_shutdown_delay", b12v_shutdown_delay);
       MyConfig.SetParamValueBool("power", "powersaving.enabled", powersaving_enabled);
       MyConfig.SetParamValue("power", "powersaving.days", powersaving_days);
+      MyConfig.SetParamValue("power", "powersaving.deepsleep_days", powersaving_deepsleep_days);
       MyConfig.SetParamValue("power", "powersaving.target", powersaving_target);
       MyConfig.SetParamValue("power", "powersaving.interval", powersaving_interval);
       MyConfig.SetParamValue("power", "powersaving.duration", powersaving_duration);
@@ -158,6 +163,7 @@ void powermgmt::WebCleanup()
     b12v_shutdown_delay = MyConfig.GetParamValue("power", "12v_shutdown_delay", STR(POWERMGMT_12V_SHUTDOWN_DELAY));
     powersaving_enabled = MyConfig.GetParamValueBool("power", "powersaving.enabled", false);
     powersaving_days = MyConfig.GetParamValue("power", "powersaving.days", STR(POWERMGMT_POWERSAVING_DAYS));
+    powersaving_deepsleep_days = MyConfig.GetParamValue("power", "powersaving.deepsleep_days", STR(POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS));
     powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", STR(POWERMGMT_POWERSAVING_TARGET));
     powersaving_interval = MyConfig.GetParamValue("power", "powersaving.interval", STR(POWERMGMT_POWERSAVING_INTERVAL));
     powersaving_duration = MyConfig.GetParamValue("power", "powersaving.duration", STR(POWERMGMT_POWERSAVING_DURATION));
@@ -314,6 +320,11 @@ void powermgmt::WebCleanup()
   c.input_radiobtn_option("powersaving_target", "Both Modem & WiFi", "both", powersaving_target == "both" || powersaving_target.empty());
   c.input_radiobtn_option("powersaving_target", "Deep Sleep", "deepsleep", powersaving_target == "deepsleep");
   c.input_radiobtn_end("");
+
+  c.input("number", "Deep sleep max duration (days)", "powersaving_deepsleep_days", powersaving_deepsleep_days.c_str(),
+    "Default: " STR(POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS) " days (0 = unlimited)",
+    "<p>0 = unlimited. Limits the deep sleep mode to the specified number of days, after which periodic power saving continues with 'Both Modem &amp; WiFi' until the vehicle is turned on.</p>",
+    "min=\"0\" step=\"1\"", "days");
 
   c.input("number", "Duty-cycle interval", "powersaving_interval", powersaving_interval.c_str(),
     "Default: " STR(POWERMGMT_POWERSAVING_INTERVAL) " hours", "", "min=\"1\" step=\"1\"", "hours");
