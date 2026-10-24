@@ -63,7 +63,9 @@ void powermgmt::WebCleanup()
   std::string error;
   bool enabled;
   bool modem_wifi_fallback = false;
+  bool powersaving_enabled = false;
   std::string modemoff_delay, modemoff_wifi_delay, wifioff_delay, b12v_shutdown_delay;
+  std::string powersaving_days, powersaving_target, powersaving_interval, powersaving_duration;
 
   if (c.method == "POST")
     {
@@ -78,6 +80,11 @@ void powermgmt::WebCleanup()
 #endif
     wifioff_delay = c.getvar("wifioff_delay");
     b12v_shutdown_delay = c.getvar("12v_shutdown_delay");
+    powersaving_enabled = (c.getvar("powersaving_enabled") == "yes");
+    powersaving_days = c.getvar("powersaving_days");
+    powersaving_target = c.getvar("powersaving_target");
+    powersaving_interval = c.getvar("powersaving_interval");
+    powersaving_duration = c.getvar("powersaving_duration");
 
     // check values
     if (!modemoff_delay.empty())
@@ -93,6 +100,15 @@ void powermgmt::WebCleanup()
 
       if (b12v_shutdown_delay.find_first_not_of("0123456789") != std::string::npos)
         error += "<li data-input=\"user_key\">Invalid shutdown delay!</li>";
+
+      if (powersaving_days.find_first_not_of("0123456789") != std::string::npos)
+        error += "<li data-input=\"user_key\">Invalid powersaving days!</li>";
+
+      if (powersaving_interval.find_first_not_of("0123456789") != std::string::npos)
+        error += "<li data-input=\"user_key\">Invalid powersaving interval!</li>";
+
+      if (powersaving_duration.find_first_not_of("0123456789") != std::string::npos)
+        error += "<li data-input=\"user_key\">Invalid powersaving duration!</li>";
       }
 
 
@@ -109,6 +125,11 @@ void powermgmt::WebCleanup()
 #endif
       MyConfig.SetParamValue("power", "wifioff_delay", wifioff_delay);
       MyConfig.SetParamValue("power", "12v_shutdown_delay", b12v_shutdown_delay);
+      MyConfig.SetParamValueBool("power", "powersaving.enabled", powersaving_enabled);
+      MyConfig.SetParamValue("power", "powersaving.days", powersaving_days);
+      MyConfig.SetParamValue("power", "powersaving.target", powersaving_target);
+      MyConfig.SetParamValue("power", "powersaving.interval", powersaving_interval);
+      MyConfig.SetParamValue("power", "powersaving.duration", powersaving_duration);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Power management configuration saved.</p>");
@@ -135,6 +156,11 @@ void powermgmt::WebCleanup()
 #endif
     wifioff_delay = MyConfig.GetParamValue("power", "wifioff_delay", STR(POWERMGMT_WIFIOFF_DELAY));
     b12v_shutdown_delay = MyConfig.GetParamValue("power", "12v_shutdown_delay", STR(POWERMGMT_12V_SHUTDOWN_DELAY));
+    powersaving_enabled = MyConfig.GetParamValueBool("power", "powersaving.enabled", false);
+    powersaving_days = MyConfig.GetParamValue("power", "powersaving.days", STR(POWERMGMT_POWERSAVING_DAYS));
+    powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", STR(POWERMGMT_POWERSAVING_TARGET));
+    powersaving_interval = MyConfig.GetParamValue("power", "powersaving.interval", STR(POWERMGMT_POWERSAVING_INTERVAL));
+    powersaving_duration = MyConfig.GetParamValue("power", "powersaving.duration", STR(POWERMGMT_POWERSAVING_DURATION));
 
     c.head(200);
     }
@@ -149,35 +175,14 @@ void powermgmt::WebCleanup()
   MyPowerMgmt.GetEstimatedConsumption(cons);
   float est_w = v12_calc * (cons.total_ma / 1000.0f);
 
-  const char* can1_pm = "n/a";
-  const char* can2_pm = "n/a";
-  const char* can3_pm = "n/a";
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  const char* swcan_pm = "n/a";
-#endif
   const char* wifi_pm = "n/a";
   const char* wifi_state = "disabled";
   const char* modem_pm = "n/a";
   const char* modem_state = "idle";
   const char* gps_pm = "n/a";
-  const char* ext12v_pm = "n/a";
 
   if (MyPeripherals)
     {
-#ifdef CONFIG_OVMS_COMP_ESP32CAN
-    if (MyPeripherals->m_esp32can)
-      can1_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_esp32can->GetPowerMode());
-#endif
-#ifdef CONFIG_OVMS_COMP_MCP2515
-    if (MyPeripherals->m_mcp2515_1)
-      can2_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_1->GetPowerMode());
-    if (MyPeripherals->m_mcp2515_2)
-      can3_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_2->GetPowerMode());
-#endif
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-    if (MyPeripherals->m_mcp2515_swcan)
-      swcan_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_swcan->GetPowerMode());
-#endif
 #ifdef CONFIG_OVMS_COMP_WIFI
     if (MyPeripherals->m_esp32wifi)
       {
@@ -204,12 +209,8 @@ void powermgmt::WebCleanup()
                 MyPeripherals->m_cellular_modem->m_nmea != NULL) ? "on" : "off";
       }
 #endif
-#ifdef CONFIG_OVMS_COMP_EXT12V
-    if (MyPeripherals->m_ext12v)
-      ext12v_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_ext12v->GetPowerMode());
-#endif
     }
-
+  
   c.printf(
     "<div class=\"well well-sm\">"
     "<b>Current Power Status:</b><br>"
@@ -226,43 +227,40 @@ void powermgmt::WebCleanup()
     "<table class=\"table table-condensed\" style=\"margin-top:8px;margin-bottom:6px;\">"
     "<thead><tr><th>Consumer</th><th>State</th><th>Est. Current</th><th>Est. Power</th></tr></thead>"
     "<tbody>"
-    "<tr><td>ESP32 + SPIRAM + System</td><td>on</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
-    "<tr><td>CAN1 (esp32can)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
-    "<tr><td>CAN2 (mcp2515_1)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
-    "<tr><td>CAN3 (mcp2515_2)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>",
+    "<tr><td>Base System</td><td>on</td><td>~%.0f mA</td><td>~%.2f W</td></tr>",
     MyPowerMgmt.GetNotChargingTimer() / 60,
     MyPowerMgmt.GetModemOffWifiTimer() / 60,
     MyPowerMgmt.Get12VAlertTimer() / 60,
     MyPowerMgmt.IsModemOff() ? "yes" : "no",
     MyPowerMgmt.IsModemOffWifi() ? "yes" : "no",
     MyPowerMgmt.IsWifiOff() ? "yes" : "no",
-    cons.base_ma, v12_calc * (cons.base_ma / 1000.0f),
-    can1_pm, cons.can1_ma, v12_calc * (cons.can1_ma / 1000.0f),
-    can2_pm, cons.can2_ma, v12_calc * (cons.can2_ma / 1000.0f),
-    can3_pm, cons.can3_ma, v12_calc * (cons.can3_ma / 1000.0f));
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  c.printf(
-    "<tr><td>SWCAN (mcp2515_swcan)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>",
-    swcan_pm, cons.swcan_ma, v12_calc * (cons.swcan_ma / 1000.0f));
-#endif
+    cons.base_ma, v12_calc * (cons.base_ma / 1000.0f));
+
+  float ah_day = (cons.total_ma / 1000.0f) * 24.0f;
+  float ah_week = ah_day * 7.0f;
+  float ah_month = ah_day * 30.0f;
+
   c.printf(
     "<tr><td>WiFi</td><td>%s (%s)</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
     "<tr><td>Cellular Modem</td><td>%s (%s)</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
     "<tr><td>GPS (NMEA)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
-    "<tr><td>Ext 12V</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
     "</tbody>"
-    "<tfoot><tr><th>Total Estimated OVMS Draw</th><th></th><th>~%.0f mA</th><th>~%.2f W</th></tr></tfoot>"
+    "<tfoot>"
+    "<tr><th>Total Estimated OVMS Draw</th><th></th><th>~%.0f mA</th><th>~%.2f W</th></tr>"
+    "<tr><th colspan=\"4\">Estimated Consumption: Day: %.2f Ah | Week: %.2f Ah | Month: %.2f Ah</th></tr>"
+    "</tfoot>"
     "</table>"
     "<small class=\"text-muted\">⚠ Note: The OVMS consumption values are rough estimates calculated from active peripheral power states "
-    "(ESP32, CAN, WiFi, Cellular, GPS, Ext12V). The OVMS v3 hardware has no dedicated current shunt sensor, so actual power draw may vary.</small>"
+    "(Base System, WiFi, Modem, GPS). The OVMS v3 hardware has no dedicated current shunt sensor, so actual power draw may vary.</small>"
     "</div>",
     wifi_pm, wifi_state, cons.wifi_ma, v12_calc * (cons.wifi_ma / 1000.0f),
     modem_pm, modem_state, cons.modem_ma, v12_calc * (cons.modem_ma / 1000.0f),
     gps_pm, cons.gps_ma, v12_calc * (cons.gps_ma / 1000.0f),
-    ext12v_pm, cons.ext12v_ma, v12_calc * (cons.ext12v_ma / 1000.0f),
-    cons.total_ma, est_w);
+    cons.total_ma, est_w, ah_day, ah_week, ah_month);
 
   c.form_start(p.uri);
+  c.print("<hr>");
+  c.print("<h3>Power saving settings</h3>");
 
   c.input_checkbox("Enable automatic power management", "enabled", enabled,
     "<p>Most electric cars have a small 12V battery which could get depleted if OVMS is left active for long periods (weeks) without charging. "
@@ -301,6 +299,27 @@ void powermgmt::WebCleanup()
     "If this period is exceeded without canceled alarm, OVMS will be shut down (sleep) to prevent further battery depletion.</p>"
     "<p>The module will then check the 12V level once per minute, and automatically reboot when the voltage has ben restored.</p>",
     "min=\"0\" step=\"1\"", "minutes");
+
+  c.print("<hr>");
+  c.print("<h3>Periodic Power Saving (Long-term Inactivity)</h3>");
+  c.input_checkbox("Enable periodic power saving", "powersaving_enabled", powersaving_enabled,
+    "<p>After the specified days of vehicle inactivity (tracked independently of 12V trickle charging), periodically perform the selected action until vehicle is turned on again.</p>");
+
+  c.input("number", "Inactivity threshold (days)", "powersaving_days", powersaving_days.c_str(),
+    "Default: " STR(POWERMGMT_POWERSAVING_DAYS) " days", "", "min=\"1\" step=\"1\"", "days");
+
+  c.input_radiobtn_start("Periodic power saving target / action", "powersaving_target");
+  c.input_radiobtn_option("powersaving_target", "Cellular Modem", "modem", powersaving_target == "modem");
+  c.input_radiobtn_option("powersaving_target", "WiFi", "wifi", powersaving_target == "wifi");
+  c.input_radiobtn_option("powersaving_target", "Both Modem & WiFi", "both", powersaving_target == "both" || powersaving_target.empty());
+  c.input_radiobtn_option("powersaving_target", "Deep Sleep", "deepsleep", powersaving_target == "deepsleep");
+  c.input_radiobtn_end("");
+
+  c.input("number", "Duty-cycle interval", "powersaving_interval", powersaving_interval.c_str(),
+    "Default: " STR(POWERMGMT_POWERSAVING_INTERVAL) " hours", "", "min=\"1\" step=\"1\"", "hours");
+
+  c.input("number", "Duty-cycle duration (or deep sleep duration)", "powersaving_duration", powersaving_duration.c_str(),
+    "Default: " STR(POWERMGMT_POWERSAVING_DURATION) " minutes", "", "min=\"1\" step=\"1\"", "minutes");
 
   c.print("<hr>");
   c.input_button("default", "Save");

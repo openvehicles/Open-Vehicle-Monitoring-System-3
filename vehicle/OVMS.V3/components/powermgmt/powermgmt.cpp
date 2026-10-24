@@ -29,7 +29,7 @@
 
 #include "ovms_log.h"
 static const char *TAG = "powermgmt";
-#include "ovms_events.h"
+#include "ovms_notify.h"
 #include "ovms_config.h"
 #include "powermgmt.h"
 #include "ovms_peripherals.h"
@@ -59,6 +59,42 @@ static void pmgmt_poweron(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
   MyPowerMgmt.CommandPowerOn(verbosity, writer, cmd->GetName());
   }
 
+static void pmgmt_powersaving(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPowerMgmt.CommandPowerSaving(verbosity, writer, cmd->GetName());
+  }
+
+static void pmgmt_powersaving_ctrl(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* action = cmd->GetName();
+  if (strcmp(action, "on") == 0)
+    {
+    MyConfig.SetParamValueBool("power", "powersaving.enabled", true);
+    writer->puts("Periodic power saving enabled.");
+    }
+  else if (strcmp(action, "off") == 0)
+    {
+    MyConfig.SetParamValueBool("power", "powersaving.enabled", false);
+    MyPowerMgmt.EventVehicleOn("", nullptr); // reset active state
+    writer->puts("Periodic power saving disabled.");
+    }
+  }
+
+static void pmgmt_powersaving_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* target = cmd->GetName();
+  std::string t(target);
+  if (t == "modem" || t == "wifi" || t == "both" || t == "deepsleep")
+    {
+    MyConfig.SetParamValue("power", "powersaving.target", t);
+    writer->printf("Periodic power saving target set to: %s\n", t.c_str());
+    }
+  else
+    {
+    writer->puts("Error: Invalid target. Use modem, wifi, both or deepsleep.");
+    }
+  }
+
 powermgmt::powermgmt()
   {
   ESP_LOGI(TAG, "Initialising POWERMGMT (8500)");
@@ -73,7 +109,16 @@ powermgmt::powermgmt()
   m_notcharging_timer = 0;
   m_modemoff_wifi_timer = 0;
   m_12v_alert_timer = 0;
+  m_powersaving_timer = 0;
   m_modem_wifi_fallback = false;
+  m_powersaving_enabled = false;
+  m_powersaving_days = POWERMGMT_POWERSAVING_DAYS;
+  m_powersaving_target = POWERMGMT_POWERSAVING_TARGET;
+  m_powersaving_interval = POWERMGMT_POWERSAVING_INTERVAL;
+  m_powersaving_duration = POWERMGMT_POWERSAVING_DURATION;
+  m_powersaving_active = false;
+  m_powersaving_cycle_timer = 0;
+  m_powersaving_awake_phase = false;
   m_charging = false;
   m_modem_off = false;
   m_modem_off_wifi = false;
@@ -81,6 +126,8 @@ powermgmt::powermgmt()
 
   MyConfig.RegisterParam("power", "Power management", true, true);
   ConfigChanged("config.mounted", NULL);
+
+  MyEvents.RegisterEvent(TAG, "vehicle.on", std::bind(&powermgmt::EventVehicleOn, this, _1, _2));
 
   OvmsCommand* cmd_pmgmt = MyCommandApp.RegisterCommand("pmgmt", "Power management framework", pmgmt_status, "", 0, 0, false);
   cmd_pmgmt->RegisterCommand("status", "Show power status and estimated consumption", pmgmt_status, "", 0, 0, false);
@@ -93,6 +140,16 @@ powermgmt::powermgmt()
   cmd_poweron->RegisterCommand("modem", "Power on cellular modem and reset delay timers", pmgmt_poweron, "", 0, 0, true);
   cmd_poweron->RegisterCommand("wifi", "Power on WiFi and reset delay timers", pmgmt_poweron, "", 0, 0, true);
   cmd_poweron->RegisterCommand("both", "Power on both cellular modem and WiFi and reset delay timers", pmgmt_poweron, "", 0, 0, true);
+  OvmsCommand* cmd_powersaving = cmd_pmgmt->RegisterCommand("powersaving", "Configure or toggle periodic power saving mode");
+  cmd_powersaving->RegisterCommand("status", "Show periodic power saving status", pmgmt_powersaving, "", 0, 0, false);
+  OvmsCommand* cmd_powersaving_set = cmd_powersaving->RegisterCommand("set", "Set periodic power saving target");
+  cmd_powersaving_set->RegisterCommand("modem", "Set target to cellular modem", pmgmt_powersaving_set, "", 0, 0, true);
+  cmd_powersaving_set->RegisterCommand("wifi", "Set target to WiFi", pmgmt_powersaving_set, "", 0, 0, true);
+  cmd_powersaving_set->RegisterCommand("both", "Set target to both modem and WiFi", pmgmt_powersaving_set, "", 0, 0, true);
+  cmd_powersaving_set->RegisterCommand("deepsleep", "Set target to deep sleep", pmgmt_powersaving_set, "", 0, 0, true);
+  OvmsCommand* cmd_powersaving_ctrl = cmd_powersaving->RegisterCommand("ctrl", "Enable or disable periodic power saving mode");
+  cmd_powersaving_ctrl->RegisterCommand("on", "Enable periodic power saving", pmgmt_powersaving_ctrl, "", 0, 0, true);
+  cmd_powersaving_ctrl->RegisterCommand("off", "Disable periodic power saving", pmgmt_powersaving_ctrl, "", 0, 0, true);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -119,39 +176,51 @@ void powermgmt::ConfigChanged(std::string event, void* data)
     m_modem_wifi_fallback = MyConfig.GetParamValueBool("power", "modem_wifi_fallback", false);
     m_wifioff_delay = MyConfig.GetParamValueInt("power", "wifioff_delay", POWERMGMT_WIFIOFF_DELAY);
     m_12v_shutdown_delay = MyConfig.GetParamValueInt("power", "12v_shutdown_delay", POWERMGMT_12V_SHUTDOWN_DELAY);
+    m_powersaving_enabled = MyConfig.GetParamValueBool("power", "powersaving.enabled", false);
+    m_powersaving_days = MyConfig.GetParamValueInt("power", "powersaving.days", POWERMGMT_POWERSAVING_DAYS);
+    m_powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", POWERMGMT_POWERSAVING_TARGET);
+    m_powersaving_interval = MyConfig.GetParamValueInt("power", "powersaving.interval", POWERMGMT_POWERSAVING_INTERVAL);
+    m_powersaving_duration = MyConfig.GetParamValueInt("power", "powersaving.duration", POWERMGMT_POWERSAVING_DURATION);
+
+    // Restore timers from parktime after reboot if feature enabled
+    int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
+    if (m_enabled && StandardMetrics.ms_v_env_parktime->AsInt(0) > 1)
+      m_notcharging_timer = park_secs;
+    if (m_powersaving_enabled && StandardMetrics.ms_v_env_parktime->AsInt(0) > 1)
+      m_powersaving_timer = park_secs;
+    }
+  }
+
+void powermgmt::EventVehicleOn(std::string event, void* data)
+  {
+  if (m_powersaving_active || m_powersaving_timer > 0)
+    {
+    ESP_LOGI(TAG, "Vehicle ON event received, resetting power saving timer and mode.");
+    m_powersaving_active = false;
+    m_powersaving_timer = 0;
+    m_powersaving_cycle_timer = 0;
+    m_powersaving_awake_phase = false;
     }
   }
 
 void powermgmt::GetEstimatedConsumption(powermgmt_consumption_t& out)
   {
-  // Approximate OVMS v3 current draw at ~12.6V in mA (no hardware current sensor available)
+  // Approximate OVMS v3.3 current draw at ~12.6V in mA based on official hardware specs
+  // https://docs.openvehicles.com/en/latest/userguide/warnings.html
   out = {};
-  out.base_ma = 45.0f; // Base ESP32 + SPIRAM + system
+
+  out.base_ma = 28.0f; // Base System
 
   if (MyPeripherals)
     {
-#ifdef CONFIG_OVMS_COMP_ESP32CAN
-    if (MyPeripherals->m_esp32can && MyPeripherals->m_esp32can->GetPowerMode() == On)
-      out.can1_ma = 8.0f;
-#endif
-#ifdef CONFIG_OVMS_COMP_MCP2515
-    if (MyPeripherals->m_mcp2515_1 && MyPeripherals->m_mcp2515_1->GetPowerMode() == On)
-      out.can2_ma = 8.0f;
-    if (MyPeripherals->m_mcp2515_2 && MyPeripherals->m_mcp2515_2->GetPowerMode() == On)
-      out.can3_ma = 8.0f;
-#endif
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-    if (MyPeripherals->m_mcp2515_swcan && MyPeripherals->m_mcp2515_swcan->GetPowerMode() == On)
-      out.swcan_ma = 8.0f;
-#endif
 #ifdef CONFIG_OVMS_COMP_WIFI
     if (MyPeripherals->m_esp32wifi && MyPeripherals->m_esp32wifi->GetPowerMode() == On)
       {
       esp32wifi_mode_t wmode = MyPeripherals->m_esp32wifi->GetMode();
       if (wmode == ESP32WIFI_MODE_AP || wmode == ESP32WIFI_MODE_APCLIENT)
-        out.wifi_ma = 45.0f;
+        out.wifi_ma = 25.0f; // Wifi AP Mode
       else if (wmode != ESP32WIFI_MODE_OFF)
-        out.wifi_ma = 35.0f;
+        out.wifi_ma = 2.0f;  // Wifi Client
       }
 #endif
 #ifdef CONFIG_OVMS_COMP_CELLULAR
@@ -160,24 +229,19 @@ void powermgmt::GetEstimatedConsumption(powermgmt_consumption_t& out)
       PowerMode mpm = MyPeripherals->m_cellular_modem->GetPowerMode();
       if (mpm == On)
         {
-        out.modem_ma = MyNetManager.m_connected_modem ? 45.0f : 25.0f;
+        out.modem_ma = 8.0f; // Modem
         if (MyPeripherals->m_cellular_modem->m_nmea != NULL)
-          out.gps_ma = 15.0f;
+          out.gps_ma = 23.0f; // GPS
         }
       else if (mpm == Sleep)
         {
-        out.modem_ma = 10.0f;
+        out.modem_ma = 5.0f;
         }
       }
 #endif
-#ifdef CONFIG_OVMS_COMP_EXT12V
-    if (MyPeripherals->m_ext12v && MyPeripherals->m_ext12v->GetPowerMode() == On)
-      out.ext12v_ma = 15.0f;
-#endif
     }
 
-  out.total_ma = out.base_ma + out.can1_ma + out.can2_ma + out.can3_ma +
-                 out.swcan_ma + out.wifi_ma + out.modem_ma + out.gps_ma + out.ext12v_ma;
+  out.total_ma = out.base_ma + out.wifi_ma + out.modem_ma + out.gps_ma;
   }
 
 float powermgmt::GetEstimatedCurrent()
@@ -196,35 +260,14 @@ void powermgmt::CommandStatus(int verbosity, OvmsWriter* writer)
   GetEstimatedConsumption(cons);
   float est_w = v12_calc * (cons.total_ma / 1000.0f);
 
-  const char* can1_pm = "n/a";
-  const char* can2_pm = "n/a";
-  const char* can3_pm = "n/a";
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  const char* swcan_pm = "n/a";
-#endif
   const char* wifi_pm = "n/a";
   const char* wifi_state = "disabled";
   const char* modem_pm = "n/a";
   const char* modem_state = "idle";
   const char* gps_pm = "n/a";
-  const char* ext12v_pm = "n/a";
 
   if (MyPeripherals)
     {
-#ifdef CONFIG_OVMS_COMP_ESP32CAN
-    if (MyPeripherals->m_esp32can)
-      can1_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_esp32can->GetPowerMode());
-#endif
-#ifdef CONFIG_OVMS_COMP_MCP2515
-    if (MyPeripherals->m_mcp2515_1)
-      can2_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_1->GetPowerMode());
-    if (MyPeripherals->m_mcp2515_2)
-      can3_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_2->GetPowerMode());
-#endif
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-    if (MyPeripherals->m_mcp2515_swcan)
-      swcan_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_swcan->GetPowerMode());
-#endif
 #ifdef CONFIG_OVMS_COMP_WIFI
     if (MyPeripherals->m_esp32wifi)
       {
@@ -251,10 +294,6 @@ void powermgmt::CommandStatus(int verbosity, OvmsWriter* writer)
                 MyPeripherals->m_cellular_modem->m_nmea != NULL) ? "on" : "off";
       }
 #endif
-#ifdef CONFIG_OVMS_COMP_EXT12V
-    if (MyPeripherals->m_ext12v)
-      ext12v_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_ext12v->GetPowerMode());
-#endif
     }
 
   writer->printf("12V Battery:       %.2f V (%s)\n", v12, chg12 ? "charging" : "not charging");
@@ -262,38 +301,33 @@ void powermgmt::CommandStatus(int verbosity, OvmsWriter* writer)
     writer->printf("12V Current (Veh): %.2f A\n", StandardMetrics.ms_v_bat_12v_current->AsFloat());
   writer->printf("Timers:            not charging %u min, WiFi modem-off %u min, 12V alert %u min\n",
     m_notcharging_timer / 60, m_modemoff_wifi_timer / 60, m_12v_alert_timer / 60);
-  writer->printf("Flags:             modem off=%s, modem off wifi connected=%s, wifi off=%s\n\n",
+  writer->printf("Flags:             modem off = %s, modem off wifi connected = %s, wifi off = %s\n\n",
     m_modem_off ? "yes" : "no", m_modem_off_wifi ? "yes" : "no", m_wifi_off ? "yes" : "no");
 
   writer->printf("%-26s %-26s %12s %10s\n", "Consumer", "State", "Est. Current", "Est. Power");
   writer->printf("------------------------------------------------------------------------------\n");
-  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "ESP32 + SPIRAM + System", "on",
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "Base System", "on",
     cons.base_ma, v12_calc * (cons.base_ma / 1000.0f));
-  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "CAN1 (esp32can)", can1_pm,
-    cons.can1_ma, v12_calc * (cons.can1_ma / 1000.0f));
-  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "CAN2 (mcp2515_1)", can2_pm,
-    cons.can2_ma, v12_calc * (cons.can2_ma / 1000.0f));
-  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "CAN3 (mcp2515_2)", can3_pm,
-    cons.can3_ma, v12_calc * (cons.can3_ma / 1000.0f));
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "SWCAN (mcp2515_swcan)", swcan_pm,
-    cons.swcan_ma, v12_calc * (cons.swcan_ma / 1000.0f));
-#endif
   char wifi_buf[36];
   snprintf(wifi_buf, sizeof(wifi_buf), "%s (%s)", wifi_pm, wifi_state);
   writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "WiFi", wifi_buf,
     cons.wifi_ma, v12_calc * (cons.wifi_ma / 1000.0f));
   char modem_buf[36];
   snprintf(modem_buf, sizeof(modem_buf), "%s (%s)", modem_pm, modem_state);
-  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "Cellular Modem", modem_buf,
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "Modem", modem_buf,
     cons.modem_ma, v12_calc * (cons.modem_ma / 1000.0f));
-  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "GPS (NMEA)", gps_pm,
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "GPS", gps_pm,
     cons.gps_ma, v12_calc * (cons.gps_ma / 1000.0f));
-  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "Ext 12V", ext12v_pm,
-    cons.ext12v_ma, v12_calc * (cons.ext12v_ma / 1000.0f));
+  float amp = cons.total_ma / 1000.0f;
+  float ah_day = amp * 24.0f;
+  float ah_week = ah_day * 7.0f;
+  float ah_month = ah_day * 30.0f;
+
   writer->printf("------------------------------------------------------------------------------\n");
-  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n\n", "Total Estimated OVMS Draw", "",
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "Total Estimated OVMS Draw", "",
     cons.total_ma, est_w);
+  writer->printf("Estimated Consumption:    Day: %.2f Ah | Week: %.2f Ah | Month: %.2f Ah\n\n",
+    ah_day, ah_week, ah_month);
   writer->puts("Note: Consumption values are rough estimates based on active peripheral states.");
   }
 
@@ -414,6 +448,9 @@ void powermgmt::CommandPowerOn(int verbosity, OvmsWriter* writer, const char* ta
 
   m_notcharging_timer = 0;
   m_modemoff_wifi_timer = 0;
+  m_powersaving_timer = 0;
+  m_powersaving_active = false;
+  m_powersaving_awake_phase = false;
 
   if (do_modem)
     {
@@ -436,6 +473,55 @@ void powermgmt::CommandPowerOn(int verbosity, OvmsWriter* writer, const char* ta
     }
   }
 
+void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char* action, const char* target)
+  {
+  if (strcmp(action, "on") == 0)
+    {
+    if (target && *target)
+      {
+      std::string t(target);
+      if (t == "modem" || t == "wifi" || t == "both" || t == "deepsleep")
+        {
+        m_powersaving_target = t;
+        MyConfig.SetParamValue("power", "powersaving.target", m_powersaving_target);
+        writer->printf("Periodic power saving target set to: %s\n", m_powersaving_target.c_str());
+        }
+      else
+        {
+        writer->puts("Error: Invalid target. Use modem, wifi, both or deepsleep.");
+        return;
+        }
+      }
+
+    m_powersaving_active = true;
+    m_powersaving_timer = m_powersaving_days * 24 * 60 * 60;
+    m_powersaving_cycle_timer = 0;
+    m_powersaving_awake_phase = false;
+    MyConfig.SetParamValueBool("power", "powersaving.enabled", true);
+    writer->puts("Periodic power saving mode activated immediately.");
+    }
+  else if (strcmp(action, "off") == 0)
+    {
+    m_powersaving_active = false;
+    m_powersaving_timer = 0;
+    m_powersaving_awake_phase = false;
+    MyConfig.SetParamValueBool("power", "powersaving.enabled", false);
+    writer->puts("Periodic power saving mode deactivated.");
+    }
+  else
+    {
+    writer->printf("Periodic Power Saving Status:\n");
+    writer->printf("  Enabled in config: %s\n", m_powersaving_enabled ? "yes" : "no");
+    writer->printf("  Currently active:  %s\n", m_powersaving_active ? "yes" : "no");
+    writer->printf("  Target component:  %s\n", m_powersaving_target.c_str());
+    writer->printf("  Days threshold:    %u\n", m_powersaving_days);
+    writer->printf("  Interval:          %u hours\n", m_powersaving_interval);
+    writer->printf("  Duration:          %u minutes\n", m_powersaving_duration);
+    writer->printf("  Timer progress:    %u / %u seconds\n", m_powersaving_timer, m_powersaving_days * 24 * 60 * 60);
+    writer->printf("  Awake phase now:   %s\n", m_powersaving_awake_phase ? "yes" : "no");
+    }
+  }
+
 void powermgmt::Ticker1(std::string event, void* data)
   {
   if (!m_charging)
@@ -451,6 +537,67 @@ void powermgmt::Ticker1(std::string event, void* data)
   else
     {
     m_modemoff_wifi_timer = 0;
+    }
+
+  // Periodic power saving inactive tracking (independent of 12V charging / trickle charging)
+  if (!m_powersaving_active)
+    {
+    if (m_powersaving_enabled)
+      {
+      m_powersaving_timer++;
+      if (m_powersaving_timer >= m_powersaving_days * 24 * 60 * 60)
+        {
+        ESP_LOGW(TAG, "Power saving inactivity threshold of %u days reached, entering periodic power saving mode.", m_powersaving_days);
+        m_powersaving_active = true;
+        m_powersaving_cycle_timer = 0;
+        m_powersaving_awake_phase = false;
+        MyNotify.NotifyStringf("info", "powermgmt.powersaving.active",
+          "Periodic power saving mode activated after %u days of inactivity (target: %s).",
+          m_powersaving_days, m_powersaving_target.c_str());
+        }
+      }
+    }
+  else
+    {
+    // Duty-cycle execution
+    m_powersaving_cycle_timer++;
+    unsigned int interval_secs = m_powersaving_interval * 60 * 60;
+    unsigned int duration_secs = m_powersaving_duration * 60;
+    unsigned int pos_in_cycle = m_powersaving_cycle_timer % interval_secs;
+
+    if (pos_in_cycle < duration_secs)
+      {
+      if (!m_powersaving_awake_phase)
+        {
+        if (m_powersaving_target == "deepsleep")
+          {
+          unsigned int sleep_secs = m_powersaving_duration * 60;
+          char buf[32];
+          snprintf(buf, sizeof(buf), "%u", sleep_secs);
+          ESP_LOGW(TAG, "Power saving duty-cycle: entering deep sleep for %u seconds", sleep_secs);
+          MyBoot.DeepSleep(sleep_secs);
+          }
+        else
+          {
+          ESP_LOGI(TAG, "Power saving duty-cycle: waking up target components (%s)", m_powersaving_target.c_str());
+          m_powersaving_awake_phase = true;
+          if (m_powersaving_target == "modem" || m_powersaving_target == "both") PowerOnModem();
+          if (m_powersaving_target == "wifi" || m_powersaving_target == "both") PowerOnWifi();
+          }
+        }
+      }
+    else
+      {
+      if (m_powersaving_awake_phase && m_powersaving_target != "deepsleep")
+        {
+        ESP_LOGI(TAG, "Power saving duty-cycle: putting target components back to sleep (%s)", m_powersaving_target.c_str());
+        m_powersaving_awake_phase = false;
+        bool do_modem = (m_powersaving_target == "modem" || m_powersaving_target == "both");
+        bool do_wifi = (m_powersaving_target == "wifi" || m_powersaving_target == "both");
+        if (do_modem) PowerOffModem(false);
+        if (do_wifi) PowerOffWifi();
+        }
+      }
     }
 
   if (StandardMetrics.ms_v_env_charging12v->AsBool())
