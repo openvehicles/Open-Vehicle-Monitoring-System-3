@@ -70,6 +70,8 @@ class powermgmt
     void ConfigChanged(std::string event, void* data);
     void GetEstimatedConsumption(powermgmt_consumption_t& out);
     float GetEstimatedCurrent();
+    void CommandStatus(int verbosity, OvmsWriter* writer);
+    void CommandConfig(int verbosity, OvmsWriter* writer);
     unsigned int GetNotChargingTimer() const { return m_notcharging_timer; }
     unsigned int GetModemOffWifiTimer() const { return m_modemoff_wifi_timer; }
     bool IsModemOff() const { return m_modem_off; }

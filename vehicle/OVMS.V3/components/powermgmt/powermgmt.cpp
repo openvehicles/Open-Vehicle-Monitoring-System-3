@@ -39,6 +39,16 @@ static const char *TAG = "powermgmt";
 
 powermgmt MyPowerMgmt __attribute__ ((init_priority (8500)));
 
+static void pmgmt_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPowerMgmt.CommandStatus(verbosity, writer);
+  }
+
+static void pmgmt_config(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPowerMgmt.CommandConfig(verbosity, writer);
+  }
+
 powermgmt::powermgmt()
   {
   ESP_LOGI(TAG, "Initialising POWERMGMT (8500)");
@@ -61,6 +71,10 @@ powermgmt::powermgmt()
 
   MyConfig.RegisterParam("power", "Power management", true, true);
   ConfigChanged("config.mounted", NULL);
+
+  OvmsCommand* cmd_pmgmt = MyCommandApp.RegisterCommand("pmgmt", "Power management framework", pmgmt_status, "", 0, 0, false);
+  cmd_pmgmt->RegisterCommand("status", "Show power status and estimated consumption", pmgmt_status, "", 0, 0, false);
+  cmd_pmgmt->RegisterCommand("config", "Show power management configuration", pmgmt_config, "", 0, 0, false);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -153,6 +167,131 @@ float powermgmt::GetEstimatedCurrent()
   powermgmt_consumption_t cons;
   GetEstimatedConsumption(cons);
   return cons.total_ma;
+  }
+
+void powermgmt::CommandStatus(int verbosity, OvmsWriter* writer)
+  {
+  float v12 = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+  float v12_calc = (v12 > 1.0f) ? v12 : 12.6f;
+  bool chg12 = StandardMetrics.ms_v_env_charging12v->AsBool();
+  powermgmt_consumption_t cons;
+  GetEstimatedConsumption(cons);
+  float est_w = v12_calc * (cons.total_ma / 1000.0f);
+
+  const char* can1_pm = "n/a";
+  const char* can2_pm = "n/a";
+  const char* can3_pm = "n/a";
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+  const char* swcan_pm = "n/a";
+#endif
+  const char* wifi_pm = "n/a";
+  const char* wifi_state = "disabled";
+  const char* modem_pm = "n/a";
+  const char* modem_state = "idle";
+  const char* gps_pm = "n/a";
+  const char* ext12v_pm = "n/a";
+
+  if (MyPeripherals)
+    {
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
+    if (MyPeripherals->m_esp32can)
+      can1_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_esp32can->GetPowerMode());
+#endif
+#ifdef CONFIG_OVMS_COMP_MCP2515
+    if (MyPeripherals->m_mcp2515_1)
+      can2_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_1->GetPowerMode());
+    if (MyPeripherals->m_mcp2515_2)
+      can3_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_2->GetPowerMode());
+#endif
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    if (MyPeripherals->m_mcp2515_swcan)
+      swcan_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_swcan->GetPowerMode());
+#endif
+#ifdef CONFIG_OVMS_COMP_WIFI
+    if (MyPeripherals->m_esp32wifi)
+      {
+      wifi_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_esp32wifi->GetPowerMode());
+      esp32wifi_mode_t wmode = MyPeripherals->m_esp32wifi->GetMode();
+      if (wmode == ESP32WIFI_MODE_AP)
+        wifi_state = "AP";
+      else if (wmode == ESP32WIFI_MODE_APCLIENT)
+        wifi_state = MyNetManager.m_connected_wifi ? "AP+Client, connected" : "AP+Client, disconnected";
+      else if (wmode == ESP32WIFI_MODE_CLIENT)
+        wifi_state = MyNetManager.m_connected_wifi ? "Client, connected" : "Client, disconnected";
+      else if (wmode == ESP32WIFI_MODE_SCAN)
+        wifi_state = "Scan";
+      else
+        wifi_state = "off";
+      }
+#endif
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+    if (MyPeripherals->m_cellular_modem)
+      {
+      modem_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_cellular_modem->GetPowerMode());
+      modem_state = MyNetManager.m_connected_modem ? "PPP connected" : "idle";
+      gps_pm = (MyPeripherals->m_cellular_modem->GetPowerMode() == On &&
+                MyPeripherals->m_cellular_modem->m_nmea != NULL) ? "on" : "off";
+      }
+#endif
+#ifdef CONFIG_OVMS_COMP_EXT12V
+    if (MyPeripherals->m_ext12v)
+      ext12v_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_ext12v->GetPowerMode());
+#endif
+    }
+
+  writer->printf("12V Battery:       %.2f V (%s)\n", v12, chg12 ? "charging" : "not charging");
+  if (StandardMetrics.ms_v_bat_12v_current->IsDefined())
+    writer->printf("12V Current (Veh): %.2f A\n", StandardMetrics.ms_v_bat_12v_current->AsFloat());
+  writer->printf("Timers:            not charging %u min, WiFi modem-off %u min, 12V alert %u min\n\n",
+    m_notcharging_timer / 60, m_modemoff_wifi_timer / 60, m_12v_alert_timer / 60);
+
+  writer->printf("%-26s %-26s %12s %10s\n", "Consumer", "State", "Est. Current", "Est. Power");
+  writer->printf("------------------------------------------------------------------------------\n");
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "ESP32 + SPIRAM + System", "on",
+    cons.base_ma, v12_calc * (cons.base_ma / 1000.0f));
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "CAN1 (esp32can)", can1_pm,
+    cons.can1_ma, v12_calc * (cons.can1_ma / 1000.0f));
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "CAN2 (mcp2515_1)", can2_pm,
+    cons.can2_ma, v12_calc * (cons.can2_ma / 1000.0f));
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "CAN3 (mcp2515_2)", can3_pm,
+    cons.can3_ma, v12_calc * (cons.can3_ma / 1000.0f));
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "SWCAN (mcp2515_swcan)", swcan_pm,
+    cons.swcan_ma, v12_calc * (cons.swcan_ma / 1000.0f));
+#endif
+  char wifi_buf[36];
+  snprintf(wifi_buf, sizeof(wifi_buf), "%s (%s)", wifi_pm, wifi_state);
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "WiFi", wifi_buf,
+    cons.wifi_ma, v12_calc * (cons.wifi_ma / 1000.0f));
+  char modem_buf[36];
+  snprintf(modem_buf, sizeof(modem_buf), "%s (%s)", modem_pm, modem_state);
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "Cellular Modem", modem_buf,
+    cons.modem_ma, v12_calc * (cons.modem_ma / 1000.0f));
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "GPS (NMEA)", gps_pm,
+    cons.gps_ma, v12_calc * (cons.gps_ma / 1000.0f));
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n", "Ext 12V", ext12v_pm,
+    cons.ext12v_ma, v12_calc * (cons.ext12v_ma / 1000.0f));
+  writer->printf("------------------------------------------------------------------------------\n");
+  writer->printf("%-26s %-26s %9.0f mA %8.2f W\n\n", "Total Estimated OVMS Draw", "",
+    cons.total_ma, est_w);
+  writer->puts("Note: Consumption values are rough estimates based on active peripheral states.");
+  }
+
+void powermgmt::CommandConfig(int verbosity, OvmsWriter* writer)
+  {
+  writer->printf("Power Management Configuration:\n");
+  writer->printf("  Enabled:                            %s\n", m_enabled ? "yes" : "no");
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  writer->printf("  Modem off delay:                    %u hours (0 = disabled)\n", m_modemoff_delay);
+#ifdef CONFIG_OVMS_COMP_WIFI
+  writer->printf("  Modem off delay (WiFi connected):   %u minutes (0 = disabled)\n", m_modemoff_wifi_delay);
+  writer->printf("  Modem on when WiFi disconnects:     %s\n", m_modem_wifi_fallback ? "yes" : "no");
+#endif
+#endif
+#ifdef CONFIG_OVMS_COMP_WIFI
+  writer->printf("  WiFi off delay:                     %u hours (0 = disabled)\n", m_wifioff_delay);
+#endif
+  writer->printf("  12V alert shutdown delay:           %u minutes (0 = disabled)\n", m_12v_shutdown_delay);
   }
 
 void powermgmt::Ticker1(std::string event, void* data)
