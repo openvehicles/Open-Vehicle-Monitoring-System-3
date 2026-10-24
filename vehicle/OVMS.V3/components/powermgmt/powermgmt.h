@@ -70,11 +70,19 @@ class powermgmt
     void ConfigChanged(std::string event, void* data);
     void GetEstimatedConsumption(powermgmt_consumption_t& out);
     float GetEstimatedCurrent();
+    void PowerOffWifi();
+    void PowerOffModem(bool wifi_triggered = false);
+    void PowerOnWifi();
+    void PowerOnModem();
     void CommandStatus(int verbosity, OvmsWriter* writer);
     void CommandConfig(int verbosity, OvmsWriter* writer);
+    void CommandPowerOff(int verbosity, OvmsWriter* writer, const char* target);
+    void CommandPowerOn(int verbosity, OvmsWriter* writer, const char* target);
     unsigned int GetNotChargingTimer() const { return m_notcharging_timer; }
     unsigned int GetModemOffWifiTimer() const { return m_modemoff_wifi_timer; }
+    unsigned int Get12VAlertTimer() const { return m_12v_alert_timer; }
     bool IsModemOff() const { return m_modem_off; }
+    bool IsModemOffWifi() const { return m_modem_off_wifi; }
     bool IsWifiOff() const { return m_wifi_off; }
 
   private:

@@ -49,6 +49,16 @@ static void pmgmt_config(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   MyPowerMgmt.CommandConfig(verbosity, writer);
   }
 
+static void pmgmt_poweroff(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPowerMgmt.CommandPowerOff(verbosity, writer, cmd->GetName());
+  }
+
+static void pmgmt_poweron(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPowerMgmt.CommandPowerOn(verbosity, writer, cmd->GetName());
+  }
+
 powermgmt::powermgmt()
   {
   ESP_LOGI(TAG, "Initialising POWERMGMT (8500)");
@@ -75,6 +85,14 @@ powermgmt::powermgmt()
   OvmsCommand* cmd_pmgmt = MyCommandApp.RegisterCommand("pmgmt", "Power management framework", pmgmt_status, "", 0, 0, false);
   cmd_pmgmt->RegisterCommand("status", "Show power status and estimated consumption", pmgmt_status, "", 0, 0, false);
   cmd_pmgmt->RegisterCommand("config", "Show power management configuration", pmgmt_config, "", 0, 0, false);
+  OvmsCommand* cmd_poweroff = cmd_pmgmt->RegisterCommand("poweroff", "Power off modem, wifi or both (as if delay reached)");
+  cmd_poweroff->RegisterCommand("modem", "Power off cellular modem", pmgmt_poweroff, "", 0, 0, true);
+  cmd_poweroff->RegisterCommand("wifi", "Power off WiFi", pmgmt_poweroff, "", 0, 0, true);
+  cmd_poweroff->RegisterCommand("both", "Power off both cellular modem and WiFi", pmgmt_poweroff, "", 0, 0, true);
+  OvmsCommand* cmd_poweron = cmd_pmgmt->RegisterCommand("poweron", "Power on modem, wifi or both and reset delay timers");
+  cmd_poweron->RegisterCommand("modem", "Power on cellular modem and reset delay timers", pmgmt_poweron, "", 0, 0, true);
+  cmd_poweron->RegisterCommand("wifi", "Power on WiFi and reset delay timers", pmgmt_poweron, "", 0, 0, true);
+  cmd_poweron->RegisterCommand("both", "Power on both cellular modem and WiFi and reset delay timers", pmgmt_poweron, "", 0, 0, true);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -242,8 +260,10 @@ void powermgmt::CommandStatus(int verbosity, OvmsWriter* writer)
   writer->printf("12V Battery:       %.2f V (%s)\n", v12, chg12 ? "charging" : "not charging");
   if (StandardMetrics.ms_v_bat_12v_current->IsDefined())
     writer->printf("12V Current (Veh): %.2f A\n", StandardMetrics.ms_v_bat_12v_current->AsFloat());
-  writer->printf("Timers:            not charging %u min, WiFi modem-off %u min, 12V alert %u min\n\n",
+  writer->printf("Timers:            not charging %u min, WiFi modem-off %u min, 12V alert %u min\n",
     m_notcharging_timer / 60, m_modemoff_wifi_timer / 60, m_12v_alert_timer / 60);
+  writer->printf("Flags:             modem off=%s, modem off wifi connected=%s, wifi off=%s\n\n",
+    m_modem_off ? "yes" : "no", m_modem_off_wifi ? "yes" : "no", m_wifi_off ? "yes" : "no");
 
   writer->printf("%-26s %-26s %12s %10s\n", "Consumer", "State", "Est. Current", "Est. Power");
   writer->printf("------------------------------------------------------------------------------\n");
@@ -294,6 +314,128 @@ void powermgmt::CommandConfig(int verbosity, OvmsWriter* writer)
   writer->printf("  12V alert shutdown delay:           %u minutes (0 = disabled)\n", m_12v_shutdown_delay);
   }
 
+void powermgmt::PowerOffWifi()
+  {
+#ifdef CONFIG_OVMS_COMP_WIFI
+  if (MyPeripherals && MyPeripherals->m_esp32wifi)
+    {
+    if (MyPeripherals->m_esp32wifi->GetPowerMode() == On)
+      {
+      ESP_LOGW(TAG, "Powering off wifi");
+      MyEvents.SignalEvent("powermgmt.wifi.off", NULL);
+      vTaskDelay(1500 / portTICK_PERIOD_MS); // make sure all notifications are transmitted before powering down WiFi
+      MyPeripherals->m_esp32wifi->SetPowerMode(Off);
+      }
+    m_wifi_off = true;
+    }
+#endif
+  }
+
+void powermgmt::PowerOffModem(bool wifi_triggered)
+  {
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (MyPeripherals && MyPeripherals->m_cellular_modem)
+    {
+    if (MyPeripherals->m_cellular_modem->GetPowerMode() == On)
+      {
+      ESP_LOGW(TAG, "Powering off cellular modem%s", wifi_triggered ? " (WiFi connected)" : "");
+      MyEvents.SignalEvent("powermgmt.modem.off", NULL);
+      vTaskDelay(1500 / portTICK_PERIOD_MS); // make sure all notifications are transmitted before powering down modem
+      MyPeripherals->m_cellular_modem->SetPowerMode(Off);
+      }
+    m_modem_off = true;
+    m_modem_off_wifi = wifi_triggered;
+    }
+#endif
+  }
+
+void powermgmt::PowerOnWifi()
+  {
+#ifdef CONFIG_OVMS_COMP_WIFI
+  if (MyPeripherals && MyPeripherals->m_esp32wifi)
+    {
+    ESP_LOGI(TAG, "Powering on wifi");
+    MyPeripherals->m_esp32wifi->SetPowerMode(On);
+    if (MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_OFF)
+      MyPeripherals->m_esp32wifi->AutoInit();
+    m_wifi_off = false;
+    }
+#endif
+  }
+
+void powermgmt::PowerOnModem()
+  {
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (MyPeripherals && MyPeripherals->m_cellular_modem)
+    {
+    ESP_LOGI(TAG, "Powering on cellular modem");
+    MyPeripherals->m_cellular_modem->SetPowerMode(On);
+    m_modem_off = false;
+    m_modem_off_wifi = false;
+    }
+#endif
+  }
+
+void powermgmt::CommandPowerOff(int verbosity, OvmsWriter* writer, const char* target)
+  {
+  bool do_modem = (strcmp(target, "modem") == 0 || strcmp(target, "both") == 0);
+  bool do_wifi = (strcmp(target, "wifi") == 0 || strcmp(target, "both") == 0);
+
+  if (do_modem)
+    {
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+    bool wifi_trig = false;
+#ifdef CONFIG_OVMS_COMP_WIFI
+    if (!do_wifi && MyNetManager.m_connected_wifi)
+      wifi_trig = true;
+#endif
+    PowerOffModem(wifi_trig);
+    writer->puts("Cellular modem powered off by powermgmt.");
+#else
+    writer->puts("Error: Cellular support not enabled.");
+#endif
+    }
+
+  if (do_wifi)
+    {
+#ifdef CONFIG_OVMS_COMP_WIFI
+    PowerOffWifi();
+    writer->puts("WiFi powered off by powermgmt.");
+#else
+    writer->puts("Error: WiFi support not enabled.");
+#endif
+    }
+  }
+
+void powermgmt::CommandPowerOn(int verbosity, OvmsWriter* writer, const char* target)
+  {
+  bool do_modem = (strcmp(target, "modem") == 0 || strcmp(target, "both") == 0);
+  bool do_wifi = (strcmp(target, "wifi") == 0 || strcmp(target, "both") == 0);
+
+  m_notcharging_timer = 0;
+  m_modemoff_wifi_timer = 0;
+
+  if (do_modem)
+    {
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+    PowerOnModem();
+    writer->puts("Cellular modem powered on and delay timers reset.");
+#else
+    writer->puts("Error: Cellular support not enabled.");
+#endif
+    }
+
+  if (do_wifi)
+    {
+#ifdef CONFIG_OVMS_COMP_WIFI
+    PowerOnWifi();
+    writer->puts("WiFi powered on and delay timers reset.");
+#else
+    writer->puts("Error: WiFi support not enabled.");
+#endif
+    }
+  }
+
 void powermgmt::Ticker1(std::string event, void* data)
   {
   if (!m_charging)
@@ -322,16 +464,13 @@ void powermgmt::Ticker1(std::string event, void* data)
 #ifdef CONFIG_OVMS_COMP_WIFI
       if (m_wifi_off)
         {
-        MyPeripherals->m_esp32wifi->SetPowerMode(On);
-        m_wifi_off = false;
+        PowerOnWifi();
         }
 #endif
 #ifdef CONFIG_OVMS_COMP_CELLULAR
       if (m_modem_off)
         {
-        MyPeripherals->m_cellular_modem->SetPowerMode(On);
-        m_modem_off = false;
-        m_modem_off_wifi = false;
+        PowerOnModem();
         }
 #endif
       }
@@ -347,60 +486,38 @@ void powermgmt::Ticker1(std::string event, void* data)
       }
     }
 
+#if defined(CONFIG_OVMS_COMP_CELLULAR) && defined(CONFIG_OVMS_COMP_WIFI)
+  if (m_modem_wifi_fallback && m_modem_off_wifi && !MyNetManager.m_connected_wifi)
+    {
+    if (!m_enabled || !(m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60))
+      {
+      ESP_LOGI(TAG,"WiFi disconnected, powering on cellular modem (fallback)");
+      PowerOnModem();
+      }
+    }
+#endif
+
   if (!m_enabled)
     return;
 
 #ifdef CONFIG_OVMS_COMP_WIFI
   if (m_wifioff_delay && m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
     {
-    if (MyPeripherals->m_esp32wifi->GetPowerMode()==On)
-      {
-      ESP_LOGW(TAG,"Powering off wifi");
-      MyEvents.SignalEvent("powermgmt.wifi.off",NULL);
-      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down WiFI
-      MyPeripherals->m_esp32wifi->SetPowerMode(Off);
-      m_wifi_off = true;
-      }
+    PowerOffWifi();
     }
 #endif
 
 #if defined(CONFIG_OVMS_COMP_CELLULAR) && defined(CONFIG_OVMS_COMP_WIFI)
   if (m_modemoff_wifi_delay && m_modemoff_wifi_timer > m_modemoff_wifi_delay*60) // minutes to seconds
     {
-    if (MyPeripherals->m_cellular_modem->GetPowerMode()==On)
-      {
-      ESP_LOGW(TAG,"Powering off cellular modem (WiFi connected)");
-      MyEvents.SignalEvent("powermgmt.modem.off",NULL);
-      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down modem
-      MyPeripherals->m_cellular_modem->SetPowerMode(Off);
-      m_modem_off = true;
-      m_modem_off_wifi = true;
-      }
-    }
-  else if (m_modem_wifi_fallback && m_modem_off_wifi && !MyNetManager.m_connected_wifi)
-    {
-    if (!(m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60))
-      {
-      ESP_LOGI(TAG,"WiFi disconnected, powering on cellular modem (fallback)");
-      MyPeripherals->m_cellular_modem->SetPowerMode(On);
-      m_modem_off = false;
-      m_modem_off_wifi = false;
-      }
+    PowerOffModem(true);
     }
 #endif
 
 #ifdef CONFIG_OVMS_COMP_CELLULAR
   if (m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
     {
-    if (MyPeripherals->m_cellular_modem->GetPowerMode()==On)
-      {
-      ESP_LOGW(TAG,"Powering off cellular modem");
-      MyEvents.SignalEvent("powermgmt.modem.off",NULL);
-      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down modem
-      MyPeripherals->m_cellular_modem->SetPowerMode(Off);
-      m_modem_off = true;
-      }
-    m_modem_off_wifi = false;
+    PowerOffModem(false);
     }
 #endif
 

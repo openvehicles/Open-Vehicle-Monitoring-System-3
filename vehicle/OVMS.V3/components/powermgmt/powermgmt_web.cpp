@@ -221,7 +221,8 @@ void powermgmt::WebCleanup()
       StandardMetrics.ms_v_bat_12v_current->AsFloat());
     }
   c.printf(
-    " | Timers: Not charging: <b>%u min</b>, WiFi modem-off: <b>%u min</b>"
+    " | Timers: Not charging: <b>%u min</b>, WiFi modem-off: <b>%u min</b>, 12V alert: <b>%u min</b><br>"
+    "Flags: modem off: <b>%s</b> | modem off wifi connected: <b>%s</b> | wifi off: <b>%s</b>"
     "<table class=\"table table-condensed\" style=\"margin-top:8px;margin-bottom:6px;\">"
     "<thead><tr><th>Consumer</th><th>State</th><th>Est. Current</th><th>Est. Power</th></tr></thead>"
     "<tbody>"
@@ -231,6 +232,10 @@ void powermgmt::WebCleanup()
     "<tr><td>CAN3 (mcp2515_2)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>",
     MyPowerMgmt.GetNotChargingTimer() / 60,
     MyPowerMgmt.GetModemOffWifiTimer() / 60,
+    MyPowerMgmt.Get12VAlertTimer() / 60,
+    MyPowerMgmt.IsModemOff() ? "yes" : "no",
+    MyPowerMgmt.IsModemOffWifi() ? "yes" : "no",
+    MyPowerMgmt.IsWifiOff() ? "yes" : "no",
     cons.base_ma, v12_calc * (cons.base_ma / 1000.0f),
     can1_pm, cons.can1_ma, v12_calc * (cons.can1_ma / 1000.0f),
     can2_pm, cons.can2_ma, v12_calc * (cons.can2_ma / 1000.0f),
