@@ -90,6 +90,71 @@ void powermgmt::ConfigChanged(std::string event, void* data)
     }
   }
 
+void powermgmt::GetEstimatedConsumption(powermgmt_consumption_t& out)
+  {
+  // Approximate OVMS v3 current draw at ~12.6V in mA (no hardware current sensor available)
+  out = {};
+  out.base_ma = 45.0f; // Base ESP32 + SPIRAM + system
+
+  if (MyPeripherals)
+    {
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
+    if (MyPeripherals->m_esp32can && MyPeripherals->m_esp32can->GetPowerMode() == On)
+      out.can1_ma = 8.0f;
+#endif
+#ifdef CONFIG_OVMS_COMP_MCP2515
+    if (MyPeripherals->m_mcp2515_1 && MyPeripherals->m_mcp2515_1->GetPowerMode() == On)
+      out.can2_ma = 8.0f;
+    if (MyPeripherals->m_mcp2515_2 && MyPeripherals->m_mcp2515_2->GetPowerMode() == On)
+      out.can3_ma = 8.0f;
+#endif
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    if (MyPeripherals->m_mcp2515_swcan && MyPeripherals->m_mcp2515_swcan->GetPowerMode() == On)
+      out.swcan_ma = 8.0f;
+#endif
+#ifdef CONFIG_OVMS_COMP_WIFI
+    if (MyPeripherals->m_esp32wifi && MyPeripherals->m_esp32wifi->GetPowerMode() == On)
+      {
+      esp32wifi_mode_t wmode = MyPeripherals->m_esp32wifi->GetMode();
+      if (wmode == ESP32WIFI_MODE_AP || wmode == ESP32WIFI_MODE_APCLIENT)
+        out.wifi_ma = 45.0f;
+      else if (wmode != ESP32WIFI_MODE_OFF)
+        out.wifi_ma = 35.0f;
+      }
+#endif
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+    if (MyPeripherals->m_cellular_modem)
+      {
+      PowerMode mpm = MyPeripherals->m_cellular_modem->GetPowerMode();
+      if (mpm == On)
+        {
+        out.modem_ma = MyNetManager.m_connected_modem ? 45.0f : 25.0f;
+        if (MyPeripherals->m_cellular_modem->m_nmea != NULL)
+          out.gps_ma = 15.0f;
+        }
+      else if (mpm == Sleep)
+        {
+        out.modem_ma = 10.0f;
+        }
+      }
+#endif
+#ifdef CONFIG_OVMS_COMP_EXT12V
+    if (MyPeripherals->m_ext12v && MyPeripherals->m_ext12v->GetPowerMode() == On)
+      out.ext12v_ma = 15.0f;
+#endif
+    }
+
+  out.total_ma = out.base_ma + out.can1_ma + out.can2_ma + out.can3_ma +
+                 out.swcan_ma + out.wifi_ma + out.modem_ma + out.gps_ma + out.ext12v_ma;
+  }
+
+float powermgmt::GetEstimatedCurrent()
+  {
+  powermgmt_consumption_t cons;
+  GetEstimatedConsumption(cons);
+  return cons.total_ma;
+  }
+
 void powermgmt::Ticker1(std::string event, void* data)
   {
   if (!m_charging)

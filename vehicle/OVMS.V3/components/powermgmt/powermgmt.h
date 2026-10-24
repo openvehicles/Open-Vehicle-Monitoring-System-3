@@ -45,6 +45,20 @@
 #define POWERMGMT_WIFIOFF_DELAY       24 // hours
 #define POWERMGMT_12V_SHUTDOWN_DELAY  30 // minutes
 
+struct powermgmt_consumption_t
+  {
+  float base_ma;
+  float can1_ma;
+  float can2_ma;
+  float can3_ma;
+  float swcan_ma;
+  float wifi_ma;
+  float modem_ma;
+  float gps_ma;
+  float ext12v_ma;
+  float total_ma;
+  };
+
 class powermgmt
   {
   public:
@@ -54,6 +68,12 @@ class powermgmt
   public:
     void Ticker1(std::string event, void* data);
     void ConfigChanged(std::string event, void* data);
+    void GetEstimatedConsumption(powermgmt_consumption_t& out);
+    float GetEstimatedCurrent();
+    unsigned int GetNotChargingTimer() const { return m_notcharging_timer; }
+    unsigned int GetModemOffWifiTimer() const { return m_modemoff_wifi_timer; }
+    bool IsModemOff() const { return m_modem_off; }
+    bool IsWifiOff() const { return m_wifi_off; }
 
   private:
     bool m_enabled;

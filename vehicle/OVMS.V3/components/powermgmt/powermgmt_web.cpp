@@ -29,7 +29,10 @@
 #include "ovms_log.h"
 //static const char *TAG = "powermgmt";
 #include "ovms_metrics.h"
+#include "metrics_standard.h"
 #include "ovms_config.h"
+#include "ovms_peripherals.h"
+#include "ovms_netmanager.h"
 #include "ovms_webserver.h"
 #include "powermgmt.h"
 
@@ -138,6 +141,122 @@ void powermgmt::WebCleanup()
 
   // generate form
   c.panel_start("primary", "Power management configuration");
+
+  float v12 = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+  float v12_calc = (v12 > 1.0f) ? v12 : 12.6f;
+  bool chg12 = StandardMetrics.ms_v_env_charging12v->AsBool();
+  powermgmt_consumption_t cons;
+  MyPowerMgmt.GetEstimatedConsumption(cons);
+  float est_w = v12_calc * (cons.total_ma / 1000.0f);
+
+  const char* can1_pm = "n/a";
+  const char* can2_pm = "n/a";
+  const char* can3_pm = "n/a";
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+  const char* swcan_pm = "n/a";
+#endif
+  const char* wifi_pm = "n/a";
+  const char* wifi_state = "disabled";
+  const char* modem_pm = "n/a";
+  const char* modem_state = "idle";
+  const char* gps_pm = "n/a";
+  const char* ext12v_pm = "n/a";
+
+  if (MyPeripherals)
+    {
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
+    if (MyPeripherals->m_esp32can)
+      can1_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_esp32can->GetPowerMode());
+#endif
+#ifdef CONFIG_OVMS_COMP_MCP2515
+    if (MyPeripherals->m_mcp2515_1)
+      can2_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_1->GetPowerMode());
+    if (MyPeripherals->m_mcp2515_2)
+      can3_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_2->GetPowerMode());
+#endif
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    if (MyPeripherals->m_mcp2515_swcan)
+      swcan_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_mcp2515_swcan->GetPowerMode());
+#endif
+#ifdef CONFIG_OVMS_COMP_WIFI
+    if (MyPeripherals->m_esp32wifi)
+      {
+      wifi_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_esp32wifi->GetPowerMode());
+      esp32wifi_mode_t wmode = MyPeripherals->m_esp32wifi->GetMode();
+      if (wmode == ESP32WIFI_MODE_AP)
+        wifi_state = "AP";
+      else if (wmode == ESP32WIFI_MODE_APCLIENT)
+        wifi_state = MyNetManager.m_connected_wifi ? "AP+Client (connected)" : "AP+Client (disconnected)";
+      else if (wmode == ESP32WIFI_MODE_CLIENT)
+        wifi_state = MyNetManager.m_connected_wifi ? "Client (connected)" : "Client (disconnected)";
+      else if (wmode == ESP32WIFI_MODE_SCAN)
+        wifi_state = "Scan";
+      else
+        wifi_state = "off";
+      }
+#endif
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+    if (MyPeripherals->m_cellular_modem)
+      {
+      modem_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_cellular_modem->GetPowerMode());
+      modem_state = MyNetManager.m_connected_modem ? "PPP connected" : "idle";
+      gps_pm = (MyPeripherals->m_cellular_modem->GetPowerMode() == On &&
+                MyPeripherals->m_cellular_modem->m_nmea != NULL) ? "on" : "off";
+      }
+#endif
+#ifdef CONFIG_OVMS_COMP_EXT12V
+    if (MyPeripherals->m_ext12v)
+      ext12v_pm = MyPcpApp.FindPowerModeByType(MyPeripherals->m_ext12v->GetPowerMode());
+#endif
+    }
+
+  c.printf(
+    "<div class=\"well well-sm\">"
+    "<b>Current Power Status:</b><br>"
+    "12V Battery: <b>%.2f V</b> (%s)",
+    v12, chg12 ? "charging" : "not charging");
+  if (StandardMetrics.ms_v_bat_12v_current->IsDefined())
+    {
+    c.printf(" | Vehicle 12V Current: <b>%.2f A</b>",
+      StandardMetrics.ms_v_bat_12v_current->AsFloat());
+    }
+  c.printf(
+    " | Timers: Not charging: <b>%u min</b>, WiFi modem-off: <b>%u min</b>"
+    "<table class=\"table table-condensed\" style=\"margin-top:8px;margin-bottom:6px;\">"
+    "<thead><tr><th>Consumer</th><th>State</th><th>Est. Current</th><th>Est. Power</th></tr></thead>"
+    "<tbody>"
+    "<tr><td>ESP32 + SPIRAM + System</td><td>on</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
+    "<tr><td>CAN1 (esp32can)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
+    "<tr><td>CAN2 (mcp2515_1)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
+    "<tr><td>CAN3 (mcp2515_2)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>",
+    MyPowerMgmt.GetNotChargingTimer() / 60,
+    MyPowerMgmt.GetModemOffWifiTimer() / 60,
+    cons.base_ma, v12_calc * (cons.base_ma / 1000.0f),
+    can1_pm, cons.can1_ma, v12_calc * (cons.can1_ma / 1000.0f),
+    can2_pm, cons.can2_ma, v12_calc * (cons.can2_ma / 1000.0f),
+    can3_pm, cons.can3_ma, v12_calc * (cons.can3_ma / 1000.0f));
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+  c.printf(
+    "<tr><td>SWCAN (mcp2515_swcan)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>",
+    swcan_pm, cons.swcan_ma, v12_calc * (cons.swcan_ma / 1000.0f));
+#endif
+  c.printf(
+    "<tr><td>WiFi</td><td>%s (%s)</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
+    "<tr><td>Cellular Modem</td><td>%s (%s)</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
+    "<tr><td>GPS (NMEA)</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
+    "<tr><td>Ext 12V</td><td>%s</td><td>~%.0f mA</td><td>~%.2f W</td></tr>"
+    "</tbody>"
+    "<tfoot><tr><th>Total Estimated OVMS Draw</th><th></th><th>~%.0f mA</th><th>~%.2f W</th></tr></tfoot>"
+    "</table>"
+    "<small class=\"text-muted\">⚠ Note: The OVMS consumption values are rough estimates calculated from active peripheral power states "
+    "(ESP32, CAN, WiFi, Cellular, GPS, Ext12V). The OVMS v3 hardware has no dedicated current shunt sensor, so actual power draw may vary.</small>"
+    "</div>",
+    wifi_pm, wifi_state, cons.wifi_ma, v12_calc * (cons.wifi_ma / 1000.0f),
+    modem_pm, modem_state, cons.modem_ma, v12_calc * (cons.modem_ma / 1000.0f),
+    gps_pm, cons.gps_ma, v12_calc * (cons.gps_ma / 1000.0f),
+    ext12v_pm, cons.ext12v_ma, v12_calc * (cons.ext12v_ma / 1000.0f),
+    cons.total_ma, est_w);
+
   c.form_start(p.uri);
 
   c.input_checkbox("Enable automatic power management", "enabled", enabled,
