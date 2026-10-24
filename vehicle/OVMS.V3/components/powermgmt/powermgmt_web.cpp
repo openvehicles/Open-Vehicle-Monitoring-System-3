@@ -59,7 +59,8 @@ void powermgmt::WebCleanup()
   auto lock = MyConfig.Lock();
   std::string error;
   bool enabled;
-  std::string modemoff_delay, wifioff_delay, b12v_shutdown_delay;
+  bool modem_wifi_fallback = false;
+  std::string modemoff_delay, modemoff_wifi_delay, wifioff_delay, b12v_shutdown_delay;
 
   if (c.method == "POST")
     {
@@ -67,6 +68,10 @@ void powermgmt::WebCleanup()
     enabled = (c.getvar("enabled") == "yes");
 #ifdef CONFIG_OVMS_COMP_CELLULAR
     modemoff_delay = c.getvar("modemoff_delay");
+#ifdef CONFIG_OVMS_COMP_WIFI
+    modemoff_wifi_delay = c.getvar("modemoff_wifi_delay");
+    modem_wifi_fallback = (c.getvar("modem_wifi_fallback") == "yes");
+#endif
 #endif
     wifioff_delay = c.getvar("wifioff_delay");
     b12v_shutdown_delay = c.getvar("12v_shutdown_delay");
@@ -76,6 +81,9 @@ void powermgmt::WebCleanup()
       {
       if (modemoff_delay.find_first_not_of("0123456789") != std::string::npos)
         error += "<li data-input=\"user_key\">Invalid Modem off delay!</li>";
+
+      if (modemoff_wifi_delay.find_first_not_of("0123456789") != std::string::npos)
+        error += "<li data-input=\"user_key\">Invalid Modem off (WiFi) delay!</li>";
 
       if (wifioff_delay.find_first_not_of("0123456789") != std::string::npos)
         error += "<li data-input=\"user_key\">Invalid WiFi off delay!</li>";
@@ -91,6 +99,10 @@ void powermgmt::WebCleanup()
       MyConfig.SetParamValueBool("power", "enabled", enabled);
 #ifdef CONFIG_OVMS_COMP_CELLULAR
       MyConfig.SetParamValue("power", "modemoff_delay", modemoff_delay);
+#ifdef CONFIG_OVMS_COMP_WIFI
+      MyConfig.SetParamValue("power", "modemoff_wifi_delay", modemoff_wifi_delay);
+      MyConfig.SetParamValueBool("power", "modem_wifi_fallback", modem_wifi_fallback);
+#endif
 #endif
       MyConfig.SetParamValue("power", "wifioff_delay", wifioff_delay);
       MyConfig.SetParamValue("power", "12v_shutdown_delay", b12v_shutdown_delay);
@@ -113,6 +125,10 @@ void powermgmt::WebCleanup()
     enabled = MyConfig.GetParamValueBool("power", "enabled", false);
 #ifdef CONFIG_OVMS_COMP_CELLULAR
     modemoff_delay = MyConfig.GetParamValue("power", "modemoff_delay", STR(POWERMGMT_MODEMOFF_DELAY));
+#ifdef CONFIG_OVMS_COMP_WIFI
+    modemoff_wifi_delay = MyConfig.GetParamValue("power", "modemoff_wifi_delay", STR(POWERMGMT_MODEMOFF_WIFI_DELAY));
+    modem_wifi_fallback = MyConfig.GetParamValueBool("power", "modem_wifi_fallback", false);
+#endif
 #endif
     wifioff_delay = MyConfig.GetParamValue("power", "wifioff_delay", STR(POWERMGMT_WIFIOFF_DELAY));
     b12v_shutdown_delay = MyConfig.GetParamValue("power", "12v_shutdown_delay", STR(POWERMGMT_12V_SHUTDOWN_DELAY));
@@ -136,6 +152,15 @@ void powermgmt::WebCleanup()
     "Default: " STR(POWERMGMT_MODEMOFF_DELAY) " hours",
     "<p>0 = disabled</p>",
     "min=\"0\" step=\"1\"", "hours");
+#ifdef CONFIG_OVMS_COMP_WIFI
+  c.input("number", "Delay before modem is turned off (when WiFi connected)", "modemoff_wifi_delay", modemoff_wifi_delay.c_str(),
+    "Default: " STR(POWERMGMT_MODEMOFF_WIFI_DELAY) " minutes",
+    "<p>0 = disabled. Turns off the cellular modem after the specified minutes of active WiFi connection while not charging the 12V battery. "
+    "The modem is turned back on when 12V battery charging starts.</p>",
+    "min=\"0\" step=\"1\"", "minutes");
+  c.input_checkbox("Turn on modem when WiFi disconnects (fallback)", "modem_wifi_fallback", modem_wifi_fallback,
+    "<p>If enabled, the cellular modem will be powered back on automatically when the WiFi connection is lost (as long as the general modem off delay has not been exceeded).</p>");
+#endif
 #endif
 
   c.input("number", "Delay before WiFi is turned off", "wifioff_delay", wifioff_delay.c_str(),

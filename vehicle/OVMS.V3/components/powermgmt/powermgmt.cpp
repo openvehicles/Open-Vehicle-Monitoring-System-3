@@ -33,6 +33,7 @@ static const char *TAG = "powermgmt";
 #include "ovms_config.h"
 #include "powermgmt.h"
 #include "ovms_peripherals.h"
+#include "ovms_netmanager.h"
 #include "ovms_boot.h"
 #include "metrics_standard.h"
 
@@ -50,9 +51,12 @@ powermgmt::powermgmt()
 
   m_enabled = false;
   m_notcharging_timer = 0;
+  m_modemoff_wifi_timer = 0;
   m_12v_alert_timer = 0;
+  m_modem_wifi_fallback = false;
   m_charging = false;
   m_modem_off = false;
+  m_modem_off_wifi = false;
   m_wifi_off = false;
 
   MyConfig.RegisterParam("power", "Power management", true, true);
@@ -79,6 +83,8 @@ void powermgmt::ConfigChanged(std::string event, void* data)
     {
     m_enabled = MyConfig.GetParamValueBool("power", "enabled", false);
     m_modemoff_delay = MyConfig.GetParamValueInt("power", "modemoff_delay", POWERMGMT_MODEMOFF_DELAY);
+    m_modemoff_wifi_delay = MyConfig.GetParamValueInt("power", "modemoff_wifi_delay", POWERMGMT_MODEMOFF_WIFI_DELAY);
+    m_modem_wifi_fallback = MyConfig.GetParamValueBool("power", "modem_wifi_fallback", false);
     m_wifioff_delay = MyConfig.GetParamValueInt("power", "wifioff_delay", POWERMGMT_WIFIOFF_DELAY);
     m_12v_shutdown_delay = MyConfig.GetParamValueInt("power", "12v_shutdown_delay", POWERMGMT_12V_SHUTDOWN_DELAY);
     }
@@ -87,7 +93,19 @@ void powermgmt::ConfigChanged(std::string event, void* data)
 void powermgmt::Ticker1(std::string event, void* data)
   {
   if (!m_charging)
+    {
     m_notcharging_timer++;
+#ifdef CONFIG_OVMS_COMP_WIFI
+    if (MyNetManager.m_connected_wifi)
+      m_modemoff_wifi_timer++;
+    else
+      m_modemoff_wifi_timer = 0;
+#endif
+    }
+  else
+    {
+    m_modemoff_wifi_timer = 0;
+    }
 
   if (StandardMetrics.ms_v_env_charging12v->AsBool())
     {
@@ -95,6 +113,7 @@ void powermgmt::Ticker1(std::string event, void* data)
       {
       ESP_LOGI(TAG,"Charging 12V battery..");
       m_charging=true;
+      m_modemoff_wifi_timer=0;
       // Turn on WiFi and modem if they were previously turned off by us
 #ifdef CONFIG_OVMS_COMP_WIFI
       if (m_wifi_off)
@@ -108,6 +127,7 @@ void powermgmt::Ticker1(std::string event, void* data)
         {
         MyPeripherals->m_cellular_modem->SetPowerMode(On);
         m_modem_off = false;
+        m_modem_off_wifi = false;
         }
 #endif
       }
@@ -119,6 +139,7 @@ void powermgmt::Ticker1(std::string event, void* data)
       ESP_LOGI(TAG,"No longer charging 12V battery..");
       m_charging=false;
       m_notcharging_timer=0;
+      m_modemoff_wifi_timer=0;
       }
     }
 
@@ -139,6 +160,31 @@ void powermgmt::Ticker1(std::string event, void* data)
     }
 #endif
 
+#if defined(CONFIG_OVMS_COMP_CELLULAR) && defined(CONFIG_OVMS_COMP_WIFI)
+  if (m_modemoff_wifi_delay && m_modemoff_wifi_timer > m_modemoff_wifi_delay*60) // minutes to seconds
+    {
+    if (MyPeripherals->m_cellular_modem->GetPowerMode()==On)
+      {
+      ESP_LOGW(TAG,"Powering off cellular modem (WiFi connected)");
+      MyEvents.SignalEvent("powermgmt.modem.off",NULL);
+      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down modem
+      MyPeripherals->m_cellular_modem->SetPowerMode(Off);
+      m_modem_off = true;
+      m_modem_off_wifi = true;
+      }
+    }
+  else if (m_modem_wifi_fallback && m_modem_off_wifi && !MyNetManager.m_connected_wifi)
+    {
+    if (!(m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60))
+      {
+      ESP_LOGI(TAG,"WiFi disconnected, powering on cellular modem (fallback)");
+      MyPeripherals->m_cellular_modem->SetPowerMode(On);
+      m_modem_off = false;
+      m_modem_off_wifi = false;
+      }
+    }
+#endif
+
 #ifdef CONFIG_OVMS_COMP_CELLULAR
   if (m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
     {
@@ -150,6 +196,7 @@ void powermgmt::Ticker1(std::string event, void* data)
       MyPeripherals->m_cellular_modem->SetPowerMode(Off);
       m_modem_off = true;
       }
+    m_modem_off_wifi = false;
     }
 #endif
 

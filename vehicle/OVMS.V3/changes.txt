@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Power Management: add option to power off cellular modem after configurable minutes of active
+    WiFi connection while not charging the 12V battery, and an optional fallback to power the
+    modem back on if the WiFi connection is lost.
+  New configs:
+    [power] modemoff_wifi_delay (int, default 0)      -- delay in minutes before modem is turned off when WiFi connected (0 = disabled)
+    [power] modem_wifi_fallback (bool, default false) -- turn on modem when WiFi disconnects
 - Server V2: disable legacy V2/MP App/client workaround of changing commas in command responses
     and text notifications into semicolons, add configuration option to enable if still needed.
   New config:
