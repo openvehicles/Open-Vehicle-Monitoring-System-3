@@ -210,7 +210,13 @@ void powermgmt::ConfigChanged(std::string event, void* data)
     int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
     if (m_enabled && park_secs > 1)
       m_notcharging_timer = park_secs;
-    if (m_powersaving_enabled && park_secs > 1)
+    if (!m_powersaving_enabled)
+      {
+      m_powersaving_active = false;
+      m_powersaving_awake_phase = false;
+      m_powersaving_deepsleep_fallback = false;
+      }
+    else if (park_secs > 1)
       {
       m_powersaving_timer = park_secs;
       if (m_powersaving_target == "deepsleep" && m_powersaving_deepsleep_days > 0 &&
@@ -222,6 +228,12 @@ void powermgmt::ConfigChanged(std::string event, void* data)
       else
         {
         m_powersaving_deepsleep_fallback = false;
+        }
+      if (event == "config.mounted" && m_powersaving_timer >= m_powersaving_days * 24 * 60 * 60)
+        {
+        m_powersaving_active = true;
+        m_powersaving_cycle_timer = 0;
+        m_powersaving_awake_phase = false;
         }
       }
     }
@@ -654,45 +666,51 @@ void powermgmt::Ticker1(std::string event, void* data)
 
     // Duty-cycle execution
     m_powersaving_cycle_timer++;
-    unsigned int interval_secs = m_powersaving_interval * 60 * 60;
-    unsigned int duration_secs = m_powersaving_duration * 60;
+    unsigned int interval_secs = (m_powersaving_interval > 0 ? m_powersaving_interval : POWERMGMT_POWERSAVING_INTERVAL) * 60 * 60;
+    unsigned int duration_secs = (m_powersaving_duration > 0 ? m_powersaving_duration : POWERMGMT_POWERSAVING_DURATION) * 60;
+    if (duration_secs >= interval_secs)
+      duration_secs = interval_secs / 2;
     unsigned int pos_in_cycle = m_powersaving_cycle_timer % interval_secs;
 
     if (pos_in_cycle < duration_secs)
       {
       if (!m_powersaving_awake_phase)
         {
-        if (m_powersaving_target == "deepsleep")
-          {
-          unsigned int sleep_secs = m_powersaving_duration * 60;
-          int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
-          if ((unsigned int)park_secs < m_powersaving_timer)
-            park_secs = m_powersaving_timer;
-          StandardMetrics.ms_v_env_parktime->SetValue(park_secs + (int)sleep_secs);
-          char buf[32];
-          snprintf(buf, sizeof(buf), "%u", sleep_secs);
-          ESP_LOGI(TAG, "Power saving duty-cycle: entering deep sleep for %u seconds", sleep_secs);
-          MyBoot.DeepSleep(sleep_secs);
-          }
-        else
-          {
-          ESP_LOGI(TAG, "Power saving duty-cycle: waking up target components (%s)", m_powersaving_target.c_str());
-          m_powersaving_awake_phase = true;
-          if (m_powersaving_target == "modem" || m_powersaving_target == "both") PowerOnModem();
-          if (m_powersaving_target == "wifi" || m_powersaving_target == "both") PowerOnWifi();
-          }
+        ESP_LOGI(TAG, "Power saving duty-cycle: waking up target components (%s) for %u minutes",
+          m_powersaving_target.c_str(), duration_secs / 60);
+        m_powersaving_awake_phase = true;
+        if (m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep")
+          PowerOnModem();
+        if (m_powersaving_target == "wifi" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep")
+          PowerOnWifi();
         }
       }
     else
       {
-      if (m_powersaving_awake_phase && m_powersaving_target != "deepsleep")
+      if (m_powersaving_awake_phase)
         {
-        ESP_LOGI(TAG, "Power saving duty-cycle: putting target components back to sleep (%s)", m_powersaving_target.c_str());
         m_powersaving_awake_phase = false;
-        bool do_modem = (m_powersaving_target == "modem" || m_powersaving_target == "both");
-        bool do_wifi = (m_powersaving_target == "wifi" || m_powersaving_target == "both");
-        if (do_modem) PowerOffModem(false);
-        if (do_wifi) PowerOffWifi();
+        if (m_powersaving_target == "deepsleep")
+          {
+          if (!MyBoot.IsShuttingDown())
+            {
+            unsigned int sleep_secs = interval_secs - duration_secs;
+            int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
+            if ((unsigned int)park_secs < m_powersaving_timer)
+              park_secs = m_powersaving_timer;
+            StandardMetrics.ms_v_env_parktime->SetValue(park_secs + (int)sleep_secs);
+            ESP_LOGI(TAG, "Power saving duty-cycle: entering deep sleep for %u seconds", sleep_secs);
+            MyBoot.DeepSleep(sleep_secs);
+            }
+          }
+        else
+          {
+          ESP_LOGI(TAG, "Power saving duty-cycle: putting target components back to sleep (%s)", m_powersaving_target.c_str());
+          bool do_modem = (m_powersaving_target == "modem" || m_powersaving_target == "both");
+          bool do_wifi = (m_powersaving_target == "wifi" || m_powersaving_target == "both");
+          if (do_modem) PowerOffModem(false);
+          if (do_wifi) PowerOffWifi();
+          }
         }
       }
     }
@@ -744,22 +762,27 @@ void powermgmt::Ticker1(std::string event, void* data)
   if (!m_enabled)
     return;
 
+  bool ps_keep_wifi = m_powersaving_active && m_powersaving_awake_phase &&
+    (m_powersaving_target == "wifi" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
+  bool ps_keep_modem = m_powersaving_active && m_powersaving_awake_phase &&
+    (m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
+
 #ifdef CONFIG_OVMS_COMP_WIFI
-  if (m_wifioff_delay && m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
+  if (!ps_keep_wifi && m_wifioff_delay && m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
     {
     PowerOffWifi();
     }
 #endif
 
 #if defined(CONFIG_OVMS_COMP_CELLULAR) && defined(CONFIG_OVMS_COMP_WIFI)
-  if (m_modemoff_wifi_delay && m_modemoff_wifi_timer > m_modemoff_wifi_delay*60) // minutes to seconds
+  if (!ps_keep_modem && m_modemoff_wifi_delay && m_modemoff_wifi_timer > m_modemoff_wifi_delay*60) // minutes to seconds
     {
     PowerOffModem(true);
     }
 #endif
 
 #ifdef CONFIG_OVMS_COMP_CELLULAR
-  if (m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
+  if (!ps_keep_modem && m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
     {
     PowerOffModem(false);
     }
