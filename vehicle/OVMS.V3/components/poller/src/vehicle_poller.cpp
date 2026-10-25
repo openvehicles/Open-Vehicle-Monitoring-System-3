@@ -4502,6 +4502,7 @@ void OvmsPoller::OnceOffPollBase::SetPollPid( uint32_t txid, uint32_t rxid, uint
   {
   m_poll  = { txid, rxid, polltype, pid, { polltime, polltime, polltime, polltime }, pollbus, protocol };
   m_poll_data = request;
+  m_poll.xargs.tag = POLL_TXDATA;
   m_poll.xargs.datalen = LIMIT_MAX(request.size(), 4095);
   m_poll.xargs.data = (const uint8_t*)m_poll_data.data();
 
