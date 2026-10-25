@@ -326,78 +326,146 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
   writer->printf("Download firmware from %s to %s\n",url.c_str(),target->label);
 
-  // HTTP client request...
-  OvmsHttpClient http(url);
+  // Query expected size via HEAD first so we can erase the target flash partition
+  // before the HTTP GET stream starts pouring data into the cellular UART:
+  size_t expected = 0;
+  esp_ota_handle_t otah = 0;
+  bool ota_begun = false;
+  esp_err_t err = ESP_OK;
+  {
+  OvmsHttpClient head(url, "HEAD", 30000);
+  if (head.IsOpen() && head.ResponseCode() == 200)
+    expected = head.BodySize();
+  head.Disconnect();
+  }
+
+  if (expected >= 1024)
+    {
+    writer->printf("Expected file size is %d\n",expected);
+    if (expected > target->size)
+      {
+      writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+      if (target->size < 0x700000)
+        {
+        writer->puts("Consider upgrading your partitioning scheme to v3-35.");
+        MyOTA.SendPartitionTypeAlert(true);
+        }
+      return;
+      }
+    MyOTA.SetFlashStatus("OTA Flash HTTP: Preparing flash partition...");
+    writer->puts(MyOTA.GetFlashStatus());
+    err = esp_ota_begin(target, expected, &otah);
+    if (err != ESP_OK)
+      {
+      MyOTA.ClearFlashStatus();
+      writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
+      return;
+      }
+    ota_begun = true;
+    }
+
+  // HTTP client GET request (60s timeout for cellular resilience)...
+  OvmsHttpClient http(url, "GET", 60000);
   if (!http.IsOpen())
     {
+    if (ota_begun) esp_ota_end(otah);
+    MyOTA.ClearFlashStatus();
     writer->puts("Error: Request failed");
     return;
     }
 
-  size_t expected = http.BodySize();
-  if (expected < 1024) // empty / HTML error page?
+  if (!ota_begun)
     {
-    writer->printf("Error: Expected download file size (%d) is invalid\n",expected);
-    return;
-    }
-
-  writer->printf("Expected file size is %d\n",expected);
-
-  if (expected > target->size)
-    {
-    writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
-    if (target->size < 0x700000)
+    expected = http.BodySize();
+    if (expected < 1024) // empty / HTML error page?
       {
-      writer->puts("Consider upgrading your partitioning scheme to v3-35.");
-      MyOTA.SendPartitionTypeAlert(true);
-      }
-    return;
-    }
-
-  MyOTA.SetFlashStatus("OTA Flash HTTP: Preparing flash partition...");
-  writer->puts(MyOTA.GetFlashStatus());
-  esp_ota_handle_t otah;
-  esp_err_t err = esp_ota_begin(target, expected, &otah);
-  if (err != ESP_OK)
-    {
-    MyOTA.ClearFlashStatus();
-    writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
-    http.Disconnect();
-    return;
-    }
-
-  // Now, process the body
-  uint8_t rbuf[512];
-  size_t filesize = 0;
-  size_t sofar = 0;
-  ssize_t k;
-  MyOTA.SetFlashStatus("OTA Flash HTTP: Downloading OTA image...");
-  while ((k = http.BodyRead(rbuf,512)) > 0)
-    {
-    filesize += k;
-    sofar += k;
-    MyOTA.SetFlashPerc((filesize*100)/expected);
-    if (sofar > 200000)
-      {
-      writer->printf("Downloading... %d%% (%d bytes so far)\n",MyOTA.m_flashperc,filesize);
-      sofar = 0;
-      }
-    if (filesize > target->size)
-      {
-      MyOTA.ClearFlashStatus();
-      writer->printf("Error: Download firmware is bigger than available partition space - state is inconsistent\n");
-      esp_ota_end(otah);
+      writer->printf("Error: Expected download file size (%d) is invalid\n",expected);
       http.Disconnect();
       return;
       }
-    err = esp_ota_write(otah, rbuf, k);
+
+    writer->printf("Expected file size is %d\n",expected);
+
+    if (expected > target->size)
+      {
+      writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+      if (target->size < 0x700000)
+        {
+        writer->puts("Consider upgrading your partitioning scheme to v3-35.");
+        MyOTA.SendPartitionTypeAlert(true);
+        }
+      http.Disconnect();
+      return;
+      }
+
+    MyOTA.SetFlashStatus("OTA Flash HTTP: Preparing flash partition...");
+    writer->puts(MyOTA.GetFlashStatus());
+    err = esp_ota_begin(target, expected, &otah);
     if (err != ESP_OK)
       {
       MyOTA.ClearFlashStatus();
-      writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err);
-      esp_ota_end(otah);
+      writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
       http.Disconnect();
       return;
+      }
+    }
+
+  // Now, process the body in 512-byte flash write slices (~1.2ms per write) to
+  // avoid blocking the non-IRAM UART RX ISR longer than the 128-byte FIFO window,
+  // with automatic HTTP Range resume if the cellular connection drops mid-download:
+  uint8_t rbuf[512];
+  size_t filesize = 0;
+  size_t sofar = 0;
+  ssize_t k = 0;
+  int retries = 0;
+  const int kMaxRetries = 5;
+  MyOTA.SetFlashStatus("OTA Flash HTTP: Downloading OTA image...");
+  while (filesize < expected)
+    {
+    while ((k = http.BodyRead(rbuf, sizeof(rbuf))) > 0)
+      {
+      filesize += k;
+      sofar += k;
+      MyOTA.SetFlashPerc((filesize*100)/expected);
+      if (sofar > 200000)
+        {
+        writer->printf("Downloading... %d%% (%d bytes so far)\n",MyOTA.m_flashperc,filesize);
+        sofar = 0;
+        }
+      if (filesize > target->size)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: Download firmware is bigger than available partition space - state is inconsistent\n");
+        esp_ota_end(otah);
+        http.Disconnect();
+        return;
+        }
+      err = esp_ota_write(otah, rbuf, k);
+      if (err != ESP_OK)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err);
+        esp_ota_end(otah);
+        http.Disconnect();
+        return;
+        }
+      }
+
+    if (filesize >= expected || retries >= kMaxRetries)
+      break;
+
+    retries++;
+    http.Disconnect();
+    writer->printf("Download interrupted at %d/%d bytes, resuming (attempt %d/%d)...\n",
+                   filesize, expected, retries, kMaxRetries);
+    vTaskDelay(pdMS_TO_TICKS(2000));
+    if (!http.Request(url, "GET", filesize) ||
+        http.ResponseCode() != 206 ||
+        http.BodySize() != (expected - filesize))
+      {
+      writer->puts("Error: Server did not honour HTTP Range resume request");
+      k = -1;
+      break;
       }
     }
   http.Disconnect();
@@ -432,7 +500,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
-                 http.BodySize(),url.c_str(),target->label);
+                 filesize,url.c_str(),target->label);
   MyConfig.SetParamValue("ota", "http.mru", url);
   }
 
@@ -1624,70 +1692,135 @@ bool OvmsOTA::AutoFlash(bool force)
     url.c_str());
   MyNotify.NotifyStringf("info", "ota.update", "New OTA firmware %s is now being downloaded", info.version_server.c_str());
 
-  // HTTP client request...
-  OvmsHttpClient http(url);
+  // Query expected size via HEAD first so we can erase the target flash partition
+  // before the HTTP GET stream starts pouring data into the cellular UART:
+  size_t expected = 0;
+  esp_ota_handle_t otah = 0;
+  bool ota_begun = false;
+  esp_err_t err = ESP_OK;
+  {
+  OvmsHttpClient head(url, "HEAD", 30000);
+  if (head.IsOpen() && head.ResponseCode() == 200)
+    expected = head.BodySize();
+  head.Disconnect();
+  }
+
+  if (expected >= 1024)
+    {
+    if (expected > target->size)
+      {
+      ESP_LOGE(TAG, "Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+      if (target->size < 0x700000)
+        {
+        ESP_LOGE(TAG, "Consider upgrading your partitioning scheme to v3-35.");
+        MyOTA.SendPartitionTypeAlert(true);
+        }
+      return false;
+      }
+    SetFlashStatus("OTA Auto Flash: Preparing flash partition...",0,true);
+    err = esp_ota_begin(target, expected, &otah);
+    if (err != ESP_OK)
+      {
+      ClearFlashStatus();
+      ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when starting OTA operation", err);
+      return false;
+      }
+    ota_begun = true;
+    }
+
+  // HTTP client GET request (60s timeout for cellular resilience)...
+  OvmsHttpClient http(url, "GET", 60000);
   if (!http.IsOpen())
     {
+    if (ota_begun) esp_ota_end(otah);
+    ClearFlashStatus();
     ESP_LOGE(TAG, "AutoFlash: http://%s request failed", url.c_str());
     m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 
-  size_t expected = http.BodySize();
-  if (expected < 1024) // empty / HTML error page?
+  if (!ota_begun)
     {
-    ESP_LOGE(TAG, "AutoFlash: Expected download file size (%d) is invalid", expected);
-    m_lastcheckday = -1; // Allow to try again within the same day
-    return false;
-    }
-
-  if (expected > target->size)
-    {
-    ESP_LOGE(TAG, "Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
-    if (target->size < 0x700000)
+    expected = http.BodySize();
+    if (expected < 1024) // empty / HTML error page?
       {
-      ESP_LOGE(TAG, "Consider upgrading your partitioning scheme to v3-35.");
-      MyOTA.SendPartitionTypeAlert(true);
+      ESP_LOGE(TAG, "AutoFlash: Expected download file size (%d) is invalid", expected);
+      http.Disconnect();
+      m_lastcheckday = -1; // Allow to try again within the same day
+      return false;
       }
-    return false;
-    }
 
-  SetFlashStatus("OTA Auto Flash: Preparing flash partition...",0,true);
-  esp_ota_handle_t otah;
-  esp_err_t err = esp_ota_begin(target, expected, &otah);
-  if (err != ESP_OK)
-    {
-    ClearFlashStatus();
-    ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when starting OTA operation", err);
-    http.Disconnect();
-    return false;
-    }
-
-  // Now, process the body
-  SetFlashStatus("OTA Auto Flash: Downloading OTA image...");
-  uint8_t rbuf[512];
-  size_t filesize = 0;
-  ssize_t k;
-  while ((k = http.BodyRead(rbuf,512)) > 0)
-    {
-    filesize += k;
-    SetFlashPerc((filesize*100)/expected);
-    if (filesize > target->size)
+    if (expected > target->size)
       {
-      ClearFlashStatus();
-      ESP_LOGE(TAG, "AutoFlash: Download firmware is bigger than available partition space - state is inconsistent");
-      esp_ota_end(otah);
+      ESP_LOGE(TAG, "Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
+      if (target->size < 0x700000)
+        {
+        ESP_LOGE(TAG, "Consider upgrading your partitioning scheme to v3-35.");
+        MyOTA.SendPartitionTypeAlert(true);
+        }
       http.Disconnect();
       return false;
       }
-    err = esp_ota_write(otah, rbuf, k);
+
+    SetFlashStatus("OTA Auto Flash: Preparing flash partition...",0,true);
+    err = esp_ota_begin(target, expected, &otah);
     if (err != ESP_OK)
       {
       ClearFlashStatus();
-      ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when writing to flash - state is inconsistent", err);
-      esp_ota_end(otah);
+      ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when starting OTA operation", err);
       http.Disconnect();
       return false;
+      }
+    }
+
+  // Now, process the body in 512-byte flash write slices (~1.2ms per write)
+  // with automatic HTTP Range resume if the cellular connection drops mid-download:
+  SetFlashStatus("OTA Auto Flash: Downloading OTA image...");
+  uint8_t rbuf[512];
+  size_t filesize = 0;
+  ssize_t k = 0;
+  int retries = 0;
+  const int kMaxRetries = 5;
+  while (filesize < expected)
+    {
+    while ((k = http.BodyRead(rbuf, sizeof(rbuf))) > 0)
+      {
+      filesize += k;
+      SetFlashPerc((filesize*100)/expected);
+      if (filesize > target->size)
+        {
+        ClearFlashStatus();
+        ESP_LOGE(TAG, "AutoFlash: Download firmware is bigger than available partition space - state is inconsistent");
+        esp_ota_end(otah);
+        http.Disconnect();
+        return false;
+        }
+      err = esp_ota_write(otah, rbuf, k);
+      if (err != ESP_OK)
+        {
+        ClearFlashStatus();
+        ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when writing to flash - state is inconsistent", err);
+        esp_ota_end(otah);
+        http.Disconnect();
+        return false;
+        }
+      }
+
+    if (filesize >= expected || retries >= kMaxRetries)
+      break;
+
+    retries++;
+    http.Disconnect();
+    ESP_LOGW(TAG, "AutoFlash: Download interrupted at %d/%d bytes, resuming (attempt %d/%d)...",
+             filesize, expected, retries, kMaxRetries);
+    vTaskDelay(pdMS_TO_TICKS(2000));
+    if (!http.Request(url, "GET", filesize) ||
+        http.ResponseCode() != 206 ||
+        http.BodySize() != (expected - filesize))
+      {
+      ESP_LOGE(TAG, "AutoFlash: Server did not honour HTTP Range resume request");
+      k = -1;
+      break;
       }
     }
   http.Disconnect();
@@ -1720,7 +1853,7 @@ bool OvmsOTA::AutoFlash(bool force)
     return false;
     }
 
-  ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", http.BodySize(), url.c_str());
+  ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", filesize, url.c_str());
   MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
   MyConfig.SetParamValue("ota", "http.mru", url);
 

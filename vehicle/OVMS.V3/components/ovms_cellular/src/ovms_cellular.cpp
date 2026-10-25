@@ -44,6 +44,9 @@ static const char *TAG = "cellular";
 #include "ovms_notify.h"
 #include "ovms_boot.h"
 #include "ovms_config.h"
+#ifdef CONFIG_OVMS_COMP_OTA
+#include "ovms_ota.h"
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global convenience variables
@@ -122,7 +125,7 @@ void modem::Task()
   {
   modem_or_uart_event_t event;
   uart_event_type_t last_err_type = UART_EVENT_MAX;
-  uint8_t data[128];
+  uint8_t data[256];
 
   // Init UART:
   ESP_LOGD(TAG, "UART init");
@@ -149,6 +152,21 @@ void modem::Task()
     (QueueHandle_t*)&m_queue,
     ESP_INTR_FLAG_LEVEL2);
 
+  // Lower RX FIFO full threshold from ESP-IDF default (120/128 bytes = 0.69ms margin)
+  // to 32 bytes (96 bytes = 8.33ms margin at 115200 baud) to prevent hardware FIFO
+  // overflows during SPI flash write operations when hardware flow control is unavailable:
+  uart_intr_config_t uart_intr = {};
+  uart_intr.intr_enable_mask = UART_RXFIFO_FULL_INT_ENA_M
+                               | UART_RXFIFO_TOUT_INT_ENA_M
+                               | UART_FRM_ERR_INT_ENA_M
+                               | UART_RXFIFO_OVF_INT_ENA_M
+                               | UART_BRK_DET_INT_ENA_M
+                               | UART_PARITY_ERR_INT_ENA_M;
+  uart_intr.rx_timeout_thresh = 10;
+  uart_intr.txfifo_empty_intr_thresh = 10;
+  uart_intr.rxfifo_full_thresh = 32;
+  uart_intr_config(m_uartnum, &uart_intr);
+
   // Queue processing loop:
   while (m_task)
     {
@@ -159,9 +177,20 @@ void modem::Task()
         // Must be a UART event
         switch(event.uart.type)
           {
+          case UART_BUFFER_FULL:
+            m_err_uart_buffer_full++;
+            if (last_err_type != event.uart.type || m_err_uart_buffer_full % 16 == 0)
+              ESP_LOGW(TAG, "UART ring buffer full [cnt=%u]", m_err_uart_buffer_full);
+            last_err_type = event.uart.type;
+            FALLTHROUGH;
+
           case UART_DATA:
             {
             size_t buffered_size = event.uart.size;
+            if (event.uart.type == UART_BUFFER_FULL || buffered_size == 0)
+              uart_get_buffered_data_len(m_uartnum, &buffered_size);
+            if (buffered_size == 0 && event.uart.type == UART_BUFFER_FULL)
+              uart_flush(m_uartnum);
             while (buffered_size > 0)
               {
               if (buffered_size>sizeof(data)) buffered_size = sizeof(data);
@@ -192,14 +221,6 @@ void modem::Task()
             m_err_uart_fifo_ovf++;
             if (last_err_type != event.uart.type || m_err_uart_fifo_ovf % 16 == 0)
               ESP_LOGW(TAG, "UART hw fifo overflow [cnt=%u]", m_err_uart_fifo_ovf);
-            last_err_type = event.uart.type;
-            break;
-
-          case UART_BUFFER_FULL:
-            uart_flush(m_uartnum);
-            m_err_uart_buffer_full++;
-            if (last_err_type != event.uart.type || m_err_uart_buffer_full % 16 == 0)
-              ESP_LOGW(TAG, "UART ring buffer full [cnt=%u]", m_err_uart_buffer_full);
             last_err_type = event.uart.type;
             break;
 
@@ -1084,7 +1105,12 @@ modem::modem_state1_t modem::State1Ticker1()
         return NetLoss;
         }
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-        { m_driver->StatusPoller(); }
+        {
+#ifdef CONFIG_OVMS_COMP_OTA
+        if (!MyOTA.IsFlashStatus())
+#endif
+          { m_driver->StatusPoller(); }
+        }
       break;
 
     case NetDeepSleep:
@@ -1904,7 +1930,7 @@ void modem::IncomingMuxData(GsmMuxChannel* channel)
     {
     if (m_state1 == NetMode)
       {
-      uint8_t buf[32];
+      uint8_t buf[256];
       size_t n;
       while ((m_ppp != NULL)&&(n = channel->m_buffer.Pop(sizeof(buf),buf)) > 0)
         {

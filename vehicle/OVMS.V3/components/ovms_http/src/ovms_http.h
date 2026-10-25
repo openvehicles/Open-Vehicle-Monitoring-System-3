@@ -39,14 +39,14 @@ class OvmsHttpClient : public OvmsNetTcpConnection
   {
   public:
     OvmsHttpClient(long timeout_ms = 10000);
-    OvmsHttpClient(std::string url, const char* method = "GET", long timeout_ms = 10000);
+    OvmsHttpClient(std::string url, const char* method = "GET", long timeout_ms = 10000, size_t range_start = 0);
     virtual ~OvmsHttpClient();
 
   public:
     virtual void Disconnect();
 
   public:
-    bool Request(std::string url, const char* method = "GET");
+    bool Request(std::string url, const char* method = "GET", size_t range_start = 0);
     ssize_t BodyRead(void *buf, size_t nbyte);
     int BodyHasLine();
     std::string BodyReadLine();
