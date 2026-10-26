@@ -97,6 +97,7 @@ class powermgmt
     bool IsModemOff() const { return m_modem_off; }
     bool IsModemOffWifi() const { return m_modem_off_wifi; }
     bool IsWifiOff() const { return m_wifi_off; }
+    bool IsWifiOffIfDisconnected() const { return m_wifioff_if_disconnected; }
 
   private:
     bool m_enabled;
@@ -109,6 +110,7 @@ class powermgmt
     unsigned int m_modemoff_wifi_delay;
     bool m_modem_wifi_fallback;
     unsigned int m_wifioff_delay;
+    bool m_wifioff_if_disconnected;
     unsigned int m_12v_shutdown_delay;
     bool m_powersaving_enabled;
     unsigned int m_powersaving_days;

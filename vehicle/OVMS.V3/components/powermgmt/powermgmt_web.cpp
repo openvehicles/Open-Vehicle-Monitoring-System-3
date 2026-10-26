@@ -63,6 +63,7 @@ void powermgmt::WebCleanup()
   std::string error;
   bool enabled;
   bool modem_wifi_fallback = false;
+  bool wifioff_if_disconnected = false;
   bool powersaving_enabled = false;
   std::string modemoff_delay, modemoff_wifi_delay, wifioff_delay, b12v_shutdown_delay;
   std::string powersaving_days, powersaving_deepsleep_days, powersaving_target, powersaving_interval, powersaving_duration;
@@ -79,6 +80,7 @@ void powermgmt::WebCleanup()
 #endif
 #endif
     wifioff_delay = c.getvar("wifioff_delay");
+    wifioff_if_disconnected = (c.getvar("wifioff_if_disconnected") == "yes");
     b12v_shutdown_delay = c.getvar("12v_shutdown_delay");
     powersaving_enabled = (c.getvar("powersaving_enabled") == "yes");
     powersaving_days = c.getvar("powersaving_days");
@@ -128,6 +130,7 @@ void powermgmt::WebCleanup()
 #endif
 #endif
       MyConfig.SetParamValue("power", "wifioff_delay", wifioff_delay);
+      MyConfig.SetParamValueBool("power", "wifioff_if_disconnected", wifioff_if_disconnected);
       MyConfig.SetParamValue("power", "12v_shutdown_delay", b12v_shutdown_delay);
       MyConfig.SetParamValueBool("power", "powersaving.enabled", powersaving_enabled);
       MyConfig.SetParamValue("power", "powersaving.days", powersaving_days);
@@ -160,6 +163,7 @@ void powermgmt::WebCleanup()
 #endif
 #endif
     wifioff_delay = MyConfig.GetParamValue("power", "wifioff_delay", STR(POWERMGMT_WIFIOFF_DELAY));
+    wifioff_if_disconnected = MyConfig.GetParamValueBool("power", "wifioff_if_disconnected", false);
     b12v_shutdown_delay = MyConfig.GetParamValue("power", "12v_shutdown_delay", STR(POWERMGMT_12V_SHUTDOWN_DELAY));
     powersaving_enabled = MyConfig.GetParamValueBool("power", "powersaving.enabled", false);
     powersaving_days = MyConfig.GetParamValue("power", "powersaving.days", STR(POWERMGMT_POWERSAVING_DAYS));
@@ -229,7 +233,7 @@ void powermgmt::WebCleanup()
     }
   c.printf(
     " | Timers: Not charging: <b>%u min</b>, WiFi modem-off: <b>%u min</b>, 12V alert: <b>%u min</b><br>"
-    "Flags: modem off: <b>%s</b> | modem off wifi connected: <b>%s</b> | wifi off: <b>%s</b>"
+    "Flags: modem off: <b>%s</b> | modem off wifi connected: <b>%s</b> | wifi off: <b>%s</b> | wifi off if disconnected: <b>%s</b>"
     "<table class=\"table table-condensed\" style=\"margin-top:8px;margin-bottom:6px;\">"
     "<thead><tr><th>Consumer</th><th>State</th><th>Est. Current</th><th>Est. Power</th></tr></thead>"
     "<tbody>"
@@ -240,6 +244,7 @@ void powermgmt::WebCleanup()
     MyPowerMgmt.IsModemOff() ? "yes" : "no",
     MyPowerMgmt.IsModemOffWifi() ? "yes" : "no",
     MyPowerMgmt.IsWifiOff() ? "yes" : "no",
+    MyPowerMgmt.IsWifiOffIfDisconnected() ? "yes" : "no",
     cons.base_ma, v12_calc * (cons.base_ma / 1000.0f));
 
   float ah_day = (cons.total_ma / 1000.0f) * 24.0f;
@@ -295,6 +300,8 @@ void powermgmt::WebCleanup()
     "Default: " STR(POWERMGMT_WIFIOFF_DELAY) " hours",
     "<p>0 = disabled</p>",
     "min=\"0\" step=\"1\"", "hours");
+  c.input_checkbox("Turn off WiFi only when disconnected", "wifioff_if_disconnected", wifioff_if_disconnected,
+    "<p>If enabled, the WiFi off delay will only turn off WiFi when there is no active WiFi connection.</p>");
 
   c.input("number", "Delay before OVMS is shut down (after initial 12V battery level alert)", "12v_shutdown_delay", b12v_shutdown_delay.c_str(),
     "Default: " STR(POWERMGMT_12V_SHUTDOWN_DELAY) " minutes",

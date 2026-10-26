@@ -130,6 +130,7 @@ powermgmt::powermgmt()
   m_12v_alert_timer = 0;
   m_powersaving_timer = 0;
   m_modem_wifi_fallback = false;
+  m_wifioff_if_disconnected = false;
   m_powersaving_enabled = false;
   m_powersaving_days = POWERMGMT_POWERSAVING_DAYS;
   m_powersaving_deepsleep_days = POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS;
@@ -198,6 +199,11 @@ void powermgmt::ConfigChanged(std::string event, void* data)
     m_modemoff_wifi_delay = MyConfig.GetParamValueInt("power", "modemoff_wifi_delay", POWERMGMT_MODEMOFF_WIFI_DELAY);
     m_modem_wifi_fallback = MyConfig.GetParamValueBool("power", "modem_wifi_fallback", false);
     m_wifioff_delay = MyConfig.GetParamValueInt("power", "wifioff_delay", POWERMGMT_WIFIOFF_DELAY);
+    m_wifioff_if_disconnected = MyConfig.GetParamValueBool("power", "wifioff_if_disconnected", false);
+    if (MyConfig.ismounted() && !MyConfig.IsDefined("power", "wifioff_if_disconnected"))
+      {
+      MyConfig.SetParamValueBool("power", "wifioff_if_disconnected", m_wifioff_if_disconnected);
+      }
     m_12v_shutdown_delay = MyConfig.GetParamValueInt("power", "12v_shutdown_delay", POWERMGMT_12V_SHUTDOWN_DELAY);
     m_powersaving_enabled = MyConfig.GetParamValueBool("power", "powersaving.enabled", false);
     m_powersaving_days = MyConfig.GetParamValueInt("power", "powersaving.days", POWERMGMT_POWERSAVING_DAYS);
@@ -351,8 +357,8 @@ void powermgmt::CommandStatus(int verbosity, OvmsWriter* writer)
     writer->printf("12V Current (Veh): %.2f A\n", StandardMetrics.ms_v_bat_12v_current->AsFloat());
   writer->printf("Timers:            not charging %u min, WiFi modem-off %u min, 12V alert %u min\n",
     m_notcharging_timer / 60, m_modemoff_wifi_timer / 60, m_12v_alert_timer / 60);
-  writer->printf("Flags:             modem off = %s, modem off wifi connected = %s, wifi off = %s\n\n",
-    m_modem_off ? "yes" : "no", m_modem_off_wifi ? "yes" : "no", m_wifi_off ? "yes" : "no");
+  writer->printf("Flags:             modem off = %s, modem off wifi connected = %s, wifi off = %s, wifi off if disconnected = %s\n\n",
+    m_modem_off ? "yes" : "no", m_modem_off_wifi ? "yes" : "no", m_wifi_off ? "yes" : "no", m_wifioff_if_disconnected ? "yes" : "no");
 
   writer->printf("%-26s %-26s %12s %10s\n", "Consumer", "State", "Est. Current", "Est. Power");
   writer->printf("------------------------------------------------------------------------------\n");
@@ -394,6 +400,7 @@ void powermgmt::CommandConfig(int verbosity, OvmsWriter* writer)
 #endif
 #ifdef CONFIG_OVMS_COMP_WIFI
   writer->printf("  WiFi off delay:                     %u hours (0 = disabled)\n", m_wifioff_delay);
+  writer->printf("  WiFi off only when disconnected:    %s\n", m_wifioff_if_disconnected ? "yes" : "no");
 #endif
   writer->printf("  12V alert shutdown delay:           %u minutes (0 = disabled)\n", m_12v_shutdown_delay);
   writer->printf("  Periodic power saving enabled:      %s\n", m_powersaving_enabled ? "yes" : "no");
@@ -770,7 +777,10 @@ void powermgmt::Ticker1(std::string event, void* data)
 #ifdef CONFIG_OVMS_COMP_WIFI
   if (!ps_keep_wifi && m_wifioff_delay && m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
     {
-    PowerOffWifi();
+    if (!m_wifioff_if_disconnected || !MyNetManager.m_connected_wifi)
+      {
+      PowerOffWifi();
+      }
     }
 #endif
 

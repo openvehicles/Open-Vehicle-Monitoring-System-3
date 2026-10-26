@@ -20,6 +20,7 @@ Open Vehicle Monitor System v3 - Change log
   New configs:
     [power] modemoff_wifi_delay (int, default 0)      -- delay in minutes before modem is turned off when WiFi connected (0 = disabled)
     [power] modem_wifi_fallback (bool, default false) -- turn on modem when WiFi disconnects
+    [power] wifioff_if_disconnected (bool, default false) -- turn off WiFi after wifioff_delay only when no active WiFi connection exists
     [power] powersaving.enabled (bool, default false) -- enable periodic power saving
     [power] powersaving.days (int, default 4)         -- inactivity days threshold
     [power] powersaving.deepsleep_days (int, default 9) -- limit deepsleep to x days before switching to both (0 = unlimited)
