@@ -855,8 +855,12 @@ void powermgmt::Ticker1(std::string event, void* data)
     }
 #endif
 #endif
-  /*
   // 12V battery alert shutdown handling (only if configured)
+  if (StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool())
+    m_12v_alert_timer++;
+  else if (m_12v_alert_timer)
+    m_12v_alert_timer = 0;
+  /*
   // Note: This is disabled because it can cause issues with vehicle.cpp ticker60 12V alert handling.
   if (StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool())
     {
